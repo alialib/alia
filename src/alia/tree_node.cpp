@@ -1,0 +1,73 @@
+#include <alia/tree_node.hpp>
+#include <alia/context.hpp>
+#include <alia/node_expander.hpp>
+#include <alia/spacer.hpp>
+#include <alia/flags.hpp>
+#include <alia/control_macros.hpp>
+#include <alia/input_utils.hpp>
+
+namespace alia {
+
+void tree_node::begin(context& ctx, unsigned flags, layout const& layout_spec,
+    region_id expander_id)
+{
+    ctx_ = &ctx;
+    flags_ = flags;
+
+    bool* expanded;
+    if (get_data(ctx, &expanded))
+        *expanded = (flags & INITIALLY_EXPANDED) != 0;
+
+    if ((flags & NO_INDENT) == 0)
+    {
+        full_grid_.begin(ctx, 0, layout_spec);
+        top_row_.begin(full_grid_);
+        do_children_ = *expanded && full_grid_.is_relevant();
+        do_node_expander(ctx, inout(expanded), 0, NOT_PADDED, expander_id);
+        label_region_.begin(ctx, layout(GROW));
+    }
+    else
+    {
+        column_.begin(ctx, layout_spec);
+        do_children_ = *expanded && column_.is_relevant();
+        label_region_.begin(ctx);
+        do_node_expander(ctx, inout(expanded), 0, NOT_PADDED, expander_id);
+    }
+}
+
+void tree_node::end_header()
+{
+    label_region_.end();
+}
+
+bool tree_node::do_children()
+{
+    end_header();
+    if ((flags_ & NO_INDENT) == 0)
+    {
+        top_row_.end();
+        alia_if_(*ctx_, do_children_)
+        {
+            bottom_row_.begin(full_grid_, layout(GROW));
+            do_spacer(*ctx_);
+            column_.begin(*ctx_, layout(GROW));
+            return true;
+        }
+        alia_end
+        return false;
+    }
+    else
+        return do_children_;
+}
+
+void tree_node::end()
+{
+    column_.end();
+    if ((flags_ & NO_INDENT) == 0)
+    {
+        bottom_row_.end();
+        full_grid_.end();
+    }
+}
+
+}
