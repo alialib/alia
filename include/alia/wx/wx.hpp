@@ -28,6 +28,14 @@
 //
 //#endif
 
+// TODO: Why isn't this automatically included?
+#ifdef _M_X64
+#pragma comment (lib, "wxbase28.lib")
+#pragma comment (lib, "wxmsw28_core.lib")
+#pragma comment (lib, "wxmsw28_gl.lib")
+#pragma comment (lib, "wxmsw28_aui.lib")
+#endif
+
 #pragma comment (lib, "uuid.lib")
 #pragma comment (lib, "comctl32.lib")
 #pragma comment (lib, "wsock32.lib")
