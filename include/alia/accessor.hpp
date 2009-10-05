@@ -247,6 +247,18 @@ offset(Wrapped accessor,
     typename accessor_value_type<Wrapped>::type offset)
 { return offset_accessor_wrapper<Wrapped>(accessor, offset); }
 
+// TODO: does this belong here?
+template<class T>
+struct control_result
+{
+    bool changed;
+    T new_value;
+    // allows use within if statements without other unintended conversions
+    typedef bool control_result::* unspecified_bool_type;
+    operator unspecified_bool_type() const
+    { return changed ? &control_result::changed : 0; }
+};
+
 }
 
 #endif

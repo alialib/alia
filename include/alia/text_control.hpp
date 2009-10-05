@@ -17,16 +17,9 @@ enum text_control_event_type
 };
 
 template<class T>
-struct text_control_result
+struct text_control_result : control_result<T>
 {
     text_control_event_type event;
-    bool changed;
-    T new_value;
-
-    // allows use within if statements without other unintended conversions
-    typedef bool text_control_result::* unspecified_bool_type;
-    operator unspecified_bool_type() const
-    { return changed ? &text_control_result::changed : 0; }
 };
 
 text_control_result<std::string> do_text_control(

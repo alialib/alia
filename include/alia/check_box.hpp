@@ -10,16 +10,7 @@ namespace alia {
 
 // accepted flags: all control flags
 
-struct check_box_result
-{
-    bool changed;
-    bool new_value;
-
-    // allows use within if statements without other unintended conversions
-    typedef bool check_box_result::* unspecified_bool_type;
-    operator unspecified_bool_type() const
-    { return changed ? &check_box_result::changed : 0; }
-};
+struct check_box_result : control_result<bool> {};
 
 check_box_result do_check_box(
     context& ctx,

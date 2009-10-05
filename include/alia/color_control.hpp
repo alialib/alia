@@ -7,16 +7,7 @@
 
 namespace alia {
 
-struct color_control_result
-{
-    bool changed;
-    rgb8 new_value;
-
-    // allows use within if statements without other unintended conversions
-    typedef bool color_control_result::* unspecified_bool_type;
-    operator unspecified_bool_type() const
-    { return changed ? &color_control_result::changed : 0; }
-};
+struct color_control_result : control_result<rgb8> {};
 
 color_control_result do_color_control(
     context& ctx,

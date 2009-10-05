@@ -8,16 +8,7 @@ namespace alia {
 
 // accepted flags: all control flags
 
-struct node_expander_result
-{
-    bool changed;
-    bool new_value;
-
-    // allows use within if statements without other unintended conversions
-    typedef bool node_expander_result::* unspecified_bool_type;
-    operator unspecified_bool_type() const
-    { return changed ? &node_expander_result::changed : 0; }
-};
+struct node_expander_result : control_result<bool> {};
 
 node_expander_result do_node_expander(context& ctx,
     accessor<bool> const& expanded, unsigned flags = 0,

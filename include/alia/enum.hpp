@@ -9,16 +9,8 @@
 namespace alia {
 
 template<class T>
-struct enum_result
-{
-    bool changed;
-    T new_value;
-
-    // allows use within if statements without other unintended conversions
-    typedef bool enum_result::* unspecified_bool_type;
-    operator unspecified_bool_type() const
-    { return changed ? &enum_result::changed : 0; }
-};
+struct enum_result : control_result<T>
+{};
 
 enum_result<unsigned> do_enum(
     context& ctx,

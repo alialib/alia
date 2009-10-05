@@ -9,16 +9,8 @@
 namespace alia {
 
 template<class T>
-struct slider_result
-{
-    bool changed;
-    T new_value;
-
-    // allows use within if statements without other unintended conversions
-    typedef bool slider_result::* unspecified_bool_type;
-    operator unspecified_bool_type() const
-    { return changed ? &slider_result::changed : 0; }
-};
+struct slider_result : control_result<T>
+{};
 
 namespace impl {
     bool do_slider(context& ctx, double* value, double minimum, double maximum,
