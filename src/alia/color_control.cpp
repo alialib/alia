@@ -44,8 +44,11 @@ color_control_result do_color_control(
     if ((spec.flags & Y_ALIGNMENT_MASK) == 0)
         spec.flags |= BASELINE_Y;
 
+    // "custom..." is currently disabled because it crashes.
+    // It's probably related to popup dismissal problems.
+
     drop_down_list ddl(ctx, in(unsigned(data.index), data.index >= 0),
-        colors.size() + 1, 0, spec);
+        colors.size()/* + 1*/, 0, spec);
     alia_if(valid)
         do_color(ctx, value);
     alia_end
@@ -62,8 +65,8 @@ color_control_result do_color_control(
             do_color(ctx, c.color);
             do_text(ctx, c.name, 0, width(12, CHARS));
         }
-        ddl_item item(ddl);
-        do_text(ctx, "custom...");
+        //ddl_item item(ddl);
+        //do_text(ctx, "custom...");
     }
     if (ddl.changed())
     {
@@ -76,18 +79,18 @@ color_control_result do_color_control(
             r.new_value = colors[index].color;
             return r;
         }
-        else
-        {
-            rgb8 custom;
-            if (ctx.surface->ask_for_color(&custom, valid ? &value : 0))
-            {
-                accessor.set(custom);
-                color_control_result r;
-                r.changed = true;
-                r.new_value = custom;
-                return r;
-            }
-        }
+        //else
+        //{
+        //    rgb8 custom;
+        //    if (ctx.surface->ask_for_color(&custom, valid ? &value : 0))
+        //    {
+        //        accessor.set(custom);
+        //        color_control_result r;
+        //        r.changed = true;
+        //        r.new_value = custom;
+        //        return r;
+        //    }
+        //}
     }
     color_control_result r;
     r.changed = false;
