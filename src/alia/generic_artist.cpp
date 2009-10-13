@@ -542,12 +542,12 @@ void generic_artist::draw_radio_button(artist_data_ptr& data, bool selected,
 static vector2i node_expander_size(15, 15);
 
 vector2i generic_artist::get_node_expander_size(artist_data_ptr& data,
-    bool expanded) const
+    int expanded) const
 {
     return node_expander_size;
 }
 
-void generic_artist::draw_node_expander(artist_data_ptr& data, bool expanded,
+void generic_artist::draw_node_expander(artist_data_ptr& data, int expanded,
     point2i const& position, widget_state state) const
 {
     box2i region(position, node_expander_size);
@@ -559,7 +559,19 @@ void generic_artist::draw_node_expander(artist_data_ptr& data, bool expanded,
     if ((state & widget_states::FOCUSED) != 0)
         draw_focus_rect(region);
 
-    draw_arrow(get_fg_color(state), region, expanded ? 3 : 1, 5);
+    rgba8 fg_color = get_fg_color(state);
+    switch (expanded)
+    {
+     case 0:
+        draw_arrow(fg_color, region, 1, 5);
+        break;
+     case 1:
+        draw_arrow(fg_color, region, 6, 7);
+        break;
+     case 2:
+        draw_arrow(fg_color, region, 3, 5);
+        break;
+    }
 }
 
 // SEPARATOR
@@ -824,39 +836,70 @@ void generic_artist::draw_octagon(rgba8 const& color,
     get_surface().draw_filled_polygon(color, octagon, 8);
 }
 
-// direction: 0: left, 1 : right, 2: up, 3: down
 void generic_artist::draw_arrow(rgba8 const& color, box2i const& region,
     int direction, int size) const
 {
-    int axis = direction / 2;
-
-    point2f position(region.corner + (region.size -
-        vector2i(size * (axis + 1), size * (2 - axis))) / 2);
-    position[1 - axis] += 0.5;
-
     point2f arrow[3];
-    switch (direction)
+    if (direction < 4)
     {
-     case 0:
-        arrow[0] = position + vector2f(0, float(size));
-        arrow[1] = position + vector2f(float(size), float(size) * 2);
-        arrow[2] = position + vector2f(float(size), 0);
-        break;
-     case 1:
-        arrow[0] = position + vector2f(0, float(size) * 2);
-        arrow[1] = position + vector2f(float(size), float(size));
-        arrow[2] = position + vector2f(0, 0);
-        break;
-     case 2:
-        arrow[0] = position + vector2f(0, float(size));
-        arrow[1] = position + vector2f(float(size) * 2, float(size));
-        arrow[2] = position + vector2f(float(size), 0);
-        break;
-     case 3:
-        arrow[0] = position + vector2f(0, 0);
-        arrow[1] = position + vector2f(float(size), float(size));
-        arrow[2] = position + vector2f(float(size) * 2, 0);
-        break;
+        int axis = direction / 2;
+        point2f position(region.corner + (region.size -
+            vector2i(size * (axis + 1), size * (2 - axis))) / 2);
+        position[1 - axis] += 0.5;
+        float s = float(size);
+        switch (direction)
+        {
+         case 0:
+            arrow[0] = position + vector2f(0, s);
+            arrow[1] = position + vector2f(s, s * 2);
+            arrow[2] = position + vector2f(s, 0);
+            break;
+         case 1:
+            arrow[0] = position + vector2f(0, s * 2);
+            arrow[1] = position + vector2f(s, s);
+            arrow[2] = position + vector2f(0, 0);
+            break;
+         case 2:
+            arrow[0] = position + vector2f(0, s);
+            arrow[1] = position + vector2f(s * 2, s);
+            arrow[2] = position + vector2f(s, 0);
+            break;
+         case 3:
+            arrow[0] = position + vector2f(0, 0);
+            arrow[1] = position + vector2f(s, s);
+            arrow[2] = position + vector2f(s * 2, 0);
+            break;
+        }
+    }
+    else
+    {
+        point2f position(region.corner + (region.size -
+            vector2i(size, size)) / 2);
+        float s = float(size);
+        switch (direction)
+        {
+         case 4:
+            arrow[0] = position + vector2f(0, s);
+            arrow[1] = position + vector2f(0, 0);
+            arrow[2] = position + vector2f(s, 0);
+            break;
+         case 5:
+            arrow[0] = position + vector2f(0, 0);
+            arrow[1] = position + vector2f(s, 0);
+            arrow[2] = position + vector2f(s, s);
+            break;
+         case 6:
+            position -= vector2f(2, 1);
+            arrow[0] = position + vector2f(s, 0);
+            arrow[1] = position + vector2f(s, s);
+            arrow[2] = position + vector2f(0, s);
+            break;
+         case 7:
+            arrow[0] = position + vector2f(s, s);
+            arrow[1] = position + vector2f(0, s);
+            arrow[2] = position + vector2f(0, 0);
+            break;
+        }
     }
     get_surface().draw_filled_polygon(color, arrow, 3);
 }

@@ -136,8 +136,8 @@ class artist
   // NODE EXPANDER
 
     virtual vector2i get_node_expander_size(artist_data_ptr& data,
-        bool expanded) const = 0;
-    virtual void draw_node_expander(artist_data_ptr& data, bool expanded,
+        int expanded) const = 0;
+    virtual void draw_node_expander(artist_data_ptr& data, int expanded,
         point2i const& position, widget_state state) const = 0;
 
   // SEPARATOR

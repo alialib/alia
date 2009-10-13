@@ -10,8 +10,14 @@ namespace alia {
 
 struct node_expander_result : control_result<bool> {};
 
-node_expander_result do_node_expander(context& ctx,
-    accessor<bool> const& expanded, unsigned flags = 0,
+node_expander_result do_node_expander(
+    context& ctx, accessor<bool> const& expanded, unsigned flags = 0,
+    layout const& layout_spec = default_layout, region_id id = auto_id);
+
+struct tristate_node_expander_result : control_result<int> {};
+
+tristate_node_expander_result do_tristate_node_expander(
+    context& ctx, accessor<int> const& expanded, unsigned flags = 0,
     layout const& layout_spec = default_layout, region_id id = auto_id);
 
 }

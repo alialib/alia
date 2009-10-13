@@ -42,8 +42,8 @@ class generic_artist : public artist
         point2i const& position, widget_state state) const;
 
     vector2i get_node_expander_size(artist_data_ptr& data,
-        bool expanded) const;
-    void draw_node_expander(artist_data_ptr& data, bool expanded,
+        int expanded) const;
+    void draw_node_expander(artist_data_ptr& data, int expanded,
         point2i const& position, widget_state state) const;
 
     int get_separator_width() const;
@@ -140,6 +140,8 @@ class generic_artist : public artist
     static unsigned const DISABLED_SUBSTYLE_OFFSET =    0x3;
     static unsigned const FOCUSED_SUBSTYLE_FLAG =       0x4;
 
+    // direction: 0: left, 1 : right, 2: up, 3: down
+    // 4: top-left, 5: top-right, 6: bottom-right, 7: bottom-left
     void draw_arrow(rgba8 const& color, box2i const& region, int direction,
         int size) const;
 

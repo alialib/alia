@@ -9,29 +9,40 @@
 namespace alia {
 
 void tree_node::begin(context& ctx, unsigned flags, layout const& layout_spec,
-    region_id expander_id)
+    accessor<int> const* expander_accessor, region_id expander_id)
 {
+    if (!expander_accessor)
+    {
+        int* expanded;
+        if (get_data(ctx, &expanded))
+            *expanded = (flags & INITIALLY_EXPANDED) != 0 ? 2 : 0;
+        begin(ctx, flags, layout_spec, &inout(expanded), expander_id);
+        return;
+    }
+
     ctx_ = &ctx;
     flags_ = flags;
-
-    bool* expanded;
-    if (get_data(ctx, &expanded))
-        *expanded = (flags & INITIALLY_EXPANDED) != 0;
 
     if ((flags & NO_INDENT) == 0)
     {
         full_grid_.begin(ctx, 0, layout_spec);
         top_row_.begin(full_grid_);
-        do_children_ = *expanded && full_grid_.is_relevant();
-        do_node_expander(ctx, inout(expanded), 0, NOT_PADDED, expander_id);
+        do_children_ =
+            (expander_accessor->is_valid() ? expander_accessor->get() : 0)
+            && full_grid_.is_relevant();
+        expander_result_ = do_tristate_node_expander(ctx, *expander_accessor,
+            0, NOT_PADDED, expander_id);
         label_region_.begin(ctx, layout(GROW));
     }
     else
     {
         column_.begin(ctx, layout_spec);
-        do_children_ = *expanded && column_.is_relevant();
+        do_children_ =
+            (expander_accessor->is_valid() ? expander_accessor->get() : 0)
+            && column_.is_relevant();
         label_region_.begin(ctx);
-        do_node_expander(ctx, inout(expanded), 0, NOT_PADDED, expander_id);
+        expander_result_ = do_tristate_node_expander(ctx, *expander_accessor,
+            0, NOT_PADDED, expander_id);
     }
 }
 

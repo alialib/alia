@@ -1,9 +1,9 @@
 #ifndef ALIA_TREE_NODE_HPP
 #define ALIA_TREE_NODE_HPP
 
-#include <alia/linear_layout.hpp>
 #include <alia/grid_layout.hpp>
 #include <alia/flags.hpp>
+#include <alia/node_expander.hpp>
 
 namespace alia {
 
@@ -19,16 +19,21 @@ class tree_node : boost::noncopyable
 
     tree_node(context& ctx, unsigned flags = 0,
         layout const& layout_spec = default_layout,
+        accessor<int> const* expander_accessor = 0,
         region_id expander_id = 0)
-    { begin(ctx, flags, layout_spec, expander_id); }
+    { begin(ctx, flags, layout_spec, expander_accessor, expander_id); }
 
     void begin(context& ctx, unsigned flags = 0,
         layout const& layout_spec = default_layout,
+        accessor<int> const* expander_accessor = 0,
         region_id expander_id = 0);
 
     void end_header();
 
     bool do_children();
+
+    tristate_node_expander_result const& get_expander_result() const
+    { return expander_result_; }
 
     void end();
 
@@ -43,6 +48,7 @@ class tree_node : boost::noncopyable
     row_layout label_region_;
 
     bool active_, do_children_;
+    tristate_node_expander_result expander_result_;
 };
 
 }
