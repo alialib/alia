@@ -19,6 +19,7 @@ struct slider_data
     region_data track_id0, track_id1, thumb_id;
     bool dragging;
     int dragging_offset;
+    double dragging_value;
     artist_data_ptr track_data, thumb_data;
 };
 
@@ -66,7 +67,7 @@ bool do_slider(context& ctx, double* value, double minimum, double maximum,
         artist.get_slider_right_border() - 1);
 
     point2i thumb_position;
-    if (data.dragging)
+    if (data.dragging && *value == data.dragging_value)
     {
         thumb_position[axis] = ctx.pass_state.integer_mouse_position[axis] -
             data.dragging_offset;
@@ -192,6 +193,8 @@ bool do_slider(context& ctx, double* value, double minimum, double maximum,
                 artist.get_slider_left_border()) * scale + minimum;
 
             *value = clamp(*value, minimum, maximum);
+
+            data.dragging_value = *value;
 
             return true;
         }
