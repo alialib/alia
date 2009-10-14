@@ -109,6 +109,8 @@ void set_clip_region(context& ctx, box2i const& region);
 void set_transformation(context& ctx,
     matrix<3,3,double> const& transformation);
 
+void end_pass(context& ctx);
+
 }
 
 #endif

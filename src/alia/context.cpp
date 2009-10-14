@@ -28,6 +28,8 @@ struct pass_state_saver
     event* old_event;
 };
 
+struct end_pass_exception {};
+
 void issue_event(context& ctx, event& event)
 {
     ++ctx.pass_counter;
@@ -58,7 +60,13 @@ void issue_event(context& ctx, event& event)
     overlay root_overlay(ctx, full_region);
     column_layout c(ctx, GROW);
     //scrollable_region sr(ctx, -1, GROW);
-    ctx.controller->do_ui(ctx);
+    try
+    {
+        ctx.controller->do_ui(ctx);
+    }
+    catch (end_pass_exception&)
+    {
+    }
     if (event.type == LAYOUT_PASS_2)
         ctx.content_size = root_overlay.get_minimum_size();
         //ctx.content_size = sr.get_content_size();
@@ -122,6 +130,11 @@ void set_transformation(context& ctx,
     }
     if (ctx.event->type == RENDER_EVENT)
         ctx.surface->set_transformation_matrix(transformation);
+}
+
+void end_pass(context& ctx)
+{
+    throw end_pass_exception();
 }
 
 }
