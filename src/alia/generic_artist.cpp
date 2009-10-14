@@ -710,8 +710,12 @@ void generic_artist::draw_panel_background(artist_data_ptr& data,
     make_polygon(poly, rect);
     get_surface().draw_filled_polygon(get_context().pass_state.bg_color, poly,
         4);
-    if ((get_context().pass_state.style_code & FOCUSED_SUBSTYLE_FLAG) != 0)
-        draw_focus_rect(rect);
+    // TODO: This should technically be here, but it makes the Astroid UI look
+    // noisy. Ideally, these should only be drawn when using keyboard
+    // navigation (or there should be a flag for that). Alternatively, focus
+    // could be indicated with shading instead.
+    //if ((get_context().pass_state.style_code & FOCUSED_SUBSTYLE_FLAG) != 0)
+    //    draw_focus_rect(rect);
 }
 
 // DROP DOWN BUTTON

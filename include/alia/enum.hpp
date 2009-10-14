@@ -3,6 +3,7 @@
 
 #include <alia/layout_interface.hpp>
 #include <alia/accessor.hpp>
+#include <alia/flags.hpp>
 #include <vector>
 #include <string>
 
@@ -12,14 +13,18 @@ template<class T>
 struct enum_result : control_result<T>
 {};
 
-enum_result<unsigned> do_enum(
+static unsigned const USE_RADIO_GROUP = CUSTOM_FLAG_0;
+
+enum_result<unsigned>
+do_enum(
     context& ctx,
     accessor<unsigned> const& value,
     std::vector<std::string> const& options,
     unsigned flags = 0,
     layout const& layout_spec = default_layout);
 
-enum_result<unsigned> do_enum(
+enum_result<unsigned>
+do_enum(
     context& ctx,
     accessor<unsigned> const& value,
     char const* const* options,
@@ -28,13 +33,15 @@ enum_result<unsigned> do_enum(
     layout const& layout_spec = default_layout);
 
 template<typename T>
-enum_result<T> do_enum(
+enum_result<T>
+do_enum(
     context& ctx,
     accessor<T> const& value,
     unsigned flags = 0,
     layout const& layout_spec = default_layout)
 {
-    enum_result<unsigned> r = do_enum(ctx, accessor_cast<unsigned>(ref(value)),
+    enum_result<unsigned> r = do_enum(ctx,
+        accessor_cast<unsigned>(ref(value)),
         get_printable_value_strings(T()), flags, layout_spec);
     enum_result<T> r2;
     r2.changed = r.changed;

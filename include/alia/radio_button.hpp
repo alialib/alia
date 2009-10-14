@@ -45,23 +45,18 @@ bool do_radio_button(
 //class radio_button_group
 //{
 // public:
-//    radio_button_group(context& context, value_parameter<int> const& value);
-//    radio_button_group(value_parameter<int> const& value);
-//    radio_button_group(manual_init) {}
+//    radio_button_group() {}
+//    radio_button_group(context& ctx, accessor<int> const& value);
 //
-//    init(context& context, value_parameter<bool> const& value);
+//    void begin(context& ctx, accessor<bool> const& value);
 //
-//    bool do_button(radio_button_data& data, std::string const& text = "",
-//        layout const& layout_spec = default_layout, bool enabled = false);
-//
-//    bool do_button(std::string const& text = "",
-//        layout const& layout_spec = default_layout, bool enabled = false);
+//    bool do_button(layout const& layout_spec = default_layout,
+//        region_id id = auto_id);
 //
 //    bool changed() const { return changed_; }
 //
 // private:
 //    context* ctx_;
-//    value_parameter<int> value_;
 //    bool changed_;
 //    int index_;
 //};
