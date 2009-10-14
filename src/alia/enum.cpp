@@ -16,7 +16,18 @@ do_enum(
     if ((flags & USE_RADIO_GROUP) != 0)
     {
         for (unsigned i = 0; i < options.size(); ++i)
-            do_radio_button(ctx, value, i, options[i]);
+        {
+            if (do_radio_button(ctx, value, i, options[i]))
+            {
+                enum_result<unsigned> r;
+                r.changed = true;
+                r.new_value = i;
+                return r;
+            }
+        }
+        enum_result<unsigned> r;
+        r.changed = false;
+        return r;
     }
     else
     {
@@ -55,7 +66,18 @@ do_enum(
     if ((flags & USE_RADIO_GROUP) != 0)
     {
         for (unsigned i = 0; i < n_options; ++i)
-            do_radio_button(ctx, value, i, options[i]);
+        {
+            if (do_radio_button(ctx, value, i, options[i]))
+            {
+                enum_result<unsigned> r;
+                r.changed = true;
+                r.new_value = i;
+                return r;
+            }
+        }
+        enum_result<unsigned> r;
+        r.changed = false;
+        return r;
     }
     else
     {
