@@ -132,15 +132,17 @@ void drop_down_list::begin(context& ctx, accessor<unsigned> const& accessor,
             data_->popup->close();
         break;
 
-     case SCROLL_WHEEL_EVENT:
-      {
-        if (mouse_is_inside_region(ctx, panel_.get_region()))
-        {
-            set_selection(accessor, selection_ - detect_wheel_movement(ctx));
-            acknowledge_input_event(ctx);
-        }
-        break;
-      }
+    // TODO: Only disable this if the mouse arrived on the widget via a scroll
+    // wheel movement.
+     //case SCROLL_WHEEL_EVENT:
+     // {
+     //   if (mouse_is_inside_region(ctx, panel_.get_region()))
+     //   {
+     //       set_selection(accessor, selection_ - detect_wheel_movement(ctx));
+     //       acknowledge_input_event(ctx);
+     //   }
+     //   break;
+     // }
 
      case KEY_DOWN_EVENT:
       {
