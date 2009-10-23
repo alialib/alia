@@ -82,9 +82,8 @@ void default_camera::check_bounds(canvas const& canvas)
     box2d const& sb = canvas.get_scene_box();
     for (int i = 0; i < 2; ++i)
     {
-        double margin = double(canvas.get_region().size[i]) / 2 /
-            get_zoom_level(canvas);
-        //double margin = 0;
+        double margin = constrained_ ? double(canvas.get_region().size[i]) /
+            2 / get_zoom_level(canvas) : 0;
         if (margin <= sb.size[i] / 2)
         {
             position_[i] = clamp(position_[i], sb.corner[i] + margin,

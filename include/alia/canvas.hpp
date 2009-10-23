@@ -81,7 +81,8 @@ class camera
 class default_camera : public camera
 {
  public:
-    default_camera() : position_(0, 0), min_zoom_(0.), max_zoom_(0.) {}
+    default_camera() : position_(0, 0), min_zoom_(0.), max_zoom_(0.),
+        constrained_(true) {}
     void initialize(point2d const& p, zoom_level zoom)
     { position_ = p; zoom_ = zoom; }
     point2d get_position(canvas const& canvas) const;
@@ -92,10 +93,12 @@ class default_camera : public camera
     double get_min_zoom(canvas const& canvas) const;
     void set_max_zoom(zoom_level zoom) { max_zoom_ = zoom; }
     double get_max_zoom(canvas const& canvas) const;
+    void set_constrained(bool constrained) { constrained_ = constrained; }
  private:
     void check_bounds(canvas const& canvas);
     point2d position_;
     zoom_level zoom_, min_zoom_, max_zoom_;
+    bool constrained_;
 };
 
 class canvas : boost::noncopyable
