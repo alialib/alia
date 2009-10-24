@@ -41,7 +41,7 @@ color_control_result do_color_control(
     }
 
     layout spec = layout_spec;
-    if ((spec.flags & Y_ALIGNMENT_MASK) == 0)
+    if (!(spec.flags & Y_ALIGNMENT_MASK))
         spec.flags |= BASELINE_Y;
 
     // "custom..." is currently disabled because it crashes.

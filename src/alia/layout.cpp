@@ -182,8 +182,8 @@ void resolve_layout_spec(context& ctx, resolved_layout_spec* resolved,
 {
     assert(info.minimum_size[1] >= info.minimum_ascent + info.minimum_descent);
     resolved->padding_size =
-        ((spec.flags & PADDED) != 0 ||
-         (spec.flags & NOT_PADDED) == 0 && info.padded_by_default) ?
+        ((spec.flags & PADDED) ||
+         !(spec.flags & NOT_PADDED) && info.padded_by_default) ?
         ctx.pass_state.padding_size : vector2i(0, 0);
     for (int i = 0; i < 2; ++i)
     {
@@ -192,21 +192,21 @@ void resolve_layout_spec(context& ctx, resolved_layout_spec* resolved,
             info.minimum_size[i]);
     }
     resolved->proportion = spec.proportion;
-    resolved->alignment = 0;
+    resolved->alignment.code = 0;
     {
         unsigned x_alignment =
-            (spec.flags & X_ALIGNMENT_MASK) != 0 ?
-            (spec.flags & X_ALIGNMENT_MASK) :
-            (info.default_alignment & X_ALIGNMENT_MASK);
-        resolved->alignment |= x_alignment;
+            (spec.flags.code & X_ALIGNMENT_MASK_CODE) != 0 ?
+            (spec.flags.code & X_ALIGNMENT_MASK_CODE) :
+            (info.default_alignment.code & X_ALIGNMENT_MASK_CODE);
+        resolved->alignment.code |= x_alignment;
     }
     {
         unsigned y_alignment =
-            (spec.flags & Y_ALIGNMENT_MASK) != 0 ?
-            (spec.flags & Y_ALIGNMENT_MASK) :
-            (info.default_alignment & Y_ALIGNMENT_MASK);
-        resolved->alignment |= y_alignment;
-        if (y_alignment == BASELINE_Y)
+            (spec.flags.code & Y_ALIGNMENT_MASK_CODE) != 0 ?
+            (spec.flags.code & Y_ALIGNMENT_MASK_CODE) :
+            (info.default_alignment.code & Y_ALIGNMENT_MASK_CODE);
+        resolved->alignment.code |= y_alignment;
+        if (y_alignment == BASELINE_Y_CODE)
         {
             resolved->ascent = info.minimum_ascent;
             resolved->descent = info.minimum_descent;
@@ -217,11 +217,11 @@ void resolve_layout_spec(context& ctx, resolved_layout_spec* resolved,
             resolved->descent = 0;
         }
     }
-    if ((resolved->alignment & 0x88) != 0)
+    if ((resolved->alignment.code & 0x88) != 0)
     {
         if (resolved->proportion == 0)
             resolved->proportion = 1;
-        resolved->alignment &= ~0x88;
+        resolved->alignment.code &= ~0x88;
     }
 }
 
@@ -305,30 +305,30 @@ void get_assigned_region(context& ctx, box2i* region,
     }
     else
     {
-        switch (resolved.alignment & X_ALIGNMENT_MASK)
+        switch (resolved.alignment.code & X_ALIGNMENT_MASK_CODE)
         {
-         case LEFT:
+         case LEFT_CODE:
             region->size[0] = resolved.size[0];
             break;
-         case RIGHT:
+         case RIGHT_CODE:
             region->corner[0] += region->size[0] - resolved.size[0];
             region->size[0] = resolved.size[0];
             break;
-         case CENTER_X:
+         case CENTER_X_CODE:
             region->corner[0] += (region->size[0] - resolved.size[0]) / 2;
             region->size[0] = resolved.size[0];
             break;
         }
-        switch (resolved.alignment & Y_ALIGNMENT_MASK)
+        switch (resolved.alignment.code & Y_ALIGNMENT_MASK_CODE)
         {
-         case TOP:
+         case TOP_CODE:
             region->size[1] = resolved.size[1];
             break;
-         case BOTTOM:
+         case BOTTOM_CODE:
             region->corner[1] += region->size[1] - resolved.size[1];
             region->size[1] = resolved.size[1];
             break;
-         case BASELINE_Y:
+         case BASELINE_Y_CODE:
             // Some layout objects ignore the baseline and always set
             // baseline_y to 0. In those cases, this case falls through and
             // the widget is centered.
@@ -339,7 +339,7 @@ void get_assigned_region(context& ctx, box2i* region,
                 region->size[1] = resolved.size[1];
                 break;
             }
-         case CENTER_Y:
+         case CENTER_Y_CODE:
             region->corner[1] += (region->size[1] - resolved.size[1]) / 2;
             region->size[1] = resolved.size[1];
             break;
