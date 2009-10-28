@@ -49,7 +49,7 @@ static T clamp(T x, T min, T max)
 }
 
 bool do_slider(context& ctx, double* value, double minimum, double maximum,
-    double step, bool integer, unsigned flags, layout const& layout_spec)
+    double step, bool integer, flag_set flags, layout const& layout_spec)
 {
     slider_data& data = *get_data<slider_data>(ctx);
 
@@ -60,7 +60,8 @@ bool do_slider(context& ctx, double* value, double minimum, double maximum,
 
     box2i const& assigned_region = data.layout_data.assigned_region;
 
-    unsigned axis = flags & 1;
+    // TODO
+    unsigned axis = flags.code & 1;
 
     double const scale = double(maximum - minimum) /
         (assigned_region.size[axis] - artist.get_slider_left_border() -

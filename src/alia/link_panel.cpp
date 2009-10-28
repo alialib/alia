@@ -11,7 +11,7 @@ struct link_panel_data
     int key_state;
 };
 
-void link_panel::begin(context& ctx, unsigned flags,
+void link_panel::begin(context& ctx, flag_set flags,
     layout const& layout_spec, region_id id)
 {
     if (!id) id = get_region_id(ctx);

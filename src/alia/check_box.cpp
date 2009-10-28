@@ -21,7 +21,7 @@ struct check_box_data
 check_box_result do_check_box(
     context& ctx,
     accessor<bool> const& accessor,
-    unsigned flags,
+    flag_set flags,
     layout const& layout_spec,
     region_id id)
 {
@@ -75,20 +75,20 @@ check_box_result do_check_box(
     context& ctx,
     accessor<bool> const& accessor,
     char const* text,
-    unsigned flags,
+    flag_set flags,
     layout const& layout_spec,
     region_id id)
 {
     if (!id) id = get_region_id(ctx);
     layout ls = layout_spec;
-    if ((ls.flags & Y_ALIGNMENT_MASK) == 0)
+    if (ls.flags & Y_ALIGNMENT_MASK)
         ls.flags |= BASELINE_Y;
-    if ((ls.flags & X_ALIGNMENT_MASK) == 0)
+    if (ls.flags & X_ALIGNMENT_MASK)
         ls.flags |= LEFT;
     // TODO: fix alignment of check box and text
     row_layout row(ctx, ls);
     check_box_result result;
-    if ((flags & REVERSED) != 0)
+    if (flags & REVERSED)
     {
         do_text(ctx, text);
         result = do_check_box(ctx, accessor, flags, default_layout, id);
@@ -107,7 +107,7 @@ check_box_result do_check_box(
     context& ctx,
     accessor<bool> const& accessor,
     std::string const& text,
-    unsigned flags,
+    flag_set flags,
     layout const& layout_spec,
     region_id id)
 {

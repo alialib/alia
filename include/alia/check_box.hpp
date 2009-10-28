@@ -15,7 +15,7 @@ struct check_box_result : control_result<bool> {};
 check_box_result do_check_box(
     context& ctx,
     accessor<bool> const& accessor,
-    unsigned flags = 0,
+    flag_set flags = NO_FLAGS,
     layout const& layout_spec = default_layout,
     region_id id = auto_id);
 
@@ -24,14 +24,14 @@ check_box_result do_check_box(
 // on either the box itself or the text.
 // accepted flags: all control flags, STATIC (for the text), REVERSED
 
-static unsigned const REVERSED = CUSTOM_FLAG_0;
+static flag_set const REVERSED(CUSTOM_FLAG_0_CODE);
 
 // char const* version
 check_box_result do_check_box(
     context& ctx,
     accessor<bool> const& accessor,
     char const* text,
-    unsigned flags = 0,
+    flag_set flags = NO_FLAGS,
     layout const& layout_spec = default_layout,
     region_id id = auto_id);
 
@@ -40,7 +40,7 @@ check_box_result do_check_box(
     context& ctx,
     accessor<bool> const& accessor,
     std::string const& text,
-    unsigned flags = 0,
+    flag_set flags = NO_FLAGS,
     layout const& layout_spec = default_layout,
     region_id id = auto_id);
 

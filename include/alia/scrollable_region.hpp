@@ -13,12 +13,12 @@ class scrollable_region
 {
  public:
     scrollable_region() : active_(false) {}
-    scrollable_region(context& ctx, unsigned flags = NO_AXIS,
+    scrollable_region(context& ctx, flag_set flags = NO_AXIS,
         layout const& layout_spec = default_layout, region_id id = auto_id)
     { begin(ctx, flags, layout_spec, id); }
     ~scrollable_region() { end(); }
 
-    void begin(context& ctx, unsigned flags = NO_AXIS,
+    void begin(context& ctx, flag_set flags = NO_AXIS,
         layout const& layout_spec = default_layout, region_id id = auto_id);
     void end();
 
@@ -39,7 +39,7 @@ class scrollable_region
     linear_layout layout_;
     overlay overlay_;
     box2i window_region_;
-    unsigned flags_;
+    flag_set flags_;
 };
 
 }

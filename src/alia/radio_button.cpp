@@ -22,7 +22,7 @@ bool do_radio_button(
     context& ctx,
     accessor<unsigned> const& value,
     unsigned index,
-    unsigned flags,
+    flag_set flags,
     layout const& layout_spec,
     region_id id)
 {
@@ -71,7 +71,7 @@ bool do_radio_button(
     accessor<unsigned> const& value,
     unsigned index,
     char const* text,
-    unsigned flags,
+    flag_set flags,
     layout const& layout_spec,
     region_id id)
 {
@@ -96,7 +96,7 @@ bool do_radio_button(
     accessor<unsigned> const& value,
     unsigned index,
     std::string const& text,
-    unsigned flags,
+    flag_set flags,
     layout const& layout_spec,
     region_id id)
 {

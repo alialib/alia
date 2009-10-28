@@ -86,7 +86,7 @@ struct text_control
         context& ctx,
         text_control_data& data,
         accessor<std::string> const& value,
-        unsigned flags,
+        flag_set flags,
         layout const& layout_spec,
         region_id id,
         int max_chars)
@@ -1093,7 +1093,7 @@ struct text_control
     accessor<std::string> const& value;
     alia::artist& artist;
     alia::font_metrics const& font_metrics;
-    unsigned flags;
+    flag_set flags;
     layout const& layout_spec;
     region_id id, cursor_id;
     int max_chars;
@@ -1107,7 +1107,7 @@ struct text_control
 text_control_result<std::string> do_text_control(
     context& ctx,
     accessor<std::string> const& value,
-    unsigned flags,
+    flag_set flags,
     layout const& layout_spec,
     region_id id,
     int max_chars)

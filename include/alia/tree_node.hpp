@@ -9,7 +9,7 @@ namespace alia {
 
 // accepted flags: INITIALLY_EXPANDED, NO_INDENT
 
-static unsigned const NO_INDENT = CUSTOM_FLAG_0;
+static flag_set const NO_INDENT(CUSTOM_FLAG_0_CODE);
 
 class tree_node : boost::noncopyable
 {
@@ -17,13 +17,13 @@ class tree_node : boost::noncopyable
     tree_node() {}
     ~tree_node() { end(); }
 
-    tree_node(context& ctx, unsigned flags = 0,
+    tree_node(context& ctx, flag_set flags = NO_FLAGS,
         layout const& layout_spec = default_layout,
         accessor<int> const* expander_accessor = 0,
         region_id expander_id = 0)
     { begin(ctx, flags, layout_spec, expander_accessor, expander_id); }
 
-    void begin(context& ctx, unsigned flags = 0,
+    void begin(context& ctx, flag_set flags = NO_FLAGS,
         layout const& layout_spec = default_layout,
         accessor<int> const* expander_accessor = 0,
         region_id expander_id = 0);
@@ -39,7 +39,7 @@ class tree_node : boost::noncopyable
 
  private:
     context* ctx_;
-    unsigned flags_;
+    flag_set flags_;
 
     grid_layout full_grid_;
     grid_row top_row_;

@@ -55,7 +55,7 @@ struct widget_layout_info
 {
     widget_layout_info(vector2i const& minimum_size, int minimum_ascent,
         int minimum_descent, vector2i const& default_size,
-        layout_flags default_alignment, bool padded_by_default)
+        layout_flag_set default_alignment, bool padded_by_default)
       : minimum_size(minimum_size)
       , minimum_ascent(minimum_ascent)
       , minimum_descent(minimum_descent)
@@ -66,7 +66,7 @@ struct widget_layout_info
     vector2i minimum_size;
     int minimum_ascent, minimum_descent;
     vector2i default_size;
-    layout_flags default_alignment;
+    layout_flag_set default_alignment;
     bool padded_by_default;
 };
 
@@ -74,7 +74,7 @@ struct resolved_layout_spec
 {
     vector2i size;
     int ascent, descent;
-    layout_flags alignment;
+    layout_flag_set alignment;
     float proportion;
     vector2i padding_size;
 };

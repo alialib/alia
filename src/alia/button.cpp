@@ -21,7 +21,7 @@ struct button_data
 button_result do_button(
     context& ctx,
     char const* text,
-    unsigned flags,
+    flag_set flags,
     layout const& layout_spec,
     region_id id)
 {
@@ -50,7 +50,7 @@ button_result do_button(
       {
         box2i const& region = data.layout_data.assigned_region;
         widget_state state =
-            get_widget_state(ctx, id, (flags & DISABLED) == 0,
+            get_widget_state(ctx, id, !(flags & DISABLED),
                 data.key_state == 1);
         ctx.artist->draw_button(data.artist_data, region, state);
         vector2i content_offset = ctx.artist->get_button_content_offset(
@@ -64,7 +64,7 @@ button_result do_button(
         break;
      case INPUT_CATEGORY:
       {
-        if ((flags & DISABLED) == 0)
+        if (!(flags & DISABLED))
         {
             add_to_focus_order(ctx, id);
             return detect_click(ctx, id, LEFT_BUTTON) ||
@@ -80,7 +80,7 @@ button_result do_button(
 button_result do_button(
     context& ctx,
     std::string const& text,
-    unsigned flags,
+    flag_set flags,
     layout const& layout_spec,
     region_id id)
 {

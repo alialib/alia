@@ -10,10 +10,10 @@ class indented_layout
 {
  public:
     indented_layout() : active_(false) {}
-    indented_layout(context& ctx, unsigned flags = 0,
+    indented_layout(context& ctx, flag_set flags = NO_FLAGS,
         layout const& layout_spec = default_layout)
     { begin(ctx, flags, layout_spec); }
-    void begin(context& ctx, unsigned flags = 0,
+    void begin(context& ctx, flag_set flags = NO_FLAGS,
         layout const& layout_spec = default_layout);
     void end();
  private:

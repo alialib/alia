@@ -32,7 +32,7 @@ static void do_scrollbar_pair(context& ctx, scrolled_region_data& data,
      case LAYOUT_PASS_0:
         return;
      case LAYOUT_PASS_1:
-        if (axis != X_AXIS)
+        if (axis != 0)
         {
             window.size[0] -= artist.get_scrollbar_width();
             return;
@@ -42,17 +42,17 @@ static void do_scrollbar_pair(context& ctx, scrolled_region_data& data,
     int sb_width = artist.get_scrollbar_width();
     bool sb_on[2] = { false, false };
 
-    if (axis != Y_AXIS && window.size[0] < content_size[0])
+    if (axis != 1 && window.size[0] < content_size[0])
     {
         sb_on[0] = true;
         window.size[1] -= sb_width;
     }
-    if (axis != X_AXIS && window.size[1] < content_size[1])
+    if (axis != 0 && window.size[1] < content_size[1])
     {
         sb_on[1] = true;
         window.size[0] -= sb_width;
     }
-    if (axis != Y_AXIS && !sb_on[0] && window.size[0] < content_size[0])
+    if (axis != 1 && !sb_on[0] && window.size[0] < content_size[0])
     {
         sb_on[0] = true;
         window.size[1] -= sb_width;
@@ -114,13 +114,13 @@ vector2i scrollable_region::get_content_size() const
     return data_->content_size;
 }
 
-void scrollable_region::begin(context& ctx, unsigned flags,
+void scrollable_region::begin(context& ctx, flag_set flags,
     layout const& layout_spec, region_id id)
 {
     ctx_ = &ctx;
     data_ = get_data<data>(ctx);
     id_ = id ? id : get_region_id(ctx);
-    axis_ = flags & AXIS_MASK;
+    axis_ = (flags & AXIS_MASK).code; // TODO
     layout_spec_ = layout_spec;
     flags_ = flags;
     active_ = false;

@@ -4,6 +4,7 @@
 #include <alia/forward.hpp>
 #include <alia/layout_interface.hpp>
 #include <string>
+#include <alia/flags.hpp>
 
 namespace alia {
 
@@ -13,14 +14,14 @@ typedef bool button_result;
 button_result do_button(
     context& ctx,
     char const* text,
-    unsigned flags = 0,
+    flag_set flags = NO_FLAGS,
     layout const& layout_spec = default_layout,
     region_id id = auto_id);
 
 button_result do_button(
     context& ctx,
     std::string const& text,
-    unsigned flags = 0,
+    flag_set flags = NO_FLAGS,
     layout const& layout_spec = default_layout,
     region_id id = auto_id);
 

@@ -3,6 +3,7 @@
 
 #include <alia/layout_interface.hpp>
 #include <alia/accessor.hpp>
+#include <alia/flags.hpp>
 #include <string>
 
 namespace alia {
@@ -13,7 +14,7 @@ bool do_radio_button(
     context& ctx,
     accessor<unsigned> const& value,
     unsigned index,
-    unsigned flags = 0,
+    flag_set flags = NO_FLAGS,
     layout const& layout_spec = default_layout,
     region_id id = auto_id);
 
@@ -28,7 +29,7 @@ bool do_radio_button(
     accessor<unsigned> const& value,
     unsigned index,
     char const* text,
-    unsigned flags = 0,
+    flag_set flags = NO_FLAGS,
     layout const& layout_spec = default_layout,
     region_id id = auto_id);
 
@@ -38,7 +39,7 @@ bool do_radio_button(
     accessor<unsigned> const& value,
     unsigned index,
     std::string const& text,
-    unsigned flags = 0,
+    flag_set flags = NO_FLAGS,
     layout const& layout_spec = default_layout,
     region_id id = auto_id);
 

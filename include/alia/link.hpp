@@ -2,6 +2,7 @@
 #define ALIA_LINK_HPP
 
 #include <alia/layout_interface.hpp>
+#include <alia/flags.hpp>
 #include <string>
 
 namespace alia {
@@ -9,14 +10,14 @@ namespace alia {
 bool do_link(
     context& ctx,
     char const* text,
-    unsigned flags = 0,
+    flag_set flags = NO_FLAGS,
     layout const& layout_spec = default_layout,
     region_id id = auto_id);
 
 bool do_link(
     context& ctx,
     std::string const& text,
-    unsigned flags = 0,
+    flag_set flags = NO_FLAGS,
     layout const& layout_spec = default_layout,
     region_id id = auto_id);
 

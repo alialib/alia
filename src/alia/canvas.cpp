@@ -100,7 +100,7 @@ struct canvas::data
 };
 
 void canvas::begin(context& ctx, box2d const& scene_box, camera* camera,
-    unsigned flags, layout const& layout_spec)
+    flag_set flags, layout const& layout_spec)
 {
     ctx_ = &ctx;
     data_ = get_data<data>(ctx);
@@ -473,7 +473,7 @@ static void calculate_ruler_values(
     }
 }
 
-int get_ruler_width(context& ctx, unsigned flags)
+int get_ruler_width(context& ctx, flag_set flags)
 {
     bool draw_border = (flags & DRAW_BORDER) != 0;
     alia::font const& font = ctx.pass_state.active_font;
@@ -487,7 +487,7 @@ int get_ruler_width(context& ctx, unsigned flags)
 void draw_side_ruler(
     canvas& canvas, box2i const& region,
     rgba8 const& bg_color, rgba8 const& fg_color,
-    double scale, unsigned flags)
+    double scale, flag_set flags)
 {
     // TODO: Clean this up. Lots of stuff applies to both axes, but the
     // function only handles one axis at a time.
@@ -542,9 +542,9 @@ void draw_side_ruler(
 
     box2i r = region;
 
-    switch (flags & SIDE_MASK)
+    switch (flags.code & SIDE_MASK_CODE)
     {
-     case BOTTOM_SIDE:
+     case BOTTOM_SIDE_CODE:
       {
         int border_y;
         if (draw_border)
@@ -573,7 +573,7 @@ void draw_side_ruler(
         }
         break;
       }
-     case TOP_SIDE:
+     case TOP_SIDE_CODE:
       {
         int border_y;
         if (draw_border)
@@ -602,7 +602,7 @@ void draw_side_ruler(
         }
         break;
       }
-     case RIGHT_SIDE:
+     case RIGHT_SIDE_CODE:
       {
         int border_x;
         if (draw_border)
@@ -631,7 +631,7 @@ void draw_side_ruler(
                 point2d(border_x + 0.375, get_high_corner(r)[1]));
         }
       }
-     case LEFT_SIDE:
+     case LEFT_SIDE_CODE:
       {
         int border_x;
         if (draw_border)
@@ -663,7 +663,7 @@ void draw_side_ruler(
     }
 }
 
-void side_rulers::begin(context& ctx, unsigned flags,
+void side_rulers::begin(context& ctx, flag_set flags,
     layout const& layout_spec)
 {
     ctx_ = &ctx;
@@ -697,16 +697,16 @@ void side_rulers::end()
         row_.end();
         do_ruler_row(BOTTOM_SIDE);
         grid_.end();
-        draw_ruler(flags_ & ~(TOP_SIDE | BOTTOM_SIDE), 0);
-        draw_ruler(flags_ & ~(LEFT_SIDE | RIGHT_SIDE), 1);
+        draw_ruler(flags_ & flag_set(~(TOP_SIDE_CODE | BOTTOM_SIDE_CODE)), 0);
+        draw_ruler(flags_ & flag_set(~(LEFT_SIDE_CODE | RIGHT_SIDE_CODE)), 1);
     }
 }
-void side_rulers::draw_ruler(unsigned flags, unsigned index)
+void side_rulers::draw_ruler(flag_set flags, unsigned index)
 {
     draw_side_ruler(*canvas_, regions_[index], ctx_->pass_state.bg_color,
         ctx_->pass_state.text_color, scales_[index], flags);
 }
-void side_rulers::do_ruler_row(unsigned side)
+void side_rulers::do_ruler_row(flag_set side)
 {
     if ((flags_ & side) != 0)
     {
@@ -718,9 +718,10 @@ void side_rulers::do_ruler_row(unsigned side)
             do_corner();
     }
 }
-void side_rulers::reserve_space(unsigned side, unsigned index)
+void side_rulers::reserve_space(flag_set side, unsigned index)
 {
-    float size = float(get_ruler_width(*ctx_, side | (flags_ & ~SIDE_MASK)));
+    float size = float(get_ruler_width(*ctx_,
+        side | (flags_ & flag_set(~SIDE_MASK_CODE))));
     do_spacer(*ctx_, &regions_[index], index != 0 ?
         layout(height(size, PIXELS), GROW | NOT_PADDED) :
         layout(width(size, PIXELS), NOT_PADDED));

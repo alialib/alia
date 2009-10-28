@@ -151,7 +151,7 @@ void naming_context::end()
 }
 
 static void record_usage(context& ctx, dynamic_block_node* node,
-    unsigned flags)
+    flag_set flags)
 {
     node->last_used = ctx.refresh_counter;
 
@@ -188,7 +188,7 @@ static void record_usage(context& ctx, dynamic_block_node* node,
 }
 
 static dynamic_block_node* find_dynamic_block(context& ctx,
-    id_interface const& id, unsigned flags)
+    id_interface const& id, flag_set flags)
 {
     dynamic_block_node* predicted = ctx.pass_state.predicted_dynamic_block;
     if (predicted && id_ref(predicted->id.id) == id_ref(&id) &&
@@ -223,7 +223,7 @@ static dynamic_block_node* find_dynamic_block(context& ctx,
 }
 
 void named_block::begin_impl(context& ctx, id_interface const& id,
-    unsigned flags)
+    flag_set flags)
 {
     scoped_data_block_.begin(ctx, find_dynamic_block(ctx, id, flags)->block);
 }

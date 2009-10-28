@@ -11,7 +11,7 @@ struct separator_data
     alia::layout_data layout_data;
 };
 
-void do_separator(context& ctx, unsigned axis, layout const& layout_spec)
+void do_separator(context& ctx, flag_set axis, layout const& layout_spec)
 {
     separator_data& data = *get_data<separator_data>(ctx);
     artist& artist = *ctx.artist;
@@ -24,20 +24,21 @@ void do_separator(context& ctx, unsigned axis, layout const& layout_spec)
         layout_widget(ctx, data.layout_data, layout_spec,
             resolve_size(ctx, layout_spec.size),
             widget_layout_info(minimum_size, 0, 0, minimum_size,
-            axis ? CENTER_X | FILL_Y : FILL_X | CENTER_Y, true));
+            axis == Y_AXIS ? CENTER_X | FILL_Y : FILL_X | CENTER_Y, true));
         break;
       }
      case RENDER_CATEGORY:
       {
         box2i const& assigned_region = data.layout_data.assigned_region;
-        point2i const& corner = assigned_region.corner + (axis ?
+        point2i const& corner = assigned_region.corner + (axis == Y_AXIS ?
             vector2i((assigned_region.size[0] -
                 artist.get_separator_width()) / 2, 0) :
             vector2i(0, (assigned_region.size[1] -
                 artist.get_separator_width()) / 2));
-        int length = axis ? assigned_region.size[1] :
+        int length = axis == Y_AXIS ? assigned_region.size[1] :
             assigned_region.size[0];
-        artist.draw_separator(data.artist_data, corner, axis, length);
+        artist.draw_separator(data.artist_data, corner, axis == Y_AXIS,
+            length);
         break;
       }
     }

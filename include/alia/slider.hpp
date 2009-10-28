@@ -14,12 +14,12 @@ struct slider_result : control_result<T>
 
 namespace impl {
     bool do_slider(context& ctx, double* value, double minimum, double maximum,
-        double step, bool integer, unsigned flags, layout const& layout_spec);
+        double step, bool integer, flag_set flags, layout const& layout_spec);
 }
 
 template<class T>
 slider_result<T> do_slider(context& ctx, accessor<T> const& value,
-    T minimum, T maximum, T step = 0, unsigned flags = 0,
+    T minimum, T maximum, T step = 0, flag_set flags = NO_FLAGS,
     layout const& layout_spec = default_layout)
 {
     // TODO: What should this do when the value is invalid?

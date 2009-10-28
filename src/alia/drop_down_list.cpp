@@ -46,7 +46,7 @@ struct drop_down_list::data
 };
 
 void drop_down_list::begin(context& ctx, accessor<unsigned> const& accessor,
-    unsigned n_items, unsigned flags, layout const& layout_spec)
+    unsigned n_items, flag_set flags, layout const& layout_spec)
 {
     ctx_ = &ctx;
     data_ = get_data<data>(ctx);
@@ -190,7 +190,7 @@ void drop_down_list::end()
             }
         }
 
-        if (do_drop_down_button(*ctx_, 0, default_layout, id_))
+        if (do_drop_down_button(*ctx_, NO_FLAGS, default_layout, id_))
         {
             box2i const& region = panel_.get_region();
             point2i boundary(-1, region.corner[1]),
@@ -269,7 +269,7 @@ void ddl_item::begin(drop_down_list& list)
     region_id id = get_region_id(ctx);
     unsigned style_code = ctx.artist->get_code_for_style(ITEM_STYLE,
         get_widget_state(ctx, id), selected_);
-    panel_.begin(*list.list_ctx_, style_code, 0, NOT_PADDED, id);
+    panel_.begin(*list.list_ctx_, style_code, NO_FLAGS, NOT_PADDED, id);
     if (detect_click(ctx, id, LEFT_BUTTON))
     {
         ddl_set_value_event e(list.id_, index);
@@ -302,7 +302,7 @@ struct drop_down_button_data
     int key_state;
 };
 
-bool do_drop_down_button(context& ctx, unsigned flags,
+bool do_drop_down_button(context& ctx, flag_set flags,
     layout const& layout_spec, region_id id)
 {
     if (!id) id = get_region_id(ctx);

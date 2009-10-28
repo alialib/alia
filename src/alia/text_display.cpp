@@ -17,7 +17,7 @@ struct text_display_data
 void do_text(
     context& ctx,
     char const* text,
-    unsigned flags,
+    flag_set flags,
     layout const& layout_spec)
 {
     text_display_data& data = *get_data<text_display_data>(ctx);
@@ -52,7 +52,7 @@ void do_text(
 void do_text(
     context& ctx,
     std::string const& text,
-    unsigned flags,
+    flag_set flags,
     layout const& layout_spec)
 {
     do_text(ctx, text.c_str(), flags, layout_spec);
@@ -67,7 +67,7 @@ struct paragraph_data
 void do_paragraph(
     context& ctx,
     char const* text,
-    unsigned flags,
+    flag_set flags,
     layout const& layout_spec)
 {
     paragraph_data& data = *get_data<paragraph_data>(ctx);
@@ -178,7 +178,7 @@ void do_paragraph(
 void do_paragraph(
     context& ctx,
     std::string const& text,
-    unsigned flags,
+    flag_set flags,
     layout const& layout_spec)
 {
     do_paragraph(ctx, text.c_str(), flags, layout_spec);

@@ -13,9 +13,10 @@ struct draggable_separator_data
     int drag_start_delta;
 };
 
-bool do_draggable_separator(context& ctx, int* value, unsigned axis,
+bool do_draggable_separator(context& ctx, int* value, flag_set flags,
     layout const& layout_spec, region_id id)
 {
+    int axis = (flags & Y_AXIS) ? 1 : 0;
     int const drag_axis = 1 - axis;
     if (!id) id = get_region_id(ctx);
     draggable_separator_data& data = *get_data<draggable_separator_data>(ctx);

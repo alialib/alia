@@ -3,6 +3,7 @@
 
 #include <alia/accessor.hpp>
 #include <alia/panel.hpp>
+#include <alia/flags.hpp>
 #include <boost/noncopyable.hpp>
 
 namespace alia {
@@ -13,14 +14,14 @@ class drop_down_list : boost::noncopyable
     drop_down_list() : active_(false) {}
     // TODO: Ideally, you shouldn't have to specify how many items there are.
     drop_down_list(context& ctx, accessor<unsigned> const& selection,
-        unsigned n_items, unsigned flags = 0,
+        unsigned n_items, flag_set flags = NO_FLAGS,
         layout const& layout_spec = default_layout)
     { begin(ctx, selection, n_items, flags, layout_spec); }
     ~drop_down_list()
     { end(); }
 
     void begin(context& ctx, accessor<unsigned> const& selection,
-        unsigned n_items, unsigned flags = 0,
+        unsigned n_items, flag_set flags = NO_FLAGS,
         layout const& layout_spec = default_layout);
     void end();
 
@@ -38,7 +39,8 @@ class drop_down_list : boost::noncopyable
     context* ctx_;
     struct data;
     data* data_;
-    unsigned n_items_, flags_;
+    unsigned n_items_;
+    flag_set flags_;
     int selection_;
     bool active_, changed_;
     region_id id_;
@@ -65,7 +67,7 @@ class ddl_item : boost::noncopyable
     panel panel_;
 };
 
-bool do_drop_down_button(context& ctx, unsigned flags = 0,
+bool do_drop_down_button(context& ctx, flag_set flags = NO_FLAGS,
     layout const& layout_spec = default_layout, region_id id = auto_id);
 
 }

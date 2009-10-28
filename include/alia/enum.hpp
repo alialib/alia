@@ -13,14 +13,14 @@ template<class T>
 struct enum_result : control_result<T>
 {};
 
-static unsigned const USE_RADIO_GROUP = CUSTOM_FLAG_0;
+static flag_set const USE_RADIO_GROUP(CUSTOM_FLAG_0_CODE);
 
 enum_result<unsigned>
 do_enum(
     context& ctx,
     accessor<unsigned> const& value,
     std::vector<std::string> const& options,
-    unsigned flags = 0,
+    flag_set flags = NO_FLAGS,
     layout const& layout_spec = default_layout);
 
 enum_result<unsigned>
@@ -29,7 +29,7 @@ do_enum(
     accessor<unsigned> const& value,
     char const* const* options,
     unsigned n_options,
-    unsigned flags = 0,
+    flag_set flags = NO_FLAGS,
     layout const& layout_spec = default_layout);
 
 template<typename T>
@@ -37,7 +37,7 @@ enum_result<T>
 do_enum(
     context& ctx,
     accessor<T> const& value,
-    unsigned flags = 0,
+    flag_set flags = NO_FLAGS,
     layout const& layout_spec = default_layout)
 {
     enum_result<unsigned> r = do_enum(ctx,

@@ -2,6 +2,7 @@
 #define ALIA_INTERLEAVED_TREE_HPP
 
 #include <alia/linear_layout.hpp>
+#include <alia/flags.hpp>
 
 namespace alia {
 
@@ -24,10 +25,10 @@ class interleaved_tree_node
  public:
     interleaved_tree_node() : active_(false) {}
     interleaved_tree_node(interleaved_tree& tree,
-        unsigned flags = 0, layout const& layout_spec = default_layout)
+        flag_set flags = NO_FLAGS, layout const& layout_spec = default_layout)
     { begin(tree, flags, layout_spec); }
 
-    void begin(interleaved_tree& tree, unsigned flags = 0,
+    void begin(interleaved_tree& tree, flag_set flags = NO_FLAGS,
         layout const& layout_spec = default_layout);
 
     bool do_children();

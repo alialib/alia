@@ -21,7 +21,7 @@ struct link_data
 bool do_link(
     context& ctx,
     char const* text,
-    unsigned flags,
+    flag_set flags,
     layout const& layout_spec,
     region_id id)
 {
@@ -103,7 +103,7 @@ bool do_link(
 bool do_link(
     context& ctx,
     std::string const& text,
-    unsigned flags,
+    flag_set flags,
     layout const& layout_spec,
     region_id id)
 {

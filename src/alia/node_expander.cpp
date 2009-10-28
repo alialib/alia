@@ -17,7 +17,7 @@ struct node_expander_data
 };
 
 node_expander_result do_node_expander(
-    context& ctx, accessor<bool> const& expanded, unsigned flags,
+    context& ctx, accessor<bool> const& expanded, flag_set flags,
     layout const& layout_spec, region_id id)
 {
     if (!id) id = get_region_id(ctx);
@@ -74,7 +74,7 @@ struct tristate_node_expander_data
 };
 
 tristate_node_expander_result do_tristate_node_expander(
-    context& ctx, accessor<int> const& expanded, unsigned flags,
+    context& ctx, accessor<int> const& expanded, flag_set flags,
     layout const& layout_spec, region_id id)
 {
     if (!id) id = get_region_id(ctx);

@@ -4,6 +4,7 @@
 #include <alia/forward.hpp>
 #include <alia/id.hpp>
 #include <alia/typedefs.hpp>
+#include <alia/flags.hpp>
 #include <boost/noncopyable.hpp>
 #include <cassert>
 
@@ -72,14 +73,15 @@ class named_block : boost::noncopyable
 {
  public:
     template<class Id>
-    named_block(context& ctx, Id const& id, unsigned flags = 0)
+    named_block(context& ctx, Id const& id, flag_set flags = NO_FLAGS)
     { begin_impl(ctx, typed_id<Id>(id), flags); }
     template<class Id>
-    void begin(context& ctx, Id const& id, unsigned flags = 0)
+    void begin(context& ctx, Id const& id, flag_set flags = NO_FLAGS)
     { begin_impl(ctx, typed_id<Id>(id), flags); }
     void end();
  private:
-    void begin_impl(context& ctx, id_interface const& id, unsigned flags = 0);
+    void begin_impl(context& ctx, id_interface const& id,
+        flag_set flags = NO_FLAGS);
     scoped_data_block scoped_data_block_;
 };
 

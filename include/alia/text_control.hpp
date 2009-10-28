@@ -4,6 +4,7 @@
 #include <alia/layout_interface.hpp>
 #include <alia/accessor.hpp>
 #include <alia/text_utils.hpp>
+#include <alia/flags.hpp>
 
 namespace alia {
 
@@ -25,7 +26,7 @@ struct text_control_result : control_result<T>
 text_control_result<std::string> do_text_control(
     context& ctx,
     accessor<std::string> const& value,
-    unsigned flags = 0,
+    flag_set flags = NO_FLAGS,
     layout const& layout_spec = default_layout,
     region_id id = auto_id,
     int max_chars = -1);
@@ -45,7 +46,7 @@ template<class T>
 text_control_result<T> do_text_control(
     context& ctx,
     accessor<T> const& accessor,
-    unsigned flags = 0,
+    flag_set flags = NO_FLAGS,
     layout const& layout_spec = default_layout,
     region_id id = auto_id,
     int max_chars = -1)

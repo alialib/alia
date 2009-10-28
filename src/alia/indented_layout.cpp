@@ -4,7 +4,7 @@
 
 namespace alia {
 
-void indented_layout::begin(context& ctx, unsigned flags,
+void indented_layout::begin(context& ctx, flag_set flags,
     layout const& layout_spec)
 {
     full_region_.begin(ctx, layout_spec);

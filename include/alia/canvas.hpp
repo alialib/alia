@@ -101,19 +101,20 @@ class default_camera : public camera
     bool constrained_;
 };
 
+static flag_set const FLIP_X(CUSTOM_FLAG_0_CODE);
+static flag_set const FLIP_Y(CUSTOM_FLAG_1_CODE);
+
 class canvas : boost::noncopyable
 {
  public:
-    static unsigned const FLIP_X = 0x1, FLIP_Y = 0x2;
-
     canvas() : active_(false) {}
     canvas(context& ctx, box2d const& scene_box, camera* camera = 0,
-        unsigned flags = 0, layout const& layout_spec = default_layout)
+        flag_set flags = NO_FLAGS, layout const& layout_spec = default_layout)
     { begin(ctx, scene_box, camera, flags, layout_spec); }
     ~canvas() { end(); }
 
     void begin(context& ctx, box2d const& scene_box, camera* camera = 0,
-        unsigned flags = 0, layout const& layout_spec = default_layout);
+        flag_set flags = NO_FLAGS, layout const& layout_spec = default_layout);
     void end();
 
     context& get_context() const { return *ctx_; }
@@ -148,7 +149,7 @@ class canvas : boost::noncopyable
     camera* camera_;
     region_id id_;
     box2d scene_box_;
-    unsigned flags_;
+    flag_set flags_;
     bool active_;
     scoped_transformation st_;
     scoped_clip_region scr_;
@@ -190,35 +191,35 @@ void apply_zoom_drag_tool(canvas& canvas, mouse_button button,
 void draw_grid_lines(canvas& canvas, box2d const& box, rgba8 const& color,
     line_style const& style, double spacing, unsigned axis, unsigned skip = 0);
 
-static unsigned const DRAW_BORDER = CUSTOM_FLAG_0;
-int get_ruler_width(context& ctx, unsigned flags);
+static flag_set const DRAW_BORDER(CUSTOM_FLAG_0_CODE);
+int get_ruler_width(context& ctx, flag_set flags);
 void draw_side_ruler(
     canvas& canvas, box2i const& region,
     rgba8 const& bg_color, rgba8 const& fg_color,
-    double scale, unsigned flags);
+    double scale, flag_set flags);
 
 struct side_rulers : boost::noncopyable
 {
  public:
     side_rulers() : active_(false) {}
-    side_rulers(context& ctx, unsigned flags,
+    side_rulers(context& ctx, flag_set flags,
         layout const& layout_spec = default_layout)
     { begin(ctx, flags, layout_spec); }
     ~side_rulers() { end(); }
     void set_scale(unsigned axis, double scale);
-    void begin(context& ctx, unsigned flags,
+    void begin(context& ctx, flag_set flags,
         layout const& layout_spec = default_layout);
     void set_canvas(canvas& canvas);
     void end();
  private:
-    void reserve_space(unsigned side, unsigned index);
+    void reserve_space(flag_set side, unsigned index);
     void do_corner();
-    void do_ruler_row(unsigned side);
-    void draw_ruler(unsigned flags, unsigned index);
+    void do_ruler_row(flag_set side);
+    void draw_ruler(flag_set flags, unsigned index);
     context* ctx_;
     grid_layout grid_;
     grid_row row_;
-    unsigned flags_;
+    flag_set flags_;
     canvas* canvas_;
     box2i regions_[2];
     double scales_[2];
@@ -228,7 +229,7 @@ struct side_rulers : boost::noncopyable
 //struct side_labels : boost::noncopyable
 //{
 //    side_labels() : active_(false) {}
-//    side_labels(context& ctx, unsigned flags,
+//    side_labels(context& ctx, flag_set flags,
 //        layout const& layout_spec = default_layout)
 //    { begin(ctx, flags, layout_spec); }
 //    ~side_labels() { end(); }
