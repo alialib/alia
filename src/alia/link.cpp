@@ -21,8 +21,8 @@ struct link_data
 bool do_link(
     context& ctx,
     char const* text,
-    flag_set flags,
     layout const& layout_spec,
+    flag_set flags,
     region_id id)
 {
     if (!id) id = get_region_id(ctx);
@@ -103,11 +103,11 @@ bool do_link(
 bool do_link(
     context& ctx,
     std::string const& text,
-    flag_set flags,
     layout const& layout_spec,
+    flag_set flags,
     region_id id)
 {
-    return do_link(ctx, text.c_str(), flags, layout_spec, id);
+    return do_link(ctx, text.c_str(), layout_spec, flags, id);
 }
 
 }

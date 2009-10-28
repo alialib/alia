@@ -8,7 +8,7 @@
 
 namespace alia {
 
-void tree_node::begin(context& ctx, flag_set flags, layout const& layout_spec,
+void tree_node::begin(context& ctx, layout const& layout_spec, flag_set flags,
     accessor<int> const* expander_accessor, region_id expander_id)
 {
     if (!expander_accessor)
@@ -16,7 +16,7 @@ void tree_node::begin(context& ctx, flag_set flags, layout const& layout_spec,
         int* expanded;
         if (get_data(ctx, &expanded))
             *expanded = (flags & INITIALLY_EXPANDED) != 0 ? 2 : 0;
-        begin(ctx, flags, layout_spec, &inout(expanded), expander_id);
+        begin(ctx, layout_spec, flags, &inout(expanded), expander_id);
         return;
     }
 
@@ -31,7 +31,7 @@ void tree_node::begin(context& ctx, flag_set flags, layout const& layout_spec,
             (expander_accessor->is_valid() ? expander_accessor->get() : 0)
             && full_grid_.is_relevant();
         expander_result_ = do_tristate_node_expander(ctx, *expander_accessor,
-            NO_FLAGS, NOT_PADDED, expander_id);
+            NOT_PADDED, NO_FLAGS, expander_id);
         label_region_.begin(ctx, layout(GROW));
     }
     else
@@ -42,7 +42,7 @@ void tree_node::begin(context& ctx, flag_set flags, layout const& layout_spec,
             && column_.is_relevant();
         label_region_.begin(ctx);
         expander_result_ = do_tristate_node_expander(ctx, *expander_accessor,
-            NO_FLAGS, NOT_PADDED, expander_id);
+            NOT_PADDED, NO_FLAGS, expander_id);
     }
 }
 

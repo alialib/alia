@@ -9,8 +9,8 @@ namespace alia {
 void do_image(
     context& ctx,
     image_interface const& img,
-    unsigned flags = 0,
-    layout const& layout_spec = default_layout);
+    layout const& layout_spec = default_layout,
+    unsigned flags = 0);
 
 }
 

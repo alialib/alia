@@ -21,8 +21,8 @@ struct check_box_data
 check_box_result do_check_box(
     context& ctx,
     accessor<bool> const& accessor,
-    flag_set flags,
     layout const& layout_spec,
+    flag_set flags,
     region_id id)
 {
     if (!id) id = get_region_id(ctx);
@@ -75,8 +75,8 @@ check_box_result do_check_box(
     context& ctx,
     accessor<bool> const& accessor,
     char const* text,
-    flag_set flags,
     layout const& layout_spec,
+    flag_set flags,
     region_id id)
 {
     if (!id) id = get_region_id(ctx);
@@ -91,11 +91,11 @@ check_box_result do_check_box(
     if (flags & REVERSED)
     {
         do_text(ctx, text);
-        result = do_check_box(ctx, accessor, flags, default_layout, id);
+        result = do_check_box(ctx, accessor, default_layout, flags, id);
     }
     else
     {
-        result = do_check_box(ctx, accessor, flags, default_layout, id);
+        result = do_check_box(ctx, accessor, default_layout, flags, id);
         do_text(ctx, text);
     }
     do_region(ctx, id, add_border(row.get_region(),
@@ -107,11 +107,11 @@ check_box_result do_check_box(
     context& ctx,
     accessor<bool> const& accessor,
     std::string const& text,
-    flag_set flags,
     layout const& layout_spec,
+    flag_set flags,
     region_id id)
 {
-    return do_check_box(ctx, accessor, text.c_str(), flags, layout_spec, id);
+    return do_check_box(ctx, accessor, text.c_str(), layout_spec, flags, id);
 }
 
 }

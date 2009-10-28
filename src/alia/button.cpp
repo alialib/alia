@@ -21,8 +21,8 @@ struct button_data
 button_result do_button(
     context& ctx,
     char const* text,
-    flag_set flags,
     layout const& layout_spec,
+    flag_set flags,
     region_id id)
 {
     if (!id) id = get_region_id(ctx);
@@ -80,11 +80,11 @@ button_result do_button(
 button_result do_button(
     context& ctx,
     std::string const& text,
-    flag_set flags,
     layout const& layout_spec,
+    flag_set flags,
     region_id id)
 {
-    return do_button(ctx, text.c_str(), flags, layout_spec, id);
+    return do_button(ctx, text.c_str(), layout_spec, flags, id);
 }
 
 }

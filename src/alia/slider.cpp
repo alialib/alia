@@ -49,7 +49,7 @@ static T clamp(T x, T min, T max)
 }
 
 bool do_slider(context& ctx, double* value, double minimum, double maximum,
-    double step, bool integer, flag_set flags, layout const& layout_spec)
+    double step, bool integer, layout const& layout_spec, flag_set flags)
 {
     slider_data& data = *get_data<slider_data>(ctx);
 

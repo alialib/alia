@@ -22,8 +22,8 @@ struct color_control_data
 color_control_result do_color_control(
     context& ctx,
     accessor<rgb8> const& accessor,
-    flag_set flags,
-    layout const& layout_spec)
+    layout const& layout_spec,
+    flag_set flags)
 {
     color_control_data& data = *get_data<color_control_data>(ctx);
 
@@ -48,12 +48,12 @@ color_control_result do_color_control(
     // It's probably related to popup dismissal problems.
 
     drop_down_list ddl(ctx, in(unsigned(data.index), data.index >= 0),
-        colors.size()/* + 1*/, NO_FLAGS, spec);
+        colors.size()/* + 1*/, spec);
     alia_if(valid)
         do_color(ctx, value);
     alia_end
     do_text(ctx, valid ? (data.index >= 0 ? colors[data.index].name :
-        std::string("custom")) : std::string(""), NO_FLAGS, width(12, CHARS));
+        std::string("custom")) : std::string(""), width(12, CHARS));
     if (ddl.do_list())
     {
         context& ctx = ddl.get_list_context();
@@ -63,7 +63,7 @@ color_control_result do_color_control(
             ddl_item item(ddl);
             row_layout r(ctx);
             do_color(ctx, c.color);
-            do_text(ctx, c.name, NO_FLAGS, width(12, CHARS));
+            do_text(ctx, c.name, width(12, CHARS));
         }
         //ddl_item item(ddl);
         //do_text(ctx, "custom...");

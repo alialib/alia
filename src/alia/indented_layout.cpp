@@ -4,8 +4,8 @@
 
 namespace alia {
 
-void indented_layout::begin(context& ctx, flag_set flags,
-    layout const& layout_spec)
+void indented_layout::begin(context& ctx, layout const& layout_spec,
+    flag_set flags)
 {
     full_region_.begin(ctx, layout_spec);
     do_spacer(ctx, 

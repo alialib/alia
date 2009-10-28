@@ -11,15 +11,15 @@ struct link_panel_data
     int key_state;
 };
 
-void link_panel::begin(context& ctx, flag_set flags,
-    layout const& layout_spec, region_id id)
+void link_panel::begin(context& ctx, layout const& layout_spec, flag_set flags,
+    region_id id)
 {
     if (!id) id = get_region_id(ctx);
     link_panel_data& data = *get_data<link_panel_data>(ctx);
     panel_.begin(ctx, ctx.artist->get_code_for_style(ITEM_STYLE,
         get_widget_state(ctx, id, (flags & DISABLED) == 0,
             data.key_state == 1)),
-        flags, layout_spec, id);
+        layout_spec, flags, id);
     if ((flags & DISABLED) == 0)
     {
         clicked_ = detect_click(ctx, id, LEFT_BUTTON) ||

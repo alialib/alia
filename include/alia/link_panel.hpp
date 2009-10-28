@@ -9,11 +9,11 @@ class link_panel
 {
  public:
     link_panel() {}
-    link_panel(context& ctx, flag_set flags = NO_FLAGS,
-        layout const& layout_spec = default_layout, region_id id = auto_id)
-    { begin(ctx, flags, layout_spec, id); }
-    void begin(context& ctx, flag_set flags = NO_FLAGS,
-        layout const& layout_spec = default_layout, region_id id = auto_id);
+    link_panel(context& ctx, layout const& layout_spec = default_layout,
+        flag_set flags = NO_FLAGS, region_id id = auto_id)
+    { begin(ctx, layout_spec, flags, id); }
+    void begin(context& ctx, layout const& layout_spec = default_layout,
+        flag_set flags = NO_FLAGS, region_id id = auto_id);
     void end() { panel_.end(); }
     bool is_relevant() const { return panel_.is_relevant(); }
     box2i const& get_region() const { panel_.get_region(); }

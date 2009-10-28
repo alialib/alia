@@ -25,11 +25,11 @@ class interleaved_tree_node
  public:
     interleaved_tree_node() : active_(false) {}
     interleaved_tree_node(interleaved_tree& tree,
-        flag_set flags = NO_FLAGS, layout const& layout_spec = default_layout)
-    { begin(tree, flags, layout_spec); }
+        layout const& layout_spec = default_layout, flag_set flags = NO_FLAGS)
+    { begin(tree, layout_spec, flags); }
 
-    void begin(interleaved_tree& tree, flag_set flags = NO_FLAGS,
-        layout const& layout_spec = default_layout);
+    void begin(interleaved_tree& tree,
+        layout const& layout_spec = default_layout, flag_set flags = NO_FLAGS);
 
     bool do_children();
 

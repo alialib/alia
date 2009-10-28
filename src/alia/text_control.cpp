@@ -86,8 +86,8 @@ struct text_control
         context& ctx,
         text_control_data& data,
         accessor<std::string> const& value,
-        flag_set flags,
         layout const& layout_spec,
+        flag_set flags,
         region_id id,
         int max_chars)
       : ctx(ctx), data(data), value(value), artist(*ctx.artist),
@@ -107,7 +107,7 @@ struct text_control
         if ((spec.flags & X_ALIGNMENT_MASK) == 0)
             spec.flags |= LEFT;
 
-        panel_.begin(ctx, TEXT_CONTROL_STYLE, ROW_LAYOUT, spec);
+        panel_.begin(ctx, TEXT_CONTROL_STYLE, spec, ROW_LAYOUT);
 
         switch (ctx.event->category)
         {
@@ -1107,14 +1107,14 @@ struct text_control
 text_control_result<std::string> do_text_control(
     context& ctx,
     accessor<std::string> const& value,
-    flag_set flags,
     layout const& layout_spec,
+    flag_set flags,
     region_id id,
     int max_chars)
 {
     if (!id) id = get_region_id(ctx);
     impl::text_control tc(ctx, *get_data<impl::text_control_data>(ctx), value,
-        flags, layout_spec, id, max_chars);
+        layout_spec, flags, id, max_chars);
     tc.do_pass();
     return tc.result;
 }

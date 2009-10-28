@@ -13,13 +13,14 @@ class scrollable_region
 {
  public:
     scrollable_region() : active_(false) {}
-    scrollable_region(context& ctx, flag_set flags = NO_AXIS,
-        layout const& layout_spec = default_layout, region_id id = auto_id)
-    { begin(ctx, flags, layout_spec, id); }
+    scrollable_region(context& ctx,
+        layout const& layout_spec = default_layout, flag_set flags = NO_AXIS,
+        region_id id = auto_id)
+    { begin(ctx, layout_spec, flags, id); }
     ~scrollable_region() { end(); }
 
-    void begin(context& ctx, flag_set flags = NO_AXIS,
-        layout const& layout_spec = default_layout, region_id id = auto_id);
+    void begin(context& ctx, layout const& layout_spec = default_layout,
+         flag_set flags = NO_AXIS, region_id id = auto_id);
     void end();
 
     bool is_relevant() const;

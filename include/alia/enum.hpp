@@ -20,8 +20,8 @@ do_enum(
     context& ctx,
     accessor<unsigned> const& value,
     std::vector<std::string> const& options,
-    flag_set flags = NO_FLAGS,
-    layout const& layout_spec = default_layout);
+    layout const& layout_spec = default_layout,
+    flag_set flags = NO_FLAGS);
 
 enum_result<unsigned>
 do_enum(
@@ -29,20 +29,21 @@ do_enum(
     accessor<unsigned> const& value,
     char const* const* options,
     unsigned n_options,
-    flag_set flags = NO_FLAGS,
-    layout const& layout_spec = default_layout);
+    layout const& layout_spec = default_layout,
+    flag_set flags = NO_FLAGS);
 
 template<typename T>
 enum_result<T>
 do_enum(
     context& ctx,
     accessor<T> const& value,
-    flag_set flags = NO_FLAGS,
-    layout const& layout_spec = default_layout)
+    layout const& layout_spec = default_layout,
+    flag_set flags = NO_FLAGS)
+
 {
     enum_result<unsigned> r = do_enum(ctx,
         accessor_cast<unsigned>(ref(value)),
-        get_printable_value_strings(T()), flags, layout_spec);
+        get_printable_value_strings(T()), layout_spec, flags);
     enum_result<T> r2;
     r2.changed = r.changed;
     r2.new_value = T(r.new_value);

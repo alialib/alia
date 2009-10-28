@@ -22,8 +22,8 @@ bool do_radio_button(
     context& ctx,
     accessor<unsigned> const& value,
     unsigned index,
-    flag_set flags,
     layout const& layout_spec,
+    flag_set flags,
     region_id id)
 {
     if (!id) id = get_region_id(ctx);
@@ -71,8 +71,8 @@ bool do_radio_button(
     accessor<unsigned> const& value,
     unsigned index,
     char const* text,
-    flag_set flags,
     layout const& layout_spec,
+    flag_set flags,
     region_id id)
 {
     if (!id) id = get_region_id(ctx);
@@ -84,7 +84,7 @@ bool do_radio_button(
     // TODO: fix alignment of radio button and text
     row_layout row(ctx, ls);
     bool result =
-        do_radio_button(ctx, value, index, flags, default_layout, id);
+        do_radio_button(ctx, value, index, default_layout, flags, id);
     do_text(ctx, text);
     do_region(ctx, id, add_border(row.get_region(),
         -ctx.pass_state.padding_size));
@@ -96,11 +96,11 @@ bool do_radio_button(
     accessor<unsigned> const& value,
     unsigned index,
     std::string const& text,
-    flag_set flags,
     layout const& layout_spec,
+    flag_set flags,
     region_id id)
 {
-    return do_radio_button(ctx, value, index, text.c_str(), flags, layout_spec,
+    return do_radio_button(ctx, value, index, text.c_str(), layout_spec, flags,
         id);
 }
 

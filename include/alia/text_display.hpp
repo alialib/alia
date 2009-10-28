@@ -10,36 +10,36 @@ namespace alia {
 void do_text(
     context& ctx,
     char const* text,
-    flag_set flags = NO_FLAGS,
-    layout const& layout_spec = default_layout);
+    layout const& layout_spec = default_layout,
+    flag_set flags = NO_FLAGS);
 
 void do_text(
     context& ctx,
     std::string const& text,
-    flag_set flags = NO_FLAGS,
-    layout const& layout_spec = default_layout);
+    layout const& layout_spec = default_layout,
+    flag_set flags = NO_FLAGS);
 
 template<class T>
 void do_text(
     context& ctx,
     T const& value,
-    flag_set flags = NO_FLAGS,
-    layout const& layout_spec = default_layout)
+    layout const& layout_spec = default_layout,
+    flag_set flags = NO_FLAGS)
 {
-    do_text(ctx, to_string(value), flags, layout_spec);
+    do_text(ctx, to_string(value), layout_spec, flags);
 }
 
 void do_paragraph(
     context& ctx,
     char const* text,
-    flag_set flags = NO_FLAGS,
-    layout const& layout_spec = default_layout);
+    layout const& layout_spec = default_layout,
+    flag_set flags = NO_FLAGS);
 
 void do_paragraph(
     context& ctx,
     std::string const& text,
-    flag_set flags = NO_FLAGS,
-    layout const& layout_spec = default_layout);
+    layout const& layout_spec = default_layout,
+    flag_set flags = NO_FLAGS);
 
 }
 

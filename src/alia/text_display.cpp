@@ -17,8 +17,8 @@ struct text_display_data
 void do_text(
     context& ctx,
     char const* text,
-    flag_set flags,
-    layout const& layout_spec)
+    layout const& layout_spec,
+    flag_set flags)
 {
     text_display_data& data = *get_data<text_display_data>(ctx);
     font const& font = ctx.pass_state.active_font;
@@ -52,10 +52,10 @@ void do_text(
 void do_text(
     context& ctx,
     std::string const& text,
-    flag_set flags,
-    layout const& layout_spec)
+    layout const& layout_spec,
+    flag_set flags)
 {
-    do_text(ctx, text.c_str(), flags, layout_spec);
+    do_text(ctx, text.c_str(), layout_spec, flags);
 }
 
 struct paragraph_data
@@ -67,8 +67,8 @@ struct paragraph_data
 void do_paragraph(
     context& ctx,
     char const* text,
-    flag_set flags,
-    layout const& layout_spec)
+    layout const& layout_spec,
+    flag_set flags)
 {
     paragraph_data& data = *get_data<paragraph_data>(ctx);
 
@@ -178,10 +178,10 @@ void do_paragraph(
 void do_paragraph(
     context& ctx,
     std::string const& text,
-    flag_set flags,
-    layout const& layout_spec)
+    layout const& layout_spec,
+    flag_set flags)
 {
-    do_paragraph(ctx, text.c_str(), flags, layout_spec);
+    do_paragraph(ctx, text.c_str(), layout_spec, flags);
 }
 
 }

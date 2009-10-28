@@ -7,8 +7,8 @@
 
 namespace alia {
 
-void do_separator(context& ctx, flag_set axis = NO_FLAGS,
-    layout const& layout_spec = default_layout);
+void do_separator(context& ctx, layout const& layout_spec = default_layout,
+    flag_set axis = NO_FLAGS);
 
 }
 

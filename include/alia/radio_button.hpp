@@ -14,8 +14,8 @@ bool do_radio_button(
     context& ctx,
     accessor<unsigned> const& value,
     unsigned index,
-    flag_set flags = NO_FLAGS,
     layout const& layout_spec = default_layout,
+    flag_set flags = NO_FLAGS,
     region_id id = auto_id);
 
 // radio button with text - The text is placed to the right of the radio button
@@ -29,8 +29,8 @@ bool do_radio_button(
     accessor<unsigned> const& value,
     unsigned index,
     char const* text,
-    flag_set flags = NO_FLAGS,
     layout const& layout_spec = default_layout,
+    flag_set flags = NO_FLAGS,
     region_id id = auto_id);
 
 // std::string version
@@ -39,8 +39,8 @@ bool do_radio_button(
     accessor<unsigned> const& value,
     unsigned index,
     std::string const& text,
-    flag_set flags = NO_FLAGS,
     layout const& layout_spec = default_layout,
+    flag_set flags = NO_FLAGS,
     region_id id = auto_id);
 
 //class radio_button_group

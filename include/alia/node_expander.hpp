@@ -12,14 +12,16 @@ namespace alia {
 struct node_expander_result : control_result<bool> {};
 
 node_expander_result do_node_expander(
-    context& ctx, accessor<bool> const& expanded, flag_set flags = NO_FLAGS,
-    layout const& layout_spec = default_layout, region_id id = auto_id);
+    context& ctx, accessor<bool> const& expanded,
+    layout const& layout_spec = default_layout, flag_set flags = NO_FLAGS,
+    region_id id = auto_id);
 
 struct tristate_node_expander_result : control_result<int> {};
 
 tristate_node_expander_result do_tristate_node_expander(
-    context& ctx, accessor<int> const& expanded, flag_set flags = NO_FLAGS,
-    layout const& layout_spec = default_layout, region_id id = auto_id);
+    context& ctx, accessor<int> const& expanded,
+    layout const& layout_spec = default_layout, flag_set flags = NO_FLAGS,
+    region_id id = auto_id);
 
 }
 

@@ -8,7 +8,7 @@
 namespace alia {
 
 bool do_draggable_separator(context& ctx, int* width,
-    flag_set flags = NO_FLAGS, layout const& layout_spec = default_layout,
+    layout const& layout_spec = default_layout, flag_set flags = NO_FLAGS,
     region_id id = auto_id);
 
 }

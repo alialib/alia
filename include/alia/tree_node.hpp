@@ -17,14 +17,18 @@ class tree_node : boost::noncopyable
     tree_node() {}
     ~tree_node() { end(); }
 
-    tree_node(context& ctx, flag_set flags = NO_FLAGS,
+    tree_node(
+        context& ctx,
         layout const& layout_spec = default_layout,
+        flag_set flags = NO_FLAGS,
         accessor<int> const* expander_accessor = 0,
         region_id expander_id = 0)
-    { begin(ctx, flags, layout_spec, expander_accessor, expander_id); }
+    { begin(ctx, layout_spec, flags, expander_accessor, expander_id); }
 
-    void begin(context& ctx, flag_set flags = NO_FLAGS,
+    void begin(
+        context& ctx,
         layout const& layout_spec = default_layout,
+        flag_set flags = NO_FLAGS,
         accessor<int> const* expander_accessor = 0,
         region_id expander_id = 0);
 

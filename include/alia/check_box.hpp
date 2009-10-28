@@ -15,8 +15,8 @@ struct check_box_result : control_result<bool> {};
 check_box_result do_check_box(
     context& ctx,
     accessor<bool> const& accessor,
-    flag_set flags = NO_FLAGS,
     layout const& layout_spec = default_layout,
+    flag_set flags = NO_FLAGS,
     region_id id = auto_id);
 
 // check box with text - The text is placed to the right of the check box
@@ -31,8 +31,8 @@ check_box_result do_check_box(
     context& ctx,
     accessor<bool> const& accessor,
     char const* text,
-    flag_set flags = NO_FLAGS,
     layout const& layout_spec = default_layout,
+    flag_set flags = NO_FLAGS,
     region_id id = auto_id);
 
 // std::string version
@@ -40,8 +40,8 @@ check_box_result do_check_box(
     context& ctx,
     accessor<bool> const& accessor,
     std::string const& text,
-    flag_set flags = NO_FLAGS,
     layout const& layout_spec = default_layout,
+    flag_set flags = NO_FLAGS,
     region_id id = auto_id);
 
 }

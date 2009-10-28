@@ -14,15 +14,15 @@ class drop_down_list : boost::noncopyable
     drop_down_list() : active_(false) {}
     // TODO: Ideally, you shouldn't have to specify how many items there are.
     drop_down_list(context& ctx, accessor<unsigned> const& selection,
-        unsigned n_items, flag_set flags = NO_FLAGS,
-        layout const& layout_spec = default_layout)
-    { begin(ctx, selection, n_items, flags, layout_spec); }
+        unsigned n_items, layout const& layout_spec = default_layout,
+        flag_set flags = NO_FLAGS)
+    { begin(ctx, selection, n_items, layout_spec, flags); }
     ~drop_down_list()
     { end(); }
 
     void begin(context& ctx, accessor<unsigned> const& selection,
-        unsigned n_items, flag_set flags = NO_FLAGS,
-        layout const& layout_spec = default_layout);
+        unsigned n_items, layout const& layout_spec = default_layout,
+        flag_set flags = NO_FLAGS);
     void end();
 
     bool do_list() const { return do_list_; }
@@ -67,8 +67,11 @@ class ddl_item : boost::noncopyable
     panel panel_;
 };
 
-bool do_drop_down_button(context& ctx, flag_set flags = NO_FLAGS,
-    layout const& layout_spec = default_layout, region_id id = auto_id);
+bool do_drop_down_button(
+    context& ctx,
+    layout const& layout_spec = default_layout,
+    flag_set flags = NO_FLAGS,
+    region_id id = auto_id);
 
 }
 

@@ -12,7 +12,7 @@ class linear_layout : public layout_object
 {
  public:
     linear_layout() {}
-    linear_layout(context& ctx, unsigned axis,
+    linear_layout(context& ctx, unsigned axis, // TODO: axis
         layout const& layout_spec = default_layout)
     { begin(ctx, axis, layout_spec); }
     ~linear_layout() { end(); }

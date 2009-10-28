@@ -9,7 +9,7 @@ class grid_layout : boost::noncopyable
 {
  public:
     grid_layout() : active_(false) {}
-    grid_layout(context& ctx, unsigned axis = 0,
+    grid_layout(context& ctx, unsigned axis = 0, // TODO: axis
         layout const& layout_spec = default_layout)
     { begin(ctx, axis, layout_spec); }
     ~grid_layout() { end(); }

@@ -141,7 +141,7 @@ box2i const& panel_border::get_content_region() const
 }
 
 void panel_background::begin(context& ctx, unsigned style_code,
-     flag_set flags, layout const& layout_spec, region_id id)
+     layout const& layout_spec, flag_set flags, region_id id)
 {
     ctx_ = &ctx;
     if (!id) id = get_region_id(ctx);
@@ -183,16 +183,16 @@ bool panel_background::is_relevant() const
     return layout_.is_relevant();
 }
 
-void panel::begin(context& ctx, unsigned style_code, flag_set flags,
-    layout const& layout_spec, region_id id)
+void panel::begin(context& ctx, unsigned style_code,
+    layout const& layout_spec, flag_set flags, region_id id)
 {
     //border_.begin(ctx, code, layout_spec);
-    bg_.begin(ctx, style_code, flags, layout_spec, id);
+    bg_.begin(ctx, style_code, layout_spec, flags, id);
 }
-void panel::begin(context& ctx, style style, flag_set flags,
-    layout const& layout_spec, region_id id)
+void panel::begin(context& ctx, style style, layout const& layout_spec,
+    flag_set flags, region_id id)
 {
-    begin(ctx, ctx.artist->get_code_for_style(style, 0), flags, layout_spec,
+    begin(ctx, ctx.artist->get_code_for_style(style, 0), layout_spec, flags,
         id);
 }
 void panel::end()
@@ -209,17 +209,17 @@ box2i const& panel::get_region() const
     return bg_.get_region();
 }
 
-void scrollable_panel::begin(context& ctx, unsigned style_code, flag_set flags,
-    layout const& layout_spec, region_id id)
+void scrollable_panel::begin(context& ctx, unsigned style_code,
+    layout const& layout_spec, flag_set flags, region_id id)
 {
     //border_.begin(ctx, code, layout_spec);
-    sr_.begin(ctx, flags, layout_spec);
-    bg_.begin(ctx, style_code, NO_FLAGS, GROW, id);
+    sr_.begin(ctx, layout_spec, flags);
+    bg_.begin(ctx, style_code, GROW, NO_FLAGS, id);
 }
-void scrollable_panel::begin(context& ctx, style style, flag_set flags,
-    layout const& layout_spec, region_id id)
+void scrollable_panel::begin(context& ctx, style style,
+    layout const& layout_spec, flag_set flags, region_id id)
 {
-    begin(ctx, ctx.artist->get_code_for_style(style, 0), flags, layout_spec,
+    begin(ctx, ctx.artist->get_code_for_style(style, 0), layout_spec, flags,
         id);
 }
 void scrollable_panel::end()

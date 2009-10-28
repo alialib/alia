@@ -114,8 +114,8 @@ vector2i scrollable_region::get_content_size() const
     return data_->content_size;
 }
 
-void scrollable_region::begin(context& ctx, flag_set flags,
-    layout const& layout_spec, region_id id)
+void scrollable_region::begin(context& ctx, layout const& layout_spec,
+    flag_set flags, region_id id)
 {
     ctx_ = &ctx;
     data_ = get_data<data>(ctx);

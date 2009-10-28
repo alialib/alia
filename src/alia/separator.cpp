@@ -11,7 +11,8 @@ struct separator_data
     alia::layout_data layout_data;
 };
 
-void do_separator(context& ctx, flag_set axis, layout const& layout_spec)
+// TODO: axis
+void do_separator(context& ctx, layout const& layout_spec, flag_set axis)
 {
     separator_data& data = *get_data<separator_data>(ctx);
     artist& artist = *ctx.artist;

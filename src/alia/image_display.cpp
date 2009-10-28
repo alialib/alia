@@ -16,8 +16,8 @@ struct image_display_data
 void do_image(
     context& ctx,
     image_interface const& img,
-    unsigned flags,
-    layout const& layout_spec)
+    layout const& layout_spec,
+    unsigned flags)
 {
     image_display_data& data = *get_data<image_display_data>(ctx);
     switch (ctx.event->category)

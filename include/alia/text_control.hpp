@@ -26,8 +26,8 @@ struct text_control_result : control_result<T>
 text_control_result<std::string> do_text_control(
     context& ctx,
     accessor<std::string> const& value,
-    flag_set flags = NO_FLAGS,
     layout const& layout_spec = default_layout,
+    flag_set flags = NO_FLAGS,
     region_id id = auto_id,
     int max_chars = -1);
 
@@ -46,8 +46,8 @@ template<class T>
 text_control_result<T> do_text_control(
     context& ctx,
     accessor<T> const& accessor,
-    flag_set flags = NO_FLAGS,
     layout const& layout_spec = default_layout,
+    flag_set flags = NO_FLAGS,
     region_id id = auto_id,
     int max_chars = -1)
 {
@@ -78,7 +78,7 @@ text_control_result<T> do_text_control(
         }
     }
     text_control_result<std::string> r = do_text_control(
-        ctx, inout(&data->text), flags, spec, id, max_chars);
+        ctx, inout(&data->text), spec, flags, id, max_chars);
     text_control_result<T> result;
     switch (r.event)
     {

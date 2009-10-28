@@ -14,15 +14,15 @@ typedef bool button_result;
 button_result do_button(
     context& ctx,
     char const* text,
-    flag_set flags = NO_FLAGS,
     layout const& layout_spec = default_layout,
+    flag_set flags = NO_FLAGS,
     region_id id = auto_id);
 
 button_result do_button(
     context& ctx,
     std::string const& text,
-    flag_set flags = NO_FLAGS,
     layout const& layout_spec = default_layout,
+    flag_set flags = NO_FLAGS,
     region_id id = auto_id);
 
 }

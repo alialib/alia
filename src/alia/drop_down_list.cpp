@@ -46,7 +46,7 @@ struct drop_down_list::data
 };
 
 void drop_down_list::begin(context& ctx, accessor<unsigned> const& accessor,
-    unsigned n_items, flag_set flags, layout const& layout_spec)
+    unsigned n_items, layout const& layout_spec, flag_set flags)
 {
     ctx_ = &ctx;
     data_ = get_data<data>(ctx);
@@ -60,7 +60,7 @@ void drop_down_list::begin(context& ctx, accessor<unsigned> const& accessor,
         spec.flags |= LEFT;
     unsigned style_code =
         ctx.artist->get_code_for_style(LIST_STYLE, get_widget_state(ctx, id_));
-    panel_.begin(ctx, style_code, ROW_LAYOUT, spec, id_);
+    panel_.begin(ctx, style_code, spec, ROW_LAYOUT, id_);
 
     do_list_ = false;
     changed_ = false;
@@ -86,7 +86,7 @@ void drop_down_list::begin(context& ctx, accessor<unsigned> const& accessor,
 
             context& ctx = *list_ctx_;
 
-            list_panel_.begin(ctx, LIST_STYLE, NO_AXIS | GREEDY, GROW);
+            list_panel_.begin(ctx, LIST_STYLE, GROW, NO_AXIS | GREEDY);
 
             key_event_info info;
             if (detect_key_press(ctx, &info))
@@ -190,7 +190,7 @@ void drop_down_list::end()
             }
         }
 
-        if (do_drop_down_button(*ctx_, NO_FLAGS, default_layout, id_))
+        if (do_drop_down_button(*ctx_, default_layout, NO_FLAGS, id_))
         {
             box2i const& region = panel_.get_region();
             point2i boundary(-1, region.corner[1]),
@@ -269,7 +269,7 @@ void ddl_item::begin(drop_down_list& list)
     region_id id = get_region_id(ctx);
     unsigned style_code = ctx.artist->get_code_for_style(ITEM_STYLE,
         get_widget_state(ctx, id), selected_);
-    panel_.begin(*list.list_ctx_, style_code, NO_FLAGS, NOT_PADDED, id);
+    panel_.begin(*list.list_ctx_, style_code, NOT_PADDED, NO_FLAGS, id);
     if (detect_click(ctx, id, LEFT_BUTTON))
     {
         ddl_set_value_event e(list.id_, index);
@@ -302,8 +302,8 @@ struct drop_down_button_data
     int key_state;
 };
 
-bool do_drop_down_button(context& ctx, flag_set flags,
-    layout const& layout_spec, region_id id)
+bool do_drop_down_button(context& ctx, layout const& layout_spec,
+    flag_set flags, region_id id)
 {
     if (!id) id = get_region_id(ctx);
     drop_down_button_data& data = *get_data<drop_down_button_data>(ctx);
