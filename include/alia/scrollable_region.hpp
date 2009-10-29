@@ -14,13 +14,13 @@ class scrollable_region
  public:
     scrollable_region() : active_(false) {}
     scrollable_region(context& ctx,
-        layout const& layout_spec = default_layout, flag_set flags = NO_AXIS,
+        layout const& layout_spec = default_layout, flag_set flags = NO_FLAGS,
         region_id id = auto_id)
     { begin(ctx, layout_spec, flags, id); }
     ~scrollable_region() { end(); }
 
     void begin(context& ctx, layout const& layout_spec = default_layout,
-         flag_set flags = NO_AXIS, region_id id = auto_id);
+         flag_set flags = NO_FLAGS, region_id id = auto_id);
     void end();
 
     bool is_relevant() const;
@@ -32,7 +32,7 @@ class scrollable_region
     struct data;
     data* data_;
     region_id id_;
-    int axis_;
+    unsigned axes_;
     layout layout_spec_;
     bool active_;
     scoped_clip_region scr_;

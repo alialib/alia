@@ -17,8 +17,7 @@ struct scrolled_region_data
 static void do_scrollbar_pair(context& ctx, scrolled_region_data& data,
     box2i& window, point2i& position, box2i const& region,
     vector2i const& content_size, vector2i const& line_increment,
-    vector2i const& page_increment = vector2i(-1, -1), int axis = -1,
-    vector2i const& unavailable = vector2i(0, 0))
+    vector2i const& page_increment, unsigned axes, vector2i const& unavailable)
 {
     artist& artist = *ctx.artist;
 
@@ -32,7 +31,7 @@ static void do_scrollbar_pair(context& ctx, scrolled_region_data& data,
      case LAYOUT_PASS_0:
         return;
      case LAYOUT_PASS_1:
-        if (axis != 0)
+        if ((axes & 2) != 0)
         {
             window.size[0] -= artist.get_scrollbar_width();
             return;
@@ -42,17 +41,17 @@ static void do_scrollbar_pair(context& ctx, scrolled_region_data& data,
     int sb_width = artist.get_scrollbar_width();
     bool sb_on[2] = { false, false };
 
-    if (axis != 1 && window.size[0] < content_size[0])
+    if ((axes & 1) != 0 && window.size[0] < content_size[0])
     {
         sb_on[0] = true;
         window.size[1] -= sb_width;
     }
-    if (axis != 0 && window.size[1] < content_size[1])
+    if ((axes & 2) != 0 && window.size[1] < content_size[1])
     {
         sb_on[1] = true;
         window.size[0] -= sb_width;
     }
-    if (axis != 1 && !sb_on[0] && window.size[0] < content_size[0])
+    if ((axes & 1) != 0 && !sb_on[0] && window.size[0] < content_size[0])
     {
         sb_on[0] = true;
         window.size[1] -= sb_width;
@@ -101,7 +100,7 @@ struct scrollable_region::data
 
     alia::layout_data layout_data;
 
-    int axis;
+    unsigned axes;
 };
 
 bool scrollable_region::is_relevant() const
@@ -120,10 +119,17 @@ void scrollable_region::begin(context& ctx, layout const& layout_spec,
     ctx_ = &ctx;
     data_ = get_data<data>(ctx);
     id_ = id ? id : get_region_id(ctx);
-    axis_ = (flags & AXIS_MASK).code; // TODO
+    axes_ = 0;
     layout_spec_ = layout_spec;
     flags_ = flags;
     active_ = false;
+
+    if (flags & HORIZONTAL)
+        axes_ |= 1;
+    if (flags & VERTICAL)
+        axes_ |= 2;
+    if (axes_ == 0)
+        axes_ = 3;
 
     if (ctx_->event->category == LAYOUT_CATEGORY &&
         get_event<layout_event>(*ctx_).active_logic)
@@ -137,10 +143,10 @@ void scrollable_region::begin(context& ctx, layout const& layout_spec,
         {
          case REFRESH_EVENT:
             diff_widget_location(*ctx_, data_->layout_data);
-            if (axis_ != data_->axis)
+            if (axes_ != data_->axes)
             {
                 record_layout_change(*ctx_, data_->layout_data);
-                data_->axis = axis_;
+                data_->axes = axes_;
             }
             break;
          case LAYOUT_PASS_1:
@@ -158,7 +164,7 @@ void scrollable_region::begin(context& ctx, layout const& layout_spec,
     do_scrollbar_pair(*ctx_, data_->scrolled_region_data, window_region_,
         data_->scroll_position, data_->layout_data.assigned_region,
         data_->content_size, vector2i(line_size, line_size),
-        vector2i(-1, -1), axis_, vector2i(0, 0));
+        vector2i(-1, -1), axes_, vector2i(0, 0));
 
     if (ctx_->event->category == REGION_CATEGORY)
         do_region(*ctx_, id_, window_region_);
@@ -174,7 +180,7 @@ void scrollable_region::begin(context& ctx, layout const& layout_spec,
         (std::max)(window_region_.size[1], data_->content_size[1]));
     overlay_.begin(ctx, box2i(point2i(0, 0), content_size));
 
-    layout_.begin(ctx, 1);
+    layout_.begin(ctx, default_layout, VERTICAL);
 
     active_ = true;
 }
@@ -223,7 +229,7 @@ void scrollable_region::end()
                 else
                 {
                     minimum_size =
-                        axis_ != 1 - which_pass
+                        (axes_ & (1 << which_pass)) != 0
                       ? (std::min)(content_size,
                             artist.get_scrollbar_button_length() * 2 +
                             artist.get_minimum_scrollbar_thumb_length() * 3 +

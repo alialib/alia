@@ -107,7 +107,7 @@ struct text_control
         if ((spec.flags & X_ALIGNMENT_MASK) == 0)
             spec.flags |= LEFT;
 
-        panel_.begin(ctx, TEXT_CONTROL_STYLE, spec, ROW_LAYOUT);
+        panel_.begin(ctx, TEXT_CONTROL_STYLE, spec, HORIZONTAL);
 
         switch (ctx.event->category)
         {

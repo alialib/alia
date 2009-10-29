@@ -144,10 +144,11 @@ void linear_layout::logic::get_region_for_node(box2i* region, int* baseline_y,
 
 // linear_layout
 
-void linear_layout::begin(context& ctx, unsigned axis,
-    layout const& layout_spec)
+void linear_layout::begin(context& ctx, layout const& layout_spec,
+    flag_set flags)
 {
     data& data = *get_data<linear_layout::data>(ctx);
+    unsigned axis = (flags & HORIZONTAL) ? 0 : 1;
     switch (ctx.event->type)
     {
      case REFRESH_EVENT:

@@ -671,7 +671,7 @@ void side_rulers::begin(context& ctx, flag_set flags,
     scales_[0] = scales_[1] = 1;
     active_ = true;
     canvas_ = 0;
-    grid_.begin(ctx, 0, layout_spec);
+    grid_.begin(ctx, layout_spec);
     do_ruler_row(TOP_SIDE);
     row_.begin(grid_, GROW);
     if ((flags & LEFT_SIDE) != 0)

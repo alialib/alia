@@ -3,6 +3,7 @@
 
 #include <alia/layout_object.hpp>
 #include <alia/layout_logic.hpp>
+#include <alia/flags.hpp>
 
 namespace alia {
 
@@ -12,12 +13,13 @@ class linear_layout : public layout_object
 {
  public:
     linear_layout() {}
-    linear_layout(context& ctx, unsigned axis, // TODO: axis
-        layout const& layout_spec = default_layout)
-    { begin(ctx, axis, layout_spec); }
+    // flags should be either HORIZONTAL or VERTICAL (the default)
+    linear_layout(context& ctx, layout const& layout_spec = default_layout,
+        flag_set flags = NO_FLAGS)
+    { begin(ctx, layout_spec, flags); }
     ~linear_layout() { end(); }
-    void begin(context& ctx, unsigned axis,
-        layout const& layout_spec = default_layout);
+    void begin(context& ctx, layout const& layout_spec = default_layout,
+        flag_set flags = NO_FLAGS);
     void end();
  private:
     struct data;
@@ -38,7 +40,7 @@ class linear_layout : public layout_object
      private:
         context* ctx_;
         data* data_;
-        int axis_;
+        unsigned axis_;
         // counts the number of items seen so far
         int item_n_;
         // used during assignment passes to track how much proportion is left
@@ -61,7 +63,7 @@ class row_layout : public linear_layout
     row_layout(context& ctx, layout const& layout_spec = default_layout)
     { begin(ctx, layout_spec); }
     void begin(context& ctx, layout const& layout_spec = default_layout)
-    { linear_layout::begin(ctx, 0, layout_spec); }
+    { linear_layout::begin(ctx, layout_spec, HORIZONTAL); }
 };
 
 class column_layout : public linear_layout
@@ -71,7 +73,7 @@ class column_layout : public linear_layout
     column_layout(context& ctx, layout const& layout_spec = default_layout)
     { begin(ctx, layout_spec); }
     void begin(context& ctx, layout const& layout_spec = default_layout)
-    { linear_layout::begin(ctx, 1, layout_spec); }
+    { linear_layout::begin(ctx, layout_spec, VERTICAL); }
 };
 
 }

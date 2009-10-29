@@ -25,7 +25,7 @@ void tree_node::begin(context& ctx, layout const& layout_spec, flag_set flags,
 
     if ((flags & NO_INDENT) == 0)
     {
-        full_grid_.begin(ctx, 0, layout_spec);
+        full_grid_.begin(ctx, layout_spec);
         top_row_.begin(full_grid_);
         do_children_ =
             (expander_accessor->is_valid() ? expander_accessor->get() : 0)

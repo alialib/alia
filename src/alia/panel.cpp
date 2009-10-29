@@ -155,7 +155,7 @@ void panel_background::begin(context& ctx, unsigned style_code,
     ctx.pass_state.padding_size += outer_padding_size_;
     layout spec = layout_spec;
     spec.flags |= PADDED;
-    layout_.begin(ctx, (flags & ROW_LAYOUT) != 0 ? 0 : 1, spec);
+    layout_.begin(ctx, spec, flags & AXIS_MASK);
     ctx.pass_state.padding_size -= outer_padding_size_;
     region_ = add_border(layout_.get_region(),
         ctx.pass_state.padding_size);

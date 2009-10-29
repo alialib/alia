@@ -7,8 +7,10 @@
 
 namespace alia {
 
+// accepted flags:
+// HORIZONTAL, VERTICAL (mutually exclusive, default is HORIZONTAL)
 void do_separator(context& ctx, layout const& layout_spec = default_layout,
-    flag_set axis = NO_FLAGS);
+    flag_set flags = NO_FLAGS);
 
 }
 

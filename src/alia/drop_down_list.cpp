@@ -60,7 +60,7 @@ void drop_down_list::begin(context& ctx, accessor<unsigned> const& accessor,
         spec.flags |= LEFT;
     unsigned style_code =
         ctx.artist->get_code_for_style(LIST_STYLE, get_widget_state(ctx, id_));
-    panel_.begin(ctx, style_code, spec, ROW_LAYOUT, id_);
+    panel_.begin(ctx, style_code, spec, HORIZONTAL, id_);
 
     do_list_ = false;
     changed_ = false;
@@ -86,7 +86,7 @@ void drop_down_list::begin(context& ctx, accessor<unsigned> const& accessor,
 
             context& ctx = *list_ctx_;
 
-            list_panel_.begin(ctx, LIST_STYLE, GROW, NO_AXIS | GREEDY);
+            list_panel_.begin(ctx, LIST_STYLE, GROW, GREEDY);
 
             key_event_info info;
             if (detect_key_press(ctx, &info))

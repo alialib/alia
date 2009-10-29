@@ -9,12 +9,13 @@ class grid_layout : boost::noncopyable
 {
  public:
     grid_layout() : active_(false) {}
-    grid_layout(context& ctx, unsigned axis = 0, // TODO: axis
-        layout const& layout_spec = default_layout)
-    { begin(ctx, axis, layout_spec); }
+    // flags should be either HORIZONTAL (the default) or VERTICAL
+    grid_layout(context& ctx, layout const& layout_spec = default_layout,
+        flag_set flags = NO_FLAGS)
+    { begin(ctx, layout_spec, flags); }
     ~grid_layout() { end(); }
-    void begin(context& ctx, unsigned axis = 0,
-        layout const& layout_spec = default_layout);
+    void begin(context& ctx, layout const& layout_spec = default_layout,
+        flag_set flags = NO_FLAGS);
     bool is_relevant() const { return layout_.is_relevant(); }
     bool is_dirty() const { return layout_.is_dirty(); }
     void end();

@@ -27,13 +27,10 @@ static inline bool operator==(flag_set a, flag_set b)
 
 static flag_set const NO_FLAGS(0);
 
-// TODO: Fix these.
-static unsigned const X_AXIS_CODE =                                 0x00000000;
-static flag_set const X_AXIS(X_AXIS_CODE);
-static unsigned const Y_AXIS_CODE =                                 0x00000001;
-static flag_set const Y_AXIS(Y_AXIS_CODE);
-static unsigned const NO_AXIS_CODE =                                0x00000003;
-static flag_set const NO_AXIS(NO_AXIS_CODE);
+static unsigned const HORIZONTAL_CODE =                             0x00000001;
+static flag_set const HORIZONTAL(HORIZONTAL_CODE);
+static unsigned const VERTICAL_CODE =                               0x00000002;
+static flag_set const VERTICAL(VERTICAL_CODE);
 static unsigned const AXIS_MASK_CODE =                              0x00000003;
 static flag_set const AXIS_MASK(AXIS_MASK_CODE);
 
@@ -66,11 +63,8 @@ static flag_set const INITIALLY_EXPANDED(INITIALLY_EXPANDED_CODE);
 static unsigned const INITIALLY_COLLAPSED_CODE =                    0x00001000;
 static flag_set const INITIALLY_COLLAPSED(INITIALLY_COLLAPSED_CODE);
 
-// panel
-static unsigned const ROW_LAYOUT_CODE =                             0x00002000;
-static flag_set const ROW_LAYOUT(ROW_LAYOUT_CODE);
 // scrollable panel
-static unsigned const GREEDY_CODE =                                 0x00004000;
+static unsigned const GREEDY_CODE =                                 0x00002000;
 static flag_set const GREEDY(GREEDY_CODE);
 
 // peripheral widgets

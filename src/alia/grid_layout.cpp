@@ -25,12 +25,14 @@ struct grid_row::data : layout_object_data
 
 // grid_layout
 
-void grid_layout::begin(context& ctx, unsigned axis,
-    layout const& layout_spec)
+void grid_layout::begin(context& ctx, layout const& layout_spec,
+    flag_set flags)
 {
     ctx_ = &ctx;
     data_ = get_data<data>(ctx);
-    layout_.begin(ctx, 1 - axis, layout_spec);
+    unsigned axis = (flags & VERTICAL) ? 1 : 0;
+    layout_.begin(ctx, layout_spec,
+        (flags & VERTICAL) ? HORIZONTAL : VERTICAL);
     axis_ = axis;
     saw_first_ = false;
     if (ctx_->event->category == LAYOUT_CATEGORY)

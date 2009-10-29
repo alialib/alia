@@ -11,11 +11,11 @@ struct separator_data
     alia::layout_data layout_data;
 };
 
-// TODO: axis
-void do_separator(context& ctx, layout const& layout_spec, flag_set axis)
+void do_separator(context& ctx, layout const& layout_spec, flag_set flags)
 {
     separator_data& data = *get_data<separator_data>(ctx);
     artist& artist = *ctx.artist;
+    bool vertical = flags & VERTICAL;
     switch (ctx.event->category)
     {
      case LAYOUT_CATEGORY:
@@ -25,21 +25,20 @@ void do_separator(context& ctx, layout const& layout_spec, flag_set axis)
         layout_widget(ctx, data.layout_data, layout_spec,
             resolve_size(ctx, layout_spec.size),
             widget_layout_info(minimum_size, 0, 0, minimum_size,
-            axis == Y_AXIS ? CENTER_X | FILL_Y : FILL_X | CENTER_Y, true));
+            vertical ? CENTER_X | FILL_Y : FILL_X | CENTER_Y, true));
         break;
       }
      case RENDER_CATEGORY:
       {
         box2i const& assigned_region = data.layout_data.assigned_region;
-        point2i const& corner = assigned_region.corner + (axis == Y_AXIS ?
+        point2i const& corner = assigned_region.corner + (vertical ?
             vector2i((assigned_region.size[0] -
                 artist.get_separator_width()) / 2, 0) :
             vector2i(0, (assigned_region.size[1] -
                 artist.get_separator_width()) / 2));
-        int length = axis == Y_AXIS ? assigned_region.size[1] :
+        int length = vertical ? assigned_region.size[1] :
             assigned_region.size[0];
-        artist.draw_separator(data.artist_data, corner, axis == Y_AXIS,
-            length);
+        artist.draw_separator(data.artist_data, corner, vertical, length);
         break;
       }
     }
