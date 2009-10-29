@@ -17,6 +17,8 @@ namespace impl {
         double step, bool integer, layout const& layout_spec, flag_set flags);
 }
 
+// accepted flags:
+// HORIZONTAL, VERTICAL (mutually exclusive, default is HORIZONTAL)
 template<class T>
 slider_result<T> do_slider(context& ctx, accessor<T> const& value,
     T minimum, T maximum, T step = 0,

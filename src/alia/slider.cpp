@@ -60,8 +60,7 @@ bool do_slider(context& ctx, double* value, double minimum, double maximum,
 
     box2i const& assigned_region = data.layout_data.assigned_region;
 
-    // TODO
-    unsigned axis = flags.code & 1;
+    unsigned axis = (flags & VERTICAL) ? 1 : 0;
 
     double const scale = double(maximum - minimum) /
         (assigned_region.size[axis] - artist.get_slider_left_border() -
