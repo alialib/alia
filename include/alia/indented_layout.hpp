@@ -3,10 +3,11 @@
 
 #include <alia/linear_layout.hpp>
 #include <alia/grid_layout.hpp>
+#include <boost/noncopyable.hpp>
 
 namespace alia {
 
-class indented_layout
+class indented_layout : boost::noncopyable
 {
  public:
     indented_layout() : active_(false) {}

@@ -3,10 +3,11 @@
 
 #include <alia/layout_logic.hpp>
 #include <alia/box.hpp>
+#include <boost/noncopyable.hpp>
 
 namespace alia {
 
-class overlay
+class overlay : boost::noncopyable
 {
  public:
     overlay() : active_(false) {}

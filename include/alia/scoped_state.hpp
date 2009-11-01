@@ -105,7 +105,7 @@ class scoped_clip_region : boost::noncopyable
     bool active_;
 };
 
-class scoped_style
+class scoped_style : boost::noncopyable
 {
  public:
     scoped_style() : active_(false) {}

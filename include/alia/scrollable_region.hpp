@@ -9,7 +9,7 @@
 
 namespace alia {
 
-class scrollable_region
+class scrollable_region : boost::noncopyable
 {
  public:
     scrollable_region() : active_(false) {}

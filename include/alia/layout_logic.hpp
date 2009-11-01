@@ -2,10 +2,11 @@
 #define ALIA_LAYOUT_LOGIC_HPP
 
 #include <alia/forward.hpp>
+#include <boost/noncopyable.hpp>
 
 namespace alia {
 
-class layout_logic
+class layout_logic : boost::noncopyable
 {
  public:
     // Nodes call this during layout pass 0 to request space along the

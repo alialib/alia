@@ -3,12 +3,13 @@
 
 #include <alia/linear_layout.hpp>
 #include <alia/flags.hpp>
+#include <boost/noncopyable.hpp>
 
 namespace alia {
 
 // accepted flags: INITIALLY_EXPANDED
 
-class interleaved_tree
+class interleaved_tree : boost::noncopyable
 {
  public:
     interleaved_tree() : active_(false) {}
@@ -20,7 +21,7 @@ class interleaved_tree
     bool active_;
 };
 
-class interleaved_tree_node
+class interleaved_tree_node : boost::noncopyable
 {
  public:
     interleaved_tree_node() : active_(false) {}
@@ -41,7 +42,7 @@ class interleaved_tree_node
     bool active_, do_children_;
 };
 
-class interleaved_tree_contents
+class interleaved_tree_contents : boost::noncopyable
 {
     
 };

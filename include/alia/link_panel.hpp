@@ -2,10 +2,11 @@
 #define ALIA_LINK_PANEL_HPP
 
 #include <alia/panel.hpp>
+#include <boost/noncopyable.hpp>
 
 namespace alia {
 
-class link_panel
+class link_panel : boost::noncopyable
 {
  public:
     link_panel() {}
