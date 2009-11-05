@@ -9,7 +9,7 @@ struct manager::impl_data
 {
     std::list<impl::top_level_window*> modals, windows;
     bool exit_requested, already_closed;
-    float font_size_adjustment;
+    float font_scale_factor;
     unsigned color_scheme;
 };
 
@@ -18,7 +18,7 @@ manager::manager()
     impl_ = new impl_data;
     impl_->exit_requested = false;
     impl_->already_closed = false;
-    impl_->font_size_adjustment = 0;
+    impl_->font_scale_factor = 0;
     impl_->color_scheme = 0;
 }
 manager::~manager()
@@ -100,18 +100,18 @@ bool manager::exiting() const
     return impl_->exit_requested;
 }
 
-void manager::set_font_size_adjustment(float adjustment)
+void manager::set_font_scale_factor(float factor)
 {
-    impl_->font_size_adjustment = adjustment;
+    impl_->font_scale_factor = factor;
     for (std::list<impl::top_level_window*>::const_iterator
         i = impl_->windows.begin(); i != impl_->windows.end(); ++i)
     {
         (*i)->adjust_font_sizes();
     }
 }
-float manager::get_font_size_adjustment() const
+float manager::get_font_scale_factor() const
 {
-    return impl_->font_size_adjustment;
+    return impl_->font_scale_factor;
 }
 
 void manager::set_color_scheme(unsigned scheme)

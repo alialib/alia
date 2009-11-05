@@ -258,14 +258,14 @@ void artist::initialize_fonts()
         }
     }
     impl_->normal_font = make_font(metrics.lfMessageFont);
-    impl_->normal_font.set_size(impl_->normal_font.get_size() +
-        get_context().font_size_adjustment);
+    impl_->normal_font.set_size(impl_->normal_font.get_size() *
+        get_context().font_scale_factor);
     impl_->heading_font = make_font(metrics.lfCaptionFont);
-    impl_->heading_font.set_size(impl_->heading_font.get_size() +
-        get_context().font_size_adjustment);
+    impl_->heading_font.set_size(impl_->heading_font.get_size() *
+        get_context().font_scale_factor);
     impl_->fixed_font = get_font(OEM_FIXED_FONT, font("courier", 10));
-    impl_->fixed_font.set_size(impl_->fixed_font.get_size() +
-        get_context().font_size_adjustment);
+    impl_->fixed_font.set_size(impl_->fixed_font.get_size() *
+        get_context().font_scale_factor);
 }
 
 font artist::translate_standard_font(standard_font font) const
@@ -280,7 +280,7 @@ font artist::translate_standard_font(standard_font font) const
          case NORMAL_FONT:
          default:
             return alia::font("georgia",
-                17 + get_context().font_size_adjustment, font::BOLD);
+                17 * get_context().font_scale_factor, font::BOLD);
             //return impl_->heading_font;
         }
         break;
@@ -292,7 +292,7 @@ font artist::translate_standard_font(standard_font font) const
          case NORMAL_FONT:
          default:
             return alia::font("georgia",
-                15 + get_context().font_size_adjustment, font::BOLD);
+                15 * get_context().font_scale_factor, font::BOLD);
             //return impl_->heading_font;
         }
         break;
@@ -304,7 +304,7 @@ font artist::translate_standard_font(standard_font font) const
          case NORMAL_FONT:
          default:
             return alia::font("georgia",
-                13 + get_context().font_size_adjustment, font::BOLD);
+                13 * get_context().font_scale_factor, font::BOLD);
             //return impl_->heading_font;
         }
         break;
@@ -318,7 +318,7 @@ font artist::translate_standard_font(standard_font font) const
          case NORMAL_FONT:
          default:
             return alia::font("helvetica",
-                13 + get_context().font_size_adjustment, 0, 1.1f);
+                13 * get_context().font_scale_factor, 0, 1.1f);
             //return impl_->heading_font;
         }
         break;
@@ -330,7 +330,7 @@ font artist::translate_standard_font(standard_font font) const
          case NORMAL_FONT:
          default:
             return alia::font("helvetica",
-                13 + get_context().font_size_adjustment, 0, 1.1f);
+                13 * get_context().font_scale_factor, 0, 1.1f);
             //return impl_->normal_font;
         }
         break;
@@ -342,7 +342,7 @@ void artist::on_system_theme_change()
     initialize();
 }
 
-void artist::on_font_size_adjustment_change()
+void artist::on_font_scale_factor_change()
 {
     initialize();
 }

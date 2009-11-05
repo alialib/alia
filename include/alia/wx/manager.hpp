@@ -22,8 +22,8 @@ class manager : public singleton<manager>
     void exit();
     bool exiting() const;
 
-    void set_font_size_adjustment(float adjustment);
-    float get_font_size_adjustment() const;
+    void set_font_scale_factor(float adjustment);
+    float get_font_scale_factor() const;
 
     void set_color_scheme(unsigned scheme);
     unsigned get_color_scheme() const;

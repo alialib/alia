@@ -18,10 +18,10 @@ font_metrics const& get_font_metrics(context& ctx, font const& f)
     return i->second;
 }
 
-void set_font_size_adjustment(context& ctx, float adjustment)
+void set_font_scale_factor(context& ctx, float adjustment)
 {
-    ctx.font_size_adjustment = adjustment;
-    ctx.artist->on_font_size_adjustment_change();
+    ctx.font_scale_factor = adjustment;
+    ctx.artist->on_font_scale_factor_change();
 }
 
 font shrink(font const& f, float amount)

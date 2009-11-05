@@ -13,8 +13,9 @@ struct slider_result : control_result<T>
 {};
 
 namespace impl {
-    bool do_slider(context& ctx, double* value, double minimum, double maximum,
-        double step, bool integer, layout const& layout_spec, flag_set flags);
+    bool do_slider(context& ctx, bool* valid, double* value, double minimum,
+        double maximum, double step, bool integer, layout const& layout_spec,
+        flag_set flags);
 }
 
 // accepted flags:
@@ -24,21 +25,33 @@ slider_result<T> do_slider(context& ctx, accessor<T> const& value,
     T minimum, T maximum, T step = 0,
     layout const& layout_spec = default_layout, flag_set flags = NO_FLAGS)
 {
-    // TODO: What should this do when the value is invalid?
-    T current_value = value.is_valid() ? value.get() : 0;
-    double value_as_double = double(current_value);
+    bool const initially_valid = value.is_valid();
+    T const initial_value = value.get();
+    bool valid = initially_valid;
+    double value_as_double;
+    if (valid)
+    {
+        if (initial_value < minimum || initial_value > maximum)
+            valid = false;
+        else
+            value_as_double = double(initial_value);
+    }
     bool is_integer = std::numeric_limits<T>::is_integer;
-    if (impl::do_slider(ctx, &value_as_double, double(minimum),
+    if (impl::do_slider(ctx, &valid, &value_as_double, double(minimum),
         double(maximum), double(step), is_integer, layout_spec, flags))
     {
-        T new_value = T(is_integer ? value_as_double + 0.5 : value_as_double);
-        if (new_value != current_value)
+        if (valid)
         {
-            value.set(new_value);
-            slider_result<T> r;
-            r.changed = true;
-            r.new_value = new_value;
-            return r;
+            T new_value =
+                T(is_integer ? value_as_double + 0.5 : value_as_double);
+            if (!initially_valid || new_value != initial_value)
+            {
+                value.set(new_value);
+                slider_result<T> r;
+                r.changed = true;
+                r.new_value = new_value;
+                return r;
+            }
         }
     }
     slider_result<T> r;

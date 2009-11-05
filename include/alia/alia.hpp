@@ -40,6 +40,6 @@
 #include <alia/color_control.hpp>
 #include <alia/canvas.hpp>
 #include <alia/rotated_layout.hpp>
-#include <alia/link_panel.hpp>
+#include <alia/clickable_panel.hpp>
 
 #endif

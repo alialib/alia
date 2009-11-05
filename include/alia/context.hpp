@@ -41,7 +41,7 @@ struct context
 {
     context() : refresh_counter(0), pass_counter(0), map_list(0),
         mouse_button_state(0), mouse_in_surface(0), hot_id(0), active_id(0),
-        focused_id(0), font_size_adjustment(0) {}
+        focused_id(0), font_scale_factor(0) {}
     uint64 refresh_counter;
     // associated objects
     alia::surface* surface;
@@ -60,7 +60,7 @@ struct context
     vector2i content_size;
     // font info
     std::map<font,font_metrics> cached_font_metrics;
-    float font_size_adjustment;
+    float font_scale_factor;
     // only valid while issuing an event
     alia::event* event;
     alia::pass_state pass_state;

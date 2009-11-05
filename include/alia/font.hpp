@@ -112,7 +112,7 @@ struct font_metrics
 
 font_metrics const& get_font_metrics(context& ctx, font const& f);
 
-void set_font_size_adjustment(context& ctx, float adjustment);
+void set_font_scale_factor(context& ctx, float adjustment);
 
 font shrink(font const& f, float amount);
 font enlarge(font const& f, float amount);

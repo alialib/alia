@@ -15,9 +15,6 @@ class generic_artist : public artist
     void activate_style(unsigned style_code);
     void restore_style(unsigned style_code);
 
-    line_width translate_standard_line_width(standard_line_width width) const;
-    line_stipple translate_standard_line_stipple(
-        standard_line_stipple stipple) const;
     font translate_standard_font(standard_font font) const;
 
     void draw_focus_rect(box2i const& rect, rgba8 const& color) const;

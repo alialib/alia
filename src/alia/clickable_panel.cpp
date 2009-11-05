@@ -1,21 +1,21 @@
-#include <alia/link_panel.hpp>
+#include <alia/clickable_panel.hpp>
 #include <alia/context.hpp>
 #include <alia/input_utils.hpp>
 #include <alia/surface.hpp>
 
 namespace alia {
 
-struct link_panel_data
+struct clickable_panel_data
 {
-    link_panel_data() : key_state(0) {}
+    clickable_panel_data() : key_state(0) {}
     int key_state;
 };
 
-void link_panel::begin(context& ctx, layout const& layout_spec, flag_set flags,
-    region_id id)
+void clickable_panel::begin(
+    context& ctx, layout const& layout_spec, flag_set flags, region_id id)
 {
     if (!id) id = get_region_id(ctx);
-    link_panel_data& data = *get_data<link_panel_data>(ctx);
+    clickable_panel_data& data = *get_data<clickable_panel_data>(ctx);
     panel_.begin(ctx, ctx.artist->get_code_for_style(ITEM_STYLE,
         get_widget_state(ctx, id, (flags & DISABLED) == 0,
             data.key_state == 1)),

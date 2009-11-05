@@ -1,16 +1,16 @@
-#ifndef ALIA_LINK_PANEL_HPP
-#define ALIA_LINK_PANEL_HPP
+#ifndef ALIA_CLICKABLE_PANEL_HPP
+#define ALIA_CLICKABLE_PANEL_HPP
 
 #include <alia/panel.hpp>
 #include <boost/noncopyable.hpp>
 
 namespace alia {
 
-class link_panel : boost::noncopyable
+class clickable_panel : boost::noncopyable
 {
  public:
-    link_panel() {}
-    link_panel(context& ctx, layout const& layout_spec = default_layout,
+    clickable_panel() {}
+    clickable_panel(context& ctx, layout const& layout_spec = default_layout,
         flag_set flags = NO_FLAGS, region_id id = auto_id)
     { begin(ctx, layout_spec, flags, id); }
     void begin(context& ctx, layout const& layout_spec = default_layout,

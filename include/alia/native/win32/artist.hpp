@@ -16,7 +16,7 @@ class artist : public generic_artist
     font translate_standard_font(standard_font font) const;
 
     void on_system_theme_change();
-    void on_font_size_adjustment_change();
+    void on_font_scale_factor_change();
 
     vector2i get_button_size(artist_data_ptr& data,
         vector2i const& content_size) const;

@@ -2,6 +2,7 @@
 #define ALIA_ID_HPP
 
 #include <boost/noncopyable.hpp>
+#include <string>
 
 namespace alia {
 
@@ -49,6 +50,12 @@ class typed_id : public id_interface
  private:
     Value value_;
 };
+
+template<class Value>
+static inline typed_id<Value> make_id(Value const& value)
+{ return typed_id<Value>(value); }
+static inline typed_id<std::string> make_id(char const* value)
+{ return typed_id<std::string>(value); }
 
 }
 

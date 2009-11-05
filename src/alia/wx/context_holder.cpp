@@ -20,8 +20,8 @@ context_holder::context_holder(controller* controller)
     surface->set_holder(this);
     context.surface = surface.get();
 
-    context.font_size_adjustment =
-        manager::get_instance().get_font_size_adjustment();
+    context.font_scale_factor =
+        manager::get_instance().get_font_scale_factor();
 
  #ifdef ALIA_HAS_NATIVE_ARTIST
     try
@@ -119,8 +119,8 @@ void context_holder::adjust_to_content_size(vector2i const& content_size)
 
 void context_holder::adjust_font_sizes()
 {
-    set_font_size_adjustment(context,
-        manager::get_instance().get_font_size_adjustment());
+    set_font_scale_factor(context,
+        manager::get_instance().get_font_scale_factor());
 }
 
 void context_holder::update_color_scheme()

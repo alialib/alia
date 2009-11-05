@@ -10,7 +10,7 @@ namespace alia {
 void mark_location_impl(context& ctx, id_interface const& id);
 template<class Id>
 void mark_location(context& ctx, Id const& id)
-{ mark_location_impl(ctx, typed_id<Id>(id)); }
+{ mark_location_impl(ctx, make_id(id)); }
 
 struct location_event : event
 {

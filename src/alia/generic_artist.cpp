@@ -323,42 +323,6 @@ rgba8 generic_artist::get_bg_color(widget_state state) const
     }
 }
 
-line_width generic_artist::translate_standard_line_width(
-    standard_line_width width) const
-{
-    switch (width)
-    {
-     case THIN:
-        return 0.5;
-        break;
-     case THICK:
-        return 2;
-        break;
-     case EXTRA_THICK:
-        return 3;
-        break;
-     case DEFAULT_WIDTH:
-     default:
-        return 1;
-        break;
-    }
-}
-
-line_stipple generic_artist::translate_standard_line_stipple(
-    standard_line_stipple stipple) const
-{
-    switch (stipple)
-    {
-     case DOTTED:
-        return line_stipple(1, 0x5555);
-     case DASHED:
-        return line_stipple(4, 0x5555);
-     case SOLID:
-     default:
-        return line_stipple(1, 0xffff);
-    }
-}
-
 font generic_artist::translate_standard_font(standard_font font) const
 {
     switch ((get_context().pass_state.style_code >> 4) & 0xf)
@@ -368,11 +332,11 @@ font generic_artist::translate_standard_font(standard_font font) const
         {
          case FIXED_FONT:
             return alia::font("courier",
-                10 + get_context().font_size_adjustment);
+                10 * get_context().font_scale_factor);
          case NORMAL_FONT:
          default:
             return alia::font("tahoma",
-                16 + get_context().font_size_adjustment, alia::font::BOLD);
+                16 * get_context().font_scale_factor, alia::font::BOLD);
         }
         break;
      case SUBHEADING_STYLE_CODE:
@@ -380,11 +344,11 @@ font generic_artist::translate_standard_font(standard_font font) const
         {
          case FIXED_FONT:
             return alia::font("courier",
-                10 + get_context().font_size_adjustment);
+                10 * get_context().font_scale_factor);
          case NORMAL_FONT:
          default:
             return alia::font("tahoma",
-                15 + get_context().font_size_adjustment, alia::font::BOLD);
+                15 * get_context().font_scale_factor, alia::font::BOLD);
         }
         break;
      default:
@@ -392,11 +356,11 @@ font generic_artist::translate_standard_font(standard_font font) const
         {
          case FIXED_FONT:
             return alia::font("courier",
-                10 + get_context().font_size_adjustment);
+                10 * get_context().font_scale_factor);
          case NORMAL_FONT:
          default:
             return alia::font("tahoma",
-                13 + get_context().font_size_adjustment);
+                13 * get_context().font_scale_factor);
         }
         break;
     }

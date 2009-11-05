@@ -14,21 +14,6 @@ enum standard_font
     FIXED_FONT,
 };
 
-enum standard_line_stipple
-{
-    SOLID,
-    DASHED,
-    DOTTED,
-};
-
-enum standard_line_width
-{
-    THIN,
-    DEFAULT_WIDTH,
-    THICK,
-    EXTRA_THICK,
-};
-
 enum style
 {
     BACKGROUND_STYLE,
@@ -74,9 +59,9 @@ class artist
     // This is called when the underlying window system changes themes.
     virtual void on_system_theme_change() {}
 
-    // This is called when the context's font_size_adjustment setting is
+    // This is called when the context's font_scale_factor setting is
     // changed.
-    virtual void on_font_size_adjustment_change() {}
+    virtual void on_font_scale_factor_change() {}
 
     // TODO: Enumeration.
     virtual void set_color_scheme(unsigned scheme) {}
@@ -90,11 +75,6 @@ class artist
     virtual void activate_style(unsigned style_code) = 0;
     virtual void restore_style(unsigned style_code) = 0;
 
-    // Translate the generic names for various properties into actual values.
-    virtual line_width translate_standard_line_width(
-        standard_line_width width) const = 0;
-    virtual line_stipple translate_standard_line_stipple(
-        standard_line_stipple stipple) const = 0;
     virtual font translate_standard_font(standard_font font) const = 0;
 
     virtual void draw_focus_rect(box2i const& rect,

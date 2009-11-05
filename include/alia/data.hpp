@@ -74,10 +74,10 @@ class named_block : boost::noncopyable
  public:
     template<class Id>
     named_block(context& ctx, Id const& id, flag_set flags = NO_FLAGS)
-    { begin_impl(ctx, typed_id<Id>(id), flags); }
+    { begin_impl(ctx, make_id(id), flags); }
     template<class Id>
     void begin(context& ctx, Id const& id, flag_set flags = NO_FLAGS)
-    { begin_impl(ctx, typed_id<Id>(id), flags); }
+    { begin_impl(ctx, make_id(id), flags); }
     void end();
  private:
     void begin_impl(context& ctx, id_interface const& id,
@@ -88,7 +88,7 @@ class named_block : boost::noncopyable
 void delete_named_data_impl(context& ctx, id_interface const& id);
 template<class Id>
 void delete_named_data(context& ctx, Id const& id)
-{ delete_named_data_impl(ctx, typed_id<Id>(id)); }
+{ delete_named_data_impl(ctx, make_id(id)); }
 
 struct switch_block_data;
 

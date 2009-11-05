@@ -48,8 +48,9 @@ static T clamp(T x, T min, T max)
     return (std::min)((std::max)(x, min), max);
 }
 
-bool do_slider(context& ctx, double* value, double minimum, double maximum,
-    double step, bool integer, layout const& layout_spec, flag_set flags)
+bool do_slider(context& ctx, bool* valid, double* value, double minimum,
+    double maximum, double step, bool integer, layout const& layout_spec,
+    flag_set flags)
 {
     slider_data& data = *get_data<slider_data>(ctx);
 
@@ -67,7 +68,7 @@ bool do_slider(context& ctx, double* value, double minimum, double maximum,
         artist.get_slider_right_border() - 1);
 
     point2i thumb_position;
-    if (data.dragging && *value == data.dragging_value)
+    if (data.dragging && (!*valid || *value == data.dragging_value))
     {
         thumb_position[axis] = ctx.pass_state.integer_mouse_position[axis] -
             data.dragging_offset;
@@ -126,14 +127,19 @@ bool do_slider(context& ctx, double* value, double minimum, double maximum,
             artist.get_slider_left_border() - artist.get_slider_right_border();
         artist.draw_slider_track(data.track_data, axis, track_width,
             track_position);
-        artist.draw_slider_thumb(data.thumb_data, axis, thumb_position,
-            get_widget_state(ctx, &data.thumb_id));
-
+        if (*valid)
+        {
+            artist.draw_slider_thumb(data.thumb_data, axis, thumb_position,
+                get_widget_state(ctx, &data.thumb_id));
+        }
         break;
       }
 
      case REGION_CATEGORY:
       {
+        if (!*valid)
+            break;
+
         box2i track_region0;
         track_region0.corner = assigned_region.corner;
         track_region0.corner[1 - axis] +=
@@ -163,6 +169,9 @@ bool do_slider(context& ctx, double* value, double minimum, double maximum,
 
      case INPUT_CATEGORY:
       {
+        if (!*valid)
+            break;
+
         static int const delay_after_first_increment = 400;
         static int const delay_after_other_increment = 40;
 
