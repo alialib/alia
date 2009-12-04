@@ -31,6 +31,10 @@ std::vector<named_color> const& get_standard_colors();
 // an index to the color.  Otherwise, returns -1.
 int look_up_standard_color(rgb8 const& color);
 
+// Looks up the given name in the standard color list.  If found, it returns
+// an index to the color.  Otherwise, returns -1.
+int look_up_standard_color(std::string const& name);
+
 }
 
 #endif

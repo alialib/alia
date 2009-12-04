@@ -47,8 +47,21 @@ int look_up_standard_color(rgb8 const& color)
 {
     std::vector<named_color> const& standard_colors = get_standard_colors();
     for (int i = 0; i < int(standard_colors.size()); ++i)
+    {
         if (standard_colors[i].color == color)
             return i;
+    }
+    return -1;
+}
+
+int look_up_standard_color(std::string const& name)
+{
+    std::vector<named_color> const& standard_colors = get_standard_colors();
+    for (int i = 0; i < int(standard_colors.size()); ++i)
+    {
+        if (standard_colors[i].name == name)
+            return i;
+    }
     return -1;
 }
 
