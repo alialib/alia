@@ -153,7 +153,10 @@ static texture* create_texture(context* ctx, image_interface const& img,
     int max_texture_size;
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_texture_size);
     if (img.size[0] > max_texture_size || img.size[1] > max_texture_size)
-        return new tiled_texture(ctx, img, flags);
+    {
+        return new tiled_texture(ctx, img, vector2i(max_texture_size,
+            max_texture_size), flags);
+    }
     else
         return new simple_texture(ctx, img, flags);
 }

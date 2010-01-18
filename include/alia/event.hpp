@@ -102,9 +102,10 @@ struct targeted_event : event
 {
     targeted_event(event_category category, event_type type, region_id id)
       : event(category, type, TARGETED_CULLING)
-      , target_id(id) {}
+      , target_id(id)
+      , saw_target(false) {}
     region_id target_id;
-    std::list<layout_data*> path_to_target;
+    bool saw_target;
 };
 
 struct point_event : event

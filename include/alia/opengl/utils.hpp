@@ -13,6 +13,7 @@ namespace alia { namespace opengl {
 void check_errors();
 
 bool is_power_of_two(unsigned n);
+unsigned get_next_power_of_two(unsigned n);
 
 GLenum get_gl_format(pixel_format fmt, unsigned flags);
 

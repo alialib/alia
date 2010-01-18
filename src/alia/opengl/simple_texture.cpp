@@ -27,14 +27,8 @@ simple_texture::simple_texture(context* ctx, image_interface const& img,
     if (!is_power_of_two(image_size_[0]) || !is_power_of_two(image_size_[1]) ||
         img.step[0] != 1)
     {
-        int i = 1;
-        while (i < image_size_[0])
-            i <<= 1;
-        texture_size_[0] = i;
-        i = 1;
-        while (i < image_size_[1])
-            i <<= 1;
-        texture_size_[1] = i;
+        for (int i = 0; i < 2; ++i)
+            texture_size_[i] = get_next_power_of_two(image_size_[i]);
 
         boost::scoped_ptr<uint8> tmp(
             new uint8[product(texture_size_) * n_channels]);

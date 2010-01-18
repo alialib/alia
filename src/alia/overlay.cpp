@@ -65,14 +65,6 @@ void overlay::begin(context& ctx, data& data, box2i const& region)
 {
     active_ = false;
 
-    if (ctx.event->culling_type == TARGETED_CULLING)
-    {
-        std::list<layout_data*>& path =
-            get_event<targeted_event>(ctx).path_to_target;
-        if (!path.empty() && path.front() == &data.layout_data)
-            path.pop_front();
-    }
-
     if (ctx.event->category == LAYOUT_CATEGORY)
     {
         ctx_ = &ctx;

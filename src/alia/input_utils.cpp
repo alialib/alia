@@ -36,7 +36,10 @@ void do_region_visibility(context& ctx, region_id id, box2i const& region)
 {
     make_region_visible_event& e = get_event<make_region_visible_event>(ctx);
     if (e.target_id == id)
+    {
         e.region = region;
+        e.saw_target = true;
+    }
 }
 
 void do_region(context& ctx, region_id id, box2i const& region)

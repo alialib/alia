@@ -260,8 +260,7 @@ void scrollable_region::end()
         break;
 
      case REGION_CATEGORY:
-        if (ctx_->event->type == MAKE_REGION_VISIBLE &&
-            layout_.is_on_target_path())
+        if (ctx_->event->type == MAKE_REGION_VISIBLE && layout_.contains_target())
         {
             make_region_visible_event& e =
                 get_event<make_region_visible_event>(*ctx_);
@@ -307,7 +306,7 @@ void scrollable_region::end()
         {
             set_focus(*ctx_, id_);
         }
-        if (layout_.is_on_target_path() || id_has_focus(*ctx_, id_))
+        if (layout_.contains_target() || id_has_focus(*ctx_, id_))
         {
             key_event_info info;
             if (detect_key_press(*ctx_, &info) && info.mods == 0)

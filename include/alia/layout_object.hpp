@@ -13,8 +13,11 @@ class layout_object : boost::noncopyable
     layout_object() : active_(false) {}
     box2i const& get_region() const;
     bool is_relevant() const;
-    bool is_on_target_path() const { return on_target_path_; }
     bool is_dirty() const;
+    // When the current event is a targeted event, this will detect if the target
+    // is inside this layout object. It should only be called after the contents of
+    // the layout object have been invoked.
+    bool contains_target() const;
  protected:
     context& get_context() const { return *ctx_; }
     void begin(context& ctx, layout_object_data& data,
@@ -25,7 +28,7 @@ class layout_object : boost::noncopyable
  private:
     context* ctx_;
     layout_object_data* data_;
-    bool active_, logic_needed_, on_target_path_;
+    bool active_, logic_needed_, already_saw_target_;
     layout layout_spec_;
     layout_logic* old_logic_;
     layout_data* old_data_;

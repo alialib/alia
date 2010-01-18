@@ -4,7 +4,7 @@
 namespace alia { namespace opengl {
 
 tiled_texture::tiled_texture(context* ctx, image_interface const& img,
-    unsigned flags)
+    vector2i const& tile_size, unsigned flags)
 {
     ctx_ = ctx;
     flags_ = flags;
@@ -16,49 +16,15 @@ tiled_texture::tiled_texture(context* ctx, image_interface const& img,
     assert(img.size[0] > 0 && img.size[1] > 0);
     image_size_ = img.size;
 
-    // The point of the minimum tile size is to ensure that we don't end up
-    // creating more tiles than necessary, not to enlarge tiles that would
-    // otherwise be small.
-    vector2i actual_minimum_tile_size(minimum_tile_size,
-        minimum_tile_size);
+    tile_size_ = tile_size;
+    n_tiles_ = (image_size_ - vector2i(1, 1)) / tile_size + vector2i(1, 1);
+
     for (int i = 0; i < 2; ++i)
     {
-        while (actual_minimum_tile_size[i] >= image_size_[i] * 2)
-            actual_minimum_tile_size[i] >>= 1;
+        last_tile_size_[i] = get_next_power_of_two(image_size_[i] -
+            (n_tiles_[i] - 1) * tile_size_[i]);
     }
 
-    // Calculate the padded dimensions. Using the minimum tile size to do this
-    // ensures that the tiles will be at least that big.
-    vector2i padded_size;
-    for (int i = 0; i < 2; ++i)
-    {
-        padded_size[i] = (image_size_[i] + (actual_minimum_tile_size[i] - 1))
-            & ~(actual_minimum_tile_size[i] - 1);
-    }
-
-    // Determine the dimensions of the tiles.
-    {
-    int i = 0;
-    while ((padded_size[0] & ((1 << (i + 1)) - 1)) == 0 && i < 8)
-        i++;
-    tile_size_[0] = 1 << i;
-    }
-    {
-    int i = 0;
-    while ((padded_size[1] & ((1 << (i + 1)) - 1)) == 0 && i < 8)
-        i++;
-    tile_size_[1] = 1 << i;
-    }
-
-    last_tile_size_ = vector2i(
-        image_size_[0] % tile_size_[0],
-	image_size_[1] % tile_size_[1]);
-    if (last_tile_size_[0] == 0)
-        last_tile_size_[0] = tile_size_[0];
-    if (last_tile_size_[1] == 0)
-        last_tile_size_[1] = tile_size_[1];
-
-    n_tiles_ = padded_size / tile_size_;
     texture_names_.resize(product(n_tiles_));
     glGenTextures(product(n_tiles_), &texture_names_[0]);
 
@@ -74,8 +40,7 @@ tiled_texture::tiled_texture(context* ctx, image_interface const& img,
             point2i corner(tile_size_[0] * j, tile_size_[1] * i);
             vector2i size(
                 (j == n_tiles_[0] - 1) ? last_tile_size_[0] : tile_size_[0],
-                (i == n_tiles_[1] - 1) ? last_tile_size_[1] :
-                    tile_size_[1]);
+                (i == n_tiles_[1] - 1) ? last_tile_size_[1] : tile_size_[1]);
 
             uint8 const* tile_ptr = reinterpret_cast<uint8 const*>(img.pixels)
                 + (corner[1] * img.step[1] + corner[0]) * n_channels;
@@ -131,8 +96,7 @@ void tiled_texture::replace(image_interface const& img)
             point2i corner(tile_size_[0] * j, tile_size_[1] * i);
             vector2i size(
                 (j == n_tiles_[0] - 1) ? last_tile_size_[0] : tile_size_[0],
-                (i == n_tiles_[1] - 1) ? last_tile_size_[1] :
-                    tile_size_[1]);
+                (i == n_tiles_[1] - 1) ? last_tile_size_[1] : tile_size_[1]);
 
             unsigned n_channels = get_channel_count(img.format);
             uint8 const* tile_ptr = reinterpret_cast<uint8 const*>(img.pixels)

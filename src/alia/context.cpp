@@ -35,21 +35,6 @@ void issue_event(context& ctx, event& event)
     ++ctx.pass_counter;
     pass_state_saver pss(ctx);
     ctx.event = &event;
-    if (event.culling_type == TARGETED_CULLING)
-    {
-        targeted_event& e = get_event<targeted_event>(ctx);
-        //if (e.target_id && e.target_id->last_refresh == ctx.refresh_counter)
-        //{
-        //    layout_data* d = e.target_id->container;
-        //    while (d)
-        //    {
-        //        e.path_to_target.push_front(d);
-        //        d = d->parent;
-        //    }
-        //}
-        //else
-            e.culling_type = NO_CULLING;
-    }
     scoped_data_block db(ctx, ctx.root_block);
     naming_context nc(ctx);
     box2i full_region(point2i(0, 0), ctx.surface->get_size());

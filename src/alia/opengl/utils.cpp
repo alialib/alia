@@ -58,6 +58,14 @@ bool is_power_of_two(unsigned n)
     return (n & (n - 1)) == 0 && n != 0;
 }
 
+unsigned get_next_power_of_two(unsigned n)
+{
+    unsigned i = 1;
+    while (i < n)
+        i <<= 1;
+    return i;
+}
+
 GLenum get_gl_format(pixel_format fmt, unsigned flags)
 {
     switch (fmt)

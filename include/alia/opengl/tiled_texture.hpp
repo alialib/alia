@@ -12,7 +12,8 @@ class tiled_texture : public texture
  public:
     static unsigned const minimum_tile_size = 128;
 
-    tiled_texture(context* ctx, image_interface const& img, unsigned flags);
+    tiled_texture(context* ctx, image_interface const& img,
+        vector2i const& tile_size, unsigned flags);
 
     vector2i const& get_size() const { return image_size_; }
 
@@ -24,7 +25,7 @@ class tiled_texture : public texture
     ~tiled_texture();
 
  private:
-    vector2i image_size_, n_tiles_, tile_size_, last_tile_size_;
+    vector2i image_size_, tile_size_, n_tiles_, last_tile_size_;
     std::vector<GLuint> texture_names_;
     unsigned flags_;
 };

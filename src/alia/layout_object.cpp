@@ -29,11 +29,16 @@ bool layout_object::is_relevant() const
      case LAYOUT_CULLING:
         return logic_needed_;
      case TARGETED_CULLING:
-        return on_target_path_;
+        return true;
      default:
      case NO_CULLING:
         return true;
     }
+}
+
+bool layout_object::contains_target() const
+{
+    return !already_saw_target_ && get_event<targeted_event>(*ctx_).saw_target;
 }
 
 bool layout_object::is_dirty() const
@@ -46,20 +51,15 @@ void layout_object::begin(context& ctx, layout_object_data& data,
 {
     ctx_ = &ctx;
     data_ = &data;
-    on_target_path_ = false;
-    active_ = false;
-    logic_needed_ = false;
 
-    if (ctx.event->culling_type == TARGETED_CULLING)
-    {
-        std::list<layout_data*>& path =
-            get_event<targeted_event>(ctx).path_to_target;
-        if (!path.empty() && path.front() == &data.layout_data)
-        {
-            path.pop_front();
-            on_target_path_ = true;
-        }
-    }
+    logic_needed_ = false;
+    active_ = false;
+
+    // already_saw_target_ is only relevant with targeted culling, but setting it
+    // to true on other events makes contains_target() safe for those events.
+    already_saw_target_ =
+        ctx.event->culling_type == TARGETED_CULLING ?
+        get_event<targeted_event>(ctx).saw_target : true;
 
     if (ctx.event->category == LAYOUT_CATEGORY)
     {

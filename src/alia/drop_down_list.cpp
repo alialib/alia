@@ -79,6 +79,8 @@ void drop_down_list::begin(context& ctx, accessor<unsigned> const& accessor,
         drop_down_list_event& e = get_event<drop_down_list_event>(ctx);
         if (e.target_id == id_)
         {
+            e.saw_target = true;
+
             do_list_ = true;
             list_ctx_ = &e.ctx;
             index_ = 0;
@@ -163,7 +165,10 @@ void drop_down_list::begin(context& ctx, accessor<unsigned> const& accessor,
       {
         ddl_set_value_event& e = get_event<ddl_set_value_event>(ctx);
         if (e.target_id == id_)
+        {
+            e.saw_target = true;
             set_selection(accessor, e.value);
+        }
         break;
       }
     }
