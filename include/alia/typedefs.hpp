@@ -5,6 +5,7 @@
 
 namespace alia {
 
+typedef unsigned char uchar;
 typedef unsigned int uint;
 typedef unsigned long ulong;
 typedef boost::uint8_t uint8;
