@@ -18,10 +18,6 @@ class exception : public std::exception
     virtual char const* what() const throw()
     { return msg_->c_str(); }
 
-    // Add another level of context to the error messsage.
-    void add_context(std::string const& str)
-    { *msg_ = str + "\n" + *msg_; }
-
  private:
     boost::shared_ptr<std::string> msg_;
 };
