@@ -52,6 +52,7 @@ struct win_font
 ascii_text_renderer::ascii_text_renderer(surface& surface,
     alia::font const& font)
   : widths_(new int [256])
+  , trailing_space_(new int [256])
 {
     bitmap_dc dc;
 
@@ -62,35 +63,40 @@ ascii_text_renderer::ascii_text_renderer(surface& surface,
     TEXTMETRIC tm;
     GetTextMetrics(dc.get_dc(), &tm);
 
-    // The overhang seems too small sometimes, so add an extra pixel.
-    //int overhang = tm.tmOverhang + 1;
-
-    //if (sizeof(INT) == sizeof(int))
-    //{
-    //    GetCharWidth32(dc.get_dc(), 0, 255, widths_.get());
-    //}
-    //else
-    //{
-    //    INT widths[256];
-    //    GetCharWidth32(dc.get_dc(), 0, 255, widths);
-    //    for (int i = 0; i < 256; ++i)
-    //        widths_[i] = int(widths[i]);
-    //}
-
-    int overhang = 0;
+    int overhang = tm.tmOverhang;
 
     ABC widths[256];
     if (!GetCharABCWidths(dc.get_dc(), 0, 255, widths))
-        throw exception("GetCharABCWidths() failed\n"); // TODO
-    for (int i = 0; i < 256; ++i)
     {
-        widths_[i] = widths[i].abcA + widths[i].abcB + widths[i].abcC;
-        if (-widths[i].abcA > overhang)
-            overhang = -widths[i].abcA;
-        if (-widths[i].abcC > overhang)
-            overhang = -widths[i].abcC;
+        // GetCharABCWidths fails on TrueType fonts, so fall back to this.
+        INT widths[256];
+        if (!GetCharWidth32(dc.get_dc(), 0, 255, widths))
+        {
+            throw exception(font.get_name() +
+                ": failed to query character widths");
+        }
+        for (int i = 0; i < 256; ++i)
+        {
+            widths_[i] = int(widths[i]);
+            trailing_space_[i] = 0;
+        }
+    }
+    else
+    {
+        for (int i = 0; i < 256; ++i)
+        {
+            widths_[i] = widths[i].abcA + widths[i].abcB + widths[i].abcC;
+            // The overhang value returned from GetTextMetrics() seems too
+            // small in some cases, so we check it here.
+            if (-widths[i].abcA > overhang)
+                overhang = -widths[i].abcA;
+            if (-widths[i].abcC > overhang)
+                overhang = -widths[i].abcC;
+            trailing_space_[i] = widths[i].abcC;
+        }
     }
     widths_['\n'] = widths_['\r'] = 0;
+    trailing_space_['\n'] = trailing_space_['\r'] = 0;
 
     vector2i cell_size(tm.tmMaxCharWidth + overhang * 2, tm.tmHeight),
         image_size = cell_size * 16;
@@ -122,7 +128,8 @@ ascii_text_renderer::ascii_text_renderer(surface& surface,
         font.get_line_height() + 0.5) - tm.tmHeight;
     metrics.overhang = overhang;
 
-    initialize(surface, font, &image_.view, widths_.get(), metrics);
+    initialize(surface, font, &image_.view, widths_.get(),
+        trailing_space_.get(), metrics);
 }
 
 }}

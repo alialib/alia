@@ -304,7 +304,7 @@ font artist::translate_standard_font(standard_font font) const
          case NORMAL_FONT:
          default:
             return alia::font("georgia",
-                13 * get_context().font_scale_factor, font::BOLD);
+                12 * get_context().font_scale_factor, font::BOLD);
             //return impl_->heading_font;
         }
         break;
@@ -318,7 +318,7 @@ font artist::translate_standard_font(standard_font font) const
          case NORMAL_FONT:
          default:
             return alia::font("helvetica",
-                13 * get_context().font_scale_factor, 0, 1.1f);
+                12 * get_context().font_scale_factor, 0, 1.1f);
             //return impl_->heading_font;
         }
         break;
@@ -330,7 +330,7 @@ font artist::translate_standard_font(standard_font font) const
          case NORMAL_FONT:
          default:
             return alia::font("helvetica",
-                13 * get_context().font_scale_factor, 0, 1.1f);
+                12 * get_context().font_scale_factor, 0, 1.1f);
             //return impl_->normal_font;
         }
         break;

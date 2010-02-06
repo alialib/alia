@@ -8,13 +8,13 @@
 
 namespace alia {
 
-struct scrolled_region_data
+struct scrollbar_pair_data
 {
     scrollbar_data sb_data[2];
     artist_data_ptr junction_data;
 };
 
-static void do_scrollbar_pair(context& ctx, scrolled_region_data& data,
+static void do_scrollbar_pair(context& ctx, scrollbar_pair_data& data,
     box2i& window, point2i& position, box2i const& region,
     vector2i const& content_size, vector2i const& line_increment,
     vector2i const& page_increment, unsigned axes, vector2i const& unavailable)
@@ -95,7 +95,7 @@ struct scrollable_region::data
 
     point2i scroll_position;
 
-    alia::scrolled_region_data scrolled_region_data;
+    alia::scrollbar_pair_data scrollbar_pair_data;
     vector2i content_size, minimum_size;
 
     alia::layout_data layout_data;
@@ -161,7 +161,7 @@ void scrollable_region::begin(context& ctx, layout const& layout_spec,
         }
     }
 
-    do_scrollbar_pair(*ctx_, data_->scrolled_region_data, window_region_,
+    do_scrollbar_pair(*ctx_, data_->scrollbar_pair_data, window_region_,
         data_->scroll_position, data_->layout_data.assigned_region,
         data_->content_size, vector2i(line_size, line_size),
         vector2i(-1, -1), axes_, vector2i(0, 0));

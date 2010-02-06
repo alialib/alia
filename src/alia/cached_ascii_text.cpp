@@ -354,8 +354,13 @@ void cached_ascii_text::calculate_character_widths(
     unsigned length)
 {
     character_widths_.reset(new int [length]);
+    trailing_space_.reset(new int [length]);
     for (unsigned i = 0; i < length; ++i)
-        character_widths_[i] = renderer.get_char_width(text[i]);
+    {
+        char c = text[i];
+        character_widths_[i] = renderer.get_char_width(c);
+        trailing_space_[i] = renderer.get_trailing_space(c);
+    }
 }
 
 int cached_ascii_text::calculate_line_spans(std::string const& text,
@@ -368,14 +373,20 @@ int cached_ascii_text::calculate_line_spans(std::string const& text,
     offset line_start = 0, word_start = 0;
     char last_char = '_';
     offset char_i;
+    int trailing_space = 0;
     for (char_i = 0; char_i < offset(text.length()); )
     {
         char this_char = text[char_i];
         if (std::isspace(last_char) && !std::isspace(this_char))
             word_start = char_i;
 
+        // Factor in the trailing space from the last character.
+        accumulated_width += trailing_space;
         int char_width = character_widths_[char_i];
-        accumulated_width += char_width;
+        // Record the trailing space from this character, but don't factor it
+        // in unless there are more characters on this line.
+        trailing_space = trailing_space_[char_i];
+        accumulated_width += char_width - trailing_space;
 
         // A new line is needed when a new-line character is encountered or
         // when the currently line is too big to fit in the window.
@@ -400,6 +411,7 @@ int cached_ascii_text::calculate_line_spans(std::string const& text,
             accumulated_width = 0;
 
             char_i = span.end;
+            trailing_space = 0;
         }
         else
             ++char_i;

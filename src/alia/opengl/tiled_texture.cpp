@@ -16,14 +16,9 @@ tiled_texture::tiled_texture(context* ctx, image_interface const& img,
     assert(img.size[0] > 0 && img.size[1] > 0);
     image_size_ = img.size;
 
-    tile_size_ = tile_size;
     n_tiles_ = (image_size_ - vector2i(1, 1)) / tile_size + vector2i(1, 1);
-
-    for (int i = 0; i < 2; ++i)
-    {
-        last_tile_size_[i] = get_next_power_of_two(image_size_[i] -
-            (n_tiles_[i] - 1) * tile_size_[i]);
-    }
+    tile_size_ = tile_size;
+    last_tile_size_ = image_size_ - (n_tiles_ - vector2i(1, 1)) * tile_size_;
 
     texture_names_.resize(product(n_tiles_));
     glGenTextures(product(n_tiles_), &texture_names_[0]);

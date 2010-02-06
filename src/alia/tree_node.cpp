@@ -9,9 +9,9 @@
 namespace alia {
 
 void tree_node::begin(context& ctx, layout const& layout_spec, flag_set flags,
-    accessor<int> const* expander_accessor, region_id expander_id)
+    accessor<int> const* expanded_accessor, region_id expander_id)
 {
-    if (!expander_accessor)
+    if (!expanded_accessor)
     {
         int* expanded;
         if (get_data(ctx, &expanded))
@@ -28,9 +28,9 @@ void tree_node::begin(context& ctx, layout const& layout_spec, flag_set flags,
         full_grid_.begin(ctx, layout_spec);
         top_row_.begin(full_grid_);
         do_children_ =
-            (expander_accessor->is_valid() ? expander_accessor->get() : 0)
+            (expanded_accessor->is_valid() ? expanded_accessor->get() : 0)
             && full_grid_.is_relevant();
-        expander_result_ = do_tristate_node_expander(ctx, *expander_accessor,
+        expander_result_ = do_tristate_node_expander(ctx, *expanded_accessor,
             NOT_PADDED, NO_FLAGS, expander_id);
         label_region_.begin(ctx, layout(GROW));
     }
@@ -38,10 +38,10 @@ void tree_node::begin(context& ctx, layout const& layout_spec, flag_set flags,
     {
         column_.begin(ctx, layout_spec);
         do_children_ =
-            (expander_accessor->is_valid() ? expander_accessor->get() : 0)
+            (expanded_accessor->is_valid() ? expanded_accessor->get() : 0)
             && column_.is_relevant();
         label_region_.begin(ctx);
-        expander_result_ = do_tristate_node_expander(ctx, *expander_accessor,
+        expander_result_ = do_tristate_node_expander(ctx, *expanded_accessor,
             NOT_PADDED, NO_FLAGS, expander_id);
     }
 }

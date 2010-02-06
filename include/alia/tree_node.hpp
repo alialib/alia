@@ -21,15 +21,15 @@ class tree_node : boost::noncopyable
         context& ctx,
         layout const& layout_spec = default_layout,
         flag_set flags = NO_FLAGS,
-        accessor<int> const* expander_accessor = 0,
+        accessor<int> const* expanded = 0,
         region_id expander_id = 0)
-    { begin(ctx, layout_spec, flags, expander_accessor, expander_id); }
+    { begin(ctx, layout_spec, flags, expanded, expander_id); }
 
     void begin(
         context& ctx,
         layout const& layout_spec = default_layout,
         flag_set flags = NO_FLAGS,
-        accessor<int> const* expander_accessor = 0,
+        accessor<int> const* expanded = 0,
         region_id expander_id = 0);
 
     void end_header();

@@ -16,6 +16,7 @@ class ascii_text_renderer : public alia::ascii_text_renderer
  private:
     image<uint8> image_;
     boost::scoped_array<int> widths_;
+    boost::scoped_array<int> trailing_space_;
 };
 
 }}

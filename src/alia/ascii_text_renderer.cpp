@@ -4,12 +4,13 @@ namespace alia {
 
 void ascii_text_renderer::initialize(
     surface& surface, font const& font, image_view<uint8> const* image,
-    int const* widths, font_metrics const& metrics)
+    int const* widths, int const* trailing_space, font_metrics const& metrics)
 {
     surface_ = &surface;
     font_ = font;
     image_ = image;
     widths_ = widths;
+    trailing_space_ = trailing_space;
     cell_size_ = image->size / 16;
     metrics_ = metrics;
 }
@@ -40,11 +41,18 @@ int ascii_text_renderer::get_char_width(char c) const
     return widths_[uint8(c)];
 }
 
+int ascii_text_renderer::get_trailing_space(char c) const
+{
+    return trailing_space_[uint8(c)];
+}
+
 int ascii_text_renderer::get_string_width(std::string const& text) const
 {
     int width = 0;
     for (unsigned i = 0; i < text.length(); ++i)
         width += widths_[uint8(text[i])];
+    if (text.length() > 0)
+        width -= trailing_space_[uint8(text[text.length() - 1])];
     return width;
 }
 

@@ -47,6 +47,7 @@ class cached_ascii_text : public cached_text
 
     image<uint8> text_image_;
     boost::scoped_array<int> character_widths_;
+    boost::scoped_array<int> trailing_space_;
 
     mutable cached_image_ptr display_image_;
 
