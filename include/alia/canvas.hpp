@@ -117,24 +117,24 @@ class canvas : boost::noncopyable
         flag_set flags = NO_FLAGS, layout const& layout_spec = default_layout);
     void end();
 
-    context& get_context() const { return *ctx_; }
+    context& context() const { return *ctx_; }
 
-    region_id get_id() const { return id_; }
-    box2i const& get_region() const;
+    region_id id() const { return id_; }
+    box2i const& region() const;
 
-    box2d const& get_scene_box() const { return scene_box_; }
+    box2d const& scene_box() const { return scene_box_; }
 
-    camera& get_camera() const { return *camera_; }
+    camera& camera() const { return *camera_; }
 
     point2d get_camera_position() const
-    { return get_camera().get_position(*this); }
+    { return camera().get_position(*this); }
     void set_camera_position(point2d const& p) const
-    { get_camera().set_position(*this, p); }
+    { camera().set_position(*this, p); }
 
     double get_zoom_level() const
-    { return get_camera().get_zoom_level(*this); }
+    { return camera().get_zoom_level(*this); }
     void set_zoom_level(zoom_level zoom) const
-    { get_camera().set_zoom_level(*this, zoom); }
+    { camera().set_zoom_level(*this, zoom); }
 
     bool flip_x() const { return (flags_ & FLIP_X) != 0; }
     bool flip_y() const { return (flags_ & FLIP_Y) != 0; }
@@ -143,10 +143,10 @@ class canvas : boost::noncopyable
     void set_canvas_coordinates();
 
  private:
-    context* ctx_;
+    alia::context* ctx_;
     struct data;
     data* data_;
-    camera* camera_;
+    alia::camera* camera_;
     region_id id_;
     box2d scene_box_;
     flag_set flags_;
@@ -183,6 +183,7 @@ struct zoom_drag_tool_data
     point2i start_point_on_canvas;
     point2d starting_camera_position;
     double starting_zoom;
+    double zoom_out_panning;
 };
 void apply_zoom_drag_tool(canvas& canvas, mouse_button button,
     zoom_drag_tool_data* data = 0);

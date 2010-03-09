@@ -52,8 +52,8 @@ point2d default_camera::get_position(canvas const& canvas) const
 }
 double default_camera::get_zoom_level(canvas const& canvas) const
 {
-    double zoom = zoom_.evaluate(canvas.get_region().size,
-        canvas.get_scene_box().size);
+    double zoom = zoom_.evaluate(canvas.region().size,
+        canvas.scene_box().size);
     double min_zoom = get_min_zoom(canvas);
     if (min_zoom != 0. && zoom < min_zoom)
         zoom = min_zoom;
@@ -69,20 +69,20 @@ void default_camera::set_zoom_level(canvas const& canvas, zoom_level zoom)
 }
 double default_camera::get_min_zoom(canvas const& canvas) const
 {
-    return min_zoom_.evaluate(canvas.get_region().size,
-        canvas.get_scene_box().size);
+    return min_zoom_.evaluate(canvas.region().size,
+        canvas.scene_box().size);
 }
 double default_camera::get_max_zoom(canvas const& canvas) const
 {
-    return max_zoom_.evaluate(canvas.get_region().size,
-        canvas.get_scene_box().size);
+    return max_zoom_.evaluate(canvas.region().size,
+        canvas.scene_box().size);
 }
 void default_camera::check_bounds(canvas const& canvas)
 {
-    box2d const& sb = canvas.get_scene_box();
+    box2d const& sb = canvas.scene_box();
     for (int i = 0; i < 2; ++i)
     {
-        double margin = constrained_ ? double(canvas.get_region().size[i]) /
+        double margin = constrained_ ? double(canvas.region().size[i]) /
             2 / get_zoom_level(canvas) : 0;
         if (margin <= sb.size[i] / 2)
         {
@@ -99,8 +99,8 @@ struct canvas::data
     alia::layout_data layout_data;
 };
 
-void canvas::begin(context& ctx, box2d const& scene_box, camera* camera,
-    flag_set flags, layout const& layout_spec)
+void canvas::begin(alia::context& ctx, box2d const& scene_box,
+    alia::camera* camera, flag_set flags, layout const& layout_spec)
 {
     ctx_ = &ctx;
     data_ = get_data<data>(ctx);
@@ -125,7 +125,7 @@ void canvas::begin(context& ctx, box2d const& scene_box, camera* camera,
                 GROW, true));
     }
 
-    do_region(ctx, id_, get_region());
+    do_region(ctx, id_, region());
 
     scr_.begin(ctx);
     scr_.set(data_->layout_data.assigned_region);
@@ -146,7 +146,7 @@ void canvas::end()
     }
 }
 
-box2i const& canvas::get_region() const
+box2i const& canvas::region() const
 {
     return data_->layout_data.assigned_region;
 }
@@ -159,8 +159,8 @@ void canvas::set_scene_coordinates()
         (flags_ & FLIP_Y) ? -scale_factor : scale_factor);
     st_.set(
         translation<2,double>(
-            vector2d(get_region().corner) +
-            vector2d(get_region().size) / 2) *
+            vector2d(region().corner) +
+            vector2d(region().size) / 2) *
         scaling_transformation(scale_vector) *
         translation(-vector2d(get_camera_position())));
 }
@@ -178,8 +178,8 @@ point2d canvas_to_scene(canvas& c, point2d const& p, double zoom_level,
         c.flip_x() ? -zoom : zoom,
         c.flip_y() ? -zoom : zoom);
     return point2d(
-        (p - (point2d(c.get_region().corner) +
-        vector2d(c.get_region().size) / 2)) * scale_factor +
+        (p - (point2d(c.region().corner) +
+        vector2d(c.region().size) / 2)) * scale_factor +
         camera_position);
 }
 point2d scene_to_canvas(canvas& c, point2d const& p, double zoom_level,
@@ -191,8 +191,8 @@ point2d scene_to_canvas(canvas& c, point2d const& p, double zoom_level,
         c.flip_y() ? -zoom : zoom);
     return point2d(
         (p - camera_position) * scale_factor +
-        (point2d(c.get_region().corner) +
-        vector2d(c.get_region().size) / 2));
+        (point2d(c.region().corner) +
+        vector2d(c.region().size) / 2));
 }
 point2d canvas_to_scene(canvas& c, point2d const& p)
 {
@@ -205,13 +205,13 @@ point2d scene_to_canvas(canvas& c, point2d const& p)
 
 void apply_panning_tool(canvas& canvas, mouse_button button)
 {
-    context& ctx = canvas.get_context();
+    context& ctx = canvas.context();
     if (ctx.event->type == RENDER_EVENT &&
-        detect_drag_in_progress(ctx, canvas.get_id(), button))
+        detect_drag_in_progress(ctx, canvas.id(), button))
     {
         ctx.surface->set_mouse_cursor(FOUR_WAY_ARROW_CURSOR);
     }
-    if (detect_drag(ctx, canvas.get_id(), button))
+    if (detect_drag(ctx, canvas.id(), button))
     {
         mouse_motion_event& e = get_event<mouse_motion_event>(ctx);
         canvas.set_camera_position(canvas.get_camera_position() -
@@ -224,7 +224,7 @@ void draw_checker_background(canvas& canvas, rgb8 const& color1,
 {
     // TODO: This won't handle changes in the color arguments.
     image<rgb8>* img;
-    if (get_data(canvas.get_context(), &img))
+    if (get_data(canvas.context(), &img))
     {
         create_image(*img, vector2i(2, 2));
         img->view.pixels[0] = img->view.pixels[3] = color1;
@@ -233,12 +233,12 @@ void draw_checker_background(canvas& canvas, rgb8 const& color1,
     point2d p;
     box2d region;
     scoped_transformation st;
-    if (canvas.get_context().event->type == RENDER_EVENT)
+    if (canvas.context().event->type == RENDER_EVENT)
     {
         point2d const corner0 = canvas_to_scene(canvas,
-            point2d(canvas.get_region().corner));
+            point2d(canvas.region().corner));
         point2d const corner1 = canvas_to_scene(canvas,
-            point2d(get_high_corner(canvas.get_region())));
+            point2d(get_high_corner(canvas.region())));
         for (int i = 0; i < 2; ++i)
         {
             p[i] = std::floor(std::min(corner0[i], corner1[i]) / spacing);
@@ -246,11 +246,11 @@ void draw_checker_background(canvas& canvas, rgb8 const& color1,
             region.size[i] = std::ceil(std::abs((corner1 - corner0)[i]) /
                 spacing + 1);
         }
-        st.begin(canvas.get_context());
+        st.begin(canvas.context());
         st.set(scaling_transformation(vector2d(spacing, spacing)));
     }
     draw_image_region(
-        canvas.get_context(),
+        canvas.context(),
         p,
         make_interface(img->view, 0),
         region,
@@ -271,7 +271,7 @@ static void draw_grid_lines_for_axis(canvas& canvas, box2d const& box,
     p0[axis] = start;
     p1[other_axis] = get_high_corner(box)[other_axis];
     p1[axis] = start;
-    surface& surface = *canvas.get_context().surface;
+    surface& surface = *canvas.context().surface;
     while (p0[axis] <= end)
     {
         surface.draw_line(color, style, p0, p1);
@@ -283,7 +283,7 @@ static void draw_grid_lines_for_axis(canvas& canvas, box2d const& box,
 void draw_grid_lines(canvas& canvas, box2d const& box, rgba8 const& color,
     line_style const& style, double spacing, unsigned axis, unsigned skip)
 {
-    if (canvas.get_context().event->type == RENDER_EVENT)
+    if (canvas.context().event->type == RENDER_EVENT)
     {
         // TODO: axis selection
         draw_grid_lines_for_axis(canvas, box, color, style, spacing, 0, skip);
@@ -492,11 +492,11 @@ void draw_side_ruler(
     // TODO: Clean this up. Lots of stuff applies to both axes, but the
     // function only handles one axis at a time.
 
-    context& ctx = canvas.get_context();
+    context& ctx = canvas.context();
     if (ctx.event->type != RENDER_EVENT)
         return;
 
-    bool mouse_inside = mouse_is_inside_region(ctx, canvas.get_region());
+    bool mouse_inside = mouse_is_inside_region(ctx, canvas.region());
 
     scoped_transformation st;
     st.begin(ctx);
@@ -513,7 +513,7 @@ void draw_side_ruler(
     point2d initial_value, initial_location;
     vector2d value_inc, location_inc;
     vector2i n_major_ticks;
-    calculate_ruler_values(canvas, canvas.get_region(), initial_value,
+    calculate_ruler_values(canvas, canvas.region(), initial_value,
         value_inc, initial_location, location_inc, n_major_ticks);
 
     initial_value[0] /= scale;
@@ -736,7 +736,7 @@ void side_rulers::do_corner()
 void zoom_to_box(canvas& canvas, box2d const& box)
 {
     canvas.set_camera_position(get_center(box));
-    vector2i const& canvas_size = canvas.get_region().size;
+    vector2i const& canvas_size = canvas.region().size;
     if (box.size[0] != 0 && box.size[1] != 0)
     {
         canvas.set_zoom_level((std::min)(canvas_size[0] / box.size[0],
@@ -747,13 +747,13 @@ void zoom_to_box(canvas& canvas, box2d const& box)
 void apply_zoom_box_tool(canvas& canvas, mouse_button button,
     rgba8 const& color, line_style const& style, zoom_box_tool_data* data)
 {
-    context& ctx = canvas.get_context();
+    context& ctx = canvas.context();
     if (!data)
         data = get_data<zoom_box_tool_data>(ctx);
-    if (detect_mouse_down(ctx, canvas.get_id(), button))
+    if (detect_mouse_down(ctx, canvas.id(), button))
         *data = ctx.pass_state.mouse_position;
     if (ctx.event->type == RENDER_EVENT &&
-        detect_drag_in_progress(ctx, canvas.get_id(), button))
+        detect_drag_in_progress(ctx, canvas.id(), button))
     {
         ctx.surface->set_mouse_cursor(CROSS_CURSOR);
         point2d const& mp = ctx.pass_state.mouse_position;
@@ -767,7 +767,7 @@ void apply_zoom_box_tool(canvas& canvas, mouse_button button,
         if (box.size[0] > 2 || box.size[1] > 2)
             draw_box(ctx, color, style, box);
     }
-    if (detect_drag_release(ctx, canvas.get_id(), button))
+    if (detect_drag_release(ctx, canvas.id(), button))
     {
         point2d const& mp = ctx.pass_state.mouse_position;
         box2d box;
@@ -784,9 +784,9 @@ void apply_zoom_box_tool(canvas& canvas, mouse_button button,
 
 void apply_zoom_wheel_tool(canvas& canvas, unsigned mods, double factor)
 {
-    alia::context& ctx = canvas.get_context();
+    alia::context& ctx = canvas.context();
     canvas.set_canvas_coordinates();
-    if (mouse_is_inside_region(ctx, canvas.get_region()))
+    if (mouse_is_inside_region(ctx, canvas.region()))
     {
         int movement = detect_wheel_movement(ctx);
         if (movement != 0)
@@ -810,30 +810,44 @@ void apply_zoom_wheel_tool(canvas& canvas, unsigned mods, double factor)
 void apply_zoom_drag_tool(canvas& canvas, mouse_button button,
     zoom_drag_tool_data* data)
 {
-    alia::context& ctx = canvas.get_context();
+    alia::context& ctx = canvas.context();
     if (!data)
         data = get_data<zoom_drag_tool_data>(ctx);
-    if (detect_mouse_down(ctx, canvas.get_id(), button))
+    if (detect_mouse_down(ctx, canvas.id(), button))
     {
         data->start_point_on_canvas = ctx.mouse_position;
         data->start_point_in_scene = canvas_to_scene(canvas,
             point2d(ctx.mouse_position));
         data->starting_zoom = canvas.get_zoom_level();
         data->starting_camera_position = canvas.get_camera_position();
+        double normal_zoom = zoom_to_fit_scene(canvas.region().size,
+            canvas.scene_box().size);
+        data->zoom_out_panning = clamp(
+            (data->starting_zoom - normal_zoom) / normal_zoom, 0., 1.);
     }
-    if (detect_drag(ctx, canvas.get_id(), button))
+    if (detect_drag(ctx, canvas.id(), button))
     {
         int motion = ctx.mouse_position[0] - data->start_point_on_canvas[0];
-        // TODO: Parameterize these constants.
-        canvas.set_zoom_level(data->starting_zoom * std::pow(1.02, motion));
-        //if (motion > 0)
+        double new_zoom = data->starting_zoom * std::pow(1.02, motion);
+        canvas.set_zoom_level(new_zoom);
         {
-            canvas.set_camera_position(
+            point2d cp =
                 data->starting_camera_position + (data->start_point_in_scene -
                 canvas_to_scene(canvas, point2d(data->start_point_on_canvas),
-                    canvas.get_zoom_level(), data->starting_camera_position)));
-            //if (motion > 0)
-            //    cp += (data->start_point_in_scene - cp) * 0.01;
+                    canvas.get_zoom_level(), data->starting_camera_position));
+            if (motion < 0 && data->zoom_out_panning)
+            {
+                double normal_zoom = zoom_to_fit_scene(canvas.region().size,
+                    canvas.scene_box().size);
+                double interpolation_factor =
+                    (1 / new_zoom - 1 / data->starting_zoom) /
+                    (1 / normal_zoom - 1 / data->starting_zoom);
+                cp +=
+                    (vector2d(get_center(canvas.scene_box())) - vector2d(cp)) *
+                    clamp(interpolation_factor, 0., 1.) *
+                    data->zoom_out_panning;
+            }
+            canvas.set_camera_position(cp);
         }
     }
 }

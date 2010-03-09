@@ -43,7 +43,8 @@ do_enum(
 {
     enum_result<unsigned> r = do_enum(ctx,
         accessor_cast<unsigned>(ref(value)),
-        get_printable_value_strings(T()), layout_spec, flags);
+        value_names(T()), value_count(T()),
+        layout_spec, flags);
     enum_result<T> r2;
     r2.changed = r.changed;
     r2.new_value = T(r.new_value);
