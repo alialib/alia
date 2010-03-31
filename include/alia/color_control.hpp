@@ -16,6 +16,12 @@ color_control_result do_color_control(
     layout const& layout_spec = default_layout,
     flag_set flags = NO_FLAGS);
 
+color_control_result do_compressed_color_control(
+    context& ctx,
+    accessor<rgb8> const& value,
+    layout const& layout_spec = default_layout,
+    flag_set flags = NO_FLAGS);
+
 }
 
 #endif

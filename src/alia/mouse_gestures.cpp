@@ -39,27 +39,6 @@ void calculate_gesture(mouse_gesture_data& data)
         }
         ++i;
     }
-    for (gesture::iterator i = data.gesture.begin(); i != data.gesture.end();
-        ++i)
-    {
-        switch (*i)
-        {
-         case GESTURE_LEFT:
-            printf("left ");
-            break;
-         case GESTURE_RIGHT:
-            printf("right ");
-            break;
-         case GESTURE_UP:
-            printf("up ");
-            break;
-         case GESTURE_DOWN:
-            printf("down ");
-            break;
-        }
-    }
-    printf("\n");
-    fflush(stdout);
 }
 
 bool detect_mouse_gesture(context& ctx, region_id id,

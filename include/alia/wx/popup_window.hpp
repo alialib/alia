@@ -13,7 +13,8 @@ class popup_window
  public:
     popup_window(opengl_surface* parent, controller* controller,
         point2i const& initial_position, point2i const& boundary,
-        vector2i const& minimum_size, vector2i const& maximum_size);
+        vector2i const& minimum_size, vector2i const& maximum_size,
+        bool right_aligned);
     ~popup_window();
 
     void update();

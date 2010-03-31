@@ -51,7 +51,8 @@ class opengl_surface : public opengl::surface
     void close();
     popup_interface* open_popup(controller* controller,
         point2i const& display_location, point2i const& boundary,
-        vector2i const& minimum_size, vector2i const& maximum_size);
+        vector2i const& minimum_size, vector2i const& maximum_size,
+        bool right_aligned);
     void show_popup_menu(menu_controller* controller);
     void beep();
     bool ask_for_color(rgb8* result, rgb8 const* initial = 0);

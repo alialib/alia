@@ -1,77 +1,78 @@
-#include <alia/generic_artist.hpp>
+#include <alia/skia/artist.hpp>
+#include <alia/skia/image_canvas.hpp>
 #include <alia/context.hpp>
 #include <alia/surface.hpp>
 #include <alia/standard_colors.hpp>
 #include <alia/scoped_state.hpp>
+#include "SkGradientShader.h"
 
-namespace alia {
+namespace alia { namespace skia {
+
+// TODO: Share resources between fixed-size widgets (radio buttons, etc).
+
+static rgba8 const focus_border_color(0x8e, 0x6a, 0x20, 0xff);
+
+struct state_colors
+{
+    rgba8 normal, hot, depressed, disabled;
+};
+
+rgba8 select_color(state_colors const& colors, widget_state state)
+{
+    if ((state & widget_states::DISABLED) != 0)
+    {
+        return colors.disabled;
+    }
+    else
+    {
+        switch (state & widget_states::PRIMARY_STATE_MASK)
+        {
+         case widget_states::HOT:
+            return colors.hot;
+         case widget_states::DEPRESSED:
+            return colors.depressed;
+         default:
+            return colors.normal;
+        }
+    }
+}
 
 static unsigned const overlay_alpha = 0xc0;
 
-void generic_artist::initialize()
+void artist::initialize()
 {
     set_color_scheme(0);
 }
 
-void generic_artist::set_color_scheme(unsigned color_scheme_index)
+void artist::set_color_scheme(unsigned color_scheme_index)
 {
     color_scheme cs;
-    switch (color_scheme_index)
-    {
-     case 1:
-        cs.dialog_normal_fg = rgb8(0x00, 0x00, 0x00);
-        cs.dialog_normal_bg = rgb8(0xe8, 0xe8, 0xe8);
-        cs.hot_fg = cs.dialog_normal_fg;
-        cs.hot_bg = rgb8(0xc0, 0xc0, 0xc0);
-        cs.selected_fg = cs.dialog_normal_bg;
-        cs.selected_bg = cs.dialog_normal_fg;
-        cs.focused_fg = cs.selected_fg;
-        cs.focused_bg = cs.selected_bg;
-        cs.disabled_fg = rgb8(0x40, 0x40, 0x40);
-        cs.disabled_bg = cs.dialog_normal_bg;
-        cs.link = rgb8(0x00, 0x00, 0xa0);
-        cs.depressed_link = rgb8(0x00, 0x00, 0x80);
-        cs.border = rgb8(0x40, 0x40, 0x40);
-        cs.separator = rgb8(0x40, 0x40, 0x40);
-        cs.content_normal_fg = rgb8(0x10, 0x10, 0x10);
-        cs.content_normal_bg = rgb8(0xff, 0xff, 0xff);
-        cs.title_fg = rgb8(0x40, 0x40, 0x60);
-        cs.heading_fg = rgb8(0x40, 0x40, 0x60);
-        cs.subheading_fg = rgb8(0x40, 0x40, 0x60);
-        cs.highlighted_fg = rgb8(0x00, 0x00, 0x00);
-        cs.text_control_fg = rgb8(0x00, 0x00, 0x00);
-        cs.text_control_bg = rgb8(0xe8, 0xe8, 0xe8);
-        break;
-     case 0:
-     default:
-        cs.dialog_normal_fg = rgb8(0x9c, 0x9c, 0x9c);
-        cs.dialog_normal_bg = rgb8(0x10, 0x10, 0x10);
-        cs.hot_fg = cs.dialog_normal_fg;
-        cs.hot_bg = rgb8(0x3e, 0x3e, 0x40);
-        cs.selected_fg = cs.dialog_normal_bg;
-        cs.selected_bg = cs.dialog_normal_fg;
-        cs.focused_fg = cs.selected_fg;
-        cs.focused_bg = cs.selected_bg;
-        cs.disabled_fg = rgb8(0x6a, 0x6a, 0x6a);
-        cs.disabled_bg = cs.dialog_normal_bg;
-        cs.link = rgb8(0x66, 0x99, 0xcc);
-        cs.depressed_link = rgb8(0x40, 0x60, 0xa0);
-        cs.border = rgb8(0x66, 0x66, 0x66);
-        cs.separator = rgb8(0x57, 0x57, 0x57);
-        cs.content_normal_fg = rgb8(0xa0, 0xa0, 0xa0);
-        cs.content_normal_bg = rgb8(0x21, 0x21, 0x21);
-        cs.title_fg = rgb8(0xd4, 0xd4, 0xe0);
-        cs.heading_fg = rgb8(0xd4, 0xd4, 0xe0);
-        cs.subheading_fg = rgb8(0xc0, 0xc0, 0xc8);
-        cs.highlighted_fg = rgb8(0xbb, 0xbb, 0xbb);
-        cs.text_control_fg = rgb8(0xb0, 0xb0, 0xb0);
-        cs.text_control_bg = rgb8(0x17, 0x17, 0x17);
-        break;
-    }
+    cs.dialog_normal_fg = rgb8(0x90, 0x90, 0x90);
+    cs.dialog_normal_bg = rgb8(0x04, 0x04, 0x04);
+    cs.hot_fg = cs.dialog_normal_fg;
+    cs.hot_bg = rgb8(0x3e, 0x3e, 0x40);
+    cs.selected_fg = cs.dialog_normal_bg;
+    cs.selected_bg = cs.dialog_normal_fg;
+    cs.focused_fg = cs.selected_fg;
+    cs.focused_bg = cs.selected_bg;
+    cs.disabled_fg = rgb8(0x6a, 0x6a, 0x6a);
+    cs.disabled_bg = cs.dialog_normal_bg;
+    cs.link = rgb8(0x66, 0x99, 0xcc);
+    cs.depressed_link = rgb8(0x40, 0x60, 0xa0);
+    cs.border = rgb8(0x66, 0x66, 0x66);
+    cs.separator = rgb8(0x57, 0x57, 0x57);
+    cs.content_normal_fg = rgb8(0x99, 0x99, 0x99);
+    cs.content_normal_bg = rgb8(0x14, 0x14, 0x14);
+    cs.title_fg = rgb8(0xd4, 0xd4, 0xe0);
+    cs.heading_fg = rgb8(0xd4, 0xd4, 0xe0);
+    cs.subheading_fg = rgb8(0xc0, 0xc0, 0xc8);
+    cs.highlighted_fg = rgb8(0xbb, 0xbb, 0xbb);
+    cs.text_control_fg = rgb8(0xb0, 0xb0, 0xb0);
+    cs.text_control_bg = rgb8(0x17, 0x17, 0x17);
     set_color_scheme(cs);
 }
 
-void generic_artist::set_color_scheme(color_scheme const& cs)
+void artist::set_color_scheme(color_scheme const& cs)
 {
     {
     style_colors& sc = style_color_info[DIALOG_STYLE_CODE];
@@ -154,7 +155,7 @@ void generic_artist::set_color_scheme(color_scheme const& cs)
     }
 }
 
-unsigned generic_artist::get_code_for_style(style s, widget_state state,
+unsigned artist::get_code_for_style(style s, widget_state state,
     bool selected)
 {
     unsigned major_style;
@@ -229,7 +230,7 @@ unsigned generic_artist::get_code_for_style(style s, widget_state state,
     }
     return flags | (major_style << 4) | substyle;
 }
-void generic_artist::activate_style(unsigned style_code)
+void artist::activate_style(unsigned style_code)
 {
     unsigned major_style = (style_code >> 4) & 0xf;
     unsigned substyle = style_code & 0xf;
@@ -271,18 +272,18 @@ void generic_artist::activate_style(unsigned style_code)
         break;
     }
 }
-void generic_artist::restore_style(unsigned style_code)
+void artist::restore_style(unsigned style_code)
 {
     active_style_colors = &get_style_colors(style_code);
 }
-generic_artist::style_colors const&
-generic_artist::get_style_colors(unsigned style_code) const
+artist::style_colors const&
+artist::get_style_colors(unsigned style_code) const
 {
     unsigned major_style = (style_code >> 4) & 0xf;
     assert(major_style < N_MAJOR_STYLES);
     return style_color_info[major_style];
 }
-rgba8 generic_artist::get_fg_color(widget_state state) const
+rgba8 artist::get_fg_color(widget_state state) const
 {
     if ((state & widget_states::DISABLED) != 0)
     {
@@ -301,7 +302,7 @@ rgba8 generic_artist::get_fg_color(widget_state state) const
         }
     }
 }
-rgba8 generic_artist::get_bg_color(widget_state state) const
+rgba8 artist::get_bg_color(widget_state state) const
 {
     uint8 bg_alpha = (get_context().pass_state.style_code & OVERLAY_FLAG) != 0
         ? overlay_alpha : 0xff;
@@ -323,7 +324,7 @@ rgba8 generic_artist::get_bg_color(widget_state state) const
     }
 }
 
-font generic_artist::translate_standard_font(standard_font font) const
+font artist::translate_standard_font(standard_font font) const
 {
     switch ((get_context().pass_state.style_code >> 4) & 0xf)
     {
@@ -335,7 +336,7 @@ font generic_artist::translate_standard_font(standard_font font) const
          case NORMAL_FONT:
          default:
             return alia::font("georgia",
-                17 * get_context().font_scale_factor, font::BOLD);
+                20 * get_context().font_scale_factor, font::BOLD);
         }
         break;
      case HEADING_STYLE_CODE:
@@ -389,7 +390,7 @@ font generic_artist::translate_standard_font(standard_font font) const
 
 // BUTTON
 
-vector2i generic_artist::get_button_size(artist_data_ptr& data,
+vector2i artist::get_button_size(artist_data_ptr& data,
     vector2i const& content_size) const
 {
     return vector2i(
@@ -397,7 +398,7 @@ vector2i generic_artist::get_button_size(artist_data_ptr& data,
         (std::max)(content_size[1] + 8, 23));
 }
 
-vector2i generic_artist::get_button_content_offset(artist_data_ptr& data,
+vector2i artist::get_button_content_offset(artist_data_ptr& data,
     vector2i const& content_size, widget_state state) const
 {
     vector2i offset(6, 4);
@@ -415,7 +416,7 @@ vector2i generic_artist::get_button_content_offset(artist_data_ptr& data,
     return offset;
 }
 
-void generic_artist::draw_button(artist_data_ptr& data_, box2i const& region,
+void artist::draw_button(artist_data_ptr& data_, box2i const& region,
     widget_state state) const
 {
     draw_box(region, state, 0);
@@ -425,7 +426,7 @@ void generic_artist::draw_button(artist_data_ptr& data_, box2i const& region,
 
 // LINK
 
-rgba8 generic_artist::get_link_color(artist_data_ptr& data,
+rgba8 artist::get_link_color(artist_data_ptr& data,
     widget_state state) const
 {
     if ((state & widget_states::DISABLED) != 0)
@@ -450,13 +451,13 @@ rgba8 generic_artist::get_link_color(artist_data_ptr& data,
 
 static alia::vector2i const check_box_size(15, 15);
 
-vector2i generic_artist::get_check_box_size(artist_data_ptr& data,
+vector2i artist::get_check_box_size(artist_data_ptr& data,
     bool checked) const
 {
     return check_box_size;
 }
 
-void generic_artist::draw_check_box(artist_data_ptr& data, bool checked,
+void artist::draw_check_box(artist_data_ptr& data, bool checked,
     point2i const& position, widget_state state) const
 {
     box2i region(position, check_box_size);
@@ -502,37 +503,112 @@ void generic_artist::draw_check_box(artist_data_ptr& data, bool checked,
 
 // RADIO BUTTON
 
-static vector2i const radio_button_size(13, 13);
+static vector2i const radio_button_size(16, 16);
+static vector2i const radio_button_image_size(20, 20);
 
-vector2i generic_artist::get_radio_button_size(artist_data_ptr& data,
+struct radio_button_data : artist_data
+{
+    //radio_button_data() : version(0) {}
+    //unsigned version;
+    widget_state state;
+    bool selected;
+    image<rgba8> img;
+    cached_image_ptr cached_img;
+};
+
+void draw_radio_button(
+    SkCanvas& canvas, rgba8 const& bg, rgba8 const& dot, rgba8 const& border)
+{
+    SkPaint paint;
+    paint.setFlags(SkPaint::kAntiAlias_Flag);
+
+    vector2d center = vector2d(radio_button_image_size) / 2;
+
+    paint.setARGB(bg.a, bg.r, bg.g, bg.b);
+    paint.setStyle(SkPaint::kFill_Style);
+    canvas.drawCircle(SkScalar(center[0]), SkScalar(center[1]), 8, paint);
+
+    if (dot.a)
+    {
+        paint.setARGB(dot.a, dot.r, dot.g, dot.b);
+        paint.setStyle(SkPaint::kFill_Style);
+        canvas.drawCircle(SkScalar(center[0]), SkScalar(center[1]), 5,
+            paint);
+    }
+
+    if (border.a)
+    {
+        paint.setARGB(border.a, border.r, border.g, border.b);
+        paint.setStyle(SkPaint::kStroke_Style);
+        paint.setStrokeWidth(SkIntToScalar(1.5));
+        canvas.drawCircle(SkScalar(center[0]), SkScalar(center[1]), 8,
+            paint);
+    }
+}
+
+rgba8 control_border_color(0x40, 0x40, 0x40, 0xff);
+
+void create_radio_button_image(
+    image<rgba8>& img, rgba8 const& bg, rgba8 const& dot,
+    rgba8 const& border)
+{
+    create_image(img, radio_button_image_size);
+    alia_foreach_pixel(img.view, rgba8, i,
+        i.r = 0x00;
+        i.g = 0x00;
+        i.b = 0x00;
+        i.a = 0x00)
+    image_canvas canvas(img.view);
+    draw_radio_button(canvas.canvas, bg, dot, border);
+    alia_foreach_pixel(img.view, rgba8, i,
+        if (i.a != 0)
+        {
+            i.r = uint8(int(i.r) * 0xff / i.a);
+            i.g = uint8(int(i.g) * 0xff / i.a);
+            i.b = uint8(int(i.b) * 0xff / i.a);
+        })
+}
+
+vector2i artist::get_radio_button_size(artist_data_ptr& data,
     bool selected) const
 {
     return radio_button_size;
 }
 
-void generic_artist::draw_radio_button(artist_data_ptr& data, bool selected,
+void artist::draw_radio_button(artist_data_ptr& data_ptr, bool selected,
     point2i const& position, widget_state state) const
 {
-    box2i region(position, radio_button_size);
-    draw_octagon(get_fg_color(state), region, 4);
-    draw_octagon(get_bg_color(state), add_border(region, -1), 3);
-    if (selected)
-        draw_octagon(get_fg_color(state), add_border(region, -4), 1);
-    if ((state & widget_states::FOCUSED) != 0)
-        draw_focus_rect(add_border(region, vector2i(2, 2)));
+    assert(!data_ptr || dynamic_cast<radio_button_data*>(data_ptr.get()));
+    radio_button_data* data = static_cast<radio_button_data*>(data_ptr.get());
+    if (!data || data->state != state || data->selected != selected)
+        //|| data->version != impl_->version)
+    {
+        data = new radio_button_data;
+        data_ptr.reset(data);
+        create_radio_button_image(data->img,
+            get_bg_color(state),
+            selected ? get_fg_color(state) : rgba8(0, 0, 0, 0),
+            (state & widget_states::FOCUSED) != 0 ?
+            focus_border_color : control_border_color);
+        get_context().surface->cache_image(data->cached_img,
+            make_interface(data->img.view, 0));
+        data->state = state;
+        data->selected = selected;
+    }
+    data->cached_img->draw(point2d(position - vector2i(2, 2)));
 }
 
 // NODE EXPANDER
 
 static vector2i node_expander_size(15, 15);
 
-vector2i generic_artist::get_node_expander_size(artist_data_ptr& data,
+vector2i artist::get_node_expander_size(artist_data_ptr& data,
     int expanded) const
 {
     return node_expander_size;
 }
 
-void generic_artist::draw_node_expander(artist_data_ptr& data, int expanded,
+void artist::draw_node_expander(artist_data_ptr& data, int expanded,
     point2i const& position, widget_state state) const
 {
     box2i region(position, node_expander_size);
@@ -561,14 +637,14 @@ void generic_artist::draw_node_expander(artist_data_ptr& data, int expanded,
 
 // SEPARATOR
 
-int generic_artist::get_separator_width() const
+int artist::get_separator_width() const
 {
     return
         ((get_context().pass_state.style_code & ~0xf) == BACKGROUND_STYLE_CODE)
       ? 2 : 1;
 }
 
-void generic_artist::draw_separator(artist_data_ptr& data,
+void artist::draw_separator(artist_data_ptr& data,
     point2i const& position, unsigned axis, int length) const
 {
     point2f p0, p1;
@@ -590,66 +666,135 @@ void generic_artist::draw_separator(artist_data_ptr& data,
 
 // SCROLLBAR
 
-int generic_artist::get_scrollbar_width() const
+state_colors scrollbar_fg = {
+    rgba8(0xd0, 0xd0, 0xd0, 0xff),
+    rgba8(0xe0, 0xe0, 0xe0, 0xff),
+    rgba8(0xc0, 0xc0, 0xc0, 0xff),
+    rgba8(0, 0, 0, 0xff) };
+
+rgba8 scrollbar_bg(0, 0, 0, 0xff);
+
+int const scrollbar_width = 14;
+
+int artist::get_scrollbar_width() const
 {
-    return 16;
+    return scrollbar_width;
 }
-int generic_artist::get_scrollbar_button_length() const
+int artist::get_scrollbar_button_length() const
 {
     return 0;
 }
-int generic_artist::get_minimum_scrollbar_thumb_length() const
+int artist::get_minimum_scrollbar_thumb_length() const
 {
     return 10;
 }
 
 // background
 
-void generic_artist::draw_scrollbar_background(artist_data_ptr& data,
+void artist::draw_scrollbar_background(artist_data_ptr& data,
     box2i const& rect, int axis, int which, widget_state state) const
 {
-    box2i border_region = rect;
-    border_region.size[1 - axis] = 1;
-    {
     point2i poly[4];
-    make_polygon(poly, border_region);
-    get_surface().draw_filled_polygon(get_fg_color(state), poly, 4);
-    }
-
-    box2i fill_region = rect;
-    ++fill_region.corner[1 - axis];
-    --fill_region.size[1 - axis];
-    {
-    point2i poly[4];
-    make_polygon(poly, fill_region);
-    get_surface().draw_filled_polygon(get_bg_color(state), poly, 4);
-    }
+    make_polygon(poly, rect);
+    get_surface().draw_filled_polygon(scrollbar_bg, poly, 4);
 }
 
 // thumb
 
-void generic_artist::draw_scrollbar_thumb(artist_data_ptr& data,
+struct scrollbar_thumb_data : artist_data
+{
+    //radio_button_data() : version(0) {}
+    //unsigned version;
+    widget_state state;
+    vector2i size;
+    image<rgba8> img;
+    cached_image_ptr cached_img;
+};
+
+void draw_scrollbar_thumb(
+    SkCanvas& canvas, vector2i const& size, rgba8 const& fg,
+    rgba8 const& bg)
+{
+    SkPaint paint;
+    paint.setFlags(SkPaint::kAntiAlias_Flag);
+
+    //SkPoint pts[2] = {
+    //    SkPoint::Make(0, 0),
+    //    SkPoint::Make(SkIntToScalar(scrollbar_width), 0) };
+    //rgba8 fga = scale(fg, 0.8f);
+    //rgba8 fgb = scale(fg, 0.93f);
+    //SkColor colors[5] = {
+    //    SkColorSetARGB(fga.a, fga.r, fga.g, fga.b),
+    //    SkColorSetARGB(fgb.a, fgb.r, fgb.g, fgb.b),
+    //    SkColorSetARGB(fg.a, fg.r, fg.g, fg.b),
+    //    SkColorSetARGB(fgb.a, fgb.r, fgb.g, fgb.b),
+    //    SkColorSetARGB(fga.a, fga.r, fga.g, fga.b) };
+    //SkScalar pos[5] = { 0, 1, 8, 9, 10 };
+    //SkShader* shader = SkGradientShader::CreateLinear(
+    //    pts, colors, 0, 5, SkShader::kClamp_TileMode, 0 );
+    //paint.setShader(shader);
+    //shader->unref();
+
+    paint.setARGB(fg.a, fg.r, fg.g, fg.b);
+    paint.setStrokeWidth(SkIntToScalar(scrollbar_width - 2));
+    paint.setStrokeCap(SkPaint::kRound_Cap);
+    float const r = scrollbar_width / 2;
+    canvas.drawLine(SkScalar(r), SkScalar(r), SkScalar(r),
+        SkScalar(size[1] - r), paint);
+}
+
+void create_scrollbar_thumb_image(
+    image<rgba8>& img, vector2i const& size, rgba8 const& fg_color,
+    rgba8 const& bg_color)
+{
+    create_image(img, size);
+    alia_foreach_pixel(img.view, rgba8, i,
+        i.r = bg_color.r;
+        i.g = bg_color.g;
+        i.b = bg_color.b;
+        i.a = bg_color.a)
+    image_canvas canvas(img.view);
+    draw_scrollbar_thumb(canvas.canvas, size, fg_color, bg_color);
+    alia_foreach_pixel(img.view, rgba8, i,
+        if (i.a != 0)
+        {
+            i.r = uint8(int(i.r) * 0xff / i.a);
+            i.g = uint8(int(i.g) * 0xff / i.a);
+            i.b = uint8(int(i.b) * 0xff / i.a);
+        })
+}
+
+void artist::draw_scrollbar_thumb(artist_data_ptr& data_ptr,
     box2i const& rect, int axis, widget_state state) const
 {
-    draw_box(rect, state, axis);
+    assert(!data_ptr || dynamic_cast<scrollbar_thumb_data*>(data_ptr.get()));
+    scrollbar_thumb_data* data = static_cast<scrollbar_thumb_data*>(
+        data_ptr.get());
+    if (!data || data->state != state || data->size != rect.size)
+        //|| data->version != impl_->version)
+    {
+        data = new scrollbar_thumb_data;
+        data_ptr.reset(data);
+        create_scrollbar_thumb_image(data->img, rect.size,
+            select_color(scrollbar_fg, state), scrollbar_bg);
+        get_context().surface->cache_image(data->cached_img,
+            make_interface(data->img.view, 0));
+        data->size = rect.size;
+        data->state = state;
+    }
+    data->cached_img->draw(point2d(rect.corner));
 }
 
 // button
 
-void generic_artist::draw_scrollbar_button(artist_data_ptr& data,
+void artist::draw_scrollbar_button(artist_data_ptr& data,
     point2i const& position, int axis, int which, widget_state state) const
 {
-    //vector2i size;
-    //size[axis] = get_scrollbar_button_length();
-    //size[1 - axis] = get_scrollbar_width();
-    //box2i rect(position, size);
-    //draw_box(rect, state, axis);
-    //draw_arrow(get_fg_color(state), rect, axis * 2 + which, 5);
 }
 
 // junction
 
-void generic_artist::draw_scrollbar_junction(artist_data_ptr& data,
+void artist::draw_scrollbar_junction(artist_data_ptr& data,
     point2i const& position) const
 {
     point2i poly[4];
@@ -661,7 +806,7 @@ void generic_artist::draw_scrollbar_junction(artist_data_ptr& data,
 
 // PANEL
 
-border_size generic_artist::get_panel_border_size(artist_data_ptr& data,
+border_size artist::get_panel_border_size(artist_data_ptr& data,
     unsigned inner_style_code) const
 {
     //if ((get_context().pass_state.style_code & ~0xf) == BACKGROUND_STYLE_CODE
@@ -672,7 +817,7 @@ border_size generic_artist::get_panel_border_size(artist_data_ptr& data,
     //else
     //    return border_size(1, 1, 1, 1);
 }
-void generic_artist::draw_panel_border(artist_data_ptr& data,
+void artist::draw_panel_border(artist_data_ptr& data,
     unsigned inner_style_code, box2i const& rect) const
 {
     //if ((get_context().pass_state.style_code & ~0xf) == BACKGROUND_STYLE_CODE
@@ -688,7 +833,7 @@ void generic_artist::draw_panel_border(artist_data_ptr& data,
     //        line_style(1, solid_line), poly, 4);
     //}
 }
-void generic_artist::draw_panel_background(artist_data_ptr& data,
+void artist::draw_panel_background(artist_data_ptr& data,
     box2i const& rect) const
 {
     point2i poly[4];
@@ -705,11 +850,11 @@ void generic_artist::draw_panel_background(artist_data_ptr& data,
 
 // DROP DOWN BUTTON
 
-vector2i generic_artist::get_minimum_drop_down_button_size() const
+vector2i artist::get_minimum_drop_down_button_size() const
 {
     return vector2i(15, 15);
 }
-void generic_artist::draw_drop_down_button(artist_data_ptr& data,
+void artist::draw_drop_down_button(artist_data_ptr& data,
     box2i const& rect, widget_state state) const
 {
     point2i poly[4];
@@ -722,35 +867,35 @@ void generic_artist::draw_drop_down_button(artist_data_ptr& data,
 
 // track
 
-int generic_artist::get_slider_left_border() const
+int artist::get_slider_left_border() const
 {
     return 5;
 }
-int generic_artist::get_slider_right_border() const
+int artist::get_slider_right_border() const
 {
     return 5;
 }
-int generic_artist::get_slider_height() const
+int artist::get_slider_height() const
 {
     return 20;
 }
-int generic_artist::get_default_slider_width() const
+int artist::get_default_slider_width() const
 {
     return 130;
 }
-box1i generic_artist::get_slider_track_region() const
+box1i artist::get_slider_track_region() const
 {
     return box1i(point1i(10), vector1i(4));
 }
-box1i generic_artist::get_slider_track_hot_region() const
+box1i artist::get_slider_track_hot_region() const
 {
     return box1i(point1i(6), vector1i(10));
 }
-box2i generic_artist::get_slider_thumb_region() const
+box2i artist::get_slider_thumb_region() const
 {
     return box2i(point2i(-6, 0), vector2i(12, 20));
 }
-void generic_artist::draw_slider_track(artist_data_ptr& data, unsigned axis,
+void artist::draw_slider_track(artist_data_ptr& data, unsigned axis,
     int width, point2i const& position) const
 {
     vector2i size;
@@ -760,7 +905,7 @@ void generic_artist::draw_slider_track(artist_data_ptr& data, unsigned axis,
     make_polygon(poly, box2i(position, size));
     get_surface().draw_filled_polygon(gray, poly, 4); // TODO: color
 }
-void generic_artist::draw_slider_thumb(artist_data_ptr& data, unsigned axis,
+void artist::draw_slider_thumb(artist_data_ptr& data, unsigned axis,
     point2i const& position, widget_state state) const
 {
     box2i thumb_region = get_slider_thumb_region();
@@ -774,7 +919,7 @@ void generic_artist::draw_slider_thumb(artist_data_ptr& data, unsigned axis,
 
 // UTILITY FUNCTIONS
 
-void generic_artist::draw_box(box2i const& region, widget_state state,
+void artist::draw_box(box2i const& region, widget_state state,
     int gradient_axis, bool draw_border) const
 {
     surface& surface = get_surface();
@@ -808,7 +953,7 @@ void generic_artist::draw_box(box2i const& region, widget_state state,
     surface.draw_filled_polygon(bg_color, poly, 4);
 }
 
-void generic_artist::draw_octagon(rgba8 const& color,
+void artist::draw_octagon(rgba8 const& color,
     box2i const& region, int corner_size) const
 {
     point2f position(region.corner);
@@ -825,7 +970,7 @@ void generic_artist::draw_octagon(rgba8 const& color,
     get_surface().draw_filled_polygon(color, octagon, 8);
 }
 
-void generic_artist::draw_arrow(rgba8 const& color, box2i const& region,
+void artist::draw_arrow(rgba8 const& color, box2i const& region,
     int direction, int size) const
 {
     point2f arrow[3];
@@ -893,12 +1038,12 @@ void generic_artist::draw_arrow(rgba8 const& color, box2i const& region,
     get_surface().draw_filled_polygon(color, arrow, 3);
 }
 
-void generic_artist::draw_focus_rect(box2i const& rect) const
+void artist::draw_focus_rect(box2i const& rect) const
 {
-    draw_focus_rect(rect, active_style_colors->normal_fg);
+    draw_focus_rect(rect, focus_border_color);
 }
 
-void generic_artist::draw_focus_rect(box2i const& rect,
+void artist::draw_focus_rect(box2i const& rect,
     rgba8 const& color) const
 {
     box2f r(rect);
@@ -908,10 +1053,10 @@ void generic_artist::draw_focus_rect(box2i const& rect,
     r.size[1] -= 1;
     point2f poly[4];
     make_polygon(poly, r);
-    get_surface().draw_line_loop(color, line_style(1, dotted_line), poly, 4);
+    get_surface().draw_line_loop(color, line_style(1, solid_line), poly, 4);
 }
 
-void generic_artist::draw_outline(box2i const& region,
+void artist::draw_outline(box2i const& region,
     rgba8 const& color) const
 {
     box2f adjusted_rect(
@@ -924,15 +1069,15 @@ void generic_artist::draw_outline(box2i const& region,
 
 // PROGRESS BAR
 
-vector2i generic_artist::get_default_progress_bar_size() const
+vector2i artist::get_default_progress_bar_size() const
 {
     return vector2i(100, 20);
 }
-vector2i generic_artist::get_minimum_progress_bar_size() const
+vector2i artist::get_minimum_progress_bar_size() const
 {
     return vector2i(40, 20);
 }
-void generic_artist::draw_progress_bar(artist_data_ptr& data,
+void artist::draw_progress_bar(artist_data_ptr& data,
     box2i const& region, double value) const
 {
     draw_outline(region, active_style_colors->normal_fg);
@@ -949,12 +1094,12 @@ void generic_artist::draw_progress_bar(artist_data_ptr& data,
 
 static vector2i icon_button_size(15, 15);
 
-vector2i generic_artist::get_icon_button_size(artist_data_ptr& data,
+vector2i artist::get_icon_button_size(artist_data_ptr& data,
     standard_icon icon)
 {
     return icon_button_size;
 }
-void generic_artist::draw_icon_button(artist_data_ptr& data,
+void artist::draw_icon_button(artist_data_ptr& data,
     standard_icon icon, point2i const& position, widget_state state)
 {
     box2i region(position, icon_button_size);
@@ -970,4 +1115,4 @@ void generic_artist::draw_icon_button(artist_data_ptr& data,
     // TODO
 }
 
-}
+}}

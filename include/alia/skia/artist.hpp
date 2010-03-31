@@ -1,12 +1,12 @@
-#ifndef ALIA_GENERIC_ARTIST_HPP
-#define ALIA_GENERIC_ARTIST_HPP
+#ifndef ALIA_SKIA_ARTIST_HPP
+#define ALIA_SKIA_ARTIST_HPP
 
 #include <alia/artist.hpp>
 #include <alia/color.hpp>
 
-namespace alia {
+namespace alia { namespace skia {
 
-class generic_artist : public artist
+class artist : public alia::artist
 {
  public:
     void initialize();
@@ -161,6 +161,6 @@ class generic_artist : public artist
         int corner_size) const;
 };
 
-}
+}}
 
 #endif

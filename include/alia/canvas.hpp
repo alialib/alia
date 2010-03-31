@@ -82,7 +82,7 @@ class default_camera : public camera
 {
  public:
     default_camera() : position_(0, 0), min_zoom_(0.), max_zoom_(0.),
-        constrained_(true) {}
+        constrained_(false) {}
     void initialize(point2d const& p, zoom_level zoom)
     { position_ = p; zoom_ = zoom; }
     point2d get_position(canvas const& canvas) const;
@@ -167,8 +167,8 @@ void apply_panning_tool(canvas& canvas, mouse_button button);
 void apply_zoom_wheel_tool(canvas& canvas, unsigned mods = 0,
     double factor = 1.1);
 
-void draw_checker_background(canvas& canvas, rgb8 const& color1,
-    rgb8 const& color2, double spacing);
+void draw_checker_background(canvas& canvas, rgba8 const& color1,
+    rgba8 const& color2, double spacing);
 
 // zoom box tool - This tool allows the user to zoom in to a rectangular area
 // of the scene by dragging the mouse and drawing a box.

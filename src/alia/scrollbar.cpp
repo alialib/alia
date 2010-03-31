@@ -35,6 +35,7 @@ class scrollbar
     void set_physical_position(int position);
 
     widget_state get_button_state(region_id id, box2i const& area);
+    widget_state get_thumb_state(region_id id, box2i const& area);
 
     void process_button_input(region_id id,
         box2i const& area, int increment);
@@ -96,6 +97,21 @@ widget_state scrollbar::get_button_state(region_id id,
     box2i const& area)
 {
     if (detect_click_in_progress(ctx, id, LEFT_BUTTON))
+    {
+        return widget_states::DEPRESSED;
+    }
+    else if (detect_potential_click(ctx, id))
+    {
+        return widget_states::HOT;
+    }
+    else
+        return widget_states::NORMAL;
+}
+
+widget_state scrollbar::get_thumb_state(region_id id,
+    box2i const& area)
+{
+    if (detect_drag_in_progress(ctx, id, LEFT_BUTTON))
     {
         return widget_states::DEPRESSED;
     }
@@ -248,7 +264,7 @@ void scrollbar::do_pass()
                 bg1_area, axis, 1, get_button_state(bg1_id, bg1_area));
         }
         artist.draw_scrollbar_thumb(data.thumb_data,
-            thumb_area, axis, get_button_state(thumb_id, thumb_area));
+            thumb_area, axis, get_thumb_state(thumb_id, thumb_area));
         artist.draw_scrollbar_button(data.button_data[0],
             button0_area.corner, axis, 0,
             get_button_state(button0_id, button0_area));

@@ -14,6 +14,7 @@ struct popup_window::impl_data
     bool open, was_dismissed;
     opengl_surface* parent;
     point2i initial_position, boundary;
+    bool right_aligned;
 };
 
 class popup_window::wx_popup_wrapper
@@ -71,7 +72,8 @@ END_EVENT_TABLE()
 
 popup_window::popup_window(opengl_surface* parent, controller* controller,
     point2i const& initial_position, point2i const& boundary,
-    vector2i const& minimum_size, vector2i const& maximum_size)
+    vector2i const& minimum_size, vector2i const& maximum_size,
+    bool right_aligned)
   : context_holder(controller)
 {
     impl_ = new impl_data;
@@ -81,6 +83,7 @@ popup_window::popup_window(opengl_surface* parent, controller* controller,
     impl_->parent = parent;
     impl_->initial_position = initial_position;
     impl_->boundary = boundary;
+    impl_->right_aligned = right_aligned;
     this->minimum_size = minimum_size;
     vector2i client_to_screen;
     parent->get_wx_window()->GetScreenPosition(
@@ -132,12 +135,23 @@ void popup_window::open()
         vector2i const& size = initial_size;
         for (int i = 0; i < 2; ++i)
         {
-            if (position[i] + size[i] > display_size[i] &&
-                impl_->boundary[i] >= 0 &&
-                boundary[i] > display_size[i] / 2 &&
-                boundary[i] < display_size[i])
+            if (i != 0 || !impl_->right_aligned)
             {
-                position[i] = boundary[i] - size[i];
+                if (position[i] + size[i] > display_size[i] &&
+                    impl_->boundary[i] >= 0 &&
+                    boundary[i] > display_size[i] / 2 &&
+                    boundary[i] < display_size[i])
+                {
+                    position[i] = boundary[i] - size[i];
+                }
+            }
+            else
+            {
+                if (impl_->boundary[i] >= 0 &&
+                    boundary[i] - size[i] >= 0)
+                {
+                    position[i] = boundary[i] - size[i];
+                }
             }
         }
         impl_->window->Move(wxPoint(position[0], position[1]),

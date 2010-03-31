@@ -4,6 +4,7 @@
 #include <alia/wx/manager.hpp>
 #include <alia/controller.hpp>
 #include <alia/layout.hpp>
+#include <alia/skia/artist.hpp>
 
 namespace alia { namespace wx {
 
@@ -23,18 +24,19 @@ context_holder::context_holder(controller* controller)
     context.font_scale_factor =
         manager::get_instance().get_font_scale_factor();
 
- #ifdef ALIA_HAS_NATIVE_ARTIST
-    try
-    {
-        artist.reset(new native::artist);
-    }
-    catch (...)
-    {
-        artist.reset(new wx::artist);
-    }
- #else
-    artist.reset(new wx::artist);
- #endif
+ //#ifdef ALIA_HAS_NATIVE_ARTIST
+ //   try
+ //   {
+ //       artist.reset(new native::artist);
+ //   }
+ //   catch (...)
+ //   {
+ //       artist.reset(new wx::artist);
+ //   }
+ //#else
+ //   artist.reset(new wx::artist);
+ //#endif
+    artist.reset(new skia::artist);
     artist->set_context(context);
     context.artist = artist.get();
     artist->initialize();

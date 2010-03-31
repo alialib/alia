@@ -18,7 +18,7 @@ manager::manager()
     impl_ = new impl_data;
     impl_->exit_requested = false;
     impl_->already_closed = false;
-    impl_->font_scale_factor = 0;
+    impl_->font_scale_factor = 1;
     impl_->color_scheme = 0;
 }
 manager::~manager()

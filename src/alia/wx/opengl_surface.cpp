@@ -30,7 +30,8 @@
 
 namespace alia { namespace wx {
 
-static int gl_canvas_attribs[] = { WX_GL_RGBA, WX_GL_DOUBLEBUFFER, 0 };
+static int gl_canvas_attribs[] = { WX_GL_RGBA, WX_GL_DOUBLEBUFFER,
+    WX_GL_STENCIL_SIZE, 1, 0 };
 
 struct timer_request
 {
@@ -637,7 +638,8 @@ point2i opengl_surface::get_location_on_display() const
 
 popup_interface* opengl_surface::open_popup(controller* controller,
     point2i const& display_location, point2i const& boundary,
-    vector2i const& minimum_size, vector2i const& maximum_size)
+    vector2i const& minimum_size, vector2i const& maximum_size,
+    bool right_aligned)
 {
     context& ctx = get_context();
     point2d dl = transform_point(ctx.pass_state.transformation,
@@ -648,7 +650,7 @@ popup_interface* opengl_surface::open_popup(controller* controller,
     popup_window* popup = new popup_window(this, controller,
         point2i(int(dl[0] + 0.5), int(dl[1] + 0.5)),
         point2i(int(b[0] + 0.5), int(b[1] + 0.5)),
-        minimum_size, maximum_size);
+        minimum_size, maximum_size, right_aligned);
     impl_->popups.push_back(popup);
     return popup;
 }

@@ -41,7 +41,7 @@ struct context
 {
     context() : refresh_counter(0), pass_counter(0), map_list(0),
         mouse_button_state(0), mouse_in_surface(0), hot_id(0), active_id(0),
-        focused_id(0), font_scale_factor(0) {}
+        focused_id(0), font_scale_factor(1) {}
     uint64 refresh_counter;
     // associated objects
     alia::surface* surface;

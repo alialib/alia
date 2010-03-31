@@ -298,7 +298,8 @@ class surface
     virtual popup_interface* open_popup(controller* controller,
         point2i const& display_location, point2i const& boundary,
         vector2i const& minimum_size = vector2i(-1, -1),
-        vector2i const& maximum_size = vector2i(-1, -1)) = 0;
+        vector2i const& maximum_size = vector2i(-1, -1),
+        bool right_aligned = false) = 0;
 
     // Show a popup menu.
     virtual void show_popup_menu(menu_controller* controller) = 0;

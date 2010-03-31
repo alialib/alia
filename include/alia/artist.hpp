@@ -30,6 +30,11 @@ enum style
     OVERLAY_STYLE,
 };
 
+enum standard_icon
+{
+    REMOVE_ICON,
+};
+
 struct border_size
 {
     border_size(int left, int top, int right, int bottom)
@@ -181,15 +186,19 @@ class artist
     virtual void draw_slider_thumb(artist_data_ptr& data, unsigned axis,
         point2i const& position, widget_state state) const = 0;
 
-/*
   // PROGRESS BAR
 
-    virtual size get_default_progress_bar_size() const = 0;
-    virtual size get_minimum_progress_bar_size() const = 0;
-    virtual progress_bar_data* get_progress_bar_data(size const& size) = 0;
-    virtual void draw_progress_bar(progress_bar_data* data,
-        point const& position) const = 0;
-*/
+    virtual vector2i get_default_progress_bar_size() const = 0;
+    virtual vector2i get_minimum_progress_bar_size() const = 0;
+    virtual void draw_progress_bar(artist_data_ptr& data,
+        box2i const& region, double value) const = 0;
+
+  // ICONS
+
+    virtual vector2i get_icon_button_size(artist_data_ptr& data,
+        standard_icon icon) = 0;
+    virtual void draw_icon_button(artist_data_ptr& data, standard_icon icon,
+        point2i const& position, widget_state state) = 0;
 
  private:
     context* context_;
