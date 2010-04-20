@@ -110,26 +110,30 @@ class artist : public alia::artist
     struct style_colors
     {
         rgb8 normal_fg, normal_bg;
+        rgb8 highlighted_fg;
+        rgb8 control_fg, control_bg;
         rgb8 hot_fg, hot_bg;
         rgb8 selected_fg, selected_bg;
         rgb8 focused_fg, focused_bg;
         rgb8 disabled_fg, disabled_bg;
         rgb8 link, hot_link, depressed_link, disabled_link;
-        rgb8 border, separator;
+        rgb8 border, focused_border;
+        rgb8 separator;
     };
 
     struct color_scheme
     {
         rgb8 dialog_normal_bg, dialog_normal_fg;
+        rgb8 control_fg, control_bg;
         rgb8 hot_fg, hot_bg;
         rgb8 selected_fg, selected_bg;
         rgb8 focused_fg, focused_bg;
         rgb8 disabled_fg, disabled_bg;
         rgb8 link, depressed_link;
-        rgb8 border, separator;
+        rgb8 control_border, focused_control_border;
+        rgb8 separator;
         rgb8 content_normal_bg, content_normal_fg;
         rgb8 title_fg, heading_fg, subheading_fg, highlighted_fg;
-        rgb8 text_control_bg, text_control_fg;
     };
     void set_color_scheme(color_scheme const& scheme);
     void set_color_scheme(unsigned color_scheme_index);

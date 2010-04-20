@@ -10,8 +10,6 @@ namespace alia { namespace skia {
 
 // TODO: Share resources between fixed-size widgets (radio buttons, etc).
 
-static rgba8 const focus_border_color(0x8e, 0x6a, 0x20, 0xff);
-
 struct state_colors
 {
     rgba8 normal, hot, depressed, disabled;
@@ -59,7 +57,8 @@ void artist::set_color_scheme(unsigned color_scheme_index)
     cs.disabled_bg = cs.dialog_normal_bg;
     cs.link = rgb8(0x66, 0x99, 0xcc);
     cs.depressed_link = rgb8(0x40, 0x60, 0xa0);
-    cs.border = rgb8(0x66, 0x66, 0x66);
+    cs.control_border = rgb8(0x66, 0x66, 0x66);
+    cs.focused_control_border = rgb8(0x8e, 0x6a, 0x20);
     cs.separator = rgb8(0x57, 0x57, 0x57);
     cs.content_normal_fg = rgb8(0x99, 0x99, 0x99);
     cs.content_normal_bg = rgb8(0x14, 0x14, 0x14);
@@ -67,8 +66,8 @@ void artist::set_color_scheme(unsigned color_scheme_index)
     cs.heading_fg = rgb8(0xd4, 0xd4, 0xe0);
     cs.subheading_fg = rgb8(0xc0, 0xc0, 0xc8);
     cs.highlighted_fg = rgb8(0xbb, 0xbb, 0xbb);
-    cs.text_control_fg = rgb8(0xb0, 0xb0, 0xb0);
-    cs.text_control_bg = rgb8(0x17, 0x17, 0x17);
+    cs.control_fg = rgb8(0xb0, 0xb0, 0xb0);
+    cs.control_bg = rgb8(0x17, 0x17, 0x17);
     set_color_scheme(cs);
 }
 
@@ -78,6 +77,9 @@ void artist::set_color_scheme(color_scheme const& cs)
     style_colors& sc = style_color_info[DIALOG_STYLE_CODE];
     sc.normal_fg = cs.dialog_normal_fg;
     sc.normal_bg = cs.dialog_normal_bg;
+    sc.highlighted_fg = cs.highlighted_fg;
+    sc.control_fg = cs.control_fg;
+    sc.control_bg = cs.control_bg;
     sc.hot_fg = cs.hot_fg;
     sc.hot_bg = cs.hot_bg;
     sc.selected_fg = cs.selected_fg;
@@ -90,7 +92,8 @@ void artist::set_color_scheme(color_scheme const& cs)
     sc.hot_link = cs.link;
     sc.depressed_link = cs.depressed_link;
     sc.disabled_link = cs.disabled_fg;
-    sc.border = cs.border;
+    sc.border = cs.control_border;
+    sc.focused_border = cs.focused_control_border;
     sc.separator = cs.separator;
     }
     {
@@ -98,18 +101,15 @@ void artist::set_color_scheme(color_scheme const& cs)
     sc = style_color_info[DIALOG_STYLE_CODE];
     sc.normal_fg = cs.content_normal_fg;
     sc.normal_bg = cs.content_normal_bg;
+    sc.highlighted_fg = cs.highlighted_fg;
+    sc.control_fg = cs.control_fg;
+    sc.control_bg = cs.control_bg;
     sc.hot_fg = cs.content_normal_fg;
     sc.hot_bg = blend(cs.content_normal_bg, cs.content_normal_fg, 0.85f);
     sc.selected_fg = cs.content_normal_fg;
     sc.selected_bg = blend(cs.content_normal_bg, cs.content_normal_fg, 0.75f);
     sc.focused_fg = cs.content_normal_fg;
     sc.focused_bg = sc.selected_bg;
-    //sc.hot_fg = cs.highlighted_fg;
-    //sc.hot_bg = cs.content_normal_bg;
-    //sc.selected_fg = cs.subheading_fg;
-    //sc.selected_bg = cs.content_normal_bg;
-    //sc.focused_fg = cs.subheading_fg;
-    //sc.focused_bg = cs.content_normal_bg;
     }
     {
     style_colors& sc = style_color_info[ODD_CONTENT_STYLE_CODE];
@@ -141,8 +141,8 @@ void artist::set_color_scheme(color_scheme const& cs)
     {
     style_colors& sc = style_color_info[TEXT_CONTROL_STYLE_CODE];
     sc = style_color_info[DIALOG_STYLE_CODE];
-    sc.normal_fg = cs.text_control_fg;
-    sc.normal_bg = cs.text_control_bg;
+    sc.normal_fg = cs.control_fg;
+    sc.normal_bg = cs.control_bg;
     }
     {
     style_colors& sc = style_color_info[LIST_STYLE_CODE];
@@ -467,7 +467,7 @@ void artist::draw_check_box(artist_data_ptr& data, bool checked,
     {
     point2i poly[4];
     make_polygon(poly, region);
-    get_surface().draw_filled_polygon(fg, poly, 4);
+    get_surface().draw_filled_polygon(active_style_colors->border, poly, 4);
     }
 
     // box
@@ -503,8 +503,8 @@ void artist::draw_check_box(artist_data_ptr& data, bool checked,
 
 // RADIO BUTTON
 
-static vector2i const radio_button_size(16, 16);
-static vector2i const radio_button_image_size(20, 20);
+static vector2i const radio_button_size(17, 17);
+static vector2i const radio_button_image_size(25, 25);
 
 struct radio_button_data : artist_data
 {
@@ -517,7 +517,8 @@ struct radio_button_data : artist_data
 };
 
 void draw_radio_button(
-    SkCanvas& canvas, rgba8 const& bg, rgba8 const& dot, rgba8 const& border)
+    SkCanvas& canvas, rgba8 const& bg, rgba8 const& dot,
+    rgba8 const& inner_border, rgba8 const& outer_border)
 {
     SkPaint paint;
     paint.setFlags(SkPaint::kAntiAlias_Flag);
@@ -526,7 +527,7 @@ void draw_radio_button(
 
     paint.setARGB(bg.a, bg.r, bg.g, bg.b);
     paint.setStyle(SkPaint::kFill_Style);
-    canvas.drawCircle(SkScalar(center[0]), SkScalar(center[1]), 8, paint);
+    canvas.drawCircle(SkScalar(center[0]), SkScalar(center[1]), 7.5, paint);
 
     if (dot.a)
     {
@@ -536,21 +537,30 @@ void draw_radio_button(
             paint);
     }
 
-    if (border.a)
+    if (inner_border.a)
     {
-        paint.setARGB(border.a, border.r, border.g, border.b);
+        paint.setARGB(inner_border.a, inner_border.r, inner_border.g,
+            inner_border.b);
         paint.setStyle(SkPaint::kStroke_Style);
         paint.setStrokeWidth(SkIntToScalar(1.5));
-        canvas.drawCircle(SkScalar(center[0]), SkScalar(center[1]), 8,
+        canvas.drawCircle(SkScalar(center[0]), SkScalar(center[1]), 7.5,
+            paint);
+    }
+
+    if (outer_border.a)
+    {
+        paint.setARGB(outer_border.a, outer_border.r, outer_border.g,
+            outer_border.b);
+        paint.setStyle(SkPaint::kStroke_Style);
+        paint.setStrokeWidth(SkIntToScalar(1));
+        canvas.drawCircle(SkScalar(center[0]), SkScalar(center[1]), 10,
             paint);
     }
 }
 
-rgba8 control_border_color(0x40, 0x40, 0x40, 0xff);
-
 void create_radio_button_image(
     image<rgba8>& img, rgba8 const& bg, rgba8 const& dot,
-    rgba8 const& border)
+    rgba8 const& inner_border, rgba8 const& outer_border)
 {
     create_image(img, radio_button_image_size);
     alia_foreach_pixel(img.view, rgba8, i,
@@ -559,7 +569,7 @@ void create_radio_button_image(
         i.b = 0x00;
         i.a = 0x00)
     image_canvas canvas(img.view);
-    draw_radio_button(canvas.canvas, bg, dot, border);
+    draw_radio_button(canvas.canvas, bg, dot, inner_border, outer_border);
     alia_foreach_pixel(img.view, rgba8, i,
         if (i.a != 0)
         {
@@ -588,8 +598,9 @@ void artist::draw_radio_button(artist_data_ptr& data_ptr, bool selected,
         create_radio_button_image(data->img,
             get_bg_color(state),
             selected ? get_fg_color(state) : rgba8(0, 0, 0, 0),
+            active_style_colors->border,
             (state & widget_states::FOCUSED) != 0 ?
-            focus_border_color : control_border_color);
+            active_style_colors->focused_border : rgba8(0, 0, 0, 0));
         get_context().surface->cache_image(data->cached_img,
             make_interface(data->img.view, 0));
         data->state = state;
@@ -696,7 +707,7 @@ void artist::draw_scrollbar_background(artist_data_ptr& data,
 {
     point2i poly[4];
     make_polygon(poly, rect);
-    get_surface().draw_filled_polygon(scrollbar_bg, poly, 4);
+    get_surface().draw_filled_polygon(active_style_colors->normal_bg, poly, 4);
 }
 
 // thumb
@@ -903,7 +914,10 @@ void artist::draw_slider_track(artist_data_ptr& data, unsigned axis,
     size[1 - axis] = 2;
     point2i poly[4];
     make_polygon(poly, box2i(position, size));
-    get_surface().draw_filled_polygon(gray, poly, 4); // TODO: color
+    get_surface().draw_filled_polygon(
+        blend(active_style_colors->normal_fg,
+            active_style_colors->normal_bg, 0.5),
+        poly, 4);
 }
 void artist::draw_slider_thumb(artist_data_ptr& data, unsigned axis,
     point2i const& position, widget_state state) const
@@ -914,7 +928,42 @@ void artist::draw_slider_thumb(artist_data_ptr& data, unsigned axis,
     region.corner[1 - axis] += thumb_region.corner[1];
     if (axis != 0)
         std::swap(region.size[0], region.size[1]);
-    draw_box(region, state, axis);
+
+    ++region.corner[axis];
+    region.size[axis] -= 2;
+
+    rgba8 fill_color;
+    if ((state & widget_states::DISABLED) != 0)
+    {
+        fill_color = blend(active_style_colors->normal_fg,
+            active_style_colors->normal_bg, 0.5);
+    }
+    else
+    {
+        switch (state & widget_states::PRIMARY_STATE_MASK)
+        {
+         case widget_states::HOT:
+            fill_color = blend(active_style_colors->normal_fg,
+                active_style_colors->highlighted_fg, 0.5);
+            break;
+         case widget_states::DEPRESSED:
+            fill_color = active_style_colors->highlighted_fg;
+            break;
+         default:
+            fill_color = active_style_colors->normal_fg;
+        }
+    }
+    fill_color.a =
+        (get_context().pass_state.style_code & OVERLAY_FLAG) != 0
+        ? overlay_alpha : 0xff;
+
+    surface& surface = get_surface();
+    point2i poly[4];
+    make_polygon(poly, region);
+    surface.draw_filled_polygon(fill_color, poly, 4);
+
+    if ((state & widget_states::FOCUSED) != 0)
+        draw_focus_rect(add_border(region, vector2i(2, 2)));
 }
 
 // UTILITY FUNCTIONS
@@ -923,34 +972,34 @@ void artist::draw_box(box2i const& region, widget_state state,
     int gradient_axis, bool draw_border) const
 {
     surface& surface = get_surface();
-    rgba8 bg_color = get_bg_color(state);
+    rgba8 fill_color = get_bg_color(state);
     box2i fill_region;
     point2i poly[4];
-    if (draw_border)
-    {
-        // TODO
-        make_polygon(poly, box2i(region.corner,
-            vector2i(1, region.size[1] - 1)));
-        surface.draw_filled_polygon(blend(bg_color, white, 0.7f), poly, 4);
-        make_polygon(poly, box2i(region.corner + vector2i(1, 0),
-            vector2i(region.size[0] - 1, 1)));
-        surface.draw_filled_polygon(blend(bg_color, white, 0.7f), poly, 4);
+    //if (draw_border)
+    //{
+    //    // TODO
+    //    make_polygon(poly, box2i(region.corner,
+    //        vector2i(1, region.size[1] - 1)));
+    //    surface.draw_filled_polygon(blend(bg_color, white, 0.7f), poly, 4);
+    //    make_polygon(poly, box2i(region.corner + vector2i(1, 0),
+    //        vector2i(region.size[0] - 1, 1)));
+    //    surface.draw_filled_polygon(blend(bg_color, white, 0.7f), poly, 4);
 
-        make_polygon(poly, box2i(
-            region.corner + vector2i(0, region.size[1] - 1),
-            vector2i(region.size[0] - 1, 1)));
-        surface.draw_filled_polygon(scale(bg_color, 0.7f), poly, 4);
-        make_polygon(poly, box2i(
-            region.corner + vector2i(region.size[0] - 1, 1),
-            vector2i(1, region.size[1] - 1)));
-        surface.draw_filled_polygon(scale(bg_color, 0.7f), poly, 4);
+    //    make_polygon(poly, box2i(
+    //        region.corner + vector2i(0, region.size[1] - 1),
+    //        vector2i(region.size[0] - 1, 1)));
+    //    surface.draw_filled_polygon(scale(bg_color, 0.7f), poly, 4);
+    //    make_polygon(poly, box2i(
+    //        region.corner + vector2i(region.size[0] - 1, 1),
+    //        vector2i(1, region.size[1] - 1)));
+    //    surface.draw_filled_polygon(scale(bg_color, 0.7f), poly, 4);
 
-        fill_region = add_border(region, -1);
-    }
-    else
+    //    fill_region = add_border(region, -1);
+    //}
+    //else
         fill_region = region;
     make_polygon(poly, fill_region);
-    surface.draw_filled_polygon(bg_color, poly, 4);
+    surface.draw_filled_polygon(fill_color, poly, 4);
 }
 
 void artist::draw_octagon(rgba8 const& color,
@@ -1040,7 +1089,7 @@ void artist::draw_arrow(rgba8 const& color, box2i const& region,
 
 void artist::draw_focus_rect(box2i const& rect) const
 {
-    draw_focus_rect(rect, focus_border_color);
+    draw_focus_rect(rect, active_style_colors->focused_border);
 }
 
 void artist::draw_focus_rect(box2i const& rect,

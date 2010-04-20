@@ -53,6 +53,10 @@ class window : public top_level_window
     bool is_open() const;
     void close();
 
+    context& get_context() const;
+
+    void set_artist(alia::artist* artist);
+
  private:
     void* get_wx_window() const;
 

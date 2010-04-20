@@ -36,9 +36,15 @@ context_holder::context_holder(controller* controller)
  //#else
  //   artist.reset(new wx::artist);
  //#endif
-    artist.reset(new skia::artist);
+
+    set_artist(new skia::artist);
+}
+
+void context_holder::set_artist(alia::artist* artist)
+{
+    this->artist.reset(artist);
     artist->set_context(context);
-    context.artist = artist.get();
+    context.artist = artist;
     artist->initialize();
     artist->set_color_scheme(manager::get_instance().get_color_scheme());
 }

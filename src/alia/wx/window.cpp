@@ -323,4 +323,14 @@ void window::set_full_screen(bool fs)
         impl_->initially_full_screen = fs;
 }
 
+context& window::get_context() const
+{
+    return impl_->context;
+}
+
+void window::set_artist(alia::artist* artist)
+{
+    impl_->set_artist(artist);
+}
+
 }}

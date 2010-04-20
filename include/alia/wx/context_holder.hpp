@@ -25,6 +25,8 @@ class context_holder
     boost::scoped_ptr<opengl_surface> surface;
     boost::scoped_ptr<alia::artist> artist;
 
+    void set_artist(alia::artist* artist);
+
     vector2i initial_size;
     vector2i minimum_size;
     vector2i maximum_size;
