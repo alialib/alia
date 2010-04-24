@@ -38,10 +38,10 @@ bool do_link(
         {
             record_layout_change(ctx, data.layout_data);
             ctx.surface->cache_text(data.renderer, font, text);
-            alia::font underlined_font = font;
-            underlined_font.set_style(
-                font.get_style() | alia::font::UNDERLINED);
-            ctx.surface->cache_text(data.underlined_renderer, underlined_font,
+            //alia::font underlined_font = font;
+            //underlined_font.set_style(
+            //    font.get_style() | alia::font::UNDERLINED);
+            ctx.surface->cache_text(data.underlined_renderer, font, //underlined_font,
                 text);
         }
         vector2i size = data.renderer->get_size();
@@ -80,10 +80,9 @@ bool do_link(
             box2i r;
             r.corner[0] = ar.corner[0] - 2;
             r.corner[1] = ar.corner[1] - 1;
-            r.size[0] = ar.size[0] + 3;
+            r.size[0] = ar.size[0] + 5;
             r.size[1] = ar.size[1] + 3;
-            ctx.artist->draw_focus_rect(r,
-                ctx.artist->get_link_color(data.artist_data, state));
+            ctx.artist->draw_focus_rect(r);
         }
         break;
       }

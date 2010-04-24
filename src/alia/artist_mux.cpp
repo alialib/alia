@@ -66,11 +66,10 @@ font artist_mux::translate_standard_font(standard_font font) const
     return artists_[which]->translate_standard_font(font);
 }
 
-void artist_mux::draw_focus_rect(box2i const& rect,
-    rgba8 const& color) const
+void artist_mux::draw_focus_rect(box2i const& rect) const
 {
     unsigned which = (selector_ & STYLES) != 0 ? 1 : 0;
-    return artists_[which]->draw_focus_rect(rect, color);
+    return artists_[which]->draw_focus_rect(rect);
 }
 
 // BUTTON

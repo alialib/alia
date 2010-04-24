@@ -46,7 +46,7 @@ void artist::set_color_scheme(unsigned color_scheme_index)
 {
     color_scheme cs;
     cs.dialog_normal_fg = rgb8(0x90, 0x90, 0x90);
-    cs.dialog_normal_bg = rgb8(0x04, 0x04, 0x04);
+    cs.dialog_normal_bg = rgb8(0x1f, 0x1f, 0x1f);
     cs.hot_fg = cs.dialog_normal_fg;
     cs.hot_bg = rgb8(0x3e, 0x3e, 0x40);
     cs.selected_fg = cs.dialog_normal_bg;
@@ -55,19 +55,25 @@ void artist::set_color_scheme(unsigned color_scheme_index)
     cs.focused_bg = cs.selected_bg;
     cs.disabled_fg = rgb8(0x6a, 0x6a, 0x6a);
     cs.disabled_bg = cs.dialog_normal_bg;
-    cs.link = rgb8(0x66, 0x99, 0xcc);
-    cs.depressed_link = rgb8(0x40, 0x60, 0xa0);
+    cs.heading_link = rgb8(0xde, 0xd7, 0xce);
+    cs.hot_heading_link = rgb8(0xff, 0xff, 0xff);
+    cs.depressed_heading_link = rgb8(0xff, 0xff, 0xff);
+    cs.link = rgb8(0x48, 0x8d, 0xb2);
+    cs.hot_link = rgb8(0x49, 0xb2, 0xe7);
+    cs.depressed_link = rgb8(0x49, 0xb2, 0xe7);
     cs.control_border = rgb8(0x66, 0x66, 0x66);
-    cs.focused_control_border = rgb8(0x8e, 0x6a, 0x20);
+    cs.focused_control_border = rgb8(0x8e, 0x50, 0x30);//rgb8(0x8e, 0x6a, 0x20);
     cs.separator = rgb8(0x57, 0x57, 0x57);
     cs.content_normal_fg = rgb8(0x99, 0x99, 0x99);
-    cs.content_normal_bg = rgb8(0x14, 0x14, 0x14);
-    cs.title_fg = rgb8(0xd4, 0xd4, 0xe0);
-    cs.heading_fg = rgb8(0xd4, 0xd4, 0xe0);
+    cs.content_normal_bg = rgb8(0x0f, 0x0f, 0x0f);
+    cs.title_fg = rgb8(0xe0, 0xda, 0xd0);
+    cs.heading_fg = rgb8(0xde, 0xd7, 0xce);
     cs.subheading_fg = rgb8(0xc0, 0xc0, 0xc8);
     cs.highlighted_fg = rgb8(0xbb, 0xbb, 0xbb);
     cs.control_fg = rgb8(0xb0, 0xb0, 0xb0);
-    cs.control_bg = rgb8(0x17, 0x17, 0x17);
+    cs.control_bg = rgb8(0x1f, 0x1f, 0x1f);
+    //cs.button_fg = rgb8(0xb0, 0xb0, 0xb0);
+    //cs.button_bg = rgb8(0x1f, 0x1f, 0x1f);
     set_color_scheme(cs);
 }
 
@@ -89,12 +95,14 @@ void artist::set_color_scheme(color_scheme const& cs)
     sc.disabled_fg = cs.disabled_fg;
     sc.disabled_bg = cs.disabled_bg;
     sc.link = cs.link;
-    sc.hot_link = cs.link;
+    sc.hot_link = cs.hot_link;
     sc.depressed_link = cs.depressed_link;
     sc.disabled_link = cs.disabled_fg;
     sc.border = cs.control_border;
     sc.focused_border = cs.focused_control_border;
     sc.separator = cs.separator;
+    //sc.button_fg = cs.button_fg;
+    //sc.button_bg = cs.button_bg;
     }
     {
     style_colors& sc = style_color_info[CONTENT_STYLE_CODE];
@@ -131,6 +139,10 @@ void artist::set_color_scheme(color_scheme const& cs)
     {
     style_colors& sc = style_color_info[HEADING_STYLE_CODE];
     sc = style_color_info[CONTENT_STYLE_CODE];
+    sc.link = cs.heading_link;
+    sc.hot_link = cs.hot_heading_link;
+    sc.depressed_link = cs.depressed_heading_link;
+    sc.disabled_link = cs.disabled_fg;
     sc.normal_fg = cs.heading_fg;
     }
     {
@@ -236,11 +248,17 @@ void artist::activate_style(unsigned style_code)
     unsigned substyle = style_code & 0xf;
     context& ctx = get_context();
     ctx.pass_state.active_font = translate_standard_font(NORMAL_FONT);
-    ctx.pass_state.padding_size =
-        major_style == BACKGROUND_STYLE_CODE ?
-        vector2i(0, 0) :
-        vector2i((std::max)((ctx.surface->get_ascii_text_size(
-            ctx.pass_state.active_font, " ")[0] + 1) / 2, 2), 2);
+    if (major_style == BACKGROUND_STYLE_CODE)
+    {
+        ctx.pass_state.padding_size = vector2i(0, 0);
+    }
+    else
+    {
+        int w = ctx.surface->get_ascii_text_size(
+            ctx.pass_state.active_font, "x")[0] / 2;
+        ctx.pass_state.padding_size = vector2i(
+            (std::max)(w, 2), (std::max)(w, 2));
+    }
     style_colors const& sc = get_style_colors(style_code);
     active_style_colors = &sc;
     uint8 bg_alpha = (style_code & OVERLAY_FLAG) != 0 ? overlay_alpha : 0xff;
@@ -336,7 +354,7 @@ font artist::translate_standard_font(standard_font font) const
          case NORMAL_FONT:
          default:
             return alia::font("georgia",
-                20 * get_context().font_scale_factor, font::BOLD);
+                22 * get_context().font_scale_factor, font::BOLD);
         }
         break;
      case HEADING_STYLE_CODE:
@@ -347,7 +365,7 @@ font artist::translate_standard_font(standard_font font) const
          case NORMAL_FONT:
          default:
             return alia::font("georgia",
-                15 * get_context().font_scale_factor, font::BOLD);
+                17 * get_context().font_scale_factor, font::BOLD);
         }
         break;
      case SUBHEADING_STYLE_CODE:
@@ -358,7 +376,7 @@ font artist::translate_standard_font(standard_font font) const
          case NORMAL_FONT:
          default:
             return alia::font("georgia",
-                12 * get_context().font_scale_factor, font::BOLD);
+                13 * get_context().font_scale_factor, font::BOLD);
         }
         break;
      case HIGHLIGHTED_STYLE_CODE:

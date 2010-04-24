@@ -33,6 +33,8 @@ class window : public top_level_window
     bool is_maximized() const;
     void set_maximized(bool maximized);
 
+    bool is_minimized() const;
+
     bool is_fit_to_contents() const;
     void set_fit_to_contents(bool fit_to_contents);
 

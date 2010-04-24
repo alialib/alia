@@ -82,8 +82,7 @@ class artist
 
     virtual font translate_standard_font(standard_font font) const = 0;
 
-    virtual void draw_focus_rect(box2i const& rect,
-        rgba8 const& color) const = 0;
+    virtual void draw_focus_rect(box2i const& rect) const = 0;
 
   // BUTTON
 

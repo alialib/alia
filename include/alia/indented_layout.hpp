@@ -7,10 +7,12 @@
 
 namespace alia {
 
+void do_indent(context& ctx);
+
 class indented_layout : boost::noncopyable
 {
  public:
-    indented_layout() : active_(false) {}
+    indented_layout() {}
     indented_layout(context& ctx,layout const& layout_spec = default_layout,
         flag_set flags = NO_FLAGS)
     { begin(ctx, layout_spec, flags); }

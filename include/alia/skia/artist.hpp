@@ -129,7 +129,8 @@ class artist : public alia::artist
         rgb8 selected_fg, selected_bg;
         rgb8 focused_fg, focused_bg;
         rgb8 disabled_fg, disabled_bg;
-        rgb8 link, depressed_link;
+        rgb8 heading_link, hot_heading_link, depressed_heading_link;
+        rgb8 link, hot_link, depressed_link;
         rgb8 control_border, focused_control_border;
         rgb8 separator;
         rgb8 content_normal_bg, content_normal_fg;

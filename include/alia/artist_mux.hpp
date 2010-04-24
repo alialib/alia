@@ -44,8 +44,7 @@ class artist_mux : public artist
 
     font translate_standard_font(standard_font font) const;
 
-    void draw_focus_rect(box2i const& rect,
-        rgba8 const& color) const;
+    void draw_focus_rect(box2i const& rect) const;
 
   // BUTTON
 

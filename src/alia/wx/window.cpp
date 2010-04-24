@@ -255,6 +255,11 @@ void window::set_maximized(bool maximized)
         impl_->initially_maximized = maximized;
 }
 
+bool window::is_minimized() const
+{
+    return impl_->window ? impl_->window->IsIconized() : false;
+}
+
 bool window::is_fit_to_contents() const
 {
     return impl_->fit_to_contents;

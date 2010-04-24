@@ -108,7 +108,8 @@ struct text_control
             spec.flags |= LEFT;
 
         panel_.begin(ctx, TEXT_CONTROL_STYLE, spec, HORIZONTAL);
-
+        if (id_has_focus(ctx, id))
+            artist.draw_focus_rect(panel_.get_region());
         switch (ctx.event->category)
         {
          case LAYOUT_CATEGORY:
@@ -173,7 +174,7 @@ struct text_control
         int minimum_width = get_font_metrics(ctx,
             ctx.pass_state.active_font).average_width * 6 + 1;
         int default_width = get_font_metrics(ctx,
-            ctx.pass_state.active_font).average_width * 12 + 1;
+            ctx.pass_state.active_font).average_width * 30 + 1;
         // TODO: The user specified size should probably only be used
         // here if it's in character-related units.
         vector2i requested_size = resolve_size(ctx, layout_spec.size);

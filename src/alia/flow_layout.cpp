@@ -83,6 +83,7 @@ int flow_layout_logic::get_width_for_node(int minimum_width, float proportion)
 {
     if (remaining_width_ < minimum_width)
         start_new_row();
+    if (remaining_width_ < minimum_width)
     assert(remaining_width_ >= minimum_width);
     remaining_width_ -= minimum_width;
     flow_layout_data::row_info& ri = data_->rows.back();
