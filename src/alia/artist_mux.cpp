@@ -81,6 +81,12 @@ vector2i artist_mux::get_button_size(artist_data_ptr& data,
     return artists_[which]->get_button_size(data, content_size);
 }
 
+rgba8 artist_mux::get_button_text_color(widget_state state) const
+{
+    unsigned which = (selector_ & BUTTON) != 0 ? 1 : 0;
+    return artists_[which]->get_button_text_color(state);
+}
+
 vector2i artist_mux::get_button_content_offset(artist_data_ptr& data,
     vector2i const& content_size, widget_state state) const
 {

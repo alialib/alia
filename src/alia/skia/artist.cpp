@@ -58,11 +58,11 @@ void artist::set_color_scheme(unsigned color_scheme_index)
     cs.heading_link = rgb8(0xde, 0xd7, 0xce);
     cs.hot_heading_link = rgb8(0xff, 0xff, 0xff);
     cs.depressed_heading_link = rgb8(0xff, 0xff, 0xff);
-    cs.link = rgb8(0x48, 0x8d, 0xb2);
+    cs.link = rgb8(0x48, 0x8d, 0xb2);//rgb8(0x03, 0x55, 0x73);
     cs.hot_link = rgb8(0x49, 0xb2, 0xe7);
     cs.depressed_link = rgb8(0x49, 0xb2, 0xe7);
     cs.control_border = rgb8(0x66, 0x66, 0x66);
-    cs.focused_control_border = rgb8(0x8e, 0x50, 0x30);//rgb8(0x8e, 0x6a, 0x20);
+    cs.focused_control_border = rgb8(0x8e, 0x6a, 0x20);//rgb8(0x05, 0xa0, 0x75);
     cs.separator = rgb8(0x57, 0x57, 0x57);
     cs.content_normal_fg = rgb8(0x99, 0x99, 0x99);
     cs.content_normal_bg = rgb8(0x0f, 0x0f, 0x0f);
@@ -72,8 +72,10 @@ void artist::set_color_scheme(unsigned color_scheme_index)
     cs.highlighted_fg = rgb8(0xbb, 0xbb, 0xbb);
     cs.control_fg = rgb8(0xb0, 0xb0, 0xb0);
     cs.control_bg = rgb8(0x1f, 0x1f, 0x1f);
-    //cs.button_fg = rgb8(0xb0, 0xb0, 0xb0);
-    //cs.button_bg = rgb8(0x1f, 0x1f, 0x1f);
+    cs.button_fg = rgb8(0xf0, 0xf0, 0xf0);
+    cs.button_normal_bg = rgb8(0x20, 0x60, 0x80);
+    cs.button_hot_bg = rgb8(0x3a, 0x7f, 0x99);
+    cs.button_depressed_bg = rgb8(0x3a, 0x7f, 0x99);
     set_color_scheme(cs);
 }
 
@@ -101,8 +103,10 @@ void artist::set_color_scheme(color_scheme const& cs)
     sc.border = cs.control_border;
     sc.focused_border = cs.focused_control_border;
     sc.separator = cs.separator;
-    //sc.button_fg = cs.button_fg;
-    //sc.button_bg = cs.button_bg;
+    sc.button_fg = cs.button_fg;
+    sc.button_normal_bg = cs.button_normal_bg;
+    sc.button_hot_bg = cs.button_hot_bg;
+    sc.button_depressed_bg = cs.button_depressed_bg;
     }
     {
     style_colors& sc = style_color_info[CONTENT_STYLE_CODE];
@@ -434,12 +438,55 @@ vector2i artist::get_button_content_offset(artist_data_ptr& data,
     return offset;
 }
 
+rgba8 artist::get_button_text_color(widget_state state) const
+{
+    return active_style_colors->button_fg;
+}
+
 void artist::draw_button(artist_data_ptr& data_, box2i const& region,
     widget_state state) const
 {
-    draw_box(region, state, 0);
+    surface& surface = get_surface();
+
+    rgba8 fill_color;
+    uint8 bg_alpha = (get_context().pass_state.style_code & OVERLAY_FLAG) != 0
+        ? overlay_alpha : 0xff;
+    if ((state & widget_states::DISABLED) != 0)
+    {
+        fill_color = rgba8(active_style_colors->disabled_bg, bg_alpha);
+    }
+    else
+    {
+        switch (state & widget_states::PRIMARY_STATE_MASK)
+        {
+         case widget_states::HOT:
+            fill_color = rgba8(active_style_colors->button_hot_bg, bg_alpha);
+            break;
+         case widget_states::DEPRESSED:
+            fill_color = rgba8(active_style_colors->button_depressed_bg,
+                bg_alpha);
+            break;
+         default:
+            fill_color = rgba8(active_style_colors->button_normal_bg,
+                bg_alpha);
+        }
+    }
+    point2i poly[4];
+    box2i fill_region = region;
+    if ((state & widget_states::PRIMARY_STATE_MASK) ==
+        widget_states::DEPRESSED)
+    {
+        ++fill_region.corner[0];
+        ++fill_region.corner[1];
+    }
+    make_polygon(poly, fill_region);
+    surface.draw_filled_polygon(fill_color, poly, 4);
+
     if ((state & widget_states::FOCUSED) != 0)
-        draw_focus_rect(add_border(region, -2));
+    {
+        draw_focus_rect(add_border(fill_region, -2),
+            rgb8(0xd0, 0xd0, 0xd0));
+    }
 }
 
 // LINK

@@ -56,7 +56,7 @@ button_result do_button(
         vector2i content_offset = ctx.artist->get_button_content_offset(
             data.artist_data, data.cached_text->get_size(), state);
         data.cached_text->draw(point2d(region.corner + content_offset),
-            ctx.pass_state.text_color);
+            ctx.artist->get_button_text_color(state));
         break;
       }
      case REGION_CATEGORY:

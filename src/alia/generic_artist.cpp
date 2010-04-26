@@ -397,6 +397,12 @@ vector2i generic_artist::get_button_size(artist_data_ptr& data,
         (std::max)(content_size[1] + 8, 23));
 }
 
+rgba8 generic_artist::get_button_text_color(widget_state state) const
+{
+    // TODO
+    return black;
+}
+
 vector2i generic_artist::get_button_content_offset(artist_data_ptr& data,
     vector2i const& content_size, widget_state state) const
 {

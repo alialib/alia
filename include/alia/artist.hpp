@@ -90,6 +90,8 @@ class artist
     virtual vector2i get_button_size(artist_data_ptr& data,
         vector2i const& content_size) const = 0;
 
+    virtual rgba8 get_button_text_color(widget_state state) const = 0;
+
     // Get the position within a button at which the contents should be
     // rendered.
     virtual vector2i get_button_content_offset(artist_data_ptr& data,

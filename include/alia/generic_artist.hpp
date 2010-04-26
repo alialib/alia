@@ -22,6 +22,7 @@ class generic_artist : public artist
 
     vector2i get_button_size(artist_data_ptr& data,
         vector2i const& content_size) const;
+    rgba8 get_button_text_color(widget_state state) const;
     vector2i get_button_content_offset(artist_data_ptr& data,
         vector2i const& content_size, widget_state state) const;
     void draw_button(artist_data_ptr& data, box2i const& region,

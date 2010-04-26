@@ -22,6 +22,7 @@ class artist : public alia::artist
 
     vector2i get_button_size(artist_data_ptr& data,
         vector2i const& content_size) const;
+    rgba8 get_button_text_color(widget_state state) const;
     vector2i get_button_content_offset(artist_data_ptr& data,
         vector2i const& content_size, widget_state state) const;
     void draw_button(artist_data_ptr& data, box2i const& region,
@@ -112,6 +113,7 @@ class artist : public alia::artist
         rgb8 normal_fg, normal_bg;
         rgb8 highlighted_fg;
         rgb8 control_fg, control_bg;
+        rgb8 button_normal_bg, button_hot_bg, button_depressed_bg, button_fg;
         rgb8 hot_fg, hot_bg;
         rgb8 selected_fg, selected_bg;
         rgb8 focused_fg, focused_bg;
@@ -132,6 +134,7 @@ class artist : public alia::artist
         rgb8 heading_link, hot_heading_link, depressed_heading_link;
         rgb8 link, hot_link, depressed_link;
         rgb8 control_border, focused_control_border;
+        rgb8 button_normal_bg, button_hot_bg, button_depressed_bg, button_fg;
         rgb8 separator;
         rgb8 content_normal_bg, content_normal_fg;
         rgb8 title_fg, heading_fg, subheading_fg, highlighted_fg;

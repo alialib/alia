@@ -48,6 +48,8 @@ class artist_mux : public artist
 
   // BUTTON
 
+    rgba8 get_button_text_color(widget_state state) const;
+
     vector2i get_button_size(artist_data_ptr& data,
         vector2i const& content_size) const;
 
