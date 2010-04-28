@@ -24,12 +24,14 @@ void clickable_panel::begin(
     {
         clicked_ = detect_click(ctx, id, LEFT_BUTTON) ||
             detect_proper_key_release(ctx, data.key_state, id, KEY_SPACE);
-        if (ctx.event->type == RENDER_EVENT &&
-            detect_potential_click(ctx, id) ||
-            detect_click_in_progress(ctx, id, LEFT_BUTTON))
-        {
-            ctx.surface->set_mouse_cursor(HAND_CURSOR);
-        }
+        //if (ctx.event->type == RENDER_EVENT &&
+        //    detect_potential_click(ctx, id) ||
+        //    detect_click_in_progress(ctx, id, LEFT_BUTTON))
+        //{
+        //    ctx.surface->set_mouse_cursor(HAND_CURSOR);
+        //}
+        if (id_has_focus(ctx, id))
+            ctx.artist->draw_focus_rect(panel_.get_region());
         add_to_focus_order(ctx, id);
     }
     else

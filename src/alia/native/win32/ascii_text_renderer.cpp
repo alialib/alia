@@ -98,7 +98,14 @@ ascii_text_renderer::ascii_text_renderer(surface& surface,
     widths_['\n'] = widths_['\r'] = 0;
     trailing_space_['\n'] = trailing_space_['\r'] = 0;
 
-    vector2i cell_size(tm.tmMaxCharWidth + overhang * 2, tm.tmHeight),
+    int max_width = 0;
+    for (int i = 0; i < 256; ++i)
+    {
+        if (widths_[i] > max_width)
+            max_width = widths_[i];
+    }
+
+    vector2i cell_size(max_width + overhang * 2, tm.tmHeight),
         image_size = cell_size * 16;
     dc.create(image_size, 0);
 

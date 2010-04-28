@@ -28,6 +28,7 @@ void ascii_text_renderer::write(
     {
         uint8 c = uint8(text[i]);
         int character_width = widths_[c];
+        assert(character_width + metrics_.overhang * 2 <= cell_size_[0]);
         box2d r(
             point2d((c % 16) * cell_size_[0], (c / 16) * cell_size_[1]),
             vector2d(character_width + metrics_.overhang * 2, cell_size_[1]));
@@ -60,6 +61,7 @@ void ascii_text_renderer::get_character_image(
     image_view<uint8>* r, char c) const
 {
     uint8 index = uint8(c);
+    assert(widths_[index] + metrics_.overhang * 2 <= cell_size_[0]);
     *r = subimage(*image_, box2i(
         point2i((index % 16) * cell_size_[0], (index / 16) * cell_size_[1]),
         vector2i(widths_[index] + metrics_.overhang * 2, cell_size_[1])));

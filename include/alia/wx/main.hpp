@@ -25,6 +25,7 @@ class application : public wxGLApp
  public:
     bool OnInit();
     int OnRun();
+    int OnExit();
 
  private:
     int return_code_;

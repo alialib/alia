@@ -44,4 +44,9 @@ int application::OnRun()
         return return_code_;
 }
 
+int application::OnExit()
+{
+    return wxGLApp::OnExit();
+}
+
 }}

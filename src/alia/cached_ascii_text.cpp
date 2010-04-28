@@ -29,7 +29,7 @@ cached_ascii_text::cached_ascii_text(
     font_metrics const& metrics = renderer.get_metrics();
 
     int text_height = metrics.height;
-    create_image(text_image_, vector2i(width + metrics.overhang * 2,
+    create_image(text_image_, vector2i(width + metrics.overhang * 2 + 1,
         text_height * get_line_count() + metrics.row_gap *
         (get_line_count() - 1)));
     alia_foreach_pixel(text_image_.view, uint8, i, i = 0);
@@ -50,11 +50,17 @@ cached_ascii_text::cached_ascii_text(
                 renderer.get_character_image(&character_image, c);
                 assert(character_image.size ==
                     vector2i(w + metrics.overhang * 2, text_height));
+                vector2i clipped_size;
+                clipped_size[0] = (std::min)(character_image.size[0],
+                    text_image_.view.size[0] - x);
+                clipped_size[1] = (std::min)(character_image.size[1],
+                    text_image_.view.size[1] - y);
                 alia_foreach_pixel2(
                     subimage(text_image_.view,
-                        box2i(point2i(x, y), character_image.size)),
+                        box2i(point2i(x, y), clipped_size)),
                     uint8, i,
-                    character_image,
+                    subimage(character_image,
+                        box2i(point2i(0, 0), clipped_size)),
                     uint8, j,
                     i = (std::max)(i, j));
             }

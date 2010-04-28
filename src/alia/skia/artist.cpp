@@ -46,7 +46,7 @@ void artist::set_color_scheme(unsigned color_scheme_index)
 {
     color_scheme cs;
     cs.dialog_normal_fg = rgb8(0x90, 0x90, 0x90);
-    cs.dialog_normal_bg = rgb8(0x1f, 0x1f, 0x1f);
+    cs.dialog_normal_bg = rgb8(0x00, 0x00, 0x00);//rgb8(0x1f, 0x1f, 0x1f);
     cs.hot_fg = cs.dialog_normal_fg;
     cs.hot_bg = rgb8(0x3e, 0x3e, 0x40);
     cs.selected_fg = cs.dialog_normal_bg;
@@ -62,7 +62,7 @@ void artist::set_color_scheme(unsigned color_scheme_index)
     cs.hot_link = rgb8(0x49, 0xb2, 0xe7);
     cs.depressed_link = rgb8(0x49, 0xb2, 0xe7);
     cs.control_border = rgb8(0x66, 0x66, 0x66);
-    cs.focused_control_border = rgb8(0x8e, 0x6a, 0x20);//rgb8(0x05, 0xa0, 0x75);
+    cs.focused_control_border = rgb8(0xc0, 0xa0, 0x80);//rgb8(0x8e, 0x6a, 0x20);//rgb8(0x05, 0xa0, 0x75);
     cs.separator = rgb8(0x57, 0x57, 0x57);
     cs.content_normal_fg = rgb8(0x99, 0x99, 0x99);
     cs.content_normal_bg = rgb8(0x0f, 0x0f, 0x0f);
@@ -71,7 +71,7 @@ void artist::set_color_scheme(unsigned color_scheme_index)
     cs.subheading_fg = rgb8(0xc0, 0xc0, 0xc8);
     cs.highlighted_fg = rgb8(0xbb, 0xbb, 0xbb);
     cs.control_fg = rgb8(0xb0, 0xb0, 0xb0);
-    cs.control_bg = rgb8(0x1f, 0x1f, 0x1f);
+    cs.control_bg = rgb8(0x1b, 0x1b, 0x1b);
     cs.button_fg = rgb8(0xf0, 0xf0, 0xf0);
     cs.button_normal_bg = rgb8(0x20, 0x60, 0x80);
     cs.button_hot_bg = rgb8(0x3a, 0x7f, 0x99);
@@ -117,9 +117,9 @@ void artist::set_color_scheme(color_scheme const& cs)
     sc.control_fg = cs.control_fg;
     sc.control_bg = cs.control_bg;
     sc.hot_fg = cs.content_normal_fg;
-    sc.hot_bg = blend(cs.content_normal_bg, cs.content_normal_fg, 0.85f);
+    sc.hot_bg = blend(cs.content_normal_bg, cs.content_normal_fg, 0.90f);
     sc.selected_fg = cs.content_normal_fg;
-    sc.selected_bg = blend(cs.content_normal_bg, cs.content_normal_fg, 0.75f);
+    sc.selected_bg = blend(cs.content_normal_bg, cs.content_normal_fg, 0.85f);
     sc.focused_fg = cs.content_normal_fg;
     sc.focused_bg = sc.selected_bg;
     }
@@ -139,6 +139,9 @@ void artist::set_color_scheme(color_scheme const& cs)
     style_colors& sc = style_color_info[TITLE_STYLE_CODE];
     sc = style_color_info[CONTENT_STYLE_CODE];
     sc.normal_fg = cs.title_fg;
+    sc.hot_fg = cs.title_fg;
+    sc.selected_fg = cs.title_fg;
+    sc.focused_fg = cs.title_fg;
     }
     {
     style_colors& sc = style_color_info[HEADING_STYLE_CODE];
@@ -148,6 +151,9 @@ void artist::set_color_scheme(color_scheme const& cs)
     sc.depressed_link = cs.depressed_heading_link;
     sc.disabled_link = cs.disabled_fg;
     sc.normal_fg = cs.heading_fg;
+    sc.hot_fg = cs.heading_fg;
+    sc.selected_fg = cs.heading_fg;
+    sc.focused_fg = cs.heading_fg;
     }
     {
     style_colors& sc = style_color_info[SUBHEADING_STYLE_CODE];
@@ -258,10 +264,11 @@ void artist::activate_style(unsigned style_code)
     }
     else
     {
-        int w = ctx.surface->get_ascii_text_size(
-            ctx.pass_state.active_font, "x")[0] / 2;
-        ctx.pass_state.padding_size = vector2i(
-            (std::max)(w, 2), (std::max)(w, 2));
+        //int w = ctx.surface->get_ascii_text_size(
+        //    ctx.pass_state.active_font, "x")[0] / 2;
+        //ctx.pass_state.padding_size = vector2i(
+        //    (std::max)(w, 2), (std::max)(w, 2));
+        ctx.pass_state.padding_size = vector2i(2, 2);
     }
     style_colors const& sc = get_style_colors(style_code);
     active_style_colors = &sc;
@@ -916,6 +923,13 @@ void artist::draw_panel_background(artist_data_ptr& data,
     make_polygon(poly, rect);
     get_surface().draw_filled_polygon(get_context().pass_state.bg_color, poly,
         4);
+
+    if (((get_context().pass_state.style_code >> 4) & 0xf) ==
+        TEXT_CONTROL_STYLE_CODE)
+    {
+        draw_focus_rect(rect, blend(active_style_colors->control_fg,
+            active_style_colors->control_bg, 0.4));
+    }
     // TODO: This should technically be here, but it makes the Astroid UI look
     // noisy. Ideally, these should only be drawn when using keyboard
     // navigation (or there should be a flag for that). Alternatively, focus
