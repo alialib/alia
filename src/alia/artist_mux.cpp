@@ -56,7 +56,6 @@ void artist_mux::activate_style(unsigned style_code)
 void artist_mux::restore_style(unsigned style_code)
 {
     unsigned which = (selector_ & STYLES) != 0 ? 1 : 0;
-    artists_[1 - which]->activate_style(style_code);
     artists_[which]->restore_style(style_code);
 }
 

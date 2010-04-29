@@ -396,7 +396,8 @@ static void calculate_ruler_values(
     box2i const& region,
     point2d& initial_value, vector2d& value_inc,
     point2d& initial_location, vector2d& location_inc,
-    vector2i& n_major_ticks)
+    vector2i& n_major_ticks,
+    double scale)
 {
     // NOTE: "ruler space" refers to the current coordinate frame of the
     // canvas.  The coordinates labeled on the rulers refer to this space.
@@ -423,11 +424,12 @@ static void calculate_ruler_values(
     // rulers (i.e, the location in ruler space).  "location" refers to the
     // position on the canvas.
 
-    point2d value_at_origin(dot(vector2d(canvas_origin), dx),
-        dot(vector2d(canvas_origin), dy));
+    point2d value_at_origin(dot(vector2d(canvas_origin), dx) * scale,
+        dot(vector2d(canvas_origin), dy) * scale);
 
     vector2d value_inc_per_pixel(
-        point2d(dot(vector2d(canvas_x), dx), dot(vector2d(canvas_y), dy)) -
+        point2d(dot(vector2d(canvas_x), dx) * scale,
+            dot(vector2d(canvas_y), dy) * scale) -
         value_at_origin);
 
     // TODO: This should use physicals units, or units relative to the font
@@ -515,11 +517,12 @@ void draw_side_ruler(
     vector2d value_inc, location_inc;
     vector2i n_major_ticks;
     calculate_ruler_values(canvas, canvas.region(), initial_value,
-        value_inc, initial_location, location_inc, n_major_ticks);
+        value_inc, initial_location, location_inc, n_major_ticks,
+        scale);
 
-    initial_value[0] /= scale;
-    initial_value[1] /= scale;
-    value_inc /= scale;
+    //initial_value[0] /= scale;
+    //initial_value[1] /= scale;
+    //value_inc /= scale;
 
     // TODO: These shouldn't simply be hardcoded.
     bool label_half_ticks[2], draw_tenth_ticks[2];
