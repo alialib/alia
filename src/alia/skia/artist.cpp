@@ -46,7 +46,7 @@ void artist::set_color_scheme(unsigned color_scheme_index)
 {
     color_scheme cs;
     cs.dialog_normal_fg = rgb8(0x90, 0x90, 0x90);
-    cs.dialog_normal_bg = rgb8(0x00, 0x00, 0x00);//rgb8(0x1f, 0x1f, 0x1f);
+    cs.dialog_normal_bg = rgb8(0x10, 0x10, 0x10);//rgb8(0x1f, 0x1f, 0x1f);
     cs.hot_fg = cs.dialog_normal_fg;
     cs.hot_bg = rgb8(0x3e, 0x3e, 0x40);
     cs.selected_fg = cs.dialog_normal_bg;
@@ -68,7 +68,7 @@ void artist::set_color_scheme(unsigned color_scheme_index)
     cs.content_normal_bg = rgb8(0x1a, 0x1a, 0x1a);
     cs.title_fg = rgb8(0xe0, 0xda, 0xd0);
     cs.heading_fg = rgb8(0xde, 0xd7, 0xce);
-    cs.subheading_fg = rgb8(0xc0, 0xc0, 0xc8);
+    cs.subheading_fg = rgb8(0xc0, 0xc0, 0xc0);
     cs.highlighted_fg = rgb8(0xbb, 0xbb, 0xbb);
     cs.control_fg = rgb8(0xb0, 0xb0, 0xb0);
     cs.control_bg = rgb8(0x22, 0x22, 0x22);
@@ -365,7 +365,7 @@ font artist::translate_standard_font(standard_font font) const
          case NORMAL_FONT:
          default:
             return alia::font("georgia",
-                22 * get_context().font_scale_factor, font::BOLD);
+                20 * get_context().font_scale_factor, font::BOLD);
         }
         break;
      case HEADING_STYLE_CODE:
@@ -376,7 +376,7 @@ font artist::translate_standard_font(standard_font font) const
          case NORMAL_FONT:
          default:
             return alia::font("georgia",
-                17 * get_context().font_scale_factor, font::BOLD);
+                16 * get_context().font_scale_factor, font::BOLD);
         }
         break;
      case SUBHEADING_STYLE_CODE:
@@ -387,7 +387,7 @@ font artist::translate_standard_font(standard_font font) const
          case NORMAL_FONT:
          default:
             return alia::font("georgia",
-                13 * get_context().font_scale_factor, font::BOLD);
+                14 * get_context().font_scale_factor, font::BOLD);
         }
         break;
      case HIGHLIGHTED_STYLE_CODE:
@@ -822,7 +822,7 @@ void draw_scrollbar_thumb(
     paint.setStrokeWidth(SkIntToScalar(scrollbar_width - 2));
     paint.setStrokeCap(SkPaint::kRound_Cap);
     float const r = scrollbar_width / 2;
-    canvas.drawLine(SkScalar(r), SkScalar(r), SkScalar(r),
+    canvas.drawLine(SkScalar(r), SkScalar(r), SkScalar(size[0] - r),
         SkScalar(size[1] - r), paint);
 }
 
