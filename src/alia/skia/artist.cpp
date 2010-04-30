@@ -422,21 +422,23 @@ font artist::translate_standard_font(standard_font font) const
 vector2i artist::get_button_size(artist_data_ptr& data,
     vector2i const& content_size) const
 {
+    int font_size = int(get_context().pass_state.active_font.get_size() + 0.5);
     return vector2i(
-        (std::max)(content_size[0] + 12, 75),
-        (std::max)(content_size[1] + 8, 23));
+        (std::max)(content_size[0] + font_size, font_size * 6),
+        (std::max)(content_size[1] + font_size / 3 + 4, font_size + 4));
 }
 
 vector2i artist::get_button_content_offset(artist_data_ptr& data,
     vector2i const& content_size, widget_state state) const
 {
-    vector2i offset(6, 4);
+    int font_size = int(get_context().pass_state.active_font.get_size() + 0.5);
+    vector2i offset(font_size / 3, font_size / 6 + 2);
     if ((state & widget_states::PRIMARY_STATE_MASK) ==
         widget_states::DEPRESSED)
     {
         offset += vector2i(1, 1);
     }
-    vector2i minimum_content_size(63, 15);
+    vector2i minimum_content_size(font_size * 5, font_size * 2 / 3);
     for (int i = 0; i < 2; ++i)
     {
         if (content_size[i] < minimum_content_size[i])
@@ -678,7 +680,9 @@ void artist::draw_radio_button(artist_data_ptr& data_ptr, bool selected,
         data->state = state;
         data->selected = selected;
     }
-    data->cached_img->draw(point2d(position - vector2i(2, 2)));
+    // - (4, 4) to compensate for the fact that the image is larger than the
+    // supposed size of the radio button
+    data->cached_img->draw(point2d(position - vector2i(4, 4)));
 }
 
 // NODE EXPANDER
@@ -800,23 +804,6 @@ void draw_scrollbar_thumb(
 {
     SkPaint paint;
     paint.setFlags(SkPaint::kAntiAlias_Flag);
-
-    //SkPoint pts[2] = {
-    //    SkPoint::Make(0, 0),
-    //    SkPoint::Make(SkIntToScalar(scrollbar_width), 0) };
-    //rgba8 fga = scale(fg, 0.8f);
-    //rgba8 fgb = scale(fg, 0.93f);
-    //SkColor colors[5] = {
-    //    SkColorSetARGB(fga.a, fga.r, fga.g, fga.b),
-    //    SkColorSetARGB(fgb.a, fgb.r, fgb.g, fgb.b),
-    //    SkColorSetARGB(fg.a, fg.r, fg.g, fg.b),
-    //    SkColorSetARGB(fgb.a, fgb.r, fgb.g, fgb.b),
-    //    SkColorSetARGB(fga.a, fga.r, fga.g, fga.b) };
-    //SkScalar pos[5] = { 0, 1, 8, 9, 10 };
-    //SkShader* shader = SkGradientShader::CreateLinear(
-    //    pts, colors, 0, 5, SkShader::kClamp_TileMode, 0 );
-    //paint.setShader(shader);
-    //shader->unref();
 
     paint.setARGB(fg.a, fg.r, fg.g, fg.b);
     paint.setStrokeWidth(SkIntToScalar(scrollbar_width - 2));
@@ -1220,27 +1207,132 @@ void artist::draw_progress_bar(artist_data_ptr& data,
 
 // ICON BUTTONS
 
-static vector2i icon_button_size(15, 15);
+static vector2i const icon_button_size(17, 17);
+static vector2i const icon_button_image_size(25, 25);
+
+struct icon_button_data : artist_data
+{
+    //icon_button_data() : version(0) {}
+    //unsigned version;
+    widget_state state;
+    standard_icon icon;
+    image<rgba8> img;
+    cached_image_ptr cached_img;
+};
+
+void draw_icon_button(
+    SkCanvas& canvas, standard_icon icon, rgba8 const& bg, rgba8 const& fg,
+    rgba8 const& border)
+{
+    SkPaint paint;
+    paint.setFlags(SkPaint::kAntiAlias_Flag);
+
+    vector2d center = vector2d(icon_button_image_size) / 2;
+
+    paint.setARGB(bg.a, bg.r, bg.g, bg.b);
+    paint.setStyle(SkPaint::kFill_Style);
+    canvas.drawCircle(SkScalar(center[0]), SkScalar(center[1]), 9, paint);
+
+    switch (icon)
+    {
+     case REMOVE_ICON:
+      {
+        float a = 8.5;
+        paint.setARGB(fg.a, fg.r, fg.g, fg.b);
+        paint.setStrokeWidth(SkIntToScalar(3));
+        paint.setStrokeCap(SkPaint::kRound_Cap);
+        paint.setStyle(SkPaint::kFill_Style);
+        canvas.drawLine(SkScalar(a), SkScalar(a),
+            SkScalar(icon_button_image_size[0] - a),
+            SkScalar(icon_button_image_size[1] - a), paint);
+        canvas.drawLine(SkScalar(icon_button_image_size[0] - a), SkScalar(a),
+            SkScalar(a), SkScalar(icon_button_image_size[1] - a), paint);
+        break;
+      }
+    }
+
+    if (border.a)
+    {
+        paint.setARGB(border.a, border.r, border.g, border.b);
+        paint.setStyle(SkPaint::kStroke_Style);
+        paint.setStrokeWidth(SkIntToScalar(1.5));
+            canvas.drawCircle(SkScalar(center[0]), SkScalar(center[1]), 9.5,
+            paint);
+    }
+}
+
+void create_icon_button_image(
+    image<rgba8>& img, standard_icon icon, rgba8 const& bg, rgba8 const& fg,
+    rgba8 const& border)
+{
+    create_image(img, icon_button_image_size);
+    alia_foreach_pixel(img.view, rgba8, i,
+        i.r = 0x00;
+        i.g = 0x00;
+        i.b = 0x00;
+        i.a = 0x00)
+    image_canvas canvas(img.view);
+    draw_icon_button(canvas.canvas, icon, bg, fg, border);
+    alia_foreach_pixel(img.view, rgba8, i,
+        if (i.a != 0)
+        {
+            i.r = uint8(int(i.r) * 0xff / i.a);
+            i.g = uint8(int(i.g) * 0xff / i.a);
+            i.b = uint8(int(i.b) * 0xff / i.a);
+        })
+}
 
 vector2i artist::get_icon_button_size(artist_data_ptr& data,
     standard_icon icon)
 {
     return icon_button_size;
 }
-void artist::draw_icon_button(artist_data_ptr& data,
-    standard_icon icon, point2i const& position, widget_state state)
+
+void artist::draw_icon_button(artist_data_ptr& data_ptr, standard_icon icon,
+    point2i const& position, widget_state state)
 {
-    box2i region(position, icon_button_size);
-
-    point2i poly[4];
-    make_polygon(poly, region);
-    get_surface().draw_filled_polygon(get_bg_color(state), poly, 4);
-
-    if ((state & widget_states::FOCUSED) != 0)
-        draw_focus_rect(region);
-
-    rgba8 fg_color = get_fg_color(state);
-    // TODO
+    assert(!data_ptr || dynamic_cast<icon_button_data*>(data_ptr.get()));
+    icon_button_data* data = static_cast<icon_button_data*>(data_ptr.get());
+    if (!data || data->state != state || data->icon != icon)
+        //|| data->version != impl_->version)
+    {
+        data = new icon_button_data;
+        data_ptr.reset(data);
+        create_icon_button_image(data->img, icon,
+            get_bg_color(state),
+            get_fg_color(state),
+            (state & widget_states::FOCUSED) != 0 ?
+            active_style_colors->focused_border : rgba8(0, 0, 0, 0));
+        get_context().surface->cache_image(data->cached_img,
+            make_interface(data->img.view, 0));
+        data->state = state;
+        data->icon = icon;
+    }
+    // - (4, 4) to compensate for the fact that the image is larger than the
+    // supposed size of the icon button
+    data->cached_img->draw(point2d(position - vector2i(4, 4)));
 }
+
+//static vector2i icon_button_size(15, 15);
+//
+//vector2i artist::get_icon_button_size(artist_data_ptr& data,
+//    standard_icon icon)
+//{
+//    return icon_button_size;
+//}
+//void artist::draw_icon_button(artist_data_ptr& data,
+//    standard_icon icon, point2i const& position, widget_state state)
+//{
+//    box2i region(position, icon_button_size);
+//
+//    point2i poly[4];
+//    make_polygon(poly, region);
+//    get_surface().draw_filled_polygon(get_bg_color(state), poly, 4);
+//
+//    if ((state & widget_states::FOCUSED) != 0)
+//        draw_focus_rect(region);
+//
+//    rgba8 fg_color = get_fg_color(state);
+//}
 
 }}
