@@ -188,7 +188,10 @@ struct zoom_drag_tool_data
 void apply_zoom_drag_tool(canvas& canvas, mouse_button button,
     zoom_drag_tool_data* data = 0);
 
-// Draw grid lines on a canvas.
+void draw_grid_lines_for_axis(canvas& canvas, box2d const& box,
+    rgba8 const& color, line_style const& style, double spacing,
+    unsigned axis, unsigned skip = 0);
+
 void draw_grid_lines(canvas& canvas, box2d const& box, rgba8 const& color,
     line_style const& style, double spacing, unsigned axis, unsigned skip = 0);
 

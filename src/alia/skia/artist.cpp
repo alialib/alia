@@ -266,9 +266,8 @@ void artist::activate_style(unsigned style_code)
     {
         //int w = ctx.surface->get_ascii_text_size(
         //    ctx.pass_state.active_font, "x")[0] / 2;
-        //ctx.pass_state.padding_size = vector2i(
-        //    (std::max)(w, 2), (std::max)(w, 2));
-        ctx.pass_state.padding_size = vector2i(2, 2);
+        ctx.pass_state.padding_size = vector2i(
+            int(2 * get_context().font_scale_factor + 0.5), 2);
     }
     style_colors const& sc = get_style_colors(style_code);
     active_style_colors = &sc;
@@ -424,7 +423,7 @@ vector2i artist::get_button_size(artist_data_ptr& data,
 {
     int font_size = int(get_context().pass_state.active_font.get_size() + 0.5);
     return vector2i(
-        (std::max)(content_size[0] + font_size, font_size * 6),
+        (std::max)(content_size[0] + font_size + 4, font_size * 5 + 4),
         (std::max)(content_size[1] + font_size / 3 + 4, font_size + 4));
 }
 
@@ -432,13 +431,13 @@ vector2i artist::get_button_content_offset(artist_data_ptr& data,
     vector2i const& content_size, widget_state state) const
 {
     int font_size = int(get_context().pass_state.active_font.get_size() + 0.5);
-    vector2i offset(font_size / 3, font_size / 6 + 2);
+    vector2i offset(font_size / 2 + 2, font_size / 6 + 2);
     if ((state & widget_states::PRIMARY_STATE_MASK) ==
         widget_states::DEPRESSED)
     {
         offset += vector2i(1, 1);
     }
-    vector2i minimum_content_size(font_size * 5, font_size * 2 / 3);
+    vector2i minimum_content_size(font_size * 4, font_size * 2 / 3);
     for (int i = 0; i < 2; ++i)
     {
         if (content_size[i] < minimum_content_size[i])

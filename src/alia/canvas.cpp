@@ -259,7 +259,7 @@ void draw_checker_background(canvas& canvas, rgba8 const& color1,
         surface::TILED_IMAGE);
 }
 
-static void draw_grid_lines_for_axis(canvas& canvas, box2d const& box,
+void draw_grid_lines_for_axis(canvas& canvas, box2d const& box,
     rgba8 const& color, line_style const& style, double spacing,
     unsigned axis, unsigned skip)
 {
