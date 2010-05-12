@@ -182,4 +182,28 @@ void scoped_style::end()
     }
 }
 
+void scoped_padding_size::begin(context& ctx)
+{
+    ctx_ = &ctx;
+    old_padding_size_ = ctx.pass_state.padding_size;
+    active_ = true;
+}
+
+void scoped_padding_size::set(vector2i const& padding_size)
+{
+    ctx_->pass_state.padding_size = padding_size;
+}
+void scoped_padding_size::restore()
+{
+    ctx_->pass_state.padding_size = old_padding_size_;
+}
+void scoped_padding_size::end()
+{
+    if (active_)
+    {
+        restore();
+        active_ = false;
+    }
+}
+
 }

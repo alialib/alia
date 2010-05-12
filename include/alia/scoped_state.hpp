@@ -130,6 +130,25 @@ class scoped_style : boost::noncopyable
     bool active_;
 };
 
+class scoped_padding_size
+{
+ public:
+    scoped_padding_size() : active_(false) {}
+    scoped_padding_size(context& ctx)
+    { begin(ctx); }
+    scoped_padding_size(context& ctx, vector2i const& padding_size)
+    { begin(ctx); set(padding_size); }
+    ~scoped_padding_size() { end(); }
+    void begin(context& ctx);
+    void set(vector2i const& padding_size);
+    void restore();
+    void end();
+ private:
+    context* ctx_;
+    vector2i old_padding_size_;
+    bool active_;
+};
+
 }
 
 #endif
