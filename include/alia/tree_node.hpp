@@ -36,7 +36,7 @@ class tree_node : boost::noncopyable
 
     bool do_children();
 
-    tristate_node_expander_result const& get_expander_result() const
+    tristate_node_expander_result const& expander_result() const
     { return expander_result_; }
 
     void end();

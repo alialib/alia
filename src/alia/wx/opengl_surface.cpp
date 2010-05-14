@@ -753,12 +753,8 @@ void opengl_surface::update()
     //if (get_context().is_inside_pass())
     //    return;
 
-    // This is necessary because Astroid uses the idle event to update the
-    // state of immutable data pointers, whose underlying state can be changed
-    // by other events (button clicks, etc). This should probably be renamed
-    // to "update_event" or something similar, since this isn't idle time.
     {
-        idle_event e;
+        update_event e;
         issue_event(get_context(), e);
     }
 

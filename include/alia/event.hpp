@@ -49,7 +49,12 @@ enum event_type
     KEY_UP_EVENT,
 
     TIMER_EVENT,
+
+    // This is sent when the event loop is idle.
     IDLE_EVENT,
+
+    // This is always sent right before a refresh event.
+    UPDATE_EVENT,
 
     // other category
 
