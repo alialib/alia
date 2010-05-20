@@ -2,6 +2,9 @@
 #include <alia/drop_down_list.hpp>
 #include <alia/text_display.hpp>
 #include <alia/radio_button.hpp>
+#include <alia/control_macros.hpp>
+#include <alia/data.hpp>
+#include <alia/context.hpp>
 
 namespace alia {
 
@@ -15,7 +18,7 @@ do_enum(
 {
     if ((flags & USE_RADIO_GROUP) != 0)
     {
-        for (unsigned i = 0; i < options.size(); ++i)
+        alia_for (unsigned i = 0; i < options.size(); ++i)
         {
             if (do_radio_button(ctx, value, i, options[i]))
             {
@@ -25,6 +28,7 @@ do_enum(
                 return r;
             }
         }
+        alia_end
         enum_result<unsigned> r;
         r.changed = false;
         return r;
@@ -65,7 +69,7 @@ do_enum(
 {
     if ((flags & USE_RADIO_GROUP) != 0)
     {
-        for (unsigned i = 0; i < n_options; ++i)
+        alia_for (unsigned i = 0; i < n_options; ++i)
         {
             if (do_radio_button(ctx, value, i, options[i]))
             {
@@ -75,6 +79,7 @@ do_enum(
                 return r;
             }
         }
+        alia_end
         enum_result<unsigned> r;
         r.changed = false;
         return r;

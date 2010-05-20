@@ -83,6 +83,7 @@ bool get_data(context& ctx, T** ptr)
     {
         typed_data_node<T>* typed_node =
             static_cast<typed_data_node<T>*>(node);
+        if (!dynamic_cast<typed_data_node<T>*>(node))
         assert(dynamic_cast<typed_data_node<T>*>(node));
         next_data_ptr = &node->next;
         *ptr = &typed_node->value;

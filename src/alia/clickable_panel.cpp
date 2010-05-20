@@ -30,7 +30,7 @@ void clickable_panel::begin(
         //{
         //    ctx.surface->set_mouse_cursor(HAND_CURSOR);
         //}
-        if (id_has_focus(ctx, id))
+        if (id_has_focus(ctx, id) && (flags & NO_FOCUS_BORDER) == 0)
             ctx.artist->draw_focus_rect(panel_.get_region());
         add_to_focus_order(ctx, id);
     }

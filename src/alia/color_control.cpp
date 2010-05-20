@@ -5,6 +5,7 @@
 #include <alia/standard_colors.hpp>
 #include <alia/control_macros.hpp>
 #include <alia/text_display.hpp>
+#include <alia/spacer.hpp>
 
 namespace alia {
 
@@ -130,7 +131,16 @@ do_compressed_color_control(
     drop_down_list ddl(ctx, in(unsigned(data.index), data.index >= 0),
         colors.size()/* + 1*/, spec);
     alia_if(valid)
+    {
         do_color(ctx, value);
+    }
+    alia_else
+    {
+        int color_size =
+            get_font_metrics(ctx, ctx.pass_state.active_font).height +
+            ctx.pass_state.padding_size[1] * 2;
+        do_spacer(ctx, layout(size(color_size, color_size, PIXELS), PADDED));
+    }
     alia_end
     if (ddl.do_list())
     {

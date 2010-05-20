@@ -153,13 +153,6 @@ struct idle_event : event
     bool request_more, refresh;
 };
 
-struct update_event : event
-{
-    update_event()
-      : event(INPUT_CATEGORY, UPDATE_EVENT, NO_CULLING)
-    {}
-};
-
 }
 
 #endif

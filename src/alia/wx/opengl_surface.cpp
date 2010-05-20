@@ -753,11 +753,6 @@ void opengl_surface::update()
     //if (get_context().is_inside_pass())
     //    return;
 
-    {
-        update_event e;
-        issue_event(get_context(), e);
-    }
-
     do_layout(get_context());
     // TODO: fix this
     //impl_->holder->adjust_to_content_size(get_context().content_size);

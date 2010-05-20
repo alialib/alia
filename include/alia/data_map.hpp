@@ -24,6 +24,7 @@ struct data_map_traversal
     data_map_traversal() { active_ = false; }
     data_map_traversal(data_map<Key,Value>& data)
     { begin(data); }
+    ~data_map_traversal() { end(); }
     void begin(data_map<Key,Value>& data)
     {
         data_ = &data;
@@ -36,22 +37,27 @@ struct data_map_traversal
     }
     bool get(Value** value, Key const& key)
     {
-        std::pair<typename std::map<Key,data_map_entry<Value> >::iterator,bool>
-            r = data_->entries.insert(
+        typename std::map<Key,data_map_entry<Value> >::iterator i =
+            data_->entries.find(key);
+        bool not_found = i == data_->entries.end();
+        if (not_found)
+        {
+            i = data_->entries.insert(
                 typename std::map<Key,data_map_entry<Value> >::value_type(
-                key, data_map_entry<Value>()));
-        *value = &r.first->second.value;
-        r.first->second.touched = true;
-        return r.second;
+                key, data_map_entry<Value>())).first;
+        }
+        *value = &i->second.value;
+        i->second.touched = true;
+        return not_found;
     }
     void end()
     {
         if (active_)
         {
-            for (std::map<Key,Value>::iterator i = data_->entries.begin();
-                i != data_->entries.end(); )
+            for (std::map<Key,data_map_entry<Value> >::iterator
+                i = data_->entries.begin(); i != data_->entries.end(); )
             {
-                std::map<Key,Value>::iterator next = i;
+                std::map<Key,data_map_entry<Value> >::iterator next = i;
                 ++next;
                 if (!i->second.touched)
                     data_->entries.erase(i);
@@ -69,12 +75,18 @@ struct data_map_traversal
 template<class Key, class Value>
 bool get(Value** value, data_map<Key,Value>& data, Key const& key)
 {
-    std::pair<typename std::map<Key,data_map_entry<Value> >::iterator,bool>
-        r = data.entries.insert(
+    typename std::map<Key,data_map_entry<Value> >::iterator i =
+        data.entries.find(key);
+    bool not_found = i == data.entries.end();
+    if (not_found)
+    {
+        i = data.entries.insert(
             typename std::map<Key,data_map_entry<Value> >::value_type(
-            key, data_map_entry<Value>()));
-    *value = &r.first->second.value;
-    return r.second;
+            key, data_map_entry<Value>())).first;
+    }
+    *value = &i->second.value;
+    i->second.touched = true;
+    return not_found;
 }
 
 }

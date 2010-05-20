@@ -53,9 +53,6 @@ enum event_type
     // This is sent when the event loop is idle.
     IDLE_EVENT,
 
-    // This is always sent right before a refresh event.
-    UPDATE_EVENT,
-
     // other category
 
     INIT_EVENT,
