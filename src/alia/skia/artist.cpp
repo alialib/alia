@@ -117,9 +117,9 @@ void artist::set_color_scheme(color_scheme const& cs)
     sc.control_fg = cs.control_fg;
     sc.control_bg = cs.control_bg;
     sc.hot_fg = cs.content_normal_fg;
-    sc.hot_bg = blend(cs.content_normal_bg, cs.content_normal_fg, 0.90f);
+    sc.hot_bg = blend(cs.content_normal_bg, cs.content_normal_fg, 0.85f);
     sc.selected_fg = cs.content_normal_fg;
-    sc.selected_bg = blend(cs.content_normal_bg, cs.content_normal_fg, 0.85f);
+    sc.selected_bg = blend(cs.content_normal_bg, cs.content_normal_fg, 0.75f);
     sc.focused_fg = cs.content_normal_fg;
     sc.focused_bg = sc.selected_bg;
     }
