@@ -121,8 +121,9 @@ void frame::create()
 
     context_holder::create(window);
 
-    if (initially_maximized)
-        window->Maximize();
+    // TODO: This doesn't properly resize the OpenGL canvas inside the window.
+    //if (initially_maximized)
+    //    window->Maximize();
 
     window->SetMinSize(wxSize(minimum_size[0], minimum_size[1]));
 
