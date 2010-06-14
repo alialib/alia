@@ -216,6 +216,18 @@ void scrollable_region::end()
                 artist& artist = *ctx_->artist;
 
                 int content_size = overlay_.get_minimum_size()[which_pass];
+
+                // If the panel is scrolled all the way to the end, and it
+                // grows, scroll down to show the new, expanded area.
+                if (data_->scroll_position[which_pass] != 0 &&
+                    data_->scroll_position[which_pass] +
+                    data_->layout_data.assigned_region.size[which_pass] >=
+                    data_->content_size[which_pass])
+                {
+                    data_->scroll_position[which_pass] = content_size -
+                        data_->layout_data.assigned_region.size[which_pass];
+                }
+
                 data_->content_size[which_pass] = content_size;
 
                 // TODO: Fix the GREEDY hack.
@@ -260,7 +272,8 @@ void scrollable_region::end()
         break;
 
      case REGION_CATEGORY:
-        if (ctx_->event->type == MAKE_REGION_VISIBLE && layout_.contains_target())
+        if (ctx_->event->type == MAKE_REGION_VISIBLE &&
+            layout_.contains_target())
         {
             make_region_visible_event& e =
                 get_event<make_region_visible_event>(*ctx_);

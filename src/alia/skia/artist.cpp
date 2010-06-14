@@ -69,7 +69,7 @@ void artist::set_color_scheme(unsigned color_scheme_index)
     cs.title_fg = rgb8(0xe0, 0xda, 0xd0);
     cs.heading_fg = rgb8(0xde, 0xd7, 0xce);
     cs.subheading_fg = rgb8(0xbb, 0xbb, 0xbb);
-    cs.highlighted_fg = rgb8(0xb6, 0xb6, 0xb6);
+    cs.highlighted_fg = rgb8(0xb4, 0xb4, 0xb4);
     cs.control_fg = rgb8(0xb4, 0xb4, 0xb4);
     cs.control_bg = rgb8(0x26, 0x26, 0x26);
     cs.button_fg = rgb8(0xf0, 0xf0, 0xf0);
@@ -126,7 +126,7 @@ void artist::set_color_scheme(color_scheme const& cs)
     {
     style_colors& sc = style_color_info[ODD_CONTENT_STYLE_CODE];
     sc = style_color_info[CONTENT_STYLE_CODE];
-    sc.normal_bg = blend(cs.content_normal_bg, cs.content_normal_fg, 0.96f);
+    sc.normal_bg = blend(cs.content_normal_bg, cs.content_normal_fg, 0.97f);
     sc.hot_bg = blend(cs.content_normal_bg, cs.content_normal_fg, 0.85f);
     sc.selected_bg = blend(cs.content_normal_bg, cs.content_normal_fg, 0.75f);
     sc.focused_bg = sc.selected_bg;
@@ -758,8 +758,6 @@ state_colors scrollbar_fg = {
     rgba8(0xc0, 0xc0, 0xc0, 0xff),
     rgba8(0, 0, 0, 0xff) };
 
-rgba8 scrollbar_bg(0, 0, 0, 0xff);
-
 int const scrollbar_width = 14;
 
 int artist::get_scrollbar_width() const
@@ -845,7 +843,7 @@ void artist::draw_scrollbar_thumb(artist_data_ptr& data_ptr,
         data = new scrollbar_thumb_data;
         data_ptr.reset(data);
         create_scrollbar_thumb_image(data->img, rect.size,
-            select_color(scrollbar_fg, state), scrollbar_bg);
+            select_color(scrollbar_fg, state), active_style_colors->normal_bg);
         get_context().surface->cache_image(data->cached_img,
             make_interface(data->img.view, 0));
         data->size = rect.size;
