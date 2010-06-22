@@ -36,6 +36,7 @@ bool compute_fps(context& ctx, int* fps)
             data.fps = data.frame_count;
             data.frame_count = 0;
         }
+        end_pass(ctx);
     }
 
     start_timer(ctx, id, 0);

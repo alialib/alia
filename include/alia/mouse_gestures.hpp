@@ -19,6 +19,9 @@ typedef std::vector<gesture_direction> gesture;
 bool detect_mouse_gesture(context& ctx, region_id id,
     mouse_button button, rgba8 const& color, line_style const& style);
 
+bool detect_backward_click_sequence(context& ctx, region_id id);
+bool detect_forward_click_sequence(context& ctx, region_id id);
+
 }
 
 #endif

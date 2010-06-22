@@ -64,4 +64,25 @@ bool detect_mouse_gesture(context& ctx, region_id id,
     return false;
 }
 
+static bool detect_click_sequence(context& ctx, region_id id,
+    mouse_button button1, mouse_button button2)
+{
+    bool* applies;
+    if (get_data(ctx, &applies))
+        *applies = false;
+    if (detect_mouse_down(ctx, id, button2))
+        *applies = is_mouse_button_pressed(ctx, button1);
+    return *applies && detect_mouse_up(ctx, id, button2) &&
+        is_region_active(ctx, id);
+}
+
+bool detect_backward_click_sequence(context& ctx, region_id id)
+{
+    return detect_click_sequence(ctx, id, RIGHT_BUTTON, LEFT_BUTTON);
+}
+bool detect_forward_click_sequence(context& ctx, region_id id)
+{
+    return detect_click_sequence(ctx, id, LEFT_BUTTON, RIGHT_BUTTON);
+}
+
 }

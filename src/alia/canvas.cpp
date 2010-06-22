@@ -834,25 +834,25 @@ void apply_zoom_drag_tool(canvas& canvas, mouse_button button,
         int motion = ctx.mouse_position[0] - data->start_point_on_canvas[0];
         double new_zoom = data->starting_zoom * std::pow(1.02, motion);
         canvas.set_zoom_level(new_zoom);
-        {
-            point2d cp =
-                data->starting_camera_position + (data->start_point_in_scene -
-                canvas_to_scene(canvas, point2d(data->start_point_on_canvas),
-                    canvas.get_zoom_level(), data->starting_camera_position));
-            if (motion < 0 && data->zoom_out_panning)
-            {
-                double normal_zoom = zoom_to_fit_scene(canvas.region().size,
-                    canvas.scene_box().size);
-                double interpolation_factor =
-                    (1 / new_zoom - 1 / data->starting_zoom) /
-                    (1 / normal_zoom - 1 / data->starting_zoom);
-                cp +=
-                    (vector2d(get_center(canvas.scene_box())) - vector2d(cp)) *
-                    clamp(interpolation_factor, 0., 1.) *
-                    data->zoom_out_panning;
-            }
-            canvas.set_camera_position(cp);
-        }
+        //{
+        //    point2d cp =
+        //        data->starting_camera_position + (data->start_point_in_scene -
+        //        canvas_to_scene(canvas, point2d(data->start_point_on_canvas),
+        //            canvas.get_zoom_level(), data->starting_camera_position));
+        //    if (motion < 0 && data->zoom_out_panning)
+        //    {
+        //        double normal_zoom = zoom_to_fit_scene(canvas.region().size,
+        //            canvas.scene_box().size);
+        //        double interpolation_factor =
+        //            (1 / new_zoom - 1 / data->starting_zoom) /
+        //            (1 / normal_zoom - 1 / data->starting_zoom);
+        //        cp +=
+        //            (vector2d(get_center(canvas.scene_box())) - vector2d(cp)) *
+        //            clamp(interpolation_factor, 0., 1.) *
+        //            data->zoom_out_panning;
+        //    }
+        //    canvas.set_camera_position(cp);
+        //}
     }
 }
 

@@ -8,9 +8,11 @@
 #include <alia/typedefs.hpp>
 #include <alia/color.hpp>
 #include <alia/matrix.hpp>
+#include <alia/exception.hpp>
 #include <list>
 #include <map>
 #include <cassert>
+#include <boost/lexical_cast.hpp>
 
 namespace alia {
 
@@ -84,10 +86,27 @@ bool get_data(context& ctx, T** ptr)
         typed_data_node<T>* typed_node =
             static_cast<typed_data_node<T>*>(node);
         if (!dynamic_cast<typed_data_node<T>*>(node))
-        assert(dynamic_cast<typed_data_node<T>*>(node));
+        {
+            assert(dynamic_cast<typed_data_node<T>*>(node));
+            // TODO: dedicated exception class
+            throw exception(std::string("alia data mismatch\n"
+                "    expected: ") + typeid(T).name() + "\n"
+                "    got: " + typeid(node).name() + "\n"
+                "    pass: " +
+                    boost::lexical_cast<std::string>(ctx.event->type));
+        }
         next_data_ptr = &node->next;
         *ptr = &typed_node->value;
         return false;
+    }
+    if (ctx.event->type != REFRESH_EVENT)
+    {
+        assert(ctx.event->type == REFRESH_EVENT);
+        throw exception(std::string(
+            "new data nodes should only be encountered on refresh passes\n"
+            "    pass: ") + boost::lexical_cast<std::string>(ctx.event->type) +
+                "\n"
+            "    type: " + typeid(T).name());
     }
     typed_data_node<T>* new_node = new typed_data_node<T>;
     *next_data_ptr = new_node;

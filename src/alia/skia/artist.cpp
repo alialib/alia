@@ -35,7 +35,7 @@ rgba8 select_color(state_colors const& colors, widget_state state)
     }
 }
 
-static unsigned const overlay_alpha = 0xc0;
+static unsigned const overlay_alpha = 0xd0;
 
 void artist::initialize()
 {
@@ -181,7 +181,7 @@ unsigned artist::get_code_for_style(style s, widget_state state,
     bool selected)
 {
     unsigned major_style;
-    unsigned flags = (get_context().pass_state.style_code & OVERLAY_FLAG);
+    unsigned flags = 0;//(get_context().pass_state.style_code & OVERLAY_FLAG);
     switch (s)
     {
      case BACKGROUND_STYLE:
@@ -209,7 +209,7 @@ unsigned artist::get_code_for_style(style s, widget_state state,
         major_style = (get_context().pass_state.style_code >> 4) & 0xf;
         break;
      case OVERLAY_STYLE:
-        major_style = CONTENT_STYLE_CODE;
+        major_style = DIALOG_STYLE_CODE;
         flags |= OVERLAY_FLAG;
         break;
      case HIGHLIGHTED_STYLE:
@@ -967,7 +967,7 @@ box1i artist::get_slider_track_hot_region() const
 }
 box2i artist::get_slider_thumb_region() const
 {
-    return box2i(point2i(-6, 0), vector2i(12, 20));
+    return box2i(point2i(-5, 0), vector2i(10, 20));
 }
 void artist::draw_slider_track(artist_data_ptr& data, unsigned axis,
     int width, point2i const& position) const
