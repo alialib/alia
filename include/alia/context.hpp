@@ -37,6 +37,8 @@ struct pass_state
     point2d mouse_position;
     // the same, but converted to integers (via floor())
     point2i integer_mouse_position;
+    // this gets set when end_pass() is called
+    bool ended;
 };
 
 struct context

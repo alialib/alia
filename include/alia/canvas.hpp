@@ -202,6 +202,9 @@ void draw_side_ruler(
     rgba8 const& bg_color, rgba8 const& fg_color,
     double scale, flag_set flags);
 
+void apply_double_click_reset_tool(canvas& canvas, mouse_button button,
+    zoom_level const& default_zoom_level);
+
 struct side_rulers : boost::noncopyable
 {
  public:

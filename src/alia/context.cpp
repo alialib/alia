@@ -34,6 +34,7 @@ void issue_event(context& ctx, event& event)
 {
     ++ctx.pass_counter;
     pass_state_saver pss(ctx);
+    ctx.pass_state.ended = false;
     ctx.event = &event;
     scoped_data_block db(ctx, ctx.root_block);
     naming_context nc(ctx);
@@ -119,6 +120,7 @@ void set_transformation(context& ctx,
 
 void end_pass(context& ctx)
 {
+    ctx.pass_state.ended = true;
     throw end_pass_exception();
 }
 

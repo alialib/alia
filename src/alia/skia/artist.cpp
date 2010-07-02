@@ -181,7 +181,7 @@ unsigned artist::get_code_for_style(style s, widget_state state,
     bool selected)
 {
     unsigned major_style;
-    unsigned flags = 0;//(get_context().pass_state.style_code & OVERLAY_FLAG);
+    unsigned flags = (get_context().pass_state.style_code & IN_OVERLAY_FLAG);
     switch (s)
     {
      case BACKGROUND_STYLE:
@@ -209,8 +209,8 @@ unsigned artist::get_code_for_style(style s, widget_state state,
         major_style = (get_context().pass_state.style_code >> 4) & 0xf;
         break;
      case OVERLAY_STYLE:
-        major_style = DIALOG_STYLE_CODE;
-        flags |= OVERLAY_FLAG;
+        major_style = (get_context().pass_state.style_code >> 4) & 0xf;
+        flags |= OVERLAY_FLAG | IN_OVERLAY_FLAG;
         break;
      case HIGHLIGHTED_STYLE:
         major_style = HIGHLIGHTED_STYLE_CODE;
@@ -909,7 +909,8 @@ void artist::draw_panel_background(artist_data_ptr& data,
         4);
 
     if (((get_context().pass_state.style_code >> 4) & 0xf) ==
-        TEXT_CONTROL_STYLE_CODE)
+        TEXT_CONTROL_STYLE_CODE &&
+        (get_context().pass_state.style_code & IN_OVERLAY_FLAG) == 0)
     {
         draw_focus_rect(rect, blend(active_style_colors->control_fg,
             active_style_colors->control_bg, 0.4));

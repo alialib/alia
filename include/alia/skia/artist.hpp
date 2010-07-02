@@ -107,6 +107,7 @@ class artist : public alia::artist
     static unsigned const N_MAJOR_STYLES =                  0xa;
 
     static unsigned const OVERLAY_FLAG = 0x100;
+    static unsigned const IN_OVERLAY_FLAG = 0x200;
 
     struct style_colors
     {

@@ -692,7 +692,7 @@ void side_rulers::set_scale(unsigned axis, double scale)
 }
 void side_rulers::end()
 {
-    if (active_)
+    if (active_ && !ctx_->pass_state.ended)
     {
         active_ = false;
         assert(canvas_);
@@ -790,7 +790,7 @@ void apply_zoom_wheel_tool(canvas& canvas, unsigned mods, double factor)
 {
     alia::context& ctx = canvas.context();
     canvas.set_canvas_coordinates();
-    if (mouse_is_inside_region(ctx, canvas.region()))
+    if (is_region_hot(ctx, canvas.id()))
     {
         int movement = detect_wheel_movement(ctx);
         if (movement != 0)
@@ -853,6 +853,16 @@ void apply_zoom_drag_tool(canvas& canvas, mouse_button button,
         //    }
         //    canvas.set_camera_position(cp);
         //}
+    }
+}
+
+void apply_double_click_reset_tool(canvas& canvas, mouse_button button,
+    zoom_level const& default_zoom_level)
+{
+    if (detect_double_click(canvas.context(), canvas.id(), button))
+    {
+        canvas.set_zoom_level(default_zoom_level);
+        canvas.set_camera_position(get_center(canvas.scene_box()));
     }
 }
 

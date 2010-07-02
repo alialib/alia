@@ -166,8 +166,11 @@ void scrollable_region::begin(context& ctx, layout const& layout_spec,
         data_->content_size, vector2i(line_size, line_size),
         vector2i(-1, -1), axes_, vector2i(0, 0));
 
-    if (ctx_->event->category == REGION_CATEGORY)
-        do_region(*ctx_, id_, window_region_);
+    // TODO: This is too greedy for the Astroid viewer controls, also it
+    // doesn't really work in the normal case because the contained panel has
+    // a separate ID anyway.
+    //if (ctx_->event->category == REGION_CATEGORY)
+    //    do_region(*ctx_, id_, window_region_);
 
     scr_.begin(ctx);
     scr_.set(window_region_);
