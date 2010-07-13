@@ -79,6 +79,11 @@ text_control_result<T> do_text_control(
     }
     text_control_result<std::string> r = do_text_control(
         ctx, inout(&data->text), spec, flags, id, max_chars);
+    alia_if(!data->message.empty())
+    {
+        do_paragraph(ctx, data->message);
+    }
+    alia_end
     text_control_result<T> result;
     switch (r.event)
     {
@@ -114,11 +119,6 @@ text_control_result<T> do_text_control(
         result.changed = false;
         break;
     }
-    alia_if(!data->message.empty())
-    {
-        do_paragraph(ctx, data->message);
-    }
-    alia_end
     return result;
 }
 

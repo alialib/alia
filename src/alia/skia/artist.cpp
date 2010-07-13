@@ -1193,14 +1193,14 @@ vector2i artist::get_minimum_progress_bar_size() const
 void artist::draw_progress_bar(artist_data_ptr& data,
     box2i const& region, double value) const
 {
-    draw_outline(region, active_style_colors->normal_fg);
+    draw_outline(region, rgb8(0x50, 0x50, 0x50));
     box2i bar_rect(
         region.corner + vector2i(2, 2),
         region.size - vector2i(4, 4));
     bar_rect.size[0] = int(bar_rect.size[0] * value + 0.5);
     point2i poly[4];
     make_polygon(poly, bar_rect);
-    get_surface().draw_filled_polygon(dark_blue, poly, 4);
+    get_surface().draw_filled_polygon(rgb8(0x1c, 0x54, 0x70), poly, 4);
 }
 
 // ICON BUTTONS

@@ -19,31 +19,6 @@ void generic_artist::set_color_scheme(unsigned color_scheme_index)
     switch (color_scheme_index)
     {
      case 1:
-        cs.dialog_normal_fg = rgb8(0x00, 0x00, 0x00);
-        cs.dialog_normal_bg = rgb8(0xe8, 0xe8, 0xe8);
-        cs.hot_fg = cs.dialog_normal_fg;
-        cs.hot_bg = rgb8(0xc0, 0xc0, 0xc0);
-        cs.selected_fg = cs.dialog_normal_bg;
-        cs.selected_bg = cs.dialog_normal_fg;
-        cs.focused_fg = cs.selected_fg;
-        cs.focused_bg = cs.selected_bg;
-        cs.disabled_fg = rgb8(0x40, 0x40, 0x40);
-        cs.disabled_bg = cs.dialog_normal_bg;
-        cs.link = rgb8(0x00, 0x00, 0xa0);
-        cs.depressed_link = rgb8(0x00, 0x00, 0x80);
-        cs.border = rgb8(0x40, 0x40, 0x40);
-        cs.separator = rgb8(0x40, 0x40, 0x40);
-        cs.content_normal_fg = rgb8(0x10, 0x10, 0x10);
-        cs.content_normal_bg = rgb8(0xff, 0xff, 0xff);
-        cs.title_fg = rgb8(0x40, 0x40, 0x60);
-        cs.heading_fg = rgb8(0x40, 0x40, 0x60);
-        cs.subheading_fg = rgb8(0x40, 0x40, 0x60);
-        cs.highlighted_fg = rgb8(0x00, 0x00, 0x00);
-        cs.text_control_fg = rgb8(0x00, 0x00, 0x00);
-        cs.text_control_bg = rgb8(0xe8, 0xe8, 0xe8);
-        break;
-     case 0:
-     default:
         cs.dialog_normal_fg = rgb8(0x9c, 0x9c, 0x9c);
         cs.dialog_normal_bg = rgb8(0x10, 0x10, 0x10);
         cs.hot_fg = cs.dialog_normal_fg;
@@ -66,6 +41,31 @@ void generic_artist::set_color_scheme(unsigned color_scheme_index)
         cs.highlighted_fg = rgb8(0xbb, 0xbb, 0xbb);
         cs.text_control_fg = rgb8(0xb0, 0xb0, 0xb0);
         cs.text_control_bg = rgb8(0x17, 0x17, 0x17);
+        break;
+     case 0:
+     default:
+        cs.dialog_normal_fg = rgb8(0x00, 0x00, 0x00);
+        cs.dialog_normal_bg = rgb8(0xe8, 0xe8, 0xe8);
+        cs.hot_fg = cs.dialog_normal_fg;
+        cs.hot_bg = rgb8(0xc0, 0xc0, 0xc0);
+        cs.selected_fg = cs.dialog_normal_bg;
+        cs.selected_bg = cs.dialog_normal_fg;
+        cs.focused_fg = cs.selected_fg;
+        cs.focused_bg = cs.selected_bg;
+        cs.disabled_fg = rgb8(0x40, 0x40, 0x40);
+        cs.disabled_bg = cs.dialog_normal_bg;
+        cs.link = rgb8(0x00, 0x00, 0xa0);
+        cs.depressed_link = rgb8(0x00, 0x00, 0x80);
+        cs.border = rgb8(0x40, 0x40, 0x40);
+        cs.separator = rgb8(0x40, 0x40, 0x40);
+        cs.content_normal_fg = rgb8(0x10, 0x10, 0x10);
+        cs.content_normal_bg = rgb8(0xff, 0xff, 0xff);
+        cs.title_fg = rgb8(0x40, 0x40, 0x60);
+        cs.heading_fg = rgb8(0x40, 0x40, 0x60);
+        cs.subheading_fg = rgb8(0x40, 0x40, 0x60);
+        cs.highlighted_fg = rgb8(0x00, 0x00, 0x00);
+        cs.text_control_fg = rgb8(0x00, 0x00, 0x00);
+        cs.text_control_bg = rgb8(0xe8, 0xe8, 0xe8);
         break;
     }
     set_color_scheme(cs);
