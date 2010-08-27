@@ -82,6 +82,9 @@ static flag_set const SIDE_MASK(SIDE_MASK_CODE);
 static unsigned const NO_FOCUS_BORDER_CODE =                        0x00100000;
 static flag_set const NO_FOCUS_BORDER(NO_FOCUS_BORDER_CODE);
 
+static unsigned const FLIPPED_CODE =                                0x00200000;
+static flag_set const FLIPPED(FLIPPED_CODE);
+
 static unsigned const CUSTOM_FLAG_0_CODE =                          0x10000000;
 static unsigned const CUSTOM_FLAG_1_CODE =                          0x20000000;
 static unsigned const CUSTOM_FLAG_2_CODE =                          0x40000000;

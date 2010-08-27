@@ -198,7 +198,7 @@ void drop_down_list::end()
         if (do_drop_down_button(*ctx_, default_layout, NO_FLAGS, id_))
         {
             box2i const& region = panel_.get_region();
-            point2i boundary(-1, region.corner[1]),
+            point2i boundary(get_high_corner(region)[0], region.corner[1]),
                 location(region.corner[0], get_high_corner(region)[1]);
             data_->internal_selection = selection_;
             data_->popup.reset(ctx_->surface->open_popup(

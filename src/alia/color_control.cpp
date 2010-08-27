@@ -116,9 +116,10 @@ do_compressed_color_control(
         value = accessor.get();
     if (data.valid != valid || valid && data.value != value)
     {
-        data.index = look_up_standard_color(value);
         data.valid = valid;
         data.value = value;
+        if (valid)
+            data.index = look_up_standard_color(value);
     }
 
     layout spec = layout_spec;
@@ -128,7 +129,7 @@ do_compressed_color_control(
     // "custom..." is currently disabled because it crashes.
     // It's probably related to popup dismissal problems.
 
-    drop_down_list ddl(ctx, in(unsigned(data.index), data.index >= 0),
+    drop_down_list ddl(ctx, in(unsigned(data.index), data.valid),
         colors.size()/* + 1*/, spec);
     alia_if(valid)
     {

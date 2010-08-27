@@ -63,13 +63,16 @@ bool do_draggable_separator(context& ctx, int* value,
      case INPUT_CATEGORY:
         if (detect_mouse_down(ctx, id, LEFT_BUTTON))
         {
+            int position = get_integer_mouse_position(ctx)[drag_axis];
             data.drag_start_delta =
-                get_integer_mouse_position(ctx)[drag_axis] - *value;
+                (flags & FLIPPED) ? *value + position : position - *value;
         }
         if (detect_drag(ctx, id, LEFT_BUTTON))
         {
-            *value = get_integer_mouse_position(ctx)[drag_axis] -
-                data.drag_start_delta;
+            int position = get_integer_mouse_position(ctx)[drag_axis];
+            *value = (flags & FLIPPED) ?
+                data.drag_start_delta - position :
+                position - data.drag_start_delta;
             return true;
         }
         break;
