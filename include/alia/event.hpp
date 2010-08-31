@@ -58,6 +58,7 @@ enum event_type
     INIT_EVENT,
 
     SET_VALUE_EVENT,
+    GET_CONTENTS_EVENT,
 
     WRAPPED_EVENT,
 

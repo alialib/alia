@@ -49,8 +49,7 @@ do_color_control(
     // "custom..." is currently disabled because it crashes.
     // It's probably related to popup dismissal problems.
 
-    drop_down_list ddl(ctx, in(unsigned(data.index), data.index >= 0),
-        colors.size()/* + 1*/, spec);
+    drop_down_list<int> ddl(ctx, in(data.index, data.index >= 0), spec);
     alia_if(valid)
         do_color(ctx, value);
     alia_end
@@ -58,22 +57,22 @@ do_color_control(
         std::string("custom")) : std::string(""), width(12, CHARS));
     if (ddl.do_list())
     {
-        context& ctx = ddl.get_list_context();
-        for (unsigned i = 0; i < colors.size(); ++i)
+        context& ctx = ddl.list_context();
+        for (std::size_t i = 0; i < colors.size(); ++i)
         {
             named_color const& c = colors[i];
-            ddl_item item(ddl);
+            ddl_item<int> item(ddl, int(i));
             row_layout r(ctx);
             do_color(ctx, c.color);
             do_text(ctx, c.name, width(12, CHARS));
         }
-        //ddl_item item(ddl);
+        //ddl_item<int> item(ddl, -1);
         //do_text(ctx, "custom...");
     }
     if (ddl.changed())
     {
-        unsigned index = ddl.get_selection();
-        if (index < colors.size())
+        int index = ddl.selection();
+        //if (index >= 0)
         {
             accessor.set(colors[index].color);
             color_control_result r;
@@ -129,8 +128,7 @@ do_compressed_color_control(
     // "custom..." is currently disabled because it crashes.
     // It's probably related to popup dismissal problems.
 
-    drop_down_list ddl(ctx, in(unsigned(data.index), data.valid),
-        colors.size()/* + 1*/, spec);
+    drop_down_list<int> ddl(ctx, in(data.index, data.valid), spec);
     alia_if(valid)
     {
         do_color(ctx, value);
@@ -146,11 +144,11 @@ do_compressed_color_control(
     alia_end
     if (ddl.do_list())
     {
-        context& ctx = ddl.get_list_context();
-        for (unsigned i = 0; i < colors.size(); ++i)
+        context& ctx = ddl.list_context();
+        for (std::size_t i = 0; i < colors.size(); ++i)
         {
             named_color const& c = colors[i];
-            ddl_item item(ddl);
+            ddl_item<int> item(ddl, i);
             row_layout r(ctx);
             do_color(ctx, c.color);
             do_text(ctx, c.name, width(12, CHARS));
@@ -158,8 +156,8 @@ do_compressed_color_control(
     }
     if (ddl.changed())
     {
-        unsigned index = ddl.get_selection();
-        if (index < colors.size())
+        int index = ddl.selection();
+        //if (index >= 0)
         {
             accessor.set(colors[index].color);
             color_control_result r;

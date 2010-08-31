@@ -38,22 +38,23 @@ do_enum(
         layout spec = layout_spec;
         if ((spec.flags & Y_ALIGNMENT_MASK) == 0)
             spec.flags |= BASELINE_Y;
-        drop_down_list ddl(ctx, value, options.size(), spec, flags);
+        drop_down_list<unsigned> ddl(ctx, value, spec, flags);
         do_text(ctx, value.is_valid() && value.get() < options.size() ?
             options[value.get()] : std::string(""), width(12, CHARS));
-        if (ddl.do_list())
+        alia_if (ddl.do_list())
         {
-            context& ctx = ddl.get_list_context();
-            for (unsigned i = 0; i < options.size(); ++i)
+            context& ctx = ddl.list_context();
+            for (unsigned i = 0; i != unsigned(options.size()); ++i)
             {
-                ddl_item item(ddl);
+                ddl_item<unsigned> item(ddl, i);
                 do_text(ctx, options[i], width(12, CHARS));
             }
         }
+        alia_end
         enum_result<unsigned> r;
         r.changed = ddl.changed();
-        if (r.changed)
-            r.new_value = ddl.get_selection();
+        if (r.changed && ddl.has_selection())
+            r.new_value = ddl.selection();
         return r;
     }
 }
@@ -89,22 +90,22 @@ do_enum(
         layout spec = layout_spec;
         if ((spec.flags & Y_ALIGNMENT_MASK) == 0)
             spec.flags |= BASELINE_Y;
-        drop_down_list ddl(ctx, value, n_options, spec, flags);
+        drop_down_list<unsigned> ddl(ctx, value, spec, flags);
         do_text(ctx, value.is_valid() && value.get() < n_options ?
             options[value.get()] : std::string(""), width(12, CHARS));
         if (ddl.do_list())
         {
-            context& ctx = ddl.get_list_context();
+            context& ctx = ddl.list_context();
             for (unsigned i = 0; i < n_options; ++i)
             {
-                ddl_item item(ddl);
+                ddl_item<unsigned> item(ddl, i);
                 do_text(ctx, options[i], width(12, CHARS));
             }
         }
         enum_result<unsigned> r;
         r.changed = ddl.changed();
-        if (r.changed)
-            r.new_value = ddl.get_selection();
+        if (r.changed && ddl.has_selection())
+            r.new_value = ddl.selection();
         return r;
     }
 }
