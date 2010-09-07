@@ -5,6 +5,7 @@
 #include <alia/forward.hpp>
 #include <alia/point.hpp>
 #include <alia/vector.hpp>
+#include <algorithm>
 
 namespace alia {
 

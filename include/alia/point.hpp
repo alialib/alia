@@ -14,28 +14,28 @@ struct point : geometric_tuple<N,T>
     explicit point(T v0)
     {
         BOOST_STATIC_ASSERT(N == 1);
-        get<0>() = v0;
+        this->template get<0>() = v0;
     }
     point(T v0, T v1)
     {
         BOOST_STATIC_ASSERT(N == 2);
-        get<0>() = v0;
-        get<1>() = v1;
+        this->template get<0>() = v0;
+        this->template get<1>() = v1;
     }
     point(T v0, T v1, T v2)
     {
         BOOST_STATIC_ASSERT(N == 3);
-        get<0>() = v0;
-        get<1>() = v1;
-        get<2>() = v2;
+        this->template get<0>() = v0;
+        this->template get<1>() = v1;
+        this->template get<2>() = v2;
     }
     point(T v0, T v1, T v2, T v3)
     {
         BOOST_STATIC_ASSERT(N == 4);
-        get<0>() = v0;
-        get<1>() = v1;
-        get<2>() = v2;
-        get<3>() = v3;
+        this->template get<0>() = v0;
+        this->template get<1>() = v1;
+        this->template get<2>() = v2;
+        this->template get<3>() = v3;
     }
 
     // explicit construction from other tuples
@@ -102,7 +102,7 @@ namespace impl {
     {
         static bool apply(point<N,T> const& a, point<N,T> const& b)
         {
-            return a.get<I-1>() == b.get<I-1>() &&
+            return a.template get<I-1>() == b.template get<I-1>() &&
                 point_equality_test<N,T,I-1>::apply(a, b);
         }
     };
@@ -123,7 +123,7 @@ bool operator!=(point<N,T> const& a, point<N,T> const& b)
 // Given a point, this returns a corresponding point with one less dimension
 // by removing the value at index i.
 template<unsigned N, class T>
-typename point<N - 1,T> slice(point<N,T> const& p, unsigned i)
+point<N - 1,T> slice(point<N,T> const& p, unsigned i)
 {
     assert(i < N);
     point<N-1,T> r;
