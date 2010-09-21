@@ -15,6 +15,8 @@ struct win_font
         font_info const* info = dynamic_cast<font_info const*>(f.get_info());
         if (info == NULL)
         {
+            char const* name = f.get_name().empty() ? "Tahoma" :
+                f.get_name().c_str();
             font_ = CreateFont(
                 -int(f.get_size() + 0.5),
                 0,
@@ -29,7 +31,7 @@ struct win_font
                 CLIP_DEFAULT_PRECIS,
                 DEFAULT_QUALITY,
                 DEFAULT_PITCH | FF_DONTCARE,
-                f.get_name().c_str());
+                name);
         }
         else
             font_ = CreateFontIndirectW(&info->logfont);

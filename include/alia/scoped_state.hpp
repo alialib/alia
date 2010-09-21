@@ -46,45 +46,43 @@ class scoped_surface_transformation : boost::noncopyable
     bool active_;
 };
 
-class scoped_font : boost::noncopyable
-{
- public:
-    scoped_font() : active_(false) {}
-    scoped_font(context& ctx)
-    { begin(ctx); }
-    template<class T>
-    scoped_font(context& ctx, T const& arg)
-    { begin(ctx); set(arg); }
-    ~scoped_font() { end(); }
-    void begin(context& ctx);
-    void set(font const& font);
-    void set(standard_font font);
-    void restore();
-    void end();
- private:
-    context* ctx_;
-    font old_font_;
-    bool active_;
-};
+//class scoped_font : boost::noncopyable
+//{
+// public:
+//    scoped_font() : active_(false) {}
+//    scoped_font(context& ctx)
+//    { begin(ctx); }
+//    template<class T>
+//    scoped_font(context& ctx, T const& arg)
+//    { begin(ctx); set(arg); }
+//    ~scoped_font() { end(); }
+//    void begin(context& ctx) {}
+//    void set(font const& font) {}
+//    void set(standard_font font) {}
+//    void restore() {}
+//    void end() {}
+// private:
+//    context* ctx_;
+//    bool active_;
+//};
 
-class scoped_text_color : boost::noncopyable
-{
- public:
-    scoped_text_color() : active_(false) {}
-    scoped_text_color(context& ctx)
-    { begin(ctx); }
-    scoped_text_color(context& ctx, rgba8 const& color)
-    { begin(ctx); set(color); }
-    ~scoped_text_color() { end(); }
-    void begin(context& ctx);
-    void set(rgba8 const& color);
-    void restore();
-    void end();
- private:
-    context* ctx_;
-    rgba8 old_color_;
-    bool active_;
-};
+//class scoped_text_color : boost::noncopyable
+//{
+// public:
+//    scoped_text_color() : active_(false) {}
+//    scoped_text_color(context& ctx)
+//    { begin(ctx); }
+//    scoped_text_color(context& ctx, rgba8 const& color)
+//    { begin(ctx); set(color); }
+//    ~scoped_text_color() { end(); }
+//    void begin(context& ctx) {}
+//    void set(rgba8 const& color) {}
+//    void restore() {}
+//    void end() {}
+// private:
+//    context* ctx_;
+//    bool active_;
+//};
 
 class scoped_clip_region : boost::noncopyable
 {
@@ -105,30 +103,25 @@ class scoped_clip_region : boost::noncopyable
     bool active_;
 };
 
-class scoped_style : boost::noncopyable
-{
- public:
-    scoped_style() : active_(false) {}
-    scoped_style(context& ctx)
-    { begin(ctx); }
-    template<class T>
-    scoped_style(context& ctx, T arg)
-    { begin(ctx); set(arg); }
-    ~scoped_style() { end(); }
-    void begin(context& ctx);
-    void set(unsigned code);
-    void set(style s);
-    void restore();
-    void end();
- private:
-    context* ctx_;
-    unsigned old_style_code_;
-    vector2i old_padding_size_;
-    font old_active_font_;
-    rgba8 old_text_color_, old_bg_color_, old_selected_text_color_,
-        old_selected_bg_color_;
-    bool active_;
-};
+//class scoped_style : boost::noncopyable
+//{
+// public:
+//    scoped_style() : active_(false) {}
+//    scoped_style(context& ctx)
+//    { begin(ctx); }
+//    template<class T>
+//    scoped_style(context& ctx, T arg)
+//    { begin(ctx); set(arg); }
+//    ~scoped_style() { end(); }
+//    void begin(context& ctx) {}
+//    void set(unsigned code) {}
+//    void set(style s) {}
+//    void restore() {}
+//    void end() {}
+// private:
+//    context* ctx_;
+//    bool active_;
+//};
 
 class scoped_padding_size
 {
@@ -139,13 +132,12 @@ class scoped_padding_size
     scoped_padding_size(context& ctx, vector2i const& padding_size)
     { begin(ctx); set(padding_size); }
     ~scoped_padding_size() { end(); }
-    void begin(context& ctx);
-    void set(vector2i const& padding_size);
-    void restore();
-    void end();
+    void begin(context& ctx) {}
+    void set(vector2i const& padding_size) {}
+    void restore() {}
+    void end() {}
  private:
     context* ctx_;
-    vector2i old_padding_size_;
     bool active_;
 };
 

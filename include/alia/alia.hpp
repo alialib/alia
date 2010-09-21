@@ -42,5 +42,6 @@
 #include <alia/rotated_layout.hpp>
 #include <alia/clickable_panel.hpp>
 #include <alia/icon_button.hpp>
+#include <alia/style_utils.hpp>
 
 #endif

@@ -123,6 +123,11 @@ void popup_window::open()
         impl_->window = new wx_popup_wrapper(this,
             impl_->parent->get_wx_window(), wxNO_BORDER);
 
+        context_holder::style_tree =
+            impl_->parent->get_holder().style_tree;
+        context_holder::context.style_tree =
+            impl_->parent->get_context().style_tree;
+
         context_holder::create(impl_->window);
 
         point2i position = impl_->initial_position, boundary = impl_->boundary;

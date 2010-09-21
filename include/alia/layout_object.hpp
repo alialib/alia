@@ -14,9 +14,9 @@ class layout_object : boost::noncopyable
     box2i const& get_region() const;
     bool is_relevant() const;
     bool is_dirty() const;
-    // When the current event is a targeted event, this will detect if the target
-    // is inside this layout object. It should only be called after the contents of
-    // the layout object have been invoked.
+    // When the current event is a targeted event, this will detect if the
+    // target is inside this layout object. It should only be called after the
+    // contents of the layout object have been invoked.
     bool contains_target() const;
  protected:
     context& get_context() const { return *ctx_; }

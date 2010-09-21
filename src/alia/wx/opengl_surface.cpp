@@ -213,6 +213,9 @@ void opengl_surface::create(wxWindow* parent)
 context& opengl_surface::get_context() const
 { return impl_->holder->context; }
 
+context_holder& opengl_surface::get_holder() const
+{ return *impl_->holder; }
+
 void opengl_surface::update_mouse_cursor()
 {
     if (impl_->desired_cursor == impl_->current_cursor)

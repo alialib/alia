@@ -25,8 +25,9 @@ bool do_draggable_separator(context& ctx, int* value,
     {
      case LAYOUT_CATEGORY:
       {
-        vector2i minimum_size(artist.get_separator_width(),
-            artist.get_separator_width());
+        vector2i minimum_size(
+            artist.get_separator_width(data.artist_data),
+            artist.get_separator_width(data.artist_data));
         layout_widget(ctx, data.layout_data, layout_spec,
             resolve_size(ctx, layout_spec.size),
             widget_layout_info(minimum_size, 0, 0, minimum_size,
@@ -38,9 +39,9 @@ bool do_draggable_separator(context& ctx, int* value,
         box2i const& assigned_region = data.layout_data.assigned_region;
         point2i const& corner = assigned_region.corner + (axis ?
             vector2i((assigned_region.size[0] -
-                artist.get_separator_width()) / 2, 0) :
+                artist.get_separator_width(data.artist_data)) / 2, 0) :
             vector2i(0, (assigned_region.size[1] -
-                artist.get_separator_width()) / 2));
+                artist.get_separator_width(data.artist_data)) / 2));
         int length = axis ? assigned_region.size[1] :
             assigned_region.size[0];
         artist.draw_separator(data.artist_data, corner, axis, length);

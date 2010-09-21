@@ -63,6 +63,10 @@ static flag_set const INITIALLY_EXPANDED(INITIALLY_EXPANDED_CODE);
 static unsigned const INITIALLY_COLLAPSED_CODE =                    0x00001000;
 static flag_set const INITIALLY_COLLAPSED(INITIALLY_COLLAPSED_CODE);
 
+// panel
+static unsigned const INTERACTIVE_CODE =                            0x00002000;
+static flag_set const INTERACTIVE(INTERACTIVE_CODE);
+
 // scrollable panel
 static unsigned const GREEDY_CODE =                                 0x00002000;
 static flag_set const GREEDY(GREEDY_CODE);

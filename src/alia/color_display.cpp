@@ -22,8 +22,8 @@ void do_color(
     {
      case LAYOUT_CATEGORY:
       {
-        int size = get_font_metrics(ctx, ctx.pass_state.active_font).height +
-            ctx.pass_state.padding_size[1] * 2;
+        int size = get_font_metrics(ctx, ctx.pass_state.style->font).height +
+            ctx.pass_state.style->padding_size[1] * 2;
         layout_widget(ctx, data.layout_data, layout_spec,
             resolve_size(ctx, layout_spec.size),
             widget_layout_info(vector2i(0, 0), 0, 0, vector2i(size, size),

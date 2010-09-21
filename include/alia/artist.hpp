@@ -19,7 +19,7 @@ enum style
     BACKGROUND_STYLE,
     DIALOG_STYLE,
     CONTENT_STYLE,
-    ODD_CONTENT_STYLE,
+    ACTIVE_CONTENT_STYLE,
     TITLE_STYLE,
     HEADING_STYLE,
     SUBHEADING_STYLE,
@@ -68,21 +68,8 @@ class artist
     // changed.
     virtual void on_font_scale_factor_change() {}
 
-    // TODO: Enumeration.
-    virtual void set_color_scheme(unsigned scheme) {}
-
-    // Get the code for a particular style.  Styles are context-dependent, so
-    // the code that's returned is dependent not only on the arguments, but
-    // also on the style that's active when it's called.
-    virtual unsigned get_code_for_style(style s, widget_state state = 0,
-        bool selected = false) = 0;
-
-    virtual void activate_style(unsigned style_code) = 0;
-    virtual void restore_style(unsigned style_code) = 0;
-
-    virtual font translate_standard_font(standard_font font) const = 0;
-
-    virtual void draw_focus_rect(box2i const& rect) const = 0;
+    virtual void draw_focus_rect(artist_data_ptr& data,
+        box2i const& rect) const = 0;
 
   // BUTTON
 
@@ -90,7 +77,8 @@ class artist
     virtual vector2i get_button_size(artist_data_ptr& data,
         vector2i const& content_size) const = 0;
 
-    virtual rgba8 get_button_text_color(widget_state state) const = 0;
+    virtual rgba8 get_button_text_color(artist_data_ptr& data,
+        widget_state state) const = 0;
 
     // Get the position within a button at which the contents should be
     // rendered.
@@ -128,7 +116,7 @@ class artist
 
   // SEPARATOR
 
-    virtual int get_separator_width() const = 0;
+    virtual int get_separator_width(artist_data_ptr& data) const = 0;
     virtual void draw_separator(artist_data_ptr& data,
         point2i const& position, unsigned axis, int length) const = 0;
 

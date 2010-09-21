@@ -7,6 +7,7 @@
 #include <alia/input_utils.hpp>
 #include <alia/region.hpp>
 #include <alia/transformations.hpp>
+#include <alia/style_utils.hpp>
 
 namespace alia {
 
@@ -33,19 +34,28 @@ struct end_pass_exception {};
 void issue_event(context& ctx, event& event)
 {
     ++ctx.pass_counter;
+
     pass_state_saver pss(ctx);
+
     ctx.pass_state.ended = false;
     ctx.event = &event;
+
     scoped_data_block db(ctx, ctx.root_block);
     naming_context nc(ctx);
+
     box2i full_region(point2i(0, 0), ctx.surface->get_size());
     set_transformation(ctx, identity_matrix<3,double>());
     set_clip_region(ctx, full_region);
-    ctx.pass_state.style_code = 0;
-    ctx.artist->activate_style(0);
+
+    ctx.pass_state.active_style = ctx.style_tree->root();
+    primary_style_properties* props;
+    if (get_cached_style_data(ctx, &props))
+        get_style_properties(ctx, ctx.style_tree->root(), *props);
+    ctx.pass_state.style = props;
+
     overlay root_overlay(ctx, full_region);
     column_layout c(ctx, GROW);
-    //scrollable_region sr(ctx, -1, GROW);
+
     try
     {
         ctx.controller->do_ui(ctx);
@@ -53,9 +63,10 @@ void issue_event(context& ctx, event& event)
     catch (end_pass_exception&)
     {
     }
+
     if (event.type == LAYOUT_PASS_2)
         ctx.content_size = root_overlay.get_minimum_size();
-        //ctx.content_size = sr.get_content_size();
+
     // TODO: move this to behavior
     if (detect_key_press(ctx, KEY_TAB))
         set_focus(ctx, get_id_after_focus(ctx));

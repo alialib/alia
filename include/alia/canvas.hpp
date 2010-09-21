@@ -82,9 +82,10 @@ class default_camera : public camera
 {
  public:
     default_camera() : position_(0, 0), min_zoom_(0.), max_zoom_(0.),
-        constrained_(false) {}
+        constrained_(false), initialized_(false) {}
+    bool is_initialized() const { return initialized_; }
     void initialize(point2d const& p, zoom_level zoom)
-    { position_ = p; zoom_ = zoom; }
+    { position_ = p; zoom_ = zoom; initialized_ = true; }
     point2d get_position(canvas const& canvas) const;
     void set_position(canvas const& canvas, point2d const& p);
     double get_zoom_level(canvas const& canvas) const;
@@ -98,7 +99,7 @@ class default_camera : public camera
     void check_bounds(canvas const& canvas);
     point2d position_;
     zoom_level zoom_, min_zoom_, max_zoom_;
-    bool constrained_;
+    bool constrained_, initialized_;
 };
 
 static flag_set const FLIP_X(CUSTOM_FLAG_0_CODE);
@@ -214,6 +215,7 @@ struct side_rulers : boost::noncopyable
     { begin(ctx, flags, layout_spec); }
     ~side_rulers() { end(); }
     void set_scale(unsigned axis, double scale);
+    void set_units(std::string const& units);
     void begin(context& ctx, flag_set flags,
         layout const& layout_spec = default_layout);
     void set_canvas(canvas& canvas);
@@ -230,6 +232,7 @@ struct side_rulers : boost::noncopyable
     canvas* canvas_;
     box2i regions_[2];
     double scales_[2];
+    std::string units_;
     bool active_;
 };
 

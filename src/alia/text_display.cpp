@@ -21,7 +21,7 @@ void do_text(
     flag_set flags)
 {
     text_display_data& data = *get_data<text_display_data>(ctx);
-    font const& font = ctx.pass_state.active_font;
+    font const& font = ctx.pass_state.style->font;
     switch (ctx.event->category)
     {
      case LAYOUT_CATEGORY:
@@ -43,7 +43,7 @@ void do_text(
      case RENDER_CATEGORY:
       {
         data.renderer->draw(point2d(data.layout_data.assigned_region.corner),
-            ctx.pass_state.text_color);
+            ctx.pass_state.style->text_color);
         break;
       }
     }
@@ -72,7 +72,7 @@ void do_paragraph(
 {
     paragraph_data& data = *get_data<paragraph_data>(ctx);
 
-    font const& font = ctx.pass_state.active_font;
+    font const& font = ctx.pass_state.style->font;
 
     switch (ctx.event->category)
     {
@@ -169,7 +169,7 @@ void do_paragraph(
       {
         data.renderer->draw(
             point2d(data.layout_data.assigned_region.corner),
-            ctx.pass_state.text_color);
+            ctx.pass_state.style->text_color);
         break;
       }
     }

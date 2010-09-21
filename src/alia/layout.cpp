@@ -146,11 +146,11 @@ vector2i resolve_size(context& ctx, size const& s)
         break;
      case CHARS:
         r[0] = int(s.width * get_font_metrics(ctx,
-            ctx.pass_state.active_font).average_width + 0.5);
+            ctx.pass_state.style->font).average_width + 0.5);
         break;
      case EM:
         r[0] = int(s.width * get_font_metrics(ctx,
-            ctx.pass_state.active_font).height + 0.5);
+            ctx.pass_state.style->font).height + 0.5);
         break;
     }
     switch (s.y_units)
@@ -170,7 +170,7 @@ vector2i resolve_size(context& ctx, size const& s)
      case CHARS:
      case EM:
         r[1] = int(s.height * get_font_metrics(ctx,
-            ctx.pass_state.active_font).height + 0.5);
+            ctx.pass_state.style->font).height + 0.5);
         break;
     }
     return r;
@@ -184,7 +184,7 @@ void resolve_layout_spec(context& ctx, resolved_layout_spec* resolved,
     resolved->padding_size =
         ((spec.flags & PADDED) ||
          !(spec.flags & NOT_PADDED) && info.padded_by_default) ?
-        ctx.pass_state.padding_size : vector2i(0, 0);
+        ctx.pass_state.style->padding_size : vector2i(0, 0);
     for (int i = 0; i < 2; ++i)
     {
         resolved->size[i] = (std::max)(

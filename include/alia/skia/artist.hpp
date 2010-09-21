@@ -11,18 +11,14 @@ class artist : public alia::artist
  public:
     void initialize();
 
-    unsigned get_code_for_style(style s, widget_state state, bool selected);
-    void activate_style(unsigned style_code);
-    void restore_style(unsigned style_code);
-
-    font translate_standard_font(standard_font font) const;
-
     void draw_focus_rect(box2i const& rect, rgba8 const& color) const;
-    void draw_focus_rect(box2i const& rect) const;
+
+    void draw_focus_rect(artist_data_ptr& data, box2i const& rect) const;
 
     vector2i get_button_size(artist_data_ptr& data,
         vector2i const& content_size) const;
-    rgba8 get_button_text_color(widget_state state) const;
+    rgba8 get_button_text_color(artist_data_ptr& data,
+        widget_state state) const;
     vector2i get_button_content_offset(artist_data_ptr& data,
         vector2i const& content_size, widget_state state) const;
     void draw_button(artist_data_ptr& data, box2i const& region,
@@ -44,7 +40,7 @@ class artist : public alia::artist
     void draw_node_expander(artist_data_ptr& data, int expanded,
         point2i const& position, widget_state state) const;
 
-    int get_separator_width() const;
+    int get_separator_width(artist_data_ptr& data) const;
     void draw_separator(artist_data_ptr& data,
         point2i const& position, unsigned axis, int length) const;
 
@@ -94,80 +90,12 @@ class artist : public alia::artist
     void draw_icon_button(artist_data_ptr& data, standard_icon icon,
         point2i const& position, widget_state state);
 
-    static unsigned const BACKGROUND_STYLE_CODE =           0x0;
-    static unsigned const DIALOG_STYLE_CODE =               0x1;
-    static unsigned const CONTENT_STYLE_CODE =              0x2;
-    static unsigned const ODD_CONTENT_STYLE_CODE =          0x3;
-    static unsigned const TITLE_STYLE_CODE =                0x4;
-    static unsigned const HEADING_STYLE_CODE =              0x5;
-    static unsigned const SUBHEADING_STYLE_CODE =           0x6;
-    static unsigned const LIST_STYLE_CODE =                 0x7;
-    static unsigned const TEXT_CONTROL_STYLE_CODE =         0x8;
-    static unsigned const HIGHLIGHTED_STYLE_CODE =          0x9;
-    static unsigned const N_MAJOR_STYLES =                  0xa;
-
-    static unsigned const OVERLAY_FLAG = 0x100;
-    static unsigned const IN_OVERLAY_FLAG = 0x200;
-
-    struct style_colors
-    {
-        rgb8 normal_fg, normal_bg;
-        rgb8 highlighted_fg;
-        rgb8 control_fg, control_bg;
-        rgb8 button_normal_bg, button_hot_bg, button_depressed_bg, button_fg;
-        rgb8 hot_fg, hot_bg;
-        rgb8 selected_fg, selected_bg;
-        rgb8 focused_fg, focused_bg;
-        rgb8 disabled_fg, disabled_bg;
-        rgb8 link, hot_link, depressed_link, disabled_link;
-        rgb8 border, focused_border;
-        rgb8 separator;
-    };
-
-    struct color_scheme
-    {
-        rgb8 dialog_normal_bg, dialog_normal_fg;
-        rgb8 control_fg, control_bg;
-        rgb8 hot_fg, hot_bg;
-        rgb8 selected_fg, selected_bg;
-        rgb8 focused_fg, focused_bg;
-        rgb8 disabled_fg, disabled_bg;
-        rgb8 heading_link, hot_heading_link, depressed_heading_link;
-        rgb8 link, hot_link, depressed_link;
-        rgb8 control_border, focused_control_border;
-        rgb8 button_normal_bg, button_hot_bg, button_depressed_bg, button_fg;
-        rgb8 separator;
-        rgb8 content_normal_bg, content_normal_fg;
-        rgb8 title_fg, heading_fg, subheading_fg, highlighted_fg;
-    };
-    void set_color_scheme(color_scheme const& scheme);
-    void set_color_scheme(unsigned color_scheme_index);
-
-    style_colors style_color_info[N_MAJOR_STYLES];
-    style_colors const* active_style_colors;
-
-    style_colors const& get_style_colors(unsigned style_code) const;
-    rgba8 get_fg_color(widget_state state) const;
-    rgba8 get_bg_color(widget_state state) const;
-
-    static unsigned const NORMAL_SUBSTYLE_OFFSET =      0x0;
-    static unsigned const HOT_SUBSTYLE_OFFSET =         0x1;
-    static unsigned const SELECTED_SUBSTYLE_OFFSET =    0x2;
-    static unsigned const DISABLED_SUBSTYLE_OFFSET =    0x3;
-    static unsigned const FOCUSED_SUBSTYLE_FLAG =       0x4;
-
     // direction: 0: left, 1 : right, 2: up, 3: down
     // 4: top-left, 5: top-right, 6: bottom-right, 7: bottom-left
     void draw_arrow(rgba8 const& color, box2i const& region, int direction,
         int size) const;
 
-    void draw_box(box2i const& region, widget_state state,
-        int gradient_axis, bool draw_border = true) const;
-
     void draw_outline(box2i const& region, rgba8 const& color) const;
-
-    void draw_octagon(rgba8 const& color, box2i const& region,
-        int corner_size) const;
 };
 
 }}

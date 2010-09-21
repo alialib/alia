@@ -8,6 +8,8 @@
 
 namespace alia { namespace wx {
 
+class context_holder;
+
 class opengl_surface : public opengl::surface
 {
  public:
@@ -24,6 +26,9 @@ class opengl_surface : public opengl::surface
     void handle_key_down(wxKeyEvent* event);
     void handle_key_up(wxKeyEvent* event);
     void handle_char(wxKeyEvent* event);
+
+    context_holder& get_holder() const;
+    context& get_context() const;
 
     // implementation of the surface interface...
 
@@ -74,7 +79,6 @@ class opengl_surface : public opengl::surface
     void on_close();
     void schedule_update();
     void update_mouse_cursor();
-    context& get_context() const;
 
     class gl_canvas_wrapper;
     class scoped_selected_menu_id_ptr;

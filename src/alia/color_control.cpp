@@ -136,8 +136,8 @@ do_compressed_color_control(
     alia_else
     {
         int color_size =
-            get_font_metrics(ctx, ctx.pass_state.active_font).height +
-            ctx.pass_state.padding_size[1] * 2;
+            get_font_metrics(ctx, ctx.pass_state.style->font).height +
+            ctx.pass_state.style->padding_size[1] * 2;
         do_spacer(ctx, layout(size(float(color_size), float(color_size),
             PIXELS), PADDED));
     }

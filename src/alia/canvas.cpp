@@ -8,6 +8,9 @@
 #include <alia/image.hpp>
 #include <alia/spacer.hpp>
 #include <boost/format.hpp>
+#include <alia/panel.hpp>
+#include <alia/text_display.hpp>
+#include <alia/control_macros.hpp>
 
 namespace alia {
 
@@ -110,7 +113,8 @@ void canvas::begin(alia::context& ctx, box2d const& scene_box,
     if (!camera)
     {
         default_camera* dc;
-        if (get_data(ctx, &dc))
+        get_data(ctx, &dc);
+        if (!dc->is_initialized() && ctx.event->category != LAYOUT_CATEGORY)
             dc->initialize(get_center(scene_box), zoom_level());
         camera_ = dc;
     }
@@ -132,7 +136,8 @@ void canvas::begin(alia::context& ctx, box2d const& scene_box,
     scr_.set(data_->layout_data.assigned_region);
 
     st_.begin(ctx);
-    set_scene_coordinates();
+    if (ctx.event->category != LAYOUT_CATEGORY)
+        set_scene_coordinates();
 
     active_ = true;
 }
@@ -479,7 +484,7 @@ static void calculate_ruler_values(
 int get_ruler_width(context& ctx, flag_set flags)
 {
     bool draw_border = (flags & DRAW_BORDER) != 0;
-    alia::font const& font = ctx.pass_state.active_font;
+    alia::font const& font = ctx.pass_state.style->font;
     int text_height = get_font_metrics(ctx, font).height;
     int ruler_width = text_height * 5 / 4;
     if (!draw_border)
@@ -509,7 +514,7 @@ void draw_side_ruler(
 
     bool draw_border = (flags & DRAW_BORDER) != 0;
 
-    alia::font const& font = ctx.pass_state.active_font;
+    alia::font const& font = ctx.pass_state.style->font;
 
     int text_height = get_font_metrics(ctx, font).height;
 
@@ -690,6 +695,10 @@ void side_rulers::set_scale(unsigned axis, double scale)
     assert(axis < 2);
     scales_[1 - axis] = scale;
 }
+void side_rulers::set_units(std::string const& units)
+{
+    units_ = units;
+}
 void side_rulers::end()
 {
     if (active_ && !ctx_->pass_state.ended)
@@ -707,8 +716,9 @@ void side_rulers::end()
 }
 void side_rulers::draw_ruler(flag_set flags, unsigned index)
 {
-    draw_side_ruler(*canvas_, regions_[index], ctx_->pass_state.bg_color,
-        ctx_->pass_state.text_color, scales_[index], flags);
+    draw_side_ruler(*canvas_, regions_[index],
+        ctx_->pass_state.style->bg_color, ctx_->pass_state.style->text_color,
+        scales_[index], flags);
 }
 void side_rulers::do_ruler_row(flag_set side)
 {
@@ -732,9 +742,12 @@ void side_rulers::reserve_space(flag_set side, unsigned index)
 }
 void side_rulers::do_corner()
 {
-    box2i region;
-    do_spacer(*ctx_, &region);
-    draw_filled_box(*ctx_, ctx_->pass_state.bg_color, region);
+    panel p(*ctx_, "junction", NOT_PADDED);
+    alia_if_ (*ctx_, !units_.empty())
+    {
+        do_text(*ctx_, units_, layout(CENTER | NOT_PADDED, 1));
+    }
+    alia_end
 }
 
 void zoom_to_box(canvas& canvas, box2d const& box)

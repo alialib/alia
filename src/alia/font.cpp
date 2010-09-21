@@ -22,6 +22,10 @@ void set_font_scale_factor(context& ctx, float adjustment)
 {
     ctx.font_scale_factor = adjustment;
     ctx.artist->on_font_scale_factor_change();
+
+    // This will invalidate any data that was cached for the current style,
+    // so all fonts will be recomputed with the new scale factor.
+    ctx.style_tree->increment_version();
 }
 
 font shrink(font const& f, float amount)

@@ -9,12 +9,21 @@
 #include <alia/color.hpp>
 #include <alia/matrix.hpp>
 #include <alia/exception.hpp>
+#include <alia/style_tree.hpp>
 #include <list>
 #include <map>
 #include <cassert>
 #include <boost/lexical_cast.hpp>
 
 namespace alia {
+
+struct primary_style_properties
+{
+    vector2i padding_size;
+    alia::font font;
+    // TODO: most of these don't need to be here
+    rgba8 text_color, bg_color, selected_text_color, selected_bg_color;
+};
 
 struct pass_state
 {
@@ -23,20 +32,23 @@ struct pass_state
     data_block* active_block;
     dynamic_block_node* predicted_dynamic_block;
     data_node** next_data_ptr;
+
     // style-related state
-    unsigned style_code;
-    vector2i padding_size;
-    font active_font;
-    rgba8 text_color, bg_color, selected_text_color, selected_bg_color;
+    style_node const* active_style;
+    primary_style_properties const* style;
+
     // geometric state
     box2i clip_region; // in surface coordinates
     box2d untransformed_clip_region; // in current frame of reference
     box2i integer_untransformed_clip_region;
     matrix<3,3,double> transformation, inverse_transformation;
+
     // the mouse position (un)transformed into the current frame of reference
     point2d mouse_position;
+
     // the same, but converted to integers (via floor())
     point2i integer_mouse_position;
+
     // this gets set when end_pass() is called
     bool ended;
 };
@@ -62,7 +74,8 @@ struct context
     region_id hot_id, active_id, focused_id;
     // current size of UI contents
     vector2i content_size;
-    // font info
+    // appearance
+    alia::style_tree* style_tree;
     std::map<font,font_metrics> cached_font_metrics;
     float font_scale_factor;
     // only valid while issuing an event
@@ -138,6 +151,7 @@ void set_transformation(context& ctx,
     matrix<3,3,double> const& transformation);
 
 void end_pass(context& ctx);
+
 
 }
 

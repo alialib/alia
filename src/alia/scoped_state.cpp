@@ -52,56 +52,6 @@ void scoped_surface_transformation::end()
     }
 }
 
-void scoped_font::begin(context& ctx)
-{
-    ctx_ = &ctx;
-    old_font_ = ctx.pass_state.active_font;
-    active_ = true;
-}
-void scoped_font::set(font const& font)
-{
-    ctx_->pass_state.active_font = font;
-}
-void scoped_font::set(standard_font font)
-{
-    ctx_->pass_state.active_font = ctx_->artist->translate_standard_font(font);
-}
-void scoped_font::restore()
-{
-    ctx_->pass_state.active_font = old_font_;
-}
-void scoped_font::end()
-{
-    if (active_)
-    {
-        ctx_->pass_state.active_font = old_font_;
-        active_ = false;
-    }
-}
-
-void scoped_text_color::begin(context& ctx)
-{
-    ctx_ = &ctx;
-    old_color_ = ctx.pass_state.text_color;
-    active_ = true;
-}
-void scoped_text_color::set(rgba8 const& color)
-{
-    ctx_->pass_state.text_color = color;
-}
-void scoped_text_color::restore()
-{
-    ctx_->pass_state.text_color = old_color_;
-}
-void scoped_text_color::end()
-{
-    if (active_)
-    {
-        ctx_->pass_state.text_color = old_color_;
-        active_ = false;
-    }
-}
-
 void scoped_clip_region::begin(context& ctx)
 {
     ctx_ = &ctx;
@@ -133,71 +83,6 @@ void scoped_clip_region::restore()
     set_clip_region(*ctx_, old_region_);
 }
 void scoped_clip_region::end()
-{
-    if (active_)
-    {
-        restore();
-        active_ = false;
-    }
-}
-
-void scoped_style::begin(context& ctx)
-{
-    ctx_ = &ctx;
-    old_style_code_ = ctx.pass_state.style_code;
-    old_padding_size_ = ctx.pass_state.padding_size;
-    old_active_font_ = ctx.pass_state.active_font;
-    old_text_color_ = ctx.pass_state.text_color;
-    old_bg_color_ = ctx.pass_state.bg_color;
-    old_selected_text_color_ = ctx.pass_state.selected_text_color;
-    old_selected_bg_color_ = ctx.pass_state.selected_bg_color;
-    active_ = true;
-}
-void scoped_style::set(unsigned code)
-{
-    ctx_->pass_state.style_code = code;
-    ctx_->artist->activate_style(code);
-}
-void scoped_style::set(style s)
-{
-    set(ctx_->artist->get_code_for_style(s, 0));
-}
-void scoped_style::restore()
-{
-    ctx_->pass_state.padding_size = old_padding_size_;
-    ctx_->pass_state.active_font = old_active_font_;
-    ctx_->pass_state.text_color = old_text_color_;
-    ctx_->pass_state.bg_color = old_bg_color_;
-    ctx_->pass_state.selected_text_color = old_selected_text_color_;
-    ctx_->pass_state.selected_bg_color = old_selected_bg_color_;
-    ctx_->pass_state.style_code = old_style_code_;
-    ctx_->artist->restore_style(old_style_code_);
-}
-void scoped_style::end()
-{
-    if (active_)
-    {
-        restore();
-        active_ = false;
-    }
-}
-
-void scoped_padding_size::begin(context& ctx)
-{
-    ctx_ = &ctx;
-    old_padding_size_ = ctx.pass_state.padding_size;
-    active_ = true;
-}
-
-void scoped_padding_size::set(vector2i const& padding_size)
-{
-    ctx_->pass_state.padding_size = padding_size;
-}
-void scoped_padding_size::restore()
-{
-    ctx_->pass_state.padding_size = old_padding_size_;
-}
-void scoped_padding_size::end()
 {
     if (active_)
     {

@@ -70,6 +70,8 @@ struct text_control_data
     bool text_edited;
 
     cached_text_ptr renderer;
+
+    artist_data_ptr focus_rect_data;
 };
 
 template<typename T>
@@ -91,7 +93,7 @@ struct text_control
         region_id id,
         int max_chars)
       : ctx(ctx), data(data), value(value), artist(*ctx.artist),
-        font_metrics(get_font_metrics(ctx, ctx.pass_state.active_font)),
+        font_metrics(get_font_metrics(ctx, ctx.pass_state.style->font)),
         flags(flags), layout_spec(layout_spec), id(id), max_chars(max_chars)
     {}
 
@@ -107,9 +109,9 @@ struct text_control
         if ((spec.flags & X_ALIGNMENT_MASK) == 0)
             spec.flags |= LEFT;
 
-        panel_.begin(ctx, TEXT_CONTROL_STYLE, spec, HORIZONTAL);
+        panel_.begin(ctx, "control", spec, HORIZONTAL);
         if (id_has_focus(ctx, id))
-            artist.draw_focus_rect(panel_.get_region());
+            artist.draw_focus_rect(data.focus_rect_data, panel_.get_region());
         switch (ctx.event->category)
         {
          case LAYOUT_CATEGORY:
@@ -172,9 +174,9 @@ struct text_control
         layout spec(BASELINE_Y | GROW_X);
         // All the +/- 1's are to make room for the cursor.
         int minimum_width = get_font_metrics(ctx,
-            ctx.pass_state.active_font).average_width * 6 + 1;
+            ctx.pass_state.style->font).average_width * 6 + 1;
         int default_width = get_font_metrics(ctx,
-            ctx.pass_state.active_font).average_width * 30 + 1;
+            ctx.pass_state.style->font).average_width * 30 + 1;
         // TODO: The user specified size should probably only be used
         // here if it's in character-related units.
         vector2i requested_size = resolve_size(ctx, layout_spec.size);
@@ -196,7 +198,7 @@ struct text_control
                 reset_to_external_value();
             }
             if (!data.renderer || data.need_layout ||
-                ctx.pass_state.active_font != data.renderer->get_font())
+                ctx.pass_state.style->font != data.renderer->get_font())
             {
                 data.renderer.reset();
                 record_layout_change(ctx, data.layout_data);
@@ -221,7 +223,7 @@ struct text_control
                     assigned_width - 1 != data.renderer->get_size()[0])
                 {
                     ctx.surface->cache_text(data.renderer,
-                        ctx.pass_state.active_font, get_display_text().c_str(),
+                        ctx.pass_state.style->font, get_display_text().c_str(),
                         assigned_width - 1);
                     data.assigned_width = assigned_width;
                 }
@@ -278,9 +280,9 @@ struct text_control
         {
             data.renderer->draw_with_highlight(
                 point2d(data.layout_data.assigned_region.corner),
-                ctx.pass_state.text_color,
-                ctx.pass_state.selected_bg_color,
-                ctx.pass_state.selected_text_color,
+                ctx.pass_state.style->text_color,
+                ctx.pass_state.style->selected_bg_color,
+                ctx.pass_state.style->selected_text_color,
                 data.first_selected,
                 data.first_selected + data.n_selected);
         }
@@ -288,7 +290,7 @@ struct text_control
         {
             data.renderer->draw(
                 point2d(data.layout_data.assigned_region.corner),
-                ctx.pass_state.text_color);
+                ctx.pass_state.style->text_color);
         }
 
         if (data.cursor_on && data.editing)
@@ -300,8 +302,8 @@ struct text_control
                 data.cursor_position >= data.first_selected &&
                 data.cursor_position <
                     cached_text::offset(data.first_selected + data.n_selected))
-              ? ctx.pass_state.selected_text_color
-              : ctx.pass_state.text_color;
+              ? ctx.pass_state.style->selected_text_color
+              : ctx.pass_state.style->text_color;
             data.renderer->draw_cursor(point2d(cursor_p), cursor_color);
         }
 

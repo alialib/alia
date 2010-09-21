@@ -4,416 +4,29 @@
 #include <alia/surface.hpp>
 #include <alia/standard_colors.hpp>
 #include <alia/scoped_state.hpp>
+#include <alia/style_utils.hpp>
 #include "SkGradientShader.h"
 
 namespace alia { namespace skia {
 
 // TODO: Share resources between fixed-size widgets (radio buttons, etc).
 
-struct state_colors
+template<class Data>
+bool cast_data_ptr(Data**typed_data, artist_data_ptr& data_ptr)
 {
-    rgba8 normal, hot, depressed, disabled;
-};
-
-rgba8 select_color(state_colors const& colors, widget_state state)
-{
-    if ((state & widget_states::DISABLED) != 0)
+    assert(!data_ptr || dynamic_cast<Data*>(data_ptr.get()));
+    *typed_data = static_cast<Data*>(data_ptr.get());
+    if (!*typed_data)
     {
-        return colors.disabled;
+        *typed_data = new Data;
+        data_ptr.reset(*typed_data);
+        return true;
     }
-    else
-    {
-        switch (state & widget_states::PRIMARY_STATE_MASK)
-        {
-         case widget_states::HOT:
-            return colors.hot;
-         case widget_states::DEPRESSED:
-            return colors.depressed;
-         default:
-            return colors.normal;
-        }
-    }
+    return false;
 }
-
-static unsigned const overlay_alpha = 0xd0;
 
 void artist::initialize()
 {
-    set_color_scheme(0);
-}
-
-void artist::set_color_scheme(unsigned color_scheme_index)
-{
-    color_scheme cs;
-    cs.dialog_normal_fg = rgb8(0x90, 0x90, 0x90);
-    cs.dialog_normal_bg = rgb8(0x10, 0x10, 0x10);//rgb8(0x1f, 0x1f, 0x1f);
-    cs.hot_fg = cs.dialog_normal_fg;
-    cs.hot_bg = rgb8(0x3e, 0x3e, 0x40);
-    cs.selected_fg = cs.dialog_normal_bg;
-    cs.selected_bg = cs.dialog_normal_fg;
-    cs.focused_fg = cs.selected_fg;
-    cs.focused_bg = cs.selected_bg;
-    cs.disabled_fg = rgb8(0x6a, 0x6a, 0x6a);
-    cs.disabled_bg = cs.dialog_normal_bg;
-    cs.heading_link = rgb8(0xde, 0xd7, 0xce);
-    cs.hot_heading_link = rgb8(0xff, 0xff, 0xff);
-    cs.depressed_heading_link = rgb8(0xff, 0xff, 0xff);
-    cs.link = rgb8(0x48, 0x8d, 0xb2);//rgb8(0x03, 0x55, 0x73);
-    cs.hot_link = rgb8(0x49, 0xb2, 0xe7);
-    cs.depressed_link = rgb8(0x49, 0xb2, 0xe7);
-    cs.control_border = rgb8(0x66, 0x66, 0x66);
-    cs.focused_control_border = rgb8(0xc0, 0xa0, 0x80);//rgb8(0x8e, 0x6a, 0x20);//rgb8(0x05, 0xa0, 0x75);
-    cs.separator = rgb8(0x57, 0x57, 0x57);
-    cs.content_normal_fg = rgb8(0x99, 0x99, 0x99);
-    cs.content_normal_bg = rgb8(0x1a, 0x1a, 0x1a);
-    cs.title_fg = rgb8(0xd0, 0xd0, 0xd0);
-    cs.heading_fg = rgb8(0xce, 0xce, 0xce);
-    cs.subheading_fg = rgb8(0xbb, 0xbb, 0xbb);
-    cs.highlighted_fg = rgb8(0xb4, 0xb4, 0xb4);
-    cs.control_fg = rgb8(0xb4, 0xb4, 0xb4);
-    cs.control_bg = rgb8(0x26, 0x26, 0x26);
-    cs.button_fg = rgb8(0xf0, 0xf0, 0xf0);
-    cs.button_normal_bg = rgb8(0x20, 0x60, 0x80);
-    cs.button_hot_bg = rgb8(0x3a, 0x7f, 0x99);
-    cs.button_depressed_bg = rgb8(0x3a, 0x7f, 0x99);
-    set_color_scheme(cs);
-}
-
-void artist::set_color_scheme(color_scheme const& cs)
-{
-    {
-    style_colors& sc = style_color_info[DIALOG_STYLE_CODE];
-    sc.normal_fg = cs.dialog_normal_fg;
-    sc.normal_bg = cs.dialog_normal_bg;
-    sc.highlighted_fg = cs.highlighted_fg;
-    sc.control_fg = cs.control_fg;
-    sc.control_bg = cs.control_bg;
-    sc.hot_fg = cs.hot_fg;
-    sc.hot_bg = cs.hot_bg;
-    sc.selected_fg = cs.selected_fg;
-    sc.selected_bg = cs.selected_bg;
-    sc.focused_fg = cs.focused_fg;
-    sc.focused_bg = cs.focused_bg;
-    sc.disabled_fg = cs.disabled_fg;
-    sc.disabled_bg = cs.disabled_bg;
-    sc.link = cs.link;
-    sc.hot_link = cs.hot_link;
-    sc.depressed_link = cs.depressed_link;
-    sc.disabled_link = cs.disabled_fg;
-    sc.border = cs.control_border;
-    sc.focused_border = cs.focused_control_border;
-    sc.separator = cs.separator;
-    sc.button_fg = cs.button_fg;
-    sc.button_normal_bg = cs.button_normal_bg;
-    sc.button_hot_bg = cs.button_hot_bg;
-    sc.button_depressed_bg = cs.button_depressed_bg;
-    }
-    {
-    style_colors& sc = style_color_info[CONTENT_STYLE_CODE];
-    sc = style_color_info[DIALOG_STYLE_CODE];
-    sc.normal_fg = cs.content_normal_fg;
-    sc.normal_bg = cs.content_normal_bg;
-    sc.highlighted_fg = cs.highlighted_fg;
-    sc.control_fg = cs.control_fg;
-    sc.control_bg = cs.control_bg;
-    sc.hot_fg = cs.content_normal_fg;
-    sc.hot_bg = blend(cs.content_normal_bg, cs.content_normal_fg, 0.85f);
-    sc.selected_fg = cs.content_normal_fg;
-    sc.selected_bg = blend(cs.content_normal_bg, cs.content_normal_fg, 0.75f);
-    sc.focused_fg = cs.content_normal_fg;
-    sc.focused_bg = sc.selected_bg;
-    }
-    {
-    style_colors& sc = style_color_info[ODD_CONTENT_STYLE_CODE];
-    sc = style_color_info[CONTENT_STYLE_CODE];
-    sc.normal_bg = blend(cs.content_normal_bg, cs.content_normal_fg, 0.97f);
-    sc.hot_bg = blend(cs.content_normal_bg, cs.content_normal_fg, 0.85f);
-    sc.selected_bg = blend(cs.content_normal_bg, cs.content_normal_fg, 0.75f);
-    sc.focused_bg = sc.selected_bg;
-    }
-    {
-    style_colors& sc = style_color_info[BACKGROUND_STYLE_CODE];
-    sc = style_color_info[DIALOG_STYLE_CODE];
-    }
-    {
-    style_colors& sc = style_color_info[TITLE_STYLE_CODE];
-    sc = style_color_info[CONTENT_STYLE_CODE];
-    sc.normal_fg = cs.title_fg;
-    sc.hot_fg = cs.title_fg;
-    sc.selected_fg = cs.title_fg;
-    sc.focused_fg = cs.title_fg;
-    }
-    {
-    style_colors& sc = style_color_info[HEADING_STYLE_CODE];
-    sc = style_color_info[CONTENT_STYLE_CODE];
-    sc.link = cs.heading_link;
-    sc.hot_link = cs.hot_heading_link;
-    sc.depressed_link = cs.depressed_heading_link;
-    sc.disabled_link = cs.disabled_fg;
-    sc.normal_fg = cs.heading_fg;
-    sc.hot_fg = cs.heading_fg;
-    sc.selected_fg = cs.heading_fg;
-    sc.focused_fg = cs.heading_fg;
-    }
-    {
-    style_colors& sc = style_color_info[SUBHEADING_STYLE_CODE];
-    sc = style_color_info[CONTENT_STYLE_CODE];
-    sc.normal_fg = cs.subheading_fg;
-    }
-    {
-    style_colors& sc = style_color_info[TEXT_CONTROL_STYLE_CODE];
-    sc = style_color_info[DIALOG_STYLE_CODE];
-    sc.normal_fg = cs.control_fg;
-    sc.normal_bg = cs.control_bg;
-    }
-    {
-    style_colors& sc = style_color_info[LIST_STYLE_CODE];
-    sc = style_color_info[TEXT_CONTROL_STYLE_CODE];
-    }
-    {
-    style_colors& sc = style_color_info[HIGHLIGHTED_STYLE_CODE];
-    sc = style_color_info[CONTENT_STYLE_CODE];
-    sc.normal_fg = cs.highlighted_fg;
-    }
-}
-
-unsigned artist::get_code_for_style(style s, widget_state state,
-    bool selected)
-{
-    unsigned major_style;
-    unsigned flags = (get_context().pass_state.style_code & IN_OVERLAY_FLAG);
-    switch (s)
-    {
-     case BACKGROUND_STYLE:
-        major_style = BACKGROUND_STYLE_CODE;
-        break;
-     case DIALOG_STYLE:
-        major_style = DIALOG_STYLE_CODE;
-        break;
-     case TITLE_STYLE:
-        major_style = TITLE_STYLE_CODE;
-        break;
-     case HEADING_STYLE:
-        major_style = HEADING_STYLE_CODE;
-        break;
-     case SUBHEADING_STYLE:
-        major_style = SUBHEADING_STYLE_CODE;
-        break;
-     case TEXT_CONTROL_STYLE:
-        major_style = TEXT_CONTROL_STYLE_CODE;
-        break;
-     case LIST_STYLE:
-        major_style = LIST_STYLE_CODE;
-        break;
-     case ITEM_STYLE:
-        major_style = (get_context().pass_state.style_code >> 4) & 0xf;
-        break;
-     case OVERLAY_STYLE:
-        major_style = (get_context().pass_state.style_code >> 4) & 0xf;
-        flags |= OVERLAY_FLAG | IN_OVERLAY_FLAG;
-        break;
-     case HIGHLIGHTED_STYLE:
-        major_style = HIGHLIGHTED_STYLE_CODE;
-        break;
-     case ODD_CONTENT_STYLE:
-        major_style = ODD_CONTENT_STYLE_CODE;
-        break;
-     case CONTENT_STYLE:
-     default:
-        major_style = CONTENT_STYLE_CODE;
-    }
-    assert(major_style < N_MAJOR_STYLES);
-    unsigned substyle;
-    if (selected)
-    {
-        substyle = SELECTED_SUBSTYLE_OFFSET;
-    }
-    else if ((state & widget_states::DISABLED) != 0)
-    {
-        substyle = DISABLED_SUBSTYLE_OFFSET;
-    }
-    else
-    {
-        switch (state & widget_states::PRIMARY_STATE_MASK)
-        {
-         case widget_states::HOT:
-            substyle = HOT_SUBSTYLE_OFFSET;
-            break;
-         case widget_states::DEPRESSED:
-            substyle = SELECTED_SUBSTYLE_OFFSET;
-            break;
-         default:
-            substyle = NORMAL_SUBSTYLE_OFFSET;
-        }
-        if ((state & widget_states::FOCUSED) != 0)
-        {
-            substyle |= FOCUSED_SUBSTYLE_FLAG;
-        }
-    }
-    return flags | (major_style << 4) | substyle;
-}
-void artist::activate_style(unsigned style_code)
-{
-    unsigned major_style = (style_code >> 4) & 0xf;
-    unsigned substyle = style_code & 0xf;
-    context& ctx = get_context();
-    ctx.pass_state.active_font = translate_standard_font(NORMAL_FONT);
-    if (major_style == BACKGROUND_STYLE_CODE)
-    {
-        ctx.pass_state.padding_size = vector2i(0, 0);
-    }
-    else
-    {
-        //int w = ctx.surface->get_ascii_text_size(
-        //    ctx.pass_state.active_font, "x")[0] / 2;
-        ctx.pass_state.padding_size = vector2i(
-            int(2 * get_context().font_scale_factor + 0.5), 2);
-    }
-    style_colors const& sc = get_style_colors(style_code);
-    active_style_colors = &sc;
-    uint8 bg_alpha = (style_code & OVERLAY_FLAG) != 0 ? overlay_alpha : 0xff;
-    switch (substyle & 0x3)
-    {
-     case DISABLED_SUBSTYLE_OFFSET:
-        //ctx.pass_state.text_color = sc.disabled_fg;
-        //ctx.pass_state.bg_color = rgba8(sc.disabled_bg, bg_alpha);
-        //ctx.pass_state.selected_text_color = sc.selected_fg;
-        //ctx.pass_state.selected_bg_color = rgba8(sc.selected_bg, bg_alpha);
-        //break;
-     case NORMAL_SUBSTYLE_OFFSET:
-        ctx.pass_state.text_color = sc.normal_fg;
-        ctx.pass_state.bg_color = rgba8(sc.normal_bg, bg_alpha);
-        ctx.pass_state.selected_text_color = sc.selected_fg;
-        ctx.pass_state.selected_bg_color = rgba8(sc.selected_bg, bg_alpha);
-        break;
-     case HOT_SUBSTYLE_OFFSET:
-        ctx.pass_state.text_color = sc.hot_fg;
-        ctx.pass_state.bg_color = rgba8(sc.hot_bg, bg_alpha);
-        ctx.pass_state.selected_text_color = sc.selected_fg;
-        ctx.pass_state.selected_bg_color = rgba8(sc.selected_bg, bg_alpha);
-        break;
-     case SELECTED_SUBSTYLE_OFFSET:
-        ctx.pass_state.text_color = sc.selected_fg;
-        ctx.pass_state.bg_color = rgba8(sc.selected_bg, bg_alpha);
-        ctx.pass_state.selected_text_color = sc.normal_fg;
-        ctx.pass_state.selected_bg_color = rgba8(sc.normal_bg, bg_alpha);
-        break;
-    }
-}
-void artist::restore_style(unsigned style_code)
-{
-    active_style_colors = &get_style_colors(style_code);
-}
-artist::style_colors const&
-artist::get_style_colors(unsigned style_code) const
-{
-    unsigned major_style = (style_code >> 4) & 0xf;
-    assert(major_style < N_MAJOR_STYLES);
-    return style_color_info[major_style];
-}
-rgba8 artist::get_fg_color(widget_state state) const
-{
-    if ((state & widget_states::DISABLED) != 0)
-    {
-        return active_style_colors->disabled_fg;
-    }
-    else
-    {
-        switch (state & widget_states::PRIMARY_STATE_MASK)
-        {
-         case widget_states::HOT:
-            return active_style_colors->hot_fg;
-         case widget_states::DEPRESSED:
-            return active_style_colors->selected_fg;
-         default:
-            return active_style_colors->normal_fg;
-        }
-    }
-}
-rgba8 artist::get_bg_color(widget_state state) const
-{
-    uint8 bg_alpha = (get_context().pass_state.style_code & OVERLAY_FLAG) != 0
-        ? overlay_alpha : 0xff;
-    if ((state & widget_states::DISABLED) != 0)
-    {
-        return rgba8(active_style_colors->disabled_bg, bg_alpha);
-    }
-    else
-    {
-        switch (state & widget_states::PRIMARY_STATE_MASK)
-        {
-         case widget_states::HOT:
-            return rgba8(active_style_colors->hot_bg, bg_alpha);
-         case widget_states::DEPRESSED:
-            return rgba8(active_style_colors->selected_bg, bg_alpha);
-         default:
-            return rgba8(active_style_colors->normal_bg, bg_alpha);
-        }
-    }
-}
-
-font artist::translate_standard_font(standard_font font) const
-{
-    switch ((get_context().pass_state.style_code >> 4) & 0xf)
-    {
-     case TITLE_STYLE_CODE:
-        switch (font)
-        {
-         case FIXED_FONT:
-            return alia::font("courier", 10 * get_context().font_scale_factor);
-         case NORMAL_FONT:
-         default:
-            return alia::font("georgia",
-                20 * get_context().font_scale_factor, font::BOLD);
-        }
-        break;
-     case HEADING_STYLE_CODE:
-        switch (font)
-        {
-         case FIXED_FONT:
-            return alia::font("courier", 10 * get_context().font_scale_factor);
-         case NORMAL_FONT:
-         default:
-            return alia::font("georgia",
-                16 * get_context().font_scale_factor, font::BOLD);
-        }
-        break;
-     case SUBHEADING_STYLE_CODE:
-        switch (font)
-        {
-         case FIXED_FONT:
-            return alia::font("courier", 10 * get_context().font_scale_factor);
-         case NORMAL_FONT:
-         default:
-            return alia::font("georgia",
-                14 * get_context().font_scale_factor, font::BOLD);
-        }
-        break;
-     case HIGHLIGHTED_STYLE_CODE:
-     case TEXT_CONTROL_STYLE_CODE:
-     case LIST_STYLE_CODE:
-        switch (font)
-        {
-         case FIXED_FONT:
-            return alia::font("courier", 10 * get_context().font_scale_factor);
-         case NORMAL_FONT:
-         default:
-            return alia::font("helvetica",
-                12 * get_context().font_scale_factor, 0, 1.1f);
-        }
-        break;
-     default:
-        switch (font)
-        {
-         case FIXED_FONT:
-            return alia::font("courier", 10 * get_context().font_scale_factor);
-         case NORMAL_FONT:
-         default:
-            return alia::font("helvetica",
-                12 * get_context().font_scale_factor, 0, 1.1f);
-        }
-        break;
-    }
 }
 
 // BUTTON
@@ -421,7 +34,7 @@ font artist::translate_standard_font(standard_font font) const
 vector2i artist::get_button_size(artist_data_ptr& data,
     vector2i const& content_size) const
 {
-    int font_size = int(get_context().pass_state.active_font.get_size() + 0.5);
+    int font_size = int(get_context().pass_state.style->font.get_size() + 0.5);
     return vector2i(
         (std::max)(content_size[0] + font_size + 4, font_size * 5 + 4),
         (std::max)(content_size[1] + font_size / 3 + 4, font_size + 4));
@@ -430,7 +43,7 @@ vector2i artist::get_button_size(artist_data_ptr& data,
 vector2i artist::get_button_content_offset(artist_data_ptr& data,
     vector2i const& content_size, widget_state state) const
 {
-    int font_size = int(get_context().pass_state.active_font.get_size() + 0.5);
+    int font_size = int(get_context().pass_state.style->font.get_size() + 0.5);
     vector2i offset(font_size / 2 + 2, font_size / 6 + 2);
     if ((state & widget_states::PRIMARY_STATE_MASK) ==
         widget_states::DEPRESSED)
@@ -446,39 +59,44 @@ vector2i artist::get_button_content_offset(artist_data_ptr& data,
     return offset;
 }
 
-rgba8 artist::get_button_text_color(widget_state state) const
+struct button_data : artist_data
 {
-    return active_style_colors->button_fg;
+    stateful_style_versioning_data versioning;
+    rgba8 fg_color, bg_color, focus_color;
+};
+
+static button_data* get_button_data(alia::context& ctx,
+    artist_data_ptr& data_ptr, widget_state state)
+{
+    button_data* data;
+    if (cast_data_ptr(&data, data_ptr) ||
+        is_outdated(ctx, data->versioning, state))
+    {
+        update(ctx, data->versioning, state);
+        style_node const* button_style = get_substyle(ctx, "button");
+        get_color_property(&data->fg_color, button_style, "color", state);
+        get_color_property(&data->bg_color, button_style, "background_color",
+            state);
+        get_color_property(&data->focus_color, button_style, "focus_color",
+            state);
+    }
+    return data;
 }
 
-void artist::draw_button(artist_data_ptr& data_, box2i const& region,
+rgba8 artist::get_button_text_color(artist_data_ptr& data_ptr,
     widget_state state) const
 {
+    button_data* data = get_button_data(get_context(), data_ptr, state);
+    return data->fg_color;
+}
+
+void artist::draw_button(artist_data_ptr& data_ptr, box2i const& region,
+    widget_state state) const
+{
+    button_data* data = get_button_data(get_context(), data_ptr, state);
+
     surface& surface = get_surface();
 
-    rgba8 fill_color;
-    uint8 bg_alpha = (get_context().pass_state.style_code & OVERLAY_FLAG) != 0
-        ? overlay_alpha : 0xff;
-    if ((state & widget_states::DISABLED) != 0)
-    {
-        fill_color = rgba8(active_style_colors->disabled_bg, bg_alpha);
-    }
-    else
-    {
-        switch (state & widget_states::PRIMARY_STATE_MASK)
-        {
-         case widget_states::HOT:
-            fill_color = rgba8(active_style_colors->button_hot_bg, bg_alpha);
-            break;
-         case widget_states::DEPRESSED:
-            fill_color = rgba8(active_style_colors->button_depressed_bg,
-                bg_alpha);
-            break;
-         default:
-            fill_color = rgba8(active_style_colors->button_normal_bg,
-                bg_alpha);
-        }
-    }
     point2i poly[4];
     box2i fill_region = region;
     if ((state & widget_states::PRIMARY_STATE_MASK) ==
@@ -488,41 +106,81 @@ void artist::draw_button(artist_data_ptr& data_, box2i const& region,
         ++fill_region.corner[1];
     }
     make_polygon(poly, fill_region);
-    surface.draw_filled_polygon(fill_color, poly, 4);
+    surface.draw_filled_polygon(data->bg_color, poly, 4);
 
     if ((state & widget_states::FOCUSED) != 0)
-    {
-        draw_focus_rect(add_border(fill_region, -2),
-            rgb8(0xd0, 0xd0, 0xd0));
-    }
+        draw_focus_rect(add_border(fill_region, -2), data->focus_color);
 }
 
 // LINK
 
-rgba8 artist::get_link_color(artist_data_ptr& data,
+struct link_data : artist_data
+{
+    stateful_style_versioning_data versioning;
+    rgba8 color;
+};
+
+static link_data* get_link_data(alia::context& ctx,
+    artist_data_ptr& data_ptr, widget_state state)
+{
+    link_data* data;
+    if (cast_data_ptr(&data, data_ptr) ||
+        is_outdated(ctx, data->versioning, state))
+    {
+        update(ctx, data->versioning, state);
+        style_node const* link_style = get_substyle(ctx, "link");
+        get_color_property(&data->color, link_style, "color", state);
+    }
+    return data;
+}
+
+rgba8 artist::get_link_color(artist_data_ptr& data_ptr,
     widget_state state) const
 {
-    if ((state & widget_states::DISABLED) != 0)
-    {
-        return active_style_colors->disabled_link;
-    }
-    else
-    {
-        switch (state & widget_states::PRIMARY_STATE_MASK)
-        {
-         case widget_states::HOT:
-            return active_style_colors->hot_link;
-         case widget_states::DEPRESSED:
-            return active_style_colors->depressed_link;
-         default:
-            return active_style_colors->link;
-        }
-    }
+    link_data* data = get_link_data(get_context(), data_ptr, state);
+    return data->color;
+}
+
+// CONTROLS
+
+namespace {
+
+struct control_style_properties
+{
+    rgba8 fg_color, bg_color, border_color, focus_color;
+    stateful_style_versioning_data versioning;
+};
+
+bool is_outdated(context& ctx, control_style_properties& props,
+    widget_state state)
+{
+    return is_outdated(ctx, props.versioning, state);
+}
+
+void update(context& ctx, control_style_properties& props,
+    widget_state state)
+{
+    style_node const* control_style = get_substyle(ctx, "control");
+    get_color_property(&props.fg_color, control_style, "color", state);
+    get_color_property(&props.bg_color, control_style, "background_color",
+        state);
+    get_color_property(&props.border_color, control_style, "border_color",
+        state);
+    get_color_property(&props.focus_color, control_style, "focus_color",
+        state);
+    update(ctx, props.versioning, state);
+}
+
 }
 
 // CHECK BOX
 
 static alia::vector2i const check_box_size(15, 15);
+
+struct check_box_data : artist_data
+{
+    control_style_properties style;
+};
 
 vector2i artist::get_check_box_size(artist_data_ptr& data,
     bool checked) const
@@ -530,17 +188,23 @@ vector2i artist::get_check_box_size(artist_data_ptr& data,
     return check_box_size;
 }
 
-void artist::draw_check_box(artist_data_ptr& data, bool checked,
+void artist::draw_check_box(artist_data_ptr& data_ptr, bool checked,
     point2i const& position, widget_state state) const
 {
+    check_box_data* data;
+    if (cast_data_ptr(&data, data_ptr)
+        || is_outdated(get_context(), data->style, state))
+    {
+        update(get_context(), data->style, state);
+    }
+
     box2i region(position, check_box_size);
-    rgba8 fg = get_fg_color(state), bg = get_bg_color(state);
 
     // outline
     {
     point2i poly[4];
     make_polygon(poly, region);
-    get_surface().draw_filled_polygon(active_style_colors->border, poly, 4);
+    get_surface().draw_filled_polygon(data->style.border_color, poly, 4);
     }
 
     // box
@@ -548,7 +212,7 @@ void artist::draw_check_box(artist_data_ptr& data, bool checked,
     {
     point2i poly[4];
     make_polygon(poly, inside_region);
-    get_surface().draw_filled_polygon(bg, poly, 4);
+    get_surface().draw_filled_polygon(data->style.bg_color, poly, 4);
     }
 
     // check
@@ -565,24 +229,26 @@ void artist::draw_check_box(artist_data_ptr& data, bool checked,
         mark1[1] = check_position + vector2i( 7, 3);
         mark1[2] = check_position + vector2i( 7, 0);
         mark1[3] = check_position + vector2i( 3, 4);
-        get_surface().draw_filled_polygon(fg, mark0, 4);
-        get_surface().draw_filled_polygon(fg, mark1, 4);
+        get_surface().draw_filled_polygon(data->style.fg_color, mark0, 4);
+        get_surface().draw_filled_polygon(data->style.fg_color, mark1, 4);
     }
 
-    // text
+    // focus
     if ((state & widget_states::FOCUSED) != 0)
-        draw_focus_rect(add_border(region, vector2i(2, 2)));
+    {
+        draw_focus_rect(add_border(region, vector2i(2, 2)),
+            data->style.focus_color);
+    }
 }
 
 // RADIO BUTTON
 
-static vector2i const radio_button_size(17, 17);
+static vector2i const radio_button_size(19, 17);
 static vector2i const radio_button_image_size(25, 25);
 
 struct radio_button_data : artist_data
 {
-    //radio_button_data() : version(0) {}
-    //unsigned version;
+    control_style_properties style;
     widget_state state;
     bool selected;
     image<rgba8> img;
@@ -661,19 +327,18 @@ vector2i artist::get_radio_button_size(artist_data_ptr& data,
 void artist::draw_radio_button(artist_data_ptr& data_ptr, bool selected,
     point2i const& position, widget_state state) const
 {
-    assert(!data_ptr || dynamic_cast<radio_button_data*>(data_ptr.get()));
-    radio_button_data* data = static_cast<radio_button_data*>(data_ptr.get());
-    if (!data || data->state != state || data->selected != selected)
-        //|| data->version != impl_->version)
+    radio_button_data* data;
+    if (cast_data_ptr(&data, data_ptr)
+        || is_outdated(get_context(), data->style, state)
+        || data->state != state || data->selected != selected)
     {
-        data = new radio_button_data;
-        data_ptr.reset(data);
+        update(get_context(), data->style, state);
         create_radio_button_image(data->img,
-            get_bg_color(state),
-            selected ? get_fg_color(state) : rgba8(0, 0, 0, 0),
-            active_style_colors->border,
+            data->style.bg_color,
+            selected ? data->style.fg_color : rgba8(0, 0, 0, 0),
+            data->style.border_color,
             (state & widget_states::FOCUSED) != 0 ?
-            active_style_colors->focused_border : rgba8(0, 0, 0, 0));
+            data->style.focus_color : rgba8(0, 0, 0, 0));
         get_context().surface->cache_image(data->cached_img,
             make_interface(data->img.view, 0));
         data->state = state;
@@ -681,10 +346,31 @@ void artist::draw_radio_button(artist_data_ptr& data_ptr, bool selected,
     }
     // - (4, 4) to compensate for the fact that the image is larger than the
     // supposed size of the radio button
-    data->cached_img->draw(point2d(position - vector2i(4, 4)));
+    data->cached_img->draw(point2d(position - vector2i(3, 4)));
 }
 
 // NODE EXPANDER
+
+struct node_expander_data : artist_data
+{
+    stateful_style_versioning_data versioning;
+    rgba8 fg_color, bg_color, focus_color;
+};
+
+static node_expander_data* get_node_expander_data(alia::context& ctx,
+    artist_data_ptr& data_ptr, widget_state state)
+{
+    node_expander_data* data;
+    if (cast_data_ptr(&data, data_ptr) ||
+        is_outdated(ctx, data->versioning, state))
+    {
+        update(ctx, data->versioning, state);
+        get_color_property(&data->fg_color, ctx, "color", state);
+        get_color_property(&data->bg_color, ctx, "background_color", state);
+        get_color_property(&data->focus_color, ctx, "focus_color", state);
+    }
+    return data;
+}
 
 static vector2i node_expander_size(15, 15);
 
@@ -694,71 +380,126 @@ vector2i artist::get_node_expander_size(artist_data_ptr& data,
     return node_expander_size;
 }
 
-void artist::draw_node_expander(artist_data_ptr& data, int expanded,
+void artist::draw_node_expander(artist_data_ptr& data_ptr, int expanded,
     point2i const& position, widget_state state) const
 {
+    node_expander_data* data = get_node_expander_data(get_context(), data_ptr,
+        state);
+
     box2i region(position, node_expander_size);
 
     point2i poly[4];
     make_polygon(poly, region);
-    get_surface().draw_filled_polygon(get_bg_color(state), poly, 4);
+    get_surface().draw_filled_polygon(data->bg_color, poly, 4);
 
     if ((state & widget_states::FOCUSED) != 0)
-        draw_focus_rect(region);
+        draw_focus_rect(region, data->focus_color);
 
-    rgba8 fg_color = get_fg_color(state);
     switch (expanded)
     {
      case 0:
-        draw_arrow(fg_color, region, 1, 5);
+        draw_arrow(data->fg_color, region, 1, 5);
         break;
      case 1:
-        draw_arrow(fg_color, region, 6, 7);
+        draw_arrow(data->fg_color, region, 6, 7);
         break;
      case 2:
-        draw_arrow(fg_color, region, 3, 5);
+        draw_arrow(data->fg_color, region, 3, 5);
         break;
     }
 }
 
 // SEPARATOR
 
-int artist::get_separator_width() const
+struct separator_data : artist_data
 {
-    return
-        ((get_context().pass_state.style_code & ~0xf) == BACKGROUND_STYLE_CODE)
-      ? 2 : 1;
+    style_versioning_data versioning;
+    int width;
+    rgba8 color;
+};
+
+static separator_data* get_separator_data(alia::context& ctx,
+    artist_data_ptr& data_ptr)
+{
+    separator_data* data;
+    if (cast_data_ptr(&data, data_ptr) ||
+        is_outdated(ctx, data->versioning))
+    {
+        update(ctx, data->versioning);
+        style_node const* separator_style = get_substyle(ctx, "separator");
+        get_color_property(&data->color, separator_style, "color");
+        get_numeric_property(&data->width, separator_style, "line_width");
+    }
+    return data;
 }
 
-void artist::draw_separator(artist_data_ptr& data,
+int artist::get_separator_width(artist_data_ptr& data_ptr) const
+{
+    separator_data* data = get_separator_data(get_context(), data_ptr);
+    return data->width;
+}
+
+void artist::draw_separator(artist_data_ptr& data_ptr,
     point2i const& position, unsigned axis, int length) const
 {
+    separator_data* data = get_separator_data(get_context(), data_ptr);
+
     point2f p0, p1;
     p0 = point2f(position) + vector2f(0.5, 0.5);
     p1 = p0;
     p1[axis] += length;
 
-    get_surface().draw_line(active_style_colors->separator,
-        line_style(1, solid_line), p0, p1);
-
-    if ((get_context().pass_state.style_code & ~0xf) == BACKGROUND_STYLE_CODE)
+    // TODO: use a polygon
+    for (int i = 0; i != data->width; ++i)
     {
+        get_surface().draw_line(data->color,
+            line_style(1, solid_line), p0, p1);
         p0[1 - axis] += 1;
         p1[1 - axis] += 1;
-        get_surface().draw_line(active_style_colors->separator,
-            line_style(1, solid_line), p0, p1);
     }
 }
 
 // SCROLLBAR
 
-state_colors scrollbar_fg = {
-    rgba8(0xd0, 0xd0, 0xd0, 0xff),
-    rgba8(0xe0, 0xe0, 0xe0, 0xff),
-    rgba8(0xc0, 0xc0, 0xc0, 0xff),
-    rgba8(0, 0, 0, 0xff) };
+struct scrollbar_style_properties
+{
+    stateful_style_versioning_data versioning;
+    rgba8 fg_color, bg_color;
+};
 
-int const scrollbar_width = 14;
+bool is_outdated(context& ctx, scrollbar_style_properties& props,
+    widget_state state)
+{
+    return is_outdated(ctx, props.versioning, state);
+}
+
+void update(context& ctx, scrollbar_style_properties& props,
+    widget_state state)
+{
+    style_node const* control_style = get_substyle(ctx, "scrollbar");
+    get_color_property(&props.fg_color, control_style, "color", state);
+    get_color_property(&props.bg_color, control_style, "background_color");
+    update(ctx, props.versioning, state);
+}
+
+struct scrollbar_data : artist_data
+{
+    scrollbar_style_properties style;
+};
+
+static scrollbar_data* get_scrollbar_data(alia::context& ctx,
+    artist_data_ptr& data_ptr, widget_state state)
+{
+    scrollbar_data* data;
+    if (cast_data_ptr(&data, data_ptr) ||
+        is_outdated(ctx, data->style, state))
+    {
+        update(ctx, data->style, state);
+    }
+    return data;
+}
+
+static int const scrollbar_width = 14;
 
 int artist::get_scrollbar_width() const
 {
@@ -775,20 +516,20 @@ int artist::get_minimum_scrollbar_thumb_length() const
 
 // background
 
-void artist::draw_scrollbar_background(artist_data_ptr& data,
+void artist::draw_scrollbar_background(artist_data_ptr& data_ptr,
     box2i const& rect, int axis, int which, widget_state state) const
 {
+    scrollbar_data* data = get_scrollbar_data(get_context(), data_ptr, state);
     point2i poly[4];
     make_polygon(poly, rect);
-    get_surface().draw_filled_polygon(active_style_colors->normal_bg, poly, 4);
+    get_surface().draw_filled_polygon(data->style.bg_color, poly, 4);
 }
 
 // thumb
 
 struct scrollbar_thumb_data : artist_data
 {
-    //radio_button_data() : version(0) {}
-    //unsigned version;
+    scrollbar_style_properties style;
     widget_state state;
     vector2i size;
     image<rgba8> img;
@@ -801,7 +542,6 @@ void draw_scrollbar_thumb(
 {
     SkPaint paint;
     paint.setFlags(SkPaint::kAntiAlias_Flag);
-
     paint.setARGB(fg.a, fg.r, fg.g, fg.b);
     paint.setStrokeWidth(SkIntToScalar(scrollbar_width - 2));
     paint.setStrokeCap(SkPaint::kRound_Cap);
@@ -834,16 +574,14 @@ void create_scrollbar_thumb_image(
 void artist::draw_scrollbar_thumb(artist_data_ptr& data_ptr,
     box2i const& rect, int axis, widget_state state) const
 {
-    assert(!data_ptr || dynamic_cast<scrollbar_thumb_data*>(data_ptr.get()));
-    scrollbar_thumb_data* data = static_cast<scrollbar_thumb_data*>(
-        data_ptr.get());
-    if (!data || data->state != state || data->size != rect.size)
-        //|| data->version != impl_->version)
+    scrollbar_thumb_data* data;
+    if (!cast_data_ptr(&data, data_ptr) ||
+        is_outdated(get_context(), data->style, state) ||
+        data->state != state || data->size != rect.size)
     {
-        data = new scrollbar_thumb_data;
-        data_ptr.reset(data);
+        update(get_context(), data->style, state);
         create_scrollbar_thumb_image(data->img, rect.size,
-            select_color(scrollbar_fg, state), active_style_colors->normal_bg);
+            data->style.fg_color, data->style.bg_color);
         get_context().surface->cache_image(data->cached_img,
             make_interface(data->img.view, 0));
         data->size = rect.size;
@@ -861,14 +599,15 @@ void artist::draw_scrollbar_button(artist_data_ptr& data,
 
 // junction
 
-void artist::draw_scrollbar_junction(artist_data_ptr& data,
+void artist::draw_scrollbar_junction(artist_data_ptr& data_ptr,
     point2i const& position) const
 {
+    scrollbar_data* data = get_scrollbar_data(get_context(), data_ptr,
+        widget_states::NORMAL);
     point2i poly[4];
     make_polygon(poly, box2i(position,
         vector2i(get_scrollbar_width(), get_scrollbar_width())));
-    get_surface().draw_filled_polygon(get_bg_color(widget_states::NORMAL),
-        poly, 4);
+    get_surface().draw_filled_polygon(data->style.bg_color, poly, 4);
 }
 
 // PANEL
@@ -876,13 +615,7 @@ void artist::draw_scrollbar_junction(artist_data_ptr& data,
 border_size artist::get_panel_border_size(artist_data_ptr& data,
     unsigned inner_style_code) const
 {
-    //if ((get_context().pass_state.style_code & ~0xf) == BACKGROUND_STYLE_CODE
-    //    || (inner_style_code & ~0xf) >= LIST_ITEM_STYLE_CODE)
-    {
-        return border_size(0, 0, 0, 0);
-    }
-    //else
-    //    return border_size(1, 1, 1, 1);
+    return border_size(0, 0, 0, 0);
 }
 void artist::draw_panel_border(artist_data_ptr& data,
     unsigned inner_style_code, box2i const& rect) const
@@ -900,21 +633,40 @@ void artist::draw_panel_border(artist_data_ptr& data,
     //        line_style(1, solid_line), poly, 4);
     //}
 }
-void artist::draw_panel_background(artist_data_ptr& data,
+
+struct panel_background_data : artist_data
+{
+    style_versioning_data versioning;
+    rgba8 color, border_color;
+};
+
+static panel_background_data* get_panel_background_data(alia::context& ctx,
+    artist_data_ptr& data_ptr)
+{
+    panel_background_data* data;
+    if (cast_data_ptr(&data, data_ptr) ||
+        is_outdated(ctx, data->versioning))
+    {
+        update(ctx, data->versioning);
+        get_color_property(&data->color, ctx, "background_color");
+        get_color_property(&data->border_color, ctx, "border_color");
+    }
+    return data;
+}
+
+void artist::draw_panel_background(artist_data_ptr& data_ptr,
     box2i const& rect) const
 {
+    panel_background_data* data = get_panel_background_data(get_context(),
+        data_ptr);
+
     point2i poly[4];
     make_polygon(poly, rect);
-    get_surface().draw_filled_polygon(get_context().pass_state.bg_color, poly,
-        4);
+    get_surface().draw_filled_polygon(data->color, poly, 4);
 
-    if (((get_context().pass_state.style_code >> 4) & 0xf) ==
-        TEXT_CONTROL_STYLE_CODE &&
-        (get_context().pass_state.style_code & IN_OVERLAY_FLAG) == 0)
-    {
-        draw_focus_rect(rect, blend(active_style_colors->control_fg,
-            active_style_colors->control_bg, 0.4));
-    }
+    if (data->border_color.a != 0)
+        draw_focus_rect(rect, data->border_color);
+
     // TODO: This should technically be here, but it makes the Astroid UI look
     // noisy. Ideally, these should only be drawn when using keyboard
     // navigation (or there should be a flag for that). Alternatively, focus
@@ -925,22 +677,68 @@ void artist::draw_panel_background(artist_data_ptr& data,
 
 // DROP DOWN BUTTON
 
+struct drop_down_data : artist_data
+{
+    stateful_style_versioning_data versioning;
+    rgba8 fg_color, bg_color;
+};
+
+static drop_down_data* get_drop_down_data(alia::context& ctx,
+    artist_data_ptr& data_ptr, widget_state state)
+{
+    drop_down_data* data;
+    if (cast_data_ptr(&data, data_ptr) ||
+        is_outdated(ctx, data->versioning, state))
+    {
+        update(ctx, data->versioning, state);
+        style_node const* drop_down_style = get_substyle(ctx, "drop_down");
+        get_color_property(&data->fg_color, drop_down_style, "color", state);
+        get_color_property(&data->bg_color, drop_down_style,
+            "background_color", state);
+    }
+    return data;
+}
+
 vector2i artist::get_minimum_drop_down_button_size() const
 {
     return vector2i(15, 15);
 }
-void artist::draw_drop_down_button(artist_data_ptr& data,
+void artist::draw_drop_down_button(artist_data_ptr& data_ptr,
     box2i const& rect, widget_state state) const
 {
+    drop_down_data* data = get_drop_down_data(get_context(), data_ptr, state);
     point2i poly[4];
     make_polygon(poly, rect);
-    get_surface().draw_filled_polygon(get_bg_color(state), poly, 4);
-    draw_arrow(get_fg_color(state), rect, 3, 5);
+    get_surface().draw_filled_polygon(data->bg_color, poly, 4);
+    draw_arrow(data->fg_color, rect, 3, 5);
 }
 
 // SLIDER
 
-// track
+struct slider_data : artist_data
+{
+    stateful_style_versioning_data versioning;
+    rgba8 thumb_color, track_color, focus_color;
+};
+
+static slider_data* get_slider_data(alia::context& ctx,
+    artist_data_ptr& data_ptr, widget_state state)
+{
+    slider_data* data;
+    if (cast_data_ptr(&data, data_ptr) ||
+        is_outdated(ctx, data->versioning, state))
+    {
+        update(ctx, data->versioning, state);
+        style_node const* slider_style = get_substyle(ctx, "slider");
+        get_color_property(&data->thumb_color, slider_style, "thumb_color",
+            state);
+        get_color_property(&data->track_color, slider_style, "track_color",
+            state);
+        get_color_property(&data->focus_color, slider_style, "focus_color",
+            state);
+    }
+    return data;
+}
 
 int artist::get_slider_left_border() const
 {
@@ -970,22 +768,23 @@ box2i artist::get_slider_thumb_region() const
 {
     return box2i(point2i(-5, 0), vector2i(10, 20));
 }
-void artist::draw_slider_track(artist_data_ptr& data, unsigned axis,
+void artist::draw_slider_track(artist_data_ptr& data_ptr, unsigned axis,
     int width, point2i const& position) const
 {
+    slider_data* data = get_slider_data(get_context(), data_ptr,
+        widget_states::NORMAL);
     vector2i size;
     size[axis] = width;
     size[1 - axis] = 2;
     point2i poly[4];
     make_polygon(poly, box2i(position, size));
-    get_surface().draw_filled_polygon(
-        blend(active_style_colors->normal_fg,
-            active_style_colors->normal_bg, 0.5),
-        poly, 4);
+    get_surface().draw_filled_polygon(data->track_color, poly, 4);
 }
-void artist::draw_slider_thumb(artist_data_ptr& data, unsigned axis,
+void artist::draw_slider_thumb(artist_data_ptr& data_ptr, unsigned axis,
     point2i const& position, widget_state state) const
 {
+    slider_data* data = get_slider_data(get_context(), data_ptr, state);
+
     box2i thumb_region = get_slider_thumb_region();
     box2i region(position, thumb_region.size);
     region.corner[axis] += thumb_region.corner[0];
@@ -996,92 +795,16 @@ void artist::draw_slider_thumb(artist_data_ptr& data, unsigned axis,
     ++region.corner[axis];
     region.size[axis] -= 2;
 
-    rgba8 fill_color;
-    if ((state & widget_states::DISABLED) != 0)
-    {
-        fill_color = blend(active_style_colors->normal_fg,
-            active_style_colors->normal_bg, 0.5);
-    }
-    else
-    {
-        switch (state & widget_states::PRIMARY_STATE_MASK)
-        {
-         case widget_states::HOT:
-            fill_color = blend(active_style_colors->normal_fg,
-                active_style_colors->highlighted_fg, 0.5);
-            break;
-         case widget_states::DEPRESSED:
-            fill_color = active_style_colors->highlighted_fg;
-            break;
-         default:
-            fill_color = active_style_colors->normal_fg;
-        }
-    }
-    fill_color.a =
-        (get_context().pass_state.style_code & OVERLAY_FLAG) != 0
-        ? overlay_alpha : 0xff;
-
     surface& surface = get_surface();
     point2i poly[4];
     make_polygon(poly, region);
-    surface.draw_filled_polygon(fill_color, poly, 4);
+    surface.draw_filled_polygon(data->thumb_color, poly, 4);
 
     if ((state & widget_states::FOCUSED) != 0)
-        draw_focus_rect(add_border(region, vector2i(2, 2)));
+        draw_focus_rect(add_border(region, vector2i(2, 2)), data->focus_color);
 }
 
 // UTILITY FUNCTIONS
-
-void artist::draw_box(box2i const& region, widget_state state,
-    int gradient_axis, bool draw_border) const
-{
-    surface& surface = get_surface();
-    rgba8 fill_color = get_bg_color(state);
-    box2i fill_region;
-    point2i poly[4];
-    //if (draw_border)
-    //{
-    //    // TODO
-    //    make_polygon(poly, box2i(region.corner,
-    //        vector2i(1, region.size[1] - 1)));
-    //    surface.draw_filled_polygon(blend(bg_color, white, 0.7f), poly, 4);
-    //    make_polygon(poly, box2i(region.corner + vector2i(1, 0),
-    //        vector2i(region.size[0] - 1, 1)));
-    //    surface.draw_filled_polygon(blend(bg_color, white, 0.7f), poly, 4);
-
-    //    make_polygon(poly, box2i(
-    //        region.corner + vector2i(0, region.size[1] - 1),
-    //        vector2i(region.size[0] - 1, 1)));
-    //    surface.draw_filled_polygon(scale(bg_color, 0.7f), poly, 4);
-    //    make_polygon(poly, box2i(
-    //        region.corner + vector2i(region.size[0] - 1, 1),
-    //        vector2i(1, region.size[1] - 1)));
-    //    surface.draw_filled_polygon(scale(bg_color, 0.7f), poly, 4);
-
-    //    fill_region = add_border(region, -1);
-    //}
-    //else
-        fill_region = region;
-    make_polygon(poly, fill_region);
-    surface.draw_filled_polygon(fill_color, poly, 4);
-}
-
-void artist::draw_octagon(rgba8 const& color,
-    box2i const& region, int corner_size) const
-{
-    point2f position(region.corner);
-    vector2f size(region.size);
-    point2f octagon[8];
-    octagon[0] = position + vector2f(0, (corner_size + 0.5f));
-    octagon[1] = position + vector2f(0, size[1] - (corner_size + 0.5f));
-    octagon[2] = position + vector2f((corner_size + 0.5f), size[1]);
-    octagon[3] = position + vector2f(size[0] - (corner_size + 0.5f), size[1]);
-    octagon[4] = position + vector2f(size[0], size[1] - (corner_size + 0.5f));
-    octagon[5] = position + vector2f(size[0], (corner_size + 0.5f));
-    octagon[6] = position + vector2f(size[0] - (corner_size + 0.5f), 0);
-    octagon[7] = position + vector2f((corner_size + 0.5f), 0);
-    get_surface().draw_filled_polygon(color, octagon, 8);
-}
 
 void artist::draw_arrow(rgba8 const& color, box2i const& region,
     int direction, int size) const
@@ -1151,11 +874,6 @@ void artist::draw_arrow(rgba8 const& color, box2i const& region,
     get_surface().draw_filled_polygon(color, arrow, 3);
 }
 
-void artist::draw_focus_rect(box2i const& rect) const
-{
-    draw_focus_rect(rect, active_style_colors->focused_border);
-}
-
 void artist::draw_focus_rect(box2i const& rect,
     rgba8 const& color) const
 {
@@ -1180,7 +898,56 @@ void artist::draw_outline(box2i const& region,
     get_surface().draw_line_loop(color, line_style(1, solid_line), poly, 4);
 }
 
+// FOCUS RECT
+
+struct focus_rect_data : artist_data
+{
+    style_versioning_data versioning;
+    rgba8 color;
+};
+
+static focus_rect_data* get_focus_rect_data(alia::context& ctx,
+    artist_data_ptr& data_ptr)
+{
+    focus_rect_data* data;
+    if (cast_data_ptr(&data, data_ptr) ||
+        is_outdated(ctx, data->versioning))
+    {
+        update(ctx, data->versioning);
+        get_color_property(&data->color, ctx, "focus_color");
+    }
+    return data;
+}
+
+void artist::draw_focus_rect(artist_data_ptr& data_ptr,
+    box2i const& rect) const
+{
+    focus_rect_data* data = get_focus_rect_data(get_context(), data_ptr);
+    draw_focus_rect(rect, data->color);
+}
+
 // PROGRESS BAR
+
+struct progress_bar_data : artist_data
+{
+    style_versioning_data versioning;
+    rgba8 border_color, bar_color;
+};
+
+static progress_bar_data* get_progress_bar_data(alia::context& ctx,
+    artist_data_ptr& data_ptr)
+{
+    progress_bar_data* data;
+    if (cast_data_ptr(&data, data_ptr) ||
+        is_outdated(ctx, data->versioning))
+    {
+        update(ctx, data->versioning);
+        style_node const* bar_style = get_substyle(ctx, "progress_bar");
+        get_color_property(&data->border_color, bar_style, "border_color");
+        get_color_property(&data->bar_color, bar_style, "color");
+    }
+    return data;
+}
 
 vector2i artist::get_default_progress_bar_size() const
 {
@@ -1190,17 +957,18 @@ vector2i artist::get_minimum_progress_bar_size() const
 {
     return vector2i(40, 20);
 }
-void artist::draw_progress_bar(artist_data_ptr& data,
+void artist::draw_progress_bar(artist_data_ptr& data_ptr,
     box2i const& region, double value) const
 {
-    draw_outline(region, rgb8(0x50, 0x50, 0x50));
+    progress_bar_data* data = get_progress_bar_data(get_context(), data_ptr);
+    draw_outline(region, data->border_color);
     box2i bar_rect(
         region.corner + vector2i(2, 2),
         region.size - vector2i(4, 4));
     bar_rect.size[0] = int(bar_rect.size[0] * value + 0.5);
     point2i poly[4];
     make_polygon(poly, bar_rect);
-    get_surface().draw_filled_polygon(rgb8(0x1c, 0x54, 0x70), poly, 4);
+    get_surface().draw_filled_polygon(data->bar_color, poly, 4);
 }
 
 // ICON BUTTONS
@@ -1210,12 +978,13 @@ static vector2i const icon_button_image_size(25, 25);
 
 struct icon_button_data : artist_data
 {
-    //icon_button_data() : version(0) {}
-    //unsigned version;
     widget_state state;
     standard_icon icon;
+
     image<rgba8> img;
     cached_image_ptr cached_img;
+
+    stateful_style_versioning_data style_versioning;
 };
 
 void draw_icon_button(
@@ -1289,18 +1058,24 @@ vector2i artist::get_icon_button_size(artist_data_ptr& data,
 void artist::draw_icon_button(artist_data_ptr& data_ptr, standard_icon icon,
     point2i const& position, widget_state state)
 {
-    assert(!data_ptr || dynamic_cast<icon_button_data*>(data_ptr.get()));
-    icon_button_data* data = static_cast<icon_button_data*>(data_ptr.get());
-    if (!data || data->state != state || data->icon != icon)
-        //|| data->version != impl_->version)
+    context& ctx = get_context();
+    icon_button_data* data;
+    if (cast_data_ptr(&data, data_ptr) ||
+        is_outdated(ctx, data->style_versioning, state) ||
+        data->state != state || data->icon != icon)
     {
-        data = new icon_button_data;
-        data_ptr.reset(data);
+        update(ctx, data->style_versioning, state);
+        rgba8 fg_color, bg_color, focus_color;
+        style_node const* icon_button_style = get_substyle(ctx, "icon_button");
+        get_color_property(&fg_color, icon_button_style, "color", state);
+        get_color_property(&bg_color, icon_button_style, "background_color",
+            state);
+        get_color_property(&focus_color, icon_button_style, "focus_color",
+            state);
         create_icon_button_image(data->img, icon,
-            get_bg_color(state),
-            get_fg_color(state),
+            bg_color, fg_color,
             (state & widget_states::FOCUSED) != 0 ?
-            active_style_colors->focused_border : rgba8(0, 0, 0, 0));
+            focus_color : rgba8(0, 0, 0, 0));
         get_context().surface->cache_image(data->cached_img,
             make_interface(data->img.view, 0));
         data->state = state;
@@ -1310,27 +1085,5 @@ void artist::draw_icon_button(artist_data_ptr& data_ptr, standard_icon icon,
     // supposed size of the icon button
     data->cached_img->draw(point2d(position - vector2i(4, 4)));
 }
-
-//static vector2i icon_button_size(15, 15);
-//
-//vector2i artist::get_icon_button_size(artist_data_ptr& data,
-//    standard_icon icon)
-//{
-//    return icon_button_size;
-//}
-//void artist::draw_icon_button(artist_data_ptr& data,
-//    standard_icon icon, point2i const& position, widget_state state)
-//{
-//    box2i region(position, icon_button_size);
-//
-//    point2i poly[4];
-//    make_polygon(poly, region);
-//    get_surface().draw_filled_polygon(get_bg_color(state), poly, 4);
-//
-//    if ((state & widget_states::FOCUSED) != 0)
-//        draw_focus_rect(region);
-//
-//    rgba8 fg_color = get_fg_color(state);
-//}
 
 }}

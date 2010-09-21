@@ -1,3 +1,5 @@
+#if 0
+
 #include <alia/generic_artist.hpp>
 #include <alia/context.hpp>
 #include <alia/surface.hpp>
@@ -192,7 +194,7 @@ unsigned generic_artist::get_code_for_style(style s, widget_state state,
      case HIGHLIGHTED_STYLE:
         major_style = HIGHLIGHTED_STYLE_CODE;
         break;
-     case ODD_CONTENT_STYLE:
+     case ACTIVE_CONTENT_STYLE:
         major_style = ODD_CONTENT_STYLE_CODE;
         break;
      case CONTENT_STYLE:
@@ -234,12 +236,12 @@ void generic_artist::activate_style(unsigned style_code)
     unsigned major_style = (style_code >> 4) & 0xf;
     unsigned substyle = style_code & 0xf;
     context& ctx = get_context();
-    ctx.pass_state.active_font = translate_standard_font(NORMAL_FONT);
-    ctx.pass_state.padding_size =
+    ctx.pass_state.style->font = translate_standard_font(NORMAL_FONT);
+    ctx.pass_state.style->padding_size =
         major_style == BACKGROUND_STYLE_CODE ?
         vector2i(0, 0) :
         vector2i((std::max)((ctx.surface->get_ascii_text_size(
-            ctx.pass_state.active_font, " ")[0] + 1) / 2, 2), 2);
+            ctx.pass_state.style->font, " ")[0] + 1) / 2, 2), 2);
     style_colors const& sc = get_style_colors(style_code);
     active_style_colors = &sc;
     uint8 bg_alpha = (style_code & OVERLAY_FLAG) != 0 ? overlay_alpha : 0xff;
@@ -977,3 +979,5 @@ void generic_artist::draw_icon_button(artist_data_ptr& data,
 }
 
 }
+
+#endif

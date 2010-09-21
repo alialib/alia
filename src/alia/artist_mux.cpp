@@ -1,3 +1,5 @@
+#if 0
+
 #include <alia/artist_mux.hpp>
 
 namespace alia {
@@ -339,3 +341,5 @@ void artist_mux::draw_icon_button(artist_data_ptr& data,
 }
 
 }
+
+#endif

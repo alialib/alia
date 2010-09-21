@@ -66,6 +66,7 @@ class drop_down_list : boost::noncopyable
     bool do_list_, make_selection_visible_;
     context* list_ctx_;
     scrollable_panel list_panel_;
+    column_layout padding_;
 };
 
 template<class Index>
@@ -142,9 +143,7 @@ void drop_down_list<Index>::begin(
     layout spec = layout_spec;
     if ((spec.flags & X_ALIGNMENT_MASK) == 0)
         spec.flags |= LEFT;
-    unsigned style_code =
-        ctx.artist->get_code_for_style(LIST_STYLE, get_widget_state(ctx, id_));
-    panel_.begin(ctx, style_code, spec, HORIZONTAL, id_);
+    panel_.begin(ctx, "control", spec, HORIZONTAL, id_);
 
     do_list_ = false;
     changed_ = false;
@@ -174,7 +173,12 @@ void drop_down_list<Index>::begin(
             {
                 context& ctx = *list_ctx_;
 
-                list_panel_.begin(ctx, LIST_STYLE, GROW, GREEDY);
+                // TODO: fix this
+                ctx.pass_state.active_style = ctx_->pass_state.active_style;
+                ctx.pass_state.style = ctx_->pass_state.style;
+
+                list_panel_.begin(ctx, "list", GROW | NOT_PADDED, GREEDY);
+                padding_.begin(ctx, GROW | PADDED);
 
                 key_event_info info;
                 if (detect_key_press(ctx, &info))
@@ -243,10 +247,11 @@ void drop_down_list<Index>::begin(
 
      case SET_VALUE_EVENT:
       {
-        ddl_set_value_event<Index>& e =
-            get_event<ddl_set_value_event<Index> >(ctx);
+        targeted_event& e = get_event<targeted_event>(ctx);
         if (e.target_id == id_)
         {
+            ddl_set_value_event<Index>& e =
+                get_event<ddl_set_value_event<Index> >(ctx);
             e.saw_target = true;
             set_selection(accessor, e.value);
         }
@@ -275,6 +280,9 @@ void drop_down_list<Index>::end()
                     issue_event(*ctx_, e2);
                 }
             }
+
+            padding_.end();
+            list_panel_.end();
         }
 
         if (do_drop_down_button(*ctx_, default_layout, NO_FLAGS, id_))
@@ -391,9 +399,8 @@ void ddl_item<Index>::begin(drop_down_list<Index>& list, Index const& index)
     context& ctx = *list.list_ctx_;
 
     region_id id = get_region_id(ctx);
-    unsigned style_code = ctx.artist->get_code_for_style(ITEM_STYLE,
-        get_widget_state(ctx, id), selected_);
-    panel_.begin(*list.list_ctx_, style_code, NOT_PADDED, NO_FLAGS, id);
+    panel_.begin(*list.list_ctx_, "item", NOT_PADDED, NO_FLAGS, id,
+        get_widget_state(ctx, id, true, false, selected_));
     if (ctx.event->type == GET_CONTENTS_EVENT)
     {
         ddl_get_contents_event<Index>& event =

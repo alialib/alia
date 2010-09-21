@@ -99,7 +99,7 @@ check_box_result do_check_box(
         do_text(ctx, text);
     }
     do_region(ctx, id, add_border(row.get_region(),
-        -ctx.pass_state.padding_size));
+        -ctx.pass_state.style->padding_size));
     return result;
 }
 

@@ -24,6 +24,7 @@ class context_holder
     alia::context context;
     boost::scoped_ptr<opengl_surface> surface;
     boost::scoped_ptr<alia::artist> artist;
+    boost::shared_ptr<alia::style_tree> style_tree;
 
     void set_artist(alia::artist* artist);
 

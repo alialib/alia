@@ -1,3 +1,5 @@
+#if 0
+
 #ifdef WIN32
 
 #include <alia/native/win32/artist.hpp>
@@ -931,5 +933,7 @@ void artist::draw_slider_thumb(artist_data_ptr& data_, unsigned axis,
 }
 
 }}
+
+#endif
 
 #endif

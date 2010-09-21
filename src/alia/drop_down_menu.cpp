@@ -45,9 +45,7 @@ void drop_down_menu::begin(context& ctx, layout const& layout_spec)
     layout spec = layout_spec;
     if ((spec.flags & X_ALIGNMENT_MASK) == 0)
         spec.flags |= LEFT;
-    unsigned style_code =
-        ctx.artist->get_code_for_style(LIST_STYLE, get_widget_state(ctx, id_));
-    panel_.begin(ctx, style_code, spec, HORIZONTAL, id_);
+    panel_.begin(ctx, "list", spec, HORIZONTAL, id_);
 
     do_list_ = false;
     active_ = true;
@@ -72,7 +70,7 @@ void drop_down_menu::begin(context& ctx, layout const& layout_spec)
 
             context& ctx = *list_ctx_;
 
-            list_panel_.begin(ctx, LIST_STYLE, GROW, GREEDY);
+            list_panel_.begin(ctx, "list", GROW, GREEDY);
         }
         break;
       }
@@ -123,9 +121,7 @@ void ddm_item::begin(drop_down_menu& menu)
 {
     context& ctx = *menu.list_ctx_;
     region_id id = get_region_id(ctx);
-    unsigned style_code = ctx.artist->get_code_for_style(ITEM_STYLE,
-        get_widget_state(ctx, id), false);
-    panel_.begin(ctx, style_code, NOT_PADDED, NO_FLAGS, id);
+    panel_.begin(ctx, "item", NOT_PADDED, NO_FLAGS, id);
     if (detect_click(ctx, id, LEFT_BUTTON))
     {
         selected_ = true;

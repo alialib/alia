@@ -24,6 +24,9 @@ context_holder::context_holder(controller* controller)
     context.font_scale_factor =
         manager::get_instance().get_font_scale_factor();
 
+    style_tree.reset(new alia::style_tree);
+    context.style_tree = style_tree.get();
+
  //#ifdef ALIA_HAS_NATIVE_ARTIST
  //   try
  //   {
@@ -46,7 +49,6 @@ void context_holder::set_artist(alia::artist* artist)
     artist->set_context(context);
     context.artist = artist;
     artist->initialize();
-    artist->set_color_scheme(manager::get_instance().get_color_scheme());
 }
 
 context_holder::~context_holder()
@@ -133,7 +135,6 @@ void context_holder::adjust_font_sizes()
 
 void context_holder::update_color_scheme()
 {
-    artist->set_color_scheme(manager::get_instance().get_color_scheme());
 }
 
 }}

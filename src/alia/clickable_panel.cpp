@@ -9,6 +9,7 @@ struct clickable_panel_data
 {
     clickable_panel_data() : key_state(0) {}
     int key_state;
+    artist_data_ptr focus_rect_data;
 };
 
 void clickable_panel::begin(
@@ -16,9 +17,9 @@ void clickable_panel::begin(
 {
     if (!id) id = get_region_id(ctx);
     clickable_panel_data& data = *get_data<clickable_panel_data>(ctx);
-    panel_.begin(ctx, ctx.artist->get_code_for_style(ITEM_STYLE,
+    panel_.begin(ctx, /*ctx.artist->get_code_for_style(ITEM_STYLE,
         get_widget_state(ctx, id, (flags & DISABLED) == 0,
-            data.key_state == 1)),
+            data.key_state == 1))*/"item",
         layout_spec, flags, id);
     if ((flags & DISABLED) == 0)
     {
@@ -31,7 +32,10 @@ void clickable_panel::begin(
         //    ctx.surface->set_mouse_cursor(HAND_CURSOR);
         //}
         if (id_has_focus(ctx, id) && (flags & NO_FOCUS_BORDER) == 0)
-            ctx.artist->draw_focus_rect(panel_.get_region());
+        {
+            ctx.artist->draw_focus_rect(data.focus_rect_data,
+                panel_.get_region());
+        }
         add_to_focus_order(ctx, id);
     }
     else
