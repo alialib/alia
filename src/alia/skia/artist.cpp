@@ -340,7 +340,7 @@ void artist::draw_radio_button(artist_data_ptr& data_ptr, bool selected,
             (state & widget_states::FOCUSED) != 0 ?
             data->style.focus_color : rgba8(0, 0, 0, 0));
         get_context().surface->cache_image(data->cached_img,
-            make_interface(data->img.view, 0));
+            make_interface(data->img.view));
         data->state = state;
         data->selected = selected;
     }
@@ -575,7 +575,7 @@ void artist::draw_scrollbar_thumb(artist_data_ptr& data_ptr,
     box2i const& rect, int axis, widget_state state) const
 {
     scrollbar_thumb_data* data;
-    if (!cast_data_ptr(&data, data_ptr) ||
+    if (cast_data_ptr(&data, data_ptr) ||
         is_outdated(get_context(), data->style, state) ||
         data->state != state || data->size != rect.size)
     {
@@ -583,7 +583,7 @@ void artist::draw_scrollbar_thumb(artist_data_ptr& data_ptr,
         create_scrollbar_thumb_image(data->img, rect.size,
             data->style.fg_color, data->style.bg_color);
         get_context().surface->cache_image(data->cached_img,
-            make_interface(data->img.view, 0));
+            make_interface(data->img.view));
         data->size = rect.size;
         data->state = state;
     }
@@ -1077,7 +1077,7 @@ void artist::draw_icon_button(artist_data_ptr& data_ptr, standard_icon icon,
             (state & widget_states::FOCUSED) != 0 ?
             focus_color : rgba8(0, 0, 0, 0));
         get_context().surface->cache_image(data->cached_img,
-            make_interface(data->img.view, 0));
+            make_interface(data->img.view));
         data->state = state;
         data->icon = icon;
     }

@@ -142,10 +142,10 @@ do_compressed_color_control(
             PIXELS), PADDED));
     }
     alia_end
-    if (ddl.do_list())
+    alia_if (ddl.do_list())
     {
         context& ctx = ddl.list_context();
-        for (std::size_t i = 0; i < colors.size(); ++i)
+        alia_for (std::size_t i = 0; i < colors.size(); ++i)
         {
             named_color const& c = colors[i];
             ddl_item<int> item(ddl, i);
@@ -153,7 +153,9 @@ do_compressed_color_control(
             do_color(ctx, c.color);
             do_text(ctx, c.name, width(12, CHARS));
         }
+        alia_end
     }
+    alia_end
     if (ddl.changed())
     {
         int index = ddl.selection();

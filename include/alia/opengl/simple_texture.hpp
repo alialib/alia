@@ -14,7 +14,7 @@ class simple_texture : public texture
 
     simple_texture(context* ctx, image_interface const& img, unsigned flags);
 
-    vector2i const& get_size() const { return image_size_; }
+    vector2i const& size() const { return image_size_; }
 
     void replace(image_interface const& img);
 

@@ -17,23 +17,9 @@ unsigned get_channel_count(pixel_format fmt);
 struct image_interface
 {
     void const* pixels;
-    unsigned version;
     pixel_format format;
     vector2i size, step;
 };
-
-static inline bool operator==(image_interface const& a,
-    image_interface const& b)
-{
-    return a.pixels == b.pixels && a.version == b.version &&
-        a.format == b.format && a.size == b.size && a.step == b.step;
-}
-
-static inline bool operator!=(image_interface const& a,
-    image_interface const& b)
-{
-    return !(a == b);
-}
 
 }
 

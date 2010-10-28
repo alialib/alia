@@ -14,10 +14,14 @@ struct texture : boost::noncopyable
     // replace the image with another of the same dimensions
     virtual void replace(image_interface const& img) = 0;
 
-    virtual vector2i const& get_size() const = 0;
+    virtual vector2i const& size() const = 0;
 
     virtual void draw(point2d const& p) = 0;
     virtual void draw_region(point2d const& p, box2d const& region) = 0;
+
+    // In cases where the OpenGL context is reset without our knowledge, we
+    // may actually want to leak the texture handles we have.
+    virtual void leak() { ctx_ = 0; }
 
     virtual ~texture() {}
 

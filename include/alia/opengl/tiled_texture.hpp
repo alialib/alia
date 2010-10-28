@@ -15,7 +15,7 @@ class tiled_texture : public texture
     tiled_texture(context* ctx, image_interface const& img,
         vector2i const& tile_size, unsigned flags);
 
-    vector2i const& get_size() const { return image_size_; }
+    vector2i const& size() const { return image_size_; }
 
     void replace(image_interface const& img);
 

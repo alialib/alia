@@ -2,8 +2,8 @@
 
 namespace alia {
 
-line_stipple solid_line(1, 0xffff), dashed_line(4, 0x5555),
-    dotted_line(1, 0x5555);
+line_stipple no_line(1, 0), solid_line(1, 0xffff), dashed_line(10, 0x5555),
+    dotted_line(3, 0x5555);
 
 void cached_text::initialize(
     std::string const& text,

@@ -3,23 +3,27 @@
 #include <alia/wx/manager.hpp>
 #include <alia/wx/wx.hpp>
 #include <exception>
-//#include <alia/generic_text_renderer.hpp>
 
 namespace alia { namespace wx {
+
+application::application()
+{
+    int attribs[] = { WX_GL_DOUBLEBUFFER, 0 };
+    if (!InitGLVisual(attribs))
+    {
+        wxMessageBox("OpenGL not available");
+        return_code_ = -1;
+    }
+    else
+        return_code_ = 0;
+}
 
 bool application::OnInit()
 {
     try
     {
-        int attribs[] = { WX_GL_DOUBLEBUFFER, 0 };
-        InitGLVisual(attribs);
-
-        //alia::generic_text_renderer::set_font_dir(
-        //    boost::filesystem::path(wxTheApp->argv[0],
-        //    boost::filesystem::native).branch_path() / "fonts");
-
-        on_init();
-        return_code_ = 0;
+        if (!return_code_)
+            on_init();
     }
     catch (std::exception& e)
     {

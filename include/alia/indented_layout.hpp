@@ -16,11 +16,11 @@ class indented_layout : boost::noncopyable
     indented_layout(context& ctx,layout const& layout_spec = default_layout,
         flag_set flags = NO_FLAGS)
     { begin(ctx, layout_spec, flags); }
+    ~indented_layout() { end(); }
     void begin(context& ctx, layout const& layout_spec = default_layout,
         flag_set flags = NO_FLAGS);
     void end();
  private:
-    context* ctx_;
     // The order of these is significant. Children must be destructed before
     // their containers.
     row_layout full_region_;

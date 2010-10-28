@@ -5,24 +5,67 @@
 
 namespace alia {
 
-typedef cached_image_ptr draw_image_data;
+// These require data caching. You can either pass in a pointer to the cached
+// data directly as the final parameter, or leave it as 0 and the functions
+// will request data from the context.
+
+// Note that the draw_image functions take a version parameter. Image contents
+// are too large to check every frame for changes, so the version parameter
+// indicates whether or not the contents have changed.
+
+template<class Version>
+struct draw_image_data
+{
+    cached_image_ptr cached_image;
+    Version version;
+};
+
+template<class Version>
 void draw_image(
     context& ctx,
     point2d const& position,
     image_interface const& img,
+    Version const& version,
     rgba8 const& color = rgba8(0xff, 0xff, 0xff, 0xff),
     unsigned flags = 0,
-    draw_image_data* data = 0);
+    draw_image_data<Version>* data = 0)
+{
+    if (!data)
+        data = get_data<draw_image_data<Version> >(ctx);
+    if (ctx.event->type == RENDER_EVENT)
+    {
+        if (!data->cached_image || data->version != version)
+        {
+            ctx.surface->cache_image(data->cached_image, img, flags);
+            data->version = version;
+        }
+        data->cached_image->draw(position, color);
+    }
+}
 
-typedef cached_image_ptr draw_image_region_data;
+template<class Version>
 void draw_image_region(
     context& ctx,
     point2d const& position,
     image_interface const& img,
+    Version const& version,
     box2d const& region,
     rgba8 const& color = rgba8(0xff, 0xff, 0xff, 0xff),
     unsigned flags = 0,
-    draw_image_region_data* data = 0);
+    draw_image_data<Version>* data = 0)
+{
+    if (!data)
+        data = get_data<draw_image_data<Version> >(ctx);
+    if (ctx.event->type == RENDER_EVENT)
+    {
+        if (!data->cached_image || data->version != version)
+        {
+            ctx.surface->cache_image(data->cached_image, img, flags);
+            data->version = version;
+        }
+        data->cached_image->draw_region(position, region, color);
+    }
+}
 
 typedef cached_text_ptr draw_text_data;
 void draw_text(

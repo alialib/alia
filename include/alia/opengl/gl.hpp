@@ -23,5 +23,8 @@
 #ifdef KEY_EXECUTE
 #undef KEY_EXECUTE
 #endif
+#ifdef DIFFERENCE
+#undef DIFFERENCE
+#endif
 
 #endif

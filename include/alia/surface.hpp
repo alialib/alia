@@ -30,7 +30,7 @@ struct line_stipple
     { return factor != other.factor || pattern != other.pattern; }
 };
 
-extern line_stipple solid_line, dashed_line, dotted_line;
+extern line_stipple no_line, solid_line, dashed_line, dotted_line;
 
 typedef float line_width;
 
@@ -48,7 +48,7 @@ struct cached_image : boost::noncopyable
 {
     virtual ~cached_image() {}
 
-    virtual vector2i get_size() const = 0;
+    virtual vector2i size() const = 0;
 
     virtual void draw(
         point2d const& position,

@@ -23,6 +23,7 @@ void on_init();
 class application : public wxGLApp
 {
  public:
+    application();
     bool OnInit();
     int OnRun();
     int OnExit();

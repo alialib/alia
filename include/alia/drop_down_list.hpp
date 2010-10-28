@@ -143,7 +143,8 @@ void drop_down_list<Index>::begin(
     layout spec = layout_spec;
     if ((spec.flags & X_ALIGNMENT_MASK) == 0)
         spec.flags |= LEFT;
-    panel_.begin(ctx, "control", spec, HORIZONTAL, id_);
+    panel_.begin(ctx, "control", spec, HORIZONTAL, id_,
+        get_widget_state(ctx, id_));
 
     do_list_ = false;
     changed_ = false;
@@ -209,9 +210,12 @@ void drop_down_list<Index>::begin(
       }
 
      case FOCUS_LOSS_EVENT:
-        if (data_->popup)
+      {
+        targeted_event& e = get_event<targeted_event>(ctx);
+        if (e.target_id == id_ && data_->popup)
             data_->popup->close();
         break;
+      }
 
      case KEY_DOWN_EVENT:
       {
@@ -232,16 +236,19 @@ void drop_down_list<Index>::begin(
 
      case GET_CONTENTS_EVENT:
       {
-        ddl_get_contents_event<Index>& e =
-            get_event<ddl_get_contents_event<Index> >(ctx);
+        targeted_event& e = get_event<targeted_event>(ctx);
+        if (e.target_id == id_)
+        {
+            ddl_get_contents_event<Index>& e =
+                get_event<ddl_get_contents_event<Index> >(ctx);
 
-        e.saw_target = true;
+            e.saw_target = true;
 
-        do_list_ = true;
-        list_ctx_ = ctx_;
+            do_list_ = true;
+            list_ctx_ = ctx_;
 
-        make_selection_visible_ = false;
-
+            make_selection_visible_ = false;
+        }
         break;
       }
 
@@ -306,7 +313,7 @@ template<class Index>
 void drop_down_list<Index>::set_selection(accessor<Index> const& accessor,
     Index const& new_selection)
 {
-    if (selection_ != new_selection)
+    if (!has_selection_ || selection_ != new_selection)
     {
         accessor.set(new_selection);
         has_selection_ = true;

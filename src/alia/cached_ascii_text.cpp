@@ -107,7 +107,7 @@ void cached_ascii_text::draw(point2d const& p, rgba8 const& fg) const
         if (text_image_.view.size[0] != 0 && text_image_.view.size[1] != 0)
         {
             surface_.cache_image(display_image_,
-                make_interface(text_image_.view, 0), surface::ALPHA_IMAGE);
+                make_interface(text_image_.view), surface::ALPHA_IMAGE);
         }
         else
             return;
@@ -152,7 +152,7 @@ void cached_ascii_text::draw_with_highlight(
         if (text_image_.view.size[0] != 0 && text_image_.view.size[1] != 0)
         {
             surface_.cache_image(display_image_,
-                make_interface(text_image_.view, 0), surface::ALPHA_IMAGE);
+                make_interface(text_image_.view), surface::ALPHA_IMAGE);
         }
         else
             return;

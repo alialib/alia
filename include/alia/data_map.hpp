@@ -18,6 +18,10 @@ struct data_map
     std::map<Key,data_map_entry<Value> > entries;
 };
 
+// TODO: This causes problems when end_pass is called. It should detect if
+// the pass was prematurely ended and not delete untouched items, but that
+// would require a context parameter.
+
 template<class Key, class Value>
 struct data_map_traversal
 {

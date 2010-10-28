@@ -155,11 +155,10 @@ struct pixel_type_format<Pixel const>
  : pixel_type_format<Pixel> {};
 
 template<class Pixel>
-image_interface make_interface(image_view<Pixel> const& view, unsigned version)
+image_interface make_interface(image_view<Pixel> const& view)
 {
     image_interface i;
     i.pixels = view.pixels;
-    i.version = version;
     i.size = view.size;
     i.format = pixel_type_format<Pixel>::value;
     i.step = vector2i(1, view.stride);

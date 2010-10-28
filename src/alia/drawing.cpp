@@ -4,39 +4,6 @@
 
 namespace alia {
 
-void draw_image(
-    context& ctx,
-    point2d const& position,
-    image_interface const& img,
-    rgba8 const& color,
-    unsigned flags,
-    draw_image_data* data)
-{
-    if (!data) data = get_data<draw_image_data>(ctx);
-    if (ctx.event->type == RENDER_EVENT)
-    {
-        ctx.surface->cache_image(*data, img, flags);
-        (*data)->draw(position, color);
-    }
-}
-
-void draw_image_region(
-    context& ctx,
-    point2d const& position,
-    image_interface const& img,
-    box2d const& region,
-    rgba8 const& color,
-    unsigned flags,
-    draw_image_region_data* data)
-{
-    if (!data) data = get_data<draw_image_region_data>(ctx);
-    if (ctx.event->type == RENDER_EVENT)
-    {
-        ctx.surface->cache_image(*data, img, flags);
-        (*data)->draw_region(position, region, color);
-    }
-}
-
 void draw_text(
     context& ctx,
     point2d const& position,

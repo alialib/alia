@@ -255,10 +255,10 @@ void draw_checker_background(canvas& canvas, rgba8 const& color1,
         st.begin(canvas.context());
         st.set(scaling_transformation(vector2d(spacing, spacing)));
     }
-    draw_image_region(
+    draw_image_region<unsigned>(
         canvas.context(),
         p,
-        make_interface(img->view, 0),
+        make_interface(img->view), 0,
         region,
         rgba8(0xff, 0xff, 0xff, 0xff),
         surface::TILED_IMAGE);
@@ -533,7 +533,7 @@ void draw_side_ruler(
     bool label_half_ticks[2], draw_tenth_ticks[2];
     for (int i = 0; i < 2; ++i)
     {
-        label_half_ticks[i] = std::abs(location_inc[i]) > 180;
+        label_half_ticks[i] = std::abs(location_inc[i]) > 120;
         draw_tenth_ticks[i] = std::abs(location_inc[i]) > 120;
     }
 

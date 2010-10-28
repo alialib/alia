@@ -17,10 +17,9 @@ void clickable_panel::begin(
 {
     if (!id) id = get_region_id(ctx);
     clickable_panel_data& data = *get_data<clickable_panel_data>(ctx);
-    panel_.begin(ctx, /*ctx.artist->get_code_for_style(ITEM_STYLE,
-        get_widget_state(ctx, id, (flags & DISABLED) == 0,
-            data.key_state == 1))*/"item",
-        layout_spec, flags, id);
+    widget_state state = get_widget_state(ctx, id, (flags & DISABLED) == 0,
+        data.key_state == 1);
+    panel_.begin(ctx, "clickable_panel", layout_spec, flags, id, state);
     if ((flags & DISABLED) == 0)
     {
         clicked_ = detect_click(ctx, id, LEFT_BUTTON) ||
