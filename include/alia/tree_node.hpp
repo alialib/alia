@@ -21,6 +21,50 @@ class tree_node : boost::noncopyable
         context& ctx,
         layout const& layout_spec = default_layout,
         flag_set flags = NO_FLAGS,
+        accessor<bool> const* expanded = 0,
+        region_id expander_id = 0)
+    { begin(ctx, layout_spec, flags, expanded, expander_id); }
+
+    void begin(
+        context& ctx,
+        layout const& layout_spec = default_layout,
+        flag_set flags = NO_FLAGS,
+        accessor<bool> const* expanded = 0,
+        region_id expander_id = 0);
+
+    void end_header();
+
+    bool do_children();
+
+    node_expander_result const& expander_result() const
+    { return expander_result_; }
+
+    void end();
+
+ private:
+    context* ctx_;
+    flag_set flags_;
+
+    grid_layout full_grid_;
+    grid_row top_row_;
+    grid_row bottom_row_;
+    column_layout column_;
+    row_layout label_region_;
+
+    bool active_, do_children_;
+    node_expander_result expander_result_;
+};
+
+class tristate_tree_node : boost::noncopyable
+{
+ public:
+    tristate_tree_node() {}
+    ~tristate_tree_node() { end(); }
+
+    tristate_tree_node(
+        context& ctx,
+        layout const& layout_spec = default_layout,
+        flag_set flags = NO_FLAGS,
         accessor<int> const* expanded = 0,
         region_id expander_id = 0)
     { begin(ctx, layout_spec, flags, expanded, expander_id); }
