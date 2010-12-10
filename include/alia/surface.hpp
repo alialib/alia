@@ -48,6 +48,8 @@ struct cached_image : boost::noncopyable
 {
     virtual ~cached_image() {}
 
+    virtual bool valid() const = 0;
+
     virtual vector2i size() const = 0;
 
     virtual void draw(
@@ -60,6 +62,9 @@ struct cached_image : boost::noncopyable
         rgba8 const& color = rgba8(0xff, 0xff, 0xff, 0xff)) = 0;
 };
 typedef boost::scoped_ptr<cached_image> cached_image_ptr;
+
+inline bool is_valid(cached_image_ptr const& img)
+{ return img && img->valid(); }
 
 class cached_text : boost::noncopyable
 {

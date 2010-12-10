@@ -8,6 +8,18 @@
 
 namespace alia { namespace opengl {
 
+struct image_data;
+
+struct context::impl_data
+{
+    std::list<image_data*> associated_data;
+    std::list<GLuint> pending_deletions;
+    // This is incremented each time the textures are invalidated.
+    // When a texture is created, it is assigned the current version number.
+    // Thus, only textures with the current version number are valid.
+    unsigned version;
+};
+
 struct image_data : cached_image
 {
     context* ctx;
@@ -21,6 +33,8 @@ struct image_data : cached_image
     ~image_data();
 
     vector2i size() const { return texture->size(); }
+
+    bool valid() const { return context_version == ctx->impl_->version; }
 
     void draw(point2d const& p, rgba8 const& color)
     {
@@ -39,16 +53,6 @@ struct image_data : cached_image
         texture->draw_region(p, region);
         glDisable(GL_TEXTURE_2D);
     }
-};
-
-struct context::impl_data
-{
-    std::list<image_data*> associated_data;
-    std::list<GLuint> pending_deletions;
-    // This is incremented each time the textures are invalidated.
-    // When a texture is created, it is assigned the current version number.
-    // Thus, only textures with the current version number are valid.
-    unsigned version;
 };
 
 image_data::~image_data()

@@ -22,8 +22,9 @@ void ascii_text_renderer::write(
 {
     point2d p = location;
     p[0] -= metrics_.overhang;
-    surface_->cache_image(cached_image_, make_interface(*image_),
-        surface::ALPHA_IMAGE);
+    if (!is_valid(cached_image_))
+        surface_->cache_image(cached_image_, make_interface(*image_),
+            surface::ALPHA_IMAGE);
     for (unsigned i = 0; i < text.length(); i++)
     {
         uint8 c = uint8(text[i]);

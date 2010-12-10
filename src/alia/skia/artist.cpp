@@ -330,7 +330,8 @@ void artist::draw_radio_button(artist_data_ptr& data_ptr, bool selected,
     radio_button_data* data;
     if (cast_data_ptr(&data, data_ptr)
         || is_outdated(get_context(), data->style, state)
-        || data->state != state || data->selected != selected)
+        || data->state != state || data->selected != selected
+        || !is_valid(data->cached_img))
     {
         update(get_context(), data->style, state);
         create_radio_button_image(data->img,
@@ -577,7 +578,8 @@ void artist::draw_scrollbar_thumb(artist_data_ptr& data_ptr,
     scrollbar_thumb_data* data;
     if (cast_data_ptr(&data, data_ptr) ||
         is_outdated(get_context(), data->style, state) ||
-        data->state != state || data->size != rect.size)
+        data->state != state || data->size != rect.size ||
+        !is_valid(data->cached_img))
     {
         update(get_context(), data->style, state);
         create_scrollbar_thumb_image(data->img, rect.size,
@@ -1062,7 +1064,8 @@ void artist::draw_icon_button(artist_data_ptr& data_ptr, standard_icon icon,
     icon_button_data* data;
     if (cast_data_ptr(&data, data_ptr) ||
         is_outdated(ctx, data->style_versioning, state) ||
-        data->state != state || data->icon != icon)
+        data->state != state || data->icon != icon ||
+        !is_valid(data->cached_img))
     {
         update(ctx, data->style_versioning, state);
         rgba8 fg_color, bg_color, focus_color;

@@ -19,7 +19,7 @@ template<class Image>
 void draw_widget(surface& surface, point2i const& position,
     static_widget_image_data<Image>& data)
 {
-    if (!data.cached_image)
+    if (!is_valid(data.cached_image))
     {
         surface.cache_image(data.cached_image,
             make_interface(data.image.view, 0));
@@ -48,7 +48,7 @@ void draw_stateful_widget(stateful_widget_image_data<State,Image>& data,
     surface& surface, point2i const& position, State const& state,
     Creator const& creator)
 {
-    if (!data.version || data.state != state)
+    if (!data.version || data.state != state || !is_valid(data.cached_image))
     {
         creator(&data.image, state);
         data.state = state;

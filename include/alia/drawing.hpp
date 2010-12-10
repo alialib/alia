@@ -34,7 +34,7 @@ void draw_image(
         data = get_data<draw_image_data<Version> >(ctx);
     if (ctx.event->type == RENDER_EVENT)
     {
-        if (!data->cached_image || data->version != version)
+        if (!is_valid(data->cached_image) || data->version != version)
         {
             ctx.surface->cache_image(data->cached_image, img, flags);
             data->version = version;
@@ -58,7 +58,7 @@ void draw_image_region(
         data = get_data<draw_image_data<Version> >(ctx);
     if (ctx.event->type == RENDER_EVENT)
     {
-        if (!data->cached_image || data->version != version)
+        if (!is_valid(data->cached_image) || data->version != version)
         {
             ctx.surface->cache_image(data->cached_image, img, flags);
             data->version = version;

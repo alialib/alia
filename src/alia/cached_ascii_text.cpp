@@ -102,7 +102,7 @@ cached_ascii_text::offset cached_ascii_text::get_line_end(
 
 void cached_ascii_text::draw(point2d const& p, rgba8 const& fg) const
 {
-    if (!display_image_)
+    if (!is_valid(display_image_))
     {
         if (text_image_.view.size[0] != 0 && text_image_.view.size[1] != 0)
         {
@@ -147,7 +147,7 @@ void cached_ascii_text::draw_with_highlight(
     rgba8 const& highlight_bg, rgba8 const& highlight_fg,
     offset highlight_begin, offset highlight_end) const
 {
-    if (!display_image_)
+    if (!is_valid(display_image_))
     {
         if (text_image_.view.size[0] != 0 && text_image_.view.size[1] != 0)
         {
