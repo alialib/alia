@@ -1018,6 +1018,10 @@ void draw_icon_button(
             SkScalar(a), SkScalar(icon_button_image_size[1] - a), paint);
         break;
       }
+     case EXPAND_ICON:
+        break;
+     case SHRINK_ICON:
+        break;
     }
 
     if (border.a)

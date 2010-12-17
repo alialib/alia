@@ -33,6 +33,8 @@ enum style
 enum standard_icon
 {
     REMOVE_ICON,
+    EXPAND_ICON,
+    SHRINK_ICON,
 };
 
 struct border_size
