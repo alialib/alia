@@ -76,6 +76,7 @@ class camera
     virtual void set_position(canvas const& canvas, point2d const& p) = 0;
     virtual double get_zoom_level(canvas const& canvas) const = 0;
     virtual void set_zoom_level(canvas const& canvas, zoom_level zoom) = 0;
+    virtual void check_bounds(canvas const& canvas) = 0;
 };
 
 class default_camera : public camera
@@ -95,8 +96,8 @@ class default_camera : public camera
     void set_max_zoom(zoom_level zoom) { max_zoom_ = zoom; }
     double get_max_zoom(canvas const& canvas) const;
     void set_constrained(bool constrained) { constrained_ = constrained; }
- private:
     void check_bounds(canvas const& canvas);
+ private:
     point2d position_;
     zoom_level zoom_, min_zoom_, max_zoom_;
     bool constrained_, initialized_;

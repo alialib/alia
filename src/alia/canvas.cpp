@@ -121,6 +121,9 @@ void canvas::begin(alia::context& ctx, box2d const& scene_box,
     else
         camera_ = camera;
 
+    if (ctx.event->category != LAYOUT_CATEGORY)
+        camera_->check_bounds(*this);
+
     if (ctx.event->category == LAYOUT_CATEGORY)
     {
         // TODO: What should the default layout behavior be?
