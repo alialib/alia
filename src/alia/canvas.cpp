@@ -833,42 +833,61 @@ void apply_zoom_drag_tool(canvas& canvas, mouse_button button,
     alia::context& ctx = canvas.context();
     if (!data)
         data = get_data<zoom_drag_tool_data>(ctx);
+
     if (detect_mouse_down(ctx, canvas.id(), button))
     {
+        // Record the state when the drag started.
         data->start_point_on_canvas = ctx.mouse_position;
         data->start_point_in_scene = canvas_to_scene(canvas,
             point2d(ctx.mouse_position));
         data->starting_zoom = canvas.get_zoom_level();
+
         data->starting_camera_position = canvas.get_camera_position();
+
+        // Calculate the zoom level that will fit the scene in the canvas.
         double normal_zoom = zoom_to_fit_scene(canvas.region().size,
             canvas.scene_box().size);
-        data->zoom_out_panning = clamp(
-            (data->starting_zoom - normal_zoom) / normal_zoom, 0., 1.);
+
+        // At that zoom level, calculate where the starting scene point will
+        // fall on the canvas, assuming that the scene is centered.
+        point2d end_point_on_canvas =
+            scene_to_canvas(canvas, data->start_point_in_scene, normal_zoom,
+                get_center(canvas.scene_box()));
+
+        // When zooming out, there will be a translation applied to move the
+        // starting scene point smoothly from the start point to the end.
+        data->zoom_out_translation = end_point_on_canvas -
+            point2d(data->start_point_on_canvas);
     }
+
     if (detect_drag(ctx, canvas.id(), button))
     {
         int motion = ctx.mouse_position[0] - data->start_point_on_canvas[0];
         double new_zoom = data->starting_zoom * std::pow(1.02, motion);
         canvas.set_zoom_level(new_zoom);
-        //{
-        //    point2d cp =
-        //        data->starting_camera_position + (data->start_point_in_scene -
-        //        canvas_to_scene(canvas, point2d(data->start_point_on_canvas),
-        //            canvas.get_zoom_level(), data->starting_camera_position));
-        //    if (motion < 0 && data->zoom_out_panning)
-        //    {
-        //        double normal_zoom = zoom_to_fit_scene(canvas.region().size,
-        //            canvas.scene_box().size);
-        //        double interpolation_factor =
-        //            (1 / new_zoom - 1 / data->starting_zoom) /
-        //            (1 / normal_zoom - 1 / data->starting_zoom);
-        //        cp +=
-        //            (vector2d(get_center(canvas.scene_box())) - vector2d(cp)) *
-        //            clamp(interpolation_factor, 0., 1.) *
-        //            data->zoom_out_panning;
-        //    }
-        //    canvas.set_camera_position(cp);
-        //}
+    
+        // Calculate the point on the canvas where the starting scene point
+        // should currently fall.
+        point2d current_canvas_point = point2d(data->start_point_on_canvas);
+        if (motion < 0)
+        {
+            double normal_zoom = zoom_to_fit_scene(canvas.region().size,
+                canvas.scene_box().size);
+            double interpolation_factor =
+                (1 / new_zoom - 1 / data->starting_zoom) /
+                (1 / normal_zoom - 1 / data->starting_zoom);
+            current_canvas_point +=
+                data->zoom_out_translation *
+                clamp(interpolation_factor, 0., 1.);
+        }
+        canvas.set_camera_position(
+            data->starting_camera_position +
+              ( data->start_point_in_scene -
+                canvas_to_scene(
+                    canvas,
+                    point2d(current_canvas_point),
+                    canvas.get_zoom_level(),
+                    data->starting_camera_position)));
     }
 }
 

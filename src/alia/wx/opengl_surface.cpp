@@ -765,7 +765,7 @@ void opengl_surface::update()
     impl_->canvas->Refresh();
     // TODO: This shouldn't be here. Need a better way to deal with expensive
     // dragging.
-    //impl_->canvas->Update();
+    impl_->canvas->Update();
 
     update_popups();
 }

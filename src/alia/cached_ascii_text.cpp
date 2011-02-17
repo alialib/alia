@@ -12,7 +12,7 @@ cached_ascii_text::cached_ascii_text(
     unsigned flags)
   : surface_(surface)
 {
-    unsigned length;
+    size_t length;
     if ((flags & surface::TRUNCATE) != 0)
     {
         length = calculate_truncation(text, width,

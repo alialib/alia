@@ -9,15 +9,14 @@
 
 namespace alia {
 
-static int uninitialized = -2;
-static int custom = -1;
+//static int custom = -1;
 
 struct color_control_data
 {
     color_control_data() : valid(false) {}
     bool valid;
     rgb8 value;
-    int index;
+    size_t index;
 };
 
 color_control_result
@@ -49,7 +48,7 @@ do_color_control(
     // "custom..." is currently disabled because it crashes.
     // It's probably related to popup dismissal problems.
 
-    drop_down_list<int> ddl(ctx, in(data.index, data.index >= 0), spec);
+    drop_down_list<size_t> ddl(ctx, in(data.index, data.index >= 0), spec);
     alia_if(valid)
         do_color(ctx, value);
     alia_end
@@ -61,7 +60,7 @@ do_color_control(
         for (std::size_t i = 0; i < colors.size(); ++i)
         {
             named_color const& c = colors[i];
-            ddl_item<int> item(ddl, int(i));
+            ddl_item<size_t> item(ddl, i);
             row_layout r(ctx);
             do_color(ctx, c.color);
             do_text(ctx, c.name, width(12, CHARS));
@@ -71,7 +70,7 @@ do_color_control(
     }
     if (ddl.changed())
     {
-        int index = ddl.selection();
+        size_t index = ddl.selection();
         //if (index >= 0)
         {
             accessor.set(colors[index].color);
@@ -128,7 +127,7 @@ do_compressed_color_control(
     // "custom..." is currently disabled because it crashes.
     // It's probably related to popup dismissal problems.
 
-    drop_down_list<int> ddl(ctx, in(data.index, data.valid), spec);
+    drop_down_list<size_t> ddl(ctx, in(data.index, data.valid), spec);
     alia_if(valid)
     {
         do_color(ctx, value);
@@ -148,7 +147,7 @@ do_compressed_color_control(
         alia_for (std::size_t i = 0; i < colors.size(); ++i)
         {
             named_color const& c = colors[i];
-            ddl_item<int> item(ddl, i);
+            ddl_item<size_t> item(ddl, i);
             row_layout r(ctx);
             do_color(ctx, c.color);
             do_text(ctx, c.name, width(12, CHARS));
@@ -158,7 +157,7 @@ do_compressed_color_control(
     alia_end
     if (ddl.changed())
     {
-        int index = ddl.selection();
+        size_t index = ddl.selection();
         //if (index >= 0)
         {
             accessor.set(colors[index].color);

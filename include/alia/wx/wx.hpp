@@ -1,11 +1,13 @@
 #ifndef ALIA_WX_HPP
 #define ALIA_WX_HPP
 
-//#ifdef NDEBUG
-//#define ALIA_WX_NDEBUG
-//#else
-//#define NDEBUG
-//#endif
+#ifdef _M_X64
+    #ifdef NDEBUG
+        #define ALIA_WX_NDEBUG
+    #else
+        #define NDEBUG
+    #endif
+#endif
 
 #include <wx/wx.h>
 #include <wx/glcanvas.h>
@@ -57,8 +59,10 @@
 
 #endif
 
-//#ifndef ALIA_WX_NDEBUG
-//#undef NDEBUG
-//#endif
+#ifdef _M_X64
+    #ifndef ALIA_WX_NDEBUG
+        #undef NDEBUG
+    #endif
+#endif
 
 #endif

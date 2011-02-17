@@ -4,15 +4,21 @@
 // This file should be included exactly once, by the main UI source file for
 // the application.
 
-//#ifdef NDEBUG
-//#define ALIA_WX_NDEBUG
-//#else
-//#define NDEBUG
-//#endif
+#ifdef _M_X64
+    #ifdef NDEBUG
+        #define ALIA_WX_NDEBUG
+    #else
+        #define NDEBUG
+    #endif
+#endif
+
 #include <wx/glcanvas.h>
-//#ifndef ALIA_WX_NDEBUG
-//#undef NDEBUG
-//#endif
+
+#ifdef _M_X64
+    #ifndef ALIA_WX_NDEBUG
+        #undef NDEBUG
+    #endif
+#endif
 
 namespace alia { namespace wx {
 

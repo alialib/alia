@@ -181,11 +181,10 @@ void apply_zoom_box_tool(canvas& canvas, mouse_button button,
 
 struct zoom_drag_tool_data
 {
-    point2d start_point_in_scene;
+    point2d start_point_in_scene, starting_camera_position;
     point2i start_point_on_canvas;
-    point2d starting_camera_position;
     double starting_zoom;
-    double zoom_out_panning;
+    vector2d zoom_out_translation;
 };
 void apply_zoom_drag_tool(canvas& canvas, mouse_button button,
     zoom_drag_tool_data* data = 0);
