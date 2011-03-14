@@ -12,19 +12,25 @@
 #endif
 
 #ifdef min
-#undef min
+    #undef min
 #endif
 #ifdef max
-#undef max
+    #undef max
 #endif
 #ifdef DOUBLE_CLICK
-#undef DOUBLE_CLICK
+    #undef DOUBLE_CLICK
 #endif
 #ifdef KEY_EXECUTE
-#undef KEY_EXECUTE
+    #undef KEY_EXECUTE
 #endif
 #ifdef DIFFERENCE
-#undef DIFFERENCE
+    #undef DIFFERENCE
+#endif
+#ifdef ABSOLUTE
+    #undef ABSOLUTE
+#endif
+#ifdef RELATIVE
+    #undef RELATIVE
 #endif
 
 #endif

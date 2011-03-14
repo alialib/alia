@@ -16,4 +16,11 @@
   #undef DOUBLE_CLICK
 #endif
 
+#ifdef ABSOLUTE
+    #undef ABSOLUTE
+#endif
+#ifdef RELATIVE
+    #undef RELATIVE
+#endif
+
 #endif

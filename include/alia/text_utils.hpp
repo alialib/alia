@@ -84,8 +84,8 @@ bool integer_from_string(T* value, std::string const& str,
         T* value, std::string const& str, std::string* message) \
     { return integer_from_string(value, str, message); }
 
-ALIA_INTEGER_FROM_STRING(int)
-ALIA_INTEGER_FROM_STRING(unsigned)
+//ALIA_INTEGER_FROM_STRING(int)
+//ALIA_INTEGER_FROM_STRING(unsigned)
 ALIA_INTEGER_FROM_STRING(int64)
 ALIA_INTEGER_FROM_STRING(uint64)
 ALIA_INTEGER_FROM_STRING(int32)
