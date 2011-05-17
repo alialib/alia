@@ -93,7 +93,7 @@ do_enum(
         drop_down_list<unsigned> ddl(ctx, value, spec, flags);
         do_text(ctx, value.is_valid() && value.get() < n_options ?
             options[value.get()] : std::string(""), width(12, CHARS));
-        if (ddl.do_list())
+        alia_if (ddl.do_list())
         {
             context& ctx = ddl.list_context();
             for (unsigned i = 0; i < n_options; ++i)
@@ -102,6 +102,7 @@ do_enum(
                 do_text(ctx, options[i], width(12, CHARS));
             }
         }
+        alia_end
         enum_result<unsigned> r;
         r.changed = ddl.changed();
         if (r.changed && ddl.has_selection())
