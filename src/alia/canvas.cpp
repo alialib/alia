@@ -451,7 +451,7 @@ static void calculate_ruler_values(
     for (int i = 0; i < 2; ++i)
     {
         major_tick_spacing[i] = 1000000;
-        while (major_tick_spacing[i] / values_per_pixel[i] > 700)
+        while (major_tick_spacing[i] / values_per_pixel[i] > 600)
             major_tick_spacing[i] /= 10;
     }
 
