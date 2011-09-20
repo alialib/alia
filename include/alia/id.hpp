@@ -4,9 +4,20 @@
 #include <boost/noncopyable.hpp>
 #include <string>
 
+// This file implements the concept of IDs in alia.
+// IDs are used in alia to identify portions of the UI that require explicit
+// naming.  IDs can be any type, but they must be copyable and comparable for
+// equality and ordering (i.e., supply == and < operators).
+
+// Note that the utilities provided in this file are meant to be used
+// internally to implement alia library features.  A typical library user
+// should never have to use anything in here directly.
+
 namespace alia {
 
-class id_interface : boost::noncopyable
+// id_interface provides a run-time polymorphic interface to the functionality
+// of an ID. This allows the use of IDs without excessive templating.
+class id_interface
 {
  public:
     virtual ~id_interface() {}
@@ -15,24 +26,8 @@ class id_interface : boost::noncopyable
     virtual bool less_than(id_interface const& other) const = 0;
 };
 
-struct id_ref
-{
-    explicit id_ref(id_interface const* id) : id(id) {}
-    id_ref() : id(0) {}
-    id_interface const* id;
-};
-bool operator==(id_ref const& a, id_ref const& b);
-bool operator!=(id_ref const& a, id_ref const& b);
-bool operator<(id_ref const& a, id_ref const& b);
-
-struct owned_id : boost::noncopyable
-{
-    owned_id() : id(0) {}
-    owned_id(id_interface* id) : id(id) {}
-    ~owned_id() { delete id; }
-    id_interface* id;
-};
-
+// typed_id<Value> takes a normal ID type (of type Value) and implements
+// id_interface for it.
 template<class Value>
 class typed_id : public id_interface
 {
@@ -51,6 +46,33 @@ class typed_id : public id_interface
     Value value_;
 };
 
+// id_ref is a light-weight reference to an ID with no ownership.
+// Objects of type id_ref can be tested for equality and ordering.
+struct id_ref
+{
+    explicit id_ref(id_interface const* id) : id(id) {}
+    id_ref() : id(0) {}
+    id_interface const* id;
+};
+bool operator==(id_ref const& a, id_ref const& b);
+bool operator!=(id_ref const& a, id_ref const& b);
+bool operator<(id_ref const& a, id_ref const& b);
+
+// owned_id is used to store an ID over the long-term (i.e., for more than a
+// single pass). Once you've obtained an ID from the application (via make_id),
+// you call clone() and store the clone in an owned_id.
+struct owned_id : boost::noncopyable
+{				
+    owned_id() : id(0) {}
+    owned_id(id_interface* id) : id(id) {}
+    ~owned_id() { delete id; }
+    id_interface* id;
+};
+
+// make_id() is a utility function for wrapping normal ID types in typed_id.
+// All IDs that come from application code should pass through this.
+// TODO: It's unclear if the exceptional behavior for char const* values is
+// really a good idea.
 template<class Value>
 static inline typed_id<Value> make_id(Value const& value)
 { return typed_id<Value>(value); }
