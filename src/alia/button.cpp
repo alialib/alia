@@ -16,7 +16,7 @@ struct button_data
 
     cached_text_ptr cached_text;
     artist_data_ptr artist_data;
-    layout_data layout_data;
+    alia::layout_data layout_data;
 
     int key_state;
 

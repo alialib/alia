@@ -26,8 +26,12 @@ struct layout_event : event
 
 struct refresh_event : layout_event
 {
-    refresh_event() : layout_event(REFRESH_EVENT, NO_CULLING) {}
-    bool layout_needed;
+    refresh_event()
+      : layout_event(REFRESH_EVENT, NO_CULLING)
+      , layout_needed(false)
+      , future_refresh_needed(false)
+    {}
+    bool layout_needed, future_refresh_needed;
 };
 
 // pass 0: calculate width requirements

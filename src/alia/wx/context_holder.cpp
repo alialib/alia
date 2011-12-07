@@ -53,7 +53,10 @@ void context_holder::set_artist(alia::artist* artist)
 
 context_holder::~context_holder()
 {
-    delete context.controller;
+    controller* ctrl = context.controller;
+    context.~context();
+    new(&context) alia::context();
+    delete ctrl;
 }
 
 void context_holder::create(wxWindow* parent)

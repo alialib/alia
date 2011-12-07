@@ -66,8 +66,6 @@ struct zoom_level
     double level;
 };
 
-class canvas;
-
 class camera
 {
  public:

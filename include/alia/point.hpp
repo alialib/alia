@@ -119,6 +119,18 @@ bool operator==(point<N,T> const& a, point<N,T> const& b)
 template<unsigned N, class T>
 bool operator!=(point<N,T> const& a, point<N,T> const& b)
 { return !(a == b); }
+template<unsigned N, class T>
+bool operator<(point<N,T> const& a, point<N,T> const& b)
+{
+    for (unsigned i = 0; i != N; ++i)
+    {
+        if (a[i] < b[i])
+            return true;
+        if (a[i] > b[i])
+            return false;
+    }
+    return false;
+}
 
 // Given a point, this returns a corresponding point with one less dimension
 // by removing the value at index i.

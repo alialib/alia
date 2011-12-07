@@ -180,6 +180,7 @@ opengl_surface::opengl_surface()
     impl_->wheel_movement = 0;
     impl_->vsync_disabled = false;
     impl_->current_cursor = (mouse_cursor)-1;
+    impl_->update_needed = false;
 }
 
 opengl_surface::~opengl_surface()
@@ -335,16 +336,21 @@ void opengl_surface::handle_idle(wxIdleEvent* event)
         event->RequestMore();
     }
 
+    //{
+    //    idle_event e;
+    //    issue_event(get_context(), e);
+    //    if (e.request_more)
+    //        event->RequestMore();
+    //    if (e.refresh)
+    //        schedule_update();
+    //}
+    if (impl_->update_needed)
     {
-        idle_event e;
-        issue_event(get_context(), e);
-        if (e.request_more)
-            event->RequestMore();
-        if (e.refresh)
-            schedule_update();
+        schedule_update();
+        event->RequestMore();
     }
 
-    wxMilliSleep(1);
+    wxMilliSleep(10);
 }
 
 static mouse_button translate_button(int wx_button)
@@ -756,7 +762,7 @@ void opengl_surface::update()
     //if (get_context().is_inside_pass())
     //    return;
 
-    do_layout(get_context());
+    impl_->update_needed = do_layout(get_context());
     // TODO: fix this
     //impl_->holder->adjust_to_content_size(get_context().content_size);
 

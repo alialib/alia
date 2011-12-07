@@ -5,6 +5,7 @@
 #include <boost/static_assert.hpp>
 #include <alia/vector.hpp>
 #include <limits>
+#include <algorithm>
 
 namespace alia {
 
@@ -159,6 +160,37 @@ class matrix
         (*this)(2, 2) = column2[2];
     }
 
+    // 2x2 constructors
+    matrix(T v00, T v01,
+           T v10, T v11)
+    {
+        set(v00, v01,
+            v10, v11);
+    }
+    matrix(vector<2,T> const& column0, vector<2,T> const& column1)
+    {
+        set(column0, column1);
+    }
+
+    // set new values (2x2)
+    void set(T v00, T v01,
+             T v10, T v11)
+    {
+        BOOST_STATIC_ASSERT(M == 2 && N == 2);
+        (*this)(0, 0) = v00;
+        (*this)(0, 1) = v01;
+        (*this)(1, 0) = v10;
+        (*this)(1, 1) = v11;
+    }
+    void set(vector<2,T> const& column0, vector<2,T> const& column1)
+    {
+        BOOST_STATIC_ASSERT(M == 2 && N == 2);
+        (*this)(0, 0) = column0[0];
+        (*this)(0, 1) = column1[0];
+        (*this)(1, 0) = column0[1];
+        (*this)(1, 1) = column1[1];
+    }
+
     // access individual elements
     T const& operator()(unsigned row, unsigned column) const
     {
@@ -250,6 +282,17 @@ class matrix
     {
         return !(*this == other);
     }
+    bool operator<(matrix const& other) const
+    {
+        for (unsigned i = 0; i != M * N; ++i)
+        {
+            if (data_[i] < other.data_[i])
+                return true;
+            else if (data_[i] > other.data_[i])
+                return false;
+        }
+        return false;
+    }
 
     // get the ith column as a vector
     vector<M,T> get_column(unsigned i) const
@@ -323,6 +366,8 @@ matrix<N,N,T> identity_matrix()
     return m;
 }
 
+// Get the inverse of the given matrix.
+// 3x3 case
 template<typename T>
 matrix<3,3,T> inverse(matrix<3,3,T> const& m)
 {
@@ -341,6 +386,18 @@ matrix<3,3,T> inverse(matrix<3,3,T> const& m)
     if (det == 0)
         return matrix<3,3,T>(0, 0, 0, 0, 0, 0, 0, 0, 0);
     inv *= T(1) / det;
+    return inv;
+}
+// 2x2 case
+template<typename T>
+matrix<2,2,T> inverse(matrix<2,2,T> const& m)
+{
+    T det = m(0,0) * m(1,1) - m(0,1) * m(1,0);
+    if (det == 0)
+        return matrix<2,2,T>(0, 0, 0, 0);
+    T inv_det = static_cast<T>(1.0) / det;
+    matrix<2,2,T> inv(m(1,1), -m(0,1), -m(1,0), m(0,0));
+    inv *= inv_det;
     return inv;
 }
 

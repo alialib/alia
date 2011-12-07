@@ -161,6 +161,18 @@ bool operator==(vector<N,T> const& a, vector<N,T> const& b)
 template<unsigned N, class T>
 bool operator!=(vector<N,T> const& a, vector<N,T> const& b)
 { return !(a == b); }
+template<unsigned N, class T>
+bool operator<(vector<N,T> const& a, vector<N,T> const& b)
+{
+    for (unsigned i = 0; i != N; ++i)
+    {
+        if (a[i] < b[i])
+            return true;
+        if (a[i] > b[i])
+            return false;
+    }
+    return false;
+}
 
 // 3D cross product of two vectors
 // This version stores the result in its first argument.

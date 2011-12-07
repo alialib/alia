@@ -5,6 +5,8 @@ namespace alia {
 
 struct context;
 
+class canvas;
+
 class controller;
 
 class artist;
@@ -71,6 +73,8 @@ static region_id const auto_id = 0;
 
 class menu_context;
 class menu_controller;
+
+class grid_layout;
 
 }
 

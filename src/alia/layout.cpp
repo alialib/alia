@@ -8,27 +8,25 @@ namespace alia {
 
 bool do_layout(context& ctx)
 {
-    {
     ++ctx.refresh_counter;
     refresh_event e;
-    e.layout_needed = false;
     issue_event(ctx, e);
-    if (!e.layout_needed)
-        return false;
-    }
+    if (e.layout_needed)
     {
-    layout_pass0_event e;
-    issue_event(ctx, e);
+        {
+            layout_pass0_event e;
+            issue_event(ctx, e);
+        }
+        {
+            layout_pass1_event e;
+            issue_event(ctx, e);
+        }
+        {
+            layout_pass2_event e;
+            issue_event(ctx, e);
+        }
     }
-    {
-    layout_pass1_event e;
-    issue_event(ctx, e);
-    }
-    {
-    layout_pass2_event e;
-    issue_event(ctx, e);
-    }
-    return true;
+    return e.future_refresh_needed;
 }
 
 bool operator==(size const& a, size const& b)

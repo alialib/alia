@@ -247,6 +247,57 @@ offset(Wrapped accessor,
     typename accessor_value_type<Wrapped>::type offset)
 { return offset_accessor_wrapper<Wrapped>(accessor, offset); }
 
+// rounds input from the user to the accessor
+template<class Wrapped>
+struct rounding_accessor_wrapper
+  : accessor<typename accessor_value_type<Wrapped>::type>
+{
+    rounding_accessor_wrapper(Wrapped wrapped,
+        typename accessor_value_type<Wrapped>::type step)
+      : wrapped_(wrapped), step_(step)
+    {}
+    bool is_valid() const { return wrapped_.is_valid(); }
+    typename accessor_value_type<Wrapped>::type get() const
+    { return wrapped_.get(); }
+    void set(typename accessor_value_type<Wrapped>::type const& value) const
+    { wrapped_.set(std::floor(value / step_ +
+        accessor_value_type<Wrapped>::type(0.5)) * step_); }
+ private:
+    Wrapped wrapped_;
+    typename accessor_value_type<Wrapped>::type step_;
+};
+template<class Wrapped>
+rounding_accessor_wrapper<Wrapped>
+add_input_rounder(Wrapped accessor,
+    typename accessor_value_type<Wrapped>::type step)
+{ return rounding_accessor_wrapper<Wrapped>(accessor, step); }
+
+// rounds input from the user to the accessor
+template<class Wrapped>
+struct clamping_accessor_wrapper
+  : accessor<typename accessor_value_type<Wrapped>::type>
+{
+    clamping_accessor_wrapper(Wrapped wrapped,
+        typename accessor_value_type<Wrapped>::type min,
+        typename accessor_value_type<Wrapped>::type max)
+      : wrapped_(wrapped), min_(min), max_(max)
+    {}
+    bool is_valid() const { return wrapped_.is_valid(); }
+    typename accessor_value_type<Wrapped>::type get() const
+    { return wrapped_.get(); }
+    void set(typename accessor_value_type<Wrapped>::type const& value) const
+    { wrapped_.set(value < min_ ? min_ : (value > max_ ? max_ : value)); }
+ private:
+    Wrapped wrapped_;
+    typename accessor_value_type<Wrapped>::type min_, max_;
+};
+template<class Wrapped>
+clamping_accessor_wrapper<Wrapped>
+add_input_clamp(Wrapped accessor,
+    typename accessor_value_type<Wrapped>::type min,
+    typename accessor_value_type<Wrapped>::type max)
+{ return clamping_accessor_wrapper<Wrapped>(accessor, min, max); }
+
 // TODO: does this belong here?
 template<class T>
 struct control_result
