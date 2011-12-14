@@ -86,6 +86,15 @@ data_block* get_data_block(context& ctx)
 {
     return get_data<data_block>(ctx);
 }
+void clear_data_block(data_block& block)
+{
+    delete block.nodes;
+    block.nodes = 0;
+    clear_block_list(block.unused_blocks);
+    block.unused_blocks = 0;
+    clear_block_list(block.used_blocks);
+    block.used_blocks = 0;
+}
 
 static void activate_data_block(context& ctx, data_block& block)
 {

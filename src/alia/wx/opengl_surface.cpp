@@ -336,19 +336,12 @@ void opengl_surface::handle_idle(wxIdleEvent* event)
         event->RequestMore();
     }
 
-    //{
-    //    idle_event e;
-    //    issue_event(get_context(), e);
-    //    if (e.request_more)
-    //        event->RequestMore();
-    //    if (e.refresh)
-    //        schedule_update();
-    //}
-    if (impl_->update_needed)
-    {
-        schedule_update();
+    idle_event e;
+    issue_event(get_context(), e);
+    if (e.request_more || impl_->update_needed)
         event->RequestMore();
-    }
+    if (e.refresh || impl_->update_needed)
+        schedule_update();
 
     wxMilliSleep(10);
 }

@@ -36,6 +36,7 @@ struct data_block
     dynamic_block_node* first_used_block;
 };
 data_block* get_data_block(context& ctx);
+void clear_data_block(data_block& block);
 
 class scoped_data_block : boost::noncopyable
 {
