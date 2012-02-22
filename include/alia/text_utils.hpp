@@ -41,6 +41,12 @@ std::string to_string(T value)
 }
 
 template<class T>
+std::string to_string(boost::optional<T> const& value)
+{
+    return value ? str(boost::format("%s") % value.get()) : "";
+}
+
+template<class T>
 bool from_string(T* value, std::string const& str, std::string* message)
 {
     try
@@ -53,6 +59,28 @@ bool from_string(T* value, std::string const& str, std::string* message)
         *message = std::string("This input expects ") +
             type_to_string<T>::get() + ".";
         return false;
+    }
+}
+
+template<class T>
+bool from_string(boost::optional<T>* value, std::string const& str,
+    std::string* message)
+{
+    if (str.empty())
+    {
+        *value = boost::optional<T>();
+        return true;
+    }
+    else
+    {
+        T x;
+        if (from_string(&x, str, message))
+        {
+            *value = x;
+            return true;
+        }
+        else
+            return false;
     }
 }
 
