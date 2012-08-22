@@ -1,38 +1,67 @@
 #include <alia/cached_ascii_text.hpp>
-#include <alia/surface.hpp>
+#include <alia/rendering.hpp>
 #include <cctype>
 
 namespace alia {
 
-cached_ascii_text::cached_ascii_text(
-    surface& surface,
-    ascii_text_renderer const& renderer,
-    std::string const& text,
-    int width,
-    unsigned flags)
-  : surface_(surface)
+void cached_text::initialize(
+    string const& text,
+    font const& font,
+    vector<2,int> const& size,
+    font_metrics const& metrics)
 {
-    size_t length;
-    if ((flags & surface::TRUNCATE) != 0)
-    {
-        length = calculate_truncation(text, width,
-            (flags & surface::GREEDY) != 0);
-        calculate_character_widths(renderer, text, length);
-    }
-    else
-    {
-        length = text.length();
-        calculate_character_widths(renderer, text, length);
-        width = calculate_line_spans(text, width);
-    }
+    text_ = text;
+    font_ = font;
+    size_ = size;
+    metrics_ = metrics;
+}
 
-    font_metrics const& metrics = renderer.get_metrics();
+static rgba8 blend_pixels(rgba8 x, rgba8 y, rgba8 bg)
+{
+    int a = int(x.a) + y.a;
+    int r = int(x.r) + y.r;
+    int g = int(x.g) + y.g;
+    int b = int(x.b) + y.b;
+    if (a > 0xff)
+    {
+        r -= bg.r * (a - 0xff) / 0xff;
+        g -= bg.g * (a - 0xff) / 0xff;
+        b -= bg.b * (a - 0xff) / 0xff;
+    }
+    return rgba8(
+        r > 0xff ? 0xff : uint8_t(r),
+        g > 0xff ? 0xff : uint8_t(g),
+        b > 0xff ? 0xff : uint8_t(b),
+        a > 0xff ? 0xff : uint8_t(a));
+}
+
+static image_view<rgba8>
+get_character_image(ascii_font_image const& image, char c)
+{
+    uint8_t index = uint8_t(c);
+    assert(image.advance[index] + image.metrics.overhang * 2 <=
+        image.cell_size[0]);
+    return subimage(image.image.view, box<2,int>(
+        make_vector<int>(
+            (index % 16) * image.cell_size[0],
+            (index / 16) * image.cell_size[1]),
+        make_vector<int>(
+            image.advance[index] + image.metrics.overhang * 2,
+            image.cell_size[1])));
+}
+
+void cached_ascii_text::generate_image(image<rgba8>& text_image, 
+    ascii_font_image const& font_image, string const& text, int width)
+{
+    font_metrics const& metrics = font_image.metrics;
 
     int text_height = metrics.height;
-    create_image(text_image_, vector2i(width + metrics.overhang * 2 + 1,
-        text_height * get_line_count() + metrics.row_gap *
-        (get_line_count() - 1)));
-    alia_foreach_pixel(text_image_.view, uint8, i, i = 0);
+    create_image(text_image,
+        make_vector<int>(
+            width + metrics.overhang * 2 + 1,
+            text_height * get_line_count() + metrics.row_gap *
+                (get_line_count() - 1)));
+    alia_foreach_pixel(text_image.view, rgba8, i, i = rgba8(0, 0, 0, 0));
 
     int y = 0;
     for (std::vector<line_span>::const_iterator
@@ -46,33 +75,62 @@ cached_ascii_text::cached_ascii_text(
             int w = character_widths_[j];
             if (!std::isspace(c) || c == ' ' && j != span.end - 1)
             {
-                image_view<uint8> character_image;
-                renderer.get_character_image(&character_image, c);
+                image_view<rgba8> character_image =
+                    get_character_image(font_image, c);
                 assert(character_image.size ==
-                    vector2i(w + metrics.overhang * 2, text_height));
-                vector2i clipped_size;
+                    make_vector<int>(w + metrics.overhang * 2, text_height));
+                vector<2,int> clipped_size;
                 clipped_size[0] = (std::min)(character_image.size[0],
-                    text_image_.view.size[0] - x);
+                    text_image.view.size[0] - x);
                 clipped_size[1] = (std::min)(character_image.size[1],
-                    text_image_.view.size[1] - y);
+                    text_image.view.size[1] - y);
                 alia_foreach_pixel2(
-                    subimage(text_image_.view,
-                        box2i(point2i(x, y), clipped_size)),
-                    uint8, i,
+                    subimage(text_image.view,
+                        box<2,int>(make_vector<int>(x, y), clipped_size)),
+                    rgba8, i,
                     subimage(character_image,
-                        box2i(point2i(0, 0), clipped_size)),
-                    uint8, j,
-                    i = (std::max)(i, j));
+                        box<2,int>(make_vector<int>(0, 0), clipped_size)),
+                    rgba8, j,
+                    i = blend_pixels(i, j, font_image.bg_color));
             }
             x += w;
         }
         y += text_height + metrics.row_gap;
     }
+}
+
+cached_ascii_text::cached_ascii_text(
+    ascii_font_image const& font_image,
+    ascii_font_image const& highlight_font_image,
+    string const& text,
+    int width,
+    unsigned flags)
+{
+    font_image_ = &font_image;
+    highlight_font_image_ = &highlight_font_image;
+
+    unsigned length;
+    if ((flags & TRUNCATE) != 0)
+    {
+        length = calculate_truncation(text, width,
+            (flags & GREEDY) != 0);
+        calculate_character_widths(font_image, text, length);
+    }
+    else
+    {
+        length = unsigned(text.length());
+        calculate_character_widths(font_image, text, length);
+        width = calculate_line_spans(text, width);
+    }
+
+    font_metrics const& metrics = font_image.metrics;
+
+    generate_image(text_image_, font_image, text, width);
 
     cached_text::initialize(
         length == text.length() ? text : text.substr(0, length),
-        renderer.get_font(),
-        text_image_.view.size - vector2i(metrics.overhang * 2, 0),
+        font_image.font,
+        text_image_.view.size - make_vector<int>(metrics.overhang * 2, 0),
         metrics);
 }
 
@@ -100,23 +158,24 @@ cached_ascii_text::offset cached_ascii_text::get_line_end(
     return p;
 }
 
-void cached_ascii_text::draw(point2d const& p, rgba8 const& fg) const
+void cached_ascii_text::draw(
+    surface& surface, vector<2,double> const& p)
 {
     if (!is_valid(display_image_))
     {
         if (text_image_.view.size[0] != 0 && text_image_.view.size[1] != 0)
         {
-            surface_.cache_image(display_image_,
-                make_interface(text_image_.view), surface::ALPHA_IMAGE);
+            surface.cache_image(display_image_,
+                make_interface(text_image_.view));
         }
         else
             return;
     }
-    display_image_->draw(p - vector2d(get_metrics().overhang, 0), fg);
+    display_image_->draw(p - make_vector<double>(get_metrics().overhang, 0));
 }
 
-void cached_ascii_text::draw_subimage(point2d const& p, box2d r,
-    rgba8 const& bg, rgba8 const& fg) const
+void cached_ascii_text::draw_subimage(
+    vector<2,double> const& p, box<2,double> r)
 {
     if (r.size[0] == 0 || r.size[1] == 0)
         return;
@@ -124,14 +183,10 @@ void cached_ascii_text::draw_subimage(point2d const& p, box2d r,
     if (r.corner[0] + r.size[0] > text_image_.view.size[0])
         r.size[0] = text_image_.view.size[0] - r.corner[0];
 
-    point2d poly[4];
-    make_polygon(poly, box2d(p, r.size));
-    surface_.draw_filled_polygon(bg, poly, 4);
-
-    display_image_->draw_region(p, r, fg);
+    display_image_->draw_region(p, r);
 }
-void cached_ascii_text::draw_subimage(point2d const& p, box2d r,
-    rgba8 const& fg) const
+void cached_ascii_text::draw_highlight_subimage(
+    vector<2,double> const& p, box<2,double> r)
 {
     if (r.size[0] == 0 || r.size[1] == 0)
         return;
@@ -139,39 +194,54 @@ void cached_ascii_text::draw_subimage(point2d const& p, box2d r,
     if (r.corner[0] + r.size[0] > text_image_.view.size[0])
         r.size[0] = text_image_.view.size[0] - r.corner[0];
 
-    display_image_->draw_region(p, r, fg);
+    highlight_display_image_->draw_region(p, r);
 }
 
-void cached_ascii_text::draw_with_highlight(
-    point2d const& p, rgba8 const& fg,
-    rgba8 const& highlight_bg, rgba8 const& highlight_fg,
-    offset highlight_begin, offset highlight_end) const
+void cached_ascii_text::draw_with_selection(
+    surface& surface, vector<2,double> const& p,
+    offset highlight_begin, offset highlight_end)
 {
     if (!is_valid(display_image_))
     {
         if (text_image_.view.size[0] != 0 && text_image_.view.size[1] != 0)
         {
-            surface_.cache_image(display_image_,
-                make_interface(text_image_.view), surface::ALPHA_IMAGE);
+            surface.cache_image(display_image_,
+                make_interface(text_image_.view));
+        }
+        else
+            return;
+    }
+    if (!is_valid(highlight_display_image_))
+    {
+        generate_image(highlight_image_, *highlight_font_image_,
+            this->get_text(), text_image_.view.size[0]);
+        if (highlight_image_.view.size[0] != 0 &&
+            highlight_image_.view.size[1] != 0)
+        {
+            surface.cache_image(highlight_display_image_,
+                make_interface(highlight_image_.view));
         }
         else
             return;
     }
 
     // Draw the overhang on both sides of the image.
-    draw_subimage(p - vector2d(get_metrics().overhang, 0),
-        box2d(point2d(0, 0),
-            vector2d(get_metrics().overhang, text_image_.view.size[1])),
-        fg);
-    draw_subimage(p + vector2d(get_size()[0], 0),
-        box2d(point2d(text_image_.view.size[0] - get_metrics().overhang, 0),
-            vector2d(get_metrics().overhang, text_image_.view.size[1])),
-        fg);
+    draw_subimage(p - make_vector<double>(get_metrics().overhang, 0),
+        box<2,double>(
+            make_vector<double>(0, 0),
+            make_vector<double>(get_metrics().overhang,
+                text_image_.view.size[1])));
+    draw_subimage(p + make_vector<double>(get_size()[0], 0),
+        box<2,double>(
+            make_vector<double>(
+                text_image_.view.size[0] - get_metrics().overhang, 0),
+            make_vector<double>(
+                get_metrics().overhang, text_image_.view.size[1])));
 
     // q is the position on the screen that we're rendering to.
-    point2d q = p;
+    vector<2,double> q = p;
     // u is the position inside the text image that we're rendering from.
-    point2d u(get_metrics().overhang, 0);
+    vector<2,double> u = make_vector<double>(get_metrics().overhang, 0);
 
     std::vector<line_span>::const_iterator i = line_spans_.begin(),
         end_i = line_spans_.end();
@@ -183,7 +253,8 @@ void cached_ascii_text::draw_with_highlight(
         ++i;
     {
         int height = int(i - line_spans_.begin()) * row_spacing;
-        draw_subimage(q, box2d(u, vector2d(get_size()[0], height)), fg);
+        draw_subimage(q, box<2,double>(u, make_vector<double>(
+            get_size()[0], height)));
         q[1] += height;
         u[1] += height;
     }
@@ -202,7 +273,8 @@ void cached_ascii_text::draw_with_highlight(
         for (; char_i < highlight_begin; ++char_i)
             width += character_widths_[char_i];
 
-        draw_subimage(q, box2d(u, vector2d(width, get_metrics().height)), fg);
+        draw_subimage(q, box<2,double>(u, make_vector<double>(
+            width, get_metrics().height)));
         q[0] += width;
         u[0] += width;
     }
@@ -214,9 +286,9 @@ void cached_ascii_text::draw_with_highlight(
         for (; char_i < i->end; ++char_i)
             width += character_widths_[char_i];
 
-        draw_subimage(q,
-            box2d(u, vector2d(width, get_metrics().height)),
-            highlight_bg, highlight_fg);
+        draw_highlight_subimage(q,
+            box<2,double>(u,
+                make_vector<double>(width, get_metrics().height)));
 
         q[0] = p[0]; q[1] += row_spacing;
         u[0] = get_metrics().overhang; u[1] += row_spacing;
@@ -233,9 +305,9 @@ void cached_ascii_text::draw_with_highlight(
         for (; char_i < highlight_end; ++char_i)
             width += character_widths_[char_i];
 
-        draw_subimage(q,
-            box2d(u, vector2d(width, get_metrics().height)),
-            highlight_bg, highlight_fg);
+        draw_highlight_subimage(q,
+            box<2,double>(u,
+                make_vector<double>(width, get_metrics().height)));
         q[0] += width;
         u[0] += width;
     }
@@ -246,8 +318,9 @@ void cached_ascii_text::draw_with_highlight(
         for (; char_i < i->end; ++char_i)
             width += character_widths_[char_i];
 
-        draw_subimage(q, box2d(u, vector2d(width, get_metrics().height)),
-            fg);
+        draw_subimage(q,
+            box<2,double>(u,
+                make_vector<double>(width, get_metrics().height)));
 
         q[0] = p[0]; q[1] += row_spacing;
         u[0] = get_metrics().overhang; u[1] += row_spacing;
@@ -259,22 +332,27 @@ void cached_ascii_text::draw_with_highlight(
     // big subregion.
     if (u[1] < get_size()[1])
     {
-        draw_subimage(q, box2d(u, vector2d(get_size()[0],
-            get_size()[1] - u[1])), fg);
+        draw_subimage(q,
+            box<2,double>(u,
+                make_vector<double>(get_size()[0], get_size()[1] - u[1])));
     }
 }
 
-void cached_ascii_text::draw_cursor(point2d const& p,
-    rgba8 const& color) const
+void cached_ascii_text::draw_cursor(
+    surface& surface, bool selected, vector<2,double> const& p)
 {
-    surface_.draw_line(color, line_style(1, solid_line),
-        p + vector2d(0.5, 0.5), p + vector2d(0.5, get_metrics().height + 0.5));
+    surface.draw_line(
+        selected ? font_image_->text_color :
+            highlight_font_image_->text_color,
+        line_style(1, solid_line),
+        p + make_vector(0.5, 0.5),
+        p + make_vector(0.5, get_metrics().height + 0.5));
 }
 
 cached_ascii_text::offset cached_ascii_text::get_character_at_point(
-    point2i const& p) const
+    vector<2,int> const& p) const
 {
-    std::string const& text = get_text();
+    string const& text = get_text();
 
     int row = p[1] / (get_metrics().height + get_metrics().row_gap);
     if (row < 0)
@@ -301,9 +379,9 @@ cached_ascii_text::offset cached_ascii_text::get_character_at_point(
 }
 
 cached_ascii_text::offset cached_ascii_text::get_character_boundary_at_point(
-    point2i const& p) const
+    vector<2,int> const& p) const
 {
-    std::string const& text = get_text();
+    string const& text = get_text();
 
     int row = p[1] / (get_metrics().height + get_metrics().row_gap);
     if (row < 0)
@@ -340,13 +418,14 @@ unsigned cached_ascii_text::get_line_number(offset position) const
     return line_n;
 }
 
-point2i cached_ascii_text::get_character_position(offset position) const
+vector<2,int> cached_ascii_text::get_character_position(offset position) const
 {
     unsigned line_n = get_line_number(position);
     int x = 0;
     for (offset i = line_spans_[line_n].begin; i < position; ++i)
         x += character_widths_[i];
-    return point2i(x, line_n * (get_metrics().height + get_metrics().row_gap));
+    return make_vector<int>(x,
+        line_n * (get_metrics().height + get_metrics().row_gap));
 }
 
 cached_ascii_text::offset cached_ascii_text::shift(offset position,
@@ -356,21 +435,19 @@ cached_ascii_text::offset cached_ascii_text::shift(offset position,
 }
 
 void cached_ascii_text::calculate_character_widths(
-    ascii_text_renderer const& renderer, std::string const& text,
-    unsigned length)
+    ascii_font_image const& font_image, string const& text, unsigned length)
 {
     character_widths_.reset(new int [length]);
     trailing_space_.reset(new int [length]);
     for (unsigned i = 0; i < length; ++i)
     {
         char c = text[i];
-        character_widths_[i] = renderer.get_char_width(c);
-        trailing_space_[i] = renderer.get_trailing_space(c);
+        character_widths_[i] = font_image.advance[uint8_t(c)];
+        trailing_space_[i] = font_image.trailing_space[uint8_t(c)];
     }
 }
 
-int cached_ascii_text::calculate_line_spans(std::string const& text,
-    int width)
+int cached_ascii_text::calculate_line_spans(string const& text, int width)
 {
     assert(width >= 0);
 
@@ -437,7 +514,7 @@ int cached_ascii_text::calculate_line_spans(std::string const& text,
     return width ? width : calculated_width;
 }
 
-unsigned cached_ascii_text::calculate_truncation(std::string const& text,
+unsigned cached_ascii_text::calculate_truncation(string const& text,
     int width, bool greedy)
 {
     assert(width >= 0);

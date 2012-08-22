@@ -3,19 +3,41 @@
 
 namespace alia {
 
-bool operator==(id_ref const& a, id_ref const& b)
+bool operator==(id_interface const& a, id_interface const& b)
 {
-    return !a.id && !b.id ||
-        a.id && b.id && typeid(*a.id) == typeid(*b.id) && a.id->equals(*b.id);
+    return typeid(a) == typeid(b) && a.equals(b);
 }
-bool operator!=(id_ref const& a, id_ref const& b)
+bool operator!=(id_interface const& a, id_interface const& b)
 {
     return !(a == b);
 }
-bool operator<(id_ref const& a, id_ref const& b)
+bool operator<(id_interface const& a, id_interface const& b)
 {
-    return b.id && (!a.id || typeid(*a.id).before(typeid(*b.id)) ||
-        typeid(*a.id) == typeid(*b.id) && a.id->less_than(*b.id));
+    return typeid(a).before(typeid(b)) ||
+        typeid(a) == typeid(b) && a.less_than(b);
 }
+
+bool operator==(owned_id const& a, owned_id const& b)
+{
+    return a.is_initialized() == b.is_initialized() &&
+        (!a.is_initialized() || a.get() == b.get());
+}
+bool operator!=(owned_id const& a, owned_id const& b)
+{ return !(a == b); }
+bool operator<(owned_id const& a, owned_id const& b)
+{ return b.is_initialized() && (!a.is_initialized() || a.get() < b.get()); }
+std::ostream& operator<<(std::ostream& o, owned_id const& id)
+{ o << id.get(); return o; }
+
+local_id generate_local_id()
+{
+    local_id id;
+    id.tag.reset(new int);
+    id.version = 0;
+    return id;
+}
+
+std::ostream& operator<<(std::ostream& o, local_id const& id)
+{ return o << "local_id(" << id.tag.get() << ":" << id.version << ")"; }
 
 }

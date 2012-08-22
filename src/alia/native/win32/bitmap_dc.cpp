@@ -1,7 +1,6 @@
 #ifdef WIN32
 
 #include <alia/native/win32/bitmap_dc.hpp>
-#include <alia/exception.hpp>
 
 namespace alia { namespace native {
 
@@ -16,18 +15,19 @@ bitmap_dc::bitmap_dc()
         throw exception("bitmap_dc: CreateCompatibleDC() failed.");
 }
 
-void bitmap_dc::create(vector2i const& size, uint8 initial_intensity)
+void bitmap_dc::create(
+    vector<2,int> const& size, uint8_t initial_intensity)
 {
     create(size);
-    memset(px_, initial_intensity, product(size) * 4);
+    memset(px_, initial_intensity, size[0] * size[1] * 4);
 }
 
-void bitmap_dc::create(vector2i const& size)
+void bitmap_dc::create(vector<2,int> const& size)
 {
     BITMAPINFO bmi;
     bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
     bmi.bmiHeader.biWidth = size[0];
-    bmi.bmiHeader.biHeight = -size[1];
+    bmi.bmiHeader.biHeight = -int(size[1]);
     bmi.bmiHeader.biPlanes = 1;
     bmi.bmiHeader.biBitCount = 32;
     bmi.bmiHeader.biCompression = BI_RGB;
