@@ -809,7 +809,7 @@ void do_progress_bar(ui_context& ctx, getter<double> const& progress,
 
 // TEXT
 
-static ascii_font_image const*
+ascii_font_image const*
 get_ascii_font_image(font const& font, rgba8 text_color, rgba8 bg_color)
 {
     // TODO: GC font images that aren't in active use.
@@ -1363,10 +1363,6 @@ bool do_link(
 void bordered_box::begin(
     ui_context& ctx, layout const& layout_spec, ui_flag_set flags)
 {
-    // TODO: There's gotta be a cleaner way to adjust the padding size.
-    //layout_vector padding_size = ctx.layout.style_info->padding_size;
-    //const_cast<layout_vector&>(ctx.layout.style_info->padding_size) /= 2;
-
     box_.begin(ctx, (flags & HORIZONTAL) ? 0 : 1, layout_spec);
 
     if (is_render_pass(ctx))
@@ -2488,15 +2484,6 @@ struct wrapped_event : ui_event
     {}
     ui_context& ctx;
     widget_id wrapper_id;
-};
-
-struct set_value_event : ui_event
-{
-    set_value_event(widget_id target, untyped_ui_value* value)
-      : ui_event(NO_CATEGORY, SET_VALUE_EVENT)
-      , value(value), target(target) {}
-    alia__shared_ptr<untyped_ui_value> value;
-    widget_id target;
 };
 
 // ddl_list_query_event is used to query the drop down list to determine how
@@ -4080,31 +4067,18 @@ void resizable_content::begin(
             set(size, new_size);
     }
 
-    if (detect_event(ctx, SET_VALUE_EVENT))
-    {
-        set_value_event& e = get_event<set_value_event>(ctx);
-        if (e.target == id_)
-            set(size, static_cast<typed_ui_value<int>*>(e.value.get())->value);
-    }
+    handle_set_value_events(ctx, id_, size);
 }
 void resizable_content::end()
 {
     if (ctx_)
     {
         layout_.end();
-
         if (!(flags_ & PREPEND) && !ctx_->pass_aborted)
         {
             if (do_draggable_separator(*ctx_, inout(&size_), UNPADDED, flags_))
-            {
-                typed_ui_value<int>* value = new typed_ui_value<int>;
-                value->value = size_;
-                set_value_event e(id_, value);
-                issue_targeted_event(*ctx_->system, e,
-                    make_routable_widget_id(*ctx_, id_));
-            }
+                issue_set_value_event(*ctx_, id_, size_);
         }
-
         ctx_ = 0;
     }
 }

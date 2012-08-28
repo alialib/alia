@@ -273,8 +273,13 @@ struct mouse_button_event : input_event
 };
 struct mouse_motion_event : input_event
 {
-    mouse_motion_event(ui_time_type time)
+    vector<2,int> last_mouse_position;
+    bool mouse_was_in_window;
+    mouse_motion_event(ui_time_type time,
+        vector<2,int> const& last_mouse_position, bool mouse_was_in_window)
       : input_event(MOUSE_MOTION_EVENT, time)
+      , last_mouse_position(last_mouse_position)
+      , mouse_was_in_window(mouse_was_in_window)
     {}
 };
 struct mouse_wheel_event : input_event
@@ -332,7 +337,7 @@ struct routable_widget_id
     widget_id id;
     routing_region_ptr region;
 
-    routable_widget_id() {}
+    routable_widget_id() : id(0) {}
     routable_widget_id(widget_id id, routing_region_ptr const& region)
       : id(id), region(region)
     {}

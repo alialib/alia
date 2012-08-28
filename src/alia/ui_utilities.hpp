@@ -151,6 +151,8 @@ void make_widget_visible(ui_system& ui, routable_widget_id id);
 
 void make_widget_visible(ui_context& ctx, widget_id id);
 
+void override_mouse_cursor(ui_context& ctx, widget_id id, mouse_cursor cursor);
+
 // MOUSE INPUT
 
 // Get the mouse position in the current frame of reference.
@@ -205,6 +207,10 @@ bool detect_click_in_progress(ui_context& ctx, widget_id id,
 // Detect if the mouse is being dragged with the given mouse button down.
 bool detect_drag(ui_context& ctx, widget_id id, mouse_button button);
 
+// If the current event is a drag, this will return the mouse movement
+// represented by this event, in the current frame of reference.
+vector<2,double> get_drag_delta(ui_context& ctx);
+
 bool detect_drag_in_progress(ui_context& ctx, widget_id id,
     mouse_button button);
 
@@ -255,7 +261,7 @@ bool detect_focus_gain(ui_context& ctx, widget_id id);
 
 bool detect_focus_loss(ui_context& ctx, widget_id id);
 
-// KEYBOARD INPUT...
+// KEYBOARD INPUT
 
 // The following are used to detect general keyboard events related to
 // any key...
@@ -387,6 +393,51 @@ widget_state get_button_state(ui_context& ctx, widget_id id,
 // Do input processing for the button.
 // This returns true iff the button was just pressed.
 bool do_button_input(ui_context& ctx, widget_id id, button_input_state& state);
+
+// VALUE EVENTS
+
+struct set_value_event : ui_event
+{
+    set_value_event(widget_id target, untyped_ui_value* value)
+      : ui_event(NO_CATEGORY, SET_VALUE_EVENT)
+      , value(value), target(target) {}
+    alia__shared_ptr<untyped_ui_value> value;
+    widget_id target;
+};
+
+template<class T>
+void handle_set_value_events(ui_context& ctx, widget_id id,
+    accessor<T> const& accessor)
+{
+    if (detect_event(ctx, SET_VALUE_EVENT))
+    {
+        set_value_event& e = get_event<set_value_event>(ctx);
+        if (e.target == id)
+        {
+            // A dynamic_cast isn't really necessary here, but it's possible
+            // that some bug coudlc ause an event could get sent with the wrong
+            // type or to the wrong ID, and since this gets executed so
+            // infrequently, it's better to just be safe.
+            typed_ui_value<T>* typed_value =
+                dynamic_cast<typed_ui_value<T>*>(e.value.get());
+            assert(typed_value);
+            if (typed_value)
+                set(accessor, typed_value->value);
+        }
+    }
+}
+
+void issue_targeted_event(ui_system& system, ui_event& event,
+    routable_widget_id const& target);
+
+template<class T>
+void issue_set_value_event(ui_context& ctx, widget_id id, T const& new_value)
+{
+    typed_ui_value<T>* value = new typed_ui_value<T>;
+    value->value = new_value;
+    set_value_event e(id, value);
+    issue_targeted_event(*ctx.system, e, make_routable_widget_id(ctx, id));
+}
 
 }
 

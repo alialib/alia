@@ -192,6 +192,17 @@ static inline layout_traversal& get_layout_traversal(ui_context& ctx)
 
 void end_pass(ui_context& ctx);
 
+struct untyped_ui_value
+{
+    virtual ~untyped_ui_value() {}
+};
+
+template<class T>
+struct typed_ui_value : untyped_ui_value
+{
+    T value;
+};
+
 }
 
 #endif

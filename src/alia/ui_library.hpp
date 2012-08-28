@@ -481,17 +481,6 @@ struct tree_node : noncopyable
 
 struct ddl_data;
 
-struct untyped_ui_value
-{
-    virtual ~untyped_ui_value() {}
-};
-
-template<class T>
-struct typed_ui_value : untyped_ui_value
-{
-    T value;
-};
-
 struct untyped_drop_down_list : noncopyable
 {
  public:

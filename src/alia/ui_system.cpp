@@ -421,9 +421,10 @@ void process_mouse_move(ui_system& ui, ui_time_type time,
 {
     if (!ui.input.mouse_inside_window || ui.input.mouse_position != position)
     {
+        mouse_motion_event e(time, ui.input.mouse_position,
+            ui.input.mouse_inside_window);
         ui.input.mouse_position = position;
         ui.input.mouse_inside_window = true;
-        mouse_motion_event e(time);
         issue_targeted_event(ui, e, get_mouse_target(ui));
     }
 }
@@ -598,6 +599,16 @@ void do_box_region(ui_context& ctx, widget_id id, box<2,int> const& region,
     }
 }
 
+void override_mouse_cursor(ui_context& ctx, widget_id id, mouse_cursor cursor)
+{
+    if (ctx.event->type == HIT_TEST_EVENT)
+    {
+        hit_test_event& e = get_event<hit_test_event>(ctx);
+        if (e.id.id == id)
+            e.cursor = cursor;
+    }
+}
+
 // MOUSE INPUT
 
 vector<2,double> get_mouse_position(ui_context& ctx)
@@ -709,6 +720,14 @@ bool detect_drag(ui_context& ctx, widget_id id, mouse_button button)
     detect_mouse_press(ctx, id, button);
     return detect_event(ctx, MOUSE_MOTION_EVENT) &&
         is_mouse_button_pressed(ctx, button) && is_region_active(ctx, id);
+}
+
+vector<2,double> get_drag_delta(ui_context& ctx)
+{
+    mouse_motion_event& e = get_event<mouse_motion_event>(ctx);
+    matrix<3,3,double> m = inverse(ctx.geometry.transformation_matrix);
+    return transform(m, vector<2,double>(ctx.system->input.mouse_position)) -
+        transform(m, vector<2,double>(e.last_mouse_position));
 }
 
 bool detect_drag_in_progress(ui_context& ctx, widget_id id,

@@ -48,7 +48,7 @@ struct ascii_text_renderer : text_renderer
 };
 
 void draw_ascii_text(
-    surface& surface, ascii_font_image const* image,
+    surface& surface, ascii_font_image const* font_image,
     cached_image_ptr& display_image, vector<2,double> const& position,
     char const* text, rgba8 const& color);
 

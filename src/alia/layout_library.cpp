@@ -17,6 +17,22 @@ void do_spacer(layout_traversal& traversal, layout const& layout_spec)
     }
 }
 
+void do_spacer(layout_traversal& traversal, layout_box* region,
+    layout const& layout_spec)
+{
+    layout_leaf* node;
+    get_data(*traversal.data, &node);
+
+    if (traversal.is_refresh_pass)
+    {
+        node->refresh_layout(traversal, layout_spec,
+            leaf_layout_requirements(make_layout_vector(0, 0), 0, 0));
+        add_layout_node(traversal, node);
+    }
+    else
+        *region = node->assignment().region;
+}
+
 layout_box get_container_region(simple_layout_container const& container)
 {
     return layout_box(make_layout_vector(0, 0), container.assigned_size);

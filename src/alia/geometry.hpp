@@ -1,10 +1,9 @@
 #ifndef ALIA_GEOMETRY_HPP
 #define ALIA_GEOMETRY_HPP
 
-#include <cassert>
+#include <alia/common.hpp>
 #include <cmath>
 #include <ostream>
-#include <alia/common.hpp>
 
 // This is the geometry library for alia. It's focused on the types of geometry
 // that are needed by a 2D UI library: vectors, boxes, transformation matrices,
@@ -13,20 +12,6 @@
 namespace alia {
 
 // VECTOR
-
-template<unsigned N, class T>
-std::ostream& operator<<(std::ostream& out, vector<N,T> const& v)
-{
-    out << "(";
-    for (unsigned i = 0; i != N; ++i)
-    {
-        if (i != 0)
-            out << ", ";
-        out << v[i];
-    }
-    out << ")";
-    return out;
-}
 
 // componentwise arithmetic assignment operators
 #define ALIA_COMPONENT_OPERATOR(op) \

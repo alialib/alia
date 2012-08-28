@@ -201,6 +201,20 @@ bool operator<(vector<N,T> const& a, vector<N,T> const& b)
     }
     return false;
 }
+// streaming
+template<unsigned N, class T>
+std::ostream& operator<<(std::ostream& out, vector<N,T> const& v)
+{
+    out << "(";
+    for (unsigned i = 0; i != N; ++i)
+    {
+        if (i != 0)
+            out << ", ";
+        out << v[i];
+    }
+    out << ")";
+    return out;
+}
 
 // optional<T> stores an optional value of type T (or no value).
 struct none_type {};

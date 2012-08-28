@@ -16,6 +16,14 @@ template<class Context>
 void do_spacer(Context& ctx, layout const& layout_spec = default_layout)
 { do_spacer(get_layout_traversal(ctx), layout_spec); }
 
+// This version of the spacer records the region that's assigned to it.
+void do_spacer(layout_traversal& traversal, layout_box* region,
+    layout const& layout_spec = default_layout);
+template<class Context>
+void do_spacer(Context& ctx, layout_box* region,
+    layout const& layout_spec = default_layout)
+{ do_spacer(get_layout_traversal(ctx), region, layout_spec); }
+
 layout_box get_container_region(simple_layout_container const& container);
 
 #define ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(container_name) \
