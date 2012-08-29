@@ -50,9 +50,16 @@ struct native_window : noncopyable
         {}
     };
 
+    native_window() : impl_(0) {}
     native_window(string const& title, window_controller* controller,
-        state_data const& initial_state);
+        state_data const& initial_state)
+    {
+        initialize(title, controller, initial_state);
+    }
     ~native_window();
+
+    void initialize(string const& title, window_controller* controller,
+        state_data const& initial_state);
 
     alia::ui_system& ui();
 

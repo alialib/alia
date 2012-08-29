@@ -123,6 +123,8 @@ void do_separator(ui_context& ctx, layout const& layout_spec)
 
      case RENDER_CATEGORY:
       {
+        if (!is_rendering_active(ctx))
+            break;
         layout_box const& region = data->layout_node.assignment().region;
         caching_renderer cache(ctx, data->rendering, *ctx.style.id, region);
         if (cache.needs_rendering())
@@ -168,6 +170,8 @@ void do_color(ui_context& ctx, getter<rgba8> const& color,
 
      case RENDER_CATEGORY:
       {
+        if (!is_rendering_active(ctx))
+            break;
         layout_box const& region = data->layout_node.assignment().region;
         caching_renderer cache(ctx, data->rendering, color.id(), region);
         if (cache.needs_rendering())
@@ -219,6 +223,8 @@ void do_bullet(ui_context& ctx, layout const& layout_spec)
 
      case RENDER_CATEGORY:
       {
+        if (!is_rendering_active(ctx))
+            break;
         layout_box const& region = data->layout_node.assignment().region;
         caching_renderer cache(ctx, data->rendering, *ctx.style.id, region);
         if (cache.needs_rendering())
@@ -377,6 +383,8 @@ check_box_result do_check_box(
 
      case RENDER_CATEGORY:
       {
+        if (!is_rendering_active(ctx))
+            break;
         data->rendering.renderer->draw(ctx, data->rendering.data,
             data->layout_node.assignment().region, value,
             get_button_state(ctx, id, data->input));
@@ -539,6 +547,8 @@ do_radio_button(
 
      case RENDER_CATEGORY:
       {
+        if (!is_rendering_active(ctx))
+            break;
         data->rendering.renderer->draw(ctx, data->rendering.data,
             data->layout_node.assignment().region, value,
             get_button_state(ctx, id, data->input));
@@ -709,6 +719,8 @@ node_expander_result do_node_expander(
 
      case RENDER_CATEGORY:
       {
+        if (!is_rendering_active(ctx))
+            break;
         data->rendering.renderer->draw(ctx, data->rendering.data,
             data->layout_node.assignment().region, value,
             get_button_state(ctx, id, data->input));
@@ -760,6 +772,8 @@ void do_progress_bar(ui_context& ctx, getter<double> const& progress,
 
      case RENDER_CATEGORY:
       {
+        if (!is_rendering_active(ctx))
+            break;
         layout_box const& region = data->layout_node.assignment().region;
         caching_renderer cache(ctx, data->rendering, progress.id(), region);
         if (cache.needs_rendering())
@@ -1177,6 +1191,8 @@ void do_text(ui_context& ctx, getter<string> const& text,
         break;
 
      case RENDER_CATEGORY:
+        if (!is_rendering_active(ctx))
+            break;
         if (data->text_image.view.pixels)
         {
             if (!data->image_cached || !is_valid(data->cached_image))
@@ -1293,6 +1309,8 @@ void do_label(ui_context& ctx, getter<string> const& text,
         refresh_standalone_text(ctx, *data, text, layout_spec);
         break;
      case RENDER_CATEGORY:
+        if (!is_rendering_active(ctx))
+            break;
         render_standalone_text(ctx, *data, text);
         break;
     }
@@ -1336,6 +1354,8 @@ bool do_link(
         break;
 
      case RENDER_CATEGORY:
+        if (!is_rendering_active(ctx))
+            break;
         render_standalone_text(ctx, data->standalone_text, text);
         if (state & WIDGET_FOCUSED)
         {
@@ -1365,7 +1385,7 @@ void bordered_box::begin(
 {
     box_.begin(ctx, (flags & HORIZONTAL) ? 0 : 1, layout_spec);
 
-    if (is_render_pass(ctx))
+    if (is_rendering(ctx))
     {
         rgba8 const& color = ctx.style.properties->border_color;
         layout_box box_with_border =
@@ -1404,6 +1424,8 @@ static void begin_panel(
 
      case RENDER_CATEGORY:
       {
+        if (!is_rendering_active(ctx))
+            break;
         if (flags & ROUNDED)
         {
             layout_box const& rect = outer.region();
@@ -1537,7 +1559,7 @@ void clickable_panel::begin(
     if ((flags & DISABLED) == 0)
     {
         clicked_ = do_button_input(ctx, id, data->input);
-        if (is_render_pass(ctx) && (state & WIDGET_FOCUSED))
+        if (is_rendering(ctx) && (state & WIDGET_FOCUSED))
             draw_panel_focus_border(ctx, panel_, flags, data->rendering);
     }
     else
@@ -1649,7 +1671,7 @@ do_button(
     panel p(ctx, const_text("button"),
         add_default_alignment(layout_spec, LEFT, TOP), NO_FLAGS, id, state);
     do_text(ctx, text, CENTER);
-    if (is_render_pass(ctx) && (state & WIDGET_FOCUSED))
+    if (is_rendering(ctx) && (state & WIDGET_FOCUSED))
     {
         draw_focus_rect(ctx, data->focus_rect, add_border(p.inner_region(),
             ctx.layout.style_info->padding_size));
@@ -1793,6 +1815,8 @@ do_icon_button(
 
      case RENDER_CATEGORY:
       {
+        if (!is_rendering_active(ctx))
+            break;
         data->rendering.renderer->draw(ctx, data->rendering.data,
             data->layout_node.assignment().region, icon,
             get_button_state(ctx, id, data->input));
@@ -2089,6 +2113,8 @@ do_slider(ui_context& ctx, accessor<double> const& value,
 
      case RENDER_CATEGORY:
       {
+        if (!is_rendering_active(ctx))
+            break;
         slider_renderer const* renderer = data->rendering.renderer;
         renderer->draw_track(ctx, data->rendering.data, axis,
             get_track_position(ctx, *data, axis),
@@ -2434,6 +2460,8 @@ do_drop_down_button(
 
      case RENDER_CATEGORY:
       {
+        if (!is_rendering_active(ctx))
+            break;
         data->rendering.renderer->draw(ctx, data->rendering.data,
             data->layout_node.assignment().region,
             get_button_state(ctx, id, data->input));
@@ -2627,6 +2655,8 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
     {
      case RENDER_CATEGORY:
       {
+        if (!is_rendering_active(ctx))
+            break;
         layout_vector poly[4];
         make_polygon(poly, container_.region());
         ctx.surface->draw_filled_polygon(
@@ -3035,6 +3065,8 @@ struct text_control
             do_refresh();
             break;
          case RENDER_CATEGORY:
+            if (!is_rendering_active(ctx))
+                break;
             render();
             break;
          case REGION_CATEGORY:
@@ -3980,6 +4012,8 @@ bool do_draggable_separator(ui_context& ctx, accessor<int> const& width,
 
      case RENDER_CATEGORY:
       {
+        if (!is_rendering_active(ctx))
+            break;
         layout_box const& region = data->layout_node.assignment().region;
         caching_renderer cache(ctx, data->rendering, *ctx.style.id, region);
         if (cache.needs_rendering())
@@ -4108,6 +4142,8 @@ void do_layout_dependent_text(ui_context& ctx, int n,
 
      case RENDER_CATEGORY:
       {
+        if (!is_rendering_active(ctx))
+            break;
         layout_box const& region = data->layout_node.assignment().region;
         ascii_font_image const* font_image =
             get_ascii_font_image(ctx.style.properties->font,

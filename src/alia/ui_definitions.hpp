@@ -160,7 +160,9 @@ enum ui_event_type
 
     REFRESH_EVENT,
 
+    // rendering
     RENDER_EVENT,
+    OVERLAY_RENDER_EVENT,
 
     // regions
     HIT_TEST_EVENT,
@@ -168,8 +170,11 @@ enum ui_event_type
 
     // keyboard
     CHAR_EVENT,
+    BACKGROUND_CHAR_EVENT,
     KEY_PRESS_EVENT,
+    BACKGROUND_KEY_PRESS_EVENT,
     KEY_RELEASE_EVENT,
+    BACKGROUND_KEY_RELEASE_EVENT,
 
     // focus notifications
     FOCUS_GAIN_EVENT,
@@ -219,6 +224,15 @@ struct refresh_event : ui_event
     refresh_event()
       : ui_event(REFRESH_CATEGORY, REFRESH_EVENT)
     {}
+};
+
+struct render_event : ui_event
+{
+    render_event(ui_event_type type)
+      : ui_event(RENDER_CATEGORY, type)
+      , active(false)
+    {}
+    bool active;
 };
 
 struct input_event : ui_event
@@ -393,13 +407,24 @@ struct ui_system
 
     ui_time_type millisecond_tick_count;
 
+    routable_widget_id overlay;
+
     ui_system() : millisecond_tick_count(0) {}
 };
 
 static inline surface& get_surface(ui_context& ctx)
 { return *ctx.surface; }
-static inline bool is_render_pass(ui_context& ctx)
-{ return ctx.event->type == RENDER_EVENT; }
+
+static inline bool is_rendering_active(ui_context& ctx)
+{
+    return static_cast<render_event&>(*ctx.event).active == true;
+}
+
+static inline bool is_rendering(ui_context& ctx)
+{
+    return ctx.event->category == RENDER_CATEGORY &&
+        is_rendering_active(ctx);
+}
 
 struct primary_style_properties
 {

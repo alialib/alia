@@ -262,7 +262,7 @@ static void issue_event(
     ctx.geometry.clip_region =
         box<2,double>(make_vector<double>(0, 0), size);
     ctx.surface = system.surface.get();
-    if (event.type == RENDER_EVENT)
+    if (event.category == RENDER_CATEGORY)
         set_subscriber(ctx.geometry, *ctx.surface);
     scoped_layout_refresh refresh;
     scoped_layout_traversal layout;
@@ -329,15 +329,18 @@ layout_vector measure_initial_ui(
 //    }
 //}
 
-struct render_event : ui_event
-{
-    render_event() : ui_event(RENDER_CATEGORY, RENDER_EVENT) {}
-};
-
 void render_ui(ui_system& system)
 {
-    render_event e;
+    render_event e(RENDER_EVENT);
+    e.active = true;
     issue_event(system, e, false);
+
+    if (is_valid(system.overlay))
+    {
+        render_event e(OVERLAY_RENDER_EVENT);
+        e.active = false;
+        issue_targeted_event(system, e, system.overlay);
+    }
 }
 
 void refresh_and_layout(ui_system& system, vector<2,unsigned> const& size,
@@ -470,11 +473,14 @@ void process_mouse_wheel(ui_system& ui, ui_time_type time, float movement)
 
 bool process_character_input(ui_system& ui, ui_time_type time, char_type c)
 {
-    char_event e(time, c); // Is this right?
+    char_event e(time, c);
     if (is_valid(ui.input.focused_id))
         issue_targeted_event(ui, e, ui.input.focused_id);
     if (!e.acknowledged)
+    {
+        e.type = BACKGROUND_CHAR_EVENT;
         issue_event(ui, e);
+    }
     return e.acknowledged;
 }
 
@@ -485,7 +491,10 @@ bool process_key_press(ui_system& ui, ui_time_type time,
     if (is_valid(ui.input.focused_id))
         issue_targeted_event(ui, e, ui.input.focused_id);
     if (!e.acknowledged)
+    {
+        e.type = BACKGROUND_KEY_PRESS_EVENT;
         issue_event(ui, e);
+    }
     ui.input.keyboard_interaction = true;
     return e.acknowledged;
 }
@@ -496,7 +505,10 @@ bool process_key_release(ui_system& ui, ui_time_type time,
     if (is_valid(ui.input.focused_id))
         issue_targeted_event(ui, e, ui.input.focused_id);
     if (!e.acknowledged)
+    {
+        e.type = BACKGROUND_KEY_RELEASE_EVENT;
         issue_event(ui, e);
+    }
     return e.acknowledged;
 }
 
@@ -682,7 +694,7 @@ bool detect_mouse_release(ui_context& ctx, widget_id id,
     mouse_button button)
 {
     process_mouse_notifications(ctx, id);
-    return detect_mouse_release(ctx, button) && is_region_hot(ctx, id);
+    return detect_mouse_release(ctx, button) && is_region_active(ctx, id);
 }
 
 bool detect_mouse_motion(ui_context& ctx, widget_id id)
@@ -870,19 +882,17 @@ void set_focus(ui_system& ui, routable_widget_id id)
     }
 }
 
-bool detect_key_press(ui_context& ctx, key_event_info* info, widget_id id)
+// Calling this ensure that a widget will steal the focus if it's click on.
+static void do_click_focus(ui_context& ctx, widget_id id)
 {
     if (detect_event(ctx, MOUSE_PRESS_EVENT) && is_region_hot(ctx, id))
-    {
         set_focus(ctx, id);
-        return false;
-    }
-    return id_has_focus(ctx, id) && detect_key_press(ctx, info);
-
 }
-bool detect_key_press(ui_context& ctx, key_event_info* info)
+
+static bool detect_key_event(ui_context& ctx, key_event_info* info,
+    ui_event_type event_type)
 {
-    if (detect_event(ctx, KEY_PRESS_EVENT))
+    if (detect_event(ctx, event_type))
     {
         key_event& e = get_event<key_event>(ctx);
         if (!e.acknowledged)
@@ -892,51 +902,49 @@ bool detect_key_press(ui_context& ctx, key_event_info* info)
         }
     }
     return false;
+}
+
+bool detect_key_press(ui_context& ctx, key_event_info* info, widget_id id)
+{
+    do_click_focus(ctx, id);
+    return id_has_focus(ctx, id) &&
+        detect_key_event(ctx, info, KEY_PRESS_EVENT);
+}
+bool detect_key_press(ui_context& ctx, key_event_info* info)
+{
+    return detect_key_event(ctx, info, BACKGROUND_KEY_PRESS_EVENT);
 }
 
 bool detect_key_release(ui_context& ctx, key_event_info* info, widget_id id)
 {
-    if (detect_event(ctx, MOUSE_PRESS_EVENT) && is_region_hot(ctx, id))
-    {
-        set_focus(ctx, id);
-        return false;
-    }
-    return id_has_focus(ctx, id) && detect_key_release(ctx, info);
+    do_click_focus(ctx, id);
+    return id_has_focus(ctx, id) &&
+        detect_key_event(ctx, info, KEY_RELEASE_EVENT);
 }
 bool detect_key_release(ui_context& ctx, key_event_info* info)
 {
-    if (detect_event(ctx, KEY_RELEASE_EVENT))
-    {
-        key_event& e = get_event<key_event>(ctx);
-        if (!e.acknowledged)
-        {
-            *info = e.info;
-            return true;
-        }
-    }
-    return false;
+    return detect_key_event(ctx, info, BACKGROUND_KEY_RELEASE_EVENT);
 }
 
-int detect_char(ui_context& ctx, widget_id id)
+static int detect_char_event(ui_context& ctx, ui_event_type event_type)
 {
-    if (detect_event(ctx, MOUSE_PRESS_EVENT) && is_region_hot(ctx, id))
-    {
-        set_focus(ctx, id);
-        return 0;
-    }
-    if (id_has_focus(ctx, id))
-        return detect_char(ctx);
-    return 0;
-}
-int detect_char(ui_context& ctx)
-{
-    if (detect_event(ctx, CHAR_EVENT))
+    if (detect_event(ctx, event_type))
     {
         char_event& e = get_event<char_event>(ctx);
         if (!e.acknowledged)
             return e.character;
     }
     return 0;
+}
+
+int detect_char(ui_context& ctx, widget_id id)
+{
+    do_click_focus(ctx, id);
+    return id_has_focus(ctx, id) ? detect_char_event(ctx, CHAR_EVENT) : 0;
+}
+int detect_char(ui_context& ctx)
+{
+    return detect_char_event(ctx, BACKGROUND_CHAR_EVENT);
 }
 
 bool detect_key_press(ui_context& ctx, widget_id id,

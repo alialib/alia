@@ -1002,7 +1002,7 @@ static void create_window(
     //SetTimer(impl->hwnd, 0, 0, 0);
 }
 
-native_window::native_window(
+void native_window::initialize(
     string const& title, window_controller* controller,
     state_data const& initial_state)
 {
@@ -1016,7 +1016,11 @@ native_window::native_window(
 
 native_window::~native_window()
 {
-    destroy_window(*impl_);
+    if (impl_)
+    {
+        destroy_window(*impl_);
+        delete impl_;
+    }
 }
 
 alia::ui_system& native_window::ui()
