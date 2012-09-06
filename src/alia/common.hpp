@@ -5,6 +5,7 @@
 #include <string>
 #include <memory>
 #include <cassert>
+#include <ostream>
 
 namespace alia {
 
