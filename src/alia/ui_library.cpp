@@ -2503,17 +2503,6 @@ struct ddl_data
     focus_rect_data focus_rendering;
 };
 
-struct wrapped_event : ui_event
-{
-    wrapped_event(widget_id wrapper_id, ui_context& ctx)
-      : ui_event(NO_CATEGORY, WRAPPED_EVENT)
-      , ctx(ctx)
-      , wrapper_id(wrapper_id)
-    {}
-    ui_context& ctx;
-    widget_id wrapper_id;
-};
-
 // ddl_list_query_event is used to query the drop down list to determine how
 // many items there are and which is selected.
 struct ddl_list_query_event : ui_event
@@ -2571,20 +2560,20 @@ static int clamp_ddl_index(ui_context& ctx, widget_id ddl_id, int index)
     return clamp(index, 0, item_count > 0 ? item_count - 1 : 0);
 }
 
-struct proxy_controller : ui_controller
-{
-    proxy_controller(
-        ui_system& parent_system, routable_widget_id parent_id)
-      : parent_system(parent_system), parent_id(parent_id) {}
-    ui_system& parent_system;
-    routable_widget_id parent_id;
-
-    void do_ui(ui_context& ctx)
-    {
-        wrapped_event e(parent_id.id, ctx);
-        issue_targeted_event(parent_system, e, parent_id);
-    }
-};
+//struct proxy_controller : ui_controller
+//{
+//    proxy_controller(
+//        ui_system& parent_system, routable_widget_id parent_id)
+//      : parent_system(parent_system), parent_id(parent_id) {}
+//    ui_system& parent_system;
+//    routable_widget_id parent_id;
+//
+//    void do_ui(ui_context& ctx)
+//    {
+//        wrapped_event e(parent_id.id, ctx);
+//        issue_targeted_event(parent_system, e, parent_id);
+//    }
+//};
 
 static bool process_ddl_key_press(ui_context& ctx, widget_id ddl_id,
     optional<int>& selected_index, key_event_info const& info)
@@ -2633,264 +2622,259 @@ untyped_ui_value const*
 untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
     ui_flag_set flags)
 {
-    ctx_ = &ctx;
+    //ctx_ = &ctx;
 
-    do_list_ = make_selection_visible_ = false;
-    list_index_ = 0;
+    //do_list_ = make_selection_visible_ = false;
+    //list_index_ = 0;
 
     untyped_ui_value const* result = 0;
 
-    id_ = get_widget_id(ctx);
+    //id_ = get_widget_id(ctx);
 
-    get_data(ctx, &data_);
+    //get_data(ctx, &data_);
 
-    widget_state state = get_button_state(ctx, id_, data_->input);
+    //widget_state state = get_button_state(ctx, id_, data_->input);
 
-    container_.begin(ctx, add_default_padding(add_default_alignment(
-        layout_spec, LEFT, BASELINE_Y), PADDED));
+    //container_.begin(ctx, add_default_padding(add_default_alignment(
+    //    layout_spec, LEFT, BASELINE_Y), PADDED));
 
-    substyle_.begin(ctx, const_text("control"), state);
+    //substyle_.begin(ctx, const_text("control"), state);
 
-    switch (ctx.event->category)
-    {
-     case RENDER_CATEGORY:
-      {
-        if (!is_rendering_active(ctx))
-            break;
-        layout_vector poly[4];
-        make_polygon(poly, container_.region());
-        ctx.surface->draw_filled_polygon(
-            ctx.style.properties->bg_color, poly, 4);
+    //switch (ctx.event->category)
+    //{
+    // case RENDER_CATEGORY:
+    //  {
+    //    if (!is_rendering_active(ctx))
+    //        break;
+    //    layout_vector poly[4];
+    //    make_polygon(poly, container_.region());
+    //    ctx.surface->draw_filled_polygon(
+    //        ctx.style.properties->bg_color, poly, 4);
 
-        if ((state & WIDGET_FOCUSED))
-            draw_focus_rect(ctx, data_->focus_rendering, container_.region());
+    //    if ((state & WIDGET_FOCUSED))
+    //        draw_focus_rect(ctx, data_->focus_rendering, container_.region());
 
-        break;
-      }
+    //    break;
+    //  }
 
-     case REGION_CATEGORY:
-        do_box_region(ctx, id_, container_.region());
-        break;
+    // case REGION_CATEGORY:
+    //    do_box_region(ctx, id_, container_.region());
+    //    break;
 
-     case INPUT_CATEGORY:
-      {
-        key_event_info info;
-        if (detect_key_press(ctx, &info))
-        {
-            // If this is a list of commands, don't select them without the
-            // list being open.
-            if (!(flags & COMMAND_LIST))
-            {
-                optional<int> selection = get_ddl_selected_index(ctx, id_);
-                if (process_ddl_key_press(ctx, id_, selection, info))
-                {
-                    acknowledge_input_event(ctx);
-                    if (selection)
-                        select_ddl_item_at_index(ctx, id_, get(selection));
-                }
-            }
-        }
-        break;
-      }
+    // case INPUT_CATEGORY:
+    //  {
+    //    key_event_info info;
+    //    if (detect_key_press(ctx, &info))
+    //    {
+    //        // If this is a list of commands, don't select them without the
+    //        // list being open.
+    //        if (!(flags & COMMAND_LIST))
+    //        {
+    //            optional<int> selection = get_ddl_selected_index(ctx, id_);
+    //            if (process_ddl_key_press(ctx, id_, selection, info))
+    //            {
+    //                acknowledge_input_event(ctx);
+    //                if (selection)
+    //                    select_ddl_item_at_index(ctx, id_, get(selection));
+    //            }
+    //        }
+    //    }
+    //    break;
+    //  }
 
-     case NO_CATEGORY:
-        switch (ctx.event->type)
-        {
-         case WRAPPED_EVENT:
-          {
-            wrapped_event& e = get_event<wrapped_event>(ctx);
-            if (e.wrapper_id == id_)
-            {
-                list_ctx_ = &e.ctx;
-                do_list_ = true;
-                
-                list_border_.begin(*list_ctx_, GROW | PADDED);
-                list_panel_.begin(*list_ctx_, const_text(""), 2,
-                    GROW | UNPADDED);
+    // case NO_CATEGORY:
+    //    switch (ctx.event->type)
+    //    {
+    //     case SET_VALUE_EVENT:
+    //      {
+    //        set_value_event& e = get_event<set_value_event>(ctx);
+    //        if (e.target == id_)
+    //        {
+    //            result = e.value.get();
+    //            if (data_->popup)
+    //                data_->popup->close();
+    //        }
+    //        break;
+    //      }
 
-                key_event_info info;
-                if (detect_key_press(*list_ctx_, &info))
-                {
-                    if (process_ddl_key_press(ctx, id_,
-                            data_->internal_selection, info))
-                    {
-                        acknowledge_input_event(*list_ctx_);
-                        make_selection_visible_ = true;
-                    }
-                    if (info.mods == 0 &&
-                       (info.code == KEY_ENTER ||
-                        info.code == KEY_NUMPAD_ENTER ||
-                        info.code == KEY_SPACE))
-                    {
-                        if (data_->internal_selection)
-                        {
-                            select_ddl_item_at_index(ctx, id_,
-                                get(data_->internal_selection));
-                        }
-                        acknowledge_input_event(*list_ctx_);
-                        data_->popup->close();
-                    }
-                    if (info.mods == 0 && info.code == KEY_ESCAPE)
-                    {
-                        acknowledge_input_event(*list_ctx_);
-                        data_->popup->close();
-                    }
-                }
-            }
-            break;
-          }
+    //     case CUSTOM_EVENT:
+    //      {
+    //        {
+    //            ddl_list_query_event* query =
+    //                dynamic_cast<ddl_list_query_event*>(ctx.event);
+    //            if (query && query->target == id_)
+    //            {
+    //                list_ctx_ = ctx_;
+    //                do_list_ = true;
+    //            }
+    //        }
+    //        {
+    //            ddl_select_index_event* event =
+    //                dynamic_cast<ddl_select_index_event*>(ctx.event);
+    //            if (event && event->target == id_)
+    //            {
+    //                list_ctx_ = ctx_;
+    //                do_list_ = true;
+    //            }
+    //        }
+    //        break;
+    //      }
+    //    }
+    //    break;
+    //}
 
-         case SET_VALUE_EVENT:
-          {
-            set_value_event& e = get_event<set_value_event>(ctx);
-            if (e.target == id_)
-            {
-                result = e.value.get();
-                if (data_->popup)
-                    data_->popup->close();
-            }
-            break;
-          }
+    //contents_.begin(ctx, BASELINE_Y | GROW_X | UNPADDED);
 
-         case CUSTOM_EVENT:
-          {
-            {
-                ddl_list_query_event* query =
-                    dynamic_cast<ddl_list_query_event*>(ctx.event);
-                if (query && query->target == id_)
-                {
-                    list_ctx_ = ctx_;
-                    do_list_ = true;
-                }
-            }
-            {
-                ddl_select_index_event* event =
-                    dynamic_cast<ddl_select_index_event*>(ctx.event);
-                if (event && event->target == id_)
-                {
-                    list_ctx_ = ctx_;
-                    do_list_ = true;
-                }
-            }
-            break;
-          }
-        }
-        break;
-    }
+    //do_list_ = is_active_overlay(ctx, overlay_id);
 
-    contents_.begin(ctx, BASELINE_Y | GROW_X | UNPADDED);
+    //alia_if (do_list_)
+    //{
+    //    list_border_.begin(*list_ctx_, GROW | PADDED);
+    //    list_panel_.begin(*list_ctx_, const_text(""), 2,
+    //        GROW | UNPADDED);
+
+    //    key_event_info info;
+    //    if (detect_key_press(*list_ctx_, &info))
+    //    {
+    //        if (process_ddl_key_press(ctx, id_,
+    //                data_->internal_selection, info))
+    //        {
+    //            acknowledge_input_event(*list_ctx_);
+    //            make_selection_visible_ = true;
+    //        }
+    //        if (info.mods == 0 &&
+    //           (info.code == KEY_ENTER ||
+    //            info.code == KEY_NUMPAD_ENTER ||
+    //            info.code == KEY_SPACE))
+    //        {
+    //            if (data_->internal_selection)
+    //            {
+    //                select_ddl_item_at_index(ctx, id_,
+    //                    get(data_->internal_selection));
+    //            }
+    //            acknowledge_input_event(*list_ctx_);
+    //            data_->popup->close();
+    //        }
+    //        if (info.mods == 0 && info.code == KEY_ESCAPE)
+    //        {
+    //            acknowledge_input_event(*list_ctx_);
+    //            data_->popup->close();
+    //        }
+    //    }
+    //}
+    //alia_end
 
     return result;
 }
 void untyped_drop_down_list::end()
 {
-    if (ctx_)
-    {
-        list_panel_.end();
-        list_border_.end();
+    //if (ctx_)
+    //{
+    //    list_panel_.end();
+    //    list_border_.end();
 
-        contents_.end();
+    //    contents_.end();
 
-        if (!ctx_->pass_aborted)
-        {
-            if (do_drop_down_button(*ctx_, CENTER, id_,
-                    data_->popup, &data_->open_at_click))
-            {
-                data_->internal_selection =
-                    get_ddl_selected_index(*ctx_, id_);
-                vector<2,int> absolute_position = vector<2,int>(
-                    transform(ctx_->geometry.transformation_matrix,
-                        vector<2,double>(container_.region().corner)) +
-                    make_vector<double>(0.5, 0.5));
-                data_->popup.reset(ctx_->surface->open_popup(
-                    new proxy_controller(*ctx_->system,
-                        make_routable_widget_id(*ctx_, id_)),
-                    absolute_position +
-                        make_vector<int>(0, container_.region().size[1]),
-                    absolute_position +
-                        make_vector<int>(container_.region().size[0], 0),
-                    make_vector<int>(container_.region().size[0], 0)));
-            }
-        }
+    //    if (!ctx_->pass_aborted)
+    //    {
+    //        if (do_drop_down_button(*ctx_, CENTER, id_,
+    //                data_->popup, &data_->open_at_click))
+    //        {
+    //            data_->internal_selection =
+    //                get_ddl_selected_index(*ctx_, id_);
+    //            vector<2,int> absolute_position = vector<2,int>(
+    //                transform(ctx_->geometry.transformation_matrix,
+    //                    vector<2,double>(container_.region().corner)) +
+    //                make_vector<double>(0.5, 0.5));
+    //            //data_->popup.reset(ctx_->surface->open_popup(
+    //            //    new proxy_controller(*ctx_->system,
+    //            //        make_routable_widget_id(*ctx_, id_)),
+    //            //    absolute_position +
+    //            //        make_vector<int>(0, container_.region().size[1]),
+    //            //    absolute_position +
+    //            //        make_vector<int>(container_.region().size[0], 0),
+    //            //    make_vector<int>(container_.region().size[0], 0)));
+    //        }
+    //    }
 
-        container_.end();
+    //    container_.end();
 
-        ctx_ = 0;
-    }
+    //    ctx_ = 0;
+    //}
 }
 
 bool untyped_ddl_item::begin(untyped_drop_down_list& list, bool is_selected)
 {
-    list_ = &list;
-    int index = list.list_index_++;
-    ddl_data* data = list.data_;
+    //list_ = &list;
+    //int index = list.list_index_++;
+    //ddl_data* data = list.data_;
 
-    bool is_internally_selected = data->internal_selection &&
-        get(data->internal_selection) == index;
+    //bool is_internally_selected = data->internal_selection &&
+    //    get(data->internal_selection) == index;
 
-    ui_context& ctx = *list.list_ctx_;
+    //ui_context& ctx = *list.list_ctx_;
 
-    widget_id id = get_widget_id(ctx);
-    panel_.begin(ctx, const_text("item"), UNPADDED, NO_FLAGS, id,
-        get_widget_state(ctx, id, true, false, is_internally_selected));
+    //widget_id id = get_widget_id(ctx);
+    //panel_.begin(ctx, const_text("item"), UNPADDED, NO_FLAGS, id,
+    //    get_widget_state(ctx, id, true, false, is_internally_selected));
 
-    if (list.make_selection_visible_ && is_internally_selected)
-        make_widget_visible(*ctx.system, make_routable_widget_id(ctx, id));
+    //if (list.make_selection_visible_ && is_internally_selected)
+    //    make_widget_visible(*ctx.system, make_routable_widget_id(ctx, id));
 
-    switch (ctx.event->category)
-    {
-     case INPUT_CATEGORY:
-        if (detect_click(ctx, id, LEFT_BUTTON))
-            return true;
-        break;
+    //switch (ctx.event->category)
+    //{
+    // case INPUT_CATEGORY:
+    //    if (detect_click(ctx, id, LEFT_BUTTON))
+    //        return true;
+    //    break;
 
-     case NO_CATEGORY:
-        switch (ctx.event->type)
-        {
-         case CUSTOM_EVENT:
-            {
-                ddl_list_query_event* query =
-                    dynamic_cast<ddl_list_query_event*>(ctx.event);
-                if (query && query->target == list.id_)
-                {
-                    if (is_selected)
-                        query->selected_index = index;
-                    ++query->total_items;
-                }
-            }
-            {
-                ddl_select_index_event* event =
-                    dynamic_cast<ddl_select_index_event*>(ctx.event);
-                if (event && event->target == list.id_ &&
-                    event->index == index)
-                {
-                    return true;
-                }
-            }
-            break;
+    // case NO_CATEGORY:
+    //    switch (ctx.event->type)
+    //    {
+    //     case CUSTOM_EVENT:
+    //        {
+    //            ddl_list_query_event* query =
+    //                dynamic_cast<ddl_list_query_event*>(ctx.event);
+    //            if (query && query->target == list.id_)
+    //            {
+    //                if (is_selected)
+    //                    query->selected_index = index;
+    //                ++query->total_items;
+    //            }
+    //        }
+    //        {
+    //            ddl_select_index_event* event =
+    //                dynamic_cast<ddl_select_index_event*>(ctx.event);
+    //            if (event && event->target == list.id_ &&
+    //                event->index == index)
+    //            {
+    //                return true;
+    //            }
+    //        }
+    //        break;
 
-         case INITIAL_VISIBILITY_EVENT:
-            if (is_internally_selected)
-            {
-                make_widget_visible(*ctx.system,
-                    make_routable_widget_id(ctx, id));
-            }
-            break;
-        }
-        break;
-    }
+    //     case INITIAL_VISIBILITY_EVENT:
+    //        if (is_internally_selected)
+    //        {
+    //            make_widget_visible(*ctx.system,
+    //                make_routable_widget_id(ctx, id));
+    //        }
+    //        break;
+    //    }
+    //    break;
+    //}
 
     return false;
 }
 void untyped_ddl_item::end()
 {
-    panel_.end();
+    //panel_.end();
 }
 void untyped_ddl_item::select(untyped_ui_value* value)
 {
-    set_value_event e(list_->id_, value);
-    issue_targeted_event(*list_->ctx_->system, e,
-        make_routable_widget_id(*list_->ctx_, list_->id_));
+    //set_value_event e(list_->id_, value);
+    //issue_targeted_event(*list_->ctx_->system, e,
+    //    make_routable_widget_id(*list_->ctx_, list_->id_));
 }
 
 // TEXT CONTROL
@@ -3349,15 +3333,22 @@ struct text_control
         if (!is_read_only())
             add_to_focus_order(ctx, id);
 
-        int c = detect_char(ctx, id);
-        if (c > 0 && c <= 0xff && std::isprint(c))
+        utf8_string text;
+        if (detect_text_input(ctx, &text, id))
         {
-            if (data.editing)
+            // TODO: real unicode
+            for (utf8_ptr p = text.begin; p != text.end; ++p)
             {
-                insert_text(string(1, c));
-                on_edit();
+                if (std::isprint(*p))
+                {
+                    if (data.editing)
+                    {
+                        insert_text(string(1, *p));
+                        on_edit();
+                    }
+                    acknowledge_key();
+                }
             }
-            acknowledge_key();
         }
         key_event_info info;
         if (detect_key_press(ctx, &info, id))

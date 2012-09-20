@@ -44,7 +44,7 @@ struct default_scrollbar_renderer : scrollbar_renderer
 
     int width(ui_context& ctx) const
     {
-        return resolve_layout_width(get_layout_traversal(ctx), 1, EM);
+        return resolve_layout_width(get_layout_traversal(ctx), 0.75f, EM);
     }
     int button_length(ui_context& ctx) const
     {
@@ -52,7 +52,8 @@ struct default_scrollbar_renderer : scrollbar_renderer
     }
     int minimum_thumb_length(ui_context& ctx) const
     {
-        return resolve_layout_width(get_layout_traversal(ctx), 1, EM) + 1;
+        // Must be larger the width.
+        return resolve_layout_width(get_layout_traversal(ctx), 1, EM);
     }
 
     // background
@@ -437,7 +438,7 @@ void scrollbar::do_pass()
             mouse_is_inside_box(ctx, box<2,double>(area)))
         {
             set_logical_position(
-                int(logical_position + movement * line_increment + 0.5));
+                int(logical_position - movement * line_increment + 0.5));
             acknowledge_input_event(ctx);
         }
       }
@@ -749,7 +750,7 @@ void scrollable_region::begin(
                 box<2,double>(vector<2,double>(window_corner),
                     vector<2,double>(container->window_size))))
         {
-            container->scroll_position[1] +=
+            container->scroll_position[1] -=
                 int(container->line_size * movement);
             clamp_scroll_position(*container_);
             acknowledge_input_event(ctx);

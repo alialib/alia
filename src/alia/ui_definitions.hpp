@@ -169,8 +169,8 @@ enum ui_event_type
     MAKE_WIDGET_VISIBLE_EVENT,
 
     // keyboard
-    CHAR_EVENT,
-    BACKGROUND_CHAR_EVENT,
+    TEXT_INPUT_EVENT,
+    BACKGROUND_TEXT_INPUT_EVENT,
     KEY_PRESS_EVENT,
     BACKGROUND_KEY_PRESS_EVENT,
     KEY_RELEASE_EVENT,
@@ -246,13 +246,12 @@ struct input_event : ui_event
 };
 
 // keyboard events
-typedef unsigned char_type;
-struct char_event : input_event
+struct text_input_event : input_event
 {
-    char_type character;
+    utf8_string text;
 
-    char_event(ui_time_type time, char_type character)
-      : input_event(CHAR_EVENT, time), character(character)
+    text_input_event(ui_time_type time, utf8_string const& text)
+      : input_event(TEXT_INPUT_EVENT, time), text(text)
     {}
 };
 struct key_event_info

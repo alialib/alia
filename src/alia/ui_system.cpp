@@ -9,7 +9,6 @@ namespace alia {
 static void on_ui_style_change(ui_system& system)
 {
     inc_version(system.style->id);
-    system.surface->close_popups();
 }
 
 void set_text_magnification(ui_system& system, float magnification)
@@ -259,8 +258,7 @@ static void issue_event(
     vector<2,double> size =
         is_refresh ? make_vector<double>(0, 0) :
             vector<2,double>(system.surface->size());
-    ctx.geometry.clip_region =
-        box<2,double>(make_vector<double>(0, 0), size);
+    initialize(ctx.geometry, box<2,double>(make_vector<double>(0, 0), size));
     ctx.surface = system.surface.get();
     if (event.category == RENDER_CATEGORY)
         set_subscriber(ctx.geometry, *ctx.surface);
@@ -380,11 +378,11 @@ static routable_widget_id get_mouse_target(ui_system& ui)
     return is_valid(ui.input.active_id) ? ui.input.active_id : ui.input.hot_id;
 }
 
-boost::optional<mouse_cursor> update_mouse_cursor(ui_system& ui)
+optional<mouse_cursor> update_mouse_cursor(ui_system& ui)
 {
     routable_widget_id previous_mouse_target = get_mouse_target(ui);
 
-    boost::optional<mouse_cursor> cursor;
+    optional<mouse_cursor> cursor;
 
     if (ui.input.mouse_inside_window)
     {
@@ -471,14 +469,15 @@ void process_mouse_wheel(ui_system& ui, ui_time_type time, float movement)
     issue_event(ui, e);
 }
 
-bool process_character_input(ui_system& ui, ui_time_type time, char_type c)
+bool process_text_input(ui_system& ui, ui_time_type time,
+    utf8_string const& text)
 {
-    char_event e(time, c);
+    text_input_event e(time, text);
     if (is_valid(ui.input.focused_id))
         issue_targeted_event(ui, e, ui.input.focused_id);
     if (!e.acknowledged)
     {
-        e.type = BACKGROUND_CHAR_EVENT;
+        e.type = BACKGROUND_TEXT_INPUT_EVENT;
         issue_event(ui, e);
     }
     return e.acknowledged;
@@ -926,25 +925,30 @@ bool detect_key_release(ui_context& ctx, key_event_info* info)
     return detect_key_event(ctx, info, BACKGROUND_KEY_RELEASE_EVENT);
 }
 
-static int detect_char_event(ui_context& ctx, ui_event_type event_type)
+static bool detect_text_input(ui_context& ctx, utf8_string* text,
+    ui_event_type event_type)
 {
     if (detect_event(ctx, event_type))
     {
-        char_event& e = get_event<char_event>(ctx);
+        text_input_event& e = get_event<text_input_event>(ctx);
         if (!e.acknowledged)
-            return e.character;
+        {
+            *text = e.text;
+            return true;
+        }
     }
-    return 0;
+    return false;
 }
 
-int detect_char(ui_context& ctx, widget_id id)
+bool detect_text_input(ui_context& ctx, utf8_string* text, widget_id id)
 {
     do_click_focus(ctx, id);
-    return id_has_focus(ctx, id) ? detect_char_event(ctx, CHAR_EVENT) : 0;
+    return id_has_focus(ctx, id) &&
+        detect_text_input(ctx, text, TEXT_INPUT_EVENT);
 }
-int detect_char(ui_context& ctx)
+bool detect_text_input(ui_context& ctx, utf8_string* text)
 {
-    return detect_char_event(ctx, BACKGROUND_CHAR_EVENT);
+    return detect_text_input(ctx, text, BACKGROUND_TEXT_INPUT_EVENT);
 }
 
 bool detect_key_press(ui_context& ctx, widget_id id,
@@ -1516,8 +1520,8 @@ struct fps_data
 {
     fps_data() : frame_count(0) {}
     int frame_count;
-    boost::optional<unsigned> last_update;
-    boost::optional<int> fps;
+    optional<unsigned> last_update;
+    optional<int> fps;
 };
 
 bool compute_fps(ui_context& ctx, int* fps)

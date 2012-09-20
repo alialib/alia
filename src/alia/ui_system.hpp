@@ -49,7 +49,8 @@ void process_double_click(ui_system& ui, ui_time_type time,
     vector<2,int> const& position, mouse_button button);
 void process_mouse_wheel(ui_system& ui, ui_time_type time, float movement);
 
-bool process_character_input(ui_system& ui, ui_time_type time, char_type c);
+bool process_text_input(ui_system& ui, ui_time_type time,
+    utf8_string const& text);
 bool process_key_press(ui_system& ui, ui_time_type time,
     key_event_info const& info);
 bool process_key_release(ui_system& ui, ui_time_type time,
@@ -61,7 +62,7 @@ routable_widget_id do_hit_test(ui_system& ui,
     vector<2,double> const& position);
 
 // Determine which widget is under the mouse and what cursor should be active.
-boost::optional<mouse_cursor> update_mouse_cursor(ui_system& ui);
+optional<mouse_cursor> update_mouse_cursor(ui_system& ui);
 
 // Determine the minimum size of the initial UI defined by the given
 // controller, style, and surface.

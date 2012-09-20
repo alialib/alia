@@ -650,14 +650,13 @@ struct geometry_context_subscriber
 };
 struct geometry_context
 {
+    box<2,double> full_region;
     matrix<3,3,double> transformation_matrix;
     box<2,double> clip_region;
     geometry_context_subscriber* subscriber;
-    geometry_context()
-      : transformation_matrix(identity_matrix<3,double>())
-      , subscriber(0)
-    {}
 };
+
+void initialize(geometry_context& ctx, box<2,double> const& full_region);
 
 void set_subscriber(geometry_context& ctx,
     geometry_context_subscriber& subscriber);
@@ -695,6 +694,24 @@ class scoped_clip_region : noncopyable
     void begin(geometry_context& ctx);
     void set(box<2,double> const& region);
     void restore();
+    void end();
+ private:
+    geometry_context* ctx_;
+    box<2,double> old_region_;
+};
+
+// scoped_clip_region_resets the clip region to the full geometry region for
+// its scope. This can be useful for drawing overlays which are meant to
+// extend beyond the clip region normally associated with their scope.
+class scoped_clip_region_reset : noncopyable
+{
+ public:
+    scoped_clip_region_reset() : ctx_(0) {}
+    template<class Context>
+    scoped_clip_region_reset(Context& ctx)
+    { begin(get_geometry_context(ctx)); }
+    ~scoped_clip_region_reset() { end(); }
+    void begin(geometry_context& ctx);
     void end();
  private:
     geometry_context* ctx_;

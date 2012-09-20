@@ -17,6 +17,10 @@ void check_errors()
     // Check for an error.
     GLenum err = glGetError();
 
+    // Clear any other errors that have also occurred.
+    while (glGetError() != GL_NO_ERROR)
+        ;
+
     // If there's no error, abort.
     if (err == GL_NO_ERROR)
         return;
@@ -270,6 +274,8 @@ simple_texture::simple_texture(opengl_context* ctx, image_interface const& img,
     glTexParameteri(target_, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(target_, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
+    check_errors();
+
     if (flags & OPENGL_TILED_TEXTURE)
     {
         glTexParameteri(target_, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -280,8 +286,9 @@ simple_texture::simple_texture(opengl_context* ctx, image_interface const& img,
         glTexParameteri(target_, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(target_, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     }
-
-    check_errors();
+    // Apparently the above sometimes fails, but we can harmlessly ignore this.
+    while (glGetError() != GL_NO_ERROR)
+        ;
 }
 
 void simple_texture::replace(image_interface const& img)
@@ -506,12 +513,17 @@ tiled_texture::tiled_texture(opengl_context* ctx, image_interface const& img,
             glTexParameteri(target_, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(target_, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
+            check_errors();
+
             glTexParameteri(target_, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameteri(target_, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+            // Apparently the above sometimes fails, but we can harmlessly
+            // ignore this.
+            while (glGetError() != GL_NO_ERROR)
+                ;
         }
     }
-
-    check_errors();
 }
 
 void tiled_texture::replace(image_interface const& img)

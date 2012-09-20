@@ -182,6 +182,49 @@ ALIA_DECLARE_GRID_LAYOUT_CONTAINER(grid)
 // always have a uniform size.
 ALIA_DECLARE_GRID_LAYOUT_CONTAINER(uniform_grid)
 
+// An overlay layout detaches its contents from the parent context.
+// The overlay should only have one child (generally another container).
+// This child becomes the root of an independent layout tree.
+// The call may specify the maximum size of its child.
+// Note that the overlay simply positions its content at (0, 0).
+// It's assumed that the caller will take care of positioning it properly.
+struct overlay_layout_data;
+struct overlay_layout
+{
+    overlay_layout() {}
+
+    template<class Context>
+    overlay_layout(Context& ctx,
+        layout_vector const& max_size)
+    { begin(ctx, position max_size); }
+
+    ~overlay_layout() { end(); }
+
+    template<class Context>
+    void begin(Context& ctx,
+        layout_vector const& max_size)
+    { concrete_begin(get_layout_traversal(ctx), max_size); }
+
+    void end();
+
+    layout_vector size() const;
+
+    layout_box region() const
+    { return layout_box(make_layout_vector(0, 0), size()); }
+
+ private:
+    void concrete_begin(
+        layout_traversal& traversal,
+        layout_vector const& max_size);
+
+    layout_traversal* traversal_;
+    layout_container* old_container_;
+    layout_node** old_next_ptr_;
+    overlay_layout_data* data_;
+    scoped_clip_region_reset clipping_reset_;
+    layout_vector max_size_;
+};
+
 }
 
 #endif

@@ -13,6 +13,13 @@ void set_subscriber(geometry_context& ctx,
     }
 }
 
+void initialize(geometry_context& ctx, box<2,double> const& full_region)
+{
+    ctx.full_region = ctx.clip_region = full_region;
+    ctx.transformation_matrix = identity_matrix<3,double>();
+    ctx.subscriber = 0;
+}
+
 void set_clip_region(geometry_context& ctx, box<2,double> const& clip_region)
 {
     ctx.clip_region = clip_region;
@@ -61,6 +68,21 @@ void scoped_clip_region::end()
     if (ctx_)
     {
         restore();
+        ctx_ = 0;
+    }
+}
+
+void scoped_clip_region_reset::begin(geometry_context& ctx)
+{
+    ctx_ = &ctx;
+    old_region_ = ctx.clip_region;
+    set_clip_region(ctx, ctx.full_region);
+}
+void scoped_clip_region_reset::end()
+{
+    if (ctx_)
+    {
+        set_clip_region(*ctx_, old_region_);
         ctx_ = 0;
     }
 }

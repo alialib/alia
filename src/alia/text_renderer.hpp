@@ -5,24 +5,6 @@
 
 namespace alia {
 
-typedef char const* utf8_ptr;
-
-struct utf8_string
-{
-    utf8_ptr begin, end;
-
-    utf8_string() {}
-    utf8_string(utf8_ptr begin, utf8_ptr end)
-      : begin(begin), end(end)
-    {}
-};
-
-static inline bool is_empty(utf8_string const& text)
-{ return text.begin == text.end; }
-
-static inline utf8_string as_utf8_string(string const& text)
-{ return utf8_string(text.c_str(), text.c_str() + text.length()); }
-
 struct text_renderer
 {
     alia::font font() const { return font_; }

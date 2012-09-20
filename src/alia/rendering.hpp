@@ -214,9 +214,6 @@ struct surface : geometry_context_subscriber
     // Get the size of the surface in pixels.
     virtual vector<2,unsigned> size() const = 0;
 
-    // Get the size of the full display, in pixels.
-    virtual vector<2,unsigned> display_size() const = 0;
-
     // Get the number of pixels per inch on the surface.
     virtual vector<2,float> ppi() const = 0;
 
@@ -226,16 +223,6 @@ struct surface : geometry_context_subscriber
 
     virtual void cache_content(
         cached_rendering_content_ptr& data) = 0;
-
-    // Open a popup above the surface.
-    virtual popup_interface* open_popup(
-        ui_controller* controller,
-        vector<2,int> const& primary_position,
-        vector<2,int> const& boundary,
-        vector<2,int> const& minimum_size = make_vector<int>(0, 0)) = 0;
-
-    // Close existing popups.
-    virtual void close_popups() = 0;
 
     // Request the surface to refresh again as soon as possible.
     virtual void request_refresh() = 0;

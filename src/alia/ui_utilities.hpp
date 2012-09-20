@@ -281,9 +281,9 @@ bool detect_key_release(ui_context& ctx, key_event_info* info, widget_id id);
 bool detect_key_release(ui_context& ctx, key_event_info* info);
 
 // Detect a normal ASCII character key press, as seen by the given widget.
-int detect_char(ui_context& ctx, widget_id id);
+bool detect_text_input(ui_context& ctx, utf8_string* text, widget_id id);
 // same, but without ID (as background)
-int detect_char(ui_context& ctx);
+bool detect_text_input(ui_context& ctx, utf8_string* text);
 
 // If you use any of the above detect_ functions, you need to call this
 // if you actually process the event.

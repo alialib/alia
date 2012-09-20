@@ -1339,4 +1339,60 @@ void uniform_grid_row::end()
     container_.end();
 }
 
+// OVERLAY LAYOUT
+
+struct overlay_layout_data
+{
+    layout_node* root_node;
+    data_graph measurement_cache, placement_cache;
+    layout_vector size;
+    overlay_layout_data() : root_node(0) {}
+};
+
+void overlay_layout::concrete_begin(
+    layout_traversal& traversal,
+    layout_vector const& max_size)
+{
+    get_cached_data(*traversal.data, &data_);
+
+    traversal_ = &traversal;
+
+    old_container_ = traversal.active_container;
+    old_next_ptr_ = traversal.next_ptr;
+
+    traversal.active_container = 0;
+    traversal.next_ptr = &data_->root_node;
+
+    clipping_reset_.begin(*traversal.geometry);
+
+    max_size_ = max_size;
+}
+
+void overlay_layout::end()
+{
+    if (traversal_)
+    {
+        clipping_reset_.end();
+
+        if (traversal_->is_refresh_pass)
+        {
+            layout_vector measured_size =
+                get_minimum_size(data_->root_node, data_->measurement_cache);
+            for (unsigned i = 0; i != 2; ++i)
+                data_->size[i] = (std::min)(max_size_[i], measured_size[i]);
+            resolve_layout(data_->root_node, data_->placement_cache,
+                data_->size);
+        }
+
+        traversal_->active_container = old_container_;
+        traversal_->next_ptr = old_next_ptr_;
+        traversal_ = 0;
+    }
+}
+
+layout_vector overlay_layout::size() const
+{
+    return data_->size;
+}
+
 }

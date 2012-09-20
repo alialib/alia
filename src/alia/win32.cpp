@@ -10,7 +10,6 @@
 #include "wglext.h"
 
 #include <alia/lua_styling.hpp>
-#include <boost/optional.hpp>
 
 namespace alia {
 
@@ -186,6 +185,12 @@ static void paint_window(native_window::impl_data& impl)
 
     opengl_surface* surface =
         static_cast<opengl_surface*>(impl.ui.surface.get());
+
+    RECT rect;
+    GetClientRect(impl.hwnd, &rect);
+    surface->set_size(
+        alia::make_vector<unsigned>(rect.right, rect.bottom));
+
     surface->initialize_render_state();
 
     render_ui(impl.ui);
@@ -418,7 +423,7 @@ static void update_window(HWND hwnd)
     RECT rect;
     GetClientRect(impl.hwnd, &rect);
 
-    // Don't update if the window has 0 size.
+    // Don't update if the window has zero size.
     // (This seems to happen if the window is minimized.)
     if (rect.bottom == rect.top || rect.left == rect.right)
         return;
@@ -432,7 +437,7 @@ static void update_window(HWND hwnd)
     surface->set_size(
         alia::make_vector<unsigned>(rect.right, rect.bottom));
 
-    boost::optional<mouse_cursor> cursor = update_mouse_cursor(impl.ui);
+    optional<mouse_cursor> cursor = update_mouse_cursor(impl.ui);
     if (cursor)
         set_cursor(get(cursor));
 
@@ -589,17 +594,18 @@ LRESULT CALLBACK wndproc(
      case WM_CHAR:
       {
         native_window::impl_data& impl = get_window_data(hwnd);
-        bool acknowledged = false;
-        if (impl.popup)
-        {
-            acknowledged = process_character_input(
-                impl.popup->ui, get_time(impl), char_type(wparam));
-        }
-        if (!acknowledged)
-        {
-            acknowledged = process_character_input(
-                impl.ui, get_time(impl), char_type(wparam));
-        }
+        // TODO: Unicode to UTF8 string.
+        //bool acknowledged = false;
+        //if (impl.popup)
+        //{
+        //    acknowledged = process_character_input(
+        //        impl.popup->ui, get_time(impl), char_type(wparam));
+        //}
+        //if (!acknowledged)
+        //{
+        //    acknowledged = process_character_input(
+        //        impl.ui, get_time(impl), char_type(wparam));
+        //}
         update_window(hwnd);
         break;
       }

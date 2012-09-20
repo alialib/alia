@@ -174,7 +174,7 @@ template<class Context>
 bool is_refresh_pass(Context& ctx)
 { return get_layout_traversal(ctx).is_refresh_pass; }
 
-struct scoped_layout_container
+struct scoped_layout_container : noncopyable
 {
     scoped_layout_container() : traversal_(0) {}
     scoped_layout_container(

@@ -204,12 +204,12 @@ struct scoped_layout_calculation_context
     scoped_layout_calculation_context() {}
 
     scoped_layout_calculation_context(
-        layout_system& system, layout_calculation_context& ctx)
-    { begin(system, ctx); }
+        data_graph& cache, layout_calculation_context& ctx)
+    { begin(cache, ctx); }
 
     ~scoped_layout_calculation_context() { end(); }
 
-    void begin(layout_system& system, layout_calculation_context& ctx);
+    void begin(data_graph& cache, layout_calculation_context& ctx);
 
     void end();
 
@@ -220,9 +220,14 @@ private:
 // Given the available space, calculate the proper regions for all nodes in the
 // given layout system.
 void resolve_layout(layout_system& system, layout_vector const& size);
+// Same, but with arguments broken up for flexibility.
+void resolve_layout(layout_node* root_node, data_graph& cache,
+    layout_vector const& size);
 
 // Calculate the minimum space needed by the given layout system.
 layout_vector get_minimum_size(layout_system& system);
+// Same, but with arguments broken up for flexibility.
+layout_vector get_minimum_size(layout_node* root_node, data_graph& cache);
 
 layout add_default_size(layout const& layout_spec, size const& size);
 layout add_default_padding(layout const& layout_spec, layout_flag_set flag);

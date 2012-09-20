@@ -3,9 +3,6 @@
 
 #include <alia/ui_interface.hpp>
 
-// TODO: remove
-#include <boost/optional.hpp>
-
 namespace alia {
 
 struct native_window;
@@ -35,7 +32,7 @@ struct native_window : noncopyable
 {
     struct state_data
     {
-        boost::optional<vector<2,int> > position;
+        optional<vector<2,int> > position;
         // size is the size of the window when it's in it's normal state
         // (i.e., not maximized or full screen).
         vector<2,int> size;
@@ -43,7 +40,7 @@ struct native_window : noncopyable
 
         state_data() {}
         state_data(
-            boost::optional<vector<2,int> > const& position,
+            optional<vector<2,int> > const& position,
             vector<2,int> const& size,
             window_state_flag_set flags = NO_FLAGS)
           : position(position), size(size), flags(flags)

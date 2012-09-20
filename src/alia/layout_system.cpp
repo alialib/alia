@@ -70,9 +70,9 @@ void scoped_layout_refresh::begin(
 }
 
 void scoped_layout_calculation_context::begin(
-    layout_system& system, layout_calculation_context& ctx)
+    data_graph& cache, layout_calculation_context& ctx)
 {
-    data_.begin(system.calculation_cache, ctx.data);
+    data_.begin(cache, ctx.data);
     ctx.map = retrieve_naming_map(ctx.data);
     ctx.for_measurement = false;
 }
@@ -81,37 +81,48 @@ void scoped_layout_calculation_context::end()
     data_.end();
 }
 
-void resolve_layout(layout_system& system, layout_vector const& size)
+void resolve_layout(layout_node* root_node, data_graph& cache,
+    layout_vector const& size)
 {
-    if (system.root_node)
+    if (root_node)
     {
         layout_calculation_context ctx;
-        scoped_layout_calculation_context slcc(system, ctx);
-        get_horizontal_requirements(ctx, *system.root_node);
-        get_vertical_requirements(ctx, *system.root_node, size[0]);
-        set_relative_assignment(ctx, *system.root_node,
+        scoped_layout_calculation_context slcc(cache, ctx);
+        get_horizontal_requirements(ctx, *root_node);
+        get_vertical_requirements(ctx, *root_node, size[0]);
+        set_relative_assignment(ctx, *root_node,
             relative_layout_assignment(
                 layout_box(make_layout_vector(0, 0), size), 0));
     }
 }
 
-layout_vector get_minimum_size(layout_system& system)
+void resolve_layout(layout_system& system, layout_vector const& size)
 {
-    if (system.root_node)
+    resolve_layout(system.root_node, system.calculation_cache, size);
+}
+
+layout_vector get_minimum_size(layout_node* root_node, data_graph& cache)
+{
+    if (root_node)
     {
         layout_calculation_context ctx;
-        scoped_layout_calculation_context slcc(system, ctx);
+        scoped_layout_calculation_context slcc(cache, ctx);
         ctx.for_measurement = true;
         layout_requirements horizontal =
-            get_horizontal_requirements(ctx, *system.root_node);
+            get_horizontal_requirements(ctx, *root_node);
         layout_requirements vertical =
-            get_vertical_requirements(ctx, *system.root_node,
+            get_vertical_requirements(ctx, *root_node,
                 horizontal.minimum_size);
         return make_layout_vector(horizontal.minimum_size,
             vertical.minimum_size);
     }
     else
         return make_layout_vector(0, 0);
+}
+
+layout_vector get_minimum_size(layout_system& system)
+{
+    return get_minimum_size(system.root_node, system.calculation_cache);
 }
 
 layout add_default_size(layout const& layout_spec, size const& size)
