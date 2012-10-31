@@ -1,3 +1,5 @@
+#if 0
+
 #include <alia/qt.hpp>
 #include <alia/ui_system.hpp>
 #include <alia/opengl.hpp>
@@ -896,3 +898,5 @@ void qt_opengl_surface::set_clipboard_text(string const& text)
 }
 
 }
+
+#endif
