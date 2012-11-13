@@ -3,8 +3,8 @@
 
 #include <alia/rendering.hpp>
 
-#include "SkCanvas.h"
-#include "SkBitmap.h"
+#include <skia/SkCanvas.h>
+#include <skia/SkBitmap.h>
 
 namespace alia {
 

@@ -68,16 +68,16 @@ DECLARE_LAYOUT_LOGIC(row_layout_logic)
 static void compute_total_width(
     layout_calculation_context& ctx,
     layout_scalar& total_width,
-    float& total_proportion,
+    float& total_growth,
     layout_node* children)
 {
     total_width = 0;
-    total_proportion = 0;
+    total_growth = 0;
     for (layout_node* i = children; i; i = i->next)
     {
         layout_requirements r = get_horizontal_requirements(ctx, *i);
         total_width += r.minimum_size;
-        total_proportion += r.proportion;
+        total_growth += r.growth_factor;
     }
 }
 
@@ -87,24 +87,25 @@ row_layout_logic::get_horizontal_requirements(
     layout_node* children)
 {
     layout_scalar total_size;
-    float total_proportion;
-    compute_total_width(ctx, total_size, total_proportion, children);
+    float total_growth;
+    compute_total_width(ctx, total_size, total_growth, children);
     return calculated_layout_requirements(total_size, 0, 0);
 }
 
-static layout_scalar calculate_child_size(
+static layout_scalar
+calculate_child_size(
     layout_scalar& remaining_extra_size,
-    float& remaining_proportion,
+    float& remaining_growth,
     layout_scalar this_minimum_size,
-    float this_proportion)
+    float this_growth)
 {
-    if (remaining_proportion != 0)
+    if (remaining_growth != 0)
     {
         layout_scalar extra_size = round_to_layout_scalar(
             float(remaining_extra_size) *
-            (this_proportion / remaining_proportion));
+            (this_growth / remaining_growth));
         remaining_extra_size -= extra_size;
-        remaining_proportion -= this_proportion;
+        remaining_growth -= this_growth;
         return this_minimum_size + extra_size;
     }
     else
@@ -118,18 +119,18 @@ row_layout_logic::get_vertical_requirements(
     layout_scalar assigned_width)
 {
     layout_scalar total_size;
-    float total_proportion;
-    compute_total_width(ctx, total_size, total_proportion, children);
+    float total_growth;
+    compute_total_width(ctx, total_size, total_growth, children);
     layout_scalar remaining_extra_size = assigned_width - total_size;
-    float remaining_proportion = total_proportion;
+    float remaining_growth = total_growth;
     layout_scalar height = 0, ascent = 0, descent = 0;
     for (layout_node* i = children; i; i = i->next)
     {
         layout_requirements x =
             alia::get_horizontal_requirements(ctx, *i);
         layout_scalar this_width = calculate_child_size(
-            remaining_extra_size, remaining_proportion,
-            x.minimum_size, x.proportion);
+            remaining_extra_size, remaining_growth,
+            x.minimum_size, x.growth_factor);
         layout_requirements y = alia::get_vertical_requirements(
             ctx, *i, this_width);
         height = (std::max)(y.minimum_size, height);
@@ -146,18 +147,18 @@ void row_layout_logic::set_relative_assignment(
     layout_scalar assigned_baseline_y)
 {
     layout_scalar total_size;
-    float total_proportion;
-    compute_total_width(ctx, total_size, total_proportion, children);
+    float total_growth;
+    compute_total_width(ctx, total_size, total_growth, children);
     layout_vector p = make_layout_vector(0, 0);
     layout_scalar remaining_extra_size = assigned_size[0] - total_size;
-    float remaining_proportion = total_proportion;
+    float remaining_growth = total_growth;
     for (layout_node* i = children; i; i = i->next)
     {
         layout_requirements x =
             alia::get_horizontal_requirements(ctx, *i);
         layout_scalar this_width = calculate_child_size(
-            remaining_extra_size, remaining_proportion,
-            x.minimum_size, x.proportion);
+            remaining_extra_size, remaining_growth,
+            x.minimum_size, x.growth_factor);
         alia::set_relative_assignment(
             ctx, *i,
             relative_layout_assignment(
@@ -193,19 +194,19 @@ DECLARE_LAYOUT_LOGIC(column_layout_logic)
 
 static void compute_total_height(
     layout_scalar& total_height,
-    float& total_proportion,
+    float& total_growth,
     layout_calculation_context& ctx,
     layout_node* children,
     layout_scalar width)
 {
     total_height = 0;
-    total_proportion = 0;
+    total_growth = 0;
     for (layout_node* i = children; i; i = i->next)
     {
         layout_requirements r = alia::get_vertical_requirements(
             ctx, *i, width);
         total_height += r.minimum_size;
-        total_proportion += r.proportion;
+        total_growth += r.growth_factor;
     }
 }
 
@@ -229,11 +230,19 @@ column_layout_logic::get_vertical_requirements(
     layout_node* children,
     layout_scalar assigned_width)
 {
-    layout_scalar total_size;
-    float total_proportion;
-    compute_total_height(total_size, total_proportion, ctx, children,
-        assigned_width);
-    return calculated_layout_requirements(total_size, 0, 0);
+    layout_scalar total_height = 0;
+    layout_scalar ascent = 0;
+    for (layout_node* i = children; i; i = i->next)
+    {
+        layout_requirements r = alia::get_vertical_requirements(
+            ctx, *i, assigned_width);
+        total_height += r.minimum_size;
+        // Record the ascent of the first child as the ascent of the column.
+        if (i == children)
+            ascent = r.minimum_ascent;
+    }
+    return calculated_layout_requirements(
+        total_height, ascent, total_height - ascent);
 }
 
 void column_layout_logic::set_relative_assignment(
@@ -243,25 +252,25 @@ void column_layout_logic::set_relative_assignment(
     layout_scalar assigned_baseline_y)
 {
     layout_scalar total_size;
-    float total_proportion;
-    compute_total_height(total_size, total_proportion, ctx, children,
+    float total_growth;
+    compute_total_height(total_size, total_growth, ctx, children,
         assigned_size[0]);
     layout_vector p = make_layout_vector(0, 0);
     layout_scalar remaining_extra_size = assigned_size[1] - total_size;
-    float remaining_proportion = total_proportion;
+    float remaining_growth = total_growth;
     for (layout_node* i = children; i; i = i->next)
     {
         layout_requirements y = alia::get_vertical_requirements(
             ctx, *i, assigned_size[0]);
         layout_scalar this_height = calculate_child_size(
-            remaining_extra_size, remaining_proportion,
-            y.minimum_size, y.proportion);
+            remaining_extra_size, remaining_growth,
+            y.minimum_size, y.growth_factor);
         alia::set_relative_assignment(
             ctx, *i,
             relative_layout_assignment(
                 layout_box(p,
                     make_layout_vector(assigned_size[0], this_height)),
-                this_height - y.minimum_descent));
+                    this_height - y.minimum_descent));
         p[1] += this_height;
     }
 }
@@ -702,11 +711,11 @@ void vertical_flow_layout::concrete_begin(
 struct grid_column_requirements
 {
     layout_scalar minimum_size;
-    float proportion;
+    float growth_factor;
 
     grid_column_requirements() {}
-    grid_column_requirements(layout_scalar minimum_size, float proportion)
-      : minimum_size(minimum_size), proportion(proportion)
+    grid_column_requirements(layout_scalar minimum_size, float growth_factor)
+      : minimum_size(minimum_size), growth_factor(growth_factor)
     {}
 };
 
@@ -798,7 +807,7 @@ static void update_grid_column_requirements(
                         ctx, *child);
                     grid_column_requirements requirements;
                     requirements.minimum_size = x.minimum_size;
-                    requirements.proportion = x.proportion;
+                    requirements.growth_factor = x.growth_factor;
                     row->cells.push_back(requirements);
                 }
                 row->last_content_query = row->last_content_change;
@@ -811,8 +820,12 @@ static void update_grid_column_requirements(
             {
                 if (row->cells[i].minimum_size > grid.columns[i].minimum_size)
                     grid.columns[i].minimum_size = row->cells[i].minimum_size;
-                if (row->cells[i].proportion > grid.columns[i].proportion)
-                    grid.columns[i].proportion = row->cells[i].proportion;
+                if (row->cells[i].growth_factor >
+		    grid.columns[i].growth_factor)
+		{
+                    grid.columns[i].growth_factor =
+			row->cells[i].growth_factor;
+		}
             }
         }
         grid.last_content_query = grid.container->last_content_change;
@@ -868,11 +881,11 @@ calculate_column_assignments(
         size_t n_columns = grid.columns.size();
         cache->assignments.resize(n_columns);
         layout_scalar required_width = 0;
-        float total_proportion = 0;
+        float total_growth = 0;
         for (size_t i = 0; i != n_columns; ++i)
         {
             required_width += grid.columns[i].minimum_size;
-            total_proportion += grid.columns[i].proportion;
+            total_growth += grid.columns[i].growth_factor;
         }
         if (n_columns > 0)
             required_width += grid.column_spacing;
@@ -880,14 +893,14 @@ calculate_column_assignments(
         for (size_t i = 0; i != n_columns; ++i)
         {
             layout_scalar width = grid.columns[i].minimum_size;
-            if (total_proportion != 0)
+            if (total_growth != 0)
             {
                 layout_scalar extra =
                     layout_scalar(
-                        (grid.columns[i].proportion / total_proportion)
+                        (grid.columns[i].growth_factor / total_growth)
                         * extra_width);
                 extra_width -= extra;
-                total_proportion -= grid.columns[i].proportion;
+                total_growth -= grid.columns[i].growth_factor;
                 width += extra;
             }
             cache->assignments[i] = width;

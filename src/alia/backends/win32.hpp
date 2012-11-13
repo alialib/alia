@@ -68,10 +68,14 @@ struct native_window : noncopyable
     bool has_idle_work();
     void do_idle_work();
 
+    void do_message_loop();
+
     struct impl_data;
  private:
     impl_data* impl_;
 };
+
+void show_error_message(string const& caption, string const& message);
 
 }
 

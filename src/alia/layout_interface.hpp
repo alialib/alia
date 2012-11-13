@@ -76,9 +76,9 @@ ALIA_DEFINE_FLAG_CODE(layout_flag_tag, 0x0004, FILL_X)
 // Note that there's currently no baseline for the X axis, but the code is
 // defined here anyway for use in the Y section.
 ALIA_DEFINE_FLAG_CODE(layout_flag_tag, 0x0005, BASELINE_X)
-// GROW is the same as FILL, but it also sets the proportion to 1 if you don't
-// manually override it. Note that GROW currently has its own bit for easier
-// testing.
+// GROW is the same as FILL, but it also sets the growth_factor to 1 if you
+// don't manually override it.
+// Note that GROW currently has its own bit for easier testing.
 ALIA_DEFINE_FLAG_CODE(layout_flag_tag, 0x0008, GROW_X)
 ALIA_DEFINE_FLAG_CODE(layout_flag_tag, 0x000f, X_ALIGNMENT_MASK)
 
@@ -115,19 +115,19 @@ ALIA_DEFINE_FLAG_CODE(layout_flag_tag, 0x3000, PADDING_MASK)
 struct layout
 {
     layout(alia::size const& size = alia::size(-1, -1, PIXELS),
-        layout_flag_set flags = NO_FLAGS, float proportion = 0)
+        layout_flag_set flags = NO_FLAGS, float growth_factor = 0)
       : size(size)
       , flags(flags)
-      , proportion(proportion)
+      , growth_factor(growth_factor)
     {}
-    layout(layout_flag_set flags, float proportion = 0)
+    layout(layout_flag_set flags, float growth_factor = 0)
       : size(-1, -1, PIXELS)
       , flags(flags)
-      , proportion(proportion)
+      , growth_factor(growth_factor)
     {}
     alia::size size;
     layout_flag_set flags;
-    float proportion;
+    float growth_factor;
 };
 extern layout default_layout;
 

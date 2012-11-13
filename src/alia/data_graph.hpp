@@ -477,6 +477,7 @@ state_accessor<T> get_state(Context& ctx, T const& default_value = T())
 // It stores not only the data but also a key that identifies the data.
 // The key is presented at each retrieval, and if it changes, the associated
 // data is invalidated and must be recomputed.
+
 // The return value is true iff the data needs to be recomputed.
 
 template<class Data>

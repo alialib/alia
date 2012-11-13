@@ -46,6 +46,13 @@ static inline utf8_string as_utf8_string(string const& text)
     #define alia__shared_ptr std::shared_ptr
 #endif
 
+template<typename T>
+T clamp(T x, T min, T max)
+{
+    assert(min <= max);
+    return (std::min)((std::max)(x, min), max);
+}
+
 // A flag_set is a set of flags, each of which represents a boolean property.
 // It is implemented as a simple unsigned integer, where each bit represents
 // a different property.

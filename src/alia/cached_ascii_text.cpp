@@ -342,8 +342,8 @@ void cached_ascii_text::draw_cursor(
     surface& surface, bool selected, vector<2,double> const& p)
 {
     surface.draw_line(
-        selected ? font_image_->text_color :
-            highlight_font_image_->text_color,
+        selected ? highlight_font_image_->text_color :
+            font_image_->text_color,
         line_style(1, solid_line),
         p + make_vector(0.5, 0.5),
         p + make_vector(0.5, get_metrics().height + 0.5));

@@ -711,7 +711,8 @@ bool detect_double_click(ui_context& ctx, widget_id id, mouse_button button)
 bool detect_click(ui_context& ctx, widget_id id, mouse_button button)
 {
     detect_mouse_press(ctx, id, button);
-    return detect_mouse_release(ctx, id, button) && is_region_active(ctx, id);
+    return detect_mouse_release(ctx, id, button) && is_region_active(ctx, id)
+        && is_region_hot(ctx, id);
 }
 
 bool detect_potential_click(ui_context& ctx, widget_id id)
@@ -1558,6 +1559,65 @@ bool compute_fps(ui_context& ctx, int* fps)
     }
     else
         return false;
+}
+
+void clear_active_overlay(ui_context& ctx)
+{
+    ctx.system->overlay = null_widget_id;
+}
+
+void set_active_overlay(ui_context& ctx, widget_id id)
+{
+    ctx.system->overlay = make_routable_widget_id(ctx, id);
+}
+
+// FOCUS
+
+void setup_focus_drawing(ui_context& ctx, SkPaint& paint)
+{
+    paint.setStrokeWidth(SkScalar(ctx.layout.style_info->padding_size[0]) *
+        SkScalar(0.7));
+    paint.setStyle(SkPaint::kStroke_Style);
+    set_color(paint, get_color_property(ctx, "focus_color"));
+}
+
+void draw_round_focus_rect(ui_context& ctx, SkCanvas& canvas,
+    vector<2,int> const& size)
+{
+    SkPaint paint;
+    paint.setFlags(SkPaint::kAntiAlias_Flag);
+    setup_focus_drawing(ctx, paint);
+    draw_round_rect(canvas, paint, size);
+}
+
+void draw_focus_rect(ui_context& ctx, SkCanvas& canvas,
+    vector<2,int> const& size)
+{
+    SkPaint paint;
+    paint.setFlags(SkPaint::kAntiAlias_Flag);
+    setup_focus_drawing(ctx, paint);
+    paint.setStrokeJoin(SkPaint::kRound_Join);
+    draw_rect(canvas, paint, size);
+}
+
+typedef caching_renderer_data focus_rect_data;
+
+void draw_focus_rect(ui_context& ctx, focus_rect_data& data,
+    box<2,int> const& content_region)
+{
+    int padding = ctx.layout.style_info->padding_size[0];
+    box<2,int> rect = add_border(content_region, padding / 2);
+    box<2,int> padded_region = add_border(rect, padding);
+    caching_renderer cache(ctx, data, *ctx.style.id, padded_region);
+    if (cache.needs_rendering())
+    {
+        skia_renderer renderer(ctx, cache.image(), padded_region.size);
+        renderer.canvas().translate(SkScalar(padding), SkScalar(padding));
+        draw_focus_rect(ctx, renderer.canvas(), rect.size);
+        renderer.cache();
+        cache.mark_valid();
+    }
+    cache.draw();
 }
 
 }

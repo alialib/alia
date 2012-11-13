@@ -44,7 +44,7 @@ struct default_scrollbar_renderer : scrollbar_renderer
 
     int width(ui_context& ctx) const
     {
-        return resolve_layout_width(get_layout_traversal(ctx), 0.75f, EM);
+        return resolve_layout_width(get_layout_traversal(ctx), 0.9f, EM);
     }
     int button_length(ui_context& ctx) const
     {
@@ -195,13 +195,6 @@ scrollbar::scrollbar(ui_context& ctx, scrollbar_data& data,
   , line_increment(line_increment)
   , page_increment(page_increment)
 {
-}
-
-template<typename T>
-static T clamp(T x, T min, T max)
-{
-    assert(min <= max);
-    return (std::min)((std::max)(x, min), max);
 }
 
 void scrollbar::set_logical_position(int position)

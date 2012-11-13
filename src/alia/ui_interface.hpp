@@ -203,6 +203,17 @@ struct typed_ui_value : untyped_ui_value
     T value;
 };
 
+template<class T>
+struct control_result
+{
+    bool changed;
+    T new_value;
+    // allows use within if statements without other unintended conversions
+    typedef bool control_result::* unspecified_bool_type;
+    operator unspecified_bool_type() const
+    { return changed ? &control_result::changed : 0; }
+};
+
 }
 
 #endif

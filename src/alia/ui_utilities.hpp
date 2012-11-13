@@ -2,6 +2,7 @@
 #define ALIA_UI_UTILTIIES_HPP
 
 #include <alia/ui_definitions.hpp>
+#include <alia/skia.hpp>
 
 // This file provides various utilties for implementing widgets.
 
@@ -438,6 +439,56 @@ void issue_set_value_event(ui_context& ctx, widget_id id, T const& new_value)
     set_value_event e(id, value);
     issue_targeted_event(*ctx.system, e, make_routable_widget_id(ctx, id));
 }
+
+// OVERLAYS
+
+void clear_active_overlay(ui_context& ctx);
+
+static inline bool is_active_overlay(ui_context& ctx, widget_id id)
+{ return ctx.system->overlay.id == id; }
+
+void set_active_overlay(ui_context& ctx, widget_id id);
+
+// FOCUS
+
+void setup_focus_drawing(ui_context& ctx, SkPaint& paint);
+
+void draw_round_focus_rect(ui_context& ctx, SkCanvas& canvas,
+    vector<2,int> const& size);
+
+void draw_focus_rect(ui_context& ctx, SkCanvas& canvas,
+    vector<2,int> const& size);
+
+typedef caching_renderer_data focus_rect_data;
+
+void draw_focus_rect(ui_context& ctx, focus_rect_data& data,
+    box<2,int> const& content_region);
+
+// MISCELLANY
+
+template<class T>
+void set_new_value(accessor<T> const& accessor, control_result<T>& result,
+    T const& new_value)
+{
+    set(accessor, new_value);
+    result.new_value = new_value;
+    result.changed = true;
+}
+
+struct simple_display_data
+{
+    layout_leaf layout_node;
+    caching_renderer_data rendering;
+};
+
+struct boolean_widget_renderer : dispatch_interface
+{
+    virtual layout_vector default_size(ui_context& ctx) const = 0;
+
+    virtual void draw(
+        ui_context& ctx, renderer_data_ptr& data_ptr, layout_box const& region,
+        getter<bool> const& value, widget_state state) const = 0;
+};
 
 }
 

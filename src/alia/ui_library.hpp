@@ -28,6 +28,8 @@ ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x020000, SINGLE_LINE)
 ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x040000, MULTILINE)
 ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x080000, NO_PANEL)
 ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x100000, ALWAYS_EDITING)
+// panels
+ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x200000, NO_INTERNAL_PADDING)
 
 // DISPLAYS - non-interactive widgets
 
@@ -75,14 +77,6 @@ struct bulleted_item : noncopyable
     bool from_string(T* value, string const& str, string* message); \
     string to_string(T value);
 
-//ALIA_DECLARE_STRING_CONVERSIONS(int64_t)
-//ALIA_DECLARE_STRING_CONVERSIONS(uint64_t)
-//ALIA_DECLARE_STRING_CONVERSIONS(int32_t)
-//ALIA_DECLARE_STRING_CONVERSIONS(uint32_t)
-//ALIA_DECLARE_STRING_CONVERSIONS(int16_t)
-//ALIA_DECLARE_STRING_CONVERSIONS(uint16_t)
-//ALIA_DECLARE_STRING_CONVERSIONS(int8_t)
-//ALIA_DECLARE_STRING_CONVERSIONS(uint8_t)
 ALIA_DECLARE_STRING_CONVERSIONS(int)
 ALIA_DECLARE_STRING_CONVERSIONS(unsigned)
 ALIA_DECLARE_STRING_CONVERSIONS(float)
@@ -180,17 +174,6 @@ do_icon_button(
     widget_id id = auto_id);
 
 // CONTROLS
-
-template<class T>
-struct control_result
-{
-    bool changed;
-    T new_value;
-    // allows use within if statements without other unintended conversions
-    typedef bool control_result::* unspecified_bool_type;
-    operator unspecified_bool_type() const
-    { return changed ? &control_result::changed : 0; }
-};
 
 // check box
 
@@ -492,26 +475,18 @@ struct untyped_drop_down_list : noncopyable
     void end();
 
     bool do_list() const { return do_list_; }
-    ui_context& list_context() const { return *list_ctx_; }
+    ui_context& list_context() const { return *ctx_; }
 
  private:
-    //bool handle_key_press(key_event_info& info, bool& has_selection,
-    //    Index& selection);
-    //void set_selection(accessor<Index> const& accessor,
-    //    Index const& selection);
-    //void get_item_list(std::vector<Index>* items);
-
     friend struct untyped_ddl_item;
 
     ui_context* ctx_;
     ddl_data* data_;
     widget_id id_;
-    row_layout container_;
-    scoped_substyle substyle_;
+    panel container_;
     row_layout contents_;
 
     bool do_list_, make_selection_visible_;
-    ui_context* list_ctx_;
     bordered_box list_border_;
     scrollable_panel list_panel_;
     int list_index_;

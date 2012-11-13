@@ -61,15 +61,15 @@ struct layout_requirements
     // If these is extra space in a container (above the minimum required by
     // its contents), it's apportioned to the individual widgets according to
     // the values they specify here.
-    float proportion;
+    float growth_factor;
 
     layout_requirements() {}
 
     layout_requirements(layout_scalar minimum_size,
         layout_scalar minimum_ascent, layout_scalar minimum_descent,
-        float proportion)
+        float growth_factor)
       : minimum_size(minimum_size), minimum_ascent(minimum_ascent),
-        minimum_descent(minimum_descent), proportion(proportion)
+        minimum_descent(minimum_descent), growth_factor(growth_factor)
     {}
 };
 
@@ -370,16 +370,16 @@ struct resolved_layout_spec
 {
     layout_vector size;
     layout_flag_set flags;
-    float proportion;
+    float growth_factor;
     layout_vector padding_size;
 
     resolved_layout_spec() {}
     resolved_layout_spec(
         layout_vector const& size,
         layout_flag_set flags,
-        float proportion,
+        float growth_factor,
         layout_vector const& padding_size)
-      : size(size), flags(flags), proportion(proportion),
+      : size(size), flags(flags), growth_factor(growth_factor),
         padding_size(padding_size)
     {}
 };

@@ -15,7 +15,7 @@ bool operator!=(size const& a, size const& b)
 bool operator==(layout const& a, layout const& b)
 {
     return a.size == b.size && a.flags == b.flags &&
-        a.proportion == b.proportion;
+        a.growth_factor == b.growth_factor;
 }
 bool operator!=(layout const& a, layout const& b)
 {
@@ -362,7 +362,7 @@ layout_vector resolve_layout_size(layout_traversal& traversal, size const& s)
 bool operator==(resolved_layout_spec const& a, resolved_layout_spec const& b)
 {
     return a.size == b.size && a.flags == b.flags &&
-        a.proportion == a.proportion && a.padding_size == b.padding_size;
+        a.growth_factor == a.growth_factor && a.padding_size == b.padding_size;
 }
 bool operator!=(resolved_layout_spec const& a, resolved_layout_spec const& b)
 { return !(a == b); }
@@ -389,11 +389,11 @@ void resolve_layout_spec(
     }
     else
         resolved.padding_size = make_layout_vector(0, 0);
-    resolved.proportion =
-        spec.proportion == 0 &&
+    resolved.growth_factor =
+        spec.growth_factor == 0 &&
         (resolved.flags.code & (GROW_X_CODE | GROW_Y_CODE |
             PROPORTIONAL_GROW_CODE)) != 0 ?
-        1 : spec.proportion;
+        1 : spec.growth_factor;
 }
 
 void resolve_requirements(
@@ -410,7 +410,7 @@ void resolve_requirements(
         padding * 2;
     requirements.minimum_ascent = calculated.minimum_ascent + padding;
     requirements.minimum_descent = calculated.minimum_descent + padding;
-    requirements.proportion = spec.proportion;
+    requirements.growth_factor = spec.growth_factor;
   }
 
 static void resolve_axis_assignment(

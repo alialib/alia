@@ -161,17 +161,17 @@ enum mouse_cursor
     FOUR_WAY_ARROW_CURSOR,
 };
 
-class popup_interface
-{
- public:
-    virtual ~popup_interface() {}
-    virtual bool is_open() const = 0;
-    virtual void close() = 0;
-};
-typedef alia__shared_ptr<popup_interface> popup_ptr;
-
-static inline bool is_open(popup_ptr const& popup)
-{ return popup && popup->is_open(); }
+//class popup_interface
+//{
+// public:
+//    virtual ~popup_interface() {}
+//    virtual bool is_open() const = 0;
+//    virtual void close() = 0;
+//};
+//typedef alia__shared_ptr<popup_interface> popup_ptr;
+//
+//static inline bool is_open(popup_ptr const& popup)
+//{ return popup && popup->is_open(); }
 
 struct ui_controller;
 

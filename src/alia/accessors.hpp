@@ -361,7 +361,7 @@ struct accessor_caster : regular_accessor<To>
 };
 template<class To, class Wrapped>
 accessor_caster<Wrapped,To>
-cast(Wrapped accessor)
+accessor_cast(Wrapped accessor)
 { return accessor_caster<Wrapped,To>(accessor); }
 
 // make_readonly(accessor) creates a copy of the given accessor with the write

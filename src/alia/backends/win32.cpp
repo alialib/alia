@@ -1,6 +1,6 @@
-#include <alia/win32.hpp>
+#include <alia/backends/win32.hpp>
 #include <alia/ui_system.hpp>
-#include <alia/opengl.hpp>
+#include <alia/backends/opengl.hpp>
 #include <alia/millisecond_clock.hpp>
 
 #define WIN32_LEAN_AND_MEAN
@@ -96,12 +96,12 @@ struct win32_opengl_surface : opengl_surface
     {
         return get_display_size(impl_->dc);
     }
-    popup_interface* open_popup(
-        ui_controller* controller,
-        vector<2,int> const& primary_position,
-        vector<2,int> const& boundary,
-        vector<2,int> const& minimum_size);
-    void close_popups();
+    //popup_interface* open_popup(
+    //    ui_controller* controller,
+    //    vector<2,int> const& primary_position,
+    //    vector<2,int> const& boundary,
+    //    vector<2,int> const& minimum_size);
+    //void close_popups();
     void request_refresh();
     void request_timer_event(routable_widget_id const& id, unsigned ms);
     string get_clipboard_text();
@@ -414,6 +414,8 @@ static void update_window(HWND hwnd)
 {
     native_window::impl_data& impl = get_window_data(hwnd);
 
+    impl.update_needed = false;
+
     if (impl.close)
     {
         destroy_window(impl);
@@ -445,8 +447,6 @@ static void update_window(HWND hwnd)
 
     if (impl.popup)
         update_window(impl.popup->hwnd);
-
-    impl.update_needed = false;
 }
 
 static void reset_mouse_tracking(HWND hwnd)
@@ -594,18 +594,25 @@ LRESULT CALLBACK wndproc(
      case WM_CHAR:
       {
         native_window::impl_data& impl = get_window_data(hwnd);
-        // TODO: Unicode to UTF8 string.
-        //bool acknowledged = false;
-        //if (impl.popup)
-        //{
-        //    acknowledged = process_character_input(
-        //        impl.popup->ui, get_time(impl), char_type(wparam));
-        //}
-        //if (!acknowledged)
-        //{
-        //    acknowledged = process_character_input(
-        //        impl.ui, get_time(impl), char_type(wparam));
-        //}
+        // TODO: Actual UTF8 string.
+        if (wparam < 0x80)
+        {
+            char character = char(wparam);
+            utf8_string utf8;
+            utf8.begin = &character;
+            utf8.end = utf8.begin + 1;
+            bool acknowledged = false;
+            if (impl.popup)
+            {
+                acknowledged = process_text_input(
+                    impl.popup->ui, get_time(impl), utf8);
+            }
+            if (!acknowledged)
+            {
+                acknowledged = process_text_input(
+                    impl.ui, get_time(impl), utf8);
+            }
+        }
         update_window(hwnd);
         break;
       }
@@ -691,7 +698,7 @@ LRESULT CALLBACK wndproc(
      case WM_MOUSEWHEEL:
       {
         native_window::impl_data& impl = get_window_data(hwnd);
-        float movement = float(-GET_WHEEL_DELTA_WPARAM(wparam)) / WHEEL_DELTA;
+        float movement = float(GET_WHEEL_DELTA_WPARAM(wparam)) / WHEEL_DELTA;
         if (impl.popup)
             process_mouse_wheel(impl.popup->ui, get_time(hwnd), movement);
         else
@@ -1084,120 +1091,147 @@ void native_window::do_idle_work()
         update_window(impl_->hwnd);
 }
 
-struct popup_window : popup_interface
+void native_window::do_message_loop()
 {
-    popup_window(
-        native_window::impl_data* parent,
-        ui_controller* controller,
-        vector<2,int> const& primary_position,
-        vector<2,int> const& boundary,
-        vector<2,int> const& minimum_size);
-    ~popup_window();
-
-    alia::ui_system& ui() { return impl_->ui; }
-
-    bool is_open() const
+    while(1)
     {
-        return impl_->hwnd != 0;
-    }
-    void close()
-    {
-        impl_->close = true;
-    }
-
- private:
-    native_window::impl_data* impl_;
-};
-
-static vector<2,int> client_to_screen(HWND hwnd, vector<2,int> const& p)
-{
-    POINT q;
-    q.x = p[0];
-    q.y = p[1];
-    ClientToScreen(hwnd, &q);
-    return make_vector<int>(q.x, q.y);
-}
-
-static vector<2,int> screen_to_client(HWND hwnd, vector<2,int> const& p)
-{
-    POINT q;
-    q.x = p[0];
-    q.y = p[1];
-    ScreenToClient(hwnd, &q);
-    return make_vector<int>(q.x, q.y);
-}
-
-popup_window::popup_window(
-    native_window::impl_data* parent,
-    ui_controller* controller,
-    vector<2,int> const& primary_position,
-    vector<2,int> const& boundary,
-    vector<2,int> const& minimum_size)
-{
-    impl_ = new native_window::impl_data;
-
-    impl_->ui.style = parent->ui.style;
-
-    alia__shared_ptr<ui_controller> controller_ptr(controller);
-
-    layout_vector size =
-        measure_initial_ui(controller_ptr, parent->ui.style,
-            parent->ui.surface);
-    for (unsigned i = 0; i != 2; ++i)
-    {
-        if (size[i] < minimum_size[i])
-            size[i] = minimum_size[i];
-    }
-
-    vector<2,int> lower_display_boundary = screen_to_client(parent->hwnd,
-        make_vector<int>(0, 0));
-    vector<2,int> upper_display_boundary = screen_to_client(parent->hwnd,
-        vector<2,int>(get_display_size(parent->dc)));
-
-    vector<2,int> position, actual_size;
-    for (unsigned i = 0; i != 2; ++i)
-    {
-        if (primary_position[i] + size[i] <= upper_display_boundary[i] ||
-            boundary[i] - lower_display_boundary[i] <
-            upper_display_boundary[i] - primary_position[i])
+        if (this->has_idle_work())
         {
-            position[i] = primary_position[i];
-            actual_size[i] = (std::min)(size[i],
-                upper_display_boundary[i] - primary_position[i]);
+            MSG msg;
+            if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+            {
+                if (msg.message == WM_QUIT)
+                    break;
+                TranslateMessage(&msg);
+                DispatchMessage(&msg);
+            }
+            this->do_idle_work();
         }
         else
         {
-            actual_size[i] = (std::min)(size[i],
-                boundary[i] - lower_display_boundary[i]);
-            position[i] = boundary[i] - actual_size[i];
+            MSG msg;
+            if (!GetMessage(&msg, NULL, 0, 0))
+                break;
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
         }
     }
-
-    create_window(impl_, parent, "popup", controller_ptr,
-        native_window::state_data(
-            client_to_screen(parent->hwnd, position),
-            actual_size));
-}
-popup_window::~popup_window()
-{
-    destroy_window(*impl_);
 }
 
-popup_interface*
-win32_opengl_surface::open_popup(
-    ui_controller* controller,
-    vector<2,int> const& primary_position,
-    vector<2,int> const& boundary,
-    vector<2,int> const& minimum_size)
-{
-    return new popup_window(
-        impl_, controller, primary_position, boundary, minimum_size);
-}
-
-void win32_opengl_surface::close_popups()
-{
-    close_popup(*impl_);
-}
+//struct popup_window : popup_interface
+//{
+//    popup_window(
+//        native_window::impl_data* parent,
+//        ui_controller* controller,
+//        vector<2,int> const& primary_position,
+//        vector<2,int> const& boundary,
+//        vector<2,int> const& minimum_size);
+//    ~popup_window();
+//
+//    alia::ui_system& ui() { return impl_->ui; }
+//
+//    bool is_open() const
+//    {
+//        return impl_->hwnd != 0;
+//    }
+//    void close()
+//    {
+//        impl_->close = true;
+//    }
+//
+// private:
+//    native_window::impl_data* impl_;
+//};
+//
+//static vector<2,int> client_to_screen(HWND hwnd, vector<2,int> const& p)
+//{
+//    POINT q;
+//    q.x = p[0];
+//    q.y = p[1];
+//    ClientToScreen(hwnd, &q);
+//    return make_vector<int>(q.x, q.y);
+//}
+//
+//static vector<2,int> screen_to_client(HWND hwnd, vector<2,int> const& p)
+//{
+//    POINT q;
+//    q.x = p[0];
+//    q.y = p[1];
+//    ScreenToClient(hwnd, &q);
+//    return make_vector<int>(q.x, q.y);
+//}
+//
+//popup_window::popup_window(
+//    native_window::impl_data* parent,
+//    ui_controller* controller,
+//    vector<2,int> const& primary_position,
+//    vector<2,int> const& boundary,
+//    vector<2,int> const& minimum_size)
+//{
+//    impl_ = new native_window::impl_data;
+//
+//    impl_->ui.style = parent->ui.style;
+//
+//    alia__shared_ptr<ui_controller> controller_ptr(controller);
+//
+//    layout_vector size =
+//        measure_initial_ui(controller_ptr, parent->ui.style,
+//            parent->ui.surface);
+//    for (unsigned i = 0; i != 2; ++i)
+//    {
+//        if (size[i] < minimum_size[i])
+//            size[i] = minimum_size[i];
+//    }
+//
+//    vector<2,int> lower_display_boundary = screen_to_client(parent->hwnd,
+//        make_vector<int>(0, 0));
+//    vector<2,int> upper_display_boundary = screen_to_client(parent->hwnd,
+//        vector<2,int>(get_display_size(parent->dc)));
+//
+//    vector<2,int> position, actual_size;
+//    for (unsigned i = 0; i != 2; ++i)
+//    {
+//        if (primary_position[i] + size[i] <= upper_display_boundary[i] ||
+//            boundary[i] - lower_display_boundary[i] <
+//            upper_display_boundary[i] - primary_position[i])
+//        {
+//            position[i] = primary_position[i];
+//            actual_size[i] = (std::min)(size[i],
+//                upper_display_boundary[i] - primary_position[i]);
+//        }
+//        else
+//        {
+//            actual_size[i] = (std::min)(size[i],
+//                boundary[i] - lower_display_boundary[i]);
+//            position[i] = boundary[i] - actual_size[i];
+//        }
+//    }
+//
+//    create_window(impl_, parent, "popup", controller_ptr,
+//        native_window::state_data(
+//            client_to_screen(parent->hwnd, position),
+//            actual_size));
+//}
+//popup_window::~popup_window()
+//{
+//    destroy_window(*impl_);
+//}
+//
+//popup_interface*
+//win32_opengl_surface::open_popup(
+//    ui_controller* controller,
+//    vector<2,int> const& primary_position,
+//    vector<2,int> const& boundary,
+//    vector<2,int> const& minimum_size)
+//{
+//    return new popup_window(
+//        impl_, controller, primary_position, boundary, minimum_size);
+//}
+//
+//void win32_opengl_surface::close_popups()
+//{
+//    close_popup(*impl_);
+//}
 
 void win32_opengl_surface::request_refresh()
 {
@@ -1257,6 +1291,12 @@ void win32_opengl_surface::set_clipboard_text(string const& text)
             CloseClipboard();
         }
     }
+}
+
+void show_error_message(string const& caption, string const& message)
+{
+    MessageBox(0, message.c_str(), caption.c_str(),
+        MB_OK | MB_ICONEXCLAMATION);
 }
 
 }
