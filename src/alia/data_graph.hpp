@@ -742,8 +742,20 @@ struct loop_block : noncopyable
 
 #define alia_switch(x) alia_switch_(ctx, x)
 
+#define ALIA_CONCATENATE_HELPER(a, b) a ## b
+#define ALIA_CONCATENATE(a, b) ALIA_CONCATENATE_HELPER(a, b)
+
 #define alia_case(c) \
-            alia__switch_block.activate_case(c)
+            case c: \
+                alia__switch_block.activate_case(c); \
+                goto ALIA_CONCATENATE(alia__dummy_label, __LINE__); \
+                ALIA_CONCATENATE(alia__dummy_label, __LINE__)
+
+#define alia_default \
+            default: \
+                alia__switch_block.activate_case("default"); \
+                goto ALIA_CONCATENATE(alia__dummy_label, __LINE__); \
+                ALIA_CONCATENATE(alia__dummy_label, __LINE__)
 
 // for
 
