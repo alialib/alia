@@ -57,8 +57,8 @@ struct getter
     // can also provide a version which returns a shared_ptr to the value, so
     // the accessing entity can share ownership of it. The pointed-to value
     // must be guaranteed to remain constant.
-    virtual alia__shared_ptr<T const> get_ptr() const
-    { return alia__shared_ptr<T const>(new T(get())); }
+    virtual alia__shared_ptr<T> get_ptr() const
+    { return alia__shared_ptr<T>(new T(get())); }
 
     // A getter must supply an ID which uniquely identifies its value.
     // The ID is required to be valid if is_gettable() returns true.
@@ -302,7 +302,7 @@ struct indirect_accessor : accessor<T>
     indirect_accessor(accessor<T> const& wrapped) : wrapped_(&wrapped) {}
     bool is_gettable() const { return wrapped_->is_gettable(); }
     T const& get() const { return wrapped_->get(); }
-    alia__shared_ptr<T const> get_ptr() const
+    alia__shared_ptr<T> get_ptr() const
     { return wrapped_->get_ptr(); }
     id_interface const& id() const { return wrapped_->id(); }
     bool is_settable() const { return wrapped_->is_settable(); }
@@ -374,7 +374,7 @@ struct readonly_accessor_wrapper
     readonly_accessor_wrapper(Wrapped wrapped) : wrapped_(wrapped) {}
     bool is_gettable() const { return wrapped_.is_gettable(); }
     wrapped_value_type const& get() const { return wrapped_.get(); }
-    alia__shared_ptr<wrapped_value_type const> get_ptr() const
+    alia__shared_ptr<wrapped_value_type> get_ptr() const
     { return wrapped_.get_ptr(); }
     id_interface const& id() const { return wrapped_.id(); }
     bool is_settable() const { return false; }
@@ -403,7 +403,7 @@ struct accessor_mux : accessor<typename accessor_value_type<T>::type>
     { return condition_ ? t_.is_gettable() : f_.is_gettable(); }
     typename accessor_value_type<T>::type const& get() const
     { return condition_ ? t_.get() : f_.get(); }
-    alia__shared_ptr<typename accessor_value_type<T>::type const>
+    alia__shared_ptr<typename accessor_value_type<T>::type>
     get_ptr() const { return condition_ ? t_.get_ptr() : f_.get_ptr(); }
     id_interface const& id() const
     { return condition_ ? t_.id() : f_.id(); }

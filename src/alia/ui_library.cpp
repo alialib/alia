@@ -570,8 +570,8 @@ struct default_node_expander_renderer : node_expander_renderer
                 draw_round_focus_rect(ctx, renderer.canvas(), unpadded_size);
 
             renderer.canvas().translate(
-                SkScalar(unpadded_size[0] / 2),
-                SkScalar(unpadded_size[1] / 2));
+                SkScalar(unpadded_size[0]) / 2,
+                SkScalar(unpadded_size[1]) / 2);
 
             if (value.is_gettable() && get(value))
                 renderer.canvas().rotate(90);
@@ -1110,8 +1110,8 @@ struct default_icon_button_renderer : icon_button_renderer
                 draw_round_focus_rect(ctx, renderer.canvas(), unpadded_size);
 
             renderer.canvas().translate(
-                SkScalar(unpadded_size[0] / 2),
-                SkScalar(unpadded_size[1] / 2));
+                SkScalar(unpadded_size[0]) / 2,
+                SkScalar(unpadded_size[1]) / 2);
 
             set_color(paint, fg_color);
 
@@ -1312,8 +1312,8 @@ struct default_drop_down_button_renderer : drop_down_button_renderer
             draw_rect(renderer.canvas(), paint, unpadded_size);
 
             renderer.canvas().translate(
-                SkScalar(unpadded_size[0] / 2),
-                SkScalar(unpadded_size[1] / 2));
+                SkScalar(unpadded_size[0]) / 2,
+                SkScalar(unpadded_size[1]) / 2);
             renderer.canvas().rotate(90);
 
             {
