@@ -512,8 +512,8 @@ struct keyed_data_accessor : accessor<Data>
     keyed_data_accessor(keyed_data<Data>* data) : data_(data) {}
     bool is_gettable() const { return data_->is_valid; }
     Data const& get() const { return data_->value; }
-    alia__shared_ptr<Data const> get_ptr() const
-    { return alia__shared_ptr<Data const>(new Data(data_->value)); }
+    alia__shared_ptr<Data> get_ptr() const
+    { return alia__shared_ptr<Data>(new Data(data_->value)); }
     id_interface const& id() const { return data_->key.get(); }
     bool is_settable() const { return true; }
     void set(Data const& value) const

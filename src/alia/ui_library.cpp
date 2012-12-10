@@ -1223,7 +1223,6 @@ do_color_control(ui_context& ctx, accessor<rgba8> const& value,
     do_color(ctx, value);
     alia_if (ddl.do_list())
     {
-        ui_context& ctx = ddl.list_context();
         column_layout c(ctx);
         {
             row_layout r(ctx, default_layout);
@@ -1647,19 +1646,51 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
         break;
     }
 
+    if (is_active_overlay(ctx, id_))
+        do_list_ = true;
+
     contents_.begin(ctx, BASELINE_Y | GROW_X | UNPADDED);
 
     // HACK: The contents need to be unpadded to line up with text controls.
     //const_cast<layout_vector&>(ctx.layout.style_info->padding_size) =
     //    make_layout_vector(0, 0);
 
-    do_list_ = is_active_overlay(ctx, id_);
+    return result;
+}
 
-    //alia_if (do_list_)
-    //{
-    //    list_border_.begin(*list_ctx_, GROW | PADDED);
-    //    list_panel_.begin(*list_ctx_, const_text(""), 2,
-    //        GROW | UNPADDED);
+bool untyped_drop_down_list::do_list()
+{
+    ui_context& ctx = *ctx_;
+
+    contents_.end();
+
+    if (do_drop_down_button(ctx, CENTER | UNPADDED, id_/*,
+            data_->popup, &data_->open_at_click*/))
+    {
+        data_->internal_selection =
+            get_ddl_selected_index(ctx, id_);
+        set_active_overlay(ctx, id_);
+        //vector<2,int> absolute_position = vector<2,int>(
+        //    transform(ctx.geometry.transformation_matrix,
+        //        vector<2,double>(container_.region().corner)) +
+        //    make_vector<double>(0.5, 0.5));
+        //data_->popup.reset(ctx.surface->open_popup(
+        //    new proxy_controller(*ctx.system,
+        //        make_routable_widget_id(ctx, id_)),
+        //    absolute_position +
+        //        make_vector<int>(0, container_.region().size[1]),
+        //    absolute_position +
+        //        make_vector<int>(container_.region().size[0], 0),
+        //    make_vector<int>(container_.region().size[0], 0)));
+    }
+
+    container_.end();
+
+    alia_if (do_list_)
+    {
+        list_overlay_.begin(ctx, make_layout_vector(100, 100));
+        list_border_.begin(ctx, GROW | PADDED);
+        list_panel_.begin(ctx, const_text("control"), 2, GROW | UNPADDED);
 
     //    key_event_info info;
     //    if (detect_key_press(*list_ctx_, &info))
@@ -1689,44 +1720,22 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
     //            data_->popup->close();
     //        }
     //    }
-    //}
-    //alia_end
+    }
+    alia_end
 
-    return result;
+    return do_list_;
 }
+
 void untyped_drop_down_list::end()
 {
     if (ctx_)
     {
-        //list_panel_.end();
-        //list_border_.end();
-
-        contents_.end();
-
-        if (!ctx_->pass_aborted)
+        if (do_list_)
         {
-            if (do_drop_down_button(*ctx_, CENTER | UNPADDED, id_/*,
-                    data_->popup, &data_->open_at_click*/))
-            {
-                data_->internal_selection =
-                    get_ddl_selected_index(*ctx_, id_);
-                set_active_overlay(*ctx_, id_);
-    //            vector<2,int> absolute_position = vector<2,int>(
-    //                transform(ctx_->geometry.transformation_matrix,
-    //                    vector<2,double>(container_.region().corner)) +
-    //                make_vector<double>(0.5, 0.5));
-    //            //data_->popup.reset(ctx_->surface->open_popup(
-    //            //    new proxy_controller(*ctx_->system,
-    //            //        make_routable_widget_id(*ctx_, id_)),
-    //            //    absolute_position +
-    //            //        make_vector<int>(0, container_.region().size[1]),
-    //            //    absolute_position +
-    //            //        make_vector<int>(container_.region().size[0], 0),
-    //            //    make_vector<int>(container_.region().size[0], 0)));
-            }
+            list_panel_.end();
+            list_border_.end();
+            list_overlay_.end();
         }
-
-        container_.end();
 
         ctx_ = 0;
     }

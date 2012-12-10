@@ -339,8 +339,8 @@ struct lazy_getter
     mutable T value_;
 };
 
-// cast<T>(a) creates a new accessor to a's underlying value that interfaces
-// with values of type T by applying static_casts.
+// accessor_cast<T>(a) creates a new accessor to a's underlying value that
+// interfaces with values of type T by applying static_casts.
 template<class Wrapped, class To>
 struct accessor_caster : regular_accessor<To>
 {

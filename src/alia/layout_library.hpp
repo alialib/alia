@@ -191,7 +191,7 @@ ALIA_DECLARE_GRID_LAYOUT_CONTAINER(uniform_grid)
 struct overlay_layout_data;
 struct overlay_layout
 {
-    overlay_layout() {}
+    overlay_layout() : traversal_(0) {}
 
     template<class Context>
     overlay_layout(Context& ctx,

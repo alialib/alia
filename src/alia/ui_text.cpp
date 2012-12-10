@@ -42,13 +42,17 @@ static void set_skia_font_info(SkPaint& paint, font const& font)
 
 //
 
+typedef std::map<std::pair<alia::font,std::pair<rgba8,rgba8> >,
+    alia__shared_ptr<ascii_font_image> > image_map_type;
+image_map_type cached_font_images;
+
 ascii_font_image const*
 get_ascii_font_image(font const& font, rgba8 text_color, rgba8 bg_color)
 {
     // TODO: GC font images that aren't in active use.
     typedef std::map<std::pair<alia::font,std::pair<rgba8,rgba8> >,
         alia__shared_ptr<ascii_font_image> > image_map_type;
-    static image_map_type cached_font_images;
+    //static image_map_type cached_font_images;
     ascii_font_image* image;
     image_map_type::iterator i = cached_font_images.find(
         std::make_pair(font, std::make_pair(text_color, bg_color)));

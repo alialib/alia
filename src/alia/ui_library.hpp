@@ -474,8 +474,7 @@ struct untyped_drop_down_list : noncopyable
     begin(ui_context& ctx, layout const& layout_spec, ui_flag_set flags);
     void end();
 
-    bool do_list() const { return do_list_; }
-    ui_context& list_context() const { return *ctx_; }
+    bool do_list();
 
  private:
     friend struct untyped_ddl_item;
@@ -487,6 +486,7 @@ struct untyped_drop_down_list : noncopyable
     row_layout contents_;
 
     bool do_list_, make_selection_visible_;
+    overlay_layout list_overlay_;
     bordered_box list_border_;
     scrollable_panel list_panel_;
     int list_index_;
@@ -530,8 +530,7 @@ struct drop_down_list : noncopyable
     }
     void end() { list_.end(); }
 
-    bool do_list() const { return list_.do_list(); }
-    ui_context& list_context() const { return list_.list_context(); }
+    bool do_list() { return list_.do_list(); }
 
     bool changed() const { return changed_; }
 

@@ -195,6 +195,18 @@ struct value_id_by_reference : id_interface
       : value_(0), storage_(0), context_(ID_CONTEXT_NOWHERE)
     {}
 
+    value_id_by_reference(value_id_by_reference const& other)
+    {
+        copy(other);
+    }
+
+    value_id_by_reference& operator=(value_id_by_reference const& other)
+    {
+        delete storage_;
+        copy(other);
+        return *this;
+    }
+
     value_id_by_reference(Value const* value, id_context context)
       : value_(value), storage_(0), context_(context)
     {}
@@ -237,6 +249,20 @@ struct value_id_by_reference : id_interface
         id_context context)
       : value_(value), storage_(storage), context_(context)
     {}
+
+    void copy(value_id_by_reference const& other)
+    {
+        if (other.storage_)
+        {
+            value_ = storage_ = new Value(*other.value_);
+        }
+        else
+        {
+            storage_ = 0;
+            value_ = other.value_;
+        }
+        context_ = other.context_;
+    }
 
     Value const* value_;
     Value* storage_;
@@ -303,14 +329,31 @@ id_pair<Id0,Id1> combine_ids(Id0 const& id0, Id1 const& id1)
 // ref(id) wraps a reference to an id_interface so that it can be combined.
 struct id_ref : id_interface
 {
-    id_ref() : id_(0) {}
+    id_ref() : id_(0), owner_(false) {}
 
-    id_ref(id_interface const& id)
-      : id_(&id)
+    id_ref(id_ref const& other)
+    {
+        owner_ = other.owner_;
+        id_ = owner_ ? other.id_->clone() : other.id_;
+    }
+
+    id_ref& operator=(id_ref const& other)
+    {
+        if (owner_)
+            delete id_;
+        owner_ = other.owner_;
+        id_ = owner_ ? other.id_->clone() : other.id_;
+        return *this;
+    }
+
+    id_ref(id_interface const& id, bool owner)
+      : id_(&id), owner_(owner)
     {}
 
+    ~id_ref() { if (owner_) delete id_; }
+
     id_interface* clone() const
-    { return new id_ref(*id_->clone()); }
+    { return new id_ref(*id_->clone(), true); }
 
     id_context context() const
     { return id_->context(); }
@@ -331,13 +374,15 @@ struct id_ref : id_interface
     { o << *id_; }
 
     id_ref deep_copy() const
-    { return id_ref(*id_->clone()); }
+    { return id_ref(*id_->clone(), true); }
 
  private:
     id_interface const* id_;
+    // If this is true, the id_ref provides ownership of the ID.
+    bool owner_;
 };
 static inline id_ref ref(id_interface const& id)
-{ return id_ref(id); }
+{ return id_ref(id, false); }
 
 // local_identity establishes an identity that's unique within the local
 // application instance.

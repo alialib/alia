@@ -732,9 +732,12 @@ void scrollable_region::begin(
         }
         if (container->hsb_on && container->vsb_on)
         {
-            container->junction_rendering.renderer->draw(
-                ctx, container->junction_rendering.data,
-                box<2,int>(window_corner, container->window_size));
+            if (is_rendering_active(ctx))
+            {
+                container->junction_rendering.renderer->draw(
+                    ctx, container->junction_rendering.data,
+                    box<2,int>(window_corner, container->window_size));
+            }
         }
 
         float movement;

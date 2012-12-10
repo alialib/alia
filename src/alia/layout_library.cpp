@@ -1376,7 +1376,8 @@ void overlay_layout::concrete_begin(
     traversal.active_container = 0;
     traversal.next_ptr = &data_->root_node;
 
-    clipping_reset_.begin(*traversal.geometry);
+    if (traversal.geometry)
+        clipping_reset_.begin(*traversal.geometry);
 
     max_size_ = max_size;
 }
