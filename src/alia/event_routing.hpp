@@ -1,9 +1,7 @@
 #ifndef ALIA_EVENT_ROUTING_HPP
 #define ALIA_EVENT_ROUTING_HPP
 
-#include <memory>
 #include <alia/data_graph.hpp>
-#include <list>
 
 // This file defines a library for routing events through an immediate mode
 // scene traversal function.
@@ -35,12 +33,18 @@ struct routing_region
     routing_region_ptr parent;
 };
 
+struct event_routing_path
+{
+    routing_region* node;
+    event_routing_path* rest;
+};
+
 struct event_routing_traversal
 {
     routing_region_ptr* active_region;
     data_traversal* data;
     bool targeted;
-    std::list<routing_region*> path_to_target;
+    event_routing_path* path_to_target;
 };
 
 static inline routing_region_ptr get_active_region(
@@ -50,27 +54,41 @@ static inline routing_region_ptr get_active_region(
         routing_region_ptr();
 }
 
-struct scoped_event_routing_traversal
+template<class TraversalFunction>
+void invoke_targeted_traversal(
+    TraversalFunction& fn,
+    event_routing_traversal& traversal,
+    routing_region* target)
 {
-    scoped_event_routing_traversal() {}
+    if (target)
+    {
+        event_routing_path path_node;
+        path_node.rest = traversal.path_to_target;
+        path_node.node = target;
+        traversal.path_to_target = &path_node;
+        invoke_targeted_traversal(fn, traversal, target->parent.get());
+    }
+    else
+        fn();
+}
 
-    scoped_event_routing_traversal(
-        event_routing_traversal& traversal,
-        data_traversal& data,
-        bool targeted,
-        routing_region_ptr const& target = routing_region_ptr())
-    { begin(traversal, data, targeted, target); }
-
-    ~scoped_event_routing_traversal() {}
-
-    void begin(
-        event_routing_traversal& traversal,
-        data_traversal& data,
-        bool targeted,
-        routing_region_ptr const& target = routing_region_ptr());
-
-    void end() {}
-};
+template<class TraversalFunction>
+void invoke_routed_traversal(
+    TraversalFunction& fn,
+    event_routing_traversal& traversal,
+    data_traversal& data,
+    bool targeted,
+    routing_region_ptr const& target = routing_region_ptr())
+{
+    traversal.active_region = 0;
+    traversal.data = &data;
+    traversal.targeted = targeted;
+    traversal.path_to_target = 0;
+    if (targeted)
+        invoke_targeted_traversal(fn, traversal, target.get());
+    else
+        fn();
+}
 
 struct scoped_routing_region
 {

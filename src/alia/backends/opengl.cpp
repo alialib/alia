@@ -201,8 +201,10 @@ struct simple_texture : opengl_texture
 
     void replace(image_interface const& img);
 
-    void draw(vector<2,double> const& p, rgba8 const& color);
-    void draw_region(vector<2,double> const& p, box<2,double> const& region,
+    void draw(surface& surface,
+        vector<2,double> const& p, rgba8 const& color);
+    void draw_region(surface& surface,
+        vector<2,double> const& p, box<2,double> const& region,
         rgba8 const& color);
 
     ~simple_texture();
@@ -324,7 +326,8 @@ void simple_texture::replace(image_interface const& img)
     check_errors();
 }
 
-void simple_texture::draw(vector<2,double> const& p, rgba8 const& color)
+void simple_texture::draw(surface& surface,
+    vector<2,double> const& p, rgba8 const& color)
 {
     glEnable(target_);
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
@@ -369,7 +372,8 @@ void simple_texture::draw(vector<2,double> const& p, rgba8 const& color)
 }
 
 void simple_texture::draw_region(
-    vector<2,double> const& p, box<2,double> const& region, rgba8 const& color)
+    surface& surface, vector<2,double> const& p,
+    box<2,double> const& region, rgba8 const& color)
 {
     glEnable(target_);
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
@@ -429,8 +433,10 @@ struct tiled_texture : opengl_texture
 
     void replace(image_interface const& img);
 
-    void draw(vector<2,double> const& p, rgba8 const& color);
-    void draw_region(vector<2,double> const& p, box<2,double> const& region,
+    void draw(surface& surface,
+        vector<2,double> const& p, rgba8 const& color);
+    void draw_region(surface& surface,
+        vector<2,double> const& p, box<2,double> const& region,
         rgba8 const& color);
 
     ~tiled_texture();
@@ -592,7 +598,8 @@ tiled_texture::~tiled_texture()
     }
 }
 
-void tiled_texture::draw(vector<2,double> const& p, rgba8 const& color)
+void tiled_texture::draw(surface& surface,
+    vector<2,double> const& p, rgba8 const& color)
 {
     glEnable(target_);
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
@@ -636,7 +643,8 @@ void tiled_texture::draw(vector<2,double> const& p, rgba8 const& color)
 }
 
 void tiled_texture::draw_region(
-    vector<2,double> const& p, box<2,double> const& region, rgba8 const& color)
+    surface& surface, vector<2,double> const& p,
+    box<2,double> const& region, rgba8 const& color)
 {
     glEnable(target_);
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
@@ -714,7 +722,7 @@ struct opengl_display_list : cached_rendering_content
     void start_recording();
     void stop_recording();
 
-    void playback() const;
+    void playback(surface& surface) const;
 
  private:
     opengl_context* ctx_;
@@ -744,7 +752,7 @@ void opengl_display_list::stop_recording()
     glEndList();
 }
 
-void opengl_display_list::playback() const
+void opengl_display_list::playback(surface& surface) const
 {
     glCallList(name_);
 }
@@ -779,21 +787,27 @@ void opengl_context::reset()
 
 void opengl_context::do_pending_deletions()
 {
-    for (std::list<GLuint>::iterator
-        i = impl_->pending_texture_deletions.begin();
-        i != impl_->pending_texture_deletions.end(); ++i)
+    if (!impl_->pending_texture_deletions.empty())
     {
-        glDeleteTextures(1, &*i);
+        for (std::list<GLuint>::iterator
+            i = impl_->pending_texture_deletions.begin();
+            i != impl_->pending_texture_deletions.end(); ++i)
+        {
+            glDeleteTextures(1, &*i);
+        }
+        impl_->pending_texture_deletions.clear();
     }
-    impl_->pending_texture_deletions.clear();
 
-    for (std::list<GLuint>::iterator
-        i = impl_->pending_display_list_deletions.begin();
-        i != impl_->pending_display_list_deletions.end(); ++i)
+    if (!impl_->pending_display_list_deletions.empty())
     {
-        glDeleteLists(*i, 1);
+        for (std::list<GLuint>::iterator
+            i = impl_->pending_display_list_deletions.begin();
+            i != impl_->pending_display_list_deletions.end(); ++i)
+        {
+            glDeleteLists(*i, 1);
+        }
+        impl_->pending_display_list_deletions.clear();
     }
-    impl_->pending_display_list_deletions.clear();
 }
 
 static opengl_texture* create_texture(
@@ -836,7 +850,7 @@ void opengl_surface::initialize_render_state()
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(0, size_[0], size_[1], 0, -1, 1);
+    glOrtho(0, size_[0], size_[1], 0, -10, 10);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
@@ -847,6 +861,11 @@ void opengl_surface::initialize_render_state()
     glScissor(0, 0, size_[0], size_[1]);
 
     glEnable(GL_LINE_STIPPLE);
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+    glDepthFunc(GL_LEQUAL);
+    glClear(GL_DEPTH_BUFFER_BIT);
 }
 
 void opengl_surface::cache_image(
@@ -879,7 +898,7 @@ void opengl_surface::cache_image(
         t = 0;
     }
 
-    // If the existing data is compatible, reuse it.
+    // If the existing texture is compatible, reuse it.
     if (t && t->size() == img.size && t->format_ == img.format)
     {
         t->replace(img);
@@ -895,10 +914,10 @@ void opengl_surface::cache_image(
 void opengl_surface::set_transformation_matrix(matrix<3,3,double> const& m)
 {
     double gl_matrix[16] = {
-        m(0,0), m(1,0), 0, m(2,0),
-        m(0,1), m(1,1), 0, m(2,1),
-             0,      0, 0,      0,
-        m(0,2), m(1,2), 0, m(2,2) };
+        m(0,0), m(1,0),        0, m(2,0),
+        m(0,1), m(1,1),        0, m(2,1),
+             0,      0,        1,      0,
+        m(0,2), m(1,2), layer_z_, m(2,2) };
     glLoadMatrixd(gl_matrix);
 }
 void opengl_surface::set_clip_region(box<2,double> const& region)
@@ -907,6 +926,11 @@ void opengl_surface::set_clip_region(box<2,double> const& region)
     glScissor(int(region.corner[0] + 0.5),
         int(size_[1] - (region.corner[1] + region.size[1]) + 0.5),
         int(region.size[0] + 0.5), int(region.size[1] + 0.5));
+}
+void opengl_surface::set_layer_z(double z)
+{
+    glTranslated(0, 0, z - layer_z_);
+    layer_z_ = z;
 }
 
 void opengl_surface::draw_line(rgba8 const& color, line_style const& style,

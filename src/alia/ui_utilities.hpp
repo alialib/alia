@@ -137,6 +137,16 @@ static inline void get_widget_id_if_needed(ui_context& ctx, widget_id& id)
         id = get_widget_id(ctx);
 }
 
+static inline void init_optional_widget_id(
+    ui_context& ctx, widget_id& id, widget_id fallback)
+{
+    if (!id)
+        id = fallback;
+}
+
+void handle_mouse_hit(ui_context& ctx, widget_id id,
+    mouse_cursor cursor = DEFAULT_CURSOR);
+
 bool mouse_is_inside_box(ui_context& ctx, box<2,double> const& box);
 
 void hit_test_box_region(ui_context& ctx, widget_id id,
@@ -440,15 +450,6 @@ void issue_set_value_event(ui_context& ctx, widget_id id, T const& new_value)
     issue_targeted_event(*ctx.system, e, make_routable_widget_id(ctx, id));
 }
 
-// OVERLAYS
-
-void clear_active_overlay(ui_context& ctx);
-
-static inline bool is_active_overlay(ui_context& ctx, widget_id id)
-{ return ctx.system->overlay.id == id; }
-
-void set_active_overlay(ui_context& ctx, widget_id id);
-
 // FOCUS
 
 void setup_focus_drawing(ui_context& ctx, SkPaint& paint);
@@ -489,6 +490,8 @@ struct boolean_widget_renderer : dispatch_interface
         ui_context& ctx, renderer_data_ptr& data_ptr, layout_box const& region,
         getter<bool> const& value, widget_state state) const = 0;
 };
+
+void set_layer_z(ui_context& ctx, double layer_z);
 
 }
 

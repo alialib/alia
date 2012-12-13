@@ -30,6 +30,7 @@ ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x080000, NO_PANEL)
 ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x100000, ALWAYS_EDITING)
 // panels
 ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x200000, NO_INTERNAL_PADDING)
+ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x400000, NO_CLICK_DETECTION)
 
 // DISPLAYS - non-interactive widgets
 
@@ -460,6 +461,29 @@ struct tree_node : noncopyable
     node_expander_result expander_result_;
 };
 
+// POPUPS
+
+struct popup
+{
+    popup() : ctx_(0) {}
+    popup(ui_context& ctx, widget_id id,
+        layout_vector const& lower_bound,
+        layout_vector const& upper_bound)
+    { begin(ctx, id, lower_bound, upper_bound); }
+    ~popup() { end(); }
+    void begin(ui_context& ctx, widget_id id,
+        layout_vector const& lower_bound,
+        layout_vector const& upper_bound);
+    void end();
+    bool user_closed();
+ private:
+    ui_context* ctx_;
+    double old_layer_z_;
+    widget_id id_, background_id_;
+    floating_layout layout_;
+    scoped_transformation transform_;
+};
+
 // DROP DOWNS
 
 struct ddl_data;
@@ -486,7 +510,7 @@ struct untyped_drop_down_list : noncopyable
     row_layout contents_;
 
     bool do_list_, make_selection_visible_;
-    overlay_layout list_overlay_;
+    popup popup_;
     bordered_box list_border_;
     scrollable_panel list_panel_;
     int list_index_;

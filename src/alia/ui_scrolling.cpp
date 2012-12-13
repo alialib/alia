@@ -44,7 +44,7 @@ struct default_scrollbar_renderer : scrollbar_renderer
 
     int width(ui_context& ctx) const
     {
-        return resolve_layout_width(get_layout_traversal(ctx), 0.9f, EM);
+        return resolve_layout_width(get_layout_traversal(ctx), 0.8f, EM);
     }
     int button_length(ui_context& ctx) const
     {
@@ -732,24 +732,12 @@ void scrollable_region::begin(
         }
         if (container->hsb_on && container->vsb_on)
         {
-            if (is_rendering_active(ctx))
+            if (is_rendering(ctx))
             {
                 container->junction_rendering.renderer->draw(
                     ctx, container->junction_rendering.data,
                     box<2,int>(window_corner, container->window_size));
             }
-        }
-
-        float movement;
-        if (detect_wheel_movement(ctx, &movement) &&
-            mouse_is_inside_box(ctx,
-                box<2,double>(vector<2,double>(window_corner),
-                    vector<2,double>(container->window_size))))
-        {
-            container->scroll_position[1] -=
-                int(container->line_size * movement);
-            clamp_scroll_position(*container_);
-            acknowledge_input_event(ctx);
         }
 
         scr_.begin(*get_layout_traversal(ctx).geometry);
@@ -765,26 +753,27 @@ void scrollable_region::end()
 {
     if (!ctx_)
         return;
+    ui_context& ctx = *ctx_;
 
-    switch (ctx_->event->category)
+    switch (ctx.event->category)
     {
      case REGION_CATEGORY:
-        if (ctx_->event->type == MAKE_WIDGET_VISIBLE_EVENT &&
+        if (ctx.event->type == MAKE_WIDGET_VISIBLE_EVENT &&
             srr_.is_relevant())
         {
             make_widget_visible_event& e =
-                get_event<make_widget_visible_event>(*ctx_);
+                get_event<make_widget_visible_event>(ctx);
             if (e.acknowledged)
             {
                 // TODO: This doesn't handle rotations properly.
                 vector<2,double>
                     region_ul =
                         transform(
-                            inverse(ctx_->geometry.transformation_matrix),
+                            inverse(ctx.geometry.transformation_matrix),
                             e.region.corner),
                     region_lr =
                         transform(
-                            inverse(ctx_->geometry.transformation_matrix),
+                            inverse(ctx.geometry.transformation_matrix),
                             get_high_corner(e.region)),
                     window_ul =
                         vector<2,double>(container_->scroll_position),
@@ -797,15 +786,19 @@ void scrollable_region::end()
                         if (region_ul[i] < window_ul[i] &&
                             region_lr[i] < window_lr[i])
                         {
-                            container_->scroll_position[i] -=
+                            int correction =
                                 int(window_ul[i] - region_ul[i] + 0.5);
+                            container_->scroll_position[i] -= correction;
+                            e.region.corner[i] += correction;
                         }
                         else if (region_ul[i] > window_ul[i] &&
                             region_lr[i] > window_lr[i])
                         {
-                            container_->scroll_position[i] +=
+                            int correction =
                                 int((std::min)(region_ul[i] - window_ul[i],
                                     region_lr[i] - window_lr[i]) + 0.5);
+                            container_->scroll_position[i] += correction;
+                            e.region.corner[i] -= correction;
                         }
                     }
                     else
@@ -813,8 +806,10 @@ void scrollable_region::end()
                         if (region_lr[i] < window_ul[i] ||
                             region_ul[i] >= window_lr[i])
                         {
-                            container_->scroll_position[i] -=
+                            int correction =
                                 int(window_ul[i] - region_ul[i] + 0.5);
+                            container_->scroll_position[i] -= correction;
+                            e.region.corner[i] += correction;
                         }
                     }
                 }
@@ -823,10 +818,10 @@ void scrollable_region::end()
         break;
 
      case INPUT_CATEGORY:
-        if (srr_.is_relevant() || id_has_focus(*ctx_, id_))
+        if (srr_.is_relevant() || id_has_focus(ctx, id_))
         {
             key_event_info info;
-            if (detect_key_press(*ctx_, &info) && info.mods == 0)
+            if (detect_key_press(ctx, &info) && info.mods == 0)
             {
                 switch (info.code)
                 {
@@ -871,6 +866,21 @@ void scrollable_region::end()
 
     transform_.end();
     scr_.end();
+
+    float movement;
+    if (detect_wheel_movement(ctx, &movement) &&
+        mouse_is_inside_box(ctx,
+            box<2,double>(vector<2,double>(
+                container_->cacher.resolved_relative_assignment.region.
+                    corner),
+                vector<2,double>(container_->window_size))))
+    {
+        container_->scroll_position[1] -=
+            int(container_->line_size * movement);
+        clamp_scroll_position(*container_);
+        acknowledge_input_event(ctx);
+    }
+
     srr_.end();
     slc_.end();
 }

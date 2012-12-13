@@ -110,9 +110,10 @@ class cached_ascii_text : public cached_text
     offset shift(offset position, int shift) const;
 
  private:
-    void draw_subimage(vector<2,double> const& p, box<2,double> r);
+    void draw_subimage(
+        surface& surface, vector<2,double> const& p, box<2,double> r);
     void draw_highlight_subimage(
-        vector<2,double> const& p, box<2,double> r);
+        surface& surface, vector<2,double> const& p, box<2,double> r);
 
     void generate_image(image<rgba8>& text_image, 
         ascii_font_image const& font_image, string const& text, int width);

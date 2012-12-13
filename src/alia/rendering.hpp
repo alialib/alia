@@ -82,6 +82,8 @@ struct image_interface
     {}
 };
 
+struct surface;
+
 // A cached_image represents an image that has been cached on a surface.
 // It provides ownership of the image. If the cached_image is destroyed, the
 // image will no longer be stored on the surface.
@@ -101,11 +103,13 @@ struct cached_image : noncopyable
     // color before display.
     // (The default value for color will make this a noop.)
     virtual void draw(
+        surface& surface,
         vector<2,double> const& position,
         rgba8 const& color = rgba8(0xff, 0xff, 0xff, 0xff)) = 0;
     // Identical to above, but only a subregion of the image is displayed.
     // region is specified in pixels.
     virtual void draw_region(
+        surface& surface,
         vector<2,double> const& position,
         box<2,double> const& region,
         rgba8 const& color = rgba8(0xff, 0xff, 0xff, 0xff)) = 0;
@@ -194,9 +198,9 @@ struct cached_rendering_content
     virtual void start_recording() = 0;
     virtual void stop_recording() = 0;
 
-    virtual void playback() const = 0;
+    virtual void playback(surface& surface) const = 0;
 
-    // A cached_image is allowed to go invalid.
+    // cached_rendering_content is allowed to go invalid.
     // If that happens, this returns false, and the content needs to be
     // recached.
     virtual bool is_valid() const = 0;
@@ -223,6 +227,9 @@ struct surface : geometry_context_subscriber
 
     virtual void cache_content(
         cached_rendering_content_ptr& data) = 0;
+
+    // Set the layer in which drawing should occur.
+    virtual void set_layer_z(double z) = 0;
 
     // Request the surface to refresh again as soon as possible.
     virtual void request_refresh() = 0;

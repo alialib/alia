@@ -136,32 +136,37 @@ static void read_layout_style_info(layout_style_info* style_info,
     style_info->x_height = style_info->font_size * 0.5f;
 }
 
-struct initial_styling
+struct initial_styling_data
 {
-    initial_styling(ui_context& ctx)
-    {
-        get_data(ctx, &path_);
-        path_->rest = 0;
-        path_->tree = &ctx.system->style->styles;
-
-        read_primary_style_properties(*ctx.system, &props_, path_);
-
-        id_ = get_id(ctx.system->style->id);
-
-        ctx.style.path = path_;
-        ctx.style.properties = &props_;
-        ctx.style.id = &id_;
-        ctx.style.theme = &ctx.system->style->theme;
-
-        read_layout_style_info(&style_info_, props_.font, path_);
-        ctx.layout.style_info = &style_info_;
-    }
- private:
-    primary_style_properties props_;
-    style_search_path* path_;
-    value_id_by_reference<local_id> id_;
-    layout_style_info style_info_;
+    owned_id id;
+    primary_style_properties props;
+    layout_style_info info;
+    style_search_path path;
 };
+
+static void setup_styling(ui_context& ctx)
+{
+    initial_styling_data* data;
+    get_data(ctx, &data);
+
+    if (!data->id.matches(get_id(ctx.system->style->id)))
+    {
+        data->path.rest = 0;
+        data->path.tree = &ctx.system->style->styles;
+
+        read_primary_style_properties(
+            *ctx.system, &data->props, &data->path);
+
+        data->id.store(get_id(ctx.system->style->id));
+
+        read_layout_style_info(&data->info, data->props.font, &data->path);
+        ctx.layout.style_info = &data->info;
+    }
+    ctx.style.path = &data->path;
+    ctx.style.properties = &data->props;
+    ctx.style.id = &data->id.get();
+    ctx.style.theme = &ctx.system->style->theme;
+}
 
 // focus events
 
@@ -246,6 +251,22 @@ get_focus_predecessor(ui_system& ui, widget_id input_id)
 
 struct end_pass_exception {};
 
+struct context_invoker
+{
+    ui_system* system;
+    ui_context* ctx;
+    void operator()()
+    {
+        try
+        {
+            system->controller->do_ui(*ctx);
+        }
+        catch (end_pass_exception&)
+        {
+        }
+    }
+};
+
 static void issue_event(
     ui_system& system, ui_event& event,
     bool targeted, routing_region_ptr const& target = routing_region_ptr())
@@ -255,6 +276,8 @@ static void issue_event(
     ctx.system = &system;
     scoped_data_traversal data(system.data, ctx.data);
     bool is_refresh = event.type == REFRESH_EVENT;
+    // Only use refresh events to decide when data is no longer needed.
+    ctx.data.gc_enabled = ctx.data.cache_clearing_enabled = is_refresh;
     vector<2,double> size =
         is_refresh ? make_vector<double>(0, 0) :
             vector<2,double>(system.surface->size());
@@ -275,16 +298,13 @@ static void issue_event(
             system.surface->ppi());
     }
     ctx.event = &event;
-    scoped_event_routing_traversal sert(ctx.routing, ctx.data, true, target);
-    initial_styling styling(ctx);
+    setup_styling(ctx);
     ctx.active_cacher = 0;
-    try
-    {
-        system.controller->do_ui(ctx);
-    }
-    catch (end_pass_exception&)
-    {
-    }
+    set_layer_z(ctx, 0);
+    context_invoker fn;
+    fn.system = &system;
+    fn.ctx = &ctx;
+    invoke_routed_traversal(fn, ctx.routing, ctx.data, targeted, target);
 }
 
 void end_pass(ui_context& ctx)
@@ -329,16 +349,8 @@ layout_vector measure_initial_ui(
 
 void render_ui(ui_system& system)
 {
-    render_event e(RENDER_EVENT);
-    e.active = true;
+    render_event e;
     issue_event(system, e, false);
-
-    if (is_valid(system.overlay))
-    {
-        render_event e(OVERLAY_RENDER_EVENT);
-        e.active = false;
-        issue_targeted_event(system, e, system.overlay);
-    }
 }
 
 void refresh_and_layout(ui_system& system, vector<2,unsigned> const& size,
@@ -568,15 +580,25 @@ widget_id get_widget_id(ui_context& ctx)
 
 // REGIONS
 
+void handle_mouse_hit(ui_context& ctx, widget_id id, mouse_cursor cursor)
+{
+    if (ctx.event->type == HIT_TEST_EVENT)
+    {
+        hit_test_event& e = get_event<hit_test_event>(ctx);
+        if (ctx.layer_z >= e.hit_z)
+        {
+	    e.id = make_routable_widget_id(ctx, id);
+	    e.cursor = cursor;
+	    e.hit_z = ctx.layer_z;
+        }
+    }
+}
+
 void hit_test_box_region(ui_context& ctx, widget_id id, box<2,int> const& box,
     mouse_cursor cursor)
 {
     if (mouse_is_inside_box(ctx, alia::box<2,double>(box)))
-    {
-        hit_test_event& e = get_event<hit_test_event>(ctx);
-        e.id = make_routable_widget_id(ctx, id);
-        e.cursor = cursor;
-    }
+	handle_mouse_hit(ctx, id, cursor);
 }
 
 void do_region_visibility(ui_context& ctx, widget_id id,
@@ -1232,6 +1254,8 @@ void scoped_substyle::begin(ui_context& ctx,
 {
     substyle_data* data;
     if (get_cached_data(ctx, &data) ||
+        //(ctx.event->type == REFRESH_EVENT ||
+        // ctx.event->type == RENDER_EVENT) &&
         !data->key.matches(combine_ids(ref(*ctx.style.id),
             combine_ids(ref(substyle_name.id()), make_id(state)))))
     {
@@ -1464,7 +1488,7 @@ void cached_ui_block::begin(ui_context& ctx, id_interface const& id)
             cacher->cached_content->start_recording();
             break;
          default:
-            cacher->cached_content->playback();
+            cacher->cached_content->playback(*ctx.surface);
             is_relevant_ = false;
             break;
         }
@@ -1561,16 +1585,6 @@ bool compute_fps(ui_context& ctx, int* fps)
         return false;
 }
 
-void clear_active_overlay(ui_context& ctx)
-{
-    ctx.system->overlay = null_widget_id;
-}
-
-void set_active_overlay(ui_context& ctx, widget_id id)
-{
-    ctx.system->overlay = make_routable_widget_id(ctx, id);
-}
-
 // FOCUS
 
 void setup_focus_drawing(ui_context& ctx, SkPaint& paint)
@@ -1618,6 +1632,13 @@ void draw_focus_rect(ui_context& ctx, focus_rect_data& data,
         cache.mark_valid();
     }
     cache.draw();
+}
+
+void set_layer_z(ui_context& ctx, double layer_z)
+{
+    ctx.layer_z = layer_z;
+    if (ctx.surface)
+        ctx.surface->set_layer_z(layer_z);
 }
 
 }

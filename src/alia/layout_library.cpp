@@ -38,8 +38,8 @@ layout_box get_container_region(simple_layout_container const& container)
     return layout_box(make_layout_vector(0, 0), container.assigned_size);
 }
 
-#define DECLARE_LAYOUT_LOGIC(logic_name) \
-    struct logic_name : layout_logic \
+#define DECLARE_LAYOUT_LOGIC(logic_type) \
+    struct logic_type : layout_logic \
     { \
         calculated_layout_requirements get_horizontal_requirements( \
             layout_calculation_context& ctx, \
@@ -55,15 +55,23 @@ layout_box get_container_region(simple_layout_container const& container)
             layout_scalar assigned_baseline_y); \
     };
 
-#define BEGIN_SIMPLE_LAYOUT_CONTAINER(logic_name) \
-    logic_name* logic; \
-    get_simple_layout_container(traversal, &container_, &logic, layout_spec); \
+#define DECLARE_LAYOUT_DATA(layout_type) \
+    struct layout_type##_data \
+    { \
+        simple_layout_container_storage<layout_type##_logic> storage; \
+    };
+
+#define BEGIN_SIMPLE_LAYOUT_CONTAINER(logic_type) \
+    logic_type* logic; \
+    get_simple_layout_container(traversal, &container_, &logic, layout_spec, \
+        data_ ? &data_->storage : 0); \
     slc_.begin(traversal, container_); \
     begin_transform(transform_, traversal, container_->cacher);
 
 // ROW LAYOUT
 
 DECLARE_LAYOUT_LOGIC(row_layout_logic)
+DECLARE_LAYOUT_DATA(row_layout)
 
 static void compute_total_width(
     layout_calculation_context& ctx,
@@ -191,6 +199,7 @@ void row_layout::concrete_begin(
 // COLUMN LAYOUT
 
 DECLARE_LAYOUT_LOGIC(column_layout_logic)
+DECLARE_LAYOUT_DATA(column_layout)
 
 static void compute_total_height(
     layout_scalar& total_height,
@@ -306,6 +315,7 @@ void linear_layout::concrete_begin(
 // LAYERED LAYOUT
 
 DECLARE_LAYOUT_LOGIC(layered_layout_logic)
+DECLARE_LAYOUT_DATA(layered_layout)
 
 calculated_layout_requirements
 layered_layout_logic::get_horizontal_requirements(
@@ -363,6 +373,7 @@ void layered_layout::concrete_begin(
 // ROTATED LAYOUT
 
 DECLARE_LAYOUT_LOGIC(rotated_layout_logic)
+DECLARE_LAYOUT_DATA(rotated_layout)
 
 calculated_layout_requirements
 rotated_layout_logic::get_horizontal_requirements(
@@ -464,6 +475,7 @@ void rotated_layout::concrete_begin(
 // FLOW LAYOUT
 
 DECLARE_LAYOUT_LOGIC(flow_layout_logic)
+DECLARE_LAYOUT_DATA(flow_layout)
 
 calculated_layout_requirements
 flow_layout_logic::get_horizontal_requirements(
@@ -565,6 +577,7 @@ void flow_layout::concrete_begin(
 // created with the same width.
 
 DECLARE_LAYOUT_LOGIC(vertical_flow_layout_logic)
+DECLARE_LAYOUT_DATA(vertical_flow_layout)
 
 static layout_scalar get_max_child_width(
     layout_calculation_context& ctx,
@@ -1352,17 +1365,18 @@ void uniform_grid_row::end()
     container_.end();
 }
 
-// OVERLAY LAYOUT
+// FLOATING LAYOUT
 
-struct overlay_layout_data
+struct floating_layout_data
 {
     layout_node* root_node;
     data_graph measurement_cache, placement_cache;
     layout_vector size;
-    overlay_layout_data() : root_node(0) {}
+    bool refresh_needed;
+    floating_layout_data() : root_node(0) {}
 };
 
-void overlay_layout::concrete_begin(
+void floating_layout::concrete_begin(
     layout_traversal& traversal,
     layout_vector const& max_size)
 {
@@ -1379,24 +1393,27 @@ void overlay_layout::concrete_begin(
     if (traversal.geometry)
         clipping_reset_.begin(*traversal.geometry);
 
-    max_size_ = max_size;
+    if (traversal.is_refresh_pass)
+    {
+        data_->refresh_needed = true;
+    }
+    else if (data_->refresh_needed)
+    {
+        layout_vector measured_size =
+            get_minimum_size(data_->root_node, data_->measurement_cache);
+        for (unsigned i = 0; i != 2; ++i)
+            data_->size[i] = (std::min)(max_size[i], measured_size[i]);
+        resolve_layout(data_->root_node, data_->placement_cache,
+            data_->size);
+        data_->refresh_needed = false;
+    }
 }
 
-void overlay_layout::end()
+void floating_layout::end()
 {
     if (traversal_)
     {
         clipping_reset_.end();
-
-        if (traversal_->is_refresh_pass)
-        {
-            layout_vector measured_size =
-                get_minimum_size(data_->root_node, data_->measurement_cache);
-            for (unsigned i = 0; i != 2; ++i)
-                data_->size[i] = (std::min)(max_size_[i], measured_size[i]);
-            resolve_layout(data_->root_node, data_->placement_cache,
-                data_->size);
-        }
 
         traversal_->active_container = old_container_;
         traversal_->next_ptr = old_next_ptr_;
@@ -1404,7 +1421,7 @@ void overlay_layout::end()
     }
 }
 
-layout_vector overlay_layout::size() const
+layout_vector floating_layout::size() const
 {
     return data_->size;
 }

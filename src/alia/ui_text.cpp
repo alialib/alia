@@ -405,8 +405,6 @@ void do_text(ui_context& ctx, getter<string> const& text,
         break;
 
      case RENDER_CATEGORY:
-        if (!is_rendering_active(ctx))
-            break;
         if (data->text_image.view.pixels)
         {
             if (!data->image_cached || !is_valid(data->cached_image))
@@ -415,7 +413,9 @@ void do_text(ui_context& ctx, getter<string> const& text,
                     make_interface(data->text_image.view));
                 data->image_cached = true;
             }
-            data->cached_image->draw(vector<2,double>(data->image_position));
+            data->cached_image->draw(
+                *ctx.surface,
+                vector<2,double>(data->image_position));
         }
         break;
     }
@@ -515,7 +515,9 @@ static void render_standalone_text(
         ctx.surface->cache_image(data.cached_image,
             make_interface(text_image.view));
     }
-    data.cached_image->draw(vector<2,double>(get_region(data).corner));
+    data.cached_image->draw(
+        *ctx.surface,
+        vector<2,double>(get_region(data).corner));
 }
 
 void do_label(ui_context& ctx, getter<string> const& text,
@@ -530,8 +532,6 @@ void do_label(ui_context& ctx, getter<string> const& text,
         refresh_standalone_text(ctx, *data, text, layout_spec);
         break;
      case RENDER_CATEGORY:
-        if (!is_rendering_active(ctx))
-            break;
         render_standalone_text(ctx, *data, text);
         break;
     }
@@ -562,8 +562,6 @@ void do_layout_dependent_text(ui_context& ctx, int n,
 
      case RENDER_CATEGORY:
       {
-        if (!is_rendering_active(ctx))
-            break;
         layout_box const& region = data->layout_node.assignment().region;
         ascii_font_image const* font_image =
             get_ascii_font_image(ctx.style.properties->font,
@@ -617,8 +615,6 @@ bool do_link(
         break;
 
      case RENDER_CATEGORY:
-        if (!is_rendering_active(ctx))
-            break;
         render_standalone_text(ctx, data->standalone_text, text);
         if (state & WIDGET_FOCUSED)
         {
@@ -816,8 +812,6 @@ struct text_control
             do_refresh();
             break;
          case RENDER_CATEGORY:
-            if (!is_rendering_active(ctx))
-                break;
             render();
             break;
          case REGION_CATEGORY:

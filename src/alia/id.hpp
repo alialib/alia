@@ -178,7 +178,7 @@ id_context get_id_context(T const* value)
 { return ID_CONTEXT_APP_INSTANCE; }
 // Conservatively make all other values local to the application instance.
 template<class T>
-id_context get_id_context(T value)
+id_context get_id_context(T const& value)
 { return ID_CONTEXT_APP_INSTANCE; }
 
 // make_id(value)

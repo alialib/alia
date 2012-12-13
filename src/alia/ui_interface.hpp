@@ -183,6 +183,7 @@ struct ui_context
     style_state style;
     ui_caching_node* active_cacher;
     bool pass_aborted;
+    double layer_z;
 };
 
 static inline data_traversal& get_data_traversal(ui_context& ctx)

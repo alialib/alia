@@ -39,8 +39,6 @@ void do_separator(ui_context& ctx, layout const& layout_spec)
 
      case RENDER_CATEGORY:
       {
-        if (!is_rendering_active(ctx))
-            break;
         layout_box const& region = data->layout_node.assignment().region;
         caching_renderer cache(ctx, data->rendering, *ctx.style.id, region);
         if (cache.needs_rendering())
@@ -86,8 +84,6 @@ void do_color(ui_context& ctx, getter<rgba8> const& color,
 
      case RENDER_CATEGORY:
       {
-        if (!is_rendering_active(ctx))
-            break;
         layout_box const& region = data->layout_node.assignment().region;
         caching_renderer cache(ctx, data->rendering, color.id(), region);
         if (cache.needs_rendering())
@@ -139,8 +135,6 @@ void do_bullet(ui_context& ctx, layout const& layout_spec)
 
      case RENDER_CATEGORY:
       {
-        if (!is_rendering_active(ctx))
-            break;
         layout_box const& region = data->layout_node.assignment().region;
         caching_renderer cache(ctx, data->rendering, *ctx.style.id, region);
         if (cache.needs_rendering())
@@ -198,6 +192,7 @@ struct check_box_data
     layout_leaf layout_node;
     themed_rendering_data<check_box_renderer> rendering;
     button_input_state input;
+    widget_data id;
 };
 
 struct default_check_box_renderer : check_box_renderer
@@ -275,10 +270,10 @@ check_box_result do_check_box(
     layout const& layout_spec,
     widget_id id)
 {
-    get_widget_id_if_needed(ctx, id);
-
     check_box_data* data;
     get_cached_data(ctx, &data);
+
+    init_optional_widget_id(ctx, id, &data->id);
 
     switch (ctx.event->category)
     {
@@ -299,8 +294,6 @@ check_box_result do_check_box(
 
      case RENDER_CATEGORY:
       {
-        if (!is_rendering_active(ctx))
-            break;
         data->rendering.renderer->draw(ctx, data->rendering.data,
             data->layout_node.assignment().region, value,
             get_button_state(ctx, id, data->input));
@@ -352,6 +345,7 @@ struct radio_button_data
     layout_leaf layout_node;
     themed_rendering_data<radio_button_renderer> rendering;
     button_input_state input;
+    widget_data id;
 };
 
 struct default_radio_button_renderer : radio_button_renderer
@@ -439,10 +433,10 @@ do_radio_button(
     layout const& layout_spec,
     widget_id id)
 {
-    get_widget_id_if_needed(ctx, id);
-
     radio_button_data* data;
     get_cached_data(ctx, &data);
+
+    init_optional_widget_id(ctx, id, &data->id);
 
     switch (ctx.event->category)
     {
@@ -463,8 +457,6 @@ do_radio_button(
 
      case RENDER_CATEGORY:
       {
-        if (!is_rendering_active(ctx))
-            break;
         data->rendering.renderer->draw(ctx, data->rendering.data,
             data->layout_node.assignment().region, value,
             get_button_state(ctx, id, data->input));
@@ -515,6 +507,7 @@ struct node_expander_data
     layout_leaf layout_node;
     themed_rendering_data<node_expander_renderer> rendering;
     button_input_state input;
+    widget_data id;
 };
 
 struct default_node_expander_renderer : node_expander_renderer
@@ -611,10 +604,10 @@ node_expander_result do_node_expander(
     layout const& layout_spec,
     widget_id id)
 {
-    get_widget_id_if_needed(ctx, id);
-
     node_expander_data* data;
     get_cached_data(ctx, &data);
+
+    init_optional_widget_id(ctx, id, &data->id);
 
     switch (ctx.event->category)
     {
@@ -635,8 +628,6 @@ node_expander_result do_node_expander(
 
      case RENDER_CATEGORY:
       {
-        if (!is_rendering_active(ctx))
-            break;
         data->rendering.renderer->draw(ctx, data->rendering.data,
             data->layout_node.assignment().region, value,
             get_button_state(ctx, id, data->input));
@@ -688,8 +679,6 @@ void do_progress_bar(ui_context& ctx, getter<double> const& progress,
 
      case RENDER_CATEGORY:
       {
-        if (!is_rendering_active(ctx))
-            break;
         layout_box const& region = data->layout_node.assignment().region;
         caching_renderer cache(ctx, data->rendering, progress.id(), region);
         if (cache.needs_rendering())
@@ -783,8 +772,6 @@ static void begin_panel(
 
      case RENDER_CATEGORY:
       {
-        if (!is_rendering_active(ctx))
-            break;
         if (flags & ROUNDED)
         {
             layout_box const& rect = outer.region();
@@ -825,8 +812,11 @@ static void begin_panel(
 
      case INPUT_CATEGORY:
         // So the panel will steal the focus if clicked on.
-        if (ctx.event->type == MOUSE_PRESS_EVENT && is_region_hot(ctx, id))
+        if (!(flags && NO_CLICK_DETECTION) &&
+            ctx.event->type == MOUSE_PRESS_EVENT && is_region_hot(ctx, id))
+        {
             set_focus(ctx, id);
+        }
         break;
     }
 }
@@ -1175,8 +1165,6 @@ do_icon_button(
 
      case RENDER_CATEGORY:
       {
-        if (!is_rendering_active(ctx))
-            break;
         data->rendering.renderer->draw(ctx, data->rendering.data,
             data->layout_node.assignment().region, icon,
             get_button_state(ctx, id, data->input));
@@ -1344,32 +1332,13 @@ struct default_drop_down_button_renderer : drop_down_button_renderer
     }
 };
 
-//static bool detect_popup_click(
-//    ui_context& ctx, popup_ptr& popup, bool* open_at_click,
-//    widget_id id, mouse_button button)
-//{
-//    if (detect_mouse_press(ctx, id, button))
-//    {
-//        *open_at_click = is_open(popup);
-//        // Refuse to be the active ID, since this click will effectively be
-//        // ignored.
-//        if (*open_at_click)
-//            ctx.system->input.active_id = null_widget_id;
-//    }
-//    return detect_mouse_release(ctx, id, button) && is_region_active(ctx, id);
-//}
-
 static bool
 do_drop_down_button(
     ui_context& ctx,
     layout const& layout_spec,
-    widget_id id/*,
-    popup_ptr& popup,
-    bool* open_at_click*/)
+    widget_id id,
+    drop_down_button_data* data)
 {
-    drop_down_button_data* data;
-    get_cached_data(ctx, &data);
-
     switch (ctx.event->category)
     {
      case REFRESH_CATEGORY:
@@ -1389,8 +1358,6 @@ do_drop_down_button(
 
      case RENDER_CATEGORY:
       {
-        if (!is_rendering_active(ctx))
-            break;
         data->rendering.renderer->draw(ctx, data->rendering.data,
             data->layout_node.assignment().region,
             get_button_state(ctx, id, data->input));
@@ -1403,16 +1370,11 @@ do_drop_down_button(
 
      case INPUT_CATEGORY:
         add_to_focus_order(ctx, id);
-        //if (detect_popup_click(ctx, popup, open_at_click, id, LEFT_BUTTON))
-        if (detect_click(ctx, id, LEFT_BUTTON))
+        if (detect_click(ctx, id, LEFT_BUTTON) ||
+            detect_keyboard_click(ctx, data->input.key, id, KEY_SPACE))
         {
-            //if (!*open_at_click)
-                return true;
-            //else
-            //    popup.reset();
-        }
-        if (detect_keyboard_click(ctx, data->input.key, id, KEY_SPACE))
             return true;
+        }
         break;
     }
 
@@ -1421,16 +1383,18 @@ do_drop_down_button(
 
 struct ddl_data
 {
-    //popup_ptr popup;
-    //bool open_at_click;
+    bool popup_open;
 
     // When the list is open, it may maintain a separate internal selection.
     // The internal selection can be copied into the actual control state
     // when the list is closed.
     optional<int> internal_selection;
 
-    button_input_state input;
+    drop_down_button_data button;
+
     focus_rect_data focus_rendering;
+
+    ddl_data() : popup_open(false) {}
 };
 
 // ddl_list_query_event is used to query the drop down list to determine how
@@ -1490,22 +1454,8 @@ static int clamp_ddl_index(ui_context& ctx, widget_id ddl_id, int index)
     return clamp(index, 0, item_count > 0 ? item_count - 1 : 0);
 }
 
-//struct proxy_controller : ui_controller
-//{
-//    proxy_controller(
-//        ui_system& parent_system, routable_widget_id parent_id)
-//      : parent_system(parent_system), parent_id(parent_id) {}
-//    ui_system& parent_system;
-//    routable_widget_id parent_id;
-//
-//    void do_ui(ui_context& ctx)
-//    {
-//        wrapped_event e(parent_id.id, ctx);
-//        issue_targeted_event(parent_system, e, parent_id);
-//    }
-//};
-
-static bool process_ddl_key_press(ui_context& ctx, widget_id ddl_id,
+static bool process_ddl_movement_keys(
+    ui_context& ctx, widget_id ddl_id,
     optional<int>& selected_index, key_event_info const& info)
 {
     if (info.mods == 0)
@@ -1548,6 +1498,12 @@ static bool process_ddl_key_press(ui_context& ctx, widget_id ddl_id,
     return false;
 }
 
+static void open_ddl(ui_context& ctx, ddl_data& data, widget_id id)
+{
+    data.internal_selection = get_ddl_selected_index(ctx, id);
+    data.popup_open = true;
+}
+
 untyped_ui_value const*
 untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
     ui_flag_set flags)
@@ -1560,9 +1516,9 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
     untyped_ui_value const* result = 0;
 
     id_ = get_widget_id(ctx);
-    get_data(ctx, &data_);
+    get_cached_data(ctx, &data_);
 
-    widget_state state = get_button_state(ctx, id_, data_->input);
+    widget_state state = get_button_state(ctx, id_, data_->button.input);
 
     container_.begin(ctx, const_text("control"),
         add_default_padding(
@@ -1573,9 +1529,6 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
     {
      case RENDER_CATEGORY:
       {
-        if (!is_rendering_active(ctx))
-            break;
-
         if ((state & WIDGET_FOCUSED))
             draw_focus_rect(ctx, data_->focus_rendering,
                 container_.outer_region());
@@ -1583,25 +1536,67 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
         break;
       }
 
-     case REGION_CATEGORY:
-        //do_box_region(ctx, id_, container_.outer_region());
-        break;
-
      case INPUT_CATEGORY:
       {
         key_event_info info;
         if (detect_key_press(ctx, &info))
         {
-            // If this is a list of commands, don't select them without the
-            // list being open.
-            if (!(flags & COMMAND_LIST))
+            if (!data_->popup_open)
             {
-                optional<int> selection = get_ddl_selected_index(ctx, id_);
-                if (process_ddl_key_press(ctx, id_, selection, info))
+                // If this is a list of commands, don't select them without the
+                // list being open.
+                if (!(flags & COMMAND_LIST))
+                {
+                    optional<int> selection = get_ddl_selected_index(ctx, id_);
+                    if (process_ddl_movement_keys(ctx, id_, selection, info))
+                    {
+                        acknowledge_input_event(ctx);
+                        if (selection)
+                            select_ddl_item_at_index(ctx, id_, get(selection));
+                    }
+                }
+            }
+            else
+            {
+                if (process_ddl_movement_keys(ctx, id_,
+                        data_->internal_selection, info))
                 {
                     acknowledge_input_event(ctx);
-                    if (selection)
-                        select_ddl_item_at_index(ctx, id_, get(selection));
+                    make_selection_visible_ = true;
+                }
+            }
+            if (info.mods == 0)
+            {
+                switch (info.code)
+                {
+                 case KEY_ENTER:
+                 case KEY_NUMPAD_ENTER:
+                    if (!data_->popup_open)
+                    {
+                        open_ddl(ctx, *data_, id_);
+                        acknowledge_input_event(ctx);
+                        break;
+                    }
+                 case KEY_SPACE:
+                    if (data_->popup_open)
+                    {
+                        if (data_->internal_selection)
+                        {
+                            select_ddl_item_at_index(ctx, id_,
+                                get(data_->internal_selection));
+                        }
+                        data_->popup_open = false;
+                        acknowledge_input_event(ctx);
+                    }
+                    break;
+                 case KEY_ESCAPE:
+                    if (data_->popup_open)
+                    {
+                        acknowledge_input_event(ctx);
+                        data_->popup_open = false;
+                        acknowledge_input_event(ctx);
+                    }
+                    break;
                 }
             }
         }
@@ -1617,7 +1612,7 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
             if (e.target == id_)
             {
                 result = e.value.get();
-                clear_active_overlay(ctx);
+                data_->popup_open = false;
             }
             break;
           }
@@ -1646,14 +1641,10 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
         break;
     }
 
-    if (is_active_overlay(ctx, id_))
+    if (data_->popup_open)
         do_list_ = true;
 
     contents_.begin(ctx, BASELINE_Y | GROW_X | UNPADDED);
-
-    // HACK: The contents need to be unpadded to line up with text controls.
-    //const_cast<layout_vector&>(ctx.layout.style_info->padding_size) =
-    //    make_layout_vector(0, 0);
 
     return result;
 }
@@ -1664,62 +1655,23 @@ bool untyped_drop_down_list::do_list()
 
     contents_.end();
 
-    if (do_drop_down_button(ctx, CENTER | UNPADDED, id_/*,
-            data_->popup, &data_->open_at_click*/))
+    if (do_drop_down_button(ctx, CENTER | UNPADDED, id_, &data_->button))
     {
-        data_->internal_selection =
-            get_ddl_selected_index(ctx, id_);
-        set_active_overlay(ctx, id_);
-        //vector<2,int> absolute_position = vector<2,int>(
-        //    transform(ctx.geometry.transformation_matrix,
-        //        vector<2,double>(container_.region().corner)) +
-        //    make_vector<double>(0.5, 0.5));
-        //data_->popup.reset(ctx.surface->open_popup(
-        //    new proxy_controller(*ctx.system,
-        //        make_routable_widget_id(ctx, id_)),
-        //    absolute_position +
-        //        make_vector<int>(0, container_.region().size[1]),
-        //    absolute_position +
-        //        make_vector<int>(container_.region().size[0], 0),
-        //    make_vector<int>(container_.region().size[0], 0)));
+        open_ddl(ctx, *data_, id_);
     }
-
-    container_.end();
 
     alia_if (do_list_)
     {
-        list_overlay_.begin(ctx, make_layout_vector(100, 100));
+        layout_vector lower = container_.inner_region().corner;
+        layout_vector upper = lower + container_.inner_region().size;
+        popup_.begin(ctx, id_,
+            make_vector(lower[0], upper[1]),
+            make_vector(upper[0], lower[1]));
+        if (popup_.user_closed())
+            data_->popup_open = false;
+
         list_border_.begin(ctx, GROW | PADDED);
         list_panel_.begin(ctx, const_text("control"), 2, GROW | UNPADDED);
-
-    //    key_event_info info;
-    //    if (detect_key_press(*list_ctx_, &info))
-    //    {
-    //        if (process_ddl_key_press(ctx, id_,
-    //                data_->internal_selection, info))
-    //        {
-    //            acknowledge_input_event(*list_ctx_);
-    //            make_selection_visible_ = true;
-    //        }
-    //        if (info.mods == 0 &&
-    //           (info.code == KEY_ENTER ||
-    //            info.code == KEY_NUMPAD_ENTER ||
-    //            info.code == KEY_SPACE))
-    //        {
-    //            if (data_->internal_selection)
-    //            {
-    //                select_ddl_item_at_index(ctx, id_,
-    //                    get(data_->internal_selection));
-    //            }
-    //            acknowledge_input_event(*list_ctx_);
-    //            data_->popup->close();
-    //        }
-    //        if (info.mods == 0 && info.code == KEY_ESCAPE)
-    //        {
-    //            acknowledge_input_event(*list_ctx_);
-    //            data_->popup->close();
-    //        }
-    //    }
     }
     alia_end
 
@@ -1734,8 +1686,10 @@ void untyped_drop_down_list::end()
         {
             list_panel_.end();
             list_border_.end();
-            list_overlay_.end();
+            popup_.end();
         }
+
+        container_.end();
 
         ctx_ = 0;
     }
@@ -1743,76 +1697,73 @@ void untyped_drop_down_list::end()
 
 bool untyped_ddl_item::begin(untyped_drop_down_list& list, bool is_selected)
 {
-    //list_ = &list;
-    //int index = list.list_index_++;
-    //ddl_data* data = list.data_;
+    list_ = &list;
+    int index = list.list_index_++;
+    ddl_data* data = list.data_;
 
-    //bool is_internally_selected = data->internal_selection &&
-    //    get(data->internal_selection) == index;
+    bool is_internally_selected = data->internal_selection &&
+        get(data->internal_selection) == index;
 
-    //ui_context& ctx = *list.list_ctx_;
+    ui_context& ctx = *list.ctx_;
 
-    //widget_id id = get_widget_id(ctx);
-    //panel_.begin(ctx, const_text("item"), UNPADDED, NO_FLAGS, id,
-    //    get_widget_state(ctx, id, true, false, is_internally_selected));
+    widget_id id = get_widget_id(ctx);
+    panel_.begin(ctx, const_text("item"), UNPADDED, NO_CLICK_DETECTION, id,
+        get_widget_state(ctx, id, true, false, is_internally_selected));
 
-    //if (list.make_selection_visible_ && is_internally_selected)
-    //    make_widget_visible(*ctx.system, make_routable_widget_id(ctx, id));
+    if (list.make_selection_visible_ && is_internally_selected)
+        make_widget_visible(*ctx.system, make_routable_widget_id(ctx, id));
 
-    //switch (ctx.event->category)
-    //{
-    // case INPUT_CATEGORY:
-    //    if (detect_click(ctx, id, LEFT_BUTTON))
-    //        return true;
-    //    break;
+    switch (ctx.event->category)
+    {
+     case INPUT_CATEGORY:
+        if (detect_click(ctx, id, LEFT_BUTTON))
+            return true;
+        break;
 
-    // case NO_CATEGORY:
-    //    switch (ctx.event->type)
-    //    {
-    //     case CUSTOM_EVENT:
-    //        {
-    //            ddl_list_query_event* query =
-    //                dynamic_cast<ddl_list_query_event*>(ctx.event);
-    //            if (query && query->target == list.id_)
-    //            {
-    //                if (is_selected)
-    //                    query->selected_index = index;
-    //                ++query->total_items;
-    //            }
-    //        }
-    //        {
-    //            ddl_select_index_event* event =
-    //                dynamic_cast<ddl_select_index_event*>(ctx.event);
-    //            if (event && event->target == list.id_ &&
-    //                event->index == index)
-    //            {
-    //                return true;
-    //            }
-    //        }
-    //        break;
-
-    //     case INITIAL_VISIBILITY_EVENT:
-    //        if (is_internally_selected)
-    //        {
-    //            make_widget_visible(*ctx.system,
-    //                make_routable_widget_id(ctx, id));
-    //        }
-    //        break;
-    //    }
-    //    break;
-    //}
+     case NO_CATEGORY:
+        switch (ctx.event->type)
+        {
+         case CUSTOM_EVENT:
+            {
+                ddl_list_query_event* query =
+                    dynamic_cast<ddl_list_query_event*>(ctx.event);
+                if (query && query->target == list.id_)
+                {
+                    if (is_selected)
+                        query->selected_index = index;
+                    ++query->total_items;
+                }
+            }
+            {
+                ddl_select_index_event* event =
+                    dynamic_cast<ddl_select_index_event*>(ctx.event);
+                if (event && event->target == list.id_ &&
+                    event->index == index)
+                {
+                    return true;
+                }
+            }
+            break;
+        }
+        break;
+    }
 
     return false;
 }
 void untyped_ddl_item::end()
 {
-    //panel_.end();
+    if (list_)
+    {
+        panel_.end();
+        list_ = 0;
+    }
 }
 void untyped_ddl_item::select(untyped_ui_value* value)
 {
-    //set_value_event e(list_->id_, value);
-    //issue_targeted_event(*list_->ctx_->system, e,
-    //    make_routable_widget_id(*list_->ctx_, list_->id_));
+    set_value_event e(list_->id_, value);
+    issue_targeted_event(*list_->ctx_->system, e,
+        make_routable_widget_id(*list_->ctx_, list_->id_));
+    end_pass(*list_->ctx_);
 }
 
 struct draggable_separator_data
@@ -1852,8 +1803,6 @@ bool do_draggable_separator(ui_context& ctx, accessor<int> const& width,
 
      case RENDER_CATEGORY:
       {
-        if (!is_rendering_active(ctx))
-            break;
         layout_box const& region = data->layout_node.assignment().region;
         caching_renderer cache(ctx, data->rendering, *ctx.style.id, region);
         if (cache.needs_rendering())
@@ -1954,6 +1903,78 @@ void resizable_content::end()
                 issue_set_value_event(*ctx_, id_, size_);
         }
         ctx_ = 0;
+    }
+}
+
+void popup::begin(ui_context& ctx, widget_id id,
+    layout_vector const& lower_bound, layout_vector const& upper_bound)
+{
+    ctx_ = &ctx;
+    id_ = id;
+
+    // Update the context's layer Z so that the popup is above other content.
+    set_layer_z(ctx, ctx.layer_z + 1);
+
+    vector<2,int> absolute_lower = vector<2,int>(
+        transform(ctx.geometry.transformation_matrix,
+            vector<2,double>(lower_bound) + make_vector<double>(0.5, 0.5)));
+    vector<2,int> absolute_upper = vector<2,int>(
+        transform(ctx.geometry.transformation_matrix,
+            vector<2,double>(upper_bound) + make_vector<double>(0.5, 0.5)));
+
+    layout_vector surface_size = layout_vector(ctx.surface->size());
+    layout_vector maximum_size;
+    for (unsigned i = 0; i != 2; ++i)
+    {
+        maximum_size[i] =
+            (std::max)(absolute_upper[i], surface_size[i] - absolute_lower[i]);
+    }
+
+    layout_.begin(ctx, maximum_size);
+
+    if (!is_refresh_pass(ctx))
+    {
+        vector<2,int> position;
+        for (unsigned i = 0; i != 2; ++i)
+        {
+            if (absolute_lower[i] + layout_.size()[i] <= surface_size[i] ||
+                surface_size[i] - absolute_lower[i] > absolute_upper[i])
+            {
+                position[i] = lower_bound[i];
+            }
+            else
+            {
+                position[i] = upper_bound[i] - layout_.size()[i];
+            }
+        }
+        transform_.begin(*get_layout_traversal(ctx).geometry);
+        transform_.set(translation_matrix(vector<2,double>(position)));
+    }
+
+    // Intercept clicks to other parts of the surface.
+    background_id_ = get_widget_id(ctx);
+    handle_mouse_hit(ctx, background_id_);
+}
+bool popup::user_closed()
+{
+    ui_context& ctx = *ctx_;
+    return
+        detect_mouse_press(ctx, background_id_, LEFT_BUTTON) || 
+        detect_mouse_press(ctx, background_id_, MIDDLE_BUTTON) || 
+        detect_mouse_press(ctx, background_id_, RIGHT_BUTTON) ||
+        detect_focus_loss(ctx, id_);
+}
+void popup::end()
+{
+    if (ctx_)
+    {
+        transform_.end();
+	layout_.end();
+
+        // Restore the context's layer Z.
+	set_layer_z(*ctx_, ctx_->layer_z - 1);
+
+	ctx_ = 0;
     }
 }
 

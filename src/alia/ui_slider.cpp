@@ -78,8 +78,7 @@ struct default_slider_renderer : slider_renderer
 
         layout_box track_box(track_position, track_size);
 
-        caching_renderer cache(ctx, data->track,
-            combine_ids(ref(*ctx.style.id), make_id(0)),
+        caching_renderer cache(ctx, data->track, ref(*ctx.style.id),
             track_box);
         if (cache.needs_rendering())
         {
@@ -112,7 +111,7 @@ struct default_slider_renderer : slider_renderer
         layout_box thumb_region = this->thumb_region(ctx);
         thumb_region.corner += thumb_position;
 
-        caching_renderer cache(ctx, data->track,
+        caching_renderer cache(ctx, data->thumb,
             combine_ids(ref(*ctx.style.id), make_id(state)),
             thumb_region);
         if (cache.needs_rendering())
@@ -273,8 +272,6 @@ do_slider(ui_context& ctx, accessor<double> const& value,
 
      case RENDER_CATEGORY:
       {
-        if (!is_rendering_active(ctx))
-            break;
         slider_renderer const* renderer = data->rendering.renderer;
         renderer->draw_track(ctx, data->rendering.data, axis,
             get_track_position(ctx, *data, axis),

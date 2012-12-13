@@ -54,8 +54,12 @@ ALIA_DEFINE_FLAG_CODE(opengl_texture_flag_tag, 1, OPENGL_TILED_TEXTURE)
 // An OpenGL surface implements the surface interface for an OpenGL surface.
 struct opengl_surface : surface
 {
+    opengl_surface() : layer_z_(0) {}
+
     void set_opengl_context(opengl_context& ctx) { ctx_ = &ctx; }
     void set_size(vector<2,unsigned> const& size) { size_ = size; }
+
+    void set_layer_z(double z);
 
     // Call this at the beginning of each rendering pass to initialize the
     // OpenGL rendering state.
@@ -110,6 +114,7 @@ struct opengl_surface : surface
  private:
     opengl_context* ctx_;
     vector<2,unsigned> size_;
+    double layer_z_;
 };
 
 }

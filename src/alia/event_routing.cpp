@@ -2,27 +2,6 @@
 
 namespace alia {
 
-void scoped_event_routing_traversal::begin(
-    event_routing_traversal& traversal,
-    data_traversal& data,
-    bool targeted,
-    routing_region_ptr const& target)
-{
-    traversal.targeted = targeted;
-    traversal.path_to_target.clear();
-    if (targeted)
-    {
-        routing_region* region = target.get();
-        while (region)
-        {
-            traversal.path_to_target.push_front(region);
-            region = region->parent.get();
-        }
-    }
-    traversal.data = &data;
-    traversal.active_region = 0;
-}
-
 void scoped_routing_region::begin(event_routing_traversal& traversal)
 {
     routing_region_ptr* region;
@@ -42,10 +21,10 @@ void scoped_routing_region::begin(event_routing_traversal& traversal)
 
     if (traversal.targeted)
     {
-        if (!traversal.path_to_target.empty() &&
-            traversal.path_to_target.front() == region->get())
+        if (traversal.path_to_target &&
+            traversal.path_to_target->node == region->get())
         {
-            traversal.path_to_target.pop_front();
+            traversal.path_to_target = traversal.path_to_target->rest;
             is_relevant_ = true;
         }
         else

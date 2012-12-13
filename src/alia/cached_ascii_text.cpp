@@ -171,11 +171,12 @@ void cached_ascii_text::draw(
         else
             return;
     }
-    display_image_->draw(p - make_vector<double>(get_metrics().overhang, 0));
+    display_image_->draw(surface,
+        p - make_vector<double>(get_metrics().overhang, 0));
 }
 
 void cached_ascii_text::draw_subimage(
-    vector<2,double> const& p, box<2,double> r)
+    surface& surface, vector<2,double> const& p, box<2,double> r)
 {
     if (r.size[0] == 0 || r.size[1] == 0)
         return;
@@ -183,10 +184,10 @@ void cached_ascii_text::draw_subimage(
     if (r.corner[0] + r.size[0] > text_image_.view.size[0])
         r.size[0] = text_image_.view.size[0] - r.corner[0];
 
-    display_image_->draw_region(p, r);
+    display_image_->draw_region(surface, p, r);
 }
 void cached_ascii_text::draw_highlight_subimage(
-    vector<2,double> const& p, box<2,double> r)
+    surface& surface, vector<2,double> const& p, box<2,double> r)
 {
     if (r.size[0] == 0 || r.size[1] == 0)
         return;
@@ -194,7 +195,7 @@ void cached_ascii_text::draw_highlight_subimage(
     if (r.corner[0] + r.size[0] > text_image_.view.size[0])
         r.size[0] = text_image_.view.size[0] - r.corner[0];
 
-    highlight_display_image_->draw_region(p, r);
+    highlight_display_image_->draw_region(surface, p, r);
 }
 
 void cached_ascii_text::draw_with_selection(
@@ -226,12 +227,16 @@ void cached_ascii_text::draw_with_selection(
     }
 
     // Draw the overhang on both sides of the image.
-    draw_subimage(p - make_vector<double>(get_metrics().overhang, 0),
+    draw_subimage(
+        surface, 
+        p - make_vector<double>(get_metrics().overhang, 0),
         box<2,double>(
             make_vector<double>(0, 0),
             make_vector<double>(get_metrics().overhang,
                 text_image_.view.size[1])));
-    draw_subimage(p + make_vector<double>(get_size()[0], 0),
+    draw_subimage(
+        surface, 
+        p + make_vector<double>(get_size()[0], 0),
         box<2,double>(
             make_vector<double>(
                 text_image_.view.size[0] - get_metrics().overhang, 0),
@@ -253,7 +258,8 @@ void cached_ascii_text::draw_with_selection(
         ++i;
     {
         int height = int(i - line_spans_.begin()) * row_spacing;
-        draw_subimage(q, box<2,double>(u, make_vector<double>(
+        draw_subimage(
+            surface, q, box<2,double>(u, make_vector<double>(
             get_size()[0], height)));
         q[1] += height;
         u[1] += height;
@@ -273,7 +279,8 @@ void cached_ascii_text::draw_with_selection(
         for (; char_i < highlight_begin; ++char_i)
             width += character_widths_[char_i];
 
-        draw_subimage(q, box<2,double>(u, make_vector<double>(
+        draw_subimage(
+            surface, q, box<2,double>(u, make_vector<double>(
             width, get_metrics().height)));
         q[0] += width;
         u[0] += width;
@@ -286,7 +293,8 @@ void cached_ascii_text::draw_with_selection(
         for (; char_i < i->end; ++char_i)
             width += character_widths_[char_i];
 
-        draw_highlight_subimage(q,
+        draw_highlight_subimage(
+            surface, q,
             box<2,double>(u,
                 make_vector<double>(width, get_metrics().height)));
 
@@ -305,7 +313,8 @@ void cached_ascii_text::draw_with_selection(
         for (; char_i < highlight_end; ++char_i)
             width += character_widths_[char_i];
 
-        draw_highlight_subimage(q,
+        draw_highlight_subimage(
+            surface, q,
             box<2,double>(u,
                 make_vector<double>(width, get_metrics().height)));
         q[0] += width;
@@ -318,7 +327,8 @@ void cached_ascii_text::draw_with_selection(
         for (; char_i < i->end; ++char_i)
             width += character_widths_[char_i];
 
-        draw_subimage(q,
+        draw_subimage(
+            surface, q,
             box<2,double>(u,
                 make_vector<double>(width, get_metrics().height)));
 
@@ -332,7 +342,8 @@ void cached_ascii_text::draw_with_selection(
     // big subregion.
     if (u[1] < get_size()[1])
     {
-        draw_subimage(q,
+        draw_subimage(
+            surface, q,
             box<2,double>(u,
                 make_vector<double>(get_size()[0], get_size()[1] - u[1])));
     }

@@ -162,7 +162,6 @@ enum ui_event_type
 
     // rendering
     RENDER_EVENT,
-    OVERLAY_RENDER_EVENT,
 
     // regions
     HIT_TEST_EVENT,
@@ -228,11 +227,9 @@ struct refresh_event : ui_event
 
 struct render_event : ui_event
 {
-    render_event(ui_event_type type)
-      : ui_event(RENDER_CATEGORY, type)
-      , active(false)
+    render_event()
+      : ui_event(RENDER_CATEGORY, RENDER_EVENT)
     {}
-    bool active;
 };
 
 struct input_event : ui_event
@@ -406,24 +403,14 @@ struct ui_system
 
     ui_time_type millisecond_tick_count;
 
-    routable_widget_id overlay;
-
     ui_system() : millisecond_tick_count(0) {}
 };
 
 static inline surface& get_surface(ui_context& ctx)
 { return *ctx.surface; }
 
-static inline bool is_rendering_active(ui_context& ctx)
-{
-    return static_cast<render_event&>(*ctx.event).active == true;
-}
-
 static inline bool is_rendering(ui_context& ctx)
-{
-    return ctx.event->category == RENDER_CATEGORY &&
-        is_rendering_active(ctx);
-}
+{ return ctx.event->type == RENDER_EVENT; }
 
 struct primary_style_properties
 {
@@ -436,11 +423,12 @@ struct hit_test_event : ui_event
 {
     vector<2,double> position;
     routable_widget_id id;
+    double hit_z;
     mouse_cursor cursor;
 
     hit_test_event(vector<2,double> const& position)
       : ui_event(REGION_CATEGORY, HIT_TEST_EVENT), position(position),
-        id(null_widget_id), cursor(DEFAULT_CURSOR)
+        id(null_widget_id), hit_z(0), cursor(DEFAULT_CURSOR)
     {}
 };
 

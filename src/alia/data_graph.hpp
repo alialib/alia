@@ -1,5 +1,5 @@
-#ifndef ALIA_DATA_INTERFACE_HPP
-#define ALIA_DATA_INTERFACE_HPP
+#ifndef ALIA_DATA_GRAPH_HPP
+#define ALIA_DATA_GRAPH_HPP
 
 #include <alia/id.hpp>
 #include <alia/common.hpp>
@@ -69,13 +69,13 @@ namespace alia {
 // Data nodes are stored as linked lists, held by data_blocks.
 //
 // Note that a data node is capable of storing any type of data.
-// data_node describes all data nodes.
-// typed_data_node<T> describes data nodes that store values of type T.
+// data_node is a base class for all data nodes.
+// typed_data_node<T> represents data nodes that store values of type T.
 //
 struct data_node : noncopyable
 {
     data_node() : next(0) {}
-    virtual ~data_node() { delete next; }
+    virtual ~data_node() {}
     data_node* next;
 };
 template<class T>
@@ -146,6 +146,7 @@ struct data_traversal
     naming_map* active_map;
     data_block* active_block;
     named_block_ref_node* predicted_named_block;
+    named_block_ref_node* used_named_blocks;
     named_block_ref_node** named_block_next_ptr;
     data_node** next_data_ptr;
     bool gc_enabled;
@@ -195,6 +196,7 @@ struct scoped_data_block : noncopyable
     // old state
     data_block* old_active_block_;
     named_block_ref_node* old_predicted_named_block_;
+    named_block_ref_node* old_used_named_blocks_;
     named_block_ref_node** old_named_block_next_ptr_;
     data_node** old_next_data_ptr_;
 };
@@ -424,16 +426,11 @@ bool get_cached_data(Context& ctx, T** ptr)
     get_data(ctx, &holder);
     if (holder->data)
     {
+        assert(dynamic_cast<typed_cached_data<T>*>(holder->data));
         typed_cached_data<T>* data =
-            dynamic_cast<typed_cached_data<T>*>(holder->data);
-        if (data)
-        {
-            *ptr = &data->value;
-            return false;
-        }
-        // data is the wrong type, so get rid of it.
-        delete holder->data;
-        holder->data = 0;
+            static_cast<typed_cached_data<T>*>(holder->data);
+        *ptr = &data->value;
+        return false;
     }
     typed_cached_data<T>* data = new typed_cached_data<T>;
     holder->data = data;

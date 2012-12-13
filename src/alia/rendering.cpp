@@ -52,7 +52,7 @@ void caching_renderer::draw()
     if (surface_)
     {
         if (data_->is_valid)
-            data_->value->draw(vector<2,double>(position_));
+            data_->value->draw(*surface_, vector<2,double>(position_));
 
         surface_ = 0;
     }

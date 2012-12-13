@@ -209,7 +209,13 @@ data_block::data_block()
 }
 data_block::~data_block()
 {
-    delete nodes;
+    data_node* node = nodes;
+    while (node)
+    {
+        data_node* next = node->next;
+        delete node;
+        node = next;
+    }
     delete_named_block_ref_list(named_blocks);
 }
 
@@ -219,27 +225,34 @@ void scoped_data_block::begin(data_traversal& traversal, data_block& block)
 
     old_active_block_ = traversal.active_block;
     old_predicted_named_block_ = traversal.predicted_named_block;
+    old_used_named_blocks_ = traversal.used_named_blocks;
     old_named_block_next_ptr_ = traversal.named_block_next_ptr;
     old_next_data_ptr_ = traversal.next_data_ptr;
 
     traversal.active_block = &block;
     traversal.predicted_named_block = block.named_blocks;
-    traversal.named_block_next_ptr = &block.named_blocks;
+    traversal.used_named_blocks = 0;
+    traversal.named_block_next_ptr = &traversal.used_named_blocks;
     traversal.next_data_ptr = &block.nodes;
 
-    block.named_blocks = 0;
     block.cache_clear = false;
 }
 void scoped_data_block::end()
 {
     if (traversal_)
     {
-        // If GC is enabled, clear out the unused named blocks.
+        // If GC is enabled, record which named blocks were used and clear out
+        // the unused ones.
         if (traversal_->gc_enabled)
+        {
+            traversal_->active_block->named_blocks =
+                traversal_->used_named_blocks;
             delete_named_block_ref_list(traversal_->predicted_named_block);
+        }
 
         traversal_->active_block = old_active_block_;
         traversal_->predicted_named_block = old_predicted_named_block_;
+        traversal_->used_named_blocks = old_used_named_blocks_;
         traversal_->named_block_next_ptr = old_named_block_next_ptr_;
         traversal_->next_data_ptr = old_next_data_ptr_;
 
@@ -288,7 +301,8 @@ static named_block_node* find_named_block(
         predicted->node->map == &map)
     {
         traversal.predicted_named_block = predicted->next;
-        record_usage(traversal, predicted);
+        if (traversal.gc_enabled)
+            record_usage(traversal, predicted);
         return predicted->node;
     }
 
