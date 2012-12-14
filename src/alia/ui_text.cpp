@@ -607,7 +607,6 @@ bool do_link(
     {
      case REFRESH_CATEGORY:
         refresh_standalone_text(ctx, data->standalone_text, text, layout_spec);
-        //refresh_focus(ctx, id);
         break;
 
      case REGION_CATEGORY:

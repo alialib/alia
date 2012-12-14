@@ -125,7 +125,7 @@ struct scrollbar_data
     unsigned axis;
     int physical_position, drag_start_delta;
     themed_rendering_data<scrollbar_renderer> rendering;
-    widget_data background_id_data[2], thumb_id_data, button_id_data[2];
+    widget_identity background_id_data[2], thumb_id_data, button_id_data[2];
 };
 
 int get_scrollbar_width(ui_context& ctx, scrollbar_data const& data)
@@ -143,11 +143,6 @@ void refresh_scrollbar_data(ui_context& ctx, scrollbar_data& data)
 {
     static default_scrollbar_renderer default_renderer;
     refresh_themed_rendering_data(ctx, data.rendering, &default_renderer);
-    //refresh_widget_id(ctx, &data.background_id_data[0]);
-    //refresh_widget_id(ctx, &data.background_id_data[1]);
-    //refresh_widget_id(ctx, &data.thumb_id_data);
-    //refresh_widget_id(ctx, &data.button_id_data[0]);
-    //refresh_widget_id(ctx, &data.button_id_data[1]);
 }
 
 class scrollbar

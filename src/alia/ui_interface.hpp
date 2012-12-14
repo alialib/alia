@@ -10,8 +10,7 @@ namespace alia {
 
 struct ui_context;
 
-struct widget_data;
-typedef widget_data* widget_id;
+typedef void const* widget_id;
 static widget_id const auto_id = 0;
 
 // Often, widgets with internal storage will want to give the application the

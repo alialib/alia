@@ -192,7 +192,6 @@ struct check_box_data
     layout_leaf layout_node;
     themed_rendering_data<check_box_renderer> rendering;
     button_input_state input;
-    widget_data id;
 };
 
 struct default_check_box_renderer : check_box_renderer
@@ -273,7 +272,7 @@ check_box_result do_check_box(
     check_box_data* data;
     get_cached_data(ctx, &data);
 
-    init_optional_widget_id(ctx, id, &data->id);
+    init_optional_widget_id(ctx, id, data);
 
     switch (ctx.event->category)
     {
@@ -288,7 +287,6 @@ check_box_result do_check_box(
             leaf_layout_requirements(renderer->default_size(ctx), 0, 0),
             LEFT | CENTER_Y | PADDED);
         add_layout_node(get_layout_traversal(ctx), &data->layout_node);
-        //refresh_focus(ctx, id);
         break;
       }
 
@@ -345,7 +343,6 @@ struct radio_button_data
     layout_leaf layout_node;
     themed_rendering_data<radio_button_renderer> rendering;
     button_input_state input;
-    widget_data id;
 };
 
 struct default_radio_button_renderer : radio_button_renderer
@@ -436,7 +433,7 @@ do_radio_button(
     radio_button_data* data;
     get_cached_data(ctx, &data);
 
-    init_optional_widget_id(ctx, id, &data->id);
+    init_optional_widget_id(ctx, id, data);
 
     switch (ctx.event->category)
     {
@@ -451,7 +448,6 @@ do_radio_button(
             leaf_layout_requirements(renderer->default_size(ctx), 0, 0),
             LEFT | CENTER_Y | PADDED);
         add_layout_node(get_layout_traversal(ctx), &data->layout_node);
-        //refresh_focus(ctx, id);
         break;
       }
 
@@ -507,7 +503,6 @@ struct node_expander_data
     layout_leaf layout_node;
     themed_rendering_data<node_expander_renderer> rendering;
     button_input_state input;
-    widget_data id;
 };
 
 struct default_node_expander_renderer : node_expander_renderer
@@ -607,7 +602,7 @@ node_expander_result do_node_expander(
     node_expander_data* data;
     get_cached_data(ctx, &data);
 
-    init_optional_widget_id(ctx, id, &data->id);
+    init_optional_widget_id(ctx, id, data);
 
     switch (ctx.event->category)
     {
@@ -622,7 +617,6 @@ node_expander_result do_node_expander(
             leaf_layout_requirements(renderer->default_size(ctx), 0, 0),
             LEFT | CENTER_Y | PADDED);
         add_layout_node(get_layout_traversal(ctx), &data->layout_node);
-        //refresh_focus(ctx, id);
         break;
       }
 
@@ -753,7 +747,6 @@ void bordered_box::end()
 struct panel_data
 {
     caching_renderer_data rendering;
-    widget_data id;
 };
 
 static void begin_panel(
@@ -763,7 +756,6 @@ static void begin_panel(
     switch (ctx.event->category)
     {
      case REFRESH_CATEGORY:
-        //refresh_focus(ctx, id);
         break;
 
      case RENDER_CATEGORY:
@@ -822,7 +814,7 @@ void panel::begin(
     panel_data* data;
     get_cached_data(ctx, &data);
 
-    init_optional_widget_id(ctx, id, &data->id);
+    init_optional_widget_id(ctx, id, data);
 
     outer_.begin(ctx, add_default_padding(layout_spec, PADDED));
 
@@ -1163,7 +1155,6 @@ do_icon_button(
             leaf_layout_requirements(renderer->default_size(ctx), 0, 0),
             LEFT | CENTER_Y | PADDED);
         add_layout_node(get_layout_traversal(ctx), &data->layout_node);
-        //refresh_focus(ctx, id);
         break;
       }
 
@@ -1356,7 +1347,6 @@ do_drop_down_button(
             leaf_layout_requirements(renderer->default_size(ctx), 0, 0),
             LEFT | CENTER_Y | PADDED);
         add_layout_node(get_layout_traversal(ctx), &data->layout_node);
-        //refresh_focus(ctx, id);
         break;
       }
 

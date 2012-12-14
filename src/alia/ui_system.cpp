@@ -566,17 +566,10 @@ routable_widget_id make_routable_widget_id(ui_context& ctx, widget_id id)
     return routable_widget_id(id, get_active_region(ctx.routing));
 }
 
-//void refresh_widget_id(ui_context& ctx, widget_id id)
-//{
-//    id->last_refresh = ctx.layout.refresh_counter;
-//}
-
 widget_id get_widget_id(ui_context& ctx)
 {
-    widget_id id;
+    widget_identity* id;
     get_data(ctx, &id);
-    //if (is_refresh_pass(ctx))
-    //    refresh_widget_id(ctx, id);
     return id;
 }
 
@@ -824,14 +817,6 @@ bool detect_focus_loss(ui_context& ctx, widget_id id)
     }
     return false;
 }
-
-//void refresh_focus(ui_context& ctx, widget_id id)
-//{
-//    refresh_event& e = get_event<refresh_event>(ctx);
-//    if (id_has_focus(ctx, id))
-//        e.saw_focus = true;
-//    id->focus_bits |= e.saw_focus ? 0 : 1;
-//}
 
 void add_to_focus_order(ui_context& ctx, widget_id id)
 {

@@ -141,7 +141,7 @@ struct slider_data
     slider_data() : dragging(false) {}
     themed_rendering_data<slider_renderer> rendering;
     layout_leaf layout_node;
-    widget_data track_id, thumb_id;
+    widget_identity track_id, thumb_id;
     bool dragging;
     int dragging_offset;
     double dragging_value;
@@ -252,8 +252,6 @@ do_slider(ui_context& ctx, accessor<double> const& value,
     {
      case REFRESH_CATEGORY:
       {
-        //refresh_widget_id(ctx, &data->track_id);
-        //refresh_widget_id(ctx, &data->thumb_id);
         static default_slider_renderer default_renderer;
         refresh_themed_rendering_data(ctx, data->rendering, &default_renderer);
         slider_renderer const* renderer = data->rendering.renderer;
@@ -266,7 +264,6 @@ do_slider(ui_context& ctx, accessor<double> const& value,
             leaf_layout_requirements(default_size, 0, 0),
             LEFT | CENTER_Y | PADDED);
         add_layout_node(get_layout_traversal(ctx), &data->layout_node);
-        //refresh_focus(ctx, thumb_id);
         break;
       }
 

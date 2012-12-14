@@ -336,11 +336,11 @@ struct style_search_path
     style_search_path const* rest;
 };
 
-struct widget_data
-{
-    //counter_type last_refresh;
-    //widget_data() : last_refresh(0) {}
-};
+// Widgets are identified by pointers.
+// Sometimes its useful to request some dummy data just to get a unique
+// pointer to use as a widget ID. When doing so, using this type can make
+// things clearer.
+typedef char widget_identity;
 
 struct routable_widget_id
 {

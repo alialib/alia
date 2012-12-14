@@ -127,8 +127,6 @@ bool compute_fps(ui_context& ctx, int* fps);
 
 routable_widget_id make_routable_widget_id(ui_context& ctx, widget_id id);
 
-//void refresh_widget_id(ui_context& ctx, widget_id id);
-
 widget_id get_widget_id(ui_context& ctx);
 
 static inline void get_widget_id_if_needed(ui_context& ctx, widget_id& id)
@@ -248,8 +246,6 @@ bool detect_explicit_drag_release(ui_context& ctx, widget_id id,
 bool detect_wheel_movement(ui_context& ctx, float* movement);
 
 // FOCUS
-
-//void refresh_focus(ui_context& ctx, widget_id id);
 
 void add_to_focus_order(ui_context& ctx, widget_id id);
 
