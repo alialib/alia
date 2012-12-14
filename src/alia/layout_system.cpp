@@ -525,7 +525,7 @@ vertical_layout_query::vertical_layout_query(
     ALIA_BEGIN_LOCATION_SPECIFIC_NAMED_BLOCK(ctx, named_block_,
         combine_ids(make_id(&cacher), make_id(assigned_width)))
     update_required_ =
-        get_data(ctx, &data_) ||
+        get_cached_data(ctx, &data_) ||
         data_->last_vertical_query != last_content_change_;
 }
 void vertical_layout_query::update(

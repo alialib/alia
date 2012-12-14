@@ -574,7 +574,7 @@ void get_simple_layout_container(
     layout const& layout_spec)
 {
     simple_layout_container_storage<Logic>* storage;
-    if (get_data(*get_layout_traversal(ctx).data, &storage))
+    if (get_cached_data(*get_layout_traversal(ctx).data, &storage))
         storage->container.logic = &storage->logic;
 
     *container = &storage->container;

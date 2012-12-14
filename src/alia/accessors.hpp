@@ -588,12 +588,12 @@ select_field(
     return field_accessor<StructureAccessor,Field>(structure, field);
 }
 
-// const_text(x), where x is a string constant, creates a read-only accessor
+// text(x), where x is a string constant, creates a read-only accessor
 // for accessing x as a string. Its ID is the pointer to the text.
-struct const_text : accessor<string>
+struct text : accessor<string>
 {
-    const_text(char const* text)
-      : text_(text), id_(text, ID_CONTEXT_APP_INSTANCE)
+    text(char const* x)
+      : text_(x), id_(x, ID_CONTEXT_APP_INSTANCE)
     {}
     id_interface const& id() const { return id_; }
     bool is_gettable() const { return true; }

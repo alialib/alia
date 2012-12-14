@@ -7,7 +7,7 @@ namespace alia {
 void do_spacer(layout_traversal& traversal, layout const& layout_spec)
 {
     layout_leaf* node;
-    get_data(*traversal.data, &node);
+    get_cached_data(*traversal.data, &node);
 
     if (traversal.is_refresh_pass)
     {
@@ -21,7 +21,7 @@ void do_spacer(layout_traversal& traversal, layout_box* region,
     layout const& layout_spec)
 {
     layout_leaf* node;
-    get_data(*traversal.data, &node);
+    get_cached_data(*traversal.data, &node);
 
     if (traversal.is_refresh_pass)
     {
@@ -873,7 +873,7 @@ calculate_column_assignments(
 {
     named_block nb(ctx, combine_ids(make_id(&grid), make_id(assigned_width)));
     cached_grid_column_assignments* cache;
-    if (get_data(ctx, &cache) ||
+    if (get_cached_data(ctx, &cache) ||
         cache->last_update != grid.container->last_content_change)
     {
         update_grid_column_requirements(ctx, grid);
@@ -993,7 +993,7 @@ void grid_layout::concrete_begin(
 {
     traversal_ = &traversal;
 
-    get_data(*traversal.data, &data_);
+    get_cached_data(*traversal.data, &data_);
     if (traversal.is_refresh_pass)
         data_->rows = 0;
 
@@ -1016,7 +1016,7 @@ void grid_row::begin(grid_layout const& grid, layout const& layout_spec)
     layout_traversal& traversal = *grid.traversal_;
 
     grid_row_container* row;
-    if (get_data(*traversal.data, &row))
+    if (get_cached_data(*traversal.data, &row))
         initialize(traversal, *row);
 
     // Add this row to the grid's list of children.
@@ -1204,7 +1204,7 @@ calculate_uniform_grid_vertical_requirements(
 {
     named_block nb(ctx, combine_ids(make_id(&grid), make_id(assigned_width)));
     cached_uniform_grid_vertical_requirements* cache;
-    if (get_data(ctx, &cache) ||
+    if (get_cached_data(ctx, &cache) ||
         cache->last_update != grid.container->last_content_change)
     {
         update_horizontal_grid_cell_requirements(ctx, grid);
@@ -1300,7 +1300,7 @@ void uniform_grid_layout::concrete_begin(
 {
     traversal_ = &traversal;
 
-    get_data(*traversal.data, &data_);
+    get_cached_data(*traversal.data, &data_);
     if (traversal.is_refresh_pass)
         data_->rows = 0;
 
@@ -1324,7 +1324,7 @@ void uniform_grid_row::begin(
     layout_traversal& traversal = *grid.traversal_;
 
     uniform_grid_row_container* row;
-    if (get_data(*traversal.data, &row))
+    if (get_cached_data(*traversal.data, &row))
         initialize(traversal, *row);
 
     // Add this row to the grid's list of children.

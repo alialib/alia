@@ -601,7 +601,7 @@ bool do_link(
     get_cached_data(ctx, &data);
 
     widget_state state = get_button_state(ctx, id, data->input);
-    scoped_substyle substyle(ctx, const_text("link"), state);
+    scoped_substyle substyle(ctx, alia::text("link"), state);
 
     switch (ctx.event->category)
     {
@@ -802,7 +802,7 @@ struct text_control
         cursor_id = get_widget_id(ctx);
 
         panel_.begin(
-            ctx, const_text("control"),
+            ctx, text("control"),
             add_default_alignment(
                 add_default_size(layout_spec, width(12, CHARS)),
                 LEFT, BASELINE_Y));

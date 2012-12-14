@@ -742,9 +742,6 @@ void bordered_box::begin(
         make_polygon(poly, box_with_border);
         ctx.surface->draw_filled_polygon(color, poly, 4);
     }
-
-    //const_cast<layout_vector&>(ctx.layout.style_info->padding_size) =
-    //    padding_size;
 }
 void bordered_box::end()
 {
@@ -910,8 +907,7 @@ void clickable_panel::begin(
     get_data(ctx, &data);
 
     widget_state state = get_button_state(ctx, id, data->input);
-    panel_.begin(ctx, const_text("clickable_panel"), layout_spec, flags, id,
-        state);
+    panel_.begin(ctx, text("clickable_panel"), layout_spec, flags, id, state);
     if ((flags & DISABLED) == 0)
     {
         clicked_ = do_button_input(ctx, id, data->input);
@@ -1018,7 +1014,7 @@ struct button_data
 button_result
 do_button(
     ui_context& ctx,
-    getter<string> const& text,
+    getter<string> const& label,
     layout const& layout_spec,
     widget_id id)
 {
@@ -1026,9 +1022,9 @@ do_button(
     button_data* data;
     get_data(ctx, &data);
     widget_state state = get_button_state(ctx, id, data->input);
-    panel p(ctx, const_text("button"),
+    panel p(ctx, text("button"),
         add_default_alignment(layout_spec, LEFT, TOP), NO_FLAGS, id, state);
-    do_text(ctx, text, CENTER);
+    do_text(ctx, label, CENTER);
     if (is_rendering(ctx) && (state & WIDGET_FOCUSED))
     {
         draw_focus_rect(ctx, data->focus_rect, add_border(p.inner_region(),
@@ -1528,7 +1524,7 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
 
     widget_state state = get_button_state(ctx, id_, data_->button.input);
 
-    container_.begin(ctx, const_text("control"),
+    container_.begin(ctx, text("control"),
         add_default_padding(
             add_default_alignment(layout_spec, LEFT, BASELINE_Y), PADDED),
         NO_INTERNAL_PADDING, id_, state);
@@ -1679,7 +1675,7 @@ bool untyped_drop_down_list::do_list()
             data_->popup_open = false;
 
         list_border_.begin(ctx, GROW | PADDED);
-        list_panel_.begin(ctx, const_text("control"), 2, GROW | UNPADDED);
+        list_panel_.begin(ctx, text("control"), 2, GROW | UNPADDED);
     }
     alia_end
 
@@ -1715,7 +1711,7 @@ bool untyped_ddl_item::begin(untyped_drop_down_list& list, bool is_selected)
     ui_context& ctx = *list.ctx_;
 
     widget_id id = get_widget_id(ctx);
-    panel_.begin(ctx, const_text("item"), UNPADDED, NO_CLICK_DETECTION, id,
+    panel_.begin(ctx, text("item"), UNPADDED, NO_CLICK_DETECTION, id,
         get_widget_state(ctx, id, true, false, is_internally_selected));
 
     if (list.make_selection_visible_ && is_internally_selected)
