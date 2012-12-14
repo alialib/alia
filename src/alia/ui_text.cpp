@@ -1,13 +1,10 @@
 #include <alia/ui_library.hpp>
 #include <alia/ui_utilities.hpp>
-
-#include <boost/lexical_cast.hpp>
-#include <boost/format.hpp>
-#include <boost/numeric/conversion/cast.hpp>
-
 #include <alia/native/font_provider.hpp>
 #include <alia/ascii_text_renderer.hpp>
 #include <alia/cached_ascii_text.hpp>
+
+#include <sstream>
 #include <utility>
 #include <cctype>
 
@@ -316,26 +313,50 @@ void text_layout_node::assign_wrapped_regions(
     }
 }
 
+namespace {
+
+template<class T>
+bool string_to_value(string const& str, T* value)
+{
+    std::istringstream s(str);
+    T x;
+    if (!(s >> x))
+        return false;
+    s >> std::ws;
+    if (s.eof())
+    {
+        *value = x;
+        return true;
+    }
+    return false;
+}
+
+template<class T>
+string value_to_string(T const& value)
+{
+    std::ostringstream s;
+    s << value;
+    return s.str();
+}
+
+}
+
 template<class T>
 bool float_from_string(T* value, string const& str, string* message)
 {
-    try
-    {
-        *value = boost::lexical_cast<T>(str);
-        return true;
-    }
-    catch (boost::bad_lexical_cast&)
+    if (!string_to_value(str, value))
     {
         *message = "This input expects a number.";
         return false;
     }
+    return true;
 }
 
 #define ALIA_FLOAT_CONVERSIONS(T) \
     bool from_string(T* value, string const& str, string* message) \
     { return float_from_string(value, str, message); } \
     string to_string(T value) \
-    { return str(boost::format("%s") % value); }
+    { return value_to_string(value); }
 
 ALIA_FLOAT_CONVERSIONS(float)
 ALIA_FLOAT_CONVERSIONS(double)
@@ -343,29 +364,27 @@ ALIA_FLOAT_CONVERSIONS(double)
 template<class T>
 bool integer_from_string(T* value, string const& str, string* message)
 {
-    try
-    {
-        long long n = boost::lexical_cast<long long>(str);
-        *value = boost::numeric_cast<T>(n);
-        return true;
-    }
-    catch (boost::bad_lexical_cast&)
+    long long n;
+    if (!string_to_value(str, &n))
     {
         *message = "This input expects an integer.";
         return false;
     }
-    catch (boost::bad_numeric_cast&)
+    T x = T(n);
+    if (x != n)
     {
         *message = "integer out of range";
         return false;
     }
+    *value = x;
+    return true;
 }
 
 #define ALIA_INTEGER_CONVERSIONS(T) \
     bool from_string(T* value, string const& str, string* message) \
     { return integer_from_string(value, str, message); } \
     string to_string(T value) \
-    { return boost::lexical_cast<string>(value); }
+    { return value_to_string(value); }
 
 ALIA_INTEGER_CONVERSIONS(int)
 ALIA_INTEGER_CONVERSIONS(unsigned)
@@ -435,7 +454,9 @@ void do_number(ui_context& ctx, char const* format,
     {
         if (number.is_gettable())
         {
-            cache->text = str(boost::format(format) % get(number));
+            char buffer[64];
+            sprintf(buffer, format, get(number));
+            cache->text = buffer;
             cache->valid = true;
         }
         else

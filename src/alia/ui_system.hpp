@@ -6,8 +6,6 @@
 #include <alia/dispatch_table.hpp>
 #include <alia/color.hpp>
 
-#include <boost/optional.hpp>
-
 namespace alia {
 
 struct parse_error : exception

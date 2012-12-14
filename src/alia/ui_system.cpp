@@ -1,6 +1,5 @@
 #include <alia/ui_system.hpp>
 #include <alia/ui_utilities.hpp>
-#include <boost/lexical_cast.hpp>
 
 #include <windows.h>
 
@@ -34,26 +33,42 @@ int get_integer_property(style_tree const* tree,
     char const* property_name, int default_value)
 {
     string const* value = get_style_property(tree, property_name);
-    return value ? boost::lexical_cast<int>(value->c_str()) : default_value;
+    string message;
+    int n;
+    if (value && from_string(&n, *value, &message))
+        return n;
+    return default_value;
 }
 int get_integer_property(style_search_path const* path,
     char const* property_name, int default_value)
 {
     string const* value = get_style_property(path, property_name);
-    return value ? boost::lexical_cast<int>(value->c_str()) : default_value;
+    string message;
+    int n;
+    if (value && from_string(&n, *value, &message))
+        return n;
+    return default_value;
 }
 
 float get_float_property(style_tree const* tree,
     char const* property_name, float default_value)
 {
     string const* value = get_style_property(tree, property_name);
-    return value ? boost::lexical_cast<float>(value->c_str()) : default_value;
+    string message;
+    float n;
+    if (value && from_string(&n, *value, &message))
+        return n;
+    return default_value;
 }
 float get_float_property(style_search_path const* path,
     char const* property_name, float default_value)
 {
     string const* value = get_style_property(path, property_name);
-    return value ? boost::lexical_cast<float>(value->c_str()) : default_value;
+    string message;
+    float n;
+    if (value && from_string(&n, *value, &message))
+        return n;
+    return default_value;
 }
 
 string get_string_property(style_tree const* tree,

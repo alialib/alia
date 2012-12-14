@@ -74,15 +74,6 @@ struct bulleted_item : noncopyable
 
 // TEXT
 
-#define ALIA_DECLARE_STRING_CONVERSIONS(T) \
-    bool from_string(T* value, string const& str, string* message); \
-    string to_string(T value);
-
-ALIA_DECLARE_STRING_CONVERSIONS(int)
-ALIA_DECLARE_STRING_CONVERSIONS(unsigned)
-ALIA_DECLARE_STRING_CONVERSIONS(float)
-ALIA_DECLARE_STRING_CONVERSIONS(double)
-
 void do_text(ui_context& ctx, getter<string> const& text,
     layout const& layout_spec = default_layout);
 

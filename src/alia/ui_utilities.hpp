@@ -489,6 +489,15 @@ struct boolean_widget_renderer : dispatch_interface
 
 void set_layer_z(ui_context& ctx, double layer_z);
 
+#define ALIA_DECLARE_STRING_CONVERSIONS(T) \
+    bool from_string(T* value, string const& str, string* message); \
+    string to_string(T value);
+
+ALIA_DECLARE_STRING_CONVERSIONS(int)
+ALIA_DECLARE_STRING_CONVERSIONS(unsigned)
+ALIA_DECLARE_STRING_CONVERSIONS(float)
+ALIA_DECLARE_STRING_CONVERSIONS(double)
+
 }
 
 #endif

@@ -1,7 +1,8 @@
 #ifndef ALIA_DISPATCH_TABLE_HPP
 #define ALIA_DISPATCH_TABLE_HPP
 
-#include <boost/ptr_container/ptr_map.hpp>
+#include <alia/common.hpp>
+#include <map>
 
 namespace alia {
 
@@ -16,9 +17,11 @@ struct dispatch_interface
     virtual ~dispatch_interface() {}
 };
 
-typedef boost::ptr_map<
-    std::type_info const*,dispatch_interface,type_info_comparison>
-    dispatch_map;
+typedef std::map<
+    std::type_info const*,
+    alia__shared_ptr<dispatch_interface>,
+    type_info_comparison
+> dispatch_map;
 
 struct dispatch_table
 {
@@ -37,7 +40,7 @@ bool get_implementation(dispatch_table const& table, Impl** impl)
     dispatch_map::const_iterator i = table.mapping.find(&typeid(Impl));
     if (i != table.mapping.end())
     {
-        *impl = static_cast<Impl*>(i->second);
+        *impl = static_cast<Impl*>(i->second.get());
         return true;
     }
     else
