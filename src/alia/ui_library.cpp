@@ -726,15 +726,11 @@ void bordered_box::begin(
     ui_context& ctx, layout const& layout_spec, ui_flag_set flags)
 {
     box_.begin(ctx, (flags & HORIZONTAL) ? 0 : 1, layout_spec);
-
     if (is_rendering(ctx))
     {
-        rgba8 const& color = ctx.style.properties->border_color;
-        layout_box box_with_border =
-            add_border(box_.region(), ctx.layout.style_info->padding_size);
-        layout_vector poly[4];
-        make_polygon(poly, box_with_border);
-        ctx.surface->draw_filled_polygon(color, poly, 4);
+        ctx.surface->draw_filled_box(ctx.style.properties->border_color,
+            box<2,double>(add_border(box_.region(),
+                ctx.layout.style_info->padding_size)));
     }
 }
 void bordered_box::end()
@@ -760,31 +756,39 @@ static void begin_panel(
 
      case RENDER_CATEGORY:
       {
-        layout_box const& rect = outer.region();
-        caching_renderer cache(ctx, data->rendering, *ctx.style.id, rect);
-        if (cache.needs_rendering())
+        if (flags & ROUNDED)
         {
-            int padding = ctx.layout.style_info->padding_size[0];
-            skia_renderer renderer(ctx, cache.image(), rect.size);
-            SkPaint paint;
-            paint.setFlags(SkPaint::kAntiAlias_Flag);
-            set_color(paint, ctx.style.properties->bg_color);
-            SkRect sr;
-            sr.fLeft = 0;
-            sr.fRight = SkScalar(rect.size[0]);
-            sr.fTop = 0;
-            sr.fBottom = SkScalar(rect.size[1]);
-            if (flags & ROUNDED)
+            layout_box const& rect = outer.region();
+            caching_renderer cache(ctx, data->rendering, *ctx.style.id, rect);
+            if (cache.needs_rendering())
             {
-                SkScalar radius = SkScalar(padding) * 2;
-                renderer.canvas().drawRoundRect(sr, radius, radius, paint);
+                int padding = ctx.layout.style_info->padding_size[0];
+                skia_renderer renderer(ctx, cache.image(), rect.size);
+                SkPaint paint;
+                paint.setFlags(SkPaint::kAntiAlias_Flag);
+                set_color(paint, ctx.style.properties->bg_color);
+                SkRect sr;
+                sr.fLeft = 0;
+                sr.fRight = SkScalar(rect.size[0]);
+                sr.fTop = 0;
+                sr.fBottom = SkScalar(rect.size[1]);
+                if (flags & ROUNDED)
+                {
+                    SkScalar radius = SkScalar(padding) * 2;
+                    renderer.canvas().drawRoundRect(sr, radius, radius, paint);
+                }
+                else
+                    renderer.canvas().drawRect(sr, paint);
+                renderer.cache();
+                cache.mark_valid();
             }
-            else
-                renderer.canvas().drawRect(sr, paint);
-            renderer.cache();
-            cache.mark_valid();
+            cache.draw();
         }
-        cache.draw();
+        else
+        {
+            ctx.surface->draw_filled_box(ctx.style.properties->bg_color,
+                box<2,double>(outer.region()));
+        }
         break;
       }
 

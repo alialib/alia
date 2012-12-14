@@ -39,7 +39,7 @@ void caching_renderer::begin(caching_renderer_data& data, surface& surface,
 {
     data_ = &data;
     surface_ = &surface;
-    position_ = region.corner;
+    region_ = region;
 
     refresh_keyed_data(data,
         combine_ids(ref(content_id), make_id(region.size)));
@@ -52,7 +52,13 @@ void caching_renderer::draw()
     if (surface_)
     {
         if (data_->is_valid)
-            data_->value->draw(*surface_, vector<2,double>(position_));
+        {
+            data_->value->draw(*surface_,
+                box<2,double>(region_),
+                box<2,double>(
+                    make_vector(0., 0.),
+                    vector<2,double>(region_.size)));
+        }
 
         surface_ = 0;
     }

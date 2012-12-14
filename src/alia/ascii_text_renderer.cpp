@@ -164,9 +164,13 @@ void draw_ascii_text(
         int character_width = image->advance[index];
         assert(character_width + image->metrics.overhang * 2 <=
             image->cell_size[0]);
-        display_image->draw_region(
+        display_image->draw(
             surface,
-            p,
+            box<2,double>(
+                p,
+                make_vector<double>(
+                    character_width + image->metrics.overhang * 2,
+                    image->cell_size[1])),
             box<2,double>(
                 make_vector<double>(
                     (index % 16) * image->cell_size[0],

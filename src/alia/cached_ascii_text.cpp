@@ -172,7 +172,12 @@ void cached_ascii_text::draw(
             return;
     }
     display_image_->draw(surface,
-        p - make_vector<double>(get_metrics().overhang, 0));
+        box<2,double>(
+            p - make_vector<double>(get_metrics().overhang, 0),
+            vector<2,double>(text_image_.view.size)),
+        box<2,double>(
+            make_vector(0., 0.),
+            vector<2,double>(text_image_.view.size)));
 }
 
 void cached_ascii_text::draw_subimage(
@@ -184,7 +189,7 @@ void cached_ascii_text::draw_subimage(
     if (r.corner[0] + r.size[0] > text_image_.view.size[0])
         r.size[0] = text_image_.view.size[0] - r.corner[0];
 
-    display_image_->draw_region(surface, p, r);
+    display_image_->draw(surface, box<2,double>(p, r.size), r);
 }
 void cached_ascii_text::draw_highlight_subimage(
     surface& surface, vector<2,double> const& p, box<2,double> r)
@@ -195,7 +200,7 @@ void cached_ascii_text::draw_highlight_subimage(
     if (r.corner[0] + r.size[0] > text_image_.view.size[0])
         r.size[0] = text_image_.view.size[0] - r.corner[0];
 
-    highlight_display_image_->draw_region(surface, p, r);
+    highlight_display_image_->draw(surface, box<2,double>(p, r.size), r);
 }
 
 void cached_ascii_text::draw_with_selection(
@@ -352,12 +357,10 @@ void cached_ascii_text::draw_with_selection(
 void cached_ascii_text::draw_cursor(
     surface& surface, bool selected, vector<2,double> const& p)
 {
-    surface.draw_line(
+    surface.draw_filled_box(
         selected ? highlight_font_image_->text_color :
             font_image_->text_color,
-        line_style(1, solid_line),
-        p + make_vector(0.5, 0.5),
-        p + make_vector(0.5, get_metrics().height + 0.5));
+        box<2,double>(p, make_vector<double>(1, get_metrics().height)));
 }
 
 cached_ascii_text::offset cached_ascii_text::get_character_at_point(

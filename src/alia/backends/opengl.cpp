@@ -10,6 +10,10 @@
 
 #include "glext.h"
 
+#include <alia/rendering.hpp>
+#include <alia/skia.hpp>
+#include <alia/layout_interface.hpp>
+
 namespace alia {
 
 void check_errors()
@@ -160,6 +164,8 @@ struct opengl_context::impl_data
     // When a texture is created, it is assigned the current version number.
     // Thus, only textures with the current version number are valid.
     unsigned version;
+
+    cached_image_ptr uniform_image;
 };
 
 struct opengl_texture : cached_image
@@ -201,10 +207,10 @@ struct simple_texture : opengl_texture
 
     void replace(image_interface const& img);
 
-    void draw(surface& surface,
-        vector<2,double> const& p, rgba8 const& color);
-    void draw_region(surface& surface,
-        vector<2,double> const& p, box<2,double> const& region,
+    void draw(
+        surface& surface,
+        box<2,double> const& surface_region,
+        box<2,double> const& image_region,
         rgba8 const& color);
 
     ~simple_texture();
@@ -326,8 +332,11 @@ void simple_texture::replace(image_interface const& img)
     check_errors();
 }
 
-void simple_texture::draw(surface& surface,
-    vector<2,double> const& p, rgba8 const& color)
+void simple_texture::draw(
+    surface& surface,
+    box<2,double> const& surface_region,
+    box<2,double> const& image_region,
+    rgba8 const& color)
 {
     glEnable(target_);
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
@@ -335,53 +344,9 @@ void simple_texture::draw(surface& surface,
 
     glColor4ub(color.r, color.g, color.b, color.a);
 
-    double x0 = p[0], x1 = x0 + image_size_[0];
-    double y0 = p[1], y1 = y0 + image_size_[1];
-
-    if (target_ == GL_TEXTURE_2D)
-    {
-        double tx = double(image_size_[0]) / texture_size_[0];
-        double ty = double(image_size_[1]) / texture_size_[1];
-
-        glBegin(GL_QUADS);
-        glTexCoord2d(0, 0);
-        glVertex2d(x0, y0);
-        glTexCoord2d(tx, 0);
-        glVertex2d(x1, y0);
-        glTexCoord2d(tx, ty);
-        glVertex2d(x1, y1);
-        glTexCoord2d(0, ty);
-        glVertex2d(x0, y1);
-        glEnd();
-    }
-    else
-    {
-        glBegin(GL_QUADS);
-        glTexCoord2d(0, 0);
-        glVertex2d(x0, y0);
-        glTexCoord2d(image_size_[0], 0);
-        glVertex2d(x1, y0);
-        glTexCoord2d(image_size_[0], image_size_[1]);
-        glVertex2d(x1, y1);
-        glTexCoord2d(0, image_size_[1]);
-        glVertex2d(x0, y1);
-        glEnd();
-    }
-
-    glDisable(target_);
-}
-
-void simple_texture::draw_region(
-    surface& surface, vector<2,double> const& p,
-    box<2,double> const& region, rgba8 const& color)
-{
-    glEnable(target_);
-    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-    glBindTexture(target_, texture_name_);
-
-    glColor4ub(color.r, color.g, color.b, color.a);
-
-    vector<2,double> const i0 = region.corner, i1 = get_high_corner(region);
+    vector<2,double> const
+        i0 = image_region.corner,
+        i1 = get_high_corner(image_region);
 
     double tx0, tx1, ty0, ty1;
     if (target_ == GL_TEXTURE_2D)
@@ -399,8 +364,11 @@ void simple_texture::draw_region(
         ty1 = i1[1];
     }
 
-    double const x0 = p[0], x1 = p[0] + region.size[0],
-        y0 = p[1], y1 = p[1] + region.size[1];
+    double const
+        x0 = surface_region.corner[0],
+        x1 = x0 + surface_region.size[0],
+        y0 = surface_region.corner[1],
+        y1 = y0 + surface_region.size[1];
 
     glBegin(GL_QUADS);
     glTexCoord2d(tx0, ty0);
@@ -433,10 +401,10 @@ struct tiled_texture : opengl_texture
 
     void replace(image_interface const& img);
 
-    void draw(surface& surface,
-        vector<2,double> const& p, rgba8 const& color);
-    void draw_region(surface& surface,
-        vector<2,double> const& p, box<2,double> const& region,
+    void draw(
+        surface& surface,
+        box<2,double> const& surface_region,
+        box<2,double> const& image_region,
         rgba8 const& color);
 
     ~tiled_texture();
@@ -598,65 +566,26 @@ tiled_texture::~tiled_texture()
     }
 }
 
-void tiled_texture::draw(surface& surface,
-    vector<2,double> const& p, rgba8 const& color)
+void tiled_texture::draw(
+    surface& surface,
+    box<2,double> const& surface_region,
+    box<2,double> const& image_region,
+    rgba8 const& color)
 {
     glEnable(target_);
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
     glColor4ub(color.r, color.g, color.b, color.a);
 
-    for (unsigned i = 0; i < n_tiles_[1]; i++)
-    {
-        double ty = (i == n_tiles_[1] - 1) ?
-            last_tile_size_[1] : tile_size_[1];
-        double y0 = p[1] + i * tile_size_[1];
-        double y1 = y0 + ty;
-        if (target_ == GL_TEXTURE_2D)
-            ty /= tile_size_[1];
-
-        for (unsigned j = 0; j < n_tiles_[0]; j++)
-        {
-            double tx = (j == n_tiles_[0] - 1) ?
-                last_tile_size_[0] : tile_size_[0];
-            double x0 = p[0] + j * tile_size_[0];
-            double x1 = x0 + tx;
-            if (target_ == GL_TEXTURE_2D)
-                tx /= tile_size_[0];
-
-            glBindTexture(target_, texture_names_[i * n_tiles_[0] + j]);
-
-            glBegin(GL_QUADS);
-            glTexCoord2d(0, 0);
-            glVertex2d(x0, y0);
-            glTexCoord2d(tx, 0);
-            glVertex2d(x1, y0);
-            glTexCoord2d(tx, ty);
-            glVertex2d(x1, y1);
-            glTexCoord2d(0, ty);
-            glVertex2d(x0, y1);
-            glEnd();
-        }
-    }
-
-    glDisable(target_);
-}
-
-void tiled_texture::draw_region(
-    surface& surface, vector<2,double> const& p,
-    box<2,double> const& region, rgba8 const& color)
-{
-    glEnable(target_);
-    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
-    glColor4ub(color.r, color.g, color.b, color.a);
+    double scale_x = surface_region.size[0] / image_region.size[0];
+    double scale_y = surface_region.size[1] / image_region.size[1];
 
     double py0 = 0, py1 = tile_size_[1];
     for (unsigned i = 0; i < n_tiles_[1];
         ++i, py0 = py1, py1 += tile_size_[1])
     {
-        double const cpy0 = (std::max)(py0, region.corner[1]);
-        double const cpy1 = (std::min)(py1, get_high_corner(region)[1]);
+        double const cpy0 = (std::max)(py0, image_region.corner[1]);
+        double const cpy1 = (std::min)(py1, get_high_corner(image_region)[1]);
 
         if (cpy0 >= cpy1)
             continue;
@@ -673,8 +602,9 @@ void tiled_texture::draw_region(
         for (unsigned j = 0; j < n_tiles_[0];
             ++j, px0 = px1, px1 += tile_size_[0])
         {
-            double const cpx0 = (std::max)(px0, region.corner[0]);
-            double const cpx1 = (std::min)(px1, get_high_corner(region)[0]);
+            double const cpx0 = (std::max)(px0, image_region.corner[0]);
+            double const cpx1 =
+                (std::min)(px1, get_high_corner(image_region)[0]);
 
             if (cpx0 >= cpx1)
                 continue;
@@ -687,10 +617,14 @@ void tiled_texture::draw_region(
                 tx1 /= tile_size_[0];
             }
 
-            double const x0 = p[0] + cpx0 - region.corner[0];
-            double const x1 = p[0] + cpx1 - region.corner[0];
-            double const y0 = p[1] + cpy0 - region.corner[1];
-            double const y1 = p[1] + cpy1 - region.corner[1];
+            double const x0 = surface_region.corner[0] +
+                (cpx0 - image_region.corner[0]) * scale_x;
+            double const x1 = surface_region.corner[0] +
+                (cpx1 - image_region.corner[0]) * scale_x;
+            double const y0 = surface_region.corner[1] +
+                (cpy0 - image_region.corner[1]) * scale_y;
+            double const y1 = surface_region.corner[1] +
+                (cpy1 - image_region.corner[1]) * scale_y;
 
             glBindTexture(target_, texture_names_[i * n_tiles_[0] + j]);
 
@@ -933,149 +867,29 @@ void opengl_surface::set_layer_z(double z)
     layer_z_ = z;
 }
 
-void opengl_surface::draw_line(rgba8 const& color, line_style const& style,
-    vector<2,double> const& p1, vector<2,double> const& p2)
+void opengl_surface::draw_filled_box(
+    rgba8 const& color, box<2,double> const& box)
 {
-    glLineStipple(style.stipple.factor, style.stipple.pattern);
-    glLineWidth(style.width);
-    glColor4ub(color.r, color.g, color.b, color.a);
-    glBegin(GL_LINES);
-    glVertex2d(p1[0], p1[1]);
-    glVertex2d(p2[0], p2[1]);
-    glEnd();
-}
-void opengl_surface::draw_line(rgba8 const& color, line_style const& style,
-    vector<2,float> const& p1, vector<2,float> const& p2)
-{
-    glLineStipple(style.stipple.factor, style.stipple.pattern);
-    glLineWidth(style.width);
-    glColor4ub(color.r, color.g, color.b, color.a);
-    glBegin(GL_LINES);
-    glVertex2f(p1[0], p1[1]);
-    glVertex2f(p2[0], p2[1]);
-    glEnd();
-}
-void opengl_surface::draw_line(rgba8 const& color, line_style const& style,
-    vector<2,int> const& p1, vector<2,int> const& p2)
-{
-    glLineStipple(style.stipple.factor, style.stipple.pattern);
-    glLineWidth(style.width);
-    glColor4ub(color.r, color.g, color.b, color.a);
-    glBegin(GL_LINES);
-    glVertex2i(p1[0], p1[1]);
-    glVertex2i(p2[0], p2[1]);
-    glEnd();
-}
-
-void opengl_surface::draw_line_strip(
-    rgba8 const& color, line_style const& style,
-    vector<2,double> const* vertices, unsigned n_vertices)
-{
-    glLineStipple(style.stipple.factor, style.stipple.pattern);
-    glLineWidth(style.width);
-    glColor4ub(color.r, color.g, color.b, color.a);
-    glBegin(GL_LINE_STRIP);
-    vector<2,double> const* end = vertices + n_vertices;
-    for (vector<2,double> const* i = vertices; i != end; ++i)
-        glVertex2d((*i)[0], (*i)[1]);
-    glEnd();
-}
-void opengl_surface::draw_line_strip(
-    rgba8 const& color, line_style const& style,
-    vector<2,float> const* vertices, unsigned n_vertices)
-{
-    glLineStipple(style.stipple.factor, style.stipple.pattern);
-    glLineWidth(style.width);
-    glColor4ub(color.r, color.g, color.b, color.a);
-    glBegin(GL_LINE_STRIP);
-    vector<2,float> const* end = vertices + n_vertices;
-    for (vector<2,float> const* i = vertices; i != end; ++i)
-        glVertex2f((*i)[0], (*i)[1]);
-    glEnd();
-}
-void opengl_surface::draw_line_strip(
-    rgba8 const& color, line_style const& style,
-    vector<2,int> const* vertices, unsigned n_vertices)
-{
-    glLineStipple(style.stipple.factor, style.stipple.pattern);
-    glLineWidth(style.width);
-    glColor4ub(color.r, color.g, color.b, color.a);
-    glBegin(GL_LINE_STRIP);
-    vector<2,int> const* end = vertices + n_vertices;
-    for (vector<2,int> const* i = vertices; i != end; ++i)
-        glVertex2i((*i)[0], (*i)[1]);
-    glEnd();
-}
-
-void opengl_surface::draw_line_loop(
-    rgba8 const& color, line_style const& style,
-    vector<2,double> const* vertices, unsigned n_vertices)
-{
-    glLineStipple(style.stipple.factor, style.stipple.pattern);
-    glLineWidth(style.width);
-    glColor4ub(color.r, color.g, color.b, color.a);
-    glBegin(GL_LINE_LOOP);
-    vector<2,double> const* end = vertices + n_vertices;
-    for (vector<2,double> const* i = vertices; i != end; ++i)
-        glVertex2d((*i)[0], (*i)[1]);
-    glEnd();
-}
-void opengl_surface::draw_line_loop(
-    rgba8 const& color, line_style const& style,
-    vector<2,float> const* vertices, unsigned n_vertices)
-{
-    glLineStipple(style.stipple.factor, style.stipple.pattern);
-    glLineWidth(style.width);
-    glColor4ub(color.r, color.g, color.b, color.a);
-    glBegin(GL_LINE_LOOP);
-    vector<2,float> const* end = vertices + n_vertices;
-    for (vector<2,float> const* i = vertices; i != end; ++i)
-        glVertex2f((*i)[0], (*i)[1]);
-    glEnd();
-}
-void opengl_surface::draw_line_loop(
-    rgba8 const& color, line_style const& style,
-    vector<2,int> const* vertices, unsigned n_vertices)
-{
-    glLineStipple(style.stipple.factor, style.stipple.pattern);
-    glLineWidth(style.width);
-    glColor4ub(color.r, color.g, color.b, color.a);
-    glBegin(GL_LINE_LOOP);
-    vector<2,int> const* end = vertices + n_vertices;
-    for (vector<2,int> const* i = vertices; i != end; ++i)
-        glVertex2i((*i)[0], (*i)[1]);
-    glEnd();
-}
-
-void opengl_surface::draw_filled_polygon(rgba8 const& color,
-    vector<2,double> const* vertices, unsigned n_vertices)
-{
-    glColor4ub(color.r, color.g, color.b, color.a);
-    glBegin(GL_POLYGON);
-    vector<2,double> const* end = vertices + n_vertices;
-    for (vector<2,double> const* i = vertices; i != end; ++i)
-        glVertex2d((*i)[0], (*i)[1]);
-    glEnd();
-}
-void opengl_surface::draw_filled_polygon(rgba8 const& color,
-    vector<2,float> const* vertices, unsigned n_vertices)
-{
-    glColor4ub(color.r, color.g, color.b, color.a);
-    glBegin(GL_POLYGON);
-    vector<2,float> const* end = vertices + n_vertices;
-    for (vector<2,float> const* i = vertices; i != end; ++i)
-        glVertex2f((*i)[0], (*i)[1]);
-    glEnd();
-}
-void opengl_surface::draw_filled_polygon(rgba8 const& color,
-    vector<2,int> const* vertices, unsigned n_vertices)
-{
-    glColor4ub(color.r, color.g, color.b, color.a);
-    glBegin(GL_POLYGON);
-    vector<2,int> const* end = vertices + n_vertices;
-    for (vector<2,int> const* i = vertices; i != end; ++i)
-        glVertex2i((*i)[0], (*i)[1]);
-    glEnd();
+    if (!is_valid(ctx_->impl_->uniform_image))
+    {
+        skia_renderer renderer;
+        renderer.begin(ctx_->impl_->uniform_image, *this,
+            make_vector<int>(1, 1));
+        SkPaint paint;
+        paint.setFlags(SkPaint::kAntiAlias_Flag);
+        set_color(paint, rgba8(0xff, 0xff, 0xff, 0xff));
+        SkRect sr;
+        sr.fLeft = 0;
+        sr.fRight = SkScalar(1);
+        sr.fTop = 0;
+        sr.fBottom = SkScalar(1);
+        renderer.canvas().drawRect(sr, paint);
+        renderer.cache();
+    }
+    ctx_->impl_->uniform_image->draw(
+        *this, box,
+        alia::box<2,double>(make_vector(0., 0.), make_vector(1., 1.)),
+        color);
 }
 
 }

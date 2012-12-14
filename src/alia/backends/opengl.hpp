@@ -59,18 +59,18 @@ struct opengl_surface : surface
     void set_opengl_context(opengl_context& ctx) { ctx_ = &ctx; }
     void set_size(vector<2,unsigned> const& size) { size_ = size; }
 
-    void set_layer_z(double z);
-
     // Call this at the beginning of each rendering pass to initialize the
     // OpenGL rendering state.
     void initialize_render_state();
 
     // implementation of the surface interface
     vector<2,unsigned> size() const { return size_; }
+    void set_layer_z(double z);
     void cache_image(cached_image_ptr& data, image_interface const& img);
     void cache_content(cached_rendering_content_ptr& data);
     void set_transformation_matrix(matrix<3,3,double> const& m);
     void set_clip_region(box<2,double> const& region);
+    void draw_filled_box(rgba8 const& color, box<2,double> const& box);
 
     // OpenGL has a lot more flexibility in loading textures than the surface
     // interface demands. Some applications may want to manage their textures
@@ -80,36 +80,6 @@ struct opengl_surface : surface
         cached_image_ptr& data,
         image_interface const& img,
         opengl_texture_flag_set flags);
-
-    // DRAWING
-
-    void draw_line(rgba8 const& color, line_style const& style,
-        vector<2,double> const& p1, vector<2,double> const& p2);
-    void draw_line(rgba8 const& color, line_style const& style,
-        vector<2,float> const& p1, vector<2,float> const& p2);
-    void draw_line(rgba8 const& color, line_style const& style,
-        vector<2,int> const& p1, vector<2,int> const& p2);
-
-    void draw_line_strip(rgba8 const& color, line_style const& style,
-        vector<2,double> const* vertices, unsigned n_vertices);
-    void draw_line_strip(rgba8 const& color, line_style const& style,
-        vector<2,float> const* vertices, unsigned n_vertices);
-    void draw_line_strip(rgba8 const& color, line_style const& style,
-        vector<2,int> const* vertices, unsigned n_vertices);
-
-    void draw_line_loop(rgba8 const& color, line_style const& style,
-        vector<2,double> const* vertices, unsigned n_vertices);
-    void draw_line_loop(rgba8 const& color, line_style const& style,
-        vector<2,float> const* vertices, unsigned n_vertices);
-    void draw_line_loop(rgba8 const& color, line_style const& style,
-        vector<2,int> const* vertices, unsigned n_vertices);
-
-    void draw_filled_polygon(rgba8 const& color,
-        vector<2,double> const* vertices, unsigned n_vertices);
-    void draw_filled_polygon(rgba8 const& color,
-        vector<2,float> const* vertices, unsigned n_vertices);
-    void draw_filled_polygon(rgba8 const& color,
-        vector<2,int> const* vertices, unsigned n_vertices);
 
  private:
     opengl_context* ctx_;

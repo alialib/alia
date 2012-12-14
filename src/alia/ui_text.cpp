@@ -415,7 +415,12 @@ void do_text(ui_context& ctx, getter<string> const& text,
             }
             data->cached_image->draw(
                 *ctx.surface,
-                vector<2,double>(data->image_position));
+                box<2,double>(
+                    vector<2,double>(data->image_position),
+                    vector<2,double>(data->text_image.view.size)),
+                box<2,double>(
+                    make_vector(0., 0.),
+                    vector<2,double>(data->text_image.view.size)));
         }
         break;
     }
@@ -517,7 +522,10 @@ static void render_standalone_text(
     }
     data.cached_image->draw(
         *ctx.surface,
-        vector<2,double>(get_region(data).corner));
+        box<2,double>(get_region(data)),
+        box<2,double>(
+            make_vector(0., 0.),
+            vector<2,double>(get_region(data).size)));
 }
 
 void do_label(ui_context& ctx, getter<string> const& text,

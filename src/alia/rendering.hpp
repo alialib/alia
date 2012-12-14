@@ -98,20 +98,14 @@ struct cached_image : noncopyable
     // Get the size of the image.
     virtual vector<2,unsigned> size() const = 0;
 
-    // Draw the image on the surface at the given position.
+    // Draw a portion of the image over the given surface region.
     // Each pixel in the image is multiplied (component-wise) by the given
     // color before display.
     // (The default value for color will make this a noop.)
     virtual void draw(
         surface& surface,
-        vector<2,double> const& position,
-        rgba8 const& color = rgba8(0xff, 0xff, 0xff, 0xff)) = 0;
-    // Identical to above, but only a subregion of the image is displayed.
-    // region is specified in pixels.
-    virtual void draw_region(
-        surface& surface,
-        vector<2,double> const& position,
-        box<2,double> const& region,
+        box<2,double> const& surface_region,
+        box<2,double> const& image_region,
         rgba8 const& color = rgba8(0xff, 0xff, 0xff, 0xff)) = 0;
 };
 typedef alia__shared_ptr<cached_image> cached_image_ptr;
@@ -245,39 +239,40 @@ struct surface : geometry_context_subscriber
     // Copy text to the clipboard.
     virtual void set_clipboard_text(string const& text) = 0;
 
-  // DRAWING...
+    virtual void draw_filled_box(rgba8 const& color,
+        box<2,double> const& box) = 0;
 
-    // Draw a line segment.
-    virtual void draw_line(rgba8 const& color, line_style const& style,
-        vector<2,double> const& p1, vector<2,double> const& p2) = 0;
-    virtual void draw_line(rgba8 const& color, line_style const& style,
-        vector<2,float> const& p1, vector<2,float> const& p2) = 0;
-    virtual void draw_line(rgba8 const& color, line_style const& style,
-        vector<2,int> const& p1, vector<2,int> const& p2) = 0;
+    //// Draw a line segment.
+    //virtual void draw_line(rgba8 const& color, line_style const& style,
+    //    vector<2,double> const& p1, vector<2,double> const& p2) = 0;
+    //virtual void draw_line(rgba8 const& color, line_style const& style,
+    //    vector<2,float> const& p1, vector<2,float> const& p2) = 0;
+    //virtual void draw_line(rgba8 const& color, line_style const& style,
+    //    vector<2,int> const& p1, vector<2,int> const& p2) = 0;
 
-    // Draw a line strip.
-    virtual void draw_line_strip(rgba8 const& color, line_style const& style,
-        vector<2,double> const* vertices, unsigned n_vertices) = 0;
-    virtual void draw_line_strip(rgba8 const& color, line_style const& style,
-        vector<2,float> const* vertices, unsigned n_vertices) = 0;
-    virtual void draw_line_strip(rgba8 const& color, line_style const& style,
-        vector<2,int> const* vertices, unsigned n_vertices) = 0;
+    //// Draw a line strip.
+    //virtual void draw_line_strip(rgba8 const& color, line_style const& style,
+    //    vector<2,double> const* vertices, unsigned n_vertices) = 0;
+    //virtual void draw_line_strip(rgba8 const& color, line_style const& style,
+    //    vector<2,float> const* vertices, unsigned n_vertices) = 0;
+    //virtual void draw_line_strip(rgba8 const& color, line_style const& style,
+    //    vector<2,int> const* vertices, unsigned n_vertices) = 0;
 
-    // Draw a line loop.
-    virtual void draw_line_loop(rgba8 const& color, line_style const& style,
-        vector<2,double> const* vertices, unsigned n_vertices) = 0;
-    virtual void draw_line_loop(rgba8 const& color, line_style const& style,
-        vector<2,float> const* vertices, unsigned n_vertices) = 0;
-    virtual void draw_line_loop(rgba8 const& color, line_style const& style,
-        vector<2,int> const* vertices, unsigned n_vertices) = 0;
+    //// Draw a line loop.
+    //virtual void draw_line_loop(rgba8 const& color, line_style const& style,
+    //    vector<2,double> const* vertices, unsigned n_vertices) = 0;
+    //virtual void draw_line_loop(rgba8 const& color, line_style const& style,
+    //    vector<2,float> const* vertices, unsigned n_vertices) = 0;
+    //virtual void draw_line_loop(rgba8 const& color, line_style const& style,
+    //    vector<2,int> const* vertices, unsigned n_vertices) = 0;
 
-    // Draw a filled shape.
-    virtual void draw_filled_polygon(rgba8 const& color,
-        vector<2,double> const* vertices, unsigned n_vertices) = 0;
-    virtual void draw_filled_polygon(rgba8 const& color,
-        vector<2,float> const* vertices, unsigned n_vertices) = 0;
-    virtual void draw_filled_polygon(rgba8 const& color,
-        vector<2,int> const* vertices, unsigned n_vertices) = 0;
+    //// Draw a filled shape.
+    //virtual void draw_filled_polygon(rgba8 const& color,
+    //    vector<2,double> const* vertices, unsigned n_vertices) = 0;
+    //virtual void draw_filled_polygon(rgba8 const& color,
+    //    vector<2,float> const* vertices, unsigned n_vertices) = 0;
+    //virtual void draw_filled_polygon(rgba8 const& color,
+    //    vector<2,int> const* vertices, unsigned n_vertices) = 0;
 };
 
 typedef keyed_data<cached_image_ptr> caching_renderer_data;
@@ -316,7 +311,7 @@ struct caching_renderer
  private:
     caching_renderer_data* data_;
     surface* surface_;
-    vector<2,int> position_;
+    box<2,int> region_;
     bool needs_rendering_;
 };
 
