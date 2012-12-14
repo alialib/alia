@@ -2,8 +2,8 @@
 #define ALIA_UI_LIBRARY_HPP
 
 #include <alia/ui_interface.hpp>
-#include <alia/layout_library.hpp>
 #include <alia/color.hpp>
+#include <alia/layout_library.hpp>
 
 namespace alia {
 
@@ -343,7 +343,7 @@ struct panel : noncopyable
     ui_context* ctx_;
     column_layout outer_;
     scoped_substyle substyle_;
-    linear_layout inner_;
+    column_layout inner_;
 };
 
 class clickable_panel : noncopyable

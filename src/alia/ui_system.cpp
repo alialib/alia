@@ -271,6 +271,8 @@ static void issue_event(
     ui_system& system, ui_event& event,
     bool targeted, routing_region_ptr const& target = routing_region_ptr())
 {
+    printf("event:%i\n", event.type);
+    fflush(stdout);
     ui_context ctx;
     ctx.pass_aborted = false;
     ctx.system = &system;
@@ -1249,12 +1251,13 @@ struct substyle_data
     local_identity identity;
 };
 
-void scoped_substyle::begin(ui_context& ctx,
-    getter<string> const& substyle_name, widget_state state)
+void scoped_substyle::begin(
+    ui_context& ctx, getter<string> const& substyle_name, widget_state state)
 {
     substyle_data* data;
-    if (get_cached_data(ctx, &data) ||
-        //(ctx.event->type == REFRESH_EVENT ||
+    get_cached_data(ctx, &data);
+
+    if (//(ctx.event->type == REFRESH_EVENT ||
         // ctx.event->type == RENDER_EVENT) &&
         !data->key.matches(combine_ids(ref(*ctx.style.id),
             combine_ids(ref(substyle_name.id()), make_id(state)))))
@@ -1543,9 +1546,7 @@ void cached_ui_block::end()
 
 struct fps_data
 {
-    fps_data() : frame_count(0) {}
     int frame_count;
-    optional<unsigned> last_update;
     optional<int> fps;
 };
 
@@ -1553,28 +1554,23 @@ bool compute_fps(ui_context& ctx, int* fps)
 {
     widget_id id = get_widget_id(ctx);
     fps_data* data;
-    get_data(ctx, &data);
+    if (get_cached_data(ctx, &data))
+    {
+        start_timer(ctx, id, 1000);
+        data->frame_count = 0;
+    }
 
     if (ctx.event->type == REFRESH_EVENT)
         ++data->frame_count;
+    ctx.surface->request_refresh();
 
     if (is_timer_done(ctx, id))
     {
-        if (!data->last_update)
-        {
-            data->last_update = get_event<timer_event>(ctx).time;
-        }
-        else if (get_event<timer_event>(ctx).time >=
-            get(data->last_update) + 1000)
-        {
-            get(data->last_update) += 1000;
-            data->fps = data->frame_count;
-            data->frame_count = 0;
-        }
+        data->fps = data->frame_count;
+        data->frame_count = 0;
+        restart_timer(ctx, id, 1000);
         end_pass(ctx);
     }
-
-    start_timer(ctx, id, 0);
 
     if (data->fps)
     {

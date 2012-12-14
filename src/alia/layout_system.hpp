@@ -560,8 +560,6 @@ struct simple_layout_container : layout_container
 // get_simple_layout_container is a utility function for retrieving a
 // simple_layout_container with a specific type of logic from a UI context's
 // data graph and refreshing it.
-// (You can optionally provide the storage for it, so the getting part is
-// optional.)
 template<class Logic>
 struct simple_layout_container_storage
 {
@@ -573,12 +571,11 @@ void get_simple_layout_container(
     Context& ctx,
     simple_layout_container** container,
     Logic** logic,
-    layout const& layout_spec,
-    simple_layout_container_storage<Logic>* storage = 0)
+    layout const& layout_spec)
 {
-    if (!storage)
-        get_data(*get_layout_traversal(ctx).data, &storage);
-    storage->container.logic = &storage->logic;
+    simple_layout_container_storage<Logic>* storage;
+    if (get_data(*get_layout_traversal(ctx).data, &storage))
+        storage->container.logic = &storage->logic;
 
     *container = &storage->container;
 

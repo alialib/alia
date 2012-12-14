@@ -512,11 +512,7 @@ static void process_timer_requests(native_window::impl_data& impl)
                 }
             }
             if (next_event == impl.timer_requests.end())
-            {
-                if (!processed_any)
-                    Sleep(1);
                 break;
-            }
 
             processed_any = true;
 
@@ -1087,6 +1083,8 @@ void native_window::do_idle_work()
     process_timer_requests(*impl_);
     if (impl_->update_needed)
         update_window(impl_->hwnd);
+    else
+        Sleep(1);
 }
 
 void native_window::do_message_loop()

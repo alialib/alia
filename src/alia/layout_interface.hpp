@@ -3,15 +3,13 @@
 
 #include <alia/geometry.hpp>
 
-// This file defines various types that are necessary for interfacing with the
-// layout system (i.e., for defining layout specifications). It doesn't define
-// the types or functions needed to implement widgets that interact with the
-// layout system, or for invoking the layout system.
+// This file defines all types and functions necessary for interfacing with the
+// layout system from the application end.
 
 namespace alia {
 
-// All positioning is currently done in integer coordinates, but I'd like to
-// keep open the possibility of changing that someday.
+// All positioning is currently done in integer coordinates, but these
+// typedefs are used to keep open the possibility of changing that one day.
 
 typedef int layout_scalar;
 
@@ -41,6 +39,7 @@ enum layout_units
     EX
 };
 
+// This is used by the application to specify the size of a layout element.
 struct size
 {
     size(float w, float h, layout_units u)
@@ -54,16 +53,18 @@ struct size
 bool operator==(size const& a, size const& b);
 bool operator!=(size const& a, size const& b);
 
+// If the application only wants to specify one dimension of the element's
+// size, these can be used.
 static inline size width(float w, layout_units u)
 { return size(w, u, -1, PIXELS); }
 static inline size height(float h, layout_units u)
 { return size(-1, PIXELS, h, u); }
 
-// The following flags are used to specify various aspects of a widget's
+// The following flags are used to specify various aspects of an element's
 // layout, including how it is placed within the space allocated to it (its
 // alignment).
-// Omitting these flags invokes the default behavior for the widget, which
-// depends on the type of widget.
+// Omitting these flags invokes the default behavior for the element, which
+// depends on the type of element.
 
 struct layout_flag_tag {};
 typedef flag_set<layout_flag_tag> layout_flag_set;
@@ -101,17 +102,16 @@ static layout_flag_set const FILL = FILL_X | FILL_Y;
 static layout_flag_set const GROW = GROW_X | GROW_Y;
 // PROPORTIONAL_FILL and PROPORTIONAL_GROW are like FILL and GROW, but the
 // width and height are constrained to their original ratio. These should
-// only be used for leaf widgets, not containers.
+// only be used for leaf element, not containers.
 ALIA_DEFINE_FLAG_CODE(layout_flag_tag, 0x0100, PROPORTIONAL_FILL)
 ALIA_DEFINE_FLAG_CODE(layout_flag_tag, 0x0200, PROPORTIONAL_GROW)
 
-// explicitly enable or disable the padding around a widget
+// explicitly enable or disable the padding around an element
 ALIA_DEFINE_FLAG_CODE(layout_flag_tag, 0x1000, PADDED)
 ALIA_DEFINE_FLAG_CODE(layout_flag_tag, 0x2000, UNPADDED)
 ALIA_DEFINE_FLAG_CODE(layout_flag_tag, 0x3000, PADDING_MASK)
 
-// All widgets accept a layout structure as a parameter. It allows the user
-// to control some aspects of the widget's layout.
+// This is the main structure used to control an element's layout.
 struct layout
 {
     layout(alia::size const& size = alia::size(-1, -1, PIXELS),
@@ -136,10 +136,11 @@ bool operator!=(layout const& a, layout const& b);
 
 struct data_traversal;
 
-// types in layout_system.hpp
+// forward declarations from layout_system.hpp
 struct layout_container;
 struct layout_node;
 struct layout_style_info;
+struct simple_layout_container;
 
 // layout_traversal is the state associated with a traversal of the scene
 // that the application wants to lay out.
@@ -174,6 +175,7 @@ template<class Context>
 bool is_refresh_pass(Context& ctx)
 { return get_layout_traversal(ctx).is_refresh_pass; }
 
+// scoped_layout_container makes a layout container active for its scope.
 struct scoped_layout_container : noncopyable
 {
     scoped_layout_container() : traversal_(0) {}
@@ -183,7 +185,7 @@ struct scoped_layout_container : noncopyable
     ~scoped_layout_container() { end(); }
     void begin(layout_traversal& traversal, layout_container* container);
     void end();
- //private:
+ private:
     layout_traversal* traversal_;
 };
 

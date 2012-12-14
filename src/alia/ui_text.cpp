@@ -801,11 +801,11 @@ struct text_control
         result.changed = false;
         cursor_id = get_widget_id(ctx);
 
-        panel_.begin(ctx, const_text("control"),
+        panel_.begin(
+            ctx, const_text("control"),
             add_default_alignment(
                 add_default_size(layout_spec, width(12, CHARS)),
-                LEFT, BASELINE_Y),
-            HORIZONTAL);
+                LEFT, BASELINE_Y));
         switch (ctx.event->category)
         {
          case REFRESH_CATEGORY:

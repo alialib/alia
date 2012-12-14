@@ -756,14 +756,13 @@ void bordered_box::end()
 struct panel_data
 {
     caching_renderer_data rendering;
+    widget_data id;
 };
 
 static void begin_panel(
-    ui_context& ctx, column_layout& outer, widget_id id, ui_flag_set flags)
+    ui_context& ctx, column_layout& outer, widget_id id, ui_flag_set flags,
+    panel_data* data)
 {
-    panel_data* data;
-    get_cached_data(ctx, &data);
-
     switch (ctx.event->category)
     {
      case REFRESH_CATEGORY:
@@ -772,36 +771,31 @@ static void begin_panel(
 
      case RENDER_CATEGORY:
       {
-        if (flags & ROUNDED)
+        layout_box const& rect = outer.region();
+        caching_renderer cache(ctx, data->rendering, *ctx.style.id, rect);
+        if (cache.needs_rendering())
         {
-            layout_box const& rect = outer.region();
-            caching_renderer cache(ctx, data->rendering, *ctx.style.id, rect);
-            if (cache.needs_rendering())
+            int padding = ctx.layout.style_info->padding_size[0];
+            skia_renderer renderer(ctx, cache.image(), rect.size);
+            SkPaint paint;
+            paint.setFlags(SkPaint::kAntiAlias_Flag);
+            set_color(paint, ctx.style.properties->bg_color);
+            SkRect sr;
+            sr.fLeft = 0;
+            sr.fRight = SkScalar(rect.size[0]);
+            sr.fTop = 0;
+            sr.fBottom = SkScalar(rect.size[1]);
+            if (flags & ROUNDED)
             {
-                int padding = ctx.layout.style_info->padding_size[0];
-                skia_renderer renderer(ctx, cache.image(), rect.size);
-                SkPaint paint;
-                paint.setFlags(SkPaint::kAntiAlias_Flag);
-                set_color(paint, ctx.style.properties->bg_color);
-                SkRect sr;
-                sr.fLeft = 0;
-                sr.fRight = SkScalar(rect.size[0]);
-                sr.fTop = 0;
-                sr.fBottom = SkScalar(rect.size[1]);
                 SkScalar radius = SkScalar(padding) * 2;
                 renderer.canvas().drawRoundRect(sr, radius, radius, paint);
-                renderer.cache();
-                cache.mark_valid();
             }
-            cache.draw();
+            else
+                renderer.canvas().drawRect(sr, paint);
+            renderer.cache();
+            cache.mark_valid();
         }
-        else
-        {
-            layout_vector poly[4];
-            make_polygon(poly, outer.region());
-            ctx.surface->draw_filled_polygon(
-                ctx.style.properties->bg_color, poly, 4);
-        }
+        cache.draw();
         break;
       }
 
@@ -827,18 +821,30 @@ void panel::begin(
     widget_state state)
 {
     ctx_ = &ctx;
-    get_widget_id_if_needed(ctx, id);
+
+    panel_data* data;
+    get_cached_data(ctx, &data);
+
+    init_optional_widget_id(ctx, id, &data->id);
+
     outer_.begin(ctx, add_default_padding(layout_spec, PADDED));
+
     substyle_.begin(ctx, style, state);
-    begin_panel(ctx, outer_, id, flags);
-    inner_.begin(ctx, (flags & HORIZONTAL) ? 0 : 1, GROW |
-        ((flags & NO_INTERNAL_PADDING) ? UNPADDED : PADDED));
+
+    begin_panel(ctx, outer_, id, flags, data);
+
+    inner_.begin(ctx,
+        GROW | ((flags & NO_INTERNAL_PADDING) ? UNPADDED : PADDED));
 }
 void panel::end()
 {
-    inner_.end();
-    substyle_.end();
-    outer_.end();
+    if (ctx_)
+    {
+        inner_.end();
+        substyle_.end();
+        outer_.end();
+        ctx_ = 0;
+    }
 }
 
 layout_box panel::outer_region() const
@@ -924,7 +930,9 @@ void scrollable_panel::begin(
     widget_id id = get_widget_id(ctx);
     outer_.begin(ctx, layout_spec);
     substyle_.begin(ctx, style, WIDGET_NORMAL);
-    begin_panel(ctx, outer_, id, flags);
+    panel_data* data;
+    get_cached_data(ctx, &data);
+    begin_panel(ctx, outer_, id, flags, data);
     region_.begin(ctx, GROW | UNPADDED, scrollable_axes, id);
     inner_.begin(ctx, GROW | PADDED);
 }
@@ -1523,7 +1531,7 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
     container_.begin(ctx, const_text("control"),
         add_default_padding(
             add_default_alignment(layout_spec, LEFT, BASELINE_Y), PADDED),
-        HORIZONTAL | NO_INTERNAL_PADDING, id_, state);
+        NO_INTERNAL_PADDING, id_, state);
 
     switch (ctx.event->category)
     {
@@ -1653,12 +1661,12 @@ bool untyped_drop_down_list::do_list()
 {
     ui_context& ctx = *ctx_;
 
-    contents_.end();
-
     if (do_drop_down_button(ctx, CENTER | UNPADDED, id_, &data_->button))
     {
         open_ddl(ctx, *data_, id_);
     }
+
+    contents_.end();
 
     alia_if (do_list_)
     {

@@ -29,17 +29,14 @@ layout_box get_container_region(simple_layout_container const& container);
 #define ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(container_name) \
     struct container_name \
     { \
-        container_name() : container_(0), data_(0) {} \
+        container_name() : container_(0) {} \
         \
         template<class Context> \
         container_name(Context& ctx, \
             layout const& layout_spec = default_layout) \
-        { data_ = 0; begin(ctx, layout_spec); } \
+        { begin(ctx, layout_spec); } \
         \
         ~container_name() { end(); } \
-        \
-        void set_data(container_name##_data& data) \
-        { data_ = &data; } \
         \
         template<class Context> \
         void begin(Context& ctx, layout const& layout_spec = default_layout) \
@@ -60,7 +57,6 @@ layout_box get_container_region(simple_layout_container const& container);
         simple_layout_container* container_; \
         scoped_layout_container slc_; \
         scoped_transformation transform_; \
-        container_name##_data* data_; \
     };
 
 #define ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(container_name, Arg) \
@@ -95,11 +91,9 @@ layout_box get_container_region(simple_layout_container const& container);
     };
 
 // A row layout places all its children in a horizontal row.
-struct row_layout_data;
 ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(row_layout)
 
 // A column layout places all its children in a vertical column.
-struct column_layout_data;
 ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(column_layout)
 
 // Linear layout places its children in a line along the specified axis.
@@ -108,25 +102,21 @@ ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(linear_layout, unsigned)
 
 // Layered layout places all its children in the same rectangle, so they are
 // in effect layered over the same region.
-struct layered_layout_data;
 ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(layered_layout)
 
 // A rotated layout rotates its child 90 degrees counterclockwise.
 // Note that a rotated layout should only have one child. If it has multiple
 // children, it will simply layer them.
-struct rotated_layout_data;
 ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(rotated_layout)
 
 // A flow layout arranges its children in horizontal rows, wrapping them around
 // to new rows as needed.
-struct flow_layout_data;
 ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(flow_layout)
 
 // A vertical flow layout arranges its children in columns. Widgets flow down
 // the columns, starting with the left column. Note that like all containers,
 // this one is still primarily driven by the horizontal space allocated to it,
 // so it will prefer to create many short columns rather than one long one.
-struct vertical_flow_layout_data;
 ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(vertical_flow_layout)
 
 #define ALIA_DECLARE_GRID_LAYOUT_CONTAINER(grid) \
