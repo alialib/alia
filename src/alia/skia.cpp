@@ -3,21 +3,34 @@
 
 namespace alia {
 
+// Check that Skia renders in RGBA order.
+#ifdef SK_CPU_BENDIAN
+    #if SK_R32_SHIFT != 24 || SK_G32_SHIFT != 16 || \
+        SK_B32_SHIFT != 8  || SK_A32_SHIFT != 0
+        #error Skia is not configured for RGBA order.
+    #endif
+#else
+    #if SK_R32_SHIFT != 0  || SK_G32_SHIFT != 8 || \
+        SK_B32_SHIFT != 16 || SK_A32_SHIFT != 24
+        #error Skia is not configured for RGBA order.
+    #endif
+#endif
+
+SkBitmap& initialize_bitmap(SkBitmap& bitmap, vector<2,int> const& size)
+{
+    bitmap.setConfig(SkBitmap::kARGB_8888_Config, size[0], size[1],
+        size[0] * 4);
+    bitmap.allocPixels();
+    bitmap.eraseARGB(0, 0, 0, 0);
+    return bitmap;
+}
+
 void skia_renderer::begin(cached_image_ptr& img, surface& surface,
     vector<2,int> const& size)
 {
     img_ = &img;
     surface_ = &surface;
     size_ = size;
-
-    // Note that although the config specifies ARGB, the default Skia
-    // configuration actually arranges ARGB values in RGBA format.
-    bitmap_.setConfig(SkBitmap::kARGB_8888_Config, size[0], size[1],
-        size[0] * 4);
-    bitmap_.allocPixels();
-    bitmap_.eraseARGB(0, 0, 0, 0);
-
-    canvas_.setBitmapDevice(bitmap_);
 }
 
 void skia_renderer::cache()
@@ -33,25 +46,6 @@ void skia_renderer::cache()
         surface_ = 0;
     }
 }
-
-//void caching_skia_renderer::begin(
-//    caching_renderer_data& data, surface& surface,
-//    id_interface const& content_id, box<2,int> const& region)
-//{
-//    caching_.begin(data, surface, content_id, region);
-//    if (caching_.needs_rendering())
-//        skia_.begin(caching_.image(), surface, region.size);
-//}
-//
-//void caching_skia_renderer::draw()
-//{
-//    if (skia_.is_active())
-//    {
-//        skia_.cache();
-//        caching_.mark_valid();
-//    }
-//    caching_.draw();
-//}
 
 void draw_round_rect(SkCanvas& canvas, SkPaint& paint,
     box<2,int> const& region)

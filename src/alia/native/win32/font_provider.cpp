@@ -120,7 +120,7 @@ void create_ascii_font_image(ascii_font_image* img,
         {
             img->advance[i] = widths[i].abcA + widths[i].abcB + widths[i].abcC;
             // The overhang value returned from GetTextMetrics() seems too
-            // small in some cases, so we check it here.
+            // small in some cases, so check it and correct it here.
             if (-widths[i].abcA > overhang)
                 overhang = -widths[i].abcA;
             if (-widths[i].abcC > overhang)

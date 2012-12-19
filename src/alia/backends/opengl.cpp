@@ -872,23 +872,22 @@ void opengl_surface::draw_filled_box(
 {
     if (!is_valid(ctx_->impl_->uniform_image))
     {
-        skia_renderer renderer;
-        renderer.begin(ctx_->impl_->uniform_image, *this,
-            make_vector<int>(1, 1));
+        skia_renderer renderer(
+            *this, ctx_->impl_->uniform_image, make_vector<int>(3, 3));
         SkPaint paint;
         paint.setFlags(SkPaint::kAntiAlias_Flag);
         set_color(paint, rgba8(0xff, 0xff, 0xff, 0xff));
         SkRect sr;
         sr.fLeft = 0;
-        sr.fRight = SkScalar(1);
+        sr.fRight = SkScalar(3);
         sr.fTop = 0;
-        sr.fBottom = SkScalar(1);
+        sr.fBottom = SkScalar(3);
         renderer.canvas().drawRect(sr, paint);
         renderer.cache();
     }
     ctx_->impl_->uniform_image->draw(
         *this, box,
-        alia::box<2,double>(make_vector(0., 0.), make_vector(1., 1.)),
+        alia::box<2,double>(make_vector(1., 1.), make_vector(1., 1.)),
         color);
 }
 

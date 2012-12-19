@@ -3,10 +3,12 @@
 
 #include <alia/rendering.hpp>
 
-#include <skia/SkCanvas.h>
-#include <skia/SkBitmap.h>
+#include <SkCanvas.h>
+#include <SkBitmap.h>
 
 namespace alia {
+
+SkBitmap& initialize_bitmap(SkBitmap& bitmap, vector<2,int> const& size);
 
 struct skia_renderer
 {
@@ -16,20 +18,9 @@ struct skia_renderer
     template<class Context>
     skia_renderer(Context& ctx, cached_image_ptr& img,
         vector<2,int> const& size)
-    { begin(ctx, img, size); }
-
-    ~skia_renderer() { end(); }
-
-    template<class Context>
-    void begin(Context& ctx, cached_image_ptr& img, vector<2,int> const& size)
-    {
-        begin(img, get_surface(ctx), size);
-    }
-
-    void begin(cached_image_ptr& img, surface& surface,
-        vector<2,int> const& size);
-
-    void end() {}
+      : bitmap_()
+      , canvas_(initialize_bitmap(bitmap_, size))    
+    { begin(img, get_surface(ctx), size); }
 
     void cache();
 
@@ -38,6 +29,9 @@ struct skia_renderer
     bool is_active() const { return surface_ != 0; }
 
  private:
+    void begin(cached_image_ptr& img, surface& surface,
+        vector<2,int> const& size);
+
     surface* surface_;
 
     cached_image_ptr* img_;

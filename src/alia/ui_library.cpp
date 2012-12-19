@@ -814,6 +814,7 @@ void panel::begin(
     widget_state state)
 {
     ctx_ = &ctx;
+    flags_ = flags;
 
     panel_data* data;
     get_cached_data(ctx, &data);
@@ -826,8 +827,12 @@ void panel::begin(
 
     begin_panel(ctx, outer_, id, flags, data);
 
-    inner_.begin(ctx,
-        GROW | ((flags & NO_INTERNAL_PADDING) ? UNPADDED : PADDED));
+    layout_flag_set inner_layout_flags =
+        FILL_X |
+        ((layout_spec.flags & Y_ALIGNMENT_MASK) == BASELINE_Y ?
+            BASELINE_Y : FILL_Y) |
+        ((flags & NO_INTERNAL_PADDING) ? UNPADDED : PADDED);
+    inner_.begin(ctx, layout(inner_layout_flags, 1));
 }
 void panel::end()
 {
@@ -844,7 +849,15 @@ layout_box panel::outer_region() const
 {
     // outer_.region() returns its region in its own frame of reference, which
     // isn't valid for panel users, so this is used instead.
-    return add_border(inner_.region(), ctx_->layout.style_info->padding_size);
+    if (flags_ & NO_INTERNAL_PADDING)
+    {
+        return inner_.region();
+    }
+    else
+    {
+        return add_border(inner_.region(),
+            ctx_->layout.style_info->padding_size);
+    }
 }
 
 struct clickable_panel_data
@@ -859,8 +872,7 @@ static void draw_panel_focus_border(
 {
     if (!(flags & NO_FOCUS_INDICATOR))
     {
-        layout_box rect = add_border(p.inner_region(),
-            ctx.layout.style_info->padding_size);
+        layout_box rect = p.outer_region();
         if (flags & ROUNDED)
         {
             caching_renderer cache(ctx, rendering, *ctx.style.id,
@@ -1537,7 +1549,7 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
      case INPUT_CATEGORY:
       {
         key_event_info info;
-        if (detect_key_press(ctx, &info))
+        if (detect_key_press(ctx, &info, id_))
         {
             if (!data_->popup_open)
             {
@@ -1705,8 +1717,8 @@ bool untyped_ddl_item::begin(untyped_drop_down_list& list, bool is_selected)
     ui_context& ctx = *list.ctx_;
 
     widget_id id = get_widget_id(ctx);
-    panel_.begin(ctx, text("item"), UNPADDED, NO_CLICK_DETECTION, id,
-        get_widget_state(ctx, id, true, false, is_internally_selected));
+    panel_.begin(ctx, text("item"), UNPADDED, NO_CLICK_DETECTION,
+        id, get_widget_state(ctx, id, true, false, is_internally_selected));
 
     if (list.make_selection_visible_ && is_internally_selected)
         make_widget_visible(*ctx.system, make_routable_widget_id(ctx, id));
@@ -1968,6 +1980,10 @@ void popup::end()
     {
         transform_.end();
 	layout_.end();
+
+        // Block any mouse wheel events that weren't handled by the popup.
+        if (ctx_->event->type == MOUSE_WHEEL_EVENT)
+            acknowledge_input_event(*ctx_);
 
         // Restore the context's layer Z.
 	set_layer_z(*ctx_, ctx_->layer_z - 1);

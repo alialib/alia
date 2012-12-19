@@ -413,13 +413,13 @@ void resolve_requirements(
     requirements.minimum_ascent = calculated.minimum_ascent + padding;
     requirements.minimum_descent = calculated.minimum_descent + padding;
     requirements.growth_factor = spec.growth_factor;
-  }
+}
 
 static void resolve_axis_assignment(
     layout_scalar& offset, layout_scalar& size,
     unsigned alignment_code,
     layout_scalar assigned_size, layout_scalar baseline,
-    layout_scalar required_size, layout_scalar ascent)
+    layout_scalar required_size, layout_scalar descent)
 {
     switch (alignment_code)
     {
@@ -428,6 +428,7 @@ static void resolve_axis_assignment(
         size = required_size;
         break;
      case LEFT_CODE:
+     default:
         offset = 0;
         size = required_size;
         break;
@@ -441,7 +442,7 @@ static void resolve_axis_assignment(
         size = assigned_size;
         break;
      case BASELINE_X_CODE:
-        offset = baseline - ascent;
+        offset = baseline - (required_size - descent);
         size = required_size;
         break;
     }
@@ -453,12 +454,13 @@ static inline unsigned get_axis_alignment_code(
     return (spec.flags.code >> (axis * X_TO_Y_SHIFT)) & X_ALIGNMENT_MASK_CODE;
 }
 
-layout_scalar resolve_assigned_width(resolved_layout_spec const& spec,
-    layout_scalar assigned_width,
+layout_scalar resolve_assigned_width(
+    resolved_layout_spec const& spec, layout_scalar assigned_width,
     layout_requirements const& horizontal_requirements)
 {
     layout_scalar offset, size;
-    resolve_axis_assignment(offset, size, get_axis_alignment_code(spec, 0),
+    resolve_axis_assignment(offset, size,
+        get_axis_alignment_code(spec, 0),
         assigned_width, 0,
         horizontal_requirements.minimum_size, 0);
     return size - spec.padding_size[0] * 2;
@@ -472,21 +474,23 @@ void resolve_relative_assignment(
     layout_requirements const& vertical_requirements)
 {
     layout_scalar x_offset, x_size;
-    resolve_axis_assignment(x_offset, x_size, get_axis_alignment_code(spec, 0),
+    resolve_axis_assignment(x_offset, x_size,
+        get_axis_alignment_code(spec, 0),
         assignment.region.size[0], 0,
         horizontal_requirements.minimum_size, 0);
     layout_scalar y_offset, y_size;
-    resolve_axis_assignment(y_offset, y_size, get_axis_alignment_code(spec, 1),
+    resolve_axis_assignment(y_offset, y_size,
+        get_axis_alignment_code(spec, 1),
         assignment.region.size[1], assignment.baseline_y,
         vertical_requirements.minimum_size,
-        vertical_requirements.minimum_size -
-            vertical_requirements.minimum_descent);
+        vertical_requirements.minimum_descent);
     resolved_assignment = relative_layout_assignment(
         layout_box(
             assignment.region.corner +
             make_layout_vector(x_offset, y_offset) + spec.padding_size,
             make_layout_vector(x_size, y_size) - spec.padding_size * 2),
-        assignment.baseline_y - (y_offset + spec.padding_size[1]));
+        y_size -
+            (vertical_requirements.minimum_descent + spec.padding_size[1]));
 }
 
 bool update(layout_traversal& traversal, layout_cacher& cacher,

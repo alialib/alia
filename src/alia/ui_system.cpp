@@ -1444,6 +1444,8 @@ void cached_ui_block::begin(ui_context& ctx, id_interface const& id)
     switch (ctx.event->type)
     {
      case REFRESH_EVENT:
+        // Detect if there are changes that require the block to be traversed
+        // this pass.
         is_relevant_ =
             cacher->last_layout_update != cacher->last_content_change ||
             !cacher->layout_id.matches(
@@ -1470,6 +1472,7 @@ void cached_ui_block::begin(ui_context& ctx, id_interface const& id)
         break;
 
      case RENDER_EVENT:
+        // Detect if the block needs to be rerendered.
         if (cacher->last_render_update != cacher->last_content_change ||
             !cacher->render_id.matches(
                 combine_ids(ref(*ctx.style.id), ref(id))) ||
@@ -1479,6 +1482,18 @@ void cached_ui_block::begin(ui_context& ctx, id_interface const& id)
             cacher->render_id.store(combine_ids(ref(*ctx.style.id), ref(id)));
             cacher->last_render_update = cacher->last_content_change;
         }
+        // render_pass_count counts the number of frames that the block has
+        // remained static. If it's 0, then the block has just changed.
+        // We don't attempt to record the rendering information on this pass.
+        // We only record it on the second pass that the block has remained
+        // static. This is for two reasons.
+        // 1. Recording the content may be expensive, so if the content is
+        //    changing every frame, we probably just want to render it
+        //    normally.
+        // 2. The surface may do special things the first pass after a change,
+        //    such as caching textures on the video card. If we avoid recording
+        //    on this pass, we don't have to worry about what happens when
+        //    those actions are recorded.
         switch (cacher->render_pass_count)
         {
          case 0:
@@ -1498,6 +1513,8 @@ void cached_ui_block::begin(ui_context& ctx, id_interface const& id)
         break;
 
      default:
+        // On other events, the content is only relevant if it contains the
+        // target of the event.
         is_relevant_ = routing_.is_relevant();
         break;
     }
@@ -1531,10 +1548,6 @@ void cached_ui_block::end()
              case 0:
                 ++cacher->render_pass_count;
             }
-
-         default:
-            is_relevant_ = routing_.is_relevant();
-            break;
         }
 
         routing_.end();

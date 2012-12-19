@@ -8,14 +8,15 @@
 #include <utility>
 #include <cctype>
 
-#include "SkTypeface.h"
+#include <SkTypeface.h>
+#include <SkCanvas.h>
+#include <SkPaint.h>
+#include <SkUtils.h>
 
 // This file impleemnts all the UI text functionality.
 // The interface for this is defined in ui_library.hpp in the "TEXT" section.
 
 namespace alia {
-
-// SKIA
 
 static void set_skia_font_info(SkPaint& paint, font const& font)
 {
@@ -30,11 +31,112 @@ static void set_skia_font_info(SkPaint& paint, font const& font)
                     SkTypeface::kItalic : SkTypeface::kNormal))))->unref();
     paint.setTextAlign(SkPaint::kLeft_Align);
     paint.setAntiAlias(true);
-    //paint.setLCDRenderText(true);
-    paint.setTextSize(SkIntToScalar(font.size));
-    paint.setXfermodeMode(SkXfermode::kSrc_Mode);
-    //paint.setSubpixelText(true);
-    //paint.setAutohinted(true);
+    paint.setLCDRenderText(true);
+    paint.setTextSize(SkFloatToScalar(font.size));
+    paint.setSubpixelText(true);
+    paint.setAutohinted(true);
+}
+
+static bool is_breakable_space(SkUnichar c)
+{
+    return
+        c >= 0x09 && c <= 0x0d || c == 0x20 || c > 0x80 &&
+        (c == 0x85 || c == 0x1680 || c == 0x180E ||
+        c >= 0x2000 && c <= 0x200a || c == 0x2028 || c == 0x2029 ||
+        c == 0x205f);
+}
+
+static bool is_line_terminator(SkUnichar c)
+{
+    return
+        c >= 0x0a && c <= 0x0d || c > 0x80 &&
+        (c == 0x85 || c == 0x2028 || c == 0x2029);
+}
+
+static utf8_ptr skip_line_terminator(utf8_string const& text)
+{
+    utf8_ptr p = text.begin;
+    if (p != text.end)
+    {
+        SkUnichar c = SkUTF8_NextUnichar(&p);
+        if (c == 0x0d && p != text.end)
+        {
+            utf8_ptr q = p;
+            SkUnichar d = SkUTF8_NextUnichar(&p);
+            if (d == 0x0a)
+                return p;
+            else
+                return q;
+        }
+    }
+    return p;
+}
+
+static utf8_ptr find_next_space(utf8_string const& text)
+{
+    utf8_ptr p = text.begin;
+    while (p != text.end)
+    {
+        utf8_ptr q = p;
+        if (is_breakable_space(SkUTF8_NextUnichar(&p)))
+            return q;
+    }
+    return p;
+}
+
+static utf8_ptr break_text(
+    SkPaint& paint, utf8_string const& text, int width, bool is_full_line,
+    int* accumulated_width, utf8_ptr* visible_end)
+{
+    utf8_ptr p = text.begin;
+    int remaining_width = width;
+    while (p != text.end)
+    {
+        utf8_ptr next_space = find_next_space(utf8_string(p, text.end));
+        int word_width =
+            SkScalarCeilToInt(paint.measureText(p, next_space - p));
+        if (word_width > remaining_width)
+        {
+            if (is_full_line)
+            {
+                SkScalar measured_width;
+                size_t what_will_fit =
+                    paint.breakText(p, next_space - p,
+                        SkIntToScalar(remaining_width), &measured_width);
+                remaining_width -= SkScalarCeilToInt(measured_width);
+                p += what_will_fit;
+            }
+            break;
+        }
+        remaining_width -= word_width;
+        p = next_space;
+        utf8_ptr space_end = text.end;
+        while (p != text.end)
+        {
+            utf8_ptr q = p;
+            SkUnichar c = SkUTF8_NextUnichar(&p);
+            if (!is_breakable_space(c))
+            {
+                space_end = q;
+                break;
+            }
+            if (is_line_terminator(c))
+            {
+                *visible_end = q;
+                p = skip_line_terminator(utf8_string(q, text.end));
+                goto line_ended;
+            }
+        }
+        int space_width =
+            SkScalarCeilToInt(paint.measureText(next_space, space_end - next_space));
+        p = space_end;
+        remaining_width -= space_width;
+        is_full_line = false;
+    }
+    *visible_end = p;
+ line_ended:
+    *accumulated_width = width - remaining_width;
+    return p;
 }
 
 //
@@ -115,137 +217,141 @@ enum text_image_state
     WRAPPED_IMAGE
 };
 
+struct text_display_row
+{
+    utf8_string text;
+    layout_vector position;
+};
+
 struct text_display_data
 {
     alia::font font;
-    rgba8 text_color, bg_color;
-
-    ascii_font_image const* font_image;
 
     owned_id text_id;
     bool text_valid;
     string text;
 
-    layout layout_spec;
-    resolved_layout_spec resolved_spec;
-    text_layout_node layout_node;
-
     owned_id style_id;
 
-    image<rgba8> text_image;
-    text_image_state image_state;
-    cached_image_ptr cached_image;
-    bool image_cached;
-    vector<2,int> image_position;
+    counter_type last_content_change;
 
-    int wrapped_rows;
+    layout layout_spec;
+    text_layout_node layout_node;
+
+    bool is_wrapped;
+
+    // If the text is not wrapped, this is used as its cacher.
+    alia::layout_cacher layout_cacher;
+
+    // If the text is wrapped, this is the information about its placement.
+    std::vector<text_display_row> wrapped_rows;
+    layout_vector wrapped_size;
+    layout_scalar wrapped_y;
+
+    caching_renderer_data rendering;
 };
 
 layout_requirements text_layout_node::get_horizontal_requirements(
     layout_calculation_context& ctx)
 {
-    // If this gets called, we know that we're not wrapping, so just compute
-    // the image of the text unwrapped and use that from here on out.
-
-    if (data->image_state != UNWRAPPED_IMAGE)
+    data->is_wrapped = false;
+    horizontal_layout_query query(
+        ctx, data->layout_cacher, data->last_content_change);
+    alia_if (query.update_required())
     {
-        ascii_text_renderer renderer(*data->font_image);
-        create_image(data->text_image,
-            make_vector<int>(
-                renderer.measure_text(as_utf8_string(data->text)),
-                data->font_image->metrics.ascent +
-                data->font_image->metrics.descent));
-        renderer.render_text(data->text_image.view, as_utf8_string(data->text),
-            data->text_color, data->bg_color);
-        data->image_cached = false;
-        data->image_state = UNWRAPPED_IMAGE;
+        SkPaint paint;
+        set_skia_font_info(paint, data->font);
+        query.update(
+            calculated_layout_requirements(
+                SkScalarCeilToInt(paint.measureText(
+                    data->text.c_str(), data->text.length())),
+                0, 0));
     }
-
-    layout_requirements requirements;
-    resolve_requirements(
-        requirements, data->resolved_spec, 0,
-        calculated_layout_requirements(data->text_image.view.size[0], 0, 0));
-    return requirements;
+    alia_end
+    return query.result();
 }
 layout_requirements text_layout_node::get_vertical_requirements(
     layout_calculation_context& ctx,
     layout_scalar assigned_width)
 {
-    layout_requirements requirements;
-    resolve_requirements(
-        requirements, data->resolved_spec, 1,
-        calculated_layout_requirements(
-            0,
-            as_layout_size(data->font_image->metrics.ascent),
-            as_layout_size(data->font_image->metrics.descent)));
-    return requirements;
+    vertical_layout_query query(
+        ctx, data->layout_cacher, data->last_content_change, assigned_width);
+    alia_if (query.update_required())
+    {
+        SkPaint paint;
+        set_skia_font_info(paint, data->font);
+        SkPaint::FontMetrics metrics;
+        SkScalar line_spacing = paint.getFontMetrics(&metrics);
+        query.update(
+            calculated_layout_requirements(
+                SkScalarCeilToInt(line_spacing),
+                SkScalarCeilToInt(-metrics.fAscent),
+                SkScalarCeilToInt(metrics.fDescent)));
+    }
+    alia_end
+    return query.result();
 }
 void text_layout_node::set_relative_assignment(
     layout_calculation_context& ctx,
     relative_layout_assignment const& assignment)
 {
-    assert(data->image_state == UNWRAPPED_IMAGE);
-    layout_requirements horizontal_requirements, vertical_requirements;
-    resolve_requirements(
-        horizontal_requirements, data->resolved_spec, 0,
-        calculated_layout_requirements(data->text_image.view.size[0], 0, 0));
-    resolve_requirements(
-        vertical_requirements, data->resolved_spec, 1,
-        calculated_layout_requirements(
-            as_layout_size(data->font_image->metrics.ascent +
-                data->font_image->metrics.descent),
-            as_layout_size(data->font_image->metrics.ascent),
-            as_layout_size(data->font_image->metrics.descent)));
-    relative_layout_assignment relative_assignment;
-    resolve_relative_assignment(relative_assignment, data->resolved_spec,
-        assignment, horizontal_requirements, vertical_requirements);
-    data->image_position = relative_assignment.region.corner;
+    relative_region_assignment rra(
+        ctx, *this, data->layout_cacher, data->last_content_change,
+        assignment);
 }
 
 layout_requirements text_layout_node::get_minimal_horizontal_requirements(
     layout_calculation_context& ctx)
 {
+    data->is_wrapped = true;
+    SkPaint paint;
+    set_skia_font_info(paint, data->font);
+    SkPaint::FontMetrics metrics;
+    paint.getFontMetrics(&metrics);
+    // This is kind of arbitrary, but it should rarely come into play.
     return layout_requirements(
-        data->font_image->metrics.average_width * 10, 0, 0, 0);
+        SkScalarCeilToInt(metrics.fAvgCharWidth * 10), 0, 0, 0);
 }
 void text_layout_node::calculate_wrapping(
     layout_calculation_context& ctx,
     layout_scalar assigned_width,
     wrapping_state& state)
 {
-    int padding_width = (std::max)(
-        data->font_image->metrics.overhang * 2,
-        data->font_image->advance[' ']);
-    int usable_width = assigned_width - padding_width;
-    data->wrapped_rows = 0;
     utf8_string text = as_utf8_string(data->text);
-    if (!is_empty(text))
+    if (is_empty(text))
+        return;
+
+    SkPaint paint;
+    set_skia_font_info(paint, data->font);
+    SkPaint::FontMetrics metrics;
+    SkScalar line_spacing = paint.getFontMetrics(&metrics);
+
+    char space = ' ';
+    int padding_width = SkScalarCeilToInt(paint.measureText(&space, 1));
+    int usable_width = assigned_width;
+
+    layout_requirements y_requirements(
+        SkScalarCeilToInt(line_spacing),
+        SkScalarCeilToInt(-metrics.fAscent),
+        SkScalarCeilToInt(metrics.fDescent),
+        0);
+    char const* p = text.begin;
+    while (1)
     {
-        layout_requirements y_requirements(
-            0,
-            as_layout_size(data->font_image->metrics.ascent),
-            as_layout_size(data->font_image->metrics.descent),
-            0);
-        ascii_text_renderer renderer(*data->font_image);
-        utf8_ptr p = text.begin;
-        while (1)
-        {
-            fold_in_requirements(state.active_row.requirements,
-                y_requirements);
-            utf8_ptr line_end =
-                renderer.break_text(
-                    utf8_string(p, text.end),
-                    usable_width - state.accumulated_width,
-                    state.accumulated_width == 0);
-            state.accumulated_width +=
-                renderer.compute_advance(utf8_string(p, line_end)) +
-                padding_width;
-            ++data->wrapped_rows;
-            if (line_end == text.end)
-                break;
-            p = line_end;
-            wrap_row(state);
-        }
+        fold_in_requirements(state.active_row.requirements, y_requirements);
+        int line_width;
+        utf8_ptr visible_end;
+        utf8_ptr line_end =
+            break_text(
+                paint, utf8_string(p, text.end),
+                usable_width - state.accumulated_width,
+                state.accumulated_width == 0,
+                &line_width, &visible_end);
+        state.accumulated_width += line_width + padding_width;
+        p = line_end;
+        wrap_row(state);
+        if (line_end == text.end)
+            break;
     }
 }
 void text_layout_node::assign_wrapped_regions(
@@ -253,64 +359,57 @@ void text_layout_node::assign_wrapped_regions(
     layout_scalar assigned_width,
     wrapping_assignment_state& state)
 {
+    data->wrapped_rows.clear();
+
     utf8_string text = as_utf8_string(data->text);
+    if (is_empty(text))
+        return;
 
-    int padding_width = (std::max)(
-        data->font_image->metrics.overhang * 2,
-        data->font_image->advance[' ']);
-    int usable_width = assigned_width - padding_width;
+    SkPaint paint;
+    set_skia_font_info(paint, data->font);
+    SkPaint::FontMetrics metrics;
+    SkScalar line_spacing = paint.getFontMetrics(&metrics);
 
-    int total_height = 0;
-    std::vector<wrapped_row>::const_iterator row_i = state.active_row;
-    for (int i = 0; i != data->wrapped_rows; ++i)
+    char space = ' ';
+    int padding_width = SkScalarCeilToInt(paint.measureText(&space, 1));
+    int usable_width = assigned_width;
+
+    data->wrapped_y = state.active_row->y;
+
+    int y = 0;
+    char const* p = text.begin;
+    while (1)
     {
-        total_height += row_i->requirements.minimum_size;
-        ++row_i;
+        // Determine line breaking.
+        int line_width;
+        utf8_ptr visible_end;
+        utf8_ptr line_end =
+            break_text(
+                paint, utf8_string(p, text.end),
+                usable_width - state.x,
+                state.x == 0,
+                &line_width, &visible_end);
+
+        // Record the row.
+        text_display_row row;
+        row.position = make_layout_vector(
+            state.x,
+            y + state.active_row->requirements.minimum_size -
+                state.active_row->requirements.minimum_descent);
+        row.text = utf8_string(p, visible_end);
+        data->wrapped_rows.push_back(row);
+
+        // Advance.
+        state.x += line_width + padding_width;
+        y += state.active_row->requirements.minimum_size;
+        p = line_end;
+        wrap_row(state);
+
+        if (line_end == text.end)
+            break;
     }
 
-    ascii_text_renderer renderer(*data->font_image);
-    create_image(data->text_image,
-        make_vector<int>(assigned_width, total_height));
-    alia_foreach_pixel(data->text_image.view, rgba8, i, i = rgba8(0, 0, 0, 0));
-    data->image_cached = false;
-    data->image_state = UNWRAPPED_IMAGE;
-
-    data->image_position = make_vector<int>(0, state.active_row->y);
-
-    if (!is_empty(text))
-    {
-        ascii_text_renderer renderer(*data->font_image);
-        utf8_ptr p = text.begin;
-        int y = 0;
-        while (1)
-        {
-            utf8_ptr line_end =
-                renderer.break_text(
-                    utf8_string(p, text.end),
-                    usable_width - state.x,
-                    state.x == 0);
-            if (line_end != p)
-            {
-                renderer.render_text(
-                    subimage(data->text_image.view, box<2,int>(
-                        make_vector<int>(state.x,
-                            y + state.active_row->requirements.minimum_ascent -
-                                data->font_image->metrics.ascent),
-                        make_vector<int>(assigned_width - state.x,
-                            data->font_image->metrics.ascent +
-                            data->font_image->metrics.descent))),
-                    utf8_string(p, line_end),
-                    data->text_color, data->bg_color);
-                state.x += renderer.compute_advance(utf8_string(p, line_end)) +
-                    padding_width;
-            }
-            if (line_end == text.end)
-                break;
-            p = line_end;
-            y += state.active_row->requirements.minimum_size;
-            wrap_row(state);
-        }
-    }
+    data->wrapped_size = make_layout_vector(assigned_width, y);
 }
 
 namespace {
@@ -404,44 +503,90 @@ void do_text(ui_context& ctx, getter<string> const& text,
             data->layout_spec != layout_spec)
         {
             record_layout_change(get_layout_traversal(ctx));
-            data->image_state = INVALID_IMAGE;
+            data->last_content_change = ctx.layout.refresh_counter;
             data->layout_node.data = data;
             data->font = ctx.style.properties->font;
-            data->text_color = ctx.style.properties->text_color;
-            data->bg_color = ctx.style.properties->bg_color;
-            data->font_image = get_ascii_font_image(
-                data->font, data->text_color, data->bg_color);
-            resolve_layout_spec(get_layout_traversal(ctx), data->resolved_spec,
-                layout_spec, LEFT | BASELINE_Y);
             data->layout_spec = layout_spec;
             data->text_valid = text.is_gettable();
             data->text = data->text_valid ? get(text) : "";
             data->text_id.store(text.id());
             data->style_id.store(*ctx.style.id);
-            data->image_cached = false;
+            update(get_layout_traversal(ctx), data->layout_cacher,
+                layout_spec, LEFT | BASELINE_Y);
         }
         add_layout_node(get_layout_traversal(ctx), &data->layout_node);
         break;
 
      case RENDER_CATEGORY:
-        if (data->text_image.view.pixels)
+      {
+        if (data->is_wrapped)
         {
-            if (!data->image_cached || !is_valid(data->cached_image))
+            if (!data->wrapped_rows.empty())
             {
-                ctx.surface->cache_image(data->cached_image,
-                    make_interface(data->text_image.view));
-                data->image_cached = true;
+                layout_box region(
+                    make_layout_vector(0, data->wrapped_y),
+                    data->wrapped_size);
+                caching_renderer cache(
+                    ctx, data->rendering,
+                    make_id(data->last_content_change),
+                    region);
+                if (cache.needs_rendering())
+                {
+                    skia_renderer renderer(ctx, cache.image(), region.size);
+                    SkPaint paint;
+                    paint.setFlags(SkPaint::kAntiAlias_Flag);
+                    set_skia_font_info(paint, data->font);
+                    rgba8 const& bg = ctx.style.properties->bg_color;
+                    renderer.canvas().clear(
+                        SkColorSetARGB(bg.a, bg.r, bg.g, bg.b));
+                    set_color(paint, ctx.style.properties->text_color);
+                    for (std::vector<text_display_row>::const_iterator
+                        i = data->wrapped_rows.begin();
+                        i != data->wrapped_rows.end(); ++i)
+                    {
+                        renderer.canvas().drawText(
+                            i->text.begin, i->text.end - i->text.begin,
+                            SkIntToScalar(i->position[0]),
+                            SkIntToScalar(i->position[1]), paint);
+                    }
+                    renderer.cache();
+                    cache.mark_valid();
+                }
+                cache.draw();
             }
-            data->cached_image->draw(
-                *ctx.surface,
-                box<2,double>(
-                    vector<2,double>(data->image_position),
-                    vector<2,double>(data->text_image.view.size)),
-                box<2,double>(
-                    make_vector(0., 0.),
-                    vector<2,double>(data->text_image.view.size)));
+        }
+        else
+        {
+            relative_layout_assignment const& assignment =
+                data->layout_cacher.resolved_relative_assignment;
+            if (assignment.region.size[0] > 0)
+            {
+                caching_renderer cache(
+                    ctx, data->rendering,
+                    make_id(data->last_content_change),
+                    assignment.region);
+                if (cache.needs_rendering())
+                {
+                    skia_renderer renderer(ctx, cache.image(),
+                        assignment.region.size);
+                    SkPaint paint;
+                    paint.setFlags(SkPaint::kAntiAlias_Flag);
+                    set_skia_font_info(paint, data->font);
+                    rgba8 const& bg = ctx.style.properties->bg_color;
+                    renderer.canvas().clear(
+                        SkColorSetARGB(bg.a, bg.r, bg.g, bg.b));
+                    set_color(paint, ctx.style.properties->text_color);
+                    renderer.canvas().drawText(
+                        data->text.c_str(), data->text.length(),
+                        0, SkIntToScalar(assignment.baseline_y), paint);
+                    renderer.cache();
+                    cache.mark_valid();
+                }
+                cache.draw();
+            }
         }
         break;
+      }
     }
 }
 
@@ -666,6 +811,59 @@ bool do_link(
 }
 
 // TEXT CONTROL - TODO: move to a separate file
+
+struct selectable_text_renderer
+{
+    string text;
+    string font;
+
+    SkPaint::FontMetrics metrics;
+
+    // the size of the entire block of text
+    vector<2,int> size;
+
+    // Get the number of lines of text.
+    unsigned get_line_count() const;
+
+    size_t get_line_begin(unsigned line_n) const;
+
+    size_t get_line_end(unsigned line_n) const;
+
+    void draw(
+        surface& surface,
+        vector<2,double> const& position);
+
+    void draw_with_selection(
+        surface& surface,
+        vector<2,double> const& position,
+        size_t highlight_begin, size_t highlight_end);
+
+    virtual void draw_cursor(
+        surface& surface, bool selected,
+        vector<2,double> const& p) = 0;
+
+    virtual offset get_character_at_point(vector<2,int> const& p) const = 0;
+
+    virtual offset get_character_boundary_at_point(
+        vector<2,int> const& p) const = 0;
+
+    // Get the index of the line that contains the given offset.
+    virtual unsigned get_line_number(offset position) const = 0;
+
+    // Get the position of the given character within the block of text.
+    virtual vector<2,int> get_character_position(offset position) const = 0;
+
+    virtual offset shift(offset position, int shift) const = 0;
+
+    virtual ~cached_text() {}
+
+ protected:
+    void initialize(
+        string const& text,
+        font const& font,
+        vector<2,int> const& size,
+        font_metrics const& metrics);
+};
 
 struct text_control_data;
 

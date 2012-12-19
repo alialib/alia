@@ -231,18 +231,25 @@ column_layout_logic::get_vertical_requirements(
     layout_scalar assigned_width)
 {
     layout_scalar total_height = 0;
-    layout_scalar ascent = 0;
+    layout_scalar ascent = 0, descent = 0;
     for (layout_node* i = children; i; i = i->next)
     {
         layout_requirements r = alia::get_vertical_requirements(
             ctx, *i, assigned_width);
         total_height += r.minimum_size;
-        // Record the ascent of the first child as the ascent of the column.
+        // The ascent of a column is the ascent of its first child.
+        // Its descent is the descent of its first child plus the total height
+        // of all other children.
         if (i == children)
+        {
             ascent = r.minimum_ascent;
+            descent = r.minimum_descent;
+        }
+        else
+            descent += r.minimum_size;
     }
     return calculated_layout_requirements(
-        total_height, ascent, total_height - ascent);
+        total_height, ascent, descent);
 }
 
 void column_layout_logic::set_relative_assignment(
@@ -260,17 +267,27 @@ void column_layout_logic::set_relative_assignment(
     float remaining_growth = total_growth;
     for (layout_node* i = children; i; i = i->next)
     {
-        layout_requirements y = alia::get_vertical_requirements(
-            ctx, *i, assigned_size[0]);
-        layout_scalar this_height = calculate_child_size(
-            remaining_extra_size, remaining_growth,
-            y.minimum_size, y.growth_factor);
+        layout_requirements y =
+            alia::get_vertical_requirements(ctx, *i, assigned_size[0]);
+        layout_scalar this_height =
+            calculate_child_size(
+                remaining_extra_size, remaining_growth,
+                y.minimum_size, y.growth_factor);
+        // If this is the first child, assign it the baseline of the column.
+        // The exception to this rule is when the column was allocated more
+        // space than it requested. In this case, the baseline calculation
+        // may have been inconsistent with how the column is planning to
+        // allocate the extra space.
+        layout_scalar this_baseline =
+            i == children && remaining_extra_size == 0 ?
+                assigned_baseline_y :
+                this_height - y.minimum_descent;
         alia::set_relative_assignment(
             ctx, *i,
             relative_layout_assignment(
                 layout_box(p,
                     make_layout_vector(assigned_size[0], this_height)),
-                    this_height - y.minimum_descent));
+                this_baseline));
         p[1] += this_height;
     }
 }
@@ -523,8 +540,8 @@ void assign_flow_regions(
 {
     for (; i != end; i = i->next)
     {
-        layout_requirements x = alia::get_horizontal_requirements(
-            ctx, *i);
+        layout_requirements x =
+            alia::get_horizontal_requirements(ctx, *i);
         alia::set_relative_assignment(
             ctx, *i,
             relative_layout_assignment(

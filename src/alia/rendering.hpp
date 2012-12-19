@@ -274,6 +274,7 @@ struct surface : geometry_context_subscriber
     //virtual void draw_filled_polygon(rgba8 const& color,
     //    vector<2,int> const* vertices, unsigned n_vertices) = 0;
 };
+static inline surface& get_surface(surface& surface) { return surface; }
 
 typedef keyed_data<cached_image_ptr> caching_renderer_data;
 

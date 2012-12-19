@@ -335,6 +335,7 @@ struct panel : noncopyable
     column_layout outer_;
     scoped_substyle substyle_;
     column_layout inner_;
+    ui_flag_set flags_;
 };
 
 class clickable_panel : noncopyable
