@@ -863,7 +863,8 @@ calculate_grid_horizontal_requirements(grid_data const& grid)
 }
 
 layout_requirements
-grid_row_container::get_horizontal_requirements(layout_calculation_context& ctx)
+grid_row_container::get_horizontal_requirements(
+    layout_calculation_context& ctx)
 {
     horizontal_layout_query query(ctx, cacher,
         grid->container->last_content_change);
@@ -890,7 +891,7 @@ calculate_column_assignments(
 {
     named_block nb(ctx, combine_ids(make_id(&grid), make_id(assigned_width)));
     cached_grid_column_assignments* cache;
-    if (get_cached_data(ctx, &cache) ||
+    if (get_data(ctx, &cache) ||
         cache->last_update != grid.container->last_content_change)
     {
         update_grid_column_requirements(ctx, grid);
@@ -1048,7 +1049,7 @@ void grid_row::begin(grid_layout const& grid, layout const& layout_spec)
 
     container_.begin(traversal, row);
 
-    update(traversal, row->cacher, layout_spec, FILL | UNPADDED);
+    update_layout_cacher(traversal, row->cacher, layout_spec, FILL | UNPADDED);
 
     begin_transform(transform_, traversal, row->cacher);
 }
@@ -1221,7 +1222,7 @@ calculate_uniform_grid_vertical_requirements(
 {
     named_block nb(ctx, combine_ids(make_id(&grid), make_id(assigned_width)));
     cached_uniform_grid_vertical_requirements* cache;
-    if (get_cached_data(ctx, &cache) ||
+    if (get_data(ctx, &cache) ||
         cache->last_update != grid.container->last_content_change)
     {
         update_horizontal_grid_cell_requirements(ctx, grid);
@@ -1356,9 +1357,10 @@ void uniform_grid_row::begin(
 
     container_.begin(traversal, row);
 
-    // All rows must be set to GROW to ensure they receive equal space from the
-    // column that contains them.
-    update(traversal, row->cacher, GROW | UNPADDED, GROW | UNPADDED);
+    // All rows must be set to GROW to ensure they receive equal space from
+    // the column that contains them.
+    update_layout_cacher(traversal, row->cacher, GROW | UNPADDED,
+        GROW | UNPADDED);
 
     begin_transform(transform_, traversal, row->cacher);
 }

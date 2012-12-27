@@ -142,21 +142,27 @@ static inline void init_optional_widget_id(
         id = fallback;
 }
 
+struct hit_test_flag_tag {};
+typedef flag_set<hit_test_flag_tag> hit_test_flag_set;
+ALIA_DEFINE_FLAG_CODE(hit_test_flag_tag, 0x1, HIT_TEST_MOUSE)
+ALIA_DEFINE_FLAG_CODE(hit_test_flag_tag, 0x2, HIT_TEST_WHEEL)
+
 void handle_mouse_hit(ui_context& ctx, widget_id id,
+    hit_test_flag_set flags = HIT_TEST_MOUSE,
     mouse_cursor cursor = DEFAULT_CURSOR);
 
 bool mouse_is_inside_box(ui_context& ctx, box<2,double> const& box);
 
 void hit_test_box_region(ui_context& ctx, widget_id id,
-    box<2,int> const& box, mouse_cursor cursor = DEFAULT_CURSOR);
+    box<2,int> const& box, hit_test_flag_set flags = HIT_TEST_MOUSE,
+    mouse_cursor cursor = DEFAULT_CURSOR);
 
 void do_region_visibility(ui_context& ctx, widget_id id,
     box<2,int> const& box);
 
-void do_box_region(ui_context& ctx, widget_id id, box<2,int> const& box,
+void do_box_region(
+    ui_context& ctx, widget_id id, box<2,int> const& box,
     mouse_cursor cursor = DEFAULT_CURSOR);
-
-void make_widget_visible(ui_system& ui, routable_widget_id id);
 
 void make_widget_visible(ui_context& ctx, widget_id id);
 
@@ -243,7 +249,7 @@ bool detect_explicit_drag_release(ui_context& ctx, widget_id id,
 
 // Detect scroll wheel movement.
 // The return value is positive for upward movement.
-bool detect_wheel_movement(ui_context& ctx, float* movement);
+bool detect_wheel_movement(ui_context& ctx, float* movement, widget_id id);
 
 // FOCUS
 

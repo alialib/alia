@@ -164,8 +164,9 @@ enum ui_event_type
     RENDER_EVENT,
 
     // regions
-    HIT_TEST_EVENT,
     MAKE_WIDGET_VISIBLE_EVENT,
+    MOUSE_HIT_TEST_EVENT,
+    WHEEL_HIT_TEST_EVENT,
 
     // keyboard
     TEXT_INPUT_EVENT,
@@ -294,10 +295,12 @@ struct mouse_motion_event : input_event
 };
 struct mouse_wheel_event : input_event
 {
+    widget_id target;
     float movement;
-    mouse_wheel_event(ui_time_type time, float movement)
+    mouse_wheel_event(ui_time_type time, widget_id target, float movement)
       : input_event(MOUSE_WHEEL_EVENT, time)
       , movement(movement)
+      , target(target)
     {}
 };
 struct mouse_notification_event : ui_event
@@ -403,6 +406,10 @@ struct ui_system
 
     ui_time_type millisecond_tick_count;
 
+    // If this is valid, then there has been a request to make this widget
+    // visible. It will be honored after the next layout calculation.
+    routable_widget_id widget_to_make_visible;
+
     ui_system() : millisecond_tick_count(0) {}
 };
 
@@ -419,16 +426,26 @@ struct primary_style_properties
         border_color;
 };
 
-struct hit_test_event : ui_event
+struct mouse_hit_test_event : ui_event
 {
-    vector<2,double> position;
     routable_widget_id id;
     double hit_z;
     mouse_cursor cursor;
 
-    hit_test_event(vector<2,double> const& position)
-      : ui_event(REGION_CATEGORY, HIT_TEST_EVENT), position(position),
+    mouse_hit_test_event()
+      : ui_event(REGION_CATEGORY, MOUSE_HIT_TEST_EVENT),
         id(null_widget_id), hit_z(0), cursor(DEFAULT_CURSOR)
+    {}
+};
+
+struct wheel_hit_test_event : ui_event
+{
+    routable_widget_id id;
+    double hit_z;
+
+    wheel_hit_test_event()
+      : ui_event(REGION_CATEGORY, WHEEL_HIT_TEST_EVENT),
+        id(null_widget_id), hit_z(0)
     {}
 };
 

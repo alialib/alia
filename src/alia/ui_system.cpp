@@ -370,20 +370,6 @@ void render_ui(ui_system& system)
     issue_event(system, e, false);
 }
 
-void refresh_and_layout(ui_system& system, vector<2,unsigned> const& size,
-    ui_time_type millisecond_tick_count)
-{
-    system.millisecond_tick_count = millisecond_tick_count;
-
-    refresh_event e;
-    issue_event(system, e, false);
-
-    resolve_layout(system.layout, layout_vector(size));
-
-    //if (is_valid(system.input.focused_id) && !e.saw_focus)
-    //    recover_focus(system);
-}
-
 void issue_event(ui_system& system, ui_event& event)
 {
     issue_event(system, event, false);
@@ -395,27 +381,40 @@ void issue_targeted_event(ui_system& system, ui_event& event,
     issue_event(system, event, true, target.region);
 }
 
-routable_widget_id do_hit_test(ui_system& ui, vector<2,double> const& position)
-{
-    hit_test_event e(position);
-    issue_event(ui, e);
-    return e.id;
-}
-
 static routable_widget_id get_mouse_target(ui_system& ui)
 {
     return is_valid(ui.input.active_id) ? ui.input.active_id : ui.input.hot_id;
 }
 
-optional<mouse_cursor> update_mouse_cursor(ui_system& ui)
+void refresh_and_layout(ui_system& ui, vector<2,unsigned> const& size,
+    ui_time_type millisecond_tick_count, mouse_cursor* current_cursor)
 {
+    ui.millisecond_tick_count = millisecond_tick_count;
+
+    refresh_event e;
+    issue_event(ui, e, false);
+
+    resolve_layout(ui.layout, layout_vector(size));
+
+    // Once layout has been resolved, we can honor requests to make a
+    // particular widget visible.
+    if (is_valid(ui.widget_to_make_visible))
+    {
+        make_widget_visible_event e(ui.widget_to_make_visible.id);
+        issue_targeted_event(ui, e, ui.widget_to_make_visible);
+        ui.widget_to_make_visible = null_widget_id;
+    }
+
+    //if (is_valid(system.input.focused_id) && !e.saw_focus)
+    //    recover_focus(system);
+
     routable_widget_id previous_mouse_target = get_mouse_target(ui);
 
-    optional<mouse_cursor> cursor;
+    mouse_cursor cursor = DEFAULT_CURSOR;
 
     if (ui.input.mouse_inside_window)
     {
-        hit_test_event hit_test(vector<2,double>(ui.input.mouse_position));
+        mouse_hit_test_event hit_test;
         issue_event(ui, hit_test);
         ui.input.hot_id = hit_test.id;
         cursor = hit_test.cursor;
@@ -441,9 +440,16 @@ optional<mouse_cursor> update_mouse_cursor(ui_system& ui)
             mouse_notification_event e(MOUSE_GAIN_EVENT);
             issue_targeted_event(ui, e, current_mouse_target);
         }
+
+        // This may have caused state changes, so we need to refresh again.
+        refresh_event e;
+        issue_event(ui, e, false);
+        // (And resolve layout again.)
+        resolve_layout(ui.layout, layout_vector(size));
     }
 
-    return cursor;
+    if (current_cursor)
+        *current_cursor = cursor;
 }
 
 void process_mouse_move(ui_system& ui, ui_time_type time,
@@ -494,8 +500,15 @@ void process_double_click(ui_system& ui, ui_time_type time,
 }
 void process_mouse_wheel(ui_system& ui, ui_time_type time, float movement)
 {
-    mouse_wheel_event e(time, movement);
-    issue_event(ui, e);
+    // First determine who should receive the event.
+    wheel_hit_test_event hit_test;
+    issue_event(ui, hit_test);
+    // Now dispatch it.
+    if (is_valid(hit_test.id))
+    {
+        mouse_wheel_event event(time, hit_test.id.id, movement);
+        issue_targeted_event(ui, event, hit_test.id);
+    }
 }
 
 bool process_text_input(ui_system& ui, ui_time_type time,
@@ -590,11 +603,12 @@ widget_id get_widget_id(ui_context& ctx)
 
 // REGIONS
 
-void handle_mouse_hit(ui_context& ctx, widget_id id, mouse_cursor cursor)
+void handle_mouse_hit(ui_context& ctx, widget_id id, hit_test_flag_set flags,
+    mouse_cursor cursor)
 {
-    if (ctx.event->type == HIT_TEST_EVENT)
+    if (ctx.event->type == MOUSE_HIT_TEST_EVENT && (flags & HIT_TEST_MOUSE))
     {
-        hit_test_event& e = get_event<hit_test_event>(ctx);
+        mouse_hit_test_event& e = get_event<mouse_hit_test_event>(ctx);
         if (ctx.layer_z >= e.hit_z)
         {
 	    e.id = make_routable_widget_id(ctx, id);
@@ -602,13 +616,23 @@ void handle_mouse_hit(ui_context& ctx, widget_id id, mouse_cursor cursor)
 	    e.hit_z = ctx.layer_z;
         }
     }
+    else if (ctx.event->type == WHEEL_HIT_TEST_EVENT &&
+        (flags & HIT_TEST_WHEEL))
+    {
+        wheel_hit_test_event& e = get_event<wheel_hit_test_event>(ctx);
+        if (ctx.layer_z >= e.hit_z)
+        {
+	    e.id = make_routable_widget_id(ctx, id);
+	    e.hit_z = ctx.layer_z;
+        }
+    }
 }
 
-void hit_test_box_region(ui_context& ctx, widget_id id, box<2,int> const& box,
-    mouse_cursor cursor)
+void hit_test_box_region(ui_context& ctx, widget_id id,
+    box<2,int> const& box, hit_test_flag_set flags, mouse_cursor cursor)
 {
     if (mouse_is_inside_box(ctx, alia::box<2,double>(box)))
-	handle_mouse_hit(ctx, id, cursor);
+	handle_mouse_hit(ctx, id, flags, cursor);
 }
 
 void do_region_visibility(ui_context& ctx, widget_id id,
@@ -633,8 +657,8 @@ void do_box_region(ui_context& ctx, widget_id id, box<2,int> const& region,
 {
     switch (ctx.event->type)
     {
-     case HIT_TEST_EVENT:
-        hit_test_box_region(ctx, id, region, cursor);
+     case MOUSE_HIT_TEST_EVENT:
+        hit_test_box_region(ctx, id, region, HIT_TEST_MOUSE, cursor);
         break;
      case MAKE_WIDGET_VISIBLE_EVENT:
         do_region_visibility(ctx, id, region);
@@ -644,9 +668,9 @@ void do_box_region(ui_context& ctx, widget_id id, box<2,int> const& region,
 
 void override_mouse_cursor(ui_context& ctx, widget_id id, mouse_cursor cursor)
 {
-    if (ctx.event->type == HIT_TEST_EVENT)
+    if (ctx.event->type == MOUSE_HIT_TEST_EVENT)
     {
-        hit_test_event& e = get_event<hit_test_event>(ctx);
+        mouse_hit_test_event& e = get_event<mouse_hit_test_event>(ctx);
         if (e.id.id == id)
             e.cursor = cursor;
     }
@@ -785,14 +809,15 @@ bool detect_drag_release(ui_context& ctx, widget_id id, mouse_button button)
     return detect_mouse_release(ctx, button) && is_region_active(ctx, id);
 }
 
-bool detect_wheel_movement(ui_context& ctx, float* movement)
+bool detect_wheel_movement(ui_context& ctx, float* movement, widget_id id)
 {
     if (ctx.event->type == MOUSE_WHEEL_EVENT)
     {
         mouse_wheel_event& e = get_event<mouse_wheel_event>(ctx);
-        if (!e.acknowledged)
+        if (e.target == id)
         {
             *movement = e.movement;
+            acknowledge_input_event(ctx);
             return true;
         }
     }
@@ -878,10 +903,9 @@ void regress_focus(ui_system& ui)
     set_focus(ui, get_focus_predecessor(ui, ui.input.focused_id.id));
 }
 
-void make_widget_visible(ui_system& ui, routable_widget_id id)
+void make_widget_visible(ui_system& ui, routable_widget_id const& id)
 {
-    make_widget_visible_event e(id.id);
-    issue_targeted_event(ui, e, id);
+    ui.widget_to_make_visible = id;
 }
 
 void make_widget_visible(ui_context& ctx, widget_id id)
@@ -1081,13 +1105,41 @@ bool detect_keyboard_click(ui_context& ctx, keyboard_click_state& state,
 
 // CULLING
 
-void culling_block::begin(ui_context& ctx)
+void culling_block::begin(ui_context& ctx, layout const& layout_spec)
 {
+    ctx_ = &ctx;
     srr_.begin(ctx.routing);
+    layout_.begin(ctx);
+    switch (ctx.event->category)
+    {
+     case REFRESH_CATEGORY:
+        is_relevant_ = true;
+        break;
+     case RENDER_CATEGORY:
+        is_relevant_ =
+            is_visible(ctx.geometry, box<2,double>(layout_.region()));
+        break;
+     case REGION_CATEGORY:
+        if (ctx.event->type == MOUSE_HIT_TEST_EVENT ||
+            ctx.event->type == WHEEL_HIT_TEST_EVENT)
+        {
+            is_relevant_ =
+                mouse_is_inside_box(ctx, box<2,double>(layout_.region()));
+            break;
+        }
+        // Other region events fall through.
+     default:
+        is_relevant_ = srr_.is_relevant();
+    }
 }
 void culling_block::end()
 {
-    srr_.end();
+    if (ctx_)
+    {
+        layout_.end();
+        srr_.end();
+        ctx_ = 0;
+    }
 }
 
 // STYLING
@@ -1433,13 +1485,21 @@ void cached_ui_block::begin(ui_context& ctx, id_interface const& id)
 {
     ctx_ = &ctx;
 
-    routing_.begin(ctx.routing);
+    culling_.begin(ctx);
 
     ui_caching_node* cacher;
     get_cached_data(ctx, &cacher);
 
     cacher->parent = ctx.active_cacher;
     ctx.active_cacher = cacher;
+
+    // Before doing anything else, see if the content can be culled by the
+    // culling block's criteria.
+    if (!culling_.is_relevant())
+    {
+        is_relevant_ = false;
+        return;
+    }
 
     switch (ctx.event->type)
     {
@@ -1513,9 +1573,7 @@ void cached_ui_block::begin(ui_context& ctx, id_interface const& id)
         break;
 
      default:
-        // On other events, the content is only relevant if it contains the
-        // target of the event.
-        is_relevant_ = routing_.is_relevant();
+        is_relevant_ = true;
         break;
     }
 }
@@ -1524,6 +1582,7 @@ void cached_ui_block::end()
     if (ctx_)
     {
         ui_context& ctx = *ctx_;
+
         ui_caching_node* cacher = ctx.active_cacher;
 
         switch (ctx.event->type)
@@ -1541,16 +1600,19 @@ void cached_ui_block::end()
             break;
 
          case RENDER_EVENT:
-            switch (cacher->render_pass_count)
+            if (is_relevant_)
             {
-             case 1:
-                cacher->cached_content->stop_recording();
-             case 0:
-                ++cacher->render_pass_count;
-            }
+                switch (cacher->render_pass_count)
+                {
+                 case 1:
+                    cacher->cached_content->stop_recording();
+                 case 0:
+                    ++cacher->render_pass_count;
+		}
+	    }
         }
 
-        routing_.end();
+        culling_.end();
 
         ctx.active_cacher = cacher->parent;
         ctx_ = 0;

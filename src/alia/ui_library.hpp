@@ -100,8 +100,8 @@ struct cached_string_conversion_accessor : accessor<string>
 };
 
 template<class T>
-void do_text(ui_context& ctx, getter<T> const& value,
-    layout const& layout_spec = default_layout)
+cached_string_conversion_accessor
+as_text(ui_context& ctx, getter<T> const& value)
 {
     cached_string_conversion* cache;
     get_cached_data(ctx, &cache);
@@ -116,11 +116,19 @@ void do_text(ui_context& ctx, getter<T> const& value,
             cache->valid = false;
         cache->id.store(value.id());
     }
-    do_text(ctx, cached_string_conversion_accessor(cache), layout_spec);
+    return cached_string_conversion_accessor(cache);
 }
 
-void do_number(ui_context& ctx, char const* format,
-    getter<double> const& number, layout const& layout_spec = default_layout);
+template<class T>
+void do_text(ui_context& ctx, getter<T> const& value,
+    layout const& layout_spec = default_layout)
+{
+    do_text(ctx, as_text(ctx, value), layout_spec);
+}
+
+cached_string_conversion_accessor
+format_number(ui_context& ctx, char const* format,
+    getter<double> const& number);
 
 void do_paragraph(ui_context& ctx, getter<string> const& text,
     layout const& layout_spec = default_layout);
@@ -133,6 +141,12 @@ bool do_link(
     getter<string> const& text,
     layout const& layout_spec = default_layout,
     widget_id id = auto_id);
+
+void draw_text(ui_context& ctx, getter<string> const& text,
+    vector<2,double> const& position);
+
+void do_layout_dependent_text(ui_context& ctx, getter<string> const& text,
+    layout const& layout_spec);
 
 // BUTTONS
 
@@ -171,13 +185,15 @@ do_icon_button(
 
 struct check_box_result : control_result<bool> {};
 
-check_box_result do_check_box(
+check_box_result
+do_check_box(
     ui_context& ctx,
     accessor<bool> const& value,
     layout const& layout_spec = default_layout,
     widget_id id = auto_id);
 
-check_box_result do_check_box(
+check_box_result
+do_check_box(
     ui_context& ctx,
     accessor<bool> const& value,
     getter<string> const& text,
@@ -188,13 +204,15 @@ check_box_result do_check_box(
 
 struct radio_button_result : control_result<bool> {};
 
-radio_button_result do_radio_button(
+radio_button_result
+do_radio_button(
     ui_context& ctx,
     accessor<bool> const& value,
     layout const& layout_spec = default_layout,
     widget_id id = auto_id);
 
-radio_button_result do_radio_button(
+radio_button_result
+do_radio_button(
     ui_context& ctx,
     accessor<bool> const& value,
     getter<string> const& text,
@@ -235,7 +253,8 @@ make_indexed_accessor(
 }
 
 template<class Index>
-radio_button_result do_radio_button(
+radio_button_result
+do_radio_button(
     ui_context& ctx,
     accessor<Index> const& selected_value,
     getter<Index> const& this_value,
@@ -248,7 +267,8 @@ radio_button_result do_radio_button(
 }
 
 template<class Index>
-radio_button_result do_radio_button(
+radio_button_result
+do_radio_button(
     ui_context& ctx,
     accessor<Index> const& selected_value,
     getter<Index> const& this_value,
@@ -334,7 +354,7 @@ struct panel : noncopyable
     ui_context* ctx_;
     column_layout outer_;
     scoped_substyle substyle_;
-    column_layout inner_;
+    linear_layout inner_;
     ui_flag_set flags_;
 };
 
@@ -409,7 +429,7 @@ struct scrollable_panel : noncopyable
     column_layout outer_;
     scoped_substyle substyle_;
     scrollable_region region_;
-    column_layout inner_;
+    linear_layout inner_;
 };
 
 struct tree_node : noncopyable
@@ -619,13 +639,14 @@ struct text_control_result : control_result<T>
     text_control_event_type event;
 };
 
-text_control_result<string> do_text_control(
+text_control_result<string>
+do_text_control(
     ui_context& ctx,
     accessor<string> const& value,
     layout const& layout_spec = default_layout,
     ui_flag_set flags = NO_FLAGS,
     widget_id id = auto_id,
-    int max_chars = -1);
+    optional<size_t> const& length_limit = none);
 
 struct text_control_string_conversion
 {
@@ -638,13 +659,14 @@ struct text_control_string_conversion
 };
 
 template<class T>
-text_control_result<T> do_text_control(
+text_control_result<T>
+do_text_control(
     ui_context& ctx,
     accessor<T> const& accessor,
     layout const& layout_spec = default_layout,
     ui_flag_set flags = NO_FLAGS,
     widget_id id = auto_id,
-    int max_chars = -1)
+    optional<size_t> const& length_limit = none)
 {
     layout spec = add_default_alignment(layout_spec, LEFT, BASELINE_Y);
     column_layout c(ctx, spec);
@@ -665,7 +687,7 @@ text_control_result<T> do_text_control(
     }
 
     text_control_result<string> r = do_text_control(
-        ctx, inout(&data->text), spec, flags, id, max_chars);
+        ctx, inout(&data->text), spec, flags, id, length_limit);
     alia_if(!data->message.empty())
     {
         do_paragraph(ctx, in(data->message));
@@ -735,10 +757,6 @@ struct resizable_content : noncopyable
     int size_;
     linear_layout layout_;
 };
-
-// TODO: Provide a better interface to this functionality.
-void do_layout_dependent_text(ui_context& ctx, int n,
-    layout const& layout_spec);
 
 }
 

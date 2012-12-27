@@ -110,40 +110,16 @@ struct cached_image : noncopyable
 };
 typedef alia__shared_ptr<cached_image> cached_image_ptr;
 
+// Given a cached image, this draws the full image at a particular position
+// on a particular surface. The surface region is constructed to be the same
+// size as the image. (The surface's transformation matrix is still applied,
+// so this doesn't necessarily imply a 1-to-1 mapping of image pixels to
+// surface pixels.)
+void draw_full_image(surface& surface, cached_image_ptr const& image,
+    vector<2,double> const& position);
+
 static inline bool is_valid(cached_image_ptr const& ptr)
 { return ptr && ptr->is_valid(); }
-
-// Line styles are specified in the same format as in OpenGL.
-
-struct line_stipple
-{
-    line_stipple() {}
-    line_stipple(int factor, uint16_t pattern)
-      : factor(factor), pattern(pattern)
-    {}
-
-    int factor;
-    uint16_t pattern;
-
-    bool operator == (line_stipple const& other) const
-    { return factor == other.factor && pattern == other.pattern; }
-    bool operator != (line_stipple const& other) const
-    { return factor != other.factor || pattern != other.pattern; }
-};
-
-extern line_stipple no_line, solid_line, dashed_line, dotted_line;
-
-typedef float line_width;
-
-struct line_style
-{
-    line_style() {}
-    line_style(line_width width, line_stipple stipple)
-      : width(width), stipple(stipple)
-    {}
-    line_width width;
-    line_stipple stipple;
-};
 
 enum mouse_cursor
 {
@@ -158,18 +134,6 @@ enum mouse_cursor
     UP_DOWN_ARROW_CURSOR,
     FOUR_WAY_ARROW_CURSOR,
 };
-
-//class popup_interface
-//{
-// public:
-//    virtual ~popup_interface() {}
-//    virtual bool is_open() const = 0;
-//    virtual void close() = 0;
-//};
-//typedef alia__shared_ptr<popup_interface> popup_ptr;
-//
-//static inline bool is_open(popup_ptr const& popup)
-//{ return popup && popup->is_open(); }
 
 struct ui_controller;
 
@@ -241,38 +205,6 @@ struct surface : geometry_context_subscriber
 
     virtual void draw_filled_box(rgba8 const& color,
         box<2,double> const& box) = 0;
-
-    //// Draw a line segment.
-    //virtual void draw_line(rgba8 const& color, line_style const& style,
-    //    vector<2,double> const& p1, vector<2,double> const& p2) = 0;
-    //virtual void draw_line(rgba8 const& color, line_style const& style,
-    //    vector<2,float> const& p1, vector<2,float> const& p2) = 0;
-    //virtual void draw_line(rgba8 const& color, line_style const& style,
-    //    vector<2,int> const& p1, vector<2,int> const& p2) = 0;
-
-    //// Draw a line strip.
-    //virtual void draw_line_strip(rgba8 const& color, line_style const& style,
-    //    vector<2,double> const* vertices, unsigned n_vertices) = 0;
-    //virtual void draw_line_strip(rgba8 const& color, line_style const& style,
-    //    vector<2,float> const* vertices, unsigned n_vertices) = 0;
-    //virtual void draw_line_strip(rgba8 const& color, line_style const& style,
-    //    vector<2,int> const* vertices, unsigned n_vertices) = 0;
-
-    //// Draw a line loop.
-    //virtual void draw_line_loop(rgba8 const& color, line_style const& style,
-    //    vector<2,double> const* vertices, unsigned n_vertices) = 0;
-    //virtual void draw_line_loop(rgba8 const& color, line_style const& style,
-    //    vector<2,float> const* vertices, unsigned n_vertices) = 0;
-    //virtual void draw_line_loop(rgba8 const& color, line_style const& style,
-    //    vector<2,int> const* vertices, unsigned n_vertices) = 0;
-
-    //// Draw a filled shape.
-    //virtual void draw_filled_polygon(rgba8 const& color,
-    //    vector<2,double> const* vertices, unsigned n_vertices) = 0;
-    //virtual void draw_filled_polygon(rgba8 const& color,
-    //    vector<2,float> const* vertices, unsigned n_vertices) = 0;
-    //virtual void draw_filled_polygon(rgba8 const& color,
-    //    vector<2,int> const* vertices, unsigned n_vertices) = 0;
 };
 static inline surface& get_surface(surface& surface) { return surface; }
 
@@ -293,10 +225,12 @@ struct caching_renderer
     void begin(Context& ctx, caching_renderer_data& data,
         id_interface const& content_id, box<2,int> const& region)
     {
-        begin(data, get_surface(ctx), content_id, region);
+        begin(data, get_surface(ctx), get_geometry_context(ctx),
+            content_id, region);
     }
 
     void begin(caching_renderer_data& data, surface& surface,
+        geometry_context& geometry,
         id_interface const& content_id, box<2,int> const& region);
 
     void end() {}

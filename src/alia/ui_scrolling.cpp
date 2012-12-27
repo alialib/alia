@@ -125,7 +125,8 @@ struct scrollbar_data
     unsigned axis;
     int physical_position, drag_start_delta;
     themed_rendering_data<scrollbar_renderer> rendering;
-    widget_identity background_id_data[2], thumb_id_data, button_id_data[2];
+    widget_identity whole_id_data, background_id_data[2], thumb_id_data,
+        button_id_data[2];
 };
 
 int get_scrollbar_width(ui_context& ctx, scrollbar_data const& data)
@@ -305,6 +306,8 @@ void scrollbar::do_pass()
     vector<2,int> button_size =
         make_vector<int>(renderer->width(ctx), renderer->button_length(ctx));
 
+    widget_id whole_id = &data.whole_id_data;
+
     box<2,int> button0_area = area;
     button0_area.size[major_axis] = button_size[1];
     widget_id button0_id = &data.button_id_data[0];
@@ -394,6 +397,7 @@ void scrollbar::do_pass()
 
      case REGION_CATEGORY:
       {
+        hit_test_box_region(ctx, whole_id, area, HIT_TEST_WHEEL);
         do_box_region(ctx, bg0_id, bg0_area);
         do_box_region(ctx, bg1_id, bg1_area);
         do_box_region(ctx, thumb_id, thumb_area);
@@ -422,12 +426,10 @@ void scrollbar::do_pass()
         process_button_input(button1_id, button1_area, line_increment);
 
         float movement;
-        if (detect_wheel_movement(ctx, &movement) &&
-            mouse_is_inside_box(ctx, box<2,double>(area)))
+        if (detect_wheel_movement(ctx, &movement, whole_id))
         {
             set_logical_position(
                 int(logical_position - movement * line_increment + 0.5));
-            acknowledge_input_event(ctx);
         }
       }
     }
@@ -678,8 +680,8 @@ void scrollable_region::begin(
         detect_layout_change(get_layout_traversal(ctx),
             &container->scrollable_axes, scrollable_axes);
 
-        update(get_layout_traversal(ctx), container->cacher, layout_spec,
-            FILL | UNPADDED);
+        update_layout_cacher(get_layout_traversal(ctx), container->cacher,
+            layout_spec, FILL | UNPADDED);
 
         static default_scrollbar_junction_renderer default_renderer;
         refresh_themed_rendering_data(ctx, container->junction_rendering,
@@ -698,6 +700,18 @@ void scrollable_region::begin(
     {
         layout_vector window_corner =
             container->cacher.resolved_relative_assignment.region.corner;
+
+	hit_test_box_region(ctx, id,
+            layout_box(window_corner, container_->window_size),
+            HIT_TEST_WHEEL);
+
+        float movement;
+        if (detect_wheel_movement(ctx, &movement, id))
+        {
+            container_->scroll_position[1] -=
+                int(container_->line_size * movement);
+            clamp_scroll_position(*container_);
+        }
 
         if (container->hsb_on)
         {
@@ -861,20 +875,6 @@ void scrollable_region::end()
 
     transform_.end();
     scr_.end();
-
-    float movement;
-    if (detect_wheel_movement(ctx, &movement) &&
-        mouse_is_inside_box(ctx,
-            box<2,double>(vector<2,double>(
-                container_->cacher.resolved_relative_assignment.region.
-                    corner),
-                vector<2,double>(container_->window_size))))
-    {
-        container_->scroll_position[1] -=
-            int(container_->line_size * movement);
-        clamp_scroll_position(*container_);
-        acknowledge_input_event(ctx);
-    }
 
     srr_.end();
     slc_.end();

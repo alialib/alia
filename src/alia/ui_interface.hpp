@@ -5,6 +5,7 @@
 #include <alia/accessors.hpp>
 #include <alia/layout_interface.hpp>
 #include <alia/event_routing.hpp>
+#include <alia/layout_library.hpp>
 
 namespace alia {
 
@@ -114,11 +115,14 @@ struct culling_block
     culling_block() {}
     culling_block(ui_context& ctx) { begin(ctx); }
     ~culling_block() { end(); }
-    void begin(ui_context& ctx);
+    void begin(ui_context& ctx, layout const& layout_spec = default_layout);
     void end();
-    bool is_relevant() const { return srr_.is_relevant(); }
+    bool is_relevant() const { return is_relevant_; }
  private:
+    ui_context* ctx_;
     scoped_routing_region srr_;
+    column_layout layout_;
+    bool is_relevant_;
 };
 
 #define alia_if_relevant_(ctx) \
@@ -147,7 +151,7 @@ struct cached_ui_block
     bool is_relevant() const { return is_relevant_; }
  private:
     ui_context* ctx_;
-    scoped_routing_region routing_;
+    culling_block culling_;
     bool is_relevant_;
     layout_node** layout_next_ptr_;
 };
@@ -189,6 +193,8 @@ static inline data_traversal& get_data_traversal(ui_context& ctx)
 { return ctx.data; }
 static inline layout_traversal& get_layout_traversal(ui_context& ctx)
 { return ctx.layout; }
+static inline geometry_context& get_geometry_context(ui_context& ctx)
+{ return ctx.geometry; }
 
 void end_pass(ui_context& ctx);
 

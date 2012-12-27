@@ -486,6 +486,14 @@ struct keyed_data
 };
 
 template<class Data>
+bool is_valid(keyed_data<Data> const& data)
+{ return data.is_valid; }
+
+template<class Data>
+void mark_valid(keyed_data<Data>& data)
+{ data.is_valid = true; }
+
+template<class Data>
 void refresh_keyed_data(keyed_data<Data>& data, id_interface const& key)
 {
     if (!data.key.matches(key))
@@ -499,7 +507,7 @@ template<class Data>
 void set(keyed_data<Data>& data, Data const& value)
 {
     data.value = value;
-    data.is_valid = true;
+    mark_valid(data);
 }
 
 template<class Data>

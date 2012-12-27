@@ -832,7 +832,8 @@ void panel::begin(
         ((layout_spec.flags & Y_ALIGNMENT_MASK) == BASELINE_Y ?
             BASELINE_Y : FILL_Y) |
         ((flags & NO_INTERNAL_PADDING) ? UNPADDED : PADDED);
-    inner_.begin(ctx, layout(inner_layout_flags, 1));
+    inner_.begin(ctx, (flags & HORIZONTAL) ? 0 : 1,
+	layout(inner_layout_flags, 1));
 }
 void panel::end()
 {
@@ -938,7 +939,7 @@ void scrollable_panel::begin(
     get_cached_data(ctx, &data);
     begin_panel(ctx, outer_, id, flags, data);
     region_.begin(ctx, GROW | UNPADDED, scrollable_axes, id);
-    inner_.begin(ctx, GROW | PADDED);
+    inner_.begin(ctx, (flags & HORIZONTAL) ? 0 : 1, GROW | PADDED);
 }
 void scrollable_panel::end()
 {
@@ -1533,16 +1534,17 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
     container_.begin(ctx, text("control"),
         add_default_padding(
             add_default_alignment(layout_spec, LEFT, BASELINE_Y), PADDED),
-        NO_INTERNAL_PADDING, id_, state);
+        HORIZONTAL | NO_INTERNAL_PADDING, id_, state);
 
     switch (ctx.event->category)
     {
      case RENDER_CATEGORY:
       {
         if ((state & WIDGET_FOCUSED))
+        {
             draw_focus_rect(ctx, data_->focus_rendering,
                 container_.outer_region());
-
+	}
         break;
       }
 
@@ -1584,6 +1586,7 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
                     if (!data_->popup_open)
                     {
                         open_ddl(ctx, *data_, id_);
+                        make_selection_visible_ = true;
                         acknowledge_input_event(ctx);
                         break;
                     }
@@ -1663,12 +1666,13 @@ bool untyped_drop_down_list::do_list()
 {
     ui_context& ctx = *ctx_;
 
+    contents_.end();
+
     if (do_drop_down_button(ctx, CENTER | UNPADDED, id_, &data_->button))
     {
         open_ddl(ctx, *data_, id_);
+        make_selection_visible_ = true;
     }
-
-    contents_.end();
 
     alia_if (do_list_)
     {
@@ -1721,7 +1725,7 @@ bool untyped_ddl_item::begin(untyped_drop_down_list& list, bool is_selected)
         id, get_widget_state(ctx, id, true, false, is_internally_selected));
 
     if (list.make_selection_visible_ && is_internally_selected)
-        make_widget_visible(*ctx.system, make_routable_widget_id(ctx, id));
+        make_widget_visible(ctx, id);
 
     switch (ctx.event->category)
     {
@@ -1892,7 +1896,7 @@ void resizable_content::begin(
     // It's possible that the content will be too big for the requested size
     // and the layout engine will force the container to a larger size.
     // If this happens, we have to record that as the real size.
-    if (detect_event(ctx, HIT_TEST_EVENT))
+    if (detect_event(ctx, MOUSE_HIT_TEST_EVENT))
     {
         unsigned drag_axis = (flags & HORIZONTAL) ? 1 : 0;
         int new_size = layout_.region().size[drag_axis];
@@ -1961,9 +1965,9 @@ void popup::begin(ui_context& ctx, widget_id id,
         transform_.set(translation_matrix(vector<2,double>(position)));
     }
 
-    // Intercept clicks to other parts of the surface.
+    // Intercept mouse clicks and wheel movement to other parts of the surface.
     background_id_ = get_widget_id(ctx);
-    handle_mouse_hit(ctx, background_id_);
+    handle_mouse_hit(ctx, background_id_, HIT_TEST_MOUSE | HIT_TEST_WHEEL);
 }
 bool popup::user_closed()
 {
@@ -1980,10 +1984,6 @@ void popup::end()
     {
         transform_.end();
 	layout_.end();
-
-        // Block any mouse wheel events that weren't handled by the popup.
-        if (ctx_->event->type == MOUSE_WHEEL_EVENT)
-            acknowledge_input_event(*ctx_);
 
         // Restore the context's layer Z.
 	set_layer_z(*ctx_, ctx_->layer_z - 1);

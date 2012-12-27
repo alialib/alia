@@ -26,8 +26,10 @@ void set_style(style_tree& tree, string const& subpath,
 
 void set_text_magnification(ui_system& system, float magnification);
 
-void refresh_and_layout(ui_system& system, vector<2,unsigned> const& size,
-    ui_time_type millisecond_tick_count);
+void refresh_and_layout(ui_system& ui, vector<2,unsigned> const& size,
+    ui_time_type millisecond_tick_count, mouse_cursor* current_cursor = 0);
+
+void make_widget_visible(ui_system& system, routable_widget_id const& id);
 
 void render_ui(ui_system& system);
 
@@ -58,9 +60,6 @@ void process_focus_gain(ui_system& ui, ui_time_type time);
 
 routable_widget_id do_hit_test(ui_system& ui,
     vector<2,double> const& position);
-
-// Determine which widget is under the mouse and what cursor should be active.
-optional<mouse_cursor> update_mouse_cursor(ui_system& ui);
 
 // Determine the minimum size of the initial UI defined by the given
 // controller, style, and surface.

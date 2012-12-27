@@ -671,6 +671,9 @@ void set_transformation_matrix(geometry_context& ctx,
 static inline geometry_context& get_geometry_context(geometry_context& ctx)
 { return ctx; }
 
+// Is any part of the given region visible through the clipping rectangle?
+bool is_visible(geometry_context& ctx, box<2,double> const& region);
+
 // scoped_clip_region is a scoped object that further restricts the clip region
 // of a geometry_context while it's active. While it's active, the context's
 // clip region will be set to the intersection of the old region and what's

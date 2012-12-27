@@ -146,13 +146,28 @@ struct layout_system
 
     layout_node* root_node;
 
+    // This is used to cache results of the layout calculation.
+    // The entire layout calculation can be viewed as a tree of pure function
+    // evaluations.
+    // Branches of that tree may be referenced by multiple parents.
+    // Also, branches may remain constant across frames.
+    // In both cases, it is wasteful to recompute the functions.
+    // (In fact, in the former case, it changes the whole complexity of the
+    // problem.)
     data_graph calculation_cache;
 
+    // This is used to generate unique IDs for cached layout data.
+    counter_type cacher_id_counter;
+
     layout_system()
-      : refresh_counter(0)
+      : refresh_counter(1)
       , root_node(0)
+      , cacher_id_counter(1)
     {}
 };
+
+static inline counter_type get_cacher_id(layout_system& system)
+{ return system.cacher_id_counter++; }
 
 // scoped_layout_traversal sets up a non-refresh traversal for a layout system.
 struct scoped_layout_traversal
@@ -436,9 +451,13 @@ void resolve_relative_assignment(
 struct layout_cacher
 {
     layout_cacher()
-      : last_horizontal_query(0)
+      : id(0)
+      , last_horizontal_query(0)
       , last_relative_assignment(0)
     {}
+
+    // the unique ID of this cacher
+    counter_type id;
 
     // the resolved layout spec supplied by the user
     resolved_layout_spec resolved_spec;
@@ -455,7 +474,8 @@ struct layout_cacher
     // the actual assignment that that value resolved to
     relative_layout_assignment resolved_relative_assignment;
 };
-bool update(layout_traversal& traversal, layout_cacher& cacher,
+bool update_layout_cacher(
+    layout_traversal& traversal, layout_cacher& cacher,
     layout const& layout_spec, layout_flag_set default_flags);
 struct horizontal_layout_query
 {
@@ -581,8 +601,8 @@ void get_simple_layout_container(
 
     if (is_refresh_pass(ctx))
     {
-        if (update(get_layout_traversal(ctx), (*container)->cacher,
-                layout_spec, FILL | UNPADDED))
+        if (update_layout_cacher(get_layout_traversal(ctx),
+                (*container)->cacher, layout_spec, FILL | UNPADDED))
         {
             // Since this container isn't active yet, it didn't get marked as
             // needing recalculation, so we need to do that manually here.

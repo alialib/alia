@@ -430,18 +430,16 @@ static void update_window(HWND hwnd)
     if (rect.bottom == rect.top || rect.left == rect.right)
         return;
 
-    refresh_and_layout(impl.ui,
-        alia::make_vector<unsigned>(rect.right, rect.bottom),
-        get_time(impl));
-
     opengl_surface* surface =
         static_cast<opengl_surface*>(impl.ui.surface.get());
     surface->set_size(
         alia::make_vector<unsigned>(rect.right, rect.bottom));
 
-    optional<mouse_cursor> cursor = update_mouse_cursor(impl.ui);
-    if (cursor)
-        set_cursor(get(cursor));
+    mouse_cursor cursor;
+    refresh_and_layout(impl.ui,
+        alia::make_vector<unsigned>(rect.right, rect.bottom),
+        get_time(impl), &cursor);
+    set_cursor(cursor);
 
     RedrawWindow(hwnd, NULL, NULL, RDW_INVALIDATE | RDW_UPDATENOW);
 

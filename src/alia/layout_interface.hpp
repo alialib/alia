@@ -137,6 +137,7 @@ bool operator!=(layout const& a, layout const& b);
 struct data_traversal;
 
 // forward declarations from layout_system.hpp
+struct layout_system;
 struct layout_container;
 struct layout_node;
 struct layout_style_info;
@@ -146,6 +147,9 @@ struct simple_layout_container;
 // that the application wants to lay out.
 struct layout_traversal
 {
+    // This is the layout system that this traversal is traversing.
+    layout_system* system;
+
     // This is a data traversal that's used to retrieve data when necessary.
     data_traversal* data;
 

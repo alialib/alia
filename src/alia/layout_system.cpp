@@ -40,6 +40,7 @@ static void initialize_traversal(
     bool is_refresh, geometry_context* geometry, layout_style_info* style,
     vector<2,float> const& ppi)
 {
+    traversal.system = &system;
     traversal.data = &data;
     traversal.active_container = 0;
     traversal.next_ptr = &system.root_node;
@@ -66,7 +67,6 @@ void scoped_layout_refresh::begin(
     layout_system& system, layout_traversal& traversal, data_traversal& data,
     vector<2,float> const& ppi)
 {
-    ++system.refresh_counter;
     initialize_traversal(system, traversal, data, true, 0, &dummy_style_info_,
         ppi);
 }
@@ -101,6 +101,10 @@ void resolve_layout(layout_node* root_node, data_graph& cache,
 void resolve_layout(layout_system& system, layout_vector const& size)
 {
     resolve_layout(system.root_node, system.calculation_cache, size);
+    // Increment the refresh counter immediately after resolving layout so
+    // that any changes detected after this will be associated with the new
+    // counter value and thus cause a recalculation.
+    ++system.refresh_counter;
 }
 
 layout_vector get_minimum_size(layout_node* root_node, data_graph& cache)
@@ -493,9 +497,12 @@ void resolve_relative_assignment(
             (vertical_requirements.minimum_descent + spec.padding_size[1]));
 }
 
-bool update(layout_traversal& traversal, layout_cacher& cacher,
+bool update_layout_cacher(
+    layout_traversal& traversal, layout_cacher& cacher,
     layout const& layout_spec, layout_flag_set default_flags)
 {
+    if (cacher.id == 0)
+        cacher.id = get_cacher_id(*traversal.system);
     resolved_layout_spec resolved_spec;
     resolve_layout_spec(traversal, resolved_spec, layout_spec, default_flags);
     return detect_layout_change(traversal, &cacher.resolved_spec,
@@ -509,7 +516,7 @@ horizontal_layout_query::horizontal_layout_query(
   : cacher_(&cacher), last_content_change_(last_content_change)
 {
     ALIA_BEGIN_LOCATION_SPECIFIC_NAMED_BLOCK(
-        ctx, named_block_, make_id(&cacher));
+        ctx, named_block_, make_id(cacher.id));
 }
 void horizontal_layout_query::update(
     calculated_layout_requirements const& calculated)
@@ -527,9 +534,9 @@ vertical_layout_query::vertical_layout_query(
   : cacher_(&cacher), last_content_change_(last_content_change)
 {
     ALIA_BEGIN_LOCATION_SPECIFIC_NAMED_BLOCK(ctx, named_block_,
-        combine_ids(make_id(&cacher), make_id(assigned_width)))
+        combine_ids(make_id(cacher.id), make_id(assigned_width)))
     update_required_ =
-        get_cached_data(ctx, &data_) ||
+        get_data(ctx, &data_) ||
         data_->last_vertical_query != last_content_change_;
 }
 void vertical_layout_query::update(
@@ -549,7 +556,7 @@ relative_region_assignment::relative_region_assignment(
   : cacher_(&cacher), last_content_change_(last_content_change)
 {
     ALIA_BEGIN_LOCATION_SPECIFIC_NAMED_BLOCK(
-        ctx, named_block_, make_id(&cacher));
+        ctx, named_block_, make_id(cacher.id));
 
     alia_if (cacher_->last_relative_assignment != last_content_change_ ||
         cacher_->relative_assignment != assignment)

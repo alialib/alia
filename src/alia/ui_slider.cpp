@@ -328,6 +328,8 @@ do_slider(ui_context& ctx, accessor<double> const& value,
 
             set_new_value(value, result,
                 clamp(new_value, minimum, maximum, step));
+
+            set_focus(ctx, &data->thumb_id);
         }
 
         if (detect_drag(ctx, &data->thumb_id, LEFT_BUTTON))

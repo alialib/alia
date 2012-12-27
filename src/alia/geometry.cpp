@@ -109,4 +109,33 @@ void scoped_transformation::end()
     }
 }
 
+bool is_visible(geometry_context& ctx, box<2,double> const& region)
+{
+    // TODO: This assumes that opposite corners of the region will define a
+    // bounding box for the region even in the transformed space, but this is
+    // only true if the only rotations in the transformation matrix are at
+    // right angles.
+    // Since a more general test would probably be more expensive, it may be
+    // worth keeping track of whether or not the matrix contains such
+    // rotations.
+    vector<2,double>
+        window_low = ctx.clip_region.corner,
+        window_high = get_high_corner(ctx.clip_region),
+        region_low = 
+            transform(ctx.transformation_matrix, region.corner),
+        region_high =
+            transform(ctx.transformation_matrix, get_high_corner(region));
+    for (unsigned i = 0; i != 2; ++i)
+    {
+        if (region_low[i] < window_low[i] &&
+            region_high[i] < window_low[i] ||
+            region_low[i] > window_high[i] &&
+            region_high[i] > window_high[i])
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 }
