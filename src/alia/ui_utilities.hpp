@@ -8,6 +8,26 @@
 
 namespace alia {
 
+// CONTEXT ACCESSORS - various accessor functions for parts of ui_context
+
+static inline matrix<3,3,double> const&
+get_transformation(ui_context& ctx)
+{ return ctx.geometry.transformation_matrix; }
+
+static inline layout_vector const&
+get_padding_size(ui_context& ctx)
+{ return ctx.layout.style_info->padding_size; }
+
+static inline counter_type
+get_refresh_counter(ui_context& ctx)
+{ return ctx.layout.refresh_counter; }
+
+// A simple macro that declared a reference to cached data and retrieves it.
+#define ALIA_GET_CACHED_DATA(T) \
+    T* alia__data_ptr; \
+    get_cached_data(ctx, &alia__data_ptr); \
+    T& data = *alia__data_ptr;
+
 void record_content_change(ui_context& ctx);
 
 template<class Event>

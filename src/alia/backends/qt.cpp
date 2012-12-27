@@ -3,7 +3,6 @@
 #include <alia/qt.hpp>
 #include <alia/ui_system.hpp>
 #include <alia/opengl.hpp>
-#include <alia/millisecond_clock.hpp>
 
 #include <QtGui>
 #include <QGLWidget>

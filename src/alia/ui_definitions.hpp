@@ -416,14 +416,13 @@ struct ui_system
 static inline surface& get_surface(ui_context& ctx)
 { return *ctx.surface; }
 
-static inline bool is_rendering(ui_context& ctx)
+static inline bool is_render_pass(ui_context& ctx)
 { return ctx.event->type == RENDER_EVENT; }
 
 struct primary_style_properties
 {
     alia::font font;
-    rgba8 text_color, bg_color, selected_text_color, selected_bg_color,
-        border_color;
+    rgba8 text_color, bg_color, border_color;
 };
 
 struct mouse_hit_test_event : ui_event

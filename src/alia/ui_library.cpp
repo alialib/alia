@@ -15,32 +15,31 @@ struct separator_data
 
 void do_separator(ui_context& ctx, layout const& layout_spec)
 {
-    separator_data* data;
-    get_cached_data(ctx, &data);
+    ALIA_GET_CACHED_DATA(separator_data)
 
     switch (ctx.event->category)
     {
      case REFRESH_CATEGORY:
       {
-        refresh_keyed_data(data->width, *ctx.style.id);
-        if (!data->width.is_valid)
-            set(data->width, get_float_property(ctx, "separator_width", 2));
-        data->layout_node.refresh_layout(
+        refresh_keyed_data(data.width, *ctx.style.id);
+        if (!data.width.is_valid)
+            set(data.width, get_float_property(ctx, "separator_width", 2));
+        data.layout_node.refresh_layout(
             get_layout_traversal(ctx), layout_spec,
             leaf_layout_requirements(
                 make_layout_vector(
-                    as_layout_size(data->width.value),
-                    as_layout_size(data->width.value)),
+                    as_layout_size(data.width.value),
+                    as_layout_size(data.width.value)),
                 0, 0),
             FILL | PADDED);
-        add_layout_node(get_layout_traversal(ctx), &data->layout_node);
+        add_layout_node(get_layout_traversal(ctx), &data.layout_node);
         break;
       }
 
      case RENDER_CATEGORY:
       {
-        layout_box const& region = data->layout_node.assignment().region;
-        caching_renderer cache(ctx, data->rendering, *ctx.style.id, region);
+        layout_box const& region = data.layout_node.assignment().region;
+        caching_renderer cache(ctx, data.rendering, *ctx.style.id, region);
         if (cache.needs_rendering())
         {
             skia_renderer renderer(ctx, cache.image(), region.size);
@@ -50,8 +49,9 @@ void do_separator(ui_context& ctx, layout const& layout_spec)
             paint.setStrokeCap(SkPaint::kRound_Cap);
             set_color(paint, get_color_property(ctx, "separator_color"));
             renderer.canvas().drawLine(
-                SkScalar(1), SkScalar(1),
-                SkScalar(region.size[0] - 1), SkScalar(region.size[1] - 1),
+                SkIntToScalar(1), SkIntToScalar(1),
+                layout_scalar_as_skia_scalar(region.size[0] - 1),
+                layout_scalar_as_skia_scalar(region.size[1] - 1),
                 paint);
             renderer.cache();
             cache.mark_valid();
@@ -67,25 +67,24 @@ void do_separator(ui_context& ctx, layout const& layout_spec)
 void do_color(ui_context& ctx, getter<rgba8> const& color,
     layout const& layout_spec)
 {
-    simple_display_data* data;
-    get_cached_data(ctx, &data);
+    ALIA_GET_CACHED_DATA(simple_display_data)
 
     switch (ctx.event->category)
     {
      case REFRESH_CATEGORY:
       {
-        data->layout_node.refresh_layout(
+        data.layout_node.refresh_layout(
             get_layout_traversal(ctx),
             add_default_size(layout_spec, size(1.4f, 1.4f, EM)),
             leaf_layout_requirements(make_layout_vector(0, 0), 0, 0));
-        add_layout_node(get_layout_traversal(ctx), &data->layout_node);
+        add_layout_node(get_layout_traversal(ctx), &data.layout_node);
         break;
       }
 
      case RENDER_CATEGORY:
       {
-        layout_box const& region = data->layout_node.assignment().region;
-        caching_renderer cache(ctx, data->rendering, color.id(), region);
+        layout_box const& region = data.layout_node.assignment().region;
+        caching_renderer cache(ctx, data.rendering, color.id(), region);
         if (cache.needs_rendering())
         {
             skia_renderer renderer(ctx, cache.image(), region.size);
@@ -95,11 +94,14 @@ void do_color(ui_context& ctx, getter<rgba8> const& color,
             set_color(paint, get(color));
             SkRect rect;
             rect.fLeft = 0;
-            rect.fRight = SkScalar(region.size[0]);
+            rect.fRight = layout_scalar_as_skia_scalar(region.size[0]);
             rect.fTop = 0;
-            rect.fBottom = SkScalar(region.size[1]);
+            rect.fBottom = layout_scalar_as_skia_scalar(region.size[1]);
             SkScalar radius =
-                SkScalar((std::min)(region.size[0], region.size[1])) / 3;
+                SkScalarDiv(
+                    layout_scalar_as_skia_scalar(
+                        (std::min)(region.size[0], region.size[1])),
+                    SkIntToScalar(3));
             renderer.canvas().drawRoundRect(rect, radius, radius, paint);
             renderer.cache();
             cache.mark_valid();
@@ -114,8 +116,7 @@ void do_color(ui_context& ctx, getter<rgba8> const& color,
 
 void do_bullet(ui_context& ctx, layout const& layout_spec)
 {
-    simple_display_data* data;
-    get_cached_data(ctx, &data);
+    ALIA_GET_CACHED_DATA(simple_display_data)
 
     switch (ctx.event->category)
     {
@@ -123,20 +124,20 @@ void do_bullet(ui_context& ctx, layout const& layout_spec)
       {
         layout_scalar size =
             resolve_layout_height(get_layout_traversal(ctx), 1, EX);
-        data->layout_node.refresh_layout(
+        data.layout_node.refresh_layout(
             get_layout_traversal(ctx), layout_spec,
             leaf_layout_requirements(
                 make_layout_vector(size, size),
                 size, 0),
             CENTER_X | BASELINE_Y | PADDED);
-        add_layout_node(get_layout_traversal(ctx), &data->layout_node);
+        add_layout_node(get_layout_traversal(ctx), &data.layout_node);
         break;
       }
 
      case RENDER_CATEGORY:
       {
-        layout_box const& region = data->layout_node.assignment().region;
-        caching_renderer cache(ctx, data->rendering, *ctx.style.id, region);
+        layout_box const& region = data.layout_node.assignment().region;
+        caching_renderer cache(ctx, data.rendering, *ctx.style.id, region);
         if (cache.needs_rendering())
         {
             skia_renderer renderer(ctx, cache.image(), region.size);
@@ -208,8 +209,7 @@ struct default_check_box_renderer : check_box_renderer
         caching_renderer_data* data;
         cast_data_ptr(&data, data_ptr);
 
-        layout_vector const& padding_size =
-            ctx.layout.style_info->padding_size;
+        layout_vector const& padding_size = get_padding_size(ctx);
         layout_box padded_region = add_border(region, padding_size);
         layout_vector const& unpadded_size = region.size;
 
@@ -232,8 +232,9 @@ struct default_check_box_renderer : check_box_renderer
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);
 
-            renderer.canvas().translate(SkScalar(padding_size[0]),
-                SkScalar(padding_size[1]));
+            renderer.canvas().translate(
+                layout_scalar_as_skia_scalar(padding_size[0]),
+                layout_scalar_as_skia_scalar(padding_size[1]));
 
             paint.setStyle(SkPaint::kFill_Style);
             set_color(paint, bg_color);
@@ -244,13 +245,27 @@ struct default_check_box_renderer : check_box_renderer
                 set_color(paint, fg_color);
                 paint.setStrokeCap(SkPaint::kRound_Cap);
                 paint.setStrokeJoin(SkPaint::kRound_Join);
-                SkScalar dx = SkScalar(unpadded_size[0]) / SkScalar(10.);
-                SkScalar dy = SkScalar(unpadded_size[1]) / SkScalar(10.);
-                paint.setStrokeWidth(dx * SkScalar(1.6));
+                SkScalar dx =
+                    SkScalarDiv(
+                        layout_scalar_as_skia_scalar(unpadded_size[0]),
+                        SkDoubleToScalar(10.));
+                SkScalar dy =
+                    SkScalarDiv(
+                        layout_scalar_as_skia_scalar(unpadded_size[1]),
+                        SkDoubleToScalar(10.));
+                paint.setStrokeWidth(SkScalarMul(dx, SkDoubleToScalar(1.6)));
                 renderer.canvas().drawLine(
-                    dx * 3, dy * 3, dx * 7, dy * 7, paint);
+                    SkScalarMul(dx, SkIntToScalar(3)),
+                    SkScalarMul(dy, SkIntToScalar(3)),
+                    SkScalarMul(dx, SkIntToScalar(7)),
+                    SkScalarMul(dy, SkIntToScalar(7)),
+                    paint);
                 renderer.canvas().drawLine(
-                    dx * 3, dy * 7, dx * 7, dy * 3, paint);
+                    SkScalarMul(dx, SkIntToScalar(3)),
+                    SkScalarMul(dy, SkIntToScalar(7)),
+                    SkScalarMul(dx, SkIntToScalar(7)),
+                    SkScalarMul(dy, SkIntToScalar(3)),
+                    paint);
             }
 
             if (state & WIDGET_FOCUSED)
@@ -269,41 +284,40 @@ check_box_result do_check_box(
     layout const& layout_spec,
     widget_id id)
 {
-    check_box_data* data;
-    get_cached_data(ctx, &data);
+    ALIA_GET_CACHED_DATA(check_box_data)
 
-    init_optional_widget_id(ctx, id, data);
+    init_optional_widget_id(ctx, id, &data);
 
     switch (ctx.event->category)
     {
      case REFRESH_CATEGORY:
       {
         static default_check_box_renderer default_renderer;
-        refresh_themed_rendering_data(ctx, data->rendering, &default_renderer);
-        check_box_renderer const* renderer = data->rendering.renderer;
-        data->layout_node.refresh_layout(
+        refresh_themed_rendering_data(ctx, data.rendering, &default_renderer);
+        check_box_renderer const* renderer = data.rendering.renderer;
+        data.layout_node.refresh_layout(
             get_layout_traversal(ctx),
             layout_spec,
             leaf_layout_requirements(renderer->default_size(ctx), 0, 0),
             LEFT | CENTER_Y | PADDED);
-        add_layout_node(get_layout_traversal(ctx), &data->layout_node);
+        add_layout_node(get_layout_traversal(ctx), &data.layout_node);
         break;
       }
 
      case RENDER_CATEGORY:
       {
-        data->rendering.renderer->draw(ctx, data->rendering.data,
-            data->layout_node.assignment().region, value,
-            get_button_state(ctx, id, data->input));
+        data.rendering.renderer->draw(ctx, data.rendering.data,
+            data.layout_node.assignment().region, value,
+            get_button_state(ctx, id, data.input));
         break;
       }
 
      case REGION_CATEGORY:
-        do_box_region(ctx, id, data->layout_node.assignment().region);
+        do_box_region(ctx, id, data.layout_node.assignment().region);
         break;
 
      case INPUT_CATEGORY:
-        if (do_button_input(ctx, id, data->input))
+        if (do_button_input(ctx, id, data.input))
         {
             check_box_result result;
             set_new_value(value, result,
@@ -359,8 +373,7 @@ struct default_radio_button_renderer : radio_button_renderer
         caching_renderer_data* data;
         cast_data_ptr(&data, data_ptr);
 
-        layout_vector const& padding_size =
-            ctx.layout.style_info->padding_size;
+        layout_vector const& padding_size = get_padding_size(ctx);
         layout_box padded_region = add_border(region, padding_size);
         layout_vector const& unpadded_size = region.size;
 
@@ -384,7 +397,8 @@ struct default_radio_button_renderer : radio_button_renderer
             paint.setFlags(SkPaint::kAntiAlias_Flag);
 
             renderer.canvas().translate(
-                SkScalar(padding_size[0]), SkScalar(padding_size[1]));
+                layout_scalar_as_skia_scalar(padding_size[0]),
+                layout_scalar_as_skia_scalar(padding_size[1]));
 
             double scale = (unpadded_size[0] + unpadded_size[1]) / 20.;
             layout_vector center = unpadded_size / 2;
@@ -394,8 +408,9 @@ struct default_radio_button_renderer : radio_button_renderer
                 set_color(paint, get_color_property(ctx, "focus_color"));
                 paint.setStyle(SkPaint::kFill_Style);
                 renderer.canvas().drawCircle(
-                    SkScalar(center[0]), SkScalar(center[1]),
-                    SkScalar(6.4 * scale), paint);
+                    layout_scalar_as_skia_scalar(center[0]),
+                    layout_scalar_as_skia_scalar(center[1]),
+                    SkDoubleToScalar(6.4 * scale), paint);
             }
 
             if (bg_color.a)
@@ -403,8 +418,9 @@ struct default_radio_button_renderer : radio_button_renderer
                 set_color(paint, bg_color);
                 paint.setStyle(SkPaint::kFill_Style);
                 renderer.canvas().drawCircle(
-                    SkScalar(center[0]), SkScalar(center[1]),
-                    SkScalar(5 * scale), paint);
+                    layout_scalar_as_skia_scalar(center[0]),
+                    layout_scalar_as_skia_scalar(center[1]),
+                    SkDoubleToScalar(5 * scale), paint);
             }
 
             if (value.is_gettable() && get(value))
@@ -412,8 +428,9 @@ struct default_radio_button_renderer : radio_button_renderer
                 set_color(paint, fg_color);
                 paint.setStyle(SkPaint::kFill_Style);
                 renderer.canvas().drawCircle(
-                    SkScalar(center[0]), SkScalar(center[1]),
-                    SkScalar(2.5 * scale), paint);
+                    layout_scalar_as_skia_scalar(center[0]),
+                    layout_scalar_as_skia_scalar(center[1]),
+                    SkDoubleToScalar(2.5 * scale), paint);
             }
 
             renderer.cache();
@@ -430,41 +447,40 @@ do_radio_button(
     layout const& layout_spec,
     widget_id id)
 {
-    radio_button_data* data;
-    get_cached_data(ctx, &data);
+    ALIA_GET_CACHED_DATA(radio_button_data)
 
-    init_optional_widget_id(ctx, id, data);
+    init_optional_widget_id(ctx, id, &data);
 
     switch (ctx.event->category)
     {
      case REFRESH_CATEGORY:
       {
         static default_radio_button_renderer default_renderer;
-        refresh_themed_rendering_data(ctx, data->rendering, &default_renderer);
-        radio_button_renderer const* renderer = data->rendering.renderer;
-        data->layout_node.refresh_layout(
+        refresh_themed_rendering_data(ctx, data.rendering, &default_renderer);
+        radio_button_renderer const* renderer = data.rendering.renderer;
+        data.layout_node.refresh_layout(
             get_layout_traversal(ctx),
             layout_spec,
             leaf_layout_requirements(renderer->default_size(ctx), 0, 0),
             LEFT | CENTER_Y | PADDED);
-        add_layout_node(get_layout_traversal(ctx), &data->layout_node);
+        add_layout_node(get_layout_traversal(ctx), &data.layout_node);
         break;
       }
 
      case RENDER_CATEGORY:
       {
-        data->rendering.renderer->draw(ctx, data->rendering.data,
-            data->layout_node.assignment().region, value,
-            get_button_state(ctx, id, data->input));
+        data.rendering.renderer->draw(ctx, data.rendering.data,
+            data.layout_node.assignment().region, value,
+            get_button_state(ctx, id, data.input));
         break;
       }
 
      case REGION_CATEGORY:
-        do_box_region(ctx, id, data->layout_node.assignment().region);
+        do_box_region(ctx, id, data.layout_node.assignment().region);
         break;
 
      case INPUT_CATEGORY:
-        if (do_button_input(ctx, id, data->input))
+        if (do_button_input(ctx, id, data.input))
         {
             radio_button_result result;
             set_new_value(value, result, true);
@@ -519,8 +535,7 @@ struct default_node_expander_renderer : node_expander_renderer
         caching_renderer_data* data;
         cast_data_ptr(&data, data_ptr);
 
-        layout_vector const& padding_size =
-            ctx.layout.style_info->padding_size;
+        layout_vector const& padding_size = get_padding_size(ctx);
         layout_box padded_region = add_border(region, padding_size);
         layout_vector const& unpadded_size = region.size;
 
@@ -544,8 +559,8 @@ struct default_node_expander_renderer : node_expander_renderer
             paint.setFlags(SkPaint::kAntiAlias_Flag);
 
             renderer.canvas().translate(
-                SkScalar(padding_size[0]),
-                SkScalar(padding_size[1]));
+                layout_scalar_as_skia_scalar(padding_size[0]),
+                layout_scalar_as_skia_scalar(padding_size[1]));
 
             if ((state & WIDGET_PRIMARY_STATE_MASK) != WIDGET_NORMAL)
             {
@@ -558,8 +573,12 @@ struct default_node_expander_renderer : node_expander_renderer
                 draw_round_focus_rect(ctx, renderer.canvas(), unpadded_size);
 
             renderer.canvas().translate(
-                SkScalar(unpadded_size[0]) / 2,
-                SkScalar(unpadded_size[1]) / 2);
+                SkScalarDiv(
+                    layout_scalar_as_skia_scalar(unpadded_size[0]),
+                    SkIntToScalar(2)),
+                SkScalarDiv(
+                    layout_scalar_as_skia_scalar(unpadded_size[1]),
+                    SkIntToScalar(2)));
 
             if (value.is_gettable() && get(value))
                 renderer.canvas().rotate(90);
@@ -567,19 +586,22 @@ struct default_node_expander_renderer : node_expander_renderer
             {
                 set_color(paint, fg_color);
                 paint.setStyle(SkPaint::kFill_Style);
-                SkScalar a = SkScalar(unpadded_size[0]) / SkScalar(1.8);
+                SkScalar a =
+                    SkScalarDiv(
+                        layout_scalar_as_skia_scalar(unpadded_size[0]),
+                        SkDoubleToScalar(1.8));
                 SkPath path;
                 path.incReserve(4);
                 SkPoint p0;
-                p0.fX = a * SkScalar(-0.34);
-                p0.fY = a * SkScalar(-0.5);
+                p0.fX = SkScalarMul(a, SkDoubleToScalar(-0.34));
+                p0.fY = SkScalarMul(a, SkDoubleToScalar(-0.5));
                 path.moveTo(p0);
                 SkPoint p1;
                 p1.fX = p0.fX;
-                p1.fY = a * SkScalar(0.5);
+                p1.fY = SkScalarMul(a, SkDoubleToScalar(0.5));
                 path.lineTo(p1);
                 SkPoint p2;
-                p2.fX = p0.fX + a * SkScalar(0.866);
+                p2.fX = p0.fX + SkScalarMul(a, SkDoubleToScalar(0.866));
                 p2.fY = 0;
                 path.lineTo(p2);
                 path.lineTo(p0);
@@ -599,41 +621,40 @@ node_expander_result do_node_expander(
     layout const& layout_spec,
     widget_id id)
 {
-    node_expander_data* data;
-    get_cached_data(ctx, &data);
+    ALIA_GET_CACHED_DATA(node_expander_data)
 
-    init_optional_widget_id(ctx, id, data);
+    init_optional_widget_id(ctx, id, &data);
 
     switch (ctx.event->category)
     {
      case REFRESH_CATEGORY:
       {
         static default_node_expander_renderer default_renderer;
-        refresh_themed_rendering_data(ctx, data->rendering, &default_renderer);
-        node_expander_renderer const* renderer = data->rendering.renderer;
-        data->layout_node.refresh_layout(
+        refresh_themed_rendering_data(ctx, data.rendering, &default_renderer);
+        node_expander_renderer const* renderer = data.rendering.renderer;
+        data.layout_node.refresh_layout(
             get_layout_traversal(ctx),
             layout_spec,
             leaf_layout_requirements(renderer->default_size(ctx), 0, 0),
             LEFT | CENTER_Y | PADDED);
-        add_layout_node(get_layout_traversal(ctx), &data->layout_node);
+        add_layout_node(get_layout_traversal(ctx), &data.layout_node);
         break;
       }
 
      case RENDER_CATEGORY:
       {
-        data->rendering.renderer->draw(ctx, data->rendering.data,
-            data->layout_node.assignment().region, value,
-            get_button_state(ctx, id, data->input));
+        data.rendering.renderer->draw(ctx, data.rendering.data,
+            data.layout_node.assignment().region, value,
+            get_button_state(ctx, id, data.input));
         break;
       }
 
      case REGION_CATEGORY:
-        do_box_region(ctx, id, data->layout_node.assignment().region);
+        do_box_region(ctx, id, data.layout_node.assignment().region);
         break;
 
      case INPUT_CATEGORY:
-        if (do_button_input(ctx, id, data->input))
+        if (do_button_input(ctx, id, data.input))
         {
             node_expander_result result;
             set_new_value(value, result,
@@ -653,28 +674,27 @@ node_expander_result do_node_expander(
 void do_progress_bar(ui_context& ctx, getter<double> const& progress,
     layout const& layout_spec)
 {
-    simple_display_data* data;
-    get_cached_data(ctx, &data);
+    ALIA_GET_CACHED_DATA(simple_display_data)
 
     switch (ctx.event->category)
     {
      case REFRESH_CATEGORY:
       {
-        data->layout_node.refresh_layout(
+        data.layout_node.refresh_layout(
             get_layout_traversal(ctx),
             // Note that this is effectively a default minimum width, since
             // the true default behavior is to fill the allotted width.
             add_default_size(layout_spec, size(10.f, 1.4f, EM)),
             leaf_layout_requirements(make_layout_vector(0, 0), 0, 0),
             FILL_X | TOP | PADDED);
-        add_layout_node(get_layout_traversal(ctx), &data->layout_node);
+        add_layout_node(get_layout_traversal(ctx), &data.layout_node);
         break;
       }
 
      case RENDER_CATEGORY:
       {
-        layout_box const& region = data->layout_node.assignment().region;
-        caching_renderer cache(ctx, data->rendering, progress.id(), region);
+        layout_box const& region = data.layout_node.assignment().region;
+        caching_renderer cache(ctx, data.rendering, progress.id(), region);
         if (cache.needs_rendering())
         {
             skia_renderer sr(ctx, cache.image(), region.size);
@@ -692,12 +712,19 @@ void do_progress_bar(ui_context& ctx, getter<double> const& progress,
             rgba8 bar_color =
                 get_color_property(progress_bar_style, "bar_color");
 
-            SkScalar trim = SkScalar(region.size[1] / 12.);
+            SkScalar trim =
+                SkScalarDiv(
+                    layout_scalar_as_skia_scalar(region.size[1]),
+                    SkDoubleToScalar(12.));
+
+            // The following is kinda iffy with regards to treating SkScalars
+            // abstractly, but I think it works in any case.
+
             box<2,SkScalar> full_box(
                 make_vector<SkScalar>(0, 0),
                 make_vector<SkScalar>(
-                    SkScalar(region.size[0]),
-                    SkScalar(region.size[1])));
+                    layout_scalar_as_skia_scalar(region.size[0]),
+                    layout_scalar_as_skia_scalar(region.size[1])));
 
             set_color(paint, outline_color);
             draw_rect(sr.canvas(), paint, full_box);
@@ -706,8 +733,8 @@ void do_progress_bar(ui_context& ctx, getter<double> const& progress,
             draw_rect(sr.canvas(), paint, add_border(full_box, -trim));
 
             box<2,SkScalar> bar_box = add_border(full_box, -trim * 2);
-            bar_box.size[0] = SkScalar(bar_box.size[0] *
-                (progress.is_gettable() ? get(progress) : 0));
+            bar_box.size[0] = SkDoubleToScalar(bar_box.size[0] *
+                (progress.is_gettable() ? get(progress) : 0.));
             set_color(paint, bar_color);
             draw_rect(sr.canvas(), paint, bar_box);
 
@@ -726,11 +753,10 @@ void bordered_box::begin(
     ui_context& ctx, layout const& layout_spec, ui_flag_set flags)
 {
     box_.begin(ctx, (flags & HORIZONTAL) ? 0 : 1, layout_spec);
-    if (is_rendering(ctx))
+    if (is_render_pass(ctx))
     {
         ctx.surface->draw_filled_box(ctx.style.properties->border_color,
-            box<2,double>(add_border(box_.region(),
-                ctx.layout.style_info->padding_size)));
+            box<2,double>(add_border(box_.region(), get_padding_size(ctx))));
     }
 }
 void bordered_box::end()
@@ -747,7 +773,7 @@ struct panel_data
 
 static void begin_panel(
     ui_context& ctx, column_layout& outer, widget_id id, ui_flag_set flags,
-    panel_data* data)
+    panel_data& data)
 {
     switch (ctx.event->category)
     {
@@ -759,22 +785,23 @@ static void begin_panel(
         if (flags & ROUNDED)
         {
             layout_box const& rect = outer.region();
-            caching_renderer cache(ctx, data->rendering, *ctx.style.id, rect);
+            caching_renderer cache(ctx, data.rendering, *ctx.style.id, rect);
             if (cache.needs_rendering())
             {
-                int padding = ctx.layout.style_info->padding_size[0];
+                int padding = get_padding_size(ctx)[0];
                 skia_renderer renderer(ctx, cache.image(), rect.size);
                 SkPaint paint;
                 paint.setFlags(SkPaint::kAntiAlias_Flag);
                 set_color(paint, ctx.style.properties->bg_color);
                 SkRect sr;
                 sr.fLeft = 0;
-                sr.fRight = SkScalar(rect.size[0]);
+                sr.fRight = layout_scalar_as_skia_scalar(rect.size[0]);
                 sr.fTop = 0;
-                sr.fBottom = SkScalar(rect.size[1]);
+                sr.fBottom = layout_scalar_as_skia_scalar(rect.size[1]);
                 if (flags & ROUNDED)
                 {
-                    SkScalar radius = SkScalar(padding) * 2;
+                    SkScalar radius =
+                        layout_scalar_as_skia_scalar(padding * 2);
                     renderer.canvas().drawRoundRect(sr, radius, radius, paint);
                 }
                 else
@@ -825,7 +852,7 @@ void panel::begin(
 
     substyle_.begin(ctx, style, state);
 
-    begin_panel(ctx, outer_, id, flags, data);
+    begin_panel(ctx, outer_, id, flags, *data);
 
     layout_flag_set inner_layout_flags =
         FILL_X |
@@ -851,14 +878,9 @@ layout_box panel::outer_region() const
     // outer_.region() returns its region in its own frame of reference, which
     // isn't valid for panel users, so this is used instead.
     if (flags_ & NO_INTERNAL_PADDING)
-    {
         return inner_.region();
-    }
     else
-    {
-        return add_border(inner_.region(),
-            ctx_->layout.style_info->padding_size);
-    }
+        return add_border(inner_.region(), get_padding_size(*ctx_));
 }
 
 struct clickable_panel_data
@@ -877,24 +899,24 @@ static void draw_panel_focus_border(
         if (flags & ROUNDED)
         {
             caching_renderer cache(ctx, rendering, *ctx.style.id,
-                add_border(rect, ctx.layout.style_info->padding_size));
+                add_border(rect, get_padding_size(ctx)));
             if (cache.needs_rendering())
             {
-                int padding = ctx.layout.style_info->padding_size[0];
+                layout_vector const& padding = get_padding_size(ctx);
                 skia_renderer renderer(ctx, cache.image(),
-                    rect.size + ctx.layout.style_info->padding_size * 2);
+                    rect.size + padding * 2);
                 SkPaint paint;
                 paint.setFlags(SkPaint::kAntiAlias_Flag);
                 setup_focus_drawing(ctx, paint);
                 renderer.canvas().translate(
-                    SkScalar(ctx.layout.style_info->padding_size[0]),
-                    SkScalar(ctx.layout.style_info->padding_size[1]));
+                    layout_scalar_as_skia_scalar(padding[0]),
+                    layout_scalar_as_skia_scalar(padding[1]));
                 SkRect sr;
                 sr.fLeft = 0;
-                sr.fRight = SkScalar(rect.size[0]);
+                sr.fRight = layout_scalar_as_skia_scalar(rect.size[0]);
                 sr.fTop = 0;
-                sr.fBottom = SkScalar(rect.size[1]);
-                SkScalar radius = SkScalar(padding) * 2;
+                sr.fBottom = layout_scalar_as_skia_scalar(rect.size[1]);
+                SkScalar radius = layout_scalar_as_skia_scalar(padding[0] * 2);
                 renderer.canvas().drawRoundRect(sr, radius, radius, paint);
                 renderer.cache();
                 cache.mark_valid();
@@ -910,18 +932,17 @@ void clickable_panel::begin(
     ui_context& ctx, layout const& layout_spec,
     ui_flag_set flags, widget_id id)
 {
+    ALIA_GET_CACHED_DATA(clickable_panel_data)
+
     get_widget_id_if_needed(ctx, id);
 
-    clickable_panel_data* data;
-    get_data(ctx, &data);
-
-    widget_state state = get_button_state(ctx, id, data->input);
+    widget_state state = get_button_state(ctx, id, data.input);
     panel_.begin(ctx, text("clickable_panel"), layout_spec, flags, id, state);
     if ((flags & DISABLED) == 0)
     {
-        clicked_ = do_button_input(ctx, id, data->input);
-        if (is_rendering(ctx) && (state & WIDGET_FOCUSED))
-            draw_panel_focus_border(ctx, panel_, flags, data->rendering);
+        clicked_ = do_button_input(ctx, id, data.input);
+        if (is_render_pass(ctx) && (state & WIDGET_FOCUSED))
+            draw_panel_focus_border(ctx, panel_, flags, data.rendering);
     }
     else
         clicked_ = false;
@@ -937,7 +958,7 @@ void scrollable_panel::begin(
     substyle_.begin(ctx, style, WIDGET_NORMAL);
     panel_data* data;
     get_cached_data(ctx, &data);
-    begin_panel(ctx, outer_, id, flags, data);
+    begin_panel(ctx, outer_, id, flags, *data);
     region_.begin(ctx, GROW | UNPADDED, scrollable_axes, id);
     inner_.begin(ctx, (flags & HORIZONTAL) ? 0 : 1, GROW | PADDED);
 }
@@ -992,13 +1013,14 @@ void tree_node::end_header()
 
 bool tree_node::do_children()
 {
+    ui_context& ctx = *ctx_;
     end_header();
     row_.end();
-    alia_if_(*ctx_, do_children_)
+    alia_if(do_children_)
     {
         row_.begin(grid_, layout(GROW));
-        do_spacer(*ctx_);
-        column_.begin(*ctx_, layout(GROW));
+        do_spacer(ctx);
+        column_.begin(ctx, layout(GROW));
         return true;
     }
     alia_end
@@ -1028,18 +1050,14 @@ do_button(
     widget_id id)
 {
     get_widget_id_if_needed(ctx, id);
-    button_data* data;
-    get_data(ctx, &data);
-    widget_state state = get_button_state(ctx, id, data->input);
+    ALIA_GET_CACHED_DATA(button_data)
+    widget_state state = get_button_state(ctx, id, data.input);
     panel p(ctx, text("button"),
         add_default_alignment(layout_spec, LEFT, TOP), NO_FLAGS, id, state);
     do_text(ctx, label, CENTER);
-    if (is_rendering(ctx) && (state & WIDGET_FOCUSED))
-    {
-        draw_focus_rect(ctx, data->focus_rect, add_border(p.inner_region(),
-            ctx.layout.style_info->padding_size));
-    }
-    return do_button_input(ctx, id, data->input);
+    if (is_render_pass(ctx) && (state & WIDGET_FOCUSED))
+        draw_focus_rect(ctx, data.focus_rect, p.outer_region());
+    return do_button_input(ctx, id, data.input);
 }
 
 // ICON BUTTON
@@ -1074,8 +1092,7 @@ struct default_icon_button_renderer : icon_button_renderer
         caching_renderer_data* data;
         cast_data_ptr(&data, data_ptr);
 
-        layout_vector const& padding_size =
-            ctx.layout.style_info->padding_size;
+        layout_vector const& padding_size = get_padding_size(ctx);
         layout_box padded_region = add_border(region, padding_size);
         layout_vector const& unpadded_size = region.size;
 
@@ -1099,8 +1116,8 @@ struct default_icon_button_renderer : icon_button_renderer
             paint.setFlags(SkPaint::kAntiAlias_Flag);
 
             renderer.canvas().translate(
-                SkScalar(padding_size[0]),
-                SkScalar(padding_size[1]));
+                layout_scalar_as_skia_scalar(padding_size[0]),
+                layout_scalar_as_skia_scalar(padding_size[1]));
 
             if ((state & WIDGET_PRIMARY_STATE_MASK) != WIDGET_NORMAL)
             {
@@ -1113,8 +1130,12 @@ struct default_icon_button_renderer : icon_button_renderer
                 draw_round_focus_rect(ctx, renderer.canvas(), unpadded_size);
 
             renderer.canvas().translate(
-                SkScalar(unpadded_size[0]) / 2,
-                SkScalar(unpadded_size[1]) / 2);
+                SkScalarDiv(
+                    layout_scalar_as_skia_scalar(unpadded_size[0]),
+                    SkIntToScalar(2)),
+                SkScalarDiv(
+                    layout_scalar_as_skia_scalar(unpadded_size[1]),
+                    SkIntToScalar(2)));
 
             set_color(paint, fg_color);
 
@@ -1122,18 +1143,15 @@ struct default_icon_button_renderer : icon_button_renderer
             {
              case REMOVE_ICON:
               {
-                SkScalar a = SkScalar(unpadded_size[0]) / SkScalar(5);
+                SkScalar a =
+                    SkScalarDiv(
+                        layout_scalar_as_skia_scalar(unpadded_size[0]),
+                        SkIntToScalar(5));
                 paint.setStrokeWidth(a);
                 paint.setStrokeCap(SkPaint::kRound_Cap);
                 paint.setStyle(SkPaint::kFill_Style);
-                renderer.canvas().drawLine(
-                    SkScalar(-a), SkScalar(-a),
-                    SkScalar(a), SkScalar(a),
-                    paint);
-                renderer.canvas().drawLine(
-                    SkScalar(-a), SkScalar(a),
-                    SkScalar(a), SkScalar(-a),
-                    paint);
+                renderer.canvas().drawLine(-a, -a,  a,  a, paint);
+                renderer.canvas().drawLine(-a,  a,  a, -a, paint);
                 break;
               }
              default:
@@ -1156,95 +1174,43 @@ do_icon_button(
 {
     get_widget_id_if_needed(ctx, id);
 
-    icon_button_data* data;
-    get_cached_data(ctx, &data);
+    ALIA_GET_CACHED_DATA(icon_button_data)
 
     switch (ctx.event->category)
     {
      case REFRESH_CATEGORY:
       {
         static default_icon_button_renderer default_renderer;
-        refresh_themed_rendering_data(ctx, data->rendering, &default_renderer);
-        icon_button_renderer const* renderer = data->rendering.renderer;
-        data->layout_node.refresh_layout(
+        refresh_themed_rendering_data(ctx, data.rendering, &default_renderer);
+        icon_button_renderer const* renderer = data.rendering.renderer;
+        data.layout_node.refresh_layout(
             get_layout_traversal(ctx),
             layout_spec,
             leaf_layout_requirements(renderer->default_size(ctx), 0, 0),
             LEFT | CENTER_Y | PADDED);
-        add_layout_node(get_layout_traversal(ctx), &data->layout_node);
+        add_layout_node(get_layout_traversal(ctx), &data.layout_node);
         break;
       }
 
      case RENDER_CATEGORY:
       {
-        data->rendering.renderer->draw(ctx, data->rendering.data,
-            data->layout_node.assignment().region, icon,
-            get_button_state(ctx, id, data->input));
+        data.rendering.renderer->draw(ctx, data.rendering.data,
+            data.layout_node.assignment().region, icon,
+            get_button_state(ctx, id, data.input));
         break;
       }
 
      case REGION_CATEGORY:
-        do_box_region(ctx, id, data->layout_node.assignment().region);
+        do_box_region(ctx, id, data.layout_node.assignment().region);
         break;
 
      case INPUT_CATEGORY:
-        if (do_button_input(ctx, id, data->input))
+        if (do_button_input(ctx, id, data.input))
             return true;
         break;
     }
 
     return false;
-}
-
-// COLOR CONTROL
-
-static void do_color_block(
-    ui_context& ctx, drop_down_list<rgba8>& ddl, uint8_t red)
-{
-    column_layout c(ctx);
-    for (int i = 0; i != 4; ++i)
-    {
-        row_layout r(ctx, default_layout);
-        for (int j = 0; j != 4; ++j)
-        {
-            rgba8 color(
-                red, uint8_t(i * 255 / 3), uint8_t(j * 255 / 3), 0xff);
-            ddl_item<rgba8> item(ddl, color);
-            do_color(ctx, in(color));
-        }
-    }
-}
-
-color_control_result
-do_color_control(ui_context& ctx, accessor<rgba8> const& value,
-    layout const& layout_spec)
-{
-    drop_down_list<rgba8> ddl(ctx, value);
-    do_color(ctx, value);
-    alia_if (ddl.do_list())
-    {
-        column_layout c(ctx);
-        {
-            row_layout r(ctx, default_layout);
-            do_color_block(ctx, ddl, uint8_t(0 * 255 / 3));
-            do_spacer(ctx, width(1, CHARS));
-            do_color_block(ctx, ddl, uint8_t(1 * 255 / 3));
-        }
-        do_spacer(ctx, height(1, CHARS));
-        {
-            row_layout r(ctx, default_layout);
-            do_color_block(ctx, ddl, uint8_t(2 * 255 / 3));
-            do_spacer(ctx, width(1, CHARS));
-            do_color_block(ctx, ddl, uint8_t(3 * 255 / 3));
-        }
-    }
-    alia_end
-
-    color_control_result result;
-    result.changed = ddl.changed();
-    if (result.changed)
-        result.new_value = get(value);
-    return result;
 }
 
 // DROP DOWNS
@@ -1279,8 +1245,7 @@ struct default_drop_down_button_renderer : drop_down_button_renderer
         caching_renderer_data* data;
         cast_data_ptr(&data, data_ptr);
 
-        layout_vector const& padding_size =
-            ctx.layout.style_info->padding_size;
+        layout_vector const& padding_size = get_padding_size(ctx);
         layout_box padded_region = add_border(region, padding_size);
         layout_vector const& unpadded_size = region.size;
 
@@ -1303,34 +1268,41 @@ struct default_drop_down_button_renderer : drop_down_button_renderer
             paint.setFlags(SkPaint::kAntiAlias_Flag);
 
             renderer.canvas().translate(
-                SkScalar(padding_size[0]),
-                SkScalar(padding_size[1]));
+                layout_scalar_as_skia_scalar(padding_size[0]),
+                layout_scalar_as_skia_scalar(padding_size[1]));
 
             paint.setStyle(SkPaint::kFill_Style);
             set_color(paint, bg_color);
             draw_rect(renderer.canvas(), paint, unpadded_size);
 
             renderer.canvas().translate(
-                SkScalar(unpadded_size[0]) / 2,
-                SkScalar(unpadded_size[1]) / 2);
+                SkScalarDiv(
+                    layout_scalar_as_skia_scalar(unpadded_size[0]),
+                    SkIntToScalar(2)),
+                SkScalarDiv(
+                    layout_scalar_as_skia_scalar(unpadded_size[1]),
+                    SkIntToScalar(2)));
             renderer.canvas().rotate(90);
 
             {
                 set_color(paint, fg_color);
                 paint.setStyle(SkPaint::kFill_Style);
-                SkScalar a = SkScalar(unpadded_size[0]) / SkScalar(1.8);
+                SkScalar a =
+                    SkScalarDiv(
+                        layout_scalar_as_skia_scalar(unpadded_size[0]),
+                        SkDoubleToScalar(1.8));
                 SkPath path;
                 path.incReserve(4);
                 SkPoint p0;
-                p0.fX = a * SkScalar(-0.34);
-                p0.fY = a * SkScalar(-0.5);
+                p0.fX = SkScalarMul(a, SkDoubleToScalar(-0.34));
+                p0.fY = SkScalarMul(a, SkDoubleToScalar(-0.5));
                 path.moveTo(p0);
                 SkPoint p1;
                 p1.fX = p0.fX;
-                p1.fY = a * SkScalar(0.5);
+                p1.fY = SkScalarMul(a, SkDoubleToScalar(0.5));
                 path.lineTo(p1);
                 SkPoint p2;
-                p2.fX = p0.fX + a * SkScalar(0.866);
+                p2.fX = p0.fX + SkScalarMul(a, SkDoubleToScalar(0.866));
                 p2.fY = 0;
                 path.lineTo(p2);
                 path.lineTo(p0);
@@ -1349,40 +1321,40 @@ do_drop_down_button(
     ui_context& ctx,
     layout const& layout_spec,
     widget_id id,
-    drop_down_button_data* data)
+    drop_down_button_data& data)
 {
     switch (ctx.event->category)
     {
      case REFRESH_CATEGORY:
       {
         static default_drop_down_button_renderer default_renderer;
-        refresh_themed_rendering_data(ctx, data->rendering, &default_renderer);
-        drop_down_button_renderer const* renderer = data->rendering.renderer;
-        data->layout_node.refresh_layout(
+        refresh_themed_rendering_data(ctx, data.rendering, &default_renderer);
+        drop_down_button_renderer const* renderer = data.rendering.renderer;
+        data.layout_node.refresh_layout(
             get_layout_traversal(ctx),
             layout_spec,
             leaf_layout_requirements(renderer->default_size(ctx), 0, 0),
             LEFT | CENTER_Y | PADDED);
-        add_layout_node(get_layout_traversal(ctx), &data->layout_node);
+        add_layout_node(get_layout_traversal(ctx), &data.layout_node);
         break;
       }
 
      case RENDER_CATEGORY:
       {
-        data->rendering.renderer->draw(ctx, data->rendering.data,
-            data->layout_node.assignment().region,
-            get_button_state(ctx, id, data->input));
+        data.rendering.renderer->draw(ctx, data.rendering.data,
+            data.layout_node.assignment().region,
+            get_button_state(ctx, id, data.input));
         break;
       }
 
      case REGION_CATEGORY:
-        do_box_region(ctx, id, data->layout_node.assignment().region);
+        do_box_region(ctx, id, data.layout_node.assignment().region);
         break;
 
      case INPUT_CATEGORY:
         add_to_focus_order(ctx, id);
         if (detect_click(ctx, id, LEFT_BUTTON) ||
-            detect_keyboard_click(ctx, data->input.key, id, KEY_SPACE))
+            detect_keyboard_click(ctx, data.input.key, id, KEY_SPACE))
         {
             return true;
         }
@@ -1527,9 +1499,11 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
     untyped_ui_value const* result = 0;
 
     id_ = get_widget_id(ctx);
-    get_cached_data(ctx, &data_);
 
-    widget_state state = get_button_state(ctx, id_, data_->button.input);
+    get_cached_data(ctx, &data_);
+    ddl_data& data = *data_;
+
+    widget_state state = get_button_state(ctx, id_, data.button.input);
 
     container_.begin(ctx, text("control"),
         add_default_padding(
@@ -1542,7 +1516,7 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
       {
         if ((state & WIDGET_FOCUSED))
         {
-            draw_focus_rect(ctx, data_->focus_rendering,
+            draw_focus_rect(ctx, data.focus_rendering,
                 container_.outer_region());
 	}
         break;
@@ -1553,7 +1527,7 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
         key_event_info info;
         if (detect_key_press(ctx, &info, id_))
         {
-            if (!data_->popup_open)
+            if (!data.popup_open)
             {
                 // If this is a list of commands, don't select them without the
                 // list being open.
@@ -1571,7 +1545,7 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
             else
             {
                 if (process_ddl_movement_keys(ctx, id_,
-                        data_->internal_selection, info))
+                        data.internal_selection, info))
                 {
                     acknowledge_input_event(ctx);
                     make_selection_visible_ = true;
@@ -1583,7 +1557,7 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
                 {
                  case KEY_ENTER:
                  case KEY_NUMPAD_ENTER:
-                    if (!data_->popup_open)
+                    if (!data.popup_open)
                     {
                         open_ddl(ctx, *data_, id_);
                         make_selection_visible_ = true;
@@ -1591,22 +1565,22 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
                         break;
                     }
                  case KEY_SPACE:
-                    if (data_->popup_open)
+                    if (data.popup_open)
                     {
-                        if (data_->internal_selection)
+                        if (data.internal_selection)
                         {
                             select_ddl_item_at_index(ctx, id_,
-                                get(data_->internal_selection));
+                                get(data.internal_selection));
                         }
-                        data_->popup_open = false;
+                        data.popup_open = false;
                         acknowledge_input_event(ctx);
                     }
                     break;
                  case KEY_ESCAPE:
-                    if (data_->popup_open)
+                    if (data.popup_open)
                     {
                         acknowledge_input_event(ctx);
-                        data_->popup_open = false;
+                        data.popup_open = false;
                         acknowledge_input_event(ctx);
                     }
                     break;
@@ -1625,7 +1599,7 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
             if (e.target == id_)
             {
                 result = e.value.get();
-                data_->popup_open = false;
+                data.popup_open = false;
             }
             break;
           }
@@ -1654,7 +1628,7 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
         break;
     }
 
-    if (data_->popup_open)
+    if (data.popup_open)
         do_list_ = true;
 
     contents_.begin(ctx, BASELINE_Y | GROW_X | UNPADDED);
@@ -1665,10 +1639,11 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
 bool untyped_drop_down_list::do_list()
 {
     ui_context& ctx = *ctx_;
+    ddl_data& data = *data_;
 
     contents_.end();
 
-    if (do_drop_down_button(ctx, CENTER | UNPADDED, id_, &data_->button))
+    if (do_drop_down_button(ctx, CENTER | UNPADDED, id_, data.button))
     {
         open_ddl(ctx, *data_, id_);
         make_selection_visible_ = true;
@@ -1682,7 +1657,7 @@ bool untyped_drop_down_list::do_list()
             make_vector(lower[0], upper[1]),
             make_vector(upper[0], lower[1]));
         if (popup_.user_closed())
-            data_->popup_open = false;
+            data.popup_open = false;
 
         list_border_.begin(ctx, GROW | PADDED);
         list_panel_.begin(ctx, text("control"), 2, GROW | UNPADDED);
@@ -1713,10 +1688,10 @@ bool untyped_ddl_item::begin(untyped_drop_down_list& list, bool is_selected)
 {
     list_ = &list;
     int index = list.list_index_++;
-    ddl_data* data = list.data_;
+    ddl_data& data = *list.data_;
 
-    bool is_internally_selected = data->internal_selection &&
-        get(data->internal_selection) == index;
+    bool is_internally_selected = data.internal_selection &&
+        get(data.internal_selection) == index;
 
     ui_context& ctx = *list.ctx_;
 
@@ -1791,8 +1766,7 @@ struct draggable_separator_data
 bool do_draggable_separator(ui_context& ctx, accessor<int> const& width,
     layout const& layout_spec, ui_flag_set flags, widget_id id)
 {
-    draggable_separator_data* data;
-    get_cached_data(ctx, &data);
+    ALIA_GET_CACHED_DATA(draggable_separator_data)
 
     get_widget_id_if_needed(ctx, id);
 
@@ -1800,25 +1774,25 @@ bool do_draggable_separator(ui_context& ctx, accessor<int> const& width,
     {
      case REFRESH_CATEGORY:
       {
-        refresh_keyed_data(data->width, *ctx.style.id);
-        if (!data->width.is_valid)
-            set(data->width, get_float_property(ctx, "separator_width", 2));
-        data->layout_node.refresh_layout(
+        refresh_keyed_data(data.width, *ctx.style.id);
+        if (!data.width.is_valid)
+            set(data.width, get_float_property(ctx, "separator_width", 2));
+        data.layout_node.refresh_layout(
             get_layout_traversal(ctx), layout_spec,
             leaf_layout_requirements(
                 make_layout_vector(
-                    as_layout_size(data->width.value),
-                    as_layout_size(data->width.value)),
+                    as_layout_size(data.width.value),
+                    as_layout_size(data.width.value)),
                 0, 0),
             FILL | PADDED);
-        add_layout_node(get_layout_traversal(ctx), &data->layout_node);
+        add_layout_node(get_layout_traversal(ctx), &data.layout_node);
         break;
       }
 
      case RENDER_CATEGORY:
       {
-        layout_box const& region = data->layout_node.assignment().region;
-        caching_renderer cache(ctx, data->rendering, *ctx.style.id, region);
+        layout_box const& region = data.layout_node.assignment().region;
+        caching_renderer cache(ctx, data.rendering, *ctx.style.id, region);
         if (cache.needs_rendering())
         {
             skia_renderer renderer(ctx, cache.image(), region.size);
@@ -1828,8 +1802,9 @@ bool do_draggable_separator(ui_context& ctx, accessor<int> const& width,
             paint.setStrokeCap(SkPaint::kRound_Cap);
             set_color(paint, get_color_property(ctx, "separator_color"));
             renderer.canvas().drawLine(
-                SkScalar(1), SkScalar(1),
-                SkScalar(region.size[0] - 1), SkScalar(region.size[1] - 1),
+                SkIntToScalar(1), SkIntToScalar(1),
+                layout_scalar_as_skia_scalar(region.size[0] - 1),
+                layout_scalar_as_skia_scalar(region.size[1] - 1),
                 paint);
             renderer.cache();
             cache.mark_valid();
@@ -1840,7 +1815,7 @@ bool do_draggable_separator(ui_context& ctx, accessor<int> const& width,
 
      case REGION_CATEGORY:
       {
-        layout_box region = data->layout_node.assignment().region;
+        layout_box region = data.layout_node.assignment().region;
         int axis = (flags & HORIZONTAL) ? 0 : 1;
         int const drag_axis = 1 - axis;
         // Add a couple of pixels to make it easier to click on.
@@ -1860,15 +1835,15 @@ bool do_draggable_separator(ui_context& ctx, accessor<int> const& width,
         {
             int position = get_integer_mouse_position(ctx)[drag_axis];
             int current_width = width.is_gettable() ? get(width) : 0;
-            data->drag_start_delta = (flags & FLIPPED) ?
+            data.drag_start_delta = (flags & FLIPPED) ?
                 current_width + position : position - current_width;
         }
         if (detect_drag(ctx, id, LEFT_BUTTON))
         {
             int position = get_integer_mouse_position(ctx)[drag_axis];
             set(width, (flags & FLIPPED) ?
-                data->drag_start_delta - position :
-                position - data->drag_start_delta);
+                data.drag_start_delta - position :
+                position - data.drag_start_delta);
             return true;
         }
         break;
@@ -1910,11 +1885,12 @@ void resizable_content::end()
 {
     if (ctx_)
     {
+        ui_context& ctx = *ctx_;
         layout_.end();
-        if (!(flags_ & PREPEND) && !ctx_->pass_aborted)
+        if (!(flags_ & PREPEND) && !ctx.pass_aborted)
         {
-            if (do_draggable_separator(*ctx_, inout(&size_), UNPADDED, flags_))
-                issue_set_value_event(*ctx_, id_, size_);
+            if (do_draggable_separator(ctx, inout(&size_), UNPADDED, flags_))
+                issue_set_value_event(ctx, id_, size_);
         }
         ctx_ = 0;
     }
@@ -1930,10 +1906,10 @@ void popup::begin(ui_context& ctx, widget_id id,
     set_layer_z(ctx, ctx.layer_z + 1);
 
     vector<2,int> absolute_lower = vector<2,int>(
-        transform(ctx.geometry.transformation_matrix,
+        transform(get_transformation(ctx),
             vector<2,double>(lower_bound) + make_vector<double>(0.5, 0.5)));
     vector<2,int> absolute_upper = vector<2,int>(
-        transform(ctx.geometry.transformation_matrix,
+        transform(get_transformation(ctx),
             vector<2,double>(upper_bound) + make_vector<double>(0.5, 0.5)));
 
     layout_vector surface_size = layout_vector(ctx.surface->size());
@@ -1982,11 +1958,13 @@ void popup::end()
 {
     if (ctx_)
     {
+        ui_context& ctx = *ctx_;
+
         transform_.end();
 	layout_.end();
 
         // Restore the context's layer Z.
-	set_layer_z(*ctx_, ctx_->layer_z - 1);
+	set_layer_z(ctx, ctx.layer_z - 1);
 
 	ctx_ = 0;
     }

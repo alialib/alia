@@ -119,16 +119,11 @@ static void read_primary_style_properties(
     style_search_path const* path)
 {
     props->text_color =
-        get_color_property(path, "text_color", rgba8(0x00, 0x00, 0x00, 0xff));
+        get_color_property(path, "text_color",
+            rgba8(0x00, 0x00, 0x00, 0xff));
     props->bg_color =
         get_color_property(path, "background_color",
             rgba8(0xff, 0xff, 0xff, 0xff));
-    props->selected_text_color =
-        get_color_property(path, "selected_text_color",
-            rgba8(0xff, 0xff, 0xff, 0xff));
-    props->selected_bg_color =
-        get_color_property(path, "selected_background_color",
-            rgba8(0x32, 0x97, 0xfd, 0xff));
     props->border_color =
         get_color_property(path, "border_color",
             rgba8(0x80, 0x80, 0x80, 0xff));
@@ -145,10 +140,21 @@ static void read_layout_style_info(layout_style_info* style_info,
     style_info->padding_size = make_vector(padding_size, padding_size);
 
     style_info->font_size = font.size;
-    // TODO
+
+    SkPaint paint;
+    set_skia_font_info(paint, font);
+
+    SkPaint::FontMetrics metrics;
+    SkScalar line_spacing = paint.getFontMetrics(&metrics);
+
     style_info->character_size = make_vector(
-        style_info->font_size * 0.6f, style_info->font_size);
-    style_info->x_height = style_info->font_size * 0.5f;
+        metrics.fAvgCharWidth > 0 ? SkScalarToFloat(metrics.fAvgCharWidth) :
+            SkScalarToFloat(line_spacing) * 0.6f,
+        SkScalarToFloat(line_spacing));
+
+    style_info->x_height =
+        metrics.fXHeight > 0 ? SkScalarToFloat(metrics.fXHeight) :
+            SkScalarToFloat(line_spacing) * 0.5f;
 }
 
 struct initial_styling_data
@@ -345,24 +351,6 @@ layout_vector measure_initial_ui(
 
     return get_minimum_size(tmp.layout);
 }
-
-///
-
-//void scoped_text_processor::begin(
-//    ui_context& ctx, ui_text_processor* processor)
-//{
-//    ctx_ = &ctx;
-//    old_processor_ = ctx.active_text_processor;
-//    ctx.active_text_processor = processor;
-//}
-//void scoped_text_processor::end()
-//{
-//    if (ctx_)
-//    {
-//        ctx_->active_text_processor = old_processor_;
-//        ctx_ = 0;
-//    }
-//}
 
 void render_ui(ui_system& system)
 {
@@ -643,11 +631,9 @@ void do_region_visibility(ui_context& ctx, widget_id id,
     {
         // TODO: This doesn't handle rotations properly.
         e.region = box<2,double>(
-            transform(ctx.geometry.transformation_matrix,
-                vector<2,double>(region.corner -
-                    ctx.layout.style_info->padding_size)),
-            vector<2,double>(region.size +
-                ctx.layout.style_info->padding_size * 2));
+            transform(get_transformation(ctx),
+                vector<2,double>(region.corner - get_padding_size(ctx))),
+            vector<2,double>(region.size + get_padding_size(ctx) * 2));
         e.acknowledged = true;
     }
 }
@@ -680,7 +666,7 @@ void override_mouse_cursor(ui_context& ctx, widget_id id, mouse_cursor cursor)
 
 vector<2,double> get_mouse_position(ui_context& ctx)
 {
-    return transform(inverse(ctx.geometry.transformation_matrix),
+    return transform(inverse(get_transformation(ctx)),
         vector<2,double>(ctx.system->input.mouse_position));
 }
 vector<2,int> get_integer_mouse_position(ui_context& ctx)
@@ -793,7 +779,7 @@ bool detect_drag(ui_context& ctx, widget_id id, mouse_button button)
 vector<2,double> get_drag_delta(ui_context& ctx)
 {
     mouse_motion_event& e = get_event<mouse_motion_event>(ctx);
-    matrix<3,3,double> m = inverse(ctx.geometry.transformation_matrix);
+    matrix<3,3,double> m = inverse(get_transformation(ctx));
     return transform(m, vector<2,double>(ctx.system->input.mouse_position)) -
         transform(m, vector<2,double>(e.last_mouse_position));
 }
@@ -1357,8 +1343,9 @@ void scoped_substyle::end()
 {
     if (ctx_)
     {
-        ctx_->style = old_state_;
-        ctx_->layout.style_info = old_style_info_;
+        ui_context& ctx = *ctx_;
+        ctx.style = old_state_;
+        ctx.layout.style_info = old_style_info_;
         ctx_ = 0;
     }
 }
@@ -1474,9 +1461,9 @@ struct ui_caching_node
 void record_content_change(ui_context& ctx)
 {
     ui_caching_node* cacher = ctx.active_cacher;
-    while (cacher && cacher->last_content_change != ctx.layout.refresh_counter)
+    while (cacher && cacher->last_content_change != get_refresh_counter(ctx))
     {
-        cacher->last_content_change = ctx.layout.refresh_counter;
+        cacher->last_content_change = get_refresh_counter(ctx);
         cacher = cacher->parent;
     }
 }
@@ -1660,8 +1647,9 @@ bool compute_fps(ui_context& ctx, int* fps)
 
 void setup_focus_drawing(ui_context& ctx, SkPaint& paint)
 {
-    paint.setStrokeWidth(SkScalar(ctx.layout.style_info->padding_size[0]) *
-        SkScalar(0.7));
+    paint.setStrokeWidth(
+        layout_scalar_as_skia_scalar(get_padding_size(ctx)[0]) *
+        SkDoubleToScalar(0.7));
     paint.setStyle(SkPaint::kStroke_Style);
     set_color(paint, get_color_property(ctx, "focus_color"));
 }
@@ -1688,16 +1676,18 @@ void draw_focus_rect(ui_context& ctx, SkCanvas& canvas,
 typedef caching_renderer_data focus_rect_data;
 
 void draw_focus_rect(ui_context& ctx, focus_rect_data& data,
-    box<2,int> const& content_region)
+    layout_box const& content_region)
 {
-    int padding = ctx.layout.style_info->padding_size[0];
-    box<2,int> rect = add_border(content_region, padding / 2);
-    box<2,int> padded_region = add_border(rect, padding);
+    layout_scalar padding = get_padding_size(ctx)[0];
+    layout_box rect = add_border(content_region, padding / 2);
+    layout_box padded_region = add_border(rect, padding);
     caching_renderer cache(ctx, data, *ctx.style.id, padded_region);
     if (cache.needs_rendering())
     {
         skia_renderer renderer(ctx, cache.image(), padded_region.size);
-        renderer.canvas().translate(SkScalar(padding), SkScalar(padding));
+        renderer.canvas().translate(
+            layout_scalar_as_skia_scalar(padding),
+            layout_scalar_as_skia_scalar(padding));
         draw_focus_rect(ctx, renderer.canvas(), rect.size);
         renderer.cache();
         cache.mark_valid();

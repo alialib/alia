@@ -536,6 +536,10 @@ struct relative_region_assignment
     bool update_required_;
     named_block named_block_;
 };
+// Get the resolved relative assignment for a layout cacher.
+static inline relative_layout_assignment const&
+get_assignment(layout_cacher const& cacher)
+{ return cacher.resolved_relative_assignment; }
 
 // The vast majority of layout containers behave identically except for the
 // logic they use to calculate their requirements and divide their space

@@ -879,9 +879,9 @@ void opengl_surface::draw_filled_box(
         set_color(paint, rgba8(0xff, 0xff, 0xff, 0xff));
         SkRect sr;
         sr.fLeft = 0;
-        sr.fRight = SkScalar(3);
+        sr.fRight = SkIntToScalar(3);
         sr.fTop = 0;
-        sr.fBottom = SkScalar(3);
+        sr.fBottom = SkIntToScalar(3);
         renderer.canvas().drawRect(sr, paint);
         renderer.cache();
     }

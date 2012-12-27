@@ -1,7 +1,6 @@
 #include <alia/backends/win32.hpp>
 #include <alia/ui_system.hpp>
 #include <alia/backends/opengl.hpp>
-#include <alia/millisecond_clock.hpp>
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -33,20 +32,13 @@ struct native_window::impl_data
     HDC dc;
     HGLRC rc;
 
-    // If this is a popup window, then this is the window's parent.
-    // Otherwise, it's 0.
-    impl_data* parent;
-
-    // If this window has a child popup, then this is it.
-    impl_data* popup;
-
     bool is_full_screen;
     // If the window is full screen, this stores the normal placement of it.
     WINDOWPLACEMENT normal_placement;
 
-    millisecond_clock clock;
-
     timer_request_list timer_requests;
+    // This prevents timer requests from being serviced in the same frame that
+    // they're requested and thus throwing the event handler into a loop.
     counter_type timer_event_counter;
 
     bool update_needed;
@@ -54,7 +46,7 @@ struct native_window::impl_data
     bool close;
 
     impl_data()
-      : dc(0), rc(0), hwnd(0), hinstance(0), parent(0), popup(0),
+      : dc(0), rc(0), hwnd(0), hinstance(0),
         is_full_screen(false), timer_event_counter(0), update_needed(false),
         close(false)
     {}
@@ -96,12 +88,6 @@ struct win32_opengl_surface : opengl_surface
     {
         return get_display_size(impl_->dc);
     }
-    //popup_interface* open_popup(
-    //    ui_controller* controller,
-    //    vector<2,int> const& primary_position,
-    //    vector<2,int> const& boundary,
-    //    vector<2,int> const& minimum_size);
-    //void close_popups();
     void request_refresh();
     void request_timer_event(routable_widget_id const& id, unsigned ms);
     string get_clipboard_text();
@@ -167,7 +153,7 @@ static bool is_wgl_extension_supported(char const* extension_name)
         return false;
 }
 
-static void disable_vsync()										// All Setup For OpenGL Goes Here
+static void disable_vsync()
 {
     if (is_wgl_extension_supported("WGL_EXT_swap_control"))
     {
@@ -365,21 +351,11 @@ static native_window::impl_data& get_window_data(HWND hwnd)
 
 static inline ui_time_type get_time(native_window::impl_data& impl)
 {
-    return impl.clock.get_tick_count();
+    return GetTickCount();
 }
-
-static void close_popup(native_window::impl_data& impl);
 
 static void destroy_window(native_window::impl_data& impl)
 {
-    close_popup(impl);
-    // If this is a popup, clear parent's pointer to this popup.
-    if (impl.parent)
-    {
-        impl.parent->popup = 0;
-        impl.parent = 0;
-    }
-
     // Delete windows resources.
     if (impl.rc)
     {
@@ -396,17 +372,6 @@ static void destroy_window(native_window::impl_data& impl)
     {
         DestroyWindow(impl.hwnd);
         impl.hwnd = 0;
-    }
-}
-
-static void close_popup(native_window::impl_data& impl)
-{
-    if (impl.popup)
-    {
-        assert(impl.popup->parent == &impl);
-        destroy_window(*impl.popup);
-        // Child should have cleared this.
-        assert(!impl.popup);
     }
 }
 
@@ -442,9 +407,6 @@ static void update_window(HWND hwnd)
     set_cursor(cursor);
 
     RedrawWindow(hwnd, NULL, NULL, RDW_INVALIDATE | RDW_UPDATENOW);
-
-    if (impl.popup)
-        update_window(impl.popup->hwnd);
 }
 
 static void reset_mouse_tracking(HWND hwnd)
@@ -465,16 +427,9 @@ static bool any_mouse_buttons_pressed()
         (GetKeyState(VK_MBUTTON) & 0x8000) != 0;
 }
 
-static bool is_popup(native_window::impl_data& impl)
-{
-    return impl.parent != 0;
-}
-
 static void on_mouse_button_press(HWND hwnd)
 {
     SetCapture(hwnd);
-    native_window::impl_data& impl = get_window_data(hwnd);
-    close_popup(impl);
 }
 
 static void on_mouse_button_release(HWND hwnd)
@@ -488,10 +443,9 @@ static void process_timer_requests(native_window::impl_data& impl)
     ++impl.timer_event_counter;
     if (!impl.timer_requests.empty())
     {
-        bool processed_any = false;
         while (1)
         {
-            unsigned now = impl.clock.get_tick_count();
+            unsigned now = get_time(impl);
             // Ideally, the list would be stored sorted, but it has to be
             // sorted relative to the current tick count (to handle wrapping),
             // and the list is generally not very long anyway.
@@ -511,8 +465,6 @@ static void process_timer_requests(native_window::impl_data& impl)
             }
             if (next_event == impl.timer_requests.end())
                 break;
-
-            processed_any = true;
 
             timer_request request = *next_event;
             impl.timer_requests.erase(next_event);
@@ -545,23 +497,6 @@ LRESULT CALLBACK wndproc(
 	break;
       }
 
-     case WM_MOUSEACTIVATE:
-        return is_popup(get_window_data(hwnd)) ? MA_NOACTIVATE : MA_ACTIVATE;
-
-     case WM_ACTIVATE:
-      {
-        if (HIWORD(wparam))
-        {
-            // Activation.
-        }
-        else
-        {
-            // Deactivation.
-            close_popup(get_window_data(hwnd));
-        }
-        break;
-      }
-
      case WM_SETFOCUS:
       {
         process_focus_gain(get_window_data(hwnd).ui, get_time(hwnd));
@@ -575,11 +510,6 @@ LRESULT CALLBACK wndproc(
         update_window(hwnd);
         return 0;
       }
-
-     //case WM_TIMER:
-     //   process_timer_requests(get_window_data(hwnd));
-     //   SetTimer(hwnd, 0, 1, 0);
-     //   return 0;
 
      case WM_CLOSE:
         PostQuitMessage(0);
@@ -595,17 +525,7 @@ LRESULT CALLBACK wndproc(
             utf8_string utf8;
             utf8.begin = &character;
             utf8.end = utf8.begin + 1;
-            bool acknowledged = false;
-            if (impl.popup)
-            {
-                acknowledged = process_text_input(
-                    impl.popup->ui, get_time(impl), utf8);
-            }
-            if (!acknowledged)
-            {
-                acknowledged = process_text_input(
-                    impl.ui, get_time(impl), utf8);
-            }
+            process_text_input(impl.ui, get_time(impl), utf8);
         }
         update_window(hwnd);
         break;
@@ -614,19 +534,9 @@ LRESULT CALLBACK wndproc(
     case WM_KEYDOWN:
       {
         native_window::impl_data& impl = get_window_data(hwnd);
-        bool acknowledged = false;
-        if (impl.popup)
-        {
-            acknowledged =
-                process_key_press(impl.popup->ui, get_time(impl),
-                    get_key_event_info(wparam));
-        }
-        if (!acknowledged)
-        {
-            acknowledged =
-                process_key_press(impl.ui, get_time(impl),
-                    get_key_event_info(wparam));
-        }
+        bool acknowledged =
+            process_key_press(impl.ui, get_time(impl),
+                get_key_event_info(wparam));
         if (!acknowledged)
         {
             switch (wparam)
@@ -641,33 +551,22 @@ LRESULT CALLBACK wndproc(
                         regress_focus(impl.ui);
                     else
                         advance_focus(impl.ui);
+                    acknowledged = true;
                 }
                 break;
             }
-            update_window(hwnd);
         }
-        else
-        {
-            update_window(hwnd);
+        update_window(hwnd);
+        if (acknowledged)
             return 0;
-        }
         break;
       }
     case WM_KEYUP:
       {
         native_window::impl_data& impl = get_window_data(hwnd);
-        bool acknowledged = false;
-        if (impl.popup)
-        {
-            acknowledged = process_key_release(
-                impl.popup->ui, get_time(impl), get_key_event_info(wparam));
-        }
-        if (!acknowledged)
-        {
-            acknowledged =
-                process_key_release(impl.ui, get_time(impl),
-                    get_key_event_info(wparam));
-        }
+        bool acknowledged =
+            process_key_release(impl.ui, get_time(impl),
+                get_key_event_info(wparam));
         update_window(hwnd);
         if (acknowledged)
             return 0;
@@ -693,10 +592,7 @@ LRESULT CALLBACK wndproc(
       {
         native_window::impl_data& impl = get_window_data(hwnd);
         float movement = float(GET_WHEEL_DELTA_WPARAM(wparam)) / WHEEL_DELTA;
-        if (impl.popup)
-            process_mouse_wheel(impl.popup->ui, get_time(hwnd), movement);
-        else
-            process_mouse_wheel(impl.ui, get_time(hwnd), movement);
+        process_mouse_wheel(impl.ui, get_time(hwnd), movement);
         update_window(hwnd);
         return 0;
       }
@@ -772,7 +668,6 @@ LRESULT CALLBACK wndproc(
 
      case WM_WINDOWPOSCHANGED:
       {
-        close_popup(get_window_data(hwnd));
         update_window(hwnd);
         return 0;
       }
@@ -862,14 +757,6 @@ static void create_window(
 {
     impl->hinstance = GetModuleHandle(NULL);
 
-    impl->parent = parent;
-    bool is_popup = parent != 0;
-    if (parent)
-    {
-        assert(!parent->popup);
-        parent->popup = impl;
-    }
-
     static bool already_registered = false;
     if (!already_registered)
     {
@@ -889,42 +776,21 @@ static void create_window(
         already_registered = true;
     }
 
-    if (is_popup)
-    {
-        impl->hwnd =
-            CreateWindowEx(
-                WS_EX_TOPMOST | WS_EX_TOOLWINDOW,
-	        "alia_gl",
-	        title.c_str(),
-	        WS_POPUP | WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
-	        initial_state.position ?
-	            get(initial_state.position)[0] : CW_USEDEFAULT,
-	        initial_state.position ?
-	            get(initial_state.position)[1] : CW_USEDEFAULT,
-	        initial_state.size[0], initial_state.size[1],
-	        parent->hwnd,
-	        NULL,
-	        impl->hinstance,
-	        impl);
-    }
-    else
-    {
-        impl->hwnd =
-            CreateWindowEx(
-                WS_EX_APPWINDOW | WS_EX_WINDOWEDGE,
-	        "alia_gl",
-	        title.c_str(),
-	        WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
-	        initial_state.position ?
-	            get(initial_state.position)[0] : CW_USEDEFAULT,
-	        initial_state.position ?
-	            get(initial_state.position)[1] : CW_USEDEFAULT,
-	        initial_state.size[0], initial_state.size[1],
-	        NULL,
-	        NULL,
-	        impl->hinstance,
-	        impl);
-    }
+    impl->hwnd =
+        CreateWindowEx(
+            WS_EX_APPWINDOW | WS_EX_WINDOWEDGE,
+	    "alia_gl",
+	    title.c_str(),
+	    WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
+	    initial_state.position ?
+	        get(initial_state.position)[0] : CW_USEDEFAULT,
+	    initial_state.position ?
+	        get(initial_state.position)[1] : CW_USEDEFAULT,
+	    initial_state.size[0], initial_state.size[1],
+	    NULL,
+	    NULL,
+	    impl->hinstance,
+	    impl);
     if (!impl->hwnd)
         throw_window_creation_error("CreateWindowEx");
 
@@ -974,22 +840,15 @@ static void create_window(
     impl->ui.controller = controller;
     impl->ui.surface.reset(surface);
 
-    if (!is_popup)
+    if (initial_state.flags & FULL_SCREEN)
     {
-        if (initial_state.flags & FULL_SCREEN)
-        {
-            enter_full_screen(*impl);
-            ShowWindow(impl->hwnd, SW_SHOW);
-        }
-        else if (initial_state.flags & MAXIMIZED)
-            ShowWindow(impl->hwnd, SW_MAXIMIZE);
-        else
-            ShowWindow(impl->hwnd, SW_SHOWNORMAL);
-        //SetForegroundWindow(impl->hwnd);
-        //SetFocus(impl->hwnd);
+        enter_full_screen(*impl);
+        ShowWindow(impl->hwnd, SW_SHOW);
     }
+    else if (initial_state.flags & MAXIMIZED)
+        ShowWindow(impl->hwnd, SW_MAXIMIZE);
     else
-        ShowWindow(impl->hwnd, SW_SHOWNA);
+        ShowWindow(impl->hwnd, SW_SHOWNORMAL);
 
     reset_mouse_tracking(impl->hwnd);
 
@@ -1002,9 +861,6 @@ static void create_window(
 
     ui_event initial_visibility(NO_CATEGORY, INITIAL_VISIBILITY_EVENT);
     issue_event(impl->ui, initial_visibility);
-
-    // Start the flow of WM_TIMER messages.
-    //SetTimer(impl->hwnd, 0, 0, 0);
 }
 
 void native_window::initialize(
@@ -1111,121 +967,6 @@ void native_window::do_message_loop()
         }
     }
 }
-
-//struct popup_window : popup_interface
-//{
-//    popup_window(
-//        native_window::impl_data* parent,
-//        ui_controller* controller,
-//        vector<2,int> const& primary_position,
-//        vector<2,int> const& boundary,
-//        vector<2,int> const& minimum_size);
-//    ~popup_window();
-//
-//    alia::ui_system& ui() { return impl_->ui; }
-//
-//    bool is_open() const
-//    {
-//        return impl_->hwnd != 0;
-//    }
-//    void close()
-//    {
-//        impl_->close = true;
-//    }
-//
-// private:
-//    native_window::impl_data* impl_;
-//};
-//
-//static vector<2,int> client_to_screen(HWND hwnd, vector<2,int> const& p)
-//{
-//    POINT q;
-//    q.x = p[0];
-//    q.y = p[1];
-//    ClientToScreen(hwnd, &q);
-//    return make_vector<int>(q.x, q.y);
-//}
-//
-//static vector<2,int> screen_to_client(HWND hwnd, vector<2,int> const& p)
-//{
-//    POINT q;
-//    q.x = p[0];
-//    q.y = p[1];
-//    ScreenToClient(hwnd, &q);
-//    return make_vector<int>(q.x, q.y);
-//}
-//
-//popup_window::popup_window(
-//    native_window::impl_data* parent,
-//    ui_controller* controller,
-//    vector<2,int> const& primary_position,
-//    vector<2,int> const& boundary,
-//    vector<2,int> const& minimum_size)
-//{
-//    impl_ = new native_window::impl_data;
-//
-//    impl_->ui.style = parent->ui.style;
-//
-//    alia__shared_ptr<ui_controller> controller_ptr(controller);
-//
-//    layout_vector size =
-//        measure_initial_ui(controller_ptr, parent->ui.style,
-//            parent->ui.surface);
-//    for (unsigned i = 0; i != 2; ++i)
-//    {
-//        if (size[i] < minimum_size[i])
-//            size[i] = minimum_size[i];
-//    }
-//
-//    vector<2,int> lower_display_boundary = screen_to_client(parent->hwnd,
-//        make_vector<int>(0, 0));
-//    vector<2,int> upper_display_boundary = screen_to_client(parent->hwnd,
-//        vector<2,int>(get_display_size(parent->dc)));
-//
-//    vector<2,int> position, actual_size;
-//    for (unsigned i = 0; i != 2; ++i)
-//    {
-//        if (primary_position[i] + size[i] <= upper_display_boundary[i] ||
-//            boundary[i] - lower_display_boundary[i] <
-//            upper_display_boundary[i] - primary_position[i])
-//        {
-//            position[i] = primary_position[i];
-//            actual_size[i] = (std::min)(size[i],
-//                upper_display_boundary[i] - primary_position[i]);
-//        }
-//        else
-//        {
-//            actual_size[i] = (std::min)(size[i],
-//                boundary[i] - lower_display_boundary[i]);
-//            position[i] = boundary[i] - actual_size[i];
-//        }
-//    }
-//
-//    create_window(impl_, parent, "popup", controller_ptr,
-//        native_window::state_data(
-//            client_to_screen(parent->hwnd, position),
-//            actual_size));
-//}
-//popup_window::~popup_window()
-//{
-//    destroy_window(*impl_);
-//}
-//
-//popup_interface*
-//win32_opengl_surface::open_popup(
-//    ui_controller* controller,
-//    vector<2,int> const& primary_position,
-//    vector<2,int> const& boundary,
-//    vector<2,int> const& minimum_size)
-//{
-//    return new popup_window(
-//        impl_, controller, primary_position, boundary, minimum_size);
-//}
-//
-//void win32_opengl_surface::close_popups()
-//{
-//    close_popup(*impl_);
-//}
 
 void win32_opengl_surface::request_refresh()
 {

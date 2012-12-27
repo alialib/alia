@@ -5,7 +5,6 @@
 #include <utility>
 #include <cctype>
 
-#include <SkTypeface.h>
 #include <SkCanvas.h>
 #include <SkPaint.h>
 #include <SkUtils.h>
@@ -15,25 +14,6 @@
 // The interface for this is defined in ui_library.hpp in the "TEXT" section.
 
 namespace alia {
-
-static void set_skia_font_info(SkPaint& paint, font const& font)
-{
-    paint.setTextEncoding(SkPaint::kUTF8_TextEncoding);
-    paint.setTypeface(
-        SkTypeface::CreateFromName(
-            font.name.c_str(),
-            SkTypeface::Style(
-                ((font.style & BOLD) ?
-                    SkTypeface::kBold : SkTypeface::kNormal) |
-                ((font.style & ITALIC) ?
-                    SkTypeface::kItalic : SkTypeface::kNormal))))->unref();
-    paint.setTextAlign(SkPaint::kLeft_Align);
-    paint.setAntiAlias(true);
-    paint.setLCDRenderText(true);
-    paint.setTextSize(SkFloatToScalar(font.size));
-    paint.setSubpixelText(true);
-    paint.setAutohinted(true);
-}
 
 static bool is_breakable_space(SkUnichar c)
 {
@@ -239,7 +219,10 @@ struct text_layout_node : layout_node
         layout_scalar assigned_width,
         wrapping_assignment_state& state);
 
-    text_display_data* data;
+    void set_data(text_display_data& data) { data_ = &data; }
+
+ private:
+    text_display_data* data_;
 };
 
 enum text_image_state
@@ -283,35 +266,39 @@ struct text_display_data
     caching_renderer_data rendering;
 };
 
-layout_requirements text_layout_node::get_horizontal_requirements(
+layout_requirements
+text_layout_node::get_horizontal_requirements(
     layout_calculation_context& ctx)
 {
-    data->is_wrapped = false;
+    text_display_data& data = *data_;
+    data.is_wrapped = false;
     horizontal_layout_query query(
-        ctx, data->layout_cacher, data->last_content_change);
+        ctx, data.layout_cacher, data.last_content_change);
     alia_if (query.update_required())
     {
         SkPaint paint;
-        set_skia_font_info(paint, data->font);
+        set_skia_font_info(paint, data.font);
         query.update(
             calculated_layout_requirements(
                 skia_scalar_as_layout_size(paint.measureText(
-		    data->text.c_str(), data->text.length())),
+		    data.text.c_str(), data.text.length())),
                 0, 0));
     }
     alia_end
     return query.result();
 }
-layout_requirements text_layout_node::get_vertical_requirements(
+layout_requirements
+text_layout_node::get_vertical_requirements(
     layout_calculation_context& ctx,
     layout_scalar assigned_width)
 {
+    text_display_data& data = *data_;
     vertical_layout_query query(
-        ctx, data->layout_cacher, data->last_content_change, assigned_width);
+        ctx, data.layout_cacher, data.last_content_change, assigned_width);
     alia_if (query.update_required())
     {
         SkPaint paint;
-        set_skia_font_info(paint, data->font);
+        set_skia_font_info(paint, data.font);
         SkPaint::FontMetrics metrics;
         SkScalar line_spacing = paint.getFontMetrics(&metrics);
         query.update(
@@ -327,8 +314,9 @@ void text_layout_node::set_relative_assignment(
     layout_calculation_context& ctx,
     relative_layout_assignment const& assignment)
 {
+    text_display_data& data = *data_;
     relative_region_assignment rra(
-        ctx, *this, data->layout_cacher, data->last_content_change,
+        ctx, *this, data.layout_cacher, data.last_content_change,
         assignment);
     rra.update();
 }
@@ -336,9 +324,10 @@ void text_layout_node::set_relative_assignment(
 layout_requirements text_layout_node::get_minimal_horizontal_requirements(
     layout_calculation_context& ctx)
 {
-    data->is_wrapped = true;
+    text_display_data& data = *data_;
+    data.is_wrapped = true;
     SkPaint paint;
-    set_skia_font_info(paint, data->font);
+    set_skia_font_info(paint, data.font);
     SkPaint::FontMetrics metrics;
     paint.getFontMetrics(&metrics);
     // This is kind of arbitrary, but it should rarely come into play.
@@ -350,12 +339,14 @@ void text_layout_node::calculate_wrapping(
     layout_scalar assigned_width,
     wrapping_state& state)
 {
-    utf8_string text = as_utf8_string(data->text);
+    text_display_data& data = *data_;
+
+    utf8_string text = as_utf8_string(data.text);
     if (is_empty(text))
         return;
 
     SkPaint paint;
-    set_skia_font_info(paint, data->font);
+    set_skia_font_info(paint, data.font);
     SkPaint::FontMetrics metrics;
     SkScalar line_spacing = paint.getFontMetrics(&metrics);
 
@@ -393,14 +384,16 @@ void text_layout_node::assign_wrapped_regions(
     layout_scalar assigned_width,
     wrapping_assignment_state& state)
 {
-    data->wrapped_rows.clear();
+    text_display_data& data = *data_;
 
-    utf8_string text = as_utf8_string(data->text);
+    data.wrapped_rows.clear();
+
+    utf8_string text = as_utf8_string(data.text);
     if (is_empty(text))
         return;
 
     SkPaint paint;
-    set_skia_font_info(paint, data->font);
+    set_skia_font_info(paint, data.font);
     SkPaint::FontMetrics metrics;
     SkScalar line_spacing = paint.getFontMetrics(&metrics);
 
@@ -409,7 +402,7 @@ void text_layout_node::assign_wrapped_regions(
 	skia_scalar_as_layout_size(paint.measureText(&space, 1));
     layout_scalar usable_width = assigned_width;
 
-    data->wrapped_y = state.active_row->y;
+    data.wrapped_y = state.active_row->y;
 
     int y = 0;
     char const* p = text.begin;
@@ -432,7 +425,7 @@ void text_layout_node::assign_wrapped_regions(
             y + state.active_row->requirements.minimum_size -
                 state.active_row->requirements.minimum_descent);
         row.text = utf8_string(p, visible_end);
-        data->wrapped_rows.push_back(row);
+        data.wrapped_rows.push_back(row);
 
         // Advance.
         state.x += line_width + padding_width;
@@ -443,7 +436,7 @@ void text_layout_node::assign_wrapped_regions(
         wrap_row(state);
     }
 
-    data->wrapped_size = make_layout_vector(assigned_width, y);
+    data.wrapped_size = make_layout_vector(assigned_width, y);
 }
 
 namespace {
@@ -525,58 +518,57 @@ ALIA_INTEGER_CONVERSIONS(unsigned)
 void do_text(ui_context& ctx, getter<string> const& text,
     layout const& layout_spec)
 {
-    text_display_data* data;
-    get_cached_data(ctx, &data);
+    ALIA_GET_CACHED_DATA(text_display_data)
 
     switch (ctx.event->category)
     {
      case REFRESH_CATEGORY:
-        if (!data->text_id.matches(text.id()) ||
-            !data->text_valid && text.is_gettable() ||
-            !data->style_id.matches(*ctx.style.id) ||
-            data->layout_spec != layout_spec)
+        if (!data.text_id.matches(text.id()) ||
+            !data.text_valid && text.is_gettable() ||
+            !data.style_id.matches(*ctx.style.id) ||
+            data.layout_spec != layout_spec)
         {
             record_layout_change(get_layout_traversal(ctx));
-            data->last_content_change = ctx.layout.refresh_counter;
-            data->layout_node.data = data;
-            data->font = ctx.style.properties->font;
-            data->layout_spec = layout_spec;
-            data->text_valid = text.is_gettable();
-            data->text = data->text_valid ? get(text) : "";
-            data->text_id.store(text.id());
-            data->style_id.store(*ctx.style.id);
+            data.last_content_change = get_refresh_counter(ctx);
+            data.layout_node.set_data(data);
+            data.font = ctx.style.properties->font;
+            data.layout_spec = layout_spec;
+            data.text_valid = text.is_gettable();
+            data.text = data.text_valid ? get(text) : "";
+            data.text_id.store(text.id());
+            data.style_id.store(*ctx.style.id);
             update_layout_cacher(get_layout_traversal(ctx),
-                data->layout_cacher, layout_spec, LEFT | BASELINE_Y);
+                data.layout_cacher, layout_spec, LEFT | BASELINE_Y);
         }
-        add_layout_node(get_layout_traversal(ctx), &data->layout_node);
+        add_layout_node(get_layout_traversal(ctx), &data.layout_node);
         break;
 
      case RENDER_CATEGORY:
       {
-        if (data->is_wrapped)
+        if (data.is_wrapped)
         {
-            if (!data->wrapped_rows.empty())
+            if (!data.wrapped_rows.empty())
             {
                 layout_box region(
-                    make_layout_vector(0, data->wrapped_y),
-                    data->wrapped_size);
+                    make_layout_vector(0, data.wrapped_y),
+                    data.wrapped_size);
                 caching_renderer cache(
-                    ctx, data->rendering,
-                    make_id(data->last_content_change),
+                    ctx, data.rendering,
+                    make_id(data.last_content_change),
                     region);
                 if (cache.needs_rendering())
                 {
                     skia_renderer renderer(ctx, cache.image(), region.size);
                     SkPaint paint;
                     paint.setFlags(SkPaint::kAntiAlias_Flag);
-                    set_skia_font_info(paint, data->font);
+                    set_skia_font_info(paint, data.font);
                     rgba8 const& bg = ctx.style.properties->bg_color;
                     renderer.canvas().clear(
                         SkColorSetARGB(bg.a, bg.r, bg.g, bg.b));
                     set_color(paint, ctx.style.properties->text_color);
                     for (std::vector<text_display_row>::const_iterator
-                        i = data->wrapped_rows.begin();
-                        i != data->wrapped_rows.end(); ++i)
+                        i = data.wrapped_rows.begin();
+                        i != data.wrapped_rows.end(); ++i)
                     {
                         renderer.canvas().drawText(
                             i->text.begin, i->text.end - i->text.begin,
@@ -593,12 +585,12 @@ void do_text(ui_context& ctx, getter<string> const& text,
         else
         {
             relative_layout_assignment const& assignment =
-                data->layout_cacher.resolved_relative_assignment;
+                get_assignment(data.layout_cacher);
             if (assignment.region.size[0] > 0)
             {
                 caching_renderer cache(
-                    ctx, data->rendering,
-                    make_id(data->last_content_change),
+                    ctx, data.rendering,
+                    make_id(data.last_content_change),
                     assignment.region);
                 if (cache.needs_rendering())
                 {
@@ -606,13 +598,13 @@ void do_text(ui_context& ctx, getter<string> const& text,
                         assignment.region.size);
                     SkPaint paint;
                     paint.setFlags(SkPaint::kAntiAlias_Flag);
-                    set_skia_font_info(paint, data->font);
+                    set_skia_font_info(paint, data.font);
                     rgba8 const& bg = ctx.style.properties->bg_color;
                     renderer.canvas().clear(
                         SkColorSetARGB(bg.a, bg.r, bg.g, bg.b));
                     set_color(paint, ctx.style.properties->text_color);
                     renderer.canvas().drawText(
-                        data->text.c_str(), data->text.length(),
+                        data.text.c_str(), data.text.length(),
                         0,
 			layout_scalar_as_skia_scalar(assignment.baseline_y),
 			paint);
@@ -826,7 +818,7 @@ void draw_text(ui_context& ctx, getter<string> const& text,
     text_drawing_data* data;
     get_cached_data(ctx, &data);
 
-    if (is_rendering(ctx))
+    if (is_render_pass(ctx))
 	draw_text(ctx, *data, text, position);
 }
 
@@ -839,24 +831,23 @@ struct layout_dependent_text_data
 void do_layout_dependent_text(ui_context& ctx, getter<string> const& text,
     layout const& layout_spec)
 {
-    layout_dependent_text_data* data;
-    get_cached_data(ctx, &data);
+    ALIA_GET_CACHED_DATA(layout_dependent_text_data)
 
     switch (ctx.event->category)
     {
      case REFRESH_CATEGORY:
       {
-        data->layout_node.refresh_layout(
+        data.layout_node.refresh_layout(
             get_layout_traversal(ctx), layout_spec,
             leaf_layout_requirements(make_layout_vector(0, 0), 0, 0));
-        add_layout_node(get_layout_traversal(ctx), &data->layout_node);
+        add_layout_node(get_layout_traversal(ctx), &data.layout_node);
         break;
       }
      case RENDER_CATEGORY:
       {
         relative_layout_assignment const& assignment =
-	    data->layout_node.assignment();
-        draw_text(ctx, data->drawing, text,
+	    data.layout_node.assignment();
+        draw_text(ctx, data.drawing, text,
             vector<2,double>(assignment.region.corner +
 	        make_layout_vector(0, assignment.baseline_y)));
         break;
@@ -881,43 +872,42 @@ bool do_link(
 {
     get_widget_id_if_needed(ctx, id);
 
-    link_data* data;
     // Technically, the key_state field is state, but it only needs to persist
     // while the user is directly interacting with the link, so it's fine to
     // just call everything cached data.
-    get_cached_data(ctx, &data);
+    ALIA_GET_CACHED_DATA(link_data)
 
-    widget_state state = get_button_state(ctx, id, data->input);
+    widget_state state = get_button_state(ctx, id, data.input);
     scoped_substyle substyle(ctx, alia::text("link"), state);
 
     switch (ctx.event->category)
     {
      case REFRESH_CATEGORY:
-        refresh_standalone_text(ctx, data->standalone_text, text, layout_spec);
+        refresh_standalone_text(ctx, data.standalone_text, text, layout_spec);
         break;
 
      case REGION_CATEGORY:
-        do_box_region(ctx, id, get_region(data->standalone_text), HAND_CURSOR);
+        do_box_region(ctx, id, get_region(data.standalone_text), HAND_CURSOR);
         break;
 
      case RENDER_CATEGORY:
-        render_standalone_text(ctx, data->standalone_text, text);
+        render_standalone_text(ctx, data.standalone_text, text);
         if (state & WIDGET_FOCUSED)
         {
             // TODO: This should be a little less hackish, but that might
             // require more information about the font metrics.
-            box<2,int> const& ar = get_region(data->standalone_text);
+            box<2,int> const& ar = get_region(data.standalone_text);
             box<2,int> r;
             r.corner[0] = ar.corner[0] - 1;
             r.corner[1] = ar.corner[1];
             r.size[0] = ar.size[0] + 3;
             r.size[1] = ar.size[1] + 1;
-            draw_focus_rect(ctx, data->focus_rect, r);
+            draw_focus_rect(ctx, data.focus_rect, r);
         }
         break;
 
      case INPUT_CATEGORY:
-        return do_button_input(ctx, id, data->input);
+        return do_button_input(ctx, id, data.input);
     }
 
     return false;
@@ -1130,7 +1120,10 @@ struct text_control_layout_node : layout_node
         layout_calculation_context& ctx,
         relative_layout_assignment const& assignment);
 
-    text_control_data* data;
+    void set_data(text_control_data& data) { data_ = &data; }
+
+ private:
+    text_control_data* data_;
 };
 
 struct text_control_data
@@ -1216,11 +1209,13 @@ string get_display_text(text_control_data& tc)
         return tc.text;
 }
 
-layout_requirements text_control_layout_node::get_horizontal_requirements(
+layout_requirements
+text_control_layout_node::get_horizontal_requirements(
     layout_calculation_context& ctx)
 {
+    text_control_data& data = *data_;
     horizontal_layout_query query(
-        ctx, data->layout_cacher, data->change_counter);
+        ctx, data.layout_cacher, data.change_counter);
     alia_if (query.update_required())
     {
         // Is there any reason to set a true minimum width?
@@ -1233,16 +1228,17 @@ layout_requirements text_control_layout_node::get_vertical_requirements(
     layout_calculation_context& ctx,
     layout_scalar assigned_width)
 {
+    text_control_data& data = *data_;
     vertical_layout_query query(
-        ctx, data->layout_cacher, data->change_counter, assigned_width);
+        ctx, data.layout_cacher, data.change_counter, assigned_width);
     alia_if (query.update_required())
     {
         SkPaint paint;
-        set_skia_font_info(paint, data->font);
+        set_skia_font_info(paint, data.font);
         SkPaint::FontMetrics metrics;
         SkScalar line_spacing = paint.getFontMetrics(&metrics);
 
-        string display_text = get_display_text(*data);
+        string display_text = get_display_text(data);
         utf8_string text = as_utf8_string(display_text);
 
         // Count how many lines are required to render the text at this width.
@@ -1277,8 +1273,9 @@ void text_control_layout_node::set_relative_assignment(
     layout_calculation_context& ctx,
     relative_layout_assignment const& assignment)
 {
+    text_control_data& data = *data_;
     relative_region_assignment rra(
-        ctx, *this, data->layout_cacher, data->change_counter, assignment);
+        ctx, *this, data.layout_cacher, data.change_counter, assignment);
     rra.update();
 }
 
@@ -1481,7 +1478,7 @@ struct text_control
 
     box<2,int> const& get_text_region() const
     {
-        return data.layout_cacher.resolved_relative_assignment.region;
+        return get_assignment(data.layout_cacher).region;
     }
 
     void reset_to_external_value()
@@ -1532,7 +1529,7 @@ struct text_control
             record_layout_change(get_layout_traversal(ctx));
 
             data.font = ctx.style.properties->font;
-            data.layout_node.data = &data;
+            data.layout_node.set_data(data);
 
             data.change_detected = false;
         }
@@ -1597,8 +1594,9 @@ struct text_control
                     data.selected_image.value,
                     get_text_region().size,
                     get_text_layout(),
-                    ctx.style.properties->selected_text_color,
-                    ctx.style.properties->selected_bg_color);
+                    get_color_property(ctx.style.path,"selected_text_color"),
+                    get_color_property(ctx.style.path,
+                        "selected_background_color"));
                 mark_valid(data.selected_image);
             }
 
@@ -1620,20 +1618,13 @@ struct text_control
                     vector<2,double>(get_text_region().size)));
         }
 
-        if (data.cursor_on && data.editing)
+        if (data.cursor_on && data.editing && data.n_selected == 0)
         {
             vector<2,int> cursor_p =
                 get_character_boundary_location(character_index_to_ptr(
                     data.cursor_position));
-            bool cursor_selected =
-                (data.n_selected != 0 &&
-                data.cursor_position >= data.first_selected &&
-                data.cursor_position <
-                    data.first_selected + data.n_selected);
             ctx.surface->draw_filled_box(
-                cursor_selected ?
-                    ctx.style.properties->selected_text_color :
-                    ctx.style.properties->text_color,
+                ctx.style.properties->text_color,
                 box<2,double>(vector<2,double>(cursor_p),
                     make_vector<double>(1, get_text_layout().line_height)));
         }

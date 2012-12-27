@@ -301,13 +301,6 @@ do_slider(ui_context& ctx, accessor<double> const& value,
     double minimum, double maximum, double step = 0,
     layout const& layout_spec = default_layout, ui_flag_set flags = NO_FLAGS);
 
-// color control
-struct color_control_result : control_result<rgba8>
-{};
-color_control_result
-do_color_control(ui_context& ctx, accessor<rgba8> const& value,
-    layout const& layout_spec = default_layout);
-
 // CONTAINERS
 
 struct bordered_box : noncopyable

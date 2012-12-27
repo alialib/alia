@@ -86,13 +86,17 @@ struct default_scrollbar_renderer : scrollbar_renderer
 
             set_color(paint, get_color_property(scrollbar_style, "color"));
 
-            SkScalar scrollbar_width = SkScalar(this->width(ctx));
+            SkScalar scrollbar_width =
+                layout_scalar_as_skia_scalar(this->width(ctx));
             SkScalar const r = scrollbar_width / SkIntToScalar(2);
 
             paint.setStrokeWidth(scrollbar_width - SkIntToScalar(2));
             paint.setStrokeCap(SkPaint::kRound_Cap);
-            renderer.canvas().drawLine(SkScalar(r), SkScalar(r),
-                SkScalar(rect.size[0] - r), SkScalar(rect.size[1] - r), paint);
+            renderer.canvas().drawLine(
+                r, r,
+                layout_scalar_as_skia_scalar(rect.size[0]) - r,
+                layout_scalar_as_skia_scalar(rect.size[1]) - r,
+                paint);
 
             renderer.cache();
             cache.mark_valid();
@@ -699,7 +703,7 @@ void scrollable_region::begin(
     else
     {
         layout_vector window_corner =
-            container->cacher.resolved_relative_assignment.region.corner;
+            get_assignment(container->cacher).region.corner;
 
 	hit_test_box_region(ctx, id,
             layout_box(window_corner, container_->window_size),
@@ -741,7 +745,7 @@ void scrollable_region::begin(
         }
         if (container->hsb_on && container->vsb_on)
         {
-            if (is_rendering(ctx))
+            if (is_render_pass(ctx))
             {
                 container->junction_rendering.renderer->draw(
                     ctx, container->junction_rendering.data,
@@ -778,11 +782,11 @@ void scrollable_region::end()
                 vector<2,double>
                     region_ul =
                         transform(
-                            inverse(ctx.geometry.transformation_matrix),
+                            inverse(get_transformation(ctx)),
                             e.region.corner),
                     region_lr =
                         transform(
-                            inverse(ctx.geometry.transformation_matrix),
+                            inverse(get_transformation(ctx)),
                             get_high_corner(e.region)),
                     window_ul =
                         vector<2,double>(container_->scroll_position),

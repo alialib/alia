@@ -4,7 +4,6 @@
 #include <alia/ui_definitions.hpp>
 #include <alia/layout_system.hpp>
 #include <alia/dispatch_table.hpp>
-#include <alia/color.hpp>
 
 namespace alia {
 
@@ -21,7 +20,6 @@ rgba8 parse_color_value(char const* value);
 void set_style(style_tree& tree, string const& subpath,
     property_map const& properties);
 
-// TODO: Implement style files.
 //void parse_style_file(style* style, char const* file);
 
 void set_text_magnification(ui_system& system, float magnification);

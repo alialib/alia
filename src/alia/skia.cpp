@@ -1,5 +1,7 @@
 #include <alia/skia.hpp>
-#include "SkPixelRef.h"
+#include <SkPixelRef.h>
+#include <SkTypeface.h>
+#include <SkPaint.h>
 
 namespace alia {
 
@@ -47,26 +49,39 @@ void skia_renderer::cache()
     }
 }
 
-void draw_round_rect(SkCanvas& canvas, SkPaint& paint,
-    box<2,int> const& region)
+SkRect layout_box_as_skia_rect(layout_box const& box)
 {
     SkRect rect;
-    rect.fLeft = SkScalar(region.corner[0]);
-    rect.fRight = SkScalar(region.corner[0] + region.size[0]);
-    rect.fTop = SkScalar(region.corner[1]);
-    rect.fBottom = SkScalar(region.corner[1] + region.size[1]);
-    SkScalar radius = SkScalar((std::min)(region.size[0], region.size[1])) / 4;
-    canvas.drawRoundRect(rect, radius, radius, paint);
+    rect.fLeft = layout_scalar_as_skia_scalar(box.corner[0]);
+    rect.fRight = layout_scalar_as_skia_scalar(box.corner[0] + box.size[0]);
+    rect.fTop = layout_scalar_as_skia_scalar(box.corner[1]);
+    rect.fBottom = layout_scalar_as_skia_scalar(box.corner[1] + box.size[1]);
+    return rect;
+}
+
+void draw_round_rect(SkCanvas& canvas, SkPaint& paint,
+    layout_box const& region)
+{
+    SkScalar radius =
+        SkScalarDiv(
+            layout_scalar_as_skia_scalar(
+                (std::min)(region.size[0], region.size[1])),
+            SkIntToScalar(4));
+    canvas.drawRoundRect(
+        layout_box_as_skia_rect(region), radius, radius, paint);
 }
 void draw_round_rect(SkCanvas& canvas, SkPaint& paint,
-    vector<2,int> const& size)
+    layout_vector const& size)
 {
     SkRect rect;
     rect.fLeft = 0;
-    rect.fRight = SkScalar(size[0]);
+    rect.fRight = layout_scalar_as_skia_scalar(size[0]);
     rect.fTop = 0;
-    rect.fBottom = SkScalar(size[1]);
-    SkScalar radius = SkScalar((std::min)(size[0], size[1])) / 4;
+    rect.fBottom = layout_scalar_as_skia_scalar(size[1]);
+    SkScalar radius =
+        SkScalarDiv(
+            layout_scalar_as_skia_scalar((std::min)(size[0], size[1])),
+            SkIntToScalar(4));
     canvas.drawRoundRect(rect, radius, radius, paint);
 }
 
@@ -79,23 +94,37 @@ void draw_rect(SkCanvas& canvas, SkPaint& paint, box<2,SkScalar> const& region)
     rect.fBottom = region.corner[1] + region.size[1];
     canvas.drawRect(rect, paint);
 }
-void draw_rect(SkCanvas& canvas, SkPaint& paint, box<2,int> const& region)
+void draw_rect(SkCanvas& canvas, SkPaint& paint, layout_box const& region)
 {
-    SkRect rect;
-    rect.fLeft = SkScalar(region.corner[0]);
-    rect.fRight = SkScalar(region.corner[0] + region.size[0]);
-    rect.fTop = SkScalar(region.corner[1]);
-    rect.fBottom = SkScalar(region.corner[1] + region.size[1]);
-    canvas.drawRect(rect, paint);
+    canvas.drawRect(layout_box_as_skia_rect(region), paint);
 }
-void draw_rect(SkCanvas& canvas, SkPaint& paint, vector<2,int> const& size)
+void draw_rect(SkCanvas& canvas, SkPaint& paint, layout_vector const& size)
 {
     SkRect rect;
     rect.fLeft = 0;
-    rect.fRight = SkScalar(size[0]);
+    rect.fRight = layout_scalar_as_skia_scalar(size[0]);
     rect.fTop = 0;
-    rect.fBottom = SkScalar(size[1]);
+    rect.fBottom = layout_scalar_as_skia_scalar(size[1]);
     canvas.drawRect(rect, paint);
+}
+
+void set_skia_font_info(SkPaint& paint, font const& font)
+{
+    paint.setTextEncoding(SkPaint::kUTF8_TextEncoding);
+    paint.setTypeface(
+        SkTypeface::CreateFromName(
+            font.name.c_str(),
+            SkTypeface::Style(
+                ((font.style & BOLD) ?
+                    SkTypeface::kBold : SkTypeface::kNormal) |
+                ((font.style & ITALIC) ?
+                    SkTypeface::kItalic : SkTypeface::kNormal))))->unref();
+    paint.setTextAlign(SkPaint::kLeft_Align);
+    paint.setAntiAlias(true);
+    paint.setLCDRenderText(true);
+    paint.setTextSize(SkFloatToScalar(font.size));
+    paint.setSubpixelText(true);
+    paint.setAutohinted(true);
 }
 
 }

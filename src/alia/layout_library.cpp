@@ -178,7 +178,7 @@ static void begin_transform(
     {
         transform.begin(*traversal.geometry);
         transform.set(translation_matrix(vector<2,double>(
-            cacher.resolved_relative_assignment.region.corner)));
+            get_assignment(cacher).region.corner)));
     }
 }
 
@@ -468,9 +468,9 @@ void rotated_layout::concrete_begin(
         transform_.begin(*traversal.geometry);
         transform_.set(
             translation_matrix(vector<2,double>(
-                container_->cacher.resolved_relative_assignment.region.corner +
-                    make_layout_vector(0, container_->cacher.
-                        resolved_relative_assignment.region.size[1]))) *
+                get_assignment(container_->cacher).region.corner +
+                make_layout_vector(
+                    0, get_assignment(container_->cacher).region.size[1]))) *
             make_matrix<double>(
                 0,  1, 0,
                -1,  0, 0,

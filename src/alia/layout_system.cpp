@@ -675,7 +675,7 @@ void layout_leaf::refresh_layout(
     leaf_layout_requirements const& requirements,
     layout_flag_set default_flags)
 {
-    // TODO: Cache this.
+    // TODO: Cache this?
     if (traversal.is_refresh_pass)
     {
         resolved_layout_spec resolved_spec;
