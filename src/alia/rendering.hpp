@@ -2,7 +2,7 @@
 #define ALIA_RENDERING_HPP
 
 #include <alia/data_graph.hpp>
-#include <alia/geometry.hpp>
+#include <alia/layout_interface.hpp>
 #include <alia/color.hpp>
 
 namespace alia {

@@ -1,4 +1,5 @@
 #include <alia/rendering.hpp>
+#include <alia/layout_system.hpp>
 
 namespace alia {
 

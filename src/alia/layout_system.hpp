@@ -657,11 +657,6 @@ struct layout_leaf : layout_node
         relative_layout_assignment const& assignment);
 
  private:
-    //bool initialized_;
-
-    // the layout spec supplied by the user
-    //layout layout_spec_;
-
     // the resolved spec
     resolved_layout_spec resolved_spec_;
 
@@ -671,6 +666,21 @@ struct layout_leaf : layout_node
     // resolved relative assignment
     alia::relative_layout_assignment relative_assignment_;
 };
+
+// GEOMETRY CONTEXT
+
+void initialize(geometry_context& ctx, box<2,double> const& full_region);
+
+void set_subscriber(geometry_context& ctx,
+    geometry_context_subscriber& subscriber);
+
+void set_clip_region(geometry_context& ctx, box<2,double> const& clip_region);
+
+void set_transformation_matrix(geometry_context& ctx,
+    matrix<3,3,double> const& matrix);
+
+// Is any part of the given region visible through the clipping rectangle?
+bool is_visible(geometry_context& ctx, box<2,double> const& region);
 
 }
 
