@@ -1,7 +1,7 @@
 #ifndef ALIA_LUA_STYLING_HPP
 #define ALIA_LUA_STYLING_HPP
 
-#include <alia/ui_interface.hpp>
+#include <alia/ui/api.hpp>
 
 namespace alia {
 
