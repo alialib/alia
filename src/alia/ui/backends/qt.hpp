@@ -1,5 +1,5 @@
-#ifndef ALIA_QT_HPP
-#define ALIA_QT_HPP
+#ifndef ALIA_UI_BACKENDS_QT_HPP
+#define ALIA_UI_BACKENDS_QT_HPP
 
 #include <alia/ui_interface.hpp>
 

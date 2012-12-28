@@ -1,7 +1,7 @@
-#ifndef ALIA_OPENGL_SURFACE_HPP
-#define ALIA_OPENGL_SURFACE_HPP
+#ifndef ALIA_UI_BACKENDS_OPENGL_HPP
+#define ALIA_UI_BACKENDS_OPENGL_HPP
 
-#include <alia/ui/utilities/rendering.hpp>
+#include <alia/ui/internals.hpp>
 
 // This file provides an OpenGL implementation of alia's UI surface interface.
 

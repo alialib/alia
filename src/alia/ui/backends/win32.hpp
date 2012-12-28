@@ -1,5 +1,5 @@
-#ifndef ALIA_WIN32_HPP
-#define ALIA_WIN32_HPP
+#ifndef ALIA_UI_BACKENDS_WIN32_HPP
+#define ALIA_UI_BACKENDS_WIN32_HPP
 
 #include <alia/ui/api.hpp>
 

@@ -2,8 +2,9 @@
 #define ALIA_UI_SYSTEM_HPP
 
 #include <alia/ui/internals.hpp>
-#include <alia/layout/system.hpp>
-#include <alia/dispatch_table.hpp>
+
+// This files defines the top-level interface to the UI system.
+// It's used by backends.
 
 namespace alia {
 

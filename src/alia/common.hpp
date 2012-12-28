@@ -1,5 +1,5 @@
-#ifndef ALIA_UTILITIES_HPP
-#define ALIA_UTILITIES_HPP
+#ifndef ALIA_COMMON_HPP
+#define ALIA_COMMON_HPP
 
 #include <exception>
 #include <string>
