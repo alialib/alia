@@ -270,6 +270,7 @@ enum ui_event_type
     OVERLAY_MOUSE_HIT_TEST_EVENT,
     OVERLAY_WHEEL_HIT_TEST_EVENT,
     OVERLAY_RENDER_EVENT,
+    OVERLAY_MAKE_WIDGET_VISIBLE_EVENT,
 
     // uncategorized events
     WRAPPED_EVENT,
@@ -916,9 +917,9 @@ struct tree_node : noncopyable
 struct overlay
 {
     overlay() : ctx_(0) {}
-    overlay(ui_context& ctx) { begin(ctx); }        
+    overlay(ui_context& ctx, widget_id id) { begin(ctx, id); }        
     ~overlay() { end(); }
-    void begin(ui_context& ctx);
+    void begin(ui_context& ctx, widget_id id);
     void end();
  private:
     ui_context* ctx_;
@@ -937,13 +938,13 @@ struct popup_positioning
 struct popup
 {
     popup() : ctx_(0) {}
-    popup(ui_context& ctx, widget_id id, popup_positioning const& positioning)
+    popup(ui_context& ctx, widget_id id,
+        popup_positioning const& positioning)
     { begin(ctx, id, positioning); }
     ~popup() { end(); }
     void begin(ui_context& ctx, widget_id id,
         popup_positioning const& positioning);
     void end();
-    bool user_closed();
  private:
     ui_context* ctx_;
     widget_id id_, background_id_;
@@ -977,7 +978,6 @@ struct untyped_drop_down_list : noncopyable
     panel container_;
     row_layout contents_;
 
-    bool do_list_, make_selection_visible_;
     popup popup_;
     bordered_box list_border_;
     scrollable_panel list_panel_;

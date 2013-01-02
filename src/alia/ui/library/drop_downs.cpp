@@ -1,5 +1,6 @@
 #include <alia/ui/api.hpp>
 #include <alia/ui/utilities.hpp>
+#include <alia/ui/system.hpp>
 
 namespace alia {
 
@@ -156,8 +157,6 @@ do_drop_down_button(
 
 struct ddl_data
 {
-    bool popup_open;
-
     popup_positioning positioning;
 
     // When the list is open, it may maintain a separate internal selection.
@@ -169,7 +168,9 @@ struct ddl_data
 
     focus_rect_data focus_rendering;
 
-    ddl_data() : popup_open(false) {}
+    bool make_selection_visible;
+
+    ddl_data() : make_selection_visible(false) {}
 };
 
 // ddl_list_query_event is used to query the drop down list to determine how
@@ -277,6 +278,9 @@ static void open_ddl(ui_context& ctx, ddl_data& data, widget_id id,
     layout_box const& bounding_region)
 {
     data.internal_selection = get_ddl_selected_index(ctx, id);
+    data.make_selection_visible = true;
+
+    // Calculate popup positioning.
     layout_vector lower = bounding_region.corner;
     layout_vector upper = get_high_corner(bounding_region);
     data.positioning.lower_bound = make_vector(lower[0], upper[1]);
@@ -289,13 +293,12 @@ static void open_ddl(ui_context& ctx, ddl_data& data, widget_id id,
         transform(get_transformation(ctx),
             vector<2,double>(data.positioning.upper_bound) +
             make_vector<double>(0.5, 0.5)));
-    data.popup_open = true;
+
     set_active_overlay(ctx, id);
 }
 
 static void close_ddl(ui_context& ctx, ddl_data& data, widget_id id)
 {
-    data.popup_open = false;
     ctx.system->overlay_id = null_widget_id;
 }
 
@@ -305,12 +308,10 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
 {
     ctx_ = &ctx;
 
-    do_list_ = make_selection_visible_ = false;
-    list_index_ = 0;
-
     untyped_ui_value const* result = 0;
 
     id_ = get_widget_id(ctx);
+    list_index_ = 0;
 
     get_cached_data(ctx, &data_);
     ddl_data& data = *data_;
@@ -339,7 +340,7 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
         key_event_info info;
         if (detect_key_press(ctx, &info, id_))
         {
-            if (!data.popup_open)
+            if (!is_overlay_active(ctx, id_))
             {
                 // If this is a list of commands, don't select them without the
                 // list being open.
@@ -359,8 +360,8 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
                 if (process_ddl_movement_keys(ctx, id_,
                         data.internal_selection, info))
                 {
+                    data.make_selection_visible = true;
                     acknowledge_input_event(ctx);
-                    make_selection_visible_ = true;
                 }
             }
             if (info.mods == 0)
@@ -369,15 +370,14 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
                 {
                  case KEY_ENTER:
                  case KEY_NUMPAD_ENTER:
-                    if (!data.popup_open)
+                    if (!is_overlay_active(ctx, id_))
                     {
                         open_ddl(ctx, data, id_, container_.inner_region());
-                        make_selection_visible_ = true;
                         acknowledge_input_event(ctx);
                         break;
                     }
                  case KEY_SPACE:
-                    if (data.popup_open)
+                    if (is_overlay_active(ctx, id_))
                     {
                         if (data.internal_selection)
                         {
@@ -389,7 +389,7 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
                     }
                     break;
                  case KEY_ESCAPE:
-                    if (data.popup_open)
+                    if (is_overlay_active(ctx, id_))
                     {
                         acknowledge_input_event(ctx);
                         close_ddl(ctx, data, id_);
@@ -415,33 +415,9 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
             }
             break;
           }
-
-         case CUSTOM_EVENT:
-          {
-            {
-                ddl_list_query_event* query =
-                    dynamic_cast<ddl_list_query_event*>(ctx.event);
-                if (query && query->target == id_)
-                {
-                    do_list_ = true;
-                }
-            }
-            {
-                ddl_select_index_event* event =
-                    dynamic_cast<ddl_select_index_event*>(ctx.event);
-                if (event && event->target == id_)
-                {
-                    do_list_ = true;
-                }
-            }
-            break;
-          }
         }
         break;
     }
-
-    if (data.popup_open)
-        do_list_ = true;
 
     contents_.begin(ctx, BASELINE_Y | GROW_X | UNPADDED);
 
@@ -458,34 +434,29 @@ bool untyped_drop_down_list::do_list()
     if (do_drop_down_button(ctx, CENTER | UNPADDED, id_, data.button))
     {
         open_ddl(ctx, data, id_, container_.inner_region());
-        make_selection_visible_ = true;
-        do_list_ = true;
+        end_pass(ctx);
     }
 
-    alia_if (do_list_)
+    bool active = id_has_focus(ctx, id_);
+
+    alia_if (active)
     {
         popup_.begin(ctx, id_, data.positioning);
-        if (popup_.user_closed())
-            close_ddl(ctx, data, id_);
-
         list_border_.begin(ctx, GROW | PADDED);
         list_panel_.begin(ctx, text("control"), 2, GROW | UNPADDED);
     }
     alia_end
 
-    return do_list_;
+    return active;
 }
 
 void untyped_drop_down_list::end()
 {
     if (ctx_)
     {
-        if (do_list_)
-        {
-            list_panel_.end();
-            list_border_.end();
-            popup_.end();
-        }
+        list_panel_.end();
+        list_border_.end();
+        popup_.end();
 
         container_.end();
 
@@ -508,8 +479,11 @@ bool untyped_ddl_item::begin(untyped_drop_down_list& list, bool is_selected)
     panel_.begin(ctx, text("item"), UNPADDED, NO_CLICK_DETECTION,
         id, get_widget_state(ctx, id, true, false, is_internally_selected));
 
-    if (list.make_selection_visible_ && is_internally_selected)
+    if (data.make_selection_visible && is_internally_selected)
+    {
         make_widget_visible(ctx, id);
+        data.make_selection_visible = false;
+    }
 
     switch (ctx.event->category)
     {

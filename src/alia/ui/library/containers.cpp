@@ -428,37 +428,55 @@ void resizable_content::end()
 
 // OVERLAYS
 
-void overlay::begin(ui_context& ctx)
+void overlay::begin(ui_context& ctx, widget_id id)
 {
     ctx_ = &ctx;
 
     real_event_category_ = ctx.event->category;
     real_event_type_ = ctx.event->type;
 
-    // If this is an overlay event, activate it by translating it to the
-    // underlying event type.
+    // If this is an overlay event, and the overlay is active, activate the
+    // event by translating it to the underlying event type.
     // Or if this is one of corresponding normal events (like rendering),
     // disable it inside the overlay.
     switch(ctx.event->type)
     {
      case OVERLAY_RENDER_EVENT:
-        ctx.event->category = RENDER_CATEGORY;
-        ctx.event->type = RENDER_EVENT;
+        if (is_overlay_active(ctx, id))
+        {
+            ctx.event->category = RENDER_CATEGORY;
+            ctx.event->type = RENDER_EVENT;
+        }
         break;
 
      case OVERLAY_MOUSE_HIT_TEST_EVENT:
-        ctx.event->category = REGION_CATEGORY;
-        ctx.event->type = MOUSE_HIT_TEST_EVENT;
+        if (is_overlay_active(ctx, id))
+        {
+            ctx.event->category = REGION_CATEGORY;
+            ctx.event->type = MOUSE_HIT_TEST_EVENT;
+        }
         break;
 
      case OVERLAY_WHEEL_HIT_TEST_EVENT:
-        ctx.event->category = REGION_CATEGORY;
-        ctx.event->type = WHEEL_HIT_TEST_EVENT;
+        if (is_overlay_active(ctx, id))
+        {
+            ctx.event->category = REGION_CATEGORY;
+            ctx.event->type = WHEEL_HIT_TEST_EVENT;
+        }
+        break;
+
+     case OVERLAY_MAKE_WIDGET_VISIBLE_EVENT:
+        if (is_overlay_active(ctx, id))
+        {
+            ctx.event->category = REGION_CATEGORY;
+            ctx.event->type = MAKE_WIDGET_VISIBLE_EVENT;
+        }
         break;
 
      case RENDER_EVENT:
      case MOUSE_HIT_TEST_EVENT:
      case WHEEL_HIT_TEST_EVENT:
+     case MAKE_WIDGET_VISIBLE_EVENT:
         ctx.event->category = NO_CATEGORY;
         ctx.event->type = NO_EVENT;
         break;
@@ -484,18 +502,25 @@ void popup::begin(ui_context& ctx, widget_id id,
     ctx_ = &ctx;
     id_ = id;
 
+    bool active = is_overlay_active(ctx, id);
+
     layout_vector surface_size = layout_vector(ctx.system->surface_size);
     layout_vector maximum_size;
-    for (unsigned i = 0; i != 2; ++i)
+    if (active)
     {
-        maximum_size[i] = (std::max)(
-            positioning.absolute_upper[i],
-            surface_size[i] - positioning.absolute_lower[i]);
+        for (unsigned i = 0; i != 2; ++i)
+        {
+            maximum_size[i] = (std::max)(
+                positioning.absolute_upper[i],
+                surface_size[i] - positioning.absolute_lower[i]);
+        }
     }
+    else
+        maximum_size = surface_size;
 
     layout_.begin(ctx, maximum_size);
 
-    if (!is_refresh_pass(ctx))
+    if (active && !is_refresh_pass(ctx))
     {
         vector<2,int> position;
         for (unsigned i = 0; i != 2; ++i)
@@ -516,21 +541,23 @@ void popup::begin(ui_context& ctx, widget_id id,
         transform_.set(translation_matrix(vector<2,double>(position)));
     }
 
-    overlay_.begin(ctx);
+    overlay_.begin(ctx, id);
 
-    // Intercept mouse clicks and wheel movement to other parts of the surface.
     background_id_ = get_widget_id(ctx);
-    handle_mouse_hit(ctx, background_id_, HIT_TEST_MOUSE | HIT_TEST_WHEEL);
-}
-bool popup::user_closed()
-{
-    ui_context& ctx = *ctx_;
-    return
-        !is_overlay_active(ctx, id_) ||
-        detect_mouse_press(ctx, background_id_, LEFT_BUTTON) || 
-        detect_mouse_press(ctx, background_id_, MIDDLE_BUTTON) || 
-        detect_mouse_press(ctx, background_id_, RIGHT_BUTTON) ||
-        detect_focus_loss(ctx, id_);
+    if (active)
+    {
+        // Intercept mouse clicks and wheel movement to other parts of the
+        // surface.
+        handle_mouse_hit(ctx, background_id_, HIT_TEST_MOUSE | HIT_TEST_WHEEL);
+        // If any are detected, or if the popup loses focus, close it.
+        if (detect_mouse_press(ctx, background_id_, LEFT_BUTTON) || 
+            detect_mouse_press(ctx, background_id_, MIDDLE_BUTTON) || 
+            detect_mouse_press(ctx, background_id_, RIGHT_BUTTON) ||
+            detect_focus_loss(ctx, id_))
+        {
+            ctx.system->overlay_id = null_widget_id;
+        }
+    }
 }
 void popup::end()
 {

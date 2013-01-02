@@ -383,7 +383,7 @@ static void update_window(HWND hwnd)
         alia::make_vector<unsigned>(rect.right, rect.bottom));
 
     mouse_cursor cursor;
-    refresh_and_layout(impl.ui,
+    update_ui(impl.ui,
         alia::make_vector<unsigned>(rect.right, rect.bottom),
         get_time(impl), &cursor);
     // Only set the mouse cursor if it's inside the window or captured.
@@ -856,7 +856,7 @@ static void create_window(
     RECT rect;
     GetClientRect(impl->hwnd, &rect);
 
-    refresh_and_layout(impl->ui,
+    update_ui(impl->ui,
         alia::make_vector<unsigned>(rect.right, rect.bottom),
         get_time(*impl));
 

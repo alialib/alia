@@ -1390,16 +1390,19 @@ void floating_layout::concrete_begin(
 
     traversal_ = &traversal;
 
-    old_container_ = traversal.active_container;
-    old_next_ptr_ = traversal.next_ptr;
+    if (traversal.is_refresh_pass)
+    {
+        old_container_ = traversal.active_container;
+        old_next_ptr_ = traversal.next_ptr;
 
-    traversal.active_container = 0;
-    traversal.next_ptr = &data_->root_node;
+        traversal.active_container = 0;
+        traversal.next_ptr = &data_->root_node;
+
+        max_size_ = max_size;
+    }
 
     if (traversal.geometry)
         clipping_reset_.begin(*traversal.geometry);
-
-    max_size_ = max_size;
 }
 
 void floating_layout::end()
@@ -1410,6 +1413,9 @@ void floating_layout::end()
 
         if (traversal.is_refresh_pass)
         {
+            traversal_->active_container = old_container_;
+            traversal_->next_ptr = old_next_ptr_;
+
             layout_vector measured_size =
                 get_minimum_size(data_->root_node, data_->measurement_cache);
             for (unsigned i = 0; i != 2; ++i)
@@ -1420,8 +1426,6 @@ void floating_layout::end()
 
         clipping_reset_.end();
 
-        traversal_->active_container = old_container_;
-        traversal_->next_ptr = old_next_ptr_;
         traversal_ = 0;
     }
 }

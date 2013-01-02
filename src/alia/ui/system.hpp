@@ -10,7 +10,9 @@ namespace alia {
 
 void set_text_magnification(ui_system& system, float magnification);
 
-void refresh_and_layout(ui_system& ui, vector<2,unsigned> const& size,
+void refresh_ui(ui_system& ui);
+
+void update_ui(ui_system& ui, vector<2,unsigned> const& size,
     ui_time_type millisecond_tick_count, mouse_cursor* current_cursor = 0);
 
 void make_widget_visible(ui_system& system, routable_widget_id const& id);

@@ -1,5 +1,6 @@
 #include <alia/ui/utilities/keyboard.hpp>
 #include <alia/ui/utilities.hpp>
+#include <alia/ui/system.hpp>
 
 namespace alia {
 
@@ -89,6 +90,9 @@ void set_focus(ui_system& ui, routable_widget_id id)
         issue_targeted_event(ui, e, ui.input.focused_id);
     }
     ui.input.focused_id = id;
+    // It's possible to have widgets that appear based on whether or not
+    // another widget has the focus, so we need to refresh here.
+    refresh_ui(ui);
     if (different && is_valid(id))
     {
         make_widget_visible(ui, id);

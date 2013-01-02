@@ -155,7 +155,15 @@ static routable_widget_id get_mouse_target(ui_system& ui)
     return is_valid(ui.input.active_id) ? ui.input.active_id : ui.input.hot_id;
 }
 
-void refresh_and_layout(ui_system& ui, vector<2,unsigned> const& size,
+void refresh_ui(ui_system& ui)
+{
+    refresh_event e;
+    issue_event(ui, e, false);
+
+    resolve_layout(ui.layout, layout_vector(ui.surface_size));
+}
+
+void update_ui(ui_system& ui, vector<2,unsigned> const& size,
     ui_time_type millisecond_tick_count, mouse_cursor* current_cursor)
 {
     ui.millisecond_tick_count = millisecond_tick_count;
@@ -168,16 +176,18 @@ void refresh_and_layout(ui_system& ui, vector<2,unsigned> const& size,
         ui.surface_size = size;
     }
 
-    refresh_event e;
-    issue_event(ui, e, false);
-
-    resolve_layout(ui.layout, layout_vector(size));
+    refresh_ui(ui);
 
     // Once layout has been resolved, we can honor requests to make a
     // particular widget visible.
     if (is_valid(ui.widget_to_make_visible))
     {
         make_widget_visible_event e(ui.widget_to_make_visible.id);
+        if (is_valid(ui.overlay_id))
+        {
+            e.category = OVERLAY_CATEGORY;
+            e.type = OVERLAY_MAKE_WIDGET_VISIBLE_EVENT;
+        }
         issue_targeted_event(ui, e, ui.widget_to_make_visible);
         ui.widget_to_make_visible = null_widget_id;
     }
@@ -233,10 +243,7 @@ void refresh_and_layout(ui_system& ui, vector<2,unsigned> const& size,
         }
 
         // This may have caused state changes, so we need to refresh again.
-        refresh_event e;
-        issue_event(ui, e, false);
-        // (And resolve layout again.)
-        resolve_layout(ui.layout, layout_vector(size));
+        refresh_ui(ui);
     }
 
     if (current_cursor)
