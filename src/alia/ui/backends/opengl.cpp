@@ -735,8 +735,6 @@ void opengl_surface::initialize_render_state()
 
     glEnable(GL_SCISSOR_TEST);
     glScissor(0, 0, size_[0], size_[1]);
-
-    glEnable(GL_LINE_STIPPLE);
 }
 
 void opengl_surface::cache_image(
@@ -794,6 +792,10 @@ void opengl_surface::set_clip_region(box<2,double> const& region)
 void opengl_surface::draw_filled_box(
     rgba8 const& color, box<2,double> const& box)
 {
+    // Draw the box using a uniform texture.
+    // There are obviously simpler ways to draw filled boxes in OpenGL, but
+    // testing shows that this is actually faster. Perhaps switching between
+    // textured and non-textured quads slows down the rendering.
     if (!is_valid(ctx_->impl_->uniform_image))
     {
         skia_renderer renderer(

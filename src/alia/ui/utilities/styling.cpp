@@ -187,12 +187,14 @@ static rgba8 parse_color_value(char const* value)
             throw parse_error("invalid hex color constant");
     }
 
-    alia::rgba8 color;
-    color.r = (digits[0] << 4) + digits[1];
-    color.g = (digits[2] << 4) + digits[3];
-    color.b = (digits[4] << 4) + digits[5];
-    color.a = has_alpha ? ((digits[6] << 4) + digits[7]) : 0xff;
-    return color;
+    alia::rgb8 color(
+        (digits[0] << 4) + digits[1],
+        (digits[2] << 4) + digits[3],
+        (digits[4] << 4) + digits[5]);
+
+    return has_alpha
+      ? apply_alpha(color, (digits[6] << 4) + digits[7])
+      : rgba8(color.r, color.g, color.b, 0xff);
 }
 
 rgba8 get_color_property(style_tree const* tree,

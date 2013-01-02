@@ -185,6 +185,13 @@ bool operator==(box<N,T> const& a, box<N,T> const& b)
 template<unsigned N, class T>
 bool operator!=(box<N,T> const& a, box<N,T> const& b)
 { return !(a == b); }
+// < operator
+template<unsigned N, class T>
+bool operator<(box<N,T> const& a, box<N,T> const& b)
+{
+    return a.corner < b.corner ||
+        a.corner == b.corner && a.size < b.size;
+}
 
 template<unsigned N, class T>
 vector<N,T> get_center(box<N,T> const& b) { return b.corner + b.size / 2; }

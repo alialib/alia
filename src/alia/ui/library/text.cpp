@@ -397,17 +397,31 @@ void do_text(ui_context& ctx, getter<string> const& text,
                     SkPaint paint;
                     paint.setFlags(SkPaint::kAntiAlias_Flag);
                     set_skia_font_info(paint, data.font);
-                    rgba8 const& bg = ctx.style.properties->background_color;
+                    // If the background is completely opaque, then we should
+                    // draw it here so that Skia can apply proper LCD text
+                    // rendering.
+                    bool draw_background =
+                        ctx.style.properties->background_color.a == 0xff;
+                    if (!draw_background)
+                    {
+                        paint.setFlags(paint.getFlags() |
+                            SkPaint::kGenA8FromLCD_Flag);
+                        paint.setXfermodeMode(SkXfermode::kSrc_Mode);
+                    }
+                    rgba8 bg = ctx.style.properties->background_color;
                     for (std::vector<text_display_row>::const_iterator
                         i = data.wrapped_rows.begin();
                         i != data.wrapped_rows.end(); ++i)
                     {
-                        set_color(paint,
-                            ctx.style.properties->background_color);
-                        draw_rect(renderer.canvas(), paint,
-                            layout_box(
-                                make_vector(i->position[0], i->top),
-                                make_vector(region.size[0], i->height)));
+                        if (draw_background)
+                        {
+                            set_color(paint,
+                                ctx.style.properties->background_color);
+                            draw_rect(renderer.canvas(), paint,
+                                layout_box(
+                                    make_vector(i->position[0], i->top),
+                                    make_vector(region.size[0], i->height)));
+                        }
                         set_color(paint, ctx.style.properties->text_color);
                         renderer.canvas().drawText(
                             i->text.begin, i->text.end - i->text.begin,
@@ -438,9 +452,20 @@ void do_text(ui_context& ctx, getter<string> const& text,
                     SkPaint paint;
                     paint.setFlags(SkPaint::kAntiAlias_Flag);
                     set_skia_font_info(paint, data.font);
-                    rgba8 const& bg = ctx.style.properties->background_color;
-                    renderer.canvas().clear(
-                        SkColorSetARGB(bg.a, bg.r, bg.g, bg.b));
+                    // If the background is completely opaque, then we should
+                    // draw it here so that Skia can apply LCD text rendering.
+                    rgba8 bg = ctx.style.properties->background_color;
+                    if (bg.a == 0xff)
+                    {
+                        renderer.canvas().clear(
+                            SkColorSetARGB(bg.a, bg.r, bg.g, bg.b));
+                    }
+                    else
+                    {
+                        paint.setXfermodeMode(SkXfermode::kSrc_Mode);
+                        paint.setFlags(paint.getFlags() |
+                            SkPaint::kGenA8FromLCD_Flag);
+                    }
                     set_color(paint, ctx.style.properties->text_color);
                     renderer.canvas().drawText(
                         data.text.c_str(), data.text.length(),
@@ -557,8 +582,19 @@ static void render_standalone_text(
 	    get_region(data).size);
 
 	rgba8 bg = ctx.style.properties->background_color;
-	renderer.canvas().clear(
-	    SkColorSetARGB(bg.a, bg.r, bg.g, bg.b));
+        // If the background is completely opaque, then we should
+        // draw it here so that Skia can apply LCD text rendering.
+        if (bg.a == 0xff)
+        {
+            renderer.canvas().clear(
+                SkColorSetARGB(bg.a, bg.r, bg.g, bg.b));
+        }
+        else
+        {
+            paint.setXfermodeMode(SkXfermode::kSrc_Mode);
+            paint.setFlags(paint.getFlags() |
+                SkPaint::kGenA8FromLCD_Flag);
+        }
 
 	string const& text_value = get(text);
 
@@ -634,8 +670,19 @@ draw_text(ui_context& ctx, text_drawing_data& data,
 	skia_renderer renderer(*ctx.surface, data.image, image_size);
 
 	rgba8 bg = ctx.style.properties->background_color;
-	renderer.canvas().clear(
-	    SkColorSetARGB(bg.a, bg.r, bg.g, bg.b));
+        // If the background is completely opaque, then we should
+        // draw it here so that Skia can apply LCD text rendering.
+        if (bg.a == 0xff)
+        {
+            renderer.canvas().clear(
+                SkColorSetARGB(bg.a, bg.r, bg.g, bg.b));
+        }
+        else
+        {
+            paint.setXfermodeMode(SkXfermode::kSrc_Mode);
+            paint.setFlags(paint.getFlags() |
+                SkPaint::kGenA8FromLCD_Flag);
+        }
 
 	set_color(paint, ctx.style.properties->text_color);
 	renderer.canvas().drawText(
