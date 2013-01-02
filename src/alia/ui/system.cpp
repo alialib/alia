@@ -67,8 +67,6 @@ static void issue_event(
     ui_system& system, ui_event& event,
     bool targeted, routing_region_ptr const& target = routing_region_ptr())
 {
-    printf("event:%i\n", event.type);
-    fflush(stdout);
     ui_context ctx;
     ctx.pass_aborted = false;
     ctx.system = &system;
@@ -81,7 +79,7 @@ static void issue_event(
             vector<2,double>(system.surface->size());
     initialize(ctx.geometry, box<2,double>(make_vector<double>(0, 0), size));
     ctx.surface = system.surface.get();
-    if (event.category == RENDER_CATEGORY)
+    if (event.type == RENDER_EVENT || event.type == OVERLAY_RENDER_EVENT)
         set_subscriber(ctx.geometry, *ctx.surface);
     scoped_layout_refresh refresh;
     scoped_layout_traversal layout;
@@ -98,7 +96,6 @@ static void issue_event(
     ctx.event = &event;
     setup_initial_styling(ctx);
     ctx.active_cacher = 0;
-    set_layer_z(ctx, 0);
     context_invoker fn;
     fn.system = &system;
     fn.ctx = &ctx;
@@ -129,8 +126,17 @@ layout_vector measure_initial_ui(
 
 void render_ui(ui_system& system)
 {
-    render_event e;
-    issue_event(system, e, false);
+    {
+        render_event e;
+        issue_event(system, e);
+    }
+    if (is_valid(system.overlay_id))
+    {
+        render_event e;
+        e.category = OVERLAY_CATEGORY;
+        e.type = OVERLAY_RENDER_EVENT;
+        issue_targeted_event(system, e, system.overlay_id);
+    }
 }
 
 void issue_event(ui_system& system, ui_event& event)
@@ -154,6 +160,14 @@ void refresh_and_layout(ui_system& ui, vector<2,unsigned> const& size,
 {
     ui.millisecond_tick_count = millisecond_tick_count;
 
+    // If the surface changes size, that could invalidate popup positioning,
+    // so close any active popups.
+    if (ui.surface_size != size)
+    {
+        ui.overlay_id = null_widget_id;
+        ui.surface_size = size;
+    }
+
     refresh_event e;
     issue_event(ui, e, false);
 
@@ -174,10 +188,27 @@ void refresh_and_layout(ui_system& ui, vector<2,unsigned> const& size,
 
     if (ui.input.mouse_inside_window)
     {
-        mouse_hit_test_event hit_test;
-        issue_event(ui, hit_test);
-        ui.input.hot_id = hit_test.id;
-        cursor = hit_test.cursor;
+        bool overlay_hot = false;
+        if (is_valid(ui.overlay_id))
+        {
+            mouse_hit_test_event hit_test;
+            hit_test.category = OVERLAY_CATEGORY;
+            hit_test.type = OVERLAY_MOUSE_HIT_TEST_EVENT;
+            issue_targeted_event(ui, hit_test, ui.overlay_id);
+            if (is_valid(hit_test.id))
+            {
+                ui.input.hot_id = hit_test.id;
+                cursor = hit_test.cursor;
+                overlay_hot = true;
+            }
+        }
+        if (!overlay_hot)
+        {
+            mouse_hit_test_event hit_test;
+            issue_event(ui, hit_test);
+            ui.input.hot_id = hit_test.id;
+            cursor = hit_test.cursor;
+        }
     }
     else
         ui.input.hot_id = null_widget_id;
@@ -261,13 +292,27 @@ void process_double_click(ui_system& ui, ui_time_type time,
 void process_mouse_wheel(ui_system& ui, ui_time_type time, float movement)
 {
     // First determine who should receive the event.
-    wheel_hit_test_event hit_test;
-    issue_event(ui, hit_test);
-    // Now dispatch it.
-    if (is_valid(hit_test.id))
+    routable_widget_id target;
+    if (is_valid(ui.overlay_id))
     {
-        mouse_wheel_event event(time, hit_test.id.id, movement);
-        issue_targeted_event(ui, event, hit_test.id);
+        wheel_hit_test_event hit_test;
+        hit_test.category = OVERLAY_CATEGORY;
+        hit_test.type = OVERLAY_WHEEL_HIT_TEST_EVENT;
+        issue_targeted_event(ui, hit_test, ui.overlay_id);
+        if (is_valid(hit_test.id))
+            target = hit_test.id;
+    }
+    if (!is_valid(target))
+    {
+        wheel_hit_test_event hit_test;
+        issue_event(ui, hit_test);
+        target = hit_test.id;
+    }
+    // Now dispatch it.
+    if (is_valid(target))
+    {
+        mouse_wheel_event event(time, target.id, movement);
+        issue_targeted_event(ui, event, target);
     }
 }
 

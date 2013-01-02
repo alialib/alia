@@ -12,11 +12,6 @@ void set_style(style_tree& tree, string const& subpath,
 
 style_tree unflatten_style_tree(flattened_style_tree const& flattened);
 
-//void parse_style_file(style* style, char const* file);
-
-// Set up the initial styling state for a context pass.
-void setup_initial_styling(ui_context& ctx);
-
 struct parse_error : exception
 {
     parse_error(string const& message)
@@ -24,6 +19,13 @@ struct parse_error : exception
     {}
     ~parse_error() throw() {}
 };
+
+style_tree parse_style_description(char const* label, utf8_string const& text);
+
+style_tree parse_style_file(char const* path);
+
+// Set up the initial styling state for a context pass.
+void setup_initial_styling(ui_context& ctx);
 
 // Look up the value of a property in the style tree.
 string const* get_style_property(

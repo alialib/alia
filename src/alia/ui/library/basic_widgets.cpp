@@ -22,7 +22,7 @@ void do_separator(ui_context& ctx, layout const& layout_spec)
       {
         refresh_keyed_data(data.width, *ctx.style.id);
         if (!data.width.is_valid)
-            set(data.width, get_float_property(ctx, "separator_width", 2));
+            set(data.width, get_float_property(ctx, "separator-width", 2));
         data.layout_node.refresh_layout(
             get_layout_traversal(ctx), layout_spec,
             leaf_layout_requirements(
@@ -46,7 +46,7 @@ void do_separator(ui_context& ctx, layout const& layout_spec)
             paint.setFlags(SkPaint::kAntiAlias_Flag);
             paint.setStrokeWidth(2);
             paint.setStrokeCap(SkPaint::kRound_Cap);
-            set_color(paint, get_color_property(ctx, "separator_color"));
+            set_color(paint, get_color_property(ctx, "separator-color"));
             renderer.canvas().drawLine(
                 SkIntToScalar(1), SkIntToScalar(1),
                 layout_scalar_as_skia_scalar(region.size[0] - 1),
@@ -160,8 +160,8 @@ void bulleted_list::begin(ui_context& ctx, layout const& layout_spec)
 
     grid_.begin(ctx, layout_spec);
 
-    // Add an empty row (with no height) at the top to force the content
-    // column to grab any extra space in the grid.
+    // Add an empty row (with no height) to force the content column to grab
+    // any extra space in the grid.
     {
         grid_row r(grid_);
         do_spacer(ctx, layout(size(0, 0, PIXELS), UNPADDED));
@@ -170,7 +170,11 @@ void bulleted_list::begin(ui_context& ctx, layout const& layout_spec)
 }
 void bulleted_list::end()
 {
-    grid_.end();
+    if (ctx_)
+    {
+        grid_.end();
+        ctx_ = 0;
+    }
 }
 void bulleted_item::begin(bulleted_list& list, layout const& layout_spec)
 {
@@ -224,9 +228,9 @@ struct default_check_box_renderer : check_box_renderer
                 find_substyle(ctx.style.path, "control", state);
 
             rgba8 bg_color =
-                get_color_property(control_style, "background_color");
+                get_color_property(control_style, "background-color");
             rgba8 fg_color =
-                get_color_property(control_style, "foreground_color");
+                get_color_property(control_style, "foreground-color");
 
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);
@@ -388,9 +392,9 @@ struct default_radio_button_renderer : radio_button_renderer
                 find_substyle(ctx.style.path, "control", state);
 
             rgba8 bg_color =
-                get_color_property(control_style, "background_color");
+                get_color_property(control_style, "background-color");
             rgba8 fg_color =
-                get_color_property(control_style, "foreground_color");
+                get_color_property(control_style, "foreground-color");
 
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);
@@ -404,7 +408,7 @@ struct default_radio_button_renderer : radio_button_renderer
 
             if (state & WIDGET_FOCUSED)
             {
-                set_color(paint, get_color_property(ctx, "focus_color"));
+                set_color(paint, get_color_property(ctx, "focus-color"));
                 paint.setStyle(SkPaint::kFill_Style);
                 renderer.canvas().drawCircle(
                     layout_scalar_as_skia_scalar(center[0]),
@@ -550,9 +554,9 @@ struct default_node_expander_renderer : node_expander_renderer
                 find_substyle(ctx.style.path, "control", state);
 
             rgba8 bg_color =
-                get_color_property(control_style, "background_color");
+                get_color_property(control_style, "background-color");
             rgba8 fg_color =
-                get_color_property(control_style, "foreground_color");
+                get_color_property(control_style, "foreground-color");
 
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);
@@ -703,13 +707,13 @@ void do_progress_bar(ui_context& ctx, getter<double> const& progress,
             paint.setStyle(SkPaint::kFill_Style);
 
             style_tree const* progress_bar_style =
-                find_substyle(ctx.style.path, "progress_bar", WIDGET_NORMAL);
+                find_substyle(ctx.style.path, "progress-bar", WIDGET_NORMAL);
 
             rgba8 outline_color =
-                get_color_property(progress_bar_style, "outline_color");
+                get_color_property(progress_bar_style, "outline-color");
             rgba8 background_color = ctx.style.properties->background_color;
             rgba8 bar_color =
-                get_color_property(progress_bar_style, "bar_color");
+                get_color_property(progress_bar_style, "bar-color");
 
             SkScalar trim =
                 SkScalarDiv(
@@ -820,9 +824,9 @@ struct default_icon_button_renderer : icon_button_renderer
                 find_substyle(ctx.style.path, "control", state);
 
             rgba8 bg_color =
-                get_color_property(control_style, "background_color");
+                get_color_property(control_style, "background-color");
             rgba8 fg_color =
-                get_color_property(control_style, "foreground_color");
+                get_color_property(control_style, "foreground-color");
 
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);

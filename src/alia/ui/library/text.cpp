@@ -9,7 +9,88 @@
 // The only exception is the text control, which is in its own file.
 // The interface for this is defined in ui_library.hpp in the "TEXT" section.
 
+// NOTE/TODO: This assumes that using Skia's SkPaint::measureText establishes
+// the horizontal bounds of the text, which doesn't seem like a valid
+// assumption in general. However, I haven't seen a case of clipped text.
+// This should be investigated further.
+
 namespace alia {
+
+namespace {
+
+template<class T>
+bool string_to_value(string const& str, T* value)
+{
+    std::istringstream s(str);
+    T x;
+    if (!(s >> x))
+        return false;
+    s >> std::ws;
+    if (s.eof())
+    {
+        *value = x;
+        return true;
+    }
+    return false;
+}
+
+template<class T>
+string value_to_string(T const& value)
+{
+    std::ostringstream s;
+    s << value;
+    return s.str();
+}
+
+}
+
+template<class T>
+bool float_from_string(T* value, string const& str, string* message)
+{
+    if (!string_to_value(str, value))
+    {
+        *message = "This input expects a number.";
+        return false;
+    }
+    return true;
+}
+
+#define ALIA_FLOAT_CONVERSIONS(T) \
+    bool from_string(T* value, string const& str, string* message) \
+    { return float_from_string(value, str, message); } \
+    string to_string(T value) \
+    { return value_to_string(value); }
+
+ALIA_FLOAT_CONVERSIONS(float)
+ALIA_FLOAT_CONVERSIONS(double)
+
+template<class T>
+bool integer_from_string(T* value, string const& str, string* message)
+{
+    long long n;
+    if (!string_to_value(str, &n))
+    {
+        *message = "This input expects an integer.";
+        return false;
+    }
+    T x = T(n);
+    if (x != n)
+    {
+        *message = "integer out of range";
+        return false;
+    }
+    *value = x;
+    return true;
+}
+
+#define ALIA_INTEGER_CONVERSIONS(T) \
+    bool from_string(T* value, string const& str, string* message) \
+    { return integer_from_string(value, str, message); } \
+    string to_string(T value) \
+    { return value_to_string(value); }
+
+ALIA_INTEGER_CONVERSIONS(int)
+ALIA_INTEGER_CONVERSIONS(unsigned)
 
 struct text_display_data;
 
@@ -54,6 +135,8 @@ struct text_display_row
 {
     utf8_string text;
     layout_vector position;
+    // for drawing the background
+    layout_scalar top, height;
 };
 
 struct text_display_data
@@ -149,8 +232,12 @@ layout_requirements text_layout_node::get_minimal_horizontal_requirements(
     SkPaint::FontMetrics metrics;
     paint.getFontMetrics(&metrics);
     // This is kind of arbitrary, but it should rarely come into play.
+    //return layout_requirements(
+    //    skia_scalar_as_layout_size(metrics.fAvgCharWidth * 10), 0, 0, 0);
+    // metrics.fAvgCharWidth is apparently not reliable, and since this is
+    // arbitrary anyway, use this instead.
     return layout_requirements(
-        skia_scalar_as_layout_size(metrics.fAvgCharWidth * 10), 0, 0, 0);
+        skia_scalar_as_layout_size(data.font.size * 6), 0, 0, 0);
 }
 void text_layout_node::calculate_wrapping(
     layout_calculation_context& ctx,
@@ -181,7 +268,6 @@ void text_layout_node::calculate_wrapping(
     char const* p = text.begin;
     while (1)
     {
-        fold_in_requirements(state.active_row.requirements, y_requirements);
         layout_scalar line_width;
         utf8_ptr visible_end;
         utf8_ptr line_end =
@@ -190,10 +276,15 @@ void text_layout_node::calculate_wrapping(
                 usable_width - state.accumulated_width,
                 state.accumulated_width == 0, false,
                 &line_width, &visible_end);
-        state.accumulated_width += line_width + padding_width;
+        if (line_end != p)
+        {
+            fold_in_requirements(state.active_row.requirements,
+                y_requirements);
+            state.accumulated_width += line_width + padding_width;
+            p = line_end;
+        }
         if (line_end == text.end)
             break;
-        p = line_end;
         wrap_row(state);
     }
 }
@@ -243,6 +334,8 @@ void text_layout_node::assign_wrapped_regions(
             y + state.active_row->requirements.minimum_size -
                 state.active_row->requirements.minimum_descent);
         row.text = utf8_string(p, visible_end);
+        row.top = y;
+        row.height = state.active_row->requirements.minimum_size;
         data.wrapped_rows.push_back(row);
 
         // Advance.
@@ -256,82 +349,6 @@ void text_layout_node::assign_wrapped_regions(
 
     data.wrapped_size = make_layout_vector(assigned_width, y);
 }
-
-namespace {
-
-template<class T>
-bool string_to_value(string const& str, T* value)
-{
-    std::istringstream s(str);
-    T x;
-    if (!(s >> x))
-        return false;
-    s >> std::ws;
-    if (s.eof())
-    {
-        *value = x;
-        return true;
-    }
-    return false;
-}
-
-template<class T>
-string value_to_string(T const& value)
-{
-    std::ostringstream s;
-    s << value;
-    return s.str();
-}
-
-}
-
-template<class T>
-bool float_from_string(T* value, string const& str, string* message)
-{
-    if (!string_to_value(str, value))
-    {
-        *message = "This input expects a number.";
-        return false;
-    }
-    return true;
-}
-
-#define ALIA_FLOAT_CONVERSIONS(T) \
-    bool from_string(T* value, string const& str, string* message) \
-    { return float_from_string(value, str, message); } \
-    string to_string(T value) \
-    { return value_to_string(value); }
-
-ALIA_FLOAT_CONVERSIONS(float)
-ALIA_FLOAT_CONVERSIONS(double)
-
-template<class T>
-bool integer_from_string(T* value, string const& str, string* message)
-{
-    long long n;
-    if (!string_to_value(str, &n))
-    {
-        *message = "This input expects an integer.";
-        return false;
-    }
-    T x = T(n);
-    if (x != n)
-    {
-        *message = "integer out of range";
-        return false;
-    }
-    *value = x;
-    return true;
-}
-
-#define ALIA_INTEGER_CONVERSIONS(T) \
-    bool from_string(T* value, string const& str, string* message) \
-    { return integer_from_string(value, str, message); } \
-    string to_string(T value) \
-    { return value_to_string(value); }
-
-ALIA_INTEGER_CONVERSIONS(int)
-ALIA_INTEGER_CONVERSIONS(unsigned)
 
 void do_text(ui_context& ctx, getter<string> const& text,
     layout const& layout_spec)
@@ -381,13 +398,17 @@ void do_text(ui_context& ctx, getter<string> const& text,
                     paint.setFlags(SkPaint::kAntiAlias_Flag);
                     set_skia_font_info(paint, data.font);
                     rgba8 const& bg = ctx.style.properties->background_color;
-                    renderer.canvas().clear(
-                        SkColorSetARGB(bg.a, bg.r, bg.g, bg.b));
-                    set_color(paint, ctx.style.properties->text_color);
                     for (std::vector<text_display_row>::const_iterator
                         i = data.wrapped_rows.begin();
                         i != data.wrapped_rows.end(); ++i)
                     {
+                        set_color(paint,
+                            ctx.style.properties->background_color);
+                        draw_rect(renderer.canvas(), paint,
+                            layout_box(
+                                make_vector(i->position[0], i->top),
+                                make_vector(region.size[0], i->height)));
+                        set_color(paint, ctx.style.properties->text_color);
                         renderer.canvas().drawText(
                             i->text.begin, i->text.end - i->text.begin,
                             layout_scalar_as_skia_scalar(i->position[0]),
@@ -462,7 +483,8 @@ format_number(ui_context& ctx, char const* format,
 void do_paragraph(ui_context& ctx, getter<string> const& text,
     layout const& layout_spec)
 {
-    flow_layout f(ctx, add_default_padding(layout_spec, PADDED));
+    flow_layout f(ctx, add_default_y_alignment(add_default_padding(
+        layout_spec, PADDED), BASELINE_Y));
     do_text(ctx, text);
 }
 
@@ -499,7 +521,7 @@ static void refresh_standalone_text(
                 make_vector(
                     skia_scalar_as_layout_size(text_width),
                     skia_scalar_as_layout_size(line_spacing)),
-                skia_scalar_as_layout_size(metrics.fAscent),
+                skia_scalar_as_layout_size(-metrics.fAscent),
                 skia_scalar_as_layout_size(metrics.fDescent));
 
         data.layout_node.refresh_layout(

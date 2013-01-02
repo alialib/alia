@@ -9,7 +9,13 @@
 
 namespace alia {
 
-// Is c a breakable space character?
+// Get the first character in a Unicode string.
+SkUnichar peek(utf8_string const& text);
+
+// Is c a whitespace character?
+bool is_space(SkUnichar c);
+
+// Is c a breakable whitespace character?
 bool is_breakable_space(SkUnichar c);
 
 // Is c a line terminator?
@@ -18,6 +24,16 @@ bool is_line_terminator(SkUnichar c);
 // Given a text string with a line terminator as its first character, this
 // skips over the line terminator. It will treat "\r\n" as a single terminator.
 utf8_ptr skip_line_terminator(utf8_string const& text);
+
+// Skip over all whitespace characters in the given text.
+// The return value is the first non-whitespace character (or the end of the
+// string if it's all whitespace).
+utf8_ptr skip_space(utf8_string const& text);
+
+// Get a pointer to the first whitespace character in the given text.
+// (If no such character exists, this returns a pointer to the end of the
+// text.)
+utf8_ptr find_next_space(utf8_string const& text);
 
 // Get a pointer to the first breakable space character in the given text.
 // (If no such character exists, this returns a pointer to the end of the

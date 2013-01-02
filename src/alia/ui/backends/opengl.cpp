@@ -645,51 +645,6 @@ void tiled_texture::draw(
 
 }
 
-struct opengl_display_list : cached_rendering_content
-{
-    opengl_display_list(opengl_context* ctx);
-    ~opengl_display_list();
-
-    bool is_valid() const { return context_version_ == ctx_->impl_->version; }
-
-    void start_recording();
-    void stop_recording();
-
-    void playback(surface& surface) const;
-
- private:
-    opengl_context* ctx_;
-    unsigned context_version_;
-    GLuint name_;
-};
-
-opengl_display_list::opengl_display_list(opengl_context* ctx)
-{
-    ctx_ = ctx;
-    context_version_ = ctx->impl_->version;
-    name_ = glGenLists(1);
-}
-
-opengl_display_list::~opengl_display_list()
-{
-    if (ctx_)
-        ctx_->impl_->pending_display_list_deletions.push_back(name_);
-}
-
-void opengl_display_list::start_recording()
-{
-    glNewList(name_, GL_COMPILE_AND_EXECUTE);
-}
-void opengl_display_list::stop_recording()
-{
-    glEndList();
-}
-
-void opengl_display_list::playback(surface& surface) const
-{
-    glCallList(name_);
-}
-
 opengl_context::opengl_context()
 {
     impl_ = new impl_data;
@@ -698,8 +653,8 @@ opengl_context::opengl_context()
 }
 opengl_context::~opengl_context()
 {
-    // Orphan the textures so they won't try to refer back to this context when
-    // they're destroyed.
+    // Orphan the textures so they won't try to refer back to this context
+    // when they're destroyed.
     for (std::list<opengl_texture*>::iterator
         i = impl_->associated_textures.begin();
         i != impl_->associated_textures.end(); ++i)
@@ -714,7 +669,6 @@ void opengl_context::reset()
 {
     impl_->is_initialized = false;
     impl_->pending_texture_deletions.clear();
-    impl_->pending_display_list_deletions.clear();
     ++impl_->version;
 }
 
@@ -729,17 +683,6 @@ void opengl_context::do_pending_deletions()
             glDeleteTextures(1, &*i);
         }
         impl_->pending_texture_deletions.clear();
-    }
-
-    if (!impl_->pending_display_list_deletions.empty())
-    {
-        for (std::list<GLuint>::iterator
-            i = impl_->pending_display_list_deletions.begin();
-            i != impl_->pending_display_list_deletions.end(); ++i)
-        {
-            glDeleteLists(*i, 1);
-        }
-        impl_->pending_display_list_deletions.clear();
     }
 }
 
@@ -794,11 +737,6 @@ void opengl_surface::initialize_render_state()
     glScissor(0, 0, size_[0], size_[1]);
 
     glEnable(GL_LINE_STIPPLE);
-
-    glEnable(GL_DEPTH_TEST);
-    glDepthMask(GL_TRUE);
-    glDepthFunc(GL_LEQUAL);
-    glClear(GL_DEPTH_BUFFER_BIT);
 }
 
 void opengl_surface::cache_image(
@@ -806,14 +744,6 @@ void opengl_surface::cache_image(
     image_interface const& img)
 {
     this->cache_image(data, img, NO_FLAGS);
-}
-
-void opengl_surface::create_cached_content(
-    cached_rendering_content_ptr& data)
-{
-    opengl_display_list* dl = new opengl_display_list(ctx_);
-    data.reset(dl);
-    ctx_->impl_->associated_display_lists.push_back(dl);
 }
 
 void opengl_surface::cache_image(
@@ -847,10 +777,10 @@ void opengl_surface::cache_image(
 void opengl_surface::set_transformation_matrix(matrix<3,3,double> const& m)
 {
     double gl_matrix[16] = {
-        m(0,0), m(1,0),        0, m(2,0),
-        m(0,1), m(1,1),        0, m(2,1),
-             0,      0,        1,      0,
-        m(0,2), m(1,2), layer_z_, m(2,2) };
+        m(0,0), m(1,0), 0, m(2,0),
+        m(0,1), m(1,1), 0, m(2,1),
+             0,      0, 1,      0,
+        m(0,2), m(1,2), 0, m(2,2) };
     glLoadMatrixd(gl_matrix);
 }
 void opengl_surface::set_clip_region(box<2,double> const& region)
@@ -859,11 +789,6 @@ void opengl_surface::set_clip_region(box<2,double> const& region)
     glScissor(int(region.corner[0] + 0.5),
         int(size_[1] - (region.corner[1] + region.size[1]) + 0.5),
         int(region.size[0] + 0.5), int(region.size[1] + 0.5));
-}
-void opengl_surface::set_layer_z(double z)
-{
-    glTranslated(0, 0, z - layer_z_);
-    layer_z_ = z;
 }
 
 void opengl_surface::draw_filled_box(

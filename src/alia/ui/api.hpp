@@ -10,6 +10,9 @@
 // library from the application end, including a standard library of widgets
 // and containers.
 
+// The implementations of the functions declared in here are spread across the
+// source files in the ui/library subdirectory.
+
 namespace alia {
 
 struct ui_context;
@@ -56,6 +59,225 @@ resolve_storage(optional_storage<T> const& s, T* fallback)
 {
     return select_accessor(s.storage != 0, ref(*s.storage), inout(fallback));
 }
+
+// Currently, time is represented by a simple millisecond counter.
+// (It can wrap.)
+typedef unsigned ui_time_type;
+
+// codes for all the keyboard keys recognized by alia.
+enum key_code
+{
+    KEY_UNKNOWN         = 0,
+
+    // ASCII keys...
+    KEY_BACKSPACE       = 8,
+    KEY_TAB	        = 9,
+    KEY_CLEAR		= 12,
+    KEY_ENTER		= 13,
+    KEY_PAUSE		= 19,
+    KEY_ESCAPE		= 27,
+    KEY_SPACE		= 32,
+    KEY_EXCLAIM		= 33,
+    KEY_QUOTEDBL	= 34,
+    KEY_HASH		= 35,
+    KEY_DOLLAR		= 36,
+    KEY_AMPERSAND	= 38,
+    KEY_QUOTE		= 39,
+    KEY_LEFTPAREN	= 40,
+    KEY_RIGHTPAREN	= 41,
+    KEY_ASTERISK	= 42,
+    KEY_PLUS		= 43,
+    KEY_COMMA		= 44,
+    KEY_MINUS		= 45,
+    KEY_PERIOD		= 46,
+    KEY_SLASH		= 47,
+    KEY_COLON		= 58,
+    KEY_SEMICOLON	= 59,
+    KEY_LESS		= 60,
+    KEY_EQUALS		= 61,
+    KEY_GREATER		= 62,
+    KEY_QUESTION	= 63,
+    KEY_AT		= 64,
+    // no uppercase letters
+    KEY_LEFTBRACKET	= 91,
+    KEY_BACKSLASH	= 92,
+    KEY_RIGHTBRACKET	= 93,
+    KEY_CARET		= 94,
+    KEY_UNDERSCORE	= 95,
+    KEY_BACKQUOTE	= 96,
+    KEY_DELETE		= 127,
+
+    // numeric keypad 
+    KEY_NUMPAD_0,
+    KEY_NUMPAD_1,
+    KEY_NUMPAD_2,
+    KEY_NUMPAD_3,
+    KEY_NUMPAD_4,
+    KEY_NUMPAD_5,
+    KEY_NUMPAD_6,
+    KEY_NUMPAD_7,
+    KEY_NUMPAD_8,
+    KEY_NUMPAD_9,
+    KEY_NUMPAD_PERIOD,
+    KEY_NUMPAD_DIVIDE,
+    KEY_NUMPAD_MULTIPLY,
+    KEY_NUMPAD_SUBTRACT,
+    KEY_NUMPAD_ADD,
+    KEY_NUMPAD_ENTER,
+
+    // arrows + home/end pad
+    KEY_UP,
+    KEY_DOWN,
+    KEY_RIGHT,
+    KEY_LEFT,
+    KEY_INSERT,
+    KEY_HOME,
+    KEY_END,
+    KEY_PAGEUP,
+    KEY_PAGEDOWN,
+
+    // function keys
+    KEY_F1,
+    KEY_F2,
+    KEY_F3,
+    KEY_F4,
+    KEY_F5,
+    KEY_F6,
+    KEY_F7,
+    KEY_F8,
+    KEY_F9,
+    KEY_F10,
+    KEY_F11,
+    KEY_F12,
+    KEY_F13,
+    KEY_F14,
+    KEY_F15,
+    KEY_F16,
+    KEY_F17,
+    KEY_F18,
+    KEY_F19,
+    KEY_F20,
+    KEY_F21,
+    KEY_F22,
+    KEY_F23,
+    KEY_F24,
+
+    // key state modifier keys
+    KEY_NUMLOCK,
+    KEY_CAPSLOCK,
+    KEY_SCROLLOCK,
+    KEY_RSHIFT,
+    KEY_LSHIFT,
+    KEY_RCTRL,
+    KEY_LCTRL,
+    KEY_RALT,
+    KEY_LALT,
+    KEY_RMETA,
+    KEY_LMETA,
+
+    // miscellaneous function keys
+    KEY_HELP,
+    KEY_PRINT,
+    KEY_PRINT_SCREEN,
+    KEY_BREAK,
+    KEY_MENU,
+};
+
+// keyboard modifier keys
+struct kmod_flag_tag {};
+typedef flag_set<kmod_flag_tag> key_modifiers;
+ALIA_DEFINE_FLAG_CODE(kmod_flag_tag, 0x00, KMOD_NONE)
+ALIA_DEFINE_FLAG_CODE(kmod_flag_tag, 0x01, KMOD_SHIFT)
+ALIA_DEFINE_FLAG_CODE(kmod_flag_tag, 0x02, KMOD_CTRL)
+ALIA_DEFINE_FLAG_CODE(kmod_flag_tag, 0x04, KMOD_ALT)
+ALIA_DEFINE_FLAG_CODE(kmod_flag_tag, 0x08, KMOD_WIN)
+ALIA_DEFINE_FLAG_CODE(kmod_flag_tag, 0x10, KMOD_META)
+
+enum mouse_button
+{
+    LEFT_BUTTON,
+    MIDDLE_BUTTON,
+    RIGHT_BUTTON
+};
+
+// standard mouse cursors that are expected to be supplied by the backend
+enum mouse_cursor
+{
+    DEFAULT_CURSOR,
+    CROSS_CURSOR,
+    BUSY_CURSOR,
+    BLANK_CURSOR,
+    IBEAM_CURSOR,
+    NO_ENTRY_CURSOR,
+    HAND_CURSOR,
+    LEFT_RIGHT_ARROW_CURSOR,
+    UP_DOWN_ARROW_CURSOR,
+    FOUR_WAY_ARROW_CURSOR,
+};
+
+enum ui_event_category
+{
+    NO_CATEGORY,
+    REFRESH_CATEGORY,
+    REGION_CATEGORY,
+    INPUT_CATEGORY,
+    RENDER_CATEGORY,
+    OVERLAY_CATEGORY,
+};
+
+enum ui_event_type
+{
+    NO_EVENT,
+
+    REFRESH_EVENT,
+
+    // rendering
+    RENDER_EVENT,
+
+    // regions
+    MAKE_WIDGET_VISIBLE_EVENT,
+    MOUSE_HIT_TEST_EVENT,
+    WHEEL_HIT_TEST_EVENT,
+
+    // keyboard
+    TEXT_INPUT_EVENT,
+    BACKGROUND_TEXT_INPUT_EVENT,
+    KEY_PRESS_EVENT,
+    BACKGROUND_KEY_PRESS_EVENT,
+    KEY_RELEASE_EVENT,
+    BACKGROUND_KEY_RELEASE_EVENT,
+
+    // focus notifications
+    FOCUS_GAIN_EVENT,
+    FOCUS_LOSS_EVENT,
+
+    // focus queries
+    FOCUS_PREDECESSOR_EVENT,
+    FOCUS_SUCCESSOR_EVENT,
+    FOCUS_RECOVERY_EVENT,
+
+    // mouse
+    MOUSE_PRESS_EVENT,
+    DOUBLE_CLICK_EVENT,
+    MOUSE_RELEASE_EVENT,
+    MOUSE_MOTION_EVENT,
+    MOUSE_WHEEL_EVENT,
+    MOUSE_CURSOR_QUERY_EVENT,
+    MOUSE_GAIN_EVENT,
+    MOUSE_LOSS_EVENT,
+
+    // overlays
+    OVERLAY_MOUSE_HIT_TEST_EVENT,
+    OVERLAY_WHEEL_HIT_TEST_EVENT,
+    OVERLAY_RENDER_EVENT,
+
+    // uncategorized events
+    WRAPPED_EVENT,
+    SET_VALUE_EVENT,
+    TIMER_EVENT,
+    INITIAL_VISIBILITY_EVENT,
+    CUSTOM_EVENT,
+};
 
 // STYLING
 
@@ -142,6 +364,7 @@ struct culling_block
 // UI CACHING
 
 struct layout_node;
+struct ui_caching_node;
 
 struct cached_ui_block
 {
@@ -154,6 +377,7 @@ struct cached_ui_block
     bool is_relevant() const { return is_relevant_; }
  private:
     ui_context* ctx_;
+    ui_caching_node* cacher_;
     culling_block culling_;
     bool is_relevant_;
     layout_node** layout_next_ptr_;
@@ -175,7 +399,6 @@ struct cached_ui_block
 struct ui_system;
 struct surface;
 struct ui_event;
-struct ui_caching_node;
 
 struct ui_context
 {
@@ -186,10 +409,9 @@ struct ui_context
     alia::surface* surface;
     ui_event* event;
     event_routing_traversal routing;
-    style_state style;
     ui_caching_node* active_cacher;
+    style_state style;
     bool pass_aborted;
-    double layer_z;
 };
 
 static inline data_traversal& get_data_traversal(ui_context& ctx)
@@ -212,11 +434,9 @@ struct typed_ui_value : untyped_ui_value
     T value;
 };
 
-template<class T>
 struct control_result
 {
     bool changed;
-    T new_value;
     // allows use within if statements without other unintended conversions
     typedef bool control_result::* unspecified_bool_type;
     operator unspecified_bool_type() const
@@ -289,7 +509,7 @@ struct bulleted_item : noncopyable
     grid_row row_;
 };
 
-// TEXT
+// TEXT DISPLAY
 
 void do_text(ui_context& ctx, getter<string> const& text,
     layout const& layout_spec = default_layout);
@@ -409,7 +629,7 @@ do_icon_button(
 
 // check box
 
-struct check_box_result : control_result<bool> {};
+struct check_box_result : control_result {};
 
 check_box_result
 do_check_box(
@@ -428,7 +648,7 @@ do_check_box(
 
 // radio button
 
-struct radio_button_result : control_result<bool> {};
+struct radio_button_result : control_result {};
 
 radio_button_result
 do_radio_button(
@@ -508,9 +728,7 @@ do_radio_button(
 }
 
 // node expander
-
-struct node_expander_result : control_result<bool> {};
-
+struct node_expander_result : control_result {};
 node_expander_result do_node_expander(
     ui_context& ctx,
     accessor<bool> const& value,
@@ -520,8 +738,7 @@ node_expander_result do_node_expander(
 // slider
 // accepted flags:
 // HORIZONTAL, VERTICAL (mutually exclusive, default is HORIZONTAL)
-struct slider_result : control_result<double>
-{};
+struct slider_result : control_result {};
 slider_result
 do_slider(ui_context& ctx, accessor<double> const& value,
     double minimum, double maximum, double step = 0,
@@ -582,11 +799,13 @@ class clickable_panel : noncopyable
  public:
     clickable_panel() {}
     clickable_panel(
-        ui_context& ctx, layout const& layout_spec = default_layout,
+        ui_context& ctx, getter<string> const& style,
+        layout const& layout_spec = default_layout,
         ui_flag_set flags = NO_FLAGS, widget_id id = auto_id)
-    { begin(ctx, layout_spec, flags, id); }
+    { begin(ctx, style, layout_spec, flags, id); }
     void begin(
-        ui_context& ctx, layout const& layout_spec = default_layout,
+        ui_context& ctx, getter<string> const& style,
+        layout const& layout_spec = default_layout,
         ui_flag_set flags = NO_FLAGS, widget_id id = auto_id);
     void end() { panel_.end(); }
     layout_box outer_region() const { return panel_.outer_region(); }
@@ -692,27 +911,45 @@ struct tree_node : noncopyable
     node_expander_result expander_result_;
 };
 
-// POPUPS
+// OVERLAYS
+
+struct overlay
+{
+    overlay() : ctx_(0) {}
+    overlay(ui_context& ctx) { begin(ctx); }        
+    ~overlay() { end(); }
+    void begin(ui_context& ctx);
+    void end();
+ private:
+    ui_context* ctx_;
+    ui_event_category real_event_category_;
+    ui_event_type real_event_type_;
+};
+
+struct popup_positioning
+{
+    layout_vector lower_bound;
+    layout_vector upper_bound;
+    layout_vector absolute_lower;
+    layout_vector absolute_upper;
+};
 
 struct popup
 {
     popup() : ctx_(0) {}
-    popup(ui_context& ctx, widget_id id,
-        layout_vector const& lower_bound,
-        layout_vector const& upper_bound)
-    { begin(ctx, id, lower_bound, upper_bound); }
+    popup(ui_context& ctx, widget_id id, popup_positioning const& positioning)
+    { begin(ctx, id, positioning); }
     ~popup() { end(); }
     void begin(ui_context& ctx, widget_id id,
-        layout_vector const& lower_bound,
-        layout_vector const& upper_bound);
+        popup_positioning const& positioning);
     void end();
     bool user_closed();
  private:
     ui_context* ctx_;
-    double old_layer_z_;
     widget_id id_, background_id_;
     floating_layout layout_;
     scoped_transformation transform_;
+    overlay overlay_;
 };
 
 // DROP DOWNS
@@ -852,13 +1089,12 @@ enum text_control_event_type
     TEXT_CONTROL_EDIT_CANCELED,
 };
 
-template<class T>
-struct text_control_result : control_result<T>
+struct text_control_result : control_result
 {
     text_control_event_type event;
 };
 
-text_control_result<string>
+text_control_result
 do_text_control(
     ui_context& ctx,
     accessor<string> const& value,
@@ -878,7 +1114,7 @@ struct text_control_string_conversion
 };
 
 template<class T>
-text_control_result<T>
+text_control_result
 do_text_control(
     ui_context& ctx,
     accessor<T> const& accessor,
@@ -905,7 +1141,7 @@ do_text_control(
         }
     }
 
-    text_control_result<string> r = do_text_control(
+    text_control_result r = do_text_control(
         ctx, inout(&data->text), spec, flags, id, length_limit);
     alia_if(!data->message.empty())
     {
@@ -913,7 +1149,7 @@ do_text_control(
     }
     alia_end
 
-    text_control_result<T> result;
+    text_control_result result;
     switch (r.event)
     {
      case TEXT_CONTROL_FOCUS_LOST:
@@ -925,7 +1161,6 @@ do_text_control(
             data->message = "";
             result.event = r.event;
             result.changed = true;
-            result.new_value = new_value;
             accessor.set(new_value);
         }
         else

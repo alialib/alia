@@ -76,11 +76,4 @@ void caching_renderer::draw()
     }
 }
 
-void set_layer_z(ui_context& ctx, double layer_z)
-{
-    ctx.layer_z = layer_z;
-    if (ctx.surface)
-        ctx.surface->set_layer_z(layer_z);
-}
-
 }

@@ -35,10 +35,10 @@ void read_primary_style_properties(
     style_search_path const* path)
 {
     props->text_color =
-        get_color_property(path, "text_color",
+        get_color_property(path, "text-color",
             rgba8(0x00, 0x00, 0x00, 0xff));
     props->background_color =
-        get_color_property(path, "background_color",
+        get_color_property(path, "background-color",
             rgba8(0xff, 0xff, 0xff, 0xff));
     props->font = get_font_properties(ui, path);
 }
@@ -48,26 +48,29 @@ void read_layout_style_info(layout_style_info* style_info,
 {
     style_info->is_padded = get_boolean_property(path, "padded", false);
     layout_scalar padding_size =
-        as_layout_size(get_float_property(path, "padding_size", 0.2f) *
+        as_layout_size(get_float_property(path, "padding-size", 0.2f) *
             font.size);
     style_info->padding_size = make_vector(padding_size, padding_size);
 
     style_info->font_size = font.size;
 
-    SkPaint paint;
-    set_skia_font_info(paint, font);
+    // Skia supposedly supplies all the necessary font metrics, but they're not
+    // always valid.
+    //SkPaint paint;
+    //set_skia_font_info(paint, font);
+    //SkPaint::FontMetrics metrics;
+    //SkScalar line_spacing = paint.getFontMetrics(&metrics);
+    //style_info->character_size = make_vector(
+    //    metrics.fAvgCharWidth > 0 ? SkScalarToFloat(metrics.fAvgCharWidth) :
+    //        SkScalarToFloat(line_spacing) * 0.6f,
+    //    SkScalarToFloat(line_spacing));
+    //style_info->x_height =
+    //    metrics.fXHeight > 0 ? SkScalarToFloat(metrics.fXHeight) :
+    //        SkScalarToFloat(line_spacing) * 0.5f;
 
-    SkPaint::FontMetrics metrics;
-    SkScalar line_spacing = paint.getFontMetrics(&metrics);
-
-    style_info->character_size = make_vector(
-        metrics.fAvgCharWidth > 0 ? SkScalarToFloat(metrics.fAvgCharWidth) :
-            SkScalarToFloat(line_spacing) * 0.6f,
-        SkScalarToFloat(line_spacing));
-
-    style_info->x_height =
-        metrics.fXHeight > 0 ? SkScalarToFloat(metrics.fXHeight) :
-            SkScalarToFloat(line_spacing) * 0.5f;
+    // ... so do some approximations instead.
+    style_info->character_size = make_vector(font.size * 0.6f, font.size);
+    style_info->x_height = font.size * 0.5f;
 }
 
 static string widget_state_string(widget_state state)
@@ -276,16 +279,16 @@ bool get_boolean_property(style_search_path const* path,
 font get_font_properties(ui_system const& ui, style_search_path const* path)
 {
     return font(
-        get_string_property(path, "font_name", "arial"),
-        get_float_property(path, "font_size", 13) *
+        get_string_property(path, "font-name", "arial"),
+        get_float_property(path, "font-size", 13) *
             ui.style->text_magnification,
-        (get_boolean_property(path, "font_bold", false) ?
+        (get_boolean_property(path, "font-bold", false) ?
             BOLD : NO_FLAGS) |
-        (get_boolean_property(path, "font_italic", false) ?
+        (get_boolean_property(path, "font-italic", false) ?
             ITALIC : NO_FLAGS) |
-        (get_boolean_property(path, "font_underline", false) ?
+        (get_boolean_property(path, "font-underline", false) ?
             UNDERLINE : NO_FLAGS) |
-        (get_boolean_property(path, "font_strikethrough", false) ?
+        (get_boolean_property(path, "font-strikethrough", false) ?
             STRIKETHROUGH : NO_FLAGS));
 }
 
@@ -357,6 +360,170 @@ style_tree unflatten_style_tree(flattened_style_tree const& flattened)
         set_style(tree, i->first, i->second);
     }
     return tree;
+}
+
+// STYLE PARSING
+
+utf8_ptr skip_space(utf8_string const& text, int& line_count)
+{
+    utf8_ptr p = text.begin;
+    while (p < text.end)
+    {
+        utf8_ptr q = p;
+        SkUnichar c = SkUTF8_NextUnichar(&p);
+        if (!is_space(c))
+            return q;
+        if (is_line_terminator(c))
+        {
+            ++line_count;
+            p = skip_line_terminator(utf8_string(q, text.end));
+        }
+    }
+    return text.end;
+}
+
+property_map
+parse_style_properties(char const* label, utf8_string const& text,
+    utf8_ptr& p, int& line_number)
+{
+    property_map properties;
+    while (1)
+    {
+        p = skip_space(utf8_string(p, text.end), line_number);
+
+        // Parse the name.
+        utf8_ptr name_start = p, name_end;
+        bool name_ended = false;
+        while (1)
+        {
+            utf8_ptr q = p;
+            SkUnichar c = SkUTF8_NextUnichar(&p);
+            if (c == ':')
+            {
+                name_end = q;
+                break;
+            }
+            if (is_space(c))
+            {
+                throw parse_error(string(label) + ":" +
+                    to_string(line_number) +
+                    ": syntax error");
+            }
+        }
+        string name(name_start, name_end - name_start);
+
+        p = skip_space(utf8_string(p, text.end), line_number);
+
+        // Parse the value.
+        utf8_ptr value_start = p, value_end;
+        bool value_ended = false;
+        while (1)
+        {
+            utf8_ptr q = p;
+            SkUnichar c = SkUTF8_NextUnichar(&p);
+            if (c == '}')
+            {
+                // Don't consume the closing brace.
+                p = q;
+                value_end = q;
+                break;
+            }
+            if (c == ',')
+            {
+                value_end = q;
+                break;
+            }
+            if (is_space(c))
+            {
+                if (!value_ended)
+                {
+                    value_end = q;
+                    value_ended = true;
+                }
+                if (is_line_terminator(c))
+                {
+                    p = skip_line_terminator(utf8_string(q, text.end));
+                    ++line_number;
+                }
+            }
+            else
+            {
+                if (value_ended)
+                {
+                    throw parse_error(string(label) + ":" +
+                        to_string(line_number) +
+                        ": syntax error");
+                }
+            }
+        }
+        string value(value_start, value_end - value_start);
+
+        properties[name] = value;
+
+        // Check for a closing brace.
+        p = skip_space(utf8_string(p, text.end), line_number);
+        SkUnichar c = peek(utf8_string(p, text.end));
+        if (c == '}')
+        {
+            SkUTF8_NextUnichar(&p);
+            break;
+        }
+    }
+    return properties;
+}
+
+style_tree parse_style_description(char const* label, utf8_string const& text)
+{
+    style_tree tree;
+    int line_number = 1;
+    utf8_ptr p = text.begin;
+    while (1)
+    {
+        p = skip_space(utf8_string(p, text.end), line_number);
+        if (p == text.end)
+            break;
+
+        // Parse the substyle name.
+        utf8_ptr next_space = find_next_space(utf8_string(p, text.end));
+        string subpath(p, next_space - p);
+        p = next_space;
+        p = skip_space(utf8_string(p, text.end), line_number);
+
+        // Check for the opening brace of the property map.
+        SkUnichar c = SkUTF8_NextUnichar(&p);
+        if (c != '{')
+        {
+            throw parse_error(string(label) + ":" + to_string(line_number) +
+                ": syntax error");
+        }
+
+        // Parse the property map.
+        property_map properties =
+            parse_style_properties(label, text, p, line_number);
+
+        // Add the substyle to the tree.
+        set_style(tree, subpath, properties);
+    }
+    return tree;
+}
+
+style_tree parse_style_file(char const* path)
+{
+    FILE* f = fopen(path, "rb");
+    if (!f)
+        throw parse_error("unable to open file: " + string(path));
+    fseek(f, 0, SEEK_END);
+    int file_length = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    // Is it really necessary to terminate the string?
+    std::vector<char> text(file_length + 1);
+    size_t count = fread(&text[0], 1, file_length, f);
+    fclose(f);
+    if (count != file_length)
+        throw parse_error("unable to read file: " + string(path));
+    text[file_length] = '\0';
+    return parse_style_description(path,
+        utf8_string(&text[0], &text[0] + file_length));
 }
 
 }

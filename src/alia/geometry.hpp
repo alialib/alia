@@ -7,7 +7,7 @@
 
 // This is the geometry library for alia. It's focused on the types of geometry
 // that are needed by a 2D UI library: vectors, boxes, transformation matrices,
-// matrix stacks, etc.
+// etc.
 
 namespace alia {
 

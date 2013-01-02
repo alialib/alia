@@ -1,6 +1,13 @@
 #include <alia/ui/api.hpp>
 #include <alia/ui/utilities.hpp>
 
+// This file implements alia's text control.
+
+// NOTE/TODO: This assumes that using Skia's SkPaint::measureText establishes
+// the horizontal bounds of the text, which doesn't seem like a valid
+// assumption in general. However, I haven't seen a case of clipped text.
+// This should be investigated further.
+
 namespace alia {
 
 struct text_layout_data
@@ -38,6 +45,11 @@ calculate_text_layout(
             break_text(
                 paint, utf8_string(p, utf8.end), width, true, for_editing,
                 &line_width, &visible_end);
+        if (line_end == p)
+        {
+            // Nothing is fitting, so we're in an infinite loop. Just abort.
+            break;
+        }
         data.rows.push_back(utf8_string(p, visible_end));
         p = line_end;
     }
@@ -133,22 +145,30 @@ get_character_boundary_at_point(
     utf8_ptr boundary_before = row_text.begin + what_fits;
 
     // When text is wrapped, the end of the row's text is actually the
-    // beginning of the next line, so we have to avoid return that position.
-    if (!is_empty(row_text) && boundary_before == row_text.end)
+    // beginning of the next line, so we have to avoid returning that position.
+    if (!is_empty(row_text) && boundary_before == row_text.end &&
+        row_text.end != as_utf8_string(layout.text).end)
     {
         SkUTF8_PrevUnichar(&boundary_before);
         return boundary_before;
     }
 
+    if (boundary_before == row_text.end)
+        return row_text.end;
+
     utf8_ptr boundary_after = boundary_before;
     SkUTF8_NextUnichar(&boundary_after);
 
     // As above, avoid returning the end of the row's text.
-    if (boundary_after == row_text.end)
+    if (boundary_after == row_text.end &&
+        row_text.end != as_utf8_string(layout.text).end)
+    {
         return boundary_before;
+    }
 
     SkScalar width_of_character =
-        paint.measureText(boundary_before, boundary_after - boundary_before);
+        paint.measureText(boundary_before,
+            boundary_after - boundary_before);
 
     // Determine if the point is on the left or right side of the character
     // and return the appropriate boundary.
@@ -343,6 +363,12 @@ layout_requirements text_control_layout_node::get_vertical_requirements(
                     assigned_width - 1, true, true,
                     &line_width, &visible_end);
             ++line_count;
+            if (line_end == p)
+            {
+                // Nothing is fitting, so we're in an infinite loop.
+                // Just abort.
+                break;
+            }
             p = line_end;
         }
         while (p != text.end);
@@ -518,7 +544,7 @@ struct text_control
         panel_.begin(
             ctx, text("control"),
             add_default_alignment(
-                add_default_size(layout_spec, width(12, CHARS)),
+                add_default_size(layout_spec, width(8, EM)),
                 LEFT, BASELINE_Y));
 
         switch (ctx.event->category)
@@ -542,7 +568,7 @@ struct text_control
         }
     }
 
-    text_control_result<string> result;
+    text_control_result result;
 
  private:
     bool is_password() const { return (flags & PASSWORD) != 0; }
@@ -682,9 +708,9 @@ struct text_control
                     data.selected_image.value,
                     get_text_region().size,
                     get_text_layout(),
-                    get_color_property(ctx.style.path, "selected_text_color"),
+                    get_color_property(ctx.style.path, "selected-text-color"),
                     get_color_property(ctx.style.path,
-                        "selected_background_color"));
+                        "selected-background-color"));
                 mark_valid(data.selected_image);
             }
 
@@ -800,7 +826,6 @@ struct text_control
                 if (data.text_edited)
                 {
                     value.set(data.text);
-                    result.new_value = data.text;
                     result.event = TEXT_CONTROL_FOCUS_LOST;
                     result.changed = true;
                 }
@@ -825,6 +850,25 @@ struct text_control
         data.true_cursor_x = -1;
         ensure_cursor_visible();
         reset_cursor_blink();
+    }
+
+    void handle_delete_key()
+    {
+        if (data.editing)
+        {
+            if (has_selection())
+            {
+                delete_selection();
+            }
+            else if (data.cursor_position <
+                int(data.text.length()))
+            {
+                data.text =
+                    data.text.substr(0, data.cursor_position) +
+                    data.text.substr(data.cursor_position + 1);
+            }
+            on_edit();
+        }
     }
 
     void do_key_input()
@@ -879,7 +923,6 @@ struct text_control
                             if (data.text_edited)
                             {
                                 value.set(data.text);
-                                result.new_value = data.text;
                                 result.changed = true;
                             }
                             if ((flags & ALWAYS_EDITING) == 0)
@@ -918,21 +961,7 @@ struct text_control
                     break;
 
                  case KEY_DELETE:
-                    if (data.editing)
-                    {
-                        if (has_selection())
-                        {
-                            delete_selection();
-                        }
-                        else if (data.cursor_position <
-                            int(data.text.length()))
-                        {
-                            data.text =
-                                data.text.substr(0, data.cursor_position) +
-                                data.text.substr(data.cursor_position + 1);
-                        }
-                        on_edit();
-                    }
+                    handle_delete_key();
                     acknowledge_key();
                     break;
 
@@ -989,13 +1018,48 @@ struct text_control
                 }
                 break;
 
+            #ifdef TARGET_OS_MAC
+             case KMOD_META_CODE:
+                switch (info.code)
+                {
+                 case 'a':
+                    move_cursor(character_ptr_to_index(get_home_position()));
+                    acknowledge_key();
+                    break;
+                 case 'e':
+                    move_cursor(character_ptr_to_index(get_end_position()));
+                    acknowledge_key();
+                    break;
+                 case 'd':
+                    handle_delete_key();
+                    acknowledge_key();
+                    break;
+                }
+                break;
+            #endif
+
              case KMOD_CTRL_CODE:
                 switch (info.code)
                 {
+                #if defined(WIN32) || defined(TARGET_OS_MAC)
                  case 'a':
                     select_all();
                     acknowledge_key();
                     break;
+                #else
+                 case 'a':
+                    move_cursor(character_ptr_to_index(get_home_position()));
+                    acknowledge_key();
+                    break;
+                 case 'e':
+                    move_cursor(character_ptr_to_index(get_end_position()));
+                    acknowledge_key();
+                    break;
+                 case 'd':
+                    handle_delete_key();
+                    acknowledge_key();
+                    break;
+                #endif
 
                  case 'c':
                  case KEY_INSERT:
@@ -1429,8 +1493,8 @@ struct text_control
             vector<2,int>(p - get_text_region().corner));
     }
 
-    // Get the screen location of the character boundary immediately before the
-    // given character index.
+    // Get the screen location of the character boundary immediately before
+    // the given character index.
     vector<2,int> get_character_boundary_location(utf8_ptr character) const
     {
         return get_character_position(get_text_layout(), character) +
@@ -1449,7 +1513,7 @@ struct text_control
     panel panel_;
 };
 
-text_control_result<string>
+text_control_result
 do_text_control(
     ui_context& ctx,
     accessor<string> const& value,

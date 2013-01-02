@@ -7,6 +7,10 @@
 
 namespace alia {
 
+// Request that the UI context refresh again quickly enough that an animation
+// can be displayed smoothly.
+void request_refresh(ui_context& ctx);
+
 // This implements a one-shot timer that can be used to schedule time-dependent
 // UI events.
 //

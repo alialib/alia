@@ -3,6 +3,12 @@
 
 namespace alia {
 
+void request_refresh(ui_context& ctx)
+{
+    ctx.surface->request_refresh(false);
+    record_content_change(ctx);
+}
+
 void start_timer(ui_context& ctx, widget_id id, unsigned duration)
 {
     input_event* ie = dynamic_cast<input_event*>(ctx.event);
@@ -41,8 +47,11 @@ bool compute_fps(ui_context& ctx, int* fps)
     }
 
     if (ctx.event->type == REFRESH_EVENT)
+    {
         ++data->frame_count;
-    ctx.surface->request_refresh();
+        ctx.surface->request_refresh(true);
+        record_content_change(ctx);
+    }
 
     if (is_timer_done(ctx, id))
     {

@@ -12,13 +12,13 @@ static inline counter_type
 get_refresh_counter(ui_context& ctx)
 { return ctx.layout.refresh_counter; }
 
+void record_content_change(ui_context& ctx);
+
 // A simple macro that declares a reference to cached data and retrieves it.
 #define ALIA_GET_CACHED_DATA(T) \
     T* alia__data_ptr; \
     get_cached_data(ctx, &alia__data_ptr); \
     T& data = *alia__data_ptr;
-
-void record_content_change(ui_context& ctx);
 
 template<class Event>
 bool detect_event(ui_context& ctx)
@@ -59,11 +59,10 @@ static inline void init_optional_widget_id(
 }
 
 template<class T>
-void set_new_value(accessor<T> const& accessor, control_result<T>& result,
+void set_new_value(accessor<T> const& accessor, control_result& result,
     T const& new_value)
 {
     set(accessor, new_value);
-    result.new_value = new_value;
     result.changed = true;
 }
 
@@ -133,6 +132,13 @@ void issue_set_value_event(ui_context& ctx, widget_id id, T const& new_value)
     set_value_event e(id, value);
     issue_targeted_event(*ctx.system, e, make_routable_widget_id(ctx, id));
 }
+
+// OVERLAYS
+
+static inline bool is_overlay_active(ui_context& ctx, widget_id id)
+{ return ctx.system->overlay_id.id == id; }
+
+void set_active_overlay(ui_context& ctx, widget_id id);
 
 }
 

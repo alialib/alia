@@ -90,7 +90,7 @@ struct default_slider_renderer : slider_renderer
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);
 
-            rgba8 color = get_color_property(slider_style, "track_color");
+            rgba8 color = get_color_property(slider_style, "track-color");
 
             renderer.canvas().drawColor(
                 SkColorSetARGB(color.a, color.r, color.g, color.b));
@@ -124,7 +124,7 @@ struct default_slider_renderer : slider_renderer
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);
 
-            rgba8 color = get_color_property(slider_style, "thumb_color");
+            rgba8 color = get_color_property(slider_style, "thumb-color");
 
             renderer.canvas().drawColor(
                 SkColorSetARGB(color.a, color.r, color.g, color.b));

@@ -36,219 +36,6 @@ static routable_widget_id const null_widget_id(0, routing_region_ptr());
 static inline bool is_valid(routable_widget_id const& id)
 { return id.id != 0; }
 
-// Currently, time is represented by a simple millisecond counter.
-// (It can wrap.)
-typedef unsigned ui_time_type;
-
-// codes for all the keyboard keys recognized by alia.
-enum key_code
-{
-    KEY_UNKNOWN         = 0,
-
-    // ASCII keys...
-    KEY_BACKSPACE       = 8,
-    KEY_TAB	        = 9,
-    KEY_CLEAR		= 12,
-    KEY_ENTER		= 13,
-    KEY_PAUSE		= 19,
-    KEY_ESCAPE		= 27,
-    KEY_SPACE		= 32,
-    KEY_EXCLAIM		= 33,
-    KEY_QUOTEDBL	= 34,
-    KEY_HASH		= 35,
-    KEY_DOLLAR		= 36,
-    KEY_AMPERSAND	= 38,
-    KEY_QUOTE		= 39,
-    KEY_LEFTPAREN	= 40,
-    KEY_RIGHTPAREN	= 41,
-    KEY_ASTERISK	= 42,
-    KEY_PLUS		= 43,
-    KEY_COMMA		= 44,
-    KEY_MINUS		= 45,
-    KEY_PERIOD		= 46,
-    KEY_SLASH		= 47,
-    KEY_COLON		= 58,
-    KEY_SEMICOLON	= 59,
-    KEY_LESS		= 60,
-    KEY_EQUALS		= 61,
-    KEY_GREATER		= 62,
-    KEY_QUESTION	= 63,
-    KEY_AT		= 64,
-    // no uppercase letters
-    KEY_LEFTBRACKET	= 91,
-    KEY_BACKSLASH	= 92,
-    KEY_RIGHTBRACKET	= 93,
-    KEY_CARET		= 94,
-    KEY_UNDERSCORE	= 95,
-    KEY_BACKQUOTE	= 96,
-    KEY_DELETE		= 127,
-
-    // numeric keypad 
-    KEY_NUMPAD_0,
-    KEY_NUMPAD_1,
-    KEY_NUMPAD_2,
-    KEY_NUMPAD_3,
-    KEY_NUMPAD_4,
-    KEY_NUMPAD_5,
-    KEY_NUMPAD_6,
-    KEY_NUMPAD_7,
-    KEY_NUMPAD_8,
-    KEY_NUMPAD_9,
-    KEY_NUMPAD_PERIOD,
-    KEY_NUMPAD_DIVIDE,
-    KEY_NUMPAD_MULTIPLY,
-    KEY_NUMPAD_SUBTRACT,
-    KEY_NUMPAD_ADD,
-    KEY_NUMPAD_ENTER,
-
-    // arrows + home/end pad
-    KEY_UP,
-    KEY_DOWN,
-    KEY_RIGHT,
-    KEY_LEFT,
-    KEY_INSERT,
-    KEY_HOME,
-    KEY_END,
-    KEY_PAGEUP,
-    KEY_PAGEDOWN,
-
-    // function keys
-    KEY_F1,
-    KEY_F2,
-    KEY_F3,
-    KEY_F4,
-    KEY_F5,
-    KEY_F6,
-    KEY_F7,
-    KEY_F8,
-    KEY_F9,
-    KEY_F10,
-    KEY_F11,
-    KEY_F12,
-    KEY_F13,
-    KEY_F14,
-    KEY_F15,
-    KEY_F16,
-    KEY_F17,
-    KEY_F18,
-    KEY_F19,
-    KEY_F20,
-    KEY_F21,
-    KEY_F22,
-    KEY_F23,
-    KEY_F24,
-
-    // key state modifier keys
-    KEY_NUMLOCK,
-    KEY_CAPSLOCK,
-    KEY_SCROLLOCK,
-    KEY_RSHIFT,
-    KEY_LSHIFT,
-    KEY_RCTRL,
-    KEY_LCTRL,
-    KEY_RALT,
-    KEY_LALT,
-    KEY_RMETA,
-    KEY_LMETA,
-
-    // miscellaneous function keys
-    KEY_HELP,
-    KEY_PRINT,
-    KEY_PRINT_SCREEN,
-    KEY_BREAK,
-    KEY_MENU,
-};
-
-// keyboard modifier keys
-struct kmod_flag_tag {};
-typedef flag_set<kmod_flag_tag> key_modifiers;
-ALIA_DEFINE_FLAG_CODE(kmod_flag_tag, 0x00, KMOD_NONE)
-ALIA_DEFINE_FLAG_CODE(kmod_flag_tag, 0x01, KMOD_SHIFT)
-ALIA_DEFINE_FLAG_CODE(kmod_flag_tag, 0x02, KMOD_CTRL)
-ALIA_DEFINE_FLAG_CODE(kmod_flag_tag, 0x04, KMOD_ALT)
-ALIA_DEFINE_FLAG_CODE(kmod_flag_tag, 0x08, KMOD_WIN)
-ALIA_DEFINE_FLAG_CODE(kmod_flag_tag, 0x10, KMOD_META)
-
-enum mouse_button
-{
-    LEFT_BUTTON,
-    MIDDLE_BUTTON,
-    RIGHT_BUTTON
-};
-
-// standard mouse cursors that are expected to be supplied by the backend
-enum mouse_cursor
-{
-    DEFAULT_CURSOR,
-    CROSS_CURSOR,
-    BUSY_CURSOR,
-    BLANK_CURSOR,
-    IBEAM_CURSOR,
-    NO_ENTRY_CURSOR,
-    HAND_CURSOR,
-    LEFT_RIGHT_ARROW_CURSOR,
-    UP_DOWN_ARROW_CURSOR,
-    FOUR_WAY_ARROW_CURSOR,
-};
-
-enum ui_event_category
-{
-    NO_CATEGORY,
-    REFRESH_CATEGORY,
-    REGION_CATEGORY,
-    INPUT_CATEGORY,
-    RENDER_CATEGORY,
-};
-
-enum ui_event_type
-{
-    NO_EVENT,
-
-    REFRESH_EVENT,
-
-    // rendering
-    RENDER_EVENT,
-
-    // regions
-    MAKE_WIDGET_VISIBLE_EVENT,
-    MOUSE_HIT_TEST_EVENT,
-    WHEEL_HIT_TEST_EVENT,
-
-    // keyboard
-    TEXT_INPUT_EVENT,
-    BACKGROUND_TEXT_INPUT_EVENT,
-    KEY_PRESS_EVENT,
-    BACKGROUND_KEY_PRESS_EVENT,
-    KEY_RELEASE_EVENT,
-    BACKGROUND_KEY_RELEASE_EVENT,
-
-    // focus notifications
-    FOCUS_GAIN_EVENT,
-    FOCUS_LOSS_EVENT,
-
-    // focus queries
-    FOCUS_PREDECESSOR_EVENT,
-    FOCUS_SUCCESSOR_EVENT,
-    FOCUS_RECOVERY_EVENT,
-
-    // mouse
-    MOUSE_PRESS_EVENT,
-    DOUBLE_CLICK_EVENT,
-    MOUSE_RELEASE_EVENT,
-    MOUSE_MOTION_EVENT,
-    MOUSE_WHEEL_EVENT,
-    MOUSE_CURSOR_QUERY_EVENT,
-    MOUSE_GAIN_EVENT,
-    MOUSE_LOSS_EVENT,
-
-    // uncategorized events
-    WRAPPED_EVENT,
-    SET_VALUE_EVENT,
-    TIMER_EVENT,
-    INITIAL_VISIBILITY_EVENT,
-    CUSTOM_EVENT,
-};
-
 // base class for all UI events
 struct ui_event
 {
@@ -341,6 +128,23 @@ struct mouse_motion_event : input_event
       , mouse_was_in_window(mouse_was_in_window)
     {}
 };
+struct mouse_notification_event : ui_event
+{
+    mouse_notification_event(ui_event_type type)
+      : ui_event(INPUT_CATEGORY, type)
+    {}
+};
+struct mouse_hit_test_event : ui_event
+{
+    routable_widget_id id;
+    mouse_cursor cursor;
+
+    mouse_hit_test_event()
+      : ui_event(REGION_CATEGORY, MOUSE_HIT_TEST_EVENT),
+        id(null_widget_id), cursor(DEFAULT_CURSOR)
+    {}
+};
+
 struct mouse_wheel_event : input_event
 {
     widget_id target;
@@ -351,33 +155,13 @@ struct mouse_wheel_event : input_event
       , target(target)
     {}
 };
-struct mouse_notification_event : ui_event
-{
-    mouse_notification_event(ui_event_type type)
-      : ui_event(INPUT_CATEGORY, type)
-    {}
-};
-
 struct wheel_hit_test_event : ui_event
 {
     routable_widget_id id;
-    double hit_z;
 
     wheel_hit_test_event()
       : ui_event(REGION_CATEGORY, WHEEL_HIT_TEST_EVENT),
-        id(null_widget_id), hit_z(0)
-    {}
-};
-
-struct mouse_hit_test_event : ui_event
-{
-    routable_widget_id id;
-    double hit_z;
-    mouse_cursor cursor;
-
-    mouse_hit_test_event()
-      : ui_event(REGION_CATEGORY, MOUSE_HIT_TEST_EVENT),
-        id(null_widget_id), hit_z(0), cursor(DEFAULT_CURSOR)
+        id(null_widget_id)
     {}
 };
 
@@ -608,34 +392,6 @@ void draw_full_image(surface& surface, cached_image_ptr const& image,
 static inline bool is_valid(cached_image_ptr const& ptr)
 { return ptr && ptr->is_valid(); }
 
-// cached_rendering_content is used to record rendering actions to a surface
-// and play them back later.
-// cached_rendering_content is analagous to cached_image in that it provides
-// ownership of the recorded content.
-struct cached_rendering_content : noncopyable
-{
-    virtual ~cached_rendering_content() {}
-
-    // Start recording content that's sent to the associated surface.
-    virtual void start_recording() = 0;
-    // Stop recording.
-    virtual void stop_recording() = 0;
-
-    // Playback the content.
-    virtual void playback(surface& surface) const = 0;
-
-    // cached_rendering_content is allowed to go invalid.
-    // If that happens, this returns false, and the content needs to be
-    // recached.
-    virtual bool is_valid() const = 0;
-};
-typedef alia__shared_ptr<cached_rendering_content>
-    cached_rendering_content_ptr;
-
-// Determine if a cached_rendering_content_ptr contains valid content.
-static inline bool is_valid(cached_rendering_content_ptr const& ptr)
-{ return ptr && ptr->is_valid(); }
-
 // A surface represents the device onto which the UI is rendered.
 //
 // The API is designed to be fairly minimal so that it's easy to implement
@@ -667,18 +423,14 @@ struct surface : geometry_context_subscriber
     virtual void draw_filled_box(rgba8 const& color,
         box<2,double> const& box) = 0;
 
-    // Initialize a cached_rendering_content_ptr with empty content so that
-    // it can be used to record.
-    virtual void create_cached_content(
-        cached_rendering_content_ptr& data) = 0;
-
-    // Set the layer in which drawing should occur.
-    virtual void set_layer_z(double z) = 0;
-
-    // Request the surface to refresh again as soon as possible.
-    // This is called when a widget is animating and wants the surface to
-    // update continuously.
-    virtual void request_refresh() = 0;
+    // Request the surface to refresh again very soon.
+    // This should generally be called via the request_refresh(ctx) utility
+    // function.
+    // No specific time is given for when the refresh should occur.
+    // If the greedy flag is set, then the refresh occurs as soon as possible.
+    // Otherwise, it should occur soon enough to make an animation appear
+    // smooth.
+    virtual void request_refresh(bool greedy) = 0;
 
     // Request a timer event for the specified ID after the UI system's tick
     // count reaches the specified trigger time.
@@ -716,11 +468,26 @@ struct ui_system
 
     ui_time_type millisecond_tick_count;
 
+    routable_widget_id overlay_id;
+
     // If this is valid, then there has been a request to make this widget
     // visible. It will be honored after the next layout calculation.
     routable_widget_id widget_to_make_visible;
 
+    vector<2,unsigned> surface_size;
+
     ui_system() : millisecond_tick_count(0) {}
+};
+
+struct ui_caching_node
+{
+    ui_caching_node* parent;
+
+    // cached layout info
+    bool layout_valid;
+    owned_id layout_id;
+    layout_node* layout_subtree_head;
+    layout_node** layout_subtree_tail;
 };
 
 }

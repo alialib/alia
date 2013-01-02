@@ -428,6 +428,10 @@ static inline value_id_by_reference<local_id>
 get_id(local_identity const& identity)
 { return make_id_by_reference(identity.id, ID_CONTEXT_APP_INSTANCE); }
 
+// no_id can be used when you have nothing to identify.
+struct no_id_type {};
+static value_id<no_id_type*> const no_id(0, ID_CONTEXT_APP_INSTANCE);
+
 }
 
 #endif

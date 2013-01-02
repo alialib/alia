@@ -50,9 +50,9 @@ struct default_drop_down_button_renderer : drop_down_button_renderer
                 find_substyle(ctx.style.path, "control", state);
 
             rgba8 bg_color =
-                get_color_property(control_style, "background_color");
+                get_color_property(control_style, "background-color");
             rgba8 fg_color =
-                get_color_property(control_style, "foreground_color");
+                get_color_property(control_style, "foreground-color");
 
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);
@@ -157,6 +157,8 @@ do_drop_down_button(
 struct ddl_data
 {
     bool popup_open;
+
+    popup_positioning positioning;
 
     // When the list is open, it may maintain a separate internal selection.
     // The internal selection can be copied into the actual control state
@@ -271,10 +273,30 @@ static bool process_ddl_movement_keys(
     return false;
 }
 
-static void open_ddl(ui_context& ctx, ddl_data& data, widget_id id)
+static void open_ddl(ui_context& ctx, ddl_data& data, widget_id id,
+    layout_box const& bounding_region)
 {
     data.internal_selection = get_ddl_selected_index(ctx, id);
+    layout_vector lower = bounding_region.corner;
+    layout_vector upper = get_high_corner(bounding_region);
+    data.positioning.lower_bound = make_vector(lower[0], upper[1]);
+    data.positioning.upper_bound = make_vector(upper[0], lower[1]);
+    data.positioning.absolute_lower = layout_vector(
+        transform(get_transformation(ctx),
+            vector<2,double>(data.positioning.lower_bound) +
+            make_vector<double>(0.5, 0.5)));
+    data.positioning.absolute_upper = layout_vector(
+        transform(get_transformation(ctx),
+            vector<2,double>(data.positioning.upper_bound) +
+            make_vector<double>(0.5, 0.5)));
     data.popup_open = true;
+    set_active_overlay(ctx, id);
+}
+
+static void close_ddl(ui_context& ctx, ddl_data& data, widget_id id)
+{
+    data.popup_open = false;
+    ctx.system->overlay_id = null_widget_id;
 }
 
 untyped_ui_value const*
@@ -349,7 +371,7 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
                  case KEY_NUMPAD_ENTER:
                     if (!data.popup_open)
                     {
-                        open_ddl(ctx, *data_, id_);
+                        open_ddl(ctx, data, id_, container_.inner_region());
                         make_selection_visible_ = true;
                         acknowledge_input_event(ctx);
                         break;
@@ -362,7 +384,7 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
                             select_ddl_item_at_index(ctx, id_,
                                 get(data.internal_selection));
                         }
-                        data.popup_open = false;
+                        close_ddl(ctx, data, id_);
                         acknowledge_input_event(ctx);
                     }
                     break;
@@ -370,7 +392,7 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
                     if (data.popup_open)
                     {
                         acknowledge_input_event(ctx);
-                        data.popup_open = false;
+                        close_ddl(ctx, data, id_);
                         acknowledge_input_event(ctx);
                     }
                     break;
@@ -389,7 +411,7 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
             if (e.target == id_)
             {
                 result = e.value.get();
-                data.popup_open = false;
+                close_ddl(ctx, data, id_);
             }
             break;
           }
@@ -435,19 +457,16 @@ bool untyped_drop_down_list::do_list()
 
     if (do_drop_down_button(ctx, CENTER | UNPADDED, id_, data.button))
     {
-        open_ddl(ctx, *data_, id_);
+        open_ddl(ctx, data, id_, container_.inner_region());
         make_selection_visible_ = true;
+        do_list_ = true;
     }
 
     alia_if (do_list_)
     {
-        layout_vector lower = container_.inner_region().corner;
-        layout_vector upper = lower + container_.inner_region().size;
-        popup_.begin(ctx, id_,
-            make_vector(lower[0], upper[1]),
-            make_vector(upper[0], lower[1]));
+        popup_.begin(ctx, id_, data.positioning);
         if (popup_.user_closed())
-            data.popup_open = false;
+            close_ddl(ctx, data, id_);
 
         list_border_.begin(ctx, GROW | PADDED);
         list_panel_.begin(ctx, text("control"), 2, GROW | UNPADDED);

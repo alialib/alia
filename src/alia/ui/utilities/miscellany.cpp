@@ -53,4 +53,17 @@ bool do_button_input(ui_context& ctx, widget_id id, button_input_state& state)
         detect_keyboard_click(ctx, state.key, id, KEY_SPACE);
 }
 
+void set_active_overlay(ui_context& ctx, widget_id id)
+{ ctx.system->overlay_id = make_routable_widget_id(ctx, id); }
+
+void record_content_change(ui_context& ctx)
+{
+    ui_caching_node* cacher = ctx.active_cacher;
+    while (cacher)
+    {
+        ++cacher->layout_valid = false;
+        cacher = cacher->parent;
+    }
+}
+
 }

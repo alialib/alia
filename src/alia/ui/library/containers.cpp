@@ -186,23 +186,17 @@ static void draw_panel_focus_border(
 }
 
 void clickable_panel::begin(
-    ui_context& ctx, layout const& layout_spec,
+    ui_context& ctx, getter<string> const& style,
+    layout const& layout_spec,
     ui_flag_set flags, widget_id id)
 {
     ALIA_GET_CACHED_DATA(clickable_panel_data)
-
     get_widget_id_if_needed(ctx, id);
-
     widget_state state = get_button_state(ctx, id, data.input);
-    panel_.begin(ctx, text("clickable_panel"), layout_spec, flags, id, state);
-    if ((flags & DISABLED) == 0)
-    {
-        clicked_ = do_button_input(ctx, id, data.input);
-        if (is_render_pass(ctx) && (state & WIDGET_FOCUSED))
-            draw_panel_focus_border(ctx, panel_, flags, data.rendering);
-    }
-    else
-        clicked_ = false;
+    panel_.begin(ctx, style, layout_spec, flags, id, state);
+    clicked_ = do_button_input(ctx, id, data.input);
+    if (is_render_pass(ctx) && (state & WIDGET_FOCUSED))
+        draw_panel_focus_border(ctx, panel_, flags, data.rendering);
 }
 
 void scrollable_panel::begin(
@@ -312,7 +306,7 @@ bool do_draggable_separator(ui_context& ctx, accessor<int> const& width,
       {
         refresh_keyed_data(data.width, *ctx.style.id);
         if (!data.width.is_valid)
-            set(data.width, get_float_property(ctx, "separator_width", 2));
+            set(data.width, get_float_property(ctx, "separator-width", 2));
         data.layout_node.refresh_layout(
             get_layout_traversal(ctx), layout_spec,
             leaf_layout_requirements(
@@ -336,7 +330,7 @@ bool do_draggable_separator(ui_context& ctx, accessor<int> const& width,
             paint.setFlags(SkPaint::kAntiAlias_Flag);
             paint.setStrokeWidth(2);
             paint.setStrokeCap(SkPaint::kRound_Cap);
-            set_color(paint, get_color_property(ctx, "separator_color"));
+            set_color(paint, get_color_property(ctx, "separator-color"));
             renderer.canvas().drawLine(
                 SkIntToScalar(1), SkIntToScalar(1),
                 layout_scalar_as_skia_scalar(region.size[0] - 1),
@@ -432,28 +426,71 @@ void resizable_content::end()
     }
 }
 
+// OVERLAYS
+
+void overlay::begin(ui_context& ctx)
+{
+    ctx_ = &ctx;
+
+    real_event_category_ = ctx.event->category;
+    real_event_type_ = ctx.event->type;
+
+    // If this is an overlay event, activate it by translating it to the
+    // underlying event type.
+    // Or if this is one of corresponding normal events (like rendering),
+    // disable it inside the overlay.
+    switch(ctx.event->type)
+    {
+     case OVERLAY_RENDER_EVENT:
+        ctx.event->category = RENDER_CATEGORY;
+        ctx.event->type = RENDER_EVENT;
+        break;
+
+     case OVERLAY_MOUSE_HIT_TEST_EVENT:
+        ctx.event->category = REGION_CATEGORY;
+        ctx.event->type = MOUSE_HIT_TEST_EVENT;
+        break;
+
+     case OVERLAY_WHEEL_HIT_TEST_EVENT:
+        ctx.event->category = REGION_CATEGORY;
+        ctx.event->type = WHEEL_HIT_TEST_EVENT;
+        break;
+
+     case RENDER_EVENT:
+     case MOUSE_HIT_TEST_EVENT:
+     case WHEEL_HIT_TEST_EVENT:
+        ctx.event->category = NO_CATEGORY;
+        ctx.event->type = NO_EVENT;
+        break;
+    }
+}
+
+void overlay::end()
+{
+    if (ctx_)
+    {
+        ui_context& ctx = *ctx_;
+
+        ctx.event->category = real_event_category_;
+        ctx.event->type = real_event_type_;
+
+        ctx_ = 0;
+    }
+}
+
 void popup::begin(ui_context& ctx, widget_id id,
-    layout_vector const& lower_bound, layout_vector const& upper_bound)
+    popup_positioning const& positioning)
 {
     ctx_ = &ctx;
     id_ = id;
 
-    // Update the context's layer Z so that the popup is above other content.
-    set_layer_z(ctx, ctx.layer_z + 1);
-
-    vector<2,int> absolute_lower = vector<2,int>(
-        transform(get_transformation(ctx),
-            vector<2,double>(lower_bound) + make_vector<double>(0.5, 0.5)));
-    vector<2,int> absolute_upper = vector<2,int>(
-        transform(get_transformation(ctx),
-            vector<2,double>(upper_bound) + make_vector<double>(0.5, 0.5)));
-
-    layout_vector surface_size = layout_vector(ctx.surface->size());
+    layout_vector surface_size = layout_vector(ctx.system->surface_size);
     layout_vector maximum_size;
     for (unsigned i = 0; i != 2; ++i)
     {
-        maximum_size[i] =
-            (std::max)(absolute_upper[i], surface_size[i] - absolute_lower[i]);
+        maximum_size[i] = (std::max)(
+            positioning.absolute_upper[i],
+            surface_size[i] - positioning.absolute_lower[i]);
     }
 
     layout_.begin(ctx, maximum_size);
@@ -463,19 +500,23 @@ void popup::begin(ui_context& ctx, widget_id id,
         vector<2,int> position;
         for (unsigned i = 0; i != 2; ++i)
         {
-            if (absolute_lower[i] + layout_.size()[i] <= surface_size[i] ||
-                surface_size[i] - absolute_lower[i] > absolute_upper[i])
+            if (positioning.absolute_lower[i] + layout_.size()[i] <=
+                    surface_size[i] ||
+                surface_size[i] - positioning.absolute_lower[i] >
+                    positioning.absolute_upper[i])
             {
-                position[i] = lower_bound[i];
+                position[i] = positioning.lower_bound[i];
             }
             else
             {
-                position[i] = upper_bound[i] - layout_.size()[i];
+                position[i] = positioning.upper_bound[i] - layout_.size()[i];
             }
         }
         transform_.begin(*get_layout_traversal(ctx).geometry);
         transform_.set(translation_matrix(vector<2,double>(position)));
     }
+
+    overlay_.begin(ctx);
 
     // Intercept mouse clicks and wheel movement to other parts of the surface.
     background_id_ = get_widget_id(ctx);
@@ -485,6 +526,7 @@ bool popup::user_closed()
 {
     ui_context& ctx = *ctx_;
     return
+        !is_overlay_active(ctx, id_) ||
         detect_mouse_press(ctx, background_id_, LEFT_BUTTON) || 
         detect_mouse_press(ctx, background_id_, MIDDLE_BUTTON) || 
         detect_mouse_press(ctx, background_id_, RIGHT_BUTTON) ||
@@ -496,11 +538,9 @@ void popup::end()
     {
         ui_context& ctx = *ctx_;
 
+        overlay_.end();
         transform_.end();
 	layout_.end();
-
-        // Restore the context's layer Z.
-	set_layer_z(ctx, ctx.layer_z - 1);
 
 	ctx_ = 0;
     }

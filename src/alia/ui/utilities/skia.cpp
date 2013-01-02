@@ -135,7 +135,7 @@ void setup_focus_drawing(ui_context& ctx, SkPaint& paint)
         layout_scalar_as_skia_scalar(get_padding_size(ctx)[0]) *
         SkDoubleToScalar(0.7));
     paint.setStyle(SkPaint::kStroke_Style);
-    set_color(paint, get_color_property(ctx, "focus_color"));
+    set_color(paint, get_color_property(ctx, "focus-color"));
 }
 
 void draw_round_focus_rect(ui_context& ctx, SkCanvas& canvas,

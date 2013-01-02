@@ -143,8 +143,6 @@ struct boolean_widget_renderer : dispatch_interface
         getter<bool> const& value, widget_state state) const = 0;
 };
 
-void set_layer_z(ui_context& ctx, double layer_z);
-
 }
 
 #endif

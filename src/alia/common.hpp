@@ -7,6 +7,9 @@
 #include <cassert>
 #include <ostream>
 
+// This file defines some generic functionality that's commonly used throughout
+// alia.
+
 namespace alia {
 
 typedef long long counter_type;

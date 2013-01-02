@@ -35,18 +35,8 @@ bool detect_mouse_press(ui_context& ctx, mouse_button button)
         get_event<mouse_button_event>(ctx).button == button;
 }
 
-void process_mouse_notifications(ui_context& ctx, widget_id id)
-{
-    if (ctx.event->type == MOUSE_GAIN_EVENT ||
-        ctx.event->type == MOUSE_LOSS_EVENT)
-    {
-        record_content_change(ctx);
-    }
-}
-
 bool detect_mouse_press(ui_context& ctx, widget_id id, mouse_button button)
 {
-    process_mouse_notifications(ctx, id);
     if (detect_mouse_press(ctx, button) && is_region_hot(ctx, id))
     {
         ctx.system->input.active_id = make_routable_widget_id(ctx, id);
@@ -64,7 +54,6 @@ bool detect_mouse_release(ui_context& ctx, mouse_button button)
 bool detect_mouse_release(ui_context& ctx, widget_id id,
     mouse_button button)
 {
-    process_mouse_notifications(ctx, id);
     return detect_mouse_release(ctx, button) && is_region_active(ctx, id);
 }
 
@@ -75,7 +64,6 @@ bool detect_mouse_motion(ui_context& ctx, widget_id id)
 
 bool detect_double_click(ui_context& ctx, widget_id id, mouse_button button)
 {
-    process_mouse_notifications(ctx, id);
     return detect_event(ctx, DOUBLE_CLICK_EVENT) &&
         get_event<mouse_button_event>(ctx).button == button &&
         is_region_hot(ctx, id);

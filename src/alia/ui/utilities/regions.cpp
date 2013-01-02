@@ -9,22 +9,14 @@ void handle_mouse_hit(ui_context& ctx, widget_id id, hit_test_flag_set flags,
     if (ctx.event->type == MOUSE_HIT_TEST_EVENT && (flags & HIT_TEST_MOUSE))
     {
         mouse_hit_test_event& e = get_event<mouse_hit_test_event>(ctx);
-        if (ctx.layer_z >= e.hit_z)
-        {
-	    e.id = make_routable_widget_id(ctx, id);
-	    e.cursor = cursor;
-	    e.hit_z = ctx.layer_z;
-        }
+	e.id = make_routable_widget_id(ctx, id);
+	e.cursor = cursor;
     }
     else if (ctx.event->type == WHEEL_HIT_TEST_EVENT &&
         (flags & HIT_TEST_WHEEL))
     {
         wheel_hit_test_event& e = get_event<wheel_hit_test_event>(ctx);
-        if (ctx.layer_z >= e.hit_z)
-        {
-	    e.id = make_routable_widget_id(ctx, id);
-	    e.hit_z = ctx.layer_z;
-        }
+	e.id = make_routable_widget_id(ctx, id);
     }
 }
 
@@ -70,6 +62,12 @@ void override_mouse_cursor(ui_context& ctx, widget_id id, mouse_cursor cursor)
     {
         mouse_hit_test_event& e = get_event<mouse_hit_test_event>(ctx);
         if (e.id.id == id)
+            e.cursor = cursor;
+    }
+    else if (ctx.event->type == MOUSE_CURSOR_QUERY_EVENT)
+    {
+        mouse_cursor_query& e = get_event<mouse_cursor_query>(ctx);
+        if (e.id == id)
             e.cursor = cursor;
     }
 }

@@ -511,6 +511,7 @@ struct floating_layout
     layout_node** old_next_ptr_;
     floating_layout_data* data_;
     scoped_clip_region_reset clipping_reset_;
+    layout_vector max_size_;
 };
 
 }

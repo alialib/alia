@@ -8,7 +8,7 @@
 #include <gl\gl.h>
 #include "wglext.h"
 
-#include <alia/lua_styling.hpp>
+#include <alia/ui/utilities/styling.hpp>
 
 namespace alia {
 
@@ -41,20 +41,15 @@ struct native_window::impl_data
     // they're requested and thus throwing the event handler into a loop.
     counter_type timer_event_counter;
 
-    bool update_needed;
+    optional<ui_time_type> next_update;
+
+    bool mouse_captured;
 
     impl_data()
-      : dc(0), rc(0), hwnd(0), hinstance(0),
-        is_full_screen(false), timer_event_counter(0), update_needed(false)
+      : dc(0), rc(0), hwnd(0), hinstance(0), is_full_screen(false),
+        timer_event_counter(0), mouse_captured(false)
     {}
 };
-
-static vector<2,unsigned> get_display_size(HDC dc)
-{
-    return make_vector<unsigned>(
-        GetDeviceCaps(dc, HORZRES),
-        GetDeviceCaps(dc, VERTRES));
-}
 
 struct win32_opengl_surface : opengl_surface
 {
@@ -81,11 +76,7 @@ struct win32_opengl_surface : opengl_surface
         }
         return ppi_;
     }
-    vector<2,unsigned> display_size() const
-    {
-        return get_display_size(impl_->dc);
-    }
-    void request_refresh();
+    void request_refresh(bool greedy);
     void request_timer_event(routable_widget_id const& id, unsigned ms);
     string get_clipboard_text();
     void set_clipboard_text(string const& text);
@@ -376,7 +367,7 @@ static void update_window(HWND hwnd)
 {
     native_window::impl_data& impl = get_window_data(hwnd);
 
-    impl.update_needed = false;
+    impl.next_update = none;
 
     RECT rect;
     GetClientRect(impl.hwnd, &rect);
@@ -395,7 +386,9 @@ static void update_window(HWND hwnd)
     refresh_and_layout(impl.ui,
         alia::make_vector<unsigned>(rect.right, rect.bottom),
         get_time(impl), &cursor);
-    set_cursor(cursor);
+    // Only set the mouse cursor if it's inside the window or captured.
+    if (impl.ui.input.mouse_inside_window || impl.mouse_captured)
+        set_cursor(cursor);
 
     RedrawWindow(hwnd, NULL, NULL, RDW_INVALIDATE | RDW_UPDATENOW);
 }
@@ -410,6 +403,12 @@ static void reset_mouse_tracking(HWND hwnd)
     TrackMouseEvent(&e);
 }
 
+static void on_mouse_button_press(HWND hwnd)
+{
+    SetCapture(hwnd);
+    get_window_data(hwnd).mouse_captured = true;
+}
+
 static bool any_mouse_buttons_pressed()
 {
     return
@@ -418,15 +417,13 @@ static bool any_mouse_buttons_pressed()
         (GetKeyState(VK_MBUTTON) & 0x8000) != 0;
 }
 
-static void on_mouse_button_press(HWND hwnd)
-{
-    SetCapture(hwnd);
-}
-
 static void on_mouse_button_release(HWND hwnd)
 {
     if (!any_mouse_buttons_pressed())
+    {
         ReleaseCapture();
+        get_window_data(hwnd).mouse_captured = false;
+    }
 }
 
 static void process_timer_requests(native_window::impl_data& impl)
@@ -434,9 +431,9 @@ static void process_timer_requests(native_window::impl_data& impl)
     ++impl.timer_event_counter;
     if (!impl.timer_requests.empty())
     {
+        unsigned now = get_time(impl);
         while (1)
         {
-            unsigned now = get_time(impl);
             // Ideally, the list would be stored sorted, but it has to be
             // sorted relative to the current tick count (to handle wrapping),
             // and the list is generally not very long anyway.
@@ -460,8 +457,10 @@ static void process_timer_requests(native_window::impl_data& impl)
             timer_request request = *next_event;
             impl.timer_requests.erase(next_event);
 
-            timer_event e(request.id.id, request.trigger_time, now);
-            issue_targeted_event(impl.ui, e, request.id);
+            {
+                timer_event e(request.id.id, request.trigger_time, now);
+                issue_targeted_event(impl.ui, e, request.id);
+            }
 
             update_window(impl.hwnd);
         }
@@ -572,8 +571,19 @@ LRESULT CALLBACK wndproc(
       }
      case WM_MOUSEMOVE:
       {
-        process_mouse_move(get_window_data(hwnd).ui, get_time(hwnd),
-            make_vector<int>(GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)));
+        vector<2,int> mouse_position =
+            make_vector<int>(GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam));
+        RECT rect;
+        GetClientRect(hwnd, &rect);
+        // Only process the movement if the mouse is captured or the movement
+        // was within the client area of the window.
+        if (get_window_data(hwnd).mouse_captured ||
+            (mouse_position[0] >= 0 && mouse_position[0] < rect.right &&
+             mouse_position[1] >= 0 && mouse_position[1] < rect.bottom))
+        {
+            process_mouse_move(get_window_data(hwnd).ui, get_time(hwnd),
+                mouse_position);
+        }
         reset_mouse_tracking(hwnd);
         update_window(hwnd);
         return 0;
@@ -801,7 +811,7 @@ static void create_window(
         0, 0, 0, 0, 0, 0, 0, 0,
         0,
         0, 0, 0, 0,
-        8,
+        0,
         0,
         0,
         PFD_MAIN_PLANE,
@@ -861,7 +871,7 @@ void native_window::initialize(
     controller->window = this;
     impl_ = new impl_data;
     impl_->ui.style.reset(new ui_style);
-    read_lua_style_file(&impl_->ui.style->styles, "style.lua");
+    impl_->ui.style->styles = parse_style_file("alia.style");
     create_window(impl_, 0, title, alia__shared_ptr<ui_controller>(controller),
         initial_state);
 }
@@ -920,14 +930,20 @@ void native_window::set_full_screen(bool fs)
 
 bool native_window::has_idle_work()
 {
-    return impl_->update_needed || !impl_->timer_requests.empty();
+    return impl_->next_update || !impl_->timer_requests.empty();
 }
 
 void native_window::do_idle_work()
 {
     process_timer_requests(*impl_);
-    if (impl_->update_needed)
-        update_window(impl_->hwnd);
+    if (impl_->next_update)
+    {
+        unsigned now = get_time(*impl_);
+        if (int(now - get(impl_->next_update)) >= 0)
+            update_window(impl_->hwnd);
+        else
+            Sleep(1);
+    }
     else
         Sleep(1);
 }
@@ -959,9 +975,15 @@ void native_window::do_message_loop()
     }
 }
 
-void win32_opengl_surface::request_refresh()
+void win32_opengl_surface::request_refresh(bool greedy)
 {
-    impl_->update_needed = true;
+    ui_time_type update_time =
+        impl_->ui.millisecond_tick_count + (greedy ? 0 : 10);
+    if (!impl_->next_update ||
+        int(get(impl_->next_update) - update_time) > 0)
+    {
+        impl_->next_update = update_time;
+    }
 }
 
 void win32_opengl_surface::request_timer_event(

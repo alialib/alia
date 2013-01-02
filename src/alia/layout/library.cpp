@@ -244,12 +244,14 @@ column_layout_logic::get_vertical_requirements(
         // The ascent of a column is the ascent of its first child.
         // Its descent is the descent of its first child plus the total height
         // of all other children.
+        // However, if the first child doesn't care about the baseline, then
+        // the column ignores it as well.
         if (i == children)
         {
             ascent = r.minimum_ascent;
             descent = r.minimum_descent;
         }
-        else
+        else if (ascent != 0 || descent != 0)
             descent += r.minimum_size;
     }
     return calculated_layout_requirements(
@@ -502,7 +504,8 @@ flow_layout_logic::get_horizontal_requirements(
     return calculated_layout_requirements(width, 0, 0);
 }
 
-static layout_scalar calculate_wrapping(
+static layout_scalar
+calculate_wrapping(
     layout_calculation_context& ctx,
     layout_node* children,
     layout_scalar assigned_width,
@@ -531,28 +534,22 @@ flow_layout_logic::get_vertical_requirements(
     std::vector<wrapped_row> rows;
     layout_scalar total_height =
         calculate_wrapping(ctx, children, assigned_width, &rows);
-    // Use the baseline of the first row as the baseline of the whole flow.
-    return calculated_layout_requirements(
-        total_height, rows[0].requirements.minimum_ascent,
-        total_height - rows[0].requirements.minimum_ascent);
-}
 
-void assign_flow_regions(
-    layout_calculation_context& ctx,
-    layout_node*& i, layout_node* end, layout_vector p,
-    layout_scalar row_height, layout_scalar row_descent)
-{
-    for (; i != end; i = i->next)
+    // Similar to the column, the flow layout uses the baseline of the first
+    // row as the baseline of the whole layout (if there is one).
+    layout_scalar ascent = 0, descent = 0;
+    if (!rows.empty())
     {
-        layout_requirements x =
-            alia::get_horizontal_requirements(ctx, *i);
-        alia::set_relative_assignment(
-            ctx, *i,
-            relative_layout_assignment(
-                layout_box(p, make_layout_vector(x.minimum_size, row_height)),
-                row_height - row_descent));
-        p[0] += x.minimum_size;
+        layout_requirements const& row0 = rows.front().requirements;
+        if (row0.minimum_ascent != 0 || row0.minimum_descent != 0)
+        {
+            ascent = row0.minimum_ascent;
+            descent = row0.minimum_descent +
+                (total_height - row0.minimum_size);
+        }
     }
+
+    return calculated_layout_requirements(total_height, ascent, descent);
 }
 
 void flow_layout_logic::set_relative_assignment(
@@ -1382,7 +1379,6 @@ struct floating_layout_data
     layout_node* root_node;
     data_graph measurement_cache, placement_cache;
     layout_vector size;
-    bool refresh_needed;
     floating_layout_data() : root_node(0) {}
 };
 
@@ -1403,26 +1399,25 @@ void floating_layout::concrete_begin(
     if (traversal.geometry)
         clipping_reset_.begin(*traversal.geometry);
 
-    if (traversal.is_refresh_pass)
-    {
-        data_->refresh_needed = true;
-    }
-    else if (data_->refresh_needed)
-    {
-        layout_vector measured_size =
-            get_minimum_size(data_->root_node, data_->measurement_cache);
-        for (unsigned i = 0; i != 2; ++i)
-            data_->size[i] = (std::min)(max_size[i], measured_size[i]);
-        resolve_layout(data_->root_node, data_->placement_cache,
-            data_->size);
-        data_->refresh_needed = false;
-    }
+    max_size_ = max_size;
 }
 
 void floating_layout::end()
 {
     if (traversal_)
     {
+        layout_traversal& traversal = *traversal_;
+
+        if (traversal.is_refresh_pass)
+        {
+            layout_vector measured_size =
+                get_minimum_size(data_->root_node, data_->measurement_cache);
+            for (unsigned i = 0; i != 2; ++i)
+                data_->size[i] = (std::min)(max_size_[i], measured_size[i]);
+            resolve_layout(data_->root_node, data_->placement_cache,
+                data_->size);
+        }
+
         clipping_reset_.end();
 
         traversal_->active_container = old_container_;
