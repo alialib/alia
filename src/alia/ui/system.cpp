@@ -68,38 +68,55 @@ static void issue_event(
     bool targeted, routing_region_ptr const& target = routing_region_ptr())
 {
     ui_context ctx;
-    ctx.pass_aborted = false;
     ctx.system = &system;
-    scoped_data_traversal data(system.data, ctx.data);
+
+    ctx.pass_aborted = false;
+
+    data_traversal data;
+    scoped_data_traversal sdt(system.data, data);
+    ctx.data = &data;
+
     bool is_refresh = event.type == REFRESH_EVENT;
     // Only use refresh events to decide when data is no longer needed.
-    ctx.data.gc_enabled = ctx.data.cache_clearing_enabled = is_refresh;
+    data.gc_enabled = data.cache_clearing_enabled = is_refresh;
     vector<2,double> size =
         is_refresh ? make_vector<double>(0, 0) :
             vector<2,double>(system.surface->size());
-    initialize(ctx.geometry, box<2,double>(make_vector<double>(0, 0), size));
+
+    geometry_context geometry;
+    ctx.geometry = &geometry;
+    initialize(geometry, box<2,double>(make_vector<double>(0, 0), size));
+
     ctx.surface = system.surface.get();
     if (event.type == RENDER_EVENT || event.type == OVERLAY_RENDER_EVENT)
-        set_subscriber(ctx.geometry, *ctx.surface);
-    scoped_layout_refresh refresh;
-    scoped_layout_traversal layout;
+        set_subscriber(*ctx.geometry, *ctx.surface);
+
+    layout_traversal layout;
+    ctx.layout = &layout;
+
+    scoped_layout_refresh slr;
+    scoped_layout_traversal slt;
     if (is_refresh)
     {
-        refresh.begin(system.layout, ctx.layout, ctx.data,
+        slr.begin(system.layout, layout, data,
             system.surface->ppi());
     }
     else
     {
-        layout.begin(system.layout, ctx.layout, ctx.data, ctx.geometry,
+        slt.begin(system.layout, layout, data, geometry,
             system.surface->ppi());
     }
+
     ctx.event = &event;
+
     setup_initial_styling(ctx);
+
     ctx.active_cacher = 0;
+
     context_invoker fn;
     fn.system = &system;
     fn.ctx = &ctx;
-    invoke_routed_traversal(fn, ctx.routing, ctx.data, targeted, target);
+    invoke_routed_traversal(fn, ctx.routing, data, targeted, target);
 }
 
 void end_pass(ui_context& ctx)

@@ -978,7 +978,7 @@ void native_window::do_message_loop()
 void win32_opengl_surface::request_refresh(bool greedy)
 {
     ui_time_type update_time =
-        impl_->ui.millisecond_tick_count + (greedy ? 0 : 10);
+        impl_->ui.millisecond_tick_count + (greedy ? 0 : 1);
     if (!impl_->next_update ||
         int(get(impl_->next_update) - update_time) > 0)
     {

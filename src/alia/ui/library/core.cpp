@@ -62,8 +62,8 @@ void scoped_substyle::begin(
     old_state_ = ctx.style;
     ctx.style = data->state;
 
-    old_style_info_ = ctx.layout.style_info;
-    ctx.layout.style_info = &data->style_info;
+    old_style_info_ = ctx.layout->style_info;
+    ctx.layout->style_info = &data->style_info;
 
     ctx_ = &ctx;
 }
@@ -73,7 +73,7 @@ void scoped_substyle::end()
     {
         ui_context& ctx = *ctx_;
         ctx.style = old_state_;
-        ctx.layout.style_info = old_style_info_;
+        ctx.layout->style_info = old_style_info_;
         ctx_ = 0;
     }
 }
@@ -92,7 +92,8 @@ void culling_block::begin(ui_context& ctx, layout const& layout_spec)
         break;
      case RENDER_CATEGORY:
         is_relevant_ =
-            is_visible(ctx.geometry, box<2,double>(layout_.region()));
+            is_visible(get_geometry_context(ctx),
+                box<2,double>(layout_.region()));
         break;
      case REGION_CATEGORY:
         if (ctx.event->type == MOUSE_HIT_TEST_EVENT ||
@@ -153,7 +154,7 @@ void cached_ui_block::begin(ui_context& ctx, id_interface const& id)
         // for the address of the first node.
         if (is_relevant_)
         {
-            layout_next_ptr_ = ctx.layout.next_ptr;
+            layout_next_ptr_ = get_layout_traversal(ctx).next_ptr;
             // Store the ID here because it's only available within this
             // function.
             cacher.layout_id.store(combine_ids(ref(*ctx.style.id), ref(id)));
@@ -165,8 +166,8 @@ void cached_ui_block::begin(ui_context& ctx, id_interface const& id)
         // Otherwise, just splice in the cached subtree.
         else
         {
-            *ctx.layout.next_ptr = cacher.layout_subtree_head;
-            ctx.layout.next_ptr = cacher.layout_subtree_tail;
+            *get_layout_traversal(ctx).next_ptr = cacher.layout_subtree_head;
+            get_layout_traversal(ctx).next_ptr = cacher.layout_subtree_tail;
         }
         break;
 
@@ -195,7 +196,7 @@ void cached_ui_block::end()
         if (is_refresh_pass(ctx) && is_relevant_)
         {
             cacher.layout_subtree_head = *layout_next_ptr_;
-            cacher.layout_subtree_tail = ctx.layout.next_ptr;
+            cacher.layout_subtree_tail = get_layout_traversal(ctx).next_ptr;
         }
 
         culling_.end();

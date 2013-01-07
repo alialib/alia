@@ -152,7 +152,10 @@ static double clamp(double x, double min, double max, double step)
 {
     assert(min <= max);
     double clamped = clamp(x, min, max);
-    return std::floor((clamped - min) / step + 0.5) * step + min;
+    if (step != 0)
+        return std::floor((clamped - min) / step + 0.5) * step + min;
+    else
+        return clamped;
 }
 
 static double get_values_per_pixel(ui_context& ctx, slider_data& data,

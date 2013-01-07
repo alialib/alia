@@ -697,7 +697,8 @@ void scrollable_region::begin(
             get_scrollbar_width(ctx, container->vsb_data));
         detect_layout_change(ctx, &container->minimum_window_size,
             get_minimum_scrollbar_length(ctx, container->vsb_data));
-        container->line_size = resolve_layout_width(ctx.layout, 10, EM);
+        container->line_size =
+            resolve_layout_width(get_layout_traversal(ctx), 10, EM);
     }
     else
     {

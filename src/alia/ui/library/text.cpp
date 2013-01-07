@@ -642,7 +642,8 @@ struct text_drawing_data
 
 static void
 draw_text(ui_context& ctx, text_drawing_data& data,
-    getter<string> const& text, vector<2,double> const& position)
+    getter<string> const& text, vector<2,double> const& position,
+    ui_text_drawing_flag_set flags)
 {
     if (!data.key.matches(combine_ids(ref(text.id()), ref(*ctx.style.id))))
     {
@@ -687,26 +688,27 @@ draw_text(ui_context& ctx, text_drawing_data& data,
 	set_color(paint, ctx.style.properties->text_color);
 	renderer.canvas().drawText(
 	    text_value.c_str(), text_value.length(),
-	    SkIntToScalar(0), -metrics.fAscent,
+	    SkIntToScalar(0), -metrics.fAscent + metrics.fLeading,
 	    paint);
 
-	data.ascent = SkScalarToDouble(-metrics.fAscent);
+	data.ascent = SkScalarToDouble(-metrics.fAscent + metrics.fLeading);
 
 	renderer.cache();
     }
 
     draw_full_image(*ctx.surface, data.image,
-        position - make_vector<double>(0, data.ascent));
+        position - make_vector<double>(0,
+            (flags & ALIGN_TEXT_TOP) ? 0 : data.ascent));
 }
 
 void draw_text(ui_context& ctx, getter<string> const& text,
-    vector<2,double> const& position)
+    vector<2,double> const& position, ui_text_drawing_flag_set flags)
 {
     text_drawing_data* data;
     get_cached_data(ctx, &data);
 
     if (is_render_pass(ctx))
-	draw_text(ctx, *data, text, position);
+	draw_text(ctx, *data, text, position, flags);
 }
 
 struct layout_dependent_text_data
@@ -736,7 +738,8 @@ void do_layout_dependent_text(ui_context& ctx, getter<string> const& text,
 	    data.layout_node.assignment();
         draw_text(ctx, data.drawing, text,
             vector<2,double>(assignment.region.corner +
-	        make_layout_vector(0, assignment.baseline_y)));
+	        make_layout_vector(0, assignment.baseline_y)),
+                ALIGN_TEXT_BASELINE);
         break;
       }
     }

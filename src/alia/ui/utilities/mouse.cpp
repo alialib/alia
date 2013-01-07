@@ -19,7 +19,7 @@ bool mouse_is_inside_box(ui_context& ctx, box<2,double> const& box)
     return
         ctx.system->input.mouse_inside_window &&
         is_inside(box, get_mouse_position(ctx)) &&
-        is_inside(ctx.geometry.clip_region,
+        is_inside(get_geometry_context(ctx).clip_region,
             vector<2,double>(ctx.system->input.mouse_position));
 }
 
@@ -92,6 +92,13 @@ bool detect_drag(ui_context& ctx, widget_id id, mouse_button button)
     detect_mouse_press(ctx, id, button);
     return detect_event(ctx, MOUSE_MOTION_EVENT) &&
         is_mouse_button_pressed(ctx, button) && is_region_active(ctx, id);
+}
+
+bool detect_mouse_down(ui_context& ctx, widget_id id, mouse_button button)
+{
+    return (detect_mouse_press(ctx, id, button) ||
+        detect_event(ctx, MOUSE_MOTION_EVENT) &&
+        is_mouse_button_pressed(ctx, button)) && is_region_active(ctx, id);
 }
 
 vector<2,double> get_drag_delta(ui_context& ctx)

@@ -10,7 +10,7 @@ namespace alia {
 
 static inline counter_type
 get_refresh_counter(ui_context& ctx)
-{ return ctx.layout.refresh_counter; }
+{ return get_layout_traversal(ctx).refresh_counter; }
 
 void record_content_change(ui_context& ctx);
 

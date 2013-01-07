@@ -318,7 +318,7 @@ void setup_initial_styling(ui_context& ctx)
         data->id.store(get_id(ctx.system->style->id));
 
         read_layout_style_info(&data->info, data->props.font, &data->path);
-        ctx.layout.style_info = &data->info;
+        get_layout_traversal(ctx).style_info = &data->info;
     }
     ctx.style.path = &data->path;
     ctx.style.properties = &data->props;

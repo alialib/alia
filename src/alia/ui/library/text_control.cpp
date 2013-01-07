@@ -45,12 +45,12 @@ calculate_text_layout(
             break_text(
                 paint, utf8_string(p, utf8.end), width, true, for_editing,
                 &line_width, &visible_end);
+        data.rows.push_back(utf8_string(p, visible_end));
         if (line_end == p)
         {
             // Nothing is fitting, so we're in an infinite loop. Just abort.
             break;
         }
-        data.rows.push_back(utf8_string(p, visible_end));
         p = line_end;
     }
     while (p != utf8.end);

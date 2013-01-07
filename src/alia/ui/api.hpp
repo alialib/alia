@@ -404,9 +404,9 @@ struct ui_event;
 struct ui_context
 {
     ui_system* system;
-    data_traversal data;
-    geometry_context geometry;
-    layout_traversal layout;
+    data_traversal* data;
+    geometry_context* geometry;
+    layout_traversal* layout;
     alia::surface* surface;
     ui_event* event;
     event_routing_traversal routing;
@@ -416,11 +416,11 @@ struct ui_context
 };
 
 static inline data_traversal& get_data_traversal(ui_context& ctx)
-{ return ctx.data; }
+{ return *ctx.data; }
 static inline layout_traversal& get_layout_traversal(ui_context& ctx)
-{ return ctx.layout; }
+{ return *ctx.layout; }
 static inline geometry_context& get_geometry_context(ui_context& ctx)
-{ return ctx.geometry; }
+{ return *ctx.geometry; }
 
 void end_pass(ui_context& ctx);
 
@@ -589,8 +589,14 @@ bool do_link(
     layout const& layout_spec = default_layout,
     widget_id id = auto_id);
 
+struct ui_text_drawing_flag_tag {};
+typedef flag_set<ui_text_drawing_flag_tag> ui_text_drawing_flag_set;
+ALIA_DEFINE_FLAG_CODE(ui_text_drawing_flag_tag, 0x00, ALIGN_TEXT_BASELINE)
+ALIA_DEFINE_FLAG_CODE(ui_text_drawing_flag_tag, 0x01, ALIGN_TEXT_TOP)
+
 void draw_text(ui_context& ctx, getter<string> const& text,
-    vector<2,double> const& position);
+    vector<2,double> const& position,
+    ui_text_drawing_flag_set flags = NO_FLAGS);
 
 void do_layout_dependent_text(ui_context& ctx, getter<string> const& text,
     layout const& layout_spec);
@@ -1211,6 +1217,20 @@ struct resizable_content : noncopyable
     int size_;
     linear_layout layout_;
 };
+
+// erase_accessor_type(ctx, x) returns a reference to a copy of the accessor x
+// whose type has been reduced to simply accessor<T>.
+// Of course, you should only use this if it's possible to return a copy of the
+// accessor without invalidating any internal references.
+template<class Accessor>
+accessor<typename accessor_value_type<Accessor>::type> const&
+erase_accessor_type(alia::ui_context& ctx, Accessor const& accessor)
+{
+    Accessor* storage;
+    get_cached_data(ctx, &storage);
+    *storage = accessor;
+    return *storage;
+}
 
 }
 

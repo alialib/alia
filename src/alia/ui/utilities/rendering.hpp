@@ -11,11 +11,11 @@ namespace alia {
 
 static inline matrix<3,3,double> const&
 get_transformation(ui_context& ctx)
-{ return ctx.geometry.transformation_matrix; }
+{ return get_geometry_context(ctx).transformation_matrix; }
 
 static inline layout_vector const&
 get_padding_size(ui_context& ctx)
-{ return ctx.layout.style_info->padding_size; }
+{ return get_layout_traversal(ctx).style_info->padding_size; }
 
 static inline surface&
 get_surface(ui_context& ctx)

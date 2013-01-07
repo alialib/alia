@@ -51,6 +51,10 @@ bool detect_click_in_progress(ui_context& ctx, widget_id id,
 // Detect if the mouse is being dragged with the given mouse button down.
 bool detect_drag(ui_context& ctx, widget_id id, mouse_button button);
 
+// Detect if the mouse is pressed or dragged within the given region with the
+// given mouse button down.
+bool detect_mouse_down(ui_context& ctx, widget_id id, mouse_button button);
+
 // If the current event is a drag, this will return the mouse movement
 // represented by this event, in the current frame of reference.
 vector<2,double> get_drag_delta(ui_context& ctx);

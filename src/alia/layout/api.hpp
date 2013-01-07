@@ -284,7 +284,7 @@ class scoped_transformation : noncopyable
     template<class Context>
     scoped_transformation(Context& ctx,
         matrix<3,3,double> const& transformation)
-    { begin(ctx); set(transformation); }
+    { begin(get_geometry_context(ctx)); set(transformation); }
     ~scoped_transformation() { end(); }
     void begin(geometry_context& ctx);
     void set(matrix<3,3,double> const& transformation);
