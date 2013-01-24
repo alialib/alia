@@ -153,59 +153,57 @@ void layout_node::assign_wrapped_regions(
     state.x += x.minimum_size;
 }
 
-layout_scalar resolve_layout_width(layout_traversal& traversal, float width,
-    layout_units units)
+float resolve_precise_layout_size(layout_traversal& traversal, unsigned axis,
+    float size, layout_units units)
 {
     switch (units)
     {
      case PIXELS:
      default:
-        return as_layout_size(width);
+        return size;
      case INCHES:
-        return as_layout_size(width * traversal.ppi[0]);
+        return size * traversal.ppi[axis];
      case CM:
-        return as_layout_size(width * traversal.ppi[0] / 2.54f);
+        return size * traversal.ppi[axis] / 2.54f;
      case MM:
-        return as_layout_size(width * traversal.ppi[0] / 25.4f);
+        return size * traversal.ppi[axis] / 25.4f;
+     case POINT:
+        return size * traversal.ppi[axis] / 72.f;
+     case PICA:
+        return size * traversal.ppi[axis] / 6.f;
      case CHARS:
-        return as_layout_size(width *
-            traversal.style_info->character_size[0]);
+        return size * traversal.style_info->character_size[axis];
      case EM:
-        return as_layout_size(width * traversal.style_info->font_size);
+        return size * traversal.style_info->font_size;
      case EX:
-        return as_layout_size(width * traversal.style_info->x_height);
+        return size * traversal.style_info->x_height;
     }
+}
+
+float resolve_precise_layout_width(layout_traversal& traversal, float width,
+    layout_units units)
+{
+    return resolve_precise_layout_size(traversal, 0, width, units);
+}
+
+layout_scalar resolve_layout_width(layout_traversal& traversal, float width,
+    layout_units units)
+{
+    return as_layout_size(
+        resolve_precise_layout_width(traversal, width, units));
+}
+
+float resolve_precise_layout_height(layout_traversal& traversal, float height,
+    layout_units units)
+{
+    return resolve_precise_layout_size(traversal, 1, height, units);
 }
 
 layout_scalar resolve_layout_height(layout_traversal& traversal, float height,
     layout_units units)
 {
-    switch (units)
-    {
-     case PIXELS:
-     default:
-        return as_layout_size(height);
-        break;
-     case INCHES:
-        return as_layout_size(height * traversal.ppi[1]);
-        break;
-     case CM:
-        return as_layout_size(height * traversal.ppi[1] / 2.54f);
-        break;
-     case MM:
-        return as_layout_size(height * traversal.ppi[1] / 25.4f);
-        break;
-     case CHARS:
-        return as_layout_size(height *
-            traversal.style_info->character_size[1]);
-        break;
-     case EM:
-        return as_layout_size(height * traversal.style_info->font_size);
-        break;
-     case EX:
-        return as_layout_size(height * traversal.style_info->x_height);
-        break;
-    }
+    return as_layout_size(
+        resolve_precise_layout_height(traversal, height, units));
 }
 
 layout_vector resolve_layout_size(layout_traversal& traversal, size const& s)
@@ -214,10 +212,18 @@ layout_vector resolve_layout_size(layout_traversal& traversal, size const& s)
         resolve_layout_height(traversal, s.height, s.y_units));
 }
 
+vector<2,float>
+resolve_precise_layout_size(layout_traversal& traversal, size const& s)
+{
+    return make_vector(
+        resolve_precise_layout_width(traversal, s.width, s.x_units),
+        resolve_precise_layout_height(traversal, s.height, s.y_units));
+}
+
 bool operator==(resolved_layout_spec const& a, resolved_layout_spec const& b)
 {
     return a.size == b.size && a.flags == b.flags &&
-        a.growth_factor == a.growth_factor && a.padding_size == b.padding_size;
+        a.growth_factor == b.growth_factor && a.padding_size == b.padding_size;
 }
 bool operator!=(resolved_layout_spec const& a, resolved_layout_spec const& b)
 { return !(a == b); }
@@ -488,6 +494,18 @@ void simple_layout_container::set_relative_assignment(
     alia_end
 }
 
+bool operator==(
+    leaf_layout_requirements const& a, leaf_layout_requirements const& b)
+{
+    return a.size == b.size && a.ascent == b.ascent && a.descent == b.descent;
+}
+
+bool operator!=(
+    leaf_layout_requirements const& a, leaf_layout_requirements const& b)
+{
+    return !(a == b);
+}
+
 layout_requirements layout_leaf::get_horizontal_requirements(
     layout_calculation_context& ctx)
 {
@@ -529,15 +547,16 @@ void layout_leaf::refresh_layout(
     leaf_layout_requirements const& requirements,
     layout_flag_set default_flags)
 {
-    // TODO: Cache this?
     if (traversal.is_refresh_pass)
     {
+        // TODO: Cache this?
         resolved_layout_spec resolved_spec;
         resolve_layout_spec(traversal, resolved_spec, layout_spec,
             default_flags);
         detect_layout_change(traversal, &resolved_spec_, resolved_spec);
+
+        detect_layout_change(traversal, &requirements_, requirements);
     }
-    requirements_ = requirements;
 }
 
 // GEOMETRY CONTEXT

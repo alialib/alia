@@ -42,6 +42,18 @@ layout_box get_container_region(simple_layout_container const& container)
     return layout_box(make_layout_vector(0, 0), container.assigned_size);
 }
 
+layout_box get_padded_container_region(
+    simple_layout_container const& container)
+{
+    return layout_box(make_layout_vector(0, 0),
+        container.cacher.relative_assignment.region.size);
+}
+
+layout_vector get_container_offset(simple_layout_container const& container)
+{
+    return get_assignment(container.cacher).region.corner;
+}
+
 #define DECLARE_LAYOUT_LOGIC(logic_type) \
     struct logic_type : layout_logic \
     { \
@@ -707,6 +719,184 @@ void vertical_flow_layout::concrete_begin(
     BEGIN_SIMPLE_LAYOUT_CONTAINER(vertical_flow_layout_logic)
 }
 
+// CLAMPED LAYOUT
+
+struct clamped_layout_logic : layout_logic
+{
+    calculated_layout_requirements get_horizontal_requirements(
+        layout_calculation_context& ctx,
+        layout_node* children);
+    calculated_layout_requirements get_vertical_requirements(
+        layout_calculation_context& ctx,
+        layout_node* children,
+        layout_scalar assigned_width);
+    void set_relative_assignment(
+        layout_calculation_context& ctx,
+        layout_node* children,
+        layout_vector const& assigned_size,
+        layout_scalar assigned_baseline_y);
+
+    layout_vector max_size;
+};
+
+calculated_layout_requirements
+clamped_layout_logic::get_horizontal_requirements(
+    layout_calculation_context& ctx,
+    layout_node* children)
+{
+    layout_scalar width = 0;
+    for (layout_node* i = children; i; i = i->next)
+    {
+        layout_requirements r = alia::get_horizontal_requirements(ctx, *i);
+        width = (std::max)(r.minimum_size, width);
+    }
+    return calculated_layout_requirements(width, 0, 0);
+}
+
+calculated_layout_requirements
+clamped_layout_logic::get_vertical_requirements(
+    layout_calculation_context& ctx,
+    layout_node* children,
+    layout_scalar assigned_width)
+{
+    layout_scalar clamped_width =
+        this->max_size[0] < 0 ? assigned_width :
+            (std::min)(assigned_width, this->max_size[0]);
+    layout_scalar height = 0, ascent = 0, descent = 0;
+    for (layout_node* i = children; i; i = i->next)
+    {
+        layout_requirements y = alia::get_vertical_requirements(
+            ctx, *i, clamped_width);
+        height = (std::max)(y.minimum_size, height);
+        ascent = (std::max)(y.minimum_ascent, ascent);
+        descent = (std::max)(y.minimum_descent, descent);
+    }
+    return calculated_layout_requirements(height, ascent, descent);
+}
+
+void clamped_layout_logic::set_relative_assignment(
+    layout_calculation_context& ctx,
+    layout_node* children,
+    layout_vector const& assigned_size,
+    layout_scalar assigned_baseline_y)
+{
+    for (layout_node* i = children; i; i = i->next)
+    {
+        layout_vector clamped_size;
+        for (int j = 0; j != 2; ++j)
+        {
+            clamped_size[j] = this->max_size[j] < 0 ? assigned_size[j] :
+                (std::min)(assigned_size[j], this->max_size[j]);
+        }
+        layout_requirements y = alia::get_vertical_requirements(
+            ctx, *i, clamped_size[0]);
+        alia::set_relative_assignment(ctx, *i,
+            relative_layout_assignment(
+                layout_box((assigned_size - clamped_size) / 2, clamped_size),
+                clamped_size[1] - y.minimum_descent));
+    }
+}
+
+void clamped_layout::concrete_begin(
+    layout_traversal& traversal, size max_size,
+    layout const& layout_spec)
+{
+    clamped_layout_logic* logic;
+    get_simple_layout_container(traversal, &container_, &logic, layout_spec);
+    slc_.begin(traversal, container_);
+    begin_transform(transform_, traversal, container_->cacher);
+    if (traversal.is_refresh_pass)
+    {
+        detect_layout_change(traversal, &logic->max_size,
+            resolve_layout_size(traversal, max_size));
+    }
+}
+
+// BORDERED LAYOUT
+
+struct bordered_layout_logic : layout_logic
+{
+    calculated_layout_requirements get_horizontal_requirements(
+        layout_calculation_context& ctx,
+        layout_node* children);
+    calculated_layout_requirements get_vertical_requirements(
+        layout_calculation_context& ctx,
+        layout_node* children,
+        layout_scalar assigned_width);
+    void set_relative_assignment(
+        layout_calculation_context& ctx,
+        layout_node* children,
+        layout_vector const& assigned_size,
+        layout_scalar assigned_baseline_y);
+
+    layout_vector border_size;
+};
+
+calculated_layout_requirements
+bordered_layout_logic::get_horizontal_requirements(
+    layout_calculation_context& ctx,
+    layout_node* children)
+{
+    layout_scalar width = 0;
+    for (layout_node* i = children; i; i = i->next)
+    {
+        layout_requirements r = alia::get_horizontal_requirements(ctx, *i);
+        width = (std::max)(r.minimum_size, width);
+    }
+    return calculated_layout_requirements(width + border_size[0], 0, 0);
+}
+
+calculated_layout_requirements
+bordered_layout_logic::get_vertical_requirements(
+    layout_calculation_context& ctx,
+    layout_node* children,
+    layout_scalar assigned_width)
+{
+    layout_scalar height = 0, ascent = 0, descent = 0;
+    for (layout_node* i = children; i; i = i->next)
+    {
+        layout_requirements y = alia::get_vertical_requirements(
+            ctx, *i, assigned_width - this->border_size[0] * 2);
+        height = (std::max)(y.minimum_size, height);
+        ascent = (std::max)(y.minimum_ascent, ascent);
+        descent = (std::max)(y.minimum_descent, descent);
+    }
+    return calculated_layout_requirements(
+        height + border_size[1] * 2, ascent + border_size[1],
+        descent + border_size[1]);
+}
+
+void bordered_layout_logic::set_relative_assignment(
+    layout_calculation_context& ctx,
+    layout_node* children,
+    layout_vector const& assigned_size,
+    layout_scalar assigned_baseline_y)
+{
+    for (layout_node* i = children; i; i = i->next)
+    {
+        alia::set_relative_assignment(ctx, *i,
+            relative_layout_assignment(
+                layout_box(make_layout_vector(0, 0),
+                    assigned_size - this->border_size * 2),
+                assigned_baseline_y - this->border_size[1]));
+    }
+}
+
+void bordered_layout::concrete_begin(
+    layout_traversal& traversal, size border_size,
+    layout const& layout_spec)
+{
+    bordered_layout_logic* logic;
+    get_simple_layout_container(traversal, &container_, &logic, layout_spec);
+    slc_.begin(traversal, container_);
+    begin_transform(transform_, traversal, container_->cacher);
+    if (traversal.is_refresh_pass)
+    {
+        detect_layout_change(traversal, &logic->border_size,
+            resolve_layout_size(traversal, border_size));
+    }
+}
+
 // GRID LAYOUT
 
 // Grids are composed of multiple rows, each with their own children.
@@ -784,24 +974,6 @@ struct grid_row_container : layout_container
 
     // next row in this grid
     grid_row_container* next;
-};
-
-struct scoped_recursion_detector : noncopyable
-{
-    scoped_recursion_detector(bool* inside)
-    {
-        already_inside_ = *inside;
-        inside_ = inside;
-        *inside = true;
-    }
-    ~scoped_recursion_detector()
-    {
-        *inside_ = already_inside_;
-    }
-    bool already_inside() const { return already_inside_; }
- private:
-    bool already_inside_;
-    bool* inside_;
 };
 
 static void update_grid_column_requirements(
@@ -1419,7 +1591,11 @@ void floating_layout::end()
             layout_vector measured_size =
                 get_minimum_size(data_->root_node, data_->measurement_cache);
             for (unsigned i = 0; i != 2; ++i)
-                data_->size[i] = (std::min)(max_size_[i], measured_size[i]);
+            {
+                data_->size[i] = max_size_[i] >= 0 ?
+                    (std::min)(max_size_[i], measured_size[i]) :
+                    measured_size[i];
+            }
             resolve_layout(data_->root_node, data_->placement_cache,
                 data_->size);
         }

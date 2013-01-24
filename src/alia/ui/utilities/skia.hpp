@@ -2,6 +2,7 @@
 #define ALIA_UI_UTILITIES_SKIA_HPP
 
 #include <alia/ui/utilities/rendering.hpp>
+#include <alia/ui/utilities/styling.hpp>
 #include <SkCanvas.h>
 #include <SkBitmap.h>
 
@@ -65,6 +66,9 @@ struct skia_renderer
 
 // Various utilities for drawing with Skia...
 
+static inline SkColor as_skia_color(rgba8 color)
+{ return SkColorSetARGB(color.a, color.r, color.g, color.b); }
+
 static inline void set_color(SkPaint& paint, rgba8 color)
 {
     paint.setARGB(color.a, color.r, color.g, color.b);
@@ -96,6 +100,12 @@ typedef caching_renderer_data focus_rect_data;
 
 void draw_focus_rect(ui_context& ctx, focus_rect_data& data,
     box<2,int> const& content_region);
+
+void draw_rect(SkCanvas& canvas, SkPaint& paint,
+    layout_box const& region, four_corners_sizes const& radii);
+
+void draw_styled_box(ui_context& ctx, SkCanvas& canvas,
+    style_search_path const* path, layout_box const& region, bool focused);
 
 }
 

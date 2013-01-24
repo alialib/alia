@@ -2,6 +2,7 @@
 #define ALIA_UI_UTILITIES_RENDERING_HPP
 
 #include <alia/ui/internals.hpp>
+#include <alia/ui/utilities/styling.hpp>
 
 // This file provides various utilities for facilitating widget rendering.
 
@@ -134,14 +135,77 @@ bool cast_data_ptr(Data**typed_data, renderer_data_ptr& data_ptr)
     }
 }
 
-struct boolean_widget_renderer : dispatch_interface
+template<class Value>
+struct control_renderer : dispatch_interface
+{
+    virtual layout_vector default_size(
+        ui_context& ctx, renderer_data_ptr& data_ptr) const = 0;
+
+    virtual void draw(
+        ui_context& ctx, renderer_data_ptr& data_ptr, layout_box const& region,
+        getter<Value> const& value, widget_state state) const = 0;
+};
+
+template<class Value>
+struct new_control_renderer : dispatch_interface
 {
     virtual layout_vector default_size(ui_context& ctx) const = 0;
 
     virtual void draw(
-        ui_context& ctx, renderer_data_ptr& data_ptr, layout_box const& region,
-        getter<bool> const& value, widget_state state) const = 0;
+        ui_context& ctx, layout_box const& region,
+        getter<Value> const& value, widget_state state) const = 0;
 };
+
+struct new_themed_rendering_data
+{
+    owned_id theme_id;
+    dispatch_interface_ptr theme_renderer;
+    data_block refresh_block, drawing_block;
+};
+
+template<class Interface, class DefaultImplementation>
+void
+get_themed_renderer(
+    ui_context& ctx, new_themed_rendering_data& data,
+    Interface const** renderer,
+    DefaultImplementation const* default_implementation)
+{
+    *renderer = data.theme_renderer ?
+        static_cast<Interface const*>(data.theme_renderer.get()) :
+        default_implementation;
+}
+
+struct stateless_control_style_path_storage
+{
+    style_search_path nodes[2];
+};
+
+style_search_path const*
+get_control_style_path(ui_context& ctx,
+    stateless_control_style_path_storage* storage,
+    char const* control_type);
+
+struct control_style_path_storage
+{
+    stateful_style_path_storage storage[2];
+};
+
+style_search_path const*
+get_control_style_path(ui_context& ctx, control_style_path_storage* storage,
+    char const* control_type, widget_state state);
+
+struct default_control_renderer_data
+{
+    keyed_data<layout_vector> size;
+    caching_renderer_data renderer;
+};
+
+layout_vector
+get_box_control_size(ui_context& ctx, char const* control_type);
+
+layout_vector
+get_box_control_size(ui_context& ctx, keyed_data<layout_vector>& data,
+    char const* control_type);
 
 }
 

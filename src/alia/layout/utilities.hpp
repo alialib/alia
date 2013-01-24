@@ -12,13 +12,19 @@ namespace alia {
 // This should be done via the following functions in case the layout_scalar
 // type is changed.
 
-// Cast a floating point number to a layout scalar representing a size.
+// Cast a floating point number/vector to a layout scalar representing a size.
 static inline layout_scalar as_layout_size(double x)
 { return layout_scalar(std::ceil(x)); }
 static inline layout_scalar as_layout_size(float x)
 { return layout_scalar(std::ceil(x)); }
 static inline layout_scalar as_layout_size(int x)
 { return layout_scalar(x); }
+static inline layout_vector as_layout_size(vector<2,double> const& x)
+{ return make_vector(as_layout_size(x[0]), as_layout_size(x[1])); }
+static inline layout_vector as_layout_size(vector<2,float> const& x)
+{ return make_vector(as_layout_size(x[0]), as_layout_size(x[1])); }
+static inline layout_vector as_layout_size(vector<2,int> const& x)
+{ return make_vector(as_layout_size(x[0]), as_layout_size(x[1])); }
 // Cast a floating point number to a layout scalar by rounding.
 static inline layout_scalar round_to_layout_scalar(float x)
 { return layout_scalar(x + 0.5); }
@@ -116,6 +122,17 @@ layout_scalar resolve_layout_width(layout_traversal& traversal, float width,
 layout_scalar resolve_layout_height(layout_traversal& traversal, float height,
     layout_units units);
 layout_vector resolve_layout_size(layout_traversal& traversal, size const& s);
+
+// These are the same as the above, but they return their results as floats,
+// so there's no rounding.
+float resolve_precise_layout_size(layout_traversal& traversal, unsigned axis,
+    float size, layout_units units);
+float resolve_precise_layout_width(layout_traversal& traversal, float width,
+    layout_units units);
+float resolve_precise_layout_height(layout_traversal& traversal, float height,
+    layout_units units);
+vector<2,float>
+resolve_precise_layout_size(layout_traversal& traversal, size const& s);
 
 // The layout spec supplied by the application must be resolved based on the
 // current proporties of the UI context and the default layout properties of
@@ -374,9 +391,13 @@ struct leaf_layout_requirements
     layout_vector size;
     layout_scalar ascent, descent;
 };
+bool operator==(
+    leaf_layout_requirements const& a, leaf_layout_requirements const& b);
+bool operator!=(
+    leaf_layout_requirements const& a, leaf_layout_requirements const& b);
 struct layout_leaf : layout_node
 {
-    layout_leaf() /*: initialized_(false)*/ {}
+    layout_leaf() {}
 
     void refresh_layout(
         layout_traversal& traversal, layout const& layout_spec,

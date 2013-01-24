@@ -77,13 +77,16 @@ struct default_scrollbar_renderer : scrollbar_renderer
         {
             skia_renderer renderer(ctx, cache.image(), rect.size);
 
-            style_tree const* scrollbar_style =
-                find_substyle(ctx.style.path, "scrollbar", state);
+            stateful_style_path_storage storage;
+            style_search_path const* path =
+                add_substyle_to_path(&storage, ctx.style.path, 0,
+                    "scrollbar", state);
 
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);
 
-            set_color(paint, get_color_property(scrollbar_style, "color"));
+            set_color(paint,
+                get_property(path, "color", rgba8(black)));
 
             SkScalar scrollbar_width =
                 layout_scalar_as_skia_scalar(this->width(ctx));
@@ -124,12 +127,15 @@ struct default_scrollbar_junction_renderer : scrollbar_junction_renderer
 
 struct scrollbar_data
 {
-    scrollbar_data() : axis(0), physical_position(0) {}
     unsigned axis;
     int physical_position, drag_start_delta;
     themed_rendering_data<scrollbar_renderer> rendering;
     widget_identity whole_id_data, background_id_data[2], thumb_id_data,
         button_id_data[2];
+
+    scrollbar_data()
+      : axis(0), physical_position(0)
+    {}
 };
 
 int get_scrollbar_width(ui_context& ctx, scrollbar_data const& data)
@@ -478,7 +484,7 @@ struct scrollable_layout_container : layout_container
     layout_cacher cacher;
 
     // set by caller and copied here
-    unsigned scrollable_axes;
+    unsigned scrollable_axes, reserved_axes;
 
     // determined at usage site and needed by layout
     layout_scalar scrollbar_width, minimum_window_size, line_size;
@@ -556,7 +562,7 @@ layout_requirements scrollable_layout_container::get_vertical_requirements(
             layout_requirements y = alia::get_vertical_requirements(
                 ctx, *children, actual_width);
             layout_scalar required_height = y.minimum_size;
-            if ((scrollable_axes & 1) != 0)
+            if ((scrollable_axes & 1) != 0 && x.minimum_size > resolved_width)
                 required_height += scrollbar_width;
             query.update(
                 calculated_layout_requirements(required_height, 0, 0));
@@ -622,6 +628,11 @@ void scrollable_layout_container::set_relative_assignment(
         else
             vsb_on = false;
 
+        if ((reserved_axes & 1) != 0 && !hsb_on)
+            available_size[1] -= scrollbar_width;
+        if ((reserved_axes & 2) != 0 && !vsb_on)
+            available_size[0] -= scrollbar_width;
+
         layout_scalar content_width =
             (std::max)(available_size[0], x.minimum_size);
 
@@ -664,7 +675,8 @@ void scrollable_region::begin(
     ui_context& ctx,
     layout const& layout_spec,
     unsigned scrollable_axes,
-    widget_id id)
+    widget_id id,
+    unsigned reserved_axes)
 {
     ctx_ = &ctx;
     id_ = id;
@@ -682,6 +694,8 @@ void scrollable_region::begin(
     {
         detect_layout_change(get_layout_traversal(ctx),
             &container->scrollable_axes, scrollable_axes);
+        detect_layout_change(get_layout_traversal(ctx),
+            &container->reserved_axes, reserved_axes);
 
         update_layout_cacher(get_layout_traversal(ctx), container->cacher,
             layout_spec, FILL | UNPADDED);

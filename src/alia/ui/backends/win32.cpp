@@ -160,11 +160,6 @@ static void paint_window(native_window::impl_data& impl)
     opengl_surface* surface =
         static_cast<opengl_surface*>(impl.ui.surface.get());
 
-    RECT rect;
-    GetClientRect(impl.hwnd, &rect);
-    surface->set_size(
-        alia::make_vector<unsigned>(rect.right, rect.bottom));
-
     surface->initialize_render_state();
 
     render_ui(impl.ui);
@@ -426,12 +421,13 @@ static void on_mouse_button_release(HWND hwnd)
     }
 }
 
-static void process_timer_requests(native_window::impl_data& impl)
+static bool process_timer_requests(
+    native_window::impl_data& impl, unsigned now)
 {
     ++impl.timer_event_counter;
+    bool processed_any = false;
     if (!impl.timer_requests.empty())
     {
-        unsigned now = get_time(impl);
         while (1)
         {
             // Ideally, the list would be stored sorted, but it has to be
@@ -454,6 +450,8 @@ static void process_timer_requests(native_window::impl_data& impl)
             if (next_event == impl.timer_requests.end())
                 break;
 
+            processed_any = true;
+
             timer_request request = *next_event;
             impl.timer_requests.erase(next_event);
 
@@ -465,6 +463,7 @@ static void process_timer_requests(native_window::impl_data& impl)
             update_window(impl.hwnd);
         }
     }
+    return processed_any;
 }
 
 static inline ui_time_type get_time(HWND hwnd)
@@ -935,17 +934,20 @@ bool native_window::has_idle_work()
 
 void native_window::do_idle_work()
 {
-    process_timer_requests(*impl_);
+    unsigned now = get_time(*impl_);
+    bool did_something = false;
+    if (process_timer_requests(*impl_, now))
+        did_something = true;
     if (impl_->next_update)
     {
-        unsigned now = get_time(*impl_);
         if (int(now - get(impl_->next_update)) >= 0)
+        {
             update_window(impl_->hwnd);
-        else
-            Sleep(1);
+            did_something = true;
+        }
     }
-    else
-        Sleep(1);
+    //if (!did_something)
+    //    Sleep(1);
 }
 
 void native_window::do_message_loop()
@@ -967,7 +969,8 @@ void native_window::do_message_loop()
         else
         {
             MSG msg;
-            if (!GetMessage(&msg, NULL, 0, 0))
+            int r = GetMessage(&msg, NULL, 0, 0);
+            if (r == 0 || r == -1) // -1 for error
                 break;
             TranslateMessage(&msg);
             DispatchMessage(&msg);

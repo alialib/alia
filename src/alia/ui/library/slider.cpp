@@ -84,13 +84,15 @@ struct default_slider_renderer : slider_renderer
         {
             skia_renderer renderer(ctx, cache.image(), track_box.size);
 
-            style_tree const* slider_style =
-                find_substyle(ctx.style.path, "slider");
+            style_search_path storage;
+            style_search_path const* path =
+                add_substyle_to_path(&storage, ctx.style.path, 0, "slider");
 
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);
 
-            rgba8 color = get_color_property(slider_style, "track-color");
+            rgba8 color =
+                get_property(path, "track-color", rgba8(black));
 
             renderer.canvas().drawColor(
                 SkColorSetARGB(color.a, color.r, color.g, color.b));
@@ -118,13 +120,16 @@ struct default_slider_renderer : slider_renderer
         {
             skia_renderer renderer(ctx, cache.image(), thumb_region.size);
 
-            style_tree const* slider_style =
-                find_substyle(ctx.style.path, "slider", state);
+            stateful_style_path_storage storage;
+            style_search_path const* path =
+                add_substyle_to_path(&storage, ctx.style.path, 0,
+                    "slider", state);
 
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);
 
-            rgba8 color = get_color_property(slider_style, "thumb-color");
+            rgba8 color =
+                get_property(path, "thumb-color", rgba8(black));
 
             renderer.canvas().drawColor(
                 SkColorSetARGB(color.a, color.r, color.g, color.b));

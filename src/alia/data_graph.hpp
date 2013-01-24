@@ -110,6 +110,9 @@ struct data_block : noncopyable
     ~data_block();
 };
 
+// Clear all data from a data block.
+void clear_data_block(data_block& block);
+
 struct naming_map_node;
 
 // data_graph stores the data graph associated with a function.
@@ -505,6 +508,13 @@ void set(keyed_data<Data>& data, Data const& value)
 {
     data.value = value;
     mark_valid(data);
+}
+
+template<class Data>
+Data const& get(keyed_data<Data> const& data)
+{
+    assert(is_valid(data));
+    return data.value;
 }
 
 template<class Data>

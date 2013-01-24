@@ -10,7 +10,7 @@ namespace alia {
 struct substyle_data
 {
     owned_id key;
-    style_search_path path;
+    stateful_style_path_storage path_storage;
     primary_style_properties properties;
     style_state state;
     layout_style_info style_info;
@@ -30,17 +30,9 @@ void scoped_substyle::begin(
     {
         inc_version(data->identity);
 
-        style_tree const* substyle =
-            find_substyle(ctx.style.path, get(substyle_name), state);
-        if (substyle)
-        {
-            data->path.tree = substyle;
-            data->path.rest = ctx.style.path;
-        }
-        else
-            data->path = *ctx.style.path;
-
-        data->state.path = &data->path;
+        data->state.path =
+            add_substyle_to_path(&data->path_storage, ctx.style.path,
+                ctx.style.path, get(substyle_name), state);
 
         read_primary_style_properties(
             *ctx.system, &data->properties, data->state.path);

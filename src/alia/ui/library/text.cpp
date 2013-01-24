@@ -803,4 +803,11 @@ bool do_link(
     return false;
 }
 
+void do_styled_text(ui_context& ctx, getter<string> const& substyle_name,
+    getter<string> const& text, layout const& layout_spec)
+{
+    scoped_substyle substyle(ctx, substyle_name);
+    do_text(ctx, text, layout_spec);
+}
+
 }

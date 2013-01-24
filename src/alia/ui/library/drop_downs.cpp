@@ -47,13 +47,15 @@ struct default_drop_down_button_renderer : drop_down_button_renderer
         {
             skia_renderer renderer(ctx, cache.image(), padded_region.size);
 
-            style_tree const* control_style =
-                find_substyle(ctx.style.path, "control", state);
+            control_style_path_storage storage;
+            style_search_path const* path =
+                get_control_style_path(ctx, &storage, "drop-down-button",
+                    state);
 
             rgba8 bg_color =
-                get_color_property(control_style, "background-color");
+                get_property(path, "background-color", rgba8(gray));
             rgba8 fg_color =
-                get_color_property(control_style, "foreground-color");
+                get_property(path, "foreground-color", rgba8(black));
 
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);
@@ -321,20 +323,10 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
     container_.begin(ctx, text("control"),
         add_default_padding(
             add_default_alignment(layout_spec, LEFT, BASELINE_Y), PADDED),
-        HORIZONTAL | NO_INTERNAL_PADDING, id_, state);
+        HORIZONTAL | SHOW_FOCUS | NO_INTERNAL_PADDING, id_, state);
 
     switch (ctx.event->category)
     {
-     case RENDER_CATEGORY:
-      {
-        if ((state & WIDGET_FOCUSED))
-        {
-            draw_focus_rect(ctx, data.focus_rendering,
-                container_.outer_region());
-	}
-        break;
-      }
-
      case INPUT_CATEGORY:
       {
         key_event_info info;
@@ -372,7 +364,7 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
                  case KEY_NUMPAD_ENTER:
                     if (!is_overlay_active(ctx, id_))
                     {
-                        open_ddl(ctx, data, id_, container_.inner_region());
+                        open_ddl(ctx, data, id_, container_.outer_region());
                         acknowledge_input_event(ctx);
                         break;
                     }
@@ -433,7 +425,7 @@ bool untyped_drop_down_list::do_list()
 
     if (do_drop_down_button(ctx, CENTER | UNPADDED, id_, data.button))
     {
-        open_ddl(ctx, data, id_, container_.inner_region());
+        open_ddl(ctx, data, id_, container_.outer_region());
         end_pass(ctx);
     }
 
@@ -443,7 +435,8 @@ bool untyped_drop_down_list::do_list()
     {
         popup_.begin(ctx, id_, data.positioning);
         list_border_.begin(ctx, GROW | PADDED);
-        list_panel_.begin(ctx, text("control"), 2, GROW | UNPADDED);
+        list_panel_.begin(ctx, text("control"), GROW | UNPADDED,
+            NO_HORIZONTAL_SCROLL);
     }
     alia_end
 

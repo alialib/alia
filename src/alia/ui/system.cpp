@@ -15,6 +15,38 @@ void set_text_magnification(ui_system& system, float magnification)
     system.style->text_magnification = magnification;
 }
 
+struct initial_styling_data
+{
+    owned_id id;
+    primary_style_properties props;
+    layout_style_info info;
+    style_search_path path;
+};
+
+static void setup_initial_styling(ui_context& ctx)
+{
+    initial_styling_data* data;
+    get_data(ctx, &data);
+
+    if (!data->id.matches(get_id(ctx.system->style->id)))
+    {
+        data->path.rest = 0;
+        data->path.tree = &ctx.system->style->styles;
+
+        read_primary_style_properties(
+            *ctx.system, &data->props, &data->path);
+
+        data->id.store(get_id(ctx.system->style->id));
+
+        read_layout_style_info(&data->info, data->props.font, &data->path);
+        get_layout_traversal(ctx).style_info = &data->info;
+    }
+    ctx.style.path = &data->path;
+    ctx.style.properties = &data->props;
+    ctx.style.id = &data->id.get();
+    ctx.style.theme = &ctx.system->style->theme;
+}
+
 static routable_widget_id
 get_focus_successor(ui_system& ui, widget_id input_id)
 {

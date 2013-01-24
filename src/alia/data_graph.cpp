@@ -209,14 +209,24 @@ data_block::data_block()
 }
 data_block::~data_block()
 {
-    data_node* node = nodes;
+    clear_data_block(*this);
+}
+
+void clear_data_block(data_block& block)
+{
+    data_node* node = block.nodes;
     while (node)
     {
         data_node* next = node->next;
         delete node;
         node = next;
     }
-    delete_named_block_ref_list(named_blocks);
+    block.nodes = 0;
+
+    delete_named_block_ref_list(block.named_blocks);
+    block.named_blocks = 0;
+
+    block.cache_clear = true;
 }
 
 void scoped_data_block::begin(data_traversal& traversal, data_block& block)

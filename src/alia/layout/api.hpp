@@ -27,6 +27,8 @@ enum layout_units
 
     // physical units
     INCHES, CM, MM,
+    POINT, // point - 1/72 of an inch
+    PICA, // pica - 12 points
 
     // character cells - One character cell is equal to the size of an average
     // character in the current font, including ascent and descent.
@@ -37,7 +39,7 @@ enum layout_units
     // borrowed from CSS - One EM is equal to the current font size.
     // One EX is equal to the height of the character 'x' in the current font.
     EM,
-    EX
+    EX,
 };
 
 // This is used by the application to specify the size of a layout element.
@@ -313,6 +315,9 @@ void do_spacer(Context& ctx, layout_box* region,
 { do_spacer(get_layout_traversal(ctx), region, layout_spec); }
 
 layout_box get_container_region(simple_layout_container const& container);
+layout_box get_padded_container_region(
+    simple_layout_container const& container);
+layout_vector get_container_offset(simple_layout_container const& container);
 
 #define ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(container_name) \
     struct container_name \
@@ -335,8 +340,15 @@ layout_box get_container_region(simple_layout_container const& container);
             if (container_) \
             { transform_.end(); slc_.end(); container_ = 0; } \
         } \
+        \
         layout_box region() const \
         { return get_container_region(*container_); } \
+        \
+        layout_box padded_region() const \
+        { return get_padded_container_region(*container_); } \
+        \
+        layout_vector offset() const \
+        { return get_container_offset(*container_); } \
         \
      private: \
         void concrete_begin( \
@@ -368,6 +380,12 @@ layout_box get_container_region(simple_layout_container const& container);
         \
         layout_box region() const \
         { return get_container_region(*container_); } \
+        \
+        layout_box padded_region() const \
+        { return get_padded_container_region(*container_); } \
+        \
+        layout_vector offset() const \
+        { return get_container_offset(*container_); } \
         \
      private: \
         void concrete_begin( \
@@ -406,6 +424,16 @@ ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(flow_layout)
 // this one is still primarily driven by the horizontal space allocated to it,
 // so it will prefer to create many short columns rather than one long one.
 ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(vertical_flow_layout)
+
+// clamped_layout imposes a maximum size on its child.
+// (It should only have a single child.)
+// If the space assigned to it is larger than the specified maximum, it
+// centers the child within that space.
+ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(clamped_layout, size)
+
+// bordered_layout adds a border to its child.
+// (It should only have a single child.)
+ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(bordered_layout, size)
 
 #define ALIA_DECLARE_GRID_LAYOUT_CONTAINER(grid) \
     struct grid##_data; \
@@ -485,13 +513,15 @@ struct floating_layout
     floating_layout() : traversal_(0) {}
 
     template<class Context>
-    floating_layout(Context& ctx, layout_vector const& max_size)
-    { begin(ctx, position max_size); }
+    floating_layout(Context& ctx,
+        layout_vector const& max_size = make_layout_vector(-1, -1))
+    { begin(ctx, max_size); }
 
     ~floating_layout() { end(); }
 
     template<class Context>
-    void begin(Context& ctx, layout_vector const& max_size)
+    void begin(Context& ctx,
+        layout_vector const& max_size = make_layout_vector(-1, -1))
     { concrete_begin(get_layout_traversal(ctx), max_size); }
 
     void end();

@@ -135,7 +135,7 @@ void setup_focus_drawing(ui_context& ctx, SkPaint& paint)
         layout_scalar_as_skia_scalar(get_padding_size(ctx)[0]) *
         SkDoubleToScalar(0.7));
     paint.setStyle(SkPaint::kStroke_Style);
-    set_color(paint, get_color_property(ctx, "focus-color"));
+    set_color(paint, get_property(ctx, "focus-color", rgba8(black)));
 }
 
 void draw_round_focus_rect(ui_context& ctx, SkCanvas& canvas,
@@ -175,6 +175,104 @@ void draw_focus_rect(ui_context& ctx, focus_rect_data& data,
         cache.mark_valid();
     }
     cache.draw();
+}
+
+static void clamp_radius_pair(SkScalar& x0, SkScalar& x1, SkScalar total)
+{
+    if (x0 + x1 > total)
+    {
+        SkScalar half = SkScalarHalf(total);
+        if (x0 < half)
+            x1 = total - x0;
+        else if (x1 < half)
+            x0 = total - x1;
+        else
+            x0 = x1 = half;
+    }
+}
+
+void draw_rect(SkCanvas& canvas, SkPaint& paint,
+    layout_box const& region, four_corners_sizes const& radii)
+{
+    SkRect rect = layout_box_as_skia_rect(region);
+    
+    SkScalar w = rect.width();
+    SkScalar half_w = SkScalarHalf(w);
+    SkScalar h = rect.height();
+    SkScalar half_h = SkScalarHalf(h);
+
+    if (half_w <= 0 || half_h <= 0)
+        return;
+
+    SkScalar r[4][2];
+    for (int i = 0; i != 4; ++i)
+    {
+        vector<2,float> const& c = radii.corners[i];
+        r[i][0] = SkFloatToScalar(c[0]);
+        r[i][1] = SkFloatToScalar(c[1]);
+    }
+    clamp_radius_pair(r[0][0], r[1][0], w);
+    clamp_radius_pair(r[1][1], r[2][1], h);
+    clamp_radius_pair(r[2][0], r[3][0], w);
+    clamp_radius_pair(r[3][1], r[0][1], h);
+
+    SkScalar s[4][2];
+    #define CUBIC_ARC_FACTOR ((SK_ScalarSqrt2 - SK_Scalar1) * 4 / 3)
+    for (int i = 0; i != 4; ++i)
+    {
+        s[i][0] = SkScalarMul(r[i][0], CUBIC_ARC_FACTOR);
+        s[i][1] = SkScalarMul(r[i][1], CUBIC_ARC_FACTOR);
+    }
+
+    SkPath path;
+    path.moveTo(rect.fLeft, rect.fTop + r[0][1]);
+    path.cubicTo(
+        rect.fLeft, rect.fTop + r[0][1] - s[0][1],
+        rect.fLeft + r[0][0] - s[0][0], rect.fTop,
+        rect.fLeft + r[0][0], rect.fTop);
+    path.lineTo(rect.fRight - r[1][0], rect.fTop);
+    path.cubicTo(
+        rect.fRight - r[1][0] + s[1][0], rect.fTop,
+        rect.fRight, rect.fTop + r[1][1] - s[1][1],
+        rect.fRight, rect.fTop + r[1][1]);
+    path.lineTo(rect.fRight, rect.fBottom - r[2][1]);
+    path.cubicTo(
+        rect.fRight, rect.fBottom - r[2][1] + s[2][1],
+        rect.fRight - r[2][0] + s[2][0], rect.fBottom,
+        rect.fRight - r[2][0], rect.fBottom);
+    path.lineTo(rect.fLeft + r[3][0], rect.fBottom);
+    path.cubicTo(
+        rect.fLeft + r[3][0] - s[3][0], rect.fBottom,
+        rect.fLeft, rect.fBottom - r[3][1] + s[3][1],
+        rect.fLeft, rect.fBottom - r[3][1]);
+    path.lineTo(rect.fLeft, rect.fTop + r[0][1]);
+    canvas.drawPath(path, paint);
+}
+
+void draw_styled_box(ui_context& ctx, SkCanvas& canvas,
+    style_search_path const* path, layout_box const& region, bool focused)
+{
+    SkPaint paint;
+    paint.setFlags(SkPaint::kAntiAlias_Flag);
+
+    four_corners_spec corners_spec =
+        get_property(path, "border-radius",
+            four_corners_spec(
+                relative_size_spec_2d(
+                    relative_size_spec(0.25),
+                    relative_size_spec(0.25))));
+    four_corners_sizes corners =
+        eval_four_corners(ctx, corners_spec, vector<2,float>(region.size));
+
+    paint.setStyle(SkPaint::kFill_Style);
+    set_color(paint, get_property(path, "background-color", rgba8(silver)));
+    draw_rect(canvas, paint, region, corners);
+
+    if (focused)
+    {
+        setup_focus_drawing(ctx, paint);
+        draw_rect(canvas, paint, region, corners);
+    }
 }
 
 }

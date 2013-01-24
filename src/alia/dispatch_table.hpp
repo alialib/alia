@@ -17,9 +17,11 @@ struct dispatch_interface
     virtual ~dispatch_interface() {}
 };
 
+typedef alia__shared_ptr<dispatch_interface> dispatch_interface_ptr;
+
 typedef std::map<
     std::type_info const*,
-    alia__shared_ptr<dispatch_interface>,
+    dispatch_interface_ptr,
     type_info_comparison
 > dispatch_map;
 
@@ -32,6 +34,23 @@ template<class Impl>
 void add_implementation(dispatch_table& table, Impl* impl)
 {
     table.mapping[&typeid(Impl)] = impl;
+}
+
+template<class Impl>
+bool
+get_implementation(dispatch_table const& table, dispatch_interface_ptr* impl)
+{
+    dispatch_map::const_iterator i = table.mapping.find(&typeid(Impl));
+    if (i != table.mapping.end())
+    {
+        *impl = i->second;
+        return true;
+    }
+    else
+    {
+        impl->reset();
+        return false;
+    }
 }
 
 template<class Impl>

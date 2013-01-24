@@ -68,11 +68,16 @@ struct getter
     virtual id_interface const& id() const = 0;
 };
 
+// Is x gettable?
+template<class T>
+bool is_gettable(getter<T> const& x)
+{ return x.is_gettable(); }
+
 // get(x) asserts that x is gettable and gets its value.
 template<class T>
 T const& get(getter<T> const& x)
 {
-    assert(x.is_gettable());
+    assert(is_gettable(x));
     return x.get();
 }
 
@@ -88,11 +93,16 @@ struct accessor : getter<T>
     virtual void set(T const& value) const = 0;
 };
 
+// Is a settable?
+template<class T>
+bool is_settable(accessor<T> const& a)
+{ return a.is_settable(); }
+
 // set(a, value) sets a to value iff a is settable.
 template<class T>
 void set(accessor<T> const& a, T const& value)
 {
-    if (a.is_settable())
+    if (is_settable(a))
         a.set(value);
 }
 
@@ -186,6 +196,61 @@ input_pointer_accessor<T>
 in_ptr(T const* value)
 {
     return input_pointer_accessor<T>(value);
+}
+
+// optional_in(x) creates a read-only accessor to an optional value.
+template<class T>
+struct optional_input_accessor : accessor<T>
+{
+    optional_input_accessor(optional<T> const& value) : value_(value) {}
+    id_interface const& id() const
+    {
+        if (value_)
+        {
+            id_ = make_id_by_reference(alia::get(value_));
+            return id_;
+        }
+        else
+            return no_id;
+    }
+    bool is_gettable() const { return value_ ? true : false; }
+    T const& get() const { return alia::get(value_); }
+    bool is_settable() const { return false; }
+    void set(T const& value) const {}
+ private:
+    mutable value_id_by_reference<T> id_;
+    optional<T> value_;
+};
+template<class T>
+optional_input_accessor<T>
+optional_in(optional<T> const& value)
+{
+    return optional_input_accessor<T>(value);
+}
+
+// make_custom_getter(&x, &id) gives you the most flexibility in creating an
+// input accessor (short of implementing your own accessor type).
+// x is the value, and id is a custom ID. Both are stored by reference.
+template<class T>
+struct custom_getter : accessor<T>
+{
+    custom_getter(optional<T> const* value, id_interface const* id) 
+      : value_(value), id_(id)
+    {}
+    id_interface const& id() const { return *id_; }
+    bool is_gettable() const { return *value_ ? true : false; }
+    T const& get() const { return alia::get(*value_); }
+    bool is_settable() const { return false; }
+    void set(T const& value) const {}
+ private:
+    id_interface const* id_;
+    optional<T> const* value_;
+};
+template<class T>
+custom_getter<T>
+make_custom_getter(optional<T> const* value, id_interface const* id)
+{
+    return custom_getter<T>(value, id);
 }
 
 // A state_proxy object is used when direct access is not possible and you

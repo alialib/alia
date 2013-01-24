@@ -76,4 +76,81 @@ void caching_renderer::draw()
     }
 }
 
+style_search_path const*
+get_control_style_path(ui_context& ctx,
+    stateless_control_style_path_storage* storage,
+    char const* control_type)
+{
+    return
+        add_substyle_to_path(
+            &storage->nodes[1],
+            ctx.style.path, 
+            add_substyle_to_path(&storage->nodes[0], ctx.style.path, 0,
+                "control"),
+            control_type);
+}
+
+style_search_path const*
+get_control_style_path(ui_context& ctx, control_style_path_storage* storage,
+    char const* control_type, widget_state state)
+{
+    return
+        add_substyle_to_path(
+            &storage->storage[1],
+            ctx.style.path,
+            add_substyle_to_path(&storage->storage[0], ctx.style.path, 0,
+                "control", state),
+            control_type, state);
+}
+
+layout_vector
+get_box_control_size(ui_context& ctx, char const* control_type)
+{
+    ALIA_GET_CACHED_DATA(keyed_data<layout_vector>)
+    refresh_keyed_data(data, *ctx.style.id);
+    if (!is_valid(data))
+    {
+        stateless_control_style_path_storage storage;
+        style_search_path const* path =
+            get_control_style_path(ctx, &storage, "check-box");
+        set(data,
+            as_layout_size(eval_absolute_size_spec(ctx,
+                get_property(path, "size",
+                    absolute_size_spec_2d(
+                        absolute_size_spec(1.2f, EM),
+                        absolute_size_spec(1.2f, EM))))) +
+            2 * as_layout_size(eval_absolute_size_spec(ctx,
+                get_property(path, "border-width",
+                    absolute_size_spec_2d(
+                        absolute_size_spec(0, PIXELS),
+                        absolute_size_spec(0, PIXELS))))));
+    }
+    return get(data);
+}
+
+layout_vector
+get_box_control_size(ui_context& ctx, keyed_data<layout_vector>& data,
+    char const* control_type)
+{
+    refresh_keyed_data(data, *ctx.style.id);
+    if (!is_valid(data))
+    {
+        stateless_control_style_path_storage storage;
+        style_search_path const* path =
+            get_control_style_path(ctx, &storage, "check-box");
+        set(data,
+            as_layout_size(eval_absolute_size_spec(ctx,
+                get_property(path, "size",
+                    absolute_size_spec_2d(
+                        absolute_size_spec(1.2f, EM),
+                        absolute_size_spec(1.2f, EM))))) +
+            2 * as_layout_size(eval_absolute_size_spec(ctx,
+                get_property(path, "border-width",
+                    absolute_size_spec_2d(
+                        absolute_size_spec(0, PIXELS),
+                        absolute_size_spec(0, PIXELS))))));
+    }
+    return get(data);
+}
+
 }

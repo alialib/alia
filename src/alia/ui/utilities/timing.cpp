@@ -9,6 +9,107 @@ void request_refresh(ui_context& ctx)
     record_content_change(ctx);
 }
 
+ui_time_type get_animation_tick_count(ui_context& ctx)
+{
+    request_refresh(ctx);
+    return ctx.system->millisecond_tick_count;
+}
+
+ui_time_type get_animation_ticks_left(ui_context& ctx, ui_time_type end_time)
+{
+    int ticks_remaining = int(end_time - ctx.system->millisecond_tick_count);
+    if (ticks_remaining > 0)
+    {
+        request_refresh(ctx);
+        return ui_time_type(ticks_remaining);
+    }
+    return 0;
+}
+
+float
+smooth_value(ui_context& ctx, float x,
+    animated_transition const& transition)
+{
+    return float(smooth_value(ctx, double(x), transition));
+}
+
+struct smooth_value_data
+{
+    bool smoothing;
+    ui_time_type duration, transition_end;
+    double old_value, new_value;
+};
+
+double
+smooth_value(ui_context& ctx, double x,
+    animated_transition const& transition)
+{
+    smooth_value_data* data;
+    if (get_cached_data(ctx, &data))
+    {
+        data->smoothing = false;
+        data->new_value = x;
+    }
+
+    double current_value = data->new_value;
+    if (data->smoothing)
+    {
+        ui_time_type ticks_left =
+            get_animation_ticks_left(ctx, data->transition_end);
+        if (ticks_left > 0)
+        {
+            current_value = data->old_value +
+                eval_curve_at_x(transition.curve,
+                    1. - double(ticks_left) / data->duration,
+                    1. / data->duration) *
+                (data->new_value - data->old_value);
+        }
+        else
+            data->smoothing = false;
+    }
+
+    if (is_refresh_pass(ctx) && x != data->new_value)
+    {
+        data->duration =
+            data->smoothing ?
+                (transition.duration -
+                    get_animation_ticks_left(ctx, data->transition_end)) :
+                transition.duration;
+        data->transition_end = get_animation_tick_count(ctx) + data->duration;
+        data->old_value = current_value;
+        data->new_value = x;
+        data->smoothing = true;
+    }
+
+    return current_value;
+}
+
+optional_input_accessor<float>
+smooth_value(ui_context& ctx, getter<float> const& x,
+    animated_transition const& transition)
+{
+    optional<float> output;
+    alia_if (is_gettable(x))
+    {
+        output = smooth_value(ctx, get(x), transition);
+    }
+    alia_end
+    return optional_in(output);
+}
+
+optional_input_accessor<double>
+smooth_value(ui_context& ctx, getter<double> const& x,
+    animated_transition const& transition)
+{
+    optional<double> output;
+    alia_if (is_gettable(x))
+    {
+        output = smooth_value(ctx, get(x), transition);
+    }
+    alia_end
+    return optional_in(output);
+}
+
 void start_timer(ui_context& ctx, widget_id id, unsigned duration)
 {
     input_event* ie = dynamic_cast<input_event*>(ctx.event);

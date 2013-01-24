@@ -32,6 +32,27 @@ static inline uint8_t multiply_uint8_channels(uint8_t a, uint8_t b)
 rgb8 blend(rgb8 const& a, rgb8 const& b, float factor);
 rgb8 blend(rgb8 const& a, rgb8 const& b, double factor);
 
+// standard color names
+static rgb8 const
+    white   (0xff, 0xff, 0xff),
+    silver  (0xc0, 0xc0, 0xc0),
+    gray    (0x80, 0x80, 0x80),
+    black   (0x00, 0x00, 0x00),
+    red     (0xff, 0x00, 0x00),
+    maroon  (0x80, 0x00, 0x00),
+    yellow  (0xff, 0xff, 0x00),
+    olive   (0x80, 0x80, 0x00),
+    lime    (0x00, 0xff, 0x00),
+    green   (0x00, 0x80, 0x00),
+    aqua    (0x00, 0xff, 0xff),
+    teal    (0x00, 0x80, 0x80),
+    blue    (0x00, 0x00, 0xff),
+    navy    (0x00, 0x00, 0x80),
+    fuchsia (0xff, 0x00, 0xff),
+    purple  (0x80, 0x00, 0x80);
+
+static inline uint8_t max_channel_value(uint8_t) { return 0xff; }
+
 // RGBA color/pixel, w/ premultiplied alpha
 template<class Channel>
 struct rgba
@@ -39,6 +60,9 @@ struct rgba
     rgba() {}
     rgba(Channel r, Channel g, Channel b, Channel a)
       : r(r), g(g), b(b), a(a)
+    {}
+    rgba(rgb<Channel> color)
+      : r(color.r), g(color.g), b(color.b), a(max_channel_value(Channel()))
     {}
     Channel r, g, b, a;
 };

@@ -243,8 +243,6 @@ struct style_tree
     property_map properties;
 };
 
-typedef std::map<string,property_map> flattened_style_tree;
-
 struct style_search_path
 {
     // first tree to search

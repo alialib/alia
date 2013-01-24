@@ -708,9 +708,9 @@ struct text_control
                     data.selected_image.value,
                     get_text_region().size,
                     get_text_layout(),
-                    get_color_property(ctx.style.path, "selected-text-color"),
-                    get_color_property(ctx.style.path,
-                        "selected-background-color"));
+                    get_property(ctx, "selected-text-color", rgba8(white)),
+                    get_property(ctx, "selected-background-color",
+                        rgba8(silver)));
                 mark_valid(data.selected_image);
             }
 

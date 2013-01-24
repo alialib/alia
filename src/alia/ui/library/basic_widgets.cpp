@@ -22,7 +22,7 @@ void do_separator(ui_context& ctx, layout const& layout_spec)
       {
         refresh_keyed_data(data.width, *ctx.style.id);
         if (!data.width.is_valid)
-            set(data.width, get_float_property(ctx, "separator-width", 2));
+            set(data.width, get_property(ctx, "separator-width", 2.f));
         data.layout_node.refresh_layout(
             get_layout_traversal(ctx), layout_spec,
             leaf_layout_requirements(
@@ -46,7 +46,8 @@ void do_separator(ui_context& ctx, layout const& layout_spec)
             paint.setFlags(SkPaint::kAntiAlias_Flag);
             paint.setStrokeWidth(2);
             paint.setStrokeCap(SkPaint::kRound_Cap);
-            set_color(paint, get_color_property(ctx, "separator-color"));
+            set_color(paint,
+                get_property(ctx, "separator-color", rgba8(gray)));
             renderer.canvas().drawLine(
                 SkIntToScalar(1), SkIntToScalar(1),
                 layout_scalar_as_skia_scalar(region.size[0] - 1),
@@ -188,35 +189,31 @@ void bulleted_item::end()
 
 // CHECK BOX
 
-struct check_box_renderer : boolean_widget_renderer
+struct check_box_renderer : control_renderer<bool>
 {};
-
-struct check_box_data
-{
-    layout_leaf layout_node;
-    themed_rendering_data<check_box_renderer> rendering;
-    button_input_state input;
-};
 
 struct default_check_box_renderer : check_box_renderer
 {
-    layout_vector default_size(ui_context& ctx) const
+    layout_vector default_size(
+        ui_context& ctx, renderer_data_ptr& data_ptr) const
     {
-        return resolve_layout_size(get_layout_traversal(ctx),
-            size(1.2f, 1.2f, EM));
+        default_control_renderer_data* data;
+        cast_data_ptr(&data, data_ptr);
+
+        return get_box_control_size(ctx, data->size, "check-box");
     }
     void draw(
         ui_context& ctx, renderer_data_ptr& data_ptr, layout_box const& region,
         getter<bool> const& value, widget_state state) const
     {
-        caching_renderer_data* data;
+        default_control_renderer_data* data;
         cast_data_ptr(&data, data_ptr);
 
         layout_vector const& padding_size = get_padding_size(ctx);
         layout_box padded_region = add_border(region, padding_size);
         layout_vector const& unpadded_size = region.size;
 
-        caching_renderer cache(ctx, *data,
+        caching_renderer cache(ctx, data->renderer,
             combine_ids(combine_ids(ref(value.id()), ref(*ctx.style.id)),
                 make_id(state)),
             padded_region);
@@ -224,13 +221,9 @@ struct default_check_box_renderer : check_box_renderer
         {
             skia_renderer renderer(ctx, cache.image(), padded_region.size);
 
-            style_tree const* control_style =
-                find_substyle(ctx.style.path, "control", state);
-
-            rgba8 bg_color =
-                get_color_property(control_style, "background-color");
-            rgba8 fg_color =
-                get_color_property(control_style, "foreground-color");
+            control_style_path_storage storage;
+            style_search_path const* path =
+                get_control_style_path(ctx, &storage, "check-box", state);
 
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);
@@ -239,15 +232,16 @@ struct default_check_box_renderer : check_box_renderer
                 layout_scalar_as_skia_scalar(padding_size[0]),
                 layout_scalar_as_skia_scalar(padding_size[1]));
 
-            paint.setStyle(SkPaint::kFill_Style);
-            set_color(paint, bg_color);
-            draw_round_rect(renderer.canvas(), paint, unpadded_size);
+            draw_styled_box(ctx, renderer.canvas(), path,
+                layout_box(make_layout_vector(0, 0), unpadded_size),
+                (state & WIDGET_FOCUSED) ? true : false);
 
             if (value.is_gettable() && get(value))
             {
+                rgba8 fg_color =
+                    get_property(path, "foreground-color", rgba8(black));
                 set_color(paint, fg_color);
                 paint.setStrokeCap(SkPaint::kRound_Cap);
-                paint.setStrokeJoin(SkPaint::kRound_Join);
                 SkScalar dx =
                     SkScalarDiv(
                         layout_scalar_as_skia_scalar(unpadded_size[0]),
@@ -271,14 +265,18 @@ struct default_check_box_renderer : check_box_renderer
                     paint);
             }
 
-            if (state & WIDGET_FOCUSED)
-                draw_round_focus_rect(ctx, renderer.canvas(), unpadded_size);
-
             renderer.cache();
             cache.mark_valid();
         }
         cache.draw();
     }
+};
+
+struct check_box_data
+{
+    layout_leaf layout_node;
+    themed_rendering_data<check_box_renderer> rendering;
+    button_input_state input;
 };
 
 check_box_result do_check_box(
@@ -301,7 +299,8 @@ check_box_result do_check_box(
         data.layout_node.refresh_layout(
             get_layout_traversal(ctx),
             layout_spec,
-            leaf_layout_requirements(renderer->default_size(ctx), 0, 0),
+            leaf_layout_requirements(
+                renderer->default_size(ctx, data.rendering.data), 0, 0),
             LEFT | CENTER_Y | PADDED);
         add_layout_node(get_layout_traversal(ctx), &data.layout_node);
         break;
@@ -352,35 +351,31 @@ check_box_result do_check_box(
 
 // RADIO BUTTON
 
-struct radio_button_renderer : boolean_widget_renderer
+struct radio_button_renderer : control_renderer<bool>
 {};
-
-struct radio_button_data
-{
-    layout_leaf layout_node;
-    themed_rendering_data<radio_button_renderer> rendering;
-    button_input_state input;
-};
 
 struct default_radio_button_renderer : radio_button_renderer
 {
-    layout_vector default_size(ui_context& ctx) const
+    layout_vector default_size(
+        ui_context& ctx, renderer_data_ptr& data_ptr) const
     {
-        return resolve_layout_size(get_layout_traversal(ctx),
-            size(1.2f, 1.2f, EM));
+        default_control_renderer_data* data;
+        cast_data_ptr(&data, data_ptr);
+
+        return get_box_control_size(ctx, data->size, "radio-button");
     }
     void draw(
         ui_context& ctx, renderer_data_ptr& data_ptr, layout_box const& region,
         getter<bool> const& value, widget_state state) const
     {
-        caching_renderer_data* data;
+        default_control_renderer_data* data;
         cast_data_ptr(&data, data_ptr);
 
         layout_vector const& padding_size = get_padding_size(ctx);
         layout_box padded_region = add_border(region, padding_size);
         layout_vector const& unpadded_size = region.size;
 
-        caching_renderer cache(ctx, *data,
+        caching_renderer cache(ctx, data->renderer,
             combine_ids(combine_ids(ref(value.id()), ref(*ctx.style.id)),
                 make_id(state)),
             padded_region);
@@ -388,13 +383,14 @@ struct default_radio_button_renderer : radio_button_renderer
         {
             skia_renderer renderer(ctx, cache.image(), padded_region.size);
 
-            style_tree const* control_style =
-                find_substyle(ctx.style.path, "control", state);
+            control_style_path_storage storage;
+            style_search_path const* path =
+                get_control_style_path(ctx, &storage, "radio-button", state);
 
             rgba8 bg_color =
-                get_color_property(control_style, "background-color");
+                get_property(path, "background-color", rgba8(silver));
             rgba8 fg_color =
-                get_color_property(control_style, "foreground-color");
+                get_property(path, "foreground-color", rgba8(black));
 
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);
@@ -408,7 +404,8 @@ struct default_radio_button_renderer : radio_button_renderer
 
             if (state & WIDGET_FOCUSED)
             {
-                set_color(paint, get_color_property(ctx, "focus-color"));
+                set_color(paint,
+                    get_property(ctx, "focus-color", rgba8(gray)));
                 paint.setStyle(SkPaint::kFill_Style);
                 renderer.canvas().drawCircle(
                     layout_scalar_as_skia_scalar(center[0]),
@@ -443,6 +440,13 @@ struct default_radio_button_renderer : radio_button_renderer
     }
 };
 
+struct radio_button_data
+{
+    layout_leaf layout_node;
+    themed_rendering_data<radio_button_renderer> rendering;
+    button_input_state input;
+};
+
 radio_button_result
 do_radio_button(
     ui_context& ctx,
@@ -464,7 +468,8 @@ do_radio_button(
         data.layout_node.refresh_layout(
             get_layout_traversal(ctx),
             layout_spec,
-            leaf_layout_requirements(renderer->default_size(ctx), 0, 0),
+            leaf_layout_requirements(
+                renderer->default_size(ctx, data.rendering.data), 0, 0),
             LEFT | CENTER_Y | PADDED);
         add_layout_node(get_layout_traversal(ctx), &data.layout_node);
         break;
@@ -514,49 +519,48 @@ radio_button_result do_radio_button(
 
 // NODE EXPANDER
 
-struct node_expander_renderer : boolean_widget_renderer
+struct node_expander_renderer : new_control_renderer<bool>
 {};
-
-struct node_expander_data
-{
-    layout_leaf layout_node;
-    themed_rendering_data<node_expander_renderer> rendering;
-    button_input_state input;
-};
 
 struct default_node_expander_renderer : node_expander_renderer
 {
     layout_vector default_size(ui_context& ctx) const
     {
-        return resolve_layout_size(get_layout_traversal(ctx),
-            size(1.2f, 1.2f, EM));
+        return get_box_control_size(ctx, "node-expander");
     }
     void draw(
-        ui_context& ctx, renderer_data_ptr& data_ptr, layout_box const& region,
+        ui_context& ctx, layout_box const& region,
         getter<bool> const& value, widget_state state) const
     {
-        caching_renderer_data* data;
-        cast_data_ptr(&data, data_ptr);
+        ALIA_GET_CACHED_DATA(caching_renderer_data);
+
+        float angle =
+            smooth_value(ctx, value.is_gettable() && get(value) ? 90.f : 0.f,
+                animated_transition(linear_curve, 200));
+
+        if (!is_render_pass(ctx))
+            return;
 
         layout_vector const& padding_size = get_padding_size(ctx);
         layout_box padded_region = add_border(region, padding_size);
         layout_vector const& unpadded_size = region.size;
 
-        caching_renderer cache(ctx, *data,
-            combine_ids(combine_ids(ref(value.id()), ref(*ctx.style.id)),
+        caching_renderer cache(ctx, data,
+            combine_ids(combine_ids(make_id(angle), ref(*ctx.style.id)),
                 make_id(state)),
             padded_region);
         if (cache.needs_rendering())
         {
             skia_renderer renderer(ctx, cache.image(), padded_region.size);
 
-            style_tree const* control_style =
-                find_substyle(ctx.style.path, "control", state);
+            control_style_path_storage storage;
+            style_search_path const* path =
+                get_control_style_path(ctx, &storage, "node-expander", state);
 
             rgba8 bg_color =
-                get_color_property(control_style, "background-color");
+                get_property(path, "background-color", rgba8(gray));
             rgba8 fg_color =
-                get_color_property(control_style, "foreground-color");
+                get_property(path, "foreground-color", rgba8(black));
 
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);
@@ -583,8 +587,7 @@ struct default_node_expander_renderer : node_expander_renderer
                     layout_scalar_as_skia_scalar(unpadded_size[1]),
                     SkIntToScalar(2)));
 
-            if (value.is_gettable() && get(value))
-                renderer.canvas().rotate(90);
+            renderer.canvas().rotate(angle);
 
             {
                 set_color(paint, fg_color);
@@ -592,7 +595,7 @@ struct default_node_expander_renderer : node_expander_renderer
                 SkScalar a =
                     SkScalarDiv(
                         layout_scalar_as_skia_scalar(unpadded_size[0]),
-                        SkDoubleToScalar(1.8));
+                        SkDoubleToScalar(2.));
                 SkPath path;
                 path.incReserve(4);
                 SkPoint p0;
@@ -618,37 +621,44 @@ struct default_node_expander_renderer : node_expander_renderer
     }
 };
 
-node_expander_result do_node_expander(
+struct boolean_widget_data
+{
+    layout_leaf layout_node;
+    new_themed_rendering_data rendering;
+    button_input_state input;
+};
+
+template<class Renderer, class DefaultRenderer>
+control_result
+do_boolean_widget(
     ui_context& ctx,
     accessor<bool> const& value,
     layout const& layout_spec,
     widget_id id)
 {
-    ALIA_GET_CACHED_DATA(node_expander_data)
+    ALIA_GET_CACHED_DATA(boolean_widget_data)
 
     init_optional_widget_id(ctx, id, &data);
+
+    Renderer const* renderer;
+    static DefaultRenderer default_renderer;
+    get_themed_renderer(ctx, data.rendering, &renderer, &default_renderer);
 
     switch (ctx.event->category)
     {
      case REFRESH_CATEGORY:
       {
-        static default_node_expander_renderer default_renderer;
-        refresh_themed_rendering_data(ctx, data.rendering, &default_renderer);
-        node_expander_renderer const* renderer = data.rendering.renderer;
+        layout_vector default_size;
+        {
+            scoped_data_block block(ctx, data.rendering.refresh_block);
+            default_size = renderer->default_size(ctx);
+        }
         data.layout_node.refresh_layout(
             get_layout_traversal(ctx),
             layout_spec,
-            leaf_layout_requirements(renderer->default_size(ctx), 0, 0),
+            leaf_layout_requirements(default_size, 0, 0),
             LEFT | CENTER_Y | PADDED);
         add_layout_node(get_layout_traversal(ctx), &data.layout_node);
-        break;
-      }
-
-     case RENDER_CATEGORY:
-      {
-        data.rendering.renderer->draw(ctx, data.rendering.data,
-            data.layout_node.assignment().region, value,
-            get_button_state(ctx, id, data.input));
         break;
       }
 
@@ -659,16 +669,37 @@ node_expander_result do_node_expander(
      case INPUT_CATEGORY:
         if (do_button_input(ctx, id, data.input))
         {
-            node_expander_result result;
-            set_new_value(value, result,
-                value.is_gettable() ? !value.get() : true);
+            control_result result;
+            result.changed = true;
             return result;
         }
         break;
     }
 
-    node_expander_result result;
+    {
+        scoped_data_block block(ctx, data.rendering.drawing_block);
+        renderer->draw(ctx,
+            data.layout_node.assignment().region, value,
+            get_button_state(ctx, id, data.input));
+    }
+
+    control_result result;
     result.changed = false;
+    return result;
+}
+
+node_expander_result
+do_node_expander(
+    ui_context& ctx,
+    accessor<bool> const& value,
+    layout const& layout_spec,
+    widget_id id)
+{
+    node_expander_result result =
+        do_boolean_widget<node_expander_renderer,default_node_expander_renderer>(
+            ctx, value, layout_spec, id);
+    if (result)
+        set(value, value.is_gettable() ? !value.get() : true);
     return result;
 }
 
@@ -706,14 +737,16 @@ void do_progress_bar(ui_context& ctx, getter<double> const& progress,
             paint.setFlags(SkPaint::kAntiAlias_Flag);
             paint.setStyle(SkPaint::kFill_Style);
 
-            style_tree const* progress_bar_style =
-                find_substyle(ctx.style.path, "progress-bar", WIDGET_NORMAL);
+            style_search_path storage;
+            style_search_path const* path =
+                add_substyle_to_path(&storage, ctx.style.path, 0,
+                    "progress-bar");
 
             rgba8 outline_color =
-                get_color_property(progress_bar_style, "outline-color");
+                get_property(path, "outline-color", rgba8(black));
             rgba8 background_color = ctx.style.properties->background_color;
             rgba8 bar_color =
-                get_color_property(progress_bar_style, "bar-color");
+                get_property(path, "bar-color", rgba8(gray));
 
             SkScalar trim =
                 SkScalarDiv(
@@ -769,10 +802,8 @@ do_button(
     ALIA_GET_CACHED_DATA(button_data)
     widget_state state = get_button_state(ctx, id, data.input);
     panel p(ctx, text("button"),
-        add_default_alignment(layout_spec, LEFT, TOP), NO_FLAGS, id, state);
+        add_default_alignment(layout_spec, LEFT, TOP), SHOW_FOCUS, id, state);
     do_text(ctx, label, CENTER);
-    if (is_render_pass(ctx) && (state & WIDGET_FOCUSED))
-        draw_focus_rect(ctx, data.focus_rect, p.outer_region());
     return do_button_input(ctx, id, data.input);
 }
 
@@ -820,13 +851,14 @@ struct default_icon_button_renderer : icon_button_renderer
         {
             skia_renderer renderer(ctx, cache.image(), padded_region.size);
 
-            style_tree const* control_style =
-                find_substyle(ctx.style.path, "control", state);
+            control_style_path_storage storage;
+            style_search_path const* path =
+                get_control_style_path(ctx, &storage, "icon-button", state);
 
             rgba8 bg_color =
-                get_color_property(control_style, "background-color");
+                get_property(path, "background-color", rgba8(gray));
             rgba8 fg_color =
-                get_color_property(control_style, "foreground-color");
+                get_property(path, "foreground-color", rgba8(black));
 
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);

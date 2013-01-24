@@ -25,10 +25,38 @@ void bordered_box::end()
 struct panel_data
 {
     caching_renderer_data rendering;
+    keyed_data<bool> rounded;
 };
 
-static void begin_panel(
-    ui_context& ctx, column_layout& outer, widget_id id, ui_flag_set flags,
+static bool
+is_style_rounded(ui_context& ctx, keyed_data<bool>& data)
+{
+    refresh_keyed_data(data, *ctx.style.id);
+    if (!is_valid(data))
+    {
+        four_corners_spec spec =
+            get_property(ctx, "border-radius",
+                four_corners_spec(
+                    relative_size_spec_2d(
+                        relative_size_spec(0, PIXELS),
+                        relative_size_spec(0, PIXELS))));
+        bool is_rounded = false;
+        for (int i = 0; i != 4; ++i)
+        {
+            for (int j = 0; j != 2; ++j)
+            {
+                if (spec.corners[i].axes[j].size != 0)
+                    is_rounded = true;
+            }
+        }
+        set(data, is_rounded);
+    }
+    return get(data);
+}
+
+static void
+begin_outer_panel(
+    ui_context& ctx, bordered_layout& outer, widget_id id, ui_flag_set flags,
     panel_data& data)
 {
     switch (ctx.event->category)
@@ -38,7 +66,7 @@ static void begin_panel(
 
      case RENDER_CATEGORY:
       {
-        if (flags & ROUNDED)
+        if (is_style_rounded(ctx, data.rounded))
         {
             layout_box const& rect = outer.region();
             caching_renderer cache(ctx, data.rendering, *ctx.style.id, rect);
@@ -49,19 +77,17 @@ static void begin_panel(
                 SkPaint paint;
                 paint.setFlags(SkPaint::kAntiAlias_Flag);
                 set_color(paint, ctx.style.properties->background_color);
-                SkRect sr;
-                sr.fLeft = 0;
-                sr.fRight = layout_scalar_as_skia_scalar(rect.size[0]);
-                sr.fTop = 0;
-                sr.fBottom = layout_scalar_as_skia_scalar(rect.size[1]);
-                if (flags & ROUNDED)
-                {
-                    SkScalar radius =
-                        layout_scalar_as_skia_scalar(padding * 2);
-                    renderer.canvas().drawRoundRect(sr, radius, radius, paint);
-                }
-                else
-                    renderer.canvas().drawRect(sr, paint);
+                four_corners_spec corners_spec =
+                    get_property(ctx, "border-radius",
+                        four_corners_spec(
+                            relative_size_spec_2d(
+                                relative_size_spec(0, PIXELS),
+                                relative_size_spec(0, PIXELS))));
+                four_corners_sizes corners =
+                    eval_four_corners(ctx, corners_spec,
+                        vector<2,float>(rect.size));
+                paint.setStyle(SkPaint::kFill_Style);
+                draw_rect(renderer.canvas(), paint, rect, corners);
                 renderer.cache();
                 cache.mark_valid();
             }
@@ -92,6 +118,20 @@ static void begin_panel(
     }
 }
 
+static void
+begin_inner_panel(
+    ui_context& ctx, linear_layout& inner, layout const& layout_spec,
+    ui_flag_set flags)
+{
+    layout_flag_set inner_layout_flags =
+        FILL_X |
+        ((layout_spec.flags & Y_ALIGNMENT_MASK) == BASELINE_Y ?
+            BASELINE_Y : FILL_Y) |
+        ((flags & NO_INTERNAL_PADDING) ? UNPADDED : PADDED);
+    inner.begin(ctx, (flags & HORIZONTAL) ? 0 : 1,
+	layout(inner_layout_flags, 1));
+}
+
 void panel::begin(
     ui_context& ctx, getter<string> const& style,
     layout const& layout_spec, ui_flag_set flags, widget_id id,
@@ -105,19 +145,14 @@ void panel::begin(
 
     init_optional_widget_id(ctx, id, data);
 
-    outer_.begin(ctx, add_default_padding(layout_spec, PADDED));
+    outer_.begin(ctx, size(0, 0, PIXELS),
+        add_default_padding(layout_spec, PADDED));
 
     substyle_.begin(ctx, style, state);
 
-    begin_panel(ctx, outer_, id, flags, *data);
+    begin_outer_panel(ctx, outer_, id, flags, *data);
 
-    layout_flag_set inner_layout_flags =
-        FILL_X |
-        ((layout_spec.flags & Y_ALIGNMENT_MASK) == BASELINE_Y ?
-            BASELINE_Y : FILL_Y) |
-        ((flags & NO_INTERNAL_PADDING) ? UNPADDED : PADDED);
-    inner_.begin(ctx, (flags & HORIZONTAL) ? 0 : 1,
-	layout(inner_layout_flags, 1));
+    begin_inner_panel(ctx, inner_, layout_spec, flags);
 }
 void panel::end()
 {
@@ -132,12 +167,12 @@ void panel::end()
 
 layout_box panel::outer_region() const
 {
-    // outer_.region() returns its region in its own frame of reference, which
-    // isn't valid for panel users, so this is used instead.
-    if (flags_ & NO_INTERNAL_PADDING)
-        return inner_.region();
-    else
-        return add_border(inner_.region(), get_padding_size(*ctx_));
+    layout_box region = outer_.region();
+    // When this is called, we're already inside the inner region, so we're
+    // using a different transformation matrix than the outer region expects.
+    // Thus, we need to adjust the region's corner to compensate.
+    region.corner -= inner_.offset();
+    return region;
 }
 
 struct clickable_panel_data
@@ -146,42 +181,41 @@ struct clickable_panel_data
     caching_renderer_data rendering;
 };
 
-static void draw_panel_focus_border(
+static void
+draw_panel_focus_border(
     ui_context& ctx, panel& p, ui_flag_set flags,
     caching_renderer_data& rendering)
 {
-    if (!(flags & NO_FOCUS_INDICATOR))
+    if (!(flags & HIDE_FOCUS))
     {
         layout_box rect = p.outer_region();
-        if (flags & ROUNDED)
+        caching_renderer cache(ctx, rendering, *ctx.style.id,
+            add_border(rect, get_padding_size(ctx)));
+        if (cache.needs_rendering())
         {
-            caching_renderer cache(ctx, rendering, *ctx.style.id,
-                add_border(rect, get_padding_size(ctx)));
-            if (cache.needs_rendering())
-            {
-                layout_vector const& padding = get_padding_size(ctx);
-                skia_renderer renderer(ctx, cache.image(),
-                    rect.size + padding * 2);
-                SkPaint paint;
-                paint.setFlags(SkPaint::kAntiAlias_Flag);
-                setup_focus_drawing(ctx, paint);
-                renderer.canvas().translate(
-                    layout_scalar_as_skia_scalar(padding[0]),
-                    layout_scalar_as_skia_scalar(padding[1]));
-                SkRect sr;
-                sr.fLeft = 0;
-                sr.fRight = layout_scalar_as_skia_scalar(rect.size[0]);
-                sr.fTop = 0;
-                sr.fBottom = layout_scalar_as_skia_scalar(rect.size[1]);
-                SkScalar radius = layout_scalar_as_skia_scalar(padding[0] * 2);
-                renderer.canvas().drawRoundRect(sr, radius, radius, paint);
-                renderer.cache();
-                cache.mark_valid();
-            }
-            cache.draw();
+            layout_vector const& padding = get_padding_size(ctx);
+            skia_renderer renderer(ctx, cache.image(),
+                rect.size + padding * 2);
+            SkPaint paint;
+            paint.setFlags(SkPaint::kAntiAlias_Flag);
+            setup_focus_drawing(ctx, paint);
+            renderer.canvas().translate(
+                layout_scalar_as_skia_scalar(padding[0]),
+                layout_scalar_as_skia_scalar(padding[1]));
+            four_corners_spec corners_spec =
+                get_property(ctx, "border-radius",
+                    four_corners_spec(
+                        relative_size_spec_2d(
+                            relative_size_spec(0, PIXELS),
+                            relative_size_spec(0, PIXELS))));
+            four_corners_sizes corners =
+                eval_four_corners(ctx, corners_spec,
+                    vector<2,float>(rect.size));
+            draw_rect(renderer.canvas(), paint, rect, corners);
+            renderer.cache();
+            cache.mark_valid();
         }
-        else
-            draw_focus_rect(ctx, rendering, rect);
+        cache.draw();
     }
 }
 
@@ -192,26 +226,40 @@ void clickable_panel::begin(
 {
     ALIA_GET_CACHED_DATA(clickable_panel_data)
     get_widget_id_if_needed(ctx, id);
-    widget_state state = get_button_state(ctx, id, data.input);
+    widget_state state;
+    if (flags & DISABLED)
+    {
+        state = WIDGET_DISABLED;
+        clicked_ = false;
+    }
+    else
+    {
+        state = get_button_state(ctx, id, data.input);
+        clicked_ = do_button_input(ctx, id, data.input);
+    }
     panel_.begin(ctx, style, layout_spec, flags, id, state);
-    clicked_ = do_button_input(ctx, id, data.input);
     if (is_render_pass(ctx) && (state & WIDGET_FOCUSED))
         draw_panel_focus_border(ctx, panel_, flags, data.rendering);
 }
 
 void scrollable_panel::begin(
     ui_context& ctx, getter<string> const& style,
-    unsigned scrollable_axes,
     layout const& layout_spec, ui_flag_set flags)
 {
     widget_id id = get_widget_id(ctx);
-    outer_.begin(ctx, layout_spec);
+    outer_.begin(ctx, size(0, 0, PIXELS), layout_spec);
     substyle_.begin(ctx, style, WIDGET_NORMAL);
     panel_data* data;
     get_cached_data(ctx, &data);
-    begin_panel(ctx, outer_, id, flags, *data);
-    region_.begin(ctx, GROW | UNPADDED, scrollable_axes, id);
-    inner_.begin(ctx, (flags & HORIZONTAL) ? 0 : 1, GROW | PADDED);
+    begin_outer_panel(ctx, outer_, id, flags, *data);
+    unsigned scrollable_axes =
+        ((flags & NO_HORIZONTAL_SCROLL) ? 0 : 1) |
+        ((flags & NO_VERTICAL_SCROLL) ? 0 : 2);
+    unsigned reserved_axes =
+        ((flags & RESERVE_HORIZONTAL) ? 1 : 0) |
+        ((flags & RESERVE_VERTICAL) ? 2 : 0);
+    region_.begin(ctx, GROW | UNPADDED, scrollable_axes, id, reserved_axes);
+    begin_inner_panel(ctx, inner_, layout_spec, flags);
 }
 void scrollable_panel::end()
 {
@@ -219,6 +267,161 @@ void scrollable_panel::end()
     region_.end();
     substyle_.end();
     outer_.end();
+}
+
+// COLLAPSIBLE CONTENT
+
+struct collapsible_layout_container : layout_container
+{
+    // implementation of layout interface
+    layout_requirements get_horizontal_requirements(
+        layout_calculation_context& ctx);
+    layout_requirements get_vertical_requirements(
+        layout_calculation_context& ctx,
+        layout_scalar assigned_width);
+    void set_relative_assignment(
+        layout_calculation_context& ctx,
+        relative_layout_assignment const& assignment);
+
+    // expansion fraction (0 to 1)
+    float expansion;
+
+    // layout cacher
+    layout_cacher cacher;
+
+    // The following are filled in during layout...
+
+    // actual content height
+    layout_scalar content_height;
+
+    // window through which the content is visible
+    layout_box window;
+};
+
+layout_requirements
+collapsible_layout_container::get_horizontal_requirements(
+    layout_calculation_context& ctx)
+{
+    horizontal_layout_query query(ctx, cacher, last_content_change);
+    alia_if (query.update_required())
+    {
+        layout_requirements r =
+            alia::get_horizontal_requirements(ctx, *children);
+        query.update(calculated_layout_requirements(r.minimum_size, 0, 0));
+    }
+    alia_end
+    return query.result();
+}
+
+layout_requirements
+collapsible_layout_container::get_vertical_requirements(
+    layout_calculation_context& ctx, layout_scalar assigned_width)
+{
+    vertical_layout_query query(ctx, cacher, last_content_change,
+        assigned_width);
+    alia_if (query.update_required())
+    {
+        layout_scalar resolved_width =
+            resolve_assigned_width(
+                this->cacher.resolved_spec,
+                assigned_width,
+                this->get_horizontal_requirements(ctx));
+        layout_requirements y = alia::get_vertical_requirements(
+            ctx, *children, resolved_width);
+        layout_scalar content_height = y.minimum_size;
+        layout_scalar visible_height =
+            round_to_layout_scalar(float(content_height) * this->expansion);
+        this->content_height = content_height;
+        query.update(calculated_layout_requirements(visible_height, 0, 0));
+    }
+    alia_end
+    return query.result();
+}
+
+void
+collapsible_layout_container::set_relative_assignment(
+    layout_calculation_context& ctx,
+    relative_layout_assignment const& assignment)
+{
+    relative_region_assignment rra(ctx, *this, cacher, last_content_change,
+        assignment);
+    alia_if (rra.update_required())
+    {
+        this->window = rra.resolved_assignment().region;
+
+        layout_box const& region = rra.resolved_assignment().region;
+
+        layout_requirements y = alia::get_vertical_requirements(
+            ctx, *children, region.size[0]);
+
+        layout_vector content_size =
+            make_layout_vector(region.size[0], y.minimum_size);
+
+        relative_layout_assignment assignment(
+            layout_box(make_layout_vector(0, 0), content_size),
+            y.minimum_size - y.minimum_descent);
+
+        alia::set_relative_assignment(ctx, *children, assignment);
+        rra.update();
+    }
+    alia_end
+}
+
+void collapsible_content::begin(
+    ui_context& ctx, bool expanded, animated_transition const& transition,
+    double const offset_factor, layout const& layout_spec)
+{
+    ctx_ = &ctx;
+
+    collapsible_layout_container* layout;
+    get_cached_data(ctx, &layout);
+
+    container_.begin(get_layout_traversal(ctx), layout);
+
+    float expansion = smooth_value(ctx, expanded ? 1.f : 0.f, transition);
+
+    if (is_refresh_pass(ctx))
+    {
+        detect_layout_change(ctx, &layout->expansion, expansion);
+        update_layout_cacher(get_layout_traversal(ctx), layout->cacher,
+            layout_spec, FILL | UNPADDED);
+    }
+    else
+    {
+        if (expansion != 0 && expansion != 1)
+        {
+            clipper_.begin(*get_layout_traversal(ctx).geometry);
+            clipper_.set(box<2,double>(layout->window));
+        }
+
+        layout_scalar offset = round_to_layout_scalar(
+            offset_factor * (1 - expansion) * layout->content_height);
+
+        transform_.begin(*get_layout_traversal(ctx).geometry);
+        transform_.set(
+            translation_matrix(make_vector<double>(0, -offset) +
+                vector<2,double>(
+                    layout->cacher.relative_assignment.region.corner)));
+    }
+
+    do_content_ = expansion != 0;
+
+    layout_.begin(ctx);
+}
+
+void collapsible_content::end()
+{
+    if (ctx_)
+    {
+        layout_.end();
+
+        transform_.end();
+        clipper_.end();
+
+        container_.end();
+
+        ctx_ = 0;
+    }
 }
 
 // TREE NODE
@@ -251,10 +454,14 @@ void tree_node::begin(
 
     grid_.begin(ctx, layout_spec);
     row_.begin(grid_);
-    do_children_ = state.is_gettable() ? state.get() : false;
+
+    is_expanded_ = state.is_gettable() ? state.get() : false;
+    get_widget_id_if_needed(ctx, expander_id);
     expander_result_ =
         do_node_expander(ctx, state, default_layout, expander_id);
-    label_region_.begin(ctx, layout(GROW));
+
+    label_region_.begin(ctx);
+    hit_test_box_region(ctx, expander_id, label_region_.region());
 }
 
 void tree_node::end_header()
@@ -267,23 +474,27 @@ bool tree_node::do_children()
     ui_context& ctx = *ctx_;
     end_header();
     row_.end();
-    alia_if(do_children_)
+    content_.begin(ctx, is_expanded_);
+    bool do_content = content_.do_content();
+    alia_if (do_content)
     {
         row_.begin(grid_, layout(GROW));
         do_spacer(ctx);
         column_.begin(ctx, layout(GROW));
-        return true;
     }
     alia_end
-    return false;
+    return do_content;
 }
 
 void tree_node::end()
 {
     column_.end();
     row_.end();
+    content_.end();
     grid_.end();
 }
+
+// RESIZABLE CONTENT
 
 struct draggable_separator_data
 {
@@ -306,7 +517,7 @@ bool do_draggable_separator(ui_context& ctx, accessor<int> const& width,
       {
         refresh_keyed_data(data.width, *ctx.style.id);
         if (!data.width.is_valid)
-            set(data.width, get_float_property(ctx, "separator-width", 2));
+            set(data.width, get_property(ctx, "separator-width", 2.f));
         data.layout_node.refresh_layout(
             get_layout_traversal(ctx), layout_spec,
             leaf_layout_requirements(
@@ -330,7 +541,8 @@ bool do_draggable_separator(ui_context& ctx, accessor<int> const& width,
             paint.setFlags(SkPaint::kAntiAlias_Flag);
             paint.setStrokeWidth(2);
             paint.setStrokeCap(SkPaint::kRound_Cap);
-            set_color(paint, get_color_property(ctx, "separator-color"));
+            set_color(paint,
+                get_property(ctx, "separator-color", rgba8(gray)));
             renderer.canvas().drawLine(
                 SkIntToScalar(1), SkIntToScalar(1),
                 layout_scalar_as_skia_scalar(region.size[0] - 1),
@@ -570,6 +782,117 @@ void popup::end()
 	layout_.end();
 
 	ctx_ = 0;
+    }
+}
+
+// ACCORDIONS
+
+void accordion::begin(ui_context& ctx, layout const& layout_spec)
+{
+    ctx_ = &ctx;
+    if (get_data(ctx, &selection_))
+        *selection_ = 0;
+    index_ = 0;
+    layout_.begin(ctx, layout_spec);
+}
+
+void accordion::end()
+{
+    if (ctx_)
+    {
+        layout_.end();
+        ctx_ = 0;
+    }
+}
+
+void accordion_section::begin(ui_context& ctx, accessor<bool> const& selected)
+{
+    ctx_ = &ctx;
+    is_selected_ = is_gettable(selected) ? get(selected) : false;
+    panel_.begin(ctx, text("accordion-header"), default_layout,
+        is_selected_ ? DISABLED : NO_FLAGS);
+    if (panel_.clicked())
+        selected.set(true);
+}
+void accordion_section::begin(accordion& parent)
+{
+    begin(*parent.ctx_,
+        make_indexed_accessor(inout(parent.selection_), parent.index_++));
+}
+bool accordion_section::do_content()
+{
+    ui_context& ctx = *ctx_;
+    panel_.end();
+    content_.begin(ctx, is_selected_, animated_transition(default_curve, 400),
+        0.1);
+    return content_.do_content();
+}
+void accordion_section::end()
+{
+    if (ctx_)
+    {
+        content_.end();
+        ctx_ = 0;
+    }
+}
+
+// CLAMPED CONTENT / HEADER
+
+void clamped_content::begin(
+    ui_context& ctx,
+    getter<string> const& background_style,
+    getter<string> const& content_style,
+    size const& max_size,
+    layout const& layout_spec,
+    ui_flag_set flags)
+{
+    ctx_ = &ctx;
+    background_.begin(ctx, background_style, layout_spec,
+        NO_INTERNAL_PADDING |
+        (max_size.width > 0 ? RESERVE_VERTICAL : NO_FLAGS) |
+        (max_size.height > 0 ? RESERVE_HORIZONTAL : NO_FLAGS));
+    clamp_.begin(ctx, max_size, GROW | UNPADDED);
+    content_.begin(ctx, content_style, UNPADDED, flags);
+}
+void clamped_content::end()
+{
+    if (ctx_)
+    {
+        content_.end();
+        clamp_.end();
+        background_.end();
+        ctx_ = 0;
+    }
+}
+
+void clamped_header::begin(
+    ui_context& ctx,
+    getter<string> const& background_style,
+    getter<string> const& header_style,
+    size const& max_size,
+    layout const& layout_spec,
+    ui_flag_set flags)
+{
+    ctx_ = &ctx;
+    background_.begin(ctx, background_style, layout_spec,
+        NO_INTERNAL_PADDING |
+        (max_size.width > 0 ?
+            NO_VERTICAL_SCROLL | RESERVE_VERTICAL :
+            NO_FLAGS) |
+        (max_size.height > 0 ?
+            NO_HORIZONTAL_SCROLL | RESERVE_HORIZONTAL :
+            NO_FLAGS));
+    clamp_.begin(ctx, max_size, GROW | UNPADDED);
+    header_.begin(ctx, header_style, UNPADDED, flags);
+}
+void clamped_header::end()
+{
+    if (ctx_)
+    {
+        header_.end();
+        clamp_.end();
+        background_.end();
+        ctx_ = 0;
     }
 }
 
