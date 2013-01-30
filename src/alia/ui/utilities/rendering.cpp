@@ -83,9 +83,9 @@ get_control_style_path(ui_context& ctx,
 {
     return
         add_substyle_to_path(
-            &storage->nodes[1],
+            &storage->storage[1],
             ctx.style.path, 
-            add_substyle_to_path(&storage->nodes[0], ctx.style.path, 0,
+            add_substyle_to_path(&storage->storage[0], ctx.style.path, 0,
                 "control"),
             control_type);
 }
@@ -114,16 +114,11 @@ get_box_control_size(ui_context& ctx, char const* control_type)
         style_search_path const* path =
             get_control_style_path(ctx, &storage, "check-box");
         set(data,
-            as_layout_size(eval_absolute_size_spec(ctx,
-                get_property(path, "size",
-                    absolute_size_spec_2d(
-                        absolute_size_spec(1.2f, EM),
-                        absolute_size_spec(1.2f, EM))))) +
-            2 * as_layout_size(eval_absolute_size_spec(ctx,
-                get_property(path, "border-width",
-                    absolute_size_spec_2d(
-                        absolute_size_spec(0, PIXELS),
-                        absolute_size_spec(0, PIXELS))))));
+            as_layout_size(resolve_absolute_size(get_layout_traversal(ctx),
+                get_property(path, "size", INHERITED_PROPERTY,
+                    make_vector(
+                        absolute_length(1.2f, EM),
+                        absolute_length(1.2f, EM))))));
     }
     return get(data);
 }
@@ -139,16 +134,11 @@ get_box_control_size(ui_context& ctx, keyed_data<layout_vector>& data,
         style_search_path const* path =
             get_control_style_path(ctx, &storage, "check-box");
         set(data,
-            as_layout_size(eval_absolute_size_spec(ctx,
-                get_property(path, "size",
-                    absolute_size_spec_2d(
-                        absolute_size_spec(1.2f, EM),
-                        absolute_size_spec(1.2f, EM))))) +
-            2 * as_layout_size(eval_absolute_size_spec(ctx,
-                get_property(path, "border-width",
-                    absolute_size_spec_2d(
-                        absolute_size_spec(0, PIXELS),
-                        absolute_size_spec(0, PIXELS))))));
+            as_layout_size(resolve_absolute_size(get_layout_traversal(ctx),
+                get_property(path, "size", INHERITED_PROPERTY,
+                    make_vector(
+                        absolute_length(1.2f, EM),
+                        absolute_length(1.2f, EM))))));
     }
     return get(data);
 }

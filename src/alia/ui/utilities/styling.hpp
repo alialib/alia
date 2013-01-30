@@ -21,30 +21,49 @@ typedef std::map<string,property_map> flattened_style_tree;
 // Convert a flattened style tree to a normal one.
 style_tree unflatten_style_tree(flattened_style_tree const& flattened);
 
-// Look up the value of a property in the style search path.
-string const* get_style_property(
-    style_search_path const* path,
-    char const* property_name);
+// STYLE PROPERTY SEARCHING
+
+// All searching is done through search paths. Search paths are linked lists
+// of pointers to style trees. A null pointer within the list acts as a
+// separator between atomic blocks of trees. When searching for a property
+// that is NOT inherited, searching stops when it encounters a separator.
+
+struct style_search_flag_tag {};
+typedef flag_set<style_search_flag_tag> style_search_flag_set;
+ALIA_DEFINE_FLAG_CODE(style_search_flag_tag, 0x00, UNINHERITED_PROPERTY)
+ALIA_DEFINE_FLAG_CODE(style_search_flag_tag, 0x01, INHERITED_PROPERTY)
+
+// Look up the value of a property using the given search path.
+string const*
+get_style_property(
+    style_search_path const* path, char const* property_name,
+    style_search_flag_set flags);
 
 // Find a substyle within the search path and construct a new path consisting
 // of the substyle followed by the 'rest' path.
 // Since the return value is a pointer to the new path, the caller must supply
-// storage for a single path node.
+// storage for it.
+struct style_path_storage
+{
+    style_search_path nodes[2];
+};
 style_search_path const*
 add_substyle_to_path(
-    style_search_path* storage,
+    style_path_storage* storage,
     style_search_path const* search_path,
     style_search_path const* rest,
-    string const& substyle_name);
+    string const& substyle_name,
+    ui_flag_set flags = NO_FLAGS);
 
 // Same as above, but includes an associated widget state.
 // This will add the substyle with and without associated state to the path,
 // so the style without the associated state acts as a fallback.
 // Depending on the widget state, it may also add other intermediate styles
 // using simpler versions of the state.
+// All substyles are added as a single atomic block.
 struct stateful_style_path_storage
 {
-    style_search_path nodes[4];
+    style_search_path nodes[5];
 };
 style_search_path const*
 add_substyle_to_path(
@@ -52,7 +71,8 @@ add_substyle_to_path(
     style_search_path const* search_path,
     style_search_path const* rest,
     string const& substyle_name,
-    widget_state state);
+    widget_state state,
+    ui_flag_set flags = NO_FLAGS);
 
 // WHOLE TREE I/O - I/O utilities that work with whole style trees.
 
@@ -156,158 +176,109 @@ template<class Value>
 Value
 get_property(
     style_search_path const* path, char const* property_name,
-    Value default_value)
+    style_search_flag_set flags, Value default_value)
 {
     return parse_property(
-        get_style_property(path, property_name), default_value);
+        get_style_property(path, property_name, flags), default_value);
 }
 
 template<class Value>
 Value
 get_property(
-    ui_context& ctx, char const* property_name, Value default_value)
-{ return get_property(ctx.style.path, property_name, default_value); }
+    ui_context& ctx, char const* property_name, style_search_flag_set flags,
+    Value default_value)
+{ return get_property(ctx.style.path, property_name, flags, default_value); }
 
 template<class Value>
 Value
 get_cached_property(
     ui_context& ctx, style_search_path const* path, char const* property_name,
-    Value default_value)
+    style_search_flag_set flags, Value default_value)
 {
     ALIA_GET_CACHED_DATA(keyed_data<Value>)
     refresh_keyed_data(data, *ctx.style.id);
     if (!is_valid(data))
-        set(data, get_property(path, property_name, default_value));
+        set(data, get_property(path, property_name, flags, default_value));
     return get(data);
 }
 
 template<class Value>
 Value
 get_cached_property(
-    ui_context& ctx, char const* property_name, Value default_value)
+    ui_context& ctx, char const* property_name, style_search_flag_set flags,
+    Value default_value)
 {
-    return get_cached_property(ctx, ctx.style.path, property_name,
+    return get_cached_property(ctx, ctx.style.path, property_name, flags,
         default_value);
 }
 
+// color properties
+
 void parse(line_parser& p, rgba8* color);
 
-// CSS-style size specifications
+rgba8
+get_color_property(style_search_path const* path, char const* property_name);
 
-// Absolute size specs are used to specify the size of stand-alone widgets.
+rgba8
+get_color_property(ui_context& ctx, char const* property_name);
 
-struct absolute_size_spec
-{
-    float size;
-    layout_units units;
-
-    absolute_size_spec(float size, layout_units units)
-      : size(size), units(units)
-    {}
-    absolute_size_spec() {}
-};
+// layout properties
 
 void parse(line_parser& p, layout_units* units);
 
-void parse(line_parser& p, absolute_size_spec* spec);
+void parse(line_parser& p, absolute_length* spec);
+void parse(line_parser& p, absolute_size* spec);
 
-float
-eval_absolute_size_spec(
-    ui_context& ctx, unsigned axis, absolute_size_spec const& spec);
-
-// Relative size specs are used to sepcify the size of widget components.
-// They can be either be specified in normal units or as a fraction of the
-// full widget size.
-
-struct relative_size_spec
-{
-    bool is_relative;
-    float size;
-    layout_units units; // only relevant if is_relative is false
-
-    relative_size_spec(float size, layout_units units)
-      : is_relative(false), size(size), units(units)
-    {}
-    relative_size_spec(float size)
-      : is_relative(true), size(size)
-    {}
-    relative_size_spec() {}
-};
-
-void parse(line_parser& p, relative_size_spec* spec);
-
-float
-eval_relative_size_spec(
-    ui_context& ctx, unsigned axis, relative_size_spec const& spec,
-    float full_size);
-
-// 2D version of absolute_size_spec
-
-struct absolute_size_spec_2d
-{
-    absolute_size_spec axes[2];
-
-    absolute_size_spec_2d(
-        absolute_size_spec const& width,
-        absolute_size_spec const& height)
-    {
-        axes[0] = width;
-        axes[1] = height;
-    }
-    absolute_size_spec_2d() {}
-};
-
-void parse(line_parser& p, absolute_size_spec_2d* spec);
-
-vector<2,float>
-eval_absolute_size_spec(ui_context& ctx, absolute_size_spec_2d const& spec);
-
-// 2D version of relative_size_spec
-
-struct relative_size_spec_2d
-{
-    relative_size_spec axes[2];
-
-    relative_size_spec_2d(
-        relative_size_spec const& width,
-        relative_size_spec const& height)
-    {
-        axes[0] = width;
-        axes[1] = height;
-    }
-    relative_size_spec_2d() {}
-};
-
-void parse(line_parser& p, relative_size_spec_2d* spec);
-
-vector<2,float>
-eval_relative_size_spec(ui_context& ctx, relative_size_spec_2d const& spec,
-    vector<2,float> const& full_size);
+void parse(line_parser& p, relative_length* spec);
+void parse(line_parser& p, relative_size* spec);
 
 // 2D size specification for each of the four corners of a rectangle
-
-struct four_corners_spec
+struct box_corner_sizes
 {
-    relative_size_spec_2d corners[4];
+    relative_size corners[4];
 
-    explicit four_corners_spec(relative_size_spec_2d corner)
+    box_corner_sizes(
+        relative_size const& top_left,
+        relative_size const& top_right,
+        relative_size const& bottom_right,
+        relative_size const& bottom_left)
+    {
+        corners[0] = top_left;
+        corners[1] = top_right;
+        corners[2] = bottom_right;
+        corners[3] = bottom_left;
+    }
+    explicit box_corner_sizes(relative_size const& corner)
     {
         for (int i = 0; i != 4; ++i)
             corners[i] = corner;
     }
-    four_corners_spec() {}
+    box_corner_sizes() {}
 };
 
-void parse(line_parser& p, four_corners_spec* spec);
-
-struct four_corners_sizes
+struct resolved_box_corner_sizes
 {
     vector<2,float> corners[4];
 };
 
-four_corners_sizes
-eval_four_corners(ui_context& ctx, four_corners_spec const& spec,
-    vector<2,float> const& full_size);
+resolved_box_corner_sizes
+resolve_box_corner_sizes(layout_traversal& traversal,
+    box_corner_sizes const& spec, vector<2,float> const& full_size);
+
+void parse(line_parser& p, box_corner_sizes* spec);
+
+void parse(line_parser& p, box_border_width* spec);
+
+// specification that selects sides of a rectangle
+struct side_selection_tag {};
+typedef flag_set<side_selection_tag> side_selection;
+ALIA_DEFINE_FLAG_CODE(side_selection_tag, 0x0, NO_SIDES)
+ALIA_DEFINE_FLAG_CODE(side_selection_tag, 0x1, LEFT_SIDE)
+ALIA_DEFINE_FLAG_CODE(side_selection_tag, 0x2, RIGHT_SIDE)
+ALIA_DEFINE_FLAG_CODE(side_selection_tag, 0x4, TOP_SIDE)
+ALIA_DEFINE_FLAG_CODE(side_selection_tag, 0x8, BOTTOM_SIDE)
+
+void parse(line_parser& p, side_selection* spec);
 
 // higher-level properties
 
@@ -324,7 +295,7 @@ void read_primary_style_properties(
     style_search_path const* path);
 
 // Read the style info that's necessary for layout from the given path.
-void read_layout_style_info(layout_style_info* style_info,
+void read_layout_style_info(ui_context& ctx, layout_style_info* style_info,
     font const& font, style_search_path const* path);
 
 }

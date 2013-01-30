@@ -102,7 +102,7 @@ void draw_focus_rect(ui_context& ctx, focus_rect_data& data,
     box<2,int> const& content_region);
 
 void draw_rect(SkCanvas& canvas, SkPaint& paint,
-    layout_box const& region, four_corners_sizes const& radii);
+    layout_box const& region, resolved_box_corner_sizes const& radii);
 
 void draw_styled_box(ui_context& ctx, SkCanvas& canvas,
     style_search_path const* path, layout_box const& region, bool focused);

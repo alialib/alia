@@ -1,11 +1,12 @@
 #include <alia/ui/api.hpp>
 #include <alia/ui/utilities.hpp>
+#include <alia/ui/system.hpp>
 
 // This file implements the core components from the UI API.
 
 namespace alia {
 
-// SUBSTYLES
+// STYLING
 
 struct substyle_data
 {
@@ -18,8 +19,32 @@ struct substyle_data
     local_identity identity;
 };
 
+void scoped_style::begin(ui_context& ctx, style_state const& style,
+    layout_style_info const* info)
+{
+    ctx_ = &ctx;
+
+    old_state_ = ctx.style;
+    ctx.style = style;
+
+    old_style_info_ = ctx.layout->style_info;
+    ctx.layout->style_info = info;
+}
+
+void scoped_style::end()
+{
+    if (ctx_)
+    {
+        ui_context& ctx = *ctx_;
+        ctx.style = old_state_;
+        ctx.layout->style_info = old_style_info_;
+        ctx_ = 0;
+    }
+}
+
 void scoped_substyle::begin(
-    ui_context& ctx, getter<string> const& substyle_name, widget_state state)
+    ui_context& ctx, getter<string> const& substyle_name, widget_state state,
+    ui_flag_set flags)
 {
     substyle_data* data;
     get_cached_data(ctx, &data);
@@ -32,7 +57,7 @@ void scoped_substyle::begin(
 
         data->state.path =
             add_substyle_to_path(&data->path_storage, ctx.style.path,
-                ctx.style.path, get(substyle_name), state);
+                ctx.style.path, get(substyle_name), state, flags);
 
         read_primary_style_properties(
             *ctx.system, &data->properties, data->state.path);
@@ -42,7 +67,7 @@ void scoped_substyle::begin(
 
         data->state.id = &data->id;
 
-        read_layout_style_info(&data->style_info, data->properties.font,
+        read_layout_style_info(ctx, &data->style_info, data->properties.font,
             data->state.path);
 
         data->key.store(combine_ids(ref(*ctx.style.id),
@@ -51,23 +76,11 @@ void scoped_substyle::begin(
         data->id = get_id(data->identity);
     }
 
-    old_state_ = ctx.style;
-    ctx.style = data->state;
-
-    old_style_info_ = ctx.layout->style_info;
-    ctx.layout->style_info = &data->style_info;
-
-    ctx_ = &ctx;
+    scoping_.begin(ctx, data->state, &data->style_info);
 }
 void scoped_substyle::end()
 {
-    if (ctx_)
-    {
-        ui_context& ctx = *ctx_;
-        ctx.style = old_state_;
-        ctx.layout->style_info = old_style_info_;
-        ctx_ = 0;
-    }
+    scoping_.end();
 }
 
 // CULLING
@@ -196,6 +209,44 @@ void cached_ui_block::end()
         ctx.active_cacher = cacher.parent;
 
         ctx_ = 0;
+    }
+}
+
+// LOCATIONS
+
+void mark_location(ui_context& ctx, id_interface const& id,
+    layout_vector const& position)
+{
+    widget_id region_id = get_widget_id(ctx);
+    layout_box region;
+    do_spacer(ctx, &region, layout(size(0, 0, PIXELS), UNPADDED));
+    do_box_region(ctx, region_id, region);
+    if (detect_event(ctx, RESOLVE_LOCATION_EVENT))
+    {
+        resolve_location_event& event = get_event<resolve_location_event>(ctx);
+        if (event.id.matches(id))
+        {
+            event.routable_id = make_routable_widget_id(ctx, region_id);
+            event.acknowledged = true;
+        }
+    }
+}
+
+void jump_to_location(ui_context& ctx, id_interface const& id)
+{
+    routable_widget_id routable_id;
+    {
+        owned_id owner;
+        owner.store(id);
+        resolve_location_event event(owner);
+        issue_event(*ctx.system, event);
+        if (!event.acknowledged)
+            return;
+        routable_id = event.routable_id;
+    }
+    {
+        jump_to_widget_event event(routable_id.id);
+        issue_targeted_event(*ctx.system, event, routable_id);
     }
 }
 

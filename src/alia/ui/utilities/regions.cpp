@@ -27,7 +27,7 @@ void hit_test_box_region(ui_context& ctx, widget_id id,
 	handle_mouse_hit(ctx, id, flags, cursor);
 }
 
-void do_region_visibility(ui_context& ctx, widget_id id,
+void handle_region_visibility(ui_context& ctx, widget_id id,
     box<2,int> const& region)
 {
     make_widget_visible_event& e = get_event<make_widget_visible_event>(ctx);
@@ -42,6 +42,18 @@ void do_region_visibility(ui_context& ctx, widget_id id,
     }
 }
 
+void handle_widget_jumping(ui_context& ctx, widget_id id,
+    vector<2,int> const& position)
+{
+    jump_to_widget_event& e = get_event<jump_to_widget_event>(ctx);
+    if (e.id == id)
+    {
+        e.position =
+            transform(get_transformation(ctx), vector<2,double>(position));
+        e.acknowledged = true;
+    }
+}
+
 void do_box_region(ui_context& ctx, widget_id id, box<2,int> const& region,
     mouse_cursor cursor)
 {
@@ -51,7 +63,10 @@ void do_box_region(ui_context& ctx, widget_id id, box<2,int> const& region,
         hit_test_box_region(ctx, id, region, HIT_TEST_MOUSE, cursor);
         break;
      case MAKE_WIDGET_VISIBLE_EVENT:
-        do_region_visibility(ctx, id, region);
+        handle_region_visibility(ctx, id, region);
+        break;
+     case JUMP_TO_WIDGET_EVENT:
+        handle_widget_jumping(ctx, id, region.corner);
         break;
     }
 }

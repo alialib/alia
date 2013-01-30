@@ -11,18 +11,18 @@ struct scrollbar_renderer : dispatch_interface
 
     // background
     virtual void draw_background(
-        ui_context& ctx, renderer_data_ptr& data, box<2,int> const& rect,
+        ui_context& ctx, renderer_data_ptr& data, layout_box const& rect,
         unsigned axis, unsigned which, widget_state state) const = 0;
 
     // thumb
     virtual void draw_thumb(
-        ui_context& ctx, renderer_data_ptr& data, box<2,int> const& rect,
+        ui_context& ctx, renderer_data_ptr& data, layout_box const& rect,
         unsigned axis, widget_state state) const = 0;
 
     // button
     virtual void draw_button(
         ui_context& ctx, renderer_data_ptr& data,
-        vector<2,int> const& position, unsigned axis, unsigned which,
+        layout_vector const& position, unsigned axis, unsigned which,
         widget_state state) const = 0;
 };
 
@@ -31,7 +31,7 @@ struct scrollbar_junction_renderer : dispatch_interface
     // junction - the little square where two scrollbars meet
     virtual void draw(
         ui_context& ctx, renderer_data_ptr& data,
-        box<2,int> const& position) const = 0;
+        layout_box const& position) const = 0;
 };
 
 struct default_scrollbar_renderer : scrollbar_renderer
@@ -41,30 +41,32 @@ struct default_scrollbar_renderer : scrollbar_renderer
         caching_renderer_data thumb;
     };
 
-    int width(ui_context& ctx) const
+    layout_scalar width(ui_context& ctx) const
     {
-        return resolve_layout_width(get_layout_traversal(ctx), 0.8f, EM);
+        return as_layout_size(resolve_absolute_length(
+            get_layout_traversal(ctx), 0, absolute_length(0.8f, EM)));
     }
-    int button_length(ui_context& ctx) const
+    layout_scalar button_length(ui_context& ctx) const
     {
         return 0;
     }
-    int minimum_thumb_length(ui_context& ctx) const
+    layout_scalar minimum_thumb_length(ui_context& ctx) const
     {
         // Must be larger the width.
-        return resolve_layout_width(get_layout_traversal(ctx), 1, EM);
+        return as_layout_size(resolve_absolute_length(
+            get_layout_traversal(ctx), 0, absolute_length(1, EM)));
     }
 
     // background
     void draw_background(
-        ui_context& ctx, renderer_data_ptr& data_ptr, box<2,int> const& rect,
+        ui_context& ctx, renderer_data_ptr& data_ptr, layout_box const& rect,
         unsigned axis, unsigned which, widget_state state) const
     {
     }
 
     // thumb
     void draw_thumb(
-        ui_context& ctx, renderer_data_ptr& data_ptr, box<2,int> const& rect,
+        ui_context& ctx, renderer_data_ptr& data_ptr, layout_box const& rect,
         unsigned axis, widget_state state) const
     {
         data_type* data;
@@ -85,8 +87,7 @@ struct default_scrollbar_renderer : scrollbar_renderer
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);
 
-            set_color(paint,
-                get_property(path, "color", rgba8(black)));
+            set_color(paint, get_color_property(path, "color"));
 
             SkScalar scrollbar_width =
                 layout_scalar_as_skia_scalar(this->width(ctx));
@@ -109,7 +110,7 @@ struct default_scrollbar_renderer : scrollbar_renderer
     // button
     void draw_button(
         ui_context& ctx, renderer_data_ptr& data_ptr,
-        vector<2,int> const& position, unsigned axis, unsigned which,
+        layout_vector const& position, unsigned axis, unsigned which,
         widget_state state) const
     {
     }
@@ -120,7 +121,7 @@ struct default_scrollbar_junction_renderer : scrollbar_junction_renderer
     // junction - the little square where two scrollbars meet
     void draw(
         ui_context& ctx, renderer_data_ptr& data_ptr,
-        box<2,int> const& rect) const
+        layout_box const& rect) const
     {
     }
 };
@@ -159,40 +160,45 @@ class scrollbar
 {
  public:
     scrollbar(ui_context& ctx, scrollbar_data& data,
-        box<2,int> const& area, int axis, int content_size, int window_size,
+        layout_box const& area, int axis, int content_size, int window_size,
         int position, int line_increment, int page_increment);
 
     void do_pass();
 
+    bool position_changed() const { return changed; }
     int get_position() const { return logical_position; }
 
  private:
     void set_logical_position(int position);
 
+    int physical_position_to_logical(int position) const;
+    int logical_position_to_physical(int position) const;
+
     int get_max_logical_position() const;
 
     void set_physical_position(int position);
 
-    widget_state get_button_state(widget_id id, box<2,int> const& area);
-    widget_state get_thumb_state(widget_id id, box<2,int> const& area);
+    widget_state get_button_state(widget_id id, layout_box const& area);
+    widget_state get_thumb_state(widget_id id, layout_box const& area);
 
-    void process_button_input(widget_id id, box<2,int> const& area,
+    void process_button_input(widget_id id, layout_box const& area,
         int increment);
 
     ui_context& ctx;
     scrollbar_data& data;
-    bool enabled;
-    box<2,int> area;
+    bool enabled, changed;
+    layout_box area;
     int axis, content_size, window_size, logical_position, line_increment,
         page_increment, max_physical_position;
 };
 
 scrollbar::scrollbar(ui_context& ctx, scrollbar_data& data,
-    box<2,int> const& area, int axis, int content_size, int window_size,
+    layout_box const& area, int axis, int content_size, int window_size,
     int position, int line_increment, int page_increment)
   : ctx(ctx)
   , data(data)
   , area(area)
+  , changed(false)
   , axis(axis)
   , content_size(content_size)
   , window_size(window_size)
@@ -205,10 +211,8 @@ scrollbar::scrollbar(ui_context& ctx, scrollbar_data& data,
 void scrollbar::set_logical_position(int position)
 {
     logical_position = clamp(position, 0, get_max_logical_position());
-
-    data.physical_position = clamp(logical_position *
-        max_physical_position / get_max_logical_position(), 0,
-        max_physical_position);
+    data.physical_position = logical_position_to_physical(position);
+    changed = true;
 }
 
 int scrollbar::get_max_logical_position() const
@@ -219,14 +223,25 @@ int scrollbar::get_max_logical_position() const
 void scrollbar::set_physical_position(int position)
 {
     data.physical_position = clamp(position, 0, max_physical_position);
+    logical_position = physical_position_to_logical(data.physical_position);
+    changed = true;
+}
 
-    logical_position = max_physical_position <= 0 ? 0 :
-        clamp(data.physical_position * get_max_logical_position() /
+int scrollbar::logical_position_to_physical(int position) const
+{
+    return clamp(position *
+        max_physical_position / get_max_logical_position(), 0,
+        max_physical_position);
+}
+
+int scrollbar::physical_position_to_logical(int position) const
+{
+    return max_physical_position <= 0 ? 0 :
+        clamp(position * get_max_logical_position() /
         max_physical_position, 0, get_max_logical_position());
 }
 
-widget_state scrollbar::get_button_state(widget_id id,
-    box<2,int> const& area)
+widget_state scrollbar::get_button_state(widget_id id, layout_box const& area)
 {
     if (detect_click_in_progress(ctx, id, LEFT_BUTTON))
     {
@@ -240,8 +255,7 @@ widget_state scrollbar::get_button_state(widget_id id,
         return WIDGET_NORMAL;
 }
 
-widget_state scrollbar::get_thumb_state(widget_id id,
-    box<2,int> const& area)
+widget_state scrollbar::get_thumb_state(widget_id id, layout_box const& area)
 {
     if (detect_drag_in_progress(ctx, id, LEFT_BUTTON))
     {
@@ -255,8 +269,8 @@ widget_state scrollbar::get_thumb_state(widget_id id,
         return WIDGET_NORMAL;
 }
 
-void scrollbar::process_button_input(widget_id id,
-    box<2,int> const& area, int increment)
+void scrollbar::process_button_input(
+    widget_id id, layout_box const& area, int increment)
 {
     static int const delay_after_first_increment = 400;
     static int const delay_after_other_increment = 40;
@@ -286,7 +300,6 @@ void scrollbar::do_pass()
         return;
     }
 
-    // TODO: This should never actually happen, but it does.
     if (content_size <= 0 || window_size <= 0)
         return;
 
@@ -312,26 +325,26 @@ void scrollbar::do_pass()
 
     scrollbar_renderer const* renderer = data.rendering.renderer;
 
-    vector<2,int> button_size =
-        make_vector<int>(renderer->width(ctx), renderer->button_length(ctx));
+    layout_vector button_size =
+        make_layout_vector(renderer->width(ctx), renderer->button_length(ctx));
 
     widget_id whole_id = &data.whole_id_data;
 
-    box<2,int> button0_area = area;
+    layout_box button0_area = area;
     button0_area.size[major_axis] = button_size[1];
     widget_id button0_id = &data.button_id_data[0];
 
-    box<2,int> button1_area = area;
+    layout_box button1_area = area;
     button1_area.corner[major_axis] =
         get_high_corner(area)[major_axis] - button_size[1];
     button1_area.size[major_axis] = button_size[1];
     widget_id button1_id = &data.button_id_data[1];
 
-    box<2,int> full_bg_area = area;
+    layout_box full_bg_area = area;
     full_bg_area.corner[major_axis] += button_size[1];
     full_bg_area.size[major_axis] -= button_size[1] * 2;
 
-    box<2,int> thumb_area = full_bg_area;
+    layout_box thumb_area = full_bg_area;
     thumb_area.size[major_axis] = (std::max)(
         renderer->minimum_thumb_length(ctx),
         window_size * full_bg_area.size[major_axis] / content_size);
@@ -350,27 +363,27 @@ void scrollbar::do_pass()
         return;
     }
 
-    // Check that the physical position is consistent with the logical
-    // position.  If not, it's set accordingly.  The physical position is
-    // only there to provide extra precision.
-    int position = logical_position;
-    set_physical_position(data.physical_position);
-    if (position != logical_position)
-        set_logical_position(position);
+    // If not dragging, then the physical position should stay in sync
+    // with the logical position.
+    widget_id thumb_id = &data.thumb_id_data;
+    if (!detect_drag_in_progress(ctx, thumb_id, LEFT_BUTTON))
+    {
+        data.physical_position =
+            logical_position_to_physical(logical_position);
+    }
 
     thumb_area.corner[major_axis] = full_bg_area.corner[major_axis] +
         data.physical_position;
-    widget_id thumb_id = &data.thumb_id_data;
 
     int thumb_center = data.physical_position +
         thumb_area.size[major_axis] / 2;
 
-    box<2,int> bg0_area = full_bg_area;
+    layout_box bg0_area = full_bg_area;
     bg0_area.size[major_axis] = thumb_area.corner[major_axis] -
         full_bg_area.corner[major_axis];
     widget_id bg0_id = &data.background_id_data[0];
 
-    box<2,int> bg1_area = full_bg_area;
+    layout_box bg1_area = full_bg_area;
     bg1_area.corner[major_axis] = get_high_corner(thumb_area)[major_axis];
     bg1_area.size[major_axis] = get_high_corner(full_bg_area)[major_axis] -
         bg1_area.corner[major_axis];
@@ -440,13 +453,15 @@ void scrollbar::do_pass()
             set_logical_position(
                 int(logical_position - movement * line_increment + 0.5));
         }
+
+        break;
       }
     }
 }
 
-int do_scrollbar(ui_context& ctx, scrollbar_data& data,
-    box<2,int> const& area, int axis, int content_size, int window_size,
-    int position, int line_increment, int page_increment)
+bool do_scrollbar(ui_context& ctx, scrollbar_data& data,
+    layout_box const& area, int axis, int content_size, int window_size,
+    int* position, int line_increment, int page_increment)
 {
     if (page_increment < 0)
     {
@@ -454,9 +469,11 @@ int do_scrollbar(ui_context& ctx, scrollbar_data& data,
             window_size - line_increment);
     }
     scrollbar sb(ctx, data, area, axis, content_size,
-        window_size, position, line_increment, page_increment);
+        window_size, *position, line_increment, page_increment);
     sb.do_pass();
-    return sb.get_position();
+    if (sb.position_changed())
+        *position = sb.get_position();
+    return sb.position_changed();
 }
 
 struct scrollbar_pair_data
@@ -477,8 +494,14 @@ struct scrollable_layout_container : layout_container
         layout_calculation_context& ctx,
         relative_layout_assignment const& assignment);
 
+    // the desired scroll position
+    layout_vector desired_scroll_position;
+
     // the actual state of the scrollable region
     layout_vector scroll_position;
+
+    // for smoothing the scroll position
+    value_smoothing_data smoothing_data[2];
 
     // layout cacher
     layout_cacher cacher;
@@ -573,23 +596,14 @@ layout_requirements scrollable_layout_container::get_vertical_requirements(
     return query.result();
 }
 
-static void clamp_scroll_position(scrollable_layout_container& container)
+static layout_scalar
+clamp_scroll_position(scrollable_layout_container& container, unsigned axis,
+    layout_scalar position)
 {
-    if (container.hsb_on)
-    {
-        container.scroll_position[0] = clamp(container.scroll_position[0], 0,
-            container.content_size[0] - container.window_size[0]);
-    }
-    else
-        container.scroll_position[0] = 0;
-        
-    if (container.vsb_on)
-    {
-        container.scroll_position[1] = clamp(container.scroll_position[1], 0,
-            container.content_size[1] - container.window_size[1]);
-    }
-    else
-        container.scroll_position[1] = 0;
+    return (container.content_size[axis] > container.window_size[axis]) ?
+        clamp(position, 0,
+            container.content_size[axis] - container.window_size[axis]) :
+        0;
 }
 
 void scrollable_layout_container::set_relative_assignment(
@@ -650,20 +664,35 @@ void scrollable_layout_container::set_relative_assignment(
         {
             if (scroll_position[i] != 0 &&
                 scroll_position[i] + this->window_size[i] >=
+                    this->content_size[i] &&
+                scroll_position[i] + available_size[i] <
                     this->content_size[i])
             {
-                scroll_position[i] = content_size[i] - available_size[i];
+                desired_scroll_position[i] = scroll_position[i] =
+                    content_size[i] - available_size[i];
+                reset_smoothing(smoothing_data[i], scroll_position[i]);
             }
         }
 
         this->content_size = content_size;
         this->window_size = available_size;
 
+        // If the scroll position needs to be clamped because of changes in
+        // content size, then do it abruptly, not smoothly.
+        for (unsigned i = 0; i != 2; ++i)
+        {
+            layout_scalar clamped_position =
+                clamp_scroll_position(*this, i, scroll_position[i]);
+            if (clamped_position != scroll_position[i])
+            {
+                scroll_position[i] = clamped_position;
+                reset_smoothing(smoothing_data[i], scroll_position[i]);
+            }
+        }
+
         relative_layout_assignment assignment(
             layout_box(make_layout_vector(0, 0), content_size),
             content_height - y.minimum_descent);
-
-        clamp_scroll_position(*this);
 
         alia::set_relative_assignment(ctx, *children, assignment);
         rra.update();
@@ -683,7 +712,20 @@ void scrollable_region::begin(
 
     scrollable_layout_container* container;
     if (get_data(ctx, &container))
-        container->scroll_position = make_vector<int>(0, 0);
+    {
+        container->desired_scroll_position = container->scroll_position =
+            make_layout_vector(0, 0);
+    }
+    for (unsigned i = 0; i != 2; ++i)
+    {
+        layout_scalar smoothed = round_to_layout_scalar(
+            smooth_value(ctx, container->smoothing_data[i],
+                container->desired_scroll_position[i],
+                animated_transition(default_curve, 350)));
+        container->scroll_position[i] =
+            clamp_scroll_position(*container, i, smoothed);
+    }
+
     container_ = container;
 
     slc_.begin(get_layout_traversal(ctx), container);
@@ -712,7 +754,8 @@ void scrollable_region::begin(
         detect_layout_change(ctx, &container->minimum_window_size,
             get_minimum_scrollbar_length(ctx, container->vsb_data));
         container->line_size =
-            resolve_layout_width(get_layout_traversal(ctx), 10, EM);
+            as_layout_size(resolve_absolute_length(
+                get_layout_traversal(ctx), 0, absolute_length(10, EM)));
     }
     else
     {
@@ -726,36 +769,49 @@ void scrollable_region::begin(
         float movement;
         if (detect_wheel_movement(ctx, &movement, id))
         {
-            container_->scroll_position[1] -=
-                int(container_->line_size * movement);
-            clamp_scroll_position(*container_);
+            container_->desired_scroll_position[1] =
+                clamp_scroll_position(*container_, 1,
+                    container_->desired_scroll_position[1] -
+                    round_to_layout_scalar(container_->line_size * movement));
         }
 
         if (container->hsb_on)
         {
-            container->scroll_position[0] = do_scrollbar(
-                ctx, container->hsb_data,
-                box<2,int>(
-                    window_corner +
-                    make_vector<int>(0, container->window_size[1]),
-                    make_vector<int>(container->window_size[0],
-                        container->scrollbar_width)),
-                0, container->content_size[0], container->window_size[0],
-                container->scroll_position[0], container->line_size,
-                container->window_size[0]);
+            if (do_scrollbar(
+                    ctx, container->hsb_data,
+                    layout_box(
+                        window_corner +
+                            make_layout_vector(0, container->window_size[1]),
+                        make_layout_vector(container->window_size[0],
+                            container->scrollbar_width)),
+                    0, container->content_size[0], container->window_size[0],
+                    &container->scroll_position[0], container->line_size,
+                    container->window_size[0]))
+            {
+                container->desired_scroll_position[0] =
+                    container->scroll_position[0];
+                reset_smoothing(container->smoothing_data[0],
+                    container->desired_scroll_position[0]);
+            }
         }
         if (container->vsb_on)
         {
-            container->scroll_position[1] = do_scrollbar(
-                ctx, container->vsb_data,
-                box<2,int>(
-                    window_corner +
-                    make_vector<int>(container->window_size[0], 0),
-                    make_vector<int>(container->scrollbar_width,
-                        container->window_size[1])),
-                1, container->content_size[1], container->window_size[1],
-                container->scroll_position[1], container->line_size,
-                container->window_size[1]);
+            if (do_scrollbar(
+                    ctx, container->vsb_data,
+                    layout_box(
+                        window_corner +
+                            make_layout_vector(container->window_size[0], 0),
+                        make_layout_vector(container->scrollbar_width,
+                            container->window_size[1])),
+                    1, container->content_size[1], container->window_size[1],
+                    &container->scroll_position[1], container->line_size,
+                    container->window_size[1]))
+            {
+                container->desired_scroll_position[1] =
+                    container->scroll_position[1];
+                reset_smoothing(container->smoothing_data[1],
+                    container->desired_scroll_position[1]);
+            }
         }
         if (container->hsb_on && container->vsb_on)
         {
@@ -763,7 +819,7 @@ void scrollable_region::begin(
             {
                 container->junction_rendering.renderer->draw(
                     ctx, container->junction_rendering.data,
-                    box<2,int>(window_corner, container->window_size));
+                    layout_box(window_corner, container->window_size));
             }
         }
 
@@ -803,7 +859,7 @@ void scrollable_region::end()
                             inverse(get_transformation(ctx)),
                             get_high_corner(e.region)),
                     window_ul =
-                        vector<2,double>(container_->scroll_position),
+                        vector<2,double>(container_->desired_scroll_position),
                     window_lr =
                         window_ul + vector<2,double>(container_->window_size);
                 for (int i = 0; i < 2; ++i)
@@ -815,7 +871,8 @@ void scrollable_region::end()
                         {
                             int correction =
                                 int(window_ul[i] - region_ul[i] + 0.5);
-                            container_->scroll_position[i] -= correction;
+                            container_->desired_scroll_position[i] -=
+                                correction;
                             e.region.corner[i] += correction;
                         }
                         else if (region_ul[i] > window_ul[i] &&
@@ -824,7 +881,8 @@ void scrollable_region::end()
                             int correction =
                                 int((std::min)(region_ul[i] - window_ul[i],
                                     region_lr[i] - window_lr[i]) + 0.5);
-                            container_->scroll_position[i] += correction;
+                            container_->desired_scroll_position[i] +=
+                                correction;
                             e.region.corner[i] -= correction;
                         }
                     }
@@ -835,10 +893,33 @@ void scrollable_region::end()
                         {
                             int correction =
                                 int(window_ul[i] - region_ul[i] + 0.5);
-                            container_->scroll_position[i] -= correction;
+                            container_->desired_scroll_position[i] -=
+                                correction;
                             e.region.corner[i] += correction;
                         }
                     }
+                }
+            }
+        }
+        else if (ctx.event->type == JUMP_TO_WIDGET_EVENT &&
+            srr_.is_relevant())
+        {
+            jump_to_widget_event& e =
+                get_event<jump_to_widget_event>(ctx);
+            if (e.acknowledged)
+            {
+                vector<2,double>
+                    position =
+                        transform(
+                            inverse(get_transformation(ctx)),
+                            e.position),
+                    window_ul =
+                        vector<2,double>(container_->desired_scroll_position);
+                for (int i = 0; i < 2; ++i)
+                {
+                    int correction = int(window_ul[i] - position[i] + 0.5);
+                    container_->desired_scroll_position[i] -= correction;
+                    e.position[i] += correction;
                 }
             }
         }
@@ -853,37 +934,46 @@ void scrollable_region::end()
                 switch (info.code)
                 {
                  case KEY_UP:
-                    container_->scroll_position[1] -= container_->line_size;
+                    container_->desired_scroll_position[1] -=
+                        container_->line_size;
                     break;
                  case KEY_DOWN:
-                    container_->scroll_position[1] += container_->line_size;
+                    container_->desired_scroll_position[1] +=
+                        container_->line_size;
                     break;
                  case KEY_PAGEUP:
-                    container_->scroll_position[1] -= (std::max)(
+                    container_->desired_scroll_position[1] -= (std::max)(
                         container_->window_size[1] - container_->line_size,
                         container_->line_size);
                     break;
                  case KEY_PAGEDOWN:
-                    container_->scroll_position[1] += (std::max)
+                    container_->desired_scroll_position[1] += (std::max)
                         (container_->window_size[1] - container_->line_size,
                         container_->line_size);
                     break;
                  case KEY_LEFT:
-                    container_->scroll_position[0] -= container_->line_size;
+                    container_->desired_scroll_position[0] -=
+                        container_->line_size;
                     break;
                  case KEY_RIGHT:
-                    container_->scroll_position[0] += container_->line_size;
+                    container_->desired_scroll_position[0] +=
+                        container_->line_size;
                     break;
                  case KEY_HOME:
-                    container_->scroll_position[1] = 0;
+                    container_->desired_scroll_position[1] = 0;
                     break;
                  case KEY_END:
-                    container_->scroll_position[1] =
+                    container_->desired_scroll_position[1] =
                         container_->content_size[1] -
                         container_->window_size[1];
                     break;
                 }
-                clamp_scroll_position(*container_);
+                for (unsigned i = 0; i != 2; ++i)
+                {
+                    container_->desired_scroll_position[i] =
+                        clamp_scroll_position(*container_, i,
+                            container_->desired_scroll_position[i]);
+                }
             }
         }
         break;

@@ -21,7 +21,6 @@ static void initialize_traversal(
     style->font_size = 0;
     style->character_size = make_vector<float>(0, 0);
     style->x_height = 0;
-    style->is_padded = false;
     style->padding_size = make_layout_vector(0, 0);
 }
 void scoped_layout_traversal::begin(
@@ -79,10 +78,11 @@ void resolve_layout(layout_node* root_node, data_graph& cache,
         layout_calculation_context ctx;
         scoped_layout_calculation_context slcc(cache, ctx);
         get_horizontal_requirements(ctx, *root_node);
-        get_vertical_requirements(ctx, *root_node, size[0]);
+        layout_requirements y =
+            get_vertical_requirements(ctx, *root_node, size[0]);
         set_relative_assignment(ctx, *root_node,
             relative_layout_assignment(
-                layout_box(make_layout_vector(0, 0), size), 0));
+                layout_box(make_layout_vector(0, 0), size), y.minimum_ascent));
     }
 }
 

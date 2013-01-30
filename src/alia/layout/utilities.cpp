@@ -9,8 +9,9 @@ void fold_in_requirements(layout_requirements& current,
         current.minimum_ascent, additional.minimum_ascent);
     current.minimum_descent = (std::max)(
         current.minimum_descent, additional.minimum_descent);
-    current.minimum_size = (std::max)(
-        current.minimum_size, additional.minimum_size);
+    current.minimum_size = (std::max)((std::max)(
+        current.minimum_size, additional.minimum_size),
+        current.minimum_ascent + current.minimum_descent);
 }
 
 void set_next_node(layout_traversal& traversal, layout_node* node)
@@ -44,19 +45,13 @@ void record_layout_change(layout_traversal& traversal)
     record_container_change(traversal, traversal.active_container);
 }
 
-layout add_default_size(layout const& layout_spec, size const& size)
+layout add_default_size(layout const& layout_spec, absolute_size const& size)
 {
     layout adjusted_spec = layout_spec;
-    if (adjusted_spec.size.width < 0)
-    {
-        adjusted_spec.size.x_units = size.x_units;
-        adjusted_spec.size.width = size.width;
-    }
-    if (adjusted_spec.size.height < 0)
-    {
-        adjusted_spec.size.y_units = size.y_units;
-        adjusted_spec.size.height = size.height;
-    }
+    if (adjusted_spec.size[0].length <= 0)
+        adjusted_spec.size[0] = size[0];
+    if (adjusted_spec.size[1].length <= 0)
+        adjusted_spec.size[1] = size[1];
     return adjusted_spec;
 }
 layout add_default_padding(layout const& layout_spec, layout_flag_set flag)
@@ -149,75 +144,153 @@ void layout_node::assign_wrapped_regions(
             layout_box(
                 make_layout_vector(state.x, state.active_row->y),
                 make_layout_vector(x.minimum_size, row_height)),
-            row_height - state.active_row->requirements.minimum_descent));
+            state.active_row->requirements.minimum_ascent));
     state.x += x.minimum_size;
 }
 
-float resolve_precise_layout_size(layout_traversal& traversal, unsigned axis,
-    float size, layout_units units)
+float resolve_absolute_length(
+    vector<2,float> const& ppi, layout_style_info const& style_info,
+    unsigned axis, absolute_length const& length)
 {
-    switch (units)
+    switch (length.units)
     {
      case PIXELS:
      default:
-        return size;
+        return length.length;
      case INCHES:
-        return size * traversal.ppi[axis];
+        return length.length * ppi[axis];
      case CM:
-        return size * traversal.ppi[axis] / 2.54f;
+        return length.length * ppi[axis] / 2.54f;
      case MM:
-        return size * traversal.ppi[axis] / 25.4f;
+        return length.length * ppi[axis] / 25.4f;
      case POINT:
-        return size * traversal.ppi[axis] / 72.f;
+        return length.length * ppi[axis] / 72.f;
      case PICA:
-        return size * traversal.ppi[axis] / 6.f;
+        return length.length * ppi[axis] / 6.f;
      case CHARS:
-        return size * traversal.style_info->character_size[axis];
+        return length.length * style_info.character_size[axis];
      case EM:
-        return size * traversal.style_info->font_size;
+        return length.length * style_info.font_size;
      case EX:
-        return size * traversal.style_info->x_height;
+        return length.length * style_info.x_height;
     }
 }
 
-float resolve_precise_layout_width(layout_traversal& traversal, float width,
-    layout_units units)
+vector<2,float>
+resolve_absolute_size(
+    vector<2,float> const& ppi, layout_style_info const& style_info,
+    absolute_size const& size)
 {
-    return resolve_precise_layout_size(traversal, 0, width, units);
+    return make_vector(
+        resolve_absolute_length(ppi, style_info, 0, size[0]),
+        resolve_absolute_length(ppi, style_info, 1, size[1]));
 }
 
-layout_scalar resolve_layout_width(layout_traversal& traversal, float width,
-    layout_units units)
+float resolve_absolute_length(
+    layout_traversal& traversal, unsigned axis,
+    absolute_length const& length)
 {
-    return as_layout_size(
-        resolve_precise_layout_width(traversal, width, units));
-}
-
-float resolve_precise_layout_height(layout_traversal& traversal, float height,
-    layout_units units)
-{
-    return resolve_precise_layout_size(traversal, 1, height, units);
-}
-
-layout_scalar resolve_layout_height(layout_traversal& traversal, float height,
-    layout_units units)
-{
-    return as_layout_size(
-        resolve_precise_layout_height(traversal, height, units));
-}
-
-layout_vector resolve_layout_size(layout_traversal& traversal, size const& s)
-{
-    return make_vector(resolve_layout_width(traversal, s.width, s.x_units),
-        resolve_layout_height(traversal, s.height, s.y_units));
+    return resolve_absolute_length(
+        traversal.ppi, *traversal.style_info, axis, length);
 }
 
 vector<2,float>
-resolve_precise_layout_size(layout_traversal& traversal, size const& s)
+resolve_absolute_size(layout_traversal& traversal, absolute_size const& size)
+{
+    return resolve_absolute_size(
+        traversal.ppi, *traversal.style_info, size);
+}
+
+float resolve_relative_length(
+    vector<2,float> const& ppi, layout_style_info const& style_info,
+    unsigned axis, relative_length const& length, float full_length)
+{
+    return length.is_relative ?
+        length.length * full_length :
+        resolve_absolute_length(ppi, style_info, axis,
+            absolute_length(length.length, length.units));
+}
+
+vector<2,float>
+resolve_relative_size(
+    vector<2,float> const& ppi, layout_style_info const& style_info,
+    relative_size const& size, vector<2,float> const& full_size)
 {
     return make_vector(
-        resolve_precise_layout_width(traversal, s.width, s.x_units),
-        resolve_precise_layout_height(traversal, s.height, s.y_units));
+        resolve_relative_length(ppi, style_info, 0, size[0], full_size[0]),
+        resolve_relative_length(ppi, style_info, 1, size[1], full_size[1]));
+}
+
+float resolve_relative_length(
+    layout_traversal& traversal, unsigned axis,
+    relative_length const& length, float full_length)
+{
+    return resolve_relative_length(
+        traversal.ppi, *traversal.style_info, axis, length, full_length);
+}
+
+vector<2,float>
+resolve_relative_size(layout_traversal& traversal, relative_size const& size,
+    vector<2,float> const& full_size)
+{
+    return resolve_relative_size(
+        traversal.ppi, *traversal.style_info, size, full_size);
+}
+
+bool operator==(resolved_box_border_width const& a,
+    resolved_box_border_width const& b)
+{
+    return a.top == b.top && a.right == b.right &&
+        a.bottom == b.bottom && a.left == b.left;
+}
+bool operator!=(resolved_box_border_width const& a,
+    resolved_box_border_width const& b)
+{
+    return !(a == b);
+}
+
+resolved_box_border_width operator+(
+    resolved_box_border_width const& a, resolved_box_border_width const& b)
+{
+    resolved_box_border_width sum;
+    sum.top = a.top + b.top;
+    sum.right = a.right + b.right;
+    sum.bottom = a.bottom + b.bottom;
+    sum.left = a.left + b.left;
+    return sum;
+}
+
+layout_box add_border(layout_box const& box,
+    resolved_box_border_width const& border)
+{
+    return layout_box(
+        box.corner - make_layout_vector(border.left, border.top),
+        box.size +
+            make_layout_vector(
+                border.left + border.right,
+                border.top + border.bottom));
+}
+
+layout_box remove_border(layout_box const& box,
+    resolved_box_border_width const& border)
+{
+    return layout_box(
+        box.corner + make_layout_vector(border.left, border.top),
+        box.size -
+            make_layout_vector(
+                border.left + border.right,
+                border.top + border.bottom));
+}
+
+resolved_box_border_width
+resolve_box_border_width(layout_traversal& traversal,
+    box_border_width const& border)
+{
+    return resolved_box_border_width(
+        as_layout_size(resolve_absolute_length(traversal, 1, border.top)),
+        as_layout_size(resolve_absolute_length(traversal, 0, border.right)),
+        as_layout_size(resolve_absolute_length(traversal, 1, border.bottom)),
+        as_layout_size(resolve_absolute_length(traversal, 0, border.left)));
 }
 
 bool operator==(resolved_layout_spec const& a, resolved_layout_spec const& b)
@@ -232,7 +305,8 @@ void resolve_layout_spec(
     layout_traversal& traversal, resolved_layout_spec& resolved,
     layout const& spec, layout_flag_set default_flags)
 {
-    resolved.size = resolve_layout_size(traversal, spec.size);
+    resolved.size =
+        as_layout_size(resolve_absolute_size(traversal, spec.size));
     resolved.flags.code =
         ((spec.flags.code & X_ALIGNMENT_MASK_CODE) != 0 ?
             (spec.flags.code & X_ALIGNMENT_MASK_CODE) :
@@ -243,8 +317,8 @@ void resolve_layout_spec(
         ((spec.flags.code & PADDING_MASK_CODE) != 0 ?
             (spec.flags.code & PADDING_MASK_CODE) :
             (default_flags.code & PADDING_MASK_CODE));
-    if (resolved.flags & PADDED || !(resolved.flags & UNPADDED) &&
-        traversal.style_info->is_padded)
+    if ((resolved.flags & PADDED ||
+         !(resolved.flags & UNPADDED) && (default_flags & PADDED)))
     {
         resolved.padding_size = traversal.style_info->padding_size;
     }
@@ -261,7 +335,7 @@ void resolve_requirements(
     layout_requirements& requirements, resolved_layout_spec const& spec,
     unsigned axis, calculated_layout_requirements const& calculated)
 {
-    int padding = spec.padding_size[axis];
+    layout_scalar padding = spec.padding_size[axis];
     requirements.minimum_size =
         (std::max)(
             (std::max)(
@@ -278,7 +352,7 @@ static void resolve_axis_assignment(
     layout_scalar& offset, layout_scalar& size,
     unsigned alignment_code,
     layout_scalar assigned_size, layout_scalar baseline,
-    layout_scalar required_size, layout_scalar descent)
+    layout_scalar required_size, layout_scalar ascent)
 {
     switch (alignment_code)
     {
@@ -301,10 +375,11 @@ static void resolve_axis_assignment(
         size = assigned_size;
         break;
      case BASELINE_X_CODE:
-        offset = baseline - (required_size - descent);
+        offset = baseline - ascent;
         size = required_size;
         break;
     }
+    assert(offset >= 0 && offset + size <= assigned_size);
 }
 
 static inline unsigned get_axis_alignment_code(
@@ -332,24 +407,27 @@ void resolve_relative_assignment(
     layout_requirements const& horizontal_requirements,
     layout_requirements const& vertical_requirements)
 {
+    assert(assignment.baseline_y >= vertical_requirements.minimum_ascent);
+    assert(assignment.baseline_y + vertical_requirements.minimum_descent <=
+        assignment.region.size[1]);
     layout_scalar x_offset, x_size;
     resolve_axis_assignment(x_offset, x_size,
         get_axis_alignment_code(spec, 0),
         assignment.region.size[0], 0,
-        horizontal_requirements.minimum_size, 0);
+        horizontal_requirements.minimum_size,
+        0);
     layout_scalar y_offset, y_size;
     resolve_axis_assignment(y_offset, y_size,
         get_axis_alignment_code(spec, 1),
         assignment.region.size[1], assignment.baseline_y,
         vertical_requirements.minimum_size,
-        vertical_requirements.minimum_descent);
+        vertical_requirements.minimum_ascent);
     resolved_assignment = relative_layout_assignment(
         layout_box(
             assignment.region.corner +
-            make_layout_vector(x_offset, y_offset) + spec.padding_size,
+                make_layout_vector(x_offset, y_offset) + spec.padding_size,
             make_layout_vector(x_size, y_size) - spec.padding_size * 2),
-        y_size -
-            (vertical_requirements.minimum_descent + spec.padding_size[1]));
+        vertical_requirements.minimum_ascent - spec.padding_size[1]);
 }
 
 bool update_layout_cacher(

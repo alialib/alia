@@ -9,10 +9,18 @@ static void on_ui_style_change(ui_system& system)
     inc_version(system.style->id);
 }
 
+float get_text_magnification(ui_system& system)
+{
+    return system.style->text_magnification;
+}
+
 void set_text_magnification(ui_system& system, float magnification)
 {
-    on_ui_style_change(system);
-    system.style->text_magnification = magnification;
+    if (system.style->text_magnification != magnification)
+    {
+        on_ui_style_change(system);
+        system.style->text_magnification = magnification;
+    }
 }
 
 struct initial_styling_data
@@ -38,9 +46,11 @@ static void setup_initial_styling(ui_context& ctx)
 
         data->id.store(get_id(ctx.system->style->id));
 
-        read_layout_style_info(&data->info, data->props.font, &data->path);
-        get_layout_traversal(ctx).style_info = &data->info;
+        read_layout_style_info(ctx, &data->info, data->props.font,
+            &data->path);
     }
+    get_layout_traversal(ctx).style_info = &data->info;
+
     ctx.style.path = &data->path;
     ctx.style.properties = &data->props;
     ctx.style.id = &data->id.get();
@@ -95,7 +105,8 @@ struct context_invoker
     }
 };
 
-static void issue_event(
+static void
+issue_event(
     ui_system& system, ui_event& event,
     bool targeted, routing_region_ptr const& target = routing_region_ptr())
 {
@@ -141,9 +152,9 @@ static void issue_event(
 
     ctx.event = &event;
 
-    setup_initial_styling(ctx);
-
     ctx.active_cacher = 0;
+
+    setup_initial_styling(ctx);
 
     context_invoker fn;
     fn.system = &system;

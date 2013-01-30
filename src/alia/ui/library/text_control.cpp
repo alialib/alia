@@ -376,7 +376,8 @@ layout_requirements text_control_layout_node::get_vertical_requirements(
         query.update(
             calculated_layout_requirements(
                 line_count * skia_scalar_as_layout_size(line_spacing),
-                skia_scalar_as_layout_size(-metrics.fAscent),
+                skia_scalar_as_layout_size(
+                    -metrics.fAscent + metrics.fLeading),
                 skia_scalar_as_layout_size(metrics.fDescent +
                     (line_count - 1) * line_spacing)));
     }
@@ -708,9 +709,8 @@ struct text_control
                     data.selected_image.value,
                     get_text_region().size,
                     get_text_layout(),
-                    get_property(ctx, "selected-text-color", rgba8(white)),
-                    get_property(ctx, "selected-background-color",
-                        rgba8(silver)));
+                    get_color_property(ctx, "selected-color"),
+                    get_color_property(ctx, "selected-background"));
                 mark_valid(data.selected_image);
             }
 

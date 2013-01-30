@@ -47,15 +47,22 @@ style_tree unflatten_style_tree(flattened_style_tree const& flattened)
 
 string const*
 get_style_property(
-    style_search_path const* path, char const* property_name)
+    style_search_path const* path, char const* property_name,
+    style_search_flag_set flags)
 {
-    while (path)
+    for (; path; path = path->rest)
     {
+        if (!path->tree)
+        {
+            if (flags & INHERITED_PROPERTY)
+                continue;
+            else
+                break;
+        }
         style_tree const& tree = *path->tree;
         property_map::const_iterator i = tree.properties.find(property_name);
         if (i != tree.properties.end())
             return &i->second;
-        path = path->rest;
     }
     return 0;
 }
@@ -64,14 +71,15 @@ static style_tree const*
 find_substyle(
     style_search_path const* path, string const& substyle_name)
 {
-    while (path)
+    for (; path; path = path->rest)
     {
+        if (!path->tree)
+            continue;
         style_tree const& tree = *path->tree;
         std::map<string,style_tree>::const_iterator i =
             tree.substyles.find(substyle_name);
         if (i != tree.substyles.end())
             return &i->second;
-        path = path->rest;
     }
     return 0;
 }
@@ -117,15 +125,27 @@ add_substyle_to_path(style_search_path* storage,
         return path;
 }
 
+static style_search_path const*
+add_path_separator(style_search_path* storage, style_search_path const* path)
+{
+    storage->tree = 0;
+    storage->rest = path;
+    return storage;
+}
+
 style_search_path const*
 add_substyle_to_path(
-    style_search_path* storage,
+    style_path_storage* storage,
     style_search_path const* search_path,
     style_search_path const* rest,
-    string const& substyle_name)
+    string const& substyle_name,
+    ui_flag_set flags)
 {
-    return add_substyle_to_path(storage, rest,
-        find_substyle(search_path, substyle_name));
+    return
+        add_substyle_to_path(&storage->nodes[1],
+            (flags & NO_STYLE_PATH_SEPARATOR) ?
+                rest : add_path_separator(&storage->nodes[0], rest),
+            find_substyle(search_path, substyle_name));
 }
 
 style_search_path const*
@@ -134,12 +154,15 @@ add_substyle_to_path(
     style_search_path const* search_path,
     style_search_path const* rest,
     string const& substyle_name,
-    widget_state state)
+    widget_state state,
+    ui_flag_set flags)
 {
     style_search_path const* path;
     
     // Start off with the stateless version as a fallback.
-    path = add_substyle_to_path(&storage->nodes[0], rest,
+    path = add_substyle_to_path(&storage->nodes[1],
+        (flags & NO_STYLE_PATH_SEPARATOR) ?
+            rest : add_path_separator(&storage->nodes[0], rest),
         find_substyle(search_path, substyle_name));
 
     // If the state has both a primary component and a focused component,
@@ -149,14 +172,14 @@ add_substyle_to_path(
     {
         {
             widget_state substate(state.code & ~WIDGET_FOCUSED_CODE);
-            path = add_substyle_to_path(&storage->nodes[1], path,
+            path = add_substyle_to_path(&storage->nodes[2], path,
                 find_substyle(search_path,
                     substyle_name + widget_state_string(substate)));
         }
         {
             widget_state substate(
                 state.code & ~WIDGET_PRIMARY_STATE_MASK_CODE);
-            path = add_substyle_to_path(&storage->nodes[2], path,
+            path = add_substyle_to_path(&storage->nodes[3], path,
                 find_substyle(search_path,
                     substyle_name + widget_state_string(substate)));
         }
@@ -165,7 +188,7 @@ add_substyle_to_path(
     // Add the original state itself.
     if (state != WIDGET_NORMAL)
     {
-        path = add_substyle_to_path(&storage->nodes[3], path,
+        path = add_substyle_to_path(&storage->nodes[4], path,
             find_substyle(search_path,
                 substyle_name + widget_state_string(state)));
     }
@@ -201,6 +224,14 @@ parse_style_properties(char const* label, utf8_string const& text,
     while (1)
     {
         p = skip_space(utf8_string(p, text.end), line_number);
+
+        // Check for a closing brace.
+        SkUnichar c = peek(utf8_string(p, text.end));
+        if (c == '}')
+        {
+            SkUTF8_NextUnichar(&p);
+            break;
+        }
 
         // Parse the name.
         utf8_ptr name_start = p, name_end;
@@ -252,15 +283,6 @@ parse_style_properties(char const* label, utf8_string const& text,
         string value(value_start, value_end - value_start);
 
         properties[name] = value;
-
-        // Check for a closing brace.
-        p = skip_space(utf8_string(p, text.end), line_number);
-        SkUnichar c = peek(utf8_string(p, text.end));
-        if (c == '}')
-        {
-            SkUTF8_NextUnichar(&p);
-            break;
-        }
     }
     return properties;
 }
@@ -438,6 +460,21 @@ void parse(line_parser& p, int* x)
     *x = i;
 }
 
+string read_string(line_parser& p)
+{
+    skip_space(p);
+    string s;
+    while (!is_eol(p))
+    {
+        char c = peek(p);
+        if (std::isspace(c))
+            break;
+        s.push_back(c);
+        advance(p);
+    }
+    return s;
+}
+
 // PROPERTY UTILITIES
 
 // colors
@@ -504,9 +541,20 @@ void parse(line_parser& p, rgba8* color)
     }
 }
 
-// CSS-style size specifications
+rgba8
+get_color_property(style_search_path const* path, char const* property_name)
+{
+    return get_property(path, property_name, INHERITED_PROPERTY, rgba8(black));
+}
 
-// absolute
+rgba8
+get_color_property(ui_context& ctx, char const* property_name)
+{
+    return get_property(ctx.style.path, property_name, INHERITED_PROPERTY,
+        rgba8(black));
+}
+
+// layout properties
 
 void parse(line_parser& p, layout_units* units)
 {
@@ -577,33 +625,32 @@ void parse(line_parser& p, layout_units* units)
     throw parse_error("invalid units");
 }
 
-void parse(line_parser& p, absolute_size_spec* spec)
+void parse(line_parser& p, absolute_length* spec)
 {
     skip_space(p);
-    parse(p, &spec->size);
+    parse(p, &spec->length);
     skip_space(p);
     parse(p, &spec->units);
 }
 
-float
-eval_absolute_size_spec(
-    ui_context& ctx, unsigned axis, absolute_size_spec const& spec)
+void parse(line_parser& p, absolute_size* spec)
 {
-    return resolve_precise_layout_size(get_layout_traversal(ctx), axis,
-        spec.size, spec.units);
+    parse(p, &(*spec)[0]);
+    if (!is_empty(p))
+        parse(p, &(*spec)[1]);
+    else
+        (*spec)[1] = (*spec)[0];
 }
 
-// relative
-
-void parse(line_parser& p, relative_size_spec* spec)
+void parse(line_parser& p, relative_length* spec)
 {
     skip_space(p);
-    parse(p, &spec->size);
+    parse(p, &spec->length);
     skip_space(p);
     if (peek(p) == '%')
     {
         spec->is_relative = true;
-        spec->size /= 100;
+        spec->length /= 100;
         advance(p);
         if (!is_eol(p) && !std::isspace(peek(p)))
             throw_unexpected_char(p);
@@ -615,72 +662,51 @@ void parse(line_parser& p, relative_size_spec* spec)
     }
 }
 
-float
-eval_relative_size_spec(
-    ui_context& ctx, unsigned axis, relative_size_spec const& spec,
-    float full_size)
+void parse(line_parser& p, relative_size* spec)
 {
-    return spec.is_relative ?
-        spec.size * full_size :
-        resolve_precise_layout_size(get_layout_traversal(ctx), axis,
-            spec.size, spec.units);
-}
-
-// absolute 2D
-
-void parse(line_parser& p, absolute_size_spec_2d* spec)
-{
-    parse(p, &spec->axes[0]);
+    parse(p, &(*spec)[0]);
     if (!is_empty(p))
-        parse(p, &spec->axes[1]);
+        parse(p, &(*spec)[1]);
     else
-        spec->axes[1] = spec->axes[0];
+        (*spec)[1] = (*spec)[0];
 }
 
-vector<2,float>
-eval_absolute_size_spec(ui_context& ctx, absolute_size_spec_2d const& spec)
+template<class Side>
+void fill_in_missing_sides(Side* sides, int n_sides)
 {
-    return make_vector(
-        eval_absolute_size_spec(ctx, 0, spec.axes[0]),
-        eval_absolute_size_spec(ctx, 1, spec.axes[1]));
+    if (n_sides < 2)
+        sides[1] = sides[0];
+    if (n_sides < 3)
+        sides[2] = sides[0];
+    if (n_sides < 4)
+        sides[3] = sides[1];
 }
 
-// relative 2D
-
-void parse(line_parser& p, relative_size_spec_2d* spec)
+void parse(line_parser& p, box_border_width* border)
 {
-    parse(p, &spec->axes[0]);
-    if (!is_empty(p))
-        parse(p, &spec->axes[1]);
-    else
-        spec->axes[1] = spec->axes[0];
+    absolute_length sides[4];
+    int n_sides = 0;
+    while (1)
+    {
+        skip_space(p);
+        if (is_eol(p))
+            break;
+        if (n_sides >= 4)
+            throw_unexpected_char(p);
+        parse(p, &sides[n_sides++]);
+    }
+    if (n_sides == 0)
+        throw parse_error("empty border width list");
+    fill_in_missing_sides(sides, n_sides);
+    border->top = sides[0];
+    border->right = sides[1];
+    border->bottom = sides[2];
+    border->left = sides[3];
 }
 
-vector<2,float>
-eval_relative_size_spec(ui_context& ctx, relative_size_spec_2d const& spec,
-    vector<2,float> const& full_size)
+void parse(line_parser& p, box_corner_sizes* spec)
 {
-    return make_vector(
-        eval_relative_size_spec(ctx, 0, spec.axes[0], full_size[0]),
-        eval_relative_size_spec(ctx, 1, spec.axes[1], full_size[1]));
-}
-
-// four corners
-
-static void
-fill_in_missing_corners(relative_size_spec* corners, int n_corners)
-{
-    if (n_corners < 2)
-        corners[1] = corners[0];
-    if (n_corners < 3)
-        corners[2] = corners[0];
-    if (n_corners < 4)
-        corners[3] = corners[1];
-}
-
-void parse(line_parser& p, four_corners_spec* spec)
-{
-    relative_size_spec specs[2][4];
+    relative_length specs[2][4];
     int n_specs[2] = { 0, 0 };
     for (int i = 0; i != 2; ++i)
     {
@@ -701,29 +727,49 @@ void parse(line_parser& p, four_corners_spec* spec)
     }
     if (n_specs[0] == 0)
         throw parse_error("empty corner list");
-    fill_in_missing_corners(specs[0], n_specs[0]);
+    fill_in_missing_sides(specs[0], n_specs[0]);
     if (n_specs[1] == 0)
     {
         for (int i = 0; i != 4; ++i)
             specs[1][i] = specs[0][i];
     }
     else
-        fill_in_missing_corners(specs[1], n_specs[1]);
+        fill_in_missing_sides(specs[1], n_specs[1]);
     for (int i = 0; i != 4; ++i)
-        spec->corners[i] = relative_size_spec_2d(specs[0][i], specs[1][i]);
+        spec->corners[i] = make_vector(specs[0][i], specs[1][i]);
 }
 
-four_corners_sizes
-eval_four_corners(ui_context& ctx, four_corners_spec const& spec,
-    vector<2,float> const& full_size)
+resolved_box_corner_sizes
+resolve_box_corner_sizes(layout_traversal& traversal,
+    box_corner_sizes const& spec, vector<2,float> const& full_size)
 {
-    four_corners_sizes sizes;
+    resolved_box_corner_sizes sizes;
     for (int i = 0; i != 4; ++i)
     {
         sizes.corners[i] =
-            eval_relative_size_spec(ctx, spec.corners[i], full_size);
+            resolve_relative_size(traversal, spec.corners[i], full_size);
     }
     return sizes;
+}
+
+void parse(line_parser& p, side_selection* spec)
+{
+    side_selection sides = NO_FLAGS;
+    while (1)
+    {
+        string s = read_string(p);
+        if (s.empty())
+            break;
+        if (s == "left")
+            sides |= LEFT_SIDE;
+        if (s == "right")
+            sides |= RIGHT_SIDE;
+        if (s == "top")
+            sides |= TOP_SIDE;
+        if (s == "bottom")
+            sides |= BOTTOM_SIDE;
+    }
+    *spec = sides;
 }
 
 // higher-level properties
@@ -731,12 +777,16 @@ eval_four_corners(ui_context& ctx, four_corners_spec const& spec,
 font get_font_properties(ui_system const& ui, style_search_path const* path)
 {
     return font(
-        get_property(path, "font-name", string("arial")),
-        get_property(path, "font-size", 13.f) * ui.style->text_magnification,
-        (get_property(path, "font-bold", false) ? BOLD : NO_FLAGS) |
-        (get_property(path, "font-italic", false) ? ITALIC : NO_FLAGS) |
-        (get_property(path, "font-underline", false) ? UNDERLINE : NO_FLAGS) |
-        (get_property(path, "font-strikethrough", false) ?
+        get_property(path, "font-family", INHERITED_PROPERTY, string("arial")),
+        get_property(path, "font-size", INHERITED_PROPERTY, 13.f) *
+            ui.style->text_magnification,
+        (get_property(path, "font-bold", INHERITED_PROPERTY, false) ?
+            BOLD : NO_FLAGS) |
+        (get_property(path, "font-italic", INHERITED_PROPERTY, false) ?
+            ITALIC : NO_FLAGS) |
+        (get_property(path, "font-underline", INHERITED_PROPERTY, false) ?
+            UNDERLINE : NO_FLAGS) |
+        (get_property(path, "font-strikethrough", INHERITED_PROPERTY, false) ?
             STRIKETHROUGH : NO_FLAGS));
 }
 
@@ -745,43 +795,48 @@ void read_primary_style_properties(
     primary_style_properties* props,
     style_search_path const* path)
 {
-    props->text_color =
-        get_property(path, "text-color",
-            rgba8(0x00, 0x00, 0x00, 0xff));
-    props->background_color =
-        get_property(path, "background-color",
-            rgba8(0xff, 0xff, 0xff, 0xff));
+    props->text_color = get_color_property(path, "color");
+    props->background_color = get_color_property(path, "background");
     props->font = get_font_properties(ui, path);
 }
 
-void read_layout_style_info(layout_style_info* style_info,
+void read_layout_style_info(ui_context& ctx, layout_style_info* style_info,
     font const& font, style_search_path const* path)
 {
-    style_info->is_padded = get_property(path, "padded", false);
-    layout_scalar padding_size =
-        as_layout_size(get_property(path, "padding-size", 0.2f) *
-            font.size);
-    style_info->padding_size = make_vector(padding_size, padding_size);
-
     style_info->font_size = font.size;
 
-    // Skia supposedly supplies all the necessary font metrics, but they're not
-    // always valid.
+    // Skia supposedly supplies all the necessary font metrics, but they're
+    // not always valid.
     //SkPaint paint;
     //set_skia_font_info(paint, font);
     //SkPaint::FontMetrics metrics;
     //SkScalar line_spacing = paint.getFontMetrics(&metrics);
     //style_info->character_size = make_vector(
-    //    metrics.fAvgCharWidth > 0 ? SkScalarToFloat(metrics.fAvgCharWidth) :
-    //        SkScalarToFloat(line_spacing) * 0.6f,
+    //    SkScalarToFloat(metrics.fAvgCharWidth),
     //    SkScalarToFloat(line_spacing));
-    //style_info->x_height =
-    //    metrics.fXHeight > 0 ? SkScalarToFloat(metrics.fXHeight) :
-    //        SkScalarToFloat(line_spacing) * 0.5f;
+    //style_info->x_height = SkScalarToFloat(metrics.fXHeight);
 
     // ... so do some approximations instead.
     style_info->character_size = make_vector(font.size * 0.6f, font.size);
     style_info->x_height = font.size * 0.5f;
+
+    // The padding size may be specified in terms of the above properties,
+    // so now that those are set, we can evaluated padding size using the
+    // style_info structure as a reference.
+    if (get_property(path, "disable-padding", UNINHERITED_PROPERTY, false))
+    {
+        style_info->padding_size = make_layout_vector(0, 0);
+    }
+    else
+    {
+        absolute_size padding_size =
+            get_property(path, "default-padding", INHERITED_PROPERTY,
+                make_vector(
+                    absolute_length(0.2f, EM),
+                    absolute_length(0.2f, EM)));
+        style_info->padding_size = as_layout_size(
+            resolve_absolute_size(ctx.layout->ppi, *style_info, padding_size));
+    }
 }
 
 }

@@ -3,18 +3,33 @@
 
 namespace alia {
 
-bool operator==(id_interface const& a, id_interface const& b)
+static inline bool
+types_match(id_interface const& a, id_interface const& b)
 {
-    return typeid(a) == typeid(b) && a.equals(b);
+    return typeid(a).name() == typeid(b).name() || typeid(a) == typeid(b);
 }
-bool operator!=(id_interface const& a, id_interface const& b)
-{
-    return !(a == b);
-}
+
 bool operator<(id_interface const& a, id_interface const& b)
 {
-    return typeid(a).before(typeid(b)) ||
-        typeid(a) == typeid(b) && a.less_than(b);
+    return typeid(a).before(typeid(b)) || types_match(a, b) && a.less_than(b);
+}
+
+void clone_into(id_interface*& storage, id_interface const* id)
+{
+    if (!id)
+    {
+        delete storage;
+        storage = 0;
+    }
+    else if (storage && types_match(*storage, *id))
+    {
+        id->deep_copy(storage);
+    }
+    else
+    {
+        delete storage;
+        storage = id->clone();
+    }
 }
 
 bool operator==(owned_id const& a, owned_id const& b)

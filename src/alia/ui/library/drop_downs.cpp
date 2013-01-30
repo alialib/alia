@@ -26,8 +26,8 @@ struct default_drop_down_button_renderer : drop_down_button_renderer
 {
     layout_vector default_size(ui_context& ctx) const
     {
-        return resolve_layout_size(get_layout_traversal(ctx),
-            size(1.f, 1.f, EM));
+        return as_layout_size(resolve_absolute_size(
+            get_layout_traversal(ctx), size(1.f, 1.f, EM)));
     }
     void draw(
         ui_context& ctx, renderer_data_ptr& data_ptr, layout_box const& region,
@@ -52,10 +52,8 @@ struct default_drop_down_button_renderer : drop_down_button_renderer
                 get_control_style_path(ctx, &storage, "drop-down-button",
                     state);
 
-            rgba8 bg_color =
-                get_property(path, "background-color", rgba8(gray));
-            rgba8 fg_color =
-                get_property(path, "foreground-color", rgba8(black));
+            rgba8 bg_color = get_color_property(path, "background");
+            rgba8 fg_color = get_color_property(path, "color");
 
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);
@@ -295,6 +293,7 @@ static void open_ddl(ui_context& ctx, ddl_data& data, widget_id id,
         transform(get_transformation(ctx),
             vector<2,double>(data.positioning.upper_bound) +
             make_vector<double>(0.5, 0.5)));
+    data.positioning.minimum_size = bounding_region.size;
 
     set_active_overlay(ctx, id);
 }
@@ -411,7 +410,7 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
         break;
     }
 
-    contents_.begin(ctx, BASELINE_Y | GROW_X | UNPADDED);
+    contents_.begin(ctx, BASELINE_Y | GROW_X);
 
     return result;
 }
@@ -423,7 +422,7 @@ bool untyped_drop_down_list::do_list()
 
     contents_.end();
 
-    if (do_drop_down_button(ctx, CENTER | UNPADDED, id_, data.button))
+    if (do_drop_down_button(ctx, CENTER, id_, data.button))
     {
         open_ddl(ctx, data, id_, container_.outer_region());
         end_pass(ctx);
@@ -434,9 +433,8 @@ bool untyped_drop_down_list::do_list()
     alia_if (active)
     {
         popup_.begin(ctx, id_, data.positioning);
-        list_border_.begin(ctx, GROW | PADDED);
-        list_panel_.begin(ctx, text("control"), GROW | UNPADDED,
-            NO_HORIZONTAL_SCROLL);
+        list_panel_.begin(ctx, text("drop-down-list"), GROW | UNPADDED,
+            NO_HORIZONTAL_SCROLL | NO_INTERNAL_PADDING);
     }
     alia_end
 
@@ -448,7 +446,6 @@ void untyped_drop_down_list::end()
     if (ctx_)
     {
         list_panel_.end();
-        list_border_.end();
         popup_.end();
 
         container_.end();
@@ -469,7 +466,8 @@ bool untyped_ddl_item::begin(untyped_drop_down_list& list, bool is_selected)
     ui_context& ctx = *list.ctx_;
 
     widget_id id = get_widget_id(ctx);
-    panel_.begin(ctx, text("item"), UNPADDED, NO_CLICK_DETECTION,
+    panel_.begin(ctx, text("item"), UNPADDED,
+        NO_INTERNAL_PADDING | NO_CLICK_DETECTION,
         id, get_widget_state(ctx, id, true, false, is_internally_selected));
 
     if (data.make_selection_visible && is_internally_selected)
@@ -519,6 +517,7 @@ void untyped_ddl_item::end()
 {
     if (list_)
     {
+        ui_context& ctx = *list_->ctx_;
         panel_.end();
         list_ = 0;
     }

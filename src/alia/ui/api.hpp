@@ -236,6 +236,7 @@ enum ui_event_type
 
     // regions
     MAKE_WIDGET_VISIBLE_EVENT,
+    JUMP_TO_WIDGET_EVENT,
     MOUSE_HIT_TEST_EVENT,
     WHEEL_HIT_TEST_EVENT,
 
@@ -271,14 +272,52 @@ enum ui_event_type
     OVERLAY_WHEEL_HIT_TEST_EVENT,
     OVERLAY_RENDER_EVENT,
     OVERLAY_MAKE_WIDGET_VISIBLE_EVENT,
+    OVERLAY_JUMP_TO_WIDGET_EVENT,
 
     // uncategorized events
     WRAPPED_EVENT,
     SET_VALUE_EVENT,
     TIMER_EVENT,
     INITIAL_VISIBILITY_EVENT,
+    RESOLVE_LOCATION_EVENT,
     CUSTOM_EVENT,
 };
+
+// COMMON FLAGS
+
+struct ui_flag_tag {};
+typedef flag_set<ui_flag_tag> ui_flag_set;
+ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000001, SELECTED)
+ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000002, DISABLED)
+ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000004, SHOW_FOCUS)
+ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000008, HIDE_FOCUS)
+ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000010, HORIZONTAL)
+ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000020, VERTICAL)
+// styles
+ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000040, NO_STYLE_PATH_SEPARATOR)
+// drop down list
+ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000080, COMMAND_LIST)
+// resizable content
+ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000100, FLIPPED)
+ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000200, APPEND)
+ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000400, PREPEND)
+// expandables
+ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0001000, INITIALLY_EXPANDED)
+ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0002000, INITIALLY_COLLAPSED)
+// text controls
+ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0010000, PASSWORD)
+ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0020000, SINGLE_LINE)
+ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0040000, MULTILINE)
+ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0080000, NO_PANEL)
+ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0100000, ALWAYS_EDITING)
+// panels
+ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0200000, NO_INTERNAL_PADDING)
+ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0400000, NO_CLICK_DETECTION)
+// scrollable panels
+ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x1000000, NO_HORIZONTAL_SCROLL)
+ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x2000000, NO_VERTICAL_SCROLL)
+ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x4000000, RESERVE_HORIZONTAL)
+ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x8000000, RESERVE_VERTICAL)
 
 // STYLING
 
@@ -316,22 +355,38 @@ struct style_state
 
 struct layout_style_info;
 
-struct scoped_substyle : noncopyable
+struct scoped_style : noncopyable
 {
-    scoped_substyle() : ctx_(0) {}
-    scoped_substyle(ui_context& ctx, getter<string> const& substyle_name,
-        widget_state state = WIDGET_NORMAL)
-    { begin(ctx, substyle_name, state); }
-    ~scoped_substyle() { end(); }
+    scoped_style() : ctx_(0) {}
+    scoped_style(ui_context& ctx, style_state const& style,
+        layout_style_info const* info)
+    { begin(ctx, style, info); }
+    ~scoped_style() { end(); }
 
-    void begin(ui_context& ctx, getter<string> const& substyle_name,
-        widget_state state = WIDGET_NORMAL);
+    void begin(ui_context& ctx, style_state const& style,
+        layout_style_info const* info);
     void end();
 
  private:
     ui_context* ctx_;
     style_state old_state_;
     layout_style_info const* old_style_info_;
+};
+
+struct scoped_substyle : noncopyable
+{
+    scoped_substyle() {}
+    scoped_substyle(ui_context& ctx, getter<string> const& substyle_name,
+        widget_state state = WIDGET_NORMAL, ui_flag_set flags = NO_FLAGS)
+    { begin(ctx, substyle_name, state, flags); }
+    ~scoped_substyle() { end(); }
+
+    void begin(ui_context& ctx, getter<string> const& substyle_name,
+        widget_state state = WIDGET_NORMAL, ui_flag_set flags = NO_FLAGS);
+    void end();
+
+ private:
+    scoped_style scoping_;
 };
 
 // ANIMATION
@@ -466,36 +521,12 @@ struct control_result
     { return changed ? &control_result::changed : 0; }
 };
 
-// COMMON FLAGS
+// Mark a location in the UI.
+void mark_location(ui_context& ctx, id_interface const& id,
+    layout_vector const& position = make_layout_vector(0, 0));
 
-struct ui_flag_tag {};
-typedef flag_set<ui_flag_tag> ui_flag_set;
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000002, SHOW_FOCUS)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000004, HIDE_FOCUS)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000008, DISABLED)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000020, HORIZONTAL)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000040, VERTICAL)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000080, COMMAND_LIST)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000100, FLIPPED)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000200, PREPEND)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000400, APPEND)
-// expandables
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0001000, INITIALLY_EXPANDED)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0002000, INITIALLY_COLLAPSED)
-// text controls
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0010000, PASSWORD)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0020000, SINGLE_LINE)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0040000, MULTILINE)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0080000, NO_PANEL)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0100000, ALWAYS_EDITING)
-// panels
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0200000, NO_INTERNAL_PADDING)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0400000, NO_CLICK_DETECTION)
-// scrollable panels
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x1000000, NO_HORIZONTAL_SCROLL)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x2000000, NO_VERTICAL_SCROLL)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x4000000, RESERVE_HORIZONTAL)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x8000000, RESERVE_VERTICAL)
+// Call this to request that the UI jump to a marked location.
+void jump_to_location(ui_context& ctx, id_interface const& id);
 
 // DISPLAYS - non-interactive widgets
 
@@ -630,6 +661,32 @@ void do_layout_dependent_text(ui_context& ctx, getter<string> const& text,
 
 void do_styled_text(ui_context& ctx, getter<string> const& substyle_name,
     getter<string> const& text, layout const& layout_spec = default_layout);
+
+// make_text(x, id), where x is a utf8_string, creates a read-only accessor
+// for accessing x as a string. It uses the given ID to identify x.
+template<class Id>
+struct utf8_string_accessor : accessor<string>
+{
+    utf8_string_accessor(utf8_string const& x, Id const& id)
+      : text_(x), id_(id)
+    {}
+    id_interface const& id() const { return id_; }
+    bool is_gettable() const { return true; }
+    string const& get() const { return lazy_getter_.get(*this); }
+    bool is_settable() const { return false; }
+    void set(string const& value) const {}
+ private:
+    utf8_string text_;
+    Id id_;
+    friend struct lazy_getter<string>;
+    string generate() const
+    { return string(text_.begin, text_.end - text_.begin); }
+    lazy_getter<string> lazy_getter_;
+};
+template<class Id>
+utf8_string_accessor<Id>
+make_text(utf8_string const& x, Id const& id)
+{ return utf8_string_accessor<Id>(x, id); }
 
 // BUTTONS
 
@@ -777,26 +834,7 @@ do_slider(ui_context& ctx, accessor<double> const& value,
     double minimum, double maximum, double step = 0,
     layout const& layout_spec = default_layout, ui_flag_set flags = NO_FLAGS);
 
-// CONTAINERS
-
-struct bordered_box : noncopyable
-{
- public:
-    bordered_box() {}
-    // accepted flags: HORIZONTAL, VERTICAL - controls layout of children
-    bordered_box(
-        ui_context& ctx, layout const& layout_spec = default_layout,
-        ui_flag_set flags = NO_FLAGS)
-    { begin(ctx, layout_spec, flags); }
-    ~bordered_box() { end(); }
-    void begin(
-        ui_context& ctx, layout const& layout_spec = default_layout,
-        ui_flag_set flags = NO_FLAGS);
-    void end();
-    layout_box region() const { return box_.region(); }
- private:
-    linear_layout box_;
-};
+// PANELS
 
 struct panel : noncopyable
 {
@@ -821,6 +859,8 @@ struct panel : noncopyable
     layout_box inner_region() const { return inner_.padded_region(); }
     // outer_region() includes the border
     layout_box outer_region() const;
+    // padded_region() includes the padding
+    layout_box padded_region() const;
  private:
     ui_context* ctx_;
     bordered_layout outer_;
@@ -845,6 +885,7 @@ class clickable_panel : noncopyable
     void end() { panel_.end(); }
     layout_box inner_region() const { return panel_.inner_region(); }
     layout_box outer_region() const { return panel_.outer_region(); }
+    layout_box padded_region() const { return panel_.padded_region(); }
     bool clicked() const { return clicked_; }
  private:
     panel panel_;
@@ -904,6 +945,8 @@ struct scrollable_panel : noncopyable
     scrollable_region region_;
     linear_layout inner_;
 };
+
+// CONTAINERS
 
 class collapsible_content : noncopyable
 {
@@ -1017,7 +1060,7 @@ struct clamped_content : noncopyable
     clamped_content(ui_context& ctx,
         getter<string> const& background_style,
         getter<string> const& content_style,
-        size const& max_size,
+        absolute_size const& max_size,
         layout const& layout_spec = default_layout,
         ui_flag_set flags = NO_FLAGS)
     {
@@ -1029,7 +1072,7 @@ struct clamped_content : noncopyable
     void begin(ui_context& ctx,
         getter<string> const& background_style,
         getter<string> const& content_style,
-        size const& max_size,
+        absolute_size const& max_size,
         layout const& layout_spec = default_layout,
         ui_flag_set flags = NO_FLAGS);
     void end();
@@ -1047,7 +1090,7 @@ struct clamped_header : noncopyable
     clamped_header(ui_context& ctx,
         getter<string> const& background_style,
         getter<string> const& header_style,
-        size const& max_size,
+        absolute_size const& max_size,
         layout const& layout_spec = default_layout,
         ui_flag_set flags = NO_FLAGS)
     {
@@ -1059,7 +1102,7 @@ struct clamped_header : noncopyable
     void begin(ui_context& ctx,
         getter<string> const& background_style,
         getter<string> const& header_style,
-        size const& max_size,
+        absolute_size const& max_size,
         layout const& layout_spec = default_layout,
         ui_flag_set flags = NO_FLAGS);
     void end();
@@ -1070,6 +1113,40 @@ struct clamped_header : noncopyable
     clamped_layout clamp_;
     panel header_;
 };
+
+struct tab_strip : noncopyable
+{
+    tab_strip(ui_context& ctx, layout const& layout_spec = default_layout,
+        ui_flag_set flags = NO_FLAGS)
+    { begin(ctx, layout_spec, flags); }
+    ~tab_strip() { end(); }
+    void begin(ui_context& ctx, layout const& layout_spec = default_layout,
+        ui_flag_set flags = NO_FLAGS);
+    void end();
+ private:
+    friend struct tab;
+    ui_context* ctx_;
+    scoped_substyle style_;
+    layered_layout layering_;
+    linear_layout tab_container_;
+};
+
+struct tab : noncopyable
+{
+    tab() {}
+    tab(ui_context& ctx, accessor<bool> const& selected)
+    { begin(ctx, selected); }
+    ~tab() { end(); }
+    void begin(ui_context& ctx, accessor<bool> const& selected);
+    void end();
+ private:
+    ui_context* ctx_;
+    clickable_panel panel_;
+    bool is_selected_;
+};
+
+void do_tab(ui_context& ctx, accessor<bool> const& selected,
+    getter<string> const& label);
 
 // OVERLAYS
 
@@ -1092,6 +1169,7 @@ struct popup_positioning
     layout_vector upper_bound;
     layout_vector absolute_lower;
     layout_vector absolute_upper;
+    layout_vector minimum_size; // ignored if negative
 };
 
 struct popup
@@ -1138,7 +1216,6 @@ struct untyped_drop_down_list : noncopyable
     row_layout contents_;
 
     popup popup_;
-    bordered_box list_border_;
     scrollable_panel list_panel_;
     int list_index_;
 };
@@ -1384,6 +1461,56 @@ erase_accessor_type(alia::ui_context& ctx, Accessor const& accessor)
     *storage = accessor;
     return *storage;
 }
+
+// TABLES
+
+struct table : noncopyable
+{
+    table() {}
+    table(ui_context& ctx, accessor<string> const& style,
+        layout const& layout_spec = default_layout)
+    { begin(ctx, style, layout_spec); }
+    ~table() { end(); }
+    void begin(ui_context& ctx, accessor<string> const& style,
+        layout const& layout_spec = default_layout);
+    void end();
+ private:
+    friend struct table_row;
+    friend struct table_cell;
+    ui_context* ctx_;
+    scoped_substyle style_;
+    grid_layout grid_;
+    vector<2,int> index_;
+};
+
+struct table_row : noncopyable
+{
+    table_row() {}
+    table_row(table& table, layout const& layout_spec = default_layout)
+    { begin(table, layout_spec); }
+    ~table_row() { end(); }
+    void begin(table& table, layout const& layout_spec = default_layout);
+    void end();
+ private:
+    friend struct table_cell;
+    table* table_;
+    grid_row grid_row_;
+    scoped_substyle style_, special_style_;
+};
+
+struct table_cell : noncopyable
+{
+    table_cell() {}
+    table_cell(table_row& row, layout const& layout_spec = default_layout)
+    { begin(row, layout_spec); }
+    ~table_cell() { end(); }
+    void begin(table_row& row, layout const& layout_spec = default_layout);
+    void end();
+ private:
+    table_row* row_;
+    panel panel_;
+    scoped_substyle special_style_;
+};
 
 }
 

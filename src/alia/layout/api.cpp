@@ -3,14 +3,21 @@
 
 namespace alia {
 
-layout default_layout;
-
-bool operator==(size const& a, size const& b)
+bool operator==(absolute_length const& a, absolute_length const& b)
 {
-    return a.width == b.width && a.height == b.height &&
-        a.x_units == b.x_units && a.y_units == b.y_units;
+    return a.length == b.length && a.units == b.units;
 }
-bool operator!=(size const& a, size const& b)
+bool operator!=(absolute_length const& a, absolute_length const& b)
+{
+    return !(a == b);
+}
+
+bool operator==(relative_length const& a, relative_length const& b)
+{
+    return a.length == b.length && a.is_relative == b.is_relative &&
+        (!a.is_relative || a.units == b.units);
+}
+bool operator!=(relative_length const& a, relative_length const& b)
 {
     return !(a == b);
 }
@@ -21,6 +28,16 @@ bool operator==(layout const& a, layout const& b)
         a.growth_factor == b.growth_factor;
 }
 bool operator!=(layout const& a, layout const& b)
+{
+    return !(a == b);
+}
+
+bool operator==(box_border_width const& a, box_border_width const& b)
+{
+    return a.top == b.top && a.right == b.right &&
+        a.bottom == b.bottom && a.left == b.left;
+}
+bool operator!=(box_border_width const& a, box_border_width const& b)
 {
     return !(a == b);
 }

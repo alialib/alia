@@ -7,7 +7,7 @@ namespace alia {
 
 struct separator_data
 {
-    keyed_data<float> width;
+    keyed_data<layout_vector> size;
     layout_leaf layout_node;
     caching_renderer_data rendering;
 };
@@ -20,16 +20,19 @@ void do_separator(ui_context& ctx, layout const& layout_spec)
     {
      case REFRESH_CATEGORY:
       {
-        refresh_keyed_data(data.width, *ctx.style.id);
-        if (!data.width.is_valid)
-            set(data.width, get_property(ctx, "separator-width", 2.f));
+        refresh_keyed_data(data.size, *ctx.style.id);
+        if (!is_valid(data.size))
+        {
+            absolute_length spec =
+                get_property(ctx, "separator-width", INHERITED_PROPERTY,
+                    absolute_length(0.1f, EM));
+            set(data.size, as_layout_size(make_vector(
+                resolve_absolute_length(get_layout_traversal(ctx), 0, spec),
+                resolve_absolute_length(get_layout_traversal(ctx), 1, spec))));
+        }
         data.layout_node.refresh_layout(
             get_layout_traversal(ctx), layout_spec,
-            leaf_layout_requirements(
-                make_layout_vector(
-                    as_layout_size(data.width.value),
-                    as_layout_size(data.width.value)),
-                0, 0),
+            leaf_layout_requirements(get(data.size), 0, 0),
             FILL | PADDED);
         add_layout_node(get_layout_traversal(ctx), &data.layout_node);
         break;
@@ -46,8 +49,7 @@ void do_separator(ui_context& ctx, layout const& layout_spec)
             paint.setFlags(SkPaint::kAntiAlias_Flag);
             paint.setStrokeWidth(2);
             paint.setStrokeCap(SkPaint::kRound_Cap);
-            set_color(paint,
-                get_property(ctx, "separator-color", rgba8(gray)));
+            set_color(paint, get_color_property(ctx, "separator-color"));
             renderer.canvas().drawLine(
                 SkIntToScalar(1), SkIntToScalar(1),
                 layout_scalar_as_skia_scalar(region.size[0] - 1),
@@ -122,8 +124,9 @@ void do_bullet(ui_context& ctx, layout const& layout_spec)
     {
      case REFRESH_CATEGORY:
       {
-        layout_scalar size =
-            resolve_layout_height(get_layout_traversal(ctx), 1, EX);
+        layout_scalar size = as_layout_size(
+            resolve_absolute_length(get_layout_traversal(ctx), 1,
+                absolute_length(1, EX)));
         data.layout_node.refresh_layout(
             get_layout_traversal(ctx), layout_spec,
             leaf_layout_requirements(
@@ -238,8 +241,7 @@ struct default_check_box_renderer : check_box_renderer
 
             if (value.is_gettable() && get(value))
             {
-                rgba8 fg_color =
-                    get_property(path, "foreground-color", rgba8(black));
+                rgba8 fg_color = get_color_property(path, "color");
                 set_color(paint, fg_color);
                 paint.setStrokeCap(SkPaint::kRound_Cap);
                 SkScalar dx =
@@ -387,10 +389,8 @@ struct default_radio_button_renderer : radio_button_renderer
             style_search_path const* path =
                 get_control_style_path(ctx, &storage, "radio-button", state);
 
-            rgba8 bg_color =
-                get_property(path, "background-color", rgba8(silver));
-            rgba8 fg_color =
-                get_property(path, "foreground-color", rgba8(black));
+            rgba8 bg_color = get_color_property(path, "background");
+            rgba8 fg_color = get_color_property(path, "color");
 
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);
@@ -404,8 +404,7 @@ struct default_radio_button_renderer : radio_button_renderer
 
             if (state & WIDGET_FOCUSED)
             {
-                set_color(paint,
-                    get_property(ctx, "focus-color", rgba8(gray)));
+                set_color(paint, get_color_property(ctx, "focus-color"));
                 paint.setStyle(SkPaint::kFill_Style);
                 renderer.canvas().drawCircle(
                     layout_scalar_as_skia_scalar(center[0]),
@@ -557,10 +556,8 @@ struct default_node_expander_renderer : node_expander_renderer
             style_search_path const* path =
                 get_control_style_path(ctx, &storage, "node-expander", state);
 
-            rgba8 bg_color =
-                get_property(path, "background-color", rgba8(gray));
-            rgba8 fg_color =
-                get_property(path, "foreground-color", rgba8(black));
+            rgba8 bg_color = get_color_property(path, "background");
+            rgba8 fg_color = get_color_property(path, "color");
 
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);
@@ -737,16 +734,15 @@ void do_progress_bar(ui_context& ctx, getter<double> const& progress,
             paint.setFlags(SkPaint::kAntiAlias_Flag);
             paint.setStyle(SkPaint::kFill_Style);
 
-            style_search_path storage;
+            style_path_storage storage;
             style_search_path const* path =
                 add_substyle_to_path(&storage, ctx.style.path, 0,
                     "progress-bar");
 
-            rgba8 outline_color =
-                get_property(path, "outline-color", rgba8(black));
-            rgba8 background_color = ctx.style.properties->background_color;
-            rgba8 bar_color =
-                get_property(path, "bar-color", rgba8(gray));
+            rgba8 outline_color = get_color_property(path, "outline-color");
+            rgba8 background_color =
+                get_color_property(path, "background");
+            rgba8 bar_color = get_color_property(path, "bar-color");
 
             SkScalar trim =
                 SkScalarDiv(
@@ -829,8 +825,8 @@ struct default_icon_button_renderer : icon_button_renderer
 {
     layout_vector default_size(ui_context& ctx) const
     {
-        return resolve_layout_size(get_layout_traversal(ctx),
-            size(1.2f, 1.2f, EM));
+        return as_layout_size(resolve_absolute_size(
+            get_layout_traversal(ctx), size(1.2f, 1.2f, EM)));
     }
     void draw(
         ui_context& ctx, renderer_data_ptr& data_ptr, layout_box const& region,
@@ -855,10 +851,8 @@ struct default_icon_button_renderer : icon_button_renderer
             style_search_path const* path =
                 get_control_style_path(ctx, &storage, "icon-button", state);
 
-            rgba8 bg_color =
-                get_property(path, "background-color", rgba8(gray));
-            rgba8 fg_color =
-                get_property(path, "foreground-color", rgba8(black));
+            rgba8 bg_color = get_color_property(path, "background");
+            rgba8 fg_color = get_color_property(path, "color");
 
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);

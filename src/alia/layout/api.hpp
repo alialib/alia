@@ -42,26 +42,82 @@ enum layout_units
     EX,
 };
 
-// This is used by the application to specify the size of a layout element.
-struct size
+// Absolute lengths are used to specify the size of stand-alone widgets.
+struct absolute_length
 {
-    size(float w, float h, layout_units u)
-      : width(w), height(h), x_units(u), y_units(u) {}
-    size(float w, layout_units xu, float h, layout_units yu)
-      : width(w), height(h), x_units(xu), y_units(yu) {}
-    size() {}
-    float width, height;
-    layout_units x_units, y_units;
-};
-bool operator==(size const& a, size const& b);
-bool operator!=(size const& a, size const& b);
+    float length;
+    layout_units units;
 
-// If the application only wants to specify one dimension of the element's
-// size, these can be used.
-static inline size width(float w, layout_units u)
-{ return size(w, u, -1, PIXELS); }
-static inline size height(float h, layout_units u)
-{ return size(-1, PIXELS, h, u); }
+    absolute_length(float length, layout_units units)
+      : length(length), units(units)
+    {}
+    absolute_length() {}
+};
+bool operator==(absolute_length const& a, absolute_length const& b);
+bool operator!=(absolute_length const& a, absolute_length const& b);
+
+// 2D version of absolute_length
+typedef vector<2,absolute_length> absolute_size;
+
+// Relative lengths is used to sepcify the size of widget components.
+// They can be either be specified in absolute units or as a fraction of the
+// full widget size.
+struct relative_length
+{
+    bool is_relative;
+    float length;
+    layout_units units; // only relevant if is_relative is false
+
+    relative_length(float length, layout_units units)
+      : is_relative(false), length(length), units(units)
+    {}
+    relative_length(float length)
+      : is_relative(true), length(length)
+    {}
+    relative_length() {}
+};
+bool operator==(relative_length const& a, relative_length const& b);
+bool operator!=(relative_length const& a, relative_length const& b);
+
+// 2D version of relative_length
+typedef vector<2,relative_length> relative_size;
+
+// box_border_width specifies the width of the borders of a box.
+// Each side can have a different border width.
+// Note that the individual widths should be specified as relative lengths,
+// but their absolute for now for simplicity.
+struct box_border_width
+{
+    absolute_length top, right, bottom, left;
+    box_border_width() {}
+    box_border_width(
+        absolute_length const& top, absolute_length const& right,
+        absolute_length const& bottom, absolute_length const& left)
+      : top(top), right(right), bottom(bottom), left(left)
+    {}
+    box_border_width(absolute_length const& width)
+      : top(width), right(width), bottom(width), left(width)
+    {}
+};
+bool operator==(box_border_width const& a, box_border_width const& b);
+bool operator!=(box_border_width const& a, box_border_width const& b);
+
+// some convenience functions for specifying widget sizes
+static inline absolute_size
+size(float w, float h, layout_units u)
+{ return make_vector(absolute_length(w, u), absolute_length(h, u)); }
+static inline absolute_size
+size(float w, layout_units wu, float h, layout_units hu)
+{ return make_vector(absolute_length(w, wu), absolute_length(h, hu)); }
+// These only specify a single dimension.
+// Note that setting the other dimension to 0 is harmless as these are
+// specifying a minimum size.
+static inline absolute_size
+width(float w, layout_units u)
+{ return make_vector(absolute_length(w, u), absolute_length(0, PIXELS)); }
+static inline absolute_size
+height(float h, layout_units u)
+{ return make_vector(absolute_length(0, PIXELS), absolute_length(h, u)); }
 
 // The following flags are used to specify various aspects of an element's
 // layout, including how it is placed within the space allocated to it (its
@@ -117,25 +173,25 @@ ALIA_DEFINE_FLAG_CODE(layout_flag_tag, 0x3000, PADDING_MASK)
 // This is the main structure used to control an element's layout.
 struct layout
 {
-    layout(alia::size const& size = alia::size(-1, -1, PIXELS),
+    layout(absolute_size const& size = alia::size(0, 0, PIXELS),
         layout_flag_set flags = NO_FLAGS, float growth_factor = 0)
       : size(size)
       , flags(flags)
       , growth_factor(growth_factor)
     {}
     layout(layout_flag_set flags, float growth_factor = 0)
-      : size(-1, -1, PIXELS)
+      : size(alia::size(0, 0, PIXELS))
       , flags(flags)
       , growth_factor(growth_factor)
     {}
-    alia::size size;
+    absolute_size size;
     layout_flag_set flags;
     float growth_factor;
 };
-extern layout default_layout;
-
 bool operator==(layout const& a, layout const& b);
 bool operator!=(layout const& a, layout const& b);
+
+static layout const default_layout;
 
 struct data_traversal;
 struct geometry_context;
@@ -429,37 +485,38 @@ ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(vertical_flow_layout)
 // (It should only have a single child.)
 // If the space assigned to it is larger than the specified maximum, it
 // centers the child within that space.
-ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(clamped_layout, size)
+ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(clamped_layout, absolute_size)
 
 // bordered_layout adds a border to its child.
 // (It should only have a single child.)
-ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(bordered_layout, size)
+ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(
+    bordered_layout, box_border_width)
 
-#define ALIA_DECLARE_GRID_LAYOUT_CONTAINER(grid) \
-    struct grid##_data; \
-    struct grid##_layout \
+#define ALIA_DECLARE_GRID_LAYOUT_CONTAINER(grid_type, row_type) \
+    struct grid_type##_data; \
+    struct grid_type \
     { \
-        grid##_layout() {} \
+        grid_type() {} \
         \
         template<class Context> \
-        grid##_layout( \
+        grid_type( \
             Context& ctx, \
             layout const& layout_spec = default_layout, \
-            float column_spacing = 0, \
-            layout_units spacing_units = PIXELS) \
-        { begin(ctx, layout_spec, column_spacing, spacing_units); } \
+            absolute_length const& column_spacing = \
+                absolute_length(0, PIXELS)) \
+        { begin(ctx, layout_spec, column_spacing); } \
         \
-        ~grid##_layout() { end(); } \
+        ~grid_type() { end(); } \
         \
         template<class Context> \
         void begin( \
             Context& ctx, \
             layout const& layout_spec = default_layout, \
-            float column_spacing = 0, \
-            layout_units spacing_units = PIXELS) \
+            absolute_length const& column_spacing = \
+                absolute_length(0, PIXELS)) \
         { \
             concrete_begin(get_layout_traversal(ctx), layout_spec, \
-                column_spacing, spacing_units); \
+                column_spacing); \
         } \
         \
         void end() { transform_.end(); container_.end(); } \
@@ -467,23 +524,23 @@ ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(bordered_layout, size)
      private: \
         void concrete_begin( \
             layout_traversal& traversal, layout const& layout_spec, \
-            float column_spacing, layout_units spacing_units); \
+            absolute_length const& column_spacing); \
         \
-        friend struct grid##_row; \
+        friend struct row_type; \
         \
         scoped_layout_container container_; \
         scoped_transformation transform_; \
         layout_traversal* traversal_; \
-        grid##_data* data_; \
+        grid_type##_data* data_; \
     }; \
-    struct grid##_row \
+    struct row_type \
     { \
-        grid##_row() {} \
-        grid##_row(grid##_layout const& g, \
+        row_type() {} \
+        row_type(grid_type const& g, \
             layout const& layout_spec = default_layout) \
         { begin(g, layout_spec); } \
-        ~grid##_row() { end(); } \
-        void begin(grid##_layout const& g, \
+        ~row_type() { end(); } \
+        void begin(grid_type const& g, \
             layout const& layout_spec = default_layout); \
         void end(); \
      private: \
@@ -495,16 +552,16 @@ ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(bordered_layout, size)
 // grid_row containers that reference the grid_layout.
 // Note that the grid_layout container by itself is just a normal column, so
 // you can intersperse other widgets amongst the grid rows.
-ALIA_DECLARE_GRID_LAYOUT_CONTAINER(grid)
+ALIA_DECLARE_GRID_LAYOUT_CONTAINER(grid_layout, grid_row)
 
 // A uniform grid layout is similar to a grid layout but all cells in the grid
-// always have a uniform size.
-ALIA_DECLARE_GRID_LAYOUT_CONTAINER(uniform_grid)
+// have a uniform size.
+ALIA_DECLARE_GRID_LAYOUT_CONTAINER(uniform_grid_layout, uniform_grid_row)
 
 // A floating_layout detaches its contents from the parent context.
-// The layout should only have one child (generally another container).
+// It should only have one child (generally another container).
 // This child becomes the root of an independent layout tree.
-// The caller may specify the maximum size of the child.
+// The caller may specify the minimum and maximum size of the child.
 // Note that the child is simply placed at (0, 0).
 // It's assumed that the caller will take care of positioning it properly.
 struct floating_layout_data;
@@ -514,15 +571,17 @@ struct floating_layout
 
     template<class Context>
     floating_layout(Context& ctx,
+        layout_vector const& min_size = make_layout_vector(-1, -1),
         layout_vector const& max_size = make_layout_vector(-1, -1))
-    { begin(ctx, max_size); }
+    { begin(ctx, min_size, max_size); }
 
     ~floating_layout() { end(); }
 
     template<class Context>
     void begin(Context& ctx,
+        layout_vector const& min_size = make_layout_vector(-1, -1),
         layout_vector const& max_size = make_layout_vector(-1, -1))
-    { concrete_begin(get_layout_traversal(ctx), max_size); }
+    { concrete_begin(get_layout_traversal(ctx), min_size, max_size); }
 
     void end();
 
@@ -532,16 +591,16 @@ struct floating_layout
     { return layout_box(make_layout_vector(0, 0), size()); }
 
  private:
-    void concrete_begin(
-        layout_traversal& traversal,
-        layout_vector const& max_size);
+    void concrete_begin(layout_traversal& traversal,
+        layout_vector const& min_size, layout_vector const& max_size);
 
     layout_traversal* traversal_;
     layout_container* old_container_;
     layout_node** old_next_ptr_;
+    layout_node* floating_root_;
     floating_layout_data* data_;
     scoped_clip_region_reset clipping_reset_;
-    layout_vector max_size_;
+    layout_vector min_size_, max_size_;
 };
 
 }

@@ -42,6 +42,20 @@ optional_input_accessor<double>
 smooth_value(ui_context& ctx, getter<double> const& x,
     animated_transition const& transition = default_transition);
 
+// Same as above, but allows you to maintain the smoothing data yourself and
+// gives you more explicit control over the process, including the ability to
+// insert discontinuities when desired.
+struct value_smoothing_data
+{
+    bool smoothing;
+    ui_time_type duration, transition_end;
+    double old_value, new_value;
+};
+void reset_smoothing(value_smoothing_data& data, double value);
+double
+smooth_value(ui_context& ctx, value_smoothing_data& data, double x,
+    animated_transition const& transition = default_transition);
+
 // Given an accessor to a value, this presents a delayed view of that value.
 // Note that this function maintains a history of all value changes within
 // the delay period, so using it on a frequently changing value with a long

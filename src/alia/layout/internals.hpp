@@ -65,9 +65,7 @@ static inline bool operator!=(relative_layout_assignment const& a,
 // specifications that refer to the current style.
 struct layout_style_info
 {
-    bool is_padded;
     vector<2,int> padding_size;
-
     float font_size;
     vector<2,float> character_size;
     float x_height;

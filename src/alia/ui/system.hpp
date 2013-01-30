@@ -8,6 +8,8 @@
 
 namespace alia {
 
+float get_text_magnification(ui_system& system);
+
 void set_text_magnification(ui_system& system, float magnification);
 
 void refresh_ui(ui_system& ui);

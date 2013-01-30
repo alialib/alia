@@ -205,7 +205,8 @@ text_layout_node::get_vertical_requirements(
         query.update(
             calculated_layout_requirements(
                 skia_scalar_as_layout_size(line_spacing),
-                skia_scalar_as_layout_size(-metrics.fAscent),
+                skia_scalar_as_layout_size(
+                    -metrics.fAscent + metrics.fLeading),
                 skia_scalar_as_layout_size(metrics.fDescent)));
     }
     alia_end
@@ -262,7 +263,8 @@ void text_layout_node::calculate_wrapping(
 
     layout_requirements y_requirements(
         skia_scalar_as_layout_size(line_spacing),
-        skia_scalar_as_layout_size(-metrics.fAscent),
+        skia_scalar_as_layout_size(
+            -metrics.fAscent + metrics.fLeading),
         skia_scalar_as_layout_size(metrics.fDescent),
         0);
     char const* p = text.begin;
@@ -373,7 +375,7 @@ void do_text(ui_context& ctx, getter<string> const& text,
             data.text_id.store(text.id());
             data.style_id.store(*ctx.style.id);
             update_layout_cacher(get_layout_traversal(ctx),
-                data.layout_cacher, layout_spec, LEFT | BASELINE_Y);
+                data.layout_cacher, layout_spec, LEFT | BASELINE_Y | PADDED);
         }
         add_layout_node(get_layout_traversal(ctx), &data.layout_node);
         break;
@@ -398,8 +400,7 @@ void do_text(ui_context& ctx, getter<string> const& text,
                     paint.setFlags(SkPaint::kAntiAlias_Flag);
                     set_skia_font_info(paint, data.font);
                     // If the background is completely opaque, then we should
-                    // draw it here so that Skia can apply proper LCD text
-                    // rendering.
+                    // draw it here so that Skia can apply LCD text rendering.
                     bool draw_background =
                         ctx.style.properties->background_color.a == 0xff;
                     if (!draw_background)
@@ -546,12 +547,13 @@ static void refresh_standalone_text(
                 make_vector(
                     skia_scalar_as_layout_size(text_width),
                     skia_scalar_as_layout_size(line_spacing)),
-                skia_scalar_as_layout_size(-metrics.fAscent),
+                skia_scalar_as_layout_size(
+                    -metrics.fAscent + metrics.fLeading),
                 skia_scalar_as_layout_size(metrics.fDescent));
 
         data.layout_node.refresh_layout(
             get_layout_traversal(ctx), layout_spec, data.layout_requirements,
-            LEFT | BASELINE_Y);
+            LEFT | BASELINE_Y | PADDED);
 
 	data.cached_image.reset();
 
@@ -728,7 +730,8 @@ void do_layout_dependent_text(ui_context& ctx, getter<string> const& text,
       {
         data.layout_node.refresh_layout(
             get_layout_traversal(ctx), layout_spec,
-            leaf_layout_requirements(make_layout_vector(0, 0), 0, 0));
+            leaf_layout_requirements(make_layout_vector(0, 0), 0, 0),
+            LEFT | BASELINE_Y | PADDED);
         add_layout_node(get_layout_traversal(ctx), &data.layout_node);
         break;
       }

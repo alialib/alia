@@ -177,7 +177,7 @@ get_themed_renderer(
 
 struct stateless_control_style_path_storage
 {
-    style_search_path nodes[2];
+    style_path_storage storage[2];
 };
 
 style_search_path const*

@@ -189,6 +189,28 @@ struct make_widget_visible_event : ui_event
     bool acknowledged;
 };
 
+struct resolve_location_event : ui_event
+{
+    resolve_location_event(owned_id const& id)
+      : ui_event(NO_CATEGORY, RESOLVE_LOCATION_EVENT), id(id),
+        acknowledged(false)
+    {}
+    owned_id id;
+    routable_widget_id routable_id;
+    bool acknowledged;
+};
+
+struct jump_to_widget_event : ui_event
+{
+    jump_to_widget_event(widget_id id)
+      : ui_event(REGION_CATEGORY, JUMP_TO_WIDGET_EVENT), id(id),
+        acknowledged(false)
+    {}
+    widget_id id;
+    vector<2,double> position;
+    bool acknowledged;
+};
+
 struct focus_notification_event : ui_event
 {
     focus_notification_event(ui_event_type type, widget_id target)
@@ -270,14 +292,18 @@ struct input_state
 struct ui_style
 {
     style_tree styles;
+
     dispatch_table theme;
+
     float text_magnification;
 
     // style_id identifies the current state of the above style elements.
     // If any of them change, style_id also changes.
     local_identity id;
 
-    ui_style() : text_magnification(1) {}
+    ui_style()
+      : text_magnification(1)
+    {}
 };
 
 // font is the specification of a font in alia.

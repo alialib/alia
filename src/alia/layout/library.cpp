@@ -45,7 +45,9 @@ layout_box get_container_region(simple_layout_container const& container)
 layout_box get_padded_container_region(
     simple_layout_container const& container)
 {
-    return layout_box(make_layout_vector(0, 0),
+    return layout_box(
+        container.cacher.relative_assignment.region.corner -
+            container.cacher.resolved_relative_assignment.region.corner,
         container.cacher.relative_assignment.region.size);
 }
 
@@ -299,7 +301,7 @@ void column_layout_logic::set_relative_assignment(
         layout_scalar this_baseline =
             i == children && remaining_extra_size == 0 ?
                 assigned_baseline_y :
-                this_height - y.minimum_descent;
+                y.minimum_ascent;
         alia::set_relative_assignment(
             ctx, *i,
             relative_layout_assignment(
@@ -365,8 +367,8 @@ layered_layout_logic::get_vertical_requirements(
     layout_scalar height = 0, ascent = 0, descent = 0;
     for (layout_node* i = children; i; i = i->next)
     {
-        layout_requirements y = alia::get_vertical_requirements(
-            ctx, *i, assigned_width);
+        layout_requirements y =
+            alia::get_vertical_requirements(ctx, *i, assigned_width);
         height = (std::max)(y.minimum_size, height);
         ascent = (std::max)(y.minimum_ascent, ascent);
         descent = (std::max)(y.minimum_descent, descent);
@@ -414,10 +416,10 @@ rotated_layout_logic::get_horizontal_requirements(
     {
         // The layout protocol requires that we ask for horizontal
         // requirements first.
-        layout_requirements x = alia::get_horizontal_requirements(
-            ctx, *i);
-        layout_requirements y = alia::get_vertical_requirements(
-            ctx, *i, 100000);
+        layout_requirements x =
+            alia::get_horizontal_requirements(ctx, *i);
+        layout_requirements y =
+            alia::get_vertical_requirements(ctx, *i, 100000);
         width = (std::max)(y.minimum_size, width);
     }
     return calculated_layout_requirements(width, 0, 0);
@@ -437,8 +439,8 @@ rotated_layout_logic::get_vertical_requirements(
     layout_scalar height = 0;
     for (layout_node* i = children; i; i = i->next)
     {
-        layout_requirements x = alia::get_horizontal_requirements(
-            ctx, *i);
+        layout_requirements x =
+            alia::get_horizontal_requirements(ctx, *i);
         layout_scalar lower_bound = x.minimum_size, upper_bound = 100000;
         while (!layout_scalars_almost_equal(upper_bound, lower_bound))
         {
@@ -463,14 +465,14 @@ void rotated_layout_logic::set_relative_assignment(
 {
     for (layout_node* i = children; i; i = i->next)
     {
-        layout_requirements y = alia::get_vertical_requirements(
-            ctx, *i, assigned_size[1]);
+        layout_requirements y =
+            alia::get_vertical_requirements(ctx, *i, assigned_size[1]);
         alia::set_relative_assignment(
             ctx, *i,
             relative_layout_assignment(
                 layout_box(make_layout_vector(0, 0),
                     make_layout_vector(assigned_size[1], assigned_size[0])),
-                assigned_size[0] - y.minimum_descent));
+                y.minimum_ascent));
     }
 }
 
@@ -634,8 +636,8 @@ vertical_flow_layout_logic::get_vertical_requirements(
     layout_scalar total_height = 0;
     for (layout_node* i = children; i; i = i->next)
     {
-        layout_requirements y = alia::get_vertical_requirements(
-            ctx, *i, column_width);
+        layout_requirements y =
+            alia::get_vertical_requirements(ctx, *i, column_width);
         total_height += y.minimum_size;
     }
 
@@ -654,8 +656,8 @@ vertical_flow_layout_logic::get_vertical_requirements(
         layout_scalar column_height = 0;
         while (child_i && column_height < average_column_height)
         {
-            layout_requirements y = alia::get_vertical_requirements(
-                ctx, *child_i, column_width);
+            layout_requirements y =
+                alia::get_vertical_requirements(ctx, *child_i, column_width);
             column_height += y.minimum_size;
             child_i = child_i->next;
         }
@@ -678,8 +680,8 @@ void vertical_flow_layout_logic::set_relative_assignment(
     layout_scalar total_height = 0;
     for (layout_node* i = children; i; i = i->next)
     {
-        layout_requirements y = alia::get_vertical_requirements(
-            ctx, *i, column_width);
+        layout_requirements y =
+            alia::get_vertical_requirements(ctx, *i, column_width);
         total_height += y.minimum_size;
     }
 
@@ -699,14 +701,14 @@ void vertical_flow_layout_logic::set_relative_assignment(
         p[0] += i * column_width;
         while (child_i && p[1] < bottom)
         {
-            layout_requirements y = alia::get_vertical_requirements(
-                ctx, *child_i, column_width);
+            layout_requirements y =
+                alia::get_vertical_requirements(ctx, *child_i, column_width);
             alia::set_relative_assignment(
                 ctx, *child_i,
                 relative_layout_assignment(
                     layout_box(p,
                         make_layout_vector(column_width, y.minimum_size)),
-                    y.minimum_size - y.minimum_descent));
+                    y.minimum_ascent));
             p[1] += y.minimum_size;
             child_i = child_i->next;
         }
@@ -765,8 +767,8 @@ clamped_layout_logic::get_vertical_requirements(
     layout_scalar height = 0, ascent = 0, descent = 0;
     for (layout_node* i = children; i; i = i->next)
     {
-        layout_requirements y = alia::get_vertical_requirements(
-            ctx, *i, clamped_width);
+        layout_requirements y =
+            alia::get_vertical_requirements(ctx, *i, clamped_width);
         height = (std::max)(y.minimum_size, height);
         ascent = (std::max)(y.minimum_ascent, ascent);
         descent = (std::max)(y.minimum_descent, descent);
@@ -788,17 +790,17 @@ void clamped_layout_logic::set_relative_assignment(
             clamped_size[j] = this->max_size[j] < 0 ? assigned_size[j] :
                 (std::min)(assigned_size[j], this->max_size[j]);
         }
-        layout_requirements y = alia::get_vertical_requirements(
-            ctx, *i, clamped_size[0]);
+        layout_requirements y =
+            alia::get_vertical_requirements(ctx, *i, clamped_size[0]);
         alia::set_relative_assignment(ctx, *i,
             relative_layout_assignment(
                 layout_box((assigned_size - clamped_size) / 2, clamped_size),
-                clamped_size[1] - y.minimum_descent));
+                y.minimum_ascent));
     }
 }
 
 void clamped_layout::concrete_begin(
-    layout_traversal& traversal, size max_size,
+    layout_traversal& traversal, absolute_size max_size,
     layout const& layout_spec)
 {
     clamped_layout_logic* logic;
@@ -808,7 +810,7 @@ void clamped_layout::concrete_begin(
     if (traversal.is_refresh_pass)
     {
         detect_layout_change(traversal, &logic->max_size,
-            resolve_layout_size(traversal, max_size));
+            as_layout_size(resolve_absolute_size(traversal, max_size)));
     }
 }
 
@@ -829,7 +831,7 @@ struct bordered_layout_logic : layout_logic
         layout_vector const& assigned_size,
         layout_scalar assigned_baseline_y);
 
-    layout_vector border_size;
+    resolved_box_border_width border;
 };
 
 calculated_layout_requirements
@@ -843,7 +845,8 @@ bordered_layout_logic::get_horizontal_requirements(
         layout_requirements r = alia::get_horizontal_requirements(ctx, *i);
         width = (std::max)(r.minimum_size, width);
     }
-    return calculated_layout_requirements(width + border_size[0], 0, 0);
+    return calculated_layout_requirements(
+        width + border.left + border.right, 0, 0);
 }
 
 calculated_layout_requirements
@@ -856,14 +859,14 @@ bordered_layout_logic::get_vertical_requirements(
     for (layout_node* i = children; i; i = i->next)
     {
         layout_requirements y = alia::get_vertical_requirements(
-            ctx, *i, assigned_width - this->border_size[0] * 2);
+            ctx, *i, assigned_width - (border.left + border.right));
         height = (std::max)(y.minimum_size, height);
         ascent = (std::max)(y.minimum_ascent, ascent);
         descent = (std::max)(y.minimum_descent, descent);
     }
     return calculated_layout_requirements(
-        height + border_size[1] * 2, ascent + border_size[1],
-        descent + border_size[1]);
+        height + border.top + border.bottom, ascent + border.top,
+        descent + border.bottom);
 }
 
 void bordered_layout_logic::set_relative_assignment(
@@ -876,14 +879,18 @@ void bordered_layout_logic::set_relative_assignment(
     {
         alia::set_relative_assignment(ctx, *i,
             relative_layout_assignment(
-                layout_box(make_layout_vector(0, 0),
-                    assigned_size - this->border_size * 2),
-                assigned_baseline_y - this->border_size[1]));
+                layout_box(
+                    make_layout_vector(border.left, border.top),
+                    assigned_size -
+                        make_layout_vector(
+                            border.left + border.right,
+                            border.top + border.bottom)),
+                assigned_baseline_y - border.top));
     }
 }
 
 void bordered_layout::concrete_begin(
-    layout_traversal& traversal, size border_size,
+    layout_traversal& traversal, box_border_width border,
     layout const& layout_spec)
 {
     bordered_layout_logic* logic;
@@ -892,14 +899,14 @@ void bordered_layout::concrete_begin(
     begin_transform(transform_, traversal, container_->cacher);
     if (traversal.is_refresh_pass)
     {
-        detect_layout_change(traversal, &logic->border_size,
-            resolve_layout_size(traversal, border_size));
+        detect_layout_change(traversal, &logic->border,
+            resolve_box_border_width(traversal, border));
     }
 }
 
-// GRID LAYOUT
+// GRIDS
 
-// Grids are composed of multiple rows, each with their own children.
+// Grids are composed of multiple rows, each with its own children.
 // The children in corresponding positions in different rows are assigned the
 // same width, so that the children line up in columns.
 // (And, as with normal rows, children within the same row all receive the
@@ -915,44 +922,141 @@ void bordered_layout::concrete_begin(
 // invoke all other rows in the grid to do the same, since the width of each
 // column could be determined by any row in the grid. Otherwise, grid rows act
 // like normal rows.
+//
+// Grids come in two forms: uniform and nonuniform. Since the two are so
+// similar, they're built on the same generic implementation.
 
+// The following serve as tags for selecting the proper grid behavior.
+struct nonuniform_grid_tag {};
+struct uniform_grid_tag {};
+
+// This structure stores the layout requirements for the columns in a grid.
+template<class Uniformity>
 struct grid_column_requirements
 {
-    layout_scalar minimum_size;
-    float growth_factor;
-
-    grid_column_requirements() {}
-    grid_column_requirements(layout_scalar minimum_size, float growth_factor)
-      : minimum_size(minimum_size), growth_factor(growth_factor)
-    {}
+};
+// In nonuniform grids, each column has its own requirements.
+template<>
+struct grid_column_requirements<nonuniform_grid_tag>
+{
+    std::vector<layout_requirements> columns;
+};
+// In uniform grids, the columns all share the same requirements.
+template<>
+struct grid_column_requirements<uniform_grid_tag>
+{
+    size_t n_columns;
+    layout_requirements requirements;
 };
 
+// Get the number of columns.
+static size_t
+get_column_count(grid_column_requirements<nonuniform_grid_tag> const& x)
+{
+    return x.columns.size();
+}
+static size_t
+get_column_count(grid_column_requirements<uniform_grid_tag> const& x)
+{
+    return x.n_columns;
+}
+
+// Reset the column requirements.
+static void
+clear_requirements(grid_column_requirements<nonuniform_grid_tag>& x)
+{
+    x.columns.clear();
+}
+static void
+clear_requirements(grid_column_requirements<uniform_grid_tag>& x)
+{
+    x.n_columns = 0;
+    x.requirements = layout_requirements(0, 0, 0, 1);
+}
+
+// Add the requirements for a column.
+static void
+add_requirements(grid_column_requirements<nonuniform_grid_tag>& x,
+    layout_requirements const& addition)
+{
+    x.columns.push_back(addition);
+}
+static void
+add_requirements(grid_column_requirements<uniform_grid_tag>& x,
+    layout_requirements const& addition)
+{
+    ++x.n_columns;
+    fold_in_requirements(x.requirements, addition);
+}
+
+// Fold the second set of requirements into the first.
+static void
+fold_in_requirements(grid_column_requirements<nonuniform_grid_tag>& x,
+    grid_column_requirements<nonuniform_grid_tag> const& y)
+{
+    size_t n_columns = get_column_count(y);
+    if (get_column_count(x) < n_columns)
+        x.columns.resize(n_columns, layout_requirements(0, 0, 0, 0));
+    for (size_t i = 0; i != n_columns; ++i)
+    {
+        layout_requirements& xi = x.columns[i];
+        layout_requirements const& yi = y.columns[i];
+        fold_in_requirements(xi, yi);
+        if (xi.growth_factor < yi.growth_factor)
+            xi.growth_factor = yi.growth_factor;
+    }
+}
+static void
+fold_in_requirements(grid_column_requirements<uniform_grid_tag>& x,
+    grid_column_requirements<uniform_grid_tag> const& y)
+{
+    if (x.n_columns < y.n_columns)
+        x.n_columns = y.n_columns;
+    fold_in_requirements(x.requirements, y.requirements);
+}
+
+// Get the requirements for the nth column.
+static layout_requirements const&
+get_column_requirements(
+    grid_column_requirements<nonuniform_grid_tag> const& x, size_t n)
+{
+    return x.columns[n];
+}
+static layout_requirements const&
+get_column_requirements(
+    grid_column_requirements<uniform_grid_tag> const& x, size_t n)
+{
+    return x.requirements;
+}
+
+template<class Uniformity>
 struct grid_row_container;
 
+template<class Uniformity>
 struct grid_data
 {
+    // unique ID of this grid
+    counter_type id;
+
     // the container that contains the whole grid
-    alia::layout_container* container;
+    layout_container* container;
 
     // list of rows in the grid
-    grid_row_container* rows;
+    grid_row_container<Uniformity>* rows;
 
     // spacing between columns
     layout_scalar column_spacing;
 
     // requirements for the columns
-    std::vector<grid_column_requirements> columns;
+    grid_column_requirements<Uniformity> requirements;
     counter_type last_content_query;
 
-    grid_data() : last_content_query(0) {}
+    grid_data() : id(0), last_content_query(0) {}
 };
 
+template<class Uniformity>
 struct grid_row_container : layout_container
 {
-    grid_row_container()
-      : last_content_query(0)
-    {}
-
     // implementation of layout interface
     layout_requirements get_horizontal_requirements(
         layout_calculation_context& ctx);
@@ -966,77 +1070,85 @@ struct grid_row_container : layout_container
     layout_cacher cacher;
 
     // cached requirements for cells within this row
+    grid_column_requirements<Uniformity> requirements;
     counter_type last_content_query;
-    std::vector<grid_column_requirements> cells;
 
-    // data for the grid that this row belongs to
-    grid_data* grid;
+    // reference to the data for the grid that this row belongs to
+    grid_data<Uniformity>* grid;
 
     // next row in this grid
     grid_row_container* next;
+
+    grid_row_container() : last_content_query(0) {}
 };
 
-static void update_grid_column_requirements(
-    layout_calculation_context& ctx, grid_data& grid)
+// Update the requirements for a grid's columns by querying its contents.
+template<class Uniformity>
+void update_grid_column_requirements(
+    layout_calculation_context& ctx, grid_data<Uniformity>& grid)
 {
-    named_block nb(ctx, make_id(&grid.last_content_query));
+    named_block nb(ctx,
+        combine_ids(make_id(grid.id), make_id(&grid.last_content_query)));
+    // Only update if something in the grid has changed since the last update.
     alia_if (grid.last_content_query != grid.container->last_content_change)
     {
         naming_context nc(ctx);
-        grid.columns.clear();
-        for (grid_row_container* row = grid.rows; row; row = row->next)
+        // Clear the requirements for the grid and recompute them by iterating
+        // through the rows and folding each row's requirements into the main
+        // grid requirements.
+        clear_requirements(grid.requirements);
+        for (grid_row_container<Uniformity>* row = grid.rows; row;
+            row = row->next)
         {
             named_block nb(nc, make_id(row));
+            // Again, only update if something in the row has changed.
             alia_if (row->last_content_query != row->last_content_change)
             {
-                row->cells.clear();
+                clear_requirements(row->requirements);
                 for (layout_node* child = row->children; child;
                     child = child->next)
                 {
-                    layout_requirements x = alia::get_horizontal_requirements(
-                        ctx, *child);
-                    grid_column_requirements requirements;
-                    requirements.minimum_size = x.minimum_size;
-                    requirements.growth_factor = x.growth_factor;
-                    row->cells.push_back(requirements);
+                    layout_requirements x =
+                        alia::get_horizontal_requirements(ctx, *child);
+                    add_requirements(row->requirements, x);
                 }
                 row->last_content_query = row->last_content_change;
             }
             alia_end
-            size_t n_columns = row->cells.size();
-            if (grid.columns.size() < n_columns)
-                grid.columns.resize(n_columns, grid_column_requirements(0, 0));
-            for (size_t i = 0; i != n_columns; ++i)
-            {
-                if (row->cells[i].minimum_size > grid.columns[i].minimum_size)
-                    grid.columns[i].minimum_size = row->cells[i].minimum_size;
-                if (row->cells[i].growth_factor >
-		    grid.columns[i].growth_factor)
-		{
-                    grid.columns[i].growth_factor =
-			row->cells[i].growth_factor;
-		}
-            }
+            fold_in_requirements(grid.requirements, row->requirements);
         }
         grid.last_content_query = grid.container->last_content_change;
     }
     alia_end
 }
 
-static calculated_layout_requirements
-calculate_grid_horizontal_requirements(grid_data const& grid)
+template<class Uniformity>
+layout_scalar
+get_required_width(grid_data<Uniformity> const& grid)
 {
-    size_t n_columns = grid.columns.size();
-    layout_scalar minimum_width = 0;
+    size_t n_columns = get_column_count(grid.requirements);
+    layout_scalar width = 0;
     for (size_t i = 0; i != n_columns; ++i)
-        minimum_width += grid.columns[i].minimum_size;
+        width += get_column_requirements(grid.requirements, i).minimum_size;
     if (n_columns > 0)
-        minimum_width += grid.column_spacing * layout_scalar(n_columns - 1);
-    return calculated_layout_requirements(minimum_width, 0, 0);
+        width += grid.column_spacing * layout_scalar(n_columns - 1);
+    return width;
 }
 
+template<class Uniformity>
+float
+get_total_growth(grid_data<Uniformity> const& grid)
+{
+    size_t n_columns = get_column_count(grid.requirements);
+    float growth = 0;
+    for (size_t i = 0; i != n_columns; ++i)
+        growth += get_column_requirements(grid.requirements, i).growth_factor;
+    return growth;
+}
+
+template<class Uniformity>
 layout_requirements
-grid_row_container::get_horizontal_requirements(
+grid_row_container<Uniformity>::get_horizontal_requirements(
     layout_calculation_context& ctx)
 {
     horizontal_layout_query query(ctx, cacher,
@@ -1044,7 +1156,8 @@ grid_row_container::get_horizontal_requirements(
     alia_if (query.update_required())
     {
         update_grid_column_requirements(ctx, *grid);
-        query.update(calculate_grid_horizontal_requirements(*grid));
+        query.update(calculated_layout_requirements(
+            get_required_width(*grid), 0, 0));
     }
     alia_end
     return query.result();
@@ -1056,42 +1169,38 @@ struct cached_grid_column_assignments
     std::vector<layout_scalar> assignments;
 };
 
-static std::vector<layout_scalar> const&
+template<class Uniformity>
+std::vector<layout_scalar> const&
 calculate_column_assignments(
     layout_calculation_context& ctx,
-    grid_data& grid,
+    grid_data<Uniformity>& grid,
     layout_scalar assigned_width)
 {
-    named_block nb(ctx, combine_ids(make_id(&grid), make_id(assigned_width)));
+    named_block nb(ctx,
+        combine_ids(make_id(grid.id), make_id(assigned_width)));
+    // Only update if something in the grid has changed since the last update.
     cached_grid_column_assignments* cache;
-    if (get_data(ctx, &cache) ||
+    if (get_cached_data(ctx, &cache) ||
         cache->last_update != grid.container->last_content_change)
     {
         update_grid_column_requirements(ctx, grid);
-
-        size_t n_columns = grid.columns.size();
+        size_t n_columns = get_column_count(grid.requirements);
         cache->assignments.resize(n_columns);
-        layout_scalar required_width = 0;
-        float total_growth = 0;
-        for (size_t i = 0; i != n_columns; ++i)
-        {
-            required_width += grid.columns[i].minimum_size;
-            total_growth += grid.columns[i].growth_factor;
-        }
-        if (n_columns > 0)
-            required_width += grid.column_spacing;
+        layout_scalar required_width = get_required_width(grid);
+        float total_growth = get_total_growth(grid);;
         layout_scalar extra_width = assigned_width - required_width;
         for (size_t i = 0; i != n_columns; ++i)
         {
-            layout_scalar width = grid.columns[i].minimum_size;
+            layout_scalar width =
+                get_column_requirements(grid.requirements, i).minimum_size;
             if (total_growth != 0)
             {
-                layout_scalar extra =
-                    layout_scalar(
-                        (grid.columns[i].growth_factor / total_growth)
-                        * extra_width);
+                float growth_factor = get_column_requirements(
+                    grid.requirements, i).growth_factor;
+                layout_scalar extra = round_to_layout_scalar(
+                    (growth_factor / total_growth) * extra_width);
                 extra_width -= extra;
-                total_growth -= grid.columns[i].growth_factor;
+                total_growth -= growth_factor;
                 width += extra;
             }
             cache->assignments[i] = width;
@@ -1120,7 +1229,9 @@ calculate_grid_row_vertical_requirements(
     return calculated_layout_requirements(height, ascent, descent);
 }
 
-layout_requirements grid_row_container::get_vertical_requirements(
+template<class Uniformity>
+layout_requirements
+grid_row_container<Uniformity>::get_vertical_requirements(
     layout_calculation_context& ctx, layout_scalar assigned_width)
 {
     vertical_layout_query query(ctx, cacher,
@@ -1137,9 +1248,11 @@ layout_requirements grid_row_container::get_vertical_requirements(
     return query.result();
 }
 
-static void set_grid_row_relative_assignment(
+template<class Uniformity>
+void
+set_grid_row_relative_assignment(
     layout_calculation_context& ctx,
-    grid_data& grid,
+    grid_data<Uniformity>& grid,
     layout_node* children,
     layout_vector const& assigned_size,
     layout_scalar assigned_baseline_y)
@@ -1161,7 +1274,9 @@ static void set_grid_row_relative_assignment(
     }
 }
 
-void grid_row_container::set_relative_assignment(
+template<class Uniformity>
+void
+grid_row_container<Uniformity>::set_relative_assignment(
     layout_calculation_context& ctx,
     relative_layout_assignment const& assignment)
 {
@@ -1178,15 +1293,48 @@ void grid_row_container::set_relative_assignment(
     alia_end
 }
 
+template<class Uniformity>
+void refresh_grid(layout_traversal& traversal, grid_data<Uniformity>& data)
+{
+    if (traversal.is_refresh_pass)
+    {
+        if (!data.id)
+            data.id = get_cacher_id(*traversal.system);
+        // Reset the row list.
+        data.rows = 0;
+    }
+}
+
+template<class Uniformity>
+void refresh_grid_row(layout_traversal& traversal, grid_data<Uniformity>& grid,
+    grid_row_container<Uniformity>& row, layout const& layout_spec)
+{
+    // Add this row to the grid's list of rows.
+    // It doesn't matter what order the list is in, and adding the row to the
+    // front of the list is easier.
+    if (traversal.is_refresh_pass)
+    {
+        row.next = grid.rows;
+        grid.rows = &row;
+        row.grid = &grid;
+    }
+
+    update_layout_cacher(traversal, row.cacher, layout_spec, FILL | UNPADDED);
+}
+
+// NONUNIFORM GRID
+
+struct grid_layout_data : grid_data<nonuniform_grid_tag>
+{};
+
 void grid_layout::concrete_begin(
     layout_traversal& traversal, layout const& layout_spec,
-    float column_spacing, layout_units spacing_units)
+    absolute_length const& column_spacing)
 {
     traversal_ = &traversal;
 
     get_cached_data(*traversal.data, &data_);
-    if (traversal.is_refresh_pass)
-        data_->rows = 0;
+    refresh_grid(traversal, *data_);
 
     simple_layout_container* container;
     column_layout_logic* logic;
@@ -1198,7 +1346,7 @@ void grid_layout::concrete_begin(
     data_->container = container;
 
     layout_scalar resolved_spacing =
-        resolve_layout_width(traversal, column_spacing, spacing_units);
+        as_layout_size(resolve_absolute_length(traversal, 0, column_spacing));
     detect_layout_change(traversal, &data_->column_spacing, resolved_spacing);
 }
 
@@ -1206,23 +1354,13 @@ void grid_row::begin(grid_layout const& grid, layout const& layout_spec)
 {
     layout_traversal& traversal = *grid.traversal_;
 
-    grid_row_container* row;
+    grid_row_container<nonuniform_grid_tag>* row;
     if (get_cached_data(*traversal.data, &row))
         initialize(traversal, *row);
 
-    // Add this row to the grid's list of children.
-    // It doesn't matter what order the list is in, and adding the row to the
-    // front of the list is easier.
-    if (traversal.is_refresh_pass)
-    {
-        row->next = grid.data_->rows;
-        grid.data_->rows = row;
-        row->grid = grid.data_;
-    }
+    refresh_grid_row(traversal, *grid.data_, *row, layout_spec);
 
     container_.begin(traversal, row);
-
-    update_layout_cacher(traversal, row->cacher, layout_spec, FILL | UNPADDED);
 
     begin_transform(transform_, traversal, row->cacher);
 }
@@ -1233,267 +1371,19 @@ void grid_row::end()
     container_.end();
 }
 
-// UNIFORM GRID LAYOUT
+// UNIFORM GRID
 
-struct uniform_grid_row_container;
-
-struct uniform_grid_data
-{
-    // the container that contains the whole grid
-    alia::layout_container* container;
-
-    // list of rows in the grid
-    uniform_grid_row_container* rows;
-
-    // spacing between columns
-    layout_scalar column_spacing;
-
-    // # of columns
-    size_t n_columns;
-
-    // horizontal requirements of the cells
-    calculated_layout_requirements horizontal_cell_requirements;
-    counter_type last_horizontal_content_query;
-
-    uniform_grid_data() : last_horizontal_content_query(0) {}
-};
-
-struct uniform_grid_row_container : layout_container
-{
-    uniform_grid_row_container()
-      : last_horizontal_content_query(0)
-    {}
-
-    // implementation of layout interface
-    layout_requirements get_horizontal_requirements(
-        layout_calculation_context& ctx);
-    layout_requirements get_vertical_requirements(
-        layout_calculation_context& ctx,
-        layout_scalar assigned_width);
-    void set_relative_assignment(
-        layout_calculation_context& ctx,
-        relative_layout_assignment const& assignment);
-
-    layout_cacher cacher;
-
-    // cached requirements for cells within this row
-    size_t n_cells;
-    // horizontal
-    calculated_layout_requirements horizontal_cell_requirements;
-    counter_type last_horizontal_content_query;
-
-    // data for the grid that this row belongs to
-    uniform_grid_data* grid;
-
-    // next row in this grid
-    uniform_grid_row_container* next;
-};
-
-static void update_horizontal_grid_cell_requirements(
-    layout_calculation_context& ctx, uniform_grid_data& grid)
-{
-    named_block nb(ctx, make_id(&grid.last_horizontal_content_query));
-    alia_if (grid.last_horizontal_content_query !=
-        grid.container->last_content_change)
-    {
-        naming_context nc(ctx);
-        calculated_layout_requirements& grid_requirements =
-            grid.horizontal_cell_requirements;
-        grid_requirements = calculated_layout_requirements(0, 0, 0);
-        grid.n_columns = 0;
-        for (uniform_grid_row_container* row = grid.rows; row; row = row->next)
-        {
-            named_block nb(nc, make_id(row));
-            calculated_layout_requirements& row_requirements =
-                row->horizontal_cell_requirements;
-            alia_if (row->last_horizontal_content_query !=
-                row->last_content_change)
-            {
-                row->n_cells = 0;
-                row_requirements = calculated_layout_requirements(0, 0, 0);
-                for (layout_node* child = row->children; child;
-                    child = child->next)
-                {
-                    layout_requirements x = alia::get_horizontal_requirements(
-                        ctx, *child);
-                    row_requirements.minimum_size = (std::max)(
-                        row_requirements.minimum_size, x.minimum_size);
-                    ++row->n_cells;
-                }
-                row->last_horizontal_content_query = row->last_content_change;
-            }
-            alia_end
-            grid_requirements.minimum_size = (std::max)(
-                grid_requirements.minimum_size, row_requirements.minimum_size);
-            grid.n_columns = (std::max)(grid.n_columns, row->n_cells);
-        }
-        grid.last_horizontal_content_query =
-            grid.container->last_content_change;
-    }
-    alia_end
-}
-
-static calculated_layout_requirements
-calculate_uniform_grid_horizontal_requirements(uniform_grid_data const& grid)
-{
-    layout_scalar minimum_width = layout_scalar(grid.n_columns *
-        grid.horizontal_cell_requirements.minimum_size);
-    if (grid.n_columns > 0)
-    {
-        minimum_width += grid.column_spacing *
-            layout_scalar(grid.n_columns - 1);
-    }
-    return calculated_layout_requirements(minimum_width, 0, 0);
-}
-
-layout_requirements
-uniform_grid_row_container::get_horizontal_requirements(layout_calculation_context& ctx)
-{
-    horizontal_layout_query query(ctx, cacher,
-        grid->container->last_content_change);
-    alia_if (query.update_required())
-    {
-        update_horizontal_grid_cell_requirements(ctx, *grid);
-        query.update(
-            calculate_uniform_grid_horizontal_requirements(*grid));
-    }
-    alia_end
-    return query.result();
-}
-
-std::vector<layout_scalar>
-calculate_uniform_grid_column_widths(
-    uniform_grid_data& grid, layout_scalar assigned_width)
-{
-    std::vector<layout_scalar> widths(grid.n_columns);
-    layout_scalar remaining_width = assigned_width;
-    if (grid.n_columns > 0)
-    {
-        remaining_width -= grid.column_spacing *
-            layout_scalar(grid.n_columns - 1);
-    }
-    for (size_t i = 0; i != grid.n_columns; ++i)
-    {
-        layout_scalar this_width = remaining_width /
-            layout_scalar(grid.n_columns - i);
-        remaining_width -= this_width;
-        widths[i] = this_width;
-    }
-    return widths;
-}
-
-struct cached_uniform_grid_vertical_requirements
-{
-    calculated_layout_requirements requirements;
-    counter_type last_update;
-};
-calculated_layout_requirements
-calculate_uniform_grid_vertical_requirements(
-    layout_calculation_context& ctx,
-    uniform_grid_data& grid,
-    layout_scalar assigned_width)
-{
-    named_block nb(ctx, combine_ids(make_id(&grid), make_id(assigned_width)));
-    cached_uniform_grid_vertical_requirements* cache;
-    if (get_data(ctx, &cache) ||
-        cache->last_update != grid.container->last_content_change)
-    {
-        update_horizontal_grid_cell_requirements(ctx, grid);
-
-        std::vector<layout_scalar> widths =
-            calculate_uniform_grid_column_widths(grid, assigned_width);
-
-        calculated_layout_requirements& grid_requirements =
-            cache->requirements;
-        grid_requirements = calculated_layout_requirements(0, 0, 0);
-        for (uniform_grid_row_container* row = grid.rows; row; row = row->next)
-        {
-            size_t column_index = 0;
-            for (layout_node* child = row->children; child;
-                child = child->next, ++column_index)
-            {
-                layout_requirements x = alia::get_vertical_requirements(
-                    ctx, *child, widths[column_index]);
-                grid_requirements.minimum_size = (std::max)(
-                    grid_requirements.minimum_size, x.minimum_size);
-                grid_requirements.minimum_ascent = (std::max)(
-                    grid_requirements.minimum_ascent, x.minimum_ascent);
-                grid_requirements.minimum_descent = (std::max)(
-                    grid_requirements.minimum_descent, x.minimum_descent);
-            }
-        }
-
-        cache->last_update = grid.container->last_content_change;
-    }
-    return cache->requirements;
-}
-
-layout_requirements
-uniform_grid_row_container::get_vertical_requirements(
-    layout_calculation_context& ctx, layout_scalar assigned_width)
-{
-    vertical_layout_query query(ctx, cacher,
-        grid->container->last_content_change, assigned_width);
-    alia_if (query.update_required())
-    {
-        query.update(
-            calculate_uniform_grid_vertical_requirements(
-                ctx, *grid, assigned_width));
-    }
-    alia_end
-    return query.result();
-}
-
-void set_grid_row_relative_assignment(
-    layout_calculation_context& ctx,
-    uniform_grid_data& grid,
-    layout_node* children,
-    layout_vector const& assigned_size,
-    layout_scalar assigned_baseline_y)
-{
-    std::vector<layout_scalar> const& column_widths =
-        calculate_uniform_grid_column_widths(grid, assigned_size[0]);
-    size_t n = 0;
-    layout_vector p = make_layout_vector(0, 0);
-    for (layout_node* i = children; i; i = i->next, ++n)
-    {
-        layout_scalar this_width = column_widths[n];
-        alia::set_relative_assignment(
-            ctx, *i,
-            relative_layout_assignment(
-                layout_box(p,
-                    make_layout_vector(this_width, assigned_size[1])),
-                assigned_baseline_y));
-        p[0] += this_width + grid.column_spacing;
-    }
-}
-
-void uniform_grid_row_container::set_relative_assignment(
-    layout_calculation_context& ctx,
-    relative_layout_assignment const& assignment)
-{
-    relative_region_assignment rra(ctx, *this, cacher,
-        grid->container->last_content_change, assignment);
-    alia_if (rra.update_required())
-    {
-        set_grid_row_relative_assignment(
-            ctx, *grid, children,
-            rra.resolved_assignment().region.size,
-            rra.resolved_assignment().baseline_y);
-        rra.update();
-    }
-    alia_end
-}
+struct uniform_grid_layout_data : grid_data<uniform_grid_tag>
+{};
 
 void uniform_grid_layout::concrete_begin(
     layout_traversal& traversal, layout const& layout_spec,
-    float column_spacing, layout_units spacing_units)
+    absolute_length const& column_spacing)
 {
     traversal_ = &traversal;
 
     get_cached_data(*traversal.data, &data_);
-    if (traversal.is_refresh_pass)
-        data_->rows = 0;
+    refresh_grid(traversal, *data_);
 
     simple_layout_container* container;
     column_layout_logic* logic;
@@ -1505,7 +1395,7 @@ void uniform_grid_layout::concrete_begin(
     data_->container = container;
 
     layout_scalar resolved_spacing =
-        resolve_layout_width(traversal, column_spacing, spacing_units);
+        as_layout_size(resolve_absolute_length(traversal, 0, column_spacing));
     detect_layout_change(traversal, &data_->column_spacing, resolved_spacing);
 }
 
@@ -1514,26 +1404,15 @@ void uniform_grid_row::begin(
 {
     layout_traversal& traversal = *grid.traversal_;
 
-    uniform_grid_row_container* row;
+    grid_row_container<uniform_grid_tag>* row;
     if (get_cached_data(*traversal.data, &row))
         initialize(traversal, *row);
 
-    // Add this row to the grid's list of children.
-    // It doesn't matter what order the list is in, and adding the row to the
-    // front of the list is easier.
-    if (traversal.is_refresh_pass)
-    {
-        row->next = grid.data_->rows;
-        grid.data_->rows = row;
-        row->grid = grid.data_;
-    }
-
-    container_.begin(traversal, row);
-
     // All rows must be set to GROW to ensure they receive equal space from
     // the column that contains them.
-    update_layout_cacher(traversal, row->cacher, GROW | UNPADDED,
-        GROW | UNPADDED);
+    refresh_grid_row(traversal, *grid.data_, *row, GROW | UNPADDED);
+
+    container_.begin(traversal, row);
 
     begin_transform(transform_, traversal, row->cacher);
 }
@@ -1548,15 +1427,13 @@ void uniform_grid_row::end()
 
 struct floating_layout_data
 {
-    layout_node* root_node;
     data_graph measurement_cache, placement_cache;
     layout_vector size;
-    floating_layout_data() : root_node(0) {}
+    floating_layout_data() {}
 };
 
-void floating_layout::concrete_begin(
-    layout_traversal& traversal,
-    layout_vector const& max_size)
+void floating_layout::concrete_begin(layout_traversal& traversal,
+    layout_vector const& min_size, layout_vector const& max_size)
 {
     get_cached_data(*traversal.data, &data_);
 
@@ -1568,8 +1445,9 @@ void floating_layout::concrete_begin(
         old_next_ptr_ = traversal.next_ptr;
 
         traversal.active_container = 0;
-        traversal.next_ptr = &data_->root_node;
+        traversal.next_ptr = &floating_root_;
 
+        min_size_ = min_size;
         max_size_ = max_size;
     }
 
@@ -1589,14 +1467,16 @@ void floating_layout::end()
             traversal_->next_ptr = old_next_ptr_;
 
             layout_vector measured_size =
-                get_minimum_size(data_->root_node, data_->measurement_cache);
+                get_minimum_size(floating_root_, data_->measurement_cache);
             for (unsigned i = 0; i != 2; ++i)
             {
-                data_->size[i] = max_size_[i] >= 0 ?
-                    (std::min)(max_size_[i], measured_size[i]) :
-                    measured_size[i];
+                data_->size[i] = measured_size[i];
+                if (min_size_[i] >= 0 && data_->size[i] < min_size_[i])
+                    data_->size[i] = min_size_[i];
+                if (max_size_[i] >= 0 && data_->size[i] > max_size_[i])
+                    data_->size[i] = max_size_[i];
             }
-            resolve_layout(data_->root_node, data_->placement_cache,
+            resolve_layout(floating_root_, data_->placement_cache,
                 data_->size);
         }
 

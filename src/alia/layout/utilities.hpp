@@ -51,7 +51,7 @@ static inline counter_type get_cacher_id(layout_system& system)
 
 // The following are all utility functions for adding default values to
 // layout specifications.
-layout add_default_size(layout const& layout_spec, size const& size);
+layout add_default_size(layout const& layout_spec, absolute_size const& size);
 layout add_default_padding(layout const& layout_spec, layout_flag_set flag);
 layout add_default_x_alignment(layout const& layout_spec,
     layout_flag_set alignment);
@@ -65,19 +65,22 @@ void wrap_row(wrapping_state& state);
 void wrap_row(wrapping_assignment_state& state);
 
 // Alternate forms for invoking the layout_node interface.
-static inline layout_requirements get_horizontal_requirements(
+static inline layout_requirements
+get_horizontal_requirements(
     layout_calculation_context& ctx, layout_node& node)
 {
     return node.get_horizontal_requirements(ctx);
 }
-static inline layout_requirements get_vertical_requirements(
+static inline layout_requirements
+get_vertical_requirements(
     layout_calculation_context& ctx,
     layout_node& node,
     layout_scalar assigned_width)
 {
     return node.get_vertical_requirements(ctx, assigned_width);
 }
-static inline void set_relative_assignment(
+static inline void
+set_relative_assignment(
     layout_calculation_context& ctx,
     layout_node& node,
     relative_layout_assignment const& assignment)
@@ -114,25 +117,66 @@ bool detect_layout_change(Context& ctx, T* value_storage, T const& new_value)
     return false;
 }
 
-// Resolve a user size specification into an actual size, in pixels.
-// The result may depend on the state of the traversal (e.g., the current
-// font size).
-layout_scalar resolve_layout_width(layout_traversal& traversal, float width,
-    layout_units units);
-layout_scalar resolve_layout_height(layout_traversal& traversal, float height,
-    layout_units units);
-layout_vector resolve_layout_size(layout_traversal& traversal, size const& s);
-
-// These are the same as the above, but they return their results as floats,
-// so there's no rounding.
-float resolve_precise_layout_size(layout_traversal& traversal, unsigned axis,
-    float size, layout_units units);
-float resolve_precise_layout_width(layout_traversal& traversal, float width,
-    layout_units units);
-float resolve_precise_layout_height(layout_traversal& traversal, float height,
-    layout_units units);
+// Resolve an absolute length into an actual length, in pixels.
+float resolve_absolute_length(
+    vector<2,float> const& ppi, layout_style_info const& style_info,
+    unsigned axis, absolute_length const& length);
+// 2D version
 vector<2,float>
-resolve_precise_layout_size(layout_traversal& traversal, size const& s);
+resolve_absolute_size(
+    vector<2,float> const& ppi, layout_style_info const& style_info,
+    absolute_size const& size);
+// Same as above, but the PPI an style_info are taken from the context.
+float resolve_absolute_length(
+    layout_traversal& traversal, unsigned axis,
+    absolute_length const& length);
+// 2D version
+vector<2,float>
+resolve_absolute_size(layout_traversal& traversal, absolute_size const& size);
+
+// Resolve a relative length into an actual length, in pixels.
+float resolve_relative_length(
+    vector<2,float> const& ppi, layout_style_info const& style_info,
+    unsigned axis, relative_length const& length, float full_length);
+// 2D version
+vector<2,float>
+resolve_relative_size(
+    vector<2,float> const& ppi, layout_style_info const& style_info,
+    relative_size const& size, vector<2,float> const& full_size);
+// Same as above, but the PPI an style_info are taken from the context.
+float resolve_relative_length(
+    layout_traversal& traversal, unsigned axis,
+    relative_length const& length, float full_length);
+// 2D version
+vector<2,float>
+resolve_relative_size(layout_traversal& traversal, relative_size const& size,
+    vector<2,float> const& full_size);
+
+// Same as box_border_width, but the border width is in pixels.
+struct resolved_box_border_width
+{
+    layout_scalar top, right, bottom, left;
+    resolved_box_border_width() {}
+    resolved_box_border_width(
+        layout_scalar top, layout_scalar right,
+        layout_scalar bottom, layout_scalar left)
+      : top(top), right(right), bottom(bottom), left(left)
+    {}
+};
+bool operator==(resolved_box_border_width const& a,
+    resolved_box_border_width const& b);
+bool operator!=(resolved_box_border_width const& a,
+    resolved_box_border_width const& b);
+
+// Resolve a box_border_width into actual widths, in pixels.
+resolved_box_border_width
+resolve_box_border_width(layout_traversal& traversal,
+    box_border_width const& border);
+
+layout_box add_border(layout_box const& box,
+    resolved_box_border_width const& border);
+layout_box remove_border(layout_box const& box,
+    resolved_box_border_width const& border);
 
 // The layout spec supplied by the application must be resolved based on the
 // current proporties of the UI context and the default layout properties of

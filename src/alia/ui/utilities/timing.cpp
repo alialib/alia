@@ -33,55 +33,60 @@ smooth_value(ui_context& ctx, float x,
     return float(smooth_value(ctx, double(x), transition));
 }
 
-struct smooth_value_data
+void reset_smoothing(value_smoothing_data& data, double value)
 {
-    bool smoothing;
-    ui_time_type duration, transition_end;
-    double old_value, new_value;
-};
+    data.smoothing = false;
+    data.new_value = value;
+}
+
+double
+smooth_value(ui_context& ctx, value_smoothing_data& data, double x,
+    animated_transition const& transition)
+{
+    double current_value = data.new_value;
+    if (data.smoothing)
+    {
+        ui_time_type ticks_left =
+            get_animation_ticks_left(ctx, data.transition_end);
+        if (ticks_left > 0)
+        {
+            current_value = data.old_value +
+                eval_curve_at_x(transition.curve,
+                    1. - double(ticks_left) / data.duration,
+                    1. / data.duration) *
+                (data.new_value - data.old_value);
+        }
+        else
+            data.smoothing = false;
+    }
+
+    if (is_refresh_pass(ctx) && x != data.new_value)
+    {
+        data.duration =
+            // If we're just going back to the old value, go back in the same
+            // amount of time it took to get here.
+            data.smoothing && x == data.old_value ?
+                (transition.duration -
+                    get_animation_ticks_left(ctx, data.transition_end)) :
+                transition.duration;
+        data.transition_end = get_animation_tick_count(ctx) + data.duration;
+        data.old_value = current_value;
+        data.new_value = x;
+        data.smoothing = true;
+    }
+
+    return current_value;
+}
 
 double
 smooth_value(ui_context& ctx, double x,
     animated_transition const& transition)
 {
-    smooth_value_data* data;
+    value_smoothing_data* data;
     if (get_cached_data(ctx, &data))
-    {
-        data->smoothing = false;
-        data->new_value = x;
-    }
+        reset_smoothing(*data, x);
 
-    double current_value = data->new_value;
-    if (data->smoothing)
-    {
-        ui_time_type ticks_left =
-            get_animation_ticks_left(ctx, data->transition_end);
-        if (ticks_left > 0)
-        {
-            current_value = data->old_value +
-                eval_curve_at_x(transition.curve,
-                    1. - double(ticks_left) / data->duration,
-                    1. / data->duration) *
-                (data->new_value - data->old_value);
-        }
-        else
-            data->smoothing = false;
-    }
-
-    if (is_refresh_pass(ctx) && x != data->new_value)
-    {
-        data->duration =
-            data->smoothing ?
-                (transition.duration -
-                    get_animation_ticks_left(ctx, data->transition_end)) :
-                transition.duration;
-        data->transition_end = get_animation_tick_count(ctx) + data->duration;
-        data->old_value = current_value;
-        data->new_value = x;
-        data->smoothing = true;
-    }
-
-    return current_value;
+    return smooth_value(ctx, *data, x, transition);
 }
 
 optional_input_accessor<float>

@@ -3,272 +3,6 @@
 
 namespace alia {
 
-// BORDERED BOX
-
-void bordered_box::begin(
-    ui_context& ctx, layout const& layout_spec, ui_flag_set flags)
-{
-    box_.begin(ctx, (flags & HORIZONTAL) ? 0 : 1, layout_spec);
-    if (is_render_pass(ctx))
-    {
-        ctx.surface->draw_filled_box(ctx.style.properties->text_color,
-            box<2,double>(add_border(box_.region(), get_padding_size(ctx))));
-    }
-}
-void bordered_box::end()
-{
-    box_.end();
-}
-
-// PANELS
-
-struct panel_data
-{
-    caching_renderer_data rendering;
-    keyed_data<bool> rounded;
-};
-
-static bool
-is_style_rounded(ui_context& ctx, keyed_data<bool>& data)
-{
-    refresh_keyed_data(data, *ctx.style.id);
-    if (!is_valid(data))
-    {
-        four_corners_spec spec =
-            get_property(ctx, "border-radius",
-                four_corners_spec(
-                    relative_size_spec_2d(
-                        relative_size_spec(0, PIXELS),
-                        relative_size_spec(0, PIXELS))));
-        bool is_rounded = false;
-        for (int i = 0; i != 4; ++i)
-        {
-            for (int j = 0; j != 2; ++j)
-            {
-                if (spec.corners[i].axes[j].size != 0)
-                    is_rounded = true;
-            }
-        }
-        set(data, is_rounded);
-    }
-    return get(data);
-}
-
-static void
-begin_outer_panel(
-    ui_context& ctx, bordered_layout& outer, widget_id id, ui_flag_set flags,
-    panel_data& data)
-{
-    switch (ctx.event->category)
-    {
-     case REFRESH_CATEGORY:
-        break;
-
-     case RENDER_CATEGORY:
-      {
-        if (is_style_rounded(ctx, data.rounded))
-        {
-            layout_box const& rect = outer.region();
-            caching_renderer cache(ctx, data.rendering, *ctx.style.id, rect);
-            if (cache.needs_rendering())
-            {
-                int padding = get_padding_size(ctx)[0];
-                skia_renderer renderer(ctx, cache.image(), rect.size);
-                SkPaint paint;
-                paint.setFlags(SkPaint::kAntiAlias_Flag);
-                set_color(paint, ctx.style.properties->background_color);
-                four_corners_spec corners_spec =
-                    get_property(ctx, "border-radius",
-                        four_corners_spec(
-                            relative_size_spec_2d(
-                                relative_size_spec(0, PIXELS),
-                                relative_size_spec(0, PIXELS))));
-                four_corners_sizes corners =
-                    eval_four_corners(ctx, corners_spec,
-                        vector<2,float>(rect.size));
-                paint.setStyle(SkPaint::kFill_Style);
-                draw_rect(renderer.canvas(), paint, rect, corners);
-                renderer.cache();
-                cache.mark_valid();
-            }
-            cache.draw();
-        }
-        else
-        {
-            ctx.surface->draw_filled_box(
-                ctx.style.properties->background_color,
-                box<2,double>(outer.region()));
-        }
-        break;
-      }
-
-     case REGION_CATEGORY:
-        // So the panel will block mouse events on things behind it.
-        do_box_region(ctx, id, outer.region());
-        break;
-
-     case INPUT_CATEGORY:
-        // So the panel will steal the focus if clicked on.
-        if (!(flags && NO_CLICK_DETECTION) &&
-            ctx.event->type == MOUSE_PRESS_EVENT && is_region_hot(ctx, id))
-        {
-            set_focus(ctx, id);
-        }
-        break;
-    }
-}
-
-static void
-begin_inner_panel(
-    ui_context& ctx, linear_layout& inner, layout const& layout_spec,
-    ui_flag_set flags)
-{
-    layout_flag_set inner_layout_flags =
-        FILL_X |
-        ((layout_spec.flags & Y_ALIGNMENT_MASK) == BASELINE_Y ?
-            BASELINE_Y : FILL_Y) |
-        ((flags & NO_INTERNAL_PADDING) ? UNPADDED : PADDED);
-    inner.begin(ctx, (flags & HORIZONTAL) ? 0 : 1,
-	layout(inner_layout_flags, 1));
-}
-
-void panel::begin(
-    ui_context& ctx, getter<string> const& style,
-    layout const& layout_spec, ui_flag_set flags, widget_id id,
-    widget_state state)
-{
-    ctx_ = &ctx;
-    flags_ = flags;
-
-    panel_data* data;
-    get_cached_data(ctx, &data);
-
-    init_optional_widget_id(ctx, id, data);
-
-    outer_.begin(ctx, size(0, 0, PIXELS),
-        add_default_padding(layout_spec, PADDED));
-
-    substyle_.begin(ctx, style, state);
-
-    begin_outer_panel(ctx, outer_, id, flags, *data);
-
-    begin_inner_panel(ctx, inner_, layout_spec, flags);
-}
-void panel::end()
-{
-    if (ctx_)
-    {
-        inner_.end();
-        substyle_.end();
-        outer_.end();
-        ctx_ = 0;
-    }
-}
-
-layout_box panel::outer_region() const
-{
-    layout_box region = outer_.region();
-    // When this is called, we're already inside the inner region, so we're
-    // using a different transformation matrix than the outer region expects.
-    // Thus, we need to adjust the region's corner to compensate.
-    region.corner -= inner_.offset();
-    return region;
-}
-
-struct clickable_panel_data
-{
-    button_input_state input;
-    caching_renderer_data rendering;
-};
-
-static void
-draw_panel_focus_border(
-    ui_context& ctx, panel& p, ui_flag_set flags,
-    caching_renderer_data& rendering)
-{
-    if (!(flags & HIDE_FOCUS))
-    {
-        layout_box rect = p.outer_region();
-        caching_renderer cache(ctx, rendering, *ctx.style.id,
-            add_border(rect, get_padding_size(ctx)));
-        if (cache.needs_rendering())
-        {
-            layout_vector const& padding = get_padding_size(ctx);
-            skia_renderer renderer(ctx, cache.image(),
-                rect.size + padding * 2);
-            SkPaint paint;
-            paint.setFlags(SkPaint::kAntiAlias_Flag);
-            setup_focus_drawing(ctx, paint);
-            renderer.canvas().translate(
-                layout_scalar_as_skia_scalar(padding[0]),
-                layout_scalar_as_skia_scalar(padding[1]));
-            four_corners_spec corners_spec =
-                get_property(ctx, "border-radius",
-                    four_corners_spec(
-                        relative_size_spec_2d(
-                            relative_size_spec(0, PIXELS),
-                            relative_size_spec(0, PIXELS))));
-            four_corners_sizes corners =
-                eval_four_corners(ctx, corners_spec,
-                    vector<2,float>(rect.size));
-            draw_rect(renderer.canvas(), paint, rect, corners);
-            renderer.cache();
-            cache.mark_valid();
-        }
-        cache.draw();
-    }
-}
-
-void clickable_panel::begin(
-    ui_context& ctx, getter<string> const& style,
-    layout const& layout_spec,
-    ui_flag_set flags, widget_id id)
-{
-    ALIA_GET_CACHED_DATA(clickable_panel_data)
-    get_widget_id_if_needed(ctx, id);
-    widget_state state;
-    if (flags & DISABLED)
-    {
-        state = WIDGET_DISABLED;
-        clicked_ = false;
-    }
-    else
-    {
-        state = get_button_state(ctx, id, data.input);
-        clicked_ = do_button_input(ctx, id, data.input);
-    }
-    panel_.begin(ctx, style, layout_spec, flags, id, state);
-    if (is_render_pass(ctx) && (state & WIDGET_FOCUSED))
-        draw_panel_focus_border(ctx, panel_, flags, data.rendering);
-}
-
-void scrollable_panel::begin(
-    ui_context& ctx, getter<string> const& style,
-    layout const& layout_spec, ui_flag_set flags)
-{
-    widget_id id = get_widget_id(ctx);
-    outer_.begin(ctx, size(0, 0, PIXELS), layout_spec);
-    substyle_.begin(ctx, style, WIDGET_NORMAL);
-    panel_data* data;
-    get_cached_data(ctx, &data);
-    begin_outer_panel(ctx, outer_, id, flags, *data);
-    unsigned scrollable_axes =
-        ((flags & NO_HORIZONTAL_SCROLL) ? 0 : 1) |
-        ((flags & NO_VERTICAL_SCROLL) ? 0 : 2);
-    unsigned reserved_axes =
-        ((flags & RESERVE_HORIZONTAL) ? 1 : 0) |
-        ((flags & RESERVE_VERTICAL) ? 2 : 0);
-    region_.begin(ctx, GROW | UNPADDED, scrollable_axes, id, reserved_axes);
-    begin_inner_panel(ctx, inner_, layout_spec, flags);
-}
-void scrollable_panel::end()
-{
-    inner_.end();
-    region_.end();
-    substyle_.end();
-    outer_.end();
-}
-
 // COLLAPSIBLE CONTENT
 
 struct collapsible_layout_container : layout_container
@@ -498,7 +232,7 @@ void tree_node::end()
 
 struct draggable_separator_data
 {
-    keyed_data<float> width;
+    keyed_data<layout_vector> size;
     layout_leaf layout_node;
     caching_renderer_data rendering;
     int drag_start_delta;
@@ -515,16 +249,19 @@ bool do_draggable_separator(ui_context& ctx, accessor<int> const& width,
     {
      case REFRESH_CATEGORY:
       {
-        refresh_keyed_data(data.width, *ctx.style.id);
-        if (!data.width.is_valid)
-            set(data.width, get_property(ctx, "separator-width", 2.f));
+        refresh_keyed_data(data.size, *ctx.style.id);
+        if (!is_valid(data.size))
+        {
+            absolute_length spec =
+                get_property(ctx, "separator-width", INHERITED_PROPERTY,
+                    absolute_length(0.1f, EM));
+            set(data.size, as_layout_size(make_vector(
+                resolve_absolute_length(get_layout_traversal(ctx), 0, spec),
+                resolve_absolute_length(get_layout_traversal(ctx), 1, spec))));
+        }
         data.layout_node.refresh_layout(
             get_layout_traversal(ctx), layout_spec,
-            leaf_layout_requirements(
-                make_layout_vector(
-                    as_layout_size(data.width.value),
-                    as_layout_size(data.width.value)),
-                0, 0),
+            leaf_layout_requirements(get(data.size), 0, 0),
             FILL | PADDED);
         add_layout_node(get_layout_traversal(ctx), &data.layout_node);
         break;
@@ -541,8 +278,7 @@ bool do_draggable_separator(ui_context& ctx, accessor<int> const& width,
             paint.setFlags(SkPaint::kAntiAlias_Flag);
             paint.setStrokeWidth(2);
             paint.setStrokeCap(SkPaint::kRound_Cap);
-            set_color(paint,
-                get_property(ctx, "separator-color", rgba8(gray)));
+            set_color(paint, get_color_property(ctx, "separator-color"));
             renderer.canvas().drawLine(
                 SkIntToScalar(1), SkIntToScalar(1),
                 layout_scalar_as_skia_scalar(region.size[0] - 1),
@@ -638,153 +374,6 @@ void resizable_content::end()
     }
 }
 
-// OVERLAYS
-
-void overlay::begin(ui_context& ctx, widget_id id)
-{
-    ctx_ = &ctx;
-
-    real_event_category_ = ctx.event->category;
-    real_event_type_ = ctx.event->type;
-
-    // If this is an overlay event, and the overlay is active, activate the
-    // event by translating it to the underlying event type.
-    // Or if this is one of corresponding normal events (like rendering),
-    // disable it inside the overlay.
-    switch(ctx.event->type)
-    {
-     case OVERLAY_RENDER_EVENT:
-        if (is_overlay_active(ctx, id))
-        {
-            ctx.event->category = RENDER_CATEGORY;
-            ctx.event->type = RENDER_EVENT;
-        }
-        break;
-
-     case OVERLAY_MOUSE_HIT_TEST_EVENT:
-        if (is_overlay_active(ctx, id))
-        {
-            ctx.event->category = REGION_CATEGORY;
-            ctx.event->type = MOUSE_HIT_TEST_EVENT;
-        }
-        break;
-
-     case OVERLAY_WHEEL_HIT_TEST_EVENT:
-        if (is_overlay_active(ctx, id))
-        {
-            ctx.event->category = REGION_CATEGORY;
-            ctx.event->type = WHEEL_HIT_TEST_EVENT;
-        }
-        break;
-
-     case OVERLAY_MAKE_WIDGET_VISIBLE_EVENT:
-        if (is_overlay_active(ctx, id))
-        {
-            ctx.event->category = REGION_CATEGORY;
-            ctx.event->type = MAKE_WIDGET_VISIBLE_EVENT;
-        }
-        break;
-
-     case RENDER_EVENT:
-     case MOUSE_HIT_TEST_EVENT:
-     case WHEEL_HIT_TEST_EVENT:
-     case MAKE_WIDGET_VISIBLE_EVENT:
-        ctx.event->category = NO_CATEGORY;
-        ctx.event->type = NO_EVENT;
-        break;
-    }
-}
-
-void overlay::end()
-{
-    if (ctx_)
-    {
-        ui_context& ctx = *ctx_;
-
-        ctx.event->category = real_event_category_;
-        ctx.event->type = real_event_type_;
-
-        ctx_ = 0;
-    }
-}
-
-void popup::begin(ui_context& ctx, widget_id id,
-    popup_positioning const& positioning)
-{
-    ctx_ = &ctx;
-    id_ = id;
-
-    bool active = is_overlay_active(ctx, id);
-
-    layout_vector surface_size = layout_vector(ctx.system->surface_size);
-    layout_vector maximum_size;
-    if (active)
-    {
-        for (unsigned i = 0; i != 2; ++i)
-        {
-            maximum_size[i] = (std::max)(
-                positioning.absolute_upper[i],
-                surface_size[i] - positioning.absolute_lower[i]);
-        }
-    }
-    else
-        maximum_size = surface_size;
-
-    layout_.begin(ctx, maximum_size);
-
-    if (active && !is_refresh_pass(ctx))
-    {
-        vector<2,int> position;
-        for (unsigned i = 0; i != 2; ++i)
-        {
-            if (positioning.absolute_lower[i] + layout_.size()[i] <=
-                    surface_size[i] ||
-                surface_size[i] - positioning.absolute_lower[i] >
-                    positioning.absolute_upper[i])
-            {
-                position[i] = positioning.lower_bound[i];
-            }
-            else
-            {
-                position[i] = positioning.upper_bound[i] - layout_.size()[i];
-            }
-        }
-        transform_.begin(*get_layout_traversal(ctx).geometry);
-        transform_.set(translation_matrix(vector<2,double>(position)));
-    }
-
-    overlay_.begin(ctx, id);
-
-    background_id_ = get_widget_id(ctx);
-    if (active)
-    {
-        // Intercept mouse clicks and wheel movement to other parts of the
-        // surface.
-        handle_mouse_hit(ctx, background_id_, HIT_TEST_MOUSE | HIT_TEST_WHEEL);
-        // If any are detected, or if the popup loses focus, close it.
-        if (detect_mouse_press(ctx, background_id_, LEFT_BUTTON) || 
-            detect_mouse_press(ctx, background_id_, MIDDLE_BUTTON) || 
-            detect_mouse_press(ctx, background_id_, RIGHT_BUTTON) ||
-            detect_focus_loss(ctx, id_))
-        {
-            ctx.system->overlay_id = null_widget_id;
-        }
-    }
-}
-void popup::end()
-{
-    if (ctx_)
-    {
-        ui_context& ctx = *ctx_;
-
-        overlay_.end();
-        transform_.end();
-	layout_.end();
-
-	ctx_ = 0;
-    }
-}
-
 // ACCORDIONS
 
 void accordion::begin(ui_context& ctx, layout const& layout_spec)
@@ -810,7 +399,7 @@ void accordion_section::begin(ui_context& ctx, accessor<bool> const& selected)
     ctx_ = &ctx;
     is_selected_ = is_gettable(selected) ? get(selected) : false;
     panel_.begin(ctx, text("accordion-header"), default_layout,
-        is_selected_ ? DISABLED : NO_FLAGS);
+        is_selected_ ? SELECTED : NO_FLAGS);
     if (panel_.clicked())
         selected.set(true);
 }
@@ -842,15 +431,15 @@ void clamped_content::begin(
     ui_context& ctx,
     getter<string> const& background_style,
     getter<string> const& content_style,
-    size const& max_size,
+    absolute_size const& max_size,
     layout const& layout_spec,
     ui_flag_set flags)
 {
     ctx_ = &ctx;
     background_.begin(ctx, background_style, layout_spec,
         NO_INTERNAL_PADDING |
-        (max_size.width > 0 ? RESERVE_VERTICAL : NO_FLAGS) |
-        (max_size.height > 0 ? RESERVE_HORIZONTAL : NO_FLAGS));
+        (max_size[0].length > 0 ? RESERVE_VERTICAL : NO_FLAGS) |
+        (max_size[1].length > 0 ? RESERVE_HORIZONTAL : NO_FLAGS));
     clamp_.begin(ctx, max_size, GROW | UNPADDED);
     content_.begin(ctx, content_style, UNPADDED, flags);
 }
@@ -869,17 +458,17 @@ void clamped_header::begin(
     ui_context& ctx,
     getter<string> const& background_style,
     getter<string> const& header_style,
-    size const& max_size,
+    absolute_size const& max_size,
     layout const& layout_spec,
     ui_flag_set flags)
 {
     ctx_ = &ctx;
     background_.begin(ctx, background_style, layout_spec,
         NO_INTERNAL_PADDING |
-        (max_size.width > 0 ?
+        (max_size[0].length > 0 ?
             NO_VERTICAL_SCROLL | RESERVE_VERTICAL :
             NO_FLAGS) |
-        (max_size.height > 0 ?
+        (max_size[1].length > 0 ?
             NO_HORIZONTAL_SCROLL | RESERVE_HORIZONTAL :
             NO_FLAGS));
     clamp_.begin(ctx, max_size, GROW | UNPADDED);
@@ -894,6 +483,59 @@ void clamped_header::end()
         background_.end();
         ctx_ = 0;
     }
+}
+
+// TABS
+
+void tab_strip::begin(ui_context& ctx, layout const& layout_spec,
+    ui_flag_set flags)
+{
+    ctx_ = &ctx;
+    style_.begin(ctx, text("tab-strip"));
+    layering_.begin(ctx, layout_spec);
+    {
+        panel background(ctx, text("tab"));
+    }
+    tab_container_.begin(ctx, (flags & VERTICAL) ? 1 : 0);
+}
+
+void tab_strip::end()
+{
+    if (ctx_)
+    {
+        tab_container_.end();
+        layering_.end();
+        style_.end();
+        ctx_ = 0;
+    }
+}
+
+void tab::begin(ui_context& ctx, accessor<bool> const& selected)
+{
+    ctx_ = &ctx;
+    is_selected_ = is_gettable(selected) ? get(selected) : false;
+    panel_.begin(ctx, text("tab"), default_layout,
+        is_selected_ ? SELECTED : NO_FLAGS);
+    if (panel_.clicked())
+    {
+        selected.set(true);
+        end_pass(ctx);
+    }
+}
+void tab::end()
+{
+    if (ctx_)
+    {
+        panel_.end();
+        ctx_ = 0;
+    }
+}
+
+void do_tab(ui_context& ctx, accessor<bool> const& selected,
+    getter<string> const& label)
+{
+    tab t(ctx, selected);
+    do_text(ctx, label);
 }
 
 }

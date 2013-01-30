@@ -135,7 +135,7 @@ void setup_focus_drawing(ui_context& ctx, SkPaint& paint)
         layout_scalar_as_skia_scalar(get_padding_size(ctx)[0]) *
         SkDoubleToScalar(0.7));
     paint.setStyle(SkPaint::kStroke_Style);
-    set_color(paint, get_property(ctx, "focus-color", rgba8(black)));
+    set_color(paint, get_color_property(ctx, "focus-color"));
 }
 
 void draw_round_focus_rect(ui_context& ctx, SkCanvas& canvas,
@@ -192,7 +192,7 @@ static void clamp_radius_pair(SkScalar& x0, SkScalar& x1, SkScalar total)
 }
 
 void draw_rect(SkCanvas& canvas, SkPaint& paint,
-    layout_box const& region, four_corners_sizes const& radii)
+    layout_box const& region, resolved_box_corner_sizes const& radii)
 {
     SkRect rect = layout_box_as_skia_rect(region);
     
@@ -255,23 +255,24 @@ void draw_styled_box(ui_context& ctx, SkCanvas& canvas,
     SkPaint paint;
     paint.setFlags(SkPaint::kAntiAlias_Flag);
 
-    four_corners_spec corners_spec =
-        get_property(path, "border-radius",
-            four_corners_spec(
-                relative_size_spec_2d(
-                    relative_size_spec(0.25),
-                    relative_size_spec(0.25))));
-    four_corners_sizes corners =
-        eval_four_corners(ctx, corners_spec, vector<2,float>(region.size));
+    box_corner_sizes border_radius_spec =
+        get_property(path, "border-radius", UNINHERITED_PROPERTY,
+            box_corner_sizes(
+                make_vector(
+                    relative_length(0.25),
+                    relative_length(0.25))));
+    resolved_box_corner_sizes border_radii =
+        resolve_box_corner_sizes(get_layout_traversal(ctx),
+            border_radius_spec, vector<2,float>(region.size));
 
     paint.setStyle(SkPaint::kFill_Style);
-    set_color(paint, get_property(path, "background-color", rgba8(silver)));
-    draw_rect(canvas, paint, region, corners);
+    set_color(paint, get_color_property(path, "background"));
+    draw_rect(canvas, paint, region, border_radii);
 
     if (focused)
     {
         setup_focus_drawing(ctx, paint);
-        draw_rect(canvas, paint, region, corners);
+        draw_rect(canvas, paint, region, border_radii);
     }
 }
 

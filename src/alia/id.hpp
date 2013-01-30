@@ -24,17 +24,20 @@ enum id_context
 };
 
 // id_interface defines the interface required of all ID types.
-// Additionally, all ID types must supply a member function deep_copy() which
-// returns a typed, stand-alone copy of the id.
 struct id_interface
 {
  public:
     virtual ~id_interface() {}
 
+    // Get the context in which this ID is valid.
+    virtual id_context context() const = 0;
+
     // Create a stand-alone copy of the ID.
     virtual id_interface* clone() const = 0;
 
-    virtual id_context context() const = 0;
+    // Given another ID of the same type, set it equal to a stand-alone copy
+    // of this ID.
+    virtual void deep_copy(id_interface* copy) const = 0;
 
     // Given another ID of the same type, return true iff it's equal to this
     // one.
@@ -50,8 +53,15 @@ struct id_interface
 
 // The following convert the interface to the ID operations into the usual form
 // that one would expect, as free functions.
-bool operator==(id_interface const& a, id_interface const& b);
-bool operator!=(id_interface const& a, id_interface const& b);
+static inline bool operator==(id_interface const& a, id_interface const& b)
+{
+    // Apparently it's faster to compare the name pointers for equality before
+    // resorting to actually comparing the typeid objects themselves.
+    return (typeid(a).name() == typeid(b).name() || typeid(a) == typeid(b)) &&
+        a.equals(b);
+}
+static inline bool operator!=(id_interface const& a, id_interface const& b)
+{ return !(a == b); }
 bool operator<(id_interface const& a, id_interface const& b);
 static inline std::ostream& operator<<(std::ostream& o, id_interface const& id)
 { id.stream(o); return o; }
@@ -63,6 +73,11 @@ static inline id_context get_context(id_interface const& id)
 static inline bool is_valid(id_interface const& id)
 { return get_context(id) != ID_CONTEXT_NOWHERE; }
 
+// Given an ID and some storage, attempts to deep copy the ID into the storage
+// if the types are compatible. Otherwise, deletes the storage and returns
+// a clone.
+void clone_into(id_interface*& storage, id_interface const* id);
+
 // owned_id is used to store an ID over the long-term. If you'll need to
 // reference an ID outside the current stack frame, there's no guarantee that
 // it'll be valid then, so you need to store it in an owned_id, which will
@@ -73,22 +88,18 @@ struct owned_id
     owned_id(owned_id const& other)
       : id_(0)
     {
-        if (other.id_)
-            id_ = other.id_->clone();
+        clone_into(id_, other.id_);
     }
     ~owned_id() { delete id_; }
     owned_id& operator=(owned_id const& other)
     {
-        clear();
-        if (other.id_)
-            id_ = other.id_->clone();
+        clone_into(id_, other.id_);
         return *this;
     }
     void clear() { delete id_; id_ = 0; }
     void store(id_interface const& new_id)
     {
-        clear();
-        id_ = new_id.clone();
+        clone_into(id_, &new_id);
     }
     bool is_initialized() const { return id_ != 0; }
     id_interface const& get() const { return *id_; }
@@ -140,7 +151,8 @@ struct value_id : id_interface
 
     void stream(std::ostream& o) const { o << value_; }
 
-    value_id deep_copy() const { return *this; }
+    void deep_copy(id_interface* copy) const
+    { *static_cast<value_id*>(copy) = *this; }
 
  private:
     Value value_;
@@ -238,10 +250,11 @@ struct value_id_by_reference : id_interface
 
     void stream(std::ostream& o) const { o << *value_; }
 
-    value_id_by_reference deep_copy() const
+    void deep_copy(id_interface* copy) const
     {
         Value* storage = new Value(*value_);
-        return value_id_by_reference(storage, storage, context_);
+        *static_cast<value_id_by_reference*>(copy) =
+            value_id_by_reference(storage, storage, context_);
     }
 
  private:
@@ -288,7 +301,11 @@ struct id_pair : id_interface
       : id0_(id0), id1_(id1) {}
 
     id_interface* clone() const
-    { return new id_pair(id0_.deep_copy(), id1_.deep_copy()); }
+    {
+        id_pair* copy = new id_pair;
+        this->deep_copy(copy);
+        return copy;
+    }
 
     id_context context() const
     {
@@ -313,8 +330,12 @@ struct id_pair : id_interface
     void stream(std::ostream& o) const
     { o << "(" << id0_ << "," << id1_ << ")"; }
 
-    id_pair deep_copy() const
-    { return id_pair(id0_.deep_copy(), id1_.deep_copy()); }
+    void deep_copy(id_interface* copy) const
+    {
+        id_pair* typed_copy = static_cast<id_pair*>(copy);
+        id0_.deep_copy(&typed_copy->id0_);
+        id1_.deep_copy(&typed_copy->id1_);
+    }
 
  private:
     Id0 id0_;
@@ -373,8 +394,12 @@ struct id_ref : id_interface
     void stream(std::ostream& o) const
     { o << *id_; }
 
-    id_ref deep_copy() const
-    { return id_ref(*id_->clone(), true); }
+    void deep_copy(id_interface* copy) const
+    {
+        id_ref* typed_copy = static_cast<id_ref*>(copy);
+        assert(typed_copy->owner_);
+        clone_into(const_cast<id_interface*&>(typed_copy->id_), id_);
+    }
 
  private:
     id_interface const* id_;

@@ -33,24 +33,29 @@ struct default_slider_renderer : slider_renderer
 
     layout_scalar default_width(ui_context& ctx) const
     {
-        return resolve_layout_width(get_layout_traversal(ctx), 20, EM);
+        return as_layout_size(resolve_absolute_length(
+            get_layout_traversal(ctx), 0, absolute_length(20, EM)));
     }
     layout_scalar left_border(ui_context& ctx) const
     {
-        return resolve_layout_width(get_layout_traversal(ctx), 0.5f, EM);
+        return as_layout_size(resolve_absolute_length(
+            get_layout_traversal(ctx), 0, absolute_length(0.5f, EM)));
     }
     layout_scalar right_border(ui_context& ctx) const
     {
-        return resolve_layout_width(get_layout_traversal(ctx), 0.5f, EM);
+        return as_layout_size(resolve_absolute_length(
+            get_layout_traversal(ctx), 0, absolute_length(0.5f, EM)));
     }
     layout_scalar height(ui_context& ctx) const
     {
-        return resolve_layout_width(get_layout_traversal(ctx), 1.3f, EM);
+        return as_layout_size(resolve_absolute_length(
+            get_layout_traversal(ctx), 0, absolute_length(1.3f, EM)));
     }
     layout_box thumb_region(ui_context& ctx) const
     {
         layout_scalar x =
-            resolve_layout_width(get_layout_traversal(ctx), 1.3f, EM);
+            as_layout_size(resolve_absolute_length(
+                get_layout_traversal(ctx), 0, absolute_length(1.3f, EM)));
         return layout_box(make_layout_vector(
             round_to_layout_scalar(x * -0.3), 0),
             make_layout_vector(round_to_layout_scalar(x * 0.6), x));
@@ -58,7 +63,8 @@ struct default_slider_renderer : slider_renderer
     box<1,layout_scalar> track_region(ui_context& ctx) const
     {
         layout_scalar x =
-            resolve_layout_width(get_layout_traversal(ctx), 1.3f, EM);
+            as_layout_size(resolve_absolute_length(
+                get_layout_traversal(ctx), 0, absolute_length(1.3f, EM)));
         box<1,layout_scalar> b;
         b.corner[0] = as_layout_size(x * 0.5);
         b.size[0] = x / 6;
@@ -84,15 +90,14 @@ struct default_slider_renderer : slider_renderer
         {
             skia_renderer renderer(ctx, cache.image(), track_box.size);
 
-            style_search_path storage;
+            style_path_storage storage;
             style_search_path const* path =
                 add_substyle_to_path(&storage, ctx.style.path, 0, "slider");
 
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);
 
-            rgba8 color =
-                get_property(path, "track-color", rgba8(black));
+            rgba8 color = get_color_property(path, "track-color");
 
             renderer.canvas().drawColor(
                 SkColorSetARGB(color.a, color.r, color.g, color.b));
@@ -128,8 +133,7 @@ struct default_slider_renderer : slider_renderer
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);
 
-            rgba8 color =
-                get_property(path, "thumb-color", rgba8(black));
+            rgba8 color = get_color_property(path, "thumb-color");
 
             renderer.canvas().drawColor(
                 SkColorSetARGB(color.a, color.r, color.g, color.b));
