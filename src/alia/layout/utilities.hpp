@@ -223,6 +223,11 @@ struct calculated_layout_requirements
     {}
 };
 
+// Update 'current' so that it includes the additional requirements specified
+// by 'additional'.
+void fold_in_requirements(calculated_layout_requirements& current,
+    layout_requirements const& additional);
+
 // Given a resolved layout spec from the application, and the calculated
 // requirements of the UI element, this fills in the actual requirements for
 // the UI element along the selected axis.

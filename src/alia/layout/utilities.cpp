@@ -14,6 +14,18 @@ void fold_in_requirements(layout_requirements& current,
         current.minimum_ascent + current.minimum_descent);
 }
 
+void fold_in_requirements(calculated_layout_requirements& current,
+    layout_requirements const& additional)
+{
+    current.minimum_ascent = (std::max)(
+        current.minimum_ascent, additional.minimum_ascent);
+    current.minimum_descent = (std::max)(
+        current.minimum_descent, additional.minimum_descent);
+    current.minimum_size = (std::max)((std::max)(
+        current.minimum_size, additional.minimum_size),
+        current.minimum_ascent + current.minimum_descent);
+}
+
 void set_next_node(layout_traversal& traversal, layout_node* node)
 {
     if (*traversal.next_ptr != node)
