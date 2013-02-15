@@ -543,7 +543,7 @@ layout_requirements scrollable_layout_container::get_horizontal_requirements(
             assert(children && !children->next); // one and only one child
             layout_requirements r =
                 alia::get_horizontal_requirements(ctx, *children);
-            layout_scalar required_width = r.minimum_size;
+            layout_scalar required_width = r.size;
             if ((scrollable_axes & 2) != 0)
                 required_width += scrollbar_width;
             query.update(
@@ -581,11 +581,11 @@ layout_requirements scrollable_layout_container::get_vertical_requirements(
             layout_requirements x =
                 alia::get_horizontal_requirements(ctx, *children);
             layout_scalar actual_width =
-                (std::max)(resolved_width, x.minimum_size);
+                (std::max)(resolved_width, x.size);
             layout_requirements y = alia::get_vertical_requirements(
                 ctx, *children, actual_width);
-            layout_scalar required_height = y.minimum_size;
-            if ((scrollable_axes & 1) != 0 && x.minimum_size > resolved_width)
+            layout_scalar required_height = y.size;
+            if ((scrollable_axes & 1) != 0 && x.size > resolved_width)
                 required_height += scrollbar_width;
             query.update(
                 calculated_layout_requirements(required_height, 0, 0));
@@ -619,7 +619,7 @@ void scrollable_layout_container::set_relative_assignment(
         assert(children && !children->next); // one and only one child
         layout_requirements x =
             alia::get_horizontal_requirements(ctx, *children);
-        if (available_size[0] < x.minimum_size)
+        if (available_size[0] < x.size)
         {
             hsb_on = true;
             available_size[1] -= scrollbar_width;
@@ -628,12 +628,12 @@ void scrollable_layout_container::set_relative_assignment(
             hsb_on = false;
 
         layout_requirements y = alia::get_vertical_requirements(
-            ctx, *children, (std::max)(available_size[0], x.minimum_size));
-        if (available_size[1] < y.minimum_size)
+            ctx, *children, (std::max)(available_size[0], x.size));
+        if (available_size[1] < y.size)
         {
             vsb_on = true;
             available_size[0] -= scrollbar_width;
-            if (!hsb_on && available_size[0] < x.minimum_size)
+            if (!hsb_on && available_size[0] < x.size)
             {
                 hsb_on = true;
                 available_size[1] -= scrollbar_width;
@@ -648,12 +648,12 @@ void scrollable_layout_container::set_relative_assignment(
             available_size[0] -= scrollbar_width;
 
         layout_scalar content_width =
-            (std::max)(available_size[0], x.minimum_size);
+            (std::max)(available_size[0], x.size);
 
         y = alia::get_vertical_requirements(ctx, *children, content_width);
 
         layout_scalar content_height =
-            (std::max)(available_size[1], y.minimum_size);
+            (std::max)(available_size[1], y.size);
 
         layout_vector content_size =
             make_layout_vector(content_width, content_height);
@@ -692,7 +692,7 @@ void scrollable_layout_container::set_relative_assignment(
 
         relative_layout_assignment assignment(
             layout_box(make_layout_vector(0, 0), content_size),
-            content_height - y.minimum_descent);
+            content_height - y.descent);
 
         alia::set_relative_assignment(ctx, *children, assignment);
         rra.update();
@@ -898,6 +898,15 @@ void scrollable_region::end()
                             e.region.corner[i] += correction;
                         }
                     }
+                }
+                if (e.abrupt)
+                {
+                    container_->scroll_position =
+                        container_->desired_scroll_position;
+                    reset_smoothing(container_->smoothing_data[0],
+                        container_->scroll_position[0]);
+                    reset_smoothing(container_->smoothing_data[1],
+                        container_->scroll_position[1]);
                 }
             }
         }

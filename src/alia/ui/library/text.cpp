@@ -4,6 +4,7 @@
 #include <sstream>
 #include <utility>
 #include <cctype>
+#include <cstdarg>
 
 // This file implements most of the UI library's text functionality.
 // The only exception is the text control, which is in its own file.
@@ -15,6 +16,34 @@
 // This should be investigated further.
 
 namespace alia {
+
+#ifdef _MSC_VER
+
+int c99_snprintf(char* str, size_t size, const char* format, ...)
+{
+    int count;
+    va_list ap;
+
+    va_start(ap, format);
+    count = c99_vsnprintf(str, size, format, ap);
+    va_end(ap);
+
+    return count;
+}
+
+int c99_vsnprintf(char* str, size_t size, const char* format, va_list ap)
+{
+    int count = -1;
+
+    if (size != 0)
+        count = _vsnprintf_s(str, size, _TRUNCATE, format, ap);
+    if (count == -1)
+        count = _vscprintf(format, ap);
+
+    return count;
+}
+
+#endif
 
 namespace {
 
@@ -229,14 +258,7 @@ layout_requirements text_layout_node::get_minimal_horizontal_requirements(
     text_display_data& data = *data_;
     data.is_wrapped = true;
     SkPaint paint;
-    set_skia_font_info(paint, data.font);
-    SkPaint::FontMetrics metrics;
-    paint.getFontMetrics(&metrics);
     // This is kind of arbitrary, but it should rarely come into play.
-    //return layout_requirements(
-    //    skia_scalar_as_layout_size(metrics.fAvgCharWidth * 10), 0, 0, 0);
-    // metrics.fAvgCharWidth is apparently not reliable, and since this is
-    // arbitrary anyway, use this instead.
     return layout_requirements(
         skia_scalar_as_layout_size(data.font.size * 6), 0, 0, 0);
 }
@@ -333,16 +355,16 @@ void text_layout_node::assign_wrapped_regions(
         text_display_row row;
         row.position = make_layout_vector(
             state.x,
-            y + state.active_row->requirements.minimum_size -
-                state.active_row->requirements.minimum_descent);
+            y + state.active_row->requirements.size -
+                state.active_row->requirements.descent);
         row.text = utf8_string(p, visible_end);
         row.top = y;
-        row.height = state.active_row->requirements.minimum_size;
+        row.height = state.active_row->requirements.size;
         data.wrapped_rows.push_back(row);
 
         // Advance.
         state.x += line_width + padding_width;
-        y += state.active_row->requirements.minimum_size;
+        y += state.active_row->requirements.size;
         if (line_end == text.end)
             break;
         p = line_end;
@@ -419,9 +441,9 @@ void do_text(ui_context& ctx, getter<string> const& text,
                             set_color(paint,
                                 ctx.style.properties->background_color);
                             draw_rect(renderer.canvas(), paint,
-                                layout_box(
+                                layout_box_as_skia_box(layout_box(
                                     make_vector(i->position[0], i->top),
-                                    make_vector(region.size[0], i->height)));
+                                    make_vector(region.size[0], i->height))));
                         }
                         set_color(paint, ctx.style.properties->text_color);
                         renderer.canvas().drawText(
@@ -482,28 +504,6 @@ void do_text(ui_context& ctx, getter<string> const& text,
         break;
       }
     }
-}
-
-cached_string_conversion_accessor
-format_number(ui_context& ctx, char const* format,
-    getter<double> const& number)
-{
-    cached_string_conversion* cache;
-    get_cached_data(ctx, &cache);
-    if (!cache->valid || !cache->id.matches(number.id()))
-    {
-        if (number.is_gettable())
-        {
-            char buffer[64];
-            sprintf(buffer, format, get(number));
-            cache->text = buffer;
-            cache->valid = true;
-        }
-        else
-            cache->valid = false;
-        cache->id.store(number.id());
-    }
-    return cached_string_conversion_accessor(cache);
 }
 
 void do_paragraph(ui_context& ctx, getter<string> const& text,
@@ -787,15 +787,12 @@ bool do_link(
         render_standalone_text(ctx, data.standalone_text, text);
         if (state & WIDGET_FOCUSED)
         {
-            // TODO: This should be a little less hackish, but that might
-            // require more information about the font metrics.
-            box<2,int> const& ar = get_region(data.standalone_text);
-            box<2,int> r;
-            r.corner[0] = ar.corner[0] - 1;
-            r.corner[1] = ar.corner[1];
-            r.size[0] = ar.size[0] + 3;
-            r.size[1] = ar.size[1] + 1;
-            draw_focus_rect(ctx, data.focus_rect, r);
+            draw_focus_rect(ctx, data.focus_rect,
+                add_border(get_region(data.standalone_text),
+                    // TODO: Don't hardcode this.
+                    as_layout_size(resolve_absolute_size(
+                        get_layout_traversal(ctx),
+                        size(3, 3, PIXELS)))));
         }
         break;
 
@@ -811,6 +808,15 @@ void do_styled_text(ui_context& ctx, getter<string> const& substyle_name,
 {
     scoped_substyle substyle(ctx, substyle_name);
     do_text(ctx, text, layout_spec);
+}
+
+void do_heading(ui_context& ctx, getter<string> const& substyle_name,
+    getter<string> const& text, layout const& layout_spec)
+{
+    scoped_substyle substyle(ctx, substyle_name);
+    bordered_layout margin(ctx, get_margin_property(ctx.style.path),
+        layout_spec);
+    do_text(ctx, text);
 }
 
 }

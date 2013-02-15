@@ -1,86 +1,53 @@
 #include <alia/ui/api.hpp>
 #include <alia/ui/utilities.hpp>
 #include <alia/ui/system.hpp>
+#include <alia/ui/library/controls.hpp>
 
 namespace alia {
 
 // DROP DOWNS
 
-struct drop_down_button_renderer : dispatch_interface
-{
-    virtual layout_vector default_size(ui_context& ctx) const = 0;
-
-    virtual void draw(
-        ui_context& ctx, renderer_data_ptr& data_ptr, layout_box const& region,
-        widget_state state) const = 0;
-};
-
-struct drop_down_button_data
-{
-    layout_leaf layout_node;
-    themed_rendering_data<drop_down_button_renderer> rendering;
-    button_input_state input;
-};
+struct drop_down_button_renderer : simple_button_renderer
+{};
 
 struct default_drop_down_button_renderer : drop_down_button_renderer
 {
-    layout_vector default_size(ui_context& ctx) const
+    leaf_layout_requirements get_layout(ui_context& ctx) const
     {
-        return as_layout_size(resolve_absolute_size(
-            get_layout_traversal(ctx), size(1.f, 1.f, EM)));
+        return get_box_control_layout(ctx, "drop-down-button");
     }
     void draw(
-        ui_context& ctx, renderer_data_ptr& data_ptr, layout_box const& region,
-        widget_state state) const
+        ui_context& ctx, layout_box const& region,  widget_state state) const
     {
-        caching_renderer_data* data;
-        cast_data_ptr(&data, data_ptr);
+        if (!is_render_pass(ctx))
+            return;
 
-        layout_vector const& padding_size = get_padding_size(ctx);
-        layout_box padded_region = add_border(region, padding_size);
-        layout_vector const& unpadded_size = region.size;
-
-        caching_renderer cache(ctx, *data,
-            combine_ids(ref(*ctx.style.id), make_id(state)),
-            padded_region);
+        caching_renderer cache;
+        initialize_caching_control_renderer(
+            ctx, cache, region, make_id(state));
         if (cache.needs_rendering())
         {
-            skia_renderer renderer(ctx, cache.image(), padded_region.size);
-
-            control_style_path_storage storage;
-            style_search_path const* path =
-                get_control_style_path(ctx, &storage, "drop-down-button",
-                    state);
-
-            rgba8 bg_color = get_color_property(path, "background");
-            rgba8 fg_color = get_color_property(path, "color");
+            box_control_renderer renderer(
+                ctx, cache, "drop-down-button", state);
 
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);
 
             renderer.canvas().translate(
-                layout_scalar_as_skia_scalar(padding_size[0]),
-                layout_scalar_as_skia_scalar(padding_size[1]));
-
-            paint.setStyle(SkPaint::kFill_Style);
-            set_color(paint, bg_color);
-            draw_rect(renderer.canvas(), paint, unpadded_size);
-
-            renderer.canvas().translate(
                 SkScalarDiv(
-                    layout_scalar_as_skia_scalar(unpadded_size[0]),
+                    renderer.content_region().size[0],
                     SkIntToScalar(2)),
                 SkScalarDiv(
-                    layout_scalar_as_skia_scalar(unpadded_size[1]),
+                    renderer.content_region().size[1],
                     SkIntToScalar(2)));
             renderer.canvas().rotate(90);
 
             {
-                set_color(paint, fg_color);
+                set_color(paint, renderer.style().fg_color);
                 paint.setStyle(SkPaint::kFill_Style);
                 SkScalar a =
                     SkScalarDiv(
-                        layout_scalar_as_skia_scalar(unpadded_size[0]),
+                        renderer.content_region().size[0],
                         SkDoubleToScalar(1.8));
                 SkPath path;
                 path.incReserve(4);
@@ -107,6 +74,8 @@ struct default_drop_down_button_renderer : drop_down_button_renderer
     }
 };
 
+typedef simple_button_data drop_down_button_data;
+
 static bool
 do_drop_down_button(
     ui_context& ctx,
@@ -114,45 +83,8 @@ do_drop_down_button(
     widget_id id,
     drop_down_button_data& data)
 {
-    switch (ctx.event->category)
-    {
-     case REFRESH_CATEGORY:
-      {
-        static default_drop_down_button_renderer default_renderer;
-        refresh_themed_rendering_data(ctx, data.rendering, &default_renderer);
-        drop_down_button_renderer const* renderer = data.rendering.renderer;
-        data.layout_node.refresh_layout(
-            get_layout_traversal(ctx),
-            layout_spec,
-            leaf_layout_requirements(renderer->default_size(ctx), 0, 0),
-            LEFT | CENTER_Y | PADDED);
-        add_layout_node(get_layout_traversal(ctx), &data.layout_node);
-        break;
-      }
-
-     case RENDER_CATEGORY:
-      {
-        data.rendering.renderer->draw(ctx, data.rendering.data,
-            data.layout_node.assignment().region,
-            get_button_state(ctx, id, data.input));
-        break;
-      }
-
-     case REGION_CATEGORY:
-        do_box_region(ctx, id, data.layout_node.assignment().region);
-        break;
-
-     case INPUT_CATEGORY:
-        add_to_focus_order(ctx, id);
-        if (detect_click(ctx, id, LEFT_BUTTON) ||
-            detect_keyboard_click(ctx, data.input.key, id, KEY_SPACE))
-        {
-            return true;
-        }
-        break;
-    }
-
-    return false;
+    return do_simple_button<drop_down_button_renderer,
+        default_drop_down_button_renderer>(ctx, layout_spec, id, &data);
 }
 
 struct ddl_data
@@ -305,7 +237,7 @@ static void close_ddl(ui_context& ctx, ddl_data& data, widget_id id)
 
 untyped_ui_value const*
 untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
-    ui_flag_set flags)
+    ddl_flag_set flags)
 {
     ctx_ = &ctx;
 
@@ -322,7 +254,7 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
     container_.begin(ctx, text("control"),
         add_default_padding(
             add_default_alignment(layout_spec, LEFT, BASELINE_Y), PADDED),
-        HORIZONTAL | SHOW_FOCUS | NO_INTERNAL_PADDING, id_, state);
+        PANEL_HORIZONTAL | PANEL_NO_INTERNAL_PADDING, id_, state);
 
     switch (ctx.event->category)
     {
@@ -335,7 +267,7 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
             {
                 // If this is a list of commands, don't select them without the
                 // list being open.
-                if (!(flags & COMMAND_LIST))
+                if (!(flags & DDL_COMMAND_LIST))
                 {
                     optional<int> selection = get_ddl_selected_index(ctx, id_);
                     if (process_ddl_movement_keys(ctx, id_, selection, info))
@@ -434,7 +366,7 @@ bool untyped_drop_down_list::do_list()
     {
         popup_.begin(ctx, id_, data.positioning);
         list_panel_.begin(ctx, text("drop-down-list"), GROW | UNPADDED,
-            NO_HORIZONTAL_SCROLL | NO_INTERNAL_PADDING);
+            PANEL_NO_HORIZONTAL_SCROLLING | PANEL_NO_INTERNAL_PADDING);
     }
     alia_end
 
@@ -467,8 +399,9 @@ bool untyped_ddl_item::begin(untyped_drop_down_list& list, bool is_selected)
 
     widget_id id = get_widget_id(ctx);
     panel_.begin(ctx, text("item"), UNPADDED,
-        NO_INTERNAL_PADDING | NO_CLICK_DETECTION,
-        id, get_widget_state(ctx, id, true, false, is_internally_selected));
+        PANEL_NO_INTERNAL_PADDING | PANEL_NO_CLICK_DETECTION, id,
+        get_widget_state(ctx, id,
+            is_internally_selected ? WIDGET_SELECTED : NO_FLAGS));
 
     if (data.make_selection_visible && is_internally_selected)
     {

@@ -5,25 +5,19 @@ namespace alia {
 void fold_in_requirements(layout_requirements& current,
     layout_requirements const& additional)
 {
-    current.minimum_ascent = (std::max)(
-        current.minimum_ascent, additional.minimum_ascent);
-    current.minimum_descent = (std::max)(
-        current.minimum_descent, additional.minimum_descent);
-    current.minimum_size = (std::max)((std::max)(
-        current.minimum_size, additional.minimum_size),
-        current.minimum_ascent + current.minimum_descent);
+    current.ascent = (std::max)(current.ascent, additional.ascent);
+    current.descent = (std::max)(current.descent, additional.descent);
+    current.size = (std::max)((std::max)(current.size, additional.size),
+        current.ascent + current.descent);
 }
 
 void fold_in_requirements(calculated_layout_requirements& current,
     layout_requirements const& additional)
 {
-    current.minimum_ascent = (std::max)(
-        current.minimum_ascent, additional.minimum_ascent);
-    current.minimum_descent = (std::max)(
-        current.minimum_descent, additional.minimum_descent);
-    current.minimum_size = (std::max)((std::max)(
-        current.minimum_size, additional.minimum_size),
-        current.minimum_ascent + current.minimum_descent);
+    current.ascent = (std::max)(current.ascent, additional.ascent);
+    current.descent = (std::max)(current.descent, additional.descent);
+    current.size = (std::max)((std::max)(current.size, additional.size),
+        current.ascent + current.descent);
 }
 
 void set_next_node(layout_traversal& traversal, layout_node* node)
@@ -107,13 +101,13 @@ layout add_default_alignment(layout const& layout_spec,
 
 void wrap_row(wrapping_state& state)
 {
-    state.active_row.requirements.minimum_size = (std::max)(
-        state.active_row.requirements.minimum_size,
-        state.active_row.requirements.minimum_ascent +
-        state.active_row.requirements.minimum_descent);
+    state.active_row.requirements.size = (std::max)(
+        state.active_row.requirements.size,
+        state.active_row.requirements.ascent +
+        state.active_row.requirements.descent);
     if (state.rows)
         state.rows->push_back(state.active_row);
-    state.active_row.y += state.active_row.requirements.minimum_size;
+    state.active_row.y += state.active_row.requirements.size;
     state.active_row.requirements = layout_requirements(0, 0, 0, 0);
     state.accumulated_width = 0;
 }
@@ -134,11 +128,11 @@ void layout_node::calculate_wrapping(
     wrapping_state& state)
 {
     layout_requirements x = this->get_horizontal_requirements(ctx);
-    if (state.accumulated_width + x.minimum_size > assigned_width)
+    if (state.accumulated_width + x.size > assigned_width)
         wrap_row(state);
     layout_requirements y =
-        this->get_vertical_requirements(ctx, x.minimum_size);
-    state.accumulated_width += x.minimum_size;
+        this->get_vertical_requirements(ctx, x.size);
+    state.accumulated_width += x.size;
     fold_in_requirements(state.active_row.requirements, y);
 }
 void layout_node::assign_wrapped_regions(
@@ -147,45 +141,56 @@ void layout_node::assign_wrapped_regions(
     wrapping_assignment_state& state)
 {
     layout_requirements x = this->get_horizontal_requirements(ctx);
-    if (state.x + x.minimum_size > assigned_width)
+    if (state.x + x.size > assigned_width)
         wrap_row(state);
-    layout_scalar row_height = state.active_row->requirements.minimum_size;
+    layout_scalar row_height = state.active_row->requirements.size;
     this->set_relative_assignment(
         ctx,
         relative_layout_assignment(
             layout_box(
                 make_layout_vector(state.x, state.active_row->y),
-                make_layout_vector(x.minimum_size, row_height)),
-            state.active_row->requirements.minimum_ascent));
-    state.x += x.minimum_size;
+                make_layout_vector(x.size, row_height)),
+            state.active_row->requirements.ascent));
+    state.x += x.size;
 }
 
 float resolve_absolute_length(
     vector<2,float> const& ppi, layout_style_info const& style_info,
     unsigned axis, absolute_length const& length)
 {
+    float scale_factor;
     switch (length.units)
     {
      case PIXELS:
      default:
-        return length.length;
+        scale_factor = style_info.magnification;
+        break;
      case INCHES:
-        return length.length * ppi[axis];
+        scale_factor = style_info.magnification * ppi[axis];
+        break;
      case CM:
-        return length.length * ppi[axis] / 2.54f;
+        scale_factor = style_info.magnification * ppi[axis] / 2.54f;
+        break;
      case MM:
-        return length.length * ppi[axis] / 25.4f;
+        scale_factor = style_info.magnification * ppi[axis] / 25.4f;
+        break;
      case POINT:
-        return length.length * ppi[axis] / 72.f;
+        scale_factor = style_info.magnification * ppi[axis] / 72.f;
+        break;
      case PICA:
-        return length.length * ppi[axis] / 6.f;
+        scale_factor = style_info.magnification * ppi[axis] / 6.f;
+        break;
      case CHARS:
-        return length.length * style_info.character_size[axis];
+        scale_factor = style_info.character_size[axis];
+        break;
      case EM:
-        return length.length * style_info.font_size;
+        scale_factor = style_info.font_size;
+        break;
      case EX:
-        return length.length * style_info.x_height;
+        scale_factor = style_info.x_height;
+        break;
     }
+    return length.length * scale_factor; 
 }
 
 vector<2,float>
@@ -261,8 +266,9 @@ bool operator!=(resolved_box_border_width const& a,
     return !(a == b);
 }
 
-resolved_box_border_width operator+(
-    resolved_box_border_width const& a, resolved_box_border_width const& b)
+resolved_box_border_width
+operator+(resolved_box_border_width const& a,
+    resolved_box_border_width const& b)
 {
     resolved_box_border_width sum;
     sum.top = a.top + b.top;
@@ -270,6 +276,16 @@ resolved_box_border_width operator+(
     sum.bottom = a.bottom + b.bottom;
     sum.left = a.left + b.left;
     return sum;
+}
+resolved_box_border_width&
+operator+=(resolved_box_border_width& a,
+    resolved_box_border_width const& b)
+{
+    a.top += b.top;
+    a.right += b.right;
+    a.bottom += b.bottom;
+    a.left += b.left;
+    return a;
 }
 
 layout_box add_border(layout_box const& box,
@@ -348,15 +364,15 @@ void resolve_requirements(
     unsigned axis, calculated_layout_requirements const& calculated)
 {
     layout_scalar padding = spec.padding_size[axis];
-    requirements.minimum_size =
+    requirements.size =
         (std::max)(
             (std::max)(
-                calculated.minimum_size,
-                calculated.minimum_ascent + calculated.minimum_descent),
+                calculated.size,
+                calculated.ascent + calculated.descent),
             spec.size[axis]) +
         padding * 2;
-    requirements.minimum_ascent = calculated.minimum_ascent + padding;
-    requirements.minimum_descent = calculated.minimum_descent + padding;
+    requirements.ascent = calculated.ascent + padding;
+    requirements.descent = calculated.descent + padding;
     requirements.growth_factor = spec.growth_factor;
 }
 
@@ -408,7 +424,7 @@ layout_scalar resolve_assigned_width(
     resolve_axis_assignment(offset, size,
         get_axis_alignment_code(spec, 0),
         assigned_width, 0,
-        horizontal_requirements.minimum_size, 0);
+        horizontal_requirements.size, 0);
     return size - spec.padding_size[0] * 2;
 }
 
@@ -419,27 +435,26 @@ void resolve_relative_assignment(
     layout_requirements const& horizontal_requirements,
     layout_requirements const& vertical_requirements)
 {
-    assert(assignment.baseline_y >= vertical_requirements.minimum_ascent);
-    assert(assignment.baseline_y + vertical_requirements.minimum_descent <=
+    assert(assignment.baseline_y >= vertical_requirements.ascent);
+    assert(assignment.baseline_y + vertical_requirements.descent <=
         assignment.region.size[1]);
     layout_scalar x_offset, x_size;
     resolve_axis_assignment(x_offset, x_size,
         get_axis_alignment_code(spec, 0),
         assignment.region.size[0], 0,
-        horizontal_requirements.minimum_size,
+        horizontal_requirements.size,
         0);
     layout_scalar y_offset, y_size;
     resolve_axis_assignment(y_offset, y_size,
         get_axis_alignment_code(spec, 1),
         assignment.region.size[1], assignment.baseline_y,
-        vertical_requirements.minimum_size,
-        vertical_requirements.minimum_ascent);
+        vertical_requirements.size, vertical_requirements.ascent);
     resolved_assignment = relative_layout_assignment(
         layout_box(
             assignment.region.corner +
                 make_layout_vector(x_offset, y_offset) + spec.padding_size,
             make_layout_vector(x_size, y_size) - spec.padding_size * 2),
-        vertical_requirements.minimum_ascent - spec.padding_size[1]);
+        vertical_requirements.ascent - spec.padding_size[1]);
 }
 
 bool update_layout_cacher(
@@ -785,6 +800,84 @@ bool is_visible(geometry_context& ctx, box<2,double> const& region)
         }
     }
     return true;
+}
+
+void begin_layout_transform(
+    scoped_transformation& transform,
+    layout_traversal const& traversal,
+    layout_cacher const& cacher)
+{
+    if (!traversal.is_refresh_pass)
+    {
+        transform.begin(*traversal.geometry);
+        transform.set(translation_matrix(vector<2,double>(
+            get_assignment(cacher).region.corner)));
+    }
+}
+
+layout_scalar
+get_max_child_width(layout_calculation_context& ctx, layout_node* children)
+{
+    layout_scalar width = 0;
+    for (layout_node* i = children; i; i = i->next)
+    {
+        layout_requirements x = alia::get_horizontal_requirements(ctx, *i);
+        width = (std::max)(x.size, width);
+    }
+    return width;
+}
+
+calculated_layout_requirements
+fold_horizontal_child_requirements(
+    layout_calculation_context& ctx, layout_node* children)
+{
+    return calculated_layout_requirements(
+        get_max_child_width(ctx, children), 0, 0);
+}
+
+calculated_layout_requirements
+fold_vertical_child_requirements(
+    layout_calculation_context& ctx, layout_node* children,
+    layout_scalar assigned_width)
+{
+    calculated_layout_requirements requirements(0, 0, 0);
+    for (layout_node* i = children; i; i = i->next)
+    {
+        fold_in_requirements(requirements,
+            alia::get_vertical_requirements(ctx, *i, assigned_width));
+    }
+    return requirements;
+}
+
+void assign_identical_child_regions(
+    layout_calculation_context& ctx,
+    layout_node* children,
+    layout_vector const& assigned_size,
+    layout_scalar assigned_baseline_y)
+{
+    for (layout_node* i = children; i; i = i->next)
+    {
+        alia::set_relative_assignment(ctx, *i,
+            relative_layout_assignment(
+                layout_box(make_layout_vector(0, 0), assigned_size),
+                assigned_baseline_y));
+    }
+}
+
+layout_scalar
+compute_total_height(
+    layout_calculation_context& ctx,
+    layout_node* children,
+    layout_scalar assigned_width)
+{
+    layout_scalar total_height = 0;
+    for (layout_node* i = children; i; i = i->next)
+    {
+        layout_requirements y =
+            alia::get_vertical_requirements(ctx, *i, assigned_width);
+        total_height += y.size;
+    }
+    return total_height;
 }
 
 }

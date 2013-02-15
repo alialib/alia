@@ -97,4 +97,13 @@ bool is_region_hot(ui_context& ctx, widget_id id)
     return ctx.system->input.hot_id.id == id;
 }
 
+void make_widget_visible(ui_context& ctx, widget_id id,
+    make_widget_visible_flag_set flags)
+{
+    widget_visibility_request request;
+    request.widget = make_routable_widget_id(ctx, id);
+    request.abrupt = (flags & MAKE_WIDGET_VISIBLE_ABRUPTLY) ? true : false;
+    ctx.system->pending_visibility_request = request;
+}
+
 }

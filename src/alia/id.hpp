@@ -397,8 +397,11 @@ struct id_ref : id_interface
     void deep_copy(id_interface* copy) const
     {
         id_ref* typed_copy = static_cast<id_ref*>(copy);
-        assert(typed_copy->owner_);
+        // What we're copying into should either be uninitialized or it should
+        // own the ID it references.
+        assert(!typed_copy->id_ || typed_copy->owner_);
         clone_into(const_cast<id_interface*&>(typed_copy->id_), id_);
+        typed_copy->owner_ = true;
     }
 
  private:

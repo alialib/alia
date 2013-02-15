@@ -104,10 +104,13 @@ template<class Tag>
 bool operator<(flag_set<Tag> a, flag_set<Tag> b)
 { return a.code < b.code; }
 
-// A macro for defining flag constants.
-#define ALIA_DEFINE_FLAG_CODE(Tag, code, name) \
+#define ALIA_DEFINE_FLAG_TYPE(type_prefix) \
+    struct type_prefix##_flag_tag {}; \
+    typedef alia::flag_set<type_prefix##_flag_tag> type_prefix##_flag_set;
+
+#define ALIA_DEFINE_FLAG(type_prefix, code, name) \
     static unsigned const name##_CODE = code; \
-    static alia::flag_set<Tag> const name(code);
+    static alia::flag_set<type_prefix##_flag_tag> const name(code);
 
 // Inspired by Boost, inheriting from noncopyable disables copying for a type.
 namespace noncopyable_ // prevents unintended ADL if used by applications

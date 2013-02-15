@@ -38,8 +38,18 @@ Event& get_event(ui_context& ctx)
     return static_cast<Event&>(*ctx.event);
 }
 
-widget_state get_widget_state(ui_context& ctx, widget_id id,
-    bool enabled = true, bool pressed = false, bool selected = false);
+// Get the state of a widget by detecting if it has the focus or is being
+// interacted with via the mouse.
+//
+// 'overrides' allows you to include special states that the function wouldn't
+// otherwise be aware of. It can include any of the following.
+//  * WIDGET_SELECTED
+//  * WIDGET_DISABLED
+//  * WIDGET_DEPRESSED (e.g., if the widget was pressed using the keyboard)
+//
+widget_state
+get_widget_state(ui_context& ctx, widget_id id,
+    widget_state overrides = NO_FLAGS);
 
 routable_widget_id make_routable_widget_id(ui_context& ctx, widget_id id);
 

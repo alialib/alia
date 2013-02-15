@@ -1,69 +1,15 @@
-#include <alia/ui/api.hpp>
-#include <alia/ui/utilities.hpp>
+#include <alia/ui/library/panels.hpp>
 
 namespace alia {
 
-struct panel_style_info
+void refresh_panel_style_info(
+    ui_context& ctx, keyed_data<panel_style_info>& stored_info,
+    getter<string> const& substyle, widget_state state,
+    add_substyle_flag_set flags)
 {
-    resolved_box_border_width border_width;
-    bool is_rounded;
-    rgba8 border_color, background_color;
-    side_selection hidden_border_sides;
-};
-
-struct panel_data
-{
-    caching_renderer_data rendering;
-    keyed_data<panel_style_info> style;
-};
-
-box_border_width
-get_border_width(
-    style_search_path const* path,
-    absolute_length const& default_width = absolute_length(0, PIXELS))
-{
-    box_border_width border_width =
-        get_property(path, "border-width", UNINHERITED_PROPERTY,
-            box_border_width(default_width));
-    return box_border_width(
-        get_property(path, "border-top-width", UNINHERITED_PROPERTY,
-            border_width.top),
-        get_property(path, "border-right-width", UNINHERITED_PROPERTY,
-            border_width.right),
-        get_property(path, "border-bottom-width", UNINHERITED_PROPERTY,
-            border_width.bottom),
-        get_property(path, "border-left-width", UNINHERITED_PROPERTY,
-            border_width.left));
-}
-
-box_corner_sizes
-get_border_radius_spec(
-    style_search_path const* path,
-    relative_length const& default_radius = relative_length(0, PIXELS))
-{
-    box_corner_sizes border_radius =
-        get_property(path, "border-radius", UNINHERITED_PROPERTY,
-            box_corner_sizes(
-                make_vector(default_radius, default_radius)));
-    return box_corner_sizes(
-        get_property(path, "border-top-left-radius", UNINHERITED_PROPERTY,
-            border_radius.corners[0]),
-        get_property(path, "border-top-right-radius", UNINHERITED_PROPERTY,
-            border_radius.corners[1]),
-        get_property(path, "border-bottom-right-radius", UNINHERITED_PROPERTY,
-            border_radius.corners[2]),
-        get_property(path, "border-bottom-left-radius", UNINHERITED_PROPERTY,
-            border_radius.corners[3]));
-}
-
-static void
-update_panel_style_info(ui_context& ctx, panel_data& data,
-    getter<string> const& substyle, widget_state state, ui_flag_set flags)
-{
-    refresh_keyed_data(data.style, combine_ids(ref(*ctx.style.id),
+    refresh_keyed_data(stored_info, combine_ids(ref(*ctx.style.id),
         combine_ids(ref(substyle.id()), make_id(state))));
-
-    if (!is_valid(data.style))
+    if (!is_valid(stored_info))
     {
         panel_style_info info;
 
@@ -72,116 +18,135 @@ update_panel_style_info(ui_context& ctx, panel_data& data,
             add_substyle_to_path(&storage, ctx.style.path, ctx.style.path,
                 get(substyle), state, flags);
 
+        info.size = make_vector(
+            get_property(path, "width", UNINHERITED_PROPERTY,
+                absolute_length(0, PIXELS)),
+            get_property(path, "height", UNINHERITED_PROPERTY,
+                absolute_length(0, PIXELS)));
+
+        info.margin =
+            resolve_box_border_width(get_layout_traversal(ctx),
+                get_margin_property(path));
+
         info.border_width =
             resolve_box_border_width(get_layout_traversal(ctx),
-                get_border_width(path));
+                get_border_width_property(path));
+
+        info.padding =
+            resolve_box_border_width(get_layout_traversal(ctx),
+                get_padding_property(path));
 
         info.border_color = get_color_property(path, "border-color");
         info.background_color = get_color_property(path, "background");
 
-        box_corner_sizes border_radius = get_border_radius_spec(path);
+        info.border_radii = get_border_radius_property(path);
         info.is_rounded = false;
         for (int i = 0; i != 4; ++i)
         {
             for (int j = 0; j != 2; ++j)
             {
-                if (border_radius.corners[i][j].length > 0)
+                if (info.border_radii.corners[i][j].length > 0)
                     info.is_rounded = true;
             }
         }
 
-        info.hidden_border_sides =
-            get_property(path, "hide-border", UNINHERITED_PROPERTY,
-                NO_SIDES);
-
-        set(data.style, info);
+        set(stored_info, info);
     }
 }
 
 static void
-begin_outer_panel(
-    ui_context& ctx, panel_data& data, bordered_layout& outer,
-    getter<string> const& style, widget_state state,
-    layout const& layout_spec, ui_flag_set flags, widget_id id)
+draw_panel_focus_border(
+    ui_context& ctx, caching_renderer_data& rendering,
+    getter<panel_style_info> const& style_info,
+    layout_box const& outer_region)
 {
-    if (is_refresh_pass(ctx))
-        update_panel_style_info(ctx, data, style, state, flags);
+    layout_box padded_region = add_border(outer_region, get_padding_size(ctx));
+    caching_renderer cache(ctx, rendering, *ctx.style.id, padded_region);
+    if (cache.needs_rendering())
+    {
+        skia_renderer renderer(ctx, cache.image(), padded_region.size);
+        SkPaint paint;
+        paint.setFlags(SkPaint::kAntiAlias_Flag);
+        setup_focus_drawing(ctx, paint);
+        renderer.canvas().translate(
+            layout_scalar_as_skia_scalar(get_padding_size(ctx)[0]),
+            layout_scalar_as_skia_scalar(get_padding_size(ctx)[1]));
+        resolved_box_corner_sizes border_radii =
+            resolve_box_corner_sizes(
+                get_layout_traversal(ctx),
+                get(style_info).border_radii,
+                vector<2,float>(outer_region.size));
+        draw_rect(renderer.canvas(), paint,
+            layout_box_as_skia_box(
+                layout_box(make_layout_vector(0, 0), outer_region.size)),
+            border_radii);
+        renderer.cache();
+        cache.mark_valid();
+    }
+    cache.draw();
+}
 
-    resolved_box_border_width const& border = get(data.style).border_width;
+static void
+begin_outer_panel(
+    ui_context& ctx, custom_panel_data& data,
+    getter<panel_style_info> const& style_info,
+    bordered_layout& outer, layout const& layout_spec,
+    panel_flag_set flags, widget_id id, widget_state state)
+{
+    resolved_box_border_width total_border =
+        get(style_info).margin + get(style_info).border_width;
+    if (!(flags & PANEL_IGNORE_STYLE_PADDING))
+        total_border += get(style_info).padding;
     outer.begin(ctx,
         box_border_width(
-            absolute_length(float(border.top), PIXELS),
-            absolute_length(float(border.right), PIXELS),
-            absolute_length(float(border.bottom), PIXELS),
-            absolute_length(float(border.left), PIXELS)),
-        layout_spec);
+            absolute_length(float(total_border.top), PIXELS),
+            absolute_length(float(total_border.right), PIXELS),
+            absolute_length(float(total_border.bottom), PIXELS),
+            absolute_length(float(total_border.left), PIXELS)),
+        add_default_size(layout_spec, get(style_info).size));
 
     switch (ctx.event->category)
     {
      case RENDER_CATEGORY:
       {
-        layout_box outer_region = outer.region();
+        layout_box outer_region =
+            remove_border(outer.region(), get(style_info).margin);
+        layout_box inner_region =
+            remove_border(outer_region, get(style_info).border_width);
 
-        layout_box inner_region = remove_border(outer_region, border);
-        side_selection hidden_sides = get(data.style).hidden_border_sides;
-        if (hidden_sides != NO_SIDES)
+        if (get(style_info).is_rounded)
         {
-            if (hidden_sides & LEFT_SIDE)
-            {
-                inner_region.corner[0] -= border.left;
-                inner_region.size[0] += border.left;
-            }
-            if (hidden_sides & RIGHT_SIDE)
-            {
-                inner_region.size[0] += border.right;
-            }
-            if (hidden_sides & TOP_SIDE)
-            {
-                inner_region.corner[1] -= border.top;
-                inner_region.size[1] += border.top;
-            }
-            if (hidden_sides & BOTTOM_SIDE)
-            {
-                inner_region.size[1] += border.bottom;
-            }
-        }
-
-        if (get(data.style).is_rounded)
-        {
-            caching_renderer cache(ctx, data.rendering,
-                combine_ids(ref(*ctx.style.id),
-                    combine_ids(ref(style.id()), make_id(state))),
+            caching_renderer cache(ctx, data.rendering, style_info.id(),
                 outer_region);
             if (cache.needs_rendering())
             {
                 skia_renderer renderer(ctx, cache.image(), outer_region.size);
 
+                renderer.canvas().translate(
+                    -layout_scalar_as_skia_scalar(outer_region.corner[0]),
+                    -layout_scalar_as_skia_scalar(outer_region.corner[1]));
+
                 SkPaint paint;
                 paint.setFlags(SkPaint::kAntiAlias_Flag);
-
-                stateful_style_path_storage storage;
-                style_search_path const* path =
-                    add_substyle_to_path(&storage, ctx.style.path,
-                        ctx.style.path, get(style), state, flags);
 
                 resolved_box_corner_sizes border_radii =
                     resolve_box_corner_sizes(
                         get_layout_traversal(ctx),
-                        get_border_radius_spec(path),
+                        get(style_info).border_radii,
                         vector<2,float>(outer_region.size));
 
                 paint.setStyle(SkPaint::kFill_Style);
 
                 if (outer_region != inner_region)
                 {
-                    set_color(paint, get(data.style).border_color);
-                    draw_rect(renderer.canvas(), paint, outer_region,
-                        border_radii);
+                    set_color(paint, get(style_info).border_color);
+                    draw_rect(renderer.canvas(), paint,
+                        layout_box_as_skia_box(outer_region), border_radii);
                 }
 
-                set_color(paint, get(data.style).background_color);
-                draw_rect(renderer.canvas(), paint, inner_region,
-                    border_radii);
+                set_color(paint, get(style_info).background_color);
+                    draw_rect(renderer.canvas(), paint,
+                        layout_box_as_skia_box(inner_region), border_radii);
 
                 renderer.cache();
                 cache.mark_valid();
@@ -193,12 +158,18 @@ begin_outer_panel(
             if (outer_region != inner_region)
             {
                 ctx.surface->draw_filled_box(
-                    get(data.style).border_color,
+                    get(style_info).border_color,
                     box<2,double>(outer_region));
             }
             ctx.surface->draw_filled_box(
-                get(data.style).background_color,
+                get(style_info).background_color,
                 box<2,double>(inner_region));
+        }
+
+        if ((state & WIDGET_FOCUSED) && !(flags & PANEL_HIDE_FOCUS))
+        {
+            draw_panel_focus_border(ctx, data.focus_rendering,
+                style_info, outer_region);
         }
 
         break;
@@ -206,12 +177,13 @@ begin_outer_panel(
 
      case REGION_CATEGORY:
         // So the panel will block mouse events on things behind it.
-        do_box_region(ctx, id, outer.region());
+        do_box_region(ctx, id,
+            remove_border(outer.region(), get(style_info).margin));
         break;
 
      case INPUT_CATEGORY:
         // So the panel will steal the focus if clicked on.
-        if (!(flags && NO_CLICK_DETECTION) &&
+        if (!(flags && PANEL_NO_CLICK_DETECTION) &&
             ctx.event->type == MOUSE_PRESS_EVENT && is_region_hot(ctx, id))
         {
             set_focus(ctx, id);
@@ -222,37 +194,63 @@ begin_outer_panel(
 
 static void
 begin_inner_panel(
-    ui_context& ctx, panel_data& data, linear_layout& inner,
-    layout const& layout_spec, ui_flag_set flags)
+    ui_context& ctx, custom_panel_data& data, linear_layout& inner,
+    layout const& layout_spec, panel_flag_set flags)
 {
     layout_flag_set inner_layout_flags =
         FILL_X |
         ((layout_spec.flags & Y_ALIGNMENT_MASK) == BASELINE_Y ?
             BASELINE_Y : FILL_Y) |
-        ((flags & NO_INTERNAL_PADDING) ? UNPADDED : PADDED);
-    inner.begin(ctx, (flags & HORIZONTAL) ? 0 : 1,
+        ((flags & PANEL_NO_INTERNAL_PADDING) ? UNPADDED : PADDED);
+    inner.begin(ctx,
+        (flags & PANEL_HORIZONTAL) ? HORIZONTAL_LAYOUT : VERTICAL_LAYOUT,
 	layout(inner_layout_flags, 1));
 }
 
-void panel::begin(
-    ui_context& ctx, getter<string> const& style,
-    layout const& layout_spec, ui_flag_set flags, widget_id id,
+void custom_panel::begin(
+    ui_context& ctx, custom_panel_data& data,
+    getter<panel_style_info> const& style,
+    layout const& layout_spec, panel_flag_set flags, widget_id id,
     widget_state state)
 {
     ctx_ = &ctx;
     flags_ = flags;
 
-    panel_data* data;
-    get_cached_data(ctx, &data);
+    init_optional_widget_id(ctx, id, &data);
 
-    init_optional_widget_id(ctx, id, data);
+    begin_outer_panel(ctx, data, style, outer_,
+        add_default_padding(layout_spec, PADDED), flags, id, state);
 
-    begin_outer_panel(ctx, *data, outer_, style, state,
-        add_default_padding(layout_spec, PADDED), flags, id);
+    begin_inner_panel(ctx, data, inner_, layout_spec, flags);
+}
 
-    substyle_.begin(ctx, style, state, flags);
+struct panel_data
+{
+    custom_panel_data panel;
+    keyed_data<panel_style_info> style_info;
+};
 
-    begin_inner_panel(ctx, *data, inner_, layout_spec, flags);
+void panel::begin(
+    ui_context& ctx, getter<string> const& style,
+    layout const& layout_spec, panel_flag_set flags, widget_id id,
+    widget_state state)
+{
+    ctx_ = &ctx;
+
+    get_cached_data(ctx, &data_);
+
+    refresh_panel_style_info(ctx, data_->style_info, style, state);
+
+    init_optional_widget_id(ctx, id, &data_);
+
+    begin_outer_panel(ctx, data_->panel,
+        make_custom_getter(&get(data_->style_info),
+            &data_->style_info.key.get()),
+        outer_, add_default_padding(layout_spec, PADDED), flags, id, state);
+
+    substyle_.begin(ctx, style, state);
+
+    begin_inner_panel(ctx, data_->panel, inner_, layout_spec, flags);
 }
 void panel::end()
 {
@@ -272,7 +270,7 @@ layout_box panel::outer_region() const
     // using a different transformation matrix than the outer region expects.
     // Thus, we need to adjust the region's corner to compensate.
     region.corner -= inner_.offset();
-    return region;
+    return remove_border(region, get(data_->style_info).margin);
 }
 
 layout_box panel::padded_region() const
@@ -286,55 +284,17 @@ layout_box panel::padded_region() const
 struct clickable_panel_data
 {
     button_input_state input;
-    caching_renderer_data rendering;
 };
-
-static void
-draw_panel_focus_border(
-    ui_context& ctx, panel& p, ui_flag_set flags,
-    caching_renderer_data& rendering)
-{
-    if (!(flags & HIDE_FOCUS))
-    {
-        layout_box rect = p.outer_region();
-        caching_renderer cache(ctx, rendering, *ctx.style.id,
-            add_border(rect, get_padding_size(ctx)));
-        if (cache.needs_rendering())
-        {
-            layout_vector const& padding = get_padding_size(ctx);
-            skia_renderer renderer(ctx, cache.image(),
-                rect.size + padding * 2);
-            SkPaint paint;
-            paint.setFlags(SkPaint::kAntiAlias_Flag);
-            setup_focus_drawing(ctx, paint);
-            renderer.canvas().translate(
-                layout_scalar_as_skia_scalar(padding[0]),
-                layout_scalar_as_skia_scalar(padding[1]));
-            box_corner_sizes corners_spec =
-                get_property(ctx, "border-radius", UNINHERITED_PROPERTY,
-                    box_corner_sizes(make_vector(
-                        relative_length(0, PIXELS),
-                        relative_length(0, PIXELS))));
-            resolved_box_corner_sizes corners =
-                resolve_box_corner_sizes(get_layout_traversal(ctx),
-                    corners_spec, vector<2,float>(rect.size));
-            draw_rect(renderer.canvas(), paint, rect, corners);
-            renderer.cache();
-            cache.mark_valid();
-        }
-        cache.draw();
-    }
-}
 
 void clickable_panel::begin(
     ui_context& ctx, getter<string> const& style,
     layout const& layout_spec,
-    ui_flag_set flags, widget_id id)
+    panel_flag_set flags, widget_id id)
 {
     ALIA_GET_CACHED_DATA(clickable_panel_data)
     get_widget_id_if_needed(ctx, id);
     widget_state state;
-    if (flags & SELECTED)
+    if (flags & PANEL_SELECTED)
     {
         state = WIDGET_SELECTED;
         clicked_ = false;
@@ -345,32 +305,42 @@ void clickable_panel::begin(
         clicked_ = do_button_input(ctx, id, data.input);
     }
     panel_.begin(ctx, style, layout_spec, flags, id, state);
-    if (is_render_pass(ctx) && (state & WIDGET_FOCUSED))
-        draw_panel_focus_border(ctx, panel_, flags, data.rendering);
 }
 
 void scrollable_panel::begin(
     ui_context& ctx, getter<string> const& style,
-    layout const& layout_spec, ui_flag_set flags)
+    layout const& layout_spec, panel_flag_set flags)
 {
     widget_id id = get_widget_id(ctx);
     panel_data* data;
     get_cached_data(ctx, &data);
-    begin_outer_panel(ctx, *data, outer_, style, WIDGET_NORMAL,
-        layout_spec, flags, id);
-    substyle_.begin(ctx, style, WIDGET_NORMAL, flags);
+    refresh_panel_style_info(ctx, data->style_info, style, WIDGET_NORMAL);
+    begin_outer_panel(ctx, data->panel,
+        make_custom_getter(&get(data->style_info),
+            &data->style_info.key.get()),
+        outer_, layout_spec, flags | PANEL_IGNORE_STYLE_PADDING,
+        id, WIDGET_NORMAL);
+    substyle_.begin(ctx, style, WIDGET_NORMAL);
     unsigned scrollable_axes =
-        ((flags & NO_HORIZONTAL_SCROLL) ? 0 : 1) |
-        ((flags & NO_VERTICAL_SCROLL) ? 0 : 2);
+        ((flags & PANEL_NO_HORIZONTAL_SCROLLING) ? 0 : 1) |
+        ((flags & PANEL_NO_VERTICAL_SCROLLING) ? 0 : 2);
     unsigned reserved_axes =
-        ((flags & RESERVE_HORIZONTAL) ? 1 : 0) |
-        ((flags & RESERVE_VERTICAL) ? 2 : 0);
-    region_.begin(ctx, GROW | UNPADDED, scrollable_axes, id, reserved_axes);
-    begin_inner_panel(ctx, *data, inner_, layout_spec, flags);
+        ((flags & PANEL_RESERVE_HORIZONTAL_SCROLLBAR) ? 1 : 0) |
+        ((flags & PANEL_RESERVE_VERTICAL_SCROLLBAR) ? 2 : 0);
+    region_.begin(ctx, GROW | UNPADDED, scrollable_axes, id, reserved_axes);   
+    panel_style_info const& style_info = get(data->style_info);
+    padding_border_.begin(ctx, 
+        box_border_width(
+            absolute_length(float(style_info.padding.top), PIXELS),
+            absolute_length(float(style_info.padding.right), PIXELS),
+            absolute_length(float(style_info.padding.bottom), PIXELS),
+            absolute_length(float(style_info.padding.left), PIXELS)));
+    begin_inner_panel(ctx, data->panel, inner_, layout_spec, flags);
 }
 void scrollable_panel::end()
 {
     inner_.end();
+    padding_border_.end();
     region_.end();
     substyle_.end();
     outer_.end();

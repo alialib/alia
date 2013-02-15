@@ -70,4 +70,23 @@ void scoped_layout_container::end()
     }
 }
 
+layout_box get_container_region(simple_layout_container const& container)
+{
+    return layout_box(make_layout_vector(0, 0), container.assigned_size);
+}
+
+layout_box get_padded_container_region(
+    simple_layout_container const& container)
+{
+    return layout_box(
+        container.cacher.relative_assignment.region.corner -
+            container.cacher.resolved_relative_assignment.region.corner,
+        container.cacher.relative_assignment.region.size);
+}
+
+layout_vector get_container_offset(simple_layout_container const& container)
+{
+    return get_assignment(container.cacher).region.corner;
+}
+
 }

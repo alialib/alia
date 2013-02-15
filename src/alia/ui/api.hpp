@@ -5,6 +5,7 @@
 #include <alia/color.hpp>
 #include <alia/layout/api.hpp>
 #include <alia/event_routing.hpp>
+#include <cstdio>
 
 // This file declares all the types and functions necessary to use the UI
 // library from the application end, including a standard library of widgets
@@ -186,12 +187,12 @@ enum key_code
 // keyboard modifier keys
 struct kmod_flag_tag {};
 typedef flag_set<kmod_flag_tag> key_modifiers;
-ALIA_DEFINE_FLAG_CODE(kmod_flag_tag, 0x00, KMOD_NONE)
-ALIA_DEFINE_FLAG_CODE(kmod_flag_tag, 0x01, KMOD_SHIFT)
-ALIA_DEFINE_FLAG_CODE(kmod_flag_tag, 0x02, KMOD_CTRL)
-ALIA_DEFINE_FLAG_CODE(kmod_flag_tag, 0x04, KMOD_ALT)
-ALIA_DEFINE_FLAG_CODE(kmod_flag_tag, 0x08, KMOD_WIN)
-ALIA_DEFINE_FLAG_CODE(kmod_flag_tag, 0x10, KMOD_META)
+ALIA_DEFINE_FLAG(kmod, 0x00, KMOD_NONE)
+ALIA_DEFINE_FLAG(kmod, 0x01, KMOD_SHIFT)
+ALIA_DEFINE_FLAG(kmod, 0x02, KMOD_CTRL)
+ALIA_DEFINE_FLAG(kmod, 0x04, KMOD_ALT)
+ALIA_DEFINE_FLAG(kmod, 0x08, KMOD_WIN)
+ALIA_DEFINE_FLAG(kmod, 0x10, KMOD_META)
 
 enum mouse_button
 {
@@ -278,46 +279,9 @@ enum ui_event_type
     WRAPPED_EVENT,
     SET_VALUE_EVENT,
     TIMER_EVENT,
-    INITIAL_VISIBILITY_EVENT,
     RESOLVE_LOCATION_EVENT,
     CUSTOM_EVENT,
 };
-
-// COMMON FLAGS
-
-struct ui_flag_tag {};
-typedef flag_set<ui_flag_tag> ui_flag_set;
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000001, SELECTED)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000002, DISABLED)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000004, SHOW_FOCUS)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000008, HIDE_FOCUS)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000010, HORIZONTAL)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000020, VERTICAL)
-// styles
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000040, NO_STYLE_PATH_SEPARATOR)
-// drop down list
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000080, COMMAND_LIST)
-// resizable content
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000100, FLIPPED)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000200, APPEND)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0000400, PREPEND)
-// expandables
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0001000, INITIALLY_EXPANDED)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0002000, INITIALLY_COLLAPSED)
-// text controls
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0010000, PASSWORD)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0020000, SINGLE_LINE)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0040000, MULTILINE)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0080000, NO_PANEL)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0100000, ALWAYS_EDITING)
-// panels
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0200000, NO_INTERNAL_PADDING)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x0400000, NO_CLICK_DETECTION)
-// scrollable panels
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x1000000, NO_HORIZONTAL_SCROLL)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x2000000, NO_VERTICAL_SCROLL)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x4000000, RESERVE_HORIZONTAL)
-ALIA_DEFINE_FLAG_CODE(ui_flag_tag, 0x8000000, RESERVE_VERTICAL)
 
 // STYLING
 
@@ -332,14 +296,14 @@ struct ui_controller : noncopyable
 struct widget_state_flag_tag {};
 typedef flag_set<widget_state_flag_tag> widget_state;
 // primary state
-ALIA_DEFINE_FLAG_CODE(widget_state_flag_tag, 0x01, WIDGET_NORMAL)
-ALIA_DEFINE_FLAG_CODE(widget_state_flag_tag, 0x02, WIDGET_DISABLED)
-ALIA_DEFINE_FLAG_CODE(widget_state_flag_tag, 0x03, WIDGET_HOT)
-ALIA_DEFINE_FLAG_CODE(widget_state_flag_tag, 0x04, WIDGET_DEPRESSED)
-ALIA_DEFINE_FLAG_CODE(widget_state_flag_tag, 0x05, WIDGET_SELECTED)
-ALIA_DEFINE_FLAG_CODE(widget_state_flag_tag, 0x0f, WIDGET_PRIMARY_STATE_MASK)
+ALIA_DEFINE_FLAG(widget_state, 0x01, WIDGET_NORMAL)
+ALIA_DEFINE_FLAG(widget_state, 0x02, WIDGET_DISABLED)
+ALIA_DEFINE_FLAG(widget_state, 0x03, WIDGET_HOT)
+ALIA_DEFINE_FLAG(widget_state, 0x04, WIDGET_DEPRESSED)
+ALIA_DEFINE_FLAG(widget_state, 0x05, WIDGET_SELECTED)
+ALIA_DEFINE_FLAG(widget_state, 0x0f, WIDGET_PRIMARY_STATE_MASK)
 // additional (independent) states
-ALIA_DEFINE_FLAG_CODE(widget_state_flag_tag, 0x10, WIDGET_FOCUSED)
+ALIA_DEFINE_FLAG(widget_state, 0x10, WIDGET_FOCUSED)
 
 struct style_search_path;
 struct dispatch_table;
@@ -373,16 +337,21 @@ struct scoped_style : noncopyable
     layout_style_info const* old_style_info_;
 };
 
+ALIA_DEFINE_FLAG_TYPE(scoped_substyle)
+ALIA_DEFINE_FLAG(scoped_substyle, 0x1, SCOPED_SUBSTYLE_NO_PATH_SEPARATOR)
+
 struct scoped_substyle : noncopyable
 {
     scoped_substyle() {}
     scoped_substyle(ui_context& ctx, getter<string> const& substyle_name,
-        widget_state state = WIDGET_NORMAL, ui_flag_set flags = NO_FLAGS)
+        widget_state state = WIDGET_NORMAL,
+        scoped_substyle_flag_set flags = NO_FLAGS)
     { begin(ctx, substyle_name, state, flags); }
     ~scoped_substyle() { end(); }
 
     void begin(ui_context& ctx, getter<string> const& substyle_name,
-        widget_state state = WIDGET_NORMAL, ui_flag_set flags = NO_FLAGS);
+        widget_state state = WIDGET_NORMAL,
+        scoped_substyle_flag_set flags = NO_FLAGS);
     void end();
 
  private:
@@ -428,7 +397,7 @@ struct culling_block
     bool is_relevant_;
 };
 
-#define alia_if_relevant_(ctx) \
+#define alia_culling_block_(ctx) \
     { \
         ::alia::culling_block alia__culling_block(ctx); \
         { \
@@ -437,7 +406,7 @@ struct culling_block
             if (alia__culling_block.is_relevant()) \
             {
 
-#define alia_if_relevant alia_if_relevant_(ctx)
+#define alia_culling_block alia_culling_block_(ctx)
 
 // UI CACHING
 
@@ -582,46 +551,15 @@ ALIA_DECLARE_STRING_CONVERSIONS(unsigned)
 ALIA_DECLARE_STRING_CONVERSIONS(float)
 ALIA_DECLARE_STRING_CONVERSIONS(double)
 
-struct cached_string_conversion
-{
-    cached_string_conversion() : valid(false) {}
-    bool valid;
-    owned_id id;
-    string text;
-};
-
-struct cached_string_conversion_accessor : accessor<string>
-{
-    cached_string_conversion_accessor(cached_string_conversion* cache)
-      : cache_(cache)
-    {}
-    bool is_gettable() const { return cache_->valid; }
-    string const& get() const { return cache_->text; };
-    id_interface const& id() const { return cache_->id.get(); }
-    bool is_settable() const { return false; }
-    void set(string const& value) const {}
- private:
-    cached_string_conversion* cache_;
-};
-
 template<class T>
-cached_string_conversion_accessor
+keyed_data_accessor<string>
 as_text(ui_context& ctx, getter<T> const& value)
 {
-    cached_string_conversion* cache;
-    get_cached_data(ctx, &cache);
-    if (!cache->valid || !cache->id.matches(value.id()))
-    {
-        if (value.is_gettable())
-        {
-            cache->text = to_string(get(value));
-            cache->valid = true;
-        }
-        else
-            cache->valid = false;
-        cache->id.store(value.id());
-    }
-    return cached_string_conversion_accessor(cache);
+    keyed_data_accessor<string> cache;
+    get_keyed_data(ctx, value.id(), &cache);
+    if (!cache.is_gettable() && value.is_gettable())
+        cache.set(to_string(get(value)));
+    return cache;
 }
 
 template<class T>
@@ -631,9 +569,68 @@ void do_text(ui_context& ctx, getter<T> const& value,
     do_text(ctx, as_text(ctx, value), layout_spec);
 }
 
-cached_string_conversion_accessor
-format_number(ui_context& ctx, char const* format,
-    getter<double> const& number);
+#ifdef _MSC_VER
+
+int c99_snprintf(char* str, size_t size, const char* format, ...);
+int c99_vsnprintf(char* str, size_t size, const char* format, va_list ap);
+
+#define ALIA_SNPRINTF alia::c99_snprintf
+
+#else
+
+#define ALIA_SNPRINTF std::snprintf
+
+#endif
+
+template<class Arg0>
+keyed_data_accessor<string>
+printf(ui_context& ctx, char const* format, getter<Arg0> const& arg0)
+{
+    keyed_data_accessor<string> cache;
+    get_keyed_data(ctx, arg0.id(), &cache);
+    if (!cache.is_gettable() && arg0.is_gettable())
+    {
+        int size = ALIA_SNPRINTF(0, 0, format, get(arg0));
+        if (size >= 0)
+        {
+            string s;
+            if (size > 0)
+            {
+                std::vector<char> chars(size + 1);
+                ALIA_SNPRINTF(&chars[0], size + 1, format, get(arg0));
+                s = string(&chars[0]);
+            }
+            cache.set(s);
+        }
+    }
+    return cache;
+}
+
+template<class Arg0, class Arg1>
+keyed_data_accessor<string>
+printf(ui_context& ctx, char const* format, getter<Arg0> const& arg0,
+    getter<Arg1> const& arg1)
+{
+    keyed_data_accessor<string> cache;
+    get_keyed_data(ctx, combine_ids(ref(arg0.id()), ref(arg1.id())), &cache);
+    if (!cache.is_gettable() && arg0.is_gettable() && arg1.is_gettable())
+    {
+        int size = ALIA_SNPRINTF(0, 0, format, get(arg0), get(arg1));
+        if (size >= 0)
+        {
+            string s;
+            if (size > 0)
+            {
+                std::vector<char> chars(size + 1);
+                ALIA_SNPRINTF(&chars[0], size + 1, format, get(arg0),
+                    get(arg1));
+                s = string(&chars[0]);
+            }
+            cache.set(s);
+        }
+    }
+    return cache;
+}
 
 void do_paragraph(ui_context& ctx, getter<string> const& text,
     layout const& layout_spec = default_layout);
@@ -647,10 +644,9 @@ bool do_link(
     layout const& layout_spec = default_layout,
     widget_id id = auto_id);
 
-struct ui_text_drawing_flag_tag {};
-typedef flag_set<ui_text_drawing_flag_tag> ui_text_drawing_flag_set;
-ALIA_DEFINE_FLAG_CODE(ui_text_drawing_flag_tag, 0x00, ALIGN_TEXT_BASELINE)
-ALIA_DEFINE_FLAG_CODE(ui_text_drawing_flag_tag, 0x01, ALIGN_TEXT_TOP)
+ALIA_DEFINE_FLAG_TYPE(ui_text_drawing)
+ALIA_DEFINE_FLAG(ui_text_drawing, 0x00, ALIGN_TEXT_BASELINE)
+ALIA_DEFINE_FLAG(ui_text_drawing, 0x01, ALIGN_TEXT_TOP)
 
 void draw_text(ui_context& ctx, getter<string> const& text,
     vector<2,double> const& position,
@@ -660,6 +656,12 @@ void do_layout_dependent_text(ui_context& ctx, getter<string> const& text,
     layout const& layout_spec);
 
 void do_styled_text(ui_context& ctx, getter<string> const& substyle_name,
+    getter<string> const& text, layout const& layout_spec = default_layout);
+
+// do_heading is the same as do_styled_text but it also accepts a margin
+// specification as part of its style so that space can be added around the
+// text.
+void do_heading(ui_context& ctx, getter<string> const& substyle_name,
     getter<string> const& text, layout const& layout_spec = default_layout);
 
 // make_text(x, id), where x is a utf8_string, creates a read-only accessor
@@ -826,24 +828,44 @@ node_expander_result do_node_expander(
     widget_id id = auto_id);
 
 // slider
-// accepted flags:
-// HORIZONTAL, VERTICAL (mutually exclusive, default is HORIZONTAL)
 struct slider_result : control_result {};
+ALIA_DEFINE_FLAG_TYPE(slider)
+ALIA_DEFINE_FLAG(slider, 0x0, SLIDER_HORIZONTAL)
+ALIA_DEFINE_FLAG(slider, 0x1, SLIDER_VERTICAL)
 slider_result
 do_slider(ui_context& ctx, accessor<double> const& value,
     double minimum, double maximum, double step = 0,
-    layout const& layout_spec = default_layout, ui_flag_set flags = NO_FLAGS);
+    layout const& layout_spec = default_layout,
+    slider_flag_set flags = NO_FLAGS);
 
 // PANELS
+
+// Currently all panel types share the same flag set, but some flags obviously
+// only apply to scrollable panels.
+ALIA_DEFINE_FLAG_TYPE(panel)
+ALIA_DEFINE_FLAG(panel, 0x001, PANEL_HORIZONTAL)
+ALIA_DEFINE_FLAG(panel, 0x002, PANEL_VERTICAL)
+ALIA_DEFINE_FLAG(panel, 0x004, PANEL_HIDE_FOCUS)
+ALIA_DEFINE_FLAG(panel, 0x010, PANEL_SELECTED)
+ALIA_DEFINE_FLAG(panel, 0x020, PANEL_NO_INTERNAL_PADDING)
+ALIA_DEFINE_FLAG(panel, 0x040, PANEL_NO_CLICK_DETECTION)
+ALIA_DEFINE_FLAG(panel, 0x080, PANEL_IGNORE_STYLE_PADDING)
+// scrolling only
+ALIA_DEFINE_FLAG(panel, 0x100, PANEL_NO_HORIZONTAL_SCROLLING)
+ALIA_DEFINE_FLAG(panel, 0x200, PANEL_NO_VERTICAL_SCROLLING)
+ALIA_DEFINE_FLAG(panel, 0x400, PANEL_RESERVE_HORIZONTAL_SCROLLBAR)
+ALIA_DEFINE_FLAG(panel, 0x800, PANEL_RESERVE_VERTICAL_SCROLLBAR)
+
+struct panel_data;
 
 struct panel : noncopyable
 {
  public:
-    panel() : ctx_(0) {}
+    panel() {}
     panel(
         ui_context& ctx, getter<string> const& style,
         layout const& layout_spec = default_layout,
-        ui_flag_set flags = NO_FLAGS,
+        panel_flag_set flags = NO_FLAGS,
         widget_id id = auto_id,
         widget_state state = WIDGET_NORMAL)
     { begin(ctx, style, layout_spec, flags, id, state); }
@@ -851,7 +873,7 @@ struct panel : noncopyable
     void begin(
         ui_context& ctx, getter<string> const& style,
         layout const& layout_spec = default_layout,
-        ui_flag_set flags = NO_FLAGS,
+        panel_flag_set flags = NO_FLAGS,
         widget_id id = auto_id,
         widget_state state = WIDGET_NORMAL);
     void end();
@@ -863,10 +885,11 @@ struct panel : noncopyable
     layout_box padded_region() const;
  private:
     ui_context* ctx_;
+    panel_data* data_;
     bordered_layout outer_;
     scoped_substyle substyle_;
     linear_layout inner_;
-    ui_flag_set flags_;
+    panel_flag_set flags_;
 };
 
 class clickable_panel : noncopyable
@@ -876,12 +899,12 @@ class clickable_panel : noncopyable
     clickable_panel(
         ui_context& ctx, getter<string> const& style,
         layout const& layout_spec = default_layout,
-        ui_flag_set flags = NO_FLAGS, widget_id id = auto_id)
+        panel_flag_set flags = NO_FLAGS, widget_id id = auto_id)
     { begin(ctx, style, layout_spec, flags, id); }
     void begin(
         ui_context& ctx, getter<string> const& style,
         layout const& layout_spec = default_layout,
-        ui_flag_set flags = NO_FLAGS, widget_id id = auto_id);
+        panel_flag_set flags = NO_FLAGS, widget_id id = auto_id);
     void end() { panel_.end(); }
     layout_box inner_region() const { return panel_.inner_region(); }
     layout_box outer_region() const { return panel_.outer_region(); }
@@ -931,18 +954,19 @@ struct scrollable_panel : noncopyable
     scrollable_panel(
         ui_context& ctx, getter<string> const& style,
         layout const& layout_spec = default_layout,
-        ui_flag_set flags = NO_FLAGS)
+        panel_flag_set flags = NO_FLAGS)
     { begin(ctx, style, layout_spec, flags); }
     ~scrollable_panel() { end(); }
     void begin(
         ui_context& ctx, getter<string> const& style,
         layout const& layout_spec = default_layout,
-        ui_flag_set flags = NO_FLAGS);
+        panel_flag_set flags = NO_FLAGS);
     void end();
  private:
     bordered_layout outer_;
     scoped_substyle substyle_;
     scrollable_region region_;
+    bordered_layout padding_border_;
     linear_layout inner_;
 };
 
@@ -978,6 +1002,9 @@ class collapsible_content : noncopyable
     bool do_content_;
 };
 
+ALIA_DEFINE_FLAG_TYPE(tree_node)
+ALIA_DEFINE_FLAG(tree_node, 0x1, TREE_NODE_INITIALLY_EXPANDED)
+
 struct tree_node : noncopyable
 {
     tree_node() {}
@@ -986,7 +1013,7 @@ struct tree_node : noncopyable
     tree_node(
         ui_context& ctx,
         layout const& layout_spec = default_layout,
-        ui_flag_set flags = NO_FLAGS,
+        tree_node_flag_set flags = NO_FLAGS,
         optional_storage<bool> const& expanded = optional_storage<bool>(none),
         widget_id expander_id = auto_id)
     { begin(ctx, layout_spec, flags, expanded, expander_id); }
@@ -994,7 +1021,7 @@ struct tree_node : noncopyable
     void begin(
         ui_context& ctx,
         layout const& layout_spec = default_layout,
-        ui_flag_set flags = NO_FLAGS,
+        tree_node_flag_set flags = NO_FLAGS,
         optional_storage<bool> const& expanded = optional_storage<bool>(none),
         widget_id expander_id = auto_id);
 
@@ -1062,7 +1089,7 @@ struct clamped_content : noncopyable
         getter<string> const& content_style,
         absolute_size const& max_size,
         layout const& layout_spec = default_layout,
-        ui_flag_set flags = NO_FLAGS)
+        panel_flag_set flags = NO_FLAGS)
     {
         begin(ctx, background_style, content_style, max_size, layout_spec,
             flags);
@@ -1074,7 +1101,7 @@ struct clamped_content : noncopyable
         getter<string> const& content_style,
         absolute_size const& max_size,
         layout const& layout_spec = default_layout,
-        ui_flag_set flags = NO_FLAGS);
+        panel_flag_set flags = NO_FLAGS);
     void end();
 
  private:
@@ -1092,7 +1119,7 @@ struct clamped_header : noncopyable
         getter<string> const& header_style,
         absolute_size const& max_size,
         layout const& layout_spec = default_layout,
-        ui_flag_set flags = NO_FLAGS)
+        panel_flag_set flags = NO_FLAGS)
     {
         begin(ctx, background_style, header_style, max_size, layout_spec,
             flags);
@@ -1104,7 +1131,7 @@ struct clamped_header : noncopyable
         getter<string> const& header_style,
         absolute_size const& max_size,
         layout const& layout_spec = default_layout,
-        ui_flag_set flags = NO_FLAGS);
+        panel_flag_set flags = NO_FLAGS);
     void end();
 
  private:
@@ -1114,14 +1141,18 @@ struct clamped_header : noncopyable
     panel header_;
 };
 
+ALIA_DEFINE_FLAG_TYPE(tab_strip)
+ALIA_DEFINE_FLAG(tab_strip, 0x0, TAB_STRIP_HORIZONTAL)
+ALIA_DEFINE_FLAG(tab_strip, 0x1, TAB_STRIP_VERTICAL)
+
 struct tab_strip : noncopyable
 {
     tab_strip(ui_context& ctx, layout const& layout_spec = default_layout,
-        ui_flag_set flags = NO_FLAGS)
+        tab_strip_flag_set flags = NO_FLAGS)
     { begin(ctx, layout_spec, flags); }
     ~tab_strip() { end(); }
     void begin(ui_context& ctx, layout const& layout_spec = default_layout,
-        ui_flag_set flags = NO_FLAGS);
+        tab_strip_flag_set flags = NO_FLAGS);
     void end();
  private:
     friend struct tab;
@@ -1194,6 +1225,9 @@ struct popup
 
 struct ddl_data;
 
+ALIA_DEFINE_FLAG_TYPE(ddl)
+ALIA_DEFINE_FLAG(ddl, 0x1, DDL_COMMAND_LIST)
+
 struct untyped_drop_down_list : noncopyable
 {
  public:
@@ -1201,7 +1235,7 @@ struct untyped_drop_down_list : noncopyable
     ~untyped_drop_down_list() { end(); }
 
     untyped_ui_value const*
-    begin(ui_context& ctx, layout const& layout_spec, ui_flag_set flags);
+    begin(ui_context& ctx, layout const& layout_spec, ddl_flag_set flags);
     void end();
 
     bool do_list();
@@ -1227,13 +1261,13 @@ struct drop_down_list : noncopyable
     drop_down_list() : changed_(false) {}
     drop_down_list(ui_context& ctx, accessor<Index> const& selection,
         layout const& layout_spec = default_layout,
-        ui_flag_set flags = NO_FLAGS)
+        ddl_flag_set flags = NO_FLAGS)
     { begin(ctx, selection, layout_spec, flags); }
     ~drop_down_list() { end(); }
 
     void begin(ui_context& ctx, accessor<Index> const& selection,
         layout const& layout_spec = default_layout,
-        ui_flag_set flags = NO_FLAGS)
+        ddl_flag_set flags = NO_FLAGS)
     {
         if (selection.is_gettable())
             selection_ = get(selection);
@@ -1330,12 +1364,19 @@ struct text_control_result : control_result
     text_control_event_type event;
 };
 
+ALIA_DEFINE_FLAG_TYPE(text_control)
+ALIA_DEFINE_FLAG(text_control, 0x01, TEXT_CONTROL_DISABLED)
+ALIA_DEFINE_FLAG(text_control, 0x02, TEXT_CONTROL_MASK_CONTENTS)
+ALIA_DEFINE_FLAG(text_control, 0x04, TEXT_CONTROL_SINGLE_LINE)
+ALIA_DEFINE_FLAG(text_control, 0x08, TEXT_CONTROL_MULTILINE)
+ALIA_DEFINE_FLAG(text_control, 0x10, TEXT_CONTROL_ALWAYS_EDITING)
+
 text_control_result
 do_text_control(
     ui_context& ctx,
     accessor<string> const& value,
     layout const& layout_spec = default_layout,
-    ui_flag_set flags = NO_FLAGS,
+    text_control_flag_set flags = NO_FLAGS,
     widget_id id = auto_id,
     optional<size_t> const& length_limit = none);
 
@@ -1355,7 +1396,7 @@ do_text_control(
     ui_context& ctx,
     accessor<T> const& accessor,
     layout const& layout_spec = default_layout,
-    ui_flag_set flags = NO_FLAGS,
+    text_control_flag_set flags = NO_FLAGS,
     widget_id id = auto_id,
     optional<size_t> const& length_limit = none)
 {
@@ -1421,29 +1462,27 @@ do_text_control(
     return result;
 }
 
-bool do_draggable_separator(ui_context& ctx, accessor<int> const& width,
-    layout const& layout_spec = default_layout, ui_flag_set flags = NO_FLAGS,
-    widget_id id = auto_id);
-
 // resizable_content is a container with a draggable separator for controlling
 // the size of its contents.
-// accepted flags:
-// HORIZONTAL, VERTICAL - the orientation of the separator (default: VERTICAL)
-// PREPEND, APPEND - is the separator appended or preprended (default: APPEND)
+ALIA_DEFINE_FLAG_TYPE(resizable_content)
+ALIA_DEFINE_FLAG(resizable_content, 0, RESIZABLE_CONTENT_VERTICAL_SEPARATOR)
+ALIA_DEFINE_FLAG(resizable_content, 1, RESIZABLE_CONTENT_HORIZONTAL_SEPARATOR)
+ALIA_DEFINE_FLAG(resizable_content, 0, RESIZABLE_CONTENT_APPEND_SEPARATOR)
+ALIA_DEFINE_FLAG(resizable_content, 2, RESIZABLE_CONTENT_PREPEND_SEPARATOR)
 struct resizable_content : noncopyable
 {
     resizable_content() {}
     resizable_content(ui_context& ctx, accessor<int> const& size,
-        ui_flag_set flags = NO_FLAGS)
+        resizable_content_flag_set flags = NO_FLAGS)
     { begin(ctx, size, flags); }
     ~resizable_content() { end(); }
     void begin(ui_context& ctx, accessor<int> const& size,
-        ui_flag_set flags = NO_FLAGS);
+        resizable_content_flag_set flags = NO_FLAGS);
     void end();
  private:
     ui_context* ctx_;
     widget_id id_;
-    ui_flag_set flags_;
+    resizable_content_flag_set flags_;
     int size_;
     linear_layout layout_;
 };
@@ -1478,9 +1517,10 @@ struct table : noncopyable
     friend struct table_row;
     friend struct table_cell;
     ui_context* ctx_;
-    scoped_substyle style_;
+    panel panel_;
     grid_layout grid_;
-    vector<2,int> index_;
+    scoped_substyle cell_style_;
+    vector<2,int> cell_index_;
 };
 
 struct table_row : noncopyable

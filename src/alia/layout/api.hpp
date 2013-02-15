@@ -125,34 +125,33 @@ height(float h, layout_units u)
 // Omitting these flags invokes the default behavior for the element, which
 // depends on the type of element.
 
-struct layout_flag_tag {};
-typedef flag_set<layout_flag_tag> layout_flag_set;
+ALIA_DEFINE_FLAG_TYPE(layout)
 
 // X alignment flags
-ALIA_DEFINE_FLAG_CODE(layout_flag_tag, 0x0001, CENTER_X)
-ALIA_DEFINE_FLAG_CODE(layout_flag_tag, 0x0002, LEFT)
-ALIA_DEFINE_FLAG_CODE(layout_flag_tag, 0x0003, RIGHT)
-ALIA_DEFINE_FLAG_CODE(layout_flag_tag, 0x0004, FILL_X)
+ALIA_DEFINE_FLAG(layout, 0x0001, CENTER_X)
+ALIA_DEFINE_FLAG(layout, 0x0002, LEFT)
+ALIA_DEFINE_FLAG(layout, 0x0003, RIGHT)
+ALIA_DEFINE_FLAG(layout, 0x0004, FILL_X)
 // Note that there's currently no baseline for the X axis, but the code is
 // defined here anyway for use in the Y section.
-ALIA_DEFINE_FLAG_CODE(layout_flag_tag, 0x0005, BASELINE_X)
+ALIA_DEFINE_FLAG(layout, 0x0005, BASELINE_X)
 // GROW is the same as FILL, but it also sets the growth_factor to 1 if you
 // don't manually override it.
 // Note that GROW currently has its own bit for easier testing.
-ALIA_DEFINE_FLAG_CODE(layout_flag_tag, 0x0008, GROW_X)
-ALIA_DEFINE_FLAG_CODE(layout_flag_tag, 0x000f, X_ALIGNMENT_MASK)
+ALIA_DEFINE_FLAG(layout, 0x0008, GROW_X)
+ALIA_DEFINE_FLAG(layout, 0x000f, X_ALIGNMENT_MASK)
 
 // Y alignment flags - Note that the Y codes are the same as the X codes but
 // shifted left by X_TO_Y_SHIFT bits.
 static unsigned const X_TO_Y_SHIFT = 4;
-ALIA_DEFINE_FLAG_CODE(layout_flag_tag, CENTER_X_CODE << X_TO_Y_SHIFT, CENTER_Y)
-ALIA_DEFINE_FLAG_CODE(layout_flag_tag, LEFT_CODE << X_TO_Y_SHIFT, TOP)
-ALIA_DEFINE_FLAG_CODE(layout_flag_tag, RIGHT_CODE << X_TO_Y_SHIFT, BOTTOM)
-ALIA_DEFINE_FLAG_CODE(layout_flag_tag, FILL_X_CODE << X_TO_Y_SHIFT, FILL_Y)
-ALIA_DEFINE_FLAG_CODE(layout_flag_tag, BASELINE_X_CODE << X_TO_Y_SHIFT,
+ALIA_DEFINE_FLAG(layout, CENTER_X_CODE << X_TO_Y_SHIFT, CENTER_Y)
+ALIA_DEFINE_FLAG(layout, LEFT_CODE << X_TO_Y_SHIFT, TOP)
+ALIA_DEFINE_FLAG(layout, RIGHT_CODE << X_TO_Y_SHIFT, BOTTOM)
+ALIA_DEFINE_FLAG(layout, FILL_X_CODE << X_TO_Y_SHIFT, FILL_Y)
+ALIA_DEFINE_FLAG(layout, BASELINE_X_CODE << X_TO_Y_SHIFT,
     BASELINE_Y)
-ALIA_DEFINE_FLAG_CODE(layout_flag_tag, GROW_X_CODE << X_TO_Y_SHIFT, GROW_Y)
-ALIA_DEFINE_FLAG_CODE(layout_flag_tag, X_ALIGNMENT_MASK_CODE << X_TO_Y_SHIFT,
+ALIA_DEFINE_FLAG(layout, GROW_X_CODE << X_TO_Y_SHIFT, GROW_Y)
+ALIA_DEFINE_FLAG(layout, X_ALIGNMENT_MASK_CODE << X_TO_Y_SHIFT,
     Y_ALIGNMENT_MASK)
 
 // combined alignment flags - These specify both X and Y simultaneously.
@@ -162,13 +161,13 @@ static layout_flag_set const GROW = GROW_X | GROW_Y;
 // PROPORTIONAL_FILL and PROPORTIONAL_GROW are like FILL and GROW, but the
 // width and height are constrained to their original ratio. These should
 // only be used for leaf element, not containers.
-ALIA_DEFINE_FLAG_CODE(layout_flag_tag, 0x0100, PROPORTIONAL_FILL)
-ALIA_DEFINE_FLAG_CODE(layout_flag_tag, 0x0200, PROPORTIONAL_GROW)
+ALIA_DEFINE_FLAG(layout, 0x0100, PROPORTIONAL_FILL)
+ALIA_DEFINE_FLAG(layout, 0x0200, PROPORTIONAL_GROW)
 
 // explicitly enable or disable the padding around an element
-ALIA_DEFINE_FLAG_CODE(layout_flag_tag, 0x1000, PADDED)
-ALIA_DEFINE_FLAG_CODE(layout_flag_tag, 0x2000, UNPADDED)
-ALIA_DEFINE_FLAG_CODE(layout_flag_tag, 0x3000, PADDING_MASK)
+ALIA_DEFINE_FLAG(layout, 0x1000, PADDED)
+ALIA_DEFINE_FLAG(layout, 0x2000, UNPADDED)
+ALIA_DEFINE_FLAG(layout, 0x3000, PADDING_MASK)
 
 // This is the main structure used to control an element's layout.
 struct layout
@@ -458,9 +457,14 @@ ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(row_layout)
 // A column layout places all its children in a vertical column.
 ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(column_layout)
 
-// Linear layout places its children in a line along the specified axis.
-// In other words, it's a row if axis is 0 and a column if axis is 1.
-ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(linear_layout, unsigned)
+// Linear layout places its children in a line.
+// In other words, it can act as either a row or a column depending on the
+// argument you give it.
+ALIA_DEFINE_FLAG_TYPE(linear_layout)
+ALIA_DEFINE_FLAG(linear_layout, 0, HORIZONTAL_LAYOUT)
+ALIA_DEFINE_FLAG(linear_layout, 1, VERTICAL_LAYOUT)
+ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(
+    linear_layout, linear_layout_flag_set)
 
 // Layered layout places all its children in the same rectangle, so they are
 // in effect layered over the same region.

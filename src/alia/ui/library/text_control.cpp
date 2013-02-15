@@ -249,7 +249,7 @@ struct text_control_data
     {}
 
     // flags passed in by caller (stored here to detect changes)
-    ui_flag_set flags;
+    text_control_flag_set flags;
 
     // Whenever a change occurs in the control, this is set.
     bool change_detected;
@@ -304,14 +304,11 @@ struct text_control_data
     // data for rendering the text
     // Both are keyed on change_counter and the usable width of the control.
     keyed_data<cached_image_ptr> unselected_image, selected_image;
-
-    // data for rendering the focus indicator
-    focus_rect_data focus_rendering;
 };
 
 string get_display_text(text_control_data& tc)
 {
-    if (tc.flags & PASSWORD)
+    if (tc.flags & TEXT_CONTROL_MASK_CONTENTS)
         return string(tc.text.length(), '*');
     else
         return tc.text;
@@ -527,7 +524,7 @@ struct text_control
         text_control_data& data,
         accessor<string> const& value,
         layout const& layout_spec,
-        ui_flag_set flags,
+        text_control_flag_set flags,
         widget_id id,
         optional<size_t> const& length_limit)
       : ctx(ctx), data(data), value(value),
@@ -546,7 +543,10 @@ struct text_control
             ctx, text("control"),
             add_default_alignment(
                 add_default_size(layout_spec, width(8, EM)),
-                LEFT, BASELINE_Y));
+                LEFT, BASELINE_Y),
+            NO_FLAGS,
+            id,
+            id_has_focus(ctx, id) ? WIDGET_FOCUSED : WIDGET_NORMAL);
 
         switch (ctx.event->category)
         {
@@ -572,11 +572,14 @@ struct text_control
     text_control_result result;
 
  private:
-    bool is_password() const { return (flags & PASSWORD) != 0; }
-    bool is_read_only() const { return (flags & DISABLED) != 0; }
-    bool is_disabled() const { return (flags & DISABLED) != 0; }
-    bool is_single_line() const { return (flags & SINGLE_LINE) != 0; }
-    bool is_multiline() const { return (flags & MULTILINE) != 0; }
+    bool is_read_only() const
+    { return (flags & TEXT_CONTROL_DISABLED) != 0; }
+    bool is_disabled() const
+    { return (flags & TEXT_CONTROL_DISABLED) != 0; }
+    bool is_single_line() const
+    { return (flags & TEXT_CONTROL_SINGLE_LINE) != 0; }
+    bool is_multiline() const
+    { return (flags & TEXT_CONTROL_MULTILINE) != 0; }
 
     box<2,int> get_full_region() const
     {
@@ -602,7 +605,7 @@ struct text_control
         data.cursor_position = data.text.length();
         on_text_change();
         data.text_edited = false;
-        if (!(flags & ALWAYS_EDITING))
+        if (!(flags & TEXT_CONTROL_ALWAYS_EDITING))
             exit_edit_mode();
     }
 
@@ -676,9 +679,6 @@ struct text_control
         {
             return;
         }
-
-        if (id_has_focus(ctx, id))
-            draw_focus_rect(ctx, data.focus_rendering, get_full_region());
 
         refresh_keyed_data(data.unselected_image,
             combine_ids(make_id(data.change_counter),
@@ -925,7 +925,7 @@ struct text_control
                                 value.set(data.text);
                                 result.changed = true;
                             }
-                            if ((flags & ALWAYS_EDITING) == 0)
+                            if ((flags & TEXT_CONTROL_ALWAYS_EDITING) == 0)
                                 exit_edit_mode();
                             result.event = TEXT_CONTROL_ENTER_PRESSED;
                         }
@@ -1388,7 +1388,7 @@ struct text_control
     // Copy the current selection to the clipboard.
     void copy()
     {
-        if (!(flags & PASSWORD) && has_selection())
+        if (!(flags & TEXT_CONTROL_MASK_CONTENTS) && has_selection())
         {
             ctx.surface->set_clipboard_text(
                 data.text.substr(data.first_selected, data.n_selected));
@@ -1504,7 +1504,7 @@ struct text_control
     ui_context& ctx;
     text_control_data& data;
     accessor<string> const& value;
-    ui_flag_set flags;
+    text_control_flag_set flags;
     layout const& layout_spec;
     widget_id id, cursor_id;
     optional<size_t> length_limit;
@@ -1518,7 +1518,7 @@ do_text_control(
     ui_context& ctx,
     accessor<string> const& value,
     layout const& layout_spec,
-    ui_flag_set flags,
+    text_control_flag_set flags,
     widget_id id,
     optional<size_t> const& length_limit)
 {

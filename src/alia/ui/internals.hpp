@@ -180,12 +180,13 @@ struct mouse_cursor_query : ui_event
 
 struct make_widget_visible_event : ui_event
 {
-    make_widget_visible_event(widget_id id)
+    make_widget_visible_event(widget_id id, bool abrupt)
       : ui_event(REGION_CATEGORY, MAKE_WIDGET_VISIBLE_EVENT), id(id),
-        acknowledged(false)
+        abrupt(abrupt), acknowledged(false)
     {}
     widget_id id;
     box<2,double> region;
+    bool abrupt;
     bool acknowledged;
 };
 
@@ -309,12 +310,11 @@ struct ui_style
 // font is the specification of a font in alia.
 // Note that the name is interpreted by Skia, and so it doesn't need to
 // exactly match a font on the system.
-struct font_flag_tag {};
-typedef flag_set<font_flag_tag> font_flag_set;
-ALIA_DEFINE_FLAG_CODE(font_flag_tag, 1, BOLD)
-ALIA_DEFINE_FLAG_CODE(font_flag_tag, 2, ITALIC)
-ALIA_DEFINE_FLAG_CODE(font_flag_tag, 4, STRIKETHROUGH)
-ALIA_DEFINE_FLAG_CODE(font_flag_tag, 8, UNDERLINE)
+ALIA_DEFINE_FLAG_TYPE(font)
+ALIA_DEFINE_FLAG(font, 1, BOLD)
+ALIA_DEFINE_FLAG(font, 2, ITALIC)
+ALIA_DEFINE_FLAG(font, 4, STRIKETHROUGH)
+ALIA_DEFINE_FLAG(font, 8, UNDERLINE)
 struct font
 {
     string name;
@@ -474,6 +474,12 @@ struct surface : geometry_context_subscriber
 };
 static inline surface& get_surface(surface& surface) { return surface; }
 
+struct widget_visibility_request
+{
+    routable_widget_id widget;
+    bool abrupt;
+};
+
 // ui_system defines all the persistent state associated with an alia UI.
 struct ui_system
 {
@@ -496,7 +502,7 @@ struct ui_system
 
     // If this is valid, then there has been a request to make this widget
     // visible. It will be honored after the next layout calculation.
-    routable_widget_id widget_to_make_visible;
+    widget_visibility_request pending_visibility_request;
 
     vector<2,unsigned> surface_size;
 

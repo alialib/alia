@@ -16,10 +16,9 @@ void do_box_region(
 // Detect if the mouse is inside the given box.
 bool mouse_is_inside_box(ui_context& ctx, box<2,double> const& box);
 
-struct hit_test_flag_tag {};
-typedef flag_set<hit_test_flag_tag> hit_test_flag_set;
-ALIA_DEFINE_FLAG_CODE(hit_test_flag_tag, 0x1, HIT_TEST_MOUSE)
-ALIA_DEFINE_FLAG_CODE(hit_test_flag_tag, 0x2, HIT_TEST_WHEEL)
+ALIA_DEFINE_FLAG_TYPE(hit_test)
+ALIA_DEFINE_FLAG(hit_test, 0x1, HIT_TEST_MOUSE)
+ALIA_DEFINE_FLAG(hit_test, 0x2, HIT_TEST_WHEEL)
 
 // Handle hit testing for a rectangular region of the surface.
 void hit_test_box_region(ui_context& ctx, widget_id id,
@@ -57,7 +56,10 @@ bool is_region_hot(ui_context& ctx, widget_id id);
 // Call this to request that a given widget be made visible.
 // If the widget is scrolled off screen, this will trigger the containing
 // scrollable regions to scroll such that the region is visible.
-void make_widget_visible(ui_context& ctx, widget_id id);
+ALIA_DEFINE_FLAG_TYPE(make_widget_visible)
+ALIA_DEFINE_FLAG(make_widget_visible, 1, MAKE_WIDGET_VISIBLE_ABRUPTLY)
+void make_widget_visible(ui_context& ctx, widget_id id,
+    make_widget_visible_flag_set flags = NO_FLAGS);
 
 }
 

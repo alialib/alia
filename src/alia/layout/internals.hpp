@@ -14,10 +14,10 @@ namespace alia {
 // single axis.
 struct layout_requirements
 {
-    layout_scalar minimum_size;
+    layout_scalar size;
 
     // The minimum space required on either side of the baseline.
-    layout_scalar minimum_ascent, minimum_descent;
+    layout_scalar ascent, descent;
 
     // If these is extra space in a container (above the minimum required by
     // its contents), it's apportioned to the individual widgets according to
@@ -26,11 +26,10 @@ struct layout_requirements
 
     layout_requirements() {}
 
-    layout_requirements(layout_scalar minimum_size,
-        layout_scalar minimum_ascent, layout_scalar minimum_descent,
-        float growth_factor)
-      : minimum_size(minimum_size), minimum_ascent(minimum_ascent),
-        minimum_descent(minimum_descent), growth_factor(growth_factor)
+    layout_requirements(layout_scalar size, layout_scalar ascent,
+        layout_scalar descent, float growth_factor)
+      : size(size), ascent(ascent), descent(descent),
+        growth_factor(growth_factor)
     {}
 };
 
@@ -69,6 +68,7 @@ struct layout_style_info
     float font_size;
     vector<2,float> character_size;
     float x_height;
+    float magnification;
 };
 
 // As in the data_graph library, the layout system may be used in a larger

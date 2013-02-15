@@ -41,9 +41,10 @@ void draw_full_image(surface& surface, cached_image_ptr const& image,
         box<2,double>(make_vector<double>(0, 0), image_size));
 }
 
-void caching_renderer::begin(caching_renderer_data& data, surface& surface,
-    geometry_context& geometry,
-    id_interface const& content_id, box<2,int> const& region)
+void caching_renderer::begin(
+    caching_renderer_data& data, surface& surface,
+    geometry_context& geometry, id_interface const& content_id,
+    layout_box const& region)
 {
     if (is_visible(geometry, box<2,double>(region)))
     {
@@ -74,73 +75,6 @@ void caching_renderer::draw()
                     vector<2,double>(region_.size)));
         }
     }
-}
-
-style_search_path const*
-get_control_style_path(ui_context& ctx,
-    stateless_control_style_path_storage* storage,
-    char const* control_type)
-{
-    return
-        add_substyle_to_path(
-            &storage->storage[1],
-            ctx.style.path, 
-            add_substyle_to_path(&storage->storage[0], ctx.style.path, 0,
-                "control"),
-            control_type);
-}
-
-style_search_path const*
-get_control_style_path(ui_context& ctx, control_style_path_storage* storage,
-    char const* control_type, widget_state state)
-{
-    return
-        add_substyle_to_path(
-            &storage->storage[1],
-            ctx.style.path,
-            add_substyle_to_path(&storage->storage[0], ctx.style.path, 0,
-                "control", state),
-            control_type, state);
-}
-
-layout_vector
-get_box_control_size(ui_context& ctx, char const* control_type)
-{
-    ALIA_GET_CACHED_DATA(keyed_data<layout_vector>)
-    refresh_keyed_data(data, *ctx.style.id);
-    if (!is_valid(data))
-    {
-        stateless_control_style_path_storage storage;
-        style_search_path const* path =
-            get_control_style_path(ctx, &storage, "check-box");
-        set(data,
-            as_layout_size(resolve_absolute_size(get_layout_traversal(ctx),
-                get_property(path, "size", INHERITED_PROPERTY,
-                    make_vector(
-                        absolute_length(1.2f, EM),
-                        absolute_length(1.2f, EM))))));
-    }
-    return get(data);
-}
-
-layout_vector
-get_box_control_size(ui_context& ctx, keyed_data<layout_vector>& data,
-    char const* control_type)
-{
-    refresh_keyed_data(data, *ctx.style.id);
-    if (!is_valid(data))
-    {
-        stateless_control_style_path_storage storage;
-        style_search_path const* path =
-            get_control_style_path(ctx, &storage, "check-box");
-        set(data,
-            as_layout_size(resolve_absolute_size(get_layout_traversal(ctx),
-                get_property(path, "size", INHERITED_PROPERTY,
-                    make_vector(
-                        absolute_length(1.2f, EM),
-                        absolute_length(1.2f, EM))))));
-    }
-    return get(data);
 }
 
 }

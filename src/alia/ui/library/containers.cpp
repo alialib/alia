@@ -39,9 +39,7 @@ collapsible_layout_container::get_horizontal_requirements(
     horizontal_layout_query query(ctx, cacher, last_content_change);
     alia_if (query.update_required())
     {
-        layout_requirements r =
-            alia::get_horizontal_requirements(ctx, *children);
-        query.update(calculated_layout_requirements(r.minimum_size, 0, 0));
+        query.update(fold_horizontal_child_requirements(ctx, children));
     }
     alia_end
     return query.result();
@@ -62,7 +60,7 @@ collapsible_layout_container::get_vertical_requirements(
                 this->get_horizontal_requirements(ctx));
         layout_requirements y = alia::get_vertical_requirements(
             ctx, *children, resolved_width);
-        layout_scalar content_height = y.minimum_size;
+        layout_scalar content_height = y.size;
         layout_scalar visible_height =
             round_to_layout_scalar(float(content_height) * this->expansion);
         this->content_height = content_height;
@@ -89,11 +87,11 @@ collapsible_layout_container::set_relative_assignment(
             ctx, *children, region.size[0]);
 
         layout_vector content_size =
-            make_layout_vector(region.size[0], y.minimum_size);
+            make_layout_vector(region.size[0], y.size);
 
         relative_layout_assignment assignment(
             layout_box(make_layout_vector(0, 0), content_size),
-            y.minimum_size - y.minimum_descent);
+            y.size - y.descent);
 
         alia::set_relative_assignment(ctx, *children, assignment);
         rra.update();
@@ -110,6 +108,8 @@ void collapsible_content::begin(
     collapsible_layout_container* layout;
     get_cached_data(ctx, &layout);
 
+    widget_id id = get_widget_id(ctx);
+
     container_.begin(get_layout_traversal(ctx), layout);
 
     float expansion = smooth_value(ctx, expanded ? 1.f : 0.f, transition);
@@ -119,9 +119,16 @@ void collapsible_content::begin(
         detect_layout_change(ctx, &layout->expansion, expansion);
         update_layout_cacher(get_layout_traversal(ctx), layout->cacher,
             layout_spec, FILL | UNPADDED);
+
+        // If the widget is expanding, ensure that it's visible.
+        if (expanded && expansion != 1)
+            make_widget_visible(ctx, id, MAKE_WIDGET_VISIBLE_ABRUPTLY);
     }
     else
     {
+        if (ctx.event->category == REGION_CATEGORY)
+            do_box_region(ctx, id, layout->window);
+
         if (expansion != 0 && expansion != 1)
         {
             clipper_.begin(*get_layout_traversal(ctx).geometry);
@@ -168,7 +175,7 @@ struct tree_node_data
 void tree_node::begin(
     ui_context& ctx,
     layout const& layout_spec,
-    ui_flag_set flags,
+    tree_node_flag_set flags,
     optional_storage<bool> const& expanded,
     widget_id expander_id)
 {
@@ -177,7 +184,7 @@ void tree_node::begin(
     tree_node_data* data;
     if (get_data(ctx, &data))
     {
-        if (flags & INITIALLY_EXPANDED)
+        if (flags & TREE_NODE_INITIALLY_EXPANDED)
             data->expanded = true;
         else
             data->expanded = false;
@@ -194,7 +201,7 @@ void tree_node::begin(
     expander_result_ =
         do_node_expander(ctx, state, default_layout, expander_id);
 
-    label_region_.begin(ctx);
+    label_region_.begin(ctx, BASELINE_Y);
     hit_test_box_region(ctx, expander_id, label_region_.region());
 }
 
@@ -238,8 +245,15 @@ struct draggable_separator_data
     int drag_start_delta;
 };
 
-bool do_draggable_separator(ui_context& ctx, accessor<int> const& width,
-    layout const& layout_spec, ui_flag_set flags, widget_id id)
+ALIA_DEFINE_FLAG_TYPE(draggable_separator)
+ALIA_DEFINE_FLAG(draggable_separator, 0x1, DRAGGABLE_SEPARATOR_HORIZONTAL)
+ALIA_DEFINE_FLAG(draggable_separator, 0x2, DRAGGABLE_SEPARATOR_VERTICAL)
+ALIA_DEFINE_FLAG(draggable_separator, 0x4, DRAGGABLE_SEPARATOR_FLIPPED)
+
+static bool
+do_draggable_separator(ui_context& ctx, accessor<int> const& width,
+    layout const& layout_spec, unsigned axis,
+    draggable_separator_flag_set flags, widget_id id)
 {
     ALIA_GET_CACHED_DATA(draggable_separator_data)
 
@@ -294,32 +308,29 @@ bool do_draggable_separator(ui_context& ctx, accessor<int> const& width,
      case REGION_CATEGORY:
       {
         layout_box region = data.layout_node.assignment().region;
-        int axis = (flags & HORIZONTAL) ? 0 : 1;
-        int const drag_axis = 1 - axis;
+        unsigned const drag_axis = 1 - axis;
         // Add a couple of pixels to make it easier to click on.
         region.corner[drag_axis] -= 1;
         region.size[drag_axis] += 2;
-        do_box_region(ctx, id, region, flags & HORIZONTAL ?
+        do_box_region(ctx, id, region, drag_axis != 0 ?
             UP_DOWN_ARROW_CURSOR : LEFT_RIGHT_ARROW_CURSOR);
         break;
       }
 
      case INPUT_CATEGORY:
       {
-        int axis = (flags & HORIZONTAL) ? 0 : 1;
-        int const drag_axis = 1 - axis;
-
+        unsigned const drag_axis = 1 - axis;
         if (detect_mouse_press(ctx, id, LEFT_BUTTON))
         {
             int position = get_integer_mouse_position(ctx)[drag_axis];
             int current_width = width.is_gettable() ? get(width) : 0;
-            data.drag_start_delta = (flags & FLIPPED) ?
+            data.drag_start_delta = (flags & DRAGGABLE_SEPARATOR_FLIPPED) ?
                 current_width + position : position - current_width;
         }
         if (detect_drag(ctx, id, LEFT_BUTTON))
         {
             int position = get_integer_mouse_position(ctx)[drag_axis];
-            set(width, (flags & FLIPPED) ?
+            set(width, (flags & DRAGGABLE_SEPARATOR_FLIPPED) ?
                 data.drag_start_delta - position :
                 position - data.drag_start_delta);
             return true;
@@ -331,27 +342,33 @@ bool do_draggable_separator(ui_context& ctx, accessor<int> const& width,
 }
 
 void resizable_content::begin(
-    ui_context& ctx, accessor<int> const& size, ui_flag_set flags)
+    ui_context& ctx, accessor<int> const& size,
+    resizable_content_flag_set flags)
 {
     ctx_ = &ctx;
     id_ = get_widget_id(ctx);
     flags_ = flags;
     size_ = get(size);
 
-    if (flags & PREPEND)
-        do_draggable_separator(ctx, size, UNPADDED, flags | FLIPPED);
+    if (flags & RESIZABLE_CONTENT_PREPEND_SEPARATOR)
+    {
+        do_draggable_separator(ctx, size, UNPADDED,
+            (flags & RESIZABLE_CONTENT_HORIZONTAL_SEPARATOR) ? 0 : 1,
+            DRAGGABLE_SEPARATOR_FLIPPED, id_);
+    }
 
-    if (flags & HORIZONTAL)
-        layout_.begin(ctx, 1, alia::height(float(size_), PIXELS));
+    if (flags & RESIZABLE_CONTENT_HORIZONTAL_SEPARATOR)
+        layout_.begin(ctx, VERTICAL_LAYOUT, height(float(size_), PIXELS));
     else
-        layout_.begin(ctx, 0, alia::width(float(size_), PIXELS));
+        layout_.begin(ctx, HORIZONTAL_LAYOUT, width(float(size_), PIXELS));
 
     // It's possible that the content will be too big for the requested size
     // and the layout engine will force the container to a larger size.
     // If this happens, we have to record that as the real size.
     if (detect_event(ctx, MOUSE_HIT_TEST_EVENT))
     {
-        unsigned drag_axis = (flags & HORIZONTAL) ? 1 : 0;
+        unsigned drag_axis =
+            (flags & RESIZABLE_CONTENT_HORIZONTAL_SEPARATOR) ? 1 : 0;
         int new_size = layout_.region().size[drag_axis];
         if (new_size != size_)
             set(size, new_size);
@@ -365,10 +382,15 @@ void resizable_content::end()
     {
         ui_context& ctx = *ctx_;
         layout_.end();
-        if (!(flags_ & PREPEND) && !ctx.pass_aborted)
+        if (!(flags_ & RESIZABLE_CONTENT_PREPEND_SEPARATOR) &&
+            !ctx.pass_aborted)
         {
-            if (do_draggable_separator(ctx, inout(&size_), UNPADDED, flags_))
+            if (do_draggable_separator(ctx, inout(&size_), UNPADDED,
+                (flags_ & RESIZABLE_CONTENT_HORIZONTAL_SEPARATOR) ? 0 : 1,
+                NO_FLAGS, id_))
+            {
                 issue_set_value_event(ctx, id_, size_);
+            }
         }
         ctx_ = 0;
     }
@@ -399,7 +421,7 @@ void accordion_section::begin(ui_context& ctx, accessor<bool> const& selected)
     ctx_ = &ctx;
     is_selected_ = is_gettable(selected) ? get(selected) : false;
     panel_.begin(ctx, text("accordion-header"), default_layout,
-        is_selected_ ? SELECTED : NO_FLAGS);
+        is_selected_ ? PANEL_SELECTED : NO_FLAGS);
     if (panel_.clicked())
         selected.set(true);
 }
@@ -433,13 +455,15 @@ void clamped_content::begin(
     getter<string> const& content_style,
     absolute_size const& max_size,
     layout const& layout_spec,
-    ui_flag_set flags)
+    panel_flag_set flags)
 {
     ctx_ = &ctx;
     background_.begin(ctx, background_style, layout_spec,
-        NO_INTERNAL_PADDING |
-        (max_size[0].length > 0 ? RESERVE_VERTICAL : NO_FLAGS) |
-        (max_size[1].length > 0 ? RESERVE_HORIZONTAL : NO_FLAGS));
+        PANEL_NO_INTERNAL_PADDING |
+        (max_size[0].length > 0 ?
+            PANEL_RESERVE_VERTICAL_SCROLLBAR : NO_FLAGS) |
+        (max_size[1].length > 0 ?
+            PANEL_RESERVE_HORIZONTAL_SCROLLBAR : NO_FLAGS));
     clamp_.begin(ctx, max_size, GROW | UNPADDED);
     content_.begin(ctx, content_style, UNPADDED, flags);
 }
@@ -460,16 +484,17 @@ void clamped_header::begin(
     getter<string> const& header_style,
     absolute_size const& max_size,
     layout const& layout_spec,
-    ui_flag_set flags)
+    panel_flag_set flags)
 {
     ctx_ = &ctx;
     background_.begin(ctx, background_style, layout_spec,
-        NO_INTERNAL_PADDING |
+        PANEL_NO_INTERNAL_PADDING |
         (max_size[0].length > 0 ?
-            NO_VERTICAL_SCROLL | RESERVE_VERTICAL :
+            PANEL_NO_VERTICAL_SCROLLING | PANEL_RESERVE_VERTICAL_SCROLLBAR :
             NO_FLAGS) |
         (max_size[1].length > 0 ?
-            NO_HORIZONTAL_SCROLL | RESERVE_HORIZONTAL :
+            PANEL_NO_HORIZONTAL_SCROLLING |
+                PANEL_RESERVE_HORIZONTAL_SCROLLBAR :
             NO_FLAGS));
     clamp_.begin(ctx, max_size, GROW | UNPADDED);
     header_.begin(ctx, header_style, UNPADDED, flags);
@@ -488,15 +513,19 @@ void clamped_header::end()
 // TABS
 
 void tab_strip::begin(ui_context& ctx, layout const& layout_spec,
-    ui_flag_set flags)
+    tab_strip_flag_set flags)
 {
     ctx_ = &ctx;
     style_.begin(ctx, text("tab-strip"));
-    layering_.begin(ctx, layout_spec);
+    alia_if (get_cached_property(ctx, "add-background-tab",
+        UNINHERITED_PROPERTY, false))
     {
+        layering_.begin(ctx, layout_spec);
         panel background(ctx, text("tab"));
     }
-    tab_container_.begin(ctx, (flags & VERTICAL) ? 1 : 0);
+    alia_end
+    tab_container_.begin(ctx,
+        (flags & TAB_STRIP_VERTICAL) ? VERTICAL_LAYOUT : HORIZONTAL_LAYOUT);
 }
 
 void tab_strip::end()
@@ -515,7 +544,7 @@ void tab::begin(ui_context& ctx, accessor<bool> const& selected)
     ctx_ = &ctx;
     is_selected_ = is_gettable(selected) ? get(selected) : false;
     panel_.begin(ctx, text("tab"), default_layout,
-        is_selected_ ? SELECTED : NO_FLAGS);
+        is_selected_ ? PANEL_SELECTED : NO_FLAGS);
     if (panel_.clicked())
     {
         selected.set(true);

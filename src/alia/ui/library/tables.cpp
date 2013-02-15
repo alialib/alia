@@ -7,16 +7,17 @@ void table::begin(ui_context& ctx, accessor<string> const& style,
     layout const& layout_spec)
 {
     ctx_ = &ctx;
-    style_.begin(ctx, style);
-    grid_.begin(ctx, layout_spec);
-    index_ = make_vector<int>(0, 0);
+    panel_.begin(ctx, style, layout_spec, PANEL_NO_INTERNAL_PADDING);
+    cell_style_.begin(ctx, text("cell"));
+    grid_.begin(ctx);
+    cell_index_ = make_vector<int>(0, 0);
 }
 void table::end()
 {
     if (ctx_)
     {
         grid_.end();
-        style_.end();
+        cell_style_.end();
         ctx_ = 0;
     }
 }
@@ -26,16 +27,16 @@ void table_row::begin(table& table, layout const& layout_spec)
     table_ = &table;
     ui_context& ctx = *table.ctx_;
 
-    ++table.index_[1];
-    table.index_[0] = 0;
+    ++table.cell_index_[1];
+    table.cell_index_[0] = 0;
 
     style_.begin(ctx,
-        text((table.index_[1] & 1) != 0 ? "odd-row" : "even-row"),
-        WIDGET_NORMAL, NO_STYLE_PATH_SEPARATOR);
-    alia_if (table.index_[1] == 1)
+        text((table.cell_index_[1] & 1) != 0 ? "odd-row" : "even-row"),
+        WIDGET_NORMAL, SCOPED_SUBSTYLE_NO_PATH_SEPARATOR);
+    alia_if (table.cell_index_[1] == 1)
     {
         special_style_.begin(ctx, text("first-row"), WIDGET_NORMAL,
-            NO_STYLE_PATH_SEPARATOR);
+            SCOPED_SUBSTYLE_NO_PATH_SEPARATOR);
     }
     alia_end
 
@@ -58,17 +59,16 @@ void table_cell::begin(table_row& row, layout const& layout_spec)
     table& table = *row.table_;
     ui_context& ctx = *table.ctx_;
 
-    ++table.index_[0];
-    alia_if (table.index_[0] == 1)
+    ++table.cell_index_[0];
+    alia_if (table.cell_index_[0] == 1)
     {
         special_style_.begin(ctx, text("first-column"), WIDGET_NORMAL,
-            NO_STYLE_PATH_SEPARATOR);
+            SCOPED_SUBSTYLE_NO_PATH_SEPARATOR);
     }
     alia_end
     panel_.begin(ctx,
-        text((table.index_[0] & 1) != 0 ? "odd-column" : "even-column"),
-        add_default_padding(layout_spec, UNPADDED),
-        NO_STYLE_PATH_SEPARATOR);
+        text((table.cell_index_[0] & 1) != 0 ? "odd-column" : "even-column"),
+        add_default_padding(layout_spec, UNPADDED));
 }
 void table_cell::end()
 {

@@ -8,17 +8,6 @@ namespace alia {
 
 // STYLING
 
-struct substyle_data
-{
-    owned_id key;
-    stateful_style_path_storage path_storage;
-    primary_style_properties properties;
-    style_state state;
-    layout_style_info style_info;
-    value_id_by_reference<local_id> id;
-    local_identity identity;
-};
-
 void scoped_style::begin(ui_context& ctx, style_state const& style,
     layout_style_info const* info)
 {
@@ -44,39 +33,22 @@ void scoped_style::end()
 
 void scoped_substyle::begin(
     ui_context& ctx, getter<string> const& substyle_name, widget_state state,
-    ui_flag_set flags)
+    scoped_substyle_flag_set flags)
 {
-    substyle_data* data;
-    get_cached_data(ctx, &data);
-
-    if (ctx.event->type == REFRESH_EVENT &&
-        !data->key.matches(combine_ids(ref(*ctx.style.id),
-            combine_ids(ref(substyle_name.id()), make_id(state)))))
+    keyed_data<substyle_data>* data;
+    if (get_cached_data(ctx, &data) || is_refresh_pass(ctx))
     {
-        inc_version(data->identity);
-
-        data->state.path =
-            add_substyle_to_path(&data->path_storage, ctx.style.path,
-                ctx.style.path, get(substyle_name), state, flags);
-
-        read_primary_style_properties(
-            *ctx.system, &data->properties, data->state.path);
-        data->state.properties = &data->properties;
-
-        data->state.theme = ctx.style.theme;
-
-        data->state.id = &data->id;
-
-        read_layout_style_info(ctx, &data->style_info, data->properties.font,
-            data->state.path);
-
-        data->key.store(combine_ids(ref(*ctx.style.id),
+        refresh_keyed_data(*data, combine_ids(ref(*ctx.style.id),
             combine_ids(ref(substyle_name.id()), make_id(state))));
-
-        data->id = get_id(data->identity);
     }
-
-    scoping_.begin(ctx, data->state, &data->style_info);
+    if (!is_valid(*data))
+    {
+        update_substyle_data(ctx, data->value, substyle_name, state,
+            (flags & SCOPED_SUBSTYLE_NO_PATH_SEPARATOR) ?
+                ADD_SUBSTYLE_NO_PATH_SEPARATOR : NO_FLAGS);
+        mark_valid(*data);
+    }
+    scoping_.begin(ctx, get(*data).state, &get(*data).style_info);
 }
 void scoped_substyle::end()
 {

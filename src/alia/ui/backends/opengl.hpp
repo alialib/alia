@@ -53,12 +53,11 @@ struct opengl_context : noncopyable
 };
 
 // OpenGL-specific image caching flags (see below).
-struct opengl_texture_flag_tag {};
-typedef flag_set<opengl_texture_flag_tag> opengl_texture_flag_set;
+ALIA_DEFINE_FLAG_TYPE(opengl_texture)
 // Use GL_REPEAT as the wrap mode.
 // (The image will only tile correctly if it is smaller than the card's
 // maximum texture size and its dimensions are powers of two.)
-ALIA_DEFINE_FLAG_CODE(opengl_texture_flag_tag, 1, OPENGL_TILED_TEXTURE)
+ALIA_DEFINE_FLAG(opengl_texture, 1, OPENGL_TILED_TEXTURE)
 
 // An OpenGL surface implements the surface interface for an OpenGL surface.
 struct opengl_surface : surface

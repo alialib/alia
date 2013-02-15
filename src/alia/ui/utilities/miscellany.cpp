@@ -15,20 +15,29 @@ widget_id get_widget_id(ui_context& ctx)
     return id;
 }
 
-widget_state get_widget_state(
-    ui_context& ctx, widget_id id, bool enabled, bool pressed, bool selected)
+widget_state
+get_widget_state(ui_context& ctx, widget_id id, widget_state overrides)
 {
     widget_state state;
-    if (enabled)
+    if (!(overrides & WIDGET_DISABLED))
     {
-        if (selected)
+        if (overrides & WIDGET_SELECTED)
+        {
             state = WIDGET_SELECTED;
-        else if (detect_click_in_progress(ctx, id, LEFT_BUTTON) || pressed)
+        }
+        else if (detect_click_in_progress(ctx, id, LEFT_BUTTON) ||
+            (overrides & WIDGET_DEPRESSED))
+        {
             state = WIDGET_DEPRESSED;
+        }
         else if (detect_potential_click(ctx, id))
+        {
             state = WIDGET_HOT;
+        }
         else
+        {
             state = WIDGET_NORMAL;
+        }
         if (id_has_focus(ctx, id) && ctx.system->input.window_has_focus &&
             ctx.system->input.keyboard_interaction)
         {
@@ -43,7 +52,8 @@ widget_state get_widget_state(
 widget_state get_button_state(ui_context& ctx, widget_id id,
     button_input_state const& state)
 {
-    return get_widget_state(ctx, id, true, is_pressed(state.key));
+    return get_widget_state(ctx, id,
+        is_pressed(state.key) ? WIDGET_DEPRESSED : NO_FLAGS);
 }
 
 bool do_button_input(ui_context& ctx, widget_id id, button_input_state& state)

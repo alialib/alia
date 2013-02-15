@@ -20,11 +20,9 @@ struct native_error : exception
     ~native_error() throw() {}
 };
 
-struct window_state_flag_tag {};
-typedef flag_set<window_state_flag_tag> window_state_flag_set;
-
-ALIA_DEFINE_FLAG_CODE(window_state_flag_tag, 0x1, MAXIMIZED)
-ALIA_DEFINE_FLAG_CODE(window_state_flag_tag, 0x2, FULL_SCREEN)
+ALIA_DEFINE_FLAG_TYPE(window_state)
+ALIA_DEFINE_FLAG(window_state, 0x1, MAXIMIZED)
+ALIA_DEFINE_FLAG(window_state, 0x2, FULL_SCREEN)
 
 struct ui_system;
 

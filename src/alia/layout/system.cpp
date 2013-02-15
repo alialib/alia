@@ -82,7 +82,7 @@ void resolve_layout(layout_node* root_node, data_graph& cache,
             get_vertical_requirements(ctx, *root_node, size[0]);
         set_relative_assignment(ctx, *root_node,
             relative_layout_assignment(
-                layout_box(make_layout_vector(0, 0), size), y.minimum_ascent));
+                layout_box(make_layout_vector(0, 0), size), y.ascent));
     }
 }
 
@@ -105,10 +105,8 @@ layout_vector get_minimum_size(layout_node* root_node, data_graph& cache)
         layout_requirements horizontal =
             get_horizontal_requirements(ctx, *root_node);
         layout_requirements vertical =
-            get_vertical_requirements(ctx, *root_node,
-                horizontal.minimum_size);
-        return make_layout_vector(horizontal.minimum_size,
-            vertical.minimum_size);
+            get_vertical_requirements(ctx, *root_node, horizontal.size);
+        return make_layout_vector(horizontal.size, vertical.size);
     }
     else
         return make_layout_vector(0, 0);

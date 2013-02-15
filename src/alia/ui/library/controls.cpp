@@ -1,0 +1,551 @@
+#include <alia/ui/api.hpp>
+#include <alia/ui/library/controls.hpp>
+
+namespace alia {
+
+style_search_path const*
+get_control_style_path(ui_context& ctx,
+    stateless_control_style_path_storage* storage,
+    char const* control_type)
+{
+    return
+        add_substyle_to_path(
+            &storage->storage[1],
+            ctx.style.path, 
+            add_substyle_to_path(&storage->storage[0], ctx.style.path, 0,
+                "control"),
+            control_type, ADD_SUBSTYLE_NO_PATH_SEPARATOR);
+}
+
+style_search_path const*
+get_control_style_path(ui_context& ctx, control_style_path_storage* storage,
+    char const* control_type, widget_state state)
+{
+    return
+        add_substyle_to_path(
+            &storage->storage[1],
+            ctx.style.path,
+            add_substyle_to_path(&storage->storage[0], ctx.style.path, 0,
+                "control", state),
+            control_type, state, ADD_SUBSTYLE_NO_PATH_SEPARATOR);
+}
+
+control_style_properties
+get_control_style_properties(
+    ui_context& ctx, style_search_path const* path, layout_vector const& size)
+{
+    control_style_properties properties;
+
+    properties.bg_color = get_color_property(path, "background");
+    properties.fg_color = get_color_property(path, "color");
+    properties.border_color = get_color_property(path, "border-color");
+
+    properties.border_width =
+        resolve_absolute_length(get_layout_traversal(ctx), 0,
+            get_property(path, "border-width", UNINHERITED_PROPERTY,
+                absolute_length(0, PIXELS)));
+
+    box_corner_sizes border_radius_spec =
+        get_border_radius_property(path, relative_length(0.25));
+    properties.border_radii =
+        resolve_box_corner_sizes(get_layout_traversal(ctx),
+            border_radius_spec, vector<2,float>(size));
+
+    return properties;
+}
+
+control_style_properties
+get_control_style_properties(
+    ui_context& ctx, char const* control_type, widget_state state,
+    layout_vector const& size)
+{
+    control_style_path_storage storage;
+    return get_control_style_properties(ctx,
+        get_control_style_path(ctx, &storage, control_type, state),
+        size);
+}
+
+leaf_layout_requirements
+get_box_control_layout(ui_context& ctx, char const* control_type)
+{
+    ALIA_GET_CACHED_DATA(keyed_data<leaf_layout_requirements>)
+    refresh_keyed_data(data, *ctx.style.id);
+    if (!is_valid(data))
+    {
+        stateless_control_style_path_storage storage;
+        style_search_path const* path =
+            get_control_style_path(ctx, &storage, control_type);
+        float border_width =
+            resolve_absolute_length(get_layout_traversal(ctx), 0,
+                get_property(path, "border-width", UNINHERITED_PROPERTY,
+                    absolute_length(0, PIXELS)));
+        layout_vector size =
+            as_layout_size(
+                resolve_absolute_size(get_layout_traversal(ctx),
+                    get_property(path, "size", UNINHERITED_PROPERTY,
+                        make_vector(
+                            absolute_length(1.2f, EM),
+                            absolute_length(1.2f, EM)))) +
+                make_vector(border_width, border_width) * 2);
+        layout_scalar descent =
+            as_layout_size(
+                resolve_absolute_length(get_layout_traversal(ctx), 0,
+                    get_property(path, "descent", UNINHERITED_PROPERTY,
+                        absolute_length(0, PIXELS))) +
+                border_width);
+        set(data, leaf_layout_requirements(size, size[1] - descent, descent));
+    }
+    return get(data);
+}
+
+skia_box
+get_box_control_content_region(
+    layout_box const& region, control_style_properties const& style)
+{
+    return add_border(layout_box_as_skia_box(region), -style.border_width);
+}
+
+void draw_box_control(
+    ui_context& ctx, SkCanvas& canvas, layout_vector const& size,
+    control_style_properties const& style, bool has_focus)
+{
+    SkPaint paint;
+    paint.setFlags(SkPaint::kAntiAlias_Flag);
+
+    skia_box full_region =
+        layout_box_as_skia_box(layout_box(make_layout_vector(0, 0), size));
+
+    if (style.border_width != 0)
+    {
+        set_color(paint, style.border_color);
+        paint.setStyle(SkPaint::kFill_Style);
+        draw_rect(canvas, paint, full_region, style.border_radii);
+    }
+
+    skia_box background_region =
+        add_border(full_region, SkFloatToScalar(-style.border_width));
+
+    set_color(paint, style.bg_color);
+    paint.setStyle(SkPaint::kFill_Style);
+    draw_rect(canvas, paint, background_region, style.border_radii);
+
+    if (has_focus)
+    {
+        setup_focus_drawing(ctx, paint);
+        draw_rect(canvas, paint, background_region, style.border_radii);
+    }
+}
+
+void initialize_caching_control_renderer(
+    ui_context& ctx, caching_renderer& cache, layout_box const& region,
+    id_interface const& content_id)
+{
+    ALIA_GET_CACHED_DATA(caching_renderer_data);
+
+    layout_box padded_region = add_border(region, get_padding_size(ctx));
+
+    cache.begin(ctx, data,
+        combine_ids(ref(content_id), ref(*ctx.style.id)),
+        padded_region);
+}
+
+box_control_renderer::box_control_renderer(
+    ui_context& ctx, caching_renderer& cache,
+    char const* control_type, widget_state state)
+  : renderer_(ctx, cache.image(), cache.region().size)
+{
+    style_path_ =
+        get_control_style_path(ctx, &path_storage_, control_type, state);
+
+    layout_box unpadded_region =
+        add_border(cache.region(), -get_padding_size(ctx));
+
+    style_ = get_control_style_properties(ctx, style_path_,
+        unpadded_region.size);
+
+    content_region_ = get_box_control_content_region(unpadded_region, style_);
+
+    renderer_.canvas().translate(
+        layout_scalar_as_skia_scalar(get_padding_size(ctx)[0]),
+        layout_scalar_as_skia_scalar(get_padding_size(ctx)[1]));
+
+    draw_box_control(ctx, renderer_.canvas(), unpadded_region.size,
+        style_, (state & WIDGET_FOCUSED) ? true : false);
+
+    renderer_.canvas().translate(
+        SkFloatToScalar(style_.border_width),
+        SkFloatToScalar(style_.border_width));
+    content_region_.corner = make_vector(SkIntToScalar(0), SkIntToScalar(0));
+}
+
+// CHECK BOX
+
+struct check_box_renderer : simple_control_renderer<bool>
+{};
+
+struct default_check_box_renderer : check_box_renderer
+{
+    leaf_layout_requirements get_layout(ui_context& ctx) const
+    {
+        return get_box_control_layout(ctx, "check-box");
+    }
+    void draw(
+        ui_context& ctx, layout_box const& region,
+        getter<bool> const& value, widget_state state) const
+    {
+        if (!is_render_pass(ctx))
+            return;
+
+        caching_renderer cache;
+        initialize_caching_control_renderer(ctx, cache, region,
+            combine_ids(ref(value.id()), make_id(state)));
+        if (cache.needs_rendering())
+        {
+            box_control_renderer renderer(ctx, cache, "check-box", state);
+
+            if (value.is_gettable() && get(value))
+            {
+                SkPaint paint;
+                paint.setFlags(SkPaint::kAntiAlias_Flag);
+                set_color(paint, renderer.style().fg_color);
+                paint.setStrokeCap(SkPaint::kRound_Cap);
+                SkScalar dx =
+                    SkScalarDiv(
+                        renderer.content_region().size[0],
+                        SkIntToScalar(10));
+                SkScalar dy =
+                    SkScalarDiv(
+                        renderer.content_region().size[1],
+                        SkIntToScalar(10));
+                paint.setStrokeWidth(SkScalarMul(dx, SkDoubleToScalar(1.6)));
+                renderer.canvas().drawLine(
+                    SkScalarMul(dx, SkIntToScalar(3)),
+                    SkScalarMul(dy, SkIntToScalar(3)),
+                    SkScalarMul(dx, SkIntToScalar(7)),
+                    SkScalarMul(dy, SkIntToScalar(7)),
+                    paint);
+                renderer.canvas().drawLine(
+                    SkScalarMul(dx, SkIntToScalar(3)),
+                    SkScalarMul(dy, SkIntToScalar(7)),
+                    SkScalarMul(dx, SkIntToScalar(7)),
+                    SkScalarMul(dy, SkIntToScalar(3)),
+                    paint);
+            }
+
+            renderer.cache();
+            cache.mark_valid();
+        }
+        cache.draw();
+    }
+};
+
+check_box_result
+do_check_box(
+    ui_context& ctx,
+    accessor<bool> const& value,
+    layout const& layout_spec,
+    widget_id id)
+{
+    check_box_result result;
+    if (do_simple_control<check_box_renderer,default_check_box_renderer>(
+        ctx, value, layout_spec, id))
+    {
+        result.changed = true;
+        set(value, value.is_gettable() ? !value.get() : true);
+    }
+    else
+        result.changed = false;
+    return result;
+}
+
+check_box_result do_check_box(
+    ui_context& ctx,
+    accessor<bool> const& value,
+    getter<string> const& text,
+    layout const& layout_spec,
+    widget_id id)
+{
+    get_widget_id_if_needed(ctx, id);
+    row_layout row(ctx, add_default_y_alignment(layout_spec, BASELINE_Y));
+    check_box_result result = do_check_box(ctx, value, default_layout, id);
+    do_paragraph(ctx, text, GROW_X);
+    do_box_region(ctx, id, row.region());
+    return result;
+}
+
+// RADIO BUTTON
+
+struct radio_button_renderer : simple_control_renderer<bool>
+{};
+
+struct default_radio_button_renderer : radio_button_renderer
+{
+    leaf_layout_requirements get_layout(ui_context& ctx) const
+    {
+        return get_box_control_layout(ctx, "radio-button");
+    }
+    void draw(
+        ui_context& ctx, layout_box const& region,
+        getter<bool> const& value, widget_state state) const
+    {
+        if (!is_render_pass(ctx))
+            return;
+
+        caching_renderer cache;
+        initialize_caching_control_renderer(ctx, cache, region,
+            combine_ids(ref(value.id()), make_id(state)));
+        if (cache.needs_rendering())
+        {
+            box_control_renderer renderer(ctx, cache, "radio-button", state);
+
+            if (value.is_gettable() && get(value))
+            {
+                SkPaint paint;
+                paint.setFlags(SkPaint::kAntiAlias_Flag);
+                set_color(paint, renderer.style().fg_color);
+                paint.setStyle(SkPaint::kFill_Style);
+                draw_rect(renderer.canvas(), paint,
+                    add_border(renderer.content_region(),
+                        -make_vector(
+                            SkScalarDiv(renderer.content_region().size[0],
+                                SkIntToScalar(4)),
+                            SkScalarDiv(renderer.content_region().size[1],
+                                SkIntToScalar(4)))),
+                    renderer.style().border_radii);
+            }
+
+            renderer.cache();
+            cache.mark_valid();
+        }
+        cache.draw();
+    }
+};
+
+radio_button_result
+do_radio_button(
+    ui_context& ctx,
+    accessor<bool> const& value,
+    layout const& layout_spec,
+    widget_id id)
+{
+    radio_button_result result;
+    if (do_simple_control<radio_button_renderer,
+        default_radio_button_renderer>(ctx, value, layout_spec, id))
+    {
+        result.changed = true;
+        set(value, true);
+    }
+    else
+        result.changed = false;
+    return result;
+}
+
+radio_button_result do_radio_button(
+    ui_context& ctx,
+    accessor<bool> const& value,
+    getter<string> const& text,
+    layout const& layout_spec,
+    widget_id id)
+{
+    get_widget_id_if_needed(ctx, id);
+    row_layout row(ctx, add_default_y_alignment(layout_spec, BASELINE_Y));
+    radio_button_result result =
+        do_radio_button(ctx, value, default_layout, id);
+    do_paragraph(ctx, text, GROW_X);
+    do_box_region(ctx, id, row.region());
+    return result;
+}
+
+// NODE EXPANDER
+
+struct node_expander_renderer : simple_control_renderer<bool>
+{};
+
+struct default_node_expander_renderer : node_expander_renderer
+{
+    leaf_layout_requirements get_layout(ui_context& ctx) const
+    {
+        return get_box_control_layout(ctx, "node-expander");
+    }
+    void draw(
+        ui_context& ctx, layout_box const& region,
+        getter<bool> const& value, widget_state state) const
+    {
+        float angle =
+            smooth_value(ctx, value.is_gettable() && get(value) ? 90.f : 0.f,
+                animated_transition(linear_curve, 200));
+
+        if (!is_render_pass(ctx))
+            return;
+
+        caching_renderer cache;
+        initialize_caching_control_renderer(ctx, cache, region,
+            combine_ids(make_id(angle), make_id(state)));
+        if (cache.needs_rendering())
+        {
+            box_control_renderer renderer(ctx, cache, "node-expander", state);
+
+            renderer.canvas().translate(
+                SkScalarDiv(
+                    renderer.content_region().size[0],
+                    SkIntToScalar(2)),
+                SkScalarDiv(
+                    renderer.content_region().size[1],
+                    SkIntToScalar(2)));
+            renderer.canvas().rotate(angle);
+
+            {
+                SkPaint paint;
+                paint.setFlags(SkPaint::kAntiAlias_Flag);
+                set_color(paint, renderer.style().fg_color);
+                paint.setStyle(SkPaint::kFill_Style);
+                SkScalar a =
+                    SkScalarDiv(
+                        renderer.content_region().size[0],
+                        SkIntToScalar(2));
+                SkPath path;
+                path.incReserve(4);
+                SkPoint p0;
+                p0.fX = SkScalarMul(a, SkDoubleToScalar(-0.34));
+                p0.fY = SkScalarMul(a, SkDoubleToScalar(-0.5));
+                path.moveTo(p0);
+                SkPoint p1;
+                p1.fX = p0.fX;
+                p1.fY = SkScalarMul(a, SkDoubleToScalar(0.5));
+                path.lineTo(p1);
+                SkPoint p2;
+                p2.fX = p0.fX + SkScalarMul(a, SkDoubleToScalar(0.866));
+                p2.fY = 0;
+                path.lineTo(p2);
+                path.lineTo(p0);
+                renderer.canvas().drawPath(path, paint);
+            }
+
+            renderer.cache();
+            cache.mark_valid();
+        }
+        cache.draw();
+    }
+};
+
+node_expander_result
+do_node_expander(
+    ui_context& ctx,
+    accessor<bool> const& value,
+    layout const& layout_spec,
+    widget_id id)
+{
+    node_expander_result result;
+    if (do_simple_control<node_expander_renderer,
+            default_node_expander_renderer>(ctx, value, layout_spec, id))
+    {
+        result.changed = true;
+        set(value, value.is_gettable() ? !value.get() : true);
+    }
+    else
+        result.changed = false;
+    return result;
+}
+
+// BUTTON
+
+struct button_data
+{
+    button_input_state input;
+    focus_rect_data focus_rect;
+};
+
+button_result
+do_button(
+    ui_context& ctx,
+    getter<string> const& label,
+    layout const& layout_spec,
+    widget_id id)
+{
+    get_widget_id_if_needed(ctx, id);
+    ALIA_GET_CACHED_DATA(button_data)
+    widget_state state = get_button_state(ctx, id, data.input);
+    panel p(ctx, text("button"),
+        add_default_alignment(layout_spec, LEFT, TOP), NO_FLAGS, id, state);
+    do_text(ctx, label, CENTER);
+    return do_button_input(ctx, id, data.input);
+}
+
+// ICON BUTTON
+
+// This can't use do_simple_button since it requires an extra parameter to the
+// renderer (the icon type). So instead, it's implemented as a control.
+
+struct icon_button_renderer : simple_control_renderer<icon_type>
+{};
+
+struct default_icon_button_renderer : icon_button_renderer
+{
+    leaf_layout_requirements get_layout(ui_context& ctx) const
+    {
+        return get_box_control_layout(ctx, "icon-button");
+    }
+    void draw(
+        ui_context& ctx, layout_box const& region,
+        getter<icon_type> const& icon, widget_state state) const
+    {
+        if (!is_render_pass(ctx))
+            return;
+
+        caching_renderer cache;
+        initialize_caching_control_renderer(ctx, cache, region,
+            combine_ids(ref(icon.id()), make_id(state)));
+        if (cache.needs_rendering())
+        {
+            box_control_renderer renderer(ctx, cache, "node-expander", state);
+
+            renderer.canvas().translate(
+                SkScalarDiv(
+                    renderer.content_region().size[0],
+                    SkIntToScalar(2)),
+                SkScalarDiv(
+                    renderer.content_region().size[1],
+                    SkIntToScalar(2)));
+
+            SkPaint paint;
+            paint.setAntiAlias(true);
+            set_color(paint, renderer.style().fg_color);
+
+            switch (get(icon))
+            {
+             case REMOVE_ICON:
+              {
+                SkScalar a =
+                    SkScalarDiv(
+                        renderer.content_region().size[0],
+                        SkIntToScalar(5));
+                paint.setStrokeWidth(a);
+                paint.setStrokeCap(SkPaint::kRound_Cap);
+                paint.setStyle(SkPaint::kFill_Style);
+                renderer.canvas().drawLine(-a, -a,  a,  a, paint);
+                renderer.canvas().drawLine(-a,  a,  a, -a, paint);
+                break;
+              }
+             default:
+                break;
+            }
+
+            renderer.cache();
+            cache.mark_valid();
+        }
+        cache.draw();
+    }
+};
+
+icon_button_result
+do_icon_button(
+    ui_context& ctx,
+    icon_type icon,
+    layout const& layout_spec,
+    widget_id id)
+{
+    return do_simple_control<icon_button_renderer,
+        default_icon_button_renderer>(ctx, in(icon), layout_spec, id);
+}
+
+}

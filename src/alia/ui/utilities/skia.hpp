@@ -40,6 +40,9 @@ struct skia_renderer
       , canvas_(initialize_bitmap(bitmap_, size))    
     { begin(img, surface, size); }
 
+    void begin(cached_image_ptr& img, surface& surface,
+        vector<2,int> const& size);
+
     // Get access to the Skia canvas that represents the cached image.
     SkCanvas& canvas() { return canvas_; }
 
@@ -50,9 +53,6 @@ struct skia_renderer
  private:
     static SkBitmap& initialize_bitmap(
         SkBitmap& bitmap, vector<2,int> const& size);
-
-    void begin(cached_image_ptr& img, surface& surface,
-        vector<2,int> const& size);
 
     surface* surface_;
 
@@ -74,7 +74,11 @@ static inline void set_color(SkPaint& paint, rgba8 color)
     paint.setARGB(color.a, color.r, color.g, color.b);
 }
 
-SkRect layout_box_as_skia_rect(layout_box const& box);
+typedef vector<2,SkScalar> skia_vector;
+typedef box<2,SkScalar> skia_box;
+
+SkRect skia_box_as_skia_rect(skia_box const& box);
+skia_box layout_box_as_skia_box(layout_box const& box);
 
 void draw_round_rect(SkCanvas& canvas, SkPaint& paint,
     layout_box const& region);
@@ -82,30 +86,19 @@ void draw_round_rect(SkCanvas& canvas, SkPaint& paint,
     layout_vector const& size);
 
 void draw_rect(SkCanvas& canvas, SkPaint& paint,
-    box<2,SkScalar> const& region);
-void draw_rect(SkCanvas& canvas, SkPaint& paint, layout_box const& region);
-void draw_rect(SkCanvas& canvas, SkPaint& paint, layout_vector const& size);
+    skia_box const& region);
+
+void draw_rect(SkCanvas& canvas, SkPaint& paint,
+    skia_box const& region, resolved_box_corner_sizes const& radii);
 
 void set_skia_font_info(SkPaint& paint, font const& font);
 
 void setup_focus_drawing(ui_context& ctx, SkPaint& paint);
 
-void draw_round_focus_rect(ui_context& ctx, SkCanvas& canvas,
-    vector<2,int> const& size);
-
-void draw_focus_rect(ui_context& ctx, SkCanvas& canvas,
-    vector<2,int> const& size);
-
 typedef caching_renderer_data focus_rect_data;
 
 void draw_focus_rect(ui_context& ctx, focus_rect_data& data,
-    box<2,int> const& content_region);
-
-void draw_rect(SkCanvas& canvas, SkPaint& paint,
-    layout_box const& region, resolved_box_corner_sizes const& radii);
-
-void draw_styled_box(ui_context& ctx, SkCanvas& canvas,
-    style_search_path const* path, layout_box const& region, bool focused);
+    layout_box const& content_region);
 
 }
 

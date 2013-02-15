@@ -234,7 +234,30 @@ optional_in(optional<T> const& value)
 template<class T>
 struct custom_getter : accessor<T>
 {
-    custom_getter(optional<T> const* value, id_interface const* id) 
+    custom_getter(T const* value, id_interface const* id)
+      : value_(value), id_(id)
+    {}
+    id_interface const& id() const { return *id_; }
+    bool is_gettable() const { return true; }
+    T const& get() const { return *value_; }
+    bool is_settable() const { return false; }
+    void set(T const& value) const {}
+ private:
+    id_interface const* id_;
+    T const* value_;
+};
+template<class T>
+custom_getter<T>
+make_custom_getter(T const* value, id_interface const* id)
+{
+    return custom_getter<T>(value, id);
+}
+
+// Same as above, but the value is optional.
+template<class T>
+struct custom_optional_getter : accessor<T>
+{
+    custom_optional_getter(optional<T> const* value, id_interface const* id)
       : value_(value), id_(id)
     {}
     id_interface const& id() const { return *id_; }
@@ -247,10 +270,10 @@ struct custom_getter : accessor<T>
     optional<T> const* value_;
 };
 template<class T>
-custom_getter<T>
+custom_optional_getter<T>
 make_custom_getter(optional<T> const* value, id_interface const* id)
 {
-    return custom_getter<T>(value, id);
+    return custom_optional_getter<T>(value, id);
 }
 
 // A state_proxy object is used when direct access is not possible and you

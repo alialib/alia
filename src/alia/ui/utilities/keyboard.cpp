@@ -71,16 +71,6 @@ void add_to_focus_order(ui_context& ctx, widget_id id)
     }
 }
 
-void make_widget_visible(ui_system& ui, routable_widget_id const& id)
-{
-    ui.widget_to_make_visible = id;
-}
-
-void make_widget_visible(ui_context& ctx, widget_id id)
-{
-    make_widget_visible(*ctx.system, make_routable_widget_id(ctx, id));
-}
-
 void set_focus(ui_system& ui, routable_widget_id id)
 {
     bool different = ui.input.focused_id.id != id.id;
@@ -89,13 +79,20 @@ void set_focus(ui_system& ui, routable_widget_id id)
         focus_notification_event e(FOCUS_LOSS_EVENT, ui.input.focused_id.id);
         issue_targeted_event(ui, e, ui.input.focused_id);
     }
+
     ui.input.focused_id = id;
+
     // It's possible to have widgets that appear based on whether or not
     // another widget has the focus, so we need to refresh here.
     refresh_ui(ui);
+
     if (different && is_valid(id))
     {
-        make_widget_visible(ui, id);
+        widget_visibility_request request;
+        request.widget = id;
+        request.abrupt = false;
+        ui.pending_visibility_request = request;
+
         focus_notification_event e(FOCUS_GAIN_EVENT, id.id);
         issue_targeted_event(ui, e, id);
     }

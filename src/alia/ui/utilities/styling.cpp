@@ -103,8 +103,8 @@ static string widget_state_string(widget_state state)
         break;
      case WIDGET_NORMAL_CODE:
      default:
-        // the normal state has no specific string associated with it
-        ;
+        s = ".normal";
+        break;
     }
     if (state & WIDGET_FOCUSED)
         s += ".focused";
@@ -139,11 +139,11 @@ add_substyle_to_path(
     style_search_path const* search_path,
     style_search_path const* rest,
     string const& substyle_name,
-    ui_flag_set flags)
+    add_substyle_flag_set flags)
 {
     return
         add_substyle_to_path(&storage->nodes[1],
-            (flags & NO_STYLE_PATH_SEPARATOR) ?
+            (flags & ADD_SUBSTYLE_NO_PATH_SEPARATOR) ?
                 rest : add_path_separator(&storage->nodes[0], rest),
             find_substyle(search_path, substyle_name));
 }
@@ -155,20 +155,19 @@ add_substyle_to_path(
     style_search_path const* rest,
     string const& substyle_name,
     widget_state state,
-    ui_flag_set flags)
+    add_substyle_flag_set flags)
 {
     style_search_path const* path;
     
     // Start off with the stateless version as a fallback.
     path = add_substyle_to_path(&storage->nodes[1],
-        (flags & NO_STYLE_PATH_SEPARATOR) ?
+        (flags & ADD_SUBSTYLE_NO_PATH_SEPARATOR) ?
             rest : add_path_separator(&storage->nodes[0], rest),
         find_substyle(search_path, substyle_name));
 
-    // If the state has both a primary component and a focused component,
-    // try them individually as fallbacks.
-    if ((state & WIDGET_FOCUSED) &&
-        (state & WIDGET_PRIMARY_STATE_MASK) != WIDGET_NORMAL)
+    // If the state has multiple components, try them individually as
+    // fallbacks.
+    if (state & WIDGET_FOCUSED)
     {
         {
             widget_state substate(state.code & ~WIDGET_FOCUSED_CODE);
@@ -176,6 +175,7 @@ add_substyle_to_path(
                 find_substyle(search_path,
                     substyle_name + widget_state_string(substate)));
         }
+        if ((state & WIDGET_PRIMARY_STATE_MASK) != WIDGET_NORMAL)
         {
             widget_state substate(
                 state.code & ~WIDGET_PRIMARY_STATE_MASK_CODE);
@@ -186,12 +186,9 @@ add_substyle_to_path(
     }
 
     // Add the original state itself.
-    if (state != WIDGET_NORMAL)
-    {
-        path = add_substyle_to_path(&storage->nodes[4], path,
-            find_substyle(search_path,
-                substyle_name + widget_state_string(state)));
-    }
+    path = add_substyle_to_path(&storage->nodes[4], path,
+        find_substyle(search_path,
+            substyle_name + widget_state_string(state)));
 
     return path;
 }
@@ -278,6 +275,8 @@ parse_style_properties(char const* label, utf8_string const& text,
             {
                 p = skip_line_terminator(utf8_string(q, text.end));
                 ++line_number;
+                value_end = q;
+                break;
             }
         }
         string value(value_start, value_end - value_start);
@@ -345,12 +344,12 @@ static int write_cpp_style_node(FILE* f, style_tree const& node,
     int* index_counter)
 {
     int index = *index_counter;
-    ++index_counter;
-    fprintf(f, "    style_tree node%i;\n", index);
+    ++*index_counter;
+    fprintf(f, "    alia::style_tree node_%i;\n", index);
     for (property_map::const_iterator
         i = node.properties.begin(); i != node.properties.end(); ++i)
     {
-        fprintf(f, "    node%i.properties[\"%s\"] = \"%s\";\n",
+        fprintf(f, "    node_%i.properties[\"%s\"] = \"%s\";\n",
             index, i->first.c_str(), i->second.c_str());
     }
     for (std::map<string,style_tree>::const_iterator
@@ -358,7 +357,7 @@ static int write_cpp_style_node(FILE* f, style_tree const& node,
     {
         int substyle_index =
             write_cpp_style_node(f, i->second, index_counter);
-        fprintf(f, "    node%i.substyles[\"%s\"] = node%i;\n",
+        fprintf(f, "    node_%i.substyles[\"%s\"] = node_%i;\n",
             index, i->first.c_str(), substyle_index);
     }
     return index;
@@ -374,7 +373,7 @@ void write_style_cpp_file(char const* path, char const* label,
     fprintf(f, "{\n");
     int node_n = 0;
     write_cpp_style_node(f, style, &node_n);
-    fprintf(f, "    return node0;\n");
+    fprintf(f, "    return node_0;\n");
     fprintf(f, "}\n");
 }
 
@@ -772,7 +771,80 @@ void parse(line_parser& p, side_selection* spec)
     *spec = sides;
 }
 
-// higher-level properties
+box_border_width
+get_padding_property(
+    style_search_path const* path, absolute_length const& default_width)
+{
+    box_border_width unified =
+        get_property(path, "padding", UNINHERITED_PROPERTY,
+            box_border_width(default_width));
+    return box_border_width(
+        get_property(path, "padding-top", UNINHERITED_PROPERTY,
+            unified.top),
+        get_property(path, "padding-right", UNINHERITED_PROPERTY,
+            unified.right),
+        get_property(path, "padding-bottom", UNINHERITED_PROPERTY,
+            unified.bottom),
+        get_property(path, "padding-left", UNINHERITED_PROPERTY,
+            unified.left));
+}
+
+box_border_width
+get_margin_property(
+    style_search_path const* path, absolute_length const& default_width)
+{
+    box_border_width unified =
+        get_property(path, "margin", UNINHERITED_PROPERTY,
+            box_border_width(default_width));
+    return box_border_width(
+        get_property(path, "margin-top", UNINHERITED_PROPERTY,
+            unified.top),
+        get_property(path, "margin-right", UNINHERITED_PROPERTY,
+            unified.right),
+        get_property(path, "margin-bottom", UNINHERITED_PROPERTY,
+            unified.bottom),
+        get_property(path, "margin-left", UNINHERITED_PROPERTY,
+            unified.left));
+}
+
+box_border_width
+get_border_width_property(
+    style_search_path const* path, absolute_length const& default_width)
+{
+    box_border_width unified =
+        get_property(path, "border-width", UNINHERITED_PROPERTY,
+            box_border_width(default_width));
+    return box_border_width(
+        get_property(path, "border-top-width", UNINHERITED_PROPERTY,
+            unified.top),
+        get_property(path, "border-right-width", UNINHERITED_PROPERTY,
+            unified.right),
+        get_property(path, "border-bottom-width", UNINHERITED_PROPERTY,
+            unified.bottom),
+        get_property(path, "border-left-width", UNINHERITED_PROPERTY,
+            unified.left));
+}
+
+box_corner_sizes
+get_border_radius_property(
+    style_search_path const* path, relative_length const& default_radius)
+{
+    box_corner_sizes unified =
+        get_property(path, "border-radius", UNINHERITED_PROPERTY,
+            box_corner_sizes(
+                make_vector(default_radius, default_radius)));
+    return box_corner_sizes(
+        get_property(path, "border-top-left-radius", UNINHERITED_PROPERTY,
+            unified.corners[0]),
+        get_property(path, "border-top-right-radius", UNINHERITED_PROPERTY,
+            unified.corners[1]),
+        get_property(path, "border-bottom-right-radius", UNINHERITED_PROPERTY,
+            unified.corners[2]),
+        get_property(path, "border-bottom-left-radius", UNINHERITED_PROPERTY,
+            unified.corners[3]));
+}
+
+// higher-level retrieval
 
 font get_font_properties(ui_system const& ui, style_search_path const* path)
 {
@@ -800,9 +872,28 @@ void read_primary_style_properties(
     props->font = get_font_properties(ui, path);
 }
 
+// default_padding_spec is simply an absolute_size, but it parses height before
+// width to be consistent with normal CSS-style padding specifications.
+struct default_padding_spec
+{
+    absolute_size padding;
+    default_padding_spec() {}
+    default_padding_spec(absolute_size const& padding) : padding(padding) {}
+};
+void parse(line_parser& p, default_padding_spec* spec)
+{
+    parse(p, &spec->padding[1]);
+    if (!is_empty(p))
+        parse(p, &spec->padding[0]);
+    else
+        spec->padding[0] = spec->padding[1];
+}
+
 void read_layout_style_info(ui_context& ctx, layout_style_info* style_info,
     font const& font, style_search_path const* path)
 {
+    style_info->magnification = ctx.system->style->text_magnification;
+
     style_info->font_size = font.size;
 
     // Skia supposedly supplies all the necessary font metrics, but they're
@@ -829,14 +920,40 @@ void read_layout_style_info(ui_context& ctx, layout_style_info* style_info,
     }
     else
     {
-        absolute_size padding_size =
+        default_padding_spec default_padding =
             get_property(path, "default-padding", INHERITED_PROPERTY,
-                make_vector(
+                default_padding_spec(make_vector(
                     absolute_length(0.2f, EM),
-                    absolute_length(0.2f, EM)));
+                    absolute_length(0.2f, EM))));
         style_info->padding_size = as_layout_size(
-            resolve_absolute_size(ctx.layout->ppi, *style_info, padding_size));
+            resolve_absolute_size(ctx.layout->ppi, *style_info,
+                default_padding.padding));
     }
+}
+
+void update_substyle_data(
+    ui_context& ctx, substyle_data& data,
+    getter<string> const& substyle_name, widget_state state,
+    add_substyle_flag_set flags)
+{
+    inc_version(data.identity);
+
+    data.state.path =
+        add_substyle_to_path(&data.path_storage, ctx.style.path,
+            ctx.style.path, get(substyle_name), state, flags);
+
+    read_primary_style_properties(
+        *ctx.system, &data.properties, data.state.path);
+    data.state.properties = &data.properties;
+
+    data.state.theme = ctx.style.theme;
+
+    data.state.id = &data.id;
+
+    read_layout_style_info(ctx, &data.style_info, data.properties.font,
+        data.state.path);
+
+    data.id = get_id(data.identity);
 }
 
 }

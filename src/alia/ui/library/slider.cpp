@@ -250,7 +250,7 @@ static layout_box get_thumb_region(ui_context& ctx, slider_data& data,
 slider_result
 do_slider(ui_context& ctx, accessor<double> const& value,
     double minimum, double maximum, double step,
-    layout const& layout_spec, ui_flag_set flags)
+    layout const& layout_spec, slider_flag_set flags)
 {
     slider_result result;
     result.changed = false;
@@ -258,7 +258,7 @@ do_slider(ui_context& ctx, accessor<double> const& value,
     slider_data* data;
     get_cached_data(ctx, &data);
 
-    unsigned axis = (flags & VERTICAL) ? 1 : 0;
+    unsigned axis = (flags & SLIDER_VERTICAL) ? 1 : 0;
 
     switch (ctx.event->category)
     {

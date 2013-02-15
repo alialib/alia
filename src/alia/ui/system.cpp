@@ -240,16 +240,17 @@ void update_ui(ui_system& ui, vector<2,unsigned> const& size,
 
     // Once layout has been resolved, we can honor requests to make a
     // particular widget visible.
-    if (is_valid(ui.widget_to_make_visible))
+    widget_visibility_request& request = ui.pending_visibility_request;
+    if (is_valid(request.widget))
     {
-        make_widget_visible_event e(ui.widget_to_make_visible.id);
+        make_widget_visible_event e(request.widget.id, request.abrupt);
         if (is_valid(ui.overlay_id))
         {
             e.category = OVERLAY_CATEGORY;
             e.type = OVERLAY_MAKE_WIDGET_VISIBLE_EVENT;
         }
-        issue_targeted_event(ui, e, ui.widget_to_make_visible);
-        ui.widget_to_make_visible = null_widget_id;
+        issue_targeted_event(ui, e, request.widget);
+        request.widget = null_widget_id;
     }
 
     routable_widget_id previous_mouse_target = get_mouse_target(ui);

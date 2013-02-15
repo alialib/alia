@@ -168,6 +168,13 @@ bool operator==(resolved_box_border_width const& a,
 bool operator!=(resolved_box_border_width const& a,
     resolved_box_border_width const& b);
 
+resolved_box_border_width
+operator+(resolved_box_border_width const& a,
+    resolved_box_border_width const& b);
+resolved_box_border_width&
+operator+=(resolved_box_border_width& a,
+    resolved_box_border_width const& b);
+
 // Resolve a box_border_width into actual widths, in pixels.
 resolved_box_border_width
 resolve_box_border_width(layout_traversal& traversal,
@@ -209,17 +216,16 @@ void resolve_layout_spec(
 // requirements for that element.
 struct calculated_layout_requirements
 {
-    layout_scalar minimum_size;
+    layout_scalar size;
 
     // The minimum space required on either side of the baseline.
-    layout_scalar minimum_ascent, minimum_descent;
+    layout_scalar ascent, descent;
 
     calculated_layout_requirements() {}
 
-    calculated_layout_requirements(layout_scalar minimum_size,
-        layout_scalar minimum_ascent, layout_scalar minimum_descent)
-      : minimum_size(minimum_size), minimum_ascent(minimum_ascent),
-        minimum_descent(minimum_descent)
+    calculated_layout_requirements(layout_scalar size,
+        layout_scalar ascent, layout_scalar descent)
+      : size(size), ascent(ascent), descent(descent)
     {}
 };
 
@@ -491,6 +497,69 @@ void set_transformation_matrix(geometry_context& ctx,
 
 // Is any part of the given region visible through the clipping rectangle?
 bool is_visible(geometry_context& ctx, box<2,double> const& region);
+
+// Some macros for implementing simple layout containers.
+
+#define ALIA_DECLARE_LAYOUT_LOGIC(logic_type) \
+    struct logic_type : layout_logic \
+    { \
+        calculated_layout_requirements get_horizontal_requirements( \
+            layout_calculation_context& ctx, \
+            layout_node* children); \
+        calculated_layout_requirements get_vertical_requirements( \
+            layout_calculation_context& ctx, \
+            layout_node* children, \
+            layout_scalar assigned_width); \
+        void set_relative_assignment( \
+            layout_calculation_context& ctx, \
+            layout_node* children, \
+            layout_vector const& assigned_size, \
+            layout_scalar assigned_baseline_y); \
+    };
+
+void begin_layout_transform(
+    scoped_transformation& transform,
+    layout_traversal const& traversal,
+    layout_cacher const& cacher);
+
+#define ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(logic_type) \
+    logic_type* logic; \
+    get_simple_layout_container(traversal, &container_, &logic, layout_spec); \
+    slc_.begin(traversal, container_); \
+    begin_layout_transform(transform_, traversal, container_->cacher);
+
+// Various utilities for working with layout children...
+
+// Get the required width of the widest child in the list.
+layout_scalar
+get_max_child_width(layout_calculation_context& ctx, layout_node* children);
+
+// Get the horizontal requirements of all the children in the list, fold them
+// together, and return the result.
+calculated_layout_requirements
+fold_horizontal_child_requirements(
+    layout_calculation_context& ctx, layout_node* children);
+
+// Get the vertical requirements of all the children in the list, fold them
+// together, and return the result.
+calculated_layout_requirements
+fold_vertical_child_requirements(
+    layout_calculation_context& ctx, layout_node* children,
+    layout_scalar assigned_width);
+
+// Assign the same layout region to all children in the list.
+void assign_identical_child_regions(
+    layout_calculation_context& ctx,
+    layout_node* children,
+    layout_vector const& assigned_size,
+    layout_scalar assigned_baseline_y);
+
+// Get the total height of all children in the list.
+layout_scalar
+compute_total_height(
+    layout_calculation_context& ctx,
+    layout_node* children,
+    layout_scalar assigned_width);
 
 }
 
