@@ -152,38 +152,66 @@ vector<2,float>
 resolve_relative_size(layout_traversal& traversal, relative_size const& size,
     vector<2,float> const& full_size);
 
-// Same as box_border_width, but the border width is in pixels.
-struct resolved_box_border_width
-{
-    layout_scalar top, right, bottom, left;
-    resolved_box_border_width() {}
-    resolved_box_border_width(
-        layout_scalar top, layout_scalar right,
-        layout_scalar bottom, layout_scalar left)
-      : top(top), right(right), bottom(bottom), left(left)
-    {}
-};
-bool operator==(resolved_box_border_width const& a,
-    resolved_box_border_width const& b);
-bool operator!=(resolved_box_border_width const& a,
-    resolved_box_border_width const& b);
-
-resolved_box_border_width
-operator+(resolved_box_border_width const& a,
-    resolved_box_border_width const& b);
-resolved_box_border_width&
-operator+=(resolved_box_border_width& a,
-    resolved_box_border_width const& b);
-
 // Resolve a box_border_width into actual widths, in pixels.
-resolved_box_border_width
+box_border_width<float>
 resolve_box_border_width(layout_traversal& traversal,
-    box_border_width const& border);
+    box_border_width<absolute_length> const& border);
 
-layout_box add_border(layout_box const& box,
-    resolved_box_border_width const& border);
-layout_box remove_border(layout_box const& box,
-    resolved_box_border_width const& border);
+// Convert a resolved box_border_width to layout_scalars, rounding up.
+box_border_width<layout_scalar>
+as_layout_size(box_border_width<float> const& border);
+
+// Add two box_border_widths.
+template<class Scalar>
+box_border_width<Scalar>
+operator+(box_border_width<Scalar> const& a,
+    box_border_width<Scalar> const& b)
+{
+    box_border_width<Scalar> sum;
+    sum.top = a.top + b.top;
+    sum.right = a.right + b.right;
+    sum.bottom = a.bottom + b.bottom;
+    sum.left = a.left + b.left;
+    return sum;
+}
+template<class Scalar>
+box_border_width<Scalar>&
+operator+=(box_border_width<Scalar>& a,
+    box_border_width<Scalar> const& b)
+{
+    a.top += b.top;
+    a.right += b.right;
+    a.bottom += b.bottom;
+    a.left += b.left;
+    return a;
+}
+
+// Get the box that results from adding a border to another box.
+template<class Scalar>
+box<2,Scalar>
+add_border(alia::box<2,Scalar> const& box,
+    box_border_width<Scalar> const& border)
+{
+    return box<2,Scalar>(
+        box.corner - make_vector(border.left, border.top),
+        box.size +
+            make_vector(
+                border.left + border.right,
+                border.top + border.bottom));
+}
+// Get the box that results from removing a border from another box.
+template<class Scalar>
+box<2,Scalar>
+remove_border(box<2,Scalar> const& box,
+    box_border_width<Scalar> const& border)
+{
+    return alia::box<2,Scalar>(
+        box.corner + make_vector(border.left, border.top),
+        box.size -
+            make_vector(
+                border.left + border.right,
+                border.top + border.bottom));
+}
 
 // The layout spec supplied by the application must be resolved based on the
 // current proporties of the UI context and the default layout properties of

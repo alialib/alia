@@ -5,8 +5,12 @@
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#endif
+#include <windowsx.h>
+#include <GL\gl.h>
+#include "wglext.h"
+#else
 #include <GL/gl.h>
+#endif
 
 #include "glext.h"
 
@@ -816,5 +820,35 @@ void opengl_surface::draw_filled_box(
         alia::box<2,double>(make_vector(1., 1.), make_vector(1., 1.)),
         color);
 }
+
+#ifdef WIN32
+
+static bool is_wgl_extension_supported(char const* extension_name)
+{
+    PFNWGLGETEXTENSIONSSTRINGEXTPROC _wglGetExtensionsStringEXT =
+        (PFNWGLGETEXTENSIONSSTRINGEXTPROC)
+        wglGetProcAddress("wglGetExtensionsStringEXT");
+
+    if (_wglGetExtensionsStringEXT)
+    {
+        return alia::is_opengl_extension_in_list(
+            _wglGetExtensionsStringEXT(), extension_name);
+    }
+    else
+        return false;
+}
+
+void disable_vsync()
+{
+    if (is_wgl_extension_supported("WGL_EXT_swap_control"))
+    {
+        PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT =
+            (PFNWGLSWAPINTERVALEXTPROC)
+            wglGetProcAddress("wglSwapIntervalEXT");
+        wglSwapIntervalEXT(0);
+    }
+}
+
+#endif
 
 }

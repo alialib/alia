@@ -4,25 +4,6 @@
 
 namespace alia {
 
-static void on_ui_style_change(ui_system& system)
-{
-    inc_version(system.style->id);
-}
-
-float get_text_magnification(ui_system& system)
-{
-    return system.style->text_magnification;
-}
-
-void set_text_magnification(ui_system& system, float magnification)
-{
-    if (system.style->text_magnification != magnification)
-    {
-        on_ui_style_change(system);
-        system.style->text_magnification = magnification;
-    }
-}
-
 struct initial_styling_data
 {
     owned_id id;
@@ -218,7 +199,7 @@ static routable_widget_id get_mouse_target(ui_system& ui)
 void refresh_ui(ui_system& ui)
 {
     refresh_event e;
-    issue_event(ui, e, false);
+    issue_event(ui, e);
 
     resolve_layout(ui.layout, layout_vector(ui.surface_size));
 }
@@ -227,6 +208,8 @@ void update_ui(ui_system& ui, vector<2,unsigned> const& size,
     ui_time_type millisecond_tick_count, mouse_cursor* current_cursor)
 {
     ui.millisecond_tick_count = millisecond_tick_count;
+
+    ui.next_update = none;
 
     // If the surface changes size, that could invalidate popup positioning,
     // so close any active popups.
@@ -240,23 +223,25 @@ void update_ui(ui_system& ui, vector<2,unsigned> const& size,
 
     // Once layout has been resolved, we can honor requests to make a
     // particular widget visible.
-    widget_visibility_request& request = ui.pending_visibility_request;
-    if (is_valid(request.widget))
+    for (std::vector<widget_visibility_request>::const_iterator
+        i = ui.pending_visibility_requests.begin();
+        i != ui.pending_visibility_requests.end(); ++i)
     {
-        make_widget_visible_event e(request.widget.id, request.abrupt);
+        make_widget_visible_event e(*i);
         if (is_valid(ui.overlay_id))
         {
             e.category = OVERLAY_CATEGORY;
             e.type = OVERLAY_MAKE_WIDGET_VISIBLE_EVENT;
         }
-        issue_targeted_event(ui, e, request.widget);
-        request.widget = null_widget_id;
+        issue_targeted_event(ui, e, i->widget);
     }
+    ui.pending_visibility_requests.clear();
 
     routable_widget_id previous_mouse_target = get_mouse_target(ui);
 
     mouse_cursor cursor = DEFAULT_CURSOR;
 
+    // Determine which widget is under the mouse cursor.
     if (ui.input.mouse_inside_window)
     {
         bool overlay_hot = false;
@@ -284,6 +269,10 @@ void update_ui(ui_system& ui, vector<2,unsigned> const& size,
     else
         ui.input.hot_id = null_widget_id;
 
+    // The block above gives us the mouse cursor that's been requested by
+    // the widget under the mouse. However, if there's a different widget
+    // that's active, it should take priority, so we need to see what cursor
+    // it wants.
     if (ui.input.active_id.id && ui.input.active_id.id != ui.input.hot_id.id)
     {
         mouse_cursor_query query(ui.input.active_id.id);
@@ -291,6 +280,12 @@ void update_ui(ui_system& ui, vector<2,unsigned> const& size,
         cursor = query.cursor;
     }
 
+    // Communicate the desired mouse cursor back to the caller.
+    if (current_cursor)
+        *current_cursor = cursor;
+
+    // If there's been a change in which widget the mouse is interacting with,
+    // issue notification events.
     routable_widget_id current_mouse_target = get_mouse_target(ui);
     if (current_mouse_target.id != previous_mouse_target.id)
     {
@@ -306,9 +301,83 @@ void update_ui(ui_system& ui, vector<2,unsigned> const& size,
         // This may have caused state changes, so we need to refresh again.
         refresh_ui(ui);
     }
+}
 
-    if (current_cursor)
-        *current_cursor = cursor;
+bool process_timer_requests(ui_system& ui, ui_time_type now)
+{
+    ++ui.timer_event_counter;
+    bool update_required = false;
+    while (1)
+    {
+        // Ideally, the list would be stored sorted, but it has to be
+        // sorted relative to the current tick count (to handle wrapping),
+        // and the list is generally not very long anyway.
+        ui_timer_request_list::iterator next_event =
+            ui.timer_requests.end();
+        for (ui_timer_request_list::iterator
+            i = ui.timer_requests.begin();
+            i != ui.timer_requests.end(); ++i)
+        {
+            if (i->frame_issued != ui.timer_event_counter &&
+                int(now - i->trigger_time) >= 0 &&
+                (next_event == ui.timer_requests.end() ||
+                int(next_event->trigger_time - i->trigger_time) >= 0))
+            {
+                next_event = i;
+            }
+        }
+        if (next_event == ui.timer_requests.end())
+            break;
+
+        update_required = true;
+
+        ui_timer_request request = *next_event;
+        ui.timer_requests.erase(next_event);
+
+        {
+            timer_event e(request.id.id, request.trigger_time, now);
+            issue_targeted_event(ui, e, request.id);
+        }
+
+        refresh_ui(ui);
+    }
+    if (ui.next_update && int(now - get(ui.next_update)) >= 0)
+        update_required = true;
+    return update_required;
+}
+
+bool has_timer_requests(ui_system& ui)
+{
+    return ui.next_update || !ui.timer_requests.empty();
+}
+
+optional<ui_time_type>
+get_time_until_next_update(ui_system& ui, ui_time_type now)
+{
+    optional<ui_time_type> time_remaining;
+
+    ui_timer_request_list::iterator next_event =
+        ui.timer_requests.end();
+    for (ui_timer_request_list::iterator
+        i = ui.timer_requests.begin();
+        i != ui.timer_requests.end(); ++i)
+    {
+        if (next_event == ui.timer_requests.end() ||
+            int(next_event->trigger_time - i->trigger_time) >= 0)
+        {
+            next_event = i;
+        }
+    }
+    if (next_event != ui.timer_requests.end())
+        time_remaining = next_event->trigger_time - now;
+
+    if (ui.next_update)
+    {
+        if (!time_remaining || get(ui.next_update) < get(time_remaining))
+            time_remaining = get(ui.next_update);
+    }
+
+    return time_remaining;
 }
 
 void process_mouse_move(ui_system& ui, ui_time_type time,
@@ -344,6 +413,7 @@ void process_mouse_release(ui_system& ui, ui_time_type time,
     vector<2,int> const& position, mouse_button button)
 {
     ui.input.mouse_button_state &= ~(1 << int(button));
+    ui.input.mouse_hovering = false;
     mouse_button_event e(MOUSE_RELEASE_EVENT, time, button);
     issue_targeted_event(ui, e, get_mouse_target(ui));
     if (ui.input.mouse_button_state == 0)
@@ -353,6 +423,7 @@ void process_double_click(ui_system& ui, ui_time_type time,
     vector<2,int> const& position, mouse_button button)
 {
     ui.input.mouse_button_state |= 1 << int(button);
+    ui.input.mouse_hovering = false;
     mouse_button_event e(DOUBLE_CLICK_EVENT, time, button);
     issue_targeted_event(ui, e, get_mouse_target(ui));
     ui.input.keyboard_interaction = false;
@@ -383,6 +454,17 @@ void process_mouse_wheel(ui_system& ui, ui_time_type time, float movement)
         issue_targeted_event(ui, event, target);
     }
 }
+void process_mouse_hover(ui_system& ui, ui_time_type time)
+{
+    if (ui.input.mouse_button_state != 0)
+        return;
+    ui.input.mouse_hovering = true;
+    if (is_valid(ui.input.hot_id))
+    {
+        mouse_notification_event event(MOUSE_HOVER_EVENT);
+        issue_targeted_event(ui, event, ui.input.hot_id);
+    }
+}
 
 bool process_text_input(ui_system& ui, ui_time_type time,
     utf8_string const& text)
@@ -408,6 +490,19 @@ bool process_key_press(ui_system& ui, ui_time_type time,
     {
         e.type = BACKGROUND_KEY_PRESS_EVENT;
         issue_event(ui, e);
+    }
+    if (!e.acknowledged && info.code == KEY_TAB)
+    {
+        if (info.mods == KMOD_SHIFT)
+        {
+            regress_focus(ui);
+            e.acknowledged = true;
+        }
+        else if (info.mods == 0)
+        {
+            advance_focus(ui);
+            e.acknowledged = true;
+        }
     }
     ui.input.keyboard_interaction = true;
     return e.acknowledged;
@@ -466,6 +561,25 @@ void advance_focus(ui_system& ui)
 void regress_focus(ui_system& ui)
 {
     set_focus(ui, get_focus_predecessor(ui, ui.input.focused_id.id));
+}
+
+static void on_ui_style_change(ui_system& system)
+{
+    inc_version(system.style->id);
+}
+
+float get_magnification_factor(ui_system& system)
+{
+    return system.style->magnification;
+}
+
+void set_magnification_factor(ui_system& system, float magnification)
+{
+    if (system.style->magnification != magnification)
+    {
+        on_ui_style_change(system);
+        system.style->magnification = magnification;
+    }
 }
 
 }

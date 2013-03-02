@@ -254,71 +254,25 @@ resolve_relative_size(layout_traversal& traversal, relative_size const& size,
         traversal.ppi, *traversal.style_info, size, full_size);
 }
 
-bool operator==(resolved_box_border_width const& a,
-    resolved_box_border_width const& b)
-{
-    return a.top == b.top && a.right == b.right &&
-        a.bottom == b.bottom && a.left == b.left;
-}
-bool operator!=(resolved_box_border_width const& a,
-    resolved_box_border_width const& b)
-{
-    return !(a == b);
-}
-
-resolved_box_border_width
-operator+(resolved_box_border_width const& a,
-    resolved_box_border_width const& b)
-{
-    resolved_box_border_width sum;
-    sum.top = a.top + b.top;
-    sum.right = a.right + b.right;
-    sum.bottom = a.bottom + b.bottom;
-    sum.left = a.left + b.left;
-    return sum;
-}
-resolved_box_border_width&
-operator+=(resolved_box_border_width& a,
-    resolved_box_border_width const& b)
-{
-    a.top += b.top;
-    a.right += b.right;
-    a.bottom += b.bottom;
-    a.left += b.left;
-    return a;
-}
-
-layout_box add_border(layout_box const& box,
-    resolved_box_border_width const& border)
-{
-    return layout_box(
-        box.corner - make_layout_vector(border.left, border.top),
-        box.size +
-            make_layout_vector(
-                border.left + border.right,
-                border.top + border.bottom));
-}
-
-layout_box remove_border(layout_box const& box,
-    resolved_box_border_width const& border)
-{
-    return layout_box(
-        box.corner + make_layout_vector(border.left, border.top),
-        box.size -
-            make_layout_vector(
-                border.left + border.right,
-                border.top + border.bottom));
-}
-
-resolved_box_border_width
+box_border_width<float>
 resolve_box_border_width(layout_traversal& traversal,
-    box_border_width const& border)
+    box_border_width<absolute_length> const& border)
 {
-    return resolved_box_border_width(
-        as_layout_size(resolve_absolute_length(traversal, 1, border.top)),
-        as_layout_size(resolve_absolute_length(traversal, 0, border.right)),
-        as_layout_size(resolve_absolute_length(traversal, 1, border.bottom)),
-        as_layout_size(resolve_absolute_length(traversal, 0, border.left)));
+    return box_border_width<float>(
+        resolve_absolute_length(traversal, 1, border.top),
+        resolve_absolute_length(traversal, 0, border.right),
+        resolve_absolute_length(traversal, 1, border.bottom),
+        resolve_absolute_length(traversal, 0, border.left));
+}
+
+box_border_width<layout_scalar>
+as_layout_size(box_border_width<float> const& border)
+{
+    return box_border_width<layout_scalar>(
+        as_layout_size(border.top),
+        as_layout_size(border.right),
+        as_layout_size(border.bottom),
+        as_layout_size(border.left));
 }
 
 bool operator==(resolved_layout_spec const& a, resolved_layout_spec const& b)

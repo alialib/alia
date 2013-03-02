@@ -28,7 +28,8 @@ struct default_drop_down_button_renderer : drop_down_button_renderer
         if (cache.needs_rendering())
         {
             box_control_renderer renderer(
-                ctx, cache, "drop-down-button", state);
+                ctx, cache, "drop-down-button",
+                state & ~WIDGET_FOCUSED);
 
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);
@@ -252,8 +253,8 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
     widget_state state = get_button_state(ctx, id_, data.button.input);
 
     container_.begin(ctx, text("control"),
-        add_default_padding(
-            add_default_alignment(layout_spec, LEFT, BASELINE_Y), PADDED),
+        add_default_size(add_default_padding(add_default_alignment(
+            layout_spec, LEFT, BASELINE_Y), PADDED), size(8, 1, EM)),
         PANEL_HORIZONTAL | PANEL_NO_INTERNAL_PADDING, id_, state);
 
     switch (ctx.event->category)
@@ -405,7 +406,7 @@ bool untyped_ddl_item::begin(untyped_drop_down_list& list, bool is_selected)
 
     if (data.make_selection_visible && is_internally_selected)
     {
-        make_widget_visible(ctx, id);
+        make_widget_visible(ctx, id, MAKE_WIDGET_VISIBLE_ABRUPTLY);
         data.make_selection_visible = false;
     }
 

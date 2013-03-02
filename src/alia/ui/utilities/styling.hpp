@@ -269,19 +269,19 @@ resolve_box_corner_sizes(layout_traversal& traversal,
 
 void parse(line_parser& p, box_corner_sizes* spec);
 
-void parse(line_parser& p, box_border_width* spec);
+void parse(line_parser& p, box_border_width<absolute_length>* spec);
 
-box_border_width
+box_border_width<absolute_length>
 get_padding_property(
     style_search_path const* path,
     absolute_length const& default_width = absolute_length(0, PIXELS));
 
-box_border_width
+box_border_width<absolute_length>
 get_margin_property(
     style_search_path const* path,
     absolute_length const& default_width = absolute_length(0, PIXELS));
 
-box_border_width
+box_border_width<absolute_length>
 get_border_width_property(
     style_search_path const* path,
     absolute_length const& default_width = absolute_length(0, PIXELS));

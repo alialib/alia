@@ -48,19 +48,10 @@ void overlay::begin(ui_context& ctx, widget_id id)
         }
         break;
 
-     case OVERLAY_JUMP_TO_WIDGET_EVENT:
-        if (is_overlay_active(ctx, id))
-        {
-            ctx.event->category = REGION_CATEGORY;
-            ctx.event->type = JUMP_TO_WIDGET_EVENT;
-        }
-        break;
-
      case RENDER_EVENT:
      case MOUSE_HIT_TEST_EVENT:
      case WHEEL_HIT_TEST_EVENT:
      case MAKE_WIDGET_VISIBLE_EVENT:
-     case JUMP_TO_WIDGET_EVENT:
         ctx.event->category = NO_CATEGORY;
         ctx.event->type = NO_EVENT;
         break;

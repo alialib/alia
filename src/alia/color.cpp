@@ -36,39 +36,12 @@ bool operator<(rgba8 const& a, rgba8 const& b)
     return false;
 }
 
-rgb8 blend(rgb8 const& a, rgb8 const& b, float f)
+rgb8 interpolate(rgb8 const& a, rgb8 const& b, double f)
 {
     rgb8 r;
     r.r = uint8_t(a.r * f + b.r * (1 - f) + 0.5);
     r.g = uint8_t(a.g * f + b.g * (1 - f) + 0.5);
     r.b = uint8_t(a.b * f + b.b * (1 - f) + 0.5);
-    return r;
-}
-rgb8 blend(rgb8 const& a, rgb8 const& b, double f)
-{
-    rgb8 r;
-    r.r = uint8_t(a.r * f + b.r * (1 - f) + 0.5);
-    r.g = uint8_t(a.g * f + b.g * (1 - f) + 0.5);
-    r.b = uint8_t(a.b * f + b.b * (1 - f) + 0.5);
-    return r;
-}
-
-rgba8 blend(rgba8 const& a, rgba8 const& b, float f)
-{
-    rgba8 r;
-    r.r = uint8_t(a.r * f + b.r * (1 - f) + 0.5);
-    r.g = uint8_t(a.g * f + b.g * (1 - f) + 0.5);
-    r.b = uint8_t(a.b * f + b.b * (1 - f) + 0.5);
-    r.a = uint8_t(a.a * f + b.a * (1 - f) + 0.5);
-    return r;
-}
-rgba8 blend(rgba8 const& a, rgba8 const& b, double f)
-{
-    rgba8 r;
-    r.r = uint8_t(a.r * f + b.r * (1 - f) + 0.5);
-    r.g = uint8_t(a.g * f + b.g * (1 - f) + 0.5);
-    r.b = uint8_t(a.b * f + b.b * (1 - f) + 0.5);
-    r.a = uint8_t(a.a * f + b.a * (1 - f) + 0.5);
     return r;
 }
 
@@ -79,6 +52,16 @@ rgba8 apply_alpha(rgb8 color, uint8_t alpha)
         multiply_uint8_channels(color.g, alpha),
         multiply_uint8_channels(color.b, alpha),
         alpha);
+}
+
+rgba8 interpolate(rgba8 const& a, rgba8 const& b, double f)
+{
+    rgba8 r;
+    r.r = uint8_t(a.r * f + b.r * (1 - f) + 0.5);
+    r.g = uint8_t(a.g * f + b.g * (1 - f) + 0.5);
+    r.b = uint8_t(a.b * f + b.b * (1 - f) + 0.5);
+    r.a = uint8_t(a.a * f + b.a * (1 - f) + 0.5);
+    return r;
 }
 
 std::ostream& operator<<(std::ostream& s, rgb8 const& c)

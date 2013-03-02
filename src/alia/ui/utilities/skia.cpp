@@ -136,8 +136,9 @@ float get_focus_border_width(ui_context& ctx)
 
 void setup_focus_drawing(ui_context& ctx, SkPaint& paint)
 {
-    paint.setStrokeWidth(SkFloatToScalar(get_focus_border_width(ctx)));
     paint.setStyle(SkPaint::kStroke_Style);
+    paint.setStrokeWidth(SkFloatToScalar(get_focus_border_width(ctx)));
+    paint.setStrokeCap(SkPaint::kSquare_Cap);
     set_color(paint, get_color_property(ctx, "focus-color"));
 }
 
@@ -237,6 +238,24 @@ void draw_rect(SkCanvas& canvas, SkPaint& paint,
         rect.fLeft, rect.fBottom - r[3][1]);
     path.lineTo(rect.fLeft, rect.fTop + r[0][1]);
     canvas.drawPath(path, paint);
+}
+
+resolved_box_corner_sizes
+adjust_border_radii_for_border_width(
+    resolved_box_corner_sizes const& radii,
+    box_border_width<float> const& border_width)
+{
+    // Not sure if this is actually correct.
+    resolved_box_corner_sizes adjusted;
+    adjusted.corners[0][0] = radii.corners[0][0] - border_width.left;
+    adjusted.corners[0][1] = radii.corners[0][1] - border_width.top;
+    adjusted.corners[1][0] = radii.corners[1][0] - border_width.right;
+    adjusted.corners[1][1] = radii.corners[1][1] - border_width.top;
+    adjusted.corners[2][0] = radii.corners[2][0] - border_width.right;
+    adjusted.corners[2][1] = radii.corners[2][1] - border_width.bottom;
+    adjusted.corners[3][0] = radii.corners[3][0] - border_width.left;
+    adjusted.corners[3][1] = radii.corners[3][1] - border_width.bottom;
+    return adjusted;
 }
 
 }

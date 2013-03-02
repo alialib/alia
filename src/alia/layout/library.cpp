@@ -597,6 +597,64 @@ void vertical_flow_layout::concrete_begin(
     ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(vertical_flow_layout_logic)
 }
 
+// CLIP EVASION LAYOUT
+
+ALIA_DECLARE_LAYOUT_LOGIC(clip_evasion_layout_logic)
+
+calculated_layout_requirements
+clip_evasion_layout_logic::get_horizontal_requirements(
+    layout_calculation_context& ctx,
+    layout_node* children)
+{
+    return fold_horizontal_child_requirements(ctx, children);
+}
+
+calculated_layout_requirements
+clip_evasion_layout_logic::get_vertical_requirements(
+    layout_calculation_context& ctx,
+    layout_node* children,
+    layout_scalar assigned_width)
+{
+    return fold_vertical_child_requirements(ctx, children, assigned_width);
+}
+
+void clip_evasion_layout_logic::set_relative_assignment(
+    layout_calculation_context& ctx,
+    layout_node* children,
+    layout_vector const& assigned_size,
+    layout_scalar assigned_baseline_y)
+{
+    assign_identical_child_regions(ctx, children, assigned_size,
+        assigned_baseline_y);
+}
+
+void clip_evasion_layout::concrete_begin(
+    layout_traversal& traversal, layout const& layout_spec)
+{
+    clip_evasion_layout_logic* logic;
+    get_simple_layout_container(traversal, &container_, &logic, layout_spec);
+    slc_.begin(traversal, container_);
+
+    if (!traversal.is_refresh_pass)
+    {
+        // TODO: This doesn't take into account how big the child actually is.
+        vector<2,double> corner_on_surface =
+            transform(
+                traversal.geometry->transformation_matrix,
+                vector<2,double>(
+                    get_assignment(container_->cacher).region.corner));
+        vector<2,double> offset;
+        for (unsigned i = 0; i != 2; ++i)
+        {
+            offset[i] = (std::max)(0.,
+                traversal.geometry->clip_region.corner[i] -
+                    corner_on_surface[i]);
+        }
+        transform_.begin(*traversal.geometry);
+        transform_.set(translation_matrix(offset));
+    }
+}
+
 // CLAMPED LAYOUT
 
 struct clamped_layout_logic : layout_logic
@@ -622,7 +680,9 @@ clamped_layout_logic::get_horizontal_requirements(
     layout_calculation_context& ctx,
     layout_node* children)
 {
-    return fold_horizontal_child_requirements(ctx, children);
+    calculated_layout_requirements requirements =
+        fold_horizontal_child_requirements(ctx, children);
+    return requirements;
 }
 
 calculated_layout_requirements
@@ -631,9 +691,12 @@ clamped_layout_logic::get_vertical_requirements(
     layout_node* children,
     layout_scalar assigned_width)
 {
+    calculated_layout_requirements requirements =
+        fold_horizontal_child_requirements(ctx, children);
     layout_scalar clamped_width =
-        this->max_size[0] < 0 ? assigned_width :
-            (std::min)(assigned_width, this->max_size[0]);
+        (std::max)(requirements.size,
+            this->max_size[0] <= 0 ? assigned_width :
+                (std::min)(assigned_width, this->max_size[0]));
     return fold_vertical_child_requirements(ctx, children, clamped_width);
 }
 
@@ -646,7 +709,7 @@ void clamped_layout_logic::set_relative_assignment(
     layout_vector clamped_size;
     for (int i = 0; i != 2; ++i)
     {
-        clamped_size[i] = this->max_size[i] < 0 ? assigned_size[i] :
+        clamped_size[i] = this->max_size[i] <= 0 ? assigned_size[i] :
             (std::min)(assigned_size[i], this->max_size[i]);
     }
     for (layout_node* i = children; i; i = i->next)
@@ -692,7 +755,7 @@ struct bordered_layout_logic : layout_logic
         layout_vector const& assigned_size,
         layout_scalar assigned_baseline_y);
 
-    resolved_box_border_width border;
+    box_border_width<layout_scalar> border;
 };
 
 calculated_layout_requirements
@@ -740,7 +803,7 @@ void bordered_layout_logic::set_relative_assignment(
 }
 
 void bordered_layout::concrete_begin(
-    layout_traversal& traversal, box_border_width border,
+    layout_traversal& traversal, box_border_width<absolute_length> border,
     layout const& layout_spec)
 {
     bordered_layout_logic* logic;
@@ -750,7 +813,7 @@ void bordered_layout::concrete_begin(
     if (traversal.is_refresh_pass)
     {
         detect_layout_change(traversal, &logic->border,
-            resolve_box_border_width(traversal, border));
+            as_layout_size(resolve_box_border_width(traversal, border)));
     }
 }
 

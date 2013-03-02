@@ -84,6 +84,15 @@ bool detect_explicit_drag_release(ui_context& ctx, widget_id id,
 // The return value is positive for upward movement.
 bool detect_wheel_movement(ui_context& ctx, float* movement, widget_id id);
 
+// Detect if the mouse is hovering over the given widget.
+bool detect_mouse_hover(ui_context& ctx, widget_id id);
+
+// Detect if the mouse is hovering over the given widget, and if so, record
+// the given string as help/descriptive text that should be displayed for the
+// widget.
+void do_mouse_hover_text(ui_context& ctx, widget_id id,
+    getter<string> const& text);
+
 }
 
 #endif

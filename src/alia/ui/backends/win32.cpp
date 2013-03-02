@@ -5,304 +5,12 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <windowsx.h>
-#include <gl\gl.h>
+#include <GL\gl.h>
 #include "wglext.h"
 
 #include <alia/ui/utilities/styling.hpp>
 
-alia::style_tree alia_style()
-{
-    alia::style_tree node_0;
-    node_0.properties["default-padding"] = "4px";
-    node_0.properties["disable-padding"] = "true";
-    node_0.properties["focus-color"] = "#d8bd67";
-    node_0.properties["font-famliy"] = "arial";
-    node_0.properties["font-size"] = "13";
-    node_0.properties["selected-background"] = "#3297fd";
-    node_0.properties["selected-color"] = "#ffffff";
-    node_0.properties["separator-color"] = "#666666";
-    alia::style_tree node_1;
-    node_1.properties["background"] = "#e4e4e4";
-    node_1.properties["color"] = "#101010";
-    node_0.substyles["accordion-header"] = node_1;
-    alia::style_tree node_2;
-    node_2.properties["background"] = "#c4c4c4";
-    node_2.properties["color"] = "#101010";
-    node_0.substyles["accordion-header.depressed"] = node_2;
-    alia::style_tree node_3;
-    node_3.properties["background"] = "#d4d4d4";
-    node_3.properties["color"] = "#101010";
-    node_0.substyles["accordion-header.hot"] = node_3;
-    alia::style_tree node_4;
-    node_4.properties["border-radius"] = "15px 45px 15px 45px";
-    node_4.properties["size"] = "65px 65px";
-    node_0.substyles["acheck-box"] = node_4;
-    alia::style_tree node_5;
-    node_5.properties["background"] = "#d4d4d4";
-    node_5.properties["color"] = "#101010";
-    node_0.substyles["astroid"] = node_5;
-    alia::style_tree node_6;
-    node_6.properties["background"] = "#fff";
-    node_6.properties["color"] = "#2c2c2c";
-    node_0.substyles["background"] = node_6;
-    alia::style_tree node_7;
-    node_7.properties["background"] = "#0060cc";
-    node_7.properties["border-radius"] = "4px";
-    node_7.properties["color"] = "#fff";
-    node_0.substyles["button"] = node_7;
-    alia::style_tree node_8;
-    node_8.properties["background"] = "#fff";
-    node_8.properties["color"] = "#2c2c2c";
-    node_8.properties["padding"] = "8px 8px 8px 0px";
-    node_0.substyles["content"] = node_8;
-    alia::style_tree node_9;
-    node_9.properties["background"] = "#e4e4e4";
-    node_9.properties["border-color"] = "#c4c4c4";
-    node_9.properties["color"] = "#101010";
-    node_9.properties["size"] = "16px 16px";
-    node_0.substyles["control"] = node_9;
-    alia::style_tree node_10;
-    node_10.properties["background"] = "#c4c4c4";
-    node_10.properties["color"] = "#101010";
-    node_0.substyles["control.depressed"] = node_10;
-    alia::style_tree node_11;
-    node_11.properties["background"] = "#d4d4d4";
-    node_11.properties["color"] = "#101010";
-    node_0.substyles["control.hot"] = node_11;
-    alia::style_tree node_12;
-    node_12.properties["background"] = "#f7f7f9";
-    node_12.properties["border-color"] = "#e9e9e9";
-    node_12.properties["border-radius"] = "4px";
-    node_12.properties["border-width"] = "1px";
-    node_0.substyles["demo"] = node_12;
-    alia::style_tree node_13;
-    node_13.properties["border-color"] = "#cccccc";
-    node_13.properties["border-width"] = "1px";
-    alia::style_tree node_14;
-    node_14.properties["background"] = "#e4e4e4";
-    node_14.properties["color"] = "#101010";
-    node_14.properties["default-padding"] = "4px";
-    node_13.substyles["item"] = node_14;
-    alia::style_tree node_15;
-    node_15.properties["background"] = "#c4c4c4";
-    node_13.substyles["item.depressed"] = node_15;
-    alia::style_tree node_16;
-    node_16.properties["background"] = "#d4d4d4";
-    node_13.substyles["item.hot"] = node_16;
-    alia::style_tree node_17;
-    node_17.properties["background"] = "#404040";
-    node_17.properties["color"] = "#dddddd";
-    node_13.substyles["item.selected"] = node_17;
-    node_0.substyles["drop-down-list"] = node_13;
-    alia::style_tree node_18;
-    node_18.properties["background"] = "#f5f5f5";
-    node_18.properties["border-color"] = "#e5e5e5";
-    node_18.properties["border-width"] = "1px 0px 0px 0px";
-    node_18.properties["color"] = "#333";
-    alia::style_tree node_19;
-    node_19.properties["color"] = "#559";
-    node_18.substyles["link"] = node_19;
-    alia::style_tree node_20;
-    node_20.properties["color"] = "#113";
-    node_20.properties["font-underline"] = "true";
-    node_18.substyles["link.depressed"] = node_20;
-    alia::style_tree node_21;
-    node_21.properties["color"] = "#226";
-    node_21.properties["font-underline"] = "true";
-    node_18.substyles["link.hot"] = node_21;
-    node_0.substyles["footer"] = node_18;
-    alia::style_tree node_22;
-    node_22.properties["font-bold"] = "true";
-    node_22.properties["font-family"] = "helvetica";
-    node_22.properties["font-size"] = "24";
-    node_0.substyles["h1"] = node_22;
-    alia::style_tree node_23;
-    node_23.properties["font-bold"] = "true";
-    node_23.properties["font-family"] = "helvetica";
-    node_23.properties["font-size"] = "16";
-    node_0.substyles["h2"] = node_23;
-    alia::style_tree node_24;
-    node_24.properties["font-bold"] = "true";
-    node_24.properties["font-family"] = "helvetica";
-    node_24.properties["font-size"] = "13";
-    node_0.substyles["h3"] = node_24;
-    alia::style_tree node_25;
-    node_25.properties["background"] = "#eee";
-    node_25.properties["border-color"] = "#d8ddd1";
-    node_25.properties["border-width"] = "0px 0px 1px 0px";
-    node_25.properties["color"] = "#333";
-    node_25.properties["default-padding"] = "6px";
-    alia::style_tree node_26;
-    node_26.properties["color"] = "#559";
-    node_25.substyles["link"] = node_26;
-    alia::style_tree node_27;
-    node_27.properties["color"] = "#113";
-    node_27.properties["font-underline"] = "true";
-    node_25.substyles["link.depressed"] = node_27;
-    alia::style_tree node_28;
-    node_28.properties["color"] = "#226";
-    node_28.properties["font-underline"] = "true";
-    node_25.substyles["link.hot"] = node_28;
-    alia::style_tree node_29;
-    node_29.properties["font-bold"] = "true";
-    node_29.properties["font-family"] = "georgia";
-    node_29.properties["font-size"] = "16";
-    node_25.substyles["title"] = node_29;
-    node_0.substyles["header"] = node_25;
-    alia::style_tree node_30;
-    node_30.properties["background"] = "#e4e4e4";
-    node_30.properties["color"] = "#101010";
-    node_0.substyles["item"] = node_30;
-    alia::style_tree node_31;
-    node_31.properties["background"] = "#c4c4c4";
-    node_0.substyles["item.depressed"] = node_31;
-    alia::style_tree node_32;
-    node_32.properties["background"] = "#d4d4d4";
-    node_0.substyles["item.hot"] = node_32;
-    alia::style_tree node_33;
-    node_33.properties["background"] = "#404040";
-    node_33.properties["color"] = "#dddddd";
-    node_0.substyles["item.selected"] = node_33;
-    alia::style_tree node_34;
-    node_34.properties["color"] = "#08c";
-    node_0.substyles["link"] = node_34;
-    alia::style_tree node_35;
-    node_35.properties["color"] = "#003360";
-    node_35.properties["font-underline"] = "true";
-    node_0.substyles["link.depressed"] = node_35;
-    alia::style_tree node_36;
-    node_36.properties["color"] = "#005580";
-    node_36.properties["font-underline"] = "true";
-    node_0.substyles["link.hot"] = node_36;
-    alia::style_tree node_37;
-    node_37.properties["background"] = "#f5f5f5";
-    node_37.properties["border-color"] = "#e9e9e9";
-    node_37.properties["border-radius"] = "4px";
-    node_37.properties["border-width"] = "1px";
-    node_37.properties["margin"] = "8px 0px 8px 8px";
-    alia::style_tree node_38;
-    node_38.properties["color"] = "#333";
-    node_38.properties["font-bold"] = "true";
-    node_38.properties["font-size"] = "14";
-    node_37.substyles["accordion-header"] = node_38;
-    alia::style_tree node_39;
-    node_39.properties["background"] = "#e4e4e4";
-    node_37.substyles["accordion-header.depressed"] = node_39;
-    alia::style_tree node_40;
-    node_40.properties["background"] = "#eaeaea";
-    node_37.substyles["accordion-header.hot"] = node_40;
-    alia::style_tree node_41;
-    node_41.properties["background"] = "#08c";
-    node_41.properties["color"] = "#fff";
-    node_37.substyles["accordion-header.selected"] = node_41;
-    alia::style_tree node_42;
-    node_42.properties["color"] = "#559";
-    node_42.properties["default-padding"] = "4px 16px";
-    node_37.substyles["link"] = node_42;
-    alia::style_tree node_43;
-    node_43.properties["color"] = "#113";
-    node_43.properties["font-underline"] = "true";
-    node_37.substyles["link.depressed"] = node_43;
-    alia::style_tree node_44;
-    node_44.properties["color"] = "#226";
-    node_44.properties["font-underline"] = "true";
-    node_37.substyles["link.hot"] = node_44;
-    alia::style_tree node_45;
-    node_45.properties["font-bold"] = "true";
-    node_45.properties["font-size"] = "17";
-    node_37.substyles["title"] = node_45;
-    node_0.substyles["nav"] = node_37;
-    alia::style_tree node_46;
-    node_46.properties["disable-padding"] = "true";
-    node_0.substyles["no-padding"] = node_46;
-    alia::style_tree node_47;
-    node_47.properties["background"] = "#00000000";
-    node_0.substyles["node-expander.normal"] = node_47;
-    alia::style_tree node_48;
-    node_48.properties["border-radius"] = "50%";
-    node_0.substyles["radio-button"] = node_48;
-    alia::style_tree node_49;
-    node_49.properties["background"] = "#666666";
-    node_49.properties["color"] = "#cccccc";
-    node_0.substyles["rulers"] = node_49;
-    alia::style_tree node_50;
-    node_50.properties["color"] = "#555";
-    node_0.substyles["scrollbar"] = node_50;
-    alia::style_tree node_51;
-    node_51.properties["color"] = "#555";
-    node_0.substyles["scrollbar.depressed"] = node_51;
-    alia::style_tree node_52;
-    node_52.properties["color"] = "#555";
-    node_0.substyles["scrollbar.hot"] = node_52;
-    alia::style_tree node_53;
-    node_53.properties["thumb-color"] = "#333333";
-    node_53.properties["track-color"] = "#777777";
-    node_0.substyles["slider"] = node_53;
-    alia::style_tree node_54;
-    node_54.properties["thumb-color"] = "#111111";
-    node_0.substyles["slider.depressed"] = node_54;
-    alia::style_tree node_55;
-    node_55.properties["thumb-color"] = "#222222";
-    node_0.substyles["slider.hot"] = node_55;
-    alia::style_tree node_56;
-    node_56.properties["add-background-tab"] = "true";
-    node_56.properties["default-padding"] = "7px 4px";
-    alia::style_tree node_57;
-    node_57.properties["border-color"] = "#ddd";
-    node_57.properties["border-radius"] = "4px 4px 0px 0px";
-    node_57.properties["border-width"] = "0px 0px 1px 0px";
-    node_57.properties["color"] = "#08c";
-    node_57.properties["default-padding"] = "4px 5px";
-    node_57.properties["padding"] = "1px 1px 0px 1px";
-    node_56.substyles["tab"] = node_57;
-    alia::style_tree node_58;
-    node_58.properties["background"] = "#ddd";
-    node_56.substyles["tab.depressed"] = node_58;
-    alia::style_tree node_59;
-    node_59.properties["background"] = "#eee";
-    node_56.substyles["tab.hot"] = node_59;
-    alia::style_tree node_60;
-    node_60.properties["border-width"] = "1px 1px 0px 1px";
-    node_60.properties["color"] = "#2c2c2c";
-    node_60.properties["padding"] = "0px 0px 1px 0px";
-    node_56.substyles["tab.selected"] = node_60;
-    node_0.substyles["tab-strip"] = node_56;
-    alia::style_tree node_61;
-    alia::style_tree node_62;
-    node_62.properties["background"] = "#f7f7f9";
-    node_62.properties["border-color"] = "#ececf0";
-    node_62.properties["color"] = "#48484c";
-    node_62.properties["default-padding"] = "1px 6px";
-    node_62.properties["font-family"] = "Consolas";
-    node_62.properties["font-size"] = "12";
-    alia::style_tree node_63;
-    node_63.properties["background"] = "#fbfbfc";
-    node_63.properties["border-right-width"] = "1px";
-    node_63.properties["color"] = "#bebec5";
-    node_63.properties["font-size"] = "12";
-    node_62.substyles["first-column"] = node_63;
-    alia::style_tree node_64;
-    node_64.properties["border-top-width"] = "0px";
-    node_62.substyles["first-row"] = node_64;
-    node_61.substyles["cell"] = node_62;
-    node_0.substyles["table"] = node_61;
-    alia::style_tree node_65;
-    node_65.properties["font-bold"] = "true";
-    node_65.properties["font-family"] = "arial";
-    node_65.properties["font-size"] = "15";
-    node_0.substyles["tree-heading"] = node_65;
-    return node_0;
-}
-
 namespace alia {
-
-struct timer_request
-{
-    ui_time_type trigger_time;
-    routable_widget_id id;
-    counter_type frame_issued;
-};
-typedef std::vector<timer_request> timer_request_list;
 
 struct native_window::impl_data
 {
@@ -320,18 +28,11 @@ struct native_window::impl_data
     // If the window is full screen, this stores the normal placement of it.
     WINDOWPLACEMENT normal_placement;
 
-    timer_request_list timer_requests;
-    // This prevents timer requests from being serviced in the same frame that
-    // they're requested and thus throwing the event handler into a loop.
-    counter_type timer_event_counter;
-
-    optional<ui_time_type> next_update;
-
     bool mouse_captured;
 
     impl_data()
       : dc(0), rc(0), hwnd(0), hinstance(0), is_full_screen(false),
-        timer_event_counter(0), mouse_captured(false)
+        mouse_captured(false)
     {}
 };
 
@@ -360,8 +61,6 @@ struct win32_opengl_surface : opengl_surface
         }
         return ppi_;
     }
-    void request_refresh(bool greedy);
-    void request_timer_event(routable_widget_id const& id, unsigned ms);
     string get_clipboard_text();
     void set_clipboard_text(string const& text);
  private:
@@ -394,7 +93,11 @@ static void set_cursor(mouse_cursor cursor)
      case NO_ENTRY_CURSOR:
         hcursor = LoadCursor(0, IDC_NO);
         break;
-     case HAND_CURSOR:
+     case POINTING_HAND_CURSOR:
+        hcursor = LoadCursor(0, IDC_HAND);
+        break;
+     case OPEN_HAND_CURSOR:
+        // It seems this is missing from the standard Windows cursor set.
         hcursor = LoadCursor(0, IDC_HAND);
         break;
      case LEFT_RIGHT_ARROW_CURSOR:
@@ -408,32 +111,6 @@ static void set_cursor(mouse_cursor cursor)
         break;
     }
     SetCursor(hcursor);
-}
-
-static bool is_wgl_extension_supported(char const* extension_name)
-{
-    PFNWGLGETEXTENSIONSSTRINGEXTPROC _wglGetExtensionsStringEXT =
-        (PFNWGLGETEXTENSIONSSTRINGEXTPROC)
-        wglGetProcAddress("wglGetExtensionsStringEXT");
-
-    if (_wglGetExtensionsStringEXT)
-    {
-        return alia::is_opengl_extension_in_list(
-            _wglGetExtensionsStringEXT(), extension_name);
-    }
-    else
-        return false;
-}
-
-static void disable_vsync()
-{
-    if (is_wgl_extension_supported("WGL_EXT_swap_control"))
-    {
-        PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT =
-            (PFNWGLSWAPINTERVALEXTPROC)
-            wglGetProcAddress("wglSwapIntervalEXT");
-        wglSwapIntervalEXT(0);
-    }
 }
 
 static void paint_window(native_window::impl_data& impl)
@@ -451,12 +128,7 @@ static void paint_window(native_window::impl_data& impl)
 
 static key_code translate_key_code(WPARAM code)
 {
-    // numbers
-    if (code >= 0x30 && code <= 0x39)
-    {
-        return key_code(code);
-    }
-    // letters
+    // Translate letters to their lowercase equivalents.
     if (code >= 0x41 && code <= 0x5a)
     {
         return key_code(code + 0x20);
@@ -588,6 +260,10 @@ static key_code translate_key_code(WPARAM code)
         return KEY_F24;
     }
 
+    // Return ASCII characters untranslated.
+    if (code < 0x80)
+        return key_code(code);
+
     return KEY_UNKNOWN;
 }
 
@@ -646,8 +322,6 @@ static void update_window(HWND hwnd)
 {
     native_window::impl_data& impl = get_window_data(hwnd);
 
-    impl.next_update = none;
-
     RECT rect;
     GetClientRect(impl.hwnd, &rect);
 
@@ -703,51 +377,6 @@ static void on_mouse_button_release(HWND hwnd)
         ReleaseCapture();
         get_window_data(hwnd).mouse_captured = false;
     }
-}
-
-static bool process_timer_requests(
-    native_window::impl_data& impl, unsigned now)
-{
-    ++impl.timer_event_counter;
-    bool processed_any = false;
-    if (!impl.timer_requests.empty())
-    {
-        while (1)
-        {
-            // Ideally, the list would be stored sorted, but it has to be
-            // sorted relative to the current tick count (to handle wrapping),
-            // and the list is generally not very long anyway.
-            timer_request_list::iterator next_event =
-                impl.timer_requests.end();
-            for (timer_request_list::iterator
-                i = impl.timer_requests.begin();
-                i != impl.timer_requests.end(); ++i)
-            {
-                if (i->frame_issued != impl.timer_event_counter &&
-                    int(now - i->trigger_time) >= 0 &&
-                    (next_event == impl.timer_requests.end() ||
-                    int(next_event->trigger_time - i->trigger_time) >= 0))
-                {
-                    next_event = i;
-                }
-            }
-            if (next_event == impl.timer_requests.end())
-                break;
-
-            processed_any = true;
-
-            timer_request request = *next_event;
-            impl.timer_requests.erase(next_event);
-
-            {
-                timer_event e(request.id.id, request.trigger_time, now);
-                issue_targeted_event(impl.ui, e, request.id);
-            }
-
-            update_window(impl.hwnd);
-        }
-    }
-    return processed_any;
 }
 
 static inline ui_time_type get_time(HWND hwnd)
@@ -810,25 +439,6 @@ LRESULT CALLBACK wndproc(
         bool acknowledged =
             process_key_press(impl.ui, get_time(impl),
                 get_key_event_info(wparam));
-        if (!acknowledged)
-        {
-            switch (wparam)
-            {
-             case VK_TAB:
-                if ((GetKeyState(VK_CONTROL) & 0x8000) == 0 &&
-                    (GetKeyState(VK_MENU) & 0x8000) == 0 &&
-                    (GetKeyState(VK_LWIN) & 0x8000) == 0 &&
-                    (GetKeyState(VK_RWIN) & 0x8000) == 0)
-                {
-                    if ((GetKeyState(VK_SHIFT) & 0x8000) != 0)
-                        regress_focus(impl.ui);
-                    else
-                        advance_focus(impl.ui);
-                    acknowledged = true;
-                }
-                break;
-            }
-        }
         update_window(hwnd);
         if (acknowledged)
             return 0;
@@ -867,6 +477,17 @@ LRESULT CALLBACK wndproc(
             process_mouse_move(get_window_data(hwnd).ui, get_time(hwnd),
                 mouse_position);
         }
+        reset_mouse_tracking(hwnd);
+        update_window(hwnd);
+        return 0;
+      }
+     case WM_MOUSEHOVER:
+      {
+        vector<2,int> mouse_position =
+            make_vector<int>(GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam));
+        ui_time_type now = get_time(hwnd);
+        process_mouse_move(get_window_data(hwnd).ui, now, mouse_position);
+        process_mouse_hover(get_window_data(hwnd).ui, now);
         reset_mouse_tracking(hwnd);
         update_window(hwnd);
         return 0;
@@ -1210,24 +831,14 @@ void native_window::set_full_screen(bool fs)
 
 bool native_window::has_idle_work()
 {
-    return impl_->next_update || !impl_->timer_requests.empty();
+    return has_timer_requests(impl_->ui);
 }
 
 void native_window::do_idle_work()
 {
-    unsigned now = get_time(*impl_);
-    bool did_something = false;
-    if (process_timer_requests(*impl_, now))
-        did_something = true;
-    if (impl_->next_update)
-    {
-        if (int(now - get(impl_->next_update)) >= 0)
-        {
-            update_window(impl_->hwnd);
-            did_something = true;
-        }
-    }
-    //if (!did_something)
+    if (process_timer_requests(impl_->ui, get_time(*impl_)))
+        update_window(impl_->hwnd);
+    //else
     //    Sleep(1);
 }
 
@@ -1257,40 +868,6 @@ void native_window::do_message_loop()
             DispatchMessage(&msg);
         }
     }
-}
-
-void win32_opengl_surface::request_refresh(bool greedy)
-{
-    ui_time_type update_time =
-        impl_->ui.millisecond_tick_count + (greedy ? 0 : 1);
-    if (!impl_->next_update ||
-        int(get(impl_->next_update) - update_time) > 0)
-    {
-        impl_->next_update = update_time;
-    }
-}
-
-void win32_opengl_surface::request_timer_event(
-    routable_widget_id const& id, ui_time_type trigger_time)
-{
-    // If an event already exists for that ID, then reschedule it.
-    for (timer_request_list::iterator i = impl_->timer_requests.begin();
-        i != impl_->timer_requests.end(); ++i)
-    {
-        if (i->id.id == id.id)
-        {
-            i->id = id;
-            i->trigger_time = trigger_time;
-            i->frame_issued = impl_->timer_event_counter;
-            return;
-        }
-    }
-    // Otherwise, add a new event.
-    timer_request rq;
-    rq.id = id;
-    rq.trigger_time = trigger_time;
-    rq.frame_issued = impl_->timer_event_counter;
-    impl_->timer_requests.push_back(rq);
 }
 
 string win32_opengl_surface::get_clipboard_text()

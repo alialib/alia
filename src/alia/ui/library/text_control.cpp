@@ -542,7 +542,7 @@ struct text_control
         panel_.begin(
             ctx, text("control"),
             add_default_alignment(
-                add_default_size(layout_spec, width(8, EM)),
+                add_default_size(layout_spec, width(12, EM)),
                 LEFT, BASELINE_Y),
             NO_FLAGS,
             id,
@@ -605,7 +605,7 @@ struct text_control
         data.cursor_position = data.text.length();
         on_text_change();
         data.text_edited = false;
-        if (!(flags & TEXT_CONTROL_ALWAYS_EDITING))
+        if (!(flags & TEXT_CONTROL_IMMEDIATE))
             exit_edit_mode();
     }
 
@@ -796,7 +796,7 @@ struct text_control
             start_timer(ctx, id, drag_delay);
         }
 
-        if (is_timer_done(ctx, id) && is_region_active(ctx, id) &&
+        if (detect_timer_event(ctx, id) && is_region_active(ctx, id) &&
             is_mouse_button_pressed(ctx, LEFT_BUTTON))
         {
             do_drag();
@@ -833,7 +833,7 @@ struct text_control
             }
         }
 
-        if (id_has_focus(ctx, id) && is_timer_done(ctx, cursor_id))
+        if (id_has_focus(ctx, id) && detect_timer_event(ctx, cursor_id))
         {
             data.cursor_on = !data.cursor_on;
             restart_timer(ctx, cursor_id, cursor_blink_delay);
@@ -925,7 +925,7 @@ struct text_control
                                 value.set(data.text);
                                 result.changed = true;
                             }
-                            if ((flags & TEXT_CONTROL_ALWAYS_EDITING) == 0)
+                            if (!(flags & TEXT_CONTROL_IMMEDIATE))
                                 exit_edit_mode();
                             result.event = TEXT_CONTROL_ENTER_PRESSED;
                         }
@@ -1279,7 +1279,13 @@ struct text_control
     void on_edit()
     {
         on_text_change();
-        data.text_edited = true;
+        if (flags & TEXT_CONTROL_IMMEDIATE)
+        {
+            value.set(data.text);
+            result.changed = true;
+        }
+        else
+            data.text_edited = true;
     }
 
     void exit_edit_mode()
@@ -1513,8 +1519,8 @@ struct text_control
     panel panel_;
 };
 
-text_control_result
-do_text_control(
+static text_control_result
+do_text_control_impl(
     ui_context& ctx,
     accessor<string> const& value,
     layout const& layout_spec,
@@ -1528,6 +1534,87 @@ do_text_control(
     text_control tc(ctx, *data, value, layout_spec, flags, id, length_limit);
     tc.do_pass();
     return tc.result;
+}
+
+struct text_control_string_conversion
+{
+    text_control_string_conversion() : valid(false) {}
+    bool valid;
+    owned_id id;
+    string text;
+    // associated error message (if text doesn't parse)
+    string message;
+};
+
+text_control_result
+do_text_control(
+    ui_context& ctx,
+    accessor<string> const& value,
+    layout const& layout_spec,
+    text_control_flag_set flags,
+    widget_id id,
+    optional<size_t> const& length_limit)
+{
+    layout spec = add_default_alignment(layout_spec, FILL_X, BASELINE_Y);
+    column_layout c(ctx, spec);
+
+    text_control_string_conversion* data;
+    get_data(ctx, &data);
+    if (is_refresh_pass(ctx))
+    {
+        bool valid = value.is_gettable();
+        if (data->valid != valid || valid && !data->id.matches(value.id()))
+        {
+            // The external value has changed.
+            data->valid = valid;
+            data->text = valid ? get(value) : "";
+            data->message = "";
+            data->id.store(value.id());
+        }
+    }
+
+    text_control_result r = do_text_control_impl(
+        ctx, inout(&data->text), layout_spec, flags, id, length_limit);
+    alia_if(!data->message.empty())
+    {
+        do_paragraph(ctx, in(data->message));
+    }
+    alia_end
+
+    text_control_result result;
+    switch (r.event)
+    {
+     case TEXT_CONTROL_FOCUS_LOST:
+     case TEXT_CONTROL_ENTER_PRESSED:
+      {
+        try
+        {
+            value.set(data->text);
+            data->message = "";
+            result.event = r.event;
+            result.changed = true;
+        }
+        catch (validation_error& e)
+        {
+            data->message = e.what();
+            result.event = TEXT_CONTROL_INVALID_VALUE;
+            result.changed = false;
+        }
+        break;
+      }
+     case TEXT_CONTROL_EDIT_CANCELED:
+        result.event = TEXT_CONTROL_EDIT_CANCELED;
+        result.changed = false;
+        data->text = value.is_gettable() ? get(value) : "";
+        data->message = "";
+        break;
+     case TEXT_CONTROL_NO_EVENT:
+     default:
+        result.event = TEXT_CONTROL_NO_EVENT;
+        result.changed = false;
+        break;
+    }
+    return result;
 }
 
 }

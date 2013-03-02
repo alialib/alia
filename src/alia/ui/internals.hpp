@@ -178,15 +178,25 @@ struct mouse_cursor_query : ui_event
     {}
 };
 
+struct widget_visibility_request
+{
+    routable_widget_id widget;
+    // If this is set, the UI will jump abruptly instead of smoothly scrolling.
+    bool abrupt;
+    // If this is set, the widget will be moved to the top of the UI instead
+    // of just being made visible.
+    bool move_to_top;
+};
+
 struct make_widget_visible_event : ui_event
 {
-    make_widget_visible_event(widget_id id, bool abrupt)
-      : ui_event(REGION_CATEGORY, MAKE_WIDGET_VISIBLE_EVENT), id(id),
-        abrupt(abrupt), acknowledged(false)
+    make_widget_visible_event(widget_visibility_request const& request)
+      : ui_event(REGION_CATEGORY, MAKE_WIDGET_VISIBLE_EVENT),
+        request(request), acknowledged(false)
     {}
-    widget_id id;
+    widget_visibility_request request;
+    // This gets filled in once we find the widget in question.
     box<2,double> region;
-    bool abrupt;
     bool acknowledged;
 };
 
@@ -198,17 +208,6 @@ struct resolve_location_event : ui_event
     {}
     owned_id id;
     routable_widget_id routable_id;
-    bool acknowledged;
-};
-
-struct jump_to_widget_event : ui_event
-{
-    jump_to_widget_event(widget_id id)
-      : ui_event(REGION_CATEGORY, JUMP_TO_WIDGET_EVENT), id(id),
-        acknowledged(false)
-    {}
-    widget_id id;
-    vector<2,double> position;
     bool acknowledged;
 };
 
@@ -281,13 +280,19 @@ struct input_state
     vector<2,int> mouse_position;
     routable_widget_id hot_id, active_id, focused_id;
     bool window_has_focus, keyboard_interaction;
+    bool mouse_hovering;
 
     input_state()
       : mouse_inside_window(false), mouse_button_state(0),
         hot_id(null_widget_id), active_id(null_widget_id),
         focused_id(null_widget_id), window_has_focus(true),
-        keyboard_interaction(false)
+        keyboard_interaction(false), mouse_hovering(false)
     {}
+};
+
+struct mouse_hover_context
+{
+    optional<string> text;
 };
 
 struct ui_style
@@ -296,14 +301,14 @@ struct ui_style
 
     dispatch_table theme;
 
-    float text_magnification;
+    float magnification;
 
     // style_id identifies the current state of the above style elements.
     // If any of them change, style_id also changes.
     local_identity id;
 
     ui_style()
-      : text_magnification(1)
+      : magnification(1)
     {}
 };
 
@@ -418,10 +423,9 @@ static inline bool is_valid(cached_image_ptr const& ptr)
 
 // A surface represents the device onto which the UI is rendered.
 //
-// The API is designed to be fairly minimal so that it's easy to implement
-// new surface types.
-// Most actual rendering is done via Skia and then rendered to the surface
-// as an image.
+// The API is designed to be fairly minimal so that it's easy to implement new
+// surface types. Most actual rendering is done via Skia and then rendered to
+// the surface as an image.
 //
 // A surface is a geometry_context_subscriber, which means that it receives
 // geometry commands about transformations and clipping from the layout engine.
@@ -447,20 +451,6 @@ struct surface : geometry_context_subscriber
     virtual void draw_filled_box(rgba8 const& color,
         box<2,double> const& box) = 0;
 
-    // Request the surface to refresh again very soon.
-    // This should generally be called via the request_refresh(ctx) utility
-    // function.
-    // No specific time is given for when the refresh should occur.
-    // If the greedy flag is set, then the refresh occurs as soon as possible.
-    // Otherwise, it should occur soon enough to make an animation appear
-    // smooth.
-    virtual void request_refresh(bool greedy) = 0;
-
-    // Request a timer event for the specified ID after the UI system's tick
-    // count reaches the specified trigger time.
-    virtual void request_timer_event(routable_widget_id const& id,
-        ui_time_type trigger_time) = 0;
-
     // Some of this isn't all that related to rendering, but it's still
     // provided by the same code that ultimately provides the surface, and
     // there didn't seem to be a good reason to create a separate interface
@@ -474,11 +464,13 @@ struct surface : geometry_context_subscriber
 };
 static inline surface& get_surface(surface& surface) { return surface; }
 
-struct widget_visibility_request
+struct ui_timer_request
 {
-    routable_widget_id widget;
-    bool abrupt;
+    ui_time_type trigger_time;
+    routable_widget_id id;
+    counter_type frame_issued;
 };
+typedef std::vector<ui_timer_request> ui_timer_request_list;
 
 // ui_system defines all the persistent state associated with an alia UI.
 struct ui_system
@@ -500,13 +492,18 @@ struct ui_system
 
     routable_widget_id overlay_id;
 
-    // If this is valid, then there has been a request to make this widget
-    // visible. It will be honored after the next layout calculation.
-    widget_visibility_request pending_visibility_request;
+    std::vector<widget_visibility_request> pending_visibility_requests;
 
     vector<2,unsigned> surface_size;
 
-    ui_system() : millisecond_tick_count(0) {}
+    ui_timer_request_list timer_requests;
+    // This prevents timer requests from being serviced in the same frame that
+    // they're requested and thus throwing the event handler into a loop.
+    counter_type timer_event_counter;
+
+    optional<ui_time_type> next_update;
+
+    ui_system() : millisecond_tick_count(0), timer_event_counter(0) {}
 };
 
 struct ui_caching_node

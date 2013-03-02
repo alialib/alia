@@ -204,8 +204,12 @@ void mark_location(ui_context& ctx, id_interface const& id,
     }
 }
 
-void jump_to_location(ui_context& ctx, id_interface const& id)
+void jump_to_location(ui_context& ctx, id_interface const& id,
+    jump_to_location_flag_set flags)
 {
+    // TODO: The lookup should be deferred until after a refresh happens
+    // naturally.
+    refresh_ui(*ctx.system);
     routable_widget_id routable_id;
     {
         owned_id owner;
@@ -217,8 +221,11 @@ void jump_to_location(ui_context& ctx, id_interface const& id)
         routable_id = event.routable_id;
     }
     {
-        jump_to_widget_event event(routable_id.id);
-        issue_targeted_event(*ctx.system, event, routable_id);
+        widget_visibility_request request;
+        request.widget = routable_id;
+        request.abrupt = (flags & JUMP_TO_LOCATION_ABRUPTLY) ? true : false;
+        request.move_to_top = true;
+        ctx.system->pending_visibility_requests.push_back(request);
     }
 }
 

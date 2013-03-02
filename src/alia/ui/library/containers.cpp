@@ -112,7 +112,7 @@ void collapsible_content::begin(
 
     container_.begin(get_layout_traversal(ctx), layout);
 
-    float expansion = smooth_value(ctx, expanded ? 1.f : 0.f, transition);
+    float expansion = smooth_raw_value(ctx, expanded ? 1.f : 0.f, transition);
 
     if (is_refresh_pass(ctx))
     {
@@ -201,7 +201,7 @@ void tree_node::begin(
     expander_result_ =
         do_node_expander(ctx, state, default_layout, expander_id);
 
-    label_region_.begin(ctx, BASELINE_Y);
+    label_region_.begin(ctx, BASELINE_Y | GROW_X);
     hit_test_box_region(ctx, expander_id, label_region_.region());
 }
 
@@ -422,13 +422,14 @@ void accordion_section::begin(ui_context& ctx, accessor<bool> const& selected)
     is_selected_ = is_gettable(selected) ? get(selected) : false;
     panel_.begin(ctx, text("accordion-header"), default_layout,
         is_selected_ ? PANEL_SELECTED : NO_FLAGS);
-    if (panel_.clicked())
+    clicked_ = panel_.clicked();
+    if (clicked_)
         selected.set(true);
 }
 void accordion_section::begin(accordion& parent)
 {
     begin(*parent.ctx_,
-        make_indexed_accessor(inout(parent.selection_), parent.index_++));
+        make_radio_accessor(inout(parent.selection_), parent.index_++));
 }
 bool accordion_section::do_content()
 {
@@ -565,6 +566,60 @@ void do_tab(ui_context& ctx, accessor<bool> const& selected,
 {
     tab t(ctx, selected);
     do_text(ctx, label);
+}
+
+void form::begin(ui_context& ctx, layout const& layout_spec)
+{
+    ctx_ = &ctx;
+    grid_.begin(ctx, layout_spec, absolute_length(1, CHARS));
+}
+void form::end()
+{
+    if (ctx_)
+    {
+        grid_.end();
+        ctx_ = 0;
+    }
+}
+
+void form_field::begin(form& form, getter<string> const& label)
+{
+    ui_context& ctx = form.context();
+    form_ = &form;
+    row_.begin(form.grid());
+    {
+        column_layout label_region(
+            ctx, layout(size(15, 2, CHARS), BASELINE_Y));
+        do_text(ctx, label, RIGHT);
+    }
+    contents_.begin(ctx, GROW);
+}
+void form_field::end()
+{
+    if (form_)
+    {
+        contents_.end();
+        row_.end();
+        form_ = 0;
+    }
+}
+
+void form_buttons::begin(form& form)
+{
+    ui_context& ctx = form.context();
+    form_ = &form;
+    row_.begin(form.grid());
+    do_spacer(ctx);
+    contents_.begin(ctx, GROW);
+}
+void form_buttons::end()
+{
+    if (form_)
+    {
+        contents_.end();
+        row_.end();
+        form_ = 0;
+    }
 }
 
 }

@@ -91,6 +91,11 @@ void draw_rect(SkCanvas& canvas, SkPaint& paint,
 void draw_rect(SkCanvas& canvas, SkPaint& paint,
     skia_box const& region, resolved_box_corner_sizes const& radii);
 
+resolved_box_corner_sizes
+adjust_border_radii_for_border_width(
+    resolved_box_corner_sizes const& radii,
+    box_border_width<float> const& border_width);
+
 void set_skia_font_info(SkPaint& paint, font const& font);
 
 void setup_focus_drawing(ui_context& ctx, SkPaint& paint);

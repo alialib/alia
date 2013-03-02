@@ -93,12 +93,13 @@ begin_outer_panel(
     bordered_layout& outer, layout const& layout_spec,
     panel_flag_set flags, widget_id id, widget_state state)
 {
-    resolved_box_border_width total_border =
-        get(style_info).margin + get(style_info).border_width;
+    box_border_width<layout_scalar> total_border =
+        as_layout_size(get(style_info).margin) +
+        as_layout_size(get(style_info).border_width);
     if (!(flags & PANEL_IGNORE_STYLE_PADDING))
-        total_border += get(style_info).padding;
+        total_border += as_layout_size(get(style_info).padding);
     outer.begin(ctx,
-        box_border_width(
+        box_border_width<absolute_length>(
             absolute_length(float(total_border.top), PIXELS),
             absolute_length(float(total_border.right), PIXELS),
             absolute_length(float(total_border.bottom), PIXELS),
@@ -109,10 +110,8 @@ begin_outer_panel(
     {
      case RENDER_CATEGORY:
       {
-        layout_box outer_region =
-            remove_border(outer.region(), get(style_info).margin);
-        layout_box inner_region =
-            remove_border(outer_region, get(style_info).border_width);
+        layout_box outer_region = remove_border(outer.region(),
+            as_layout_size(get(style_info).margin));
 
         if (get(style_info).is_rounded)
         {
@@ -137,7 +136,16 @@ begin_outer_panel(
 
                 paint.setStyle(SkPaint::kFill_Style);
 
-                if (outer_region != inner_region)
+                skia_box background_region = remove_border(
+                    layout_box_as_skia_box(outer_region),
+                    box_border_width<SkScalar>(
+                        get(style_info).border_width.top,
+                        get(style_info).border_width.right,
+                        get(style_info).border_width.bottom,
+                        get(style_info).border_width.left));
+
+                if (get(style_info).border_width !=
+                    box_border_width<float>(0, 0, 0, 0))
                 {
                     set_color(paint, get(style_info).border_color);
                     draw_rect(renderer.canvas(), paint,
@@ -146,7 +154,9 @@ begin_outer_panel(
 
                 set_color(paint, get(style_info).background_color);
                     draw_rect(renderer.canvas(), paint,
-                        layout_box_as_skia_box(inner_region), border_radii);
+                        background_region,
+                        adjust_border_radii_for_border_width(border_radii,
+                            get(style_info).border_width));
 
                 renderer.cache();
                 cache.mark_valid();
@@ -155,7 +165,11 @@ begin_outer_panel(
         }
         else
         {
-            if (outer_region != inner_region)
+            box<2,float> background_region = remove_border(
+                box<2,float>(outer_region),
+                get(style_info).border_width);
+            if (get(style_info).border_width !=
+                box_border_width<float>(0, 0, 0, 0))
             {
                 ctx.surface->draw_filled_box(
                     get(style_info).border_color,
@@ -163,7 +177,7 @@ begin_outer_panel(
             }
             ctx.surface->draw_filled_box(
                 get(style_info).background_color,
-                box<2,double>(inner_region));
+                box<2,double>(background_region));
         }
 
         if ((state & WIDGET_FOCUSED) && !(flags & PANEL_HIDE_FOCUS))
@@ -177,8 +191,8 @@ begin_outer_panel(
 
      case REGION_CATEGORY:
         // So the panel will block mouse events on things behind it.
-        do_box_region(ctx, id,
-            remove_border(outer.region(), get(style_info).margin));
+        do_box_region(ctx, id, remove_border(outer.region(),
+            as_layout_size(get(style_info).margin)));
         break;
 
      case INPUT_CATEGORY:
@@ -245,7 +259,7 @@ void panel::begin(
 
     begin_outer_panel(ctx, data_->panel,
         make_custom_getter(&get(data_->style_info),
-            &data_->style_info.key.get()),
+            ref(data_->style_info.key.get())),
         outer_, add_default_padding(layout_spec, PADDED), flags, id, state);
 
     substyle_.begin(ctx, style, state);
@@ -270,7 +284,8 @@ layout_box panel::outer_region() const
     // using a different transformation matrix than the outer region expects.
     // Thus, we need to adjust the region's corner to compensate.
     region.corner -= inner_.offset();
-    return remove_border(region, get(data_->style_info).margin);
+    return remove_border(region,
+        as_layout_size(get(data_->style_info).margin));
 }
 
 layout_box panel::padded_region() const
@@ -317,7 +332,7 @@ void scrollable_panel::begin(
     refresh_panel_style_info(ctx, data->style_info, style, WIDGET_NORMAL);
     begin_outer_panel(ctx, data->panel,
         make_custom_getter(&get(data->style_info),
-            &data->style_info.key.get()),
+            ref(data->style_info.key.get())),
         outer_, layout_spec, flags | PANEL_IGNORE_STYLE_PADDING,
         id, WIDGET_NORMAL);
     substyle_.begin(ctx, style, WIDGET_NORMAL);
@@ -330,7 +345,7 @@ void scrollable_panel::begin(
     region_.begin(ctx, GROW | UNPADDED, scrollable_axes, id, reserved_axes);   
     panel_style_info const& style_info = get(data->style_info);
     padding_border_.begin(ctx, 
-        box_border_width(
+        box_border_width<absolute_length>(
             absolute_length(float(style_info.padding.top), PIXELS),
             absolute_length(float(style_info.padding.right), PIXELS),
             absolute_length(float(style_info.padding.bottom), PIXELS),

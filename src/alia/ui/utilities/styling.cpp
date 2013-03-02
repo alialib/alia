@@ -286,22 +286,82 @@ parse_style_properties(char const* label, utf8_string const& text,
     return properties;
 }
 
+static void append_span(string& dst, utf8_ptr begin, utf8_ptr end)
+{
+    while (begin != end)
+    {
+        dst.push_back(*begin);
+        ++begin;
+    }
+}
+
+static string strip_comments(utf8_string const& text)
+{
+    string code;
+    code.reserve(text.end - text.begin);
+    utf8_ptr p = text.begin;
+    int comment_depth = 0;
+    SkUnichar last_char = 0;
+    utf8_ptr span_start = text.begin;
+    while (p != text.end)
+    {
+        utf8_ptr q = p;
+        SkUnichar c = SkUTF8_NextUnichar(&p);
+        switch (c)
+        {
+         case '*':
+            if (last_char == '/')
+            {
+                if (comment_depth == 0)
+                    append_span(code, span_start, q - 1);
+                ++comment_depth;
+                last_char = 0;
+                continue;
+            }
+            break;
+         case '/':
+            if (last_char == '*')
+            {
+                if (comment_depth > 0)
+                {
+                    --comment_depth;
+                    span_start = p;
+                    last_char = 0;
+                    continue;
+                }
+            }
+            break;
+        }
+        last_char = c;
+        if (comment_depth > 0 && is_line_terminator(c))
+        {
+            p = skip_line_terminator(utf8_string(q, text.end));
+            code.push_back('\n');
+        }
+    }
+    append_span(code, span_start, text.end);
+    return code;
+}
+
 style_tree parse_style_description(char const* label, utf8_string const& text)
 {
     style_tree tree;
     int line_number = 1;
-    utf8_ptr p = text.begin;
+    string stripped = strip_comments(text);
+    utf8_string stripped_text = as_utf8_string(stripped);
+    utf8_ptr p = stripped_text.begin;
     while (1)
     {
-        p = skip_space(utf8_string(p, text.end), line_number);
-        if (p == text.end)
+        p = skip_space(utf8_string(p, stripped_text.end), line_number);
+        if (p == stripped_text.end)
             break;
 
         // Parse the substyle name.
-        utf8_ptr next_space = find_next_space(utf8_string(p, text.end));
+        utf8_ptr next_space =
+            find_next_space(utf8_string(p, stripped_text.end));
         string subpath(p, next_space - p);
         p = next_space;
-        p = skip_space(utf8_string(p, text.end), line_number);
+        p = skip_space(utf8_string(p, stripped_text.end), line_number);
 
         // Check for the opening brace of the property map.
         SkUnichar c = SkUTF8_NextUnichar(&p);
@@ -313,7 +373,7 @@ style_tree parse_style_description(char const* label, utf8_string const& text)
 
         // Parse the property map.
         property_map properties =
-            parse_style_properties(label, text, p, line_number);
+            parse_style_properties(label, stripped_text, p, line_number);
 
         // Add the substyle to the tree.
         set_style(tree, subpath, properties);
@@ -681,7 +741,7 @@ void fill_in_missing_sides(Side* sides, int n_sides)
         sides[3] = sides[1];
 }
 
-void parse(line_parser& p, box_border_width* border)
+void parse(line_parser& p, box_border_width<absolute_length>* border)
 {
     absolute_length sides[4];
     int n_sides = 0;
@@ -771,14 +831,14 @@ void parse(line_parser& p, side_selection* spec)
     *spec = sides;
 }
 
-box_border_width
+box_border_width<absolute_length>
 get_padding_property(
     style_search_path const* path, absolute_length const& default_width)
 {
-    box_border_width unified =
+    box_border_width<absolute_length> unified =
         get_property(path, "padding", UNINHERITED_PROPERTY,
-            box_border_width(default_width));
-    return box_border_width(
+            box_border_width<absolute_length>(default_width));
+    return box_border_width<absolute_length>(
         get_property(path, "padding-top", UNINHERITED_PROPERTY,
             unified.top),
         get_property(path, "padding-right", UNINHERITED_PROPERTY,
@@ -789,14 +849,14 @@ get_padding_property(
             unified.left));
 }
 
-box_border_width
+box_border_width<absolute_length>
 get_margin_property(
     style_search_path const* path, absolute_length const& default_width)
 {
-    box_border_width unified =
+    box_border_width<absolute_length> unified =
         get_property(path, "margin", UNINHERITED_PROPERTY,
-            box_border_width(default_width));
-    return box_border_width(
+            box_border_width<absolute_length>(default_width));
+    return box_border_width<absolute_length>(
         get_property(path, "margin-top", UNINHERITED_PROPERTY,
             unified.top),
         get_property(path, "margin-right", UNINHERITED_PROPERTY,
@@ -807,14 +867,14 @@ get_margin_property(
             unified.left));
 }
 
-box_border_width
+box_border_width<absolute_length>
 get_border_width_property(
     style_search_path const* path, absolute_length const& default_width)
 {
-    box_border_width unified =
+    box_border_width<absolute_length> unified =
         get_property(path, "border-width", UNINHERITED_PROPERTY,
-            box_border_width(default_width));
-    return box_border_width(
+            box_border_width<absolute_length>(default_width));
+    return box_border_width<absolute_length>(
         get_property(path, "border-top-width", UNINHERITED_PROPERTY,
             unified.top),
         get_property(path, "border-right-width", UNINHERITED_PROPERTY,
@@ -851,7 +911,7 @@ font get_font_properties(ui_system const& ui, style_search_path const* path)
     return font(
         get_property(path, "font-family", INHERITED_PROPERTY, string("arial")),
         get_property(path, "font-size", INHERITED_PROPERTY, 13.f) *
-            ui.style->text_magnification,
+            ui.style->magnification,
         (get_property(path, "font-bold", INHERITED_PROPERTY, false) ?
             BOLD : NO_FLAGS) |
         (get_property(path, "font-italic", INHERITED_PROPERTY, false) ?
@@ -892,7 +952,7 @@ void parse(line_parser& p, default_padding_spec* spec)
 void read_layout_style_info(ui_context& ctx, layout_style_info* style_info,
     font const& font, style_search_path const* path)
 {
-    style_info->magnification = ctx.system->style->text_magnification;
+    style_info->magnification = ctx.system->style->magnification;
 
     style_info->font_size = font.size;
 

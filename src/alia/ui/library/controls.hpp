@@ -184,12 +184,6 @@ get_control_style_properties(
     ui_context& ctx, char const* control_type, widget_state state,
     layout_vector const& size);
 
-struct default_control_renderer_data
-{
-    keyed_data<layout_vector> size;
-    caching_renderer_data renderer;
-};
-
 leaf_layout_requirements
 get_box_control_layout(ui_context& ctx, char const* control_type);
 

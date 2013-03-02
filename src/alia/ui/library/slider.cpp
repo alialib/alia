@@ -5,87 +5,76 @@
 
 namespace alia {
 
+struct slider_layout_info
+{
+    layout_scalar default_width;
+    layout_scalar height, descent;
+    layout_box thumb_region;
+    box<1,layout_scalar> track_region;
+    // border on either side of the track
+    layout_scalar left_border, right_border;
+};
+
 struct slider_renderer : dispatch_interface
 {
-    virtual layout_scalar default_width(ui_context& ctx) const = 0;
-    virtual layout_scalar left_border(ui_context& ctx) const = 0;
-    virtual layout_scalar right_border(ui_context& ctx) const = 0;
-    virtual layout_scalar height(ui_context& ctx) const = 0;
-    virtual layout_box thumb_region(ui_context& ctx) const = 0;
-    virtual box<1,layout_scalar> track_region(ui_context& ctx) const = 0;
+    virtual slider_layout_info get_layout(ui_context& ctx) const = 0;
 
     virtual void draw_track(
-        ui_context& ctx, renderer_data_ptr& data_ptr, unsigned axis,
+        ui_context& ctx, slider_layout_info const& info, unsigned axis,
         layout_vector const& track_position, layout_scalar track_width) const
         = 0;
 
     virtual void draw_thumb(
-        ui_context& ctx, renderer_data_ptr& data_ptr, unsigned axis,
+        ui_context& ctx, slider_layout_info const& info, unsigned axis,
         layout_vector const& thumb_position, widget_state state) const = 0;
 };
 
 struct default_slider_renderer : slider_renderer
 {
-    struct data_type
+    slider_layout_info get_layout(ui_context& ctx) const
     {
-        caching_renderer_data track, thumb;
-    };
-
-    layout_scalar default_width(ui_context& ctx) const
-    {
-        return as_layout_size(resolve_absolute_length(
-            get_layout_traversal(ctx), 0, absolute_length(20, EM)));
-    }
-    layout_scalar left_border(ui_context& ctx) const
-    {
-        return as_layout_size(resolve_absolute_length(
-            get_layout_traversal(ctx), 0, absolute_length(0.5f, EM)));
-    }
-    layout_scalar right_border(ui_context& ctx) const
-    {
-        return as_layout_size(resolve_absolute_length(
-            get_layout_traversal(ctx), 0, absolute_length(0.5f, EM)));
-    }
-    layout_scalar height(ui_context& ctx) const
-    {
-        return as_layout_size(resolve_absolute_length(
-            get_layout_traversal(ctx), 0, absolute_length(1.3f, EM)));
-    }
-    layout_box thumb_region(ui_context& ctx) const
-    {
+        slider_layout_info info;
+        info.default_width =
+            as_layout_size(resolve_absolute_length(
+                get_layout_traversal(ctx), 0, absolute_length(20, EM)));
+        info.left_border =
+            as_layout_size(resolve_absolute_length(
+                get_layout_traversal(ctx), 0, absolute_length(0.5f, EM)));
+        info.right_border =
+            as_layout_size(resolve_absolute_length(
+                get_layout_traversal(ctx), 0, absolute_length(0.5f, EM)));
         layout_scalar x =
             as_layout_size(resolve_absolute_length(
                 get_layout_traversal(ctx), 0, absolute_length(1.3f, EM)));
-        return layout_box(make_layout_vector(
-            round_to_layout_scalar(x * -0.3), 0),
-            make_layout_vector(round_to_layout_scalar(x * 0.6), x));
-    }
-    box<1,layout_scalar> track_region(ui_context& ctx) const
-    {
-        layout_scalar x =
-            as_layout_size(resolve_absolute_length(
-                get_layout_traversal(ctx), 0, absolute_length(1.3f, EM)));
-        box<1,layout_scalar> b;
-        b.corner[0] = as_layout_size(x * 0.5);
-        b.size[0] = x / 6;
-        return b;
+        info.height = x;
+        info.descent = as_layout_size(x * 0.2);
+        info.thumb_region =
+            layout_box(make_layout_vector(
+                round_to_layout_scalar(x * -0.3), 0),
+                make_layout_vector(round_to_layout_scalar(x * 0.6), x));
+        box<1,layout_scalar> track_region;
+        track_region.corner[0] = as_layout_size(x * 0.5);
+        track_region.size[0] = x / 6;
+        info.track_region = track_region;
+        return info;
     }
 
     void draw_track(
-        ui_context& ctx, renderer_data_ptr& data_ptr, unsigned axis,
+        ui_context& ctx, slider_layout_info const& info, unsigned axis,
         layout_vector const& track_position, layout_scalar track_width) const
     {
-        data_type* data;
-        cast_data_ptr(&data, data_ptr);
+        ALIA_GET_CACHED_DATA(caching_renderer_data);
+
+        if (!is_render_pass(ctx))
+            return;
 
         layout_vector track_size;
         track_size[axis] = track_width;
-        track_size[1 - axis] = track_region(ctx).size[0];
+        track_size[1 - axis] = info.track_region.size[0];
 
         layout_box track_box(track_position, track_size);
 
-        caching_renderer cache(ctx, data->track, ref(*ctx.style.id),
-            track_box);
+        caching_renderer cache(ctx, data, ref(*ctx.style.id), track_box);
         if (cache.needs_rendering())
         {
             skia_renderer renderer(ctx, cache.image(), track_box.size);
@@ -109,16 +98,18 @@ struct default_slider_renderer : slider_renderer
     }
 
     void draw_thumb(
-        ui_context& ctx, renderer_data_ptr& data_ptr, unsigned axis,
+        ui_context& ctx, slider_layout_info const& info, unsigned axis,
         layout_vector const& thumb_position, widget_state state) const
     {
-        data_type* data;
-        cast_data_ptr(&data, data_ptr);
+        ALIA_GET_CACHED_DATA(caching_renderer_data);
 
-        layout_box thumb_region = this->thumb_region(ctx);
+        if (!is_render_pass(ctx))
+            return;
+
+        layout_box thumb_region = info.thumb_region;
         thumb_region.corner += thumb_position;
 
-        caching_renderer cache(ctx, data->thumb,
+        caching_renderer cache(ctx, data,
             combine_ids(ref(*ctx.style.id), make_id(state)),
             thumb_region);
         if (cache.needs_rendering())
@@ -148,7 +139,8 @@ struct default_slider_renderer : slider_renderer
 struct slider_data
 {
     slider_data() : dragging(false) {}
-    themed_rendering_data<slider_renderer> rendering;
+    new_themed_rendering_data rendering;
+    slider_layout_info layout_info;
     layout_leaf layout_node;
     widget_identity track_id, thumb_id;
     bool dragging;
@@ -170,39 +162,39 @@ static double clamp(double x, double min, double max, double step)
 static double get_values_per_pixel(ui_context& ctx, slider_data& data,
     unsigned axis, double minimum, double maximum)
 {
+    slider_layout_info const& layout_info = data.layout_info;
     layout_box const& assigned_region = data.layout_node.assignment().region;
-    slider_renderer const* renderer = data.rendering.renderer;
     return double(maximum - minimum) /
-        (assigned_region.size[axis] - renderer->left_border(ctx) -
-        renderer->right_border(ctx) - 1);
+        (assigned_region.size[axis] - layout_info.left_border -
+        layout_info.right_border - 1);
 }
 
 static layout_vector get_track_position(ui_context& ctx, slider_data& data,
     unsigned axis)
 {
-    slider_renderer const* renderer = data.rendering.renderer;
+    slider_layout_info const& layout_info = data.layout_info;
     layout_box const& assigned_region = data.layout_node.assignment().region;
     layout_vector track_position;
-    track_position[axis] = assigned_region.corner[axis] +
-        renderer->left_border(ctx);
+    track_position[axis] =
+        assigned_region.corner[axis] + layout_info.left_border;
     track_position[1 - axis] = assigned_region.corner[1 - axis] +
-        renderer->track_region(ctx).corner[0];
+        layout_info.track_region.corner[0];
     return track_position;
 }
 
 static layout_scalar get_track_width(ui_context& ctx, slider_data& data,
     unsigned axis)
 {
-    slider_renderer const* renderer = data.rendering.renderer;
+    slider_layout_info const& layout_info = data.layout_info;
     layout_box const& assigned_region = data.layout_node.assignment().region;
     return assigned_region.size[axis] -
-        renderer->left_border(ctx) - renderer->right_border(ctx);
+        layout_info.left_border - layout_info.right_border;
 }
 
 static layout_vector get_thumb_position(ui_context& ctx, slider_data& data,
     unsigned axis, double minimum, double maximum, getter<double> const& value)
 {
-    slider_renderer const* renderer = data.rendering.renderer;
+    slider_layout_info const& layout_info = data.layout_info;
     layout_box const& assigned_region = data.layout_node.assignment().region;
     layout_vector thumb_position;
     if (data.dragging &&
@@ -213,9 +205,9 @@ static layout_vector get_thumb_position(ui_context& ctx, slider_data& data,
         thumb_position[1 - axis] = assigned_region.corner[1 - axis];
 
         int const maximum_position = get_high_corner(assigned_region)[axis] -
-            renderer->right_border(ctx) - 1;
+            layout_info.right_border - 1;
         int const minimum_position = assigned_region.corner[axis] +
-            renderer->left_border(ctx);
+            layout_info.left_border;
 
         thumb_position[axis] = clamp(thumb_position[axis],
             minimum_position, maximum_position);
@@ -226,7 +218,7 @@ static layout_vector get_thumb_position(ui_context& ctx, slider_data& data,
         thumb_position[axis] +=
             round_to_layout_scalar((get(value) - minimum) /
                 get_values_per_pixel(ctx, data, axis, minimum, maximum)) +
-            renderer->left_border(ctx);
+            layout_info.left_border;
     }
     return thumb_position;
 }
@@ -234,16 +226,16 @@ static layout_vector get_thumb_position(ui_context& ctx, slider_data& data,
 static layout_box get_thumb_region(ui_context& ctx, slider_data& data,
     unsigned axis, double minimum, double maximum, getter<double> const& value)
 {
-    slider_renderer const* renderer = data.rendering.renderer;
+    slider_layout_info const& layout_info = data.layout_info;
     layout_vector thumb_position =
         get_thumb_position(ctx, data, axis, minimum, maximum, value);
     layout_box thumb_region;
     thumb_region.corner[axis] =
-        renderer->thumb_region(ctx).corner[0] + thumb_position[axis];
+        layout_info.thumb_region.corner[0] + thumb_position[axis];
     thumb_region.corner[1 - axis] =
-        renderer->thumb_region(ctx).corner[1] + thumb_position[1 - axis];
-    thumb_region.size[axis] = renderer->thumb_region(ctx).size[0];
-    thumb_region.size[1 - axis] = renderer->thumb_region(ctx).size[1];
+        layout_info.thumb_region.corner[1] + thumb_position[1 - axis];
+    thumb_region.size[axis] = layout_info.thumb_region.size[0];
+    thumb_region.size[1 - axis] = layout_info.thumb_region.size[1];
     return thumb_region;
 }
 
@@ -255,48 +247,33 @@ do_slider(ui_context& ctx, accessor<double> const& value,
     slider_result result;
     result.changed = false;
 
-    slider_data* data;
-    get_cached_data(ctx, &data);
-
     unsigned axis = (flags & SLIDER_VERTICAL) ? 1 : 0;
+
+    ALIA_GET_CACHED_DATA(slider_data)
+
+    slider_renderer const* renderer;
+    static default_slider_renderer default_renderer;
+    get_themed_renderer(ctx, data.rendering, &renderer, &default_renderer);
 
     switch (ctx.event->category)
     {
      case REFRESH_CATEGORY:
       {
-        static default_slider_renderer default_renderer;
-        refresh_themed_rendering_data(ctx, data->rendering, &default_renderer);
-        slider_renderer const* renderer = data->rendering.renderer;
+        {
+            scoped_data_block block(ctx, data.rendering.refresh_block);
+            data.layout_info = renderer->get_layout(ctx);
+        }
+        slider_layout_info const& layout_info = data.layout_info;
         vector<2,int> default_size;
-        default_size[axis] = renderer->default_width(ctx);
-        default_size[1 - axis] = renderer->height(ctx);
-        data->layout_node.refresh_layout(
+        default_size[axis] = layout_info.default_width;
+        default_size[1 - axis] = layout_info.height;
+        data.layout_node.refresh_layout(
             get_layout_traversal(ctx),
             layout_spec,
-            leaf_layout_requirements(default_size, 0, 0),
-            LEFT | CENTER_Y | PADDED);
-        add_layout_node(get_layout_traversal(ctx), &data->layout_node);
-        break;
-      }
-
-     case RENDER_CATEGORY:
-      {
-        slider_renderer const* renderer = data->rendering.renderer;
-        renderer->draw_track(ctx, data->rendering.data, axis,
-            get_track_position(ctx, *data, axis),
-            get_track_width(ctx, *data, axis));
-        widget_state thumb_state = get_widget_state(ctx, &data->thumb_id);
-        if (value.is_gettable())
-        {
-            renderer->draw_thumb(ctx, data->rendering.data, axis,
-                get_thumb_position(ctx, *data, axis, minimum, maximum, value),
-                thumb_state);
-        }
-        if (thumb_state & WIDGET_FOCUSED)
-        {
-            draw_focus_rect(ctx, data->focus_rendering,
-                data->layout_node.assignment().region);
-        }
+            leaf_layout_requirements(default_size,
+                default_size[1] - layout_info.descent, layout_info.descent),
+            LEFT | BASELINE_Y | PADDED);
+        add_layout_node(get_layout_traversal(ctx), &data.layout_node);
         break;
       }
 
@@ -305,18 +282,16 @@ do_slider(ui_context& ctx, accessor<double> const& value,
         if (!value.is_gettable())
             break;
 
-        slider_renderer const* renderer = data->rendering.renderer;
-
         layout_vector track_size;
-        track_size[axis] = get_track_width(ctx, *data, axis);
-        track_size[1 - axis] = renderer->track_region(ctx).size[0];
-        do_box_region(ctx, &data->track_id,
+        track_size[axis] = get_track_width(ctx, data, axis);
+        track_size[1 - axis] = data.layout_info.track_region.size[0];
+        do_box_region(ctx, &data.track_id,
             add_border(
-                layout_box(get_track_position(ctx, *data, axis), track_size),
+                layout_box(get_track_position(ctx, data, axis), track_size),
                 make_layout_vector(2, 2)));
 
-        do_box_region(ctx, &data->thumb_id,
-            get_thumb_region(ctx, *data, axis, minimum, maximum, value));
+        do_box_region(ctx, &data.thumb_id,
+            get_thumb_region(ctx, data, axis, minimum, maximum, value));
 
         break;
       }
@@ -326,60 +301,56 @@ do_slider(ui_context& ctx, accessor<double> const& value,
         if (!value.is_gettable())
             break;
 
-        if (detect_mouse_press(ctx, &data->track_id, LEFT_BUTTON) ||
-            detect_drag(ctx, &data->track_id, LEFT_BUTTON))
+        if (detect_mouse_press(ctx, &data.track_id, LEFT_BUTTON) ||
+            detect_drag(ctx, &data.track_id, LEFT_BUTTON))
         {
-            slider_renderer const* renderer = data->rendering.renderer;
-
             double new_value =
                 (get_integer_mouse_position(ctx)[axis] -
-                    data->layout_node.assignment().region.corner[axis] -
-                    renderer->left_border(ctx)) *
-                get_values_per_pixel(ctx, *data, axis, minimum, maximum) +
+                    data.layout_node.assignment().region.corner[axis] -
+                    data.layout_info.left_border) *
+                get_values_per_pixel(ctx, data, axis, minimum, maximum) +
                 minimum;
 
             set_new_value(value, result,
                 clamp(new_value, minimum, maximum, step));
 
-            set_focus(ctx, &data->thumb_id);
+            set_focus(ctx, &data.thumb_id);
         }
 
-        if (detect_drag(ctx, &data->thumb_id, LEFT_BUTTON))
+        if (detect_drag(ctx, &data.thumb_id, LEFT_BUTTON))
         {
-            if (!data->dragging)
+            if (!data.dragging)
             {
                 layout_vector thumb_position =
-                    get_thumb_position(ctx, *data, axis, minimum, maximum,
+                    get_thumb_position(ctx, data, axis, minimum, maximum,
                         value);
-                data->dragging_offset =
+                data.dragging_offset =
                     get_integer_mouse_position(ctx)[axis] -
                     thumb_position[axis];
-                data->dragging = true;
+                data.dragging = true;
             }
-
-            slider_renderer const* renderer = data->rendering.renderer;
 
             double new_value =
                 (get_integer_mouse_position(ctx)[axis] -
-                    data->dragging_offset -
-                    data->layout_node.assignment().region.corner[axis] -
-                    renderer->left_border(ctx)) *
-                get_values_per_pixel(ctx, *data, axis, minimum, maximum) +
+                    data.dragging_offset -
+                    data.layout_node.assignment().region.corner[axis] -
+                    data.layout_info.left_border) *
+                get_values_per_pixel(ctx, data, axis, minimum, maximum) +
                 minimum;
 
             set_new_value(value, result,
                 clamp(new_value, minimum, maximum, step));
 
-            data->dragging_value = get(value);
+            data.dragging_value = get(value);
         }
 
-        if (detect_drag_release(ctx, &data->thumb_id, LEFT_BUTTON))
-            data->dragging = false;
+        if (detect_drag_release(ctx, &data.thumb_id, LEFT_BUTTON))
+            data.dragging = false;
 
-        add_to_focus_order(ctx, &data->thumb_id);
+        add_to_focus_order(ctx, &data.thumb_id);
 
         key_event_info info;
-        if (detect_key_press(ctx, &info, &data->thumb_id) && info.mods == 0)
+        if (detect_key_press(ctx, &info, &data.thumb_id) && info.mods == 0)
         {
             double increment = (maximum - minimum) / 10;
             switch (info.code)
@@ -429,6 +400,25 @@ do_slider(ui_context& ctx, accessor<double> const& value,
 
         break;
       }
+    }
+
+    {
+        scoped_data_block block(ctx, data.rendering.drawing_block);
+        renderer->draw_track(ctx, data.layout_info, axis,
+            get_track_position(ctx, data, axis),
+            get_track_width(ctx, data, axis));
+        widget_state thumb_state = get_widget_state(ctx, &data.thumb_id);
+        if (value.is_gettable())
+        {
+            renderer->draw_thumb(ctx, data.layout_info, axis,
+                get_thumb_position(ctx, data, axis, minimum, maximum, value),
+                thumb_state);
+        }
+        if (is_render_pass(ctx) && thumb_state & WIDGET_FOCUSED)
+        {
+            draw_focus_rect(ctx, data.focus_rendering,
+                data.layout_node.assignment().region);
+        }
     }
 
     return result;

@@ -135,4 +135,20 @@ bool detect_wheel_movement(ui_context& ctx, float* movement, widget_id id)
     return false;
 }
 
+bool detect_mouse_hover(ui_context& ctx, widget_id id)
+{
+    return ctx.system->input.mouse_hovering && is_region_hot(ctx, id);
+}
+
+void do_mouse_hover_text(ui_context& ctx, widget_id id,
+    getter<string> const& text)
+{
+    if (detect_mouse_hover(ctx, id))
+    {
+        // Note that this violates the rule that 
+        if (ctx.hover)
+            ctx.hover->text = get(text);
+    }
+}
+
 }

@@ -25,8 +25,8 @@ get_control_style_path(ui_context& ctx, control_style_path_storage* storage,
         add_substyle_to_path(
             &storage->storage[1],
             ctx.style.path,
-            add_substyle_to_path(&storage->storage[0], ctx.style.path, 0,
-                "control", state),
+            add_substyle_to_path(&storage->storage[0], ctx.style.path,
+                ctx.style.path, "control", state),
             control_type, state, ADD_SUBSTYLE_NO_PATH_SEPARATOR);
 }
 
@@ -124,15 +124,16 @@ void draw_box_control(
 
     skia_box background_region =
         add_border(full_region, SkFloatToScalar(-style.border_width));
-
     set_color(paint, style.bg_color);
     paint.setStyle(SkPaint::kFill_Style);
-    draw_rect(canvas, paint, background_region, style.border_radii);
+    draw_rect(canvas, paint, background_region,
+        adjust_border_radii_for_border_width(style.border_radii,
+            box_border_width<float>(style.border_width)));
 
     if (has_focus)
     {
         setup_focus_drawing(ctx, paint);
-        draw_rect(canvas, paint, background_region, style.border_radii);
+        draw_rect(canvas, paint, full_region, style.border_radii);
     }
 }
 
@@ -371,8 +372,8 @@ struct default_node_expander_renderer : node_expander_renderer
         ui_context& ctx, layout_box const& region,
         getter<bool> const& value, widget_state state) const
     {
-        float angle =
-            smooth_value(ctx, value.is_gettable() && get(value) ? 90.f : 0.f,
+        double angle =
+            smooth_raw_value(ctx, value.is_gettable() && get(value) ? 90. : 0.,
                 animated_transition(linear_curve, 200));
 
         if (!is_render_pass(ctx))
@@ -392,7 +393,7 @@ struct default_node_expander_renderer : node_expander_renderer
                 SkScalarDiv(
                     renderer.content_region().size[1],
                     SkIntToScalar(2)));
-            renderer.canvas().rotate(angle);
+            renderer.canvas().rotate(float(angle));
 
             {
                 SkPaint paint;
@@ -460,15 +461,18 @@ do_button(
     ui_context& ctx,
     getter<string> const& label,
     layout const& layout_spec,
+    button_flag_set flags,
     widget_id id)
 {
     get_widget_id_if_needed(ctx, id);
     ALIA_GET_CACHED_DATA(button_data)
-    widget_state state = get_button_state(ctx, id, data.input);
+    widget_state state = (flags & BUTTON_DISABLED) ? WIDGET_DISABLED :
+        get_button_state(ctx, id, data.input);
     panel p(ctx, text("button"),
         add_default_alignment(layout_spec, LEFT, TOP), NO_FLAGS, id, state);
     do_text(ctx, label, CENTER);
-    return do_button_input(ctx, id, data.input);
+    return (flags & BUTTON_DISABLED) ? false :
+        do_button_input(ctx, id, data.input);
 }
 
 // ICON BUTTON

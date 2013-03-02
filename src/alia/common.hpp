@@ -103,6 +103,9 @@ bool operator!=(flag_set<Tag> a, flag_set<Tag> b)
 template<class Tag>
 bool operator<(flag_set<Tag> a, flag_set<Tag> b)
 { return a.code < b.code; }
+template<class Tag>
+flag_set<Tag> operator~(flag_set<Tag> a)
+{ return flag_set<Tag>(~a.code); }
 
 #define ALIA_DEFINE_FLAG_TYPE(type_prefix) \
     struct type_prefix##_flag_tag {}; \

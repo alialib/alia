@@ -6,6 +6,7 @@
 #include <alia/layout/api.hpp>
 #include <alia/event_routing.hpp>
 #include <cstdio>
+#include <vector>
 
 // This file declares all the types and functions necessary to use the UI
 // library from the application end, including a standard library of widgets
@@ -210,7 +211,8 @@ enum mouse_cursor
     BLANK_CURSOR,
     IBEAM_CURSOR,
     NO_ENTRY_CURSOR,
-    HAND_CURSOR,
+    OPEN_HAND_CURSOR,
+    POINTING_HAND_CURSOR,
     LEFT_RIGHT_ARROW_CURSOR,
     UP_DOWN_ARROW_CURSOR,
     FOUR_WAY_ARROW_CURSOR,
@@ -237,7 +239,6 @@ enum ui_event_type
 
     // regions
     MAKE_WIDGET_VISIBLE_EVENT,
-    JUMP_TO_WIDGET_EVENT,
     MOUSE_HIT_TEST_EVENT,
     WHEEL_HIT_TEST_EVENT,
 
@@ -267,13 +268,13 @@ enum ui_event_type
     MOUSE_CURSOR_QUERY_EVENT,
     MOUSE_GAIN_EVENT,
     MOUSE_LOSS_EVENT,
+    MOUSE_HOVER_EVENT,
 
     // overlays
     OVERLAY_MOUSE_HIT_TEST_EVENT,
     OVERLAY_WHEEL_HIT_TEST_EVENT,
     OVERLAY_RENDER_EVENT,
     OVERLAY_MAKE_WIDGET_VISIBLE_EVENT,
-    OVERLAY_JUMP_TO_WIDGET_EVENT,
 
     // uncategorized events
     WRAPPED_EVENT,
@@ -446,6 +447,7 @@ struct cached_ui_block
 struct ui_system;
 struct surface;
 struct ui_event;
+struct mouse_hover_context;
 
 struct ui_context
 {
@@ -459,6 +461,7 @@ struct ui_context
     ui_caching_node* active_cacher;
     style_state style;
     bool pass_aborted;
+    mouse_hover_context* hover;
 };
 
 static inline data_traversal& get_data_traversal(ui_context& ctx)
@@ -495,13 +498,18 @@ void mark_location(ui_context& ctx, id_interface const& id,
     layout_vector const& position = make_layout_vector(0, 0));
 
 // Call this to request that the UI jump to a marked location.
-void jump_to_location(ui_context& ctx, id_interface const& id);
+ALIA_DEFINE_FLAG_TYPE(jump_to_location)
+ALIA_DEFINE_FLAG(jump_to_location, 0x1, JUMP_TO_LOCATION_ABRUPTLY)
+void jump_to_location(ui_context& ctx, id_interface const& id,
+    jump_to_location_flag_set flags = NO_FLAGS);
 
 // DISPLAYS - non-interactive widgets
 
 void do_separator(ui_context& ctx, layout const& layout_spec = default_layout);
 
 void do_color(ui_context& ctx, getter<rgba8> const& color,
+    layout const& layout_spec = default_layout);
+void do_color(ui_context& ctx, getter<rgb8> const& color,
     layout const& layout_spec = default_layout);
 
 void do_progress_bar(ui_context& ctx, getter<double> const& progress,
@@ -537,49 +545,93 @@ struct bulleted_item : noncopyable
     grid_row row_;
 };
 
-// TEXT DISPLAY
+// TEXT CONVERSION
 
-void do_text(ui_context& ctx, getter<string> const& text,
-    layout const& layout_spec = default_layout);
+// All conversion of values to and from text goes through the functions
+// from_string and to_string. In order to use a particular value type with
+// the text-based widgets and utilities provided here, that type must
+// implement these functions.
 
 #define ALIA_DECLARE_STRING_CONVERSIONS(T) \
-    bool from_string(T* value, string const& str, string* message); \
+    void from_string(T* value, string const& s); \
     string to_string(T value);
+
+// from_string(value, s) should parse the string s and store it in *value.
+// It should throw a validation_error if the string doesn't parse.
+
+// to_string(value) should simply return the string form of value.
+
+// Implementations of from_string and to_string are provided for the following
+// types.
 
 ALIA_DECLARE_STRING_CONVERSIONS(int)
 ALIA_DECLARE_STRING_CONVERSIONS(unsigned)
 ALIA_DECLARE_STRING_CONVERSIONS(float)
 ALIA_DECLARE_STRING_CONVERSIONS(double)
 
+// as_text(ctx, x) creates a text-based interface to the getter x.
+template<class T>
+void update_text_conversion(keyed_data<string>* data, getter<T> const& x)
+{
+    if (is_gettable(x))
+    {
+        refresh_keyed_data(*data, x.id());
+        if (!is_valid(*data))
+            set(*data, to_string(get(x)));
+    }
+    else
+        data->is_valid = false;
+}
 template<class T>
 keyed_data_accessor<string>
-as_text(ui_context& ctx, getter<T> const& value)
+as_text(ui_context& ctx, getter<T> const& x)
 {
-    keyed_data_accessor<string> cache;
-    get_keyed_data(ctx, value.id(), &cache);
-    if (!cache.is_gettable() && value.is_gettable())
-        cache.set(to_string(get(value)));
-    return cache;
+    keyed_data<string>* data;
+    get_cached_data(ctx, &data);
+    update_text_conversion(data, x);
+    return keyed_data_accessor<string>(data);
 }
 
-template<class T>
-void do_text(ui_context& ctx, getter<T> const& value,
-    layout const& layout_spec = default_layout)
+// as_settable_text(ctx, x) is similar to as_text but it works with full
+// accessors and provides setting capabilities as well.
+template<class Wrapped>
+struct settable_text_accessor : accessor<string>
 {
-    do_text(ctx, as_text(ctx, value), layout_spec);
+    settable_text_accessor(Wrapped wrapped, keyed_data<string>* data)
+      : wrapped_(wrapped), data_(data)
+    {}
+    bool is_gettable() const { return is_valid(*data_); }
+    string const& get() const { return alia::get(*data_); }
+    alia__shared_ptr<string> get_ptr() const
+    { return alia__shared_ptr<string>(new string(this->get())); }
+    id_interface const& id() const { return wrapped_.id(); }
+    bool is_settable() const { return wrapped_.is_settable(); }
+    void set(string const& s) const
+    {
+        accessor_value_type<Wrapped>::type value;
+        from_string(&value, s);
+        wrapped_.set(value);
+    }
+ private:
+    keyed_data<string>* data_;
+    Wrapped wrapped_;
+};
+template<class Accessor>
+settable_text_accessor<Accessor>
+as_settable_text(ui_context& ctx, Accessor const& x)
+{
+    keyed_data<string>* data;
+    get_cached_data(ctx, &data);
+    update_text_conversion(data, x);
+    return settable_text_accessor<Accessor>(x, data);
 }
 
 #ifdef _MSC_VER
-
 int c99_snprintf(char* str, size_t size, const char* format, ...);
 int c99_vsnprintf(char* str, size_t size, const char* format, va_list ap);
-
 #define ALIA_SNPRINTF alia::c99_snprintf
-
 #else
-
 #define ALIA_SNPRINTF std::snprintf
-
 #endif
 
 template<class Arg0>
@@ -632,6 +684,18 @@ printf(ui_context& ctx, char const* format, getter<Arg0> const& arg0,
     return cache;
 }
 
+// TEXT DISPLAY
+
+void do_text(ui_context& ctx, getter<string> const& text,
+    layout const& layout_spec = default_layout);
+
+template<class T>
+void do_text(ui_context& ctx, getter<T> const& value,
+    layout const& layout_spec = default_layout)
+{
+    do_text(ctx, as_text(ctx, value), layout_spec);
+}
+
 void do_paragraph(ui_context& ctx, getter<string> const& text,
     layout const& layout_spec = default_layout);
 
@@ -654,7 +718,7 @@ void draw_text(ui_context& ctx, getter<string> const& text,
 
 void do_layout_dependent_text(ui_context& ctx, getter<string> const& text,
     layout const& layout_spec);
-
+    
 void do_styled_text(ui_context& ctx, getter<string> const& substyle_name,
     getter<string> const& text, layout const& layout_spec = default_layout);
 
@@ -690,17 +754,68 @@ utf8_string_accessor<Id>
 make_text(utf8_string const& x, Id const& id)
 { return utf8_string_accessor<Id>(x, id); }
 
+// TEXT CONTROL
+
+enum text_control_event_type
+{
+    TEXT_CONTROL_NO_EVENT,
+    TEXT_CONTROL_ENTER_PRESSED,
+    TEXT_CONTROL_FOCUS_LOST,
+    TEXT_CONTROL_INVALID_VALUE,
+    TEXT_CONTROL_EDIT_CANCELED,
+};
+
+struct text_control_result : control_result
+{
+    text_control_event_type event;
+};
+
+ALIA_DEFINE_FLAG_TYPE(text_control)
+ALIA_DEFINE_FLAG(text_control, 0x01, TEXT_CONTROL_DISABLED)
+ALIA_DEFINE_FLAG(text_control, 0x02, TEXT_CONTROL_MASK_CONTENTS)
+ALIA_DEFINE_FLAG(text_control, 0x04, TEXT_CONTROL_SINGLE_LINE)
+ALIA_DEFINE_FLAG(text_control, 0x08, TEXT_CONTROL_MULTILINE)
+ALIA_DEFINE_FLAG(text_control, 0x10, TEXT_CONTROL_IMMEDIATE)
+
+text_control_result
+do_text_control(
+    ui_context& ctx,
+    accessor<string> const& value,
+    layout const& layout_spec = default_layout,
+    text_control_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id,
+    optional<size_t> const& length_limit = none);
+
+template<class T>
+text_control_result
+do_text_control(
+    ui_context& ctx,
+    accessor<T> const& accessor,
+    layout const& layout_spec = default_layout,
+    text_control_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id,
+    optional<size_t> const& length_limit = none)
+{
+    return do_text_control(
+        ctx, as_settable_text(ctx, ref(accessor)), layout_spec, flags, id,
+        length_limit);
+}
+
 // BUTTONS
 
 // text button
 
 typedef bool button_result;
 
+ALIA_DEFINE_FLAG_TYPE(button)
+ALIA_DEFINE_FLAG(button, 0x1, BUTTON_DISABLED)
+
 button_result
 do_button(
     ui_context& ctx,
     getter<string> const& text,
     layout const& layout_spec = default_layout,
+    button_flag_set flags = NO_FLAGS,
     widget_id id = auto_id);
 
 // icon button
@@ -762,9 +877,9 @@ do_radio_button(
     widget_id id = auto_id);
 
 template<class Index>
-struct indexed_accessor : regular_accessor<bool>
+struct radio_accessor : regular_accessor<bool>
 {
-    indexed_accessor(
+    radio_accessor(
         accessor<Index> const& selected_value,
         Index this_value)
       : selected_value_(selected_value), this_value_(this_value)
@@ -782,12 +897,12 @@ struct indexed_accessor : regular_accessor<bool>
 };
 
 template<class Index>
-indexed_accessor<Index>
-make_indexed_accessor(
+radio_accessor<Index>
+make_radio_accessor(
     accessor<Index> const& selected_value,
     Index this_value)
 {
-    return indexed_accessor<Index>(selected_value, this_value);
+    return radio_accessor<Index>(selected_value, this_value);
 }
 
 template<class Index>
@@ -800,7 +915,7 @@ do_radio_button(
     widget_id id = auto_id)
 {
     return do_radio_button(ctx,
-        make_indexed_accessor(selected_value, this_value),
+        make_radio_accessor(selected_value, this_value),
         layout_spec, id);
 }
 
@@ -815,7 +930,7 @@ do_radio_button(
     widget_id id = auto_id)
 {
     return do_radio_button(ctx,
-        make_indexed_accessor(selected_value, this_value),
+        make_radio_accessor(selected_value, this_value),
         text, layout_spec, id);
 }
 
@@ -1074,11 +1189,13 @@ struct accordion_section : noncopyable
     void begin(accordion& parent);
     void end();
     bool do_content();
+    bool clicked() const { return clicked_; }
  private:
     ui_context* ctx_;
     clickable_panel panel_;
     bool is_selected_;
     collapsible_content content_;
+    bool clicked_;
 };
 
 struct clamped_content : noncopyable
@@ -1348,120 +1465,6 @@ struct ddl_item : noncopyable
     bool selected_;
 };
 
-// TEXT CONTROL
-
-enum text_control_event_type
-{
-    TEXT_CONTROL_NO_EVENT,
-    TEXT_CONTROL_ENTER_PRESSED,
-    TEXT_CONTROL_FOCUS_LOST,
-    TEXT_CONTROL_INVALID_VALUE,
-    TEXT_CONTROL_EDIT_CANCELED,
-};
-
-struct text_control_result : control_result
-{
-    text_control_event_type event;
-};
-
-ALIA_DEFINE_FLAG_TYPE(text_control)
-ALIA_DEFINE_FLAG(text_control, 0x01, TEXT_CONTROL_DISABLED)
-ALIA_DEFINE_FLAG(text_control, 0x02, TEXT_CONTROL_MASK_CONTENTS)
-ALIA_DEFINE_FLAG(text_control, 0x04, TEXT_CONTROL_SINGLE_LINE)
-ALIA_DEFINE_FLAG(text_control, 0x08, TEXT_CONTROL_MULTILINE)
-ALIA_DEFINE_FLAG(text_control, 0x10, TEXT_CONTROL_ALWAYS_EDITING)
-
-text_control_result
-do_text_control(
-    ui_context& ctx,
-    accessor<string> const& value,
-    layout const& layout_spec = default_layout,
-    text_control_flag_set flags = NO_FLAGS,
-    widget_id id = auto_id,
-    optional<size_t> const& length_limit = none);
-
-struct text_control_string_conversion
-{
-    text_control_string_conversion() : valid(false) {}
-    bool valid;
-    owned_id id;
-    string text;
-    // associated error message (if text doesn't parse)
-    string message;
-};
-
-template<class T>
-text_control_result
-do_text_control(
-    ui_context& ctx,
-    accessor<T> const& accessor,
-    layout const& layout_spec = default_layout,
-    text_control_flag_set flags = NO_FLAGS,
-    widget_id id = auto_id,
-    optional<size_t> const& length_limit = none)
-{
-    layout spec = add_default_alignment(layout_spec, LEFT, BASELINE_Y);
-    column_layout c(ctx, spec);
-
-    text_control_string_conversion* data;
-    get_data(ctx, &data);
-    if (ctx.event->type == REFRESH_EVENT)
-    {
-        bool valid = accessor.is_gettable();
-        if (data->valid != valid || valid && !data->id.matches(accessor.id()))
-        {
-            // The external value has changed.
-            data->valid = valid;
-            data->text = valid ? to_string(get(accessor)) : "";
-            data->message = "";
-            data->id.store(accessor.id());
-        }
-    }
-
-    text_control_result r = do_text_control(
-        ctx, inout(&data->text), spec, flags, id, length_limit);
-    alia_if(!data->message.empty())
-    {
-        do_paragraph(ctx, in(data->message));
-    }
-    alia_end
-
-    text_control_result result;
-    switch (r.event)
-    {
-     case TEXT_CONTROL_FOCUS_LOST:
-     case TEXT_CONTROL_ENTER_PRESSED:
-      {
-        T new_value;
-        if (from_string(&new_value, data->text, &data->message))
-        {
-            data->message = "";
-            result.event = r.event;
-            result.changed = true;
-            accessor.set(new_value);
-        }
-        else
-        {
-            result.event = TEXT_CONTROL_INVALID_VALUE;
-            result.changed = false;
-        }
-        break;
-      }
-     case TEXT_CONTROL_EDIT_CANCELED:
-        result.event = TEXT_CONTROL_EDIT_CANCELED;
-        result.changed = false;
-        data->text = accessor.is_gettable() ? to_string(get(accessor)) : "";
-        data->message = "";
-        break;
-     case TEXT_CONTROL_NO_EVENT:
-     default:
-        result.event = TEXT_CONTROL_NO_EVENT;
-        result.changed = false;
-        break;
-    }
-    return result;
-}
-
 // resizable_content is a container with a draggable separator for controlling
 // the size of its contents.
 ALIA_DEFINE_FLAG_TYPE(resizable_content)
@@ -1551,6 +1554,115 @@ struct table_cell : noncopyable
     panel panel_;
     scoped_substyle special_style_;
 };
+
+// FORMS
+
+struct form : noncopyable
+{
+    form() : ctx_(0) {}
+    form(ui_context& ctx, layout const& layout_spec = default_layout)
+    { begin(ctx, layout_spec); }
+    ~form() { end(); }
+    void begin(ui_context& ctx, layout const& layout_spec = default_layout);
+    void end();
+    ui_context& context() { return *ctx_; }
+    grid_layout& grid() { return grid_; }
+ private:
+    ui_context* ctx_;
+    grid_layout grid_;
+};
+
+struct form_field : noncopyable
+{
+    form_field() : form_(0) {}
+    form_field(form& form, getter<string> const& label)
+    { begin(form, label); }
+    ~form_field() { end(); }
+    void begin(form& form, getter<string> const& label);
+    void end();
+ private:
+    form* form_;
+    grid_row row_;
+    column_layout contents_;
+};
+
+struct form_buttons : noncopyable
+{
+    form_buttons() : form_(0) {}
+    form_buttons(form& form) { begin(form); }
+    ~form_buttons() { end(); }
+    void begin(form& form);
+    void end();
+ private:
+    form* form_;
+    grid_row row_;
+    row_layout contents_;
+};
+
+// VALIDATION
+
+// enforce_min(accessor, min) wraps the given accessor with validation logic
+// ensuring that no values less than min are written to it.
+template<class Wrapped>
+struct min_validation_wrapper
+  : regular_accessor<typename accessor_value_type<Wrapped>::type>
+{
+    min_validation_wrapper(Wrapped wrapped,
+        typename accessor_value_type<Wrapped>::type min)
+      : wrapped_(wrapped), min_(min)
+    {}
+    bool is_gettable() const { return wrapped_.is_gettable(); }
+    typename accessor_value_type<Wrapped>::type const& get() const
+    { return wrapped_.get(); }
+    bool is_settable() const { return wrapped_.is_settable(); }
+    void set(typename accessor_value_type<Wrapped>::type const& value) const
+    {
+        if (value < min_)
+        {
+            throw validation_error(
+                "This value must be at least " + to_string(min_) + ".");
+        }
+        wrapped_.set(value);
+    }
+ private:
+    Wrapped wrapped_;
+    typename accessor_value_type<Wrapped>::type min_;
+};
+template<class Wrapped>
+min_validation_wrapper<Wrapped>
+enforce_min(Wrapped accessor, typename accessor_value_type<Wrapped>::type min)
+{ return min_validation_wrapper<Wrapped>(accessor, min); }
+
+// enforce_max(accessor, max) is analogous to enforce_max.
+template<class Wrapped>
+struct max_validation_wrapper
+  : regular_accessor<typename accessor_value_type<Wrapped>::type>
+{
+    max_validation_wrapper(Wrapped wrapped,
+        typename accessor_value_type<Wrapped>::type max)
+      : wrapped_(wrapped), max_(max)
+    {}
+    bool is_gettable() const { return wrapped_.is_gettable(); }
+    typename accessor_value_type<Wrapped>::type const& get() const
+    { return wrapped_.get(); }
+    bool is_settable() const { return wrapped_.is_settable(); }
+    void set(typename accessor_value_type<Wrapped>::type const& value) const
+    {
+        if (value > max_)
+        {
+            throw validation_error(
+                "This value cannot be greater than " + to_string(max_) + ".");
+        }
+        wrapped_.set(value);
+    }
+ private:
+    Wrapped wrapped_;
+    typename accessor_value_type<Wrapped>::type max_;
+};
+template<class Wrapped>
+max_validation_wrapper<Wrapped>
+enforce_max(Wrapped accessor, typename accessor_value_type<Wrapped>::type max)
+{ return max_validation_wrapper<Wrapped>(accessor, max); }
 
 }
 

@@ -125,6 +125,15 @@ struct accessor_value_type<Accessor const&>
   : accessor_value_type<Accessor>
 {};
 
+// When an accessor is set to a value, it's allowed to throw a validation
+// error if the value is not acceptable.
+// It should include a message that's presentable to the user.
+struct validation_error : exception
+{
+    validation_error(string const& message) : exception(message) {}
+    ~validation_error() throw() {}
+};
+
 // regular_accessor is a partial implementation of the accessor interface for
 // cases where the ID of the accessor is simply the value itself.
 template<class T>
@@ -231,49 +240,49 @@ optional_in(optional<T> const& value)
 // make_custom_getter(&x, &id) gives you the most flexibility in creating an
 // input accessor (short of implementing your own accessor type).
 // x is the value, and id is a custom ID. Both are stored by reference.
-template<class T>
+template<class T, class Id>
 struct custom_getter : accessor<T>
 {
-    custom_getter(T const* value, id_interface const* id)
+    custom_getter(T const* value, Id const& id)
       : value_(value), id_(id)
     {}
-    id_interface const& id() const { return *id_; }
+    id_interface const& id() const { return id_; }
     bool is_gettable() const { return true; }
     T const& get() const { return *value_; }
     bool is_settable() const { return false; }
     void set(T const& value) const {}
  private:
-    id_interface const* id_;
+    Id id_;
     T const* value_;
 };
-template<class T>
-custom_getter<T>
-make_custom_getter(T const* value, id_interface const* id)
+template<class T, class Id>
+custom_getter<T,Id>
+make_custom_getter(T const* value, Id const& id)
 {
-    return custom_getter<T>(value, id);
+    return custom_getter<T,Id>(value, id);
 }
 
 // Same as above, but the value is optional.
-template<class T>
+template<class T, class Id>
 struct custom_optional_getter : accessor<T>
 {
-    custom_optional_getter(optional<T> const* value, id_interface const* id)
+    custom_optional_getter(optional<T> const* value, Id const& id)
       : value_(value), id_(id)
     {}
-    id_interface const& id() const { return *id_; }
+    id_interface const& id() const { return id_; }
     bool is_gettable() const { return *value_ ? true : false; }
     T const& get() const { return alia::get(*value_); }
     bool is_settable() const { return false; }
     void set(T const& value) const {}
  private:
-    id_interface const* id_;
+    Id id_;
     optional<T> const* value_;
 };
-template<class T>
-custom_optional_getter<T>
-make_custom_getter(optional<T> const* value, id_interface const* id)
+template<class T, class Id>
+custom_optional_getter<T,Id>
+make_custom_getter(optional<T> const* value, Id const& id)
 {
-    return custom_optional_getter<T>(value, id);
+    return custom_optional_getter<T,Id>(value, id);
 }
 
 // A state_proxy object is used when direct access is not possible and you
@@ -599,34 +608,6 @@ rounding_accessor_wrapper<Wrapped>
 add_input_rounder(Wrapped accessor,
     typename accessor_value_type<Wrapped>::type step)
 { return rounding_accessor_wrapper<Wrapped>(accessor, step); }
-
-// add_input_clamp(accessor, min, max) clamps input from the UI to the
-// accessor so that it's always between min and max (inclusive).
-template<class Wrapped>
-struct clamping_accessor_wrapper
-  : regular_accessor<typename accessor_value_type<Wrapped>::type>
-{
-    clamping_accessor_wrapper(Wrapped wrapped,
-        typename accessor_value_type<Wrapped>::type min,
-        typename accessor_value_type<Wrapped>::type max)
-      : wrapped_(wrapped), min_(min), max_(max)
-    {}
-    bool is_gettable() const { return wrapped_.is_gettable(); }
-    typename accessor_value_type<Wrapped>::type const& get() const
-    { return wrapped_.get(); }
-    bool is_settable() const { return wrapped_.is_settable(); }
-    void set(typename accessor_value_type<Wrapped>::type const& value) const
-    { wrapped_.set(value < min_ ? min_ : (value > max_ ? max_ : value)); }
- private:
-    Wrapped wrapped_;
-    typename accessor_value_type<Wrapped>::type min_, max_;
-};
-template<class Wrapped>
-clamping_accessor_wrapper<Wrapped>
-add_input_clamp(Wrapped accessor,
-    typename accessor_value_type<Wrapped>::type min,
-    typename accessor_value_type<Wrapped>::type max)
-{ return clamping_accessor_wrapper<Wrapped>(accessor, min, max); }
 
 // Given an accessor to a structure, select_field(accessor, field_ptr) returns
 // an accessor to the specified field within the structure.

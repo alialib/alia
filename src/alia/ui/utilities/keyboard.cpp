@@ -90,8 +90,9 @@ void set_focus(ui_system& ui, routable_widget_id id)
     {
         widget_visibility_request request;
         request.widget = id;
+        request.move_to_top = false;
         request.abrupt = false;
-        ui.pending_visibility_request = request;
+        ui.pending_visibility_requests.push_back(request);
 
         focus_notification_event e(FOCUS_GAIN_EVENT, id.id);
         issue_targeted_event(ui, e, id);

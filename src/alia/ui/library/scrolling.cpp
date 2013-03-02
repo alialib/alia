@@ -131,8 +131,7 @@ struct scrollbar_data
     unsigned axis;
     int physical_position, drag_start_delta;
     themed_rendering_data<scrollbar_renderer> rendering;
-    widget_identity whole_id_data, background_id_data[2], thumb_id_data,
-        button_id_data[2];
+    widget_identity background_id_data[2], thumb_id_data, button_id_data[2];
 
     scrollbar_data()
       : axis(0), physical_position(0)
@@ -281,7 +280,7 @@ void scrollbar::process_button_input(
         start_timer(ctx, id, delay_after_first_increment);
     }
     else if (detect_click_in_progress(ctx, id, LEFT_BUTTON) &&
-        is_timer_done(ctx, id))
+        detect_timer_event(ctx, id))
     {
         set_logical_position(logical_position + increment);
         restart_timer(ctx, id, delay_after_other_increment);
@@ -327,8 +326,6 @@ void scrollbar::do_pass()
 
     layout_vector button_size =
         make_layout_vector(renderer->width(ctx), renderer->button_length(ctx));
-
-    widget_id whole_id = &data.whole_id_data;
 
     layout_box button0_area = area;
     button0_area.size[major_axis] = button_size[1];
@@ -419,7 +416,6 @@ void scrollbar::do_pass()
 
      case REGION_CATEGORY:
       {
-        hit_test_box_region(ctx, whole_id, area, HIT_TEST_WHEEL);
         do_box_region(ctx, bg0_id, bg0_area);
         do_box_region(ctx, bg1_id, bg1_area);
         do_box_region(ctx, thumb_id, thumb_area);
@@ -446,13 +442,6 @@ void scrollbar::do_pass()
 
         process_button_input(button0_id, button0_area, -line_increment);
         process_button_input(button1_id, button1_area, line_increment);
-
-        float movement;
-        if (detect_wheel_movement(ctx, &movement, whole_id))
-        {
-            set_logical_position(
-                int(logical_position - movement * line_increment + 0.5));
-        }
 
         break;
       }
@@ -501,7 +490,7 @@ struct scrollable_layout_container : layout_container
     layout_vector scroll_position;
 
     // for smoothing the scroll position
-    value_smoothing_data smoothing_data[2];
+    value_smoother<layout_scalar> smoothers[2];
 
     // layout cacher
     layout_cacher cacher;
@@ -606,6 +595,23 @@ clamp_scroll_position(scrollable_layout_container& container, unsigned axis,
         0;
 }
 
+static void
+reset_smoothing_for_axis(
+    scrollable_layout_container& container, unsigned axis)
+{
+    container.scroll_position[axis] =
+        container.desired_scroll_position[axis];
+    reset_smoothing(container.smoothers[axis],
+        container.scroll_position[axis]);
+}
+
+static void
+reset_smoothing(scrollable_layout_container& container)
+{
+    reset_smoothing_for_axis(container, 0);
+    reset_smoothing_for_axis(container, 1);
+}
+
 void scrollable_layout_container::set_relative_assignment(
     layout_calculation_context& ctx,
     relative_layout_assignment const& assignment)
@@ -668,9 +674,9 @@ void scrollable_layout_container::set_relative_assignment(
                 scroll_position[i] + available_size[i] <
                     this->content_size[i])
             {
-                desired_scroll_position[i] = scroll_position[i] =
+                desired_scroll_position[i] =
                     content_size[i] - available_size[i];
-                reset_smoothing(smoothing_data[i], scroll_position[i]);
+                reset_smoothing_for_axis(*this, i);
             }
         }
 
@@ -685,8 +691,8 @@ void scrollable_layout_container::set_relative_assignment(
                 clamp_scroll_position(*this, i, scroll_position[i]);
             if (clamped_position != scroll_position[i])
             {
-                scroll_position[i] = clamped_position;
-                reset_smoothing(smoothing_data[i], scroll_position[i]);
+                desired_scroll_position[i] = clamped_position;
+                reset_smoothing_for_axis(*this, i);
             }
         }
 
@@ -698,6 +704,68 @@ void scrollable_layout_container::set_relative_assignment(
         rra.update();
     }
     alia_end
+}
+
+static void
+handle_visibility_request(
+    ui_context& ctx, scrollable_layout_container& container,
+    make_widget_visible_event& event)
+{
+    matrix<3,3,double> inverse_transform = inverse(get_transformation(ctx));
+    // TODO: This doesn't handle rotations properly.
+    vector<2,double>
+        region_ul =
+            transform(inverse_transform, event.region.corner),
+        region_lr =
+            transform(inverse_transform, get_high_corner(event.region)),
+        window_ul =
+            vector<2,double>(container.desired_scroll_position),
+        window_lr =
+            window_ul + vector<2,double>(container.window_size);
+    for (int i = 0; i < 2; ++i)
+    {
+        layout_scalar correction = 0;
+        if (event.request.move_to_top)
+        {
+            correction = round_to_layout_scalar(window_ul[i] - region_ul[i]);
+        }
+        else if (event.region.size[i] <= double(container.window_size[i]))
+        {
+            if (region_ul[i] < window_ul[i] && region_lr[i] < window_lr[i])
+            {
+                correction =
+                    round_to_layout_scalar(window_ul[i] - region_ul[i]);
+            }
+            else if (region_ul[i] > window_ul[i] &&
+                region_lr[i] > window_lr[i])
+            {
+                correction =
+                    -round_to_layout_scalar(
+                        (std::min)(
+                            region_ul[i] - window_ul[i],
+                            region_lr[i] - window_lr[i]));
+            }
+        }
+        else
+        {
+            if (region_lr[i] < window_ul[i] || region_ul[i] >= window_lr[i])
+            {
+                correction =
+                    round_to_layout_scalar(window_ul[i] - region_ul[i]);
+            }
+        }
+        if (correction != 0)
+        {
+            layout_scalar clamped_position =
+                clamp_scroll_position(container, i,
+                    container.desired_scroll_position[i] - correction);
+            event.region.corner[i] +=
+                container.desired_scroll_position[i] - clamped_position;
+            container.desired_scroll_position[i] = clamped_position;
+            if (event.request.abrupt)
+                reset_smoothing_for_axis(container, i);
+        }
+    }
 }
 
 void scrollable_region::begin(
@@ -718,10 +786,10 @@ void scrollable_region::begin(
     }
     for (unsigned i = 0; i != 2; ++i)
     {
-        layout_scalar smoothed = round_to_layout_scalar(
-            smooth_value(ctx, container->smoothing_data[i],
+        layout_scalar smoothed =
+            smooth_raw_value(ctx, container->smoothers[i],
                 container->desired_scroll_position[i],
-                animated_transition(default_curve, 350)));
+                animated_transition(default_curve, 350));
         container->scroll_position[i] =
             clamp_scroll_position(*container, i, smoothed);
     }
@@ -790,8 +858,7 @@ void scrollable_region::begin(
             {
                 container->desired_scroll_position[0] =
                     container->scroll_position[0];
-                reset_smoothing(container->smoothing_data[0],
-                    container->desired_scroll_position[0]);
+                reset_smoothing_for_axis(*container, 0);
             }
         }
         if (container->vsb_on)
@@ -809,8 +876,7 @@ void scrollable_region::begin(
             {
                 container->desired_scroll_position[1] =
                     container->scroll_position[1];
-                reset_smoothing(container->smoothing_data[1],
-                    container->desired_scroll_position[1]);
+                reset_smoothing_for_axis(*container, 1);
             }
         }
         if (container->hsb_on && container->vsb_on)
@@ -847,90 +913,7 @@ void scrollable_region::end()
             make_widget_visible_event& e =
                 get_event<make_widget_visible_event>(ctx);
             if (e.acknowledged)
-            {
-                // TODO: This doesn't handle rotations properly.
-                vector<2,double>
-                    region_ul =
-                        transform(
-                            inverse(get_transformation(ctx)),
-                            e.region.corner),
-                    region_lr =
-                        transform(
-                            inverse(get_transformation(ctx)),
-                            get_high_corner(e.region)),
-                    window_ul =
-                        vector<2,double>(container_->desired_scroll_position),
-                    window_lr =
-                        window_ul + vector<2,double>(container_->window_size);
-                for (int i = 0; i < 2; ++i)
-                {
-                    if (e.region.size[i] <= double(container_->window_size[i]))
-                    {
-                        if (region_ul[i] < window_ul[i] &&
-                            region_lr[i] < window_lr[i])
-                        {
-                            int correction =
-                                int(window_ul[i] - region_ul[i] + 0.5);
-                            container_->desired_scroll_position[i] -=
-                                correction;
-                            e.region.corner[i] += correction;
-                        }
-                        else if (region_ul[i] > window_ul[i] &&
-                            region_lr[i] > window_lr[i])
-                        {
-                            int correction =
-                                int((std::min)(region_ul[i] - window_ul[i],
-                                    region_lr[i] - window_lr[i]) + 0.5);
-                            container_->desired_scroll_position[i] +=
-                                correction;
-                            e.region.corner[i] -= correction;
-                        }
-                    }
-                    else
-                    {
-                        if (region_lr[i] < window_ul[i] ||
-                            region_ul[i] >= window_lr[i])
-                        {
-                            int correction =
-                                int(window_ul[i] - region_ul[i] + 0.5);
-                            container_->desired_scroll_position[i] -=
-                                correction;
-                            e.region.corner[i] += correction;
-                        }
-                    }
-                }
-                if (e.abrupt)
-                {
-                    container_->scroll_position =
-                        container_->desired_scroll_position;
-                    reset_smoothing(container_->smoothing_data[0],
-                        container_->scroll_position[0]);
-                    reset_smoothing(container_->smoothing_data[1],
-                        container_->scroll_position[1]);
-                }
-            }
-        }
-        else if (ctx.event->type == JUMP_TO_WIDGET_EVENT &&
-            srr_.is_relevant())
-        {
-            jump_to_widget_event& e =
-                get_event<jump_to_widget_event>(ctx);
-            if (e.acknowledged)
-            {
-                vector<2,double>
-                    position =
-                        transform(
-                            inverse(get_transformation(ctx)),
-                            e.position),
-                    window_ul =
-                        vector<2,double>(container_->desired_scroll_position);
-                for (int i = 0; i < 2; ++i)
-                {
-                    int correction = int(window_ul[i] - position[i] + 0.5);
-                    container_->desired_scroll_position[i] -= correction;
-                    e.position[i] += correction;
-                }
-            }
+                handle_visibility_request(ctx, *container_, e);
         }
         break;
 

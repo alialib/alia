@@ -84,23 +84,32 @@ typedef vector<2,relative_length> relative_size;
 
 // box_border_width specifies the width of the borders of a box.
 // Each side can have a different border width.
-// Note that the individual widths should be specified as relative lengths,
-// but their absolute for now for simplicity.
+template<class Scalar>
 struct box_border_width
 {
-    absolute_length top, right, bottom, left;
+    Scalar top, right, bottom, left;
     box_border_width() {}
     box_border_width(
-        absolute_length const& top, absolute_length const& right,
-        absolute_length const& bottom, absolute_length const& left)
+        Scalar top, Scalar right, Scalar bottom, Scalar left)
       : top(top), right(right), bottom(bottom), left(left)
     {}
-    box_border_width(absolute_length const& width)
+    explicit box_border_width(Scalar width)
       : top(width), right(width), bottom(width), left(width)
     {}
 };
-bool operator==(box_border_width const& a, box_border_width const& b);
-bool operator!=(box_border_width const& a, box_border_width const& b);
+template<class Scalar>
+bool operator==(box_border_width<Scalar> const& a,
+    box_border_width<Scalar> const& b)
+{
+    return a.top == b.top && a.right == b.right &&
+        a.bottom == b.bottom && a.left == b.left;
+}
+template<class Scalar>
+bool operator!=(box_border_width<Scalar> const& a,
+    box_border_width<Scalar> const& b)
+{
+    return !(a == b);
+}
 
 // some convenience functions for specifying widget sizes
 static inline absolute_size
@@ -493,8 +502,14 @@ ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(clamped_layout, absolute_size)
 
 // bordered_layout adds a border to its child.
 // (It should only have a single child.)
+// (Note that the scalar type should ideally be relative_length, but that's a
+// little more complicated to implement.)
 ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(
-    bordered_layout, box_border_width)
+    bordered_layout, box_border_width<absolute_length>)
+
+// A clip_evasion_layout will move its child around inside its assigned region
+// to try to keep the child visible.
+ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(clip_evasion_layout)
 
 #define ALIA_DECLARE_GRID_LAYOUT_CONTAINER(grid_type, row_type) \
     struct grid_type##_data; \

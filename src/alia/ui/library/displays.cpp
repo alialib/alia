@@ -8,6 +8,7 @@ namespace alia {
 struct separator_data
 {
     keyed_data<layout_vector> size;
+    keyed_data<absolute_size> padding;
     layout_leaf layout_node;
     caching_renderer_data rendering;
 };
@@ -16,20 +17,34 @@ void do_separator(ui_context& ctx, layout const& layout_spec)
 {
     ALIA_GET_CACHED_DATA(separator_data)
 
-    switch (ctx.event->category)
+    if (is_refresh_pass(ctx))
     {
-     case REFRESH_CATEGORY:
-      {
         refresh_keyed_data(data.size, *ctx.style.id);
         if (!is_valid(data.size))
         {
             absolute_length spec =
                 get_property(ctx, "separator-width", INHERITED_PROPERTY,
-                    absolute_length(0.1f, EM));
+                    absolute_length(1, PIXELS));
             set(data.size, as_layout_size(make_vector(
                 resolve_absolute_length(get_layout_traversal(ctx), 0, spec),
                 resolve_absolute_length(get_layout_traversal(ctx), 1, spec))));
         }
+        refresh_keyed_data(data.padding, *ctx.style.id);
+        if (!is_valid(data.padding))
+        {
+            absolute_length spec =
+                get_property(ctx, "separator-padding", INHERITED_PROPERTY,
+                    absolute_length(0, PIXELS));
+            set(data.padding, make_vector(spec, spec));
+        }
+    }
+
+    do_spacer(ctx, layout(get(data.padding), UNPADDED));
+
+    switch (ctx.event->category)
+    {
+     case REFRESH_CATEGORY:
+      {
         data.layout_node.refresh_layout(
             get_layout_traversal(ctx), layout_spec,
             leaf_layout_requirements(get(data.size), 0, 0),
@@ -62,6 +77,8 @@ void do_separator(ui_context& ctx, layout const& layout_spec)
         break;
       }
     }
+
+    do_spacer(ctx, layout(get(data.padding), UNPADDED));
 }
 
 // COLOR
@@ -93,7 +110,8 @@ void do_color(ui_context& ctx, getter<rgba8> const& color,
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);
             paint.setStyle(SkPaint::kFill_Style);
-            set_color(paint, get(color));
+            set_color(paint, is_gettable(color) ? get(color) :
+                rgba8(0x00, 0x00, 0x00, 0x00));
             SkRect rect;
             rect.fLeft = 0;
             rect.fRight = layout_scalar_as_skia_scalar(region.size[0]);
@@ -112,6 +130,15 @@ void do_color(ui_context& ctx, getter<rgba8> const& color,
         break;
       }
     }
+}
+
+void do_color(ui_context& ctx, getter<rgb8> const& color,
+    layout const& layout_spec)
+{
+    do_color(ctx,
+        in(is_gettable(color) ? rgba8(get(color)) :
+            rgba8(0x00, 0x00, 0x00, 0x00)),
+        layout_spec);
 }
 
 // BULLETED LIST

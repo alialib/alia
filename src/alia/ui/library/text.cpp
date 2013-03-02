@@ -74,19 +74,15 @@ string value_to_string(T const& value)
 }
 
 template<class T>
-bool float_from_string(T* value, string const& str, string* message)
+void float_from_string(T* value, string const& str)
 {
     if (!string_to_value(str, value))
-    {
-        *message = "This input expects a number.";
-        return false;
-    }
-    return true;
+        throw validation_error("This input expects a number.");
 }
 
 #define ALIA_FLOAT_CONVERSIONS(T) \
-    bool from_string(T* value, string const& str, string* message) \
-    { return float_from_string(value, str, message); } \
+    void from_string(T* value, string const& str) \
+    { float_from_string(value, str); } \
     string to_string(T value) \
     { return value_to_string(value); }
 
@@ -94,27 +90,20 @@ ALIA_FLOAT_CONVERSIONS(float)
 ALIA_FLOAT_CONVERSIONS(double)
 
 template<class T>
-bool integer_from_string(T* value, string const& str, string* message)
+void integer_from_string(T* value, string const& str)
 {
     long long n;
     if (!string_to_value(str, &n))
-    {
-        *message = "This input expects an integer.";
-        return false;
-    }
+        throw validation_error("This input expects an integer.");
     T x = T(n);
     if (x != n)
-    {
-        *message = "integer out of range";
-        return false;
-    }
+        throw validation_error("This integer is outside the supported range.");
     *value = x;
-    return true;
 }
 
 #define ALIA_INTEGER_CONVERSIONS(T) \
-    bool from_string(T* value, string const& str, string* message) \
-    { return integer_from_string(value, str, message); } \
+    void from_string(T* value, string const& str) \
+    { integer_from_string(value, str); } \
     string to_string(T value) \
     { return value_to_string(value); }
 
@@ -780,7 +769,8 @@ bool do_link(
         break;
 
      case REGION_CATEGORY:
-        do_box_region(ctx, id, get_region(data.standalone_text), HAND_CURSOR);
+        do_box_region(ctx, id, get_region(data.standalone_text),
+            POINTING_HAND_CURSOR);
         break;
 
      case RENDER_CATEGORY:

@@ -729,9 +729,9 @@ struct loop_block : noncopyable
 
 #define alia_else alia_else_(ctx)
 
-// pass_dependent_if
-// This is used for tests that involve conditions that change from one pass to
-// another. It does not clear out cached items if the test fails.
+// pass_dependent_if - This is used for tests that involve conditions that
+// change from one pass to another. It does not clear out cached data wihin
+// the block if it's skipped.
 
 #define alia_pass_dependent_if_(ctx, condition) \
     { \
@@ -760,14 +760,14 @@ struct loop_block : noncopyable
 #define alia_case(c) \
             case c: \
                 alia__switch_block.activate_case(c); \
-                goto ALIA_CONCATENATE(alia__dummy_label, __LINE__); \
-                ALIA_CONCATENATE(alia__dummy_label, __LINE__)
+                goto ALIA_CONCATENATE(alia__dummy_label_, __LINE__); \
+                ALIA_CONCATENATE(alia__dummy_label_, __LINE__)
 
 #define alia_default \
             default: \
                 alia__switch_block.activate_case("default"); \
-                goto ALIA_CONCATENATE(alia__dummy_label, __LINE__); \
-                ALIA_CONCATENATE(alia__dummy_label, __LINE__)
+                goto ALIA_CONCATENATE(alia__dummy_label_, __LINE__); \
+                ALIA_CONCATENATE(alia__dummy_label_, __LINE__)
 
 // for
 

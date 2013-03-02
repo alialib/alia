@@ -96,6 +96,9 @@ struct opengl_surface : surface
     vector<2,unsigned> size_;
 };
 
+// Use OpenGL extensions to disable vsync.
+void disable_vsync();
+
 }
 
 #endif

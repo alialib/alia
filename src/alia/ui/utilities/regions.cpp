@@ -31,25 +31,13 @@ void handle_region_visibility(ui_context& ctx, widget_id id,
     box<2,int> const& region)
 {
     make_widget_visible_event& e = get_event<make_widget_visible_event>(ctx);
-    if (e.id == id)
+    if (e.request.widget.id == id)
     {
         // TODO: This doesn't handle rotations properly.
         e.region = box<2,double>(
             transform(get_transformation(ctx),
                 vector<2,double>(region.corner - get_padding_size(ctx))),
             vector<2,double>(region.size + get_padding_size(ctx) * 2));
-        e.acknowledged = true;
-    }
-}
-
-void handle_widget_jumping(ui_context& ctx, widget_id id,
-    vector<2,int> const& position)
-{
-    jump_to_widget_event& e = get_event<jump_to_widget_event>(ctx);
-    if (e.id == id)
-    {
-        e.position =
-            transform(get_transformation(ctx), vector<2,double>(position));
         e.acknowledged = true;
     }
 }
@@ -64,9 +52,6 @@ void do_box_region(ui_context& ctx, widget_id id, box<2,int> const& region,
         break;
      case MAKE_WIDGET_VISIBLE_EVENT:
         handle_region_visibility(ctx, id, region);
-        break;
-     case JUMP_TO_WIDGET_EVENT:
-        handle_widget_jumping(ctx, id, region.corner);
         break;
     }
 }
@@ -103,7 +88,8 @@ void make_widget_visible(ui_context& ctx, widget_id id,
     widget_visibility_request request;
     request.widget = make_routable_widget_id(ctx, id);
     request.abrupt = (flags & MAKE_WIDGET_VISIBLE_ABRUPTLY) ? true : false;
-    ctx.system->pending_visibility_request = request;
+    request.move_to_top = false;
+    ctx.system->pending_visibility_requests.push_back(request);
 }
 
 }

@@ -32,16 +32,6 @@ bool operator!=(layout const& a, layout const& b)
     return !(a == b);
 }
 
-bool operator==(box_border_width const& a, box_border_width const& b)
-{
-    return a.top == b.top && a.right == b.right &&
-        a.bottom == b.bottom && a.left == b.left;
-}
-bool operator!=(box_border_width const& a, box_border_width const& b)
-{
-    return !(a == b);
-}
-
 void scoped_layout_container::begin(
     layout_traversal& traversal, layout_container* container)
 {

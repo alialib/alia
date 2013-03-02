@@ -29,10 +29,6 @@ void hit_test_box_region(ui_context& ctx, widget_id id,
 void handle_region_visibility(ui_context& ctx, widget_id id,
     box<2,int> const& box);
 
-// Respond to a jump_to_widget_event for a given widget.
-void handle_widget_jumping(ui_context& ctx, widget_id id,
-    vector<2,int> const& position);
-
 // If you want to work with non-rectangular shapes, you can do hit testing
 // yourself and call this when you detect a hit.
 void handle_mouse_hit(ui_context& ctx, widget_id id,

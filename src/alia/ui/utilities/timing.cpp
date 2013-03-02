@@ -3,15 +3,23 @@
 
 namespace alia {
 
-void request_refresh(ui_context& ctx)
+void request_refresh(ui_context& ctx, ui_time_type duration)
 {
-    ctx.surface->request_refresh(false);
+    ui_system& ui = *ctx.system;
+    ui_time_type update_time = ui.millisecond_tick_count + duration;
+    if (!ui.next_update || int(get(ui.next_update) - update_time) > 0)
+        ui.next_update = update_time;
     record_content_change(ctx);
+}
+
+void request_animation_refresh(ui_context& ctx)
+{
+    request_refresh(ctx, 10);
 }
 
 ui_time_type get_animation_tick_count(ui_context& ctx)
 {
-    request_refresh(ctx);
+    request_animation_refresh(ctx);
     return ctx.system->millisecond_tick_count;
 }
 
@@ -20,110 +28,67 @@ ui_time_type get_animation_ticks_left(ui_context& ctx, ui_time_type end_time)
     int ticks_remaining = int(end_time - ctx.system->millisecond_tick_count);
     if (ticks_remaining > 0)
     {
-        request_refresh(ctx);
+        request_animation_refresh(ctx);
         return ui_time_type(ticks_remaining);
     }
     return 0;
 }
 
-float
-smooth_value(ui_context& ctx, float x,
-    animated_transition const& transition)
+struct square_wave_data
 {
-    return float(smooth_value(ctx, double(x), transition));
-}
+    widget_identity id;
+    bool value;
+};
 
-void reset_smoothing(value_smoothing_data& data, double value)
+bool square_wave(ui_context& ctx, ui_time_type true_duration,
+    ui_time_type false_duration)
 {
-    data.smoothing = false;
-    data.new_value = value;
-}
-
-double
-smooth_value(ui_context& ctx, value_smoothing_data& data, double x,
-    animated_transition const& transition)
-{
-    double current_value = data.new_value;
-    if (data.smoothing)
-    {
-        ui_time_type ticks_left =
-            get_animation_ticks_left(ctx, data.transition_end);
-        if (ticks_left > 0)
-        {
-            current_value = data.old_value +
-                eval_curve_at_x(transition.curve,
-                    1. - double(ticks_left) / data.duration,
-                    1. / data.duration) *
-                (data.new_value - data.old_value);
-        }
-        else
-            data.smoothing = false;
-    }
-
-    if (is_refresh_pass(ctx) && x != data.new_value)
-    {
-        data.duration =
-            // If we're just going back to the old value, go back in the same
-            // amount of time it took to get here.
-            data.smoothing && x == data.old_value ?
-                (transition.duration -
-                    get_animation_ticks_left(ctx, data.transition_end)) :
-                transition.duration;
-        data.transition_end = get_animation_tick_count(ctx) + data.duration;
-        data.old_value = current_value;
-        data.new_value = x;
-        data.smoothing = true;
-    }
-
-    return current_value;
-}
-
-double
-smooth_value(ui_context& ctx, double x,
-    animated_transition const& transition)
-{
-    value_smoothing_data* data;
+    square_wave_data* data;
     if (get_cached_data(ctx, &data))
-        reset_smoothing(*data, x);
-
-    return smooth_value(ctx, *data, x, transition);
+    {
+        data->value = true;
+        start_timer(ctx, &data->id, true_duration);
+    }
+    if (detect_timer_event(ctx, &data->id))
+    {
+        data->value = !data->value;
+        restart_timer(ctx, &data->id,
+            (data->value || !false_duration) ? true_duration : false_duration);
+    }
+    return data->value;
 }
 
-optional_input_accessor<float>
-smooth_value(ui_context& ctx, getter<float> const& x,
-    animated_transition const& transition)
+void request_timer_event(ui_context& ctx, widget_id id, ui_time_type time)
 {
-    optional<float> output;
-    alia_if (is_gettable(x))
+    ui_system& ui = *ctx.system;
+    // If an event already exists for that ID, then reschedule it.
+    for (ui_timer_request_list::iterator i = ui.timer_requests.begin();
+        i != ui.timer_requests.end(); ++i)
     {
-        output = smooth_value(ctx, get(x), transition);
+        if (i->id.id == id)
+        {
+            i->id = make_routable_widget_id(ctx, id);
+            i->trigger_time = time;
+            i->frame_issued = ui.timer_event_counter;
+            return;
+        }
     }
-    alia_end
-    return optional_in(output);
-}
-
-optional_input_accessor<double>
-smooth_value(ui_context& ctx, getter<double> const& x,
-    animated_transition const& transition)
-{
-    optional<double> output;
-    alia_if (is_gettable(x))
-    {
-        output = smooth_value(ctx, get(x), transition);
-    }
-    alia_end
-    return optional_in(output);
+    // Otherwise, add a new event.
+    ui_timer_request rq;
+    rq.id = make_routable_widget_id(ctx, id);
+    rq.trigger_time = time;
+    rq.frame_issued = ui.timer_event_counter;
+    ui.timer_requests.push_back(rq);
 }
 
 void start_timer(ui_context& ctx, widget_id id, unsigned duration)
 {
     input_event* ie = dynamic_cast<input_event*>(ctx.event);
     ui_time_type now = ie ? ie->time : ctx.system->millisecond_tick_count;
-    ctx.surface->request_timer_event(make_routable_widget_id(ctx, id),
-        now + duration);
+    request_timer_event(ctx, id, now + duration);
 }
 
-bool is_timer_done(ui_context& ctx, widget_id id)
+bool detect_timer_event(ui_context& ctx, widget_id id)
 {
     return ctx.event->type == TIMER_EVENT &&
         get_event<timer_event>(ctx).id == id;
@@ -132,8 +97,31 @@ bool is_timer_done(ui_context& ctx, widget_id id)
 void restart_timer(ui_context& ctx, widget_id id, unsigned duration)
 {
     timer_event& e = get_event<timer_event>(ctx);
-    ctx.surface->request_timer_event(make_routable_widget_id(ctx, id),
-        e.trigger_time + duration);
+    request_timer_event(ctx, id, e.trigger_time + duration);
+}
+
+timer::timer(ui_context& ctx, timer_data* data)
+{
+    if (data)
+        data_ = data;
+    else
+        get_cached_data(ctx, &data_);
+    ctx_ = &ctx;
+    triggered_ = data_->active && detect_timer_event(ctx, &data_->id);
+    if (triggered_)
+        data_->active = false;
+}
+void timer::start(unsigned duration)
+{
+    if (triggered_)
+        restart_timer(*ctx_, &data_->id, duration);
+    else
+        start_timer(*ctx_, &data_->id, duration);
+    data_->active = true;
+}
+void timer::stop()
+{
+    data_->active = false;
 }
 
 struct fps_data
@@ -155,11 +143,11 @@ bool compute_fps(ui_context& ctx, int* fps)
     if (ctx.event->type == REFRESH_EVENT)
     {
         ++data->frame_count;
-        ctx.surface->request_refresh(true);
+        request_refresh(ctx, 0);
         record_content_change(ctx);
     }
 
-    if (is_timer_done(ctx, id))
+    if (detect_timer_event(ctx, id))
     {
         data->fps = data->frame_count;
         data->frame_count = 0;
