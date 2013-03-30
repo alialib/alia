@@ -8,6 +8,15 @@
 
 namespace alia {
 
+// Initialize the UI system.
+void initialize_ui(
+    ui_system& ui,
+    alia__shared_ptr<ui_controller> const& controller,
+    alia__shared_ptr<alia::surface> const& surface,
+    vector<2,float> const& ppi,
+    alia__shared_ptr<os_interface> const& os,
+    alia__shared_ptr<style_tree> const& style);
+
 // Update the UI system.
 // This detects changes in the UI contents and updates the layout of the UI.
 // It also resolves what's under the mouse cursor and updates the UI

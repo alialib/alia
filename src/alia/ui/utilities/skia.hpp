@@ -79,6 +79,7 @@ typedef box<2,SkScalar> skia_box;
 
 SkRect skia_box_as_skia_rect(skia_box const& box);
 skia_box layout_box_as_skia_box(layout_box const& box);
+skia_box float_box_as_skia_box(box<2,float> const& box);
 
 void draw_round_rect(SkCanvas& canvas, SkPaint& paint,
     layout_box const& region);
@@ -98,11 +99,11 @@ adjust_border_radii_for_border_width(
 
 void set_skia_font_info(SkPaint& paint, font const& font);
 
-void setup_focus_drawing(ui_context& ctx, SkPaint& paint);
+void setup_focus_drawing(dataless_ui_context& ctx, SkPaint& paint);
 
 typedef caching_renderer_data focus_rect_data;
 
-void draw_focus_rect(ui_context& ctx, focus_rect_data& data,
+void draw_focus_rect(dataless_ui_context& ctx, focus_rect_data& data,
     layout_box const& content_region);
 
 }

@@ -241,7 +241,8 @@ void text_layout_node::set_relative_assignment(
     rra.update();
 }
 
-layout_requirements text_layout_node::get_minimal_horizontal_requirements(
+layout_requirements
+text_layout_node::get_minimal_horizontal_requirements(
     layout_calculation_context& ctx)
 {
     text_display_data& data = *data_;
@@ -278,6 +279,7 @@ void text_layout_node::calculate_wrapping(
             -metrics.fAscent + metrics.fLeading),
         skia_scalar_as_layout_size(metrics.fDescent),
         0);
+
     char const* p = text.begin;
     while (1)
     {
@@ -513,8 +515,9 @@ struct standalone_text_data
     cached_image_ptr cached_image;
 };
 
-static void refresh_standalone_text(
-    ui_context& ctx,
+static void
+refresh_standalone_text(
+    dataless_ui_context& ctx,
     standalone_text_data& data,
     getter<string> const& text,
     layout const& layout_spec)
@@ -556,8 +559,9 @@ static box<2,int> get_region(standalone_text_data& data)
     return data.layout_node.assignment().region;
 }
 
-static void render_standalone_text(
-    ui_context& ctx,
+static void
+render_standalone_text(
+    dataless_ui_context& ctx,
     standalone_text_data& data,
     getter<string> const& text)
 {
@@ -632,7 +636,7 @@ struct text_drawing_data
 };
 
 static void
-draw_text(ui_context& ctx, text_drawing_data& data,
+draw_text(dataless_ui_context& ctx, text_drawing_data& data,
     getter<string> const& text, vector<2,double> const& position,
     ui_text_drawing_flag_set flags)
 {

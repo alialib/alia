@@ -5,10 +5,15 @@ namespace alia {
 
 // SEPARATOR
 
+struct separator_metrics
+{
+    layout_vector size;
+    absolute_size padding;
+};
+
 struct separator_data
 {
-    keyed_data<layout_vector> size;
-    keyed_data<absolute_size> padding;
+    keyed_data<separator_metrics> metrics;
     layout_leaf layout_node;
     caching_renderer_data rendering;
 };
@@ -19,27 +24,28 @@ void do_separator(ui_context& ctx, layout const& layout_spec)
 
     if (is_refresh_pass(ctx))
     {
-        refresh_keyed_data(data.size, *ctx.style.id);
-        if (!is_valid(data.size))
+        refresh_keyed_data(data.metrics, *ctx.style.id);
+        if (!is_valid(data.metrics))
         {
-            absolute_length spec =
-                get_property(ctx, "separator-width", INHERITED_PROPERTY,
-                    absolute_length(1, PIXELS));
-            set(data.size, as_layout_size(make_vector(
-                resolve_absolute_length(get_layout_traversal(ctx), 0, spec),
-                resolve_absolute_length(get_layout_traversal(ctx), 1, spec))));
-        }
-        refresh_keyed_data(data.padding, *ctx.style.id);
-        if (!is_valid(data.padding))
-        {
-            absolute_length spec =
-                get_property(ctx, "separator-padding", INHERITED_PROPERTY,
+            separator_metrics metrics;
+            style_path_storage storage;
+            style_search_path const* path =
+                add_substyle_to_path(&storage, ctx.style.path, 0, "separator");
+            absolute_length padding =
+                get_property(path, "padding", UNINHERITED_PROPERTY,
                     absolute_length(0, PIXELS));
-            set(data.padding, make_vector(spec, spec));
+            metrics.padding = make_vector(padding, padding);
+            absolute_length width =
+                get_property(path, "width", UNINHERITED_PROPERTY,
+                    absolute_length(1, PIXELS));
+            metrics.size = as_layout_size(make_vector(
+                resolve_absolute_length(get_layout_traversal(ctx), 0, width),
+                resolve_absolute_length(get_layout_traversal(ctx), 1, width)));
+            set(data.metrics, metrics);
         }
     }
 
-    do_spacer(ctx, layout(get(data.padding), UNPADDED));
+    do_spacer(ctx, layout(get(data.metrics).padding, UNPADDED));
 
     switch (ctx.event->category)
     {
@@ -47,7 +53,7 @@ void do_separator(ui_context& ctx, layout const& layout_spec)
       {
         data.layout_node.refresh_layout(
             get_layout_traversal(ctx), layout_spec,
-            leaf_layout_requirements(get(data.size), 0, 0),
+            leaf_layout_requirements(get(data.metrics).size, 0, 0),
             FILL | PADDED);
         add_layout_node(get_layout_traversal(ctx), &data.layout_node);
         break;
@@ -62,9 +68,13 @@ void do_separator(ui_context& ctx, layout const& layout_spec)
             skia_renderer renderer(ctx, cache.image(), region.size);
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);
-            paint.setStrokeWidth(2);
-            paint.setStrokeCap(SkPaint::kRound_Cap);
-            set_color(paint, get_color_property(ctx, "separator-color"));
+            paint.setStrokeWidth(layout_scalar_as_skia_scalar(
+                get(data.metrics).size[0]));
+            paint.setStrokeCap(SkPaint::kSquare_Cap);
+            style_path_storage storage;
+            style_search_path const* path =
+                add_substyle_to_path(&storage, ctx.style.path, 0, "separator");
+            set_color(paint, get_color_property(path, "color"));
             renderer.canvas().drawLine(
                 SkIntToScalar(1), SkIntToScalar(1),
                 layout_scalar_as_skia_scalar(region.size[0] - 1),
@@ -78,23 +88,50 @@ void do_separator(ui_context& ctx, layout const& layout_spec)
       }
     }
 
-    do_spacer(ctx, layout(get(data.padding), UNPADDED));
+    do_spacer(ctx, layout(get(data.metrics).padding, UNPADDED));
 }
 
 // COLOR
 
+struct color_metrics
+{
+    absolute_size size;
+};
+
+struct color_display_data
+{
+    keyed_data<color_metrics> metrics;
+    layout_leaf layout_node;
+    caching_renderer_data rendering;
+};
+
 void do_color(ui_context& ctx, getter<rgba8> const& color,
     layout const& layout_spec)
 {
-    ALIA_GET_CACHED_DATA(simple_display_data)
+    ALIA_GET_CACHED_DATA(color_display_data)
 
     switch (ctx.event->category)
     {
      case REFRESH_CATEGORY:
       {
+        refresh_keyed_data(data.metrics, *ctx.style.id);
+        if (!is_valid(data.metrics))
+        {
+            color_metrics metrics;
+            style_path_storage storage;
+            style_search_path const* path =
+                add_substyle_to_path(&storage, ctx.style.path, 0,
+                    "color-display");
+            metrics.size =
+                get_property(path, "size", UNINHERITED_PROPERTY,
+                    make_vector(
+                        absolute_length(1.4f, EM),
+                        absolute_length(1.4f, EM)));
+            set(data.metrics, metrics);
+        }
         data.layout_node.refresh_layout(
             get_layout_traversal(ctx),
-            add_default_size(layout_spec, size(1.4f, 1.4f, EM)),
+            add_default_size(layout_spec, get(data.metrics).size),
             leaf_layout_requirements(make_layout_vector(0, 0), 0, 0));
         add_layout_node(get_layout_traversal(ctx), &data.layout_node);
         break;
@@ -117,12 +154,21 @@ void do_color(ui_context& ctx, getter<rgba8> const& color,
             rect.fRight = layout_scalar_as_skia_scalar(region.size[0]);
             rect.fTop = 0;
             rect.fBottom = layout_scalar_as_skia_scalar(region.size[1]);
-            SkScalar radius =
-                SkScalarDiv(
-                    layout_scalar_as_skia_scalar(
-                        (std::min)(region.size[0], region.size[1])),
-                    SkIntToScalar(3));
-            renderer.canvas().drawRoundRect(rect, radius, radius, paint);
+            style_path_storage storage;
+            style_search_path const* path =
+                add_substyle_to_path(&storage, ctx.style.path, 0,
+                    "color-display");
+            resolved_box_corner_sizes border_radii =
+                resolve_box_corner_sizes(get_layout_traversal(ctx),
+                    get_border_radius_property(path, relative_length(0.3f)),
+                    vector<2,float>(region.size));
+            draw_rect(renderer.canvas(), paint,
+                skia_box(
+                    make_vector(SkIntToScalar(0), SkIntToScalar(0)),
+                    make_vector(
+                        layout_scalar_as_skia_scalar(region.size[0]),
+                        layout_scalar_as_skia_scalar(region.size[1]))),
+                border_radii);
             renderer.cache();
             cache.mark_valid();
         }

@@ -2,8 +2,48 @@
 
 namespace alia {
 
+panel_style_info
+get_panel_style_info(dataless_ui_context& ctx, style_search_path const* path)
+{
+    panel_style_info info;
+
+    info.size = make_vector(
+        get_property(path, "width", UNINHERITED_PROPERTY,
+            absolute_length(0, PIXELS)),
+        get_property(path, "height", UNINHERITED_PROPERTY,
+            absolute_length(0, PIXELS)));
+
+    info.margin =
+        resolve_box_border_width(get_layout_traversal(ctx),
+            get_margin_property(path));
+
+    info.border_width =
+        resolve_box_border_width(get_layout_traversal(ctx),
+            get_border_width_property(path));
+
+    info.padding =
+        resolve_box_border_width(get_layout_traversal(ctx),
+            get_padding_property(path));
+
+    info.border_color = get_color_property(path, "border-color");
+    info.background_color = get_color_property(path, "background");
+
+    info.border_radii = get_border_radius_property(path);
+    info.is_rounded = false;
+    for (int i = 0; i != 4; ++i)
+    {
+        for (int j = 0; j != 2; ++j)
+        {
+            if (info.border_radii.corners[i][j].length > 0)
+                info.is_rounded = true;
+        }
+    }
+
+    return info;
+}
+
 void refresh_panel_style_info(
-    ui_context& ctx, keyed_data<panel_style_info>& stored_info,
+    dataless_ui_context& ctx, keyed_data<panel_style_info>& stored_info,
     getter<string> const& substyle, widget_state state,
     add_substyle_flag_set flags)
 {
@@ -11,52 +51,17 @@ void refresh_panel_style_info(
         combine_ids(ref(substyle.id()), make_id(state))));
     if (!is_valid(stored_info))
     {
-        panel_style_info info;
-
         stateful_style_path_storage storage;
         style_search_path const* path =
             add_substyle_to_path(&storage, ctx.style.path, ctx.style.path,
                 get(substyle), state, flags);
-
-        info.size = make_vector(
-            get_property(path, "width", UNINHERITED_PROPERTY,
-                absolute_length(0, PIXELS)),
-            get_property(path, "height", UNINHERITED_PROPERTY,
-                absolute_length(0, PIXELS)));
-
-        info.margin =
-            resolve_box_border_width(get_layout_traversal(ctx),
-                get_margin_property(path));
-
-        info.border_width =
-            resolve_box_border_width(get_layout_traversal(ctx),
-                get_border_width_property(path));
-
-        info.padding =
-            resolve_box_border_width(get_layout_traversal(ctx),
-                get_padding_property(path));
-
-        info.border_color = get_color_property(path, "border-color");
-        info.background_color = get_color_property(path, "background");
-
-        info.border_radii = get_border_radius_property(path);
-        info.is_rounded = false;
-        for (int i = 0; i != 4; ++i)
-        {
-            for (int j = 0; j != 2; ++j)
-            {
-                if (info.border_radii.corners[i][j].length > 0)
-                    info.is_rounded = true;
-            }
-        }
-
-        set(stored_info, info);
+        set(stored_info, get_panel_style_info(ctx, path));
     }
 }
 
 static void
 draw_panel_focus_border(
-    ui_context& ctx, caching_renderer_data& rendering,
+    dataless_ui_context& ctx, caching_renderer_data& rendering,
     getter<panel_style_info> const& style_info,
     layout_box const& outer_region)
 {
@@ -165,9 +170,10 @@ begin_outer_panel(
         }
         else
         {
-            box<2,float> background_region = remove_border(
-                box<2,float>(outer_region),
-                get(style_info).border_width);
+            box<2,float> background_region =
+                remove_border(
+                    box<2,float>(outer_region),
+                    get(style_info).border_width);
             if (get(style_info).border_width !=
                 box_border_width<float>(0, 0, 0, 0))
             {
@@ -230,12 +236,21 @@ void custom_panel::begin(
     ctx_ = &ctx;
     flags_ = flags;
 
-    init_optional_widget_id(ctx, id, &data);
+    init_optional_widget_id(id, &data);
 
     begin_outer_panel(ctx, data, style, outer_,
         add_default_padding(layout_spec, PADDED), flags, id, state);
 
     begin_inner_panel(ctx, data, inner_, layout_spec, flags);
+}
+void custom_panel::end()
+{
+    if (ctx_)
+    {
+        inner_.end();
+        outer_.end();
+        ctx_ = 0;
+    }
 }
 
 struct panel_data
@@ -255,7 +270,7 @@ void panel::begin(
 
     refresh_panel_style_info(ctx, data_->style_info, style, state);
 
-    init_optional_widget_id(ctx, id, &data_);
+    init_optional_widget_id(id, data_);
 
     begin_outer_panel(ctx, data_->panel,
         make_custom_getter(&get(data_->style_info),
@@ -324,7 +339,8 @@ void clickable_panel::begin(
 
 void scrollable_panel::begin(
     ui_context& ctx, getter<string> const& style,
-    layout const& layout_spec, panel_flag_set flags)
+    layout const& layout_spec, panel_flag_set flags,
+    optional_storage<layout_vector> const& scroll_position_storage)
 {
     widget_id id = get_widget_id(ctx);
     panel_data* data;
@@ -342,7 +358,8 @@ void scrollable_panel::begin(
     unsigned reserved_axes =
         ((flags & PANEL_RESERVE_HORIZONTAL_SCROLLBAR) ? 1 : 0) |
         ((flags & PANEL_RESERVE_VERTICAL_SCROLLBAR) ? 2 : 0);
-    region_.begin(ctx, GROW | UNPADDED, scrollable_axes, id, reserved_axes);   
+    region_.begin(ctx, GROW | UNPADDED, scrollable_axes, id,
+        scroll_position_storage, reserved_axes);
     panel_style_info const& style_info = get(data->style_info);
     padding_border_.begin(ctx, 
         box_border_width<absolute_length>(

@@ -9,23 +9,24 @@
 namespace alia {
 
 // Request that the UI context refresh again after the given time has elapsed.
-void request_refresh(ui_context& ctx, ui_time_type duration);
+void request_refresh(dataless_ui_context& ctx, ui_time_type duration);
 
 // Request that the UI context refresh again quickly enough for smooth
 // animation.
-void request_animation_refresh(ui_context& ctx);
+void request_animation_refresh(dataless_ui_context& ctx);
 
 // Get the value of the millisecond tick counter associated with the given
 // UI context. This counter is updated every refresh pass, so it's consistent
 // within a single frame.
 // When this is called, it's assumed that something is currently animating, so
 // it also requests a refresh.
-ui_time_type get_animation_tick_count(ui_context& ctx);
+ui_time_type get_animation_tick_count(dataless_ui_context& ctx);
 
 // Get the number of ticks remaining until the given end time.
 // If the time has passed, this returns 0.
 // This ensures that the UI context refreshes until the end time is reached.
-ui_time_type get_animation_ticks_left(ui_context& ctx, ui_time_type end_time);
+ui_time_type
+get_animation_ticks_left(dataless_ui_context& ctx, ui_time_type end_time);
 
 // Generates a square wave.
 // The return value alternates between true and false as time passes.
@@ -77,7 +78,7 @@ void reset_smoothing(value_smoother<Value>& smoother, Value const& value)
 template<class Value>
 Value
 smooth_raw_value(
-    ui_context& ctx, value_smoother<Value>& smoother, Value const& x,
+    dataless_ui_context& ctx, value_smoother<Value>& smoother, Value const& x,
     animated_transition const& transition = default_transition)
 {
     if (!smoother.initialized)
@@ -135,7 +136,8 @@ smooth_raw_value(ui_context& ctx, Value const& x,
 template<class Value>
 optional_input_accessor<Value>
 smooth_value(
-    ui_context& ctx, value_smoother<Value>& smoother, getter<Value> const& x,
+    dataless_ui_context& ctx, value_smoother<Value>& smoother,
+    getter<Value> const& x,
     animated_transition const& transition = default_transition)
 {
     optional<Value> output;
@@ -203,8 +205,8 @@ delay_value(ui_context& ctx, accessor<Value> const& x, ui_time_type lag)
 
 // This implements a one-shot timer that can be used to schedule time-dependent
 // UI events.
-void start_timer(ui_context& ctx, widget_id id, unsigned duration);
-bool detect_timer_event(ui_context& ctx, widget_id id);
+void start_timer(dataless_ui_context& ctx, widget_id id, unsigned duration);
+bool detect_timer_event(dataless_ui_context& ctx, widget_id id);
 
 // restart_timer() is similar to start_timer(), but it can only be invoked
 // when handling a previous event (i.e, when detect_timer_event() returns
@@ -212,7 +214,7 @@ bool detect_timer_event(ui_context& ctx, widget_id id);
 // It adjusts the duration so that it's relative to when the event SHOULD HAVE
 // occurred, rather than when it actually occurred. This allows repeating
 // events to be scheduled on a fixed frequency without drifting.
-void restart_timer(ui_context& ctx, widget_id id, unsigned duration);
+void restart_timer(dataless_ui_context& ctx, widget_id id, unsigned duration);
 
 // The timer object provides a more convenient interface to timer events.
 // It is implemented on top of the above functions.

@@ -360,6 +360,19 @@ struct state
         inc_version(identity_);
         value_ = value;
     }
+    // If you REALLY need direct, non-const access to the underlying state,
+    // you can use this. It returns a non-const reference to the value and
+    // increments the version number of the associated ID.
+    // Note that you should be careful to use this atomically. In other words,
+    // call this to get a reference, do your update, and then discard the
+    // reference before anyone else observes the state. If you hold onto the
+    // reference and continue making changes while UI elements are accessing
+    // it, you'll cause them to go out-of-sync.
+    T& nonconst_get()
+    {
+        inc_version(identity_);
+        return value_;
+    }
  private:
     T value_;
     local_identity identity_;

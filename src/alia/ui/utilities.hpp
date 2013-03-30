@@ -11,5 +11,7 @@
 #include <alia/ui/utilities/styling.hpp>
 #include <alia/ui/utilities/text.hpp>
 #include <alia/ui/utilities/timing.hpp>
+#include <alia/ui/utilities/validation.hpp>
+#include <alia/ui/utilities/dragging.hpp>
 
 #endif

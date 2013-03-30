@@ -7,17 +7,36 @@ namespace alia {
 
 // STYLE TREE MANIPULATION
 
-void set_style(style_tree& tree, string const& subpath,
-    property_map const& properties)
+static style_tree*
+get_style_tree_child(style_tree& tree, string const& child_name,
+    bool create_if_missing)
+{
+    if (create_if_missing)
+    {
+        style_tree_ptr& child = tree.substyles[child_name];
+        if (!child)
+            child.reset(new style_tree);
+        return child.get();
+    }
+    else
+    {
+        std::map<string,style_tree_ptr>::iterator child =
+            tree.substyles.find(child_name);
+        return child != tree.substyles.end() ? child->second.get() : 0;
+    }
+}
+
+static style_tree*
+find_style_node(style_tree& tree, string const& subpath,
+    bool create_if_missing)
 {
     std::size_t first_slash = subpath.find('/');
     if (first_slash == string::npos)
     {
         if (subpath.empty())
-            tree.properties = properties;
+            return &tree;
         else
-            tree.substyles[subpath].properties = properties;
-        return;
+            return get_style_tree_child(tree, subpath, create_if_missing);
     }
 
     string child_name = subpath.substr(0, first_slash),
@@ -26,21 +45,28 @@ void set_style(style_tree& tree, string const& subpath,
     // This is a little too permissive, since it would accept paths like
     // 'a///b', but there's nothing really wrong with that.
     if (child_name.empty())
-    {
-        set_style(tree, rest_of_path, properties);
-        return;
-    }
+        return find_style_node(tree, rest_of_path, create_if_missing);
 
-    set_style(tree.substyles[child_name], rest_of_path, properties);
+    style_tree* child = get_style_tree_child(tree, child_name, true);
+
+    return child ? find_style_node(*child, rest_of_path, true) : 0;
 }
 
-style_tree unflatten_style_tree(flattened_style_tree const& flattened)
+void set_style(style_tree& tree, string const& subpath,
+    flattened_style_node const& flattened)
 {
-    style_tree tree;
+    style_tree* node = find_style_node(tree, subpath, true);
+    node->properties = flattened.properties;
+}
+
+style_tree_ptr unflatten_style_tree(flattened_style_tree const& flattened)
+{
+    style_tree_ptr tree;
+    tree.reset(new style_tree);
     for (flattened_style_tree::const_iterator i = flattened.begin();
         i != flattened.end(); ++i)
     {
-        set_style(tree, i->first, i->second);
+        set_style(*tree, i->first, i->second);
     }
     return tree;
 }
@@ -76,10 +102,10 @@ find_substyle(
         if (!path->tree)
             continue;
         style_tree const& tree = *path->tree;
-        std::map<string,style_tree>::const_iterator i =
+        std::map<string,style_tree_ptr>::const_iterator i =
             tree.substyles.find(substyle_name);
         if (i != tree.substyles.end())
-            return &i->second;
+            return i->second.get();
     }
     return 0;
 }
@@ -141,11 +167,14 @@ add_substyle_to_path(
     string const& substyle_name,
     add_substyle_flag_set flags)
 {
+    style_tree const* substyle = find_substyle(search_path, substyle_name);
     return
-        add_substyle_to_path(&storage->nodes[1],
-            (flags & ADD_SUBSTYLE_NO_PATH_SEPARATOR) ?
-                rest : add_path_separator(&storage->nodes[0], rest),
-            find_substyle(search_path, substyle_name));
+        (substyle || !(flags & ADD_SUBSTYLE_IFF_EXISTS))
+          ? add_substyle_to_path(&storage->nodes[1],
+                (flags & ADD_SUBSTYLE_NO_PATH_SEPARATOR) ?
+                    rest : add_path_separator(&storage->nodes[0], rest),
+                substyle)
+          : rest;
 }
 
 style_search_path const*
@@ -343,9 +372,11 @@ static string strip_comments(utf8_string const& text)
     return code;
 }
 
-style_tree parse_style_description(char const* label, utf8_string const& text)
+style_tree_ptr
+parse_style_description(char const* label, utf8_string const& text)
 {
-    style_tree tree;
+    style_tree_ptr tree;
+    tree.reset(new style_tree);
     int line_number = 1;
     string stripped = strip_comments(text);
     utf8_string stripped_text = as_utf8_string(stripped);
@@ -363,6 +394,8 @@ style_tree parse_style_description(char const* label, utf8_string const& text)
         p = next_space;
         p = skip_space(utf8_string(p, stripped_text.end), line_number);
 
+        flattened_style_node node;
+
         // Check for the opening brace of the property map.
         SkUnichar c = SkUTF8_NextUnichar(&p);
         if (c != '{')
@@ -372,16 +405,16 @@ style_tree parse_style_description(char const* label, utf8_string const& text)
         }
 
         // Parse the property map.
-        property_map properties =
+        node.properties =
             parse_style_properties(label, stripped_text, p, line_number);
 
         // Add the substyle to the tree.
-        set_style(tree, subpath, properties);
+        set_style(*tree, subpath, node);
     }
     return tree;
 }
 
-style_tree parse_style_file(char const* path)
+style_tree_ptr parse_style_file(char const* path)
 {
     FILE* f = fopen(path, "rb");
     if (!f)
@@ -412,11 +445,11 @@ static int write_cpp_style_node(FILE* f, style_tree const& node,
         fprintf(f, "    node_%i.properties[\"%s\"] = \"%s\";\n",
             index, i->first.c_str(), i->second.c_str());
     }
-    for (std::map<string,style_tree>::const_iterator
+    for (std::map<string,style_tree_ptr>::const_iterator
         i = node.substyles.begin(); i != node.substyles.end(); ++i)
     {
         int substyle_index =
-            write_cpp_style_node(f, i->second, index_counter);
+            write_cpp_style_node(f, *i->second, index_counter);
         fprintf(f, "    node_%i.substyles[\"%s\"] = node_%i;\n",
             index, i->first.c_str(), substyle_index);
     }
@@ -607,7 +640,7 @@ get_color_property(style_search_path const* path, char const* property_name)
 }
 
 rgba8
-get_color_property(ui_context& ctx, char const* property_name)
+get_color_property(dataless_ui_context& ctx, char const* property_name)
 {
     return get_property(ctx.style.path, property_name, INHERITED_PROPERTY,
         rgba8(black));
@@ -911,7 +944,7 @@ font get_font_properties(ui_system const& ui, style_search_path const* path)
     return font(
         get_property(path, "font-family", INHERITED_PROPERTY, string("arial")),
         get_property(path, "font-size", INHERITED_PROPERTY, 13.f) *
-            ui.style->magnification,
+            ui.style.magnification,
         (get_property(path, "font-bold", INHERITED_PROPERTY, false) ?
             BOLD : NO_FLAGS) |
         (get_property(path, "font-italic", INHERITED_PROPERTY, false) ?
@@ -949,10 +982,11 @@ void parse(line_parser& p, default_padding_spec* spec)
         spec->padding[0] = spec->padding[1];
 }
 
-void read_layout_style_info(ui_context& ctx, layout_style_info* style_info,
+void read_layout_style_info(
+    dataless_ui_context& ctx, layout_style_info* style_info,
     font const& font, style_search_path const* path)
 {
-    style_info->magnification = ctx.system->style->magnification;
+    style_info->magnification = ctx.system->style.magnification;
 
     style_info->font_size = font.size;
 
@@ -992,15 +1026,16 @@ void read_layout_style_info(ui_context& ctx, layout_style_info* style_info,
 }
 
 void update_substyle_data(
-    ui_context& ctx, substyle_data& data,
-    getter<string> const& substyle_name, widget_state state,
+    dataless_ui_context& ctx, substyle_data& data,
+    style_search_path const* path,
+    string const& substyle_name, widget_state state,
     add_substyle_flag_set flags)
 {
     inc_version(data.identity);
 
     data.state.path =
-        add_substyle_to_path(&data.path_storage, ctx.style.path,
-            ctx.style.path, get(substyle_name), state, flags);
+        add_substyle_to_path(&data.path_storage, path, path, substyle_name,
+            state, flags);
 
     read_primary_style_properties(
         *ctx.system, &data.properties, data.state.path);

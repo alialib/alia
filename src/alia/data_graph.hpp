@@ -569,46 +569,12 @@ bool get_keyed_data(Context& ctx, id_interface const& key, Data** data)
     else if (!ptr->key.matches(key))
     {
         ptr->key.store(key);
-        ptr->value = Data();
+        ptr->data = Data();
         is_new = true;
     }
     *data = &ptr->data;
     return is_new;
 };
-
-// get_computed_data(ctx, fn, input) is the standard high-level way of
-// retrieving computed data from a data graph.
-// Its return value is a read-only accessor to the result of calling fn(input).
-// It caches this result, and will only recompute it when the input changes,
-// or if the cached result is lost.
-// Note that this assumes that fn remains constant over all traversals. If
-// dynamic behavior is desired, it should be captured by input, not fn.
-
-#if 0
-
-template<class T>
-struct computed_data_accessor : accessor<T>
-{
-    computed_data_accessor(T const* v) : v_(v) {}
-    bool is_gettable() const { return true; }
-    T const& get() const { return *v_; }
-    bool is_settable() const { return false; }
-    void set(T const& value) const {}
- private:
-    T const* v_;
-};
-
-template<class Context, class Fn, class Input>
-auto get_computed_data(Context& ctx, Fn const& fn, Input const& input) ->
-    computed_data_accessor<decltype(fn(input))>
-{
-    decltype(fn(input))* data;
-    if (get_keyed_data(ctx, input, &data))
-        *data = fn(input);
-    return computed_data_accessor<decltype(fn(input))>(data);
-}
-
-#endif
 
 // scoped_data_traversal can be used to manage a traversal of a graph.
 // begin(graph, traversal) will initialize traversal to act as a traversal of

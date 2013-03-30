@@ -20,7 +20,7 @@ struct simple_control_renderer : dispatch_interface
 struct simple_control_data
 {
     layout_leaf layout_node;
-    new_themed_rendering_data rendering;
+    themed_rendering_data rendering;
     button_input_state input;
 };
 
@@ -37,21 +37,22 @@ do_simple_control(
         get_cached_data(ctx, &data_ptr);
     simple_control_data& data = *data_ptr;
 
-    init_optional_widget_id(ctx, id, &data);
+    init_optional_widget_id(id, &data);
 
     Renderer const* renderer;
     static DefaultRenderer default_renderer;
     get_themed_renderer(ctx, data.rendering, &renderer, &default_renderer);
 
-    switch (ctx.event->category)
+    alia_untracked_switch (ctx.event->category)
     {
-     case REFRESH_CATEGORY:
+     alia_untracked_case (REFRESH_CATEGORY):
       {
         leaf_layout_requirements layout_requirements;
+        alia_tracked_block (data.rendering.refresh_block)
         {
-            scoped_data_block block(ctx, data.rendering.refresh_block);
             layout_requirements = renderer->get_layout(ctx);
         }
+        alia_end
         data.layout_node.refresh_layout(
             get_layout_traversal(ctx), layout_spec, layout_requirements,
             LEFT | BASELINE_Y | PADDED);
@@ -59,22 +60,24 @@ do_simple_control(
         break;
       }
 
-     case REGION_CATEGORY:
+     alia_untracked_case (REGION_CATEGORY):
         do_box_region(ctx, id, data.layout_node.assignment().region);
         break;
 
-     case INPUT_CATEGORY:
+     alia_untracked_case (INPUT_CATEGORY):
         if (do_button_input(ctx, id, data.input))
             return true;
         break;
     }
+    alia_end
 
+    alia_tracked_block (data.rendering.drawing_block)
     {
-        scoped_data_block block(ctx, data.rendering.drawing_block);
         renderer->draw(ctx,
             data.layout_node.assignment().region, value,
             get_button_state(ctx, id, data.input));
     }
+    alia_end
 
     return false;
 }
@@ -91,7 +94,7 @@ struct simple_button_renderer : dispatch_interface
 struct simple_button_data
 {
     layout_leaf layout_node;
-    new_themed_rendering_data rendering;
+    themed_rendering_data rendering;
     button_input_state input;
 };
 
@@ -107,21 +110,22 @@ do_simple_button(
         get_cached_data(ctx, &data_ptr);
     simple_button_data& data = *data_ptr;
 
-    init_optional_widget_id(ctx, id, &data);
+    init_optional_widget_id(id, &data);
 
     Renderer const* renderer;
     static DefaultRenderer default_renderer;
     get_themed_renderer(ctx, data.rendering, &renderer, &default_renderer);
 
-    switch (ctx.event->category)
+    alia_untracked_switch (ctx.event->category)
     {
-     case REFRESH_CATEGORY:
+     alia_untracked_case (REFRESH_CATEGORY):
       {
         leaf_layout_requirements layout_requirements;
+        alia_tracked_block (data.rendering.refresh_block)
         {
-            scoped_data_block block(ctx, data.rendering.refresh_block);
             layout_requirements = renderer->get_layout(ctx);
         }
+        alia_end
         data.layout_node.refresh_layout(
             get_layout_traversal(ctx), layout_spec, layout_requirements,
             LEFT | BASELINE_Y | PADDED);
@@ -129,22 +133,24 @@ do_simple_button(
         break;
       }
 
-     case REGION_CATEGORY:
+     alia_untracked_case (REGION_CATEGORY):
         do_box_region(ctx, id, data.layout_node.assignment().region);
         break;
 
-     case INPUT_CATEGORY:
+     alia_untracked_case (INPUT_CATEGORY):
         if (do_button_input(ctx, id, data.input))
             return true;
         break;
     }
+    alia_end
 
+    alia_tracked_block (data.rendering.drawing_block)
     {
-        scoped_data_block block(ctx, data.rendering.drawing_block);
         renderer->draw(ctx,
             data.layout_node.assignment().region,
             get_button_state(ctx, id, data.input));
     }
+    alia_end
 
     return false;
 }
@@ -155,7 +161,7 @@ struct stateless_control_style_path_storage
 };
 
 style_search_path const*
-get_control_style_path(ui_context& ctx,
+get_control_style_path(dataless_ui_context& ctx,
     stateless_control_style_path_storage* storage,
     char const* control_type);
 
@@ -165,7 +171,8 @@ struct control_style_path_storage
 };
 
 style_search_path const*
-get_control_style_path(ui_context& ctx, control_style_path_storage* storage,
+get_control_style_path(
+    dataless_ui_context& ctx, control_style_path_storage* storage,
     char const* control_type, widget_state state);
 
 struct control_style_properties
@@ -177,11 +184,12 @@ struct control_style_properties
 
 control_style_properties
 get_control_style_properties(
-    ui_context& ctx, style_search_path const* path, layout_vector const& size);
+    dataless_ui_context& ctx, style_search_path const* path,
+    layout_vector const& size);
 
 control_style_properties
 get_control_style_properties(
-    ui_context& ctx, char const* control_type, widget_state state,
+    dataless_ui_context& ctx, char const* control_type, widget_state state,
     layout_vector const& size);
 
 leaf_layout_requirements
@@ -192,12 +200,12 @@ get_box_control_content_region(
     layout_box const& region, control_style_properties const& style);
 
 void draw_box_control(
-    ui_context& ctx, SkCanvas& canvas, layout_vector const& size,
+    dataless_ui_context& ctx, SkCanvas& canvas, layout_vector const& size,
     control_style_properties const& style, bool has_focus);
 
 void initialize_caching_control_renderer(
-    ui_context& ctx, caching_renderer& cache, layout_box const& region,
-    id_interface const& content_id);
+    ui_context& ctx, caching_renderer& cache,
+    layout_box const& region, id_interface const& content_id);
 
 struct box_control_renderer
 {

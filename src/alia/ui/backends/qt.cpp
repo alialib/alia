@@ -42,31 +42,10 @@ struct qt_window::impl_data
     impl_data() : was_maximized(false) {}
 };
 
-static vector<2,unsigned> get_display_size(qt_window::impl_data& impl)
+struct qt_os_interface : os_interface
 {
-    QSize size = QApplication::desktop()->screenGeometry(impl.window).size();
-    return make_vector(unsigned(size.width()), unsigned(size.height()));
-}
-
-struct qt_opengl_surface : opengl_surface
-{
-    qt_opengl_surface(qt_window::impl_data* impl)
-      : impl_(impl)
-    {}
-    vector<2,float> ppi() const
-    {
-        return make_vector(
-            float(impl_->window->physicalDpiX()),
-            float(impl_->window->physicalDpiY()));
-    }
-    vector<2,unsigned> display_size() const
-    {
-        return get_display_size(*impl_);
-    }
     string get_clipboard_text();
     void set_clipboard_text(string const& text);
- private:
-    qt_window::impl_data* impl_;
 };
 
 static unsigned get_time(qt_window::impl_data& impl)
@@ -250,8 +229,6 @@ static void update_window(qt_window::impl_data& impl)
     opengl_surface* surface =
         static_cast<opengl_surface*>(impl.ui.surface.get());
     QSize size = impl.window->size();
-    surface->set_size(
-        alia::make_vector<unsigned>(size.width(), size.height()));
 
     mouse_cursor cursor;
     update_ui(impl.ui,
@@ -268,10 +245,8 @@ void qt_gl_window::paintGL()
         static_cast<opengl_surface*>(impl.ui.surface.get());
 
     QSize size = impl.window->size();
-    surface->set_size(
+    surface->initialize_render_state(
         alia::make_vector<unsigned>(size.width(), size.height()));
-
-    surface->initialize_render_state();
 
     render_ui(impl.ui);
 }
@@ -446,18 +421,22 @@ void create_window(
 {
     impl->timer.start();
 
-    impl->ui.style.reset(new ui_style);
-    impl->ui.style->styles = parse_style_file("alia.style");
-
-    qt_opengl_surface* surface = new alia::qt_opengl_surface(impl);
-    surface->set_opengl_context(impl->gl_ctx);
-
-    impl->ui.controller = controller;
-    impl->ui.surface.reset(surface);
-
     QGLFormat format;
     format.setSwapInterval(0);
     impl->window = new qt_gl_window(*impl, format, 0, Qt::Window);
+
+    opengl_surface* surface = new opengl_surface;
+    surface->set_opengl_context(impl->gl_ctx);
+
+    initialize_ui(
+        impl->ui,
+        controller,
+        alia__shared_ptr<alia::surface>(surface),
+        make_vector(
+            float(impl->window->physicalDpiX()),
+            float(impl->window->physicalDpiY())),
+        alia__shared_ptr<os_interface>(new qt_os_interface),
+        parse_style_file("alia.style"));
 
     impl->window->setWindowTitle(title.c_str());
 
@@ -486,7 +465,6 @@ void create_window(
     }
 
     QSize size = impl->window->size();
-
     update_ui(impl->ui,
         alia::make_vector<unsigned>(size.width(), size.height()),
         get_time(*impl));
@@ -556,14 +534,14 @@ void qt_window::set_full_screen(bool fs)
     }
 }
 
-string qt_opengl_surface::get_clipboard_text()
+string qt_os_interface::get_clipboard_text()
 {
     QClipboard* clipboard = QApplication::clipboard();
     QByteArray ba = clipboard->text().toUtf8();
     return string(ba.data());
 }
 
-void qt_opengl_surface::set_clipboard_text(string const& text)
+void qt_os_interface::set_clipboard_text(string const& text)
 {
     QClipboard* clipboard = QApplication::clipboard();
     clipboard->setText(text.c_str());

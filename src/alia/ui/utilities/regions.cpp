@@ -3,7 +3,17 @@
 
 namespace alia {
 
-void handle_mouse_hit(ui_context& ctx, widget_id id, hit_test_flag_set flags,
+bool is_mouse_inside_box(dataless_ui_context& ctx, box<2,double> const& box)
+{
+    return
+        ctx.system->input.mouse_inside_window &&
+        is_inside(box, get_mouse_position(ctx)) &&
+        is_inside(get_geometry_context(ctx).clip_region,
+            vector<2,double>(ctx.system->input.mouse_position));
+}
+
+void handle_mouse_hit(
+    dataless_ui_context& ctx, widget_id id, hit_test_flag_set flags,
     mouse_cursor cursor)
 {
     if (ctx.event->type == MOUSE_HIT_TEST_EVENT && (flags & HIT_TEST_MOUSE))
@@ -20,14 +30,14 @@ void handle_mouse_hit(ui_context& ctx, widget_id id, hit_test_flag_set flags,
     }
 }
 
-void hit_test_box_region(ui_context& ctx, widget_id id,
+void hit_test_box_region(dataless_ui_context& ctx, widget_id id,
     box<2,int> const& box, hit_test_flag_set flags, mouse_cursor cursor)
 {
-    if (mouse_is_inside_box(ctx, alia::box<2,double>(box)))
+    if (is_mouse_inside_box(ctx, alia::box<2,double>(box)))
 	handle_mouse_hit(ctx, id, flags, cursor);
 }
 
-void handle_region_visibility(ui_context& ctx, widget_id id,
+void handle_region_visibility(dataless_ui_context& ctx, widget_id id,
     box<2,int> const& region)
 {
     make_widget_visible_event& e = get_event<make_widget_visible_event>(ctx);
@@ -42,7 +52,8 @@ void handle_region_visibility(ui_context& ctx, widget_id id,
     }
 }
 
-void do_box_region(ui_context& ctx, widget_id id, box<2,int> const& region,
+void do_box_region(
+    dataless_ui_context& ctx, widget_id id, box<2,int> const& region,
     mouse_cursor cursor)
 {
     switch (ctx.event->type)
@@ -56,7 +67,8 @@ void do_box_region(ui_context& ctx, widget_id id, box<2,int> const& region,
     }
 }
 
-void override_mouse_cursor(ui_context& ctx, widget_id id, mouse_cursor cursor)
+void override_mouse_cursor(
+    dataless_ui_context& ctx, widget_id id, mouse_cursor cursor)
 {
     if (ctx.event->type == MOUSE_HIT_TEST_EVENT)
     {
@@ -72,17 +84,17 @@ void override_mouse_cursor(ui_context& ctx, widget_id id, mouse_cursor cursor)
     }
 }
 
-bool is_region_active(ui_context& ctx, widget_id id)
+bool is_region_active(dataless_ui_context& ctx, widget_id id)
 {
     return ctx.system->input.active_id.id == id;
 }
 
-bool is_region_hot(ui_context& ctx, widget_id id)
+bool is_region_hot(dataless_ui_context& ctx, widget_id id)
 {
     return ctx.system->input.hot_id.id == id;
 }
 
-void make_widget_visible(ui_context& ctx, widget_id id,
+void make_widget_visible(dataless_ui_context& ctx, widget_id id,
     make_widget_visible_flag_set flags)
 {
     widget_visibility_request request;

@@ -708,7 +708,7 @@ static opengl_texture* create_texture(
         return new simple_texture(ctx, img, flags);
 }
 
-void opengl_surface::initialize_render_state()
+void opengl_surface::initialize_render_state(vector<2,unsigned> const& size)
 {
     ctx_->do_pending_deletions();
 
@@ -726,11 +726,11 @@ void opengl_surface::initialize_render_state()
         ctx_->impl_->is_initialized = true;
     }
 
-    glViewport(0, 0, size_[0], size_[1]);
+    glViewport(0, 0, size[0], size[1]);
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(0, size_[0], size_[1], 0, -10, 10);
+    glOrtho(0, size[0], size[1], 0, -10, 10);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
@@ -738,7 +738,9 @@ void opengl_surface::initialize_render_state()
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
     glEnable(GL_SCISSOR_TEST);
-    glScissor(0, 0, size_[0], size_[1]);
+    glScissor(0, 0, size[0], size[1]);
+
+    size_ = size;
 }
 
 void opengl_surface::cache_image(

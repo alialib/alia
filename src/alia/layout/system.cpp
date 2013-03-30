@@ -4,12 +4,11 @@
 namespace alia {
 
 static void initialize_traversal(
-    layout_system& system, layout_traversal& traversal, data_traversal& data,
+    layout_system& system, layout_traversal& traversal,
     bool is_refresh, geometry_context* geometry, layout_style_info* style,
     vector<2,float> const& ppi)
 {
     traversal.system = &system;
-    traversal.data = &data;
     traversal.active_container = 0;
     traversal.next_ptr = &system.root_node;
     traversal.is_refresh_pass = is_refresh;
@@ -24,18 +23,17 @@ static void initialize_traversal(
     style->padding_size = make_layout_vector(0, 0);
 }
 void scoped_layout_traversal::begin(
-    layout_system& system, layout_traversal& traversal, data_traversal& data,
+    layout_system& system, layout_traversal& traversal,
     geometry_context& geometry, vector<2,float> const& ppi)
 {
-    initialize_traversal(system, traversal, data, false, &geometry,
+    initialize_traversal(system, traversal, false, &geometry,
         &dummy_style_info_, ppi);
 }
 void scoped_layout_refresh::begin(
-    layout_system& system, layout_traversal& traversal, data_traversal& data,
+    layout_system& system, layout_traversal& traversal,
     vector<2,float> const& ppi)
 {
-    initialize_traversal(system, traversal, data, true, 0, &dummy_style_info_,
-        ppi);
+    initialize_traversal(system, traversal, true, 0, &dummy_style_info_, ppi);
 }
 
 // scoped_layout_calculation_context sets up a calculation context for a

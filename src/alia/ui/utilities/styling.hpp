@@ -9,17 +9,24 @@ namespace alia {
 
 // STYLE TREE MANIPULATION 
 
-// Update the given tree so that the given subpath is set to the given property
-// map. Elements within the subpath are separated by '/'.
-void set_style(style_tree& tree, string const& subpath,
-    property_map const& properties);
+// A flattened style tree is one that simply stores subpaths and their
+// associated style nodes. Subpaths are separated by '/'.
 
-// A flattened style tree is one that simply stored subpaths and their
-// associated property maps.
-typedef std::map<string,property_map> flattened_style_tree;
+struct flattened_style_node
+{
+    std::list<string> fallbacks;
+    property_map properties;
+};
+
+typedef std::map<string,flattened_style_node> flattened_style_tree;
+
+// Update the given tree so that the given subpath is set to the given flat
+// style node.
+void set_style(style_tree& tree, string const& subpath,
+    flattened_style_node const& flattened);
 
 // Convert a flattened style tree to a normal one.
-style_tree unflatten_style_tree(flattened_style_tree const& flattened);
+style_tree_ptr unflatten_style_tree(flattened_style_tree const& flattened);
 
 // STYLE PROPERTY SEARCHING
 
@@ -48,6 +55,7 @@ struct style_path_storage
 };
 ALIA_DEFINE_FLAG_TYPE(add_substyle)
 ALIA_DEFINE_FLAG(add_substyle, 0x0000040, ADD_SUBSTYLE_NO_PATH_SEPARATOR)
+ALIA_DEFINE_FLAG(add_substyle, 0x0000040, ADD_SUBSTYLE_IFF_EXISTS)
 style_search_path const*
 add_substyle_to_path(
     style_path_storage* storage,
@@ -77,9 +85,11 @@ add_substyle_to_path(
 
 // WHOLE TREE I/O - I/O utilities that work with whole style trees.
 
-style_tree parse_style_description(char const* label, utf8_string const& text);
+style_tree_ptr
+parse_style_description(char const* label, utf8_string const& text);
 
-style_tree parse_style_file(char const* path);
+style_tree_ptr
+parse_style_file(char const* path);
 
 void write_style_cpp_file(char const* path, char const* label,
     style_tree const& style);
@@ -186,8 +196,8 @@ get_property(
 template<class Value>
 Value
 get_property(
-    ui_context& ctx, char const* property_name, style_search_flag_set flags,
-    Value default_value)
+    dataless_ui_context& ctx, char const* property_name,
+    style_search_flag_set flags, Value default_value)
 { return get_property(ctx.style.path, property_name, flags, default_value); }
 
 template<class Value>
@@ -222,7 +232,7 @@ rgba8
 get_color_property(style_search_path const* path, char const* property_name);
 
 rgba8
-get_color_property(ui_context& ctx, char const* property_name);
+get_color_property(dataless_ui_context& ctx, char const* property_name);
 
 // layout properties
 
@@ -317,10 +327,11 @@ void read_primary_style_properties(
     style_search_path const* path);
 
 // Read the style info that's necessary for layout from the given path.
-void read_layout_style_info(ui_context& ctx, layout_style_info* style_info,
+void read_layout_style_info(
+    dataless_ui_context& ctx, layout_style_info* style_info,
     font const& font, style_search_path const* path);
 
-struct substyle_data
+struct substyle_data : noncopyable
 {
     stateful_style_path_storage path_storage;
     primary_style_properties properties;
@@ -331,8 +342,9 @@ struct substyle_data
 };
 
 void update_substyle_data(
-    ui_context& ctx, substyle_data& data,
-    getter<string> const& substyle_name, widget_state state,
+    dataless_ui_context& ctx, substyle_data& data,
+    style_search_path const* path,
+    string const& substyle_name, widget_state state,
     add_substyle_flag_set flags = NO_FLAGS);
 
 }

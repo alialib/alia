@@ -77,4 +77,12 @@ void caching_renderer::draw()
     }
 }
 
+void clear_rendering_data(themed_rendering_data& data)
+{
+    data.theme_id.clear();
+    clear_data_block(data.refresh_block);
+    clear_data_block(data.drawing_block);
+    data.theme_renderer.reset();
+}
+
 }

@@ -4,17 +4,17 @@
 
 namespace alia {
 
-void clear_focus(ui_system& ui)
+void acknowledge_input_event(dataless_ui_context& ctx)
 {
-    ui.input.focused_id = null_widget_id;
+    get_event<input_event>(ctx).acknowledged = true;
 }
 
-bool id_has_focus(ui_context& ctx, widget_id id)
+bool id_has_focus(dataless_ui_context& ctx, widget_id id)
 {
     return ctx.system->input.focused_id.id == id;
 }
 
-bool detect_focus_gain(ui_context& ctx, widget_id id)
+bool detect_focus_gain(dataless_ui_context& ctx, widget_id id)
 {
     if (detect_event(ctx, FOCUS_GAIN_EVENT))
     {
@@ -25,7 +25,7 @@ bool detect_focus_gain(ui_context& ctx, widget_id id)
     return false;
 }
 
-bool detect_focus_loss(ui_context& ctx, widget_id id)
+bool detect_focus_loss(dataless_ui_context& ctx, widget_id id)
 {
     if (detect_event(ctx, FOCUS_LOSS_EVENT))
     {
@@ -36,7 +36,7 @@ bool detect_focus_loss(ui_context& ctx, widget_id id)
     return false;
 }
 
-void add_to_focus_order(ui_context& ctx, widget_id id)
+void add_to_focus_order(dataless_ui_context& ctx, widget_id id)
 {
     switch (ctx.event->type)
     {
@@ -100,14 +100,14 @@ void set_focus(ui_system& ui, routable_widget_id id)
 }
 
 // Calling this ensure that a widget will steal the focus if it's click on.
-static void do_click_focus(ui_context& ctx, widget_id id)
+static void do_click_focus(dataless_ui_context& ctx, widget_id id)
 {
     if (detect_event(ctx, MOUSE_PRESS_EVENT) && is_region_hot(ctx, id))
         set_focus(ctx, id);
 }
 
-static bool detect_key_event(ui_context& ctx, key_event_info* info,
-    ui_event_type event_type)
+static bool detect_key_event(
+    dataless_ui_context& ctx, key_event_info* info, ui_event_type event_type)
 {
     if (detect_event(ctx, event_type))
     {
@@ -121,30 +121,32 @@ static bool detect_key_event(ui_context& ctx, key_event_info* info,
     return false;
 }
 
-bool detect_key_press(ui_context& ctx, key_event_info* info, widget_id id)
+bool detect_key_press(
+    dataless_ui_context& ctx, key_event_info* info, widget_id id)
 {
     do_click_focus(ctx, id);
     return id_has_focus(ctx, id) &&
         detect_key_event(ctx, info, KEY_PRESS_EVENT);
 }
-bool detect_key_press(ui_context& ctx, key_event_info* info)
+bool detect_key_press(dataless_ui_context& ctx, key_event_info* info)
 {
     return detect_key_event(ctx, info, BACKGROUND_KEY_PRESS_EVENT);
 }
 
-bool detect_key_release(ui_context& ctx, key_event_info* info, widget_id id)
+bool detect_key_release(
+    dataless_ui_context& ctx, key_event_info* info, widget_id id)
 {
     do_click_focus(ctx, id);
     return id_has_focus(ctx, id) &&
         detect_key_event(ctx, info, KEY_RELEASE_EVENT);
 }
-bool detect_key_release(ui_context& ctx, key_event_info* info)
+bool detect_key_release(dataless_ui_context& ctx, key_event_info* info)
 {
     return detect_key_event(ctx, info, BACKGROUND_KEY_RELEASE_EVENT);
 }
 
-static bool detect_text_input(ui_context& ctx, utf8_string* text,
-    ui_event_type event_type)
+static bool detect_text_input(
+    dataless_ui_context& ctx, utf8_string* text, ui_event_type event_type)
 {
     if (detect_event(ctx, event_type))
     {
@@ -158,18 +160,19 @@ static bool detect_text_input(ui_context& ctx, utf8_string* text,
     return false;
 }
 
-bool detect_text_input(ui_context& ctx, utf8_string* text, widget_id id)
+bool detect_text_input(
+    dataless_ui_context& ctx, utf8_string* text, widget_id id)
 {
     do_click_focus(ctx, id);
     return id_has_focus(ctx, id) &&
         detect_text_input(ctx, text, TEXT_INPUT_EVENT);
 }
-bool detect_text_input(ui_context& ctx, utf8_string* text)
+bool detect_text_input(dataless_ui_context& ctx, utf8_string* text)
 {
     return detect_text_input(ctx, text, BACKGROUND_TEXT_INPUT_EVENT);
 }
 
-bool detect_key_press(ui_context& ctx, widget_id id,
+bool detect_key_press(dataless_ui_context& ctx, widget_id id,
     key_code code, key_modifiers modifiers)
 {
     key_event_info info;
@@ -182,7 +185,8 @@ bool detect_key_press(ui_context& ctx, widget_id id,
     return false;
 }
 
-bool detect_key_press(ui_context& ctx, key_code code, key_modifiers modifiers)
+bool detect_key_press(
+    dataless_ui_context& ctx, key_code code, key_modifiers modifiers)
 {
     key_event_info info;
     if (detect_key_press(ctx, &info) && info.code == code &&
@@ -194,7 +198,7 @@ bool detect_key_press(ui_context& ctx, key_code code, key_modifiers modifiers)
     return false;
 }
 
-bool detect_key_release(ui_context& ctx, widget_id id,
+bool detect_key_release(dataless_ui_context& ctx, widget_id id,
     key_code code, key_modifiers modifiers)
 {
     key_event_info info;
@@ -207,7 +211,7 @@ bool detect_key_release(ui_context& ctx, widget_id id,
     return false;
 }
 
-bool detect_key_release(ui_context& ctx, key_code code,
+bool detect_key_release(dataless_ui_context& ctx, key_code code,
     key_modifiers modifiers)
 {
     key_event_info info;
@@ -220,12 +224,13 @@ bool detect_key_release(ui_context& ctx, key_code code,
     return false;
 }
 
-void set_focus(ui_context& ctx, widget_id id)
+void set_focus(dataless_ui_context& ctx, widget_id id)
 {
     set_focus(*ctx.system, make_routable_widget_id(ctx, id));
 }
 
-bool detect_keyboard_click(ui_context& ctx, keyboard_click_state& state,
+bool detect_keyboard_click(
+    dataless_ui_context& ctx, keyboard_click_state& state,
     widget_id id, key_code code, key_modifiers modifiers)
 {
     key_event_info info;
@@ -248,7 +253,8 @@ bool detect_keyboard_click(ui_context& ctx, keyboard_click_state& state,
     }
     return false;
 }
-bool detect_keyboard_click(ui_context& ctx, keyboard_click_state& state,
+bool detect_keyboard_click(
+    dataless_ui_context& ctx, keyboard_click_state& state,
     key_code code, key_modifiers modifiers)
 {
     key_event_info info;

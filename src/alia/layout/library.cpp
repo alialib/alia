@@ -8,10 +8,11 @@
 
 namespace alia {
 
-void do_spacer(layout_traversal& traversal, layout const& layout_spec)
+void do_spacer(layout_traversal& traversal, data_traversal& data,
+    layout const& layout_spec)
 {
     layout_leaf* node;
-    get_cached_data(*traversal.data, &node);
+    get_cached_data(data, &node);
 
     if (traversal.is_refresh_pass)
     {
@@ -21,11 +22,11 @@ void do_spacer(layout_traversal& traversal, layout const& layout_spec)
     }
 }
 
-void do_spacer(layout_traversal& traversal, layout_box* region,
-    layout const& layout_spec)
+void do_spacer(layout_traversal& traversal, data_traversal& data,
+    layout_box* region, layout const& layout_spec)
 {
     layout_leaf* node;
-    get_cached_data(*traversal.data, &node);
+    get_cached_data(data, &node);
 
     if (traversal.is_refresh_pass)
     {
@@ -143,7 +144,8 @@ void row_layout_logic::set_relative_assignment(
 }
 
 void row_layout::concrete_begin(
-    layout_traversal& traversal, layout const& layout_spec)
+    layout_traversal& traversal, data_traversal& data,
+    layout const& layout_spec)
 {
     ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(row_layout_logic)
 }
@@ -236,7 +238,8 @@ void column_layout_logic::set_relative_assignment(
 }
 
 void column_layout::concrete_begin(
-    layout_traversal& traversal, layout const& layout_spec)
+    layout_traversal& traversal, data_traversal& data,
+    layout const& layout_spec)
 {
     ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(column_layout_logic)
 }
@@ -244,20 +247,20 @@ void column_layout::concrete_begin(
 // LINEAR LAYOUT - This just chooses between row and column logic.
 
 void linear_layout::concrete_begin(
-    layout_traversal& traversal, linear_layout_flag_set flags,
-    layout const& layout_spec)
+    layout_traversal& traversal, data_traversal& data,
+    linear_layout_flag_set flags, layout const& layout_spec)
 {
-    alia_if_(*traversal.data, flags & VERTICAL_LAYOUT)
+    alia_if_(data, flags & VERTICAL_LAYOUT)
     {
         column_layout_logic* logic;
         get_simple_layout_container(
-            traversal, &container_, &logic, layout_spec);
+            traversal, data, &container_, &logic, layout_spec);
     }
-    alia_else_(*traversal.data)
+    alia_else_(data)
     {
         row_layout_logic* logic;
         get_simple_layout_container(
-            traversal, &container_, &logic, layout_spec);
+            traversal, data, &container_, &logic, layout_spec);
     }
     alia_end
     slc_.begin(traversal, container_);
@@ -296,7 +299,8 @@ void layered_layout_logic::set_relative_assignment(
 }
 
 void layered_layout::concrete_begin(
-    layout_traversal& traversal, layout const& layout_spec)
+    layout_traversal& traversal, data_traversal& data,
+    layout const& layout_spec)
 {
     ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(layered_layout_logic)
 }
@@ -381,10 +385,12 @@ void rotated_layout_logic::set_relative_assignment(
 }
 
 void rotated_layout::concrete_begin(
-    layout_traversal& traversal, layout const& layout_spec)
+    layout_traversal& traversal, data_traversal& data,
+    layout const& layout_spec)
 {
     rotated_layout_logic* logic;
-    get_simple_layout_container(traversal, &container_, &logic, layout_spec);
+    get_simple_layout_container(traversal, data, &container_, &logic,
+        layout_spec);
     slc_.begin(traversal, container_);
 
     if (!traversal.is_refresh_pass)
@@ -488,7 +494,8 @@ void flow_layout_logic::set_relative_assignment(
 }
 
 void flow_layout::concrete_begin(
-    layout_traversal& traversal, layout const& layout_spec)
+    layout_traversal& traversal, data_traversal& data,
+    layout const& layout_spec)
 {
     ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(flow_layout_logic)
 }
@@ -592,7 +599,8 @@ void vertical_flow_layout_logic::set_relative_assignment(
 }
 
 void vertical_flow_layout::concrete_begin(
-    layout_traversal& traversal, layout const& layout_spec)
+    layout_traversal& traversal, data_traversal& data,
+    layout const& layout_spec)
 {
     ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(vertical_flow_layout_logic)
 }
@@ -629,26 +637,55 @@ void clip_evasion_layout_logic::set_relative_assignment(
 }
 
 void clip_evasion_layout::concrete_begin(
-    layout_traversal& traversal, layout const& layout_spec)
+    layout_traversal& traversal, data_traversal& data,
+    layout const& layout_spec)
 {
     clip_evasion_layout_logic* logic;
-    get_simple_layout_container(traversal, &container_, &logic, layout_spec);
+    get_simple_layout_container(traversal, data, &container_, &logic,
+        layout_spec);
     slc_.begin(traversal, container_);
 
     if (!traversal.is_refresh_pass)
     {
-        // TODO: This doesn't take into account how big the child actually is.
         vector<2,double> corner_on_surface =
             transform(
                 traversal.geometry->transformation_matrix,
                 vector<2,double>(
                     get_assignment(container_->cacher).region.corner));
+        vector<2,double> high_corner_on_surface =
+            transform(
+                traversal.geometry->transformation_matrix,
+                vector<2,double>(get_high_corner(
+                    get_assignment(container_->cacher).region)));
         vector<2,double> offset;
         for (unsigned i = 0; i != 2; ++i)
         {
-            offset[i] = (std::max)(0.,
-                traversal.geometry->clip_region.corner[i] -
-                    corner_on_surface[i]);
+            // If the content is smaller than the clip region, just prevent it
+            // from scrolling off the top of the clip region.
+            if (high_corner_on_surface[i] - corner_on_surface[i] <
+                traversal.geometry->clip_region.size[i])
+            {
+                offset[i] = (std::max)(0.,
+                    traversal.geometry->clip_region.corner[i] -
+                        corner_on_surface[i]);
+            }
+            // Otherwise, just make sure that it's not scrolled to the point
+            // that there's empty space.
+            else if (corner_on_surface[i] >
+                traversal.geometry->clip_region.corner[i])
+            {
+                offset[i] = traversal.geometry->clip_region.corner[i] -
+                    corner_on_surface[i];
+            }
+            else if (high_corner_on_surface[i] <
+                get_high_corner(traversal.geometry->clip_region)[i])
+            {
+                offset[i] = 
+                    get_high_corner(traversal.geometry->clip_region)[i] -
+                    high_corner_on_surface[i];
+            }
+            else
+                offset[i] = 0;
         }
         transform_.begin(*traversal.geometry);
         transform_.set(translation_matrix(offset));
@@ -724,11 +761,12 @@ void clamped_layout_logic::set_relative_assignment(
 }
 
 void clamped_layout::concrete_begin(
-    layout_traversal& traversal, absolute_size max_size,
-    layout const& layout_spec)
+    layout_traversal& traversal, data_traversal& data,
+    absolute_size max_size, layout const& layout_spec)
 {
     clamped_layout_logic* logic;
-    get_simple_layout_container(traversal, &container_, &logic, layout_spec);
+    get_simple_layout_container(traversal, data, &container_, &logic,
+        layout_spec);
     slc_.begin(traversal, container_);
     begin_layout_transform(transform_, traversal, container_->cacher);
     if (traversal.is_refresh_pass)
@@ -803,11 +841,12 @@ void bordered_layout_logic::set_relative_assignment(
 }
 
 void bordered_layout::concrete_begin(
-    layout_traversal& traversal, box_border_width<absolute_length> border,
-    layout const& layout_spec)
+    layout_traversal& traversal, data_traversal& data,
+    box_border_width<absolute_length> border, layout const& layout_spec)
 {
     bordered_layout_logic* logic;
-    get_simple_layout_container(traversal, &container_, &logic, layout_spec);
+    get_simple_layout_container(traversal, data, &container_, &logic,
+        layout_spec);
     slc_.begin(traversal, container_);
     begin_layout_transform(transform_, traversal, container_->cacher);
     if (traversal.is_refresh_pass)
@@ -1285,17 +1324,19 @@ struct grid_layout_data : grid_data<nonuniform_grid_tag>
 {};
 
 void grid_layout::concrete_begin(
-    layout_traversal& traversal, layout const& layout_spec,
-    absolute_length const& column_spacing)
+    layout_traversal& traversal, data_traversal& data,
+    layout const& layout_spec, absolute_length const& column_spacing)
 {
     traversal_ = &traversal;
+    data_traversal_ = &data;
 
-    get_cached_data(*traversal.data, &data_);
+    get_cached_data(data, &data_);
     refresh_grid(traversal, *data_);
 
     simple_layout_container* container;
     column_layout_logic* logic;
-    get_simple_layout_container(traversal, &container, &logic, layout_spec);
+    get_simple_layout_container(traversal, data, &container, &logic,
+        layout_spec);
     container_.begin(traversal, container);
 
     begin_layout_transform(transform_, traversal, container->cacher);
@@ -1312,7 +1353,7 @@ void grid_row::begin(grid_layout const& grid, layout const& layout_spec)
     layout_traversal& traversal = *grid.traversal_;
 
     grid_row_container<nonuniform_grid_tag>* row;
-    if (get_cached_data(*traversal.data, &row))
+    if (get_cached_data(*grid.data_traversal_, &row))
         initialize(traversal, *row);
 
     refresh_grid_row(traversal, *grid.data_, *row, layout_spec);
@@ -1334,17 +1375,19 @@ struct uniform_grid_layout_data : grid_data<uniform_grid_tag>
 {};
 
 void uniform_grid_layout::concrete_begin(
-    layout_traversal& traversal, layout const& layout_spec,
-    absolute_length const& column_spacing)
+    layout_traversal& traversal, data_traversal& data,
+    layout const& layout_spec, absolute_length const& column_spacing)
 {
     traversal_ = &traversal;
+    data_traversal_ = &data;
 
-    get_cached_data(*traversal.data, &data_);
+    get_cached_data(*data_traversal_, &data_);
     refresh_grid(traversal, *data_);
 
     simple_layout_container* container;
     column_layout_logic* logic;
-    get_simple_layout_container(traversal, &container, &logic, layout_spec);
+    get_simple_layout_container(traversal, data, &container, &logic,
+        layout_spec);
     container_.begin(traversal, container);
 
     begin_layout_transform(transform_, traversal, container->cacher);
@@ -1362,7 +1405,7 @@ void uniform_grid_row::begin(
     layout_traversal& traversal = *grid.traversal_;
 
     grid_row_container<uniform_grid_tag>* row;
-    if (get_cached_data(*traversal.data, &row))
+    if (get_cached_data(*grid.data_traversal_, &row))
         initialize(traversal, *row);
 
     // All rows must be set to GROW to ensure they receive equal space from
@@ -1389,10 +1432,11 @@ struct floating_layout_data
     floating_layout_data() {}
 };
 
-void floating_layout::concrete_begin(layout_traversal& traversal,
+void floating_layout::concrete_begin(
+    layout_traversal& traversal, data_traversal& data,
     layout_vector const& min_size, layout_vector const& max_size)
 {
-    get_cached_data(*traversal.data, &data_);
+    get_cached_data(data, &data_);
 
     traversal_ = &traversal;
 

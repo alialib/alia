@@ -430,28 +430,28 @@ struct simple_layout_container_storage
     simple_layout_container container;
     Logic logic;
 };
-template<class Context, class Logic>
+template<class Logic>
 void get_simple_layout_container(
-    Context& ctx,
+    layout_traversal& traversal,
+    data_traversal& data,
     simple_layout_container** container,
     Logic** logic,
     layout const& layout_spec)
 {
     simple_layout_container_storage<Logic>* storage;
-    if (get_cached_data(*get_layout_traversal(ctx).data, &storage))
+    if (get_cached_data(data, &storage))
         storage->container.logic = &storage->logic;
 
     *container = &storage->container;
 
-    if (is_refresh_pass(ctx))
+    if (is_refresh_pass(traversal))
     {
-        if (update_layout_cacher(get_layout_traversal(ctx),
-                (*container)->cacher, layout_spec, FILL | UNPADDED))
+        if (update_layout_cacher(traversal, (*container)->cacher,
+                layout_spec, FILL | UNPADDED))
         {
             // Since this container isn't active yet, it didn't get marked as
             // needing recalculation, so we need to do that manually here.
-            (*container)->last_content_change =
-                get_layout_traversal(ctx).refresh_counter;
+            (*container)->last_content_change = traversal.refresh_counter;
         }
     }
 
@@ -552,7 +552,8 @@ void begin_layout_transform(
 
 #define ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(logic_type) \
     logic_type* logic; \
-    get_simple_layout_container(traversal, &container_, &logic, layout_spec); \
+    get_simple_layout_container(traversal, data, &container_, &logic, \
+        layout_spec); \
     slc_.begin(traversal, container_); \
     begin_layout_transform(transform_, traversal, container_->cacher);
 

@@ -22,15 +22,13 @@ struct scoped_layout_traversal
 
     scoped_layout_traversal(
         layout_system& system, layout_traversal& traversal,
-        data_traversal& data, geometry_context& geometry,
-        vector<2,float> const& ppi)
-    { begin(system, traversal, data, geometry, ppi); }
+        geometry_context& geometry, vector<2,float> const& ppi)
+    { begin(system, traversal, geometry, ppi); }
 
     ~scoped_layout_traversal() { end(); }
 
     void begin(layout_system& system, layout_traversal& traversal,
-        data_traversal& data, geometry_context& geometry,
-        vector<2,float> const& ppi);
+        geometry_context& geometry, vector<2,float> const& ppi);
 
     void end() {}
 
@@ -45,13 +43,13 @@ struct scoped_layout_refresh
 
     scoped_layout_refresh(
         layout_system& system, layout_traversal& traversal,
-        data_traversal& data, vector<2,float> const& ppi)
-    { begin(system, traversal, data, ppi); }
+        vector<2,float> const& ppi)
+    { begin(system, traversal, ppi); }
 
     ~scoped_layout_refresh() { end(); }
 
     void begin(layout_system& system, layout_traversal& traversal,
-        data_traversal& data, vector<2,float> const& ppi);
+        vector<2,float> const& ppi);
 
     void end() {}
 

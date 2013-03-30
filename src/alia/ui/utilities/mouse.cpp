@@ -3,39 +3,36 @@
 
 namespace alia {
 
-vector<2,double> get_mouse_position(ui_context& ctx)
+vector<2,double> get_mouse_position(dataless_ui_context& ctx)
 {
     return transform(inverse(get_transformation(ctx)),
         vector<2,double>(ctx.system->input.mouse_position));
 }
-vector<2,int> get_integer_mouse_position(ui_context& ctx)
+vector<2,int> get_integer_mouse_position(dataless_ui_context& ctx)
 {
     vector<2,double> dp = get_mouse_position(ctx);
     return make_vector<int>(int(dp[0] + 0.5), int(dp[1] + 0.5));
 }
 
-bool mouse_is_inside_box(ui_context& ctx, box<2,double> const& box)
+bool is_mouse_in_surface(dataless_ui_context& ctx)
 {
-    return
-        ctx.system->input.mouse_inside_window &&
-        is_inside(box, get_mouse_position(ctx)) &&
-        is_inside(get_geometry_context(ctx).clip_region,
-            vector<2,double>(ctx.system->input.mouse_position));
+    return ctx.system->input.mouse_inside_window;
 }
 
-bool is_mouse_button_pressed(ui_context& ctx, mouse_button button)
+bool is_mouse_button_pressed(dataless_ui_context& ctx, mouse_button button)
 {
     return (ctx.system->input.mouse_button_state & (1 << int(button))) != 0;
 }
 
-bool detect_mouse_press(ui_context& ctx, mouse_button button)
+bool detect_mouse_press(dataless_ui_context& ctx, mouse_button button)
 {
     return (detect_event(ctx, MOUSE_PRESS_EVENT) ||
         detect_event(ctx, DOUBLE_CLICK_EVENT)) &&
         get_event<mouse_button_event>(ctx).button == button;
 }
 
-bool detect_mouse_press(ui_context& ctx, widget_id id, mouse_button button)
+bool detect_mouse_press(
+    dataless_ui_context& ctx, widget_id id, mouse_button button)
 {
     if (detect_mouse_press(ctx, button) && is_region_hot(ctx, id))
     {
@@ -46,62 +43,64 @@ bool detect_mouse_press(ui_context& ctx, widget_id id, mouse_button button)
         return false;
 }
 
-bool detect_mouse_release(ui_context& ctx, mouse_button button)
+bool detect_mouse_release(dataless_ui_context& ctx, mouse_button button)
 {
     return detect_event(ctx, MOUSE_RELEASE_EVENT) &&
         get_event<mouse_button_event>(ctx).button == button;
 }
-bool detect_mouse_release(ui_context& ctx, widget_id id,
-    mouse_button button)
+bool detect_mouse_release(
+    dataless_ui_context& ctx, widget_id id, mouse_button button)
 {
     return detect_mouse_release(ctx, button) && is_region_active(ctx, id);
 }
 
-bool detect_mouse_motion(ui_context& ctx, widget_id id)
+bool detect_mouse_motion(dataless_ui_context& ctx, widget_id id)
 {
     return detect_event(ctx, MOUSE_MOTION_EVENT) && is_region_hot(ctx, id);
 }
 
-bool detect_double_click(ui_context& ctx, widget_id id, mouse_button button)
+bool detect_double_click(
+    dataless_ui_context& ctx, widget_id id, mouse_button button)
 {
     return detect_event(ctx, DOUBLE_CLICK_EVENT) &&
         get_event<mouse_button_event>(ctx).button == button &&
         is_region_hot(ctx, id);
 }
-bool detect_click(ui_context& ctx, widget_id id, mouse_button button)
+bool detect_click(
+    dataless_ui_context& ctx, widget_id id, mouse_button button)
 {
     detect_mouse_press(ctx, id, button);
-    return detect_mouse_release(ctx, id, button) && is_region_active(ctx, id)
-        && is_region_hot(ctx, id);
+    return detect_mouse_release(ctx, id, button) && is_region_hot(ctx, id);
 }
 
-bool detect_potential_click(ui_context& ctx, widget_id id)
+bool is_click_possible(dataless_ui_context& ctx, widget_id id)
 {
     return is_region_hot(ctx, id) && is_region_active(ctx, 0);
 }
 
-bool detect_click_in_progress(ui_context& ctx, widget_id id,
-    mouse_button button)
+bool is_click_in_progress(
+    dataless_ui_context& ctx, widget_id id, mouse_button button)
 {
     return is_region_hot(ctx, id) && is_region_active(ctx, id) &&
         is_mouse_button_pressed(ctx, button);
 }
 
-bool detect_drag(ui_context& ctx, widget_id id, mouse_button button)
+bool detect_drag(dataless_ui_context& ctx, widget_id id, mouse_button button)
 {
     detect_mouse_press(ctx, id, button);
     return detect_event(ctx, MOUSE_MOTION_EVENT) &&
         is_mouse_button_pressed(ctx, button) && is_region_active(ctx, id);
 }
 
-bool detect_mouse_down(ui_context& ctx, widget_id id, mouse_button button)
+bool detect_press_or_drag(
+    dataless_ui_context& ctx, widget_id id, mouse_button button)
 {
     return (detect_mouse_press(ctx, id, button) ||
         detect_event(ctx, MOUSE_MOTION_EVENT) &&
         is_mouse_button_pressed(ctx, button)) && is_region_active(ctx, id);
 }
 
-vector<2,double> get_drag_delta(ui_context& ctx)
+vector<2,double> get_drag_delta(dataless_ui_context& ctx)
 {
     mouse_motion_event& e = get_event<mouse_motion_event>(ctx);
     matrix<3,3,double> m = inverse(get_transformation(ctx));
@@ -109,18 +108,28 @@ vector<2,double> get_drag_delta(ui_context& ctx)
         transform(m, vector<2,double>(e.last_mouse_position));
 }
 
-bool detect_drag_in_progress(ui_context& ctx, widget_id id,
-    mouse_button button)
+bool is_drag_in_progress(
+    dataless_ui_context& ctx, widget_id id, mouse_button button)
 {
-    return is_mouse_button_pressed(ctx, button) && is_region_active(ctx, id);
+    return is_mouse_button_pressed(ctx, button) && is_region_active(ctx, id) &&
+        ctx.system->input.dragging;
 }
 
-bool detect_drag_release(ui_context& ctx, widget_id id, mouse_button button)
+bool detect_drag_release(
+    dataless_ui_context& ctx, widget_id id, mouse_button button)
 {
-    return detect_mouse_release(ctx, button) && is_region_active(ctx, id);
+    return is_drag_in_progress(ctx, id, button) &&
+        detect_mouse_release(ctx, button);
 }
 
-bool detect_wheel_movement(ui_context& ctx, float* movement, widget_id id)
+bool detect_stationary_click(
+    dataless_ui_context& ctx, widget_id id, mouse_button button)
+{
+    return detect_click(ctx, id, button) && !ctx.system->input.dragging;
+}
+
+bool detect_wheel_movement(
+    dataless_ui_context& ctx, float* movement, widget_id id)
 {
     if (ctx.event->type == MOUSE_WHEEL_EVENT)
     {
@@ -135,20 +144,42 @@ bool detect_wheel_movement(ui_context& ctx, float* movement, widget_id id)
     return false;
 }
 
-bool detect_mouse_hover(ui_context& ctx, widget_id id)
+//bool detect_mouse_hover(dataless_ui_context& ctx, widget_id id)
+//{
+//    return ctx.system->input.mouse_hovering && is_region_hot(ctx, id);
+//}
+
+void do_mouse_hover_text(
+    dataless_ui_context& ctx, widget_id id, getter<string> const& text)
 {
-    return ctx.system->input.mouse_hovering && is_region_hot(ctx, id);
+    //if (detect_mouse_hover(ctx, id))
+    //{
+    //    // Note that this violates the rule that 
+    //    if (ctx.hover)
+    //        ctx.hover->text = get(text);
+    //}
 }
 
-void do_mouse_hover_text(ui_context& ctx, widget_id id,
-    getter<string> const& text)
+bool detect_mouse_gain(dataless_ui_context& ctx, widget_id id)
 {
-    if (detect_mouse_hover(ctx, id))
+    if (ctx.event->type == MOUSE_GAIN_EVENT)
     {
-        // Note that this violates the rule that 
-        if (ctx.hover)
-            ctx.hover->text = get(text);
+        mouse_notification_event& event =
+            get_event<mouse_notification_event>(ctx);
+        return event.target == id;
     }
+    return false;
+}
+
+bool detect_mouse_loss(dataless_ui_context& ctx, widget_id id)
+{
+    if (ctx.event->type == MOUSE_LOSS_EVENT)
+    {
+        mouse_notification_event& event =
+            get_event<mouse_notification_event>(ctx);
+        return event.target == id;
+    }
+    return false;
 }
 
 }

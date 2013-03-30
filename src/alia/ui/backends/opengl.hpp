@@ -67,16 +67,12 @@ struct opengl_surface : surface
     // Call this when the surface is created to associate it with a context.
     void set_opengl_context(opengl_context& ctx) { ctx_ = &ctx; }
 
-    // Call this whenever the size of the associated OpenGL window changes.
-    // (Or just call it every frame right before rendering.)
-    void set_size(vector<2,unsigned> const& size) { size_ = size; }
-
     // Call this at the beginning of each rendering pass to initialize the
     // OpenGL rendering state.
-    void initialize_render_state();
+    // 'size' is the size of the surface in pixels.
+    void initialize_render_state(vector<2,unsigned> const& size);
 
     // implementation of the surface interface
-    vector<2,unsigned> size() const { return size_; }
     void cache_image(cached_image_ptr& data, image_interface const& img);
     void set_transformation_matrix(matrix<3,3,double> const& m);
     void set_clip_region(box<2,double> const& region);

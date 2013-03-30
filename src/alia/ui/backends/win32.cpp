@@ -36,38 +36,27 @@ struct native_window::impl_data
     {}
 };
 
-struct win32_opengl_surface : opengl_surface
+struct win32_os_interface : os_interface
 {
-    win32_opengl_surface(native_window::impl_data* impl)
-      : impl_(impl), ppi_known_(false)
-    {}
-    vector<2,float> ppi() const
-    {
-        if (!ppi_known_)
-        {
-            HDC hdc = GetDC(NULL);
-            if (hdc)
-            {
-                ppi_[0] = float(GetDeviceCaps(hdc, LOGPIXELSX));
-                ppi_[1] = float(GetDeviceCaps(hdc, LOGPIXELSY));
-                ReleaseDC(NULL, hdc);
-            }
-            else
-            {
-                ppi_[0] = 96;
-                ppi_[1] = 96;
-            }
-            ppi_known_ = true;
-        }
-        return ppi_;
-    }
     string get_clipboard_text();
     void set_clipboard_text(string const& text);
- private:
-    native_window::impl_data* impl_;
-    mutable bool ppi_known_;
-    mutable vector<2,float> ppi_;
 };
+
+static vector<2,float> get_ppi()
+{
+    HDC hdc = GetDC(NULL);
+    if (hdc)
+    {
+        vector<2,float> ppi =
+            make_vector<float>(
+                float(GetDeviceCaps(hdc, LOGPIXELSX)),
+                float(GetDeviceCaps(hdc, LOGPIXELSY)));
+        ReleaseDC(NULL, hdc);
+        return ppi;
+    }
+    else
+        return make_vector<float>(96, 96);
+}
 
 static void set_cursor(mouse_cursor cursor)
 {
@@ -118,10 +107,13 @@ static void paint_window(native_window::impl_data& impl)
     if (!wglMakeCurrent(impl.dc, impl.rc))
         return;
 
+    RECT rect;
+    GetClientRect(impl.hwnd, &rect);
+
     opengl_surface* surface =
         static_cast<opengl_surface*>(impl.ui.surface.get());
-
-    surface->initialize_render_state();
+    surface->initialize_render_state(
+        alia::make_vector<unsigned>(rect.right, rect.bottom));
 
     render_ui(impl.ui);
 }
@@ -330,11 +322,6 @@ static void update_window(HWND hwnd)
     if (rect.bottom == rect.top || rect.left == rect.right)
         return;
 
-    opengl_surface* surface =
-        static_cast<opengl_surface*>(impl.ui.surface.get());
-    surface->set_size(
-        alia::make_vector<unsigned>(rect.right, rect.bottom));
-
     mouse_cursor cursor;
     update_ui(impl.ui,
         alia::make_vector<unsigned>(rect.right, rect.bottom),
@@ -421,7 +408,7 @@ LRESULT CALLBACK wndproc(
       {
         native_window::impl_data& impl = get_window_data(hwnd);
         // TODO: Actual UTF8 string.
-        if (wparam < 0x80)
+        if (wparam >= 0 && wparam < 0x80)
         {
             char character = char(wparam);
             utf8_string utf8;
@@ -481,17 +468,17 @@ LRESULT CALLBACK wndproc(
         update_window(hwnd);
         return 0;
       }
-     case WM_MOUSEHOVER:
-      {
-        vector<2,int> mouse_position =
-            make_vector<int>(GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam));
-        ui_time_type now = get_time(hwnd);
-        process_mouse_move(get_window_data(hwnd).ui, now, mouse_position);
-        process_mouse_hover(get_window_data(hwnd).ui, now);
-        reset_mouse_tracking(hwnd);
-        update_window(hwnd);
-        return 0;
-      }
+     //case WM_MOUSEHOVER:
+     // {
+     //   vector<2,int> mouse_position =
+     //       make_vector<int>(GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam));
+     //   ui_time_type now = get_time(hwnd);
+     //   process_mouse_move(get_window_data(hwnd).ui, now, mouse_position);
+     //   process_mouse_hover(get_window_data(hwnd).ui, now);
+     //   reset_mouse_tracking(hwnd);
+     //   update_window(hwnd);
+     //   return 0;
+     // }
 
      case WM_MOUSEWHEEL:
       {
@@ -739,11 +726,16 @@ static void create_window(
 
     disable_vsync();
 
-    win32_opengl_surface* surface = new alia::win32_opengl_surface(impl);
+    opengl_surface* surface = new opengl_surface;
     surface->set_opengl_context(impl->gl_ctx);
 
-    impl->ui.controller = controller;
-    impl->ui.surface.reset(surface);
+    initialize_ui(
+        impl->ui,
+        controller,
+        alia__shared_ptr<alia::surface>(surface),
+        get_ppi(),
+        alia__shared_ptr<alia::os_interface>(new win32_os_interface),
+        parse_style_file("alia.style"));
 
     if (initial_state.flags & FULL_SCREEN)
     {
@@ -771,8 +763,6 @@ void native_window::initialize(
 {
     controller->window = this;
     impl_ = new impl_data;
-    impl_->ui.style.reset(new ui_style);
-    impl_->ui.style->styles = parse_style_file("alia.style");
     create_window(impl_, 0, title, alia__shared_ptr<ui_controller>(controller),
         initial_state);
 }
@@ -870,8 +860,9 @@ void native_window::do_message_loop()
     }
 }
 
-string win32_opengl_surface::get_clipboard_text()
+string win32_os_interface::get_clipboard_text()
 {
+    // TODO: Unicode support.
     if (OpenClipboard(0))
     {
         HANDLE clip = GetClipboardData(CF_TEXT); 
@@ -885,8 +876,9 @@ string win32_opengl_surface::get_clipboard_text()
         return "";
 }
 
-void win32_opengl_surface::set_clipboard_text(string const& text)
+void win32_os_interface::set_clipboard_text(string const& text)
 {
+    // TODO: Unicode support.
     size_t const required_length = text.length() + 1;
     HGLOBAL mem =  GlobalAlloc(GMEM_MOVEABLE, required_length);
     if (mem)

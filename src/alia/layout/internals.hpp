@@ -86,10 +86,11 @@ struct layout_calculation_context
     naming_map* map;
     bool for_measurement;
 };
-static inline data_traversal& get_data_traversal(
-    layout_calculation_context& ctx)
+static inline data_traversal&
+get_data_traversal(layout_calculation_context& ctx)
 { return ctx.data; }
-static inline naming_map& get_naming_map(layout_calculation_context& ctx)
+static inline naming_map&
+get_naming_map(layout_calculation_context& ctx)
 { return *ctx.map; }
 
 // These are used when working with wrapped layouts.

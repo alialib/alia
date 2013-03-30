@@ -4,7 +4,7 @@
 namespace alia {
 
 style_search_path const*
-get_control_style_path(ui_context& ctx,
+get_control_style_path(dataless_ui_context& ctx,
     stateless_control_style_path_storage* storage,
     char const* control_type)
 {
@@ -18,7 +18,8 @@ get_control_style_path(ui_context& ctx,
 }
 
 style_search_path const*
-get_control_style_path(ui_context& ctx, control_style_path_storage* storage,
+get_control_style_path(
+    dataless_ui_context& ctx, control_style_path_storage* storage,
     char const* control_type, widget_state state)
 {
     return
@@ -32,7 +33,8 @@ get_control_style_path(ui_context& ctx, control_style_path_storage* storage,
 
 control_style_properties
 get_control_style_properties(
-    ui_context& ctx, style_search_path const* path, layout_vector const& size)
+    dataless_ui_context& ctx, style_search_path const* path,
+    layout_vector const& size)
 {
     control_style_properties properties;
 
@@ -56,7 +58,7 @@ get_control_style_properties(
 
 control_style_properties
 get_control_style_properties(
-    ui_context& ctx, char const* control_type, widget_state state,
+    dataless_ui_context& ctx, char const* control_type, widget_state state,
     layout_vector const& size)
 {
     control_style_path_storage storage;
@@ -106,7 +108,7 @@ get_box_control_content_region(
 }
 
 void draw_box_control(
-    ui_context& ctx, SkCanvas& canvas, layout_vector const& size,
+    dataless_ui_context& ctx, SkCanvas& canvas, layout_vector const& size,
     control_style_properties const& style, bool has_focus)
 {
     SkPaint paint;
@@ -473,83 +475,6 @@ do_button(
     do_text(ctx, label, CENTER);
     return (flags & BUTTON_DISABLED) ? false :
         do_button_input(ctx, id, data.input);
-}
-
-// ICON BUTTON
-
-// This can't use do_simple_button since it requires an extra parameter to the
-// renderer (the icon type). So instead, it's implemented as a control.
-
-struct icon_button_renderer : simple_control_renderer<icon_type>
-{};
-
-struct default_icon_button_renderer : icon_button_renderer
-{
-    leaf_layout_requirements get_layout(ui_context& ctx) const
-    {
-        return get_box_control_layout(ctx, "icon-button");
-    }
-    void draw(
-        ui_context& ctx, layout_box const& region,
-        getter<icon_type> const& icon, widget_state state) const
-    {
-        if (!is_render_pass(ctx))
-            return;
-
-        caching_renderer cache;
-        initialize_caching_control_renderer(ctx, cache, region,
-            combine_ids(ref(icon.id()), make_id(state)));
-        if (cache.needs_rendering())
-        {
-            box_control_renderer renderer(ctx, cache, "node-expander", state);
-
-            renderer.canvas().translate(
-                SkScalarDiv(
-                    renderer.content_region().size[0],
-                    SkIntToScalar(2)),
-                SkScalarDiv(
-                    renderer.content_region().size[1],
-                    SkIntToScalar(2)));
-
-            SkPaint paint;
-            paint.setAntiAlias(true);
-            set_color(paint, renderer.style().fg_color);
-
-            switch (get(icon))
-            {
-             case REMOVE_ICON:
-              {
-                SkScalar a =
-                    SkScalarDiv(
-                        renderer.content_region().size[0],
-                        SkIntToScalar(5));
-                paint.setStrokeWidth(a);
-                paint.setStrokeCap(SkPaint::kRound_Cap);
-                paint.setStyle(SkPaint::kFill_Style);
-                renderer.canvas().drawLine(-a, -a,  a,  a, paint);
-                renderer.canvas().drawLine(-a,  a,  a, -a, paint);
-                break;
-              }
-             default:
-                break;
-            }
-
-            renderer.cache();
-            cache.mark_valid();
-        }
-        cache.draw();
-    }
-};
-
-icon_button_result
-do_icon_button(
-    ui_context& ctx,
-    icon_type icon,
-    layout const& layout_spec,
-    widget_id id)
-{
-    return do_simple_control<icon_button_renderer,
-        default_icon_button_renderer>(ctx, in(icon), layout_spec, id);
 }
 
 }

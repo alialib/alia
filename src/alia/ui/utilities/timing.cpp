@@ -3,7 +3,7 @@
 
 namespace alia {
 
-void request_refresh(ui_context& ctx, ui_time_type duration)
+void request_refresh(dataless_ui_context& ctx, ui_time_type duration)
 {
     ui_system& ui = *ctx.system;
     ui_time_type update_time = ui.millisecond_tick_count + duration;
@@ -12,18 +12,19 @@ void request_refresh(ui_context& ctx, ui_time_type duration)
     record_content_change(ctx);
 }
 
-void request_animation_refresh(ui_context& ctx)
+void request_animation_refresh(dataless_ui_context& ctx)
 {
     request_refresh(ctx, 10);
 }
 
-ui_time_type get_animation_tick_count(ui_context& ctx)
+ui_time_type get_animation_tick_count(dataless_ui_context& ctx)
 {
     request_animation_refresh(ctx);
     return ctx.system->millisecond_tick_count;
 }
 
-ui_time_type get_animation_ticks_left(ui_context& ctx, ui_time_type end_time)
+ui_time_type
+get_animation_ticks_left(dataless_ui_context& ctx, ui_time_type end_time)
 {
     int ticks_remaining = int(end_time - ctx.system->millisecond_tick_count);
     if (ticks_remaining > 0)
@@ -58,7 +59,8 @@ bool square_wave(ui_context& ctx, ui_time_type true_duration,
     return data->value;
 }
 
-void request_timer_event(ui_context& ctx, widget_id id, ui_time_type time)
+void request_timer_event(
+    dataless_ui_context& ctx, widget_id id, ui_time_type time)
 {
     ui_system& ui = *ctx.system;
     // If an event already exists for that ID, then reschedule it.
@@ -81,20 +83,20 @@ void request_timer_event(ui_context& ctx, widget_id id, ui_time_type time)
     ui.timer_requests.push_back(rq);
 }
 
-void start_timer(ui_context& ctx, widget_id id, unsigned duration)
+void start_timer(dataless_ui_context& ctx, widget_id id, unsigned duration)
 {
     input_event* ie = dynamic_cast<input_event*>(ctx.event);
     ui_time_type now = ie ? ie->time : ctx.system->millisecond_tick_count;
     request_timer_event(ctx, id, now + duration);
 }
 
-bool detect_timer_event(ui_context& ctx, widget_id id)
+bool detect_timer_event(dataless_ui_context& ctx, widget_id id)
 {
     return ctx.event->type == TIMER_EVENT &&
         get_event<timer_event>(ctx).id == id;
 }
 
-void restart_timer(ui_context& ctx, widget_id id, unsigned duration)
+void restart_timer(dataless_ui_context& ctx, widget_id id, unsigned duration)
 {
     timer_event& e = get_event<timer_event>(ctx);
     request_timer_event(ctx, id, e.trigger_time + duration);

@@ -56,20 +56,58 @@ calculate_text_layout(
     while (p != utf8.end);
 }
 
-// Get the index of the line that contains the given offset.
-size_t get_line_number(text_layout_data const& layout, utf8_ptr character)
+// Ambiguities occur when attemping to map a character offset to a cursor
+// position. This is because the end of a word wrapped line is at the same
+// character offset as the beginning of the next line. Both are valid cursor
+// positions under different circumstances.
+// This structure addresses this problem by recording not only the character
+// offset by also how to resolve such an ambiguity;
+struct disambiguated_utf8_ptr
+{
+    utf8_ptr ptr;
+    bool prefer_end_of_line;
+
+    disambiguated_utf8_ptr() {}
+    explicit disambiguated_utf8_ptr(
+        utf8_ptr ptr, bool prefer_end_of_line = false)
+      : ptr(ptr), prefer_end_of_line(prefer_end_of_line)
+    {}
+};
+
+// analogous to disambiguated_utf8_ptr, but stores an offset instead
+struct disambiguated_utf8_offset
+{
+    size_t offset;
+    bool prefer_end_of_line;
+
+    disambiguated_utf8_offset() {}
+    explicit disambiguated_utf8_offset(
+        size_t offset, bool prefer_end_of_line = false)
+      : offset(offset), prefer_end_of_line(prefer_end_of_line)
+    {}
+};
+
+// Get the index of the line that contains the given character.
+static size_t
+get_line_number(
+    text_layout_data const& layout, disambiguated_utf8_ptr const& character)
 {
     size_t n_rows = layout.rows.size();
     for (size_t i = 0; i != n_rows - 1; ++i)
     {
-        if (character < layout.rows[i + 1].begin)
+        if (character.ptr <= layout.rows[i].end &&
+            (character.ptr < layout.rows[i + 1].begin ||
+             character.prefer_end_of_line))
+        {
             return i;
+        }
     }
     return n_rows - 1;
 }
 
 static layout_vector
-get_character_position(text_layout_data const& layout, utf8_ptr character)
+get_character_position(text_layout_data const& layout,
+    disambiguated_utf8_ptr const& character)
 {
     size_t line_n = get_line_number(layout, character);
     utf8_ptr line_begin = layout.rows[line_n].begin;
@@ -77,21 +115,21 @@ get_character_position(text_layout_data const& layout, utf8_ptr character)
     set_skia_font_info(paint, layout.font);
     return make_vector(
         skia_scalar_as_layout_size(
-            paint.measureText(line_begin, character - line_begin)),
+            paint.measureText(line_begin, character.ptr - line_begin)),
         layout_scalar(line_n * layout.line_height));
 }
 
-static utf8_ptr
+static disambiguated_utf8_ptr
 get_line_begin(text_layout_data const& layout, size_t line_n)
 {
     assert(line_n < layout.rows.size());
-    return layout.rows[line_n].begin;
+    return disambiguated_utf8_ptr(layout.rows[line_n].begin, false);
 }
-static utf8_ptr
+static disambiguated_utf8_ptr
 get_line_end(text_layout_data const& layout, size_t line_n)
 {
     assert(line_n < layout.rows.size());
-    return layout.rows[line_n].end;
+    return disambiguated_utf8_ptr(layout.rows[line_n].end, true);
 }
 
 static optional<utf8_ptr>
@@ -119,15 +157,15 @@ get_character_at_point(text_layout_data const& layout, layout_vector const& p)
     return row_text.begin + what_fits;
 }
 
-static utf8_ptr
+static disambiguated_utf8_ptr
 get_character_boundary_at_point(
     text_layout_data const& layout, layout_vector const& p)
 {
     int row_index = int(p[1] / layout.line_height);
     if (row_index < 0)
-        return as_utf8_string(layout.text).begin;
+        return disambiguated_utf8_ptr(as_utf8_string(layout.text).begin);
     if (row_index >= int(layout.rows.size()))
-        return as_utf8_string(layout.text).end;
+        return disambiguated_utf8_ptr(as_utf8_string(layout.text).end);
 
     utf8_string const& row_text = layout.rows[row_index];
 
@@ -135,7 +173,7 @@ get_character_boundary_at_point(
     set_skia_font_info(paint, layout.font);
 
     if (p[0] < 0)
-        return row_text.begin;
+        return disambiguated_utf8_ptr(row_text.begin);
 
     SkScalar measured_width;
     size_t what_fits =
@@ -144,27 +182,11 @@ get_character_boundary_at_point(
 
     utf8_ptr boundary_before = row_text.begin + what_fits;
 
-    // When text is wrapped, the end of the row's text is actually the
-    // beginning of the next line, so we have to avoid returning that position.
-    if (!is_empty(row_text) && boundary_before == row_text.end &&
-        row_text.end != as_utf8_string(layout.text).end)
-    {
-        SkUTF8_PrevUnichar(&boundary_before);
-        return boundary_before;
-    }
-
     if (boundary_before == row_text.end)
-        return row_text.end;
+        return disambiguated_utf8_ptr(row_text.end, true);
 
     utf8_ptr boundary_after = boundary_before;
     SkUTF8_NextUnichar(&boundary_after);
-
-    // As above, avoid returning the end of the row's text.
-    if (boundary_after == row_text.end &&
-        row_text.end != as_utf8_string(layout.text).end)
-    {
-        return boundary_before;
-    }
 
     SkScalar width_of_character =
         paint.measureText(boundary_before,
@@ -172,8 +194,11 @@ get_character_boundary_at_point(
 
     // Determine if the point is on the left or right side of the character
     // and return the appropriate boundary.
-    return (layout_scalar_as_skia_scalar(p[0]) - measured_width) >
-	width_of_character / 2 ? boundary_after : boundary_before;
+    return
+        (layout_scalar_as_skia_scalar(p[0]) - measured_width) >
+	    width_of_character / 2
+      ? disambiguated_utf8_ptr(boundary_after, boundary_after == row_text.end)
+      : disambiguated_utf8_ptr(boundary_before);
 }
 
 static void
@@ -236,18 +261,6 @@ struct text_control_layout_node : layout_node
 
 struct text_control_data
 {
-    text_control_data()
-      : change_detected(false)
-      , change_counter(1)
-      , cursor_on(false)
-      , cursor_position(0)
-      , editing(false)
-      , first_selected(0)
-      , n_selected(0)
-      , true_cursor_x(-1)
-      , text_edited(false)
-    {}
-
     // flags passed in by caller (stored here to detect changes)
     text_control_flag_set flags;
 
@@ -267,8 +280,8 @@ struct text_control_data
 
     // is the cursor on?
     bool cursor_on;
-    // the cursor is before the character at the given index
-    size_t cursor_position;
+    // the cursor is before the character at the given offset
+    disambiguated_utf8_offset cursor_position;
 
     // in editing mode?
     bool editing;
@@ -304,9 +317,22 @@ struct text_control_data
     // data for rendering the text
     // Both are keyed on change_counter and the usable width of the control.
     keyed_data<cached_image_ptr> unselected_image, selected_image;
+
+    text_control_data()
+      : change_detected(false)
+      , change_counter(1)
+      , cursor_on(false)
+      , cursor_position(disambiguated_utf8_offset(0))
+      , editing(false)
+      , first_selected(0)
+      , n_selected(0)
+      , true_cursor_x(-1)
+      , text_edited(false)
+    {}
 };
 
-string get_display_text(text_control_data& tc)
+static string
+get_display_text(text_control_data& tc)
 {
     if (tc.flags & TEXT_CONTROL_MASK_CONTENTS)
         return string(tc.text.length(), '*');
@@ -516,1011 +542,1069 @@ draw_text_with_selection(
     }
 }
 
-struct text_control
+static int const cursor_blink_delay = 500;
+static int const drag_delay = 40;
+
+struct text_control_parameters
 {
- public:
-    text_control(
-        ui_context& ctx,
-        text_control_data& data,
-        accessor<string> const& value,
-        layout const& layout_spec,
-        text_control_flag_set flags,
-        widget_id id,
-        optional<size_t> const& length_limit)
-      : ctx(ctx), data(data), value(value),
-        flags(flags), layout_spec(layout_spec), id(id),
-        length_limit(length_limit)
-    {}
+    ui_context* ctx;
+    text_control_data* data;
+    accessor<string> const* value;
+    text_control_flag_set flags;
+    layout const* layout_spec;
+    widget_id id;
+    optional<size_t> length_limit;
+    panel* panel; // containing panel
+    text_control_result* result;
+};
 
-    void do_pass()
+text_layout_data& get_text_layout(text_control_parameters const& tc)
+{ return tc.data->text_layout.value; }
+
+static box<2,int>
+get_full_region(text_control_parameters const& tc)
+{
+    return tc.panel->outer_region();
+}
+
+static box<2,int> const&
+get_text_region(text_control_parameters const& tc)
+{
+    return get_assignment(tc.data->layout_cacher).region;
+}
+
+// Get the index of the character that contains the given pixel.
+// Will return invalid character indices if the pixel is not actually
+// inside a character.
+static optional<utf8_ptr>
+get_character_at_pixel(
+    text_control_parameters const& tc, vector<2,int> const& p)
+{
+    return get_character_at_point(get_text_layout(tc),
+        vector<2,int>(p - get_text_region(tc).corner));
+}
+
+static disambiguated_utf8_ptr
+get_line_begin(text_control_parameters const& tc, size_t line_n)
+{
+    return get_line_begin(get_text_layout(tc), line_n);
+}
+
+static disambiguated_utf8_ptr
+get_line_end(text_control_parameters const& tc, size_t line_n)
+{
+    return get_line_end(get_text_layout(tc), line_n);
+}
+
+// Get the index of the character that begins closest to the given pixel.
+static disambiguated_utf8_ptr
+get_character_boundary_at_pixel(
+    text_control_parameters const& tc, vector<2,int> const& p)
+{
+    return get_character_boundary_at_point(
+        get_text_layout(tc),
+        vector<2,int>(p - get_text_region(tc).corner));
+}
+
+// Get the screen location of the character boundary immediately before
+// the given character index.
+static vector<2,int>
+get_character_boundary_location(
+    text_control_parameters const& tc, disambiguated_utf8_ptr const& character)
+{
+    return get_character_position(get_text_layout(tc), character) +
+        vector<2,int>(get_text_region(tc).corner);
+}
+
+// Convert back and forth between character indices and pointers.
+static utf8_ptr
+character_index_to_ptr(text_control_parameters const& tc, size_t index)
+{
+    return get_text_layout(tc).text.c_str() + index;
+}
+static size_t
+character_ptr_to_index(text_control_parameters const& tc, utf8_ptr ptr)
+{
+    return ptr - get_text_layout(tc).text.c_str();
+}
+
+// Convert back and forth between disambiguated character indices and pointers.
+static disambiguated_utf8_ptr
+character_index_to_ptr(
+    text_control_parameters const& tc, disambiguated_utf8_offset index)
+{
+    return disambiguated_utf8_ptr(
+        character_index_to_ptr(tc, index.offset),
+        index.prefer_end_of_line);
+}
+static disambiguated_utf8_offset
+character_ptr_to_index(
+    text_control_parameters const& tc, disambiguated_utf8_ptr ptr)
+{
+    return disambiguated_utf8_offset(
+        character_ptr_to_index(tc, ptr.ptr),
+        ptr.prefer_end_of_line);
+}
+
+// Get the number of the line that contains the given character.
+static size_t
+get_line_number(
+    text_control_parameters const& tc, disambiguated_utf8_ptr character)
+{
+    return alia::get_line_number(get_text_layout(tc), character);
+}
+
+// Get the number of lines of text in the current layout.
+static size_t
+get_line_count(text_control_parameters const& tc)
+{
+    return get_text_layout(tc).rows.size();
+}
+
+static widget_id
+get_cursor_id(text_control_parameters const& tc)
+{
+    return &tc.data->cursor_position;
+}
+
+static box<2,int>
+get_cursor_region(text_control_parameters const& tc)
+{
+    return box<2,int>(
+        get_character_boundary_location(tc,
+            character_index_to_ptr(tc, tc.data->cursor_position)),
+        make_vector<int>(1, get_text_layout(tc).line_height));
+}
+
+// Get the number of the line that the cursor is on.
+static size_t
+get_cursor_line_number(text_control_parameters const& tc)
+{
+    return get_line_number(tc, character_index_to_ptr(tc,
+        tc.data->cursor_position));
+}
+
+// Get the character index that corresponds to the cursor position shifted
+// down by delta lines (a negative delta shifts up).
+static disambiguated_utf8_offset
+get_vertically_adjusted_position(text_control_parameters const& tc, int delta)
+{
+    size_t line_n = get_cursor_line_number(tc);
+    if (tc.data->true_cursor_x < 0)
     {
-        result.event = TEXT_CONTROL_NO_EVENT;
-        result.changed = false;
+        tc.data->true_cursor_x = 
+            get_character_position(get_text_layout(tc),
+                character_index_to_ptr(tc, tc.data->cursor_position))[0];
+    }
+    line_n =
+        size_t(clamp(int(line_n) + delta, 0, int(get_line_count(tc)) - 1));
+    return character_ptr_to_index(tc,
+        get_character_boundary_at_point(
+            get_text_layout(tc),
+            make_vector<int>(
+                tc.data->true_cursor_x,
+                get_character_position(
+                    get_text_layout(tc),
+                    get_line_begin(tc, line_n))[1])));
+}
 
-        cursor_id = get_widget_id(ctx);
+// Get the position that the home key should go to.
+static disambiguated_utf8_ptr
+get_line_home_position(text_control_parameters const& tc)
+{
+    return get_line_begin(tc, get_cursor_line_number(tc));
+}
 
-        panel_.begin(
-            ctx, text("control"),
-            add_default_alignment(
-                add_default_size(layout_spec, width(12, EM)),
-                LEFT, BASELINE_Y),
-            NO_FLAGS,
-            id,
-            id_has_focus(ctx, id) ? WIDGET_FOCUSED : WIDGET_NORMAL);
+// Get the position that the end key should go to.
+static disambiguated_utf8_ptr
+get_line_end_position(text_control_parameters const& tc)
+{
+    return get_line_end(tc, get_cursor_line_number(tc));
+}
 
-        switch (ctx.event->category)
-        {
-         case REFRESH_CATEGORY:
-            do_refresh();
-            break;
-         case RENDER_CATEGORY:
-            update_text_layout();
-            render();
-            break;
-         case REGION_CATEGORY:
-            update_text_layout();
-            do_box_region(ctx, cursor_id, get_cursor_region(), IBEAM_CURSOR);
-            do_box_region(ctx, id, get_full_region(), IBEAM_CURSOR);
-            break;
-         case INPUT_CATEGORY:
-            update_text_layout();
-            do_input();
-            break;
-        }
+static bool is_read_only(text_control_parameters const& tc)
+{ return (tc.flags & TEXT_CONTROL_DISABLED) != 0; }
+
+static bool is_disabled(text_control_parameters const& tc)
+{ return (tc.flags & TEXT_CONTROL_DISABLED) != 0; }
+
+static bool is_single_line(text_control_parameters const& tc)
+{ return (tc.flags & TEXT_CONTROL_SINGLE_LINE) != 0; }
+
+static bool is_multiline(text_control_parameters const& tc)
+{ return (tc.flags & TEXT_CONTROL_MULTILINE) != 0; }
+
+static void record_change(text_control_parameters const& tc)
+{
+    tc.data->change_detected = true;
+}
+
+static void ensure_cursor_visible(text_control_parameters const& tc)
+{
+    make_widget_visible(*tc.ctx, get_cursor_id(tc));
+}
+
+// Reset the cursor blink so that it's visible.
+static void reset_cursor_blink(text_control_parameters const& tc)
+{
+    tc.data->cursor_on = true;
+    start_timer(*tc.ctx, get_cursor_id(tc), cursor_blink_delay);
+}
+
+static void on_text_change(text_control_parameters const& tc)
+{
+    tc.data->true_cursor_x = -1;
+    record_change(tc);
+}
+
+static void on_edit(text_control_parameters const& tc)
+{
+    on_text_change(tc);
+    if (tc.flags & TEXT_CONTROL_IMMEDIATE)
+        set(*tc.value, tc.data->text);
+    else
+        tc.data->text_edited = true;
+}
+
+static void exit_edit_mode(text_control_parameters const& tc)
+{
+    tc.data->editing = false;
+    tc.data->n_selected = 0;
+    tc.data->cursor_on = false;
+}
+
+static void reset_to_external_value(text_control_parameters const& tc)
+{
+    tc.data->text = tc.value->is_gettable() ? get(*tc.value) : "";
+    tc.data->cursor_position =
+        disambiguated_utf8_offset(tc.data->text.length());
+    on_text_change(tc);
+    tc.data->text_edited = false;
+    if (!(tc.flags & TEXT_CONTROL_IMMEDIATE))
+        exit_edit_mode(tc);
+}
+
+static void do_refresh(text_control_parameters const& tc)
+{
+    ui_context& ctx = *tc.ctx;
+    text_control_data& data = *tc.data;
+
+    if (!data.external_id.matches(tc.value->id()))
+    {
+        // The value changed through some external program logic,
+        // so update the displayed text to reflect it.
+        // This also aborts any edits that may have been taking
+        // place.
+        reset_to_external_value(tc);
+        data.external_id.store(tc.value->id());
     }
 
-    text_control_result result;
-
- private:
-    bool is_read_only() const
-    { return (flags & TEXT_CONTROL_DISABLED) != 0; }
-    bool is_disabled() const
-    { return (flags & TEXT_CONTROL_DISABLED) != 0; }
-    bool is_single_line() const
-    { return (flags & TEXT_CONTROL_SINGLE_LINE) != 0; }
-    bool is_multiline() const
-    { return (flags & TEXT_CONTROL_MULTILINE) != 0; }
-
-    box<2,int> get_full_region() const
+    if (!data.style_id.matches(*ctx.style.id))
     {
-        return panel_.outer_region();
+        record_change(tc);
+        data.style_id.store(*ctx.style.id);
     }
 
-    box<2,int> get_cursor_region() const
+    if (tc.flags != data.flags)
     {
-        return box<2,int>(
-            get_character_boundary_location(
-                character_index_to_ptr(data.cursor_position)),
-            make_vector<int>(1, get_text_layout().line_height));
+        record_change(tc);
+        data.flags = tc.flags;
     }
 
-    box<2,int> const& get_text_region() const
+    update_layout_cacher(get_layout_traversal(ctx), data.layout_cacher,
+        UNPADDED, BASELINE_Y | GROW_X);
+
+    if (data.change_detected)
     {
-        return get_assignment(data.layout_cacher).region;
+        ++data.change_counter;
+        record_layout_change(get_layout_traversal(ctx));
+
+        data.font = ctx.style.properties->font;
+        data.layout_node.set_data(data);
+
+        data.change_detected = false;
     }
 
-    void reset_to_external_value()
+    add_layout_node(get_layout_traversal(ctx), &data.layout_node);
+}
+
+static void update_text_layout(text_control_parameters const& tc)
+{
+    ui_context& ctx = *tc.ctx;
+    text_control_data& data = *tc.data;
+
+    refresh_keyed_data(data.text_layout,
+        combine_ids(make_id(data.change_counter),
+            make_id(get_text_region(tc).size[0])));
+    if (!is_valid(data.text_layout))
     {
-        data.text = value.is_gettable() ? get(value) : "";
-        data.cursor_position = data.text.length();
-        on_text_change();
-        data.text_edited = false;
-        if (!(flags & TEXT_CONTROL_IMMEDIATE))
-            exit_edit_mode();
+        calculate_text_layout(data.text_layout.value,
+            get_display_text(data), ctx.style.properties->font,
+            // - 1 to leave room for the cursor
+            get_text_region(tc).size[0] - 1,
+            // for editing
+            true);
+        mark_valid(data.text_layout);
+    }
+}
+
+static void render(text_control_parameters const& tc)
+{
+    ui_context& ctx = *tc.ctx;
+    text_control_data& data = *tc.data;
+
+    if (!is_visible(get_geometry_context(ctx),
+            box<2,double>(get_full_region(tc))))
+    {
+        return;
     }
 
-    void record_change()
+    refresh_keyed_data(data.unselected_image,
+        combine_ids(make_id(data.change_counter),
+            make_id(get_text_region(tc).size[0])));
+    if (!is_valid(data.unselected_image) ||
+        !is_valid(data.unselected_image.value))
     {
-        data.change_detected = true;
+        render_text_image(
+            *ctx.surface,
+            data.unselected_image.value,
+            get_text_region(tc).size,
+            get_text_layout(tc),
+            ctx.style.properties->text_color,
+            ctx.style.properties->background_color);
+        mark_valid(data.unselected_image);
     }
 
-    void do_refresh()
+    if (data.n_selected != 0)
     {
-        if (!data.external_id.matches(value.id()))
-        {
-            // The value changed through some external program logic,
-            // so update the displayed text to reflect it.
-            // This also aborts any edits that may have been taking
-            // place.
-            reset_to_external_value();
-            data.external_id.store(value.id());
-        }
-
-        if (!data.style_id.matches(*ctx.style.id))
-        {
-            record_change();
-            data.style_id.store(*ctx.style.id);
-        }
-
-        if (flags != data.flags)
-        {
-            record_change();
-            data.flags = flags;
-        }
-
-        update_layout_cacher(get_layout_traversal(ctx), data.layout_cacher,
-            UNPADDED, BASELINE_Y | GROW_X);
-
-        if (data.change_detected)
-        {
-            ++data.change_counter;
-            record_layout_change(get_layout_traversal(ctx));
-
-            data.font = ctx.style.properties->font;
-            data.layout_node.set_data(data);
-
-            data.change_detected = false;
-        }
-
-        add_layout_node(get_layout_traversal(ctx), &data.layout_node);
-    }
-
-    void update_text_layout()
-    {
-        refresh_keyed_data(data.text_layout,
+        refresh_keyed_data(data.selected_image,
             combine_ids(make_id(data.change_counter),
-                make_id(get_text_region().size[0])));
-        if (!is_valid(data.text_layout))
-        {
-            calculate_text_layout(data.text_layout.value,
-                get_display_text(data), ctx.style.properties->font,
-                // - 1 to leave room for the cursor
-                get_text_region().size[0] - 1,
-                // for editing
-                true);
-            mark_valid(data.text_layout);
-        }
-    }
-
-    void render()
-    {
-        if (!is_visible(get_geometry_context(ctx),
-                box<2,double>(get_full_region())))
-        {
-            return;
-        }
-
-        refresh_keyed_data(data.unselected_image,
-            combine_ids(make_id(data.change_counter),
-                make_id(get_text_region().size[0])));
-        if (!is_valid(data.unselected_image) ||
-            !is_valid(data.unselected_image.value))
+                make_id(get_text_region(tc).size[0])));
+        if (!is_valid(data.selected_image) ||
+            !is_valid(data.selected_image.value))
         {
             render_text_image(
                 *ctx.surface,
-                data.unselected_image.value,
-                get_text_region().size,
-                get_text_layout(),
-                ctx.style.properties->text_color,
-                ctx.style.properties->background_color);
-            mark_valid(data.unselected_image);
+                data.selected_image.value,
+                get_text_region(tc).size,
+                get_text_layout(tc),
+                get_color_property(ctx, "selected-color"),
+                get_color_property(ctx, "selected-background"));
+            mark_valid(data.selected_image);
         }
 
-        if (data.n_selected != 0)
-        {
-            refresh_keyed_data(data.selected_image,
-                combine_ids(make_id(data.change_counter),
-                    make_id(get_text_region().size[0])));
-            if (!is_valid(data.selected_image) ||
-                !is_valid(data.selected_image.value))
-            {
-                render_text_image(
-                    *ctx.surface,
-                    data.selected_image.value,
-                    get_text_region().size,
-                    get_text_layout(),
-                    get_color_property(ctx, "selected-color"),
-                    get_color_property(ctx, "selected-background"));
-                mark_valid(data.selected_image);
-            }
-
-            draw_text_with_selection(
-                *ctx.surface,
-                get_text_layout(),
-                data.unselected_image.value, data.selected_image.value,
-                get_text_region(),
-                character_index_to_ptr(data.first_selected),
-                character_index_to_ptr(data.first_selected + data.n_selected));
-        }
-        else
-        {
-            data.unselected_image.value->draw(
-                *ctx.surface,
-                box<2,double>(get_text_region()),
-                box<2,double>(
-                    make_vector(0., 0.),
-                    vector<2,double>(get_text_region().size)));
-        }
-
-        if (data.cursor_on && data.editing && data.n_selected == 0)
-        {
-            vector<2,int> cursor_p =
-                get_character_boundary_location(character_index_to_ptr(
-                    data.cursor_position));
-            ctx.surface->draw_filled_box(
-                ctx.style.properties->text_color,
-                box<2,double>(vector<2,double>(cursor_p),
-                    make_vector<double>(1, get_text_layout().line_height)));
-        }
+        draw_text_with_selection(
+            *ctx.surface,
+            get_text_layout(tc),
+            data.unselected_image.value, data.selected_image.value,
+            get_text_region(tc),
+            character_index_to_ptr(tc, data.first_selected),
+            character_index_to_ptr(tc, data.first_selected + data.n_selected));
+    }
+    else
+    {
+        data.unselected_image.value->draw(
+            *ctx.surface,
+            box<2,double>(get_text_region(tc)),
+            box<2,double>(
+                make_vector(0., 0.),
+                vector<2,double>(get_text_region(tc).size)));
     }
 
-    text_layout_data& get_text_layout() const
-    { return data.text_layout.value; }
-
-    void do_input()
+    if (data.cursor_on && data.editing && data.n_selected == 0)
     {
-        if (detect_double_click(ctx, id, LEFT_BUTTON))
+        vector<2,int> cursor_p =
+            get_character_boundary_location(tc,
+                character_index_to_ptr(tc, data.cursor_position));
+        ctx.surface->draw_filled_box(
+            ctx.style.properties->text_color,
+            box<2,double>(vector<2,double>(cursor_p),
+                make_vector<double>(1, get_text_layout(tc).line_height)));
+    }
+}
+
+// Call this after any key press.
+static void
+acknowledge_key(text_control_parameters const& tc)
+{
+    reset_cursor_blink(tc);
+    acknowledge_input_event(*tc.ctx);
+    ensure_cursor_visible(tc);
+}
+
+// Is there currently any text selected?
+static bool has_selection(text_control_parameters const& tc)
+{
+    text_control_data& data = *tc.data;
+    return data.n_selected != 0;
+}
+
+// Delete the current selection.
+void delete_selection(text_control_parameters const& tc)
+{
+    text_control_data& data = *tc.data;
+    if (has_selection(tc))
+    {
+        data.text = data.text.substr(0, data.first_selected) +
+            data.text.substr(data.first_selected + data.n_selected);
+        data.cursor_position = disambiguated_utf8_offset(data.first_selected);
+        data.n_selected = 0;
+    }
+}
+
+// Insert text at the current cursor position.
+static void
+insert_text(text_control_parameters const& tc, string const& text)
+{
+    text_control_data& data = *tc.data;
+    if (!tc.length_limit ||
+        data.text.length() + text.length() - data.n_selected
+            <= get(tc.length_limit))
+    {
+        delete_selection(tc);
+        data.text = data.text.substr(0, data.cursor_position.offset) +
+            text + data.text.substr(data.cursor_position.offset);
+        data.cursor_position.offset += text.length();
+    }
+}
+
+// Set the current selection.
+static void
+set_selection(text_control_parameters const& tc, size_t from, size_t to)
+{
+    text_control_data& data = *tc.data;
+    if (from > to)
+        std::swap(from, to);
+    data.first_selected = from;
+    data.n_selected = to - from;
+}
+
+// Select all text.
+static void
+select_all(text_control_parameters const& tc)
+{
+    text_control_data& data = *tc.data;
+    data.first_selected = 0;
+    data.n_selected = data.text.length();
+    data.cursor_position = disambiguated_utf8_offset(data.n_selected);
+}
+
+// Copy the current selection to the clipboard.
+static void
+copy_selection(text_control_parameters const& tc)
+{
+    ui_context& ctx = *tc.ctx;
+    text_control_data& data = *tc.data;
+    if (!(tc.flags & TEXT_CONTROL_MASK_CONTENTS) && has_selection(tc))
+    {
+        ctx.system->os->set_clipboard_text(
+            data.text.substr(data.first_selected, data.n_selected));
+    }
+}
+
+// Cut the current selection.
+static void
+cut_selection(text_control_parameters const& tc)
+{
+    copy_selection(tc);
+    delete_selection(tc);
+}
+
+// Paste the current clipboard contents into the control.
+static void
+paste_into(text_control_parameters const& tc)
+{
+    insert_text(tc, tc.ctx->system->os->get_clipboard_text());
+}
+
+// Move the cursor to the given position.
+static void
+move_cursor(text_control_parameters const& tc,
+    disambiguated_utf8_offset const& new_position, bool reset_x = true)
+{
+    text_control_data& data = *tc.data;
+    data.cursor_position = new_position;
+    data.n_selected = 0;
+    if (reset_x)
+        data.true_cursor_x = -1;
+}
+
+static disambiguated_utf8_offset
+shifted_cursor_position(text_control_parameters const& tc, int shift)
+{
+    text_control_data& data = *tc.data;
+    if (shift < 0)
+    {
+        return disambiguated_utf8_offset(
+            size_t(-shift) > data.cursor_position.offset ?
+                0 : data.cursor_position.offset + shift);
+    }
+    else
+    {
+        return disambiguated_utf8_offset(
+            (std::min)(
+                get_text_layout(tc).text.length(),
+                data.cursor_position.offset + shift));
+    }
+}
+
+// Move the cursor, manipulating the selection in the process.
+static void
+shift_move_cursor(text_control_parameters const& tc,
+    disambiguated_utf8_offset const& new_position, bool reset_x = true)
+{
+    text_control_data& data = *tc.data;
+
+    size_t selection_end = data.first_selected + data.n_selected;
+
+    if (has_selection(tc) &&
+        data.cursor_position.offset == data.first_selected)
+    {
+        set_selection(tc, new_position.offset, selection_end);
+    }
+    else if (has_selection(tc) &&
+        data.cursor_position.offset == selection_end)
+    {
+        set_selection(tc, data.first_selected, new_position.offset);
+    }
+    else
+        set_selection(tc, data.cursor_position.offset, new_position.offset);
+
+    data.cursor_position = new_position;
+
+    if (reset_x)
+        data.true_cursor_x = -1;
+}
+
+static void
+handle_delete_key(text_control_parameters const& tc)
+{
+    text_control_data& data = *tc.data;
+    if (data.editing)
+    {
+        if (has_selection(tc))
         {
-            string const& display_text = get_text_layout().text;
-            optional<utf8_ptr> character =
-                get_character_at_pixel(get_integer_mouse_position(ctx));
-            if (character)
-            {
-		utf8_string word = get_containing_word(
-		    as_utf8_string(display_text), get(character));
-                set_selection(character_ptr_to_index(word.begin),
-		    character_ptr_to_index(word.end));
-                data.cursor_position = character_ptr_to_index(word.end);
-                data.true_cursor_x = -1;
-                reset_cursor_blink();
-            }
+            delete_selection(tc);
         }
-        else if (detect_mouse_press(ctx, id, LEFT_BUTTON))
+        else if (data.cursor_position.offset < data.text.length())
         {
-            // This determines if the click is just an initial "move the focus
-            // to this control and select its text" click or a an actual click
-            // to move the cursor and/or drag.
-            // If the control already has focus, then all clicks are the latter
-            // type. Similarly if the control is read-only. It's less clear
-            // what to do for multiline controls (and what constitutes a
-            // "multiline" control), so this may have to be revisited.
-            if (is_read_only() || get_text_layout().rows.size() > 1 ||
-                id_has_focus(ctx, id))
+            data.text =
+                data.text.substr(0, data.cursor_position.offset) +
+                data.text.substr(data.cursor_position.offset + 1);
+        }
+        on_edit(tc);
+    }
+}
+
+static void
+handle_key_press(
+    text_control_parameters const& tc, key_event_info const & key)
+{
+    ui_context& ctx = *tc.ctx;
+    text_control_data& data = *tc.data;
+    switch (key.mods.code)
+    {
+     case 0:
+        switch (key.code)
+        {
+         case KEY_HOME:
+            move_cursor(tc, character_ptr_to_index(tc,
+                get_line_home_position(tc)));
+            acknowledge_key(tc);
+            break;
+
+         case KEY_END:
+            move_cursor(tc, character_ptr_to_index(tc,
+                get_line_end_position(tc)));
+            acknowledge_key(tc);
+            break;
+
+         case KEY_ENTER:
+         case KEY_NUMPAD_ENTER:
+            if (data.editing)
             {
-                size_t index =
-                    character_ptr_to_index(get_character_boundary_at_pixel(
-                        get_integer_mouse_position(ctx)));
-                data.drag_start_index = index;
-                move_cursor(index);
-                reset_cursor_blink();
-                data.safe_to_drag = true;
-                if (!is_read_only())
-                    data.editing = true;
+                if (is_multiline(tc))
+                {
+                    insert_text(tc, "\n");
+                    on_edit(tc);
+                }
+                else
+                {
+                    if (data.text_edited)
+                        set(*tc.value, data.text);
+                    if (!(tc.flags & TEXT_CONTROL_IMMEDIATE))
+                        exit_edit_mode(tc);
+                    tc.result->event = TEXT_CONTROL_ENTER_PRESSED;
+                }
             }
             else
-                data.safe_to_drag = false;
-        }
-        else if (detect_drag(ctx, id, LEFT_BUTTON) && data.safe_to_drag)
-        {
-            do_drag();
-            start_timer(ctx, id, drag_delay);
-        }
+                data.editing = true;
+            acknowledge_key(tc);
+            break;
 
-        if (detect_timer_event(ctx, id) && is_region_active(ctx, id) &&
-            is_mouse_button_pressed(ctx, LEFT_BUTTON))
-        {
-            do_drag();
-            restart_timer(ctx, id, drag_delay);
-        }
+         case KEY_ESCAPE:
+            reset_to_external_value(tc);
+            tc.result->event = TEXT_CONTROL_EDIT_CANCELED;
+            acknowledge_input_event(ctx);
+            break;
 
-        //if (detect_click(ctx, id, RIGHT_BUTTON))
-        //{
-        //    right_click_menu menu(*this);
-        //    ctx.surface->show_popup_menu(&menu);
-        //}
-
-        do_key_input();
-
-        {
-            if (detect_focus_gain(ctx, id))
+         case KEY_BACKSPACE:
+            if (data.editing)
             {
-                if (!is_read_only())
-                    data.editing = true;
-                reset_cursor_blink();
-                ensure_cursor_visible();
-                if (!is_read_only() && get_line_count() < 2)
-                    select_all();
-            }
-            else if (detect_focus_loss(ctx, id))
-            {
-                if (data.text_edited)
+                if (has_selection(tc))
                 {
-                    value.set(data.text);
-                    result.event = TEXT_CONTROL_FOCUS_LOST;
-                    result.changed = true;
+                    delete_selection(tc);
                 }
-                exit_edit_mode();
+                else if (data.cursor_position.offset > 0)
+                {
+                    data.text =
+                        data.text.substr(0, data.cursor_position.offset - 1) +
+                        data.text.substr(data.cursor_position.offset);
+                    data.cursor_position =
+                        disambiguated_utf8_offset(
+                            data.cursor_position.offset - 1);
+                }
+                on_edit(tc);
             }
-        }
+            acknowledge_key(tc);
+            break;
 
-        if (id_has_focus(ctx, id) && detect_timer_event(ctx, cursor_id))
-        {
-            data.cursor_on = !data.cursor_on;
-            restart_timer(ctx, cursor_id, cursor_blink_delay);
+         case KEY_DELETE:
+            handle_delete_key(tc);
+            acknowledge_key(tc);
+            break;
+
+         case KEY_LEFT:
+            move_cursor(tc, shifted_cursor_position(tc, -1));
+            acknowledge_key(tc);
+            break;
+
+         case KEY_RIGHT:
+            move_cursor(tc, shifted_cursor_position(tc, 1));
+            acknowledge_key(tc);
+            break;
+
+         case KEY_UP:
+            if (is_multiline(tc) || get_line_count(tc) > 1)
+            {
+                move_cursor(tc, get_vertically_adjusted_position(tc, -1),
+                    false);
+                acknowledge_key(tc);
+            }
+            break;
+
+         case KEY_DOWN:
+            if (is_multiline(tc) || get_line_count(tc) > 1)
+            {
+                move_cursor(tc, get_vertically_adjusted_position(tc, 1),
+                    false);
+                acknowledge_key(tc);
+            }
+            break;
+
+         case KEY_PAGEUP:
+            if (is_multiline(tc) || get_line_count(tc) > 1)
+            {
+                move_cursor(tc,
+                    get_vertically_adjusted_position(tc,
+                        -(get_text_region(tc).size[1] /
+                        get_text_layout(tc).line_height - 1)),
+                    false);
+                acknowledge_key(tc);
+            }
+            break;
+
+         case KEY_PAGEDOWN:
+            if (is_multiline(tc) || get_line_count(tc) > 1)
+            {
+                move_cursor(tc,
+                    get_vertically_adjusted_position(tc,
+                        get_text_region(tc).size[1] /
+                        get_text_layout(tc).line_height - 1),
+                    false);
+                acknowledge_key(tc);
+            }
+            break;
         }
+        break;
+
+    #ifdef TARGET_OS_MAC
+     case KMOD_META_CODE:
+        switch (key.code)
+        {
+         case 'a':
+            move_cursor(tc, character_ptr_to_index(tc,
+                get_line_home_position(tc)));
+            acknowledge_key(tc);
+            break;
+         case 'e':
+            move_cursor(tc, character_ptr_to_index(tc,
+                get_line_end_position(tc)));
+            acknowledge_key(tc);
+            break;
+         case 'd':
+            handle_delete_key(tc);
+            acknowledge_key(tc);
+            break;
+        }
+        break;
+    #endif
+
+     case KMOD_CTRL_CODE:
+        switch (key.code)
+        {
+        #if defined(WIN32) || defined(TARGET_OS_MAC)
+         case 'a':
+            select_all(tc);
+            acknowledge_key(tc);
+            break;
+        #else
+         case 'a':
+            move_cursor(tc, character_ptr_to_index(tc,
+                get_line_home_position(tc)));
+            acknowledge_key(tc);
+            break;
+         case 'e':
+            move_cursor(tc, character_ptr_to_index(tc,
+                get_line_end_position(tc)));
+            acknowledge_key(tc);
+            acknowledge_key();
+            break;
+         case 'd':
+            handle_delete_key(tc);
+            acknowledge_key(tc);
+            break;
+        #endif
+
+         case 'c':
+         case KEY_INSERT:
+            copy_selection(tc);
+            acknowledge_key(tc);
+            break;
+
+         case 'x':
+            if (data.editing)
+            {
+                cut_selection(tc);
+                on_edit(tc);
+            }
+            acknowledge_key(tc);
+            break;
+
+         case 'v':
+            if (data.editing)
+            {
+                paste_into(tc);
+                on_edit(tc);
+            }
+            acknowledge_key(tc);
+            break;
+
+         case KEY_HOME:
+            move_cursor(tc, disambiguated_utf8_offset(0));
+            acknowledge_key(tc);
+            break;
+
+         case KEY_END:
+            move_cursor(tc,
+                disambiguated_utf8_offset(get_text_layout(tc).text.length()));
+            acknowledge_key(tc);
+            break;
+
+         case KEY_DELETE:
+            if (data.editing)
+            {
+                delete_selection(tc);
+                on_edit(tc);
+            }
+            acknowledge_key(tc);
+            break;
+
+         case KEY_LEFT:
+            move_cursor(tc, character_ptr_to_index(tc,
+                disambiguated_utf8_ptr(find_previous_word_start(
+		    as_utf8_string(get_text_layout(tc).text),
+		    character_index_to_ptr(tc,
+                        data.cursor_position.offset)))));
+            acknowledge_key(tc);
+            break;
+
+         case KEY_RIGHT:
+            move_cursor(tc, character_ptr_to_index(tc,
+                disambiguated_utf8_ptr(find_next_word_start(
+		    utf8_string(
+			character_index_to_ptr(tc,
+                            data.cursor_position.offset),
+			as_utf8_string(get_text_layout(tc).text).end)))));
+            acknowledge_key(tc);
+            break;
+        }
+        break;
+
+     case KMOD_SHIFT_CODE:
+        switch (key.code)
+        {
+         case KEY_HOME:
+            shift_move_cursor(tc, character_ptr_to_index(tc,
+                get_line_home_position(tc)));
+            acknowledge_key(tc);
+            break;
+
+         case KEY_END:
+            shift_move_cursor(tc, character_ptr_to_index(tc,
+                get_line_end_position(tc)));
+            acknowledge_key(tc);
+            break;
+
+         case KEY_INSERT:
+            if (data.editing)
+            {
+                paste_into(tc);
+                on_edit(tc);
+            }
+            acknowledge_key(tc);
+            break;
+
+         case KEY_DELETE:
+            if (data.editing)
+            {
+                cut_selection(tc);
+                on_edit(tc);
+            }
+            acknowledge_key(tc);
+            break;
+
+         case KEY_LEFT:
+            shift_move_cursor(tc, shifted_cursor_position(tc, -1));
+            acknowledge_key(tc);
+            break;
+
+         case KEY_RIGHT:
+            shift_move_cursor(tc, shifted_cursor_position(tc, 1));
+            acknowledge_key(tc);
+            break;
+
+         case KEY_UP:
+            if (is_multiline(tc) || get_line_count(tc) > 1)
+            {
+                shift_move_cursor(tc, get_vertically_adjusted_position(tc, -1),
+                    false);
+                acknowledge_key(tc);
+            }
+            break;
+
+         case KEY_DOWN:
+            if (is_multiline(tc) || get_line_count(tc) > 1)
+            {
+                shift_move_cursor(tc, get_vertically_adjusted_position(tc, 1),
+                    false);
+                acknowledge_key(tc);
+            }
+            break;
+
+         case KEY_PAGEUP:
+            if (is_multiline(tc) || get_line_count(tc) > 1)
+            {
+                shift_move_cursor(tc,
+                    get_vertically_adjusted_position(tc,
+                        -(get_text_region(tc).size[1] /
+                        get_text_layout(tc).line_height - 1)),
+                    false);
+                acknowledge_key(tc);
+            }
+            break;
+
+         case KEY_PAGEDOWN:
+            if (is_multiline(tc) || get_line_count(tc) > 1)
+            {
+                shift_move_cursor(tc,
+                    get_vertically_adjusted_position(tc,
+                        get_text_region(tc).size[1] /
+                        get_text_layout(tc).line_height - 1),
+                    false);
+                acknowledge_key(tc);
+            }
+            break;
+        }
+        break;
+
+     case KMOD_SHIFT_CODE | KMOD_CTRL_CODE:
+        switch (key.code)
+        {
+         case KEY_HOME:
+            shift_move_cursor(tc, disambiguated_utf8_offset(0));
+            acknowledge_key(tc);
+            break;
+
+         case KEY_END:
+            shift_move_cursor(tc,
+                disambiguated_utf8_offset(data.text.length(), true));
+            acknowledge_key(tc);
+            break;
+
+         case KEY_LEFT:
+            shift_move_cursor(tc, character_ptr_to_index(tc,
+                disambiguated_utf8_ptr(find_previous_word_start(
+		    as_utf8_string(get_text_layout(tc).text),
+		    character_index_to_ptr(tc,
+                        data.cursor_position.offset)))));
+            acknowledge_key(tc);
+            break;
+
+         case KEY_RIGHT:
+            shift_move_cursor(tc, character_ptr_to_index(tc,
+                disambiguated_utf8_ptr(find_next_word_start(
+		    utf8_string(
+			character_index_to_ptr(tc,
+                            data.cursor_position.offset),
+			as_utf8_string(get_text_layout(tc).text).end)))));
+            acknowledge_key(tc);
+            break;
+        }
+        break;
     }
+}
 
-    void do_drag()
+void do_key_input(text_control_parameters const& tc)
+{
+    ui_context& ctx = *tc.ctx;
+    text_control_data& data = *tc.data;
+
+    if (!is_read_only(tc))
+        add_to_focus_order(ctx, tc.id);
+
+    utf8_string text;
+    if (detect_text_input(ctx, &text, tc.id))
     {
-        size_t index =
-            character_ptr_to_index(get_character_boundary_at_pixel(
-                get_integer_mouse_position(ctx)));
-        set_selection(data.drag_start_index, index);
-        data.cursor_position = index;
-        data.true_cursor_x = -1;
-        ensure_cursor_visible();
-        reset_cursor_blink();
-    }
-
-    void handle_delete_key()
-    {
-        if (data.editing)
+        // Ignore control characters.
+        // TODO: Do this in a more Unicode-aware manner.
+        if (text.end != text.begin + 1 || isprint(*text.begin))
         {
-            if (has_selection())
+            if (data.editing)
             {
-                delete_selection();
-            }
-            else if (data.cursor_position <
-                int(data.text.length()))
-            {
-                data.text =
-                    data.text.substr(0, data.cursor_position) +
-                    data.text.substr(data.cursor_position + 1);
-            }
-            on_edit();
-        }
-    }
-
-    void do_key_input()
-    {
-        if (!is_read_only())
-            add_to_focus_order(ctx, id);
-
-        utf8_string text;
-        if (detect_text_input(ctx, &text, id))
-        {
-            // Ignore control characters.
-            // TODO: Do this in a more Unicode-aware manner.
-            if (text.end != text.begin + 1 || isprint(*text.begin))
-            {
-                if (data.editing)
-                {
-                    insert_text(string(text.begin, text.end - text.begin));
-                    on_edit();
-                    acknowledge_key();
-                }
-            }
-        }
-        key_event_info info;
-        if (detect_key_press(ctx, &info, id))
-        {
-            switch (info.mods.code)
-            {
-             case 0:
-                switch (info.code)
-                {
-                 case KEY_HOME:
-                    move_cursor(character_ptr_to_index(get_home_position()));
-                    acknowledge_key();
-                    break;
-
-                 case KEY_END:
-                    move_cursor(character_ptr_to_index(get_end_position()));
-                    acknowledge_key();
-                    break;
-
-                 case KEY_ENTER:
-                 case KEY_NUMPAD_ENTER:
-                    if (data.editing)
-                    {
-                        if (is_multiline())
-                        {
-                            insert_text("\n");
-                            on_edit();
-                        }
-                        else
-                        {
-                            if (data.text_edited)
-                            {
-                                value.set(data.text);
-                                result.changed = true;
-                            }
-                            if (!(flags & TEXT_CONTROL_IMMEDIATE))
-                                exit_edit_mode();
-                            result.event = TEXT_CONTROL_ENTER_PRESSED;
-                        }
-                    }
-                    else
-                        data.editing = true;
-                    acknowledge_key();
-                    break;
-
-                 case KEY_ESCAPE:
-                    reset_to_external_value();
-                    result.event = TEXT_CONTROL_EDIT_CANCELED;
-                    acknowledge_input_event(ctx);
-                    break;
-
-                 case KEY_BACKSPACE:
-                    if (data.editing)
-                    {
-                        if (has_selection())
-                        {
-                            delete_selection();
-                        }
-                        else if (data.cursor_position > 0)
-                        {
-                            data.text =
-                                data.text.substr(0, data.cursor_position - 1) +
-                                data.text.substr(data.cursor_position);
-                            --data.cursor_position;
-                        }
-                        on_edit();
-                    }
-                    acknowledge_key();
-                    break;
-
-                 case KEY_DELETE:
-                    handle_delete_key();
-                    acknowledge_key();
-                    break;
-
-                 case KEY_LEFT:
-                    move_cursor(shifted_cursor_position(-1));
-                    acknowledge_key();
-                    break;
-
-                 case KEY_RIGHT:
-                    move_cursor(shifted_cursor_position(1));
-                    acknowledge_key();
-                    break;
-
-                 case KEY_UP:
-                    if (is_multiline() || get_line_count() > 1)
-                    {
-                        move_cursor(get_vertically_adjusted_position(-1),
-                            false);
-                        acknowledge_key();
-                    }
-                    break;
-
-                 case KEY_DOWN:
-                    if (is_multiline() || get_line_count() > 1)
-                    {
-                        move_cursor(get_vertically_adjusted_position(1),
-                            false);
-                        acknowledge_key();
-                    }
-                    break;
-
-                 case KEY_PAGEUP:
-                    if (is_multiline() || get_line_count() > 1)
-                    {
-                        move_cursor(get_vertically_adjusted_position(
-                            -(get_text_region().size[1] /
-                            get_text_layout().line_height - 1)), false);
-                        acknowledge_key();
-                    }
-                    break;
-
-                 case KEY_PAGEDOWN:
-                    if (is_multiline() || get_line_count() > 1)
-                    {
-                        move_cursor(get_vertically_adjusted_position(
-                            get_text_region().size[1] /
-                            get_text_layout().line_height - 1), false);
-                        acknowledge_key();
-                    }
-                    break;
-
-                 default:
-                    ;
-                }
-                break;
-
-            #ifdef TARGET_OS_MAC
-             case KMOD_META_CODE:
-                switch (info.code)
-                {
-                 case 'a':
-                    move_cursor(character_ptr_to_index(get_home_position()));
-                    acknowledge_key();
-                    break;
-                 case 'e':
-                    move_cursor(character_ptr_to_index(get_end_position()));
-                    acknowledge_key();
-                    break;
-                 case 'd':
-                    handle_delete_key();
-                    acknowledge_key();
-                    break;
-                }
-                break;
-            #endif
-
-             case KMOD_CTRL_CODE:
-                switch (info.code)
-                {
-                #if defined(WIN32) || defined(TARGET_OS_MAC)
-                 case 'a':
-                    select_all();
-                    acknowledge_key();
-                    break;
-                #else
-                 case 'a':
-                    move_cursor(character_ptr_to_index(get_home_position()));
-                    acknowledge_key();
-                    break;
-                 case 'e':
-                    move_cursor(character_ptr_to_index(get_end_position()));
-                    acknowledge_key();
-                    break;
-                 case 'd':
-                    handle_delete_key();
-                    acknowledge_key();
-                    break;
-                #endif
-
-                 case 'c':
-                 case KEY_INSERT:
-                    copy();
-                    acknowledge_key();
-                    break;
-
-                 case 'x':
-                    if (data.editing)
-                    {
-                        cut();
-                        on_edit();
-                    }
-                    acknowledge_key();
-                    break;
-
-                 case 'v':
-                    if (data.editing)
-                    {
-                        paste();
-                        on_edit();
-                    }
-                    acknowledge_key();
-                    break;
-
-                 case KEY_HOME:
-                    move_cursor(0);
-                    acknowledge_key();
-                    break;
-
-                 case KEY_END:
-                    move_cursor(get_text_layout().text.length());
-                    acknowledge_key();
-                    break;
-
-                 case KEY_DELETE:
-                    if (data.editing)
-                    {
-                        delete_selection();
-                        on_edit();
-                    }
-                    acknowledge_key();
-                    break;
-
-                 case KEY_LEFT:
-                    move_cursor(character_ptr_to_index(
-                        find_previous_word_start(
-			    as_utf8_string(get_text_layout().text),
-			    character_index_to_ptr(data.cursor_position))));
-                    acknowledge_key();
-                    break;
-
-                 case KEY_RIGHT:
-                    move_cursor(character_ptr_to_index(
-                        find_next_word_start(
-			    utf8_string(
-			        character_index_to_ptr(data.cursor_position),
-				as_utf8_string(get_text_layout().text).end))));
-                    acknowledge_key();
-                    break;
-
-                 default:
-                    ;
-                }
-                break;
-
-             case KMOD_SHIFT_CODE:
-                switch (info.code)
-                {
-                 case KEY_HOME:
-                    shift_move_cursor(character_ptr_to_index(
-                        get_home_position()));
-                    acknowledge_key();
-                    break;
-
-                 case KEY_END:
-                    shift_move_cursor(character_ptr_to_index(
-                        get_end_position()));
-                    acknowledge_key();
-                    break;
-
-                 case KEY_INSERT:
-                    if (data.editing)
-                    {
-                        paste();
-                        on_edit();
-                    }
-                    acknowledge_key();
-                    break;
-
-                 case KEY_DELETE:
-                    if (data.editing)
-                    {
-                        cut();
-                        on_edit();
-                    }
-                    acknowledge_key();
-                    break;
-
-                 case KEY_LEFT:
-                    shift_move_cursor(shifted_cursor_position(-1));
-                    acknowledge_key();
-                    break;
-
-                 case KEY_RIGHT:
-                    shift_move_cursor(shifted_cursor_position(1));
-                    acknowledge_key();
-                    break;
-
-                 case KEY_UP:
-                    if (is_multiline() || get_line_count() > 1)
-                    {
-                        shift_move_cursor(get_vertically_adjusted_position(-1),
-                            false);
-                        acknowledge_key();
-                    }
-                    break;
-
-                 case KEY_DOWN:
-                    if (is_multiline() || get_line_count() > 1)
-                    {
-                        shift_move_cursor(get_vertically_adjusted_position(1),
-                            false);
-                        acknowledge_key();
-                    }
-                    break;
-
-                 case KEY_PAGEUP:
-                    if (is_multiline() || get_line_count() > 1)
-                    {
-                        shift_move_cursor(get_vertically_adjusted_position(
-                            -(get_text_region().size[1] /
-                            get_text_layout().line_height - 1)), false);
-                        acknowledge_key();
-                    }
-                    break;
-
-                 case KEY_PAGEDOWN:
-                    if (is_multiline() || get_line_count() > 1)
-                    {
-                        shift_move_cursor(get_vertically_adjusted_position(
-                            get_text_region().size[1] /
-                            get_text_layout().line_height - 1), false);
-                        acknowledge_key();
-                    }
-                    break;
-
-                 default:
-                    ;
-                }
-                break;
-
-             case KMOD_SHIFT_CODE | KMOD_CTRL_CODE:
-                switch (info.code)
-                {
-                 case KEY_HOME:
-                    shift_move_cursor(0);
-                    acknowledge_key();
-                    break;
-
-                 case KEY_END:
-                    shift_move_cursor(int(data.text.length()));
-                    acknowledge_key();
-                    break;
-
-                 case KEY_LEFT:
-                    shift_move_cursor(character_ptr_to_index(
-                        find_previous_word_start(
-			    as_utf8_string(get_text_layout().text),
-			    character_index_to_ptr(data.cursor_position))));
-                    acknowledge_key();
-                    break;
-
-                 case KEY_RIGHT:
-                    shift_move_cursor(character_ptr_to_index(
-                        find_next_word_start(
-			    utf8_string(
-			        character_index_to_ptr(data.cursor_position),
-				as_utf8_string(get_text_layout().text).end))));
-                    acknowledge_key();
-                    break;
-
-                 default:
-                    ;
-                }
-                break;
+                insert_text(tc, string(text.begin, text.end - text.begin));
+                on_edit(tc);
+                acknowledge_key(tc);
             }
         }
     }
+    key_event_info info;
+    if (detect_key_press(ctx, &info, tc.id))
+        handle_key_press(tc, info);
+}
 
-    // Call this after any key press.
-    void acknowledge_key()
-    {
-        reset_cursor_blink();
-        acknowledge_input_event(ctx);
-        ensure_cursor_visible();
-    }
+static void do_drag(text_control_parameters const& tc)
+{
+    ui_context& ctx = *tc.ctx;
+    text_control_data& data = *tc.data;
+    disambiguated_utf8_offset drag_target =
+        character_ptr_to_index(tc, get_character_boundary_at_pixel(tc,
+            get_integer_mouse_position(ctx)));
+    set_selection(tc, data.drag_start_index, drag_target.offset);
+    data.cursor_position = drag_target;
+    data.true_cursor_x = -1;
+    ensure_cursor_visible(tc);
+    reset_cursor_blink(tc);
+}
 
-    void ensure_cursor_visible()
-    {
-        make_widget_visible(ctx, cursor_id);
-    }
+void do_input(text_control_parameters const& tc)
+{
+    ui_context& ctx = *tc.ctx;
+    text_control_data& data = *tc.data;
 
-    // Reset the cursor blink so that it's visible.
-    void reset_cursor_blink()
+    if (detect_double_click(ctx, tc.id, LEFT_BUTTON))
     {
-        data.cursor_on = true;
-        start_timer(ctx, cursor_id, cursor_blink_delay);
-    }
-
-    void on_text_change()
-    {
-        data.true_cursor_x = -1;
-        record_change();
-    }
-
-    void on_edit()
-    {
-        on_text_change();
-        if (flags & TEXT_CONTROL_IMMEDIATE)
+        string const& display_text = get_text_layout(tc).text;
+        optional<utf8_ptr> character =
+            get_character_at_pixel(tc, get_integer_mouse_position(ctx));
+        if (character)
         {
-            value.set(data.text);
-            result.changed = true;
-        }
-        else
-            data.text_edited = true;
-    }
-
-    void exit_edit_mode()
-    {
-        data.editing = false;
-        data.n_selected = 0;
-        data.cursor_on = false;
-    }
-
-    // Get the number of the line that contains the given character.
-    size_t get_line_number(utf8_ptr character) const
-    {
-        return alia::get_line_number(get_text_layout(), character);
-    }
-
-    // Insert text at the current cursor position.
-    void insert_text(string const& text)
-    {
-        if (!length_limit ||
-            data.text.length() + text.length() - data.n_selected
-            <= get(length_limit))
-        {
-            delete_selection();
-            data.text = data.text.substr(0, data.cursor_position) +
-                text + data.text.substr(data.cursor_position);
-            data.cursor_position += text.length();
-        }
-    }
-
-    // Move the cursor to the given position.
-    void move_cursor(size_t new_position, bool reset_x = true)
-    {
-        data.cursor_position = new_position;
-        data.n_selected = 0;
-        if (reset_x)
+	    utf8_string word = get_containing_word(
+		as_utf8_string(display_text), get(character));
+            set_selection(tc, character_ptr_to_index(tc, word.begin),
+		character_ptr_to_index(tc, word.end));
+            data.cursor_position = character_ptr_to_index(tc,
+                disambiguated_utf8_ptr(word.end, true));
             data.true_cursor_x = -1;
+            reset_cursor_blink(tc);
+        }
     }
-
-    size_t shifted_cursor_position(int shift)
+    else if (detect_mouse_press(ctx, tc.id, LEFT_BUTTON))
     {
-        if (shift < 0)
+        // This determines if the click is just an initial "move the focus
+        // to this control and select its text" click or an actual click
+        // to move the cursor and/or drag.
+        // If the control already has focus, then all clicks are the latter
+        // type. Similarly if the control is read-only. It's less clear
+        // what to do for multiline controls (and what constitutes a
+        // "multiline" control), so this may have to be revisited.
+        if (is_read_only(tc) || get_text_layout(tc).rows.size() > 1 ||
+            id_has_focus(ctx, tc.id))
         {
-            return size_t(-shift) > data.cursor_position ?
-                0 : data.cursor_position + shift;
+            disambiguated_utf8_offset target =
+                character_ptr_to_index(tc, get_character_boundary_at_pixel(tc,
+                    get_integer_mouse_position(ctx)));
+            data.drag_start_index = target.offset;
+            move_cursor(tc, target);
+            reset_cursor_blink(tc);
+            data.safe_to_drag = true;
+            if (!is_read_only(tc))
+                data.editing = true;
         }
         else
+            data.safe_to_drag = false;
+    }
+    else if (detect_drag(ctx, tc.id, LEFT_BUTTON) && data.safe_to_drag)
+    {
+        do_drag(tc);
+        start_timer(ctx, tc.id, drag_delay);
+    }
+
+    if (detect_timer_event(ctx, tc.id) && is_region_active(ctx, tc.id) &&
+        is_mouse_button_pressed(ctx, LEFT_BUTTON))
+    {
+        do_drag(tc);
+        restart_timer(ctx, tc.id, drag_delay);
+    }
+
+    //if (detect_click(ctx, tc.id, RIGHT_BUTTON))
+    //{
+    //    text_control_right_click_menu menu(tc);
+    //    ctx.surface->show_popup_menu(&menu);
+    //}
+
+    do_key_input(tc);
+
+    {
+        if (detect_focus_gain(ctx, tc.id))
         {
-            return (std::min)(
-                get_text_layout().text.length(),
-                data.cursor_position + shift);
+            if (!is_read_only(tc))
+                data.editing = true;
+            reset_cursor_blink(tc);
+            ensure_cursor_visible(tc);
+            if (!is_read_only(tc) && get_line_count(tc) < 2)
+                select_all(tc);
+        }
+        else if (detect_focus_loss(ctx, tc.id))
+        {
+            if (data.text_edited)
+            {
+                set(*tc.value, data.text);
+                tc.result->event = TEXT_CONTROL_FOCUS_LOST;
+            }
+            exit_edit_mode(tc);
         }
     }
 
-    // Move the cursor, manipulating the selection in the process.
-    void shift_move_cursor(size_t new_position, bool reset_x = true)
+    if (id_has_focus(ctx, tc.id) && detect_timer_event(ctx, get_cursor_id(tc)))
     {
-        size_t selection_end = data.first_selected + data.n_selected;
-
-        if (has_selection() && data.cursor_position == data.first_selected)
-            set_selection(new_position, selection_end);
-        else if (has_selection() && data.cursor_position == selection_end)
-            set_selection(data.first_selected, new_position);
-        else
-            set_selection(data.cursor_position, new_position);
-
-        data.cursor_position = new_position;
-
-        if (reset_x)
-            data.true_cursor_x = -1;
+        data.cursor_on = !data.cursor_on;
+        restart_timer(ctx, get_cursor_id(tc), cursor_blink_delay);
     }
-
-    // Set the current selection.
-    void set_selection(size_t from, size_t to)
-    {
-        if (from > to)
-            std::swap(from, to);
-        data.first_selected = from;
-        data.n_selected = to - from;
-    }
-
-    // Select all text.
-    void select_all()
-    {
-        data.first_selected = 0;
-        data.cursor_position = data.n_selected = int(data.text.length());
-    }
-
-    // Is there currently any text selected?
-    bool has_selection() const
-    {
-        return data.n_selected != 0;
-    }
-
-    // Delete the current selection.
-    void delete_selection()
-    {
-        if (has_selection())
-        {
-            data.text = data.text.substr(0, data.first_selected) +
-                data.text.substr(data.first_selected + data.n_selected);
-            data.cursor_position = data.first_selected;
-            data.n_selected = 0;
-        }
-    }
-
-    // Copy the current selection to the clipboard.
-    void copy()
-    {
-        if (!(flags & TEXT_CONTROL_MASK_CONTENTS) && has_selection())
-        {
-            ctx.surface->set_clipboard_text(
-                data.text.substr(data.first_selected, data.n_selected));
-        }
-    }
-
-    // Cut the current selection.
-    void cut()
-    {
-        copy();
-        delete_selection();
-    }
-
-    // Paste the current clipboard contents into the control.
-    void paste()
-    {
-        insert_text(ctx.surface->get_clipboard_text());
-    }
-
-    // Convert back and forth between character indices and pointers.
-    utf8_ptr character_index_to_ptr(size_t index) const
-    {
-        return get_text_layout().text.c_str() + index;
-    }
-    size_t character_ptr_to_index(utf8_ptr ptr) const
-    {
-        return ptr - get_text_layout().text.c_str();
-    }
-
-    // Get the number of the line that the cursor is on.
-    size_t get_cursor_line_number() const
-    {
-        return get_line_number(character_index_to_ptr(
-            data.cursor_position));
-    }
-
-    // Get the position that the home key should go to.
-    utf8_ptr get_home_position() const
-    {
-        return get_line_begin(get_cursor_line_number());
-    }
-
-    // Get the position that the end key should go to.
-    utf8_ptr get_end_position() const
-    {
-        return get_line_end(get_cursor_line_number());
-    }
-
-    // Get the number of lines of text in the current layout.
-    size_t get_line_count() const
-    {
-        return get_text_layout().rows.size();
-    }
-
-    // Get the character index that corresponds to the cursor position shifted
-    // down by delta lines (a negative delta shifts up).
-    size_t get_vertically_adjusted_position(int delta)
-    {
-        size_t line_n = get_cursor_line_number();
-        if (data.true_cursor_x < 0)
-        {
-            data.true_cursor_x = 
-                get_character_position(get_text_layout(),
-                    character_index_to_ptr(data.cursor_position))[0];
-        }
-        line_n = size_t(clamp(int(line_n) + delta, 0,
-            int(get_line_count()) - 1));
-        return character_ptr_to_index(
-            get_character_boundary_at_point(
-                get_text_layout(),
-                make_vector<int>(
-                    data.true_cursor_x,
-                    get_character_position(
-                        get_text_layout(),
-                        get_line_begin(line_n))[1])));
-    }
-
-    // Get the index of the character that contains the given pixel.
-    // Will return invalid character indices if the pixel is not actually
-    // inside a character.
-    optional<utf8_ptr> get_character_at_pixel(vector<2,int> const& p)
-    {
-        return get_character_at_point(get_text_layout(),
-            vector<2,int>(p - get_text_region().corner));
-    }
-
-    utf8_ptr get_line_begin(size_t line_n) const
-    {
-        return alia::get_line_begin(get_text_layout(), line_n);
-    }
-
-    utf8_ptr get_line_end(size_t line_n) const
-    {
-        return alia::get_line_end(get_text_layout(), line_n);
-    }
-
-    // Get the index of the character that begins closest to the given pixel.
-    utf8_ptr get_character_boundary_at_pixel(vector<2,int> const& p) const
-    {
-        return get_character_boundary_at_point(
-            get_text_layout(),
-            vector<2,int>(p - get_text_region().corner));
-    }
-
-    // Get the screen location of the character boundary immediately before
-    // the given character index.
-    vector<2,int> get_character_boundary_location(utf8_ptr character) const
-    {
-        return get_character_position(get_text_layout(), character) +
-            vector<2,int>(get_text_region().corner);
-    }
-
-    ui_context& ctx;
-    text_control_data& data;
-    accessor<string> const& value;
-    text_control_flag_set flags;
-    layout const& layout_spec;
-    widget_id id, cursor_id;
-    optional<size_t> length_limit;
-    static int const cursor_blink_delay = 500;
-    static int const drag_delay = 40;
-    panel panel_;
-};
+}
 
 static text_control_result
-do_text_control_impl(
+do_text_control_pass(
     ui_context& ctx,
     accessor<string> const& value,
     layout const& layout_spec,
@@ -1528,23 +1612,59 @@ do_text_control_impl(
     widget_id id,
     optional<size_t> const& length_limit)
 {
-    if (!id) id = get_widget_id(ctx);
+    text_control_parameters tc;
+    tc.ctx = &ctx;
+    tc.value = &value;
+    tc.layout_spec = &layout_spec;
+    tc.flags = flags;
+    tc.length_limit = length_limit;
+
+    text_control_result result;
+    result.event = TEXT_CONTROL_NO_EVENT;
+    result.changed = false;
+    tc.result = &result;
+
     text_control_data* data;
     get_cached_data(ctx, &data);
-    text_control tc(ctx, *data, value, layout_spec, flags, id, length_limit);
-    tc.do_pass();
-    return tc.result;
-}
+    tc.data = data;
 
-struct text_control_string_conversion
-{
-    text_control_string_conversion() : valid(false) {}
-    bool valid;
-    owned_id id;
-    string text;
-    // associated error message (if text doesn't parse)
-    string message;
-};
+    init_optional_widget_id(id, &data->flags);
+    tc.id = id;
+
+    panel p;
+    p.begin(
+        ctx, text("control"),
+        add_default_alignment(
+            add_default_size(layout_spec, width(12, EM)),
+            LEFT, BASELINE_Y),
+        NO_FLAGS,
+        id,
+        id_has_focus(ctx, id) ? WIDGET_FOCUSED : WIDGET_NORMAL);
+    tc.panel = &p;
+
+    switch (ctx.event->category)
+    {
+     case REFRESH_CATEGORY:
+        do_refresh(tc);
+        break;
+     case RENDER_CATEGORY:
+        update_text_layout(tc);
+        render(tc);
+        break;
+     case REGION_CATEGORY:
+        update_text_layout(tc);
+        do_box_region(ctx, get_cursor_id(tc), get_cursor_region(tc),
+            IBEAM_CURSOR);
+        do_box_region(ctx, id, get_full_region(tc), IBEAM_CURSOR);
+        break;
+     case INPUT_CATEGORY:
+        update_text_layout(tc);
+        do_input(tc);
+        break;
+    }
+
+    return result;
+}
 
 text_control_result
 do_text_control(
@@ -1558,62 +1678,24 @@ do_text_control(
     layout spec = add_default_alignment(layout_spec, FILL_X, BASELINE_Y);
     column_layout c(ctx, spec);
 
-    text_control_string_conversion* data;
-    get_data(ctx, &data);
-    if (is_refresh_pass(ctx))
-    {
-        bool valid = value.is_gettable();
-        if (data->valid != valid || valid && !data->id.matches(value.id()))
-        {
-            // The external value has changed.
-            data->valid = valid;
-            data->text = valid ? get(value) : "";
-            data->message = "";
-            data->id.store(value.id());
-        }
-    }
+    validation_error_handler_data* validation_data;
+    get_data(ctx, &validation_data);
 
-    text_control_result r = do_text_control_impl(
-        ctx, inout(&data->text), layout_spec, flags, id, length_limit);
-    alia_if(!data->message.empty())
-    {
-        do_paragraph(ctx, in(data->message));
-    }
-    alia_end
+    validation_error_reporting_data* reporting;
+    get_data(ctx, &reporting);
 
-    text_control_result result;
-    switch (r.event)
-    {
-     case TEXT_CONTROL_FOCUS_LOST:
-     case TEXT_CONTROL_ENTER_PRESSED:
-      {
-        try
-        {
-            value.set(data->text);
-            data->message = "";
-            result.event = r.event;
-            result.changed = true;
-        }
-        catch (validation_error& e)
-        {
-            data->message = e.what();
-            result.event = TEXT_CONTROL_INVALID_VALUE;
-            result.changed = false;
-        }
-        break;
-      }
-     case TEXT_CONTROL_EDIT_CANCELED:
-        result.event = TEXT_CONTROL_EDIT_CANCELED;
-        result.changed = false;
-        data->text = value.is_gettable() ? get(value) : "";
-        data->message = "";
-        break;
-     case TEXT_CONTROL_NO_EVENT:
-     default:
-        result.event = TEXT_CONTROL_NO_EVENT;
-        result.changed = false;
-        break;
-    }
+    scoped_error_reporting_context reporting_context(ctx, reporting);
+
+    text_control_result result =
+        do_text_control_pass(
+            ctx,
+            make_validation_error_handler(ctx, ref(value), *validation_data),
+            layout_spec, flags, id, length_limit);
+    if (result.event == TEXT_CONTROL_EDIT_CANCELED)
+        clear_error(*validation_data);
+
+    do_validation_report(ctx, reporting->reports);
+
     return result;
 }
 

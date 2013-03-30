@@ -218,9 +218,6 @@ struct layout_traversal
     // This is the layout system that this traversal is traversing.
     layout_system* system;
 
-    // This is a data traversal that's used to retrieve data when necessary.
-    data_traversal* data;
-
     layout_container* active_container;
 
     layout_node** next_ptr;
@@ -364,19 +361,27 @@ class scoped_transformation : noncopyable
 // LIBRARY
 
 // A spacer simply fills space in a layout.
-void do_spacer(layout_traversal& traversal,
+void do_spacer(layout_traversal& traversal, data_traversal& data,
     layout const& layout_spec = default_layout);
+// context-based interface
 template<class Context>
 void do_spacer(Context& ctx, layout const& layout_spec = default_layout)
-{ do_spacer(get_layout_traversal(ctx), layout_spec); }
+{
+    do_spacer(get_layout_traversal(ctx), get_data_traversal(ctx),
+        layout_spec);
+}
 
 // This version of the spacer records the region that's assigned to it.
-void do_spacer(layout_traversal& traversal, layout_box* region,
-    layout const& layout_spec = default_layout);
+void do_spacer(layout_traversal& traversal, data_traversal& data,
+    layout_box* region, layout const& layout_spec = default_layout);
+// context-based interface
 template<class Context>
 void do_spacer(Context& ctx, layout_box* region,
     layout const& layout_spec = default_layout)
-{ do_spacer(get_layout_traversal(ctx), region, layout_spec); }
+{
+    do_spacer(get_layout_traversal(ctx), get_data_traversal(ctx),
+        region, layout_spec);
+}
 
 layout_box get_container_region(simple_layout_container const& container);
 layout_box get_padded_container_region(
@@ -397,7 +402,8 @@ layout_vector get_container_offset(simple_layout_container const& container);
         \
         template<class Context> \
         void begin(Context& ctx, layout const& layout_spec = default_layout) \
-        { concrete_begin(get_layout_traversal(ctx), layout_spec); } \
+        { concrete_begin(get_layout_traversal(ctx), \
+            get_data_traversal(ctx), layout_spec); } \
         \
         void end() \
         { \
@@ -416,7 +422,8 @@ layout_vector get_container_offset(simple_layout_container const& container);
         \
      private: \
         void concrete_begin( \
-            layout_traversal& traversal, layout const& layout_spec); \
+            layout_traversal& traversal, data_traversal& data, \
+            layout const& layout_spec); \
         \
         simple_layout_container* container_; \
         scoped_layout_container slc_; \
@@ -438,7 +445,8 @@ layout_vector get_container_offset(simple_layout_container const& container);
         template<class Context> \
         void begin(Context& ctx, Arg arg, \
             layout const& layout_spec = default_layout) \
-        { concrete_begin(get_layout_traversal(ctx), arg, layout_spec); } \
+        { concrete_begin(get_layout_traversal(ctx), get_data_traversal(ctx), \
+            arg, layout_spec); } \
         \
         void end() { transform_.end(); slc_.end(); } \
         \
@@ -452,8 +460,8 @@ layout_vector get_container_offset(simple_layout_container const& container);
         { return get_container_offset(*container_); } \
         \
      private: \
-        void concrete_begin( \
-            layout_traversal& traversal, Arg arg, layout const& layout_spec); \
+        void concrete_begin(layout_traversal& traversal, \
+            data_traversal& data, Arg arg, layout const& layout_spec); \
         \
         simple_layout_container* container_; \
         scoped_layout_container slc_; \
@@ -534,15 +542,15 @@ ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(clip_evasion_layout)
             absolute_length const& column_spacing = \
                 absolute_length(0, PIXELS)) \
         { \
-            concrete_begin(get_layout_traversal(ctx), layout_spec, \
-                column_spacing); \
+            concrete_begin(get_layout_traversal(ctx), \
+                get_data_traversal(ctx), layout_spec, column_spacing); \
         } \
         \
         void end() { transform_.end(); container_.end(); } \
     \
      private: \
-        void concrete_begin( \
-            layout_traversal& traversal, layout const& layout_spec, \
+        void concrete_begin(layout_traversal& traversal, \
+            data_traversal& data, layout const& layout_spec, \
             absolute_length const& column_spacing); \
         \
         friend struct row_type; \
@@ -550,6 +558,7 @@ ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(clip_evasion_layout)
         scoped_layout_container container_; \
         scoped_transformation transform_; \
         layout_traversal* traversal_; \
+        data_traversal* data_traversal_; \
         grid_type##_data* data_; \
     }; \
     struct row_type \
@@ -600,7 +609,10 @@ struct floating_layout
     void begin(Context& ctx,
         layout_vector const& min_size = make_layout_vector(-1, -1),
         layout_vector const& max_size = make_layout_vector(-1, -1))
-    { concrete_begin(get_layout_traversal(ctx), min_size, max_size); }
+    {
+        concrete_begin(get_layout_traversal(ctx), get_data_traversal(ctx),
+            min_size, max_size);
+    }
 
     void end();
 
@@ -610,7 +622,7 @@ struct floating_layout
     { return layout_box(make_layout_vector(0, 0), size()); }
 
  private:
-    void concrete_begin(layout_traversal& traversal,
+    void concrete_begin(layout_traversal& traversal, data_traversal& data,
         layout_vector const& min_size, layout_vector const& max_size);
 
     layout_traversal* traversal_;

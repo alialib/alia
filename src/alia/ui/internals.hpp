@@ -5,6 +5,7 @@
 #include <alia/layout/internals.hpp>
 #include <alia/dispatch_table.hpp>
 #include <map>
+#include <list>
 
 // This file includes various declarations necessary to implement the
 // internals of the UI library.
@@ -130,9 +131,11 @@ struct mouse_motion_event : input_event
 };
 struct mouse_notification_event : ui_event
 {
-    mouse_notification_event(ui_event_type type)
+    mouse_notification_event(ui_event_type type, widget_id target)
       : ui_event(INPUT_CATEGORY, type)
+      , target(target)
     {}
+    widget_id target;
 };
 struct mouse_hit_test_event : ui_event
 {
@@ -261,15 +264,20 @@ typedef std::map<string,string> property_map;
 
 struct style_tree
 {
-    std::map<string,style_tree> substyles;
+    std::map<string,alia__shared_ptr<style_tree> > substyles;
+    std::list<style_tree*> fallbacks;
     property_map properties;
 };
+
+typedef alia__shared_ptr<style_tree> style_tree_ptr;
 
 struct style_search_path
 {
     // first tree to search
+    // If this is 0, it serves as an inheritance separator.
+    // (See ui/utilities/styling.hpp for more info.)
     style_tree const* tree;
-    // rest of the path
+    // rest of the path (0 if this is the end)
     style_search_path const* rest;
 };
 
@@ -281,12 +289,14 @@ struct input_state
     routable_widget_id hot_id, active_id, focused_id;
     bool window_has_focus, keyboard_interaction;
     bool mouse_hovering;
+    bool dragging;
 
     input_state()
       : mouse_inside_window(false), mouse_button_state(0),
         hot_id(null_widget_id), active_id(null_widget_id),
         focused_id(null_widget_id), window_has_focus(true),
-        keyboard_interaction(false), mouse_hovering(false)
+        keyboard_interaction(false), mouse_hovering(false),
+        dragging(false)
     {}
 };
 
@@ -297,7 +307,7 @@ struct mouse_hover_context
 
 struct ui_style
 {
-    style_tree styles;
+    style_tree_ptr styles;
 
     dispatch_table theme;
 
@@ -429,16 +439,10 @@ static inline bool is_valid(cached_image_ptr const& ptr)
 //
 // A surface is a geometry_context_subscriber, which means that it receives
 // geometry commands about transformations and clipping from the layout engine.
-// 
+//
 struct surface : geometry_context_subscriber
 {
     virtual ~surface() {}
-
-    // Get the size of the surface in pixels.
-    virtual vector<2,unsigned> size() const = 0;
-
-    // Get the number of pixels per inch on the surface.
-    virtual vector<2,float> ppi() const = 0;
 
     // Cache the given image in the given cached_image_ptr.
     // If the cached_image_ptr is already initialized, it may be reused to
@@ -450,11 +454,13 @@ struct surface : geometry_context_subscriber
     // Draw a filled box with a solid color.
     virtual void draw_filled_box(rgba8 const& color,
         box<2,double> const& box) = 0;
+};
+static inline surface& get_surface(surface& surface) { return surface; }
 
-    // Some of this isn't all that related to rendering, but it's still
-    // provided by the same code that ultimately provides the surface, and
-    // there didn't seem to be a good reason to create a separate interface
-    // for it...
+// os_interface provides an interface to functionality of the underlying OS.
+struct os_interface
+{
+    virtual ~os_interface() {}
 
     // Get text from the clipboard.
     virtual string get_clipboard_text() = 0;
@@ -462,7 +468,6 @@ struct surface : geometry_context_subscriber
     // Copy text to the clipboard.
     virtual void set_clipboard_text(string const& text) = 0;
 };
-static inline surface& get_surface(surface& surface) { return surface; }
 
 struct ui_timer_request
 {
@@ -480,13 +485,17 @@ struct ui_system
 
     layout_system layout;
 
-    alia__shared_ptr<alia::surface> surface;
-
     alia__shared_ptr<ui_controller> controller;
+
+    alia__shared_ptr<alia::surface> surface;
+    vector<2,unsigned> surface_size;
+    vector<2,float> ppi;
+
+    alia__shared_ptr<os_interface> os;
 
     input_state input;
 
-    alia__shared_ptr<ui_style> style;
+    ui_style style;
 
     ui_time_type millisecond_tick_count;
 
@@ -494,16 +503,12 @@ struct ui_system
 
     std::vector<widget_visibility_request> pending_visibility_requests;
 
-    vector<2,unsigned> surface_size;
-
     ui_timer_request_list timer_requests;
     // This prevents timer requests from being serviced in the same frame that
     // they're requested and thus throwing the event handler into a loop.
     counter_type timer_event_counter;
 
     optional<ui_time_type> next_update;
-
-    ui_system() : millisecond_tick_count(0), timer_event_counter(0) {}
 };
 
 struct ui_caching_node

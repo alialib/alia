@@ -4,6 +4,24 @@
 
 namespace alia {
 
+void initialize_ui(
+    ui_system& ui,
+    alia__shared_ptr<ui_controller> const& controller,
+    alia__shared_ptr<alia::surface> const& surface,
+    vector<2,float> const& ppi,
+    alia__shared_ptr<os_interface> const& os,
+    alia__shared_ptr<style_tree> const& style)
+{
+    ui.controller = controller;
+    ui.surface = surface;
+    ui.surface_size = make_vector<unsigned>(0, 0);
+    ui.ppi = ppi;
+    ui.os = os;
+    ui.millisecond_tick_count = 0;
+    ui.timer_event_counter = 0;
+    ui.style.styles = style;
+}
+
 struct initial_styling_data
 {
     owned_id id;
@@ -17,15 +35,15 @@ static void setup_initial_styling(ui_context& ctx)
     initial_styling_data* data;
     get_data(ctx, &data);
 
-    if (!data->id.matches(get_id(ctx.system->style->id)))
+    if (!data->id.matches(get_id(ctx.system->style.id)))
     {
         data->path.rest = 0;
-        data->path.tree = &ctx.system->style->styles;
+        data->path.tree = &*ctx.system->style.styles;
 
         read_primary_style_properties(
             *ctx.system, &data->props, &data->path);
 
-        data->id.store(get_id(ctx.system->style->id));
+        data->id.store(get_id(ctx.system->style.id));
 
         read_layout_style_info(ctx, &data->info, data->props.font,
             &data->path);
@@ -35,7 +53,7 @@ static void setup_initial_styling(ui_context& ctx)
     ctx.style.path = &data->path;
     ctx.style.properties = &data->props;
     ctx.style.id = &data->id.get();
-    ctx.style.theme = &ctx.system->style->theme;
+    ctx.style.theme = &ctx.system->style.theme;
 }
 
 static routable_widget_id
@@ -103,13 +121,12 @@ issue_event(
     bool is_refresh = event.type == REFRESH_EVENT;
     // Only use refresh events to decide when data is no longer needed.
     data.gc_enabled = data.cache_clearing_enabled = is_refresh;
-    vector<2,double> size =
-        is_refresh ? make_vector<double>(0, 0) :
-            vector<2,double>(system.surface->size());
 
     geometry_context geometry;
     ctx.geometry = &geometry;
-    initialize(geometry, box<2,double>(make_vector<double>(0, 0), size));
+    initialize(geometry,
+        box<2,double>(make_vector<double>(0, 0),
+            vector<2,double>(system.surface_size)));
 
     ctx.surface = system.surface.get();
     if (event.type == RENDER_EVENT || event.type == OVERLAY_RENDER_EVENT)
@@ -121,15 +138,9 @@ issue_event(
     scoped_layout_refresh slr;
     scoped_layout_traversal slt;
     if (is_refresh)
-    {
-        slr.begin(system.layout, layout, data,
-            system.surface->ppi());
-    }
+        slr.begin(system.layout, layout, system.ppi);
     else
-    {
-        slt.begin(system.layout, layout, data, geometry,
-            system.surface->ppi());
-    }
+        slt.begin(system.layout, layout, geometry, system.ppi);
 
     ctx.event = &event;
 
@@ -137,21 +148,18 @@ issue_event(
 
     setup_initial_styling(ctx);
 
+    ctx.validation.detection = 0;
+    ctx.validation.reporting = 0;
+
     context_invoker fn;
     fn.system = &system;
     fn.ctx = &ctx;
     invoke_routed_traversal(fn, ctx.routing, data, targeted, target);
 }
 
-void end_pass(ui_context& ctx)
-{
-    ctx.pass_aborted = true;
-    throw end_pass_exception();
-}
-
 layout_vector measure_initial_ui(
     alia__shared_ptr<ui_controller> const& controller,
-    alia__shared_ptr<ui_style> const& style,
+    ui_style const& style,
     alia__shared_ptr<surface> const& surface)
 {
     ui_system tmp;
@@ -223,19 +231,25 @@ void update_ui(ui_system& ui, vector<2,unsigned> const& size,
 
     // Once layout has been resolved, we can honor requests to make a
     // particular widget visible.
-    for (std::vector<widget_visibility_request>::const_iterator
-        i = ui.pending_visibility_requests.begin();
-        i != ui.pending_visibility_requests.end(); ++i)
+    if (!ui.pending_visibility_requests.empty())
     {
-        make_widget_visible_event e(*i);
-        if (is_valid(ui.overlay_id))
+        for (std::vector<widget_visibility_request>::const_iterator
+            i = ui.pending_visibility_requests.begin();
+            i != ui.pending_visibility_requests.end(); ++i)
         {
-            e.category = OVERLAY_CATEGORY;
-            e.type = OVERLAY_MAKE_WIDGET_VISIBLE_EVENT;
+            make_widget_visible_event e(*i);
+            if (is_valid(ui.overlay_id))
+            {
+                e.category = OVERLAY_CATEGORY;
+                e.type = OVERLAY_MAKE_WIDGET_VISIBLE_EVENT;
+            }
+            issue_targeted_event(ui, e, i->widget);
         }
-        issue_targeted_event(ui, e, i->widget);
+        ui.pending_visibility_requests.clear();
+        // The movement may have caused changes that require a refresh, so
+        // issue another one.
+        refresh_ui(ui);
     }
-    ui.pending_visibility_requests.clear();
 
     routable_widget_id previous_mouse_target = get_mouse_target(ui);
 
@@ -290,11 +304,13 @@ void update_ui(ui_system& ui, vector<2,unsigned> const& size,
     if (current_mouse_target.id != previous_mouse_target.id)
     {
         {
-            mouse_notification_event e(MOUSE_LOSS_EVENT);
+            mouse_notification_event e(MOUSE_LOSS_EVENT,
+                previous_mouse_target.id);
             issue_targeted_event(ui, e, previous_mouse_target);
         }
         {
-            mouse_notification_event e(MOUSE_GAIN_EVENT);
+            mouse_notification_event e(MOUSE_GAIN_EVENT,
+                current_mouse_target.id);
             issue_targeted_event(ui, e, current_mouse_target);
         }
 
@@ -387,6 +403,8 @@ void process_mouse_move(ui_system& ui, ui_time_type time,
     {
         mouse_motion_event e(time, ui.input.mouse_position,
             ui.input.mouse_inside_window);
+        if (ui.input.mouse_button_state != 0)
+            ui.input.dragging = true;
         ui.input.mouse_position = position;
         ui.input.mouse_inside_window = true;
         issue_targeted_event(ui, e, get_mouse_target(ui));
@@ -417,7 +435,10 @@ void process_mouse_release(ui_system& ui, ui_time_type time,
     mouse_button_event e(MOUSE_RELEASE_EVENT, time, button);
     issue_targeted_event(ui, e, get_mouse_target(ui));
     if (ui.input.mouse_button_state == 0)
+    {
         ui.input.active_id = null_widget_id;
+        ui.input.dragging = false;
+    }
 }
 void process_double_click(ui_system& ui, ui_time_type time,
     vector<2,int> const& position, mouse_button button)
@@ -461,7 +482,7 @@ void process_mouse_hover(ui_system& ui, ui_time_type time)
     ui.input.mouse_hovering = true;
     if (is_valid(ui.input.hot_id))
     {
-        mouse_notification_event event(MOUSE_HOVER_EVENT);
+        mouse_notification_event event(MOUSE_HOVER_EVENT, ui.input.hot_id.id);
         issue_targeted_event(ui, event, ui.input.hot_id);
     }
 }
@@ -521,11 +542,6 @@ bool process_key_release(ui_system& ui, ui_time_type time,
     return e.acknowledged;
 }
 
-void acknowledge_input_event(ui_context& ctx)
-{
-    get_event<input_event>(ctx).acknowledged = true;
-}
-
 void process_focus_loss(ui_system& ui, ui_time_type time)
 {
     if (ui.input.window_has_focus)
@@ -563,22 +579,27 @@ void regress_focus(ui_system& ui)
     set_focus(ui, get_focus_predecessor(ui, ui.input.focused_id.id));
 }
 
+void clear_focus(ui_system& ui)
+{
+    ui.input.focused_id = null_widget_id;
+}
+
 static void on_ui_style_change(ui_system& system)
 {
-    inc_version(system.style->id);
+    inc_version(system.style.id);
 }
 
 float get_magnification_factor(ui_system& system)
 {
-    return system.style->magnification;
+    return system.style.magnification;
 }
 
 void set_magnification_factor(ui_system& system, float magnification)
 {
-    if (system.style->magnification != magnification)
+    if (system.style.magnification != magnification)
     {
         on_ui_style_change(system);
-        system.style->magnification = magnification;
+        system.style.magnification = magnification;
     }
 }
 

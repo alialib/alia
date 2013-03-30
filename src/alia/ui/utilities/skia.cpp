@@ -72,6 +72,17 @@ skia_box layout_box_as_skia_box(layout_box const& box)
             layout_scalar_as_skia_scalar(box.size[1])));
 }
 
+skia_box float_box_as_skia_box(box<2,float> const& box)
+{
+    return skia_box(
+        make_vector(
+            SkFloatToScalar(box.corner[0]),
+            SkFloatToScalar(box.corner[1])),
+        make_vector(
+            SkFloatToScalar(box.size[0]),
+            SkFloatToScalar(box.size[1])));
+}
+
 void draw_round_rect(SkCanvas& canvas, SkPaint& paint,
     layout_box const& region)
 {
@@ -119,6 +130,8 @@ void set_skia_font_info(SkPaint& paint, font const& font)
                     SkTypeface::kBold : SkTypeface::kNormal) |
                 ((font.style & ITALIC) ?
                     SkTypeface::kItalic : SkTypeface::kNormal))))->unref();
+    paint.setUnderlineText((font.style & UNDERLINE) ? true : false);
+    paint.setStrikeThruText((font.style & STRIKETHROUGH) ? true : false);
     paint.setTextAlign(SkPaint::kLeft_Align);
     paint.setAntiAlias(true);
     paint.setLCDRenderText(true);
@@ -127,14 +140,14 @@ void set_skia_font_info(SkPaint& paint, font const& font)
     paint.setAutohinted(true);
 }
 
-float get_focus_border_width(ui_context& ctx)
+float get_focus_border_width(dataless_ui_context& ctx)
 {
     return resolve_absolute_length(get_layout_traversal(ctx), 0,
         get_property(ctx, "focus-border-width", INHERITED_PROPERTY,
             absolute_length(1.5, PIXELS)));
 }
 
-void setup_focus_drawing(ui_context& ctx, SkPaint& paint)
+void setup_focus_drawing(dataless_ui_context& ctx, SkPaint& paint)
 {
     paint.setStyle(SkPaint::kStroke_Style);
     paint.setStrokeWidth(SkFloatToScalar(get_focus_border_width(ctx)));
@@ -142,7 +155,7 @@ void setup_focus_drawing(ui_context& ctx, SkPaint& paint)
     set_color(paint, get_color_property(ctx, "focus-color"));
 }
 
-void draw_focus_rect(ui_context& ctx, focus_rect_data& data,
+void draw_focus_rect(dataless_ui_context& ctx, focus_rect_data& data,
     layout_box const& content_region)
 {
     float width = get_focus_border_width(ctx);

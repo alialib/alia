@@ -121,7 +121,8 @@ struct ddl_list_query_event : ui_event
     optional<int> selected_index;
 };
 
-static optional<int> get_ddl_selected_index(ui_context& ctx, widget_id ddl_id)
+static optional<int>
+get_ddl_selected_index(dataless_ui_context& ctx, widget_id ddl_id)
 {
     ddl_list_query_event event(ddl_id);
     issue_targeted_event(*ctx.system, event,
@@ -129,7 +130,7 @@ static optional<int> get_ddl_selected_index(ui_context& ctx, widget_id ddl_id)
     return event.selected_index;
 }
 
-static int get_ddl_item_count(ui_context& ctx, widget_id ddl_id)
+static int get_ddl_item_count(dataless_ui_context& ctx, widget_id ddl_id)
 {
     ddl_list_query_event event(ddl_id);
     issue_targeted_event(*ctx.system, event,
@@ -149,22 +150,23 @@ struct ddl_select_index_event : ui_event
     int index;
 };
 
-static void select_ddl_item_at_index(ui_context& ctx, widget_id ddl_id,
-    int index)
+static void select_ddl_item_at_index(
+    dataless_ui_context& ctx, widget_id ddl_id, int index)
 {
     ddl_select_index_event event(ddl_id, index);
     issue_targeted_event(*ctx.system, event,
         make_routable_widget_id(ctx, ddl_id));
 }
 
-static int clamp_ddl_index(ui_context& ctx, widget_id ddl_id, int index)
+static int clamp_ddl_index(
+    dataless_ui_context& ctx, widget_id ddl_id, int index)
 {
     int item_count = get_ddl_item_count(ctx, ddl_id);
     return clamp(index, 0, item_count > 0 ? item_count - 1 : 0);
 }
 
 static bool process_ddl_movement_keys(
-    ui_context& ctx, widget_id ddl_id,
+    dataless_ui_context& ctx, widget_id ddl_id,
     optional<int>& selected_index, key_event_info const& info)
 {
     if (info.mods == 0)
@@ -207,7 +209,7 @@ static bool process_ddl_movement_keys(
     return false;
 }
 
-static void open_ddl(ui_context& ctx, ddl_data& data, widget_id id,
+static void open_ddl(dataless_ui_context& ctx, ddl_data& data, widget_id id,
     layout_box const& bounding_region)
 {
     data.internal_selection = get_ddl_selected_index(ctx, id);
@@ -231,7 +233,7 @@ static void open_ddl(ui_context& ctx, ddl_data& data, widget_id id,
     set_active_overlay(ctx, id);
 }
 
-static void close_ddl(ui_context& ctx, ddl_data& data, widget_id id)
+static void close_ddl(dataless_ui_context& ctx, ddl_data& data, widget_id id)
 {
     ctx.system->overlay_id = null_widget_id;
 }
@@ -361,6 +363,11 @@ bool untyped_drop_down_list::do_list()
         end_pass(ctx);
     }
 
+    // Well, this isn't quite the right condition. The list isn't relevant
+    // in all passes where the ID has focus. However, it IS relevant in some
+    // passes when the ID isn't the active overlay (passes that are meant to
+    // query information about the list items). So this is overly conservative,
+    // but there doesn't seem to be any harm in that.
     bool active = id_has_focus(ctx, id_);
 
     alia_if (active)

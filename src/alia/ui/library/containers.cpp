@@ -290,8 +290,9 @@ do_draggable_separator(ui_context& ctx, accessor<int> const& width,
             skia_renderer renderer(ctx, cache.image(), region.size);
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);
-            paint.setStrokeWidth(2);
-            paint.setStrokeCap(SkPaint::kRound_Cap);
+            paint.setStrokeWidth(layout_scalar_as_skia_scalar(
+                get(data.size)[0]));
+            paint.setStrokeCap(SkPaint::kSquare_Cap);
             set_color(paint, get_color_property(ctx, "separator-color"));
             renderer.canvas().drawLine(
                 SkIntToScalar(1), SkIntToScalar(1),
@@ -349,6 +350,7 @@ void resizable_content::begin(
     id_ = get_widget_id(ctx);
     flags_ = flags;
     size_ = get(size);
+    active_ = true;
 
     if (flags & RESIZABLE_CONTENT_PREPEND_SEPARATOR)
     {
@@ -378,9 +380,9 @@ void resizable_content::begin(
 }
 void resizable_content::end()
 {
-    if (ctx_)
+    ui_context& ctx = *ctx_;
+    alia_if (active_)
     {
-        ui_context& ctx = *ctx_;
         layout_.end();
         if (!(flags_ & RESIZABLE_CONTENT_PREPEND_SEPARATOR) &&
             !ctx.pass_aborted)
@@ -392,8 +394,9 @@ void resizable_content::end()
                 issue_set_value_event(ctx, id_, size_);
             }
         }
-        ctx_ = 0;
+        active_ = false;
     }
+    alia_end
 }
 
 // ACCORDIONS
@@ -435,8 +438,8 @@ bool accordion_section::do_content()
 {
     ui_context& ctx = *ctx_;
     panel_.end();
-    content_.begin(ctx, is_selected_, animated_transition(default_curve, 400),
-        0.1);
+    content_.begin(ctx, is_selected_,
+        animated_transition(default_curve, 400), 0.1);
     return content_.do_content();
 }
 void accordion_section::end()

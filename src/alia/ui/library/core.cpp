@@ -8,7 +8,7 @@ namespace alia {
 
 // STYLING
 
-void scoped_style::begin(ui_context& ctx, style_state const& style,
+void scoped_style::begin(dataless_ui_context& ctx, style_state const& style,
     layout_style_info const* info)
 {
     ctx_ = &ctx;
@@ -24,7 +24,7 @@ void scoped_style::end()
 {
     if (ctx_)
     {
-        ui_context& ctx = *ctx_;
+        dataless_ui_context& ctx = *ctx_;
         ctx.style = old_state_;
         ctx.layout->style_info = old_style_info_;
         ctx_ = 0;
@@ -43,7 +43,8 @@ void scoped_substyle::begin(
     }
     if (!is_valid(*data))
     {
-        update_substyle_data(ctx, data->value, substyle_name, state,
+        update_substyle_data(ctx, data->value, ctx.style.path,
+            get(substyle_name), state,
             (flags & SCOPED_SUBSTYLE_NO_PATH_SEPARATOR) ?
                 ADD_SUBSTYLE_NO_PATH_SEPARATOR : NO_FLAGS);
         mark_valid(*data);
@@ -77,7 +78,7 @@ void culling_block::begin(ui_context& ctx, layout const& layout_spec)
             ctx.event->type == WHEEL_HIT_TEST_EVENT)
         {
             is_relevant_ =
-                mouse_is_inside_box(ctx, box<2,double>(layout_.region()));
+                is_mouse_inside_box(ctx, box<2,double>(layout_.region()));
             break;
         }
         // Other region events fall through.
@@ -97,17 +98,22 @@ void culling_block::end()
 
 // UI CACHING
 
-void cached_ui_block::begin(ui_context& ctx, id_interface const& id)
+void cached_ui_block::begin(ui_context& ctx, id_interface const& id,
+    layout const& layout_spec)
 {
     ctx_ = &ctx;
 
-    culling_.begin(ctx);
+    culling_.begin(ctx, layout_spec);
 
     get_cached_data(ctx, &cacher_);
     ui_caching_node& cacher = *cacher_;
 
     cacher.parent = ctx.active_cacher;
     ctx.active_cacher = &cacher;
+
+    // Caching content in the middle of a validation block is not currently
+    // supported.
+    assert(!ctx.validation.detection && !ctx.validation.reporting);
 
     // Before doing anything else, see if the content can be culled by the
     // culling block's criteria.
@@ -117,9 +123,8 @@ void cached_ui_block::begin(ui_context& ctx, id_interface const& id)
         return;
     }
 
-    switch (ctx.event->type)
+    if (ctx.event->type == REFRESH_EVENT)
     {
-     case REFRESH_EVENT:
         // Detect if there are changes that require the block to be traversed
         // this pass.
         is_relevant_ =
@@ -146,25 +151,15 @@ void cached_ui_block::begin(ui_context& ctx, id_interface const& id)
             *get_layout_traversal(ctx).next_ptr = cacher.layout_subtree_head;
             get_layout_traversal(ctx).next_ptr = cacher.layout_subtree_tail;
         }
-        break;
-
-     case RENDER_EVENT:
-        is_relevant_ = true;
-        break;
-
-     default:
-        is_relevant_ = true;
-        // Any other event that makes it into the block could potentially
-        // cause a state change, so record a change.
-        ++cacher.layout_valid = false;
-        break;
     }
+    else
+        is_relevant_ = true;
 }
 void cached_ui_block::end()
 {
     if (ctx_)
     {
-        ui_context& ctx = *ctx_;
+        dataless_ui_context& ctx = *ctx_;
         ui_caching_node& cacher = *cacher_;
 
         // If the layout was just updated, record the head and tail of the
@@ -174,6 +169,19 @@ void cached_ui_block::end()
         {
             cacher.layout_subtree_head = *layout_next_ptr_;
             cacher.layout_subtree_tail = get_layout_traversal(ctx).next_ptr;
+        }
+
+        switch (ctx.event->type)
+        {
+         case REFRESH_EVENT:
+         case RENDER_EVENT:
+         case MOUSE_HIT_TEST_EVENT:
+         case WHEEL_HIT_TEST_EVENT:
+            break;
+         default:
+            // Any other event that makes it into the block could potentially
+            // cause a state change, so record a change.
+            cacher.layout_valid = false;
         }
 
         culling_.end();
@@ -204,11 +212,14 @@ void mark_location(ui_context& ctx, id_interface const& id,
     }
 }
 
-void jump_to_location(ui_context& ctx, id_interface const& id,
+void jump_to_location(dataless_ui_context& ctx, id_interface const& id,
     jump_to_location_flag_set flags)
 {
-    // TODO: The lookup should be deferred until after a refresh happens
-    // naturally.
+    // Look up the ID.
+    // The UI must be refreshed first as there may have just been state
+    // changes that caused this ID to appear in the UI.
+    // (Ideally, the lookup should be deferred until after a refresh happens
+    // naturally.)
     refresh_ui(*ctx.system);
     routable_widget_id routable_id;
     {
@@ -220,6 +231,7 @@ void jump_to_location(ui_context& ctx, id_interface const& id,
             return;
         routable_id = event.routable_id;
     }
+    // Now that we know where that ID is, make it visible.
     {
         widget_visibility_request request;
         request.widget = routable_id;
@@ -227,6 +239,14 @@ void jump_to_location(ui_context& ctx, id_interface const& id,
         request.move_to_top = true;
         ctx.system->pending_visibility_requests.push_back(request);
     }
+}
+
+struct end_pass_exception {};
+
+void end_pass(dataless_ui_context& ctx)
+{
+    ctx.pass_aborted = true;
+    throw end_pass_exception();
 }
 
 }

@@ -3,7 +3,7 @@
 
 namespace alia {
 
-void overlay::begin(ui_context& ctx, widget_id id)
+void overlay_event_transformer::begin(dataless_ui_context& ctx, widget_id id)
 {
     ctx_ = &ctx;
 
@@ -58,11 +58,11 @@ void overlay::begin(ui_context& ctx, widget_id id)
     }
 }
 
-void overlay::end()
+void overlay_event_transformer::end()
 {
     if (ctx_)
     {
-        ui_context& ctx = *ctx_;
+        dataless_ui_context& ctx = *ctx_;
 
         ctx.event->category = real_event_category_;
         ctx.event->type = real_event_type_;

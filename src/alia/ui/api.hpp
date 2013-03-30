@@ -17,6 +17,7 @@
 
 namespace alia {
 
+struct dataless_ui_context;
 struct ui_context;
 
 typedef void const* widget_id;
@@ -28,7 +29,7 @@ static widget_id const auto_id = 0;
 // in reponse to other user actions.)
 // In those cases, the widget can accept an optional_storage<T> argument.
 // The application can then call storage(accessor) to provide an accessor for
-// the widget's storage, or it can pass in none to opt out of providing
+// the widget's storage, or it can pass in 'none' to opt out of providing
 // storage.
 template<class T>
 struct optional_storage : noncopyable
@@ -218,6 +219,9 @@ enum mouse_cursor
     FOUR_WAY_ARROW_CURSOR,
 };
 
+// general categories of UI events recognized by alia
+// (This can be useful as a primary dispatching criteria in widget
+// implementations.)
 enum ui_event_category
 {
     NO_CATEGORY,
@@ -228,6 +232,7 @@ enum ui_event_category
     OVERLAY_CATEGORY,
 };
 
+// UI events recognized by alia
 enum ui_event_type
 {
     NO_EVENT,
@@ -284,14 +289,16 @@ enum ui_event_type
     CUSTOM_EVENT,
 };
 
-// STYLING
-
+// ui_controller is the interface for the application-supplied controller
+// that specifies the actual content of the UI.
 struct ui_controller : noncopyable
 {
     virtual ~ui_controller() {}
 
     virtual void do_ui(ui_context& ctx) = 0;
 };
+
+// UI STYLING
 
 // widget state flags
 struct widget_state_flag_tag {};
@@ -310,37 +317,55 @@ struct style_search_path;
 struct dispatch_table;
 struct primary_style_properties;
 
+// style_state defines the style-related state that's maintained during
+// a UI traversal. (It is a subcomponent of the ui_context structure.)
 struct style_state
 {
+    // the current search path for style properties
     style_search_path const* path;
+    // the current theme (which provides widget renderers)
     dispatch_table const* theme;
+    // the 'primary' style properties
+    // (what's required for rendering simple text)
     primary_style_properties const* properties;
+    // a unique ID for the current value of the style state
     id_interface const* id;
 };
 
+// The layout system also requires some information about the current style.
 struct layout_style_info;
 
+// scoped_style is a scoped object that activates a new style for a UI context
+// within its scope.
+// (Since the style is specified explicitly as a state structure, this is not
+// meant to be used directly in user code, but rather as a utility for more
+// convenient forms like scoped_substyle.)
 struct scoped_style : noncopyable
 {
     scoped_style() : ctx_(0) {}
-    scoped_style(ui_context& ctx, style_state const& style,
+    scoped_style(dataless_ui_context& ctx, style_state const& style,
         layout_style_info const* info)
     { begin(ctx, style, info); }
     ~scoped_style() { end(); }
 
-    void begin(ui_context& ctx, style_state const& style,
+    void begin(dataless_ui_context& ctx, style_state const& style,
         layout_style_info const* info);
     void end();
 
  private:
-    ui_context* ctx_;
+    dataless_ui_context* ctx_;
     style_state old_state_;
     layout_style_info const* old_style_info_;
 };
 
+// scoped_substyle is similar to scoped_style in that it activates a new style
+// for a UI context within its scope. However, the new style is specified as a
+// simple string. The string is looked up in the current search path, and the
+// associated style is loaded and activated.
+// You can optionally specify a widget state, in which case the search will
+// first look to see if it can match both the name and the state.
 ALIA_DEFINE_FLAG_TYPE(scoped_substyle)
 ALIA_DEFINE_FLAG(scoped_substyle, 0x1, SCOPED_SUBSTYLE_NO_PATH_SEPARATOR)
-
 struct scoped_substyle : noncopyable
 {
     scoped_substyle() {}
@@ -369,6 +394,8 @@ static animation_curve const ease_in_curve(0.42, 0, 1, 1);
 static animation_curve const ease_out_curve(0, 0, 0.58, 1);
 static animation_curve const ease_in_out_curve(0.42, 0, 0.58, 1);
 
+// animated_transition specifies an animated transition from one state to
+// another, defined by a duration and a curve to follow.
 struct animated_transition
 {
     animation_curve curve;
@@ -381,12 +408,26 @@ struct animated_transition
 };
 static animated_transition const default_transition(default_curve, 400);
 
+// VALIDATION
+
+struct validation_error_reporting_context;
+struct validation_error_detection_context;
+
+struct validation_context
+{
+    validation_error_reporting_context* reporting;
+    validation_error_detection_context* detection;
+};
+
 // CULLING
+
+// A culling_block is an optimization.
 
 struct culling_block
 {
     culling_block() {}
-    culling_block(ui_context& ctx) { begin(ctx); }
+    culling_block(ui_context& ctx, layout const& layout_spec = default_layout)
+    { begin(ctx, layout_spec); }
     ~culling_block() { end(); }
     void begin(ui_context& ctx, layout const& layout_spec = default_layout);
     void end();
@@ -398,16 +439,16 @@ struct culling_block
     bool is_relevant_;
 };
 
-#define alia_culling_block_(ctx) \
+#define alia_culling_block_(ctx, layout_spec) \
     { \
-        ::alia::culling_block alia__culling_block(ctx); \
+        ::alia::culling_block alia__culling_block(ctx, layout_spec); \
         { \
             ::alia::pass_dependent_if_block alia__if_block( \
                 get_data_traversal(ctx), alia__culling_block.is_relevant()); \
             if (alia__culling_block.is_relevant()) \
             {
 
-#define alia_culling_block alia_culling_block_(ctx)
+#define alia_culling_block(layout_spec) alia_culling_block_(ctx, layout_spec)
 
 // UI CACHING
 
@@ -417,10 +458,12 @@ struct ui_caching_node;
 struct cached_ui_block
 {
     cached_ui_block() : ctx_(0) {}
-    cached_ui_block(ui_context& ctx, id_interface const& id)
-    { begin(ctx, id); }
+    cached_ui_block(ui_context& ctx, id_interface const& id,
+        layout const& layout_spec = default_layout)
+    { begin(ctx, id, layout_spec); }
     ~cached_ui_block() { end(); }
-    void begin(ui_context& ctx, id_interface const& id);
+    void begin(ui_context& ctx, id_interface const& id,
+        layout const& layout_spec = default_layout);
     void end();
     bool is_relevant() const { return is_relevant_; }
  private:
@@ -431,16 +474,17 @@ struct cached_ui_block
     layout_node** layout_next_ptr_;
 };
 
-#define alia_cached_ui_block_(ctx, id) \
+#define alia_cached_ui_block_(ctx, id, layout_spec) \
     { \
         ::alia::cached_ui_block alia__cached_ui_block(ctx, id); \
         { \
             ::alia::pass_dependent_if_block alia__if_block( \
-                get_data_traversal(ctx), alia__cached_ui_block.is_relevant()); \
+                get_data_traversal(ctx), alia__cached_ui_block.is_relevant());\
             if (alia__cached_ui_block.is_relevant()) \
             {
 
-#define alia_cached_ui_block(id) alia_cached_ui_block_(ctx, id)
+#define alia_cached_ui_block(id, layout_spec) \
+    alia_cached_ui_block_(ctx, id, layout_spec)
 
 // UI CONTEXT
 
@@ -449,10 +493,14 @@ struct surface;
 struct ui_event;
 struct mouse_hover_context;
 
-struct ui_context
+// dataless_ui_context defines everything about a UI context except for the
+// data traversal. It's impossible to retrieve data from a dataless UI context
+// (insofar as anything in C++ is impossible), and thus one can safely call
+// functions that expect a dataless_ui_context even in areas where control
+// flow is not properly tracked.
+struct dataless_ui_context
 {
     ui_system* system;
-    data_traversal* data;
     geometry_context* geometry;
     layout_traversal* layout;
     alia::surface* surface;
@@ -462,16 +510,92 @@ struct ui_context
     style_state style;
     bool pass_aborted;
     mouse_hover_context* hover;
+    validation_context validation;
+};
+
+struct ui_context : dataless_ui_context
+{
+    data_traversal* data;
 };
 
 static inline data_traversal& get_data_traversal(ui_context& ctx)
 { return *ctx.data; }
-static inline layout_traversal& get_layout_traversal(ui_context& ctx)
+static inline layout_traversal& get_layout_traversal(dataless_ui_context& ctx)
 { return *ctx.layout; }
-static inline geometry_context& get_geometry_context(ui_context& ctx)
+static inline geometry_context& get_geometry_context(dataless_ui_context& ctx)
 { return *ctx.geometry; }
 
-void end_pass(ui_context& ctx);
+// UTILITIES - Various utilities that are considered part of the core API or
+// must be visible for other reasons.
+
+// The following macros are substitutes for normal C++ control flow statements.
+// Unlike alia_if and company, they do NOT track control flow. Instead, they
+// upcast your UI context variable to a dataless_ui_context within the block.
+// This means that any attempt to retrieve data within the block will result
+// in an error (as it should).
+
+#define ALIA_REMOVE_DATA_TRACKING \
+    ::alia::dataless_ui_context& alia__ctx = ctx; \
+    ::alia::dataless_ui_context& ctx = alia__ctx;
+
+#define alia_untracked_if(condition) \
+    if (condition) \
+    { \
+        ALIA_REMOVE_DATA_TRACKING \
+        {{
+
+#define alia_untracked_else_if(condition) \
+    }}} \
+    else if (condition) \
+    { \
+        ALIA_REMOVE_DATA_TRACKING \
+        {{
+
+#define alia_untracked_else \
+    }}} \
+    else \
+    { \
+        ALIA_REMOVE_DATA_TRACKING \
+        {{
+
+#define alia_untracked_switch(expression) \
+    switch (expression) \
+    {{{
+
+#define alia_untracked_case(c) \
+        }}} \
+        case c: \
+        {{{ \
+            ALIA_REMOVE_DATA_TRACKING \
+            goto ALIA_CONCATENATE(alia__dummy_label_, __LINE__); \
+            ALIA_CONCATENATE(alia__dummy_label_, __LINE__)
+
+#define alia_untracked_default \
+        }}} \
+        default: \
+        {{{ \
+            ALIA_REMOVE_DATA_TRACKING \
+            goto ALIA_CONCATENATE(alia__dummy_label_, __LINE__); \
+            ALIA_CONCATENATE(alia__dummy_label_, __LINE__)
+
+// alia_scoped_data_block does the opposite of the above.
+// It transitions from untracked control flow back to tracked control flow.
+// In order to do this, you must supply a data_block to use for tracking and
+// data retrieval.
+#define alia_tracked_block(block) \
+    { \
+        ::alia::ui_context& alia__ctx = static_cast<::alia::ui_context&>(ctx);\
+        ::alia::ui_context& ctx = alia__ctx; \
+        ::alia::scoped_data_block alia__block(ctx, (block)); \
+        {{
+
+// Calling end_pass(ctx) will immediately end the currently traversal over
+// your UI. This may be necessary if an event has triggered a change in state
+// that invalidates the current traversal. (For example, if clicking a button
+// removed an item from a list, and you're in the middle of traversing that
+// list.) It's implemented by throwing an exception which is caught outside
+// the traversal.
+void end_pass(dataless_ui_context& ctx);
 
 struct untyped_ui_value
 {
@@ -500,7 +624,7 @@ void mark_location(ui_context& ctx, id_interface const& id,
 // Call this to request that the UI jump to a marked location.
 ALIA_DEFINE_FLAG_TYPE(jump_to_location)
 ALIA_DEFINE_FLAG(jump_to_location, 0x1, JUMP_TO_LOCATION_ABRUPTLY)
-void jump_to_location(ui_context& ctx, id_interface const& id,
+void jump_to_location(dataless_ui_context& ctx, id_interface const& id,
     jump_to_location_flag_set flags = NO_FLAGS);
 
 // DISPLAYS - non-interactive widgets
@@ -761,7 +885,6 @@ enum text_control_event_type
     TEXT_CONTROL_NO_EVENT,
     TEXT_CONTROL_ENTER_PRESSED,
     TEXT_CONTROL_FOCUS_LOST,
-    TEXT_CONTROL_INVALID_VALUE,
     TEXT_CONTROL_EDIT_CANCELED,
 };
 
@@ -816,24 +939,6 @@ do_button(
     getter<string> const& text,
     layout const& layout_spec = default_layout,
     button_flag_set flags = NO_FLAGS,
-    widget_id id = auto_id);
-
-// icon button
-
-typedef bool icon_button_result;
-
-enum icon_type
-{
-    REMOVE_ICON,
-    EXPAND_ICON,
-    SHRINK_ICON,
-};
-
-icon_button_result
-do_icon_button(
-    ui_context& ctx,
-    icon_type icon,
-    layout const& layout_spec = default_layout,
     widget_id id = auto_id);
 
 // CONTROLS
@@ -1030,7 +1135,7 @@ class clickable_panel : noncopyable
     bool clicked_;
 };
 
-struct scrollable_layout_container;
+struct scrolling_data;
 
 struct scrollable_region : noncopyable
 {
@@ -1040,8 +1145,12 @@ struct scrollable_region : noncopyable
         layout const& layout_spec = default_layout,
         unsigned scrollable_axes = 1 | 2,
         widget_id id = auto_id,
+        optional_storage<layout_vector> const& scroll_position_storage = none,
         unsigned reserved_axes = 0)
-    { begin(ctx, layout_spec, scrollable_axes, id, reserved_axes); }
+    {
+        begin(ctx, layout_spec, scrollable_axes, id, scroll_position_storage,
+            reserved_axes);
+    }
     ~scrollable_region() { end(); }
 
     void begin(
@@ -1049,12 +1158,13 @@ struct scrollable_region : noncopyable
         layout const& layout_spec = default_layout,
         unsigned scrollable_axes = 1 | 2,
         widget_id id = auto_id,
+        optional_storage<layout_vector> const& scroll_position_storage = none,
         unsigned reserved_axes = 0);
     void end();
 
  private:
     ui_context* ctx_;
-    scrollable_layout_container* container_;
+    scrolling_data* data_;
     widget_id id_;
     scoped_clip_region scr_;
     scoped_transformation transform_;
@@ -1069,13 +1179,15 @@ struct scrollable_panel : noncopyable
     scrollable_panel(
         ui_context& ctx, getter<string> const& style,
         layout const& layout_spec = default_layout,
-        panel_flag_set flags = NO_FLAGS)
-    { begin(ctx, style, layout_spec, flags); }
+        panel_flag_set flags = NO_FLAGS,
+        optional_storage<layout_vector> const& scroll_position_storage = none)
+    { begin(ctx, style, layout_spec, flags, scroll_position_storage); }
     ~scrollable_panel() { end(); }
     void begin(
         ui_context& ctx, getter<string> const& style,
         layout const& layout_spec = default_layout,
-        panel_flag_set flags = NO_FLAGS);
+        panel_flag_set flags = NO_FLAGS,
+        optional_storage<layout_vector> const& scroll_position_storage = none);
     void end();
  private:
     bordered_layout outer_;
@@ -1083,6 +1195,44 @@ struct scrollable_panel : noncopyable
     scrollable_region region_;
     bordered_layout padding_border_;
     linear_layout inner_;
+};
+
+struct custom_panel_data;
+struct panel_style_info;
+
+struct custom_panel : noncopyable
+{
+ public:
+    custom_panel() : ctx_(0) {}
+    custom_panel(
+        ui_context& ctx, custom_panel_data& data,
+        getter<panel_style_info> const& style,
+        layout const& layout_spec = default_layout,
+        panel_flag_set flags = NO_FLAGS,
+        widget_id id = auto_id,
+        widget_state state = WIDGET_NORMAL)
+    { begin(ctx, data, style, layout_spec, flags, id, state); }
+    ~custom_panel() { end(); }
+    void begin(
+        ui_context& ctx, custom_panel_data& data,
+        getter<panel_style_info> const& style,
+        layout const& layout_spec = default_layout,
+        panel_flag_set flags = NO_FLAGS,
+        widget_id id = auto_id,
+        widget_state state = WIDGET_NORMAL);
+    void end();
+    // inner_region() is the region inside the panel's border
+    layout_box inner_region() const { return inner_.padded_region(); }
+    // outer_region() includes the border
+    layout_box outer_region() const;
+    // padded_region() includes the padding
+    layout_box padded_region() const;
+ private:
+    ui_context* ctx_;
+    panel_style_info* style_;
+    bordered_layout outer_;
+    linear_layout inner_;
+    panel_flag_set flags_;
 };
 
 // CONTAINERS
@@ -1298,15 +1448,16 @@ void do_tab(ui_context& ctx, accessor<bool> const& selected,
 
 // OVERLAYS
 
-struct overlay
+struct overlay_event_transformer
 {
-    overlay() : ctx_(0) {}
-    overlay(ui_context& ctx, widget_id id) { begin(ctx, id); }        
-    ~overlay() { end(); }
-    void begin(ui_context& ctx, widget_id id);
+    overlay_event_transformer() : ctx_(0) {}
+    overlay_event_transformer(dataless_ui_context& ctx, widget_id id)
+    { begin(ctx, id); }        
+    ~overlay_event_transformer() { end(); }
+    void begin(dataless_ui_context& ctx, widget_id id);
     void end();
  private:
-    ui_context* ctx_;
+    dataless_ui_context* ctx_;
     ui_event_category real_event_category_;
     ui_event_type real_event_type_;
 };
@@ -1335,7 +1486,7 @@ struct popup
     widget_id id_, background_id_;
     floating_layout layout_;
     scoped_transformation transform_;
-    overlay overlay_;
+    overlay_event_transformer overlay_;
 };
 
 // DROP DOWNS
@@ -1397,8 +1548,8 @@ struct drop_down_list : noncopyable
         {
             typed_ui_value<Index> const* v =
                 dynamic_cast<typed_ui_value<Index> const*>(new_value);
-            // This should only fail if somehow an event with the wrong value
-            // type is somehow sent to this widget.
+            // This should only fail if an event with the wrong value type is
+            // somehow sent to this widget.
             assert(v);
             if (v)
             {
@@ -1474,7 +1625,7 @@ ALIA_DEFINE_FLAG(resizable_content, 0, RESIZABLE_CONTENT_APPEND_SEPARATOR)
 ALIA_DEFINE_FLAG(resizable_content, 2, RESIZABLE_CONTENT_PREPEND_SEPARATOR)
 struct resizable_content : noncopyable
 {
-    resizable_content() {}
+    resizable_content(ui_context& ctx) : ctx_(&ctx), active_(false) {}
     resizable_content(ui_context& ctx, accessor<int> const& size,
         resizable_content_flag_set flags = NO_FLAGS)
     { begin(ctx, size, flags); }
@@ -1484,6 +1635,7 @@ struct resizable_content : noncopyable
     void end();
  private:
     ui_context* ctx_;
+    bool active_;
     widget_id id_;
     resizable_content_flag_set flags_;
     int size_;
@@ -1496,7 +1648,7 @@ struct resizable_content : noncopyable
 // accessor without invalidating any internal references.
 template<class Accessor>
 accessor<typename accessor_value_type<Accessor>::type> const&
-erase_accessor_type(alia::ui_context& ctx, Accessor const& accessor)
+erase_accessor_type(ui_context& ctx, Accessor const& accessor)
 {
     Accessor* storage;
     get_cached_data(ctx, &storage);
@@ -1506,23 +1658,25 @@ erase_accessor_type(alia::ui_context& ctx, Accessor const& accessor)
 
 // TABLES
 
+struct table_style_info;
+
 struct table : noncopyable
 {
     table() {}
-    table(ui_context& ctx, accessor<string> const& style,
+    table(ui_context& ctx, getter<string> const& style,
         layout const& layout_spec = default_layout)
     { begin(ctx, style, layout_spec); }
     ~table() { end(); }
-    void begin(ui_context& ctx, accessor<string> const& style,
+    void begin(ui_context& ctx, getter<string> const& style,
         layout const& layout_spec = default_layout);
     void end();
  private:
     friend struct table_row;
+    //friend struct table_row_background;
     friend struct table_cell;
     ui_context* ctx_;
-    panel panel_;
     grid_layout grid_;
-    scoped_substyle cell_style_;
+    table_style_info const* style_;
     vector<2,int> cell_index_;
 };
 
@@ -1538,8 +1692,21 @@ struct table_row : noncopyable
     friend struct table_cell;
     table* table_;
     grid_row grid_row_;
-    scoped_substyle style_, special_style_;
 };
+
+//struct table_row_background : noncopyable
+//{
+//    table_row_background() {}
+//    table_row_background(table& table,
+//        layout const& layout_spec = default_layout)
+//    { begin(table, layout_spec); }
+//    ~table_row_background() { end(); }
+//    void begin(table& table, layout const& layout_spec = default_layout);
+//    void end();
+// private:
+//    table* table_;
+//    custom_panel panel_;
+//};
 
 struct table_cell : noncopyable
 {
@@ -1551,8 +1718,8 @@ struct table_cell : noncopyable
     void end();
  private:
     table_row* row_;
-    panel panel_;
-    scoped_substyle special_style_;
+    custom_panel panel_;
+    scoped_style style_;
 };
 
 // FORMS
