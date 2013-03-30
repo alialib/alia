@@ -44,7 +44,7 @@ void table::begin(ui_context& ctx, getter<string> const& style,
 {
     ctx_ = &ctx;
 
-    grid_.begin(ctx, GROW);
+    grid_.begin(ctx, add_default_padding(layout_spec, PADDED));
 
     keyed_data<table_style_info>* style_data;
     if (get_cached_data(ctx, &style_data) || is_refresh_pass(ctx))

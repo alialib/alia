@@ -52,11 +52,30 @@ find_style_node(style_tree& tree, string const& subpath,
     return child ? find_style_node(*child, rest_of_path, true) : 0;
 }
 
+static std::list<style_tree*>
+resolve_flattened_fallbacks(
+    style_tree& tree, std::list<string> const& flattened)
+{
+    std::list<style_tree*> fallbacks;
+    for (std::list<string>::const_iterator
+        i = flattened.begin(); i != flattened.end(); ++i)
+    {
+        style_tree* node = find_style_node(tree, *i, false);
+        if (!node)
+            throw exception("style not found: " + *i);
+        fallbacks.push_back(node);
+    }
+    return fallbacks;
+}
+
 void set_style(style_tree& tree, string const& subpath,
     flattened_style_node const& flattened)
 {
+    std::list<style_tree*> fallbacks =
+        resolve_flattened_fallbacks(tree, flattened.fallbacks);
     style_tree* node = find_style_node(tree, subpath, true);
     node->properties = flattened.properties;
+    swap(node->fallbacks, fallbacks);
 }
 
 style_tree_ptr unflatten_style_tree(flattened_style_tree const& flattened)
@@ -69,6 +88,24 @@ style_tree_ptr unflatten_style_tree(flattened_style_tree const& flattened)
         set_style(*tree, i->first, i->second);
     }
     return tree;
+}
+
+static string const*
+get_style_property(style_tree const& tree, char const* property_name)
+{
+    property_map::const_iterator i = tree.properties.find(property_name);
+    if (i != tree.properties.end())
+        return &i->second;
+    
+    for (std::list<style_tree*>::const_iterator
+        i = tree.fallbacks.begin(); i != tree.fallbacks.end(); ++i)
+    {
+        string const* property = get_style_property(**i, property_name);
+        if (property)
+            return property;
+    }
+
+    return 0;
 }
 
 string const*
@@ -85,10 +122,28 @@ get_style_property(
             else
                 break;
         }
-        style_tree const& tree = *path->tree;
-        property_map::const_iterator i = tree.properties.find(property_name);
-        if (i != tree.properties.end())
-            return &i->second;
+        string const* property =
+            get_style_property(*path->tree, property_name);
+        if (property)
+            return property;
+    }
+    return 0;
+}
+
+static style_tree const*
+find_substyle(
+    style_tree const& tree, string const& substyle_name)
+{
+    std::map<string,style_tree_ptr>::const_iterator i =
+        tree.substyles.find(substyle_name);
+    if (i != tree.substyles.end())
+        return i->second.get();
+    for (std::list<style_tree*>::const_iterator
+        i = tree.fallbacks.begin(); i != tree.fallbacks.end(); ++i)
+    {
+        style_tree const* tree = find_substyle(**i, substyle_name);
+        if (tree)
+            return tree;
     }
     return 0;
 }
@@ -99,13 +154,12 @@ find_substyle(
 {
     for (; path; path = path->rest)
     {
-        if (!path->tree)
-            continue;
-        style_tree const& tree = *path->tree;
-        std::map<string,style_tree_ptr>::const_iterator i =
-            tree.substyles.find(substyle_name);
-        if (i != tree.substyles.end())
-            return i->second.get();
+        if (path->tree)
+        {
+            style_tree const* tree = find_substyle(*path->tree, substyle_name);
+            if (tree)
+                return tree;
+        }
     }
     return 0;
 }
@@ -224,7 +278,7 @@ add_substyle_to_path(
 
 // WHOLE TREE I/O
 
-utf8_ptr skip_space(utf8_string const& text, int& line_count)
+static utf8_ptr skip_space(utf8_string const& text, int& line_count)
 {
     utf8_ptr p = text.begin;
     while (p < text.end)
@@ -242,7 +296,52 @@ utf8_ptr skip_space(utf8_string const& text, int& line_count)
     return text.end;
 }
 
-property_map
+static utf8_ptr find_end_of_fallback_path(utf8_string const& text)
+{
+    utf8_ptr p = text.begin;
+    while (p < text.end)
+    {
+        utf8_ptr q = p;
+        SkUnichar c = SkUTF8_NextUnichar(&p);
+        if (is_space(c) || c == ',' || c == '{')
+            return q;
+    }
+    return text.end;
+}
+
+static std::list<string>
+parse_fallbacks(char const* label, utf8_string const& text,
+    utf8_ptr& p, int& line_number)
+{
+    std::list<string> fallbacks;
+    while (1)
+    {
+        p = skip_space(utf8_string(p, text.end), line_number);
+        utf8_ptr subpath_start = p;
+        p = find_end_of_fallback_path(utf8_string(p, text.end));
+        fallbacks.push_back(string(subpath_start, p - subpath_start));
+        p = skip_space(utf8_string(p, text.end), line_number);
+        utf8_ptr q = p;
+        SkUnichar c = SkUTF8_NextUnichar(&p);
+        if (c == '{')
+        {
+            p = q;
+            break;
+        }
+        else if (c == ',')
+        {
+            continue;
+        }
+        else
+        {
+            throw parse_error(string(label) + ":" +
+                to_string(line_number) + ": syntax error");
+        }
+    }
+    return fallbacks;
+}
+
+static property_map
 parse_style_properties(char const* label, utf8_string const& text,
     utf8_ptr& p, int& line_number)
 {
@@ -274,8 +373,7 @@ parse_style_properties(char const* label, utf8_string const& text,
             if (is_space(c))
             {
                 throw parse_error(string(label) + ":" +
-                    to_string(line_number) +
-                    ": syntax error");
+                    to_string(line_number) + ": syntax error");
             }
         }
         string name(name_start, name_end - name_start);
@@ -396,8 +494,16 @@ parse_style_description(char const* label, utf8_string const& text)
 
         flattened_style_node node;
 
-        // Check for the opening brace of the property map.
+        // Check for fallbacks.
         SkUnichar c = SkUTF8_NextUnichar(&p);
+        if (c == ':')
+        {
+            node.fallbacks =
+                parse_fallbacks(label, stripped_text, p, line_number);
+            c = SkUTF8_NextUnichar(&p);
+        }
+
+        // Check for the opening brace of the property map.
         if (c != '{')
         {
             throw parse_error(string(label) + ":" + to_string(line_number) +
