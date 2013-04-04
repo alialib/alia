@@ -21,6 +21,7 @@ static void initialize_traversal(
     style->character_size = make_vector<float>(0, 0);
     style->x_height = 0;
     style->padding_size = make_layout_vector(0, 0);
+    style->magnification = 1;
 }
 void scoped_layout_traversal::begin(
     layout_system& system, layout_traversal& traversal,

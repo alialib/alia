@@ -192,7 +192,7 @@ box<2,Scalar>
 add_border(alia::box<2,Scalar> const& box,
     box_border_width<Scalar> const& border)
 {
-    return box<2,Scalar>(
+    return alia::box<2,Scalar>(
         box.corner - make_vector(border.left, border.top),
         box.size +
             make_vector(

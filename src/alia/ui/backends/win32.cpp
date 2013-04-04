@@ -828,8 +828,8 @@ void native_window::do_idle_work()
 {
     if (process_timer_requests(impl_->ui, get_time(*impl_)))
         update_window(impl_->hwnd);
-    //else
-    //    Sleep(1);
+    else
+        Sleep(1);
 }
 
 void native_window::do_message_loop()
