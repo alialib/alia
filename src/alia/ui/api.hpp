@@ -608,6 +608,24 @@ struct typed_ui_value : untyped_ui_value
     T value;
 };
 
+// erase_type(ctx, x) stores a copy of x within the data graph of ctx and
+// returns a reference to that copy.
+// The idea here is that you can then return that reference to a calling
+// function without that function caring what the concrete type of x is.
+// This is useful when implementing functions that return accessors since
+// you can declare the function type as simply returning a reference to an
+// accessor<T>, hiding the details of how that accessor is created.
+// Of course, when using this, you must ensure that x doesn't contain any
+// references that might be invalid when the stored copy is accessed.
+template<class T>
+T& erase_type(ui_context& ctx, T const& x)
+{
+    T* storage;
+    get_cached_data(ctx, &storage);
+    *storage = x;
+    return *storage;
+}
+
 struct control_result
 {
     bool changed;
@@ -1641,20 +1659,6 @@ struct resizable_content : noncopyable
     int size_;
     linear_layout layout_;
 };
-
-// erase_accessor_type(ctx, x) returns a reference to a copy of the accessor x
-// whose type has been reduced to simply accessor<T>.
-// Of course, you should only use this if it's possible to return a copy of the
-// accessor without invalidating any internal references.
-template<class Accessor>
-accessor<typename accessor_value_type<Accessor>::type> const&
-erase_accessor_type(ui_context& ctx, Accessor const& accessor)
-{
-    Accessor* storage;
-    get_cached_data(ctx, &storage);
-    *storage = accessor;
-    return *storage;
-}
 
 // TABLES
 

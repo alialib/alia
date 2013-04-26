@@ -134,6 +134,18 @@ struct validation_error : exception
     ~validation_error() throw() {}
 };
 
+// empty_accessor is an accessor that contains no value.
+template<class T>
+struct empty_accessor : accessor<T>
+{
+    empty_accessor() {}
+    id_interface const& id() const { return no_id; }
+    bool is_gettable() const { return false; }
+    T const& get() const { assert(false); return *(T*)(0); }
+    bool is_settable() const { return false; }
+    void set(T const& value) const {}
+};
+
 // regular_accessor is a partial implementation of the accessor interface for
 // cases where the ID of the accessor is simply the value itself.
 template<class T>
@@ -152,6 +164,7 @@ struct regular_accessor : accessor<T>
 template<class T>
 struct inout_accessor : regular_accessor<T>
 {
+    inout_accessor() {}
     inout_accessor(T* v) : v_(v) {}
     bool is_gettable() const { return true; }
     T const& get() const { return *v_; }
@@ -172,6 +185,7 @@ inout(T* value)
 template<class T>
 struct input_accessor : regular_accessor<T>
 {
+    input_accessor() {}
     input_accessor(T const& v) : v_(v) {}
     bool is_gettable() const { return true; }
     T const& get() const { return v_; }
@@ -192,6 +206,7 @@ in(T const& value)
 template<class T>
 struct input_pointer_accessor : regular_accessor<T>
 {
+    input_pointer_accessor() {}
     input_pointer_accessor(T const* v) : v_(v) {}
     bool is_gettable() const { return true; }
     T const& get() const { return *v_; }
@@ -211,6 +226,7 @@ in_ptr(T const* value)
 template<class T>
 struct optional_input_accessor : accessor<T>
 {
+    optional_input_accessor() {}
     optional_input_accessor(optional<T> const& value) : value_(value) {}
     id_interface const& id() const
     {
@@ -243,6 +259,7 @@ optional_in(optional<T> const& value)
 template<class T, class Id>
 struct custom_getter : accessor<T>
 {
+    custom_getter() {}
     custom_getter(T const* value, Id const& id)
       : value_(value), id_(id)
     {}
@@ -266,6 +283,7 @@ make_custom_getter(T const* value, Id const& id)
 template<class T, class Id>
 struct custom_optional_getter : accessor<T>
 {
+    custom_optional_getter() {}
     custom_optional_getter(optional<T> const* value, Id const& id)
       : value_(value), id_(id)
     {}
@@ -409,6 +427,7 @@ make_accessor(state<T>& state)
 template<class T>
 struct indirect_accessor : accessor<T>
 {
+    indirect_accessor() {}
     indirect_accessor(accessor<T> const& wrapped) : wrapped_(&wrapped) {}
     bool is_gettable() const { return wrapped_->is_gettable(); }
     T const& get() const { return wrapped_->get(); }
@@ -454,6 +473,7 @@ struct lazy_getter
 template<class Wrapped, class To>
 struct accessor_caster : regular_accessor<To>
 {
+    accessor_caster() {}
     accessor_caster(Wrapped wrapped) : wrapped_(wrapped) {}
     bool is_gettable() const { return wrapped_.is_gettable(); }
     To const& get() const { return lazy_getter_.get(*this); }
@@ -481,6 +501,7 @@ struct readonly_accessor_wrapper
   : accessor<typename accessor_value_type<Wrapped>::type>
 {
     typedef typename accessor_value_type<Wrapped>::type wrapped_value_type;
+    readonly_accessor_wrapper() {}
     readonly_accessor_wrapper(Wrapped wrapped) : wrapped_(wrapped) {}
     bool is_gettable() const { return wrapped_.is_gettable(); }
     wrapped_value_type const& get() const { return wrapped_.get(); }
@@ -506,6 +527,7 @@ make_readonly(Wrapped accessor)
 template<class T, class F>
 struct accessor_mux : accessor<typename accessor_value_type<T>::type>
 {
+    accessor_mux() {}
     accessor_mux(bool condition, T t, F f)
       : condition_(condition), t_(t), f_(f)
     {}
@@ -543,6 +565,7 @@ struct scaling_accessor_wrapper
   : regular_accessor<typename accessor_value_type<Wrapped>::type>
 {
     typedef typename accessor_value_type<Wrapped>::type wrapped_value_type;
+    scaling_accessor_wrapper() {}
     scaling_accessor_wrapper(Wrapped wrapped, wrapped_value_type scale_factor)
       : wrapped_(wrapped), scale_factor_(scale_factor)
     {}
@@ -572,6 +595,7 @@ struct offset_accessor_wrapper
   : regular_accessor<typename accessor_value_type<Wrapped>::type>
 {
     typedef typename accessor_value_type<Wrapped>::type wrapped_value_type;
+    offset_accessor_wrapper() {}
     offset_accessor_wrapper(Wrapped wrapped,
         typename accessor_value_type<Wrapped>::type offset)
       : wrapped_(wrapped), offset_(offset)
@@ -601,6 +625,7 @@ template<class Wrapped>
 struct rounding_accessor_wrapper
   : regular_accessor<typename accessor_value_type<Wrapped>::type>
 {
+    rounding_accessor_wrapper() {}
     rounding_accessor_wrapper(Wrapped wrapped,
         typename accessor_value_type<Wrapped>::type step)
       : wrapped_(wrapped), step_(step)
@@ -630,6 +655,7 @@ struct field_accessor : accessor<Field>
     typedef typename accessor_value_type<StructureAccessor>::type
         structure_type;
     typedef Field structure_type::*field_ptr;
+    field_accessor() {}
     field_accessor(StructureAccessor structure, field_ptr field)
       : structure_(structure), field_(field)
     {}
@@ -674,6 +700,7 @@ select_field(
 // for accessing x as a string. Its ID is the pointer to the text.
 struct text : accessor<string>
 {
+    text() {}
     text(char const* x)
       : text_(x), id_(x, ID_CONTEXT_APP_INSTANCE)
     {}

@@ -417,12 +417,12 @@ void process_mouse_leave(ui_system& ui, ui_time_type time)
 void process_mouse_press(ui_system& ui, ui_time_type time,
     vector<2,int> const& position, mouse_button button)
 {
-    ui.input.mouse_button_state |= 1 << int(button);
     routable_widget_id target = get_mouse_target(ui);
     {
         mouse_button_event e(MOUSE_PRESS_EVENT, time, button);
         issue_targeted_event(ui, e, target);
     }
+    ui.input.mouse_button_state |= 1 << int(button);
     if (!is_valid(target))
         clear_focus(ui);
     ui.input.keyboard_interaction = false;
@@ -430,10 +430,10 @@ void process_mouse_press(ui_system& ui, ui_time_type time,
 void process_mouse_release(ui_system& ui, ui_time_type time,
     vector<2,int> const& position, mouse_button button)
 {
-    ui.input.mouse_button_state &= ~(1 << int(button));
-    ui.input.mouse_hovering = false;
     mouse_button_event e(MOUSE_RELEASE_EVENT, time, button);
     issue_targeted_event(ui, e, get_mouse_target(ui));
+    ui.input.mouse_button_state &= ~(1 << int(button));
+    ui.input.mouse_hovering = false;
     if (ui.input.mouse_button_state == 0)
     {
         ui.input.active_id = null_widget_id;
@@ -443,10 +443,10 @@ void process_mouse_release(ui_system& ui, ui_time_type time,
 void process_double_click(ui_system& ui, ui_time_type time,
     vector<2,int> const& position, mouse_button button)
 {
-    ui.input.mouse_button_state |= 1 << int(button);
-    ui.input.mouse_hovering = false;
     mouse_button_event e(DOUBLE_CLICK_EVENT, time, button);
     issue_targeted_event(ui, e, get_mouse_target(ui));
+    ui.input.mouse_button_state |= 1 << int(button);
+    ui.input.mouse_hovering = false;
     ui.input.keyboard_interaction = false;
 }
 void process_mouse_wheel(ui_system& ui, ui_time_type time, float movement)
@@ -479,12 +479,12 @@ void process_mouse_hover(ui_system& ui, ui_time_type time)
 {
     if (ui.input.mouse_button_state != 0)
         return;
-    ui.input.mouse_hovering = true;
     if (is_valid(ui.input.hot_id))
     {
         mouse_notification_event event(MOUSE_HOVER_EVENT, ui.input.hot_id.id);
         issue_targeted_event(ui, event, ui.input.hot_id);
     }
+    ui.input.mouse_hovering = true;
 }
 
 bool process_text_input(ui_system& ui, ui_time_type time,

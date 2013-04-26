@@ -318,6 +318,13 @@ struct text_control_data
     // Both are keyed on change_counter and the usable width of the control.
     keyed_data<cached_image_ptr> unselected_image, selected_image;
 
+    // history of values for undo/redo
+    // TODO: more compact representation of this?
+    std::vector<string> history_buffer;
+    // When undoing and redoing, this gives the index of the currently
+    // selected value within the history buffer.
+    size_t undo_index;
+
     text_control_data()
       : change_detected(false)
       , change_counter(1)
@@ -328,6 +335,7 @@ struct text_control_data
       , n_selected(0)
       , true_cursor_x(-1)
       , text_edited(false)
+      , undo_index(0)
     {}
 };
 

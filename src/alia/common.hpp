@@ -116,17 +116,17 @@ flag_set<Tag> operator~(flag_set<Tag> a)
     static alia::flag_set<type_prefix##_flag_tag> const name(code);
 
 // Inspired by Boost, inheriting from noncopyable disables copying for a type.
-namespace noncopyable_ // prevents unintended ADL if used by applications
+// The namespace prevents unintended ADL if used by applications.
+namespace impl { namespace noncopyable_ {
+struct noncopyable
 {
-    struct noncopyable
-    {
-        noncopyable() {}
-     private:
-        noncopyable(noncopyable const& other);
-        noncopyable& operator=(noncopyable const& other);
-    };
-}
-typedef noncopyable_::noncopyable noncopyable;
+    noncopyable() {}
+    private:
+    noncopyable(noncopyable const& other);
+    noncopyable& operator=(noncopyable const& other);
+};
+}}
+typedef impl::noncopyable_::noncopyable noncopyable;
 
 struct exception : std::exception
 {
