@@ -295,7 +295,6 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
                 switch (info.code)
                 {
                  case KEY_ENTER:
-                 case KEY_NUMPAD_ENTER:
                     if (!is_overlay_active(ctx, id_))
                     {
                         open_ddl(ctx, data, id_, container_.outer_region());

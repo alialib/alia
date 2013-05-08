@@ -65,6 +65,8 @@ bool is_opengl_extension_in_list(
     char const* extension_list, char const* extension)
 {
     char const* start = extension_list;
+    if (!start)
+        return false;
 
     for(;;)
     {

@@ -173,35 +173,35 @@ static key_code translate_key_code(WPARAM code)
      case VK_HELP:
         return KEY_HELP;
      case VK_NUMPAD0:
-        return KEY_NUMPAD_0;
+        return key_code('0');
      case VK_NUMPAD1:
-        return KEY_NUMPAD_1;
+        return key_code('1');
      case VK_NUMPAD2:
-        return KEY_NUMPAD_2;
+        return key_code('2');
      case VK_NUMPAD3:
-        return KEY_NUMPAD_3;
+        return key_code('3');
      case VK_NUMPAD4:
-        return KEY_NUMPAD_4;
+        return key_code('4');
      case VK_NUMPAD5:
-        return KEY_NUMPAD_5;
+        return key_code('5');
      case VK_NUMPAD6:
-        return KEY_NUMPAD_6;
+        return key_code('6');
      case VK_NUMPAD7:
-        return KEY_NUMPAD_7;
+        return key_code('7');
      case VK_NUMPAD8:
-        return KEY_NUMPAD_8;
+        return key_code('8');
      case VK_NUMPAD9:
-        return KEY_NUMPAD_9;
+        return key_code('9');
      case VK_MULTIPLY:
-        return KEY_NUMPAD_MULTIPLY;
+        return key_code('*');
      case VK_ADD:
-        return KEY_NUMPAD_ADD;
+        return key_code('+');
      case VK_SUBTRACT:
-        return KEY_NUMPAD_SUBTRACT;
+        return key_code('-');
      case VK_DECIMAL:
-        return KEY_NUMPAD_PERIOD;
+        return key_code('.');
      case VK_DIVIDE:
-        return KEY_NUMPAD_DIVIDE;
+        return key_code('/');
      case VK_F1:
         return KEY_F1;
      case VK_F2:
@@ -599,10 +599,10 @@ static void throw_win32_error(string const& prefix)
         {
             string message = prefix + "\n" + error_message;
             LocalFree(error_message);
-            throw native_error(message);
+            throw backend_error(message);
         }
     }
-    throw native_error(prefix);
+    throw backend_error(prefix);
 }
 
 static void throw_window_creation_error(string const& fn_name)
@@ -645,7 +645,7 @@ static void create_window(
     native_window::impl_data* parent,
     string const& title,
     alia__shared_ptr<ui_controller> const& controller,
-    native_window::state_data const& initial_state)
+    app_window_state const& initial_state)
 {
     impl->hinstance = GetModuleHandle(NULL);
 
@@ -737,12 +737,12 @@ static void create_window(
         alia__shared_ptr<alia::os_interface>(new win32_os_interface),
         parse_style_file("alia.style"));
 
-    if (initial_state.flags & FULL_SCREEN)
+    if (initial_state.flags & APP_WINDOW_FULL_SCREEN)
     {
         enter_full_screen(*impl);
         ShowWindow(impl->hwnd, SW_SHOW);
     }
-    else if (initial_state.flags & MAXIMIZED)
+    else if (initial_state.flags & APP_WINDOW_MAXIMIZED)
         ShowWindow(impl->hwnd, SW_MAXIMIZE);
     else
         ShowWindow(impl->hwnd, SW_SHOWNORMAL);
@@ -758,13 +758,13 @@ static void create_window(
 }
 
 void native_window::initialize(
-    string const& title, window_controller* controller,
-    state_data const& initial_state)
+    string const& title,
+    alia__shared_ptr<app_window_controller> const& controller,
+    app_window_state const& initial_state)
 {
     controller->window = this;
     impl_ = new impl_data;
-    create_window(impl_, 0, title, alia__shared_ptr<ui_controller>(controller),
-        initial_state);
+    create_window(impl_, 0, title, controller, initial_state);
 }
 
 native_window::~native_window()
@@ -779,18 +779,18 @@ native_window::~native_window()
 alia::ui_system& native_window::ui()
 { return impl_->ui; }
 
-native_window::state_data native_window::state() const
+app_window_state native_window::state() const
 {
     WINDOWPLACEMENT wp;
     wp.length = sizeof(WINDOWPLACEMENT);
     if (GetWindowPlacement(impl_->hwnd, &wp))
     {
-        native_window::state_data state;
+        app_window_state state;
         state.flags = NO_FLAGS;
         if ((wp.showCmd & SW_MAXIMIZE) != 0)
-            state.flags |= MAXIMIZED;
+            state.flags |= APP_WINDOW_MAXIMIZED;
         if (impl_->is_full_screen)
-            state.flags |= FULL_SCREEN;
+            state.flags |= APP_WINDOW_FULL_SCREEN;
         state.position = make_vector<int>(
             wp.rcNormalPosition.left, wp.rcNormalPosition.top);
         state.size = make_vector<int>(
@@ -799,7 +799,7 @@ native_window::state_data native_window::state() const
         return state;
     }
     else
-        return native_window::state_data();
+        return app_window_state();
 }
 
 bool native_window::is_full_screen() const
@@ -892,12 +892,6 @@ void win32_os_interface::set_clipboard_text(string const& text)
             CloseClipboard();
         }
     }
-}
-
-void show_error_message(string const& caption, string const& message)
-{
-    MessageBox(0, message.c_str(), caption.c_str(),
-        MB_OK | MB_ICONEXCLAMATION);
 }
 
 }

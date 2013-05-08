@@ -1,3 +1,5 @@
+#if 0
+
 #include <alia/ui/backends/qt.hpp>
 #include <alia/ui/system.hpp>
 #include <alia/ui/backends/opengl.hpp>
@@ -403,21 +405,11 @@ void qt_gl_window::timerEvent(QTimerEvent* event)
         update_window(impl);
 }
 
-static void throw_qt_error(string const& prefix)
-{
-    throw qt_error(prefix);
-}
-
-static void throw_window_creation_error(string const& fn_name)
-{
-    throw_qt_error("unable to create window: " + fn_name + " failed");
-}
-
 void create_window(
     qt_window::impl_data* impl,
     string const& title,
     alia__shared_ptr<ui_controller> const& controller,
-    qt_window::state_data const& initial_state)
+    app_window_state const& initial_state)
 {
     impl->timer.start();
 
@@ -450,12 +442,13 @@ void create_window(
     }
     impl->window->resize(initial_state.size[0], initial_state.size[1]);
 
-    if (initial_state.flags & FULL_SCREEN)
+    if (initial_state.flags & APP_WINDOW_FULL_SCREEN)
     {
         impl->window->showFullScreen();
-        impl->was_maximized = (initial_state.flags & MAXIMIZED) != 0;
+        impl->was_maximized =
+            (initial_state.flags & APP_WINDOW_MAXIMIZED) != 0;
     }
-    else if (initial_state.flags & MAXIMIZED)
+    else if (initial_state.flags & APP_WINDOW_MAXIMIZED)
     {
         impl->window->showMaximized();
     }
@@ -473,13 +466,13 @@ void create_window(
 }
 
 void qt_window::initialize(
-    string const& title, window_controller* controller,
-    state_data const& initial_state)
+    string const& title,
+    alia__shared_ptr<app_window_controller> const& controller,
+    app_window_state const& initial_state)
 {
     controller->window = this;
     impl_ = new qt_window::impl_data;
-    create_window(impl_, title, alia__shared_ptr<ui_controller>(controller),
-        initial_state);
+    create_window(impl_, title, controller, initial_state);
 }
 
 qt_window::~qt_window()
@@ -494,18 +487,18 @@ qt_window::~qt_window()
 alia::ui_system& qt_window::ui()
 { return impl_->ui; }
 
-qt_window::state_data qt_window::state() const
+app_window_state qt_window::state() const
 {
-    qt_window::state_data state;
+    app_window_state state;
     state.flags = NO_FLAGS;
     if (impl_->window->isMaximized() ||
         impl_->window->isFullScreen() && impl_->was_maximized)
     {
-        state.flags |= MAXIMIZED;
+        state.flags |= APP_WINDOW_MAXIMIZED;
     }
     if (impl_->window->isFullScreen())
     {
-        state.flags |= FULL_SCREEN;
+        state.flags |= APP_WINDOW_FULL_SCREEN;
     }
     QRect rect = impl_->window->rect();
     state.position = make_vector<int>(rect.left(), rect.top());
@@ -548,3 +541,5 @@ void qt_os_interface::set_clipboard_text(string const& text)
 }
 
 }
+
+#endif

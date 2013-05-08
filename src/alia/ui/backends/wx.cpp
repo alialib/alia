@@ -1,0 +1,695 @@
+#include <alia/ui/backends/wx.hpp>
+#include <alia/ui/system.hpp>
+#include <alia/ui/backends/opengl.hpp>
+#include <alia/ui/utilities.hpp>
+
+#include <wx/stopwatch.h>
+#include <wx/clipbrd.h>
+#include <wx/utils.h>
+
+namespace alia {
+
+// ENUM TRANSLATION
+
+static key_code
+translate_key_code(int code)
+{
+    // Translate letters to their lowercase equivalents.
+    if (code >= 0x41 && code <= 0x5a)
+    {
+        return key_code(code + 0x20);
+    }
+
+    switch (code)
+    {
+     case WXK_BACK:
+        return KEY_BACKSPACE;
+     case WXK_TAB:
+        return KEY_TAB;
+     case WXK_CLEAR:
+        return KEY_CLEAR;
+     case WXK_RETURN:
+        return KEY_ENTER;
+     case WXK_PAUSE:
+        return KEY_PAUSE;
+     case WXK_ESCAPE:
+        return KEY_ESCAPE;
+     case WXK_SPACE:
+        return KEY_SPACE;
+     case WXK_PAGEUP:
+        return KEY_PAGEUP;
+     case WXK_PAGEDOWN:
+        return KEY_PAGEDOWN;
+     case WXK_END:
+        return KEY_END;
+     case WXK_HOME:
+        return KEY_HOME;
+     case WXK_UP:
+        return KEY_UP;
+     case WXK_DOWN:
+        return KEY_DOWN;
+     case WXK_LEFT:
+        return KEY_LEFT;
+     case WXK_RIGHT:
+        return KEY_RIGHT;
+     case WXK_PRINT:
+        return KEY_PRINT_SCREEN;
+     case WXK_INSERT:
+        return KEY_INSERT;
+     case WXK_DELETE:
+        return KEY_DELETE;
+     case WXK_HELP:
+        return KEY_HELP;
+     case WXK_F1:
+        return KEY_F1;
+     case WXK_F2:
+        return KEY_F2;
+     case WXK_F3:
+        return KEY_F3;
+     case WXK_F4:
+        return KEY_F4;
+     case WXK_F5:
+        return KEY_F5;
+     case WXK_F6:
+        return KEY_F6;
+     case WXK_F7:
+        return KEY_F7;
+     case WXK_F8:
+        return KEY_F8;
+     case WXK_F9:
+        return KEY_F9;
+     case WXK_F10:
+        return KEY_F10;
+     case WXK_F11:
+        return KEY_F11;
+     case WXK_F12:
+        return KEY_F12;
+     case WXK_F13:
+        return KEY_F13;
+     case WXK_F14:
+        return KEY_F14;
+     case WXK_F15:
+        return KEY_F15;
+     case WXK_F16:
+        return KEY_F16;
+     case WXK_F17:
+        return KEY_F17;
+     case WXK_F18:
+        return KEY_F18;
+     case WXK_F19:
+        return KEY_F19;
+     case WXK_F20:
+        return KEY_F20;
+     case WXK_F21:
+        return KEY_F21;
+     case WXK_F22:
+        return KEY_F22;
+     case WXK_F23:
+        return KEY_F23;
+     case WXK_F24:
+        return KEY_F24;
+     case WXK_NUMPAD_ENTER:
+        return KEY_ENTER;
+     case WXK_NUMPAD0:
+        return key_code('0');
+     case WXK_NUMPAD1:
+        return key_code('1');
+     case WXK_NUMPAD2:
+        return key_code('2');
+     case WXK_NUMPAD3:
+        return key_code('3');
+     case WXK_NUMPAD4:
+        return key_code('4');
+     case WXK_NUMPAD5:
+        return key_code('5');
+     case WXK_NUMPAD6:
+        return key_code('6');
+     case WXK_NUMPAD7:
+        return key_code('7');
+     case WXK_NUMPAD8:
+        return key_code('8');
+     case WXK_NUMPAD9:
+        return key_code('9');
+     case WXK_NUMPAD_ADD:
+        return key_code('+');
+     case WXK_NUMPAD_SUBTRACT:
+        return key_code('-');
+     case WXK_NUMPAD_DIVIDE:
+        return key_code('/');
+     case WXK_NUMPAD_MULTIPLY:
+        return key_code('*');
+     case WXK_NUMPAD_DECIMAL:
+        return key_code('.');
+     case WXK_NUMPAD_EQUAL:
+        return KEY_EQUALS;
+     case WXK_NUMPAD_UP:
+        return KEY_UP;
+     case WXK_NUMPAD_DOWN:
+        return KEY_DOWN;
+     case WXK_NUMPAD_LEFT:
+        return KEY_LEFT;
+     case WXK_NUMPAD_RIGHT:
+        return KEY_RIGHT;
+     case WXK_NUMPAD_INSERT:
+        return KEY_INSERT;
+     case WXK_NUMPAD_DELETE:
+        return KEY_DELETE;
+     case WXK_NUMPAD_HOME:
+        return KEY_HOME;
+     case WXK_NUMPAD_END:
+        return KEY_END;
+    }
+
+    // Return ASCII characters untranslated.
+    if (code < 0x80)
+        return key_code(code);
+
+    return KEY_UNKNOWN;
+}
+
+static key_event_info
+get_key_event_info(wxKeyEvent const& event)
+{
+    key_modifiers mods = KMOD_NONE;
+    if (event.ShiftDown())
+        mods |= KMOD_SHIFT;
+    if (event.ControlDown())
+        mods |= KMOD_CTRL;
+    if (event.AltDown())
+        mods |= KMOD_ALT;
+    if (event.MetaDown())
+        mods |= KMOD_META;
+    return key_event_info(translate_key_code(event.GetKeyCode()), mods);
+}
+
+static wxCursor
+translate_mouse_cursor(mouse_cursor cursor)
+{
+    switch (cursor)
+    {
+     case DEFAULT_CURSOR:
+     default:
+        return wxCursor(wxCURSOR_ARROW);
+     case CROSS_CURSOR:
+        return wxCursor(wxCURSOR_CROSS);
+     case BUSY_CURSOR:
+        return wxCursor(wxCURSOR_WAIT);
+     case BLANK_CURSOR:
+        return wxCursor(wxCURSOR_BLANK);
+     case IBEAM_CURSOR:
+        return wxCursor(wxCURSOR_IBEAM);
+     case NO_ENTRY_CURSOR:
+        return wxCursor(wxCURSOR_NO_ENTRY);
+     case OPEN_HAND_CURSOR:
+        return wxCursor(wxCURSOR_HAND);
+     case POINTING_HAND_CURSOR:
+        return wxCursor(wxCURSOR_HAND);
+     case LEFT_RIGHT_ARROW_CURSOR:
+        return wxCursor(wxCURSOR_SIZEWE);
+     case UP_DOWN_ARROW_CURSOR:
+        return wxCursor(wxCURSOR_SIZENS);
+     case FOUR_WAY_ARROW_CURSOR:
+        return wxCursor(wxCURSOR_SIZING);
+    }
+}
+
+// OS INTERFACE
+
+struct wx_os_interface : os_interface
+{
+    string get_clipboard_text();
+    void set_clipboard_text(string const& text);
+};
+
+string wx_os_interface::get_clipboard_text()
+{
+    std::string text;
+    if (wxTheClipboard->Open())
+    {
+        if (wxTheClipboard->IsSupported(wxDF_TEXT))
+        {
+            wxTextDataObject data;
+            wxTheClipboard->GetData(data);
+            text = data.GetText().c_str();
+        }
+        wxTheClipboard->Close();
+    }
+    return text;
+}
+
+void wx_os_interface::set_clipboard_text(string const& text)
+{
+    if (wxTheClipboard->Open())
+    {
+        wxTheClipboard->SetData(new wxTextDataObject(text.c_str()));
+        wxTheClipboard->Close();
+    }
+}
+
+// OPENGL WINDOW
+
+#define INVOKE_CALLBACK(callback) \
+    try \
+    { \
+        callback \
+    } \
+    catch(std::exception& e) \
+    { \
+        show_error(e.what()); \
+    } \
+    catch(...) \
+    { \
+        show_error("An unknown error has occurred."); \
+    }
+
+BEGIN_EVENT_TABLE(wx_opengl_window, wxGLCanvas)
+    EVT_PAINT(wx_opengl_window::on_paint)
+    EVT_ERASE_BACKGROUND(wx_opengl_window::on_erase_background)
+    EVT_SIZE(wx_opengl_window::on_size)
+    EVT_MOUSE_EVENTS(wx_opengl_window::on_mouse)
+    EVT_SET_FOCUS(wx_opengl_window::on_set_focus)
+    EVT_KILL_FOCUS(wx_opengl_window::on_kill_focus)
+    EVT_KEY_DOWN(wx_opengl_window::on_key_down)
+    EVT_KEY_UP(wx_opengl_window::on_key_up)
+    EVT_CHAR(wx_opengl_window::on_char)
+    EVT_IDLE(wx_opengl_window::on_idle)
+    EVT_MENU(-1, wx_opengl_window::on_menu)
+    EVT_SYS_COLOUR_CHANGED(wx_opengl_window::on_sys_color_change)
+END_EVENT_TABLE()
+
+struct wx_opengl_window::impl_data
+{
+    ui_system ui;
+    opengl_context alia_gl_context;
+    wxGLContext* wx_gl_context;
+    wx_opengl_window* window;
+    int wheel_movement; // accumulates fractional mouse wheel movement
+    bool vsync_disabled;
+};
+
+static ui_time_type
+get_time(wx_opengl_window::impl_data& impl)
+{
+    return ui_time_type(wxGetLocalTimeMillis().GetLo());
+}
+
+static void
+set_cursor(wx_opengl_window::impl_data& impl, mouse_cursor cursor)
+{
+    impl.window->SetCursor(translate_mouse_cursor(cursor));
+}
+
+static void
+update_window(wx_opengl_window::impl_data& impl)
+{
+    opengl_surface* surface =
+        static_cast<opengl_surface*>(impl.ui.surface.get());
+    vector<2,int> size;
+    impl.window->GetClientSize(&size[0], &size[1]);
+
+    mouse_cursor cursor;
+    update_ui(impl.ui,
+        vector<2,unsigned>(size),
+        get_time(impl), &cursor);
+    set_cursor(impl, cursor);
+
+    impl.window->Refresh(false);
+}
+
+static void
+handle_paint(wx_opengl_window::impl_data& impl)
+{
+    opengl_surface* surface =
+        static_cast<opengl_surface*>(impl.ui.surface.get());
+
+    // Windows requires this
+    wxPaintDC dc(impl.window);
+
+    impl.window->SetCurrent(*impl.wx_gl_context);
+
+    if (!impl.vsync_disabled)
+    {
+        disable_vsync();
+        impl.vsync_disabled = true;
+    }
+
+    vector<2,int> size;
+    impl.window->GetSize(&size[0], &size[1]);
+    surface->initialize_render_state(vector<2,unsigned>(size));
+
+    render_ui(impl.ui);
+
+    impl.window->SwapBuffers();
+}
+
+static mouse_button
+translate_button(int wx_button)
+{
+    switch (wx_button)
+    {
+     case wxMOUSE_BTN_LEFT:
+        return LEFT_BUTTON;
+     case wxMOUSE_BTN_MIDDLE:
+        return MIDDLE_BUTTON;
+     case wxMOUSE_BTN_RIGHT:
+        return RIGHT_BUTTON;
+     default:
+        return mouse_button(-1);
+    }
+}
+
+static void
+handle_mouse(wx_opengl_window::impl_data& impl, wxMouseEvent& event)
+{
+    // Wheel events are treated specially because it seems they end up going to
+    // the wrong window sometimes.  In particular, if there's an active popup,
+    // other mouse events will go to the popup, but wheel events will go to the
+    // parent surface.
+    if (event.GetEventType() == wxEVT_MOUSEWHEEL)
+    {
+        impl.wheel_movement += event.GetWheelRotation();
+        int lines = impl.wheel_movement / event.GetWheelDelta();
+        impl.wheel_movement -= lines * event.GetWheelDelta();
+        if (lines != 0)
+        {
+            process_mouse_wheel(impl.ui, get_time(impl), lines);
+            update_window(impl);
+        }
+        return;
+    }
+
+    // Get the current mouse position.
+    vector<2,int> position = make_vector<int>(event.GetX(), event.GetY());
+
+    // Determine if the mouse is in the surface.
+    {
+        vector<2,int> client_size;
+        impl.window->GetClientSize(&client_size[0], &client_size[1]);
+        if (impl.window->HasCapture() || !event.Leaving() &&
+            is_inside(box<2,int>(make_vector(0, 0), client_size), position))
+        {
+            process_mouse_move(impl.ui, get_time(impl), position);
+        }
+        else
+            process_mouse_leave(impl.ui, get_time(impl));
+    }
+
+    if (event.ButtonDClick())
+    {
+        process_double_click(impl.ui, get_time(impl), position,
+            translate_button(event.GetButton()));
+        if (!impl.window->HasCapture())
+            impl.window->CaptureMouse();
+    }
+    else if (event.ButtonDown())
+    {
+        process_mouse_press(impl.ui, get_time(impl), position,
+            translate_button(event.GetButton()));
+        impl.window->SetFocus();
+        if (!impl.window->HasCapture())
+            impl.window->CaptureMouse();
+    }
+    else if (event.ButtonUp())
+    {
+        process_mouse_release(impl.ui, get_time(impl), position,
+            translate_button(event.GetButton()));
+        // TODO: fix this mess
+        if (!event.LeftIsDown() && !event.MiddleIsDown() &&
+            !event.RightIsDown() && impl.window->HasCapture())
+        {
+            impl.window->ReleaseMouse();
+        }
+    }
+
+    update_window(impl);
+}
+
+static void
+handle_char(wx_opengl_window::impl_data& impl, wxKeyEvent& event)
+{
+    bool acknowledged = false;
+
+    // Ignore char events that have modifiers (ALT-, CTRL-, etc).
+    if (!event.HasModifiers())
+    {
+        // TODO: Support Unicode.
+        if (event.GetKeyCode() < 0x80)
+        {
+            char character = event.GetKeyCode();
+            utf8_string utf8;
+            utf8.begin = &character;
+            utf8.end = &character + 1;
+            acknowledged = process_text_input(impl.ui, get_time(impl), utf8);
+        }
+    }
+
+    update_window(impl);
+    if (!acknowledged)
+        event.Skip();
+}
+
+static void
+handle_key_down(wx_opengl_window::impl_data& impl, wxKeyEvent& event)
+{
+    bool acknowledged =
+        process_key_press(impl.ui, get_time(impl), get_key_event_info(event));
+    update_window(impl);
+    if (!acknowledged)
+        event.Skip();
+}
+
+static void
+handle_key_up(wx_opengl_window::impl_data& impl, wxKeyEvent& event)
+{
+    bool acknowledged =
+        process_key_release(impl.ui, get_time(impl),
+            get_key_event_info(event));
+    update_window(impl);
+    if (!acknowledged)
+        event.Skip();
+}
+
+wx_opengl_window::wx_opengl_window(
+    alia__shared_ptr<ui_controller> const& controller,
+    wxWindow* parent,
+    wxWindowID id,
+    int const* attrib_list,
+    wxPoint const& pos,
+    wxSize const& size,
+    long style,
+    wxString const& name,
+    wxPalette const& palette)
+  : wxGLCanvas(parent, id, const_cast<int*>(attrib_list), pos, size,
+        style | wxWANTS_CHARS | wxFULL_REPAINT_ON_RESIZE, name, palette)
+{
+    impl_ = new impl_data;
+    impl_->window = this;
+
+    impl_data& impl = *impl_;
+
+    opengl_surface* surface = new opengl_surface;
+    surface->set_opengl_context(impl.alia_gl_context);
+
+    impl.wx_gl_context = new wxGLContext(this);
+
+    impl.vsync_disabled = false;
+
+    wxScreenDC dc;
+    wxSize ppi = dc.GetPPI();
+
+    initialize_ui(
+        impl.ui, controller,
+        alia__shared_ptr<alia::surface>(surface),
+        make_vector<float>(ppi.GetWidth(), ppi.GetHeight()),
+        alia__shared_ptr<os_interface>(new wx_os_interface),
+        parse_style_file("alia.style"));
+
+    update();
+}
+wx_opengl_window::~wx_opengl_window()
+{
+    delete impl_->wx_gl_context;
+    delete impl_;
+}
+void wx_opengl_window::update()
+{
+    update_window(*impl_);
+}
+void wx_opengl_window::on_paint(wxPaintEvent& event)
+{
+    handle_paint(*impl_);
+}
+void wx_opengl_window::on_erase_background(wxEraseEvent& event)
+{
+}
+void wx_opengl_window::on_size(wxSizeEvent& event)
+{
+    update_window(*impl_);
+}
+void wx_opengl_window::on_mouse(wxMouseEvent& event)
+{
+    handle_mouse(*impl_, event);
+}
+void wx_opengl_window::on_set_focus(wxFocusEvent& event)
+{
+    wx_opengl_window::impl_data& impl = *impl_;
+    process_focus_gain(impl.ui, get_time(impl));
+    update_window(impl);
+}
+void wx_opengl_window::on_kill_focus(wxFocusEvent& event)
+{
+    wx_opengl_window::impl_data& impl = *impl_;
+    process_focus_loss(impl.ui, get_time(impl));
+    update_window(impl);
+}
+void wx_opengl_window::on_idle(wxIdleEvent& event)
+{
+    wx_opengl_window::impl_data& impl = *impl_;
+    if (process_timer_requests(impl.ui, get_time(impl)))
+        update_window(impl);
+    else
+        Sleep(1);
+    if (has_timer_requests(impl.ui))
+        event.RequestMore();
+}
+void wx_opengl_window::on_key_down(wxKeyEvent& event)
+{
+    handle_key_down(*impl_, event);
+}
+void wx_opengl_window::on_key_up(wxKeyEvent& event)
+{
+    handle_key_up(*impl_, event);
+}
+void wx_opengl_window::on_char(wxKeyEvent& event)
+{
+    handle_char(*impl_, event);
+}
+void wx_opengl_window::on_menu(wxCommandEvent& event)
+{
+}
+void wx_opengl_window::on_sys_color_change(wxSysColourChangedEvent& event)
+{
+}
+
+alia::ui_system& wx_opengl_window::ui()
+{ return impl_->ui; }
+
+struct wx_frame::impl_data
+{
+    alia__shared_ptr<app_window_controller> controller;
+    // position/size of the window when it's not maximized or full screen
+    box<2,int> normal_rect;
+};
+
+BEGIN_EVENT_TABLE(wx_frame, wxFrame)
+    EVT_MENU(-1, wx_frame::on_menu)
+    EVT_SIZE(wx_frame::on_size)
+    EVT_MOVE(wx_frame::on_move)
+END_EVENT_TABLE()
+
+wx_frame::wx_frame(
+    alia__shared_ptr<app_window_controller> const& controller,
+    wxWindow* parent,
+    wxWindowID id,
+    wxString const& title,
+    wxPoint const& pos,
+    wxSize const& size,
+    long style,
+    wxString const& name)
+  : wxFrame(parent, id, title, pos, size, style, name)
+{
+    impl_ = new wx_frame::impl_data;
+    controller->window = this;
+    impl_->controller = controller;
+    impl_->normal_rect =
+        make_box(
+            make_vector<int>(pos.x, pos.y),
+            make_vector<int>(size.GetWidth(), size.GetHeight()));
+}
+
+wx_frame::~wx_frame()
+{
+    delete impl_;
+}
+
+app_window_state wx_frame::state() const
+{
+    app_window_state state;
+    state.flags = NO_FLAGS;
+    if (this->IsMaximized())
+        state.flags |= APP_WINDOW_MAXIMIZED;
+    if (this->IsFullScreen())
+        state.flags |= APP_WINDOW_FULL_SCREEN;
+    state.position = impl_->normal_rect.corner;
+    state.size = impl_->normal_rect.size;
+    return state;
+}
+
+bool wx_frame::is_full_screen() const
+{
+    return this->IsFullScreen();
+}
+
+void wx_frame::set_full_screen(bool fs)
+{
+    this->ShowFullScreen(fs);
+}
+
+void wx_frame::on_menu(wxCommandEvent& event)
+{
+}
+
+void wx_frame::on_size(wxSizeEvent& event)
+{
+    if (!this->IsMaximized() && !this->IsFullScreen())
+    {
+        vector<2,int> size;
+        this->GetSize(&size[0], &size[1]);
+        impl_->normal_rect.size = size;
+    }
+    event.Skip();
+}
+
+void wx_frame::on_move(wxMoveEvent& event)
+{
+    if (!this->IsMaximized() && !this->IsFullScreen())
+    {
+        vector<2,int> p;
+        this->GetPosition(&p[0], &p[1]);
+        impl_->normal_rect.corner = p;
+    }
+    event.Skip();
+}
+
+void create_wx_framed_window(
+    string const& title,
+    alia__shared_ptr<app_window_controller> const& controller,
+    app_window_state const& initial_state,
+    int const* gl_canvas_attribs)
+{
+    wx_frame* frame = new wx_frame(
+        controller, 0, wxID_ANY, title.c_str(),
+        initial_state.position ?
+            wxPoint(
+                get(initial_state.position)[0],
+                get(initial_state.position)[1]) :
+            wxDefaultPosition,
+        wxSize(initial_state.size[0], initial_state.size[1]));
+
+    wx_opengl_window* contents = new wx_opengl_window(
+        controller, frame, wxID_ANY, gl_canvas_attribs,
+        wxDefaultPosition,
+        wxSize(initial_state.size[0], initial_state.size[1]));
+
+    // Create a sizer, and make sure the content window fills it.
+    wxSizer* sizer = new wxBoxSizer(wxVERTICAL);
+    sizer->Add(contents, 1, wxEXPAND, 0);
+    frame->SetSizer(sizer);
+
+    // Show the frame.
+    frame->Show(true);
+    if (initial_state.flags & APP_WINDOW_FULL_SCREEN)
+        frame->ShowFullScreen(true);
+}
+
+}

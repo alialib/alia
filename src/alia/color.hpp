@@ -28,7 +28,7 @@ std::ostream& operator<<(std::ostream& s, rgb8 const& c);
 static inline uint8_t multiply_uint8_channels(uint8_t a, uint8_t b)
 { return uint8_t(unsigned(a) * b / 0xff); }
 
-// interpolate(a, b, factor) = a * factor + b * (1 - factor)
+// interpolate(a, b, factor) = a * (1 - factor) + b * factor
 rgb8 interpolate(rgb8 const& a, rgb8 const& b, double factor);
 
 // standard color names
@@ -78,7 +78,7 @@ std::ostream& operator<<(std::ostream& s, rgba8 const& c);
 // premultiply the color by the alpha to form an rgba8 value
 rgba8 apply_alpha(rgb8 color, uint8_t alpha);
 
-// interpolate(a, b, factor) = a * factor + b * (1 - factor)
+// interpolate(a, b, factor) = a * (1 - factor) + b * factor
 rgba8 interpolate(rgba8 const& a, rgba8 const& b, double factor);
 
 }

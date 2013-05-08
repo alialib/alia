@@ -110,24 +110,6 @@ enum key_code
     KEY_BACKQUOTE	= 96,
     KEY_DELETE		= 127,
 
-    // numeric keypad 
-    KEY_NUMPAD_0,
-    KEY_NUMPAD_1,
-    KEY_NUMPAD_2,
-    KEY_NUMPAD_3,
-    KEY_NUMPAD_4,
-    KEY_NUMPAD_5,
-    KEY_NUMPAD_6,
-    KEY_NUMPAD_7,
-    KEY_NUMPAD_8,
-    KEY_NUMPAD_9,
-    KEY_NUMPAD_PERIOD,
-    KEY_NUMPAD_DIVIDE,
-    KEY_NUMPAD_MULTIPLY,
-    KEY_NUMPAD_SUBTRACT,
-    KEY_NUMPAD_ADD,
-    KEY_NUMPAD_ENTER,
-
     // arrows + home/end pad
     KEY_UP,
     KEY_DOWN,
@@ -282,6 +264,7 @@ enum ui_event_type
     OVERLAY_MAKE_WIDGET_VISIBLE_EVENT,
 
     // uncategorized events
+    
     WRAPPED_EVENT,
     SET_VALUE_EVENT,
     TIMER_EVENT,

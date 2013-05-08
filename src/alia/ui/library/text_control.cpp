@@ -704,8 +704,16 @@ get_vertically_adjusted_position(text_control_parameters const& tc, int delta)
             get_character_position(get_text_layout(tc),
                 character_index_to_ptr(tc, tc.data->cursor_position))[0];
     }
-    line_n =
-        size_t(clamp(int(line_n) + delta, 0, int(get_line_count(tc)) - 1));
+
+    int adjusted_line_n = int(line_n) + delta;
+    if (adjusted_line_n < 0)
+        return disambiguated_utf8_offset(0);
+    if (adjusted_line_n >= int(get_line_count(tc)))
+    {
+        return disambiguated_utf8_offset(
+            get_text_layout(tc).text.length(), true);
+    }
+
     return character_ptr_to_index(tc,
         get_character_boundary_at_point(
             get_text_layout(tc),
@@ -713,7 +721,7 @@ get_vertically_adjusted_position(text_control_parameters const& tc, int delta)
                 tc.data->true_cursor_x,
                 get_character_position(
                     get_text_layout(tc),
-                    get_line_begin(tc, line_n))[1])));
+                    get_line_begin(tc, adjusted_line_n))[1])));
 }
 
 // Get the position that the home key should go to.
@@ -1128,7 +1136,6 @@ handle_key_press(
             break;
 
          case KEY_ENTER:
-         case KEY_NUMPAD_ENTER:
             if (data.editing)
             {
                 if (is_multiline(tc))

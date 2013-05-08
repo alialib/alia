@@ -53,16 +53,16 @@ struct value_smoother
 // is to simply implement a compatible interpolate function directly for the
 // value type.
 
-// interpolate(a, b, factor) yields (a * factor) + b * (1 - factor)
+// interpolate(a, b, factor) yields a * (1 - factor) + b * factor
 template<class Value>
 Value interpolate(Value const& a, Value const& b, double factor)
-{ return (a * factor) + b * (1 - factor); }
+{ return a * (1 - factor) + b * factor; }
 
 static inline float interpolate(float a, float b, double factor)
-{ return float((a * factor) + b * (1 - factor)); }
+{ return float(a * (1 - factor) + b * factor); }
 
 static inline int interpolate(int a, int b, double factor)
-{ return int((a * factor) + b * (1 - factor) + 0.5); }
+{ return int(std::floor(a * (1 - factor) + b * factor + 0.5)); }
 
 // reset_smoothing(smoother, value) causes the smoother to transition abruptly
 // to the value specified.
@@ -95,7 +95,7 @@ smooth_raw_value(
                     1. - double(ticks_left) / smoother.duration,
                     1. / smoother.duration);
             current_value =
-                interpolate(smoother.new_value, smoother.old_value, fraction);
+                interpolate(smoother.old_value, smoother.new_value, fraction);
         }
         else
             smoother.in_transition = false;

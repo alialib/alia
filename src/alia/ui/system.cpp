@@ -157,7 +157,8 @@ issue_event(
     invoke_routed_traversal(fn, ctx.routing, data, targeted, target);
 }
 
-layout_vector measure_initial_ui(
+layout_vector
+measure_initial_ui(
     alia__shared_ptr<ui_controller> const& controller,
     ui_style const& style,
     alia__shared_ptr<surface> const& surface)
