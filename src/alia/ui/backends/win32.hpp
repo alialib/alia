@@ -28,6 +28,8 @@ struct native_window : app_window
     bool is_full_screen() const;
     void set_full_screen(bool fs);
 
+    void close();
+
     bool has_idle_work();
     void do_idle_work();
 

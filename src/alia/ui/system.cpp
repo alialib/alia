@@ -20,6 +20,9 @@ void initialize_ui(
     ui.millisecond_tick_count = 0;
     ui.timer_event_counter = 0;
     ui.style.styles = style;
+    ui.menu_bar.parent = 0;
+    ui.menu_bar.children = 0;
+    ui.menu_bar.last_change = 0;
 }
 
 struct initial_styling_data
@@ -150,6 +153,9 @@ issue_event(
 
     ctx.validation.detection = 0;
     ctx.validation.reporting = 0;
+
+    ctx.menu.active_container = 0;
+    ctx.menu.next_ptr = 0;
 
     context_invoker fn;
     fn.system = &system;

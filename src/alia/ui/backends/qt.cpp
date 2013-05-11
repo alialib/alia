@@ -527,6 +527,11 @@ void qt_window::set_full_screen(bool fs)
     }
 }
 
+void qt_window::close()
+{
+    // TODO
+}
+
 string qt_os_interface::get_clipboard_text()
 {
     QClipboard* clipboard = QApplication::clipboard();

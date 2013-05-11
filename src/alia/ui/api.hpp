@@ -475,6 +475,16 @@ struct ui_system;
 struct surface;
 struct ui_event;
 struct mouse_hover_context;
+struct menu_node;
+struct menu_container;
+
+struct menu_context
+{
+    // pointer to where the next child should be attached
+    menu_node** next_ptr;
+
+    menu_container* active_container;
+};
 
 // dataless_ui_context defines everything about a UI context except for the
 // data traversal. It's impossible to retrieve data from a dataless UI context
@@ -494,6 +504,7 @@ struct dataless_ui_context
     bool pass_aborted;
     mouse_hover_context* hover;
     validation_context validation;
+    menu_context menu;
 };
 
 struct ui_context : dataless_ui_context
@@ -1817,6 +1828,54 @@ template<class Wrapped>
 max_validation_wrapper<Wrapped>
 enforce_max(Wrapped accessor, typename accessor_value_type<Wrapped>::type max)
 { return max_validation_wrapper<Wrapped>(accessor, max); }
+
+// MENUS
+
+struct scoped_menu_container : noncopyable
+{
+    scoped_menu_container() : ctx_(0) {}
+    scoped_menu_container(ui_context& ctx, menu_container* container) : ctx_(0)
+    { begin(ctx, container); }
+    ~scoped_menu_container() { end(); }
+    void begin(ui_context& ctx, menu_container* container);
+    void end();
+ private:
+    ui_context* ctx_;
+};
+
+// menu is a scoped object that groups its children into a menu (or submenu).
+struct submenu : noncopyable
+{
+    submenu() {}
+    submenu(ui_context& ctx, accessor<string> const& label,
+        accessor<bool> const& enabled = in(true))
+    { begin(ctx, label, enabled); }
+    ~submenu() { end(); }
+    void begin(ui_context& ctx, accessor<string> const& label,
+        accessor<bool> const& enabled = in(true));
+    void end();
+ private:
+    scoped_menu_container scoping_;
+};
+
+struct menu_bar : noncopyable
+{
+    menu_bar() {}
+    menu_bar(ui_context& ctx) { begin(ctx); }
+    ~menu_bar() { end(); }
+    void begin(ui_context& ctx);
+    void end();
+ private:
+    scoped_menu_container scoping_;
+};
+
+bool do_menu_option(ui_context& ctx, accessor<string> const& label,
+    accessor<bool> const& enabled = in(true));
+
+bool do_checkable_menu_option(ui_context& ctx, accessor<string> const& label,
+    accessor<bool> const& checked, accessor<bool> const& enabled = in(true));
+
+void do_menu_separator(ui_context& ctx);
 
 }
 

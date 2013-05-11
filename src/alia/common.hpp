@@ -121,7 +121,7 @@ namespace impl { namespace noncopyable_ {
 struct noncopyable
 {
     noncopyable() {}
-    private:
+ private:
     noncopyable(noncopyable const& other);
     noncopyable& operator=(noncopyable const& other);
 };
@@ -298,6 +298,11 @@ bool operator<(optional<T> const& a, optional<T> const& b)
 {
     return b && (a ? get(a) < get(b) : true);
 }
+
+template<class T>
+optional<T>
+some(T const& x)
+{ return optional<T>(x); }
 
 }
 

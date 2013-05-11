@@ -28,6 +28,8 @@ struct qt_window : app_window
     bool is_full_screen() const;
     void set_full_screen(bool fs);
 
+    void close();
+
     struct impl_data;
  private:
     impl_data* impl_;

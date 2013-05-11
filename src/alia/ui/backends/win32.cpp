@@ -819,6 +819,11 @@ void native_window::set_full_screen(bool fs)
     }
 }
 
+void native_window::close()
+{
+    // TODO
+}
+
 bool native_window::has_idle_work()
 {
     return has_timer_requests(impl_->ui);

@@ -259,6 +259,16 @@ struct timer_event : input_event
     ui_time_type trigger_time;
 };
 
+// When a menu item is selected, this event is dispatched.
+struct menu_item_selection_event : ui_event
+{
+    menu_item_selection_event(widget_id target)
+      : ui_event(NO_CATEGORY, CUSTOM_EVENT)
+      , target(target)
+    {}
+    widget_id target;
+};
+
 // property_map maps UI property names to values (both are strings).
 typedef std::map<string,string> property_map;
 
@@ -477,6 +487,60 @@ struct ui_timer_request
 };
 typedef std::vector<ui_timer_request> ui_timer_request_list;
 
+enum menu_node_type
+{
+    ROOT_MENU_NODE,
+    SUBMENU_NODE,
+    MENU_SEPARATOR_NODE,
+    MENU_ITEM_NODE,
+};
+
+// A menu is defined by a hierarchy of menu_nodes.
+struct menu_node
+{
+    menu_node_type type;
+
+    // next node in the linked list of nodes
+    menu_node* next;
+};
+
+// menu_container is a menu_node with children.
+struct menu_container : menu_node
+{
+    menu_node* children;
+
+    menu_container* parent;
+
+    // This records the UI context's refresh_counter when the contents of this
+    // menu last changed.
+    counter_type last_change;
+};
+
+// submenu_node is a menu_container representing a submenu.
+struct submenu_node : menu_container
+{
+    keyed_data<string> label;
+
+    bool enabled;
+};
+
+// menu_separator_node is a menu_node representing a separator.
+struct menu_separator_node : menu_node
+{
+};
+
+// menu_item_node is a menu_node representing an actual selectable menu item.
+struct menu_item_node : menu_node
+{
+    keyed_data<string> label;
+
+    bool enabled;
+
+    // If this is a checkable menu item, then this is its checked/unchecked
+    // state. (If this is none, then it's not a checkable item.)
+    optional<bool> checked;
+};
+
 // ui_system defines all the persistent state associated with an alia UI.
 struct ui_system
 {
@@ -509,6 +573,8 @@ struct ui_system
     counter_type timer_event_counter;
 
     optional<ui_time_type> next_update;
+
+    menu_container menu_bar;
 };
 
 struct ui_caching_node

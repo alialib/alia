@@ -67,9 +67,13 @@ struct wx_frame : public wxFrame, app_window
     bool is_full_screen() const;
     void set_full_screen(bool fs);
 
+    void close();
+
     void on_menu(wxCommandEvent& event);
     void on_move(wxMoveEvent& event);
     void on_size(wxSizeEvent& event);
+
+    void update_menu_bar(wxWindow* controller, menu_container const& menu_bar);
 
     struct impl_data;
  private:

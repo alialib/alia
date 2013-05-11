@@ -46,6 +46,9 @@ struct app_window
     // Is the window currently in full screen mode?
     virtual bool is_full_screen() const
     { return state().flags & APP_WINDOW_FULL_SCREEN; }
+
+    // Close this window.
+    virtual void close() = 0;
 };
 
 struct app_window_controller : ui_controller

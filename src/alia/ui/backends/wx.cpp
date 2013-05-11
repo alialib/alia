@@ -285,6 +285,7 @@ struct wx_opengl_window::impl_data
     wx_opengl_window* window;
     int wheel_movement; // accumulates fractional mouse wheel movement
     bool vsync_disabled;
+    counter_type last_menu_bar_update;
 };
 
 static ui_time_type
@@ -312,6 +313,19 @@ update_window(wx_opengl_window::impl_data& impl)
         vector<2,unsigned>(size),
         get_time(impl), &cursor);
     set_cursor(impl, cursor);
+
+    // If the menu bar has changed, find the parent frame, test if it's an
+    // alia frame, and if so, ask it to update its menu bar.
+    if (impl.ui.menu_bar.last_change != impl.last_menu_bar_update)
+    {
+        wxWindow* frame = impl.window;
+        while (!frame->IsTopLevel())
+            frame = frame->GetParent();
+        wx_frame* alia_frame = dynamic_cast<wx_frame*>(frame);
+        if (alia_frame)
+            alia_frame->update_menu_bar(impl.window, impl.ui.menu_bar);
+        impl.last_menu_bar_update = impl.ui.menu_bar.last_change;
+    }
 
     impl.window->Refresh(false);
 }
@@ -469,6 +483,62 @@ handle_key_up(wx_opengl_window::impl_data& impl, wxKeyEvent& event)
         event.Skip();
 }
 
+static widget_id
+resolve_wx_menu_id(menu_node const* nodes, int* id)
+{
+    for (menu_node const* i = nodes; i; i = i->next)
+    {
+        switch (i->type)
+        {
+         case SUBMENU_NODE:
+          {
+            submenu_node const* node = static_cast<submenu_node const*>(i);
+            widget_id resolved = resolve_wx_menu_id(node->children, id);
+            if (resolved)
+                return resolved;
+            --(*id);
+            break;
+          }
+         case MENU_ITEM_NODE:
+          {
+            if (!(*id)--)
+                return i;
+            break;
+          }
+         case MENU_SEPARATOR_NODE:
+            break;
+        }
+    }
+    return 0;
+}
+
+static widget_id
+resolve_wx_menu_bar_id(menu_container const& spec, int* id)
+{
+    for (menu_node const* i = spec.children; i; i = i->next)
+    {
+        assert(i->type == SUBMENU_NODE);
+        submenu_node const* node = static_cast<submenu_node const*>(i);
+        widget_id resolved = resolve_wx_menu_id(node->children, id);
+        if (resolved)
+            return resolved;
+    }
+    return 0;
+}
+
+static void
+handle_menu(wx_opengl_window::impl_data& impl, wxCommandEvent& event)
+{
+    int id = event.GetId();
+    widget_id target = resolve_wx_menu_bar_id(impl.ui.menu_bar, &id);
+    if (target)
+    {
+        menu_item_selection_event event(target);
+        issue_event(impl.ui, event);
+    }
+    update_window(impl);
+}
+
 wx_opengl_window::wx_opengl_window(
     alia__shared_ptr<ui_controller> const& controller,
     wxWindow* parent,
@@ -483,9 +553,9 @@ wx_opengl_window::wx_opengl_window(
         style | wxWANTS_CHARS | wxFULL_REPAINT_ON_RESIZE, name, palette)
 {
     impl_ = new impl_data;
-    impl_->window = this;
-
     impl_data& impl = *impl_;
+
+    impl_->window = this;
 
     opengl_surface* surface = new opengl_surface;
     surface->set_opengl_context(impl.alia_gl_context);
@@ -493,6 +563,8 @@ wx_opengl_window::wx_opengl_window(
     impl.wx_gl_context = new wxGLContext(this);
 
     impl.vsync_disabled = false;
+
+    impl.last_menu_bar_update = 0;
 
     wxScreenDC dc;
     wxSize ppi = dc.GetPPI();
@@ -566,6 +638,7 @@ void wx_opengl_window::on_char(wxKeyEvent& event)
 }
 void wx_opengl_window::on_menu(wxCommandEvent& event)
 {
+    handle_menu(*impl_, event);
 }
 void wx_opengl_window::on_sys_color_change(wxSysColourChangedEvent& event)
 {
@@ -577,8 +650,13 @@ alia::ui_system& wx_opengl_window::ui()
 struct wx_frame::impl_data
 {
     alia__shared_ptr<app_window_controller> controller;
+
     // position/size of the window when it's not maximized or full screen
     box<2,int> normal_rect;
+
+    // This window is in control of the menu bar. (The app should ensure that
+    // it stays alive as long as the menu bar is active.)
+    wxWindow* menu_bar_controller;
 };
 
 BEGIN_EVENT_TABLE(wx_frame, wxFrame)
@@ -599,9 +677,12 @@ wx_frame::wx_frame(
   : wxFrame(parent, id, title, pos, size, style, name)
 {
     impl_ = new wx_frame::impl_data;
+    impl_data& impl = *impl_;
+
     controller->window = this;
-    impl_->controller = controller;
-    impl_->normal_rect =
+    impl.controller = controller;
+
+    impl.normal_rect =
         make_box(
             make_vector<int>(pos.x, pos.y),
             make_vector<int>(size.GetWidth(), size.GetHeight()));
@@ -635,8 +716,111 @@ void wx_frame::set_full_screen(bool fs)
     this->ShowFullScreen(fs);
 }
 
+static void
+build_wx_menu(wxMenu* wx_menu, menu_node const* nodes, int* next_id)
+{
+    for (menu_node const* i = nodes; i; i = i->next)
+    {
+        switch (i->type)
+        {
+         case SUBMENU_NODE:
+          {
+            submenu_node const* node = static_cast<submenu_node const*>(i);
+
+            wxMenu* submenu = new wxMenu;
+            build_wx_menu(submenu, node->children, next_id);
+
+            int id = (*next_id)++;
+            wx_menu->Append(id,
+                wxString(get(node->label).c_str(), wxConvUTF8),
+                submenu);
+            if (!node->enabled)
+                wx_menu->Enable(id, false);
+
+            break;
+          }
+
+         case MENU_ITEM_NODE:
+          {
+            menu_item_node const* node = static_cast<menu_item_node const*>(i);
+            
+            int id = (*next_id)++;
+
+            if (node->checked)
+            {
+                wx_menu->AppendCheckItem(id,
+                    wxString(get(node->label).c_str(), wxConvUTF8));
+                wx_menu->Check(id, get(node->checked));
+            }
+            else
+            {
+                wx_menu->Append(id,
+                    wxString(get(node->label).c_str(), wxConvUTF8));
+            }
+
+            if (!node->enabled)
+                wx_menu->Enable(id, false);
+
+            break;
+          }
+
+         case MENU_SEPARATOR_NODE:
+          {
+            wx_menu->AppendSeparator();
+            break;
+          }
+        }
+    }
+}
+
+static wxMenuBar*
+build_wx_menu_bar(menu_container const& spec)
+{
+    wxMenuBar* bar = new wxMenuBar;
+
+    int next_id = 0;
+
+    for (menu_node const* i = spec.children; i; i = i->next)
+    {
+        assert(i->type == SUBMENU_NODE);
+        submenu_node const* node = static_cast<submenu_node const*>(i);
+        wxMenu* wx_menu = new wxMenu;
+        build_wx_menu(wx_menu, node->children, &next_id);
+        bar->Append(wx_menu,
+            wxString(get(node->label).c_str(), wxConvUTF8));
+    }
+
+    return bar;
+}
+
+static void
+fix_wx_menu_bar(wxMenuBar* bar, menu_container const& spec)
+{
+    int n = 0;
+    for (menu_node const* i = spec.children; i; i = i->next)
+    {
+        submenu_node const* node = static_cast<submenu_node const*>(i);
+        if (!node->enabled)
+            bar->EnableTop(n, false);
+    }
+}
+
+void wx_frame::update_menu_bar(
+    wxWindow* controller, menu_container const& menu_bar)
+{
+    this->SetMenuBar(build_wx_menu_bar(menu_bar));
+    fix_wx_menu_bar(this->GetMenuBar(), menu_bar);
+    impl_->menu_bar_controller = controller;
+}
+
 void wx_frame::on_menu(wxCommandEvent& event)
 {
+    impl_->menu_bar_controller->GetEventHandler()->ProcessEvent(event);
+}
+
+void wx_frame::close()
+{
+    this->Close();
 }
 
 void wx_frame::on_size(wxSizeEvent& event)
