@@ -11,7 +11,7 @@ namespace alia {
 
 // ENUM TRANSLATION
 
-static key_code
+key_code static
 translate_key_code(int code)
 {
     // Translate letters to their lowercase equivalents.
@@ -167,7 +167,7 @@ translate_key_code(int code)
     return KEY_UNKNOWN;
 }
 
-static key_event_info
+key_event_info static
 get_key_event_info(wxKeyEvent const& event)
 {
     key_modifiers mods = KMOD_NONE;
@@ -182,7 +182,7 @@ get_key_event_info(wxKeyEvent const& event)
     return key_event_info(translate_key_code(event.GetKeyCode()), mods);
 }
 
-static wxCursor
+wxCursor static
 translate_mouse_cursor(mouse_cursor cursor)
 {
     switch (cursor)
@@ -288,19 +288,19 @@ struct wx_opengl_window::impl_data
     counter_type last_menu_bar_update;
 };
 
-static ui_time_type
+ui_time_type static
 get_time(wx_opengl_window::impl_data& impl)
 {
     return ui_time_type(wxGetLocalTimeMillis().GetLo());
 }
 
-static void
+void static
 set_cursor(wx_opengl_window::impl_data& impl, mouse_cursor cursor)
 {
     impl.window->SetCursor(translate_mouse_cursor(cursor));
 }
 
-static void
+void static
 update_window(wx_opengl_window::impl_data& impl)
 {
     opengl_surface* surface =
@@ -330,7 +330,7 @@ update_window(wx_opengl_window::impl_data& impl)
     impl.window->Refresh(false);
 }
 
-static void
+void static
 handle_paint(wx_opengl_window::impl_data& impl)
 {
     opengl_surface* surface =
@@ -356,7 +356,7 @@ handle_paint(wx_opengl_window::impl_data& impl)
     impl.window->SwapBuffers();
 }
 
-static mouse_button
+mouse_button static
 translate_button(int wx_button)
 {
     switch (wx_button)
@@ -372,7 +372,7 @@ translate_button(int wx_button)
     }
 }
 
-static void
+void static
 handle_mouse(wx_opengl_window::impl_data& impl, wxMouseEvent& event)
 {
     // Wheel events are treated specially because it seems they end up going to
@@ -438,7 +438,7 @@ handle_mouse(wx_opengl_window::impl_data& impl, wxMouseEvent& event)
     update_window(impl);
 }
 
-static void
+void static
 handle_char(wx_opengl_window::impl_data& impl, wxKeyEvent& event)
 {
     bool acknowledged = false;
@@ -462,7 +462,7 @@ handle_char(wx_opengl_window::impl_data& impl, wxKeyEvent& event)
         event.Skip();
 }
 
-static void
+void static
 handle_key_down(wx_opengl_window::impl_data& impl, wxKeyEvent& event)
 {
     bool acknowledged =
@@ -472,7 +472,7 @@ handle_key_down(wx_opengl_window::impl_data& impl, wxKeyEvent& event)
         event.Skip();
 }
 
-static void
+void static
 handle_key_up(wx_opengl_window::impl_data& impl, wxKeyEvent& event)
 {
     bool acknowledged =
@@ -483,7 +483,7 @@ handle_key_up(wx_opengl_window::impl_data& impl, wxKeyEvent& event)
         event.Skip();
 }
 
-static widget_id
+widget_id static
 resolve_wx_menu_id(menu_node const* nodes, int* id)
 {
     for (menu_node const* i = nodes; i; i = i->next)
@@ -512,7 +512,7 @@ resolve_wx_menu_id(menu_node const* nodes, int* id)
     return 0;
 }
 
-static widget_id
+widget_id static
 resolve_wx_menu_bar_id(menu_container const& spec, int* id)
 {
     for (menu_node const* i = spec.children; i; i = i->next)
@@ -526,7 +526,7 @@ resolve_wx_menu_bar_id(menu_container const& spec, int* id)
     return 0;
 }
 
-static void
+void static
 handle_menu(wx_opengl_window::impl_data& impl, wxCommandEvent& event)
 {
     int id = event.GetId();
@@ -716,7 +716,7 @@ void wx_frame::set_full_screen(bool fs)
     this->ShowFullScreen(fs);
 }
 
-static void
+void static
 build_wx_menu(wxMenu* wx_menu, menu_node const* nodes, int* next_id)
 {
     for (menu_node const* i = nodes; i; i = i->next)

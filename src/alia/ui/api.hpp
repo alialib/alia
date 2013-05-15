@@ -21,7 +21,7 @@ struct dataless_ui_context;
 struct ui_context;
 
 typedef void const* widget_id;
-static widget_id const auto_id = 0;
+widget_id static const auto_id = 0;
 
 // Often, widgets with internal storage will want to give the application the
 // option of providing their own storage for that data. (This is useful if the
@@ -371,11 +371,11 @@ struct scoped_substyle : noncopyable
 
 // The following are interpolation curves that can be used for animations.
 typedef unit_cubic_bezier animation_curve;
-static animation_curve const default_curve(0.25, 0.1, 0.25, 1);
-static animation_curve const linear_curve(0, 0, 1, 1);
-static animation_curve const ease_in_curve(0.42, 0, 1, 1);
-static animation_curve const ease_out_curve(0, 0, 0.58, 1);
-static animation_curve const ease_in_out_curve(0.42, 0, 0.58, 1);
+animation_curve static const default_curve(0.25, 0.1, 0.25, 1);
+animation_curve static const linear_curve(0, 0, 1, 1);
+animation_curve static const ease_in_curve(0.42, 0, 1, 1);
+animation_curve static const ease_out_curve(0, 0, 0.58, 1);
+animation_curve static const ease_in_out_curve(0.42, 0, 0.58, 1);
 
 // animated_transition specifies an animated transition from one state to
 // another, defined by a duration and a curve to follow.
@@ -389,7 +389,7 @@ struct animated_transition
       : curve(curve), duration(duration)
     {}
 };
-static animated_transition const default_transition(default_curve, 400);
+animated_transition static const default_transition(default_curve, 400);
 
 // VALIDATION
 
@@ -512,11 +512,14 @@ struct ui_context : dataless_ui_context
     data_traversal* data;
 };
 
-static inline data_traversal& get_data_traversal(ui_context& ctx)
+static inline data_traversal&
+get_data_traversal(ui_context& ctx)
 { return *ctx.data; }
-static inline layout_traversal& get_layout_traversal(dataless_ui_context& ctx)
+static inline layout_traversal&
+get_layout_traversal(dataless_ui_context& ctx)
 { return *ctx.layout; }
-static inline geometry_context& get_geometry_context(dataless_ui_context& ctx)
+static inline geometry_context&
+get_geometry_context(dataless_ui_context& ctx)
 { return *ctx.geometry; }
 
 // UTILITIES - Various utilities that are considered part of the core API or
