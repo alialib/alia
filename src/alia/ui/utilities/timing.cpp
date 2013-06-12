@@ -5,6 +5,8 @@ namespace alia {
 
 void request_refresh(dataless_ui_context& ctx, ui_time_type duration)
 {
+    if (!is_refresh_pass(ctx))
+        return;
     ui_system& ui = *ctx.system;
     ui_time_type update_time = ui.millisecond_tick_count + duration;
     if (!ui.next_update || int(get(ui.next_update) - update_time) > 0)

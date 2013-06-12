@@ -464,6 +464,11 @@ struct surface : geometry_context_subscriber
     // Draw a filled box with a solid color.
     virtual void draw_filled_box(rgba8 const& color,
         box<2,double> const& box) = 0;
+
+    // This is a scale factor that affect the opacity of all textures rendered
+    // to the surface.
+    virtual void set_opacity(float opacity) = 0;
+    virtual float opacity() const = 0;
 };
 static inline surface& get_surface(surface& surface) { return surface; }
 

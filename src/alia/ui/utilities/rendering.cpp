@@ -85,4 +85,27 @@ void clear_rendering_data(themed_rendering_data& data)
     data.theme_renderer.reset();
 }
 
+void scoped_surface_opacity::begin(dataless_ui_context& ctx, float opacity)
+{
+    if (is_render_pass(ctx))
+    {
+        ctx_ = &ctx;
+        surface& surface = *ctx.surface;
+        old_opacity_ = surface.opacity();
+        surface.set_opacity(opacity);
+    }
+    else
+        ctx_ = 0;
+}
+void scoped_surface_opacity::end()
+{
+    if (ctx_)
+    {
+        dataless_ui_context& ctx = *ctx_;
+        surface& surface = *ctx.surface;
+        surface.set_opacity(old_opacity_);
+        ctx_ = 0;
+    }
+}
+
 }

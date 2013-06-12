@@ -62,7 +62,7 @@ ALIA_DEFINE_FLAG(opengl_texture, 1, OPENGL_TILED_TEXTURE)
 // An OpenGL surface implements the surface interface for an OpenGL surface.
 struct opengl_surface : surface
 {
-    opengl_surface() : ctx_(0) {}
+    opengl_surface() : ctx_(0), opacity_(1) {}
 
     // Call this when the surface is created to associate it with a context.
     void set_opengl_context(opengl_context& ctx) { ctx_ = &ctx; }
@@ -87,9 +87,13 @@ struct opengl_surface : surface
         image_interface const& img,
         opengl_texture_flag_set flags);
 
+    void set_opacity(float opacity) { opacity_ = opacity; }
+    float opacity() const { return opacity_; }
+
  private:
     opengl_context* ctx_;
     vector<2,unsigned> size_;
+    float opacity_;
 };
 
 // Use OpenGL extensions to disable vsync.

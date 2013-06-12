@@ -347,7 +347,10 @@ void simple_texture::draw(
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
     glBindTexture(target_, texture_name_);
 
-    glColor4ub(color.r, color.g, color.b, color.a);
+    rgba8 resolved_color = interpolate(rgba8(0, 0, 0, 0), color,
+        static_cast<opengl_surface&>(surface).opacity());
+    glColor4ub(resolved_color.r, resolved_color.g, resolved_color.b,
+        resolved_color.a);
 
     vector<2,double> const
         i0 = image_region.corner,
@@ -580,7 +583,10 @@ void tiled_texture::draw(
     glEnable(target_);
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
-    glColor4ub(color.r, color.g, color.b, color.a);
+    rgba8 resolved_color = interpolate(rgba8(0, 0, 0, 0), color,
+        static_cast<opengl_surface&>(surface).opacity());
+    glColor4ub(resolved_color.r, resolved_color.g, resolved_color.b,
+        resolved_color.a);
 
     double scale_x = surface_region.size[0] / image_region.size[0];
     double scale_y = surface_region.size[1] / image_region.size[1];
@@ -743,6 +749,7 @@ void opengl_surface::initialize_render_state(vector<2,unsigned> const& size)
     glScissor(0, 0, size[0], size[1]);
 
     size_ = size;
+    opacity_ = 1;
 }
 
 void opengl_surface::cache_image(

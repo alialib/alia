@@ -257,6 +257,7 @@ static none_type none;
 template<class T>
 struct optional
 {
+    typedef T value_type;
     optional() : valid_(false) {}
     optional(T const& value) : value_(value), valid_(true) {}
     optional(none_type) : valid_(false) {}

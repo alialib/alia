@@ -328,6 +328,7 @@ update_window(wx_opengl_window::impl_data& impl)
     }
 
     impl.window->Refresh(false);
+    //impl.window->Update();
 }
 
 void static
@@ -443,8 +444,7 @@ handle_char(wx_opengl_window::impl_data& impl, wxKeyEvent& event)
 {
     bool acknowledged = false;
 
-    // Ignore char events that have modifiers (ALT-, CTRL-, etc).
-    if (!event.HasModifiers())
+    if (!event.AltDown() && !event.ControlDown())
     {
         // TODO: Support Unicode.
         if (event.GetKeyCode() < 0x80)
@@ -566,6 +566,8 @@ wx_opengl_window::wx_opengl_window(
 
     impl.last_menu_bar_update = 0;
 
+    impl.wheel_movement = 0;
+
     wxScreenDC dc;
     wxSize ppi = dc.GetPPI();
 
@@ -619,8 +621,8 @@ void wx_opengl_window::on_idle(wxIdleEvent& event)
     wx_opengl_window::impl_data& impl = *impl_;
     if (process_timer_requests(impl.ui, get_time(impl)))
         update_window(impl);
-    else
-        Sleep(1);
+    //else
+    //    Sleep(1);
     if (has_timer_requests(impl.ui))
         event.RequestMore();
 }

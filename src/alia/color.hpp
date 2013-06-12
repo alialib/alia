@@ -77,6 +77,7 @@ std::ostream& operator<<(std::ostream& s, rgba8 const& c);
 
 // premultiply the color by the alpha to form an rgba8 value
 rgba8 apply_alpha(rgb8 color, uint8_t alpha);
+rgba8 apply_alpha(rgba8 color, uint8_t alpha);
 
 // interpolate(a, b, factor) = a * (1 - factor) + b * factor
 rgba8 interpolate(rgba8 const& a, rgba8 const& b, double factor);

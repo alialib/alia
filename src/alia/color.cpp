@@ -54,6 +54,15 @@ rgba8 apply_alpha(rgb8 color, uint8_t alpha)
         alpha);
 }
 
+rgba8 apply_alpha(rgba8 color, uint8_t alpha)
+{
+    return rgba8(
+        multiply_uint8_channels(color.r, alpha),
+        multiply_uint8_channels(color.g, alpha),
+        multiply_uint8_channels(color.b, alpha),
+        multiply_uint8_channels(color.a, alpha));
+}
+
 rgba8 interpolate(rgba8 const& a, rgba8 const& b, double f)
 {
     rgba8 r;
