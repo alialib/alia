@@ -772,7 +772,7 @@ field_accessor<Accessor,
 select_first(Accessor const& accessor)
 {
     return select_field(accessor,
-        &(typename accessor_value_type<Accessor>::type::first));
+        &accessor_value_type<Accessor>::type::first);
 }
 
 // select_second(accessors) takes an accessors to a std::pair and selects the
@@ -783,7 +783,7 @@ field_accessor<Accessor,
 select_second(Accessor const& accessor)
 {
     return select_field(accessor,
-        &(typename accessor_value_type<Accessor>::type::second));
+        &accessor_value_type<Accessor>::type::second);
 }
 
 // unwrap_optional_accessor(accessor) takes an accessor to an optional value
