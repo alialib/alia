@@ -717,6 +717,100 @@ struct text : accessor<string>
     lazy_getter<string> lazy_getter_;
 };
 
+// combine_accessors(first, second) takes two accessors and combines them into
+// a single accessors whose value type is std::pair<FirstValue,SecondValue>,
+// where FirstValue and SecondValue are the value types of first and second,
+// respectively.
+template<class First, class Second>
+struct accessor_combiner
+  : accessor<
+        typedef std::pair<
+            typename accessor_value_type<First>::type,
+            typename accessor_value_type<Second>::type> >
+{
+    typedef std::pair<
+        typename accessor_value_type<First>::type,
+        typename accessor_value_type<Second>::type> pair_type;
+    accessor_combiner() {}
+    accessor_combiner(First const& first, Second const& second) 
+      : first_(first), second_(second)
+    {}
+    bool is_gettable() const
+    { return first_.is_gettable() && second_.is_gettable(); }
+    pair_type const& get() const { return lazy_getter_.get(*this); }
+    bool is_settable() const
+    { return first_.is_settable() && second_.is_settable(); }
+    void set(pair_type const& value) const
+    {
+        first_.set(value.first);
+        second_.set(value.second);
+    }
+    id_interface const& id() const
+    {
+        id_ = combine_ids(ref(first_.id()), ref(second_.id()));
+        return id_;
+    }
+ private:
+    friend struct lazy_getter<pair_type>;
+    pair_type generate() const
+    { return std::make_pair(first_.get(), second_.get()); }
+    First first_;
+    Second second_;
+    mutable id_pair<id_ref,id_ref> id_;
+    lazy_getter<pair_type> lazy_getter_;
+};
+template<class First, class Second>
+accessor_combiner<First,Second>
+combine_accessors(First const& first, Second const& second)
+{ return accessor_combiner<First,Second>(first, second); }
+
+// select_first(accessors) takes an accessors to a std::pair and selects the
+// first value of the pair.
+template<class Accessor>
+field_accessor<Accessor,
+    typename accessor_value_type<Accessor>::type::first_type>
+select_first(Accessor const& accessor)
+{
+    return select_field(accessor,
+        &typename accessor_value_type<Accessor>::type::first);
+}
+
+// select_second(accessors) takes an accessors to a std::pair and selects the
+// second value of the pair.
+template<class Accessor>
+field_accessor<Accessor,
+    typename accessor_value_type<Accessor>::type::second_type>
+select_second(Accessor const& accessor)
+{
+    return select_field(accessor,
+        &typename accessor_value_type<Accessor>::type::second);
+}
+
+// unwrap_optional_accessor(accessor) takes an accessor to an optional value
+// and creates an accessor to the underlying value. It's only gettable if the
+// wrapped accessor is gettable and contains a valid value.
+template<class OptionalAccessor>
+struct optional_accessor_unwrapper
+  : accessor<typename accessor_value_type<OptionalAccessor>::type::value_type>
+{
+    optional_accessor_unwrapper() {}
+    optional_accessor_unwrapper(OptionalAccessor const& accessor) 
+      : accessor_(accessor)
+    {}
+    bool is_gettable() const
+    { return accessor_.is_gettable() && accessor_.get(); }
+    value_type const& get() const { return accessor_.get().get(); }
+    bool is_settable() const { return accessor_.is_settable(); }
+    void set(value_type const& value) const { accessor_.set(value); }
+    id_interface const& id() const { return accessor_.id(); }
+ private:
+    OptionalAccessor accessor_;
+};
+template<class OptionalAccessor>
+optional_accessor_unwrapper<OptionalAccessor>
+unwrap_optional_accessor(OptionalAccessor const& accessor)
+{ return optional_accessor_unwrapper<OptionalAccessor>(accessor); }
+
 }
 
 #endif

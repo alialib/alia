@@ -64,6 +64,9 @@ static inline float interpolate(float a, float b, double factor)
 static inline int interpolate(int a, int b, double factor)
 { return int(std::floor(a * (1 - factor) + b * factor + 0.5)); }
 
+static inline uint8_t interpolate(uint8_t a, uint8_t b, double factor)
+{ return uint8_t(std::floor(a * (1 - factor) + b * factor + 0.5)); }
+
 // reset_smoothing(smoother, value) causes the smoother to transition abruptly
 // to the value specified.
 template<class Value>
