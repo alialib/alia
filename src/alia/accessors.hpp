@@ -724,7 +724,7 @@ struct text : accessor<string>
 template<class First, class Second>
 struct accessor_combiner
   : accessor<
-        typedef std::pair<
+        std::pair<
             typename accessor_value_type<First>::type,
             typename accessor_value_type<Second>::type> >
 {
