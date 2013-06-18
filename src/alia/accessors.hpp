@@ -793,15 +793,18 @@ template<class OptionalAccessor>
 struct optional_accessor_unwrapper
   : accessor<typename accessor_value_type<OptionalAccessor>::type::value_type>
 {
+    typedef typename accessor_value_type<OptionalAccessor>::type::value_type
+        underlying_value_type;
     optional_accessor_unwrapper() {}
     optional_accessor_unwrapper(OptionalAccessor const& accessor) 
       : accessor_(accessor)
     {}
     bool is_gettable() const
     { return accessor_.is_gettable() && accessor_.get(); }
-    value_type const& get() const { return accessor_.get().get(); }
+    underlying_value_type const& get() const { return accessor_.get().get(); }
     bool is_settable() const { return accessor_.is_settable(); }
-    void set(value_type const& value) const { accessor_.set(value); }
+    void set(underlying_value_type const& value) const
+    { accessor_.set(value); }
     id_interface const& id() const { return accessor_.id(); }
  private:
     OptionalAccessor accessor_;
