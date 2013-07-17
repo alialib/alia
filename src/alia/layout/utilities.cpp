@@ -165,6 +165,9 @@ float resolve_absolute_length(
      default:
         scale_factor = style_info.magnification;
         break;
+     case UNMAGNIFIED_PIXELS:
+        scale_factor = 1;
+        break;
      case INCHES:
         scale_factor = style_info.magnification * ppi[axis];
         break;

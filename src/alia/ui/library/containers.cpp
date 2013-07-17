@@ -30,6 +30,8 @@ struct collapsible_layout_container : layout_container
 
     // window through which the content is visible
     layout_box window;
+
+    collapsible_layout_container() : expansion(0) {}
 };
 
 layout_requirements
@@ -103,6 +105,14 @@ void collapsible_content::begin(
     ui_context& ctx, bool expanded, animated_transition const& transition,
     double const offset_factor, layout const& layout_spec)
 {
+    float expansion = smooth_raw_value(ctx, expanded ? 1.f : 0.f, transition);
+    begin(ctx, expansion, offset_factor, layout_spec);
+}
+
+void collapsible_content::begin(
+    ui_context& ctx, float expansion,
+    double const offset_factor, layout const& layout_spec)
+{
     ctx_ = &ctx;
 
     collapsible_layout_container* layout;
@@ -112,17 +122,14 @@ void collapsible_content::begin(
 
     container_.begin(get_layout_traversal(ctx), layout);
 
-    float expansion = smooth_raw_value(ctx, expanded ? 1.f : 0.f, transition);
-
     if (is_refresh_pass(ctx))
     {
+        // If the widget is expanding, ensure that it's visible.
+        if (expansion > layout->expansion)
+            make_widget_visible(ctx, id, MAKE_WIDGET_VISIBLE_ABRUPTLY);
         detect_layout_change(ctx, &layout->expansion, expansion);
         update_layout_cacher(get_layout_traversal(ctx), layout->cacher,
             layout_spec, FILL | UNPADDED);
-
-        // If the widget is expanding, ensure that it's visible.
-        if (expanded && expansion != 1)
-            make_widget_visible(ctx, id, MAKE_WIDGET_VISIBLE_ABRUPTLY);
     }
     else
     {
@@ -266,9 +273,13 @@ do_draggable_separator(ui_context& ctx, accessor<int> const& width,
         refresh_keyed_data(data.size, *ctx.style.id);
         if (!is_valid(data.size))
         {
+            style_path_storage storage;
+            style_search_path const* path =
+                add_substyle_to_path(&storage, ctx.style.path, 0,
+                    "draggable-separator");
             absolute_length spec =
-                get_property(ctx, "separator-width", INHERITED_PROPERTY,
-                    absolute_length(0.1f, EM));
+                get_property(path, "width", UNINHERITED_PROPERTY,
+                    absolute_length(1, PIXELS));
             set(data.size, as_layout_size(make_vector(
                 resolve_absolute_length(get_layout_traversal(ctx), 0, spec),
                 resolve_absolute_length(get_layout_traversal(ctx), 1, spec))));
@@ -293,7 +304,11 @@ do_draggable_separator(ui_context& ctx, accessor<int> const& width,
             paint.setStrokeWidth(layout_scalar_as_skia_scalar(
                 get(data.size)[0]));
             paint.setStrokeCap(SkPaint::kSquare_Cap);
-            set_color(paint, get_color_property(ctx, "separator-color"));
+            style_path_storage storage;
+            style_search_path const* path =
+                add_substyle_to_path(&storage, ctx.style.path, 0,
+                    "draggable-separator");
+            set_color(paint, get_color_property(path, "color"));
             renderer.canvas().drawLine(
                 SkIntToScalar(1), SkIntToScalar(1),
                 layout_scalar_as_skia_scalar(region.size[0] - 1),
@@ -360,9 +375,15 @@ void resizable_content::begin(
     }
 
     if (flags & RESIZABLE_CONTENT_HORIZONTAL_SEPARATOR)
-        layout_.begin(ctx, VERTICAL_LAYOUT, height(float(size_), PIXELS));
+    {
+        layout_.begin(ctx, VERTICAL_LAYOUT, height(float(size_),
+            UNMAGNIFIED_PIXELS));
+    }
     else
-        layout_.begin(ctx, HORIZONTAL_LAYOUT, width(float(size_), PIXELS));
+    {
+        layout_.begin(ctx, HORIZONTAL_LAYOUT, width(float(size_),
+            UNMAGNIFIED_PIXELS));
+    }
 
     // It's possible that the content will be too big for the requested size
     // and the layout engine will force the container to a larger size.
@@ -381,11 +402,12 @@ void resizable_content::begin(
 void resizable_content::end()
 {
     ui_context& ctx = *ctx_;
+    if (ctx.pass_aborted)
+        return;
     alia_if (active_)
     {
         layout_.end();
-        if (!(flags_ & RESIZABLE_CONTENT_PREPEND_SEPARATOR) &&
-            !ctx.pass_aborted)
+        if (!(flags_ & RESIZABLE_CONTENT_PREPEND_SEPARATOR))
         {
             if (do_draggable_separator(ctx, inout(&size_), UNPADDED,
                 (flags_ & RESIZABLE_CONTENT_HORIZONTAL_SEPARATOR) ? 0 : 1,

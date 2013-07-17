@@ -25,6 +25,9 @@ enum layout_units
 {
     PIXELS,
 
+    // won't be affected by the global magnification factor
+    UNMAGNIFIED_PIXELS,
+
     // physical units
     INCHES, CM, MM,
     POINT, // point - 1/72 of an inch

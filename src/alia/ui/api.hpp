@@ -1264,8 +1264,17 @@ class collapsible_content : noncopyable
         layout const& layout_spec = default_layout)
     { begin(ctx, expanded, transition, offset_factor, layout_spec); }
 
+    collapsible_content(ui_context& ctx, float expansion,
+        double const offset_factor = 1.,
+        layout const& layout_spec = default_layout)
+    { begin(ctx, expansion, offset_factor, layout_spec); }
+
     void begin(ui_context& ctx, bool expanded,
         animated_transition const& transition = default_transition,
+        double const offset_factor = 1.,
+        layout const& layout_spec = default_layout);
+
+    void begin(ui_context& ctx, float expansion,
         double const offset_factor = 1.,
         layout const& layout_spec = default_layout);
 
