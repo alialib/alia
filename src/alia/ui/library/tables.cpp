@@ -39,7 +39,7 @@ void get_table_style_info(ui_context& ctx, table_style_info* info,
         info->cells[4].substyle.state.path, "first-column");
 }
 
-void table::begin(ui_context& ctx, getter<string> const& style,
+void table::begin(ui_context& ctx, accessor<string> const& style,
     layout const& layout_spec)
 {
     ctx_ = &ctx;

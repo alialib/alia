@@ -305,6 +305,12 @@ optional<T>
 some(T const& x)
 { return optional<T>(x); }
 
+template<class Container>
+struct raii_adaptor : Container
+{
+    ~raii_adaptor() { Container::end(); }
+};
+
 }
 
 #endif

@@ -192,7 +192,7 @@ get_track_width(dataless_ui_context& ctx, slider_data& data, unsigned axis)
 
 static layout_vector
 get_thumb_position(dataless_ui_context& ctx, slider_data& data,
-    unsigned axis, double minimum, double maximum, getter<double> const& value)
+    unsigned axis, double minimum, double maximum, accessor<double> const& value)
 {
     layout_box const& assigned_region = data.layout_node.assignment().region;
     layout_vector thumb_position;
@@ -224,7 +224,7 @@ get_thumb_position(dataless_ui_context& ctx, slider_data& data,
 
 static layout_box
 get_thumb_region(dataless_ui_context& ctx, slider_data& data,
-    unsigned axis, double minimum, double maximum, getter<double> const& value)
+    unsigned axis, double minimum, double maximum, accessor<double> const& value)
 {
     layout_vector thumb_position =
         get_thumb_position(ctx, data, axis, minimum, maximum, value);

@@ -140,7 +140,7 @@ template<class Value>
 optional_input_accessor<Value>
 smooth_value(
     dataless_ui_context& ctx, value_smoother<Value>& smoother,
-    getter<Value> const& x,
+    accessor<Value> const& x,
     animated_transition const& transition = default_transition)
 {
     optional<Value> output;
@@ -151,7 +151,7 @@ smooth_value(
 
 template<class Value>
 optional_input_accessor<Value>
-smooth_value(ui_context& ctx, getter<Value> const& x,
+smooth_value(ui_context& ctx, accessor<Value> const& x,
     animated_transition const& transition = default_transition)
 {
     value_smoother<Value>* data;

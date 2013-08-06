@@ -14,7 +14,7 @@ struct simple_control_renderer : dispatch_interface
 
     virtual void draw(
         ui_context& ctx, layout_box const& region,
-        getter<Value> const& value, widget_state state) const = 0;
+        accessor<Value> const& value, widget_state state) const = 0;
 };
 
 struct simple_control_data

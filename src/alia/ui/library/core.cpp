@@ -19,7 +19,6 @@ void scoped_style::begin(dataless_ui_context& ctx, style_state const& style,
     old_style_info_ = ctx.layout->style_info;
     ctx.layout->style_info = info;
 }
-
 void scoped_style::end()
 {
     if (ctx_)
@@ -32,23 +31,11 @@ void scoped_style::end()
 }
 
 void scoped_substyle::begin(
-    ui_context& ctx, getter<string> const& substyle_name, widget_state state,
+    ui_context& ctx, accessor<string> const& substyle_name, widget_state state,
     scoped_substyle_flag_set flags)
 {
-    keyed_data<substyle_data>* data;
-    if (get_cached_data(ctx, &data) || is_refresh_pass(ctx))
-    {
-        refresh_keyed_data(*data, combine_ids(ref(*ctx.style.id),
-            combine_ids(ref(substyle_name.id()), make_id(state))));
-    }
-    if (!is_valid(*data))
-    {
-        update_substyle_data(ctx, data->value, ctx.style.path,
-            get(substyle_name), state,
-            (flags & SCOPED_SUBSTYLE_NO_PATH_SEPARATOR) ?
-                ADD_SUBSTYLE_NO_PATH_SEPARATOR : NO_FLAGS);
-        mark_valid(*data);
-    }
+    keyed_data<substyle_data>* data =
+        get_substyle_data(ctx, substyle_name, state, flags);
     scoping_.begin(ctx, get(*data).state, &get(*data).style_info);
 }
 void scoped_substyle::end()

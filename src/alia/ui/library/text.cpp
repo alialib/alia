@@ -365,7 +365,7 @@ void text_layout_node::assign_wrapped_regions(
     data.wrapped_size = make_layout_vector(assigned_width, y);
 }
 
-void do_text(ui_context& ctx, getter<string> const& text,
+void do_text(ui_context& ctx, accessor<string> const& text,
     layout const& layout_spec)
 {
     ALIA_GET_CACHED_DATA(text_display_data)
@@ -497,7 +497,7 @@ void do_text(ui_context& ctx, getter<string> const& text,
     }
 }
 
-void do_paragraph(ui_context& ctx, getter<string> const& text,
+void do_paragraph(ui_context& ctx, accessor<string> const& text,
     layout const& layout_spec)
 {
     flow_layout f(ctx, add_default_y_alignment(add_default_padding(
@@ -519,7 +519,7 @@ static void
 refresh_standalone_text(
     dataless_ui_context& ctx,
     standalone_text_data& data,
-    getter<string> const& text,
+    accessor<string> const& text,
     layout const& layout_spec)
 {
     if (!data.key.matches(combine_ids(ref(text.id()), ref(*ctx.style.id))))
@@ -563,7 +563,7 @@ static void
 render_standalone_text(
     dataless_ui_context& ctx,
     standalone_text_data& data,
-    getter<string> const& text)
+    accessor<string> const& text)
 {
     if (!is_valid(data.cached_image))
     {
@@ -611,7 +611,7 @@ render_standalone_text(
             vector<2,double>(get_region(data).size)));
 }
 
-void do_label(ui_context& ctx, getter<string> const& text,
+void do_label(ui_context& ctx, accessor<string> const& text,
     layout const& layout_spec)
 {
     standalone_text_data* data;
@@ -637,7 +637,7 @@ struct text_drawing_data
 
 static void
 draw_text(dataless_ui_context& ctx, text_drawing_data& data,
-    getter<string> const& text, vector<2,double> const& position,
+    accessor<string> const& text, vector<2,double> const& position,
     ui_text_drawing_flag_set flags)
 {
     if (!data.key.matches(combine_ids(ref(text.id()), ref(*ctx.style.id))))
@@ -696,7 +696,7 @@ draw_text(dataless_ui_context& ctx, text_drawing_data& data,
             (flags & ALIGN_TEXT_TOP) ? 0 : data.ascent));
 }
 
-void draw_text(ui_context& ctx, getter<string> const& text,
+void draw_text(ui_context& ctx, accessor<string> const& text,
     vector<2,double> const& position, ui_text_drawing_flag_set flags)
 {
     text_drawing_data* data;
@@ -712,7 +712,7 @@ struct layout_dependent_text_data
     text_drawing_data drawing;
 };
 
-void do_layout_dependent_text(ui_context& ctx, getter<string> const& text,
+void do_layout_dependent_text(ui_context& ctx, accessor<string> const& text,
     layout const& layout_spec)
 {
     ALIA_GET_CACHED_DATA(layout_dependent_text_data)
@@ -752,7 +752,7 @@ struct link_data
 
 bool do_link(
     ui_context& ctx,
-    getter<string> const& text,
+    accessor<string> const& text,
     layout const& layout_spec,
     widget_id id)
 {
@@ -797,15 +797,15 @@ bool do_link(
     return false;
 }
 
-void do_styled_text(ui_context& ctx, getter<string> const& substyle_name,
-    getter<string> const& text, layout const& layout_spec)
+void do_styled_text(ui_context& ctx, accessor<string> const& substyle_name,
+    accessor<string> const& text, layout const& layout_spec)
 {
     scoped_substyle substyle(ctx, substyle_name);
     do_text(ctx, text, layout_spec);
 }
 
-void do_heading(ui_context& ctx, getter<string> const& substyle_name,
-    getter<string> const& text, layout const& layout_spec)
+void do_heading(ui_context& ctx, accessor<string> const& substyle_name,
+    accessor<string> const& text, layout const& layout_spec)
 {
     scoped_substyle substyle(ctx, substyle_name);
     bordered_layout margin(ctx, get_margin_property(ctx.style.path),

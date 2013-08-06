@@ -150,7 +150,7 @@ bool detect_wheel_movement(
 //}
 
 void do_mouse_hover_text(
-    dataless_ui_context& ctx, widget_id id, getter<string> const& text)
+    dataless_ui_context& ctx, widget_id id, accessor<string> const& text)
 {
     //if (detect_mouse_hover(ctx, id))
     //{

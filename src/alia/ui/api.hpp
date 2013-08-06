@@ -352,13 +352,13 @@ ALIA_DEFINE_FLAG(scoped_substyle, 0x1, SCOPED_SUBSTYLE_NO_PATH_SEPARATOR)
 struct scoped_substyle : noncopyable
 {
     scoped_substyle() {}
-    scoped_substyle(ui_context& ctx, getter<string> const& substyle_name,
+    scoped_substyle(ui_context& ctx, accessor<string> const& substyle_name,
         widget_state state = WIDGET_NORMAL,
         scoped_substyle_flag_set flags = NO_FLAGS)
     { begin(ctx, substyle_name, state, flags); }
     ~scoped_substyle() { end(); }
 
-    void begin(ui_context& ctx, getter<string> const& substyle_name,
+    void begin(ui_context& ctx, accessor<string> const& substyle_name,
         widget_state state = WIDGET_NORMAL,
         scoped_substyle_flag_set flags = NO_FLAGS);
     void end();
@@ -646,12 +646,12 @@ void jump_to_location(dataless_ui_context& ctx, id_interface const& id,
 
 void do_separator(ui_context& ctx, layout const& layout_spec = default_layout);
 
-void do_color(ui_context& ctx, getter<rgba8> const& color,
+void do_color(ui_context& ctx, accessor<rgba8> const& color,
     layout const& layout_spec = default_layout);
-void do_color(ui_context& ctx, getter<rgb8> const& color,
+void do_color(ui_context& ctx, accessor<rgb8> const& color,
     layout const& layout_spec = default_layout);
 
-void do_progress_bar(ui_context& ctx, getter<double> const& progress,
+void do_progress_bar(ui_context& ctx, accessor<double> const& progress,
     layout const& layout_spec = default_layout);
 
 void do_bullet(ui_context& ctx, layout const& layout_spec = default_layout);
@@ -708,9 +708,9 @@ ALIA_DECLARE_STRING_CONVERSIONS(unsigned)
 ALIA_DECLARE_STRING_CONVERSIONS(float)
 ALIA_DECLARE_STRING_CONVERSIONS(double)
 
-// as_text(ctx, x) creates a text-based interface to the getter x.
+// as_text(ctx, x) creates a text-based interface to the accessor x.
 template<class T>
-void update_text_conversion(keyed_data<string>* data, getter<T> const& x)
+void update_text_conversion(keyed_data<string>* data, accessor<T> const& x)
 {
     if (is_gettable(x))
     {
@@ -723,7 +723,7 @@ void update_text_conversion(keyed_data<string>* data, getter<T> const& x)
 }
 template<class T>
 keyed_data_accessor<string>
-as_text(ui_context& ctx, getter<T> const& x)
+as_text(ui_context& ctx, accessor<T> const& x)
 {
     keyed_data<string>* data;
     get_cached_data(ctx, &data);
@@ -773,22 +773,33 @@ int c99_vsnprintf(char* str, size_t size, const char* format, va_list ap);
 #define ALIA_SNPRINTF std::snprintf
 #endif
 
+template<class Value>
+Value
+make_printf_friendly(Value x)
+{ return x; }
+
+static inline char const*
+make_printf_friendly(string const& x)
+{ return x.c_str(); }
+
 template<class Arg0>
 keyed_data_accessor<string>
-printf(ui_context& ctx, char const* format, getter<Arg0> const& arg0)
+printf(ui_context& ctx, char const* format, accessor<Arg0> const& arg0)
 {
     keyed_data_accessor<string> cache;
     get_keyed_data(ctx, arg0.id(), &cache);
     if (!cache.is_gettable() && arg0.is_gettable())
     {
-        int size = ALIA_SNPRINTF(0, 0, format, get(arg0));
+        int size = ALIA_SNPRINTF(0, 0, format,
+            make_printf_friendly(get(arg0)));
         if (size >= 0)
         {
             string s;
             if (size > 0)
             {
                 std::vector<char> chars(size + 1);
-                ALIA_SNPRINTF(&chars[0], size + 1, format, get(arg0));
+                ALIA_SNPRINTF(&chars[0], size + 1, format,
+                    make_printf_friendly(get(arg0)));
                 s = string(&chars[0]);
             }
             cache.set(s);
@@ -799,22 +810,24 @@ printf(ui_context& ctx, char const* format, getter<Arg0> const& arg0)
 
 template<class Arg0, class Arg1>
 keyed_data_accessor<string>
-printf(ui_context& ctx, char const* format, getter<Arg0> const& arg0,
-    getter<Arg1> const& arg1)
+printf(ui_context& ctx, char const* format, accessor<Arg0> const& arg0,
+    accessor<Arg1> const& arg1)
 {
     keyed_data_accessor<string> cache;
     get_keyed_data(ctx, combine_ids(ref(arg0.id()), ref(arg1.id())), &cache);
     if (!cache.is_gettable() && arg0.is_gettable() && arg1.is_gettable())
     {
-        int size = ALIA_SNPRINTF(0, 0, format, get(arg0), get(arg1));
+        int size = ALIA_SNPRINTF(0, 0, format,
+            make_printf_friendly(get(arg0)), make_printf_friendly(get(arg1)));
         if (size >= 0)
         {
             string s;
             if (size > 0)
             {
                 std::vector<char> chars(size + 1);
-                ALIA_SNPRINTF(&chars[0], size + 1, format, get(arg0),
-                    get(arg1));
+                ALIA_SNPRINTF(&chars[0], size + 1, format,
+                    make_printf_friendly(get(arg0)),
+                    make_printf_friendly(get(arg1)));
                 s = string(&chars[0]);
             }
             cache.set(s);
@@ -825,25 +838,25 @@ printf(ui_context& ctx, char const* format, getter<Arg0> const& arg0,
 
 // TEXT DISPLAY
 
-void do_text(ui_context& ctx, getter<string> const& text,
+void do_text(ui_context& ctx, accessor<string> const& text,
     layout const& layout_spec = default_layout);
 
 template<class T>
-void do_text(ui_context& ctx, getter<T> const& value,
+void do_text(ui_context& ctx, accessor<T> const& value,
     layout const& layout_spec = default_layout)
 {
     do_text(ctx, as_text(ctx, value), layout_spec);
 }
 
-void do_paragraph(ui_context& ctx, getter<string> const& text,
+void do_paragraph(ui_context& ctx, accessor<string> const& text,
     layout const& layout_spec = default_layout);
 
-void do_label(ui_context& ctx, getter<string> const& text,
+void do_label(ui_context& ctx, accessor<string> const& text,
     layout const& layout_spec = default_layout);
 
 bool do_link(
     ui_context& ctx,
-    getter<string> const& text,
+    accessor<string> const& text,
     layout const& layout_spec = default_layout,
     widget_id id = auto_id);
 
@@ -851,21 +864,21 @@ ALIA_DEFINE_FLAG_TYPE(ui_text_drawing)
 ALIA_DEFINE_FLAG(ui_text_drawing, 0x00, ALIGN_TEXT_BASELINE)
 ALIA_DEFINE_FLAG(ui_text_drawing, 0x01, ALIGN_TEXT_TOP)
 
-void draw_text(ui_context& ctx, getter<string> const& text,
+void draw_text(ui_context& ctx, accessor<string> const& text,
     vector<2,double> const& position,
     ui_text_drawing_flag_set flags = NO_FLAGS);
 
-void do_layout_dependent_text(ui_context& ctx, getter<string> const& text,
+void do_layout_dependent_text(ui_context& ctx, accessor<string> const& text,
     layout const& layout_spec);
     
-void do_styled_text(ui_context& ctx, getter<string> const& substyle_name,
-    getter<string> const& text, layout const& layout_spec = default_layout);
+void do_styled_text(ui_context& ctx, accessor<string> const& substyle_name,
+    accessor<string> const& text, layout const& layout_spec = default_layout);
 
 // do_heading is the same as do_styled_text but it also accepts a margin
 // specification as part of its style so that space can be added around the
 // text.
-void do_heading(ui_context& ctx, getter<string> const& substyle_name,
-    getter<string> const& text, layout const& layout_spec = default_layout);
+void do_heading(ui_context& ctx, accessor<string> const& substyle_name,
+    accessor<string> const& text, layout const& layout_spec = default_layout);
 
 // make_text(x, id), where x is a utf8_string, creates a read-only accessor
 // for accessing x as a string. It uses the given ID to identify x.
@@ -951,7 +964,7 @@ ALIA_DEFINE_FLAG(button, 0x1, BUTTON_DISABLED)
 button_result
 do_button(
     ui_context& ctx,
-    getter<string> const& text,
+    accessor<string> const& text,
     layout const& layout_spec = default_layout,
     button_flag_set flags = NO_FLAGS,
     widget_id id = auto_id);
@@ -973,7 +986,7 @@ check_box_result
 do_check_box(
     ui_context& ctx,
     accessor<bool> const& value,
-    getter<string> const& text,
+    accessor<string> const& text,
     layout const& layout_spec = default_layout,
     widget_id id = auto_id);
 
@@ -992,7 +1005,7 @@ radio_button_result
 do_radio_button(
     ui_context& ctx,
     accessor<bool> const& value,
-    getter<string> const& text,
+    accessor<string> const& text,
     layout const& layout_spec = default_layout,
     widget_id id = auto_id);
 
@@ -1045,7 +1058,7 @@ do_radio_button(
     ui_context& ctx,
     accessor<Index> const& selected_value,
     Index this_value,
-    getter<string> const& text,
+    accessor<string> const& text,
     layout const& layout_spec = default_layout,
     widget_id id = auto_id)
 {
@@ -1098,7 +1111,7 @@ struct panel : noncopyable
  public:
     panel() {}
     panel(
-        ui_context& ctx, getter<string> const& style,
+        ui_context& ctx, accessor<string> const& style,
         layout const& layout_spec = default_layout,
         panel_flag_set flags = NO_FLAGS,
         widget_id id = auto_id,
@@ -1106,7 +1119,7 @@ struct panel : noncopyable
     { begin(ctx, style, layout_spec, flags, id, state); }
     ~panel() { end(); }
     void begin(
-        ui_context& ctx, getter<string> const& style,
+        ui_context& ctx, accessor<string> const& style,
         layout const& layout_spec = default_layout,
         panel_flag_set flags = NO_FLAGS,
         widget_id id = auto_id,
@@ -1132,12 +1145,12 @@ class clickable_panel : noncopyable
  public:
     clickable_panel() {}
     clickable_panel(
-        ui_context& ctx, getter<string> const& style,
+        ui_context& ctx, accessor<string> const& style,
         layout const& layout_spec = default_layout,
         panel_flag_set flags = NO_FLAGS, widget_id id = auto_id)
     { begin(ctx, style, layout_spec, flags, id); }
     void begin(
-        ui_context& ctx, getter<string> const& style,
+        ui_context& ctx, accessor<string> const& style,
         layout const& layout_spec = default_layout,
         panel_flag_set flags = NO_FLAGS, widget_id id = auto_id);
     void end() { panel_.end(); }
@@ -1192,14 +1205,14 @@ struct scrollable_panel : noncopyable
  public:
     scrollable_panel() {}
     scrollable_panel(
-        ui_context& ctx, getter<string> const& style,
+        ui_context& ctx, accessor<string> const& style,
         layout const& layout_spec = default_layout,
         panel_flag_set flags = NO_FLAGS,
         optional_storage<layout_vector> const& scroll_position_storage = none)
     { begin(ctx, style, layout_spec, flags, scroll_position_storage); }
     ~scrollable_panel() { end(); }
     void begin(
-        ui_context& ctx, getter<string> const& style,
+        ui_context& ctx, accessor<string> const& style,
         layout const& layout_spec = default_layout,
         panel_flag_set flags = NO_FLAGS,
         optional_storage<layout_vector> const& scroll_position_storage = none);
@@ -1221,7 +1234,7 @@ struct custom_panel : noncopyable
     custom_panel() : ctx_(0) {}
     custom_panel(
         ui_context& ctx, custom_panel_data& data,
-        getter<panel_style_info> const& style,
+        accessor<panel_style_info> const& style,
         layout const& layout_spec = default_layout,
         panel_flag_set flags = NO_FLAGS,
         widget_id id = auto_id,
@@ -1230,7 +1243,7 @@ struct custom_panel : noncopyable
     ~custom_panel() { end(); }
     void begin(
         ui_context& ctx, custom_panel_data& data,
-        getter<panel_style_info> const& style,
+        accessor<panel_style_info> const& style,
         layout const& layout_spec = default_layout,
         panel_flag_set flags = NO_FLAGS,
         widget_id id = auto_id,
@@ -1376,8 +1389,8 @@ struct clamped_content : noncopyable
 {
     clamped_content() {}
     clamped_content(ui_context& ctx,
-        getter<string> const& background_style,
-        getter<string> const& content_style,
+        accessor<string> const& background_style,
+        accessor<string> const& content_style,
         absolute_size const& max_size,
         layout const& layout_spec = default_layout,
         panel_flag_set flags = NO_FLAGS)
@@ -1388,8 +1401,8 @@ struct clamped_content : noncopyable
     ~clamped_content() { end(); }
 
     void begin(ui_context& ctx,
-        getter<string> const& background_style,
-        getter<string> const& content_style,
+        accessor<string> const& background_style,
+        accessor<string> const& content_style,
         absolute_size const& max_size,
         layout const& layout_spec = default_layout,
         panel_flag_set flags = NO_FLAGS);
@@ -1406,8 +1419,8 @@ struct clamped_header : noncopyable
 {
     clamped_header() {}
     clamped_header(ui_context& ctx,
-        getter<string> const& background_style,
-        getter<string> const& header_style,
+        accessor<string> const& background_style,
+        accessor<string> const& header_style,
         absolute_size const& max_size,
         layout const& layout_spec = default_layout,
         panel_flag_set flags = NO_FLAGS)
@@ -1418,8 +1431,8 @@ struct clamped_header : noncopyable
     ~clamped_header() { end(); }
 
     void begin(ui_context& ctx,
-        getter<string> const& background_style,
-        getter<string> const& header_style,
+        accessor<string> const& background_style,
+        accessor<string> const& header_style,
         absolute_size const& max_size,
         layout const& layout_spec = default_layout,
         panel_flag_set flags = NO_FLAGS);
@@ -1468,7 +1481,7 @@ struct tab : noncopyable
 };
 
 void do_tab(ui_context& ctx, accessor<bool> const& selected,
-    getter<string> const& label);
+    accessor<string> const& label);
 
 // OVERLAYS
 
@@ -1673,11 +1686,11 @@ struct table_style_info;
 struct table : noncopyable
 {
     table() {}
-    table(ui_context& ctx, getter<string> const& style,
+    table(ui_context& ctx, accessor<string> const& style,
         layout const& layout_spec = default_layout)
     { begin(ctx, style, layout_spec); }
     ~table() { end(); }
-    void begin(ui_context& ctx, getter<string> const& style,
+    void begin(ui_context& ctx, accessor<string> const& style,
         layout const& layout_spec = default_layout);
     void end();
  private:
@@ -1752,10 +1765,10 @@ struct form : noncopyable
 struct form_field : noncopyable
 {
     form_field() : form_(0) {}
-    form_field(form& form, getter<string> const& label)
+    form_field(form& form, accessor<string> const& label)
     { begin(form, label); }
     ~form_field() { end(); }
-    void begin(form& form, getter<string> const& label);
+    void begin(form& form, accessor<string> const& label);
     void end();
  private:
     form* form_;

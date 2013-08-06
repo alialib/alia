@@ -194,7 +194,7 @@ struct default_check_box_renderer : check_box_renderer
     }
     void draw(
         ui_context& ctx, layout_box const& region,
-        getter<bool> const& value, widget_state state) const
+        accessor<bool> const& value, widget_state state) const
     {
         if (!is_render_pass(ctx))
             return;
@@ -264,7 +264,7 @@ do_check_box(
 check_box_result do_check_box(
     ui_context& ctx,
     accessor<bool> const& value,
-    getter<string> const& text,
+    accessor<string> const& text,
     layout const& layout_spec,
     widget_id id)
 {
@@ -289,7 +289,7 @@ struct default_radio_button_renderer : radio_button_renderer
     }
     void draw(
         ui_context& ctx, layout_box const& region,
-        getter<bool> const& value, widget_state state) const
+        accessor<bool> const& value, widget_state state) const
     {
         if (!is_render_pass(ctx))
             return;
@@ -346,7 +346,7 @@ do_radio_button(
 radio_button_result do_radio_button(
     ui_context& ctx,
     accessor<bool> const& value,
-    getter<string> const& text,
+    accessor<string> const& text,
     layout const& layout_spec,
     widget_id id)
 {
@@ -372,7 +372,7 @@ struct default_node_expander_renderer : node_expander_renderer
     }
     void draw(
         ui_context& ctx, layout_box const& region,
-        getter<bool> const& value, widget_state state) const
+        accessor<bool> const& value, widget_state state) const
     {
         double angle =
             smooth_raw_value(ctx, value.is_gettable() && get(value) ? 90. : 0.,
@@ -461,7 +461,7 @@ struct button_data
 button_result
 do_button(
     ui_context& ctx,
-    getter<string> const& label,
+    accessor<string> const& label,
     layout const& layout_spec,
     button_flag_set flags,
     widget_id id)

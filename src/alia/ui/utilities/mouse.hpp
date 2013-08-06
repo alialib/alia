@@ -102,7 +102,7 @@ bool detect_wheel_movement(
 // the given string as help/descriptive text that should be displayed for the
 // widget.
 void do_mouse_hover_text(ui_context& ctx, widget_id id,
-    getter<string> const& text);
+    accessor<string> const& text);
 
 // Detect if the mouse has just entered a region.
 bool detect_mouse_gain(dataless_ui_context& ctx, widget_id id);

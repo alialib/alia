@@ -20,10 +20,6 @@ namespace alia {
 // - Ensure that the passing of values to the UI is as efficient and lazy as
 //   possible.
 //
-// All reading of model state goes through the getter interface below, and all
-// writing of model state goes through the accessor interface.
-// Both are abstract base classes.
-//
 // Accessors are passed by const reference into UI functions.
 // They're typically created directly at the call site as function arguments
 // and are only valid for the life of the function call.
@@ -37,9 +33,8 @@ namespace alia {
 // scope, it can do so by reinvoking the UI context with a set_value_event
 // that is processed by the container's begin function.
 
-// getter defines the interface for retrieving values.
 template<class T>
-struct getter
+struct accessor
 {
     typedef T value_type;
 
@@ -48,7 +43,7 @@ struct getter
     virtual bool is_gettable() const = 0;
 
     // Get the value. The reference returned here is only guaranteed to be
-    // valid as long as the getter itself is valid.
+    // valid as long as the accessor itself is valid.
     virtual T const& get() const = 0;
 
     // In some cases, the entity accessing the value may need to store a local
@@ -60,38 +55,32 @@ struct getter
     virtual alia__shared_ptr<T> get_ptr() const
     { return alia__shared_ptr<T>(new T(get())); }
 
-    // A getter must supply an ID which uniquely identifies its value.
+    // An accessor must supply an ID which uniquely identifies its value.
     // The ID is required to be valid if is_gettable() returns true.
     // (It may be valid even if is_gettable() returns false, which would mean
-    // that the getter can identify its value but doesn't know it yet.)
-    // The ID reference is only valid as long as the getter itself is valid.
+    // that the accessor can identify its value but doesn't know it yet.)
+    // The ID reference is only valid as long as the accessor itself is valid.
     virtual id_interface const& id() const = 0;
-};
 
-// Is x gettable?
-template<class T>
-bool is_gettable(getter<T> const& x)
-{ return x.is_gettable(); }
-
-// get(x) asserts that x is gettable and gets its value.
-template<class T>
-T const& get(getter<T> const& x)
-{
-    assert(is_gettable(x));
-    return x.get();
-}
-
-// The full accessor interface extends the getter interface with methods for
-// setting the value of the underlying model state.
-template<class T>
-struct accessor : getter<T>
-{
     // If is_settable() returns false, the accessor is currently read-only and
     // any UI controls associated with it should disallow user input.
     // (And thus, set() should not be called.)
     virtual bool is_settable() const = 0;
     virtual void set(T const& value) const = 0;
 };
+
+// Is x gettable?
+template<class T>
+bool is_gettable(accessor<T> const& x)
+{ return x.is_gettable(); }
+
+// get(x) asserts that x is gettable and gets its value.
+template<class T>
+T const& get(accessor<T> const& x)
+{
+    assert(is_gettable(x));
+    return x.get();
+}
 
 // Is a settable?
 template<class T>

@@ -33,12 +33,12 @@ unsigned get_channel_count(pixel_format fmt)
 }
 
 void draw_full_image(surface& surface, cached_image_ptr const& image,
-    vector<2,double> const& position)
+    vector<2,double> const& position, rgba8 const& color)
 {
     assert(is_valid(image));
     vector<2,double> image_size = vector<2,double>(image->size());
     image->draw(surface, box<2,double>(position, image_size),
-        box<2,double>(make_vector<double>(0, 0), image_size));
+        box<2,double>(make_vector<double>(0, 0), image_size), color);
 }
 
 void caching_renderer::begin(

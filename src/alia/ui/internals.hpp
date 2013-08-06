@@ -434,8 +434,10 @@ typedef alia__shared_ptr<cached_image> cached_image_ptr;
 // size as the image. (The surface's transformation matrix is still applied,
 // so this doesn't necessarily imply a 1-to-1 mapping of image pixels to
 // surface pixels.)
-void draw_full_image(surface& surface, cached_image_ptr const& image,
-    vector<2,double> const& position);
+void draw_full_image(
+    surface& surface, cached_image_ptr const& image,
+    vector<2,double> const& position,
+    rgba8 const& color = rgba8(0xff, 0xff, 0xff, 0xff));
 
 // Determine if a cached_image_ptr contains a valid image.
 static inline bool is_valid(cached_image_ptr const& ptr)

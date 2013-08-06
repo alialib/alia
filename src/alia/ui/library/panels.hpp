@@ -21,7 +21,7 @@ get_panel_style_info(dataless_ui_context& ctx, style_search_path const* path);
 
 void refresh_panel_style_info(
     dataless_ui_context& ctx, keyed_data<panel_style_info>& stored_info,
-    getter<string> const& substyle, widget_state state,
+    accessor<string> const& substyle, widget_state state,
     add_substyle_flag_set flags = NO_FLAGS);
 
 struct custom_panel_data

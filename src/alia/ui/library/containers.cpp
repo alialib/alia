@@ -477,8 +477,8 @@ void accordion_section::end()
 
 void clamped_content::begin(
     ui_context& ctx,
-    getter<string> const& background_style,
-    getter<string> const& content_style,
+    accessor<string> const& background_style,
+    accessor<string> const& content_style,
     absolute_size const& max_size,
     layout const& layout_spec,
     panel_flag_set flags)
@@ -506,8 +506,8 @@ void clamped_content::end()
 
 void clamped_header::begin(
     ui_context& ctx,
-    getter<string> const& background_style,
-    getter<string> const& header_style,
+    accessor<string> const& background_style,
+    accessor<string> const& header_style,
     absolute_size const& max_size,
     layout const& layout_spec,
     panel_flag_set flags)
@@ -587,7 +587,7 @@ void tab::end()
 }
 
 void do_tab(ui_context& ctx, accessor<bool> const& selected,
-    getter<string> const& label)
+    accessor<string> const& label)
 {
     tab t(ctx, selected);
     do_text(ctx, label);
@@ -607,7 +607,7 @@ void form::end()
     }
 }
 
-void form_field::begin(form& form, getter<string> const& label)
+void form_field::begin(form& form, accessor<string> const& label)
 {
     ui_context& ctx = form.context();
     form_ = &form;

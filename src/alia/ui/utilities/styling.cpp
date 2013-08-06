@@ -1157,4 +1157,26 @@ void update_substyle_data(
     data.id = get_id(data.identity);
 }
 
+keyed_data<substyle_data>*
+get_substyle_data(
+    ui_context& ctx, accessor<string> const& substyle_name, widget_state state,
+    scoped_substyle_flag_set flags)
+{
+    keyed_data<substyle_data>* data;
+    if (get_cached_data(ctx, &data) || is_refresh_pass(ctx))
+    {
+        refresh_keyed_data(*data, combine_ids(ref(*ctx.style.id),
+            combine_ids(ref(substyle_name.id()), make_id(state))));
+    }
+    if (!is_valid(*data))
+    {
+        update_substyle_data(ctx, data->value, ctx.style.path,
+            get(substyle_name), state,
+            (flags & SCOPED_SUBSTYLE_NO_PATH_SEPARATOR) ?
+                ADD_SUBSTYLE_NO_PATH_SEPARATOR : NO_FLAGS);
+        mark_valid(*data);
+    }
+    return data;
+}
+
 }

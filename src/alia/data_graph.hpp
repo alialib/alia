@@ -534,6 +534,11 @@ struct keyed_data_accessor : accessor<Data>
     keyed_data<Data>* data_;
 };
 
+template<class Data>
+keyed_data_accessor<Data>
+make_accessor(keyed_data<Data>* data)
+{ return keyed_data_accessor<Data>(data); }
+
 template<class Context, class Data>
 bool get_keyed_data(Context& ctx, id_interface const& key,
     keyed_data_accessor<Data>* accessor)
@@ -541,8 +546,8 @@ bool get_keyed_data(Context& ctx, id_interface const& key,
     keyed_data<Data>* ptr;
     get_cached_data(ctx, &ptr);
     refresh_keyed_data(*ptr, key);
-    *accessor = keyed_data_accessor<Data>(ptr);
-    return !ptr->is_valid;
+    *accessor = make_accessor(ptr);
+    return !is_valid(*ptr);
 };
 
 // This is another form of get_keyed_data where there's no accessor to guard

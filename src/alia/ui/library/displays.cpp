@@ -105,7 +105,7 @@ struct color_display_data
     caching_renderer_data rendering;
 };
 
-void do_color(ui_context& ctx, getter<rgba8> const& color,
+void do_color(ui_context& ctx, accessor<rgba8> const& color,
     layout const& layout_spec)
 {
     ALIA_GET_CACHED_DATA(color_display_data)
@@ -178,7 +178,7 @@ void do_color(ui_context& ctx, getter<rgba8> const& color,
     }
 }
 
-void do_color(ui_context& ctx, getter<rgb8> const& color,
+void do_color(ui_context& ctx, accessor<rgb8> const& color,
     layout const& layout_spec)
 {
     do_color(ctx,
@@ -265,7 +265,7 @@ void bulleted_item::end()
 
 // PROGRESS BAR
 
-void do_progress_bar(ui_context& ctx, getter<double> const& progress,
+void do_progress_bar(ui_context& ctx, accessor<double> const& progress,
     layout const& layout_spec)
 {
     ALIA_GET_CACHED_DATA(simple_display_data)

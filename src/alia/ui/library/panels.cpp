@@ -44,7 +44,7 @@ get_panel_style_info(dataless_ui_context& ctx, style_search_path const* path)
 
 void refresh_panel_style_info(
     dataless_ui_context& ctx, keyed_data<panel_style_info>& stored_info,
-    getter<string> const& substyle, widget_state state,
+    accessor<string> const& substyle, widget_state state,
     add_substyle_flag_set flags)
 {
     refresh_keyed_data(stored_info, combine_ids(ref(*ctx.style.id),
@@ -62,7 +62,7 @@ void refresh_panel_style_info(
 static void
 draw_panel_focus_border(
     dataless_ui_context& ctx, caching_renderer_data& rendering,
-    getter<panel_style_info> const& style_info,
+    accessor<panel_style_info> const& style_info,
     layout_box const& outer_region)
 {
     layout_box padded_region = add_border(outer_region, get_padding_size(ctx));
@@ -94,7 +94,7 @@ draw_panel_focus_border(
 static void
 begin_outer_panel(
     ui_context& ctx, custom_panel_data& data,
-    getter<panel_style_info> const& style_info,
+    accessor<panel_style_info> const& style_info,
     bordered_layout& outer, layout const& layout_spec,
     panel_flag_set flags, widget_id id, widget_state state)
 {
@@ -229,7 +229,7 @@ begin_inner_panel(
 
 void custom_panel::begin(
     ui_context& ctx, custom_panel_data& data,
-    getter<panel_style_info> const& style,
+    accessor<panel_style_info> const& style,
     layout const& layout_spec, panel_flag_set flags, widget_id id,
     widget_state state)
 {
@@ -260,7 +260,7 @@ struct panel_data
 };
 
 void panel::begin(
-    ui_context& ctx, getter<string> const& style,
+    ui_context& ctx, accessor<string> const& style,
     layout const& layout_spec, panel_flag_set flags, widget_id id,
     widget_state state)
 {
@@ -317,7 +317,7 @@ struct clickable_panel_data
 };
 
 void clickable_panel::begin(
-    ui_context& ctx, getter<string> const& style,
+    ui_context& ctx, accessor<string> const& style,
     layout const& layout_spec,
     panel_flag_set flags, widget_id id)
 {
@@ -338,7 +338,7 @@ void clickable_panel::begin(
 }
 
 void scrollable_panel::begin(
-    ui_context& ctx, getter<string> const& style,
+    ui_context& ctx, accessor<string> const& style,
     layout const& layout_spec, panel_flag_set flags,
     optional_storage<layout_vector> const& scroll_position_storage)
 {

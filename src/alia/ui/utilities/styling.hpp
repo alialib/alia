@@ -314,6 +314,73 @@ void parse(line_parser& p, side_selection* spec);
 
 // HIGHER-LEVEL STYLE AND PROPERTY RETRIEVAL UTILITIES
 
+// This is used for caching compound style info structures.
+//
+// To use it, define the style info structure and provide a function of the
+// following form.
+//
+// void read_style_info(dataless_ui_context& ctx, Info* info,
+//    style_search_path const* path);
+//
+// This should read the necessary style info from the UI context and style
+// path and store it in *info.
+//
+// You can then call get_cached_style_info(ctx, &info, style) each pass.
+// This will take care of caching and calling read_style_info when needed.
+// On return, *info always points to the latest style info.
+//
+template<class Info>
+void
+get_cached_style_info(ui_context& ctx, Info const** info,
+    alia::accessor<string> const& style)
+{
+    keyed_data<Info>* cached_info;
+    if (get_cached_data(ctx, &cached_info) || is_refresh_pass(ctx))
+    {
+        refresh_keyed_data(*cached_info,
+            combine_ids(ref(*ctx.style.id), ref(style.id())));
+        if (!is_valid(*cached_info))
+        {
+            style_path_storage storage;
+            style_search_path const* path =
+                add_substyle_to_path(&storage, ctx.style.path, ctx.style.path,
+                    get(style));
+            Info info;
+            read_style_info(ctx, &info, path);
+            set(*cached_info, info);
+        }
+    }
+    assert(is_valid(*cached_info));
+    *info = &get(*cached_info);
+}
+
+// Same as above, but for stateful components.
+template<class Info>
+void
+get_cached_style_info(ui_context& ctx, Info const** info,
+    alia::accessor<string> const& style, widget_state state)
+{
+    keyed_data<Info>* cached_info;
+    if (get_cached_data(ctx, &cached_info) || is_refresh_pass(ctx))
+    {
+        refresh_keyed_data(*cached_info,
+            combine_ids(ref(*ctx.style.id),
+                combine_ids(ref(style.id()), make_id(state))));
+        if (!is_valid(*cached_info))
+        {
+            stateful_style_path_storage storage;
+            style_search_path const* path =
+                add_substyle_to_path(&storage, ctx.style.path, ctx.style.path,
+                    get(style), state);
+            Info info;
+            read_style_info(ctx, &info, path);
+            set(*cached_info, info);
+        }
+    }
+    assert(is_valid(*cached_info));
+    *info = &get(*cached_info);
+}
+
 // Get the entire description of a font from the given style search path.
 // This requires a reference to the associated UI system because that provides
 // a global font scale factor.
@@ -346,6 +413,12 @@ void update_substyle_data(
     style_search_path const* path,
     string const& substyle_name, widget_state state,
     add_substyle_flag_set flags = NO_FLAGS);
+
+keyed_data<substyle_data>*
+get_substyle_data(
+    ui_context& ctx, accessor<string> const& substyle_name,
+    widget_state state = WIDGET_NORMAL,
+    scoped_substyle_flag_set flags = NO_FLAGS);
 
 }
 
