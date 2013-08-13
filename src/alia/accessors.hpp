@@ -9,66 +9,6 @@
 
 namespace alia {
 
-// Accessors are the means by which UI elements access model state and values
-// computed by the application for display in the UI.
-// The goals of the accessor library are as follows.
-// - Unify the interface to C-style data structures and OOP-style classes
-//   (whose data members may be protected behind accessor functions).
-// - Provide standard mechanisms for transforming the UI's view of model state
-//   or applying constraints to its manipulations of that state.
-// - Provide mechanisms for efficiently detecting changes in displayed values.
-// - Ensure that the passing of values to the UI is as efficient and lazy as
-//   possible.
-//
-// Accessors are passed by const reference into UI functions.
-// They're typically created directly at the call site as function arguments
-// and are only valid for the life of the function call.
-// Accessor wrappers are templated and store copies of the actual wrapped
-// accessor, which allows them to be easily composed at the call site, without
-// requiring any memory allocation.
-// UI functions are untemplated and lose the actual type of the accessor.
-// One consequence of this is that a UI container cannot store its accessor
-// for its entire scope and thus only has access to it within its begin
-// function. If a container needs to set its accessor's value from within its
-// scope, it can do so by reinvoking the UI context with a set_value_event
-// that is processed by the container's begin function.
-
-template<class T>
-struct accessor
-{
-    typedef T value_type;
-
-    // If this returns false, the underlying state has no value, so get()
-    // should not be called.
-    virtual bool is_gettable() const = 0;
-
-    // Get the value. The reference returned here is only guaranteed to be
-    // valid as long as the accessor itself is valid.
-    virtual T const& get() const = 0;
-
-    // In some cases, the entity accessing the value may need to store a local
-    // copy of it. If done through get(), this would require copying the value
-    // itself, but that may be expensive if the value is large. Thus, accessors
-    // can also provide a version which returns a shared_ptr to the value, so
-    // the accessing entity can share ownership of it. The pointed-to value
-    // must be guaranteed to remain constant.
-    virtual alia__shared_ptr<T> get_ptr() const
-    { return alia__shared_ptr<T>(new T(get())); }
-
-    // An accessor must supply an ID which uniquely identifies its value.
-    // The ID is required to be valid if is_gettable() returns true.
-    // (It may be valid even if is_gettable() returns false, which would mean
-    // that the accessor can identify its value but doesn't know it yet.)
-    // The ID reference is only valid as long as the accessor itself is valid.
-    virtual id_interface const& id() const = 0;
-
-    // If is_settable() returns false, the accessor is currently read-only and
-    // any UI controls associated with it should disallow user input.
-    // (And thus, set() should not be called.)
-    virtual bool is_settable() const = 0;
-    virtual void set(T const& value) const = 0;
-};
-
 // Is x gettable?
 template<class T>
 bool is_gettable(accessor<T> const& x)
