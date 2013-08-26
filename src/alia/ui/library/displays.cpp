@@ -95,7 +95,8 @@ void do_separator(ui_context& ctx, layout const& layout_spec)
 
 struct color_metrics
 {
-    absolute_size size;
+    layout_vector size;
+    layout_scalar descent;
 };
 
 struct color_display_data
@@ -123,16 +124,25 @@ void do_color(ui_context& ctx, accessor<rgba8> const& color,
                 add_substyle_to_path(&storage, ctx.style.path, 0,
                     "color-display");
             metrics.size =
-                get_property(path, "size", UNINHERITED_PROPERTY,
-                    make_vector(
-                        absolute_length(1.4f, EM),
-                        absolute_length(1.4f, EM)));
+                as_layout_size(
+                    resolve_absolute_size(get_layout_traversal(ctx),
+                        get_property(path, "size", UNINHERITED_PROPERTY,
+                            make_vector(
+                                absolute_length(1.4f, EM),
+                                absolute_length(1.4f, EM)))));
+            metrics.descent =
+                as_layout_size(
+                    resolve_absolute_length(get_layout_traversal(ctx), 0,
+                        get_property(path, "descent", UNINHERITED_PROPERTY,
+                            absolute_length(0, PIXELS))));
             set(data.metrics, metrics);
         }
         data.layout_node.refresh_layout(
             get_layout_traversal(ctx),
-            add_default_size(layout_spec, get(data.metrics).size),
-            leaf_layout_requirements(make_layout_vector(0, 0), 0, 0));
+            layout_spec,
+            leaf_layout_requirements(get(data.metrics).size,
+                get(data.metrics).size[1] - get(data.metrics).descent,
+                get(data.metrics).descent));
         add_layout_node(get_layout_traversal(ctx), &data.layout_node);
         break;
       }

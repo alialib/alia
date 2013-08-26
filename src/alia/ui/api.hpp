@@ -1304,6 +1304,45 @@ class collapsible_content : noncopyable
     bool do_content_;
 };
 
+class horizontal_collapsible_content : noncopyable
+{
+ public:
+    horizontal_collapsible_content() {}
+    ~horizontal_collapsible_content() { end(); }
+
+    horizontal_collapsible_content(ui_context& ctx, bool expanded,
+        animated_transition const& transition = default_transition,
+        double const offset_factor = 1.,
+        layout const& layout_spec = default_layout)
+    { begin(ctx, expanded, transition, offset_factor, layout_spec); }
+
+    horizontal_collapsible_content(ui_context& ctx, float expansion,
+        double const offset_factor = 1.,
+        layout const& layout_spec = default_layout)
+    { begin(ctx, expansion, offset_factor, layout_spec); }
+
+    void begin(ui_context& ctx, bool expanded,
+        animated_transition const& transition = default_transition,
+        double const offset_factor = 1.,
+        layout const& layout_spec = default_layout);
+
+    void begin(ui_context& ctx, float expansion,
+        double const offset_factor = 1.,
+        layout const& layout_spec = default_layout);
+
+    void end();
+
+    bool do_content() const { return do_content_; }
+
+ private:
+    ui_context* ctx_;
+    scoped_layout_container container_;
+    scoped_clip_region clipper_;
+    scoped_transformation transform_;
+    column_layout layout_;
+    bool do_content_;
+};
+
 ALIA_DEFINE_FLAG_TYPE(tree_node)
 ALIA_DEFINE_FLAG(tree_node, 0x1, TREE_NODE_INITIALLY_EXPANDED)
 
@@ -1574,6 +1613,8 @@ struct drop_down_list : noncopyable
         layout const& layout_spec = default_layout,
         ddl_flag_set flags = NO_FLAGS)
     {
+        changed_ = false;
+
         if (selection.is_gettable())
             selection_ = get(selection);
         else

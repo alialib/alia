@@ -81,8 +81,6 @@ collapsible_layout_container::set_relative_assignment(
         assignment);
     alia_if (rra.update_required())
     {
-        this->window = rra.resolved_assignment().region;
-
         layout_box const& region = rra.resolved_assignment().region;
 
         layout_requirements y = alia::get_vertical_requirements(
@@ -99,6 +97,7 @@ collapsible_layout_container::set_relative_assignment(
         rra.update();
     }
     alia_end
+    this->window = rra.resolved_assignment().region;
 }
 
 void collapsible_content::begin(
@@ -158,6 +157,173 @@ void collapsible_content::begin(
 }
 
 void collapsible_content::end()
+{
+    if (ctx_)
+    {
+        layout_.end();
+
+        transform_.end();
+        clipper_.end();
+
+        container_.end();
+
+        ctx_ = 0;
+    }
+}
+
+// HORIZONTAL COLLAPSIBLE CONTENT
+
+struct horizontal_collapsible_layout_container : layout_container
+{
+    // implementation of layout interface
+    layout_requirements get_horizontal_requirements(
+        layout_calculation_context& ctx);
+    layout_requirements get_vertical_requirements(
+        layout_calculation_context& ctx,
+        layout_scalar assigned_width);
+    void set_relative_assignment(
+        layout_calculation_context& ctx,
+        relative_layout_assignment const& assignment);
+
+    // expansion fraction (0 to 1)
+    float expansion;
+
+    // layout cacher
+    layout_cacher cacher;
+
+    // The following are filled in during layout...
+
+    // actual content width
+    layout_scalar content_width;
+
+    // window through which the content is visible
+    layout_box window;
+
+    horizontal_collapsible_layout_container() : expansion(0) {}
+};
+
+layout_requirements
+horizontal_collapsible_layout_container::get_horizontal_requirements(
+    layout_calculation_context& ctx)
+{
+    horizontal_layout_query query(ctx, cacher, last_content_change);
+    alia_if (query.update_required())
+    {
+        layout_scalar content_width = get_max_child_width(ctx, children);
+        layout_scalar visible_width =
+            round_to_layout_scalar(float(content_width) * this->expansion);
+        this->content_width = content_width;
+        query.update(calculated_layout_requirements(visible_width, 0, 0));
+    }
+    alia_end
+    return query.result();
+}
+
+layout_requirements
+horizontal_collapsible_layout_container::get_vertical_requirements(
+    layout_calculation_context& ctx, layout_scalar assigned_width)
+{
+    vertical_layout_query query(ctx, cacher, last_content_change,
+        assigned_width);
+    alia_if (query.update_required())
+    {
+        layout_scalar resolved_width =
+            resolve_assigned_width(
+                this->cacher.resolved_spec,
+                assigned_width,
+                this->get_horizontal_requirements(ctx));
+        query.update(fold_vertical_child_requirements(ctx, children,
+            resolved_width));
+    }
+    alia_end
+    return query.result();
+}
+
+void
+horizontal_collapsible_layout_container::set_relative_assignment(
+    layout_calculation_context& ctx,
+    relative_layout_assignment const& assignment)
+{
+    relative_region_assignment rra(ctx, *this, cacher, last_content_change,
+        assignment);
+    alia_if (rra.update_required())
+    {
+        this->window = rra.resolved_assignment().region;
+
+        layout_box const& region = rra.resolved_assignment().region;
+
+        layout_scalar content_width = get_max_child_width(ctx, children);
+
+        layout_vector content_size =
+            make_layout_vector(content_width, region.size[1]);
+
+        relative_layout_assignment assignment(
+            layout_box(make_layout_vector(0, 0), content_size),
+            assignment.baseline_y);
+
+        alia::set_relative_assignment(ctx, *children, assignment);
+        rra.update();
+    }
+    alia_end
+}
+
+void horizontal_collapsible_content::begin(
+    ui_context& ctx, bool expanded, animated_transition const& transition,
+    double const offset_factor, layout const& layout_spec)
+{
+    float expansion = smooth_raw_value(ctx, expanded ? 1.f : 0.f, transition);
+    begin(ctx, expansion, offset_factor, layout_spec);
+}
+
+void horizontal_collapsible_content::begin(
+    ui_context& ctx, float expansion,
+    double const offset_factor, layout const& layout_spec)
+{
+    ctx_ = &ctx;
+
+    horizontal_collapsible_layout_container* layout;
+    get_cached_data(ctx, &layout);
+
+    widget_id id = get_widget_id(ctx);
+
+    container_.begin(get_layout_traversal(ctx), layout);
+
+    if (is_refresh_pass(ctx))
+    {
+        // If the widget is expanding, ensure that it's visible.
+        if (expansion > layout->expansion)
+            make_widget_visible(ctx, id, MAKE_WIDGET_VISIBLE_ABRUPTLY);
+        detect_layout_change(ctx, &layout->expansion, expansion);
+        update_layout_cacher(get_layout_traversal(ctx), layout->cacher,
+            layout_spec, FILL | UNPADDED);
+    }
+    else
+    {
+        if (ctx.event->category == REGION_CATEGORY)
+            do_box_region(ctx, id, layout->window);
+
+        if (expansion != 0 && expansion != 1)
+        {
+            clipper_.begin(*get_layout_traversal(ctx).geometry);
+            clipper_.set(box<2,double>(layout->window));
+        }
+
+        layout_scalar offset = round_to_layout_scalar(
+            offset_factor * (1 - expansion) * layout->content_width);
+
+        transform_.begin(*get_layout_traversal(ctx).geometry);
+        transform_.set(
+            translation_matrix(make_vector<double>(-offset, 0) +
+                vector<2,double>(
+                    layout->cacher.relative_assignment.region.corner)));
+    }
+
+    do_content_ = expansion != 0;
+
+    layout_.begin(ctx);
+}
+
+void horizontal_collapsible_content::end()
 {
     if (ctx_)
     {

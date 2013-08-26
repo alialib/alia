@@ -621,8 +621,8 @@ void wx_opengl_window::on_idle(wxIdleEvent& event)
     wx_opengl_window::impl_data& impl = *impl_;
     if (process_timer_requests(impl.ui, get_time(impl)))
         update_window(impl);
-    //else
-    //    Sleep(1);
+    else
+        Sleep(1);
     if (has_timer_requests(impl.ui))
         event.RequestMore();
 }
