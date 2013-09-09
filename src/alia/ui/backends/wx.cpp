@@ -185,6 +185,23 @@ get_key_event_info(wxKeyEvent const& event)
 wxCursor static
 translate_mouse_cursor(mouse_cursor cursor)
 {
+    // wxCURSOR_BLANK doesn't seem to work on Windows, so instead just hide
+    // the mouse cursor. (This also means we have to make sure the cursor is
+    // shown again when we don't want a blank cursor.)
+    #ifdef __WXMSW__
+        if (cursor == BLANK_CURSOR)
+        {
+            while (ShowCursor(false) >= 0)
+                ;
+            return wxCursor(wxCURSOR_ARROW);
+        }
+        else
+        {
+            while (ShowCursor(true) < 0)
+                ;
+        }
+    #endif
+
     switch (cursor)
     {
      case DEFAULT_CURSOR:

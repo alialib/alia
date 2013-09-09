@@ -360,8 +360,6 @@ struct indirect_accessor : accessor<T>
     indirect_accessor(accessor<T> const& wrapped) : wrapped_(&wrapped) {}
     bool is_gettable() const { return wrapped_->is_gettable(); }
     T const& get() const { return wrapped_->get(); }
-    alia__shared_ptr<T> get_ptr() const
-    { return wrapped_->get_ptr(); }
     id_interface const& id() const { return wrapped_->id(); }
     bool is_settable() const { return wrapped_->is_settable(); }
     void set(T const& value) const { wrapped_->set(value); }
@@ -434,8 +432,6 @@ struct readonly_accessor_wrapper
     readonly_accessor_wrapper(Wrapped wrapped) : wrapped_(wrapped) {}
     bool is_gettable() const { return wrapped_.is_gettable(); }
     wrapped_value_type const& get() const { return wrapped_.get(); }
-    alia__shared_ptr<wrapped_value_type> get_ptr() const
-    { return wrapped_.get_ptr(); }
     id_interface const& id() const { return wrapped_.id(); }
     bool is_settable() const { return false; }
     void set(wrapped_value_type const& value) const {}
@@ -464,8 +460,6 @@ struct accessor_mux : accessor<typename accessor_value_type<T>::type>
     { return condition_ ? t_.is_gettable() : f_.is_gettable(); }
     typename accessor_value_type<T>::type const& get() const
     { return condition_ ? t_.get() : f_.get(); }
-    alia__shared_ptr<typename accessor_value_type<T>::type>
-    get_ptr() const { return condition_ ? t_.get_ptr() : f_.get_ptr(); }
     id_interface const& id() const
     { return condition_ ? t_.id() : f_.id(); }
     bool is_settable() const

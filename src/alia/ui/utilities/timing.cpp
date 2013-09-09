@@ -16,7 +16,7 @@ void request_refresh(dataless_ui_context& ctx, ui_time_type duration)
 
 void request_animation_refresh(dataless_ui_context& ctx)
 {
-    request_refresh(ctx, 10);
+    request_refresh(ctx, 1);
 }
 
 ui_time_type get_animation_tick_count(dataless_ui_context& ctx)

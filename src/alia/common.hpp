@@ -350,15 +350,6 @@ struct accessor
     // valid as long as the accessor itself is valid.
     virtual T const& get() const = 0;
 
-    // In some cases, the entity accessing the value may need to store a local
-    // copy of it. If done through get(), this would require copying the value
-    // itself, but that may be expensive if the value is large. Thus, accessors
-    // can also provide a version which returns a shared_ptr to the value, so
-    // the accessing entity can share ownership of it. The pointed-to value
-    // must be guaranteed to remain constant.
-    virtual alia__shared_ptr<T> get_ptr() const
-    { return alia__shared_ptr<T>(new T(get())); }
-
     // An accessor must supply an ID which uniquely identifies its value.
     // The ID is required to be valid if is_gettable() returns true.
     // (It may be valid even if is_gettable() returns false, which would mean
