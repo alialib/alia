@@ -379,6 +379,7 @@ bool get_data(Context& ctx, T** ptr)
     data_node* node = *traversal.next_data_ptr;
     if (node)
     {
+        if (!dynamic_cast<typed_data_node<T>*>(node))
         assert(dynamic_cast<typed_data_node<T>*>(node));
         typed_data_node<T>* typed_node =
             static_cast<typed_data_node<T>*>(node);
