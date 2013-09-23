@@ -507,18 +507,20 @@ bool process_text_input(ui_system& ui, ui_time_type time,
     }
     return e.acknowledged;
 }
-
-bool process_key_press(ui_system& ui, ui_time_type time,
+bool process_focused_key_press(ui_system& ui, ui_time_type time,
     key_event_info const& info)
 {
+    ui.input.keyboard_interaction = true;
     key_event e(KEY_PRESS_EVENT, time, info);
     if (is_valid(ui.input.focused_id))
         issue_targeted_event(ui, e, ui.input.focused_id);
-    if (!e.acknowledged)
-    {
-        e.type = BACKGROUND_KEY_PRESS_EVENT;
-        issue_event(ui, e);
-    }
+    return e.acknowledged;
+}
+bool process_background_key_press(ui_system& ui, ui_time_type time,
+    key_event_info const& info)
+{
+    key_event e(BACKGROUND_KEY_PRESS_EVENT, time, info);
+    issue_event(ui, e);
     if (!e.acknowledged && info.code == KEY_TAB)
     {
         if (info.mods == KMOD_SHIFT)
@@ -532,8 +534,13 @@ bool process_key_press(ui_system& ui, ui_time_type time,
             e.acknowledged = true;
         }
     }
-    ui.input.keyboard_interaction = true;
     return e.acknowledged;
+}
+bool process_key_press(ui_system& ui, ui_time_type time,
+    key_event_info const& info)
+{
+    return process_focused_key_press(ui, time, info) ||
+        process_background_key_press(ui, time, info);
 }
 bool process_key_release(ui_system& ui, ui_time_type time,
     key_event_info const& info)

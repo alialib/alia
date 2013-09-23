@@ -153,6 +153,8 @@ struct layout_container : layout_node
     // when the container's layout needs to be recomputed.
     counter_type last_content_change;
 
+    virtual void record_change(layout_traversal& traversal);
+
     layout_container* parent;
 
     layout_container() : children(0), last_content_change(0), parent(0) {}

@@ -75,6 +75,15 @@ void process_focus_loss(
 void process_focus_gain(
     ui_system& ui, ui_time_type time);
 
+// process_key_press calls both of the following.
+// process_focused_key_press will only pass the key to the widget with the
+// keyboard focus (if any).
+// process_background_key_press will pass it to any widget that's listening.
+bool process_focused_key_press(
+    ui_system& ui, ui_time_type time, key_event_info const& info);
+bool process_background_key_press(
+    ui_system& ui, ui_time_type time, key_event_info const& info);
+
 // Move the keyboard focus forward and backwards through the focus order.
 void advance_focus(ui_system& ui);
 void regress_focus(ui_system& ui);

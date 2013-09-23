@@ -288,7 +288,6 @@ BEGIN_EVENT_TABLE(wx_opengl_window, wxGLCanvas)
     EVT_KILL_FOCUS(wx_opengl_window::on_kill_focus)
     EVT_KEY_DOWN(wx_opengl_window::on_key_down)
     EVT_KEY_UP(wx_opengl_window::on_key_up)
-    EVT_CHAR(wx_opengl_window::on_char)
     EVT_IDLE(wx_opengl_window::on_idle)
     EVT_MENU(-1, wx_opengl_window::on_menu)
     EVT_SYS_COLOUR_CHANGED(wx_opengl_window::on_sys_color_change)
@@ -345,7 +344,7 @@ update_window(wx_opengl_window::impl_data& impl)
     }
 
     impl.window->Refresh(false);
-    //impl.window->Update();
+    impl.window->Update();
 }
 
 void static
@@ -457,33 +456,31 @@ handle_mouse(wx_opengl_window::impl_data& impl, wxMouseEvent& event)
 }
 
 void static
-handle_char(wx_opengl_window::impl_data& impl, wxKeyEvent& event)
+handle_key_down(wx_opengl_window::impl_data& impl, wxKeyEvent& event)
 {
-    bool acknowledged = false;
+    ui_time_type time = get_time(impl);
+    key_event_info info = get_key_event_info(event);
 
-    if (!event.AltDown() && !event.ControlDown())
+    bool acknowledged = process_focused_key_press(impl.ui, time, info);
+
+    if (!acknowledged && !event.AltDown() && !event.ControlDown())
     {
-        // TODO: Support Unicode.
-        if (event.GetKeyCode() < 0x80)
+        wxChar unicode = event.GetUnicodeKey();
+        if (unicode != 0)
         {
-            char character = event.GetKeyCode();
+            wxChar buffer[2] = { unicode, 0 };
+            wxString string(buffer);
+            wxScopedCharBuffer char_buffer = string.utf8_str();
             utf8_string utf8;
-            utf8.begin = &character;
-            utf8.end = &character + 1;
+            utf8.begin = char_buffer.data();
+            utf8.end = char_buffer.data() + char_buffer.length();
             acknowledged = process_text_input(impl.ui, get_time(impl), utf8);
         }
     }
 
-    update_window(impl);
     if (!acknowledged)
-        event.Skip();
-}
+        acknowledged = process_background_key_press(impl.ui, time, info);
 
-void static
-handle_key_down(wx_opengl_window::impl_data& impl, wxKeyEvent& event)
-{
-    bool acknowledged =
-        process_key_press(impl.ui, get_time(impl), get_key_event_info(event));
     update_window(impl);
     if (!acknowledged)
         event.Skip();
@@ -650,10 +647,6 @@ void wx_opengl_window::on_key_down(wxKeyEvent& event)
 void wx_opengl_window::on_key_up(wxKeyEvent& event)
 {
     handle_key_up(*impl_, event);
-}
-void wx_opengl_window::on_char(wxKeyEvent& event)
-{
-    handle_char(*impl_, event);
 }
 void wx_opengl_window::on_menu(wxCommandEvent& event)
 {

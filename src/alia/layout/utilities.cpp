@@ -46,9 +46,20 @@ static void record_container_change(layout_traversal& traversal,
     }
 }
 
+void layout_container::record_change(layout_traversal& traversal)
+{
+    if (this->last_content_change != traversal.refresh_counter)
+    {
+        this->last_content_change = traversal.refresh_counter;
+        if (this->parent)
+            this->parent->record_change(traversal);
+    }
+}
+
 void record_layout_change(layout_traversal& traversal)
 {
-    record_container_change(traversal, traversal.active_container);
+    if (traversal.active_container)
+        traversal.active_container->record_change(traversal);
 }
 
 layout add_default_size(layout const& layout_spec, absolute_size const& size)

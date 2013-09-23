@@ -38,7 +38,6 @@ struct wx_opengl_window : public wxGLCanvas
     void on_idle(wxIdleEvent& event);
     void on_key_down(wxKeyEvent& event);
     void on_key_up(wxKeyEvent& event);
-    void on_char(wxKeyEvent& event);
     void on_menu(wxCommandEvent& event);
     void on_sys_color_change(wxSysColourChangedEvent& event);
 

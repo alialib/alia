@@ -1019,6 +1019,9 @@ struct grid_row_container : layout_container
         layout_calculation_context& ctx,
         relative_layout_assignment const& assignment);
 
+    void record_change(layout_traversal& traversal);
+    void record_self_change(layout_traversal& traversal);
+
     layout_cacher cacher;
 
     // cached requirements for cells within this row
@@ -1287,6 +1290,36 @@ grid_row_container<Uniformity>::set_relative_assignment(
         rra.update();
     }
     alia_end
+}
+
+template<class Uniformity>
+void
+grid_row_container<Uniformity>::record_change(layout_traversal& traversal)
+{
+    if (this->last_content_change != traversal.refresh_counter)
+    {
+        this->last_content_change = traversal.refresh_counter;
+        if (this->parent)
+            this->parent->record_change(traversal);
+        grid_data<Uniformity>& grid = *this->grid;
+        for (grid_row_container<Uniformity>* row = grid.rows;
+            row; row = row->next)
+        {
+            row->record_self_change(traversal);
+        }
+    }
+}
+
+template<class Uniformity>
+void
+grid_row_container<Uniformity>::record_self_change(layout_traversal& traversal)
+{
+    if (this->last_content_change != traversal.refresh_counter)
+    {
+        this->last_content_change = traversal.refresh_counter;
+        if (this->parent)
+            this->parent->record_change(traversal);
+    }
 }
 
 template<class Uniformity>
