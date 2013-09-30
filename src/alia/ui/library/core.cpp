@@ -117,7 +117,7 @@ void cached_ui_block::begin(ui_context& ctx, id_interface const& id,
         is_relevant_ =
             !cacher.layout_valid ||
             !cacher.layout_id.matches(
-                combine_ids(ref(*ctx.style.id), ref(id)));
+                combine_ids(ref(ctx.style.id), ref(&id)));
         // If we're going to actually update the layout, record the current
         // value of the layout context's next_ptr, so we'll know where to look
         // for the address of the first node.
@@ -126,7 +126,7 @@ void cached_ui_block::begin(ui_context& ctx, id_interface const& id,
             layout_next_ptr_ = get_layout_traversal(ctx).next_ptr;
             // Store the ID here because it's only available within this
             // function.
-            cacher.layout_id.store(combine_ids(ref(*ctx.style.id), ref(id)));
+            cacher.layout_id.store(combine_ids(ref(ctx.style.id), ref(&id)));
             // Need to mark it valid here because it could be invalidated
             // by something inside the block.
             // (Is this dangerous?)

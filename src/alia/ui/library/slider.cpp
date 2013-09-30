@@ -74,7 +74,7 @@ struct default_slider_renderer : slider_renderer
 
         layout_box track_box(track_position, track_size);
 
-        caching_renderer cache(ctx, data, ref(*ctx.style.id), track_box);
+        caching_renderer cache(ctx, data, ref(ctx.style.id), track_box);
         if (cache.needs_rendering())
         {
             skia_renderer renderer(ctx, cache.image(), track_box.size);
@@ -110,7 +110,7 @@ struct default_slider_renderer : slider_renderer
         thumb_region.corner += thumb_position;
 
         caching_renderer cache(ctx, data,
-            combine_ids(ref(*ctx.style.id), make_id(state)),
+            combine_ids(ref(ctx.style.id), make_id(state)),
             thumb_region);
         if (cache.needs_rendering())
         {

@@ -47,8 +47,8 @@ void refresh_panel_style_info(
     accessor<string> const& substyle, widget_state state,
     add_substyle_flag_set flags)
 {
-    refresh_keyed_data(stored_info, combine_ids(ref(*ctx.style.id),
-        combine_ids(ref(substyle.id()), make_id(state))));
+    refresh_keyed_data(stored_info, combine_ids(ref(ctx.style.id),
+        combine_ids(ref(&substyle.id()), make_id(state))));
     if (!is_valid(stored_info))
     {
         stateful_style_path_storage storage;
@@ -274,7 +274,7 @@ void panel::begin(
 
     begin_outer_panel(ctx, data_->panel,
         make_custom_getter(&get(data_->style_info),
-            ref(data_->style_info.key.get())),
+            ref(&data_->style_info.key.get())),
         outer_, add_default_padding(layout_spec, PADDED), flags, id, state);
 
     substyle_.begin(ctx, style, state);
@@ -348,7 +348,7 @@ void scrollable_panel::begin(
     refresh_panel_style_info(ctx, data->style_info, style, WIDGET_NORMAL);
     begin_outer_panel(ctx, data->panel,
         make_custom_getter(&get(data->style_info),
-            ref(data->style_info.key.get())),
+            ref(&data->style_info.key.get())),
         outer_, layout_spec, flags | PANEL_IGNORE_STYLE_PADDING,
         id, WIDGET_NORMAL);
     substyle_.begin(ctx, style, WIDGET_NORMAL);

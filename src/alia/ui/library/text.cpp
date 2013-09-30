@@ -522,7 +522,7 @@ refresh_standalone_text(
     accessor<string> const& text,
     layout const& layout_spec)
 {
-    if (!data.key.matches(combine_ids(ref(text.id()), ref(*ctx.style.id))))
+    if (!data.key.matches(combine_ids(ref(&text.id()), ref(ctx.style.id))))
     {
         SkPaint paint;
         set_skia_font_info(paint, ctx.style.properties->font);
@@ -549,7 +549,7 @@ refresh_standalone_text(
 
 	data.cached_image.reset();
 
-        data.key.store(combine_ids(ref(text.id()), ref(*ctx.style.id)));
+        data.key.store(combine_ids(ref(&text.id()), ref(ctx.style.id)));
     }
     add_layout_node(get_layout_traversal(ctx), &data.layout_node);
 }
@@ -640,10 +640,10 @@ draw_text(dataless_ui_context& ctx, text_drawing_data& data,
     accessor<string> const& text, vector<2,double> const& position,
     ui_text_drawing_flag_set flags)
 {
-    if (!data.key.matches(combine_ids(ref(text.id()), ref(*ctx.style.id))))
+    if (!data.key.matches(combine_ids(ref(&text.id()), ref(ctx.style.id))))
     {
 	data.image.reset();
-	data.key.store(combine_ids(ref(text.id()), ref(*ctx.style.id)));
+	data.key.store(combine_ids(ref(&text.id()), ref(ctx.style.id)));
     }
 
     if (!is_valid(data.image))
@@ -704,41 +704,6 @@ void draw_text(ui_context& ctx, accessor<string> const& text,
 
     if (is_render_pass(ctx))
 	draw_text(ctx, *data, text, position, flags);
-}
-
-struct layout_dependent_text_data
-{
-    layout_leaf layout_node;
-    text_drawing_data drawing;
-};
-
-void do_layout_dependent_text(ui_context& ctx, accessor<string> const& text,
-    layout const& layout_spec)
-{
-    ALIA_GET_CACHED_DATA(layout_dependent_text_data)
-
-    switch (ctx.event->category)
-    {
-     case REFRESH_CATEGORY:
-      {
-        data.layout_node.refresh_layout(
-            get_layout_traversal(ctx), layout_spec,
-            leaf_layout_requirements(make_layout_vector(0, 0), 0, 0),
-            LEFT | BASELINE_Y | PADDED);
-        add_layout_node(get_layout_traversal(ctx), &data.layout_node);
-        break;
-      }
-     case RENDER_CATEGORY:
-      {
-        relative_layout_assignment const& assignment =
-	    data.layout_node.assignment();
-        draw_text(ctx, data.drawing, text,
-            vector<2,double>(assignment.region.corner +
-	        make_layout_vector(0, assignment.baseline_y)),
-                ALIGN_TEXT_BASELINE);
-        break;
-      }
-    }
 }
 
 // LINK

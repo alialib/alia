@@ -50,7 +50,7 @@ void table::begin(ui_context& ctx, accessor<string> const& style,
     if (get_cached_data(ctx, &style_data) || is_refresh_pass(ctx))
     {
         refresh_keyed_data(*style_data,
-            combine_ids(ref(*ctx.style.id), ref(style.id())));
+            combine_ids(ref(ctx.style.id), ref(&style.id())));
     }
     if (!is_valid(*style_data))
     {
@@ -133,7 +133,7 @@ void table_cell::begin(table_row& row, layout const& layout_spec)
 
     panel_.begin(ctx, *panel_data,
         make_custom_getter(&cell_style.panel_info,
-            ref(*cell_style.substyle.state.id)),
+            ref(cell_style.substyle.state.id)),
         add_default_padding(layout_spec, UNPADDED));
 
     style_.begin(ctx, cell_style.substyle.state,

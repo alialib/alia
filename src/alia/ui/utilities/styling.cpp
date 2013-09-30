@@ -1165,8 +1165,8 @@ get_substyle_data(
     keyed_data<substyle_data>* data;
     if (get_cached_data(ctx, &data) || is_refresh_pass(ctx))
     {
-        refresh_keyed_data(*data, combine_ids(ref(*ctx.style.id),
-            combine_ids(ref(substyle_name.id()), make_id(state))));
+        refresh_keyed_data(*data, combine_ids(ref(ctx.style.id),
+            combine_ids(ref(&substyle_name.id()), make_id(state))));
     }
     if (!is_valid(*data))
     {

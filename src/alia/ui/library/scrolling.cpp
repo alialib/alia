@@ -77,7 +77,7 @@ struct default_scrollbar_renderer : scrollbar_renderer
             return;
 
         caching_renderer cache(ctx, data,
-            combine_ids(ref(*ctx.style.id), make_id(state)),
+            combine_ids(ref(ctx.style.id), make_id(state)),
             rect);
         if (cache.needs_rendering())
         {

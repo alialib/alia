@@ -148,7 +148,7 @@ void initialize_caching_control_renderer(
     layout_box padded_region = add_border(region, get_padding_size(ctx));
 
     cache.begin(ctx, data,
-        combine_ids(ref(content_id), ref(*ctx.style.id)),
+        combine_ids(ref(&content_id), ref(ctx.style.id)),
         padded_region);
 }
 
@@ -201,7 +201,7 @@ struct default_check_box_renderer : check_box_renderer
 
         caching_renderer cache;
         initialize_caching_control_renderer(ctx, cache, region,
-            combine_ids(ref(value.id()), make_id(state)));
+            combine_ids(ref(&value.id()), make_id(state)));
         if (cache.needs_rendering())
         {
             box_control_renderer renderer(ctx, cache, "check-box", state);
@@ -296,7 +296,7 @@ struct default_radio_button_renderer : radio_button_renderer
 
         caching_renderer cache;
         initialize_caching_control_renderer(ctx, cache, region,
-            combine_ids(ref(value.id()), make_id(state)));
+            combine_ids(ref(&value.id()), make_id(state)));
         if (cache.needs_rendering())
         {
             box_control_renderer renderer(ctx, cache, "radio-button", state);

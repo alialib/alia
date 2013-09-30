@@ -357,7 +357,7 @@ template<class T>
 struct indirect_accessor : accessor<T>
 {
     indirect_accessor() {}
-    indirect_accessor(accessor<T> const& wrapped) : wrapped_(&wrapped) {}
+    indirect_accessor(accessor<T> const* wrapped) : wrapped_(wrapped) {}
     bool is_gettable() const { return wrapped_->is_gettable(); }
     T const& get() const { return wrapped_->get(); }
     id_interface const& id() const { return wrapped_->id(); }
@@ -368,7 +368,7 @@ struct indirect_accessor : accessor<T>
 };
 template<class T>
 indirect_accessor<T>
-ref(accessor<T> const& accessor)
+ref(accessor<T> const* accessor)
 { return indirect_accessor<T>(accessor); }
 
 // lazy_getter is used to create getters that lazily generate their values.
@@ -593,15 +593,17 @@ struct field_accessor : accessor<Field>
         // Apparently pointers-to-members aren't comparable for order, so
         // instead we use the address of the field if it were in a structure
         // that started at address 0.
-        id_ = combine_ids(ref(structure_.id()),
+        id_ = combine_ids(ref(&structure_.id()),
             make_id(&(((structure_type*)0)->*field_)));
         return id_;
     }
-    bool is_settable() const
-    { return structure_.is_gettable() && structure_.is_settable(); }
+    bool is_settable() const { return structure_.is_settable(); }
     void set(Field const& x) const
     {
-        structure_type s = structure_.get();
+        // Allowing a field to be set when the rest of the structure isn't
+        // gettable is questionable.
+        structure_type s =
+            structure_.is_gettable() ? structure_.get() : structure_type();
         s.*field_ = x;
         structure_.set(s);
     }

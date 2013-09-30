@@ -1704,7 +1704,7 @@ do_text_control(
     text_control_result result =
         do_text_control_pass(
             ctx,
-            make_validation_error_handler(ctx, ref(value), *validation_data),
+            make_validation_error_handler(ctx, ref(&value), *validation_data),
             layout_spec, flags, id, length_limit);
     if (result.event == TEXT_CONTROL_EDIT_CANCELED)
         clear_error(*validation_data);

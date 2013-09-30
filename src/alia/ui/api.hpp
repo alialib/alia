@@ -60,7 +60,7 @@ template<class T>
 accessor_mux<indirect_accessor<T>,inout_accessor<T> >
 resolve_storage(optional_storage<T> const& s, T* fallback)
 {
-    return select_accessor(s.storage != 0, ref(*s.storage), inout(fallback));
+    return select_accessor(s.storage != 0, ref(s.storage), inout(fallback));
 }
 
 // Currently, time is represented by a simple millisecond counter.
@@ -606,21 +606,21 @@ struct typed_ui_value : untyped_ui_value
 };
 
 // erase_type(ctx, x) stores a copy of x within the data graph of ctx and
-// returns a reference to that copy.
-// The idea here is that you can then return that reference to a calling
+// returns a pointer to that copy.
+// The idea here is that you can then return that pointer to a calling
 // function without that function caring what the concrete type of x is.
 // This is useful when implementing functions that return accessors since
-// you can declare the function type as simply returning a reference to an
-// accessor<T>, hiding the details of how that accessor is created.
+// you can declare the function type as simply returning a an
+// indirect_accessor, hiding the details of how that accessor is created.
 // Of course, when using this, you must ensure that x doesn't contain any
 // references that might be invalid when the stored copy is accessed.
 template<class T>
-T& erase_type(ui_context& ctx, T const& x)
+T* erase_type(ui_context& ctx, T const& x)
 {
     T* storage;
     get_cached_data(ctx, &storage);
     *storage = x;
-    return *storage;
+    return storage;
 }
 
 struct control_result
@@ -814,7 +814,7 @@ printf(ui_context& ctx, char const* format, accessor<Arg0> const& arg0,
     accessor<Arg1> const& arg1)
 {
     keyed_data_accessor<string> cache;
-    get_keyed_data(ctx, combine_ids(ref(arg0.id()), ref(arg1.id())), &cache);
+    get_keyed_data(ctx, combine_ids(ref(&arg0.id()), ref(&arg1.id())), &cache);
     if (!cache.is_gettable() && arg0.is_gettable() && arg1.is_gettable())
     {
         int size = ALIA_SNPRINTF(0, 0, format,
@@ -868,9 +868,6 @@ void draw_text(ui_context& ctx, accessor<string> const& text,
     vector<2,double> const& position,
     ui_text_drawing_flag_set flags = NO_FLAGS);
 
-void do_layout_dependent_text(ui_context& ctx, accessor<string> const& text,
-    layout const& layout_spec);
-    
 void do_styled_text(ui_context& ctx, accessor<string> const& substyle_name,
     accessor<string> const& text, layout const& layout_spec = default_layout);
 
@@ -948,7 +945,7 @@ do_text_control(
     optional<size_t> const& length_limit = none)
 {
     return do_text_control(
-        ctx, as_settable_text(ctx, ref(accessor)), layout_spec, flags, id,
+        ctx, as_settable_text(ctx, ref(&accessor)), layout_spec, flags, id,
         length_limit);
 }
 
@@ -1757,20 +1754,6 @@ struct table_row : noncopyable
     table* table_;
     grid_row grid_row_;
 };
-
-//struct table_row_background : noncopyable
-//{
-//    table_row_background() {}
-//    table_row_background(table& table,
-//        layout const& layout_spec = default_layout)
-//    { begin(table, layout_spec); }
-//    ~table_row_background() { end(); }
-//    void begin(table& table, layout const& layout_spec = default_layout);
-//    void end();
-// private:
-//    table* table_;
-//    custom_panel panel_;
-//};
 
 struct table_cell : noncopyable
 {

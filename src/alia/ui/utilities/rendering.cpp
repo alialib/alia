@@ -49,7 +49,7 @@ void caching_renderer::begin(
     if (is_visible(geometry, box<2,double>(region)))
     {
         refresh_keyed_data(data,
-            combine_ids(ref(content_id), make_id(region.size)));
+            combine_ids(ref(&content_id), make_id(region.size)));
         data_ = &data;
         region_ = region;
         surface_ = &surface;

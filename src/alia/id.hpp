@@ -367,14 +367,14 @@ struct id_ref : id_interface
         return *this;
     }
 
-    id_ref(id_interface const& id, bool owner)
-      : id_(&id), owner_(owner)
+    id_ref(id_interface const* id, bool owner)
+      : id_(id), owner_(owner)
     {}
 
     ~id_ref() { if (owner_) delete id_; }
 
     id_interface* clone() const
-    { return new id_ref(*id_->clone(), true); }
+    { return new id_ref(id_->clone(), true); }
 
     id_context context() const
     { return id_->context(); }
@@ -409,7 +409,7 @@ struct id_ref : id_interface
     // If this is true, the id_ref provides ownership of the ID.
     bool owner_;
 };
-static inline id_ref ref(id_interface const& id)
+static inline id_ref ref(id_interface const* id)
 { return id_ref(id, false); }
 
 // local_identity establishes an identity that's unique within the local
