@@ -470,7 +470,7 @@ handle_key_down(wx_opengl_window::impl_data& impl, wxKeyEvent& event)
         {
             wxChar buffer[2] = { unicode, 0 };
             wxString string(buffer);
-            wxScopedCharBuffer char_buffer = string.utf8_str();
+            wxCharBuffer char_buffer = string.utf8_str();
             utf8_string utf8;
             utf8.begin = char_buffer.data();
             utf8.end = char_buffer.data() + char_buffer.length();
@@ -555,6 +555,7 @@ handle_menu(wx_opengl_window::impl_data& impl, wxCommandEvent& event)
 
 wx_opengl_window::wx_opengl_window(
     alia__shared_ptr<ui_controller> const& controller,
+    alia__shared_ptr<style_tree> const& alia_style,
     wxWindow* parent,
     wxWindowID id,
     int const* attrib_list,
@@ -590,7 +591,7 @@ wx_opengl_window::wx_opengl_window(
         alia__shared_ptr<alia::surface>(surface),
         make_vector<float>(ppi.GetWidth(), ppi.GetHeight()),
         alia__shared_ptr<os_interface>(new wx_os_interface),
-        parse_style_file("alia.style"));
+        alia_style);
 
     update();
 }
@@ -860,6 +861,7 @@ void wx_frame::on_move(wxMoveEvent& event)
 void create_wx_framed_window(
     string const& title,
     alia__shared_ptr<app_window_controller> const& controller,
+    alia__shared_ptr<style_tree> const& style,
     app_window_state const& initial_state,
     int const* gl_canvas_attribs)
 {
@@ -873,7 +875,7 @@ void create_wx_framed_window(
         wxSize(initial_state.size[0], initial_state.size[1]));
 
     wx_opengl_window* contents = new wx_opengl_window(
-        controller, frame, wxID_ANY, gl_canvas_attribs,
+        controller, style, frame, wxID_ANY, gl_canvas_attribs,
         wxDefaultPosition,
         wxSize(initial_state.size[0], initial_state.size[1]));
 

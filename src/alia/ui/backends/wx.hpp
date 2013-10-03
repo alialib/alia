@@ -8,6 +8,8 @@
 
 namespace alia {
 
+struct style_tree;
+
 // wx_opengl_window is a wxGLCanvas with an associated alia UI.
 // It takes care of dispatching events received by the canvas to the UI.
 struct wx_opengl_window : public wxGLCanvas
@@ -15,6 +17,7 @@ struct wx_opengl_window : public wxGLCanvas
  public:
     wx_opengl_window(
         alia__shared_ptr<ui_controller> const& controller,
+        alia__shared_ptr<style_tree> const& alia_style,
         wxWindow* parent,
         wxWindowID id = wxID_ANY,
         int const* attrib_list = 0,
@@ -86,6 +89,7 @@ struct wx_frame : public wxFrame, app_window
 void create_wx_framed_window(
     string const& title,
     alia__shared_ptr<app_window_controller> const& controller,
+    alia__shared_ptr<style_tree> const& style,
     app_window_state const& initial_state,
     int const* gl_canvas_attribs);
 
