@@ -885,9 +885,9 @@ void create_wx_framed_window(
     frame->SetSizer(sizer);
 
     // Show the frame.
-    frame->Show(true);
     if (initial_state.flags & APP_WINDOW_FULL_SCREEN)
         frame->ShowFullScreen(true);
+    frame->Show(true);
 }
 
 }

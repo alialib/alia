@@ -1006,11 +1006,11 @@ do_radio_button(
     layout const& layout_spec = default_layout,
     widget_id id = auto_id);
 
-template<class Index>
+template<class Accessor, class Index>
 struct radio_accessor : regular_accessor<bool>
 {
     radio_accessor(
-        accessor<Index> const& selected_value,
+        Accessor const& selected_value,
         Index this_value)
       : selected_value_(selected_value), this_value_(this_value)
     {}
@@ -1021,18 +1021,18 @@ struct radio_accessor : regular_accessor<bool>
  private:
     friend struct lazy_getter<bool>;
     bool generate() const { return selected_value_.get() == this_value_; }
-    accessor<Index> const& selected_value_;
+    Accessor selected_value_;
     Index this_value_;
     lazy_getter<bool> lazy_getter_;
 };
 
-template<class Index>
-radio_accessor<Index>
+template<class Accessor, class Index>
+radio_accessor<Accessor,Index>
 make_radio_accessor(
-    accessor<Index> const& selected_value,
+    Accessor const& selected_value,
     Index this_value)
 {
-    return radio_accessor<Index>(selected_value, this_value);
+    return radio_accessor<Accessor,Index>(selected_value, this_value);
 }
 
 template<class Index>
