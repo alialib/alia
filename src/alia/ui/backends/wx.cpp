@@ -271,6 +271,7 @@ BEGIN_EVENT_TABLE(wx_opengl_window, wxGLCanvas)
     EVT_KILL_FOCUS(wx_opengl_window::on_kill_focus)
     EVT_KEY_DOWN(wx_opengl_window::on_key_down)
     EVT_KEY_UP(wx_opengl_window::on_key_up)
+    EVT_CHAR(wx_opengl_window::on_char)
     EVT_IDLE(wx_opengl_window::on_idle)
     EVT_MENU(-1, wx_opengl_window::on_menu)
     EVT_SYS_COLOUR_CHANGED(wx_opengl_window::on_sys_color_change)
@@ -285,6 +286,8 @@ struct wx_opengl_window::impl_data
     int wheel_movement; // accumulates fractional mouse wheel movement
     bool vsync_disabled;
     counter_type last_menu_bar_update;
+    // this is used to hold key info between events for the same key press
+    wxKeyEvent last_key_down;
 };
 
 ui_time_type static
@@ -458,15 +461,24 @@ handle_mouse(wx_opengl_window::impl_data& impl, wxMouseEvent& event)
 void static
 handle_key_down(wx_opengl_window::impl_data& impl, wxKeyEvent& event)
 {
-    ui_time_type time = get_time(impl);
-    key_event_info info = get_key_event_info(event);
+    impl.last_key_down = event;
+    event.Skip();
+}
 
+void static
+handle_char(wx_opengl_window::impl_data& impl, wxKeyEvent& event)
+{
+    ui_time_type time = get_time(impl);
+    key_event_info info = get_key_event_info(impl.last_key_down);
+
+    // Try processing it as a focused key press.
     bool acknowledged = process_focused_key_press(impl.ui, time, info);
 
+    // Try processing it as text.
     if (!acknowledged && !event.AltDown() && !event.ControlDown())
     {
         wxChar unicode = event.GetUnicodeKey();
-        if (unicode != 0)
+        if (unicode != 0 && unicode != '\t') // don't count TAB as text
         {
             wxChar buffer[2] = { unicode, 0 };
             wxString string(buffer);
@@ -478,6 +490,7 @@ handle_key_down(wx_opengl_window::impl_data& impl, wxKeyEvent& event)
         }
     }
 
+    // Try processing it as a background key press.
     if (!acknowledged)
         acknowledged = process_background_key_press(impl.ui, time, info);
 
@@ -644,6 +657,10 @@ void wx_opengl_window::on_idle(wxIdleEvent& event)
 void wx_opengl_window::on_key_down(wxKeyEvent& event)
 {
     handle_key_down(*impl_, event);
+}
+void wx_opengl_window::on_char(wxKeyEvent& event)
+{
+    handle_char(*impl_, event);
 }
 void wx_opengl_window::on_key_up(wxKeyEvent& event)
 {
@@ -886,8 +903,17 @@ void create_wx_framed_window(
 
     // Show the frame.
     if (initial_state.flags & APP_WINDOW_FULL_SCREEN)
+    {
+        // This is the only sequence of commands I've found that creates a
+        // full screen window without flickering and without causing a weird
+        // blank window when the user switches back to windowed mode.
+        frame->Freeze();
+        frame->Show(true);
         frame->ShowFullScreen(true);
-    frame->Show(true);
+        frame->Thaw();
+    }
+    else
+        frame->Show(true);
 }
 
 }
