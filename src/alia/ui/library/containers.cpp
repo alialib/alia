@@ -627,7 +627,7 @@ bool accordion_section::do_content()
     ui_context& ctx = *ctx_;
     panel_.end();
     content_.begin(ctx, is_selected_,
-        animated_transition(default_curve, 400), 0.1);
+        animated_transition(default_curve, 400), 0.9);
     return content_.do_content();
 }
 void accordion_section::end()
