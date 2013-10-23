@@ -324,7 +324,12 @@ void clickable_panel::begin(
     ALIA_GET_CACHED_DATA(clickable_panel_data)
     get_widget_id_if_needed(ctx, id);
     widget_state state;
-    if (flags & PANEL_SELECTED)
+    if (flags & PANEL_DISABLED)
+    {
+        state = WIDGET_DISABLED;
+        clicked_ = false;
+    }
+    else if (flags & PANEL_SELECTED)
     {
         state = WIDGET_SELECTED;
         clicked_ = false;

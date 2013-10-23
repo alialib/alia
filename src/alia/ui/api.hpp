@@ -1066,7 +1066,8 @@ do_radio_button(
 
 // node expander
 typedef control_result node_expander_result;
-node_expander_result do_node_expander(
+node_expander_result
+do_node_expander(
     ui_context& ctx,
     accessor<bool> const& value,
     layout const& layout_spec = default_layout,
@@ -1086,20 +1087,22 @@ do_slider(ui_context& ctx, accessor<double> const& value,
 // PANELS
 
 // Currently all panel types share the same flag set, but some flags obviously
-// only apply to scrollable panels.
+// only apply to certain types.
 ALIA_DEFINE_FLAG_TYPE(panel)
-ALIA_DEFINE_FLAG(panel, 0x001, PANEL_HORIZONTAL)
-ALIA_DEFINE_FLAG(panel, 0x002, PANEL_VERTICAL)
-ALIA_DEFINE_FLAG(panel, 0x004, PANEL_HIDE_FOCUS)
-ALIA_DEFINE_FLAG(panel, 0x010, PANEL_SELECTED)
-ALIA_DEFINE_FLAG(panel, 0x020, PANEL_NO_INTERNAL_PADDING)
-ALIA_DEFINE_FLAG(panel, 0x040, PANEL_NO_CLICK_DETECTION)
-ALIA_DEFINE_FLAG(panel, 0x080, PANEL_IGNORE_STYLE_PADDING)
+ALIA_DEFINE_FLAG(panel, 0x0001, PANEL_HORIZONTAL)
+ALIA_DEFINE_FLAG(panel, 0x0002, PANEL_VERTICAL)
+ALIA_DEFINE_FLAG(panel, 0x0004, PANEL_HIDE_FOCUS)
+ALIA_DEFINE_FLAG(panel, 0x0010, PANEL_SELECTED)
+ALIA_DEFINE_FLAG(panel, 0x0020, PANEL_NO_INTERNAL_PADDING)
+ALIA_DEFINE_FLAG(panel, 0x0040, PANEL_NO_CLICK_DETECTION)
+ALIA_DEFINE_FLAG(panel, 0x0080, PANEL_IGNORE_STYLE_PADDING)
 // scrolling only
-ALIA_DEFINE_FLAG(panel, 0x100, PANEL_NO_HORIZONTAL_SCROLLING)
-ALIA_DEFINE_FLAG(panel, 0x200, PANEL_NO_VERTICAL_SCROLLING)
-ALIA_DEFINE_FLAG(panel, 0x400, PANEL_RESERVE_HORIZONTAL_SCROLLBAR)
-ALIA_DEFINE_FLAG(panel, 0x800, PANEL_RESERVE_VERTICAL_SCROLLBAR)
+ALIA_DEFINE_FLAG(panel, 0x0100, PANEL_NO_HORIZONTAL_SCROLLING)
+ALIA_DEFINE_FLAG(panel, 0x0200, PANEL_NO_VERTICAL_SCROLLING)
+ALIA_DEFINE_FLAG(panel, 0x0400, PANEL_RESERVE_HORIZONTAL_SCROLLBAR)
+ALIA_DEFINE_FLAG(panel, 0x0800, PANEL_RESERVE_VERTICAL_SCROLLBAR)
+// clickable only
+ALIA_DEFINE_FLAG(panel, 0x1000, PANEL_DISABLED)
 
 struct panel_data;
 
@@ -1817,66 +1820,67 @@ struct form_buttons : noncopyable
 
 // enforce_min(accessor, min) wraps the given accessor with validation logic
 // ensuring that no values less than min are written to it.
-template<class Wrapped>
+template<class Wrapped, class Min>
 struct min_validation_wrapper
   : regular_accessor<typename accessor_value_type<Wrapped>::type>
 {
-    min_validation_wrapper(Wrapped wrapped,
-        typename accessor_value_type<Wrapped>::type min)
+    min_validation_wrapper(Wrapped wrapped, Min min)
       : wrapped_(wrapped), min_(min)
     {}
     bool is_gettable() const { return wrapped_.is_gettable(); }
     typename accessor_value_type<Wrapped>::type const& get() const
     { return wrapped_.get(); }
-    bool is_settable() const { return wrapped_.is_settable(); }
+    bool is_settable() const
+    { return wrapped_.is_settable() && min_.is_gettable(); }
     void set(typename accessor_value_type<Wrapped>::type const& value) const
     {
-        if (value < min_)
+        if (value < min_.get())
         {
             throw validation_error(
-                "This value must be at least " + to_string(min_) + ".");
+                "This value must be at least " + to_string(min_.get()) + ".");
         }
         wrapped_.set(value);
     }
  private:
     Wrapped wrapped_;
-    typename accessor_value_type<Wrapped>::type min_;
+    Min min_;
 };
-template<class Wrapped>
-min_validation_wrapper<Wrapped>
-enforce_min(Wrapped accessor, typename accessor_value_type<Wrapped>::type min)
-{ return min_validation_wrapper<Wrapped>(accessor, min); }
+template<class Wrapped, class Min>
+min_validation_wrapper<Wrapped,Min>
+enforce_min(Wrapped accessor, Min min)
+{ return min_validation_wrapper<Wrapped,Min>(accessor, min); }
 
 // enforce_max(accessor, max) is analogous to enforce_max.
-template<class Wrapped>
+template<class Wrapped, class Max>
 struct max_validation_wrapper
   : regular_accessor<typename accessor_value_type<Wrapped>::type>
 {
-    max_validation_wrapper(Wrapped wrapped,
-        typename accessor_value_type<Wrapped>::type max)
+    max_validation_wrapper(Wrapped wrapped, Max max)
       : wrapped_(wrapped), max_(max)
     {}
     bool is_gettable() const { return wrapped_.is_gettable(); }
     typename accessor_value_type<Wrapped>::type const& get() const
     { return wrapped_.get(); }
-    bool is_settable() const { return wrapped_.is_settable(); }
+    bool is_settable() const
+    { return wrapped_.is_settable() && max_.is_gettable(); }
     void set(typename accessor_value_type<Wrapped>::type const& value) const
     {
-        if (value > max_)
+        if (value > max_.get())
         {
             throw validation_error(
-                "This value cannot be greater than " + to_string(max_) + ".");
+                "This value cannot be greater than " +
+                to_string(max_.get()) + ".");
         }
         wrapped_.set(value);
     }
  private:
     Wrapped wrapped_;
-    typename accessor_value_type<Wrapped>::type max_;
+    Max max_;
 };
-template<class Wrapped>
-max_validation_wrapper<Wrapped>
-enforce_max(Wrapped accessor, typename accessor_value_type<Wrapped>::type max)
-{ return max_validation_wrapper<Wrapped>(accessor, max); }
+template<class Wrapped, class Max>
+max_validation_wrapper<Wrapped,Max>
+enforce_max(Wrapped accessor, Max max)
+{ return max_validation_wrapper<Wrapped,Max>(accessor, max); }
 
 // MENUS
 
