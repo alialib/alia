@@ -82,8 +82,12 @@ struct regular_accessor : accessor<T>
 {
     id_interface const& id() const
     {
-        id_ = make_id_by_reference(this->get());
-        return id_;
+        if (this->is_gettable())
+        {
+            id_ = make_id_by_reference(this->get());
+            return id_;
+        }
+        return no_id;
     }
  private:
     mutable value_id_by_reference<T> id_;
