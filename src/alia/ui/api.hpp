@@ -1659,10 +1659,8 @@ struct untyped_ddl_item : noncopyable
     bool begin(untyped_drop_down_list& list, bool is_selected);
     void end();
     void select(untyped_ui_value* value);
-    bool is_selected() const { return selected_; }
  private:
     untyped_drop_down_list* list_;
-    bool selected_;
     panel panel_;
 };
 
@@ -1677,8 +1675,8 @@ struct ddl_item : noncopyable
 
     void begin(drop_down_list<Index>& list, Index const& index)
     {
-        if (item_.begin(list.list_,
-            list.selection_ ? get(list.selection_) == index : false))
+        selected_ = list.selection_ ? get(list.selection_) == index : false;
+        if (item_.begin(list.list_, selected_))
         {
             typed_ui_value<Index>* v = new typed_ui_value<Index>;
             v->value = index;
@@ -1687,7 +1685,7 @@ struct ddl_item : noncopyable
     }
     void end() { item_.end(); }
 
-    bool is_selected() const { return item_.is_selected(); }
+    bool is_selected() const { return selected_; }
 
  private:
     untyped_ddl_item item_;

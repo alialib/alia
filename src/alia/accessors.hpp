@@ -302,7 +302,7 @@ template<class T>
 struct state
 {
     state() {}
-    state(T const& value) {}
+    state(T const& value) : value_(value) {}
     T const& get() const { return value_; }
     value_id_by_reference<local_id> id() const
     { return get_id(identity_); }

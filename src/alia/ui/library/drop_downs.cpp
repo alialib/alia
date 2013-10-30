@@ -356,7 +356,7 @@ bool untyped_drop_down_list::do_list()
 
     contents_.end();
 
-    if (do_drop_down_button(ctx, CENTER, id_, data.button))
+    if (do_drop_down_button(ctx, CENTER_X | BASELINE_Y, id_, data.button))
     {
         open_ddl(ctx, data, id_, container_.outer_region());
         end_pass(ctx);
