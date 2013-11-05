@@ -35,6 +35,8 @@ calculate_text_layout(
 
     utf8_string utf8 = as_utf8_string(data.text);
 
+    bool ended_on_line_terminator = false;
+
     data.rows.clear();
     char const* p = utf8.begin;
     do // Always include at least one row, even for empty strings.
@@ -44,7 +46,7 @@ calculate_text_layout(
         utf8_ptr line_end =
             break_text(
                 paint, utf8_string(p, utf8.end), width, true, for_editing,
-                &line_width, &visible_end);
+                &line_width, &visible_end, &ended_on_line_terminator);
         data.rows.push_back(utf8_string(p, visible_end));
         if (line_end == p)
         {
@@ -54,6 +56,9 @@ calculate_text_layout(
         p = line_end;
     }
     while (p != utf8.end);
+
+    if (ended_on_line_terminator)
+        data.rows.push_back(utf8_string(utf8.end, utf8.end));
 }
 
 // Ambiguities occur when attemping to map a character offset to a cursor
@@ -383,6 +388,7 @@ layout_requirements text_control_layout_node::get_vertical_requirements(
         // Count how many lines are required to render the text at this width.
         unsigned line_count = 0;
         char const* p = text.begin;
+        bool ended_on_line_terminator = false;
         do // Include one line even for empty strings.
         {
             layout_scalar line_width;
@@ -392,7 +398,7 @@ layout_requirements text_control_layout_node::get_vertical_requirements(
                     paint, utf8_string(p, text.end),
                     // (- 1 to leave room for the cursor)
                     assigned_width - 1, true, true,
-                    &line_width, &visible_end);
+                    &line_width, &visible_end, &ended_on_line_terminator);
             ++line_count;
             if (line_end == p)
             {
@@ -403,6 +409,8 @@ layout_requirements text_control_layout_node::get_vertical_requirements(
             p = line_end;
         }
         while (p != text.end);
+        if (ended_on_line_terminator)
+            ++line_count;
 
         query.update(
             calculated_layout_requirements(
@@ -777,7 +785,10 @@ static void on_edit(text_control_parameters const& tc)
 {
     on_text_change(tc);
     if (tc.flags & TEXT_CONTROL_IMMEDIATE)
+    {
         set(*tc.value, tc.data->text);
+        tc.result->changed = true;
+    }
     else
         tc.data->text_edited = true;
 }
@@ -1146,7 +1157,10 @@ handle_key_press(
                 else
                 {
                     if (data.text_edited)
+                    {
                         set(*tc.value, data.text);
+                        tc.result->changed = true;
+                    }
                     if (!(tc.flags & TEXT_CONTROL_IMMEDIATE))
                         exit_edit_mode(tc);
                     tc.result->event = TEXT_CONTROL_ENTER_PRESSED;
@@ -1605,6 +1619,7 @@ void do_input(text_control_parameters const& tc)
             if (data.text_edited)
             {
                 set(*tc.value, data.text);
+                tc.result->changed = true;
                 tc.result->event = TEXT_CONTROL_FOCUS_LOST;
             }
             exit_edit_mode(tc);

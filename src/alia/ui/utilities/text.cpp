@@ -147,7 +147,7 @@ utf8_ptr
 break_text(
     SkPaint& paint, utf8_string const& text, layout_scalar width,
     bool is_full_line, bool for_editing, layout_scalar* accumulated_width,
-    utf8_ptr* visible_end)
+    utf8_ptr* visible_end, bool* ended_on_line_terminator)
 {
     utf8_ptr p = text.begin;
     layout_scalar remaining_width = width;
@@ -192,6 +192,8 @@ break_text(
             {
                 *visible_end = q;
                 p = skip_line_terminator(utf8_string(q, text.end));
+                if (ended_on_line_terminator)
+                    *ended_on_line_terminator = true;
                 goto line_ended;
             }
             // If we encounter a non-space character or we're in editing mode
@@ -212,6 +214,8 @@ break_text(
         is_full_line = false;
     }
     *visible_end = p;
+    if (ended_on_line_terminator)
+        *ended_on_line_terminator = false;
  line_ended:
     *accumulated_width = width - remaining_width;
     return p;

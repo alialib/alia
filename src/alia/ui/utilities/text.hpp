@@ -76,11 +76,14 @@ utf8_string get_containing_word(utf8_string const& text, utf8_ptr p);
 // *accumulated_width stores the actual width of the text that fit.
 // *visible_end stores the end of the text that's actually visible on the line.
 //
+// If ended_on_line_terminator is not 0, it will be set to indicate whether or
+// not the last character was a line terminator.
+//
 utf8_ptr
 break_text(
     SkPaint& paint, utf8_string const& text, layout_scalar width,
     bool is_full_line, bool for_editing, layout_scalar* accumulated_width,
-    utf8_ptr* visible_end);
+    utf8_ptr* visible_end, bool* ended_on_line_terminator = 0);
 
 }
 
