@@ -1045,7 +1045,7 @@ do_radio_button(
     widget_id id = auto_id)
 {
     return do_radio_button(ctx,
-        make_radio_accessor(selected_value, this_value),
+        make_radio_accessor(ref(&selected_value), this_value),
         layout_spec, id);
 }
 
@@ -1060,7 +1060,7 @@ do_radio_button(
     widget_id id = auto_id)
 {
     return do_radio_button(ctx,
-        make_radio_accessor(selected_value, this_value),
+        make_radio_accessor(ref(&selected_value), this_value),
         text, layout_spec, id);
 }
 
