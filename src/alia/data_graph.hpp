@@ -491,6 +491,13 @@ bool is_valid(keyed_data<Data> const& data)
 { return data.is_valid; }
 
 template<class Data>
+void invalidate(keyed_data<Data>& data)
+{
+    data.is_valid  = false;
+    data.key.clear();
+}
+
+template<class Data>
 void mark_valid(keyed_data<Data>& data)
 { data.is_valid = true; }
 
@@ -527,7 +534,8 @@ struct keyed_data_accessor : accessor<Data>
     Data const& get() const { return data_->value; }
     alia__shared_ptr<Data> get_ptr() const
     { return alia__shared_ptr<Data>(new Data(data_->value)); }
-    id_interface const& id() const { return data_->key.get(); }
+    id_interface const& id() const
+    { return data_->key.is_initialized() ? data_->key.get() : no_id; }
     bool is_settable() const { return true; }
     void set(Data const& value) const
     { alia::set(*data_, value); }

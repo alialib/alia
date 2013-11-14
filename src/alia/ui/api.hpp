@@ -719,7 +719,7 @@ void update_text_conversion(keyed_data<string>* data, accessor<T> const& x)
             set(*data, to_string(get(x)));
     }
     else
-        data->is_valid = false;
+        invalidate(*data);
 }
 template<class T>
 keyed_data_accessor<string>
