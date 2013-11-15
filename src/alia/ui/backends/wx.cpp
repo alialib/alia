@@ -461,8 +461,28 @@ handle_mouse(wx_opengl_window::impl_data& impl, wxMouseEvent& event)
 void static
 handle_key_down(wx_opengl_window::impl_data& impl, wxKeyEvent& event)
 {
-    impl.last_key_down = event;
-    event.Skip();
+    ui_time_type time = get_time(impl);
+    key_event_info info = get_key_event_info(event);
+
+    // If ALT or CTRL is pressed, assume there's no text equivalent and just
+    // process it as a normal key press.
+    if (event.AltDown() || event.ControlDown())
+    {
+        // Try processing it as a focused key press.
+        bool acknowledged = process_focused_key_press(impl.ui, time, info);
+
+        // Try processing it as a background key press.
+        if (!acknowledged)
+            acknowledged = process_background_key_press(impl.ui, time, info);
+
+        if (!acknowledged)
+            event.Skip();
+    }
+    else
+    {
+        impl.last_key_down = event;
+        event.Skip();
+    }
 }
 
 void static
@@ -471,31 +491,37 @@ handle_char(wx_opengl_window::impl_data& impl, wxKeyEvent& event)
     ui_time_type time = get_time(impl);
     key_event_info info = get_key_event_info(impl.last_key_down);
 
-    // Try processing it as a focused key press.
-    bool acknowledged = process_focused_key_press(impl.ui, time, info);
-
-    // Try processing it as text.
-    if (!acknowledged && !event.AltDown() && !event.ControlDown())
+    if (!event.AltDown() && !event.ControlDown())
     {
-        wxChar unicode = event.GetUnicodeKey();
-        if (unicode != 0 && unicode != '\t') // don't count TAB as text
+        // Try processing it as a focused key press.
+        bool acknowledged = process_focused_key_press(impl.ui, time, info);
+
+        // Try processing it as text.
+        if (!acknowledged)
         {
-            wxChar buffer[2] = { unicode, 0 };
-            wxString string(buffer);
-            wxCharBuffer char_buffer = string.utf8_str();
-            utf8_string utf8;
-            utf8.begin = char_buffer.data();
-            utf8.end = char_buffer.data() + char_buffer.length();
-            acknowledged = process_text_input(impl.ui, get_time(impl), utf8);
+            wxChar unicode = event.GetUnicodeKey();
+            if (unicode != 0 && unicode != '\t') // don't count TAB as text
+            {
+                wxChar buffer[2] = { unicode, 0 };
+                wxString string(buffer);
+                wxCharBuffer char_buffer = string.utf8_str();
+                utf8_string utf8;
+                utf8.begin = char_buffer.data();
+                utf8.end = char_buffer.data() + char_buffer.length();
+                acknowledged =
+                    process_text_input(impl.ui, get_time(impl), utf8);
+            }
         }
+
+        // Try processing it as a background key press.
+        if (!acknowledged)
+            acknowledged = process_background_key_press(impl.ui, time, info);
+
+        update_window(impl);
+        if (!acknowledged)
+            event.Skip();
     }
-
-    // Try processing it as a background key press.
-    if (!acknowledged)
-        acknowledged = process_background_key_press(impl.ui, time, info);
-
-    update_window(impl);
-    if (!acknowledged)
+    else
         event.Skip();
 }
 
