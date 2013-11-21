@@ -134,7 +134,8 @@ struct fps_data
     optional<int> fps;
 };
 
-bool compute_fps(ui_context& ctx, int* fps)
+indirect_accessor<int>
+compute_fps(ui_context& ctx)
 {
     widget_id id = get_widget_id(ctx);
     fps_data* data;
@@ -159,13 +160,7 @@ bool compute_fps(ui_context& ctx, int* fps)
         end_pass(ctx);
     }
 
-    if (data->fps)
-    {
-        *fps = get(data->fps);
-        return true;
-    }
-    else
-        return false;
+    return alia::ref(erase_type(ctx, optional_in(data->fps)));
 }
 
 }

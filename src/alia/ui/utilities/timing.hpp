@@ -242,7 +242,8 @@ struct timer
 
 // Request that the UI refresh as quickly as possible and count the number of
 // frames per second.
-bool compute_fps(ui_context& ctx, int* fps);
+indirect_accessor<int>
+compute_fps(ui_context& ctx);
 
 }
 
