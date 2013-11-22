@@ -372,7 +372,7 @@ void tree_node::begin(
     is_expanded_ = state.is_gettable() ? state.get() : false;
     get_widget_id_if_needed(ctx, expander_id);
     expander_result_ =
-        do_node_expander(ctx, state, default_layout, expander_id);
+        do_unsafe_node_expander(ctx, state, default_layout, expander_id);
 
     label_region_.begin(ctx, BASELINE_Y | GROW_X);
     hit_test_box_region(ctx, expander_id, label_region_.region());

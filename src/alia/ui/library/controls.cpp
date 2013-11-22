@@ -243,7 +243,7 @@ struct default_check_box_renderer : check_box_renderer
 };
 
 check_box_result
-do_check_box(
+do_unsafe_check_box(
     ui_context& ctx,
     accessor<bool> const& value,
     layout const& layout_spec,
@@ -261,7 +261,8 @@ do_check_box(
     return result;
 }
 
-check_box_result do_check_box(
+check_box_result
+do_unsafe_check_box(
     ui_context& ctx,
     accessor<bool> const& value,
     accessor<string> const& text,
@@ -270,7 +271,8 @@ check_box_result do_check_box(
 {
     get_widget_id_if_needed(ctx, id);
     row_layout row(ctx, add_default_y_alignment(layout_spec, BASELINE_Y));
-    check_box_result result = do_check_box(ctx, value, default_layout, id);
+    check_box_result result =
+        do_unsafe_check_box(ctx, value, default_layout, id);
     do_paragraph(ctx, text, GROW_X);
     do_box_region(ctx, id, row.region());
     return result;
@@ -325,7 +327,7 @@ struct default_radio_button_renderer : radio_button_renderer
 };
 
 radio_button_result
-do_radio_button(
+do_unsafe_radio_button(
     ui_context& ctx,
     accessor<bool> const& value,
     layout const& layout_spec,
@@ -343,7 +345,8 @@ do_radio_button(
     return result;
 }
 
-radio_button_result do_radio_button(
+radio_button_result
+do_unsafe_radio_button(
     ui_context& ctx,
     accessor<bool> const& value,
     accessor<string> const& text,
@@ -353,7 +356,7 @@ radio_button_result do_radio_button(
     get_widget_id_if_needed(ctx, id);
     row_layout row(ctx, add_default_y_alignment(layout_spec, BASELINE_Y));
     radio_button_result result =
-        do_radio_button(ctx, value, default_layout, id);
+        do_unsafe_radio_button(ctx, value, default_layout, id);
     do_paragraph(ctx, text, GROW_X);
     do_box_region(ctx, id, row.region());
     return result;
@@ -432,7 +435,7 @@ struct default_node_expander_renderer : node_expander_renderer
 };
 
 node_expander_result
-do_node_expander(
+do_unsafe_node_expander(
     ui_context& ctx,
     accessor<bool> const& value,
     layout const& layout_spec,

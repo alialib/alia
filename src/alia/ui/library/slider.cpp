@@ -224,7 +224,8 @@ get_thumb_position(dataless_ui_context& ctx, slider_data& data,
 
 static layout_box
 get_thumb_region(dataless_ui_context& ctx, slider_data& data,
-    unsigned axis, double minimum, double maximum, accessor<double> const& value)
+    unsigned axis, double minimum, double maximum,
+    accessor<double> const& value)
 {
     layout_vector thumb_position =
         get_thumb_position(ctx, data, axis, minimum, maximum, value);
@@ -239,7 +240,7 @@ get_thumb_region(dataless_ui_context& ctx, slider_data& data,
 }
 
 slider_result
-do_slider(ui_context& ctx, accessor<double> const& value,
+do_unsafe_slider(ui_context& ctx, accessor<double> const& value,
     double minimum, double maximum, double step,
     layout const& layout_spec, slider_flag_set flags)
 {

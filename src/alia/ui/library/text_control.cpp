@@ -1697,7 +1697,7 @@ do_text_control_pass(
 }
 
 text_control_result
-do_text_control(
+do_unsafe_text_control(
     ui_context& ctx,
     accessor<string> const& value,
     layout const& layout_spec,

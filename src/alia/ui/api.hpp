@@ -926,7 +926,7 @@ ALIA_DEFINE_FLAG(text_control, 0x08, TEXT_CONTROL_MULTILINE)
 ALIA_DEFINE_FLAG(text_control, 0x10, TEXT_CONTROL_IMMEDIATE)
 
 text_control_result
-do_text_control(
+do_unsafe_text_control(
     ui_context& ctx,
     accessor<string> const& value,
     layout const& layout_spec = default_layout,
@@ -934,8 +934,39 @@ do_text_control(
     widget_id id = auto_id,
     optional<size_t> const& length_limit = none);
 
+void static inline
+do_text_control(
+    ui_context& ctx,
+    accessor<string> const& value,
+    layout const& layout_spec = default_layout,
+    text_control_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id,
+    optional<size_t> const& length_limit = none)
+{
+    if (do_unsafe_text_control(ctx, value, layout_spec, flags, id,
+            length_limit))
+    {
+        end_pass(ctx);
+    }
+}
+
 template<class T>
 text_control_result
+do_unsafe_text_control(
+    ui_context& ctx,
+    accessor<T> const& accessor,
+    layout const& layout_spec = default_layout,
+    text_control_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id,
+    optional<size_t> const& length_limit = none)
+{
+    return do_unsafe_text_control(
+        ctx, as_settable_text(ctx, ref(&accessor)), layout_spec, flags, id,
+        length_limit);
+}
+
+template<class T>
+void
 do_text_control(
     ui_context& ctx,
     accessor<T> const& accessor,
@@ -944,9 +975,11 @@ do_text_control(
     widget_id id = auto_id,
     optional<size_t> const& length_limit = none)
 {
-    return do_text_control(
-        ctx, as_settable_text(ctx, ref(&accessor)), layout_spec, flags, id,
-        length_limit);
+    if (do_unsafe_text_control(ctx, accessor, layout_spec, flags, id,
+            length_limit))
+    {
+        end_pass(ctx);
+    }
 }
 
 // BUTTONS
@@ -973,38 +1006,84 @@ do_button(
 typedef control_result check_box_result;
 
 check_box_result
-do_check_box(
+do_unsafe_check_box(
     ui_context& ctx,
     accessor<bool> const& value,
     layout const& layout_spec = default_layout,
     widget_id id = auto_id);
 
-check_box_result
+void static inline
 do_check_box(
+    ui_context& ctx,
+    accessor<bool> const& value,
+    layout const& layout_spec = default_layout,
+    widget_id id = auto_id)
+{
+    if (do_unsafe_check_box(ctx, value, layout_spec, id))
+        end_pass(ctx);
+}
+
+check_box_result
+do_unsafe_check_box(
     ui_context& ctx,
     accessor<bool> const& value,
     accessor<string> const& text,
     layout const& layout_spec = default_layout,
     widget_id id = auto_id);
+
+void static inline
+do_check_box(
+    ui_context& ctx,
+    accessor<bool> const& value,
+    accessor<string> const& text,
+    layout const& layout_spec = default_layout,
+    widget_id id = auto_id)
+{
+    if (do_unsafe_check_box(ctx, value, text, layout_spec, id))
+        end_pass(ctx);
+}
 
 // radio button
 
 typedef control_result radio_button_result;
 
 radio_button_result
-do_radio_button(
+do_unsafe_radio_button(
     ui_context& ctx,
     accessor<bool> const& value,
     layout const& layout_spec = default_layout,
     widget_id id = auto_id);
 
-radio_button_result
+void static inline
 do_radio_button(
+    ui_context& ctx,
+    accessor<bool> const& value,
+    layout const& layout_spec = default_layout,
+    widget_id id = auto_id)
+{
+    if (do_unsafe_radio_button(ctx, value, layout_spec, id))
+        end_pass(ctx);
+}
+
+radio_button_result
+do_unsafe_radio_button(
     ui_context& ctx,
     accessor<bool> const& value,
     accessor<string> const& text,
     layout const& layout_spec = default_layout,
     widget_id id = auto_id);
+
+void static inline
+do_radio_button(
+    ui_context& ctx,
+    accessor<bool> const& value,
+    accessor<string> const& text,
+    layout const& layout_spec = default_layout,
+    widget_id id = auto_id)
+{
+    if (do_unsafe_radio_button(ctx, value, text, layout_spec, id))
+        end_pass(ctx);
+}
 
 template<class Accessor, class Index>
 struct radio_accessor : regular_accessor<bool>
@@ -1037,6 +1116,20 @@ make_radio_accessor(
 
 template<class Index>
 radio_button_result
+do_unsafe_radio_button(
+    ui_context& ctx,
+    accessor<Index> const& selected_value,
+    Index this_value,
+    layout const& layout_spec = default_layout,
+    widget_id id = auto_id)
+{
+    return do_unsafe_radio_button(ctx,
+        make_radio_accessor(ref(&selected_value), this_value),
+        layout_spec, id);
+}
+
+template<class Index>
+void
 do_radio_button(
     ui_context& ctx,
     accessor<Index> const& selected_value,
@@ -1044,13 +1137,30 @@ do_radio_button(
     layout const& layout_spec = default_layout,
     widget_id id = auto_id)
 {
-    return do_radio_button(ctx,
-        make_radio_accessor(ref(&selected_value), this_value),
-        layout_spec, id);
+    if (do_unsafe_radio_button(ctx, selected_value, this_value,
+            layout_spec, id))
+    {
+        end_pass(ctx);
+    }
 }
 
 template<class Index>
 radio_button_result
+do_unsafe_radio_button(
+    ui_context& ctx,
+    accessor<Index> const& selected_value,
+    Index this_value,
+    accessor<string> const& text,
+    layout const& layout_spec = default_layout,
+    widget_id id = auto_id)
+{
+    return do_unsafe_radio_button(ctx,
+        make_radio_accessor(ref(&selected_value), this_value),
+        text, layout_spec, id);
+}
+
+template<class Index>
+void
 do_radio_button(
     ui_context& ctx,
     accessor<Index> const& selected_value,
@@ -1059,30 +1169,48 @@ do_radio_button(
     layout const& layout_spec = default_layout,
     widget_id id = auto_id)
 {
-    return do_radio_button(ctx,
-        make_radio_accessor(ref(&selected_value), this_value),
-        text, layout_spec, id);
+    if (do_unsafe_radio_button(ctx, selected_value, this_value,
+            text, layout_spec, id))
+    {
+        end_pass(ctx);
+    }
 }
 
 // node expander
 typedef control_result node_expander_result;
 node_expander_result
-do_node_expander(
+do_unsafe_node_expander(
     ui_context& ctx,
     accessor<bool> const& value,
     layout const& layout_spec = default_layout,
     widget_id id = auto_id);
 
 // slider
-struct slider_result : control_result {};
+
+typedef control_result slider_result;
+
 ALIA_DEFINE_FLAG_TYPE(slider)
 ALIA_DEFINE_FLAG(slider, 0x0, SLIDER_HORIZONTAL)
 ALIA_DEFINE_FLAG(slider, 0x1, SLIDER_VERTICAL)
+
 slider_result
-do_slider(ui_context& ctx, accessor<double> const& value,
+do_unsafe_slider(ui_context& ctx, accessor<double> const& value,
     double minimum, double maximum, double step = 0,
     layout const& layout_spec = default_layout,
     slider_flag_set flags = NO_FLAGS);
+
+void static inline
+do_slider(ui_context& ctx, accessor<double> const& value,
+    double minimum, double maximum, double step = 0,
+    layout const& layout_spec = default_layout,
+    slider_flag_set flags = NO_FLAGS)
+{
+    if (do_unsafe_slider(ctx, value, minimum, maximum, step,
+            layout_spec, flags))
+    {
+        end_pass(ctx);
+    }
+}
 
 // PANELS
 
