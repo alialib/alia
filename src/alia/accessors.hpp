@@ -715,7 +715,7 @@ select_second(Accessor const& accessor)
         &accessor_value_type<Accessor>::type::second);
 }
 
-// unwrap_optional_accessor(accessor) takes an accessor to an optional value
+// unwrap_optional(accessor) takes an accessor to an optional value
 // and creates an accessor to the underlying value. It's only gettable if the
 // wrapped accessor is gettable and contains a valid value.
 template<class OptionalAccessor>
@@ -740,7 +740,7 @@ struct optional_accessor_unwrapper
 };
 template<class OptionalAccessor>
 optional_accessor_unwrapper<OptionalAccessor>
-unwrap_optional_accessor(OptionalAccessor const& accessor)
+unwrap_optional(OptionalAccessor const& accessor)
 { return optional_accessor_unwrapper<OptionalAccessor>(accessor); }
 
 }
