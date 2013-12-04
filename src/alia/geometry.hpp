@@ -255,7 +255,7 @@ bool overlapping(box<N,T> const& box1, box<N,T> const& box2)
         T low = (std::max)(box1.corner[i], box2.corner[i]);
         T high = (std::min)(get_high_corner(box1)[i],
             get_high_corner(box2)[i]);
-        if (low >= high)
+        if (low > high)
             return false;
     }
     return true;

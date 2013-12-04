@@ -748,6 +748,8 @@ void opengl_surface::initialize_render_state(vector<2,unsigned> const& size)
     glEnable(GL_SCISSOR_TEST);
     glScissor(0, 0, size[0], size[1]);
 
+    glDisable(GL_LIGHTING);
+
     size_ = size;
     opacity_ = 1;
 }
