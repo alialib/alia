@@ -524,7 +524,7 @@ style_tree_ptr parse_style_file(char const* path)
 {
     FILE* f = fopen(path, "rb");
     if (!f)
-        throw parse_error("unable to open file: " + string(path));
+        throw open_file_error("unable to open file: " + string(path));
     fseek(f, 0, SEEK_END);
     int file_length = ftell(f);
     fseek(f, 0, SEEK_SET);

@@ -110,6 +110,14 @@ struct line_parser
 void initialize_line_parser(line_parser& p, char const* text, size_t size);
 void initialize_line_parser(line_parser& p, std::string const& text);
 
+struct open_file_error : exception
+{
+    open_file_error(string const& message)
+      : exception(message)
+    {}
+    ~open_file_error() throw() {}
+};
+
 struct parse_error : exception
 {
     parse_error(string const& message)
