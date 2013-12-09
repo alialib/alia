@@ -362,6 +362,31 @@ do_unsafe_radio_button(
     return result;
 }
 
+radio_button_result
+do_unsafe_radio_button_with_description(
+    ui_context& ctx,
+    accessor<bool> const& value,
+    accessor<string> const& label,
+    accessor<string> const& description,
+    layout const& layout_spec,
+    widget_id id)
+{
+    column_layout box(ctx); // just here to record region
+    widget_id radio_id = get_widget_id(ctx);
+    do_box_region(ctx, radio_id, box.region());
+    radio_button_result result;
+    {
+        row_layout row(ctx);
+        result = do_unsafe_radio_button(ctx, value, default_layout, radio_id);
+        {
+            column_layout col(ctx, GROW);
+            do_styled_text(ctx, text("radio-label"), label);
+            do_paragraph(ctx, description);
+        }
+    }
+    return result;
+}
+
 // NODE EXPANDER
 
 struct node_expander_renderer : simple_control_renderer<bool>

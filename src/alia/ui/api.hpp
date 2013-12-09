@@ -1085,6 +1085,36 @@ do_radio_button(
         end_pass(ctx);
 }
 
+radio_button_result
+do_unsafe_radio_button_with_description(
+    ui_context& ctx,
+    accessor<bool> const& value,
+    accessor<string> const& label,
+    accessor<string> const& description,
+    layout const& layout_spec = default_layout,
+    widget_id id = auto_id);
+
+void static inline
+do_radio_button_with_description(
+    ui_context& ctx,
+    accessor<bool> const& value,
+    accessor<string> const& label,
+    accessor<string> const& description,
+    layout const& layout_spec = default_layout,
+    widget_id id = auto_id)
+{
+    if (do_unsafe_radio_button_with_description(
+            ctx, value, label, description, layout_spec, id))
+    {
+        end_pass(ctx);
+    }
+}
+
+// make_radio_accessor(selected_value, this_value), where selected_value is an
+// accessor<T> and this_value is a T, yields an accessor<bool> whose value
+// tells whether or not selected_value is set to this_value.
+// Setting the resulting accessor to any value sets selected_value's value to
+// this_value. (Setting it to false is considered nonsensical.)
 template<class Accessor, class Index>
 struct radio_accessor : regular_accessor<bool>
 {
@@ -1104,7 +1134,6 @@ struct radio_accessor : regular_accessor<bool>
     Index this_value_;
     lazy_getter<bool> lazy_getter_;
 };
-
 template<class Accessor, class Index>
 radio_accessor<Accessor,Index>
 make_radio_accessor(
@@ -1171,6 +1200,41 @@ do_radio_button(
 {
     if (do_unsafe_radio_button(ctx, selected_value, this_value,
             text, layout_spec, id))
+    {
+        end_pass(ctx);
+    }
+}
+
+template<class Index>
+radio_button_result
+do_unsafe_radio_button_with_description(
+    ui_context& ctx,
+    accessor<Index> const& selected_value,
+    Index this_value,
+    accessor<string> const& label,
+    accessor<string> const& description,
+    layout const& layout_spec = default_layout,
+    widget_id id = auto_id)
+{
+    return do_unsafe_radio_button_with_description(ctx,
+        make_radio_accessor(ref(&selected_value), this_value),
+        label, description, layout_spec, id);
+}
+
+template<class Index>
+void
+do_radio_button_with_description(
+    ui_context& ctx,
+    accessor<Index> const& selected_value,
+    Index this_value,
+    accessor<string> const& label,
+    accessor<string> const& description,
+    layout const& layout_spec = default_layout,
+    widget_id id = auto_id)
+{
+    if (do_unsafe_radio_button_with_description(
+            ctx, selected_value, this_value, label, description,
+            layout_spec, id))
     {
         end_pass(ctx);
     }
