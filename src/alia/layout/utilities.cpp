@@ -375,7 +375,7 @@ static void resolve_axis_assignment(
         size = required_size;
         break;
     }
-    assert(offset >= 0 && offset + size <= assigned_size);
+    //assert(offset >= 0 && offset + size <= assigned_size);
 }
 
 static inline unsigned get_axis_alignment_code(
@@ -403,9 +403,9 @@ void resolve_relative_assignment(
     layout_requirements const& horizontal_requirements,
     layout_requirements const& vertical_requirements)
 {
-    assert(assignment.baseline_y >= vertical_requirements.ascent);
-    assert(assignment.baseline_y + vertical_requirements.descent <=
-        assignment.region.size[1]);
+    //assert(assignment.baseline_y >= vertical_requirements.ascent);
+    //assert(assignment.baseline_y + vertical_requirements.descent <=
+    //    assignment.region.size[1]);
     layout_scalar x_offset, x_size;
     resolve_axis_assignment(x_offset, x_size,
         get_axis_alignment_code(spec, 0),

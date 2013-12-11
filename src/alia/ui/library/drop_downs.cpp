@@ -254,7 +254,7 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
 
     widget_state state = get_button_state(ctx, id_, data.button.input);
 
-    container_.begin(ctx, text("drop-down-list"),
+    container_.begin(ctx, text("drop-down"),
         add_default_size(add_default_padding(add_default_alignment(
             layout_spec, LEFT, BASELINE_Y), PADDED), size(8, 1, EM)),
         PANEL_HORIZONTAL | PANEL_NO_INTERNAL_PADDING, id_, state);
