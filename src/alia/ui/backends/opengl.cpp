@@ -738,7 +738,7 @@ void opengl_surface::initialize_render_state(vector<2,unsigned> const& size)
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(0, size[0], size[1], 0, -10, 10);
+    glOrtho(0, size[0], size[1], 0, -10000, 10000);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
