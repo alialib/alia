@@ -285,7 +285,7 @@ struct style_search_path
 {
     // first tree to search
     // If this is 0, it serves as an inheritance separator.
-    // (See ui/utilities/styling.hpp for more info.)
+    // (See ui/accessors/styling.hpp for more info.)
     style_tree const* tree;
     // rest of the path (0 if this is the end)
     style_search_path const* rest;
