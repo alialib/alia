@@ -747,7 +747,7 @@ struct settable_text_accessor : accessor<string>
     bool is_settable() const { return wrapped_.is_settable(); }
     void set(string const& s) const
     {
-        accessor_value_type<Wrapped>::type value;
+        typename accessor_value_type<Wrapped>::type value;
         from_string(&value, s);
         wrapped_.set(value);
     }
@@ -1835,7 +1835,7 @@ struct drop_down_list : noncopyable
     bool changed() const { return changed_; }
 
  private:
-    template<class Index>
+    template<class _Index>
     friend struct ddl_item;
 
     untyped_drop_down_list list_;
