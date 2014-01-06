@@ -1,5 +1,3 @@
-#if 0
-
 #include <alia/ui/backends/qt.hpp>
 #include <alia/ui/system.hpp>
 #include <alia/ui/backends/opengl.hpp>
@@ -546,5 +544,3 @@ void qt_os_interface::set_clipboard_text(string const& text)
 }
 
 }
-
-#endif
