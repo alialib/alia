@@ -317,10 +317,10 @@ void do_progress_bar(ui_context& ctx, accessor<double> const& progress,
                 get_color_property(path, "background");
             rgba8 bar_color = get_color_property(path, "bar-color");
 
-            SkScalar trim =
-                SkScalarDiv(
-                    layout_scalar_as_skia_scalar(region.size[1]),
-                    SkDoubleToScalar(12.));
+            SkScalar trim = 0;
+                //SkScalarDiv(
+                //    layout_scalar_as_skia_scalar(region.size[1]),
+                //    SkDoubleToScalar(12.));
 
             // The following is kinda iffy with regards to treating SkScalars
             // abstractly, but I think it works in any case.
