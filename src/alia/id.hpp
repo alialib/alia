@@ -132,6 +132,8 @@ struct value_id : id_interface
     value_id(Value value, id_context context)
       : value_(value), context_(context) {}
 
+    Value const& value() const { return value_; }
+
     id_interface* clone() const { return new value_id(value_, context_); }
 
     id_context context() const { return context_; }

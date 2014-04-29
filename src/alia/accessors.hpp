@@ -367,6 +367,7 @@ struct indirect_accessor : accessor<T>
     id_interface const& id() const { return wrapped_->id(); }
     bool is_settable() const { return wrapped_->is_settable(); }
     void set(T const& value) const { wrapped_->set(value); }
+    accessor<T> const& wrapped() const { return *wrapped_; }
  private:
     accessor<T> const* wrapped_;
 };
