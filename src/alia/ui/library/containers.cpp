@@ -363,7 +363,8 @@ void tree_node::begin(
             data->expanded = false;
     }
 
-    accessor_mux<indirect_accessor<bool>,inout_accessor<bool> > state =
+    accessor_mux<input_accessor<bool>,indirect_accessor<bool>,
+        inout_accessor<bool> > state =
         resolve_storage(expanded, &data->expanded);
 
     grid_.begin(ctx, layout_spec);

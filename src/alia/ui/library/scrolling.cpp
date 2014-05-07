@@ -875,7 +875,7 @@ void scrollable_region::begin(
 
     // Determine where the scroll position is actually supposed to be stored,
     // and handle requests to set its value.
-    accessor_mux<indirect_accessor<layout_vector>,
+    accessor_mux<input_accessor<bool>,indirect_accessor<layout_vector>,
         inout_accessor<layout_vector> > position =
         resolve_storage(scroll_position_storage, &data.scroll_position);
     if (data.scroll_position_changed)

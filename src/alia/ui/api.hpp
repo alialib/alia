@@ -57,10 +57,11 @@ accessor_storage<Accessor> storage(Accessor const& accessor)
 // resolve_storage(optional_storage, fallback) returns an accessor to the
 // optional storage iff it's valid and to the fallback storage otherwise.
 template<class T>
-accessor_mux<indirect_accessor<T>,inout_accessor<T> >
+accessor_mux<input_accessor<bool>,indirect_accessor<T>,inout_accessor<T> >
 resolve_storage(optional_storage<T> const& s, T* fallback)
 {
-    return select_accessor(s.storage != 0, ref(s.storage), inout(fallback));
+    return select_accessor(in(s.storage != 0), ref(s.storage),
+        inout(fallback));
 }
 
 // Currently, time is represented by a simple millisecond counter.

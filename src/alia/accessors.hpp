@@ -448,43 +448,52 @@ readonly_accessor_wrapper<Wrapped>
 make_readonly(Wrapped accessor)
 { return readonly_accessor_wrapper<Wrapped>(accessor); }
 
-// select_accessor(condition, t, f), where t and f are accessors, yields t if
-// condition is true and f if it's false.
+// select_accessor(condition, t, f), where condition, t and f are accessors, 
+// yields t if get(condition) is true and f otherwise.
 // Note that this is a normal function call, so, unlike an if statement or the
 // ternary operator, both t and f are fully evaluated. However, they are only
 // accessed if they're selected.
-// t and f must have the same value type.
-template<class T, class F>
+// t and f must have the same value type, and condition's value type must be
+// testable in a boolean context.
+template<class Condition, class T, class F>
 struct accessor_mux : accessor<typename accessor_value_type<T>::type>
 {
     accessor_mux() {}
-    accessor_mux(bool condition, T t, F f)
+    accessor_mux(Condition condition, T t, F f)
       : condition_(condition), t_(t), f_(f)
     {}
     bool is_gettable() const
-    { return condition_ ? t_.is_gettable() : f_.is_gettable(); }
+    {
+        return
+            condition_.is_gettable() &&
+            condition_.get() ? t_.is_gettable() : f_.is_gettable();
+    }
     typename accessor_value_type<T>::type const& get() const
-    { return condition_ ? t_.get() : f_.get(); }
+    { return condition_.get() ? t_.get() : f_.get(); }
     id_interface const& id() const
-    { return condition_ ? t_.id() : f_.id(); }
+    { return condition_.get() ? t_.id() : f_.id(); }
     bool is_settable() const
-    { return condition_ ? t_.is_settable() : f_.is_settable(); }
+    {
+        return
+            condition_.is_gettable() &&
+            condition_.get() ? t_.is_settable() : f_.is_settable();
+    }
     void set(typename accessor_value_type<T>::type const& value) const
     {
-        if (condition_)
+        if (condition_.get())
             t_.set(value);
         else
             f_.set(value);
     }
  private:
-    bool condition_;
+    Condition condition_;
     T t_;
     F f_;
 };
-template<class T, class F>
-accessor_mux<T,F>
-select_accessor(bool condition, T t, F f)
-{ return accessor_mux<T,F>(condition, t, f); }
+template<class Condition, class T, class F>
+accessor_mux<Condition,T,F>
+select_accessor(Condition condition, T t, F f)
+{ return accessor_mux<Condition,T,F>(condition, t, f); }
 
 // scale(a, factor) creates a new accessor that presents a scaled view of a,
 // where a is an accessor to a numeric value.
