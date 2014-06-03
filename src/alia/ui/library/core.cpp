@@ -232,6 +232,7 @@ struct end_pass_exception {};
 
 void end_pass(dataless_ui_context& ctx)
 {
+    assert(!is_render_pass(ctx));
     ctx.pass_aborted = true;
     throw end_pass_exception();
 }

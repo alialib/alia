@@ -95,19 +95,22 @@ struct context_invoker
 {
     ui_system* system;
     ui_context* ctx;
+    bool aborted;
     void operator()()
     {
         try
         {
             system->controller->do_ui(*ctx);
+            aborted = false;
         }
         catch (end_pass_exception&)
         {
+            aborted = true;
         }
     }
 };
 
-static void
+static bool
 issue_event(
     ui_system& system, ui_event& event,
     bool targeted, routing_region_ptr const& target = routing_region_ptr())
@@ -161,6 +164,7 @@ issue_event(
     fn.system = &system;
     fn.ctx = &ctx;
     invoke_routed_traversal(fn, ctx.routing, data, targeted, target);
+    return fn.aborted;
 }
 
 layout_vector
@@ -214,7 +218,11 @@ static routable_widget_id get_mouse_target(ui_system& ui)
 void refresh_ui(ui_system& ui)
 {
     refresh_event e;
-    issue_event(ui, e);
+    // Continue refreshing as long as the refresh event is being aborted.
+    // This is a workaround for code that wants to handle events on refresh
+    // passes.
+    while (issue_event(ui, e, false))
+        ;
 
     resolve_layout(ui.layout, layout_vector(ui.surface_size));
 }
