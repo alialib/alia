@@ -69,9 +69,6 @@ static inline std::ostream& operator<<(std::ostream& o, id_interface const& id)
 // Get the context of the given ID.
 static inline id_context get_context(id_interface const& id)
 { return id.context(); }
-// Is the ID valid?
-static inline bool is_valid(id_interface const& id)
-{ return get_context(id) != ID_CONTEXT_NOWHERE; }
 
 // Given an ID and some storage, attempts to deep copy the ID into the storage
 // if the types are compatible. Otherwise, deletes the storage and returns
