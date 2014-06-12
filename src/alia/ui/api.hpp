@@ -708,6 +708,7 @@ ALIA_DECLARE_STRING_CONVERSIONS(int)
 ALIA_DECLARE_STRING_CONVERSIONS(unsigned)
 ALIA_DECLARE_STRING_CONVERSIONS(float)
 ALIA_DECLARE_STRING_CONVERSIONS(double)
+ALIA_DECLARE_STRING_CONVERSIONS(size_t)
 
 // as_text(ctx, x) creates a text-based interface to the accessor x.
 template<class T>

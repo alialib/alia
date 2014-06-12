@@ -109,6 +109,7 @@ void integer_from_string(T* value, string const& str)
 
 ALIA_INTEGER_CONVERSIONS(int)
 ALIA_INTEGER_CONVERSIONS(unsigned)
+ALIA_INTEGER_CONVERSIONS(size_t)
 
 struct text_display_data;
 
