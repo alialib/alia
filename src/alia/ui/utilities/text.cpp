@@ -171,6 +171,9 @@ break_text(
                     paint.breakText(p, next_space - p,
                         layout_scalar_as_skia_scalar(remaining_width),
 			&measured_width);
+                // Avoid infinite loops!
+                if (!what_will_fit)
+                    what_will_fit = next_space - p;
                 remaining_width -= skia_scalar_as_layout_size(measured_width);
                 p += what_will_fit;
             }

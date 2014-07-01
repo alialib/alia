@@ -901,7 +901,8 @@ void wx_frame::on_move(wxMoveEvent& event)
     event.Skip();
 }
 
-void create_wx_framed_window(
+wx_frame*
+create_wx_framed_window(
     string const& title,
     alia__shared_ptr<app_window_controller> const& controller,
     alia__shared_ptr<style_tree> const& style,
@@ -940,6 +941,8 @@ void create_wx_framed_window(
     }
     else
         frame->Show(true);
+
+    return frame;
 }
 
 }

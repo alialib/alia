@@ -87,7 +87,8 @@ struct wx_frame : public wxFrame, app_window
 // Create a wx_frame with a wx_opengl_window inside, filling the frame.
 // If don't need the flexibility to create wxWidgets UI elements yourself,
 // then this is the simplest way to get alia working with wxWdigets.
-void create_wx_framed_window(
+wx_frame*
+create_wx_framed_window(
     string const& title,
     alia__shared_ptr<app_window_controller> const& controller,
     alia__shared_ptr<style_tree> const& style,

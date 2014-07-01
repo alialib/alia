@@ -292,6 +292,11 @@ void text_layout_node::calculate_wrapping(
                 usable_width - state.accumulated_width,
                 state.accumulated_width == 0, false,
                 &line_width, &visible_end);
+        if (line_end == p && !state.accumulated_width)
+        {
+            // Avoid infinite loops.
+            break;
+        }
         if (line_end != p)
         {
             fold_in_requirements(state.active_row.requirements,
