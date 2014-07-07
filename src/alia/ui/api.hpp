@@ -1533,7 +1533,7 @@ class horizontal_collapsible_content : noncopyable
     scoped_layout_container container_;
     scoped_clip_region clipper_;
     scoped_transformation transform_;
-    column_layout layout_;
+    row_layout layout_;
     bool do_content_;
 };
 
@@ -1615,6 +1615,44 @@ struct accordion_section : noncopyable
     clickable_panel panel_;
     bool is_selected_;
     collapsible_content content_;
+    bool clicked_;
+};
+
+struct horizontal_accordion : noncopyable
+{
+    horizontal_accordion(
+        ui_context& ctx, layout const& layout_spec = default_layout)
+    { begin(ctx, layout_spec); }
+    ~horizontal_accordion() { end(); }
+    void begin(ui_context& ctx, layout const& layout_spec = default_layout);
+    void end();
+ private:
+    friend struct horizontal_accordion_section;
+    ui_context* ctx_;
+    int* selection_;
+    int index_;
+    row_layout layout_;
+};
+
+struct horizontal_accordion_section : noncopyable
+{
+    horizontal_accordion_section() {}
+    horizontal_accordion_section(
+        ui_context& ctx, accessor<bool> const& selected)
+    { begin(ctx, selected); }
+    horizontal_accordion_section(horizontal_accordion& parent)
+    { begin(parent); }
+    ~horizontal_accordion_section() { end(); }
+    void begin(ui_context& ctx, accessor<bool> const& selected);
+    void begin(horizontal_accordion& parent);
+    void end();
+    bool do_content();
+    bool clicked() const { return clicked_; }
+ private:
+    ui_context* ctx_;
+    clickable_panel panel_;
+    bool is_selected_;
+    horizontal_collapsible_content content_;
     bool clicked_;
 };
 

@@ -590,6 +590,8 @@ void resizable_content::end()
 
 // ACCORDIONS
 
+// vertical
+
 void accordion::begin(ui_context& ctx, layout const& layout_spec)
 {
     ctx_ = &ctx;
@@ -632,6 +634,59 @@ bool accordion_section::do_content()
     return content_.do_content();
 }
 void accordion_section::end()
+{
+    if (ctx_)
+    {
+        content_.end();
+        ctx_ = 0;
+    }
+}
+
+// horizontal
+
+void horizontal_accordion::begin(ui_context& ctx, layout const& layout_spec)
+{
+    ctx_ = &ctx;
+    if (get_data(ctx, &selection_))
+        *selection_ = 0;
+    index_ = 0;
+    layout_.begin(ctx, layout_spec);
+}
+
+void horizontal_accordion::end()
+{
+    if (ctx_)
+    {
+        layout_.end();
+        ctx_ = 0;
+    }
+}
+
+void horizontal_accordion_section::begin(
+    ui_context& ctx, accessor<bool> const& selected)
+{
+    ctx_ = &ctx;
+    is_selected_ = is_gettable(selected) ? get(selected) : false;
+    panel_.begin(ctx, text("horizontal-accordion-header"), default_layout,
+        is_selected_ ? PANEL_SELECTED : NO_FLAGS);
+    clicked_ = panel_.clicked();
+    if (clicked_)
+        selected.set(true);
+}
+void horizontal_accordion_section::begin(horizontal_accordion& parent)
+{
+    begin(*parent.ctx_,
+        make_radio_accessor(inout(parent.selection_), parent.index_++));
+}
+bool horizontal_accordion_section::do_content()
+{
+    ui_context& ctx = *ctx_;
+    panel_.end();
+    content_.begin(ctx, is_selected_,
+        animated_transition(default_curve, 400), 0.9);
+    return content_.do_content();
+}
+void horizontal_accordion_section::end()
 {
     if (ctx_)
     {
