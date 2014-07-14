@@ -58,6 +58,11 @@ ALIA_DEFINE_FLAG(make_widget_visible, 1, MAKE_WIDGET_VISIBLE_ABRUPTLY)
 void make_widget_visible(dataless_ui_context& ctx, widget_id id,
     make_widget_visible_flag_set flags = NO_FLAGS);
 
+// Convert a region from the current frame of reference to the surface.
+box<2,double>
+region_to_surface_coordinates(dataless_ui_context& ctx,
+    box<2,double> const& region);
+
 }
 
 #endif

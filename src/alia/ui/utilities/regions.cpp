@@ -104,4 +104,25 @@ void make_widget_visible(dataless_ui_context& ctx, widget_id id,
     ctx.system->pending_visibility_requests.push_back(request);
 }
 
+box<2,double>
+region_to_surface_coordinates(dataless_ui_context& ctx,
+    box<2,double> const& region)
+{
+    vector<2,double> corner0 =
+        transform(get_geometry_context(ctx).transformation_matrix,
+            region.corner);
+    vector<2,double> corner1 =
+        transform(get_geometry_context(ctx).transformation_matrix,
+            get_high_corner(region));
+    box<2,double> region_in_root_frame;
+    for (unsigned i = 0; i != 2; ++i)
+    {
+        region_in_root_frame.corner[i] =
+            corner0[i] < corner1[i] ? corner0[i] : corner1[i];
+        region_in_root_frame.size[i] =
+            std::fabs(corner1[i] - corner0[i]);
+    }
+    return region_in_root_frame;
+}
+
 }
