@@ -80,17 +80,21 @@ struct empty_accessor : accessor<T>
 template<class T>
 struct regular_accessor : accessor<T>
 {
+    explicit regular_accessor(id_context context = get_id_context(T()))
+      : context_(context)
+    {}
     id_interface const& id() const
     {
         if (this->is_gettable())
         {
-            id_ = make_id_by_reference(this->get());
+            id_ = make_id_by_reference(this->get(), context_);
             return id_;
         }
         return no_id;
     }
  private:
     mutable value_id_by_reference<T> id_;
+    id_context context_;
 };
 
 // inout(&x) creates an accessor for direct access to a non-const variable x.
@@ -98,7 +102,9 @@ template<class T>
 struct inout_accessor : regular_accessor<T>
 {
     inout_accessor() {}
-    inout_accessor(T* v) : v_(v) {}
+    inout_accessor(T* v, id_context context = get_id_context(T()))
+      : regular_accessor(context), v_(v)
+    {}
     bool is_gettable() const { return true; }
     T const& get() const { return *v_; }
     bool is_settable() const { return true; }
@@ -119,7 +125,9 @@ template<class T>
 struct input_accessor : regular_accessor<T>
 {
     input_accessor() {}
-    input_accessor(T const& v) : v_(v) {}
+    input_accessor(T const& v, id_context context = get_id_context(T()))
+      : regular_accessor(context), v_(v)
+    {}
     bool is_gettable() const { return true; }
     T const& get() const { return v_; }
     bool is_settable() const { return false; }
@@ -140,7 +148,10 @@ template<class T>
 struct input_pointer_accessor : regular_accessor<T>
 {
     input_pointer_accessor() {}
-    input_pointer_accessor(T const* v) : v_(v) {}
+    input_pointer_accessor(
+        T const* v, id_context context = get_id_context(T()))
+      : regular_accessor(context), v_(v)
+    {}
     bool is_gettable() const { return true; }
     T const& get() const { return *v_; }
     bool is_settable() const { return false; }

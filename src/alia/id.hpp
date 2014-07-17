@@ -183,6 +183,10 @@ ALIA_UNIVERSAL_TYPE(unsigned long long)
 ALIA_UNIVERSAL_TYPE(wchar_t)
 ALIA_UNIVERSAL_TYPE(float)
 ALIA_UNIVERSAL_TYPE(double)
+// Vectors have the context of their element type.
+template<unsigned N, class T>
+id_context get_id_context(vector<N,T> const& value)
+{ return get_id_context(T()); }
 // All pointers are local to the application instance.
 template<class T>
 id_context get_id_context(T const* value)
