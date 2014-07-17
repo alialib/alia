@@ -102,7 +102,7 @@ template<class T>
 struct inout_accessor : regular_accessor<T>
 {
     inout_accessor() {}
-    inout_accessor(T* v, id_context context = get_id_context(T()))
+    inout_accessor(T* v, id_context context)
       : regular_accessor(context), v_(v)
     {}
     bool is_gettable() const { return true; }
@@ -114,9 +114,9 @@ struct inout_accessor : regular_accessor<T>
 };
 template<class T>
 inout_accessor<T>
-inout(T* value)
+inout(T* value, id_context context = get_id_context(T()))
 {
-    return inout_accessor<T>(value);
+    return inout_accessor<T>(value, context);
 }
 
 // in(x) creates a read-only accessor for the value of x.
@@ -125,7 +125,7 @@ template<class T>
 struct input_accessor : regular_accessor<T>
 {
     input_accessor() {}
-    input_accessor(T const& v, id_context context = get_id_context(T()))
+    input_accessor(T const& v, id_context context)
       : regular_accessor(context), v_(v)
     {}
     bool is_gettable() const { return true; }
@@ -137,9 +137,9 @@ struct input_accessor : regular_accessor<T>
 };
 template<class T>
 input_accessor<T>
-in(T const& value)
+in(T const& value, id_context context = get_id_context(T()))
 {
-    return input_accessor<T>(value);
+    return input_accessor<T>(value, context);
 }
 
 // in_ptr(&x) creates a read-only accessor for the value of x.
@@ -148,8 +148,7 @@ template<class T>
 struct input_pointer_accessor : regular_accessor<T>
 {
     input_pointer_accessor() {}
-    input_pointer_accessor(
-        T const* v, id_context context = get_id_context(T()))
+    input_pointer_accessor(T const* v, id_context context)
       : regular_accessor(context), v_(v)
     {}
     bool is_gettable() const { return true; }
@@ -161,9 +160,9 @@ struct input_pointer_accessor : regular_accessor<T>
 };
 template<class T>
 input_pointer_accessor<T>
-in_ptr(T const* value)
+in_ptr(T const* value, id_context context = get_id_context(T()))
 {
-    return input_pointer_accessor<T>(value);
+    return input_pointer_accessor<T>(value, context);
 }
 
 // optional_in(x) creates a read-only accessor to an optional value.
