@@ -41,12 +41,13 @@ calculate_text_layout(
     char const* p = utf8.begin;
     do // Always include at least one row, even for empty strings.
     {
-        layout_scalar line_width;
+        layout_scalar line_width, visible_width;
         utf8_ptr visible_end;
         utf8_ptr line_end =
             break_text(
                 paint, utf8_string(p, utf8.end), width, true, for_editing,
-                &line_width, &visible_end, &ended_on_line_terminator);
+                &line_width, &visible_width, &visible_end,
+                &ended_on_line_terminator);
         data.rows.push_back(utf8_string(p, visible_end));
         if (line_end == p)
         {
@@ -391,14 +392,15 @@ layout_requirements text_control_layout_node::get_vertical_requirements(
         bool ended_on_line_terminator = false;
         do // Include one line even for empty strings.
         {
-            layout_scalar line_width;
+            layout_scalar line_width, visible_width;
             utf8_ptr visible_end;
             utf8_ptr line_end =
                 break_text(
                     paint, utf8_string(p, text.end),
                     // (- 1 to leave room for the cursor)
                     assigned_width - 1, true, true,
-                    &line_width, &visible_end, &ended_on_line_terminator);
+                    &line_width, &visible_width, &visible_end,
+                    &ended_on_line_terminator);
             ++line_count;
             if (line_end == p)
             {

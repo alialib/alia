@@ -410,7 +410,8 @@ void rotated_layout::concrete_begin(
 
 // FLOW LAYOUT
 
-ALIA_DECLARE_LAYOUT_LOGIC(flow_layout_logic)
+ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA(flow_layout_logic,
+    layout_flag_set x_alignment_;)
 
 calculated_layout_requirements
 flow_layout_logic::get_horizontal_requirements(
@@ -435,13 +436,14 @@ calculate_wrapping(
     std::vector<wrapped_row>* rows)
 {
     wrapping_state state;
+    state.assigned_width = assigned_width;
     state.accumulated_width = 0;
     state.active_row.requirements = layout_requirements(0, 0, 0, 0);
     state.active_row.y = 0;
     state.rows = rows;
 
     for (layout_node* i = children; i; i = i->next)
-        i->calculate_wrapping(ctx, assigned_width, state);
+        i->calculate_wrapping(ctx, state);
     // Include the last/current row in the height requirements.
     wrap_row(state);
 
@@ -487,17 +489,34 @@ void flow_layout_logic::set_relative_assignment(
 
     // Now actually do the assignments.
     wrapping_assignment_state state;
-    state.x = 0;
+    state.x = !rows.empty()
+      ? calculate_initial_x(assigned_size[0], x_alignment_, rows.front())
+      : 0;
+    state.assigned_width = assigned_size[0];
     state.active_row = rows.begin();
+    state.end_row = rows.end();
+    state.x_alignment = x_alignment_;
     for (layout_node* i = children; i; i = i->next)
-        i->assign_wrapped_regions(ctx, assigned_size[0], state);
+        i->assign_wrapped_regions(ctx, state);
 }
 
 void flow_layout::concrete_begin(
     layout_traversal& traversal, data_traversal& data,
-    layout const& layout_spec)
+    layout const& requested_layout_spec)
 {
+    // With a flow layout, we want to have the layout itself always fill the
+    // horizontal space and use the requested X alignment to position the
+    // individual rows in the flow.
+    auto layout_spec = requested_layout_spec;
+    layout_flag_set x_alignment = FILL_X;
+    if ((layout_spec.flags.code & 0x3) != 0)
+    {
+        x_alignment.code = layout_spec.flags.code & X_ALIGNMENT_MASK_CODE;
+        layout_spec.flags.code &= ~X_ALIGNMENT_MASK_CODE;
+        layout_spec.flags.code |= FILL_X_CODE;
+    }
     ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(flow_layout_logic)
+    logic->x_alignment_ = x_alignment;
 }
 
 // VERTICAL FLOW LAYOUT

@@ -96,18 +96,23 @@ get_naming_map(layout_calculation_context& ctx)
 // These are used when working with wrapped layouts.
 struct wrapped_row
 {
+    layout_scalar width;
     layout_requirements requirements;
     layout_scalar y;
 };
 struct wrapping_state
 {
     std::vector<wrapped_row>* rows;
+    layout_scalar assigned_width;
     wrapped_row active_row;
     layout_scalar accumulated_width;
+    layout_scalar visible_width;
 };
 struct wrapping_assignment_state
 {
-    std::vector<wrapped_row>::iterator active_row;
+    layout_scalar assigned_width;
+    layout_flag_set x_alignment;
+    std::vector<wrapped_row>::iterator active_row, end_row;
     layout_scalar x;
 };
 
@@ -132,11 +137,9 @@ struct layout_node
         layout_calculation_context& ctx);
     virtual void calculate_wrapping(
         layout_calculation_context& ctx,
-        layout_scalar assigned_width,
         wrapping_state& state);
     virtual void assign_wrapped_regions(
         layout_calculation_context& ctx,
-        layout_scalar assigned_width,
         wrapping_assignment_state& state);
 
     // next node in the list of siblings

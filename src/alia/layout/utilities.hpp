@@ -62,6 +62,11 @@ layout add_default_alignment(layout const& layout_spec,
 
 // The following are utilities for working with wrapped layouts.
 void wrap_row(wrapping_state& state);
+layout_scalar
+calculate_initial_x(
+    layout_scalar assigned_width,
+    layout_flag_set x_alignment,
+    wrapped_row const& row);
 void wrap_row(wrapping_assignment_state& state);
 
 // Alternate forms for invoking the layout_node interface.
@@ -528,7 +533,7 @@ bool is_visible(geometry_context& ctx, box<2,double> const& region);
 
 // Some macros for implementing simple layout containers.
 
-#define ALIA_DECLARE_LAYOUT_LOGIC(logic_type) \
+#define ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA(logic_type, data) \
     struct logic_type : layout_logic \
     { \
         calculated_layout_requirements get_horizontal_requirements( \
@@ -543,7 +548,11 @@ bool is_visible(geometry_context& ctx, box<2,double> const& region);
             layout_node* children, \
             layout_vector const& assigned_size, \
             layout_scalar assigned_baseline_y); \
+        data \
     };
+
+#define ALIA_DECLARE_LAYOUT_LOGIC(logic_type) \
+    ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA(logic_type, )
 
 void begin_layout_transform(
     scoped_transformation& transform,

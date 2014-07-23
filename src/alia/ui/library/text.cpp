@@ -130,11 +130,9 @@ struct text_layout_node : layout_node
         layout_calculation_context& ctx);
     void calculate_wrapping(
         layout_calculation_context& ctx,
-        layout_scalar assigned_width,
         wrapping_state& state);
     void assign_wrapped_regions(
         layout_calculation_context& ctx,
-        layout_scalar assigned_width,
         wrapping_assignment_state& state);
 
     void set_data(text_display_data& data) { data_ = &data; }
@@ -247,15 +245,20 @@ text_layout_node::get_minimal_horizontal_requirements(
     layout_calculation_context& ctx)
 {
     text_display_data& data = *data_;
+
+    // Record that this text is being used in a wrapping context.
     data.is_wrapped = true;
+
     SkPaint paint;
-    // This is kind of arbitrary, but it should rarely come into play.
+    set_skia_font_info(paint, data.font);
+
     return layout_requirements(
-        skia_scalar_as_layout_size(data.font.size * 6), 0, 0, 0);
+        // This is kind of arbitrary, but it should rarely come into play.
+        skia_scalar_as_layout_size(data.font.size * 4),
+        0, 0, 0);
 }
 void text_layout_node::calculate_wrapping(
     layout_calculation_context& ctx,
-    layout_scalar assigned_width,
     wrapping_state& state)
 {
     text_display_data& data = *data_;
@@ -272,7 +275,7 @@ void text_layout_node::calculate_wrapping(
     char space = ' ';
     layout_scalar padding_width =
 	skia_scalar_as_layout_size(paint.measureText(&space, 1));
-    layout_scalar usable_width = assigned_width;
+    layout_scalar usable_width = state.assigned_width;
 
     layout_requirements y_requirements(
         skia_scalar_as_layout_size(line_spacing),
@@ -284,14 +287,14 @@ void text_layout_node::calculate_wrapping(
     char const* p = text.begin;
     while (1)
     {
-        layout_scalar line_width;
+        layout_scalar line_width, visible_width;
         utf8_ptr visible_end;
         utf8_ptr line_end =
             break_text(
                 paint, utf8_string(p, text.end),
                 usable_width - state.accumulated_width,
                 state.accumulated_width == 0, false,
-                &line_width, &visible_end);
+                &line_width, &visible_width, &visible_end);
         if (line_end == p && !state.accumulated_width)
         {
             // Avoid infinite loops.
@@ -301,6 +304,8 @@ void text_layout_node::calculate_wrapping(
         {
             fold_in_requirements(state.active_row.requirements,
                 y_requirements);
+            state.visible_width =
+                state.accumulated_width + visible_width;
             state.accumulated_width += line_width + padding_width;
             p = line_end;
         }
@@ -311,7 +316,6 @@ void text_layout_node::calculate_wrapping(
 }
 void text_layout_node::assign_wrapped_regions(
     layout_calculation_context& ctx,
-    layout_scalar assigned_width,
     wrapping_assignment_state& state)
 {
     text_display_data& data = *data_;
@@ -330,7 +334,7 @@ void text_layout_node::assign_wrapped_regions(
     char space = ' ';
     layout_scalar padding_width =
 	skia_scalar_as_layout_size(paint.measureText(&space, 1));
-    layout_scalar usable_width = assigned_width;
+    layout_scalar usable_width = state.assigned_width;
 
     data.wrapped_y = state.active_row->y;
 
@@ -339,14 +343,19 @@ void text_layout_node::assign_wrapped_regions(
     while (1)
     {
         // Determine line breaking.
-        layout_scalar line_width;
+        layout_scalar line_width, visible_width;
         utf8_ptr visible_end;
         utf8_ptr line_end =
             break_text(
                 paint, utf8_string(p, text.end),
                 usable_width - state.x,
-                state.x == 0, false,
-                &line_width, &visible_end);
+                state.x ==
+                    calculate_initial_x(
+                        state.assigned_width,
+                        state.x_alignment,
+                        *state.active_row),
+                false,
+                &line_width, &visible_width, &visible_end);
 
         // Record the row.
         text_display_row row;
@@ -368,7 +377,7 @@ void text_layout_node::assign_wrapped_regions(
         wrap_row(state);
     }
 
-    data.wrapped_size = make_layout_vector(assigned_width, y);
+    data.wrapped_size = make_layout_vector(state.assigned_width, y);
 }
 
 void do_text(ui_context& ctx, accessor<string> const& text,
@@ -420,27 +429,28 @@ void do_text(ui_context& ctx, accessor<string> const& text,
                     set_skia_font_info(paint, data.font);
                     // If the background is completely opaque, then we should
                     // draw it here so that Skia can apply LCD text rendering.
-                    bool draw_background =
-                        ctx.style.properties->background_color.a == 0xff;
+                    rgba8 bg = ctx.style.properties->background_color;
+                    bool draw_background = bg.a == 0xff;
                     if (!draw_background)
                     {
                         paint.setFlags(paint.getFlags() |
                             SkPaint::kGenA8FromLCD_Flag);
                         paint.setXfermodeMode(SkXfermode::kSrc_Mode);
                     }
-                    rgba8 bg = ctx.style.properties->background_color;
                     for (std::vector<text_display_row>::const_iterator
                         i = data.wrapped_rows.begin();
                         i != data.wrapped_rows.end(); ++i)
                     {
                         if (draw_background)
                         {
-                            set_color(paint,
-                                ctx.style.properties->background_color);
+                            set_color(paint, bg);
                             draw_rect(renderer.canvas(), paint,
                                 layout_box_as_skia_box(layout_box(
-                                    make_vector(i->position[0], i->top),
-                                    make_vector(region.size[0], i->height))));
+                                    // HACK! TODO: Deal with overhang properly.
+                                    make_vector(
+                                        i->position[0] - 2, i->top),
+                                    make_vector(
+                                        region.size[0] + 4, i->height))));
                         }
                         set_color(paint, ctx.style.properties->text_color);
                         renderer.canvas().drawText(

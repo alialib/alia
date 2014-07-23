@@ -74,6 +74,8 @@ utf8_string get_containing_word(utf8_string const& text, utf8_ptr p);
 // The return value is a pointer to the first character that didn't fit on the
 // line (or the end of the text if the whole string fit).
 // *accumulated_width stores the actual width of the text that fit.
+// *visible_width stores the width of the text that's actually visible on the
+// line.
 // *visible_end stores the end of the text that's actually visible on the line.
 //
 // If ended_on_line_terminator is not 0, it will be set to indicate whether or
@@ -83,7 +85,11 @@ utf8_ptr
 break_text(
     SkPaint& paint, utf8_string const& text, layout_scalar width,
     bool is_full_line, bool for_editing, layout_scalar* accumulated_width,
-    utf8_ptr* visible_end, bool* ended_on_line_terminator = 0);
+    layout_scalar* visible_width, utf8_ptr* visible_end,
+    bool* ended_on_line_terminator = 0);
+
+// Calculate the width of the longest word (in pixels) in the given text.
+layout_scalar get_longest_word(SkPaint& paint, utf8_string const& text);
 
 }
 

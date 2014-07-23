@@ -1,5 +1,6 @@
 #include <alia/ui/utilities/text.hpp>
 #include <alia/ui/utilities/skia.hpp>
+#include <alia/layout/utilities.hpp>
 
 namespace alia {
 
@@ -146,11 +147,15 @@ utf8_string get_containing_word(utf8_string const& text, utf8_ptr p)
 utf8_ptr
 break_text(
     SkPaint& paint, utf8_string const& text, layout_scalar width,
-    bool is_full_line, bool for_editing, layout_scalar* accumulated_width,
-    utf8_ptr* visible_end, bool* ended_on_line_terminator)
+    bool is_full_line, bool for_editing, layout_scalar* accumulated_width_out,
+    layout_scalar* visible_width_out, utf8_ptr* visible_end_out,
+    bool* ended_on_line_terminator_out)
 {
     utf8_ptr p = text.begin;
     layout_scalar remaining_width = width;
+    layout_scalar visible_width = 0;
+    utf8_ptr visible_end = p;
+    bool ended_on_line_terminator = false;
     while (p < text.end)
     {
         utf8_ptr next_space =
@@ -159,7 +164,7 @@ break_text(
         layout_scalar word_width =
             skia_scalar_as_layout_size(paint.measureText(p, next_space - p));
         // If that width is more than the remaining width on the line, then
-        // we need to break (both the line and the loop).
+        // we need to break.
         if (word_width > remaining_width)
         {
             // If we're at the start of the line, we have a word that's longer
@@ -175,13 +180,16 @@ break_text(
                 if (!what_will_fit)
                     what_will_fit = next_space - p;
                 remaining_width -= skia_scalar_as_layout_size(measured_width);
+                visible_width = width - remaining_width;
+                visible_end = p;
                 p += what_will_fit;
             }
-            break;
+            goto line_broken;
         }
         // Advance past that word.
         remaining_width -= word_width;
-        p = next_space;
+        visible_width = width - remaining_width;
+        visible_end = p = next_space;
         // This block takes care of skipping space at the end of the word.
         // The space is treated differently because it doesn't necessarily
         // need to be visible on the line.
@@ -193,11 +201,9 @@ break_text(
             // If we encounter a line terminator, break the line immediately.
             if (is_line_terminator(c))
             {
-                *visible_end = q;
                 p = skip_line_terminator(utf8_string(q, text.end));
-                if (ended_on_line_terminator)
-                    *ended_on_line_terminator = true;
-                goto line_ended;
+                ended_on_line_terminator = true;
+                goto line_broken;
             }
             // If we encounter a non-space character or we're in editing mode
             // and we've already encountered a single space, then we're done.
@@ -216,12 +222,33 @@ break_text(
         // We no longer have a full line.
         is_full_line = false;
     }
-    *visible_end = p;
-    if (ended_on_line_terminator)
-        *ended_on_line_terminator = false;
- line_ended:
-    *accumulated_width = width - remaining_width;
+ line_broken:
+    if (ended_on_line_terminator_out)
+        *ended_on_line_terminator_out = ended_on_line_terminator;
+    *visible_end_out = visible_end;
+    *visible_width_out = visible_width;
+    *accumulated_width_out = width - remaining_width;
     return p;
+}
+
+// Calculate the length of the longest word (in pixels) in the given text.
+layout_scalar get_longest_word(SkPaint& paint, utf8_string const& text)
+{
+    layout_scalar max_width = as_layout_size(0);
+    char const* p = text.begin;
+    while (p != text.end)
+    {
+        utf8_ptr next_space =
+            find_next_breakable_space(utf8_string(p, text.end));
+
+        layout_scalar word_width =
+            skia_scalar_as_layout_size(paint.measureText(p, next_space - p));
+        if (word_width > max_width)
+            max_width = word_width;
+
+        p = skip_space(utf8_string(next_space, text.end));
+    }
+    return max_width;
 }
 
 }
