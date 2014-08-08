@@ -68,17 +68,21 @@ void do_separator(ui_context& ctx, layout const& layout_spec)
             skia_renderer renderer(ctx, cache.image(), region.size);
             SkPaint paint;
             paint.setFlags(SkPaint::kAntiAlias_Flag);
-            paint.setStrokeWidth(layout_scalar_as_skia_scalar(
-                get(data.metrics).size[0]));
+            SkScalar stroke_width =
+                layout_scalar_as_skia_scalar(get(data.metrics).size[0]);
+            SkScalar half_stroke_width = stroke_width / 2;
+            paint.setStrokeWidth(stroke_width);
             paint.setStrokeCap(SkPaint::kSquare_Cap);
             style_path_storage storage;
             style_search_path const* path =
                 add_substyle_to_path(&storage, ctx.style.path, 0, "separator");
             set_color(paint, get_color_property(path, "color"));
             renderer.canvas().drawLine(
-                SkIntToScalar(1), SkIntToScalar(1),
-                layout_scalar_as_skia_scalar(region.size[0] - 1),
-                layout_scalar_as_skia_scalar(region.size[1] - 1),
+                half_stroke_width, half_stroke_width,
+                layout_scalar_as_skia_scalar(region.size[0]) -
+                    half_stroke_width,
+                layout_scalar_as_skia_scalar(region.size[1]) -
+                    half_stroke_width,
                 paint);
             renderer.cache();
             cache.mark_valid();
