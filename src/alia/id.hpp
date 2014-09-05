@@ -87,10 +87,26 @@ struct owned_id
     {
         clone_into(id_, other.id_);
     }
+    owned_id(owned_id&& other)
+      : id_(0)
+    {
+        id_ = other.id_;
+        other.id_ = 0;
+    }
     ~owned_id() { delete id_; }
     owned_id& operator=(owned_id const& other)
     {
-        clone_into(id_, other.id_);
+        if (this != &other)
+            clone_into(id_, other.id_);
+        return *this;
+    }
+    owned_id& operator=(owned_id&& other)
+    {
+        if (this != &other)
+        {
+            id_ = other.id_;
+            other.id_ = 0;
+        }
         return *this;
     }
     void clear() { delete id_; id_ = 0; }
