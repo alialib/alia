@@ -507,7 +507,7 @@ void flow_layout::concrete_begin(
     // With a flow layout, we want to have the layout itself always fill the
     // horizontal space and use the requested X alignment to position the
     // individual rows in the flow.
-    auto layout_spec = requested_layout_spec;
+    auto layout_spec = add_default_padding(requested_layout_spec, PADDED);
     layout_flag_set x_alignment = FILL_X;
     if ((layout_spec.flags.code & 0x3) != 0)
     {
