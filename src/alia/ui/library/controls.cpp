@@ -117,13 +117,6 @@ void draw_box_control(
     skia_box full_region =
         layout_box_as_skia_box(layout_box(make_layout_vector(0, 0), size));
 
-    if (style.border_width != 0)
-    {
-        set_color(paint, style.border_color);
-        paint.setStyle(SkPaint::kFill_Style);
-        draw_rect(canvas, paint, full_region, style.border_radii);
-    }
-
     skia_box background_region =
         add_border(full_region, SkFloatToScalar(-style.border_width));
     set_color(paint, style.bg_color);
@@ -131,6 +124,17 @@ void draw_box_control(
     draw_rect(canvas, paint, background_region,
         adjust_border_radii_for_border_width(style.border_radii,
             box_border_width<float>(style.border_width)));
+
+    if (style.border_width != 0)
+    {
+        set_color(paint, style.border_color);
+        paint.setStyle(SkPaint::kStroke_Style);
+        paint.setStrokeWidth(style.border_width);
+        paint.setStrokeCap(SkPaint::kSquare_Cap);
+        skia_box border_rect =
+            add_border(full_region, SkFloatToScalar(-style.border_width / 2));
+        draw_rect(canvas, paint, full_region, style.border_radii);
+    }
 
     if (has_focus)
     {
