@@ -625,4 +625,11 @@ void set_magnification_factor(ui_system& system, float magnification)
     }
 }
 
+void set_system_style(ui_system& system,
+    alia__shared_ptr<style_tree> const& style)
+{
+    system.style.styles = style;
+    on_ui_style_change(system);
+}
+
 }
