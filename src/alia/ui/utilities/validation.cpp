@@ -18,6 +18,7 @@ void do_validation_report(ui_context& ctx, validation_error_report* reports)
     alia_if (reports)
     {
         do_validation_report(ctx, reports->next);
+        panel p(ctx, text("validation-error-panel"));
         do_paragraph(ctx, in(*reports->message));
     }
     alia_end
