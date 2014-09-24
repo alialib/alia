@@ -197,13 +197,14 @@ begin_outer_panel(
 
      case REGION_CATEGORY:
         // So the panel will block mouse events on things behind it.
-        do_box_region(ctx, id, remove_border(outer.region(),
-            as_layout_size(get(style_info).margin)));
+        if (!(flags & PANEL_NO_REGION))
+            do_box_region(ctx, id, remove_border(outer.region(),
+                as_layout_size(get(style_info).margin)));
         break;
 
      case INPUT_CATEGORY:
         // So the panel will steal the focus if clicked on.
-        if (!(flags && PANEL_NO_CLICK_DETECTION) &&
+        if (!(flags & PANEL_NO_CLICK_DETECTION) &&
             ctx.event->type == MOUSE_PRESS_EVENT && is_region_hot(ctx, id))
         {
             set_focus(ctx, id);
