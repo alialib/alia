@@ -838,6 +838,38 @@ printf(ui_context& ctx, char const* format, accessor<Arg0> const& arg0,
     return cache;
 }
 
+template<class Arg0, class Arg1, class Arg2>
+keyed_data_accessor<string>
+printf(ui_context& ctx, char const* format, accessor<Arg0> const& arg0,
+    accessor<Arg1> const& arg1, accessor<Arg2> const& arg2)
+{
+    keyed_data_accessor<string> cache;
+    get_keyed_data(ctx, combine_ids(ref(&arg0.id()),
+        combine_ids(ref(&arg1.id()), ref(&arg2.id()))), &cache);
+    if (!cache.is_gettable() && arg0.is_gettable() && arg1.is_gettable() &&
+        arg2.is_gettable())
+    {
+        int size = ALIA_SNPRINTF(0, 0, format,
+            make_printf_friendly(get(arg0)), make_printf_friendly(get(arg1)),
+            make_printf_friendly(get(arg2)));
+        if (size >= 0)
+        {
+            string s;
+            if (size > 0)
+            {
+                std::vector<char> chars(size + 1);
+                ALIA_SNPRINTF(&chars[0], size + 1, format,
+                    make_printf_friendly(get(arg0)),
+                    make_printf_friendly(get(arg1)),
+                    make_printf_friendly(get(arg2)));
+                s = string(&chars[0]);
+            }
+            cache.set(s);
+        }
+    }
+    return cache;
+}
+
 // TEXT DISPLAY
 
 void do_text(ui_context& ctx, accessor<string> const& text,
@@ -1824,7 +1856,7 @@ struct untyped_drop_down_list : noncopyable
     ddl_data* data_;
     widget_id id_;
     panel container_;
-    row_layout contents_;
+    flow_layout contents_;
 
     popup popup_;
     scrollable_panel list_panel_;
@@ -1895,6 +1927,7 @@ struct untyped_ddl_item : noncopyable
  private:
     untyped_drop_down_list* list_;
     panel panel_;
+    flow_layout layout_;
 };
 
 template<class Index>

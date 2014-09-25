@@ -256,7 +256,7 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
 
     container_.begin(ctx, text("drop-down"),
         add_default_size(add_default_padding(add_default_alignment(
-            layout_spec, LEFT, BASELINE_Y), PADDED), size(8, 1, EM)),
+            layout_spec, LEFT, BASELINE_Y), PADDED), size(10, 1, EM)),
         PANEL_HORIZONTAL | PANEL_NO_INTERNAL_PADDING, id_, state);
 
     switch (ctx.event->category)
@@ -372,7 +372,8 @@ bool untyped_drop_down_list::do_list()
     alia_if (active)
     {
         popup_.begin(ctx, id_, data.positioning);
-        list_panel_.begin(ctx, text("drop-down-list"), GROW | UNPADDED,
+        list_panel_.begin(ctx, text("drop-down-list"),
+            layout(width(10, EM), UNPADDED),
             PANEL_NO_HORIZONTAL_SCROLLING | PANEL_NO_INTERNAL_PADDING);
     }
     alia_end
@@ -409,6 +410,7 @@ bool untyped_ddl_item::begin(untyped_drop_down_list& list, bool is_selected)
         PANEL_NO_INTERNAL_PADDING | PANEL_NO_CLICK_DETECTION, id,
         get_widget_state(ctx, id,
             is_internally_selected ? WIDGET_SELECTED : NO_FLAGS));
+    layout_.begin(ctx);
 
     if (data.make_selection_visible && is_internally_selected)
     {
@@ -458,6 +460,7 @@ void untyped_ddl_item::end()
     if (list_)
     {
         ui_context& ctx = *list_->ctx_;
+        layout_.end();
         panel_.end();
         list_ = 0;
     }
