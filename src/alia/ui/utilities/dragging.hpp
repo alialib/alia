@@ -2,6 +2,8 @@
 #define ALIA_UI_UTILITIES_DRAGGING_HPP
 
 #include <alia/ui/internals.hpp>
+#include <alia/ui/utilities/mouse.hpp>
+#include <alia/ui/utilities/regions.hpp>
 #include <alia/ui/utilities/rendering.hpp>
 #include <alia/ui/utilities/styling.hpp>
 
