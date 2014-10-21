@@ -2,6 +2,7 @@
 #define ALIA_UI_BACKENDS_INTERFACE_HPP
 
 #include <alia/common.hpp>
+#include <alia/ui/api.hpp>
 
 // This file defines a common interface between the application window and the
 // UI controller. Where applicable, it can be implemented by backends.
