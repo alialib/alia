@@ -62,7 +62,7 @@ void refresh_draggable_style(dataless_ui_context& ctx,
                     absolute_length(3.f, PIXELS)));
         style.outline_color =
             get_color_property(path, "outline-color");
-        style.corner_radii = get_border_radius_property(ctx.style.path);
+        style.corner_radii = get_border_radius_property(path);
         style.fill_color =
             get_property(path, "fill-color", UNINHERITED_PROPERTY,
                 rgba8(0, 0, 0, 0));
