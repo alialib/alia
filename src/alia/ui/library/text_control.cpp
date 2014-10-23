@@ -146,7 +146,7 @@ get_character_at_point(text_layout_data const& layout, layout_vector const& p)
 
     int row_index = int(p[1] / layout.line_height);
     if (row_index < 0 || row_index >= int(layout.rows.size()))
-        none;
+        return none;
 
     utf8_string const& row_text = layout.rows[row_index];
 

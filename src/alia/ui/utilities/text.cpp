@@ -181,8 +181,8 @@ break_text(
                     what_will_fit = next_space - p;
                 remaining_width -= skia_scalar_as_layout_size(measured_width);
                 visible_width = width - remaining_width;
-                visible_end = p;
                 p += what_will_fit;
+                visible_end = p;
             }
             goto line_broken;
         }
