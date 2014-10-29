@@ -81,51 +81,14 @@ void clone_into(id_interface*& storage, id_interface const* id);
 // clone it and assume ownership of the clone.
 struct owned_id
 {
-    owned_id() : id_(0) {}
-    owned_id(owned_id const& other)
-      : id_(0)
-    {
-        clone_into(id_, other.id_);
-    }
-    owned_id(owned_id&& other)
-      : id_(0)
-    {
-        id_ = other.id_;
-        other.id_ = 0;
-    }
-    ~owned_id() { delete id_; }
-    owned_id& operator=(owned_id const& other)
-    {
-        if (this != &other)
-            clone_into(id_, other.id_);
-        return *this;
-    }
-    owned_id& operator=(owned_id&& other)
-    {
-        if (this != &other)
-        {
-            id_ = other.id_;
-            other.id_ = 0;
-        }
-        return *this;
-    }
-    void clear() { delete id_; id_ = 0; }
-    void store(id_interface const& new_id)
-    {
-        clone_into(id_, &new_id);
-    }
-    bool is_initialized() const { return id_ != 0; }
+    void clear() { id_.reset(); }
+    void store(id_interface const& new_id) { id_.reset(new_id.clone()); }
+    bool is_initialized() const { return id_ ? true : false; }
     id_interface const& get() const { return *id_; }
-    bool matches(id_interface const& id) const
-    { return id_ != 0 && *id_ == id; }
-    friend void swap(owned_id& a, owned_id& b)
-    {
-        id_interface* tmp = a.id_;
-        a.id_ = b.id_;
-        b.id_ = tmp;
-    }
+    bool matches(id_interface const& id) const { return id_ && *id_ == id; }
+    friend void swap(owned_id& a, owned_id& b) { swap(a.id_, b.id_); }
  private:
-    id_interface* id_;
+    alia__shared_ptr<id_interface> id_;
 };
 bool operator==(owned_id const& a, owned_id const& b);
 bool operator!=(owned_id const& a, owned_id const& b);
@@ -223,31 +186,18 @@ template<class Value>
 struct value_id_by_reference : id_interface
 {
     value_id_by_reference()
-      : value_(0), storage_(0), context_(ID_CONTEXT_NOWHERE)
+      : value_(0), storage_(), context_(ID_CONTEXT_NOWHERE)
     {}
-
-    value_id_by_reference(value_id_by_reference const& other)
-    {
-        copy(other);
-    }
-
-    value_id_by_reference& operator=(value_id_by_reference const& other)
-    {
-        delete storage_;
-        copy(other);
-        return *this;
-    }
 
     value_id_by_reference(Value const* value, id_context context)
-      : value_(value), storage_(0), context_(context)
+      : value_(value), storage_(), context_(context)
     {}
-
-    ~value_id_by_reference() { delete storage_; }
 
     id_interface* clone() const
     {
-        Value* storage = new Value(*value_);
-        return new value_id_by_reference(storage, storage, context_);
+        value_id_by_reference* copy = new value_id_by_reference;
+        this->deep_copy(copy);
+        return copy;
     }
 
     id_context context() const { return context_; }
@@ -271,33 +221,24 @@ struct value_id_by_reference : id_interface
 
     void deep_copy(id_interface* copy) const
     {
-        Value* storage = new Value(*value_);
-        *static_cast<value_id_by_reference*>(copy) =
-            value_id_by_reference(storage, storage, context_);
-    }
-
- private:
-    value_id_by_reference(Value const* value, Value* storage,
-        id_context context)
-      : value_(value), storage_(storage), context_(context)
-    {}
-
-    void copy(value_id_by_reference const& other)
-    {
-        if (other.storage_)
+        auto& typed_copy = *static_cast<value_id_by_reference*>(copy);
+        if (storage_)
         {
-            value_ = storage_ = new Value(*other.value_);
+            typed_copy.storage_ = this->storage_;
+            typed_copy.value_ = this->value_;
+            typed_copy.context_ = this->context_;
         }
         else
         {
-            storage_ = 0;
-            value_ = other.value_;
+            typed_copy.storage_.reset(new Value(*this->value_));
+            typed_copy.value_ = typed_copy.storage_.get();
+            typed_copy.context_ = this->context_;
         }
-        context_ = other.context_;
     }
 
+ private:
     Value const* value_;
-    Value* storage_;
+    alia__shared_ptr<Value> storage_;
     id_context context_;
 };
 
@@ -369,31 +310,16 @@ id_pair<Id0,Id1> combine_ids(Id0 const& id0, Id1 const& id1)
 // ref(id) wraps a reference to an id_interface so that it can be combined.
 struct id_ref : id_interface
 {
-    id_ref() : id_(0), owner_(false) {}
+    id_ref() : id_(0), ownership_() {}
 
-    id_ref(id_ref const& other)
-    {
-        owner_ = other.owner_;
-        id_ = owner_ ? other.id_->clone() : other.id_;
-    }
-
-    id_ref& operator=(id_ref const& other)
-    {
-        if (owner_)
-            delete id_;
-        owner_ = other.owner_;
-        id_ = owner_ ? other.id_->clone() : other.id_;
-        return *this;
-    }
-
-    id_ref(id_interface const* id, bool owner)
-      : id_(id), owner_(owner)
-    {}
-
-    ~id_ref() { if (owner_) delete id_; }
+    id_ref(id_interface const* id) : id_(id), ownership_() {}
 
     id_interface* clone() const
-    { return new id_ref(id_->clone(), true); }
+    {
+        id_ref* copy = new id_ref;
+        this->deep_copy(copy);
+        return copy;
+    }
 
     id_context context() const
     { return id_->context(); }
@@ -415,21 +341,25 @@ struct id_ref : id_interface
 
     void deep_copy(id_interface* copy) const
     {
-        id_ref* typed_copy = static_cast<id_ref*>(copy);
-        // What we're copying into should either be uninitialized or it should
-        // own the ID it references.
-        assert(!typed_copy->id_ || typed_copy->owner_);
-        clone_into(const_cast<id_interface*&>(typed_copy->id_), id_);
-        typed_copy->owner_ = true;
+        auto& typed_copy = *static_cast<id_ref*>(copy);
+        if (ownership_)
+        {
+            typed_copy.ownership_ = ownership_;
+            typed_copy.id_ = id_;
+        }
+        else
+        {
+            typed_copy.ownership_.reset(id_->clone());
+            typed_copy.id_ = typed_copy.ownership_.get();
+        }
     }
 
  private:
     id_interface const* id_;
-    // If this is true, the id_ref provides ownership of the ID.
-    bool owner_;
+    alia__shared_ptr<id_interface> ownership_;
 };
 static inline id_ref ref(id_interface const* id)
-{ return id_ref(id, false); }
+{ return id_ref(id); }
 
 // local_identity establishes an identity that's unique within the local
 // application instance.

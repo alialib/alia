@@ -484,6 +484,7 @@ struct keyed_data
     owned_id key;
     bool is_valid;
     Data value;
+    keyed_data() : is_valid(false) {}
 };
 
 template<class Data>
@@ -502,13 +503,15 @@ void mark_valid(keyed_data<Data>& data)
 { data.is_valid = true; }
 
 template<class Data>
-void refresh_keyed_data(keyed_data<Data>& data, id_interface const& key)
+bool refresh_keyed_data(keyed_data<Data>& data, id_interface const& key)
 {
     if (!data.key.matches(key))
     {
         data.is_valid = false;
         data.key.store(key);
+        return true;
     }
+    return false;
 }
 
 template<class Data>
