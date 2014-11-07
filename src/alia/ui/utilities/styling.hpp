@@ -372,8 +372,8 @@ get_cached_style_info(ui_context& ctx, Info const** info,
     if (get_cached_data(ctx, &cached_info) || is_refresh_pass(ctx))
     {
         refresh_keyed_data(*cached_info,
-            combine_ids(ref(*ctx.style.id),
-                combine_ids(ref(style.id()), make_id(state))));
+	    combine_ids(ref(ctx.style.id),
+		combine_ids(ref(&style.id()), make_id(state))));
         if (!is_valid(*cached_info))
         {
             stateful_style_path_storage storage;
