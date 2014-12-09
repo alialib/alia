@@ -143,6 +143,21 @@ vector<N,T> uniform_vector(T value)
     return r;
 }
 
+// hash function
+} namespace std {
+    template<unsigned N, class T>
+    struct hash<alia::vector<N,T> >
+    {
+        size_t operator()(alia::vector<N,T> const& v) const
+        {
+            size_t h = 0;
+            for (unsigned i = 0; i != N; ++i)
+                h = alia::combine_hashes(h, hash<T>()(v[i]));
+            return h;
+        }
+    };
+} namespace alia {
+
 // BOX
 
 // A box is an N-dimensional generalization of a rectangle. In one dimension,
@@ -285,6 +300,19 @@ void make_polygon(vector<2,T>* vertices, box<2,T> const& box)
     vertices[2] = box.corner + box.size;
     vertices[3] = box.corner + make_vector<T>(0, box.size[1]);
 }
+
+// hash function
+} namespace std {
+    template<unsigned N, class T>
+    struct hash<alia::box<N,T> >
+    {
+        size_t operator()(alia::box<N,T> const& x) const
+        {
+            hash<alia::vector<N,T> > hasher;
+            return alia::combine_hashes(hasher(x.corner), hasher(x.size));
+        }
+    };
+} namespace alia {
 
 // MATRIX
 
@@ -586,6 +614,24 @@ matrix<2,2,T> inverse(matrix<2,2,T> const& m)
     inv *= inv_det;
     return inv;
 }
+
+// hash function
+} namespace std {
+    template<unsigned M, unsigned N, class T>
+    struct hash<alia::matrix<M,N,T> >
+    {
+        size_t operator()(alia::matrix<M,N,T> const& m) const
+        {
+            size_t h = 0;
+            for (unsigned i = 0; i != M; ++i)
+            {
+                for (unsigned j = 0; j != N; ++j)
+                    h = alia::combine_hashes(h, hash<T>()(m(i, j)));
+            }
+            return h;
+        }
+    };
+} namespace alia {
 
 // ANGLES
 

@@ -107,6 +107,22 @@ template<class Tag>
 flag_set<Tag> operator~(flag_set<Tag> a)
 { return flag_set<Tag>(~a.code); }
 
+}
+
+namespace std
+{
+    template<class Tag>
+    struct hash<alia::flag_set<Tag> >
+    {
+        size_t operator()(alia::flag_set<Tag> const& set) const
+        {
+            return hash<unsigned>()(set.code);
+        }
+    };
+}
+
+namespace alia {
+
 #define ALIA_DEFINE_FLAG_TYPE(type_prefix) \
     struct type_prefix##_flag_tag {}; \
     typedef alia::flag_set<type_prefix##_flag_tag> type_prefix##_flag_set;
@@ -363,6 +379,16 @@ struct accessor
     virtual bool is_settable() const = 0;
     virtual void set(T const& value) const = 0;
 };
+
+// Invoke the standard hash function for a value.
+template<class T>
+size_t invoke_hash(T const& x)
+{ return std::hash<T>()(x); }
+
+// Combine two hash values.
+size_t static inline
+combine_hashes(size_t a, size_t b)
+{ return 0x9e3779b9 + (a << 6) + (a >> 2) + b; }
 
 }
 

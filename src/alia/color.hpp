@@ -25,6 +25,27 @@ bool operator<(rgb8 const& a, rgb8 const& b);
 
 std::ostream& operator<<(std::ostream& s, rgb8 const& c);
 
+}
+
+namespace std
+{
+    template<class Channel>
+    struct hash<alia::rgb<Channel> >
+    {
+        size_t operator()(alia::rgb<Channel> const& x) const
+        {
+            return
+                alia::combine_hashes(
+                    alia::combine_hashes(
+                        hash<Channel>()(x.r),
+                        hash<Channel>()(x.g)),
+                    hash<Channel>()(x.b));
+        }
+    };
+}
+
+namespace alia {
+
 static inline uint8_t multiply_uint8_channels(uint8_t a, uint8_t b)
 { return uint8_t(unsigned(a) * b / 0xff); }
 
@@ -74,6 +95,29 @@ static inline bool operator!=(rgba8 const& a, rgba8 const& b)
 bool operator<(rgba8 const& a, rgba8 const& b);
 
 std::ostream& operator<<(std::ostream& s, rgba8 const& c);
+
+}
+
+namespace std
+{
+    template<class Channel>
+    struct hash<alia::rgba<Channel> >
+    {
+        size_t operator()(alia::rgba<Channel> const& x) const
+        {
+            return
+                alia::combine_hashes(
+                    alia::combine_hashes(
+                        hash<Channel>()(x.r),
+                        hash<Channel>()(x.g)),
+                    alia::combine_hashes(
+                        hash<Channel>()(x.b),
+                        hash<Channel>()(x.a)));
+        }
+    };
+}
+
+namespace alia {
 
 // premultiply the color by the alpha to form an rgba8 value
 rgba8 apply_alpha(rgb8 color, uint8_t alpha);

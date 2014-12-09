@@ -1,8 +1,9 @@
 #ifndef ALIA_ID_HPP
 #define ALIA_ID_HPP
 
-#include <ostream>
+#include <sstream>
 #include <memory>
+#include <functional>
 #include <alia/common.hpp>
 
 // This file implements the concept of IDs in alia.
@@ -49,6 +50,9 @@ struct id_interface
 
     // Write a textual representation of the ID to the given ostream.
     virtual void stream(std::ostream& o) const = 0;
+
+    // Generate a hash of the ID.
+    virtual size_t hash() const = 0;
 };
 
 // The following convert the interface to the ID operations into the usual form
@@ -131,6 +135,9 @@ struct value_id : id_interface
 
     void deep_copy(id_interface* copy) const
     { *static_cast<value_id*>(copy) = *this; }
+
+    size_t hash() const
+    { return std::hash<Value>()(value_); }
 
  private:
     Value value_;
@@ -236,6 +243,9 @@ struct value_id_by_reference : id_interface
         }
     }
 
+    size_t hash() const
+    { return std::hash<Value>()(*value_); }
+
  private:
     Value const* value_;
     alia__shared_ptr<Value> storage_;
@@ -297,6 +307,9 @@ struct id_pair : id_interface
         id1_.deep_copy(&typed_copy->id1_);
     }
 
+    size_t hash() const
+    { return id0_.hash() ^ id1_.hash(); }
+
  private:
     Id0 id0_;
     Id1 id1_;
@@ -354,6 +367,9 @@ struct id_ref : id_interface
         }
     }
 
+    size_t hash() const
+    { return id_->hash(); }
+
  private:
     id_interface const* id_;
     alia__shared_ptr<id_interface> ownership_;
@@ -381,6 +397,23 @@ static inline bool operator<(local_id const& a, local_id const& b)
 { return a.tag < b.tag || a.tag == b.tag && a.version < b.version; }
 
 std::ostream& operator<<(std::ostream& o, local_id const& id);
+
+}
+
+namespace std
+{
+    template<>
+    struct hash<alia::local_id>
+    {
+        size_t operator()(alia::local_id const& id) const
+        {
+            return hash<int*>()(id.tag.get()) ^
+                hash<alia::counter_type>()(id.version);
+        }
+    };
+}
+
+namespace alia {
 
 local_id generate_local_id();
 
