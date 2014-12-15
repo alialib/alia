@@ -103,7 +103,7 @@ struct inout_accessor : regular_accessor<T>
 {
     inout_accessor() {}
     inout_accessor(T* v, id_context context)
-      : regular_accessor(context), v_(v)
+      : regular_accessor<T>(context), v_(v)
     {}
     bool is_gettable() const { return true; }
     T const& get() const { return *v_; }
@@ -126,7 +126,7 @@ struct input_accessor : regular_accessor<T>
 {
     input_accessor() {}
     input_accessor(T const& v, id_context context)
-      : regular_accessor(context), v_(v)
+      : regular_accessor<T>(context), v_(v)
     {}
     bool is_gettable() const { return true; }
     T const& get() const { return v_; }
@@ -149,7 +149,7 @@ struct input_pointer_accessor : regular_accessor<T>
 {
     input_pointer_accessor() {}
     input_pointer_accessor(T const* v, id_context context)
-      : regular_accessor(context), v_(v)
+      : regular_accessor<T>(context), v_(v)
     {}
     bool is_gettable() const { return true; }
     T const& get() const { return *v_; }
