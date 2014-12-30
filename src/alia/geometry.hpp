@@ -301,19 +301,6 @@ void make_polygon(vector<2,T>* vertices, box<2,T> const& box)
     vertices[3] = box.corner + make_vector<T>(0, box.size[1]);
 }
 
-// hash function
-} namespace std {
-    template<unsigned N, class T>
-    struct hash<alia::box<N,T> >
-    {
-        size_t operator()(alia::box<N,T> const& x) const
-        {
-            hash<alia::vector<N,T> > hasher;
-            return alia::combine_hashes(hasher(x.corner), hasher(x.size));
-        }
-    };
-} namespace alia {
-
 // MATRIX
 
 // M x N matrix class - T is the type of the scalar elements, M is the number
