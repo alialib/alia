@@ -320,6 +320,10 @@ void text_layout_node::assign_wrapped_regions(
 {
     text_display_data& data = *data_;
 
+    // When the row wrapping changes, things need to be re-rendered, so
+    // invalidate the rendering data. (This is probably a bit conservative.)
+    invalidate(data.rendering);
+
     data.wrapped_rows.clear();
 
     utf8_string text = as_utf8_string(data.text);
