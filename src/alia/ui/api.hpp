@@ -624,6 +624,18 @@ T* erase_type(ui_context& ctx, T const& x)
     return storage;
 }
 
+// make_indirect(ctx, x) takes an accessor x, erases its type, and then
+// returns an indirect_accessor that refers to it.
+template<class Accessor>
+indirect_accessor<typename Accessor::value_type>
+make_indirect(ui_context& ctx, Accessor const& x)
+{ return alia::ref(erase_type(ctx, x)); }
+// Don't bother if it's already indirect.
+template<class Value>
+indirect_accessor<Value>
+make_indirect(ui_context& ctx, indirect_accessor<Value> const& x)
+{ return x; }
+
 struct control_result
 {
     bool changed;

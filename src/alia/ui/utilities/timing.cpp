@@ -160,7 +160,7 @@ compute_fps(ui_context& ctx)
         end_pass(ctx);
     }
 
-    return alia::ref(erase_type(ctx, optional_in(data->fps)));
+    return make_indirect(ctx, optional_in(data->fps));
 }
 
 }
