@@ -46,10 +46,10 @@ solve_for_t_at_x(
     for (int i = 0; i != 8; ++i)
     {
         double x_error = sample_curve_x(coeff, t) - x;
-        if (fabs(x_error) < epsilon)
+        if (std::fabs(x_error) < epsilon)
             return t;
         double dx = sample_curve_derivative(coeff, t);
-        if (fabs(dx) < 1e-6)
+        if (std::fabs(dx) < 1e-6)
             break;
         t -= x_error / dx;
     }
@@ -61,7 +61,7 @@ solve_for_t_at_x(
     while (lower < upper)
     {
         double x_at_t = sample_curve_x(coeff, t);
-        if (fabs(x_at_t - x) < epsilon)
+        if (std::fabs(x_at_t - x) < epsilon)
             return t;
         if (x > x_at_t)
             lower = t;
