@@ -196,9 +196,10 @@ optional_in(optional<T> const& value)
     return optional_input_accessor<T>(value);
 }
 
-// make_custom_getter(&x, &id) gives you the most flexibility in creating an
+// make_custom_getter(&x, id) gives you the most flexibility in creating an
 // input accessor (short of implementing your own accessor type).
-// x is the value, and id is a custom ID. Both are stored by reference.
+// x is the value, and id is a custom ID.
+// The value is stored by pointer, so must remain valid, but the ID is copied.
 template<class T, class Id>
 struct custom_getter : accessor<T>
 {
