@@ -243,6 +243,7 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
     ddl_flag_set flags)
 {
     ctx_ = &ctx;
+    flags_ = flags;
 
     untyped_ui_value const* result = 0;
 
@@ -344,7 +345,8 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
         break;
     }
 
-    contents_.begin(ctx, BASELINE_Y | GROW_X);
+    if (!(flags_ & DDL_COMMAND_LIST))
+        contents_.begin(ctx, BASELINE_Y | GROW_X);
 
     return result;
 }
@@ -354,12 +356,23 @@ bool untyped_drop_down_list::do_list()
     ui_context& ctx = *ctx_;
     ddl_data& data = *data_;
 
-    contents_.end();
-
-    if (do_drop_down_button(ctx, CENTER_X | BASELINE_Y, id_, data.button))
+    if (flags_ & DDL_COMMAND_LIST)
     {
-        open_ddl(ctx, data, id_, container_.outer_region());
-        end_pass(ctx);
+        if (do_icon_button(ctx, MENU_ICON, CENTER_X | BASELINE_Y, id_))
+        {
+            open_ddl(ctx, data, id_, container_.outer_region());
+            end_pass(ctx);
+        }
+    }
+    else
+    {
+        contents_.end();
+
+        if (do_drop_down_button(ctx, CENTER_X | BASELINE_Y, id_, data.button))
+        {
+            open_ddl(ctx, data, id_, container_.outer_region());
+            end_pass(ctx);
+        }
     }
 
     // Well, this isn't quite the right condition. The list isn't relevant

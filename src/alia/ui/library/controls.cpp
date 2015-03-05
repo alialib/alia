@@ -185,6 +185,124 @@ box_control_renderer::box_control_renderer(
     content_region_.corner = make_vector(SkIntToScalar(0), SkIntToScalar(0));
 }
 
+// ICON BUTTON
+
+// This can't use do_simple_button since it requires an extra parameter to the
+// renderer (the icon type). So instead, it's implemented as a control.
+
+struct icon_button_renderer : simple_control_renderer<icon_type>
+{};
+
+struct default_icon_button_renderer : icon_button_renderer
+{
+    leaf_layout_requirements get_layout(ui_context& ctx) const
+    {
+        return get_box_control_layout(ctx, "icon-button");
+    }
+    void draw(
+        ui_context& ctx, layout_box const& region,
+        accessor<icon_type> const& icon, widget_state state) const
+    {
+        if (!is_render_pass(ctx))
+            return;
+
+        caching_renderer cache;
+        initialize_caching_control_renderer(ctx, cache, region,
+            combine_ids(ref(&icon.id()), make_id(state)));
+        if (cache.needs_rendering())
+        {
+            box_control_renderer renderer(ctx, cache, "icon-button", state);
+
+            renderer.canvas().translate(
+                SkScalarDiv(
+                    renderer.content_region().size[0],
+                    SkIntToScalar(2)),
+                SkScalarDiv(
+                    renderer.content_region().size[1],
+                    SkIntToScalar(2)));
+
+            SkPaint paint;
+            paint.setAntiAlias(true);
+            set_color(paint, renderer.style().fg_color);
+
+            switch (get(icon))
+            {
+             case REMOVE_ICON:
+              {
+                SkScalar a =
+                    SkScalarDiv(
+                        renderer.content_region().size[0],
+                        SkIntToScalar(4));
+                paint.setStrokeWidth(a);
+                paint.setStrokeCap(SkPaint::kRound_Cap);
+                renderer.canvas().drawLine(-a, -a,  a,  a, paint);
+                renderer.canvas().drawLine(-a,  a,  a, -a, paint);
+                break;
+              }
+             case DRAG_ICON:
+              {
+                SkScalar const a =
+                    SkScalarDiv(
+                        renderer.content_region().size[0],
+                        SkFloatToScalar(2.6f));
+                SkScalar const b = SkScalarDiv(a, SkIntToScalar(4));
+                paint.setStrokeWidth(SkScalarDiv(a, SkFloatToScalar(2.5f)));
+                paint.setStrokeCap(SkPaint::kRound_Cap);
+                renderer.canvas().drawLine(-a,  0,      a,      0, paint);
+                renderer.canvas().drawLine(-a,  0, -a + b,     -b, paint);
+                renderer.canvas().drawLine(-a,  0, -a + b,      b, paint);
+                renderer.canvas().drawLine( a,  0,  a - b,     -b, paint);
+                renderer.canvas().drawLine( a,  0,  a - b,      b, paint);
+                renderer.canvas().drawLine( 0, -a,      0,      a, paint);
+                renderer.canvas().drawLine( 0, -a,     -b, -a + b, paint);
+                renderer.canvas().drawLine( 0, -a,      b, -a + b, paint);
+                renderer.canvas().drawLine( 0,  a,     -b,  a - b, paint);
+                renderer.canvas().drawLine( 0,  a,      b,  a - b, paint);
+                break;
+              }
+             case MENU_ICON:
+              {
+                SkScalar a =
+                    SkScalarDiv(
+                        renderer.content_region().size[0],
+                        SkIntToScalar(4));
+                SkScalar b =
+                    SkScalarDiv(
+                        renderer.content_region().size[0],
+                        SkIntToScalar(4));
+                SkScalar c =
+                    SkScalarDiv(
+                        renderer.content_region().size[0],
+                        SkIntToScalar(5));
+                paint.setStrokeWidth(c);
+                paint.setStrokeCap(SkPaint::kRound_Cap);
+                renderer.canvas().drawLine(-b,  0,  b,  0, paint);
+                renderer.canvas().drawLine(-b,  a,  b,  a, paint);
+                renderer.canvas().drawLine(-b, -a,  b, -a, paint);
+                break;
+              }
+             default:
+                break;
+            }
+
+            renderer.cache();
+            cache.mark_valid();
+        }
+        cache.draw();
+    }
+};
+
+icon_button_result
+do_icon_button(
+    ui_context& ctx,
+    icon_type icon,
+    layout const& layout_spec,
+    widget_id id)
+{
+    return do_simple_control<icon_button_renderer,
+        default_icon_button_renderer>(ctx, in(icon), layout_spec, id);
+}
+
 // CHECK BOX
 
 struct check_box_renderer : simple_control_renderer<bool>

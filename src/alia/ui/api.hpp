@@ -1045,6 +1045,26 @@ do_button(
     button_flag_set flags = NO_FLAGS,
     widget_id id = auto_id);
 
+// icon button
+
+typedef bool icon_button_result;
+
+enum icon_type
+{
+    REMOVE_ICON,
+    DRAG_ICON,
+    MENU_ICON,
+    EXPAND_ICON,
+    SHRINK_ICON,
+};
+
+icon_button_result
+do_icon_button(
+    ui_context& ctx,
+    icon_type icon,
+    layout const& layout_spec = default_layout,
+    widget_id id = auto_id);
+
 // CONTROLS
 
 // check box
@@ -1865,6 +1885,7 @@ struct untyped_drop_down_list : noncopyable
     friend struct untyped_ddl_item;
 
     ui_context* ctx_;
+    ddl_flag_set flags_;
     ddl_data* data_;
     widget_id id_;
     panel container_;
