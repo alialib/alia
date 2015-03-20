@@ -2086,6 +2086,8 @@ struct form : noncopyable
     grid_layout grid_;
 };
 
+void do_form_section_heading(form& form, accessor<string> const& text);
+
 struct form_field : noncopyable
 {
     form_field() : form_(0) {}

@@ -829,6 +829,13 @@ void form::end()
     }
 }
 
+void do_form_section_heading(form& form, accessor<string> const& label)
+{
+    ui_context& ctx = form.context();
+    grid_row row(form.grid());
+    do_heading(ctx, text("form-section-heading"), label, RIGHT);
+}
+
 void form_field::begin(form& form, accessor<string> const& label)
 {
     ui_context& ctx = form.context();
