@@ -574,6 +574,7 @@ struct text_control_parameters
     optional<size_t> length_limit;
     panel* panel; // containing panel
     text_control_result* result;
+    validation_error_handler_data* validation;
 };
 
 text_layout_data& get_text_layout(text_control_parameters const& tc)
@@ -1161,6 +1162,8 @@ handle_key_press(
                     if (data.text_edited)
                     {
                         set(*tc.value, data.text);
+                        if (!tc.validation->error_occurred)
+                            reset_to_external_value(tc);
                         tc.result->changed = true;
                     }
                     if (!(tc.flags & TEXT_CONTROL_IMMEDIATE))
@@ -1621,6 +1624,8 @@ void do_input(text_control_parameters const& tc)
             if (data.text_edited)
             {
                 set(*tc.value, data.text);
+                if (!tc.validation->error_occurred)
+                    reset_to_external_value(tc);
                 tc.result->changed = true;
                 tc.result->event = TEXT_CONTROL_FOCUS_LOST;
             }
@@ -1639,6 +1644,7 @@ static text_control_result
 do_text_control_pass(
     ui_context& ctx,
     accessor<string> const& value,
+    validation_error_handler_data* validation,
     layout const& layout_spec,
     text_control_flag_set flags,
     widget_id id,
@@ -1659,6 +1665,8 @@ do_text_control_pass(
     text_control_data* data;
     get_cached_data(ctx, &data);
     tc.data = data;
+    
+    tc.validation = validation;
 
     init_optional_widget_id(id, &data->flags);
     tc.id = id;
@@ -1722,6 +1730,7 @@ do_unsafe_text_control(
         do_text_control_pass(
             ctx,
             make_validation_error_handler(ctx, ref(&value), *validation_data),
+            validation_data,
             layout_spec, flags, id, length_limit);
     if (result.event == TEXT_CONTROL_EDIT_CANCELED)
         clear_error(*validation_data);
