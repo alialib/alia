@@ -5,8 +5,6 @@ namespace alia {
 
 void request_refresh(dataless_ui_context& ctx, ui_time_type duration)
 {
-    if (!is_refresh_pass(ctx))
-        return;
     ui_system& ui = *ctx.system;
     ui_time_type update_time = ui.millisecond_tick_count + duration;
     if (!ui.next_update || int(get(ui.next_update) - update_time) > 0)
@@ -21,7 +19,8 @@ void request_animation_refresh(dataless_ui_context& ctx)
 
 ui_time_type get_animation_tick_count(dataless_ui_context& ctx)
 {
-    request_animation_refresh(ctx);
+    if (is_refresh_pass(ctx))
+        request_animation_refresh(ctx);
     return ctx.system->millisecond_tick_count;
 }
 
@@ -31,7 +30,8 @@ get_animation_ticks_left(dataless_ui_context& ctx, ui_time_type end_time)
     int ticks_remaining = int(end_time - ctx.system->millisecond_tick_count);
     if (ticks_remaining > 0)
     {
-        request_animation_refresh(ctx);
+        if (is_refresh_pass(ctx))
+            request_animation_refresh(ctx);
         return ui_time_type(ticks_remaining);
     }
     return 0;
