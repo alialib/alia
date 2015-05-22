@@ -1625,8 +1625,6 @@ struct tree_node : noncopyable
         optional_storage<bool> const& expanded = optional_storage<bool>(none),
         widget_id expander_id = auto_id);
 
-    void end_header();
-
     bool do_children();
 
     node_expander_result const& expander_result() const

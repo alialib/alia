@@ -379,15 +379,10 @@ void tree_node::begin(
     hit_test_box_region(ctx, expander_id, label_region_.region());
 }
 
-void tree_node::end_header()
-{
-    label_region_.end();
-}
-
 bool tree_node::do_children()
 {
     ui_context& ctx = *ctx_;
-    end_header();
+    label_region_.end();
     row_.end();
     content_.begin(ctx, is_expanded_);
     bool do_content = content_.do_content();
