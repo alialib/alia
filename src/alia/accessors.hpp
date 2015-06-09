@@ -387,6 +387,37 @@ indirect_accessor<T>
 ref(accessor<T> const* accessor)
 { return indirect_accessor<T>(accessor); }
 
+// copyable_accessor_helper is a utility for allowing accessor wrappers to
+// store copies of other accessors if they are passed by concrete value and
+// pointers if they're passed as references to accessor<T>.
+template<class T>
+struct copyable_accessor_helper
+{
+    typedef T result_type;
+    static T const& apply(T const& x) { return x; }
+};
+template<class T>
+struct copyable_accessor_helper<T const&>
+{
+    typedef T result_type;
+    static T const& apply(T const& x) { return x; }
+};
+template<class Value>
+struct copyable_accessor_helper<accessor<Value> const&>
+{
+    typedef indirect_accessor<Value> result_type;
+    static result_type apply(accessor<Value> const& x)
+    { return alia::ref(&x); }
+};
+
+// make_accessor_copyable(x) converts x to its copyable equivalent.
+template<class Accessor>
+typename copyable_accessor_helper<Accessor const&>::result_type
+make_accessor_copyable(Accessor const& x)
+{
+    return copyable_accessor_helper<Accessor const&>::apply(x);
+}
+
 // lazy_getter is used to create getters that lazily generate their values.
 // It provides storage for the computed value and ensures that it's only
 // computed once.
@@ -433,9 +464,16 @@ struct accessor_caster : regular_accessor<To>
     lazy_getter<To> lazy_getter_;
 };
 template<class To, class Wrapped>
-accessor_caster<Wrapped,To>
-accessor_cast(Wrapped accessor)
-{ return accessor_caster<Wrapped,To>(accessor); }
+accessor_caster<
+    typename copyable_accessor_helper<Wrapped const&>::result_type,
+    To>
+accessor_cast(Wrapped const& wrapped)
+{
+    return
+        accessor_caster<
+            typename copyable_accessor_helper<Wrapped const&>::result_type,
+            To>(make_accessor_copyable(wrapped));
+}
 
 // make_readonly(accessor) creates a copy of the given accessor with the write
 // function disabled.
@@ -455,9 +493,15 @@ struct readonly_accessor_wrapper
     Wrapped wrapped_;
 };
 template<class Wrapped>
-readonly_accessor_wrapper<Wrapped>
-make_readonly(Wrapped accessor)
-{ return readonly_accessor_wrapper<Wrapped>(accessor); }
+readonly_accessor_wrapper<
+    typename copyable_accessor_helper<Wrapped const&>::result_type>
+make_readonly(Wrapped const& wrapped)
+{
+    return
+        readonly_accessor_wrapper<
+            typename copyable_accessor_helper<Wrapped const&>::result_type>(
+            make_accessor_copyable(wrapped));
+}
 
 // select_accessor(condition, t, f), where condition, t and f are accessors, 
 // yields t if get(condition) is true and f otherwise.
@@ -502,9 +546,21 @@ struct accessor_mux : accessor<typename accessor_value_type<T>::type>
     F f_;
 };
 template<class Condition, class T, class F>
-accessor_mux<Condition,T,F>
-select_accessor(Condition condition, T t, F f)
-{ return accessor_mux<Condition,T,F>(condition, t, f); }
+accessor_mux<
+    typename copyable_accessor_helper<Condition const&>::result_type,
+    typename copyable_accessor_helper<T const&>::result_type,
+    typename copyable_accessor_helper<F const&>::result_type>
+select_accessor(Condition const& condition, T const& t, F const& f)
+{
+    return
+        accessor_mux<
+            typename copyable_accessor_helper<Condition const&>::result_type,
+            typename copyable_accessor_helper<T const&>::result_type,
+            typename copyable_accessor_helper<F const&>::result_type>(
+            make_accessor_copyable(condition),
+            make_accessor_copyable(t),
+            make_accessor_copyable(f));
+}
 
 // scale(a, factor) creates a new accessor that presents a scaled view of a,
 // where a is an accessor to a numeric value.
@@ -531,10 +587,16 @@ struct scaling_accessor_wrapper
     lazy_getter<wrapped_value_type> lazy_getter_;
 };
 template<class Wrapped>
-scaling_accessor_wrapper<Wrapped>
-scale(Wrapped accessor,
+scaling_accessor_wrapper<
+    typename copyable_accessor_helper<Wrapped const&>::result_type>
+scale(Wrapped const& wrapped,
     typename accessor_value_type<Wrapped>::type scale_factor)
-{ return scaling_accessor_wrapper<Wrapped>(accessor, scale_factor); }
+{
+    return
+        scaling_accessor_wrapper<
+            typename copyable_accessor_helper<Wrapped const&>::result_type>(
+            make_accessor_copyable(wrapped), scale_factor);
+}
 
 // offset(a, offset) presents an offset view of a, where a is an accessor to
 // a numeric value.
@@ -562,10 +624,16 @@ struct offset_accessor_wrapper
     lazy_getter<wrapped_value_type> lazy_getter_;
 };
 template<class Wrapped>
-offset_accessor_wrapper<Wrapped>
-offset(Wrapped accessor,
+offset_accessor_wrapper<
+    typename copyable_accessor_helper<Wrapped const&>::result_type>
+offset(Wrapped const& wrapped,
     typename accessor_value_type<Wrapped>::type offset)
-{ return offset_accessor_wrapper<Wrapped>(accessor, offset); }
+{
+    return
+        offset_accessor_wrapper<
+            typename copyable_accessor_helper<Wrapped const&>::result_type>(
+            make_accessor_copyable(wrapped), offset);
+}
 
 // add_input_rounder(accessor, step) rounds input from the UI to the given
 // accessor so that its always a multiple of step.
@@ -590,10 +658,16 @@ struct rounding_accessor_wrapper
     typename accessor_value_type<Wrapped>::type step_;
 };
 template<class Wrapped>
-rounding_accessor_wrapper<Wrapped>
-add_input_rounder(Wrapped accessor,
+rounding_accessor_wrapper<
+    typename copyable_accessor_helper<Wrapped const&>::result_type>
+add_input_rounder(Wrapped const& wrapped,
     typename accessor_value_type<Wrapped>::type step)
-{ return rounding_accessor_wrapper<Wrapped>(accessor, step); }
+{
+    return
+        rounding_accessor_wrapper<
+            typename copyable_accessor_helper<Wrapped const&>::result_type>(
+            make_accessor_copyable(wrapped), step);
+}
 
 // Given an accessor to a structure, select_field(accessor, field_ptr) returns
 // an accessor to the specified field within the structure.
@@ -638,12 +712,19 @@ struct field_accessor : accessor<Field>
     mutable id_pair<id_ref,value_id<Field*> > id_;
 };
 template<class StructureAccessor, class Field>
-field_accessor<StructureAccessor,Field>
+field_accessor<
+    typename copyable_accessor_helper<StructureAccessor const&>::result_type,
+    Field>
 select_field(
-    StructureAccessor structure,
+    StructureAccessor const& structure,
     Field accessor_value_type<StructureAccessor>::type::*field)
 {
-    return field_accessor<StructureAccessor,Field>(structure, field);
+    return
+        field_accessor<
+            typename copyable_accessor_helper<
+                StructureAccessor const&>::result_type,
+            Field>(
+            make_accessor_copyable(structure), field);
 }
 
 // text(x), where x is a string constant, creates a read-only accessor
@@ -668,7 +749,7 @@ struct text : accessor<string>
 };
 
 // combine_accessors(first, second) takes two accessors and combines them into
-// a single accessors whose value type is std::pair<FirstValue,SecondValue>,
+// a single accessor whose value type is std::pair<FirstValue,SecondValue>,
 // where FirstValue and SecondValue are the value types of first and second,
 // respectively.
 template<class First, class Second>
@@ -710,14 +791,23 @@ struct accessor_combiner
     lazy_getter<pair_type> lazy_getter_;
 };
 template<class First, class Second>
-accessor_combiner<First,Second>
+accessor_combiner<
+    typename copyable_accessor_helper<First const&>::result_type,
+    typename copyable_accessor_helper<Second const&>::result_type>
 combine_accessors(First const& first, Second const& second)
-{ return accessor_combiner<First,Second>(first, second); }
+{
+    return
+        accessor_combiner<
+            typename copyable_accessor_helper<First const&>::result_type,
+            typename copyable_accessor_helper<Second const&>::result_type>(
+            make_accessor_copyable(first), make_accessor_copyable(second));
+}
 
 // select_first(accessors) takes an accessors to a std::pair and selects the
 // first value of the pair.
 template<class Accessor>
-field_accessor<Accessor,
+field_accessor<
+    typename copyable_accessor_helper<Accessor const&>::result_type,
     typename accessor_value_type<Accessor>::type::first_type>
 select_first(Accessor const& accessor)
 {
@@ -728,7 +818,8 @@ select_first(Accessor const& accessor)
 // select_second(accessors) takes an accessors to a std::pair and selects the
 // second value of the pair.
 template<class Accessor>
-field_accessor<Accessor,
+field_accessor<
+    typename copyable_accessor_helper<Accessor const&>::result_type,
     typename accessor_value_type<Accessor>::type::second_type>
 select_second(Accessor const& accessor)
 {
@@ -760,9 +851,16 @@ struct optional_accessor_unwrapper
     OptionalAccessor accessor_;
 };
 template<class OptionalAccessor>
-optional_accessor_unwrapper<OptionalAccessor>
+optional_accessor_unwrapper<
+    typename copyable_accessor_helper<OptionalAccessor const&>::result_type>
 unwrap_optional(OptionalAccessor const& accessor)
-{ return optional_accessor_unwrapper<OptionalAccessor>(accessor); }
+{
+    return
+        optional_accessor_unwrapper<
+            typename copyable_accessor_helper<
+                OptionalAccessor const&>::result_type>(
+            make_accessor_copyable(accessor));
+}
 
 }
 
