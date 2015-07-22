@@ -1817,6 +1817,82 @@ struct tab : noncopyable
 void do_tab(ui_context& ctx, accessor<bool> const& selected,
     accessor<string> const& label);
 
+struct transitioning_layout_container;
+struct transitioning_layout_content_data;
+
+// A transitioning container allows you to specify multiple alternative
+// content blocks and have the UI smoothly transition between them.
+class transitioning_container : noncopyable
+{
+ public:
+    transitioning_container() {}
+    ~transitioning_container() { end(); }
+
+    transitioning_container(
+        ui_context& ctx,
+        animated_transition const& transition = default_transition,
+        layout const& layout_spec = default_layout)
+    { begin(ctx, transition, layout_spec); }
+
+    void begin(
+        ui_context& ctx,
+        animated_transition const& transition = default_transition,
+        layout const& layout_spec = default_layout);
+
+    void end();
+
+ private:
+    friend class transitioning_container_content;
+    ui_context* ctx_;
+    animated_transition transition_;
+    transitioning_layout_container* layout_;
+    scoped_layout_container container_;
+    scoped_transformation transform_;
+    widget_id id_;
+    scoped_clip_region clipper_;
+    transitioning_layout_content_data** next_ptr_;
+};
+
+struct scoped_surface_opacity : noncopyable
+{
+    scoped_surface_opacity() : ctx_(0) {}
+    scoped_surface_opacity(dataless_ui_context& ctx, float opacity)
+    { begin(ctx, opacity); }
+    ~scoped_surface_opacity() { end(); }
+    void begin(dataless_ui_context& ctx, float opacity);
+    void end();
+ private:
+    dataless_ui_context* ctx_;
+    float old_opacity_;
+};
+
+// transitioning_container_content specifies a single content block within a
+// transitioning_container.
+class transitioning_container_content : noncopyable
+{
+ public:
+    transitioning_container_content() {}
+    ~transitioning_container_content() { end(); }
+
+    transitioning_container_content(ui_context& ctx,
+        transitioning_container& container, bool active)
+    { begin(ctx, container, active); }
+
+    void begin(ui_context& ctx, transitioning_container& container,
+        bool active);
+
+    void end();
+
+    bool do_content() const { return do_content_; }
+
+ private:
+    ui_context* ctx_;
+    transitioning_container* container_;
+    column_layout content_holder_;
+    scoped_surface_opacity transparency_;
+    bool do_content_;
+};
+
 // OVERLAYS
 
 struct overlay_event_transformer

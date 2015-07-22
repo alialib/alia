@@ -871,4 +871,257 @@ void form_buttons::end()
     }
 }
 
+// TRANSITIONING CONTAINERS
+
+struct transitioning_layout_content_data
+{
+    layout_scalar content_height;
+    float presence;
+    transitioning_layout_content_data* next;
+};
+
+struct transitioning_layout_container : layout_container
+{
+    // implementation of layout interface
+    layout_requirements get_horizontal_requirements(
+        layout_calculation_context& ctx);
+    layout_requirements get_vertical_requirements(
+        layout_calculation_context& ctx,
+        layout_scalar assigned_width);
+    void set_relative_assignment(
+        layout_calculation_context& ctx,
+        relative_layout_assignment const& assignment);
+
+    // list of nodes that this container transitions between
+    transitioning_layout_content_data* nodes;
+
+    // layout cacher
+    layout_cacher cacher;
+
+    // The following are filled in during layout...
+
+    // window through which the content is visible
+    layout_box window;
+
+    transitioning_layout_container() : nodes(0) {}
+};
+
+layout_requirements
+transitioning_layout_container::get_horizontal_requirements(
+    layout_calculation_context& ctx)
+{
+    horizontal_layout_query query(ctx, cacher, last_content_change);
+    alia_if (query.update_required())
+    {
+        query.update(fold_horizontal_child_requirements(ctx, children));
+    }
+    alia_end
+    return query.result();
+}
+
+layout_scalar static
+get_container_height(transitioning_layout_content_data* nodes)
+{
+    float weighted_height = 0;
+    float total_weight = 0;
+    for (auto* i = nodes; i; i = i->next)
+    {
+        weighted_height += i->presence * i->content_height;
+        total_weight += i->presence;
+    }
+    return
+        total_weight > 0
+      ? layout_scalar(weighted_height / (std::max)(total_weight, 1.f) + 0.5)
+      : as_layout_size(0);
+}
+
+float static
+get_total_presence(transitioning_layout_content_data* nodes)
+{
+    float sum = 0;
+    for (auto* i = nodes; i; i = i->next)
+        sum += i->presence;
+    return sum;
+}
+
+bool static
+is_in_transition(transitioning_layout_content_data* nodes)
+{
+    for (auto* i = nodes; i; i = i->next)
+    {
+        if (i->presence > 0 && i->presence < 1)
+            return true;
+    }
+    return false;
+}
+
+layout_requirements
+transitioning_layout_container::get_vertical_requirements(
+    layout_calculation_context& ctx, layout_scalar assigned_width)
+{
+    vertical_layout_query
+        query(ctx, cacher, last_content_change, assigned_width);
+    alia_if (query.update_required())
+    {
+        layout_scalar resolved_width =
+            resolve_assigned_width(
+                this->cacher.resolved_spec,
+                assigned_width,
+                this->get_horizontal_requirements(ctx));
+
+        // Update child content heights.
+        transitioning_layout_content_data* node = this->nodes;
+        for (layout_node* i = this->children; i; i = i->next)
+        {
+            layout_requirements y =
+                alia::get_vertical_requirements(ctx, *i, resolved_width);
+            node->content_height = y.size;
+            node = node->next;
+        }
+
+        query.update(calculated_layout_requirements(
+            get_container_height(nodes), 0, 0));
+    }
+    alia_end
+    return query.result();
+}
+
+void
+transitioning_layout_container::set_relative_assignment(
+    layout_calculation_context& ctx,
+    relative_layout_assignment const& assignment)
+{
+    relative_region_assignment rra(ctx, *this, cacher, last_content_change,
+        assignment);
+    alia_if (rra.update_required())
+    {
+        layout_box const& region = rra.resolved_assignment().region;
+
+        for (layout_node* i = this->children; i; i = i->next)
+        {
+            layout_requirements y = alia::get_vertical_requirements(
+                ctx, *i, region.size[0]);
+
+            layout_vector content_size =
+                make_layout_vector(region.size[0], y.size);
+
+            relative_layout_assignment assignment(
+                layout_box(make_layout_vector(0, 0), content_size),
+                y.size - y.descent);
+
+            alia::set_relative_assignment(ctx, *i, assignment);
+        }
+
+        rra.update();
+    }
+    alia_end
+    this->window = rra.resolved_assignment().region;
+}
+
+void transitioning_container::begin(
+    ui_context& ctx, animated_transition const& transition,
+    layout const& layout_spec)
+{
+    ctx_ = &ctx;
+    transition_ = transition;
+
+    get_cached_data(ctx, &layout_);
+
+    container_.begin(get_layout_traversal(ctx), layout_);
+
+    id_ = get_widget_id(ctx);
+
+    if (is_refresh_pass(ctx))
+    {
+        update_layout_cacher(get_layout_traversal(ctx), layout_->cacher,
+            layout_spec, FILL | UNPADDED);
+        // Clear out node list.
+        layout_->nodes = 0;
+        next_ptr_ = &layout_->nodes;
+    }
+    else
+    {
+        if (ctx.event->category == REGION_CATEGORY)
+            do_box_region(ctx, id_, layout_->window);
+
+        if (is_in_transition(layout_->nodes))
+        {
+            clipper_.begin(*get_layout_traversal(ctx).geometry);
+            clipper_.set(box<2,double>(layout_->window));
+        }
+
+        transform_.begin(*get_layout_traversal(ctx).geometry);
+        transform_.set(
+            translation_matrix(
+                vector<2,double>(
+                    layout_->cacher.relative_assignment.region.corner)));
+    }
+}
+
+void transitioning_container::end()
+{
+    if (ctx_)
+    {
+        clipper_.end();
+        container_.end();
+        ctx_ = 0;
+    }
+}
+
+void transitioning_container_content::begin(
+    ui_context& ctx, transitioning_container& container, bool active)
+{
+    ctx_ = &ctx;
+    container_ = &container;
+
+    float presence =
+        smooth_raw_value(ctx, active ? 1.f : 0.f, container.transition_);
+
+    transitioning_layout_content_data* node;
+    get_cached_data(ctx, &node);
+
+    widget_id id = get_widget_id(ctx);
+
+    if (is_refresh_pass(ctx))
+    {
+        // If the widget is expanding, ensure that it's visible.
+        if (presence > node->presence)
+        {
+            make_widget_visible(ctx, container.id_,
+                MAKE_WIDGET_VISIBLE_ABRUPTLY);
+        }
+        // Insert the node into the container's list.
+        node->next = 0;
+        *container.next_ptr_ = node;
+        container.next_ptr_ = &node->next;
+        // Detect changes.
+        detect_layout_change(ctx, &node->presence, presence);
+    }
+    else
+    {
+        if (is_in_transition(container.layout_->nodes) && presence > 0)
+        {
+            auto relative_presence =
+                presence / get_total_presence(container.layout_->nodes);
+            transparency_.begin(ctx, relative_presence);
+        }
+    }
+
+    do_content_ = presence > 0;
+    alia_if (do_content_)
+    {
+        content_holder_.begin(ctx);
+    }
+    alia_end
+}
+
+void transitioning_container_content::end()
+{
+    if (ctx_)
+    {
+        content_holder_.end();
+        ctx_ = 0;
+    }
+}
+
 }

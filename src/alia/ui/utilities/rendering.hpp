@@ -103,19 +103,6 @@ get_themed_renderer(
         default_implementation;
 }
 
-struct scoped_surface_opacity : noncopyable
-{
-    scoped_surface_opacity() : ctx_(0) {}
-    scoped_surface_opacity(dataless_ui_context& ctx, float opacity)
-    { begin(ctx, opacity); }
-    ~scoped_surface_opacity() { end(); }
-    void begin(dataless_ui_context& ctx, float opacity);
-    void end();
- private:
-    dataless_ui_context* ctx_;
-    float old_opacity_;
-};
-
 }
 
 #endif
