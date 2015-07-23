@@ -930,8 +930,8 @@ get_container_height(transitioning_layout_content_data* nodes)
         total_weight += i->presence;
     }
     return
-        total_weight > 0
-      ? layout_scalar(weighted_height / (std::max)(total_weight, 1.f) + 0.5)
+        total_weight > 0.0001
+      ? layout_scalar(weighted_height / total_weight + 0.5)
       : as_layout_size(0);
 }
 
@@ -1063,6 +1063,7 @@ void transitioning_container::end()
     if (ctx_)
     {
         clipper_.end();
+        transform_.end();
         container_.end();
         ctx_ = 0;
     }
@@ -1076,26 +1077,30 @@ void transitioning_container_content::begin(
 
     float presence =
         smooth_raw_value(ctx, active ? 1.f : 0.f, container.transition_);
+    do_content_ = presence > 0;
 
     transitioning_layout_content_data* node;
-    get_cached_data(ctx, &node);
+    if (get_cached_data(ctx, &node))
+    {
+        // Initialize it as an empty/absent node.
+        node->content_height = 0;
+        node->presence = 0;
+        node->next = 0;
+    }
 
     widget_id id = get_widget_id(ctx);
 
     if (is_refresh_pass(ctx))
     {
-        // If the widget is expanding, ensure that it's visible.
-        if (presence > node->presence)
-        {
-            make_widget_visible(ctx, container.id_,
-                MAKE_WIDGET_VISIBLE_ABRUPTLY);
-        }
-        // Insert the node into the container's list.
-        node->next = 0;
-        *container.next_ptr_ = node;
-        container.next_ptr_ = &node->next;
         // Detect changes.
         detect_layout_change(ctx, &node->presence, presence);
+        // If the node is present, insert it into the container's list.
+        if (do_content_)
+        {
+            node->next = 0;
+            *container.next_ptr_ = node;
+            container.next_ptr_ = &node->next;
+        }
     }
     else
     {
@@ -1107,7 +1112,6 @@ void transitioning_container_content::begin(
         }
     }
 
-    do_content_ = presence > 0;
     alia_if (do_content_)
     {
         content_holder_.begin(ctx);
@@ -1120,6 +1124,7 @@ void transitioning_container_content::end()
     if (ctx_)
     {
         content_holder_.end();
+        transparency_.end();
         ctx_ = 0;
     }
 }
