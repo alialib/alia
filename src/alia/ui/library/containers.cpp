@@ -973,6 +973,10 @@ transitioning_layout_container::get_vertical_requirements(
         transitioning_layout_content_data* node = this->nodes;
         for (layout_node* i = this->children; i; i = i->next)
         {
+            // If you trigger this assert, then you have widgets (or other
+            // layout elements) inside your transitioning_container that
+            // aren't transitioning_container_content.
+            assert(node);
             layout_requirements y =
                 alia::get_vertical_requirements(ctx, *i, resolved_width);
             node->content_height = y.size;
@@ -1097,10 +1101,10 @@ void transitioning_container_content::begin(
         // If the node is present, insert it into the container's list.
         if (do_content_)
         {
-            node->next = 0;
             *container.next_ptr_ = node;
             container.next_ptr_ = &node->next;
         }
+        node->next = 0;
     }
     else
     {
