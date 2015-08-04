@@ -618,7 +618,7 @@ void accordion_section::begin(ui_context& ctx, accessor<bool> const& selected)
 void accordion_section::begin(accordion& parent)
 {
     begin(*parent.ctx_,
-        make_radio_accessor(inout(parent.selection_), parent.index_++));
+        make_radio_accessor(inout(parent.selection_), in(parent.index_++)));
 }
 bool accordion_section::do_content()
 {
@@ -671,7 +671,7 @@ void horizontal_accordion_section::begin(
 void horizontal_accordion_section::begin(horizontal_accordion& parent)
 {
     begin(*parent.ctx_,
-        make_radio_accessor(inout(parent.selection_), parent.index_++));
+        make_radio_accessor(inout(parent.selection_), in(parent.index_++)));
 }
 bool horizontal_accordion_section::do_content()
 {

@@ -1176,9 +1176,9 @@ do_radio_button_with_description(
     }
 }
 
-// make_radio_accessor(selected_value, this_value), where selected_value is an
-// accessor<T> and this_value is a T, yields an accessor<bool> whose value
-// tells whether or not selected_value is set to this_value.
+// make_radio_accessor(selected_value, this_value), where selected_value and
+// this_value are both of type accessor<T>, yields an accessor<bool> whose
+// value tells whether or not selected_value is set to this_value.
 // Setting the resulting accessor to any value sets selected_value's value to
 // this_value. (Setting it to false is considered nonsensical.)
 template<class Accessor, class Index>
@@ -1189,24 +1189,36 @@ struct radio_accessor : regular_accessor<bool>
         Index this_value)
       : selected_value_(selected_value), this_value_(this_value)
     {}
-    bool is_gettable() const { return selected_value_.is_gettable(); }
-    bool const& get() const { return lazy_getter_.get(*this); }
-    bool is_settable() const { return selected_value_.is_settable(); }
-    void set(bool const& value) const { selected_value_.set(this_value_); }
+    bool is_gettable() const
+    { return selected_value_.is_gettable() && this_value_.is_gettable(); }
+    bool const& get() const
+    { return lazy_getter_.get(*this); }
+    bool is_settable() const
+    { return selected_value_.is_settable() && this_value_.is_gettable(); }
+    void set(bool const& value) const
+    { selected_value_.set(this_value_.get()); }
  private:
     friend struct lazy_getter<bool>;
-    bool generate() const { return selected_value_.get() == this_value_; }
+    bool generate() const
+    { return selected_value_.get() == this_value_.get(); }
     Accessor selected_value_;
     Index this_value_;
     lazy_getter<bool> lazy_getter_;
 };
 template<class Accessor, class Index>
-radio_accessor<Accessor,Index>
+radio_accessor<
+    typename copyable_accessor_helper<Accessor const&>::result_type,
+    typename copyable_accessor_helper<Index const&>::result_type>
 make_radio_accessor(
     Accessor const& selected_value,
-    Index this_value)
+    Index const& this_value)
 {
-    return radio_accessor<Accessor,Index>(selected_value, this_value);
+    return
+        radio_accessor<
+            typename copyable_accessor_helper<Accessor const&>::result_type,
+            typename copyable_accessor_helper<Index const&>::result_type>(
+                make_accessor_copyable(selected_value),
+                make_accessor_copyable(this_value));
 }
 
 template<class Index>
@@ -1214,7 +1226,7 @@ radio_button_result
 do_unsafe_radio_button(
     ui_context& ctx,
     accessor<Index> const& selected_value,
-    Index this_value,
+    accessor<Index> const& this_value,
     layout const& layout_spec = default_layout,
     widget_id id = auto_id)
 {
@@ -1228,7 +1240,7 @@ void
 do_radio_button(
     ui_context& ctx,
     accessor<Index> const& selected_value,
-    Index this_value,
+    accessor<Index> const& this_value,
     layout const& layout_spec = default_layout,
     widget_id id = auto_id)
 {
@@ -1244,7 +1256,7 @@ radio_button_result
 do_unsafe_radio_button(
     ui_context& ctx,
     accessor<Index> const& selected_value,
-    Index this_value,
+    accessor<Index> const& this_value,
     accessor<string> const& text,
     layout const& layout_spec = default_layout,
     widget_id id = auto_id)
@@ -1259,7 +1271,7 @@ void
 do_radio_button(
     ui_context& ctx,
     accessor<Index> const& selected_value,
-    Index this_value,
+    accessor<Index> const& this_value,
     accessor<string> const& text,
     layout const& layout_spec = default_layout,
     widget_id id = auto_id)
@@ -1276,7 +1288,7 @@ radio_button_result
 do_unsafe_radio_button_with_description(
     ui_context& ctx,
     accessor<Index> const& selected_value,
-    Index this_value,
+    accessor<Index> const& this_value,
     accessor<string> const& label,
     accessor<string> const& description,
     layout const& layout_spec = default_layout,
@@ -1292,7 +1304,7 @@ void
 do_radio_button_with_description(
     ui_context& ctx,
     accessor<Index> const& selected_value,
-    Index this_value,
+    accessor<Index> const& this_value,
     accessor<string> const& label,
     accessor<string> const& description,
     layout const& layout_spec = default_layout,
