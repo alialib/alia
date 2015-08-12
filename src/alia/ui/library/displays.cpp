@@ -75,7 +75,7 @@ void do_separator(ui_context& ctx, layout const& layout_spec)
             paint.setStrokeCap(SkPaint::kSquare_Cap);
             style_path_storage storage;
             style_search_path const* path =
-                add_substyle_to_path(&storage, ctx.style.path, 0, "separator");
+                add_substyle_to_path(&storage, ctx.style.path, ctx.style.path, "separator");
             set_color(paint, get_color_property(path, "color"));
             renderer.canvas().drawLine(
                 half_stroke_width, half_stroke_width,
