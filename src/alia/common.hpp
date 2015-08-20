@@ -6,6 +6,7 @@
 #include <memory>
 #include <cassert>
 #include <ostream>
+#include <iostream>
 
 // This file defines some generic functionality that's commonly used throughout
 // alia.
@@ -148,8 +149,13 @@ struct exception : std::exception
 {
     exception(string const& msg)
       : msg_(new string(msg))
-    {}
-    ~exception() throw() {}
+    {
+        std::cout << msg << std::endl;
+    }
+
+    ~exception() throw() {
+    
+    }
 
     virtual char const* what() const throw()
     { return msg_->c_str(); }
