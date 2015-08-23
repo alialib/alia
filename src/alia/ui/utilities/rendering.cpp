@@ -127,9 +127,9 @@ void scoped_surface_opacity::end()
         surface& surface = *ctx.surface;
         if (data_->subsurface)
         {
+            surface.set_active_subsurface(old_subsurface_);
             data_->subsurface->blit(surface,
                 rgba8(0xff, 0xff, 0xff, uint8_t(0xff * opacity_ + 0.5)));
-            surface.set_active_subsurface(old_subsurface_);
         }
         else
             surface.set_opacity(old_opacity_);

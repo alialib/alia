@@ -709,11 +709,13 @@ offscreen_buffer::offscreen_buffer(
 
     // Generate color texture.
     glGenTextures(1, &color_texture_name_);
-    glBindTexture(GL_TEXTURE_2D, color_texture_name_);
-     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, region.size[0], region.size[1],
-        0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glBindTexture(GL_TEXTURE_RECTANGLE_ARB, color_texture_name_);
+    glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, region.size[0],
+        region.size[1], 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER,
+        GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER,
+        GL_NEAREST);
 
     // Generate a render buffer for the depth and stencil components.
     glGenRenderbuffers(1, &renderbuffer_name_);
@@ -724,18 +726,15 @@ offscreen_buffer::offscreen_buffer(
         GL_RENDERBUFFER, renderbuffer_name_);
 
     // Associate the texture as the color component of the framebuffer.
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-        color_texture_name_, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+        GL_TEXTURE_RECTANGLE_ARB, color_texture_name_, 0);
     GLenum draw_buffers[1] = { GL_COLOR_ATTACHMENT0 };
     glDrawBuffers(1, draw_buffers);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    check_errors();
-
-    // Also check the framebuffer status.
+    // Check if all that succeeded.
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         throw exception("framebuffer creation failed");
+    check_errors();
 }
 
 offscreen_buffer::~offscreen_buffer()
@@ -787,13 +786,14 @@ void offscreen_buffer::blit(
     glEnd();
 
     glDisable(GL_TEXTURE_RECTANGLE_ARB);
+
+    check_errors();
 }
 
 static offscreen_buffer*
-create_offscreen_buffer(
-    opengl_context* ctx, box<2,unsigned> const& region)
+create_offscreen_buffer(opengl_context* ctx, box<2,unsigned> const& region)
 {
-    if (!GLEW_ARB_framebuffer_object)
+    if (!GLEW_VERSION_3_0)
         return 0;
 
     if (region.size[0] > ctx->impl_->max_texture_size ||
@@ -966,35 +966,6 @@ void opengl_surface::cache_image(
     ctx_->impl_->associated_textures.push_back(t);
 }
 
-void opengl_surface::generate_offscreen_subsurface(
-    offscreen_subsurface_ptr& subsurface,
-    box<2,unsigned> const& region)
-{
-    assert(!subsurface || dynamic_cast<offscreen_buffer*>(subsurface.get()));
-    offscreen_buffer* buffer =
-        static_cast<offscreen_buffer*>(subsurface.get());
-
-    // If the buffer is for a previous instance of the context, abandon it.
-    if (buffer && buffer->context_version_ != ctx_->impl_->version)
-    {
-        buffer->leak();
-        buffer = 0;
-    }
-
-    // If the existing buffer is compatible, reuse it.
-    if (buffer && buffer->region().size == region.size)
-    {
-        buffer->region_ = region;
-        return;
-    }
-
-    // Otherwise, create a fresh texture.
-    buffer = create_offscreen_buffer(ctx_, region);
-    subsurface.reset(buffer);
-    if (buffer)
-        ctx_->impl_->associated_offscreen_buffers.push_back(buffer);
-}
-
 void static
 apply_clip_region(
     box<2,unsigned> const& viewport, box<2,double> const& clip_region)
@@ -1021,21 +992,71 @@ set_active_viewport(
     apply_clip_region(viewport, clip_region);
 }
 
+void opengl_surface::generate_offscreen_subsurface(
+    offscreen_subsurface_ptr& subsurface,
+    box<2,unsigned> const& region)
+{
+    assert(!subsurface || dynamic_cast<offscreen_buffer*>(subsurface.get()));
+    offscreen_buffer* buffer =
+        static_cast<offscreen_buffer*>(subsurface.get());
+
+    // If the buffer is for a previous instance of the context, abandon it.
+    if (buffer && buffer->context_version_ != ctx_->impl_->version)
+    {
+        buffer->leak();
+        buffer = 0;
+    }
+
+    // If the existing buffer is compatible, reuse it.
+    if (buffer && buffer->region().size == region.size)
+    {
+        buffer->region_ = region;
+    }
+    // Otherwise, create a new one.
+    else
+    {
+        buffer = create_offscreen_buffer(ctx_, region);
+        subsurface.reset(buffer);
+        if (buffer)
+            ctx_->impl_->associated_offscreen_buffers.push_back(buffer);
+    }
+
+    if (buffer)
+    {
+        // Activate the buffer.
+        glBindFramebuffer(GL_FRAMEBUFFER, buffer->framebuffer_name_);
+        set_active_viewport(buffer->region_, clip_region_);
+
+        // And clear it.
+        glClearColor(0, 0, 0, 0);
+        glClearDepth(1);
+        glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT |
+            GL_DEPTH_BUFFER_BIT);
+
+        check_errors();
+
+        // We should also restore the proper active buffer, but since buffers
+        // are always used immediately after being created, that doesn't
+        // actually matter. (Probably these steps should be merged in the API.)
+    }
+}
+
 void opengl_surface::set_active_subsurface(offscreen_subsurface* subsurface)
 {
     assert(!subsurface || dynamic_cast<offscreen_buffer*>(subsurface));
     if (subsurface)
     {
         offscreen_buffer* buffer = static_cast<offscreen_buffer*>(subsurface);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, buffer->framebuffer_name_);
+        glBindFramebuffer(GL_FRAMEBUFFER, buffer->framebuffer_name_);
         set_active_viewport(buffer->region_, clip_region_);
     }
     else
     {
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         set_active_viewport(make_box(make_vector(0u, 0u), size_),
             clip_region_);
     }
+    check_errors();
     active_subsurface_ = subsurface;
 }
 
