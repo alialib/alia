@@ -1865,16 +1865,27 @@ class transitioning_container : noncopyable
     transitioning_layout_content_data** next_ptr_;
 };
 
+struct offscreen_subsurface;
+struct scoped_surface_opacity_data;
+
+// Within the scope of a scoped_surface_opacity, all renderer content is
+// reduced in opacity by applying the specified factor.
+// If possible, this is done by generating an offscreen rendering buffer.
 struct scoped_surface_opacity : noncopyable
 {
     scoped_surface_opacity() : ctx_(0) {}
-    scoped_surface_opacity(dataless_ui_context& ctx, float opacity)
+    scoped_surface_opacity(ui_context& ctx, float opacity)
     { begin(ctx, opacity); }
     ~scoped_surface_opacity() { end(); }
-    void begin(dataless_ui_context& ctx, float opacity);
+    void begin(ui_context& ctx, float opacity);
     void end();
  private:
     dataless_ui_context* ctx_;
+    scoped_surface_opacity_data* data_;
+    // used if offscreen rendering if supported
+    offscreen_subsurface* old_subsurface_;
+    float opacity_;
+    // used in fallback mode
     float old_opacity_;
 };
 

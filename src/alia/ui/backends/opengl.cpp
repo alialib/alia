@@ -2,17 +2,8 @@
 #include <list>
 #include <vector>
 
-#ifdef WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <windowsx.h>
-#include <GL\gl.h>
-#include "wglext.h"
-#else
-#include <GL/gl.h>
-#endif
-
-#include "glext.h"
+#include <GL\glew.h>
+#include <GL\wglew.h>
 
 #include <alia/ui/utilities/rendering.hpp>
 #include <alia/ui/utilities/skia.hpp>
@@ -148,7 +139,7 @@ static void copy_subimage(
 }
 
 struct opengl_texture;
-struct opengl_display_list;
+struct offscreen_buffer;
 
 struct opengl_context::impl_data
 {
@@ -162,8 +153,10 @@ struct opengl_context::impl_data
     std::list<opengl_texture*> associated_textures;
     std::list<GLuint> pending_texture_deletions;
 
-    std::list<opengl_display_list*> associated_display_lists;
-    std::list<GLuint> pending_display_list_deletions;
+    std::list<offscreen_buffer*> associated_offscreen_buffers;
+    std::list<GLuint> pending_framebuffer_deletions;
+    std::list<GLuint> pending_renderbuffer_deletions;
+    offscreen_buffer* active_offscreen_buffer;
 
     // This is incremented each time the context is reset.
     // When a texture is created, it is assigned the current version number.
@@ -172,6 +165,8 @@ struct opengl_context::impl_data
 
     cached_image_ptr uniform_image;
 };
+
+// TEXTURES
 
 struct opengl_texture : cached_image
 {
@@ -657,6 +652,173 @@ void tiled_texture::draw(
 
 }
 
+static opengl_texture* create_texture(
+    opengl_context* ctx, image_interface const& img,
+    opengl_texture_flag_set flags)
+{
+    if (img.size[0] > ctx->impl_->max_texture_size ||
+        img.size[1] > ctx->impl_->max_texture_size)
+    {
+        return new tiled_texture(
+            ctx, img,
+            make_vector<unsigned>(
+                ctx->impl_->max_texture_size,
+                ctx->impl_->max_texture_size),
+            flags);
+    }
+    else
+        return new simple_texture(ctx, img, flags);
+}
+
+// OFFSCREEN BUFFERS
+
+struct offscreen_buffer : offscreen_subsurface
+{
+    offscreen_buffer(opengl_context& ctx, box<2,unsigned> const& region);
+
+    ~offscreen_buffer();
+
+    bool is_valid() const { return context_version_ == ctx_->impl_->version; }
+
+    box<2,unsigned> region() const { return region_; }
+
+    void blit(
+        surface& surface,
+        rgba8 const& color);
+
+    // In cases where the OpenGL context is reset without our knowledge, we
+    // may actually want to leak the handles we have.
+    void leak() { ctx_ = 0; }
+
+    opengl_context* ctx_;
+    unsigned context_version_;
+    box<2,unsigned> region_;
+    GLuint framebuffer_name_, color_texture_name_, renderbuffer_name_;
+};
+
+offscreen_buffer::offscreen_buffer(
+    opengl_context& ctx, box<2,unsigned> const& region)
+{
+    ctx_ = &ctx;
+    context_version_ = ctx.impl_->version;
+    region_ = region;
+
+    // Generate the framebuffer.
+    glGenFramebuffers(1, &framebuffer_name_);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_name_);
+
+    // Generate color texture.
+    glGenTextures(1, &color_texture_name_);
+    glBindTexture(GL_TEXTURE_2D, color_texture_name_);
+     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, region.size[0], region.size[1],
+        0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    // Generate a render buffer for the depth and stencil components.
+    glGenRenderbuffers(1, &renderbuffer_name_);
+    glBindRenderbuffer(GL_RENDERBUFFER, renderbuffer_name_);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
+        region.size[0], region.size[1]);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+        GL_RENDERBUFFER, renderbuffer_name_);
+
+    // Associate the texture as the color component of the framebuffer.
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+        color_texture_name_, 0);
+    GLenum draw_buffers[1] = { GL_COLOR_ATTACHMENT0 };
+    glDrawBuffers(1, draw_buffers);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    check_errors();
+
+    // Also check the framebuffer status.
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        throw exception("framebuffer creation failed");
+}
+
+offscreen_buffer::~offscreen_buffer()
+{
+    if (ctx_)
+    {
+        auto& impl = *ctx_->impl_;
+        impl.associated_offscreen_buffers.remove(this);
+        impl.pending_framebuffer_deletions.push_back(framebuffer_name_);
+        impl.pending_texture_deletions.push_back(color_texture_name_);
+        impl.pending_renderbuffer_deletions.push_back(renderbuffer_name_);
+    }
+}
+
+void offscreen_buffer::blit(
+    surface& surface,
+    rgba8 const& color)
+{
+    glEnable(GL_TEXTURE_RECTANGLE_ARB);
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+    glBindTexture(GL_TEXTURE_RECTANGLE_ARB, color_texture_name_);
+
+    rgba8 resolved_color = interpolate(rgba8(0, 0, 0, 0), color,
+        static_cast<opengl_surface&>(surface).opacity());
+    glColor4ub(resolved_color.r, resolved_color.g, resolved_color.b,
+        resolved_color.a);
+
+    double const
+        tx0 = 0,
+        tx1 = region_.size[0],
+        ty0 = 0,
+        ty1 = region_.size[1];
+
+    double const
+        x0 = region_.corner[0],
+        x1 = x0 + region_.size[0],
+        y0 = region_.corner[1],
+        y1 = y0 + region_.size[1];
+
+    glBegin(GL_QUADS);
+    glTexCoord2d(tx0, ty0);
+    glVertex2d(x0, y0);
+    glTexCoord2d(tx1, ty0);
+    glVertex2d(x1, y0);
+    glTexCoord2d(tx1, ty1);
+    glVertex2d(x1, y1);
+    glTexCoord2d(tx0, ty1);
+    glVertex2d(x0, y1);
+    glEnd();
+
+    glDisable(GL_TEXTURE_RECTANGLE_ARB);
+}
+
+static offscreen_buffer*
+create_offscreen_buffer(
+    opengl_context* ctx, box<2,unsigned> const& region)
+{
+    if (!GLEW_ARB_framebuffer_object)
+        return 0;
+
+    if (region.size[0] > ctx->impl_->max_texture_size ||
+        region.size[1] > ctx->impl_->max_texture_size)
+    {
+        return 0;
+    }
+
+    if (!ctx->impl_->texture_rectangle_supported)
+        return 0;
+
+    offscreen_buffer* buffer = 0;
+    try
+    {
+        buffer = new offscreen_buffer(*ctx, region);
+    }
+    catch (...)
+    {
+    }
+
+    return buffer;
+}
+
+// CONTEXT
+
 opengl_context::opengl_context()
 {
     impl_ = new impl_data;
@@ -665,11 +827,17 @@ opengl_context::opengl_context()
 }
 opengl_context::~opengl_context()
 {
-    // Orphan the textures so they won't try to refer back to this context
-    // when they're destroyed.
+    // Orphan any associated UI objects so they won't try to refer back to this
+    // context when they're destroyed.
     for (std::list<opengl_texture*>::iterator
         i = impl_->associated_textures.begin();
         i != impl_->associated_textures.end(); ++i)
+    {
+        (*i)->leak();
+    }
+    for (std::list<offscreen_buffer*>::iterator
+        i = impl_->associated_offscreen_buffers.begin();
+        i != impl_->associated_offscreen_buffers.end(); ++i)
     {
         (*i)->leak();
     }
@@ -696,25 +864,29 @@ void opengl_context::do_pending_deletions()
         }
         impl_->pending_texture_deletions.clear();
     }
+    if (!impl_->pending_framebuffer_deletions.empty())
+    {
+        for (std::list<GLuint>::iterator
+            i = impl_->pending_framebuffer_deletions.begin();
+            i != impl_->pending_framebuffer_deletions.end(); ++i)
+        {
+            glDeleteFramebuffers(1, &*i);
+        }
+        impl_->pending_framebuffer_deletions.clear();
+    }
+    if (!impl_->pending_renderbuffer_deletions.empty())
+    {
+        for (std::list<GLuint>::iterator
+            i = impl_->pending_renderbuffer_deletions.begin();
+            i != impl_->pending_renderbuffer_deletions.end(); ++i)
+        {
+            glDeleteRenderbuffers(1, &*i);
+        }
+        impl_->pending_renderbuffer_deletions.clear();
+    }
 }
 
-static opengl_texture* create_texture(
-    opengl_context* ctx, image_interface const& img,
-    opengl_texture_flag_set flags)
-{
-    if (img.size[0] > ctx->impl_->max_texture_size ||
-        img.size[1] > ctx->impl_->max_texture_size)
-    {
-        return new tiled_texture(
-            ctx, img,
-            make_vector<unsigned>(
-                ctx->impl_->max_texture_size,
-                ctx->impl_->max_texture_size),
-            flags);
-    }
-    else
-        return new simple_texture(ctx, img, flags);
-}
+// SURFACE
 
 void opengl_surface::initialize_render_state(vector<2,unsigned> const& size)
 {
@@ -722,6 +894,10 @@ void opengl_surface::initialize_render_state(vector<2,unsigned> const& size)
 
     if (!ctx_->impl_->is_initialized)
     {
+        GLenum err = glewInit();
+        if (GLEW_OK != err)
+            throw exception("GLEW initialization failed");
+
         int max_texture_size;
         glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_texture_size);
         ctx_->impl_->max_texture_size = max_texture_size;
@@ -747,6 +923,7 @@ void opengl_surface::initialize_render_state(vector<2,unsigned> const& size)
 
     glEnable(GL_SCISSOR_TEST);
     glScissor(0, 0, size[0], size[1]);
+    clip_region_ = box<2,double>(make_vector(0., 0.), vector<2,double>(size));
 
     glDisable(GL_LIGHTING);
 
@@ -789,6 +966,79 @@ void opengl_surface::cache_image(
     ctx_->impl_->associated_textures.push_back(t);
 }
 
+void opengl_surface::generate_offscreen_subsurface(
+    offscreen_subsurface_ptr& subsurface,
+    box<2,unsigned> const& region)
+{
+    assert(!subsurface || dynamic_cast<offscreen_buffer*>(subsurface.get()));
+    offscreen_buffer* buffer =
+        static_cast<offscreen_buffer*>(subsurface.get());
+
+    // If the buffer is for a previous instance of the context, abandon it.
+    if (buffer && buffer->context_version_ != ctx_->impl_->version)
+    {
+        buffer->leak();
+        buffer = 0;
+    }
+
+    // If the existing buffer is compatible, reuse it.
+    if (buffer && buffer->region().size == region.size)
+    {
+        buffer->region_ = region;
+        return;
+    }
+
+    // Otherwise, create a fresh texture.
+    buffer = create_offscreen_buffer(ctx_, region);
+    subsurface.reset(buffer);
+    if (buffer)
+        ctx_->impl_->associated_offscreen_buffers.push_back(buffer);
+}
+
+void static
+apply_clip_region(
+    box<2,unsigned> const& viewport, box<2,double> const& clip_region)
+{
+    glScissor(
+        int(clip_region.corner[0] - viewport.corner[0] + 0.5),
+        int((viewport.corner[1] + viewport.size[1]) -
+            (clip_region.corner[1] + clip_region.size[1]) + 0.5),
+        int(clip_region.size[0] + 0.5), int(clip_region.size[1] + 0.5));
+}
+
+void static
+set_active_viewport(
+    box<2,unsigned> const& viewport, box<2,double> const& clip_region)
+{
+    glViewport(0, 0, viewport.size[0], viewport.size[1]);
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(viewport.corner[0], viewport.corner[0] + viewport.size[0],
+        viewport.corner[1] + viewport.size[1], viewport.corner[1],
+        -10000, 10000);
+
+    apply_clip_region(viewport, clip_region);
+}
+
+void opengl_surface::set_active_subsurface(offscreen_subsurface* subsurface)
+{
+    assert(!subsurface || dynamic_cast<offscreen_buffer*>(subsurface));
+    if (subsurface)
+    {
+        offscreen_buffer* buffer = static_cast<offscreen_buffer*>(subsurface);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, buffer->framebuffer_name_);
+        set_active_viewport(buffer->region_, clip_region_);
+    }
+    else
+    {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        set_active_viewport(make_box(make_vector(0u, 0u), size_),
+            clip_region_);
+    }
+    active_subsurface_ = subsurface;
+}
+
 void opengl_surface::set_transformation_matrix(matrix<3,3,double> const& m)
 {
     double gl_matrix[16] = {
@@ -801,9 +1051,11 @@ void opengl_surface::set_transformation_matrix(matrix<3,3,double> const& m)
 void opengl_surface::set_clip_region(box<2,double> const& region)
 {
     assert(region.size[0] >= 0 && region.size[1] >= 0);
-    glScissor(int(region.corner[0] + 0.5),
-        int(size_[1] - (region.corner[1] + region.size[1]) + 0.5),
-        int(region.size[0] + 0.5), int(region.size[1] + 0.5));
+    box<2,unsigned> active_viewport =
+        active_subsurface_ ? active_subsurface_->region() :
+            make_box(make_vector(0u, 0u), size_);
+    apply_clip_region(active_viewport, region);
+    clip_region_ = region;
 }
 
 void opengl_surface::draw_filled_box(
@@ -836,30 +1088,10 @@ void opengl_surface::draw_filled_box(
 
 #ifdef WIN32
 
-static bool is_wgl_extension_supported(char const* extension_name)
-{
-    PFNWGLGETEXTENSIONSSTRINGEXTPROC _wglGetExtensionsStringEXT =
-        (PFNWGLGETEXTENSIONSSTRINGEXTPROC)
-        wglGetProcAddress("wglGetExtensionsStringEXT");
-
-    if (_wglGetExtensionsStringEXT)
-    {
-        return alia::is_opengl_extension_in_list(
-            _wglGetExtensionsStringEXT(), extension_name);
-    }
-    else
-        return false;
-}
-
 void disable_vsync()
 {
-    if (is_wgl_extension_supported("WGL_EXT_swap_control"))
-    {
-        PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT =
-            (PFNWGLSWAPINTERVALEXTPROC)
-            wglGetProcAddress("wglSwapIntervalEXT");
+    if (WGLEW_EXT_swap_control)
         wglSwapIntervalEXT(0);
-    }
 }
 
 #endif

@@ -85,14 +85,36 @@ void clear_rendering_data(themed_rendering_data& data)
     data.theme_renderer.reset();
 }
 
-void scoped_surface_opacity::begin(dataless_ui_context& ctx, float opacity)
+struct scoped_surface_opacity_data
 {
+    offscreen_subsurface_ptr subsurface;
+};
+
+void scoped_surface_opacity::begin(ui_context& ctx, float opacity)
+{
+    box<2,unsigned> clip_region =
+        box<2,unsigned>(get_geometry_context(ctx).clip_region);
+
+    get_cached_data(ctx, &data_);
+
     if (is_render_pass(ctx))
     {
         ctx_ = &ctx;
         surface& surface = *ctx.surface;
-        old_opacity_ = surface.opacity();
-        surface.set_opacity(opacity);
+
+        surface.generate_offscreen_subsurface(data_->subsurface, clip_region);
+
+        if (data_->subsurface)
+        {
+            old_subsurface_ = surface.get_active_subsurface();
+            surface.set_active_subsurface(data_->subsurface.get());
+            opacity_ = opacity;
+        }
+        else
+        {
+            old_opacity_ = surface.opacity();
+            surface.set_opacity(opacity);
+        }
     }
     else
         ctx_ = 0;
@@ -103,7 +125,14 @@ void scoped_surface_opacity::end()
     {
         dataless_ui_context& ctx = *ctx_;
         surface& surface = *ctx.surface;
-        surface.set_opacity(old_opacity_);
+        if (data_->subsurface)
+        {
+            data_->subsurface->blit(surface,
+                rgba8(0xff, 0xff, 0xff, uint8_t(0xff * opacity_ + 0.5)));
+            surface.set_active_subsurface(old_subsurface_);
+        }
+        else
+            surface.set_opacity(old_opacity_);
         ctx_ = 0;
     }
 }
