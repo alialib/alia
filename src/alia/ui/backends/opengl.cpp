@@ -709,13 +709,11 @@ offscreen_buffer::offscreen_buffer(
 
     // Generate color texture.
     glGenTextures(1, &color_texture_name_);
-    glBindTexture(GL_TEXTURE_RECTANGLE_ARB, color_texture_name_);
-    glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, region.size[0],
+    glBindTexture(GL_TEXTURE_2D, color_texture_name_);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, region.size[0],
         region.size[1], 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-    glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER,
-        GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER,
-        GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
     // Generate a render buffer for the depth and stencil components.
     glGenRenderbuffers(1, &renderbuffer_name_);
@@ -727,7 +725,7 @@ offscreen_buffer::offscreen_buffer(
 
     // Associate the texture as the color component of the framebuffer.
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-        GL_TEXTURE_RECTANGLE_ARB, color_texture_name_, 0);
+        GL_TEXTURE_2D, color_texture_name_, 0);
     GLenum draw_buffers[1] = { GL_COLOR_ATTACHMENT0 };
     glDrawBuffers(1, draw_buffers);
 
@@ -753,20 +751,16 @@ void offscreen_buffer::blit(
     surface& surface,
     rgba8 const& color)
 {
-    glEnable(GL_TEXTURE_RECTANGLE_ARB);
+    glEnable(GL_TEXTURE_2D);
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-    glBindTexture(GL_TEXTURE_RECTANGLE_ARB, color_texture_name_);
+    glBindTexture(GL_TEXTURE_2D, color_texture_name_);
 
     rgba8 resolved_color = interpolate(rgba8(0, 0, 0, 0), color,
         static_cast<opengl_surface&>(surface).opacity());
     glColor4ub(resolved_color.r, resolved_color.g, resolved_color.b,
         resolved_color.a);
 
-    double const
-        tx0 = 0,
-        tx1 = region_.size[0],
-        ty0 = 0,
-        ty1 = region_.size[1];
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     double const
         x0 = region_.corner[0],
@@ -774,18 +768,26 @@ void offscreen_buffer::blit(
         y0 = region_.corner[1],
         y1 = y0 + region_.size[1];
 
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
     glBegin(GL_QUADS);
-    glTexCoord2d(tx0, ty0);
-    glVertex2d(x0, y0);
-    glTexCoord2d(tx1, ty0);
-    glVertex2d(x1, y0);
-    glTexCoord2d(tx1, ty1);
-    glVertex2d(x1, y1);
-    glTexCoord2d(tx0, ty1);
+    glTexCoord2d(0, 0);
     glVertex2d(x0, y1);
+    glTexCoord2d(1, 0);
+    glVertex2d(x1, y1);
+    glTexCoord2d(1, 1);
+    glVertex2d(x1, y0);
+    glTexCoord2d(0, 1);
+    glVertex2d(x0, y0);
     glEnd();
 
-    glDisable(GL_TEXTURE_RECTANGLE_ARB);
+    glPopMatrix();
+
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+    glDisable(GL_TEXTURE_2D);
 
     check_errors();
 }
@@ -1004,6 +1006,7 @@ void opengl_surface::generate_offscreen_subsurface(
     if (buffer && buffer->context_version_ != ctx_->impl_->version)
     {
         buffer->leak();
+        subsurface.reset();
         buffer = 0;
     }
 
@@ -1067,6 +1070,7 @@ void opengl_surface::set_transformation_matrix(matrix<3,3,double> const& m)
         m(0,1), m(1,1), 0, m(2,1),
              0,      0, 1,      0,
         m(0,2), m(1,2), 0, m(2,2) };
+    glMatrixMode(GL_MODELVIEW);
     glLoadMatrixd(gl_matrix);
 }
 void opengl_surface::set_clip_region(box<2,double> const& region)
