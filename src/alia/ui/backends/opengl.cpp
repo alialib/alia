@@ -704,8 +704,8 @@ offscreen_buffer::offscreen_buffer(
     region_ = region;
 
     // Generate the framebuffer.
-    glGenFramebuffers(1, &framebuffer_name_);
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_name_);
+    glGenFramebuffersEXT(1, &framebuffer_name_);
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, framebuffer_name_);
 
     // Generate color texture.
     glGenTextures(1, &color_texture_name_);
@@ -718,22 +718,27 @@ offscreen_buffer::offscreen_buffer(
         GL_NEAREST);
 
     // Generate a render buffer for the depth and stencil components.
-    glGenRenderbuffers(1, &renderbuffer_name_);
-    glBindRenderbuffer(GL_RENDERBUFFER, renderbuffer_name_);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
+    glGenRenderbuffersEXT(1, &renderbuffer_name_);
+    glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, renderbuffer_name_);
+    glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH24_STENCIL8_EXT,
         region.size[0], region.size[1]);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
-        GL_RENDERBUFFER, renderbuffer_name_);
+    glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT,
+        GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, renderbuffer_name_);
+    glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT,
+        GL_STENCIL_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, renderbuffer_name_);
 
     // Associate the texture as the color component of the framebuffer.
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+    glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
         GL_TEXTURE_RECTANGLE_ARB, color_texture_name_, 0);
-    GLenum draw_buffers[1] = { GL_COLOR_ATTACHMENT0 };
+    GLenum draw_buffers[1] = { GL_COLOR_ATTACHMENT0_EXT };
     glDrawBuffers(1, draw_buffers);
 
     // Check if all that succeeded.
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT) !=
+        GL_FRAMEBUFFER_COMPLETE_EXT)
+    {
         throw exception("framebuffer creation failed");
+    }
     check_errors();
 }
 
@@ -793,7 +798,7 @@ void offscreen_buffer::blit(
 static offscreen_buffer*
 create_offscreen_buffer(opengl_context* ctx, box<2,unsigned> const& region)
 {
-    if (!GLEW_VERSION_3_0)
+    if (!GLEW_ARB_framebuffer_object || !GLEW_ARB_draw_buffers)
         return 0;
 
     if (region.size[0] > ctx->impl_->max_texture_size ||
@@ -870,7 +875,7 @@ void opengl_context::do_pending_deletions()
             i = impl_->pending_framebuffer_deletions.begin();
             i != impl_->pending_framebuffer_deletions.end(); ++i)
         {
-            glDeleteFramebuffers(1, &*i);
+            glDeleteFramebuffersEXT(1, &*i);
         }
         impl_->pending_framebuffer_deletions.clear();
     }
@@ -880,7 +885,7 @@ void opengl_context::do_pending_deletions()
             i = impl_->pending_renderbuffer_deletions.begin();
             i != impl_->pending_renderbuffer_deletions.end(); ++i)
         {
-            glDeleteRenderbuffers(1, &*i);
+            glDeleteRenderbuffersEXT(1, &*i);
         }
         impl_->pending_renderbuffer_deletions.clear();
     }
@@ -1024,7 +1029,7 @@ void opengl_surface::generate_offscreen_subsurface(
     if (buffer)
     {
         // Activate the buffer.
-        glBindFramebuffer(GL_FRAMEBUFFER, buffer->framebuffer_name_);
+        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, buffer->framebuffer_name_);
         set_active_viewport(buffer->region_, clip_region_);
 
         // And clear it.
@@ -1047,12 +1052,12 @@ void opengl_surface::set_active_subsurface(offscreen_subsurface* subsurface)
     if (subsurface)
     {
         offscreen_buffer* buffer = static_cast<offscreen_buffer*>(subsurface);
-        glBindFramebuffer(GL_FRAMEBUFFER, buffer->framebuffer_name_);
+        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, buffer->framebuffer_name_);
         set_active_viewport(buffer->region_, clip_region_);
     }
     else
     {
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
         set_active_viewport(make_box(make_vector(0u, 0u), size_),
             clip_region_);
     }
