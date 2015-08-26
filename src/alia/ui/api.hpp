@@ -1056,6 +1056,8 @@ enum icon_type
     MENU_ICON,
     EXPAND_ICON,
     SHRINK_ICON,
+    PLUS_ICON,
+    MINUS_ICON,
 };
 
 icon_button_result

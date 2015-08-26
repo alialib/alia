@@ -279,6 +279,37 @@ struct default_icon_button_renderer : icon_button_renderer
                 renderer.canvas().drawLine(-b, -a,  b, -a, paint);
                 break;
               }
+             case PLUS_ICON:
+              {
+                SkScalar a =
+                    SkScalarDiv(
+                        renderer.content_region().size[0],
+                        SkIntToScalar(4));
+                SkScalar c =
+                    SkScalarDiv(
+                        renderer.content_region().size[0],
+                        SkIntToScalar(5));
+                paint.setStrokeWidth(c);
+                paint.setStrokeCap(SkPaint::kRound_Cap);
+                renderer.canvas().drawLine(-a,  0,  a,  0, paint);
+                renderer.canvas().drawLine(0, -a,  0,  a,  paint);
+                break;
+              }
+             case MINUS_ICON:
+              {
+                SkScalar a =
+                    SkScalarDiv(
+                        renderer.content_region().size[0],
+                        SkIntToScalar(4));
+                SkScalar c =
+                    SkScalarDiv(
+                        renderer.content_region().size[0],
+                        SkIntToScalar(5));
+                paint.setStrokeWidth(c);
+                paint.setStrokeCap(SkPaint::kRound_Cap);
+                renderer.canvas().drawLine(-a,  0,  a,  0, paint);
+                break;
+              }
              default:
                 break;
             }
