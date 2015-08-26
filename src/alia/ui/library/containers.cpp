@@ -1124,8 +1124,8 @@ void transitioning_container_content::begin(
 
     alia_if (is_in_transition(container.layout_->nodes) && presence > 0)
     {
-        auto relative_presence =
-            presence / get_total_presence(container.layout_->nodes);
+        auto relative_presence = presence /
+            get_presence_through_node(container.layout_->nodes, node);
         transparency_.begin(ctx, relative_presence);
     }
     alia_end
