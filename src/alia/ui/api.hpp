@@ -2244,9 +2244,18 @@ struct min_validation_wrapper
     Min min_;
 };
 template<class Wrapped, class Min>
-min_validation_wrapper<Wrapped,Min>
+min_validation_wrapper<
+    typename copyable_accessor_helper<Wrapped const&>::result_type,
+    typename copyable_accessor_helper<Min const&>::result_type>
 enforce_min(Wrapped accessor, Min min)
-{ return min_validation_wrapper<Wrapped,Min>(accessor, min); }
+{
+    return
+        min_validation_wrapper<
+            typename copyable_accessor_helper<Wrapped const&>::result_type,
+            typename copyable_accessor_helper<Min const&>::result_type>(
+                make_accessor_copyable(accessor),
+                make_accessor_copyable(min));
+}
 
 // enforce_max(accessor, max) is analogous to enforce_max.
 template<class Wrapped, class Max>
@@ -2276,9 +2285,18 @@ struct max_validation_wrapper
     Max max_;
 };
 template<class Wrapped, class Max>
-max_validation_wrapper<Wrapped,Max>
+max_validation_wrapper<
+    typename copyable_accessor_helper<Wrapped const&>::result_type,
+    typename copyable_accessor_helper<Max const&>::result_type>
 enforce_max(Wrapped accessor, Max max)
-{ return max_validation_wrapper<Wrapped,Max>(accessor, max); }
+{
+    return
+        max_validation_wrapper<
+            typename copyable_accessor_helper<Wrapped const&>::result_type,
+            typename copyable_accessor_helper<Max const&>::result_type>(
+                make_accessor_copyable(accessor),
+                make_accessor_copyable(max));
+}
 
 // MENUS
 
