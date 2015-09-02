@@ -884,9 +884,11 @@ printf(ui_context& ctx, char const* format, accessor<Arg0> const& arg0,
 
 // TEXT DISPLAY
 
+// Do a string of text. If called inside a flow_layout, the text will wrap.
+// Otherwise, it will request as much space as it needs to fit unwrapped.
 void do_text(ui_context& ctx, accessor<string> const& text,
     layout const& layout_spec = default_layout);
-
+// same, but will take a value and convert it to text
 template<class T>
 void do_text(ui_context& ctx, accessor<T> const& value,
     layout const& layout_spec = default_layout)
@@ -894,26 +896,40 @@ void do_text(ui_context& ctx, accessor<T> const& value,
     do_text(ctx, as_text(ctx, value), layout_spec);
 }
 
-void do_paragraph(ui_context& ctx, accessor<string> const& text,
+// Do a flow_layout with the given text inside it.
+void do_flow_text(ui_context& ctx, accessor<string> const& text,
     layout const& layout_spec = default_layout);
+// same, but will take a value and convert it to text
+template<class T>
+void do_flow_text(ui_context& ctx, accessor<T> const& value,
+    layout const& layout_spec = default_layout)
+{
+    do_flow_text(ctx, as_text(ctx, value), layout_spec);
+}
 
+// This is here for backwards-compatibility.
+void static
+do_paragraph(ui_context& ctx, accessor<string> const& text,
+    layout const& layout_spec = default_layout)
+{
+    do_flow_text(ctx, text, layout_spec);
+}
+
+// Do a text display will never wrap.
 void do_label(ui_context& ctx, accessor<string> const& text,
     layout const& layout_spec = default_layout);
-
-bool do_link(
-    ui_context& ctx,
-    accessor<string> const& text,
-    layout const& layout_spec = default_layout,
-    widget_id id = auto_id);
 
 ALIA_DEFINE_FLAG_TYPE(ui_text_drawing)
 ALIA_DEFINE_FLAG(ui_text_drawing, 0x00, ALIGN_TEXT_BASELINE)
 ALIA_DEFINE_FLAG(ui_text_drawing, 0x01, ALIGN_TEXT_TOP)
 
+// Draw text at a given position in the UI.
+// (This doesn't do any layout.)
 void draw_text(ui_context& ctx, accessor<string> const& text,
     vector<2,double> const& position,
     ui_text_drawing_flag_set flags = NO_FLAGS);
 
+// Do the given text inside the given substyle.
 void do_styled_text(ui_context& ctx, accessor<string> const& substyle_name,
     accessor<string> const& text, layout const& layout_spec = default_layout);
 
@@ -1029,6 +1045,14 @@ do_text_control(
 }
 
 // BUTTONS
+
+// link - meant to resemble browser links
+
+bool do_link(
+    ui_context& ctx,
+    accessor<string> const& text,
+    layout const& layout_spec = default_layout,
+    widget_id id = auto_id);
 
 // text button
 

@@ -517,7 +517,7 @@ void do_text(ui_context& ctx, accessor<string> const& text,
     }
 }
 
-void do_paragraph(ui_context& ctx, accessor<string> const& text,
+void do_flow_text(ui_context& ctx, accessor<string> const& text,
     layout const& layout_spec)
 {
     flow_layout f(ctx, add_default_y_alignment(add_default_padding(
