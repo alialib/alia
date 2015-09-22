@@ -289,12 +289,14 @@ void text_layout_node::calculate_wrapping(
     {
         layout_scalar line_width, visible_width;
         utf8_ptr visible_end;
+        bool ended_on_line_terminator;
         utf8_ptr line_end =
             break_text(
                 paint, utf8_string(p, text.end),
                 usable_width - state.accumulated_width,
                 state.accumulated_width == 0, false,
-                &line_width, &visible_width, &visible_end);
+                &line_width, &visible_width, &visible_end,
+                &ended_on_line_terminator);
         if (line_end == p && !state.accumulated_width)
         {
             // Avoid infinite loops.
@@ -310,7 +312,11 @@ void text_layout_node::calculate_wrapping(
             p = line_end;
         }
         if (line_end == text.end)
+        {
+            if (ended_on_line_terminator)
+                wrap_row(state);
             break;
+        }
         wrap_row(state);
     }
 }
@@ -349,6 +355,7 @@ void text_layout_node::assign_wrapped_regions(
         // Determine line breaking.
         layout_scalar line_width, visible_width;
         utf8_ptr visible_end;
+        bool ended_on_line_terminator;
         utf8_ptr line_end =
             break_text(
                 paint, utf8_string(p, text.end),
@@ -359,7 +366,8 @@ void text_layout_node::assign_wrapped_regions(
                         state.x_alignment,
                         *state.active_row),
                 false,
-                &line_width, &visible_width, &visible_end);
+                &line_width, &visible_width, &visible_end,
+                &ended_on_line_terminator);
 
         // Record the row.
         text_display_row row;
@@ -376,7 +384,11 @@ void text_layout_node::assign_wrapped_regions(
         state.x += line_width + padding_width;
         y += state.active_row->requirements.size;
         if (line_end == text.end)
+        {
+            if (ended_on_line_terminator)
+                wrap_row(state);
             break;
+        }
         p = line_end;
         wrap_row(state);
     }
