@@ -97,7 +97,8 @@ void scoped_surface_opacity::begin(ui_context& ctx, float opacity)
 
     get_cached_data(ctx, &data_);
 
-    if (is_render_pass(ctx))
+    if (is_render_pass(ctx) &&
+        clip_region.size[0] != 0 && clip_region.size[1] != 0)
     {
         ctx_ = &ctx;
         surface& surface = *ctx.surface;
