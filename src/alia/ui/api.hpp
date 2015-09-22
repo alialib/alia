@@ -1212,7 +1212,7 @@ struct radio_accessor : regular_accessor<bool>
 {
     radio_accessor(
         Accessor const& selected_value,
-        Index this_value)
+        Index const& this_value)
       : selected_value_(selected_value), this_value_(this_value)
     {}
     bool is_gettable() const
