@@ -67,6 +67,12 @@ static inline int interpolate(int a, int b, double factor)
 static inline uint8_t interpolate(uint8_t a, uint8_t b, double factor)
 { return uint8_t(std::floor(a * (1 - factor) + b * factor + 0.5)); }
 
+// Interpolating a size_t is a little question, but it's useful when the size_t
+// represents a count of something, so there's a special case for it to
+// eliminate warnings.
+static inline size_t interpolate(size_t a, size_t b, double factor)
+{ return size_t(std::floor(double(a) * (1 - factor) + double(b) * factor + 0.5)); }
+
 // reset_smoothing(smoother, value) causes the smoother to transition abruptly
 // to the value specified.
 template<class Value>
