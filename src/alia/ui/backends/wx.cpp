@@ -361,15 +361,15 @@ handle_paint(wx_opengl_window::impl_data& impl)
 
     impl.window->SetCurrent(*impl.wx_gl_context);
 
+    vector<2,int> size;
+    impl.window->GetSize(&size[0], &size[1]);
+    surface->initialize_render_state(vector<2,unsigned>(size));
+
     if (!impl.vsync_disabled)
     {
         disable_vsync();
         impl.vsync_disabled = true;
     }
-
-    vector<2,int> size;
-    impl.window->GetSize(&size[0], &size[1]);
-    surface->initialize_render_state(vector<2,unsigned>(size));
 
     render_ui(impl.ui);
 

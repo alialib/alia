@@ -10,28 +10,11 @@
 
 namespace alia {
 
-// IDs in alia have an associated context which specifies the scope in which
-// they are valid. IDs won't be used outside of their specified context.
-enum id_context
-{
-    // The ID is not valid at all.
-    ID_CONTEXT_NOWHERE,
-    // The ID is only valid within the current application instance.
-    ID_CONTEXT_APP_INSTANCE,
-    // The ID is valid across application instances, but only on this machine.
-    ID_CONTEXT_LOCAL_MACHINE,
-    // The ID is universally valid.
-    ID_CONTEXT_UNIVERSAL
-};
-
 // id_interface defines the interface required of all ID types.
 struct id_interface
 {
  public:
     virtual ~id_interface() {}
-
-    // Get the context in which this ID is valid.
-    virtual id_context context() const = 0;
 
     // Create a stand-alone copy of the ID.
     virtual id_interface* clone() const = 0;
@@ -70,10 +53,6 @@ bool operator<(id_interface const& a, id_interface const& b);
 static inline std::ostream& operator<<(std::ostream& o, id_interface const& id)
 { id.stream(o); return o; }
 
-// Get the context of the given ID.
-static inline id_context get_context(id_interface const& id)
-{ return id.context(); }
-
 // Given an ID and some storage, attempts to deep copy the ID into the storage
 // if the types are compatible. Otherwise, deletes the storage and returns
 // a clone.
@@ -107,28 +86,25 @@ template<class Value>
 struct value_id : id_interface
 {
  public:
-    value_id() : context_(ID_CONTEXT_NOWHERE) {}
+    value_id() {}
 
-    value_id(Value value, id_context context)
-      : value_(value), context_(context) {}
+    value_id(Value value)
+      : value_(value) {}
 
     Value const& value() const { return value_; }
 
-    id_interface* clone() const { return new value_id(value_, context_); }
-
-    id_context context() const { return context_; }
+    id_interface* clone() const { return new value_id(value_); }
 
     bool equals(id_interface const& other) const
     {
         value_id const& other_id = static_cast<value_id const&>(other);
-        return value_ == other_id.value_ && context_ == other_id.context_;
+        return value_ == other_id.value_;
     }
 
     bool less_than(id_interface const& other) const
     {
         value_id const& other_id = static_cast<value_id const&>(other);
-        return value_ < other_id.value_ ||
-            value_ == other_id.value_ && context_ < other_id.context_;
+        return value_ < other_id.value_;
     }
 
     void stream(std::ostream& o) const { o << value_; }
@@ -141,51 +117,12 @@ struct value_id : id_interface
 
  private:
     Value value_;
-    id_context context_;
 };
 
-// make_id(value, context) creates a value_id with the given value and context.
-template<class Value>
-value_id<Value> make_id(Value value, id_context context)
-{ return value_id<Value>(value, context); }
-
-// get_id_context(value) is used by make_id(value) to determine the context
-// for the ID if none is given explicitly.
-// All primitive types are universally valid.
-#define ALIA_UNIVERSAL_TYPE(T) \
-    static inline alia::id_context get_id_context(T value) \
-    { return ID_CONTEXT_UNIVERSAL; }
-ALIA_UNIVERSAL_TYPE(bool)
-ALIA_UNIVERSAL_TYPE(signed char)
-ALIA_UNIVERSAL_TYPE(unsigned char)
-ALIA_UNIVERSAL_TYPE(signed short)
-ALIA_UNIVERSAL_TYPE(unsigned short)
-ALIA_UNIVERSAL_TYPE(signed int)
-ALIA_UNIVERSAL_TYPE(unsigned int)
-ALIA_UNIVERSAL_TYPE(signed long)
-ALIA_UNIVERSAL_TYPE(unsigned long)
-ALIA_UNIVERSAL_TYPE(signed long long)
-ALIA_UNIVERSAL_TYPE(unsigned long long)
-ALIA_UNIVERSAL_TYPE(wchar_t)
-ALIA_UNIVERSAL_TYPE(float)
-ALIA_UNIVERSAL_TYPE(double)
-// Vectors have the context of their element type.
-template<unsigned N, class T>
-id_context get_id_context(vector<N,T> const& value)
-{ return get_id_context(T()); }
-// All pointers are local to the application instance.
-template<class T>
-id_context get_id_context(T const* value)
-{ return ID_CONTEXT_APP_INSTANCE; }
-// Conservatively make all other values local to the application instance.
-template<class T>
-id_context get_id_context(T const& value)
-{ return ID_CONTEXT_APP_INSTANCE; }
-
-// make_id(value)
+// make_id(value) creates a value_id with the given value.
 template<class Value>
 value_id<Value> make_id(Value value)
-{ return value_id<Value>(value, get_id_context(value)); }
+{ return value_id<Value>(value); }
 
 // value_id_by_reference is like value_id but takes a pointer to the value.
 // The value is only copied if the ID is cloned or deep-copied.
@@ -193,11 +130,11 @@ template<class Value>
 struct value_id_by_reference : id_interface
 {
     value_id_by_reference()
-      : value_(0), storage_(), context_(ID_CONTEXT_NOWHERE)
+      : value_(0), storage_()
     {}
 
-    value_id_by_reference(Value const* value, id_context context)
-      : value_(value), storage_(), context_(context)
+    value_id_by_reference(Value const* value)
+      : value_(value), storage_()
     {}
 
     id_interface* clone() const
@@ -207,21 +144,18 @@ struct value_id_by_reference : id_interface
         return copy;
     }
 
-    id_context context() const { return context_; }
-
     bool equals(id_interface const& other) const
     {
         value_id_by_reference const& other_id =
             static_cast<value_id_by_reference const&>(other);
-        return *value_ == *other_id.value_ && context_ == other_id.context_;
+        return *value_ == *other_id.value_;
     }
 
     bool less_than(id_interface const& other) const
     {
         value_id_by_reference const& other_id =
             static_cast<value_id_by_reference const&>(other);
-        return *value_ < *other_id.value_ ||
-            *value_ == *other_id.value_ && context_ < other_id.context_;
+        return *value_ < *other_id.value_;
     }
 
     void stream(std::ostream& o) const { o << *value_; }
@@ -233,13 +167,11 @@ struct value_id_by_reference : id_interface
         {
             typed_copy.storage_ = this->storage_;
             typed_copy.value_ = this->value_;
-            typed_copy.context_ = this->context_;
         }
         else
         {
             typed_copy.storage_.reset(new Value(*this->value_));
             typed_copy.value_ = typed_copy.storage_.get();
-            typed_copy.context_ = this->context_;
         }
     }
 
@@ -249,17 +181,12 @@ struct value_id_by_reference : id_interface
  private:
     Value const* value_;
     alia__shared_ptr<Value> storage_;
-    id_context context_;
 };
 
 // make_id_by_reference
 template<class Value>
-value_id_by_reference<Value> make_id_by_reference(
-    Value const& value, id_context context)
-{ return value_id_by_reference<Value>(&value, context); }
-template<class Value>
 value_id_by_reference<Value> make_id_by_reference(Value const& value)
-{ return value_id_by_reference<Value>(&value, get_id_context(value)); }
+{ return value_id_by_reference<Value>(&value); }
 
 // id_pair implements the ID interface for a pair of IDs.
 template<class Id0, class Id1>
@@ -275,13 +202,6 @@ struct id_pair : id_interface
         id_pair* copy = new id_pair;
         this->deep_copy(copy);
         return copy;
-    }
-
-    id_context context() const
-    {
-        id_context ctx0 = id0_.context();
-        id_context ctx1 = id1_.context();
-        return ctx0 < ctx1 ? ctx0 : ctx1;
     }
 
     bool equals(id_interface const& other) const
@@ -333,9 +253,6 @@ struct id_ref : id_interface
         this->deep_copy(copy);
         return copy;
     }
-
-    id_context context() const
-    { return id_->context(); }
 
     bool equals(id_interface const& other) const
     {
@@ -436,11 +353,11 @@ static inline void inc_version(local_identity& identity)
 
 static inline value_id_by_reference<local_id>
 get_id(local_identity const& identity)
-{ return make_id_by_reference(identity.id, ID_CONTEXT_APP_INSTANCE); }
+{ return make_id_by_reference(identity.id); }
 
 // no_id can be used when you have nothing to identify.
 struct no_id_type {};
-static value_id<no_id_type*> const no_id(0, ID_CONTEXT_APP_INSTANCE);
+static value_id<no_id_type*> const no_id(0);
 
 }
 

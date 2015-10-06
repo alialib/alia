@@ -443,6 +443,30 @@ void draw_full_image(
 static inline bool is_valid(cached_image_ptr const& ptr)
 { return ptr && ptr->is_valid(); }
 
+// An offscreen_subsurface is an abstraction that lives within a surface and
+// allows for offscreen rendering.
+struct offscreen_subsurface : noncopyable
+{
+    virtual ~offscreen_subsurface() {}
+
+    // An offscreen_subsurface is allowed to go invalid.
+    // If that happens, this returns false, and the subsurface needs to be
+    // regenerated.
+    virtual bool is_valid() const = 0;
+
+    // Get the region covered of the subsurface.
+    virtual box<2,unsigned> region() const = 0;
+
+    // Blit the buffer to the surface.
+    // Each pixel in the buffer is multiplied (component-wise) by the given
+    // color before display.
+    // (The default value for color will make this a noop.)
+    virtual void blit(
+        surface& surface,
+        rgba8 const& color = rgba8(0xff, 0xff, 0xff, 0xff)) = 0;
+};
+typedef alia__shared_ptr<offscreen_subsurface> offscreen_subsurface_ptr;
+
 // A surface represents the device onto which the UI is rendered.
 //
 // The API is designed to be fairly minimal so that it's easy to implement new
@@ -462,6 +486,25 @@ struct surface : geometry_context_subscriber
     virtual void cache_image(
         cached_image_ptr& data,
         image_interface const& image) = 0;
+
+    // Generate an offscreen subsurface for rendering to the specified region
+    // of the surface.
+    // If the given pointer is already initialized, it may be reused to store
+    // the new subsurface.
+    // This is allowed to fail (or be unsupported), in which case the
+    // subsurface pointer remains uninitialized.
+    virtual void generate_offscreen_subsurface(
+        offscreen_subsurface_ptr& subsurface,
+        box<2,unsigned> const& region) = 0;
+
+    // Set the active offscreen subsurface target.
+    // A null pointer represents the actual screen surface.
+    virtual void set_active_subsurface(
+        offscreen_subsurface* subsurface) = 0;
+
+    // Get the active offscreen subsurface target.
+    // A null pointer represents the actual screen surface.
+    virtual offscreen_subsurface* get_active_subsurface() = 0;
 
     // Draw a filled box with a solid color.
     virtual void draw_filled_box(rgba8 const& color,

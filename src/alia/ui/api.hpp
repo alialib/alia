@@ -884,9 +884,11 @@ printf(ui_context& ctx, char const* format, accessor<Arg0> const& arg0,
 
 // TEXT DISPLAY
 
+// Do a string of text. If called inside a flow_layout, the text will wrap.
+// Otherwise, it will request as much space as it needs to fit unwrapped.
 void do_text(ui_context& ctx, accessor<string> const& text,
     layout const& layout_spec = default_layout);
-
+// same, but will take a value and convert it to text
 template<class T>
 void do_text(ui_context& ctx, accessor<T> const& value,
     layout const& layout_spec = default_layout)
@@ -894,26 +896,40 @@ void do_text(ui_context& ctx, accessor<T> const& value,
     do_text(ctx, as_text(ctx, value), layout_spec);
 }
 
-void do_paragraph(ui_context& ctx, accessor<string> const& text,
+// Do a flow_layout with the given text inside it.
+void do_flow_text(ui_context& ctx, accessor<string> const& text,
     layout const& layout_spec = default_layout);
+// same, but will take a value and convert it to text
+template<class T>
+void do_flow_text(ui_context& ctx, accessor<T> const& value,
+    layout const& layout_spec = default_layout)
+{
+    do_flow_text(ctx, as_text(ctx, value), layout_spec);
+}
 
+// This is here for backwards-compatibility.
+void static
+do_paragraph(ui_context& ctx, accessor<string> const& text,
+    layout const& layout_spec = default_layout)
+{
+    do_flow_text(ctx, text, layout_spec);
+}
+
+// Do a text display will never wrap.
 void do_label(ui_context& ctx, accessor<string> const& text,
     layout const& layout_spec = default_layout);
-
-bool do_link(
-    ui_context& ctx,
-    accessor<string> const& text,
-    layout const& layout_spec = default_layout,
-    widget_id id = auto_id);
 
 ALIA_DEFINE_FLAG_TYPE(ui_text_drawing)
 ALIA_DEFINE_FLAG(ui_text_drawing, 0x00, ALIGN_TEXT_BASELINE)
 ALIA_DEFINE_FLAG(ui_text_drawing, 0x01, ALIGN_TEXT_TOP)
 
+// Draw text at a given position in the UI.
+// (This doesn't do any layout.)
 void draw_text(ui_context& ctx, accessor<string> const& text,
     vector<2,double> const& position,
     ui_text_drawing_flag_set flags = NO_FLAGS);
 
+// Do the given text inside the given substyle.
 void do_styled_text(ui_context& ctx, accessor<string> const& substyle_name,
     accessor<string> const& text, layout const& layout_spec = default_layout);
 
@@ -1030,6 +1046,14 @@ do_text_control(
 
 // BUTTONS
 
+// link - meant to resemble browser links
+
+bool do_link(
+    ui_context& ctx,
+    accessor<string> const& text,
+    layout const& layout_spec = default_layout,
+    widget_id id = auto_id);
+
 // text button
 
 typedef bool button_result;
@@ -1056,6 +1080,8 @@ enum icon_type
     MENU_ICON,
     EXPAND_ICON,
     SHRINK_ICON,
+    PLUS_ICON,
+    MINUS_ICON,
 };
 
 icon_button_result
@@ -1186,7 +1212,7 @@ struct radio_accessor : regular_accessor<bool>
 {
     radio_accessor(
         Accessor const& selected_value,
-        Index this_value)
+        Index const& this_value)
       : selected_value_(selected_value), this_value_(this_value)
     {}
     bool is_gettable() const
@@ -1216,6 +1242,55 @@ make_radio_accessor(
     return
         radio_accessor<
             typename copyable_accessor_helper<Accessor const&>::result_type,
+            typename copyable_accessor_helper<Index const&>::result_type>(
+                make_accessor_copyable(selected_value),
+                make_accessor_copyable(this_value));
+}
+
+// make_radio_accessor_for_optional(selected_value, this_value), where
+// selected_value is of type accessor<optional<T>> and this_value is of type
+// accessor<T>, yields an accessor<bool> whose value tells whether or not
+// selected_value is set to this_value.
+// Setting the resulting accessor to any value sets selected_value's value to
+// this_value. (Setting it to false is considered nonsensical.)
+template<class Accessor, class Index>
+struct radio_accessor_for_optional : regular_accessor<bool>
+{
+    radio_accessor_for_optional(
+        Accessor const& selected_value,
+        Index const& this_value)
+      : selected_value_(selected_value), this_value_(this_value)
+    {}
+    bool is_gettable() const
+    { return selected_value_.is_gettable() && this_value_.is_gettable(); }
+    bool const& get() const
+    { return lazy_getter_.get(*this); }
+    bool is_settable() const
+    { return selected_value_.is_settable() && this_value_.is_gettable(); }
+    void set(bool const& value) const
+    { selected_value_.set(some(this_value_.get())); }
+ private:
+    friend struct lazy_getter<bool>;
+    bool generate() const
+    {
+        auto const& selected = selected_value_.get();
+        return selected && selected.get() == this_value_.get();
+    }
+    Accessor selected_value_;
+    Index this_value_;
+    lazy_getter<bool> lazy_getter_;
+};
+template<class Accessor, class Index>
+radio_accessor_for_optional<
+    typename copyable_accessor_helper<Accessor const&>::result_type,
+    typename copyable_accessor_helper<Index const&>::result_type>
+make_radio_accessor_for_optional(
+    Accessor const& selected_value,
+    Index const& this_value)
+{
+    return
+        radio_accessor_for_optional<
+            typename copyable_accessor_helper<Accessor const&>::result_type,   
             typename copyable_accessor_helper<Index const&>::result_type>(
                 make_accessor_copyable(selected_value),
                 make_accessor_copyable(this_value));
@@ -1865,16 +1940,27 @@ class transitioning_container : noncopyable
     transitioning_layout_content_data** next_ptr_;
 };
 
+struct offscreen_subsurface;
+struct scoped_surface_opacity_data;
+
+// Within the scope of a scoped_surface_opacity, all renderer content is
+// reduced in opacity by applying the specified factor.
+// If possible, this is done by generating an offscreen rendering buffer.
 struct scoped_surface_opacity : noncopyable
 {
     scoped_surface_opacity() : ctx_(0) {}
-    scoped_surface_opacity(dataless_ui_context& ctx, float opacity)
+    scoped_surface_opacity(ui_context& ctx, float opacity)
     { begin(ctx, opacity); }
     ~scoped_surface_opacity() { end(); }
-    void begin(dataless_ui_context& ctx, float opacity);
+    void begin(ui_context& ctx, float opacity);
     void end();
  private:
     dataless_ui_context* ctx_;
+    scoped_surface_opacity_data* data_;
+    // used if offscreen rendering if supported
+    offscreen_subsurface* old_subsurface_;
+    float opacity_;
+    // used in fallback mode
     float old_opacity_;
 };
 
@@ -2231,9 +2317,18 @@ struct min_validation_wrapper
     Min min_;
 };
 template<class Wrapped, class Min>
-min_validation_wrapper<Wrapped,Min>
+min_validation_wrapper<
+    typename copyable_accessor_helper<Wrapped const&>::result_type,
+    typename copyable_accessor_helper<Min const&>::result_type>
 enforce_min(Wrapped accessor, Min min)
-{ return min_validation_wrapper<Wrapped,Min>(accessor, min); }
+{
+    return
+        min_validation_wrapper<
+            typename copyable_accessor_helper<Wrapped const&>::result_type,
+            typename copyable_accessor_helper<Min const&>::result_type>(
+                make_accessor_copyable(accessor),
+                make_accessor_copyable(min));
+}
 
 // enforce_max(accessor, max) is analogous to enforce_max.
 template<class Wrapped, class Max>
@@ -2263,9 +2358,18 @@ struct max_validation_wrapper
     Max max_;
 };
 template<class Wrapped, class Max>
-max_validation_wrapper<Wrapped,Max>
+max_validation_wrapper<
+    typename copyable_accessor_helper<Wrapped const&>::result_type,
+    typename copyable_accessor_helper<Max const&>::result_type>
 enforce_max(Wrapped accessor, Max max)
-{ return max_validation_wrapper<Wrapped,Max>(accessor, max); }
+{
+    return
+        max_validation_wrapper<
+            typename copyable_accessor_helper<Wrapped const&>::result_type,
+            typename copyable_accessor_helper<Max const&>::result_type>(
+                make_accessor_copyable(accessor),
+                make_accessor_copyable(max));
+}
 
 // MENUS
 

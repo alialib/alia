@@ -944,6 +944,20 @@ get_total_presence(transitioning_layout_content_data* nodes)
     return sum;
 }
 
+float static
+get_presence_through_node(transitioning_layout_content_data* nodes,
+    transitioning_layout_content_data* node)
+{
+    float sum = 0;
+    for (auto* i = nodes; i; i = i->next)
+    {
+        sum += i->presence;
+        if (i == node)
+            break;
+    }
+    return sum;
+}
+
 bool static
 is_in_transition(transitioning_layout_content_data* nodes)
 {
@@ -1094,7 +1108,7 @@ void transitioning_container_content::begin(
 
     widget_id id = get_widget_id(ctx);
 
-    if (is_refresh_pass(ctx))
+    alia_untracked_if (is_refresh_pass(ctx))
     {
         // Detect changes.
         detect_layout_change(ctx, &node->presence, presence);
@@ -1106,15 +1120,15 @@ void transitioning_container_content::begin(
         }
         node->next = 0;
     }
-    else
+    alia_end
+
+    alia_if (is_in_transition(container.layout_->nodes) && presence > 0)
     {
-        if (is_in_transition(container.layout_->nodes) && presence > 0)
-        {
-            auto relative_presence =
-                presence / get_total_presence(container.layout_->nodes);
-            transparency_.begin(ctx, relative_presence);
-        }
+        auto relative_presence = presence /
+            get_presence_through_node(container.layout_->nodes, node);
+        transparency_.begin(ctx, relative_presence);
     }
+    alia_end
 
     alia_if (do_content_)
     {
