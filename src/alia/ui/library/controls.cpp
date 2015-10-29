@@ -650,7 +650,8 @@ do_button(
     widget_state state = (flags & BUTTON_DISABLED) ? WIDGET_DISABLED :
         get_button_state(ctx, id, data.input);
     panel p(ctx, text("button"),
-        add_default_alignment(layout_spec, LEFT, TOP), NO_FLAGS, id, state);
+        add_default_alignment(layout_spec, LEFT, TOP),
+        PANEL_UNSAFE_CLICK_DETECTION, id, state);
     do_text(ctx, label, CENTER);
     return (flags & BUTTON_DISABLED) ? false :
         do_button_input(ctx, id, data.input);
