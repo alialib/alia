@@ -91,7 +91,8 @@ draw_panel_focus_border(
     cache.draw();
 }
 
-static void
+// Returns true iff the panel was clicked on.
+static bool
 begin_outer_panel(
     ui_context& ctx, custom_panel_data& data,
     accessor<panel_style_info> const& style_info,
@@ -208,9 +209,12 @@ begin_outer_panel(
             ctx.event->type == MOUSE_PRESS_EVENT && is_region_hot(ctx, id))
         {
             set_focus(ctx, id);
+            return true;
         }
         break;
     }
+
+    return false;
 }
 
 static void
@@ -239,8 +243,12 @@ void custom_panel::begin(
 
     init_optional_widget_id(id, &data);
 
-    begin_outer_panel(ctx, data, style, outer_,
-        add_default_padding(layout_spec, PADDED), flags, id, state);
+    if (begin_outer_panel(ctx, data, style, outer_,
+            add_default_padding(layout_spec, PADDED), flags, id, state))
+    {
+        if (!(flags & PANEL_UNSAFE_CLICK_DETECTION))
+            end_pass(ctx);
+    }
 
     begin_inner_panel(ctx, data, inner_, layout_spec, flags);
 }
@@ -273,10 +281,15 @@ void panel::begin(
 
     init_optional_widget_id(id, data_);
 
-    begin_outer_panel(ctx, data_->panel,
-        make_custom_getter(&get(data_->style_info),
-            ref(&data_->style_info.key.get())),
-        outer_, add_default_padding(layout_spec, PADDED), flags, id, state);
+    if (begin_outer_panel(ctx, data_->panel,
+            make_custom_getter(&get(data_->style_info),
+                ref(&data_->style_info.key.get())),
+            outer_, add_default_padding(layout_spec, PADDED),
+            flags, id, state))
+    {
+        if (!(flags & PANEL_UNSAFE_CLICK_DETECTION))
+            end_pass(ctx);
+    }
 
     substyle_.begin(ctx, style, state);
 
@@ -352,11 +365,15 @@ void scrollable_panel::begin(
     panel_data* data;
     get_cached_data(ctx, &data);
     refresh_panel_style_info(ctx, data->style_info, style, WIDGET_NORMAL);
-    begin_outer_panel(ctx, data->panel,
-        make_custom_getter(&get(data->style_info),
-            ref(&data->style_info.key.get())),
-        outer_, layout_spec, flags | PANEL_IGNORE_STYLE_PADDING,
-        id, WIDGET_NORMAL);
+    if (begin_outer_panel(ctx, data->panel,
+            make_custom_getter(&get(data->style_info),
+                ref(&data->style_info.key.get())),
+            outer_, layout_spec, flags | PANEL_IGNORE_STYLE_PADDING,
+            id, WIDGET_NORMAL))
+    {
+        if (!(flags & PANEL_UNSAFE_CLICK_DETECTION))
+            end_pass(ctx);
+    }
     substyle_.begin(ctx, style, WIDGET_NORMAL);
     unsigned scrollable_axes =
         ((flags & PANEL_NO_HORIZONTAL_SCROLLING) ? 0 : 1) |

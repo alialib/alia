@@ -258,7 +258,8 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
     container_.begin(ctx, text("drop-down"),
         add_default_size(add_default_padding(add_default_alignment(
             layout_spec, LEFT, BASELINE_Y), PADDED), size(10, 1, EM)),
-        PANEL_HORIZONTAL | PANEL_NO_INTERNAL_PADDING, id_, state);
+        PANEL_HORIZONTAL | PANEL_NO_INTERNAL_PADDING |
+        PANEL_UNSAFE_CLICK_DETECTION, id_, state);
 
     switch (ctx.event->category)
     {
