@@ -308,15 +308,19 @@ void text_layout_node::calculate_wrapping(
                 y_requirements);
             state.visible_width =
                 state.accumulated_width + visible_width;
-            state.accumulated_width += line_width + padding_width;
+            state.accumulated_width += line_width;
             p = line_end;
         }
         if (line_end == text.end)
         {
             if (ended_on_line_terminator)
+            {
+                state.accumulated_width += padding_width;
                 wrap_row(state);
+            }
             break;
         }
+        state.accumulated_width += padding_width;
         wrap_row(state);
     }
 }
@@ -381,15 +385,19 @@ void text_layout_node::assign_wrapped_regions(
         data.wrapped_rows.push_back(row);
 
         // Advance.
-        state.x += line_width + padding_width;
+        state.x += line_width;
         y += state.active_row->requirements.size;
         if (line_end == text.end)
         {
             if (ended_on_line_terminator)
+            {
+                state.x += padding_width;
                 wrap_row(state);
+            }
             break;
         }
         p = line_end;
+        state.x += padding_width;
         wrap_row(state);
     }
 
