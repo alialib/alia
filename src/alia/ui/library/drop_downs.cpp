@@ -266,65 +266,73 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
      case INPUT_CATEGORY:
       {
         key_event_info info;
-        if (detect_key_press(ctx, &info, id_))
+        try
         {
-            if (!is_overlay_active(ctx, id_))
+            if (detect_key_press(ctx, &info, id_))
             {
-                // If this is a list of commands, don't select them without the
-                // list being open.
-                if (!(flags & DDL_COMMAND_LIST))
+                if (!is_overlay_active(ctx, id_))
                 {
-                    optional<int> selection = get_ddl_selected_index(ctx, id_);
-                    if (process_ddl_movement_keys(ctx, id_, selection, info))
+                    // If this is a list of commands, don't select them without the
+                    // list being open.
+                    if (!(flags & DDL_COMMAND_LIST))
                     {
-                        acknowledge_input_event(ctx);
-                        if (selection)
-                            select_ddl_item_at_index(ctx, id_, get(selection));
+                        optional<int> selection = get_ddl_selected_index(ctx, id_);
+                        if (process_ddl_movement_keys(ctx, id_, selection, info))
+                        {
+                            acknowledge_input_event(ctx);
+                            if (selection)
+                                select_ddl_item_at_index(ctx, id_, get(selection));
+                        }
                     }
                 }
-            }
-            else
-            {
-                if (process_ddl_movement_keys(ctx, id_,
-                        data.internal_selection, info))
+                else
                 {
-                    data.make_selection_visible = true;
-                    acknowledge_input_event(ctx);
-                }
-            }
-            if (info.mods == 0)
-            {
-                switch (info.code)
-                {
-                 case KEY_ENTER:
-                    if (!is_overlay_active(ctx, id_))
+                    if (process_ddl_movement_keys(ctx, id_,
+                            data.internal_selection, info))
                     {
-                        open_ddl(ctx, data, id_, container_.outer_region());
+                        data.make_selection_visible = true;
                         acknowledge_input_event(ctx);
+                    }
+                }
+                if (info.mods == 0)
+                {
+                    switch (info.code)
+                    {
+                     case KEY_ENTER:
+                        if (!is_overlay_active(ctx, id_))
+                        {
+                            open_ddl(ctx, data, id_, container_.outer_region());
+                            acknowledge_input_event(ctx);
+                            break;
+                        }
+                     case KEY_SPACE:
+                        if (is_overlay_active(ctx, id_))
+                        {
+                            if (data.internal_selection)
+                            {
+                                select_ddl_item_at_index(ctx, id_,
+                                    get(data.internal_selection));
+                            }
+                            close_ddl(ctx, data, id_);
+                            acknowledge_input_event(ctx);
+                        }
+                        break;
+                     case KEY_ESCAPE:
+                        if (is_overlay_active(ctx, id_))
+                        {
+                            acknowledge_input_event(ctx);
+                            close_ddl(ctx, data, id_);
+                            acknowledge_input_event(ctx);
+                        }
                         break;
                     }
-                 case KEY_SPACE:
-                    if (is_overlay_active(ctx, id_))
-                    {
-                        if (data.internal_selection)
-                        {
-                            select_ddl_item_at_index(ctx, id_,
-                                get(data.internal_selection));
-                        }
-                        close_ddl(ctx, data, id_);
-                        acknowledge_input_event(ctx);
-                    }
-                    break;
-                 case KEY_ESCAPE:
-                    if (is_overlay_active(ctx, id_))
-                    {
-                        acknowledge_input_event(ctx);
-                        close_ddl(ctx, data, id_);
-                        acknowledge_input_event(ctx);
-                    }
-                    break;
                 }
             }
+        }
+        catch (end_pass_exception&)
+        {
+            // Ignore attempts to abort the pass due to input.
+            // Later ddl code will end up aborting it anyway.
         }
         break;
       }

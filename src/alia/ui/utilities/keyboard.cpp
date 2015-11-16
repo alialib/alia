@@ -103,7 +103,10 @@ void set_focus(ui_system& ui, routable_widget_id id)
 static void do_click_focus(dataless_ui_context& ctx, widget_id id)
 {
     if (detect_event(ctx, MOUSE_PRESS_EVENT) && is_region_hot(ctx, id))
+    {
         set_focus(ctx, id);
+        end_pass(ctx);
+    }
 }
 
 static bool detect_key_event(
