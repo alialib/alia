@@ -638,6 +638,8 @@ struct ui_caching_node
     layout_node** layout_subtree_tail;
 };
 
+struct end_pass_exception {};
+
 }
 
 #endif

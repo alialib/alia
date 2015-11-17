@@ -89,8 +89,6 @@ get_focus_predecessor(ui_system& ui, widget_id input_id)
     return e.predecessor;
 }
 
-struct end_pass_exception {};
-
 struct context_invoker
 {
     ui_system* system;
