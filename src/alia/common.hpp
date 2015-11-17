@@ -7,6 +7,7 @@
 #include <cassert>
 #include <ostream>
 #include <iostream>
+#include <cstdint>
 
 // This file defines some generic functionality that's commonly used throughout
 // alia.
@@ -15,9 +16,10 @@ namespace alia {
 
 typedef long long counter_type;
 
-typedef unsigned char uint8_t;
-typedef short int16_t;
-typedef unsigned short uint16_t;
+using std::int8_t;
+using std::uint8_t;
+using std::int16_t;
+using std::uint16_t;
 
 typedef std::string string;
 
