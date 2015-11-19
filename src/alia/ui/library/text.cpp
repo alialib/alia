@@ -10,10 +10,10 @@
 // The only exception is the text control, which is in its own file.
 // The interface for this is defined in ui_library.hpp in the "TEXT" section.
 
-// NOTE/TODO: This assumes that using Skia's SkPaint::measureText establishes
-// the horizontal bounds of the text, which doesn't seem like a valid
-// assumption in general. However, I haven't seen a case of clipped text.
-// This should be investigated further.
+// NOTE/TODO: This doesn't really deal with horizontal overhand properly.
+// Dealing with it properly would be complicated as it would probably require
+// some interface changes between this file and the rest of alia. Currently,
+// there are some hacks in place that mostly work.
 
 namespace alia {
 
@@ -264,6 +264,10 @@ void text_layout_node::calculate_wrapping(
     text_display_data& data = *data_;
 
     utf8_string text = as_utf8_string(data.text);
+    // Account for the fact that the last piece of text had extra padding for
+    // overhang by removing any leading spaces.
+    if (!is_empty(text) && *text.begin == ' ')
+        ++text.begin;
     if (is_empty(text))
         return;
 
@@ -311,16 +315,14 @@ void text_layout_node::calculate_wrapping(
             state.accumulated_width += line_width;
             p = line_end;
         }
+        // Always add the padding here to make sure overhang is rendered
+        state.accumulated_width += padding_width;
         if (line_end == text.end)
         {
             if (ended_on_line_terminator)
-            {
-                state.accumulated_width += padding_width;
                 wrap_row(state);
-            }
             break;
         }
-        state.accumulated_width += padding_width;
         wrap_row(state);
     }
 }
@@ -337,6 +339,10 @@ void text_layout_node::assign_wrapped_regions(
     data.wrapped_rows.clear();
 
     utf8_string text = as_utf8_string(data.text);
+    // Account for the fact that the last piece of text had extra padding for
+    // overhang by removing any leading spaces.
+    if (!is_empty(text) && *text.begin == ' ')
+        ++text.begin;
     if (is_empty(text))
         return;
 
@@ -387,17 +393,15 @@ void text_layout_node::assign_wrapped_regions(
         // Advance.
         state.x += line_width;
         y += state.active_row->requirements.size;
+        // Always add the padding here to make sure overhang is rendered
+        state.x += padding_width;
         if (line_end == text.end)
         {
             if (ended_on_line_terminator)
-            {
-                state.x += padding_width;
                 wrap_row(state);
-            }
             break;
         }
         p = line_end;
-        state.x += padding_width;
         wrap_row(state);
     }
 
