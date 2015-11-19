@@ -1677,7 +1677,7 @@ do_text_control_pass(
         add_default_alignment(
             add_default_size(layout_spec, width(12, EM)),
             LEFT, BASELINE_Y),
-        NO_FLAGS,
+        PANEL_UNSAFE_CLICK_DETECTION,
         id,
         id_has_focus(ctx, id) ? WIDGET_FOCUSED : WIDGET_NORMAL);
     tc.panel = &p;
