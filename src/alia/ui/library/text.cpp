@@ -315,14 +315,20 @@ void text_layout_node::calculate_wrapping(
             state.accumulated_width += line_width;
             p = line_end;
         }
-        // Always add the padding here to make sure overhang is rendered
-        state.accumulated_width += padding_width;
         if (line_end == text.end)
         {
             if (ended_on_line_terminator)
+            {
+                state.accumulated_width += padding_width;
                 wrap_row(state);
+            }
+            // If the last character wasn't a space, add the padding here to
+            // make sure overhang is rendered.
+            else if (visible_end == line_end)
+                state.accumulated_width += padding_width;
             break;
         }
+        state.accumulated_width += padding_width;
         wrap_row(state);
     }
 }
@@ -393,14 +399,20 @@ void text_layout_node::assign_wrapped_regions(
         // Advance.
         state.x += line_width;
         y += state.active_row->requirements.size;
-        // Always add the padding here to make sure overhang is rendered
-        state.x += padding_width;
         if (line_end == text.end)
         {
             if (ended_on_line_terminator)
+            {
+                state.x += padding_width;
                 wrap_row(state);
+            }
+            // If the last character wasn't a space, add the padding here to
+            // make sure overhang is rendered.
+            else if (visible_end == line_end)
+                state.x += padding_width;
             break;
         }
+        state.x += padding_width;
         p = line_end;
         wrap_row(state);
     }
