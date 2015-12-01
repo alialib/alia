@@ -2321,7 +2321,7 @@ template<class Wrapped, class Min>
 min_validation_wrapper<
     typename copyable_accessor_helper<Wrapped const&>::result_type,
     typename copyable_accessor_helper<Min const&>::result_type>
-enforce_min(Wrapped accessor, Min min)
+enforce_min(Wrapped const& accessor, Min const& min)
 {
     return
         min_validation_wrapper<
@@ -2362,7 +2362,7 @@ template<class Wrapped, class Max>
 max_validation_wrapper<
     typename copyable_accessor_helper<Wrapped const&>::result_type,
     typename copyable_accessor_helper<Max const&>::result_type>
-enforce_max(Wrapped accessor, Max max)
+enforce_max(Wrapped const& accessor, Max const& max)
 {
     return
         max_validation_wrapper<
