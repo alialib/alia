@@ -301,6 +301,30 @@ void make_polygon(vector<2,T>* vertices, box<2,T> const& box)
     vertices[3] = box.corner + make_vector<T>(0, box.size[1]);
 }
 
+template<typename T>
+int get_edge_index(vector<2,T> const& point, box<2,T> const& box)
+{
+    double tol = 1.0e-10;
+    int index = -1;
+    if((std::fabs(point[1] - box.corner[1]) <= tol) && (point[0] >= box.corner[0]))
+    {
+        index = 0;
+    }
+    if((std::fabs(point[0] - (box.corner[0] + box.size[0])) <= tol) && (point[1] >= box.corner[1]))
+    {
+        index = 1;
+    }
+    if((std::fabs(point[1] - (box.corner[1] + box.size[1])) <= tol)  && (point[0] > box.corner[0]))
+    {
+        index = 2;
+    }
+    if((std::fabs(point[0] - box.corner[0]) <= tol) && (point[1] > box.corner[1]))
+    {
+        index = 3;
+    }
+    return index;
+}
+
 // MATRIX
 
 // M x N matrix class - T is the type of the scalar elements, M is the number
