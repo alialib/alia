@@ -302,7 +302,7 @@ void make_polygon(vector<2,T>* vertices, box<2,T> const& box)
 }
 
 template<typename T>
-int get_edge_index(vector<2,T> const& point, box<2,T> const& box)
+int get_edge_index(box<2,T> const& box, vector<2,T> const& point)
 {
     double tol = 1.0e-10;
     int index = -1;
