@@ -242,6 +242,7 @@ void wx_os_interface::set_clipboard_text(string const& text)
     if (wxTheClipboard->Open())
     {
         wxTheClipboard->SetData(new wxTextDataObject(text.c_str()));
+        wxTheClipboard->Flush();
         wxTheClipboard->Close();
     }
 }
