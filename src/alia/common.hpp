@@ -361,18 +361,11 @@ struct id_interface;
 // scope, it can do so by reinvoking the UI context with a set_value_event
 // that is processed by the container's begin function.
 //
-template<class T>
-struct accessor
+struct untyped_accessor_base
 {
-    typedef T value_type;
-
     // If this returns false, the underlying state has no value, so get()
     // should not be called.
     virtual bool is_gettable() const = 0;
-
-    // Get the value. The reference returned here is only guaranteed to be
-    // valid as long as the accessor itself is valid.
-    virtual T const& get() const = 0;
 
     // An accessor must supply an ID which uniquely identifies its value.
     // The ID is required to be valid if is_gettable() returns true.
@@ -383,8 +376,18 @@ struct accessor
 
     // If is_settable() returns false, the accessor is currently read-only and
     // any UI controls associated with it should disallow user input.
-    // (And thus, set() should not be called.)
     virtual bool is_settable() const = 0;
+};
+template<class T>
+struct accessor : untyped_accessor_base
+{
+    typedef T value_type;
+
+    // Get the value. The reference returned here is only guaranteed to be
+    // valid as long as the accessor itself is valid.
+    virtual T const& get() const = 0;
+
+    // Set the value. (Only call if is_settable returns true.)
     virtual void set(T const& value) const = 0;
 };
 
