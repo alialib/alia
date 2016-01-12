@@ -17,10 +17,24 @@ struct opengl_error : exception
     ~opengl_error() throw() {}
 };
 
+void check_opengl_errors();
+
 // Given an OpenGL extension list and an individual extension, this checks if
 // that extension is in the list.
 bool is_opengl_extension_in_list(
     char const* extension_list, char const* extension);
+
+// The OpenGL context allows external code to schedule actions that must be
+// run when the context is active.
+// (These are typically calls to delete internal OpenGL objects.)
+struct opengl_action_interface : noncopyable
+{
+    virtual ~opengl_action_interface() {}
+
+    virtual void execute() = 0;
+};
+
+struct opengl_context_impl;
 
 // An opengl_context manages the persistent state associated with an OpenGL
 // context (e.g., texture names).
@@ -41,15 +55,52 @@ struct opengl_context : noncopyable
     // Calling reset() will trigger this.
     void reset();
 
-    // OpenGL textures that are associated with this context may be destroyed
-    // at any time. However, the actual OpenGL texture deletions must be done
-    // while the associated OpenGL context is active. Thus, they are buffered.
-    // Calling this actually executes the buffered deletions.
-    // (This is done automatically by the surfaces when they render.)
-    void do_pending_deletions();
+    // Execute any scheduled actions.
+    // (This is called by the associated surfaces when they know that the
+    // actual rendering context is active.)
+    void do_scheduled_actions();
 
-    struct impl_data;
-    impl_data* impl_;
+    opengl_context_impl* impl_;
+};
+
+// External objects wishing to associate themselves with an OpenGL context
+// should hold an opengl_context_ref and use the following interface to
+// interact with it.
+// This interface exists because it's possible for external objects to outlive
+// the context and for the context to be reset during the life of external
+// objects.
+// Also note that this interface isn't thread-safe.
+struct opengl_context_ref
+{
+    opengl_context_ref() { context_ = 0; }
+    opengl_context_ref(opengl_context_ref const& other)
+    { acquire(other.context_); }
+    ~opengl_context_ref() { release(); }
+    opengl_context_ref& operator=(opengl_context_ref const& other)
+    { release(); acquire(other.context_); return *this; }
+
+    void reset(opengl_context* context) { release(); acquire(context); }
+
+    // Is the reference up-to-date?
+    bool is_current() const;
+
+    // Schedule an action.
+    // Ownership of the action is assumed by the context, so it should be
+    // specifically allocated for this call.
+    // Note that the scheduling will only happen if the reference is up-to-date.
+    // If it's outdated, the action will be immediately deleted and discarded.
+    void schedule_action(opengl_action_interface* action) const;
+
+ private:
+    friend struct opengl_context;
+
+    void acquire(opengl_context* context);
+    void release();
+
+    // a weak reference to the context
+    opengl_context* context_;
+    // the version of the context that this object is associated with
+    unsigned version_;
 };
 
 // OpenGL-specific image caching flags (see below).
@@ -66,6 +117,12 @@ struct opengl_surface : surface
 
     // Call this when the surface is created to associate it with a context.
     void set_opengl_context(opengl_context& ctx) { ctx_ = &ctx; }
+
+    // Get the associated context.
+    opengl_context& context() const { return *ctx_; }
+    
+    // Gets the ID of the context associated with this surface.
+    id_interface const& context_id() const;
 
     // Call this at the beginning of each rendering pass to initialize the
     // OpenGL rendering state.
@@ -101,6 +158,7 @@ struct opengl_surface : surface
 
  private:
     opengl_context* ctx_;
+    mutable id_pair<value_id<opengl_context*>,value_id<unsigned> > context_id_;
     vector<2,unsigned> size_;
     float opacity_;
     offscreen_subsurface* active_subsurface_;

@@ -10,18 +10,18 @@
 
 namespace alia {
 
-void check_errors()
+void check_opengl_errors()
 {
     // Check for an error.
     GLenum err = glGetError();
 
+    // If there's no error, we're done here.
+    if (err == GL_NO_ERROR)
+        return;
+
     // Clear any other errors that have also occurred.
     while (glGetError() != GL_NO_ERROR)
         ;
-
-    // If there's no error, abort.
-    if (err == GL_NO_ERROR)
-        return;
 
     // Decode the error.
     const char *s;
@@ -46,7 +46,7 @@ void check_errors()
         s = "GL_OUT_OF_MEMORY";
         break;
      default:
-        s = "GL_UNKNOWN_ERROR";
+        s = "unknown OpenGL error";
     }
 
     throw opengl_error(s);
@@ -141,7 +141,7 @@ static void copy_subimage(
 struct opengl_texture;
 struct offscreen_buffer;
 
-struct opengl_context::impl_data
+struct opengl_context_impl
 {
     bool is_initialized;
 
@@ -150,17 +150,13 @@ struct opengl_context::impl_data
 
     unsigned max_texture_size;
 
-    std::list<opengl_texture*> associated_textures;
-    std::list<GLuint> pending_texture_deletions;
+    std::vector<alia__shared_ptr<opengl_action_interface> > actions;
 
-    std::list<offscreen_buffer*> associated_offscreen_buffers;
-    std::list<GLuint> pending_framebuffer_deletions;
-    std::list<GLuint> pending_renderbuffer_deletions;
-    offscreen_buffer* active_offscreen_buffer;
+    // references to this context
+    std::list<opengl_context_ref*> refs;
 
     // This is incremented each time the context is reset.
-    // When a texture is created, it is assigned the current version number.
-    // Thus, only textures with the current version number are valid.
+    // This corresponds to the version number stored in context references.
     unsigned version;
 
     cached_image_ptr uniform_image;
@@ -170,31 +166,25 @@ struct opengl_context::impl_data
 
 struct opengl_texture : cached_image
 {
-    opengl_texture() : ctx_(0) {}
+    opengl_texture() {}
 
-    bool is_valid() const { return context_version_ == ctx_->impl_->version; }
+    bool is_valid() const { return ctx_.is_current(); }
 
     virtual void replace(image_interface const& img) = 0;
 
-    // In cases where the OpenGL context is reset without our knowledge, we
-    // may actually want to leak the texture handles we have.
-    void leak() { ctx_ = 0; }
-
-    ~opengl_texture();
-
-    opengl_context* ctx_;
-    unsigned context_version_;
+    opengl_context_ref ctx_;
 
     pixel_format format_;
 };
 
-opengl_texture::~opengl_texture()
-{
-    if (ctx_)
-        ctx_->impl_->associated_textures.remove(this);
-}
-
 namespace {
+
+struct texture_deletion : opengl_action_interface
+{
+    texture_deletion(GLuint texture) : texture(texture) {}
+    GLuint texture;
+    void execute() { glDeleteTextures(1, &texture); }
+};
 
 struct simple_texture : opengl_texture
 {
@@ -225,8 +215,7 @@ struct simple_texture : opengl_texture
 simple_texture::simple_texture(opengl_context* ctx, image_interface const& img,
     opengl_texture_flag_set flags)
 {
-    ctx_ = ctx;
-    context_version_ = ctx->impl_->version;
+    ctx_.reset(ctx);
     format_ = img.format;
     flags_ = flags;
 
@@ -282,7 +271,7 @@ simple_texture::simple_texture(opengl_context* ctx, image_interface const& img,
     glTexParameteri(target_, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(target_, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-    check_errors();
+    check_opengl_errors();
 
     if (flags & OPENGL_TILED_TEXTURE)
     {
@@ -329,7 +318,7 @@ void simple_texture::replace(image_interface const& img)
             texture_size_[1], image_format, GL_UNSIGNED_BYTE, img.pixels);
     }
 
-    check_errors();
+    check_opengl_errors();
 }
 
 void simple_texture::draw(
@@ -389,8 +378,7 @@ void simple_texture::draw(
 
 simple_texture::~simple_texture()
 {
-    if (ctx_)
-        ctx_->impl_->pending_texture_deletions.push_back(texture_name_);
+    ctx_.schedule_action(new texture_deletion(texture_name_));
 }
 
 struct tiled_texture : opengl_texture
@@ -422,8 +410,7 @@ struct tiled_texture : opengl_texture
 tiled_texture::tiled_texture(opengl_context* ctx, image_interface const& img,
     vector<2,unsigned> const& tile_size, opengl_texture_flag_set flags)
 {
-    ctx_ = ctx;
-    context_version_ = ctx->impl_->version;
+    ctx_.reset(ctx);
     format_ = img.format;
     flags_ = flags;
 
@@ -490,7 +477,7 @@ tiled_texture::tiled_texture(opengl_context* ctx, image_interface const& img,
             glTexParameteri(target_, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(target_, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-            check_errors();
+            check_opengl_errors();
 
             glTexParameteri(target_, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameteri(target_, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -554,18 +541,17 @@ void tiled_texture::replace(image_interface const& img)
         }
     }
 
-    check_errors();
+    check_opengl_errors();
 }
 
 tiled_texture::~tiled_texture()
 {
-    if (ctx_)
+    // This could be done more efficiently, but I suspect this code is rarely
+    // used anyway.
+    for (std::vector<GLuint>::iterator i = texture_names_.begin();
+        i != texture_names_.end(); ++i)
     {
-        for (std::vector<GLuint>::iterator i = texture_names_.begin();
-            i != texture_names_.end(); ++i)
-        {
-            ctx_->impl_->pending_texture_deletions.push_back(*i);
-        }
+        ctx_.schedule_action(new texture_deletion(*i));
     }
 }
 
@@ -678,7 +664,7 @@ struct offscreen_buffer : offscreen_subsurface
 
     ~offscreen_buffer();
 
-    bool is_valid() const { return context_version_ == ctx_->impl_->version; }
+    bool is_valid() const { return ctx_.is_current(); }
 
     box<2,unsigned> region() const { return region_; }
 
@@ -686,11 +672,7 @@ struct offscreen_buffer : offscreen_subsurface
         surface& surface,
         rgba8 const& color);
 
-    // In cases where the OpenGL context is reset without our knowledge, we
-    // may actually want to leak the handles we have.
-    void leak() { ctx_ = 0; }
-
-    opengl_context* ctx_;
+    opengl_context_ref ctx_;
     unsigned context_version_;
     box<2,unsigned> region_;
     GLuint framebuffer_name_, color_texture_name_, renderbuffer_name_;
@@ -699,7 +681,7 @@ struct offscreen_buffer : offscreen_subsurface
 offscreen_buffer::offscreen_buffer(
     opengl_context& ctx, box<2,unsigned> const& region)
 {
-    ctx_ = &ctx;
+    ctx_.reset(&ctx);
     context_version_ = ctx.impl_->version;
     region_ = region;
 
@@ -737,19 +719,33 @@ offscreen_buffer::offscreen_buffer(
     {
         throw exception("framebuffer creation failed");
     }
-    check_errors();
+    check_opengl_errors();
 }
+
+struct framebuffer_deletion : opengl_action_interface
+{
+    framebuffer_deletion(
+        GLuint framebuffer,
+        GLuint color_texture,
+        GLuint renderbuffer)
+      : framebuffer(framebuffer)
+      , color_texture(color_texture)
+      , renderbuffer(renderbuffer)
+    {}
+    GLuint framebuffer, color_texture, renderbuffer;
+    void execute()
+    {
+        glDeleteFramebuffers(1, &framebuffer);
+        glDeleteTextures(1, &color_texture);
+        glDeleteRenderbuffers(1, &renderbuffer);
+    }
+};
 
 offscreen_buffer::~offscreen_buffer()
 {
-    if (ctx_)
-    {
-        auto& impl = *ctx_->impl_;
-        impl.associated_offscreen_buffers.remove(this);
-        impl.pending_framebuffer_deletions.push_back(framebuffer_name_);
-        impl.pending_texture_deletions.push_back(color_texture_name_);
-        impl.pending_renderbuffer_deletions.push_back(renderbuffer_name_);
-    }
+    ctx_.schedule_action(
+        new framebuffer_deletion(framebuffer_name_, color_texture_name_,
+            renderbuffer_name_));
 }
 
 void offscreen_buffer::blit(
@@ -794,7 +790,7 @@ void offscreen_buffer::blit(
 
     glDisable(GL_TEXTURE_2D);
 
-    check_errors();
+    check_opengl_errors();
 }
 
 static offscreen_buffer*
@@ -823,80 +819,90 @@ create_offscreen_buffer(opengl_context* ctx, box<2,unsigned> const& region)
     return buffer;
 }
 
+// CONTEXT REFS
+
+void opengl_context_ref::acquire(opengl_context* context)
+{
+    context_ = context;
+    context->impl_->refs.push_back(this);
+    version_ = context_->impl_->version;
+}
+
+void opengl_context_ref::release()
+{
+    if (context_)
+    {
+        context_->impl_->refs.remove(this);
+        context_ = 0;
+    }
+}
+
+bool opengl_context_ref::is_current() const
+{
+    return context_ && context_->impl_->version == version_;
+}
+
+void opengl_context_ref::schedule_action(opengl_action_interface* action) const
+{
+    if (this->is_current())
+    {
+        context_->impl_->actions.push_back(
+            alia__shared_ptr<opengl_action_interface>(action));
+    }
+    else
+        delete action;
+}
+
 // CONTEXT
 
 opengl_context::opengl_context()
 {
-    impl_ = new impl_data;
+    impl_ = new opengl_context_impl;
     impl_->is_initialized = false;
     impl_->version = 0;
 }
 opengl_context::~opengl_context()
 {
-    // Orphan any associated UI objects so they won't try to refer back to this
+    // Orphan any associated references so they won't try to refer back to this
     // context when they're destroyed.
-    for (std::list<opengl_texture*>::iterator
-        i = impl_->associated_textures.begin();
-        i != impl_->associated_textures.end(); ++i)
+    for (std::list<opengl_context_ref*>::iterator i = impl_->refs.begin();
+        i != impl_->refs.end(); ++i)
     {
-        (*i)->leak();
+        (*i)->context_ = 0;
     }
-    for (std::list<offscreen_buffer*>::iterator
-        i = impl_->associated_offscreen_buffers.begin();
-        i != impl_->associated_offscreen_buffers.end(); ++i)
-    {
-        (*i)->leak();
-    }
-
     delete impl_;
 }
 
 void opengl_context::reset()
 {
     impl_->is_initialized = false;
-    impl_->pending_texture_deletions.clear();
     ++impl_->version;
+    impl_->actions.clear();
 }
 
-void opengl_context::do_pending_deletions()
+void opengl_context::do_scheduled_actions()
 {
-    if (!impl_->pending_texture_deletions.empty())
+    if (!impl_->actions.empty())
     {
-        for (std::list<GLuint>::iterator
-            i = impl_->pending_texture_deletions.begin();
-            i != impl_->pending_texture_deletions.end(); ++i)
-        {
-            glDeleteTextures(1, &*i);
-        }
-        impl_->pending_texture_deletions.clear();
-    }
-    if (!impl_->pending_framebuffer_deletions.empty())
-    {
-        for (std::list<GLuint>::iterator
-            i = impl_->pending_framebuffer_deletions.begin();
-            i != impl_->pending_framebuffer_deletions.end(); ++i)
-        {
-            glDeleteFramebuffersEXT(1, &*i);
-        }
-        impl_->pending_framebuffer_deletions.clear();
-    }
-    if (!impl_->pending_renderbuffer_deletions.empty())
-    {
-        for (std::list<GLuint>::iterator
-            i = impl_->pending_renderbuffer_deletions.begin();
-            i != impl_->pending_renderbuffer_deletions.end(); ++i)
-        {
-            glDeleteRenderbuffersEXT(1, &*i);
-        }
-        impl_->pending_renderbuffer_deletions.clear();
+        typedef std::vector<alia__shared_ptr<opengl_action_interface> >::
+            const_iterator iter_t;
+        for (iter_t i = impl_->actions.begin(); i != impl_->actions.end(); ++i)
+            (*i)->execute();
+        impl_->actions.clear();
     }
 }
 
 // SURFACE
 
+id_interface const& opengl_surface::context_id() const
+{
+    context_id_ = combine_ids(make_id(ctx_), make_id(ctx_->impl_->version));
+    return context_id_;
+}
+
 void opengl_surface::initialize_render_state(vector<2,unsigned> const& size)
 {
-    ctx_->do_pending_deletions();
+    ctx_->do_scheduled_actions();
 
     if (!ctx_->impl_->is_initialized)
     {
@@ -952,15 +958,9 @@ void opengl_surface::cache_image(
     assert(!data || dynamic_cast<opengl_texture*>(data.get()));
     opengl_texture* t = static_cast<opengl_texture*>(data.get());
 
-    // If the texture is for a previous instance of the context, abandon it.
-    if (t && t->context_version_ != ctx_->impl_->version)
-    {
-        t->leak();
-        t = 0;
-    }
-
     // If the existing texture is compatible, reuse it.
-    if (t && t->size() == img.size && t->format_ == img.format)
+    if (t && t->is_valid() && t->size() == img.size &&
+        t->format_ == img.format)
     {
         t->replace(img);
         return;
@@ -969,7 +969,6 @@ void opengl_surface::cache_image(
     // Otherwise, create a fresh texture.
     t = create_texture(ctx_, img, flags);
     data.reset(t);
-    ctx_->impl_->associated_textures.push_back(t);
 }
 
 void static
@@ -1009,7 +1008,6 @@ void opengl_surface::generate_offscreen_subsurface(
     // If the buffer is for a previous instance of the context, abandon it.
     if (buffer && buffer->context_version_ != ctx_->impl_->version)
     {
-        buffer->leak();
         subsurface.reset();
         buffer = 0;
     }
@@ -1024,8 +1022,6 @@ void opengl_surface::generate_offscreen_subsurface(
     {
         buffer = create_offscreen_buffer(ctx_, region);
         subsurface.reset(buffer);
-        if (buffer)
-            ctx_->impl_->associated_offscreen_buffers.push_back(buffer);
     }
 
     if (buffer)
@@ -1040,7 +1036,7 @@ void opengl_surface::generate_offscreen_subsurface(
         glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT |
             GL_DEPTH_BUFFER_BIT);
 
-        check_errors();
+        check_opengl_errors();
 
         // We should also restore the proper active buffer, but since buffers
         // are always used immediately after being created, that doesn't
@@ -1063,7 +1059,7 @@ void opengl_surface::set_active_subsurface(offscreen_subsurface* subsurface)
         set_active_viewport(make_box(make_vector(0u, 0u), size_),
             clip_region_);
     }
-    check_errors();
+    check_opengl_errors();
     active_subsurface_ = subsurface;
 }
 
