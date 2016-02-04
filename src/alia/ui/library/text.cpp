@@ -249,13 +249,12 @@ text_layout_node::get_minimal_horizontal_requirements(
     // Record that this text is being used in a wrapping context.
     data.is_wrapped = true;
 
-    SkPaint paint;
-    set_skia_font_info(paint, data.font);
-
-    return layout_requirements(
-        // This is kind of arbitrary, but it should rarely come into play.
-        skia_scalar_as_layout_size(data.font.size * 4),
-        0, 0, 0);
+    // Don't force any particular minimum width when wrapping. The flow_layout
+    // that we're wrapping inside should have its width by other factors, and
+    // this text should just conform to that.
+    // Also, using 1 pixel here makes it more obvious when the flow_layout was
+    // relying on this value to determine its width.
+    return layout_requirements(1, 0, 0, 0);
 }
 void text_layout_node::calculate_wrapping(
     layout_calculation_context& ctx,

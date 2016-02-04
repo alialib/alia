@@ -841,7 +841,7 @@ void form_field::begin(form& form, accessor<string> const& label)
             get_cached_property(ctx, "form-label-size",
                 INHERITED_PROPERTY, size(15, 2, CHARS));
         column_layout label_region(ctx, layout(label_size, BASELINE_Y));
-        do_text(ctx, label, RIGHT);
+        do_styled_text(ctx, text("form-label"), label, RIGHT);
     }
     contents_.begin(ctx, GROW);
 }
