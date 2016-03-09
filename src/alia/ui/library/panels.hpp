@@ -12,7 +12,7 @@ struct panel_style_info
     absolute_size size;
     box_border_width<float> margin, border_width, padding;
     bool is_rounded;
-    rgba8 border_color, background_color;
+    rgba8 border_color, background_color, gradient_color;
     box_corner_sizes border_radii;
 };
 

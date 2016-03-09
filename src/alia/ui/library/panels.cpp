@@ -1,5 +1,7 @@
 #include <alia/ui/library/panels.hpp>
 
+#include <SkGradientShader.h>
+
 namespace alia {
 
 panel_style_info
@@ -27,6 +29,9 @@ get_panel_style_info(dataless_ui_context& ctx, style_search_path const* path)
 
     info.border_color = get_color_property(path, "border-color");
     info.background_color = get_color_property(path, "background");
+    info.gradient_color =
+        get_property(path, "gradient", UNINHERITED_PROPERTY,
+            info.background_color);
 
     info.border_radii = get_border_radius_property(path);
     info.is_rounded = false;
@@ -119,7 +124,9 @@ begin_outer_panel(
         layout_box outer_region = remove_border(outer.region(),
             as_layout_size(get(style_info).margin));
 
-        if (get(style_info).is_rounded)
+        // If the panel is rounded or has a gradient, draw it with Skia.
+        if (get(style_info).is_rounded ||
+            get(style_info).gradient_color != get(style_info).background_color)
         {
             caching_renderer cache(ctx, data.rendering, style_info.id(),
                 outer_region);
@@ -133,6 +140,30 @@ begin_outer_panel(
 
                 SkPaint paint;
                 paint.setFlags(SkPaint::kAntiAlias_Flag);
+
+                // Set up a shader for doing a vertical gradient.
+                SkPoint gradient_points[] = {
+                    {
+                        layout_scalar_as_skia_scalar(outer_region.corner[0]),
+                        layout_scalar_as_skia_scalar(outer_region.corner[1])
+                    },
+                    {
+                        layout_scalar_as_skia_scalar(outer_region.corner[0]),
+                        layout_scalar_as_skia_scalar(
+                            outer_region.corner[1] + outer_region.size[1])
+                    }
+                };
+                SkColor gradient_colors[] =
+                    {
+                        as_skia_color(get(style_info).background_color),
+                        as_skia_color(get(style_info).gradient_color)
+                    };
+                SkShader* shader =
+                    SkGradientShader::CreateLinear(
+                        gradient_points, gradient_colors, NULL, 2,
+                        SkShader::kClamp_TileMode);
+                SkAutoUnref shader_deleter(shader);
+                paint.setShader(shader);
 
                 resolved_box_corner_sizes border_radii =
                     resolve_box_corner_sizes(
@@ -169,6 +200,7 @@ begin_outer_panel(
             }
             cache.draw();
         }
+        // Otherwise, draw it as a simple box.
         else
         {
             box<2,float> background_region =

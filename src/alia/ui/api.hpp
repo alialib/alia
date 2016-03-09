@@ -1069,6 +1069,24 @@ do_button(
     button_flag_set flags = NO_FLAGS,
     widget_id id = auto_id);
 
+button_result
+do_primary_button(
+    ui_context& ctx,
+    accessor<string> const& text,
+    layout const& layout_spec = default_layout,
+    button_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id);
+
+// Do a button with a custom style.
+button_result
+do_styled_button(
+    ui_context& ctx,
+    accessor<string> const& style,
+    accessor<string> const& text,
+    layout const& layout_spec = default_layout,
+    button_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id);
+
 // icon button
 
 typedef bool icon_button_result;

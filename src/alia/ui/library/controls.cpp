@@ -638,8 +638,9 @@ struct button_data
 };
 
 button_result
-do_button(
+do_styled_button(
     ui_context& ctx,
+    accessor<string> const& style,
     accessor<string> const& label,
     layout const& layout_spec,
     button_flag_set flags,
@@ -649,12 +650,37 @@ do_button(
     ALIA_GET_CACHED_DATA(button_data)
     widget_state state = (flags & BUTTON_DISABLED) ? WIDGET_DISABLED :
         get_button_state(ctx, id, data.input);
-    panel p(ctx, text("button"),
+    panel p(ctx, style,
         add_default_alignment(layout_spec, LEFT, TOP),
         PANEL_UNSAFE_CLICK_DETECTION, id, state);
     do_text(ctx, label, CENTER);
     return (flags & BUTTON_DISABLED) ? false :
         do_button_input(ctx, id, data.input);
+}
+
+button_result
+do_button(
+    ui_context& ctx,
+    accessor<string> const& label,
+    layout const& layout_spec,
+    button_flag_set flags,
+    widget_id id)
+{
+    return
+        do_styled_button(ctx, text("button"), label, layout_spec, flags, id);
+}
+
+button_result
+do_primary_button(
+    ui_context& ctx,
+    accessor<string> const& label,
+    layout const& layout_spec,
+    button_flag_set flags,
+    widget_id id)
+{
+    return
+        do_styled_button(ctx, text("primary-button"), label, layout_spec,
+            flags, id);
 }
 
 }
