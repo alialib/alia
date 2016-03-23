@@ -109,6 +109,9 @@ void issue_targeted_event(ui_system& system, ui_event& event,
 // necessary to call this separately.
 void refresh_ui(ui_system& ui);
 
+// Get the time in microseconds that the last refresh event took to process.
+int get_last_refresh_duration(ui_system& ui);
+
 // Set a new style for the UI system.
 void set_system_style(ui_system& system,
     alia__shared_ptr<style_tree> const& style);
