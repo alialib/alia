@@ -2,6 +2,11 @@
 #include <alia/layout/system.hpp>
 #include <alia/ui/utilities.hpp>
 
+#ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 namespace alia {
 
 void initialize_ui(
@@ -23,6 +28,7 @@ void initialize_ui(
     ui.menu_bar.parent = 0;
     ui.menu_bar.children = 0;
     ui.menu_bar.last_change = 0;
+    ui.last_refresh_duration = 0;
 }
 
 struct initial_styling_data
@@ -215,6 +221,23 @@ static routable_widget_id get_mouse_target(ui_system& ui)
 
 void refresh_ui(ui_system& ui)
 {
+    // Capture the start time.
+    // Only supporting Windows at the moment.
+  #ifdef WIN32
+    // First get the frequency of the counter.
+    // This doesn't change, so we only have to do it once.
+    static LARGE_INTEGER frequency;
+    static bool queried_frequency = false;
+    if (!queried_frequency)
+    {
+        QueryPerformanceFrequency(&frequency);
+        queried_frequency = true;
+    }
+
+    LARGE_INTEGER start_time;
+    QueryPerformanceCounter(&start_time);
+  #endif
+
     refresh_event e;
     // Continue refreshing as long as the refresh event is being aborted.
     // This is a workaround for code that wants to handle events on refresh
@@ -222,7 +245,21 @@ void refresh_ui(ui_system& ui)
     while (issue_event(ui, e, false))
         ;
 
+    // Record the duration of the refresh.
+  #ifdef WIN32
+    LARGE_INTEGER end_time;
+    QueryPerformanceCounter(&end_time);
+    ui.last_refresh_duration =
+        int((end_time.QuadPart - start_time.QuadPart) * 1000000 /
+            frequency.QuadPart);
+  #endif
+
     resolve_layout(ui.layout, layout_vector(ui.surface_size));
+}
+
+int get_last_refresh_duration(ui_system& ui)
+{
+    return ui.last_refresh_duration;
 }
 
 void update_ui(ui_system& ui, vector<2,unsigned> const& size,

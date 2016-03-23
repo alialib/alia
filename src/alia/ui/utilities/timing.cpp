@@ -128,39 +128,4 @@ void timer::stop()
     data_->active = false;
 }
 
-struct fps_data
-{
-    int frame_count;
-    optional<int> fps;
-};
-
-indirect_accessor<int>
-compute_fps(ui_context& ctx)
-{
-    widget_id id = get_widget_id(ctx);
-    fps_data* data;
-    if (get_cached_data(ctx, &data))
-    {
-        start_timer(ctx, id, 1000);
-        data->frame_count = 0;
-    }
-
-    if (ctx.event->type == REFRESH_EVENT)
-    {
-        ++data->frame_count;
-        request_refresh(ctx, 0);
-        record_content_change(ctx);
-    }
-
-    if (detect_timer_event(ctx, id))
-    {
-        data->fps = data->frame_count;
-        data->frame_count = 0;
-        restart_timer(ctx, id, 1000);
-        end_pass(ctx);
-    }
-
-    return make_indirect(ctx, optional_in(data->fps));
-}
-
 }

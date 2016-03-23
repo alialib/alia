@@ -625,6 +625,8 @@ struct ui_system
     optional<ui_time_type> next_update;
 
     menu_container menu_bar;
+
+    int last_refresh_duration;
 };
 
 struct ui_caching_node
