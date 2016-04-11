@@ -641,25 +641,6 @@ void clear_focus(ui_system& ui)
     ui.input.focused_id = null_widget_id;
 }
 
-static void on_ui_style_change(ui_system& system)
-{
-    inc_version(system.style.id);
-}
-
-float get_magnification_factor(ui_system& system)
-{
-    return system.style.magnification;
-}
-
-void set_magnification_factor(ui_system& system, float magnification)
-{
-    if (system.style.magnification != magnification)
-    {
-        on_ui_style_change(system);
-        system.style.magnification = magnification;
-    }
-}
-
 void set_system_style(ui_system& system,
     alia__shared_ptr<style_tree> const& style)
 {

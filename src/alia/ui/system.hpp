@@ -91,12 +91,6 @@ void regress_focus(ui_system& ui);
 // Clear the keyboard focus (so that no widget has focus).
 void clear_focus(ui_system& ui);
 
-// A UI system has an associated magnification factor that acts as a global
-// scale factor for font sizes and other widget size specifications.
-// These functions get and set that value.
-float get_magnification_factor(ui_system& system);
-void set_magnification_factor(ui_system& system, float magnification);
-
 // Issue an untargeted event to the UI system.
 void issue_event(ui_system& system, ui_event& event);
 
@@ -115,6 +109,11 @@ int get_last_refresh_duration(ui_system& ui);
 // Set a new style for the UI system.
 void set_system_style(ui_system& system,
     alia__shared_ptr<style_tree> const& style);
+
+static inline void on_ui_style_change(ui_system& system)
+{
+    inc_version(system.style.id);
+}
 
 }
 
