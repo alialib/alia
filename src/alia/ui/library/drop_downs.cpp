@@ -212,6 +212,9 @@ static bool process_ddl_movement_keys(
 static void open_ddl(dataless_ui_context& ctx, ddl_data& data, widget_id id,
     layout_box const& bounding_region)
 {
+    // Clear currently active overlay so ddl can open
+    clear_active_overlay(ctx);
+
     data.internal_selection = get_ddl_selected_index(ctx, id);
     data.make_selection_visible = true;
 
@@ -235,7 +238,7 @@ static void open_ddl(dataless_ui_context& ctx, ddl_data& data, widget_id id,
 
 static void close_ddl(dataless_ui_context& ctx, ddl_data& data, widget_id id)
 {
-    ctx.system->overlay_id = null_widget_id;
+    clear_active_overlay(ctx);
 }
 
 untyped_ui_value const*
