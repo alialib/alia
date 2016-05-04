@@ -399,8 +399,8 @@ size_t invoke_hash(T const& x)
 // Combine two hash values.
 size_t static inline
 combine_hashes(size_t a, size_t b)
-{ return 0x9e3779b9 + (a << 6) + (a >> 2) + b; }
-
+{ return a ^ (0x9e3779b9 + (a << 6) + (a >> 2) + b); }
+	
 }
 
 #endif
