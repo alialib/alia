@@ -1679,7 +1679,8 @@ do_text_control_pass(
             LEFT, BASELINE_Y),
         PANEL_UNSAFE_CLICK_DETECTION,
         id,
-        id_has_focus(ctx, id) ? WIDGET_FOCUSED : WIDGET_NORMAL);
+        (flags & TEXT_CONTROL_DISABLED) ? WIDGET_DISABLED :
+            id_has_focus(ctx, id) ? WIDGET_FOCUSED : WIDGET_NORMAL);
     tc.panel = &p;
 
     switch (ctx.event->category)
