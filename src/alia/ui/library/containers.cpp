@@ -837,11 +837,18 @@ void form_field::begin(form& form, accessor<string> const& label)
     form_ = &form;
     row_.begin(form.grid());
     {
+        auto c = get_state(ctx, optional<string>());
+        alia_if(is_gettable(c) && is_gettable(label) && !get(c) )
+        {
+            if(!get(label).empty())
+                set(c, some(get(label) + ":"));
+        }
+        alia_end
         auto label_size =
             get_cached_property(ctx, "form-label-size",
                 INHERITED_PROPERTY, size(15, 2, CHARS));
         column_layout label_region(ctx, layout(label_size, BASELINE_Y));
-        do_styled_text(ctx, text("form-label"), label, RIGHT);
+        do_styled_text(ctx, text("form-label"), unwrap_optional(c), RIGHT);
     }
     contents_.begin(ctx, GROW);
 }
