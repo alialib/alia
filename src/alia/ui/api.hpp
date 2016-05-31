@@ -1270,7 +1270,7 @@ make_radio_accessor(
 // accessor<T>, yields an accessor<bool> whose value tells whether or not
 // selected_value is set to this_value.
 // Setting the resulting accessor to any value sets selected_value's value to
-// this_value. (Setting it to false is considered nonsensical.)
+// this_value. (Setting it to false results in a none optional type set)
 template<class Accessor, class Index>
 struct radio_accessor_for_optional : regular_accessor<bool>
 {
@@ -1286,7 +1286,12 @@ struct radio_accessor_for_optional : regular_accessor<bool>
     bool is_settable() const
     { return selected_value_.is_settable() && this_value_.is_gettable(); }
     void set(bool const& value) const
-    { selected_value_.set(some(this_value_.get())); }
+    { 
+        if(value)
+            selected_value_.set(some(this_value_.get()));
+        else
+            selected_value_.set(none);
+    }
  private:
     friend struct lazy_getter<bool>;
     bool generate() const
