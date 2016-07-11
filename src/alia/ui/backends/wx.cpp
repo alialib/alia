@@ -720,6 +720,7 @@ BEGIN_EVENT_TABLE(wx_frame, wxFrame)
     EVT_MENU(-1, wx_frame::on_menu)
     EVT_SIZE(wx_frame::on_size)
     EVT_MOVE(wx_frame::on_move)
+    EVT_CLOSE(wx_frame::on_close)
 END_EVENT_TABLE()
 
 wx_frame::wx_frame(
@@ -898,6 +899,23 @@ void wx_frame::on_move(wxMoveEvent& event)
         vector<2,int> p;
         this->GetPosition(&p[0], &p[1]);
         impl_->normal_rect.corner = p;
+    }
+    event.Skip();
+}
+
+void wx_frame::on_close(wxCloseEvent& event)
+{
+    // Send shut down events to any children that have alia UIs.
+    wxList& children = this->GetChildren();
+    for (wxList::Node* i = children.GetFirst(); i; i = i->GetNext())
+    {
+        wx_opengl_window* gl_window =
+            dynamic_cast<wx_opengl_window*>(i->GetData());
+        if (gl_window)
+        {
+            shutdown_event event;
+            issue_event(gl_window->ui(), event);
+        }
     }
     event.Skip();
 }

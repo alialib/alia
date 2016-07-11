@@ -270,6 +270,7 @@ enum ui_event_type
     SET_VALUE_EVENT,
     TIMER_EVENT,
     RESOLVE_LOCATION_EVENT,
+    SHUTDOWN_EVENT,
     CUSTOM_EVENT,
 };
 
