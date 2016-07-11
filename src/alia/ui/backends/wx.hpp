@@ -75,6 +75,7 @@ struct wx_frame : public wxFrame, app_window
     void on_menu(wxCommandEvent& event);
     void on_move(wxMoveEvent& event);
     void on_size(wxSizeEvent& event);
+    void on_close(wxCloseEvent& event);
 
     void update_menu_bar(wxWindow* controller, menu_container const& menu_bar);
 

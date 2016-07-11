@@ -38,6 +38,13 @@ Event& get_event(dataless_ui_context& ctx)
     return static_cast<Event&>(*ctx.event);
 }
 
+struct shutdown_event : ui_event
+{
+    shutdown_event()
+      : ui_event(NO_CATEGORY, SHUTDOWN_EVENT)
+    {}
+};
+
 // Get the state of a widget by detecting if it has the focus or is being
 // interacted with via the mouse.
 //
