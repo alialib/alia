@@ -2299,6 +2299,20 @@ struct form_field : noncopyable
     column_layout contents_;
 };
 
+// Provides an empty form label
+struct form_empty_field : noncopyable
+{
+    form_empty_field() : form_(0) {}
+    form_empty_field(form& form) { begin(form); }
+    ~form_empty_field() { end(); }
+    void begin(form& form);
+    void end();
+ private:
+    form* form_;
+    grid_row row_;
+    row_layout contents_;
+};
+
 struct form_buttons : noncopyable
 {
     form_buttons() : form_(0) {}
