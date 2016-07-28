@@ -865,7 +865,7 @@ void form_empty_field::begin(form& form)
     do_spacer(ctx);
     contents_.begin(ctx, GROW);
 }
-void form_empty_label::end()
+void form_empty_field::end()
 {
     if (form_)
     {
