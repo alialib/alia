@@ -53,6 +53,28 @@ bool operator<(id_interface const& a, id_interface const& b);
 static inline std::ostream& operator<<(std::ostream& o, id_interface const& id)
 { id.stream(o); return o; }
 
+// The following allow for using IDs as keys in a map or unordered_map.
+// The IDs are stored separately as owned_ids in the mapped values and pointers
+// are used as keys. This allows searches to be done on pointers to other IDs.
+
+struct id_interface_pointer_less_than_test
+{
+    bool operator()(id_interface const* a, id_interface const* b) const
+    { return *a < *b; }
+};
+
+struct id_interface_pointer_equality_test
+{
+    bool operator()(id_interface const* a, id_interface const* b) const
+    { return *a == *b; }
+};
+
+struct id_interface_pointer_hash
+{
+    size_t operator()(id_interface const* id) const
+    { return id->hash(); }
+};
+
 // Given an ID and some storage, attempts to deep copy the ID into the storage
 // if the types are compatible. Otherwise, deletes the storage and returns
 // a clone.
