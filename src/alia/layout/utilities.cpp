@@ -1,5 +1,7 @@
 #include <alia/layout/utilities.hpp>
 
+#include <algorithm>
+
 namespace alia {
 
 void fold_in_requirements(layout_requirements& current,

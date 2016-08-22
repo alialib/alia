@@ -1,8 +1,11 @@
 #include <alia/ui/utilities/skia.hpp>
 #include <alia/ui/utilities.hpp>
+
 #include <SkPixelRef.h>
 #include <SkTypeface.h>
 #include <SkPaint.h>
+#include <SkImageInfo.h>
+#include <SkPath.h>
 
 namespace alia {
 
@@ -22,9 +25,11 @@ namespace alia {
 SkBitmap& skia_renderer::initialize_bitmap(
     SkBitmap& bitmap, vector<2,int> const& size)
 {
-    bitmap.setConfig(SkBitmap::kARGB_8888_Config, size[0], size[1],
-        size[0] * 4);
-    bitmap.allocPixels();
+    bitmap.allocPixels(
+        SkImageInfo::Make(
+            size[0], size[1],
+            kRGBA_8888_SkColorType,
+            kPremul_SkAlphaType));
     bitmap.eraseARGB(0, 0, 0, 0);
     return bitmap;
 }
@@ -87,10 +92,9 @@ void draw_round_rect(SkCanvas& canvas, SkPaint& paint,
     layout_box const& region)
 {
     SkScalar radius =
-        SkScalarDiv(
-            layout_scalar_as_skia_scalar(
-                (std::min)(region.size[0], region.size[1])),
-            SkIntToScalar(4));
+        layout_scalar_as_skia_scalar(
+            (std::min)(region.size[0], region.size[1])) /
+        SkIntToScalar(4);
     canvas.drawRoundRect(
         skia_box_as_skia_rect(layout_box_as_skia_box(region)), radius, radius, paint);
 }
@@ -103,9 +107,8 @@ void draw_round_rect(SkCanvas& canvas, SkPaint& paint,
     rect.fTop = 0;
     rect.fBottom = layout_scalar_as_skia_scalar(size[1]);
     SkScalar radius =
-        SkScalarDiv(
-            layout_scalar_as_skia_scalar((std::min)(size[0], size[1])),
-            SkIntToScalar(4));
+        layout_scalar_as_skia_scalar((std::min)(size[0], size[1])) /
+        SkIntToScalar(4);
     canvas.drawRoundRect(rect, radius, radius, paint);
 }
 
@@ -123,13 +126,14 @@ void set_skia_font_info(SkPaint& paint, font const& font)
 {
     paint.setTextEncoding(SkPaint::kUTF8_TextEncoding);
     paint.setTypeface(
-        SkTypeface::CreateFromName(
+        SkTypeface::MakeFromName(
             font.name.c_str(),
-            SkTypeface::Style(
-                ((font.style & BOLD) ?
-                    SkTypeface::kBold : SkTypeface::kNormal) |
-                ((font.style & ITALIC) ?
-                    SkTypeface::kItalic : SkTypeface::kNormal))))->unref();
+            SkFontStyle(
+                (font.style & BOLD) ?
+                    SkFontStyle::kBold_Weight : SkFontStyle::kNormal_Weight,
+                SkFontStyle::kNormal_Width,
+                (font.style & ITALIC) ?
+                    SkFontStyle::kItalic_Slant : SkFontStyle::kUpright_Slant)));
     paint.setUnderlineText((font.style & UNDERLINE) ? true : false);
     paint.setStrikeThruText((font.style & STRIKETHROUGH) ? true : false);
     paint.setTextAlign(SkPaint::kLeft_Align);

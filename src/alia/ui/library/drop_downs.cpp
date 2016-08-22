@@ -3,6 +3,8 @@
 #include <alia/ui/system.hpp>
 #include <alia/ui/library/controls.hpp>
 
+#include <SkPath.h>
+
 namespace alia {
 
 // DROP DOWNS
@@ -35,21 +37,15 @@ struct default_drop_down_button_renderer : drop_down_button_renderer
             paint.setFlags(SkPaint::kAntiAlias_Flag);
 
             renderer.canvas().translate(
-                SkScalarDiv(
-                    renderer.content_region().size[0],
-                    SkIntToScalar(2)),
-                SkScalarDiv(
-                    renderer.content_region().size[1],
-                    SkIntToScalar(2)));
+                renderer.content_region().size[0] / SkIntToScalar(2),
+                renderer.content_region().size[1] / SkIntToScalar(2));
             renderer.canvas().rotate(90);
 
             {
                 set_color(paint, renderer.style().fg_color);
                 paint.setStyle(SkPaint::kFill_Style);
                 SkScalar a =
-                    SkScalarDiv(
-                        renderer.content_region().size[0],
-                        SkDoubleToScalar(1.8));
+                    renderer.content_region().size[0] / SkDoubleToScalar(1.8);
                 SkPath path;
                 path.incReserve(4);
                 SkPoint p0;

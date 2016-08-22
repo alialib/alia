@@ -22,8 +22,7 @@ void draw_drop_location(dataless_ui_context& ctx, layout_box const& region,
         paint.setStrokeWidth(SkFloatToScalar(style.outline_width));
         SkScalar dashing[2];
         dashing[0] = dashing[1] = SkFloatToScalar(style.outline_dashing);
-        paint.setPathEffect(
-            new SkDashPathEffect(dashing, 2, 0, true))->unref();
+        paint.setPathEffect(SkDashPathEffect::Make(dashing, 2, 0));
         set_color(paint, style.outline_color);
         draw_rect(renderer.canvas(), paint,
             float_box_as_skia_box(outline_box),

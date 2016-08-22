@@ -2,24 +2,28 @@
 #define ALIA_UI_UTILITIES_TEXT_HPP
 
 #include <alia/ui/internals.hpp>
-#include <SkUtils.h>
 #include <SkPaint.h>
 
 // This file provides various utilities for working with UTF8 text.
 
 namespace alia {
 
+typedef uint32_t unicode_char_t;
+
 // Get the first character in a Unicode string.
-SkUnichar peek(utf8_string const& text);
+unicode_char_t peek(utf8_string const& text);
+
+// Get a pointer to the next character in a UTF8 string.
+utf8_ptr next_utf8_char(utf8_string const& text);
 
 // Is c a whitespace character?
-bool is_space(SkUnichar c);
+bool is_space(unicode_char_t c);
 
 // Is c a breakable whitespace character?
-bool is_breakable_space(SkUnichar c);
+bool is_breakable_space(unicode_char_t c);
 
 // Is c a line terminator?
-bool is_line_terminator(SkUnichar c);
+bool is_line_terminator(unicode_char_t c);
 
 // Given a text string with a line terminator as its first character, this
 // skips over the line terminator. It will treat "\r\n" as a single terminator.

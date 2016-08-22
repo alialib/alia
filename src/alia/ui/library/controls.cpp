@@ -1,6 +1,8 @@
 #include <alia/ui/api.hpp>
 #include <alia/ui/library/controls.hpp>
 
+#include <SkPath.h>
+
 namespace alia {
 
 style_search_path const*
@@ -212,12 +214,8 @@ struct default_icon_button_renderer : icon_button_renderer
             box_control_renderer renderer(ctx, cache, "icon-button", state);
 
             renderer.canvas().translate(
-                SkScalarDiv(
-                    renderer.content_region().size[0],
-                    SkIntToScalar(2)),
-                SkScalarDiv(
-                    renderer.content_region().size[1],
-                    SkIntToScalar(2)));
+                renderer.content_region().size[0] / SkIntToScalar(2),
+                renderer.content_region().size[1] / SkIntToScalar(2));
 
             SkPaint paint;
             paint.setAntiAlias(true);
@@ -228,9 +226,7 @@ struct default_icon_button_renderer : icon_button_renderer
              case REMOVE_ICON:
               {
                 SkScalar a =
-                    SkScalarDiv(
-                        renderer.content_region().size[0],
-                        SkIntToScalar(4));
+                    renderer.content_region().size[0] / SkIntToScalar(4);
                 paint.setStrokeWidth(a);
                 paint.setStrokeCap(SkPaint::kRound_Cap);
                 renderer.canvas().drawLine(-a, -a,  a,  a, paint);
@@ -240,11 +236,9 @@ struct default_icon_button_renderer : icon_button_renderer
              case DRAG_ICON:
               {
                 SkScalar const a =
-                    SkScalarDiv(
-                        renderer.content_region().size[0],
-                        SkFloatToScalar(2.6f));
-                SkScalar const b = SkScalarDiv(a, SkIntToScalar(4));
-                paint.setStrokeWidth(SkScalarDiv(a, SkFloatToScalar(2.5f)));
+                    renderer.content_region().size[0] / SkFloatToScalar(2.6f);
+                SkScalar const b = a / SkIntToScalar(4);
+                paint.setStrokeWidth(a / SkFloatToScalar(2.5f));
                 paint.setStrokeCap(SkPaint::kRound_Cap);
                 renderer.canvas().drawLine(-a,  0,      a,      0, paint);
                 renderer.canvas().drawLine(-a,  0, -a + b,     -b, paint);
@@ -261,17 +255,11 @@ struct default_icon_button_renderer : icon_button_renderer
              case MENU_ICON:
               {
                 SkScalar a =
-                    SkScalarDiv(
-                        renderer.content_region().size[0],
-                        SkIntToScalar(4));
+                    renderer.content_region().size[0] / SkIntToScalar(4);
                 SkScalar b =
-                    SkScalarDiv(
-                        renderer.content_region().size[0],
-                        SkIntToScalar(4));
+                    renderer.content_region().size[0] / SkIntToScalar(4);
                 SkScalar c =
-                    SkScalarDiv(
-                        renderer.content_region().size[0],
-                        SkIntToScalar(5));
+                    renderer.content_region().size[0] / SkIntToScalar(5);
                 paint.setStrokeWidth(c);
                 paint.setStrokeCap(SkPaint::kRound_Cap);
                 renderer.canvas().drawLine(-b,  0,  b,  0, paint);
@@ -282,13 +270,9 @@ struct default_icon_button_renderer : icon_button_renderer
              case PLUS_ICON:
               {
                 SkScalar a =
-                    SkScalarDiv(
-                        renderer.content_region().size[0],
-                        SkIntToScalar(4));
+                    renderer.content_region().size[0] / SkIntToScalar(4);
                 SkScalar c =
-                    SkScalarDiv(
-                        renderer.content_region().size[0],
-                        SkIntToScalar(5));
+                    renderer.content_region().size[0] / SkIntToScalar(5);
                 paint.setStrokeWidth(c);
                 paint.setStrokeCap(SkPaint::kRound_Cap);
                 renderer.canvas().drawLine(-a,  0,  a,  0, paint);
@@ -298,13 +282,9 @@ struct default_icon_button_renderer : icon_button_renderer
              case MINUS_ICON:
               {
                 SkScalar a =
-                    SkScalarDiv(
-                        renderer.content_region().size[0],
-                        SkIntToScalar(4));
+                    renderer.content_region().size[0] / SkIntToScalar(4);
                 SkScalar c =
-                    SkScalarDiv(
-                        renderer.content_region().size[0],
-                        SkIntToScalar(5));
+                    renderer.content_region().size[0] / SkIntToScalar(5);
                 paint.setStrokeWidth(c);
                 paint.setStrokeCap(SkPaint::kRound_Cap);
                 renderer.canvas().drawLine(-a,  0,  a,  0, paint);
@@ -364,13 +344,9 @@ struct default_check_box_renderer : check_box_renderer
                 set_color(paint, renderer.style().fg_color);
                 paint.setStrokeCap(SkPaint::kRound_Cap);
                 SkScalar dx =
-                    SkScalarDiv(
-                        renderer.content_region().size[0],
-                        SkIntToScalar(10));
+                    renderer.content_region().size[0] / SkIntToScalar(10);
                 SkScalar dy =
-                    SkScalarDiv(
-                        renderer.content_region().size[1],
-                        SkIntToScalar(10));
+                    renderer.content_region().size[1] / SkIntToScalar(10);
                 paint.setStrokeWidth(SkScalarMul(dx, SkDoubleToScalar(1.6)));
                 renderer.canvas().drawLine(
                     SkScalarMul(dx, SkIntToScalar(3)),
@@ -463,10 +439,8 @@ struct default_radio_button_renderer : radio_button_renderer
                 draw_rect(renderer.canvas(), paint,
                     add_border(renderer.content_region(),
                         -make_vector(
-                            SkScalarDiv(renderer.content_region().size[0],
-                                SkIntToScalar(4)),
-                            SkScalarDiv(renderer.content_region().size[1],
-                                SkIntToScalar(4)))),
+                            renderer.content_region().size[0] / SkIntToScalar(4),
+                            renderer.content_region().size[1] / SkIntToScalar(4))),
                     renderer.style().border_radii);
             }
 
@@ -568,12 +542,8 @@ struct default_node_expander_renderer : node_expander_renderer
             box_control_renderer renderer(ctx, cache, "node-expander", state);
 
             renderer.canvas().translate(
-                SkScalarDiv(
-                    renderer.content_region().size[0],
-                    SkIntToScalar(2)),
-                SkScalarDiv(
-                    renderer.content_region().size[1],
-                    SkIntToScalar(2)));
+                renderer.content_region().size[0] / SkIntToScalar(2),
+                renderer.content_region().size[1] / SkIntToScalar(2));
             renderer.canvas().rotate(float(angle));
 
             {
@@ -582,9 +552,7 @@ struct default_node_expander_renderer : node_expander_renderer
                 set_color(paint, renderer.style().fg_color);
                 paint.setStyle(SkPaint::kFill_Style);
                 SkScalar a =
-                    SkScalarDiv(
-                        renderer.content_region().size[0],
-                        SkIntToScalar(2));
+                    renderer.content_region().size[0] / SkIntToScalar(2);
                 SkPath path;
                 path.incReserve(4);
                 SkPoint p0;

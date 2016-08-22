@@ -158,12 +158,10 @@ begin_outer_panel(
                         as_skia_color(get(style_info).background_color),
                         as_skia_color(get(style_info).gradient_color)
                     };
-                SkShader* shader =
-                    SkGradientShader::CreateLinear(
+                paint.setShader(
+                    SkGradientShader::MakeLinear(
                         gradient_points, gradient_colors, NULL, 2,
-                        SkShader::kClamp_TileMode);
-                SkAutoUnref shader_deleter(shader);
-                paint.setShader(shader);
+                        SkShader::kClamp_TileMode));
 
                 resolved_box_corner_sizes border_radii =
                     resolve_box_corner_sizes(

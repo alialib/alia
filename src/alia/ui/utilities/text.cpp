@@ -2,15 +2,35 @@
 #include <alia/ui/utilities/skia.hpp>
 #include <alia/layout/utilities.hpp>
 
+#include <utf8.h>
+
 namespace alia {
 
-SkUnichar peek(utf8_string const& text)
+unicode_char_t peek(utf8_string const& text)
 {
-    utf8_ptr p = text.begin;
-    return SkUTF8_NextUnichar(&p);
+    return utf8::peek_next(text.begin, text.end);
 }
 
-bool is_space(SkUnichar c)
+utf8_ptr next_utf8_char(utf8_string const& text)
+{
+    utf8_ptr p = text.begin;
+    utf8::next(p, text.end);
+    return p;
+}
+
+unicode_char_t static
+next_utf8_char(utf8_ptr* start, utf8_ptr const& end)
+{
+    return utf8::next(*start, end);
+}
+
+unicode_char_t static
+prev_utf8_char(utf8_ptr* start, utf8_ptr const& end)
+{
+    return utf8::prior(*start, end);
+}
+
+bool is_space(unicode_char_t c)
 {
     return
         c >= 0x09 && c <= 0x0d || c == 0x20 || c > 0x80 &&
@@ -19,7 +39,7 @@ bool is_space(SkUnichar c)
         c == 0x202f || c == 0x205f || c == 0x3000 || c == 0xfeff);
 }
 
-bool is_breakable_space(SkUnichar c)
+bool is_breakable_space(unicode_char_t c)
 {
     return
         c >= 0x09 && c <= 0x0d || c == 0x20 || c > 0x80 &&
@@ -28,7 +48,7 @@ bool is_breakable_space(SkUnichar c)
         c == 0x205f || c == 0x3000);
 }
 
-bool is_line_terminator(SkUnichar c)
+bool is_line_terminator(unicode_char_t c)
 {
     return
         c >= 0x0a && c <= 0x0d || c > 0x80 &&
@@ -40,11 +60,11 @@ utf8_ptr skip_line_terminator(utf8_string const& text)
     utf8_ptr p = text.begin;
     if (p < text.end)
     {
-        SkUnichar c = SkUTF8_NextUnichar(&p);
+        unicode_char_t c = next_utf8_char(&p, text.end);
         if (c == 0x0d && p != text.end)
         {
             utf8_ptr q = p;
-            SkUnichar d = SkUTF8_NextUnichar(&p);
+            unicode_char_t d = next_utf8_char(&p, text.end);
             if (d == 0x0a)
                 return p;
             else
@@ -60,7 +80,7 @@ utf8_ptr skip_space(utf8_string const& text)
     while (p < text.end)
     {
         utf8_ptr q = p;
-        if (!is_space(SkUTF8_NextUnichar(&p)))
+        if (!is_space(next_utf8_char(&p, text.end)))
             return q;
     }
     return text.end;
@@ -72,7 +92,7 @@ utf8_ptr find_next_space(utf8_string const& text)
     while (p < text.end)
     {
         utf8_ptr q = p;
-        if (is_space(SkUTF8_NextUnichar(&p)))
+        if (is_space(next_utf8_char(&p, text.end)))
             return q;
     }
     return text.end;
@@ -84,7 +104,7 @@ utf8_ptr find_next_breakable_space(utf8_string const& text)
     while (p < text.end)
     {
         utf8_ptr q = p;
-        if (is_breakable_space(SkUTF8_NextUnichar(&p)))
+        if (is_breakable_space(next_utf8_char(&p, text.end)))
             return q;
     }
     return text.end;
@@ -96,7 +116,7 @@ utf8_ptr find_next_word_start(utf8_string const& text)
     while (p < text.end)
     {
         utf8_ptr q = p;
-        if (!is_space(SkUTF8_NextUnichar(&p)))
+        if (!is_space(next_utf8_char(&p, text.end)))
             return q;
     }
     return text.end;
@@ -112,10 +132,10 @@ utf8_ptr find_previous_word_start(utf8_string const& text, utf8_ptr p)
     bool last_character_was_space = true;
     while (p > text.begin)
     {
-	utf8_ptr q = p;
-	bool is_space = alia::is_space(SkUTF8_PrevUnichar(&p));
+        utf8_ptr q = p;
+        bool is_space = alia::is_space(prev_utf8_char(&p, text.begin));
         if (is_space && !last_character_was_space)
-	    return q;
+            return q;
         last_character_was_space = is_space;
     }
     return text.begin;
@@ -124,22 +144,22 @@ utf8_ptr find_previous_word_start(utf8_string const& text, utf8_ptr p)
 utf8_string get_containing_word(utf8_string const& text, utf8_ptr p)
 {
     utf8_ptr q = p;
-    bool is_space = alia::is_space(SkUTF8_NextUnichar(&q));
+    bool is_space = alia::is_space(next_utf8_char(&q, text.end));
     // Move q forward to the end of the word.
     while (q < text.end)
     {
-	utf8_ptr t = q;
-	if (alia::is_space(SkUTF8_NextUnichar(&t)) != is_space)
-	    break;
-	q = t;
+        utf8_ptr t = q;
+        if (alia::is_space(next_utf8_char(&t, text.end)) != is_space)
+            break;
+        q = t;
     }
     // Move p backward to the start of the word.
     while (p > text.begin)
     {
-	utf8_ptr t = p;
-	if (alia::is_space(SkUTF8_PrevUnichar(&t)) != is_space)
-	    break;
-	p = t;
+        utf8_ptr t = p;
+        if (alia::is_space(prev_utf8_char(&t, text.begin)) != is_space)
+            break;
+        p = t;
     }
     return utf8_string(p, q);
 }
@@ -175,7 +195,7 @@ break_text(
                 size_t what_will_fit =
                     paint.breakText(p, next_space - p,
                         layout_scalar_as_skia_scalar(remaining_width),
-			&measured_width);
+                        &measured_width);
                 // Avoid infinite loops!
                 if (!what_will_fit)
                     what_will_fit = next_space - p;
@@ -197,7 +217,7 @@ break_text(
         while (p < text.end)
         {
             utf8_ptr q = p;
-            SkUnichar c = SkUTF8_NextUnichar(&p);
+            unicode_char_t c = next_utf8_char(&p, text.end);
             // If we encounter a line terminator, break the line immediately.
             if (is_line_terminator(c))
             {

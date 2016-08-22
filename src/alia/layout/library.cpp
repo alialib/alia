@@ -2,6 +2,7 @@
 #include <alia/layout/utilities.hpp>
 #include <alia/layout/system.hpp>
 #include <vector>
+#include <algorithm>
 
 // This file implements the standard library of layout containers (and the
 // spacer, which is the only standard leaf).

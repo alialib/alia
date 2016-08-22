@@ -2,6 +2,7 @@
 #include <alia/ui/utilities.hpp>
 #include <sstream>
 #include <cctype>
+#include <utf8.h>
 
 namespace alia {
 
@@ -278,13 +279,25 @@ add_substyle_to_path(
 
 // WHOLE TREE I/O
 
+unicode_char_t static
+next_utf8_char(utf8_ptr* start, utf8_ptr const& end)
+{
+    return utf8::next(*start, end);
+}
+
+unicode_char_t static
+prev_utf8_char(utf8_ptr* start, utf8_ptr const& end)
+{
+    return utf8::prior(*start, end);
+}
+
 static utf8_ptr skip_space(utf8_string const& text, int& line_count)
 {
     utf8_ptr p = text.begin;
     while (p < text.end)
     {
         utf8_ptr q = p;
-        SkUnichar c = SkUTF8_NextUnichar(&p);
+        unicode_char_t c = next_utf8_char(&p, text.end);
         if (!is_space(c))
             return q;
         if (is_line_terminator(c))
@@ -302,7 +315,7 @@ static utf8_ptr find_end_of_fallback_path(utf8_string const& text)
     while (p < text.end)
     {
         utf8_ptr q = p;
-        SkUnichar c = SkUTF8_NextUnichar(&p);
+        unicode_char_t c = next_utf8_char(&p, text.end);
         if (is_space(c) || c == ',' || c == '{')
             return q;
     }
@@ -322,7 +335,7 @@ parse_fallbacks(char const* label, utf8_string const& text,
         fallbacks.push_back(string(subpath_start, p - subpath_start));
         p = skip_space(utf8_string(p, text.end), line_number);
         utf8_ptr q = p;
-        SkUnichar c = SkUTF8_NextUnichar(&p);
+        unicode_char_t c = next_utf8_char(&p, text.end);
         if (c == '{')
         {
             p = q;
@@ -354,7 +367,7 @@ parse_style_properties(char const* label, utf8_string const& text,
         SkUnichar c = peek(utf8_string(p, text.end));
         if (c == '}')
         {
-            SkUTF8_NextUnichar(&p);
+            next_utf8_char(&p, text.end);
             break;
         }
 
@@ -364,7 +377,7 @@ parse_style_properties(char const* label, utf8_string const& text,
         while (1)
         {
             utf8_ptr q = p;
-            SkUnichar c = SkUTF8_NextUnichar(&p);
+            unicode_char_t c = next_utf8_char(&p, text.end);
             if (c == ':')
             {
                 name_end = q;
@@ -385,7 +398,7 @@ parse_style_properties(char const* label, utf8_string const& text,
         while (1)
         {
             utf8_ptr q = p;
-            SkUnichar c = SkUTF8_NextUnichar(&p);
+            unicode_char_t c = next_utf8_char(&p, text.end);
             if (c == '}')
             {
                 // Don't consume the closing brace.
@@ -433,7 +446,7 @@ static string strip_comments(utf8_string const& text)
     while (p != text.end)
     {
         utf8_ptr q = p;
-        SkUnichar c = SkUTF8_NextUnichar(&p);
+        unicode_char_t c = next_utf8_char(&p, text.end);
         switch (c)
         {
          case '*':
@@ -495,12 +508,12 @@ parse_style_description(char const* label, utf8_string const& text)
         flattened_style_node node;
 
         // Check for fallbacks.
-        SkUnichar c = SkUTF8_NextUnichar(&p);
+        unicode_char_t c = next_utf8_char(&p, text.end);
         if (c == ':')
         {
             node.fallbacks =
                 parse_fallbacks(label, stripped_text, p, line_number);
-            c = SkUTF8_NextUnichar(&p);
+            c = next_utf8_char(&p, text.end);
         }
 
         // Check for the opening brace of the property map.

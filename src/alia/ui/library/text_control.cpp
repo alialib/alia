@@ -1,6 +1,8 @@
 #include <alia/ui/api.hpp>
 #include <alia/ui/utilities.hpp>
 
+#include <utf8.h>
+
 // This file implements alia's text control.
 
 // NOTE/TODO: This assumes that using Skia's SkPaint::measureText establishes
@@ -192,7 +194,7 @@ get_character_boundary_at_point(
         return disambiguated_utf8_ptr(row_text.end, true);
 
     utf8_ptr boundary_after = boundary_before;
-    SkUTF8_NextUnichar(&boundary_after);
+    utf8::next(boundary_after, row_text.end);
 
     SkScalar width_of_character =
         paint.measureText(boundary_before,

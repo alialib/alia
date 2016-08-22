@@ -47,7 +47,18 @@ struct accessor_storage : optional_storage<typename Accessor::value_type>
     {
         this->storage = &accessor_;
     }
- private:
+    accessor_storage(accessor_storage&& other)
+    {
+        accessor_ = std::move(other.accessor_);
+        this->storage = &accessor_;
+    }
+    accessor_storage& operator=(accessor_storage&& other)
+    {
+        accessor_ = std::move(other.accessor_);
+        this->storage = &accessor_;
+        return *this;
+    }
+private:
     Accessor accessor_;
 };
 template<class Accessor>

@@ -1,6 +1,8 @@
 #include <alia/ui/backends/opengl.hpp>
+
 #include <list>
 #include <vector>
+#include <algorithm>
 
 #include <GL\glew.h>
 #include <GL\wglew.h>
