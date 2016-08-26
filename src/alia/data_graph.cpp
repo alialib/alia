@@ -2,6 +2,11 @@
 #include <map>
 #include <vector>
 
+#ifndef _WIN32
+// ignore warnings for GCC
+#pragma GCC diagnostic ignored "-Wunused-function"
+#endif
+
 namespace alia {
 
 // Using a reference type as the key for a map causes problems, so we need to
