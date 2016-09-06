@@ -1101,6 +1101,9 @@ do_styled_button(
 
 // icon button
 
+ALIA_DEFINE_FLAG_TYPE(simple_control)
+ALIA_DEFINE_FLAG(simple_control, 0x1, SIMPLE_CONTROL_DISABLED)
+
 typedef bool icon_button_result;
 
 enum icon_type
@@ -1119,6 +1122,7 @@ do_icon_button(
     ui_context& ctx,
     icon_type icon,
     layout const& layout_spec = default_layout,
+    simple_control_flag_set flags = NO_FLAGS,
     widget_id id = auto_id);
 
 // CONTROLS
@@ -1132,6 +1136,7 @@ do_unsafe_check_box(
     ui_context& ctx,
     accessor<bool> const& value,
     layout const& layout_spec = default_layout,
+    simple_control_flag_set flags = NO_FLAGS,
     widget_id id = auto_id);
 
 void static inline
@@ -1139,9 +1144,10 @@ do_check_box(
     ui_context& ctx,
     accessor<bool> const& value,
     layout const& layout_spec = default_layout,
+    simple_control_flag_set flags = NO_FLAGS,
     widget_id id = auto_id)
 {
-    if (do_unsafe_check_box(ctx, value, layout_spec, id))
+    if (do_unsafe_check_box(ctx, value, layout_spec, flags, id))
         end_pass(ctx);
 }
 
@@ -1151,6 +1157,7 @@ do_unsafe_check_box(
     accessor<bool> const& value,
     accessor<string> const& text,
     layout const& layout_spec = default_layout,
+    simple_control_flag_set flags = NO_FLAGS,
     widget_id id = auto_id);
 
 void static inline
@@ -1159,9 +1166,10 @@ do_check_box(
     accessor<bool> const& value,
     accessor<string> const& text,
     layout const& layout_spec = default_layout,
+    simple_control_flag_set flags = NO_FLAGS,
     widget_id id = auto_id)
 {
-    if (do_unsafe_check_box(ctx, value, text, layout_spec, id))
+    if (do_unsafe_check_box(ctx, value, text, layout_spec, flags, id))
         end_pass(ctx);
 }
 
@@ -1174,6 +1182,7 @@ do_unsafe_radio_button(
     ui_context& ctx,
     accessor<bool> const& value,
     layout const& layout_spec = default_layout,
+    simple_control_flag_set flags = NO_FLAGS,
     widget_id id = auto_id);
 
 void static inline
@@ -1181,9 +1190,10 @@ do_radio_button(
     ui_context& ctx,
     accessor<bool> const& value,
     layout const& layout_spec = default_layout,
+    simple_control_flag_set flags = NO_FLAGS,
     widget_id id = auto_id)
 {
-    if (do_unsafe_radio_button(ctx, value, layout_spec, id))
+    if (do_unsafe_radio_button(ctx, value, layout_spec, flags, id))
         end_pass(ctx);
 }
 
@@ -1193,6 +1203,7 @@ do_unsafe_radio_button(
     accessor<bool> const& value,
     accessor<string> const& text,
     layout const& layout_spec = default_layout,
+    simple_control_flag_set flags = NO_FLAGS,
     widget_id id = auto_id);
 
 void static inline
@@ -1201,9 +1212,10 @@ do_radio_button(
     accessor<bool> const& value,
     accessor<string> const& text,
     layout const& layout_spec = default_layout,
+    simple_control_flag_set flags = NO_FLAGS,
     widget_id id = auto_id)
 {
-    if (do_unsafe_radio_button(ctx, value, text, layout_spec, id))
+    if (do_unsafe_radio_button(ctx, value, text, layout_spec, flags, id))
         end_pass(ctx);
 }
 
@@ -1214,6 +1226,7 @@ do_unsafe_radio_button_with_description(
     accessor<string> const& label,
     accessor<string> const& description,
     layout const& layout_spec = default_layout,
+    simple_control_flag_set flags = NO_FLAGS,
     widget_id id = auto_id);
 
 void static inline
@@ -1223,10 +1236,11 @@ do_radio_button_with_description(
     accessor<string> const& label,
     accessor<string> const& description,
     layout const& layout_spec = default_layout,
+    simple_control_flag_set flags = NO_FLAGS,
     widget_id id = auto_id)
 {
     if (do_unsafe_radio_button_with_description(
-            ctx, value, label, description, layout_spec, id))
+            ctx, value, label, description, layout_spec, flags, id))
     {
         end_pass(ctx);
     }
@@ -1338,11 +1352,12 @@ do_unsafe_radio_button(
     accessor<Index> const& selected_value,
     accessor<Index> const& this_value,
     layout const& layout_spec = default_layout,
+    simple_control_flag_set flags = NO_FLAGS,
     widget_id id = auto_id)
 {
     return do_unsafe_radio_button(ctx,
         make_radio_accessor(ref(&selected_value), this_value),
-        layout_spec, id);
+        layout_spec, flags, id);
 }
 
 template<class Index>
@@ -1352,10 +1367,11 @@ do_radio_button(
     accessor<Index> const& selected_value,
     accessor<Index> const& this_value,
     layout const& layout_spec = default_layout,
+    simple_control_flag_set flags = NO_FLAGS,
     widget_id id = auto_id)
 {
     if (do_unsafe_radio_button(ctx, selected_value, this_value,
-            layout_spec, id))
+            layout_spec, flags, id))
     {
         end_pass(ctx);
     }
@@ -1369,11 +1385,12 @@ do_unsafe_radio_button(
     accessor<Index> const& this_value,
     accessor<string> const& text,
     layout const& layout_spec = default_layout,
+    simple_control_flag_set flags = NO_FLAGS,
     widget_id id = auto_id)
 {
     return do_unsafe_radio_button(ctx,
         make_radio_accessor(ref(&selected_value), this_value),
-        text, layout_spec, id);
+        text, layout_spec, flags, id);
 }
 
 template<class Index>
@@ -1384,10 +1401,11 @@ do_radio_button(
     accessor<Index> const& this_value,
     accessor<string> const& text,
     layout const& layout_spec = default_layout,
+    simple_control_flag_set flags = NO_FLAGS,
     widget_id id = auto_id)
 {
     if (do_unsafe_radio_button(ctx, selected_value, this_value,
-            text, layout_spec, id))
+            text, layout_spec, flags, id))
     {
         end_pass(ctx);
     }
@@ -1402,11 +1420,12 @@ do_unsafe_radio_button_with_description(
     accessor<string> const& label,
     accessor<string> const& description,
     layout const& layout_spec = default_layout,
+    simple_control_flag_set flags = NO_FLAGS,
     widget_id id = auto_id)
 {
     return do_unsafe_radio_button_with_description(ctx,
         make_radio_accessor(ref(&selected_value), this_value),
-        label, description, layout_spec, id);
+        label, description, layout_spec, flags, id);
 }
 
 template<class Index>
@@ -1418,11 +1437,12 @@ do_radio_button_with_description(
     accessor<string> const& label,
     accessor<string> const& description,
     layout const& layout_spec = default_layout,
+    simple_control_flag_set flags = NO_FLAGS,
     widget_id id = auto_id)
 {
     if (do_unsafe_radio_button_with_description(
             ctx, selected_value, this_value, label, description,
-            layout_spec, id))
+            layout_spec, flags, id))
     {
         end_pass(ctx);
     }
@@ -1435,6 +1455,7 @@ do_unsafe_node_expander(
     ui_context& ctx,
     accessor<bool> const& value,
     layout const& layout_spec = default_layout,
+    simple_control_flag_set flags = NO_FLAGS,
     widget_id id = auto_id);
 
 // slider
@@ -1727,6 +1748,7 @@ class horizontal_collapsible_content : noncopyable
 
 ALIA_DEFINE_FLAG_TYPE(tree_node)
 ALIA_DEFINE_FLAG(tree_node, 0x1, TREE_NODE_INITIALLY_EXPANDED)
+ALIA_DEFINE_FLAG(tree_node, 0x2, TREE_NODE_DISABLED)
 
 struct tree_node : noncopyable
 {

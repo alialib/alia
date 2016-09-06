@@ -366,7 +366,7 @@ bool untyped_drop_down_list::do_list()
 
     if (flags_ & DDL_COMMAND_LIST)
     {
-        if (do_icon_button(ctx, MENU_ICON, CENTER_X | BASELINE_Y, id_))
+        if (do_icon_button(ctx, MENU_ICON, CENTER_X | BASELINE_Y, NO_FLAGS, id_))
         {
             open_ddl(ctx, data, id_, container_.outer_region());
             end_pass(ctx);

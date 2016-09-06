@@ -306,10 +306,11 @@ do_icon_button(
     ui_context& ctx,
     icon_type icon,
     layout const& layout_spec,
+    simple_control_flag_set flags,
     widget_id id)
 {
     return do_simple_control<icon_button_renderer,
-        default_icon_button_renderer>(ctx, in(icon), layout_spec, id);
+        default_icon_button_renderer>(ctx, in(icon), layout_spec, flags, id);
 }
 
 // CHECK BOX
@@ -374,11 +375,12 @@ do_unsafe_check_box(
     ui_context& ctx,
     accessor<bool> const& value,
     layout const& layout_spec,
+    simple_control_flag_set flags,
     widget_id id)
 {
     check_box_result result;
     if (do_simple_control<check_box_renderer,default_check_box_renderer>(
-        ctx, value, layout_spec, id))
+        ctx, value, layout_spec, flags, id))
     {
         result.changed = true;
         set(value, value.is_gettable() ? !value.get() : true);
@@ -394,12 +396,13 @@ do_unsafe_check_box(
     accessor<bool> const& value,
     accessor<string> const& text,
     layout const& layout_spec,
+    simple_control_flag_set flags,
     widget_id id)
 {
     get_widget_id_if_needed(ctx, id);
     row_layout row(ctx, add_default_y_alignment(layout_spec, BASELINE_Y));
     check_box_result result =
-        do_unsafe_check_box(ctx, value, default_layout, id);
+        do_unsafe_check_box(ctx, value, default_layout, flags, id);
     do_paragraph(ctx, text, GROW_X);
     do_box_region(ctx, id, row.region());
     return result;
@@ -456,11 +459,12 @@ do_unsafe_radio_button(
     ui_context& ctx,
     accessor<bool> const& value,
     layout const& layout_spec,
+    simple_control_flag_set flags,
     widget_id id)
 {
     radio_button_result result;
     if (do_simple_control<radio_button_renderer,
-        default_radio_button_renderer>(ctx, value, layout_spec, id))
+        default_radio_button_renderer>(ctx, value, layout_spec, flags, id))
     {
         result.changed = true;
         set(value, true);
@@ -476,12 +480,13 @@ do_unsafe_radio_button(
     accessor<bool> const& value,
     accessor<string> const& text,
     layout const& layout_spec,
+    simple_control_flag_set flags,
     widget_id id)
 {
     get_widget_id_if_needed(ctx, id);
     row_layout row(ctx, add_default_y_alignment(layout_spec, BASELINE_Y));
     radio_button_result result =
-        do_unsafe_radio_button(ctx, value, default_layout, id);
+        do_unsafe_radio_button(ctx, value, default_layout, flags, id);
     do_paragraph(ctx, text, GROW_X);
     do_box_region(ctx, id, row.region());
     return result;
@@ -494,6 +499,7 @@ do_unsafe_radio_button_with_description(
     accessor<string> const& label,
     accessor<string> const& description,
     layout const& layout_spec,
+    simple_control_flag_set flags,
     widget_id id)
 {
     column_layout box(ctx); // just here to record region
@@ -502,7 +508,7 @@ do_unsafe_radio_button_with_description(
     radio_button_result result;
     {
         row_layout row(ctx);
-        result = do_unsafe_radio_button(ctx, value, default_layout, radio_id);
+        result = do_unsafe_radio_button(ctx, value, default_layout, flags, radio_id);
         {
             column_layout col(ctx, GROW);
             do_styled_text(ctx, text("radio-label"), label);
@@ -583,11 +589,12 @@ do_unsafe_node_expander(
     ui_context& ctx,
     accessor<bool> const& value,
     layout const& layout_spec,
+    simple_control_flag_set flags,
     widget_id id)
 {
     node_expander_result result;
     if (do_simple_control<node_expander_renderer,
-            default_node_expander_renderer>(ctx, value, layout_spec, id))
+            default_node_expander_renderer>(ctx, value, layout_spec, flags, id))
     {
         result.changed = true;
         set(value, value.is_gettable() ? !value.get() : true);

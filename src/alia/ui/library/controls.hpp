@@ -30,6 +30,7 @@ do_simple_control(
     ui_context& ctx,
     accessor<Value> const& value,
     layout const& layout_spec,
+    simple_control_flag_set flags,
     widget_id id,
     simple_control_data* data_ptr = 0)
 {
@@ -66,16 +67,21 @@ do_simple_control(
 
      alia_untracked_case (INPUT_CATEGORY):
         if (do_button_input(ctx, id, data.input))
-            return true;
+            if (flags & SIMPLE_CONTROL_DISABLED)
+                return false;
+            else
+                return true;
         break;
     }
     alia_end
 
     alia_tracked_block (data.rendering.drawing_block)
     {
+        widget_state state = (flags & SIMPLE_CONTROL_DISABLED) ? WIDGET_DISABLED :
+            get_button_state(ctx, id, data.input);
         renderer->draw(ctx,
             data.layout_node.assignment().region, value,
-            get_button_state(ctx, id, data.input));
+            state);
     }
     alia_end
 
