@@ -807,7 +807,13 @@ static void exit_edit_mode(text_control_parameters const& tc)
 
 static void reset_to_external_value(text_control_parameters const& tc)
 {
-    tc.data->text = tc.value->is_gettable() ? get(*tc.value) : "";
+    auto new_value = tc.value->is_gettable() ? get(*tc.value) : "";
+    // It's possible that we actually caused the change in the external text (e.g., when
+    // we're immediately sending out changes), so if we already have the new value, don't
+    // actually reset.
+    if (tc.data->text == new_value)
+        return;
+    tc.data->text = new_value;
     tc.data->cursor_position =
         disambiguated_utf8_offset(tc.data->text.length());
     on_text_change(tc);

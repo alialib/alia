@@ -2074,6 +2074,8 @@ class transitioning_container_content : noncopyable
 
     bool do_content() const { return do_content_; }
 
+    column_layout& content_holder() { return content_holder_; }
+
  private:
     ui_context* ctx_;
     transitioning_container* container_;
@@ -2366,17 +2368,17 @@ struct form_field : noncopyable
 };
 
 // Provides an empty form label
-struct form_empty_field : noncopyable
+struct empty_form_field : noncopyable
 {
-    form_empty_field() : form_(0) {}
-    form_empty_field(form& form) { begin(form); }
-    ~form_empty_field() { end(); }
+    empty_form_field() : form_(0) {}
+    empty_form_field(form& form) { begin(form); }
+    ~empty_form_field() { end(); }
     void begin(form& form);
     void end();
  private:
     form* form_;
     grid_row row_;
-    row_layout contents_;
+    column_layout contents_;
 };
 
 struct form_buttons : noncopyable

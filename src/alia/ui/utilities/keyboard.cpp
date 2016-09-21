@@ -76,6 +76,12 @@ void set_focus(ui_system& ui, routable_widget_id id)
     bool different = ui.input.focused_id.id != id.id;
     if (different && is_valid(ui.input.focused_id))
     {
+        // A lot of code likes to call set_focus in response to events, which
+        // means that the following FOCUS_LOSS_EVENT could end up being invoked
+        // on a UI state that hasn't seen a refresh event yet, so do a refresh
+        // here just to be safe.
+        refresh_ui(ui);
+
         focus_notification_event e(FOCUS_LOSS_EVENT, ui.input.focused_id.id);
         issue_targeted_event(ui, e, ui.input.focused_id);
     }

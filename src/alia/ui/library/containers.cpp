@@ -843,8 +843,11 @@ void form_field::begin(form& form, accessor<string> const& label)
             get_cached_property(ctx, "form-label-size",
                 INHERITED_PROPERTY, size(15, 2, CHARS));
         column_layout label_region(ctx, layout(label_size, BASELINE_Y));
-        if(is_gettable(label) && !get(label).empty())
+        alia_if (is_gettable(label) && !get(label).empty())
+        {
             do_styled_text(ctx, text("form-label"), printf(ctx, "%s:", label), RIGHT);
+        }
+        alia_end
     }
     contents_.begin(ctx, GROW);
 }
@@ -858,8 +861,8 @@ void form_field::end()
     }
 }
 
-//This is the "empty form_field"
-void form_empty_field::begin(form& form)
+// This is the "empty form_field"
+void empty_form_field::begin(form& form)
 {
     ui_context& ctx = form.context();
     form_ = &form;
@@ -867,7 +870,7 @@ void form_empty_field::begin(form& form)
     do_spacer(ctx);
     contents_.begin(ctx, GROW);
 }
-void form_empty_field::end()
+void empty_form_field::end()
 {
     if (form_)
     {
