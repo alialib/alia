@@ -232,6 +232,9 @@ void end_pass(dataless_ui_context& ctx)
 {
     assert(!is_render_pass(ctx));
     ctx.pass_aborted = true;
+    // This is pretty ugly, but it's hard to imagine a case where it wouldn't
+    // be safe.
+    get_data_traversal(static_cast<ui_context&>(ctx)).traversal_aborted = true;
     throw end_pass_exception();
 }
 

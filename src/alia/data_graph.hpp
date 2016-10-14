@@ -154,6 +154,9 @@ struct data_traversal
     data_node** next_data_ptr;
     bool gc_enabled;
     bool cache_clearing_enabled;
+    // If this is set, the traversal was aborted, so we shouldn't expect it
+    // to complete.
+    bool traversal_aborted;
 };
 
 // The utilities here operate on data_traversals. However, the data_graph

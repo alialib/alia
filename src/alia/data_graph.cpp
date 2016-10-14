@@ -258,7 +258,7 @@ void scoped_data_block::end()
     {
         // If GC is enabled, record which named blocks were used and clear out
         // the unused ones.
-        if (traversal_->gc_enabled)
+        if (traversal_->gc_enabled && !traversal_->traversal_aborted)
         {
             traversal_->active_block->named_blocks =
                 traversal_->used_named_blocks;
@@ -423,6 +423,7 @@ void scoped_cache_clearing_disabler::end()
 void scoped_data_traversal::begin(data_graph& graph, data_traversal& traversal)
 {
     traversal.graph = &graph;
+    traversal.traversal_aborted = false;
     traversal.gc_enabled = true;
     traversal.cache_clearing_enabled = true;
     root_block_.begin(traversal, graph.root_block);
