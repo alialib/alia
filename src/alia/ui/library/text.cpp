@@ -199,7 +199,7 @@ text_layout_node::get_horizontal_requirements(
         query.update(
             calculated_layout_requirements(
                 skia_scalar_as_layout_size(paint.measureText(
-		    data.text.c_str(), data.text.length())),
+                    data.text.c_str(), data.text.length())),
                 0, 0));
     }
     alia_end
@@ -277,7 +277,7 @@ void text_layout_node::calculate_wrapping(
 
     char space = ' ';
     layout_scalar padding_width =
-	skia_scalar_as_layout_size(paint.measureText(&space, 1));
+        skia_scalar_as_layout_size(paint.measureText(&space, 1));
     layout_scalar usable_width = state.assigned_width;
 
     layout_requirements y_requirements(
@@ -358,7 +358,7 @@ void text_layout_node::assign_wrapped_regions(
 
     char space = ' ';
     layout_scalar padding_width =
-	skia_scalar_as_layout_size(paint.measureText(&space, 1));
+        skia_scalar_as_layout_size(paint.measureText(&space, 1));
     layout_scalar usable_width = state.assigned_width;
 
     data.wrapped_y = state.active_row->y;
@@ -496,7 +496,7 @@ void do_text(ui_context& ctx, accessor<string> const& text,
                             i->text.begin, i->text.end - i->text.begin,
                             layout_scalar_as_skia_scalar(i->position[0]),
                             layout_scalar_as_skia_scalar(i->position[1]),
-			    paint);
+                            paint);
                     }
                     renderer.cache();
                     cache.mark_valid();
@@ -539,8 +539,8 @@ void do_text(ui_context& ctx, accessor<string> const& text,
                     renderer.canvas().drawText(
                         data.text.c_str(), data.text.length(),
                         0,
-			layout_scalar_as_skia_scalar(assignment.baseline_y),
-			paint);
+                        layout_scalar_as_skia_scalar(assignment.baseline_y),
+                        paint);
                     renderer.cache();
                     cache.mark_valid();
                 }
@@ -584,10 +584,10 @@ refresh_standalone_text(
         SkPaint::FontMetrics metrics;
         SkScalar line_spacing = paint.getFontMetrics(&metrics);
 
-	string const& text_value = get(text);
+        string const& text_value = get(text);
 
-	SkScalar text_width =
-	    paint.measureText(text_value.c_str(), text_value.length());
+        SkScalar text_width =
+            paint.measureText(text_value.c_str(), text_value.length());
 
         data.layout_requirements =
             leaf_layout_requirements(
@@ -602,7 +602,7 @@ refresh_standalone_text(
             get_layout_traversal(ctx), layout_spec, data.layout_requirements,
             LEFT | BASELINE_Y | PADDED);
 
-	data.cached_image.reset();
+        data.cached_image.reset();
 
         data.key.store(combine_ids(ref(&text.id()), ref(ctx.style.id)));
     }
@@ -622,16 +622,16 @@ render_standalone_text(
 {
     if (!is_valid(data.cached_image))
     {
-	SkPaint paint;
-	set_skia_font_info(paint, ctx.style.properties->font);
+        SkPaint paint;
+        set_skia_font_info(paint, ctx.style.properties->font);
 
-	SkPaint::FontMetrics metrics;
-	paint.getFontMetrics(&metrics);
+        SkPaint::FontMetrics metrics;
+        paint.getFontMetrics(&metrics);
 
-	skia_renderer renderer(*ctx.surface, data.cached_image,
-	    get_region(data).size);
+        skia_renderer renderer(*ctx.surface, data.cached_image,
+            get_region(data).size);
 
-	rgba8 bg = ctx.style.properties->background_color;
+        rgba8 bg = ctx.style.properties->background_color;
         // If the background is completely opaque, then we should
         // draw it here so that Skia can apply LCD text rendering.
         if (bg.a == 0xff)
@@ -646,17 +646,17 @@ render_standalone_text(
                 SkPaint::kGenA8FromLCD_Flag);
         }
 
-	string const& text_value = get(text);
+        string const& text_value = get(text);
 
-	set_color(paint, ctx.style.properties->text_color);
-	renderer.canvas().drawText(
-	    text_value.c_str(), text_value.length(),
-	    SkIntToScalar(0),
-	    layout_scalar_as_skia_scalar(
-		data.layout_node.assignment().baseline_y),
-	    paint);
+        set_color(paint, ctx.style.properties->text_color);
+        renderer.canvas().drawText(
+            text_value.c_str(), text_value.length(),
+            SkIntToScalar(0),
+            layout_scalar_as_skia_scalar(
+                data.layout_node.assignment().baseline_y),
+            paint);
 
-	renderer.cache();
+        renderer.cache();
     }
     data.cached_image->draw(
         *ctx.surface,
@@ -697,30 +697,30 @@ draw_text(dataless_ui_context& ctx, text_drawing_data& data,
 {
     if (!data.key.matches(combine_ids(ref(&text.id()), ref(ctx.style.id))))
     {
-	data.image.reset();
-	data.key.store(combine_ids(ref(&text.id()), ref(ctx.style.id)));
+        data.image.reset();
+        data.key.store(combine_ids(ref(&text.id()), ref(ctx.style.id)));
     }
 
     if (!is_valid(data.image))
     {
-	SkPaint paint;
-	set_skia_font_info(paint, ctx.style.properties->font);
+        SkPaint paint;
+        set_skia_font_info(paint, ctx.style.properties->font);
 
-	SkPaint::FontMetrics metrics;
-	SkScalar line_spacing = paint.getFontMetrics(&metrics);
+        SkPaint::FontMetrics metrics;
+        SkScalar line_spacing = paint.getFontMetrics(&metrics);
 
-	string const& text_value = get(text);
+        string const& text_value = get(text);
 
-	SkScalar text_width =
-	    paint.measureText(text_value.c_str(), text_value.length());
+        SkScalar text_width =
+            paint.measureText(text_value.c_str(), text_value.length());
 
         vector<2,int> image_size = make_vector<int>(
-	    SkScalarCeilToInt(text_width),
-	    SkScalarCeilToInt(line_spacing));
+            SkScalarCeilToInt(text_width),
+            SkScalarCeilToInt(line_spacing));
 
-	skia_renderer renderer(*ctx.surface, data.image, image_size);
+        skia_renderer renderer(*ctx.surface, data.image, image_size);
 
-	rgba8 bg = ctx.style.properties->background_color;
+        rgba8 bg = ctx.style.properties->background_color;
         // If the background is completely opaque, then we should
         // draw it here so that Skia can apply LCD text rendering.
         if (bg.a == 0xff)
@@ -735,15 +735,15 @@ draw_text(dataless_ui_context& ctx, text_drawing_data& data,
                 SkPaint::kGenA8FromLCD_Flag);
         }
 
-	set_color(paint, ctx.style.properties->text_color);
-	renderer.canvas().drawText(
-	    text_value.c_str(), text_value.length(),
-	    SkIntToScalar(0), -metrics.fAscent + metrics.fLeading,
-	    paint);
+        set_color(paint, ctx.style.properties->text_color);
+        renderer.canvas().drawText(
+            text_value.c_str(), text_value.length(),
+            SkIntToScalar(0), -metrics.fAscent + metrics.fLeading,
+            paint);
 
-	data.ascent = SkScalarToDouble(-metrics.fAscent + metrics.fLeading);
+        data.ascent = SkScalarToDouble(-metrics.fAscent + metrics.fLeading);
 
-	renderer.cache();
+        renderer.cache();
     }
 
     draw_full_image(*ctx.surface, data.image,
@@ -758,7 +758,7 @@ void draw_text(ui_context& ctx, accessor<string> const& text,
     get_cached_data(ctx, &data);
 
     if (is_render_pass(ctx))
-	draw_text(ctx, *data, text, position, flags);
+        draw_text(ctx, *data, text, position, flags);
 }
 
 // LINK

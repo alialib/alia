@@ -67,10 +67,10 @@ bool do_button_input(
 }
 
 void set_active_overlay(dataless_ui_context& ctx, widget_id id)
-{ 
+{
     // Only set the active overlay if none is currently set
     if(ctx.system->overlay_id.id == null_widget_id.id)
-        ctx.system->overlay_id = make_routable_widget_id(ctx, id); 
+        ctx.system->overlay_id = make_routable_widget_id(ctx, id);
 }
 
 void clear_active_overlay(dataless_ui_context& ctx)

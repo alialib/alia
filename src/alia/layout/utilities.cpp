@@ -225,7 +225,7 @@ float resolve_absolute_length(
         scale_factor = style_info.x_height;
         break;
     }
-    return length.length * scale_factor; 
+    return length.length * scale_factor;
 }
 
 vector<2,float>
@@ -774,7 +774,7 @@ bool is_visible(geometry_context& ctx, box<2,double> const& region)
     vector<2,double>
         window_low = ctx.clip_region.corner,
         window_high = get_high_corner(ctx.clip_region),
-        region_low = 
+        region_low =
             transform(ctx.transformation_matrix, region.corner),
         region_high =
             transform(ctx.transformation_matrix, get_high_corner(region));

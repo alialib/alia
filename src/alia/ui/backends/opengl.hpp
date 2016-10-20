@@ -120,7 +120,7 @@ struct opengl_surface : surface
 
     // Get the associated context.
     opengl_context& context() const { return *ctx_; }
-    
+
     // Gets the ID of the context associated with this surface.
     id_interface const& context_id() const;
 

@@ -97,7 +97,7 @@ get_style_property(style_tree const& tree, char const* property_name)
     property_map::const_iterator i = tree.properties.find(property_name);
     if (i != tree.properties.end())
         return &i->second;
-    
+
     for (std::list<style_tree*>::const_iterator
         i = tree.fallbacks.begin(); i != tree.fallbacks.end(); ++i)
     {
@@ -242,7 +242,7 @@ add_substyle_to_path(
     add_substyle_flag_set flags)
 {
     style_search_path const* path;
-    
+
     // Start off with the stateless version as a fallback.
     path = add_substyle_to_path(&storage->nodes[1],
         (flags & ADD_SUBSTYLE_NO_PATH_SEPARATOR) ?

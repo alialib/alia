@@ -13,7 +13,7 @@ get_control_style_path(dataless_ui_context& ctx,
     return
         add_substyle_to_path(
             &storage->storage[1],
-            ctx.style.path, 
+            ctx.style.path,
             add_substyle_to_path(&storage->storage[0], ctx.style.path, 0,
                 "control"),
             control_type, ADD_SUBSTYLE_NO_PATH_SEPARATOR);

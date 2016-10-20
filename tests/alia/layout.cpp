@@ -32,7 +32,7 @@ void do_test_leaf(alia::layout_traversal& traversal, test_leaf& leaf,
     {
         leaf.node.refresh_layout(traversal, layout_spec,
             alia::leaf_layout_requirements(
-		alia::make_layout_vector(0, 0), 0, 0));
+                alia::make_layout_vector(0, 0), 0, 0));
         add_layout_node(traversal, &leaf.node);
     }
     else
@@ -67,8 +67,8 @@ void do_test_leaf2(
         scoped_data_traversal sdt(graph, data_traversal); \
         alia::layout_traversal layout_traversal; \
         scoped_layout_refresh slr(system, layout_traversal, \
-	    make_vector<float>(1, 1));	\
-	testing_context ctx; \
+            make_vector<float>(1, 1));        \
+        testing_context ctx; \
         ctx.data = &data_traversal; \
         ctx.layout = &layout_traversal; \
         ui_code \
@@ -85,7 +85,7 @@ void do_test_leaf2(
         alia::layout_traversal layout_traversal; \
         scoped_layout_traversal slr(system, layout_traversal, geometry, \
             make_vector<float>(1, 1)); \
-	testing_context ctx; \
+        testing_context ctx; \
         ctx.data = &data_traversal; \
         ctx.layout = &layout_traversal; \
         ui_code \
@@ -109,7 +109,7 @@ void do_test_leaf2(
         alia::layout_traversal layout_traversal; \
         scoped_layout_refresh slr(system, layout_traversal, \
             make_vector<float>(1, 1)); \
-	testing_context ctx; \
+        testing_context ctx; \
         ctx.data = &data_traversal; \
         ctx.layout = &layout_traversal; \
         ui_code \
@@ -126,7 +126,7 @@ void do_test_leaf2(
         alia::layout_traversal layout_traversal; \
         scoped_layout_traversal slr(system, layout_traversal, geometry, \
             make_vector<float>(1, 1)); \
-	testing_context ctx; \
+        testing_context ctx; \
         ctx.data = &data_traversal; \
         ctx.layout = &layout_traversal; \
         ui_code \

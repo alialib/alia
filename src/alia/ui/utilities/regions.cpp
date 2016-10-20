@@ -19,14 +19,14 @@ void handle_mouse_hit(
     if (ctx.event->type == MOUSE_HIT_TEST_EVENT && (flags & HIT_TEST_MOUSE))
     {
         mouse_hit_test_event& e = get_event<mouse_hit_test_event>(ctx);
-	e.id = make_routable_widget_id(ctx, id);
-	e.cursor = cursor;
+        e.id = make_routable_widget_id(ctx, id);
+        e.cursor = cursor;
     }
     else if (ctx.event->type == WHEEL_HIT_TEST_EVENT &&
         (flags & HIT_TEST_WHEEL))
     {
         wheel_hit_test_event& e = get_event<wheel_hit_test_event>(ctx);
-	e.id = make_routable_widget_id(ctx, id);
+        e.id = make_routable_widget_id(ctx, id);
     }
 }
 
@@ -34,7 +34,7 @@ void hit_test_box_region(dataless_ui_context& ctx, widget_id id,
     box<2,int> const& box, hit_test_flag_set flags, mouse_cursor cursor)
 {
     if (is_mouse_inside_box(ctx, alia::box<2,double>(box)))
-	handle_mouse_hit(ctx, id, flags, cursor);
+        handle_mouse_hit(ctx, id, flags, cursor);
 }
 
 void handle_region_visibility(dataless_ui_context& ctx, widget_id id,

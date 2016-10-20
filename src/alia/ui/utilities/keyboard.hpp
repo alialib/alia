@@ -61,7 +61,7 @@ bool detect_text_input(dataless_ui_context& ctx, utf8_string* text);
 // if you actually process the event.
 void acknowledge_input_event(dataless_ui_context& ctx);
 
-// The following are used to detect specific keys... 
+// The following are used to detect specific keys...
 // The acknowledgement is done automatically.
 
 // Detect if the given key (plus optional modifiers) was just pressed.

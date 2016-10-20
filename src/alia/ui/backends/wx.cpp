@@ -801,7 +801,7 @@ build_wx_menu(wxMenu* wx_menu, menu_node const* nodes, int* next_id)
          case MENU_ITEM_NODE:
           {
             menu_item_node const* node = static_cast<menu_item_node const*>(i);
-            
+
             int id = (*next_id)++;
 
             if (node->checked)

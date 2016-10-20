@@ -373,7 +373,7 @@ void tree_node::begin(
     is_expanded_ = state.is_gettable() ? state.get() : false;
     get_widget_id_if_needed(ctx, expander_id);
     expander_result_ =
-        do_unsafe_node_expander(ctx, state, default_layout, 
+        do_unsafe_node_expander(ctx, state, default_layout,
             (flags & TREE_NODE_DISABLED ? SIMPLE_CONTROL_DISABLED : NO_FLAGS),
             expander_id);
 

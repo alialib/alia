@@ -203,7 +203,7 @@ void draw_rect(SkCanvas& canvas, SkPaint& paint,
     skia_box const& region, resolved_box_corner_sizes const& radii)
 {
     SkRect rect = skia_box_as_skia_rect(region);
-    
+
     SkScalar w = rect.width();
     SkScalar half_w = SkScalarHalf(w);
     SkScalar h = rect.height();

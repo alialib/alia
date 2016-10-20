@@ -259,7 +259,7 @@ begin_inner_panel(
         ((flags & PANEL_NO_INTERNAL_PADDING) ? UNPADDED : PADDED);
     inner.begin(ctx,
         (flags & PANEL_HORIZONTAL) ? HORIZONTAL_LAYOUT : VERTICAL_LAYOUT,
-	layout(inner_layout_flags, 1));
+        layout(inner_layout_flags, 1));
 }
 
 void custom_panel::begin(
@@ -414,7 +414,7 @@ void scrollable_panel::begin(
     region_.begin(ctx, GROW | UNPADDED, scrollable_axes, id,
         scroll_position_storage, reserved_axes);
     panel_style_info const& style_info = get(data->style_info);
-    padding_border_.begin(ctx, 
+    padding_border_.begin(ctx,
         box_border_width<absolute_length>(
             absolute_length(float(style_info.padding.top), PIXELS),
             absolute_length(float(style_info.padding.right), PIXELS),

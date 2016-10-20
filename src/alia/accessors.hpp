@@ -493,7 +493,7 @@ make_readonly(Wrapped const& wrapped)
             make_accessor_copyable(wrapped));
 }
 
-// select_accessor(condition, t, f), where condition, t and f are accessors, 
+// select_accessor(condition, t, f), where condition, t and f are accessors,
 // yields t if get(condition) is true and f otherwise.
 // Note that this is a normal function call, so, unlike an if statement or the
 // ternary operator, both t and f are fully evaluated. However, they are only
@@ -751,7 +751,7 @@ struct accessor_combiner
         typename accessor_value_type<First>::type,
         typename accessor_value_type<Second>::type> pair_type;
     accessor_combiner() {}
-    accessor_combiner(First const& first, Second const& second) 
+    accessor_combiner(First const& first, Second const& second)
       : first_(first), second_(second)
     {}
     bool is_gettable() const
@@ -825,7 +825,7 @@ struct optional_accessor_unwrapper
     typedef typename accessor_value_type<OptionalAccessor>::type::value_type
         underlying_value_type;
     optional_accessor_unwrapper() {}
-    optional_accessor_unwrapper(OptionalAccessor const& accessor) 
+    optional_accessor_unwrapper(OptionalAccessor const& accessor)
       : accessor_(accessor)
     {}
     bool is_gettable() const

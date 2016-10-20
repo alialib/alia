@@ -125,8 +125,8 @@ void popup::begin(ui_context& ctx, widget_id id,
         // surface.
         handle_mouse_hit(ctx, background_id_, HIT_TEST_MOUSE | HIT_TEST_WHEEL);
         // If any are detected, or if the popup loses focus, close it.
-        if (detect_mouse_press(ctx, background_id_, LEFT_BUTTON) || 
-            detect_mouse_press(ctx, background_id_, MIDDLE_BUTTON) || 
+        if (detect_mouse_press(ctx, background_id_, LEFT_BUTTON) ||
+            detect_mouse_press(ctx, background_id_, MIDDLE_BUTTON) ||
             detect_mouse_press(ctx, background_id_, RIGHT_BUTTON) ||
             detect_focus_loss(ctx, id_))
         {
@@ -142,9 +142,9 @@ void popup::end()
 
         overlay_.end();
         transform_.end();
-	layout_.end();
+        layout_.end();
 
-	ctx_ = 0;
+        ctx_ = 0;
     }
 }
 

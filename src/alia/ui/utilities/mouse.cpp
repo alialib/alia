@@ -154,7 +154,7 @@ void do_mouse_hover_text(
 {
     //if (detect_mouse_hover(ctx, id))
     //{
-    //    // Note that this violates the rule that 
+    //    // Note that this violates the rule that
     //    if (ctx.hover)
     //        ctx.hover->text = get(text);
     //}

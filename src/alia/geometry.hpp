@@ -663,8 +663,8 @@ matrix<3,3,T> rotation_matrix(T a)
     T c = std::cos(a), s = std::sin(a);
     return make_matrix<T>(
         c, -s, 0,
-	s,  c, 0,
-	0,  0, 1);
+        s,  c, 0,
+        0,  0, 1);
 }
 
 // Generate a translation matrix.
@@ -673,8 +673,8 @@ matrix<3,3,T> translation_matrix(vector<2,T> const& v)
 {
     return make_matrix<T>(
         1, 0, v[0],
-	0, 1, v[1],
-	0, 0,    1);
+        0, 1, v[1],
+        0, 0,    1);
 }
 
 // Generate a scaling matrix.
@@ -683,8 +683,8 @@ matrix<3,3,T> scaling_matrix(vector<2,T> const& v)
 {
     return make_matrix<T>(
         v[0],    0, 0,
-	   0, v[1], 0,
-	   0,    0, 1);
+           0, v[1], 0,
+           0,    0, 1);
 }
 
 // Transform a vector by a transformation matrix.

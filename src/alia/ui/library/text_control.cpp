@@ -33,7 +33,7 @@ calculate_text_layout(
 
     SkPaint::FontMetrics metrics;
     data.line_height =
-	skia_scalar_as_layout_size(paint.getFontMetrics(&metrics));
+        skia_scalar_as_layout_size(paint.getFontMetrics(&metrics));
 
     utf8_string utf8 = as_utf8_string(data.text);
 
@@ -204,7 +204,7 @@ get_character_boundary_at_point(
     // and return the appropriate boundary.
     return
         (layout_scalar_as_skia_scalar(p[0]) - measured_width) >
-	    width_of_character / 2
+            width_of_character / 2
       ? disambiguated_utf8_ptr(boundary_after, boundary_after == row_text.end)
       : disambiguated_utf8_ptr(boundary_before);
 }
@@ -216,9 +216,9 @@ draw_wrapped_text(
 {
     SkPaint::FontMetrics metrics;
     layout_scalar line_spacing =
-	skia_scalar_as_layout_size(paint.getFontMetrics(&metrics));
+        skia_scalar_as_layout_size(paint.getFontMetrics(&metrics));
     layout_scalar y = skia_scalar_as_layout_scalar(
-	metrics.fLeading + -metrics.fAscent);
+        metrics.fLeading + -metrics.fAscent);
     for (std::vector<utf8_string>::const_iterator
         i = rows.begin(); i != rows.end(); ++i)
     {
@@ -466,7 +466,7 @@ draw_text_with_selection(
         ++row_i;
     {
         layout_scalar height =
-	    layout_scalar(row_i - layout.rows.begin()) * layout.line_height;
+            layout_scalar(row_i - layout.rows.begin()) * layout.line_height;
         unselected_image->draw(
             surface,
             box<2,double>(q, make_vector<double>(region.size[0], height)),
@@ -713,7 +713,7 @@ get_vertically_adjusted_position(text_control_parameters const& tc, int delta)
     size_t line_n = get_cursor_line_number(tc);
     if (tc.data->true_cursor_x < 0)
     {
-        tc.data->true_cursor_x = 
+        tc.data->true_cursor_x =
             get_character_position(get_text_layout(tc),
                 character_index_to_ptr(tc, tc.data->cursor_position))[0];
     }
@@ -1365,8 +1365,8 @@ handle_key_press(
          case KEY_LEFT:
             move_cursor(tc, character_ptr_to_index(tc,
                 disambiguated_utf8_ptr(find_previous_word_start(
-		    as_utf8_string(get_text_layout(tc).text),
-		    character_index_to_ptr(tc,
+                    as_utf8_string(get_text_layout(tc).text),
+                    character_index_to_ptr(tc,
                         data.cursor_position.offset)))));
             acknowledge_key(tc);
             break;
@@ -1374,10 +1374,10 @@ handle_key_press(
          case KEY_RIGHT:
             move_cursor(tc, character_ptr_to_index(tc,
                 disambiguated_utf8_ptr(find_next_word_start(
-		    utf8_string(
-			character_index_to_ptr(tc,
+                    utf8_string(
+                        character_index_to_ptr(tc,
                             data.cursor_position.offset),
-			as_utf8_string(get_text_layout(tc).text).end)))));
+                        as_utf8_string(get_text_layout(tc).text).end)))));
             acknowledge_key(tc);
             break;
         }
@@ -1487,8 +1487,8 @@ handle_key_press(
          case KEY_LEFT:
             shift_move_cursor(tc, character_ptr_to_index(tc,
                 disambiguated_utf8_ptr(find_previous_word_start(
-		    as_utf8_string(get_text_layout(tc).text),
-		    character_index_to_ptr(tc,
+                    as_utf8_string(get_text_layout(tc).text),
+                    character_index_to_ptr(tc,
                         data.cursor_position.offset)))));
             acknowledge_key(tc);
             break;
@@ -1496,10 +1496,10 @@ handle_key_press(
          case KEY_RIGHT:
             shift_move_cursor(tc, character_ptr_to_index(tc,
                 disambiguated_utf8_ptr(find_next_word_start(
-		    utf8_string(
-			character_index_to_ptr(tc,
+                    utf8_string(
+                        character_index_to_ptr(tc,
                             data.cursor_position.offset),
-			as_utf8_string(get_text_layout(tc).text).end)))));
+                        as_utf8_string(get_text_layout(tc).text).end)))));
             acknowledge_key(tc);
             break;
         }
@@ -1561,10 +1561,10 @@ void do_input(text_control_parameters const& tc)
             get_character_at_pixel(tc, get_integer_mouse_position(ctx));
         if (character)
         {
-	    utf8_string word = get_containing_word(
-		as_utf8_string(display_text), get(character));
+            utf8_string word = get_containing_word(
+                as_utf8_string(display_text), get(character));
             set_selection(tc, character_ptr_to_index(tc, word.begin),
-		character_ptr_to_index(tc, word.end));
+                character_ptr_to_index(tc, word.end));
             data.cursor_position = character_ptr_to_index(tc,
                 disambiguated_utf8_ptr(word.end, true));
             data.true_cursor_x = -1;
@@ -1673,7 +1673,7 @@ do_text_control_pass(
     text_control_data* data;
     get_cached_data(ctx, &data);
     tc.data = data;
-    
+
     tc.validation = validation;
 
     init_optional_widget_id(id, &data->flags);

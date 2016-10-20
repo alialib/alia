@@ -381,9 +381,9 @@ LRESULT CALLBACK wndproc(
     {
      case WM_NCCREATE:
       {
-	LPCREATESTRUCT cs = (LPCREATESTRUCT) lparam;
-	SetWindowLongPtr(hwnd, GWLP_USERDATA, __int3264(cs->lpCreateParams));
-	break;
+        LPCREATESTRUCT cs = (LPCREATESTRUCT) lparam;
+        SetWindowLongPtr(hwnd, GWLP_USERDATA, __int3264(cs->lpCreateParams));
+        break;
       }
 
      case WM_SETFOCUS:
@@ -419,7 +419,7 @@ LRESULT CALLBACK wndproc(
         update_window(hwnd);
         break;
       }
- 
+
     case WM_KEYDOWN:
       {
         native_window::impl_data& impl = get_window_data(hwnd);
@@ -587,7 +587,7 @@ static void throw_win32_error(string const& prefix)
         LPTSTR error_message = NULL;
         FormatMessage(
             FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER |
-                FORMAT_MESSAGE_IGNORE_INSERTS,  
+                FORMAT_MESSAGE_IGNORE_INSERTS,
             NULL,
             error_code,
             MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
@@ -671,18 +671,18 @@ static void create_window(
     impl->hwnd =
         CreateWindowEx(
             WS_EX_APPWINDOW | WS_EX_WINDOWEDGE,
-	    "alia_gl",
-	    title.c_str(),
-	    WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
-	    initial_state.position ?
-	        get(initial_state.position)[0] : CW_USEDEFAULT,
-	    initial_state.position ?
-	        get(initial_state.position)[1] : CW_USEDEFAULT,
-	    initial_state.size[0], initial_state.size[1],
-	    NULL,
-	    NULL,
-	    impl->hinstance,
-	    impl);
+            "alia_gl",
+            title.c_str(),
+            WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
+            initial_state.position ?
+                get(initial_state.position)[0] : CW_USEDEFAULT,
+            initial_state.position ?
+                get(initial_state.position)[1] : CW_USEDEFAULT,
+            initial_state.size[0], initial_state.size[1],
+            NULL,
+            NULL,
+            impl->hinstance,
+            impl);
     if (!impl->hwnd)
         throw_window_creation_error("CreateWindowEx");
 
@@ -870,7 +870,7 @@ string win32_os_interface::get_clipboard_text()
     // TODO: Unicode support.
     if (OpenClipboard(0))
     {
-        HANDLE clip = GetClipboardData(CF_TEXT); 
+        HANDLE clip = GetClipboardData(CF_TEXT);
         char const* text = (char const*) GlobalLock(clip);
         string result = text ? text : "";
         GlobalUnlock(clip);

@@ -700,7 +700,7 @@ void clip_evasion_layout::concrete_begin(
             else if (high_corner_on_surface[i] <
                 get_high_corner(traversal.geometry->clip_region)[i])
             {
-                offset[i] = 
+                offset[i] =
                     get_high_corner(traversal.geometry->clip_region)[i] -
                     high_corner_on_surface[i];
             }

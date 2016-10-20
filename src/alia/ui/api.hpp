@@ -86,41 +86,41 @@ enum key_code
 
     // ASCII keys...
     KEY_BACKSPACE       = 8,
-    KEY_TAB	        = 9,
-    KEY_CLEAR		= 12,
-    KEY_ENTER		= 13,
-    KEY_PAUSE		= 19,
-    KEY_ESCAPE		= 27,
-    KEY_SPACE		= 32,
-    KEY_EXCLAIM		= 33,
-    KEY_QUOTEDBL	= 34,
-    KEY_HASH		= 35,
-    KEY_DOLLAR		= 36,
-    KEY_AMPERSAND	= 38,
-    KEY_QUOTE		= 39,
-    KEY_LEFTPAREN	= 40,
-    KEY_RIGHTPAREN	= 41,
-    KEY_ASTERISK	= 42,
-    KEY_PLUS		= 43,
-    KEY_COMMA		= 44,
-    KEY_MINUS		= 45,
-    KEY_PERIOD		= 46,
-    KEY_SLASH		= 47,
-    KEY_COLON		= 58,
-    KEY_SEMICOLON	= 59,
-    KEY_LESS		= 60,
-    KEY_EQUALS		= 61,
-    KEY_GREATER		= 62,
-    KEY_QUESTION	= 63,
-    KEY_AT		= 64,
+    KEY_TAB                = 9,
+    KEY_CLEAR                = 12,
+    KEY_ENTER                = 13,
+    KEY_PAUSE                = 19,
+    KEY_ESCAPE                = 27,
+    KEY_SPACE                = 32,
+    KEY_EXCLAIM                = 33,
+    KEY_QUOTEDBL        = 34,
+    KEY_HASH                = 35,
+    KEY_DOLLAR                = 36,
+    KEY_AMPERSAND        = 38,
+    KEY_QUOTE                = 39,
+    KEY_LEFTPAREN        = 40,
+    KEY_RIGHTPAREN        = 41,
+    KEY_ASTERISK        = 42,
+    KEY_PLUS                = 43,
+    KEY_COMMA                = 44,
+    KEY_MINUS                = 45,
+    KEY_PERIOD                = 46,
+    KEY_SLASH                = 47,
+    KEY_COLON                = 58,
+    KEY_SEMICOLON        = 59,
+    KEY_LESS                = 60,
+    KEY_EQUALS                = 61,
+    KEY_GREATER                = 62,
+    KEY_QUESTION        = 63,
+    KEY_AT                = 64,
     // no uppercase letters
-    KEY_LEFTBRACKET	= 91,
-    KEY_BACKSLASH	= 92,
-    KEY_RIGHTBRACKET	= 93,
-    KEY_CARET		= 94,
-    KEY_UNDERSCORE	= 95,
-    KEY_BACKQUOTE	= 96,
-    KEY_DELETE		= 127,
+    KEY_LEFTBRACKET        = 91,
+    KEY_BACKSLASH        = 92,
+    KEY_RIGHTBRACKET        = 93,
+    KEY_CARET                = 94,
+    KEY_UNDERSCORE        = 95,
+    KEY_BACKQUOTE        = 96,
+    KEY_DELETE                = 127,
 
     // arrows + home/end pad
     KEY_UP,
@@ -276,7 +276,7 @@ enum ui_event_type
     OVERLAY_MAKE_WIDGET_VISIBLE_EVENT,
 
     // uncategorized events
-    
+
     WRAPPED_EVENT,
     SET_VALUE_EVENT,
     TIMER_EVENT,
@@ -1345,7 +1345,7 @@ struct radio_accessor_for_optional : regular_accessor<bool>
     bool is_settable() const
     { return selected_value_.is_settable() && this_value_.is_gettable(); }
     void set(bool const& value) const
-    { 
+    {
         if(value)
             selected_value_.set(some(this_value_.get()));
         else
@@ -1372,7 +1372,7 @@ make_radio_accessor_for_optional(
 {
     return
         radio_accessor_for_optional<
-            typename copyable_accessor_helper<Accessor const&>::result_type,   
+            typename copyable_accessor_helper<Accessor const&>::result_type,
             typename copyable_accessor_helper<Index const&>::result_type>(
                 make_accessor_copyable(selected_value),
                 make_accessor_copyable(this_value));
@@ -2090,7 +2090,7 @@ struct overlay_event_transformer
 {
     overlay_event_transformer() : ctx_(0) {}
     overlay_event_transformer(dataless_ui_context& ctx, widget_id id)
-    { begin(ctx, id); }        
+    { begin(ctx, id); }
     ~overlay_event_transformer() { end(); }
     void begin(dataless_ui_context& ctx, widget_id id);
     void end();

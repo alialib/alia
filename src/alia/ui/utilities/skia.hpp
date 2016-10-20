@@ -30,14 +30,14 @@ struct skia_renderer
     skia_renderer(Context& ctx, cached_image_ptr& img,
         vector<2,int> const& size)
       : bitmap_()
-      , canvas_(initialize_bitmap(bitmap_, size))    
+      , canvas_(initialize_bitmap(bitmap_, size))
     { begin(img, get_surface(ctx), size); }
 
     template<class Context>
     skia_renderer(surface& surface, cached_image_ptr& img,
         vector<2,int> const& size)
       : bitmap_()
-      , canvas_(initialize_bitmap(bitmap_, size))    
+      , canvas_(initialize_bitmap(bitmap_, size))
     { begin(img, surface, size); }
 
     void begin(cached_image_ptr& img, surface& surface,
