@@ -279,6 +279,12 @@ void bulleted_item::end()
 
 // PROGRESS BAR
 
+double
+round(double x)
+{
+    return floor(x * 100 + 0.5) / 100;
+}
+
 void do_progress_bar(ui_context& ctx, accessor<double> const& progress,
     layout const& layout_spec)
 {
@@ -342,8 +348,8 @@ void do_progress_bar(ui_context& ctx, accessor<double> const& progress,
             draw_rect(sr.canvas(), paint, add_border(full_box, -trim));
 
             skia_box bar_box = add_border(full_box, -trim * 2);
-            bar_box.size[0] = SkDoubleToScalar(bar_box.size[0] *
-                (progress.is_gettable() ? get(progress) : 0.));
+            bar_box.size[0] = SkDoubleToScalar(round(bar_box.size[0] *
+                (progress.is_gettable() ? get(progress) : 0.)));
             set_color(paint, bar_color);
             draw_rect(sr.canvas(), paint, bar_box);
 
