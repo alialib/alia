@@ -2150,6 +2150,7 @@ struct untyped_drop_down_list : noncopyable
     friend struct untyped_ddl_item;
 
     ui_context* ctx_;
+    layout layout_spec_;
     ddl_flag_set flags_;
     ddl_data* data_;
     widget_id id_;

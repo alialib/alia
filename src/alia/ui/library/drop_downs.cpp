@@ -243,6 +243,7 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
 {
     ctx_ = &ctx;
     flags_ = flags;
+    layout_spec_ = layout_spec;
 
     untyped_ui_value const* result = 0;
 
@@ -363,6 +364,7 @@ bool untyped_drop_down_list::do_list()
 {
     ui_context& ctx = *ctx_;
     ddl_data& data = *data_;
+    layout& layout_spec = layout_spec_;
 
     if (flags_ & DDL_COMMAND_LIST)
     {
@@ -394,7 +396,7 @@ bool untyped_drop_down_list::do_list()
     {
         popup_.begin(ctx, id_, data.positioning);
         list_panel_.begin(ctx, text("drop-down-list"),
-            layout(width(10, EM), UNPADDED),
+            layout_spec,
             PANEL_NO_HORIZONTAL_SCROLLING | PANEL_NO_INTERNAL_PADDING);
     }
     alia_end
