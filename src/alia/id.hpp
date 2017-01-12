@@ -259,8 +259,18 @@ struct id_pair : id_interface
 
 // combine_ids(id0, id1) combines id0 and id1 into a single ID pair.
 template<class Id0, class Id1>
-id_pair<Id0,Id1> combine_ids(Id0 const& id0, Id1 const& id1)
+auto combine_ids(Id0 const& id0, Id1 const& id1)
 { return id_pair<Id0,Id1>(id0, id1); }
+
+// Combine more than two IDs into nested pairs.
+template<class Id0, class Id1, class ...Rest>
+auto combine_ids(Id0 const& id0, Id1 const& id1, Rest const& ...rest)
+{ return combine_ids(combine_ids(id0, id1), rest...); }
+
+// Allow combine_ids() to take a single argument for variadic purposes.
+template<class Id0>
+auto combine_ids(Id0 const& id0)
+{ return id0; }
 
 // ref(id) wraps a reference to an id_interface so that it can be combined.
 struct id_ref : id_interface

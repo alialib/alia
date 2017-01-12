@@ -6,6 +6,7 @@
 #include <alia/common.hpp>
 #include <alia/id.hpp>
 #include <memory>
+#include <type_traits>
 
 namespace alia {
 
@@ -28,8 +29,8 @@ bool is_settable(accessor<T> const& a)
 { return a.is_settable(); }
 
 // set(a, value) sets a to value iff a is settable.
-template<class T>
-void set(accessor<T> const& a, T const& value)
+template<class Dst, class Src>
+void set(accessor<Dst> const& a, Src const& value)
 {
     if (is_settable(a))
         a.set(value);
@@ -736,85 +737,6 @@ struct text : accessor<string>
     lazy_getter<string> lazy_getter_;
 };
 
-// combine_accessors(first, second) takes two accessors and combines them into
-// a single accessor whose value type is std::pair<FirstValue,SecondValue>,
-// where FirstValue and SecondValue are the value types of first and second,
-// respectively.
-template<class First, class Second>
-struct accessor_combiner
-  : accessor<
-        std::pair<
-            typename accessor_value_type<First>::type,
-            typename accessor_value_type<Second>::type> >
-{
-    typedef std::pair<
-        typename accessor_value_type<First>::type,
-        typename accessor_value_type<Second>::type> pair_type;
-    accessor_combiner() {}
-    accessor_combiner(First const& first, Second const& second)
-      : first_(first), second_(second)
-    {}
-    bool is_gettable() const
-    { return first_.is_gettable() && second_.is_gettable(); }
-    pair_type const& get() const { return lazy_getter_.get(*this); }
-    bool is_settable() const
-    { return first_.is_settable() && second_.is_settable(); }
-    void set(pair_type const& value) const
-    {
-        first_.set(value.first);
-        second_.set(value.second);
-    }
-    id_interface const& id() const
-    {
-        id_ = combine_ids(ref(first_.id()), ref(second_.id()));
-        return id_;
-    }
- private:
-    friend struct lazy_getter<pair_type>;
-    pair_type generate() const
-    { return std::make_pair(first_.get(), second_.get()); }
-    First first_;
-    Second second_;
-    mutable id_pair<id_ref,id_ref> id_;
-    lazy_getter<pair_type> lazy_getter_;
-};
-template<class First, class Second>
-accessor_combiner<
-    typename copyable_accessor_helper<First const&>::result_type,
-    typename copyable_accessor_helper<Second const&>::result_type>
-combine_accessors(First const& first, Second const& second)
-{
-    return
-        accessor_combiner<
-            typename copyable_accessor_helper<First const&>::result_type,
-            typename copyable_accessor_helper<Second const&>::result_type>(
-            make_accessor_copyable(first), make_accessor_copyable(second));
-}
-
-// select_first(accessors) takes an accessors to a std::pair and selects the
-// first value of the pair.
-template<class Accessor>
-field_accessor<
-    typename copyable_accessor_helper<Accessor const&>::result_type,
-    typename accessor_value_type<Accessor>::type::first_type>
-select_first(Accessor const& accessor)
-{
-    return select_field(accessor,
-        &accessor_value_type<Accessor>::type::first);
-}
-
-// select_second(accessors) takes an accessors to a std::pair and selects the
-// second value of the pair.
-template<class Accessor>
-field_accessor<
-    typename copyable_accessor_helper<Accessor const&>::result_type,
-    typename accessor_value_type<Accessor>::type::second_type>
-select_second(Accessor const& accessor)
-{
-    return select_field(accessor,
-        &accessor_value_type<Accessor>::type::second);
-}
-
 // unwrap_optional(accessor) takes an accessor to an optional value
 // and creates an accessor to the underlying value. It's only gettable if the
 // wrapped accessor is gettable and contains a valid value.
@@ -849,6 +771,137 @@ unwrap_optional(OptionalAccessor const& accessor)
                 OptionalAccessor const&>::result_type>(
             make_accessor_copyable(accessor));
 }
+
+// lazy_apply(f, args...), where :args are all accessors, yields an accessor
+// to the result of lazily applying the function :f to the values of :args.
+// Note that doing this in true variadic fashion is a little insane, so I'm
+// just doing the two overloads I need for now...
+
+template<class Result, class Function, class Arg>
+struct lazy_apply1_accessor : accessor<Result>
+{
+    lazy_apply1_accessor() {}
+    lazy_apply1_accessor(Function const& f, Arg const& arg)
+      : f_(f), arg_(arg)
+    {}
+    id_interface const& id() const { return arg_.id(); }
+    bool is_gettable() const { return arg_.is_gettable(); }
+    Result const& get() const { return lazy_getter_.get(*this); }
+    bool is_settable() const { return false; }
+    void set(Result const& value) const {}
+ private:
+    friend struct lazy_getter<Result>;
+    Result generate() const { return f_(arg_.get()); }
+    Function f_;
+    Arg arg_;
+    lazy_getter<Result> lazy_getter_;
+};
+template<class Function, class Arg>
+auto
+lazy_apply(Function const& f, Arg const& arg)
+{
+    return
+        lazy_apply1_accessor<
+            decltype(f(get(arg))),
+            Function,
+            typename copyable_accessor_helper<Arg>::result_type
+          >(f, make_accessor_copyable(arg));
+}
+
+template<class Result, class Function, class Arg0, class Arg1>
+struct lazy_apply2_accessor : accessor<Result>
+{
+    lazy_apply2_accessor() {}
+    lazy_apply2_accessor(
+        Function const& f, Arg0 const& arg0, Arg1 const& arg1)
+      : f_(f), arg0_(arg0), arg1_(arg1)
+    {}
+    id_interface const& id() const
+    {
+        id_ = combine_ids(ref(&arg0_.id()), ref(&arg1_.id()));
+        return id_;
+    }
+    bool is_gettable() const
+    {
+        return arg0_.is_gettable() && arg1_.is_gettable();
+    }
+    Result const& get() const { return lazy_getter_.get(*this); }
+    bool is_settable() const { return false; }
+    void set(Result const& value) const {}
+ private:
+    friend struct lazy_getter<Result>;
+    Result generate() const { return f_(arg0_.get(), arg1_.get()); }
+    Function f_;
+    Arg0 arg0_;
+    Arg1 arg1_;
+    mutable id_pair<id_ref,id_ref> id_;
+    lazy_getter<Result> lazy_getter_;
+};
+template<class Function, class Arg0, class Arg1>
+auto
+lazy_apply(Function const& f, Arg0 const& arg0, Arg1 const& arg1)
+{
+    return
+        lazy_apply2_accessor<
+            decltype(f(get(arg0), get(arg1))),
+            Function,
+            typename copyable_accessor_helper<Arg0>::result_type,
+            typename copyable_accessor_helper<Arg1>::result_type
+          >(f,
+            make_accessor_copyable(arg0),
+            make_accessor_copyable(arg1));
+}
+
+// Define various operators for accessors.
+
+#define ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(op) \
+    template<class A, class B, \
+        std::enable_if_t< \
+            std::is_base_of<untyped_accessor_base,A>::value && \
+            std::is_base_of<untyped_accessor_base,B>::value, \
+            int> = 0> \
+    auto \
+    operator op(A const& a, B const& b) \
+    { \
+        return lazy_apply([ ](auto a, auto b) { return a op b; }, a, b); \
+    }
+
+ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(+)
+ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(-)
+ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(*)
+ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(/)
+ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(^)
+ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(%)
+ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(&)
+ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(|)
+ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(<<)
+ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(>>)
+ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(&&)
+ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(||)
+ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(==)
+ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(!=)
+ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(<)
+ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(<=)
+ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(>)
+ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(>=)
+
+#undef ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR
+
+#define ALIA_DEFINE_UNARY_ACCESSOR_OPERATOR(op) \
+    template<class A, \
+        std::enable_if_t< \
+            std::is_base_of<untyped_accessor_base,A>::value, \
+            int> = 0> \
+    auto \
+    operator op(A const& a) \
+    { \
+        return lazy_apply([ ](auto a) { return op a; }, a); \
+    }
+
+ALIA_DEFINE_UNARY_ACCESSOR_OPERATOR(-)
+ALIA_DEFINE_UNARY_ACCESSOR_OPERATOR(!)
+
+#undef ALIA_DEFINE_UNARY_ACCESSOR_OPERATOR
 
 }
 

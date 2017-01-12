@@ -549,14 +549,14 @@ get_geometry_context(dataless_ui_context& ctx)
     ::alia::dataless_ui_context& ctx = alia__ctx;
 
 #define alia_untracked_if(condition) \
-    if (condition) \
+    if (alia::is_true(condition)) \
     { \
         ALIA_REMOVE_DATA_TRACKING \
         {{
 
 #define alia_untracked_else_if(condition) \
     }}} \
-    else if (condition) \
+    else if (alia::is_true(condition)) \
     { \
         ALIA_REMOVE_DATA_TRACKING \
         {{
@@ -1093,11 +1093,39 @@ do_text_control(
 
 // link - meant to resemble browser links
 
-bool do_link(
+bool
+do_unsafe_link(
     ui_context& ctx,
     accessor<string> const& text,
     layout const& layout_spec = default_layout,
     widget_id id = auto_id);
+
+[[deprecated("Use the lambda-based interface.")]]
+bool static inline
+do_link(
+    ui_context& ctx,
+    accessor<string> const& text,
+    layout const& layout_spec = default_layout,
+    widget_id id = auto_id)
+{
+    return do_unsafe_link(ctx, text, layout_spec, id);
+}
+
+template<class Handler>
+std::enable_if_t<!std::is_convertible<Handler,layout>::value>
+do_link(
+    ui_context& ctx,
+    accessor<string> const& text,
+    Handler const& handler,
+    layout const& layout_spec = default_layout,
+    widget_id id = auto_id)
+{
+    if (do_unsafe_link(ctx, text, layout_spec, id))
+    {
+        handler();
+        end_pass(ctx);
+    }
+}
 
 // text button
 
@@ -1107,30 +1135,122 @@ ALIA_DEFINE_FLAG_TYPE(button)
 ALIA_DEFINE_FLAG(button, 0x1, BUTTON_DISABLED)
 
 button_result
+do_unsafe_button(
+    ui_context& ctx,
+    accessor<string> const& text,
+    layout const& layout_spec = default_layout,
+    button_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id);
+
+[[deprecated("Use the lambda-based interface.")]]
+button_result static inline
 do_button(
     ui_context& ctx,
     accessor<string> const& text,
     layout const& layout_spec = default_layout,
     button_flag_set flags = NO_FLAGS,
-    widget_id id = auto_id);
+    widget_id id = auto_id)
+{
+    return do_unsafe_button(ctx, text, layout_spec, flags, id);
+}
+
+template<class Handler>
+std::enable_if_t<!std::is_convertible<Handler,layout>::value>
+do_button(
+    ui_context& ctx,
+    accessor<string> const& text,
+    Handler const& handler,
+    layout const& layout_spec = default_layout,
+    button_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id)
+{
+    if (do_unsafe_button(ctx, text, layout_spec, flags, id))
+    {
+        handler();
+        end_pass(ctx);
+    }
+}
+
+// the primary button for a UI
 
 button_result
-do_primary_button(
+do_unsafe_primary_button(
     ui_context& ctx,
     accessor<string> const& text,
     layout const& layout_spec = default_layout,
     button_flag_set flags = NO_FLAGS,
     widget_id id = auto_id);
 
-// Do a button with a custom style.
+[[deprecated("Use the lambda-based interface.")]]
+button_result static inline
+do_primary_button(
+    ui_context& ctx,
+    accessor<string> const& text,
+    layout const& layout_spec = default_layout,
+    button_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id)
+{
+    return do_unsafe_primary_button(ctx, text, layout_spec, flags, id);
+}
+
+template<class Handler>
+std::enable_if_t<!std::is_convertible<Handler,layout>::value>
+do_primary_button(
+    ui_context& ctx,
+    accessor<string> const& text,
+    Handler const& handler,
+    layout const& layout_spec = default_layout,
+    button_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id)
+{
+    if (do_unsafe_primary_button(ctx, text, layout_spec, flags, id))
+    {
+        handler();
+        end_pass(ctx);
+    }
+}
+
+// a button with a custom style
+
 button_result
-do_styled_button(
+do_unsafe_styled_button(
     ui_context& ctx,
     accessor<string> const& style,
     accessor<string> const& text,
     layout const& layout_spec = default_layout,
     button_flag_set flags = NO_FLAGS,
     widget_id id = auto_id);
+
+[[deprecated("Use the lambda-based interface.")]]
+button_result static inline
+do_styled_button(
+    ui_context& ctx,
+    accessor<string> const& style,
+    accessor<string> const& text,
+    layout const& layout_spec = default_layout,
+    button_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id)
+{
+    return do_unsafe_styled_button(ctx, style, text, layout_spec, flags, id);
+}
+
+template<class Handler>
+std::enable_if_t<!std::is_convertible<Handler,layout>::value>
+do_styled_button(
+    ui_context& ctx,
+    accessor<string> const& style,
+    accessor<string> const& text,
+    Handler const& handler,
+    layout const& layout_spec = default_layout,
+    button_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id)
+{
+    if (do_unsafe_styled_button(ctx, style, text, layout_spec, flags, id))
+    {
+        handler();
+        end_pass(ctx);
+    }
+}
 
 // icon button
 
@@ -1151,12 +1271,41 @@ enum icon_type
 };
 
 icon_button_result
-do_icon_button(
+do_unsafe_icon_button(
     ui_context& ctx,
     icon_type icon,
     layout const& layout_spec = default_layout,
     simple_control_flag_set flags = NO_FLAGS,
     widget_id id = auto_id);
+
+[[deprecated("Use the lambda-based interface.")]]
+icon_button_result static inline
+do_icon_button(
+    ui_context& ctx,
+    icon_type icon,
+    layout const& layout_spec = default_layout,
+    simple_control_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id)
+{
+    return do_unsafe_icon_button(ctx, icon, layout_spec, flags, id);
+}
+
+template<class Handler>
+std::enable_if_t<!std::is_convertible<Handler,layout>::value>
+do_icon_button(
+    ui_context& ctx,
+    icon_type icon,
+    Handler const& handler,
+    layout const& layout_spec = default_layout,
+    simple_control_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id)
+{
+    if (do_unsafe_icon_button(ctx, icon, layout_spec, flags, id))
+    {
+        handler();
+        end_pass(ctx);
+    }
+}
 
 // CONTROLS
 

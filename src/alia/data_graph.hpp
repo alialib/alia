@@ -676,15 +676,29 @@ struct loop_block : noncopyable
 // takes the context as its first argument. The other form has no trailing
 // underscore and assumes that the context is a variable named 'ctx'.
 
+// is_true(x) evaluates x in a boolean context.
+template<class T>
+std::enable_if_t<!std::is_base_of<untyped_accessor_base,T>::value,bool>
+is_true(T x)
+{ return x ? true : false; }
+
+// is_true(x), where x is an accessor to a bool, returns true iff x is
+// gettable and its value is true.
+template<class Accessor>
+std::enable_if_t<std::is_base_of<untyped_accessor_base,Accessor>::value,bool>
+is_true(Accessor const& x)
+{ return is_gettable(x) && is_true(get(x)); }
+
 // if, else_if, else
 
 #define alia_if_(ctx, condition) \
     { \
         bool alia__else_condition; \
         { \
-            bool alia__condition = (condition) ? true : false; \
+            bool alia__condition = alia::is_true(condition); \
             ::alia::if_block alia__if_block(get_data_traversal(ctx), \
                 alia__condition); \
+            /* Should this use is_false? */ \
             alia__else_condition = !alia__condition; \
             if (alia__condition) \
             {
@@ -695,7 +709,8 @@ struct loop_block : noncopyable
             } \
         } \
         { \
-            bool alia__condition = alia__else_condition && (condition); \
+            bool alia__condition = \
+                alia__else_condition && alia::is_true(condition); \
             ::alia::if_block alia__if_block(get_data_traversal(ctx), \
                 alia__condition); \
             if (alia__condition) \
@@ -722,7 +737,7 @@ struct loop_block : noncopyable
 #define alia_pass_dependent_if_(ctx, condition) \
     { \
         { \
-            bool alia__condition = (condition) ? true : false; \
+            bool alia__condition = alia::is_true(condition); \
             ::alia::pass_dependent_if_block alia__if_block( \
                 get_data_traversal(ctx), alia__condition); \
             if (alia__condition) \

@@ -302,15 +302,20 @@ struct default_icon_button_renderer : icon_button_renderer
 };
 
 icon_button_result
-do_icon_button(
+do_unsafe_icon_button(
     ui_context& ctx,
     icon_type icon,
     layout const& layout_spec,
     simple_control_flag_set flags,
     widget_id id)
 {
-    return do_simple_control<icon_button_renderer,
-        default_icon_button_renderer>(ctx, in(icon), layout_spec, flags, id);
+    return
+        do_simple_control<icon_button_renderer,default_icon_button_renderer>(
+            ctx,
+            in(icon),
+            layout_spec,
+            flags,
+            id);
 }
 
 // CHECK BOX
@@ -613,7 +618,7 @@ struct button_data
 };
 
 button_result
-do_styled_button(
+do_unsafe_styled_button(
     ui_context& ctx,
     accessor<string> const& style,
     accessor<string> const& label,
@@ -634,7 +639,7 @@ do_styled_button(
 }
 
 button_result
-do_button(
+do_unsafe_button(
     ui_context& ctx,
     accessor<string> const& label,
     layout const& layout_spec,
@@ -642,11 +647,16 @@ do_button(
     widget_id id)
 {
     return
-        do_styled_button(ctx, text("button"), label, layout_spec, flags, id);
+        do_unsafe_styled_button(ctx,
+            text("button"),
+            label,
+            layout_spec,
+            flags,
+            id);
 }
 
 button_result
-do_primary_button(
+do_unsafe_primary_button(
     ui_context& ctx,
     accessor<string> const& label,
     layout const& layout_spec,
@@ -654,8 +664,12 @@ do_primary_button(
     widget_id id)
 {
     return
-        do_styled_button(ctx, text("primary-button"), label, layout_spec,
-            flags, id);
+        do_unsafe_styled_button(ctx,
+            text("primary-button"),
+            label,
+            layout_spec,
+            flags,
+            id);
 }
 
 }

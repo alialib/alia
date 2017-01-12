@@ -770,7 +770,7 @@ struct link_data
     focus_rect_data focus_rect;
 };
 
-bool do_link(
+bool do_unsafe_link(
     ui_context& ctx,
     accessor<string> const& text,
     layout const& layout_spec,
