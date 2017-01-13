@@ -1127,6 +1127,13 @@ do_link(
     }
 }
 
+void do_url_link(
+    ui_context& ctx,
+    accessor<string> const& text,
+    accessor<string> const& url,
+    layout const& layout_spec = default_layout,
+    widget_id id = auto_id);
+
 // text button
 
 typedef bool button_result;

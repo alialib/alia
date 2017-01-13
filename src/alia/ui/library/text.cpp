@@ -6,6 +6,8 @@
 #include <cctype>
 #include <cstdarg>
 
+#include <wx/utils.h>
+
 // This file implements most of the UI library's text functionality.
 // The only exception is the text control, which is in its own file.
 // The interface for this is defined in ui_library.hpp in the "TEXT" section.
@@ -815,6 +817,26 @@ bool do_unsafe_link(
     }
 
     return false;
+}
+
+void do_url_link(
+    ui_context& ctx,
+    accessor<string> const& text,
+    accessor<string> const& url,
+    layout const& layout_spec,
+    widget_id id)
+{
+    alia_if(is_gettable(url))
+    {
+        do_link(ctx, text,
+            [&]()
+            {
+                wxLaunchDefaultBrowser(wxString(get(url)));
+            },
+            layout_spec,
+            id);
+    }
+    alia_end
 }
 
 void do_styled_text(ui_context& ctx, accessor<string> const& substyle_name,
