@@ -13,6 +13,10 @@ void do_box_region(
     dataless_ui_context& ctx, widget_id id, box<2,int> const& box,
     mouse_cursor cursor = DEFAULT_CURSOR);
 
+void do_box_region(
+    dataless_ui_context& ctx, widget_id id, box<2, double> const& region,
+    mouse_cursor cursor = DEFAULT_CURSOR);
+
 // Detect if the mouse is inside the given box.
 bool is_mouse_inside_box(dataless_ui_context& ctx, box<2,double> const& box);
 
@@ -25,9 +29,16 @@ void hit_test_box_region(dataless_ui_context& ctx, widget_id id,
     box<2,int> const& box, hit_test_flag_set flags = HIT_TEST_MOUSE,
     mouse_cursor cursor = DEFAULT_CURSOR);
 
+void hit_test_box_region(dataless_ui_context& ctx, widget_id id,
+    box<2, double> const& box, hit_test_flag_set flags = HIT_TEST_MOUSE,
+    mouse_cursor cursor = DEFAULT_CURSOR);
+
 // Respond to a make_widget_visible_event for a given widget.
 void handle_region_visibility(dataless_ui_context& ctx, widget_id id,
     box<2,int> const& box);
+
+void handle_region_visibility(dataless_ui_context& ctx, widget_id id,
+    box<2, double> const& region);
 
 // If you want to work with non-rectangular shapes, you can do hit testing
 // yourself and call this when you detect a hit.

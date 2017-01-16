@@ -37,6 +37,13 @@ void hit_test_box_region(dataless_ui_context& ctx, widget_id id,
         handle_mouse_hit(ctx, id, flags, cursor);
 }
 
+void hit_test_box_region(dataless_ui_context& ctx, widget_id id,
+    box<2, double> const& box, hit_test_flag_set flags, mouse_cursor cursor)
+{
+    if (is_mouse_inside_box(ctx, alia::box<2, double>(box)))
+        handle_mouse_hit(ctx, id, flags, cursor);
+}
+
 void handle_region_visibility(dataless_ui_context& ctx, widget_id id,
     box<2,int> const& region)
 {
@@ -52,6 +59,22 @@ void handle_region_visibility(dataless_ui_context& ctx, widget_id id,
     }
 }
 
+void handle_region_visibility(dataless_ui_context& ctx, widget_id id,
+    box<2, double> const& region)
+{
+    make_widget_visible_event& e = get_event<make_widget_visible_event>(ctx);
+    if (e.request.widget.id == id)
+    {
+        // TODO: This doesn't handle rotations properly.
+        e.region =
+            box<2, double>(
+                transform(get_transformation(ctx),
+                    vector<2, double>(region.corner - (vector<2, double>)get_padding_size(ctx))),
+                vector<2, double>(region.size + (vector<2, double>)get_padding_size(ctx) * 2));
+        e.acknowledged = true;
+    }
+}
+
 void do_box_region(
     dataless_ui_context& ctx, widget_id id, box<2,int> const& region,
     mouse_cursor cursor)
@@ -62,6 +85,21 @@ void do_box_region(
         hit_test_box_region(ctx, id, region, HIT_TEST_MOUSE, cursor);
         break;
      case MAKE_WIDGET_VISIBLE_EVENT:
+        handle_region_visibility(ctx, id, region);
+        break;
+    }
+}
+
+void do_box_region(
+    dataless_ui_context& ctx, widget_id id, box<2, double> const& region,
+    mouse_cursor cursor)
+{
+    switch (ctx.event->type)
+    {
+    case MOUSE_HIT_TEST_EVENT:
+        hit_test_box_region(ctx, id, region, HIT_TEST_MOUSE, cursor);
+        break;
+    case MAKE_WIDGET_VISIBLE_EVENT:
         handle_region_visibility(ctx, id, region);
         break;
     }
