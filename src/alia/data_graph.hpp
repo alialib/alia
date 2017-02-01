@@ -445,7 +445,7 @@ bool get_cached_data(Context& ctx, T** ptr)
 // get_state is the standard interface for retrieving state from a data graph.
 // Instead of a simple pointer, it returns an accessor to the state, which will
 // allow future versions of this code to track changes in the data graph.
-// It comes in two forms...
+// It comes in multiple forms...
 //
 // get_state(ctx, default_value) returns the accessor to the state. If the
 // state hasn't been initialized yet, it's initialized with default_value.
@@ -465,12 +465,33 @@ bool get_state(Context& ctx, state_accessor<T>* accessor)
 }
 
 template<class T, class Context>
-state_accessor<T> get_state(Context& ctx, T const& default_value = T())
+std::enable_if_t<
+    !std::is_base_of<untyped_accessor_base,T>::value,
+    state_accessor<T> >
+get_state(Context& ctx, T const& default_value = T())
 {
     state<T>* ptr;
     if (get_data(ctx, &ptr))
         ptr->set(default_value);
     return make_accessor(*ptr);
+}
+
+// Another form of get_state where the initial_value is passed by accessor...
+// This is now the preferred form.
+
+// get_state(ctx, initial_value) returns an accessor to some persistent local
+// state whose initial value is determined by the accessor :initial_value. The
+// returned accessor will not be gettable until :initial_value is gettable.
+template<class Context, class State>
+auto
+get_state(Context& ctx, accessor<State> const& initial_value)
+{
+    auto state = get_state(ctx, optional<State>());
+    if (is_gettable(state) && !get(state) && is_gettable(initial_value))
+    {
+        set(state, some(get(initial_value)));
+    }
+    return unwrap_optional(state);
 }
 
 // get_keyed_data(ctx, key, &accessor) is a utility for retrieving cached data
@@ -689,18 +710,31 @@ std::enable_if_t<std::is_base_of<untyped_accessor_base,Accessor>::value,bool>
 is_true(Accessor const& x)
 { return is_gettable(x) && is_true(get(x)); }
 
+// is_false(x) evaluates x in a boolean context and inverts it.
+template<class T>
+std::enable_if_t<!std::is_base_of<untyped_accessor_base,T>::value,bool>
+is_false(T x)
+{ return x ? false : true; }
+
+// is_false(x), where x is an accessor to a bool, returns false iff x is
+// gettable and its value is false.
+template<class Accessor>
+std::enable_if_t<std::is_base_of<untyped_accessor_base,Accessor>::value,bool>
+is_false(Accessor const& x)
+{ return is_gettable(x) && is_false(get(x)); }
+
 // if, else_if, else
 
 #define alia_if_(ctx, condition) \
     { \
         bool alia__else_condition; \
         { \
-            bool alia__condition = alia::is_true(condition); \
+            auto alia__condition_value = (condition); \
+            bool alia__if_condition = alia::is_true(alia__condition_value); \
+            alia__else_condition = alia::is_false(alia__condition_value); \
             ::alia::if_block alia__if_block(get_data_traversal(ctx), \
-                alia__condition); \
-            /* Should this use is_false? */ \
-            alia__else_condition = !alia__condition; \
-            if (alia__condition) \
+                alia__if_condition); \
+            if (alia__if_condition) \
             {
 
 #define alia_if(condition) alia_if_(ctx, condition)
@@ -709,13 +743,17 @@ is_true(Accessor const& x)
             } \
         } \
         { \
-            bool alia__condition = \
-                alia__else_condition && alia::is_true(condition); \
+            auto alia__condition_value = (condition); \
+            bool alia__else_if_condition = \
+                alia__else_condition && \
+                alia::is_true(alia__condition_value); \
+            alia__else_condition = \
+                alia__else_condition && \
+                alia::is_false(alia__condition_value); \
             ::alia::if_block alia__if_block(get_data_traversal(ctx), \
-                alia__condition); \
-            if (alia__condition) \
+                alia__else_if_condition); \
+            if (alia__else_if_condition) \
             { \
-                alia__else_condition = false;
 
 #define alia_else_if(condition) alia_else_if_(ctx, condition)
 
