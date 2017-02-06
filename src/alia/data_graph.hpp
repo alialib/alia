@@ -729,7 +729,7 @@ is_false(Accessor const& x)
     { \
         bool alia__else_condition; \
         { \
-            auto alia__condition_value = (condition); \
+            auto const& alia__condition_value = (condition); \
             bool alia__if_condition = alia::is_true(alia__condition_value); \
             alia__else_condition = alia::is_false(alia__condition_value); \
             ::alia::if_block alia__if_block(get_data_traversal(ctx), \
@@ -743,7 +743,7 @@ is_false(Accessor const& x)
             } \
         } \
         { \
-            auto alia__condition_value = (condition); \
+            auto const& alia__condition_value = (condition); \
             bool alia__else_if_condition = \
                 alia__else_condition && \
                 alia::is_true(alia__condition_value); \
