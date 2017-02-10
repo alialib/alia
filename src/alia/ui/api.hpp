@@ -2,6 +2,7 @@
 #define ALIA_UI_API_HPP
 
 #include <alia/accessors.hpp>
+#include <alia/actions.hpp>
 #include <alia/color.hpp>
 #include <alia/layout/api.hpp>
 #include <alia/event_routing.hpp>
@@ -1100,7 +1101,7 @@ do_unsafe_link(
     layout const& layout_spec = default_layout,
     widget_id id = auto_id);
 
-[[deprecated("Use the lambda-based interface.")]]
+[[deprecated("Use the action-based interface.")]]
 bool static inline
 do_link(
     ui_context& ctx,
@@ -1111,8 +1112,19 @@ do_link(
     return do_unsafe_link(ctx, text, layout_spec, id);
 }
 
+void
+do_link(
+    ui_context& ctx,
+    accessor<string> const& text,
+    action const& on_click,
+    layout const& layout_spec = default_layout,
+    widget_id id = auto_id);
+
 template<class Handler>
-std::enable_if_t<!std::is_convertible<Handler,layout>::value>
+[[deprecated("Use the action-based interface.")]]
+std::enable_if_t<
+    !std::is_convertible<Handler,layout>::value &&
+    !std::is_base_of<action,Handler>::value>
 do_link(
     ui_context& ctx,
     accessor<string> const& text,
@@ -1149,7 +1161,7 @@ do_unsafe_button(
     button_flag_set flags = NO_FLAGS,
     widget_id id = auto_id);
 
-[[deprecated("Use the lambda-based interface.")]]
+[[deprecated("Use the action-based interface.")]]
 button_result static inline
 do_button(
     ui_context& ctx,
@@ -1162,7 +1174,10 @@ do_button(
 }
 
 template<class Handler>
-std::enable_if_t<!std::is_convertible<Handler,layout>::value>
+[[deprecated("Use the action-based interface.")]]
+std::enable_if_t<
+    !std::is_convertible<Handler,layout>::value &&
+    !std::is_base_of<action,Handler>::value>
 do_button(
     ui_context& ctx,
     accessor<string> const& text,
@@ -1178,6 +1193,15 @@ do_button(
     }
 }
 
+void
+do_button(
+    ui_context& ctx,
+    accessor<string> const& text,
+    action const& on_press,
+    layout const& layout_spec = default_layout,
+    button_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id);
+
 // the primary button for a UI
 
 button_result
@@ -1188,7 +1212,7 @@ do_unsafe_primary_button(
     button_flag_set flags = NO_FLAGS,
     widget_id id = auto_id);
 
-[[deprecated("Use the lambda-based interface.")]]
+[[deprecated("Use the action-based interface.")]]
 button_result static inline
 do_primary_button(
     ui_context& ctx,
@@ -1201,7 +1225,10 @@ do_primary_button(
 }
 
 template<class Handler>
-std::enable_if_t<!std::is_convertible<Handler,layout>::value>
+[[deprecated("Use the action-based interface.")]]
+std::enable_if_t<
+    !std::is_convertible<Handler,layout>::value &&
+    !std::is_base_of<action,Handler>::value>
 do_primary_button(
     ui_context& ctx,
     accessor<string> const& text,
@@ -1217,6 +1244,15 @@ do_primary_button(
     }
 }
 
+void
+do_primary_button(
+    ui_context& ctx,
+    accessor<string> const& text,
+    action const& on_press,
+    layout const& layout_spec = default_layout,
+    button_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id);
+
 // a button with a custom style
 
 button_result
@@ -1228,7 +1264,7 @@ do_unsafe_styled_button(
     button_flag_set flags = NO_FLAGS,
     widget_id id = auto_id);
 
-[[deprecated("Use the lambda-based interface.")]]
+[[deprecated("Use the action-based interface.")]]
 button_result static inline
 do_styled_button(
     ui_context& ctx,
@@ -1242,7 +1278,10 @@ do_styled_button(
 }
 
 template<class Handler>
-std::enable_if_t<!std::is_convertible<Handler,layout>::value>
+[[deprecated("Use the action-based interface.")]]
+std::enable_if_t<
+    !std::is_convertible<Handler,layout>::value &&
+    !std::is_base_of<action,Handler>::value>
 do_styled_button(
     ui_context& ctx,
     accessor<string> const& style,
@@ -1258,6 +1297,16 @@ do_styled_button(
         end_pass(ctx);
     }
 }
+
+void
+do_styled_button(
+    ui_context& ctx,
+    accessor<string> const& style,
+    accessor<string> const& text,
+    action const& on_press,
+    layout const& layout_spec = default_layout,
+    button_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id);
 
 // icon button
 
@@ -1285,7 +1334,7 @@ do_unsafe_icon_button(
     simple_control_flag_set flags = NO_FLAGS,
     widget_id id = auto_id);
 
-[[deprecated("Use the lambda-based interface.")]]
+[[deprecated("Use the action-based interface.")]]
 icon_button_result static inline
 do_icon_button(
     ui_context& ctx,
@@ -1298,7 +1347,10 @@ do_icon_button(
 }
 
 template<class Handler>
-std::enable_if_t<!std::is_convertible<Handler,layout>::value>
+[[deprecated("Use the action-based interface.")]]
+std::enable_if_t<
+    !std::is_convertible<Handler,layout>::value &&
+    !std::is_base_of<action,Handler>::value>
 do_icon_button(
     ui_context& ctx,
     icon_type icon,
@@ -1313,6 +1365,15 @@ do_icon_button(
         end_pass(ctx);
     }
 }
+
+void
+do_icon_button(
+    ui_context& ctx,
+    icon_type icon,
+    action const& on_press,
+    layout const& layout_spec = default_layout,
+    simple_control_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id);
 
 // CONTROLS
 

@@ -318,6 +318,27 @@ do_unsafe_icon_button(
             id);
 }
 
+void
+do_icon_button(
+    ui_context& ctx,
+    icon_type icon,
+    action const& on_press,
+    layout const& layout_spec,
+    simple_control_flag_set flags,
+    widget_id id)
+{
+    if (do_unsafe_icon_button(
+            ctx,
+            icon,
+            layout_spec,
+            flags | (on_press.is_ready() ? NO_FLAGS : SIMPLE_CONTROL_DISABLED),
+            id))
+    {
+        perform_action(on_press);
+        end_pass(ctx);
+    }
+}
+
 // CHECK BOX
 
 struct check_box_renderer : simple_control_renderer<bool>
@@ -638,6 +659,29 @@ do_unsafe_styled_button(
         do_button_input(ctx, id, data.input);
 }
 
+void
+do_styled_button(
+    ui_context& ctx,
+    accessor<string> const& style,
+    accessor<string> const& text,
+    action const& on_press,
+    layout const& layout_spec,
+    button_flag_set flags,
+    widget_id id)
+{
+    if (do_unsafe_styled_button(
+            ctx,
+            style,
+            text,
+            layout_spec,
+            flags | (on_press.is_ready() ? NO_FLAGS : BUTTON_DISABLED),
+            id))
+    {
+        perform_action(on_press);
+        end_pass(ctx);
+    }
+}
+
 button_result
 do_unsafe_button(
     ui_context& ctx,
@@ -655,6 +699,27 @@ do_unsafe_button(
             id);
 }
 
+void
+do_button(
+    ui_context& ctx,
+    accessor<string> const& text,
+    action const& on_press,
+    layout const& layout_spec,
+    button_flag_set flags,
+    widget_id id)
+{
+    if (do_unsafe_button(
+            ctx,
+            text,
+            layout_spec,
+            flags | (on_press.is_ready() ? NO_FLAGS : BUTTON_DISABLED),
+            id))
+    {
+        perform_action(on_press);
+        end_pass(ctx);
+    }
+}
+
 button_result
 do_unsafe_primary_button(
     ui_context& ctx,
@@ -670,6 +735,27 @@ do_unsafe_primary_button(
             layout_spec,
             flags,
             id);
+}
+
+void
+do_primary_button(
+    ui_context& ctx,
+    accessor<string> const& text,
+    action const& on_press,
+    layout const& layout_spec,
+    button_flag_set flags,
+    widget_id id)
+{
+    if (do_unsafe_primary_button(
+            ctx,
+            text,
+            layout_spec,
+            flags | (on_press.is_ready() ? NO_FLAGS : BUTTON_DISABLED),
+            id))
+    {
+        perform_action(on_press);
+        end_pass(ctx);
+    }
 }
 
 }

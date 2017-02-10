@@ -819,6 +819,33 @@ bool do_unsafe_link(
     return false;
 }
 
+void
+do_link(
+    ui_context& ctx,
+    accessor<string> const& text,
+    action const& on_click,
+    layout const& layout_spec,
+    widget_id id)
+{
+    // It might be better to disable the link when :on_click isn't ready, but we don't
+    // have disabled links at the moment.
+    alia_if (on_click.is_ready())
+    {
+        if (do_unsafe_link(ctx, text, layout_spec, id))
+        {
+            perform_action(on_click);
+            end_pass(ctx);
+        }
+    }
+    alia_else
+    {
+        // Do a zero-size spacer just in case the caller is expecting this to take up a
+        // layout slot (e.g., in a grid).
+        do_spacer(ctx, size(0, 0, PIXELS));
+    }
+    alia_end
+}
+
 void do_url_link(
     ui_context& ctx,
     accessor<string> const& text,
