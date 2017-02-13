@@ -12,6 +12,7 @@ namespace alia {
 
 // Is x gettable?
 template<class T>
+[[deprecated("Use _is_gettable or .is_gettable() directly, depending on needs.")]]
 bool is_gettable(accessor<T> const& x)
 { return x.is_gettable(); }
 
@@ -25,6 +26,7 @@ T const& get(accessor<T> const& x)
 
 // Is a settable?
 template<class T>
+[[deprecated("Use _is_settable or .is_settable() directly, depending on needs.")]]
 bool is_settable(accessor<T> const& a)
 { return a.is_settable(); }
 
@@ -804,7 +806,7 @@ lazy_apply(Function const& f, Arg const& arg)
         lazy_apply1_accessor<
             decltype(f(get(arg))),
             Function,
-            typename copyable_accessor_helper<Arg>::result_type
+            typename copyable_accessor_helper<Arg const&>::result_type
           >(f, make_accessor_copyable(arg));
 }
 
@@ -845,8 +847,8 @@ lazy_apply(Function const& f, Arg0 const& arg0, Arg1 const& arg1)
         lazy_apply2_accessor<
             decltype(f(get(arg0), get(arg1))),
             Function,
-            typename copyable_accessor_helper<Arg0>::result_type,
-            typename copyable_accessor_helper<Arg1>::result_type
+            typename copyable_accessor_helper<Arg0 const&>::result_type,
+            typename copyable_accessor_helper<Arg1 const&>::result_type
           >(f,
             make_accessor_copyable(arg0),
             make_accessor_copyable(arg1));
@@ -876,8 +878,6 @@ ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(&)
 ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(|)
 ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(<<)
 ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(>>)
-ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(&&)
-ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(||)
 ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(==)
 ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(!=)
 ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(<)
@@ -902,6 +902,171 @@ ALIA_DEFINE_UNARY_ACCESSOR_OPERATOR(-)
 ALIA_DEFINE_UNARY_ACCESSOR_OPERATOR(!)
 
 #undef ALIA_DEFINE_UNARY_ACCESSOR_OPERATOR
+
+// The || and && operators require special implementations because they don't necessarily
+// need to evaluate both of their arguments...
+
+template<class Arg0, class Arg1>
+struct logical_or_accessor : accessor<bool>
+{
+    logical_or_accessor() {}
+    logical_or_accessor(Arg0 const& arg0, Arg1 const& arg1)
+      : arg0_(arg0), arg1_(arg1)
+    {}
+    id_interface const& id() const
+    {
+        id_ = combine_ids(ref(&arg0_.id()), ref(&arg1_.id()));
+        return id_;
+    }
+    bool is_gettable() const
+    {
+        // Obviously, this is gettable if both of its arguments are gettable. However,
+        // it's also gettable if only one is gettable and its value is true.
+        return
+            arg0_.is_gettable() && arg1_.is_gettable() ||
+            arg0_.is_gettable() && arg0_.get() ||
+            arg1_.is_gettable() && arg1_.get();
+    }
+    bool const& get() const
+    {
+        value_ =
+            arg0_.is_gettable() && arg0_.get() ||
+            arg1_.is_gettable() && arg1_.get();
+        return value_;
+    }
+    bool is_settable() const { return false; }
+    void set(bool const& value) const {}
+ private:
+    Arg0 arg0_;
+    Arg1 arg1_;
+    mutable id_pair<id_ref,id_ref> id_;
+    mutable bool value_;
+};
+template<class A, class B,
+    std::enable_if_t<
+        std::is_base_of<untyped_accessor_base,A>::value &&
+        std::is_base_of<untyped_accessor_base,B>::value,
+        int> = 0>
+auto
+operator||(A const& a, B const& b)
+{
+    return
+        logical_or_accessor<
+            typename copyable_accessor_helper<A const&>::result_type,
+            typename copyable_accessor_helper<B const&>::result_type
+          >(make_accessor_copyable(a),
+            make_accessor_copyable(b));
+}
+
+template<class Arg0, class Arg1>
+struct logical_and_accessor : accessor<bool>
+{
+    logical_and_accessor() {}
+    logical_and_accessor(Arg0 const& arg0, Arg1 const& arg1)
+      : arg0_(arg0), arg1_(arg1)
+    {}
+    id_interface const& id() const
+    {
+        id_ = combine_ids(ref(&arg0_.id()), ref(&arg1_.id()));
+        return id_;
+    }
+    bool is_gettable() const
+    {
+        // Obviously, this is gettable if both of its arguments are gettable. However,
+        // it's also gettable if only one is gettable and its value is false.
+        return
+            arg0_.is_gettable() && arg1_.is_gettable() ||
+            arg0_.is_gettable() && !arg0_.get() ||
+            arg1_.is_gettable() && !arg1_.get();
+    }
+    bool const& get() const
+    {
+        value_ =
+          !(arg0_.is_gettable() && !arg0_.get() ||
+            arg1_.is_gettable() && !arg1_.get());
+        return value_;
+    }
+    bool is_settable() const { return false; }
+    void set(bool const& value) const {}
+ private:
+    Arg0 arg0_;
+    Arg1 arg1_;
+    mutable id_pair<id_ref,id_ref> id_;
+    mutable bool value_;
+};
+template<class A, class B,
+    std::enable_if_t<
+        std::is_base_of<untyped_accessor_base,A>::value &&
+        std::is_base_of<untyped_accessor_base,B>::value,
+        int> = 0>
+auto
+operator&&(A const& a, B const& b)
+{
+    return
+        logical_and_accessor<
+            typename copyable_accessor_helper<A const&>::result_type,
+            typename copyable_accessor_helper<B const&>::result_type
+          >(make_accessor_copyable(a),
+            make_accessor_copyable(b));
+}
+
+// _is_gettable(x) yields an accessor to a boolean which indicates whether or not x is
+// gettable. (The returned accessor is always gettable itself.)
+template<class Wrapped>
+struct gettability_accessor : regular_accessor<bool>
+{
+    gettability_accessor() {}
+    gettability_accessor(Wrapped const& wrapped) : wrapped_(wrapped) {}
+    bool is_gettable() const { return true; }
+    bool const& get() const
+    {
+        value_ = wrapped_.is_gettable();
+        return value_;
+    }
+    bool is_settable() const { return false; }
+    void set(bool const& value) const {}
+ private:
+    Wrapped wrapped_;
+    mutable bool value_;
+};
+template<class Wrapped>
+auto
+_is_gettable(Wrapped const& wrapped)
+{
+    return
+        gettability_accessor<
+            typename copyable_accessor_helper<Wrapped const&>::result_type
+          >(make_accessor_copyable(wrapped));
+}
+
+// _is_settable(x) yields an accessor to a boolean which indicates whether or not x is
+// settable. (The returned accessor is always gettable.)
+template<class Wrapped>
+struct settability_accessor : regular_accessor<bool>
+{
+    settability_accessor() {}
+    settability_accessor(Wrapped const& wrapped) : wrapped_(wrapped) {}
+    bool is_gettable() const { return true; }
+    bool const& get() const
+    {
+        value_ = wrapped_.is_settable();
+        return value_;
+    }
+    bool is_settable() const { return false; }
+    void set(bool const& value) const {}
+ private:
+    Wrapped wrapped_;
+    mutable bool value_;
+};
+template<class Wrapped>
+auto
+_is_settable(Wrapped const& wrapped)
+{
+    return
+        settability_accessor<
+            typename copyable_accessor_helper<Wrapped const&>::result_type
+          >(make_accessor_copyable(wrapped));
+}
 
 }
 

@@ -1,13 +1,16 @@
 #ifndef ALIA_UI_API_HPP
 #define ALIA_UI_API_HPP
 
+#include <cstdio>
+#include <vector>
+
+#include <boost/function.hpp>
+
 #include <alia/accessors.hpp>
 #include <alia/actions.hpp>
 #include <alia/color.hpp>
-#include <alia/layout/api.hpp>
 #include <alia/event_routing.hpp>
-#include <cstdio>
-#include <vector>
+#include <alia/layout/api.hpp>
 
 // This file declares all the types and functions necessary to use the UI
 // library from the application end, including a standard library of widgets
@@ -2359,9 +2362,12 @@ struct untyped_drop_down_list : noncopyable
 
     untyped_ui_value const*
     begin(ui_context& ctx, layout const& layout_spec, ddl_flag_set flags);
+
     void end();
 
     bool do_list();
+
+    ui_context& context() { return *ctx_; }
 
  private:
     friend struct untyped_ddl_item;
@@ -2451,19 +2457,29 @@ struct ddl_item : noncopyable
 {
  public:
     ddl_item() {}
+    ddl_item(drop_down_list<Index>& list, accessor<Index> const& index)
+    { begin(list, index); }
     ddl_item(drop_down_list<Index>& list, Index const& index)
     { begin(list, index); }
     ~ddl_item() { end(); }
 
+    void begin(drop_down_list<Index>& list, accessor<Index> const& index)
+    {
+        alia_if_(list.list_.context(), is_gettable(index))
+        {
+            selected_ = list.selection_ ? get(list.selection_) == index.get() : false;
+            if (item_.begin(list.list_, selected_))
+            {
+                typed_ui_value<Index>* v = new typed_ui_value<Index>;
+                v->value = index.get();
+                item_.select(v);
+            }
+        }
+        alia_end
+    }
     void begin(drop_down_list<Index>& list, Index const& index)
     {
-        selected_ = list.selection_ ? get(list.selection_) == index : false;
-        if (item_.begin(list.list_, selected_))
-        {
-            typed_ui_value<Index>* v = new typed_ui_value<Index>;
-            v->value = index;
-            item_.select(v);
-        }
+        begin(list, in(index));
     }
     void end() { item_.end(); }
 
@@ -2473,6 +2489,28 @@ struct ddl_item : noncopyable
     untyped_ddl_item item_;
     bool selected_;
 };
+
+template<class Index>
+void
+do_drop_down_list(
+    ui_context& ctx,
+    accessor<Index> const& selection,
+    layout const& layout_spec,
+    boost::function<void()> const& do_selection,
+    boost::function<void(drop_down_list<Index>& ddl)> const& do_list)
+{
+    drop_down_list<Index> ddl(ctx, selection, layout_spec);
+    do_selection();
+    alia_if (ddl.do_list())
+    {
+        do_list(ddl);
+    }
+    alia_end
+    if (ddl.changed())
+    {
+        end_pass(ctx);
+    }
+}
 
 // resizable_content is a container with a draggable separator for controlling
 // the size of its contents.
