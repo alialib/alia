@@ -290,6 +290,31 @@ struct default_icon_button_renderer : icon_button_renderer
                 renderer.canvas().drawLine(-a,  0,  a,  0, paint);
                 break;
               }
+             case CONTOUR_ICON:
+             {
+                 SkScalar a = renderer.content_region().size[0] / SkIntToScalar(2);
+                 SkScalar b = renderer.content_region().size[0] / SkIntToScalar(6);
+
+                 paint.setStrokeWidth(3);
+                 paint.setColor(SK_ColorBLACK);
+                 paint.setStrokeCap(SkPaint::kRound_Cap);
+
+                 //top
+                 renderer.canvas().drawLine(-a, -a, a, -a, paint);
+                 //upmid
+                 renderer.canvas().drawLine(-a, -b, a, -b, paint);
+                 //lowmid
+                 renderer.canvas().drawLine(-a, b, a, b, paint);
+                 //bottom
+                 renderer.canvas().drawLine(-a, a, a, a, paint);
+
+                 break;
+             }
+             case SOLID_ICON:
+             {
+                 // empty icon for use with the solid/contour structure render modes
+                 break;
+             }
              default:
                 break;
             }

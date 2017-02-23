@@ -1327,6 +1327,8 @@ enum icon_type
     SHRINK_ICON,
     PLUS_ICON,
     MINUS_ICON,
+    CONTOUR_ICON,
+    SOLID_ICON
 };
 
 icon_button_result
