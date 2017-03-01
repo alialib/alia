@@ -362,6 +362,7 @@ do_icon_button(
         perform_action(on_press);
         end_pass(ctx);
     }
+
 }
 
 // CHECK BOX
