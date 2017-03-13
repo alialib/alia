@@ -819,6 +819,20 @@ bool do_unsafe_link(
     return false;
 }
 
+bool
+do_unsafe_link(
+    ui_context& ctx,
+    accessor<string> const& text,
+    accessor<string> const& tooltip,
+    layout const& layout_spec,
+    widget_id id)
+{
+    get_widget_id_if_needed(ctx, id);
+    auto result = do_unsafe_link(ctx, text, layout_spec, id);
+    set_tooltip_message(ctx, id, tooltip);
+    return result;
+}
+
 void
 do_link(
     ui_context& ctx,
@@ -844,6 +858,20 @@ do_link(
         do_spacer(ctx, size(0, 0, PIXELS));
     }
     alia_end
+}
+
+void
+do_link(
+    ui_context& ctx,
+    accessor<string> const& text,
+    accessor<string> const& tooltip,
+    action const& on_click,
+    layout const& layout_spec,
+    widget_id id)
+{
+    get_widget_id_if_needed(ctx, id);
+    do_link(ctx, text, on_click, layout_spec, id);
+    set_tooltip_message(ctx, id, tooltip);
 }
 
 void do_url_link(

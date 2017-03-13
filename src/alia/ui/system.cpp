@@ -114,6 +114,139 @@ struct context_invoker
     }
 };
 
+
+struct tooltip_overlay_state
+{
+    string message;
+    layout_box generating_region;
+    float opacity;
+};
+
+bool static
+operator==(tooltip_overlay_state const& a, tooltip_overlay_state const& b)
+{
+    return
+        a.message == b.message &&
+        a.generating_region == b.generating_region &&
+        a.opacity == b.opacity;
+}
+
+bool static
+operator!=(tooltip_overlay_state const& a, tooltip_overlay_state const& b)
+{
+    return !(a == b);
+}
+
+tooltip_overlay_state static
+interpolate(tooltip_overlay_state const& a, tooltip_overlay_state const& b, double factor)
+{
+    tooltip_overlay_state interpolated;
+    // Transition the message/region instantly unless there's no message to transition to.
+    if (!b.message.empty())
+    {
+        interpolated.message = b.message;
+        interpolated.generating_region = b.generating_region;
+    }
+    else
+    {
+        interpolated.message = a.message;
+        interpolated.generating_region = a.generating_region;
+    }
+    // Transition the opacity smoothly.
+    interpolated.opacity = interpolate(a.opacity, b.opacity, factor);
+    return interpolated;
+}
+
+static void
+do_tooltip_overlay(ui_context& ctx)
+{
+    auto& tooltip = ctx.system->tooltip;
+
+    scoped_data_block data_block(ctx, tooltip.data);
+
+    // If there's an active tooltip message, but the tooltip system isn't enabled yet, we
+    // need to make sure the UI continues updating so that we can display the tooltip when
+    // necessary.
+    if (!tooltip.enabled && !tooltip.message.empty())
+        request_animation_refresh(ctx);
+
+    // This is all written somewhat crudely (without using accessors) because the
+    // utilities that would allow it to be written more elegantly are currently part of
+    // CRADLE, not alia.
+
+    auto current_state =
+        tooltip_overlay_state{
+            tooltip.message,
+            tooltip.generating_region,
+            tooltip.enabled && !tooltip.message.empty() ? 1.f : 0.f };
+
+    auto smoothed_state =
+        smooth_raw_value(ctx, current_state, animated_transition(default_curve, 200));
+
+    alia_if (!smoothed_state.message.empty() && smoothed_state.opacity > 0)
+    {
+        floating_layout layout(ctx);
+
+        scoped_surface_opacity scoped_opacity(ctx, smoothed_state.opacity);
+
+        scoped_transformation transformation;
+        if (!is_refresh_pass(ctx))
+        {
+            vector<2,int> position;
+            // Decide how to align each axis of the tooltip.
+            auto surface_size = layout_vector(ctx.system->surface_size);
+            // First get the region that generated the tooltip (plus a little padding).
+            // We want to try to align the tooltip with this.
+            auto generating_region =
+                add_border(
+                    smoothed_state.generating_region,
+                    as_layout_size(ctx.system->style.magnification * 2.5));
+            auto lower_region_edge = get_low_corner(generating_region);
+            auto upper_region_edge = get_high_corner(generating_region);
+            // For the horizontal alignment, we prefer to align the left edge of the
+            // tooltip with the left edge of the generating region.
+            if (lower_region_edge[0] + layout.size()[0] <= surface_size[0] ||
+                surface_size[0] - lower_region_edge[0] > upper_region_edge[0])
+            {
+                position[0] = lower_region_edge[0];
+            }
+            else
+            {
+                position[0] = upper_region_edge[0] - layout.size()[0];
+            }
+            // For the vertical alignment, we prefer to align the bottom edge of the
+            // tooltip with the top edge of the generating region.
+            if (lower_region_edge[1] > layout.size()[1] ||
+                surface_size[1] - upper_region_edge[1] < lower_region_edge[1])
+            {
+                position[1] = lower_region_edge[1] - layout.size()[1];
+            }
+            else
+            {
+                position[1] = upper_region_edge[1];
+            }
+            // Set up our transformation to move the tooltip to that position.
+            transformation.begin(*get_layout_traversal(ctx).geometry);
+            transformation.set(translation_matrix(vector<2,double>(position)));
+        }
+
+        // If the string is short enough, just display it without wrapping.
+        alia_if (smoothed_state.message.length() < 64)
+        {
+            panel p(ctx, text("tooltip"));
+            do_text(ctx, in_ptr(&smoothed_state.message));
+        }
+        // Otherwise, create a panel of a fixed width and let it flow within that.
+        alia_else
+        {
+            panel p(ctx, text("tooltip"), width(30, EM));
+            do_flow_text(ctx, in_ptr(&smoothed_state.message));
+        }
+        alia_end
+    }
+    alia_end
+}
+
 static bool
 issue_event(
     ui_system& system, ui_event& event,
@@ -168,6 +301,25 @@ issue_event(
     fn.system = &system;
     fn.ctx = &ctx;
     invoke_routed_traversal(fn, ctx.routing, data, targeted, target);
+
+    // Do the tooltip overlay (if any).
+    // Note that we only need refresh and render events for the tooltip overlay, and we
+    // actually want it to render after the OVERLAY_RENDER_EVENT (if there is one).
+    switch (event.type)
+    {
+     case RENDER_EVENT:
+        // If there's an active overlay, do the rendering after that.
+        if (is_valid(system.overlay_id))
+            break;
+        // intentional fallthrough
+     case OVERLAY_RENDER_EVENT:
+        event.category = RENDER_CATEGORY;
+        event.type = RENDER_EVENT;
+        // intentional fallthrough
+     case REFRESH_EVENT:
+        do_tooltip_overlay(ctx);
+    }
+
     return fn.aborted;
 }
 
@@ -252,6 +404,8 @@ void refresh_ui(ui_system& ui)
     ui.last_refresh_duration =
         int((end_time.QuadPart - start_time.QuadPart) * 1000000 /
             frequency.QuadPart);
+  #else
+    ui.last_refresh_duration = 0;
   #endif
 
     resolve_layout(ui.layout, layout_vector(ui.surface_size));
@@ -260,6 +414,41 @@ void refresh_ui(ui_system& ui)
 int get_last_refresh_duration(ui_system& ui)
 {
     return ui.last_refresh_duration;
+}
+
+void static
+record_tooltip(ui_system& ui, mouse_hit_test_event const& hit_test)
+{
+    ui.tooltip.message = hit_test.tooltip_message;
+    ui.tooltip.generating_region = hit_test.hit_box;
+}
+
+void static
+update_tooltip(ui_system& ui)
+{
+    bool tooltips_enabled = ui.tooltip.enabled;
+
+    // If the UI has been hovering over a widget with a tooltip for a while, enable
+    // the tooltip overlay.
+    if (!is_valid(ui.input.active_id) && !ui.tooltip.message.empty() &&
+        ui.millisecond_tick_count - ui.input.hover_start_time > 500)
+    {
+        tooltips_enabled = true;
+    }
+    // If the UI has been hovering over nothing for a while, disable the tooltip
+    // overlay.
+    if (ui.tooltip.message.empty() &&
+        ui.millisecond_tick_count - ui.input.hover_start_time > 200)
+    {
+        tooltips_enabled = false;
+    }
+
+    // If the tooltip state has changed, refresh the UI.
+    if (tooltips_enabled != ui.tooltip.enabled)
+    {
+        ui.tooltip.enabled = tooltips_enabled;
+        refresh_ui(ui);
+    }
 }
 
 void update_ui(ui_system& ui, vector<2,unsigned> const& size,
@@ -317,8 +506,9 @@ void update_ui(ui_system& ui, vector<2,unsigned> const& size,
             issue_targeted_event(ui, hit_test, ui.overlay_id);
             if (is_valid(hit_test.id))
             {
-                ui.input.hot_id = hit_test.id;
+                set_hot_region(ui, hit_test.id);
                 cursor = hit_test.cursor;
+                record_tooltip(ui, hit_test);
                 overlay_hot = true;
             }
         }
@@ -326,12 +516,13 @@ void update_ui(ui_system& ui, vector<2,unsigned> const& size,
         {
             mouse_hit_test_event hit_test;
             issue_event(ui, hit_test);
-            ui.input.hot_id = hit_test.id;
+            set_hot_region(ui, hit_test.id);
             cursor = hit_test.cursor;
+            record_tooltip(ui, hit_test);
         }
     }
     else
-        ui.input.hot_id = null_widget_id;
+        set_hot_region(ui, null_widget_id);
 
     // The block above gives us the mouse cursor that's been requested by
     // the widget under the mouse. However, if there's a different widget
@@ -347,6 +538,9 @@ void update_ui(ui_system& ui, vector<2,unsigned> const& size,
     // Communicate the desired mouse cursor back to the caller.
     if (current_cursor)
         *current_cursor = cursor;
+
+    // Update the state of the tooltip based on the passage of time.
+    update_tooltip(ui);
 
     // If there's been a change in which widget the mouse is interacting with,
     // issue notification events.
@@ -483,10 +677,9 @@ void process_mouse_release(ui_system& ui, ui_time_type time,
     mouse_button_event e(MOUSE_RELEASE_EVENT, time, button);
     issue_targeted_event(ui, e, get_mouse_target(ui));
     ui.input.mouse_button_state &= ~(1 << int(button));
-    ui.input.mouse_hovering = false;
     if (ui.input.mouse_button_state == 0)
     {
-        ui.input.active_id = null_widget_id;
+        set_active_region(ui, null_widget_id);
         ui.input.dragging = false;
     }
 }
@@ -496,7 +689,6 @@ void process_double_click(ui_system& ui, ui_time_type time,
     mouse_button_event e(DOUBLE_CLICK_EVENT, time, button);
     issue_targeted_event(ui, e, get_mouse_target(ui));
     ui.input.mouse_button_state |= 1 << int(button);
-    ui.input.mouse_hovering = false;
     ui.input.keyboard_interaction = false;
 }
 void process_mouse_wheel(ui_system& ui, ui_time_type time, float movement)
@@ -524,17 +716,6 @@ void process_mouse_wheel(ui_system& ui, ui_time_type time, float movement)
         mouse_wheel_event event(time, target.id, movement);
         issue_targeted_event(ui, event, target);
     }
-}
-void process_mouse_hover(ui_system& ui, ui_time_type time)
-{
-    if (ui.input.mouse_button_state != 0)
-        return;
-    if (is_valid(ui.input.hot_id))
-    {
-        mouse_notification_event event(MOUSE_HOVER_EVENT, ui.input.hot_id.id);
-        issue_targeted_event(ui, event, ui.input.hot_id);
-    }
-    ui.input.mouse_hovering = true;
 }
 
 bool process_text_input(ui_system& ui, ui_time_type time,

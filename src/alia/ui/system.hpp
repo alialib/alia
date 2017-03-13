@@ -60,8 +60,6 @@ void process_double_click(
     vector<2,int> const& position, mouse_button button);
 void process_mouse_wheel(
     ui_system& ui, ui_time_type time, float movement);
-void process_mouse_hover(
-    ui_system& ui, ui_time_type time);
 
 // The following are for sending keyboard events to the UI.
 bool process_text_input(

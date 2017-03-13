@@ -301,6 +301,27 @@ void make_polygon(vector<2,T>* vertices, box<2,T> const& box)
     vertices[3] = box.corner + make_vector<T>(0, box.size[1]);
 }
 
+// Expand a box (if necessary) to include the given point. - If an expansion is necessary,
+// it's done so that the point lies on the edge of the box.
+template<unsigned N, class T>
+void expand_box_to_include_point(box<N,T>& box, vector<N,T> const& point)
+{
+    for (unsigned i = 0; i != N; ++i)
+    {
+        // Expand in the negative direction.
+        if (box.corner[i] > point[i])
+        {
+            box.size[i] += box.corner[i] - point[i];
+            box.corner[i] = point[i];
+        }
+        // Expand in the positive direction.
+        if (box.corner[i] + box.size[i] < point[i])
+        {
+            box.size[i] = point[i] - box.corner[i];
+        }
+    }
+}
+
 template<typename T>
 int get_edge_index(box<2,T> const& box, vector<2,T> const& point)
 {
@@ -694,6 +715,24 @@ vector<2,T> transform(matrix<3,3,T> const& m, vector<2,T> const& v)
     return make_vector(
         v[0] * m(0,0) + v[1] * m(0,1) + m(0,2),
         v[0] * m(1,0) + v[1] * m(1,1) + m(1,2));
+}
+
+// Transform a box by a transformation matrix.
+template<typename T>
+box<2,T>
+transform_box(matrix<3,3,T> const& m, box<2,T> const& b)
+{
+    // Start with a box that just includes the transformation of one corner of the
+    // original box.
+    box<2,T> result = make_box(transform(m, b.corner), make_vector<T>(0, 0));
+    // Now expand that box to include the transformation of each of the other corners.
+    expand_box_to_include_point(result,
+        transform(m, b.corner + make_vector<T>(b.size[0], 0)));
+    expand_box_to_include_point(result,
+        transform(m, b.corner + b.size));
+    expand_box_to_include_point(result,
+        transform(m, b.corner + make_vector<T>(0, b.size[1])));
+    return result;
 }
 
 // CUBIC BEZIERS

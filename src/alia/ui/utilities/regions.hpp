@@ -10,11 +10,11 @@ namespace alia {
 // This will handle all region-related events for a widget that occupies a
 // rectangular region on the surface.
 void do_box_region(
-    dataless_ui_context& ctx, widget_id id, box<2,int> const& box,
+    dataless_ui_context& ctx, widget_id id, box<2,int> const& region,
     mouse_cursor cursor = DEFAULT_CURSOR);
-
+// same, but for double coordinates
 void do_box_region(
-    dataless_ui_context& ctx, widget_id id, box<2, double> const& region,
+    dataless_ui_context& ctx, widget_id id, box<2,double> const& region,
     mouse_cursor cursor = DEFAULT_CURSOR);
 
 // Detect if the mouse is inside the given box.
@@ -28,21 +28,26 @@ ALIA_DEFINE_FLAG(hit_test, 0x2, HIT_TEST_WHEEL)
 void hit_test_box_region(dataless_ui_context& ctx, widget_id id,
     box<2,int> const& box, hit_test_flag_set flags = HIT_TEST_MOUSE,
     mouse_cursor cursor = DEFAULT_CURSOR);
-
+// same, but for double coordinates
 void hit_test_box_region(dataless_ui_context& ctx, widget_id id,
-    box<2, double> const& box, hit_test_flag_set flags = HIT_TEST_MOUSE,
+    box<2,double> const& box, hit_test_flag_set flags = HIT_TEST_MOUSE,
     mouse_cursor cursor = DEFAULT_CURSOR);
 
 // Respond to a make_widget_visible_event for a given widget.
 void handle_region_visibility(dataless_ui_context& ctx, widget_id id,
     box<2,int> const& box);
-
+// same as above, but for double coordinates
 void handle_region_visibility(dataless_ui_context& ctx, widget_id id,
-    box<2, double> const& region);
+    box<2,double> const& region);
 
 // If you want to work with non-rectangular shapes, you can do hit testing
 // yourself and call this when you detect a hit.
-void handle_mouse_hit(dataless_ui_context& ctx, widget_id id,
+// Note that you still need to provide a bounding box for your shape.
+void
+handle_mouse_hit(
+    dataless_ui_context& ctx,
+    widget_id id,
+    box<2,double> const& bounding_box,
     hit_test_flag_set flags = HIT_TEST_MOUSE,
     mouse_cursor cursor = DEFAULT_CURSOR);
 
@@ -58,8 +63,16 @@ void override_mouse_cursor(
 // given ID, and the mouse button is still down.
 bool is_region_active(dataless_ui_context& ctx, widget_id id);
 
+// Set the ID of the widget that has captured the mouse.
+// (This is primarily intended for internal use.)
+void set_active_region(ui_system& ui, routable_widget_id const& active_id);
+
 // Detect if the mouse is over the given region.
 bool is_region_hot(dataless_ui_context& ctx, widget_id id);
+
+// Set the ID of the widget that the mouse is over.
+// (This is primarily intended for internal use.)
+void set_hot_region(ui_system& ui, routable_widget_id const& hot_id);
 
 // Call this to request that a given widget be made visible.
 // If the widget is scrolled off screen, this will trigger the containing
@@ -73,6 +86,14 @@ void make_widget_visible(dataless_ui_context& ctx, widget_id id,
 box<2,double>
 region_to_surface_coordinates(dataless_ui_context& ctx,
     box<2,double> const& region);
+
+// Set the tooltip associated with the given region ID.
+// Note that this must be called AFTER hit testing has been performed on the region.
+void
+set_tooltip_message(
+    ui_context& ctx,
+    widget_id region_id,
+    accessor<string> const& tooltip_message);
 
 }
 

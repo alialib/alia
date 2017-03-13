@@ -1104,6 +1104,14 @@ do_unsafe_link(
     layout const& layout_spec = default_layout,
     widget_id id = auto_id);
 
+bool
+do_unsafe_link(
+    ui_context& ctx,
+    accessor<string> const& text,
+    accessor<string> const& tooltip,
+    layout const& layout_spec = default_layout,
+    widget_id id = auto_id);
+
 [[deprecated("Use the action-based interface.")]]
 bool static inline
 do_link(
@@ -1119,6 +1127,15 @@ void
 do_link(
     ui_context& ctx,
     accessor<string> const& text,
+    action const& on_click,
+    layout const& layout_spec = default_layout,
+    widget_id id = auto_id);
+
+void
+do_link(
+    ui_context& ctx,
+    accessor<string> const& text,
+    accessor<string> const& tooltip,
     action const& on_click,
     layout const& layout_spec = default_layout,
     widget_id id = auto_id);
@@ -1142,6 +1159,26 @@ do_link(
     }
 }
 
+template<class Handler>
+[[deprecated("Use the action-based interface.")]]
+std::enable_if_t<
+    !std::is_convertible<Handler,layout>::value &&
+    !std::is_base_of<action,Handler>::value>
+do_link(
+    ui_context& ctx,
+    accessor<string> const& text,
+    accessor<string> const& tooltip,
+    Handler const& handler,
+    layout const& layout_spec = default_layout,
+    widget_id id = auto_id)
+{
+    if (do_unsafe_link(ctx, text, tooltip, layout_spec, id))
+    {
+        handler();
+        end_pass(ctx);
+    }
+}
+
 void do_url_link(
     ui_context& ctx,
     accessor<string> const& text,
@@ -1159,7 +1196,16 @@ ALIA_DEFINE_FLAG(button, 0x1, BUTTON_DISABLED)
 button_result
 do_unsafe_button(
     ui_context& ctx,
-    accessor<string> const& text,
+    accessor<string> const& label,
+    layout const& layout_spec = default_layout,
+    button_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id);
+
+button_result
+do_unsafe_button(
+    ui_context& ctx,
+    accessor<string> const& label,
+    accessor<string> const& tooltip,
     layout const& layout_spec = default_layout,
     button_flag_set flags = NO_FLAGS,
     widget_id id = auto_id);
@@ -1168,12 +1214,12 @@ do_unsafe_button(
 button_result static inline
 do_button(
     ui_context& ctx,
-    accessor<string> const& text,
+    accessor<string> const& label,
     layout const& layout_spec = default_layout,
     button_flag_set flags = NO_FLAGS,
     widget_id id = auto_id)
 {
-    return do_unsafe_button(ctx, text, layout_spec, flags, id);
+    return do_unsafe_button(ctx, label, layout_spec, flags, id);
 }
 
 template<class Handler>
@@ -1183,13 +1229,34 @@ std::enable_if_t<
     !std::is_base_of<action,Handler>::value>
 do_button(
     ui_context& ctx,
-    accessor<string> const& text,
+    accessor<string> const& label,
     Handler const& handler,
     layout const& layout_spec = default_layout,
     button_flag_set flags = NO_FLAGS,
     widget_id id = auto_id)
 {
-    if (do_unsafe_button(ctx, text, layout_spec, flags, id))
+    if (do_unsafe_button(ctx, label, layout_spec, flags, id))
+    {
+        handler();
+        end_pass(ctx);
+    }
+}
+
+template<class Handler>
+[[deprecated("Use the action-based interface.")]]
+std::enable_if_t<
+    !std::is_convertible<Handler,layout>::value &&
+    !std::is_base_of<action,Handler>::value>
+do_button(
+    ui_context& ctx,
+    accessor<string> const& label,
+    accessor<string> const& tooltip,
+    Handler const& handler,
+    layout const& layout_spec = default_layout,
+    button_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id)
+{
+    if (do_unsafe_button(ctx, label, tooltip, layout_spec, flags, id))
     {
         handler();
         end_pass(ctx);
@@ -1199,7 +1266,17 @@ do_button(
 void
 do_button(
     ui_context& ctx,
-    accessor<string> const& text,
+    accessor<string> const& label,
+    action const& on_press,
+    layout const& layout_spec = default_layout,
+    button_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id);
+
+void
+do_button(
+    ui_context& ctx,
+    accessor<string> const& label,
+    accessor<string> const& tooltip,
     action const& on_press,
     layout const& layout_spec = default_layout,
     button_flag_set flags = NO_FLAGS,
@@ -1210,7 +1287,7 @@ do_button(
 button_result
 do_unsafe_primary_button(
     ui_context& ctx,
-    accessor<string> const& text,
+    accessor<string> const& label,
     layout const& layout_spec = default_layout,
     button_flag_set flags = NO_FLAGS,
     widget_id id = auto_id);
@@ -1219,12 +1296,12 @@ do_unsafe_primary_button(
 button_result static inline
 do_primary_button(
     ui_context& ctx,
-    accessor<string> const& text,
+    accessor<string> const& label,
     layout const& layout_spec = default_layout,
     button_flag_set flags = NO_FLAGS,
     widget_id id = auto_id)
 {
-    return do_unsafe_primary_button(ctx, text, layout_spec, flags, id);
+    return do_unsafe_primary_button(ctx, label, layout_spec, flags, id);
 }
 
 template<class Handler>
@@ -1234,13 +1311,13 @@ std::enable_if_t<
     !std::is_base_of<action,Handler>::value>
 do_primary_button(
     ui_context& ctx,
-    accessor<string> const& text,
+    accessor<string> const& label,
     Handler const& handler,
     layout const& layout_spec = default_layout,
     button_flag_set flags = NO_FLAGS,
     widget_id id = auto_id)
 {
-    if (do_unsafe_primary_button(ctx, text, layout_spec, flags, id))
+    if (do_unsafe_primary_button(ctx, label, layout_spec, flags, id))
     {
         handler();
         end_pass(ctx);
@@ -1250,7 +1327,7 @@ do_primary_button(
 void
 do_primary_button(
     ui_context& ctx,
-    accessor<string> const& text,
+    accessor<string> const& label,
     action const& on_press,
     layout const& layout_spec = default_layout,
     button_flag_set flags = NO_FLAGS,
@@ -1262,7 +1339,17 @@ button_result
 do_unsafe_styled_button(
     ui_context& ctx,
     accessor<string> const& style,
-    accessor<string> const& text,
+    accessor<string> const& label,
+    layout const& layout_spec = default_layout,
+    button_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id);
+
+button_result
+do_unsafe_styled_button(
+    ui_context& ctx,
+    accessor<string> const& style,
+    accessor<string> const& label,
+    accessor<string> const& tooltip,
     layout const& layout_spec = default_layout,
     button_flag_set flags = NO_FLAGS,
     widget_id id = auto_id);
@@ -1272,12 +1359,12 @@ button_result static inline
 do_styled_button(
     ui_context& ctx,
     accessor<string> const& style,
-    accessor<string> const& text,
+    accessor<string> const& label,
     layout const& layout_spec = default_layout,
     button_flag_set flags = NO_FLAGS,
     widget_id id = auto_id)
 {
-    return do_unsafe_styled_button(ctx, style, text, layout_spec, flags, id);
+    return do_unsafe_styled_button(ctx, style, label, layout_spec, flags, id);
 }
 
 template<class Handler>
@@ -1288,13 +1375,35 @@ std::enable_if_t<
 do_styled_button(
     ui_context& ctx,
     accessor<string> const& style,
-    accessor<string> const& text,
+    accessor<string> const& label,
     Handler const& handler,
     layout const& layout_spec = default_layout,
     button_flag_set flags = NO_FLAGS,
     widget_id id = auto_id)
 {
-    if (do_unsafe_styled_button(ctx, style, text, layout_spec, flags, id))
+    if (do_unsafe_styled_button(ctx, style, label, layout_spec, flags, id))
+    {
+        handler();
+        end_pass(ctx);
+    }
+}
+
+template<class Handler>
+[[deprecated("Use the action-based interface.")]]
+std::enable_if_t<
+    !std::is_convertible<Handler,layout>::value &&
+    !std::is_base_of<action,Handler>::value>
+do_styled_button(
+    ui_context& ctx,
+    accessor<string> const& style,
+    accessor<string> const& label,
+    accessor<string> const& tooltip,
+    Handler const& handler,
+    layout const& layout_spec = default_layout,
+    button_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id)
+{
+    if (do_unsafe_styled_button(ctx, style, label, tooltip, layout_spec, flags, id))
     {
         handler();
         end_pass(ctx);
@@ -1305,7 +1414,18 @@ void
 do_styled_button(
     ui_context& ctx,
     accessor<string> const& style,
-    accessor<string> const& text,
+    accessor<string> const& label,
+    action const& on_press,
+    layout const& layout_spec = default_layout,
+    button_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id);
+
+void
+do_styled_button(
+    ui_context& ctx,
+    accessor<string> const& style,
+    accessor<string> const& label,
+    accessor<string> const& tooltip,
     action const& on_press,
     layout const& layout_spec = default_layout,
     button_flag_set flags = NO_FLAGS,
@@ -1335,6 +1455,15 @@ icon_button_result
 do_unsafe_icon_button(
     ui_context& ctx,
     icon_type icon,
+    layout const& layout_spec = default_layout,
+    simple_control_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id);
+
+icon_button_result
+do_unsafe_icon_button(
+    ui_context& ctx,
+    icon_type icon,
+    accessor<string> const& tooltip,
     layout const& layout_spec = default_layout,
     simple_control_flag_set flags = NO_FLAGS,
     widget_id id = auto_id);
@@ -1371,10 +1500,41 @@ do_icon_button(
     }
 }
 
+template<class Handler>
+[[deprecated("Use the action-based interface.")]]
+std::enable_if_t<
+    !std::is_convertible<Handler,layout>::value &&
+    !std::is_base_of<action,Handler>::value>
+do_icon_button(
+    ui_context& ctx,
+    icon_type icon,
+    accessor<string> const& tooltip,
+    Handler const& handler,
+    layout const& layout_spec = default_layout,
+    simple_control_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id)
+{
+    if (do_unsafe_icon_button(ctx, icon, tooltip, layout_spec, flags, id))
+    {
+        handler();
+        end_pass(ctx);
+    }
+}
+
 void
 do_icon_button(
     ui_context& ctx,
     icon_type icon,
+    action const& on_press,
+    layout const& layout_spec = default_layout,
+    simple_control_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id);
+
+void
+do_icon_button(
+    ui_context& ctx,
+    icon_type icon,
+    accessor<string> const& tooltip,
     action const& on_press,
     layout const& layout_spec = default_layout,
     simple_control_flag_set flags = NO_FLAGS,
@@ -1425,6 +1585,30 @@ do_check_box(
     widget_id id = auto_id)
 {
     if (do_unsafe_check_box(ctx, value, text, layout_spec, flags, id))
+        end_pass(ctx);
+}
+
+check_box_result
+do_unsafe_check_box(
+    ui_context& ctx,
+    accessor<bool> const& value,
+    accessor<string> const& text,
+    accessor<string> const& tooltip,
+    layout const& layout_spec = default_layout,
+    simple_control_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id);
+
+void static inline
+do_check_box(
+    ui_context& ctx,
+    accessor<bool> const& value,
+    accessor<string> const& text,
+    accessor<string> const& tooltip,
+    layout const& layout_spec = default_layout,
+    simple_control_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id)
+{
+    if (do_unsafe_check_box(ctx, value, text, tooltip, layout_spec, flags, id))
         end_pass(ctx);
 }
 

@@ -121,9 +121,11 @@ void popup::begin(ui_context& ctx, widget_id id,
     background_id_ = get_widget_id(ctx);
     if (active)
     {
-        // Intercept mouse clicks and wheel movement to other parts of the
-        // surface.
-        handle_mouse_hit(ctx, background_id_, HIT_TEST_MOUSE | HIT_TEST_WHEEL);
+        // Intercept mouse clicks and wheel movement to other parts of the surface.
+        handle_mouse_hit(ctx, background_id_,
+            // This box doesn't matter since we're not really doing any input processing.
+            box<2,double>(make_vector(0., 0.), make_vector(0., 0.)),
+            HIT_TEST_MOUSE | HIT_TEST_WHEEL);
         // If any are detected, or if the popup loses focus, close it.
         if (detect_mouse_press(ctx, background_id_, LEFT_BUTTON) ||
             detect_mouse_press(ctx, background_id_, MIDDLE_BUTTON) ||

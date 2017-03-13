@@ -95,15 +95,6 @@ bool detect_stationary_click(
 bool detect_wheel_movement(
     dataless_ui_context& ctx, float* movement, widget_id id);
 
-// Detect if the mouse is hovering over the given widget.
-//bool detect_mouse_hover(dataless_ui_context& ctx, widget_id id);
-
-// Detect if the mouse is hovering over the given widget, and if so, record
-// the given string as help/descriptive text that should be displayed for the
-// widget.
-void do_mouse_hover_text(ui_context& ctx, widget_id id,
-    accessor<string> const& text);
-
 // Detect if the mouse has just entered a region.
 bool detect_mouse_gain(dataless_ui_context& ctx, widget_id id);
 

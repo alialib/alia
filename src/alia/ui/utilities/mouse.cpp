@@ -1,5 +1,6 @@
 #include <alia/ui/utilities/mouse.hpp>
 #include <alia/ui/utilities.hpp>
+#include <alia/ui/system.hpp>
 
 namespace alia {
 
@@ -36,7 +37,7 @@ bool detect_mouse_press(
 {
     if (detect_mouse_press(ctx, button) && is_region_hot(ctx, id))
     {
-        ctx.system->input.active_id = make_routable_widget_id(ctx, id);
+        set_active_region(*ctx.system, make_routable_widget_id(ctx, id));
         return true;
     }
     else
@@ -142,22 +143,6 @@ bool detect_wheel_movement(
         }
     }
     return false;
-}
-
-//bool detect_mouse_hover(dataless_ui_context& ctx, widget_id id)
-//{
-//    return ctx.system->input.mouse_hovering && is_region_hot(ctx, id);
-//}
-
-void do_mouse_hover_text(
-    dataless_ui_context& ctx, widget_id id, accessor<string> const& text)
-{
-    //if (detect_mouse_hover(ctx, id))
-    //{
-    //    // Note that this violates the rule that
-    //    if (ctx.hover)
-    //        ctx.hover->text = get(text);
-    //}
 }
 
 bool detect_mouse_gain(dataless_ui_context& ctx, widget_id id)

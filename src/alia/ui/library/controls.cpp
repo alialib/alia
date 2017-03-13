@@ -343,6 +343,21 @@ do_unsafe_icon_button(
             id);
 }
 
+icon_button_result
+do_unsafe_icon_button(
+    ui_context& ctx,
+    icon_type icon,
+    accessor<string> const& tooltip,
+    layout const& layout_spec,
+    simple_control_flag_set flags,
+    widget_id id)
+{
+    get_widget_id_if_needed(ctx, id);
+    auto result = do_icon_button(ctx, icon, layout_spec, flags, id);
+    set_tooltip_message(ctx, id, tooltip);
+    return result;
+}
+
 void
 do_icon_button(
     ui_context& ctx,
@@ -363,6 +378,21 @@ do_icon_button(
         end_pass(ctx);
     }
 
+}
+
+void
+do_icon_button(
+    ui_context& ctx,
+    icon_type icon,
+    accessor<string> const& tooltip,
+    action const& on_press,
+    layout const& layout_spec,
+    simple_control_flag_set flags,
+    widget_id id)
+{
+    get_widget_id_if_needed(ctx, id);
+    do_icon_button(ctx, icon, on_press, layout_spec, flags, id);
+    set_tooltip_message(ctx, id, tooltip);
 }
 
 // CHECK BOX
@@ -457,6 +487,22 @@ do_unsafe_check_box(
         do_unsafe_check_box(ctx, value, default_layout, flags, id);
     do_paragraph(ctx, text, GROW_X);
     do_box_region(ctx, id, row.region());
+    return result;
+}
+
+check_box_result
+do_unsafe_check_box(
+    ui_context& ctx,
+    accessor<bool> const& value,
+    accessor<string> const& text,
+    accessor<string> const& tooltip,
+    layout const& layout_spec,
+    simple_control_flag_set flags,
+    widget_id id)
+{
+    get_widget_id_if_needed(ctx, id);
+    auto result = do_unsafe_check_box(ctx, value, text, layout_spec, flags, id);
+    set_tooltip_message(ctx, id, tooltip);
     return result;
 }
 
@@ -685,11 +731,27 @@ do_unsafe_styled_button(
         do_button_input(ctx, id, data.input);
 }
 
+button_result
+do_unsafe_styled_button(
+    ui_context& ctx,
+    accessor<string> const& style,
+    accessor<string> const& label,
+    accessor<string> const& tooltip,
+    layout const& layout_spec,
+    button_flag_set flags,
+    widget_id id)
+{
+    get_widget_id_if_needed(ctx, id);
+    auto result = do_unsafe_styled_button(ctx, style, label, layout_spec, flags, id);
+    set_tooltip_message(ctx, id, tooltip);
+    return result;
+}
+
 void
 do_styled_button(
     ui_context& ctx,
     accessor<string> const& style,
-    accessor<string> const& text,
+    accessor<string> const& label,
     action const& on_press,
     layout const& layout_spec,
     button_flag_set flags,
@@ -698,7 +760,7 @@ do_styled_button(
     if (do_unsafe_styled_button(
             ctx,
             style,
-            text,
+            label,
             layout_spec,
             flags | (on_press.is_ready() ? NO_FLAGS : BUTTON_DISABLED),
             id))
@@ -706,6 +768,22 @@ do_styled_button(
         perform_action(on_press);
         end_pass(ctx);
     }
+}
+
+void
+do_styled_button(
+    ui_context& ctx,
+    accessor<string> const& style,
+    accessor<string> const& label,
+    accessor<string> const& tooltip,
+    action const& on_press,
+    layout const& layout_spec,
+    button_flag_set flags,
+    widget_id id)
+{
+    get_widget_id_if_needed(ctx, id);
+    do_styled_button(ctx, style, label, on_press, layout_spec, flags, id);
+    set_tooltip_message(ctx, id, tooltip);
 }
 
 button_result
@@ -723,6 +801,21 @@ do_unsafe_button(
             layout_spec,
             flags,
             id);
+}
+
+button_result
+do_unsafe_button(
+    ui_context& ctx,
+    accessor<string> const& label,
+    accessor<string> const& tooltip,
+    layout const& layout_spec,
+    button_flag_set flags,
+    widget_id id)
+{
+    get_widget_id_if_needed(ctx, id);
+    auto result = do_unsafe_button(ctx, label, layout_spec, flags, id);
+    set_tooltip_message(ctx, id, tooltip);
+    return result;
 }
 
 void
@@ -746,6 +839,21 @@ do_button(
     }
 }
 
+void
+do_button(
+    ui_context& ctx,
+    accessor<string> const& label,
+    accessor<string> const& tooltip,
+    action const& on_press,
+    layout const& layout_spec,
+    button_flag_set flags,
+    widget_id id)
+{
+    get_widget_id_if_needed(ctx, id);
+    do_button(ctx, label, on_press, layout_spec, flags, id);
+    set_tooltip_message(ctx, id, tooltip);
+}
+
 button_result
 do_unsafe_primary_button(
     ui_context& ctx,
@@ -766,7 +874,7 @@ do_unsafe_primary_button(
 void
 do_primary_button(
     ui_context& ctx,
-    accessor<string> const& text,
+    accessor<string> const& label,
     action const& on_press,
     layout const& layout_spec,
     button_flag_set flags,
@@ -774,7 +882,7 @@ do_primary_button(
 {
     if (do_unsafe_primary_button(
             ctx,
-            text,
+            label,
             layout_spec,
             flags | (on_press.is_ready() ? NO_FLAGS : BUTTON_DISABLED),
             id))

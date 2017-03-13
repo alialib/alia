@@ -141,6 +141,8 @@ struct mouse_hit_test_event : ui_event
 {
     routable_widget_id id;
     mouse_cursor cursor;
+    layout_box hit_box;
+    string tooltip_message;
 
     mouse_hit_test_event()
       : ui_event(REGION_CATEGORY, MOUSE_HIT_TEST_EVENT),
@@ -293,20 +295,45 @@ struct style_search_path
 
 struct input_state
 {
-    unsigned mouse_button_state;
+    // Is the mouse inside the window associated with this UI?
     bool mouse_inside_window;
+
+    // the state of the mouse buttons (one bit per button)
+    unsigned mouse_button_state;
+
+    // the raw mouse position inside the window
     vector<2,int> mouse_position;
-    routable_widget_id hot_id, active_id, focused_id;
-    bool window_has_focus, keyboard_interaction;
-    bool mouse_hovering;
+
+    // the ID of the widget that the mouse is over
+    routable_widget_id hot_id;
+
+    // the ID of the widget that has the mouse captured - Note that this isn't necessarily
+    // the same as the hot_id.
+    routable_widget_id active_id;
+
+    // the ID of the widget that has the keyboard focus
+    routable_widget_id focused_id;
+
+    // Is the user currently dragging the mouse (with a button pressed)?
     bool dragging;
+
+    // Does the window have focus?
+    bool window_has_focus;
+
+    // Is the user currently interacting with the UI via the keyboard? - This is used as a
+    // hint to display focus indicators.
+    bool keyboard_interaction;
+
+    // If the mouse is hovering over a widget (identifiied by hot_id), this is the time at
+    // which the hovering started.
+    // Note that hovering is only possible if there is no active widget.
+    ui_time_type hover_start_time;
 
     input_state()
       : mouse_inside_window(false), mouse_button_state(0),
         hot_id(null_widget_id), active_id(null_widget_id),
         focused_id(null_widget_id), window_has_focus(true),
-        keyboard_interaction(false), mouse_hovering(false),
-        dragging(false)
+        keyboard_interaction(false), dragging(false)
     {}
 };
 
@@ -591,6 +618,24 @@ struct menu_item_node : menu_node
     optional<bool> checked;
 };
 
+// This describes the state of the tooltip feature. - The tooltip feature shares state
+// across the entire UI system.
+struct tooltip_state
+{
+    // Is the tooltip system enabled? - This gets toggled on and off based on whether or
+    // not the mouse is hovering over a single widget.
+    bool enabled = false;
+
+    // the message to show - If this is empty, no tooltip is active.
+    string message;
+
+    // the region (within the window) that this tooltip applies to
+    layout_box generating_region;
+
+    // the data block used for the tooltip UI
+    data_block data;
+};
+
 // ui_system defines all the persistent state associated with an alia UI.
 struct ui_system
 {
@@ -627,6 +672,8 @@ struct ui_system
     menu_container menu_bar;
 
     int last_refresh_duration;
+
+    tooltip_state tooltip;
 };
 
 struct ui_caching_node
