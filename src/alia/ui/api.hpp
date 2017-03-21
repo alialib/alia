@@ -2508,11 +2508,11 @@ struct overlay_event_transformer
 
 struct popup_positioning
 {
-    layout_vector lower_bound;
-    layout_vector upper_bound;
-    layout_vector absolute_lower;
-    layout_vector absolute_upper;
-    layout_vector minimum_size; // ignored if negative
+    layout_vector lower_bound = make_layout_vector(0, 0);
+    layout_vector upper_bound = make_layout_vector(0, 0);
+    layout_vector absolute_lower = make_layout_vector(0, 0);
+    layout_vector absolute_upper = make_layout_vector(0, 0);
+    layout_vector minimum_size = make_layout_vector(-1, -1); // ignored if negative
 };
 
 struct popup
