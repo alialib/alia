@@ -255,11 +255,23 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
 
     widget_state state = get_button_state(ctx, id_, data.button.input);
 
-    container_.begin(ctx, text("drop-down"),
-        add_default_size(add_default_padding(add_default_alignment(
-            layout_spec, LEFT, BASELINE_Y), PADDED), size(10, 1, EM)),
-        PANEL_HORIZONTAL | PANEL_NO_INTERNAL_PADDING |
-        PANEL_UNSAFE_CLICK_DETECTION, id_, state);
+    if (flags_ & DDL_DISABLED)
+    {
+        state = WIDGET_DISABLED;
+        container_.begin(ctx, text("drop-down.disabled"),
+            add_default_size(add_default_padding(add_default_alignment(
+                layout_spec, LEFT, BASELINE_Y), PADDED), size(10, 1, EM)),
+            PANEL_HORIZONTAL | PANEL_NO_INTERNAL_PADDING |
+            PANEL_UNSAFE_CLICK_DETECTION, id_, state);
+    }
+    else
+    {
+        container_.begin(ctx, text("drop-down"),
+            add_default_size(add_default_padding(add_default_alignment(
+                layout_spec, LEFT, BASELINE_Y), PADDED), size(10, 1, EM)),
+            PANEL_HORIZONTAL | PANEL_NO_INTERNAL_PADDING |
+            PANEL_UNSAFE_CLICK_DETECTION, id_, state);
+    }
 
     switch (ctx.event->category)
     {
@@ -373,6 +385,12 @@ bool untyped_drop_down_list::do_list()
             open_ddl(ctx, data, id_, container_.outer_region());
             end_pass(ctx);
         }
+    }
+    if (flags_ & DDL_DISABLED)
+    {
+        contents_.end();
+
+        do_drop_down_button(ctx, CENTER_X | BASELINE_Y, id_, data.button);
     }
     else
     {

@@ -2539,6 +2539,7 @@ struct ddl_data;
 
 ALIA_DEFINE_FLAG_TYPE(ddl)
 ALIA_DEFINE_FLAG(ddl, 0x1, DDL_COMMAND_LIST)
+ALIA_DEFINE_FLAG(ddl, 0x2, DDL_DISABLED)
 
 struct untyped_drop_down_list : noncopyable
 {
