@@ -591,6 +591,26 @@ do_unsafe_radio_button(
 }
 
 radio_button_result
+do_unsafe_radio_button(
+    ui_context& ctx,
+    accessor<bool> const& value,
+    accessor<string> const& text,
+    accessor<string> const& tooltip,
+    layout const& layout_spec,
+    simple_control_flag_set flags,
+    widget_id id)
+{
+    get_widget_id_if_needed(ctx, id);
+    row_layout row(ctx, add_default_y_alignment(layout_spec, BASELINE_Y));
+    radio_button_result result =
+        do_unsafe_radio_button(ctx, value, default_layout, flags, id);
+    do_paragraph(ctx, text, GROW_X);
+    do_box_region(ctx, id, row.region());
+    set_tooltip_message(ctx, id, tooltip);
+    return result;
+}
+
+radio_button_result
 do_unsafe_radio_button_with_description(
     ui_context& ctx,
     accessor<bool> const& value,

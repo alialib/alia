@@ -1659,6 +1659,30 @@ do_radio_button(
 }
 
 radio_button_result
+do_unsafe_radio_button(
+    ui_context& ctx,
+    accessor<bool> const& value,
+    accessor<string> const& text,
+    accessor<string> const& tooltip,
+    layout const& layout_spec = default_layout,
+    simple_control_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id);
+
+void static inline
+do_radio_button(
+    ui_context& ctx,
+    accessor<bool> const& value,
+    accessor<string> const& text,
+    accessor<string> const& tooltip,
+    layout const& layout_spec = default_layout,
+    simple_control_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id)
+{
+    if (do_unsafe_radio_button(ctx, value, text, tooltip, layout_spec, flags, id))
+        end_pass(ctx);
+}
+
+radio_button_result
 do_unsafe_radio_button_with_description(
     ui_context& ctx,
     accessor<bool> const& value,
