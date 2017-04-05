@@ -1093,6 +1093,67 @@ do_text_control(
     }
 }
 
+template<class T>
+settable_text_accessor<indirect_accessor<T>>
+formatted_number_as_settable_text(
+    ui_context& ctx, indirect_accessor<T> const& x, char const* format)
+{
+    keyed_data<string>* data;
+    get_cached_data(ctx, &data);
+    auto d = printf(ctx, format, x);
+
+    if (is_gettable(x))
+    {
+        refresh_keyed_data(*data, x.id());
+        if (!is_valid(*data) && is_gettable(d))
+        {
+            set(*data, get(d));
+        }
+    }
+    else
+    {
+        invalidate(*data);
+    }
+
+    return settable_text_accessor<indirect_accessor<T>>(x, data);
+}
+
+template<class T>
+text_control_result
+do_unsafe_formatted_numeric_text_control(
+    ui_context& ctx,
+    accessor<T> const& accessor,
+    char const* format,
+    layout const& layout_spec = default_layout,
+    text_control_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id,
+    optional<size_t> const& length_limit = none)
+{
+    return do_unsafe_text_control(
+        ctx,
+        formatted_number_as_settable_text(ctx, ref(&accessor), format),
+        layout_spec,
+        flags, id, length_limit);
+}
+
+template<class T>
+void
+do_formatted_numeric_text_control(
+    ui_context& ctx,
+    accessor<T> const& accessor,
+    char const* format,
+    layout const& layout_spec = default_layout,
+    text_control_flag_set flags = NO_FLAGS,
+    widget_id id = auto_id,
+    optional<size_t> const& length_limit = none)
+{
+    if (do_unsafe_formatted_numeric_text_control(ctx, accessor, layout_spec, flags, id,
+        length_limit))
+    {
+        end_pass(ctx);
+    }
+}
+
 // BUTTONS
 
 // link - meant to resemble browser links
