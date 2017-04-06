@@ -502,14 +502,14 @@ do_draggable_separator(ui_context& ctx, accessor<int> const& width,
         unsigned const drag_axis = 1 - axis;
         if (detect_mouse_press(ctx, id, LEFT_BUTTON))
         {
-            int position = get_integer_mouse_position(ctx)[drag_axis];
+            int position = ctx.system->input.mouse_position[drag_axis];
             int current_width = width.is_gettable() ? get(width) : 0;
             data.drag_start_delta = (flags & DRAGGABLE_SEPARATOR_FLIPPED) ?
                 current_width + position : position - current_width;
         }
         if (detect_drag(ctx, id, LEFT_BUTTON))
         {
-            int position = get_integer_mouse_position(ctx)[drag_axis];
+            int position = ctx.system->input.mouse_position[drag_axis];
             set(width, (flags & DRAGGABLE_SEPARATOR_FLIPPED) ?
                 data.drag_start_delta - position :
                 position - data.drag_start_delta);
@@ -528,25 +528,40 @@ void resizable_content::begin(
     ctx_ = &ctx;
     id_ = get_widget_id(ctx);
     flags_ = flags;
-    size_ = get(size);
     active_ = true;
+
+    unsigned drag_axis = (flags & RESIZABLE_CONTENT_HORIZONTAL_SEPARATOR) ? 1 : 0;
+
+    // Clamp the content size to be no bigger than half the size of the surface.
+    // This prevents the situation where the content is so large that the user can't
+    // actually grab the edge of it to shrink it.
+    // (It also happens that this limit is more-than-enough for our use cases.)
+    layout_vector surface_size = layout_vector(ctx.system->surface_size);
+    size_ = (std::min)(size.is_gettable() ? get(size) : 0, surface_size[drag_axis] / 2);
 
     if (flags & RESIZABLE_CONTENT_PREPEND_SEPARATOR)
     {
-        do_draggable_separator(ctx, size, UNPADDED,
+        state_proxy<int> size_proxy(size_);
+        do_draggable_separator(ctx, make_accessor(size_proxy), UNPADDED,
             (flags & RESIZABLE_CONTENT_HORIZONTAL_SEPARATOR) ? 0 : 1,
             DRAGGABLE_SEPARATOR_FLIPPED, id_);
+        if (size_proxy.was_set())
+        {
+            // Apply clamping again.
+            set(size, (std::min)(size_proxy.get(), surface_size[drag_axis] / 2));
+            end_pass(ctx);
+        }
     }
 
     if (flags & RESIZABLE_CONTENT_HORIZONTAL_SEPARATOR)
     {
-        layout_.begin(ctx, VERTICAL_LAYOUT, height(float(size_),
-            UNMAGNIFIED_PIXELS));
+        layout_.begin(ctx, VERTICAL_LAYOUT,
+            height(float(size_), UNMAGNIFIED_PIXELS));
     }
     else
     {
-        layout_.begin(ctx, HORIZONTAL_LAYOUT, width(float(size_),
-            UNMAGNIFIED_PIXELS));
+        layout_.begin(ctx, HORIZONTAL_LAYOUT,
+            width(float(size_), UNMAGNIFIED_PIXELS));
     }
 
     // It's possible that the content will be too big for the requested size
@@ -554,8 +569,6 @@ void resizable_content::begin(
     // If this happens, we have to record that as the real size.
     if (detect_event(ctx, MOUSE_HIT_TEST_EVENT))
     {
-        unsigned drag_axis =
-            (flags & RESIZABLE_CONTENT_HORIZONTAL_SEPARATOR) ? 1 : 0;
         int new_size = layout_.region().size[drag_axis];
         if (new_size != size_)
             set(size, new_size);
@@ -573,12 +586,19 @@ void resizable_content::end()
         layout_.end();
         if (!(flags_ & RESIZABLE_CONTENT_PREPEND_SEPARATOR))
         {
-            if (do_draggable_separator(ctx, inout(&size_), UNPADDED,
+            state_proxy<int> size_proxy(size_);
+            do_draggable_separator(ctx, make_accessor(size_proxy), UNPADDED,
                 (flags_ & RESIZABLE_CONTENT_HORIZONTAL_SEPARATOR) ? 0 : 1,
-                NO_FLAGS, id_))
+                NO_FLAGS, id_);
+            if (size_proxy.was_set())
             {
-                issue_set_value_event(ctx, id_, size_);
-            }
+                // Apply clamping again.
+                layout_vector surface_size = layout_vector(ctx.system->surface_size);
+                unsigned drag_axis =
+                    (flags_ & RESIZABLE_CONTENT_HORIZONTAL_SEPARATOR) ? 1 : 0;
+                issue_set_value_event(ctx, id_,
+                    (std::min)(size_proxy.get(), surface_size[drag_axis] / 2));
+             }
         }
         active_ = false;
     }
