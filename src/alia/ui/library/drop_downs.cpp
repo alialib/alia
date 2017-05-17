@@ -254,24 +254,23 @@ untyped_drop_down_list::begin(ui_context& ctx, layout const& layout_spec,
     ddl_data& data = *data_;
 
     widget_state state = get_button_state(ctx, id_, data.button.input);
-
     if (flags_ & DDL_DISABLED)
     {
         state = WIDGET_DISABLED;
-        container_.begin(ctx, text("drop-down.disabled"),
-            add_default_size(add_default_padding(add_default_alignment(
-                layout_spec, LEFT, BASELINE_Y), PADDED), size(10, 1, EM)),
-            PANEL_HORIZONTAL | PANEL_NO_INTERNAL_PADDING |
-            PANEL_UNSAFE_CLICK_DETECTION, id_, state);
     }
-    else
-    {
-        container_.begin(ctx, text("drop-down"),
-            add_default_size(add_default_padding(add_default_alignment(
-                layout_spec, LEFT, BASELINE_Y), PADDED), size(10, 1, EM)),
-            PANEL_HORIZONTAL | PANEL_NO_INTERNAL_PADDING |
-            PANEL_UNSAFE_CLICK_DETECTION, id_, state);
-    }
+
+    auto style =
+        (flags_ & DDL_COMMAND_LIST) ?
+            text("drop-down-menu") :
+            ((flags_ & DDL_DISABLED) ?
+                text("drop-down.disabled") :
+                text("drop-down"));
+
+    container_.begin(ctx, style,
+        add_default_size(add_default_padding(add_default_alignment(
+            layout_spec, LEFT, BASELINE_Y), PADDED), size(10, 1, EM)),
+        PANEL_HORIZONTAL | PANEL_NO_INTERNAL_PADDING |
+        PANEL_UNSAFE_CLICK_DETECTION, id_, state);
 
     switch (ctx.event->category)
     {
@@ -386,19 +385,16 @@ bool untyped_drop_down_list::do_list()
             end_pass(ctx);
         }
     }
-    if (flags_ & DDL_DISABLED)
-    {
-        contents_.end();
-
-        do_drop_down_button(ctx, CENTER_X | BASELINE_Y, id_, data.button);
-    }
     else
     {
         contents_.end();
 
         if (do_drop_down_button(ctx, CENTER_X | BASELINE_Y, id_, data.button))
         {
-            open_ddl(ctx, data, id_, container_.outer_region());
+            if (!(flags_ & DDL_DISABLED))
+            {
+                open_ddl(ctx, data, id_, container_.outer_region());
+            }
             end_pass(ctx);
         }
     }
@@ -512,6 +508,108 @@ void untyped_ddl_item::select(untyped_ui_value* value)
     issue_targeted_event(*list_->ctx_->system, e,
         make_routable_widget_id(*list_->ctx_, list_->id_));
     end_pass(*list_->ctx_);
+}
+
+// DROP DOWN MENUS
+
+struct drop_down_menu_context
+{
+    drop_down_menu_context(
+        ui_context& ctx,
+        drop_down_list<unsigned>& ddl,
+        state_proxy<unsigned>& proxy,
+        unsigned& item_counter)
+      : ctx(ctx),
+        ddl(ddl),
+        proxy(proxy),
+        item_counter(item_counter)
+    {
+    }
+
+    ui_context& ctx;
+    drop_down_list<unsigned>& ddl;
+    state_proxy<unsigned>& proxy;
+    unsigned& item_counter;
+};
+
+void
+do_menu_option(
+    drop_down_menu_context& menu_ctx,
+    boost::function<void()> const& do_label,
+    action const& on_click)
+{
+    alia_if_ (menu_ctx.ctx, on_click.is_ready())
+    {
+        do_menu_option(menu_ctx, do_label,
+            [&]()
+            {
+                on_click.perform();
+            });
+    }
+    alia_end
+}
+
+void
+do_menu_option(
+    drop_down_menu_context& menu_ctx,
+    boost::function<void()> const& do_label,
+    boost::function<void()> const& on_click)
+{
+    ddl_item<unsigned> item(menu_ctx.ddl, ++menu_ctx.item_counter);
+    do_label();
+    if (menu_ctx.proxy.was_set() && menu_ctx.proxy.get() == menu_ctx.item_counter)
+    {
+        on_click();
+        end_pass(menu_ctx.ctx);
+    }
+}
+
+void
+do_menu_option(
+    drop_down_menu_context& menu_ctx,
+    accessor<string> const& label,
+    action const& on_click)
+{
+    do_menu_option(menu_ctx,
+        [&]()
+        {
+            column_layout column(menu_ctx.ctx); // to prevent flow
+            do_text(menu_ctx.ctx, label);
+        },
+        on_click);
+}
+
+void
+do_menu_option(
+    drop_down_menu_context& menu_ctx,
+    accessor<string> const& label,
+    boost::function<void()> const& on_click)
+{
+    do_menu_option(menu_ctx,
+        [&]()
+        {
+            column_layout column(menu_ctx.ctx); // to prevent flow
+            do_text(menu_ctx.ctx, label);
+        },
+        on_click);
+}
+
+void
+do_drop_down_menu(
+    ui_context& ctx,
+    layout const& layout_spec,
+    boost::function<void(drop_down_menu_context& menu_ctx)> const& do_options)
+{
+    state_proxy<unsigned> selection;
+    drop_down_list<unsigned>
+        ddl(ctx, make_accessor(selection), layout_spec, DDL_COMMAND_LIST);
+    alia_if (ddl.do_list())
+    {
+        unsigned item_counter = 0;
+        drop_down_menu_context menu_ctx(ctx, ddl, selection, item_counter);
+        do_options(menu_ctx);
+    }
+    alia_end
 }
 
 }

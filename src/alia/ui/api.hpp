@@ -2784,6 +2784,46 @@ do_drop_down_list(
     }
 }
 
+// The following takes care of implementing a drop down menu of commands via the
+// drop_down_list interface above.
+
+struct drop_down_menu_context;
+
+// Do an individual option within a menu.
+// action-based interface
+void
+do_menu_option(
+    drop_down_menu_context& menu_ctx,
+    boost::function<void()> const& do_label,
+    action const& on_click);
+// lambda-based interface
+void
+do_menu_option(
+    drop_down_menu_context& menu_ctx,
+    boost::function<void()> const& do_label,
+    boost::function<void()> const& on_click);
+// action-based interface with text label
+void
+do_menu_option(
+    drop_down_menu_context& menu_ctx,
+    accessor<string> const& label,
+    action const& on_click);
+// lambda-based interface with text label
+void
+do_menu_option(
+    drop_down_menu_context& menu_ctx,
+    accessor<string> const& label,
+    boost::function<void()> const& on_click);
+
+// Do a drop down menu.
+// do_options is called to enumerate the available menu options (by calling
+// do_menu_option).
+void
+do_drop_down_menu(
+    ui_context& ctx,
+    layout const& layout_spec,
+    boost::function<void(drop_down_menu_context& menu_ctx)> const& do_options);
+
 // resizable_content is a container with a draggable separator for controlling
 // the size of its contents.
 ALIA_DEFINE_FLAG_TYPE(resizable_content)
