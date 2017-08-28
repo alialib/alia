@@ -10,7 +10,9 @@ Welcome to alia's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   intro
+   introduction
+   state-management
+   control-flow
 
 Indices and tables
 ==================
