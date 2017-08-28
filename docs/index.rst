@@ -10,7 +10,7 @@ Welcome to alia's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-
+   intro
 
 Indices and tables
 ==================
