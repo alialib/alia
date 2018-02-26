@@ -15,6 +15,5 @@ before_script:
   - ./fips gen
 
 script:
-  - python python/generate_config.py $_THINKNODE_API_TOKEN
   - ./fips make unit_test_coverage
   - ./fips make integration_tests
