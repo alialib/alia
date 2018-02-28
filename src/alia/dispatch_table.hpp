@@ -8,22 +8,24 @@ namespace alia {
 
 struct type_info_comparison
 {
-    bool operator()(std::type_info const* a, std::type_info const* b) const
-    { return a->before(*b) ? true : false; }
+    bool
+    operator()(std::type_info const* a, std::type_info const* b) const
+    {
+        return a->before(*b) ? true : false;
+    }
 };
 
 struct dispatch_interface
 {
-    virtual ~dispatch_interface() {}
+    virtual ~dispatch_interface()
+    {
+    }
 };
 
 typedef alia__shared_ptr<dispatch_interface> dispatch_interface_ptr;
 
-typedef std::map<
-    std::type_info const*,
-    dispatch_interface_ptr,
-    type_info_comparison
-> dispatch_map;
+typedef std::map<std::type_info const*, dispatch_interface_ptr, type_info_comparison>
+    dispatch_map;
 
 struct dispatch_table
 {
@@ -31,7 +33,8 @@ struct dispatch_table
 };
 
 template<class Impl>
-void add_implementation(dispatch_table& table, Impl* impl)
+void
+add_implementation(dispatch_table& table, Impl* impl)
 {
     table.mapping[&typeid(Impl)] = impl;
 }
@@ -54,7 +57,8 @@ get_implementation(dispatch_table const& table, dispatch_interface_ptr* impl)
 }
 
 template<class Impl>
-bool get_implementation(dispatch_table const& table, Impl** impl)
+bool
+get_implementation(dispatch_table const& table, Impl** impl)
 {
     dispatch_map::const_iterator i = table.mapping.find(&typeid(Impl));
     if (i != table.mapping.end())
@@ -69,6 +73,6 @@ bool get_implementation(dispatch_table const& table, Impl** impl)
     }
 }
 
-}
+} // namespace alia
 
 #endif

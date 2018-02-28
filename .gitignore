@@ -1,0 +1,4 @@
+.fips-*
+.vscode
+.python
+.lcov.info

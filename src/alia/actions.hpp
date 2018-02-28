@@ -21,15 +21,16 @@ namespace alia {
 struct action
 {
     // Is this action ready to be performed?
-    virtual bool is_ready() const = 0;
+    virtual bool
+    is_ready() const = 0;
 
     // Perform this action.
-    virtual void perform() const = 0;
+    virtual void
+    perform() const = 0;
 };
 
 // Perform an action.
-void static inline
-perform_action(action const& a)
+void static inline perform_action(action const& a)
 {
     assert(a.is_ready());
     a.perform();
@@ -38,15 +39,19 @@ perform_action(action const& a)
 // action_ref is a reference to an action that implements the action interface itself.
 struct action_ref : action
 {
-    action_ref(action const* ref = nullptr) : ref_(ref) {}
+    action_ref(action const* ref = nullptr) : ref_(ref)
+    {
+    }
 
-    bool is_ready() const
+    bool
+    is_ready() const
     {
         assert(ref_);
         return ref_->is_ready();
     }
 
-    void perform() const
+    void
+    perform() const
     {
         assert(ref_);
         ref_->perform();
@@ -58,9 +63,10 @@ struct action_ref : action
 
 // ref(action_ptr) wraps a pointer to an action so that it can be passed around as an
 // action. The referenced action must remain valid for the life of the wrapper.
-action_ref static inline
-ref(action const* action_ptr)
-{ return action_ref(action_ptr); }
+action_ref static inline ref(action const* action_ptr)
+{
+    return action_ref(action_ptr);
+}
 
 // copyable_action_helper is a utility for allowing action wrappers to store copies of
 // other actions if they are passed by concrete value and pointers if they're passed as
@@ -69,20 +75,31 @@ template<class T>
 struct copyable_action_helper
 {
     typedef T result_type;
-    static T const& apply(T const& x) { return x; }
+    static T const&
+    apply(T const& x)
+    {
+        return x;
+    }
 };
 template<class T>
 struct copyable_action_helper<T const&>
 {
     typedef T result_type;
-    static T const& apply(T const& x) { return x; }
+    static T const&
+    apply(T const& x)
+    {
+        return x;
+    }
 };
 template<>
 struct copyable_action_helper<action const&>
 {
     typedef action_ref result_type;
-    static result_type apply(action const& x)
-    { return alia::ref(&x); }
+    static result_type
+    apply(action const& x)
+    {
+        return alia::ref(&x);
+    }
 };
 
 // make_action_copyable(x) converts x to its copyable equivalent.
@@ -99,18 +116,22 @@ make_action_copyable(Action const& x)
 template<class First, class Second>
 struct action_pair : action
 {
-    action_pair() {}
+    action_pair()
+    {
+    }
 
-    action_pair(First const& first, Second const& second)
-      : first_(first), second_(second)
-    {}
+    action_pair(First const& first, Second const& second) : first_(first), second_(second)
+    {
+    }
 
-    bool is_ready() const
+    bool
+    is_ready() const
     {
         return first_.is_ready() && second_.is_ready();
     }
 
-    void perform() const
+    void
+    perform() const
     {
         first_.perform();
         second_.perform();
@@ -125,17 +146,15 @@ template<class First, class Second>
 auto
 combine_actions(First const& first, Second const& second)
 {
-    return
-        action_pair<
-            typename copyable_action_helper<First const&>::result_type,
-            typename copyable_action_helper<Second const&>::result_type
-          >(make_action_copyable(first),
-            make_action_copyable(second));
+    return action_pair<
+        typename copyable_action_helper<First const&>::result_type,
+        typename copyable_action_helper<Second const&>::result_type>(
+        make_action_copyable(first), make_action_copyable(second));
 }
 
-template<class First, class Second, class ...Rest>
+template<class First, class Second, class... Rest>
 auto
-combine_actions(First const& first, Second const& second, Rest const& ...rest)
+combine_actions(First const& first, Second const& second, Rest const&... rest)
 {
     return combine_actions(combine_actions(first, second), rest...);
 }
@@ -147,16 +166,18 @@ combine_actions(First const& first, Second const& second, Rest const& ...rest)
 template<class Sink, class Source>
 struct setter_action : action
 {
-    setter_action(Sink const& sink, Source const& source)
-      : sink_(sink), source_(source)
-    {}
+    setter_action(Sink const& sink, Source const& source) : sink_(sink), source_(source)
+    {
+    }
 
-    bool is_ready() const
+    bool
+    is_ready() const
     {
         return source_.is_gettable() && sink_.is_settable();
     }
 
-    void perform() const
+    void
+    perform() const
     {
         sink_.set(source_.get());
     }
@@ -170,12 +191,10 @@ template<class Sink, class Source>
 auto
 make_setter(Sink const& sink, Source const& source)
 {
-    return
-        setter_action<
-            typename copyable_accessor_helper<Sink const&>::result_type,
-            typename copyable_accessor_helper<Source const&>::result_type
-          >(make_accessor_copyable(sink),
-            make_accessor_copyable(source));
+    return setter_action<
+        typename copyable_accessor_helper<Sink const&>::result_type,
+        typename copyable_accessor_helper<Source const&>::result_type>(
+        make_accessor_copyable(sink), make_accessor_copyable(source));
 }
 
 // make_toggle_action(flag), where :flag is an accessor to a boolean, creates an action
@@ -199,16 +218,19 @@ template<class Collection, class Item>
 struct push_back_action : action
 {
     push_back_action(Collection const& collection, Item const& item)
-      : collection_(collection), item_(item)
-    {}
-
-    bool is_ready() const
+        : collection_(collection), item_(item)
     {
-        return collection_.is_gettable() && collection_.is_settable() &&
-            item_.is_gettable();
     }
 
-    void perform() const
+    bool
+    is_ready() const
+    {
+        return collection_.is_gettable() && collection_.is_settable()
+               && item_.is_gettable();
+    }
+
+    void
+    perform() const
     {
         auto new_collection = collection_.get();
         new_collection.push_back(item_.get());
@@ -224,14 +246,12 @@ template<class Collection, class Item>
 auto
 make_push_back_action(Collection const& collection, Item const& item)
 {
-    return
-        push_back_action<
-            typename copyable_accessor_helper<Collection const&>::result_type,
-            typename copyable_accessor_helper<Item const&>::result_type
-          >(make_accessor_copyable(collection),
-            make_accessor_copyable(item));
+    return push_back_action<
+        typename copyable_accessor_helper<Collection const&>::result_type,
+        typename copyable_accessor_helper<Item const&>::result_type>(
+        make_accessor_copyable(collection), make_accessor_copyable(item));
 }
 
-}
+} // namespace alia
 
 #endif
