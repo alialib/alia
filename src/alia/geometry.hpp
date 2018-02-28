@@ -14,13 +14,13 @@ namespace alia {
 // VECTOR
 
 // componentwise arithmetic assignment operators
-#define ALIA_COMPONENT_OPERATOR(op) \
-    template<unsigned N, class T> \
-    vector<N,T>& operator op(vector<N,T>& a, vector<N,T> const& b) \
-    { \
-        for (unsigned i = 0; i < N; ++i) \
-            a[i] op b[i]; \
-        return a; \
+#define ALIA_COMPONENT_OPERATOR(op)                                                      \
+    template<unsigned N, class T>                                                        \
+    vector<N, T>& operator op(vector<N, T>& a, vector<N, T> const& b)                    \
+    {                                                                                    \
+        for (unsigned i = 0; i < N; ++i)                                                 \
+            a[i] op b[i];                                                                \
+        return a;                                                                        \
     }
 ALIA_COMPONENT_OPERATOR(+=)
 ALIA_COMPONENT_OPERATOR(-=)
@@ -29,13 +29,13 @@ ALIA_COMPONENT_OPERATOR(/=)
 #undef ALIA_COMPONENT_OPERATOR
 
 // scalar arithmetic assignment operators
-#define ALIA_SCALAR_OPERATOR(op) \
-    template<unsigned N, class T, class Scalar> \
-    vector<N,T>& operator op(vector<N,T>& a, Scalar b) \
-    { \
-        for (unsigned i = 0; i < N; ++i) \
-            a[i] op b; \
-        return a; \
+#define ALIA_SCALAR_OPERATOR(op)                                                         \
+    template<unsigned N, class T, class Scalar>                                          \
+    vector<N, T>& operator op(vector<N, T>& a, Scalar b)                                 \
+    {                                                                                    \
+        for (unsigned i = 0; i < N; ++i)                                                 \
+            a[i] op b;                                                                   \
+        return a;                                                                        \
     }
 ALIA_SCALAR_OPERATOR(*=)
 ALIA_SCALAR_OPERATOR(/=)
@@ -43,14 +43,14 @@ ALIA_SCALAR_OPERATOR(%=)
 #undef ALIA_SCALAR_OPERATOR
 
 // componentwise operators
-#define ALIA_COMPONENT_OPERATOR(op) \
-    template<unsigned N, class T> \
-    vector<N,T> operator op(vector<N,T> const& a, vector<N,T> const& b) \
-    { \
-        vector<N,T> r; \
-        for (unsigned i = 0; i < N; ++i) \
-            r[i] = a[i] op b[i]; \
-        return r; \
+#define ALIA_COMPONENT_OPERATOR(op)                                                      \
+    template<unsigned N, class T>                                                        \
+    vector<N, T> operator op(vector<N, T> const& a, vector<N, T> const& b)               \
+    {                                                                                    \
+        vector<N, T> r;                                                                  \
+        for (unsigned i = 0; i < N; ++i)                                                 \
+            r[i] = a[i] op b[i];                                                         \
+        return r;                                                                        \
     }
 ALIA_COMPONENT_OPERATOR(+)
 ALIA_COMPONENT_OPERATOR(-)
@@ -59,31 +59,31 @@ ALIA_COMPONENT_OPERATOR(/)
 #undef ALIA_COMPONENT_OPERATOR
 
 // scalar operators
-#define ALIA_COMMUTATIVE_SCALAR_OPERATOR(op) \
-    template<unsigned N, class T, class Scalar> \
-    vector<N,T> operator op(vector<N,T> const& a, Scalar b) \
-    { \
-        vector<N,T> r; \
-        for (unsigned i = 0; i < N; ++i) \
-            r[i] = a[i] op b; \
-        return r; \
-    } \
-    template<unsigned N, class T, class Scalar> \
-    vector<N,T> operator op(Scalar a, vector<N,T> const& b) \
-    { \
-        vector<N,T> r; \
-        for (unsigned i = 0; i < N; ++i) \
-            r[i] = a op b[i]; \
-        return r; \
+#define ALIA_COMMUTATIVE_SCALAR_OPERATOR(op)                                             \
+    template<unsigned N, class T, class Scalar>                                          \
+    vector<N, T> operator op(vector<N, T> const& a, Scalar b)                            \
+    {                                                                                    \
+        vector<N, T> r;                                                                  \
+        for (unsigned i = 0; i < N; ++i)                                                 \
+            r[i] = a[i] op b;                                                            \
+        return r;                                                                        \
+    }                                                                                    \
+    template<unsigned N, class T, class Scalar>                                          \
+    vector<N, T> operator op(Scalar a, vector<N, T> const& b)                            \
+    {                                                                                    \
+        vector<N, T> r;                                                                  \
+        for (unsigned i = 0; i < N; ++i)                                                 \
+            r[i] = a op b[i];                                                            \
+        return r;                                                                        \
     }
-#define ALIA_SCALAR_OPERATOR(op) \
-    template<unsigned N, class T, class Scalar> \
-    vector<N,T> operator op(vector<N,T> const& a, Scalar b) \
-    { \
-        vector<N,T> r; \
-        for (unsigned i = 0; i < N; ++i) \
-            r[i] = a[i] op b; \
-        return r; \
+#define ALIA_SCALAR_OPERATOR(op)                                                         \
+    template<unsigned N, class T, class Scalar>                                          \
+    vector<N, T> operator op(vector<N, T> const& a, Scalar b)                            \
+    {                                                                                    \
+        vector<N, T> r;                                                                  \
+        for (unsigned i = 0; i < N; ++i)                                                 \
+            r[i] = a[i] op b;                                                            \
+        return r;                                                                        \
     }
 ALIA_COMMUTATIVE_SCALAR_OPERATOR(*)
 ALIA_SCALAR_OPERATOR(/)
@@ -93,9 +93,10 @@ ALIA_SCALAR_OPERATOR(%)
 
 // unary negation
 template<unsigned N, class T>
-vector<N,T> operator-(vector<N,T> const& v)
+vector<N, T>
+operator-(vector<N, T> const& v)
 {
-    vector<N,T> r;
+    vector<N, T> r;
     for (unsigned i = 0; i < N; ++i)
         r[i] = -v[i];
     return r;
@@ -103,7 +104,8 @@ vector<N,T> operator-(vector<N,T> const& v)
 
 // dot product of two vectors
 template<unsigned N, class T>
-T dot(vector<N,T> const& a, vector<N,T> const& b)
+T
+dot(vector<N, T> const& a, vector<N, T> const& b)
 {
     T result = 0;
     for (unsigned i = 0; i < N; ++i)
@@ -113,7 +115,8 @@ T dot(vector<N,T> const& a, vector<N,T> const& b)
 
 // vector length
 template<unsigned N, class T>
-T length(vector<N,T> const& v)
+T
+length(vector<N, T> const& v)
 {
     return std::sqrt(length2(v));
 }
@@ -121,42 +124,48 @@ T length(vector<N,T> const& v)
 // vector length squared - This is more efficient, and it's sufficient if
 // you're using the length for comparison purposes.
 template<unsigned N, class T>
-T length2(vector<N,T> const& v)
+T
+length2(vector<N, T> const& v)
 {
     return dot(v, v);
 }
 
 // Get the unit-length version of the given vector.
 template<unsigned N, class T>
-vector<N,T> unit(vector<N,T> const& v)
+vector<N, T>
+unit(vector<N, T> const& v)
 {
     return v / length(v);
 }
 
 // Create a vector whose components all have the same value.
 template<unsigned N, class T>
-vector<N,T> uniform_vector(T value)
+vector<N, T>
+uniform_vector(T value)
 {
-    vector<N,T> r;
+    vector<N, T> r;
     for (unsigned i = 0; i < N; ++i)
         r[i] = value;
     return r;
 }
 
 // hash function
-} namespace std {
-    template<unsigned N, class T>
-    struct hash<alia::vector<N,T> >
+} // namespace alia
+namespace std {
+template<unsigned N, class T>
+struct hash<alia::vector<N, T>>
+{
+    size_t
+    operator()(alia::vector<N, T> const& v) const
     {
-        size_t operator()(alia::vector<N,T> const& v) const
-        {
-            size_t h = 0;
-            for (unsigned i = 0; i != N; ++i)
-                h = alia::combine_hashes(h, hash<T>()(v[i]));
-            return h;
-        }
-    };
-} namespace alia {
+        size_t h = 0;
+        for (unsigned i = 0; i != N; ++i)
+            h = alia::combine_hashes(h, hash<T>()(v[i]));
+        return h;
+    }
+};
+} // namespace std
+namespace alia {
 
 // BOX
 
@@ -167,27 +176,33 @@ vector<N,T> uniform_vector(T value)
 template<unsigned N, class T>
 struct box
 {
-    box() {}
+    box()
+    {
+    }
 
-    box(vector<N,T> const& corner, vector<N,T> const& size)
-      : corner(corner), size(size)
-    {}
+    box(vector<N, T> const& corner, vector<N, T> const& size) : corner(corner), size(size)
+    {
+    }
 
     // explicit conversion from a box with a different coordinate type
     template<class OtherT>
-    explicit box(box<N,OtherT> const& other)
-      : corner(other.corner), size(other.size)
-    {}
+    explicit box(box<N, OtherT> const& other) : corner(other.corner), size(other.size)
+    {
+    }
 
-    vector<N,T> corner, size;
+    vector<N, T> corner, size;
 };
 
 template<unsigned N, typename T>
-box<N,T> make_box(vector<N,T> const& corner, vector<N,T> const& size)
-{ return box<N,T>(corner, size); }
+box<N, T>
+make_box(vector<N, T> const& corner, vector<N, T> const& size)
+{
+    return box<N, T>(corner, size);
+}
 
 template<unsigned N, typename T>
-std::ostream& operator<<(std::ostream& out, box<N,T> const& box)
+std::ostream&
+operator<<(std::ostream& out, box<N, T> const& box)
 {
     out << "[corner: " << box.corner << ", size: " << box.size << "]";
     return out;
@@ -195,31 +210,50 @@ std::ostream& operator<<(std::ostream& out, box<N,T> const& box)
 
 // equality operators
 template<unsigned N, class T>
-bool operator==(box<N,T> const& a, box<N,T> const& b)
-{ return a.corner == b.corner && a.size == b.size; }
+bool
+operator==(box<N, T> const& a, box<N, T> const& b)
+{
+    return a.corner == b.corner && a.size == b.size;
+}
 template<unsigned N, class T>
-bool operator!=(box<N,T> const& a, box<N,T> const& b)
-{ return !(a == b); }
+bool
+operator!=(box<N, T> const& a, box<N, T> const& b)
+{
+    return !(a == b);
+}
 // < operator
 template<unsigned N, class T>
-bool operator<(box<N,T> const& a, box<N,T> const& b)
+bool
+operator<(box<N, T> const& a, box<N, T> const& b)
 {
-    return a.corner < b.corner ||
-        a.corner == b.corner && a.size < b.size;
+    return a.corner < b.corner || a.corner == b.corner && a.size < b.size;
 }
 
 template<unsigned N, class T>
-vector<N,T> get_center(box<N,T> const& b) { return b.corner + b.size / 2; }
+vector<N, T>
+get_center(box<N, T> const& b)
+{
+    return b.corner + b.size / 2;
+}
 
 template<unsigned N, class T>
-vector<N,T> get_low_corner(box<N,T> const& b) { return b.corner; }
+vector<N, T>
+get_low_corner(box<N, T> const& b)
+{
+    return b.corner;
+}
 
 template<unsigned N, class T>
-vector<N,T> get_high_corner(box<N,T> const& b) { return b.corner + b.size; }
+vector<N, T>
+get_high_corner(box<N, T> const& b)
+{
+    return b.corner + b.size;
+}
 
 // Is the point p inside the given box?
 template<unsigned N, class T>
-bool is_inside(box<N,T> const& box, vector<N,T> const& p)
+bool
+is_inside(box<N, T> const& box, vector<N, T> const& p)
 {
     for (unsigned i = 0; i < N; ++i)
     {
@@ -232,24 +266,23 @@ bool is_inside(box<N,T> const& box, vector<N,T> const& p)
 // Does the projection of p along the given axis lie within the projection of
 // the box along the same axis?
 template<unsigned N, class T>
-bool is_inside(box<N,T> const& box, unsigned axis, T p)
+bool
+is_inside(box<N, T> const& box, unsigned axis, T p)
 {
     assert(axis < N);
-    return p >= box.corner[axis] &&
-        p < box.corner[axis] + box.size[axis];
+    return p >= box.corner[axis] && p < box.corner[axis] + box.size[axis];
 }
 
 // Compute the intersection of the two boxes.
 // The return value is whether or not the boxes actually intersect.
 // The result is only valid if they intersect.
 template<unsigned N, class T>
-bool compute_intersection(box<N,T>* result, box<N,T> const& box1,
-    box<N,T> const& box2)
+bool
+compute_intersection(box<N, T>* result, box<N, T> const& box1, box<N, T> const& box2)
 {
     for (unsigned i = 0; i < N; i++)
     {
-        T low = box1.corner[i] > box2.corner[i] ?
-            box1.corner[i] : box2.corner[i];
+        T low = box1.corner[i] > box2.corner[i] ? box1.corner[i] : box2.corner[i];
         T high1 = box1.corner[i] + box1.size[i];
         T high2 = box2.corner[i] + box2.size[i];
         T high = high1 < high2 ? high1 : high2;
@@ -263,13 +296,13 @@ bool compute_intersection(box<N,T>* result, box<N,T> const& box1,
 
 // Test if the two boxes are overlapping.
 template<unsigned N, class T>
-bool overlapping(box<N,T> const& box1, box<N,T> const& box2)
+bool
+overlapping(box<N, T> const& box1, box<N, T> const& box2)
 {
     for (unsigned i = 0; i < N; i++)
     {
         T low = (std::max)(box1.corner[i], box2.corner[i]);
-        T high = (std::min)(get_high_corner(box1)[i],
-            get_high_corner(box2)[i]);
+        T high = (std::min)(get_high_corner(box1)[i], get_high_corner(box2)[i]);
         if (low > high)
             return false;
     }
@@ -278,22 +311,24 @@ bool overlapping(box<N,T> const& box1, box<N,T> const& box2)
 
 // Add a uniform border around the given box and return the expanded box.
 template<unsigned N, class T>
-box<N,T> add_border(box<N,T> const& box, T border)
+box<N, T>
+add_border(box<N, T> const& box, T border)
 {
-    return alia::box<N,T>(
-        box.corner - uniform_vector<N,T>(border),
-        box.size + uniform_vector<N,T>(border * 2));
+    return alia::box<N, T>(
+        box.corner - uniform_vector<N, T>(border),
+        box.size + uniform_vector<N, T>(border * 2));
 }
 
 // Add a border around the given box and return the expanded box.
 template<unsigned N, class T>
-box<N,T> add_border(box<N,T> const& box, vector<N,T> const& border)
+box<N, T>
+add_border(box<N, T> const& box, vector<N, T> const& border)
 {
-    return alia::box<N,T>(box.corner - border, box.size + border * 2);
+    return alia::box<N, T>(box.corner - border, box.size + border * 2);
 }
 
 template<typename T>
-void make_polygon(vector<2,T>* vertices, box<2,T> const& box)
+void make_polygon(vector<2, T>* vertices, box<2, T> const& box)
 {
     vertices[0] = box.corner;
     vertices[1] = box.corner + make_vector<T>(box.size[0], 0);
@@ -304,7 +339,8 @@ void make_polygon(vector<2,T>* vertices, box<2,T> const& box)
 // Expand a box (if necessary) to include the given point. - If an expansion is necessary,
 // it's done so that the point lies on the edge of the box.
 template<unsigned N, class T>
-void expand_box_to_include_point(box<N,T>& box, vector<N,T> const& point)
+void
+expand_box_to_include_point(box<N, T>& box, vector<N, T> const& point)
 {
     for (unsigned i = 0; i != N; ++i)
     {
@@ -323,23 +359,25 @@ void expand_box_to_include_point(box<N,T>& box, vector<N,T> const& point)
 }
 
 template<typename T>
-int get_edge_index(box<2,T> const& box, vector<2,T> const& point)
+int get_edge_index(box<2, T> const& box, vector<2, T> const& point)
 {
     double tol = 1.0e-10;
     int index = -1;
-    if((std::fabs(point[1] - box.corner[1]) <= tol) && (point[0] >= box.corner[0]))
+    if ((std::fabs(point[1] - box.corner[1]) <= tol) && (point[0] >= box.corner[0]))
     {
         index = 0;
     }
-    if((std::fabs(point[0] - (box.corner[0] + box.size[0])) <= tol) && (point[1] >= box.corner[1]))
+    if ((std::fabs(point[0] - (box.corner[0] + box.size[0])) <= tol)
+        && (point[1] >= box.corner[1]))
     {
         index = 1;
     }
-    if((std::fabs(point[1] - (box.corner[1] + box.size[1])) <= tol)  && (point[0] > box.corner[0]))
+    if ((std::fabs(point[1] - (box.corner[1] + box.size[1])) <= tol)
+        && (point[0] > box.corner[0]))
     {
         index = 2;
     }
-    if((std::fabs(point[0] - box.corner[0]) <= tol) && (point[1] > box.corner[1]))
+    if ((std::fabs(point[0] - box.corner[0]) <= tol) && (point[1] > box.corner[1]))
     {
         index = 3;
     }
@@ -354,25 +392,29 @@ template<unsigned M, unsigned N, class T>
 class matrix
 {
  public:
-    matrix() {}
+    matrix()
+    {
+    }
 
     // construct from a matrix of the same size but a different element type
     template<class OtherT>
-    explicit matrix(matrix<M,N,OtherT> const& other)
+    explicit matrix(matrix<M, N, OtherT> const& other)
     {
-        typename matrix<M,N,OtherT>::const_iterator j = other.begin();
+        typename matrix<M, N, OtherT>::const_iterator j = other.begin();
         iterator end = this->end();
         for (iterator i = begin(); i != end; ++i, ++j)
             *i = static_cast<T>(*j);
     }
 
     // access individual elements
-    T const& operator()(unsigned row, unsigned column) const
+    T const&
+    operator()(unsigned row, unsigned column) const
     {
         assert(row < M && column < N);
         return data_[row * N + column];
     }
-    T& operator()(unsigned row, unsigned column)
+    T&
+    operator()(unsigned row, unsigned column)
     {
         assert(row < M && column < N);
         return data_[row * N + column];
@@ -380,16 +422,33 @@ class matrix
 
     // iterator interface
     typedef T* iterator;
-    iterator begin() { return data_; }
-    iterator end() { return data_ + M * N; }
+    iterator
+    begin()
+    {
+        return data_;
+    }
+    iterator
+    end()
+    {
+        return data_ + M * N;
+    }
 
     // const iterator interface
     typedef T const* const_iterator;
-    const_iterator begin() const { return data_; }
-    const_iterator end() const { return data_ + M * N; }
+    const_iterator
+    begin() const
+    {
+        return data_;
+    }
+    const_iterator
+    end() const
+    {
+        return data_ + M * N;
+    }
 
     // scalar *
-    matrix& operator*=(T s)
+    matrix&
+    operator*=(T s)
     {
         iterator end = this->end();
         for (iterator i = begin(); i != end; ++i)
@@ -403,14 +462,16 @@ class matrix
         return r;
     }
     // scalar /
-    matrix& operator/=(T s)
+    matrix&
+    operator/=(T s)
     {
         iterator end = this->end();
         for (iterator i = begin(); i != end; ++i)
             *i /= s;
         return *this;
     }
-    matrix operator/(T s) const
+    matrix
+    operator/(T s) const
     {
         matrix r = (*this);
         r /= s;
@@ -418,7 +479,8 @@ class matrix
     }
 
     // componentwise +
-    matrix& operator+=(matrix const& other)
+    matrix&
+    operator+=(matrix const& other)
     {
         const_iterator j = other.begin();
         iterator end = this->end();
@@ -426,14 +488,16 @@ class matrix
             *i += *j;
         return *this;
     }
-    matrix operator+(matrix const& other) const
+    matrix
+    operator+(matrix const& other) const
     {
         matrix r = (*this);
         r += other;
         return r;
     }
     // componentwise -
-    matrix& operator-=(matrix const& other)
+    matrix&
+    operator-=(matrix const& other)
     {
         const_iterator j = other.begin();
         iterator end = this->end();
@@ -441,7 +505,8 @@ class matrix
             *i -= *j;
         return *this;
     }
-    matrix operator-(matrix const& other) const
+    matrix
+    operator-(matrix const& other) const
     {
         matrix r = (*this);
         r -= other;
@@ -449,15 +514,18 @@ class matrix
     }
 
     // comparisons
-    bool operator==(matrix const& other) const
+    bool
+    operator==(matrix const& other) const
     {
         return std::mismatch(begin(), end(), other.begin()).first == end();
     }
-    bool operator!=(matrix const& other) const
+    bool
+    operator!=(matrix const& other) const
     {
         return !(*this == other);
     }
-    bool operator<(matrix const& other) const
+    bool
+    operator<(matrix const& other) const
     {
         for (unsigned i = 0; i != M * N; ++i)
         {
@@ -470,9 +538,10 @@ class matrix
     }
 
     // get the ith column as a vector
-    vector<M,T> get_column(unsigned i) const
+    vector<M, T>
+    get_column(unsigned i) const
     {
-        vector<M,T> v;
+        vector<M, T> v;
         for (unsigned j = 0; j < M; ++j)
         {
             v[j] = (*this)(j, i);
@@ -481,14 +550,16 @@ class matrix
     }
 
     // set the ith column using a vector
-    void set_column(unsigned i, vector<M,T> const& v)
+    void
+    set_column(unsigned i, vector<M, T> const& v)
     {
         for (unsigned j = 0; j < M; ++j)
             (*this)(j, i) = v[j];
     }
 
     // *= operator
-    matrix<M,N,T>& operator*=(matrix<N,N,T> const& other)
+    matrix<M, N, T>&
+    operator*=(matrix<N, N, T> const& other)
     {
         *this = *this * other;
         return *this;
@@ -499,7 +570,8 @@ class matrix
 };
 
 template<unsigned M, unsigned N, typename T>
-std::ostream& operator<<(std::ostream& out, matrix<M,N,T> const& m)
+std::ostream&
+operator<<(std::ostream& out, matrix<M, N, T> const& m)
 {
     out << "[";
     for (unsigned i = 0; i != M; ++i)
@@ -517,11 +589,10 @@ std::ostream& operator<<(std::ostream& out, matrix<M,N,T> const& m)
 
 // 2x2 constructor
 template<class T>
-matrix<2,2,T> make_matrix(
-    T v00, T v01,
-    T v10, T v11)
+matrix<2, 2, T>
+make_matrix(T v00, T v01, T v10, T v11)
 {
-    matrix<2,2,T> m;
+    matrix<2, 2, T> m;
     m(0, 0) = v00;
     m(0, 1) = v01;
     m(1, 0) = v10;
@@ -530,12 +601,10 @@ matrix<2,2,T> make_matrix(
 }
 // 3x3 constructor
 template<class T>
-matrix<3,3,T> make_matrix(
-    T v00, T v01, T v02,
-    T v10, T v11, T v12,
-    T v20, T v21, T v22)
+matrix<3, 3, T>
+make_matrix(T v00, T v01, T v02, T v10, T v11, T v12, T v20, T v21, T v22)
 {
-    matrix<3,3,T> m;
+    matrix<3, 3, T> m;
     m(0, 0) = v00;
     m(0, 1) = v01;
     m(0, 2) = v02;
@@ -549,13 +618,26 @@ matrix<3,3,T> make_matrix(
 }
 // 4x4 constructor
 template<class T>
-matrix<4,4,T> make_matrix(
-    T v00, T v01, T v02, T v03,
-    T v10, T v11, T v12, T v13,
-    T v20, T v21, T v22, T v23,
-    T v30, T v31, T v32, T v33)
+matrix<4, 4, T>
+make_matrix(
+    T v00,
+    T v01,
+    T v02,
+    T v03,
+    T v10,
+    T v11,
+    T v12,
+    T v13,
+    T v20,
+    T v21,
+    T v22,
+    T v23,
+    T v30,
+    T v31,
+    T v32,
+    T v33)
 {
-    matrix<4,4,T> m;
+    matrix<4, 4, T> m;
     m(0, 0) = v00;
     m(0, 1) = v01;
     m(0, 2) = v02;
@@ -576,18 +658,18 @@ matrix<4,4,T> make_matrix(
 }
 
 template<unsigned M, unsigned N, class T, class Scalar>
-matrix<M,N,T> operator*(Scalar s, matrix<M,N,T> const& m)
+matrix<M, N, T> operator*(Scalar s, matrix<M, N, T> const& m)
 {
-    matrix<M,N,T> r = m;
+    matrix<M, N, T> r = m;
     r *= s;
     return r;
 }
 
 // matrix multiplication
-template <class T, unsigned M, unsigned N, unsigned O>
-matrix<M,O,T> operator*(matrix<M,N,T> const& a, matrix<N,O,T> const& b)
+template<class T, unsigned M, unsigned N, unsigned O>
+matrix<M, O, T> operator*(matrix<M, N, T> const& a, matrix<N, O, T> const& b)
 {
-    matrix<M,O,T> r;
+    matrix<M, O, T> r;
     for (unsigned i = 0; i < M; i++)
     {
         for (unsigned j = 0; j < O; j++)
@@ -602,10 +684,11 @@ matrix<M,O,T> operator*(matrix<M,N,T> const& a, matrix<N,O,T> const& b)
 
 // Get the identity matrix.
 template<unsigned N, class T>
-matrix<N,N,T> identity_matrix()
+matrix<N, N, T>
+identity_matrix()
 {
-    matrix<N,N,T> m;
-    typename matrix<N,N,T>::iterator p = m.begin();
+    matrix<N, N, T> m;
+    typename matrix<N, N, T>::iterator p = m.begin();
     for (unsigned i = 0; i < N; ++i)
         for (unsigned j = 0; j < N; ++j, ++p)
             *p = static_cast<T>((i == j) ? 1 : 0);
@@ -615,20 +698,19 @@ matrix<N,N,T> identity_matrix()
 // Get the inverse of the given matrix.
 // 3x3 case
 template<class T>
-matrix<3,3,T> inverse(matrix<3,3,T> const& m)
+matrix<3, 3, T> inverse(matrix<3, 3, T> const& m)
 {
-    matrix<3,3,T> inv =
-        make_matrix<T>(
-            m(1,1) * m(2,2) - m(1,2) * m(2,1),
-            m(0,2) * m(2,1) - m(0,1) * m(2,2),
-            m(0,1) * m(1,2) - m(0,2) * m(1,1),
-            m(1,2) * m(2,0) - m(1,0) * m(2,2),
-            m(0,0) * m(2,2) - m(0,2) * m(2,0),
-            m(0,2) * m(1,0) - m(0,0) * m(1,2),
-            m(1,0) * m(2,1) - m(1,1) * m(2,0),
-            m(0,1) * m(2,0) - m(0,0) * m(2,1),
-            m(0,0) * m(1,1) - m(0,1) * m(1,0));
-    T det = m(0,0) * inv(0,0) + m(0,1) * inv(1,0) + m(0,2) * inv(2,0);
+    matrix<3, 3, T> inv = make_matrix<T>(
+        m(1, 1) * m(2, 2) - m(1, 2) * m(2, 1),
+        m(0, 2) * m(2, 1) - m(0, 1) * m(2, 2),
+        m(0, 1) * m(1, 2) - m(0, 2) * m(1, 1),
+        m(1, 2) * m(2, 0) - m(1, 0) * m(2, 2),
+        m(0, 0) * m(2, 2) - m(0, 2) * m(2, 0),
+        m(0, 2) * m(1, 0) - m(0, 0) * m(1, 2),
+        m(1, 0) * m(2, 1) - m(1, 1) * m(2, 0),
+        m(0, 1) * m(2, 0) - m(0, 0) * m(2, 1),
+        m(0, 0) * m(1, 1) - m(0, 1) * m(1, 0));
+    T det = m(0, 0) * inv(0, 0) + m(0, 1) * inv(1, 0) + m(0, 2) * inv(2, 0);
     if (det == 0)
         return make_matrix<T>(0, 0, 0, 0, 0, 0, 0, 0, 0);
     inv *= T(1) / det;
@@ -636,102 +718,101 @@ matrix<3,3,T> inverse(matrix<3,3,T> const& m)
 }
 // 2x2 case
 template<class T>
-matrix<2,2,T> inverse(matrix<2,2,T> const& m)
+matrix<2, 2, T> inverse(matrix<2, 2, T> const& m)
 {
-    T det = m(0,0) * m(1,1) - m(0,1) * m(1,0);
+    T det = m(0, 0) * m(1, 1) - m(0, 1) * m(1, 0);
     if (det == 0)
         return make_matrix<T>(0, 0, 0, 0);
     T inv_det = static_cast<T>(1.0) / det;
-    matrix<2,2,T> inv = make_matrix(m(1,1), -m(0,1), -m(1,0), m(0,0));
+    matrix<2, 2, T> inv = make_matrix(m(1, 1), -m(0, 1), -m(1, 0), m(0, 0));
     inv *= inv_det;
     return inv;
 }
 
 // hash function
-} namespace std {
-    template<unsigned M, unsigned N, class T>
-    struct hash<alia::matrix<M,N,T> >
+} // namespace alia
+namespace std {
+template<unsigned M, unsigned N, class T>
+struct hash<alia::matrix<M, N, T>>
+{
+    size_t
+    operator()(alia::matrix<M, N, T> const& m) const
     {
-        size_t operator()(alia::matrix<M,N,T> const& m) const
+        size_t h = 0;
+        for (unsigned i = 0; i != M; ++i)
         {
-            size_t h = 0;
-            for (unsigned i = 0; i != M; ++i)
-            {
-                for (unsigned j = 0; j != N; ++j)
-                    h = alia::combine_hashes(h, hash<T>()(m(i, j)));
-            }
-            return h;
+            for (unsigned j = 0; j != N; ++j)
+                h = alia::combine_hashes(h, hash<T>()(m(i, j)));
         }
-    };
-} namespace alia {
+        return h;
+    }
+};
+} // namespace std
+namespace alia {
 
 // ANGLES
 
 static const double pi = 3.1415926535897932384626433832795;
 
-static inline double degrees_to_radians(double degrees)
-{ return degrees * (pi / 180); }
+static inline double
+degrees_to_radians(double degrees)
+{
+    return degrees * (pi / 180);
+}
 
-static inline double radians_to_degrees(double radians)
-{ return radians * (180 / pi); }
+static inline double
+radians_to_degrees(double radians)
+{
+    return radians * (180 / pi);
+}
 
 // 2D TRANSFORMATIONS
 
 // Generate a rotation matrix.
 template<class T>
-matrix<3,3,T> rotation_matrix(T a)
+matrix<3, 3, T>
+rotation_matrix(T a)
 {
     T c = std::cos(a), s = std::sin(a);
-    return make_matrix<T>(
-        c, -s, 0,
-        s,  c, 0,
-        0,  0, 1);
+    return make_matrix<T>(c, -s, 0, s, c, 0, 0, 0, 1);
 }
 
 // Generate a translation matrix.
 template<class T>
-matrix<3,3,T> translation_matrix(vector<2,T> const& v)
+matrix<3, 3, T> translation_matrix(vector<2, T> const& v)
 {
-    return make_matrix<T>(
-        1, 0, v[0],
-        0, 1, v[1],
-        0, 0,    1);
+    return make_matrix<T>(1, 0, v[0], 0, 1, v[1], 0, 0, 1);
 }
 
 // Generate a scaling matrix.
 template<class T>
-matrix<3,3,T> scaling_matrix(vector<2,T> const& v)
+matrix<3, 3, T> scaling_matrix(vector<2, T> const& v)
 {
-    return make_matrix<T>(
-        v[0],    0, 0,
-           0, v[1], 0,
-           0,    0, 1);
+    return make_matrix<T>(v[0], 0, 0, 0, v[1], 0, 0, 0, 1);
 }
 
 // Transform a vector by a transformation matrix.
 template<class T>
-vector<2,T> transform(matrix<3,3,T> const& m, vector<2,T> const& v)
+vector<2, T> transform(matrix<3, 3, T> const& m, vector<2, T> const& v)
 {
     return make_vector(
-        v[0] * m(0,0) + v[1] * m(0,1) + m(0,2),
-        v[0] * m(1,0) + v[1] * m(1,1) + m(1,2));
+        v[0] * m(0, 0) + v[1] * m(0, 1) + m(0, 2),
+        v[0] * m(1, 0) + v[1] * m(1, 1) + m(1, 2));
 }
 
 // Transform a box by a transformation matrix.
 template<typename T>
-box<2,T>
-transform_box(matrix<3,3,T> const& m, box<2,T> const& b)
+box<2, T> transform_box(matrix<3, 3, T> const& m, box<2, T> const& b)
 {
     // Start with a box that just includes the transformation of one corner of the
     // original box.
-    box<2,T> result = make_box(transform(m, b.corner), make_vector<T>(0, 0));
+    box<2, T> result = make_box(transform(m, b.corner), make_vector<T>(0, 0));
     // Now expand that box to include the transformation of each of the other corners.
-    expand_box_to_include_point(result,
-        transform(m, b.corner + make_vector<T>(b.size[0], 0)));
-    expand_box_to_include_point(result,
-        transform(m, b.corner + b.size));
-    expand_box_to_include_point(result,
-        transform(m, b.corner + make_vector<T>(0, b.size[1])));
+    expand_box_to_include_point(
+        result, transform(m, b.corner + make_vector<T>(b.size[0], 0)));
+    expand_box_to_include_point(result, transform(m, b.corner + b.size));
+    expand_box_to_include_point(
+        result, transform(m, b.corner + make_vector<T>(0, b.size[1])));
     return result;
 }
 
@@ -741,14 +822,22 @@ transform_box(matrix<3,3,T> const& m, box<2,T> const& b)
 // and (1, 1).
 struct unit_cubic_bezier
 {
-    vector<2,double> p1, p2;
+    vector<2, double> p1, p2;
 
-    unit_cubic_bezier() {}
-    unit_cubic_bezier(vector<2,double> const& p1, vector<2,double> const& p2)
-      : p1(p1), p2(p2)
-    {}
+    unit_cubic_bezier()
+    {
+    }
+    unit_cubic_bezier(vector<2, double> const& p1, vector<2, double> const& p2)
+        : p1(p1), p2(p2)
+    {
+    }
     unit_cubic_bezier(double p1x, double p1y, double p2x, double p2y)
-    { p1[0] = p1x; p1[1] = p1y; p2[0] = p2x; p2[1] = p2y; }
+    {
+        p1[0] = p1x;
+        p1[1] = p1y;
+        p2[0] = p2x;
+        p2[1] = p2y;
+    }
 };
 
 // Evaluate a unit_cubic_bezier at the given x value.
@@ -757,6 +846,6 @@ struct unit_cubic_bezier
 double
 eval_curve_at_x(unit_cubic_bezier const& curve, double x, double epsilon);
 
-}
+} // namespace alia
 
 #endif

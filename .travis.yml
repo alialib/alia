@@ -15,5 +15,5 @@ before_script:
   - ./fips gen
 
 script:
-  - ./fips make unit_test_coverage
-  - ./fips make integration_tests
+  - ./fips make all_tests_coverage
+  - scripts/check-code-styling.sh

@@ -1,4 +1,5 @@
 #!/bin/bash
+# Set up a Python virtual environment so that it can build alia.
 echo "Setting up Python environment in .python..."
 set -x -e
 virtualenv --python=python3.5 .python

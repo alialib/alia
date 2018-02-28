@@ -3,7 +3,8 @@
 
 namespace alia {
 
-bool operator<(rgb8 const& a, rgb8 const& b)
+bool
+operator<(rgb8 const& a, rgb8 const& b)
 {
     if (a.r < b.r)
         return true;
@@ -17,7 +18,8 @@ bool operator<(rgb8 const& a, rgb8 const& b)
         return true;
     return false;
 }
-bool operator<(rgba8 const& a, rgba8 const& b)
+bool
+operator<(rgba8 const& a, rgba8 const& b)
 {
     if (a.r < b.r)
         return true;
@@ -36,7 +38,8 @@ bool operator<(rgba8 const& a, rgba8 const& b)
     return false;
 }
 
-rgb8 interpolate(rgb8 const& a, rgb8 const& b, double f)
+rgb8
+interpolate(rgb8 const& a, rgb8 const& b, double f)
 {
     rgb8 r;
     r.r = uint8_t(a.r * (1 - f) + b.r * f + 0.5);
@@ -45,7 +48,8 @@ rgb8 interpolate(rgb8 const& a, rgb8 const& b, double f)
     return r;
 }
 
-rgba8 apply_alpha(rgb8 color, uint8_t alpha)
+rgba8
+apply_alpha(rgb8 color, uint8_t alpha)
 {
     return rgba8(
         multiply_uint8_channels(color.r, alpha),
@@ -54,7 +58,8 @@ rgba8 apply_alpha(rgb8 color, uint8_t alpha)
         alpha);
 }
 
-rgba8 apply_alpha(rgba8 color, uint8_t alpha)
+rgba8
+apply_alpha(rgba8 color, uint8_t alpha)
 {
     return rgba8(
         multiply_uint8_channels(color.r, alpha),
@@ -63,7 +68,8 @@ rgba8 apply_alpha(rgba8 color, uint8_t alpha)
         multiply_uint8_channels(color.a, alpha));
 }
 
-rgba8 interpolate(rgba8 const& a, rgba8 const& b, double f)
+rgba8
+interpolate(rgba8 const& a, rgba8 const& b, double f)
 {
     rgba8 r;
     r.r = uint8_t(a.r * (1 - f) + b.r * f + 0.5);
@@ -73,15 +79,17 @@ rgba8 interpolate(rgba8 const& a, rgba8 const& b, double f)
     return r;
 }
 
-std::ostream& operator<<(std::ostream& s, rgb8 const& c)
+std::ostream&
+operator<<(std::ostream& s, rgb8 const& c)
 {
-    return s << "#" << std::hex << std::setw(2) << std::setfill('0') <<
-        int(c.r) << int(c.g) << int(c.b);
+    return s << "#" << std::hex << std::setw(2) << std::setfill('0') << int(c.r)
+             << int(c.g) << int(c.b);
 }
-std::ostream& operator<<(std::ostream& s, rgba8 const& c)
+std::ostream&
+operator<<(std::ostream& s, rgba8 const& c)
 {
-    return s << "#" << std::hex << std::setw(2) << std::setfill('0') <<
-        int(c.r) << int(c.g) << int(c.b) << int(c.a);
+    return s << "#" << std::hex << std::setw(2) << std::setfill('0') << int(c.r)
+             << int(c.g) << int(c.b) << int(c.a);
 }
 
-}
+} // namespace alia

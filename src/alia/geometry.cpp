@@ -34,12 +34,11 @@ sample_curve_y(unit_cubic_bezier_coefficients const& coeff, double t)
 static double
 sample_curve_derivative(unit_cubic_bezier_coefficients const& coeff, double t)
 {
-    return (3 * coeff.ax * t + 2 * coeff.bx) *t + coeff.cx;
+    return (3 * coeff.ax * t + 2 * coeff.bx) * t + coeff.cx;
 }
 
 static double
-solve_for_t_at_x(
-    unit_cubic_bezier_coefficients const& coeff, double x, double epsilon)
+solve_for_t_at_x(unit_cubic_bezier_coefficients const& coeff, double x, double epsilon)
 {
     // Newton's method should be faster, so try that first.
     double t = x;
@@ -86,4 +85,4 @@ eval_curve_at_x(unit_cubic_bezier const& curve, double x, double epsilon)
     return sample_curve_y(coeff, solve_for_t_at_x(coeff, x, epsilon));
 }
 
-}
+} // namespace alia

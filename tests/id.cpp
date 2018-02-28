@@ -1,6 +1,6 @@
 #include <alia/id.hpp>
-#include <utility>
 #include <boost/lexical_cast.hpp>
+#include <utility>
 
 #include <catch.hpp>
 

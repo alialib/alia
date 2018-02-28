@@ -47,18 +47,16 @@ struct event_routing_traversal
     event_routing_path* path_to_target;
 };
 
-static inline routing_region_ptr get_active_region(
-    event_routing_traversal const& traversal)
+static inline routing_region_ptr
+get_active_region(event_routing_traversal const& traversal)
 {
-    return traversal.active_region ? *traversal.active_region :
-        routing_region_ptr();
+    return traversal.active_region ? *traversal.active_region : routing_region_ptr();
 }
 
 template<class TraversalFunction>
-void invoke_targeted_traversal(
-    TraversalFunction& fn,
-    event_routing_traversal& traversal,
-    routing_region* target)
+void
+invoke_targeted_traversal(
+    TraversalFunction& fn, event_routing_traversal& traversal, routing_region* target)
 {
     if (target)
     {
@@ -73,7 +71,8 @@ void invoke_targeted_traversal(
 }
 
 template<class TraversalFunction>
-void invoke_routed_traversal(
+void
+invoke_routed_traversal(
     TraversalFunction& fn,
     event_routing_traversal& traversal,
     data_traversal& data,
@@ -92,20 +91,33 @@ void invoke_routed_traversal(
 
 struct scoped_routing_region
 {
-    scoped_routing_region() : traversal_(0) {}
+    scoped_routing_region() : traversal_(0)
+    {
+    }
     scoped_routing_region(event_routing_traversal& traversal)
-    { begin(traversal); }
+    {
+        begin(traversal);
+    }
     ~scoped_routing_region()
-    { end(); }
-    void begin(event_routing_traversal& traversal);
-    void end();
-    bool is_relevant() const { return is_relevant_; }
+    {
+        end();
+    }
+    void
+    begin(event_routing_traversal& traversal);
+    void
+    end();
+    bool
+    is_relevant() const
+    {
+        return is_relevant_;
+    }
+
  private:
     event_routing_traversal* traversal_;
     routing_region_ptr* parent_;
     bool is_relevant_;
 };
 
-}
+} // namespace alia
 
 #endif

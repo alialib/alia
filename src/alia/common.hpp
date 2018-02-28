@@ -1,13 +1,13 @@
 #ifndef ALIA_COMMON_HPP
 #define ALIA_COMMON_HPP
 
-#include <exception>
-#include <string>
-#include <memory>
 #include <cassert>
-#include <ostream>
-#include <iostream>
 #include <cstdint>
+#include <exception>
+#include <iostream>
+#include <memory>
+#include <ostream>
+#include <string>
 
 // This file defines some generic functionality that's commonly used throughout
 // alia.
@@ -16,10 +16,10 @@ namespace alia {
 
 typedef long long counter_type;
 
-using std::int8_t;
-using std::uint8_t;
 using std::int16_t;
+using std::int8_t;
 using std::uint16_t;
+using std::uint8_t;
 
 typedef std::string string;
 
@@ -29,31 +29,40 @@ struct utf8_string
 {
     utf8_ptr begin, end;
 
-    utf8_string() {}
-    utf8_string(utf8_ptr begin, utf8_ptr end)
-      : begin(begin), end(end)
-    {}
+    utf8_string()
+    {
+    }
+    utf8_string(utf8_ptr begin, utf8_ptr end) : begin(begin), end(end)
+    {
+    }
 };
 
-static inline bool is_empty(utf8_string const& text)
-{ return text.begin == text.end; }
+static inline bool
+is_empty(utf8_string const& text)
+{
+    return text.begin == text.end;
+}
 
-static inline utf8_string as_utf8_string(string const& text)
-{ return utf8_string(text.c_str(), text.c_str() + text.length()); }
+static inline utf8_string
+as_utf8_string(string const& text)
+{
+    return utf8_string(text.c_str(), text.c_str() + text.length());
+}
 
 // Figure out which shared_ptr to use.
 #ifdef _MSC_VER
-    #if (_MSC_VER >= 1600)
-        #define alia__shared_ptr std::shared_ptr
-    #else
-        #define alia__shared_ptr std::tr1::shared_ptr
-    #endif
+#if (_MSC_VER >= 1600)
+#define alia__shared_ptr std::shared_ptr
 #else
-    #define alia__shared_ptr std::shared_ptr
+#define alia__shared_ptr std::tr1::shared_ptr
+#endif
+#else
+#define alia__shared_ptr std::shared_ptr
 #endif
 
 template<typename T>
-T clamp(T x, T min, T max)
+T
+clamp(T x, T min, T max)
 {
     assert(min <= max);
     return (std::min)((std::max)(x, min), max);
@@ -69,102 +78,148 @@ T clamp(T x, T min, T max)
 // it. Only properties/sets with the same tag can be combined.
 
 // NO_FLAGS can be implicitly converted to any type of flag_set.
-struct null_flag_set {};
+struct null_flag_set
+{
+};
 static null_flag_set const NO_FLAGS = null_flag_set();
 
 template<class Tag>
 struct flag_set
 {
     unsigned code;
-    flag_set() {}
-    flag_set(null_flag_set) : code(0) {}
-    explicit flag_set(unsigned code) : code(code) {}
+    flag_set()
+    {
+    }
+    flag_set(null_flag_set) : code(0)
+    {
+    }
+    explicit flag_set(unsigned code) : code(code)
+    {
+    }
     // allows use within if statements without other unintended conversions
-    typedef unsigned flag_set::* unspecified_bool_type;
+    typedef unsigned flag_set::*unspecified_bool_type;
     operator unspecified_bool_type() const
-    { return code != 0 ? &flag_set::code : 0; }
+    {
+        return code != 0 ? &flag_set::code : 0;
+    }
 };
 
 template<class Tag>
-flag_set<Tag> operator|(flag_set<Tag> a, flag_set<Tag> b)
-{ return flag_set<Tag>(a.code | b.code); }
+flag_set<Tag>
+operator|(flag_set<Tag> a, flag_set<Tag> b)
+{
+    return flag_set<Tag>(a.code | b.code);
+}
 template<class Tag>
-flag_set<Tag>& operator|=(flag_set<Tag>& a, flag_set<Tag> b)
-{ a.code |= b.code; return a; }
+flag_set<Tag>&
+operator|=(flag_set<Tag>& a, flag_set<Tag> b)
+{
+    a.code |= b.code;
+    return a;
+}
 template<class Tag>
 flag_set<Tag> operator&(flag_set<Tag> a, flag_set<Tag> b)
-{ return flag_set<Tag>(a.code & b.code); }
-template<class Tag>
-flag_set<Tag>& operator&=(flag_set<Tag>& a, flag_set<Tag> b)
-{ a.code &= b.code; return a; }
-template<class Tag>
-bool operator==(flag_set<Tag> a, flag_set<Tag> b)
-{ return a.code == b.code; }
-template<class Tag>
-bool operator!=(flag_set<Tag> a, flag_set<Tag> b)
-{ return a.code != b.code; }
-template<class Tag>
-bool operator<(flag_set<Tag> a, flag_set<Tag> b)
-{ return a.code < b.code; }
-template<class Tag>
-flag_set<Tag> operator~(flag_set<Tag> a)
-{ return flag_set<Tag>(~a.code); }
-
-}
-
-namespace std
 {
-    template<class Tag>
-    struct hash<alia::flag_set<Tag> >
-    {
-        size_t operator()(alia::flag_set<Tag> const& set) const
-        {
-            return hash<unsigned>()(set.code);
-        }
-    };
+    return flag_set<Tag>(a.code & b.code);
 }
+template<class Tag>
+flag_set<Tag>&
+operator&=(flag_set<Tag>& a, flag_set<Tag> b)
+{
+    a.code &= b.code;
+    return a;
+}
+template<class Tag>
+bool
+operator==(flag_set<Tag> a, flag_set<Tag> b)
+{
+    return a.code == b.code;
+}
+template<class Tag>
+bool
+operator!=(flag_set<Tag> a, flag_set<Tag> b)
+{
+    return a.code != b.code;
+}
+template<class Tag>
+bool
+operator<(flag_set<Tag> a, flag_set<Tag> b)
+{
+    return a.code < b.code;
+}
+template<class Tag>
+flag_set<Tag>
+operator~(flag_set<Tag> a)
+{
+    return flag_set<Tag>(~a.code);
+}
+} // namespace alia
+
+namespace std {
+template<class Tag>
+struct hash<alia::flag_set<Tag>>
+{
+    size_t
+    operator()(alia::flag_set<Tag> const& set) const
+    {
+        return hash<unsigned>()(set.code);
+    }
+};
+} // namespace std
 
 namespace alia {
-
-#define ALIA_DEFINE_FLAG_TYPE(type_prefix) \
-    struct type_prefix##_flag_tag {}; \
+#define ALIA_DEFINE_FLAG_TYPE(type_prefix)                                               \
+    struct type_prefix##_flag_tag                                                        \
+    {                                                                                    \
+    };                                                                                   \
     typedef alia::flag_set<type_prefix##_flag_tag> type_prefix##_flag_set;
 
-#define ALIA_DEFINE_FLAG(type_prefix, code, name) \
-    static unsigned const name##_CODE = code; \
+#define ALIA_DEFINE_FLAG(type_prefix, code, name)                                        \
+    static unsigned const name##_CODE = code;                                            \
     static alia::flag_set<type_prefix##_flag_tag> const name(code);
 
 // Inspired by Boost, inheriting from noncopyable disables copying for a type.
 // The namespace prevents unintended ADL if used by applications.
-namespace impl { namespace noncopyable_ {
+namespace impl {
+namespace noncopyable_ {
 struct noncopyable
 {
-    noncopyable() {}
+    noncopyable()
+    {
+    }
+
  private:
     noncopyable(noncopyable const& other);
-    noncopyable& operator=(noncopyable const& other);
+    noncopyable&
+    operator=(noncopyable const& other);
 };
-}}
+} // namespace noncopyable_
+} // namespace impl
 typedef impl::noncopyable_::noncopyable noncopyable;
 
 struct exception : std::exception
 {
-    exception(string const& msg)
-      : msg_(new string(msg))
+    exception(string const& msg) : msg_(new string(msg))
     {
         std::cout << msg << std::endl;
     }
 
-    ~exception() throw() {
-
+    ~exception() throw()
+    {
     }
 
-    virtual char const* what() const throw()
-    { return msg_->c_str(); }
+    virtual char const*
+    what() const throw()
+    {
+        return msg_->c_str();
+    }
 
     // Add another level of context to the error messsage.
-    void add_context(string const& str)
-    { *msg_ += "\n" + str; }
+    void
+    add_context(string const& str)
+    {
+        *msg_ += "\n" + str;
+    }
 
  private:
     alia__shared_ptr<string> msg_;
@@ -191,11 +246,13 @@ struct vector
         return elements[i];
     }
 
-    vector() {}
+    vector()
+    {
+    }
 
     // explicit conversion from vectors with other element types
     template<class OtherT>
-    explicit vector(vector<N,OtherT> const& other)
+    explicit vector(vector<N, OtherT> const& other)
     {
         for (unsigned i = 0; i < N; ++i)
             (*this)[i] = static_cast<T>(other[i]);
@@ -206,18 +263,20 @@ struct vector
 };
 // 2D constructor
 template<class T>
-vector<2,T> make_vector(T x, T y)
+vector<2, T>
+make_vector(T x, T y)
 {
-    vector<2,T> v;
+    vector<2, T> v;
     v[0] = x;
     v[1] = y;
     return v;
 }
 // 3D constructor
 template<class T>
-vector<3,T> make_vector(T x, T y, T z)
+vector<3, T>
+make_vector(T x, T y, T z)
 {
-    vector<3,T> v;
+    vector<3, T> v;
     v[0] = x;
     v[1] = y;
     v[2] = z;
@@ -225,31 +284,41 @@ vector<3,T> make_vector(T x, T y, T z)
 }
 // equality operators
 namespace impl {
-    template<unsigned N, class T, unsigned I>
-    struct vector_equality_test
+template<unsigned N, class T, unsigned I>
+struct vector_equality_test
+{
+    static bool
+    apply(vector<N, T> const& a, vector<N, T> const& b)
     {
-        static bool apply(vector<N,T> const& a, vector<N,T> const& b)
-        {
-            return a[I - 1] == b[I - 1] &&
-                vector_equality_test<N,T,I-1>::apply(a, b);
-        }
-    };
-    template<unsigned N, class T>
-    struct vector_equality_test<N,T,0>
+        return a[I - 1] == b[I - 1] && vector_equality_test<N, T, I - 1>::apply(a, b);
+    }
+};
+template<unsigned N, class T>
+struct vector_equality_test<N, T, 0>
+{
+    static bool
+    apply(vector<N, T> const& a, vector<N, T> const& b)
     {
-        static bool apply(vector<N,T> const& a, vector<N,T> const& b)
-        { return true; }
-    };
+        return true;
+    }
+};
+} // namespace impl
+template<unsigned N, class T>
+bool
+operator==(vector<N, T> const& a, vector<N, T> const& b)
+{
+    return impl::vector_equality_test<N, T, N>::apply(a, b);
 }
 template<unsigned N, class T>
-bool operator==(vector<N,T> const& a, vector<N,T> const& b)
-{ return impl::vector_equality_test<N,T,N>::apply(a, b); }
-template<unsigned N, class T>
-bool operator!=(vector<N,T> const& a, vector<N,T> const& b)
-{ return !(a == b); }
+bool
+operator!=(vector<N, T> const& a, vector<N, T> const& b)
+{
+    return !(a == b);
+}
 // < operator
 template<unsigned N, class T>
-bool operator<(vector<N,T> const& a, vector<N,T> const& b)
+bool
+operator<(vector<N, T> const& a, vector<N, T> const& b)
 {
     for (unsigned i = 0; i < N; ++i)
     {
@@ -262,7 +331,8 @@ bool operator<(vector<N,T> const& a, vector<N,T> const& b)
 }
 // streaming
 template<unsigned N, class T>
-std::ostream& operator<<(std::ostream& out, vector<N,T> const& v)
+std::ostream&
+operator<<(std::ostream& out, vector<N, T> const& v)
 {
     out << "(";
     for (unsigned i = 0; i != N; ++i)
@@ -276,50 +346,86 @@ std::ostream& operator<<(std::ostream& out, vector<N,T> const& v)
 }
 
 // optional<T> stores an optional value of type T (or no value).
-struct none_type {};
+struct none_type
+{
+};
 static none_type const none;
 template<class T>
 struct optional
 {
     typedef T value_type;
-    optional() : valid_(false) {}
-    optional(T const& value) : value_(value), valid_(true) {}
-    optional(none_type) : valid_(false) {}
-    optional& operator=(T const& value)
-    { value_ = value; valid_ = true; return *this; }
+    optional() : valid_(false)
+    {
+    }
+    optional(T const& value) : value_(value), valid_(true)
+    {
+    }
+    optional(none_type) : valid_(false)
+    {
+    }
+    optional&
+    operator=(T const& value)
+    {
+        value_ = value;
+        valid_ = true;
+        return *this;
+    }
     optional& operator=(none_type)
-    { valid_ = false; return *this; }
+    {
+        valid_ = false;
+        return *this;
+    }
     // allows use within if statements without other unintended conversions
-    typedef bool optional::* unspecified_bool_type;
+    typedef bool optional::*unspecified_bool_type;
     operator unspecified_bool_type() const
-    { return valid_ ? &optional::valid_ : 0; }
-    T const& get() const
-    { assert(valid_); return value_; }
-    T& get()
-    { assert(valid_); return value_; }
+    {
+        return valid_ ? &optional::valid_ : 0;
+    }
+    T const&
+    get() const
+    {
+        assert(valid_);
+        return value_;
+    }
+    T&
+    get()
+    {
+        assert(valid_);
+        return value_;
+    }
+
  private:
     T value_;
     bool valid_;
 };
 template<class T>
-T const& get(optional<T> const& opt)
-{ return opt.get(); }
+T const&
+get(optional<T> const& opt)
+{
+    return opt.get();
+}
 template<class T>
-T& get(optional<T>& opt)
-{ return opt.get(); }
+T&
+get(optional<T>& opt)
+{
+    return opt.get();
+}
 
 template<class T>
-bool operator==(optional<T> const& a, optional<T> const& b)
+bool
+operator==(optional<T> const& a, optional<T> const& b)
 {
     return a ? (b && get(a) == get(b)) : !b;
 }
 template<class T>
-bool operator!=(optional<T> const& a, optional<T> const& b)
+bool
+operator!=(optional<T> const& a, optional<T> const& b)
 {
     return !(a == b);
 }
 template<class T>
-bool operator<(optional<T> const& a, optional<T> const& b)
+bool
+operator<(optional<T> const& a, optional<T> const& b)
 {
     return b && (a ? get(a) < get(b) : true);
 }
@@ -327,12 +433,17 @@ bool operator<(optional<T> const& a, optional<T> const& b)
 template<class T>
 optional<T>
 some(T const& x)
-{ return optional<T>(x); }
+{
+    return optional<T>(x);
+}
 
 template<class Container>
 struct raii_adaptor : Container
 {
-    ~raii_adaptor() { Container::end(); }
+    ~raii_adaptor()
+    {
+        Container::end();
+    }
 };
 
 struct id_interface;
@@ -365,18 +476,21 @@ struct untyped_accessor_base
 {
     // If this returns false, the underlying state has no value, so get()
     // should not be called.
-    virtual bool is_gettable() const = 0;
+    virtual bool
+    is_gettable() const = 0;
 
     // An accessor must supply an ID which uniquely identifies its value.
     // The ID is required to be valid if is_gettable() returns true.
     // (It may be valid even if is_gettable() returns false, which would mean
     // that the accessor can identify its value but doesn't know it yet.)
     // The ID reference is only valid as long as the accessor itself is valid.
-    virtual id_interface const& id() const = 0;
+    virtual id_interface const&
+    id() const = 0;
 
     // If is_settable() returns false, the accessor is currently read-only and
     // any UI controls associated with it should disallow user input.
-    virtual bool is_settable() const = 0;
+    virtual bool
+    is_settable() const = 0;
 };
 template<class T>
 struct accessor : untyped_accessor_base
@@ -385,29 +499,34 @@ struct accessor : untyped_accessor_base
 
     // Get the value. The reference returned here is only guaranteed to be
     // valid as long as the accessor itself is valid.
-    virtual T const& get() const = 0;
+    virtual T const&
+    get() const = 0;
 
     // Set the value. (Only call if is_settable returns true.)
-    virtual void set(T const& value) const = 0;
+    virtual void
+    set(T const& value) const = 0;
 };
 
 // Invoke the standard hash function for a value.
 template<class T>
-size_t invoke_hash(T const& x)
-{ return std::hash<T>()(x); }
+size_t
+invoke_hash(T const& x)
+{
+    return std::hash<T>()(x);
+}
 
 // Combine two hash values.
-size_t static inline
-combine_hashes(size_t a, size_t b)
-{ return a ^ (0x9e3779b9 + (a << 6) + (a >> 2) + b); }
+size_t static inline combine_hashes(size_t a, size_t b)
+{
+    return a ^ (0x9e3779b9 + (a << 6) + (a >> 2) + b);
+}
 
 // ALIA_UNUSED is used to denote that a variable may be unused.
 #ifdef __GNUC__
-    #define ALIA_UNUSED [[gnu::unused]]
+#define ALIA_UNUSED [[gnu::unused]]
 #else
-    #define ALIA_UNUSED
+#define ALIA_UNUSED
 #endif
-
-}
+} // namespace alia
 
 #endif
