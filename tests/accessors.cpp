@@ -4,19 +4,22 @@
 #include <catch.hpp>
 
 template<class T>
-T const& set_and_get(alia::accessor<T> const& x, T const& value)
+T const&
+set_and_get(alia::accessor<T> const& x, T const& value)
 {
     x.set(value);
     return x.get();
 }
 
 template<class T>
-bool is_readonly(alia::accessor<T> const& x)
+bool
+is_readonly(alia::accessor<T> const& x)
 {
     return x.is_gettable() && !x.is_settable();
 }
 
-void test_ref(alia::accessor<int> const& x)
+void
+test_ref(alia::accessor<int> const& x)
 {
     x.set(0);
     REQUIRE(set_and_get(ref(x), 3) == 3);
@@ -25,31 +28,44 @@ void test_ref(alia::accessor<int> const& x)
 
 struct foo
 {
-    foo() : x(0), y(1) {}
+    foo() : x(0), y(1)
+    {
+    }
     int x;
     double y;
 };
-bool operator==(foo a, foo b)
-{ return a.x == b.x && a.y == b.y; }
-bool operator!=(foo a, foo b)
-{ return !(a == b); }
-bool operator<(foo a, foo b)
-{ return a.x < b.x || a.x == b.x && a.y < b.y; }
-std::ostream& operator<<(std::ostream& s, foo f)
+bool
+operator==(foo a, foo b)
+{
+    return a.x == b.x && a.y == b.y;
+}
+bool
+operator!=(foo a, foo b)
+{
+    return !(a == b);
+}
+bool
+operator<(foo a, foo b)
+{
+    return a.x < b.x || a.x == b.x && a.y < b.y;
+}
+std::ostream&
+operator<<(std::ostream& s, foo f)
 {
     s << "(" << f.x << "," << f.y << ")";
     return s;
 }
 namespace std {
-    template<>
-    struct hash<foo>
+template<>
+struct hash<foo>
+{
+    size_t
+    operator()(foo const& f) const
     {
-        size_t operator()(foo const& f) const
-        {
-            return 0;
-        }
-    };
-}
+        return 0;
+    }
+};
+} // namespace std
 
 TEST_CASE("accessors", "[accessors]")
 {
@@ -87,10 +103,10 @@ TEST_CASE("accessors", "[accessors]")
     REQUIRE(y == 1.0);
 
     // test select_accessor
-    REQUIRE(get(select_accessor(in(true), inout(&x),
-        accessor_cast<int>(inout(&y)))) == 2);
-    REQUIRE(get(select_accessor(in(false), inout(&x),
-        accessor_cast<int>(inout(&y)))) == 1);
+    REQUIRE(
+        get(select_accessor(in(true), inout(&x), accessor_cast<int>(inout(&y)))) == 2);
+    REQUIRE(
+        get(select_accessor(in(false), inout(&x), accessor_cast<int>(inout(&y)))) == 1);
     REQUIRE(!is_readonly(select_accessor(in(true), inout(&x), in(0))));
     REQUIRE(is_readonly(select_accessor(in(false), inout(&x), in(0))));
 

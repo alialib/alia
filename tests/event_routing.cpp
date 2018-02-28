@@ -1,12 +1,14 @@
-#include <alia/event_routing.hpp>
 #include <alia/data_graph.hpp>
+#include <alia/event_routing.hpp>
 #include <sstream>
 
 #include <catch.hpp>
 
 struct event
 {
-    virtual ~event() {}
+    virtual ~event()
+    {
+    }
 };
 
 struct context
@@ -16,15 +18,19 @@ struct context
     ::event* event;
 };
 
-alia::data_traversal& get_data_traversal(context& ctx)
-{ return *ctx.data; }
+alia::data_traversal&
+get_data_traversal(context& ctx)
+{
+    return *ctx.data;
+}
 
 struct ostream_event : event
 {
     std::ostream* stream;
 };
 
-void do_ostream_text(context& ctx, std::string const& text)
+void
+do_ostream_text(context& ctx, std::string const& text)
 {
     ostream_event* oe = dynamic_cast<ostream_event*>(ctx.event);
     if (oe)
@@ -39,7 +45,8 @@ struct find_label_event : event
     std::string name;
 };
 
-void do_label(context& ctx, std::string const& name)
+void
+do_label(context& ctx, std::string const& name)
 {
     do_ostream_text(ctx, name);
 
@@ -55,26 +62,29 @@ struct traversal_function
 {
     context& ctx;
     int n;
-    traversal_function(context& ctx, int n) : ctx(ctx), n(n) {}
-    void operator()()
+    traversal_function(context& ctx, int n) : ctx(ctx), n(n)
+    {
+    }
+    void
+    operator()()
     {
         do_ostream_text(ctx, "");
 
         alia::scoped_routing_region srr(*ctx.routing);
-        alia_if (srr.is_relevant())
+        alia_if(srr.is_relevant())
         {
             do_label(ctx, "root");
 
-            alia_if (n != 0)
+            alia_if(n != 0)
             {
                 alia::scoped_routing_region srr(*ctx.routing);
-                alia_if (srr.is_relevant())
+                alia_if(srr.is_relevant())
                 {
                     do_label(ctx, "nonzero");
 
                     {
                         alia::scoped_routing_region srr(*ctx.routing);
-                        alia_if (srr.is_relevant())
+                        alia_if(srr.is_relevant())
                         {
                             do_label(ctx, "deep");
                         }
@@ -85,10 +95,10 @@ struct traversal_function
             }
             alia_end
 
-            alia_if (n & 1)
+                alia_if(n & 1)
             {
                 alia::scoped_routing_region srr(*ctx.routing);
-                alia_if (srr.is_relevant())
+                alia_if(srr.is_relevant())
                 {
                     do_label(ctx, "odd");
                 }
@@ -100,7 +110,12 @@ struct traversal_function
     }
 };
 
-void do_traversal(alia::data_graph& graph, int n, event& e, bool targeted,
+void
+do_traversal(
+    alia::data_graph& graph,
+    int n,
+    event& e,
+    bool targeted,
     alia::routing_region_ptr const& target = alia::routing_region_ptr())
 {
     alia::data_traversal data_traversal;
@@ -113,13 +128,12 @@ void do_traversal(alia::data_graph& graph, int n, event& e, bool targeted,
     ctx.routing = &routing_traversal;
 
     traversal_function fn(ctx, n);
-    alia::invoke_routed_traversal(fn, routing_traversal, data_traversal,
-        targeted, target);
+    alia::invoke_routed_traversal(
+        fn, routing_traversal, data_traversal, targeted, target);
 }
 
-void check_traversal_path(
-    int n, std::string const& label,
-    std::string const& expected_path)
+void
+check_traversal_path(int n, std::string const& label, std::string const& expected_path)
 {
     auto* x = new int[200];
     x[0] = 0;

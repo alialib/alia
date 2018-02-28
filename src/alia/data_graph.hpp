@@ -1,10 +1,10 @@
 #ifndef ALIA_DATA_GRAPH_HPP
 #define ALIA_DATA_GRAPH_HPP
 
-#include <alia/id.hpp>
-#include <alia/common.hpp>
-#include <cassert>
 #include <alia/accessors.hpp>
+#include <alia/common.hpp>
+#include <alia/id.hpp>
+#include <cassert>
 
 // This file defines the data retrieval library used for associating mutable
 // state and cached data with alia UIs. It is designed so that each widget
@@ -74,8 +74,12 @@ namespace alia {
 //
 struct data_node : noncopyable
 {
-    data_node() : next(0) {}
-    virtual ~data_node() {}
+    data_node() : next(0)
+    {
+    }
+    virtual ~data_node()
+    {
+    }
     data_node* next;
 };
 template<class T>
@@ -111,7 +115,8 @@ struct data_block : noncopyable
 };
 
 // Clear all data from a data block.
-void clear_data_block(data_block& block);
+void
+clear_data_block(data_block& block);
 
 struct naming_map_node;
 
@@ -132,11 +137,11 @@ struct data_graph : noncopyable
     named_block_ref_node* unused_named_block_refs;
 
     // for versioning state stored in the graph
-    //local_identity identity;
+    // local_identity identity;
 
-    data_graph()
-      : map_list(0)
-    {}
+    data_graph() : map_list(0)
+    {
+    }
 };
 
 struct naming_map;
@@ -170,8 +175,11 @@ struct data_traversal
 
 // If using this library directly, the data_traversal itself can server as the
 // context.
-static inline data_traversal& get_data_traversal(data_traversal& ctx)
-{ return ctx; }
+static inline data_traversal&
+get_data_traversal(data_traversal& ctx)
+{
+    return ctx;
+}
 
 // A scoped_data_block activates the associated data_block at the beginning
 // of its scope and deactivates it at the end. It's useful anytime there is a
@@ -181,21 +189,33 @@ static inline data_traversal& get_data_traversal(data_traversal& ctx)
 // need for applications to use it directly.
 struct scoped_data_block : noncopyable
 {
-    scoped_data_block() : traversal_(0) {}
+    scoped_data_block() : traversal_(0)
+    {
+    }
 
     template<class Context>
     scoped_data_block(Context& ctx, data_block& block)
-    { begin(ctx, block); }
+    {
+        begin(ctx, block);
+    }
 
-    ~scoped_data_block() { end(); }
+    ~scoped_data_block()
+    {
+        end();
+    }
 
     template<class Context>
-    void begin(Context& ctx, data_block& block)
-    { begin(get_data_traversal(ctx), block); }
+    void
+    begin(Context& ctx, data_block& block)
+    {
+        begin(get_data_traversal(ctx), block);
+    }
 
-    void begin(data_traversal& traversal, data_block& block);
+    void
+    begin(data_traversal& traversal, data_block& block);
 
-    void end();
+    void
+    end();
 
  private:
     data_traversal* traversal_;
@@ -232,29 +252,42 @@ struct scoped_data_block : noncopyable
 // call site.
 struct manual_delete
 {
-    explicit manual_delete(bool value)
-      : value(value) {}
+    explicit manual_delete(bool value) : value(value)
+    {
+    }
     bool value;
 };
 
 struct named_block : noncopyable
 {
-    named_block() {}
+    named_block()
+    {
+    }
 
     template<class Context>
-    named_block(Context& ctx, id_interface const& id,
-        manual_delete manual = manual_delete(false))
-    { begin(ctx, id, manual); }
+    named_block(
+        Context& ctx, id_interface const& id, manual_delete manual = manual_delete(false))
+    {
+        begin(ctx, id, manual);
+    }
 
     template<class Context>
-    void begin(Context& ctx, id_interface const& id,
-        manual_delete manual = manual_delete(false))
-    { begin(get_data_traversal(ctx), get_naming_map(ctx), id, manual); }
+    void
+    begin(
+        Context& ctx, id_interface const& id, manual_delete manual = manual_delete(false))
+    {
+        begin(get_data_traversal(ctx), get_naming_map(ctx), id, manual);
+    }
 
-    void begin(data_traversal& traversal, naming_map& map,
-        id_interface const& id, manual_delete manual);
+    void
+    begin(
+        data_traversal& traversal,
+        naming_map& map,
+        id_interface const& id,
+        manual_delete manual);
 
-    void end();
+    void
+    end();
 
  private:
     scoped_data_block scoped_data_block_;
@@ -262,47 +295,80 @@ struct named_block : noncopyable
 
 struct naming_context : noncopyable
 {
-    naming_context() {}
+    naming_context()
+    {
+    }
 
     template<class Context>
     naming_context(Context& ctx)
-    { begin(ctx); }
+    {
+        begin(ctx);
+    }
 
-    ~naming_context() { end(); }
+    ~naming_context()
+    {
+        end();
+    }
 
     template<class Context>
-    void begin(Context& ctx)
-    { begin(get_data_traversal(ctx)); }
+    void
+    begin(Context& ctx)
+    {
+        begin(get_data_traversal(ctx));
+    }
 
-    void begin(data_traversal& traversal);
+    void
+    begin(data_traversal& traversal);
 
-    void end() {}
+    void
+    end()
+    {
+    }
 
-    data_traversal& traversal() { return *traversal_; }
-    naming_map& map() { return *map_; }
+    data_traversal&
+    traversal()
+    {
+        return *traversal_;
+    }
+    naming_map&
+    map()
+    {
+        return *map_;
+    }
 
  private:
     data_traversal* traversal_;
     naming_map* map_;
 };
-static inline data_traversal& get_data_traversal(naming_context& ctx)
-{ return ctx.traversal(); }
-static inline naming_map& get_naming_map(naming_context& ctx)
-{ return ctx.map(); }
+static inline data_traversal&
+get_data_traversal(naming_context& ctx)
+{
+    return ctx.traversal();
+}
+static inline naming_map&
+get_naming_map(naming_context& ctx)
+{
+    return ctx.map();
+}
 
 // retrieve_naming_map gets a data_map from a data_traveral and registers it
 // with the underlying graph. It can be used to retrieve additional naming maps
 // from a data graph, in case you want to manage them yourself.
-naming_map* retrieve_naming_map(data_traversal& traversal);
+naming_map*
+retrieve_naming_map(data_traversal& traversal);
 
 // delete_named_block(ctx, id) deletes the data associated with a particular
 // named block, as identified by the given ID.
 
-void delete_named_block(data_graph& graph, id_interface const& id);
+void
+delete_named_block(data_graph& graph, id_interface const& id);
 
 template<class Context>
-void delete_named_block(Context& ctx, id_interface const& id)
-{ delete_named_block(*get_data_traversal(ctx).graph, id); }
+void
+delete_named_block(Context& ctx, id_interface const& id)
+{
+    delete_named_block(*get_data_traversal(ctx).graph, id);
+}
 
 // This is a macro that, given a context, an uninitialized named_block, and an
 // ID, combines the ID with another ID which is unique to that location in the
@@ -310,10 +376,10 @@ void delete_named_block(Context& ctx, id_interface const& id)
 // combined ID.
 // This is not as generally useful as naming_context, but it can be used to
 // identify the combinaion of a function and its argument.
-#define ALIA_BEGIN_LOCATION_SPECIFIC_NAMED_BLOCK(ctx, named_block, id) \
-    { \
-        static int alia__dummy_static; \
-        named_block.begin(ctx, combine_ids(make_id(&alia__dummy_static), id));\
+#define ALIA_BEGIN_LOCATION_SPECIFIC_NAMED_BLOCK(ctx, named_block, id)                   \
+    {                                                                                    \
+        static int alia__dummy_static;                                                   \
+        named_block.begin(ctx, combine_ids(make_id(&alia__dummy_static), id));           \
     }
 
 // scoped_gc_disabler disables the garbage collector within a scope of a
@@ -327,21 +393,35 @@ void delete_named_block(Context& ctx, id_interface const& id)
 struct named_block_out_of_order : exception
 {
     named_block_out_of_order()
-      : exception("named block order must remain constant with GC disabled")
-    {}
+        : exception("named block order must remain constant with GC disabled")
+    {
+    }
 };
 struct scoped_gc_disabler
 {
-    scoped_gc_disabler() : traversal_(0) {}
+    scoped_gc_disabler() : traversal_(0)
+    {
+    }
     template<class Context>
     scoped_gc_disabler(Context& ctx)
-    { begin(ctx); }
-    ~scoped_gc_disabler() { end(); }
+    {
+        begin(ctx);
+    }
+    ~scoped_gc_disabler()
+    {
+        end();
+    }
     template<class Context>
-    void begin(Context& ctx)
-    { begin(get_data_traversal(ctx)); }
-    void begin(data_traversal& traversal);
-    void end();
+    void
+    begin(Context& ctx)
+    {
+        begin(get_data_traversal(ctx));
+    }
+    void
+    begin(data_traversal& traversal);
+    void
+    end();
+
  private:
     data_traversal* traversal_;
     bool old_gc_state_;
@@ -351,16 +431,29 @@ struct scoped_gc_disabler
 // the cache of blocks that are inactive.
 struct scoped_cache_clearing_disabler
 {
-    scoped_cache_clearing_disabler() : traversal_(0) {}
+    scoped_cache_clearing_disabler() : traversal_(0)
+    {
+    }
     template<class Context>
     scoped_cache_clearing_disabler(Context& ctx)
-    { begin(ctx); }
-    ~scoped_cache_clearing_disabler() { end(); }
+    {
+        begin(ctx);
+    }
+    ~scoped_cache_clearing_disabler()
+    {
+        end();
+    }
     template<class Context>
-    void begin(Context& ctx)
-    { begin(get_data_traversal(ctx)); }
-    void begin(data_traversal& traversal);
-    void end();
+    void
+    begin(Context& ctx)
+    {
+        begin(get_data_traversal(ctx));
+    }
+    void
+    begin(data_traversal& traversal);
+    void
+    end();
+
  private:
     data_traversal* traversal_;
     bool old_cache_clearing_state_;
@@ -376,16 +469,16 @@ struct scoped_cache_clearing_disabler
 // Note that get_data should normally not be used directly by the application.
 
 template<class Context, class T>
-bool get_data(Context& ctx, T** ptr)
+bool
+get_data(Context& ctx, T** ptr)
 {
     data_traversal& traversal = get_data_traversal(ctx);
     data_node* node = *traversal.next_data_ptr;
     if (node)
     {
         if (!dynamic_cast<typed_data_node<T>*>(node))
-        assert(dynamic_cast<typed_data_node<T>*>(node));
-        typed_data_node<T>* typed_node =
-            static_cast<typed_data_node<T>*>(node);
+            assert(dynamic_cast<typed_data_node<T>*>(node));
+        typed_data_node<T>* typed_node = static_cast<typed_data_node<T>*>(node);
         traversal.next_data_ptr = &node->next;
         *ptr = &typed_node->value;
         return false;
@@ -407,7 +500,9 @@ bool get_data(Context& ctx, T** ptr)
 
 struct cached_data
 {
-    virtual ~cached_data() {}
+    virtual ~cached_data()
+    {
+    }
 };
 
 template<class T>
@@ -418,21 +513,26 @@ struct typed_cached_data : cached_data
 
 struct cached_data_holder
 {
-    cached_data_holder() : data(0) {}
-    ~cached_data_holder() { delete data; }
+    cached_data_holder() : data(0)
+    {
+    }
+    ~cached_data_holder()
+    {
+        delete data;
+    }
     cached_data* data;
 };
 
 template<class Context, class T>
-bool get_cached_data(Context& ctx, T** ptr)
+bool
+get_cached_data(Context& ctx, T** ptr)
 {
     cached_data_holder* holder;
     get_data(ctx, &holder);
     if (holder->data)
     {
         assert(dynamic_cast<typed_cached_data<T>*>(holder->data));
-        typed_cached_data<T>* data =
-            static_cast<typed_cached_data<T>*>(holder->data);
+        typed_cached_data<T>* data = static_cast<typed_cached_data<T>*>(holder->data);
         *ptr = &data->value;
         return false;
     }
@@ -456,7 +556,8 @@ bool get_cached_data(Context& ctx, T** ptr)
 // The return value is true iff the underlying state requires initialization.
 
 template<class Context, class T>
-bool get_state(Context& ctx, state_accessor<T>* accessor)
+bool
+get_state(Context& ctx, state_accessor<T>* accessor)
 {
     state<T>* ptr;
     bool is_new = get_data(get_data_traversal(ctx), &ptr);
@@ -465,9 +566,7 @@ bool get_state(Context& ctx, state_accessor<T>* accessor)
 }
 
 template<class T, class Context>
-std::enable_if_t<
-    !std::is_base_of<untyped_accessor_base,T>::value,
-    state_accessor<T> >
+std::enable_if_t<!std::is_base_of<untyped_accessor_base, T>::value, state_accessor<T>>
 get_state(Context& ctx, T const& default_value = T())
 {
     state<T>* ptr;
@@ -508,26 +607,36 @@ struct keyed_data
     owned_id key;
     bool is_valid;
     Data value;
-    keyed_data() : is_valid(false) {}
+    keyed_data() : is_valid(false)
+    {
+    }
 };
 
 template<class Data>
-bool is_valid(keyed_data<Data> const& data)
-{ return data.is_valid; }
+bool
+is_valid(keyed_data<Data> const& data)
+{
+    return data.is_valid;
+}
 
 template<class Data>
-void invalidate(keyed_data<Data>& data)
+void
+invalidate(keyed_data<Data>& data)
 {
-    data.is_valid  = false;
+    data.is_valid = false;
     data.key.clear();
 }
 
 template<class Data>
-void mark_valid(keyed_data<Data>& data)
-{ data.is_valid = true; }
+void
+mark_valid(keyed_data<Data>& data)
+{
+    data.is_valid = true;
+}
 
 template<class Data>
-bool refresh_keyed_data(keyed_data<Data>& data, id_interface const& key)
+bool
+refresh_keyed_data(keyed_data<Data>& data, id_interface const& key)
 {
     if (!data.key.matches(key))
     {
@@ -539,14 +648,16 @@ bool refresh_keyed_data(keyed_data<Data>& data, id_interface const& key)
 }
 
 template<class Data>
-void set(keyed_data<Data>& data, Data const& value)
+void
+set(keyed_data<Data>& data, Data const& value)
 {
     data.value = value;
     mark_valid(data);
 }
 
 template<class Data>
-Data const& get(keyed_data<Data> const& data)
+Data const&
+get(keyed_data<Data> const& data)
 {
     assert(is_valid(data));
     return data.value;
@@ -555,17 +666,43 @@ Data const& get(keyed_data<Data> const& data)
 template<class Data>
 struct keyed_data_accessor : accessor<Data>
 {
-    keyed_data_accessor() {}
-    keyed_data_accessor(keyed_data<Data>* data) : data_(data) {}
-    bool is_gettable() const { return data_->is_valid; }
-    Data const& get() const { return data_->value; }
-    alia__shared_ptr<Data> get_ptr() const
-    { return alia__shared_ptr<Data>(new Data(data_->value)); }
-    id_interface const& id() const
-    { return data_->key.is_initialized() ? data_->key.get() : no_id; }
-    bool is_settable() const { return true; }
-    void set(Data const& value) const
-    { alia::set(*data_, value); }
+    keyed_data_accessor()
+    {
+    }
+    keyed_data_accessor(keyed_data<Data>* data) : data_(data)
+    {
+    }
+    bool
+    is_gettable() const
+    {
+        return data_->is_valid;
+    }
+    Data const&
+    get() const
+    {
+        return data_->value;
+    }
+    alia__shared_ptr<Data>
+    get_ptr() const
+    {
+        return alia__shared_ptr<Data>(new Data(data_->value));
+    }
+    id_interface const&
+    id() const
+    {
+        return data_->key.is_initialized() ? data_->key.get() : no_id;
+    }
+    bool
+    is_settable() const
+    {
+        return true;
+    }
+    void
+    set(Data const& value) const
+    {
+        alia::set(*data_, value);
+    }
+
  private:
     keyed_data<Data>* data_;
 };
@@ -573,11 +710,13 @@ struct keyed_data_accessor : accessor<Data>
 template<class Data>
 keyed_data_accessor<Data>
 make_accessor(keyed_data<Data>* data)
-{ return keyed_data_accessor<Data>(data); }
+{
+    return keyed_data_accessor<Data>(data);
+}
 
 template<class Context, class Data>
-bool get_keyed_data(Context& ctx, id_interface const& key,
-    keyed_data_accessor<Data>* accessor)
+bool
+get_keyed_data(Context& ctx, id_interface const& key, keyed_data_accessor<Data>* accessor)
 {
     keyed_data<Data>* ptr;
     get_cached_data(ctx, &ptr);
@@ -598,7 +737,8 @@ struct raw_keyed_data
 };
 
 template<class Context, class Data>
-bool get_keyed_data(Context& ctx, id_interface const& key, Data** data)
+bool
+get_keyed_data(Context& ctx, id_interface const& key, Data** data)
 {
     raw_keyed_data<Data>* ptr;
     bool is_new = false;
@@ -622,17 +762,25 @@ bool get_keyed_data(Context& ctx, id_interface const& key, Data** data)
 // graph.
 struct scoped_data_traversal
 {
-    scoped_data_traversal() {}
+    scoped_data_traversal()
+    {
+    }
 
     scoped_data_traversal(data_graph& graph, data_traversal& traversal)
-    { begin(graph, traversal); }
+    {
+        begin(graph, traversal);
+    }
 
     ~scoped_data_traversal()
-    { end(); }
+    {
+        end();
+    }
 
-    void begin(data_graph& graph, data_traversal& traversal);
+    void
+    begin(data_graph& graph, data_traversal& traversal);
 
-    void end();
+    void
+    end();
 
  private:
     scoped_data_block root_block_;
@@ -641,7 +789,8 @@ struct scoped_data_traversal
 
 // Clear all cached data stored in the subgraph referenced from the given
 // data_block.
-void clear_cached_data(data_block& block);
+void
+clear_cached_data(data_block& block);
 
 // The following are utilities that are used to implement the control flow
 // macros. They shouldn't be used directly by applications.
@@ -649,6 +798,7 @@ void clear_cached_data(data_block& block);
 struct if_block : noncopyable
 {
     if_block(data_traversal& traversal, bool condition);
+
  private:
     scoped_data_block scoped_data_block_;
 };
@@ -656,6 +806,7 @@ struct if_block : noncopyable
 struct pass_dependent_if_block : noncopyable
 {
     pass_dependent_if_block(data_traversal& traversal, bool condition);
+
  private:
     scoped_data_block scoped_data_block_;
 };
@@ -668,11 +819,13 @@ struct switch_block : noncopyable
         nc_.begin(ctx);
     }
     template<class Id>
-    void activate_case(Id id)
+    void
+    activate_case(Id id)
     {
         active_case_.end();
         active_case_.begin(nc_, make_id(id), manual_delete(true));
     }
+
  private:
     naming_context nc_;
     named_block active_case_;
@@ -682,9 +835,19 @@ struct loop_block : noncopyable
 {
     loop_block(data_traversal& traversal);
     ~loop_block();
-    data_block& block() const { return *block_; }
-    data_traversal& traversal() const { return *traversal_; }
-    void next();
+    data_block&
+    block() const
+    {
+        return *block_;
+    }
+    data_traversal&
+    traversal() const
+    {
+        return *traversal_;
+    }
+    void
+    next();
+
  private:
     data_traversal* traversal_;
     data_block* block_;
@@ -699,69 +862,77 @@ struct loop_block : noncopyable
 
 // is_true(x) evaluates x in a boolean context.
 template<class T>
-std::enable_if_t<!std::is_base_of<untyped_accessor_base,T>::value,bool>
+std::enable_if_t<!std::is_base_of<untyped_accessor_base, T>::value, bool>
 is_true(T x)
-{ return x ? true : false; }
+{
+    return x ? true : false;
+}
 
 // is_true(x), where x is an accessor to a bool, returns true iff x is
 // gettable and its value is true.
 template<class Accessor>
-std::enable_if_t<std::is_base_of<untyped_accessor_base,Accessor>::value,bool>
+std::enable_if_t<std::is_base_of<untyped_accessor_base, Accessor>::value, bool>
 is_true(Accessor const& x)
-{ return is_gettable(x) && is_true(get(x)); }
+{
+    return is_gettable(x) && is_true(get(x));
+}
 
 // is_false(x) evaluates x in a boolean context and inverts it.
 template<class T>
-std::enable_if_t<!std::is_base_of<untyped_accessor_base,T>::value,bool>
+std::enable_if_t<!std::is_base_of<untyped_accessor_base, T>::value, bool>
 is_false(T x)
-{ return x ? false : true; }
+{
+    return x ? false : true;
+}
 
 // is_false(x), where x is an accessor to a bool, returns false iff x is
 // gettable and its value is false.
 template<class Accessor>
-std::enable_if_t<std::is_base_of<untyped_accessor_base,Accessor>::value,bool>
+std::enable_if_t<std::is_base_of<untyped_accessor_base, Accessor>::value, bool>
 is_false(Accessor const& x)
-{ return is_gettable(x) && is_false(get(x)); }
+{
+    return is_gettable(x) && is_false(get(x));
+}
 
 // if, else_if, else
 
-#define alia_if_(ctx, condition) \
-    { \
-        bool alia__else_condition ALIA_UNUSED; \
-        { \
-            auto const& alia__condition_value = (condition); \
-            bool alia__if_condition = alia::is_true(alia__condition_value); \
-            alia__else_condition = alia::is_false(alia__condition_value); \
-            ::alia::if_block alia__if_block(get_data_traversal(ctx), alia__if_condition); \
-            if (alia__if_condition) \
+#define alia_if_(ctx, condition)                                                         \
+    {                                                                                    \
+        bool alia__else_condition ALIA_UNUSED;                                           \
+        {                                                                                \
+            auto const& alia__condition_value = (condition);                             \
+            bool alia__if_condition = alia::is_true(alia__condition_value);              \
+            alia__else_condition = alia::is_false(alia__condition_value);                \
+            ::alia::if_block alia__if_block(                                             \
+                get_data_traversal(ctx), alia__if_condition);                            \
+            if (alia__if_condition)                                                      \
             {
 
 #define alia_if(condition) alia_if_(ctx, condition)
 
-#define alia_else_if_(ctx, condition) \
-            } \
-        } \
-        { \
-            auto const& alia__condition_value = (condition); \
-            bool alia__else_if_condition = \
-                alia__else_condition && \
-                alia::is_true(alia__condition_value); \
-            alia__else_condition = \
-                alia__else_condition && \
-                alia::is_false(alia__condition_value); \
-            ::alia::if_block alia__if_block(get_data_traversal(ctx), alia__else_if_condition); \
-            if (alia__else_if_condition) \
-            { \
+#define alia_else_if_(ctx, condition)                                                    \
+    }                                                                                    \
+    }                                                                                    \
+    {                                                                                    \
+        auto const& alia__condition_value = (condition);                                 \
+        bool alia__else_if_condition                                                     \
+            = alia__else_condition && alia::is_true(alia__condition_value);              \
+        alia__else_condition                                                             \
+            = alia__else_condition && alia::is_false(alia__condition_value);             \
+        ::alia::if_block alia__if_block(                                                 \
+            get_data_traversal(ctx), alia__else_if_condition);                           \
+        if (alia__else_if_condition)                                                     \
+        {
 
 #define alia_else_if(condition) alia_else_if_(ctx, condition)
 
-#define alia_else_(ctx) \
-            } \
-        } \
-        { \
-            ::alia::if_block alia__if_block(get_data_traversal(ctx), alia__else_condition); \
-            if (alia__else_condition) \
-            {
+#define alia_else_(ctx)                                                                  \
+    }                                                                                    \
+    }                                                                                    \
+    {                                                                                    \
+        ::alia::if_block alia__if_block(get_data_traversal(ctx), alia__else_condition);  \
+        if (alia__else_condition)                                                        \
+        {
 
 #define alia_else alia_else_(ctx)
 
@@ -769,73 +940,78 @@ is_false(Accessor const& x)
 // change from one pass to another. It does not clear out cached data wihin
 // the block if it's skipped.
 
-#define alia_pass_dependent_if_(ctx, condition) \
-    { \
-        { \
-            bool alia__condition = alia::is_true(condition); \
-            ::alia::pass_dependent_if_block alia__if_block( \
-                get_data_traversal(ctx), alia__condition); \
-            if (alia__condition) \
+#define alia_pass_dependent_if_(ctx, condition)                                          \
+    {                                                                                    \
+        {                                                                                \
+            bool alia__condition = alia::is_true(condition);                             \
+            ::alia::pass_dependent_if_block alia__if_block(                              \
+                get_data_traversal(ctx), alia__condition);                               \
+            if (alia__condition)                                                         \
             {
 
-#define alia_pass_dependent_if(condition) \
-    alia_pass_dependent_if_(ctx, condition)
+#define alia_pass_dependent_if(condition) alia_pass_dependent_if_(ctx, condition)
 
 // switch
 
-#define alia_switch_(ctx, x) \
-    {{ \
-        ::alia::switch_block alia__switch_block(ctx); \
-        switch(x) {
+#define alia_switch_(ctx, x)                                                             \
+    {                                                                                    \
+        {                                                                                \
+            ::alia::switch_block alia__switch_block(ctx);                                \
+            switch (x)                                                                   \
+            {
 
 #define alia_switch(x) alia_switch_(ctx, x)
 
-#define ALIA_CONCATENATE_HELPER(a, b) a ## b
+#define ALIA_CONCATENATE_HELPER(a, b) a##b
 #define ALIA_CONCATENATE(a, b) ALIA_CONCATENATE_HELPER(a, b)
 
-#define alia_case(c) \
-            case c: \
-                alia__switch_block.activate_case(c); \
-                goto ALIA_CONCATENATE(alia__dummy_label_, __LINE__); \
-                ALIA_CONCATENATE(alia__dummy_label_, __LINE__)
+#define alia_case(c)                                                                     \
+    case c:                                                                              \
+        alia__switch_block.activate_case(c);                                             \
+        goto ALIA_CONCATENATE(alia__dummy_label_, __LINE__);                             \
+        ALIA_CONCATENATE(alia__dummy_label_, __LINE__)
 
-#define alia_default \
-            default: \
-                alia__switch_block.activate_case("default"); \
-                goto ALIA_CONCATENATE(alia__dummy_label_, __LINE__); \
-                ALIA_CONCATENATE(alia__dummy_label_, __LINE__)
+#define alia_default                                                                     \
+    default:                                                                             \
+        alia__switch_block.activate_case("default");                                     \
+        goto ALIA_CONCATENATE(alia__dummy_label_, __LINE__);                             \
+        ALIA_CONCATENATE(alia__dummy_label_, __LINE__)
 
 // for
 
-#define alia_for_(ctx, x) \
-    {{ \
-        ::alia::loop_block alia__looper(get_data_traversal(ctx)); \
-        for (x) \
-        { \
-            ::alia::scoped_data_block alia__scope; \
-            alia__scope.begin(alia__looper.traversal(), alia__looper.block());\
-            alia__looper.next();
+#define alia_for_(ctx, x)                                                                \
+    {                                                                                    \
+        {                                                                                \
+            ::alia::loop_block alia__looper(get_data_traversal(ctx));                    \
+            for (x)                                                                      \
+            {                                                                            \
+                ::alia::scoped_data_block alia__scope;                                   \
+                alia__scope.begin(alia__looper.traversal(), alia__looper.block());       \
+                alia__looper.next();
 
 #define alia_for(x) alia_for_(ctx, x)
 
 // while
 
-#define alia_while_(ctx, x) \
-    {{ \
-        ::alia::loop_block alia__looper(get_data_traversal(ctx)); \
-        while (x) \
-        { \
-            ::alia::scoped_data_block alia__scope; \
-            alia__scope.begin(alia__looper.traversal(), alia__looper.block());\
-            alia__looper.next();
+#define alia_while_(ctx, x)                                                              \
+    {                                                                                    \
+        {                                                                                \
+            ::alia::loop_block alia__looper(get_data_traversal(ctx));                    \
+            while (x)                                                                    \
+            {                                                                            \
+                ::alia::scoped_data_block alia__scope;                                   \
+                alia__scope.begin(alia__looper.traversal(), alia__looper.block());       \
+                alia__looper.next();
 
 #define alia_while(x) alia_while_(ctx, x)
 
 // end
 
-#define alia_end \
-    }}}
+#define alia_end                                                                         \
+    }                                                                                    \
+    }                                                                                    \
+    }
 
-}
+} // namespace alia
 
 #endif

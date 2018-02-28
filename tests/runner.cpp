@@ -11,8 +11,8 @@
 
 // The Catch "main" code triggers these in Visual C++.
 #if defined(_MSC_VER)
-    #pragma warning(disable:4244)
-    #pragma warning(disable:4702)
+#pragma warning(disable : 4244)
+#pragma warning(disable : 4702)
 #endif
 
 #include <catch.hpp>

@@ -159,3 +159,9 @@ add_custom_target(
     all_tests
     DEPENDS unit_tests
     DEPENDS integration_tests)
+
+# Add a target for running all tests (w/coverage).
+add_custom_target(
+    all_tests_coverage
+    DEPENDS unit_test_coverage
+    DEPENDS integration_tests)

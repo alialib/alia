@@ -8,32 +8,43 @@ namespace alia {
 // create a structure that will serve as an ID reference.
 struct id_reference
 {
-    id_reference() {}
-    explicit id_reference(id_interface const& id)
-      : id(&id)
-    {}
+    id_reference()
+    {
+    }
+    explicit id_reference(id_interface const& id) : id(&id)
+    {
+    }
     id_interface const* id;
 };
-static bool operator==(id_reference a, id_reference b)
-{ return *a.id == *b.id; }
-static bool operator!=(id_reference a, id_reference b)
-{ return *a.id != *b.id; }
-static bool operator<(id_reference a, id_reference b)
-{ return *a.id < *b.id; }
+static bool
+operator==(id_reference a, id_reference b)
+{
+    return *a.id == *b.id;
+}
+static bool
+operator!=(id_reference a, id_reference b)
+{
+    return *a.id != *b.id;
+}
+static bool
+operator<(id_reference a, id_reference b)
+{
+    return *a.id < *b.id;
+}
 
 struct named_block_node;
 
 struct naming_map
 {
-    typedef std::map<id_reference,named_block_node*> map_type;
+    typedef std::map<id_reference, named_block_node*> map_type;
     map_type blocks;
 };
 
 struct named_block_node : noncopyable
 {
-    named_block_node()
-      : reference_count(0), active_count(0), manual_delete(false), map(0)
-    {}
+    named_block_node() : reference_count(0), active_count(0), manual_delete(false), map(0)
+    {
+    }
 
     // the actual data block
     data_block block;
@@ -62,7 +73,9 @@ struct named_block_node : noncopyable
 // associating them with the data_graph.
 struct naming_map_node : noncopyable
 {
-    naming_map_node() : next(0), prev(0) {}
+    naming_map_node() : next(0), prev(0)
+    {
+    }
     ~naming_map_node();
 
     naming_map map;
@@ -79,7 +92,8 @@ naming_map_node::~naming_map_node()
     // Remove the association between any named_blocks left in the map and
     // the map itself.
     for (naming_map::map_type::const_iterator i = map.blocks.begin();
-        i != map.blocks.end(); ++i)
+         i != map.blocks.end();
+         ++i)
     {
         named_block_node* node = i->second;
         if (node->reference_count == 0)
@@ -102,9 +116,9 @@ naming_map_node::~naming_map_node()
 // A named_block_ref_node provides ownership of the referenced node.
 struct named_block_ref_node : noncopyable
 {
-    named_block_ref_node()
-      : node(0), next(0)
-    {}
+    named_block_ref_node() : node(0), next(0)
+    {
+    }
 
     ~named_block_ref_node()
     {
@@ -139,7 +153,8 @@ struct named_block_ref_node : noncopyable
     named_block_ref_node* next;
 };
 
-static void activate(named_block_ref_node& ref)
+static void
+activate(named_block_ref_node& ref)
 {
     if (!ref.active)
     {
@@ -147,7 +162,8 @@ static void activate(named_block_ref_node& ref)
         ref.active = true;
     }
 }
-static void deactivate(named_block_ref_node& ref)
+static void
+deactivate(named_block_ref_node& ref)
 {
     if (ref.active)
     {
@@ -158,7 +174,8 @@ static void deactivate(named_block_ref_node& ref)
     }
 }
 
-static void delete_named_block_ref_list(named_block_ref_node* head)
+static void
+delete_named_block_ref_list(named_block_ref_node* head)
 {
     while (head)
     {
@@ -170,13 +187,14 @@ static void delete_named_block_ref_list(named_block_ref_node* head)
 
 // Clear all cached data stored in the subgraph referenced from the given node
 // list.
-static void clear_cached_data(data_node* nodes)
+static void
+clear_cached_data(data_node* nodes)
 {
     for (data_node* i = nodes; i; i = i->next)
     {
         // If this node is cached data, clear it.
-        typed_data_node<cached_data_holder>* caching_node =
-            dynamic_cast<typed_data_node<cached_data_holder>*>(i);
+        typed_data_node<cached_data_holder>* caching_node
+            = dynamic_cast<typed_data_node<cached_data_holder>*>(i);
         if (caching_node)
         {
             cached_data_holder& holder = caching_node->value;
@@ -185,14 +203,15 @@ static void clear_cached_data(data_node* nodes)
         }
 
         // If this node is a data block, clear cached data from it.
-        typed_data_node<data_block>* block =
-            dynamic_cast<typed_data_node<data_block>*>(i);
+        typed_data_node<data_block>* block
+            = dynamic_cast<typed_data_node<data_block>*>(i);
         if (block)
             clear_cached_data(block->value);
     }
 }
 
-void clear_cached_data(data_block& block)
+void
+clear_cached_data(data_block& block)
 {
     if (!block.cache_clear)
     {
@@ -203,8 +222,7 @@ void clear_cached_data(data_block& block)
     }
 }
 
-data_block::data_block()
-  : nodes(0), cache_clear(true), named_blocks(0)
+data_block::data_block() : nodes(0), cache_clear(true), named_blocks(0)
 {
 }
 data_block::~data_block()
@@ -212,7 +230,8 @@ data_block::~data_block()
     clear_data_block(*this);
 }
 
-void clear_data_block(data_block& block)
+void
+clear_data_block(data_block& block)
 {
     data_node* node = block.nodes;
     while (node)
@@ -229,7 +248,8 @@ void clear_data_block(data_block& block)
     block.cache_clear = true;
 }
 
-void scoped_data_block::begin(data_traversal& traversal, data_block& block)
+void
+scoped_data_block::begin(data_traversal& traversal, data_block& block)
 {
     traversal_ = &traversal;
 
@@ -247,7 +267,8 @@ void scoped_data_block::begin(data_traversal& traversal, data_block& block)
 
     block.cache_clear = false;
 }
-void scoped_data_block::end()
+void
+scoped_data_block::end()
 {
     if (traversal_)
     {
@@ -255,8 +276,7 @@ void scoped_data_block::end()
         // the unused ones.
         if (traversal_->gc_enabled && !traversal_->traversal_aborted)
         {
-            traversal_->active_block->named_blocks =
-                traversal_->used_named_blocks;
+            traversal_->active_block->named_blocks = traversal_->used_named_blocks;
             delete_named_block_ref_list(traversal_->predicted_named_block);
         }
 
@@ -270,7 +290,8 @@ void scoped_data_block::end()
     }
 }
 
-naming_map* retrieve_naming_map(data_traversal& traversal)
+naming_map*
+retrieve_naming_map(data_traversal& traversal)
 {
     naming_map_node* map_node;
     if (get_data(traversal, &map_node))
@@ -286,13 +307,15 @@ naming_map* retrieve_naming_map(data_traversal& traversal)
     return &map_node->map;
 }
 
-void naming_context::begin(data_traversal& traversal)
+void
+naming_context::begin(data_traversal& traversal)
 {
     traversal_ = &traversal;
     map_ = retrieve_naming_map(traversal);
 }
 
-static void record_usage(data_traversal& traversal, named_block_ref_node* ref)
+static void
+record_usage(data_traversal& traversal, named_block_ref_node* ref)
 {
     *traversal.named_block_next_ptr = ref;
     traversal.named_block_next_ptr = &ref->next;
@@ -300,15 +323,17 @@ static void record_usage(data_traversal& traversal, named_block_ref_node* ref)
     activate(*ref);
 }
 
-static named_block_node* find_named_block(
-    data_traversal& traversal, naming_map& map, id_interface const& id,
+static named_block_node*
+find_named_block(
+    data_traversal& traversal,
+    naming_map& map,
+    id_interface const& id,
     manual_delete manual)
 {
     // If the sequence of data requests is the same as last pass (which it
     // generally is), then the block we're looking for is the predicted one.
     named_block_ref_node* predicted = traversal.predicted_named_block;
-    if (predicted && predicted->node->id.get() == id &&
-        predicted->node->map == &map)
+    if (predicted && predicted->node->id.get() == id && predicted->node->map == &map)
     {
         traversal.predicted_named_block = predicted->next;
         if (traversal.gc_enabled)
@@ -329,8 +354,10 @@ static named_block_node* find_named_block(
         new_node->id.store(id);
         new_node->map = &map;
         new_node->manual_delete = manual.value;
-        i = map.blocks.insert(naming_map::map_type::value_type(
-            id_reference(new_node->id.get()), new_node)).first;
+        i = map.blocks
+                .insert(naming_map::map_type::value_type(
+                    id_reference(new_node->id.get()), new_node))
+                .first;
     }
 
     named_block_node* node = i->second;
@@ -348,23 +375,28 @@ static named_block_node* find_named_block(
     return node;
 }
 
-void named_block::begin(data_traversal& traversal, naming_map& map,
-    id_interface const& id, manual_delete manual)
+void
+named_block::begin(
+    data_traversal& traversal,
+    naming_map& map,
+    id_interface const& id,
+    manual_delete manual)
 {
-    scoped_data_block_.begin(traversal,
-        find_named_block(traversal, map, id, manual)->block);
+    scoped_data_block_.begin(
+        traversal, find_named_block(traversal, map, id, manual)->block);
 }
-void named_block::end()
+void
+named_block::end()
 {
     scoped_data_block_.end();
 }
 
-void delete_named_block(data_graph& graph, id_interface const& id)
+void
+delete_named_block(data_graph& graph, id_interface const& id)
 {
     for (naming_map_node* i = graph.map_list; i; i = i->next)
     {
-        naming_map::map_type::const_iterator j =
-            i->map.blocks.find(id_reference(id));
+        naming_map::map_type::const_iterator j = i->map.blocks.find(id_reference(id));
         if (j != i->map.blocks.end())
         {
             named_block_node* node = j->second;
@@ -385,13 +417,15 @@ void delete_named_block(data_graph& graph, id_interface const& id)
     }
 }
 
-void scoped_gc_disabler::begin(data_traversal& traversal)
+void
+scoped_gc_disabler::begin(data_traversal& traversal)
 {
     traversal_ = &traversal;
     old_gc_state_ = traversal.gc_enabled;
     traversal.gc_enabled = false;
 }
-void scoped_gc_disabler::end()
+void
+scoped_gc_disabler::end()
 {
     if (traversal_)
     {
@@ -400,13 +434,15 @@ void scoped_gc_disabler::end()
     }
 }
 
-void scoped_cache_clearing_disabler::begin(data_traversal& traversal)
+void
+scoped_cache_clearing_disabler::begin(data_traversal& traversal)
 {
     traversal_ = &traversal;
     old_cache_clearing_state_ = traversal.cache_clearing_enabled;
     traversal.cache_clearing_enabled = false;
 }
-void scoped_cache_clearing_disabler::end()
+void
+scoped_cache_clearing_disabler::end()
 {
     if (traversal_)
     {
@@ -415,7 +451,8 @@ void scoped_cache_clearing_disabler::end()
     }
 }
 
-void scoped_data_traversal::begin(data_graph& graph, data_traversal& traversal)
+void
+scoped_data_traversal::begin(data_graph& graph, data_traversal& traversal)
 {
     traversal.graph = &graph;
     traversal.traversal_aborted = false;
@@ -424,7 +461,8 @@ void scoped_data_traversal::begin(data_graph& graph, data_traversal& traversal)
     root_block_.begin(traversal, graph.root_block);
     root_map_.begin(traversal);
 }
-void scoped_data_traversal::end()
+void
+scoped_data_traversal::end()
 {
     root_block_.end();
     root_map_.end();
@@ -466,9 +504,10 @@ loop_block::~loop_block()
     if (traversal_->cache_clearing_enabled)
         clear_cached_data(*block_);
 }
-void loop_block::next()
+void
+loop_block::next()
 {
     get_data(*traversal_, &block_);
 }
 
-}
+} // namespace alia
