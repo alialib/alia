@@ -82,6 +82,7 @@ do_traversal(
     int backwards,
     int reentrant)
 {
+    // clang-format off
     using namespace alia;
     data_traversal ctx;
     scoped_data_traversal sdt(graph, ctx);
@@ -91,7 +92,8 @@ do_traversal(
     {
         do_traversal(graph, n, a, b, c, d, backwards, 0);
     }
-    alia_end alia_if(b || c || d)
+    alia_end
+    alia_if(b || c || d)
     {
         do_string(ctx, "x");
         alia_if(b)
@@ -118,7 +120,8 @@ do_traversal(
             }
             do_string(ctx, "z");
         }
-        alia_end alia_if(c)
+        alia_end
+        alia_if(c)
         {
             alia_for(int i = 0; i < n; ++i)
             {
@@ -127,7 +130,8 @@ do_traversal(
             }
             alia_end
         }
-        alia_end do_int(ctx, 6);
+        alia_end
+        do_int(ctx, 6);
         alia_if(d)
         {
             naming_context nc(ctx);
@@ -150,7 +154,8 @@ do_traversal(
             }
             do_string(ctx, "a");
         }
-        alia_end do_int(ctx, 0);
+        alia_end
+        do_int(ctx, 0);
         do_string(ctx, "z");
     }
     alia_else_if(a)
@@ -160,7 +165,8 @@ do_traversal(
         {
             do_traversal(graph, n, a, b, c, d, backwards, 0);
         }
-        alia_end naming_context nc(ctx);
+        alia_end
+        naming_context nc(ctx);
         if (backwards)
         {
             for (int i = n + 103; i >= n + 100; --i)
@@ -191,23 +197,34 @@ do_traversal(
             }
             alia_end
         }
-        alia_else{alia_if(reentrant){do_traversal(graph, n, a, b, c, d, backwards, 0);
-    }
-    alia_end alia_switch(n)
-    {
-        alia_case(0) : do_int(ctx, 0);
-        break;
-        alia_case(1) : do_int(ctx, 0);
-        alia_case(2) : alia_case(3) : do_int(ctx, 2);
-        break;
-    alia_default:
-        do_int(ctx, 3);
+        alia_else
+        {
+            alia_if(reentrant)
+            {
+                do_traversal(graph, n, a, b, c, d, backwards, 0);
+            }
+            alia_end
+            alia_switch(n)
+            {
+                alia_case(0):
+                    do_int(ctx, 0);
+                    break;
+                alia_case(1):
+                    do_int(ctx, 0);
+                alia_case(2):
+                alia_case(3):
+                    do_int(ctx, 2);
+                    break;
+                alia_default:
+                    do_int(ctx, 3);
+            }
+            alia_end
+        }
+        alia_end
     }
     alia_end
-}
-alia_end
-}
-alia_end do_int(ctx, -1);
+    do_int(ctx, -1);
+// clang-format on
 }
 
 #define check_inits(ic, sc)                                                              \
@@ -408,6 +425,7 @@ do_keyed_int(alia::data_traversal& ctx, int n)
 void
 do_traversal(alia::data_graph& graph, int n, int a, int b)
 {
+    // clang-format off
     alia::data_traversal ctx;
     alia::scoped_data_traversal sdt(graph, ctx);
     do_cached_int(ctx, 0);
@@ -431,15 +449,20 @@ do_traversal(alia::data_graph& graph, int n, int a, int b)
         }
         do_cached_int(ctx, 1);
     }
-    alia_end alia_switch(a)
+    alia_end
+    alia_switch(a)
     {
-        alia_case(0) : do_cached_int(ctx, 0);
-        break;
-        alia_case(1) : do_cached_int(ctx, 1);
-        break;
+        alia_case(0):
+            do_cached_int(ctx, 0);
+            break;
+        alia_case(1):
+            do_cached_int(ctx, 1);
+            break;
     }
-    alia_end do_cached_int(ctx, -1);
+    alia_end
+    do_cached_int(ctx, -1);
     do_keyed_int(ctx, a + b);
+// clang-format on
 }
 
 TEST_CASE("cached_data_test", "[data_graph]")

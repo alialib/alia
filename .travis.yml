@@ -16,4 +16,3 @@ before_script:
 
 script:
   - ./fips make all_tests_coverage
-  - scripts/check-code-styling.sh
