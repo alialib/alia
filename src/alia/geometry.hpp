@@ -336,8 +336,8 @@ void make_polygon(vector<2, T>* vertices, box<2, T> const& box)
     vertices[3] = box.corner + make_vector<T>(0, box.size[1]);
 }
 
-// Expand a box (if necessary) to include the given point. - If an expansion is necessary,
-// it's done so that the point lies on the edge of the box.
+// Expand a box (if necessary) to include the given point. - If an expansion is
+// necessary, it's done so that the point lies on the edge of the box.
 template<unsigned N, class T>
 void
 expand_box_to_include_point(box<N, T>& box, vector<N, T> const& point)
@@ -356,32 +356,6 @@ expand_box_to_include_point(box<N, T>& box, vector<N, T> const& point)
             box.size[i] = point[i] - box.corner[i];
         }
     }
-}
-
-template<typename T>
-int get_edge_index(box<2, T> const& box, vector<2, T> const& point)
-{
-    double tol = 1.0e-10;
-    int index = -1;
-    if ((std::fabs(point[1] - box.corner[1]) <= tol) && (point[0] >= box.corner[0]))
-    {
-        index = 0;
-    }
-    if ((std::fabs(point[0] - (box.corner[0] + box.size[0])) <= tol)
-        && (point[1] >= box.corner[1]))
-    {
-        index = 1;
-    }
-    if ((std::fabs(point[1] - (box.corner[1] + box.size[1])) <= tol)
-        && (point[0] > box.corner[0]))
-    {
-        index = 2;
-    }
-    if ((std::fabs(point[0] - box.corner[0]) <= tol) && (point[1] > box.corner[1]))
-    {
-        index = 3;
-    }
-    return index;
 }
 
 // MATRIX
@@ -804,10 +778,11 @@ vector<2, T> transform(matrix<3, 3, T> const& m, vector<2, T> const& v)
 template<typename T>
 box<2, T> transform_box(matrix<3, 3, T> const& m, box<2, T> const& b)
 {
-    // Start with a box that just includes the transformation of one corner of the
-    // original box.
+    // Start with a box that just includes the transformation of one corner of
+    // the original box.
     box<2, T> result = make_box(transform(m, b.corner), make_vector<T>(0, 0));
-    // Now expand that box to include the transformation of each of the other corners.
+    // Now expand that box to include the transformation of each of the other
+    // corners.
     expand_box_to_include_point(
         result, transform(m, b.corner + make_vector<T>(b.size[0], 0)));
     expand_box_to_include_point(result, transform(m, b.corner + b.size));

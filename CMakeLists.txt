@@ -156,7 +156,7 @@ add_custom_target(
 
 # Add a target for running all tests.
 add_custom_target(
-    all_tests
+    all_tests ALL
     DEPENDS unit_tests
     DEPENDS integration_tests)
 

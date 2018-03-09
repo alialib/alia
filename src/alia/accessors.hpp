@@ -1368,8 +1368,8 @@ ALIA_DEFINE_UNARY_ACCESSOR_OPERATOR(!)
 
 #undef ALIA_DEFINE_UNARY_ACCESSOR_OPERATOR
 
-// The || and && operators require special implementations because they don't necessarily
-// need to evaluate both of their arguments...
+// The || and && operators require special implementations because they don't
+// necessarily need to evaluate both of their arguments...
 
 template<class Arg0, class Arg1>
 struct logical_or_accessor : accessor<bool>
@@ -1389,8 +1389,9 @@ struct logical_or_accessor : accessor<bool>
     bool
     is_gettable() const
     {
-        // Obviously, this is gettable if both of its arguments are gettable. However,
-        // it's also gettable if only one is gettable and its value is true.
+        // Obviously, this is gettable if both of its arguments are gettable.
+        // However, it's also gettable if only one is gettable and its value is
+        // true.
         return arg0_.is_gettable() && arg1_.is_gettable()
                || arg0_.is_gettable() && arg0_.get()
                || arg1_.is_gettable() && arg1_.get();
@@ -1451,8 +1452,9 @@ struct logical_and_accessor : accessor<bool>
     bool
     is_gettable() const
     {
-        // Obviously, this is gettable if both of its arguments are gettable. However,
-        // it's also gettable if only one is gettable and its value is false.
+        // Obviously, this is gettable if both of its arguments are gettable.
+        // However, it's also gettable if only one is gettable and its value is
+        // false.
         return arg0_.is_gettable() && arg1_.is_gettable()
                || arg0_.is_gettable() && !arg0_.get()
                || arg1_.is_gettable() && !arg1_.get();
@@ -1496,8 +1498,8 @@ operator&&(A const& a, B const& b)
         make_accessor_copyable(a), make_accessor_copyable(b));
 }
 
-// _is_gettable(x) yields an accessor to a boolean which indicates whether or not x is
-// gettable. (The returned accessor is always gettable itself.)
+// _is_gettable(x) yields an accessor to a boolean which indicates whether or
+// not x is gettable. (The returned accessor is always gettable itself.)
 template<class Wrapped>
 struct gettability_accessor : regular_accessor<bool>
 {
@@ -1541,8 +1543,8 @@ _is_gettable(Wrapped const& wrapped)
         make_accessor_copyable(wrapped));
 }
 
-// _is_settable(x) yields an accessor to a boolean which indicates whether or not x is
-// settable. (The returned accessor is always gettable.)
+// _is_settable(x) yields an accessor to a boolean which indicates whether or
+// not x is settable. (The returned accessor is always gettable.)
 template<class Wrapped>
 struct settability_accessor : regular_accessor<bool>
 {
