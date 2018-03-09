@@ -133,7 +133,8 @@ do_traversal(
 }
 
 void
-check_traversal_path(int n, std::string const& label, std::string const& expected_path)
+check_traversal_path(
+    int n, std::string const& label, std::string const& expected_path)
 {
     auto* x = new int[200];
     x[0] = 0;

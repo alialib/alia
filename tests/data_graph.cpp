@@ -227,8 +227,8 @@ do_traversal(
 // clang-format on
 }
 
-#define check_inits(ic, sc)                                                              \
-    REQUIRE(n_int_inits == ic);                                                          \
+#define check_inits(ic, sc)                                                    \
+    REQUIRE(n_int_inits == ic);                                                \
     REQUIRE(n_string_inits == sc);
 
 TEST_CASE("low_level_test", "[data_graph]")
