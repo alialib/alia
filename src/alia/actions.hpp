@@ -3,17 +3,19 @@
 
 #include <alia/accessors.hpp>
 
-// This file defines the alia action interface, some common implementations of it, and
-// some utilities for working with it.
+// This file defines the alia action interface, some common implementations of
+// it, and some utilities for working with it.
 //
-// An action is essentially a response to an event that happens within alia. When
-// specifying a UI element that can generate events, the application supplies the action
-// that should be performed when the corresponding event is generated. Using this style
-// allows event handling to be written in a safer and more reactive manner.
+// An action is essentially a response to an event that happens within alia.
+// When specifying a UI element that can generate events, the application
+// supplies the action that should be performed when the corresponding event is
+// generated. Using this style allows event handling to be written in a safer
+// and more reactive manner.
 //
-// Actions are very similar to accessors in the way that they are used in an application.
-// Like accessors, they're typically created directly at the call site as function
-// arguments and are only valid for the life of the function call.
+// Actions are very similar to accessors in the way that they are used in an
+// application. Like accessors, they're typically created directly at the call
+// site as function arguments and are only valid for the life of the function
+// call.
 
 namespace alia {
 
@@ -36,7 +38,8 @@ void static inline perform_action(action const& a)
     a.perform();
 }
 
-// action_ref is a reference to an action that implements the action interface itself.
+// action_ref is a reference to an action that implements the action interface
+// itself.
 struct action_ref : action
 {
     action_ref(action const* ref = nullptr) : ref_(ref)
@@ -61,16 +64,17 @@ struct action_ref : action
     action const* ref_;
 };
 
-// ref(action_ptr) wraps a pointer to an action so that it can be passed around as an
-// action. The referenced action must remain valid for the life of the wrapper.
+// ref(action_ptr) wraps a pointer to an action so that it can be passed around
+// as an action. The referenced action must remain valid for the life of the
+// wrapper.
 action_ref static inline ref(action const* action_ptr)
 {
     return action_ref(action_ptr);
 }
 
-// copyable_action_helper is a utility for allowing action wrappers to store copies of
-// other actions if they are passed by concrete value and pointers if they're passed as
-// references to the action base class.
+// copyable_action_helper is a utility for allowing action wrappers to store
+// copies of other actions if they are passed by concrete value and pointers if
+// they're passed as references to the action base class.
 template<class T>
 struct copyable_action_helper
 {
@@ -110,8 +114,9 @@ make_action_copyable(Action const& x)
     return copyable_action_helper<Action const&>::apply(x);
 }
 
-// combine_actions(first, second, ...) combines multiple actions into a single action.
-// The returned action will perform all of its arguments in the order they're supplied.
+// combine_actions(first, second, ...) combines multiple actions into a single
+// action. The returned action will perform all of its arguments in the order
+// they're supplied.
 
 template<class First, class Second>
 struct action_pair : action
@@ -159,9 +164,10 @@ combine_actions(First const& first, Second const& second, Rest const&... rest)
     return combine_actions(combine_actions(first, second), rest...);
 }
 
-// make_setter(sink, source) creates an action that will set the value of :sink to the
-// value held in :source. :sink and :source are both accessors. In order for the action
-// to be considered ready, :sink must be settable and :source must be gettable.
+// make_setter(sink, source) creates an action that will set the value of :sink
+// to the value held in :source. :sink and :source are both accessors. In order
+// for the action to be considered ready, :sink must be settable and :source
+// must be gettable.
 
 template<class Sink, class Source>
 struct setter_action : action
@@ -197,11 +203,11 @@ make_setter(Sink const& sink, Source const& source)
         make_accessor_copyable(sink), make_accessor_copyable(source));
 }
 
-// make_toggle_action(flag), where :flag is an accessor to a boolean, creates an action
-// that will toggle the value of :flag between true and false.
+// make_toggle_action(flag), where :flag is an accessor to a boolean, creates an
+// action that will toggle the value of :flag between true and false.
 //
-// Note that this could also be used with other value types as long as the ! operator
-// provides a reasonable "toggle" function.
+// Note that this could also be used with other value types as long as the !
+// operator provides a reasonable "toggle" function.
 //
 template<class Flag>
 auto
@@ -211,8 +217,8 @@ make_toggle_action(Flag const& flag)
 }
 
 // make_push_back_action(collection, item), where both :collection and :item are
-// accessors, creates an action that will push the value of :item onto the back of
-// :collection.
+// accessors, creates an action that will push the value of :item onto the back
+// of :collection.
 
 template<class Collection, class Item>
 struct push_back_action : action

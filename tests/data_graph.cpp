@@ -462,7 +462,7 @@ do_traversal(alia::data_graph& graph, int n, int a, int b)
     alia_end
     do_cached_int(ctx, -1);
     do_keyed_int(ctx, a + b);
-// clang-format on
+    // clang-format on
 }
 
 TEST_CASE("cached_data_test", "[data_graph]")
