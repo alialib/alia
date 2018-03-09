@@ -125,7 +125,8 @@ struct action_pair : action
     {
     }
 
-    action_pair(First const& first, Second const& second) : first_(first), second_(second)
+    action_pair(First const& first, Second const& second)
+        : first_(first), second_(second)
     {
     }
 
@@ -172,7 +173,8 @@ combine_actions(First const& first, Second const& second, Rest const&... rest)
 template<class Sink, class Source>
 struct setter_action : action
 {
-    setter_action(Sink const& sink, Source const& source) : sink_(sink), source_(source)
+    setter_action(Sink const& sink, Source const& source)
+        : sink_(sink), source_(source)
     {
     }
 

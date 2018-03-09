@@ -42,7 +42,8 @@ struct naming_map
 
 struct named_block_node : noncopyable
 {
-    named_block_node() : reference_count(0), active_count(0), manual_delete(false), map(0)
+    named_block_node()
+        : reference_count(0), active_count(0), manual_delete(false), map(0)
     {
     }
 
@@ -276,7 +277,8 @@ scoped_data_block::end()
         // the unused ones.
         if (traversal_->gc_enabled && !traversal_->traversal_aborted)
         {
-            traversal_->active_block->named_blocks = traversal_->used_named_blocks;
+            traversal_->active_block->named_blocks
+                = traversal_->used_named_blocks;
             delete_named_block_ref_list(traversal_->predicted_named_block);
         }
 
@@ -333,7 +335,8 @@ find_named_block(
     // If the sequence of data requests is the same as last pass (which it
     // generally is), then the block we're looking for is the predicted one.
     named_block_ref_node* predicted = traversal.predicted_named_block;
-    if (predicted && predicted->node->id.get() == id && predicted->node->map == &map)
+    if (predicted && predicted->node->id.get() == id
+        && predicted->node->map == &map)
     {
         traversal.predicted_named_block = predicted->next;
         if (traversal.gc_enabled)
@@ -396,7 +399,8 @@ delete_named_block(data_graph& graph, id_interface const& id)
 {
     for (naming_map_node* i = graph.map_list; i; i = i->next)
     {
-        naming_map::map_type::const_iterator j = i->map.blocks.find(id_reference(id));
+        naming_map::map_type::const_iterator j
+            = i->map.blocks.find(id_reference(id));
         if (j != i->map.blocks.end())
         {
             named_block_node* node = j->second;

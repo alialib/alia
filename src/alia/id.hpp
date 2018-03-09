@@ -501,7 +501,8 @@ struct hash<alia::local_id>
     size_t
     operator()(alia::local_id const& id) const
     {
-        return hash<int*>()(id.tag.get()) ^ hash<alia::counter_type>()(id.version);
+        return hash<int*>()(id.tag.get())
+               ^ hash<alia::counter_type>()(id.version);
     }
 };
 } // namespace std

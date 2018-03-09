@@ -169,14 +169,14 @@ struct hash<alia::flag_set<Tag>>
 } // namespace std
 
 namespace alia {
-#define ALIA_DEFINE_FLAG_TYPE(type_prefix)                                               \
-    struct type_prefix##_flag_tag                                                        \
-    {                                                                                    \
-    };                                                                                   \
+#define ALIA_DEFINE_FLAG_TYPE(type_prefix)                                     \
+    struct type_prefix##_flag_tag                                              \
+    {                                                                          \
+    };                                                                         \
     typedef alia::flag_set<type_prefix##_flag_tag> type_prefix##_flag_set;
 
-#define ALIA_DEFINE_FLAG(type_prefix, code, name)                                        \
-    static unsigned const name##_CODE = code;                                            \
+#define ALIA_DEFINE_FLAG(type_prefix, code, name)                              \
+    static unsigned const name##_CODE = code;                                  \
     static alia::flag_set<type_prefix##_flag_tag> const name(code);
 
 // Inspired by Boost, inheriting from noncopyable disables copying for a type.
@@ -291,7 +291,8 @@ struct vector_equality_test
     static bool
     apply(vector<N, T> const& a, vector<N, T> const& b)
     {
-        return a[I - 1] == b[I - 1] && vector_equality_test<N, T, I - 1>::apply(a, b);
+        return a[I - 1] == b[I - 1]
+               && vector_equality_test<N, T, I - 1>::apply(a, b);
     }
 };
 template<unsigned N, class T>

@@ -50,13 +50,16 @@ struct event_routing_traversal
 static inline routing_region_ptr
 get_active_region(event_routing_traversal const& traversal)
 {
-    return traversal.active_region ? *traversal.active_region : routing_region_ptr();
+    return traversal.active_region ? *traversal.active_region
+                                   : routing_region_ptr();
 }
 
 template<class TraversalFunction>
 void
 invoke_targeted_traversal(
-    TraversalFunction& fn, event_routing_traversal& traversal, routing_region* target)
+    TraversalFunction& fn,
+    event_routing_traversal& traversal,
+    routing_region* target)
 {
     if (target)
     {

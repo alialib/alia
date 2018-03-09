@@ -36,7 +36,8 @@ struct tag_in_component_list<Tag> : std::false_type
 };
 // case where tag matches
 template<class Tag, class Data, class... Rest>
-struct tag_in_component_list<Tag, context_component<Tag, Data>, Rest...> : std::true_type
+struct tag_in_component_list<Tag, context_component<Tag, Data>, Rest...>
+    : std::true_type
 {
 };
 // non-matching (recursive) case
@@ -138,7 +139,8 @@ struct context
 
     template<class Other>
     context(
-        Other other, std::enable_if_t<context_is_convertible<Other, context>::value>* = 0)
+        Other other,
+        std::enable_if_t<context_is_convertible<Other, context>::value>* = 0)
         : storage_(other.storage_)
     {
     }
