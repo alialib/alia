@@ -22,7 +22,8 @@ scoped_routing_region::begin(event_routing_traversal& traversal)
 
     if (traversal.targeted)
     {
-        if (traversal.path_to_target && traversal.path_to_target->node == region->get())
+        if (traversal.path_to_target
+            && traversal.path_to_target->node == region->get())
         {
             traversal.path_to_target = traversal.path_to_target->rest;
             is_relevant_ = true;
