@@ -113,14 +113,7 @@ fips_begin_module(alia)
 fips_end_module()
 target_link_libraries(alia ${CONAN_LIBS})
 
-# Add tests.
-set(test_dir ${CMAKE_SOURCE_DIR}/tests)
-file (GLOB_RECURSE test_files ${CMAKE_SOURCE_DIR}/tests/*.[chi]pp)
-add_executable(test_runner ${test_files})
-target_link_libraries(test_runner alia ${CONAN_LIBS})
-add_test(NAME test_runner COMMAND test_runner)
-
-# Add the test runner.
+# Add the unit test runner.
 fips_begin_app(unit_test_runner cmdline)
     fips_deps(alia)
     fips_src(tests)
