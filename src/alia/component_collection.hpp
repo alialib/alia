@@ -52,7 +52,7 @@
 // included.
 //
 // The statically typed component_collection object is a simple wrapper around
-// the dynamically typed "raw" storage object. It adds a compile-time type list
+// the dynamically typed storage object. It adds a compile-time type list
 // indicating what's actually supposed to be in the collection. This allows
 // collections to be converted to other collection types without any run-time
 // overhead. This does imply some run-time overhead for retrieving components
@@ -62,7 +62,18 @@
 // that) whereas passing by reference would be more obvious, but that seems
 // unavoidable given the requirements.
 
+#ifndef ALIA_DYNAMIC_COMPONENT_CHECKING
+#define ALIA_STATIC_COMPONENT_CHECKING
+#endif
+
 namespace alia {
+
+template<class Components, class Storage>
+struct component_collection;
+
+#ifdef ALIA_STATIC_COMPONENT_CHECKING
+
+namespace detail {
 
 // A component has a tag type and a data type associated with it. The tag
 // type is used only at compile time to identify the component while the data
@@ -79,9 +90,6 @@ template<class... Components>
 struct component_list
 {
 };
-
-template<class Components, class Storage>
-struct component_collection;
 
 // component_list_contains_tag<Tag,Components>::value yields a compile-time
 // boolean indicating whether or not :Components contains a component with a
@@ -263,13 +271,15 @@ struct component_collection_is_convertible<
 {
 };
 
+} // namespace detail
+
 template<class Components, class Storage>
 struct component_collection
 {
     typedef Components components;
     typedef Storage storage_type;
 
-    component_collection()
+    component_collection(Storage* storage) : storage(storage)
     {
     }
 
@@ -277,7 +287,7 @@ struct component_collection
     template<class Other>
     component_collection(
         Other other,
-        std::enable_if_t<component_collection_is_convertible<
+        std::enable_if_t<detail::component_collection_is_convertible<
             Other,
             component_collection>::value>* = 0)
         : storage(other.storage)
@@ -287,7 +297,9 @@ struct component_collection
     // assignment operator (from convertible collections)
     template<class Other>
     std::enable_if_t<
-        component_collection_is_convertible<Other, component_collection>::value,
+        detail::component_collection_is_convertible<
+            Other,
+            component_collection>::value,
         component_collection&>
     operator=(Other other)
     {
@@ -302,7 +314,7 @@ struct component_collection
 // no components and :Storage as its storage type.
 template<class Storage>
 using empty_component_collection
-    = component_collection<component_list<>, Storage>;
+    = component_collection<detail::component_list<>, Storage>;
 
 // add_component_type<Collection,Tag,Data>::type gives the type that results
 // from extending :Collection with the component defined by :Tag and :Data.
@@ -312,21 +324,91 @@ struct add_component_type
 };
 template<class Tag, class Data, class Storage, class... Components>
 struct add_component_type<
-    component_collection<component_list<Components...>, Storage>,
+    component_collection<detail::component_list<Components...>, Storage>,
     Tag,
     Data>
 {
     static_assert(
-        !component_list_contains_tag<component_list<Components...>, Tag>::value,
+        !detail::component_list_contains_tag<
+            detail::component_list<Components...>,
+            Tag>::value,
         "duplicate component tag");
     typedef component_collection<
-        component_list<component<Tag, Data>, Components...>,
+        detail::component_list<detail::component<Tag, Data>, Components...>,
         Storage>
         type;
 };
 template<class Collection, class Tag, class Data>
 using add_component_type_t =
     typename add_component_type<Collection, Tag, Data>::type;
+
+// remove_component_type<Collection,Tag,Data>::type yields the type that results
+// from removing the component associated with :Tag from :Collection.
+template<class Collection, class Tag>
+struct remove_component_type
+{
+};
+template<class Tag, class Storage, class Components>
+struct remove_component_type<component_collection<Components, Storage>, Tag>
+{
+    static_assert(
+        detail::component_list_contains_tag<Components, Tag>::value,
+        "attempting to remove a component tag that doesn't exist");
+    typedef component_collection<
+        detail::remove_component_from_list<Components, Tag>,
+        Storage>
+        type;
+};
+template<class Collection, class Tag>
+using remove_component_type_t =
+    typename remove_component_type<Collection, Tag>::type;
+
+#endif
+
+#ifdef ALIA_DYNAMIC_COMPONENT_CHECKING
+
+struct dynamic_component_list
+{
+};
+
+template<class Components, class Storage>
+struct component_collection
+{
+    typedef Components components;
+    typedef Storage storage_type;
+
+    Storage* storage;
+};
+
+// empty_component_collection<Storage> yields a component collection with
+// no components and :Storage as its storage type.
+template<class Storage>
+using empty_component_collection
+    = component_collection<dynamic_component_list, Storage>;
+
+// add_component_type<Collection,Tag,Data>::type gives the type that results
+// from extending :Collection with the component defined by :Tag and :Data.
+template<class Collection, class Tag, class Data>
+struct add_component_type
+{
+    typedef Collection type;
+};
+template<class Collection, class Tag, class Data>
+using add_component_type_t
+    typename add_component_type<Collection, Tag, Data>::type;
+
+// remove_component_type<Collection,Tag,Data>::type yields the type that results
+// from removing the component associated with :Tag from :Collection.
+template<class Collection, class Tag>
+struct remove_component_type
+{
+    typedef Collection type;
+};
+template<class Collection, class Tag>
+using remove_component_type_t =
+    typename remove_component_type<Collection, Tag>::type;
+
+#endif
 
 // Extend a collection by adding a new component.
 // :Tag is the tag of the component.
@@ -343,36 +425,11 @@ add_component(
 {
     // Copy over existing components.
     *new_storage = *collection.storage;
-
     // Add the new data to the storage object.
     add_component<Tag>(*new_storage, data);
-
     // Create a collection to reference the new storage object.
-    add_component_type<Collection, Tag, Data> new_collection;
-    new_collection.storage = new_storage;
-    return new_collection;
+    return add_component_type_t<Collection, Tag, Data>(new_storage);
 }
-
-// remove_component_type<Collection,Tag,Data>::type yeilds the type that results
-// from removing the component associated with :Tag from :Collection.
-template<class Collection, class Tag>
-struct remove_component_type
-{
-};
-template<class Tag, class Storage, class Components>
-struct remove_component_type<component_collection<Components, Storage>, Tag>
-{
-    static_assert(
-        component_list_contains_tag<Components, Tag>::value,
-        "attempting to remove a component tag that doesn't exist");
-    typedef component_collection<
-        remove_component_from_list<Components, Tag>,
-        Storage>
-        type;
-};
-template<class Collection, class Tag>
-using remove_component_type_t =
-    typename remove_component_type<Collection, Tag>::type;
 
 // Remove a component from a collection.
 // :Tag is the tag of the component.
@@ -387,11 +444,18 @@ remove_component_type_t<Collection, Tag>
 remove_component(
     typename Collection::storage_type* new_storage, Collection collection)
 {
+#ifdef ALIA_STATIC_COMPONENT_CHECKING
     // Since we're using static checking, it doesn't matter if the runtime
     // storage includes an extra component. Static checks will prevent its use.
-    remove_component_type<Collection, Tag> new_collection;
-    new_collection.storage = collection.storage;
-    return new_collection;
+    return remove_component_type_t<Collection, Tag>(collection.storage);
+#else
+    // Copy over existing components.
+    *new_storage = *collection.storage;
+    // Remove the component from the storage object.
+    remove_component<Tag>(*new_storage);
+    // Create a collection to reference the new storage object.
+    return remove_component_type_t<Collection, Tag, Data>(new_storage);
+#endif
 }
 
 // Get a reference to the data associated with a component in a collection.
@@ -402,17 +466,19 @@ template<class Tag, class Collection>
 auto&
 get_component(Collection collection)
 {
+#ifdef ALIA_STATIC_COMPONENT_CHECKING
     static_assert(
-        component_collection_contains_tag<Collection, Tag>::value,
+        detail::component_collection_contains_tag<Collection, Tag>::value,
         "component not found in collection");
+#endif
     return get_component<Tag>(*collection.storage);
 }
 
-// raw_component_storage is one possible implementation of the underlying
+// generic_component_storage is one possible implementation of the underlying
 // container for storing components and their associated data.
 // :Data is the type used to store component data.
 template<class Data>
-struct raw_component_storage
+struct generic_component_storage
 {
     std::unordered_map<std::type_index, Data> components;
 };
@@ -422,7 +488,7 @@ struct raw_component_storage
 // Add a component.
 template<class Tag, class Data>
 void
-add_component(raw_component_storage<Data>& storage, Data&& data)
+add_component(generic_component_storage<Data>& storage, Data&& data)
 {
     storage.components[std::type_index(typeid(Tag))]
         = std::forward<Data&&>(data);
@@ -431,7 +497,7 @@ add_component(raw_component_storage<Data>& storage, Data&& data)
 // Remove a component.
 template<class Tag, class Data>
 void
-remove_component(raw_component_storage<Data>& storage)
+remove_component(generic_component_storage<Data>& storage)
 {
     storage.components.erase(std::type_index(typeid(Tag)));
 }
@@ -439,7 +505,7 @@ remove_component(raw_component_storage<Data>& storage)
 // Get the data for a component.
 template<class Tag, class Data>
 Data&
-get_component(raw_component_storage<Data>& storage)
+get_component(generic_component_storage<Data>& storage)
 {
     return storage.components.at(std::type_index(typeid(Tag)));
 }
