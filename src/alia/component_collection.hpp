@@ -211,11 +211,11 @@ template<class Tag, class OtherTag, class Data, class... Rest>
 struct remove_component_from_list<
     component_list<component<OtherTag, Data>, Rest...>,
     Tag>
+    : add_component_to_list<
+          typename remove_component_from_list<component_list<Rest...>, Tag>::
+              type,
+          component<OtherTag, Data>>
 {
-    typedef add_component_to_list<
-        remove_component_from_list<component_list<Rest...>, Tag>,
-        component<OtherTag, Data>>
-        type;
 };
 
 // collection_contains_all_components<Collection,Components...>::value yields a
@@ -355,7 +355,7 @@ struct remove_component_type<component_collection<Components, Storage>, Tag>
         detail::component_list_contains_tag<Components, Tag>::value,
         "attempting to remove a component tag that doesn't exist");
     typedef component_collection<
-        detail::remove_component_from_list<Components, Tag>,
+        typename detail::remove_component_from_list<Components, Tag>::type,
         Storage>
         type;
 };
@@ -439,7 +439,7 @@ add_component(
 // Note that this function is allowed to reuse the storage object from the
 // input collection, so that is also required to outlive the returned
 // collection.
-template<class Tag, class Data, class Collection>
+template<class Tag, class Collection>
 remove_component_type_t<Collection, Tag>
 remove_component(
     typename Collection::storage_type* new_storage, Collection collection)
@@ -486,12 +486,13 @@ struct generic_component_storage
 // The following functions constitute the interface expected of storage objects.
 
 // Add a component.
-template<class Tag, class Data>
+template<class Tag, class StorageData, class ComponentData>
 void
-add_component(generic_component_storage<Data>& storage, Data&& data)
+add_component(
+    generic_component_storage<StorageData>& storage, ComponentData&& data)
 {
     storage.components[std::type_index(typeid(Tag))]
-        = std::forward<Data&&>(data);
+        = std::forward<ComponentData&&>(data);
 }
 
 // Remove a component.
