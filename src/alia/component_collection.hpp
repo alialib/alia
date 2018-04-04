@@ -81,6 +81,8 @@ namespace detail {
 template<class Tag, class Data>
 struct component
 {
+    typedef Tag tag;
+    typedef Data data_type;
 };
 
 // component_list<Components...> defines a simple compile-time list of
@@ -240,6 +242,30 @@ struct collection_contains_all_components<Collection, Component, Rest...>
 {
 };
 
+// merge_component_lists<A,B>::type yields a list of components that includes
+// all components from :A and :B (with no duplicates).
+template<class A, class B>
+struct merge_component_lists
+{
+};
+// base case (:A is empty)
+template<class B>
+struct merge_component_lists<component_list<>, B>
+{
+    typedef B type;
+};
+// recursive case
+template<class B, class AHead, class... ARest>
+struct merge_component_lists<component_list<AHead, ARest...>, B>
+    : add_component_to_list<
+          // Ensure that :AHead isn't duplicated. (This may be a noop.)
+          typename remove_component_from_list<
+              typename merge_component_lists<component_list<ARest...>, B>::type,
+              typename AHead::tag>::type,
+          AHead>
+{
+};
+
 // component_collection_is_convertible<From,To>::value yields a
 // compile-time boolean indicating whether or not the type :From can be
 // converted to the type :To (both must be component_collections).
@@ -363,6 +389,22 @@ template<class Collection, class Tag>
 using remove_component_type_t =
     typename remove_component_type<Collection, Tag>::type;
 
+// merge_components<A,B>::type yields a component collection type that contains
+// all the components from :A and :B (but no duplicates).
+// Note that the resulting component collection inherits the storage type of :A.
+template<class A, class B>
+struct merge_components
+{
+    typedef component_collection<
+        typename detail::merge_component_lists<
+            typename A::components,
+            typename B::components>::type,
+        typename A::storage_type>
+        type;
+};
+template<class A, class B>
+using merge_components_t = typename merge_components<A, B>::type;
+
 #endif
 
 #ifdef ALIA_DYNAMIC_COMPONENT_CHECKING
@@ -411,6 +453,17 @@ struct remove_component_type
 template<class Collection, class Tag>
 using remove_component_type_t =
     typename remove_component_type<Collection, Tag>::type;
+
+// merge_components<A,B>::type yields a component collection type that contains
+// all the components from :A and :B (but no duplicates).
+// Note that the resulting component collection inherits the storage type of :A.
+template<class A, class B>
+struct merge_components
+{
+    typedef A type;
+};
+template<class A, class B>
+using merge_components_t = typename merge_components<A, B>::type;
 
 #endif
 
