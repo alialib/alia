@@ -54,6 +54,30 @@ using list_zb = remove_component_from_list<list_zfb, foo_tag>::type;
 static_assert(!component_list_contains_tag<list_zb, foo_tag>::value, "");
 static_assert(component_list_contains_tag<list_zb, bar_tag>::value, "");
 static_assert(component_list_contains_tag<list_zb, zap_tag>::value, "");
+using list_z = remove_component_from_list<list_zb, bar_tag>::type;
+static_assert(!component_list_contains_tag<list_z, foo_tag>::value, "");
+static_assert(!component_list_contains_tag<list_z, bar_tag>::value, "");
+static_assert(component_list_contains_tag<list_z, zap_tag>::value, "");
+using list_fbz = merge_component_lists<list_fb, list_zb>::type;
+static_assert(component_list_contains_tag<list_fbz, foo_tag>::value, "");
+static_assert(component_list_contains_tag<list_fbz, bar_tag>::value, "");
+static_assert(component_list_contains_tag<list_fbz, zap_tag>::value, "");
+using list_bf = merge_component_lists<list_b, list_f>::type;
+static_assert(component_list_contains_tag<list_bf, foo_tag>::value, "");
+static_assert(component_list_contains_tag<list_bf, bar_tag>::value, "");
+static_assert(!component_list_contains_tag<list_bf, zap_tag>::value, "");
+using list_b_ = merge_component_lists<list_b, list_b>::type;
+static_assert(!component_list_contains_tag<list_b_, foo_tag>::value, "");
+static_assert(component_list_contains_tag<list_b_, bar_tag>::value, "");
+static_assert(!component_list_contains_tag<list_b_, zap_tag>::value, "");
+using list_f_ = merge_component_lists<list_f, list_empty>::type;
+static_assert(component_list_contains_tag<list_f_, foo_tag>::value, "");
+static_assert(!component_list_contains_tag<list_f_, bar_tag>::value, "");
+static_assert(!component_list_contains_tag<list_f_, zap_tag>::value, "");
+using list_z_ = merge_component_lists<list_empty, list_z>::type;
+static_assert(!component_list_contains_tag<list_z_, foo_tag>::value, "");
+static_assert(!component_list_contains_tag<list_z_, bar_tag>::value, "");
+static_assert(component_list_contains_tag<list_z_, zap_tag>::value, "");
 } // namespace list_tests
 
 // Define some arbitrary component collection types.
@@ -66,6 +90,7 @@ using cc_bz = add_component_type_t<cc_z, bar_tag, bar>;
 using cc_fbz = add_component_type_t<cc_bz, foo_tag, foo>;
 using cc_fz = remove_component_type_t<cc_fbz, bar_tag>;
 using cc_f = add_component_type_t<cc_empty, foo_tag, foo>;
+using cc_fzb = merge_components_t<cc_fz, cc_bz>;
 
 // Test the underlying type functions on component collections.
 namespace cc_type_tests {
@@ -98,6 +123,8 @@ static_assert(component_collection_is_convertible<cc_fbz, cc_fb>::value, "");
 static_assert(!component_collection_is_convertible<cc_fb, cc_fbz>::value, "");
 static_assert(component_collection_is_convertible<cc_fbz, cc_b>::value, "");
 static_assert(!component_collection_is_convertible<cc_b, cc_fbz>::value, "");
+static_assert(component_collection_is_convertible<cc_fzb, cc_fz>::value, "");
+static_assert(component_collection_is_convertible<cc_fzb, cc_bz>::value, "");
 } // namespace cc_type_tests
 
 TEST_CASE("static component_collection conversions", "[component_collections]")
