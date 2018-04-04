@@ -377,6 +377,10 @@ struct component_collection
     typedef Components components;
     typedef Storage storage_type;
 
+    component_collection(Storage* storage) : storage(storage)
+    {
+    }
+
     Storage* storage;
 };
 
@@ -394,7 +398,7 @@ struct add_component_type
     typedef Collection type;
 };
 template<class Collection, class Tag, class Data>
-using add_component_type_t
+using add_component_type_t =
     typename add_component_type<Collection, Tag, Data>::type;
 
 // remove_component_type<Collection,Tag,Data>::type yields the type that results
@@ -454,7 +458,7 @@ remove_component(
     // Remove the component from the storage object.
     remove_component<Tag>(*new_storage);
     // Create a collection to reference the new storage object.
-    return remove_component_type_t<Collection, Tag, Data>(new_storage);
+    return remove_component_type_t<Collection, Tag>(new_storage);
 #endif
 }
 
