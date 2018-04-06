@@ -25,6 +25,12 @@ struct bar_tag
 struct bar
 {
     int i = 0;
+    bar()
+    {
+    }
+    bar(int i) : i(i)
+    {
+    }
 };
 struct zap_tag
 {
@@ -61,7 +67,7 @@ TEST_CASE("dynamic component access", "[component_collections]")
     cc_empty mc_empty(&storage_empty);
 
     storage_type storage_b;
-    cc_b mc_b = add_component<bar_tag>(&storage_b, mc_empty, bar{1});
+    cc_b mc_b = add_component<bar_tag>(&storage_b, mc_empty, bar(1));
     REQUIRE(any_cast<bar>(get_component<bar_tag>(mc_b))->i == 1);
     REQUIRE_THROWS(get_component<foo_tag>(mc_b));
 
