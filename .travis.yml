@@ -15,4 +15,4 @@ before_script:
   - ./fips gen
 
 script:
-  - ./fips make all_tests_coverage
+  - ./fips make test
