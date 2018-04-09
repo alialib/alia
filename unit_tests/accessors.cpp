@@ -104,9 +104,12 @@ TEST_CASE("accessors", "[accessors]")
 
     // test select_accessor
     REQUIRE(
-        get(select_accessor(in(true), inout(&x), accessor_cast<int>(inout(&y)))) == 2);
+        get(select_accessor(in(true), inout(&x), accessor_cast<int>(inout(&y))))
+        == 2);
     REQUIRE(
-        get(select_accessor(in(false), inout(&x), accessor_cast<int>(inout(&y)))) == 1);
+        get(select_accessor(
+            in(false), inout(&x), accessor_cast<int>(inout(&y))))
+        == 1);
     REQUIRE(!is_readonly(select_accessor(in(true), inout(&x), in(0))));
     REQUIRE(is_readonly(select_accessor(in(false), inout(&x), in(0))));
 
