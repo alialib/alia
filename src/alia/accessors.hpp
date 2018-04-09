@@ -12,7 +12,8 @@ namespace alia {
 
 // Is x gettable?
 template<class T>
-[[deprecated("Use _is_gettable or .is_gettable() directly, depending on needs.")]] bool
+[[deprecated(
+    "Use _is_gettable or .is_gettable() directly, depending on needs.")]] bool
 is_gettable(accessor<T> const& x) { return x.is_gettable(); }
 
 // get(x) asserts that x is gettable and gets its value.
@@ -25,7 +26,8 @@ T const& get(accessor<T> const& x)
 
 // Is a settable?
 template<class T>
-[[deprecated("Use _is_settable or .is_settable() directly, depending on needs.")]] bool
+[[deprecated(
+    "Use _is_settable or .is_settable() directly, depending on needs.")]] bool
 is_settable(accessor<T> const& a) { return a.is_settable(); }
 
 // set(a, value) sets a to value iff a is settable.
@@ -404,7 +406,8 @@ make_custom_getter(optional<T> const* value, Id const& id)
 template<class T>
 struct state_proxy
 {
-    state_proxy(T const& value) : initialized_(true), value_(value), was_set_(false)
+    state_proxy(T const& value)
+        : initialized_(true), value_(value), was_set_(false)
     {
     }
     state_proxy() : initialized_(false), was_set_(false)
@@ -742,7 +745,9 @@ struct accessor_caster : regular_accessor<To>
     lazy_getter<To> lazy_getter_;
 };
 template<class To, class Wrapped>
-accessor_caster<typename copyable_accessor_helper<Wrapped const&>::result_type, To>
+accessor_caster<
+    typename copyable_accessor_helper<Wrapped const&>::result_type,
+    To>
 accessor_cast(Wrapped const& wrapped)
 {
     return accessor_caster<
@@ -753,7 +758,8 @@ accessor_cast(Wrapped const& wrapped)
 // make_readonly(accessor) creates a copy of the given accessor with the write
 // function disabled.
 template<class Wrapped>
-struct readonly_accessor_wrapper : accessor<typename accessor_value_type<Wrapped>::type>
+struct readonly_accessor_wrapper
+    : accessor<typename accessor_value_type<Wrapped>::type>
 {
     typedef typename accessor_value_type<Wrapped>::type wrapped_value_type;
     readonly_accessor_wrapper()
@@ -791,7 +797,8 @@ struct readonly_accessor_wrapper : accessor<typename accessor_value_type<Wrapped
     Wrapped wrapped_;
 };
 template<class Wrapped>
-readonly_accessor_wrapper<typename copyable_accessor_helper<Wrapped const&>::result_type>
+readonly_accessor_wrapper<
+    typename copyable_accessor_helper<Wrapped const&>::result_type>
 make_readonly(Wrapped const& wrapped)
 {
     return readonly_accessor_wrapper<
@@ -812,7 +819,8 @@ struct accessor_mux : accessor<typename accessor_value_type<T>::type>
     accessor_mux()
     {
     }
-    accessor_mux(Condition condition, T t, F f) : condition_(condition), t_(t), f_(f)
+    accessor_mux(Condition condition, T t, F f)
+        : condition_(condition), t_(t), f_(f)
     {
     }
     bool
@@ -914,8 +922,11 @@ struct scaling_accessor_wrapper
     lazy_getter<wrapped_value_type> lazy_getter_;
 };
 template<class Wrapped>
-scaling_accessor_wrapper<typename copyable_accessor_helper<Wrapped const&>::result_type>
-scale(Wrapped const& wrapped, typename accessor_value_type<Wrapped>::type scale_factor)
+scaling_accessor_wrapper<
+    typename copyable_accessor_helper<Wrapped const&>::result_type>
+scale(
+    Wrapped const& wrapped,
+    typename accessor_value_type<Wrapped>::type scale_factor)
 {
     return scaling_accessor_wrapper<
         typename copyable_accessor_helper<Wrapped const&>::result_type>(
@@ -970,8 +981,10 @@ struct offset_accessor_wrapper
     lazy_getter<wrapped_value_type> lazy_getter_;
 };
 template<class Wrapped>
-offset_accessor_wrapper<typename copyable_accessor_helper<Wrapped const&>::result_type>
-offset(Wrapped const& wrapped, typename accessor_value_type<Wrapped>::type offset)
+offset_accessor_wrapper<
+    typename copyable_accessor_helper<Wrapped const&>::result_type>
+offset(
+    Wrapped const& wrapped, typename accessor_value_type<Wrapped>::type offset)
 {
     return offset_accessor_wrapper<
         typename copyable_accessor_helper<Wrapped const&>::result_type>(
@@ -1011,7 +1024,9 @@ struct rounding_accessor_wrapper
     set(typename accessor_value_type<Wrapped>::type const& value) const
     {
         wrapped_.set(
-            std::floor(value / step_ + typename accessor_value_type<Wrapped>::type(0.5))
+            std::floor(
+                value / step_ +
+                typename accessor_value_type<Wrapped>::type(0.5))
             * step_);
     }
 
@@ -1020,7 +1035,8 @@ struct rounding_accessor_wrapper
     typename accessor_value_type<Wrapped>::type step_;
 };
 template<class Wrapped>
-rounding_accessor_wrapper<typename copyable_accessor_helper<Wrapped const&>::result_type>
+rounding_accessor_wrapper<
+    typename copyable_accessor_helper<Wrapped const&>::result_type>
 add_input_rounder(
     Wrapped const& wrapped, typename accessor_value_type<Wrapped>::type step)
 {
@@ -1034,7 +1050,8 @@ add_input_rounder(
 template<class StructureAccessor, class Field>
 struct field_accessor : accessor<Field>
 {
-    typedef typename accessor_value_type<StructureAccessor>::type structure_type;
+    typedef
+        typename accessor_value_type<StructureAccessor>::type structure_type;
     typedef Field structure_type::*field_ptr;
     field_accessor()
     {
@@ -1074,7 +1091,8 @@ struct field_accessor : accessor<Field>
     {
         // Allowing a field to be set when the rest of the structure isn't
         // gettable is questionable.
-        structure_type s = structure_.is_gettable() ? structure_.get() : structure_type();
+        structure_type s
+            = structure_.is_gettable() ? structure_.get() : structure_type();
         s.*field_ = x;
         structure_.set(s);
     }
@@ -1093,7 +1111,8 @@ select_field(
     Field accessor_value_type<StructureAccessor>::type::*field)
 {
     return field_accessor<
-        typename copyable_accessor_helper<StructureAccessor const&>::result_type,
+        typename copyable_accessor_helper<
+            StructureAccessor const&>::result_type,
         Field>(make_accessor_copyable(structure), field);
 }
 
@@ -1156,7 +1175,8 @@ struct optional_accessor_unwrapper
     optional_accessor_unwrapper()
     {
     }
-    optional_accessor_unwrapper(OptionalAccessor const& accessor) : accessor_(accessor)
+    optional_accessor_unwrapper(OptionalAccessor const& accessor)
+        : accessor_(accessor)
     {
     }
     bool
@@ -1193,8 +1213,8 @@ optional_accessor_unwrapper<
     typename copyable_accessor_helper<OptionalAccessor const&>::result_type>
 unwrap_optional(OptionalAccessor const& accessor)
 {
-    return optional_accessor_unwrapper<
-        typename copyable_accessor_helper<OptionalAccessor const&>::result_type>(
+    return optional_accessor_unwrapper<typename copyable_accessor_helper<
+        OptionalAccessor const&>::result_type>(
         make_accessor_copyable(accessor));
 }
 
@@ -1322,17 +1342,17 @@ lazy_apply(Function const& f, Arg0 const& arg0, Arg1 const& arg1)
 
 // Define various operators for accessors.
 
-#define ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(op)                                         \
-    template<                                                                            \
-        class A,                                                                         \
-        class B,                                                                         \
-        std::enable_if_t<                                                                \
-            std::is_base_of<untyped_accessor_base, A>::value                             \
-                && std::is_base_of<untyped_accessor_base, B>::value,                     \
-            int> = 0>                                                                    \
-    auto operator op(A const& a, B const& b)                                             \
-    {                                                                                    \
-        return lazy_apply([](auto a, auto b) { return a op b; }, a, b);                  \
+#define ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(op)                               \
+    template<                                                                  \
+        class A,                                                               \
+        class B,                                                               \
+        std::enable_if_t<                                                      \
+            std::is_base_of<untyped_accessor_base, A>::value                   \
+                && std::is_base_of<untyped_accessor_base, B>::value,           \
+            int> = 0>                                                          \
+    auto operator op(A const& a, B const& b)                                   \
+    {                                                                          \
+        return lazy_apply([](auto a, auto b) { return a op b; }, a, b);        \
     }
 
 ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(+)
@@ -1354,13 +1374,15 @@ ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR(>=)
 
 #undef ALIA_DEFINE_BINARY_ACCESSOR_OPERATOR
 
-#define ALIA_DEFINE_UNARY_ACCESSOR_OPERATOR(op)                                          \
-    template<                                                                            \
-        class A,                                                                         \
-        std::enable_if_t<std::is_base_of<untyped_accessor_base, A>::value, int> = 0>     \
-    auto operator op(A const& a)                                                         \
-    {                                                                                    \
-        return lazy_apply([](auto a) { return op a; }, a);                               \
+#define ALIA_DEFINE_UNARY_ACCESSOR_OPERATOR(op)                                \
+    template<                                                                  \
+        class A,                                                               \
+        std::enable_if_t<                                                      \
+            std::is_base_of<untyped_accessor_base, A>::value,                  \
+            int> = 0>                                                          \
+    auto operator op(A const& a)                                               \
+    {                                                                          \
+        return lazy_apply([](auto a) { return op a; }, a);                     \
     }
 
 ALIA_DEFINE_UNARY_ACCESSOR_OPERATOR(-)
@@ -1368,8 +1390,8 @@ ALIA_DEFINE_UNARY_ACCESSOR_OPERATOR(!)
 
 #undef ALIA_DEFINE_UNARY_ACCESSOR_OPERATOR
 
-// The || and && operators require special implementations because they don't necessarily
-// need to evaluate both of their arguments...
+// The || and && operators require special implementations because they don't
+// necessarily need to evaluate both of their arguments...
 
 template<class Arg0, class Arg1>
 struct logical_or_accessor : accessor<bool>
@@ -1377,7 +1399,8 @@ struct logical_or_accessor : accessor<bool>
     logical_or_accessor()
     {
     }
-    logical_or_accessor(Arg0 const& arg0, Arg1 const& arg1) : arg0_(arg0), arg1_(arg1)
+    logical_or_accessor(Arg0 const& arg0, Arg1 const& arg1)
+        : arg0_(arg0), arg1_(arg1)
     {
     }
     id_interface const&
@@ -1389,8 +1412,9 @@ struct logical_or_accessor : accessor<bool>
     bool
     is_gettable() const
     {
-        // Obviously, this is gettable if both of its arguments are gettable. However,
-        // it's also gettable if only one is gettable and its value is true.
+        // Obviously, this is gettable if both of its arguments are gettable.
+        // However, it's also gettable if only one is gettable and its value is
+        // true.
         return arg0_.is_gettable() && arg1_.is_gettable()
                || arg0_.is_gettable() && arg0_.get()
                || arg1_.is_gettable() && arg1_.get();
@@ -1398,7 +1422,8 @@ struct logical_or_accessor : accessor<bool>
     bool const&
     get() const
     {
-        value_ = arg0_.is_gettable() && arg0_.get() || arg1_.is_gettable() && arg1_.get();
+        value_ = arg0_.is_gettable() && arg0_.get()
+                 || arg1_.is_gettable() && arg1_.get();
         return value_;
     }
     bool
@@ -1439,7 +1464,8 @@ struct logical_and_accessor : accessor<bool>
     logical_and_accessor()
     {
     }
-    logical_and_accessor(Arg0 const& arg0, Arg1 const& arg1) : arg0_(arg0), arg1_(arg1)
+    logical_and_accessor(Arg0 const& arg0, Arg1 const& arg1)
+        : arg0_(arg0), arg1_(arg1)
     {
     }
     id_interface const&
@@ -1451,8 +1477,9 @@ struct logical_and_accessor : accessor<bool>
     bool
     is_gettable() const
     {
-        // Obviously, this is gettable if both of its arguments are gettable. However,
-        // it's also gettable if only one is gettable and its value is false.
+        // Obviously, this is gettable if both of its arguments are gettable.
+        // However, it's also gettable if only one is gettable and its value is
+        // false.
         return arg0_.is_gettable() && arg1_.is_gettable()
                || arg0_.is_gettable() && !arg0_.get()
                || arg1_.is_gettable() && !arg1_.get();
@@ -1460,8 +1487,9 @@ struct logical_and_accessor : accessor<bool>
     bool const&
     get() const
     {
-        value_ = !(
-            arg0_.is_gettable() && !arg0_.get() || arg1_.is_gettable() && !arg1_.get());
+        value_
+            = !(arg0_.is_gettable() && !arg0_.get()
+                || arg1_.is_gettable() && !arg1_.get());
         return value_;
     }
     bool
@@ -1496,8 +1524,8 @@ operator&&(A const& a, B const& b)
         make_accessor_copyable(a), make_accessor_copyable(b));
 }
 
-// _is_gettable(x) yields an accessor to a boolean which indicates whether or not x is
-// gettable. (The returned accessor is always gettable itself.)
+// _is_gettable(x) yields an accessor to a boolean which indicates whether or
+// not x is gettable. (The returned accessor is always gettable itself.)
 template<class Wrapped>
 struct gettability_accessor : regular_accessor<bool>
 {
@@ -1541,8 +1569,8 @@ _is_gettable(Wrapped const& wrapped)
         make_accessor_copyable(wrapped));
 }
 
-// _is_settable(x) yields an accessor to a boolean which indicates whether or not x is
-// settable. (The returned accessor is always gettable.)
+// _is_settable(x) yields an accessor to a boolean which indicates whether or
+// not x is settable. (The returned accessor is always gettable.)
 template<class Wrapped>
 struct settability_accessor : regular_accessor<bool>
 {

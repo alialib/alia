@@ -6,7 +6,8 @@
 // Disable coloring because it doesn't seem to work properly on Windows.
 #define CATCH_CONFIG_COLOUR_NONE
 
-// Allowing Catch to support nullptr causes duplicate definitions for some things.
+// Allowing Catch to support nullptr causes duplicate definitions for some
+// things.
 #define CATCH_CONFIG_CPP11_NO_NULLPTR
 
 // The Catch "main" code triggers these in Visual C++.

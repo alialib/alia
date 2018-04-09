@@ -8,6 +8,7 @@
 #include <memory>
 #include <ostream>
 #include <string>
+#include <type_traits>
 
 // This file defines some generic functionality that's commonly used throughout
 // alia.
@@ -168,14 +169,14 @@ struct hash<alia::flag_set<Tag>>
 } // namespace std
 
 namespace alia {
-#define ALIA_DEFINE_FLAG_TYPE(type_prefix)                                               \
-    struct type_prefix##_flag_tag                                                        \
-    {                                                                                    \
-    };                                                                                   \
+#define ALIA_DEFINE_FLAG_TYPE(type_prefix)                                     \
+    struct type_prefix##_flag_tag                                              \
+    {                                                                          \
+    };                                                                         \
     typedef alia::flag_set<type_prefix##_flag_tag> type_prefix##_flag_set;
 
-#define ALIA_DEFINE_FLAG(type_prefix, code, name)                                        \
-    static unsigned const name##_CODE = code;                                            \
+#define ALIA_DEFINE_FLAG(type_prefix, code, name)                              \
+    static unsigned const name##_CODE = code;                                  \
     static alia::flag_set<type_prefix##_flag_tag> const name(code);
 
 // Inspired by Boost, inheriting from noncopyable disables copying for a type.
@@ -290,7 +291,8 @@ struct vector_equality_test
     static bool
     apply(vector<N, T> const& a, vector<N, T> const& b)
     {
-        return a[I - 1] == b[I - 1] && vector_equality_test<N, T, I - 1>::apply(a, b);
+        return a[I - 1] == b[I - 1]
+               && vector_equality_test<N, T, I - 1>::apply(a, b);
     }
 };
 template<unsigned N, class T>
@@ -445,6 +447,145 @@ struct raii_adaptor : Container
         Container::end();
     }
 };
+
+// any is effectively an implementation of std/boost::any that a) can be used
+// without a dependence on C++17/Boost and b) provides unsafe casts.
+struct any
+{
+    // default constructor
+    any() : holder_(0)
+    {
+    }
+    // destructor
+    ~any()
+    {
+        delete holder_;
+    }
+    // copy constructor
+    any(any const& other) : holder_(other.holder_ ? other.holder_->clone() : 0)
+    {
+    }
+    // move constructor
+    any(any&& other) : holder_(other.holder_)
+    {
+        other.holder_ = 0;
+    }
+    // constructor for concrete values
+    template<class T>
+    explicit any(T const& value) : holder_(new typed_value_holder<T>(value))
+    {
+    }
+    // constructor for concrete values (by rvalue)
+    template<typename T>
+    any(T&& value,
+        std::enable_if_t<!std::is_same<any&, T>::value>* = 0,
+        std::enable_if_t<!std::is_const<T>::value>* = 0)
+        : holder_(new typed_value_holder<typename std::decay<T>::type>(
+              static_cast<T&&>(value)))
+    {
+    }
+    // copy assignment operator
+    any&
+    operator=(any const& other)
+    {
+        delete holder_;
+        holder_ = other.holder_ ? other.holder_->clone() : 0;
+        return *this;
+    }
+    // move assignment operator
+    any&
+    operator=(any&& other)
+    {
+        delete holder_;
+        holder_ = other.holder_;
+        other.holder_ = 0;
+        return *this;
+    }
+    // swap
+    void
+    swap(any& other)
+    {
+        std::swap(holder_, other.holder_);
+    }
+    // assignment operator for concrete values
+    template<class T>
+    any&
+    operator=(T const& value)
+    {
+        delete holder_;
+        holder_ = new typed_value_holder<T>(value);
+        return *this;
+    }
+    // assignment operator for concrete values (by rvalue)
+    template<class T>
+    any&
+    operator=(T&& value)
+    {
+        any(static_cast<T&&>(value)).swap(*this);
+        return *this;
+    }
+    // value holder
+    struct untyped_value_holder
+    {
+        virtual ~untyped_value_holder()
+        {
+        }
+        virtual untyped_value_holder*
+        clone() const = 0;
+    };
+    template<class T>
+    struct typed_value_holder : untyped_value_holder
+    {
+        explicit typed_value_holder(T const& value) : value(value)
+        {
+        }
+        explicit typed_value_holder(T&& value) : value(static_cast<T&&>(value))
+        {
+        }
+        untyped_value_holder*
+        clone() const
+        {
+            return new typed_value_holder(value);
+        }
+        T value;
+    };
+    untyped_value_holder* holder_;
+};
+static inline void
+swap(any& a, any& b)
+{
+    a.swap(b);
+}
+template<class T>
+T const*
+any_cast(any const& a)
+{
+    any::typed_value_holder<T> const* ptr
+        = dynamic_cast<any::typed_value_holder<T> const*>(a.holder_);
+    return ptr ? &ptr->value : 0;
+}
+template<class T>
+T*
+any_cast(any& a)
+{
+    any::typed_value_holder<T>* ptr
+        = dynamic_cast<any::typed_value_holder<T>*>(a.holder_);
+    return ptr ? &ptr->value : 0;
+}
+template<class T>
+T const&
+unsafe_any_cast(any const& a)
+{
+    assert(dynamic_cast<any::typed_value_holder<T> const*>(a.holder_));
+    return static_cast<any::typed_value_holder<T> const*>(a.holder_)->value;
+}
+template<class T>
+T&
+unsafe_any_cast(any& a)
+{
+    assert(dynamic_cast<any::typed_value_holder<T>*>(a.holder_));
+    return static_cast<any::typed_value_holder<T>*>(a.holder_)->value;
+}
 
 struct id_interface;
 

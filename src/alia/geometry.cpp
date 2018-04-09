@@ -38,7 +38,8 @@ sample_curve_derivative(unit_cubic_bezier_coefficients const& coeff, double t)
 }
 
 static double
-solve_for_t_at_x(unit_cubic_bezier_coefficients const& coeff, double x, double epsilon)
+solve_for_t_at_x(
+    unit_cubic_bezier_coefficients const& coeff, double x, double epsilon)
 {
     // Newton's method should be faster, so try that first.
     double t = x;

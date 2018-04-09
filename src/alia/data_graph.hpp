@@ -266,7 +266,9 @@ struct named_block : noncopyable
 
     template<class Context>
     named_block(
-        Context& ctx, id_interface const& id, manual_delete manual = manual_delete(false))
+        Context& ctx,
+        id_interface const& id,
+        manual_delete manual = manual_delete(false))
     {
         begin(ctx, id, manual);
     }
@@ -274,7 +276,9 @@ struct named_block : noncopyable
     template<class Context>
     void
     begin(
-        Context& ctx, id_interface const& id, manual_delete manual = manual_delete(false))
+        Context& ctx,
+        id_interface const& id,
+        manual_delete manual = manual_delete(false))
     {
         begin(get_data_traversal(ctx), get_naming_map(ctx), id, manual);
     }
@@ -376,10 +380,10 @@ delete_named_block(Context& ctx, id_interface const& id)
 // combined ID.
 // This is not as generally useful as naming_context, but it can be used to
 // identify the combinaion of a function and its argument.
-#define ALIA_BEGIN_LOCATION_SPECIFIC_NAMED_BLOCK(ctx, named_block, id)                   \
-    {                                                                                    \
-        static int alia__dummy_static;                                                   \
-        named_block.begin(ctx, combine_ids(make_id(&alia__dummy_static), id));           \
+#define ALIA_BEGIN_LOCATION_SPECIFIC_NAMED_BLOCK(ctx, named_block, id)         \
+    {                                                                          \
+        static int alia__dummy_static;                                         \
+        named_block.begin(ctx, combine_ids(make_id(&alia__dummy_static), id)); \
     }
 
 // scoped_gc_disabler disables the garbage collector within a scope of a
@@ -532,7 +536,8 @@ get_cached_data(Context& ctx, T** ptr)
     if (holder->data)
     {
         assert(dynamic_cast<typed_cached_data<T>*>(holder->data));
-        typed_cached_data<T>* data = static_cast<typed_cached_data<T>*>(holder->data);
+        typed_cached_data<T>* data
+            = static_cast<typed_cached_data<T>*>(holder->data);
         *ptr = &data->value;
         return false;
     }
@@ -566,7 +571,9 @@ get_state(Context& ctx, state_accessor<T>* accessor)
 }
 
 template<class T, class Context>
-std::enable_if_t<!std::is_base_of<untyped_accessor_base, T>::value, state_accessor<T>>
+std::enable_if_t<
+    !std::is_base_of<untyped_accessor_base, T>::value,
+    state_accessor<T>>
 get_state(Context& ctx, T const& default_value = T())
 {
     state<T>* ptr;
@@ -716,7 +723,8 @@ make_accessor(keyed_data<Data>* data)
 
 template<class Context, class Data>
 bool
-get_keyed_data(Context& ctx, id_interface const& key, keyed_data_accessor<Data>* accessor)
+get_keyed_data(
+    Context& ctx, id_interface const& key, keyed_data_accessor<Data>* accessor)
 {
     keyed_data<Data>* ptr;
     get_cached_data(ctx, &ptr);
@@ -896,42 +904,43 @@ is_false(Accessor const& x)
 
 // if, else_if, else
 
-#define alia_if_(ctx, condition)                                                         \
-    {                                                                                    \
-        bool alia__else_condition ALIA_UNUSED;                                           \
-        {                                                                                \
-            auto const& alia__condition_value = (condition);                             \
-            bool alia__if_condition = alia::is_true(alia__condition_value);              \
-            alia__else_condition = alia::is_false(alia__condition_value);                \
-            ::alia::if_block alia__if_block(                                             \
-                get_data_traversal(ctx), alia__if_condition);                            \
-            if (alia__if_condition)                                                      \
+#define alia_if_(ctx, condition)                                               \
+    {                                                                          \
+        bool alia__else_condition ALIA_UNUSED;                                 \
+        {                                                                      \
+            auto const& alia__condition_value = (condition);                   \
+            bool alia__if_condition = alia::is_true(alia__condition_value);    \
+            alia__else_condition = alia::is_false(alia__condition_value);      \
+            ::alia::if_block alia__if_block(                                   \
+                get_data_traversal(ctx), alia__if_condition);                  \
+            if (alia__if_condition)                                            \
             {
 
 #define alia_if(condition) alia_if_(ctx, condition)
 
-#define alia_else_if_(ctx, condition)                                                    \
-    }                                                                                    \
-    }                                                                                    \
-    {                                                                                    \
-        auto const& alia__condition_value = (condition);                                 \
-        bool alia__else_if_condition                                                     \
-            = alia__else_condition && alia::is_true(alia__condition_value);              \
-        alia__else_condition                                                             \
-            = alia__else_condition && alia::is_false(alia__condition_value);             \
-        ::alia::if_block alia__if_block(                                                 \
-            get_data_traversal(ctx), alia__else_if_condition);                           \
-        if (alia__else_if_condition)                                                     \
+#define alia_else_if_(ctx, condition)                                          \
+    }                                                                          \
+    }                                                                          \
+    {                                                                          \
+        auto const& alia__condition_value = (condition);                       \
+        bool alia__else_if_condition                                           \
+            = alia__else_condition && alia::is_true(alia__condition_value);    \
+        alia__else_condition                                                   \
+            = alia__else_condition && alia::is_false(alia__condition_value);   \
+        ::alia::if_block alia__if_block(                                       \
+            get_data_traversal(ctx), alia__else_if_condition);                 \
+        if (alia__else_if_condition)                                           \
         {
 
 #define alia_else_if(condition) alia_else_if_(ctx, condition)
 
-#define alia_else_(ctx)                                                                  \
-    }                                                                                    \
-    }                                                                                    \
-    {                                                                                    \
-        ::alia::if_block alia__if_block(get_data_traversal(ctx), alia__else_condition);  \
-        if (alia__else_condition)                                                        \
+#define alia_else_(ctx)                                                        \
+    }                                                                          \
+    }                                                                          \
+    {                                                                          \
+        ::alia::if_block alia__if_block(                                       \
+            get_data_traversal(ctx), alia__else_condition);                    \
+        if (alia__else_condition)                                              \
         {
 
 #define alia_else alia_else_(ctx)
@@ -940,24 +949,25 @@ is_false(Accessor const& x)
 // change from one pass to another. It does not clear out cached data wihin
 // the block if it's skipped.
 
-#define alia_pass_dependent_if_(ctx, condition)                                          \
-    {                                                                                    \
-        {                                                                                \
-            bool alia__condition = alia::is_true(condition);                             \
-            ::alia::pass_dependent_if_block alia__if_block(                              \
-                get_data_traversal(ctx), alia__condition);                               \
-            if (alia__condition)                                                         \
+#define alia_pass_dependent_if_(ctx, condition)                                \
+    {                                                                          \
+        {                                                                      \
+            bool alia__condition = alia::is_true(condition);                   \
+            ::alia::pass_dependent_if_block alia__if_block(                    \
+                get_data_traversal(ctx), alia__condition);                     \
+            if (alia__condition)                                               \
             {
 
-#define alia_pass_dependent_if(condition) alia_pass_dependent_if_(ctx, condition)
+#define alia_pass_dependent_if(condition)                                      \
+    alia_pass_dependent_if_(ctx, condition)
 
 // switch
 
-#define alia_switch_(ctx, x)                                                             \
-    {                                                                                    \
-        {                                                                                \
-            ::alia::switch_block alia__switch_block(ctx);                                \
-            switch (x)                                                                   \
+#define alia_switch_(ctx, x)                                                   \
+    {                                                                          \
+        {                                                                      \
+            ::alia::switch_block alia__switch_block(ctx);                      \
+            switch (x)                                                         \
             {
 
 #define alia_switch(x) alia_switch_(ctx, x)
@@ -965,51 +975,53 @@ is_false(Accessor const& x)
 #define ALIA_CONCATENATE_HELPER(a, b) a##b
 #define ALIA_CONCATENATE(a, b) ALIA_CONCATENATE_HELPER(a, b)
 
-#define alia_case(c)                                                                     \
-    case c:                                                                              \
-        alia__switch_block.activate_case(c);                                             \
-        goto ALIA_CONCATENATE(alia__dummy_label_, __LINE__);                             \
+#define alia_case(c)                                                           \
+    case c:                                                                    \
+        alia__switch_block.activate_case(c);                                   \
+        goto ALIA_CONCATENATE(alia__dummy_label_, __LINE__);                   \
         ALIA_CONCATENATE(alia__dummy_label_, __LINE__)
 
-#define alia_default                                                                     \
-    default:                                                                             \
-        alia__switch_block.activate_case("default");                                     \
-        goto ALIA_CONCATENATE(alia__dummy_label_, __LINE__);                             \
+#define alia_default                                                           \
+    default:                                                                   \
+        alia__switch_block.activate_case("default");                           \
+        goto ALIA_CONCATENATE(alia__dummy_label_, __LINE__);                   \
         ALIA_CONCATENATE(alia__dummy_label_, __LINE__)
 
 // for
 
-#define alia_for_(ctx, x)                                                                \
-    {                                                                                    \
-        {                                                                                \
-            ::alia::loop_block alia__looper(get_data_traversal(ctx));                    \
-            for (x)                                                                      \
-            {                                                                            \
-                ::alia::scoped_data_block alia__scope;                                   \
-                alia__scope.begin(alia__looper.traversal(), alia__looper.block());       \
+#define alia_for_(ctx, x)                                                      \
+    {                                                                          \
+        {                                                                      \
+            ::alia::loop_block alia__looper(get_data_traversal(ctx));          \
+            for (x)                                                            \
+            {                                                                  \
+                ::alia::scoped_data_block alia__scope;                         \
+                alia__scope.begin(                                             \
+                    alia__looper.traversal(), alia__looper.block());           \
                 alia__looper.next();
 
 #define alia_for(x) alia_for_(ctx, x)
 
 // while
 
-#define alia_while_(ctx, x)                                                              \
-    {                                                                                    \
-        {                                                                                \
-            ::alia::loop_block alia__looper(get_data_traversal(ctx));                    \
-            while (x)                                                                    \
-            {                                                                            \
-                ::alia::scoped_data_block alia__scope;                                   \
-                alia__scope.begin(alia__looper.traversal(), alia__looper.block());       \
+#define alia_while_(ctx, x)                                                    \
+    {                                                                          \
+        {                                                                      \
+            ::alia::loop_block alia__looper(get_data_traversal(ctx));          \
+            while (x)                                                          \
+            {                                                                  \
+                ::alia::scoped_data_block alia__scope;                         \
+                alia__scope.begin(                                             \
+                    alia__looper.traversal(), alia__looper.block());           \
                 alia__looper.next();
 
 #define alia_while(x) alia_while_(ctx, x)
 
 // end
 
-#define alia_end                                                                         \
-    }                                                                                    \
-    }                                                                                    \
+#define alia_end                                                               \
+    }                                                                          \
+    }                                                                          \
     }
 
 } // namespace alia

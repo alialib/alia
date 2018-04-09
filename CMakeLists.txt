@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 2.8.12)
 
 set(CMAKE_CXX_STANDARD 14)
 
+enable_testing()
+
 # Set up fips.
 get_filename_component(FIPS_ROOT_DIR "../fips" ABSOLUTE)
 include("${FIPS_ROOT_DIR}/cmake/fips.cmake")
@@ -113,31 +115,67 @@ fips_begin_module(alia)
 fips_end_module()
 target_link_libraries(alia ${CONAN_LIBS})
 
-# Add tests.
-set(test_dir ${CMAKE_SOURCE_DIR}/tests)
-file (GLOB_RECURSE test_files ${CMAKE_SOURCE_DIR}/tests/*.[chi]pp)
-add_executable(test_runner ${test_files})
-target_link_libraries(test_runner alia ${CONAN_LIBS})
-add_test(NAME test_runner COMMAND test_runner)
-
-# Add the test runner.
+# Add the unit test runner.
 fips_begin_app(unit_test_runner cmdline)
     fips_deps(alia)
-    fips_src(tests)
+    fips_src(unit_tests)
 fips_end_app()
 
-# Add the unit testing target.
+# Add tests that are supposed to cause compilation errors.
+# Specifically, find all .cpp files in the compilation_tests/ directory and
+# generate test cases that try to compile them once with
+# ALIA_TEST_COMPILATION_FAILURE #defined and once without it. The files are
+# expected to compile successfully without the #define but generate a
+# compilation error when the #define is provided.
+file(GLOB_RECURSE COMPILATION_TEST_FILES "compilation_tests/*.cpp")
+set(COMPILATION_TEST_SCRIPT
+    "${PROJECT_BINARY_DIR}/invoke_compilation_tests.cmake")
+file(WRITE ${COMPILATION_TEST_SCRIPT} "")
+get_target_property(COMPILE_DEFS unit_test_runner COMPILE_DEFINITIONS)
+foreach(TEST_FILE ${COMPILATION_TEST_FILES})
+    get_filename_component(TEST_NAME ${TEST_FILE} NAME_WE)
+
+    # We implement these tests by creating libraries that are built from the
+    # source file in question. Then we create actual CMake test cases that try
+    # to build those targets.
+
+    # This is the "control" case (which omits the error and should build).
+    fips_begin_lib(${TEST_NAME}_control)
+        fips_deps(alia)
+        fips_files(${TEST_FILE})
+    fips_end_lib()
+    set_target_properties(${TEST_NAME}_control PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
+    add_test(NAME ${TEST_NAME}_control
+        COMMAND ${CMAKE_COMMAND} --build . --target ${TEST_NAME}_control
+        WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
+
+    # This is the actual failure case.
+    fips_begin_lib(${TEST_NAME})
+        fips_deps(alia)
+        fips_files(${TEST_FILE})
+    fips_end_lib()
+    target_compile_definitions(
+        ${TEST_NAME} PRIVATE ALIA_TEST_COMPILATION_FAILURE)
+    set_target_properties(${TEST_NAME} PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
+    add_test(NAME ${TEST_NAME}
+        COMMAND ${CMAKE_COMMAND} --build . --target ${TEST_NAME}
+        WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
+    set_tests_properties(${TEST_NAME} PROPERTIES WILL_FAIL TRUE)
+endforeach()
+
+# Add a target for running the unit tests.
 add_custom_target(
     unit_tests
-    # Create a fresh 'testing' directory within the build dir and run the
+    # Create a fresh 'unit-testing' directory within the build dir and run the
     # tests with that. (Some of them perform file I/O.)
-    COMMAND ${CMAKE_COMMAND} -E remove_directory testing
-    COMMAND ${CMAKE_COMMAND} -E make_directory testing
-    COMMAND ${CMAKE_COMMAND} -E chdir testing ${CMAKE_COMMAND} -E env ALIA_DEPLOY_DIR=${FIPS_PROJECT_DEPLOY_DIR} ${FIPS_PROJECT_DEPLOY_DIR}/unit_test_runner
+    COMMAND ${CMAKE_COMMAND} -E remove_directory unit-testing
+    COMMAND ${CMAKE_COMMAND} -E make_directory unit-testing
+    COMMAND ${CMAKE_COMMAND} -E chdir unit-testing ${CMAKE_COMMAND} -E env ALIA_DEPLOY_DIR=${FIPS_PROJECT_DEPLOY_DIR} ${FIPS_PROJECT_DEPLOY_DIR}/unit_test_runner
     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
     DEPENDS unit_test_runner)
 
-# Add the unit test coverage target.
+# On Linux debug builds, the proper CMake test associated with the unit tests
+# includes test coverage reporting.
 if(FIPS_GCC AND CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_custom_target(
         unit_test_coverage
@@ -147,21 +185,13 @@ if(FIPS_GCC AND CMAKE_BUILD_TYPE STREQUAL "Debug")
         COMMAND lcov --extract raw.info '${PROJECT_SOURCE_DIR}/src/alia/*' --output-file filtered.info
         COMMAND ${CMAKE_COMMAND} -E copy filtered.info ${PROJECT_SOURCE_DIR}/.lcov.info
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
+    add_test(
+        NAME unit_test_coverage
+        COMMAND ${CMAKE_COMMAND} --build . --target unit_test_coverage
+        WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
+else()
+    add_test(
+        NAME unit_tests
+        COMMAND ${CMAKE_COMMAND} --build . --target unit_tests
+        WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
 endif()
-
-# Add the integration testing target.
-add_custom_target(
-    integration_tests
-    COMMAND echo Integration tests not implemented yet...)
-
-# Add a target for running all tests.
-add_custom_target(
-    all_tests
-    DEPENDS unit_tests
-    DEPENDS integration_tests)
-
-# Add a target for running all tests (w/coverage).
-add_custom_target(
-    all_tests_coverage
-    DEPENDS unit_test_coverage
-    DEPENDS integration_tests)
