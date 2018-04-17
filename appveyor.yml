@@ -19,7 +19,11 @@ init:
   - ps: Update-AppveyorBuild -Version "$($env:APPVEYOR_REPO_BRANCH) - $($env:APPVEYOR_REPO_COMMIT)"
 
 install:
+  # Set up Conan.
+  - set PATH=%PATH%;%PYTHON%/Scripts/
   - pip.exe install conan
+  - conan user
+  - conan --version
   - scripts\set-up-conan.bat
 
 for:
