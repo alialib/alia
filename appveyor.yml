@@ -13,10 +13,16 @@ configuration:
   - Debug
   - Release
 
+environment:
+  - PYTHON: "C:\\Python36"
+
 init:
   - git config --global core.autocrlf input
   # Set build version to git commit-hash
   - ps: Update-AppveyorBuild -Version "$($env:APPVEYOR_REPO_BRANCH) - $($env:APPVEYOR_REPO_COMMIT)"
+
+install:
+  - "%PYTHON%\\Scripts\\pip.exe install conan"
 
 for:
   - matrix:
@@ -45,7 +51,8 @@ for:
       - fips set config win32-vstudio-debug
 
 before_build:
+  - scripts\set-up-conan.bat
   - fips gen
 
 build_script:
-  - cmd: fips make test
+  - fips make test
