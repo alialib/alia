@@ -31,7 +31,7 @@ for:
       only:
         - platform: x64
           configuration: Release
-    before_build:f
+    before_build:
       - fips set config win64-vstudio-release
   - matrix:
       only:
