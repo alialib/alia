@@ -14,7 +14,8 @@ configuration:
   - Release
 
 environment:
-  - PYTHON: "C:\\Python36"
+  global:
+    PYTHON: "C:\\Python36"
 
 init:
   - git config --global core.autocrlf input
