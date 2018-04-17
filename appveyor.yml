@@ -1,0 +1,51 @@
+# version string format -- This will be overwritten later anyway
+version: "{build}"
+
+image:
+  - Visual Studio 2017
+  - Visual Studio 2015
+
+platform:
+  - x86
+  - x64
+
+configuration:
+  - Debug
+  - Release
+
+init:
+  - git config --global core.autocrlf input
+  # Set build version to git commit-hash
+  - ps: Update-AppveyorBuild -Version "$($env:APPVEYOR_REPO_BRANCH) - $($env:APPVEYOR_REPO_COMMIT)"
+
+for:
+  - matrix:
+      only:
+        - platform: x64
+          configuration: Release
+    before_build:
+      - fips set config win64-vstudio-release
+  - matrix:
+      only:
+        - platform: x64
+          configuration: Debug
+    before_build:
+      - fips set config win64-vstudio-debug
+  - matrix:
+      only:
+        - platform: x86
+          configuration: Release
+    before_build:
+      - fips set config win32-vstudio-release
+  - matrix:
+      only:
+        - platform: x86
+          configuration: Debug
+    before_build:
+      - fips set config win32-vstudio-debug
+
+before_build:
+  - fips gen
+
+build_script:
+  - cmd: fips make test
