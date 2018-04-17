@@ -19,7 +19,7 @@ init:
   - ps: Update-AppveyorBuild -Version "$($env:APPVEYOR_REPO_BRANCH) - $($env:APPVEYOR_REPO_COMMIT)"
 
 install:
-  - choco install conan
+  - pip.exe install conan
   - scripts\set-up-conan.bat
 
 for:
@@ -27,7 +27,7 @@ for:
       only:
         - platform: x64
           configuration: Release
-    before_build:
+    before_build:f
       - fips set config win64-vstudio-release
   - matrix:
       only:
