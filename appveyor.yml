@@ -1,0 +1,69 @@
+# version string format -- This will be overwritten later anyway
+version: "{build}"
+
+image:
+  - Visual Studio 2017
+  - Visual Studio 2015
+
+platform:
+  - x86
+  - x64
+
+configuration:
+  - Debug
+  - Release
+
+init:
+  - git config --global core.autocrlf input
+  # Set build version to git commit-hash
+  - ps: Update-AppveyorBuild -Version "$($env:APPVEYOR_REPO_BRANCH) - $($env:APPVEYOR_REPO_COMMIT)"
+
+install:
+  # Set up Conan.
+  - set PATH=%PATH%;%PYTHON%/Scripts/
+  - pip.exe install conan
+  - conan user
+  - conan --version
+  - scripts\set-up-conan.bat
+
+environment:
+  BOOST_ROOT: C:/Libraries/boost_1_66_0
+
+for:
+  - matrix:
+      only:
+        - platform: x64
+          configuration: Release
+    before_build:
+      - fips set config win64-vstudio-release
+    environment:
+      LIBRARY_ARCHITECTURE: lib64
+  - matrix:
+      only:
+        - platform: x64
+          configuration: Debug
+    before_build:
+      - fips set config win64-vstudio-debug
+    environment:
+      LIBRARY_ARCHITECTURE: lib64
+  - matrix:
+      only:
+        - platform: x86
+          configuration: Release
+    before_build:
+      - fips set config win32-vstudio-release
+    environment:
+      LIBRARY_ARCHITECTURE: lib32
+  - matrix:
+      only:
+        - platform: x86
+          configuration: Debug
+    before_build:
+      - fips set config win32-vstudio-debug
+    environment:
+      LIBRARY_ARCHITECTURE: lib32
+
+build_script:
+  - set BOOST_LIBRARYDIR=%BOOST_ROOT%/%LIBRARY_ARCHITECTURE%-msvc-14.1
+  - fips gen
+  - fips make ctest
