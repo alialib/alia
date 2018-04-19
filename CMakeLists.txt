@@ -52,10 +52,20 @@ set(CMAKE_CXX_FLAGS "${ORIGINAL_CXX_FLAGS}")
 fips_include_directories(${CONAN_INCLUDE_DIRS}
     "$<$<CONFIG:Release>:${CONAN_INCLUDE_DIRS_RELEASE}>"
     "$<$<CONFIG:Debug>:${CONAN_INCLUDE_DIRS_DEBUG}>")
+# And remember the libs that it wants to link against.
+set(EXTERNAL_LIBS ${CONAN_LIBS})
+
+# If we're running on AppVeyor, we omit Boost from Conan and just use the one
+# that AppVeyor supplies. (This saves a lot of time and frustration.)
+if(DEFINED ENV{APPVEYOR})
+    find_package(Boost REQUIRED COMPONENTS program_options)
+    fips_include_directories(${Boost_INCLUDE_DIRS})
+    list(APPEND EXTERNAL_LIBS ${Boost_LIBRARIES})
+endif()
 
 fips_include_directories(${PROJECT_SOURCE_DIR}/src)
 
-# Add the given linker options on anything that gets linked.
+# MACRO - Add the given linker options on anything that gets linked.
 macro(add_link_options )
     string(REPLACE ";" " " OPTIONS "${ARGV}")
     set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} ${OPTIONS}")
@@ -64,7 +74,7 @@ macro(add_link_options )
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${OPTIONS}")
 endmacro()
 
-# Add the given linker options for executables.
+# MACRO - Add the given linker options for executables.
 macro(add_exe_link_options )
     string(REPLACE ";" " " OPTIONS "${ARGV}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OPTIONS}")
@@ -113,7 +123,7 @@ fips_begin_module(alia)
     fips_src(src/alia)
     fips_dir(.)
 fips_end_module()
-target_link_libraries(alia ${CONAN_LIBS})
+target_link_libraries(alia ${EXTERNAL_LIBS})
 
 # Add the unit test runner.
 fips_begin_app(unit_test_runner cmdline)
@@ -195,3 +205,10 @@ else()
         COMMAND ${CMAKE_COMMAND} --build . --target unit_tests
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
 endif()
+
+# CMake doesn't seem to generate a test target in some cases (which I haven't
+# quite figured out), so generate a custom one.
+add_custom_target(
+    ctest
+    COMMAND ctest -C ${CMAKE_BUILD_TYPE}
+    WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
