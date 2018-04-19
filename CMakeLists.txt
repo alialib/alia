@@ -58,7 +58,6 @@ set(EXTERNAL_LIBS ${CONAN_LIBS})
 # If we're running on AppVeyor, we omit Boost from Conan and just use the one
 # that AppVeyor supplies. (This saves a lot of time and frustration.)
 if(DEFINED ENV{APPVEYOR})
-    set(Boost_USE_STATIC_RUNTIME ON)
     find_package(Boost REQUIRED COMPONENTS program_options)
     fips_include_directories(${Boost_INCLUDE_DIRS})
     list(APPEND EXTERNAL_LIBS ${Boost_LIBRARIES})
