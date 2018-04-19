@@ -11,8 +11,7 @@ before_script:
   - export CC=`which gcc-5`
   - export CXX=`which g++-5`
   - scripts/set-up-conan.sh
-  - ./fips set config linux-make-debug
-  - ./fips gen
 
 script:
-  - ./fips make test
+  - ./fips make test linux-make-debug
+  - ./fips make test linux-make-release
