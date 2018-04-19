@@ -41,8 +41,6 @@ for:
         - image: Visual Studio 2015
     environment:
       VisualStudioVersion: "14.0"
-
-for:
   - matrix:
       only:
         - platform: x64
