@@ -27,8 +27,7 @@ install:
   - scripts\set-up-conan.bat
 
 environment:
-  BOOST_VERSION: 1_66_0
-  BOOST_ROOT: C:/Libraries/boost_%BOOST_VERSION%
+  BOOST_ROOT: C:/Libraries/boost_1_66_0
 
 for:
   - matrix:
@@ -66,6 +65,6 @@ for:
 
 build_script:
   - set BOOST_LIBRARYDIR=%BOOST_ROOT%/%LIBRARY_ARCHITECTURE%-msvc-14.1
-  - dir "%BOOST_LIBRARYDIR%"
+  - echo "%BOOST_LIBRARYDIR%"
   - fips gen
   - fips make ctest
