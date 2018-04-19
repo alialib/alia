@@ -26,6 +26,10 @@ install:
   - conan --version
   - scripts\set-up-conan.bat
 
+environment:
+  BOOST_VERSION: 1_66_0
+  BOOST_ROOT: C:/Libraries/boost_%BOOST_VERSION%
+
 for:
   - matrix:
       only:
@@ -33,24 +37,32 @@ for:
           configuration: Release
     before_build:
       - fips set config win64-vstudio-release
+    environment:
+      BOOST_LIBRARY_DIR: %BOOST_ROOT%/lib64-msvc-%VisualStudioVersion%
   - matrix:
       only:
         - platform: x64
           configuration: Debug
     before_build:
       - fips set config win64-vstudio-debug
+    environment:
+      BOOST_LIBRARY_DIR: %BOOST_ROOT%/lib64-msvc-%VisualStudioVersion%
   - matrix:
       only:
         - platform: x86
           configuration: Release
     before_build:
       - fips set config win32-vstudio-release
+    environment:
+      BOOST_LIBRARY_DIR: %BOOST_ROOT%/lib32-msvc-%VisualStudioVersion%
   - matrix:
       only:
         - platform: x86
           configuration: Debug
     before_build:
       - fips set config win32-vstudio-debug
+    environment:
+      BOOST_LIBRARY_DIR: %BOOST_ROOT%/lib32-msvc-%VisualStudioVersion%
 
 build_script:
   - fips gen
