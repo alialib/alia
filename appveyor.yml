@@ -71,6 +71,6 @@ build_script:
   - if "%APPVEYOR_BUILD_WORKER_IMAGE%" == "Visual Studio 2017" (
       set VC_VERSION=15.0)
   - set BOOST_LIBRARYDIR=%BOOST_ROOT%/%LIBRARY_ARCHITECTURE%-msvc-%VC_VERSION%
-  - dir "%BOOST_LIBRARYDIR%"
+  - dir "%BOOST_ROOT%"
   - fips gen
   - fips make ctest
