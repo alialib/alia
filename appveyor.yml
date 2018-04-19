@@ -33,6 +33,18 @@ environment:
 for:
   - matrix:
       only:
+        - image: Visual Studio 2017
+    environment:
+      VisualStudioVersion: "15.0"
+  - matrix:
+      only:
+        - image: Visual Studio 2015
+    environment:
+      VisualStudioVersion: "14.0"
+
+for:
+  - matrix:
+      only:
         - platform: x64
           configuration: Release
     before_build:
