@@ -65,12 +65,6 @@ for:
       LIBRARY_ARCHITECTURE: lib32
 
 build_script:
-  # VisualStudioVersion doesn't seem to be provided, so figure it out.
-  - if "%APPVEYOR_BUILD_WORKER_IMAGE%" == "Visual Studio 2015" (
-      set VC_VERSION=14.0)
-  - if "%APPVEYOR_BUILD_WORKER_IMAGE%" == "Visual Studio 2017" (
-      set VC_VERSION=15.0)
-  - set BOOST_LIBRARYDIR=%BOOST_ROOT%/%LIBRARY_ARCHITECTURE%-msvc-%VC_VERSION%
-  - dir /s /b /aD "C:/Libraries"
+  - set BOOST_LIBRARYDIR=%BOOST_ROOT%/%LIBRARY_ARCHITECTURE%-msvc-14.1
   - fips gen
   - fips make ctest
