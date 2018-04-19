@@ -54,4 +54,4 @@ for:
 
 build_script:
   - fips gen
-  - fips make test
+  - fips make ctest

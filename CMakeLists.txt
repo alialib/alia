@@ -195,3 +195,11 @@ else()
         COMMAND ${CMAKE_COMMAND} --build . --target unit_tests
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
 endif()
+
+# CMake doesn't seem to generate a test target for MSVC.
+if(FIPS_MSVC)
+    add_custom_target(
+        ctest
+        COMMAND ctest -C ${CMAKE_BUILD_TYPE}
+        WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
+endif()
