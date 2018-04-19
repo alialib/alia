@@ -65,6 +65,6 @@ for:
       BOOST_LIBRARYDIR: "%BOOST_ROOT%/lib32-msvc-%VisualStudioVersion%"
 
 build_script:
-  - echo "Boost library dir: %BOOST_LIBRARYDIR%"
+  - "echo Boost library dir: %BOOST_LIBRARYDIR%"
   - fips gen
   - fips make ctest
