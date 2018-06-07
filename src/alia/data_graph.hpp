@@ -7,16 +7,16 @@
 #include <cassert>
 
 // This file defines the data retrieval library used for associating mutable
-// state and cached data with alia UIs. It is designed so that each widget
-// instance is associated with a unique instance of data, even if there is
-// no specific external identifier for that widget instance.
+// state and cached data with alia instances. It is designed so that each node
+// emitted by an application is associated with a unique instance of data, even
+// if there is no specific external identifier for that node.
 //
-// More generally, if you replace "widget instance" with "subexpression
-// evaluation" in the previous sentence, it can be used to associate data with
-// particular points in the evaluation of any function. This can be useful in
-// situations where you need to evaluate a particular function many times with
-// slightly different inputs and you want to reuse the work that was done in
-// earlier evaluations without a lot of manual bookkeeping.
+// More generally, if you replace "node" with "subexpression evaluation" in the
+// previous sentence, it can be used to associate data with particular points in
+// the evaluation of any function. This can be useful in situations where you
+// need to evaluate a particular function many times with slightly different
+// inputs and you want to reuse the work that was done in earlier evaluations
+// without a lot of manual bookkeeping.
 //
 // To understand what's going on here, imagine the evaluation of a function on
 // a simple in-order, single-threaded processor. We can represent all possible
@@ -90,13 +90,14 @@ struct typed_data_node : data_node
 
 struct named_block_ref_node;
 
-// A data block represents a block of execution. During a single evaluation,
-// either all nodes in the block are executed or all nodes are bypassed, and,
-// if executed, they are always executed in the same order.
-// (Other nodes may be executed in between, depending on the evaluation.)
+// A data_block represents an block of execution. During a single evaluation,
+// either all nodes in the block are executed or all nodes are bypassed, and, if
+// executed, they are always executed in the same order. (It's conceptually
+// similar to a 'basic block' except that other nodes may be executed in between
+// nodes in a data_block.)
 struct data_block : noncopyable
 {
-    // the list of nodes in this basic block
+    // the list of nodes in this block
     data_node* nodes;
 
     // set if the block's cache is clear
