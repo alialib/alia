@@ -548,7 +548,13 @@ get_id(local_identity const& identity)
 struct no_id_type
 {
 };
-static value_id<no_id_type*> const no_id(0);
+static value_id<no_id_type*> const no_id(nullptr);
+
+// unit_id can be used when there is only possible identify.
+struct unit_id_type
+{
+};
+static value_id<unit_id_type*> const unit_id(nullptr);
 
 } // namespace alia
 

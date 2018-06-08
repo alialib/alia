@@ -10,32 +10,32 @@
 
 namespace alia {
 
-// Is x gettable?
+// Is x readable?
 template<class T>
 [[deprecated(
-    "Use _is_gettable or .is_gettable() directly, depending on needs.")]] bool
-is_gettable(accessor<T> const& x) { return x.is_gettable(); }
+    "Use _is_readable or .is_readable() directly, depending on needs.")]] bool
+is_readable(accessor<T> const& x) { return x.is_readable(); }
 
-// get(x) asserts that x is gettable and gets its value.
+// read(x) asserts that x is readable and reads its value.
 template<class T>
-T const& get(accessor<T> const& x)
+T const& read(accessor<T> const& x)
 {
-    assert(x.is_gettable());
-    return x.get();
+    assert(x.is_readable());
+    return x.read();
 }
 
-// Is a settable?
+// Is a writable?
 template<class T>
 [[deprecated(
-    "Use _is_settable or .is_settable() directly, depending on needs.")]] bool
-is_settable(accessor<T> const& a) { return a.is_settable(); }
+    "Use _is_writable or .is_writable() directly, depending on needs.")]] bool
+is_writable(accessor<T> const& a) { return a.is_writable(); }
 
-// set(a, value) sets a to value iff a is settable.
+// write(a, value) writes a to value iff a is writable.
 template<class Dst, class Src>
-void set(accessor<Dst> const& a, Src const& value)
+void write(accessor<Dst> const& a, Src const& value)
 {
-    if (a.is_settable())
-        a.set(value);
+    if (a.is_writable())
+        a.write(value);
 }
 
 // accessor_value_type<Accessor>::type yields the value type of an accessor.
@@ -57,7 +57,7 @@ struct accessor_value_type<Accessor const&> : accessor_value_type<Accessor>
 {
 };
 
-// When an accessor is set to a value, it's allowed to throw a validation
+// When an accessor is write to a value, it's allowed to throw a validation
 // error if the value is not acceptable.
 // It should include a message that's presentable to the user.
 struct validation_error : exception
@@ -83,23 +83,23 @@ struct empty_accessor : accessor<T>
         return no_id;
     }
     bool
-    is_gettable() const
+    is_readable() const
     {
         return false;
     }
     T const&
-    get() const
+    read() const
     {
         assert(false);
         return *(T*) (0);
     }
     bool
-    is_settable() const
+    is_writable() const
     {
         return false;
     }
     void
-    set(T const& value) const
+    write(T const& value) const
     {
     }
 };
@@ -112,9 +112,9 @@ struct regular_accessor : accessor<T>
     id_interface const&
     id() const
     {
-        if (this->is_gettable())
+        if (this->is_readable())
         {
-            id_ = make_id_by_reference(this->get());
+            id_ = make_id_by_reference(this->read());
             return id_;
         }
         return no_id;
@@ -135,22 +135,22 @@ struct inout_accessor : regular_accessor<T>
     {
     }
     bool
-    is_gettable() const
+    is_readable() const
     {
         return true;
     }
     T const&
-    get() const
+    read() const
     {
         return *v_;
     }
     bool
-    is_settable() const
+    is_writable() const
     {
         return true;
     }
     void
-    set(T const& value) const
+    write(T const& value) const
     {
         *v_ = value;
     }
@@ -165,47 +165,6 @@ inout(T* value)
     return inout_accessor<T>(value);
 }
 
-// in(x) creates a read-only accessor for the value of x.
-// A copy of x is stored within the accessor.
-template<class T>
-struct input_accessor : regular_accessor<T>
-{
-    input_accessor()
-    {
-    }
-    input_accessor(T const& v) : v_(v)
-    {
-    }
-    bool
-    is_gettable() const
-    {
-        return true;
-    }
-    T const&
-    get() const
-    {
-        return v_;
-    }
-    bool
-    is_settable() const
-    {
-        return false;
-    }
-    void
-    set(T const& value) const
-    {
-    }
-
- private:
-    T v_;
-};
-template<class T>
-input_accessor<T>
-in(T const& value)
-{
-    return input_accessor<T>(value);
-}
-
 // in_ptr(&x) creates a read-only accessor for the value of x.
 // x is passed by pointer and must stay valid for the life of the accessor.
 template<class T>
@@ -218,22 +177,22 @@ struct input_pointer_accessor : regular_accessor<T>
     {
     }
     bool
-    is_gettable() const
+    is_readable() const
     {
         return true;
     }
     T const&
-    get() const
+    read() const
     {
         return *v_;
     }
     bool
-    is_settable() const
+    is_writable() const
     {
         return false;
     }
     void
-    set(T const& value) const
+    write(T const& value) const
     {
     }
 
@@ -262,29 +221,29 @@ struct optional_input_accessor : accessor<T>
     {
         if (value_)
         {
-            id_ = make_id_by_reference(alia::get(value_));
+            id_ = make_id_by_reference(alia::read(value_));
             return id_;
         }
         else
             return no_id;
     }
     bool
-    is_gettable() const
+    is_readable() const
     {
         return value_ ? true : false;
     }
     T const&
-    get() const
+    read() const
     {
-        return alia::get(value_);
+        return alia::read(value_);
     }
     bool
-    is_settable() const
+    is_writable() const
     {
         return false;
     }
     void
-    set(T const& value) const
+    write(T const& value) const
     {
     }
 
@@ -299,17 +258,17 @@ optional_in(optional<T> const& value)
     return optional_input_accessor<T>(value);
 }
 
-// make_custom_getter(&x, id) gives you the most flexibility in creating an
+// make_custom_readter(&x, id) gives you the most flexibility in creating an
 // input accessor (short of implementing your own accessor type).
 // x is the value, and id is a custom ID.
 // The value is stored by pointer, so must remain valid, but the ID is copied.
 template<class T, class Id>
-struct custom_getter : accessor<T>
+struct custom_readter : accessor<T>
 {
-    custom_getter()
+    custom_readter()
     {
     }
-    custom_getter(T const* value, Id const& id) : value_(value), id_(id)
+    custom_readter(T const* value, Id const& id) : value_(value), id_(id)
     {
     }
     id_interface const&
@@ -318,22 +277,22 @@ struct custom_getter : accessor<T>
         return id_;
     }
     bool
-    is_gettable() const
+    is_readable() const
     {
         return true;
     }
     T const&
-    get() const
+    read() const
     {
         return *value_;
     }
     bool
-    is_settable() const
+    is_writable() const
     {
         return false;
     }
     void
-    set(T const& value) const
+    write(T const& value) const
     {
     }
 
@@ -342,20 +301,20 @@ struct custom_getter : accessor<T>
     T const* value_;
 };
 template<class T, class Id>
-custom_getter<T, Id>
-make_custom_getter(T const* value, Id const& id)
+custom_readter<T, Id>
+make_custom_readter(T const* value, Id const& id)
 {
-    return custom_getter<T, Id>(value, id);
+    return custom_readter<T, Id>(value, id);
 }
 
 // Same as above, but the value is optional.
 template<class T, class Id>
-struct custom_optional_getter : accessor<T>
+struct custom_optional_readter : accessor<T>
 {
-    custom_optional_getter()
+    custom_optional_readter()
     {
     }
-    custom_optional_getter(optional<T> const* value, Id const& id)
+    custom_optional_readter(optional<T> const* value, Id const& id)
         : value_(value), id_(id)
     {
     }
@@ -365,22 +324,22 @@ struct custom_optional_getter : accessor<T>
         return id_;
     }
     bool
-    is_gettable() const
+    is_readable() const
     {
         return *value_ ? true : false;
     }
     T const&
-    get() const
+    read() const
     {
-        return alia::get(*value_);
+        return alia::read(*value_);
     }
     bool
-    is_settable() const
+    is_writable() const
     {
         return false;
     }
     void
-    set(T const& value) const
+    write(T const& value) const
     {
     }
 
@@ -389,10 +348,10 @@ struct custom_optional_getter : accessor<T>
     optional<T> const* value_;
 };
 template<class T, class Id>
-custom_optional_getter<T, Id>
-make_custom_getter(optional<T> const* value, Id const& id)
+custom_optional_readter<T, Id>
+make_custom_readter(optional<T> const* value, Id const& id)
 {
-    return custom_optional_getter<T, Id>(value, id);
+    return custom_optional_readter<T, Id>(value, id);
 }
 
 // A state_proxy object is used when direct access is not possible and you
@@ -401,16 +360,16 @@ make_custom_getter(optional<T> const* value, Id const& id)
 // model state. (If uninitialized, it will report having no value.)
 // * Make accessors for it as necessary using make_accessor(s), where s is the
 // state_proxy object.
-// * Call s.was_set() to check if it was set, and if it was, retrieve its value
-// with s.get() and write it back to the model state.
+// * Call s.was_write() to check if it was write, and if it was, retrieve its
+// value with s.read() and write it back to the model state.
 template<class T>
 struct state_proxy
 {
     state_proxy(T const& value)
-        : initialized_(true), value_(value), was_set_(false)
+        : initialized_(true), value_(value), was_write_(false)
     {
     }
-    state_proxy() : initialized_(false), was_set_(false)
+    state_proxy() : initialized_(false), was_write_(false)
     {
     }
     bool
@@ -425,12 +384,12 @@ struct state_proxy
         value_ = value;
     }
     bool
-    was_set() const
+    was_write() const
     {
-        return was_set_;
+        return was_write_;
     }
     T const&
-    get() const
+    read() const
     {
         return value_;
     }
@@ -440,15 +399,15 @@ struct state_proxy
     friend struct state_proxy_accessor;
 
     void
-    set(T const& value)
+    write(T const& value)
     {
         value_ = value;
-        was_set_ = true;
+        was_write_ = true;
     }
 
     bool initialized_;
     T value_;
-    bool was_set_;
+    bool was_write_;
 };
 template<class T>
 struct state_proxy_accessor : regular_accessor<T>
@@ -457,24 +416,24 @@ struct state_proxy_accessor : regular_accessor<T>
     {
     }
     bool
-    is_gettable() const
+    is_readable() const
     {
         return s_->is_initialized();
     }
     T const&
-    get() const
+    read() const
     {
-        return s_->get();
+        return s_->read();
     }
     bool
-    is_settable() const
+    is_writable() const
     {
         return true;
     }
     void
-    set(T const& value) const
+    write(T const& value) const
     {
-        s_->set(value);
+        s_->write(value);
     }
 
  private:
@@ -499,17 +458,17 @@ struct state
     {
     }
     T const&
-    get() const
+    read() const
     {
         return value_;
     }
     value_id_by_reference<local_id>
     id() const
     {
-        return get_id(identity_);
+        return read_id(identity_);
     }
     void
-    set(T const& value)
+    write(T const& value)
     {
         inc_version(identity_);
         value_ = value;
@@ -518,12 +477,12 @@ struct state
     // you can use this. It returns a non-const reference to the value and
     // increments the version number of the associated ID.
     // Note that you should be careful to use this atomically. In other words,
-    // call this to get a reference, do your update, and then discard the
+    // call this to read a reference, do your update, and then discard the
     // reference before anyone else observes the state. If you hold onto the
     // reference and continue making changes while UI elements are accessing
     // it, you'll cause them to go out-of-sync.
     T&
-    nonconst_get()
+    nonconst_read()
     {
         inc_version(identity_);
         return value_;
@@ -543,14 +502,14 @@ struct state_accessor : accessor<T>
     {
     }
     bool
-    is_gettable() const
+    is_readable() const
     {
         return true;
     }
     T const&
-    get() const
+    read() const
     {
-        return s_->get();
+        return s_->read();
     }
     id_interface const&
     id() const
@@ -559,14 +518,14 @@ struct state_accessor : accessor<T>
         return id_;
     }
     bool
-    is_settable() const
+    is_writable() const
     {
         return true;
     }
     void
-    set(T const& value) const
+    write(T const& value) const
     {
-        s_->set(value);
+        s_->write(value);
     }
 
  private:
@@ -593,14 +552,14 @@ struct indirect_accessor : accessor<T>
     {
     }
     bool
-    is_gettable() const
+    is_readable() const
     {
-        return wrapped_->is_gettable();
+        return wrapped_->is_readable();
     }
     T const&
-    get() const
+    read() const
     {
-        return wrapped_->get();
+        return wrapped_->read();
     }
     id_interface const&
     id() const
@@ -608,14 +567,14 @@ struct indirect_accessor : accessor<T>
         return wrapped_->id();
     }
     bool
-    is_settable() const
+    is_writable() const
     {
-        return wrapped_->is_settable();
+        return wrapped_->is_writable();
     }
     void
-    set(T const& value) const
+    write(T const& value) const
     {
-        wrapped_->set(value);
+        wrapped_->write(value);
     }
     accessor<T> const&
     wrapped() const
@@ -675,18 +634,18 @@ make_accessor_copyable(Accessor const& x)
     return copyable_accessor_helper<Accessor const&>::apply(x);
 }
 
-// lazy_getter is used to create getters that lazily generate their values.
+// lazy_readter is used to create readters that lazily generate their values.
 // It provides storage for the computed value and ensures that it's only
 // computed once.
 template<class T>
-struct lazy_getter
+struct lazy_readter
 {
-    lazy_getter() : already_generated_(false)
+    lazy_readter() : already_generated_(false)
     {
     }
     template<class Generator>
     T const&
-    get(Generator const& generator) const
+    read(Generator const& generator) const
     {
         if (!already_generated_)
         {
@@ -713,36 +672,36 @@ struct accessor_caster : regular_accessor<To>
     {
     }
     bool
-    is_gettable() const
+    is_readable() const
     {
-        return wrapped_.is_gettable();
+        return wrapped_.is_readable();
     }
     To const&
-    get() const
+    read() const
     {
-        return lazy_getter_.get(*this);
+        return lazy_readter_.read(*this);
     }
     bool
-    is_settable() const
+    is_writable() const
     {
-        return wrapped_.is_settable();
+        return wrapped_.is_writable();
     }
     void
-    set(To const& value) const
+    write(To const& value) const
     {
-        return wrapped_.set(
+        return wrapped_.write(
             static_cast<typename accessor_value_type<Wrapped>::type>(value));
     }
 
  private:
-    friend struct lazy_getter<To>;
+    friend struct lazy_readter<To>;
     To
     generate() const
     {
-        return static_cast<To>(wrapped_.get());
+        return static_cast<To>(wrapped_.read());
     }
     Wrapped wrapped_;
-    lazy_getter<To> lazy_getter_;
+    lazy_readter<To> lazy_readter_;
 };
 template<class To, class Wrapped>
 accessor_caster<
@@ -769,14 +728,14 @@ struct readonly_accessor_wrapper
     {
     }
     bool
-    is_gettable() const
+    is_readable() const
     {
-        return wrapped_.is_gettable();
+        return wrapped_.is_readable();
     }
     wrapped_value_type const&
-    get() const
+    read() const
     {
-        return wrapped_.get();
+        return wrapped_.read();
     }
     id_interface const&
     id() const
@@ -784,12 +743,12 @@ struct readonly_accessor_wrapper
         return wrapped_.id();
     }
     bool
-    is_settable() const
+    is_writable() const
     {
         return false;
     }
     void
-    set(wrapped_value_type const& value) const
+    write(wrapped_value_type const& value) const
     {
     }
 
@@ -807,7 +766,7 @@ make_readonly(Wrapped const& wrapped)
 }
 
 // select_accessor(condition, t, f), where condition, t and f are accessors,
-// yields t if get(condition) is true and f otherwise.
+// yields t if read(condition) is true and f otherwise.
 // Note that this is a normal function call, so, unlike an if statement or the
 // ternary operator, both t and f are fully evaluated. However, they are only
 // accessed if they're selected.
@@ -824,34 +783,34 @@ struct accessor_mux : accessor<typename accessor_value_type<T>::type>
     {
     }
     bool
-    is_gettable() const
+    is_readable() const
     {
-        return condition_.is_gettable() && condition_.get() ? t_.is_gettable()
-                                                            : f_.is_gettable();
+        return condition_.is_readable() && condition_.read() ? t_.is_readable()
+                                                             : f_.is_readable();
     }
     typename accessor_value_type<T>::type const&
-    get() const
+    read() const
     {
-        return condition_.get() ? t_.get() : f_.get();
+        return condition_.read() ? t_.read() : f_.read();
     }
     id_interface const&
     id() const
     {
-        return condition_.get() ? t_.id() : f_.id();
+        return condition_.read() ? t_.id() : f_.id();
     }
     bool
-    is_settable() const
+    is_writable() const
     {
-        return condition_.is_gettable() && condition_.get() ? t_.is_settable()
-                                                            : f_.is_settable();
+        return condition_.is_readable() && condition_.read() ? t_.is_writable()
+                                                             : f_.is_writable();
     }
     void
-    set(typename accessor_value_type<T>::type const& value) const
+    write(typename accessor_value_type<T>::type const& value) const
     {
-        if (condition_.get())
-            t_.set(value);
+        if (condition_.read())
+            t_.write(value);
         else
-            f_.set(value);
+            f_.write(value);
     }
 
  private:
@@ -890,36 +849,36 @@ struct scaling_accessor_wrapper
     {
     }
     bool
-    is_gettable() const
+    is_readable() const
     {
-        return wrapped_.is_gettable();
+        return wrapped_.is_readable();
     }
     wrapped_value_type const&
-    get() const
+    read() const
     {
-        return lazy_getter_.get(*this);
+        return lazy_readter_.read(*this);
     }
     bool
-    is_settable() const
+    is_writable() const
     {
-        return wrapped_.is_settable();
+        return wrapped_.is_writable();
     }
     void
-    set(wrapped_value_type const& value) const
+    write(wrapped_value_type const& value) const
     {
-        wrapped_.set(value / scale_factor_);
+        wrapped_.write(value / scale_factor_);
     }
 
  private:
-    friend struct lazy_getter<wrapped_value_type>;
+    friend struct lazy_readter<wrapped_value_type>;
     wrapped_value_type
     generate() const
     {
-        return wrapped_.get() * scale_factor_;
+        return wrapped_.read() * scale_factor_;
     }
     Wrapped wrapped_;
     wrapped_value_type scale_factor_;
-    lazy_getter<wrapped_value_type> lazy_getter_;
+    lazy_readter<wrapped_value_type> lazy_readter_;
 };
 template<class Wrapped>
 scaling_accessor_wrapper<
@@ -933,62 +892,63 @@ scale(
         make_accessor_copyable(wrapped), scale_factor);
 }
 
-// offset(a, offset) presents an offset view of a, where a is an accessor to
-// a numeric value.
+// offwrite(a, offwrite) presents an offwrite view of a, where a is an accessor
+// to a numeric value.
 template<class Wrapped>
-struct offset_accessor_wrapper
+struct offwrite_accessor_wrapper
     : regular_accessor<typename accessor_value_type<Wrapped>::type>
 {
     typedef typename accessor_value_type<Wrapped>::type wrapped_value_type;
-    offset_accessor_wrapper()
+    offwrite_accessor_wrapper()
     {
     }
-    offset_accessor_wrapper(
-        Wrapped wrapped, typename accessor_value_type<Wrapped>::type offset)
-        : wrapped_(wrapped), offset_(offset)
+    offwrite_accessor_wrapper(
+        Wrapped wrapped, typename accessor_value_type<Wrapped>::type offwrite)
+        : wrapped_(wrapped), offwrite_(offwrite)
     {
     }
     bool
-    is_gettable() const
+    is_readable() const
     {
-        return wrapped_.is_gettable();
+        return wrapped_.is_readable();
     }
     wrapped_value_type const&
-    get() const
+    read() const
     {
-        return lazy_getter_.get(*this);
+        return lazy_readter_.read(*this);
     }
     bool
-    is_settable() const
+    is_writable() const
     {
-        return wrapped_.is_settable();
+        return wrapped_.is_writable();
     }
     void
-    set(typename accessor_value_type<Wrapped>::type const& value) const
+    write(typename accessor_value_type<Wrapped>::type const& value) const
     {
-        wrapped_.set(value - offset_);
+        wrapped_.write(value - offwrite_);
     }
 
  private:
-    friend struct lazy_getter<wrapped_value_type>;
+    friend struct lazy_readter<wrapped_value_type>;
     wrapped_value_type
     generate() const
     {
-        return wrapped_.get() + offset_;
+        return wrapped_.read() + offwrite_;
     }
     Wrapped wrapped_;
-    wrapped_value_type offset_;
-    lazy_getter<wrapped_value_type> lazy_getter_;
+    wrapped_value_type offwrite_;
+    lazy_readter<wrapped_value_type> lazy_readter_;
 };
 template<class Wrapped>
-offset_accessor_wrapper<
+offwrite_accessor_wrapper<
     typename copyable_accessor_helper<Wrapped const&>::result_type>
-offset(
-    Wrapped const& wrapped, typename accessor_value_type<Wrapped>::type offset)
+offwrite(
+    Wrapped const& wrapped,
+    typename accessor_value_type<Wrapped>::type offwrite)
 {
-    return offset_accessor_wrapper<
+    return offwrite_accessor_wrapper<
         typename copyable_accessor_helper<Wrapped const&>::result_type>(
-        make_accessor_copyable(wrapped), offset);
+        make_accessor_copyable(wrapped), offwrite);
 }
 
 // add_input_rounder(accessor, step) rounds input from the UI to the given
@@ -1006,24 +966,24 @@ struct rounding_accessor_wrapper
     {
     }
     bool
-    is_gettable() const
+    is_readable() const
     {
-        return wrapped_.is_gettable();
+        return wrapped_.is_readable();
     }
     typename accessor_value_type<Wrapped>::type const&
-    get() const
+    read() const
     {
-        return wrapped_.get();
+        return wrapped_.read();
     }
     bool
-    is_settable() const
+    is_writable() const
     {
-        return wrapped_.is_settable();
+        return wrapped_.is_writable();
     }
     void
-    set(typename accessor_value_type<Wrapped>::type const& value) const
+    write(typename accessor_value_type<Wrapped>::type const& value) const
     {
-        wrapped_.set(
+        wrapped_.write(
             std::floor(
                 value / step_ +
                 typename accessor_value_type<Wrapped>::type(0.5))
@@ -1061,14 +1021,14 @@ struct field_accessor : accessor<Field>
     {
     }
     bool
-    is_gettable() const
+    is_readable() const
     {
-        return structure_.is_gettable();
+        return structure_.is_readable();
     }
     Field const&
-    get() const
+    read() const
     {
-        structure_type const& structure = structure_.get();
+        structure_type const& structure = structure_.read();
         return structure.*field_;
     }
     id_interface const&
@@ -1082,19 +1042,19 @@ struct field_accessor : accessor<Field>
         return id_;
     }
     bool
-    is_settable() const
+    is_writable() const
     {
-        return structure_.is_settable();
+        return structure_.is_writable();
     }
     void
-    set(Field const& x) const
+    write(Field const& x) const
     {
-        // Allowing a field to be set when the rest of the structure isn't
-        // gettable is questionable.
+        // Allowing a field to be write when the rest of the structure isn't
+        // readable is questionable.
         structure_type s
-            = structure_.is_gettable() ? structure_.get() : structure_type();
+            = structure_.is_readable() ? structure_.read() : structure_type();
         s.*field_ = x;
-        structure_.set(s);
+        structure_.write(s);
     }
 
  private:
@@ -1132,40 +1092,40 @@ struct text : accessor<string>
         return id_;
     }
     bool
-    is_gettable() const
+    is_readable() const
     {
         return true;
     }
     string const&
-    get() const
+    read() const
     {
-        return lazy_getter_.get(*this);
+        return lazy_readter_.read(*this);
     }
     bool
-    is_settable() const
+    is_writable() const
     {
         return false;
     }
     void
-    set(string const& value) const
+    write(string const& value) const
     {
     }
 
  private:
     char const* text_;
     value_id<char const*> id_;
-    friend struct lazy_getter<string>;
+    friend struct lazy_readter<string>;
     string
     generate() const
     {
         return string(text_);
     }
-    lazy_getter<string> lazy_getter_;
+    lazy_readter<string> lazy_readter_;
 };
 
 // unwrap_optional(accessor) takes an accessor to an optional value
-// and creates an accessor to the underlying value. It's only gettable if the
-// wrapped accessor is gettable and contains a valid value.
+// and creates an accessor to the underlying value. It's only readable if the
+// wrapped accessor is readable and contains a valid value.
 template<class OptionalAccessor>
 struct optional_accessor_unwrapper
     : accessor<typename accessor_value_type<OptionalAccessor>::type::value_type>
@@ -1180,24 +1140,24 @@ struct optional_accessor_unwrapper
     {
     }
     bool
-    is_gettable() const
+    is_readable() const
     {
-        return accessor_.is_gettable() && accessor_.get();
+        return accessor_.is_readable() && accessor_.read();
     }
     underlying_value_type const&
-    get() const
+    read() const
     {
-        return accessor_.get().get();
+        return accessor_.read().read();
     }
     bool
-    is_settable() const
+    is_writable() const
     {
-        return accessor_.is_settable();
+        return accessor_.is_writable();
     }
     void
-    set(underlying_value_type const& value) const
+    write(underlying_value_type const& value) const
     {
-        accessor_.set(value);
+        accessor_.write(value);
     }
     id_interface const&
     id() const
@@ -1238,42 +1198,42 @@ struct lazy_apply1_accessor : accessor<Result>
         return arg_.id();
     }
     bool
-    is_gettable() const
+    is_readable() const
     {
-        return arg_.is_gettable();
+        return arg_.is_readable();
     }
     Result const&
-    get() const
+    read() const
     {
-        return lazy_getter_.get(*this);
+        return lazy_readter_.read(*this);
     }
     bool
-    is_settable() const
+    is_writable() const
     {
         return false;
     }
     void
-    set(Result const& value) const
+    write(Result const& value) const
     {
     }
 
  private:
-    friend struct lazy_getter<Result>;
+    friend struct lazy_readter<Result>;
     Result
     generate() const
     {
-        return f_(arg_.get());
+        return f_(arg_.read());
     }
     Function f_;
     Arg arg_;
-    lazy_getter<Result> lazy_getter_;
+    lazy_readter<Result> lazy_readter_;
 };
 template<class Function, class Arg>
 auto
 lazy_apply(Function const& f, Arg const& arg)
 {
     return lazy_apply1_accessor<
-        decltype(f(get(arg))),
+        decltype(f(read(arg))),
         Function,
         typename copyable_accessor_helper<Arg const&>::result_type>(
         f, make_accessor_copyable(arg));
@@ -1296,44 +1256,44 @@ struct lazy_apply2_accessor : accessor<Result>
         return id_;
     }
     bool
-    is_gettable() const
+    is_readable() const
     {
-        return arg0_.is_gettable() && arg1_.is_gettable();
+        return arg0_.is_readable() && arg1_.is_readable();
     }
     Result const&
-    get() const
+    read() const
     {
-        return lazy_getter_.get(*this);
+        return lazy_readter_.read(*this);
     }
     bool
-    is_settable() const
+    is_writable() const
     {
         return false;
     }
     void
-    set(Result const& value) const
+    write(Result const& value) const
     {
     }
 
  private:
-    friend struct lazy_getter<Result>;
+    friend struct lazy_readter<Result>;
     Result
     generate() const
     {
-        return f_(arg0_.get(), arg1_.get());
+        return f_(arg0_.read(), arg1_.read());
     }
     Function f_;
     Arg0 arg0_;
     Arg1 arg1_;
     mutable id_pair<id_ref, id_ref> id_;
-    lazy_getter<Result> lazy_getter_;
+    lazy_readter<Result> lazy_readter_;
 };
 template<class Function, class Arg0, class Arg1>
 auto
 lazy_apply(Function const& f, Arg0 const& arg0, Arg1 const& arg1)
 {
     return lazy_apply2_accessor<
-        decltype(f(get(arg0), get(arg1))),
+        decltype(f(read(arg0), read(arg1))),
         Function,
         typename copyable_accessor_helper<Arg0 const&>::result_type,
         typename copyable_accessor_helper<Arg1 const&>::result_type>(
@@ -1410,29 +1370,29 @@ struct logical_or_accessor : accessor<bool>
         return id_;
     }
     bool
-    is_gettable() const
+    is_readable() const
     {
-        // Obviously, this is gettable if both of its arguments are gettable.
-        // However, it's also gettable if only one is gettable and its value is
+        // Obviously, this is readable if both of its arguments are readable.
+        // However, it's also readable if only one is readable and its value is
         // true.
-        return arg0_.is_gettable() && arg1_.is_gettable()
-               || arg0_.is_gettable() && arg0_.get()
-               || arg1_.is_gettable() && arg1_.get();
+        return arg0_.is_readable() && arg1_.is_readable()
+               || arg0_.is_readable() && arg0_.read()
+               || arg1_.is_readable() && arg1_.read();
     }
     bool const&
-    get() const
+    read() const
     {
-        value_ = arg0_.is_gettable() && arg0_.get()
-                 || arg1_.is_gettable() && arg1_.get();
+        value_ = arg0_.is_readable() && arg0_.read()
+                 || arg1_.is_readable() && arg1_.read();
         return value_;
     }
     bool
-    is_settable() const
+    is_writable() const
     {
         return false;
     }
     void
-    set(bool const& value) const
+    write(bool const& value) const
     {
     }
 
@@ -1475,30 +1435,30 @@ struct logical_and_accessor : accessor<bool>
         return id_;
     }
     bool
-    is_gettable() const
+    is_readable() const
     {
-        // Obviously, this is gettable if both of its arguments are gettable.
-        // However, it's also gettable if only one is gettable and its value is
+        // Obviously, this is readable if both of its arguments are readable.
+        // However, it's also readable if only one is readable and its value is
         // false.
-        return arg0_.is_gettable() && arg1_.is_gettable()
-               || arg0_.is_gettable() && !arg0_.get()
-               || arg1_.is_gettable() && !arg1_.get();
+        return arg0_.is_readable() && arg1_.is_readable()
+               || arg0_.is_readable() && !arg0_.read()
+               || arg1_.is_readable() && !arg1_.read();
     }
     bool const&
-    get() const
+    read() const
     {
         value_
-            = !(arg0_.is_gettable() && !arg0_.get()
-                || arg1_.is_gettable() && !arg1_.get());
+            = !(arg0_.is_readable() && !arg0_.read()
+                || arg1_.is_readable() && !arg1_.read());
         return value_;
     }
     bool
-    is_settable() const
+    is_writable() const
     {
         return false;
     }
     void
-    set(bool const& value) const
+    write(bool const& value) const
     {
     }
 
@@ -1524,35 +1484,35 @@ operator&&(A const& a, B const& b)
         make_accessor_copyable(a), make_accessor_copyable(b));
 }
 
-// _is_gettable(x) yields an accessor to a boolean which indicates whether or
-// not x is gettable. (The returned accessor is always gettable itself.)
+// _is_readable(x) yields an accessor to a boolean which indicates whether or
+// not x is readable. (The returned accessor is always readable itself.)
 template<class Wrapped>
-struct gettability_accessor : regular_accessor<bool>
+struct readtability_accessor : regular_accessor<bool>
 {
-    gettability_accessor()
+    readtability_accessor()
     {
     }
-    gettability_accessor(Wrapped const& wrapped) : wrapped_(wrapped)
+    readtability_accessor(Wrapped const& wrapped) : wrapped_(wrapped)
     {
     }
     bool
-    is_gettable() const
+    is_readable() const
     {
         return true;
     }
     bool const&
-    get() const
+    read() const
     {
-        value_ = wrapped_.is_gettable();
+        value_ = wrapped_.is_readable();
         return value_;
     }
     bool
-    is_settable() const
+    is_writable() const
     {
         return false;
     }
     void
-    set(bool const& value) const
+    write(bool const& value) const
     {
     }
 
@@ -1562,42 +1522,42 @@ struct gettability_accessor : regular_accessor<bool>
 };
 template<class Wrapped>
 auto
-_is_gettable(Wrapped const& wrapped)
+_is_readable(Wrapped const& wrapped)
 {
-    return gettability_accessor<
+    return readtability_accessor<
         typename copyable_accessor_helper<Wrapped const&>::result_type>(
         make_accessor_copyable(wrapped));
 }
 
-// _is_settable(x) yields an accessor to a boolean which indicates whether or
-// not x is settable. (The returned accessor is always gettable.)
+// _is_writable(x) yields an accessor to a boolean which indicates whether or
+// not x is writable. (The returned accessor is always readable.)
 template<class Wrapped>
-struct settability_accessor : regular_accessor<bool>
+struct writetability_accessor : regular_accessor<bool>
 {
-    settability_accessor()
+    writetability_accessor()
     {
     }
-    settability_accessor(Wrapped const& wrapped) : wrapped_(wrapped)
+    writetability_accessor(Wrapped const& wrapped) : wrapped_(wrapped)
     {
     }
     bool
-    is_gettable() const
+    is_readable() const
     {
         return true;
     }
     bool const&
-    get() const
+    read() const
     {
-        value_ = wrapped_.is_settable();
+        value_ = wrapped_.is_writable();
         return value_;
     }
     bool
-    is_settable() const
+    is_writable() const
     {
         return false;
     }
     void
-    set(bool const& value) const
+    write(bool const& value) const
     {
     }
 
@@ -1607,9 +1567,9 @@ struct settability_accessor : regular_accessor<bool>
 };
 template<class Wrapped>
 auto
-_is_settable(Wrapped const& wrapped)
+_is_writable(Wrapped const& wrapped)
 {
-    return settability_accessor<
+    return writetability_accessor<
         typename copyable_accessor_helper<Wrapped const&>::result_type>(
         make_accessor_copyable(wrapped));
 }
