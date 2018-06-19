@@ -7,7 +7,7 @@ TEST_CASE("empty signal", "[signals]")
 {
     using namespace alia;
 
-    auto s = empty_signal<int>();
+    auto s = empty<int>();
 
     REQUIRE(signal_can_read<decltype(s)>::value);
     REQUIRE(signal_can_write<decltype(s)>::value);
@@ -44,12 +44,12 @@ TEST_CASE("value signal", "[signals]")
     REQUIRE(value(1).value_id() != value(2).value_id());
 }
 
-TEST_CASE("direct inout signal", "[signals]")
+TEST_CASE("direct signal", "[signals]")
 {
     using namespace alia;
 
     int x = 1;
-    auto s = direct_inout(&x);
+    auto s = direct(&x);
 
     typedef decltype(s) value_signal_t;
     REQUIRE(signal_can_read<value_signal_t>::value);

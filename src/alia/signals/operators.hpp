@@ -179,6 +179,71 @@ operator&&(A const& a, B const& b)
     return logical_and_signal<A, B>(a, b);
 }
 
+// This is the equivalent of the ternary operator for signals.
+// select_signal(condition, t, f), where condition, t and f are signals,
+// yields t if condition's value is true and f if condition's value is false.
+// Note that this is a normal function call, so, unlike an if statement or the
+// ternary operator, both t and f are fully evaluated. However, they are only
+// accessed if they're selected.
+// t and f must have the same value type, and condition's value type must be
+// testable in a boolean context.
+template<class Condition, class T, class F>
+struct signal_mux : signal<
+                        typename T::value_type,
+                        typename signal_direction_intersection<
+                            typename T::direction_tag,
+                            typename F::direction_tag>::type>
+{
+    signal_mux()
+    {
+    }
+    signal_mux(Condition condition, T t, F f)
+        : condition_(condition), t_(t), f_(f)
+    {
+    }
+    bool
+    is_readable() const
+    {
+        return condition_.is_readable() && condition_.read() ? t_.is_readable()
+                                                             : f_.is_readable();
+    }
+    typename T::value_type const&
+    read() const
+    {
+        return condition_.read() ? t_.read() : f_.read();
+    }
+    id_interface const&
+    value_id() const
+    {
+        return condition_.read() ? t_.value_id() : f_.value_id();
+    }
+    bool
+    is_writable() const
+    {
+        return condition_.is_readable() && condition_.read() ? t_.is_writable()
+                                                             : f_.is_writable();
+    }
+    void
+    write(typename T::value_type const& value) const
+    {
+        if (condition_.read())
+            t_.write(value);
+        else
+            f_.write(value);
+    }
+
+ private:
+    Condition condition_;
+    T t_;
+    F f_;
+};
+template<class Condition, class T, class F>
+signal_mux<Condition, T, F>
+select_signal(Condition const& condition, T const& t, F const& f)
+{
+    return signal_mux<Condition, T, F>(condition, t, f);
+}
+
 } // namespace alia
 
 #endif

@@ -8,7 +8,7 @@
 
 namespace alia {
 
-// empty_signal is a signal that never has a value.
+// empty<Value>() gives a signal that never has a value.
 template<class Value>
 struct empty_signal : signal<Value, two_way_signal>
 {
@@ -40,6 +40,12 @@ struct empty_signal : signal<Value, two_way_signal>
     {
     }
 };
+template<class Value>
+empty_signal<Value>
+empty()
+{
+    return empty_signal<Value>();
+}
 
 // constant(x) creates a read-only signal which always has the value :x.
 // A copy of :x is stored within the signal.
@@ -128,15 +134,15 @@ value(Value const& x)
     return value_signal<Value>(x);
 }
 
-// direct_inout(&x) creates a two-way signal that directly exposes the value of
-// the variable :x.
+// direct(&x) creates a two-way signal that directly exposes the value of the
+// variable :x.
 template<class Value>
-struct direct_inout_signal : regular_signal<Value, two_way_signal>
+struct direct_signal : regular_signal<Value, two_way_signal>
 {
-    direct_inout_signal()
+    direct_signal()
     {
     }
-    explicit direct_inout_signal(Value* v) : v_(v)
+    explicit direct_signal(Value* v) : v_(v)
     {
     }
     bool
@@ -164,10 +170,10 @@ struct direct_inout_signal : regular_signal<Value, two_way_signal>
     Value* v_;
 };
 template<class Value>
-direct_inout_signal<Value>
-direct_inout(Value* x)
+direct_signal<Value>
+direct(Value* x)
 {
-    return direct_inout_signal<Value>(x);
+    return direct_signal<Value>(x);
 }
 
 } // namespace alia
