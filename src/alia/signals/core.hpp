@@ -16,13 +16,13 @@ namespace alia {
 // without requiring any memory allocation.
 
 // direction tags
-class read_only_signal
+struct read_only_signal
 {
 };
-class write_only_signal
+struct write_only_signal
 {
 };
-class two_way_signal
+struct two_way_signal
 {
 };
 
@@ -31,17 +31,17 @@ class two_way_signal
 // in a context expecting :Expected direction.
 // In the general case, the signals are not compatible.
 template<class Expected, class Actual>
-class signal_direction_is_compatible : std::false_type
+struct signal_direction_is_compatible : std::false_type
 {
 };
 // If the directions are the same, this is trivially true.
 template<class Same>
-class signal_direction_is_compatible<Same, Same> : std::true_type
+struct signal_direction_is_compatible<Same, Same> : std::true_type
 {
 };
 // A two-way signal can work as anything.
 template<class Expected>
-class signal_direction_is_compatible<Expected, two_way_signal> : std::true_type
+struct signal_direction_is_compatible<Expected, two_way_signal> : std::true_type
 {
 };
 
@@ -60,17 +60,17 @@ struct untyped_signal_base
     // The returned ID reference is only valid as long as the signal itself is
     // valid.
     virtual id_interface const&
-    id() const = 0;
+    value_id() const = 0;
 
     // Can the signal currently be written to?
     virtual bool
     is_writable() const = 0;
 };
-template<class Value, class Direction>
+
+template<class Value>
 struct signal_interface : untyped_signal_base
 {
     typedef Value value_type;
-    typedef Direction direction_tag;
 
     // Read the signal's value. The reference returned here is only guaranteed
     // to be valid as long as the accessor itself is valid.
@@ -82,16 +82,22 @@ struct signal_interface : untyped_signal_base
     write(Value const& value) const = 0;
 };
 
+template<class Value, class Direction>
+struct signal : signal_interface<Value>
+{
+    typedef Direction direction_tag;
+};
+
 // signal_ref is a reference to a signal that acts as a signal itself.
 template<class Value, class Direction>
-struct signal_ref : signal_interface<Value, Direction>
+struct signal_ref : signal<Value, Direction>
 {
     // Construct from any signal with compatible direction.
-    template<class SignalDirection>
+    template<class OtherDirection>
     signal_ref(
-        signal_interface<Value, SignalDirection> const& signal,
+        signal<Value, OtherDirection> const& signal,
         std::enable_if_t<
-            signal_direction_is_compatible<Direction, SignalDirection>::value,
+            signal_direction_is_compatible<Direction, OtherDirection>::value,
             int> = 0)
         : ref_(&signal)
     {
@@ -115,9 +121,9 @@ struct signal_ref : signal_interface<Value, Direction>
         return ref_->read();
     }
     id_interface const&
-    id() const
+    value_id() const
     {
-        return ref_->id();
+        return ref_->value_id();
     }
     bool
     is_writable() const
@@ -131,7 +137,7 @@ struct signal_ref : signal_interface<Value, Direction>
     }
 
  private:
-    signal_interface<Value, Direction> const* ref_;
+    signal_interface<Value> const* ref_;
 };
 // Construct a signal_ref for :signal.
 template<class Value, class Direction>
@@ -156,12 +162,29 @@ using output = signal_ref<Value, write_only_signal>;
 template<class Value>
 using inout = signal_ref<Value, two_way_signal>;
 
+// is_signal_type<T>::value yields a compile-time boolean indicating whether or
+// not T is an alia signal type.
+template<class T>
+struct is_signal_type : std::is_base_of<untyped_signal_base, T>
+{
+};
+
 // signal_can_read<Signal>::value yields a compile-time boolean indicating
 // whether or not the given signal type supports reading.
 template<class Signal>
-class signal_can_read : signal_direction_is_compatible<
-                            read_only_signal,
-                            typename Signal::direction_tag>
+struct signal_can_read : signal_direction_is_compatible<
+                             read_only_signal,
+                             typename Signal::direction_tag>
+{
+};
+
+// is_readable_signal_type<T>::value yields a compile-time boolean indicating
+// whether or not T is an alia signal that supports reading.
+template<class T>
+struct is_readable_signal_type : std::conditional_t<
+                                     is_signal_type<T>::value,
+                                     signal_can_read<T>,
+                                     std::false_type>
 {
 };
 
@@ -192,9 +215,9 @@ read_signal(Signal const& signal)
 // signal_can_write<Signal>::value yields a compile-time boolean indicating
 // whether or not the given signal type supports writing.
 template<class Signal>
-class signal_can_write : signal_direction_is_compatible<
-                             write_only_signal,
-                             typename Signal::direction_tag>
+struct signal_can_write : signal_direction_is_compatible<
+                              write_only_signal,
+                              typename Signal::direction_tag>
 {
 };
 

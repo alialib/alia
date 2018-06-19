@@ -1,3 +1,5 @@
+#if 0
+
 #include <alia/accessors.hpp>
 #include <string>
 
@@ -149,3 +151,5 @@ TEST_CASE("accessors", "[accessors]")
     REQUIRE(set_and_get(select_field(inout(&f), &foo::y), 2.) == 2.);
     REQUIRE(f.y == 2.);
 }
+
+#endif

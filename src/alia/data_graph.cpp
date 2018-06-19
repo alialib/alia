@@ -1,3 +1,5 @@
+#if 0
+
 #include <alia/data_graph.hpp>
 #include <map>
 #include <vector>
@@ -515,3 +517,5 @@ loop_block::next()
 }
 
 } // namespace alia
+
+#endif
