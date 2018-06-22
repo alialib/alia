@@ -134,8 +134,7 @@ value(Value const& x)
     return value_signal<Value>(x);
 }
 
-// direct(&x) creates a two-way signal that directly exposes the value of the
-// variable :x.
+// direct(&x) creates a two-way signal that directly exposes the value of :x.
 template<class Value>
 struct direct_signal : regular_signal<Value, two_way_signal>
 {
@@ -175,6 +174,52 @@ direct(Value* x)
 {
     return direct_signal<Value>(x);
 }
+
+// text(x), where x is a string constant, creates a read-only signal for
+// accessing x as a string.
+struct text : signal<string, read_only_signal>
+{
+    text()
+    {
+    }
+    text(char const* x) : text_(x)
+    {
+    }
+    id_interface const&
+    value_id() const
+    {
+        return unit_id;
+    }
+    bool
+    is_readable() const
+    {
+        return true;
+    }
+    string const&
+    read() const
+    {
+        return lazy_reader_.read(*this);
+    }
+    bool
+    is_writable() const
+    {
+        return false;
+    }
+    void
+    write(string const& value) const
+    {
+    }
+
+ private:
+    char const* text_;
+    friend struct lazy_reader<string>;
+    string
+    generate() const
+    {
+        return string(text_);
+    }
+    lazy_reader<string> lazy_reader_;
+};
 
 } // namespace alia
 

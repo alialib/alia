@@ -25,7 +25,7 @@ struct regular_signal : signal<Value, Direction>
     }
 
  private:
-    mutable value_id_by_reference<Value> id_;
+    mutable simple_id_by_reference<Value> id_;
 };
 
 // lazy_reader is used to create signals that lazily generate their values.

@@ -229,10 +229,10 @@ struct lambda_inout_signal_with_id : signal<Value, two_way_signal>
     IsReadable is_readable_;
     Read read_;
     mutable decltype(read_()) value_;
-    GenerateId generate_id_;
-    mutable decltype(generate_id_()) id_;
     IsWritable is_writable_;
     Write write_;
+    GenerateId generate_id_;
+    mutable decltype(generate_id_()) id_;
 };
 template<
     class IsReadable,

@@ -1,5 +1,4 @@
 #include <alia/signals/lambdas.hpp>
-#include <string>
 
 #include <catch.hpp>
 

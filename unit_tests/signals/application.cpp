@@ -1,8 +1,8 @@
 #include <alia/signals/application.hpp>
-#include <alia/signals/basic.hpp>
-#include <string>
 
 #include <catch.hpp>
+
+#include <alia/signals/basic.hpp>
 
 TEST_CASE("lazy_apply", "[signals]")
 {

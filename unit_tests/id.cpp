@@ -8,16 +8,16 @@ TEST_CASE("IDs", "[id]")
 {
     using namespace alia;
 
-    // Test value IDs and the basic ID interface operators.
-    value_id<int> a = make_id(1);
+    // Test simple IDs and the basic ID interface operators.
+    simple_id<int> a = make_id(1);
     REQUIRE(boost::lexical_cast<std::string>(a) == "1");
     REQUIRE(boost::lexical_cast<std::string>(ref(a)) == "1");
     REQUIRE(a == a);
-    value_id<int> c = make_id(1);
+    simple_id<int> c = make_id(1);
     REQUIRE(ref(a) == ref(a));
     REQUIRE(a == c);
     REQUIRE(ref(a) == ref(c));
-    value_id<int> b = make_id(2);
+    simple_id<int> b = make_id(2);
     REQUIRE(a != b);
     REQUIRE(ref(a) != ref(b));
     REQUIRE(a < b);
@@ -25,7 +25,7 @@ TEST_CASE("IDs", "[id]")
     REQUIRE(!(b < a));
     REQUIRE(!(ref(b) < ref(a)));
     int x;
-    value_id<int*> d = make_id(&x);
+    simple_id<int*> d = make_id(&x);
     REQUIRE(a != d);
     REQUIRE(ref(a) != ref(d));
     REQUIRE((a < d && !(d < a) || d < a && !(a < d)));

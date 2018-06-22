@@ -244,6 +244,73 @@ select_signal(Condition const& condition, T const& t, F const& f)
     return signal_mux<Condition, T, F>(condition, t, f);
 }
 
+// Given a signal to a structure, signal->*field_ptr returns a signal to the
+// specified field within the structure.
+template<class StructureSignal, class Field>
+struct field_signal : signal<Field, typename StructureSignal::direction_tag>
+{
+    typedef typename StructureSignal::value_type structure_type;
+    typedef Field structure_type::*field_ptr;
+    field_signal()
+    {
+    }
+    field_signal(StructureSignal structure, field_ptr field)
+        : structure_(structure), field_(field)
+    {
+    }
+    bool
+    is_readable() const
+    {
+        return structure_.is_readable();
+    }
+    Field const&
+    read() const
+    {
+        structure_type const& structure = structure_.read();
+        return structure.*field_;
+    }
+    id_interface const&
+    value_id() const
+    {
+        // Apparently pointers-to-members aren't comparable for order, so
+        // instead we use the address of the field if it were in a structure
+        // that started at address 0.
+        id_ = combine_ids(
+            ref(structure_.value_id()),
+            make_id(&(((structure_type*) 0)->*field_)));
+        return id_;
+    }
+    bool
+    is_writable() const
+    {
+        return structure_.is_readable() && structure_.is_writable();
+    }
+    void
+    write(Field const& x) const
+    {
+        structure_type s = structure_.read();
+        s.*field_ = x;
+        structure_.write(s);
+    }
+
+ private:
+    StructureSignal structure_;
+    field_ptr field_;
+    mutable id_pair<id_ref, simple_id<Field*>> id_;
+};
+template<class StructureSignal, class Field>
+std::enable_if_t<
+    is_signal_type<StructureSignal>::value,
+    field_signal<StructureSignal, Field>>
+operator->*(
+    StructureSignal const& structure, Field StructureSignal::value_type::*field)
+{
+    return field_signal<StructureSignal, Field>(structure, field);
+}
+
+// alia_field(x, f) is equivalent to x->*T::f where T is the value type of x.
+#define alia_field(x, f) ((x)->*&std::decay<decltype(read_signal(x))>::type::f)
+
 } // namespace alia
 
 #endif

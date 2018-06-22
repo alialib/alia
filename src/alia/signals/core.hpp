@@ -46,8 +46,8 @@ struct signal_direction_is_compatible<Expected, two_way_signal> : std::true_type
 };
 
 // signal_direction_intersection<A,B>::type, where A and B are signal
-// directions, yields a direction which only has the capabilities that are
-// common to both A and B.
+// directions, yields a direction that only has the capabilities that are common
+// to both A and B.
 template<class A, class B>
 struct signal_direction_intersection
 {
@@ -68,6 +68,23 @@ template<class B>
 struct signal_direction_intersection<two_way_signal, B>
 {
     typedef B type;
+};
+
+// signal_direction_union<A,B>::type, where A and B are signal directions,
+// yields a direction that has the union of the capabilities of A and B.
+template<class A, class B>
+struct signal_direction_union;
+// If the directions are the same, this is trivial.
+template<class Same>
+struct signal_direction_union<Same, Same>
+{
+    typedef Same type;
+};
+template<class A, class B>
+struct signal_direction_union
+{
+    // All other combinations yield two-way signals.
+    typedef two_way_signal type;
 };
 
 // untyped_signal_base defines functionality common to all signals, irrespective
