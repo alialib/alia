@@ -18,7 +18,7 @@ struct id_interface
     {
     }
 
-    // Create a stand-alone copy of the ID.
+    // Create a standalone copy of the ID.
     virtual id_interface*
     clone() const = 0;
 

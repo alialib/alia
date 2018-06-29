@@ -42,9 +42,11 @@ Similarly, a signal that supports writing isn't necessarily *always* writable. (
 Value Identity
 --------------
 
+.. caution:: This is advanced stuff.
+
 Just like regular values in C++, a signal value can be arbitrarily large. For example, a signal could carry a block of text or an image. Since alia uses polling to detect changes in signals, this can be prohibitively expensive for large signal values. (If we were using alia to display a large image, we wouldn't want alia to compare every pixel of the image every frame to make sure that the image we're providing is still the same one that's on the screen.)
 
-To address this concern, any signal with a readable value must also provide a *value identity*. 
+To address this concern, any signal with a readable value must also provide a *value identity*.
 
 There is one simple rule governing value identitiies:
 

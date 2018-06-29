@@ -15,3 +15,6 @@ before_script:
 script:
   - ./fips make test linux-make-debug
   - ./fips make test linux-make-release
+
+after_success:
+  - cd ../fips-build/alia/linux-make-debug && bash <(curl -s https://codecov.io/bash)

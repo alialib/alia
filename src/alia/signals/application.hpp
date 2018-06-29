@@ -7,6 +7,7 @@ namespace alia {
 
 // lazy_apply(f, args...), where :args are all signals, yields a signal
 // to the result of lazily applying the function :f to the values of :args.
+
 // Note that doing this in true variadic fashion is a little insane, so I'm
 // just doing the two overloads I need for now...
 
