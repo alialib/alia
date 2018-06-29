@@ -24,4 +24,4 @@ cache:
   - $HOME/.conan
 
 after_success:
-  - bash <(curl -s https://codecov.io/bash) -s ../fips-build/alia/linux-make-debug
+  - bash <(curl -s https://codecov.io/bash) -X gcov
