@@ -21,7 +21,7 @@ before_cache:
 
 cache:
   directories:
-  - $HOME/.conan
+  - $HOME/.conan/data
 
 after_success:
   - bash <(curl -s https://codecov.io/bash) -X gcov
