@@ -16,5 +16,12 @@ script:
   - ./fips make test linux-make-debug
   - ./fips make test linux-make-release
 
+before_cache:
+  - conan remove "*" -s -b -f
+
+cache:
+  directories:
+  - $HOME/.conan
+
 after_success:
-  - cd ../fips-build/alia/linux-make-debug && bash <(curl -s https://codecov.io/bash)
+  - bash <(curl -s https://codecov.io/bash) -s ../fips-build/alia/linux-make-debug
