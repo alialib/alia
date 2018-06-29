@@ -76,7 +76,7 @@ struct writability_faker : signal<
     id_interface const&
     value_id() const
     {
-        return no_id;
+        return wrapped_.value_id();
     }
     bool
     is_readable() const

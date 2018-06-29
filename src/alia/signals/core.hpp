@@ -130,6 +130,48 @@ struct signal : signal_interface<Value>
     typedef Direction direction_tag;
 };
 
+template<class Value>
+struct signal<Value, read_only_signal> : signal_interface<Value>
+{
+    typedef read_only_signal direction_tag;
+
+    // These must be defined to satisfy the interface requirements, but they
+    // obviously won't be used on a read-only signal.
+    bool
+    is_writable() const
+    {
+        return false;
+    }
+    void
+    write(Value const& value) const
+    {
+    }
+};
+
+template<class Value>
+struct signal<Value, write_only_signal> : signal_interface<Value>
+{
+    typedef write_only_signal direction_tag;
+
+    // These must be defined to satisfy the interface requirements, but they
+    // obviously won't be used on a write-only signal.
+    id_interface const&
+    value_id() const
+    {
+        return no_id;
+    }
+    bool
+    is_readable() const
+    {
+        return false;
+    }
+    Value const&
+    read() const
+    {
+        return *(typename Wrapped::value_type const*) nullptr;
+    }
+};
+
 // signal_ref is a reference to a signal that acts as a signal itself.
 template<class Value, class Direction>
 struct signal_ref : signal<Value, Direction>
