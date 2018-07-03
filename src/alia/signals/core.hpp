@@ -69,6 +69,12 @@ struct signal_direction_intersection<two_way_signal, B>
 {
     typedef B type;
 };
+// Resolve ambiguity.
+template<>
+struct signal_direction_intersection<two_way_signal, two_way_signal>
+{
+    typedef two_way_signal type;
+};
 
 // signal_direction_union<A,B>::type, where A and B are signal directions,
 // yields a direction that has the union of the capabilities of A and B.
