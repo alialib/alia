@@ -4,6 +4,11 @@
 
 #include <catch.hpp>
 
+static void
+test_ids(alia::id_interface const& a, alia::id_interface const& b)
+{
+}
+
 TEST_CASE("IDs", "[id]")
 {
     using namespace alia;

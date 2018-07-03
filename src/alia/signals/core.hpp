@@ -137,6 +137,7 @@ struct signal<Value, read_only_signal> : signal_interface<Value>
 
     // These must be defined to satisfy the interface requirements, but they
     // obviously won't be used on a read-only signal.
+    // LCOV_EXCL_START
     bool
     is_writable() const
     {
@@ -146,6 +147,7 @@ struct signal<Value, read_only_signal> : signal_interface<Value>
     write(Value const& value) const
     {
     }
+    // LCOV_EXCL_END
 };
 
 template<class Value>
@@ -155,6 +157,7 @@ struct signal<Value, write_only_signal> : signal_interface<Value>
 
     // These must be defined to satisfy the interface requirements, but they
     // obviously won't be used on a write-only signal.
+    // LCOV_EXCL_START
     id_interface const&
     value_id() const
     {
@@ -170,6 +173,7 @@ struct signal<Value, write_only_signal> : signal_interface<Value>
     {
         return *(Value const*) nullptr;
     }
+    // LCOV_EXCL_END
 };
 
 // signal_ref is a reference to a signal that acts as a signal itself.

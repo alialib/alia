@@ -71,6 +71,9 @@ TEST_CASE("fake_writability", "[signals]")
         REQUIRE(signal_can_write<signal_t>::value);
 
         REQUIRE(signal_is_readable(s));
+        REQUIRE(read_signal(s) == 0);
+        int x = 0;
+        REQUIRE(s.value_id() == make_id_by_reference(x));
         REQUIRE(!signal_is_writable(s));
     }
 }

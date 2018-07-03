@@ -31,11 +31,14 @@ struct readability_faker : signal<
     {
         return false;
     }
+    // Since this is only faking readability, read() should never be called.
+    // LCOV_EXCL_START
     typename Wrapped::value_type const&
     read() const
     {
         return *(typename Wrapped::value_type const*) nullptr;
     }
+    // LCOV_EXCL_END
     bool
     is_writable() const
     {
@@ -93,10 +96,13 @@ struct writability_faker : signal<
     {
         return false;
     }
+    // Since this is only faking writability, write() should never be called.
+    // LCOV_EXCL_START
     void
     write(typename Wrapped::value_type const& value) const
     {
     }
+    // LCOV_EXCL_END
 
  private:
     Wrapped wrapped_;
