@@ -35,15 +35,6 @@ struct lazy_apply1_signal : signal<Result, read_only_signal>
     {
         return lazy_reader_.read(*this);
     }
-    bool
-    is_writable() const
-    {
-        return false;
-    }
-    void
-    write(Result const& value) const
-    {
-    }
 
  private:
     friend struct lazy_reader<Result>;
@@ -89,15 +80,6 @@ struct lazy_apply2_signal : signal<Result, read_only_signal>
     read() const
     {
         return lazy_reader_.read(*this);
-    }
-    bool
-    is_writable() const
-    {
-        return false;
-    }
-    void
-    write(Result const& value) const
-    {
     }
 
  private:

@@ -168,7 +168,7 @@ struct signal<Value, write_only_signal> : signal_interface<Value>
     Value const&
     read() const
     {
-        return *(typename Wrapped::value_type const*) nullptr;
+        return *(Value const*) nullptr;
     }
 };
 

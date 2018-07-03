@@ -180,15 +180,6 @@ struct readability_signal : regular_signal<bool, read_only_signal>
         value_ = wrapped_.is_readable();
         return value_;
     }
-    bool
-    is_writable() const
-    {
-        return false;
-    }
-    void
-    write(bool const& value) const
-    {
-    }
 
  private:
     Wrapped wrapped_;
@@ -222,15 +213,6 @@ struct writability_signal : regular_signal<bool, read_only_signal>
     {
         value_ = wrapped_.is_writable();
         return value_;
-    }
-    bool
-    is_writable() const
-    {
-        return false;
-    }
-    void
-    write(bool const& value) const
-    {
     }
 
  private:
