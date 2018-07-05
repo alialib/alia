@@ -69,6 +69,12 @@ struct signal_direction_intersection<two_way_signal, B>
 {
     typedef B type;
 };
+// Resolve ambiguity.
+template<>
+struct signal_direction_intersection<two_way_signal, two_way_signal>
+{
+    typedef two_way_signal type;
+};
 
 // signal_direction_union<A,B>::type, where A and B are signal directions,
 // yields a direction that has the union of the capabilities of A and B.
@@ -128,6 +134,52 @@ template<class Value, class Direction>
 struct signal : signal_interface<Value>
 {
     typedef Direction direction_tag;
+};
+
+template<class Value>
+struct signal<Value, read_only_signal> : signal_interface<Value>
+{
+    typedef read_only_signal direction_tag;
+
+    // These must be defined to satisfy the interface requirements, but they
+    // obviously won't be used on a read-only signal.
+    // LCOV_EXCL_START
+    bool
+    is_writable() const
+    {
+        return false;
+    }
+    void
+    write(Value const& value) const
+    {
+    }
+    // LCOV_EXCL_END
+};
+
+template<class Value>
+struct signal<Value, write_only_signal> : signal_interface<Value>
+{
+    typedef write_only_signal direction_tag;
+
+    // These must be defined to satisfy the interface requirements, but they
+    // obviously won't be used on a write-only signal.
+    // LCOV_EXCL_START
+    id_interface const&
+    value_id() const
+    {
+        return no_id;
+    }
+    bool
+    is_readable() const
+    {
+        return false;
+    }
+    Value const&
+    read() const
+    {
+        return *(Value const*) nullptr;
+    }
+    // LCOV_EXCL_END
 };
 
 // signal_ref is a reference to a signal that acts as a signal itself.

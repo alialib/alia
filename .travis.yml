@@ -15,3 +15,13 @@ before_script:
 script:
   - ./fips make test linux-make-debug
   - ./fips make test linux-make-release
+
+before_cache:
+  - conan remove "*" -s -b -f
+
+cache:
+  directories:
+  - $HOME/.conan/data
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash) -X gcov

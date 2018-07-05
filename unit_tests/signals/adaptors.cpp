@@ -23,18 +23,23 @@ TEST_CASE("fake_readability", "[signals]")
     }
 
     {
+        int x = 0;
+
         auto s = fake_readability(lambda_inout(
             [&]() { return true; },
-            [&]() { return 0; },
+            [&]() { return x; },
             [&]() { return true; },
-            [&](int x) {}));
+            [&](int v) { x = v; }));
 
         typedef decltype(s) signal_t;
         REQUIRE(signal_can_read<signal_t>::value);
         REQUIRE(signal_can_write<signal_t>::value);
 
+        REQUIRE(s.value_id() == no_id);
         REQUIRE(!signal_is_readable(s));
         REQUIRE(signal_is_writable(s));
+        write_signal(s, 1);
+        REQUIRE(x == 1);
     }
 }
 
@@ -66,6 +71,9 @@ TEST_CASE("fake_writability", "[signals]")
         REQUIRE(signal_can_write<signal_t>::value);
 
         REQUIRE(signal_is_readable(s));
+        REQUIRE(read_signal(s) == 0);
+        int x = 0;
+        REQUIRE(s.value_id() == make_id_by_reference(x));
         REQUIRE(!signal_is_writable(s));
     }
 }

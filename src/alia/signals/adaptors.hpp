@@ -31,11 +31,14 @@ struct readability_faker : signal<
     {
         return false;
     }
+    // Since this is only faking readability, read() should never be called.
+    // LCOV_EXCL_START
     typename Wrapped::value_type const&
     read() const
     {
         return *(typename Wrapped::value_type const*) nullptr;
     }
+    // LCOV_EXCL_END
     bool
     is_writable() const
     {
@@ -76,7 +79,7 @@ struct writability_faker : signal<
     id_interface const&
     value_id() const
     {
-        return no_id;
+        return wrapped_.value_id();
     }
     bool
     is_readable() const
@@ -93,10 +96,13 @@ struct writability_faker : signal<
     {
         return false;
     }
+    // Since this is only faking writability, write() should never be called.
+    // LCOV_EXCL_START
     void
     write(typename Wrapped::value_type const& value) const
     {
     }
+    // LCOV_EXCL_END
 
  private:
     Wrapped wrapped_;
@@ -180,15 +186,6 @@ struct readability_signal : regular_signal<bool, read_only_signal>
         value_ = wrapped_.is_readable();
         return value_;
     }
-    bool
-    is_writable() const
-    {
-        return false;
-    }
-    void
-    write(bool const& value) const
-    {
-    }
 
  private:
     Wrapped wrapped_;
@@ -222,15 +219,6 @@ struct writability_signal : regular_signal<bool, read_only_signal>
     {
         value_ = wrapped_.is_writable();
         return value_;
-    }
-    bool
-    is_writable() const
-    {
-        return false;
-    }
-    void
-    write(bool const& value) const
-    {
     }
 
  private:

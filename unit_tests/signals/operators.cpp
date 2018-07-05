@@ -75,6 +75,34 @@ TEST_CASE("select_signal with different directions", "[signals]")
     REQUIRE(!signal_is_readable(s));
 }
 
+TEST_CASE("writable select_signal", "[signals]")
+{
+    using namespace alia;
+
+    bool condition = false;
+    int x = 1;
+    int y = 2;
+    auto s = select_signal(direct(&condition), direct(&x), direct(&y));
+
+    typedef decltype(s) signal_t;
+    REQUIRE(signal_can_read<signal_t>::value);
+    REQUIRE(signal_can_write<signal_t>::value);
+
+    REQUIRE(signal_is_readable(s));
+    REQUIRE(read_signal(s) == 2);
+    condition = true;
+    REQUIRE(read_signal(s) == 1);
+    write_signal(s, 4);
+    REQUIRE(x == 4);
+    REQUIRE(y == 2);
+    REQUIRE(read_signal(s) == 4);
+    condition = false;
+    write_signal(s, 3);
+    REQUIRE(x == 4);
+    REQUIRE(y == 3);
+    REQUIRE(read_signal(s) == 3);
+}
+
 TEST_CASE("field signal", "[signals]")
 {
     using namespace alia;
@@ -112,9 +140,13 @@ TEST_CASE("field signal", "[signals]")
     REQUIRE(signal_can_read<y_signal_t>::value);
     REQUIRE(signal_can_write<y_signal_t>::value);
 
+    REQUIRE(y_signal.value_id() != x_signal.value_id());
     REQUIRE(signal_is_readable(y_signal));
     REQUIRE(read_signal(y_signal) == 1.5);
     REQUIRE(signal_is_writable(y_signal));
+    owned_id captured_y_id;
+    captured_y_id.store(y_signal.value_id());
     write_signal(y_signal, 0.5);
+    REQUIRE(y_signal.value_id() != captured_y_id.get());
     REQUIRE(f.y == 0.5);
 }

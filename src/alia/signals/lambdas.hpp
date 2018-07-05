@@ -29,15 +29,6 @@ struct lambda_input_signal : regular_signal<Value, read_only_signal>
         value_ = read_();
         return value_;
     }
-    bool
-    is_writable() const
-    {
-        return false;
-    }
-    void
-    write(Value const& value) const
-    {
-    }
 
  private:
     IsReadable is_readable_;
@@ -81,15 +72,6 @@ struct lambda_input_signal_with_id : signal<Value, read_only_signal>
     {
         value_ = read_();
         return value_;
-    }
-    bool
-    is_writable() const
-    {
-        return false;
-    }
-    void
-    write(Value const& value) const
-    {
     }
 
  private:
