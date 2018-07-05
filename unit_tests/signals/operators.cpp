@@ -94,6 +94,17 @@ TEST_CASE("select_signal value ID", "[signals]")
     REQUIRE(captured_id.get() != s.value_id());
 }
 
+TEST_CASE("select_signal with unreadable condition", "[signals]")
+{
+    using namespace alia;
+
+    int x = 0, y = 1;
+    auto s = select_signal(empty<bool>(), direct(&x), direct(&y));
+    REQUIRE(!signal_is_readable(s));
+    REQUIRE(s.value_id() == no_id);
+    REQUIRE(!signal_is_writable(s));
+}
+
 TEST_CASE("writable select_signal", "[signals]")
 {
     using namespace alia;

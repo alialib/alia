@@ -204,8 +204,8 @@ struct signal_mux : signal<
     bool
     is_readable() const
     {
-        return condition_.is_readable() && condition_.read() ? t_.is_readable()
-                                                             : f_.is_readable();
+        return condition_.is_readable()
+               && (condition_.read() ? t_.is_readable() : f_.is_readable());
     }
     typename T::value_type const&
     read() const
@@ -225,8 +225,8 @@ struct signal_mux : signal<
     bool
     is_writable() const
     {
-        return condition_.is_readable() && condition_.read() ? t_.is_writable()
-                                                             : f_.is_writable();
+        return condition_.is_readable()
+               && (condition_.read() ? t_.is_writable() : f_.is_writable());
     }
     void
     write(typename T::value_type const& value) const

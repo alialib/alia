@@ -148,15 +148,6 @@ struct text : signal<string, read_only_signal>
     {
         return lazy_reader_.read(*this);
     }
-    bool
-    is_writable() const
-    {
-        return false;
-    }
-    void
-    write(string const& value) const
-    {
-    }
 
  private:
     char const* text_;
