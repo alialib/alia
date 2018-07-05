@@ -7,7 +7,7 @@ before_script:
   - sudo apt-get install -y --upgrade binutils-2.26
   - export PATH=/usr/lib/binutils-2.26/bin:${PATH}
   - scripts/set-up-python.sh
-  - source .python/bin/activate
+  - source .venv/bin/activate
   - export CC=`which gcc-5`
   - export CXX=`which g++-5`
   - scripts/set-up-conan.sh

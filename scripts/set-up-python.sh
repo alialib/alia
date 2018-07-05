@@ -2,7 +2,7 @@
 # Set up a Python virtual environment so that it can build alia.
 echo "Setting up Python environment in .python..."
 set -x -e
-virtualenv --python=python3.5 --prompt="(alia) " .venv
+virtualenv --prompt="(alia) " .venv
 source .venv/bin/activate
 python --version
 pip install conan gcovr
