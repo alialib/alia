@@ -7,6 +7,8 @@ In alia, signals are values that vary over time. In other words, alia signals ar
 
 If you think of an alia application as defining a dataflow graph where the inputs are application state and the outputs go into a back end (e.g., are displayed on the screen), then the edges of this graph (where the values live) are all signals.
 
+
+
 Directionality
 --------------
 
@@ -78,4 +80,6 @@ Lambdas
 
 Adaptors
 --------
+
+``signal_cast<Value>(signal)``
 
