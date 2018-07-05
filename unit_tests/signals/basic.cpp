@@ -12,20 +12,9 @@ TEST_CASE("empty signal", "[signals]")
     REQUIRE(signal_can_read<signal_t>::value);
     REQUIRE(signal_can_write<signal_t>::value);
 
+    REQUIRE(s.value_id() == no_id);
     REQUIRE(!signal_is_readable(s));
     REQUIRE(!signal_is_writable(s));
-}
-
-TEST_CASE("constant signal", "[signals]")
-{
-    using namespace alia;
-
-    typedef decltype(constant(1)) signal_t;
-    REQUIRE(signal_can_read<signal_t>::value);
-    REQUIRE(!signal_can_write<signal_t>::value);
-
-    REQUIRE(signal_is_readable(constant(1)));
-    REQUIRE(read_signal(constant(1)) == 1);
 }
 
 TEST_CASE("value signal", "[signals]")

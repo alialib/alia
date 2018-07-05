@@ -10,34 +10,34 @@ TEST_CASE("signal operators", "[signals]")
 {
     using namespace alia;
 
-    REQUIRE(is_true(constant(2) == constant(2)));
-    REQUIRE(is_false(constant(6) == constant(2)));
-    REQUIRE(is_true(constant(6) != constant(2)));
-    REQUIRE(is_false(constant(2) != constant(2)));
-    REQUIRE(is_true(constant(6) > constant(2)));
-    REQUIRE(is_false(constant(6) < constant(2)));
-    REQUIRE(is_true(constant(6) >= constant(2)));
-    REQUIRE(is_true(constant(2) >= constant(2)));
-    REQUIRE(is_false(constant(2) >= constant(6)));
-    REQUIRE(is_true(constant(2) < constant(6)));
-    REQUIRE(is_false(constant(6) < constant(2)));
-    REQUIRE(is_true(constant(2) <= constant(6)));
-    REQUIRE(is_true(constant(2) <= constant(2)));
-    REQUIRE(is_false(constant(6) <= constant(2)));
+    REQUIRE(is_true(value(2) == value(2)));
+    REQUIRE(is_false(value(6) == value(2)));
+    REQUIRE(is_true(value(6) != value(2)));
+    REQUIRE(is_false(value(2) != value(2)));
+    REQUIRE(is_true(value(6) > value(2)));
+    REQUIRE(is_false(value(6) < value(2)));
+    REQUIRE(is_true(value(6) >= value(2)));
+    REQUIRE(is_true(value(2) >= value(2)));
+    REQUIRE(is_false(value(2) >= value(6)));
+    REQUIRE(is_true(value(2) < value(6)));
+    REQUIRE(is_false(value(6) < value(2)));
+    REQUIRE(is_true(value(2) <= value(6)));
+    REQUIRE(is_true(value(2) <= value(2)));
+    REQUIRE(is_false(value(6) <= value(2)));
 
-    REQUIRE(is_true(constant(6) + constant(2) == constant(8)));
-    REQUIRE(is_true(constant(6) - constant(2) == constant(4)));
-    REQUIRE(is_true(constant(6) * constant(2) == constant(12)));
-    REQUIRE(is_true(constant(6) / constant(2) == constant(3)));
-    REQUIRE(is_true(constant(6) % constant(2) == constant(0)));
-    REQUIRE(is_true((constant(6) ^ constant(2)) == constant(4)));
-    REQUIRE(is_true((constant(6) & constant(2)) == constant(2)));
-    REQUIRE(is_true((constant(6) | constant(2)) == constant(6)));
-    REQUIRE(is_true(constant(6) << constant(2) == constant(24)));
-    REQUIRE(is_true(constant(6) >> constant(2) == constant(1)));
+    REQUIRE(is_true(value(6) + value(2) == value(8)));
+    REQUIRE(is_true(value(6) - value(2) == value(4)));
+    REQUIRE(is_true(value(6) * value(2) == value(12)));
+    REQUIRE(is_true(value(6) / value(2) == value(3)));
+    REQUIRE(is_true(value(6) % value(2) == value(0)));
+    REQUIRE(is_true((value(6) ^ value(2)) == value(4)));
+    REQUIRE(is_true((value(6) & value(2)) == value(2)));
+    REQUIRE(is_true((value(6) | value(2)) == value(6)));
+    REQUIRE(is_true(value(6) << value(2) == value(24)));
+    REQUIRE(is_true(value(6) >> value(2) == value(1)));
 
-    REQUIRE(is_true(-constant(2) == constant(-2)));
-    REQUIRE(is_false(!(constant(2) == constant(2))));
+    REQUIRE(is_true(-value(2) == value(-2)));
+    REQUIRE(is_false(!(value(2) == value(2))));
 }
 
 TEST_CASE("select_signal", "[signals]")
@@ -45,7 +45,7 @@ TEST_CASE("select_signal", "[signals]")
     using namespace alia;
 
     bool condition = false;
-    auto s = select_signal(direct(&condition), constant(1), constant(2));
+    auto s = select_signal(direct(&condition), value(1), value(2));
 
     typedef decltype(s) signal_t;
     REQUIRE(signal_can_read<signal_t>::value);
@@ -53,9 +53,12 @@ TEST_CASE("select_signal", "[signals]")
 
     REQUIRE(signal_is_readable(s));
     REQUIRE(read_signal(s) == 2);
+    owned_id captured_id;
+    captured_id.store(s.value_id());
     condition = true;
     REQUIRE(signal_is_readable(s));
     REQUIRE(read_signal(s) == 1);
+    REQUIRE(captured_id.get() != s.value_id());
 }
 
 TEST_CASE("select_signal with different directions", "[signals]")
@@ -63,7 +66,7 @@ TEST_CASE("select_signal with different directions", "[signals]")
     using namespace alia;
 
     bool condition = false;
-    auto s = select_signal(direct(&condition), empty<int>(), constant(2));
+    auto s = select_signal(direct(&condition), empty<int>(), value(2));
 
     typedef decltype(s) signal_t;
     REQUIRE(signal_can_read<signal_t>::value);
@@ -73,6 +76,22 @@ TEST_CASE("select_signal with different directions", "[signals]")
     REQUIRE(read_signal(s) == 2);
     condition = true;
     REQUIRE(!signal_is_readable(s));
+}
+
+TEST_CASE("select_signal value ID", "[signals]")
+{
+    // Test that select_signal's ID changes when the condition changes, even
+    // if both of its input signals are producing the same value ID.
+
+    using namespace alia;
+
+    bool condition = false;
+    auto s = select_signal(direct(&condition), value(2), value(2));
+
+    owned_id captured_id;
+    captured_id.store(s.value_id());
+    condition = true;
+    REQUIRE(captured_id.get() != s.value_id());
 }
 
 TEST_CASE("writable select_signal", "[signals]")

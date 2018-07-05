@@ -24,7 +24,7 @@ ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(+)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(-)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(*)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(/)
-ALIA_DEFINE_BINARY_SIGNAL_OPERATOR (^)
+ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(^)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(%)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(&)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(|)
@@ -215,7 +215,12 @@ struct signal_mux : signal<
     id_interface const&
     value_id() const
     {
-        return condition_.read() ? t_.value_id() : f_.value_id();
+        if (!condition_.is_readable())
+            return no_id;
+        id_ = combine_ids(
+            make_id(condition_.read()),
+            condition_.read() ? ref(t_.value_id()) : ref(f_.value_id()));
+        return id_;
     }
     bool
     is_writable() const
@@ -236,6 +241,7 @@ struct signal_mux : signal<
     Condition condition_;
     T t_;
     F f_;
+    mutable id_pair<simple_id<bool>, id_ref> id_;
 };
 template<class Condition, class T, class F>
 signal_mux<Condition, T, F>

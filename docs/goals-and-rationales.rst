@@ -95,7 +95,7 @@ Background Execution
 All this really implies is that a function should be executed in a separate thread from the controller.
 
 ::
-    x = alia::async(ctx, fib, constant(43));
+    x = alia::async(ctx, fib, value(43));
 
 Just like ``std::async``, this returns immediately, but x doesn't yield a value until fib() returns.
 
