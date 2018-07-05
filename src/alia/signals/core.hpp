@@ -153,7 +153,7 @@ struct signal<Value, read_only_signal> : signal_interface<Value>
     write(Value const& value) const
     {
     }
-    // LCOV_EXCL_END
+    // LCOV_EXCL_STOP
 };
 
 template<class Value>
@@ -179,7 +179,7 @@ struct signal<Value, write_only_signal> : signal_interface<Value>
     {
         return *(Value const*) nullptr;
     }
-    // LCOV_EXCL_END
+    // LCOV_EXCL_STOP
 };
 
 // signal_ref is a reference to a signal that acts as a signal itself.

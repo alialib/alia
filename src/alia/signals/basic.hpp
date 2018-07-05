@@ -31,7 +31,7 @@ struct empty_signal : signal<Value, two_way_signal>
     {
         return *(Value*) nullptr;
     }
-    // LCOV_EXCL_END
+    // LCOV_EXCL_STOP
     bool
     is_writable() const
     {
@@ -42,7 +42,7 @@ struct empty_signal : signal<Value, two_way_signal>
     write(Value const& value) const
     {
     }
-    // LCOV_EXCL_END
+    // LCOV_EXCL_STOP
 };
 template<class Value>
 empty_signal<Value>

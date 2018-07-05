@@ -38,7 +38,7 @@ struct readability_faker : signal<
     {
         return *(typename Wrapped::value_type const*) nullptr;
     }
-    // LCOV_EXCL_END
+    // LCOV_EXCL_STOP
     bool
     is_writable() const
     {
@@ -102,7 +102,7 @@ struct writability_faker : signal<
     write(typename Wrapped::value_type const& value) const
     {
     }
-    // LCOV_EXCL_END
+    // LCOV_EXCL_STOP
 
  private:
     Wrapped wrapped_;
