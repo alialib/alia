@@ -33,16 +33,10 @@ struct lazy_apply1_signal : signal<Result, read_only_signal>
     Result const&
     read() const
     {
-        return lazy_reader_.read(*this);
+        return lazy_reader_.read([&] { return f_(arg_.read()); });
     }
 
  private:
-    friend struct lazy_reader<Result>;
-    Result
-    generate() const
-    {
-        return f_(arg_.read());
-    }
     Function f_;
     Arg arg_;
     lazy_reader<Result> lazy_reader_;
@@ -79,16 +73,11 @@ struct lazy_apply2_signal : signal<Result, read_only_signal>
     Result const&
     read() const
     {
-        return lazy_reader_.read(*this);
+        return lazy_reader_.read(
+            [&]() { return f_(arg0_.read(), arg1_.read()); });
     }
 
  private:
-    friend struct lazy_reader<Result>;
-    Result
-    generate() const
-    {
-        return f_(arg0_.read(), arg1_.read());
-    }
     Function f_;
     Arg0 arg0_;
     Arg1 arg1_;

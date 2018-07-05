@@ -10,7 +10,7 @@ TEST_CASE("offset signal", "[signals]")
     using namespace alia;
 
     double x = 1;
-    auto s = offset(direct(&x), 0.5);
+    auto s = offset(direct(x), 0.5);
 
     typedef decltype(s) signal_t;
     REQUIRE(signal_can_read<signal_t>::value);
@@ -28,7 +28,7 @@ TEST_CASE("scaled signal", "[signals]")
     using namespace alia;
 
     double x = 1;
-    auto s = scale(direct(&x), 0.5);
+    auto s = scale(direct(x), 0.5);
 
     typedef decltype(s) signal_t;
     REQUIRE(signal_can_read<signal_t>::value);
@@ -46,7 +46,7 @@ TEST_CASE("round_signal_writes", "[signals]")
     using namespace alia;
 
     double x = 1;
-    auto s = round_signal_writes(direct(&x), 0.5);
+    auto s = round_signal_writes(direct(x), 0.5);
 
     typedef decltype(s) signal_t;
     REQUIRE(signal_can_read<signal_t>::value);

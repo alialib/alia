@@ -83,7 +83,7 @@ TEST_CASE("signal_cast", "[signals]")
     using namespace alia;
 
     int x = 1;
-    auto s = signal_cast<double>(direct(&x));
+    auto s = signal_cast<double>(direct(x));
 
     typedef decltype(s) signal_t;
     REQUIRE((std::is_same<signal_t::value_type, double>::value));

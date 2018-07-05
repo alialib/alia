@@ -40,7 +40,7 @@ TEST_CASE("direct signal", "[signals]")
     using namespace alia;
 
     int x = 1;
-    auto s = direct(&x);
+    auto s = direct(x);
 
     typedef decltype(s) signal_t;
     REQUIRE(signal_can_read<signal_t>::value);
@@ -66,4 +66,6 @@ TEST_CASE("text signal", "[signals]")
 
     REQUIRE(signal_is_readable(s));
     REQUIRE(read_signal(s) == string("hello"));
+    // There aren't really any interesting requirements on this.
+    REQUIRE(s.value_id() == s.value_id());
 }

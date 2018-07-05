@@ -43,7 +43,7 @@ struct lazy_reader
     {
         if (!already_generated_)
         {
-            value_ = generator.generate();
+            value_ = generator();
             already_generated_ = true;
         }
         return value_;

@@ -70,3 +70,20 @@ TEST_CASE("normal regular_signal", "[signals]")
     REQUIRE(s.value_id() == make_id_by_reference(s.read()));
     REQUIRE(!signal_is_writable(s));
 }
+
+TEST_CASE("lazy_reader", "[signals]")
+{
+    using namespace alia;
+
+    int n = 0;
+
+    auto generator = [&]() { ++n; return 12; };
+
+    lazy_reader<int> reader;
+
+    REQUIRE(reader.read(generator) == 12);
+    REQUIRE(n == 1);
+    // Check that it is caching and not re-invoking the generator.
+    REQUIRE(reader.read(generator) == 12);
+    REQUIRE(n == 1);
+}

@@ -25,6 +25,7 @@ struct empty_signal : signal<Value, two_way_signal>
     {
         return false;
     }
+    // Since this is never readable, read() should never be called.
     // LCOV_EXCL_START
     Value const&
     read() const
@@ -37,6 +38,7 @@ struct empty_signal : signal<Value, two_way_signal>
     {
         return false;
     }
+    // Since this is never writable, write() should never be called.
     // LCOV_EXCL_START
     void
     write(Value const& value) const
@@ -82,7 +84,7 @@ value(Value const& v)
     return value_signal<Value>(v);
 }
 
-// direct(&x) creates a two-way signal that directly exposes the value of :x.
+// direct(x) creates a two-way signal that directly exposes the value of x.
 template<class Value>
 struct direct_signal : regular_signal<Value, two_way_signal>
 {
@@ -118,9 +120,9 @@ struct direct_signal : regular_signal<Value, two_way_signal>
 };
 template<class Value>
 direct_signal<Value>
-direct(Value* x)
+direct(Value& x)
 {
-    return direct_signal<Value>(x);
+    return direct_signal<Value>(&x);
 }
 
 // text(x), where x is a string constant, creates a read-only signal for
@@ -146,17 +148,11 @@ struct text : signal<string, read_only_signal>
     string const&
     read() const
     {
-        return lazy_reader_.read(*this);
+        return lazy_reader_.read([&] { return string(text_); });
     }
 
  private:
     char const* text_;
-    friend struct lazy_reader<string>;
-    string
-    generate() const
-    {
-        return string(text_);
-    }
     lazy_reader<string> lazy_reader_;
 };
 

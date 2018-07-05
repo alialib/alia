@@ -134,7 +134,8 @@ struct signal_caster : regular_signal<To, typename Wrapped::direction_tag>
     To const&
     read() const
     {
-        return lazy_reader_.read(*this);
+        return lazy_reader_.read(
+            [&] { return static_cast<To>(wrapped_.read()); });
     }
     bool
     is_writable() const
@@ -148,12 +149,6 @@ struct signal_caster : regular_signal<To, typename Wrapped::direction_tag>
     }
 
  private:
-    friend struct lazy_reader<To>;
-    To
-    generate() const
-    {
-        return static_cast<To>(wrapped_.read());
-    }
     Wrapped wrapped_;
     lazy_reader<To> lazy_reader_;
 };

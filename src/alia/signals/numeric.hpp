@@ -33,7 +33,8 @@ struct scaling_signal_wrapper : regular_signal<
     wrapped_value_type const&
     read() const
     {
-        return lazy_reader_.read(*this);
+        return lazy_reader_.read(
+            [&] { return wrapped_.read() * scale_factor_; });
     }
     bool
     is_writable() const
@@ -47,12 +48,6 @@ struct scaling_signal_wrapper : regular_signal<
     }
 
  private:
-    friend struct lazy_reader<wrapped_value_type>;
-    wrapped_value_type
-    generate() const
-    {
-        return wrapped_.read() * scale_factor_;
-    }
     Wrapped wrapped_;
     wrapped_value_type scale_factor_;
     lazy_reader<wrapped_value_type> lazy_reader_;
@@ -87,7 +82,7 @@ struct offset_signal_wrapper : regular_signal<
     wrapped_value_type const&
     read() const
     {
-        return lazy_reader_.read(*this);
+        return lazy_reader_.read([&] { return wrapped_.read() + offset_; });
     }
     bool
     is_writable() const
@@ -101,12 +96,6 @@ struct offset_signal_wrapper : regular_signal<
     }
 
  private:
-    friend struct lazy_reader<wrapped_value_type>;
-    wrapped_value_type
-    generate() const
-    {
-        return wrapped_.read() + offset_;
-    }
     Wrapped wrapped_;
     wrapped_value_type offset_;
     lazy_reader<wrapped_value_type> lazy_reader_;
