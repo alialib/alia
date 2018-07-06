@@ -1,4 +1,4 @@
-#ifndef ALIA_DATA_GRAPH_HPP
+#if : std::shared_ptrRAPH_HPP
 #define ALIA_DATA_GRAPH_HPP
 
 #include <alia/common.hpp>
@@ -614,7 +614,7 @@ get_state(Context& ctx, signal<State> const& initial_value)
 template<class Data>
 struct keyed_data
 {
-    owned_id key;
+    captured_id key;
     bool is_valid;
     Data value;
     keyed_data() : is_valid(false)
@@ -692,10 +692,10 @@ struct keyed_data_signal : signal<Data>
     {
         return data_->value;
     }
-    alia__shared_ptr<Data>
+    std::shared_ptr<Data>
     get_ptr() const
     {
-        return alia__shared_ptr<Data>(new Data(data_->value));
+        return std::shared_ptr<Data>(new Data(data_->value));
     }
     id_interface const&
     id() const
@@ -743,7 +743,7 @@ get_keyed_data(
 template<class Data>
 struct raw_keyed_data
 {
-    owned_id key;
+    captured_id key;
     Data data;
 };
 

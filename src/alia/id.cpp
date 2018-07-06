@@ -35,26 +35,26 @@ clone_into(id_interface*& storage, id_interface const* id)
 }
 
 bool
-operator==(owned_id const& a, owned_id const& b)
+operator==(captured_id const& a, captured_id const& b)
 {
     return a.is_initialized() == b.is_initialized()
            && (!a.is_initialized() || a.get() == b.get());
 }
 bool
-operator!=(owned_id const& a, owned_id const& b)
+operator!=(captured_id const& a, captured_id const& b)
 {
     return !(a == b);
 }
 bool
-operator<(owned_id const& a, owned_id const& b)
+operator<(captured_id const& a, captured_id const& b)
 {
     return b.is_initialized() && (!a.is_initialized() || a.get() < b.get());
 }
 std::ostream&
-operator<<(std::ostream& o, owned_id const& id)
+operator<<(std::ostream& o, captured_id const& id)
 {
     if (!id.is_initialized())
-        o << "<empty owned_id>";
+        o << "<empty captured_id>";
     else
         o << id.get();
     return o;

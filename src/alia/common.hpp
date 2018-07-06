@@ -50,17 +50,6 @@ as_utf8_string(string const& text)
     return utf8_string(text.c_str(), text.c_str() + text.length());
 }
 
-// Figure out which shared_ptr to use.
-#ifdef _MSC_VER
-#if (_MSC_VER >= 1600)
-#define alia__shared_ptr std::shared_ptr
-#else
-#define alia__shared_ptr std::tr1::shared_ptr
-#endif
-#else
-#define alia__shared_ptr std::shared_ptr
-#endif
-
 template<typename T>
 T
 clamp(T x, T min, T max)
@@ -223,7 +212,7 @@ struct exception : std::exception
     }
 
  private:
-    alia__shared_ptr<string> msg_;
+    std::shared_ptr<string> msg_;
 };
 
 // vector<N,T> represents an N-dimensional geometric vector with elements of
@@ -588,65 +577,6 @@ unsafe_any_cast(any& a)
 }
 
 struct id_interface;
-
-// Accessors are the means by which UI elements access model state and values
-// computed by the application for display in the UI.
-// The goals of the accessor library are as follows.
-// - Unify the interface to C-style data structures and OOP-style classes
-//   (whose data members may be protected behind accessor functions).
-// - Provide standard mechanisms for transforming the UI's view of model state
-//   or applying constraints to its manipulations of that state.
-// - Provide mechanisms for efficiently detecting changes in displayed values.
-// - Ensure that the passing of values to the UI is as efficient and lazy as
-//   possible.
-//
-// Accessors are passed by const reference into UI functions.
-// They're typically created directly at the call site as function arguments
-// and are only valid for the life of the function call.
-// Accessor wrappers are templated and store copies of the actual wrapped
-// accessor, which allows them to be easily composed at the call site, without
-// requiring any memory allocation.
-// UI functions are untemplated and lose the actual type of the accessor.
-// One consequence of this is that a UI container cannot store its accessor
-// for its entire scope and thus only has access to it within its begin
-// function. If a container needs to set its accessor's value from within its
-// scope, it can do so by reinvoking the UI context with a set_value_event
-// that is processed by the container's begin function.
-//
-struct untyped_accessor_base
-{
-    // If this returns false, the underlying state has no value, so get()
-    // should not be called.
-    virtual bool
-    is_gettable() const = 0;
-
-    // An accessor must supply an ID which uniquely identifies its value.
-    // The ID is required to be valid if is_gettable() returns true.
-    // (It may be valid even if is_gettable() returns false, which would mean
-    // that the accessor can identify its value but doesn't know it yet.)
-    // The ID reference is only valid as long as the accessor itself is valid.
-    virtual id_interface const&
-    id() const = 0;
-
-    // If is_settable() returns false, the accessor is currently read-only and
-    // any UI controls associated with it should disallow user input.
-    virtual bool
-    is_settable() const = 0;
-};
-template<class T>
-struct accessor : untyped_accessor_base
-{
-    typedef T value_type;
-
-    // Get the value. The reference returned here is only guaranteed to be
-    // valid as long as the accessor itself is valid.
-    virtual T const&
-    get() const = 0;
-
-    // Set the value. (Only call if is_settable returns true.)
-    virtual void
-    set(T const& value) const = 0;
-};
 
 // Invoke the standard hash function for a value.
 template<class T>
