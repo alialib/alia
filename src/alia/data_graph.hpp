@@ -1,22 +1,24 @@
 #ifndef ALIA_DATA_GRAPH_HPP
 #define ALIA_DATA_GRAPH_HPP
 
-#include <alia/accessors.hpp>
 #include <alia/common.hpp>
 #include <alia/id.hpp>
+#include <alia/signals.hpp>
 #include <cassert>
 
+#if 0
+
 // This file defines the data retrieval library used for associating mutable
-// state and cached data with alia UIs. It is designed so that each widget
-// instance is associated with a unique instance of data, even if there is
-// no specific external identifier for that widget instance.
+// state and cached data with alia instances. It is designed so that each node
+// emitted by an application is associated with a unique instance of data, even
+// if there is no specific external identifier for that node.
 //
-// More generally, if you replace "widget instance" with "subexpression
-// evaluation" in the previous sentence, it can be used to associate data with
-// particular points in the evaluation of any function. This can be useful in
-// situations where you need to evaluate a particular function many times with
-// slightly different inputs and you want to reuse the work that was done in
-// earlier evaluations without a lot of manual bookkeeping.
+// More generally, if you replace "node" with "subexpression evaluation" in the
+// previous sentence, it can be used to associate data with particular points in
+// the evaluation of any function. This can be useful in situations where you
+// need to evaluate a particular function many times with slightly different
+// inputs and you want to reuse the work that was done in earlier evaluations
+// without a lot of manual bookkeeping.
 //
 // To understand what's going on here, imagine the evaluation of a function on
 // a simple in-order, single-threaded processor. We can represent all possible
@@ -90,13 +92,14 @@ struct typed_data_node : data_node
 
 struct named_block_ref_node;
 
-// A data block represents a block of execution. During a single evaluation,
-// either all nodes in the block are executed or all nodes are bypassed, and,
-// if executed, they are always executed in the same order.
-// (Other nodes may be executed in between, depending on the evaluation.)
+// A data_block represents an block of execution. During a single evaluation,
+// either all nodes in the block are executed or all nodes are bypassed, and, if
+// executed, they are always executed in the same order. (It's conceptually
+// similar to a 'basic block' except that other nodes may be executed in between
+// nodes in a data_block.)
 struct data_block : noncopyable
 {
-    // the list of nodes in this basic block
+    // the list of nodes in this block
     data_node* nodes;
 
     // set if the block's cache is clear
@@ -548,49 +551,49 @@ get_cached_data(Context& ctx, T** ptr)
 }
 
 // get_state is the standard interface for retrieving state from a data graph.
-// Instead of a simple pointer, it returns an accessor to the state, which will
-// allow future versions of this code to track changes in the data graph.
-// It comes in multiple forms...
+// Instead of a simple pointer, it returns a signal, which will allow future
+// versions of this code to track changes in the data graph. It comes in
+// multiple forms...
 //
-// get_state(ctx, default_value) returns the accessor to the state. If the
-// state hasn't been initialized yet, it's initialized with default_value.
+// get_state(ctx, default_value) returns the state as a signal. If the state
+// hasn't been initialized yet, it's initialized with default_value.
 // default_value is optional, and if omitted, the state will be initialized to
 // a default constructed value.
 //
-// get_state(ctx, &accessor) writes the accessor for the state to *accessor.
+// get_state(ctx, &signal) writes the signal for the state to *signal.
 // The return value is true iff the underlying state requires initialization.
 
-template<class Context, class T>
-bool
-get_state(Context& ctx, state_accessor<T>* accessor)
-{
-    state<T>* ptr;
-    bool is_new = get_data(get_data_traversal(ctx), &ptr);
-    *accessor = make_accessor(*ptr);
-    return is_new;
-}
+// template<class Context, class T>
+// bool
+// get_state(Context& ctx, state_signal<T>* signal)
+// {
+//     state<T>* ptr;
+//     bool is_new = get_data(get_data_traversal(ctx), &ptr);
+//     *signal = make_signal(*ptr);
+//     return is_new;
+// }
 
-template<class T, class Context>
-std::enable_if_t<
-    !std::is_base_of<untyped_accessor_base, T>::value,
-    state_accessor<T>>
-get_state(Context& ctx, T const& default_value = T())
-{
-    state<T>* ptr;
-    if (get_data(ctx, &ptr))
-        ptr->set(default_value);
-    return make_accessor(*ptr);
-}
+// template<class T, class Context>
+// std::enable_if_t<
+//     !std::is_base_of<untyped_signal_base, T>::value,
+//     state_signal<T>>
+// get_state(Context& ctx, T const& default_value = T())
+// {
+//     state<T>* ptr;
+//     if (get_data(ctx, &ptr))
+//         ptr->set(default_value);
+//     return make_signal(*ptr);
+// }
 
-// Another form of get_state where the initial_value is passed by accessor...
+// Another form of get_state where the initial_value is passed as a signal...
 // This is now the preferred form.
 
-// get_state(ctx, initial_value) returns an accessor to some persistent local
-// state whose initial value is determined by the accessor :initial_value. The
-// returned accessor will not be gettable until :initial_value is gettable.
+// get_state(ctx, initial_value) returns an signal to some persistent local
+// state whose initial value is determined by the signal :initial_value. The
+// returned signal will not be gettable until :initial_value is gettable.
 template<class Context, class State>
 auto
-get_state(Context& ctx, accessor<State> const& initial_value)
+get_state(Context& ctx, signal<State> const& initial_value)
 {
     auto state = get_state(ctx, optional<State>());
     if (is_gettable(state) && !get(state) && is_gettable(initial_value))
@@ -600,7 +603,7 @@ get_state(Context& ctx, accessor<State> const& initial_value)
     return unwrap_optional(state);
 }
 
-// get_keyed_data(ctx, key, &accessor) is a utility for retrieving cached data
+// get_keyed_data(ctx, key, &signal) is a utility for retrieving cached data
 // from a data graph.
 // It stores not only the data but also a key that identifies the data.
 // The key is presented at each retrieval, and if it changes, the associated
@@ -671,12 +674,12 @@ get(keyed_data<Data> const& data)
 }
 
 template<class Data>
-struct keyed_data_accessor : accessor<Data>
+struct keyed_data_signal : signal<Data>
 {
-    keyed_data_accessor()
+    keyed_data_signal()
     {
     }
-    keyed_data_accessor(keyed_data<Data>* data) : data_(data)
+    keyed_data_signal(keyed_data<Data>* data) : data_(data)
     {
     }
     bool
@@ -715,25 +718,25 @@ struct keyed_data_accessor : accessor<Data>
 };
 
 template<class Data>
-keyed_data_accessor<Data>
-make_accessor(keyed_data<Data>* data)
+keyed_data_signal<Data>
+make_signal(keyed_data<Data>* data)
 {
-    return keyed_data_accessor<Data>(data);
+    return keyed_data_signal<Data>(data);
 }
 
 template<class Context, class Data>
 bool
 get_keyed_data(
-    Context& ctx, id_interface const& key, keyed_data_accessor<Data>* accessor)
+    Context& ctx, id_interface const& key, keyed_data_signal<Data>* signal)
 {
     keyed_data<Data>* ptr;
     get_cached_data(ctx, &ptr);
     refresh_keyed_data(*ptr, key);
-    *accessor = make_accessor(ptr);
+    *signal = make_signal(ptr);
     return !is_valid(*ptr);
 };
 
-// This is another form of get_keyed_data where there's no accessor to guard
+// This is another form of get_keyed_data where there's no signal to guard
 // access to the retrieved data. Thus, it's up to the caller to track whether
 // or not the data is properly initialized.
 
@@ -868,40 +871,6 @@ struct loop_block : noncopyable
 // takes the context as its first argument. The other form has no trailing
 // underscore and assumes that the context is a variable named 'ctx'.
 
-// is_true(x) evaluates x in a boolean context.
-template<class T>
-std::enable_if_t<!std::is_base_of<untyped_accessor_base, T>::value, bool>
-is_true(T x)
-{
-    return x ? true : false;
-}
-
-// is_true(x), where x is an accessor to a bool, returns true iff x is
-// gettable and its value is true.
-template<class Accessor>
-std::enable_if_t<std::is_base_of<untyped_accessor_base, Accessor>::value, bool>
-is_true(Accessor const& x)
-{
-    return is_gettable(x) && is_true(get(x));
-}
-
-// is_false(x) evaluates x in a boolean context and inverts it.
-template<class T>
-std::enable_if_t<!std::is_base_of<untyped_accessor_base, T>::value, bool>
-is_false(T x)
-{
-    return x ? false : true;
-}
-
-// is_false(x), where x is an accessor to a bool, returns false iff x is
-// gettable and its value is false.
-template<class Accessor>
-std::enable_if_t<std::is_base_of<untyped_accessor_base, Accessor>::value, bool>
-is_false(Accessor const& x)
-{
-    return is_gettable(x) && is_false(get(x));
-}
-
 // if, else_if, else
 
 #define alia_if_(ctx, condition)                                               \
@@ -1025,5 +994,7 @@ is_false(Accessor const& x)
     }
 
 } // namespace alia
+
+#endif
 
 #endif

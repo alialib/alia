@@ -193,7 +193,7 @@ if(FIPS_GCC AND CMAKE_BUILD_TYPE STREQUAL "Debug")
         COMMAND ${CMAKE_COMMAND} --build . --target unit_tests
         COMMAND lcov --directory . --capture --output-file raw.info
         COMMAND lcov --extract raw.info '${PROJECT_SOURCE_DIR}/src/alia/*' --output-file filtered.info
-        COMMAND ${CMAKE_COMMAND} -E copy filtered.info ${PROJECT_SOURCE_DIR}/.lcov.info
+        COMMAND ${CMAKE_COMMAND} -E copy filtered.info ${PROJECT_SOURCE_DIR}/lcov.info
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
     add_test(
         NAME unit_test_coverage

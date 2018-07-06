@@ -1,6 +1,8 @@
 #ifndef ALIA_EVENT_ROUTING_HPP
 #define ALIA_EVENT_ROUTING_HPP
 
+#if 0
+
 #include <alia/data_graph.hpp>
 
 // This file defines a library for routing events through an immediate mode
@@ -122,5 +124,7 @@ struct scoped_routing_region
 };
 
 } // namespace alia
+
+#endif
 
 #endif

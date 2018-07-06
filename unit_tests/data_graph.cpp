@@ -1,3 +1,5 @@
+#if 0
+
 #include <alia/data_graph.hpp>
 #include <boost/lexical_cast.hpp>
 #include <string>
@@ -633,5 +635,7 @@ BOOST_AUTO_TEST_CASE(computing_test)
         check_foo_calls(nfc);
     }
 }
+
+#endif
 
 #endif

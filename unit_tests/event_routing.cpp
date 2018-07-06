@@ -1,3 +1,5 @@
+#if 0
+
 #include <alia/data_graph.hpp>
 #include <alia/event_routing.hpp>
 #include <sstream>
@@ -176,3 +178,5 @@ TEST_CASE("targeted_event_dispatch", "[targeted_event_dispatch]")
     check_traversal_path(2, "odd", ";");
     check_traversal_path(2, "deep", ";root;nonzero;deep;");
 }
+
+#endif
