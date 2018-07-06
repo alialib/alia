@@ -1,22 +1,25 @@
-.. alia documentation master file, created by
-   sphinx-quickstart on Thu Jun 15 09:35:48 2017.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-Welcome to alia's documentation!
-================================
+alia
+====
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :hidden:
+   :caption: Guides
+
+   signals
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Under the Hood
+
+   goals-and-rationales
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Outdated Tutorial
 
    introduction
    state-management
    control-flow
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
