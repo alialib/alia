@@ -18,7 +18,7 @@ struct id_interface
     {
     }
 
-    // Create a stand-alone copy of the ID.
+    // Create a standalone copy of the ID.
     virtual id_interface*
     clone() const = 0;
 
@@ -156,19 +156,18 @@ operator<(owned_id const& a, owned_id const& b);
 std::ostream&
 operator<<(std::ostream& o, owned_id const& id);
 
-// value_id<Value> takes a regular type (of type Value) and implements
-// id_interface for it.
-// The type Value must be copyable, comparable for equality and ordering
+// simple_id<Value> takes a regular type (Value) and implements id_interface for
+// it. The type Value must be copyable, comparable for equality and ordering
 // (i.e., supply == and < operators), and convertible to a string.
 template<class Value>
-struct value_id : id_interface
+struct simple_id : id_interface
 {
  public:
-    value_id()
+    simple_id()
     {
     }
 
-    value_id(Value value) : value_(value)
+    simple_id(Value value) : value_(value)
     {
     }
 
@@ -181,20 +180,20 @@ struct value_id : id_interface
     id_interface*
     clone() const
     {
-        return new value_id(value_);
+        return new simple_id(value_);
     }
 
     bool
     equals(id_interface const& other) const
     {
-        value_id const& other_id = static_cast<value_id const&>(other);
+        simple_id const& other_id = static_cast<simple_id const&>(other);
         return value_ == other_id.value_;
     }
 
     bool
     less_than(id_interface const& other) const
     {
-        value_id const& other_id = static_cast<value_id const&>(other);
+        simple_id const& other_id = static_cast<simple_id const&>(other);
         return value_ < other_id.value_;
     }
 
@@ -207,7 +206,7 @@ struct value_id : id_interface
     void
     deep_copy(id_interface* copy) const
     {
-        *static_cast<value_id*>(copy) = *this;
+        *static_cast<simple_id*>(copy) = *this;
     }
 
     size_t
@@ -220,31 +219,31 @@ struct value_id : id_interface
     Value value_;
 };
 
-// make_id(value) creates a value_id with the given value.
+// make_id(value) creates a simple_id with the given value.
 template<class Value>
-value_id<Value>
+simple_id<Value>
 make_id(Value value)
 {
-    return value_id<Value>(value);
+    return simple_id<Value>(value);
 }
 
-// value_id_by_reference is like value_id but takes a pointer to the value.
+// simple_id_by_reference is like simple_id but takes a pointer to the value.
 // The value is only copied if the ID is cloned or deep-copied.
 template<class Value>
-struct value_id_by_reference : id_interface
+struct simple_id_by_reference : id_interface
 {
-    value_id_by_reference() : value_(0), storage_()
+    simple_id_by_reference() : value_(0), storage_()
     {
     }
 
-    value_id_by_reference(Value const* value) : value_(value), storage_()
+    simple_id_by_reference(Value const* value) : value_(value), storage_()
     {
     }
 
     id_interface*
     clone() const
     {
-        value_id_by_reference* copy = new value_id_by_reference;
+        simple_id_by_reference* copy = new simple_id_by_reference;
         this->deep_copy(copy);
         return copy;
     }
@@ -252,16 +251,16 @@ struct value_id_by_reference : id_interface
     bool
     equals(id_interface const& other) const
     {
-        value_id_by_reference const& other_id
-            = static_cast<value_id_by_reference const&>(other);
+        simple_id_by_reference const& other_id
+            = static_cast<simple_id_by_reference const&>(other);
         return *value_ == *other_id.value_;
     }
 
     bool
     less_than(id_interface const& other) const
     {
-        value_id_by_reference const& other_id
-            = static_cast<value_id_by_reference const&>(other);
+        simple_id_by_reference const& other_id
+            = static_cast<simple_id_by_reference const&>(other);
         return *value_ < *other_id.value_;
     }
 
@@ -274,7 +273,7 @@ struct value_id_by_reference : id_interface
     void
     deep_copy(id_interface* copy) const
     {
-        auto& typed_copy = *static_cast<value_id_by_reference*>(copy);
+        auto& typed_copy = *static_cast<simple_id_by_reference*>(copy);
         if (storage_)
         {
             typed_copy.storage_ = this->storage_;
@@ -300,10 +299,10 @@ struct value_id_by_reference : id_interface
 
 // make_id_by_reference
 template<class Value>
-value_id_by_reference<Value>
+simple_id_by_reference<Value>
 make_id_by_reference(Value const& value)
 {
-    return value_id_by_reference<Value>(&value);
+    return simple_id_by_reference<Value>(&value);
 }
 
 // id_pair implements the ID interface for a pair of IDs.
@@ -538,7 +537,7 @@ inc_version(local_identity& identity)
     ++identity.id.version;
 }
 
-static inline value_id_by_reference<local_id>
+static inline simple_id_by_reference<local_id>
 get_id(local_identity const& identity)
 {
     return make_id_by_reference(identity.id);
@@ -548,7 +547,13 @@ get_id(local_identity const& identity)
 struct no_id_type
 {
 };
-static value_id<no_id_type*> const no_id(0);
+static simple_id<no_id_type*> const no_id(nullptr);
+
+// unit_id can be used when there is only possible identify.
+struct unit_id_type
+{
+};
+static simple_id<unit_id_type*> const unit_id(nullptr);
 
 } // namespace alia
 

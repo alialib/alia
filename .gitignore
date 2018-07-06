@@ -1,4 +1,4 @@
 .fips-*
 .vscode
-.python
-.lcov.info
+.venv
+
