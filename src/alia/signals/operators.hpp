@@ -24,7 +24,7 @@ ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(+)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(-)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(*)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(/)
-ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(^)
+ALIA_DEFINE_BINARY_SIGNAL_OPERATOR (^)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(%)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(&)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(|)
@@ -65,9 +65,9 @@ struct logical_or_signal : signal<bool, read_only_signal>
     {
     }
     id_interface const&
-    id() const
+    value_id() const
     {
-        id_ = combine_ids(ref(arg0_.id()), ref(arg1_.id()));
+        id_ = combine_ids(ref(arg0_.value_id()), ref(arg1_.value_id()));
         return id_;
     }
     bool
@@ -127,9 +127,9 @@ struct logical_and_signal : signal<bool, read_only_signal>
     {
     }
     id_interface const&
-    id() const
+    value_id() const
     {
-        id_ = combine_ids(ref(arg0_.id()), ref(arg1_.id()));
+        id_ = combine_ids(ref(arg0_.value_id()), ref(arg1_.value_id()));
         return id_;
     }
     bool

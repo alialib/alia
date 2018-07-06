@@ -6,7 +6,7 @@
 #include <alia/signals/lambdas.hpp>
 #include <alia/signals/utilities.hpp>
 
-TEST_CASE("signal operators", "[signals]")
+TEST_CASE("basic signal operators", "[signals]")
 {
     using namespace alia;
 
@@ -38,6 +38,58 @@ TEST_CASE("signal operators", "[signals]")
 
     REQUIRE(is_true(-value(2) == value(-2)));
     REQUIRE(is_false(!(value(2) == value(2))));
+}
+
+TEST_CASE("signal &&", "[signals]")
+{
+    using namespace alia;
+
+    REQUIRE(is_true(value(true) && value(true)));
+    REQUIRE(is_false(value(true) && value(false)));
+    REQUIRE(is_false(value(false) && value(true)));
+    REQUIRE(is_false(value(false) && value(false)));
+
+    // Check that unreadable signals are treated properly.
+    REQUIRE(!signal_is_readable(empty<bool>() && empty<bool>()));
+    REQUIRE(!signal_is_readable(value(true) && empty<bool>()));
+    REQUIRE(!signal_is_readable(empty<bool>() && value(true)));
+    REQUIRE(is_false(value(false) && empty<bool>()));
+    REQUIRE(is_false(empty<bool>() && value(false)));
+
+    // Check that && short circuits.
+    int access_count = 0;
+    auto access_counting_signal = lambda_input(always_readable, [&]() {
+        ++access_count;
+        return true;
+    });
+    REQUIRE(is_false(value(false) && access_counting_signal));
+    REQUIRE(access_count == 0);
+}
+
+TEST_CASE("signal ||", "[signals]")
+{
+    using namespace alia;
+
+    REQUIRE(is_true(value(true) || value(true)));
+    REQUIRE(is_true(value(true) || value(false)));
+    REQUIRE(is_true(value(false) || value(true)));
+    REQUIRE(is_false(value(false) || value(false)));
+
+    // Check that unreadable signals are treated properly.
+    REQUIRE(!signal_is_readable(empty<bool>() || empty<bool>()));
+    REQUIRE(!signal_is_readable(value(false) || empty<bool>()));
+    REQUIRE(!signal_is_readable(empty<bool>() || value(false)));
+    REQUIRE(is_true(value(true) || empty<bool>()));
+    REQUIRE(is_true(empty<bool>() || value(true)));
+
+    // Check that || short circuits.
+    int access_count = 0;
+    auto access_counting_signal = lambda_input(always_readable, [&]() {
+        ++access_count;
+        return false;
+    });
+    REQUIRE(is_true(value(true) || access_counting_signal));
+    REQUIRE(access_count == 0);
 }
 
 TEST_CASE("select_signal", "[signals]")
