@@ -102,12 +102,12 @@ TEST_CASE("signal ||", "[signals]")
         != (value(true) || value(false)).value_id());
 }
 
-TEST_CASE("select_signal", "[signals]")
+TEST_CASE("signal select", "[signals]")
 {
     using namespace alia;
 
     bool condition = false;
-    auto s = select_signal(direct(condition), value(1), value(2));
+    auto s = select(direct(condition), value(1), value(2));
 
     typedef decltype(s) signal_t;
     REQUIRE(signal_can_read<signal_t>::value);
@@ -123,12 +123,12 @@ TEST_CASE("select_signal", "[signals]")
     REQUIRE(captured_id.get() != s.value_id());
 }
 
-TEST_CASE("select_signal with different directions", "[signals]")
+TEST_CASE("select with different directions", "[signals]")
 {
     using namespace alia;
 
     bool condition = false;
-    auto s = select_signal(direct(condition), empty<int>(), value(2));
+    auto s = select(direct(condition), empty<int>(), value(2));
 
     typedef decltype(s) signal_t;
     REQUIRE(signal_can_read<signal_t>::value);
@@ -140,15 +140,15 @@ TEST_CASE("select_signal with different directions", "[signals]")
     REQUIRE(!signal_is_readable(s));
 }
 
-TEST_CASE("select_signal value ID", "[signals]")
+TEST_CASE("select value ID", "[signals]")
 {
-    // Test that select_signal's ID changes when the condition changes, even
-    // if both of its input signals are producing the same value ID.
+    // Test that select's ID changes when the condition changes, even if both of
+    // its input signals are producing the same value ID.
 
     using namespace alia;
 
     bool condition = false;
-    auto s = select_signal(direct(condition), value(2), value(2));
+    auto s = select(direct(condition), value(2), value(2));
 
     owned_id captured_id;
     captured_id.store(s.value_id());
@@ -156,25 +156,25 @@ TEST_CASE("select_signal value ID", "[signals]")
     REQUIRE(captured_id.get() != s.value_id());
 }
 
-TEST_CASE("select_signal with unreadable condition", "[signals]")
+TEST_CASE("select with unreadable condition", "[signals]")
 {
     using namespace alia;
 
     int x = 0, y = 1;
-    auto s = select_signal(empty<bool>(), direct(x), direct(y));
+    auto s = select(empty<bool>(), direct(x), direct(y));
     REQUIRE(!signal_is_readable(s));
     REQUIRE(s.value_id() == no_id);
     REQUIRE(!signal_is_writable(s));
 }
 
-TEST_CASE("writable select_signal", "[signals]")
+TEST_CASE("writable select", "[signals]")
 {
     using namespace alia;
 
     bool condition = false;
     int x = 1;
     int y = 2;
-    auto s = select_signal(direct(condition), direct(x), direct(y));
+    auto s = select(direct(condition), direct(x), direct(y));
 
     typedef decltype(s) signal_t;
     REQUIRE(signal_can_read<signal_t>::value);
