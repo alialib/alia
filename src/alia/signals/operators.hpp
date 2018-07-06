@@ -87,15 +87,6 @@ struct logical_or_signal : signal<bool, read_only_signal>
                  || arg1_.is_readable() && arg1_.read();
         return value_;
     }
-    bool
-    is_writable() const
-    {
-        return false;
-    }
-    void
-    write(bool const& value) const
-    {
-    }
 
  private:
     Arg0 arg0_;
@@ -149,15 +140,6 @@ struct logical_and_signal : signal<bool, read_only_signal>
             = !(arg0_.is_readable() && !arg0_.read()
                 || arg1_.is_readable() && !arg1_.read());
         return value_;
-    }
-    bool
-    is_writable() const
-    {
-        return false;
-    }
-    void
-    write(bool const& value) const
-    {
     }
 
  private:
