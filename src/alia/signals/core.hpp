@@ -44,6 +44,12 @@ template<class Expected>
 struct signal_direction_is_compatible<Expected, two_way_signal> : std::true_type
 {
 };
+// Resolve ambiguity.
+template<>
+struct signal_direction_is_compatible<two_way_signal, two_way_signal>
+    : std::true_type
+{
+};
 
 // signal_direction_intersection<A,B>::type, where A and B are signal
 // directions, yields a direction that only has the capabilities that are common
@@ -312,6 +318,16 @@ template<class Signal>
 struct signal_can_write : signal_direction_is_compatible<
                               write_only_signal,
                               typename Signal::direction_tag>
+{
+};
+
+// is_writable_signal_type<T>::value yields a compile-time boolean indicating
+// whether or not T is an alia signal that supports writing.
+template<class T>
+struct is_writable_signal_type : std::conditional_t<
+                                     is_signal_type<T>::value,
+                                     signal_can_write<T>,
+                                     std::false_type>
 {
 };
 
