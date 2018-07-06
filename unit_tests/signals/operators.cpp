@@ -64,6 +64,11 @@ TEST_CASE("signal &&", "[signals]")
     });
     REQUIRE(is_false(value(false) && access_counting_signal));
     REQUIRE(access_count == 0);
+
+    // Check that value ID is reasonable.
+    REQUIRE(
+        (value(true) && value(false)).value_id()
+        != (value(true) && value(true)).value_id());
 }
 
 TEST_CASE("signal ||", "[signals]")
@@ -90,6 +95,11 @@ TEST_CASE("signal ||", "[signals]")
     });
     REQUIRE(is_true(value(true) || access_counting_signal));
     REQUIRE(access_count == 0);
+
+    // Check that value ID is reasonable.
+    REQUIRE(
+        (value(false) || value(false)).value_id()
+        != (value(true) || value(false)).value_id());
 }
 
 TEST_CASE("select_signal", "[signals]")
