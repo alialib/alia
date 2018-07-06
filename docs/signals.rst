@@ -16,7 +16,7 @@ In general, signal values can be read (i.e., polled) and new values can be writt
 
 ..todo:: Add an example of, say, adding two signals and point out how writing to the sum doesn't make sense.
 
-Signals carry a compile-time property that indicates the direction(s) in which values can flow: read-only, write-only or two-way. Similarly, when a function takes a signal as a parameter, the function signature will specify the requirements of the signal:
+Signals carry a compile-time property that indicates the direction(s) in which values can flow: read-only, write-only or bidirectional. Similarly, when a function takes a signal as a parameter, the function signature will specify the requirements of the signal:
 
 * **input**: The function may try to read the signal.
 * **output**: The function may try to write to the signal.

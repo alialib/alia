@@ -92,19 +92,19 @@ lambda_input(IsReadable is_readable, Read read, GenerateId generate_id)
         GenerateId>(is_readable, read, generate_id);
 }
 
-// lambda_inout(is_readable, read, is_writable, write, generate_id) creates a
-// two-way signal whose value is read by calling :is_readable and :read and
-// written by calling :is_writable and :write. Its ID is determined by calling
-// :generate_id.
+// lambda_bidirectional(is_readable, read, is_writable, write, generate_id)
+// creates a bidirectional signal whose value is read by calling :is_readable
+// and :read and written by calling :is_writable and :write. Its ID is
+// determined by calling :generate_id.
 template<
     class Value,
     class IsReadable,
     class Read,
     class IsWritable,
     class Write>
-struct lambda_inout_signal : regular_signal<Value, two_way_signal>
+struct lambda_bidirectional_signal : regular_signal<Value, bidirectional_signal>
 {
-    lambda_inout_signal(
+    lambda_bidirectional_signal(
         IsReadable is_readable, Read read, IsWritable is_writable, Write write)
         : is_readable_(is_readable),
           read_(read),
@@ -143,10 +143,10 @@ struct lambda_inout_signal : regular_signal<Value, two_way_signal>
 };
 template<class IsReadable, class Read, class IsWritable, class Write>
 auto
-lambda_inout(
+lambda_bidirectional(
     IsReadable is_readable, Read read, IsWritable is_writable, Write write)
 {
-    return lambda_inout_signal<
+    return lambda_bidirectional_signal<
         std::decay_t<decltype(read())>,
         IsReadable,
         Read,
@@ -154,9 +154,9 @@ lambda_inout(
         Write>(is_readable, read, is_writable, write);
 }
 
-// lambda_inout(is_readable, read, is_writable, write) creates a two-way signal
-// whose value is read by calling :is_readable and :read and written by calling
-// :is_writable and :write.
+// lambda_bidirectional(is_readable, read, is_writable, write) creates a
+// bidirectional signal whose value is read by calling :is_readable and :read
+// and written by calling :is_writable and :write.
 template<
     class Value,
     class IsReadable,
@@ -164,9 +164,9 @@ template<
     class IsWritable,
     class Write,
     class GenerateId>
-struct lambda_inout_signal_with_id : signal<Value, two_way_signal>
+struct lambda_bidirectional_signal_with_id : signal<Value, bidirectional_signal>
 {
-    lambda_inout_signal_with_id(
+    lambda_bidirectional_signal_with_id(
         IsReadable is_readable,
         Read read,
         IsWritable is_writable,
@@ -223,14 +223,14 @@ template<
     class Write,
     class GenerateId>
 auto
-lambda_inout(
+lambda_bidirectional(
     IsReadable is_readable,
     Read read,
     IsWritable is_writable,
     Write write,
     GenerateId generate_id)
 {
-    return lambda_inout_signal_with_id<
+    return lambda_bidirectional_signal_with_id<
         std::decay_t<decltype(read())>,
         IsReadable,
         Read,

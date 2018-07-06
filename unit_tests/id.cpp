@@ -35,29 +35,29 @@ TEST_CASE("IDs", "[id]")
     REQUIRE(ref(a) != ref(d));
     REQUIRE((a < d && !(d < a) || d < a && !(a < d)));
 
-    // Test owned_id.
-    owned_id o;
-    o.store(a);
+    // Test captured_id.
+    captured_id o;
+    o.capture(a);
     REQUIRE(o.get() == a);
     REQUIRE(o.get() != b);
-    owned_id p;
+    captured_id p;
     REQUIRE(o != p);
-    p.store(a);
+    p.capture(a);
     REQUIRE(o == p);
-    p.store(c);
+    p.capture(c);
     REQUIRE(o == p);
-    p.store(b);
+    p.capture(b);
     REQUIRE(o != p);
     REQUIRE(o < p);
     REQUIRE(boost::lexical_cast<std::string>(o) == "1");
 
     // Test id_pair.
-    o.store(combine_ids(a, b));
+    o.capture(combine_ids(a, b));
     REQUIRE(boost::lexical_cast<std::string>(o) == "(1,2)");
     REQUIRE(o.get() == combine_ids(a, b));
     REQUIRE(combine_ids(a, c) < combine_ids(a, b));
     REQUIRE(combine_ids(a, b) != combine_ids(b, a));
     REQUIRE(combine_ids(a, b) < combine_ids(b, a));
-    o.store(combine_ids(a, ref(b)));
+    o.capture(combine_ids(a, ref(b)));
     REQUIRE(o.get() == combine_ids(a, ref(b)));
 }

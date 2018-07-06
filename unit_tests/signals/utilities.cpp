@@ -32,7 +32,8 @@ TEST_CASE("unreadable regular_signal", "[signals]")
     REQUIRE(s.value_id() == no_id);
 }
 
-struct normal_regular_signal : alia::regular_signal<int, alia::two_way_signal>
+struct normal_regular_signal
+    : alia::regular_signal<int, alia::bidirectional_signal>
 {
     bool
     is_readable() const
@@ -77,7 +78,10 @@ TEST_CASE("lazy_reader", "[signals]")
 
     int n = 0;
 
-    auto generator = [&]() { ++n; return 12; };
+    auto generator = [&]() {
+        ++n;
+        return 12;
+    };
 
     lazy_reader<int> reader;
 

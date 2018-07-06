@@ -22,7 +22,7 @@ struct read_only_signal
 struct write_only_signal
 {
 };
-struct two_way_signal
+struct bidirectional_signal
 {
 };
 
@@ -39,15 +39,17 @@ template<class Same>
 struct signal_direction_is_compatible<Same, Same> : std::true_type
 {
 };
-// A two-way signal can work as anything.
+// A bidirectional signal can work as anything.
 template<class Expected>
-struct signal_direction_is_compatible<Expected, two_way_signal> : std::true_type
+struct signal_direction_is_compatible<Expected, bidirectional_signal>
+    : std::true_type
 {
 };
 // Resolve ambiguity.
 template<>
-struct signal_direction_is_compatible<two_way_signal, two_way_signal>
-    : std::true_type
+struct signal_direction_is_compatible<
+    bidirectional_signal,
+    bidirectional_signal> : std::true_type
 {
 };
 
@@ -64,22 +66,22 @@ struct signal_direction_intersection<Same, Same>
 {
     typedef Same type;
 };
-// A two-way signal has both capabilities.
+// A bidirectional signal has both capabilities.
 template<class A>
-struct signal_direction_intersection<A, two_way_signal>
+struct signal_direction_intersection<A, bidirectional_signal>
 {
     typedef A type;
 };
 template<class B>
-struct signal_direction_intersection<two_way_signal, B>
+struct signal_direction_intersection<bidirectional_signal, B>
 {
     typedef B type;
 };
 // Resolve ambiguity.
 template<>
-struct signal_direction_intersection<two_way_signal, two_way_signal>
+struct signal_direction_intersection<bidirectional_signal, bidirectional_signal>
 {
-    typedef two_way_signal type;
+    typedef bidirectional_signal type;
 };
 
 // signal_direction_union<A,B>::type, where A and B are signal directions,
@@ -95,8 +97,8 @@ struct signal_direction_union<Same, Same>
 template<class A, class B>
 struct signal_direction_union
 {
-    // All other combinations yield two-way signals.
-    typedef two_way_signal type;
+    // All other combinations yield bidirectional signals.
+    typedef bidirectional_signal type;
 };
 
 // untyped_signal_base defines functionality common to all signals, irrespective
@@ -257,10 +259,10 @@ using input = signal_ref<Value, read_only_signal>;
 template<class Value>
 using output = signal_ref<Value, write_only_signal>;
 
-// inout<Value> denotes a reference to a two-way signal carrying values of
-// type :Value.
+// bidirectional<Value> denotes a reference to a bidirectional signal carrying
+// values of type :Value.
 template<class Value>
-using inout = signal_ref<Value, two_way_signal>;
+using bidirectional = signal_ref<Value, bidirectional_signal>;
 
 // is_signal_type<T>::value yields a compile-time boolean indicating whether or
 // not T is an alia signal type.

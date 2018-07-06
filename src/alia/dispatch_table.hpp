@@ -22,7 +22,7 @@ struct dispatch_interface
     }
 };
 
-typedef alia__shared_ptr<dispatch_interface> dispatch_interface_ptr;
+typedef std::shared_ptr<dispatch_interface> dispatch_interface_ptr;
 
 typedef std::
     map<std::type_info const*, dispatch_interface_ptr, type_info_comparison>

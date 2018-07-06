@@ -32,13 +32,13 @@ TEST_CASE("lambda input signal with ID", "[signals]")
     REQUIRE(s.value_id() == unit_id);
 }
 
-TEST_CASE("lambda inout signal", "[signals]")
+TEST_CASE("lambda bidirectional signal", "[signals]")
 {
     using namespace alia;
 
     int x = 1;
 
-    auto s = lambda_inout(
+    auto s = lambda_bidirectional(
         always_readable,
         [&x]() { return x; },
         always_writable,
@@ -51,20 +51,19 @@ TEST_CASE("lambda inout signal", "[signals]")
     REQUIRE(signal_is_readable(s));
     REQUIRE(read_signal(s) == 1);
     REQUIRE(signal_is_writable(s));
-    owned_id original_id;
-    original_id.store(s.value_id());
+    captured_id original_id = s.value_id();
     write_signal(s, 0);
     REQUIRE(read_signal(s) == 0);
     REQUIRE(!original_id.matches(s.value_id()));
 }
 
-TEST_CASE("lambda inout signal with ID", "[signals]")
+TEST_CASE("lambda bidirectional signal with ID", "[signals]")
 {
     using namespace alia;
 
     int x = 1;
 
-    auto s = lambda_inout(
+    auto s = lambda_bidirectional(
         always_readable,
         [&x]() { return x; },
         always_writable,

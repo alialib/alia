@@ -56,7 +56,7 @@ TEST_CASE("signal &&", "[signals]")
     REQUIRE(is_false(value(false) && empty<bool>()));
     REQUIRE(is_false(empty<bool>() && value(false)));
 
-    // Check that && short circuits.
+    // Check that && short-circuits.
     int access_count = 0;
     auto access_counting_signal = lambda_input(always_readable, [&]() {
         ++access_count;
@@ -65,7 +65,7 @@ TEST_CASE("signal &&", "[signals]")
     REQUIRE(is_false(value(false) && access_counting_signal));
     REQUIRE(access_count == 0);
 
-    // Check that value ID is reasonable.
+    // Check that its value ID behaves reasonably.
     REQUIRE(
         (value(true) && value(false)).value_id()
         != (value(true) && value(true)).value_id());
@@ -87,7 +87,7 @@ TEST_CASE("signal ||", "[signals]")
     REQUIRE(is_true(value(true) || empty<bool>()));
     REQUIRE(is_true(empty<bool>() || value(true)));
 
-    // Check that || short circuits.
+    // Check that || short-circuits.
     int access_count = 0;
     auto access_counting_signal = lambda_input(always_readable, [&]() {
         ++access_count;
@@ -96,7 +96,7 @@ TEST_CASE("signal ||", "[signals]")
     REQUIRE(is_true(value(true) || access_counting_signal));
     REQUIRE(access_count == 0);
 
-    // Check that value ID is reasonable.
+    // Check that its value ID behaves reasonably.
     REQUIRE(
         (value(false) || value(false)).value_id()
         != (value(true) || value(false)).value_id());
@@ -115,12 +115,11 @@ TEST_CASE("signal select", "[signals]")
 
     REQUIRE(signal_is_readable(s));
     REQUIRE(read_signal(s) == 2);
-    owned_id captured_id;
-    captured_id.store(s.value_id());
+    captured_id original_id = s.value_id();
     condition = true;
     REQUIRE(signal_is_readable(s));
     REQUIRE(read_signal(s) == 1);
-    REQUIRE(captured_id.get() != s.value_id());
+    REQUIRE(original_id.get() != s.value_id());
 }
 
 TEST_CASE("select with different directions", "[signals]")
@@ -150,10 +149,9 @@ TEST_CASE("select value ID", "[signals]")
     bool condition = false;
     auto s = select(direct(condition), value(2), value(2));
 
-    owned_id captured_id;
-    captured_id.store(s.value_id());
+    captured_id original_id = s.value_id();
     condition = true;
-    REQUIRE(captured_id.get() != s.value_id());
+    REQUIRE(original_id.get() != s.value_id());
 }
 
 TEST_CASE("select with unreadable condition", "[signals]")
@@ -205,7 +203,7 @@ TEST_CASE("field signal", "[signals]")
         double y;
     };
     foo f = {2, 1.5};
-    auto f_signal = lambda_inout(
+    auto f_signal = lambda_bidirectional(
         always_readable,
         [&]() { return f; },
         always_writable,
@@ -236,9 +234,8 @@ TEST_CASE("field signal", "[signals]")
     REQUIRE(signal_is_readable(y_signal));
     REQUIRE(read_signal(y_signal) == 1.5);
     REQUIRE(signal_is_writable(y_signal));
-    owned_id captured_y_id;
-    captured_y_id.store(y_signal.value_id());
+    captured_id original_y_id = y_signal.value_id();
     write_signal(y_signal, 0.5);
-    REQUIRE(y_signal.value_id() != captured_y_id.get());
+    REQUIRE(y_signal.value_id() != original_y_id.get());
     REQUIRE(f.y == 0.5);
 }
