@@ -162,7 +162,7 @@ operator&&(A const& a, B const& b)
 }
 
 // This is the equivalent of the ternary operator for signals.
-// select_signal(condition, t, f), where condition, t and f are signals,
+// select(condition, t, f), where condition, t and f are signals,
 // yields t if condition's value is true and f if condition's value is false.
 // Note that this is a normal function call, so, unlike an if statement or the
 // ternary operator, both t and f are fully evaluated. However, they are only
@@ -227,7 +227,7 @@ struct signal_mux : signal<
 };
 template<class Condition, class T, class F>
 signal_mux<Condition, T, F>
-select_signal(Condition const& condition, T const& t, F const& f)
+select(Condition const& condition, T const& t, F const& f)
 {
     return signal_mux<Condition, T, F>(condition, t, f);
 }
