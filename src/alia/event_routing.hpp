@@ -28,7 +28,7 @@ namespace alia {
 
 struct routing_region;
 
-typedef alia__shared_ptr<routing_region> routing_region_ptr;
+typedef std::shared_ptr<routing_region> routing_region_ptr;
 
 struct routing_region
 {

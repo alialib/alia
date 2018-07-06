@@ -10,7 +10,7 @@ namespace alia {
 
 // empty<Value>() gives a signal that never has a value.
 template<class Value>
-struct empty_signal : signal<Value, two_way_signal>
+struct empty_signal : signal<Value, bidirectional_signal>
 {
     empty_signal()
     {
@@ -84,9 +84,10 @@ value(Value const& v)
     return value_signal<Value>(v);
 }
 
-// direct(x) creates a two-way signal that directly exposes the value of x.
+// direct(x) creates a bidirectional signal that directly exposes the value of
+// x.
 template<class Value>
-struct direct_signal : regular_signal<Value, two_way_signal>
+struct direct_signal : regular_signal<Value, bidirectional_signal>
 {
     direct_signal()
     {

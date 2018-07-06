@@ -53,7 +53,7 @@ struct named_block_node : noncopyable
     data_block block;
 
     // the ID of the block
-    owned_id id;
+    captured_id id;
 
     // count of references to this block by data_blocks
     int reference_count;

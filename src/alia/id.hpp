@@ -22,7 +22,7 @@ struct id_interface
     virtual id_interface*
     clone() const = 0;
 
-    // Given another ID of the same type, set it equal to a stand-alone copy
+    // Given another ID of the same type, set it equal to a standalone copy
     // of this ID.
     virtual void
     deep_copy(id_interface* copy) const = 0;
@@ -37,7 +37,7 @@ struct id_interface
     virtual bool
     less_than(id_interface const& other) const = 0;
 
-    // Write a textual representation of the ID to the given ostream.
+    // Write a textual representation of the ID to the given stream.
     virtual void
     stream(std::ostream& o) const = 0;
 
@@ -46,8 +46,9 @@ struct id_interface
     hash() const = 0;
 };
 
-// The following convert the interface to the ID operations into the usual form
+// The following convert the interface of the ID operations into the usual form
 // that one would expect, as free functions.
+
 static inline bool
 operator==(id_interface const& a, id_interface const& b)
 {
@@ -56,13 +57,16 @@ operator==(id_interface const& a, id_interface const& b)
     return (typeid(a).name() == typeid(b).name() || typeid(a) == typeid(b))
            && a.equals(b);
 }
+
 static inline bool
 operator!=(id_interface const& a, id_interface const& b)
 {
     return !(a == b);
 }
+
 bool
 operator<(id_interface const& a, id_interface const& b);
+
 static inline std::ostream&
 operator<<(std::ostream& o, id_interface const& id)
 {
@@ -70,9 +74,10 @@ operator<<(std::ostream& o, id_interface const& id)
     return o;
 }
 
-// The following allow for using IDs as keys in a map or unordered_map.
-// The IDs are stored separately as owned_ids in the mapped values and pointers
-// are used as keys. This allows searches to be done on pointers to other IDs.
+// The following allow the use of IDs as keys in a map or unordered_map.
+// The IDs are stored separately as captured_ids in the mapped values and
+// pointers are used as keys. This allows searches to be done on pointers to
+// other IDs.
 
 struct id_interface_pointer_less_than_test
 {
@@ -101,25 +106,31 @@ struct id_interface_pointer_hash
     }
 };
 
-// Given an ID and some storage, attempts to deep copy the ID into the storage
-// if the types are compatible. Otherwise, deletes the storage and returns
-// a clone.
+// Given an ID and some storage, clone the ID into the storage as efficiently as
+// possible. Specifically, if :storage already contains an ID of the same type,
+// perform a deep copy into the existing ID. Otherwise, delete the existing ID
+// (if any) and create a new clone to store there.
 void
 clone_into(id_interface*& storage, id_interface const* id);
 
-// owned_id is used to store an ID over the long-term. If you'll need to
-// reference an ID outside the current stack frame, there's no guarantee that
-// it'll be valid then, so you need to store it in an owned_id, which will
-// clone it and assume ownership of the clone.
-struct owned_id
+// captured_id is used to capture an ID for long-term storage (beyond the point
+// where the id_interface
+struct captured_id
 {
+    captured_id()
+    {
+    }
+    captured_id(id_interface const& id)
+    {
+        this->capture(id);
+    }
     void
     clear()
     {
         id_.reset();
     }
     void
-    store(id_interface const& new_id)
+    capture(id_interface const& new_id)
     {
         id_.reset(new_id.clone());
     }
@@ -139,22 +150,93 @@ struct owned_id
         return id_ && *id_ == id;
     }
     friend void
-    swap(owned_id& a, owned_id& b)
+    swap(captured_id& a, captured_id& b)
     {
         swap(a.id_, b.id_);
     }
 
  private:
-    alia__shared_ptr<id_interface> id_;
+    std::shared_ptr<id_interface> id_;
 };
 bool
-operator==(owned_id const& a, owned_id const& b);
+operator==(captured_id const& a, captured_id const& b);
 bool
-operator!=(owned_id const& a, owned_id const& b);
+operator!=(captured_id const& a, captured_id const& b);
 bool
-operator<(owned_id const& a, owned_id const& b);
+operator<(captured_id const& a, captured_id const& b);
 std::ostream&
-operator<<(std::ostream& o, owned_id const& id);
+operator<<(std::ostream& o, captured_id const& id);
+
+// ref(id) wraps a reference to an id_interface so that it can be combined.
+struct id_ref : id_interface
+{
+    id_ref() : id_(0), ownership_()
+    {
+    }
+
+    id_ref(id_interface const& id) : id_(&id), ownership_()
+    {
+    }
+
+    id_interface*
+    clone() const
+    {
+        id_ref* copy = new id_ref;
+        this->deep_copy(copy);
+        return copy;
+    }
+
+    bool
+    equals(id_interface const& other) const
+    {
+        id_ref const& other_id = static_cast<id_ref const&>(other);
+        return *id_ == *other_id.id_;
+    }
+
+    bool
+    less_than(id_interface const& other) const
+    {
+        id_ref const& other_id = static_cast<id_ref const&>(other);
+        return *id_ < *other_id.id_;
+    }
+
+    void
+    stream(std::ostream& o) const
+    {
+        o << *id_;
+    }
+
+    void
+    deep_copy(id_interface* copy) const
+    {
+        auto& typed_copy = *static_cast<id_ref*>(copy);
+        if (ownership_)
+        {
+            typed_copy.ownership_ = ownership_;
+            typed_copy.id_ = id_;
+        }
+        else
+        {
+            typed_copy.ownership_.reset(id_->clone());
+            typed_copy.id_ = typed_copy.ownership_.get();
+        }
+    }
+
+    size_t
+    hash() const
+    {
+        return id_->hash();
+    }
+
+ private:
+    id_interface const* id_;
+    std::shared_ptr<id_interface> ownership_;
+};
+static inline id_ref
+ref(id_interface const& id)
+{
+    return id_ref(id);
+}
 
 // simple_id<Value> takes a regular type (Value) and implements id_interface for
 // it. The type Value must be copyable, comparable for equality and ordering
@@ -294,10 +376,10 @@ struct simple_id_by_reference : id_interface
 
  private:
     Value const* value_;
-    alia__shared_ptr<Value> storage_;
+    std::shared_ptr<Value> storage_;
 };
 
-// make_id_by_reference
+// make_id_by_reference(value) creates a simple_id_by_reference for :value.
 template<class Value>
 simple_id_by_reference<Value>
 make_id_by_reference(Value const& value)
@@ -389,77 +471,6 @@ combine_ids(Id0 const& id0)
     return id0;
 }
 
-// ref(id) wraps a reference to an id_interface so that it can be combined.
-struct id_ref : id_interface
-{
-    id_ref() : id_(0), ownership_()
-    {
-    }
-
-    id_ref(id_interface const* id) : id_(id), ownership_()
-    {
-    }
-
-    id_interface*
-    clone() const
-    {
-        id_ref* copy = new id_ref;
-        this->deep_copy(copy);
-        return copy;
-    }
-
-    bool
-    equals(id_interface const& other) const
-    {
-        id_ref const& other_id = static_cast<id_ref const&>(other);
-        return *id_ == *other_id.id_;
-    }
-
-    bool
-    less_than(id_interface const& other) const
-    {
-        id_ref const& other_id = static_cast<id_ref const&>(other);
-        return *id_ < *other_id.id_;
-    }
-
-    void
-    stream(std::ostream& o) const
-    {
-        o << *id_;
-    }
-
-    void
-    deep_copy(id_interface* copy) const
-    {
-        auto& typed_copy = *static_cast<id_ref*>(copy);
-        if (ownership_)
-        {
-            typed_copy.ownership_ = ownership_;
-            typed_copy.id_ = id_;
-        }
-        else
-        {
-            typed_copy.ownership_.reset(id_->clone());
-            typed_copy.id_ = typed_copy.ownership_.get();
-        }
-    }
-
-    size_t
-    hash() const
-    {
-        return id_->hash();
-    }
-
- private:
-    id_interface const* id_;
-    alia__shared_ptr<id_interface> ownership_;
-};
-static inline id_ref
-ref(id_interface const& id)
-{
-    return id_ref(&id);
-}
-
 // local_identity establishes an identity that's unique within the local
 // application instance.
 // The identity is versioned. Calling inc_version(identity) increases the
@@ -469,7 +480,7 @@ ref(id_interface const& id)
 
 struct local_id
 {
-    alia__shared_ptr<int> tag;
+    std::shared_ptr<int> tag;
     counter_type version;
 };
 static inline bool

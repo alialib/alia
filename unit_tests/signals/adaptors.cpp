@@ -25,7 +25,7 @@ TEST_CASE("fake_readability", "[signals]")
     {
         int x = 0;
 
-        auto s = fake_readability(lambda_inout(
+        auto s = fake_readability(lambda_bidirectional(
             [&]() { return true; },
             [&]() { return x; },
             [&]() { return true; },
@@ -60,7 +60,7 @@ TEST_CASE("fake_writability", "[signals]")
     }
 
     {
-        auto s = fake_writability(lambda_inout(
+        auto s = fake_writability(lambda_bidirectional(
             [&]() { return true; },
             [&]() { return 0; },
             [&]() { return true; },
@@ -136,7 +136,7 @@ TEST_CASE("is_writable", "[signals]")
     int x = 1;
 
     {
-        auto s = is_writable(lambda_inout(
+        auto s = is_writable(lambda_bidirectional(
             always_readable,
             [&]() { return x; },
             [&]() { return writable; },
@@ -154,7 +154,7 @@ TEST_CASE("is_writable", "[signals]")
 
     {
         // Recreate the signal to circumvent internal caching.
-        auto s = is_writable(lambda_inout(
+        auto s = is_writable(lambda_bidirectional(
             always_readable,
             [&]() { return x; },
             [&]() { return writable; },
