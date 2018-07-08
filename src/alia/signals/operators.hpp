@@ -57,9 +57,6 @@ ALIA_DEFINE_UNARY_SIGNAL_OPERATOR(!)
 template<class Arg0, class Arg1>
 struct logical_or_signal : signal<bool, read_only_signal>
 {
-    logical_or_signal()
-    {
-    }
     logical_or_signal(Arg0 const& arg0, Arg1 const& arg1)
         : arg0_(arg0), arg1_(arg1)
     {
@@ -110,9 +107,6 @@ operator||(A const& a, B const& b)
 template<class Arg0, class Arg1>
 struct logical_and_signal : signal<bool, read_only_signal>
 {
-    logical_and_signal()
-    {
-    }
     logical_and_signal(Arg0 const& arg0, Arg1 const& arg1)
         : arg0_(arg0), arg1_(arg1)
     {
@@ -176,9 +170,6 @@ struct signal_mux : signal<
                             typename T::direction_tag,
                             typename F::direction_tag>::type>
 {
-    signal_mux()
-    {
-    }
     signal_mux(Condition condition, T t, F f)
         : condition_(condition), t_(t), f_(f)
     {
@@ -239,9 +230,6 @@ struct field_signal : signal<Field, typename StructureSignal::direction_tag>
 {
     typedef typename StructureSignal::value_type structure_type;
     typedef Field structure_type::*field_ptr;
-    field_signal()
-    {
-    }
     field_signal(StructureSignal structure, field_ptr field)
         : structure_(structure), field_(field)
     {

@@ -15,9 +15,6 @@ struct readability_faker : signal<
                                    read_only_signal,
                                    typename Wrapped::direction_tag>::type>
 {
-    readability_faker()
-    {
-    }
     readability_faker(Wrapped wrapped) : wrapped_(wrapped)
     {
     }
@@ -70,9 +67,6 @@ struct writability_faker : signal<
                                    write_only_signal,
                                    typename Wrapped::direction_tag>::type>
 {
-    writability_faker()
-    {
-    }
     writability_faker(Wrapped wrapped) : wrapped_(wrapped)
     {
     }
@@ -120,9 +114,6 @@ fake_writability(Wrapped const& wrapped)
 template<class Wrapped, class To>
 struct signal_caster : regular_signal<To, typename Wrapped::direction_tag>
 {
-    signal_caster()
-    {
-    }
     signal_caster(Wrapped wrapped) : wrapped_(wrapped)
     {
     }
@@ -164,9 +155,6 @@ signal_cast(Wrapped const& wrapped)
 template<class Wrapped>
 struct readability_signal : regular_signal<bool, read_only_signal>
 {
-    readability_signal()
-    {
-    }
     readability_signal(Wrapped const& wrapped) : wrapped_(wrapped)
     {
     }
@@ -198,9 +186,6 @@ is_readable(Wrapped const& wrapped)
 template<class Wrapped>
 struct writability_signal : regular_signal<bool, read_only_signal>
 {
-    writability_signal()
-    {
-    }
     writability_signal(Wrapped const& wrapped) : wrapped_(wrapped)
     {
     }
