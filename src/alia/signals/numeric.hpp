@@ -18,9 +18,6 @@ struct scaling_signal_wrapper : regular_signal<
                                     typename Wrapped::direction_tag>
 {
     typedef typename Wrapped::value_type wrapped_value_type;
-    scaling_signal_wrapper()
-    {
-    }
     scaling_signal_wrapper(Wrapped wrapped, wrapped_value_type scale_factor)
         : wrapped_(wrapped), scale_factor_(scale_factor)
     {
@@ -67,9 +64,6 @@ struct offset_signal_wrapper : regular_signal<
                                    typename Wrapped::direction_tag>
 {
     typedef typename Wrapped::value_type wrapped_value_type;
-    offset_signal_wrapper()
-    {
-    }
     offset_signal_wrapper(Wrapped wrapped, typename Wrapped::value_type offset)
         : wrapped_(wrapped), offset_(offset)
     {
@@ -114,9 +108,6 @@ struct rounding_signal_wrapper : regular_signal<
                                      typename Wrapped::value_type,
                                      typename Wrapped::direction_tag>
 {
-    rounding_signal_wrapper()
-    {
-    }
     rounding_signal_wrapper(Wrapped wrapped, typename Wrapped::value_type step)
         : wrapped_(wrapped), step_(step)
     {

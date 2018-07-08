@@ -14,9 +14,6 @@ namespace alia {
 template<class Result, class Function, class Arg>
 struct lazy_apply1_signal : signal<Result, read_only_signal>
 {
-    lazy_apply1_signal()
-    {
-    }
     lazy_apply1_signal(Function const& f, Arg const& arg) : f_(f), arg_(arg)
     {
     }
@@ -52,9 +49,6 @@ lazy_apply(Function const& f, Arg const& arg)
 template<class Result, class Function, class Arg0, class Arg1>
 struct lazy_apply2_signal : signal<Result, read_only_signal>
 {
-    lazy_apply2_signal()
-    {
-    }
     lazy_apply2_signal(Function const& f, Arg0 const& arg0, Arg1 const& arg1)
         : f_(f), arg0_(arg0), arg1_(arg1)
     {
