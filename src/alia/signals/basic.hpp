@@ -57,9 +57,6 @@ empty()
 template<class Value>
 struct value_signal : regular_signal<Value, read_only_signal>
 {
-    value_signal()
-    {
-    }
     explicit value_signal(Value const& v) : v_(v)
     {
     }
@@ -89,9 +86,6 @@ value(Value const& v)
 template<class Value>
 struct direct_signal : regular_signal<Value, bidirectional_signal>
 {
-    direct_signal()
-    {
-    }
     explicit direct_signal(Value* v) : v_(v)
     {
     }
@@ -130,9 +124,6 @@ direct(Value& x)
 // accessing x as a string.
 struct text : signal<string, read_only_signal>
 {
-    text()
-    {
-    }
     text(char const* x) : text_(x)
     {
     }
