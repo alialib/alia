@@ -871,6 +871,22 @@ struct loop_block : noncopyable
 // takes the context as its first argument. The other form has no trailing
 // underscore and assumes that the context is a variable named 'ctx'.
 
+// is_true(x) evaluates x in a boolean context.
+template<class T>
+std::enable_if_t<!is_readable_signal_type<T>::value, bool>
+is_true(T x)
+{
+    return x ? true : false;
+}
+
+// is_false(x) evaluates x in a boolean context and inverts it.
+template<class T>
+std::enable_if_t<!is_readable_signal_type<T>::value, bool>
+is_false(T x)
+{
+    return x ? false : true;
+}
+
 // if, else_if, else
 
 #define alia_if_(ctx, condition)                                               \
