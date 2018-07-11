@@ -114,7 +114,7 @@ void
 clone_into(id_interface*& storage, id_interface const* id);
 
 // captured_id is used to capture an ID for long-term storage (beyond the point
-// where the id_interface
+// where the id_interface reference will be valid).
 struct captured_id
 {
     captured_id()
