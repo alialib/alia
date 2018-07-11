@@ -94,3 +94,19 @@ TEST_CASE("id_pair", "[id]")
     REQUIRE(boost::lexical_cast<std::string>(b) == "(1,2)");
     test_different_ids(a, b);
 }
+
+TEST_CASE("clone_into", "[id]")
+{
+    id_interface* storage = 0;
+    auto zero = make_id(0);
+    auto abc = make_id(string("abc"));
+    auto one = make_id(1);
+    clone_into(storage, &zero);
+    REQUIRE(*storage == zero);
+    clone_into(storage, &one);
+    REQUIRE(*storage == one);
+    clone_into(storage, &abc);
+    REQUIRE(*storage == abc);
+    clone_into(storage, nullptr);
+    REQUIRE(storage == nullptr);
+}
