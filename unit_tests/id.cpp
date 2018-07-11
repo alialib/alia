@@ -33,6 +33,12 @@ test_single_id(Id const& id)
     Id copy;
     id.deep_copy(&copy);
     test_equal_ids(id, copy);
+
+    // Copying a clone is sometimes different because the clone is free of
+    // references to the surrounding stack frame.
+    Id clone_copy;
+    clone->deep_copy(&clone_copy);
+    test_equal_ids(id, clone_copy);
 }
 
 // Test all the ID operations on a pair of different IDs.
