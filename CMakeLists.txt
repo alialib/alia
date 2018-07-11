@@ -119,10 +119,10 @@ if(FIPS_GCC AND CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 # Add the alia library.
-fips_begin_module(alia)
+fips_begin_lib(alia)
     fips_src(src/alia)
     fips_dir(.)
-fips_end_module()
+fips_end_lib()
 target_link_libraries(alia ${EXTERNAL_LIBS})
 
 # Add the unit test runner.
@@ -189,10 +189,11 @@ add_custom_target(
 if(FIPS_GCC AND CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_custom_target(
         unit_test_coverage
-        COMMAND lcov --directory . --zerocounters
+        COMMAND lcov -c -i -d . -o baseline.info
         COMMAND ${CMAKE_COMMAND} --build . --target unit_tests
-        COMMAND lcov --directory . --capture --output-file raw.info
-        COMMAND lcov --extract raw.info '${PROJECT_SOURCE_DIR}/src/alia/*' --output-file filtered.info
+        COMMAND lcov -c -d . -o raw.info
+        COMMAND lcov -a baseline.info -a raw.info -o ${PROJECT_BINARY_DIR}/combined.info
+        COMMAND lcov -e combined.info '${PROJECT_SOURCE_DIR}/src/alia/*' -o filtered.info
         COMMAND ${CMAKE_COMMAND} -E copy filtered.info ${PROJECT_SOURCE_DIR}/lcov.info
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
     add_test(
