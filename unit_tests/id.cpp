@@ -108,5 +108,5 @@ TEST_CASE("clone_into", "[id]")
     clone_into(storage, &abc);
     REQUIRE(*storage == abc);
     clone_into(storage, nullptr);
-    REQUIRE(storage == nullptr);
+    REQUIRE(!storage);
 }
