@@ -113,6 +113,26 @@ TEST_CASE("is_writable_signal_type", "[signals]")
     REQUIRE(!is_writable_signal_type<std::string>::value);
 }
 
+TEST_CASE("signal_ref", "[signals]")
+{
+    using namespace alia;
+
+    int x = 1;
+    auto y = direct(x);
+    signal_ref<int, bidirectional_signal> s = y;
+
+    typedef decltype(s) signal_t;
+    REQUIRE(signal_can_read<signal_t>::value);
+    REQUIRE(signal_can_write<signal_t>::value);
+
+    REQUIRE(signal_is_readable(s));
+    REQUIRE(read_signal(s) == 1);
+    REQUIRE(signal_is_writable(s));
+    write_signal(s, 0);
+    REQUIRE(x == 0);
+    REQUIRE(read_signal(s) == 0);
+}
+
 void
 f_input(alia::input<int> x)
 {
