@@ -24,4 +24,4 @@ cache:
   - $HOME/.conan/data
 
 after_success:
-  - bash <(curl -s https://codecov.io/bash) -X gcov
+  - bash <(curl -s https://codecov.io/bash) -X gcov -f lcov.info
