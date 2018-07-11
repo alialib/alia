@@ -126,6 +126,7 @@ TEST_CASE("signal_ref", "[signals]")
     REQUIRE(signal_can_write<signal_t>::value);
 
     REQUIRE(signal_is_readable(s));
+    REQUIRE(s.value_id() == y.value_id());
     REQUIRE(read_signal(s) == 1);
     REQUIRE(signal_is_writable(s));
     write_signal(s, 0);
