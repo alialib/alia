@@ -60,19 +60,4 @@ operator<<(std::ostream& o, captured_id const& id)
     return o;
 }
 
-local_id
-generate_local_id()
-{
-    local_id id;
-    id.tag.reset(new int);
-    id.version = 0;
-    return id;
-}
-
-std::ostream&
-operator<<(std::ostream& o, local_id const& id)
-{
-    return o << "local_id(" << id.tag.get() << ":" << id.version << ")";
-}
-
 } // namespace alia
