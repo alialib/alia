@@ -86,12 +86,35 @@ TEST_CASE("captured_id", "[id]")
     REQUIRE(boost::lexical_cast<std::string>(c) == "0");
 }
 
-TEST_CASE("id_pair", "[id]")
+TEST_CASE("combine_ids x1", "[id]")
+{
+    auto a = combine_ids(make_id(0));
+    auto b = combine_ids(make_id(1));
+    REQUIRE(boost::lexical_cast<std::string>(a) == "0");
+    REQUIRE(boost::lexical_cast<std::string>(b) == "1");
+    test_different_ids(a, b);
+}
+
+TEST_CASE("combine_ids x2", "[id]")
 {
     auto a = combine_ids(make_id(0), make_id(1));
     auto b = combine_ids(make_id(1), make_id(2));
     REQUIRE(boost::lexical_cast<std::string>(a) == "(0,1)");
     REQUIRE(boost::lexical_cast<std::string>(b) == "(1,2)");
+    test_different_ids(a, b);
+}
+
+TEST_CASE("combine_ids x3", "[id]")
+{
+    auto a = combine_ids(make_id(0), make_id(1), make_id(2));
+    auto b = combine_ids(make_id(1), make_id(2), make_id(3));
+    test_different_ids(a, b);
+}
+
+TEST_CASE("combine_ids x4", "[id]")
+{
+    auto a = combine_ids(make_id(0), make_id(1), make_id(2), make_id(3));
+    auto b = combine_ids(make_id(1), make_id(2), make_id(3), make_id(4));
     test_different_ids(a, b);
 }
 
