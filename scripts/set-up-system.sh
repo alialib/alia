@@ -7,6 +7,7 @@ set -x -e
 apt-get update -qy
 apt-get install -y software-properties-common
 add-apt-repository -y ppa:ubuntu-toolchain-r/test
+apt-add-repository -y "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-4.0 main"
 apt-get update -qy
-apt-get install -y --upgrade g++-5 gcc-5 lcov cmake git curl clang-5.0
+apt-get install -y --upgrade g++-5 gcc-5 lcov cmake git curl clang-4.0
 pip install virtualenv
