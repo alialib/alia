@@ -15,6 +15,12 @@ before_script:
 script:
   - ./fips make test linux-make-debug
   - ./fips make test linux-make-release
+  - export CC=`which clang-5.0`
+  - export CXX=`which clang-5.0`
+  - ./fips clean linux-make-debug
+  - ./fips clean linux-make-release
+  - ./fips make test linux-make-debug
+  - ./fips make test linux-make-release
 
 before_cache:
   - conan remove "*" -s -b -f
@@ -24,4 +30,4 @@ cache:
   - $HOME/.conan/data
 
 after_success:
-  - bash <(curl -s https://codecov.io/bash) -X gcov -f lcov.info
+  - bash <(curl -s https://codecov.io/bash) -X gcov
