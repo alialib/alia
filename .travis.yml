@@ -8,8 +8,8 @@ before_script:
   - export PATH=/usr/lib/binutils-2.26/bin:${PATH}
   - scripts/set-up-python.sh
   - source .venv/bin/activate
-  - export CC=`which clang-5.0`
-  - export CXX=`which clang-5.0`
+  - export CC=`which clang-4.0`
+  - export CXX=`which clang++-4.0`
   - scripts/set-up-conan.sh
   - export CTEST_OUTPUT_ON_FAILURE=1
 
