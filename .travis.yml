@@ -11,6 +11,7 @@ before_script:
   - export CC=`which clang-5.0`
   - export CXX=`which clang-5.0`
   - scripts/set-up-conan.sh
+  - export CTEST_OUTPUT_ON_FAILURE=1
 
 script:
   - ./fips make test linux-make-debug
