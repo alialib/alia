@@ -8,17 +8,11 @@ before_script:
   - export PATH=/usr/lib/binutils-2.26/bin:${PATH}
   - scripts/set-up-python.sh
   - source .venv/bin/activate
-  - export CC=`which gcc-5`
-  - export CXX=`which g++-5`
+  - export CC=`which clang-5.0`
+  - export CXX=`which clang-5.0`
   - scripts/set-up-conan.sh
 
 script:
-  - ./fips make test linux-make-debug
-  - ./fips make test linux-make-release
-  - export CC=`which clang-5.0`
-  - export CXX=`which clang-5.0`
-  - ./fips clean linux-make-debug
-  - ./fips clean linux-make-release
   - ./fips make test linux-make-debug
   - ./fips make test linux-make-release
 
