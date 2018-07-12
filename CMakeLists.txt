@@ -16,8 +16,8 @@ fips_project(alia)
 # Conan and fips disagree on various build options, so we need to override
 # some of Conan's defaults.
 set(CONAN_OPTIONS)
-if (FIPS_MSVC)
-    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+if(FIPS_MSVC)
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         set(CONAN_OPTIONS
             -s compiler=Visual\ Studio -s build_type=Debug -s compiler.runtime=MTd)
     else()
@@ -25,12 +25,21 @@ if (FIPS_MSVC)
             -s compiler=Visual\ Studio -s build_type=Release -s compiler.runtime=MT)
     endif()
 elseif(FIPS_GCC)
-    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         set(CONAN_OPTIONS
             -s compiler=gcc -s compiler.libcxx=libstdc++11 -s build_type=Debug -o Boost:fPIC=True)
     else()
         set(CONAN_OPTIONS
             -s compiler=gcc -s compiler.libcxx=libstdc++11 -s build_type=Release -o Boost:fPIC=True)
+    endif()
+elseif(FIPS_CLANG)
+    string(REGEX REPLACE "([0-9]+\\.[0-9]+).*" "\\1" CLANG_MAJOR_MINOR_VERSION ${CMAKE_CXX_COMPILER_VERSION})
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set(CONAN_OPTIONS
+            -s compiler=clang -s compiler.version=${CLANG_MAJOR_MINOR_VERSION} -s compiler.libcxx=libstdc++11 -s build_type=Debug -o Boost:fPIC=True)
+    else()
+        set(CONAN_OPTIONS
+            -s compiler=clang -s compiler.version=${CLANG_MAJOR_MINOR_VERSION} -s compiler.libcxx=libstdc++11 -s build_type=Release -o Boost:fPIC=True)
     endif()
 endif()
 execute_process(
@@ -103,6 +112,8 @@ elseif(FIPS_MSVC)
     add_definitions(/D_CRT_SECURE_NO_WARNINGS)
     # Also suppress linker warnings about missing .pdb files that seem to inevitably creep in.
     add_link_options(/ignore:4099)
+elseif(FIPS_CLANG)
+    add_compile_options(-v)
 endif()
 
 # Enable "big objects" for Visual C++ and try to speed up builds.
@@ -112,10 +123,10 @@ if(FIPS_MSVC)
 endif()
 
 # Set build options for instrumenting test coverage.
-if(FIPS_GCC AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+if(FIPS_CLANG AND CMAKE_BUILD_TYPE STREQUAL "Debug")
     message(STATUS "Enabling gcov support")
-    add_compile_options(--coverage -fno-inline -fno-inline-small-functions -fno-default-inline -fprofile-arcs -ftest-coverage)
-    add_exe_link_options(--coverage)
+    add_compile_options(-DLLVM_USE_LINKER=gold -fprofile-instr-generate -fcoverage-mapping)
+    add_exe_link_options(-fprofile-instr-generate -fcoverage-mapping)
 endif()
 
 # Add the alia library.
@@ -186,15 +197,12 @@ add_custom_target(
 
 # On Linux debug builds, the proper CMake test associated with the unit tests
 # includes test coverage reporting.
-if(FIPS_GCC AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+if(FIPS_CLANG AND CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_custom_target(
         unit_test_coverage
-        COMMAND lcov -c -i -d . -o baseline.info
         COMMAND ${CMAKE_COMMAND} --build . --target unit_tests
-        COMMAND lcov -c -d . -o raw.info
-        COMMAND lcov -a baseline.info -a raw.info -o ${PROJECT_BINARY_DIR}/combined.info
-        COMMAND lcov -e combined.info '${PROJECT_SOURCE_DIR}/src/alia/*' -o filtered.info
-        COMMAND ${CMAKE_COMMAND} -E copy filtered.info ${PROJECT_SOURCE_DIR}/lcov.info
+        COMMAND llvm-profdata-${CLANG_MAJOR_MINOR_VERSION} merge -sparse unit-testing/default.profraw -o default.profdata
+        COMMAND llvm-cov-4.0 show -instr-profile=default.profdata ${FIPS_PROJECT_DEPLOY_DIR}/unit_test_runner >${PROJECT_SOURCE_DIR}/coverage.txt
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
     add_test(
         NAME unit_test_coverage
