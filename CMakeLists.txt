@@ -113,7 +113,7 @@ elseif(FIPS_MSVC)
     # Also suppress linker warnings about missing .pdb files that seem to inevitably creep in.
     add_link_options(/ignore:4099)
 elseif(FIPS_CLANG)
-    add_compile_options(-v)
+    add_compile_options(-lstdc++)
 endif()
 
 # Enable "big objects" for Visual C++ and try to speed up builds.
