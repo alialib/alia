@@ -8,5 +8,5 @@ apt-get update -qy
 apt-get install -y software-properties-common
 add-apt-repository -y ppa:ubuntu-toolchain-r/test
 apt-get update -qy
-apt-get install -y --upgrade g++-5 gcc-5 lcov cmake git curl
+apt-get install -y --upgrade g++-5 gcc-5 lcov cmake git curl clang-5.0
 pip install virtualenv

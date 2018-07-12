@@ -179,9 +179,9 @@ struct noncopyable
     }
 
  private:
-    noncopyable(noncopyable const& other);
+    noncopyable(noncopyable const& other) = delete;
     noncopyable&
-    operator=(noncopyable const& other);
+    operator=(noncopyable const& other) = delete;
 };
 } // namespace noncopyable_
 } // namespace impl
@@ -215,130 +215,10 @@ struct exception : std::exception
     std::shared_ptr<string> msg_;
 };
 
-// vector<N,T> represents an N-dimensional geometric vector with elements of
-// type T.
-template<unsigned N, class T>
-struct vector
-{
-    // allow external access to template parameters
-    typedef T value_type;
-    static const unsigned dimensionality = N;
-
-    // element accessors
-    T operator[](unsigned i) const
-    {
-        assert(i < N);
-        return elements[i];
-    }
-    T& operator[](unsigned i)
-    {
-        assert(i < N);
-        return elements[i];
-    }
-
-    vector()
-    {
-    }
-
-    // explicit conversion from vectors with other element types
-    template<class OtherT>
-    explicit vector(vector<N, OtherT> const& other)
-    {
-        for (unsigned i = 0; i < N; ++i)
-            (*this)[i] = static_cast<T>(other[i]);
-    }
-
- private:
-    T elements[N];
-};
-// 2D constructor
-template<class T>
-vector<2, T>
-make_vector(T x, T y)
-{
-    vector<2, T> v;
-    v[0] = x;
-    v[1] = y;
-    return v;
-}
-// 3D constructor
-template<class T>
-vector<3, T>
-make_vector(T x, T y, T z)
-{
-    vector<3, T> v;
-    v[0] = x;
-    v[1] = y;
-    v[2] = z;
-    return v;
-}
-// equality operators
-namespace impl {
-template<unsigned N, class T, unsigned I>
-struct vector_equality_test
-{
-    static bool
-    apply(vector<N, T> const& a, vector<N, T> const& b)
-    {
-        return a[I - 1] == b[I - 1]
-               && vector_equality_test<N, T, I - 1>::apply(a, b);
-    }
-};
-template<unsigned N, class T>
-struct vector_equality_test<N, T, 0>
-{
-    static bool
-    apply(vector<N, T> const& a, vector<N, T> const& b)
-    {
-        return true;
-    }
-};
-} // namespace impl
-template<unsigned N, class T>
-bool
-operator==(vector<N, T> const& a, vector<N, T> const& b)
-{
-    return impl::vector_equality_test<N, T, N>::apply(a, b);
-}
-template<unsigned N, class T>
-bool
-operator!=(vector<N, T> const& a, vector<N, T> const& b)
-{
-    return !(a == b);
-}
-// < operator
-template<unsigned N, class T>
-bool
-operator<(vector<N, T> const& a, vector<N, T> const& b)
-{
-    for (unsigned i = 0; i < N; ++i)
-    {
-        if (a[i] < b[i])
-            return true;
-        if (b[i] < a[i])
-            return false;
-    }
-    return false;
-}
-// streaming
-template<unsigned N, class T>
-std::ostream&
-operator<<(std::ostream& out, vector<N, T> const& v)
-{
-    out << "(";
-    for (unsigned i = 0; i != N; ++i)
-    {
-        if (i != 0)
-            out << ", ";
-        out << v[i];
-    }
-    out << ")";
-    return out;
-}
-
 // optional<T> stores an optional value of type T (or no value).
 struct none_type
 {
+    none_type() {}
 };
 static none_type const none;
 template<class T>
