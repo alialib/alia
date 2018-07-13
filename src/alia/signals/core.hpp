@@ -185,7 +185,10 @@ struct signal<Value, write_only_signal> : signal_interface<Value>
     Value const&
     read() const
     {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wnull-dereference"
         return *(Value const*) nullptr;
+#pragma clang diagnostic pop
     }
     // LCOV_EXCL_STOP
 };

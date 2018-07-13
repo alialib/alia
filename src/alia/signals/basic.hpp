@@ -30,7 +30,10 @@ struct empty_signal : signal<Value, bidirectional_signal>
     Value const&
     read() const
     {
-        return *(Value*) nullptr;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wnull-dereference"
+        return *(Value const*) nullptr;
+#pragma clang diagnostic pop
     }
     // LCOV_EXCL_STOP
     bool
