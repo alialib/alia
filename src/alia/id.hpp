@@ -112,6 +112,9 @@ struct id_interface_pointer_hash
 // (if any) and create a new clone to store there.
 void
 clone_into(id_interface*& storage, id_interface const* id);
+// Same, but where the storage is a shared_ptr.
+void
+clone_into(std::shared_ptr<id_interface>& storage, id_interface const* id);
 
 // captured_id is used to capture an ID for long-term storage (beyond the point
 // where the id_interface reference will be valid).
@@ -132,7 +135,7 @@ struct captured_id
     void
     capture(id_interface const& new_id)
     {
-        id_.reset(new_id.clone());
+        clone_into(id_, &new_id);
     }
     bool
     is_initialized() const
