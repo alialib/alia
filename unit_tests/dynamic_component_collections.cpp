@@ -4,6 +4,8 @@
 
 #include <catch.hpp>
 
+#include <boost/any.hpp>
+
 using namespace alia;
 
 // This shouldn't have been defiend.
@@ -41,7 +43,7 @@ struct zap
 };
 
 // Define some arbitrary component collection types.
-using storage_type = generic_component_storage<any>;
+using storage_type = generic_component_storage<boost::any>;
 using cc_empty = empty_component_collection<storage_type>;
 using cc_b = add_component_type_t<cc_empty, bar_tag, bar>;
 using cc_fb = add_component_type_t<cc_b, foo_tag, foo>;
@@ -68,16 +70,16 @@ TEST_CASE("dynamic component access", "[component_collections]")
 
     storage_type storage_b;
     cc_b mc_b = add_component<bar_tag>(&storage_b, mc_empty, bar(1));
-    REQUIRE(any_cast<bar>(get_component<bar_tag>(mc_b))->i == 1);
+    REQUIRE(boost::any_cast<bar>(get_component<bar_tag>(mc_b)).i == 1);
     REQUIRE_THROWS(get_component<foo_tag>(mc_b));
 
     storage_type storage_fb;
     cc_fb mc_fb = add_component<foo_tag>(&storage_fb, mc_b, foo());
-    REQUIRE(any_cast<bar>(get_component<bar_tag>(mc_fb))->i == 1);
-    REQUIRE(any_cast<foo>(get_component<foo_tag>(mc_fb))->b == false);
+    REQUIRE(boost::any_cast<bar>(get_component<bar_tag>(mc_fb)).i == 1);
+    REQUIRE(boost::any_cast<foo>(get_component<foo_tag>(mc_fb)).b == false);
 
     storage_type storage_f;
     cc_f mc_f = remove_component<bar_tag>(&storage_f, mc_fb);
-    REQUIRE(any_cast<foo>(get_component<foo_tag>(mc_f))->b == false);
+    REQUIRE(boost::any_cast<foo>(get_component<foo_tag>(mc_f)).b == false);
     REQUIRE_THROWS(get_component<bar_tag>(mc_f));
 }
