@@ -308,15 +308,6 @@ some(T const& x)
     return optional<T>(x);
 }
 
-template<class Container>
-struct raii_adaptor : Container
-{
-    ~raii_adaptor()
-    {
-        Container::end();
-    }
-};
-
 // Invoke the standard hash function for a value.
 template<class T>
 size_t

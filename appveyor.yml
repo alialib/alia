@@ -65,5 +65,6 @@ for:
 
 build_script:
   - set BOOST_LIBRARYDIR=%BOOST_ROOT%/%LIBRARY_ARCHITECTURE%-msvc-14.1
+  - set CTEST_OUTPUT_ON_FAILURE=1
   - fips gen
   - fips make ctest
