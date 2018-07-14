@@ -33,10 +33,14 @@ struct readability_faker : signal<
     typename Wrapped::value_type const&
     read() const
     {
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wnull-dereference"
+#ifdef __clang__
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wnull-dereference"
+#endif
         return *(typename Wrapped::value_type const*) nullptr;
-#pragma clang diagnostic pop
+#ifdef __clang__
+    #pragma clang diagnostic pop
+#endif
     }
     // LCOV_EXCL_STOP
     bool
