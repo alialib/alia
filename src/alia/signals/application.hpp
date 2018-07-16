@@ -89,6 +89,8 @@ lazy_apply(Function const& f, Arg0 const& arg0, Arg1 const& arg1)
         Arg1>(f, arg0, arg1);
 }
 
+#define alia_method(m) [ ](auto const& x) { return x.m(); }
+
 } // namespace alia
 
 #endif
