@@ -8,7 +8,6 @@
 
 #include <catch.hpp>
 
-
 using namespace alia;
 
 // Test all the relevant ID operations on a pair of equal IDs.
@@ -168,7 +167,7 @@ TEST_CASE("map of IDs", "[id]")
     auto one = make_id(1);
     auto another_one = make_id(1);
 
-    std::map<id_interface const*,int,id_interface_pointer_less_than_test> m;
+    std::map<id_interface const*, int, id_interface_pointer_less_than_test> m;
     m[&zero] = 0;
     m[&abc] = 123;
     REQUIRE(m.at(&zero) == 0);
@@ -186,7 +185,12 @@ TEST_CASE("unordered_map of IDs", "[id]")
     auto one = make_id(1);
     auto another_one = make_id(1);
 
-    std::unordered_map<id_interface const*,int,id_interface_pointer_hash,id_interface_pointer_equality_test> m;
+    std::unordered_map<
+        id_interface const*,
+        int,
+        id_interface_pointer_hash,
+        id_interface_pointer_equality_test>
+        m;
     m[&zero] = 0;
     m[&abc] = 123;
     REQUIRE(m.at(&zero) == 0);
