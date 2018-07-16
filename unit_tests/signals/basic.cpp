@@ -65,7 +65,7 @@ TEST_CASE("text signal", "[signals]")
     REQUIRE(!signal_can_write<signal_t>::value);
 
     REQUIRE(signal_is_readable(s));
-    REQUIRE(read_signal(s) == string("hello"));
+    REQUIRE(read_signal(s) == std::string("hello"));
     // There aren't really any interesting requirements on this.
     REQUIRE(s.value_id() == s.value_id());
 }
