@@ -132,7 +132,7 @@ TEST_CASE("clone_into/pointer", "[id]")
 {
     id_interface* storage = 0;
     auto zero = make_id(0);
-    auto abc = make_id(string("abc"));
+    auto abc = make_id(std::string("abc"));
     auto one = make_id(1);
     clone_into(storage, &zero);
     REQUIRE(*storage == zero);
@@ -148,7 +148,7 @@ TEST_CASE("clone_into/shared_ptr", "[id]")
 {
     std::shared_ptr<id_interface> storage;
     auto zero = make_id(0);
-    auto abc = make_id(string("abc"));
+    auto abc = make_id(std::string("abc"));
     auto one = make_id(1);
     clone_into(storage, &zero);
     REQUIRE(*storage == zero);
@@ -163,7 +163,7 @@ TEST_CASE("clone_into/shared_ptr", "[id]")
 TEST_CASE("map of IDs", "[id]")
 {
     auto zero = make_id(0);
-    auto abc = make_id(string("abc"));
+    auto abc = make_id(std::string("abc"));
     auto one = make_id(1);
     auto another_one = make_id(1);
 
@@ -181,7 +181,7 @@ TEST_CASE("map of IDs", "[id]")
 TEST_CASE("unordered_map of IDs", "[id]")
 {
     auto zero = make_id(0);
-    auto abc = make_id(string("abc"));
+    auto abc = make_id(std::string("abc"));
     auto one = make_id(1);
     auto another_one = make_id(1);
 

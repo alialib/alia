@@ -129,7 +129,7 @@ direct(Value& x)
 
 // text(x), where x is a string constant, creates a read-only signal for
 // accessing x as a string.
-struct text : signal<string, read_only_signal>
+struct text : signal<std::string, read_only_signal>
 {
     text(char const* x) : text_(x)
     {
@@ -144,15 +144,15 @@ struct text : signal<string, read_only_signal>
     {
         return true;
     }
-    string const&
+    std::string const&
     read() const
     {
-        return lazy_reader_.read([&] { return string(text_); });
+        return lazy_reader_.read([&] { return std::string(text_); });
     }
 
  private:
     char const* text_;
-    lazy_reader<string> lazy_reader_;
+    lazy_reader<std::string> lazy_reader_;
 };
 
 } // namespace alia
