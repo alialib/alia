@@ -181,7 +181,8 @@ struct noncopyable
  private:
     noncopyable(noncopyable const& other) = delete;
     noncopyable&
-    operator=(noncopyable const& other) = delete;
+    operator=(noncopyable const& other)
+        = delete;
 };
 } // namespace noncopyable_
 } // namespace impl
@@ -218,7 +219,9 @@ struct exception : std::exception
 // optional<T> stores an optional value of type T (or no value).
 struct none_type
 {
-    none_type() {}
+    none_type()
+    {
+    }
 };
 static none_type const none;
 template<class T>
