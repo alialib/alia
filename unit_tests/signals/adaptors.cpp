@@ -164,3 +164,91 @@ TEST_CASE("is_writable", "[signals]")
         REQUIRE(read_signal(s) == true);
     }
 }
+
+TEST_CASE("add_fallback", "[signals]")
+{
+    using namespace alia;
+
+    int p = 1;
+    int f = 0;
+    auto make_fallback = [&](bool primary_readable,
+                             bool primary_writable,
+                             bool fallback_readable) {
+        return add_fallback(
+            lambda_bidirectional(
+                [=]() { return primary_readable; },
+                [=]() { return p; },
+                [=]() { return primary_writable; },
+                [&p](int x) { p = x; }),
+            lambda_bidirectional(
+                [=]() { return fallback_readable; },
+                [=]() { return f; },
+                always_writable,
+                [&f](int x) { f = x; }));
+    };
+
+    {
+        typedef decltype(make_fallback(true, true, true)) signal_t;
+        REQUIRE(signal_can_read<signal_t>::value);
+        REQUIRE(signal_can_write<signal_t>::value);
+    }
+
+    {
+        typedef decltype(add_fallback(value(0), value(1))) signal_t;
+        REQUIRE(signal_can_read<signal_t>::value);
+        REQUIRE(!signal_can_write<signal_t>::value);
+    }
+
+    {
+        p = 1;
+        auto s = make_fallback(true, true, true);
+        REQUIRE(signal_is_readable(s));
+        REQUIRE(read_signal(s) == 1);
+        REQUIRE(signal_is_writable(s));
+        write_signal(s, 2);
+        REQUIRE(p == 2);
+        REQUIRE(f == 0);
+    }
+
+    {
+        p = 1;
+        auto s = make_fallback(false, true, true);
+        REQUIRE(signal_is_readable(s));
+        REQUIRE(read_signal(s) == 0);
+        REQUIRE(signal_is_writable(s));
+        write_signal(s, 2);
+        REQUIRE(p == 2);
+        REQUIRE(f == 0);
+    }
+
+    {
+        p = 1;
+        auto s = make_fallback(false, true, false);
+        REQUIRE(!signal_is_readable(s));
+        REQUIRE(signal_is_writable(s));
+        write_signal(s, 2);
+        REQUIRE(p == 2);
+        REQUIRE(f == 0);
+    }
+
+    {
+        p = 1;
+        auto s = make_fallback(true, false, false);
+        REQUIRE(signal_is_readable(s));
+        REQUIRE(read_signal(s) == 1);
+        REQUIRE(!signal_is_writable(s));
+    }
+
+    {
+        // Check that the overall signal produces a different value ID when
+        // using the primary vs the fallback, even when the two component
+        // signals have the same value ID.
+        p = 0;
+        auto s = make_fallback(true, false, false);
+        auto t = make_fallback(false, false, true);
+        REQUIRE(signal_is_readable(s));
+        REQUIRE(signal_is_readable(t));
+        REQUIRE(read_signal(s) == read_signal(t));
+        REQUIRE(s.value_id() != t.value_id());
+    }
+}
