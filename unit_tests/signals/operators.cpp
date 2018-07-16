@@ -1,3 +1,5 @@
+#define ALIA_LOWERCASE_MACROS
+
 #include <alia/signals/operators.hpp>
 
 #include <catch.hpp>
