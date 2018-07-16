@@ -38,3 +38,10 @@ TEST_CASE("lazy_apply", "[signals]")
     REQUIRE(s2.value_id() != s4.value_id());
     REQUIRE(s3.value_id() != s4.value_id());
 }
+
+TEST_CASE("alia_method", "[signals]")
+{
+    using namespace alia;
+    auto v = text("test text");
+    REQUIRE(read_signal(lazy_apply(alia_method(length), v)) == 9);
+}
