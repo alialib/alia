@@ -219,6 +219,63 @@ is_writable(Wrapped const& wrapped)
     return writability_signal<Wrapped>(wrapped);
 }
 
+// add_fallback(primary, fallback), where :primary and :fallback are both
+// signals, yields another signal whose value is that of :primary if it's ready
+// and that of :fallback otherwise.
+// All writes go directly to :primary.
+template<class Primary, class Fallback>
+struct fallback_signal
+    : signal<typename Primary::value_type, typename Primary::direction_tag>
+{
+    fallback_signal()
+    {
+    }
+    fallback_signal(Primary primary, Fallback fallback)
+        : primary_(primary), fallback_(fallback)
+    {
+    }
+    bool
+    is_readable() const
+    {
+        return primary_.is_readable() || fallback_.is_readable();
+    }
+    typename Primary::value_type const&
+    read() const
+    {
+        return primary_.is_readable() ? primary_.read() : fallback_.read();
+    }
+    id_interface const&
+    value_id() const
+    {
+        id_ = combine_ids(
+            make_id(primary_.is_readable()),
+            primary_.is_readable() ? ref(primary_.value_id())
+                                   : ref(fallback_.value_id()));
+        return id_;
+    }
+    bool
+    is_writable() const
+    {
+        return primary_.is_writable();
+    }
+    void
+    write(typename Primary::value_type const& value) const
+    {
+        primary_.write(value);
+    }
+
+ private:
+    mutable id_pair<simple_id<bool>, id_ref> id_;
+    Primary primary_;
+    Fallback fallback_;
+};
+template<class Primary, class Fallback>
+fallback_signal<Primary, Fallback>
+add_fallback(Primary const& primary, Fallback const& fallback)
+{
+    return fallback_signal<Primary, Fallback>(primary, fallback);
+}
+
 } // namespace alia
 
 #endif
