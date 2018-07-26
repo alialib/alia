@@ -540,59 +540,6 @@ get_cached_data(Context& ctx, T** ptr)
 void
 clear_cached_data(data_block& block);
 
-// get_state is the standard interface for retrieving state from a data graph.
-// Instead of a simple pointer, it returns a signal, which will allow future
-// versions of this code to track changes in the data graph. It comes in
-// multiple forms...
-//
-// get_state(ctx, default_value) returns the state as a signal. If the state
-// hasn't been initialized yet, it's initialized with default_value.
-// default_value is optional, and if omitted, the state will be initialized to
-// a default constructed value.
-//
-// get_state(ctx, &signal) writes the signal for the state to *signal.
-// The return value is true iff the underlying state requires initialization.
-
-// template<class Context, class T>
-// bool
-// get_state(Context& ctx, state_signal<T>* signal)
-// {
-//     state<T>* ptr;
-//     bool is_new = get_data(get_data_traversal(ctx), &ptr);
-//     *signal = make_signal(*ptr);
-//     return is_new;
-// }
-
-// template<class T, class Context>
-// std::enable_if_t<
-//     !std::is_base_of<untyped_signal_base, T>::value,
-//     state_signal<T>>
-// get_state(Context& ctx, T const& default_value = T())
-// {
-//     state<T>* ptr;
-//     if (get_data(ctx, &ptr))
-//         ptr->set(default_value);
-//     return make_signal(*ptr);
-// }
-
-// // Another form of get_state where the initial_value is passed as a signal...
-// // This is now the preferred form.
-
-// // get_state(ctx, initial_value) returns an signal to some persistent local
-// // state whose initial value is determined by the signal :initial_value. The
-// // returned signal will not be gettable until :initial_value is gettable.
-// template<class Context, class State>
-// auto
-// get_state(Context& ctx, input<State> const& initial_value)
-// {
-//     auto state = get_state(ctx, optional<State>());
-//     if (is_gettable(state) && !get(state) && is_gettable(initial_value))
-//     {
-//         set(state, some(get(initial_value)));
-//     }
-//     return unwrap_optional(state);
-// }
-
 // get_keyed_data(ctx, key, &signal) is a utility for retrieving cached data
 // from a data graph.
 // It stores not only the data but also a key that identifies the data.
