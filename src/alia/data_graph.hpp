@@ -800,7 +800,7 @@ struct loop_block : noncopyable
 
 // is_true(x) evaluates x in a boolean context.
 template<class T>
-std::enable_if_t<!is_readable_signal_type<T>::value, bool>
+std::enable_if_t<!is_signal_type<T>::value, bool>
 is_true(T x)
 {
     return x ? true : false;
@@ -808,45 +808,77 @@ is_true(T x)
 
 // is_false(x) evaluates x in a boolean context and inverts it.
 template<class T>
-std::enable_if_t<!is_readable_signal_type<T>::value, bool>
+std::enable_if_t<!is_signal_type<T>::value, bool>
 is_false(T x)
 {
     return x ? false : true;
 }
 
+// is_readable(x), where x is a readable signal type, calls signal_is_readable.
+template<class T>
+std::enable_if_t<is_readable_signal_type<T>::value, bool>
+is_readable(T const& x)
+{
+    return signal_is_readable(x);
+}
+
+// is_readable(x), where x is NOT a signal type, always returns true.
+template<class T>
+std::enable_if_t<!is_signal_type<T>::value, bool>
+is_readable(T const& x)
+{
+    return true;
+}
+
+// read(x), where x is a readable signal type, calls read_signal.
+template<class T>
+std::enable_if_t<is_readable_signal_type<T>::value, typename T::value_type>
+read(T const& x)
+{
+    return read_signal(x);
+}
+
+// read(x), where x is NOT a signal type, simply returns x.
+template<class T>
+std::enable_if_t<!is_signal_type<T>::value, T const&>
+read(T const& x)
+{
+    return x;
+}
+
 // if, else_if, else
 
-#define alia_if_(ctx, condition)                                               \
+#define ALIA_IF_(ctx, condition)                                               \
     {                                                                          \
         bool alia__else_condition ALIA_UNUSED;                                 \
         {                                                                      \
             auto const& alia__condition_value = (condition);                   \
-            bool alia__if_condition = alia::is_true(alia__condition_value);    \
-            alia__else_condition = alia::is_false(alia__condition_value);      \
+            bool alia__if_condition = ::alia::is_true(alia__condition_value);  \
+            alia__else_condition = ::alia::is_false(alia__condition_value);    \
             ::alia::if_block alia__if_block(                                   \
                 get_data_traversal(ctx), alia__if_condition);                  \
             if (alia__if_condition)                                            \
             {
 
-#define alia_if(condition) alia_if_(ctx, condition)
+#define ALIA_IF(condition) ALIA_IF_(ctx, condition)
 
-#define alia_else_if_(ctx, condition)                                          \
+#define ALIA_ELSE_IF_(ctx, condition)                                          \
     }                                                                          \
     }                                                                          \
     {                                                                          \
         auto const& alia__condition_value = (condition);                       \
         bool alia__else_if_condition                                           \
-            = alia__else_condition && alia::is_true(alia__condition_value);    \
+            = alia__else_condition && ::alia::is_true(alia__condition_value);  \
         alia__else_condition                                                   \
-            = alia__else_condition && alia::is_false(alia__condition_value);   \
+            = alia__else_condition && ::alia::is_false(alia__condition_value); \
         ::alia::if_block alia__if_block(                                       \
             get_data_traversal(ctx), alia__else_if_condition);                 \
         if (alia__else_if_condition)                                           \
         {
 
-#define alia_else_if(condition) alia_else_if_(ctx, condition)
+#define ALIA_ELSE_IF(condition) ALIA_ELSE_IF_(ctx, condition)
 
-#define alia_else_(ctx)                                                        \
+#define ALIA_ELSE_(ctx)                                                        \
     }                                                                          \
     }                                                                          \
     {                                                                          \
@@ -855,53 +887,54 @@ is_false(T x)
         if (alia__else_condition)                                              \
         {
 
-#define alia_else alia_else_(ctx)
+#define ALIA_ELSE ALIA_ELSE_(ctx)
 
 // pass_dependent_if - This is used for tests that involve conditions that
-// change from one pass to another. It does not clear out cached data wihin
+// change from one pass to another. It does not clear out cached data within
 // the block if it's skipped.
 
-#define alia_pass_dependent_if_(ctx, condition)                                \
+#define ALIA_PASS_DEPENDENT_IF_(ctx, condition)                                \
     {                                                                          \
         {                                                                      \
-            bool alia__condition = alia::is_true(condition);                   \
+            bool alia__condition = ::alia::is_true(condition);                 \
             ::alia::pass_dependent_if_block alia__if_block(                    \
                 get_data_traversal(ctx), alia__condition);                     \
             if (alia__condition)                                               \
             {
 
-#define alia_pass_dependent_if(condition)                                      \
-    alia_pass_dependent_if_(ctx, condition)
+#define ALIA_PASS_DEPENDENT_IF(condition)                                      \
+    ALIA_PASS_DEPENDENT_IF_(ctx, condition)
 
 // switch
 
-#define alia_switch_(ctx, x)                                                   \
+#define ALIA_SWITCH_(ctx, x)                                                   \
     {                                                                          \
+        ::alia::switch_block alia__switch_block(ctx);                          \
+        if (::alia::is_readable(x))                                            \
         {                                                                      \
-            ::alia::switch_block alia__switch_block(ctx);                      \
-            switch (x)                                                         \
+            switch (::alia::read(x))                                           \
             {
 
-#define alia_switch(x) alia_switch_(ctx, x)
+#define ALIA_SWITCH(x) ALIA_SWITCH_(ctx, x)
 
 #define ALIA_CONCATENATE_HELPER(a, b) a##b
 #define ALIA_CONCATENATE(a, b) ALIA_CONCATENATE_HELPER(a, b)
 
-#define alia_case(c)                                                           \
+#define ALIA_CASE(c)                                                           \
     case c:                                                                    \
         alia__switch_block.activate_case(c);                                   \
         goto ALIA_CONCATENATE(alia__dummy_label_, __LINE__);                   \
         ALIA_CONCATENATE(alia__dummy_label_, __LINE__)
 
-#define alia_default                                                           \
+#define ALIA_DEFAULT                                                           \
     default:                                                                   \
-        alia__switch_block.activate_case("default");                           \
+        alia__switch_block.activate_case("alia__default_case");                \
         goto ALIA_CONCATENATE(alia__dummy_label_, __LINE__);                   \
         ALIA_CONCATENATE(alia__dummy_label_, __LINE__)
 
 // for
 
-#define alia_for_(ctx, x)                                                      \
+#define ALIA_FOR_(ctx, x)                                                      \
     {                                                                          \
         {                                                                      \
             ::alia::loop_block alia__looper(get_data_traversal(ctx));          \
@@ -912,11 +945,11 @@ is_false(T x)
                     alia__looper.traversal(), alia__looper.block());           \
                 alia__looper.next();
 
-#define alia_for(x) alia_for_(ctx, x)
+#define ALIA_FOR(x) ALIA_FOR_(ctx, x)
 
 // while
 
-#define alia_while_(ctx, x)                                                    \
+#define ALIA_WHILE_(ctx, x)                                                    \
     {                                                                          \
         {                                                                      \
             ::alia::loop_block alia__looper(get_data_traversal(ctx));          \
@@ -927,11 +960,11 @@ is_false(T x)
                     alia__looper.traversal(), alia__looper.block());           \
                 alia__looper.next();
 
-#define alia_while(x) alia_while_(ctx, x)
+#define ALIA_WHILE(x) ALIA_WHILE_(ctx, x)
 
 // end
 
-#define alia_end                                                               \
+#define ALIA_END                                                               \
     }                                                                          \
     }                                                                          \
     }
