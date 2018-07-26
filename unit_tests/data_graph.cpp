@@ -113,7 +113,7 @@ TEST_CASE("basic alia_if", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](auto condition) {
-            return [&](data_traversal& ctx) {
+            return [=](data_traversal& ctx) {
                 ALIA_IF(condition)
                 {
                     do_int(ctx, 0);
@@ -143,7 +143,7 @@ TEST_CASE("alia_if/alia_else", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](auto condition) {
-            return [&](data_traversal& ctx) {
+            return [=](data_traversal& ctx) {
                 ALIA_IF(condition)
                 {
                     do_int(ctx, 0);
@@ -182,7 +182,7 @@ TEST_CASE("alia_if/alia_else caching", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](auto condition) {
-            return [&](data_traversal& ctx) {
+            return [=](data_traversal& ctx) {
                 ALIA_IF(condition)
                 {
                     do_cached_int(ctx, 0);
@@ -231,7 +231,7 @@ TEST_CASE("alia_if/alia_else_if/alia_else", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](auto condition1, auto condition2) {
-            return [&](data_traversal& ctx) {
+            return [=](data_traversal& ctx) {
                 ALIA_IF(condition1)
                 {
                     do_int(ctx, 0);
@@ -287,7 +287,7 @@ TEST_CASE("alia_switch", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](auto n) {
-            return [&](data_traversal& ctx) {
+            return [=](data_traversal& ctx) {
                 // clang-format off
                 ALIA_SWITCH(n)
                 {
