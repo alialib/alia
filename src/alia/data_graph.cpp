@@ -1,44 +1,18 @@
-#if 0
-
 #include <alia/data_graph.hpp>
 #include <map>
 #include <vector>
 
 namespace alia {
 
-// Using a reference type as the key for a map causes problems, so we need to
-// create a structure that will serve as an ID reference.
-struct id_reference
-{
-    id_reference()
-    {
-    }
-    explicit id_reference(id_interface const& id) : id(&id)
-    {
-    }
-    id_interface const* id;
-};
-static bool
-operator==(id_reference a, id_reference b)
-{
-    return *a.id == *b.id;
-}
-static bool
-operator!=(id_reference a, id_reference b)
-{
-    return *a.id != *b.id;
-}
-static bool
-operator<(id_reference a, id_reference b)
-{
-    return *a.id < *b.id;
-}
-
 struct named_block_node;
 
 struct naming_map
 {
-    typedef std::map<id_reference, named_block_node*> map_type;
+    typedef std::map<
+        id_interface const*,
+        named_block_node*,
+        id_interface_pointer_less_than_test>
+        map_type;
     map_type blocks;
 };
 
@@ -134,7 +108,7 @@ struct named_block_ref_node : noncopyable
                 {
                     if (!node->manual_delete)
                     {
-                        node->map->blocks.erase(id_reference(node->id.get()));
+                        node->map->blocks.erase(&node->id.get());
                         delete node;
                     }
                     else
@@ -225,9 +199,6 @@ clear_cached_data(data_block& block)
     }
 }
 
-data_block::data_block() : nodes(0), cache_clear(true), named_blocks(0)
-{
-}
 data_block::~data_block()
 {
     clear_data_block(*this);
@@ -275,20 +246,21 @@ scoped_data_block::end()
 {
     if (traversal_)
     {
+        data_traversal& traversal = *traversal_;
+
         // If GC is enabled, record which named blocks were used and clear out
         // the unused ones.
-        if (traversal_->gc_enabled && !traversal_->traversal_aborted)
+        if (traversal.gc_enabled && !traversal.traversal_aborted)
         {
-            traversal_->active_block->named_blocks
-                = traversal_->used_named_blocks;
-            delete_named_block_ref_list(traversal_->predicted_named_block);
+            traversal.active_block->named_blocks = traversal.used_named_blocks;
+            delete_named_block_ref_list(traversal.predicted_named_block);
         }
 
-        traversal_->active_block = old_active_block_;
-        traversal_->predicted_named_block = old_predicted_named_block_;
-        traversal_->used_named_blocks = old_used_named_blocks_;
-        traversal_->named_block_next_ptr = old_named_block_next_ptr_;
-        traversal_->next_data_ptr = old_next_data_ptr_;
+        traversal.active_block = old_active_block_;
+        traversal.predicted_named_block = old_predicted_named_block_;
+        traversal.used_named_blocks = old_used_named_blocks_;
+        traversal.named_block_next_ptr = old_named_block_next_ptr_;
+        traversal.next_data_ptr = old_next_data_ptr_;
 
         traversal_ = 0;
     }
@@ -350,18 +322,18 @@ find_named_block(
         throw named_block_out_of_order();
 
     // Otherwise, look it up in the map.
-    naming_map::map_type::const_iterator i = map.blocks.find(id_reference(id));
+    naming_map::map_type::const_iterator i = map.blocks.find(&id);
 
     // If it's not already in the map, create it and insert it.
     if (i == map.blocks.end())
     {
         named_block_node* new_node = new named_block_node;
-        new_node->id.store(id);
+        new_node->id.capture(id);
         new_node->map = &map;
         new_node->manual_delete = manual.value;
         i = map.blocks
                 .insert(naming_map::map_type::value_type(
-                    id_reference(new_node->id.get()), new_node))
+                    &new_node->id.get(), new_node))
                 .first;
     }
 
@@ -401,8 +373,7 @@ delete_named_block(data_graph& graph, id_interface const& id)
 {
     for (naming_map_node* i = graph.map_list; i; i = i->next)
     {
-        naming_map::map_type::const_iterator j
-            = i->map.blocks.find(id_reference(id));
+        naming_map::map_type::const_iterator j = i->map.blocks.find(&id);
         if (j != i->map.blocks.end())
         {
             named_block_node* node = j->second;
@@ -415,7 +386,7 @@ delete_named_block(data_graph& graph, id_interface const& id)
             }
             else
             {
-                i->map.blocks.erase(id_reference(id));
+                i->map.blocks.erase(&id);
                 node->map = 0;
                 delete node;
             }
@@ -517,5 +488,3 @@ loop_block::next()
 }
 
 } // namespace alia
-
-#endif

@@ -1,17 +1,16 @@
-#if : std::shared_ptrRAPH_HPP
+#ifndef ALIA_DATA_GRAPH_HPP
 #define ALIA_DATA_GRAPH_HPP
 
 #include <alia/common.hpp>
+#include <alia/context.hpp>
 #include <alia/id.hpp>
 #include <alia/signals.hpp>
 #include <cassert>
 
-#if 0
-
 // This file defines the data retrieval library used for associating mutable
-// state and cached data with alia instances. It is designed so that each node
-// emitted by an application is associated with a unique instance of data, even
-// if there is no specific external identifier for that node.
+// state and cached data with alia content graphs. It is designed so that each
+// node emitted by an application is associated with a unique instance of data,
+// even if there is no specific external identifier for that node.
 //
 // More generally, if you replace "node" with "subexpression evaluation" in the
 // previous sentence, it can be used to associate data with particular points in
@@ -51,12 +50,12 @@
 // that is made available to your function as it executes.
 //
 // One problem with all this is that sometimes a subexpression evaluation
-// (widget instance) is associated with a particular piece of input data
-// and the evaluation of that input data is not fixed within the graph
-// (e.g., it's in a list of items where you can remove or shuffle items).
-// In cases like this, we allow the application to attach an explicit ID to
-// the subgraph representing the evaluation of that expression, and we ensure
-// that that subgraph is always used where that ID is encountered.
+// (content node) is associated with a particular piece of input data and the
+// evaluation of that input data is not fixed within the graph (e.g., it's in a
+// list of items where you can remove or shuffle items). In cases like this, we
+// allow the application to attach an explicit name to the subgraph
+// representing the evaluation of that expression, and we ensure that that
+// subgraph is always used where that name is encountered.
 
 namespace alia {
 
@@ -92,7 +91,7 @@ struct typed_data_node : data_node
 
 struct named_block_ref_node;
 
-// A data_block represents an block of execution. During a single evaluation,
+// A data_block represents a block of execution. During a single evaluation,
 // either all nodes in the block are executed or all nodes are bypassed, and, if
 // executed, they are always executed in the same order. (It's conceptually
 // similar to a 'basic block' except that other nodes may be executed in between
@@ -100,24 +99,23 @@ struct named_block_ref_node;
 struct data_block : noncopyable
 {
     // the list of nodes in this block
-    data_node* nodes;
+    data_node* nodes = nullptr;
 
-    // set if the block's cache is clear
-    bool cache_clear;
+    // a flag to track if the block's cache is clear
+    bool cache_clear = true;
 
-    // list of named blocks (blocks with IDs) referenced from this data block
-    // The references maintain (shared) ownership of the named blocks.
-    // The order of the references indicates the order in which the block
-    // references appeared in the last pass. When inputs are constant, this
-    // order is also constant, and thus we can find the blocks with a very
-    // small, constant cost.
-    named_block_ref_node* named_blocks;
+    // list of named blocks referenced from this data block - The references
+    // maintain shared ownership of the named blocks. The order of the
+    // references indicates the order in which the block references appeared in
+    // the last pass. When the content graph is stable and this order is
+    // constant, we can find the blocks with a very small, constant cost.
+    named_block_ref_node* named_blocks = nullptr;
 
-    data_block();
     ~data_block();
 };
 
 // Clear all data from a data block.
+// Note that this recursively processes child blocks.
 void
 clear_data_block(data_block& block);
 
@@ -128,7 +126,7 @@ struct data_graph : noncopyable
 {
     data_block root_block;
 
-    naming_map_node* map_list;
+    naming_map_node* map_list = nullptr;
 
     // This list stores unused references to named blocks. When named block
     // references disappear from a traversal, it's possible that they've done
@@ -137,14 +135,7 @@ struct data_graph : noncopyable
     // until a complete traversal can establish new references to the named
     // blocks. They're cleaned up when someone calls gc_named_data(graph)
     // following a complete traversal.
-    named_block_ref_node* unused_named_block_refs;
-
-    // for versioning state stored in the graph
-    // local_identity identity;
-
-    data_graph() : map_list(0)
-    {
-    }
+    named_block_ref_node* unused_named_block_refs = nullptr;
 };
 
 struct naming_map;
@@ -167,21 +158,16 @@ struct data_traversal
     bool traversal_aborted;
 };
 
-// The utilities here operate on data_traversals. However, the data_graph
-// library is intended to be used to enable the development of other libraries
-// with immediate mode APIs, and while the utilities below are intended to be
-// used directly by the application developer, they are intended to be used
-// within a context defined by the larger IM library. Thus, the utilities
-// are designed to accept a generic context parameter. The only requirement is
-// that it defines the function get_data_traversal(ctx), which returns a
-// reference to a data_traversal.
-
-// If using this library directly, the data_traversal itself can server as the
-// context.
 static inline data_traversal&
-get_data_traversal(data_traversal& ctx)
+get_data_traversal(context& ctx)
 {
-    return ctx;
+    return *get_component<data_traversal_tag>(ctx);
+}
+
+static inline data_traversal&
+get_data_traversal(data_traversal& traversal)
+{
+    return traversal;
 }
 
 // A scoped_data_block activates the associated data_block at the beginning
@@ -207,9 +193,8 @@ struct scoped_data_block : noncopyable
         end();
     }
 
-    template<class Context>
     void
-    begin(Context& ctx, data_block& block)
+    begin(context& ctx, data_block& block)
     {
         begin(get_data_traversal(ctx), block);
     }
@@ -550,6 +535,11 @@ get_cached_data(Context& ctx, T** ptr)
     return true;
 }
 
+// Clear all cached data stored within a data block.
+// Note that this recursively processes child blocks.
+void
+clear_cached_data(data_block& block);
+
 // get_state is the standard interface for retrieving state from a data graph.
 // Instead of a simple pointer, it returns a signal, which will allow future
 // versions of this code to track changes in the data graph. It comes in
@@ -585,23 +575,23 @@ get_cached_data(Context& ctx, T** ptr)
 //     return make_signal(*ptr);
 // }
 
-// Another form of get_state where the initial_value is passed as a signal...
-// This is now the preferred form.
+// // Another form of get_state where the initial_value is passed as a signal...
+// // This is now the preferred form.
 
-// get_state(ctx, initial_value) returns an signal to some persistent local
-// state whose initial value is determined by the signal :initial_value. The
-// returned signal will not be gettable until :initial_value is gettable.
-template<class Context, class State>
-auto
-get_state(Context& ctx, signal<State> const& initial_value)
-{
-    auto state = get_state(ctx, optional<State>());
-    if (is_gettable(state) && !get(state) && is_gettable(initial_value))
-    {
-        set(state, some(get(initial_value)));
-    }
-    return unwrap_optional(state);
-}
+// // get_state(ctx, initial_value) returns an signal to some persistent local
+// // state whose initial value is determined by the signal :initial_value. The
+// // returned signal will not be gettable until :initial_value is gettable.
+// template<class Context, class State>
+// auto
+// get_state(Context& ctx, input<State> const& initial_value)
+// {
+//     auto state = get_state(ctx, optional<State>());
+//     if (is_gettable(state) && !get(state) && is_gettable(initial_value))
+//     {
+//         set(state, some(get(initial_value)));
+//     }
+//     return unwrap_optional(state);
+// }
 
 // get_keyed_data(ctx, key, &signal) is a utility for retrieving cached data
 // from a data graph.
@@ -651,7 +641,7 @@ refresh_keyed_data(keyed_data<Data>& data, id_interface const& key)
     if (!data.key.matches(key))
     {
         data.is_valid = false;
-        data.key.store(key);
+        data.key.capture(key);
         return true;
     }
     return false;
@@ -674,7 +664,7 @@ get(keyed_data<Data> const& data)
 }
 
 template<class Data>
-struct keyed_data_signal : signal<Data>
+struct keyed_data_signal : signal<Data, bidirectional_signal>
 {
     keyed_data_signal()
     {
@@ -683,32 +673,27 @@ struct keyed_data_signal : signal<Data>
     {
     }
     bool
-    is_gettable() const
+    is_readable() const
     {
         return data_->is_valid;
     }
     Data const&
-    get() const
+    read() const
     {
         return data_->value;
     }
-    std::shared_ptr<Data>
-    get_ptr() const
-    {
-        return std::shared_ptr<Data>(new Data(data_->value));
-    }
     id_interface const&
-    id() const
+    value_id() const
     {
         return data_->key.is_initialized() ? data_->key.get() : no_id;
     }
     bool
-    is_settable() const
+    is_writable() const
     {
         return true;
     }
     void
-    set(Data const& value) const
+    write(Data const& value) const
     {
         alia::set(*data_, value);
     }
@@ -797,11 +782,6 @@ struct scoped_data_traversal
     scoped_data_block root_block_;
     naming_context root_map_;
 };
-
-// Clear all cached data stored in the subgraph referenced from the given
-// data_block.
-void
-clear_cached_data(data_block& block);
 
 // The following are utilities that are used to implement the control flow
 // macros. They shouldn't be used directly by applications.
@@ -1010,7 +990,5 @@ is_false(T x)
     }
 
 } // namespace alia
-
-#endif
 
 #endif

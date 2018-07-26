@@ -520,7 +520,7 @@ remove_component(
 // If static checking is enabled, this generates a compile-time error if :Tag
 // isn't contained in :collection.
 template<class Tag, class Collection>
-auto&
+auto
 get_component(Collection collection)
 {
 #ifdef ALIA_STATIC_COMPONENT_CHECKING

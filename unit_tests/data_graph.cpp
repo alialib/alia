@@ -1,5 +1,3 @@
-#if 0
-
 #include <alia/data_graph.hpp>
 #include <boost/lexical_cast.hpp>
 #include <string>
@@ -414,14 +412,14 @@ do_cached_int(alia::data_traversal& ctx, int n)
 void
 do_keyed_int(alia::data_traversal& ctx, int n)
 {
-    alia::keyed_data_accessor<int_object> obj;
+    alia::keyed_data_signal<int_object> obj;
     if (get_keyed_data(ctx, alia::make_id(n), &obj))
     {
-        REQUIRE(!obj.is_gettable());
-        set(obj, int_object(n * 2));
+        REQUIRE(!obj.is_readable());
+        write_signal(obj, int_object(n * 2));
     }
     else
-        REQUIRE(get(obj).n == n * 2);
+        REQUIRE(read_signal(obj).n == n * 2);
 }
 
 void
@@ -506,56 +504,56 @@ TEST_CASE("cached_data_test", "[data_graph]")
 
 // The following tests that get_state (in its various forms) works properly.
 
-void
-do_int_state(alia::data_traversal& ctx, int n)
-{
-    alia::state_accessor<int_object> accessor = get_state(ctx, int_object(n));
-    REQUIRE(get(accessor).n == n);
-}
+// void
+// do_int_state(alia::data_traversal& ctx, int n)
+// {
+//     alia::state_signal<int_object> signal = get_state(ctx, int_object(n));
+//     REQUIRE(read_signal(signal).n == n);
+// }
 
-void
-do_alt_int_state(alia::data_traversal& ctx, int n)
-{
-    alia::state_accessor<int_object> accessor;
-    if (get_state(ctx, &accessor))
-    {
-        REQUIRE(get(accessor).n == 1);
-        set(select_field(accessor, &int_object::n), n);
-    }
-    else
-        REQUIRE(get(accessor).n == n);
-}
+// void
+// do_alt_int_state(alia::data_traversal& ctx, int n)
+// {
+//     alia::state_signal<int_object> signal;
+//     if (get_state(ctx, &signal))
+//     {
+//         REQUIRE(read_signal(signal).n == 1);
+//         write(signal->*&int_object::n, n);
+//     }
+//     else
+//         REQUIRE(read_signal(signal).n == n);
+// }
 
-void
-do_state_traversal(alia::data_graph& graph, int n)
-{
-    alia::data_traversal ctx;
-    alia::scoped_data_traversal traversal(graph, ctx);
-    do_int_state(ctx, 0);
-    alia_if(n > 2)
-    {
-        do_int_state(ctx, 12);
-    }
-    alia_end do_alt_int_state(ctx, -2);
-    alia_for(int i = 0; i < n; ++i)
-    {
-        do_int_state(ctx, i);
-    }
-    alia_end
-}
+// void
+// do_state_traversal(alia::data_graph& graph, int n)
+// {
+//     alia::data_traversal ctx;
+//     alia::scoped_data_traversal traversal(graph, ctx);
+//     do_int_state(ctx, 0);
+//     alia_if(n > 2)
+//     {
+//         do_int_state(ctx, 12);
+//     }
+//     alia_end do_alt_int_state(ctx, -2);
+//     alia_for(int i = 0; i < n; ++i)
+//     {
+//         do_int_state(ctx, i);
+//     }
+//     alia_end
+// }
 
-TEST_CASE("state_test", "[data_graph]")
-{
-    {
-        alia::data_graph graph;
+// TEST_CASE("state_test", "[data_graph]")
+// {
+//     {
+//         alia::data_graph graph;
 
-        do_state_traversal(graph, 0);
-        do_state_traversal(graph, 7);
-        do_state_traversal(graph, 1);
-        do_state_traversal(graph, 4);
-        do_state_traversal(graph, 0);
-    }
-}
+//         do_state_traversal(graph, 0);
+//         do_state_traversal(graph, 7);
+//         do_state_traversal(graph, 1);
+//         do_state_traversal(graph, 4);
+//         do_state_traversal(graph, 0);
+//     }
+// }
 
 #if 0
 
@@ -635,7 +633,5 @@ BOOST_AUTO_TEST_CASE(computing_test)
         check_foo_calls(nfc);
     }
 }
-
-#endif
 
 #endif
