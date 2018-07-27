@@ -643,7 +643,7 @@ TEST_CASE("manual deletion", "[data_graph]")
                 for (auto i : indices)
                 {
                     // Odd indices will require manual deletion.
-                    named_block nb(nc, make_id(i), manual_delete(i & 1 != 0));
+                    named_block nb(nc, make_id(i), manual_delete((i & 1) != 0));
                     do_int(ctx, i);
                 }
                 do_int(ctx, 0);
