@@ -16,12 +16,21 @@ using namespace alia;
 
 static std::stringstream log_;
 
+// Clear the log.
+// It's best to do this explicitly at the beginning of each test in case the
+// previous one failed and left the log in a bad state.
+static void
+clear_log()
+{
+    log_.str(std::string());
+}
+
 // Check that the log contains the expected contents and clear it.
 static void
 check_log(std::string const& expected_contents)
 {
     REQUIRE(log_.str() == expected_contents);
-    log_.str(std::string());
+    clear_log();
 }
 
 struct int_object
@@ -81,9 +90,13 @@ do_keyed_int(data_traversal& ctx, int n)
     {
         REQUIRE(!obj.is_readable());
         write_signal(obj, int_object(n * 2));
+        log_ << "initializing keyed int: " << n << ";";
     }
     else
+    {
         REQUIRE(read_signal(obj).n == n * 2);
+        log_ << "visiting keyed int: " << n << ";";
+    }
 }
 
 template<class Controller>
@@ -97,6 +110,7 @@ do_traversal(data_graph& graph, Controller const& controller)
 
 TEST_CASE("basic data traversal", "[data_graph]")
 {
+    clear_log();
     {
         data_graph graph;
         auto controller = [](data_traversal& ctx) { do_int(ctx, 0); };
@@ -110,6 +124,7 @@ TEST_CASE("basic data traversal", "[data_graph]")
 
 TEST_CASE("basic alia_if", "[data_graph]")
 {
+    clear_log();
     {
         data_graph graph;
         auto make_controller = [](auto condition) {
@@ -140,6 +155,7 @@ TEST_CASE("basic alia_if", "[data_graph]")
 
 TEST_CASE("alia_if/alia_else", "[data_graph]")
 {
+    clear_log();
     {
         data_graph graph;
         auto make_controller = [](auto condition) {
@@ -179,6 +195,7 @@ TEST_CASE("alia_if/alia_else", "[data_graph]")
 
 TEST_CASE("alia_if/alia_else caching", "[data_graph]")
 {
+    clear_log();
     {
         data_graph graph;
         auto make_controller = [](auto condition) {
@@ -228,6 +245,7 @@ TEST_CASE("alia_if/alia_else caching", "[data_graph]")
 
 TEST_CASE("alia_if/alia_else_if/alia_else", "[data_graph]")
 {
+    clear_log();
     {
         data_graph graph;
         auto make_controller = [](auto condition1, auto condition2) {
@@ -284,6 +302,7 @@ TEST_CASE("alia_if/alia_else_if/alia_else", "[data_graph]")
 
 TEST_CASE("alia_switch", "[data_graph]")
 {
+    clear_log();
     {
         data_graph graph;
         auto make_controller = [](auto n) {
@@ -350,406 +369,363 @@ TEST_CASE("alia_switch", "[data_graph]")
         "destructing int;");
 }
 
-// void
-// do_traversal(
-//     data_graph& graph,
-//     int n,
-//     int a,
-//     int b,
-//     int c,
-//     int d,
-//     int backwards,
-//     int reentrant)
-// {
-//     // clang-format off
-//     using namespace alia;
-//     data_traversal ctx;
-//     scoped_data_traversal sdt(graph, ctx);
-//     do_int(ctx, 0);
-//     do_int(ctx, -2);
-//     alia_if(reentrant)
-//     {
-//         do_traversal(graph, n, a, b, c, d, backwards, 0);
-//     }
-//     alia_end
-//     alia_if(b || c || d)
-//     {
-//         do_string(ctx, "x");
-//         alia_if(b)
-//         {
-//             do_string(ctx, "y");
-//             naming_context nc(ctx);
-//             if (backwards)
-//             {
-//                 for (int i = n + 3; i >= n; --i)
-//                 {
-//                     named_block nb(nc, make_id(i));
-//                     do_int(ctx, i);
-//                     do_string(ctx, "p");
-//                 }
-//             }
-//             else
-//             {
-//                 for (int i = n; i < n + 4; ++i)
-//                 {
-//                     named_block nb(nc, make_id(i));
-//                     do_int(ctx, i);
-//                     do_string(ctx, "p");
-//                 }
-//             }
-//             do_string(ctx, "z");
-//         }
-//         alia_end
-//         alia_if(c)
-//         {
-//             alia_for(int i = 0; i < n; ++i)
-//             {
-//                 do_int(ctx, i);
-//                 do_string(ctx, "q");
-//             }
-//             alia_end
-//         }
-//         alia_end
-//         do_int(ctx, 6);
-//         alia_if(d)
-//         {
-//             naming_context nc(ctx);
-//             do_int(ctx, 2);
-//             if (backwards)
-//             {
-//                 for (int i = n + 3; i >= n; --i)
-//                 {
-//                     named_block nb(nc, make_id(i));
-//                     do_int(ctx, i - 1);
-//                 }
-//             }
-//             else
-//             {
-//                 for (int i = n; i < n + 4; ++i)
-//                 {
-//                     named_block nb(nc, make_id(i));
-//                     do_int(ctx, i - 1);
-//                 }
-//             }
-//             do_string(ctx, "a");
-//         }
-//         alia_end
-//         do_int(ctx, 0);
-//         do_string(ctx, "z");
-//     }
-//     alia_else_if(a)
-//     {
-//         do_string(ctx, "alia");
-//         alia_if(reentrant)
-//         {
-//             do_traversal(graph, n, a, b, c, d, backwards, 0);
-//         }
-//         alia_end
-//         naming_context nc(ctx);
-//         if (backwards)
-//         {
-//             for (int i = n + 103; i >= n + 100; --i)
-//             {
-//                 named_block nb(nc, make_id(i), manual_delete(true));
-//                 do_int(ctx, i - 1);
-//             }
-//         }
-//         else
-//         {
-//             for (int i = n + 100; i < n + 104; ++i)
-//             {
-//                 named_block nb(nc, make_id(i), manual_delete(true));
-//                 do_int(ctx, i - 1);
-//             }
-//         }
-//         do_int(ctx, 42);
-//     }
-//     alia_else
-//     {
-//         do_int(ctx, 0);
-//         alia_if(n < 0)
-//         {
-//             int i = 0;
-//             alia_while(i-- > n)
-//             {
-//                 do_int(ctx, i);
-//             }
-//             alia_end
-//         }
-//         alia_else
-//         {
-//             alia_if(reentrant)
-//             {
-//                 do_traversal(graph, n, a, b, c, d, backwards, 0);
-//             }
-//             alia_end
-//             alia_switch(n)
-//             {
-//                 alia_case(0):
-//                     do_int(ctx, 0);
-//                     break;
-//                 alia_case(1):
-//                     do_int(ctx, 0);
-//                 alia_case(2):
-//                 alia_case(3):
-//                     do_int(ctx, 2);
-//                     break;
-//                 alia_default:
-//                     do_int(ctx, 3);
-//             }
-//             alia_end
-//         }
-//         alia_end
-//     }
-//     alia_end
-//     do_int(ctx, -1);
-// // clang-format on
-// }
+TEST_CASE("alia_for", "[data_graph]")
+{
+    clear_log();
+    {
+        data_graph graph;
+        auto make_controller = [](int n) {
+            return [=](data_traversal& ctx) {
+                ALIA_FOR(int i = 1; i <= n; ++i)
+                {
+                    do_int(ctx, i);
+                }
+                ALIA_END
+                do_int(ctx, 0);
+            };
+        };
+        do_traversal(graph, make_controller(2));
+        check_log(
+            "initializing int: 1;"
+            "initializing int: 2;"
+            "initializing int: 0;");
+        do_traversal(graph, make_controller(1));
+        check_log(
+            "visiting int: 1;"
+            "destructing int;"
+            "visiting int: 0;");
+        do_traversal(graph, make_controller(4));
+        check_log(
+            "visiting int: 1;"
+            "initializing int: 2;"
+            "initializing int: 3;"
+            "initializing int: 4;"
+            "visiting int: 0;");
+        do_traversal(graph, make_controller(0));
+        check_log(
+            "destructing int;"
+            "destructing int;"
+            "destructing int;"
+            "destructing int;"
+            "visiting int: 0;");
+        do_traversal(graph, make_controller(3));
+        check_log(
+            "initializing int: 1;"
+            "initializing int: 2;"
+            "initializing int: 3;"
+            "visiting int: 0;");
+    }
+    check_log(
+        "destructing int;"
+        "destructing int;"
+        "destructing int;"
+        "destructing int;");
+}
 
-// #define check_inits(ic, sc)                                                    \
-//     REQUIRE(n_int_inits == ic);                                                \
-//     REQUIRE(n_string_inits == sc);
+TEST_CASE("alia_while", "[data_graph]")
+{
+    clear_log();
+    {
+        data_graph graph;
+        auto make_controller = [](int n) {
+            return [=](data_traversal& ctx) {
+                int i = 1;
+                ALIA_WHILE(i <= n)
+                {
+                    do_int(ctx, i);
+                    ++i;
+                }
+                ALIA_END
+                do_int(ctx, 0);
+            };
+        };
+        do_traversal(graph, make_controller(2));
+        check_log(
+            "initializing int: 1;"
+            "initializing int: 2;"
+            "initializing int: 0;");
+        do_traversal(graph, make_controller(1));
+        check_log(
+            "visiting int: 1;"
+            "destructing int;"
+            "visiting int: 0;");
+        do_traversal(graph, make_controller(4));
+        check_log(
+            "visiting int: 1;"
+            "initializing int: 2;"
+            "initializing int: 3;"
+            "initializing int: 4;"
+            "visiting int: 0;");
+        do_traversal(graph, make_controller(0));
+        check_log(
+            "destructing int;"
+            "destructing int;"
+            "destructing int;"
+            "destructing int;"
+            "visiting int: 0;");
+        do_traversal(graph, make_controller(3));
+        check_log(
+            "initializing int: 1;"
+            "initializing int: 2;"
+            "initializing int: 3;"
+            "visiting int: 0;");
+    }
+    check_log(
+        "destructing int;"
+        "destructing int;"
+        "destructing int;"
+        "destructing int;");
+}
 
-// TEST_CASE("low_level_test", "[data_graph]")
-// {
-//     n_int_constructs = 0;
-//     n_int_destructs = 0;
-//     n_int_inits = 0;
-//     n_string_constructs = 0;
-//     n_string_destructs = 0;
-//     n_string_inits = 0;
+TEST_CASE("named blocks", "[data_graph]")
+{
+    clear_log();
+    {
+        data_graph graph;
+        auto make_controller = [](std::vector<int> indices) {
+            return [=](data_traversal& ctx) {
+                naming_context nc(ctx);
+                for (auto i : indices)
+                {
+                    named_block nb(nc, make_id(i));
+                    do_int(ctx, i);
+                }
+                do_int(ctx, 0);
+            };
+        };
+        do_traversal(graph, make_controller({1}));
+        check_log(
+            "initializing int: 1;"
+            "initializing int: 0;");
+        do_traversal(graph, make_controller({2}));
+        check_log(
+            "initializing int: 2;"
+            "visiting int: 0;"
+            "destructing int;");
+        do_traversal(graph, make_controller({1, 2}));
+        check_log(
+            "initializing int: 1;"
+            "visiting int: 2;"
+            "visiting int: 0;");
+        do_traversal(graph, make_controller({2, 3}));
+        check_log(
+            "visiting int: 2;"
+            "initializing int: 3;"
+            "visiting int: 0;"
+            "destructing int;");
+        do_traversal(graph, make_controller({2, 1, 3}));
+        check_log(
+            "visiting int: 2;"
+            "initializing int: 1;"
+            "visiting int: 3;"
+            "visiting int: 0;");
+    }
+    check_log(
+        "destructing int;"
+        "destructing int;"
+        "destructing int;"
+        "destructing int;");
+}
 
-//     {
-//         data_graph graph;
+TEST_CASE("multiple naming contexts", "[data_graph]")
+{
+    clear_log();
+    {
+        data_graph graph;
+        auto make_controller = [](std::vector<int> indices) {
+            return [=](data_traversal& ctx) {
+                {
+                    naming_context nc(ctx);
+                    for (auto i : indices)
+                    {
+                        named_block nb(nc, make_id(i));
+                        do_int(ctx, i);
+                    }
+                }
+                // Do the same thing again with the same names but with all the
+                // do_int values doubled. This would cause conflicts if they
+                // didn't have separate data from the ones above.
+                {
+                    naming_context nc(ctx);
+                    for (auto i : indices)
+                    {
+                        named_block nb(nc, make_id(i));
+                        do_int(ctx, i * 2);
+                    }
+                }
+                do_int(ctx, 0);
+            };
+        };
+        do_traversal(graph, make_controller({1}));
+        check_log(
+            "initializing int: 1;"
+            "initializing int: 2;"
+            "initializing int: 0;");
+        do_traversal(graph, make_controller({2}));
+        check_log(
+            "initializing int: 2;"
+            "initializing int: 4;"
+            "visiting int: 0;"
+            "destructing int;"
+            "destructing int;");
+        do_traversal(graph, make_controller({1, 2}));
+        check_log(
+            "initializing int: 1;"
+            "visiting int: 2;"
+            "initializing int: 2;"
+            "visiting int: 4;"
+            "visiting int: 0;");
+        do_traversal(graph, make_controller({2, 3}));
+        check_log(
+            "visiting int: 2;"
+            "initializing int: 3;"
+            "visiting int: 4;"
+            "initializing int: 6;"
+            "visiting int: 0;"
+            "destructing int;"
+            "destructing int;");
+    }
+    check_log(
+        "destructing int;"
+        "destructing int;"
+        "destructing int;"
+        "destructing int;"
+        "destructing int;");
+}
 
-//         int ic = 0, sc = 0;
+TEST_CASE("unexecuted named blocks", "[data_graph]")
+{
+    // Test that named blocks aren't GC'd if they're in unexecuted blocks.
+    clear_log();
+    {
+        data_graph graph;
+        auto make_controller = [](auto condition, std::vector<int> indices) {
+            return [=](data_traversal& ctx) {
+                ALIA_IF(condition)
+                {
+                    naming_context nc(ctx);
+                    for (auto i : indices)
+                    {
+                        named_block nb(nc, make_id(i));
+                        do_int(ctx, i);
+                    }
+                }
+                ALIA_END
+                do_int(ctx, 0);
+            };
+        };
+        do_traversal(graph, make_controller(value(true), {1}));
+        check_log(
+            "initializing int: 1;"
+            "initializing int: 0;");
+        do_traversal(graph, make_controller(value(false), {1}));
+        check_log("visiting int: 0;");
+        do_traversal(graph, make_controller(value(true), {2, 1}));
+        check_log(
+            "initializing int: 2;"
+            "visiting int: 1;"
+            "visiting int: 0;");
+    }
+    check_log(
+        "destructing int;"
+        "destructing int;"
+        "destructing int;");
+}
 
-//         // different cases in the switch statement
-//         do_traversal(graph, 0, 0, 0, 0, 0, 0, 0);
-//         ic += 5;
-//         check_inits(ic, sc);
-//         do_traversal(graph, 3, 0, 0, 0, 0, 0, 0);
-//         ic += 1;
-//         check_inits(ic, sc);
-//         do_traversal(graph, 2, 0, 0, 0, 0, 0, 0);
-//         check_inits(ic, sc);
-//         do_traversal(graph, 6, 0, 0, 0, 0, 0, 0);
-//         ic += 1;
-//         check_inits(ic, sc);
-//         do_traversal(graph, 4, 0, 0, 0, 0, 0, 0);
-//         check_inits(ic, sc);
-//         do_traversal(graph, 1, 0, 0, 0, 0, 0, 0);
-//         ic += 1;
-//         check_inits(ic, sc);
-//         do_traversal(graph, 0, 0, 0, 0, 0, 0, 0);
-//         check_inits(ic, sc);
+TEST_CASE("manual deletion", "[data_graph]")
+{
+    clear_log();
+    {
+        data_graph graph;
+        auto make_controller = [](std::vector<int> indices) {
+            return [=](data_traversal& ctx) {
+                naming_context nc(ctx);
+                for (auto i : indices)
+                {
+                    // Odd indices will require manual deletion.
+                    named_block nb(nc, make_id(i), manual_delete(i & 1 != 0));
+                    do_int(ctx, i);
+                }
+                do_int(ctx, 0);
+            };
+        };
+        do_traversal(graph, make_controller({1}));
+        check_log(
+            "initializing int: 1;"
+            "initializing int: 0;");
+        // Test that manual_delete blocks aren't GC'd when they're not seen.
+        do_traversal(graph, make_controller({2, 3}));
+        check_log(
+            "initializing int: 2;"
+            "initializing int: 3;"
+            "visiting int: 0;");
+        // Test that normal blocks are still GC'd.
+        do_traversal(graph, make_controller({1}));
+        check_log(
+            "visiting int: 1;"
+            "visiting int: 0;"
+            "destructing int;");
+        // Test that normal blocks are still GC'd.
+        do_traversal(graph, make_controller({3, 1}));
+        check_log(
+            "visiting int: 3;"
+            "visiting int: 1;"
+            "visiting int: 0;");
+        // Test that normal blocks are still GC'd.
+        do_traversal(graph, make_controller({1}));
+        check_log(
+            "visiting int: 1;"
+            "visiting int: 0;");
+        // Test manual deletion.
+        delete_named_block(graph, make_id(3));
+        check_log("destructing int;");
+        // Test that manual deletion has no effect on blocks that are still
+        // active.
+        delete_named_block(graph, make_id(1));
+        check_log("");
+        do_traversal(graph, make_controller({1}));
+        check_log(
+            "visiting int: 1;"
+            "visiting int: 0;");
+    }
+    check_log(
+        "destructing int;"
+        "destructing int;");
+}
 
-//         // different numbers of iterations in the while loop
-//         do_traversal(graph, -3, 0, 0, 0, 0, 0, 0);
-//         ic += 3;
-//         check_inits(ic, sc);
-//         do_traversal(graph, -2, 0, 0, 0, 0, 0, 0);
-//         check_inits(ic, sc);
-//         do_traversal(graph, -6, 0, 0, 0, 0, 0, 0);
-//         ic += 3;
-//         check_inits(ic, sc);
-//         do_traversal(graph, -1, 0, 0, 0, 0, 0, 0);
-//         check_inits(ic, sc);
-//         do_traversal(graph, -7, 0, 0, 0, 0, 0, 0);
-//         ic += 1;
-//         check_inits(ic, sc);
-//         do_traversal(graph, -3, 0, 0, 0, 0, 0, 0);
-//         check_inits(ic, sc);
-//         do_traversal(graph, -1, 0, 0, 0, 0, 0, 0);
-//         check_inits(ic, sc);
-//         // and one more case
-//         do_traversal(graph, 0, 0, 0, 0, 0, 0, 0);
-//         check_inits(ic, sc);
-
-//         do_traversal(graph, 0, 1, 0, 0, 0, 0, 0);
-//         ic += 5;
-//         sc += 1;
-//         check_inits(ic, sc);
-
-//         // varying numbers of iterations in the for loop
-//         do_traversal(graph, 0, 0, 0, 1, 0, 0, 0);
-//         ic += 2;
-//         sc += 2;
-//         check_inits(ic, sc);
-//         do_traversal(graph, 3, 0, 0, 1, 0, 0, 0);
-//         ic += 3;
-//         sc += 3;
-//         check_inits(ic, sc);
-//         do_traversal(graph, 12, 0, 0, 1, 0, 0, 0);
-//         ic += 9;
-//         sc += 9;
-//         check_inits(ic, sc);
-//         do_traversal(graph, 6, 0, 0, 1, 0, 0, 0);
-//         check_inits(ic, sc);
-//         do_traversal(graph, 12, 0, 0, 1, 0, 0, 0);
-//         check_inits(ic, sc);
-
-//         do_traversal(graph, 0, 0, 1, 1, 1, 0, 0);
-//         ic += 9;
-//         sc += 7;
-//         check_inits(ic, sc);
-//         // At this point, all branches have been followed, so all future
-//         // initializations are from named blocks...
-
-//         // Test that named blocks aren't deleted if they're inside unexecuted
-//         // branches.
-//         do_traversal(graph, 0, 0, 0, 0, 0, 0, 0);
-//         check_inits(ic, sc);
-//         do_traversal(graph, 0, 0, 1, 1, 1, 0, 0);
-//         check_inits(ic, sc);
-
-//         // different sets of named blocks, some in reverse order
-//         do_traversal(graph, 1, 0, 0, 0, 1, 0, 0);
-//         ic += 1;
-//         check_inits(ic, sc);
-//         do_traversal(graph, 6, 0, 0, 0, 1, 0, 0);
-//         ic += 4;
-//         check_inits(ic, sc);
-//         do_traversal(graph, 7, 0, 0, 0, 1, 1, 0);
-//         ic += 1;
-//         check_inits(ic, sc);
-//         do_traversal(graph, 1, 0, 0, 0, 1, 0, 0);
-//         ic += 4;
-//         check_inits(ic, sc);
-//         do_traversal(graph, 1, 0, 0, 0, 1, 1, 0);
-//         check_inits(ic, sc);
-//         do_traversal(graph, 1, 0, 0, 0, 1, 0, 0);
-//         check_inits(ic, sc);
-
-//         // Test that blocks with the MANUAL_DELETE flag aren't deleted if
-//         // they're not seen.
-//         do_traversal(graph, 1, 1, 0, 0, 0, 0, 0);
-//         ic += 1;
-//         check_inits(ic, sc);
-//         do_traversal(graph, 0, 1, 0, 0, 0, 0, 0);
-//         check_inits(ic, sc);
-//         do_traversal(graph, 6, 1, 0, 0, 0, 0, 0);
-//         ic += 4;
-//         check_inits(ic, sc);
-//         do_traversal(graph, 1, 1, 0, 0, 0, 0, 0);
-//         do_traversal(graph, 0, 1, 0, 0, 0, 0, 0);
-//         check_inits(ic, sc);
-//         do_traversal(graph, 1, 1, 0, 0, 0, 1, 0);
-//         check_inits(ic, sc);
-
-//         // Deleting has no effect if the named block is still being invoked.
-//         delete_named_block(graph, make_id(101));
-//         do_traversal(graph, 1, 1, 0, 0, 0, 0, 0);
-//         check_inits(ic, sc);
-
-//         // Now test that manual deletion of blocks actually works.
-//         delete_named_block(graph, make_id(100));
-//         do_traversal(graph, 0, 1, 0, 0, 0, 0, 0);
-//         ic += 1;
-//         check_inits(ic, sc);
-//         delete_named_block(graph, make_id(100));
-//         do_traversal(graph, 6, 1, 0, 0, 0, 0, 0);
-//         do_traversal(graph, 0, 1, 0, 0, 0, 0, 0);
-//         ic += 2;
-//         check_inits(ic, sc);
-//         delete_named_block(graph, make_id(106));
-//         delete_named_block(graph, make_id(107));
-//         do_traversal(graph, 6, 1, 0, 0, 0, 0, 0);
-//         ic += 2;
-//         check_inits(ic, sc);
-
-//         // Test that recursive traversals don't cause any leaks.
-//         // (There was a bug where it caused leaks with named blocks.)
-//         do_traversal(graph, 6, 0, 0, 0, 0, 0, 1);
-//         do_traversal(graph, 0, 1, 0, 0, 0, 0, 1);
-//         do_traversal(graph, 1, 0, 0, 0, 0, 0, 1);
-//     }
-
-//     REQUIRE(n_int_inits == n_int_constructs);
-//     REQUIRE(n_int_inits == n_int_destructs);
-
-//     REQUIRE(n_string_inits == n_string_constructs);
-//     REQUIRE(n_string_inits == n_string_destructs);
-// }
-
-// The following tests that the low-level mechanics of cached data work.
-
-// void
-// do_traversal(data_graph& graph, int n, int a, int b)
-// {
-//     // clang-format off
-//     data_traversal ctx;
-//     scoped_data_traversal sdt(graph, ctx);
-//     do_cached_int(ctx, 0);
-//     do_int(ctx, -2);
-//     alia_if(a)
-//     {
-//         alia_for(int i = 0; i < n; ++i)
-//         {
-//             do_cached_int(ctx, i);
-//         }
-//         alia_end do_int(ctx, 0);
-//     }
-//     alia_else_if(b)
-//     {
-//         naming_context nc(ctx);
-//         for (int i = n + 103; i >= n + 100; --i)
-//         {
-//             named_block nb(nc, make_id(i));
-//             do_int(ctx, 1 - i);
-//             do_cached_int(ctx, i - 1);
-//         }
-//         do_cached_int(ctx, 1);
-//     }
-//     alia_end
-//     alia_switch(a)
-//     {
-//         alia_case(0):
-//             do_cached_int(ctx, 0);
-//             break;
-//         alia_case(1):
-//             do_cached_int(ctx, 1);
-//             break;
-//     }
-//     alia_end
-//     do_cached_int(ctx, -1);
-//     do_keyed_int(ctx, a + b);
-//     // clang-format on
-// }
-
-// TEST_CASE("cached_data_test", "[data_graph]")
-// {
-//     n_int_constructs = 0;
-//     n_int_destructs = 0;
-//     n_int_inits = 0;
-//     n_string_constructs = 0;
-//     n_string_destructs = 0;
-//     n_string_inits = 0;
-
-//     {
-//         data_graph graph;
-
-//         int ic = 0, sc = 0;
-
-//         do_traversal(graph, 0, 0, 0);
-//         ic += 5;
-//         check_inits(ic, sc);
-//         do_traversal(graph, 3, 1, 0);
-//         ic += 6;
-//         check_inits(ic, sc);
-//         do_traversal(graph, 2, 0, 1);
-//         ic += 10;
-//         check_inits(ic, sc);
-//         do_traversal(graph, 3, 1, 0);
-//         ic += 4;
-//         check_inits(ic, sc);
-//         do_traversal(graph, 2, 0, 1);
-//         ic += 6;
-//         check_inits(ic, sc);
-//     }
-
-//     REQUIRE(n_int_constructs == n_int_destructs);
-
-//     REQUIRE(n_string_inits == n_string_constructs);
-//     REQUIRE(n_string_inits == n_string_destructs);
-// }
+TEST_CASE("keyed data", "[data_graph]")
+{
+    clear_log();
+    {
+        data_graph graph;
+        auto make_controller = [](int i) {
+            return [=](data_traversal& ctx) {
+                do_keyed_int(ctx, i);
+                do_keyed_int(ctx, 0);
+            };
+        };
+        do_traversal(graph, make_controller(1));
+        check_log(
+            // A destruction happens during every initialization.
+            "destructing int;"
+            "initializing keyed int: 1;"
+            "destructing int;"
+            "initializing keyed int: 0;");
+        do_traversal(graph, make_controller(1));
+        check_log(
+            "visiting keyed int: 1;"
+            "visiting keyed int: 0;");
+        do_traversal(graph, make_controller(2));
+        check_log(
+            "destructing int;"
+            "initializing keyed int: 2;"
+            "visiting keyed int: 0;");
+        do_traversal(graph, make_controller(2));
+        check_log(
+            "visiting keyed int: 2;"
+            "visiting keyed int: 0;");
+    }
+    check_log(
+        "destructing int;"
+        "destructing int;");
+}

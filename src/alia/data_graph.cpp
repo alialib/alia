@@ -478,8 +478,11 @@ loop_block::loop_block(data_traversal& traversal)
 }
 loop_block::~loop_block()
 {
-    if (traversal_->cache_clearing_enabled)
-        clear_cached_data(*block_);
+    // The current block is the one we were expecting to use for the next
+    // iteration, but since the destructor is being invoked, there won't be a
+    // next iteration, which means we should clear out that block.
+    if (!traversal_->traversal_aborted)
+        clear_data_block(*block_);
 }
 void
 loop_block::next()
