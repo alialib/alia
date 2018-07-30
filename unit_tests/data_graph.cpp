@@ -212,6 +212,44 @@ TEST_CASE("alia_if/alia_else", "[data_graph]")
         "destructing int;");
 }
 
+TEST_CASE("non-signal alia_if/alia_else", "[data_graph]")
+{
+    clear_log();
+    {
+        data_graph graph;
+        auto make_controller = [](auto condition) {
+            return [=](custom_context ctx) {
+                ALIA_IF(condition)
+                {
+                    do_int(ctx, 0);
+                }
+                ALIA_ELSE
+                {
+                    do_int(ctx, 1);
+                }
+                ALIA_END
+                do_int(ctx, 2);
+            };
+        };
+        do_traversal(graph, make_controller(false));
+        check_log(
+            "initializing int: 1;"
+            "initializing int: 2;");
+        do_traversal(graph, make_controller(true));
+        check_log(
+            "initializing int: 0;"
+            "visiting int: 2;");
+        do_traversal(graph, make_controller(false));
+        check_log(
+            "visiting int: 1;"
+            "visiting int: 2;");
+    }
+    check_log(
+        "destructing int;"
+        "destructing int;"
+        "destructing int;");
+}
+
 TEST_CASE("alia_if/alia_else caching", "[data_graph]")
 {
     clear_log();
@@ -374,6 +412,75 @@ TEST_CASE("alia_switch", "[data_graph]")
             "initializing cached int: 3;"
             "visiting int: -2;");
         do_traversal(graph, make_controller(value(2)));
+        check_log(
+            "visiting int: 2;"
+            "visiting cached int: 3;"
+            "visiting int: -2;");
+    }
+    check_log(
+        "destructing int;"
+        "destructing int;"
+        "destructing int;"
+        "destructing int;"
+        "destructing int;"
+        "destructing int;");
+}
+
+TEST_CASE("non-signal alia_switch", "[data_graph]")
+{
+    clear_log();
+    {
+        data_graph graph;
+        auto make_controller = [](auto n) {
+            return [=](custom_context ctx) {
+                // clang-format off
+                ALIA_SWITCH(n)
+                {
+                    ALIA_CASE(0):
+                        do_int(ctx, 0);
+                        break;
+                    ALIA_CASE(1):
+                        do_int(ctx, 1);
+                    ALIA_CASE(2):
+                    ALIA_CASE(3):
+                        do_int(ctx, 2);
+                        do_cached_int(ctx, 3);
+                        break;
+                    ALIA_DEFAULT:
+                        do_int(ctx, 4);
+                }
+                ALIA_END
+                do_int(ctx, -2);
+                // clang-format on
+            };
+        };
+        do_traversal(graph, make_controller(0));
+        check_log(
+            "initializing int: 0;"
+            "initializing int: -2;");
+        do_traversal(graph, make_controller(2));
+        check_log(
+            "initializing int: 2;"
+            "initializing cached int: 3;"
+            "visiting int: -2;");
+        do_traversal(graph, make_controller(1));
+        check_log(
+            "initializing int: 1;"
+            "visiting int: 2;"
+            "visiting cached int: 3;"
+            "visiting int: -2;");
+        do_traversal(graph, make_controller(17));
+        check_log(
+            "initializing int: 4;"
+            "visiting int: -2;"
+            "destructing int;");
+        do_traversal(graph, make_controller(1));
+        check_log(
+            "visiting int: 1;"
+            "visiting int: 2;"
+            "initializing cached int: 3;"
+            "visiting int: -2;");
+        do_traversal(graph, make_controller(2));
         check_log(
             "visiting int: 2;"
             "visiting cached int: 3;"
