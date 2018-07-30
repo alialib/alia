@@ -2,7 +2,6 @@
 #define ALIA_DATA_GRAPH_HPP
 
 #include <alia/common.hpp>
-#include <alia/context.hpp>
 #include <alia/id.hpp>
 #include <alia/signals.hpp>
 #include <cassert>
@@ -158,16 +157,20 @@ struct data_traversal
     bool traversal_aborted;
 };
 
-static inline data_traversal&
-get_data_traversal(context& ctx)
-{
-    return *get_component<data_traversal_tag>(ctx);
-}
+// The utilities here operate on data_traversals. However, the data_graph
+// library is intended to be used in scenarios where the data_traversal object
+// is part of a larger context. Thus, any utilities here that are intended to be
+// used directly by the application developer are designed to accept a generic
+// context parameter. The only requirement on that paramater is that it defines
+// the function get_data_traversal(ctx), which returns a reference to a
+// data_traversal.
 
+// If using this library directly, the data_traversal itself can serve as the
+// context.
 static inline data_traversal&
-get_data_traversal(data_traversal& traversal)
+get_data_traversal(data_traversal& ctx)
 {
-    return traversal;
+    return ctx;
 }
 
 // A scoped_data_block activates the associated data_block at the beginning
@@ -193,8 +196,9 @@ struct scoped_data_block : noncopyable
         end();
     }
 
+    template<class Context>
     void
-    begin(context& ctx, data_block& block)
+    begin(Context& ctx, data_block& block)
     {
         begin(get_data_traversal(ctx), block);
     }

@@ -48,8 +48,9 @@ struct int_object
     int n;
 };
 
+template<class Context>
 void
-do_int(data_traversal& ctx, int n)
+do_int(Context& ctx, int n)
 {
     int_object* obj;
     if (get_data(ctx, &obj))
@@ -65,8 +66,9 @@ do_int(data_traversal& ctx, int n)
     }
 }
 
+template<class Context>
 void
-do_cached_int(data_traversal& ctx, int n)
+do_cached_int(Context& ctx, int n)
 {
     int_object* obj;
     if (get_cached_data(ctx, &obj))
@@ -82,8 +84,9 @@ do_cached_int(data_traversal& ctx, int n)
     }
 }
 
+template<class Context>
 void
-do_keyed_int(data_traversal& ctx, int n)
+do_keyed_int(Context& ctx, int n)
 {
     keyed_data_signal<int_object> obj;
     if (get_keyed_data(ctx, make_id(n), &obj))
@@ -106,6 +109,22 @@ do_traversal(data_graph& graph, Controller const& controller)
     data_traversal ctx;
     scoped_data_traversal sdt(graph, ctx);
     controller(ctx);
+}
+
+// This is used to test that the utilities work with a custom context (rather
+// than invoking them directly on a data_traversal).
+struct custom_context
+{
+    custom_context(data_traversal& traversal) : traversal(traversal)
+    {
+    }
+
+    data_traversal& traversal;
+};
+static data_traversal&
+get_data_traversal(custom_context& ctx)
+{
+    return ctx.traversal;
 }
 
 TEST_CASE("basic data traversal", "[data_graph]")
@@ -159,7 +178,7 @@ TEST_CASE("alia_if/alia_else", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](auto condition) {
-            return [=](data_traversal& ctx) {
+            return [=](custom_context ctx) {
                 ALIA_IF(condition)
                 {
                     do_int(ctx, 0);
@@ -199,7 +218,7 @@ TEST_CASE("alia_if/alia_else caching", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](auto condition) {
-            return [=](data_traversal& ctx) {
+            return [=](custom_context ctx) {
                 ALIA_IF(condition)
                 {
                     do_cached_int(ctx, 0);
@@ -249,7 +268,7 @@ TEST_CASE("alia_if/alia_else_if/alia_else", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](auto condition1, auto condition2) {
-            return [=](data_traversal& ctx) {
+            return [=](custom_context ctx) {
                 ALIA_IF(condition1)
                 {
                     do_int(ctx, 0);
@@ -306,7 +325,7 @@ TEST_CASE("alia_switch", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](auto n) {
-            return [=](data_traversal& ctx) {
+            return [=](custom_context ctx) {
                 // clang-format off
                 ALIA_SWITCH(n)
                 {
@@ -375,7 +394,7 @@ TEST_CASE("alia_for", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](int n) {
-            return [=](data_traversal& ctx) {
+            return [=](custom_context ctx) {
                 ALIA_FOR(int i = 1; i <= n; ++i)
                 {
                     do_int(ctx, i);
@@ -428,7 +447,7 @@ TEST_CASE("alia_while", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](int n) {
-            return [=](data_traversal& ctx) {
+            return [=](custom_context ctx) {
                 int i = 1;
                 ALIA_WHILE(i <= n)
                 {
@@ -533,7 +552,7 @@ TEST_CASE("multiple naming contexts", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](std::vector<int> indices) {
-            return [=](data_traversal& ctx) {
+            return [=](custom_context ctx) {
                 {
                     naming_context nc(ctx);
                     for (auto i : indices)
@@ -600,7 +619,7 @@ TEST_CASE("unexecuted named blocks", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](auto condition, std::vector<int> indices) {
-            return [=](data_traversal& ctx) {
+            return [=](custom_context ctx) {
                 ALIA_IF(condition)
                 {
                     naming_context nc(ctx);
@@ -638,7 +657,7 @@ TEST_CASE("manual deletion", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](std::vector<int> indices) {
-            return [=](data_traversal& ctx) {
+            return [=](custom_context ctx) {
                 naming_context nc(ctx);
                 for (auto i : indices)
                 {
@@ -699,7 +718,7 @@ TEST_CASE("keyed data", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](int i) {
-            return [=](data_traversal& ctx) {
+            return [=](custom_context ctx) {
                 do_keyed_int(ctx, i);
                 do_keyed_int(ctx, 0);
             };
