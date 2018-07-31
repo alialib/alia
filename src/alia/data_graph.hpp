@@ -152,9 +152,6 @@ struct data_traversal
     data_node** next_data_ptr;
     bool gc_enabled;
     bool cache_clearing_enabled;
-    // If this is set, the traversal was aborted, so we shouldn't expect it
-    // to complete.
-    bool traversal_aborted;
 };
 
 // The utilities here operate on data_traversals. However, the data_graph
@@ -378,10 +375,10 @@ delete_named_block(Context& ctx, id_interface const& id)
         named_block.begin(ctx, combine_ids(make_id(&alia__dummy_static), id)); \
     }
 
-// scoped_gc_disabler disables the garbage collector within a scope of a
-// traversal. It's used when you don't intend to visit the entire active part
-// of the graph and thus don't want the garbage collector to collect the
-// unvisited parts.
+// disable_gc(traversal) disables the garbage collector for a data traversal.
+// It's used when you don't intend to visit the entire active part of the graph
+// and thus don't want the garbage collector to collect the unvisited parts.
+// It should be invoked before actually beginning a traversal.
 // When using this, if you visit named blocks, you must visit all blocks in a
 // data_block in the same order that they were last visited with the garbage
 // collector enabled. However, you don't have to finish the entire sequence.
@@ -393,35 +390,11 @@ struct named_block_out_of_order : exception
     {
     }
 };
-struct scoped_gc_disabler
+static void
+disable_gc(data_traversal& traversal)
 {
-    scoped_gc_disabler() : traversal_(0)
-    {
-    }
-    template<class Context>
-    scoped_gc_disabler(Context& ctx)
-    {
-        begin(ctx);
-    }
-    ~scoped_gc_disabler()
-    {
-        end();
-    }
-    template<class Context>
-    void
-    begin(Context& ctx)
-    {
-        begin(get_data_traversal(ctx));
-    }
-    void
-    begin(data_traversal& traversal);
-    void
-    end();
-
- private:
-    data_traversal* traversal_;
-    bool old_gc_state_;
-};
+    traversal.gc_enabled = false;
+}
 
 // Similar to scoped_gc_disabler, this will prevent the library from clearing
 // the cache of blocks that are inactive.

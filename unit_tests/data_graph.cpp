@@ -104,10 +104,13 @@ do_keyed_int(Context& ctx, int n)
 
 template<class Controller>
 void
-do_traversal(data_graph& graph, Controller const& controller)
+do_traversal(
+    data_graph& graph, Controller const& controller, bool with_gc = true)
 {
     data_traversal ctx;
     scoped_data_traversal sdt(graph, ctx);
+    if (!with_gc)
+        disable_gc(ctx);
     controller(ctx);
 }
 
@@ -751,6 +754,53 @@ TEST_CASE("unexecuted named blocks", "[data_graph]")
             "initializing int: 2;"
             "visiting int: 1;"
             "visiting int: 0;");
+    }
+    check_log(
+        "destructing int;"
+        "destructing int;"
+        "destructing int;");
+}
+
+TEST_CASE("GC disabling", "[data_graph]")
+{
+    clear_log();
+    {
+        data_graph graph;
+        auto make_controller = [](std::vector<int> indices) {
+            return [=](custom_context ctx) {
+                {
+                    naming_context nc(ctx);
+                    for (auto i : indices)
+                    {
+                        named_block nb(nc, make_id(i));
+                        do_int(ctx, i);
+                    }
+                }
+                do_int(ctx, 0);
+            };
+        };
+        // These traversals are fine because they have GC enabled.
+        do_traversal(graph, make_controller({1, 2}), true);
+        check_log(
+            "initializing int: 1;"
+            "initializing int: 2;"
+            "initializing int: 0;");
+        do_traversal(graph, make_controller({2, 1}), true);
+        check_log(
+            "visiting int: 2;"
+            "visiting int: 1;"
+            "visiting int: 0;");
+        // This traversal is fine because it maintains the previous order.
+        do_traversal(graph, make_controller({2, 1}), false);
+        check_log(
+            "visiting int: 2;"
+            "visiting int: 1;"
+            "visiting int: 0;");
+        // This traversal is an error because it tries to change the order
+        // with GC disabled.
+        REQUIRE_THROWS_AS(
+            do_traversal(graph, make_controller({1, 2}), false),
+            named_block_out_of_order);
     }
     check_log(
         "destructing int;"

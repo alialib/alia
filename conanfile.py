@@ -5,7 +5,7 @@ import os
 class CradleConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     requires = \
-        "catch/1.5.0@TyRoXx/stable", \
+        "catch2/2.3.0@bincrafters/stable", \
         "FakeIt/2.0.4@gasuketsu/stable"
     generators = "cmake"
     default_options = \

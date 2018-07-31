@@ -250,7 +250,7 @@ scoped_data_block::end()
 
         // If GC is enabled, record which named blocks were used and clear out
         // the unused ones.
-        if (traversal.gc_enabled && !traversal.traversal_aborted)
+        if (traversal.gc_enabled && !std::uncaught_exception())
         {
             traversal.active_block->named_blocks = traversal.used_named_blocks;
             delete_named_block_ref_list(traversal.predicted_named_block);
@@ -395,23 +395,6 @@ delete_named_block(data_graph& graph, id_interface const& id)
 }
 
 void
-scoped_gc_disabler::begin(data_traversal& traversal)
-{
-    traversal_ = &traversal;
-    old_gc_state_ = traversal.gc_enabled;
-    traversal.gc_enabled = false;
-}
-void
-scoped_gc_disabler::end()
-{
-    if (traversal_)
-    {
-        traversal_->gc_enabled = old_gc_state_;
-        traversal_ = 0;
-    }
-}
-
-void
 scoped_cache_clearing_disabler::begin(data_traversal& traversal)
 {
     traversal_ = &traversal;
@@ -432,7 +415,6 @@ void
 scoped_data_traversal::begin(data_graph& graph, data_traversal& traversal)
 {
     traversal.graph = &graph;
-    traversal.traversal_aborted = false;
     traversal.gc_enabled = true;
     traversal.cache_clearing_enabled = true;
     root_block_.begin(traversal, graph.root_block);
@@ -481,7 +463,7 @@ loop_block::~loop_block()
     // The current block is the one we were expecting to use for the next
     // iteration, but since the destructor is being invoked, there won't be a
     // next iteration, which means we should clear out that block.
-    if (!traversal_->traversal_aborted)
+    if (!std::uncaught_exception())
         clear_data_block(*block_);
 }
 void
