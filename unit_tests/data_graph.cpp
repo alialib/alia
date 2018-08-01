@@ -869,6 +869,60 @@ TEST_CASE("manual deletion", "[data_graph]")
         "destructing int;");
 }
 
+TEST_CASE("scoped_cache_clearing_disabler", "[data_graph]")
+{
+    clear_log();
+    {
+        data_graph graph;
+        auto make_controller = [](auto condition) {
+            return [=](custom_context ctx) {
+                {
+                    scoped_cache_clearing_disabler disabler(ctx);
+                    ALIA_IF(condition)
+                    {
+                        do_cached_int(ctx, 0);
+                    }
+                    ALIA_ELSE
+                    {
+                        do_cached_int(ctx, 1);
+                    }
+                    ALIA_END
+                }
+                ALIA_IF(condition)
+                {
+                    do_cached_int(ctx, 2);
+                }
+                ALIA_END
+            };
+        };
+        // Since we are disabling cache clearing for the first block, the 0 and
+        // 1 will persist even when their blocks go inactive.
+        do_traversal(graph, make_controller(value(false)));
+        check_log("initializing cached int: 1;");
+        do_traversal(graph, make_controller(value(true)));
+        check_log(
+            "initializing cached int: 0;"
+            "initializing cached int: 2;");
+        do_traversal(graph, make_controller(value(false)));
+        check_log(
+            "visiting cached int: 1;"
+            "destructing int;");
+        do_traversal(graph, make_controller(empty<bool>()));
+        check_log("");
+        do_traversal(graph, make_controller(value(true)));
+        check_log(
+            "visiting cached int: 0;"
+            "initializing cached int: 2;");
+        do_traversal(graph, make_controller(value(false)));
+        check_log(
+            "visiting cached int: 1;"
+            "destructing int;");
+    }
+    check_log(
+        "destructing int;"
+        "destructing int;");
+}
+
 TEST_CASE("keyed data", "[data_graph]")
 {
     clear_log();
