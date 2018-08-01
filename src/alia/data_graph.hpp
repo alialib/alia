@@ -661,12 +661,12 @@ get_keyed_data(Context& ctx, id_interface const& key, Data** data)
     bool is_new = false;
     if (get_cached_data(ctx, &ptr))
     {
-        ptr->key.store(key);
+        ptr->key.capture(key);
         is_new = true;
     }
     else if (!ptr->key.matches(key))
     {
-        ptr->key.store(key);
+        ptr->key.capture(key);
         ptr->data = Data();
         is_new = true;
     }
