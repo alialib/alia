@@ -88,19 +88,20 @@ naming_map_node::~naming_map_node()
         graph->map_list = next;
 }
 
+static void
+deactivate(named_block_ref_node& ref);
+
 // named_block_ref_nodes are stored as lists within data_blocks to hold
 // references to the named_block_nodes that occur within that block.
 // A named_block_ref_node provides ownership of the referenced node.
 struct named_block_ref_node : noncopyable
 {
-    named_block_ref_node() : node(0), next(0)
-    {
-    }
-
     ~named_block_ref_node()
     {
         if (node)
         {
+            deactivate(*this);
+
             --node->reference_count;
             if (!node->reference_count)
             {
@@ -121,13 +122,13 @@ struct named_block_ref_node : noncopyable
     }
 
     // referenced node
-    named_block_node* node;
+    named_block_node* node = nullptr;
 
     // is this reference contributing to the active count in the node?
-    bool active;
+    bool active = false;
 
     // next node in linked list
-    named_block_ref_node* next;
+    named_block_ref_node* next = nullptr;
 };
 
 static void
@@ -145,7 +146,7 @@ deactivate(named_block_ref_node& ref)
     if (ref.active)
     {
         --ref.node->active_count;
-        if (!ref.node->active_count)
+        if (ref.node->active_count == 0)
             clear_cached_data(ref.node->block);
         ref.active = false;
     }
