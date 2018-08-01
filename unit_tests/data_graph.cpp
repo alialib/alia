@@ -262,7 +262,16 @@ TEST_CASE("alia_if/alia_else caching", "[data_graph]")
             return [=](custom_context ctx) {
                 ALIA_IF(condition)
                 {
-                    do_cached_int(ctx, 0);
+                    ; // This somehow stops ClangFormat from doing weird stuff
+                      // with this block;
+                    ALIA_IF(value(true))
+                    {
+                        // This is nested inside an additional level of data
+                        // blocks, so it triggers a different case in the cache
+                        // clearing code.
+                        do_cached_int(ctx, 0);
+                    }
+                    ALIA_END
                 }
                 ALIA_ELSE
                 {
@@ -356,6 +365,41 @@ TEST_CASE("alia_if/alia_else_if/alia_else", "[data_graph]")
     check_log(
         "destructing int;"
         "destructing int;"
+        "destructing int;"
+        "destructing int;");
+}
+
+TEST_CASE("alia_pass_dependent_if", "[data_graph]")
+{
+    clear_log();
+    {
+        data_graph graph;
+        auto make_controller = [](auto condition) {
+            return [=](data_traversal& ctx) {
+                ALIA_PASS_DEPENDENT_IF(condition)
+                {
+                    do_cached_int(ctx, 0);
+                }
+                ALIA_END
+                do_int(ctx, 1);
+            };
+        };
+        do_traversal(graph, make_controller(value(false)));
+        check_log("initializing int: 1;");
+        do_traversal(graph, make_controller(value(true)));
+        check_log(
+            "initializing cached int: 0;"
+            "visiting int: 1;");
+        do_traversal(graph, make_controller(value(false)));
+        check_log("visiting int: 1;");
+        do_traversal(graph, make_controller(empty<bool>()));
+        check_log("visiting int: 1;");
+        do_traversal(graph, make_controller(value(true)));
+        check_log(
+            "visiting cached int: 0;"
+            "visiting int: 1;");
+    }
+    check_log(
         "destructing int;"
         "destructing int;");
 }
