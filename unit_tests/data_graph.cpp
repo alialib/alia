@@ -98,6 +98,7 @@ do_keyed_int(Context& ctx, int n)
     else
     {
         REQUIRE(read_signal(obj).n == n * 2);
+        REQUIRE(obj.value_id() == make_id(n));
         log_ << "visiting keyed int: " << n << ";";
     }
 }
