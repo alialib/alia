@@ -701,6 +701,59 @@ TEST_CASE("named blocks", "[data_graph]")
         "destructing int;");
 }
 
+TEST_CASE("mobile named blocks", "[data_graph]")
+{
+    clear_log();
+    {
+        data_graph graph;
+        auto make_controller = [](std::vector<int> indices, int divider) {
+            return [=](data_traversal& ctx) {
+                naming_context nc(ctx);
+                ALIA_FOR(auto i : indices)
+                {
+                    ;
+                    ALIA_IF(i < divider)
+                    {
+                        named_block nb(nc, make_id(i));
+                        do_int(ctx, i);
+                    }
+                    ALIA_END
+                }
+                ALIA_END
+                ALIA_FOR(auto i : indices)
+                {
+                    ;
+                    ALIA_IF(i >= divider)
+                    {
+                        named_block nb(nc, make_id(i));
+                        do_int(ctx, i);
+                    }
+                    ALIA_END
+                }
+                ALIA_END
+            };
+        };
+        do_traversal(graph, make_controller({3, 2, 1}, 2));
+        check_log(
+            "initializing int: 1;"
+            "initializing int: 3;"
+            "initializing int: 2;");
+        do_traversal(graph, make_controller({3, 2, 1}, 3));
+        check_log(
+            "visiting int: 2;"
+            "visiting int: 1;"
+            "visiting int: 3;");
+        do_traversal(graph, make_controller({3, 1}, 3));
+        check_log(
+            "visiting int: 1;"
+            "visiting int: 3;");
+    }
+    check_log(
+        "destructing int;"
+        "destructing int;"
+        "destructing int;");
+}
+
 TEST_CASE("multiple naming contexts", "[data_graph]")
 {
     clear_log();
