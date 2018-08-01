@@ -42,7 +42,6 @@ struct exception : std::exception
 {
     exception(std::string const& msg) : msg_(new std::string(msg))
     {
-        std::cout << msg << std::endl;
     }
 
     ~exception() throw()
