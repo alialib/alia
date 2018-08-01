@@ -395,6 +395,12 @@ delete_named_block(data_graph& graph, id_interface const& id)
 }
 
 void
+disable_gc(data_traversal& traversal)
+{
+    traversal.gc_enabled = false;
+}
+
+void
 scoped_cache_clearing_disabler::begin(data_traversal& traversal)
 {
     traversal_ = &traversal;

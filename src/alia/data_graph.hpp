@@ -390,11 +390,8 @@ struct named_block_out_of_order : exception
     {
     }
 };
-static void
-disable_gc(data_traversal& traversal)
-{
-    traversal.gc_enabled = false;
-}
+void
+disable_gc(data_traversal& traversal);
 
 // Similar to scoped_gc_disabler, this will prevent the library from clearing
 // the cache of blocks that are inactive.
