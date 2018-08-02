@@ -220,8 +220,8 @@ is_writable(Wrapped const& wrapped)
 }
 
 // add_fallback(primary, fallback), where :primary and :fallback are both
-// signals, yields another signal whose value is that of :primary if it's ready
-// and that of :fallback otherwise.
+// signals, yields another signal whose value is that of :primary if it's
+// readable and that of :fallback otherwise.
 // All writes go directly to :primary.
 template<class Primary, class Fallback>
 struct fallback_signal
