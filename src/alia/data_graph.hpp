@@ -164,7 +164,7 @@ struct data_traversal
 
 // If using this library directly, the data_traversal itself can serve as the
 // context.
-static inline data_traversal&
+inline data_traversal&
 get_data_traversal(data_traversal& ctx)
 {
     return ctx;
@@ -333,12 +333,12 @@ struct naming_context : noncopyable
     data_traversal* traversal_;
     naming_map* map_;
 };
-static inline data_traversal&
+inline data_traversal&
 get_data_traversal(naming_context& ctx)
 {
     return ctx.traversal();
 }
-static inline naming_map&
+inline naming_map&
 get_naming_map(naming_context& ctx)
 {
     return ctx.map();

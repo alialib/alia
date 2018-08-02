@@ -49,7 +49,7 @@ struct event_routing_traversal
     event_routing_path* path_to_target;
 };
 
-static inline routing_region_ptr
+inline routing_region_ptr
 get_active_region(event_routing_traversal const& traversal)
 {
     return traversal.active_region ? *traversal.active_region
