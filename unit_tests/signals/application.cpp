@@ -6,10 +6,10 @@
 
 #include <alia/signals/basic.hpp>
 
+using namespace alia;
+
 TEST_CASE("lazy_apply", "[signals]")
 {
-    using namespace alia;
-
     auto s1 = lazy_apply([](int i) { return 2 * i; }, value(1));
 
     typedef decltype(s1) signal_t1;
@@ -43,7 +43,6 @@ TEST_CASE("lazy_apply", "[signals]")
 
 TEST_CASE("alia_method", "[signals]")
 {
-    using namespace alia;
     auto v = text("test text");
     REQUIRE(read_signal(lazy_apply(alia_method(length), v)) == 9);
 }

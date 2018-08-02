@@ -4,10 +4,10 @@
 
 #include <alia/signals/basic.hpp>
 
+using namespace alia;
+
 TEST_CASE("signal_direction_is_compatible", "[signals]")
 {
-    using namespace alia;
-
 #define TEST_COMPATIBILITY(Expected, Actual, result)                           \
     REQUIRE(                                                                   \
         (signal_direction_is_compatible<Expected, Actual>::value) == (result))
@@ -25,8 +25,6 @@ TEST_CASE("signal_direction_is_compatible", "[signals]")
 
 TEST_CASE("signal_direction_intersection", "[signals]")
 {
-    using namespace alia;
-
 #define TEST_INTERSECTION(A, B, Result)                                        \
     REQUIRE((std::is_same<signal_direction_intersection<A, B>::type, Result>:: \
                  value))
@@ -45,8 +43,6 @@ TEST_CASE("signal_direction_intersection", "[signals]")
 
 TEST_CASE("signal_direction_union", "[signals]")
 {
-    using namespace alia;
-
 #define TEST_UNION(A, B, Result)                                               \
     REQUIRE((std::is_same<signal_direction_union<A, B>::type, Result>::value))
 
@@ -64,8 +60,6 @@ TEST_CASE("signal_direction_union", "[signals]")
 
 TEST_CASE("is_signal_type", "[signals]")
 {
-    using namespace alia;
-
     REQUIRE(is_signal_type<input<int>>::value);
     REQUIRE(is_signal_type<output<int>>::value);
     REQUIRE(is_signal_type<bidirectional<int>>::value);
@@ -75,8 +69,6 @@ TEST_CASE("is_signal_type", "[signals]")
 
 TEST_CASE("signal_can_read", "[signals]")
 {
-    using namespace alia;
-
     REQUIRE(signal_can_read<input<int>>::value);
     REQUIRE(!signal_can_read<output<int>>::value);
     REQUIRE(signal_can_read<bidirectional<int>>::value);
@@ -84,8 +76,6 @@ TEST_CASE("signal_can_read", "[signals]")
 
 TEST_CASE("is_readable_signal_type", "[signals]")
 {
-    using namespace alia;
-
     REQUIRE(is_readable_signal_type<input<int>>::value);
     REQUIRE(!is_readable_signal_type<output<int>>::value);
     REQUIRE(is_readable_signal_type<bidirectional<int>>::value);
@@ -95,8 +85,6 @@ TEST_CASE("is_readable_signal_type", "[signals]")
 
 TEST_CASE("signal_can_write", "[signals]")
 {
-    using namespace alia;
-
     REQUIRE(!signal_can_write<input<int>>::value);
     REQUIRE(signal_can_write<output<int>>::value);
     REQUIRE(signal_can_write<bidirectional<int>>::value);
@@ -104,8 +92,6 @@ TEST_CASE("signal_can_write", "[signals]")
 
 TEST_CASE("is_writable_signal_type", "[signals]")
 {
-    using namespace alia;
-
     REQUIRE(!is_writable_signal_type<input<int>>::value);
     REQUIRE(is_writable_signal_type<output<int>>::value);
     REQUIRE(is_writable_signal_type<bidirectional<int>>::value);
@@ -115,8 +101,6 @@ TEST_CASE("is_writable_signal_type", "[signals]")
 
 TEST_CASE("signal_ref", "[signals]")
 {
-    using namespace alia;
-
     int x = 1;
     auto y = direct(x);
     signal_ref<int, bidirectional_signal> s = y;
@@ -151,8 +135,6 @@ f_bidirectional(alia::bidirectional<int> x)
 
 TEST_CASE("signal parameter passing", "[signals]")
 {
-    using namespace alia;
-
     auto read_only = value(0);
     int x = 0;
     auto bidirectional = direct(x);
