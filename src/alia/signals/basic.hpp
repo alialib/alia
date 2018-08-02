@@ -88,6 +88,38 @@ value(Value const& v)
     return value_signal<Value>(v);
 }
 
+// This is a special overload of value() for C-style string literals.
+struct string_literal_signal : signal<std::string, read_only_signal>
+{
+    string_literal_signal(char const* x) : text_(x)
+    {
+    }
+    id_interface const&
+    value_id() const
+    {
+        return unit_id;
+    }
+    bool
+    is_readable() const
+    {
+        return true;
+    }
+    std::string const&
+    read() const
+    {
+        return lazy_reader_.read([&] { return std::string(text_); });
+    }
+
+ private:
+    char const* text_;
+    lazy_reader<std::string> lazy_reader_;
+};
+inline string_literal_signal
+value(char const* text)
+{
+    return string_literal_signal(text);
+}
+
 // direct(x) creates a bidirectional signal that directly exposes the value of
 // x.
 template<class Value>
@@ -126,34 +158,6 @@ direct(Value& x)
 {
     return direct_signal<Value>(&x);
 }
-
-// text(x), where x is a string constant, creates a read-only signal for
-// accessing x as a string.
-struct text : signal<std::string, read_only_signal>
-{
-    text(char const* x) : text_(x)
-    {
-    }
-    id_interface const&
-    value_id() const
-    {
-        return unit_id;
-    }
-    bool
-    is_readable() const
-    {
-        return true;
-    }
-    std::string const&
-    read() const
-    {
-        return lazy_reader_.read([&] { return std::string(text_); });
-    }
-
- private:
-    char const* text_;
-    lazy_reader<std::string> lazy_reader_;
-};
 
 } // namespace alia
 

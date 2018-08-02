@@ -50,9 +50,9 @@ TEST_CASE("direct signal", "[signals]")
     REQUIRE(read_signal(s) == 0);
 }
 
-TEST_CASE("text signal", "[signals]")
+TEST_CASE("string literal signal", "[signals]")
 {
-    auto s = text("hello");
+    auto s = value("hello");
 
     typedef decltype(s) signal_t;
     REQUIRE(signal_can_read<signal_t>::value);
