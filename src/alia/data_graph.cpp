@@ -343,7 +343,6 @@ find_named_block(
 
     // Create a new reference node to record the node's usage within this
     // data_block.
-    // TODO: Allocate these from a pool.
     named_block_ref_node* ref = new named_block_ref_node;
     ref->node = node;
     ref->active = false;
