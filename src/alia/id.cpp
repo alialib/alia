@@ -3,7 +3,7 @@
 
 namespace alia {
 
-static inline bool
+inline bool
 types_match(id_interface const& a, id_interface const& b)
 {
     return typeid(a).name() == typeid(b).name() || typeid(a) == typeid(b);

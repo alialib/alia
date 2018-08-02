@@ -241,7 +241,7 @@ lambda_bidirectional(
 
 // This is just a clear and concise way of indicating that a lambda signal is
 // always readable.
-static inline bool
+inline bool
 always_readable()
 {
     return true;
@@ -249,7 +249,7 @@ always_readable()
 
 // This is just a clear and concise way of indicating that a lambda signal is
 // always writable.
-static inline bool
+inline bool
 always_writable()
 {
     return true;
