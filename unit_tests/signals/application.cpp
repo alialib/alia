@@ -43,6 +43,6 @@ TEST_CASE("lazy_apply", "[signals]")
 
 TEST_CASE("alia_method", "[signals]")
 {
-    auto v = text("test text");
+    auto v = value("test text");
     REQUIRE(read_signal(lazy_apply(alia_method(length), v)) == 9);
 }
