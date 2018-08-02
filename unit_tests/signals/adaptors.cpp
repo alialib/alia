@@ -7,10 +7,10 @@
 
 #include <catch.hpp>
 
+using namespace alia;
+
 TEST_CASE("fake_readability", "[signals]")
 {
-    using namespace alia;
-
     {
         auto s = fake_readability(
             lambda_input([&]() { return true; }, [&]() { return 0; }));
@@ -45,8 +45,6 @@ TEST_CASE("fake_readability", "[signals]")
 
 TEST_CASE("fake_writability", "[signals]")
 {
-    using namespace alia;
-
     {
         auto s = fake_writability(
             lambda_input([&]() { return true; }, [&]() { return 0; }));
@@ -80,8 +78,6 @@ TEST_CASE("fake_writability", "[signals]")
 
 TEST_CASE("signal_cast", "[signals]")
 {
-    using namespace alia;
-
     int x = 1;
     auto s = signal_cast<double>(direct(x));
 
@@ -99,8 +95,6 @@ TEST_CASE("signal_cast", "[signals]")
 
 TEST_CASE("is_readable", "[signals]")
 {
-    using namespace alia;
-
     bool readable = false;
     int x = 1;
 
@@ -130,8 +124,6 @@ TEST_CASE("is_readable", "[signals]")
 
 TEST_CASE("is_writable", "[signals]")
 {
-    using namespace alia;
-
     bool writable = false;
     int x = 1;
 
@@ -167,8 +159,6 @@ TEST_CASE("is_writable", "[signals]")
 
 TEST_CASE("add_fallback", "[signals]")
 {
-    using namespace alia;
-
     int p = 1;
     int f = 0;
     auto make_fallback = [&](bool primary_readable,
