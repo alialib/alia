@@ -870,6 +870,15 @@ read(T const& x)
 
 #define ALIA_ELSE ALIA_ELSE_(ctx)
 
+#ifdef ALIA_LOWERCASE_MACROS
+#define alia_if_(ctx, condition) ALIA_IF_(ctx, condition)
+#define alia_if(condition) ALIA_IF(condition)
+#define alia_else_if_(ctx, condition) ALIA_ELSE_IF_(ctx, condition)
+#define alia_else_if(condition) ALIA_ELSE_IF(condition)
+#define alia_else_(ctx) ALIA_ELSE(ctx)
+#define alia_else ALIA_ELSE
+#endif
+
 // pass_dependent_if - This is used for tests that involve conditions that
 // change from one pass to another. It does not clear out cached data within
 // the block if it's skipped.
@@ -885,6 +894,12 @@ read(T const& x)
 
 #define ALIA_PASS_DEPENDENT_IF(condition)                                      \
     ALIA_PASS_DEPENDENT_IF_(ctx, condition)
+
+#ifdef ALIA_LOWERCASE_MACROS
+#define alia_pass_dependent_if_(ctx, condition)                                \
+    ALIA_PASS_DEPENDENT_IF_(ctx, condition)
+#define alia_pass_dependent_if(condition) ALIA_PASS_DEPENDENT_IF(condition)
+#endif
 
 // switch
 
@@ -913,6 +928,13 @@ read(T const& x)
         goto ALIA_CONCATENATE(alia__dummy_label_, __LINE__);                   \
         ALIA_CONCATENATE(alia__dummy_label_, __LINE__)
 
+#ifdef ALIA_LOWERCASE_MACROS
+#define alia_switch_(ctx, x) ALIA_SWITCH_(ctx, x)
+#define alia_switch(x) ALIA_SWITCH(x)
+#define alia_case(c) ALIA_CASE(c)
+#define alia_default ALIA_DEFAULT
+#endif
+
 // for
 
 #define ALIA_FOR_(ctx, x)                                                      \
@@ -927,6 +949,11 @@ read(T const& x)
                 alia__looper.next();
 
 #define ALIA_FOR(x) ALIA_FOR_(ctx, x)
+
+#ifdef ALIA_LOWERCASE_MACROS
+#define alia_for_(ctx, x) ALIA_FOR_(ctx, x)
+#define alia_for(x) ALIA_FOR(x)
+#endif
 
 // while
 
@@ -943,12 +970,21 @@ read(T const& x)
 
 #define ALIA_WHILE(x) ALIA_WHILE_(ctx, x)
 
+#ifdef ALIA_LOWERCASE_MACROS
+#define alia_while_(ctx, x) ALIA_WHILE_(ctx, x)
+#define alia_while(x) ALIA_WHILE(x)
+#endif
+
 // end
 
 #define ALIA_END                                                               \
     }                                                                          \
     }                                                                          \
     }
+
+#ifdef ALIA_LOWERCASE_MACROS
+#define alia_end ALIA_END
+#endif
 
 } // namespace alia
 
