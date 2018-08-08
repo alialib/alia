@@ -73,7 +73,7 @@ TEST_CASE("id_ref", "[id]")
     test_different_ids(ref(make_id(0)), ref(make_id(1)));
 }
 
-TEST_CASE("captured_id", "[id]")
+TEST_CASE("captured_id basics", "[id]")
 {
     captured_id c;
     REQUIRE(!c.is_initialized());
@@ -85,6 +85,11 @@ TEST_CASE("captured_id", "[id]")
     REQUIRE(c.get() == make_id(0));
     c.clear();
     REQUIRE(!c.is_initialized());
+}
+
+TEST_CASE("captured_id operators", "[id]")
+{
+    captured_id c;
     c.capture(make_id(0));
     captured_id d;
     REQUIRE(c != d);
@@ -94,6 +99,72 @@ TEST_CASE("captured_id", "[id]")
     REQUIRE(c != d);
     REQUIRE(c < d);
     REQUIRE(boost::lexical_cast<std::string>(c) == "0");
+}
+
+TEST_CASE("captured_id copy construction", "[id]")
+{
+    captured_id c;
+    c.capture(make_id(0));
+    captured_id d = c;
+    REQUIRE(d == c);
+    // Check that d is independent of changes in c.
+    c.capture(make_id(1));
+    REQUIRE(d != c);
+
+    c.clear();
+    captured_id e = c;
+    REQUIRE(e == c);
+    // Check that e is independent of changes in c.
+    c.capture(make_id(1));
+    REQUIRE(e != c);
+}
+
+TEST_CASE("captured_id move construction", "[id]")
+{
+    captured_id c;
+    c.capture(make_id(0));
+    captured_id d = std::move(c);
+    REQUIRE(d.matches(make_id(0)));
+
+    captured_id e;
+    e.clear();
+    captured_id f = std::move(e);
+    REQUIRE(!f.is_initialized());
+}
+
+TEST_CASE("captured_id copy assignment", "[id]")
+{
+    captured_id c;
+    c.capture(make_id(0));
+    captured_id d;
+    d = c;
+    REQUIRE(d == c);
+    // Check that d is independent of changes in c.
+    c.capture(make_id(1));
+    REQUIRE(d != c);
+
+    c.clear();
+    captured_id e;
+    e = c;
+    REQUIRE(e == c);
+    // Check that e is independent of changes in c.
+    c.capture(make_id(1));
+    REQUIRE(e != c);
+}
+
+TEST_CASE("captured_id move assignment", "[id]")
+{
+    captured_id c;
+    c.capture(make_id(0));
+    captured_id d;
+    d = std::move(c);
+    REQUIRE(d.matches(make_id(0)));
+
+    captured_id e;
+    e.clear();
+    captured_id f;
+    f = std::move(e);
+    REQUIRE(!f.is_initialized());
 }
 
 TEST_CASE("combine_ids x1", "[id]")
