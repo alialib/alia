@@ -773,6 +773,26 @@ struct loop_block : noncopyable
 // takes the context as its first argument. The other form has no trailing
 // underscore and assumes that the context is a variable named 'ctx'.
 
+// is_readable(x), where x is a readable signal type, calls signal_is_readable.
+template<class T>
+std::enable_if_t<is_readable_signal_type<T>::value, bool>
+is_readable(T const& x)
+{
+    return signal_is_readable(x);
+}
+
+// read(x), where x is a readable signal type, calls read_signal.
+template<class T>
+std::enable_if_t<is_readable_signal_type<T>::value, typename T::value_type>
+read(T const& x)
+{
+    return read_signal(x);
+}
+
+// ALIA_STRICT_CONDITIONALS disables the definitions that allow non-signals to
+// be used in if/else/switch macros.
+#ifndef ALIA_STRICT_CONDITIONALS
+
 // is_true(x) evaluates x in a boolean context.
 template<class T>
 std::enable_if_t<!is_signal_type<T>::value, bool>
@@ -789,28 +809,12 @@ is_false(T x)
     return x ? false : true;
 }
 
-// is_readable(x), where x is a readable signal type, calls signal_is_readable.
-template<class T>
-std::enable_if_t<is_readable_signal_type<T>::value, bool>
-is_readable(T const& x)
-{
-    return signal_is_readable(x);
-}
-
 // is_readable(x), where x is NOT a signal type, always returns true.
 template<class T>
 std::enable_if_t<!is_signal_type<T>::value, bool>
 is_readable(T const& x)
 {
     return true;
-}
-
-// read(x), where x is a readable signal type, calls read_signal.
-template<class T>
-std::enable_if_t<is_readable_signal_type<T>::value, typename T::value_type>
-read(T const& x)
-{
-    return read_signal(x);
 }
 
 // read(x), where x is NOT a signal type, simply returns x.
@@ -820,6 +824,8 @@ read(T const& x)
 {
     return x;
 }
+
+#endif
 
 // if, else_if, else
 
