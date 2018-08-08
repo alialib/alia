@@ -2,10 +2,10 @@
 
 #include <catch.hpp>
 
+using namespace alia;
+
 TEST_CASE("lambda input signal", "[signals]")
 {
-    using namespace alia;
-
     auto s = lambda_input(always_readable, []() { return 1; });
 
     typedef decltype(s) signal_t;
@@ -18,8 +18,6 @@ TEST_CASE("lambda input signal", "[signals]")
 
 TEST_CASE("lambda input signal with ID", "[signals]")
 {
-    using namespace alia;
-
     auto s = lambda_input(
         always_readable, []() { return 1; }, []() { return unit_id; });
 
@@ -34,8 +32,6 @@ TEST_CASE("lambda input signal with ID", "[signals]")
 
 TEST_CASE("lambda bidirectional signal", "[signals]")
 {
-    using namespace alia;
-
     int x = 1;
 
     auto s = lambda_bidirectional(
@@ -59,8 +55,6 @@ TEST_CASE("lambda bidirectional signal", "[signals]")
 
 TEST_CASE("lambda bidirectional signal with ID", "[signals]")
 {
-    using namespace alia;
-
     int x = 1;
 
     auto s = lambda_bidirectional(

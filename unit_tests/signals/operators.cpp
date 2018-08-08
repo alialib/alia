@@ -10,10 +10,10 @@
 #include <alia/signals/lambdas.hpp>
 #include <alia/signals/utilities.hpp>
 
+using namespace alia;
+
 TEST_CASE("basic signal operators", "[signals]")
 {
-    using namespace alia;
-
     REQUIRE(is_true(value(2) == value(2)));
     REQUIRE(is_false(value(6) == value(2)));
     REQUIRE(is_true(value(6) != value(2)));
@@ -46,8 +46,6 @@ TEST_CASE("basic signal operators", "[signals]")
 
 TEST_CASE("signal &&", "[signals]")
 {
-    using namespace alia;
-
     REQUIRE(is_true(value(true) && value(true)));
     REQUIRE(is_false(value(true) && value(false)));
     REQUIRE(is_false(value(false) && value(true)));
@@ -77,8 +75,6 @@ TEST_CASE("signal &&", "[signals]")
 
 TEST_CASE("signal ||", "[signals]")
 {
-    using namespace alia;
-
     REQUIRE(is_true(value(true) || value(true)));
     REQUIRE(is_true(value(true) || value(false)));
     REQUIRE(is_true(value(false) || value(true)));
@@ -108,8 +104,6 @@ TEST_CASE("signal ||", "[signals]")
 
 TEST_CASE("signal select", "[signals]")
 {
-    using namespace alia;
-
     bool condition = false;
     auto s = select(direct(condition), value(1), value(2));
 
@@ -128,8 +122,6 @@ TEST_CASE("signal select", "[signals]")
 
 TEST_CASE("select with different directions", "[signals]")
 {
-    using namespace alia;
-
     bool condition = false;
     auto s = select(direct(condition), empty<int>(), value(2));
 
@@ -148,8 +140,6 @@ TEST_CASE("select value ID", "[signals]")
     // Test that select's ID changes when the condition changes, even if both of
     // its input signals are producing the same value ID.
 
-    using namespace alia;
-
     bool condition = false;
     auto s = select(direct(condition), value(2), value(2));
 
@@ -160,8 +150,6 @@ TEST_CASE("select value ID", "[signals]")
 
 TEST_CASE("select with unreadable condition", "[signals]")
 {
-    using namespace alia;
-
     int x = 0, y = 1;
     auto s = select(empty<bool>(), direct(x), direct(y));
     REQUIRE(!signal_is_readable(s));
@@ -171,8 +159,6 @@ TEST_CASE("select with unreadable condition", "[signals]")
 
 TEST_CASE("writable select", "[signals]")
 {
-    using namespace alia;
-
     bool condition = false;
     int x = 1;
     int y = 2;
@@ -199,8 +185,6 @@ TEST_CASE("writable select", "[signals]")
 
 TEST_CASE("field signal", "[signals]")
 {
-    using namespace alia;
-
     struct foo
     {
         int x;

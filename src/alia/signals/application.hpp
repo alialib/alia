@@ -1,6 +1,7 @@
 #ifndef ALIA_SIGNALS_APPLICATION_HPP
 #define ALIA_SIGNALS_APPLICATION_HPP
 
+#include <alia/context.hpp>
 #include <alia/signals/utilities.hpp>
 
 namespace alia {
@@ -94,6 +95,154 @@ lazy_apply(Function const& f, Arg0 const& arg0, Arg1 const& arg1)
         Function,
         Arg0,
         Arg1>(f, arg0, arg1);
+}
+
+template<class Function>
+auto
+lazy_lift(Function const& f)
+{
+    return [=](auto&&... args) { return lazy_apply(f, args...); };
+}
+
+// apply(ctx, f, args...), where :args are all signals, yields a signal to the
+// result of applying the function :f to the values of :args. Unlike lazy_apply,
+// this is eager and caches and the result.
+
+enum class apply_status
+{
+    UNCOMPUTED,
+    READY,
+    FAILED
+};
+
+template<class Value>
+struct apply_result_data
+{
+    int result_version;
+    Value result;
+    apply_status status = apply_status::UNCOMPUTED;
+};
+
+template<class Value>
+void
+reset(apply_result_data<Value>& data)
+{
+    if (data.status != apply_status::UNCOMPUTED)
+    {
+        ++data.result_version;
+        data.status = apply_status::UNCOMPUTED;
+    }
+}
+
+template<class Value>
+struct apply_signal : signal<Value, read_only_signal>
+{
+    apply_signal()
+    {
+    }
+    apply_signal(apply_result_data<Value>& data) : data_(&data)
+    {
+    }
+    id_interface const&
+    value_id() const
+    {
+        id_ = make_id(data_->result_version);
+        return id_;
+    }
+    bool
+    is_readable() const
+    {
+        return data_->status == apply_status::READY;
+    }
+    Value const&
+    read() const
+    {
+        return data_->result;
+    }
+    bool
+    is_writable() const
+    {
+        return false;
+    }
+    void
+    write(Value const& value) const
+    {
+    }
+
+ private:
+    apply_result_data<Value>* data_;
+    mutable simple_id<int> id_;
+};
+
+template<class Value>
+apply_signal<Value>
+make_apply_signal(apply_result_data<Value>& data)
+{
+    return apply_signal<Value>(data);
+}
+
+template<class Result>
+void
+process_apply_args(
+    context ctx, apply_result_data<Result>& data, bool& args_ready)
+{
+}
+template<class Result, class Arg, class... Rest>
+void
+process_apply_args(
+    context ctx,
+    apply_result_data<Result>& data,
+    bool& args_ready,
+    Arg const& arg,
+    Rest const&... rest)
+{
+    captured_id* cached_id;
+    get_cached_data(ctx, &cached_id);
+    if (!signal_is_readable(arg))
+    {
+        reset(data);
+        args_ready = false;
+    }
+    else if (!cached_id->matches(arg.value_id()))
+    {
+        reset(data);
+        cached_id->capture(arg.value_id());
+    }
+    process_apply_args(ctx, data, args_ready, rest...);
+}
+
+template<class Function, class... Args>
+auto
+apply(context ctx, Function const& f, Args const&... args)
+{
+    apply_result_data<decltype(f(read_signal(args)...))>* data_ptr;
+    get_cached_data(ctx, &data_ptr);
+    auto& data = *data_ptr;
+    if (is_refresh_pass(ctx))
+    {
+        bool args_ready = true;
+        process_apply_args(ctx, data, args_ready, args...);
+        if (data.status == apply_status::UNCOMPUTED && args_ready)
+        {
+            try
+            {
+                data.result = f(read_signal(args)...);
+                data.status = apply_status::READY;
+            }
+            catch (...)
+            {
+                data.status = apply_status::FAILED;
+            }
+        }
+    }
+    return make_apply_signal(data);
+}
+
+template<class Function>
+auto
+lift(context ctx, Function const& f)
+{
+    return [=](auto&&... args) { return apply(ctx, f, args...); };
 }
 
 // alia_method(m) wraps a method name in a lambda so that it can be passed as a

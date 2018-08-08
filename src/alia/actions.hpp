@@ -32,7 +32,7 @@ struct action
 };
 
 // Perform an action.
-void static inline perform_action(action const& a)
+void inline perform_action(action const& a)
 {
     assert(a.is_ready());
     a.perform();
@@ -67,7 +67,8 @@ struct action_ref : action
 // ref(action_ptr) wraps a pointer to an action so that it can be passed around
 // as an action. The referenced action must remain valid for the life of the
 // wrapper.
-action_ref static inline ref(action const* action_ptr)
+inline action_ref
+ref(action const* action_ptr)
 {
     return action_ref(action_ptr);
 }

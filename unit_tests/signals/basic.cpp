@@ -2,10 +2,10 @@
 
 #include <catch.hpp>
 
+using namespace alia;
+
 TEST_CASE("empty signal", "[signals]")
 {
-    using namespace alia;
-
     auto s = empty<int>();
 
     typedef decltype(s) signal_t;
@@ -19,8 +19,6 @@ TEST_CASE("empty signal", "[signals]")
 
 TEST_CASE("value signal", "[signals]")
 {
-    using namespace alia;
-
     auto s = value(1);
 
     typedef decltype(s) signal_t;
@@ -37,8 +35,6 @@ TEST_CASE("value signal", "[signals]")
 
 TEST_CASE("direct signal", "[signals]")
 {
-    using namespace alia;
-
     int x = 1;
     auto s = direct(x);
 
@@ -54,11 +50,9 @@ TEST_CASE("direct signal", "[signals]")
     REQUIRE(read_signal(s) == 0);
 }
 
-TEST_CASE("text signal", "[signals]")
+TEST_CASE("string literal signal", "[signals]")
 {
-    using namespace alia;
-
-    auto s = text("hello");
+    auto s = value("hello");
 
     typedef decltype(s) signal_t;
     REQUIRE(signal_can_read<signal_t>::value);
