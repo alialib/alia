@@ -89,6 +89,13 @@ lazy_apply(Function const& f, Arg0 const& arg0, Arg1 const& arg1)
         Arg1>(f, arg0, arg1);
 }
 
+template<class Function>
+auto
+lazy_lift(Function const& f)
+{
+    return [f](auto&&... args) { return lazy_apply(f, args...); };
+}
+
 // alia_method(m) wraps a method name in a lambda so that it can be passed as a
 // function object.
 #define ALIA_METHOD(m) [](auto const& x) { return x.m(); }
