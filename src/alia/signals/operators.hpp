@@ -377,28 +377,13 @@ struct has_at_indexer<
 {
 };
 
-// has_const_subscript<Container, Index>::value yields a compile-time boolean
-// indicating whether or not Container has a const subscript operator that takes
-// an Index.
-template<class Container, class Index, class = void_t<>>
-struct has_const_subscript : std::false_type
-{
-};
-template<class Container, class Index>
-struct has_const_subscript<
-    Container,
-    Index,
-    void_t<decltype(std::declval<Container const&>()[std::declval<Index>()])>>
-    : std::true_type
-{
-};
-
 template<class Container, class Index>
 auto
 invoke_const_subscript(
     Container const& container,
     Index const& index,
-    std::enable_if_t<has_const_subscript<Container, Index>::value>* = 0)
+    std::enable_if_t<!has_at_indexer<Container, Index>::value>* = 0)
+    -> decltype(container[index])
 {
     return container[index];
 }
@@ -408,9 +393,8 @@ auto
 invoke_const_subscript(
     Container const& container,
     Index const& index,
-    std::enable_if_t<
-        !has_const_subscript<Container, Index>::value
-        && has_at_indexer<Container, Index>::value>* = 0)
+    std::enable_if_t<has_at_indexer<Container, Index>::value>* = 0)
+    -> decltype(container.at(index))
 {
     return container.at(index);
 }
