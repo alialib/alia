@@ -49,7 +49,7 @@ struct id_interface
 // The following convert the interface of the ID operations into the usual form
 // that one would expect, as free functions.
 
-static inline bool
+inline bool
 operator==(id_interface const& a, id_interface const& b)
 {
     // Apparently it's faster to compare the name pointers for equality before
@@ -58,7 +58,7 @@ operator==(id_interface const& a, id_interface const& b)
            && a.equals(b);
 }
 
-static inline bool
+inline bool
 operator!=(id_interface const& a, id_interface const& b)
 {
     return !(a == b);
@@ -67,7 +67,7 @@ operator!=(id_interface const& a, id_interface const& b)
 bool
 operator<(id_interface const& a, id_interface const& b);
 
-static inline std::ostream&
+inline std::ostream&
 operator<<(std::ostream& o, id_interface const& id)
 {
     id.stream(o);
@@ -235,7 +235,7 @@ struct id_ref : id_interface
     id_interface const* id_;
     std::shared_ptr<id_interface> ownership_;
 };
-static inline id_ref
+inline id_ref
 ref(id_interface const& id)
 {
     return id_ref(id);

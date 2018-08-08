@@ -1,7 +1,9 @@
 #define CATCH_CONFIG_MAIN
 
 // Ask Catch to dump memory leaks under Windows.
+#ifdef _WIN32
 #define CATCH_CONFIG_WINDOWS_CRTDBG
+#endif
 
 // Disable coloring because it doesn't seem to work properly on Windows.
 #define CATCH_CONFIG_COLOUR_NONE

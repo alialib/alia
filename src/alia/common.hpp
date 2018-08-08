@@ -42,7 +42,6 @@ struct exception : std::exception
 {
     exception(std::string const& msg) : msg_(new std::string(msg))
     {
-        std::cout << msg << std::endl;
     }
 
     ~exception() throw()
@@ -75,7 +74,7 @@ invoke_hash(T const& x)
 }
 
 // Combine two hash values.
-static inline size_t
+inline size_t
 combine_hashes(size_t a, size_t b)
 {
     return a ^ (0x9e3779b9 + (a << 6) + (a >> 2) + b);
