@@ -87,6 +87,15 @@ combine_hashes(size_t a, size_t b)
 #define ALIA_UNUSED
 #endif
 
+// implementation of C++17's void_t that works on C++11 compilers
+template<typename... Ts>
+struct make_void
+{
+    typedef void type;
+};
+template<typename... Ts>
+using void_t = typename make_void<Ts...>::type;
+
 } // namespace alia
 
 #endif

@@ -118,7 +118,7 @@ enum class apply_status
 template<class Value>
 struct apply_result_data
 {
-    int result_version;
+    int result_version = 0;
     Value result;
     apply_status status = apply_status::UNCOMPUTED;
 };
@@ -137,9 +137,6 @@ reset(apply_result_data<Value>& data)
 template<class Value>
 struct apply_signal : signal<apply_signal<Value>, Value, read_only_signal>
 {
-    apply_signal()
-    {
-    }
     apply_signal(apply_result_data<Value>& data) : data_(&data)
     {
     }
@@ -158,15 +155,6 @@ struct apply_signal : signal<apply_signal<Value>, Value, read_only_signal>
     read() const
     {
         return data_->result;
-    }
-    bool
-    is_writable() const
-    {
-        return false;
-    }
-    void
-    write(Value const& value) const
-    {
     }
 
  private:
