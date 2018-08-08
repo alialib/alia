@@ -462,6 +462,27 @@ struct const_subscript_invoker<
     mutable typename subscript_result_type<Container, Index>::type storage_;
 };
 
+template<class ContainerSignal, class IndexSignal, class Value>
+std::enable_if_t<signal_can_write<ContainerSignal>::value>
+write_subscript(
+    ContainerSignal const& container,
+    IndexSignal const& index,
+    Value const& value)
+{
+    auto new_container = container.read();
+    new_container[index.read()] = value;
+    container.write(new_container);
+}
+
+template<class ContainerSignal, class IndexSignal, class Value>
+std::enable_if_t<!signal_can_write<ContainerSignal>::value>
+write_subscript(
+    ContainerSignal const& container,
+    IndexSignal const& index,
+    Value const& value)
+{
+}
+
 template<class ContainerSignal, class IndexSignal>
 struct subscript_signal : signal<
                               subscript_signal<ContainerSignal, IndexSignal>,
@@ -502,9 +523,7 @@ struct subscript_signal : signal<
     void
     write(typename subscript_signal::value_type const& x) const
     {
-        auto new_container = container_.read();
-        new_container[index_.read()] = x;
-        container_.write(new_container);
+        write_subscript(container_, index_, x);
     }
 
  private:
