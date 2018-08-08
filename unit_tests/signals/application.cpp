@@ -53,6 +53,142 @@ TEST_CASE("lazy_lift", "[signals]")
     REQUIRE(read_signal(s) == 2);
 }
 
+template<class Controller>
+void
+do_traversal(
+    data_graph& graph, Controller const& controller, bool refresh = true)
+{
+    data_traversal traversal;
+    scoped_data_traversal sdt(graph, traversal);
+    if (!refresh)
+        disable_gc(traversal);
+
+    component_storage storage;
+    add_component<data_traversal_tag>(storage, &traversal);
+
+    context ctx(&storage);
+    controller(ctx);
+}
+
+TEST_CASE("simple apply", "[signals]")
+{
+    int f_call_count = 0;
+    auto f = [&](int x, int y) {
+        ++f_call_count;
+        return x * 2 + y;
+    };
+
+    {
+        data_graph graph;
+        auto make_controller = [=](int x, int y) {
+            return [=](context ctx) {
+                auto s = apply(ctx, f, value(x), value(y));
+
+                typedef decltype(s) signal_t;
+                REQUIRE(signal_can_read<signal_t>::value);
+                REQUIRE(!signal_can_write<signal_t>::value);
+
+                REQUIRE(signal_is_readable(s));
+                REQUIRE(read_signal(s) == x * 2 + y);
+            };
+        };
+
+        do_traversal(graph, make_controller(1, 2));
+        REQUIRE(f_call_count == 1);
+
+        do_traversal(graph, make_controller(1, 2));
+        REQUIRE(f_call_count == 1);
+
+        do_traversal(graph, make_controller(2, 2));
+        REQUIRE(f_call_count == 2);
+
+        do_traversal(graph, make_controller(2, 2));
+        REQUIRE(f_call_count == 2);
+
+        do_traversal(graph, make_controller(2, 3));
+        REQUIRE(f_call_count == 3);
+    }
+}
+
+TEST_CASE("unready apply", "[signals]")
+{
+    int f_call_count = 0;
+    auto f = [&](int x, int y) {
+        ++f_call_count;
+        return x * 2 + y;
+    };
+
+    {
+        data_graph graph;
+        auto make_controller = [=](auto x, auto y) {
+            return [=](context ctx) {
+                auto s = apply(ctx, f, x, y);
+
+                typedef decltype(s) signal_t;
+                REQUIRE(signal_can_read<signal_t>::value);
+                REQUIRE(!signal_can_write<signal_t>::value);
+
+                REQUIRE(!signal_is_readable(s));
+            };
+        };
+
+        do_traversal(graph, make_controller(empty<int>(), value(2)));
+        REQUIRE(f_call_count == 0);
+
+        do_traversal(graph, make_controller(value(1), empty<int>()));
+        REQUIRE(f_call_count == 0);
+    }
+}
+
+TEST_CASE("failed apply", "[signals]")
+{
+    auto f = [&](int x, int y) -> int { throw "failed"; };
+
+    {
+        data_graph graph;
+        auto make_controller = [=](auto x, auto y) {
+            return [=](context ctx) {
+                auto s = apply(ctx, f, x, y);
+
+                typedef decltype(s) signal_t;
+                REQUIRE(signal_can_read<signal_t>::value);
+                REQUIRE(!signal_can_write<signal_t>::value);
+
+                REQUIRE(!signal_is_readable(s));
+            };
+        };
+
+        do_traversal(graph, make_controller(value(1), value(2)));
+    }
+}
+
+TEST_CASE("lift", "[signals]")
+{
+    int f_call_count = 0;
+    auto f = [&](int x) {
+        ++f_call_count;
+        return x + 1;
+    };
+
+    {
+        data_graph graph;
+        auto controller = [=](context ctx) {
+            auto f_lifted = lift(ctx, f);
+            auto s = f_lifted(value(0));
+
+            typedef decltype(s) signal_t;
+            REQUIRE(signal_can_read<signal_t>::value);
+            REQUIRE(!signal_can_write<signal_t>::value);
+
+            REQUIRE(signal_is_readable(s));
+            REQUIRE(read_signal(s) == 1);
+        };
+
+        do_traversal(graph, controller);
+        REQUIRE(f_call_count == 1);
+    }
+}
+
 TEST_CASE("alia_method", "[signals]")
 {
     auto v = value("test text");

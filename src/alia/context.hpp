@@ -2,6 +2,7 @@
 #define ALIA_CONTEXT_HPP
 
 #include <alia/component_collection.hpp>
+#include <alia/data_graph.hpp>
 
 namespace alia {
 
@@ -78,6 +79,18 @@ typedef add_component_type_t<
     data_traversal_tag,
     data_traversal*>
     context;
+
+inline data_traversal&
+get_data_traversal(context& ctx)
+{
+    return *get_component<data_traversal_tag>(ctx);
+}
+
+inline bool
+is_refresh_pass(context& ctx)
+{
+    return get_data_traversal(ctx).gc_enabled;
+}
 
 } // namespace alia
 
