@@ -10,8 +10,8 @@ namespace alia {
 
 // regular_signal is a partial implementation of the signal interface for
 // cases where the value ID of the signal is simply the value itself.
-template<class Value, class Direction>
-struct regular_signal : signal<Value, Direction>
+template<class Derived, class Value, class Direction>
+struct regular_signal : signal<Derived, Value, Direction>
 {
     id_interface const&
     value_id() const

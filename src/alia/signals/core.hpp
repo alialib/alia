@@ -138,17 +138,24 @@ struct signal_interface : untyped_signal_base
     write(Value const& value) const = 0;
 };
 
-template<class Value, class Direction>
-struct signal : signal_interface<Value>
+template<class Derived, class Value, class Direction>
+struct signal_base : signal_interface<Value>
 {
     typedef Direction direction_tag;
+
+    template<class Index>
+    auto operator[](Index const& index) const;
 };
 
-template<class Value>
-struct signal<Value, read_only_signal> : signal_interface<Value>
+template<class Derived, class Value, class Direction>
+struct signal : signal_base<Derived, Value, Direction>
 {
-    typedef read_only_signal direction_tag;
+};
 
+template<class Derived, class Value>
+struct signal<Derived, Value, read_only_signal>
+    : signal_base<Derived, Value, read_only_signal>
+{
     // These must be defined to satisfy the interface requirements, but they
     // obviously won't be used on a read-only signal.
     // LCOV_EXCL_START
@@ -164,11 +171,10 @@ struct signal<Value, read_only_signal> : signal_interface<Value>
     // LCOV_EXCL_STOP
 };
 
-template<class Value>
-struct signal<Value, write_only_signal> : signal_interface<Value>
+template<class Derived, class Value>
+struct signal<Derived, Value, write_only_signal>
+    : signal_base<Derived, Value, write_only_signal>
 {
-    typedef write_only_signal direction_tag;
-
     // These must be defined to satisfy the interface requirements, but they
     // obviously won't be used on a write-only signal.
     // LCOV_EXCL_START
@@ -199,12 +205,12 @@ struct signal<Value, write_only_signal> : signal_interface<Value>
 
 // signal_ref is a reference to a signal that acts as a signal itself.
 template<class Value, class Direction>
-struct signal_ref : signal<Value, Direction>
+struct signal_ref : signal<signal_ref<Value, Direction>, Value, Direction>
 {
     // Construct from any signal with compatible direction.
-    template<class OtherDirection>
+    template<class OtherSignal, class OtherDirection>
     signal_ref(
-        signal<Value, OtherDirection> const& signal,
+        signal<OtherSignal, Value, OtherDirection> const& signal,
         std::enable_if_t<
             signal_direction_is_compatible<Direction, OtherDirection>::value,
             int> = 0)

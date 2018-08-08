@@ -24,7 +24,7 @@ ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(+)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(-)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(*)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(/)
-ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(^)
+ALIA_DEFINE_BINARY_SIGNAL_OPERATOR (^)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(%)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(&)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(|)
@@ -55,7 +55,8 @@ ALIA_DEFINE_UNARY_SIGNAL_OPERATOR(!)
 // necessarily need to evaluate both of their arguments...
 
 template<class Arg0, class Arg1>
-struct logical_or_signal : signal<bool, read_only_signal>
+struct logical_or_signal
+    : signal<logical_or_signal<Arg0, Arg1>, bool, read_only_signal>
 {
     logical_or_signal(Arg0 const& arg0, Arg1 const& arg1)
         : arg0_(arg0), arg1_(arg1)
@@ -105,7 +106,8 @@ operator||(A const& a, B const& b)
 }
 
 template<class Arg0, class Arg1>
-struct logical_and_signal : signal<bool, read_only_signal>
+struct logical_and_signal
+    : signal<logical_and_signal<Arg0, Arg1>, bool, read_only_signal>
 {
     logical_and_signal(Arg0 const& arg0, Arg1 const& arg1)
         : arg0_(arg0), arg1_(arg1)
@@ -165,6 +167,7 @@ operator&&(A const& a, B const& b)
 // testable in a boolean context.
 template<class Condition, class T, class F>
 struct signal_mux : signal<
+                        signal_mux<Condition, T, F>,
                         typename T::value_type,
                         typename signal_direction_intersection<
                             typename T::direction_tag,
@@ -226,7 +229,10 @@ select(Condition const& condition, T const& t, F const& f)
 // Given a signal to a structure, signal->*field_ptr returns a signal to the
 // specified field within the structure.
 template<class StructureSignal, class Field>
-struct field_signal : signal<Field, typename StructureSignal::direction_tag>
+struct field_signal : signal<
+                          field_signal<StructureSignal, Field>,
+                          Field,
+                          typename StructureSignal::direction_tag>
 {
     typedef typename StructureSignal::value_type structure_type;
     typedef Field structure_type::*field_ptr;
@@ -289,6 +295,243 @@ operator->*(
 #ifdef ALIA_LOWERCASE_MACROS
 #define alia_field(x, f) ALIA_FIELD(x, f)
 #endif
+
+// has_value_type<T>::value yields a compile-time boolean indicating whether or
+// not T has a value_type member (which is the case for standard containers).
+template<class T, class = std::void_t<>>
+struct has_value_type : std::false_type
+{
+};
+template<class T>
+struct has_value_type<T, std::void_t<typename T::value_type>> : std::true_type
+{
+};
+
+// has_mapped_type<T>::value yields a compile-time boolean indicating whether or
+// not T has a mapped_type member (which is the case for standard associative
+// containers).
+template<class T, class = std::void_t<>>
+struct has_mapped_type : std::false_type
+{
+};
+template<class T>
+struct has_mapped_type<T, std::void_t<typename T::mapped_type>> : std::true_type
+{
+};
+
+// subscript_result_type<Container, Index>::type gives the expected type of the
+// value that results from invoking the subscript operator on a Container. (This
+// is necessary to deal with containers that return proxies.)
+//
+// The logic is as follows:
+// 1 - If the container has a mapped_type field, use that.
+// 2 - Otherwise, if the container has a value_type field, use that.
+// 3 - Otherwise, just see what operator[] returns.
+//
+template<class Container, class Index, class = void>
+struct subscript_result_type
+{
+};
+template<class Container, class Index>
+struct subscript_result_type<
+    Container,
+    Index,
+    std::enable_if_t<has_mapped_type<Container>::value>>
+{
+    typedef typename Container::mapped_type type;
+};
+template<class Container, class Index>
+struct subscript_result_type<
+    Container,
+    Index,
+    std::enable_if_t<
+        !has_mapped_type<Container>::value && has_value_type<Container>::value>>
+{
+    typedef typename Container::value_type type;
+};
+template<class Container, class Index>
+struct subscript_result_type<
+    Container,
+    Index,
+    std::enable_if_t<
+        !has_mapped_type<Container>::value
+        && !has_value_type<Container>::value>>
+{
+    typedef std::decay_t<decltype(
+        std::declval<Container>()[std::declval<Index>()])>
+        type;
+};
+
+// has_at_indexer<Container, Index>::value yields a compile-time boolean
+// indicating whether or not Container has an 'at' method that takes an Index.
+template<class Container, class Index, class = std::void_t<>>
+struct has_at_indexer : std::false_type
+{
+};
+template<class Container, class Index>
+struct has_at_indexer<
+    Container,
+    Index,
+    std::void_t<decltype(std::declval<Container const&>().at(
+        std::declval<Index>()))>> : std::true_type
+{
+};
+
+// has_const_subscript<Container, Index>::value yields a compile-time boolean
+// indicating whether or not Container has a const subscript operator that takes
+// an Index.
+template<class Container, class Index, class = std::void_t<>>
+struct has_const_subscript : std::false_type
+{
+};
+template<class Container, class Index>
+struct has_const_subscript<
+    Container,
+    Index,
+    std::void_t<decltype(
+        std::declval<Container const&>()[std::declval<Index>()])>>
+    : std::true_type
+{
+};
+
+template<class Container, class Index>
+auto
+invoke_const_subscript(
+    Container const& container,
+    Index const& index,
+    std::enable_if_t<has_const_subscript<Container, Index>::value>* = 0)
+{
+    return container[index];
+}
+
+template<class Container, class Index>
+auto
+invoke_const_subscript(
+    Container const& container,
+    Index const& index,
+    std::enable_if_t<
+        !has_const_subscript<Container, Index>::value
+        && has_at_indexer<Container, Index>::value>* = 0)
+{
+    return container.at(index);
+}
+
+// const_subscript_returns_reference<Container,Index>::value yields a
+// compile-time boolean indicating where or not invoke_const_subscript returns
+// by reference (vs by value).
+template<class Container, class Index>
+struct const_subscript_returns_reference
+    : std::is_reference<decltype(invoke_const_subscript(
+          std::declval<Container>(), std::declval<Index>()))>
+{
+};
+
+template<class Container, class Index, class = void>
+struct const_subscript_invoker
+{
+};
+
+template<class Container, class Index>
+struct const_subscript_invoker<
+    Container,
+    Index,
+    std::enable_if_t<
+        const_subscript_returns_reference<Container, Index>::value>>
+{
+    auto const&
+    operator()(Container const& container, Index const& index) const
+    {
+        return invoke_const_subscript(container, index);
+    }
+};
+
+template<class Container, class Index>
+struct const_subscript_invoker<
+    Container,
+    Index,
+    std::enable_if_t<
+        !const_subscript_returns_reference<Container, Index>::value>>
+{
+    auto const&
+    operator()(Container const& container, Index const& index) const
+    {
+        storage_ = invoke_const_subscript(container, index);
+        return storage_;
+    }
+
+ private:
+    mutable typename subscript_result_type<Container, Index>::type storage_;
+};
+
+template<class ContainerSignal, class IndexSignal>
+struct subscript_signal : signal<
+                              subscript_signal<ContainerSignal, IndexSignal>,
+                              typename subscript_result_type<
+                                  typename ContainerSignal::value_type,
+                                  typename IndexSignal::value_type>::type,
+                              typename ContainerSignal::direction_tag>
+{
+    subscript_signal()
+    {
+    }
+    subscript_signal(ContainerSignal array, IndexSignal index)
+        : container_(array), index_(index)
+    {
+    }
+    bool
+    is_readable() const
+    {
+        return container_.is_readable() && index_.is_readable();
+    }
+    typename subscript_signal::value_type const&
+    read() const
+    {
+        return invoker_(container_.read(), index_.read());
+    }
+    id_interface const&
+    value_id() const
+    {
+        id_ = combine_ids(ref(container_.value_id()), ref(index_.value_id()));
+        return id_;
+    }
+    bool
+    is_writable() const
+    {
+        return container_.is_readable() && index_.is_readable()
+               && container_.is_writable();
+    }
+    void
+    write(typename subscript_signal::value_type const& x) const
+    {
+        auto new_container = container_.read();
+        new_container[index_.read()] = x;
+        container_.write(new_container);
+    }
+
+ private:
+    ContainerSignal container_;
+    IndexSignal index_;
+    mutable id_pair<alia::id_ref, alia::id_ref> id_;
+    const_subscript_invoker<
+        typename ContainerSignal::value_type,
+        typename IndexSignal::value_type>
+        invoker_;
+};
+template<class ContainerSignal, class IndexSignal>
+subscript_signal<ContainerSignal, IndexSignal>
+make_subscript_signal(
+    ContainerSignal const& container, IndexSignal const& index)
+{
+    return subscript_signal<ContainerSignal, IndexSignal>(container, index);
+}
+
+template<class Derived, class Value, class Direction>
+template<class Index>
+auto signal_base<Derived, Value, Direction>::
+operator[](Index const& index) const
+{
+    return make_subscript_signal(static_cast<Derived const&>(*this), index);
+}
 
 } // namespace alia
 
