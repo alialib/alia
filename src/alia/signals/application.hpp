@@ -135,7 +135,7 @@ reset(apply_result_data<Value>& data)
 }
 
 template<class Value>
-struct apply_signal : signal<Value, read_only_signal>
+struct apply_signal : signal<apply_signal<Value>, Value, read_only_signal>
 {
     apply_signal()
     {
