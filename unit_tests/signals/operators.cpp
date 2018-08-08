@@ -337,3 +337,70 @@ TEST_CASE("map subscript", "[signals]")
     write_signal(s, 7);
     REQUIRE(c == std::map<int, int>{{2, 7}, {0, 3}});
 }
+
+TEST_CASE("custom ref subscript", "[signals]")
+{
+    struct my_vector
+    {
+        int x[3] = {1, 2, 3};
+        int& operator[](int i)
+        {
+            return x[i];
+        }
+        int const& operator[](int i) const
+        {
+            return x[i];
+        }
+    };
+
+    my_vector c;
+    auto c_signal = lambda_bidirectional(
+        always_readable,
+        [&]() { return c; },
+        always_writable,
+        [&](my_vector const& v) { c = v; },
+        [&]() {
+            return unit_id; // doesn't really matter
+        });
+    auto s = c_signal[value(2)];
+
+    typedef decltype(s) signal_t;
+    REQUIRE((std::is_same<signal_t::value_type, int>::value));
+    REQUIRE(signal_can_read<signal_t>::value);
+    REQUIRE(signal_can_write<signal_t>::value);
+
+    REQUIRE(signal_is_readable(s));
+    REQUIRE(read_signal(s) == 3);
+    REQUIRE(signal_is_writable(s));
+    write_signal(s, 4);
+    REQUIRE(c[2] == 4);
+}
+
+TEST_CASE("custom by-value subscript", "[signals]")
+{
+    struct my_vector
+    {
+        int x[3] = {1, 2, 3};
+        int operator[](int i) const
+        {
+            return x[i];
+        }
+    };
+
+    my_vector c;
+    auto c_signal = lambda_input(
+        always_readable,
+        [&]() { return c; },
+        [&]() {
+            return unit_id; // doesn't really matter
+        });
+    auto s = c_signal[value(2)];
+
+    typedef decltype(s) signal_t;
+    REQUIRE((std::is_same<signal_t::value_type, int>::value));
+    REQUIRE(signal_can_read<signal_t>::value);
+    REQUIRE(!signal_can_write<signal_t>::value);
+
+    REQUIRE(signal_is_readable(s));
+    REQUIRE(read_signal(s) == 3);
+}
