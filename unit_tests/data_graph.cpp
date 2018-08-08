@@ -1,3 +1,4 @@
+#define ALIA_LOWERCASE_MACROS
 #include <alia/data_graph.hpp>
 
 #include <sstream>
@@ -320,19 +321,20 @@ TEST_CASE("alia_if/alia_else_if/alia_else", "[data_graph]")
         data_graph graph;
         auto make_controller = [](auto condition1, auto condition2) {
             return [=](custom_context ctx) {
-                ALIA_IF(condition1)
+                alia_if(condition1)
                 {
                     do_int(ctx, 0);
                 }
-                ALIA_ELSE_IF(condition2)
+                alia_else_if(condition2)
                 {
                     do_int(ctx, 1);
                 }
-                ALIA_ELSE
+                alia_else
                 {
                     do_int(ctx, 2);
                 }
-                ALIA_END
+                alia_end; // The ';' helps ClangFormat.
+
                 do_int(ctx, 3);
             };
         };
@@ -377,11 +379,11 @@ TEST_CASE("alia_pass_dependent_if", "[data_graph]")
         data_graph graph;
         auto make_controller = [](auto condition) {
             return [=](data_traversal& ctx) {
-                ALIA_PASS_DEPENDENT_IF(condition)
+                alia_pass_dependent_if(condition)
                 {
                     do_cached_int(ctx, 0);
                 }
-                ALIA_END
+                alia_end;
                 do_int(ctx, 1);
             };
         };
@@ -482,22 +484,22 @@ TEST_CASE("non-signal alia_switch", "[data_graph]")
         auto make_controller = [](auto n) {
             return [=](custom_context ctx) {
                 // clang-format off
-                ALIA_SWITCH(n)
+                alia_switch(n)
                 {
-                    ALIA_CASE(0):
+                    alia_case(0):
                         do_int(ctx, 0);
                         break;
-                    ALIA_CASE(1):
+                    alia_case(1):
                         do_int(ctx, 1);
-                    ALIA_CASE(2):
-                    ALIA_CASE(3):
+                    alia_case(2):
+                    alia_case(3):
                         do_int(ctx, 2);
                         do_cached_int(ctx, 3);
                         break;
-                    ALIA_DEFAULT:
+                    alia_default:
                         do_int(ctx, 4);
                 }
-                ALIA_END
+                alia_end
                 do_int(ctx, -2);
                 // clang-format on
             };
@@ -604,12 +606,12 @@ TEST_CASE("alia_while", "[data_graph]")
         auto make_controller = [](int n) {
             return [=](custom_context ctx) {
                 int i = 1;
-                ALIA_WHILE(i <= n)
+                alia_while(i <= n)
                 {
                     do_int(ctx, i);
                     ++i;
                 }
-                ALIA_END
+                alia_end;
                 do_int(ctx, 0);
             };
         };
@@ -720,17 +722,17 @@ TEST_CASE("mobile named blocks", "[data_graph]")
                     ALIA_END
                 }
                 ALIA_END
-                ALIA_FOR(auto i : indices)
+                alia_for(auto i : indices)
                 {
                     ;
-                    ALIA_IF(i >= divider)
+                    alia_if(i >= divider)
                     {
                         named_block nb(nc, make_id(i));
                         do_int(ctx, i);
                     }
-                    ALIA_END
+                    alia_end
                 }
-                ALIA_END
+                alia_end
             };
         };
         do_traversal(graph, make_controller({3, 2, 1}, 2));
