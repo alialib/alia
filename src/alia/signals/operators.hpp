@@ -298,24 +298,24 @@ operator->*(
 
 // has_value_type<T>::value yields a compile-time boolean indicating whether or
 // not T has a value_type member (which is the case for standard containers).
-template<class T, class = std::void_t<>>
+template<class T, class = void_t<>>
 struct has_value_type : std::false_type
 {
 };
 template<class T>
-struct has_value_type<T, std::void_t<typename T::value_type>> : std::true_type
+struct has_value_type<T, void_t<typename T::value_type>> : std::true_type
 {
 };
 
 // has_mapped_type<T>::value yields a compile-time boolean indicating whether or
 // not T has a mapped_type member (which is the case for standard associative
 // containers).
-template<class T, class = std::void_t<>>
+template<class T, class = void_t<>>
 struct has_mapped_type : std::false_type
 {
 };
 template<class T>
-struct has_mapped_type<T, std::void_t<typename T::mapped_type>> : std::true_type
+struct has_mapped_type<T, void_t<typename T::mapped_type>> : std::true_type
 {
 };
 
@@ -364,7 +364,7 @@ struct subscript_result_type<
 
 // has_at_indexer<Container, Index>::value yields a compile-time boolean
 // indicating whether or not Container has an 'at' method that takes an Index.
-template<class Container, class Index, class = std::void_t<>>
+template<class Container, class Index, class = void_t<>>
 struct has_at_indexer : std::false_type
 {
 };
@@ -372,7 +372,7 @@ template<class Container, class Index>
 struct has_at_indexer<
     Container,
     Index,
-    std::void_t<decltype(std::declval<Container const&>().at(
+    void_t<decltype(std::declval<Container const&>().at(
         std::declval<Index>()))>> : std::true_type
 {
 };
@@ -380,7 +380,7 @@ struct has_at_indexer<
 // has_const_subscript<Container, Index>::value yields a compile-time boolean
 // indicating whether or not Container has a const subscript operator that takes
 // an Index.
-template<class Container, class Index, class = std::void_t<>>
+template<class Container, class Index, class = void_t<>>
 struct has_const_subscript : std::false_type
 {
 };
@@ -388,8 +388,7 @@ template<class Container, class Index>
 struct has_const_subscript<
     Container,
     Index,
-    std::void_t<decltype(
-        std::declval<Container const&>()[std::declval<Index>()])>>
+    void_t<decltype(std::declval<Container const&>()[std::declval<Index>()])>>
     : std::true_type
 {
 };

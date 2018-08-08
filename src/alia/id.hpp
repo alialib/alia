@@ -127,6 +127,30 @@ struct captured_id
     {
         this->capture(id);
     }
+    captured_id(captured_id const& other)
+    {
+        if (other.is_initialized())
+            this->capture(other.get());
+    }
+    captured_id(captured_id&& other)
+    {
+        id_ = std::move(other.id_);
+    }
+    captured_id&
+    operator=(captured_id const& other)
+    {
+        if (other.is_initialized())
+            this->capture(other.get());
+        else
+            this->clear();
+        return *this;
+    }
+    captured_id&
+    operator=(captured_id&& other)
+    {
+        id_ = std::move(other.id_);
+        return *this;
+    }
     void
     clear()
     {

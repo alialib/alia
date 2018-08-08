@@ -78,36 +78,46 @@ TEST_CASE("simple apply", "[signals]")
         return x * 2 + y;
     };
 
-    {
-        data_graph graph;
-        auto make_controller = [=](int x, int y) {
-            return [=](context ctx) {
-                auto s = apply(ctx, f, value(x), value(y));
+    captured_id signal_id;
 
-                typedef decltype(s) signal_t;
-                REQUIRE(signal_can_read<signal_t>::value);
-                REQUIRE(!signal_can_write<signal_t>::value);
+    data_graph graph;
+    auto make_controller = [&](int x, int y) {
+        return [=, &signal_id](context ctx) {
+            auto s = apply(ctx, f, value(x), value(y));
 
-                REQUIRE(signal_is_readable(s));
-                REQUIRE(read_signal(s) == x * 2 + y);
-            };
+            typedef decltype(s) signal_t;
+            REQUIRE(signal_can_read<signal_t>::value);
+            REQUIRE(!signal_can_write<signal_t>::value);
+
+            REQUIRE(signal_is_readable(s));
+            REQUIRE(read_signal(s) == x * 2 + y);
+
+            signal_id.capture(s.value_id());
         };
+    };
 
-        do_traversal(graph, make_controller(1, 2));
-        REQUIRE(f_call_count == 1);
+    do_traversal(graph, make_controller(1, 2));
+    REQUIRE(f_call_count == 1);
+    captured_id last_id = signal_id;
 
-        do_traversal(graph, make_controller(1, 2));
-        REQUIRE(f_call_count == 1);
+    do_traversal(graph, make_controller(1, 2));
+    REQUIRE(f_call_count == 1);
+    REQUIRE(last_id == signal_id);
+    last_id = signal_id;
 
-        do_traversal(graph, make_controller(2, 2));
-        REQUIRE(f_call_count == 2);
+    do_traversal(graph, make_controller(2, 2));
+    REQUIRE(f_call_count == 2);
+    REQUIRE(last_id != signal_id);
+    last_id = signal_id;
 
-        do_traversal(graph, make_controller(2, 2));
-        REQUIRE(f_call_count == 2);
+    do_traversal(graph, make_controller(2, 2));
+    REQUIRE(f_call_count == 2);
+    REQUIRE(last_id == signal_id);
+    last_id = signal_id;
 
-        do_traversal(graph, make_controller(2, 3));
-        REQUIRE(f_call_count == 3);
-    }
+    do_traversal(graph, make_controller(2, 3));
+    REQUIRE(f_call_count == 3);
+    REQUIRE(last_id != signal_id);
 }
 
 TEST_CASE("unready apply", "[signals]")
