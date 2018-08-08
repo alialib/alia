@@ -2,6 +2,8 @@
 
 #include <alia/signals/operators.hpp>
 
+#include <map>
+
 #include <catch.hpp>
 
 #include <alia/signals/basic.hpp>
@@ -240,4 +242,114 @@ TEST_CASE("field signal", "[signals]")
     write_signal(y_signal, 0.5);
     REQUIRE(y_signal.value_id() != original_y_id.get());
     REQUIRE(f.y == 0.5);
+}
+
+TEST_CASE("vector subscript", "[signals]")
+{
+    using namespace alia;
+
+    auto c = std::vector<int>{2, 0, 3};
+    auto c_signal = lambda_bidirectional(
+        always_readable,
+        [&]() { return c; },
+        always_writable,
+        [&](std::vector<int> const& v) { c = v; },
+        [&]() {
+            return combine_ids(make_id(c[0]), make_id(c[1]), make_id(c[2]));
+        });
+    auto s = c_signal[value(1)];
+
+    typedef decltype(s) signal_t;
+    REQUIRE((std::is_same<signal_t::value_type, int>::value));
+    REQUIRE(signal_can_read<signal_t>::value);
+    REQUIRE(signal_can_write<signal_t>::value);
+
+    REQUIRE(signal_is_readable(s));
+    REQUIRE(read_signal(s) == 0);
+    REQUIRE(signal_is_writable(s));
+    captured_id original_id = s.value_id();
+    write_signal(s, 1);
+    REQUIRE(c == std::vector<int>({2, 1, 3}));
+
+    // Check that changes in the container and the index both cause changes in
+    // the value ID.
+    REQUIRE(!original_id.matches(s.value_id()));
+    auto t = c_signal[value(0)];
+    REQUIRE(t.value_id() != s.value_id());
+}
+
+TEST_CASE("read-only subscript", "[signals]")
+{
+    using namespace alia;
+
+    auto c = std::vector<int>{2, 0, 3};
+    auto c_signal = lambda_input(
+        always_readable,
+        [&]() { return c; },
+        [&]() {
+            return combine_ids(make_id(c[0]), make_id(c[1]), make_id(c[2]));
+        });
+    auto s = c_signal[value(1)];
+
+    typedef decltype(s) signal_t;
+    REQUIRE((std::is_same<signal_t::value_type, int>::value));
+    REQUIRE(signal_can_read<signal_t>::value);
+    REQUIRE(!signal_can_write<signal_t>::value);
+
+    REQUIRE(signal_is_readable(s));
+    REQUIRE(read_signal(s) == 0);
+}
+
+TEST_CASE("vector<bool> subscript", "[signals]")
+{
+    using namespace alia;
+
+    auto c = std::vector<bool>{true, false, false};
+    auto c_signal = lambda_bidirectional(
+        always_readable,
+        [&]() { return c; },
+        always_writable,
+        [&](std::vector<bool> const& v) { c = v; },
+        [&]() {
+            return unit_id; // doesn't really matter
+        });
+    auto s = c_signal[value(1)];
+
+    typedef decltype(s) signal_t;
+    REQUIRE((std::is_same<signal_t::value_type, bool>::value));
+    REQUIRE(signal_can_read<signal_t>::value);
+    REQUIRE(signal_can_write<signal_t>::value);
+
+    REQUIRE(signal_is_readable(s));
+    REQUIRE(read_signal(s) == false);
+    REQUIRE(signal_is_writable(s));
+    write_signal(s, true);
+    REQUIRE(c == std::vector<bool>({true, true, false}));
+}
+
+TEST_CASE("map subscript", "[signals]")
+{
+    using namespace alia;
+
+    auto c = std::map<int, int>{{2, 1}, {0, 3}};
+    auto c_signal = lambda_bidirectional(
+        always_readable,
+        [&]() { return c; },
+        always_writable,
+        [&](std::map<int, int> const& v) { c = v; },
+        [&]() {
+            return unit_id; // doesn't really matter
+        });
+    auto s = c_signal[value(2)];
+
+    typedef decltype(s) signal_t;
+    REQUIRE((std::is_same<signal_t::value_type, int>::value));
+    REQUIRE(signal_can_read<signal_t>::value);
+    REQUIRE(signal_can_write<signal_t>::value);
+
+    REQUIRE(signal_is_readable(s));
+    REQUIRE(read_signal(s) == 1);
+    REQUIRE(signal_is_writable(s));
+    write_signal(s, 7);
+    REQUIRE(c == std::map<int, int>{{2, 7}, {0, 3}});
 }

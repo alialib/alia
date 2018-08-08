@@ -674,7 +674,8 @@ get(keyed_data<Data> const& data)
 }
 
 template<class Data>
-struct keyed_data_signal : signal<Data>
+struct keyed_data_signal
+    : signal<keyed_data_signal<Data>, Data, bidirectional_signal>
 {
     keyed_data_signal()
     {

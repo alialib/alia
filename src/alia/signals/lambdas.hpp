@@ -12,7 +12,10 @@ namespace alia {
 // lambda_input(is_readable, read) creates a read-only signal whose value is
 // determined by calling :is_readable and :read.
 template<class Value, class IsReadable, class Read>
-struct lambda_input_signal : regular_signal<Value, read_only_signal>
+struct lambda_input_signal : regular_signal<
+                                 lambda_input_signal<Value, IsReadable, Read>,
+                                 Value,
+                                 read_only_signal>
 {
     lambda_input_signal(IsReadable is_readable, Read read)
         : is_readable_(is_readable), read_(read)
@@ -49,7 +52,11 @@ lambda_input(IsReadable is_readable, Read read)
 // value is determined by calling :is_readable and :read and whose ID is
 // determined by calling :generate_id.
 template<class Value, class IsReadable, class Read, class GenerateId>
-struct lambda_input_signal_with_id : signal<Value, read_only_signal>
+struct lambda_input_signal_with_id
+    : signal<
+          lambda_input_signal_with_id<Value, IsReadable, Read, GenerateId>,
+          Value,
+          read_only_signal>
 {
     lambda_input_signal_with_id(
         IsReadable is_readable, Read read, GenerateId generate_id)
@@ -102,7 +109,15 @@ template<
     class Read,
     class IsWritable,
     class Write>
-struct lambda_bidirectional_signal : regular_signal<Value, bidirectional_signal>
+struct lambda_bidirectional_signal : regular_signal<
+                                         lambda_bidirectional_signal<
+                                             Value,
+                                             IsReadable,
+                                             Read,
+                                             IsWritable,
+                                             Write>,
+                                         Value,
+                                         bidirectional_signal>
 {
     lambda_bidirectional_signal(
         IsReadable is_readable, Read read, IsWritable is_writable, Write write)
@@ -164,7 +179,17 @@ template<
     class IsWritable,
     class Write,
     class GenerateId>
-struct lambda_bidirectional_signal_with_id : signal<Value, bidirectional_signal>
+struct lambda_bidirectional_signal_with_id
+    : signal<
+          lambda_bidirectional_signal_with_id<
+              Value,
+              IsReadable,
+              Read,
+              IsWritable,
+              Write,
+              GenerateId>,
+          Value,
+          bidirectional_signal>
 {
     lambda_bidirectional_signal_with_id(
         IsReadable is_readable,

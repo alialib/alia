@@ -4,9 +4,9 @@ alia
 .. toctree::
    :maxdepth: 2
    :hidden:
-   :caption: Guides
+   :caption: The Basics
 
-   signals
+   the-basics/signals
 
 .. toctree::
    :maxdepth: 2

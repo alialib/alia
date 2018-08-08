@@ -14,6 +14,7 @@ namespace alia {
 // where a is a signal to a numeric value.
 template<class Wrapped>
 struct scaling_signal_wrapper : regular_signal<
+                                    scaling_signal_wrapper<Wrapped>,
                                     typename Wrapped::value_type,
                                     typename Wrapped::direction_tag>
 {
@@ -60,6 +61,7 @@ scale(Wrapped const& wrapped, typename Wrapped::value_type scale_factor)
 // to a numeric value.
 template<class Wrapped>
 struct offset_signal_wrapper : regular_signal<
+                                   offset_signal_wrapper<Wrapped>,
                                    typename Wrapped::value_type,
                                    typename Wrapped::direction_tag>
 {
@@ -105,6 +107,7 @@ offset(Wrapped const& wrapped, typename Wrapped::value_type offset)
 // :signal so that values are always a multiple of :step.
 template<class Wrapped>
 struct rounding_signal_wrapper : regular_signal<
+                                     rounding_signal_wrapper<Wrapped>,
                                      typename Wrapped::value_type,
                                      typename Wrapped::direction_tag>
 {

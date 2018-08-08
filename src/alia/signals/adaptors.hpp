@@ -10,6 +10,7 @@ namespace alia {
 // it will type-check as a readable signal.
 template<class Wrapped>
 struct readability_faker : signal<
+                               readability_faker<Wrapped>,
                                typename Wrapped::value_type,
                                typename signal_direction_union<
                                    read_only_signal,
@@ -69,6 +70,7 @@ fake_readability(Wrapped const& wrapped)
 // it will type-check as a writable signal.
 template<class Wrapped>
 struct writability_faker : signal<
+                               writability_faker<Wrapped>,
                                typename Wrapped::value_type,
                                typename signal_direction_union<
                                    write_only_signal,
@@ -119,7 +121,10 @@ fake_writability(Wrapped const& wrapped)
 // the value type :Value. The proxy will apply static_casts to convert its
 // own values to and from :x's value type.
 template<class Wrapped, class To>
-struct signal_caster : regular_signal<To, typename Wrapped::direction_tag>
+struct signal_caster : regular_signal<
+                           signal_caster<Wrapped, To>,
+                           To,
+                           typename Wrapped::direction_tag>
 {
     signal_caster(Wrapped wrapped) : wrapped_(wrapped)
     {
@@ -160,7 +165,8 @@ signal_cast(Wrapped const& wrapped)
 // is_readable(x) yields a signal to a boolean which indicates whether or
 // not x is readable. (The returned signal is always readable itself.)
 template<class Wrapped>
-struct readability_signal : regular_signal<bool, read_only_signal>
+struct readability_signal
+    : regular_signal<readability_signal<Wrapped>, bool, read_only_signal>
 {
     readability_signal(Wrapped const& wrapped) : wrapped_(wrapped)
     {
@@ -191,7 +197,8 @@ is_readable(Wrapped const& wrapped)
 // is_writable(x) yields a signal to a boolean which indicates whether or
 // not x is writable. (The returned signal is always readable.)
 template<class Wrapped>
-struct writability_signal : regular_signal<bool, read_only_signal>
+struct writability_signal
+    : regular_signal<writability_signal<Wrapped>, bool, read_only_signal>
 {
     writability_signal(Wrapped const& wrapped) : wrapped_(wrapped)
     {
@@ -224,8 +231,10 @@ is_writable(Wrapped const& wrapped)
 // and that of :fallback otherwise.
 // All writes go directly to :primary.
 template<class Primary, class Fallback>
-struct fallback_signal
-    : signal<typename Primary::value_type, typename Primary::direction_tag>
+struct fallback_signal : signal<
+                             fallback_signal<Primary, Fallback>,
+                             typename Primary::value_type,
+                             typename Primary::direction_tag>
 {
     fallback_signal()
     {

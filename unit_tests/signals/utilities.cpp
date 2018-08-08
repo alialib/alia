@@ -4,8 +4,10 @@
 
 #include <alia/signals/basic.hpp>
 
+using namespace alia;
+
 struct unreadable_regular_signal
-    : alia::regular_signal<int, alia::read_only_signal>
+    : regular_signal<unreadable_regular_signal, int, read_only_signal>
 {
     bool
     is_readable() const
@@ -22,8 +24,6 @@ struct unreadable_regular_signal
 
 TEST_CASE("unreadable regular_signal", "[signals]")
 {
-    using namespace alia;
-
     unreadable_regular_signal s;
 
     typedef decltype(s) signal_t;
@@ -35,7 +35,7 @@ TEST_CASE("unreadable regular_signal", "[signals]")
 }
 
 struct normal_regular_signal
-    : alia::regular_signal<int, alia::bidirectional_signal>
+    : regular_signal<normal_regular_signal, int, bidirectional_signal>
 {
     bool
     is_readable() const
@@ -61,8 +61,6 @@ struct normal_regular_signal
 
 TEST_CASE("normal regular_signal", "[signals]")
 {
-    using namespace alia;
-
     normal_regular_signal s;
 
     typedef decltype(s) signal_t;
@@ -76,8 +74,6 @@ TEST_CASE("normal regular_signal", "[signals]")
 
 TEST_CASE("lazy_reader", "[signals]")
 {
-    using namespace alia;
-
     int n = 0;
 
     auto generator = [&]() {
@@ -96,8 +92,6 @@ TEST_CASE("lazy_reader", "[signals]")
 
 TEST_CASE("is_true/false", "[signals]")
 {
-    using namespace alia;
-
     REQUIRE(is_true(value(true)));
     REQUIRE(!is_true(value(false)));
     REQUIRE(!is_true(empty<bool>()));
