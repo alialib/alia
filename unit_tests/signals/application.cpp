@@ -41,6 +41,18 @@ TEST_CASE("lazy_apply", "[signals]")
     REQUIRE(s3.value_id() != s4.value_id());
 }
 
+TEST_CASE("lazy_lift", "[signals]")
+{
+    auto s = lazy_lift([](int i) { return 2 * i; })(value(1));
+
+    typedef decltype(s) signal_t;
+    REQUIRE(signal_can_read<signal_t>::value);
+    REQUIRE(!signal_can_write<signal_t>::value);
+
+    REQUIRE(signal_is_readable(s));
+    REQUIRE(read_signal(s) == 2);
+}
+
 TEST_CASE("alia_method", "[signals]")
 {
     auto v = value("test text");
