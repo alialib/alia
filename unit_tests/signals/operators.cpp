@@ -228,6 +228,59 @@ TEST_CASE("field signal", "[signals]")
     REQUIRE(f.y == 0.5);
 }
 
+struct my_array
+{
+    int x[3] = {1, 2, 3};
+    int& operator[](int i)
+    {
+        return x[i];
+    }
+    int const& operator[](int i) const
+    {
+        return x[i];
+    }
+};
+
+struct my_const_array
+{
+    int x[3] = {1, 2, 3};
+    int operator[](int i) const
+    {
+        return x[i];
+    }
+};
+
+// Test some of the helper metafunctions for subscript signals.
+TEST_CASE("subscript metafunctions", "[signals]")
+{
+    REQUIRE(has_at_indexer<std::vector<int>, int>::value);
+    REQUIRE(has_at_indexer<std::map<int, int>, int>::value);
+    REQUIRE(has_at_indexer<std::vector<bool>, int>::value);
+    REQUIRE(!has_at_indexer<my_array, int>::value);
+    REQUIRE(!has_at_indexer<my_const_array, int>::value);
+
+    REQUIRE((std::is_same<
+             subscript_result_type<std::vector<float>, int>::type,
+             float>::value));
+    REQUIRE((std::is_same<
+             subscript_result_type<std::map<int, float>, int>::type,
+             float>::value));
+    REQUIRE((std::is_same<
+             subscript_result_type<std::vector<bool>, int>::type,
+             bool>::value));
+    REQUIRE(
+        (std::is_same<subscript_result_type<my_array, int>::type, int>::value));
+    REQUIRE(
+        (std::is_same<subscript_result_type<my_const_array, int>::type, int>::
+             value));
+
+    REQUIRE(const_subscript_returns_reference<std::vector<int>, int>::value);
+    REQUIRE(const_subscript_returns_reference<std::map<int, int>, int>::value);
+    REQUIRE(!const_subscript_returns_reference<std::vector<bool>, int>::value);
+    REQUIRE(const_subscript_returns_reference<my_array, int>::value);
+    REQUIRE(!const_subscript_returns_reference<my_const_array, int>::value);
+}
+
 TEST_CASE("vector subscript", "[signals]")
 {
     using namespace alia;
@@ -255,8 +308,8 @@ TEST_CASE("vector subscript", "[signals]")
     write_signal(s, 1);
     REQUIRE(c == std::vector<int>({2, 1, 3}));
 
-    // Check that changes in the container and the index both cause changes in
-    // the value ID.
+    // Check that changes in the container and the index both cause changes
+    // in the value ID.
     REQUIRE(!original_id.matches(s.value_id()));
     auto t = c_signal[value(0)];
     REQUIRE(t.value_id() != s.value_id());
@@ -340,25 +393,12 @@ TEST_CASE("map subscript", "[signals]")
 
 TEST_CASE("custom ref subscript", "[signals]")
 {
-    struct my_vector
-    {
-        int x[3] = {1, 2, 3};
-        int& operator[](int i)
-        {
-            return x[i];
-        }
-        int const& operator[](int i) const
-        {
-            return x[i];
-        }
-    };
-
-    my_vector c;
+    my_array c;
     auto c_signal = lambda_bidirectional(
         always_readable,
         [&]() { return c; },
         always_writable,
-        [&](my_vector const& v) { c = v; },
+        [&](my_array const& v) { c = v; },
         [&]() {
             return unit_id; // doesn't really matter
         });
@@ -378,16 +418,7 @@ TEST_CASE("custom ref subscript", "[signals]")
 
 TEST_CASE("custom by-value subscript", "[signals]")
 {
-    struct my_vector
-    {
-        int x[3] = {1, 2, 3};
-        int operator[](int i) const
-        {
-            return x[i];
-        }
-    };
-
-    my_vector c;
+    my_const_array c;
     auto c_signal = lambda_input(
         always_readable,
         [&]() { return c; },
