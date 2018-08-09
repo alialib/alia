@@ -235,7 +235,7 @@ lift(context ctx, Function const& f)
 
 // alia_method(m) wraps a method name in a lambda so that it can be passed as a
 // function object.
-#define ALIA_METHOD(m) [](auto const& x) { return x.m(); }
+#define ALIA_METHOD(m) [](auto&& x, auto&&... args) { return x.m(args...); }
 #ifdef ALIA_LOWERCASE_MACROS
 #define alia_method(m) ALIA_METHOD(m)
 #endif
