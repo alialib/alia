@@ -202,5 +202,7 @@ TEST_CASE("lift", "[signals]")
 TEST_CASE("alia_method", "[signals]")
 {
     auto v = value("test text");
-    REQUIRE(read_signal(lazy_apply(alia_method(length), v)) == 9);
+    REQUIRE(read_signal(lazy_apply(ALIA_METHOD(length), v)) == 9);
+    REQUIRE(
+        read_signal(lazy_apply(alia_method(substr), v, value(5))) == "text");
 }
