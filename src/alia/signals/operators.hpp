@@ -157,14 +157,19 @@ operator&&(A const& a, B const& b)
     return logical_and_signal<A, B>(a, b);
 }
 
-// This is the equivalent of the ternary operator for signals.
-// select(condition, t, f), where condition, t and f are signals,
-// yields t if condition's value is true and f if condition's value is false.
+// This is the equivalent of the ternary operator (or std::conditional) for
+// signals.
+//
+// conditional(b, t, f), where :b, :t and :f are all signals, yields :t
+// if :b's value is true and :f if :b's value is false.
+//
+// :t and :f must have the same value type, and :b's value type must be testable
+// in a boolean context.
+//
 // Note that this is a normal function call, so, unlike an if statement or the
-// ternary operator, both t and f are fully evaluated. However, they are only
-// accessed if they're selected.
-// t and f must have the same value type, and condition's value type must be
-// testable in a boolean context.
+// ternary operator, both :t and :f are fully evaluated. However, they are only
+// read if they're selected.
+//
 template<class Condition, class T, class F>
 struct signal_mux : signal<
                         signal_mux<Condition, T, F>,
@@ -221,7 +226,7 @@ struct signal_mux : signal<
 };
 template<class Condition, class T, class F>
 signal_mux<Condition, T, F>
-select(Condition const& condition, T const& t, F const& f)
+conditional(Condition const& condition, T const& t, F const& f)
 {
     return signal_mux<Condition, T, F>(condition, t, f);
 }
