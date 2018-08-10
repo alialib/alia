@@ -6,14 +6,30 @@ alia
    :hidden:
    :caption: The Basics
 
+   the-basics/what-is-alia
+   the-basics/getting-started
+   the-basics/introductory-examples
    the-basics/signals
+   the-basics/control-flow
 
 .. toctree::
    :maxdepth: 2
    :hidden:
-   :caption: Under the Hood
+   :caption: In-Depth Guides
 
-   goals-and-rationales
+   in-depth/signals
+   in-depth/loops-and-conditionals
+   in-depth/events
+   in-depth/configuration
+   in-depth/best-practices
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Developer Guides
+
+   developer/building-and-testing
+   developer/goals-and-rationales
 
 .. toctree::
    :maxdepth: 2
