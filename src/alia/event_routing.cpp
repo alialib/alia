@@ -1,5 +1,3 @@
-#if 0
-
 #include <alia/event_routing.hpp>
 
 namespace alia {
@@ -38,6 +36,7 @@ scoped_routing_region::begin(event_routing_traversal& traversal)
 
     traversal_ = &traversal;
 }
+
 void
 scoped_routing_region::end()
 {
@@ -49,5 +48,3 @@ scoped_routing_region::end()
 }
 
 } // namespace alia
-
-#endif
