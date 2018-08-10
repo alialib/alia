@@ -1,24 +1,20 @@
 #ifndef ALIA_EVENT_ROUTING_HPP
 #define ALIA_EVENT_ROUTING_HPP
 
-#if 0
-
 #include <alia/data_graph.hpp>
 
-// This file defines a library for routing events through an immediate mode
-// scene traversal function.
+// This file implements utilities for routing events through an alia content
+// traversal function.
 //
-// When implementing a library with an immediate mode API, the application
-// typically defines the contents of the scene dynamically by iterating through
-// the current objects in the scene and calling a library-provided function to
-// specify the existence of each of them. A sophisticated library will actually
-// use this function to dispatch events or queries to these functions.
+// In alia, the application defines the contents of the scene dynamically by
+// iterating through the current objects in the scene and calling a
+// library-provided function to specify the existence of each of them.
 //
-// However, in cases where the event only needs to go to one object in the
-// scene, the overhead of having the traversal function visit every other
-// object can be problematic. The overhead can be reduced by having the
-// traversal function skip over subregions of the scene when they're not
-// relevant to the event.
+// This function also serves as a way to dispatch and handle events. However, in
+// cases where the event only needs to go to one object in the scene, the
+// overhead of having the traversal function visit every other object can be
+// problematic. The overhead can be reduced by having the traversal function
+// skip over subregions of the scene when they're not relevant to the event.
 //
 // This file provides a system for defining a hierarchy of such subregions in
 // the scene, identifying which subregion an event is targeted at, and culling
@@ -107,10 +103,13 @@ struct scoped_routing_region
     {
         end();
     }
+
     void
     begin(event_routing_traversal& traversal);
+
     void
     end();
+
     bool
     is_relevant() const
     {
@@ -124,7 +123,5 @@ struct scoped_routing_region
 };
 
 } // namespace alia
-
-#endif
 
 #endif
