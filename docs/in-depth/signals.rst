@@ -20,7 +20,7 @@ Signals carry a compile-time property that indicates the direction(s) in which v
 
 * **input**: The function may try to read the signal.
 * **output**: The function may try to write to the signal.
-* **inout**: The function may try to read from or write to the signal.
+* **bidirectional**: The function may try to read from or write to the signal.
 
 ..todo:: Add an example function declaration.
 
@@ -58,16 +58,14 @@ There is one simple rule governing value identitiies:
 
 It is common for a single's value identity to be the value itself.
 
-Constructors
-------------
+Constructing Signals
+--------------------
 
 ``value``
 
-``direct_inout``
+``direct``
 
-``constant``
-
-``empty_signal<Value>()``
+``empty``
 
 Lambdas
 ^^^^^^^
@@ -76,12 +74,39 @@ Lambdas
 
 ``lambda_input(is_readable, read, generate_id)``
 
-``lambda_inout(is_readable, read, is_writable, write)``
+``lambda_bidirectional(is_readable, read, is_writable, write)``
 
-``lambda_inout(is_readable, read, is_writable, write, generate_id)``
+``lambda_bidirectional(is_readable, read, is_writable, write, generate_id)``
 
-Adaptors
---------
+Transforming & Composing Signals
+--------------------------------
+
+Operators
+^^^^^^^^^
+
+Casts
+^^^^^
 
 ``signal_cast<Value>(signal)``
 
+Function Application
+^^^^^^^^^^^^^^^^^^^^
+
+Maps
+^^^^
+
+Other Adaptors
+^^^^^^^^^^^^^^
+
+Creating Custom Signals
+-----------------------
+
+Expected Interface
+^^^^^^^^^^^^^^^^^^
+
+Utilities
+^^^^^^^^^
+
+regular_signal
+
+lazy_reader
