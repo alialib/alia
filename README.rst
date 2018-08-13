@@ -1,13 +1,13 @@
 alia
 ====
 
-.. image:: https://travis-ci.org/tmadden/alia.svg?branch=master
+.. image:: https://img.shields.io/travis/tmadden/alia.svg?style=flat&logo=travis
     :target: https://travis-ci.org/tmadden/alia
 
-.. image:: https://ci.appveyor.com/api/projects/status/nxtmxag4oph0a0ie/branch/master?svg=true
+.. image:: https://img.shields.io/appveyor/tmadden/alia.svg?style=flat&logo=appveyor
     :target: https://ci.appveyor.com/project/tmadden/alia/branch/master
 
-.. image:: https://codecov.io/gh/tmadden/alia/branch/master/graph/badge.svg
+.. image:: https://img.shields.io/codecov/c/github/tmadden/alia/master.svg?style=flat
     :target: https://codecov.io/gh/tmadden/alia
 
 |
