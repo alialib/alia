@@ -4,7 +4,7 @@ alia
 .. image:: https://img.shields.io/travis/tmadden/alia.svg?style=flat&logo=travis
     :target: https://travis-ci.org/tmadden/alia
 
-.. image:: https://img.shields.io/appveyor/tmadden/alia.svg?style=flat&logo=appveyor
+.. image:: https://img.shields.io/appveyor/ci/tmadden/alia/master.svg?style=flat&logo=appveyor
     :target: https://ci.appveyor.com/project/tmadden/alia/branch/master
 
 .. image:: https://img.shields.io/codecov/c/github/tmadden/alia/master.svg?style=flat
