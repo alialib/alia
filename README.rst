@@ -10,6 +10,8 @@ alia
 .. image:: https://codecov.io/gh/tmadden/alia/branch/master/graph/badge.svg
     :target: https://codecov.io/gh/tmadden/alia
 
+|
+
 alia (pronounced uh-LEE-uh) is a modern C++ library for developing reactive applications. It provides a core of generic facilities for reactive programming (data flow modeling, event processing, etc.) as well as interfaces to some existing C++ libraries, allowing those libraries to be used reactively from within alia applications.
 
 The full documentation for alia can be found here.
@@ -41,9 +43,7 @@ Below is a simple tip calculator written in alia using the asm-dom wrapper. To t
 	do_input(ctx, n_people);
 	alia_if (n_people > 1)
 	{
-		auto total_per_person = total / n_people;
-		do_text(ctx, format(ctx, "total per person: %.2f", total_per_person);
-		auto tip_per_person = tip / n_people;
-		do_text(ctx, format(ctx, "tip per person: %.2f", tip_per_person);
+		do_text(ctx, format(ctx, "tip per person: %.2f", tip / n_people);
+		do_text(ctx, format(ctx, "total per person: %.2f", total / n_people);
 	}
 	alia_end
