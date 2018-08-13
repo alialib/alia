@@ -16,9 +16,9 @@ The full documentation for alia can be found here.
 
 Below is a simple tip calculator written in alia using the asm-dom wrapper. To try it out and see more examples, click here.
 
-..todo: Add links to documentation and examples.
+.. todo: Add links to documentation and examples.
 
-..
+.. code-block:: C++
 
 	// Get the state we need.
 	auto bill = get_state<double>(ctx); // defaults to uninitialized
