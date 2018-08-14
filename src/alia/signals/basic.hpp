@@ -122,6 +122,23 @@ value(char const* text)
     return string_literal_signal(text);
 }
 
+// literal operators
+namespace literals {
+inline value_signal<unsigned long long int>
+operator"" _a(unsigned long long int n)
+{
+    return value(n);
+}
+inline value_signal<long double> operator"" _a(long double n)
+{
+    return value(n);
+}
+inline string_literal_signal operator"" _a(char const* s, size_t n)
+{
+    return string_literal_signal(s);
+}
+} // namespace literals
+
 // direct(x) creates a bidirectional signal that directly exposes the value of
 // x.
 template<class Value>
