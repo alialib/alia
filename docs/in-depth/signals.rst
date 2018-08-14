@@ -3,7 +3,7 @@ Signals
 
 In alia, signals are values that vary over time. In other words, alia signals are like those from signal processing (and *not* like IPC signals, which are equivalent to events in alia).
 
-..todo:: Add some example code and point out the signals.
+.. todo:: Add some example code and point out the signals.
 
 If you think of an alia application as defining a dataflow graph where the inputs are application state and the outputs go into a back end (e.g., are displayed on the screen), then the edges of this graph (where the values live) are all signals.
 
@@ -14,7 +14,7 @@ Directionality
 
 In general, signal values can be read (i.e., polled) and new values can be written to signals, but not all signals support both operations.
 
-..todo:: Add an example of, say, adding two signals and point out how writing to the sum doesn't make sense.
+.. todo:: Add an example of, say, adding two signals and point out how writing to the sum doesn't make sense.
 
 Signals carry a compile-time property that indicates the direction(s) in which values can flow: read-only, write-only or bidirectional. Similarly, when a function takes a signal as a parameter, the function signature will specify the requirements of the signal:
 
@@ -22,11 +22,11 @@ Signals carry a compile-time property that indicates the direction(s) in which v
 * **output**: The function may try to write to the signal.
 * **bidirectional**: The function may try to read from or write to the signal.
 
-..todo:: Add an example function declaration.
+.. todo:: Add an example function declaration.
 
 When calling a function, the signals that you provide must meet those requirements. (e.g., If a function expects an input signal but you try to pass a signal that only supports writing, a compile-time error will be generated.)
 
-..todo:: Add a link to an advanced section about bypassing these checks.
+.. todo:: Add a link to an advanced section about bypassing these checks.
 
 Availability
 ------------
