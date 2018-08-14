@@ -16,7 +16,7 @@ struct data_traversal;
 // commonly-used components in the core of alia.
 struct component_storage
 {
-    data_traversal* data;
+    data_traversal* data = 0;
 };
 
 // All component access is done through the following 'manipulator' structure.
@@ -30,6 +30,11 @@ struct component_manipulator
 template<>
 struct component_manipulator<data_traversal_tag>
 {
+    static bool
+    has(component_storage& storage)
+    {
+        return storage.data != 0;
+    }
     static void
     add(component_storage& storage, data_traversal* data)
     {
@@ -50,6 +55,13 @@ struct component_manipulator<data_traversal_tag>
 // The following is the implementation of the interface expected of component
 // storage objects. It simply forwards the requests along to the appropriate
 // manipulator.
+
+template<class Tag>
+bool
+has_component(component_storage& storage)
+{
+    return component_manipulator<Tag>::has(storage);
+}
 
 template<class Tag, class Data>
 void
