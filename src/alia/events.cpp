@@ -1,12 +1,14 @@
-#include <alia/event_routing.hpp>
+#include <alia/events.hpp>
 
 namespace alia {
 
 void
-scoped_routing_region::begin(event_routing_traversal& traversal)
+scoped_routing_region::begin(context& ctx)
 {
+    event_traversal& traversal = get_event_traversal(ctx);
+
     routing_region_ptr* region;
-    if (get_data(*traversal.data, &region))
+    if (get_data(ctx, &region))
         region->reset(new routing_region);
 
     if (traversal.active_region)
