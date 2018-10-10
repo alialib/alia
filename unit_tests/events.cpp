@@ -2,7 +2,7 @@
 #include <alia/events.hpp>
 #include <sstream>
 
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 
 using namespace alia;
 
