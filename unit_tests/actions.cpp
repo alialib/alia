@@ -63,3 +63,45 @@ TEST_CASE("action parameter passing", "[actions]")
     auto a = empty<int>() <<= empty<int>();
     f(a);
 }
+
+TEST_CASE("toggle action", "[actions]")
+{
+    bool x = false;
+    {
+        auto a = make_toggle_action(direct(x));
+        REQUIRE(a.is_ready());
+        perform_action(a);
+        REQUIRE(x);
+    }
+    {
+        auto a = make_toggle_action(direct(x));
+        REQUIRE(a.is_ready());
+        perform_action(a);
+        REQUIRE(!x);
+    }
+
+    {
+        auto a = make_toggle_action(empty<bool>());
+        REQUIRE(!a.is_ready());
+    }
+}
+
+TEST_CASE("push_back action", "[actions]")
+{
+    auto x = std::vector<int>{1, 2};
+    {
+        auto a = make_push_back_action(direct(x), value(3));
+        REQUIRE(a.is_ready());
+        perform_action(a);
+        REQUIRE(x == std::vector<int>{1, 2, 3});
+    }
+
+    {
+        auto a = make_push_back_action(direct(x), empty<int>());
+        REQUIRE(!a.is_ready());
+    }
+    {
+        auto a = make_push_back_action(empty<std::vector<int>>(), value(3));
+        REQUIRE(!a.is_ready());
+    }
+}

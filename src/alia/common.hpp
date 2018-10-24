@@ -65,21 +65,6 @@ struct exception : std::exception
     std::shared_ptr<std::string> msg_;
 };
 
-// Invoke the standard hash function for a value.
-template<class T>
-size_t
-invoke_hash(T const& x)
-{
-    return std::hash<T>()(x);
-}
-
-// Combine two hash values.
-inline size_t
-combine_hashes(size_t a, size_t b)
-{
-    return a ^ (0x9e3779b9 + (a << 6) + (a >> 2) + b);
-}
-
 // ALIA_UNUSED is used to denote that a variable may be unused.
 #ifdef __GNUC__
 #define ALIA_UNUSED [[gnu::unused]]
