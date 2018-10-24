@@ -1,7 +1,8 @@
 #ifndef ALIA_ACTIONS_HPP
 #define ALIA_ACTIONS_HPP
 
-#include <alia/signals.hpp>
+#include <alia/signals/core.hpp>
+#include <alia/signals/operators.hpp>
 
 // This file defines the alia action interface, some common implementations of
 // it, and some utilities for working with it.
@@ -31,7 +32,7 @@ struct untyped_action_interface
 template<class... Args>
 struct action_interface : untyped_action_interface
 {
-    // typedef action_interface action_interface_type;
+    typedef action_interface action_interface_type;
 
     // Perform this action.
     virtual void
@@ -87,7 +88,7 @@ using action = action_ref<Args...>;
 // performs the two actions in sequence.
 
 template<class First, class Second, class... Args>
-struct action_pair : First::action_interface
+struct action_pair : First::action_interface_type
 {
     action_pair()
     {
@@ -168,54 +169,51 @@ operator<<=(Sink const& sink, Source const& source)
 // Note that this could also be used with other value types as long as the !
 // operator provides a reasonable "toggle" function.
 //
-// template<class Flag>
-// auto
-// make_toggle_action(Flag const& flag)
-// {
-//     return make_setter(flag, !flag);
-// }
+template<class Flag>
+auto
+make_toggle_action(Flag const& flag)
+{
+    return flag <<= !flag;
+}
 
 // make_push_back_action(collection, item), where both :collection and :item are
 // signals, creates an action that will push the value of :item onto the back
 // of :collection.
 
-// template<class Collection, class Item>
-// struct push_back_action : action
-// {
-//     push_back_action(Collection const& collection, Item const& item)
-//         : collection_(collection), item_(item)
-//     {
-//     }
+template<class Collection, class Item>
+struct push_back_action : action_interface<>
+{
+    push_back_action(Collection const& collection, Item const& item)
+        : collection_(collection), item_(item)
+    {
+    }
 
-//     bool
-//     is_ready() const
-//     {
-//         return collection_.is_gettable() && collection_.is_settable()
-//                && item_.is_gettable();
-//     }
+    bool
+    is_ready() const
+    {
+        return collection_.is_readable() && collection_.is_writable()
+               && item_.is_readable();
+    }
 
-//     void
-//     perform() const
-//     {
-//         auto new_collection = collection_.get();
-//         new_collection.push_back(item_.get());
-//         collection_.set(new_collection);
-//     }
+    void
+    perform() const
+    {
+        auto new_collection = collection_.read();
+        new_collection.push_back(item_.read());
+        collection_.write(new_collection);
+    }
 
-//  private:
-//     Collection collection_;
-//     Item item_;
-// };
+ private:
+    Collection collection_;
+    Item item_;
+};
 
-// template<class Collection, class Item>
-// auto
-// make_push_back_action(Collection const& collection, Item const& item)
-// {
-//     return push_back_action<
-//         typename copyable_accessor_helper<Collection const&>::result_type,
-//         typename copyable_accessor_helper<Item const&>::result_type>(
-//         make_accessor_copyable(collection), make_accessor_copyable(item));
-// }
+template<class Collection, class Item>
+auto
+make_push_back_action(Collection const& collection, Item const& item)
+{
+    return push_back_action<Collection, Item>(collection, item);
+}
 
 } // namespace alia
 
