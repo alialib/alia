@@ -254,13 +254,6 @@ struct signal_ref : signal<signal_ref<Value, Direction>, Value, Direction>
  private:
     signal_interface<Value> const* ref_;
 };
-// Construct a signal_ref for :signal.
-template<class Value, class Direction>
-signal_ref<Value, Direction>
-ref(signal_ref<Value, Direction> const& signal)
-{
-    return signal_ref<Value, Direction>(signal);
-}
 
 // input<Value> denotes a reference to a readable signal carrying values of
 // type :Value.
