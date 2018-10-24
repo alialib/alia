@@ -32,11 +32,16 @@ struct untyped_action_interface
 template<class... Args>
 struct action_interface : untyped_action_interface
 {
-    typedef action_interface action_interface_type;
-
     // Perform this action.
     virtual void
     perform(Args... args) const = 0;
+};
+
+// is_action_type<T>::value yields a compile-time boolean indicating whether or
+// not T is an alia action type.
+template<class T>
+struct is_action_type : std::is_base_of<untyped_action_interface, T>
+{
 };
 
 // Perform an action.
@@ -88,7 +93,7 @@ using action = action_ref<Args...>;
 // performs the two actions in sequence.
 
 template<class First, class Second, class... Args>
-struct action_pair : First::action_interface_type
+struct action_pair : First::action_interface
 {
     action_pair()
     {
@@ -117,7 +122,12 @@ struct action_pair : First::action_interface_type
     Second second_;
 };
 
-template<class First, class Second>
+template<
+    class First,
+    class Second,
+    std::enable_if_t<
+        is_action_type<First>::value && is_action_type<Second>::value,
+        int> = 0>
 auto
 operator,(First const& first, Second const& second)
 {
@@ -156,14 +166,20 @@ struct copy_action : action_interface<>
     Source source_;
 };
 
-template<class Sink, class Source>
+template<
+    class Sink,
+    class Source,
+    std::enable_if_t<
+        is_writable_signal_type<Sink>::value
+            && is_readable_signal_type<Source>::value,
+        int> = 0>
 auto
 operator<<=(Sink const& sink, Source const& source)
 {
     return copy_action<Sink, Source>(sink, source);
 }
 
-// make_toggle_action(flag), where :flag is an signal to a boolean, creates an
+// make_toggle_action(flag), where :flag is a signal to a boolean, creates an
 // action that will toggle the value of :flag between true and false.
 //
 // Note that this could also be used with other value types as long as the !
@@ -213,6 +229,79 @@ auto
 make_push_back_action(Collection const& collection, Item const& item)
 {
     return push_back_action<Collection, Item>(collection, item);
+}
+
+// lambda_action(is_ready, perform) creates an action whose behavior is defined
+// by two function objects.
+//
+// :is_ready takes no parameters and simply returns true or false to show if the
+// action is ready to be performed.
+//
+// :perform can take any number/type of arguments and this defines the signature
+// of the action.
+
+template<class Function>
+struct call_operator_action_signature
+{
+};
+
+template<class T, class R, class... Args>
+struct call_operator_action_signature<R (T::*)(Args...) const>
+{
+    typedef action_interface<Args...> type;
+};
+
+template<class Lambda>
+struct lambda_action_signature
+    : call_operator_action_signature<decltype(&Lambda::operator())>
+{
+};
+
+template<class IsReady, class Perform, class Interface>
+struct lambda_action_object;
+
+template<class IsReady, class Perform, class... Args>
+struct lambda_action_object<IsReady, Perform, action_interface<Args...>>
+    : action_interface<Args...>
+{
+    lambda_action_object(IsReady is_ready, Perform perform)
+        : is_ready_(is_ready), perform_(perform)
+    {
+    }
+
+    bool
+    is_ready() const
+    {
+        return is_ready_();
+    }
+
+    void
+    perform(Args... args) const
+    {
+        perform_(args...);
+    }
+
+ private:
+    IsReady is_ready_;
+    Perform perform_;
+};
+
+template<class IsReady, class Perform>
+auto
+lambda_action(IsReady is_ready, Perform perform)
+{
+    return lambda_action_object<
+        IsReady,
+        Perform,
+        typename lambda_action_signature<Perform>::type>(is_ready, perform);
+}
+
+// This is just a clear and concise way of indicating that a lambda action is
+// always ready.
+inline bool
+always_ready()
+{
+    return true;
 }
 
 } // namespace alia
