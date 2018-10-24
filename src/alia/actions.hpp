@@ -6,8 +6,8 @@
 // This file defines the alia action interface, some common implementations of
 // it, and some utilities for working with it.
 //
-// An action is essentially a response to an event that happens within alia.
-// When specifying a UI element that can generate events, the application
+// An action is essentially a response to an event that's dispatched by alia.
+// When specifying a component element that can generate events, the application
 // supplies the action that should be performed when the corresponding event is
 // generated. Using this style allows event handling to be written in a safer
 // and more reactive manner.
@@ -19,108 +19,75 @@
 
 namespace alia {
 
-// This is the interface required of actions.
-struct action
+// untyped_action_interface defines functionality common to all actions,
+// irrespective of the type of arguments that the action takes.
+struct untyped_action_interface
 {
     // Is this action ready to be performed?
     virtual bool
     is_ready() const = 0;
+};
+
+template<class... Args>
+struct action_interface : untyped_action_interface
+{
+    // typedef action_interface action_interface_type;
 
     // Perform this action.
     virtual void
-    perform() const = 0;
+    perform(Args... args) const = 0;
 };
 
 // Perform an action.
-void inline perform_action(action const& a)
+template<class... Args>
+void
+perform_action(action_interface<Args...> const& action, Args... args)
 {
-    assert(a.is_ready());
-    a.perform();
+    assert(action.is_ready());
+    action.perform(args...);
 }
 
 // action_ref is a reference to an action that implements the action interface
 // itself.
-struct action_ref : action
+template<class... Args>
+struct action_ref : action_interface<Args...>
 {
-    action_ref(action const* ref = nullptr) : ref_(ref)
+    // Construct from a reference to another action.
+    action_ref(action_interface<Args...> const& ref) : action_(&ref)
+    {
+    }
+    // Construct from another action_ref. - This is meant to prevent unnecessary
+    // layers of indirection.
+    action_ref(action_ref<Args...> const& other) : action_(other.action_)
     {
     }
 
     bool
     is_ready() const
     {
-        assert(ref_);
-        return ref_->is_ready();
+        return action_->is_ready();
     }
 
     void
-    perform() const
+    perform(Args... args) const
     {
-        assert(ref_);
-        ref_->perform();
+        action_->perform(args...);
     }
 
  private:
-    action const* ref_;
+    action_interface<Args...> const* action_;
 };
 
-// ref(action_ptr) wraps a pointer to an action so that it can be passed around
-// as an action. The referenced action must remain valid for the life of the
-// wrapper.
-inline action_ref
-ref(action const* action_ptr)
-{
-    return action_ref(action_ptr);
-}
+template<class... Args>
+using action = action_ref<Args...>;
 
-// copyable_action_helper is a utility for allowing action wrappers to store
-// copies of other actions if they are passed by concrete value and pointers if
-// they're passed as references to the action base class.
-template<class T>
-struct copyable_action_helper
-{
-    typedef T result_type;
-    static T const&
-    apply(T const& x)
-    {
-        return x;
-    }
-};
-template<class T>
-struct copyable_action_helper<T const&>
-{
-    typedef T result_type;
-    static T const&
-    apply(T const& x)
-    {
-        return x;
-    }
-};
-template<>
-struct copyable_action_helper<action const&>
-{
-    typedef action_ref result_type;
-    static result_type
-    apply(action const& x)
-    {
-        return alia::ref(&x);
-    }
-};
+// comma operator
+//
+// Using the comma operator between two signals creates a combined action that
+// performs the two actions in sequence.
 
-// make_action_copyable(x) converts x to its copyable equivalent.
-template<class Action>
-typename copyable_action_helper<Action const&>::result_type
-make_action_copyable(Action const& x)
-{
-    return copyable_action_helper<Action const&>::apply(x);
-}
-
-// combine_actions(first, second, ...) combines multiple actions into a single
-// action. The returned action will perform all of its arguments in the order
-// they're supplied.
-
-template<class First, class Second>
-struct action_pair : action
+template<class First, class Second, class... Args>
+struct action_pair : First::action_interface
 {
     action_pair()
     {
@@ -138,10 +105,10 @@ struct action_pair : action
     }
 
     void
-    perform() const
+    perform(Args... args) const
     {
-        first_.perform();
-        second_.perform();
+        first_.perform(args...);
+        second_.perform(args...);
     }
 
  private:
@@ -151,60 +118,49 @@ struct action_pair : action
 
 template<class First, class Second>
 auto
-combine_actions(First const& first, Second const& second)
+operator,(First const& first, Second const& second)
 {
-    return action_pair<
-        typename copyable_action_helper<First const&>::result_type,
-        typename copyable_action_helper<Second const&>::result_type>(
-        make_action_copyable(first), make_action_copyable(second));
+    return action_pair<First, Second>(first, second);
 }
 
-template<class First, class Second, class... Rest>
+// operator <<=
+//
+// sink <<= source, where :sink and :source are both signals, creates an action
+// that will set the value of :sink to the value held in :source. In order for
+// the action to be considered ready, :source must be readable and :sink must be
+// writable.
+
+template<class Sink, class Source>
+struct copy_action : action_interface<>
+{
+    copy_action(Sink const& sink, Source const& source)
+        : sink_(sink), source_(source)
+    {
+    }
+
+    bool
+    is_ready() const
+    {
+        return source_.is_readable() && sink_.is_writable();
+    }
+
+    void
+    perform() const
+    {
+        sink_.write(source_.read());
+    }
+
+ private:
+    Sink sink_;
+    Source source_;
+};
+
+template<class Sink, class Source>
 auto
-combine_actions(First const& first, Second const& second, Rest const&... rest)
+operator<<=(Sink const& sink, Source const& source)
 {
-    return combine_actions(combine_actions(first, second), rest...);
+    return copy_action<Sink, Source>(sink, source);
 }
-
-// make_setter(sink, source) creates an action that will set the value of :sink
-// to the value held in :source. :sink and :source are both signals. In order
-// for the action to be considered ready, :sink must be settable and :source
-// must be gettable.
-
-// template<class Sink, class Source>
-// struct setter_action : action
-// {
-//     setter_action(Sink const& sink, Source const& source)
-//         : sink_(sink), source_(source)
-//     {
-//     }
-
-//     bool
-//     is_ready() const
-//     {
-//         return source_.is_gettable() && sink_.is_settable();
-//     }
-
-//     void
-//     perform() const
-//     {
-//         sink_.set(source_.get());
-//     }
-
-//  private:
-//     Sink sink_;
-//     Source source_;
-// };
-
-// template<class Sink, class Source>
-// auto
-// make_setter(Sink const& sink, Source const& source)
-// {
-//     return setter_action<
-//         typename copyable_accessor_helper<Sink const&>::result_type,
-//         typename copyable_accessor_helper<Source const&>::result_type>(
-//         make_accessor_copyable(sink), make_accessor_copyable(source));
-// }
 
 // make_toggle_action(flag), where :flag is an signal to a boolean, creates an
 // action that will toggle the value of :flag between true and false.
