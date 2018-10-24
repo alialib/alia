@@ -167,8 +167,6 @@ bool
 operator!=(captured_id const& a, captured_id const& b);
 bool
 operator<(captured_id const& a, captured_id const& b);
-std::ostream&
-operator<<(std::ostream& o, captured_id const& id);
 
 // ref(id) wraps a reference to an id_interface so that it can be combined.
 struct id_ref : id_interface
