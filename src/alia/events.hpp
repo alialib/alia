@@ -23,6 +23,7 @@
 
 namespace alia {
 
+struct system;
 struct routing_region;
 
 typedef std::shared_ptr<routing_region> routing_region_ptr;
@@ -48,52 +49,44 @@ struct event_traversal
 };
 
 inline routing_region_ptr
-get_active_routing_region(context& ctx)
+get_active_routing_region(context ctx)
 {
     event_traversal& traversal = get_event_traversal(ctx);
     return traversal.active_region ? *traversal.active_region
                                    : routing_region_ptr();
 }
 
-template<class TraversalFunction>
+// Set up the event traversal so that it will route the control flow to the
+// given target. (And also invoke the traversal.)
+// :target can be null, in which case no (further) routing will be done.
 void
-invoke_targeted_traversal(
-    TraversalFunction& fn, event_traversal& traversal, routing_region* target)
-{
-    // In order to construct the path to the target, we start at the target and
-    // follow the 'parent' pointers until we reach the root.
-    // We do this via recursion so that the path can be constructed entirely
-    // on the stack.
-    if (target)
-    {
-        event_routing_path path_node;
-        path_node.rest = traversal.path_to_target;
-        path_node.node = target;
-        traversal.path_to_target = &path_node;
-        invoke_targeted_traversal(fn, traversal, target->parent.get());
-    }
-    else
-        fn();
-}
+route_event(system& sys, event_traversal& traversal, routing_region* target);
 
-template<class TraversalFunction, class Event>
+template<class Event>
 void
-dispatch_event(
-    TraversalFunction& fn,
-    event_traversal& traversal,
-    bool targeted,
-    Event& event,
-    routing_region_ptr const& target = routing_region_ptr())
+dispatch_targeted_event(
+    system& sys, Event& event, routing_region_ptr const& target)
 {
+    event_traversal traversal;
     traversal.active_region = 0;
-    traversal.targeted = targeted;
+    traversal.targeted = true;
     traversal.path_to_target = 0;
     traversal.event_type = &typeid(Event);
     traversal.event = &event;
-    if (targeted)
-        invoke_targeted_traversal(fn, traversal, target.get());
-    else
-        fn();
+    route_event(sys, traversal, target.get());
+}
+
+template<class Event>
+void
+dispatch_event(system& sys, Event& event)
+{
+    event_traversal traversal;
+    traversal.active_region = 0;
+    traversal.targeted = false;
+    traversal.path_to_target = 0;
+    traversal.event_type = &typeid(Event);
+    traversal.event = &event;
+    route_event(sys, traversal, 0);
 }
 
 struct scoped_routing_region
@@ -101,7 +94,7 @@ struct scoped_routing_region
     scoped_routing_region() : traversal_(0)
     {
     }
-    scoped_routing_region(context& ctx)
+    scoped_routing_region(context ctx)
     {
         begin(ctx);
     }
@@ -111,7 +104,7 @@ struct scoped_routing_region
     }
 
     void
-    begin(context& ctx);
+    begin(context ctx);
 
     void
     end();
@@ -129,11 +122,11 @@ struct scoped_routing_region
 };
 
 bool
-detect_event(context& ctx, std::type_info const& type);
+detect_event(context ctx, std::type_info const& type);
 
 template<class Event>
 bool
-detect_event(context& ctx, Event** event)
+detect_event(context ctx, Event** event)
 {
     event_traversal& traversal = get_event_traversal(ctx);
     if (*traversal.event_type == typeid(Event))

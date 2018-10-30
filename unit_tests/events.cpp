@@ -1,5 +1,5 @@
-#include <alia/data_graph.hpp>
 #include <alia/events.hpp>
+#include <alia/system.hpp>
 #include <sstream>
 
 #include <catch2/catch.hpp>
@@ -42,13 +42,12 @@ do_label(context& ctx, std::string const& name)
 
 struct traversal_function
 {
-    context& ctx;
     int n;
-    traversal_function(context& ctx, int n) : ctx(ctx), n(n)
+    traversal_function(int n) : n(n)
     {
     }
     void
-    operator()()
+    operator()(context ctx)
     {
         do_ostream_text(ctx, "");
 
@@ -94,46 +93,24 @@ struct traversal_function
     }
 };
 
-template<class Event>
-void
-do_traversal(
-    data_graph& graph,
-    int n,
-    Event& e,
-    bool targeted,
-    routing_region_ptr const& target = routing_region_ptr())
-{
-    data_traversal data_traversal;
-    scoped_data_traversal sdt(graph, data_traversal);
-    event_traversal event_traversal;
-
-    component_storage storage;
-    add_component<data_traversal_tag>(storage, &data_traversal);
-    add_component<event_traversal_tag>(storage, &event_traversal);
-
-    context ctx(&storage);
-
-    traversal_function fn(ctx, n);
-    dispatch_event(fn, event_traversal, targeted, e, target);
-}
-
 void
 check_traversal_path(
     int n, std::string const& label, std::string const& expected_path)
 {
-    data_graph graph;
+    alia::system sys;
+    sys.controller = traversal_function(n);
     routing_region_ptr target;
     {
         find_label_event fle;
         fle.name = label;
-        do_traversal(graph, n, fle, false);
+        dispatch_event(sys, fle);
         target = fle.region;
     }
     {
         ostream_event oe;
         std::ostringstream s;
         oe.stream = &s;
-        do_traversal(graph, n, oe, true, target);
+        dispatch_targeted_event(sys, oe, target);
         REQUIRE(s.str() == expected_path);
     }
 }
