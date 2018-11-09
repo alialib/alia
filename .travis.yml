@@ -1,28 +1,31 @@
 sudo: required
 dist: trusty
-
 before_script:
-  - sudo bash scripts/set-up-system.sh
-  # Ubuntu Trusty has a buggy binutils.
-  - sudo apt-get install -y --upgrade binutils-2.26
-  - export PATH=/usr/lib/binutils-2.26/bin:${PATH}
-  - scripts/set-up-python.sh
-  - source .venv/bin/activate
-  - export CC=`which clang-4.0`
-  - export CXX=`which clang++-4.0`
-  - scripts/set-up-conan.sh
-  - export CTEST_OUTPUT_ON_FAILURE=1
-
+- sudo bash scripts/set-up-system.sh
+- sudo apt-get install -y --upgrade binutils-2.26
+- export PATH=/usr/lib/binutils-2.26/bin:${PATH}
+- scripts/set-up-python.sh
+- source .venv/bin/activate
+- export CC=`which clang-4.0`
+- export CXX=`which clang++-4.0`
+- scripts/set-up-conan.sh
+- export CTEST_OUTPUT_ON_FAILURE=1
 script:
-  - ./fips make test linux-make-debug
-  - ./fips make test linux-make-release
-
+- ./fips make test linux-make-debug
+- ./fips make test linux-make-release
+- python scripts/generate-distributables.py
 before_cache:
-  - conan remove "*" -s -b -f
-
+- conan remove "*" -s -b -f
 cache:
   directories:
-  - $HOME/.conan/data
-
+  - "$HOME/.conan/data"
 after_success:
-  - bash <(curl -s https://codecov.io/bash) -X gcov
+- bash <(curl -s https://codecov.io/bash) -X gcov
+deploy:
+  provider: releases
+  api_key:
+    secure: upz/uDNpVnHmK/oe9dSDsK04Z6lEVOgrrM1BZG8tatw/atTREJELXDkuB2eudkv21tDCRP5YRJYlkRcKrn5bvINk8HcayPXlWhmDiKaT3majietiix1B4V5llSuzbaEdH3cR24122tHoCzGpBxQeon1Vr77za0iWO9t8FkQO/YFeMn/GEU3TUbMMinp5i3WNd4x0Ps9yArSinsEMdK6342uHurFEDR54/04fpIYW1LlJobOIYqs0NYiLAfYfrunNZ/C2Zilxm7drWY4HsY8wIrrrOPsZojUEn4pAZfebDrCCUkvMyaN2SXdCC1MhsmOKLb5J38Y8LC11z8KWL+XdAhvRFxE7Q556rPeV/4WU4jaZcETmNd1yS7MQsWxHE+uCsXmiS7UerFPMNv14+xSno/qc0WjmLIzhsJOnB5hYQW8t/Y5N8DbCkAo7JTlm3niVQPXz3RBSWG55oW/X1l5TyRmNXB900v+nlovehqyheZcXaaljWx0NaiwYyt6uUEf7cUinFeEYjc0fsV6Yf0/jrw+L5Ex6TEtSzKcTfv2lz6qUi7BSwvoUmEnQfqcZfamKyulJ+9662ZpFiKILi+QuiM0ucjMPw2pMF3BwqTnEqEMLc6qBH8+jnVOFDsrAbo79eiqJ2W2HXEyUWVrXG5KruFuuVPuSXxuOMG/RA4rQtP8=
+  file: alia.hpp
+  on:
+    tags: true
+    repo: tmadden/alia
