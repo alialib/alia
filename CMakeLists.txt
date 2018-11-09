@@ -203,7 +203,7 @@ if(FIPS_CLANG AND CMAKE_BUILD_TYPE STREQUAL "Debug")
         unit_test_coverage
         COMMAND ${CMAKE_COMMAND} --build . --target unit_tests
         COMMAND llvm-profdata-${CLANG_MAJOR_MINOR_VERSION} merge -sparse unit-testing/default.profraw -o default.profdata
-        COMMAND llvm-cov-4.0 show -instr-profile=default.profdata ${FIPS_PROJECT_DEPLOY_DIR}/unit_test_runner >${PROJECT_SOURCE_DIR}/coverage.txt
+        COMMAND llvm-cov-${CLANG_MAJOR_MINOR_VERSION} show -instr-profile=default.profdata ${FIPS_PROJECT_DEPLOY_DIR}/unit_test_runner >${PROJECT_SOURCE_DIR}/coverage.txt
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
     add_test(
         NAME unit_test_coverage
