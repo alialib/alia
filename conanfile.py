@@ -14,7 +14,7 @@ class CradleConan(ConanFile):
     if "APPVEYOR" not in os.environ:
         # AppVeyor provides Boost directly (and seems to have trouble building
         # it through Conan), so omit Boost if we're running on AppVeyor.
-        requires = requires + ("Boost/1.64.0@conan/stable", )
+        requires = requires + ("Boost/1.68.0@conan/stable", )
         default_options = default_options + \
            ("Boost:without_atomic=True",
             "Boost:without_chrono=True",
