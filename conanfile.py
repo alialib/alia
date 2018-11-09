@@ -14,25 +14,25 @@ class CradleConan(ConanFile):
     if "APPVEYOR" not in os.environ:
         # AppVeyor provides Boost directly (and seems to have trouble building
         # it through Conan), so omit Boost if we're running on AppVeyor.
-        requires = requires + ("Boost/1.68.0@conan/stable", )
+        requires = requires + ("boost/1.68.0@conan/stable", )
         default_options = default_options + \
-           ("Boost:without_atomic=True",
-            "Boost:without_chrono=True",
-            "Boost:without_container=True",
-            "Boost:without_context=True",
-            "Boost:without_coroutine=True",
-            "Boost:without_coroutine2=True",
-            "Boost:without_graph=True",
-            "Boost:without_graph_parallel=True",
-            "Boost:without_log=True",
-            "Boost:without_math=True",
-            "Boost:without_mpi=True",
-            "Boost:without_serialization=True",
-            "Boost:without_signals=True",
-            "Boost:without_test=True",
-            "Boost:without_timer=True",
-            "Boost:without_type_erasure=True",
-            "Boost:without_wave=True")
+           ("boost:without_atomic=True",
+            "boost:without_chrono=True",
+            "boost:without_container=True",
+            "boost:without_context=True",
+            "boost:without_coroutine=True",
+            "boost:without_coroutine2=True",
+            "boost:without_graph=True",
+            "boost:without_graph_parallel=True",
+            "boost:without_log=True",
+            "boost:without_math=True",
+            "boost:without_mpi=True",
+            "boost:without_serialization=True",
+            "boost:without_signals=True",
+            "boost:without_test=True",
+            "boost:without_timer=True",
+            "boost:without_type_erasure=True",
+            "boost:without_wave=True")
 
     def imports(self):
         dest = os.getenv("CONAN_IMPORT_PATH", "bin")
