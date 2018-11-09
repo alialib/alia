@@ -1,9 +1,6 @@
 dist: xenial
 before_script:
 - sudo bash scripts/set-up-system.sh
-  # Ubuntu Trusty has a buggy binutils.
-- sudo apt-get install -y --upgrade binutils-2.26
-- export PATH=/usr/lib/binutils-2.26/bin:${PATH}
 - scripts/set-up-python.sh
 - source .venv/bin/activate
 - export CC=`which clang-4.0`
