@@ -1,7 +1,7 @@
-sudo: required
-dist: trusty
+dist: xenial
 before_script:
 - sudo bash scripts/set-up-system.sh
+  # Ubuntu Trusty has a buggy binutils.
 - sudo apt-get install -y --upgrade binutils-2.26
 - export PATH=/usr/lib/binutils-2.26/bin:${PATH}
 - scripts/set-up-python.sh
@@ -18,7 +18,7 @@ before_cache:
 - conan remove "*" -s -b -f
 cache:
   directories:
-  - "$HOME/.conan/data"
+  - $HOME/.conan/data
 after_success:
 - bash <(curl -s https://codecov.io/bash) -X gcov
 deploy:
