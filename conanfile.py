@@ -21,7 +21,6 @@ class CradleConan(ConanFile):
             "boost:without_container=True",
             "boost:without_context=True",
             "boost:without_coroutine=True",
-            "boost:without_coroutine2=True",
             "boost:without_graph=True",
             "boost:without_graph_parallel=True",
             "boost:without_log=True",
