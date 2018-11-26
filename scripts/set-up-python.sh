@@ -5,4 +5,4 @@ set -x -e
 virtualenv --prompt="(alia) " .venv
 source .venv/bin/activate
 python --version
-pip install conan gcovr
+pip install conan gcovr pathlib
