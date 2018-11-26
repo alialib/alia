@@ -12,7 +12,7 @@ alia
 
 |
 
-.. warning:: This project is in an unstable, pre-release state. There are missing links, missing documentation pages, missing features, and APIs that may change in the future. That said, what's there now should work well, so if you're interested in playing around with it, I welcome any feedback or contributions!
+**WARNING**: This project is in an unstable, pre-release state. There are missing links, missing documentation pages, missing features, and APIs that may change in the future. That said, what's there now should work well, so if you're interested in playing around with it, I welcome any feedback or contributions!
 
 alia (pronounced uh-LEE-uh) is a modern C++ library for developing reactive applications. It provides a core of generic facilities for reactive programming (data flow modeling, event processing, etc.) as well as interfaces to some existing C++ libraries, allowing those libraries to be used reactively from within alia applications.
 
