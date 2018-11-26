@@ -10,11 +10,12 @@
 // iterating through the current objects in the scene and calling a
 // library-provided function to specify the existence of each of them.
 //
-// This function also serves as a way to dispatch and handle events. However, in
-// cases where the event only needs to go to one object in the scene, the
-// overhead of having the traversal function visit every other object can be
-// problematic. The overhead can be reduced by having the traversal function
-// skip over subregions of the scene when they're not relevant to the event.
+// This traversal function serves as a way to dispatch and handle events.
+// However, in cases where the event only needs to go to a single object in the
+// scene, the overhead of having the traversal function visit every other object
+// can be problematic. The overhead can be reduced by having the traversal
+// function skip over subregions of the scene when they're not relevant to the
+// event.
 //
 // This file provides a system for defining a hierarchy of such subregions in
 // the scene, identifying which subregion an event is targeted at, and culling
