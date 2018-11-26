@@ -1,6 +1,6 @@
 #include <alia/signals/core.hpp>
 
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 
 #include <alia/signals/basic.hpp>
 
@@ -118,17 +118,17 @@ TEST_CASE("signal_ref", "[signals]")
     REQUIRE(read_signal(s) == 0);
 }
 
-void
+static void
 f_input(alia::input<int> x)
 {
 }
 
-void
+static void
 f_output(alia::output<int> x)
 {
 }
 
-void
+static void
 f_bidirectional(alia::bidirectional<int> x)
 {
 }

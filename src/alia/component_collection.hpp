@@ -14,7 +14,7 @@
 // allow applications to freely mix together components from multiple sources
 // (which may not know about one another).
 //
-// Some additional design considerations follow. Note that these use refer to
+// Some additional design considerations follow. Note that these refer to
 // contexts rather than component collections, since that is the primary
 // motivating example of a component collection.
 //
@@ -27,13 +27,13 @@
 // (but ubiquitous within it).
 //
 // 2. Functions that take contexts as arguments should be able to define the set
-// of components that they requires as part of the type signature of the
-// context. Any caller whose context includes a superset of those frames
-// should be able to call the function with an implicit conversion of the
-// context parameter. This should all be possible without needing to define
-// functions as templates (otherwise alia-based applications would end up being
-// entirely header-based) and with minimal (ideally zero) runtime overhead in
-// converting the caller's context to the type expected by the function.
+// of components that they require as part of the type signature of the context.
+// Any caller whose context includes a superset of those components should be
+// able to call the function with an implicit conversion of the context
+// parameter. This should all be possible without needing to define functions as
+// templates (otherwise alia-based applications would end up being entirely
+// header-based) and with minimal (ideally zero) runtime overhead in converting
+// the caller's context to the type expected by the function.
 //
 // 3. Retrieving frames/capabilities from a context should require minimal
 // (ideally zero) runtime overhead.
@@ -48,8 +48,7 @@
 // ALIA_DYNAMIC_COMPONENT_CHECKING. If this is set, code related to statically
 // checking components is omitted and dynamic checks are substituted where
 // appropriate. Note that when ALIA_DYNAMIC_COMPONENT_CHECKING is NOT set,
-// ALIA_STATIC_COMPONENT_CHECKING is set by default and static checks are
-// included.
+// ALIA_STATIC_COMPONENT_CHECKING is set and static checks are included.
 //
 // The statically typed component_collection object is a simple wrapper around
 // the dynamically typed storage object. It adds a compile-time type list
@@ -541,6 +540,15 @@ struct generic_component_storage
 };
 
 // The following functions constitute the interface expected of storage objects.
+
+// Does the storage object have a component with the given tag?
+template<class Tag, class Data>
+bool
+has_component(generic_component_storage<Data>& storage)
+{
+    return storage.components.find(std::type_index(typeid(Tag)))
+           != storage.components.end();
+}
 
 // Add a component.
 template<class Tag, class StorageData, class ComponentData>

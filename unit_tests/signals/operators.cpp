@@ -4,7 +4,7 @@
 
 #include <map>
 
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 
 #include <alia/signals/basic.hpp>
 #include <alia/signals/lambdas.hpp>
@@ -197,7 +197,6 @@ TEST_CASE("field signal", "[signals]")
         always_writable,
         [&](foo const& v) { f = v; },
         [&]() { return combine_ids(make_id(f.x), make_id(f.y)); });
-
     auto x_signal = f_signal->*&foo::x;
 
     typedef decltype(x_signal) x_signal_t;
@@ -286,14 +285,7 @@ TEST_CASE("vector subscript", "[signals]")
     using namespace alia;
 
     auto c = std::vector<int>{2, 0, 3};
-    auto c_signal = lambda_bidirectional(
-        always_readable,
-        [&]() { return c; },
-        always_writable,
-        [&](std::vector<int> const& v) { c = v; },
-        [&]() {
-            return combine_ids(make_id(c[0]), make_id(c[1]), make_id(c[2]));
-        });
+    auto c_signal = direct(c);
     auto s = c_signal[value(1)];
 
     typedef decltype(s) signal_t;
@@ -320,12 +312,7 @@ TEST_CASE("read-only subscript", "[signals]")
     using namespace alia;
 
     auto c = std::vector<int>{2, 0, 3};
-    auto c_signal = lambda_input(
-        always_readable,
-        [&]() { return c; },
-        [&]() {
-            return combine_ids(make_id(c[0]), make_id(c[1]), make_id(c[2]));
-        });
+    auto c_signal = value(c);
     auto s = c_signal[value(1)];
 
     typedef decltype(s) signal_t;
@@ -342,14 +329,7 @@ TEST_CASE("vector<bool> subscript", "[signals]")
     using namespace alia;
 
     auto c = std::vector<bool>{true, false, false};
-    auto c_signal = lambda_bidirectional(
-        always_readable,
-        [&]() { return c; },
-        always_writable,
-        [&](std::vector<bool> const& v) { c = v; },
-        [&]() {
-            return unit_id; // doesn't really matter
-        });
+    auto c_signal = direct(c);
     auto s = c_signal[value(1)];
 
     typedef decltype(s) signal_t;
@@ -369,14 +349,7 @@ TEST_CASE("map subscript", "[signals]")
     using namespace alia;
 
     auto c = std::map<int, int>{{2, 1}, {0, 3}};
-    auto c_signal = lambda_bidirectional(
-        always_readable,
-        [&]() { return c; },
-        always_writable,
-        [&](std::map<int, int> const& v) { c = v; },
-        [&]() {
-            return unit_id; // doesn't really matter
-        });
+    auto c_signal = direct(c);
     auto s = c_signal[value(2)];
 
     typedef decltype(s) signal_t;

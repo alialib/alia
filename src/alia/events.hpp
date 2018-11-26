@@ -1,6 +1,7 @@
-#ifndef ALIA_EVENT_ROUTING_HPP
-#define ALIA_EVENT_ROUTING_HPP
+#ifndef ALIA_EVENTS_HPP
+#define ALIA_EVENTS_HPP
 
+#include <alia/context.hpp>
 #include <alia/data_graph.hpp>
 
 // This file implements utilities for routing events through an alia content
@@ -23,6 +24,7 @@
 
 namespace alia {
 
+struct system;
 struct routing_region;
 
 typedef std::shared_ptr<routing_region> routing_region_ptr;
@@ -38,57 +40,54 @@ struct event_routing_path
     event_routing_path* rest;
 };
 
-struct event_routing_traversal
+struct event_traversal
 {
     routing_region_ptr* active_region;
-    data_traversal* data;
     bool targeted;
     event_routing_path* path_to_target;
+    std::type_info const* event_type;
+    void* event;
 };
 
 inline routing_region_ptr
-get_active_region(event_routing_traversal const& traversal)
+get_active_routing_region(context ctx)
 {
+    event_traversal& traversal = get_event_traversal(ctx);
     return traversal.active_region ? *traversal.active_region
                                    : routing_region_ptr();
 }
 
-template<class TraversalFunction>
+// Set up the event traversal so that it will route the control flow to the
+// given target. (And also invoke the traversal.)
+// :target can be null, in which case no (further) routing will be done.
 void
-invoke_targeted_traversal(
-    TraversalFunction& fn,
-    event_routing_traversal& traversal,
-    routing_region* target)
+route_event(system& sys, event_traversal& traversal, routing_region* target);
+
+template<class Event>
+void
+dispatch_targeted_event(
+    system& sys, Event& event, routing_region_ptr const& target)
 {
-    if (target)
-    {
-        event_routing_path path_node;
-        path_node.rest = traversal.path_to_target;
-        path_node.node = target;
-        traversal.path_to_target = &path_node;
-        invoke_targeted_traversal(fn, traversal, target->parent.get());
-    }
-    else
-        fn();
+    event_traversal traversal;
+    traversal.active_region = 0;
+    traversal.targeted = true;
+    traversal.path_to_target = 0;
+    traversal.event_type = &typeid(Event);
+    traversal.event = &event;
+    route_event(sys, traversal, target.get());
 }
 
-template<class TraversalFunction>
+template<class Event>
 void
-invoke_routed_traversal(
-    TraversalFunction& fn,
-    event_routing_traversal& traversal,
-    data_traversal& data,
-    bool targeted,
-    routing_region_ptr const& target = routing_region_ptr())
+dispatch_event(system& sys, Event& event)
 {
+    event_traversal traversal;
     traversal.active_region = 0;
-    traversal.data = &data;
-    traversal.targeted = targeted;
+    traversal.targeted = false;
     traversal.path_to_target = 0;
-    if (targeted)
-        invoke_targeted_traversal(fn, traversal, target.get());
-    else
-        fn();
+    traversal.event_type = &typeid(Event);
+    traversal.event = &event;
+    route_event(sys, traversal, 0);
 }
 
 struct scoped_routing_region
@@ -96,9 +95,9 @@ struct scoped_routing_region
     scoped_routing_region() : traversal_(0)
     {
     }
-    scoped_routing_region(event_routing_traversal& traversal)
+    scoped_routing_region(context ctx)
     {
-        begin(traversal);
+        begin(ctx);
     }
     ~scoped_routing_region()
     {
@@ -106,7 +105,7 @@ struct scoped_routing_region
     }
 
     void
-    begin(event_routing_traversal& traversal);
+    begin(context ctx);
 
     void
     end();
@@ -118,10 +117,26 @@ struct scoped_routing_region
     }
 
  private:
-    event_routing_traversal* traversal_;
+    event_traversal* traversal_;
     routing_region_ptr* parent_;
     bool is_relevant_;
 };
+
+bool
+detect_event(context ctx, std::type_info const& type);
+
+template<class Event>
+bool
+detect_event(context ctx, Event** event)
+{
+    event_traversal& traversal = get_event_traversal(ctx);
+    if (*traversal.event_type == typeid(Event))
+    {
+        *event = reinterpret_cast<Event*>(traversal.event);
+        return true;
+    }
+    return false;
+}
 
 } // namespace alia
 

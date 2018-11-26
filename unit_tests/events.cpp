@@ -1,93 +1,72 @@
-#include <alia/data_graph.hpp>
-#include <alia/event_routing.hpp>
+#include <alia/events.hpp>
+#include <alia/system.hpp>
 #include <sstream>
 
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 
 using namespace alia;
 
-struct test_event
-{
-    virtual ~test_event()
-    {
-    }
-};
-
-struct test_context
-{
-    event_routing_traversal* routing;
-    data_traversal* data;
-    test_event* event;
-};
-
-data_traversal&
-get_data_traversal(test_context& ctx)
-{
-    return *ctx.data;
-}
-
-struct ostream_event : test_event
+struct ostream_event
 {
     std::ostream* stream;
 };
 
 void
-do_ostream_text(test_context& ctx, std::string const& text)
+do_ostream_text(context& ctx, std::string const& text)
 {
-    ostream_event* oe = dynamic_cast<ostream_event*>(ctx.event);
-    if (oe)
+    ostream_event* oe;
+    if (detect_event(ctx, &oe))
     {
         *oe->stream << text << ";";
     }
 }
 
-struct find_label_event : test_event
+struct find_label_event
 {
     routing_region_ptr region;
     std::string name;
 };
 
 void
-do_label(test_context& ctx, std::string const& name)
+do_label(context& ctx, std::string const& name)
 {
     do_ostream_text(ctx, name);
 
-    find_label_event* fle = dynamic_cast<find_label_event*>(ctx.event);
-    if (fle)
+    find_label_event* fle;
+    if (detect_event(ctx, &fle))
     {
         if (fle->name == name)
-            fle->region = get_active_region(*ctx.routing);
+            fle->region = get_active_routing_region(ctx);
     }
 }
 
 struct traversal_function
 {
-    test_context& ctx;
     int n;
-    traversal_function(test_context& ctx, int n) : ctx(ctx), n(n)
+    traversal_function(int n) : n(n)
     {
     }
     void
-    operator()()
+    operator()(context ctx)
     {
         do_ostream_text(ctx, "");
 
-        REQUIRE(!get_active_region(*ctx.routing));
+        REQUIRE(!get_active_routing_region(ctx));
 
-        scoped_routing_region srr(*ctx.routing);
+        scoped_routing_region srr(ctx);
         ALIA_IF(srr.is_relevant())
         {
             do_label(ctx, "root");
 
             ALIA_IF(n != 0)
             {
-                scoped_routing_region srr(*ctx.routing);
+                scoped_routing_region srr(ctx);
                 ALIA_IF(srr.is_relevant())
                 {
                     do_label(ctx, "nonzero");
 
                     {
-                        scoped_routing_region srr(*ctx.routing);
+                        scoped_routing_region srr(ctx);
                         ALIA_IF(srr.is_relevant())
                         {
                             do_label(ctx, "deep");
@@ -101,7 +80,7 @@ struct traversal_function
 
             ALIA_IF(n & 1)
             {
-                scoped_routing_region srr(*ctx.routing);
+                scoped_routing_region srr(ctx);
                 ALIA_IF(srr.is_relevant())
                 {
                     do_label(ctx, "odd");
@@ -115,44 +94,23 @@ struct traversal_function
 };
 
 void
-do_traversal(
-    data_graph& graph,
-    int n,
-    test_event& e,
-    bool targeted,
-    routing_region_ptr const& target = routing_region_ptr())
-{
-    data_traversal data_traversal;
-    scoped_data_traversal sdt(graph, data_traversal);
-    event_routing_traversal routing_traversal;
-
-    test_context ctx;
-    ctx.event = &e;
-    ctx.data = &data_traversal;
-    ctx.routing = &routing_traversal;
-
-    traversal_function fn(ctx, n);
-    invoke_routed_traversal(
-        fn, routing_traversal, data_traversal, targeted, target);
-}
-
-void
 check_traversal_path(
     int n, std::string const& label, std::string const& expected_path)
 {
-    data_graph graph;
+    alia::system sys;
+    sys.controller = traversal_function(n);
     routing_region_ptr target;
     {
         find_label_event fle;
         fle.name = label;
-        do_traversal(graph, n, fle, false);
+        dispatch_event(sys, fle);
         target = fle.region;
     }
     {
         ostream_event oe;
         std::ostringstream s;
         oe.stream = &s;
-        do_traversal(graph, n, oe, true, target);
+        dispatch_targeted_event(sys, oe, target);
         REQUIRE(s.str() == expected_path);
     }
 }

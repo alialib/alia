@@ -4,9 +4,7 @@
 #include <unordered_map>
 #include <utility>
 
-#include <boost/lexical_cast.hpp>
-
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 
 using namespace alia;
 
@@ -18,10 +16,6 @@ test_equal_ids(id_interface const& a, id_interface const& b)
     REQUIRE(b == a);
     REQUIRE(!(a < b));
     REQUIRE(!(b < a));
-    REQUIRE(
-        boost::lexical_cast<std::string>(a)
-        == boost::lexical_cast<std::string>(b));
-    REQUIRE(a.hash() == b.hash());
 }
 
 // Test all the ID operations on a single ID.
@@ -54,7 +48,6 @@ test_different_ids(A const& a, B const& b)
     test_single_id(b);
     REQUIRE(a != b);
     REQUIRE((a < b && !(b < a) || b < a && !(a < b)));
-    REQUIRE(a.hash() != b.hash());
 }
 
 TEST_CASE("simple_id", "[id]")
@@ -98,7 +91,6 @@ TEST_CASE("captured_id operators", "[id]")
     d.capture(make_id(1));
     REQUIRE(c != d);
     REQUIRE(c < d);
-    REQUIRE(boost::lexical_cast<std::string>(c) == "0");
 }
 
 TEST_CASE("captured_id copy construction", "[id]")
@@ -171,8 +163,6 @@ TEST_CASE("combine_ids x1", "[id]")
 {
     auto a = combine_ids(make_id(0));
     auto b = combine_ids(make_id(1));
-    REQUIRE(boost::lexical_cast<std::string>(a) == "0");
-    REQUIRE(boost::lexical_cast<std::string>(b) == "1");
     test_different_ids(a, b);
 }
 
@@ -180,8 +170,6 @@ TEST_CASE("combine_ids x2", "[id]")
 {
     auto a = combine_ids(make_id(0), make_id(1));
     auto b = combine_ids(make_id(1), make_id(2));
-    REQUIRE(boost::lexical_cast<std::string>(a) == "(0,1)");
-    REQUIRE(boost::lexical_cast<std::string>(b) == "(1,2)");
     test_different_ids(a, b);
 }
 
@@ -239,29 +227,6 @@ TEST_CASE("map of IDs", "[id]")
     auto another_one = make_id(1);
 
     std::map<id_interface const*, int, id_interface_pointer_less_than_test> m;
-    m[&zero] = 0;
-    m[&abc] = 123;
-    REQUIRE(m.at(&zero) == 0);
-    REQUIRE(m.at(&abc) == 123);
-    REQUIRE(m.find(&one) == m.end());
-    m[&one] = 1;
-    REQUIRE(m.at(&one) == 1);
-    REQUIRE(m.at(&another_one) == 1);
-}
-
-TEST_CASE("unordered_map of IDs", "[id]")
-{
-    auto zero = make_id(0);
-    auto abc = make_id(std::string("abc"));
-    auto one = make_id(1);
-    auto another_one = make_id(1);
-
-    std::unordered_map<
-        id_interface const*,
-        int,
-        id_interface_pointer_hash,
-        id_interface_pointer_equality_test>
-        m;
     m[&zero] = 0;
     m[&abc] = 123;
     REQUIRE(m.at(&zero) == 0);

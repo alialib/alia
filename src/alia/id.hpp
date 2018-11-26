@@ -36,14 +36,6 @@ struct id_interface
     // one.
     virtual bool
     less_than(id_interface const& other) const = 0;
-
-    // Write a textual representation of the ID to the given stream.
-    virtual void
-    stream(std::ostream& o) const = 0;
-
-    // Generate a hash of the ID.
-    virtual size_t
-    hash() const = 0;
 };
 
 // The following convert the interface of the ID operations into the usual form
@@ -67,13 +59,6 @@ operator!=(id_interface const& a, id_interface const& b)
 bool
 operator<(id_interface const& a, id_interface const& b);
 
-inline std::ostream&
-operator<<(std::ostream& o, id_interface const& id)
-{
-    id.stream(o);
-    return o;
-}
-
 // The following allow the use of IDs as keys in a map or unordered_map.
 // The IDs are stored separately as captured_ids in the mapped values and
 // pointers are used as keys. This allows searches to be done on pointers to
@@ -94,15 +79,6 @@ struct id_interface_pointer_equality_test
     operator()(id_interface const* a, id_interface const* b) const
     {
         return *a == *b;
-    }
-};
-
-struct id_interface_pointer_hash
-{
-    size_t
-    operator()(id_interface const* id) const
-    {
-        return id->hash();
     }
 };
 
@@ -191,8 +167,6 @@ bool
 operator!=(captured_id const& a, captured_id const& b);
 bool
 operator<(captured_id const& a, captured_id const& b);
-std::ostream&
-operator<<(std::ostream& o, captured_id const& id);
 
 // ref(id) wraps a reference to an id_interface so that it can be combined.
 struct id_ref : id_interface
@@ -228,12 +202,6 @@ struct id_ref : id_interface
     }
 
     void
-    stream(std::ostream& o) const
-    {
-        o << *id_;
-    }
-
-    void
     deep_copy(id_interface* copy) const
     {
         auto& typed_copy = *static_cast<id_ref*>(copy);
@@ -247,12 +215,6 @@ struct id_ref : id_interface
             typed_copy.ownership_.reset(id_->clone());
             typed_copy.id_ = typed_copy.ownership_.get();
         }
-    }
-
-    size_t
-    hash() const
-    {
-        return id_->hash();
     }
 
  private:
@@ -307,21 +269,9 @@ struct simple_id : id_interface
     }
 
     void
-    stream(std::ostream& o) const
-    {
-        o << value_;
-    }
-
-    void
     deep_copy(id_interface* copy) const
     {
         *static_cast<simple_id*>(copy) = *this;
-    }
-
-    size_t
-    hash() const
-    {
-        return std::hash<Value>()(value_);
     }
 
  private:
@@ -374,12 +324,6 @@ struct simple_id_by_reference : id_interface
     }
 
     void
-    stream(std::ostream& o) const
-    {
-        o << *value_;
-    }
-
-    void
     deep_copy(id_interface* copy) const
     {
         auto& typed_copy = *static_cast<simple_id_by_reference*>(copy);
@@ -393,12 +337,6 @@ struct simple_id_by_reference : id_interface
             typed_copy.storage_.reset(new Value(*this->value_));
             typed_copy.value_ = typed_copy.storage_.get();
         }
-    }
-
-    size_t
-    hash() const
-    {
-        return std::hash<Value>()(*value_);
     }
 
  private:
@@ -450,23 +388,11 @@ struct id_pair : id_interface
     }
 
     void
-    stream(std::ostream& o) const
-    {
-        o << "(" << id0_ << "," << id1_ << ")";
-    }
-
-    void
     deep_copy(id_interface* copy) const
     {
         id_pair* typed_copy = static_cast<id_pair*>(copy);
         id0_.deep_copy(&typed_copy->id0_);
         id1_.deep_copy(&typed_copy->id1_);
-    }
-
-    size_t
-    hash() const
-    {
-        return id0_.hash() ^ id1_.hash();
     }
 
  private:
