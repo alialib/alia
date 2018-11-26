@@ -18,4 +18,4 @@
 #pragma warning(disable : 4702)
 #endif
 
-#include <catch.hpp>
+#include <catch2/catch.hpp>
