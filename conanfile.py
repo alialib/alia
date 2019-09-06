@@ -2,14 +2,11 @@ from conans import ConanFile, CMake
 import os
 
 
-class CradleConan(ConanFile):
+class AliaConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
-    requires = \
-        "catch2/2.3.0@bincrafters/stable", \
-        "FakeIt/2.0.4@gasuketsu/stable"
+    requires = ("Catch/1.12.1@bincrafters/stable", )
     generators = "cmake"
     default_options = \
-        "FakeIt:integration=catch", \
         "*:shared=False"
     if "APPVEYOR" not in os.environ:
         # AppVeyor provides Boost directly (and seems to have trouble building
