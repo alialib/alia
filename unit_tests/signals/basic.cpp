@@ -1,6 +1,6 @@
 #include <alia/signals/basic.hpp>
 
-#include <catch2/catch.hpp>
+#include <catch.hpp>
 
 using namespace alia;
 

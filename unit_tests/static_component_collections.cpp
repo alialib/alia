@@ -1,6 +1,6 @@
 #include <alia/component_collection.hpp>
 
-#include <catch2/catch.hpp>
+#include <catch.hpp>
 
 #include <boost/any.hpp>
 

@@ -1,7 +1,7 @@
 #include <alia/context.hpp>
 #include <alia/events.hpp>
 
-#include <catch2/catch.hpp>
+#include <catch.hpp>
 
 using namespace alia;
 
