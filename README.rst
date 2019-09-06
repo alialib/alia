@@ -4,21 +4,31 @@ alia
 .. image:: https://img.shields.io/travis/tmadden/alia.svg?style=flat&logo=travis
     :target: https://travis-ci.org/tmadden/alia
 
-.. image:: https://img.shields.io/appveyor/ci/tmadden/alia/master.svg?style=flat&logo=appveyor
+.. image::
+https://img.shields.io/appveyor/ci/tmadden/alia/master.svg?style=flat&logo=appveyor
     :target: https://ci.appveyor.com/project/tmadden/alia/branch/master
 
-.. image:: https://img.shields.io/codecov/c/github/tmadden/alia/master.svg?style=flat
+.. image::
+https://img.shields.io/codecov/c/github/tmadden/alia/master.svg?style=flat
     :target: https://codecov.io/gh/tmadden/alia
 
 |
 
-**WARNING**: This project is in an unstable, pre-release state. There are missing links, missing documentation pages, missing features, and APIs that may change in the future. That said, what's there now should work well, so if you're interested in playing around with it, I welcome any feedback or contributions!
+**WARNING**: This project is in an unstable, pre-release state. There are
+missing links, missing documentation pages, missing features, and APIs that may
+change in the future. That said, what's there now should work well, so if you're
+interested in playing around with it, I welcome any feedback or contributions!
 
-alia (pronounced uh-LEE-uh) is a modern C++ library for developing reactive applications. It provides a core of generic facilities for reactive programming (data flow modeling, event processing, etc.) as well as interfaces to some existing C++ libraries, allowing those libraries to be used reactively from within alia applications.
+alia (pronounced uh-LEE-uh) is a modern C++ library for developing reactive
+applications. It provides a core of generic facilities for reactive programming
+(data flow modeling, event processing, etc.) as well as interfaces to some
+existing C++ libraries, allowing those libraries to be used reactively from
+within alia applications.
 
 The full documentation for alia can be found here.
 
-Below is a simple tip calculator written in alia using the asm-dom wrapper. To try it out and see more examples, click here.
+Below is a simple tip calculator written in alia using the asm-dom wrapper. To
+try it out and see more examples, click here.
 
 .. todo: Add links to documentation and examples.
 
