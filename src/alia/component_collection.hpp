@@ -8,7 +8,7 @@
 #include <unordered_map>
 
 // This file provides a means for defining arbitrary collections of components
-// which constitute the context in which an application operates. The set of
+// that constitute the context in which an application operates. The set of
 // components required for an application obviously varies across applications
 // (and even across modules within a complex application). The goal here is to
 // allow applications to freely mix together components from multiple sources
@@ -22,7 +22,7 @@
 // those into its context. This includes application-level state. If there is
 // state that is essentially global to the application (e.g., the active user),
 // application code should be able to retrieve this from the application
-// context. Similarly, a component of the application may decide to extend
+// context. Similarly, a component of the application should be able to extend
 // the application's context with state that is specific to that component
 // (but ubiquitous within it).
 //

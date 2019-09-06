@@ -5,7 +5,7 @@
 
 #include <boost/lexical_cast.hpp>
 
-#include <catch2/catch.hpp>
+#include <catch.hpp>
 
 using namespace alia;
 
@@ -1028,6 +1028,51 @@ TEST_CASE("named block caching", "[data_graph]")
     check_log(
         "destructing int;"
         "destructing int;");
+}
+
+TEST_CASE("naming_map lifetime", "[data_graph]")
+{
+    clear_log();
+    {
+        data_graph graph;
+
+        auto make_controller = [](auto condition, std::vector<int> indices) {
+            return [=](custom_context ctx) {
+                ALIA_IF(condition)
+                {
+                    naming_context nc(ctx);
+                    for (auto i : indices)
+                    {
+                        named_block nb(nc, make_id(i));
+                        {
+                            naming_context inner_nc(ctx);
+                            named_block inner_nb(inner_nc, make_id("inner"));
+                            do_int(ctx, i);
+                        }
+                    }
+                }
+                ALIA_END
+            };
+        };
+        do_traversal(graph, make_controller(value(true), {2, 1}));
+        check_log(
+            "initializing int: 2;"
+            "initializing int: 1;");
+        do_traversal(graph, make_controller(value(true), {2, 3, 1}));
+        check_log(
+            "visiting int: 2;"
+            "initializing int: 3;"
+            "visiting int: 1;");
+        do_traversal(graph, make_controller(value(true), {2, 1}));
+        check_log(
+            "visiting int: 2;"
+            "visiting int: 1;"
+            "destructing int;");
+        do_traversal(graph, make_controller(value(true), {}));
+        check_log(
+            "destructing int;"
+            "destructing int;");
+    }
 }
 
 TEST_CASE("scoped_cache_clearing_disabler", "[data_graph]")

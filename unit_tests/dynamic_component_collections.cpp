@@ -2,13 +2,13 @@
 
 #include <alia/component_collection.hpp>
 
-#include <catch2/catch.hpp>
+#include <catch.hpp>
 
 #include <boost/any.hpp>
 
 using namespace alia;
 
-// This shouldn't have been defiend.
+// This shouldn't have been defined.
 #ifdef ALIA_STATIC_COMPONENT_CHECKING
 #error ALIA_STATIC_COMPONENT_CHECKING defined
 #endif

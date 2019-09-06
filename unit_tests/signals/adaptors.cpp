@@ -5,7 +5,7 @@
 #include <alia/signals/basic.hpp>
 #include <alia/signals/lambdas.hpp>
 
-#include <catch2/catch.hpp>
+#include <catch.hpp>
 
 using namespace alia;
 
