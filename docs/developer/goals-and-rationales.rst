@@ -6,35 +6,59 @@ Signals
 
 The goals of the signals component are as follows.
 
-* Unify the interface to C-style data structures and OOP-style classes (whose data members may be protected behind accessor functions).
-* Provide standard mechanisms for transforming a back end's view of model  state or applying constraints to its manipulations of that state.
-* Provide mechanisms for efficiently detecting changes in signal values. (e.g., It should be possible to poll a signal carrying a large body of text and detect if it has changed since the last poll without examining the entire text.)
-* The 'direction' of signals (i.e., input/output/bidirectional) should be explicitly denoted in both the capabilities that a signal implementation provides and the requirements of a function that accepts a signal as a parameter.
-* A function that expects an input signal should be able to accept a bidirectional signal without requiring the function to do any template shenanigans. (More specifically, a function that accepts a signal should only have to declare the required direction and the value type of the signal. If both of those are concrete, the function shouldn't need to use templates to accept that signal.)
-* Allow signal wrappers to be agnostic of the signal's direction. (e.g., If I want to implement a wrapper that presents a view of a signal where the value is 10x as large, I should have to define what that means for reading and writing the signal, but I shouldn't have to write three different versions in order to preserve the direction of the wrapped signal.)
-* Ensure that the passing of signal values across functions is as efficient  and lazy as possible. (i.e., Avoid unnecessary memory allocations and  computations of unused values.)
+* Unify the interface to C-style data structures and OOP-style classes (whose
+data members may be protected behind accessor functions).
 
-IMGUI-Style vs Reactive-Style
------------------------------
+* Provide standard mechanisms for transforming a back end's view of model  state
+or applying constraints to its manipulations of that state.
 
-How do we strike a balance between supporting IMGUI style and reactive style?
+* Provide mechanisms for efficiently detecting changes in signal values. (e.g.,
+It should be possible to poll a signal carrying a large body of text and detect
+if it has changed since the last poll without examining the entire text.)
 
-IMGUI Style
-:::::::::::
+* The 'direction' of signals (i.e., input/output/bidirectional) should be
+explicitly denoted in both the capabilities that a signal implementation
+provides and the requirements of a function that accepts a signal as a
+parameter.
 
-The application iterates over the entire UI each frame/pass, (re)calculating everything that's relevant to the current snapshot and rendering/emitting it.
+* A function that expects an input signal should be able to accept a
+bidirectional signal without requiring the function to do any template
+shenanigans. (More specifically, a function that accepts a signal should only
+have to declare the required direction and the value type of the signal. If both
+of those are concrete, the function shouldn't need to use templates to accept
+that signal.)
 
-Reactive Style
-::::::::::::::
+* Allow signal wrappers to be agnostic of the signal's direction. (e.g., If I
+want to implement a wrapper that presents a view of a signal where the value is
+10x as large, I should have to define what that means for reading and writing
+the signal, but I shouldn't have to write three different versions in order to
+preserve the direction of the wrapped signal.)
 
-The application builds a dataflow / object graph with individual callbacks that are invoked when needed to propogate changes.
+* Ensure that the passing of signal values across functions is as efficient  and
+lazy as possible. (i.e., Avoid unnecessary memory allocations and  computations
+of unused values.)
+
+IMGUI-Style or Not
+------------------
+
+Should the API use an IMGUI style?
+
+In IMGUI style, the application iterates over the entire UI each frame/pass,
+(re)calculating everything that's relevant to the current snapshot and
+rendering/emitting it.
+
+Another approach is to have the application builds a dataflow/object graph with
+individual callbacks that are invoked when needed to propogate changes.
 
 Resolution
-::::::::::
+^^^^^^^^^^
 
-Just like in alia v2, events don't need to traverse the full content/object graph. Instead, they can be routed to specific nodes. This behavior depends on the event itself.
+Just like in alia v2, events don't need to traverse the full content/object
+graph. Instead, they can be routed to specific nodes. This behavior depends on
+the event itself.
 
-Subgraphs can also skip the refresh event with proper support from the adaptor libraries.
+Subgraphs can also skip the refresh event with proper support from the adaptor
+libraries.
 
 Functions can be explicitly 'invoked', which handles skipping/routing.
 
@@ -43,10 +67,12 @@ Functions can be explicitly 'invoked', which handles skipping/routing.
 Terminology
 -----------
 
-There needs to be consistent terminology (which is ideally independent of user interfaces) for referring to whatever is actually getting generated by the controller.
+There needs to be consistent terminology (which is ideally independent of user
+interfaces) for referring to whatever is actually getting generated by the
+controller.
 
 Options
-:::::::
+^^^^^^^
 
 * 'nodes'
 * 'content'
@@ -58,11 +84,13 @@ Options
 * 'do'
 
 Resolution
-::::::::::
 
-'content graph', 'content node', 'nodes in the content graph', 'content graph traversal', etc.
+
+'content graph', 'content node', 'nodes in the content graph', 'content graph
+traversal', etc.
 
 'do'/'emit'?
+
 
 Validation
 ----------
@@ -70,34 +98,42 @@ Validation
 What facilities should alia provide for doing input validation?
 
 Resolution
-::::::::::
+^^^^^^^^^^
 
 It should (obviously) not provide anything specific to display of error mssages.
 
-The validation_error is probably worth keeping. For now, that's probably all that's worth deciding.
+It seems worth keeping the idea of signals being able to validate values that
+you attempt to write to them. For now, that's probably all that's worth
+deciding.
 
 
 
 Signals and Requests
 --------------------
 
-The background request system in alia/cradle v2 seems to conflate multiple concerns:
+The background request system in alia/cradle v2 seems to conflate multiple
+concerns:
 
 - Some signal values should be computed in the background.
-- Some signal values are accessed from multiple places within the UI and should be shared across those places.
+
+- Some signal values are accessed from multiple places within the UI and should
+be shared across those places.
+
 - Some signal values are worth caching in memory or on disk.
 
 Can these be addressed independently? How?
 
 Background Execution
-::::::::::::::::::::
+^^^^^^^^^^^^^^^^^^^^
 
-All this really implies is that a function should be executed in a separate thread from the controller.
+All this really implies is that a function should be executed in a separate
+thread from the controller.
 
 ::
     x = alia::async(ctx, fib, value(43));
 
-Just like ``std::async``, this returns immediately, but x doesn't yield a value until fib() returns.
+Just like ``std::async``, this returns immediately, but x doesn't yield a value
+until fib() returns.
 
 alia::async(ctx, f, args) does the following:
 
@@ -113,81 +149,102 @@ alia::async(ctx, f, args) does the following:
 				- Check if all the args are gettable.
 					- If so:
 						- Dispatch a job to run the function.
-							- This should include a wrapper to handle cancellation.
+							- This should include a wrapper to handle
+							cancellation.
 							  https://stackoverflow.com/questions/12086622/is-there-a-way-to-cancel-detach-a-future-in-c11
-							- Some indirection should be provided to allow different dispatchers (std::async, thread pooler, etc.)
+							- Some indirection should be provided to allow
+							different dispatchers (std::async, thread pooler,
+							etc.)
 							  https://github.com/vit-vit/CTPL
 	  	- Check if the job has produced a value (and if so, grab it).
 
 Shared Access
-:::::::::::::
+^^^^^^^^^^^^^
 
-The main issue here is that the ID used to identify the signal value would need to be globally unique, whereas normal signal values only have to be unique for the location in the data graph at which they're used.
+The main issue here is that the ID used to identify the signal value would need
+to be globally unique, whereas normal signal values only have to be unique for
+the location in the data graph at which they're used.
 
-This can actually just be treated as a separate concern. A library like CRADLE can be implemented entirely separate from alia and interfaces to it through something like the above async function.
+This can actually just be treated as a separate concern. A library like CRADLE
+can be implemented entirely separate from alia and interfaces to it through
+something like the above async function.
 
 Caching
-:::::::
+^^^^^^^
 
 This is basically the same story as shared access.
 
 Resolution
-::::::::::
+^^^^^^^^^^
 
-Implement the async function described above and forget about shared access and caching for now.
+Implement the async function described above and forget about shared access and
+caching for now.
 
 
 
 State Persistence
 -----------------
 
-Is there a generic mechanism by which 'magic'/local state could be persisted at a higher/global level (e.g., as part of a YAML data structure)?
+Is there a generic mechanism by which 'magic'/local state could be persisted at
+a higher/global level (e.g., as part of a YAML data structure)?
 
 Notes
-:::::
+^^^^^
 
-The main requirement that this imposes is the ability to construct a path to arbitrary state (e.g., 'cart/items/0/product_id'). This is also useful for debugging tools.
+The main requirement that this imposes is the ability to construct a path to
+arbitrary state (e.g., 'cart/items/0/product_id'). This is also useful for
+debugging tools.
 
 Resolution
-::::::::::
+^^^^^^^^^^
 
 ...
-
 
 
 Refresh Passes
 --------------
 
 The Issue
-:::::::::
+^^^^^^^^^
 
-Should alia v3 follow v2's convention of assuming that state doesn't change except on refresh passes?
+Should alia v3 follow v2's convention of assuming that state doesn't change
+except on refresh passes?
 
 Advantages
-::::::::::
+^^^^^^^^^^
 
-Depending on the interface, this could cause the interface to behave as if it is lagged w.r.t. the state. (It's possible that a widget will want to handle events before all properties can be set.)
+Depending on the interface, not following this convention could cause the
+interface to behave as if it is lagged w.r.t. the state. (It's possible that a
+widget will want to handle events before all properties can be set.)
 
 Disadvantages
-:::::::::::::
+^^^^^^^^^^^^^
 
-This causes issues for newbies and could impose burdensome constraints in some use cases. It also might adversely affect performance in cases where the app ends up having to issue refresh passes just to pick up changes (since those are global, whereas it was only trying to issue a targeted event).
+This causes issues for newbies and could impose burdensome constraints in some
+use cases. It also might adversely affect performance in cases where the app
+ends up having to issue refresh passes just to pick up changes (since those are
+global, whereas it was only trying to issue a targeted event).
 
 Resolution
-::::::::::
+^^^^^^^^^^
 
-Keep the assumption. Maybe add an option to send refresh passes before every event.
+Keep the assumption. Maybe add an option to send refresh passes before every
+event, or add (optional, perhaps opt-out) behavior that would automatically
+issue refresh passes in response to violations (and perhaps perform extra
+checks).
 
 
 Debugging
 ---------
 
-What tools should alia provide for debugging? How should these work? What requirements do they impose on the application?
+What tools should alia provide for debugging? How should these work? What
+requirements do they impose on the application?
 
 Resolution
-::::::::::
+^^^^^^^^^^
 
-It seems pretty reasonable that an alia app should be able to provide signal values and event logs via a local REST or websockets API.
+It seems pretty reasonable that an alia app should be able to provide signal
+values and event logs via a local REST or websockets API.
 
 A GUI / web interface could be layered on top of this API.
 
@@ -195,70 +252,104 @@ More insight could be gained by parsing the C++ files:
 
 https://github.com/foonathan/cppast
 
-This imposes some constraints on the types used for events and signals (e.g., streamability), but this would be an optional feature and features like those used in Boost.Exception could be used to stream various types as possible.
+This imposes some constraints on the types used for events and signals (e.g.,
+streamability), but this would be an optional feature and features like those
+used in Boost Exceptions could be used to stream various types as nicely as they
+can be streamed.
 
 
+Organization
+------------
 
-# ORGANIZATION
+The Issue
+^^^^^^^^^
 
-* The Issue
+How is the project structured? Are library 'adaptors' part of the same
+repository/project as the core? If not, how do we guarantee that everything
+works together? If so, how do we avoid the project's scope getting out of
+control?
 
-How is the project structured? Are library 'adaptors' part of the same repository/project as the core? If not, how do we guarantee that everything works together? If so, how do we avoid the project's scope getting out of control?
+Resolution
+^^^^^^^^^^
 
-* Resolution
-
-Start out with everything as a single repository/project and worry about this later.
-
-
-
-# DISTRIBUTION
-
-* The Issue
-
-How does the typical developer get and use alia? (Assuming the developer isn't using a package manager.)
-
-* Resolution
-
-Usage is through header files. The core only requires C++11. Other components are split up based on which libraries they connect to (e.g., <alia/qt.hpp> provides an adaptor for Qt support). Optional libraries are enable with #defines. All of these are header-only and the implementation is only defined when ALIA_IMPLEMENTATION is #define'd. In all cases, the developer is responsible for making third-party libraries available.
-
-These header files are built from multiple source files and distributed via GitHub releases.
+Start out with everything as a single repository/project and worry about this
+later.
 
 
+Distribution
+------------
 
-# CULLING
+The Issue
+^^^^^^^^^
 
-* The Issue
+How does the typical developer get and use alia? (Assuming the developer isn't
+using a package manager.)
 
-Should we support having the controller cull the scene directly? (The alternative is having the controller specify the entire scene and culling downstream.)
+Resolution
+^^^^^^^^^^
 
-* Pros
+Usage is through header files. The core only requires C++11. Other components
+are split up based on which libraries they connect to (e.g., <alia/qt.hpp>
+provides an adaptor for Qt support). Optional libraries are enable with
+#defines. All of these are header-only and the implementation is only defined
+when ALIA_IMPLEMENTATION is #define'd. In all cases, the developer is
+responsible for making third-party libraries available.
+
+These header files are built from multiple source files and distributed via
+GitHub releases.
+
+
+Culling
+-------
+
+The Issue
+^^^^^^^^^
+
+Should alia support having the controller cull the scene directly? (The
+alternative is having the controller specify the entire scene and culling
+downstream.)
+
+Pros
+^^^^
 
 - Should improve performance.
 
-* Cons
+Cons
+^^^^
 
 - Might complicate interfaces.
 
-* Resolution
+Resolution
+^^^^^^^^^^
 
-For now, this isn't explicitly addressed. Culling in general is possible, and the mechanisms should exist for individual adaptors to do it.
+For now, this isn't explicitly addressed. Culling in general is possible, and
+the mechanisms should exist for individual adaptors to do it.
 
 
+Pipelining
+----------
 
-# PIPELINING
-
-* The Issue
+The Issue
+^^^^^^^^^
 
 Should the controller be able to reactively process its own output?
 
-* Pros
+Pros
+^^^^
 
-- This would allow some interesting staged processing of content (e.g., transition effects).
+- This would allow some interesting staged processing of content (e.g.,
+transition effects).
 
-* Cons
+Cons
+^^^^
 
 - This could add some overhead compared with just creating objects directly.
 
-* Resolution
+Resolution
+^^^^^^^^^^
 
-This is left up to the designer of the library adaptor that is receiving the objects. Ultimately, the controller 'emits' something, and the adpator provides an API for doing so. The API can be in whatever form the designer likes, and can include methods to insert filters/preprocessors. (This is a simple matter of providing a level of indirection.)
+This is left up to the designer of the library adaptor that is receiving the
+objects. Ultimately, the controller 'emits' something, and the adaptor provides
+an API for doing so. The API can be in whatever form the designer likes, and can
+include methods to insert filters/preprocessors. (This is a simple matter of
+providing a level of indirection.)
