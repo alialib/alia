@@ -252,11 +252,11 @@ struct my_const_array
 // Test some of the helper metafunctions for subscript signals.
 TEST_CASE("subscript metafunctions", "[signals]")
 {
-    REQUIRE(has_at_indexer<std::vector<int>, int>::value);
-    REQUIRE(has_at_indexer<std::map<int, int>, int>::value);
-    REQUIRE(has_at_indexer<std::vector<bool>, int>::value);
-    REQUIRE(!has_at_indexer<my_array, int>::value);
-    REQUIRE(!has_at_indexer<my_const_array, int>::value);
+    REQUIRE((has_at_indexer<std::vector<int>, int>::value));
+    REQUIRE((has_at_indexer<std::map<int, int>, int>::value));
+    REQUIRE((has_at_indexer<std::vector<bool>, int>::value));
+    REQUIRE((!has_at_indexer<my_array, int>::value));
+    REQUIRE((!has_at_indexer<my_const_array, int>::value));
 
     REQUIRE((std::is_same<
              subscript_result_type<std::vector<float>, int>::type,
@@ -273,11 +273,13 @@ TEST_CASE("subscript metafunctions", "[signals]")
         (std::is_same<subscript_result_type<my_const_array, int>::type, int>::
              value));
 
-    REQUIRE(const_subscript_returns_reference<std::vector<int>, int>::value);
-    REQUIRE(const_subscript_returns_reference<std::map<int, int>, int>::value);
-    REQUIRE(!const_subscript_returns_reference<std::vector<bool>, int>::value);
-    REQUIRE(const_subscript_returns_reference<my_array, int>::value);
-    REQUIRE(!const_subscript_returns_reference<my_const_array, int>::value);
+    REQUIRE((const_subscript_returns_reference<std::vector<int>, int>::value));
+    REQUIRE(
+        (const_subscript_returns_reference<std::map<int, int>, int>::value));
+    REQUIRE(
+        (!const_subscript_returns_reference<std::vector<bool>, int>::value));
+    REQUIRE((const_subscript_returns_reference<my_array, int>::value));
+    REQUIRE((!const_subscript_returns_reference<my_const_array, int>::value));
 }
 
 TEST_CASE("vector subscript", "[signals]")
@@ -361,7 +363,7 @@ TEST_CASE("map subscript", "[signals]")
     REQUIRE(read_signal(s) == 1);
     REQUIRE(signal_is_writable(s));
     write_signal(s, 7);
-    REQUIRE(c == std::map<int, int>{{2, 7}, {0, 3}});
+    REQUIRE((c == std::map<int, int>{{2, 7}, {0, 3}}));
 }
 
 TEST_CASE("custom ref subscript", "[signals]")

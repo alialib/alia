@@ -93,7 +93,7 @@ TEST_CASE("push_back action", "[actions]")
         auto a = make_push_back_action(direct(x), value(3));
         REQUIRE(a.is_ready());
         perform_action(a);
-        REQUIRE(x == std::vector<int>{1, 2, 3});
+        REQUIRE(x == (std::vector<int>{1, 2, 3}));
     }
 
     {
