@@ -59,7 +59,7 @@ operator!=(id_interface const& a, id_interface const& b)
 bool
 operator<(id_interface const& a, id_interface const& b);
 
-// The following allow the use of IDs as keys in a map or unordered_map.
+// The following allow the use of IDs as keys in a map.
 // The IDs are stored separately as captured_ids in the mapped values and
 // pointers are used as keys. This allows searches to be done on pointers to
 // other IDs.
@@ -70,15 +70,6 @@ struct id_interface_pointer_less_than_test
     operator()(id_interface const* a, id_interface const* b) const
     {
         return *a < *b;
-    }
-};
-
-struct id_interface_pointer_equality_test
-{
-    bool
-    operator()(id_interface const* a, id_interface const* b) const
-    {
-        return *a == *b;
     }
 };
 
