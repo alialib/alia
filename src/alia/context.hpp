@@ -2,7 +2,7 @@
 #define ALIA_CONTEXT_HPP
 
 #include <alia/component_collection.hpp>
-#include <alia/data_graph.hpp>
+#include <alia/flow/data_graph.hpp>
 
 namespace alia {
 

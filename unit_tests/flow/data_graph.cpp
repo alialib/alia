@@ -1,5 +1,5 @@
 #define ALIA_LOWERCASE_MACROS
-#include <alia/data_graph.hpp>
+#include <alia/flow/data_graph.hpp>
 
 #include <sstream>
 
