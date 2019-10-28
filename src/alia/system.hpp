@@ -4,7 +4,7 @@
 #include <functional>
 
 #include <alia/context.hpp>
-#include <alia/data_graph.hpp>
+#include <alia/flow/data_graph.hpp>
 
 namespace alia {
 

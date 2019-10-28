@@ -1,5 +1,5 @@
-#ifndef ALIA_ACTIONS_HPP
-#define ALIA_ACTIONS_HPP
+#ifndef ALIA_FLOW_ACTIONS_HPP
+#define ALIA_FLOW_ACTIONS_HPP
 
 #include <alia/signals/core.hpp>
 #include <alia/signals/operators.hpp>

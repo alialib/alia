@@ -1,5 +1,5 @@
-#ifndef ALIA_DATA_GRAPH_HPP
-#define ALIA_DATA_GRAPH_HPP
+#ifndef ALIA_FLOW_DATA_GRAPH_HPP
+#define ALIA_FLOW_DATA_GRAPH_HPP
 
 #include <alia/common.hpp>
 #include <alia/id.hpp>
