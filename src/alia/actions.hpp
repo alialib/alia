@@ -89,7 +89,7 @@ using action = action_ref<Args...>;
 
 // comma operator
 //
-// Using the comma operator between two signals creates a combined action that
+// Using the comma operator between two actions creates a combined action that
 // performs the two actions in sequence.
 
 template<class First, class Second, class... Args>
