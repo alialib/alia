@@ -1,8 +1,8 @@
-#ifndef ALIA_EVENTS_HPP
-#define ALIA_EVENTS_HPP
+#ifndef ALIA_FLOW_EVENTS_HPP
+#define ALIA_FLOW_EVENTS_HPP
 
 #include <alia/context.hpp>
-#include <alia/data_graph.hpp>
+#include <alia/flow/data_graph.hpp>
 
 // This file implements utilities for routing events through an alia content
 // traversal function.
