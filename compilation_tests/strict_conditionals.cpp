@@ -2,7 +2,7 @@
 #define ALIA_STRICT_CONDITIONALS
 #endif
 
-#include <alia/data_graph.hpp>
+#include <alia/flow/data_graph.hpp>
 
 using namespace alia;
 

@@ -1,5 +1,5 @@
 #include <alia/context.hpp>
-#include <alia/events.hpp>
+#include <alia/flow/events.hpp>
 
 #include <catch.hpp>
 
