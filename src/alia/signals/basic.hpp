@@ -139,8 +139,8 @@ inline string_literal_signal operator"" _a(char const* s, size_t n)
 }
 } // namespace literals
 
-// direct(x) creates a bidirectional signal that directly exposes the value of
-// x.
+// direct(x), where x is a non-const reference, creates a bidirectional signal
+// that directly exposes the value of x.
 template<class Value>
 struct direct_signal
     : regular_signal<direct_signal<Value>, Value, bidirectional_signal>
@@ -177,6 +177,36 @@ direct_signal<Value>
 direct(Value& x)
 {
     return direct_signal<Value>(&x);
+}
+
+// direct(x), where x is a const reference, creates a read-only signal that
+// directly exposes the value of x.
+template<class Value>
+struct direct_const_signal
+    : regular_signal<direct_const_signal<Value>, Value, read_only_signal>
+{
+    explicit direct_const_signal(Value const* v) : v_(v)
+    {
+    }
+    bool
+    is_readable() const
+    {
+        return true;
+    }
+    Value const&
+    read() const
+    {
+        return *v_;
+    }
+
+ private:
+    Value const* v_;
+};
+template<class Value>
+direct_const_signal<Value>
+direct(Value const& x)
+{
+    return direct_const_signal<Value>(&x);
 }
 
 } // namespace alia
