@@ -6,13 +6,15 @@
 
 using namespace alia;
 
+namespace {
+
 struct ostream_event
 {
     std::ostream* stream;
 };
 
 void
-do_ostream_text(context& ctx, std::string const& text)
+do_ostream_text(context ctx, std::string const& text)
 {
     ostream_event* oe;
     if (detect_event(ctx, &oe))
@@ -28,7 +30,7 @@ struct find_label_event
 };
 
 void
-do_label(context& ctx, std::string const& name)
+do_label(context ctx, std::string const& name)
 {
     do_ostream_text(ctx, name);
 
@@ -114,6 +116,8 @@ check_traversal_path(
         REQUIRE(s.str() == expected_path);
     }
 }
+
+} // namespace
 
 TEST_CASE("targeted_event_dispatch", "[targeted_event_dispatch]")
 {
