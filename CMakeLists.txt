@@ -190,7 +190,7 @@ endforeach()
 add_custom_target(
     unit_tests
     # Create a fresh 'unit-testing' directory within the build dir and run the
-    # tests with that. (Some of them perform file I/O.)
+    # tests with that.
     COMMAND ${CMAKE_COMMAND} -E remove_directory unit-testing
     COMMAND ${CMAKE_COMMAND} -E make_directory unit-testing
     COMMAND ${CMAKE_COMMAND} -E chdir unit-testing ${CMAKE_COMMAND} -E env ALIA_DEPLOY_DIR=${FIPS_PROJECT_DEPLOY_DIR} ${FIPS_PROJECT_DEPLOY_DIR}/unit_test_runner
