@@ -6,7 +6,7 @@ def generate_single_header(single_header_path, source_dir, module):
         with open('LICENSE.txt') as f:
             lines = f.readlines()
             for line in lines:
-                output.write('// ' + line)
+                output.write(('// ' + line).strip() + '\n')
 
         output.write('\n')
 
