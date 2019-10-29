@@ -231,14 +231,15 @@ struct scoped_data_block : noncopyable
 // that they've disappeared from the graph. The logic for this is fairly
 // sophisticated, and it generally won't mistakingly collect named_blocks in
 // inactive regions of the graph. However, it still may not always do what you
-// want.
-// In those cases, you can specify the manual_delete flag. This will prevent
-// the library from collecting the block. It can be deleted manually by calling
-// delete_named_data(ctx, id). If that never happens, it will be deleted when
-// its context is destroyed.
+// want. In those cases, you can specify the manual_delete flag. This will
+// prevent the library from collecting the block. It can be deleted manually by
+// calling delete_named_data(ctx, id). If that never happens, it will be deleted
+// when the data_graph that it belongs to is destroyed. (But this is likely to
+// still be a memory leak, since the data_graph might live on as long as the
+// application is running.)
 
-// The flag is specified via its own structure to make it very obvious at the
-// call site.
+// The manual deletion flag is specified via its own structure to make it very
+// obvious at the call site.
 struct manual_delete
 {
     explicit manual_delete(bool value) : value(value)
