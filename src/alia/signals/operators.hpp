@@ -314,7 +314,7 @@ struct has_value_type<T, void_t<typename T::value_type>> : std::true_type
 
 // has_mapped_type<T>::value yields a compile-time boolean indicating whether or
 // not T has a mapped_type member (which is the case for standard associative
-// containers).
+// containers, or at least the ones that aren't sets).
 template<class T, class = void_t<>>
 struct has_mapped_type : std::false_type
 {
