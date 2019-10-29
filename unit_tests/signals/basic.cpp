@@ -50,6 +50,19 @@ TEST_CASE("direct signal", "[signals]")
     REQUIRE(read_signal(s) == 0);
 }
 
+TEST_CASE("direct const signal", "[signals]")
+{
+    int x = 1;
+    auto s = direct(static_cast<int const&>(x));
+
+    typedef decltype(s) signal_t;
+    REQUIRE(signal_can_read<signal_t>::value);
+    REQUIRE(!signal_can_write<signal_t>::value);
+
+    REQUIRE(signal_is_readable(s));
+    REQUIRE(read_signal(s) == 1);
+}
+
 TEST_CASE("string literal signal", "[signals]")
 {
     auto s = value("hello");
