@@ -285,6 +285,55 @@ add_fallback(Primary const& primary, Fallback const& fallback)
     return fallback_signal<Primary, Fallback>(primary, fallback);
 }
 
+// simplify_id(s), where :s is a signal, yields a wrapper for :s with the exact
+// same read/write behavior but whose value ID is a simple_id (i.e., it is
+// simply the value of the signal).
+//
+// The main utility of this is in cases where you have a signal carrying a
+// small value with a complicated value ID (because it was picked from the
+// signal of a larger data structure, for example). The more complicated ID
+// might change superfluously.
+//
+template<class Wrapped>
+struct simplified_id_wrapper : regular_signal<
+                                   simplified_id_wrapper<Wrapped>,
+                                   typename Wrapped::value_type,
+                                   typename Wrapped::direction_tag>
+{
+    simplified_id_wrapper(Wrapped wrapped) : wrapped_(wrapped)
+    {
+    }
+    bool
+    is_readable() const
+    {
+        return wrapped_.is_readable();
+    }
+    typename Wrapped::value_type const&
+    read() const
+    {
+        return wrapped_.read();
+    }
+    bool
+    is_writable() const
+    {
+        return wrapped_.is_writable();
+    }
+    void
+    write(typename Wrapped::value_type const& value) const
+    {
+        return wrapped_.write(value);
+    }
+
+ private:
+    Wrapped wrapped_;
+};
+template<class Wrapped>
+simplified_id_wrapper<Wrapped>
+simplify_id(Wrapped const& wrapped)
+{
+    return simplified_id_wrapper<Wrapped>(wrapped);
+}
+
 } // namespace alia
 
 #endif
