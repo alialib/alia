@@ -81,6 +81,14 @@ struct make_void
 template<typename... Ts>
 using void_t = typename make_void<Ts...>::type;
 
+// ALIA_LAMBDIFY(f) produces a lambda that calls f, which is essentially a
+// version of f that can be passed as an argument and still allows normal
+// overload resolution.
+#define ALIA_LAMBDIFY(f) [](auto&&... args) { return f(args...); }
+#ifdef ALIA_LOWERCASE_MACROS
+#define alia_lambdify(f) ALIA_LAMBDIFY(f)
+#endif
+
 } // namespace alia
 
 #endif

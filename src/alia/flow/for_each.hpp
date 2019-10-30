@@ -44,6 +44,38 @@ get_alia_id(Item const& item)
     return no_id;
 }
 
+// for_each for map-like containers
+template<
+    class Context,
+    class ContainerSignal,
+    class Fn,
+    std::enable_if_t<
+        is_map_like<typename ContainerSignal::value_type>::value,
+        int> = 0>
+void
+for_each(Context ctx, ContainerSignal const& container_signal, Fn const& fn)
+{
+    ALIA_IF(is_readable(container_signal))
+    {
+        naming_context nc(ctx);
+        auto const& container = read_signal(container_signal);
+        for (auto const& item : container)
+        {
+            named_block nb;
+            auto iteration_id = get_alia_id(item.first);
+            if (iteration_id != no_id)
+                nb.begin(nc, iteration_id);
+            else
+                nb.begin(nc, make_id(&item));
+            auto key = direct(item.first);
+            auto value = container_signal[key];
+            fn(ctx, key, value);
+        }
+    }
+    ALIA_END
+}
+
+// for_each for vector-like containers
 template<
     class Context,
     class ContainerSignal,
@@ -69,6 +101,90 @@ for_each(Context ctx, ContainerSignal const& container_signal, Fn const& fn)
             else
                 nb.begin(nc, make_id(index));
             fn(ctx, container_signal[value(index)]);
+        }
+    }
+    ALIA_END
+}
+
+// signal type for accessing items within a list
+template<class ListSignal, class Item>
+struct list_item_signal : signal<
+                              list_item_signal<ListSignal, Item>,
+                              Item,
+                              typename ListSignal::direction_tag>
+{
+    list_item_signal(ListSignal const& list_signal, size_t index, Item* item)
+        : list_signal_(list_signal), index_(index), item_(item)
+    {
+    }
+    id_interface const&
+    value_id() const
+    {
+        id_ = combine_ids(ref(list_signal_.value_id()), make_id(index_));
+        return id_;
+    }
+    bool
+    is_readable() const
+    {
+        return list_signal_.is_readable();
+    }
+    Item const&
+    read() const
+    {
+        return *item_;
+    }
+    bool
+    is_writable() const
+    {
+        return list_signal_.is_writable();
+    }
+    void
+    write(Item const& value) const
+    {
+        *item_ = value;
+    }
+
+ private:
+    ListSignal list_signal_;
+    size_t index_;
+    Item* item_;
+    mutable id_pair<id_ref, simple_id<size_t>> id_;
+};
+template<class ListSignal, class Item>
+list_item_signal<ListSignal, Item>
+make_list_item_signal(ListSignal const& signal, size_t index, Item const* item)
+{
+    return list_item_signal<ListSignal, Item>(
+        signal, index, const_cast<Item*>(item));
+}
+
+// for_each for list-like containers
+template<
+    class Context,
+    class ContainerSignal,
+    class Fn,
+    std::enable_if_t<
+        !is_map_like<typename ContainerSignal::value_type>::value
+            && !is_vector_like<typename ContainerSignal::value_type>::value,
+        int> = 0>
+void
+for_each(Context ctx, ContainerSignal const& container_signal, Fn const& fn)
+{
+    ALIA_IF(is_readable(container_signal))
+    {
+        naming_context nc(ctx);
+        auto const& container = read_signal(container_signal);
+        size_t index = 0;
+        for (auto const& item : container)
+        {
+            named_block nb;
+            auto iteration_id = get_alia_id(item);
+            if (iteration_id != no_id)
+                nb.begin(nc, iteration_id);
+            else
+                nb.begin(nc, make_id(&item));
+            fn(ctx, make_list_item_signal(container_signal, index, &item));
+            ++index;
         }
     }
     ALIA_END
