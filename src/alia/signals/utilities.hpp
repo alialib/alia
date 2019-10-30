@@ -54,24 +54,6 @@ struct lazy_reader
     mutable Value value_;
 };
 
-// is_true(x), where x is a boolean signal, returns true iff x is readable and
-// its value is true.
-template<class Signal>
-std::enable_if_t<is_readable_signal_type<Signal>::value, bool>
-is_true(Signal const& x)
-{
-    return signal_is_readable(x) && read_signal(x);
-}
-
-// is_false(x), where x is a boolean signal, returns true iff x is readable and
-// its value is false.
-template<class Signal>
-std::enable_if_t<is_readable_signal_type<Signal>::value, bool>
-is_false(Signal const& x)
-{
-    return signal_is_readable(x) && !read_signal(x);
-}
-
 } // namespace alia
 
 #endif
