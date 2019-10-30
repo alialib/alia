@@ -288,6 +288,66 @@ TEST_CASE("string list", "[for_each][list]")
     REQUIRE(call_count == 3);
 }
 
+TEST_CASE("unsimplified string list", "[for_each][list]")
+{
+    alia::system sys;
+
+    int call_count = 0;
+    auto counting_identity = [&](string s) {
+        ++call_count;
+        return s;
+    };
+
+    std::list<string> container{"foo", "bar", "baz"};
+
+    auto controller = [&](context ctx) {
+        for_each(
+            ctx,
+            direct(container),
+            [&](context ctx, input<string> const& item) {
+                do_text(ctx, apply(ctx, counting_identity, item));
+            });
+    };
+
+    // The first time the traversal is done, there is one initial call for each
+    // item.
+    check_traversal(sys, controller, "foo;bar;baz;");
+    REQUIRE(call_count == 3);
+
+    // For sanity, check that when we reinvoke the same traversal, no additional
+    // calls are made.
+    check_traversal(sys, controller, "foo;bar;baz;");
+    REQUIRE(call_count == 3);
+
+    container.reverse();
+
+    // Since there's no call to simplify_id in the controller, the IDs of the
+    // items actually changed, which triggered additional calls.
+    check_traversal(sys, controller, "baz;bar;foo;");
+    REQUIRE(call_count == 6);
+}
+
+TEST_CASE("writing string list items", "[for_each][list]")
+{
+    alia::system sys;
+
+    std::list<string> container{"foo", "bar", "baz"};
+
+    auto controller = [&](context ctx) {
+        for_each(
+            ctx,
+            direct(container),
+            [&](context ctx, bidirectional<string> const& item) {
+                write_signal(item, "boo");
+            });
+    };
+
+    // The first time the traversal is done, there is one initial call for each
+    // item.
+    check_traversal(sys, controller, "");
+    REQUIRE(container == (std::list<string>{"boo", "boo", "boo"}));
+}
+
 TEST_CASE("item list", "[for_each][list]")
 {
     alia::system sys;
