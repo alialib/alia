@@ -241,7 +241,8 @@ TEST_CASE("item map", "[for_each][map]")
     check_traversal(sys, controller, "bar;0;baz;3;foo;2;");
     REQUIRE(call_count == 3);
 
-    container[my_item{"alpha"}] = 1;
+    my_item alpha{"alpha"};
+    container[alpha] = 1;
 
     // Since my_item defines get_alia_id, the graph data properly follows the
     // items, so the only additional call is for the new item.
