@@ -1,5 +1,7 @@
 #include <alia/flow/actions.hpp>
 
+#include <alia/signals/basic.hpp>
+
 #include <catch.hpp>
 
 using namespace alia;

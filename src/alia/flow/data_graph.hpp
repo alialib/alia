@@ -3,7 +3,7 @@
 
 #include <alia/common.hpp>
 #include <alia/id.hpp>
-#include <alia/signals.hpp>
+#include <alia/signals/core.hpp>
 #include <cassert>
 
 // This file defines the data retrieval library used for associating mutable
@@ -774,18 +774,39 @@ struct loop_block : noncopyable
 // takes the context as its first argument. The other form has no trailing
 // underscore and assumes that the context is a variable named 'ctx'.
 
-// is_readable(x), where x is a readable signal type, calls signal_is_readable.
-template<class T>
-std::enable_if_t<is_readable_signal_type<T>::value, bool>
-is_readable(T const& x)
+// condition_is_true(x), where x is a signal whose value is testable in a
+// boolean context, returns true iff x is readable and its value is true.
+template<class Signal>
+std::enable_if_t<is_readable_signal_type<Signal>::value, bool>
+condition_is_true(Signal const& x)
+{
+    return signal_is_readable(x) && (read_signal(x) ? true : false);
+}
+
+// condition_is_false(x), where x is a signal whose value is testable in a
+// boolean context, returns true iff x is readable and its value is false.
+template<class Signal>
+std::enable_if_t<is_readable_signal_type<Signal>::value, bool>
+condition_is_false(Signal const& x)
+{
+    return signal_is_readable(x) && (read_signal(x) ? false : true);
+}
+
+// condition_is_readable(x), where x is a readable signal type, calls
+// signal_is_readable.
+template<class Signal>
+std::enable_if_t<is_readable_signal_type<Signal>::value, bool>
+condition_is_readable(Signal const& x)
 {
     return signal_is_readable(x);
 }
 
-// read(x), where x is a readable signal type, calls read_signal.
-template<class T>
-std::enable_if_t<is_readable_signal_type<T>::value, typename T::value_type>
-read(T const& x)
+// read_condition(x), where x is a readable signal type, calls read_signal.
+template<class Signal>
+std::enable_if_t<
+    is_readable_signal_type<Signal>::value,
+    typename Signal::value_type>
+read_condition(Signal const& x)
 {
     return read_signal(x);
 }
@@ -794,34 +815,34 @@ read(T const& x)
 // be used in if/else/switch macros.
 #ifndef ALIA_STRICT_CONDITIONALS
 
-// is_true(x) evaluates x in a boolean context.
+// condition_is_true(x) evaluates x in a boolean context.
 template<class T>
 std::enable_if_t<!is_signal_type<T>::value, bool>
-is_true(T x)
+condition_is_true(T x)
 {
     return x ? true : false;
 }
 
-// is_false(x) evaluates x in a boolean context and inverts it.
+// condition_is_false(x) evaluates x in a boolean context and inverts it.
 template<class T>
 std::enable_if_t<!is_signal_type<T>::value, bool>
-is_false(T x)
+condition_is_false(T x)
 {
     return x ? false : true;
 }
 
-// is_readable(x), where x is NOT a signal type, always returns true.
+// condition_is_readable(x), where x is NOT a signal type, always returns true.
 template<class T>
 std::enable_if_t<!is_signal_type<T>::value, bool>
-is_readable(T const& x)
+condition_is_readable(T const& x)
 {
     return true;
 }
 
-// read(x), where x is NOT a signal type, simply returns x.
+// read_condition(x), where x is NOT a signal type, simply returns x.
 template<class T>
 std::enable_if_t<!is_signal_type<T>::value, T const&>
-read(T const& x)
+read_condition(T const& x)
 {
     return x;
 }
@@ -835,8 +856,10 @@ read(T const& x)
         bool _alia_else_condition ALIA_UNUSED;                                 \
         {                                                                      \
             auto const& _alia_condition_value = (condition);                   \
-            bool _alia_if_condition = ::alia::is_true(_alia_condition_value);  \
-            _alia_else_condition = ::alia::is_false(_alia_condition_value);    \
+            bool _alia_if_condition                                            \
+                = ::alia::condition_is_true(_alia_condition_value);            \
+            _alia_else_condition                                               \
+                = ::alia::condition_is_false(_alia_condition_value);           \
             ::alia::if_block _alia_if_block(                                   \
                 get_data_traversal(ctx), _alia_if_condition);                  \
             if (_alia_if_condition)                                            \
@@ -850,9 +873,11 @@ read(T const& x)
     {                                                                          \
         auto const& _alia_condition_value = (condition);                       \
         bool _alia_else_if_condition                                           \
-            = _alia_else_condition && ::alia::is_true(_alia_condition_value);  \
+            = _alia_else_condition                                             \
+              && ::alia::condition_is_true(_alia_condition_value);             \
         _alia_else_condition                                                   \
-            = _alia_else_condition && ::alia::is_false(_alia_condition_value); \
+            = _alia_else_condition                                             \
+              && ::alia::condition_is_false(_alia_condition_value);            \
         ::alia::if_block _alia_if_block(                                       \
             get_data_traversal(ctx), _alia_else_if_condition);                 \
         if (_alia_else_if_condition)                                           \
@@ -887,7 +912,7 @@ read(T const& x)
 #define ALIA_PASS_DEPENDENT_IF_(ctx, condition)                                \
     {                                                                          \
         {                                                                      \
-            bool _alia_condition = ::alia::is_true(condition);                 \
+            bool _alia_condition = ::alia::condition_is_true(condition);       \
             ::alia::pass_dependent_if_block _alia_if_block(                    \
                 get_data_traversal(ctx), _alia_condition);                     \
             if (_alia_condition)                                               \
@@ -907,9 +932,9 @@ read(T const& x)
 #define ALIA_SWITCH_(ctx, x)                                                   \
     {                                                                          \
         ::alia::switch_block _alia_switch_block(ctx);                          \
-        if (::alia::is_readable(x))                                            \
+        if (::alia::condition_is_readable(x))                                  \
         {                                                                      \
-            switch (::alia::read(x))                                           \
+            switch (::alia::read_condition(x))                                 \
             {
 
 #define ALIA_SWITCH(x) ALIA_SWITCH_(ctx, x)
