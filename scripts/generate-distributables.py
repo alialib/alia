@@ -1,6 +1,7 @@
 from pathlib import Path
 import re
 
+
 def generate_single_header(single_header_path, source_dir, module):
     with open(single_header_path, 'w') as output:
         with open('LICENSE.txt') as f:
@@ -38,7 +39,8 @@ def generate_single_header(single_header_path, source_dir, module):
 
             for line in lines:
                 # Recursively process #include'd files so that they're inlined.
-                include = re.match(r'^\s*#include <(alia/[a-z0-9/_\.]+)>', line)
+                include = re.match(r'^\s*#include <(alia/[a-z0-9/_\.]+)>',
+                                   line)
                 if include:
                     add_header_file('src/' + include.group(1))
                     continue
@@ -57,7 +59,8 @@ def generate_single_header(single_header_path, source_dir, module):
 
             for line in lines:
                 # All internal headers should've already been included.
-                include = re.match(r'^\s*#include <(alia/[a-z0-9/_\.]+)>', line)
+                include = re.match(r'^\s*#include <(alia/[a-z0-9/_\.]+)>',
+                                   line)
                 if include:
                     continue
 
@@ -76,5 +79,6 @@ def generate_single_header(single_header_path, source_dir, module):
         output.write('#endif\n')
 
         output.write('#endif\n')
+
 
 generate_single_header('alia.hpp', 'src/alia', 'core')

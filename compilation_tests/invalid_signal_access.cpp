@@ -1,4 +1,4 @@
-#include <alia/signals.hpp>
+#include <alia/signals/basic.hpp>
 
 using namespace alia;
 
