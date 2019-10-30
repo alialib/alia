@@ -3,11 +3,24 @@
 
 #include <sstream>
 
+#include <alia/signals/basic.hpp>
+
 #include <boost/lexical_cast.hpp>
 
 #include <catch.hpp>
 
 using namespace alia;
+
+TEST_CASE("condition_is_true/false/etc", "[signals]")
+{
+    REQUIRE(condition_is_true(value(true)));
+    REQUIRE(!condition_is_true(value(false)));
+    REQUIRE(!condition_is_true(empty<bool>()));
+
+    REQUIRE(condition_is_false(value(false)));
+    REQUIRE(!condition_is_false(value(true)));
+    REQUIRE(!condition_is_false(empty<bool>()));
+}
 
 // The following define a small framework for testing data traversal mechanics.
 // The idea is that we execute various traversals over test data graphs

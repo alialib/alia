@@ -2,8 +2,6 @@
 
 #include <catch.hpp>
 
-#include <alia/signals/basic.hpp>
-
 using namespace alia;
 
 struct unreadable_regular_signal
@@ -88,15 +86,4 @@ TEST_CASE("lazy_reader", "[signals]")
     // Check that it is caching and not re-invoking the generator.
     REQUIRE(reader.read(generator) == 12);
     REQUIRE(n == 1);
-}
-
-TEST_CASE("is_true/false", "[signals]")
-{
-    REQUIRE(is_true(value(true)));
-    REQUIRE(!is_true(value(false)));
-    REQUIRE(!is_true(empty<bool>()));
-
-    REQUIRE(is_false(value(false)));
-    REQUIRE(!is_false(value(true)));
-    REQUIRE(!is_false(empty<bool>()));
 }

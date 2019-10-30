@@ -58,7 +58,7 @@ for_each(Context ctx, ContainerSignal const& container_signal, Fn const& fn)
     ALIA_IF(is_readable(container_signal))
     {
         naming_context nc(ctx);
-        auto const& container = read(container_signal);
+        auto const& container = read_signal(container_signal);
         size_t const item_count = container.size();
         for (size_t index = 0; index != item_count; ++index)
         {

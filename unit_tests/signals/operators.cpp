@@ -12,6 +12,20 @@
 
 using namespace alia;
 
+template<class Signal>
+bool
+is_true(Signal const& x)
+{
+    return signal_is_readable(x) && read_signal(x);
+}
+
+template<class Signal>
+bool
+is_false(Signal const& x)
+{
+    return signal_is_readable(x) && !read_signal(x);
+}
+
 TEST_CASE("basic signal operators", "[signals]")
 {
     REQUIRE(is_true(value(2) == value(2)));
