@@ -27,7 +27,7 @@ Event Handling
 A common first example in GUI libraries is a button that changes the value of a text display, so let's see how that looks in alia... ::
 
    std::string text = "push the button!";
-   
+
    void do_ui(context& ctx)
    {
        do_text(ctx, text);
@@ -45,7 +45,7 @@ Controls
 ::
 
    bool checked = false;
-   
+
    void do_ui(context& ctx)
    {
        do_check_box(ctx, inout(&checked), "check me");
@@ -77,7 +77,7 @@ Computed Values
 Similarly, it's trivial to display values that are computed dynamically from user inputs. For example, the following UI features two numeric inputs and a text display that shows their sum. ::
 
    int x, y;
-   
+
    void do_ui(context& ctx)
    {
        do_text_control(ctx, inout(&x));
