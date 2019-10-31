@@ -139,6 +139,7 @@ fips_end_lib()
 target_link_libraries(alia ${EXTERNAL_LIBS})
 
 # Add the unit test runner.
+fips_include_directories(${PROJECT_SOURCE_DIR}/unit_tests)
 fips_begin_app(unit_test_runner cmdline)
     fips_deps(alia)
     fips_src(unit_tests)
