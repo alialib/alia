@@ -28,14 +28,15 @@ template<class... Args>
 std::string
 invoke_snprintf(std::string const& format, Args const&... args)
 {
-    int length = snprintf(0, 0, format.c_str(), make_printf_friendly(args)...);
+    int length
+        = std::snprintf(0, 0, format.c_str(), make_printf_friendly(args)...);
     if (length < 0)
         throw "printf format error";
     std::string s;
     if (length > 0)
     {
         s.resize(length);
-        snprintf(
+        std::snprintf(
             &s[0], length + 1, format.c_str(), make_printf_friendly(args)...);
     }
     return s;
