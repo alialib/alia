@@ -29,8 +29,8 @@ def generate_single_header(single_header_path, source_dir, module):
                 lines = f.readlines()
 
             # Check that the last (non-empty) line is an #endif and remove it.
-            # (This is the end of the include guard, but we can't recognize it based
-            # solely on its content.)
+            # (This is the end of the include guard, but we can't recognize it
+            # based solely on its content.)
             while lines[-1].strip() == "":
                 del lines[-1]
             if lines[-1].strip() != "#endif":
