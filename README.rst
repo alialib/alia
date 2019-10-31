@@ -45,8 +45,8 @@ try it out and see more examples, click here.
 	auto total = bill + tip;
 
 	// Show the results.
-	do_text(ctx, format(ctx, "tip: %.2f", tip);
-	do_text(ctx, format(ctx, "total: %.2f", total);
+	do_text(ctx, printf(ctx, "tip: %.2f", tip);
+	do_text(ctx, printf(ctx, "total: %.2f", total);
 
 	// Allow the user to split the bill.
 	auto n_people = get_state(ctx, value(1.));
