@@ -5,38 +5,22 @@
 #include <algorithm>
 #include <list>
 #include <map>
-#include <sstream>
 
-#include <alia/flow/events.hpp>
 #include <alia/signals/adaptors.hpp>
 #include <alia/signals/application.hpp>
 #include <alia/signals/basic.hpp>
 #include <alia/signals/lambdas.hpp>
 #include <alia/signals/operators.hpp>
-#include <alia/system.hpp>
 
 #include <catch.hpp>
+
+#include "traversal.hpp"
 
 using namespace alia;
 
 using std::string;
 
 namespace {
-
-struct ostream_event
-{
-    std::ostream* stream;
-};
-
-void
-do_text(context ctx, input<string> const& text)
-{
-    ostream_event* oe;
-    if (detect_event(ctx, &oe) && signal_is_readable(text))
-    {
-        *oe->stream << read_signal(text) << ";";
-    }
-}
 
 // Define a simple custom structure to represent the 'items' we'll collect.
 
@@ -61,23 +45,6 @@ auto
 get_alia_id(my_item const& item)
 {
     return make_id(item.id);
-}
-
-template<class Controller>
-void
-check_traversal(
-    alia::system& sys,
-    Controller const& controller,
-    string const& expected_output)
-{
-    sys.controller = controller;
-    {
-        ostream_event oe;
-        std::ostringstream s;
-        oe.stream = &s;
-        dispatch_event(sys, oe);
-        REQUIRE(s.str() == expected_output);
-    }
 }
 
 } // namespace
