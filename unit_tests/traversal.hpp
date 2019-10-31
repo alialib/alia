@@ -16,7 +16,7 @@ struct ostream_event
 };
 
 void
-do_text(context ctx, input<std::string> const& text)
+do_text(context ctx, readable<std::string> const& text)
 {
     ostream_event* oe;
     if (detect_event(ctx, &oe) && signal_is_readable(text))

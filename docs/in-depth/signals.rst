@@ -18,13 +18,13 @@ In general, signal values can be read (i.e., polled) and new values can be writt
 
 Signals carry a compile-time property that indicates the direction(s) in which values can flow: read-only, write-only or bidirectional. Similarly, when a function takes a signal as a parameter, the function signature will specify the requirements of the signal:
 
-* **input**: The function may try to read the signal.
-* **output**: The function may try to write to the signal.
+* **readable**: The function may try to read the signal.
+* **writable**: The function may try to write to the signal.
 * **bidirectional**: The function may try to read from or write to the signal.
 
 .. todo:: Add an example function declaration.
 
-When calling a function, the signals that you provide must meet those requirements. (e.g., If a function expects an input signal but you try to pass a signal that only supports writing, a compile-time error will be generated.)
+When calling a function, the signals that you provide must meet those requirements. (e.g., If a function expects a readable signal but you try to pass a signal that only supports writing, a compile-time error will be generated.)
 
 .. todo:: Add a link to an advanced section about bypassing these checks.
 
@@ -70,9 +70,9 @@ Constructing Signals
 Lambdas
 ^^^^^^^
 
-``lambda_input(is_readable, read)``
+``lambda_reader(is_readable, read)``
 
-``lambda_input(is_readable, read, generate_id)``
+``lambda_reader(is_readable, read, generate_id)``
 
 ``lambda_bidirectional(is_readable, read, is_writable, write)``
 

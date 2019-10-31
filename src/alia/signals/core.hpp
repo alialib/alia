@@ -255,15 +255,15 @@ struct signal_ref : signal<signal_ref<Value, Direction>, Value, Direction>
     signal_interface<Value> const* ref_;
 };
 
-// input<Value> denotes a reference to a readable signal carrying values of
+// readable<Value> denotes a reference to a readable signal carrying values of
 // type :Value.
 template<class Value>
-using input = signal_ref<Value, read_only_signal>;
+using readable = signal_ref<Value, read_only_signal>;
 
-// output<Value> denotes a reference to a writable signal carrying values of
+// writable<Value> denotes a reference to a writable signal carrying values of
 // type :Value.
 template<class Value>
-using output = signal_ref<Value, write_only_signal>;
+using writable = signal_ref<Value, write_only_signal>;
 
 // bidirectional<Value> denotes a reference to a bidirectional signal carrying
 // values of type :Value.

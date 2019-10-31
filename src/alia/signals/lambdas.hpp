@@ -9,15 +9,15 @@
 
 namespace alia {
 
-// lambda_input(is_readable, read) creates a read-only signal whose value is
+// lambda_reader(is_readable, read) creates a read-only signal whose value is
 // determined by calling :is_readable and :read.
 template<class Value, class IsReadable, class Read>
-struct lambda_input_signal : regular_signal<
-                                 lambda_input_signal<Value, IsReadable, Read>,
-                                 Value,
-                                 read_only_signal>
+struct lambda_reader_signal : regular_signal<
+                                  lambda_reader_signal<Value, IsReadable, Read>,
+                                  Value,
+                                  read_only_signal>
 {
-    lambda_input_signal(IsReadable is_readable, Read read)
+    lambda_reader_signal(IsReadable is_readable, Read read)
         : is_readable_(is_readable), read_(read)
     {
     }
@@ -40,25 +40,25 @@ struct lambda_input_signal : regular_signal<
 };
 template<class IsReadable, class Read>
 auto
-lambda_input(IsReadable is_readable, Read read)
+lambda_reader(IsReadable is_readable, Read read)
 {
-    return lambda_input_signal<
+    return lambda_reader_signal<
         std::decay_t<decltype(read())>,
         IsReadable,
         Read>(is_readable, read);
 }
 
-// lambda_input(is_readable, read, generate_id) creates a read-only signal whose
-// value is determined by calling :is_readable and :read and whose ID is
+// lambda_reader(is_readable, read, generate_id) creates a read-only signal
+// whose value is determined by calling :is_readable and :read and whose ID is
 // determined by calling :generate_id.
 template<class Value, class IsReadable, class Read, class GenerateId>
-struct lambda_input_signal_with_id
+struct lambda_reader_signal_with_id
     : signal<
-          lambda_input_signal_with_id<Value, IsReadable, Read, GenerateId>,
+          lambda_reader_signal_with_id<Value, IsReadable, Read, GenerateId>,
           Value,
           read_only_signal>
 {
-    lambda_input_signal_with_id(
+    lambda_reader_signal_with_id(
         IsReadable is_readable, Read read, GenerateId generate_id)
         : is_readable_(is_readable), read_(read), generate_id_(generate_id)
     {
@@ -90,9 +90,9 @@ struct lambda_input_signal_with_id
 };
 template<class IsReadable, class Read, class GenerateId>
 auto
-lambda_input(IsReadable is_readable, Read read, GenerateId generate_id)
+lambda_reader(IsReadable is_readable, Read read, GenerateId generate_id)
 {
-    return lambda_input_signal_with_id<
+    return lambda_reader_signal_with_id<
         std::decay_t<decltype(read())>,
         IsReadable,
         Read,

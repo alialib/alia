@@ -44,7 +44,7 @@ invoke_snprintf(std::string const& format, Args const&... args)
 
 template<class... Args>
 auto
-printf(context ctx, input<std::string> format, Args const&... args)
+printf(context ctx, readable<std::string> format, Args const&... args)
 {
     return apply(ctx, ALIA_LAMBDIFY(invoke_snprintf), format, args...);
 }
