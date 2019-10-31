@@ -4,9 +4,9 @@
 
 using namespace alia;
 
-TEST_CASE("lambda input signal", "[signals]")
+TEST_CASE("lambda readable signal", "[signals]")
 {
-    auto s = lambda_input(always_readable, []() { return 1; });
+    auto s = lambda_reader(always_readable, []() { return 1; });
 
     typedef decltype(s) signal_t;
     REQUIRE(signal_can_read<signal_t>::value);
@@ -16,9 +16,9 @@ TEST_CASE("lambda input signal", "[signals]")
     REQUIRE(read_signal(s) == 1);
 }
 
-TEST_CASE("lambda input signal with ID", "[signals]")
+TEST_CASE("lambda readable signal with ID", "[signals]")
 {
-    auto s = lambda_input(
+    auto s = lambda_reader(
         always_readable, []() { return 1; }, []() { return unit_id; });
 
     typedef decltype(s) signal_t;
