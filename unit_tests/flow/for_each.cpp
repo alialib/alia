@@ -65,7 +65,7 @@ TEST_CASE("string vector", "[for_each][vector]")
         for_each(
             ctx,
             direct(container),
-            [&](context ctx, input<string> const& item) {
+            [&](context ctx, readable<string> const& item) {
                 do_text(ctx, apply(ctx, counting_identity, simplify_id(item)));
             });
     };
@@ -103,7 +103,7 @@ TEST_CASE("item vector", "[for_each][vector]")
         for_each(
             ctx,
             direct(container),
-            [&](context ctx, input<my_item> const& item) {
+            [&](context ctx, readable<my_item> const& item) {
                 do_text(
                     ctx,
                     apply(
@@ -147,7 +147,7 @@ TEST_CASE("simple map", "[for_each][map]")
         for_each(
             ctx,
             direct(container),
-            [&](context ctx, input<string> key, bidirectional<int> value) {
+            [&](context ctx, readable<string> key, bidirectional<int> value) {
                 do_text(ctx, apply(ctx, counting_identity, simplify_id(key)));
                 do_text(ctx, apply(ctx, alia_lambdify(std::to_string), value));
             });
@@ -187,7 +187,7 @@ TEST_CASE("item map", "[for_each][map]")
         for_each(
             ctx,
             direct(container),
-            [&](context ctx, input<my_item> key, bidirectional<int> value) {
+            [&](context ctx, readable<my_item> key, bidirectional<int> value) {
                 do_text(
                     ctx,
                     apply(
@@ -233,7 +233,7 @@ TEST_CASE("string list", "[for_each][list]")
         for_each(
             ctx,
             direct(container),
-            [&](context ctx, input<string> const& item) {
+            [&](context ctx, readable<string> const& item) {
                 do_text(ctx, apply(ctx, counting_identity, simplify_id(item)));
             });
     };
@@ -272,7 +272,7 @@ TEST_CASE("unsimplified string list", "[for_each][list]")
         for_each(
             ctx,
             direct(container),
-            [&](context ctx, input<string> const& item) {
+            [&](context ctx, readable<string> const& item) {
                 do_text(ctx, apply(ctx, counting_identity, item));
             });
     };
@@ -332,7 +332,7 @@ TEST_CASE("item list", "[for_each][list]")
         for_each(
             ctx,
             direct(container),
-            [&](context ctx, input<my_item> const& item) {
+            [&](context ctx, readable<my_item> const& item) {
                 do_text(
                     ctx,
                     apply(

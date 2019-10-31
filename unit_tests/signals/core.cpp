@@ -60,8 +60,8 @@ TEST_CASE("signal_direction_union", "[signals]")
 
 TEST_CASE("is_signal_type", "[signals]")
 {
-    REQUIRE(is_signal_type<input<int>>::value);
-    REQUIRE(is_signal_type<output<int>>::value);
+    REQUIRE(is_signal_type<readable<int>>::value);
+    REQUIRE(is_signal_type<writable<int>>::value);
     REQUIRE(is_signal_type<bidirectional<int>>::value);
     REQUIRE(!is_signal_type<int>::value);
     REQUIRE(!is_signal_type<std::string>::value);
@@ -69,15 +69,15 @@ TEST_CASE("is_signal_type", "[signals]")
 
 TEST_CASE("signal_can_read", "[signals]")
 {
-    REQUIRE(signal_can_read<input<int>>::value);
-    REQUIRE(!signal_can_read<output<int>>::value);
+    REQUIRE(signal_can_read<readable<int>>::value);
+    REQUIRE(!signal_can_read<writable<int>>::value);
     REQUIRE(signal_can_read<bidirectional<int>>::value);
 }
 
 TEST_CASE("is_readable_signal_type", "[signals]")
 {
-    REQUIRE(is_readable_signal_type<input<int>>::value);
-    REQUIRE(!is_readable_signal_type<output<int>>::value);
+    REQUIRE(is_readable_signal_type<readable<int>>::value);
+    REQUIRE(!is_readable_signal_type<writable<int>>::value);
     REQUIRE(is_readable_signal_type<bidirectional<int>>::value);
     REQUIRE(!is_readable_signal_type<int>::value);
     REQUIRE(!is_readable_signal_type<std::string>::value);
@@ -85,15 +85,15 @@ TEST_CASE("is_readable_signal_type", "[signals]")
 
 TEST_CASE("signal_can_write", "[signals]")
 {
-    REQUIRE(!signal_can_write<input<int>>::value);
-    REQUIRE(signal_can_write<output<int>>::value);
+    REQUIRE(!signal_can_write<readable<int>>::value);
+    REQUIRE(signal_can_write<writable<int>>::value);
     REQUIRE(signal_can_write<bidirectional<int>>::value);
 }
 
 TEST_CASE("is_writable_signal_type", "[signals]")
 {
-    REQUIRE(!is_writable_signal_type<input<int>>::value);
-    REQUIRE(is_writable_signal_type<output<int>>::value);
+    REQUIRE(!is_writable_signal_type<readable<int>>::value);
+    REQUIRE(is_writable_signal_type<writable<int>>::value);
     REQUIRE(is_writable_signal_type<bidirectional<int>>::value);
     REQUIRE(!is_writable_signal_type<int>::value);
     REQUIRE(!is_writable_signal_type<std::string>::value);
@@ -119,12 +119,12 @@ TEST_CASE("signal_ref", "[signals]")
 }
 
 static void
-f_input(alia::input<int> x)
+f_readable(alia::readable<int> x)
 {
 }
 
 static void
-f_output(alia::output<int> x)
+f_writable(alia::writable<int> x)
 {
 }
 
@@ -139,8 +139,8 @@ TEST_CASE("signal parameter passing", "[signals]")
     int x = 0;
     auto bidirectional = direct(x);
 
-    f_input(read_only);
-    f_input(bidirectional);
-    f_output(bidirectional);
+    f_readable(read_only);
+    f_readable(bidirectional);
+    f_writable(bidirectional);
     f_bidirectional(bidirectional);
 }

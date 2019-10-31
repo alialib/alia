@@ -15,7 +15,7 @@ TEST_CASE("fake_readability", "[signals]")
 {
     {
         auto s = fake_readability(
-            lambda_input([&]() { return true; }, [&]() { return 0; }));
+            lambda_reader([&]() { return true; }, [&]() { return 0; }));
 
         typedef decltype(s) signal_t;
         REQUIRE(signal_can_read<signal_t>::value);
@@ -49,7 +49,7 @@ TEST_CASE("fake_writability", "[signals]")
 {
     {
         auto s = fake_writability(
-            lambda_input([&]() { return true; }, [&]() { return 0; }));
+            lambda_reader([&]() { return true; }, [&]() { return 0; }));
 
         typedef decltype(s) signal_t;
         REQUIRE(signal_can_read<signal_t>::value);
@@ -102,7 +102,7 @@ TEST_CASE("is_readable", "[signals]")
 
     {
         auto s = is_readable(
-            lambda_input([&]() { return readable; }, [&]() { return x; }));
+            lambda_reader([&]() { return readable; }, [&]() { return x; }));
 
         typedef decltype(s) signal_t;
         REQUIRE(signal_can_read<signal_t>::value);
@@ -117,7 +117,7 @@ TEST_CASE("is_readable", "[signals]")
     {
         // Recreate the signal to circumvent internal caching.
         auto s = is_readable(
-            lambda_input([&]() { return readable; }, [&]() { return x; }));
+            lambda_reader([&]() { return readable; }, [&]() { return x; }));
 
         REQUIRE(signal_is_readable(s));
         REQUIRE(read_signal(s) == true);

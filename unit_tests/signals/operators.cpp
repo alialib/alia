@@ -74,7 +74,7 @@ TEST_CASE("signal &&", "[signals]")
 
     // Check that && short-circuits.
     int access_count = 0;
-    auto access_counting_signal = lambda_input(always_readable, [&]() {
+    auto access_counting_signal = lambda_reader(always_readable, [&]() {
         ++access_count;
         return true;
     });
@@ -103,7 +103,7 @@ TEST_CASE("signal ||", "[signals]")
 
     // Check that || short-circuits.
     int access_count = 0;
-    auto access_counting_signal = lambda_input(always_readable, [&]() {
+    auto access_counting_signal = lambda_reader(always_readable, [&]() {
         ++access_count;
         return false;
     });
@@ -408,7 +408,7 @@ TEST_CASE("custom ref subscript", "[signals]")
 TEST_CASE("custom by-value subscript", "[signals]")
 {
     my_const_array c;
-    auto c_signal = lambda_input(
+    auto c_signal = lambda_reader(
         always_readable,
         [&]() { return c; },
         [&]() {
