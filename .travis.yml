@@ -4,7 +4,6 @@ python: 3.7
 before_script:
 - sudo bash scripts/set-up-system.sh
 - pip install conan gcovr
-- source .venv/bin/activate
 - export CC=`which clang-4.0`
 - export CXX=`which clang++-4.0`
 - scripts/set-up-conan.sh
