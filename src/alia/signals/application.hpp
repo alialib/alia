@@ -118,7 +118,7 @@ enum class apply_status
 template<class Value>
 struct apply_result_data
 {
-    int result_version = 0;
+    counter_type result_version = 0;
     Value result;
     apply_status status = apply_status::UNCOMPUTED;
 };
@@ -159,7 +159,7 @@ struct apply_signal : signal<apply_signal<Value>, Value, read_only_signal>
 
  private:
     apply_result_data<Value>* data_;
-    mutable simple_id<int> id_;
+    mutable simple_id<counter_type> id_;
 };
 
 template<class Value>
