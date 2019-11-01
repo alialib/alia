@@ -15,8 +15,9 @@ struct ostream_event
     std::ostream* stream;
 };
 
+template<class Text>
 void
-do_text(context ctx, readable<std::string> const& text)
+do_text(context ctx, readable<Text> const& text)
 {
     ostream_event* oe;
     if (detect_event(ctx, &oe) && signal_is_readable(text))
