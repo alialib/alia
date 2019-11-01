@@ -27,6 +27,17 @@ do_text(context ctx, readable<std::string> const& text)
 
 template<class Controller>
 void
+do_traversal(alia::system& sys, Controller const& controller)
+{
+    sys.controller = controller;
+    {
+        int nothing_event = 0;
+        dispatch_event(sys, nothing_event);
+    }
+}
+
+template<class Controller>
+void
 check_traversal(
     alia::system& sys,
     Controller const& controller,
