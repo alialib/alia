@@ -139,11 +139,22 @@ fips_end_lib()
 target_link_libraries(alia ${EXTERNAL_LIBS})
 
 # Add the unit test runner.
-fips_include_directories(${PROJECT_SOURCE_DIR}/unit_tests)
 fips_begin_app(unit_test_runner cmdline)
     fips_deps(alia)
     fips_src(unit_tests)
 fips_end_app()
+target_include_directories(unit_test_runner
+    PRIVATE ${PROJECT_SOURCE_DIR}/unit_tests)
+
+# Create another version of the unit tests that run against the single-header
+# version of the library.
+# (Note that this comes as an empty test and requires some external setup to
+# run properly. This is normally only done within Travis.)
+fips_begin_app(single_header_test_runner cmdline)
+    fips_src(single_header_tests)
+fips_end_app()
+target_include_directories(single_header_test_runner
+    PRIVATE ${PROJECT_SOURCE_DIR}/single_header_tests)
 
 # Add tests that are supposed to cause compilation errors.
 # Specifically, find all .cpp files in the compilation_tests/ directory and
@@ -198,6 +209,18 @@ add_custom_target(
     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
     DEPENDS unit_test_runner)
 
+# Add a second target for running the unit tests against the single-header
+# version of the library.
+add_custom_target(
+    single_header_tests
+    # Create a fresh 'single-header-testing' directory within the build dir and
+    # run the tests with that.
+    COMMAND ${CMAKE_COMMAND} -E remove_directory single-header-testing
+    COMMAND ${CMAKE_COMMAND} -E make_directory single-header-testing
+    COMMAND ${CMAKE_COMMAND} -E chdir single-header-testing ${CMAKE_COMMAND} -E env ALIA_DEPLOY_DIR=${FIPS_PROJECT_DEPLOY_DIR} ${FIPS_PROJECT_DEPLOY_DIR}/single_header_test_runner
+    WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+    DEPENDS single_header_test_runner)
+
 # On Linux debug builds, the proper CMake test associated with the unit tests
 # includes test coverage reporting.
 if(FIPS_CLANG AND CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -217,6 +240,12 @@ else()
         COMMAND ${CMAKE_COMMAND} --build . --target unit_tests
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
 endif()
+
+# Add the single header tests as a test.
+add_test(
+    NAME single_header_tests
+    COMMAND ${CMAKE_COMMAND} --build . --target single_header_tests
+    WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
 
 # CMake doesn't seem to generate a test target in some cases (which I haven't
 # quite figured out), so generate a custom one.
