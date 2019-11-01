@@ -1,7 +1,7 @@
 dist: xenial
 before_script:
 - sudo bash scripts/set-up-system.sh
-- scripts/set-up-python.sh
+- scripts/set-up-python.sh --python=python3.7
 - source .venv/bin/activate
 - export CC=`which clang-4.0`
 - export CXX=`which clang++-4.0`
