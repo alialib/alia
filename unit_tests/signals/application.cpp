@@ -6,6 +6,8 @@
 
 #include <alia/signals/basic.hpp>
 
+#include "traversal.hpp"
+
 using namespace alia;
 
 TEST_CASE("lazy_apply", "[signals]")
@@ -53,23 +55,6 @@ TEST_CASE("lazy_lift", "[signals]")
     REQUIRE(read_signal(s) == 2);
 }
 
-template<class Controller>
-void
-do_traversal(
-    data_graph& graph, Controller const& controller, bool refresh = true)
-{
-    data_traversal traversal;
-    scoped_data_traversal sdt(graph, traversal);
-    if (!refresh)
-        disable_gc(traversal);
-
-    component_storage storage;
-    add_component<data_traversal_tag>(storage, &traversal);
-
-    context ctx(&storage);
-    controller(ctx);
-}
-
 TEST_CASE("simple apply", "[signals]")
 {
     int f_call_count = 0;
@@ -80,7 +65,7 @@ TEST_CASE("simple apply", "[signals]")
 
     captured_id signal_id;
 
-    data_graph graph;
+    alia::system sys;
     auto make_controller = [&](int x, int y) {
         return [=, &signal_id](context ctx) {
             auto s = apply(ctx, f, value(x), value(y));
@@ -96,26 +81,26 @@ TEST_CASE("simple apply", "[signals]")
         };
     };
 
-    do_traversal(graph, make_controller(1, 2));
+    do_traversal(sys, make_controller(1, 2));
     REQUIRE(f_call_count == 1);
     captured_id last_id = signal_id;
 
-    do_traversal(graph, make_controller(1, 2));
+    do_traversal(sys, make_controller(1, 2));
     REQUIRE(f_call_count == 1);
     REQUIRE(last_id == signal_id);
     last_id = signal_id;
 
-    do_traversal(graph, make_controller(2, 2));
+    do_traversal(sys, make_controller(2, 2));
     REQUIRE(f_call_count == 2);
     REQUIRE(last_id != signal_id);
     last_id = signal_id;
 
-    do_traversal(graph, make_controller(2, 2));
+    do_traversal(sys, make_controller(2, 2));
     REQUIRE(f_call_count == 2);
     REQUIRE(last_id == signal_id);
     last_id = signal_id;
 
-    do_traversal(graph, make_controller(2, 3));
+    do_traversal(sys, make_controller(2, 3));
     REQUIRE(f_call_count == 3);
     REQUIRE(last_id != signal_id);
 }
@@ -129,7 +114,7 @@ TEST_CASE("unready apply", "[signals]")
     };
 
     {
-        data_graph graph;
+        alia::system sys;
         auto make_controller = [=](auto x, auto y) {
             return [=](context ctx) {
                 auto s = apply(ctx, f, x, y);
@@ -142,10 +127,10 @@ TEST_CASE("unready apply", "[signals]")
             };
         };
 
-        do_traversal(graph, make_controller(empty<int>(), value(2)));
+        do_traversal(sys, make_controller(empty<int>(), value(2)));
         REQUIRE(f_call_count == 0);
 
-        do_traversal(graph, make_controller(value(1), empty<int>()));
+        do_traversal(sys, make_controller(value(1), empty<int>()));
         REQUIRE(f_call_count == 0);
     }
 }
@@ -155,7 +140,7 @@ TEST_CASE("failed apply", "[signals]")
     auto f = [&](int x, int y) -> int { throw "failed"; };
 
     {
-        data_graph graph;
+        alia::system sys;
         auto make_controller = [=](auto x, auto y) {
             return [=](context ctx) {
                 auto s = apply(ctx, f, x, y);
@@ -168,7 +153,7 @@ TEST_CASE("failed apply", "[signals]")
             };
         };
 
-        do_traversal(graph, make_controller(value(1), value(2)));
+        do_traversal(sys, make_controller(value(1), value(2)));
     }
 }
 
@@ -181,7 +166,7 @@ TEST_CASE("lift", "[signals]")
     };
 
     {
-        data_graph graph;
+        alia::system sys;
         auto controller = [=](context ctx) {
             auto f_lifted = lift(ctx, f);
             auto s = f_lifted(value(0));
@@ -194,7 +179,7 @@ TEST_CASE("lift", "[signals]")
             REQUIRE(read_signal(s) == 1);
         };
 
-        do_traversal(graph, controller);
+        do_traversal(sys, controller);
         REQUIRE(f_call_count == 1);
     }
 }
