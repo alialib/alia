@@ -99,10 +99,9 @@ lambda_reader(IsReadable is_readable, Read read, GenerateId generate_id)
         GenerateId>(is_readable, read, generate_id);
 }
 
-// lambda_bidirectional(is_readable, read, is_writable, write, generate_id)
-// creates a bidirectional signal whose value is read by calling :is_readable
-// and :read and written by calling :is_writable and :write. Its ID is
-// determined by calling :generate_id.
+// lambda_bidirectional(is_readable, read, is_writable, write) creates a
+// bidirectional signal whose value is read by calling :is_readable and :read
+// and written by calling :is_writable and :write.
 template<
     class Value,
     class IsReadable,
@@ -169,9 +168,10 @@ lambda_bidirectional(
         Write>(is_readable, read, is_writable, write);
 }
 
-// lambda_bidirectional(is_readable, read, is_writable, write) creates a
-// bidirectional signal whose value is read by calling :is_readable and :read
-// and written by calling :is_writable and :write.
+// lambda_bidirectional(is_readable, read, is_writable, write, generate_id)
+// creates a bidirectional signal whose value is read by calling :is_readable
+// and :read and written by calling :is_writable and :write. Its ID is
+// determined by calling :generate_id.
 template<
     class Value,
     class IsReadable,
