@@ -8,9 +8,11 @@ before_script:
 - scripts/set-up-conan.sh
 - export CTEST_OUTPUT_ON_FAILURE=1
 script:
+- python scripts/generate-distributables.py
+- cp alia.hpp single_header_tests
+- python scripts/generate-single-header-tests.py
 - ./fips make test linux-make-debug
 - ./fips make test linux-make-release
-- python scripts/generate-distributables.py
 before_cache:
 - conan remove "*" -s -b -f
 cache:
