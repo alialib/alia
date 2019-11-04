@@ -375,7 +375,7 @@ struct id_pair : id_interface
     {
         id_pair const& other_id = static_cast<id_pair const&>(other);
         return id0_.less_than(other_id.id0_)
-               || id0_.equals(other_id.id0_) && id1_.less_than(other_id.id1_);
+               || (id0_.equals(other_id.id0_) && id1_.less_than(other_id.id1_));
     }
 
     void
