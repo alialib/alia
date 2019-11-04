@@ -74,15 +74,15 @@ struct logical_or_signal
         // Obviously, this is readable if both of its arguments are readable.
         // However, it's also readable if only one is readable and its value is
         // true.
-        return arg0_.is_readable() && arg1_.is_readable()
-               || arg0_.is_readable() && arg0_.read()
-               || arg1_.is_readable() && arg1_.read();
+        return (arg0_.is_readable() && arg1_.is_readable())
+               || (arg0_.is_readable() && arg0_.read())
+               || (arg1_.is_readable() && arg1_.read());
     }
     bool const&
     read() const
     {
-        value_ = arg0_.is_readable() && arg0_.read()
-                 || arg1_.is_readable() && arg1_.read();
+        value_ = (arg0_.is_readable() && arg0_.read())
+                 || (arg1_.is_readable() && arg1_.read());
         return value_;
     }
 
@@ -125,16 +125,16 @@ struct logical_and_signal
         // Obviously, this is readable if both of its arguments are readable.
         // However, it's also readable if only one is readable and its value is
         // false.
-        return arg0_.is_readable() && arg1_.is_readable()
-               || arg0_.is_readable() && !arg0_.read()
-               || arg1_.is_readable() && !arg1_.read();
+        return (arg0_.is_readable() && arg1_.is_readable())
+               || (arg0_.is_readable() && !arg0_.read())
+               || (arg1_.is_readable() && !arg1_.read());
     }
     bool const&
     read() const
     {
         value_
-            = !(arg0_.is_readable() && !arg0_.read()
-                || arg1_.is_readable() && !arg1_.read());
+            = !((arg0_.is_readable() && !arg0_.read())
+                || (arg1_.is_readable() && !arg1_.read()));
         return value_;
     }
 
