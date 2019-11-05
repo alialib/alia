@@ -44,6 +44,14 @@ struct is_action_type : std::is_base_of<untyped_action_interface, T>
 {
 };
 
+// Is the given action ready?
+template<class... Args>
+bool
+action_is_ready(action_interface<Args...> const& action)
+{
+    return action.is_ready();
+}
+
 // Perform an action.
 template<class... Args>
 void
