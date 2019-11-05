@@ -47,11 +47,13 @@ TEST_CASE("action_ref", "[actions]")
 
     action_ref<> s = r;
     REQUIRE(s.is_ready());
+    REQUIRE(action_is_ready(s));
     perform_action(s);
     REQUIRE(x == 2);
 
     s = a;
     REQUIRE(!s.is_ready());
+    REQUIRE(!action_is_ready(s));
 }
 
 static void
