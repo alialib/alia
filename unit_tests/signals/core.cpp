@@ -99,6 +99,15 @@ TEST_CASE("is_writable_signal_type", "[signals]")
     REQUIRE(!is_writable_signal_type<std::string>::value);
 }
 
+TEST_CASE("is_bidirectional_signal_type", "[signals]")
+{
+    REQUIRE(!is_bidirectional_signal_type<readable<int>>::value);
+    REQUIRE(!is_bidirectional_signal_type<writable<int>>::value);
+    REQUIRE(is_bidirectional_signal_type<bidirectional<int>>::value);
+    REQUIRE(!is_bidirectional_signal_type<int>::value);
+    REQUIRE(!is_bidirectional_signal_type<std::string>::value);
+}
+
 TEST_CASE("signal_ref", "[signals]")
 {
     int x = 1;
