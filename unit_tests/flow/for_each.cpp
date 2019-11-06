@@ -310,8 +310,6 @@ TEST_CASE("writing string list items", "[for_each][list]")
             });
     };
 
-    // The first time the traversal is done, there is one initial call for each
-    // item.
     check_traversal(sys, controller, "");
     REQUIRE(container == (std::list<string>{"boo", "boo", "boo"}));
 }
