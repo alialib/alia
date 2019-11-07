@@ -448,17 +448,6 @@ if_block::if_block(data_traversal& traversal, bool condition)
     }
 }
 
-pass_dependent_if_block::pass_dependent_if_block(
-    data_traversal& traversal, bool condition)
-{
-    data_block* block;
-    get_data(traversal, &block);
-    if (condition)
-    {
-        scoped_data_block_.begin(traversal, *block);
-    }
-}
-
 loop_block::loop_block(data_traversal& traversal)
 {
     traversal_ = &traversal;
