@@ -385,41 +385,6 @@ TEST_CASE("alia_if/alia_else_if/alia_else", "[data_graph]")
         "destructing int;");
 }
 
-TEST_CASE("alia_pass_dependent_if", "[data_graph]")
-{
-    clear_log();
-    {
-        data_graph graph;
-        auto make_controller = [](auto condition) {
-            return [=](data_traversal& ctx) {
-                alia_pass_dependent_if(condition)
-                {
-                    do_cached_int(ctx, 0);
-                }
-                alia_end;
-                do_int(ctx, 1);
-            };
-        };
-        do_traversal(graph, make_controller(value(false)));
-        check_log("initializing int: 1;");
-        do_traversal(graph, make_controller(value(true)));
-        check_log(
-            "initializing cached int: 0;"
-            "visiting int: 1;");
-        do_traversal(graph, make_controller(value(false)));
-        check_log("visiting int: 1;");
-        do_traversal(graph, make_controller(empty<bool>()));
-        check_log("visiting int: 1;");
-        do_traversal(graph, make_controller(value(true)));
-        check_log(
-            "visiting cached int: 0;"
-            "visiting int: 1;");
-    }
-    check_log(
-        "destructing int;"
-        "destructing int;");
-}
-
 TEST_CASE("alia_switch", "[data_graph]")
 {
     clear_log();
