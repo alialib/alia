@@ -717,14 +717,6 @@ struct if_block : noncopyable
     scoped_data_block scoped_data_block_;
 };
 
-struct pass_dependent_if_block : noncopyable
-{
-    pass_dependent_if_block(data_traversal& traversal, bool condition);
-
- private:
-    scoped_data_block scoped_data_block_;
-};
-
 struct switch_block : noncopyable
 {
     template<class Context>
@@ -903,28 +895,6 @@ read_condition(T const& x)
 #define alia_else_if(condition) ALIA_ELSE_IF(condition)
 #define alia_else_(ctx) ALIA_ELSE(ctx)
 #define alia_else ALIA_ELSE
-#endif
-
-// pass_dependent_if - This is used for tests that involve conditions that
-// change from one pass to another. It does not clear out cached data within
-// the block if it's skipped.
-
-#define ALIA_PASS_DEPENDENT_IF_(ctx, condition)                                \
-    {                                                                          \
-        {                                                                      \
-            bool _alia_condition = ::alia::condition_is_true(condition);       \
-            ::alia::pass_dependent_if_block _alia_if_block(                    \
-                get_data_traversal(ctx), _alia_condition);                     \
-            if (_alia_condition)                                               \
-            {
-
-#define ALIA_PASS_DEPENDENT_IF(condition)                                      \
-    ALIA_PASS_DEPENDENT_IF_(ctx, condition)
-
-#ifdef ALIA_LOWERCASE_MACROS
-#define alia_pass_dependent_if_(ctx, condition)                                \
-    ALIA_PASS_DEPENDENT_IF_(ctx, condition)
-#define alia_pass_dependent_if(condition) ALIA_PASS_DEPENDENT_IF(condition)
 #endif
 
 // switch
