@@ -53,7 +53,7 @@ try it out and see more examples, click here.
 	do_input(ctx, n_people);
 	alia_if (n_people > 1)
 	{
-		do_text(ctx, format(ctx, "tip per person: %.2f", tip / n_people);
-		do_text(ctx, format(ctx, "total per person: %.2f", total / n_people);
+		do_text(ctx, printf(ctx, "tip per person: %.2f", tip / n_people);
+		do_text(ctx, printf(ctx, "total per person: %.2f", total / n_people);
 	}
 	alia_end
