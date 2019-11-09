@@ -20,19 +20,12 @@ extern std::stringstream the_log;
 // Clear the log.
 // It's best to do this explicitly at the beginning of each test in case the
 // previous one failed and left the log in a bad state.
-static void
-clear_log()
-{
-    the_log.str(std::string());
-}
+void
+clear_log();
 
 // Check that the log contains the expected contents and clear it.
-static void
-check_log(std::string const& expected_contents)
-{
-    REQUIRE(the_log.str() == expected_contents);
-    clear_log();
-}
+void
+check_log(std::string const& expected_contents);
 
 struct int_object
 {
@@ -126,10 +119,7 @@ struct custom_context
 
     data_traversal& traversal;
 };
-inline static data_traversal&
-get_data_traversal(custom_context& ctx)
-{
-    return ctx.traversal;
-}
+data_traversal&
+get_data_traversal(custom_context& ctx);
 
 #endif
