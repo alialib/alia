@@ -184,10 +184,13 @@ get_component(component_storage& storage)
 // Finally, the typedef for the context...
 
 typedef add_component_type_t<
-    add_component_type_t<
-        empty_component_collection<component_storage>,
-        event_traversal_tag,
-        event_traversal*>,
+    empty_component_collection<component_storage>,
+    event_traversal_tag,
+    event_traversal*>
+    dataless_context;
+
+typedef add_component_type_t<
+    dataless_context,
     data_traversal_tag,
     data_traversal*>
     context;

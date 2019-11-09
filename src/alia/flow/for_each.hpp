@@ -1,7 +1,7 @@
 #ifndef ALIA_FLOW_FOR_EACH_HPP
 #define ALIA_FLOW_FOR_EACH_HPP
 
-#include <alia/flow/data_graph.hpp>
+#include <alia/flow/macros.hpp>
 #include <alia/signals/adaptors.hpp>
 #include <alia/signals/basic.hpp>
 #include <alia/signals/operators.hpp>
