@@ -1,6 +1,9 @@
 #include <alia/flow/events.hpp>
-#include <alia/system.hpp>
+
 #include <sstream>
+
+#include <alia/flow/macros.hpp>
+#include <alia/system.hpp>
 
 #include <catch.hpp>
 
