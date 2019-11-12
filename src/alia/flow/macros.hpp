@@ -146,11 +146,11 @@ read_condition(T const& x)
     {                                                                          \
         bool _alia_else_condition ALIA_UNUSED;                                 \
         {                                                                      \
-            auto const& _alia_condition_value = (condition);                   \
+            auto const& _alia_condition = (condition);                         \
             bool _alia_if_condition                                            \
-                = ::alia::condition_is_true(_alia_condition_value);            \
+                = ::alia::condition_is_true(_alia_condition);                  \
             _alia_else_condition                                               \
-                = ::alia::condition_is_false(_alia_condition_value);           \
+                = ::alia::condition_is_false(_alia_condition);                 \
             ::alia::if_block _alia_if_block(                                   \
                 get_data_traversal(ctx), _alia_if_condition);                  \
             if (_alia_if_condition)                                            \
@@ -162,13 +162,12 @@ read_condition(T const& x)
     }                                                                          \
     }                                                                          \
     {                                                                          \
-        auto const& _alia_condition_value = (condition);                       \
+        auto const& _alia_condition = (condition);                             \
         bool _alia_else_if_condition                                           \
             = _alia_else_condition                                             \
-              && ::alia::condition_is_true(_alia_condition_value);             \
-        _alia_else_condition                                                   \
-            = _alia_else_condition                                             \
-              && ::alia::condition_is_false(_alia_condition_value);            \
+              && ::alia::condition_is_true(_alia_condition);                   \
+        _alia_else_condition = _alia_else_condition                            \
+                               && ::alia::condition_is_false(_alia_condition); \
         ::alia::if_block _alia_if_block(                                       \
             get_data_traversal(ctx), _alia_else_if_condition);                 \
         if (_alia_else_if_condition)                                           \
@@ -211,22 +210,28 @@ read_condition(T const& x)
 #define ALIA_CONCATENATE_HELPER(a, b) a##b
 #define ALIA_CONCATENATE(a, b) ALIA_CONCATENATE_HELPER(a, b)
 
-#define ALIA_CASE(c)                                                           \
+#define ALIA_CASE_(ctx, c)                                                     \
     case c:                                                                    \
         _alia_switch_block.activate_case(c);                                   \
         goto ALIA_CONCATENATE(_alia_dummy_label_, __LINE__);                   \
         ALIA_CONCATENATE(_alia_dummy_label_, __LINE__)
 
-#define ALIA_DEFAULT                                                           \
+#define ALIA_CASE(c) ALIA_CASE_(ctx, c)
+
+#define ALIA_DEFAULT_(ctx)                                                     \
     default:                                                                   \
         _alia_switch_block.activate_case("_alia_default_case");                \
         goto ALIA_CONCATENATE(_alia_dummy_label_, __LINE__);                   \
         ALIA_CONCATENATE(_alia_dummy_label_, __LINE__)
 
+#define ALIA_DEFAULT ALIA_DEFAULT_(ctx)
+
 #ifdef ALIA_LOWERCASE_MACROS
 #define alia_switch_(ctx, x) ALIA_SWITCH_(ctx, x)
 #define alia_switch(x) ALIA_SWITCH(x)
+#define alia_case_(ctx, c) ALIA_CASE(ctx, c)
 #define alia_case(c) ALIA_CASE(c)
+#define alia_default_(ctx) ALIA_DEFAULT_(ctx)
 #define alia_default ALIA_DEFAULT
 #endif
 
@@ -280,6 +285,118 @@ read_condition(T const& x)
 #ifdef ALIA_LOWERCASE_MACROS
 #define alia_end ALIA_END
 #endif
+
+// The following macros are substitutes for normal C++ control flow statements.
+// Unlike alia_if and company, they do NOT track control flow. Instead, they
+// convert your context variable to a dataless_context within the block.
+// This means that any attempt to retrieve data within the block will result
+// in an error (as it should).
+
+#define ALIA_REMOVE_DATA_TRACKING(ctx)                                         \
+    ::alia::dataless_context& _alia_ctx = ctx;                                 \
+    ::alia::dataless_context& ctx = _alia_ctx;
+
+#define ALIA_UNTRACKED_IF_(ctx, condition)                                     \
+    if (alia::condition_is_true(condition))                                    \
+    {                                                                          \
+        ALIA_REMOVE_DATA_TRACKING(ctx)                                         \
+        {                                                                      \
+            {
+
+#define ALIA_UNTRACKED_IF(condition) ALIA_UNTRACKED_IF_(ctx, condition)
+
+#define ALIA_UNTRACKED_ELSE_IF_(ctx, condition)                                \
+    }                                                                          \
+    }                                                                          \
+    }                                                                          \
+    else if (alia::is_true(condition))                                         \
+    {                                                                          \
+        ALIA_REMOVE_DATA_TRACKING(ctx)                                         \
+        {                                                                      \
+            {
+
+#define ALIA_UNTRACKED_ELSE_IF(condition)                                      \
+    ALIA_UNTRACKED_ELSE_IF_(ctx, condition)
+
+#define ALIA_UNTRACKED_ELSE_(ctx)                                              \
+    }                                                                          \
+    }                                                                          \
+    }                                                                          \
+    else                                                                       \
+    {                                                                          \
+        ALIA_REMOVE_DATA_TRACKING(ctx)                                         \
+        {                                                                      \
+            {
+
+#define ALIA_UNTRACKED_ELSE ALIA_UNTRACKED_ELSE_(ctx)
+
+#define ALIA_UNTRACKED_SWITCH_(ctx, expression)                                \
+    switch (expression)                                                        \
+    {                                                                          \
+        {                                                                      \
+            {
+
+#define ALIA_UNTRACKED_SWITCH(expression)                                      \
+    ALIA_UNTRACKED_SWITCH_(ctx, expression)
+
+#define ALIA_UNTRACKED_CASE_(ctx, c)                                           \
+    }                                                                          \
+    }                                                                          \
+    }                                                                          \
+    case c:                                                                    \
+    {                                                                          \
+        {                                                                      \
+            {                                                                  \
+                ALIA_REMOVE_DATA_TRACKING(ctx)                                 \
+                goto ALIA_CONCATENATE(alia__dummy_label_, __LINE__);           \
+                ALIA_CONCATENATE(alia__dummy_label_, __LINE__)
+
+#define ALIA_UNTRACKED_CASE(c) ALIA_UNTRACKED_CASE_(ctx, c)
+
+#define ALIA_UNTRACKED_DEFAULT_(ctx)                                           \
+    }                                                                          \
+    }                                                                          \
+    }                                                                          \
+    default:                                                                   \
+    {                                                                          \
+        {                                                                      \
+            {                                                                  \
+                ALIA_REMOVE_DATA_TRACKING                                      \
+                goto ALIA_CONCATENATE(alia__dummy_label_, __LINE__);           \
+                ALIA_CONCATENATE(alia__dummy_label_, __LINE__)
+
+#define ALIA_UNTRACKED_DEFAULT ALIA_UNTRACKED_DEFAULT_(ctx)
+
+#ifdef ALIA_LOWERCASE_MACROS
+
+#define alia_untracked_if_(ctx, condition) ALIA_UNTRACKED_IF_(ctx, condition)
+#define alia_untracked_if(condition) ALIA_UNTRACKED_IF(condition)
+#define alia_untracked_else_if_(ctx, condition)                                \
+    ALIA_UNTRACKED_ELSE_IF_(ctx, condition)
+#define alia_untracked_else_if(condition) ALIA_UNTRACKED_ELSE_IF(condition)
+#define alia_untracked_else_(ctx) ALIA_UNTRACKED_ELSE(ctx)
+#define alia_untracked_else ALIA_UNTRACKED_ELSE
+
+#define alia_untracked_switch_(ctx, x) ALIA_UNTRACKED_SWITCH_(ctx, x)
+#define alia_untracked_switch(x) ALIA_UNTRACKED_SWITCH(x)
+#define alia_untracked_case_(ctx, c) ALIA_UNTRACKED_CASE_(ctx, c)
+#define alia_untracked_case(c) ALIA_UNTRACKED_CASE(c)
+#define alia_untracked_default_(ctx) ALIA_UNTRACKED_DEFAULT_(ctx)
+#define alia_untracked_default ALIA_UNTRACKED_DEFAULT
+
+#endif
+
+// alia_scoped_data_block does the opposite of the above.
+// It transitions from untracked control flow back to tracked control flow.
+// In order to do this, you must supply a data_block to use for tracking and
+// data retrieval.
+#define ALIA_TRACKED_BLOCK_(ctx, block)                                        \
+    {                                                                          \
+        ::alia::context& alia__ctx = static_cast<::alia::context&>(ctx);       \
+        ::alia::context& ctx = alia__ctx;                                      \
+        ::alia::scoped_data_block alia__block(ctx, (block));                   \
+        {                                                                      \
+            {
 
 } // namespace alia
 
