@@ -293,8 +293,10 @@ read_condition(T const& x)
 // in an error (as it should).
 
 #define ALIA_REMOVE_DATA_TRACKING(ctx)                                         \
-    ::alia::dataless_context& _alia_ctx = ctx;                                 \
-    ::alia::dataless_context& ctx = _alia_ctx;
+    decltype(ctx)::storage_type _alia_storage;                                 \
+    auto _alia_ctx                                                             \
+        = alia::remove_component<data_traversal_tag>(&_alia_storage, ctx);     \
+    auto ctx = _alia_ctx;
 
 #define ALIA_UNTRACKED_IF_(ctx, condition)                                     \
     if (alia::condition_is_true(condition))                                    \
@@ -309,7 +311,7 @@ read_condition(T const& x)
     }                                                                          \
     }                                                                          \
     }                                                                          \
-    else if (alia::is_true(condition))                                         \
+    else if (alia::condition_is_true(condition))                               \
     {                                                                          \
         ALIA_REMOVE_DATA_TRACKING(ctx)                                         \
         {                                                                      \
@@ -361,7 +363,7 @@ read_condition(T const& x)
     {                                                                          \
         {                                                                      \
             {                                                                  \
-                ALIA_REMOVE_DATA_TRACKING                                      \
+                ALIA_REMOVE_DATA_TRACKING(ctx)                                 \
                 goto ALIA_CONCATENATE(alia__dummy_label_, __LINE__);           \
                 ALIA_CONCATENATE(alia__dummy_label_, __LINE__)
 
@@ -385,18 +387,6 @@ read_condition(T const& x)
 #define alia_untracked_default ALIA_UNTRACKED_DEFAULT
 
 #endif
-
-// alia_scoped_data_block does the opposite of the above.
-// It transitions from untracked control flow back to tracked control flow.
-// In order to do this, you must supply a data_block to use for tracking and
-// data retrieval.
-#define ALIA_TRACKED_BLOCK_(ctx, block)                                        \
-    {                                                                          \
-        ::alia::context& alia__ctx = static_cast<::alia::context&>(ctx);       \
-        ::alia::context& ctx = alia__ctx;                                      \
-        ::alia::scoped_data_block alia__block(ctx, (block));                   \
-        {                                                                      \
-            {
 
 } // namespace alia
 

@@ -11,7 +11,7 @@ TEST_CASE("basic data traversal", "[data_graph]")
     clear_log();
     {
         data_graph graph;
-        auto controller = [](data_traversal& ctx) { do_int(ctx, 0); };
+        auto controller = [](context ctx) { do_int(ctx, 0); };
         do_traversal(graph, controller);
         check_log("initializing int: 0;");
         do_traversal(graph, controller);
@@ -26,7 +26,7 @@ TEST_CASE("simple named blocks", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](std::vector<int> indices) {
-            return [=](data_traversal& ctx) {
+            return [=](context ctx) {
                 naming_context nc(ctx);
                 for (auto i : indices)
                 {
@@ -76,7 +76,7 @@ TEST_CASE("mobile named blocks", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](std::vector<int> indices, int divider) {
-            return [=](data_traversal& ctx) {
+            return [=](context ctx) {
                 naming_context nc(ctx);
                 ALIA_FOR(auto i : indices)
                 {

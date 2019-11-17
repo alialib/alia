@@ -1,4 +1,3 @@
-#define ALIA_DYNAMIC_COMPONENT_CHECKING
 #define ALIA_LOWERCASE_MACROS
 #include <alia/flow/macros.hpp>
 
@@ -23,7 +22,7 @@ TEST_CASE("basic alia_if", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](auto condition) {
-            return [=](data_traversal& ctx) {
+            return [=](context ctx) {
                 ALIA_IF(condition)
                 {
                     do_int(ctx, 0);
@@ -496,9 +495,18 @@ TEST_CASE("alia_untracked_if", "[data_graph]")
         data_graph graph;
         auto make_controller = [](int n) {
             return [=](context ctx) {
-                alia_untracked_if(n > 1)
+                REQUIRE(has_component<data_traversal_tag>(ctx));
+                alia_untracked_if(n > 2)
                 {
-                    do_int(ctx, 1);
+                    REQUIRE(!has_component<data_traversal_tag>(ctx));
+                }
+                alia_untracked_else_if(n > 1)
+                {
+                    REQUIRE(!has_component<data_traversal_tag>(ctx));
+                }
+                alia_untracked_else
+                {
+                    REQUIRE(!has_component<data_traversal_tag>(ctx));
                 }
                 alia_end;
                 do_int(ctx, 0);
@@ -506,6 +514,38 @@ TEST_CASE("alia_untracked_if", "[data_graph]")
         };
         do_traversal(graph, make_controller(1));
         check_log("initializing int: 0;");
-        REQUIRE_THROWS(do_traversal(graph, make_controller(2)));
+        do_traversal(graph, make_controller(2));
+        do_traversal(graph, make_controller(3));
+    }
+}
+
+TEST_CASE("alia_untracked_switch", "[data_graph]")
+{
+    clear_log();
+    {
+        data_graph graph;
+        auto make_controller = [](int n) {
+            return [=](context ctx) {
+                REQUIRE(has_component<data_traversal_tag>(ctx));
+
+                // clang-format off
+                ALIA_UNTRACKED_SWITCH(n)
+                {
+                    ALIA_UNTRACKED_CASE(0):
+                        REQUIRE(!has_component<data_traversal_tag>(ctx));
+                        break;
+                    ALIA_UNTRACKED_DEFAULT:
+                        REQUIRE(!has_component<data_traversal_tag>(ctx));
+                        break;
+                }
+                ALIA_END
+                // clang-format on
+
+                do_int(ctx, 0);
+            };
+        };
+        do_traversal(graph, make_controller(1));
+        check_log("initializing int: 0;");
+        do_traversal(graph, make_controller(0));
     }
 }
