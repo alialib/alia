@@ -528,13 +528,18 @@ TEST_CASE("alia_untracked_switch", "[data_graph]")
             return [=](context ctx) {
                 REQUIRE(has_component<data_traversal_tag>(ctx));
 
+                auto f = [](context ctx, int x) {
+                    REQUIRE(has_component<data_traversal_tag>(ctx));
+                    return x;
+                };
+
                 // clang-format off
-                ALIA_UNTRACKED_SWITCH(n)
+                ALIA_UNTRACKED_SWITCH(f(ctx, n))
                 {
-                    ALIA_UNTRACKED_CASE(0):
+                    case 0:
                         REQUIRE(!has_component<data_traversal_tag>(ctx));
                         break;
-                    ALIA_UNTRACKED_DEFAULT:
+                    default:
                         REQUIRE(!has_component<data_traversal_tag>(ctx));
                         break;
                 }

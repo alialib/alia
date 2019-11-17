@@ -332,43 +332,6 @@ read_condition(T const& x)
 
 #define ALIA_UNTRACKED_ELSE ALIA_UNTRACKED_ELSE_(ctx)
 
-#define ALIA_UNTRACKED_SWITCH_(ctx, expression)                                \
-    switch (expression)                                                        \
-    {                                                                          \
-        {                                                                      \
-            {
-
-#define ALIA_UNTRACKED_SWITCH(expression)                                      \
-    ALIA_UNTRACKED_SWITCH_(ctx, expression)
-
-#define ALIA_UNTRACKED_CASE_(ctx, c)                                           \
-    }                                                                          \
-    }                                                                          \
-    }                                                                          \
-    case c:                                                                    \
-    {                                                                          \
-        {                                                                      \
-            {                                                                  \
-                ALIA_REMOVE_DATA_TRACKING(ctx)                                 \
-                goto ALIA_CONCATENATE(alia__dummy_label_, __LINE__);           \
-                ALIA_CONCATENATE(alia__dummy_label_, __LINE__)
-
-#define ALIA_UNTRACKED_CASE(c) ALIA_UNTRACKED_CASE_(ctx, c)
-
-#define ALIA_UNTRACKED_DEFAULT_(ctx)                                           \
-    }                                                                          \
-    }                                                                          \
-    }                                                                          \
-    default:                                                                   \
-    {                                                                          \
-        {                                                                      \
-            {                                                                  \
-                ALIA_REMOVE_DATA_TRACKING(ctx)                                 \
-                goto ALIA_CONCATENATE(alia__dummy_label_, __LINE__);           \
-                ALIA_CONCATENATE(alia__dummy_label_, __LINE__)
-
-#define ALIA_UNTRACKED_DEFAULT ALIA_UNTRACKED_DEFAULT_(ctx)
-
 #ifdef ALIA_LOWERCASE_MACROS
 
 #define alia_untracked_if_(ctx, condition) ALIA_UNTRACKED_IF_(ctx, condition)
@@ -379,12 +342,23 @@ read_condition(T const& x)
 #define alia_untracked_else_(ctx) ALIA_UNTRACKED_ELSE(ctx)
 #define alia_untracked_else ALIA_UNTRACKED_ELSE
 
+#endif
+
+#define ALIA_UNTRACKED_SWITCH_(ctx, expression)                                \
+    {                                                                          \
+        {                                                                      \
+            auto _alia_value = (expression);                                   \
+            ALIA_REMOVE_DATA_TRACKING(ctx)                                     \
+            switch (_alia_value)                                               \
+            {
+
+#define ALIA_UNTRACKED_SWITCH(expression)                                      \
+    ALIA_UNTRACKED_SWITCH_(ctx, expression)
+
+#ifdef ALIA_LOWERCASE_MACROS
+
 #define alia_untracked_switch_(ctx, x) ALIA_UNTRACKED_SWITCH_(ctx, x)
 #define alia_untracked_switch(x) ALIA_UNTRACKED_SWITCH(x)
-#define alia_untracked_case_(ctx, c) ALIA_UNTRACKED_CASE_(ctx, c)
-#define alia_untracked_case(c) ALIA_UNTRACKED_CASE(c)
-#define alia_untracked_default_(ctx) ALIA_UNTRACKED_DEFAULT_(ctx)
-#define alia_untracked_default ALIA_UNTRACKED_DEFAULT
 
 #endif
 
