@@ -1,6 +1,7 @@
 #ifndef ALIA_TESTING_FLOW_TESTER_HPP
 #define ALIA_TESTING_FLOW_TESTER_HPP
 
+#include <alia/context.hpp>
 #include <alia/flow/data_graph.hpp>
 
 #include <sstream>
@@ -102,24 +103,17 @@ void
 do_traversal(
     data_graph& graph, Controller const& controller, bool with_gc = true)
 {
-    data_traversal ctx;
-    scoped_data_traversal sdt(graph, ctx);
+    data_traversal data;
+    scoped_data_traversal sdt(graph, data);
+
+    component_storage storage;
+    add_component<data_traversal_tag>(storage, &data);
+
+    context ctx(&storage);
+
     if (!with_gc)
-        disable_gc(ctx);
+        disable_gc(data);
     controller(ctx);
 }
-
-// This is used to test that the utilities work with a custom context (rather
-// than invoking them directly on a data_traversal).
-struct custom_context
-{
-    custom_context(data_traversal& traversal) : traversal(traversal)
-    {
-    }
-
-    data_traversal& traversal;
-};
-data_traversal&
-get_data_traversal(custom_context& ctx);
 
 #endif
