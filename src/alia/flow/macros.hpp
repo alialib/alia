@@ -293,7 +293,7 @@ read_condition(T const& x)
 // in an error (as it should).
 
 #define ALIA_REMOVE_DATA_TRACKING(ctx)                                         \
-    decltype(ctx)::storage_type _alia_storage;                                 \
+    typename decltype(ctx)::storage_type _alia_storage;                        \
     auto _alia_ctx                                                             \
         = alia::remove_component<data_traversal_tag>(&_alia_storage, ctx);     \
     auto ctx = _alia_ctx;
