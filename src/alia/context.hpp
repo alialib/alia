@@ -2,7 +2,6 @@
 #define ALIA_CONTEXT_HPP
 
 #include <alia/component_collection.hpp>
-#include <alia/flow/data_graph.hpp>
 
 namespace alia {
 
@@ -198,19 +197,16 @@ typedef add_component_type_t<
 // And some convenience functions...
 
 inline data_traversal&
-get_data_traversal(context& ctx)
+get_data_traversal(context ctx)
 {
     return *get_component<data_traversal_tag>(ctx);
 }
 
-inline bool
-is_refresh_pass(context& ctx)
-{
-    return get_data_traversal(ctx).gc_enabled;
-}
+bool
+is_refresh_pass(context ctx);
 
 inline event_traversal&
-get_event_traversal(context& ctx)
+get_event_traversal(context ctx)
 {
     return *get_component<event_traversal_tag>(ctx);
 }
