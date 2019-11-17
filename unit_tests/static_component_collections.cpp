@@ -148,10 +148,14 @@ TEST_CASE("static component access", "[component_collections]")
 {
     storage_type storage_empty;
     cc_empty mc_empty(&storage_empty);
+    REQUIRE(!has_component<foo_tag>(mc_empty));
+    REQUIRE(!has_component<bar_tag>(mc_empty));
 
     storage_type storage_b;
     cc_b mc_b = add_component<bar_tag>(&storage_b, mc_empty, bar(1));
     REQUIRE(boost::any_cast<bar>(get_component<bar_tag>(mc_b)).i == 1);
+    REQUIRE(!has_component<foo_tag>(mc_b));
+    REQUIRE(has_component<bar_tag>(mc_b));
 
     storage_type storage_fb;
     cc_fb mc_fb = add_component<foo_tag>(&storage_fb, mc_b, foo());

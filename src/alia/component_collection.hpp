@@ -514,6 +514,19 @@ remove_component(
 #endif
 }
 
+// Determine if a component is in a collection.
+// :Tag identifies the component.
+template<class Tag, class Collection>
+bool
+has_component(Collection collection)
+{
+#ifdef ALIA_STATIC_COMPONENT_CHECKING
+    return detail::component_collection_contains_tag<Collection, Tag>::value;
+#else
+    return has_component<Tag>(*collection.storage);
+#endif
+}
+
 // Get a reference to the data associated with a component in a collection.
 // :Tag identifies the component.
 // If static checking is enabled, this generates a compile-time error if :Tag

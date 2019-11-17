@@ -11,7 +11,7 @@ TEST_CASE("basic data traversal", "[data_graph]")
     clear_log();
     {
         data_graph graph;
-        auto controller = [](data_traversal& ctx) { do_int(ctx, 0); };
+        auto controller = [](context ctx) { do_int(ctx, 0); };
         do_traversal(graph, controller);
         check_log("initializing int: 0;");
         do_traversal(graph, controller);
@@ -26,7 +26,7 @@ TEST_CASE("simple named blocks", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](std::vector<int> indices) {
-            return [=](data_traversal& ctx) {
+            return [=](context ctx) {
                 naming_context nc(ctx);
                 for (auto i : indices)
                 {
@@ -76,7 +76,7 @@ TEST_CASE("mobile named blocks", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](std::vector<int> indices, int divider) {
-            return [=](data_traversal& ctx) {
+            return [=](context ctx) {
                 naming_context nc(ctx);
                 ALIA_FOR(auto i : indices)
                 {
@@ -129,7 +129,7 @@ TEST_CASE("multiple naming contexts", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](std::vector<int> indices) {
-            return [=](custom_context ctx) {
+            return [=](context ctx) {
                 {
                     naming_context nc(ctx);
                     for (auto i : indices)
@@ -196,7 +196,7 @@ TEST_CASE("unexecuted named blocks", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](auto condition, std::vector<int> indices) {
-            return [=](custom_context ctx) {
+            return [=](context ctx) {
                 ALIA_IF(condition)
                 {
                     naming_context nc(ctx);
@@ -234,7 +234,7 @@ TEST_CASE("GC disabling", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](std::vector<int> indices) {
-            return [=](custom_context ctx) {
+            return [=](context ctx) {
                 {
                     naming_context nc(ctx);
                     for (auto i : indices)
@@ -281,7 +281,7 @@ TEST_CASE("manual deletion", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](std::vector<int> indices) {
-            return [=](custom_context ctx) {
+            return [=](context ctx) {
                 naming_context nc(ctx);
                 for (auto i : indices)
                 {
@@ -342,7 +342,7 @@ TEST_CASE("named block caching", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](auto condition, std::vector<int> indices) {
-            return [=](custom_context ctx) {
+            return [=](context ctx) {
                 ALIA_IF(condition)
                 {
                     naming_context nc(ctx);
@@ -404,7 +404,7 @@ TEST_CASE("naming_map lifetime", "[data_graph]")
         data_graph graph;
 
         auto make_controller = [](auto condition, std::vector<int> indices) {
-            return [=](custom_context ctx) {
+            return [=](context ctx) {
                 ALIA_IF(condition)
                 {
                     naming_context nc(ctx);
@@ -448,7 +448,7 @@ TEST_CASE("scoped_cache_clearing_disabler", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](auto condition) {
-            return [=](custom_context ctx) {
+            return [=](context ctx) {
                 {
                     scoped_cache_clearing_disabler disabler(ctx);
                     ALIA_IF(condition)
@@ -532,7 +532,7 @@ TEST_CASE("signal-based get_keyed_data", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](int i) {
-            return [=](custom_context ctx) {
+            return [=](context ctx) {
                 do_keyed_int(ctx, i);
                 do_keyed_int(ctx, 0);
             };
@@ -569,7 +569,7 @@ TEST_CASE("low-level get_keyed_data", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](int i) {
-            return [=](custom_context ctx) {
+            return [=](context ctx) {
                 int_object* x;
                 if (get_keyed_data(ctx, make_id(i), &x))
                 {
