@@ -42,84 +42,31 @@ struct int_object
     int n;
 };
 
-template<class Context>
 void
-do_int(Context& ctx, int n)
-{
-    int_object* obj;
-    if (get_data(ctx, &obj))
-    {
-        REQUIRE(obj->n == -1);
-        obj->n = n;
-        the_log << "initializing int: " << n << ";";
-    }
-    else
-    {
-        REQUIRE(obj->n == n);
-        the_log << "visiting int: " << n << ";";
-    }
-}
+do_int(context ctx, int n);
 
-template<class Context>
 void
-do_cached_int(Context& ctx, int n)
-{
-    int_object* obj;
-    if (get_cached_data(ctx, &obj))
-    {
-        REQUIRE(obj->n == -1);
-        obj->n = n;
-        the_log << "initializing cached int: " << n << ";";
-    }
-    else
-    {
-        REQUIRE(obj->n == n);
-        the_log << "visiting cached int: " << n << ";";
-    }
-}
+do_cached_int(context ctx, int n);
 
-template<class Context>
 void
-do_keyed_int(Context& ctx, int n)
-{
-    keyed_data_signal<int_object> obj;
-    if (get_keyed_data(ctx, make_id(n), &obj))
-    {
-        REQUIRE(!obj.is_readable());
-        write_signal(obj, int_object(n * 2));
-        the_log << "initializing keyed int: " << n << ";";
-    }
-    else
-    {
-        REQUIRE(read_signal(obj).n == n * 2);
-        REQUIRE(obj.value_id() == make_id(n));
-        the_log << "visiting keyed int: " << n << ";";
-    }
-}
+do_keyed_int(context ctx, int n);
 
 template<class Controller>
 void
 do_traversal(
     data_graph& graph, Controller const& controller, bool with_gc = true)
 {
-    data_traversal ctx;
-    scoped_data_traversal sdt(graph, ctx);
+    data_traversal data;
+    scoped_data_traversal sdt(graph, data);
+
+    component_storage storage;
+    add_component<data_traversal_tag>(storage, &data);
+
+    context ctx(&storage);
+
     if (!with_gc)
         disable_gc(ctx);
     controller(ctx);
 }
-
-// This is used to test that the utilities work with a custom context (rather
-// than invoking them directly on a data_traversal).
-struct custom_context
-{
-    custom_context(data_traversal& traversal) : traversal(traversal)
-    {
-    }
-
-    data_traversal& traversal;
-};
-data_traversal&
-get_data_traversal(custom_context& ctx);
 
 #endif

@@ -1,3 +1,4 @@
+#define ALIA_DYNAMIC_COMPONENT_CHECKING
 #define ALIA_LOWERCASE_MACROS
 #include <alia/flow/macros.hpp>
 
@@ -53,7 +54,7 @@ TEST_CASE("alia_if/alia_else", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](auto condition) {
-            return [=](custom_context ctx) {
+            return [=](context ctx) {
                 ALIA_IF(condition)
                 {
                     do_int(ctx, 0);
@@ -93,7 +94,7 @@ TEST_CASE("non-signal alia_if/alia_else", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](auto condition) {
-            return [=](custom_context ctx) {
+            return [=](context ctx) {
                 ALIA_IF(condition)
                 {
                     do_int(ctx, 0);
@@ -131,7 +132,7 @@ TEST_CASE("alia_if/alia_else caching", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](auto condition) {
-            return [=](custom_context ctx) {
+            return [=](context ctx) {
                 ALIA_IF(condition)
                 {
                     ; // This somehow stops ClangFormat from doing weird stuff
@@ -190,7 +191,7 @@ TEST_CASE("alia_if/alia_else_if/alia_else", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](auto condition1, auto condition2) {
-            return [=](custom_context ctx) {
+            return [=](context ctx) {
                 alia_if(condition1)
                 {
                     do_int(ctx, 0);
@@ -248,7 +249,7 @@ TEST_CASE("alia_switch", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](auto n) {
-            return [=](custom_context ctx) {
+            return [=](context ctx) {
                 // clang-format off
                 ALIA_SWITCH(n)
                 {
@@ -317,7 +318,7 @@ TEST_CASE("non-signal alia_switch", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](auto n) {
-            return [=](custom_context ctx) {
+            return [=](context ctx) {
                 // clang-format off
                 alia_switch(n)
                 {
@@ -386,7 +387,7 @@ TEST_CASE("alia_for", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](int n) {
-            return [=](custom_context ctx) {
+            return [=](context ctx) {
                 ALIA_FOR(int i = 1; i <= n; ++i)
                 {
                     do_int(ctx, i);
@@ -439,7 +440,7 @@ TEST_CASE("alia_while", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](int n) {
-            return [=](custom_context ctx) {
+            return [=](context ctx) {
                 int i = 1;
                 alia_while(i <= n)
                 {
@@ -486,4 +487,25 @@ TEST_CASE("alia_while", "[data_graph]")
         "destructing int;"
         "destructing int;"
         "destructing int;");
+}
+
+TEST_CASE("alia_untracked_if", "[data_graph]")
+{
+    clear_log();
+    {
+        data_graph graph;
+        auto make_controller = [](int n) {
+            return [=](context ctx) {
+                alia_untracked_if(n > 1)
+                {
+                    do_int(ctx, 1);
+                }
+                alia_end;
+                do_int(ctx, 0);
+            };
+        };
+        do_traversal(graph, make_controller(1));
+        check_log("initializing int: 0;");
+        REQUIRE_THROWS(do_traversal(graph, make_controller(2)));
+    }
 }
