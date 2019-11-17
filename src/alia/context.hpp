@@ -2,7 +2,6 @@
 #define ALIA_CONTEXT_HPP
 
 #include <alia/component_collection.hpp>
-#include <alia/flow/data_graph.hpp>
 
 namespace alia {
 
@@ -120,6 +119,10 @@ struct component_manipulator<data_traversal_tag>
     static data_traversal*
     get(component_storage& storage)
     {
+#ifdef ALIA_DYNAMIC_COMPONENT_CHECKING
+        if (!storage.data)
+            throw "missing data traversal component";
+#endif
         return storage.data;
     }
 };
@@ -145,6 +148,10 @@ struct component_manipulator<event_traversal_tag>
     static event_traversal*
     get(component_storage& storage)
     {
+#ifdef ALIA_DYNAMIC_COMPONENT_CHECKING
+        if (!storage.event)
+            throw "missing event traversal component";
+#endif
         return storage.event;
     }
 };
@@ -197,20 +204,19 @@ typedef add_component_type_t<
 
 // And some convenience functions...
 
-inline data_traversal&
-get_data_traversal(context& ctx)
+template<class Context>
+data_traversal&
+get_data_traversal(Context ctx)
 {
     return *get_component<data_traversal_tag>(ctx);
 }
 
-inline bool
-is_refresh_pass(context& ctx)
-{
-    return get_data_traversal(ctx).gc_enabled;
-}
+bool
+is_refresh_pass(context ctx);
 
-inline event_traversal&
-get_event_traversal(context& ctx)
+template<class Context>
+event_traversal&
+get_event_traversal(Context ctx)
 {
     return *get_component<event_traversal_tag>(ctx);
 }
