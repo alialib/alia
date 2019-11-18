@@ -37,12 +37,10 @@ do_label(context ctx, std::string const& name)
 {
     do_ostream_text(ctx, name);
 
-    find_label_event* fle;
-    if (detect_event(ctx, &fle))
-    {
-        if (fle->name == name)
-            fle->region = get_active_routing_region(ctx);
-    }
+    handle_event<find_label_event>(ctx, [name](auto ctx, auto& fle) {
+        if (fle.name == name)
+            fle.region = get_active_routing_region(ctx);
+    });
 }
 
 struct traversal_function

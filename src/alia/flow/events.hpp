@@ -3,6 +3,7 @@
 
 #include <alia/context.hpp>
 #include <alia/flow/data_graph.hpp>
+#include <alia/flow/macros.hpp>
 
 // This file implements utilities for routing events through an alia content
 // traversal function.
@@ -49,8 +50,9 @@ struct event_traversal
     void* event;
 };
 
-inline routing_region_ptr
-get_active_routing_region(context ctx)
+template<class Context>
+routing_region_ptr
+get_active_routing_region(Context ctx)
 {
     event_traversal& traversal = get_event_traversal(ctx);
     return traversal.active_region ? *traversal.active_region
@@ -136,6 +138,18 @@ detect_event(context ctx, Event** event)
         return true;
     }
     return false;
+}
+
+template<class Event, class Context, class Handler>
+void
+handle_event(Context ctx, Handler const& handler)
+{
+    Event* e;
+    ALIA_UNTRACKED_IF(detect_event(ctx, &e))
+    {
+        handler(ctx, *e);
+    }
+    ALIA_END
 }
 
 } // namespace alia
