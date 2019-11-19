@@ -27,37 +27,35 @@ TEST_CASE("state_holder", "[signals]")
 TEST_CASE("basic get_state", "[signals]")
 {
     alia::system sys;
-    auto make_controller = [&](bool initial_value_ready) {
-        return [&](context ctx) {
-            auto initial_value = conditional(
-                value(initial_value_ready), value(12), empty<int>());
+    do_traversal(sys, [&](context ctx) {
+        auto state = get_state(ctx, empty<int>());
 
-            auto state = get_state(ctx, initial_value);
+        REQUIRE(!signal_is_readable(state));
+        REQUIRE(signal_is_writable(state));
+    });
+    captured_id state_id;
+    do_traversal(sys, [&](context ctx) {
+        auto state = get_state(ctx, value(12));
 
-            if (initial_value_ready)
-            {
-                REQUIRE(signal_is_readable(state));
-                REQUIRE(read_signal(state) == 12);
-                REQUIRE(signal_is_writable(state));
-                write_signal(state, 13);
-                REQUIRE(read_signal(state) == 13);
-            }
-            else
-            {
-                REQUIRE(!signal_is_readable(state));
-                REQUIRE(signal_is_writable(state));
-            }
-        };
-    };
+        REQUIRE(signal_is_readable(state));
+        REQUIRE(read_signal(state) == 12);
+        REQUIRE(signal_is_writable(state));
+        state_id.capture(state.value_id());
 
-    do_traversal(sys, make_controller(false));
-    do_traversal(sys, make_controller(true));
+        write_signal(state, 13);
+    });
+    do_traversal(sys, [&](context ctx) {
+        auto state = get_state(ctx, value(12));
+
+        REQUIRE(read_signal(state) == 13);
+        REQUIRE(!state_id.matches(state.value_id()));
+    });
 }
 
 TEST_CASE("writing to uninitialized state", "[signals]")
 {
     alia::system sys;
-    auto controller = [&](context ctx) {
+    do_traversal(sys, [&](context ctx) {
         auto state = get_state(ctx, empty<int>());
 
         REQUIRE(!signal_is_readable(state));
@@ -66,7 +64,5 @@ TEST_CASE("writing to uninitialized state", "[signals]")
         REQUIRE(signal_is_readable(state));
         REQUIRE(signal_is_writable(state));
         REQUIRE(read_signal(state) == 1);
-    };
-
-    do_traversal(sys, controller);
+    });
 }
