@@ -1,26 +1,41 @@
 dist: xenial
+
 language: python
+
 python: 3.7
-before_script:
+
+install:
 - sudo bash scripts/set-up-system.sh
 - pip install conan gcovr
-- export CC=`which clang-4.0`
-- export CXX=`which clang++-4.0`
 - scripts/set-up-conan.sh
-- export CTEST_OUTPUT_ON_FAILURE=1
+
+jobs:
+  include:
+    # The Clang build generates test coverage information.
+    - before_script:
+      - export CC=`which clang-4.0`
+      - export CXX=`which clang++-4.0`
+      after_success:
+      - bash <(curl -s https://codecov.io/bash) -X gcov
+    # Add the GCC build too.
+    - before_script:
+      - export CC=`which gcc`
+      - export CXX=`which g++`
+
 script:
+- export CTEST_OUTPUT_ON_FAILURE=1
 - python scripts/generate-distributables.py
 - cp alia.hpp single_header_tests
 - python scripts/generate-single-header-tests.py
 - ./fips make test linux-make-debug
 - ./fips make test linux-make-release
+
 before_cache:
 - conan remove "*" -s -b -f
 cache:
   directories:
   - $HOME/.conan/data
-after_success:
-- bash <(curl -s https://codecov.io/bash) -X gcov
+
 deploy:
   provider: releases
   api_key:
