@@ -166,3 +166,59 @@ TEST_CASE("static component access", "[component_collections]")
     cc_f mc_f = remove_component<bar_tag>(&storage_f, mc_fb);
     REQUIRE(boost::any_cast<foo>(get_component<foo_tag>(mc_f)).b == false);
 }
+
+using boost::any;
+using boost::any_cast;
+using std::string;
+
+template<class Tag>
+struct component_printer
+{
+};
+
+template<>
+struct component_printer<foo_tag>
+{
+    static string
+    apply(any const& x)
+    {
+        foo const& f = any_cast<foo>(x);
+        return f.b ? "foo: true; " : "foo: false; ";
+    }
+};
+
+template<>
+struct component_printer<bar_tag>
+{
+    static string
+    apply(any const& x)
+    {
+        bar const& b = any_cast<bar>(x);
+        return "bar: " + std::to_string(b.i) + "; ";
+    }
+};
+
+struct reducer
+{
+    template<class Tag, class Data>
+    string
+    operator()(Tag tag, Data data, string z)
+    {
+        return component_printer<Tag>::apply(data) + z;
+    }
+};
+
+TEST_CASE("collection folding", "[component_collections]")
+{
+    storage_type storage_empty;
+    cc_empty mc_empty(&storage_empty);
+
+    storage_type storage_b;
+    cc_b mc_b = add_component<bar_tag>(&storage_b, mc_empty, bar(1));
+
+    storage_type storage_fb;
+    cc_fb mc_fb = add_component<foo_tag>(&storage_fb, mc_b, foo());
+
+    auto reduction = fold_over_components(mc_fb, reducer(), string());
+    REQUIRE(reduction == "foo: false; bar: 1; ");
+}

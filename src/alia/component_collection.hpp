@@ -543,6 +543,69 @@ get_component(Collection collection)
     return get_component<Tag>(*collection.storage);
 }
 
+// fold_over_components(collection, f, z) performs a functional fold over the
+// components in a collection, invoking f as f(tag, data, z) for each component
+// (and accumulating in z).
+
+#ifdef ALIA_STATIC_COMPONENT_CHECKING
+
+template<class Collection, class Function, class Initial>
+auto
+fold_over_components(Collection collection, Function f, Initial z);
+
+namespace detail {
+
+// collection_folder is a helper struct for doing compile-time component
+// collection folding...
+template<class Collection>
+struct collection_folder
+{
+};
+// the empty case
+template<class Storage>
+struct collection_folder<component_collection<component_list<>, Storage>>
+{
+    template<class Collection, class Function, class Initial>
+    static auto
+    apply(Collection collection, Function f, Initial z)
+    {
+        return z;
+    }
+};
+// the recursive case
+template<class Storage, class Tag, class Data, class... Rest>
+struct collection_folder<component_collection<
+    component_list<component<Tag, Data>, Rest...>,
+    Storage>>
+{
+    template<class Collection, class Function, class Initial>
+    static auto
+    apply(Collection collection, Function f, Initial z)
+    {
+        return f(
+            Tag(),
+            get_component<Tag>(*collection.storage),
+            fold_over_components(
+                component_collection<detail::component_list<Rest...>, Storage>(
+                    collection.storage),
+                f,
+                z));
+    }
+};
+
+} // namespace detail
+
+template<class Collection, class Function, class Initial>
+auto
+fold_over_components(Collection collection, Function f, Initial z)
+{
+    return detail::collection_folder<Collection>::apply(collection, f, z);
+}
+
+#else
+
+#endif
+
 // generic_component_storage is one possible implementation of the underlying
 // container for storing components and their associated data.
 // :Data is the type used to store component data.
