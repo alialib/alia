@@ -67,200 +67,151 @@
 
 namespace alia {
 
-template<class Components, class Storage>
+#define ALIA_DEFINE_COMPONENT_TYPE(tag, data)                                  \
+    struct tag                                                                 \
+    {                                                                          \
+        typedef data data_type;                                                \
+    };
+
+template<class Tags, class Storage>
 struct component_collection;
 
 #ifdef ALIA_STATIC_COMPONENT_CHECKING
 
 namespace detail {
 
-// A component has a tag type and a data type associated with it. The tag
-// type is used only at compile time to identify the component while the data
-// type actually stores any run-time data associated with the component.
-template<class Tag, class Data>
-struct component
-{
-    typedef Tag tag;
-    typedef Data data_type;
-};
-
-// component_list<Components...> defines a simple compile-time list of
-// components. This is held by a component_collection to provide compile-time
-// tracking of its contents.
-template<class... Components>
-struct component_list
+// tag_list<Tags...> defines a simple compile-time list of tags. This is held by
+// a component_collection to provide compile-time tracking of its contents.
+template<class... Tags>
+struct tag_list
 {
 };
 
-// component_list_contains_tag<Tag,Components>::value yields a compile-time
-// boolean indicating whether or not :Components contains a component with a
-// tag matching :Tag.
+// list_contains_tag<List,Tag>::value yields a compile-time boolean indicating
+// whether or not the tag_list :List contains :Tag.
 template<class List, class Tag>
-struct component_list_contains_tag
+struct list_contains_tag
 {
 };
-// base case (list is empty, so :Tag not found)
+// base case - The list is empty, so the tag isn't in there.
 template<class Tag>
-struct component_list_contains_tag<component_list<>, Tag> : std::false_type
+struct list_contains_tag<tag_list<>, Tag> : std::false_type
 {
 };
 // case where tag matches
-template<class Tag, class Data, class... Rest>
-struct component_list_contains_tag<
-    component_list<component<Tag, Data>, Rest...>,
-    Tag> : std::true_type
+template<class Tag, class... Rest>
+struct list_contains_tag<tag_list<Tag, Rest...>, Tag> : std::true_type
 {
 };
 // non-matching (recursive) case
-template<class Tag, class OtherTag, class Data, class... Rest>
-struct component_list_contains_tag<
-    component_list<component<OtherTag, Data>, Rest...>,
-    Tag> : component_list_contains_tag<component_list<Rest...>, Tag>
+template<class Tag, class OtherTag, class... Rest>
+struct list_contains_tag<tag_list<OtherTag, Rest...>, Tag>
+    : list_contains_tag<tag_list<Rest...>, Tag>
 {
 };
 
 // component_collection_contains_tag<Collection,Tag>::value yields a
-// compile-time boolean indicating whether or not :Collection contains an entry
-// with a tag matching :Tag.
+// compile-time boolean indicating whether or not :Collection contains a
+// component with the tag :Tag.
 template<class Collection, class Tag>
 struct component_collection_contains_tag
 {
 };
-template<class Components, class Storage, class Tag>
+template<class Tags, class Storage, class Tag>
 struct component_collection_contains_tag<
-    component_collection<Components, Storage>,
-    Tag> : component_list_contains_tag<Components, Tag>
+    component_collection<Tags, Storage>,
+    Tag> : list_contains_tag<Tags, Tag>
 {
 };
 
-// list_contains_component<List,Component>::value yields a compile-time
-// boolean indicating whether or not :Component appears in the component_list
-// :List.
-template<class List, class Component>
-struct list_contains_component
-{
-};
-// base case (list is empty, so :Component not found)
-template<class Component>
-struct list_contains_component<component_list<>, Component> : std::false_type
-{
-};
-// case where component matches
-template<class Component, class... Rest>
-struct list_contains_component<component_list<Component, Rest...>, Component>
-    : std::true_type
-{
-};
-// non-matching (recursive) case
-template<class Component, class OtherComponent, class... Rest>
-struct list_contains_component<
-    component_list<OtherComponent, Rest...>,
-    Component> : list_contains_component<component_list<Rest...>, Component>
-{
-};
-
-// collection_contains_component<Collection,Component>::value yields a
-// compile-time boolean indicating whether or not :Collection contains
-// :Component.
-template<class Collection, class Component>
-struct collection_contains_component
-{
-};
-template<class Components, class Storage, class Component>
-struct collection_contains_component<
-    component_collection<Components, Storage>,
-    Component> : list_contains_component<Components, Component>
-{
-};
-
-// add_component_to_list<List,Component>::type yields the list that results
-// from adding :Component to the head of :List.
-// Note that this doesn't perform any checks for duplicate tags.
-template<class List, class Component>
-struct add_component_to_list
-{
-};
-template<class Component, class... Components>
-struct add_component_to_list<component_list<Components...>, Component>
-{
-    typedef component_list<Component, Components...> type;
-};
-
-// remove_component_from_list<List,Tag>::type yields the list that results from
-// removing the component matching :Tag from :List.
-// Note that removing a component that's not actually in the list is not
-// considered an error.
+// add_tag_to_list<List,Tag>::type yields the list that results from adding :Tag
+// to the head of :List.
+//
+// Note that this doesn't perform any checks for duplicates.
+//
 template<class List, class Tag>
-struct remove_component_from_list
+struct add_tag_to_list
+{
+};
+template<class Tag, class... Tags>
+struct add_tag_to_list<tag_list<Tags...>, Tag>
+{
+    typedef tag_list<Tag, Tags...> type;
+};
+
+// remove_tag_from_list<List,Tag>::type yields the list that results from
+// removing the tag matching :Tag from :List.
+//
+// Note that removing a tag that's not actually in the list is not considered an
+// error.
+//
+template<class List, class Tag>
+struct remove_tag_from_list
 {
 };
 // base case (list is empty)
 template<class Tag>
-struct remove_component_from_list<component_list<>, Tag>
+struct remove_tag_from_list<tag_list<>, Tag>
 {
-    typedef component_list<> type;
+    typedef tag_list<> type;
 };
 // case where component matches
-template<class Tag, class Data, class... Rest>
-struct remove_component_from_list<
-    component_list<component<Tag, Data>, Rest...>,
-    Tag> : remove_component_from_list<component_list<Rest...>, Tag>
+template<class Tag, class... Rest>
+struct remove_tag_from_list<tag_list<Tag, Rest...>, Tag>
+    : remove_tag_from_list<tag_list<Rest...>, Tag>
 {
 };
 // non-matching case
-template<class Tag, class OtherTag, class Data, class... Rest>
-struct remove_component_from_list<
-    component_list<component<OtherTag, Data>, Rest...>,
-    Tag>
-    : add_component_to_list<
-          typename remove_component_from_list<component_list<Rest...>, Tag>::
-              type,
-          component<OtherTag, Data>>
+template<class Tag, class OtherTag, class... Rest>
+struct remove_tag_from_list<tag_list<OtherTag, Rest...>, Tag>
+    : add_tag_to_list<
+          typename remove_tag_from_list<tag_list<Rest...>, Tag>::type,
+          OtherTag>
 {
 };
 
-// collection_contains_all_components<Collection,Components...>::value yields a
-// compile-time boolean indicating whether or not :Collection contains all
-// components in :Components.
-template<class Collection, class... Components>
-struct collection_contains_all_components
+// collection_contains_all_tags<Collection,Tags...>::value yields a compile-time
+// boolean indicating whether or not :Collection contains all tags in :Tags.
+template<class Collection, class... Tags>
+struct collection_contains_all_tags
 {
 };
-// base case (list is empty)
+// base case - The list of tags to search for is empty, so this is trivially
+// true.
 template<class Collection>
-struct collection_contains_all_components<Collection> : std::true_type
+struct collection_contains_all_tags<Collection> : std::true_type
 {
 };
 // recursive case
-template<class Collection, class Component, class... Rest>
-struct collection_contains_all_components<Collection, Component, Rest...>
+template<class Collection, class Tag, class... Rest>
+struct collection_contains_all_tags<Collection, Tag, Rest...>
     : std::conditional_t<
-          collection_contains_component<Collection, Component>::value,
-          collection_contains_all_components<Collection, Rest...>,
+          component_collection_contains_tag<Collection, Tag>::value,
+          collection_contains_all_tags<Collection, Rest...>,
           std::false_type>
 {
 };
 
-// merge_component_lists<A,B>::type yields a list of components that includes
-// all components from :A and :B (with no duplicates).
+// merge_tag_lists<A,B>::type yields a list of tags that includes all tags from
+// :A and :B (with no duplicates).
 template<class A, class B>
-struct merge_component_lists
+struct merge_tag_lists
 {
 };
 // base case (:A is empty)
 template<class B>
-struct merge_component_lists<component_list<>, B>
+struct merge_tag_lists<tag_list<>, B>
 {
     typedef B type;
 };
 // recursive case
 template<class B, class AHead, class... ARest>
-struct merge_component_lists<component_list<AHead, ARest...>, B>
-    : add_component_to_list<
+struct merge_tag_lists<tag_list<AHead, ARest...>, B>
+    : add_tag_to_list<
           // Ensure that :AHead isn't duplicated. (This may be a noop.)
-          typename remove_component_from_list<
-              typename merge_component_lists<component_list<ARest...>, B>::type,
-              typename AHead::tag>::type,
+          typename remove_tag_from_list<
+              typename merge_tag_lists<tag_list<ARest...>, B>::type,
+              AHead>::type,
           AHead>
 {
 };
@@ -269,39 +220,35 @@ struct merge_component_lists<component_list<AHead, ARest...>, B>
 // compile-time boolean indicating whether or not the type :From can be
 // converted to the type :To (both must be component_collections).
 // The requirements for this are that a) the storage types are the same and b)
-// :From has a superset of the components of :To.
+// the component tags of :From are a superset of those of :To.
 template<class From, class To>
 struct component_collection_is_convertible
 {
 };
 // case where storage types differ
-template<
-    class FromComponents,
-    class FromStorage,
-    class ToComponents,
-    class ToStorage>
+template<class FromTags, class FromStorage, class ToTags, class ToStorage>
 struct component_collection_is_convertible<
-    component_collection<FromComponents, FromStorage>,
-    component_collection<ToComponents, ToStorage>> : std::false_type
+    component_collection<FromTags, FromStorage>,
+    component_collection<ToTags, ToStorage>> : std::false_type
 {
 };
 // case where storage types are the same, so components must be checked
-template<class Storage, class FromComponents, class... ToComponents>
+template<class Storage, class FromTags, class... ToTags>
 struct component_collection_is_convertible<
-    component_collection<FromComponents, Storage>,
-    component_collection<component_list<ToComponents...>, Storage>>
-    : collection_contains_all_components<
-          component_collection<FromComponents, Storage>,
-          ToComponents...>
+    component_collection<FromTags, Storage>,
+    component_collection<tag_list<ToTags...>, Storage>>
+    : collection_contains_all_tags<
+          component_collection<FromTags, Storage>,
+          ToTags...>
 {
 };
 
 } // namespace detail
 
-template<class Components, class Storage>
+template<class Tags, class Storage>
 struct component_collection
 {
-    typedef Components components;
+    typedef Tags tags;
     typedef Storage storage_type;
 
     component_collection(Storage* storage) : storage(storage)
@@ -339,48 +286,41 @@ struct component_collection
 // no components and :Storage as its storage type.
 template<class Storage>
 using empty_component_collection
-    = component_collection<detail::component_list<>, Storage>;
+    = component_collection<detail::tag_list<>, Storage>;
 
-// add_component_type<Collection,Tag,Data>::type gives the type that results
-// from extending :Collection with the component defined by :Tag and :Data.
-template<class Collection, class Tag, class Data>
+// add_component_type<Collection,Tag>::type gives the type that results
+// from extending :Collection with the component defined by :Tag.
+template<class Collection, class Tag>
 struct add_component_type
 {
 };
-template<class Tag, class Data, class Storage, class... Components>
+template<class Tag, class Storage, class... Tags>
 struct add_component_type<
-    component_collection<detail::component_list<Components...>, Storage>,
-    Tag,
-    Data>
+    component_collection<detail::tag_list<Tags...>, Storage>,
+    Tag>
 {
     static_assert(
-        !detail::component_list_contains_tag<
-            detail::component_list<Components...>,
-            Tag>::value,
+        !detail::list_contains_tag<detail::tag_list<Tags...>, Tag>::value,
         "duplicate component tag");
-    typedef component_collection<
-        detail::component_list<detail::component<Tag, Data>, Components...>,
-        Storage>
-        type;
+    typedef component_collection<detail::tag_list<Tag, Tags...>, Storage> type;
 };
-template<class Collection, class Tag, class Data>
-using add_component_type_t =
-    typename add_component_type<Collection, Tag, Data>::type;
+template<class Collection, class Tag>
+using add_component_type_t = typename add_component_type<Collection, Tag>::type;
 
-// remove_component_type<Collection,Tag,Data>::type yields the type that results
+// remove_component_type<Collection,Tag>::type yields the type that results
 // from removing the component associated with :Tag from :Collection.
 template<class Collection, class Tag>
 struct remove_component_type
 {
 };
-template<class Tag, class Storage, class Components>
-struct remove_component_type<component_collection<Components, Storage>, Tag>
+template<class Tag, class Storage, class Tags>
+struct remove_component_type<component_collection<Tags, Storage>, Tag>
 {
     static_assert(
-        detail::component_list_contains_tag<Components, Tag>::value,
+        detail::list_contains_tag<Tags, Tag>::value,
         "attempting to remove a component tag that doesn't exist");
     typedef component_collection<
-        typename detail::remove_component_from_list<Components, Tag>::type,
+        typename detail::remove_tag_from_list<Tags, Tag>::type,
         Storage>
         type;
 };
@@ -395,27 +335,24 @@ template<class A, class B>
 struct merge_components
 {
     typedef component_collection<
-        typename detail::merge_component_lists<
-            typename A::components,
-            typename B::components>::type,
+        typename detail::merge_tag_lists<typename A::tags, typename B::tags>::
+            type,
         typename A::storage_type>
         type;
 };
 template<class A, class B>
 using merge_components_t = typename merge_components<A, B>::type;
 
-#endif
+#else
 
-#ifdef ALIA_DYNAMIC_COMPONENT_CHECKING
-
-struct dynamic_component_list
+struct dynamic_tag_list
 {
 };
 
-template<class Components, class Storage>
+template<class Tags, class Storage>
 struct component_collection
 {
-    typedef Components components;
+    typedef Tags tags;
     typedef Storage storage_type;
 
     component_collection(Storage* storage) : storage(storage)
@@ -425,25 +362,24 @@ struct component_collection
     Storage* storage;
 };
 
-// empty_component_collection<Storage> yields a component collection with
-// no components and :Storage as its storage type.
+// empty_component_collection<Storage> yields a component collection with no
+// components and :Storage as its storage type.
 template<class Storage>
 using empty_component_collection
-    = component_collection<dynamic_component_list, Storage>;
+    = component_collection<dynamic_tag_list, Storage>;
 
-// add_component_type<Collection,Tag,Data>::type gives the type that results
-// from extending :Collection with the component defined by :Tag and :Data.
-template<class Collection, class Tag, class Data>
+// add_component_type<Collection,Tag>::type gives the type that results from
+// extending :Collection with the component defined by :Tag and :Data.
+template<class Collection, class Tag>
 struct add_component_type
 {
     typedef Collection type;
 };
-template<class Collection, class Tag, class Data>
-using add_component_type_t =
-    typename add_component_type<Collection, Tag, Data>::type;
+template<class Collection, class Tag>
+using add_component_type_t = typename add_component_type<Collection, Tag>::type;
 
-// remove_component_type<Collection,Tag,Data>::type yields the type that results
-// from removing the component associated with :Tag from :Collection.
+// remove_component_type<Collection,Tag>::type yields the type that results from
+// removing the component associated with :Tag from :Collection.
 template<class Collection, class Tag>
 struct remove_component_type
 {
@@ -469,48 +405,60 @@ using merge_components_t = typename merge_components<A, B>::type;
 // Extend a collection by adding a new component.
 // :Tag is the tag of the component.
 // :data is the data associated with the new component.
-// :new_storage is a pointer to the storage object to use for the extended
-// collection. It must outlive the returned collection. (Its contents before
-// calling this function don't matter.)
-template<class Tag, class Data, class Collection>
-add_component_type_t<Collection, Tag, Data>
-add_component(
-    typename Collection::storage_type* new_storage,
-    Collection collection,
-    Data data)
+//
+// Note that although this returns a new collection (with the correct type), the
+// new collection shares the storage of the original, so this should be used
+// with caution.
+//
+template<class Tag, class Collection>
+add_component_type_t<Collection, Tag>
+add_component(Collection collection, typename Tag::data_type data)
 {
-    // Copy over existing components.
-    *new_storage = *collection.storage;
+    auto* storage = collection.storage;
     // Add the new data to the storage object.
-    add_component<Tag>(*new_storage, data);
-    // Create a collection to reference the new storage object.
-    return add_component_type_t<Collection, Tag, Data>(new_storage);
+    storage->add_component<Tag>(data);
+    // Create a collection with the proper type to reference the storage.
+    return add_component_type_t<Collection, Tag>(storage);
 }
 
 // Remove a component from a collection.
 // :Tag is the tag of the component.
-// :new_storage is a pointer to the storage object to use for the new
-// collection. It must outlive the returned collection. (Its contents before
-// calling this function don't matter.)
-// Note that this function is allowed to reuse the storage object from the
-// input collection, so that is also required to outlive the returned
-// collection.
+//
+// As with add_component(), although this returns a new collection for typing
+// purposes, the new collection shares the storage of the original, so use with
+// caution.
+//
 template<class Tag, class Collection>
 remove_component_type_t<Collection, Tag>
-remove_component(
-    typename Collection::storage_type* new_storage, Collection collection)
+remove_component(Collection collection)
 {
-#ifdef ALIA_STATIC_COMPONENT_CHECKING
-    // Since we're using static checking, it doesn't matter if the runtime
-    // storage includes an extra component. Static checks will prevent its use.
-    return remove_component_type_t<Collection, Tag>(collection.storage);
-#else
-    // Copy over existing components.
-    *new_storage = *collection.storage;
+    auto* storage = collection.storage;
+    // We only actually have to remove the component if we're using dynamic
+    // component checking. With static checking, it doesn't matter if the
+    // runtime storage includes an extra component. Static checks will prevent
+    // its use.
+#ifdef ALIA_DYNAMIC_COMPONENT_CHECKING
     // Remove the component from the storage object.
-    remove_component<Tag>(*new_storage);
-    // Create a collection to reference the new storage object.
+    storage->remove_component<Tag>();
+#endif
+    return remove_component_type_t<Collection, Tag>(storage);
+}
+
+// Remove a component from a collection.
+//
+// With this version, you supply a new storage object, and the function uses it
+// if needed to ensure that the original collection's storage is left untouched.
+//
+template<class Tag, class Collection, class Storage>
+remove_component_type_t<Collection, Tag>
+remove_component(Collection collection, Storage* new_storage)
+{
+#ifdef ALIA_DYNAMIC_COMPONENT_CHECKING
+    *new_storage = *collection.storage;
+    new_storage->remove_component<Tag>();
     return remove_component_type_t<Collection, Tag>(new_storage);
+#else
+    return remove_component_type_t<Collection, Tag>(collection.storage);
 #endif
 }
 
@@ -523,7 +471,7 @@ has_component(Collection collection)
 #ifdef ALIA_STATIC_COMPONENT_CHECKING
     return detail::component_collection_contains_tag<Collection, Tag>::value;
 #else
-    return has_component<Tag>(*collection.storage);
+    return collection.storage->has_component<Tag>();
 #endif
 }
 
@@ -540,7 +488,7 @@ get_component(Collection collection)
         detail::component_collection_contains_tag<Collection, Tag>::value,
         "component not found in collection");
 #endif
-    return get_component<Tag>(*collection.storage);
+    return collection.storage->get_component<Tag>();
 }
 
 // fold_over_components(collection, f, z) performs a functional fold over the
@@ -563,7 +511,7 @@ struct collection_folder
 };
 // the empty case
 template<class Storage>
-struct collection_folder<component_collection<component_list<>, Storage>>
+struct collection_folder<component_collection<tag_list<>, Storage>>
 {
     template<class Collection, class Function, class Initial>
     static auto
@@ -573,10 +521,8 @@ struct collection_folder<component_collection<component_list<>, Storage>>
     }
 };
 // the recursive case
-template<class Storage, class Tag, class Data, class... Rest>
-struct collection_folder<component_collection<
-    component_list<component<Tag, Data>, Rest...>,
-    Storage>>
+template<class Storage, class Tag, class... Rest>
+struct collection_folder<component_collection<tag_list<Tag, Rest...>, Storage>>
 {
     template<class Collection, class Function, class Initial>
     static auto
@@ -584,9 +530,9 @@ struct collection_folder<component_collection<
     {
         return f(
             Tag(),
-            get_component<Tag>(*collection.storage),
+            get_component<Tag>(collection),
             fold_over_components(
-                component_collection<detail::component_list<Rest...>, Storage>(
+                component_collection<detail::tag_list<Rest...>, Storage>(
                     collection.storage),
                 f,
                 z));
@@ -604,6 +550,15 @@ fold_over_components(Collection collection, Function f, Initial z)
 
 #else
 
+template<class Collection, class Function, class Initial>
+auto
+fold_over_components(Collection collection, Function f, Initial z)
+{
+    // In the dynamic case, there's not much we can do at this level, so the
+    // storage object has to do all the work.
+    return collection.storage->fold_over_components(f, z);
+}
+
 #endif
 
 // generic_component_storage is one possible implementation of the underlying
@@ -613,44 +568,54 @@ template<class Data>
 struct generic_component_storage
 {
     std::unordered_map<std::type_index, Data> components;
+
+    // Does the storage object have a component with the given tag?
+    template<class Tag>
+    bool
+    has_component()
+    {
+        return this->components.find(std::type_index(typeid(Tag)))
+               != this->components.end();
+    }
+
+    // Store a component.
+    template<class Tag, class ComponentData>
+    void
+    add_component(ComponentData&& data)
+    {
+        this->components[std::type_index(typeid(Tag))]
+            = std::forward<ComponentData&&>(data);
+    }
+
+    // Remove a component.
+    template<class Tag>
+    void
+    remove_component()
+    {
+        this->components.erase(std::type_index(typeid(Tag)));
+    }
+
+    // Retrieve the data for a component.
+    template<class Tag>
+    Data&
+    get_component()
+    {
+        return this->components.at(std::type_index(typeid(Tag)));
+    }
+
+    // Perform a functional fold over the components in a collection, invoking f
+    // as f(tag, data, z) for each component (and accumulating in z).
+    template<class Function, class Accumulator>
+    auto
+    fold_over_components(Function f, Accumulator z)
+    {
+        for (auto const& i : this->components)
+        {
+            z = f(i.second.first, i.second.second, z);
+        }
+        return z;
+    }
 };
-
-// The following functions constitute the interface expected of storage objects.
-
-// Does the storage object have a component with the given tag?
-template<class Tag, class Data>
-bool
-has_component(generic_component_storage<Data>& storage)
-{
-    return storage.components.find(std::type_index(typeid(Tag)))
-           != storage.components.end();
-}
-
-// Add a component.
-template<class Tag, class StorageData, class ComponentData>
-void
-add_component(
-    generic_component_storage<StorageData>& storage, ComponentData&& data)
-{
-    storage.components[std::type_index(typeid(Tag))]
-        = std::forward<ComponentData&&>(data);
-}
-
-// Remove a component.
-template<class Tag, class Data>
-void
-remove_component(generic_component_storage<Data>& storage)
-{
-    storage.components.erase(std::type_index(typeid(Tag)));
-}
-
-// Get the data for a component.
-template<class Tag, class Data>
-Data&
-get_component(generic_component_storage<Data>& storage)
-{
-    return storage.components.at(std::type_index(typeid(Tag)));
-}
 
 } // namespace alia
 
