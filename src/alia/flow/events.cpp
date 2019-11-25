@@ -57,8 +57,8 @@ invoke_controller(system& sys, event_traversal& events)
     scoped_data_traversal sdt(sys.data, data);
 
     component_storage storage;
-    add_component<data_traversal_tag>(storage, &data);
-    add_component<event_traversal_tag>(storage, &events);
+    storage.add_component<data_traversal_tag>(&data);
+    storage.add_component<event_traversal_tag>(&events);
 
     context ctx(&storage);
     sys.controller(ctx);
