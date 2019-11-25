@@ -5,15 +5,11 @@
 
 namespace alia {
 
-struct data_traversal_tag
-{
-};
 struct data_traversal;
+ALIA_DEFINE_COMPONENT_TYPE(data_traversal_tag, data_traversal*)
 
-struct event_traversal_tag
-{
-};
 struct event_traversal;
+ALIA_DEFINE_COMPONENT_TYPE(event_traversal_tag, event_traversal*)
 
 struct any_pointer
 {
@@ -60,14 +56,50 @@ operator!=(T* other, any_pointer p)
     return other != reinterpret_cast<T*>(p.ptr);
 }
 
+template<class Tag>
+struct component_manipulator;
+
 // The structure we use to store components. It provides direct storage of the
 // commonly-used components in the core of alia.
+
 struct component_storage
 {
     data_traversal* data = 0;
     event_traversal* event = 0;
     // generic storage for other components
     generic_component_storage<any_pointer> other;
+
+    // The following is the implementation of the interface expected of
+    // component storage objects. It simply forwards the requests along to the
+    // appropriate manipulator.
+
+    template<class Tag>
+    bool
+    has_component()
+    {
+        return component_manipulator<Tag>::has(*this);
+    }
+
+    template<class Tag, class Data>
+    void
+    add_component(Data&& data)
+    {
+        component_manipulator<Tag>::add(*this, std::forward<Data&&>(data));
+    }
+
+    template<class Tag>
+    void
+    remove_component()
+    {
+        component_manipulator<Tag>::remove(*this);
+    }
+
+    template<class Tag>
+    auto
+    get_component()
+    {
+        return component_manipulator<Tag>::get(*this);
+    }
 };
 
 // All component access is done through the following 'manipulator' structure.
@@ -79,22 +111,22 @@ struct component_manipulator
     static bool
     has(component_storage& storage)
     {
-        return has_component<Tag>(storage.other);
+        return storage.other.has_component<Tag>();
     }
     static void
     add(component_storage& storage, any_pointer data)
     {
-        add_component<Tag>(storage.other, data);
+        storage.other.add_component<Tag>(data);
     }
     static void
     remove(component_storage& storage)
     {
-        remove_component<Tag>(storage.other);
+        storage.other.remove_component<Tag>();
     }
     static any_pointer
     get(component_storage& storage)
     {
-        return get_component<Tag>(storage.other);
+        return storage.other.get_component<Tag>();
     }
 };
 
@@ -156,51 +188,14 @@ struct component_manipulator<event_traversal_tag>
     }
 };
 
-// The following is the implementation of the interface expected of component
-// storage objects. It simply forwards the requests along to the appropriate
-// manipulator.
-
-template<class Tag>
-bool
-has_component(component_storage& storage)
-{
-    return component_manipulator<Tag>::has(storage);
-}
-
-template<class Tag, class Data>
-void
-add_component(component_storage& storage, Data&& data)
-{
-    component_manipulator<Tag>::add(storage, std::forward<Data&&>(data));
-}
-
-template<class Tag>
-void
-remove_component(component_storage& storage)
-{
-    component_manipulator<Tag>::remove(storage);
-}
-
-template<class Tag>
-auto
-get_component(component_storage& storage)
-{
-    return component_manipulator<Tag>::get(storage);
-}
-
 // Finally, the typedef for the context...
 
 typedef add_component_type_t<
     empty_component_collection<component_storage>,
-    event_traversal_tag,
-    event_traversal*>
+    event_traversal_tag>
     dataless_context;
 
-typedef add_component_type_t<
-    dataless_context,
-    data_traversal_tag,
-    data_traversal*>
-    context;
+typedef add_component_type_t<dataless_context, data_traversal_tag> context;
 
 // And some convenience functions...
 
