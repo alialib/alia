@@ -402,6 +402,64 @@ using merge_components_t = typename merge_components<A, B>::type;
 
 #endif
 
+// generic_component_storage is one possible implementation of the underlying
+// container for storing components and their associated data.
+// :Data is the type used to store component data.
+template<class Data>
+struct generic_component_storage
+{
+    std::unordered_map<std::type_index, Data> components;
+};
+
+// Does the storage object have a component with the given tag?
+template<class Tag, class Data>
+bool
+has_storage_component(generic_component_storage<Data>& storage)
+{
+    return storage.components.find(std::type_index(typeid(Tag)))
+           != storage.components.end();
+}
+
+// Store a component.
+template<class Tag, class StorageData, class ComponentData>
+void
+add_storage_component(
+    generic_component_storage<StorageData>& storage, ComponentData&& data)
+{
+    storage.components[std::type_index(typeid(Tag))]
+        = std::forward<ComponentData&&>(data);
+}
+
+// Remove a component.
+template<class Tag, class Data>
+void
+remove_storage_component(generic_component_storage<Data>& storage)
+{
+    storage.components.erase(std::type_index(typeid(Tag)));
+}
+
+// Retrieve the data for a component.
+template<class Tag, class Data>
+Data&
+get_storage_component(generic_component_storage<Data>& storage)
+{
+    return storage.components.at(std::type_index(typeid(Tag)));
+}
+
+// Perform a functional fold over the components in a collection, invoking f
+// as f(tag, data, z) for each component (and accumulating in z).
+template<class Data, class Function, class Accumulator>
+auto
+for_each_storage_component(
+    generic_component_storage<Data>& storage, Function f, Accumulator z)
+{
+    for (auto const& i : storage.components)
+    {
+        z = f(i.second.first, i.second.second, z);
+    }
+    return z;
+}
+
 // Extend a collection by adding a new component.
 // :Tag is the tag of the component.
 // :data is the data associated with the new component.
@@ -416,7 +474,7 @@ add_component(Collection collection, typename Tag::data_type data)
 {
     auto* storage = collection.storage;
     // Add the new data to the storage object.
-    storage->add_component<Tag>(data);
+    add_storage_component<Tag>(*storage, data);
     // Create a collection with the proper type to reference the storage.
     return add_component_type_t<Collection, Tag>(storage);
 }
@@ -432,14 +490,14 @@ template<class Tag, class Collection>
 remove_component_type_t<Collection, Tag>
 remove_component(Collection collection)
 {
-    auto* storage = collection.storage;
+    typename Collection::storage_type* storage = collection.storage;
     // We only actually have to remove the component if we're using dynamic
     // component checking. With static checking, it doesn't matter if the
     // runtime storage includes an extra component. Static checks will prevent
     // its use.
 #ifdef ALIA_DYNAMIC_COMPONENT_CHECKING
     // Remove the component from the storage object.
-    storage->remove_component<Tag>();
+    remove_storage_component<Tag>(*storage);
 #endif
     return remove_component_type_t<Collection, Tag>(storage);
 }
@@ -453,12 +511,12 @@ template<class Tag, class Collection, class Storage>
 remove_component_type_t<Collection, Tag>
 remove_component(Collection collection, Storage* new_storage)
 {
-#ifdef ALIA_DYNAMIC_COMPONENT_CHECKING
-    *new_storage = *collection.storage;
-    new_storage->remove_component<Tag>();
-    return remove_component_type_t<Collection, Tag>(new_storage);
-#else
+#ifdef ALIA_STATIC_COMPONENT_CHECKING
     return remove_component_type_t<Collection, Tag>(collection.storage);
+#else
+    *new_storage = *collection.storage;
+    remove_component<Tag>(*new_storage);
+    return remove_component_type_t<Collection, Tag>(new_storage);
 #endif
 }
 
@@ -471,7 +529,7 @@ has_component(Collection collection)
 #ifdef ALIA_STATIC_COMPONENT_CHECKING
     return detail::component_collection_contains_tag<Collection, Tag>::value;
 #else
-    return collection.storage->has_component<Tag>();
+    return has_storage_component<Tag>(*collection.storage);
 #endif
 }
 
@@ -488,7 +546,7 @@ get_component(Collection collection)
         detail::component_collection_contains_tag<Collection, Tag>::value,
         "component not found in collection");
 #endif
-    return collection.storage->get_component<Tag>();
+    return get_storage_component<Tag>(*collection.storage);
 }
 
 // fold_over_components(collection, f, z) performs a functional fold over the
@@ -556,66 +614,11 @@ fold_over_components(Collection collection, Function f, Initial z)
 {
     // In the dynamic case, there's not much we can do at this level, so the
     // storage object has to do all the work.
-    return collection.storage->fold_over_components(f, z);
+    for_each_storage_component(
+        *collection.storage, [&](auto component) { z = f(component, z); });
 }
 
 #endif
-
-// generic_component_storage is one possible implementation of the underlying
-// container for storing components and their associated data.
-// :Data is the type used to store component data.
-template<class Data>
-struct generic_component_storage
-{
-    std::unordered_map<std::type_index, Data> components;
-
-    // Does the storage object have a component with the given tag?
-    template<class Tag>
-    bool
-    has_component()
-    {
-        return this->components.find(std::type_index(typeid(Tag)))
-               != this->components.end();
-    }
-
-    // Store a component.
-    template<class Tag, class ComponentData>
-    void
-    add_component(ComponentData&& data)
-    {
-        this->components[std::type_index(typeid(Tag))]
-            = std::forward<ComponentData&&>(data);
-    }
-
-    // Remove a component.
-    template<class Tag>
-    void
-    remove_component()
-    {
-        this->components.erase(std::type_index(typeid(Tag)));
-    }
-
-    // Retrieve the data for a component.
-    template<class Tag>
-    Data&
-    get_component()
-    {
-        return this->components.at(std::type_index(typeid(Tag)));
-    }
-
-    // Perform a functional fold over the components in a collection, invoking f
-    // as f(tag, data, z) for each component (and accumulating in z).
-    template<class Function, class Accumulator>
-    auto
-    fold_over_components(Function f, Accumulator z)
-    {
-        for (auto const& i : this->components)
-        {
-            z = f(i.second.first, i.second.second, z);
-        }
-        return z;
-    }
-};
 
 } // namespace alia
 
