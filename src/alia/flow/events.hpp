@@ -1,7 +1,7 @@
 #ifndef ALIA_FLOW_EVENTS_HPP
 #define ALIA_FLOW_EVENTS_HPP
 
-#include <alia/context.hpp>
+#include <alia/components/context.hpp>
 #include <alia/flow/data_graph.hpp>
 #include <alia/flow/macros.hpp>
 

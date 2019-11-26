@@ -1,11 +1,10 @@
-#ifndef ALIA_COMPONENT_COLLECTION_HPP
-#define ALIA_COMPONENT_COLLECTION_HPP
+#ifndef ALIA_COMPONENTS_TYPING_HPP
+#define ALIA_COMPONENTS_TYPING_HPP
 
 #include <alia/common.hpp>
+#include <alia/components/storage.hpp>
 
 #include <type_traits>
-#include <typeindex>
-#include <unordered_map>
 
 // This file provides a means for defining arbitrary collections of components
 // that constitute the context in which an application operates. The set of
@@ -401,64 +400,6 @@ template<class A, class B>
 using merge_components_t = typename merge_components<A, B>::type;
 
 #endif
-
-// generic_component_storage is one possible implementation of the underlying
-// container for storing components and their associated data.
-// :Data is the type used to store component data.
-template<class Data>
-struct generic_component_storage
-{
-    std::unordered_map<std::type_index, Data> components;
-};
-
-// Does the storage object have a component with the given tag?
-template<class Tag, class Data>
-bool
-has_storage_component(generic_component_storage<Data>& storage)
-{
-    return storage.components.find(std::type_index(typeid(Tag)))
-           != storage.components.end();
-}
-
-// Store a component.
-template<class Tag, class StorageData, class ComponentData>
-void
-add_storage_component(
-    generic_component_storage<StorageData>& storage, ComponentData&& data)
-{
-    storage.components[std::type_index(typeid(Tag))]
-        = std::forward<ComponentData&&>(data);
-}
-
-// Remove a component.
-template<class Tag, class Data>
-void
-remove_storage_component(generic_component_storage<Data>& storage)
-{
-    storage.components.erase(std::type_index(typeid(Tag)));
-}
-
-// Retrieve the data for a component.
-template<class Tag, class Data>
-Data&
-get_storage_component(generic_component_storage<Data>& storage)
-{
-    return storage.components.at(std::type_index(typeid(Tag)));
-}
-
-// Perform a functional fold over the components in a collection, invoking f
-// as f(tag, data, z) for each component (and accumulating in z).
-template<class Data, class Function, class Accumulator>
-auto
-for_each_storage_component(
-    generic_component_storage<Data>& storage, Function f, Accumulator z)
-{
-    for (auto const& i : storage.components)
-    {
-        z = f(i.second.first, i.second.second, z);
-    }
-    return z;
-}
 
 // Extend a collection by adding a new component.
 // :Tag is the tag of the component.

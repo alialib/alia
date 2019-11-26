@@ -1,7 +1,7 @@
-#ifndef ALIA_CONTEXT_HPP
-#define ALIA_CONTEXT_HPP
+#ifndef ALIA_COMPONENTS_CONTEXT_HPP
+#define ALIA_COMPONENTS_CONTEXT_HPP
 
-#include <alia/component_collection.hpp>
+#include <alia/components/typing.hpp>
 
 namespace alia {
 

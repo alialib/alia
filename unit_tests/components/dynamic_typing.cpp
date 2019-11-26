@@ -1,6 +1,6 @@
 #define ALIA_DYNAMIC_COMPONENT_CHECKING
 
-#include <alia/component_collection.hpp>
+#include <alia/components/typing.hpp>
 
 #include <catch.hpp>
 

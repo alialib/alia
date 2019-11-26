@@ -1,7 +1,7 @@
 #ifndef ALIA_SIGNALS_APPLICATION_HPP
 #define ALIA_SIGNALS_APPLICATION_HPP
 
-#include <alia/context.hpp>
+#include <alia/components/context.hpp>
 #include <alia/flow/data_graph.hpp>
 #include <alia/signals/utilities.hpp>
 
