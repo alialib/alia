@@ -68,38 +68,6 @@ struct component_storage
     event_traversal* event = 0;
     // generic storage for other components
     generic_component_storage<any_pointer> other;
-
-    // The following is the implementation of the interface expected of
-    // component storage objects. It simply forwards the requests along to the
-    // appropriate manipulator.
-
-    template<class Tag>
-    bool
-    has_component()
-    {
-        return component_manipulator<Tag>::has(*this);
-    }
-
-    template<class Tag, class Data>
-    void
-    add_component(Data&& data)
-    {
-        component_manipulator<Tag>::add(*this, std::forward<Data&&>(data));
-    }
-
-    template<class Tag>
-    void
-    remove_component()
-    {
-        component_manipulator<Tag>::remove(*this);
-    }
-
-    template<class Tag>
-    auto
-    get_component()
-    {
-        return component_manipulator<Tag>::get(*this);
-    }
 };
 
 // All component access is done through the following 'manipulator' structure.
@@ -111,22 +79,22 @@ struct component_manipulator
     static bool
     has(component_storage& storage)
     {
-        return storage.other.has_component<Tag>();
+        return has_storage_component<Tag>(storage.other);
     }
     static void
     add(component_storage& storage, any_pointer data)
     {
-        storage.other.add_component<Tag>(data);
+        add_storage_component<Tag>(storage.other, data);
     }
     static void
     remove(component_storage& storage)
     {
-        storage.other.remove_component<Tag>();
+        remove_storage_component<Tag>(storage.other);
     }
     static any_pointer
     get(component_storage& storage)
     {
-        return storage.other.get_component<Tag>();
+        return get_storage_component<Tag>(storage.other);
     }
 };
 
@@ -187,6 +155,38 @@ struct component_manipulator<event_traversal_tag>
         return storage.event;
     }
 };
+
+// The following is the implementation of the interface expected of component
+// storage objects. It simply forwards the requests along to the appropriate
+// manipulator.
+
+template<class Tag>
+bool
+has_storage_component(component_storage& storage)
+{
+    return component_manipulator<Tag>::has(storage);
+}
+
+template<class Tag, class Data>
+void
+add_storage_component(component_storage& storage, Data&& data)
+{
+    component_manipulator<Tag>::add(storage, std::forward<Data&&>(data));
+}
+
+template<class Tag>
+void
+remove_storage_component(component_storage& storage)
+{
+    component_manipulator<Tag>::remove(storage);
+}
+
+template<class Tag>
+auto
+get_storage_component(component_storage& storage)
+{
+    return component_manipulator<Tag>::get(storage);
+}
 
 // Finally, the typedef for the context...
 

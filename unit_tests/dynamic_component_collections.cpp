@@ -61,13 +61,13 @@ TEST_CASE("dynamic component access", "[component_collections]")
 {
     storage_type storage;
     cc_empty mc_empty(&storage);
-    REQUIRE(!storage.has_component<bar_tag>());
+    REQUIRE(!has_storage_component<bar_tag>(storage));
 
     cc_b mc_b = add_component<bar_tag>(mc_empty, bar(1));
-    REQUIRE(storage.has_component<bar_tag>());
+    REQUIRE(has_storage_component<bar_tag>(storage));
     REQUIRE(has_component<bar_tag>(mc_b));
     REQUIRE(boost::any_cast<bar>(get_component<bar_tag>(mc_b)).i == 1);
-    REQUIRE(!storage.has_component<foo_tag>());
+    REQUIRE(!has_storage_component<foo_tag>(storage));
     REQUIRE(!has_component<foo_tag>(mc_b));
     REQUIRE_THROWS(get_component<foo_tag>(mc_b));
 
