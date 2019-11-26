@@ -1,7 +1,7 @@
 #ifndef ALIA_TESTING_FLOW_TESTER_HPP
 #define ALIA_TESTING_FLOW_TESTER_HPP
 
-#include <alia/context.hpp>
+#include <alia/components/context.hpp>
 #include <alia/flow/data_graph.hpp>
 
 #include <sstream>

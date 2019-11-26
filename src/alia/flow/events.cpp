@@ -1,5 +1,5 @@
+#include <alia/components/system.hpp>
 #include <alia/flow/events.hpp>
-#include <alia/system.hpp>
 
 namespace alia {
 
