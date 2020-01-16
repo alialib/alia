@@ -145,6 +145,8 @@ TEST_CASE("static component access", "[component_collections]")
     REQUIRE(boost::any_cast<foo>(get_component<foo_tag>(mc_f)).b == false);
 }
 
+namespace {
+
 using boost::any;
 using boost::any_cast;
 using std::string;
@@ -185,6 +187,8 @@ struct reducer
         return component_printer<Tag>::apply(data) + z;
     }
 };
+
+} // namespace
 
 TEST_CASE("collection folding", "[component_collections]")
 {
