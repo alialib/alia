@@ -188,6 +188,17 @@ get_storage_component(component_storage& storage)
     return component_manipulator<Tag>::get(storage);
 }
 
+template<class Function>
+void
+for_each_storage_component(component_storage& storage, Function f)
+{
+    if (storage.data)
+        f(*storage.data);
+    if (storage.event)
+        f(*storage.event);
+    for_each_storage_component(storage.other, f);
+}
+
 // Finally, the typedef for the context...
 
 typedef add_component_type_t<
