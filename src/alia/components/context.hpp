@@ -11,51 +11,6 @@ ALIA_DEFINE_COMPONENT_TYPE(data_traversal_tag, data_traversal*)
 struct event_traversal;
 ALIA_DEFINE_COMPONENT_TYPE(event_traversal_tag, event_traversal*)
 
-struct any_pointer
-{
-    any_pointer()
-    {
-    }
-
-    template<class T>
-    any_pointer(T* ptr) : ptr(ptr)
-    {
-    }
-
-    template<class T>
-    operator T*()
-    {
-        return reinterpret_cast<T*>(ptr);
-    }
-
-    void* ptr;
-};
-
-template<class T>
-bool
-operator==(any_pointer p, T* other)
-{
-    return reinterpret_cast<T*>(p.ptr) == other;
-}
-template<class T>
-bool
-operator==(T* other, any_pointer p)
-{
-    return other == reinterpret_cast<T*>(p.ptr);
-}
-template<class T>
-bool
-operator!=(any_pointer p, T* other)
-{
-    return reinterpret_cast<T*>(p.ptr) != other;
-}
-template<class T>
-bool
-operator!=(T* other, any_pointer p)
-{
-    return other != reinterpret_cast<T*>(p.ptr);
-}
-
 template<class Tag>
 struct component_manipulator;
 
