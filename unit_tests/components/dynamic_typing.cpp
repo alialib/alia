@@ -79,3 +79,48 @@ TEST_CASE("dynamic component access", "[component_collections]")
     REQUIRE(boost::any_cast<foo>(get_component<foo_tag>(mc_f)).b == false);
     REQUIRE_THROWS(get_component<bar_tag>(mc_f));
 }
+
+namespace {
+
+using boost::any;
+using boost::any_cast;
+using std::string;
+
+string
+print_component(any const& x)
+{
+    foo const* f = any_cast<foo>(&x);
+    if (f)
+        return f->b ? "foo: true; " : "foo: false; ";
+
+    bar const* b = any_cast<bar>(&x);
+    if (b)
+        return "bar: " + std::to_string(b->i) + "; ";
+
+    return "";
+}
+
+struct reducer
+{
+    template<class Data>
+    string
+    operator()(Data data, string z)
+    {
+        return print_component(data) + z;
+    }
+};
+
+} // namespace
+
+TEST_CASE("dynamic collection folding", "[component_collections]")
+{
+    storage_type storage;
+    cc_empty mc_empty(&storage);
+    cc_b mc_b = add_component<bar_tag>(mc_empty, bar(1));
+    cc_fb mc_fb = add_component<foo_tag>(mc_b, foo());
+
+    auto reduction = fold_over_components(mc_fb, reducer(), string());
+    REQUIRE(
+        (reduction == "foo: false; bar: 1; "
+         || reduction == "bar: 1; foo: false; "));
+}

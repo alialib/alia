@@ -557,6 +557,7 @@ fold_over_components(Collection collection, Function f, Initial z)
     // storage object has to do all the work.
     for_each_storage_component(
         *collection.storage, [&](auto component) { z = f(component, z); });
+    return z;
 }
 
 #endif
