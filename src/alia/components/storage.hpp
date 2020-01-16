@@ -51,7 +51,7 @@ get_storage_component(generic_component_storage<Data>& storage)
 }
 
 // Invoke f on each component within the storage object.
-template<class Data, class Function, class Accumulator>
+template<class Data, class Function>
 void
 for_each_storage_component(generic_component_storage<Data>& storage, Function f)
 {
