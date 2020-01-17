@@ -66,12 +66,6 @@
 
 namespace alia {
 
-#define ALIA_DEFINE_COMPONENT_TYPE(tag, data)                                  \
-    struct tag                                                                 \
-    {                                                                          \
-        typedef data data_type;                                                \
-    };
-
 template<class Tags, class Storage>
 struct component_collection;
 
@@ -409,9 +403,9 @@ using merge_components_t = typename merge_components<A, B>::type;
 // new collection shares the storage of the original, so this should be used
 // with caution.
 //
-template<class Tag, class Collection>
+template<class Tag, class Collection, class Data>
 add_component_type_t<Collection, Tag>
-add_component(Collection collection, typename Tag::data_type data)
+add_component(Collection collection, Data data)
 {
     auto* storage = collection.storage;
     // Add the new data to the storage object.
