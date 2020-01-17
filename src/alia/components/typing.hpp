@@ -474,6 +474,23 @@ has_component(Collection collection)
 #endif
 }
 
+#ifdef ALIA_DYNAMIC_COMPONENT_CHECKING
+
+// When using dynamic component checking, this error is thrown when trying to
+// retrieve a component that's not actually present in a collection.
+template<class Tag>
+struct component_not_found : exception
+{
+    component_not_found()
+        : exception(
+              std::string("component not found in collection:\n")
+              + typeid(Tag)::name())
+    {
+    }
+};
+
+#endif
+
 // Get a reference to the data associated with a component in a collection.
 // :Tag identifies the component.
 // If static checking is enabled, this generates a compile-time error if :Tag
@@ -486,6 +503,9 @@ get_component(Collection collection)
     static_assert(
         detail::component_collection_contains_tag<Collection, Tag>::value,
         "component not found in collection");
+#else
+    if (!has_component<Tag>(collection))
+        throw component_not_found<Tag>();
 #endif
     return get_storage_component<Tag>(*collection.storage);
 }

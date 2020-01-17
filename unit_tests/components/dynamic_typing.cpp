@@ -69,7 +69,8 @@ TEST_CASE("dynamic component access", "[component_collections]")
     REQUIRE(boost::any_cast<bar>(get_component<bar_tag>(mc_b)).i == 1);
     REQUIRE(!has_storage_component<foo_tag>(storage));
     REQUIRE(!has_component<foo_tag>(mc_b));
-    REQUIRE_THROWS(get_component<foo_tag>(mc_b));
+    REQUIRE_THROWS_AS(
+        get_component<foo_tag>(mc_b), component_not_found<foo_tag>);
 
     cc_fb mc_fb = add_component<foo_tag>(mc_b, foo());
     REQUIRE(boost::any_cast<bar>(get_component<bar_tag>(mc_fb)).i == 1);
@@ -77,7 +78,8 @@ TEST_CASE("dynamic component access", "[component_collections]")
 
     cc_f mc_f = remove_component<bar_tag>(mc_fb);
     REQUIRE(boost::any_cast<foo>(get_component<foo_tag>(mc_f)).b == false);
-    REQUIRE_THROWS(get_component<bar_tag>(mc_f));
+    REQUIRE_THROWS_AS(
+        get_component<bar_tag>(mc_f), component_not_found<bar_tag>);
 }
 
 namespace {
