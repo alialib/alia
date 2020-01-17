@@ -1,8 +1,11 @@
 #ifndef ALIA_COMPONENTS_STORAGE_HPP
 #define ALIA_COMPONENTS_STORAGE_HPP
 
+#include <type_traits>
 #include <typeindex>
 #include <unordered_map>
+
+#include <alia/components/typing.hpp>
 
 namespace alia {
 
@@ -13,53 +16,47 @@ template<class Data>
 struct generic_component_storage
 {
     std::unordered_map<std::type_index, Data> components;
-};
 
-// Does the storage object have a component with the given tag?
-template<class Tag, class Data>
-bool
-has_storage_component(generic_component_storage<Data>& storage)
-{
-    return storage.components.find(std::type_index(typeid(Tag)))
-           != storage.components.end();
-}
-
-// Store a component.
-template<class Tag, class StorageData, class ComponentData>
-void
-add_storage_component(
-    generic_component_storage<StorageData>& storage, ComponentData&& data)
-{
-    storage.components[std::type_index(typeid(Tag))]
-        = std::forward<ComponentData&&>(data);
-}
-
-// Remove a component.
-template<class Tag, class Data>
-void
-remove_storage_component(generic_component_storage<Data>& storage)
-{
-    storage.components.erase(std::type_index(typeid(Tag)));
-}
-
-// Retrieve the data for a component.
-template<class Tag, class Data>
-Data&
-get_storage_component(generic_component_storage<Data>& storage)
-{
-    return storage.components.at(std::type_index(typeid(Tag)));
-}
-
-// Invoke f on each component within the storage object.
-template<class Data, class Function>
-void
-for_each_storage_component(generic_component_storage<Data>& storage, Function f)
-{
-    for (auto& i : storage.components)
+    template<class Tag>
+    bool
+    has() const
     {
-        f(i.second);
+        return this->components.find(std::type_index(typeid(Tag)))
+               != this->components.end();
     }
-}
+
+    template<class Tag, class ComponentData>
+    void
+    add(ComponentData&& data)
+    {
+        this->components[std::type_index(typeid(Tag))]
+            = std::forward<ComponentData&&>(data);
+    }
+
+    template<class Tag>
+    void
+    remove()
+    {
+        this->components.erase(std::type_index(typeid(Tag)));
+    }
+
+    template<class Tag>
+    Data&
+    get()
+    {
+        return this->components.at(std::type_index(typeid(Tag)));
+    }
+
+    template<class Function>
+    void
+    for_each(Function f)
+    {
+        for (auto& i : this->components)
+        {
+            f(i.second);
+        }
+    }
+};
 
 // any_pointer is a simple way to store pointers to any type in a
 // generic_component_storage object.
@@ -74,39 +71,170 @@ struct any_pointer
     {
     }
 
-    template<class T>
-    operator T*()
-    {
-        return reinterpret_cast<T*>(ptr);
-    }
-
     void* ptr;
 };
 
-template<class T>
-bool
-operator==(any_pointer p, T* other)
+template<class Pointer>
+struct component_caster<any_pointer&, Pointer*>
 {
-    return reinterpret_cast<T*>(p.ptr) == other;
+    static Pointer*
+    apply(any_pointer stored)
+    {
+        return reinterpret_cast<Pointer*>(stored.ptr);
+    }
+};
+
+// any_value is a way of storing any object by value as a component. It's very
+// similar to boost/std::any and those could be used as the implementation if it
+// didn't complicate the dependencies of alia so much...
+struct untyped_cloneable_value_holder
+{
+    virtual ~untyped_cloneable_value_holder()
+    {
+    }
+    virtual untyped_cloneable_value_holder*
+    clone() const = 0;
+};
+template<class T>
+struct typed_cloneable_value_holder : untyped_cloneable_value_holder
+{
+    explicit typed_cloneable_value_holder(T const& value) : value(value)
+    {
+    }
+    explicit typed_cloneable_value_holder(T&& value)
+        : value(static_cast<T&&>(value))
+    {
+    }
+    untyped_cloneable_value_holder*
+    clone() const
+    {
+        return new typed_cloneable_value_holder(value);
+    }
+    T value;
+};
+struct any_value
+{
+    // default constructor
+    any_value() : holder_(nullptr)
+    {
+    }
+    // destructor
+    ~any_value()
+    {
+        delete holder_;
+    }
+    // copy constructor
+    any_value(any_value const& other)
+        : holder_(other.holder_ ? other.holder_->clone() : nullptr)
+    {
+    }
+    // move constructor
+    any_value(any_value&& other) : holder_(other.holder_)
+    {
+        other.holder_ = nullptr;
+    }
+    // constructor for concrete values
+    template<class T>
+    explicit any_value(T const& value)
+        : holder_(new typed_cloneable_value_holder<T>(value))
+    {
+    }
+    // constructor for concrete values (by rvalue)
+    template<typename T>
+    any_value(
+        T&& value,
+        std::enable_if_t<
+            !std::is_same<any_value&, T>::value
+            && !std::is_const<T>::value>* = nullptr)
+        : holder_(
+              new typed_cloneable_value_holder<typename std::decay<T>::type>(
+                  static_cast<T&&>(value)))
+    {
+    }
+    // copy assignment operator
+    any_value&
+    operator=(any_value const& other)
+    {
+        delete holder_;
+        holder_ = other.holder_ ? other.holder_->clone() : nullptr;
+        return *this;
+    }
+    // move assignment operator
+    any_value&
+    operator=(any_value&& other)
+    {
+        delete holder_;
+        holder_ = other.holder_;
+        other.holder_ = 0;
+        return *this;
+    }
+    // swap
+    void
+    swap(any_value& other)
+    {
+        std::swap(holder_, other.holder_);
+    }
+    // assignment operator for concrete values
+    template<class T>
+    any_value&
+    operator=(T const& value)
+    {
+        delete holder_;
+        holder_ = new typed_cloneable_value_holder<T>(value);
+        return *this;
+    }
+    // assignment operator for concrete values (by rvalue)
+    template<class T>
+    any_value&
+    operator=(T&& value)
+    {
+        any_value(static_cast<T&&>(value)).swap(*this);
+        return *this;
+    }
+    // value holder
+    untyped_cloneable_value_holder* holder_;
+};
+static inline void
+swap(any_value& a, any_value& b)
+{
+    a.swap(b);
 }
 template<class T>
-bool
-operator==(T* other, any_pointer p)
+T const*
+any_cast(any_value const* a)
 {
-    return other == reinterpret_cast<T*>(p.ptr);
+    typed_cloneable_value_holder<T> const* ptr
+        = dynamic_cast<typed_cloneable_value_holder<T> const*>(a->holder_);
+    return ptr ? &ptr->value : nullptr;
 }
 template<class T>
-bool
-operator!=(any_pointer p, T* other)
+T*
+any_cast(any_value* a)
 {
-    return reinterpret_cast<T*>(p.ptr) != other;
+    typed_cloneable_value_holder<T>* ptr
+        = dynamic_cast<typed_cloneable_value_holder<T>*>(a->holder_);
+    return ptr ? &ptr->value : nullptr;
 }
-template<class T>
-bool
-operator!=(T* other, any_pointer p)
+
+struct component_type_mismatch : exception
 {
-    return other != reinterpret_cast<T*>(p.ptr);
-}
+    component_type_mismatch()
+        : exception("component was stored as the wrong type")
+    {
+    }
+};
+template<class Value>
+struct component_caster<any_value&, Value>
+{
+    static Value&
+    apply(any_value& stored)
+    {
+        Value* value = any_cast<Value>(&stored);
+        if (!value)
+            throw component_type_mismatch();
+        return *value;
+    }
+};
 
 // The following provides a small framework for defining more specialized
 // component storage structures with direct storage of frequently used
@@ -116,51 +244,51 @@ template<class Storage, class Tag>
 struct component_accessor
 {
     static bool
-    has(Storage& storage)
+    has(Storage const& storage)
     {
-        return has_storage_component<Tag>(storage.generic);
+        return storage.generic.template has<Tag>();
     }
     static void
     add(Storage& storage, any_pointer data)
     {
-        add_storage_component<Tag>(storage.generic, data);
+        storage.generic.template add<Tag>(data);
     }
     static void
     remove(Storage& storage)
     {
-        remove_storage_component<Tag>(storage.generic);
+        storage.generic.template remove<Tag>();
     }
     static any_pointer
     get(Storage& storage)
     {
-        return get_storage_component<Tag>(storage.generic);
+        return storage.generic.template get<Tag>();
     }
 };
 
 #define ALIA_IMPLEMENT_STORAGE_COMPONENT_ACCESSORS(Storage)                    \
     template<class Tag>                                                        \
-    bool has_storage_component(Storage& storage)                               \
+    bool has() const                                                           \
     {                                                                          \
-        return component_accessor<Storage, Tag>::has(storage);                 \
+        return component_accessor<Storage, Tag>::has(*this);                   \
     }                                                                          \
                                                                                \
     template<class Tag, class Data>                                            \
-    void add_storage_component(Storage& storage, Data&& data)                  \
+    void add(Data&& data)                                                      \
     {                                                                          \
         component_accessor<Storage, Tag>::add(                                 \
-            storage, std::forward<Data&&>(data));                              \
+            *this, std::forward<Data&&>(data));                                \
     }                                                                          \
                                                                                \
     template<class Tag>                                                        \
-    void remove_storage_component(Storage& storage)                            \
+    void remove()                                                              \
     {                                                                          \
-        component_accessor<Storage, Tag>::remove(storage);                     \
+        component_accessor<Storage, Tag>::remove(*this);                       \
     }                                                                          \
                                                                                \
     template<class Tag>                                                        \
-    auto get_storage_component(Storage& storage)                               \
+    auto get()                                                                 \
     {                                                                          \
-        return component_accessor<Storage, Tag>::get(storage);                 \
+        return component_accessor<Storage, Tag>::get(*this);                   \
     }
 
 #define ALIA_ADD_DIRECT_COMPONENT_ACCESS(Storage, Tag, name)                   \
@@ -168,7 +296,7 @@ struct component_accessor
     struct component_accessor<Storage, Tag>                                    \
     {                                                                          \
         static bool                                                            \
-        has(Storage& storage)                                                  \
+        has(Storage const& storage)                                            \
         {                                                                      \
             return storage.name != nullptr;                                    \
         }                                                                      \

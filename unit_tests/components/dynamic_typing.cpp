@@ -2,9 +2,9 @@
 
 #include <alia/components/typing.hpp>
 
-#include <catch.hpp>
+#include <alia/components/storage.hpp>
 
-#include <boost/any.hpp>
+#include <catch.hpp>
 
 using namespace alia;
 
@@ -37,7 +37,7 @@ struct zap
 ALIA_DEFINE_COMPONENT_TYPE(zap_tag, zap)
 
 // Define some arbitrary component collection types.
-using storage_type = generic_component_storage<boost::any>;
+using storage_type = generic_component_storage<any_value>;
 using cc_empty = empty_component_collection<storage_type>;
 using cc_b = add_component_type_t<cc_empty, bar_tag>;
 using cc_fb = add_component_type_t<cc_b, foo_tag>;
@@ -61,35 +61,33 @@ TEST_CASE("dynamic component access", "[component_collections]")
 {
     storage_type storage;
     cc_empty mc_empty(&storage);
-    REQUIRE(!has_storage_component<bar_tag>(storage));
+    REQUIRE(!storage.has<bar_tag>());
 
     cc_b mc_b = add_component<bar_tag>(mc_empty, bar(1));
-    REQUIRE(has_storage_component<bar_tag>(storage));
+    REQUIRE(storage.has<bar_tag>());
     REQUIRE(has_component<bar_tag>(mc_b));
-    REQUIRE(boost::any_cast<bar>(get_component<bar_tag>(mc_b)).i == 1);
-    REQUIRE(!has_storage_component<foo_tag>(storage));
+    REQUIRE(get_component<bar_tag>(mc_b).i == 1);
+    REQUIRE(!storage.has<foo_tag>());
     REQUIRE(!has_component<foo_tag>(mc_b));
     REQUIRE_THROWS_AS(
         get_component<foo_tag>(mc_b), component_not_found<foo_tag>);
 
     cc_fb mc_fb = add_component<foo_tag>(mc_b, foo());
-    REQUIRE(boost::any_cast<bar>(get_component<bar_tag>(mc_fb)).i == 1);
-    REQUIRE(boost::any_cast<foo>(get_component<foo_tag>(mc_fb)).b == false);
+    REQUIRE(get_component<bar_tag>(mc_fb).i == 1);
+    REQUIRE(get_component<foo_tag>(mc_fb).b == false);
 
     cc_f mc_f = remove_component<bar_tag>(mc_fb);
-    REQUIRE(boost::any_cast<foo>(get_component<foo_tag>(mc_f)).b == false);
+    REQUIRE(get_component<foo_tag>(mc_f).b == false);
     REQUIRE_THROWS_AS(
         get_component<bar_tag>(mc_f), component_not_found<bar_tag>);
 }
 
 namespace {
 
-using boost::any;
-using boost::any_cast;
 using std::string;
 
 string
-print_component(any const& x)
+print_component(any_value x)
 {
     foo const* f = any_cast<foo>(&x);
     if (f)
@@ -122,6 +120,7 @@ TEST_CASE("dynamic collection folding", "[component_collections]")
     cc_fb mc_fb = add_component<foo_tag>(mc_b, foo());
 
     auto reduction = fold_over_components(mc_fb, reducer(), string());
+    CAPTURE(reduction)
     REQUIRE(
         (reduction == "foo: false; bar: 1; "
          || reduction == "bar: 1; foo: false; "));

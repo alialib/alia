@@ -1,7 +1,7 @@
 #ifndef ALIA_COMPONENTS_CONTEXT_HPP
 #define ALIA_COMPONENTS_CONTEXT_HPP
 
-#include <alia/components/typing.hpp>
+#include <alia/components/storage.hpp>
 
 namespace alia {
 
@@ -25,25 +25,25 @@ struct context_component_storage
 
     // generic storage for other components
     generic_component_storage<any_pointer> generic;
+
+    ALIA_IMPLEMENT_STORAGE_COMPONENT_ACCESSORS(context_component_storage)
+
+    template<class Function>
+    void
+    for_each(Function f)
+    {
+        if (this->data)
+            f(*this->data);
+        if (this->event)
+            f(*this->event);
+        this->generic.for_each(f);
+    }
 };
 
 ALIA_ADD_DIRECT_COMPONENT_ACCESS(
     context_component_storage, data_traversal_tag, data)
 ALIA_ADD_DIRECT_COMPONENT_ACCESS(
     context_component_storage, event_traversal_tag, event)
-
-ALIA_IMPLEMENT_STORAGE_COMPONENT_ACCESSORS(context_component_storage)
-
-template<class Function>
-void
-for_each_storage_component(context_component_storage& storage, Function f)
-{
-    if (storage.data)
-        f(*storage.data);
-    if (storage.event)
-        f(*storage.event);
-    for_each_storage_component(storage.generic, f);
-}
 
 // the typedefs for the context - There are two because we want to be able to
 // represent the context with and without data capabilities.

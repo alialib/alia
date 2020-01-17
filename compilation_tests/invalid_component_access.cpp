@@ -1,7 +1,5 @@
 #include <alia/components/typing.hpp>
 
-#include <boost/any.hpp>
-
 using namespace alia;
 
 struct foo
@@ -15,7 +13,7 @@ struct bar
 };
 ALIA_DEFINE_COMPONENT_TYPE(bar_tag, bar)
 
-using storage_type = generic_component_storage<boost::any>;
+using storage_type = generic_component_storage<any_value>;
 using cc_empty = empty_component_collection<storage_type>;
 
 void

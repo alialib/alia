@@ -107,7 +107,7 @@ do_traversal(
     scoped_data_traversal sdt(graph, data);
 
     context_component_storage storage;
-    add_storage_component<data_traversal_tag>(storage, &data);
+    storage.add<data_traversal_tag>(&data);
 
     context ctx(&storage);
 
