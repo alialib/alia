@@ -12,9 +12,9 @@ struct other_traversal
 {
 };
 
-TEST_CASE("component_storage", "[context]")
+TEST_CASE("context_component_storage", "[context]")
 {
-    component_storage storage;
+    context_component_storage storage;
 
     REQUIRE(!has_storage_component<data_traversal_tag>(storage));
     data_traversal data;
