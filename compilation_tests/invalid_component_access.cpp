@@ -1,5 +1,7 @@
 #include <alia/components/typing.hpp>
 
+#include <alia/components/storage.hpp>
+
 using namespace alia;
 
 struct foo
