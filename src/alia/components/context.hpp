@@ -14,150 +14,42 @@ ALIA_DEFINE_COMPONENT_TYPE(event_traversal_tag, event_traversal*)
 template<class Tag>
 struct component_manipulator;
 
-// The structure we use to store components. It provides direct storage of the
+// the structure we use to store components - It provides direct storage of the
 // commonly-used components in the core of alia.
 
-struct component_storage
+struct context_component_storage
 {
-    data_traversal* data = 0;
-    event_traversal* event = 0;
+    // directly-stored components
+    data_traversal* data = nullptr;
+    event_traversal* event = nullptr;
+
     // generic storage for other components
-    generic_component_storage<any_pointer> other;
+    generic_component_storage<any_pointer> generic;
 };
 
-// All component access is done through the following 'manipulator' structure.
-// Specializations can be defined for tags that have direct storage.
+ALIA_ADD_DIRECT_COMPONENT_ACCESS(
+    context_component_storage, data_traversal_tag, data)
+ALIA_ADD_DIRECT_COMPONENT_ACCESS(
+    context_component_storage, event_traversal_tag, event)
 
-template<class Tag>
-struct component_manipulator
-{
-    static bool
-    has(component_storage& storage)
-    {
-        return has_storage_component<Tag>(storage.other);
-    }
-    static void
-    add(component_storage& storage, any_pointer data)
-    {
-        add_storage_component<Tag>(storage.other, data);
-    }
-    static void
-    remove(component_storage& storage)
-    {
-        remove_storage_component<Tag>(storage.other);
-    }
-    static any_pointer
-    get(component_storage& storage)
-    {
-        return get_storage_component<Tag>(storage.other);
-    }
-};
-
-template<>
-struct component_manipulator<data_traversal_tag>
-{
-    static bool
-    has(component_storage& storage)
-    {
-        return storage.data != 0;
-    }
-    static void
-    add(component_storage& storage, data_traversal* data)
-    {
-        storage.data = data;
-    }
-    static void
-    remove(component_storage& storage)
-    {
-        storage.data = 0;
-    }
-    static data_traversal*
-    get(component_storage& storage)
-    {
-#ifdef ALIA_DYNAMIC_COMPONENT_CHECKING
-        if (!storage.data)
-            throw "missing data traversal component";
-#endif
-        return storage.data;
-    }
-};
-
-template<>
-struct component_manipulator<event_traversal_tag>
-{
-    static bool
-    has(component_storage& storage)
-    {
-        return storage.event != 0;
-    }
-    static void
-    add(component_storage& storage, event_traversal* event)
-    {
-        storage.event = event;
-    }
-    static void
-    remove(component_storage& storage)
-    {
-        storage.event = 0;
-    }
-    static event_traversal*
-    get(component_storage& storage)
-    {
-#ifdef ALIA_DYNAMIC_COMPONENT_CHECKING
-        if (!storage.event)
-            throw "missing event traversal component";
-#endif
-        return storage.event;
-    }
-};
-
-// The following is the implementation of the interface expected of component
-// storage objects. It simply forwards the requests along to the appropriate
-// manipulator.
-
-template<class Tag>
-bool
-has_storage_component(component_storage& storage)
-{
-    return component_manipulator<Tag>::has(storage);
-}
-
-template<class Tag, class Data>
-void
-add_storage_component(component_storage& storage, Data&& data)
-{
-    component_manipulator<Tag>::add(storage, std::forward<Data&&>(data));
-}
-
-template<class Tag>
-void
-remove_storage_component(component_storage& storage)
-{
-    component_manipulator<Tag>::remove(storage);
-}
-
-template<class Tag>
-auto
-get_storage_component(component_storage& storage)
-{
-    return component_manipulator<Tag>::get(storage);
-}
+ALIA_IMPLEMENT_STORAGE_COMPONENT_ACCESSORS(context_component_storage)
 
 template<class Function>
 void
-for_each_storage_component(component_storage& storage, Function f)
+for_each_storage_component(context_component_storage& storage, Function f)
 {
     if (storage.data)
         f(*storage.data);
     if (storage.event)
         f(*storage.event);
-    for_each_storage_component(storage.other, f);
+    for_each_storage_component(storage.generic, f);
 }
 
-// Finally, the typedef for the context...
+// the typedefs for the context - There are two because we want to be able to
+// represent the context with and without data capabilities.
 
 typedef add_component_type_t<
-    empty_component_collection<component_storage>,
+    empty_component_collection<context_component_storage>,
     event_traversal_tag>
     dataless_context;
 
