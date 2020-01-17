@@ -16,7 +16,10 @@ struct foo
 {
     bool b = false;
 };
-ALIA_DEFINE_COMPONENT_TYPE(foo_tag, foo)
+struct foo_tag
+{
+};
+
 struct bar
 {
     int i = 0;
@@ -27,12 +30,17 @@ struct bar
     {
     }
 };
-ALIA_DEFINE_COMPONENT_TYPE(bar_tag, bar)
+struct bar_tag
+{
+};
+
 struct zap
 {
     double d = 0;
 };
-ALIA_DEFINE_COMPONENT_TYPE(zap_tag, zap)
+struct zap_tag
+{
+};
 
 // Test the underlying mechanics of adding and removing tags in lists.
 namespace list_tests {
