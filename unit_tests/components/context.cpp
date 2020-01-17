@@ -12,25 +12,25 @@ struct other_traversal
 {
 };
 
-TEST_CASE("component_storage", "[context]")
+TEST_CASE("context_component_storage", "[context]")
 {
-    component_storage storage;
+    context_component_storage storage;
 
-    REQUIRE(!has_storage_component<data_traversal_tag>(storage));
+    REQUIRE(!has_storage_component<data_component>(storage));
     data_traversal data;
-    add_storage_component<data_traversal_tag>(storage, &data);
-    REQUIRE(has_storage_component<data_traversal_tag>(storage));
-    REQUIRE(get_storage_component<data_traversal_tag>(storage) == &data);
-    remove_storage_component<data_traversal_tag>(storage);
-    REQUIRE(!has_storage_component<data_traversal_tag>(storage));
+    add_storage_component<data_component>(storage, &data);
+    REQUIRE(has_storage_component<data_component>(storage));
+    REQUIRE(get_storage_component<data_component>(storage) == &data);
+    remove_storage_component<data_component>(storage);
+    REQUIRE(!has_storage_component<data_component>(storage));
 
-    REQUIRE(!has_storage_component<event_traversal_tag>(storage));
+    REQUIRE(!has_storage_component<event_component>(storage));
     event_traversal event;
-    add_storage_component<event_traversal_tag>(storage, &event);
-    REQUIRE(has_storage_component<event_traversal_tag>(storage));
-    REQUIRE(get_storage_component<event_traversal_tag>(storage) == &event);
-    remove_storage_component<event_traversal_tag>(storage);
-    REQUIRE(!has_storage_component<event_traversal_tag>(storage));
+    add_storage_component<event_component>(storage, &event);
+    REQUIRE(has_storage_component<event_component>(storage));
+    REQUIRE(get_storage_component<event_component>(storage) == &event);
+    remove_storage_component<event_component>(storage);
+    REQUIRE(!has_storage_component<event_component>(storage));
 
     REQUIRE(!has_storage_component<other_traversal_tag>(storage));
     other_traversal other;
