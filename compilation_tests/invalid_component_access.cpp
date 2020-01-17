@@ -8,17 +8,12 @@ struct foo
 {
     bool b = false;
 };
-struct foo_tag
-{
-};
-
+ALIA_DEFINE_COMPONENT_TYPE(foo_tag, foo)
 struct bar
 {
     int i = 0;
 };
-struct bar_tag
-{
-};
+ALIA_DEFINE_COMPONENT_TYPE(bar_tag, bar)
 
 using storage_type = generic_component_storage<boost::any>;
 using cc_empty = empty_component_collection<storage_type>;
