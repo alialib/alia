@@ -484,7 +484,7 @@ struct component_not_found : exception
     component_not_found()
         : exception(
               std::string("component not found in collection:\n")
-              + typeid(Tag)::name())
+              + typeid(Tag).name())
     {
     }
 };
