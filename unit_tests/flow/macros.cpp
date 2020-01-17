@@ -495,18 +495,18 @@ TEST_CASE("alia_untracked_if", "[data_graph]")
         data_graph graph;
         auto make_controller = [](int n) {
             return [=](context ctx) {
-                REQUIRE(has_component<data_component>(ctx));
+                REQUIRE(has_component<data_traversal_tag>(ctx));
                 alia_untracked_if(n > 2)
                 {
-                    REQUIRE(!has_component<data_component>(ctx));
+                    REQUIRE(!has_component<data_traversal_tag>(ctx));
                 }
                 alia_untracked_else_if(n > 1)
                 {
-                    REQUIRE(!has_component<data_component>(ctx));
+                    REQUIRE(!has_component<data_traversal_tag>(ctx));
                 }
                 alia_untracked_else
                 {
-                    REQUIRE(!has_component<data_component>(ctx));
+                    REQUIRE(!has_component<data_traversal_tag>(ctx));
                 }
                 alia_end;
                 do_int(ctx, 0);
@@ -526,10 +526,10 @@ TEST_CASE("alia_untracked_switch", "[data_graph]")
         data_graph graph;
         auto make_controller = [](int n) {
             return [=](context ctx) {
-                REQUIRE(has_component<data_component>(ctx));
+                REQUIRE(has_component<data_traversal_tag>(ctx));
 
                 auto f = [](context ctx, int x) {
-                    REQUIRE(has_component<data_component>(ctx));
+                    REQUIRE(has_component<data_traversal_tag>(ctx));
                     return x;
                 };
 
@@ -537,10 +537,10 @@ TEST_CASE("alia_untracked_switch", "[data_graph]")
                 ALIA_UNTRACKED_SWITCH(f(ctx, n))
                 {
                     case 0:
-                        REQUIRE(!has_component<data_component>(ctx));
+                        REQUIRE(!has_component<data_traversal_tag>(ctx));
                         break;
                     default:
-                        REQUIRE(!has_component<data_component>(ctx));
+                        REQUIRE(!has_component<data_traversal_tag>(ctx));
                         break;
                 }
                 ALIA_END
