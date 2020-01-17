@@ -295,7 +295,7 @@ read_condition(T const& x)
 #define ALIA_REMOVE_DATA_TRACKING(ctx)                                         \
     typename decltype(ctx)::storage_type _alia_storage;                        \
     auto _alia_ctx                                                             \
-        = alia::remove_component<data_traversal_tag>(ctx, &_alia_storage);     \
+        = alia::remove_component<data_component>(ctx, &_alia_storage);     \
     auto ctx = _alia_ctx;
 
 #define ALIA_UNTRACKED_IF_(ctx, condition)                                     \
