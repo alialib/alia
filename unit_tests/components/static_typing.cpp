@@ -1,8 +1,8 @@
 #include <alia/components/typing.hpp>
 
-#include <catch.hpp>
+#include <alia/components/storage.hpp>
 
-#include <boost/any.hpp>
+#include <catch.hpp>
 
 using namespace alia;
 
@@ -83,7 +83,7 @@ static_assert(list_contains_tag<list_z_, zap_tag>::value, "");
 } // namespace list_tests
 
 // Define some arbitrary component collection types.
-using storage_type = generic_component_storage<boost::any>;
+using storage_type = generic_component_storage<any_value>;
 using cc_empty = empty_component_collection<storage_type>;
 using cc_b = add_component_type_t<cc_empty, bar_tag>;
 using cc_fb = add_component_type_t<cc_b, foo_tag>;
@@ -133,22 +133,20 @@ TEST_CASE("static component access", "[component_collections]")
     REQUIRE(!has_component<bar_tag>(mc_empty));
 
     cc_b mc_b = add_component<bar_tag>(mc_empty, bar(1));
-    REQUIRE(boost::any_cast<bar>(get_component<bar_tag>(mc_b)).i == 1);
+    REQUIRE(get_component<bar_tag>(mc_b).i == 1);
     REQUIRE(!has_component<foo_tag>(mc_b));
     REQUIRE(has_component<bar_tag>(mc_b));
 
     cc_fb mc_fb = add_component<foo_tag>(mc_b, foo());
-    REQUIRE(boost::any_cast<bar>(get_component<bar_tag>(mc_fb)).i == 1);
-    REQUIRE(boost::any_cast<foo>(get_component<foo_tag>(mc_fb)).b == false);
+    REQUIRE(get_component<bar_tag>(mc_fb).i == 1);
+    REQUIRE(get_component<foo_tag>(mc_fb).b == false);
 
     cc_f mc_f = remove_component<bar_tag>(mc_fb);
-    REQUIRE(boost::any_cast<foo>(get_component<foo_tag>(mc_f)).b == false);
+    REQUIRE(get_component<foo_tag>(mc_f).b == false);
 }
 
 namespace {
 
-using boost::any;
-using boost::any_cast;
 using std::string;
 
 template<class Tag>
@@ -160,9 +158,8 @@ template<>
 struct component_printer<foo_tag>
 {
     static string
-    apply(any const& x)
+    apply(foo const& f)
     {
-        foo const& f = any_cast<foo>(x);
         return f.b ? "foo: true; " : "foo: false; ";
     }
 };
@@ -171,9 +168,8 @@ template<>
 struct component_printer<bar_tag>
 {
     static string
-    apply(any const& x)
+    apply(bar const& b)
     {
-        bar const& b = any_cast<bar>(x);
         return "bar: " + std::to_string(b.i) + "; ";
     }
 };

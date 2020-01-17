@@ -2,7 +2,6 @@
 #define ALIA_COMPONENTS_TYPING_HPP
 
 #include <alia/common.hpp>
-#include <alia/components/storage.hpp>
 
 #include <type_traits>
 
@@ -415,7 +414,7 @@ add_component(Collection collection, typename Tag::data_type data)
 {
     auto* storage = collection.storage;
     // Add the new data to the storage object.
-    add_storage_component<Tag>(*storage, data);
+    storage->template add<Tag>(data);
     // Create a collection with the proper type to reference the storage.
     return add_component_type_t<Collection, Tag>(storage);
 }
@@ -438,7 +437,7 @@ remove_component(Collection collection)
     // its use.
 #ifdef ALIA_DYNAMIC_COMPONENT_CHECKING
     // Remove the component from the storage object.
-    remove_storage_component<Tag>(*storage);
+    storage->template remove<Tag>();
 #endif
     return remove_component_type_t<Collection, Tag>(storage);
 }
@@ -456,7 +455,7 @@ remove_component(Collection collection, Storage* new_storage)
     return remove_component_type_t<Collection, Tag>(collection.storage);
 #else
     *new_storage = *collection.storage;
-    remove_component<Tag>(*new_storage);
+    new_storage->template remove<Tag>();
     return remove_component_type_t<Collection, Tag>(new_storage);
 #endif
 }
@@ -470,7 +469,7 @@ has_component(Collection collection)
 #ifdef ALIA_STATIC_COMPONENT_CHECKING
     return detail::component_collection_contains_tag<Collection, Tag>::value;
 #else
-    return has_storage_component<Tag>(*collection.storage);
+    return collection.storage->template has<Tag>();
 #endif
 }
 
@@ -491,10 +490,29 @@ struct component_not_found : exception
 
 #endif
 
-// Get a reference to the data associated with a component in a collection.
-// :Tag identifies the component.
-// If static checking is enabled, this generates a compile-time error if :Tag
-// isn't contained in :collection.
+// component_caster should be specialized so that it properly casts from stored
+// component values to the expected types.
+
+template<class Stored, class Expected>
+struct component_caster
+{
+};
+
+// If we're stored what's expected, then the cast is trivial.
+template<class T>
+struct component_caster<T, T>
+{
+    static T
+    apply(T stored)
+    {
+        return stored;
+    }
+};
+
+// Get a reference to the data associated with a component in a
+// collection. :Tag identifies the component. If static checking is
+// enabled, this generates a compile-time error if :Tag isn't contained
+// in :collection.
 template<class Tag, class Collection>
 auto
 get_component(Collection collection)
@@ -507,7 +525,10 @@ get_component(Collection collection)
     if (!has_component<Tag>(collection))
         throw component_not_found<Tag>();
 #endif
-    return get_storage_component<Tag>(*collection.storage);
+    return component_caster<
+        decltype(collection.storage->template get<Tag>()),
+        typename Tag::data_type>::apply(collection.storage
+                                            ->template get<Tag>());
 }
 
 // fold_over_components(collection, f, z) performs a functional fold over the
@@ -575,8 +596,7 @@ fold_over_components(Collection collection, Function f, Initial z)
 {
     // In the dynamic case, there's not much we can do at this level, so the
     // storage object has to do all the work.
-    for_each_storage_component(
-        *collection.storage, [&](auto component) { z = f(component, z); });
+    collection.storage->for_each([&](auto component) { z = f(component, z); });
     return z;
 }
 
