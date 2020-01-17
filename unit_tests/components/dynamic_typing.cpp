@@ -18,7 +18,10 @@ struct foo
 {
     bool b = false;
 };
-ALIA_DEFINE_COMPONENT_TYPE(foo_tag, foo)
+struct foo_tag
+{
+};
+
 struct bar
 {
     int i = 0;
@@ -29,12 +32,17 @@ struct bar
     {
     }
 };
-ALIA_DEFINE_COMPONENT_TYPE(bar_tag, bar)
+struct bar_tag
+{
+};
+
 struct zap
 {
     double d = 0;
 };
-ALIA_DEFINE_COMPONENT_TYPE(zap_tag, zap)
+struct zap_tag
+{
+};
 
 // Define some arbitrary component collection types.
 using storage_type = generic_component_storage<boost::any>;
