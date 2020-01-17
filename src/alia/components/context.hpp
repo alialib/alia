@@ -6,10 +6,14 @@
 namespace alia {
 
 struct data_traversal;
-ALIA_DEFINE_COMPONENT_TYPE(data_traversal_tag, data_traversal*)
+struct data_traversal_tag
+{
+};
 
 struct event_traversal;
-ALIA_DEFINE_COMPONENT_TYPE(event_traversal_tag, event_traversal*)
+struct event_traversal_tag
+{
+};
 
 template<class Tag>
 struct component_manipulator;
