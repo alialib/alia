@@ -27,6 +27,7 @@ TEST_CASE("any_value basics", "[components][storage]")
     REQUIRE(*any_cast<std::string>(&e) == "xyz");
     e = b;
     REQUIRE(*any_cast<int>(&e) == 17);
+    REQUIRE(*any_cast<int>(&b) == 17);
 
     any_value f;
     f = std::move(e);
