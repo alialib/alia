@@ -24,6 +24,17 @@ struct context_component_storage
     generic_component_storage<any_pointer> generic;
 
     ALIA_IMPLEMENT_STORAGE_COMPONENT_ACCESSORS(context_component_storage)
+
+    template<class Function>
+    void
+    for_each(Function f)
+    {
+        if (this->data)
+            f(*this->data);
+        if (this->event)
+            f(*this->event);
+        this->generic.for_each(f);
+    }
 };
 
 ALIA_ADD_DIRECT_COMPONENT_ACCESS(
