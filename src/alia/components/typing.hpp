@@ -36,6 +36,18 @@
 // 3. Retrieving frames/capabilities from a context should require minimal
 // (ideally zero) runtime overhead.
 //
+// 4. Static type checking of context conversions/retrievals should be
+// possible but optional. Developers should not have to pay these compile-time
+// costs unless it's desired. It should be possible to use a mixed workflow
+// where these checks are replaced by runtime checks for iterative development
+// but enabled for CI/release builds.
+//
+// In order to satisfy #4, this file looks for a #define called
+// ALIA_DYNAMIC_COMPONENT_CHECKING. If this is set, code related to statically
+// checking components is omitted and dynamic checks are substituted where
+// appropriate. Note that when ALIA_DYNAMIC_COMPONENT_CHECKING is NOT set,
+// ALIA_STATIC_COMPONENT_CHECKING is set and static checks are included.
+//
 // The statically typed component_collection object is a simple wrapper around
 // the dynamically typed storage object. It adds a compile-time type list
 // indicating what's actually supposed to be in the collection. This allows
@@ -47,6 +59,10 @@
 // that) whereas passing by reference would be more obvious, but that seems
 // unavoidable given the requirements.
 
+#ifndef ALIA_DYNAMIC_COMPONENT_CHECKING
+#define ALIA_STATIC_COMPONENT_CHECKING
+#endif
+
 namespace alia {
 
 #define ALIA_DEFINE_COMPONENT_TYPE(tag, data)                                  \
@@ -57,6 +73,8 @@ namespace alia {
 
 template<class Tags, class Storage>
 struct component_collection;
+
+#ifdef ALIA_STATIC_COMPONENT_CHECKING
 
 namespace detail {
 
@@ -323,6 +341,65 @@ struct merge_components
 template<class A, class B>
 using merge_components_t = typename merge_components<A, B>::type;
 
+#else
+
+struct dynamic_tag_list
+{
+};
+
+template<class Tags, class Storage>
+struct component_collection
+{
+    typedef Tags tags;
+    typedef Storage storage_type;
+
+    component_collection(Storage* storage) : storage(storage)
+    {
+    }
+
+    Storage* storage;
+};
+
+// empty_component_collection<Storage> yields a component collection with no
+// components and :Storage as its storage type.
+template<class Storage>
+using empty_component_collection
+    = component_collection<dynamic_tag_list, Storage>;
+
+// add_component_type<Collection,Tag>::type gives the type that results from
+// extending :Collection with the component defined by :Tag and :Data.
+template<class Collection, class Tag>
+struct add_component_type
+{
+    typedef Collection type;
+};
+template<class Collection, class Tag>
+using add_component_type_t = typename add_component_type<Collection, Tag>::type;
+
+// remove_component_type<Collection,Tag>::type yields the type that results from
+// removing the component associated with :Tag from :Collection.
+template<class Collection, class Tag>
+struct remove_component_type
+{
+    typedef Collection type;
+};
+template<class Collection, class Tag>
+using remove_component_type_t =
+    typename remove_component_type<Collection, Tag>::type;
+
+// merge_components<A,B>::type yields a component collection type that contains
+// all the components from :A and :B (but no duplicates).
+// Note that the resulting component collection inherits the storage type of :A.
+template<class A, class B>
+struct merge_components
+{
+    typedef A type;
+};
+template<class A, class B>
+using merge_components_t = typename merge_components<A, B>::type;
+
+#endif
+
 // Extend a collection by adding a new component.
 // :Tag is the tag of the component.
 // :data is the data associated with the new component.
@@ -353,11 +430,34 @@ template<class Tag, class Collection>
 remove_component_type_t<Collection, Tag>
 remove_component(Collection collection)
 {
-    // Note that we don't actually remove the component from the storage object.
-    // Since there is compile-time checking of the components in a collection,
-    // it doesn't matter if the runtime storage includes an extra component.
-    // Static checks will prevent its use.
+    typename Collection::storage_type* storage = collection.storage;
+    // We only actually have to remove the component if we're using dynamic
+    // component checking. With static checking, it doesn't matter if the
+    // runtime storage includes an extra component. Static checks will prevent
+    // its use.
+#ifdef ALIA_DYNAMIC_COMPONENT_CHECKING
+    // Remove the component from the storage object.
+    storage->template remove<Tag>();
+#endif
+    return remove_component_type_t<Collection, Tag>(storage);
+}
+
+// Remove a component from a collection.
+//
+// With this version, you supply a new storage object, and the function uses it
+// if needed to ensure that the original collection's storage is left untouched.
+//
+template<class Tag, class Collection, class Storage>
+remove_component_type_t<Collection, Tag>
+remove_component(Collection collection, Storage* new_storage)
+{
+#ifdef ALIA_STATIC_COMPONENT_CHECKING
     return remove_component_type_t<Collection, Tag>(collection.storage);
+#else
+    *new_storage = *collection.storage;
+    new_storage->template remove<Tag>();
+    return remove_component_type_t<Collection, Tag>(new_storage);
+#endif
 }
 
 // Determine if a component is in a collection.
@@ -366,8 +466,29 @@ template<class Tag, class Collection>
 bool
 has_component(Collection collection)
 {
+#ifdef ALIA_STATIC_COMPONENT_CHECKING
     return detail::component_collection_contains_tag<Collection, Tag>::value;
+#else
+    return collection.storage->template has<Tag>();
+#endif
 }
+
+#ifdef ALIA_DYNAMIC_COMPONENT_CHECKING
+
+// When using dynamic component checking, this error is thrown when trying to
+// retrieve a component that's not actually present in a collection.
+template<class Tag>
+struct component_not_found : exception
+{
+    component_not_found()
+        : exception(
+              std::string("component not found in collection:\n")
+              + typeid(Tag).name())
+    {
+    }
+};
+
+#endif
 
 // component_caster should be specialized so that it properly casts from stored
 // component values to the expected types.
@@ -396,9 +517,14 @@ template<class Tag, class Collection>
 auto
 get_component(Collection collection)
 {
+#ifdef ALIA_STATIC_COMPONENT_CHECKING
     static_assert(
         detail::component_collection_contains_tag<Collection, Tag>::value,
         "component not found in collection");
+#else
+    if (!has_component<Tag>(collection))
+        throw component_not_found<Tag>();
+#endif
     return component_caster<
         decltype(collection.storage->template get<Tag>()),
         typename Tag::data_type>::apply(collection.storage
@@ -408,6 +534,8 @@ get_component(Collection collection)
 // fold_over_components(collection, f, z) performs a functional fold over the
 // components in a collection, invoking f as f(tag, data, z) for each component
 // (and accumulating in z).
+
+#ifdef ALIA_STATIC_COMPONENT_CHECKING
 
 template<class Collection, class Function, class Initial>
 auto
@@ -459,6 +587,20 @@ fold_over_components(Collection collection, Function f, Initial z)
 {
     return detail::collection_folder<Collection>::apply(collection, f, z);
 }
+
+#else
+
+template<class Collection, class Function, class Initial>
+auto
+fold_over_components(Collection collection, Function f, Initial z)
+{
+    // In the dynamic case, there's not much we can do at this level, so the
+    // storage object has to do all the work.
+    collection.storage->for_each([&](auto component) { z = f(component, z); });
+    return z;
+}
+
+#endif
 
 } // namespace alia
 
