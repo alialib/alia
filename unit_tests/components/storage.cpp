@@ -18,10 +18,13 @@ TEST_CASE("any_value basics", "[components][storage]")
     REQUIRE(*any_cast<int>(&c) == 17);
 
     any_value d;
-    d = 12;
-    REQUIRE(*any_cast<int>(&d) == 12);
+    REQUIRE(!any_cast<int>(&d));
+    std::string xyz("xyz");
+    d = xyz;
+    REQUIRE(*any_cast<std::string>(&d) == "xyz");
 
-    any_value e;
+    any_value e(xyz);
+    REQUIRE(*any_cast<std::string>(&e) == "xyz");
     e = b;
     REQUIRE(*any_cast<int>(&e) == 17);
 
