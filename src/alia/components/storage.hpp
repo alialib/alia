@@ -65,7 +65,7 @@ struct any_pointer
 };
 
 template<class Pointer>
-struct component_caster<any_pointer&, Pointer*>
+struct component_caster<any_pointer, Pointer*>
 {
     static Pointer*
     apply(any_pointer stored)
