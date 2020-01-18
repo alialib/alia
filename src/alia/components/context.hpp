@@ -11,9 +11,6 @@ ALIA_DEFINE_COMPONENT_TYPE(data_traversal_tag, data_traversal*)
 struct event_traversal;
 ALIA_DEFINE_COMPONENT_TYPE(event_traversal_tag, event_traversal*)
 
-template<class Tag>
-struct component_manipulator;
-
 // the structure we use to store components - It provides direct storage of the
 // commonly-used components in the core of alia.
 
