@@ -206,23 +206,13 @@ any_cast(any_value* a)
     return ptr ? &ptr->value : nullptr;
 }
 
-struct component_type_mismatch : exception
-{
-    component_type_mismatch()
-        : exception("component was stored as the wrong type")
-    {
-    }
-};
 template<class Value>
 struct component_caster<any_value&, Value>
 {
     static Value&
     apply(any_value& stored)
     {
-        Value* value = any_cast<Value>(&stored);
-        if (!value)
-            throw component_type_mismatch();
-        return *value;
+        return *any_cast<Value>(&stored);
     }
 };
 
