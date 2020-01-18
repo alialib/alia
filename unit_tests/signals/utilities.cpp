@@ -20,7 +20,7 @@ struct unreadable_regular_signal
     }
 };
 
-TEST_CASE("unreadable regular_signal", "[signals]")
+TEST_CASE("unreadable regular_signal", "[signals][utilities]")
 {
     unreadable_regular_signal s;
 
@@ -57,7 +57,7 @@ struct normal_regular_signal
     }
 };
 
-TEST_CASE("normal regular_signal", "[signals]")
+TEST_CASE("normal regular_signal", "[signals][utilities]")
 {
     normal_regular_signal s;
 
@@ -70,7 +70,7 @@ TEST_CASE("normal regular_signal", "[signals]")
     REQUIRE(!signal_is_writable(s));
 }
 
-TEST_CASE("lazy_reader", "[signals]")
+TEST_CASE("lazy_reader", "[signals][utilities]")
 {
     int n = 0;
 

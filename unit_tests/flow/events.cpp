@@ -120,7 +120,7 @@ check_traversal_path(
 
 } // namespace
 
-TEST_CASE("targeted_event_dispatch", "[targeted_event_dispatch]")
+TEST_CASE("targeted_event_dispatch", "[flow][events]")
 {
     check_traversal_path(0, "absent", ";");
     check_traversal_path(0, "root", ";root;");
