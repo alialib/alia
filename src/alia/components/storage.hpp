@@ -46,6 +46,16 @@ struct generic_component_storage
     {
         return this->components.at(std::type_index(typeid(Tag)));
     }
+
+    template<class Function>
+    void
+    for_each(Function f)
+    {
+        for (auto& i : this->components)
+        {
+            f(i.second);
+        }
+    }
 };
 
 // any_pointer is a simple way to store pointers to any type in a

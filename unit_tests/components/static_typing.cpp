@@ -6,6 +6,11 @@
 
 using namespace alia;
 
+// component_collection.hpp is supposed to define this by default.
+#ifndef ALIA_STATIC_COMPONENT_CHECKING
+#error ALIA_STATIC_COMPONENT_CHECKING not defined
+#endif
+
 // Define some arbitrary tag and data types.
 struct foo
 {
