@@ -16,7 +16,7 @@ TEST_CASE("condition_is_true/false/etc", "[flow][macros]")
     REQUIRE(!condition_is_false(empty<bool>()));
 }
 
-TEST_CASE("basic alia_if", "[data_graph]")
+TEST_CASE("basic alia_if", "[flow][macros]")
 {
     clear_log();
     {
@@ -47,7 +47,7 @@ TEST_CASE("basic alia_if", "[data_graph]")
         "destructing int;");
 }
 
-TEST_CASE("alia_if/alia_else", "[data_graph]")
+TEST_CASE("alia_if/alia_else", "[flow][macros]")
 {
     clear_log();
     {
@@ -87,7 +87,7 @@ TEST_CASE("alia_if/alia_else", "[data_graph]")
         "destructing int;");
 }
 
-TEST_CASE("non-signal alia_if/alia_else", "[data_graph]")
+TEST_CASE("non-signal alia_if/alia_else", "[flow][macros]")
 {
     clear_log();
     {
@@ -125,7 +125,7 @@ TEST_CASE("non-signal alia_if/alia_else", "[data_graph]")
         "destructing int;");
 }
 
-TEST_CASE("alia_if/alia_else caching", "[data_graph]")
+TEST_CASE("alia_if/alia_else caching", "[flow][macros]")
 {
     clear_log();
     {
@@ -184,7 +184,7 @@ TEST_CASE("alia_if/alia_else caching", "[data_graph]")
         "destructing int;");
 }
 
-TEST_CASE("alia_if/alia_else_if/alia_else", "[data_graph]")
+TEST_CASE("alia_if/alia_else_if/alia_else", "[flow][macros]")
 {
     clear_log();
     {
@@ -242,7 +242,7 @@ TEST_CASE("alia_if/alia_else_if/alia_else", "[data_graph]")
         "destructing int;");
 }
 
-TEST_CASE("alia_switch", "[data_graph]")
+TEST_CASE("alia_switch", "[flow][macros]")
 {
     clear_log();
     {
@@ -311,7 +311,7 @@ TEST_CASE("alia_switch", "[data_graph]")
         "destructing int;");
 }
 
-TEST_CASE("non-signal alia_switch", "[data_graph]")
+TEST_CASE("non-signal alia_switch", "[flow][macros]")
 {
     clear_log();
     {
@@ -380,7 +380,7 @@ TEST_CASE("non-signal alia_switch", "[data_graph]")
         "destructing int;");
 }
 
-TEST_CASE("alia_for", "[data_graph]")
+TEST_CASE("alia_for", "[flow][macros]")
 {
     clear_log();
     {
@@ -433,7 +433,7 @@ TEST_CASE("alia_for", "[data_graph]")
         "destructing int;");
 }
 
-TEST_CASE("alia_while", "[data_graph]")
+TEST_CASE("alia_while", "[flow][macros]")
 {
     clear_log();
     {
@@ -488,7 +488,7 @@ TEST_CASE("alia_while", "[data_graph]")
         "destructing int;");
 }
 
-TEST_CASE("alia_untracked_if", "[data_graph]")
+TEST_CASE("alia_untracked_if", "[flow][macros]")
 {
     clear_log();
     {
@@ -519,7 +519,7 @@ TEST_CASE("alia_untracked_if", "[data_graph]")
     }
 }
 
-TEST_CASE("alia_untracked_switch", "[data_graph]")
+TEST_CASE("alia_untracked_switch", "[flow][macros]")
 {
     clear_log();
     {

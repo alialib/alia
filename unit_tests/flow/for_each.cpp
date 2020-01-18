@@ -49,7 +49,7 @@ get_alia_id(my_item const& item)
 
 } // namespace
 
-TEST_CASE("string vector", "[for_each][vector]")
+TEST_CASE("string vector", "[flow][for_each]")
 {
     alia::system sys;
 
@@ -87,7 +87,7 @@ TEST_CASE("string vector", "[for_each][vector]")
     REQUIRE(call_count == 5);
 }
 
-TEST_CASE("item vector", "[for_each][vector]")
+TEST_CASE("item vector", "[flow][for_each]")
 {
     alia::system sys;
 
@@ -131,7 +131,7 @@ TEST_CASE("item vector", "[for_each][vector]")
     REQUIRE(call_count == 3);
 }
 
-TEST_CASE("simple map", "[for_each][map]")
+TEST_CASE("simple map", "[flow][for_each]")
 {
     alia::system sys;
 
@@ -171,7 +171,7 @@ TEST_CASE("simple map", "[for_each][map]")
     REQUIRE(call_count == 4);
 }
 
-TEST_CASE("item map", "[for_each][map]")
+TEST_CASE("item map", "[flow][for_each]")
 {
     alia::system sys;
 
@@ -217,7 +217,7 @@ TEST_CASE("item map", "[for_each][map]")
     REQUIRE(call_count == 4);
 }
 
-TEST_CASE("string list", "[for_each][list]")
+TEST_CASE("string list", "[flow][for_each]")
 {
     alia::system sys;
 
@@ -256,7 +256,7 @@ TEST_CASE("string list", "[for_each][list]")
     REQUIRE(call_count == 3);
 }
 
-TEST_CASE("unsimplified string list", "[for_each][list]")
+TEST_CASE("unsimplified string list", "[flow][for_each]")
 {
     alia::system sys;
 
@@ -295,7 +295,7 @@ TEST_CASE("unsimplified string list", "[for_each][list]")
     REQUIRE(call_count == 6);
 }
 
-TEST_CASE("writing string list items", "[for_each][list]")
+TEST_CASE("writing string list items", "[flow][for_each]")
 {
     alia::system sys;
 

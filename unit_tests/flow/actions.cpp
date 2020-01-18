@@ -6,7 +6,7 @@
 
 using namespace alia;
 
-TEST_CASE("copy actions", "[actions]")
+TEST_CASE("copy actions", "[flow][actions]")
 {
     int x = 1;
     REQUIRE(!(empty<int>() <<= empty<int>()).is_ready());
@@ -32,7 +32,7 @@ TEST_CASE("copy actions", "[actions]")
         REQUIRE(x == (21 normal_form 7));                                      \
     }
 
-TEST_CASE("compound assignment action operators", "[actions]")
+TEST_CASE("compound assignment action operators", "[flow][actions]")
 {
     TEST_COMPOUND_ASSIGNMENT_OPERATOR(+=, +)
     TEST_COMPOUND_ASSIGNMENT_OPERATOR(-=, -)
@@ -66,7 +66,7 @@ TEST_CASE("compound assignment action operators", "[actions]")
         }                                                                      \
     }
 
-TEST_CASE("increment/decrement operators", "[actions]")
+TEST_CASE("increment/decrement operators", "[flow][actions]")
 {
     TEST_BY_ONE_OPERATOR(++, +)
     TEST_BY_ONE_OPERATOR(--, -)
@@ -74,7 +74,7 @@ TEST_CASE("increment/decrement operators", "[actions]")
 
 #undef TEST_COMPOUND_ASSIGNMENT_OPERATOR
 
-TEST_CASE("sequenced actions", "[actions]")
+TEST_CASE("sequenced actions", "[flow][actions]")
 {
     int x = 1, y = 2;
     auto a = empty<int>() <<= empty<int>();
@@ -87,7 +87,7 @@ TEST_CASE("sequenced actions", "[actions]")
     REQUIRE(y == 3);
 }
 
-TEST_CASE("action_ref", "[actions]")
+TEST_CASE("action_ref", "[flow][actions]")
 {
     int x = 1;
     auto a = empty<int>() <<= empty<int>();
@@ -117,13 +117,13 @@ f(action<> a)
     REQUIRE(!a.is_ready());
 }
 
-TEST_CASE("action parameter passing", "[actions]")
+TEST_CASE("action parameter passing", "[flow][actions]")
 {
     auto a = empty<int>() <<= empty<int>();
     f(a);
 }
 
-TEST_CASE("toggle action", "[actions]")
+TEST_CASE("toggle action", "[flow][actions]")
 {
     bool x = false;
     {
@@ -145,7 +145,7 @@ TEST_CASE("toggle action", "[actions]")
     }
 }
 
-TEST_CASE("push_back action", "[actions]")
+TEST_CASE("push_back action", "[flow][actions]")
 {
     auto x = std::vector<int>{1, 2};
     {
@@ -165,7 +165,7 @@ TEST_CASE("push_back action", "[actions]")
     }
 }
 
-TEST_CASE("lambda actions", "[actions]")
+TEST_CASE("lambda actions", "[flow][actions]")
 {
     int x = 0;
     auto a = lambda_action(always_ready, [&](int y, int z) { x = y + z; });

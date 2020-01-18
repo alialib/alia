@@ -4,7 +4,7 @@
 
 using namespace alia;
 
-TEST_CASE("empty signal", "[signals]")
+TEST_CASE("empty signal", "[signals][basic]")
 {
     auto s = empty<int>();
 
@@ -17,7 +17,7 @@ TEST_CASE("empty signal", "[signals]")
     REQUIRE(!signal_is_writable(s));
 }
 
-TEST_CASE("value signal", "[signals]")
+TEST_CASE("value signal", "[signals][basic]")
 {
     auto s = value(1);
 
@@ -33,7 +33,7 @@ TEST_CASE("value signal", "[signals]")
     REQUIRE(s.value_id() != value(2).value_id());
 }
 
-TEST_CASE("direct signal", "[signals]")
+TEST_CASE("direct signal", "[signals][basic]")
 {
     int x = 1;
     auto s = direct(x);
@@ -50,7 +50,7 @@ TEST_CASE("direct signal", "[signals]")
     REQUIRE(read_signal(s) == 0);
 }
 
-TEST_CASE("direct const signal", "[signals]")
+TEST_CASE("direct const signal", "[signals][basic]")
 {
     int x = 1;
     auto s = direct(static_cast<int const&>(x));
@@ -63,7 +63,7 @@ TEST_CASE("direct const signal", "[signals]")
     REQUIRE(read_signal(s) == 1);
 }
 
-TEST_CASE("string literal signal", "[signals]")
+TEST_CASE("string literal signal", "[signals][basic]")
 {
     auto s = value("hello");
 
@@ -77,7 +77,7 @@ TEST_CASE("string literal signal", "[signals]")
     REQUIRE(s.value_id() == s.value_id());
 }
 
-TEST_CASE("string literal operator", "[signals]")
+TEST_CASE("string literal operator", "[signals][basic]")
 {
     using namespace alia::literals;
 
@@ -93,7 +93,7 @@ TEST_CASE("string literal operator", "[signals]")
     REQUIRE(s.value_id() == s.value_id());
 }
 
-TEST_CASE("integer literal operator", "[signals]")
+TEST_CASE("integer literal operator", "[signals][basic]")
 {
     using namespace alia::literals;
 
@@ -107,7 +107,7 @@ TEST_CASE("integer literal operator", "[signals]")
     REQUIRE(read_signal(s) == 1);
 }
 
-TEST_CASE("float literal operator", "[signals]")
+TEST_CASE("float literal operator", "[signals][basic]")
 {
     using namespace alia::literals;
 

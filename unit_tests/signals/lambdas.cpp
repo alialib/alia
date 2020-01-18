@@ -4,7 +4,7 @@
 
 using namespace alia;
 
-TEST_CASE("lambda readable signal", "[signals]")
+TEST_CASE("lambda readable signal", "[signals][lambdas]")
 {
     auto s = lambda_reader(always_readable, []() { return 1; });
 
@@ -16,7 +16,7 @@ TEST_CASE("lambda readable signal", "[signals]")
     REQUIRE(read_signal(s) == 1);
 }
 
-TEST_CASE("lambda readable signal with ID", "[signals]")
+TEST_CASE("lambda readable signal with ID", "[signals][lambdas]")
 {
     auto s = lambda_reader(
         always_readable, []() { return 1; }, []() { return unit_id; });
@@ -30,7 +30,7 @@ TEST_CASE("lambda readable signal with ID", "[signals]")
     REQUIRE(s.value_id() == unit_id);
 }
 
-TEST_CASE("lambda bidirectional signal", "[signals]")
+TEST_CASE("lambda bidirectional signal", "[signals][lambdas]")
 {
     int x = 1;
 
@@ -53,7 +53,7 @@ TEST_CASE("lambda bidirectional signal", "[signals]")
     REQUIRE(!original_id.matches(s.value_id()));
 }
 
-TEST_CASE("lambda bidirectional signal with ID", "[signals]")
+TEST_CASE("lambda bidirectional signal with ID", "[signals][lambdas]")
 {
     int x = 1;
 

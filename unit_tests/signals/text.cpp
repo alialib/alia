@@ -10,7 +10,7 @@
 
 using namespace alia;
 
-TEST_CASE("printf", "[signals]")
+TEST_CASE("printf", "[signals][text]")
 {
     alia::system sys;
 

@@ -9,7 +9,7 @@
 
 using namespace alia;
 
-TEST_CASE("state_holder", "[signals]")
+TEST_CASE("state_holder", "[signals][state]")
 {
     state_holder<int> s;
     REQUIRE(!s.is_initialized());
@@ -24,7 +24,7 @@ TEST_CASE("state_holder", "[signals]")
     REQUIRE(s.get() == 4);
 }
 
-TEST_CASE("basic get_state", "[signals]")
+TEST_CASE("basic get_state", "[signals][state]")
 {
     alia::system sys;
     do_traversal(sys, [&](context ctx) {
@@ -52,7 +52,7 @@ TEST_CASE("basic get_state", "[signals]")
     });
 }
 
-TEST_CASE("writing to uninitialized state", "[signals]")
+TEST_CASE("writing to uninitialized state", "[signals][state]")
 {
     alia::system sys;
     do_traversal(sys, [&](context ctx) {
