@@ -26,7 +26,7 @@ is_false(Signal const& x)
     return signal_is_readable(x) && !read_signal(x);
 }
 
-TEST_CASE("basic signal operators", "[signals]")
+TEST_CASE("basic signal operators", "[signals][operators][operators]")
 {
     REQUIRE(is_true(value(2) == value(2)));
     REQUIRE(is_false(value(6) == value(2)));
@@ -58,7 +58,7 @@ TEST_CASE("basic signal operators", "[signals]")
     REQUIRE(is_false(!(value(2) == value(2))));
 }
 
-TEST_CASE("signal &&", "[signals]")
+TEST_CASE("signal &&", "[signals][operators][operators]")
 {
     REQUIRE(is_true(value(true) && value(true)));
     REQUIRE(is_false(value(true) && value(false)));
@@ -87,7 +87,7 @@ TEST_CASE("signal &&", "[signals]")
         != (value(true) && value(true)).value_id());
 }
 
-TEST_CASE("signal ||", "[signals]")
+TEST_CASE("signal ||", "[signals][operators]")
 {
     REQUIRE(is_true(value(true) || value(true)));
     REQUIRE(is_true(value(true) || value(false)));
@@ -116,7 +116,7 @@ TEST_CASE("signal ||", "[signals]")
         != (value(true) || value(false)).value_id());
 }
 
-TEST_CASE("signal select", "[signals]")
+TEST_CASE("signal select", "[signals][operators]")
 {
     bool condition = false;
     auto s = conditional(direct(condition), value(1), value(2));
@@ -134,7 +134,7 @@ TEST_CASE("signal select", "[signals]")
     REQUIRE(original_id.get() != s.value_id());
 }
 
-TEST_CASE("select with different directions", "[signals]")
+TEST_CASE("select with different directions", "[signals][operators]")
 {
     bool condition = false;
     auto s = conditional(direct(condition), empty<int>(), value(2));
@@ -149,7 +149,7 @@ TEST_CASE("select with different directions", "[signals]")
     REQUIRE(!signal_is_readable(s));
 }
 
-TEST_CASE("select value ID", "[signals]")
+TEST_CASE("select value ID", "[signals][operators]")
 {
     // Test that conditional's ID changes when the condition changes, even if
     // both of its input signals are producing the same value ID.
@@ -162,7 +162,7 @@ TEST_CASE("select value ID", "[signals]")
     REQUIRE(original_id.get() != s.value_id());
 }
 
-TEST_CASE("select with unreadable condition", "[signals]")
+TEST_CASE("select with unreadable condition", "[signals][operators]")
 {
     int x = 0, y = 1;
     auto s = conditional(empty<bool>(), direct(x), direct(y));
@@ -171,7 +171,7 @@ TEST_CASE("select with unreadable condition", "[signals]")
     REQUIRE(!signal_is_writable(s));
 }
 
-TEST_CASE("writable select", "[signals]")
+TEST_CASE("writable select", "[signals][operators]")
 {
     bool condition = false;
     int x = 1;
@@ -197,7 +197,7 @@ TEST_CASE("writable select", "[signals]")
     REQUIRE(read_signal(s) == 3);
 }
 
-TEST_CASE("field signal", "[signals]")
+TEST_CASE("field signal", "[signals][operators]")
 {
     struct foo
     {
@@ -264,7 +264,7 @@ struct my_const_array
 };
 
 // Test some of the helper metafunctions for subscript signals.
-TEST_CASE("subscript metafunctions", "[signals]")
+TEST_CASE("subscript metafunctions", "[signals][operators]")
 {
     REQUIRE((has_at_indexer<std::vector<int>, int>::value));
     REQUIRE((has_at_indexer<std::map<int, int>, int>::value));
@@ -296,7 +296,7 @@ TEST_CASE("subscript metafunctions", "[signals]")
     REQUIRE((!const_subscript_returns_reference<my_const_array, int>::value));
 }
 
-TEST_CASE("vector subscript", "[signals]")
+TEST_CASE("vector subscript", "[signals][operators]")
 {
     using namespace alia;
 
@@ -323,7 +323,7 @@ TEST_CASE("vector subscript", "[signals]")
     REQUIRE(t.value_id() != s.value_id());
 }
 
-TEST_CASE("read-only subscript", "[signals]")
+TEST_CASE("read-only subscript", "[signals][operators]")
 {
     using namespace alia;
 
@@ -340,7 +340,7 @@ TEST_CASE("read-only subscript", "[signals]")
     REQUIRE(read_signal(s) == 0);
 }
 
-TEST_CASE("vector<bool> subscript", "[signals]")
+TEST_CASE("vector<bool> subscript", "[signals][operators]")
 {
     using namespace alia;
 
@@ -360,7 +360,7 @@ TEST_CASE("vector<bool> subscript", "[signals]")
     REQUIRE(c == std::vector<bool>({true, true, false}));
 }
 
-TEST_CASE("map subscript", "[signals]")
+TEST_CASE("map subscript", "[signals][operators]")
 {
     using namespace alia;
 
@@ -380,7 +380,7 @@ TEST_CASE("map subscript", "[signals]")
     REQUIRE((c == std::map<int, int>{{2, 7}, {0, 3}}));
 }
 
-TEST_CASE("custom ref subscript", "[signals]")
+TEST_CASE("custom ref subscript", "[signals][operators]")
 {
     my_array c;
     auto c_signal = lambda_bidirectional(
@@ -405,7 +405,7 @@ TEST_CASE("custom ref subscript", "[signals]")
     REQUIRE(c[2] == 4);
 }
 
-TEST_CASE("custom by-value subscript", "[signals]")
+TEST_CASE("custom by-value subscript", "[signals][operators]")
 {
     my_const_array c;
     auto c_signal = lambda_reader(

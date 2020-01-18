@@ -11,7 +11,7 @@
 
 using namespace alia;
 
-TEST_CASE("fake_readability", "[signals]")
+TEST_CASE("fake_readability", "[signals][adaptors]")
 {
     {
         auto s = fake_readability(
@@ -45,7 +45,7 @@ TEST_CASE("fake_readability", "[signals]")
     }
 }
 
-TEST_CASE("fake_writability", "[signals]")
+TEST_CASE("fake_writability", "[signals][adaptors]")
 {
     {
         auto s = fake_writability(
@@ -78,7 +78,7 @@ TEST_CASE("fake_writability", "[signals]")
     }
 }
 
-TEST_CASE("signal_cast", "[signals]")
+TEST_CASE("signal_cast", "[signals][adaptors]")
 {
     int x = 1;
     auto s = signal_cast<double>(direct(x));
@@ -95,7 +95,7 @@ TEST_CASE("signal_cast", "[signals]")
     REQUIRE(x == 0);
 }
 
-TEST_CASE("is_readable", "[signals]")
+TEST_CASE("is_readable", "[signals][adaptors]")
 {
     bool readable = false;
     int x = 1;
@@ -124,7 +124,7 @@ TEST_CASE("is_readable", "[signals]")
     }
 }
 
-TEST_CASE("is_writable", "[signals]")
+TEST_CASE("is_writable", "[signals][adaptors]")
 {
     bool writable = false;
     int x = 1;
@@ -159,7 +159,7 @@ TEST_CASE("is_writable", "[signals]")
     }
 }
 
-TEST_CASE("add_fallback", "[signals]")
+TEST_CASE("add_fallback", "[signals][adaptors]")
 {
     int p = 1;
     int f = 0;
@@ -245,7 +245,7 @@ TEST_CASE("add_fallback", "[signals]")
     }
 }
 
-TEST_CASE("simplify_id", "[signals]")
+TEST_CASE("simplify_id", "[signals][adaptors]")
 {
     using namespace alia;
 
