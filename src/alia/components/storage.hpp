@@ -141,39 +141,13 @@ struct any_value
                   static_cast<T&&>(value)))
     {
     }
-    // copy assignment operator
-    any_value&
-    operator=(any_value const& other)
-    {
-        delete holder_;
-        holder_ = other.holder_ ? other.holder_->clone() : nullptr;
-        return *this;
-    }
-    // move assignment operator
-    any_value&
-    operator=(any_value&& other)
-    {
-        delete holder_;
-        holder_ = other.holder_;
-        other.holder_ = 0;
-        return *this;
-    }
     // swap
     void
     swap(any_value& other)
     {
         std::swap(holder_, other.holder_);
     }
-    // assignment operator for concrete values
-    template<class T>
-    any_value&
-    operator=(T const& value)
-    {
-        delete holder_;
-        holder_ = new typed_cloneable_value_holder<T>(value);
-        return *this;
-    }
-    // assignment operator for concrete values (by rvalue)
+    // assignment operator
     template<class T>
     any_value&
     operator=(T&& value)
