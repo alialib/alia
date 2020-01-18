@@ -111,7 +111,7 @@ static_assert(component_collection_is_convertible<cc_fzb, cc_fz>::value, "");
 static_assert(component_collection_is_convertible<cc_fzb, cc_bz>::value, "");
 } // namespace cc_type_tests
 
-TEST_CASE("static component_collection conversions", "[component_collections]")
+TEST_CASE("static component_collection conversions", "[components][typing]")
 {
     storage_type storage;
     cc_fb mc_fb(&storage);
@@ -120,7 +120,7 @@ TEST_CASE("static component_collection conversions", "[component_collections]")
     REQUIRE(mc_b.storage == &storage);
 }
 
-TEST_CASE("static component access", "[component_collections]")
+TEST_CASE("static component access", "[components][typing]")
 {
     storage_type storage;
     cc_empty mc_empty(&storage);
@@ -181,7 +181,7 @@ struct reducer
 
 } // namespace
 
-TEST_CASE("collection folding", "[component_collections]")
+TEST_CASE("collection folding", "[components][typing]")
 {
     storage_type storage;
     cc_empty mc_empty(&storage);
