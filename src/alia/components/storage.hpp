@@ -65,7 +65,7 @@ struct any_pointer
 };
 
 template<class Pointer>
-struct component_caster<any_pointer, Pointer*>
+struct component_caster<any_pointer&, Pointer*>
 {
     static Pointer*
     apply(any_pointer stored)
@@ -73,120 +73,13 @@ struct component_caster<any_pointer, Pointer*>
         return reinterpret_cast<Pointer*>(stored.ptr);
     }
 };
-
-// any_value is a way of storing any object by value as a component. It's very
-// similar to boost/std::any and those could be used as the implementation if it
-// didn't complicate the dependencies of alia so much...
-struct untyped_cloneable_value_holder
+template<class Pointer>
+struct component_caster<any_pointer, Pointer*>
 {
-    virtual ~untyped_cloneable_value_holder()
+    static Pointer*
+    apply(any_pointer stored)
     {
-    }
-    virtual untyped_cloneable_value_holder*
-    clone() const = 0;
-};
-template<class T>
-struct typed_cloneable_value_holder : untyped_cloneable_value_holder
-{
-    explicit typed_cloneable_value_holder(T const& value) : value(value)
-    {
-    }
-    explicit typed_cloneable_value_holder(T&& value)
-        : value(static_cast<T&&>(value))
-    {
-    }
-    untyped_cloneable_value_holder*
-    clone() const
-    {
-        return new typed_cloneable_value_holder(value);
-    }
-    T value;
-};
-struct any_value
-{
-    // default constructor
-    any_value() : holder_(nullptr)
-    {
-    }
-    // destructor
-    ~any_value()
-    {
-        delete holder_;
-    }
-    // copy constructor
-    any_value(any_value const& other)
-        : holder_(other.holder_ ? other.holder_->clone() : nullptr)
-    {
-    }
-    // move constructor
-    any_value(any_value&& other) : holder_(other.holder_)
-    {
-        other.holder_ = nullptr;
-    }
-    // constructor for concrete values
-    template<class T>
-    explicit any_value(T const& value)
-        : holder_(new typed_cloneable_value_holder<T>(value))
-    {
-    }
-    // constructor for concrete values (by rvalue)
-    template<typename T>
-    any_value(
-        T&& value,
-        std::enable_if_t<
-            !std::is_same<any_value&, T>::value
-            && !std::is_const<T>::value>* = nullptr)
-        : holder_(
-              new typed_cloneable_value_holder<typename std::decay<T>::type>(
-                  static_cast<T&&>(value)))
-    {
-    }
-    // swap
-    void
-    swap(any_value& other)
-    {
-        std::swap(holder_, other.holder_);
-    }
-    // assignment operator
-    template<class T>
-    any_value&
-    operator=(T&& value)
-    {
-        any_value(static_cast<T&&>(value)).swap(*this);
-        return *this;
-    }
-    // value holder
-    untyped_cloneable_value_holder* holder_;
-};
-static inline void
-swap(any_value& a, any_value& b)
-{
-    a.swap(b);
-}
-template<class T>
-T const*
-any_cast(any_value const* a)
-{
-    typed_cloneable_value_holder<T> const* ptr
-        = dynamic_cast<typed_cloneable_value_holder<T> const*>(a->holder_);
-    return ptr ? &ptr->value : nullptr;
-}
-template<class T>
-T*
-any_cast(any_value* a)
-{
-    typed_cloneable_value_holder<T>* ptr
-        = dynamic_cast<typed_cloneable_value_holder<T>*>(a->holder_);
-    return ptr ? &ptr->value : nullptr;
-}
-
-template<class Value>
-struct component_caster<any_value&, Value>
-{
-    static Value&
-    apply(any_value& stored)
-    {
-        return *any_cast<Value>(&stored);
+        return reinterpret_cast<Pointer*>(stored.ptr);
     }
 };
 
@@ -240,7 +133,7 @@ struct component_accessor
     }                                                                          \
                                                                                \
     template<class Tag>                                                        \
-    auto get()                                                                 \
+    decltype(auto) get()                                                       \
     {                                                                          \
         return component_accessor<Storage, Tag>::get(*this);                   \
     }

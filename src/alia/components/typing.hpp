@@ -508,6 +508,15 @@ struct component_caster<T, T>
         return stored;
     }
 };
+template<class T>
+struct component_caster<T&, T>
+{
+    static T&
+    apply(T& stored)
+    {
+        return stored;
+    }
+};
 
 // Get a reference to the data associated with a component in a
 // collection. :Tag identifies the component. If static checking is
