@@ -6,7 +6,7 @@
 
 #include "flow/testing.hpp"
 
-TEST_CASE("basic data traversal", "[data_graph]")
+TEST_CASE("basic data traversal", "[flow][data_graph]")
 {
     clear_log();
     {
@@ -20,7 +20,7 @@ TEST_CASE("basic data traversal", "[data_graph]")
     check_log("destructing int;");
 }
 
-TEST_CASE("simple named blocks", "[data_graph]")
+TEST_CASE("simple named blocks", "[flow][data_graph]")
 {
     clear_log();
     {
@@ -70,7 +70,7 @@ TEST_CASE("simple named blocks", "[data_graph]")
         "destructing int;");
 }
 
-TEST_CASE("mobile named blocks", "[data_graph]")
+TEST_CASE("mobile named blocks", "[flow][data_graph]")
 {
     clear_log();
     {
@@ -123,7 +123,7 @@ TEST_CASE("mobile named blocks", "[data_graph]")
         "destructing int;");
 }
 
-TEST_CASE("multiple naming contexts", "[data_graph]")
+TEST_CASE("multiple naming contexts", "[flow][data_graph]")
 {
     clear_log();
     {

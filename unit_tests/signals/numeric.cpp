@@ -7,7 +7,7 @@
 
 using namespace alia;
 
-TEST_CASE("offset signal", "[signals]")
+TEST_CASE("offset signal", "[signals][numeric]")
 {
     double x = 1;
     auto s = offset(direct(x), value(0.5));
@@ -23,7 +23,7 @@ TEST_CASE("offset signal", "[signals]")
     REQUIRE(x == 3.5);
 }
 
-TEST_CASE("scaled signal", "[signals]")
+TEST_CASE("scaled signal", "[signals][numeric]")
 {
     double x = 1;
     auto s = scale(direct(x), value(0.5));
@@ -39,7 +39,7 @@ TEST_CASE("scaled signal", "[signals]")
     REQUIRE(x == 4);
 }
 
-TEST_CASE("round_signal_writes", "[signals]")
+TEST_CASE("round_signal_writes", "[signals][numeric]")
 {
     double x = 1;
     auto s = round_signal_writes(direct(x), value(0.5));
