@@ -154,5 +154,5 @@ TEST_CASE("component casting", "[components][typing]")
     generic_component_storage<int> storage;
     auto empty = make_empty_component_collection(&storage);
     auto ctx = add_component<int_tag>(empty, 1);
-    REQUIRE(get_component<foo_tag>(ctx) == 1);
+    REQUIRE(get_component<int_tag>(ctx) == 1);
 }
