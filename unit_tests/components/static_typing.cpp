@@ -128,7 +128,7 @@ TEST_CASE("static component_collection conversions", "[components][typing]")
 TEST_CASE("static component access", "[components][typing]")
 {
     storage_type storage;
-    cc_empty mc_empty(&storage);
+    cc_empty mc_empty = make_empty_component_collection(&storage);
     REQUIRE(!has_component<foo_tag>(mc_empty));
     REQUIRE(!has_component<bar_tag>(mc_empty));
 
