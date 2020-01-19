@@ -1,4 +1,6 @@
 #include <alia/components/context.hpp>
+
+#include <alia/components/system.hpp>
 #include <alia/flow/events.hpp>
 
 #include <catch.hpp>
@@ -43,13 +45,11 @@ TEST_CASE("context", "[components][context]")
 {
     context_component_storage storage;
 
+    alia::system sys;
     data_traversal data;
-    storage.add<data_traversal_tag>(&data);
-
     event_traversal event;
-    storage.add<event_traversal_tag>(&event);
 
-    context ctx(&storage);
+    context ctx = make_context(&storage, &sys, &event, &data);
 
     REQUIRE(has_component<data_traversal_tag>(ctx));
     REQUIRE(get_component<data_traversal_tag>(ctx) == &data);
