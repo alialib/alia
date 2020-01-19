@@ -48,7 +48,7 @@ using cc_fz = remove_component_type_t<cc_fbz, bar_tag>;
 using cc_f = add_component_type_t<cc_empty, foo_tag>;
 using cc_fzb = merge_components_t<cc_fz, cc_bz>;
 
-TEST_CASE("dynamic component_collection conversions", "[component_collections]")
+TEST_CASE("dynamic component_collection conversions", "[components][typing]")
 {
     storage_type storage;
     cc_fb mc_fb(&storage);
@@ -57,7 +57,7 @@ TEST_CASE("dynamic component_collection conversions", "[component_collections]")
     REQUIRE(mc_b.storage == &storage);
 }
 
-TEST_CASE("dynamic component access", "[component_collections]")
+TEST_CASE("dynamic component access", "[components][typing]")
 {
     storage_type storage;
     cc_empty mc_empty = make_empty_component_collection(&storage);
