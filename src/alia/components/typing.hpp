@@ -400,6 +400,14 @@ using merge_components_t = typename merge_components<A, B>::type;
 
 #endif
 
+// Make an empty component collection for the given storage object.
+template<class Storage>
+empty_component_collection<Storage>
+make_empty_component_collection(Storage* storage)
+{
+    return empty_component_collection<Storage>(storage);
+}
+
 // Extend a collection by adding a new component.
 // :Tag is the tag of the component.
 // :data is the data associated with the new component.

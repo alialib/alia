@@ -107,9 +107,7 @@ do_traversal(
     scoped_data_traversal sdt(graph, data);
 
     context_component_storage storage;
-    storage.add<data_traversal_tag>(&data);
-
-    context ctx(&storage);
+    context ctx = make_context(&storage, nullptr, nullptr, &data);
 
     if (!with_gc)
         disable_gc(data);

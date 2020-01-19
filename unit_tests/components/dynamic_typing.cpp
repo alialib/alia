@@ -60,7 +60,7 @@ TEST_CASE("dynamic component_collection conversions", "[component_collections]")
 TEST_CASE("dynamic component access", "[component_collections]")
 {
     storage_type storage;
-    cc_empty mc_empty(&storage);
+    cc_empty mc_empty = make_empty_component_collection(&storage);
     REQUIRE(!storage.has<bar_tag>());
 
     bar b(1);
