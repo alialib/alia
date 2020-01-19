@@ -146,3 +146,13 @@ TEST_CASE("static component access", "[components][typing]")
     cc_f mc_f = remove_component<bar_tag>(mc_fb);
     REQUIRE(get_component<foo_tag>(mc_f)->b == false);
 }
+
+ALIA_DEFINE_COMPONENT_TYPE(int_tag, int)
+
+TEST_CASE("component casting", "[components][typing]")
+{
+    generic_component_storage<int> storage;
+    auto empty = make_empty_component_collection(&storage);
+    auto ctx = add_component<int_tag>(empty, 1);
+    REQUIRE(get_component<foo_tag>(ctx) == 1);
+}
