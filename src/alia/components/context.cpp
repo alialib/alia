@@ -18,10 +18,4 @@ make_context(
         data);
 }
 
-bool
-is_refresh_pass(context ctx)
-{
-    return get_data_traversal(ctx).gc_enabled;
-}
-
 } // namespace alia
