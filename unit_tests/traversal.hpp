@@ -32,8 +32,8 @@ do_traversal(alia::system& sys, Controller const& controller)
 {
     sys.controller = controller;
     {
-        int nothing_event = 0;
-        dispatch_event(sys, nothing_event);
+        refresh_event refresh;
+        dispatch_event(sys, refresh);
     }
 }
 
@@ -45,6 +45,10 @@ check_traversal(
     std::string const& expected_output)
 {
     sys.controller = controller;
+    {
+        refresh_event refresh;
+        dispatch_event(sys, refresh);
+    }
     {
         ostream_event oe;
         std::ostringstream s;

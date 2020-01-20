@@ -124,9 +124,6 @@ struct scoped_routing_region
     bool is_relevant_;
 };
 
-bool
-detect_event(context ctx, std::type_info const& type);
-
 template<class Event>
 bool
 detect_event(context ctx, Event** event)
@@ -150,6 +147,18 @@ handle_event(Context ctx, Handler const& handler)
         handler(ctx, *e);
     }
     ALIA_END
+}
+
+// the refresh event
+struct refresh_event
+{
+};
+
+static inline bool
+is_refresh_event(context ctx)
+{
+    refresh_event* e;
+    return detect_event(ctx, &e);
 }
 
 } // namespace alia
