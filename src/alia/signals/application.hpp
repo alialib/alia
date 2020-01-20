@@ -3,6 +3,7 @@
 
 #include <alia/components/context.hpp>
 #include <alia/flow/data_graph.hpp>
+#include <alia/flow/events.hpp>
 #include <alia/signals/utilities.hpp>
 
 namespace alia {
@@ -187,15 +188,18 @@ process_apply_args(
 {
     captured_id* cached_id;
     get_cached_data(ctx, &cached_id);
-    if (!signal_is_readable(arg))
+    if (is_refresh_event(ctx))
     {
-        reset(data);
-        args_ready = false;
-    }
-    else if (!cached_id->matches(arg.value_id()))
-    {
-        reset(data);
-        cached_id->capture(arg.value_id());
+        if (!signal_is_readable(arg))
+        {
+            reset(data);
+            args_ready = false;
+        }
+        else if (!cached_id->matches(arg.value_id()))
+        {
+            reset(data);
+            cached_id->capture(arg.value_id());
+        }
     }
     process_apply_args(ctx, data, args_ready, rest...);
 }
@@ -207,10 +211,10 @@ apply(context ctx, Function const& f, Args const&... args)
     apply_result_data<decltype(f(read_signal(args)...))>* data_ptr;
     get_cached_data(ctx, &data_ptr);
     auto& data = *data_ptr;
-    if (is_refresh_pass(ctx))
+    bool args_ready = true;
+    process_apply_args(ctx, data, args_ready, args...);
+    if (is_refresh_event(ctx))
     {
-        bool args_ready = true;
-        process_apply_args(ctx, data, args_ready, args...);
         if (data.status == apply_status::UNCOMPUTED && args_ready)
         {
             try
