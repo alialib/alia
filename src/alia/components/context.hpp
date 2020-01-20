@@ -71,9 +71,6 @@ get_data_traversal(Context ctx)
     return *get_component<data_traversal_tag>(ctx);
 }
 
-bool
-is_refresh_pass(context ctx);
-
 } // namespace alia
 
 #endif
