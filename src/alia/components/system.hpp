@@ -14,6 +14,9 @@ struct system
     std::function<void(context)> controller;
 };
 
+void
+refresh_system(system& sys);
+
 } // namespace alia
 
 #endif
