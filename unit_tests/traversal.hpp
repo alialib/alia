@@ -31,10 +31,7 @@ void
 do_traversal(alia::system& sys, Controller const& controller)
 {
     sys.controller = controller;
-    {
-        refresh_event refresh;
-        dispatch_event(sys, refresh);
-    }
+    refresh_system(sys);
 }
 
 template<class Controller>
@@ -45,10 +42,7 @@ check_traversal(
     std::string const& expected_output)
 {
     sys.controller = controller;
-    {
-        refresh_event refresh;
-        dispatch_event(sys, refresh);
-    }
+    refresh_system(sys);
     {
         ostream_event oe;
         std::ostringstream s;
