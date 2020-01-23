@@ -1,142 +1,72 @@
+#define ALIA_LOWERCASE_MACROS
+
 #include <alia/flow/events.hpp>
-
-#include <sstream>
-
-#include <alia/components/system.hpp>
-#include <alia/flow/macros.hpp>
 
 #include <catch.hpp>
 
+#include <alia/components/system.hpp>
+#include <alia/signals/basic.hpp>
+
 using namespace alia;
+using std::string;
 
 namespace {
 
-struct ostream_event
+struct my_event : targeted_event
 {
-    std::ostream* stream;
+    string result;
 };
 
-void
-do_ostream_text(context ctx, std::string const& text)
+ALIA_DEFINE_COMPONENT_TYPE(my_tag, std::vector<routable_node_id>*)
+
+typedef add_component_type_t<context, my_tag> my_context;
+
+static void
+do_my_thing(my_context ctx, readable<string> label)
 {
-    ostream_event* oe;
-    if (detect_event(ctx, &oe))
+    node_id this_id = get_node_id(ctx);
+
+    if (is_refresh_event(ctx))
     {
-        *oe->stream << text << ";";
+        get_component<my_tag>(ctx)->push_back(
+            make_routable_node_id(ctx, this_id));
     }
-}
 
-struct find_label_event
-{
-    routing_region_ptr region;
-    std::string name;
-};
-
-void
-do_label(context ctx, std::string const& name)
-{
-    do_ostream_text(ctx, name);
-
-    handle_event<find_label_event>(ctx, [name](auto ctx, auto& fle) {
-        if (fle.name == name)
-            fle.region = get_active_routing_region(ctx);
-    });
-}
-
-struct traversal_function
-{
-    int n;
-    traversal_function(int n) : n(n)
-    {
-    }
-    void
-    operator()(context ctx)
-    {
-        do_ostream_text(ctx, "");
-
-        REQUIRE(!get_active_routing_region(ctx));
-
-        scoped_routing_region srr(ctx);
-        ALIA_IF(srr.is_relevant())
-        {
-            do_label(ctx, "root");
-
-            ALIA_IF(n != 0)
-            {
-                scoped_routing_region srr(ctx);
-                ALIA_IF(srr.is_relevant())
-                {
-                    do_label(ctx, "nonzero");
-
-                    {
-                        scoped_routing_region srr(ctx);
-                        ALIA_IF(srr.is_relevant())
-                        {
-                            do_label(ctx, "deep");
-                        }
-                        ALIA_END
-                    }
-                }
-                ALIA_END
-            }
-            ALIA_END
-
-            ALIA_IF(n & 1)
-            {
-                scoped_routing_region srr(ctx);
-                ALIA_IF(srr.is_relevant())
-                {
-                    do_label(ctx, "odd");
-                }
-                ALIA_END
-            }
-            ALIA_END
-        }
-        ALIA_END
-    }
-};
-
-void
-check_traversal_path(
-    int n, std::string const& label, std::string const& expected_path)
-{
-    alia::system sys;
-    sys.controller = traversal_function(n);
-    routing_region_ptr target;
-    {
-        find_label_event fle;
-        fle.name = label;
-        dispatch_event(sys, fle);
-        target = fle.region;
-    }
-    {
-        ostream_event oe;
-        std::ostringstream s;
-        oe.stream = &s;
-        dispatch_targeted_event(sys, oe, target);
-        REQUIRE(s.str() == expected_path);
-    }
+    handle_targeted_event<my_event>(
+        ctx, this_id, [&](auto ctx, my_event& event) {
+            event.result = read_signal(label);
+        });
 }
 
 } // namespace
 
-TEST_CASE("targeted_event_dispatch", "[flow][events]")
+TEST_CASE("node IDs", "[flow][events]")
 {
-    check_traversal_path(0, "absent", ";");
-    check_traversal_path(0, "root", ";root;");
-    check_traversal_path(0, "nonzero", ";");
-    check_traversal_path(0, "odd", ";");
-    check_traversal_path(0, "deep", ";");
+    alia::system sys;
 
-    check_traversal_path(1, "absent", ";");
-    check_traversal_path(1, "root", ";root;");
-    check_traversal_path(1, "nonzero", ";root;nonzero;");
-    check_traversal_path(1, "odd", ";root;odd;");
-    check_traversal_path(1, "deep", ";root;nonzero;deep;");
+    REQUIRE(!is_valid(null_node_id));
 
-    check_traversal_path(2, "absent", ";");
-    check_traversal_path(2, "root", ";root;");
-    check_traversal_path(2, "nonzero", ";root;nonzero;");
-    check_traversal_path(2, "odd", ";");
-    check_traversal_path(2, "deep", ";root;nonzero;deep;");
+    std::vector<routable_node_id> ids;
+
+    sys.controller = [&](context vanilla_ctx) {
+        my_context ctx = add_component<my_tag>(vanilla_ctx, &ids);
+        do_my_thing(ctx, value("one"));
+        do_my_thing(ctx, value("two"));
+    };
+    refresh_system(sys);
+
+    REQUIRE(ids.size() == 2);
+    REQUIRE(is_valid(ids[0]));
+    REQUIRE(is_valid(ids[1]));
+
+    {
+        my_event event;
+        dispatch_targeted_event(sys, event, ids[0]);
+        REQUIRE(event.result == "one");
+    }
+    {
+        my_event event;
+        dispatch_targeted_event(sys, event, ids[1]);
+        REQUIRE(event.result == "two");
+    }
 }
