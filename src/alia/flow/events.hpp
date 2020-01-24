@@ -126,7 +126,7 @@ struct scoped_routing_region
 
 template<class Event>
 bool
-detect_event(context ctx, Event** event)
+detect_event(dataless_context ctx, Event** event)
 {
     event_traversal& traversal = get_event_traversal(ctx);
     if (*traversal.event_type == typeid(Event))
@@ -201,7 +201,7 @@ dispatch_targeted_event(system& sys, Event& event, routable_node_id const& id)
 
 template<class Event>
 bool
-detect_targeted_event(context ctx, node_id id, Event** event)
+detect_targeted_event(dataless_context ctx, node_id id, Event** event)
 {
     return detect_event(ctx, event) && (*event)->target_id == id;
 }
@@ -225,7 +225,7 @@ struct refresh_event
 };
 
 static inline bool
-is_refresh_event(context ctx)
+is_refresh_event(dataless_context ctx)
 {
     refresh_event* e;
     return detect_event(ctx, &e);
