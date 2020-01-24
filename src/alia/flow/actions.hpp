@@ -1,6 +1,7 @@
 #ifndef ALIA_FLOW_ACTIONS_HPP
 #define ALIA_FLOW_ACTIONS_HPP
 
+#include <alia/signals/basic.hpp>
 #include <alia/signals/core.hpp>
 #include <alia/signals/operators.hpp>
 
@@ -186,6 +187,56 @@ operator<<=(Sink const& sink, Source const& source)
 {
     return copy_action<Sink, Source>(sink, source);
 }
+
+// For most compound assignment operators (e.g., +=), a += b, where :a and :b
+// are signals, creates an action that sets :a equal to :a + :b.
+
+#define ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(assignment_form, normal_form) \
+    template<                                                                  \
+        class A,                                                               \
+        class B,                                                               \
+        std::enable_if_t<                                                      \
+            is_bidirectional_signal_type<A>::value                             \
+                && is_readable_signal_type<B>::value,                          \
+            int> = 0>                                                          \
+    auto operator assignment_form(A const& a, B const& b)                      \
+    {                                                                          \
+        return a <<= (a normal_form b);                                        \
+    }
+
+ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(+=, +)
+ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(-=, -)
+ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(*=, *)
+ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(/=, /)
+ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(^=, ^)
+ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(%=, %)
+ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(&=, &)
+ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(|=, |)
+
+#undef ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR
+
+// The increment and decrement operators work similarly.
+
+#define ALIA_DEFINE_BY_ONE_OPERATOR(assignment_form, normal_form)              \
+    template<                                                                  \
+        class A,                                                               \
+        std::enable_if_t<is_bidirectional_signal_type<A>::value, int> = 0>     \
+    auto operator assignment_form(A const& a)                                  \
+    {                                                                          \
+        return a <<= (a normal_form value(typename A::value_type(1)));         \
+    }                                                                          \
+    template<                                                                  \
+        class A,                                                               \
+        std::enable_if_t<is_bidirectional_signal_type<A>::value, int> = 0>     \
+    auto operator assignment_form(A const& a, int)                             \
+    {                                                                          \
+        return a <<= (a normal_form value(typename A::value_type(1)));         \
+    }
+
+ALIA_DEFINE_BY_ONE_OPERATOR(++, +)
+ALIA_DEFINE_BY_ONE_OPERATOR(--, -)
+
+#undef ALIA_DEFINE_BY_ONE_OPERATOR
 
 // make_toggle_action(flag), where :flag is a signal to a boolean, creates an
 // action that will toggle the value of :flag between true and false.

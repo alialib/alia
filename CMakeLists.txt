@@ -28,19 +28,19 @@ if(FIPS_MSVC)
 elseif(FIPS_GCC)
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         set(CONAN_OPTIONS
-            -s compiler=gcc -s compiler.libcxx=libstdc++11 -s build_type=Debug -o Boost:fPIC=True)
+            -s compiler=gcc -s compiler.libcxx=libstdc++11 -s build_type=Debug)
     else()
         set(CONAN_OPTIONS
-            -s compiler=gcc -s compiler.libcxx=libstdc++11 -s build_type=Release -o Boost:fPIC=True)
+            -s compiler=gcc -s compiler.libcxx=libstdc++11 -s build_type=Release)
     endif()
 elseif(FIPS_CLANG)
     string(REGEX REPLACE "([0-9]+\\.[0-9]+).*" "\\1" CLANG_MAJOR_MINOR_VERSION ${CMAKE_CXX_COMPILER_VERSION})
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
         set(CONAN_OPTIONS
-            -s compiler=clang -s compiler.version=${CLANG_MAJOR_MINOR_VERSION} -s compiler.libcxx=libstdc++11 -s build_type=Debug -o Boost:fPIC=True)
+            -s compiler=clang -s compiler.version=${CLANG_MAJOR_MINOR_VERSION} -s compiler.libcxx=libstdc++11 -s build_type=Debug)
     else()
         set(CONAN_OPTIONS
-            -s compiler=clang -s compiler.version=${CLANG_MAJOR_MINOR_VERSION} -s compiler.libcxx=libstdc++11 -s build_type=Release -o Boost:fPIC=True)
+            -s compiler=clang -s compiler.version=${CLANG_MAJOR_MINOR_VERSION} -s compiler.libcxx=libstdc++11 -s build_type=Release)
     endif()
 endif()
 execute_process(
@@ -64,14 +64,6 @@ fips_include_directories(${CONAN_INCLUDE_DIRS}
     "$<$<CONFIG:Debug>:${CONAN_INCLUDE_DIRS_DEBUG}>")
 # And remember the libs that it wants to link against.
 set(EXTERNAL_LIBS ${CONAN_LIBS})
-
-# If we're running on AppVeyor, we omit Boost from Conan and just use the one
-# that AppVeyor supplies. (This saves a lot of time and frustration.)
-if(DEFINED ENV{APPVEYOR})
-    find_package(Boost REQUIRED COMPONENTS program_options)
-    fips_include_directories(${Boost_INCLUDE_DIRS})
-    list(APPEND EXTERNAL_LIBS ${Boost_LIBRARIES})
-endif()
 
 fips_include_directories(${PROJECT_SOURCE_DIR}/src)
 
@@ -109,6 +101,8 @@ elseif(FIPS_MSVC)
     add_compile_options(/wd4456)
     # "unreferenced local function has been removed"
     add_compile_options(/wd4505)
+    # "declaration of <variable> hides function parameter"
+    add_compile_options(/wd4457)
     # warnings about functions that are potentially insecure
     add_definitions(/D_CRT_SECURE_NO_WARNINGS)
     # Also suppress linker warnings about missing .pdb files that seem to inevitably creep in.

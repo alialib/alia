@@ -1,5 +1,5 @@
+#include <alia/components/system.hpp>
 #include <alia/flow/events.hpp>
-#include <alia/system.hpp>
 
 namespace alia {
 
@@ -53,14 +53,16 @@ scoped_routing_region::end()
 static void
 invoke_controller(system& sys, event_traversal& events)
 {
+    bool is_refresh = (events.event_type == &typeid(refresh_event));
+
     data_traversal data;
     scoped_data_traversal sdt(sys.data, data);
+    // Only use refresh events to decide when data is no longer needed.
+    data.gc_enabled = data.cache_clearing_enabled = is_refresh;
 
-    component_storage storage;
-    add_component<data_traversal_tag>(storage, &data);
-    add_component<event_traversal_tag>(storage, &events);
+    context_component_storage storage;
+    context ctx = make_context(&storage, &sys, &events, &data);
 
-    context ctx(&storage);
     sys.controller(ctx);
 }
 

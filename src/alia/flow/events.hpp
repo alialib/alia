@@ -1,8 +1,9 @@
 #ifndef ALIA_FLOW_EVENTS_HPP
 #define ALIA_FLOW_EVENTS_HPP
 
-#include <alia/context.hpp>
+#include <alia/components/context.hpp>
 #include <alia/flow/data_graph.hpp>
+#include <alia/flow/macros.hpp>
 
 // This file implements utilities for routing events through an alia content
 // traversal function.
@@ -49,8 +50,9 @@ struct event_traversal
     void* event;
 };
 
-inline routing_region_ptr
-get_active_routing_region(context ctx)
+template<class Context>
+routing_region_ptr
+get_active_routing_region(Context ctx)
 {
     event_traversal& traversal = get_event_traversal(ctx);
     return traversal.active_region ? *traversal.active_region
@@ -122,9 +124,6 @@ struct scoped_routing_region
     bool is_relevant_;
 };
 
-bool
-detect_event(context ctx, std::type_info const& type);
-
 template<class Event>
 bool
 detect_event(context ctx, Event** event)
@@ -136,6 +135,100 @@ detect_event(context ctx, Event** event)
         return true;
     }
     return false;
+}
+
+template<class Event, class Context, class Handler>
+void
+handle_event(Context ctx, Handler&& handler)
+{
+    Event* e;
+    ALIA_UNTRACKED_IF(detect_event(ctx, &e))
+    {
+        handler(ctx, *e);
+    }
+    ALIA_END
+}
+
+struct node_identity
+{
+};
+typedef node_identity const* node_id;
+
+static inline node_id
+get_node_id(context ctx)
+{
+    node_identity* id;
+    get_cached_data(ctx, &id);
+    return id;
+}
+
+// routable_node_id identifies a node with enough information that an event can
+// be routed to it.
+struct routable_node_id
+{
+    node_id id = nullptr;
+    routing_region_ptr region;
+};
+
+static inline routable_node_id
+make_routable_node_id(dataless_context ctx, node_id id)
+{
+    return routable_node_id{id, get_active_routing_region(ctx)};
+}
+
+static routable_node_id const null_node_id;
+
+// Is the given routable_node_id valid?
+// (Only the null_node_id is invalid.)
+static inline bool
+is_valid(routable_node_id const& id)
+{
+    return id.id != nullptr;
+}
+
+struct targeted_event
+{
+    node_id target_id;
+};
+
+template<class Event>
+void
+dispatch_targeted_event(system& sys, Event& event, routable_node_id const& id)
+{
+    event.target_id = id.id;
+    dispatch_targeted_event(sys, event, id.region);
+}
+
+template<class Event>
+bool
+detect_targeted_event(context ctx, node_id id, Event** event)
+{
+    return detect_event(ctx, event) && (*event)->target_id == id;
+}
+
+template<class Event, class Context, class Handler>
+void
+handle_targeted_event(Context ctx, node_id id, Handler&& handler)
+{
+    Event* e;
+    ALIA_UNTRACKED_IF(detect_targeted_event(ctx, id, &e))
+    {
+        handler(ctx, *e);
+    }
+    ALIA_END
+}
+
+// the refresh event...
+
+struct refresh_event
+{
+};
+
+static inline bool
+is_refresh_event(context ctx)
+{
+    refresh_event* e;
+    return detect_event(ctx, &e);
 }
 
 } // namespace alia

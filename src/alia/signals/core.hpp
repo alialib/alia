@@ -361,6 +361,27 @@ write_signal(Signal const& signal, Value const& value)
     signal.write(value);
 }
 
+// signal_is_bidirectional<Signal>::value yields a compile-time boolean
+// indicating whether or not the given signal type supports both reading and
+// writing.
+template<class Signal>
+struct signal_is_bidirectional : signal_direction_is_compatible<
+                                     bidirectional_signal,
+                                     typename Signal::direction_tag>
+{
+};
+
+// is_bidirectional_signal_type<T>::value yields a compile-time boolean
+// indicating whether or not T is an alia signal that supports both reading and
+// writing.
+template<class T>
+struct is_bidirectional_signal_type : std::conditional_t<
+                                          is_signal_type<T>::value,
+                                          signal_is_bidirectional<T>,
+                                          std::false_type>
+{
+};
+
 } // namespace alia
 
 #endif

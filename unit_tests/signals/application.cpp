@@ -10,7 +10,7 @@
 
 using namespace alia;
 
-TEST_CASE("lazy_apply", "[signals]")
+TEST_CASE("lazy_apply", "[signals][application]")
 {
     auto s1 = lazy_apply([](int i) { return 2 * i; }, value(1));
 
@@ -43,7 +43,7 @@ TEST_CASE("lazy_apply", "[signals]")
     REQUIRE(s3.value_id() != s4.value_id());
 }
 
-TEST_CASE("lazy_lift", "[signals]")
+TEST_CASE("lazy_lift", "[signals][application]")
 {
     auto s = lazy_lift([](int i) { return 2 * i; })(value(1));
 
@@ -55,7 +55,7 @@ TEST_CASE("lazy_lift", "[signals]")
     REQUIRE(read_signal(s) == 2);
 }
 
-TEST_CASE("simple apply", "[signals]")
+TEST_CASE("simple apply", "[signals][application]")
 {
     int f_call_count = 0;
     auto f = [&](int x, int y) {
@@ -105,7 +105,7 @@ TEST_CASE("simple apply", "[signals]")
     REQUIRE(last_id != signal_id);
 }
 
-TEST_CASE("unready apply", "[signals]")
+TEST_CASE("unready apply", "[signals][application]")
 {
     int f_call_count = 0;
     auto f = [&](int x, int y) {
@@ -135,7 +135,7 @@ TEST_CASE("unready apply", "[signals]")
     }
 }
 
-TEST_CASE("failed apply", "[signals]")
+TEST_CASE("failed apply", "[signals][application]")
 {
     auto f = [&](int x, int y) -> int { throw "failed"; };
 
@@ -157,7 +157,7 @@ TEST_CASE("failed apply", "[signals]")
     }
 }
 
-TEST_CASE("lift", "[signals]")
+TEST_CASE("lift", "[signals][application]")
 {
     int f_call_count = 0;
     auto f = [&](int x) {
@@ -184,7 +184,7 @@ TEST_CASE("lift", "[signals]")
     }
 }
 
-TEST_CASE("alia_method", "[signals]")
+TEST_CASE("alia_method", "[signals][application]")
 {
     auto v = value("test text");
     REQUIRE(read_signal(lazy_apply(ALIA_METHOD(length), v)) == 9);

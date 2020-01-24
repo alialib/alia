@@ -1,8 +1,8 @@
 #ifndef ALIA_TEST_TRAVERSAL_HPP
 #define ALIA_TEST_TRAVERSAL_HPP
 
+#include <alia/components/system.hpp>
 #include <alia/flow/events.hpp>
-#include <alia/system.hpp>
 
 #include <sstream>
 
@@ -31,10 +31,7 @@ void
 do_traversal(alia::system& sys, Controller const& controller)
 {
     sys.controller = controller;
-    {
-        int nothing_event = 0;
-        dispatch_event(sys, nothing_event);
-    }
+    refresh_system(sys);
 }
 
 template<class Controller>
@@ -45,6 +42,7 @@ check_traversal(
     std::string const& expected_output)
 {
     sys.controller = controller;
+    refresh_system(sys);
     {
         ostream_event oe;
         std::ostringstream s;
