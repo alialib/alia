@@ -97,7 +97,7 @@ struct scoped_routing_region
     scoped_routing_region() : traversal_(0)
     {
     }
-    scoped_routing_region(context ctx)
+    scoped_routing_region(dataless_context ctx)
     {
         begin(ctx);
     }
@@ -107,7 +107,7 @@ struct scoped_routing_region
     }
 
     void
-    begin(context ctx);
+    begin(dataless_context ctx);
 
     void
     end();
@@ -126,7 +126,7 @@ struct scoped_routing_region
 
 template<class Event>
 bool
-detect_event(context ctx, Event** event)
+detect_event(dataless_context ctx, Event** event)
 {
     event_traversal& traversal = get_event_traversal(ctx);
     if (*traversal.event_type == typeid(Event))
@@ -155,7 +155,7 @@ struct node_identity
 typedef node_identity const* node_id;
 
 static inline node_id
-get_node_id(context ctx)
+get_node_id(dataless_context ctx)
 {
     node_identity* id;
     get_cached_data(ctx, &id);
@@ -201,7 +201,7 @@ dispatch_targeted_event(system& sys, Event& event, routable_node_id const& id)
 
 template<class Event>
 bool
-detect_targeted_event(context ctx, node_id id, Event** event)
+detect_targeted_event(dataless_context ctx, node_id id, Event** event)
 {
     return detect_event(ctx, event) && (*event)->target_id == id;
 }
