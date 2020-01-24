@@ -11,6 +11,12 @@ TEST_CASE("cubic beziers", "[other][cubic_bezier]")
     unit_cubic_bezier linear = {0.1, 0.1, 0.9, 0.9};
     for (int i = 0; i <= 10; ++i)
     {
+        auto coeff = compute_curve_coefficients(linear);
+        REQUIRE(
+            solve_for_t_at_x(coeff, 0.1 * i, error_tolerance)
+            == Approx(solve_for_t_at_x_with_bisection_search(
+                          coeff, 0.1 * i, error_tolerance))
+                   .epsilon(error_tolerance * 2));
         REQUIRE(
             eval_curve_at_x(linear, 0.1 * i, error_tolerance)
             == Approx(0.1 * i).epsilon(error_tolerance));
@@ -30,6 +36,12 @@ TEST_CASE("cubic beziers", "[other][cubic_bezier]")
                                  {0.0000, 0.0000}};
     for (int i = 0; i != 11; ++i)
     {
+        auto coeff = compute_curve_coefficients(nonlinear);
+        REQUIRE(
+            solve_for_t_at_x(coeff, 0.1 * i, error_tolerance)
+            == Approx(solve_for_t_at_x_with_bisection_search(
+                          coeff, 0.1 * i, error_tolerance))
+                   .epsilon(error_tolerance * 2));
         REQUIRE(
             eval_curve_at_x(nonlinear, test_values[i][0], error_tolerance)
             == Approx(test_values[i][1]).epsilon(error_tolerance));
