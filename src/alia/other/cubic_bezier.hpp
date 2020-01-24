@@ -29,7 +29,7 @@ solve_for_t_at_x(
     double error_tolerance);
 
 // This is the same as above but it always uses a bisection search.
-// It's likely slower and is primarily exposed for testing purposes.
+// It's simple but likely slower and is primarily exposed for testing purposes.
 double
 solve_for_t_at_x_with_bisection_search(
     unit_cubic_bezier_coefficients const& coeff,
