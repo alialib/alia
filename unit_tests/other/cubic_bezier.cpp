@@ -4,25 +4,30 @@
 
 using namespace alia;
 
-TEST_CASE("cubic beziers", "[other][cubic_bezier]")
+TEST_CASE("linear cubic bezier", "[other][cubic_bezier]")
 {
-    double error_tolerance = 0.0001;
+    double error_tolerance = 0.00001;
 
-    unit_cubic_bezier linear = {0.1, 0.1, 0.9, 0.9};
+    unit_cubic_bezier curve = {0.1, 0.1, 0.9, 0.9};
     for (int i = 0; i <= 10; ++i)
     {
-        auto coeff = compute_curve_coefficients(linear);
+        auto coeff = compute_curve_coefficients(curve);
         REQUIRE(
             solve_for_t_at_x(coeff, 0.1 * i, error_tolerance)
             == Approx(solve_for_t_at_x_with_bisection_search(
                           coeff, 0.1 * i, error_tolerance))
                    .epsilon(error_tolerance * 2));
         REQUIRE(
-            eval_curve_at_x(linear, 0.1 * i, error_tolerance)
+            eval_curve_at_x(curve, 0.1 * i, error_tolerance)
             == Approx(0.1 * i).epsilon(error_tolerance));
     }
+}
 
-    unit_cubic_bezier nonlinear = {0.25, 0.1, 0.25, 1};
+TEST_CASE("nonlinear cubic bezier", "[other][cubic_bezier]")
+{
+    double error_tolerance = 0.0001;
+
+    unit_cubic_bezier curve = {0.25, 0.1, 0.25, 1};
     double test_values[11][2] = {{1.0000, 1.0000},
                                  {0.7965, 0.9747},
                                  {0.6320, 0.9056},
@@ -36,14 +41,30 @@ TEST_CASE("cubic beziers", "[other][cubic_bezier]")
                                  {0.0000, 0.0000}};
     for (int i = 0; i != 11; ++i)
     {
-        auto coeff = compute_curve_coefficients(nonlinear);
+        auto coeff = compute_curve_coefficients(curve);
         REQUIRE(
             solve_for_t_at_x(coeff, 0.1 * i, error_tolerance)
             == Approx(solve_for_t_at_x_with_bisection_search(
                           coeff, 0.1 * i, error_tolerance))
                    .epsilon(error_tolerance * 2));
         REQUIRE(
-            eval_curve_at_x(nonlinear, test_values[i][0], error_tolerance)
+            eval_curve_at_x(curve, test_values[i][0], error_tolerance)
             == Approx(test_values[i][1]).epsilon(error_tolerance));
+    }
+}
+
+TEST_CASE("degenerate cubic bezier", "[other][cubic_bezier]")
+{
+    double error_tolerance = 0.0001;
+
+    unit_cubic_bezier curve = {0, 0.5, 0, 1};
+    for (int i = 0; i != 11; ++i)
+    {
+        auto coeff = compute_curve_coefficients(curve);
+        REQUIRE(
+            solve_for_t_at_x(coeff, 0.1 * i, error_tolerance)
+            == Approx(solve_for_t_at_x_with_bisection_search(
+                          coeff, 0.1 * i, error_tolerance))
+                   .epsilon(error_tolerance * 2));
     }
 }

@@ -48,7 +48,7 @@ solve_for_t_at_x_with_bisection_search(
     double lower = 0.0;
     double upper = 1.0;
     double t = x;
-    while (lower < upper)
+    while (true)
     {
         double x_at_t = sample_curve_x(coeff, t);
         if (std::fabs(x_at_t - x) < error_tolerance)
@@ -59,7 +59,6 @@ solve_for_t_at_x_with_bisection_search(
             upper = t;
         t = (lower + upper) / 2;
     }
-    return t;
 }
 
 double
