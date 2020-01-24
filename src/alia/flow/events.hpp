@@ -225,7 +225,7 @@ struct refresh_event
 };
 
 static inline bool
-is_refresh_event(context ctx)
+is_refresh_event(dataless_context ctx)
 {
     refresh_event* e;
     return detect_event(ctx, &e);
