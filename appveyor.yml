@@ -13,6 +13,10 @@ configuration:
   - Debug
   - Release
 
+branches:
+  only:
+    - master
+
 init:
   - git config --global core.autocrlf input
   # Set build version to git commit-hash
