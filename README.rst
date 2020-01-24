@@ -10,6 +10,9 @@ alia
 .. image:: https://img.shields.io/codecov/c/github/tmadden/alia/master.svg?style=flat&logo=codecov&logoColor=white
     :target: https://codecov.io/gh/tmadden/alia/branch/master
 
+.. image:: https://img.shields.io/badge/stability-unstable-yellow.svg?style=flat
+    :target: https://github.com/orangemug/stability-badges#unstable
+
 |
 
 **WARNING**: This project is in an unstable, pre-release state. There are
