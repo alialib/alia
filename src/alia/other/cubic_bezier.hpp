@@ -28,7 +28,7 @@ solve_for_t_at_x(
     double x,
     double error_tolerance);
 
-// This is the same as above but it always uses a bisection search.
+// This is the same as above but always uses a bisection search.
 // It's simple but likely slower and is primarily exposed for testing purposes.
 double
 solve_for_t_at_x_with_bisection_search(
