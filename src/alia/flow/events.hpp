@@ -97,7 +97,7 @@ struct scoped_routing_region
     scoped_routing_region() : traversal_(0)
     {
     }
-    scoped_routing_region(dataless_context ctx)
+    scoped_routing_region(context ctx)
     {
         begin(ctx);
     }
@@ -107,7 +107,7 @@ struct scoped_routing_region
     }
 
     void
-    begin(dataless_context ctx);
+    begin(context ctx);
 
     void
     end();
@@ -155,7 +155,7 @@ struct node_identity
 typedef node_identity const* node_id;
 
 static inline node_id
-get_node_id(dataless_context ctx)
+get_node_id(context ctx)
 {
     node_identity* id;
     get_cached_data(ctx, &id);
