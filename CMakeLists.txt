@@ -20,10 +20,12 @@ set(CONAN_OPTIONS)
 if(FIPS_MSVC)
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         set(CONAN_OPTIONS
-            -s compiler=Visual\ Studio -s build_type=Debug -s compiler.runtime=MTd)
+            -s compiler=Visual\ Studio -s build_type=Debug -s
+            compiler.runtime=MTd)
     else()
         set(CONAN_OPTIONS
-            -s compiler=Visual\ Studio -s build_type=Release -s compiler.runtime=MT)
+            -s compiler=Visual\ Studio -s build_type=Release -s
+            compiler.runtime=MT)
     endif()
 elseif(FIPS_GCC)
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -31,20 +33,25 @@ elseif(FIPS_GCC)
             -s compiler=gcc -s compiler.libcxx=libstdc++11 -s build_type=Debug)
     else()
         set(CONAN_OPTIONS
-            -s compiler=gcc -s compiler.libcxx=libstdc++11 -s build_type=Release)
+            -s compiler=gcc -s compiler.libcxx=libstdc++11 -s
+            build_type=Release)
     endif()
 elseif(FIPS_CLANG)
-    string(REGEX REPLACE "([0-9]+\\.[0-9]+).*" "\\1" CLANG_MAJOR_MINOR_VERSION ${CMAKE_CXX_COMPILER_VERSION})
+    string(REGEX REPLACE "([0-9]+\\.[0-9]+).*" "\\1" CLANG_MAJOR_MINOR_VERSION
+           ${CMAKE_CXX_COMPILER_VERSION})
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
         set(CONAN_OPTIONS
-            -s compiler=clang -s compiler.version=${CLANG_MAJOR_MINOR_VERSION} -s compiler.libcxx=libstdc++11 -s build_type=Debug)
+            -s compiler=clang -s compiler.version=${CLANG_MAJOR_MINOR_VERSION}
+            -s compiler.libcxx=libstdc++11 -s build_type=Debug)
     else()
         set(CONAN_OPTIONS
-            -s compiler=clang -s compiler.version=${CLANG_MAJOR_MINOR_VERSION} -s compiler.libcxx=libstdc++11 -s build_type=Release)
+            -s compiler=clang -s compiler.version=${CLANG_MAJOR_MINOR_VERSION}
+            -s compiler.libcxx=libstdc++11 -s build_type=Release)
     endif()
 endif()
 execute_process(
-    COMMAND conan install ${PROJECT_SOURCE_DIR} ${CONAN_OPTIONS} -e CONAN_IMPORT_PATH=${FIPS_PROJECT_DEPLOY_DIR} --build missing
+    COMMAND conan install ${PROJECT_SOURCE_DIR} ${CONAN_OPTIONS}
+            -e CONAN_IMPORT_PATH=${FIPS_PROJECT_DEPLOY_DIR} --build missing
     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
     RESULT_VARIABLE CONAN_RESULT)
 if(NOT ${CONAN_RESULT} EQUAL 0)
@@ -52,7 +59,8 @@ if(NOT ${CONAN_RESULT} EQUAL 0)
 endif()
 
 # And now set up CMake to use those libraries.
-# Note that Conan seems to insert flags that don't make sense and cause warnings.
+# Note that Conan seems to insert flags that don't make sense and cause
+# warnings.
 set(ORIGINAL_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 include(${PROJECT_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup()
@@ -105,7 +113,8 @@ elseif(FIPS_MSVC)
     add_compile_options(/wd4457)
     # warnings about functions that are potentially insecure
     add_definitions(/D_CRT_SECURE_NO_WARNINGS)
-    # Also suppress linker warnings about missing .pdb files that seem to inevitably creep in.
+    # Also suppress linker warnings about missing .pdb files that seem to
+    # inevitably creep in.
     add_link_options(/ignore:4099)
 elseif(FIPS_CLANG)
     add_compile_options(-Wall -Werror)
@@ -121,7 +130,8 @@ endif()
 # Set build options for instrumenting test coverage.
 if(FIPS_CLANG AND CMAKE_BUILD_TYPE STREQUAL "Debug")
     message(STATUS "Enabling gcov support")
-    add_compile_options(-DLLVM_USE_LINKER=gold -fprofile-instr-generate -fcoverage-mapping)
+    add_compile_options(-DLLVM_USE_LINKER=gold -fprofile-instr-generate
+                        -fcoverage-mapping)
     add_exe_link_options(-fprofile-instr-generate -fcoverage-mapping)
 endif()
 
@@ -144,10 +154,10 @@ target_include_directories(unit_test_runner
 # version of the library.
 # (Note that this comes as an empty test and requires some external setup to
 # run properly. This is normally only done within Travis.)
-fips_begin_app(single_header_test_runner cmdline)
+fips_begin_app(single_header_tester cmdline)
     fips_src(single_header_tests)
 fips_end_app()
-target_include_directories(single_header_test_runner
+target_include_directories(single_header_tester
     PRIVATE ${PROJECT_SOURCE_DIR}/single_header_tests)
 
 # Add tests that are supposed to cause compilation errors.
@@ -173,7 +183,8 @@ foreach(TEST_FILE ${COMPILATION_TEST_FILES})
         fips_deps(alia)
         fips_files(${TEST_FILE})
     fips_end_lib()
-    set_target_properties(${TEST_NAME}_control PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
+    set_target_properties(${TEST_NAME}_control PROPERTIES EXCLUDE_FROM_ALL 1
+                          EXCLUDE_FROM_DEFAULT_BUILD 1)
     add_test(NAME ${TEST_NAME}_control
         COMMAND ${CMAKE_COMMAND} --build . --target ${TEST_NAME}_control
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
@@ -185,7 +196,8 @@ foreach(TEST_FILE ${COMPILATION_TEST_FILES})
     fips_end_lib()
     target_compile_definitions(
         ${TEST_NAME} PRIVATE ALIA_TEST_COMPILATION_FAILURE)
-    set_target_properties(${TEST_NAME} PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
+    set_target_properties(${TEST_NAME} PROPERTIES EXCLUDE_FROM_ALL 1
+                          EXCLUDE_FROM_DEFAULT_BUILD 1)
     add_test(NAME ${TEST_NAME}
         COMMAND ${CMAKE_COMMAND} --build . --target ${TEST_NAME}
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
@@ -199,7 +211,9 @@ add_custom_target(
     # tests with that.
     COMMAND ${CMAKE_COMMAND} -E remove_directory unit-testing
     COMMAND ${CMAKE_COMMAND} -E make_directory unit-testing
-    COMMAND ${CMAKE_COMMAND} -E chdir unit-testing ${CMAKE_COMMAND} -E env ALIA_DEPLOY_DIR=${FIPS_PROJECT_DEPLOY_DIR} ${FIPS_PROJECT_DEPLOY_DIR}/unit_test_runner
+    COMMAND ${CMAKE_COMMAND} -E chdir unit-testing ${CMAKE_COMMAND}
+                             -E env ALIA_DEPLOY_DIR=${FIPS_PROJECT_DEPLOY_DIR}
+                             ${FIPS_PROJECT_DEPLOY_DIR}/unit_test_runner
     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
     DEPENDS unit_test_runner)
 
@@ -211,9 +225,11 @@ add_custom_target(
     # run the tests with that.
     COMMAND ${CMAKE_COMMAND} -E remove_directory single-header-testing
     COMMAND ${CMAKE_COMMAND} -E make_directory single-header-testing
-    COMMAND ${CMAKE_COMMAND} -E chdir single-header-testing ${CMAKE_COMMAND} -E env ALIA_DEPLOY_DIR=${FIPS_PROJECT_DEPLOY_DIR} ${FIPS_PROJECT_DEPLOY_DIR}/single_header_test_runner
+    COMMAND ${CMAKE_COMMAND} -E chdir single-header-testing ${CMAKE_COMMAND}
+                             -E env ALIA_DEPLOY_DIR=${FIPS_PROJECT_DEPLOY_DIR}
+                             ${FIPS_PROJECT_DEPLOY_DIR}/single_header_tester
     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
-    DEPENDS single_header_test_runner)
+    DEPENDS single_header_tester)
 
 # On Linux debug builds, the proper CMake test associated with the unit tests
 # includes test coverage reporting.
@@ -221,8 +237,12 @@ if(FIPS_CLANG AND CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_custom_target(
         unit_test_coverage
         COMMAND ${CMAKE_COMMAND} --build . --target unit_tests
-        COMMAND llvm-profdata-${CLANG_MAJOR_MINOR_VERSION} merge -sparse unit-testing/default.profraw -o default.profdata
-        COMMAND llvm-cov-${CLANG_MAJOR_MINOR_VERSION} show -instr-profile=default.profdata ${FIPS_PROJECT_DEPLOY_DIR}/unit_test_runner >${PROJECT_SOURCE_DIR}/coverage.txt
+        COMMAND llvm-profdata-${CLANG_MAJOR_MINOR_VERSION} merge -sparse
+                unit-testing/default.profraw -o default.profdata
+        COMMAND llvm-cov-${CLANG_MAJOR_MINOR_VERSION} show
+                -instr-profile=default.profdata
+                ${FIPS_PROJECT_DEPLOY_DIR}/unit_test_runner
+                >${PROJECT_SOURCE_DIR}/coverage.txt
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
     add_test(
         NAME unit_test_coverage
