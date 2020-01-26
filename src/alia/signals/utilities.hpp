@@ -54,6 +54,20 @@ struct lazy_reader
     mutable Value value_;
 };
 
+// signals_all_readable(signal_a, signal_b, ...) is a variadic function that
+// returns true iff all its input signals are readable.
+static inline bool
+signals_all_readable()
+{
+    return true;
+}
+template<class Signal, class... Rest>
+bool
+signals_all_readable(Signal const& signal, Rest const&... rest)
+{
+    return signal_is_readable(signal) && signals_all_readable(rest...);
+}
+
 } // namespace alia
 
 #endif
