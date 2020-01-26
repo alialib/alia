@@ -173,7 +173,9 @@ struct routable_node_id
 static inline routable_node_id
 make_routable_node_id(dataless_context ctx, node_id id)
 {
-    routable_node_id routable = {id, get_active_routing_region(ctx)};
+    routable_node_id routable;
+    routable.id = id;
+    routable.region = get_active_routing_region(ctx);
     return routable;
 }
 
