@@ -54,6 +54,10 @@ TEST_CASE("basic signal operators", "[signals][operators][operators]")
     REQUIRE(is_true(value(6) << value(2) == value(24)));
     REQUIRE(is_true(value(6) >> value(2) == value(1)));
 
+    REQUIRE(is_true(value(6) + 2 == value(8)));
+    REQUIRE(is_true(6 + value(2) == value(8)));
+    REQUIRE(is_true(value(6) + value(2) == 8));
+
     REQUIRE(is_true(-value(2) == value(-2)));
     REQUIRE(is_false(!(value(2) == value(2))));
 }
@@ -85,6 +89,12 @@ TEST_CASE("signal &&", "[signals][operators][operators]")
     REQUIRE(
         (value(true) && value(false)).value_id()
         != (value(true) && value(true)).value_id());
+
+    // Check that it works with plain old values too.
+    REQUIRE(is_true(true && value(true)));
+    REQUIRE(is_true(value(true) && true));
+    REQUIRE(is_false(true && value(false)));
+    REQUIRE(is_false(value(false) && true));
 }
 
 TEST_CASE("signal ||", "[signals][operators]")
@@ -114,6 +124,12 @@ TEST_CASE("signal ||", "[signals][operators]")
     REQUIRE(
         (value(false) || value(false)).value_id()
         != (value(true) || value(false)).value_id());
+
+    // Check that it works with plain old values too.
+    REQUIRE(is_true(true || value(false)));
+    REQUIRE(is_true(value(false) || true));
+    REQUIRE(is_false(false || value(false)));
+    REQUIRE(is_false(value(false) || false));
 }
 
 TEST_CASE("signal select", "[signals][operators]")

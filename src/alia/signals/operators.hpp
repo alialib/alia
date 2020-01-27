@@ -2,6 +2,7 @@
 #define ALIA_SIGNALS_OPERATORS_HPP
 
 #include <alia/signals/application.hpp>
+#include <alia/signals/basic.hpp>
 #include <alia/signals/utilities.hpp>
 
 // This file defines the operators for signals.
@@ -18,6 +19,26 @@ namespace alia {
     auto operator op(A const& a, B const& b)                                   \
     {                                                                          \
         return lazy_apply([](auto a, auto b) { return a op b; }, a, b);        \
+    }                                                                          \
+    template<                                                                  \
+        class A,                                                               \
+        class B,                                                               \
+        std::enable_if_t<                                                      \
+            is_signal_type<A>::value && !is_signal_type<B>::value,             \
+            int> = 0>                                                          \
+    auto operator op(A const& a, B const& b)                                   \
+    {                                                                          \
+        return lazy_apply([](auto a, auto b) { return a op b; }, a, value(b)); \
+    }                                                                          \
+    template<                                                                  \
+        class A,                                                               \
+        class B,                                                               \
+        std::enable_if_t<                                                      \
+            !is_signal_type<A>::value && is_signal_type<B>::value,             \
+            int> = 0>                                                          \
+    auto operator op(A const& a, B const& b)                                   \
+    {                                                                          \
+        return lazy_apply([](auto a, auto b) { return a op b; }, value(a), b); \
     }
 
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(+)
@@ -96,13 +117,34 @@ template<
     class A,
     class B,
     std::enable_if_t<
-        std::is_base_of<untyped_signal_base, A>::value
-            && std::is_base_of<untyped_signal_base, B>::value,
+        is_signal_type<A>::value && is_signal_type<B>::value,
         int> = 0>
 auto
 operator||(A const& a, B const& b)
 {
     return logical_or_signal<A, B>(a, b);
+}
+template<
+    class A,
+    class B,
+    std::enable_if_t<
+        is_signal_type<A>::value && !is_signal_type<B>::value,
+        int> = 0>
+auto
+operator||(A const& a, B const& b)
+{
+    return a || value(b);
+}
+template<
+    class A,
+    class B,
+    std::enable_if_t<
+        !is_signal_type<A>::value && is_signal_type<B>::value,
+        int> = 0>
+auto
+operator||(A const& a, B const& b)
+{
+    return value(a) || b;
 }
 
 template<class Arg0, class Arg1>
@@ -148,13 +190,34 @@ template<
     class A,
     class B,
     std::enable_if_t<
-        std::is_base_of<untyped_signal_base, A>::value
-            && std::is_base_of<untyped_signal_base, B>::value,
+        is_signal_type<A>::value && is_signal_type<B>::value,
         int> = 0>
 auto
 operator&&(A const& a, B const& b)
 {
     return logical_and_signal<A, B>(a, b);
+}
+template<
+    class A,
+    class B,
+    std::enable_if_t<
+        is_signal_type<A>::value && !is_signal_type<B>::value,
+        int> = 0>
+auto
+operator&&(A const& a, B const& b)
+{
+    return a && value(b);
+}
+template<
+    class A,
+    class B,
+    std::enable_if_t<
+        !is_signal_type<A>::value && is_signal_type<B>::value,
+        int> = 0>
+auto
+operator&&(A const& a, B const& b)
+{
+    return value(a) && b;
 }
 
 // This is the equivalent of the ternary operator (or std::conditional) for
