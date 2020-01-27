@@ -25,6 +25,7 @@ jobs:
       - export CXX=`which g++`
       after_success:
       - sphinx-build docs html
+      - touch html/.nojekyll
       deploy:
       - provider: releases
         api_key:
