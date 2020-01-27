@@ -39,7 +39,7 @@ jobs:
         skip_cleanup: true
         github_token: $GITHUB_TOKEN
         on:
-          branch: gh-docs
+          branch: master
         local_dir: html
 
 script:
