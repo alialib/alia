@@ -7,36 +7,36 @@ Signals
 The goals of the signals component are as follows.
 
 * Unify the interface to C-style data structures and OOP-style classes (whose
-data members may be protected behind accessor functions).
+  data members may be protected behind accessor functions).
 
 * Provide standard mechanisms for transforming a back end's view of model  state
-or applying constraints to its manipulations of that state.
+  or applying constraints to its manipulations of that state.
 
 * Provide mechanisms for efficiently detecting changes in signal values. (e.g.,
-It should be possible to poll a signal carrying a large body of text and detect
-if it has changed since the last poll without examining the entire text.)
+  It should be possible to poll a signal carrying a large body of text and detect
+  if it has changed since the last poll without examining the entire text.)
 
 * The 'direction' of signals (i.e., input/output/bidirectional) should be
-explicitly denoted in both the capabilities that a signal implementation
-provides and the requirements of a function that accepts a signal as a
-parameter.
+  explicitly denoted in both the capabilities that a signal implementation
+  provides and the requirements of a function that accepts a signal as a
+  parameter.
 
 * A function that expects an input signal should be able to accept a
-bidirectional signal without requiring the function to do any template
-shenanigans. (More specifically, a function that accepts a signal should only
-have to declare the required direction and the value type of the signal. If both
-of those are concrete, the function shouldn't need to use templates to accept
-that signal.)
+  bidirectional signal without requiring the function to do any template
+  shenanigans. (More specifically, a function that accepts a signal should only
+  have to declare the required direction and the value type of the signal. If
+  both of those are concrete, the function shouldn't need to use templates to
+  accept that signal.)
 
 * Allow signal wrappers to be agnostic of the signal's direction. (e.g., If I
-want to implement a wrapper that presents a view of a signal where the value is
-10x as large, I should have to define what that means for reading and writing
-the signal, but I shouldn't have to write three different versions in order to
-preserve the direction of the wrapped signal.)
+  want to implement a wrapper that presents a view of a signal where the value
+  is 10x as large, I should have to define what that means for reading and
+  writing the signal, but I shouldn't have to write three different versions in
+  order to preserve the direction of the wrapped signal.)
 
 * Ensure that the passing of signal values across functions is as efficient  and
-lazy as possible. (i.e., Avoid unnecessary memory allocations and  computations
-of unused values.)
+  lazy as possible. (i.e., Avoid unnecessary memory allocations and  computations
+  of unused values.)
 
 IMGUI-Style or Not
 ------------------
@@ -117,7 +117,7 @@ concerns:
 - Some signal values should be computed in the background.
 
 - Some signal values are accessed from multiple places within the UI and should
-be shared across those places.
+  be shared across those places.
 
 - Some signal values are worth caching in memory or on disk.
 
@@ -150,11 +150,11 @@ alia::async(ctx, f, args) does the following:
 					- If so:
 						- Dispatch a job to run the function.
 							- This should include a wrapper to handle
-							cancellation.
+							  cancellation.
 							  https://stackoverflow.com/questions/12086622/is-there-a-way-to-cancel-detach-a-future-in-c11
 							- Some indirection should be provided to allow
-							different dispatchers (std::async, thread pooler,
-							etc.)
+							  different dispatchers (std::async, thread pooler,
+							  etc.)
 							  https://github.com/vit-vit/CTPL
 	  	- Check if the job has produced a value (and if so, grab it).
 
@@ -338,7 +338,7 @@ Pros
 ^^^^
 
 - This would allow some interesting staged processing of content (e.g.,
-transition effects).
+  transition effects).
 
 Cons
 ^^^^
