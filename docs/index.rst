@@ -6,7 +6,7 @@ alia
    :hidden:
    :caption: The Basics
 
-   the-basics/what-is-alia
+   the-basics/motivation
    the-basics/getting-started
    the-basics/introductory-examples
    the-basics/signals
