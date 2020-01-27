@@ -36,8 +36,7 @@ jobs:
           repo: tmadden/alia
       - provider: pages
         skip_cleanup: true
-        github_token:
-          secure: upz/uDNpVnHmK/oe9dSDsK04Z6lEVOgrrM1BZG8tatw/atTREJELXDkuB2eudkv21tDCRP5YRJYlkRcKrn5bvINk8HcayPXlWhmDiKaT3majietiix1B4V5llSuzbaEdH3cR24122tHoCzGpBxQeon1Vr77za0iWO9t8FkQO/YFeMn/GEU3TUbMMinp5i3WNd4x0Ps9yArSinsEMdK6342uHurFEDR54/04fpIYW1LlJobOIYqs0NYiLAfYfrunNZ/C2Zilxm7drWY4HsY8wIrrrOPsZojUEn4pAZfebDrCCUkvMyaN2SXdCC1MhsmOKLb5J38Y8LC11z8KWL+XdAhvRFxE7Q556rPeV/4WU4jaZcETmNd1yS7MQsWxHE+uCsXmiS7UerFPMNv14+xSno/qc0WjmLIzhsJOnB5hYQW8t/Y5N8DbCkAo7JTlm3niVQPXz3RBSWG55oW/X1l5TyRmNXB900v+nlovehqyheZcXaaljWx0NaiwYyt6uUEf7cUinFeEYjc0fsV6Yf0/jrw+L5Ex6TEtSzKcTfv2lz6qUi7BSwvoUmEnQfqcZfamKyulJ+9662ZpFiKILi+QuiM0ucjMPw2pMF3BwqTnEqEMLc6qBH8+jnVOFDsrAbo79eiqJ2W2HXEyUWVrXG5KruFuuVPuSXxuOMG/RA4rQtP8=
+        github_token: $GITHUB_TOKEN
         on:
           branch: gh-docs
         local_dir: html

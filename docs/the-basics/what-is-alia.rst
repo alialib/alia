@@ -6,8 +6,8 @@ that we are implementing a simple mapping application that has to display points
 of interest to the user. This could be implemented very simply as follows.
 
 .. note: For simplicity, this example uses global data and functions to access
-our application state. This isn't meant to be a guide on how to structure
-application code.
+   our application state. This isn't meant to be a guide on how to structure
+   application code.
 
 ::
 
