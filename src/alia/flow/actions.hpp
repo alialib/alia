@@ -188,6 +188,18 @@ operator<<=(Sink const& sink, Source const& source)
     return copy_action<Sink, Source>(sink, source);
 }
 
+template<
+    class Sink,
+    class Source,
+    std::enable_if_t<
+        is_writable_signal_type<Sink>::value && !is_signal_type<Source>::value,
+        int> = 0>
+auto
+operator<<=(Sink const& sink, Source const& source)
+{
+    return sink <<= value(source);
+}
+
 // For most compound assignment operators (e.g., +=), a += b, where :a and :b
 // are signals, creates an action that sets :a equal to :a + :b.
 
@@ -202,6 +214,17 @@ operator<<=(Sink const& sink, Source const& source)
     auto operator assignment_form(A const& a, B const& b)                      \
     {                                                                          \
         return a <<= (a normal_form b);                                        \
+    }                                                                          \
+    template<                                                                  \
+        class A,                                                               \
+        class B,                                                               \
+        std::enable_if_t<                                                      \
+            is_bidirectional_signal_type<A>::value                             \
+                && !is_signal_type<B>::value,                                  \
+            int> = 0>                                                          \
+    auto operator assignment_form(A const& a, B const& b)                      \
+    {                                                                          \
+        return a <<= (a normal_form value(b));                                 \
     }
 
 ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(+=, +)

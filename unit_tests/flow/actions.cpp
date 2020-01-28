@@ -17,6 +17,10 @@ TEST_CASE("copy actions", "[flow][actions]")
     REQUIRE(x == 1);
     perform_action(a);
     REQUIRE(x == 2);
+    auto liberal = direct(x) <<= 4;
+    REQUIRE(liberal.is_ready());
+    perform_action(liberal);
+    REQUIRE(x == 4);
 }
 
 #define TEST_COMPOUND_ASSIGNMENT_OPERATOR(op, normal_form)                     \
@@ -30,6 +34,11 @@ TEST_CASE("copy actions", "[flow][actions]")
         REQUIRE(x == 21);                                                      \
         perform_action(a);                                                     \
         REQUIRE(x == (21 normal_form 7));                                      \
+        x = 2;                                                                 \
+        auto liberal = direct(x) op 6;                                         \
+        REQUIRE(liberal.is_ready());                                           \
+        perform_action(liberal);                                               \
+        REQUIRE(x == (2 normal_form 6));                                       \
     }
 
 TEST_CASE("compound assignment action operators", "[flow][actions]")
@@ -81,7 +90,7 @@ TEST_CASE("sequenced actions", "[flow][actions]")
     auto b = direct(x) <<= value(2);
     auto c = direct(y) <<= value(3);
     REQUIRE(!(a, b).is_ready());
-    REQUIRE((b, c).is_ready());
+    REQUIRE((b, c, b).is_ready());
     perform_action((b, c));
     REQUIRE(x == 2);
     REQUIRE(y == 3);
