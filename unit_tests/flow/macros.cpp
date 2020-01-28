@@ -7,12 +7,12 @@
 
 TEST_CASE("condition_is_true/false/etc", "[flow][macros]")
 {
-    REQUIRE(condition_is_true(value(true)));
-    REQUIRE(!condition_is_true(value(false)));
+    REQUIRE(condition_is_true(val(true)));
+    REQUIRE(!condition_is_true(val(false)));
     REQUIRE(!condition_is_true(empty<bool>()));
 
-    REQUIRE(condition_is_false(value(false)));
-    REQUIRE(!condition_is_false(value(true)));
+    REQUIRE(condition_is_false(val(false)));
+    REQUIRE(!condition_is_false(val(true)));
     REQUIRE(!condition_is_false(empty<bool>()));
 }
 
@@ -31,13 +31,13 @@ TEST_CASE("basic alia_if", "[flow][macros]")
                 do_int(ctx, 1);
             };
         };
-        do_traversal(graph, make_controller(value(false)));
+        do_traversal(graph, make_controller(val(false)));
         check_log("initializing int: 1;");
-        do_traversal(graph, make_controller(value(true)));
+        do_traversal(graph, make_controller(val(true)));
         check_log(
             "initializing int: 0;"
             "visiting int: 1;");
-        do_traversal(graph, make_controller(value(false)));
+        do_traversal(graph, make_controller(val(false)));
         check_log("visiting int: 1;");
         do_traversal(graph, make_controller(empty<bool>()));
         check_log("visiting int: 1;");
@@ -66,15 +66,15 @@ TEST_CASE("alia_if/alia_else", "[flow][macros]")
                 do_int(ctx, 2);
             };
         };
-        do_traversal(graph, make_controller(value(false)));
+        do_traversal(graph, make_controller(val(false)));
         check_log(
             "initializing int: 1;"
             "initializing int: 2;");
-        do_traversal(graph, make_controller(value(true)));
+        do_traversal(graph, make_controller(val(true)));
         check_log(
             "initializing int: 0;"
             "visiting int: 2;");
-        do_traversal(graph, make_controller(value(false)));
+        do_traversal(graph, make_controller(val(false)));
         check_log(
             "visiting int: 1;"
             "visiting int: 2;");
@@ -136,7 +136,7 @@ TEST_CASE("alia_if/alia_else caching", "[flow][macros]")
                 {
                     ; // This somehow stops ClangFormat from doing weird stuff
                       // with this block;
-                    ALIA_IF(value(true))
+                    ALIA_IF(val(true))
                     {
                         // This is nested inside an additional level of data
                         // blocks, so it triggers a different case in the cache
@@ -156,16 +156,16 @@ TEST_CASE("alia_if/alia_else caching", "[flow][macros]")
         // Cached data isn't retained inside inactive parts of the traversal, so
         // our cached ints will get destructed and recreated from one traversal
         // to another.
-        do_traversal(graph, make_controller(value(false)));
+        do_traversal(graph, make_controller(val(false)));
         check_log(
             "initializing cached int: 1;"
             "initializing int: 2;");
-        do_traversal(graph, make_controller(value(true)));
+        do_traversal(graph, make_controller(val(true)));
         check_log(
             "initializing cached int: 0;"
             "destructing int;"
             "visiting int: 2;");
-        do_traversal(graph, make_controller(value(false)));
+        do_traversal(graph, make_controller(val(false)));
         check_log(
             "destructing int;"
             "initializing cached int: 1;"
@@ -174,7 +174,7 @@ TEST_CASE("alia_if/alia_else caching", "[flow][macros]")
         check_log(
             "destructing int;"
             "visiting int: 2;");
-        do_traversal(graph, make_controller(value(true)));
+        do_traversal(graph, make_controller(val(true)));
         check_log(
             "initializing cached int: 0;"
             "visiting int: 2;");
@@ -208,29 +208,29 @@ TEST_CASE("alia_if/alia_else_if/alia_else", "[flow][macros]")
                 do_int(ctx, 3);
             };
         };
-        do_traversal(graph, make_controller(value(false), value(true)));
+        do_traversal(graph, make_controller(val(false), val(true)));
         check_log(
             "initializing int: 1;"
             "initializing int: 3;");
-        do_traversal(graph, make_controller(value(true), value(false)));
+        do_traversal(graph, make_controller(val(true), val(false)));
         check_log(
             "initializing int: 0;"
             "visiting int: 3;");
-        do_traversal(graph, make_controller(value(true), value(true)));
+        do_traversal(graph, make_controller(val(true), val(true)));
         check_log(
             "visiting int: 0;"
             "visiting int: 3;");
-        do_traversal(graph, make_controller(value(false), value(false)));
+        do_traversal(graph, make_controller(val(false), val(false)));
         check_log(
             "initializing int: 2;"
             "visiting int: 3;");
-        do_traversal(graph, make_controller(empty<bool>(), value(false)));
+        do_traversal(graph, make_controller(empty<bool>(), val(false)));
         check_log("visiting int: 3;");
         do_traversal(graph, make_controller(empty<bool>(), empty<bool>()));
         check_log("visiting int: 3;");
-        do_traversal(graph, make_controller(value(false), empty<bool>()));
+        do_traversal(graph, make_controller(val(false), empty<bool>()));
         check_log("visiting int: 3;");
-        do_traversal(graph, make_controller(value(false), value(true)));
+        do_traversal(graph, make_controller(val(false), val(true)));
         check_log(
             "visiting int: 1;"
             "visiting int: 3;");
@@ -270,33 +270,33 @@ TEST_CASE("alia_switch", "[flow][macros]")
                 // clang-format on
             };
         };
-        do_traversal(graph, make_controller(value(0)));
+        do_traversal(graph, make_controller(val(0)));
         check_log(
             "initializing int: 0;"
             "initializing int: -2;");
-        do_traversal(graph, make_controller(value(2)));
+        do_traversal(graph, make_controller(val(2)));
         check_log(
             "initializing int: 2;"
             "initializing cached int: 3;"
             "visiting int: -2;");
-        do_traversal(graph, make_controller(value(1)));
+        do_traversal(graph, make_controller(val(1)));
         check_log(
             "initializing int: 1;"
             "visiting int: 2;"
             "visiting cached int: 3;"
             "visiting int: -2;");
-        do_traversal(graph, make_controller(value(17)));
+        do_traversal(graph, make_controller(val(17)));
         check_log(
             "initializing int: 4;"
             "visiting int: -2;"
             "destructing int;");
-        do_traversal(graph, make_controller(value(1)));
+        do_traversal(graph, make_controller(val(1)));
         check_log(
             "visiting int: 1;"
             "visiting int: 2;"
             "initializing cached int: 3;"
             "visiting int: -2;");
-        do_traversal(graph, make_controller(value(2)));
+        do_traversal(graph, make_controller(val(2)));
         check_log(
             "visiting int: 2;"
             "visiting cached int: 3;"

@@ -9,5 +9,5 @@ using namespace alia;
 void
 f()
 {
-    auto x = true || value(false);
+    auto x = true || val(false);
 }

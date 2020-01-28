@@ -199,7 +199,7 @@ template<
 auto
 operator<<=(Sink const& sink, Source const& source)
 {
-    return sink <<= value(source);
+    return sink <<= val(source);
 }
 
 #endif
@@ -244,7 +244,7 @@ ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(|=, |)
             int> = 0>                                                          \
     auto operator assignment_form(A const& a, B const& b)                      \
     {                                                                          \
-        return a <<= (a normal_form value(b));                                 \
+        return a <<= (a normal_form val(b));                                 \
     }
 
 ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(+=, +)
@@ -266,14 +266,14 @@ ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(|=, |)
         std::enable_if_t<is_bidirectional_signal_type<A>::value, int> = 0>     \
     auto operator assignment_form(A const& a)                                  \
     {                                                                          \
-        return a <<= (a normal_form value(typename A::value_type(1)));         \
+        return a <<= (a normal_form val(typename A::value_type(1)));         \
     }                                                                          \
     template<                                                                  \
         class A,                                                               \
         std::enable_if_t<is_bidirectional_signal_type<A>::value, int> = 0>     \
     auto operator assignment_form(A const& a, int)                             \
     {                                                                          \
-        return a <<= (a normal_form value(typename A::value_type(1)));         \
+        return a <<= (a normal_form val(typename A::value_type(1)));         \
     }
 
 ALIA_DEFINE_BY_ONE_OPERATOR(++, +)

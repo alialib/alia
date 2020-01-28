@@ -15,12 +15,12 @@ TEST_CASE("printf", "[signals][text]")
     alia::system sys;
 
     auto controller = [&](context ctx) {
-        do_text(ctx, printf(ctx, "hello %s", value("world")));
-        do_text(ctx, printf(ctx, "n is %4.1f", value(2.125)));
+        do_text(ctx, printf(ctx, "hello %s", val("world")));
+        do_text(ctx, printf(ctx, "n is %4.1f", val(2.125)));
         // MSVC is too forgiving of bad format strings, so this test doesn't
         // actually work there.
 #ifndef _MSC_VER
-        do_text(ctx, printf(ctx, "bad format: %q", value(0)));
+        do_text(ctx, printf(ctx, "bad format: %q", val(0)));
 #endif
     };
 

@@ -12,7 +12,7 @@ TEST_CASE("copy actions", "[flow][actions]")
     REQUIRE(!(empty<int>() <<= empty<int>()).is_ready());
     REQUIRE(!(direct(x) <<= empty<int>()).is_ready());
     REQUIRE(!(empty<int>() <<= direct(x)).is_ready());
-    auto a = direct(x) <<= value(2);
+    auto a = direct(x) <<= val(2);
     REQUIRE(a.is_ready());
     REQUIRE(x == 1);
     perform_action(a);
@@ -29,7 +29,7 @@ TEST_CASE("copy actions", "[flow][actions]")
         REQUIRE(!(empty<int>() op empty<int>()).is_ready());                   \
         REQUIRE(!(direct(x) op empty<int>()).is_ready());                      \
         REQUIRE(!(empty<int>() op direct(x)).is_ready());                      \
-        auto a = direct(x) op value(7);                                        \
+        auto a = direct(x) op val(7);                                        \
         REQUIRE(a.is_ready());                                                 \
         REQUIRE(x == 21);                                                      \
         perform_action(a);                                                     \
@@ -87,8 +87,8 @@ TEST_CASE("sequenced actions", "[flow][actions]")
 {
     int x = 1, y = 2;
     auto a = empty<int>() <<= empty<int>();
-    auto b = direct(x) <<= value(2);
-    auto c = direct(y) <<= value(3);
+    auto b = direct(x) <<= val(2);
+    auto c = direct(y) <<= val(3);
     REQUIRE(!(a, b).is_ready());
     REQUIRE((b, c, b).is_ready());
     perform_action((b, c));
@@ -100,7 +100,7 @@ TEST_CASE("action_ref", "[flow][actions]")
 {
     int x = 1;
     auto a = empty<int>() <<= empty<int>();
-    auto b = direct(x) <<= value(2);
+    auto b = direct(x) <<= val(2);
 
     action_ref<> r = b;
     REQUIRE(r.is_ready());
@@ -158,7 +158,7 @@ TEST_CASE("push_back action", "[flow][actions]")
 {
     auto x = std::vector<int>{1, 2};
     {
-        auto a = make_push_back_action(direct(x), value(3));
+        auto a = make_push_back_action(direct(x), val(3));
         REQUIRE(a.is_ready());
         perform_action(a);
         REQUIRE(x == (std::vector<int>{1, 2, 3}));
@@ -169,7 +169,7 @@ TEST_CASE("push_back action", "[flow][actions]")
         REQUIRE(!a.is_ready());
     }
     {
-        auto a = make_push_back_action(empty<std::vector<int>>(), value(3));
+        auto a = make_push_back_action(empty<std::vector<int>>(), val(3));
         REQUIRE(!a.is_ready());
     }
 }
@@ -196,7 +196,7 @@ TEST_CASE("parameterized actions", "[flow][actions]")
     auto assign = [&my_int](int x) { my_int = x; };
     auto a = parameterized_action(assign, empty<int>());
     REQUIRE(!action_is_ready(a));
-    auto b = parameterized_action(assign, value(1));
+    auto b = parameterized_action(assign, val(1));
     REQUIRE(action_is_ready(b));
     perform_action(b);
     REQUIRE(my_int == 1);
