@@ -35,7 +35,7 @@ TEST_CASE("basic get_state", "[signals][state]")
     });
     captured_id state_id;
     do_traversal(sys, [&](context ctx) {
-        auto state = get_state(ctx, value(12));
+        auto state = get_state(ctx, val(12));
 
         REQUIRE(signal_is_readable(state));
         REQUIRE(read_signal(state) == 12);
@@ -45,7 +45,7 @@ TEST_CASE("basic get_state", "[signals][state]")
         write_signal(state, 13);
     });
     do_traversal(sys, [&](context ctx) {
-        auto state = get_state(ctx, value(12));
+        auto state = get_state(ctx, val(12));
 
         REQUIRE(read_signal(state) == 13);
         REQUIRE(!state_id.matches(state.value_id()));

@@ -60,7 +60,7 @@ template<class... Args>
 auto
 printf(context ctx, char const* format, Args const&... args)
 {
-    return apply(ctx, ALIA_LAMBDIFY(invoke_snprintf), value(format), args...);
+    return apply(ctx, ALIA_LAMBDIFY(invoke_snprintf), val(format), args...);
 }
 
 } // namespace alia
