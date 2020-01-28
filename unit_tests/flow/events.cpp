@@ -50,8 +50,8 @@ TEST_CASE("node IDs", "[flow][events]")
 
     sys.controller = [&](context vanilla_ctx) {
         my_context ctx = add_component<my_tag>(vanilla_ctx, &ids);
-        do_my_thing(ctx, value("one"));
-        do_my_thing(ctx, value("two"));
+        do_my_thing(ctx, val("one"));
+        do_my_thing(ctx, val("two"));
     };
     refresh_system(sys);
 

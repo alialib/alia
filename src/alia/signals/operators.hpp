@@ -51,7 +51,7 @@ ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(>=)
             int> = 0>                                                          \
     auto operator op(A const& a, B const& b)                                   \
     {                                                                          \
-        return lazy_apply([](auto a, auto b) { return a op b; }, a, value(b)); \
+        return lazy_apply([](auto a, auto b) { return a op b; }, a, val(b)); \
     }                                                                          \
     template<                                                                  \
         class A,                                                               \
@@ -61,7 +61,7 @@ ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(>=)
             int> = 0>                                                          \
     auto operator op(A const& a, B const& b)                                   \
     {                                                                          \
-        return lazy_apply([](auto a, auto b) { return a op b; }, value(a), b); \
+        return lazy_apply([](auto a, auto b) { return a op b; }, val(a), b); \
     }
 
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(+)
@@ -161,7 +161,7 @@ template<
 auto
 operator||(A const& a, B const& b)
 {
-    return a || value(b);
+    return a || val(b);
 }
 template<
     class A,
@@ -172,7 +172,7 @@ template<
 auto
 operator||(A const& a, B const& b)
 {
-    return value(a) || b;
+    return val(a) || b;
 }
 
 #endif
@@ -239,7 +239,7 @@ template<
 auto
 operator&&(A const& a, B const& b)
 {
-    return a && value(b);
+    return a && val(b);
 }
 template<
     class A,
@@ -250,7 +250,7 @@ template<
 auto
 operator&&(A const& a, B const& b)
 {
-    return value(a) && b;
+    return val(a) && b;
 }
 
 #endif
