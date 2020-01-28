@@ -92,31 +92,3 @@ TEST_CASE("string literal operator", "[signals][basic]")
     // There aren't really any interesting requirements on this.
     REQUIRE(s.value_id() == s.value_id());
 }
-
-TEST_CASE("integer literal operator", "[signals][basic]")
-{
-    using namespace alia::literals;
-
-    auto s = 1_a;
-
-    typedef decltype(s) signal_t;
-    REQUIRE(signal_can_read<signal_t>::value);
-    REQUIRE(!signal_can_write<signal_t>::value);
-
-    REQUIRE(signal_is_readable(s));
-    REQUIRE(read_signal(s) == 1);
-}
-
-TEST_CASE("float literal operator", "[signals][basic]")
-{
-    using namespace alia::literals;
-
-    auto s = 1.5_a;
-
-    typedef decltype(s) signal_t;
-    REQUIRE(signal_can_read<signal_t>::value);
-    REQUIRE(!signal_can_write<signal_t>::value);
-
-    REQUIRE(signal_is_readable(s));
-    REQUIRE(read_signal(s) == 1.5);
-}
