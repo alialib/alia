@@ -188,6 +188,8 @@ operator<<=(Sink const& sink, Source const& source)
     return copy_action<Sink, Source>(sink, source);
 }
 
+#ifndef ALIA_STRICT_OPERATORS
+
 template<
     class Sink,
     class Source,
@@ -199,6 +201,8 @@ operator<<=(Sink const& sink, Source const& source)
 {
     return sink <<= value(source);
 }
+
+#endif
 
 // For most compound assignment operators (e.g., +=), a += b, where :a and :b
 // are signals, creates an action that sets :a equal to :a + :b.
@@ -214,17 +218,6 @@ operator<<=(Sink const& sink, Source const& source)
     auto operator assignment_form(A const& a, B const& b)                      \
     {                                                                          \
         return a <<= (a normal_form b);                                        \
-    }                                                                          \
-    template<                                                                  \
-        class A,                                                               \
-        class B,                                                               \
-        std::enable_if_t<                                                      \
-            is_bidirectional_signal_type<A>::value                             \
-                && !is_signal_type<B>::value,                                  \
-            int> = 0>                                                          \
-    auto operator assignment_form(A const& a, B const& b)                      \
-    {                                                                          \
-        return a <<= (a normal_form value(b));                                 \
     }
 
 ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(+=, +)
@@ -237,6 +230,33 @@ ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(&=, &)
 ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(|=, |)
 
 #undef ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR
+
+#ifndef ALIA_STRICT_OPERATORS
+
+#define ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(                      \
+    assignment_form, normal_form)                                              \
+    template<                                                                  \
+        class A,                                                               \
+        class B,                                                               \
+        std::enable_if_t<                                                      \
+            is_bidirectional_signal_type<A>::value                             \
+                && !is_signal_type<B>::value,                                  \
+            int> = 0>                                                          \
+    auto operator assignment_form(A const& a, B const& b)                      \
+    {                                                                          \
+        return a <<= (a normal_form value(b));                                 \
+    }
+
+ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(+=, +)
+ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(-=, -)
+ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(*=, *)
+ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(/=, /)
+ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(^=, ^)
+ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(%=, %)
+ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(&=, &)
+ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(|=, |)
+
+#endif
 
 // The increment and decrement operators work similarly.
 
