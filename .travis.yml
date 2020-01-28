@@ -6,7 +6,7 @@ python: 3.7
 
 install:
 - sudo bash scripts/set-up-system.sh
-- pip install conan gcovr
+- pip install -r requirements.txt
 - scripts/set-up-conan.sh
 
 jobs:
@@ -18,11 +18,29 @@ jobs:
       - export CXX=`which clang++-4.0`
       after_success:
       - bash <(curl -s https://codecov.io/bash) -X gcov
-    # Add the GCC build too.
+    # The GCC build does deployment.
     - env: CACHE_NAME=gcc
       before_script:
       - export CC=`which gcc`
       - export CXX=`which g++`
+      after_success:
+      - sphinx-build docs html
+      - touch html/.nojekyll
+      deploy:
+      - provider: releases
+        api_key:
+          secure: upz/uDNpVnHmK/oe9dSDsK04Z6lEVOgrrM1BZG8tatw/atTREJELXDkuB2eudkv21tDCRP5YRJYlkRcKrn5bvINk8HcayPXlWhmDiKaT3majietiix1B4V5llSuzbaEdH3cR24122tHoCzGpBxQeon1Vr77za0iWO9t8FkQO/YFeMn/GEU3TUbMMinp5i3WNd4x0Ps9yArSinsEMdK6342uHurFEDR54/04fpIYW1LlJobOIYqs0NYiLAfYfrunNZ/C2Zilxm7drWY4HsY8wIrrrOPsZojUEn4pAZfebDrCCUkvMyaN2SXdCC1MhsmOKLb5J38Y8LC11z8KWL+XdAhvRFxE7Q556rPeV/4WU4jaZcETmNd1yS7MQsWxHE+uCsXmiS7UerFPMNv14+xSno/qc0WjmLIzhsJOnB5hYQW8t/Y5N8DbCkAo7JTlm3niVQPXz3RBSWG55oW/X1l5TyRmNXB900v+nlovehqyheZcXaaljWx0NaiwYyt6uUEf7cUinFeEYjc0fsV6Yf0/jrw+L5Ex6TEtSzKcTfv2lz6qUi7BSwvoUmEnQfqcZfamKyulJ+9662ZpFiKILi+QuiM0ucjMPw2pMF3BwqTnEqEMLc6qBH8+jnVOFDsrAbo79eiqJ2W2HXEyUWVrXG5KruFuuVPuSXxuOMG/RA4rQtP8=
+        file: alia.hpp
+        skip_cleanup: true
+        on:
+          tags: true
+          repo: tmadden/alia
+      - provider: pages
+        skip_cleanup: true
+        github_token: $GITHUB_TOKEN
+        on:
+          branch: master
+        local_dir: html
 
 script:
 - export CTEST_OUTPUT_ON_FAILURE=1
@@ -37,13 +55,3 @@ before_cache:
 cache:
   directories:
   - $HOME/.conan/data
-
-deploy:
-  provider: releases
-  api_key:
-    secure: upz/uDNpVnHmK/oe9dSDsK04Z6lEVOgrrM1BZG8tatw/atTREJELXDkuB2eudkv21tDCRP5YRJYlkRcKrn5bvINk8HcayPXlWhmDiKaT3majietiix1B4V5llSuzbaEdH3cR24122tHoCzGpBxQeon1Vr77za0iWO9t8FkQO/YFeMn/GEU3TUbMMinp5i3WNd4x0Ps9yArSinsEMdK6342uHurFEDR54/04fpIYW1LlJobOIYqs0NYiLAfYfrunNZ/C2Zilxm7drWY4HsY8wIrrrOPsZojUEn4pAZfebDrCCUkvMyaN2SXdCC1MhsmOKLb5J38Y8LC11z8KWL+XdAhvRFxE7Q556rPeV/4WU4jaZcETmNd1yS7MQsWxHE+uCsXmiS7UerFPMNv14+xSno/qc0WjmLIzhsJOnB5hYQW8t/Y5N8DbCkAo7JTlm3niVQPXz3RBSWG55oW/X1l5TyRmNXB900v+nlovehqyheZcXaaljWx0NaiwYyt6uUEf7cUinFeEYjc0fsV6Yf0/jrw+L5Ex6TEtSzKcTfv2lz6qUi7BSwvoUmEnQfqcZfamKyulJ+9662ZpFiKILi+QuiM0ucjMPw2pMF3BwqTnEqEMLc6qBH8+jnVOFDsrAbo79eiqJ2W2HXEyUWVrXG5KruFuuVPuSXxuOMG/RA4rQtP8=
-  file: alia.hpp
-  skip_cleanup: true
-  on:
-    tags: true
-    repo: tmadden/alia
