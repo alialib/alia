@@ -16,7 +16,7 @@ alia
    :caption: In-Depth Guides
 
    in-depth/signals
-   in-depth/loops-and-conditionals
+   in-depth/control-flow
    in-depth/events
    in-depth/configuration
    in-depth/best-practices
