@@ -66,3 +66,25 @@ TEST_CASE("writing to uninitialized state", "[signals][state]")
         REQUIRE(read_signal(state) == 1);
     });
 }
+
+TEST_CASE("get_state with raw initial value", "[signals][state]")
+{
+    alia::system sys;
+    captured_id state_id;
+    do_traversal(sys, [&](context ctx) {
+        auto state = get_state(ctx, 12);
+
+        REQUIRE(signal_is_readable(state));
+        REQUIRE(read_signal(state) == 12);
+        REQUIRE(signal_is_writable(state));
+        state_id.capture(state.value_id());
+
+        write_signal(state, 13);
+    });
+    do_traversal(sys, [&](context ctx) {
+        auto state = get_state(ctx, 12);
+
+        REQUIRE(read_signal(state) == 13);
+        REQUIRE(!state_id.matches(state.value_id()));
+    });
+}
