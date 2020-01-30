@@ -136,8 +136,8 @@ like this::
 
 We've replaced ``draw_map`` with ``do_map``. Whereas ``draw_map`` was only
 concerned with drawing, ``do_map`` is capable of handling mouse events as well.
-Essentially, it decides what POIs are on the map (again, by calling do_poi on
-them) and routes events to them (via the ``ctx`` parameter).
+Essentially, it decides what POIs are on the map (again, by calling ``do_poi``
+on them) and routes events to them (via the ``ctx`` parameter).
 
 Somewhere inside ``do_poi``, you might find code that detects what event is
 being processed and either draws the POI or does some mouse logic. Importantly,
@@ -155,9 +155,9 @@ and destroy calls to ``do_poi``. Whatever calls are encountered during a call to
 ``do_map`` uniquely specify the set of POIs that are present in the map.
 *do_map is reactive in the same way that draw_map was!*
 
-So, alia is an attempt to recapture this function-oriented, reactive-style of
-application development in C++, even when your application requires the power of
-objects, and even when you want to utilize one or more libraries with an
-object-oriented interface. The core of alia supplies the mechanics to make the
-above style of programming possible, and it's intended to make the development
-of bindings to other libraries fairly straightforward.
+So, alia's goal is to allow you to write C++ application code reactively, even
+when your application’s functionality requires the power of objects, and even
+when you want to utilize one or more libraries with an object-oriented
+interface. The core of alia supplies the mechanics to make the above style of
+programming possible, and it's intended to make the development of bindings to
+other libraries fairly straightforward.
