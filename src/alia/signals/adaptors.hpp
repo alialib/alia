@@ -1,6 +1,7 @@
 #ifndef ALIA_SIGNALS_ADAPTORS_HPP
 #define ALIA_SIGNALS_ADAPTORS_HPP
 
+#include <alia/signals/basic.hpp>
 #include <alia/signals/utilities.hpp>
 
 namespace alia {
@@ -332,6 +333,23 @@ simplified_id_wrapper<Wrapped>
 simplify_id(Wrapped const& wrapped)
 {
     return simplified_id_wrapper<Wrapped>(wrapped);
+}
+
+// signalize(x) turns x into a signal if it isn't already one.
+// Or, in other words...
+// signalize(s), where s is a signal, returns s.
+// signalize(v), where v is a raw value, returns a value signal carrying s.
+template<class Signal>
+std::enable_if_t<is_readable_signal_type<Signal>::value, Signal>
+signalize(Signal s)
+{
+    return s;
+}
+template<class Value, std::enable_if_t<!is_signal_type<Value>::value, int> = 0>
+auto
+signalize(Value v)
+{
+    return val(std::move(v));
 }
 
 } // namespace alia

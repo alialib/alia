@@ -267,3 +267,20 @@ TEST_CASE("simplify_id", "[signals][adaptors]")
     write_signal(s, 7);
     REQUIRE((c == std::map<int, int>{{2, 7}, {0, 3}}));
 }
+
+TEST_CASE("signalize a signal", "[signals][adaptors]")
+{
+    int x = 12;
+    auto s = direct(x);
+    auto t = signalize(s);
+    REQUIRE(signal_is_readable(t));
+    REQUIRE(read_signal(t) == 12);
+}
+
+TEST_CASE("signalize a value", "[signals][adaptors]")
+{
+    int x = 12;
+    auto t = signalize(x);
+    REQUIRE(signal_is_readable(t));
+    REQUIRE(read_signal(t) == 12);
+}
