@@ -7,10 +7,8 @@ alia
    :caption: The Basics
 
    the-basics/motivation
+   the-basics/introduction
    the-basics/getting-started
-   the-basics/introductory-examples
-   the-basics/signals
-   the-basics/control-flow
 
 .. toctree::
    :maxdepth: 2
