@@ -72,12 +72,12 @@ changes.
 In other words, this simple implementation of a map display is *reactive*!
 
 Of course, immediate mode rendering only gets us so far. Now imagine that we
-want the user to be able to interact with our POIs. We need to detect when the
-user has clicked on a POI and open a popup with information about that POI and
-some options for interacting with it. Suddenly, we need a richer interface to
-our graphical POIs than ``draw_poi`` provides (i.e., a way to deliver mouse
-events), along with some hidden state behind that interface (e.g., is the popup
-open?).
+want the user to be able to interact with our POIs. Suppose we need to detect
+when the user has clicked on a POI and open a popup with information about that
+POI and some options for interacting with it. Suddenly, we need a richer
+interface to our graphical POIs than ``draw_poi`` provides (i.e., a way to
+deliver mouse events), along with some hidden state behind that interface (e.g.,
+is the popup open?).
 
 All of this of course screams "POIs are objects!" And while an object is clearly
 a good fit for these new requirements, naively introducing a list of such
@@ -103,7 +103,7 @@ with application complexity.
 alia is designed to bring back that reactive, 'immediate mode' style of
 programming to your application code while still allowing you to interact with
 objects under the hood. alia began life as an immediate mode GUI library like
-`Dear ImGui <https://github.com/ocornut/imgui`_, but in its current form it has
+`Dear ImGui <https://github.com/ocornut/imgui>`_, but in its current form it has
 ditched the actual GUI code (which other libraries did better anyway) in favor
 of focusing on the mechanics of managing objects and events in a reactive/IM
 way.
@@ -153,11 +153,11 @@ arbitrary internal state. ``do_poi`` could even be a simple wrapper around a
 class. However, unlike normal C++ objects, we don't have to explicitly create
 and destroy calls to ``do_poi``. Whatever calls are encountered during a call to
 ``do_map`` uniquely specify the set of POIs that are present in the map.
-*``do_map`` is reactive in the same way that ``draw_map`` was!*
+*do_map is reactive in the same way that draw_map was!*
 
-So, alia is a library that allows you to write C++ application code reactively,
-even when your application's functionality requires the power of objects, and
-even when you want to utilize one or more libraries with an object-oriented
-interface. The core of alia supplies the mechanics to make the above style of
-programming possible, and it's intended to make the development of bindings to
-other libraries fairly straightforward.
+So, alia is an attempt to recapture this function-oriented, reactive-style of
+application development in C++, even when your application requires the power of
+objects, and even when you want to utilize one or more libraries with an
+object-oriented interface. The core of alia supplies the mechanics to make the
+above style of programming possible, and it's intended to make the development
+of bindings to other libraries fairly straightforward.
