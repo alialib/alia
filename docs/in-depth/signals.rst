@@ -124,6 +124,10 @@ Maps
 Other Adaptors
 ^^^^^^^^^^^^^^
 
+As Parameters
+-------------
+
+
 Creating Custom Signals
 -----------------------
 
