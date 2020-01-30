@@ -29,7 +29,7 @@ TEST_CASE("copy actions", "[flow][actions]")
         REQUIRE(!(empty<int>() op empty<int>()).is_ready());                   \
         REQUIRE(!(direct(x) op empty<int>()).is_ready());                      \
         REQUIRE(!(empty<int>() op direct(x)).is_ready());                      \
-        auto a = direct(x) op val(7);                                        \
+        auto a = direct(x) op val(7);                                          \
         REQUIRE(a.is_ready());                                                 \
         REQUIRE(x == 21);                                                      \
         perform_action(a);                                                     \
@@ -136,20 +136,20 @@ TEST_CASE("toggle action", "[flow][actions]")
 {
     bool x = false;
     {
-        auto a = make_toggle_action(direct(x));
+        auto a = toggle(direct(x));
         REQUIRE(a.is_ready());
         perform_action(a);
         REQUIRE(x);
     }
     {
-        auto a = make_toggle_action(direct(x));
+        auto a = toggle(direct(x));
         REQUIRE(a.is_ready());
         perform_action(a);
         REQUIRE(!x);
     }
 
     {
-        auto a = make_toggle_action(empty<bool>());
+        auto a = toggle(empty<bool>());
         REQUIRE(!a.is_ready());
     }
 }

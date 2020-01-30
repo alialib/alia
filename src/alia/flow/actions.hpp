@@ -244,7 +244,7 @@ ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(|=, |)
             int> = 0>                                                          \
     auto operator assignment_form(A const& a, B const& b)                      \
     {                                                                          \
-        return a <<= (a normal_form val(b));                                 \
+        return a <<= (a normal_form val(b));                                   \
     }
 
 ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(+=, +)
@@ -266,14 +266,14 @@ ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(|=, |)
         std::enable_if_t<is_bidirectional_signal_type<A>::value, int> = 0>     \
     auto operator assignment_form(A const& a)                                  \
     {                                                                          \
-        return a <<= (a normal_form val(typename A::value_type(1)));         \
+        return a <<= (a normal_form val(typename A::value_type(1)));           \
     }                                                                          \
     template<                                                                  \
         class A,                                                               \
         std::enable_if_t<is_bidirectional_signal_type<A>::value, int> = 0>     \
     auto operator assignment_form(A const& a, int)                             \
     {                                                                          \
-        return a <<= (a normal_form val(typename A::value_type(1)));         \
+        return a <<= (a normal_form val(typename A::value_type(1)));           \
     }
 
 ALIA_DEFINE_BY_ONE_OPERATOR(++, +)
@@ -281,15 +281,15 @@ ALIA_DEFINE_BY_ONE_OPERATOR(--, -)
 
 #undef ALIA_DEFINE_BY_ONE_OPERATOR
 
-// make_toggle_action(flag), where :flag is a signal to a boolean, creates an
-// action that will toggle the value of :flag between true and false.
+// toggle(flag), where :flag is a signal to a boolean, creates an action that
+// will toggle the value of :flag between true and false.
 //
 // Note that this could also be used with other value types as long as the !
 // operator provides a reasonable "toggle" function.
 //
 template<class Flag>
 auto
-make_toggle_action(Flag const& flag)
+toggle(Flag const& flag)
 {
     return flag <<= !flag;
 }
