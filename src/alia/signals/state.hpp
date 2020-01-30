@@ -2,6 +2,7 @@
 #define ALIA_SIGNALS_STATE_HPP
 
 #include <alia/flow/data_graph.hpp>
+#include <alia/signals/adaptors.hpp>
 #include <alia/signals/core.hpp>
 
 namespace alia {
@@ -124,17 +125,19 @@ make_state_signal(state_holder<Value>& state)
 
 // get_state(ctx, initial_value) returns a signal carrying some persistent local
 // state whose initial value is determined by the :initial_value signal. The
-// returned signal will not be readable until :initial_value is readable (or
-// a value is explicitly written to the state signal).
+// returned signal will not be readable until :initial_value is readable or
+// a value is explicitly written to the state signal.
 template<class Context, class InitialValue>
 auto
 get_state(Context ctx, InitialValue const& initial_value)
 {
-    state_holder<typename InitialValue::value_type>* state;
+    auto initial_value_signal = signalize(initial_value);
+
+    state_holder<typename decltype(initial_value_signal)::value_type>* state;
     get_data(ctx, &state);
 
-    if (!state->is_initialized() && signal_is_readable(initial_value))
-        state->set(read_signal(initial_value));
+    if (!state->is_initialized() && signal_is_readable(initial_value_signal))
+        state->set(read_signal(initial_value_signal));
 
     return make_state_signal(*state);
 }
