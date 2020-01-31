@@ -54,7 +54,7 @@ template<
         is_map_like<typename ContainerSignal::value_type>::value,
         int> = 0>
 void
-for_each(Context ctx, ContainerSignal const& container_signal, Fn const& fn)
+for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
 {
     ALIA_IF(is_readable(container_signal))
     {
@@ -86,7 +86,7 @@ template<
             && is_vector_like<typename ContainerSignal::value_type>::value,
         int> = 0>
 void
-for_each(Context ctx, ContainerSignal const& container_signal, Fn const& fn)
+for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
 {
     ALIA_IF(is_readable(container_signal))
     {
@@ -169,7 +169,7 @@ template<
             && !is_vector_like<typename ContainerSignal::value_type>::value,
         int> = 0>
 void
-for_each(Context ctx, ContainerSignal const& container_signal, Fn const& fn)
+for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
 {
     ALIA_IF(is_readable(container_signal))
     {
