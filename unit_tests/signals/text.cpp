@@ -27,6 +27,37 @@ TEST_CASE("printf", "[signals][text]")
     check_traversal(sys, controller, "hello world;n is  2.1;");
 }
 
+TEST_CASE("text conversions", "[signals][text]")
+{
+    {
+        int x;
+        from_string(&x, "17");
+        REQUIRE(x == 17);
+        from_string(&x, "-1");
+        REQUIRE(x == -1);
+        REQUIRE_THROWS_AS(from_string(&x, "a17"), validation_error);
+        REQUIRE_THROWS_AS(from_string(&x, "1 04"), validation_error);
+        REQUIRE_THROWS_AS(from_string(&x, "1 ;"), validation_error);
+    }
+    {
+        signed short x;
+        from_string(&x, "17");
+        REQUIRE(x == 17);
+        from_string(&x, "-1");
+        REQUIRE(x == -1);
+        REQUIRE_THROWS_AS(from_string(&x, "a17"), validation_error);
+        REQUIRE_THROWS_AS(from_string(&x, "40000"), validation_error);
+    }
+    {
+        unsigned short x;
+        from_string(&x, "40000");
+        REQUIRE(x == 40000);
+        REQUIRE_THROWS_AS(from_string(&x, "a17"), validation_error);
+        REQUIRE_THROWS_AS(from_string(&x, "-1"), validation_error);
+        REQUIRE_THROWS_AS(from_string(&x, "70000"), validation_error);
+    }
+}
+
 TEST_CASE("as_text", "[signals][text]")
 {
     alia::system sys;
@@ -83,4 +114,29 @@ TEST_CASE("as_bidirectional_text", "[signals][text]")
     };
 
     check_traversal(sys, controller, "-121;121;hello!;1.2;");
+}
+
+TEST_CASE("as_bidirectional_text value_id", "[signals][text]")
+{
+    alia::system sys;
+
+    int x = 1;
+    captured_id signal_id;
+
+    auto make_controller = [&](std::string const& new_x) {
+        return [&](context ctx) {
+            auto x_text = as_bidirectional_text(ctx, direct(x));
+            REQUIRE(signal_is_writable(x_text));
+            write_signal(x_text, new_x);
+            signal_id.capture(x_text.value_id());
+        };
+    };
+
+    do_traversal(sys, make_controller("4"));
+    REQUIRE(x == 4);
+    captured_id last_id = signal_id;
+
+    do_traversal(sys, make_controller("7"));
+    REQUIRE(x == 7);
+    REQUIRE(last_id != signal_id);
 }
