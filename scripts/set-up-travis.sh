@@ -3,5 +3,5 @@
 # This should be run with sudo.
 set -x -e
 scripts/set-up-system.sh
-sudo -u $SUDO_USER pip install -r requirements.txt
+pip install -r requirements.txt
 sudo -u $SUDO_USER bash scripts/set-up-conan.sh
