@@ -6,4 +6,3 @@ virtualenv --prompt="(alia) " "$@" .venv
 source .venv/bin/activate
 python --version
 pip install -r requirements.txt
-

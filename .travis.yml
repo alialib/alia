@@ -1,28 +1,32 @@
 dist: xenial
 
 language: python
-
 python: 3.7
-
-install:
-- sudo bash scripts/set-up-system.sh
-- pip install -r requirements.txt
-- scripts/set-up-conan.sh
 
 jobs:
   include:
+
     # The Clang build generates test coverage information.
     - env: CACHE_NAME=clang
+      install:
+      - sudo bash scripts/set-up-travis.sh
       before_script:
       - export CC=`which clang-4.0`
       - export CXX=`which clang++-4.0`
+      script:
+      - scripts/do-ci-testing.sh
       after_success:
       - bash <(curl -s https://codecov.io/bash) -X gcov
+
     # The GCC build does deployment.
     - env: CACHE_NAME=gcc
+      install:
+      - sudo bash scripts/set-up-travis.sh
       before_script:
       - export CC=`which gcc`
       - export CXX=`which g++`
+      script:
+      - scripts/do-ci-testing.sh
       after_success:
       - sphinx-build docs html
       - touch html/.nojekyll
@@ -41,14 +45,6 @@ jobs:
         on:
           branch: master
         local_dir: html
-
-script:
-- export CTEST_OUTPUT_ON_FAILURE=1
-- python scripts/generate-distributables.py
-- cp alia.hpp single_header_tests
-- python scripts/generate-single-header-tests.py
-- ./fips make test linux-make-debug
-- ./fips make test linux-make-release
 
 before_cache:
 - conan remove "*" -s -b -f
