@@ -154,7 +154,7 @@ struct node_identity
 };
 typedef node_identity const* node_id;
 
-static inline node_id
+inline node_id
 get_node_id(context ctx)
 {
     node_identity* id;
@@ -170,7 +170,7 @@ struct routable_node_id
     routing_region_ptr region;
 };
 
-static inline routable_node_id
+inline routable_node_id
 make_routable_node_id(dataless_context ctx, node_id id)
 {
     routable_node_id routable;
@@ -183,7 +183,7 @@ static routable_node_id const null_node_id;
 
 // Is the given routable_node_id valid?
 // (Only the null_node_id is invalid.)
-static inline bool
+inline bool
 is_valid(routable_node_id const& id)
 {
     return id.id != nullptr;
@@ -227,7 +227,7 @@ struct refresh_event
 {
 };
 
-static inline bool
+inline bool
 is_refresh_event(dataless_context ctx)
 {
     refresh_event* e;

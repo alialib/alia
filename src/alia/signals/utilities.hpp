@@ -56,7 +56,7 @@ struct lazy_reader
 
 // signals_all_readable(signal_a, signal_b, ...) is a variadic function that
 // returns true iff all its input signals are readable.
-static inline bool
+inline bool
 signals_all_readable()
 {
     return true;

@@ -18,7 +18,7 @@ make_printf_friendly(Value x)
     return x;
 }
 
-static inline char const*
+inline char const*
 make_printf_friendly(std::string const& x)
 {
     return x.c_str();
