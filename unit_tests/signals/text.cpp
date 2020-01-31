@@ -56,6 +56,12 @@ TEST_CASE("text conversions", "[signals][text]")
         REQUIRE_THROWS_AS(from_string(&x, "-1"), validation_error);
         REQUIRE_THROWS_AS(from_string(&x, "70000"), validation_error);
     }
+    {
+        double x;
+        from_string(&x, "4.5");
+        REQUIRE(x == 4.5);
+        REQUIRE_THROWS_AS(from_string(&x, "a17"), validation_error);
+    }
 }
 
 TEST_CASE("as_text", "[signals][text]")
