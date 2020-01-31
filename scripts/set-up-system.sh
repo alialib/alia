@@ -3,4 +3,5 @@
 # This should be run with sudo.
 echo "Setting up system..."
 set -x -e
+apt-get update -qy
 apt-get install -y --upgrade g++-5 gcc-5 lcov cmake git curl clang-4.0 llvm-4.0
