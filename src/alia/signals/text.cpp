@@ -114,7 +114,7 @@ from_string(std::string* value, std::string const& str)
 std::string
 to_string(std::string value)
 {
-    return std::move(value);
+    return value;
 }
 
 } // namespace alia
