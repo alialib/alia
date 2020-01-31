@@ -25,7 +25,7 @@ ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(+)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(-)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(*)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(/)
-ALIA_DEFINE_BINARY_SIGNAL_OPERATOR (^)
+ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(^)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(%)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(&)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(|)
@@ -51,7 +51,7 @@ ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(>=)
             int> = 0>                                                          \
     auto operator op(A const& a, B const& b)                                   \
     {                                                                          \
-        return lazy_apply([](auto a, auto b) { return a op b; }, a, val(b)); \
+        return lazy_apply([](auto a, auto b) { return a op b; }, a, val(b));   \
     }                                                                          \
     template<                                                                  \
         class A,                                                               \
@@ -61,14 +61,14 @@ ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(>=)
             int> = 0>                                                          \
     auto operator op(A const& a, B const& b)                                   \
     {                                                                          \
-        return lazy_apply([](auto a, auto b) { return a op b; }, val(a), b); \
+        return lazy_apply([](auto a, auto b) { return a op b; }, val(a), b);   \
     }
 
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(+)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(-)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(*)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(/)
-ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR (^)
+ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(^)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(%)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(&)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(|)
