@@ -21,8 +21,7 @@ TEST_CASE("lazy_apply", "[signals][application]")
     REQUIRE(signal_is_readable(s1));
     REQUIRE(read_signal(s1) == 2);
 
-    auto s2
-        = lazy_apply([](int i, int j) { return i + j; }, val(1), val(6));
+    auto s2 = lazy_apply([](int i, int j) { return i + j; }, val(1), val(6));
 
     typedef decltype(s2) signal_t2;
     REQUIRE(signal_can_read<signal_t2>::value);
@@ -34,10 +33,8 @@ TEST_CASE("lazy_apply", "[signals][application]")
 
     // Create some similar signals to make sure that they produce different
     // value IDs.
-    auto s3
-        = lazy_apply([](int i, int j) { return i + j; }, val(2), val(6));
-    auto s4
-        = lazy_apply([](int i, int j) { return i + j; }, val(1), val(0));
+    auto s3 = lazy_apply([](int i, int j) { return i + j; }, val(2), val(6));
+    auto s4 = lazy_apply([](int i, int j) { return i + j; }, val(1), val(0));
     REQUIRE(s2.value_id() != s3.value_id());
     REQUIRE(s2.value_id() != s4.value_id());
     REQUIRE(s3.value_id() != s4.value_id());
@@ -188,6 +185,5 @@ TEST_CASE("alia_method", "[signals][application]")
 {
     auto v = val("test text");
     REQUIRE(read_signal(lazy_apply(ALIA_METHOD(length), v)) == 9);
-    REQUIRE(
-        read_signal(lazy_apply(alia_method(substr), v, val(5))) == "text");
+    REQUIRE(read_signal(lazy_apply(alia_method(substr), v, val(5))) == "text");
 }
