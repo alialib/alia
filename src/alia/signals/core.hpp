@@ -382,6 +382,18 @@ struct is_bidirectional_signal_type : std::conditional_t<
 {
 };
 
+// When a value is written to a signal, the signal is allowed to throw a
+// validation_error if the value isn't acceptable.
+struct validation_error : exception
+{
+    validation_error(std::string const& message) : exception(message)
+    {
+    }
+    ~validation_error() throw()
+    {
+    }
+};
+
 } // namespace alia
 
 #endif
