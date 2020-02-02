@@ -38,8 +38,7 @@ request_animation_refresh(dataless_context ctx)
 millisecond_count
 get_raw_animation_tick_count(dataless_context ctx)
 {
-    if (is_refresh_event(ctx))
-        request_animation_refresh(ctx);
+    request_animation_refresh(ctx);
     return get_component<system_tag>(ctx)->tick_counter;
 }
 

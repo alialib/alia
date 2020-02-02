@@ -6,6 +6,7 @@
 #include <alia/flow/actions.hpp>
 #include <alia/flow/data_graph.hpp>
 #include <alia/other/cubic_bezier.hpp>
+#include <alia/signals/adaptors.hpp>
 #include <alia/signals/basic.hpp>
 
 // This file provides various signals and adaptors that work with time.
@@ -87,12 +88,13 @@ struct animation_timer
     {
         return val(raw_.ticks_left());
     }
+    template<class Duration>
     auto
-    start(readable<millisecond_count> duration)
+    start(Duration duration)
     {
         return parameterized_action(
             [&](millisecond_count duration) { raw_.start(duration); },
-            duration);
+            signalize(duration));
     }
 
  private:
