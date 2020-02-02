@@ -69,3 +69,143 @@ TEST_CASE("interpolation", "[signals][temporal]")
             .real()
         == Approx(1));
 }
+
+TEST_CASE("smooth_raw_value", "[signals][temporal]")
+{
+    alia::system sys;
+
+    set_automatic_time_updates(sys, false);
+    set_millisecond_tick_counter(sys, 0);
+
+    REQUIRE(!system_needs_refresh(sys));
+
+    value_smoother<int> smoother;
+
+    do_traversal(sys, [&](context ctx) {
+        int x = smooth_raw_value(
+            ctx, smoother, 0, animated_transition{linear_curve, 100});
+        REQUIRE(x == 0);
+    });
+    REQUIRE(!system_needs_refresh(sys));
+
+    set_millisecond_tick_counter(sys, 100);
+    do_traversal(sys, [&](context ctx) {
+        int x = smooth_raw_value(
+            ctx, smoother, 10, animated_transition{linear_curve, 100});
+        REQUIRE(x == 0);
+    });
+    REQUIRE(system_needs_refresh(sys));
+
+    set_millisecond_tick_counter(sys, 110);
+    do_traversal(sys, [&](context ctx) {
+        int x = smooth_raw_value(
+            ctx, smoother, 10, animated_transition{linear_curve, 100});
+        REQUIRE(x == 1);
+    });
+    REQUIRE(system_needs_refresh(sys));
+
+    set_millisecond_tick_counter(sys, 150);
+    do_traversal(sys, [&](context ctx) {
+        int x = smooth_raw_value(
+            ctx, smoother, 0, animated_transition{linear_curve, 100});
+        REQUIRE(x == 5);
+    });
+    REQUIRE(system_needs_refresh(sys));
+
+    set_millisecond_tick_counter(sys, 170);
+    do_traversal(sys, [&](context ctx) {
+        int x = smooth_raw_value(
+            ctx, smoother, 0, animated_transition{linear_curve, 100});
+        REQUIRE(x == 3);
+    });
+    REQUIRE(system_needs_refresh(sys));
+
+    set_millisecond_tick_counter(sys, 200);
+    do_traversal(sys, [&](context ctx) {
+        int x = smooth_raw_value(
+            ctx, smoother, 0, animated_transition{linear_curve, 100});
+        REQUIRE(x == 0);
+    });
+    REQUIRE(!system_needs_refresh(sys));
+
+    set_millisecond_tick_counter(sys, 300);
+    do_traversal(sys, [&](context ctx) {
+        int x = smooth_raw_value(
+            ctx, smoother, 20, animated_transition{linear_curve, 100});
+        REQUIRE(x == 0);
+    });
+    REQUIRE(system_needs_refresh(sys));
+
+    set_millisecond_tick_counter(sys, 350);
+    do_traversal(sys, [&](context ctx) {
+        int x = smooth_raw_value(
+            ctx, smoother, 30, animated_transition{linear_curve, 100});
+        REQUIRE(x == 10);
+    });
+    REQUIRE(system_needs_refresh(sys));
+
+    set_millisecond_tick_counter(sys, 400);
+    do_traversal(sys, [&](context ctx) {
+        int x = smooth_raw_value(
+            ctx, smoother, 30, animated_transition{linear_curve, 100});
+        REQUIRE(x == 20);
+    });
+    REQUIRE(system_needs_refresh(sys));
+
+    set_millisecond_tick_counter(sys, 450);
+    do_traversal(sys, [&](context ctx) {
+        int x = smooth_raw_value(
+            ctx, smoother, 30, animated_transition{linear_curve, 100});
+        REQUIRE(x == 30);
+    });
+    REQUIRE(!system_needs_refresh(sys));
+}
+
+TEST_CASE("smooth_value", "[signals][temporal]")
+{
+    alia::system sys;
+
+    set_automatic_time_updates(sys, false);
+    set_millisecond_tick_counter(sys, 0);
+
+    REQUIRE(!system_needs_refresh(sys));
+
+    auto transition = animated_transition{linear_curve, 100};
+
+    do_traversal(sys, [&](context ctx) {
+        auto x = smooth_value(ctx, val(0), transition);
+        REQUIRE(signal_is_readable(x));
+        REQUIRE(read_signal(x) == 0);
+    });
+    REQUIRE(!system_needs_refresh(sys));
+
+    captured_id last_id;
+
+    set_millisecond_tick_counter(sys, 100);
+    do_traversal(sys, [&](context ctx) {
+        auto x = smooth_value(ctx, val(10), transition);
+        REQUIRE(signal_is_readable(x));
+        REQUIRE(read_signal(x) == 0);
+        last_id.capture(x.value_id());
+    });
+    REQUIRE(system_needs_refresh(sys));
+
+    set_millisecond_tick_counter(sys, 150);
+    do_traversal(sys, [&](context ctx) {
+        auto x = smooth_value(ctx, val(10), transition);
+        REQUIRE(signal_is_readable(x));
+        REQUIRE(read_signal(x) == 5);
+        REQUIRE(last_id != x.value_id());
+        last_id.capture(x.value_id());
+    });
+    REQUIRE(system_needs_refresh(sys));
+
+    set_millisecond_tick_counter(sys, 200);
+    do_traversal(sys, [&](context ctx) {
+        auto x = smooth_value(ctx, val(10), transition);
+        REQUIRE(signal_is_readable(x));
+        REQUIRE(read_signal(x) == 10);
+        REQUIRE(last_id != x.value_id());
+    });
+    REQUIRE(!system_needs_refresh(sys));
+}

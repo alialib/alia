@@ -221,7 +221,7 @@ template<class Wrapped>
 struct smoothed_signal : regular_signal<
                              smoothed_signal<Wrapped>,
                              typename Wrapped::value_type,
-                             typename Wrapped::direction_tag>
+                             read_only_signal>
 {
     smoothed_signal(
         Wrapped wrapped, typename Wrapped::value_type smoothed_value)
@@ -248,16 +248,6 @@ struct smoothed_signal : regular_signal<
     read() const
     {
         return smoothed_value_;
-    }
-    bool
-    is_writable() const
-    {
-        return wrapped_.is_writable();
-    }
-    void
-    write(typename Wrapped::value_type const& value) const
-    {
-        return wrapped_.write(value);
     }
 
  private:
