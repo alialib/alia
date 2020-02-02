@@ -66,7 +66,8 @@ get_tick_count_now()
 void
 refresh_system(system& sys)
 {
-    sys.tick_counter = get_tick_count_now();
+    if (sys.automatic_time_updates)
+        sys.tick_counter = get_tick_count_now();
 
     sys.refresh_needed = false;
 

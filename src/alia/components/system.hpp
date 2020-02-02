@@ -39,9 +39,11 @@ get_raw_animation_ticks_left(dataless_context ctx, millisecond_count end_tick);
 
 struct external_interface
 {
+    // alia calls this every frame when an animation is in progress.
     virtual void
     request_animation_refresh()
-        = 0;
+    {
+    }
 };
 
 struct system
@@ -49,12 +51,25 @@ struct system
     data_graph data;
     std::function<void(context)> controller;
     millisecond_count tick_counter = 0;
+    bool automatic_time_updates = true;
     bool refresh_needed = false;
     external_interface* external = nullptr;
 };
 
 void
 refresh_system(system& sys);
+
+inline void
+set_automatic_time_updates(system& sys, bool enabled)
+{
+    sys.automatic_time_updates = enabled;
+}
+
+inline void
+set_millisecond_tick_counter(system& sys, millisecond_count count)
+{
+    sys.tick_counter = count;
+}
 
 } // namespace alia
 
