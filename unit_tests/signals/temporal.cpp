@@ -2,13 +2,13 @@
 
 #include <catch.hpp>
 
-#include <thread>
+#include <complex>
 
 #include "traversal.hpp"
 
 using namespace alia;
 
-TEST_CASE("animation_timer", "[components][system]")
+TEST_CASE("animation_timer", "[signals][temporal]")
 {
     alia::system sys;
 
@@ -56,4 +56,16 @@ TEST_CASE("animation_timer", "[components][system]")
     });
 
     REQUIRE(!system_needs_refresh(sys));
+}
+
+TEST_CASE("interpolation", "[signals][temporal]")
+{
+    REQUIRE(interpolate(-1., 1., 0.6) == Approx(0.2));
+    REQUIRE(interpolate(0, 10, 0.57) == 6);
+    REQUIRE(interpolate(0, 10, 0.64) == 6);
+    REQUIRE(interpolate(1.f, 3.f, 0.5) == Approx(2.f));
+    REQUIRE(
+        interpolate(std::complex<double>(0), std::complex<double>(4), 0.25)
+            .real()
+        == Approx(1));
 }

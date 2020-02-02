@@ -9,6 +9,8 @@
 #include <alia/signals/adaptors.hpp>
 #include <alia/signals/basic.hpp>
 
+#include <cmath>
+
 // This file provides various signals and adaptors that work with time.
 
 namespace alia {
@@ -136,7 +138,7 @@ struct value_smoother
 
 // interpolate(a, b, factor) yields a * (1 - factor) + b * factor
 template<class Value>
-Value
+std::enable_if_t<!std::is_integral<Value>::value, Value>
 interpolate(Value const& a, Value const& b, double factor)
 {
     return a * (1 - factor) + b * factor;
@@ -149,10 +151,10 @@ interpolate(float a, float b, double factor)
 }
 // Overload it for integers to add rounding (and eliminate warnings).
 template<class Integer>
-std::enable_if_t<!std::is_integral<Integer>::value, Integer>
+std::enable_if_t<std::is_integral<Integer>::value, Integer>
 interpolate(Integer a, Integer b, double factor)
 {
-    return float(a * (1 - factor) + b * factor);
+    return Integer(std::round(a * (1 - factor) + b * factor));
 }
 
 // reset_smoothing(smoother, value) causes the smoother to transition abruptly
