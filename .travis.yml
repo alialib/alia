@@ -63,7 +63,7 @@ jobs:
       script:
         - python scripts/generate-distributables.py
         - mv alia.hpp examples/asm-dom
-        - |
+        - >
           docker run -dit --name emscripten -v $(pwd)/examples/asm-dom:/src
           trzeci/emscripten:sdk-incoming-64bit bash
         - docker exec -it emscripten emcmake cmake .
