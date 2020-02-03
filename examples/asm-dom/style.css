@@ -1,0 +1,8 @@
+@charset "utf-8";
+
+.colored-box {
+    width: 3em;
+    height: 3em;
+    border-radius: 0.5em;
+    margin: 1em 0em;
+}
