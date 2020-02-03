@@ -208,4 +208,11 @@ TEST_CASE("smooth_value", "[signals][temporal]")
         REQUIRE(last_id != x.value_id());
     });
     REQUIRE(!system_needs_refresh(sys));
+
+    set_millisecond_tick_counter(sys, 240);
+    do_traversal(sys, [&](context ctx) {
+        auto x = smooth_value(ctx, empty<int>(), transition);
+        REQUIRE(!signal_is_readable(x));
+    });
+    REQUIRE(!system_needs_refresh(sys));
 }
