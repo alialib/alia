@@ -3,7 +3,6 @@ alia
 
 .. toctree::
    :maxdepth: 2
-   :hidden:
    :caption: The Basics
 
    the-basics/motivation
@@ -12,7 +11,6 @@ alia
 
 .. toctree::
    :maxdepth: 2
-   :hidden:
    :caption: In-Depth Guides
 
    in-depth/signals
@@ -23,17 +21,6 @@ alia
 
 .. toctree::
    :maxdepth: 2
-   :hidden:
-   :caption: Developer Guides
+   :caption: Development
 
-   developer/building-and-testing
-   developer/goals-and-rationales
-
-.. toctree::
-   :maxdepth: 2
-   :hidden:
-   :caption: Outdated Tutorial
-
-   introduction
-   state-management
-   control-flow
+   development/building-and-testing
