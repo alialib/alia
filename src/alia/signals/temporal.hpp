@@ -271,7 +271,7 @@ smooth_value(
     Signal x,
     animated_transition const& transition = default_transition)
 {
-    Value output;
+    Value output = Value();
     if (signal_is_readable(x))
         output = smooth_raw_value(ctx, smoother, read_signal(x), transition);
     return make_smoothed_signal(x, output);
