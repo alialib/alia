@@ -206,6 +206,7 @@ TEST_CASE("smooth_value", "[signals][temporal]")
         REQUIRE(signal_is_readable(x));
         REQUIRE(read_signal(x) == 10);
         REQUIRE(last_id != x.value_id());
+        last_id.capture(x.value_id());
     });
     REQUIRE(!system_needs_refresh(sys));
 
@@ -213,6 +214,7 @@ TEST_CASE("smooth_value", "[signals][temporal]")
     do_traversal(sys, [&](context ctx) {
         auto x = smooth_value(ctx, empty<int>(), transition);
         REQUIRE(!signal_is_readable(x));
+        REQUIRE(last_id != x.value_id());
     });
     REQUIRE(!system_needs_refresh(sys));
 }
