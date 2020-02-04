@@ -90,9 +90,9 @@ maybe we just write code like this now::
 
     void update_user_location()
     {
-        if (location_tracking_enabled() && user_location_object_exists())
+        if (location_tracking_enabled() && !user_location_object_exists())
             add_user_location_object();
-        else if (!location_tracking_enabled() && !user_location_object_exists())
+        else if (!location_tracking_enabled() && user_location_object_exists())
             remove_user_location_object();
     }
 
