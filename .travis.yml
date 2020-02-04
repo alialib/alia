@@ -6,7 +6,7 @@ python: 3.7
 jobs:
   include:
 
-    # The Clang build generates test coverage information.
+    # The Clang job generates test coverage information.
     - env: CACHE_NAME=clang
       install:
       - sudo bash scripts/set-up-travis.sh
@@ -18,7 +18,7 @@ jobs:
       after_success:
       - bash <(curl -s https://codecov.io/bash) -X gcov
 
-    # The GCC build does deployment.
+    # The GCC job deploys alia.hpp releases.
     - env: CACHE_NAME=gcc
       install:
       - sudo bash scripts/set-up-travis.sh
@@ -27,9 +27,6 @@ jobs:
       - export CXX=`which g++`
       script:
       - scripts/do-ci-testing.sh
-      after_success:
-      - sphinx-build docs html
-      - touch html/.nojekyll
       deploy:
       - provider: releases
         api_key:
@@ -49,25 +46,31 @@ jobs:
         on:
           tags: true
           repo: tmadden/alia
+
+    # The Emscripten job deploys the documentation.
+    # (The isn't currently a full test. It just tests that the asm-dom examples
+    # build successfully.)
+    - env: CACHE_NAME=emscripten
+      services:
+      - docker
+      script:
+      - python scripts/generate-distributables.py
+      - mv alia.hpp examples/asm-dom
+      - >
+        docker run -dit --name emscripten -v $(pwd)/examples/asm-dom:/src
+        trzeci/emscripten:sdk-incoming-64bit bash
+      - docker exec -it emscripten emcmake cmake .
+      - docker exec -it emscripten make
+      after_success:
+      - sphinx-build docs html
+      - touch html/.nojekyll
+      deploy:
       - provider: pages
         skip_cleanup: true
         github_token: $GITHUB_TOKEN
         on:
           branch: master
         local_dir: html
-
-    # Test that the Emscripten examples work.
-    - env: CACHE_NAME=emscripten
-      services:
-        - docker
-      script:
-        - python scripts/generate-distributables.py
-        - mv alia.hpp examples/asm-dom
-        - >
-          docker run -dit --name emscripten -v $(pwd)/examples/asm-dom:/src
-          trzeci/emscripten:sdk-incoming-64bit bash
-        - docker exec -it emscripten emcmake cmake .
-        - docker exec -it emscripten make
 
 before_cache:
 - conan remove "*" -s -b -f
