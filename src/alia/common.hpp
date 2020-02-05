@@ -44,12 +44,12 @@ struct exception : std::exception
     {
     }
 
-    ~exception() throw()
+    ~exception() noexcept(true)
     {
     }
 
     virtual char const*
-    what() const throw()
+    what() const noexcept(true)
     {
         return msg_->c_str();
     }
