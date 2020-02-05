@@ -145,7 +145,7 @@ each call to ``do_poi`` can also store arbitrary data within ``ctx``, which
 allows it to maintain state about the user interaction or manage its own
 widgets. All of this is invisible to ``do_map``. (Except that ``do_map`` must be
 written with special forms of ``if`` and ``for``, which allow alia to ensure
-that each call to ``do_poi`` get the correct data.)
+that each call to ``do_poi`` is associated with the correct data.)
 
 Effectively, each call to ``do_poi`` has the capabilities of a normal C++
 object: it can respond to multiple types of events, and it can maintain
