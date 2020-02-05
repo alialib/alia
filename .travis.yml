@@ -9,7 +9,8 @@ jobs:
     # The Clang job generates test coverage information.
     - env: CACHE_NAME=clang
       install:
-      - sudo bash scripts/set-up-travis.sh
+      - sudo bash scripts/set-up-system.sh
+      - scripts/set-up-travis.sh
       before_script:
       - export CC=`which clang-4.0`
       - export CXX=`which clang++-4.0`
@@ -21,7 +22,8 @@ jobs:
     # The GCC job deploys alia.hpp releases.
     - env: CACHE_NAME=gcc
       install:
-      - sudo bash scripts/set-up-travis.sh
+      - sudo bash scripts/set-up-system.sh
+      - scripts/set-up-travis.sh
       before_script:
       - export CC=`which gcc`
       - export CXX=`which g++`
