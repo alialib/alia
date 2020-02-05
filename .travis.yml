@@ -56,14 +56,15 @@ jobs:
       script:
       - python scripts/generate-distributables.py
       - mv alia.hpp examples/asm-dom
+      - mkdir examples/asm-dom/build
       - >
         docker run -dit --name emscripten -v $(pwd)/examples/asm-dom:/src
         trzeci/emscripten:sdk-incoming-64bit bash
-      - docker exec -it emscripten emcmake cmake .
-      - docker exec -it emscripten make
+      - >
+        docker exec -it emscripten -w /src/build
+        bash -c 'emcmake cmake .. && make'
       after_success:
-      - sphinx-build docs html
-      - touch html/.nojekyll
+      - scripts/build-docs.sh
       deploy:
       - provider: pages
         skip_cleanup: true

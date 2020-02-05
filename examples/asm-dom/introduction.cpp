@@ -7,9 +7,6 @@
 using namespace alia;
 using namespace dom;
 
-alia::system greeting_system;
-dom::system greeting_dom;
-
 void
 do_greeting_ui(dom::context ctx, bidirectional<string> name)
 {
@@ -24,8 +21,16 @@ do_greeting_ui(dom::context ctx, bidirectional<string> name)
     alia_end
 }
 
-alia::system addition_system;
-dom::system addition_dom;
+void
+init_greeting_ui()
+{
+    static alia::system the_system;
+    static dom::system the_dom;
+
+    initialize(the_dom, the_system, "greeting-ui", [](dom::context ctx) {
+        do_greeting_ui(ctx, get_state(ctx, string()));
+    });
+}
 
 void
 do_addition_ui(
@@ -36,21 +41,24 @@ do_addition_ui(
     do_text(ctx, a + b);
 }
 
+void
+init_addition_ui()
+{
+    static alia::system the_system;
+    static dom::system the_dom;
+
+    initialize(the_dom, the_system, "addition-ui", [](dom::context ctx) {
+        do_addition_ui(
+            ctx,
+            get_state(ctx, empty<double>()),
+            get_state(ctx, empty<double>()));
+    });
+}
+
 int
 main()
 {
-    initialize(
-        addition_dom, addition_system, "addition-ui", [](dom::context ctx) {
-            do_addition_ui(
-                ctx,
-                get_state(ctx, empty<double>()),
-                get_state(ctx, empty<double>()));
-        });
-
-    initialize(
-        greeting_dom, greeting_system, "greeting-ui", [](dom::context ctx) {
-            do_greeting_ui(ctx, get_state(ctx, string()));
-        });
-
+    init_greeting_ui();
+    init_addition_ui();
     return 0;
 };
