@@ -58,10 +58,9 @@ jobs:
       - mv alia.hpp examples/asm-dom
       - mkdir examples/asm-dom/build
       - >
-        docker run -dit --name emscripten -v $(pwd)/examples/asm-dom:/src
-        trzeci/emscripten:sdk-incoming-64bit -w /src/build bash
-      - docker exec -it emscripten emcmake cmake .
-      - docker exec -it emscripten make
+        docker run -it --name emscripten -v $(pwd)/examples/asm-dom:/src
+        trzeci/emscripten:sdk-incoming-64bit -w /src/build
+        bash -c 'emcmake cmake . && make'
       after_success:
       - scripts/build-docs.sh
       deploy:
