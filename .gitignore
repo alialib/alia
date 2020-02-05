@@ -3,3 +3,4 @@
 .venv
 .docs
 coverage.txt
+html

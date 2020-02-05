@@ -232,6 +232,7 @@ initialize(
     if (!asmdom_initialized)
     {
         asmdom::Config config = asmdom::Config();
+        config.unsafePatch = true;
         asmdom::init(config);
         asmdom_initialized = true;
     }

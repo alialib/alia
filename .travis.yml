@@ -9,7 +9,8 @@ jobs:
     # The Clang job generates test coverage information.
     - env: CACHE_NAME=clang
       install:
-      - sudo bash scripts/set-up-travis.sh
+      - sudo bash scripts/set-up-system.sh
+      - scripts/set-up-travis.sh
       before_script:
       - export CC=`which clang-4.0`
       - export CXX=`which clang++-4.0`
@@ -21,7 +22,8 @@ jobs:
     # The GCC job deploys alia.hpp releases.
     - env: CACHE_NAME=gcc
       install:
-      - sudo bash scripts/set-up-travis.sh
+      - sudo bash scripts/set-up-system.sh
+      - scripts/set-up-travis.sh
       before_script:
       - export CC=`which gcc`
       - export CXX=`which g++`
@@ -56,14 +58,13 @@ jobs:
       script:
       - python scripts/generate-distributables.py
       - mv alia.hpp examples/asm-dom
+      - mkdir examples/asm-dom/build
       - >
-        docker run -dit --name emscripten -v $(pwd)/examples/asm-dom:/src
-        trzeci/emscripten:sdk-incoming-64bit bash
-      - docker exec -it emscripten emcmake cmake .
-      - docker exec -it emscripten make
+        docker run -it --name emscripten -v $(pwd)/examples/asm-dom:/src
+        -w /src/build trzeci/emscripten:sdk-incoming-64bit
+        bash -c 'emcmake cmake .. && make'
       after_success:
-      - sphinx-build docs html
-      - touch html/.nojekyll
+      - scripts/build-docs.sh
       deploy:
       - provider: pages
         skip_cleanup: true
