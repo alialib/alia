@@ -1,6 +1,11 @@
 Introduction
 ============
 
+.. raw:: html
+
+   <script src="../asm-dom.js"></script>
+   <script src="../introduction.js"></script>
+
 alia is designed to allow you to write reactive application code that interacts
 with traditional, object-oriented C++ libraries. Let's start with a very simple
 example::
@@ -23,15 +28,22 @@ This example uses an experimental wrapper for `the asm-dom library
 <https://github.com/mbasso/asm-dom>`_. Since asm-dom allows us to write C++ web
 UIs, you can see this example in action right here:
 
-.. todo:: insert example
+.. raw:: html
+
+   <div class="demo-panel">
+   <div id="greeting-ui"></div>
+   </div>
 
 Most of the examples that you'll see in this documentation use a mixture of alia
-and the experimental asm-dom wrapper. Since alia itself focuses on the mechanics
-of writing reactive applications, it doesn't actually *do* anything to interact
-with the outside world. It's a bit like a fancy programming language with no I/O
+and the asm-dom wrapper. Since alia itself focuses on the mechanics of writing
+reactive applications, it doesn't actually *do* anything to interact with the
+outside world. It's a bit like a fancy programming language with no I/O
 capabilities. It's designed to hook up to other libraries that do useful things,
 so for these examples, we've hooked it up to asm-dom. For clarity, anything
 specific to the asm-dom wrapper is prefixed with the ``dom::`` namespace.
+
+The Reactive Paradigm
+---------------------
 
 If you're familiar with reactive programming, it will be obvious, but the key
 takeaway from this example is that when using alia, application code is
@@ -49,6 +61,9 @@ time you type into the input box, the ``name`` state changes and
 time, it decides to show the input box that allows you to edit ``name``, and
 sometimes it decides to show a greeting as well.
 
+alia's Role
+-----------
+
 Of course, behind the scenes, we're not completely rebuilding the UI every time
 anything changes. That would be prohibitively expensive for more complex UIs,
 and it would likely lead to discontinuities in the behavior of the UI. Instead,
@@ -60,7 +75,7 @@ and compute these 'diffs' efficiently. To facilitate this, it introduces some
 of its own concepts into the application-level code, which we'll touch on here.
 
 Signals
--------
+^^^^^^^
 
 You might have noticed that our ``name`` parameter is declared as a
 ``bidirectional<std::string>`` rather than ``std::string&``, as you might have
@@ -72,7 +87,7 @@ signal in signal processing). In alia, this concept is captured by signal types,
 and they differ from normal C++ values in two important ways:
 
 Availability
-^^^^^^^^^^^^
+++++++++++++
 
 It's often useful to think of a signal in your dataflow as carrying no value at
 all (e.g., because the user hasn't input a value yet, or because the value is
@@ -93,6 +108,12 @@ For example, let's write a quick app that adds numbers::
       dom::do_text(ctx, a + b);
   }
 
+.. raw:: html
+
+   <div class="demo-panel">
+   <div id="addition-ui"></div>
+   </div>
+
 As simple as this example is, it's actually setting up a dataflow (via the ``+``
 operator). Notice that the sum doesn't actually appear until we supply a value
 for both ``a`` and ``b``. The result of the ``+`` operator itself is a signal,
@@ -100,7 +121,7 @@ and if either of its inputs is unavailable, that state implicitly propagates
 through to the sum.
 
 Value Identification
-^^^^^^^^^^^^^^^^^^^^
+++++++++++++++++++++
 
 When interfacing alia with a library (like asm-dom), we frequently have to write
 code that asks "Is this value the same as the last time we saw it?" For simple
@@ -115,7 +136,7 @@ You can read much more about signals in the :doc:`in-depth guide
 <../in-depth/signals>`.
 
 Control Flow Tracking
----------------------
+^^^^^^^^^^^^^^^^^^^^^
 
 As mentioned above, alia's main job is to track the relationship between the
 objects declared by your application code and the objects that actually exist in

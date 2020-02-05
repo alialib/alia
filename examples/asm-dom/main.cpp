@@ -26,29 +26,6 @@ alia::system the_system;
 dom::system the_dom;
 
 void
-do_addition_ui(
-    dom::context ctx, bidirectional<double> a, bidirectional<double> b)
-{
-    do_input(ctx, a);
-    do_input(ctx, b);
-    do_text(ctx, a + b);
-}
-
-void
-do_greeting_ui(dom::context ctx, bidirectional<string> name)
-{
-    // Allow the user to input their name.
-    do_input(ctx, name);
-
-    // Greet the user.
-    alia_if(name != "")
-    {
-        do_text(ctx, "Hello, " + name + "!");
-    }
-    alia_end
-}
-
-void
 do_ui(dom::context ctx)
 {
     auto color = get_state(ctx, val(rgb8(0, 0, 0)));
@@ -64,12 +41,10 @@ do_tip_calculator(dom::context ctx)
 {
     // Get the state we need.
     auto bill = get_state(ctx, empty<double>()); // defaults to uninitialized
-    auto tip_percentage = get_state(ctx, val(20.)); // defaults to 20%
+    auto tip_percentage = get_state(ctx, 20.); // defaults to 20%
 
     // Show some controls for manipulating our state.
-    // std::cout << "do bill" << std::endl;
     do_number_input(ctx, bill);
-    // std::cout << "do tip" << std::endl;
     do_number_input(ctx, tip_percentage);
 
     // Do some reactive calculations.
@@ -81,9 +56,9 @@ do_tip_calculator(dom::context ctx)
     do_text(ctx, printf(ctx, "total: %.2f", total));
 
     // Allow the user to split the bill.
-    auto n_people = get_state(ctx, val(1.));
+    auto n_people = get_state(ctx, 1);
     do_number_input(ctx, n_people);
-    alia_if(n_people > val(1))
+    alia_if(n_people > 1)
     {
         do_text(ctx, printf(ctx, "tip per person: %.2f", tip / n_people));
         do_text(ctx, printf(ctx, "total per person: %.2f", total / n_people));
@@ -94,7 +69,8 @@ do_tip_calculator(dom::context ctx)
 int
 main()
 {
-    initialize(the_dom, the_system, "root", do_ui);
-
+    initialize(the_dom, the_system, "greeting-ui", [](dom::context ctx) {
+        do_greeting_ui(ctx, get_state(ctx, string()));
+    });
     return 0;
 };

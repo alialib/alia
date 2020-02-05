@@ -10,10 +10,19 @@ include(cmake/asm-dom.cmake)
 # Allow the use of Emscripten's Fetch API.
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s FETCH=1")
 
-# Add the main target.
-add_executable(main main.cpp color.cpp dom.cpp)
-set_property(TARGET main PROPERTY CXX_STANDARD 17)
-target_link_libraries(main PRIVATE asm-dom)
+# Add the various demo targets...
+
+add_library(demolib STATIC color.cpp dom.cpp)
+set_property(TARGET demolib PROPERTY CXX_STANDARD 17)
+target_link_libraries(demolib PRIVATE asm-dom)
+
+function(add_demo_target demo_name)
+    add_executable(${demo_name} ${demo_name}.cpp)
+    set_property(TARGET ${demo_name} PROPERTY CXX_STANDARD 17)
+    target_link_libraries(${demo_name} PRIVATE asm-dom demolib)
+endfunction()
+
+add_demo_target(introduction)
 
 # Copy the index.html file into the build directory
 configure_file(
