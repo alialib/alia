@@ -389,7 +389,7 @@ struct validation_error : exception
     validation_error(std::string const& message) : exception(message)
     {
     }
-    ~validation_error() throw()
+    ~validation_error() noexcept(true)
     {
     }
 };
