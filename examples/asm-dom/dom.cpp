@@ -48,7 +48,7 @@ do_input_(dom::context ctx, bidirectional<string> value)
             asmdom::h(
                 "input",
                 asmdom::Data(
-                    asmdom::Props{{"value", emscripten::value(data->value)}},
+                    asmdom::Props{{"value", emscripten::val(data->value)}},
                     asmdom::Callbacks{
                         {"oninput", [=](emscripten::val e) {
                              value_update_event update;
@@ -103,7 +103,7 @@ do_number_input_(dom::context ctx, bidirectional<string> value)
                 "input",
                 asmdom::Data(
                     asmdom::Attrs{{"type", "number"}},
-                    asmdom::Props{{"value", emscripten::value(data->value)}},
+                    asmdom::Props{{"value", emscripten::val(data->value)}},
                     asmdom::Callbacks{
                         {"oninput", [=](emscripten::val e) {
                              value_update_event update;
