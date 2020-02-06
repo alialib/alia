@@ -8,21 +8,9 @@ Introduction
 
 alia is designed to allow you to write reactive application code that interacts
 with traditional, object-oriented C++ libraries. Let's start with a very simple
-example::
+example:
 
-    void
-    do_greeting_ui(dom::context ctx, bidirectional<std::string> name)
-    {
-        // Allow the user to input their name.
-        dom::do_input(ctx, name);
-
-        // If we have a name, greet the user.
-        alia_if (name != "")
-        {
-            dom::do_text(ctx, "Hello, " + name + "!");
-        }
-        alia_end
-    }
+.. literalinclude:: ../../examples/asm-dom/snippets/greeting_ui.cpp
 
 This example uses an experimental wrapper for `the asm-dom library
 <https://github.com/mbasso/asm-dom>`_. Since asm-dom allows us to write C++ web
@@ -54,12 +42,12 @@ UI, but in other cases, we might declare the objects in a game world or a
 physics simulation.
 
 These functions are designed to be reinvoked as the state changes. Each time
-they're invoked, they declare what the application looks like **at that point
-in time** and **for that particular application state**. In our example, every
-time you type into the input box, the ``name`` state changes and
-``do_greeting_ui`` is reinvoked to decide what the new UI looks like. Every
-time, it decides to show the input box that allows you to edit ``name``, and
-sometimes it decides to show a greeting as well.
+they're invoked, they declare what the application looks like **at that point in
+time** and **for that particular application state**. In our example, every time
+you type into the input box, the ``name`` state changes and ``do_greeting_ui``
+is reinvoked to decide what the new UI looks like. Every time, it decides to
+show a message asking for your name and the input box that allows you answer,
+and sometimes it decides to show a greeting as well.
 
 alia's Role
 -----------
@@ -97,16 +85,9 @@ that works with signals has to account for it. With alia signals, this state is
 implicitly part of the type and implicitly propagates through your application's
 data flow.
 
-For example, let's write a quick app that adds numbers::
+For example, let's write a quick app that adds numbers:
 
-  void
-  do_addition_ui(
-      dom::context ctx, bidirectional<double> a, bidirectional<double> b)
-  {
-      dom::do_input(ctx, a);
-      dom::do_input(ctx, b);
-      dom::do_text(ctx, a + b);
-  }
+.. literalinclude:: ../../examples/asm-dom/snippets/addition_ui.cpp
 
 .. raw:: html
 
@@ -149,31 +130,15 @@ statement in the original example.
 
 Besides allowing alia to do its job, these constructs also play nicely with
 signals. For example, imagine we want to add some commentary on the sum we
-computed in the addition example::
+computed in the addition example:
 
-  void
-  do_addition_ui(
-      dom::context ctx, bidirectional<double> a, bidirectional<double> b)
-  {
-      dom::do_input(ctx, a);
-      dom::do_input(ctx, b);
+.. literalinclude:: ../../examples/asm-dom/snippets/addition_analysis.cpp
 
-      auto sum = a + b;
-      dom::do_text(ctx, sum);
-      alia_if (sum > 0)
-      {
-          dom::do_text(ctx, "The sum is positive!");
-      }
-      alia_else_if (sum < 0)
-      {
-          dom::do_text(ctx, "The sum is negative!");
-      }
-      alia_else
-      {
-          dom::do_text(ctx, "The sum is zero!");
-      }
-      alia_end
-  }
+.. raw:: html
+
+   <div class="demo-panel">
+   <div id="addition-analysis"></div>
+   </div>
 
 Notice that although our ``if``/``else`` branches have seemingly accounted for
 all possibilities on the number line, there is still the possibility that we

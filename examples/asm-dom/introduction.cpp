@@ -7,19 +7,7 @@
 using namespace alia;
 using namespace dom;
 
-void
-do_greeting_ui(dom::context ctx, bidirectional<string> name)
-{
-    // Allow the user to input their name.
-    do_input(ctx, name);
-
-    // Greet the user.
-    alia_if(name != "")
-    {
-        do_text(ctx, "Hello, " + name + "!");
-    }
-    alia_end
-}
+#include "snippets/greeting_ui.cpp"
 
 void
 init_greeting_ui()
@@ -32,14 +20,7 @@ init_greeting_ui()
     });
 }
 
-void
-do_addition_ui(
-    dom::context ctx, bidirectional<double> a, bidirectional<double> b)
-{
-    do_input(ctx, a);
-    do_input(ctx, b);
-    do_text(ctx, a + b);
-}
+#include "snippets/addition_ui.cpp"
 
 void
 init_addition_ui()
@@ -55,10 +36,27 @@ init_addition_ui()
     });
 }
 
+#include "snippets/addition_analysis.cpp"
+
+void
+init_addition_analysis()
+{
+    static alia::system the_system;
+    static dom::system the_dom;
+
+    initialize(the_dom, the_system, "addition-analysis", [](dom::context ctx) {
+        do_addition_analysis(
+            ctx,
+            get_state(ctx, empty<double>()),
+            get_state(ctx, empty<double>()));
+    });
+}
+
 int
 main()
 {
     init_greeting_ui();
     init_addition_ui();
+    init_addition_analysis();
     return 0;
 };
