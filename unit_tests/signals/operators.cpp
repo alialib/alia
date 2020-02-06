@@ -28,53 +28,53 @@ is_false(Signal const& x)
 
 TEST_CASE("basic signal operators", "[signals][operators][operators]")
 {
-    REQUIRE(is_true(val(2) == val(2)));
-    REQUIRE(is_false(val(6) == val(2)));
-    REQUIRE(is_true(val(6) != val(2)));
-    REQUIRE(is_false(val(2) != val(2)));
-    REQUIRE(is_true(val(6) > val(2)));
-    REQUIRE(is_false(val(6) < val(2)));
-    REQUIRE(is_true(val(6) >= val(2)));
-    REQUIRE(is_true(val(2) >= val(2)));
-    REQUIRE(is_false(val(2) >= val(6)));
-    REQUIRE(is_true(val(2) < val(6)));
-    REQUIRE(is_false(val(6) < val(2)));
-    REQUIRE(is_true(val(2) <= val(6)));
-    REQUIRE(is_true(val(2) <= val(2)));
-    REQUIRE(is_false(val(6) <= val(2)));
+    REQUIRE(is_true(value(2) == value(2)));
+    REQUIRE(is_false(value(6) == value(2)));
+    REQUIRE(is_true(value(6) != value(2)));
+    REQUIRE(is_false(value(2) != value(2)));
+    REQUIRE(is_true(value(6) > value(2)));
+    REQUIRE(is_false(value(6) < value(2)));
+    REQUIRE(is_true(value(6) >= value(2)));
+    REQUIRE(is_true(value(2) >= value(2)));
+    REQUIRE(is_false(value(2) >= value(6)));
+    REQUIRE(is_true(value(2) < value(6)));
+    REQUIRE(is_false(value(6) < value(2)));
+    REQUIRE(is_true(value(2) <= value(6)));
+    REQUIRE(is_true(value(2) <= value(2)));
+    REQUIRE(is_false(value(6) <= value(2)));
 
-    REQUIRE(is_true(val(6) + val(2) == val(8)));
-    REQUIRE(is_true(val(6) - val(2) == val(4)));
-    REQUIRE(is_true(val(6) * val(2) == val(12)));
-    REQUIRE(is_true(val(6) / val(2) == val(3)));
-    REQUIRE(is_true(val(6) % val(2) == val(0)));
-    REQUIRE(is_true((val(6) ^ val(2)) == val(4)));
-    REQUIRE(is_true((val(6) & val(2)) == val(2)));
-    REQUIRE(is_true((val(6) | val(2)) == val(6)));
-    REQUIRE(is_true(val(6) << val(2) == val(24)));
-    REQUIRE(is_true(val(6) >> val(2) == val(1)));
+    REQUIRE(is_true(value(6) + value(2) == value(8)));
+    REQUIRE(is_true(value(6) - value(2) == value(4)));
+    REQUIRE(is_true(value(6) * value(2) == value(12)));
+    REQUIRE(is_true(value(6) / value(2) == value(3)));
+    REQUIRE(is_true(value(6) % value(2) == value(0)));
+    REQUIRE(is_true((value(6) ^ value(2)) == value(4)));
+    REQUIRE(is_true((value(6) & value(2)) == value(2)));
+    REQUIRE(is_true((value(6) | value(2)) == value(6)));
+    REQUIRE(is_true(value(6) << value(2) == value(24)));
+    REQUIRE(is_true(value(6) >> value(2) == value(1)));
 
-    REQUIRE(is_true(val(6) + 2 == val(8)));
-    REQUIRE(is_true(6 + val(2) == val(8)));
-    REQUIRE(is_true(val(6) + val(2) == 8));
+    REQUIRE(is_true(value(6) + 2 == value(8)));
+    REQUIRE(is_true(6 + value(2) == value(8)));
+    REQUIRE(is_true(value(6) + value(2) == 8));
 
-    REQUIRE(is_true(-val(2) == val(-2)));
-    REQUIRE(is_false(!(val(2) == val(2))));
+    REQUIRE(is_true(-value(2) == value(-2)));
+    REQUIRE(is_false(!(value(2) == value(2))));
 }
 
 TEST_CASE("signal &&", "[signals][operators][operators]")
 {
-    REQUIRE(is_true(val(true) && val(true)));
-    REQUIRE(is_false(val(true) && val(false)));
-    REQUIRE(is_false(val(false) && val(true)));
-    REQUIRE(is_false(val(false) && val(false)));
+    REQUIRE(is_true(value(true) && value(true)));
+    REQUIRE(is_false(value(true) && value(false)));
+    REQUIRE(is_false(value(false) && value(true)));
+    REQUIRE(is_false(value(false) && value(false)));
 
     // Check that unreadable signals are treated properly.
     REQUIRE(!signal_is_readable(empty<bool>() && empty<bool>()));
-    REQUIRE(!signal_is_readable(val(true) && empty<bool>()));
-    REQUIRE(!signal_is_readable(empty<bool>() && val(true)));
-    REQUIRE(is_false(val(false) && empty<bool>()));
-    REQUIRE(is_false(empty<bool>() && val(false)));
+    REQUIRE(!signal_is_readable(value(true) && empty<bool>()));
+    REQUIRE(!signal_is_readable(empty<bool>() && value(true)));
+    REQUIRE(is_false(value(false) && empty<bool>()));
+    REQUIRE(is_false(empty<bool>() && value(false)));
 
     // Check that && short-circuits.
     int access_count = 0;
@@ -82,34 +82,34 @@ TEST_CASE("signal &&", "[signals][operators][operators]")
         ++access_count;
         return true;
     });
-    REQUIRE(is_false(val(false) && access_counting_signal));
+    REQUIRE(is_false(value(false) && access_counting_signal));
     REQUIRE(access_count == 0);
 
     // Check that its value ID behaves reasonably.
     REQUIRE(
-        (val(true) && val(false)).value_id()
-        != (val(true) && val(true)).value_id());
+        (value(true) && value(false)).value_id()
+        != (value(true) && value(true)).value_id());
 
     // Check that it works with plain old values too.
-    REQUIRE(is_true(true && val(true)));
-    REQUIRE(is_true(val(true) && true));
-    REQUIRE(is_false(true && val(false)));
-    REQUIRE(is_false(val(false) && true));
+    REQUIRE(is_true(true && value(true)));
+    REQUIRE(is_true(value(true) && true));
+    REQUIRE(is_false(true && value(false)));
+    REQUIRE(is_false(value(false) && true));
 }
 
 TEST_CASE("signal ||", "[signals][operators]")
 {
-    REQUIRE(is_true(val(true) || val(true)));
-    REQUIRE(is_true(val(true) || val(false)));
-    REQUIRE(is_true(val(false) || val(true)));
-    REQUIRE(is_false(val(false) || val(false)));
+    REQUIRE(is_true(value(true) || value(true)));
+    REQUIRE(is_true(value(true) || value(false)));
+    REQUIRE(is_true(value(false) || value(true)));
+    REQUIRE(is_false(value(false) || value(false)));
 
     // Check that unreadable signals are treated properly.
     REQUIRE(!signal_is_readable(empty<bool>() || empty<bool>()));
-    REQUIRE(!signal_is_readable(val(false) || empty<bool>()));
-    REQUIRE(!signal_is_readable(empty<bool>() || val(false)));
-    REQUIRE(is_true(val(true) || empty<bool>()));
-    REQUIRE(is_true(empty<bool>() || val(true)));
+    REQUIRE(!signal_is_readable(value(false) || empty<bool>()));
+    REQUIRE(!signal_is_readable(empty<bool>() || value(false)));
+    REQUIRE(is_true(value(true) || empty<bool>()));
+    REQUIRE(is_true(empty<bool>() || value(true)));
 
     // Check that || short-circuits.
     int access_count = 0;
@@ -117,25 +117,25 @@ TEST_CASE("signal ||", "[signals][operators]")
         ++access_count;
         return false;
     });
-    REQUIRE(is_true(val(true) || access_counting_signal));
+    REQUIRE(is_true(value(true) || access_counting_signal));
     REQUIRE(access_count == 0);
 
     // Check that its value ID behaves reasonably.
     REQUIRE(
-        (val(false) || val(false)).value_id()
-        != (val(true) || val(false)).value_id());
+        (value(false) || value(false)).value_id()
+        != (value(true) || value(false)).value_id());
 
     // Check that it works with plain old values too.
-    REQUIRE(is_true(true || val(false)));
-    REQUIRE(is_true(val(false) || true));
-    REQUIRE(is_false(false || val(false)));
-    REQUIRE(is_false(val(false) || false));
+    REQUIRE(is_true(true || value(false)));
+    REQUIRE(is_true(value(false) || true));
+    REQUIRE(is_false(false || value(false)));
+    REQUIRE(is_false(value(false) || false));
 }
 
 TEST_CASE("signal select", "[signals][operators]")
 {
     bool condition = false;
-    auto s = conditional(direct(condition), val(1), val(2));
+    auto s = conditional(direct(condition), value(1), value(2));
 
     typedef decltype(s) signal_t;
     REQUIRE(signal_can_read<signal_t>::value);
@@ -153,7 +153,7 @@ TEST_CASE("signal select", "[signals][operators]")
 TEST_CASE("select with different directions", "[signals][operators]")
 {
     bool condition = false;
-    auto s = conditional(direct(condition), empty<int>(), val(2));
+    auto s = conditional(direct(condition), empty<int>(), value(2));
 
     typedef decltype(s) signal_t;
     REQUIRE(signal_can_read<signal_t>::value);
@@ -171,7 +171,7 @@ TEST_CASE("select value ID", "[signals][operators]")
     // both of its input signals are producing the same value ID.
 
     bool condition = false;
-    auto s = conditional(direct(condition), val(2), val(2));
+    auto s = conditional(direct(condition), value(2), value(2));
 
     captured_id original_id = s.value_id();
     condition = true;
@@ -318,7 +318,7 @@ TEST_CASE("vector subscript", "[signals][operators]")
 
     auto c = std::vector<int>{2, 0, 3};
     auto c_signal = direct(c);
-    auto s = c_signal[val(1)];
+    auto s = c_signal[value(1)];
 
     typedef decltype(s) signal_t;
     REQUIRE((std::is_same<signal_t::value_type, int>::value));
@@ -335,7 +335,7 @@ TEST_CASE("vector subscript", "[signals][operators]")
     // Check that changes in the container and the index both cause changes
     // in the value ID.
     REQUIRE(!original_id.matches(s.value_id()));
-    auto t = c_signal[val(0)];
+    auto t = c_signal[value(0)];
     REQUIRE(t.value_id() != s.value_id());
 }
 
@@ -344,8 +344,8 @@ TEST_CASE("read-only subscript", "[signals][operators]")
     using namespace alia;
 
     auto c = std::vector<int>{2, 0, 3};
-    auto c_signal = val(c);
-    auto s = c_signal[val(1)];
+    auto c_signal = value(c);
+    auto s = c_signal[value(1)];
 
     typedef decltype(s) signal_t;
     REQUIRE((std::is_same<signal_t::value_type, int>::value));
@@ -362,7 +362,7 @@ TEST_CASE("vector<bool> subscript", "[signals][operators]")
 
     auto c = std::vector<bool>{true, false, false};
     auto c_signal = direct(c);
-    auto s = c_signal[val(1)];
+    auto s = c_signal[value(1)];
 
     typedef decltype(s) signal_t;
     REQUIRE((std::is_same<signal_t::value_type, bool>::value));
@@ -382,7 +382,7 @@ TEST_CASE("map subscript", "[signals][operators]")
 
     auto c = std::map<int, int>{{2, 1}, {0, 3}};
     auto c_signal = direct(c);
-    auto s = c_signal[val(2)];
+    auto s = c_signal[value(2)];
 
     typedef decltype(s) signal_t;
     REQUIRE((std::is_same<signal_t::value_type, int>::value));
@@ -407,7 +407,7 @@ TEST_CASE("custom ref subscript", "[signals][operators]")
         [&]() {
             return unit_id; // doesn't really matter
         });
-    auto s = c_signal[val(2)];
+    auto s = c_signal[value(2)];
 
     typedef decltype(s) signal_t;
     REQUIRE((std::is_same<signal_t::value_type, int>::value));
@@ -430,7 +430,7 @@ TEST_CASE("custom by-value subscript", "[signals][operators]")
         [&]() {
             return unit_id; // doesn't really matter
         });
-    auto s = c_signal[val(2)];
+    auto s = c_signal[value(2)];
 
     typedef decltype(s) signal_t;
     REQUIRE((std::is_same<signal_t::value_type, int>::value));

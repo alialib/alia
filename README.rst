@@ -37,14 +37,14 @@ try it out and see more examples, click here.
 
 	// Get the state we need.
 	auto bill = get_state(ctx, empty<double>()); // defaults to uninitialized
-	auto tip_percentage = get_state(ctx, val(20.)); // defaults to 20%
+	auto tip_percentage = get_state(ctx, value(20.)); // defaults to 20%
 
 	// Show some controls for manipulating our state.
 	do_number_input(ctx, bill);
 	do_number_input(ctx, tip_percentage);
 
 	// Do some reactive calculations.
-	auto tip = bill * tip_percentage / val(100.);
+	auto tip = bill * tip_percentage / value(100.);
 	auto total = bill + tip;
 
 	// Show the results.
@@ -52,7 +52,7 @@ try it out and see more examples, click here.
 	do_text(ctx, printf(ctx, "total: %.2f", total));
 
 	// Allow the user to split the bill.
-	auto n_people = get_state(ctx, val(1.));
+	auto n_people = get_state(ctx, value(1.));
 	do_number_input(ctx, n_people);
 	alia_if (n_people > 1)
 	{

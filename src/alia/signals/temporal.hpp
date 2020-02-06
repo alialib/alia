@@ -83,12 +83,12 @@ struct animation_timer
     auto
     is_active() const
     {
-        return val(raw_.is_active());
+        return value(raw_.is_active());
     }
     auto
     ticks_left() const
     {
-        return val(raw_.ticks_left());
+        return value(raw_.ticks_left());
     }
     template<class Duration>
     auto

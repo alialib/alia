@@ -186,7 +186,7 @@ TEST_CASE("add_fallback", "[signals][adaptors]")
     }
 
     {
-        typedef decltype(add_fallback(val(0), val(1))) signal_t;
+        typedef decltype(add_fallback(value(0), value(1))) signal_t;
         REQUIRE(signal_can_read<signal_t>::value);
         REQUIRE(!signal_can_write<signal_t>::value);
     }
@@ -251,7 +251,7 @@ TEST_CASE("simplify_id", "[signals][adaptors]")
 
     auto c = std::map<int, int>{{2, 1}, {0, 3}};
     auto c_signal = direct(c);
-    auto unwrapped = c_signal[val(2)];
+    auto unwrapped = c_signal[value(2)];
     auto s = simplify_id(unwrapped);
 
     typedef decltype(s) signal_t;

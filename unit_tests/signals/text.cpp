@@ -15,12 +15,12 @@ TEST_CASE("printf", "[signals][text]")
     alia::system sys;
 
     auto controller = [&](context ctx) {
-        do_text(ctx, printf(ctx, "hello %s", val("world")));
-        do_text(ctx, printf(ctx, "n is %4.1f", val(2.125)));
+        do_text(ctx, printf(ctx, "hello %s", value("world")));
+        do_text(ctx, printf(ctx, "n is %4.1f", value(2.125)));
         // MSVC is too forgiving of bad format strings, so this test doesn't
         // actually work there.
 #ifndef _MSC_VER
-        do_text(ctx, printf(ctx, "bad format: %q", val(0)));
+        do_text(ctx, printf(ctx, "bad format: %q", value(0)));
 #endif
     };
 
@@ -72,10 +72,10 @@ TEST_CASE("as_text", "[signals][text]")
         auto no_text = as_text(ctx, empty<int>());
         REQUIRE(!signal_is_readable(no_text));
 
-        do_text(ctx, as_text(ctx, val(-121)));
-        do_text(ctx, as_text(ctx, val(121u)));
-        do_text(ctx, as_text(ctx, val("hello!")));
-        do_text(ctx, as_text(ctx, val(1.2)));
+        do_text(ctx, as_text(ctx, value(-121)));
+        do_text(ctx, as_text(ctx, value(121u)));
+        do_text(ctx, as_text(ctx, value("hello!")));
+        do_text(ctx, as_text(ctx, value(1.2)));
     };
 
     check_traversal(sys, controller, "-121;121;hello!;1.2;");
@@ -113,10 +113,10 @@ TEST_CASE("as_bidirectional_text", "[signals][text]")
             REQUIRE(x == "world");
         }
 
-        do_text(ctx, as_bidirectional_text(ctx, val(-121)));
-        do_text(ctx, as_bidirectional_text(ctx, val(121u)));
-        do_text(ctx, as_bidirectional_text(ctx, val("hello!")));
-        do_text(ctx, as_bidirectional_text(ctx, val(1.2)));
+        do_text(ctx, as_bidirectional_text(ctx, value(-121)));
+        do_text(ctx, as_bidirectional_text(ctx, value(121u)));
+        do_text(ctx, as_bidirectional_text(ctx, value("hello!")));
+        do_text(ctx, as_bidirectional_text(ctx, value(1.2)));
     };
 
     check_traversal(sys, controller, "-121;121;hello!;1.2;");

@@ -144,7 +144,7 @@ f_bidirectional(alia::bidirectional<int> x)
 
 TEST_CASE("signal parameter passing", "[signals][core]")
 {
-    auto read_only = val(0);
+    auto read_only = value(0);
     int x = 0;
     auto bidirectional = direct(x);
 
