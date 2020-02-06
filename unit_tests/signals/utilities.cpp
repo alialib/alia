@@ -93,7 +93,7 @@ TEST_CASE("lazy_reader", "[signals][utilities]")
 TEST_CASE("signals_all_readable", "[signals][utilities]")
 {
     normal_regular_signal s;
-    auto t = val(0);
+    auto t = value(0);
     unreadable_regular_signal u;
 
     REQUIRE(signals_all_readable());

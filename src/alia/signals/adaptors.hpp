@@ -349,7 +349,7 @@ template<class Value, std::enable_if_t<!is_signal_type<Value>::value, int> = 0>
 auto
 signalize(Value v)
 {
-    return val(std::move(v));
+    return value(std::move(v));
 }
 
 } // namespace alia

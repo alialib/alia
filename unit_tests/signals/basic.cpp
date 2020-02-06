@@ -19,7 +19,7 @@ TEST_CASE("empty signal", "[signals][basic]")
 
 TEST_CASE("value signal", "[signals][basic]")
 {
-    auto s = val(1);
+    auto s = value(1);
 
     typedef decltype(s) signal_t;
     REQUIRE(signal_can_read<signal_t>::value);
@@ -30,7 +30,7 @@ TEST_CASE("value signal", "[signals][basic]")
 
     // Test that signals with different values also have different IDs.
     // (This is what differentiates value signals from constant signals.)
-    REQUIRE(s.value_id() != val(2).value_id());
+    REQUIRE(s.value_id() != value(2).value_id());
 }
 
 TEST_CASE("direct signal", "[signals][basic]")
@@ -65,7 +65,7 @@ TEST_CASE("direct const signal", "[signals][basic]")
 
 TEST_CASE("string literal signal", "[signals][basic]")
 {
-    auto s = val("hello");
+    auto s = value("hello");
 
     typedef decltype(s) signal_t;
     REQUIRE(signal_can_read<signal_t>::value);

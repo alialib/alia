@@ -210,13 +210,13 @@ TEST_CASE("unexecuted named blocks", "[data_graph]")
                 do_int(ctx, 0);
             };
         };
-        do_traversal(graph, make_controller(val(true), {1}));
+        do_traversal(graph, make_controller(value(true), {1}));
         check_log(
             "initializing int: 1;"
             "initializing int: 0;");
-        do_traversal(graph, make_controller(val(false), {1}));
+        do_traversal(graph, make_controller(value(false), {1}));
         check_log("visiting int: 0;");
-        do_traversal(graph, make_controller(val(true), {2, 1}));
+        do_traversal(graph, make_controller(value(true), {2, 1}));
         check_log(
             "initializing int: 2;"
             "visiting int: 1;"
@@ -349,7 +349,7 @@ TEST_CASE("named block caching", "[data_graph]")
                     for (auto i : indices)
                     {
                         named_block nb(nc, make_id(i));
-                        ALIA_IF(val(true))
+                        ALIA_IF(value(true))
                         {
                             do_cached_int(ctx, i);
                         }
@@ -359,35 +359,35 @@ TEST_CASE("named block caching", "[data_graph]")
                 ALIA_END
             };
         };
-        do_traversal(graph, make_controller(val(true), {2, 1}));
+        do_traversal(graph, make_controller(value(true), {2, 1}));
         check_log(
             "initializing cached int: 2;"
             "initializing cached int: 1;");
-        do_traversal(graph, make_controller(val(true), {2, 1}));
+        do_traversal(graph, make_controller(value(true), {2, 1}));
         check_log(
             "visiting cached int: 2;"
             "visiting cached int: 1;");
-        do_traversal(graph, make_controller(val(true), {1}));
+        do_traversal(graph, make_controller(value(true), {1}));
         check_log(
             "visiting cached int: 1;"
             "destructing int;");
-        do_traversal(graph, make_controller(val(true), {2, 1}));
+        do_traversal(graph, make_controller(value(true), {2, 1}));
         check_log(
             "initializing cached int: 2;"
             "visiting cached int: 1;");
-        do_traversal(graph, make_controller(val(false), {2, 1}));
+        do_traversal(graph, make_controller(value(false), {2, 1}));
         check_log(
             "destructing int;"
             "destructing int;");
-        do_traversal(graph, make_controller(val(true), {2, 1}));
+        do_traversal(graph, make_controller(value(true), {2, 1}));
         check_log(
             "initializing cached int: 2;"
             "initializing cached int: 1;");
-        do_traversal(graph, make_controller(val(false), {}));
+        do_traversal(graph, make_controller(value(false), {}));
         check_log(
             "destructing int;"
             "destructing int;");
-        do_traversal(graph, make_controller(val(true), {2, 1}));
+        do_traversal(graph, make_controller(value(true), {2, 1}));
         check_log(
             "initializing cached int: 2;"
             "initializing cached int: 1;");
@@ -421,21 +421,21 @@ TEST_CASE("naming_map lifetime", "[data_graph]")
                 ALIA_END
             };
         };
-        do_traversal(graph, make_controller(val(true), {2, 1}));
+        do_traversal(graph, make_controller(value(true), {2, 1}));
         check_log(
             "initializing int: 2;"
             "initializing int: 1;");
-        do_traversal(graph, make_controller(val(true), {2, 3, 1}));
+        do_traversal(graph, make_controller(value(true), {2, 3, 1}));
         check_log(
             "visiting int: 2;"
             "initializing int: 3;"
             "visiting int: 1;");
-        do_traversal(graph, make_controller(val(true), {2, 1}));
+        do_traversal(graph, make_controller(value(true), {2, 1}));
         check_log(
             "visiting int: 2;"
             "visiting int: 1;"
             "destructing int;");
-        do_traversal(graph, make_controller(val(true), {}));
+        do_traversal(graph, make_controller(value(true), {}));
         check_log(
             "destructing int;"
             "destructing int;");
@@ -470,23 +470,23 @@ TEST_CASE("scoped_cache_clearing_disabler", "[data_graph]")
         };
         // Since we are disabling cache clearing for the first block, the 0 and
         // 1 will persist even when their blocks go inactive.
-        do_traversal(graph, make_controller(val(false)));
+        do_traversal(graph, make_controller(value(false)));
         check_log("initializing cached int: 1;");
-        do_traversal(graph, make_controller(val(true)));
+        do_traversal(graph, make_controller(value(true)));
         check_log(
             "initializing cached int: 0;"
             "initializing cached int: 2;");
-        do_traversal(graph, make_controller(val(false)));
+        do_traversal(graph, make_controller(value(false)));
         check_log(
             "visiting cached int: 1;"
             "destructing int;");
         do_traversal(graph, make_controller(empty<bool>()));
         check_log("");
-        do_traversal(graph, make_controller(val(true)));
+        do_traversal(graph, make_controller(value(true)));
         check_log(
             "visiting cached int: 0;"
             "initializing cached int: 2;");
-        do_traversal(graph, make_controller(val(false)));
+        do_traversal(graph, make_controller(value(false)));
         check_log(
             "visiting cached int: 1;"
             "destructing int;");

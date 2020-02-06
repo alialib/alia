@@ -28,10 +28,10 @@ dom::system the_dom;
 void
 do_ui(dom::context ctx)
 {
-    auto color = get_state(ctx, val(rgb8(0, 0, 0)));
+    auto color = get_state(ctx, value(rgb8(0, 0, 0)));
 
-    do_button(ctx, "black"_a, color <<= val(rgb8(50, 50, 55)));
-    do_button(ctx, "white"_a, color <<= val(rgb8(230, 230, 255)));
+    do_button(ctx, "black"_a, color <<= value(rgb8(50, 50, 55)));
+    do_button(ctx, "white"_a, color <<= value(rgb8(230, 230, 255)));
 
     do_colored_box(ctx, smooth_value(ctx, color));
 }
