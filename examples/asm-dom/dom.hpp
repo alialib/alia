@@ -35,7 +35,7 @@ template<class Signal>
 void
 do_text(dom::context ctx, Signal text)
 {
-    do_text_(ctx, as_text(ctx, text));
+    do_text_(ctx, as_text(ctx, signalize(text)));
 }
 
 struct input_data
