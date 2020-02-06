@@ -101,7 +101,7 @@ for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
                 nb.begin(nc, iteration_id);
             else
                 nb.begin(nc, make_id(index));
-            fn(ctx, container_signal[val(index)]);
+            fn(ctx, container_signal[value(index)]);
         }
     }
     ALIA_END

@@ -45,7 +45,7 @@ get_raw_animation_tick_count(dataless_context ctx)
 value_signal<millisecond_count>
 get_animation_tick_count(dataless_context ctx)
 {
-    return val(get_raw_animation_tick_count(ctx));
+    return value(get_raw_animation_tick_count(ctx));
 }
 
 millisecond_count

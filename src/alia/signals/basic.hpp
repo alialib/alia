@@ -60,7 +60,7 @@ empty()
     return empty_signal<Value>();
 }
 
-// val(v) creates a read-only signal that carries the value v.
+// value(v) creates a read-only signal that carries the value v.
 template<class Value>
 struct value_signal
     : regular_signal<value_signal<Value>, Value, read_only_signal>
@@ -84,12 +84,12 @@ struct value_signal
 };
 template<class Value>
 value_signal<Value>
-val(Value const& v)
+value(Value const& v)
 {
     return value_signal<Value>(v);
 }
 
-// This is a special overload of val() for C-style string literals.
+// This is a special overload of value() for C-style string literals.
 struct string_literal_signal
     : signal<string_literal_signal, std::string, read_only_signal>
 {
@@ -117,7 +117,7 @@ struct string_literal_signal
     lazy_reader<std::string> lazy_reader_;
 };
 inline string_literal_signal
-val(char const* text)
+value(char const* text)
 {
     return string_literal_signal(text);
 }

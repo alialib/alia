@@ -173,7 +173,7 @@ TEST_CASE("smooth_value", "[signals][temporal]")
     auto transition = animated_transition{linear_curve, 100};
 
     do_traversal(sys, [&](context ctx) {
-        auto x = smooth_value(ctx, val(0), transition);
+        auto x = smooth_value(ctx, value(0), transition);
         REQUIRE(signal_is_readable(x));
         REQUIRE(read_signal(x) == 0);
     });
@@ -183,7 +183,7 @@ TEST_CASE("smooth_value", "[signals][temporal]")
 
     set_millisecond_tick_counter(sys, 100);
     do_traversal(sys, [&](context ctx) {
-        auto x = smooth_value(ctx, val(10), transition);
+        auto x = smooth_value(ctx, value(10), transition);
         REQUIRE(signal_is_readable(x));
         REQUIRE(read_signal(x) == 0);
         last_id.capture(x.value_id());
@@ -192,7 +192,7 @@ TEST_CASE("smooth_value", "[signals][temporal]")
 
     set_millisecond_tick_counter(sys, 150);
     do_traversal(sys, [&](context ctx) {
-        auto x = smooth_value(ctx, val(10), transition);
+        auto x = smooth_value(ctx, value(10), transition);
         REQUIRE(signal_is_readable(x));
         REQUIRE(read_signal(x) == 5);
         REQUIRE(last_id != x.value_id());
@@ -202,7 +202,7 @@ TEST_CASE("smooth_value", "[signals][temporal]")
 
     set_millisecond_tick_counter(sys, 200);
     do_traversal(sys, [&](context ctx) {
-        auto x = smooth_value(ctx, val(10), transition);
+        auto x = smooth_value(ctx, value(10), transition);
         REQUIRE(signal_is_readable(x));
         REQUIRE(read_signal(x) == 10);
         REQUIRE(last_id != x.value_id());
