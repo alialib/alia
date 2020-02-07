@@ -76,6 +76,9 @@ highlight_language = 'c++'
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
 
+extensions.append('sphinx.ext.graphviz')
+graphviz_output_format = 'svg'
+
 # -- Options for HTML output ----------------------------------------------
 
 html_theme = "sphinx_rtd_theme"

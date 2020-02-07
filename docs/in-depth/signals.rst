@@ -12,10 +12,11 @@ inputs are application state and the outputs go into a back end (e.g., are
 displayed on the screen), then the edges of this graph (where the values live)
 are all signals.
 
-
+Signal Properties
+-----------------
 
 Directionality
---------------
+^^^^^^^^^^^^^^
 
 In general, signal values can be read (i.e., polled) and new values can be
 written to signals, but not all signals support both operations.
@@ -41,7 +42,7 @@ a signal that only supports writing, a compile-time error will be generated.)
 .. todo:: Add a link to an advanced section about bypassing these checks.
 
 Availability
-------------
+^^^^^^^^^^^^
 
 Even when a signal supports reading, it might not always have a value. There are
 any number of reasons why this might be the case:
@@ -63,7 +64,7 @@ unwritable during certain sync operations or network outages.) Use
 value to it.
 
 Value Identity
---------------
+^^^^^^^^^^^^^^
 
 Just like regular values in C++, a signal value can be arbitrarily large. For
 example, a signal could carry a block of text or an image. Since alia uses
@@ -187,8 +188,8 @@ done with ``empty<T>``::
 
     auto n = empty<double>();
 
-Now ``n`` can be passed into functions expecting a readable<double>, but it will
-never actually provide one.
+Now ``n`` can be passed into functions expecting a ``readable<double>``, but it
+will never actually provide one.
 
 Operators and Casts
 -------------------
@@ -197,11 +198,10 @@ Basic Operators
 ^^^^^^^^^^^^^^^
 
 All the basic operators work as you'd expect with signals, producing signals
-that carrying the result of the operation and are only readable when both
-arguments are readable.
+that carry the result of the operation and are only readable when both arguments
+are readable.
 
-All the basic arithmetic, bitwise arithmetic/shifting, and comparison operators
-are provided:
+All the basic binary operators are provided:
 
 ``+`` ``-`` ``*`` ``/``  ``%`` ``^`` ``&`` ``|`` ``<<`` ``>>`` ``==`` ``!=``
 ``<`` ``<=`` ``>`` ``>=``
@@ -220,7 +220,7 @@ they provide short-circuiting in the signal space. In particular:
   operation, the second operand isn't read.
 
 * When *either* operand is readable and fully resolves the result of the
-  operation, the other is allowed to unreadable. The result will still be
+  operation, the other is allowed to be unreadable. The result will still be
   readable.
 
 The Ternary Operator

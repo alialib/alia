@@ -25,3 +25,13 @@
 .rst-content div[class^='demo-panel'] *:first-child {
     margin-top: 0px;
 }
+
+.rst-content dl:not(.docutils) dt {
+    background-color: #0000;
+    border-color: #0000;
+    font-size: 16px;
+}
+
+.rst-content tt, .rst-content code {
+    font-size: 90%;
+}

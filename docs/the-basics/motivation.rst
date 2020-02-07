@@ -6,10 +6,9 @@ that we are implementing a simple mapping application that has to display points
 of interest to the user.
 
 At first, our application is simple and our map isn't interactive, so our code
-might start out something like the following. (We're going to gloss over some
-details here and make liberal use of globals because the goal is to demonstrate
-things with the simplest possible code, not show perfect application development
-practices.) ::
+might start out something like the following. (In order to illustrate things
+with the simplest possible code, we're going to make liberal use of globals and
+gloss over some details...) ::
 
     void draw_map(rendering_context& ctx)
     {
@@ -38,9 +37,7 @@ And of course, we can easily refactor this. ::
     {
         draw_map_background(ctx);
         for (auto const& poi : points_of_interest)
-        {
             draw_poi(ctx, poi);
-        }
     }
 
 When our application behavior can be implemented as simple function calls, this
