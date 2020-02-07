@@ -1,5 +1,5 @@
-Best Practices
-==============
+App Design
+==========
 
 State Minimization
 ------------------

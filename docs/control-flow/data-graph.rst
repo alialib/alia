@@ -1,5 +1,5 @@
-Control Flow
-============
+The Data Graph
+==============
 
 .. digraph:: data_graph
 
@@ -23,12 +23,3 @@ Control Flow
 
 ..    { rank=same "c[0]" "b[1]" }
 ..    { rank=same "c[1]" "b[2]" }
-
-Loops & Conditionals
---------------------
-
-.. todo: alia_if/else (with signals), alia_switch/alia_case, for_each
-
-.. todo: Mention ALIA_STRICT_CONDITIONALS.
-
-.. todo: alia_for, alia_while, alia_if/else (with booleans), alia_switch (with raw values)

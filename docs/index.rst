@@ -3,24 +3,55 @@ alia
 
 .. toctree::
    :maxdepth: 2
-   :caption: The Basics
+   :caption: Introduction
 
-   the-basics/motivation
-   the-basics/introduction
-   the-basics/getting-started
+   introduction/motivation
+   introduction/reactive-hello
+   introduction/key-features
+   introduction/getting-started
 
 .. toctree::
    :maxdepth: 2
-   :caption: In-Depth Guides
+   :caption: Signals
 
-   in-depth/signals
-   in-depth/control-flow
-   in-depth/events
-   in-depth/configuration
-   in-depth/best-practices
+   signals/introduction
+   signals/construction
+   signals/operators-and-casts
+   signals/function-application
+   signals/adaptors
+   signals/custom-signals
+   signals/as-parameters
+   signals/time
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Control Flow
+
+   control-flow/flow-concepts
+   control-flow/tracking-mechanisms
+   control-flow/events
+   control-flow/actions
+   control-flow/data-graph
+   control-flow/the-context
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Integration
+
+   integration/the-system
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Other Guides
+
+   other-guides/configuration
+   other-guides/app-design
+   other-guides/performance
 
 .. toctree::
    :maxdepth: 2
    :caption: Development
 
+   development/contributing
+   development/roadmap
    development/building-and-testing

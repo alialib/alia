@@ -1,56 +1,10 @@
-Introduction
+Key Features
 ============
 
 .. raw:: html
 
    <script src="../asm-dom.js"></script>
-   <script src="../introduction.js"></script>
-
-alia is designed to allow you to write reactive application code that interacts
-with traditional, object-oriented C++ libraries. Let's start with a very simple
-example:
-
-.. literalinclude:: ../../examples/asm-dom/snippets/greeting_ui.cpp
-
-This example uses an experimental wrapper for `the asm-dom library
-<https://github.com/mbasso/asm-dom>`_. Since asm-dom allows us to write C++ web
-UIs, you can see this example in action right here:
-
-.. raw:: html
-
-   <div class="demo-panel">
-   <div id="greeting-ui"></div>
-   </div>
-
-Most of the examples that you'll see in this documentation use a mixture of alia
-and the asm-dom wrapper. Since alia itself focuses on the mechanics of writing
-reactive applications, it doesn't actually *do* anything to interact with the
-outside world. It's a bit like a fancy programming language with no I/O
-capabilities. It's designed to hook up to other libraries that do useful things,
-so for these examples, we've hooked it up to asm-dom. For clarity, anything
-specific to the asm-dom wrapper is prefixed with the ``dom::`` namespace.
-
-The Reactive Paradigm
----------------------
-
-If you're familiar with reactive programming, it will be obvious, but the key
-takeaway from this example is that when using alia, application code is
-developed as **functions that operate on application state and declare the
-presence of objects in the presentation of the application**. In this case, our
-application presents a web UI, so our function declares what widgets are in that
-UI, but in other cases, we might declare the objects in a rendering scene or a
-physics simulation.
-
-These functions are designed to be reinvoked as the state changes. Each time
-they're invoked, they declare what the application looks like **at that point in
-time** and **for that particular application state**. In our example, every time
-you type into the input box, the ``name`` state changes and ``do_greeting_ui``
-is reinvoked to decide what the new UI looks like. Every time, it decides to
-show a message asking for your name and the input box that allows you answer,
-and sometimes it decides to show a greeting as well.
-
-alia's Role
------------
+   <script src="../key-features.js"></script>
 
 Of course, behind the scenes, we're not completely rebuilding the UI every time
 anything changes. That would be prohibitively expensive for more complex UIs,
@@ -63,7 +17,7 @@ and compute these 'diffs' efficiently. To facilitate this, it introduces some
 of its own concepts into the application-level code, which we'll touch on here.
 
 Signals
-^^^^^^^
+-------
 
 You might have noticed that our ``name`` parameter is declared as a
 ``bidirectional<std::string>`` rather than ``std::string&``, as you might have
@@ -75,7 +29,7 @@ signal in signal processing). In alia, this concept is captured by signal types,
 and they differ from normal C++ values in two important ways:
 
 Availability
-++++++++++++
+''''''''''''
 
 It's often useful to think of a signal in your dataflow as carrying no value at
 all (e.g., because the user hasn't input a value yet, or because the value is
@@ -102,7 +56,7 @@ and if either of its inputs is unavailable, that state implicitly propagates
 through to the sum.
 
 Value Identification
-++++++++++++++++++++
+''''''''''''''''''''
 
 When interfacing alia with a library (like asm-dom), we frequently have to write
 code that asks "Is this value the same as the last time we saw it?" For simple
@@ -113,11 +67,11 @@ for its value. alia knows that the value remains unchanged as long as that ID
 stays the same. Often, these are readily available in applications that are
 built on immutable data structures and/or do revision tracking.
 
-You can read much more about signals in the :doc:`in-depth guide
-<../in-depth/signals>`.
+You can read much more about signals in the :doc:`in-depth guides
+<../signals/introduction>`.
 
 Control Flow Tracking
-^^^^^^^^^^^^^^^^^^^^^
+---------------------
 
 As mentioned above, alia's main job is to track the relationship between the
 objects declared by your application code and the objects that actually exist in
@@ -147,5 +101,5 @@ macros account for this automatically, and in that case, none of the branches
 are taken.
 
 alia provides a large suite of options for tracking your control flow, some less
-invasive than others. You can see them all in the :doc:`in-depth guide
-<../in-depth/control-flow>`.
+invasive than others. You can see them all in the :doc:`in-depth guides
+<../control-flow/flow-concepts>`.
