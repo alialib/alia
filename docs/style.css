@@ -1,0 +1,22 @@
+:root {
+    --code-theme-background: #fafafa;
+    --code-inline-background: #f4f4f4;
+
+    --sidebar-toggle-background: #f0f0f0;
+
+    --sidebar-name-font-size: 24px;
+    --sidebar-name-font-weight: 600;
+}
+
+.markdown-section dt {
+    font-family: monospace;
+    font-size: 17px;
+    font-weight: bold;
+    color: rgb(40, 107, 136);
+    margin: 20px 0px -10px 0px;
+}
+
+.sidebar-nav li p {
+    text-transform: uppercase;
+    color: rgb(40, 107, 136);
+}
