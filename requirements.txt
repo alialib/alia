@@ -1,4 +1,2 @@
 conan
 gcovr
-sphinx
-sphinx_rtd_theme
