@@ -1,8 +1,8 @@
 A Reactive "Hello, World!"
 ==========================
 
-<script src="../asm-dom.js"></script>
-<script src="../reactive-hello.js"></script>
+<script src="asm-dom.js"></script>
+<script src="reactive-hello.js"></script>
 
 alia is designed to allow you to write reactive application code that interacts
 with traditional, object-oriented C++ libraries. Let's start with a very simple
