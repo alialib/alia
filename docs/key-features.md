@@ -1,8 +1,8 @@
 Key Features
 ============
 
-<script src="../asm-dom.js"></script>
-<script src="../key-features.js"></script>
+<script src="asm-dom.js"></script>
+<script src="key-features.js"></script>
 
 Of course, behind the scenes, we're not completely rebuilding the UI
 every time anything changes. That would be prohibitively expensive for
