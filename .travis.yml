@@ -71,7 +71,7 @@ jobs:
         github_token: $GITHUB_TOKEN
         on:
           branch: master
-        local_dir: html
+        local_dir: www
 
 before_cache:
 - conan remove "*" -s -b -f

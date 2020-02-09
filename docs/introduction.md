@@ -1,11 +1,9 @@
-Signals & Dataflow
-==================
+Signal Objects
+==============
 
 In alia, signals are values that vary over time. In other words, alia signals
 are like those from signal processing (and *not* like IPC signals, which are
 equivalent to events in alia).
-
-.. todo:: Add some example code and point out the signals.
 
 If you think of an alia application as defining a dataflow graph where the
 inputs are application state and the outputs go into a back end (e.g., are
@@ -18,25 +16,18 @@ Directionality
 In general, signal values can be read (i.e., polled) and new values can be
 written to signals, but not all signals support both operations.
 
-.. todo:: Add an example of, say, adding two signals and point out how writing
-   to the sum doesn't make sense.
-
 Signals carry a compile-time property that indicates the direction(s) in which
 values can flow: read-only, write-only or bidirectional. Similarly, when a
 function takes a signal as a parameter, the function signature will specify the
 requirements of the signal:
 
-* **readable**: The function may try to read the signal.
-* **writable**: The function may try to write to the signal.
-* **bidirectional**: The function may try to read from or write to the signal.
-
-.. todo:: Add an example function declaration.
+- **readable**: The function may try to read the signal.
+- **writable**: The function may try to write to the signal.
+- **bidirectional**: The function may try to read from or write to the signal.
 
 When calling a function, the signals that you provide must meet those
 requirements. (e.g., If a function expects a readable signal but you try to pass
 a signal that only supports writing, a compile-time error will be generated.)
-
-.. todo:: Add a link to an advanced section about bypassing these checks.
 
 Availability
 ------------
@@ -44,20 +35,18 @@ Availability
 Even when a signal supports reading, it might not always have a value. There are
 any number of reasons why this might be the case:
 
-* The signal is a user input and has no value until the user enters one.
-
-* The signal represents some remote data that is still being retrieved.
-
-* The signal is the result of some computationally intensive calculation that
+- The signal is a user input and has no value until the user enters one.
+- The signal represents some remote data that is still being retrieved.
+- The signal is the result of some computationally intensive calculation that
   hasn't completed yet.
 
 Before trying to read from a signal, you should check that it is actually
-readable using ``signal_is_readable``.
+readable using `signal_is_readable`.
 
 Similarly, a signal that supports writing isn't necessarily *always* writable.
 (e.g., Some data may require the user to explicitly unlock it, or it may be
 unwritable during certain sync operations or network outages.) Use
-``signal_is_writable`` to check if a signal is writable before trying to write a
+`signal_is_writable` to check if a signal is writable before trying to write a
 value to it.
 
 Value Identity

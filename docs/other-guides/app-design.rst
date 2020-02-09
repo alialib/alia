@@ -1,6 +1,0 @@
-App Design
-==========
-
-State Minimization
-------------------
-

@@ -3,6 +3,7 @@ Key Features
 
 <script src="../asm-dom.js"></script>
 <script src="../key-features.js"></script>
+
 Of course, behind the scenes, we're not completely rebuilding the UI
 every time anything changes. That would be prohibitively expensive for
 more complex UIs, and it would likely lead to discontinuities in the
@@ -40,9 +41,12 @@ implicitly propagates through your application's data flow.
 
 For example, let's write a quick app that adds numbers:
 
+[source](../snippets/addition_ui.cpp ':include')
+
 <div class="demo-panel">
 <div id="addition-ui"></div>
 </div>
+
 As simple as this example is, it's actually setting up a dataflow (via
 the `+` operator). Notice that the sum doesn't actually appear until we
 supply a value for both `a` and `b`. The result of the `+` operator
@@ -81,9 +85,12 @@ Besides allowing alia to do its job, these constructs also play nicely
 with signals. For example, imagine we want to add some commentary on the
 sum we computed in the addition example:
 
+[source](../snippets/addition_analysis.cpp ':include')
+
 <div class="demo-panel">
 <div id="addition-analysis"></div>
 </div>
+
 Notice that although our `if`/`else` branches have seemingly accounted
 for all possibilities on the number line, there is still the possibility
 that we haven't filled in the inputs yet and our sum doesn't have a
