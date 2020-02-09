@@ -8,7 +8,7 @@ alia is designed to allow you to write reactive application code that interacts
 with traditional, object-oriented C++ libraries. Let's start with a very simple
 example:
 
-[source](../snippets/greeting_ui.cpp ':include')
+[source](snippets/greeting_ui.cpp ':include')
 
 This example uses an experimental wrapper for [the asm-dom
 library](https://github.com/mbasso/asm-dom). Since asm-dom allows us to write
