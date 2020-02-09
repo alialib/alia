@@ -1,0 +1,40 @@
+:root {
+    --code-theme-background: #fafafa;
+    --code-theme-selector: var(--code-theme-tag);
+    --code-inline-background: #0000000a;
+    --sidebar-toggle-background: #f0f0f0;
+    --sidebar-name-font-size: 24px;
+    --sidebar-name-font-weight: normal;
+}
+
+.markdown-section dt {
+    font-family: monospace;
+    font-size: 17px;
+    font-weight: bold;
+    color: rgb(40, 107, 136);
+    margin: 20px 0 -10px 0;
+}
+
+.sidebar-nav li p {
+    text-transform: uppercase;
+    color: rgb(40, 107, 136);
+}
+
+.markdown-section div[class^='demo-panel'] {
+    margin: 2em 0;
+    padding: 1.5em;
+    border-width: var(--blockquote-border-width, 0);
+    border-style: var(--blockquote-border-style);
+    border-color: var(--blockquote-border-color);
+    border-radius: var(--blockquote-border-radius);
+    background: #fafafa;
+    color: var(--blockquote-color);
+}
+
+.markdown-section div[class^='demo-panel'] * {
+    margin: 1em 1em 0 0;
+}
+
+.markdown-section div[class^='demo-panel'] *:first-child {
+    margin: 0 1em 0 0;
+}
