@@ -1,6 +1,0 @@
-Best Practices
-==============
-
-State Minimization
-------------------
-

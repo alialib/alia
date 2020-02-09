@@ -1,6 +1,5 @@
 .fips-*
 .vscode
 .venv
-.docs
+www
 coverage.txt
-html

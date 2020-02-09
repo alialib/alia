@@ -1,0 +1,5 @@
+a -> b -> e;
+b -> c -> d;
+
+edge[style=invis];
+d -> e;
