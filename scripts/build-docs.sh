@@ -3,8 +3,7 @@
 # Note that the asm-dom examples must be built in examples/asm-dom/build before
 # running this script.
 set -e
-rm -rf www
-cp -r docs www
+mkdir -p www
+cp docs/* www
 cp examples/asm-dom/build/*.js examples/asm-dom/build/*.wasm www
-cp -r examples/asm-dom/snippets www
-touch www/.nojekyll
+cp examples/asm-dom/snippets/* www
