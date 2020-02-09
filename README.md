@@ -2,14 +2,9 @@ alia
 ====
 
 [![image](https://img.shields.io/travis/tmadden/alia/master.svg?style=flat&logo=travis-ci&logoColor=white)](https://travis-ci.org/tmadden/alia/branches)
-
 [![image](https://img.shields.io/appveyor/ci/tmadden/alia/master.svg?style=flat&logo=appveyor&logoColor=white)](https://ci.appveyor.com/project/tmadden/alia/branch/master)
-
 [![image](https://img.shields.io/codecov/c/github/tmadden/alia/master.svg?style=flat&logo=codecov&logoColor=white)](https://codecov.io/gh/tmadden/alia/branch/master)
-
 [![image](https://img.shields.io/badge/stability-unstable-yellow.svg?style=flat)](https://github.com/orangemug/stability-badges#unstable)
-
-|
 
 **WARNING**: This project is in an unstable, pre-release state. There
 are missing links, missing documentation pages, missing features, and
