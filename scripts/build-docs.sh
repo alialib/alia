@@ -4,6 +4,9 @@
 # running this script.
 set -e
 mkdir -p www
-cp docs/* www
-cp examples/asm-dom/build/*.js examples/asm-dom/build/*.wasm www
-cp examples/asm-dom/snippets/* www
+cd www
+rm -rf *
+ln -s ../docs/* .
+unzip favicon_io.zip && rm favicon_io.zip
+ln -s ../examples/asm-dom/build/*.js ../examples/asm-dom/build/*.wasm .
+ln -s ../examples/asm-dom/snippets/* .
