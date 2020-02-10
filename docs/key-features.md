@@ -1,8 +1,9 @@
 Key Features
 ============
 
-<script src="asm-dom.js"></script>
-<script src="key-features.js"></script>
+<script>
+    init_alia_demos(['addition-ui', 'addition-analysis']);
+</script>
 
 Of course, behind the scenes, we're not completely rebuilding the UI
 every time anything changes. That would be prohibitively expensive for
@@ -90,6 +91,7 @@ sum we computed in the addition example:
 <div class="demo-panel">
 <div id="addition-analysis"></div>
 </div>
+<!-- <script>init_alia_demo('addition-analysis')</script> -->
 
 Notice that although our `if`/`else` branches have seemingly accounted
 for all possibilities on the number line, there is still the possibility
