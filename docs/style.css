@@ -1,7 +1,7 @@
 :root {
     --code-theme-background: #fafafa;
     --code-theme-selector: var(--code-theme-tag);
-    --code-inline-background: #0000000a;
+    --code-inline-background: #0000000c;
     --sidebar-toggle-background: #f0f0f0;
     --sidebar-name-font-size: 24px;
     --sidebar-name-font-weight: normal;
@@ -17,7 +17,9 @@
 
 .sidebar-nav li p {
     text-transform: uppercase;
-    color: rgb(40, 107, 136);
+    color: rgb(151, 168, 175);
+    font-weight: 600;
+    user-select: none;
 }
 
 .markdown-section div[class^='demo-panel'] {

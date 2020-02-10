@@ -18,8 +18,8 @@ C++ web UIs, you can see this example in action right here:
 <div id="greeting-ui"></div>
 </div>
 
-?> Many of the examples in this documentation use a mixture of alia and the
-asm-dom wrapper. Since alia itself focuses on the mechanics of writing reactive
+Many of the examples in this documentation use a mixture of alia and the asm-dom
+wrapper. Since alia itself focuses on the mechanics of writing reactive
 applications, it doesn't actually *do* anything to interact with the outside
 world. It's a bit like a fancy programming language with no I/O capabilities.
 It's designed to hook up to other libraries that do useful things, so for these
