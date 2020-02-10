@@ -5,7 +5,7 @@ alia
 [![image](https://img.shields.io/appveyor/ci/tmadden/alia/master.svg?style=flat&logo=appveyor&logoColor=white)](https://ci.appveyor.com/project/tmadden/alia/branch/master)
 [![image](https://img.shields.io/codecov/c/github/tmadden/alia/master.svg?style=flat&logo=codecov&logoColor=white)](https://codecov.io/gh/tmadden/alia/branch/master)
 [![image](https://img.shields.io/badge/stability-unstable-yellow.svg?style=flat)](https://github.com/orangemug/stability-badges#unstable)
-[image](https://img.shields.io/badge/C++-14-green.svg?style=flat&logo=c%2B%2B)
+![image](https://img.shields.io/badge/C++-14-green.svg?style=flat&logo=c%2B%2B)
 
 **WARNING**: This project is in an unstable, pre-release state. There
 are missing links, missing documentation pages, missing features, and
