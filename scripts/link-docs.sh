@@ -6,7 +6,7 @@ set -e
 mkdir -p www
 cd www
 rm -rf *
-cp ../docs/* .
+ln -s ../docs/* .
 unzip favicon_io.zip && rm favicon_io.zip
-cp ../examples/asm-dom/build/*.js ../examples/asm-dom/build/*.wasm .
-cp ../examples/asm-dom/snippets/* .
+ln -s ../examples/asm-dom/build/*.js ../examples/asm-dom/build/*.wasm .
+ln -s ../examples/asm-dom/snippets/* .
