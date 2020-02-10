@@ -2,7 +2,7 @@ void
 do_addition_analysis(
     dom::context ctx, bidirectional<double> a, bidirectional<double> b)
 {
-    do_text(ctx, "Enter two numbers to add:");
+    dom::do_text(ctx, "Enter two numbers to add:");
 
     dom::do_input(ctx, a);
     dom::do_input(ctx, b);
