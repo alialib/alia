@@ -19,6 +19,19 @@
 
 <body>
     <div id="app"></div>
+
+    <script src="asm-dom.js"></script>
+    <script src="demos.js"></script>
+    <script>
+        function init_alia_demos(demos) {
+            AliaDemos().then(function (Module) {
+                for (demo of demos) {
+                    Module.ccall('init_demo', 'boolean', ['string'], [demo]);
+                }
+            });
+        }
+    </script>
+
     <script>
         window.$docsify = {
             name: 'alia',
@@ -36,15 +49,17 @@
             pagination: {
                 crossChapter: true,
                 crossChapterText: true,
-            }
+            },
+            executeScript: true
         }
     </script>
+
     <script src="https://cdn.jsdelivr.net/npm/docsify@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/docsify-themeable@0"></script>
     <script src="https://cdn.jsdelivr.net/npm/docsify-pagination@2/dist/docsify-pagination.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/plugins/search.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/docsify-tabs@1"></script>
-    <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/plugins/external-script.min.js"></script>
+
     <script src="//unpkg.com/prismjs/components/prism-c.min.js"></script>
     <script src="//unpkg.com/prismjs/components/prism-cpp.min.js"></script>
 </body>
