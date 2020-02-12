@@ -7,9 +7,9 @@ A Reactive "Hello, World!"
 
 alia is designed to allow you to write reactive application code that interacts
 with traditional, object-oriented C++ libraries. Let's start with a very simple
-example:
+example, an interactive 'Hello, World!':
 
-[source](greeting_ui.cpp ':include')
+[source](greeting.cpp ':include :fragment=greeting')
 
 This example uses an experimental wrapper for [the asm-dom
 library](https://github.com/mbasso/asm-dom). Since asm-dom allows us to write
@@ -42,3 +42,5 @@ you type into the input box, the `name` state changes and `do_greeting_ui` is
 reinvoked to decide what the new UI looks like. Every time, it decides to show a
 message asking for your name and the input box that allows you answer, and
 sometimes it decides to show a greeting as well.
+
+alia provides the mechanics to facilitate this style of development...
