@@ -13,28 +13,48 @@ APIs that may change in the future. That said, what's there now should
 work well, so if you're interested in playing around with it, I welcome
 any feedback or contributions!
 
-alia (pronounced uh-LEE-uh) is a modern C++ library for developing
-reactive applications. It provides a core of generic facilities for
-reactive programming (data flow modeling, event processing, etc.) as
-well as interfaces to some existing C++ libraries, allowing those
-libraries to be used reactively from within alia applications.
+alia (pronounced uh-LEE-uh) is a modern C++ library for developing reactive
+applications. It provides a core of generic facilities for reactive programming
+and is designed to hook up to other, more traditional libraries and allow them
+to be used in a reactive manner. In particular, alia features:
 
-The full documentation for alia can be found here.
+* **data-backed control flow** - alia provides mechanisms for tracking your
+  control flow so that you can stably associate arbitrary data objects with
+  specific points in your application's reactive presentation logic.
 
-Below is a simple tip calculator written in alia using the asm-dom
-wrapper. To try it out and see more examples, click here.
+  In alia, rather than explicitly managing trees of presentation objects, you
+  compose your application as a tree of function calls, each of which is allowed
+  to manage its own object(s) internally.
+
+* **dataflow semantics** - alia provides tools for modeling the computations in
+  your application as a dataflow that implicitly supports the reality that
+  function inputs are often not immediately available (because they are waiting
+  for user inputs, background calculations, remote queries, etc.).
+
+alia also provides a whole suite of supporting features that help keep these
+concepts practical in real-world applications: efficient change detection for
+program state, efficient routing of events, declarative event handlers, etc.
+
+Check out [the documentation](https://tmadden.github.io/alia) for more info.
+
+An Example
+----------
+
+Below is a simple tip calculator written in alia using an experimental
+[asm-dom](https://github.com/mbasso/asm-dom) wrapper. To try it out and see more
+examples, click here.
 
 ```cpp
 // Get the state we need.
 auto bill = get_state(ctx, empty<double>()); // defaults to uninitialized
-auto tip_percentage = get_state(ctx, value(20.)); // defaults to 20%
+auto tip_ratio = get_state(ctx, 0.2); // defaults to 20%
 
 // Show some controls for manipulating our state.
 do_number_input(ctx, bill);
-do_number_input(ctx, tip_percentage);
+do_number_input(ctx, scale(tip_ratio, 100)); // Users like %, not ratios.
 
 // Do some reactive calculations.
-auto tip = bill * tip_percentage / value(100.);
+auto tip = bill * tip_ratio / 100;
 auto total = bill + tip;
 
 // Show the results.
@@ -42,7 +62,7 @@ do_text(ctx, printf(ctx, "tip: %.2f", tip));
 do_text(ctx, printf(ctx, "total: %.2f", total));
 
 // Allow the user to split the bill.
-auto n_people = get_state(ctx, value(1.));
+auto n_people = get_state(ctx, 1);
 do_number_input(ctx, n_people);
 alia_if (n_people > 1)
 {
