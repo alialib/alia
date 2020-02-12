@@ -16,11 +16,13 @@ set_property(TARGET demolib PROPERTY CXX_STANDARD 17)
 target_link_libraries(demolib PRIVATE asm-dom)
 
 # Add the demos target.
+include_directories(.)
 string(APPEND CMAKE_CXX_FLAGS " -s EXPORTED_FUNCTIONS='[\"_init_demo\"]'")
 string(APPEND CMAKE_CXX_FLAGS
     " -s EXTRA_EXPORTED_RUNTIME_METHODS='[\"ccall\", \"cwrap\", \"UTF8ToString\"]'")
 string(APPEND CMAKE_CXX_FLAGS
     " -s MODULARIZE=1 -s 'EXPORT_NAME=\"AliaDemos\"'")
-add_executable(demos demos.cpp)
+file(GLOB demo_files "demos/*.cpp")
+add_executable(demos demos.cpp ${demo_files})
 set_property(TARGET demos PROPERTY CXX_STANDARD 17)
 target_link_libraries(demos PRIVATE asm-dom demolib)

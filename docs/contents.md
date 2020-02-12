@@ -1,6 +1,5 @@
 - Introduction
 
-  - [Motivation](motivation.md)
   - [A Reactive "Hello, World!"](reactive-hello.md)
   - [Key Features](key-features.md)
   - [Getting Started](getting-started.md)

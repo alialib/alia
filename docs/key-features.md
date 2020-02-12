@@ -42,7 +42,7 @@ implicitly propagates through your application's data flow.
 
 For example, let's write a quick app that adds numbers:
 
-[source](addition_ui.cpp ':include')
+[source](addition.cpp ':include :fragment=ui')
 
 <div class="demo-panel">
 <div id="addition-ui"></div>
@@ -86,7 +86,7 @@ Besides allowing alia to do its job, these constructs also play nicely
 with signals. For example, imagine we want to add some commentary on the
 sum we computed in the addition example:
 
-[source](addition_analysis.cpp ':include')
+[source](addition.cpp ':include :fragment=analysis')
 
 <div class="demo-panel">
 <div id="addition-analysis"></div>

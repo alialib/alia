@@ -118,11 +118,14 @@ The Empty Signal
 ----------------
 
 Occasionally, it's useful to create a signal that never carries a value.
-This is done with `empty<T>`:
 
-```cpp
-auto n = empty<double>();
-```
+<dl>
 
-Now `n` can be passed into functions expecting a `readable<double>`, but
-it will never actually provide one.
+<dt>empty&lt;T&gt;()</dt><dd>
+
+Creates a signal that type checks as a readable signal carrying a value of type
+`T` but never actually provides a value.
+
+</dd>
+
+</dl>

@@ -125,7 +125,7 @@ do_number_input_(dom::context ctx, bidirectional<string> value)
 }
 
 void
-do_button(dom::context ctx, readable<std::string> text, action<> on_click)
+do_button_(dom::context ctx, readable<std::string> text, action<> on_click)
 {
     auto id = get_node_id(ctx);
     auto routable_id = make_routable_node_id(ctx, id);
@@ -137,7 +137,9 @@ do_button(dom::context ctx, readable<std::string> text, action<> on_click)
                 asmdom::h(
                     "button",
                     asmdom::Data(
-                        asmdom::Attrs{{"class", "btn btn-primary mr-1"}},
+                        asmdom::Attrs{{"class", "btn"},
+                                      {"disabled",
+                                       on_click.is_ready() ? "false" : "true"}},
                         asmdom::Callbacks{{"onclick",
                                            [=](emscripten::val) {
                                                click_event click;
