@@ -65,7 +65,14 @@ do_number_input(dom::context ctx, Signal value)
 }
 
 void
-do_button(dom::context ctx, readable<std::string> text, action<> on_click);
+do_button_(dom::context ctx, readable<std::string> text, action<> on_click);
+
+template<class Text>
+void
+do_button(dom::context ctx, Text text, action<> on_click)
+{
+    do_button_(ctx, signalize(text), on_click);
+}
 
 void
 do_colored_box(dom::context ctx, readable<rgb8> color);
