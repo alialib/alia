@@ -9,4 +9,4 @@ rm -rf *
 cp ../docs/* .
 unzip favicon_io.zip && rm favicon_io.zip
 cp ../examples/asm-dom/build/*.js ../examples/asm-dom/build/*.wasm .
-cp ../examples/asm-dom/snippets/* .
+cp ../examples/asm-dom/demos/* .
