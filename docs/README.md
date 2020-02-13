@@ -51,8 +51,8 @@ A Quick Example
 
 Below is a simple interactive "Hello, World!" example that uses an experimental
 [asm-dom](https://github.com/mbasso/asm-dom) wrapper. To see it in action and
-read more about it, [click
-here](https://tmadden.github.io/alia/#/reactive-hello).
+read more about it, <a target="_self"
+href="https://tmadden.github.io/alia/#/reactive-hello">click here</a>.
 
 ```cpp
 void
