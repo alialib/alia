@@ -1,6 +1,7 @@
 #ifndef ALIA_SIGNALS_NUMERIC_HPP
 #define ALIA_SIGNALS_NUMERIC_HPP
 
+#include <alia/signals/adaptors.hpp>
 #include <alia/signals/application.hpp>
 #include <alia/signals/utilities.hpp>
 
@@ -50,9 +51,15 @@ struct scaled_signal : regular_signal<
 };
 template<class N, class Factor>
 scaled_signal<N, Factor>
-scale(N const& n, Factor const& scale_factor)
+make_scaled_signal(N n, Factor scale_factor)
 {
     return scaled_signal<N, Factor>(n, scale_factor);
+}
+template<class N, class Factor>
+auto
+scale(N n, Factor scale_factor)
+{
+    return make_scaled_signal(n, signalize(scale_factor));
 }
 
 // offset(n, offset) presents an offset view of :n.
@@ -93,9 +100,15 @@ struct offset_signal : regular_signal<
 };
 template<class N, class Offset>
 offset_signal<N, Offset>
-offset(N const& n, Offset const& offset)
+make_offset_signal(N n, Offset offset)
 {
     return offset_signal<N, Offset>(n, offset);
+}
+template<class N, class Offset>
+auto
+offset(N n, Offset offset)
+{
+    return make_offset_signal(n, signalize(offset));
 }
 
 // round_signal_writes(n, step) yields a wrapper which rounds any writes to
@@ -137,9 +150,15 @@ struct rounding_signal_wrapper : regular_signal<
 };
 template<class N, class Step>
 rounding_signal_wrapper<N, Step>
-round_signal_writes(N const& n, Step const& step)
+make_rounding_signal_wrapper(N n, Step step)
 {
     return rounding_signal_wrapper<N, Step>(n, step);
+}
+template<class N, class Step>
+auto
+round_signal_writes(N n, Step step)
+{
+    return make_rounding_signal_wrapper(n, signalize(step));
 }
 
 } // namespace alia

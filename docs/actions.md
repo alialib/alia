@@ -2,14 +2,18 @@ Actions
 =======
 
 <script>
-    init_alia_demos(['unready-copier', 'action-operators']);
+    init_alia_demos(['unready-copier', 'action-operators', 'action-combining']);
 </script>
 
 Actions are one way of responding to events in alia. They're intended to be a
 convenient, declarative way of specifying the side effects that should be
-performed when an event occurs. For the most part, you can think of them a lot
-like a simple callback function, but as we'll see, they sometimes integrate more
-naturally into reactive code than a normal C++ callback would...
+performed when an event occurs. For the most part, you can think of them as
+simple callback functions, but as we'll see, they sometimes integrate more
+naturally into reactive code than normal C++ callbacks would...
+
+Actions are very similar to signals in the way that they are used in an
+application. Like signals, they're typically created directly at the call site
+as function arguments and are only valid for the life of the function call.
 
 Signal Operators
 ----------------
@@ -26,7 +30,7 @@ are provided. However, since the operators themselves don't have any side
 effects, there's no difference between the two forms.
 
 The `<<=` operator is treated as a special *copy operator.* It produces an
-action that copies the value of its right operand into the left operand.
+action that copies the value of its right operand into its left operand.
 
 As with the other (non-mutating) signal operators, wherever possible, these
 overloads allow you to mix signals and raw (non-signal) C++ values.
@@ -48,7 +52,7 @@ There is one important difference between an action and a normal C++ callback:
 
 This property often allows actions to integrate more naturally into the dataflow
 of your application. For example, the copy action produced by the `<<=` signal
-operator is only considered ready if its left-hand operand is writeable and its
+operator is only considered ready if its left-hand operand is writable and its
 right-hand operand is readable.
 
 When alia is integrated with a UI library, this property can often be leveraged
@@ -94,3 +98,16 @@ action.
 </dd>
 
 </dl>
+
+Combining
+---------
+
+Actions can be combined using the `,` operator:
+
+[source](actions.cpp ':include :fragment=action-combining')
+
+<div class="demo-panel">
+<div id="action-combining"></div>
+</div>
+
+!> Note that this is not meant to convey a *sequencing* of actions.
