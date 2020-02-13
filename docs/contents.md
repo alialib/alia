@@ -8,7 +8,7 @@
 
   - [Signal Objects](introduction.md)
   - [Construction](signal-constructors.md)
-  - [Operators & Casts](operators-and-casts.md)
+  - [Operators](signal-operators.md)
   - [Function Application](function-application.md)
   - [Adaptors](signal-adaptors.md)
   - [Custom Signals](custom-signals.md)
