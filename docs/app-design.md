@@ -1,5 +1,4 @@
 App Design Principles
 =====================
 
-State Minimization
-------------------
+Coming soon...

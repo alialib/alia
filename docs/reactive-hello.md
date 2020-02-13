@@ -32,8 +32,8 @@ takeaway from this example is that when using alia, application code is
 developed as **functions that operate on application state and declare the
 presence of objects in the presentation of the application**. In this case, our
 application presents a web UI, so our function declares what elements are in
-that UI, but in other cases, we might declare the objects in a rendering scene
-or a physics simulation.
+that UI, but in other scenarios, we might declare the objects in a rendering
+scene or a physics simulation.
 
 These functions are designed to be reinvoked as the state changes. Each time
 they're invoked, they declare what the application looks like **at that point in

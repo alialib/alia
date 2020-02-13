@@ -1,5 +1,5 @@
-Operators and Casts
-===================
+Operators
+=========
 
 Basic Operators
 ---------------
@@ -61,8 +61,9 @@ the equivalent in the form of the `conditional` function. It mimics
 
 <dt>conditional(b, t, f)</dt><dd>
 
-Yields `t` if `b` carries `true` (or a value that behaves similarly in a boolean
-context) and `f` if `b` carries `false` (or a value that similarly).
+Yields `t` if `b` carries `true` (or a value that behaves similarly in a
+conditional context) and `f` if `b` carries `false` (or a value that behaves
+similarly).
 
 </dd>
 
@@ -72,10 +73,9 @@ context) and `f` if `b` carries `false` (or a value that similarly).
 Mutating Operators
 ------------------
 
-Operators that would normally mutate one of the operands (i.e., the compound
-assignment operators and the increment/decrement operators) instead produce
-*actions* in alia and are covered in [that section](actions.md?id=actions) of
-the documentation.
+Operators that would normally mutate one of the operands (e.g., `+=` or `--`)
+instead produce *actions* in alia and are covered in [that
+section](actions.md?id=actions) of the documentation.
 
 Mixing in Raw Values
 --------------------
@@ -84,30 +84,18 @@ Wherever possible, the signal operators allow you to mix signals and raw
 (non-signal) C++ values. So, for example, if `n` is an integer signal, `n + 1`
 is also a valid signal, as is `n > 1 && n < 4`, etc.
 
-Casts
------
-
-<dl>
-
-<dt>signal_cast&lt;Value&gt;(x)</dt><dd>
-
-Yields a signal with the value type `Value` that acts as a proxy for `x`. The
-proxy applies `static_cast` to convert its own values to and from the value type
-of `x`.
-
-</dd>
-
-</dl>
-
-Subscripts and Fields
----------------------
+Subscripts
+----------
 
 The subscript operator is defined for signals that carry containers. The index
 can either be another signal or a raw value.
 
+Field Access
+------------
+
 The `->*` operator can be used for accessing fields within a structure. For
-example, if `s` is a signal carrying a structure of type `foo`, then
-`s->*&foo::x` is a signal carrying the field `x` within `s`. Since this syntax
-is a little verbose, alia provides the `ALIA_FIELD` macro. `ALIA_FIELD(s, x)` is
-equivalent to the above (as is `alia_field(s, x)` if you allow alia to define
+example, if `p` is a signal carrying a structure of type `point`, then
+`p->*&point::x` is a signal carrying the field `x` within `p`. Since this syntax
+is a little verbose, alia provides the `ALIA_FIELD` macro. `ALIA_FIELD(p, x)` is
+equivalent to the above (as is `alia_field(p, x)` if you allow alia to define
 lowercase macros).

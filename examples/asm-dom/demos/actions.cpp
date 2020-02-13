@@ -32,12 +32,12 @@ do_action_operators(dom::context ctx, bidirectional<int> n)
     // clang-format off
 /// [action-operators]
 dom::do_text(ctx, printf(ctx, "N is %d.", n));
-dom::do_button(ctx, "double", n *= 2);
-dom::do_button(ctx, "halve", n /= 2);
-dom::do_button(ctx, "square", n *= n);
-dom::do_button(ctx, "increment", ++n);
-dom::do_button(ctx, "decrement", n--);
-dom::do_button(ctx, "reset", n <<= 1);
+dom::do_button(ctx, "Double", n *= 2);
+dom::do_button(ctx, "Halve", n /= 2);
+dom::do_button(ctx, "Square", n *= n);
+dom::do_button(ctx, "Increment", ++n);
+dom::do_button(ctx, "Decrement", n--);
+dom::do_button(ctx, "Reset", n <<= 1);
 /// [action-operators]
     // clang-format on
 }
@@ -54,3 +54,30 @@ init_action_operators(std::string dom_id)
 }
 
 static demo action_operators("action-operators", init_action_operators);
+
+void
+do_action_combining(
+    dom::context ctx, bidirectional<int> m, bidirectional<int> n)
+{
+    // clang-format off
+/// [action-combining]
+dom::do_text(ctx, printf(ctx, "M is %d and N is %d.", m, n));
+dom::do_button(ctx, "Increment M", ++m);
+dom::do_button(ctx, "Increment N", ++n);
+dom::do_button(ctx, "Reset Both", (m <<= 0, n <<= 0));
+/// [action-combining]
+    // clang-format on
+}
+
+void
+init_action_combining(std::string dom_id)
+{
+    static alia::system the_system;
+    static dom::system the_dom;
+
+    initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
+        do_action_combining(ctx, get_state(ctx, 0), get_state(ctx, 0));
+    });
+}
+
+static demo action_combining("action-combining", init_action_combining);

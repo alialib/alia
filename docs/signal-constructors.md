@@ -50,11 +50,11 @@ Internally, the signal stores a *reference* to the value.
 Lambda Constructors
 -------------------
 
-When you need a little more control but don't want to create a custom
-signal type, you can create a signal from one or more lambdas functions.
-(For completeness, you can create a fully functional, bidirectional
-signal using lambdas, but the further you go down this list, the more
-likely it is that you should just create a custom signal type.)
+When you need a little more control but don't want to create a custom signal
+type, you can create a signal from one or more lambdas functions (or other
+function objects). For completeness, you can create a fully functional,
+bidirectional signal using lambdas, but the further you go down this list, the
+more likely it is that you should just create a custom signal type...
 
 <dl>
 
