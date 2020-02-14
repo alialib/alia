@@ -1,21 +1,9 @@
-Key Features
-============
+Dataflow & Signals
+==================
 
 <script>
     init_alia_demos(['addition-ui', 'addition-analysis']);
 </script>
-
-Of course, behind the scenes, we're not completely rebuilding the UI
-every time anything changes. That would be prohibitively expensive for
-more complex UIs, and it would likely lead to discontinuities in the
-behavior of the UI. Instead, as our application declares the widgets
-that *should* be in the UI, the asm-dom wrapper compares that
-specification to what *is* there and adjusts the UI accordingly. The
-mechanics of maintaining this relationship are not trivial, which is
-where alia comes in. It makes it possible to maintain this relationship
-and compute these 'diffs' efficiently. To facilitate this, it introduces
-some of its own concepts into the application-level code, which we'll
-touch on here.
 
 Signals
 -------
@@ -69,37 +57,3 @@ structures and/or do revision tracking.
 You can read much more about signals in the in-depth guides
 &lt;../signals/introduction&gt;.
 
-Control Flow Tracking
----------------------
-
-As mentioned above, alia's main job is to track the relationship between
-the objects declared by your application code and the objects that
-actually exist in a library. This job is impossible (or, at best, very
-messy) without knowing something about your control flow. As such, alia
-asks that you notify it whenever you introduce branching or looping into
-the parts of your application that declare objects. There are various
-ways to do this, but the simplest is to use some of the built-in
-constructs that alia provides, like the `alia_if` statement in the
-original example.
-
-Besides allowing alia to do its job, these constructs also play nicely
-with signals. For example, imagine we want to add some commentary on the
-sum we computed in the addition example:
-
-[source](addition.cpp ':include :fragment=analysis')
-
-<div class="demo-panel">
-<div id="addition-analysis"></div>
-</div>
-<!-- <script>init_alia_demo('addition-analysis')</script> -->
-
-Notice that although our `if`/`else` branches have seemingly accounted
-for all possibilities on the number line, there is still the possibility
-that we haven't filled in the inputs yet and our sum doesn't have a
-value. The alia macros account for this automatically, and in that case,
-none of the branches are taken.
-
-alia provides a large suite of options for tracking your control flow,
-some less invasive than others. You can see them all in the
-in-depth guides
-&lt;../control-flow/flow-concepts&gt;.

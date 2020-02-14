@@ -1,7 +1,8 @@
 - Introduction
 
   - [A Reactive "Hello, World!"](reactive-hello.md)
-  - [Key Features](key-features.md)
+  - [Control Flow](control-flow-basics.md)
+  - [Dataflow & Signals](dataflow-basics.md)
   - [Getting Started](getting-started.md)
 
 - Signals
@@ -38,4 +39,4 @@
 
   - [Contributing](contributing.md)
   - [Roadmap](roadmap.md)
-  - [Testing](testing.md)
+  - [Building & Testing](building-and-testing.md)
