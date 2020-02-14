@@ -1,7 +1,7 @@
 - Introduction
 
   - [A Reactive "Hello, World!"](reactive-hello.md)
-  - [Control Flow](control-flow-basics.md)
+  - [Reactive Control Flow](control-flow-basics.md)
   - [Dataflow & Signals](dataflow-basics.md)
   - [Getting Started](getting-started.md)
 
