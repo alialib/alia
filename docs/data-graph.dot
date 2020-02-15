@@ -1,5 +1,12 @@
-a -> b -> e;
-b -> c -> d;
+digraph flow {
+
+edge[color="#242424"];
+node[color="#242424", fontcolor="#242424"];
+
+a -> b -> c -> e;
+c -> d;
 
 edge[style=invis];
 d -> e;
+
+}

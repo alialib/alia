@@ -7,6 +7,7 @@ mkdir -p www
 cd www
 rm -rf *
 cp ../docs/* .
-unzip favicon_io.zip && rm favicon_io.zip
+unzip favicon.zip && rm *.zip
 cp ../examples/asm-dom/build/*.js ../examples/asm-dom/build/*.wasm .
 cp ../examples/asm-dom/demos/* .
+dot -Tsvg -o data-graph.svg data-graph.dot && rm data-graph.dot
