@@ -1,6 +1,10 @@
 Key Features
 ============
 
+<script>
+    init_alia_demos(['addition-ui', 'numerical-analysis']);
+</script>
+
 Dataflow Semantics
 ------------------
 
@@ -23,7 +27,7 @@ propagates through your application's data flow.
 
 For example, let's write a quick app that adds numbers:
 
-[source](addition.cpp ':include :fragment=ui')
+[source](numerical.cpp ':include :fragment=addition-ui')
 
 <div class="demo-panel">
 <div id="addition-ui"></div>
@@ -51,11 +55,11 @@ on *what the UI should be now* and not worry about *what the UI was before* or
 *how to transform it* from one to the other.
 
 Of course, behind the scenes, we generally don't have this luxury. We can't
-simply throw away the old UI every time anything happens and build a new
-one according to the application's latest specification. That would be
-prohibitively expensive for more complex UIs, and it would likely lead to
-discontinuities in the behavior of the UI as scrollbar positions, cursor
-positions, and other bits of hidden state reset themselves.
+simply throw away the old UI every time anything happens and build a new one
+according to the application's latest specification. That would be prohibitively
+expensive for more complex UIs, and it would likely lead to discontinuities in
+the behavior of the UI as scrollbar positions, cursor positions, and other bits
+of hidden state reset themselves.
 
 Instead, as our application declares the widgets that *should* be in the UI,
 we'd like to compare that specification to what *is* there and adjust the UI
@@ -67,7 +71,7 @@ alia does this by *maintaining a graph-like data structure that models the
 control flow of the reactive portions of application.* As the application code
 executes and makes calls to functions like `do_text` and `do_input`, alia
 ensures that **each of those calls is consistently associated with the same node
-in this graph of data.**
+in this data graph.**
 
 In order to make this work, alia asks that you notify it whenever you introduce
 branching or looping into the parts of your application that declare objects.
@@ -76,20 +80,19 @@ built-in constructs that alia provides, like the `alia_if` statement in the
 'Hello, World!' example.
 
 Besides allowing alia to do its job, these constructs also play nicely with
-signals. For example, imagine we want to add some commentary on the sum we
-computed in the addition example:
+signals. For example, let's write an example that classifies a number as
+positive, negative, or zero:
 
-[source](addition.cpp ':include :fragment=analysis')
+[source](numerical.cpp ':include :fragment=analysis')
 
 <div class="demo-panel">
-<div id="addition-analysis"></div>
+<div id="numerical-analysis"></div>
 </div>
 
 Notice that although our `if`/`else` branches have seemingly accounted for all
 possibilities on the number line, there is still the possibility that we haven't
-filled in the inputs yet and our sum doesn't have a value. The alia macros
-account for this automatically, and in that case, none of the branches are
-taken.
+filled in the input yet and `n` doesn't have a value. The alia macros account
+for this automatically, and in that case, none of the branches are taken.
 
 alia provides a [large suite of options](tracking-mechanisms.md) for tracking
 your control flow, some less invasive than others.
