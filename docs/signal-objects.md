@@ -52,6 +52,15 @@ value to it.
 Value Identity
 --------------
 
+When interfacing alia with a library (like asm-dom), we frequently have to write
+code that asks "Is this value the same as the last time we saw it?" For simple
+things like names and numbers, it's trivial to just store the old value and
+check it against the new one. For larger values, however, this could become
+prohibitively expensive, so alia allows a signal to provide an abbreviated ID
+for its value. alia knows that the value remains unchanged as long as that ID
+stays the same. Often, these are readily available in applications that are
+built on immutable data structures and/or do revision tracking.
+
 Just like regular values in C++, a signal value can be arbitrarily large. For
 example, a signal could carry a block of text or an image. Since alia uses
 polling to detect changes in signals, this can be prohibitively expensive for

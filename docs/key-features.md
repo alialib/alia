@@ -2,104 +2,97 @@ Key Features
 ============
 
 <script>
-    init_alia_demos(['addition-ui', 'addition-analysis']);
+    init_alia_demos(['addition-ui', 'numerical-analysis']);
 </script>
 
-Of course, behind the scenes, we're not completely rebuilding the UI
-every time anything changes. That would be prohibitively expensive for
-more complex UIs, and it would likely lead to discontinuities in the
-behavior of the UI. Instead, as our application declares the widgets
-that *should* be in the UI, the asm-dom wrapper compares that
-specification to what *is* there and adjusts the UI accordingly. The
-mechanics of maintaining this relationship are not trivial, which is
-where alia comes in. It makes it possible to maintain this relationship
-and compute these 'diffs' efficiently. To facilitate this, it introduces
-some of its own concepts into the application-level code, which we'll
-touch on here.
+Dataflow Semantics
+------------------
 
-Signals
--------
+In reactive programming, it's useful to think of your application as defining a
+dataflow and your variables as carrying values that change over time. In alia,
+this type of variable is called a *signal.* If you think of an alia application
+as defining a dataflow graph where the inputs are application state and the
+outputs go into a presentation layer, then the edges of this graph (where the
+values live) are all signals. (In our 'Hello, World!' example, `name` is a
+signal.)
 
-You might have noticed that our `name` parameter is declared as a
-`bidirectional<std::string>` rather than `std::string&`, as you might
-have expected. In alia parlance, `name` is a *signal*, and since it's
-*bidirectional*, `do_greeting_ui` can both read from it and write to it.
-In reactive programming, it's useful to think of your application as
-defining a dataflow and your variables as carrying values that change
-over time (like a signal in signal processing). In alia, this concept is
-captured by signal types, and they differ from normal C++ values in two
-important ways:
-
-### Availability
-
-It's often useful to think of a signal in your dataflow as carrying no
-value at all (e.g., because the user hasn't input a value yet, or
-because the value is still being computed or queried from some remote
-source). Since this "not available yet" state tends to propagate through
-a dataflow, virtually all code that works with signals has to account
-for it. With alia signals, this state is implicitly part of the type and
-implicitly propagates through your application's data flow.
+The most important difference between an alia signal and a regular C++ variable
+is the concept of *availability.* It's often useful to think of a signal in your
+dataflow as carrying no value at all (e.g., because the user hasn't input a
+value yet, or because the value is still being computed or queried from some
+remote source). Since this "not available yet" state tends to propagate through
+a dataflow, virtually all code that works with signals has to account for it.
+With alia signals, this state is implicitly part of the type and implicitly
+propagates through your application's data flow.
 
 For example, let's write a quick app that adds numbers:
 
-[source](addition.cpp ':include :fragment=ui')
+[source](numerical.cpp ':include :fragment=addition-ui')
 
 <div class="demo-panel">
 <div id="addition-ui"></div>
 </div>
 
-As simple as this example is, it's actually setting up a dataflow (via
-the `+` operator). Notice that the sum doesn't actually appear until we
-supply a value for both `a` and `b`. The result of the `+` operator
-itself is a signal, and if either of its inputs is unavailable, that
-state implicitly propagates through to the sum.
+As simple as this example is, it's actually setting up a dataflow (via the `+`
+operator). Notice that the sum doesn't actually appear until we supply a value
+for both `a` and `b`. The result of the `+` operator itself is a signal, and if
+either of its inputs is unavailable, that state implicitly propagates through to
+the sum.
 
-### Value Identification
+The Data Graph
+--------------
 
-When interfacing alia with a library (like asm-dom), we frequently have
-to write code that asks "Is this value the same as the last time we saw
-it?" For simple things like names and numbers, it's trivial to just
-store the old value and check it against the new one. For larger values,
-however, this could become prohibitively expensive, so alia allows a
-signal to provide an abbreviated ID for its value. alia knows that the
-value remains unchanged as long as that ID stays the same. Often, these
-are readily available in applications that are built on immutable data
-structures and/or do revision tracking.
+<script>
+    init_alia_demos(['addition-ui', 'addition-analysis']);
+</script>
 
-You can read much more about signals in the in-depth guides
-&lt;../signals/introduction&gt;.
+As seen in the 'Hello, World!' example, application code in alia is expressed as
+functions that declare the presence of objects in the UI (or other presentation
+layer). Whenever the UI needs to be updated, the application essentially gives a
+fresh new specification of what the UI should look like at that point in time.
+This is the beauty of reactive programming. The application developer can focus
+on *what the UI should be now* and not worry about *what the UI was before* or
+*how to transform it* from one to the other.
 
-Control Flow Tracking
----------------------
+Of course, behind the scenes, we generally don't have this luxury. We can't
+simply throw away the old UI every time anything happens and build a new one
+according to the application's latest specification. That would be prohibitively
+expensive for more complex UIs, and it would likely lead to discontinuities in
+the behavior of the UI as scrollbar positions, cursor positions, and other bits
+of hidden state reset themselves.
 
-As mentioned above, alia's main job is to track the relationship between
-the objects declared by your application code and the objects that
-actually exist in a library. This job is impossible (or, at best, very
-messy) without knowing something about your control flow. As such, alia
-asks that you notify it whenever you introduce branching or looping into
-the parts of your application that declare objects. There are various
-ways to do this, but the simplest is to use some of the built-in
-constructs that alia provides, like the `alia_if` statement in the
-original example.
+Instead, as our application declares the widgets that *should* be in the UI,
+we'd like to compare that specification to what *is* there and adjust the UI
+accordingly. The mechanics of this are not trivial, which is where alia comes
+in. It makes it possible to maintain the relationship between the *declared* UI
+and the *actual* UI and efficiently detect where changes have occurred.
 
-Besides allowing alia to do its job, these constructs also play nicely
-with signals. For example, imagine we want to add some commentary on the
-sum we computed in the addition example:
+alia does this by *maintaining a graph-like data structure that models the
+control flow of the reactive portions of application.* As the application code
+executes and makes calls to functions like `do_text` and `do_input`, alia
+ensures that **each of those calls is consistently associated with the same node
+in this data graph.**
 
-[source](addition.cpp ':include :fragment=analysis')
+In order to make this work, alia asks that you notify it whenever you introduce
+branching or looping into the parts of your application that declare objects.
+There are various ways to do this, but the simplest is to use some of the
+built-in constructs that alia provides, like the `alia_if` statement in the
+'Hello, World!' example.
+
+Besides allowing alia to do its job, these constructs also play nicely with
+signals. For example, let's write an example that classifies a number as
+positive, negative, or zero:
+
+[source](numerical.cpp ':include :fragment=analysis')
 
 <div class="demo-panel">
-<div id="addition-analysis"></div>
+<div id="numerical-analysis"></div>
 </div>
-<!-- <script>init_alia_demo('addition-analysis')</script> -->
 
-Notice that although our `if`/`else` branches have seemingly accounted
-for all possibilities on the number line, there is still the possibility
-that we haven't filled in the inputs yet and our sum doesn't have a
-value. The alia macros account for this automatically, and in that case,
-none of the branches are taken.
+Notice that although our `if`/`else` branches have seemingly accounted for all
+possibilities on the number line, there is still the possibility that we haven't
+filled in the input yet and `n` doesn't have a value. The alia macros account
+for this automatically, and in that case, none of the branches are taken.
 
-alia provides a large suite of options for tracking your control flow,
-some less invasive than others. You can see them all in the
-in-depth guides
-&lt;../control-flow/flow-concepts&gt;.
+alia provides a [large suite of options](tracking-mechanisms.md) for tracking
+your control flow, some less invasive than others.

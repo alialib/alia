@@ -107,12 +107,9 @@ to be done.
 And if you're interested in sharing your integrations, I'm more than happy to
 incorporate them as examples and/or link people to your projects.
 
-<div class="hide-when-deployed">
-
 Getting Started
 ---------------
 
-Continue on to [the full documentation](https://tmadden.github.io/alia) for more
-info.
-
-</div>
+Continue on to <a target="_self"
+href="https://tmadden.github.io/alia/#/reactive-hello">the full
+documentation</a> for more info.

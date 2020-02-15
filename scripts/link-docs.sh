@@ -7,6 +7,7 @@ mkdir -p www
 cd www
 rm -rf *
 ln -s ../docs/* .
-unzip favicon_io.zip && rm favicon_io.zip
+unzip local-favicon.zip && rm *.zip
 ln -s ../examples/asm-dom/build/*.js ../examples/asm-dom/build/*.wasm .
 ln -s ../examples/asm-dom/demos/* .
+dot -Tsvg -o data-graph.svg data-graph.dot
