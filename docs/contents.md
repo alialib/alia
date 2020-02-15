@@ -33,7 +33,7 @@
 
   - [Configuration](configuration.md)
   - [App Design Principles](app-design.md)
-  - [Performance Considerations](performance.md)
+  - [Efficiency Considerations](efficiency.md)
 
 - Development
 
