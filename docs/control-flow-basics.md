@@ -1,30 +1,6 @@
 Reactive Control Flow
 =====================
 
-<script>
-    init_alia_demos(['expanded-greeting', 'addition-analysis']);
-</script>
-
-As seen in the 'Hello, World!' example, application code in alia is expressed as
-functions that declare the presence of objects in the UI (or other presentation
-layer). Whenever the UI needs to be updated, the application essentially gives a
-fresh new specification of what the UI should look like at that point in time.
-This is the beauty of reactive programming. The application developer can focus
-on *what the UI should be now* and not worry about *what the UI was before* or
-*how to transform it* from one to the other.
-
-Of course, behind the scenes, we generally don't have this luxury. We can't
-simply throw away the old UI every time anything happens and build a fresh new
-one according to the application's latest specification. That would be
-prohibitively expensive for more complex UIs, and it would likely lead to
-discontinuities in the behavior of the UI as all the scrollbar positions, cursor
-positions, and other bits of hidden state reset themselves.
-
-Instead, each update, we'd like to
-
-This is where alia comes in. It provides the mechanics to track the relationship
-between the specification that's declared by the application code and the
-objects that actually exist behind the scenes.
 
 Tracking
 --------

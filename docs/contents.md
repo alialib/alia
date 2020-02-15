@@ -1,8 +1,8 @@
 - Introduction
 
   - [A Reactive "Hello, World!"](reactive-hello.md)
-  - [Reactive Control Flow](control-flow-basics.md)
-  - [Dataflow & Signals](dataflow-basics.md)
+  - [Key Features](key-features.md)
+  - [Assorted Examples](assorted-examples.md)
   - [Getting Started](getting-started.md)
 
 - Signals
