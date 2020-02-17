@@ -101,8 +101,12 @@ using action = action_ref<Args...>;
 // Using the comma operator between two actions creates a combined action that
 // performs the two actions in sequence.
 
+template<class First, class Second, class Interface>
+struct action_pair;
+
 template<class First, class Second, class... Args>
-struct action_pair : First::action_interface
+struct action_pair<First, Second, action_interface<Args...>>
+    : action_interface<Args...>
 {
     action_pair()
     {
@@ -140,7 +144,8 @@ template<
 auto
 operator,(First const& first, Second const& second)
 {
-    return action_pair<First, Second>(first, second);
+    return action_pair<First, Second, typename First::action_interface>(
+        first, second);
 }
 
 // operator <<=
