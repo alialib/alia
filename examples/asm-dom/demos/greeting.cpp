@@ -109,7 +109,7 @@ do_widget(dom::context ctx, std::string name)
         ctx,
         printf(
             ctx,
-            "Hi, I'm a widget. My name is %s, and I live at %p.",
+            "Hi, I'm widget %s. I live at %p.",
             value(name),
             value(data)));
 }
@@ -119,25 +119,25 @@ do_contrived_hello(dom::context ctx)
 {
     auto n = get_animation_tick_count(ctx) % 2000;
 
-    do_widget(ctx, "Tom");
+    do_widget(ctx, "A");
 
     ALIA_IF(n > 1000)
     {
-        do_widget(ctx, "Dick");
+        do_widget(ctx, "B");
     }
     ALIA_ELSE
     {
-        do_widget(ctx, "Maria");
+        do_widget(ctx, "C");
     }
     ALIA_END
 
     ALIA_IF(n > 500)
     {
-        do_widget(ctx, "Harry");
+        do_widget(ctx, "D");
     }
     ALIA_END
 
-    do_widget(ctx, "Maria");
+    do_widget(ctx, "E");
 }
 /// [contrived-hello]
 

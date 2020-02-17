@@ -13,8 +13,7 @@ dataflow and your variables as carrying values that change over time. In alia,
 this type of variable is called a *signal.* If you think of an alia application
 as defining a dataflow graph where the inputs are application state and the
 outputs go into a presentation layer, then the edges of this graph (where the
-values live) are all signals. (In our 'Hello, World!' example, `name` is a
-signal.)
+values live) are all signals.
 
 The most important difference between an alia signal and a regular C++ variable
 is the concept of *availability.* It's often useful to think of a signal in your
