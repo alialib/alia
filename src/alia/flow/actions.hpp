@@ -409,6 +409,15 @@ always_ready()
     return true;
 }
 
+// The single-argument version of lambda_action creates an action that's always
+// ready to perform.
+template<class Perform>
+auto
+lambda_action(Perform perform)
+{
+    return lambda_action(always_ready, perform);
+}
+
 // parameterized_action(f, args...) is used to construct actions that
 // require parameters that are represented as signals. :args should all be
 // signals. The action won't be considered ready until all signals are
