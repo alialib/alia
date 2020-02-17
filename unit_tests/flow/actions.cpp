@@ -181,7 +181,7 @@ TEST_CASE("push_back action", "[flow][actions]")
 TEST_CASE("lambda actions", "[flow][actions]")
 {
     int x = 0;
-    auto a = lambda_action(always_ready, [&](int y, int z) { x = y + z; });
+    auto a = lambda_action([&](int y, int z) { x = y + z; });
     perform_action(a, 1, 2);
     REQUIRE(x == 3);
 
