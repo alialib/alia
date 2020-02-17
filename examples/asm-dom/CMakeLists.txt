@@ -9,6 +9,8 @@ include(cmake/asm-dom.cmake)
 
 # Allow the use of Emscripten's Fetch API.
 string(APPEND CMAKE_CXX_FLAGS " -s FETCH=1")
+# Enable exceptions.
+string(APPEND CMAKE_CXX_FLAGS " -s DISABLE_EXCEPTION_CATCHING=0")
 
 # Create a library of common demo functionality.
 add_library(demolib STATIC color.cpp dom.cpp)
