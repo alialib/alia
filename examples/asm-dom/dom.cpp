@@ -82,61 +82,6 @@ do_input_(dom::context ctx, bidirectional<string> value)
 }
 
 void
-do_number_input_(dom::context ctx, bidirectional<string> value)
-{
-    input_data* data;
-    get_cached_data(ctx, &data);
-
-    auto id = get_node_id(ctx);
-    auto routable_id = make_routable_node_id(ctx, id);
-
-    if (signal_is_readable(value))
-    {
-        if (!data->external_id.matches(value.value_id()))
-        {
-            data->value = read_signal(value);
-            data->external_id.capture(value.value_id());
-        }
-    }
-    else
-    {
-        if (!data->external_id.matches(no_id))
-        {
-            data->value = string();
-            data->external_id.capture(no_id);
-        }
-    }
-
-    auto* system = get_component<system_tag>(ctx);
-
-    handle_event<refresh_event>(ctx, [=](auto ctx, auto& e) {
-        get_component<context_info_tag>(ctx)->current_children->push_back(
-            asmdom::h(
-                "input",
-                asmdom::Data(
-                    asmdom::Attrs{{"type", "number"}},
-                    asmdom::Props{{"value", emscripten::val(data->value)}},
-                    asmdom::Callbacks{
-                        {"oninput", [=](emscripten::val e) {
-                             value_update_event update;
-                             update.value
-                                 = e["target"]["value"].as<std::string>();
-                             dispatch_targeted_event(
-                                 *system, update, routable_id);
-                             refresh_system(*system);
-                             return true;
-                         }}})));
-    });
-    handle_targeted_event<value_update_event>(ctx, id, [=](auto ctx, auto& e) {
-        if (signal_is_writable(value))
-        {
-            write_signal(value, e.value);
-        }
-        data->value = e.value;
-    });
-}
-
-void
 do_button_(dom::context ctx, readable<std::string> text, action<> on_click)
 {
     auto id = get_node_id(ctx);
