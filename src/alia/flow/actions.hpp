@@ -35,7 +35,7 @@ struct action_interface : untyped_action_interface
 {
     // Perform this action.
     virtual void
-    perform(Args... args) const = 0;
+    perform(std::function<void()> const& intermediary, Args... args) const = 0;
 };
 
 // is_action_type<T>::value yields a compile-time boolean indicating whether or
@@ -59,7 +59,7 @@ void
 perform_action(action_interface<Args...> const& action, Args... args)
 {
     assert(action.is_ready());
-    action.perform(args...);
+    action.perform([]() {}, args...);
 }
 
 // action_ref is a reference to an action that implements the action interface
@@ -84,9 +84,9 @@ struct action_ref : action_interface<Args...>
     }
 
     void
-    perform(Args... args) const
+    perform(std::function<void()> const& intermediary, Args... args) const
     {
-        action_->perform(args...);
+        action_->perform(intermediary, args...);
     }
 
  private:
@@ -120,10 +120,10 @@ struct action_pair : First::action_interface
     }
 
     void
-    perform(Args... args) const
+    perform(std::function<void()> const& intermediary, Args... args) const
     {
-        first_.perform(args...);
-        second_.perform(args...);
+        second_.perform(
+            [&]() { first_.perform(intermediary, args...); }, args...);
     }
 
  private:
@@ -145,16 +145,15 @@ operator,(First const& first, Second const& second)
 
 // operator <<=
 //
-// sink <<= source, where :sink and :source are both signals, creates an action
-// that will set the value of :sink to the value held in :source. In order for
-// the action to be considered ready, :source must be readable and :sink must be
-// writable.
+// sink <<= source, where :sink and :source are both signals, creates an
+// action that will set the value of :sink to the value held in :source. In
+// order for the action to be considered ready, :source must be readable and
+// :sink must be writable.
 
 template<class Sink, class Source>
 struct copy_action : action_interface<>
 {
-    copy_action(Sink const& sink, Source const& source)
-        : sink_(sink), source_(source)
+    copy_action(Sink sink, Source source) : sink_(sink), source_(source)
     {
     }
 
@@ -165,9 +164,11 @@ struct copy_action : action_interface<>
     }
 
     void
-    perform() const
+    perform(std::function<void()> const& intermediary) const
     {
-        sink_.write(source_.read());
+        auto value = source_.read();
+        intermediary();
+        sink_.write(value);
     }
 
  private:
@@ -183,7 +184,7 @@ template<
             && is_readable_signal_type<Source>::value,
         int> = 0>
 auto
-operator<<=(Sink const& sink, Source const& source)
+operator<<=(Sink sink, Source source)
 {
     return copy_action<Sink, Source>(sink, source);
 }
@@ -197,15 +198,15 @@ template<
         is_writable_signal_type<Sink>::value && !is_signal_type<Source>::value,
         int> = 0>
 auto
-operator<<=(Sink const& sink, Source const& source)
+operator<<=(Sink sink, Source source)
 {
     return sink <<= value(source);
 }
 
 #endif
 
-// For most compound assignment operators (e.g., +=), a += b, where :a and :b
-// are signals, creates an action that sets :a equal to :a + :b.
+// For most compound assignment operators (e.g., +=), a += b, where :a and
+// :b are signals, creates an action that sets :a equal to :a + :b.
 
 #define ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(assignment_form, normal_form) \
     template<                                                                  \
@@ -281,8 +282,8 @@ ALIA_DEFINE_BY_ONE_OPERATOR(--, -)
 
 #undef ALIA_DEFINE_BY_ONE_OPERATOR
 
-// toggle(flag), where :flag is a signal to a boolean, creates an action that
-// will toggle the value of :flag between true and false.
+// toggle(flag), where :flag is a signal to a boolean, creates an action
+// that will toggle the value of :flag between true and false.
 //
 // Note that this could also be used with other value types as long as the !
 // operator provides a reasonable "toggle" function.
@@ -294,9 +295,9 @@ toggle(Flag const& flag)
     return flag <<= !flag;
 }
 
-// make_push_back_action(collection, item), where both :collection and :item are
-// signals, creates an action that will push the value of :item onto the back
-// of :collection.
+// make_push_back_action(collection, item), where both :collection and :item
+// are signals, creates an action that will push the value of :item onto the
+// back of :collection.
 
 template<class Collection, class Item>
 struct push_back_action : action_interface<>
@@ -314,10 +315,11 @@ struct push_back_action : action_interface<>
     }
 
     void
-    perform() const
+    perform(std::function<void()> const& intermediary) const
     {
         auto new_collection = collection_.read();
         new_collection.push_back(item_.read());
+        intermediary();
         collection_.write(new_collection);
     }
 
@@ -333,13 +335,13 @@ make_push_back_action(Collection const& collection, Item const& item)
     return push_back_action<Collection, Item>(collection, item);
 }
 
-// lambda_action(is_ready, perform) creates an action whose behavior is defined
-// by two function objects.
+// lambda_action(is_ready, perform) creates an action whose behavior is
+// defined by two function objects.
 //
-// :is_ready takes no parameters and simply returns true or false to show if the
-// action is ready to be performed.
+// :is_ready takes no parameters and simply returns true or false to
+// indicate if the action is ready to be performed.
 //
-// :perform can take any number/type of arguments and this defines the signature
+// :perform can take any number/type of arguments and defines the signature
 // of the action.
 
 template<class Function>
@@ -378,8 +380,9 @@ struct lambda_action_object<IsReady, Perform, action_interface<Args...>>
     }
 
     void
-    perform(Args... args) const
+    perform(std::function<void()> const& intermediary, Args... args) const
     {
+        intermediary();
         perform_(args...);
     }
 
@@ -398,19 +401,19 @@ lambda_action(IsReady is_ready, Perform perform)
         typename lambda_action_signature<Perform>::type>(is_ready, perform);
 }
 
-// This is just a clear and concise way of indicating that a lambda action is
-// always ready.
+// This is just a clear and concise way of indicating that a lambda action
+// is always ready.
 inline bool
 always_ready()
 {
     return true;
 }
 
-// parameterized_action(f, args...) is used to construct actions that require
-// parameters that are represented as signals. :args should all be signals. The
-// action won't be considered ready until all signals are readable. f() is the
-// function that performs the action. Its arguments are the values read from the
-// argument signals.
+// parameterized_action(f, args...) is used to construct actions that
+// require parameters that are represented as signals. :args should all be
+// signals. The action won't be considered ready until all signals are
+// readable. f() is the function that performs the action. Its arguments are
+// the values read from the argument signals.
 template<class Function, class... Args>
 auto
 parameterized_action(Function f, Args... args)

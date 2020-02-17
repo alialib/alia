@@ -83,7 +83,7 @@ TEST_CASE("increment/decrement operators", "[flow][actions]")
 
 #undef TEST_COMPOUND_ASSIGNMENT_OPERATOR
 
-TEST_CASE("sequenced actions", "[flow][actions]")
+TEST_CASE("combined actions", "[flow][actions]")
 {
     int x = 1, y = 2;
     auto a = empty<int>() <<= empty<int>();
@@ -94,6 +94,10 @@ TEST_CASE("sequenced actions", "[flow][actions]")
     perform_action((b, c));
     REQUIRE(x == 2);
     REQUIRE(y == 3);
+    // Test that actions are performed with latch-like semantics.
+    perform_action((direct(x) <<= 4, direct(y) <<= direct(x)));
+    REQUIRE(x == 4);
+    REQUIRE(y == 2);
 }
 
 TEST_CASE("action_ref", "[flow][actions]")
