@@ -94,10 +94,25 @@ TEST_CASE("combined actions", "[flow][actions]")
     perform_action((b, c));
     REQUIRE(x == 2);
     REQUIRE(y == 3);
+}
+
+TEST_CASE("latch-like action", "[flow][actions]")
+{
     // Test that actions are performed with latch-like semantics.
+    int x = 2, y = 3;
     perform_action((direct(x) <<= 4, direct(y) <<= direct(x)));
     REQUIRE(x == 4);
     REQUIRE(y == 2);
+}
+
+TEST_CASE("parameterized combined action", "[flow][actions]")
+{
+    int x = 0, y = 0;
+    auto a = lambda_action([&](int n) { x += n; });
+    auto b = lambda_action([&](int n) { y -= n; });
+    perform_action((a, b), 4);
+    REQUIRE(x == 4);
+    REQUIRE(y == -4);
 }
 
 TEST_CASE("action_ref", "[flow][actions]")
