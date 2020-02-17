@@ -7,11 +7,11 @@
 
 - Signals
 
-  - [Signal Objects](introduction.md)
-  - [Construction](signal-constructors.md)
+  - [Basic Usage](basic-signals.md)
   - [Operators](signal-operators.md)
   - [Function Application](function-application.md)
   - [Adaptors](signal-adaptors.md)
+  - [Value Identity](value-identity.md)
   - [Custom Signals](custom-signals.md)
   - [Signals as Parameters](signals-as-parameters.md)
   - [Time as a Signal](time-signals.md)

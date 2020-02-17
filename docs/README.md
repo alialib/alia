@@ -72,6 +72,9 @@ do_greeting_ui(dom::context ctx, bidirectional<string> name)
 }
 ```
 
+Other assorted examples are available <a target="_self"
+href="https://tmadden.github.io/alia/#/assorted-examples">here</a>.
+
 Project Status
 --------------
 
@@ -101,8 +104,8 @@ any external libraries.
 **So at this point, if you're interested in using alia in a real project, it
 will require some work on your part to hook it up to the libraries you need for
 user interfaces, rendering, etc.** I provide guidance and examples on how to do
-this, and in my experience, it's relatively straightforward, but it still needs
-to be done.
+this, and in my experience, it's relatively fun and straightforward work, but it
+still needs to be done.
 
 And if you're interested in sharing your integrations, I'm more than happy to
 incorporate them as examples and/or link people to your projects.
