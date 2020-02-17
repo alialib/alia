@@ -66,16 +66,6 @@ do_input(dom::context ctx, Signal signal)
 }
 
 void
-do_number_input_(dom::context ctx, bidirectional<string> value);
-
-template<class Signal>
-void
-do_number_input(dom::context ctx, Signal value)
-{
-    do_number_input_(ctx, as_bidirectional_text(ctx, value));
-}
-
-void
 do_button_(dom::context ctx, readable<std::string> text, action<> on_click);
 
 template<class Text>
