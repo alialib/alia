@@ -1,6 +1,7 @@
 #ifndef ALIA_SIGNALS_TEXT_HPP
 #define ALIA_SIGNALS_TEXT_HPP
 
+#include <alia/signals/adaptors.hpp>
 #include <alia/signals/application.hpp>
 #include <alia/signals/basic.hpp>
 
@@ -49,18 +50,15 @@ invoke_snprintf(std::string const& format, Args const&... args)
     return s;
 }
 
-template<class... Args>
+template<class Format, class... Args>
 auto
-printf(context ctx, readable<std::string> format, Args const&... args)
+printf(context ctx, Format format, Args... args)
 {
-    return apply(ctx, ALIA_LAMBDIFY(invoke_snprintf), format, args...);
-}
-
-template<class... Args>
-auto
-printf(context ctx, char const* format, Args const&... args)
-{
-    return apply(ctx, ALIA_LAMBDIFY(invoke_snprintf), value(format), args...);
+    return apply(
+        ctx,
+        ALIA_LAMBDIFY(invoke_snprintf),
+        signalize(format),
+        signalize(args)...);
 }
 
 // All conversion of values to and from text goes through the functions
