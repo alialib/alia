@@ -16,6 +16,18 @@ do_text_(dom::context ctx, readable<std::string> text)
 }
 
 void
+do_heading_(
+    dom::context ctx, readable<std::string> level, readable<std::string> text)
+{
+    handle_event<refresh_event>(ctx, [=](auto ctx, auto& e) {
+        get_component<context_info_tag>(ctx)->current_children->push_back(
+            asmdom::h(
+                signal_is_readable(level) ? read_signal(level) : "p",
+                signal_is_readable(text) ? read_signal(text) : string()));
+    });
+}
+
+void
 do_input_(dom::context ctx, bidirectional<string> value)
 {
     input_data* data;

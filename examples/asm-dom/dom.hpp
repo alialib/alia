@@ -38,6 +38,17 @@ do_text(dom::context ctx, Signal text)
     do_text_(ctx, as_text(ctx, signalize(text)));
 }
 
+void
+do_heading_(
+    dom::context ctx, readable<std::string> level, readable<std::string> text);
+
+template<class Level, class Text>
+void
+do_heading(dom::context ctx, Level level, Text text)
+{
+    do_heading_(ctx, signalize(level), as_text(ctx, signalize(text)));
+}
+
 struct input_data
 {
     captured_id external_id;
