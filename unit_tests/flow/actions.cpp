@@ -220,3 +220,25 @@ TEST_CASE("parameterized actions", "[flow][actions]")
     perform_action(b);
     REQUIRE(my_int == 1);
 }
+
+TEST_CASE("action binding", "[flow][actions]")
+{
+    int x = 0;
+    auto a = lambda_action([&](int y, int z) { x = y - z; });
+
+    REQUIRE(!(a <<= empty<int>()).is_ready());
+
+    auto b = a <<= value(1);
+    REQUIRE(b.is_ready());
+    REQUIRE(!(b <<= empty<int>()).is_ready());
+    perform_action(b, 4);
+    REQUIRE(x == -3);
+
+    auto c = b <<= 2;
+    REQUIRE(c.is_ready());
+    perform_action(c);
+    REQUIRE(x == -1);
+
+    REQUIRE(!(lambda_action([]() { return false; }, [&](int x) {}) <<= value(0))
+                 .is_ready());
+}
