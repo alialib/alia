@@ -209,18 +209,6 @@ TEST_CASE("lambda actions", "[flow][actions]")
     REQUIRE(x == 4);
 }
 
-TEST_CASE("parameterized actions", "[flow][actions]")
-{
-    int my_int = 0;
-    auto assign = [&my_int](int x) { my_int = x; };
-    auto a = parameterized_action(assign, empty<int>());
-    REQUIRE(!action_is_ready(a));
-    auto b = parameterized_action(assign, value(1));
-    REQUIRE(action_is_ready(b));
-    perform_action(b);
-    REQUIRE(my_int == 1);
-}
-
 TEST_CASE("action binding", "[flow][actions]")
 {
     int x = 0;

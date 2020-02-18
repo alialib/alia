@@ -90,13 +90,11 @@ struct animation_timer
     {
         return value(raw_.ticks_left());
     }
-    template<class Duration>
     auto
-    start(Duration duration)
+    start()
     {
-        return parameterized_action(
-            [&](millisecond_count duration) { raw_.start(duration); },
-            signalize(duration));
+        return lambda_action(
+            [&](millisecond_count duration) { raw_.start(duration); });
     }
 
  private:

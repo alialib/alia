@@ -477,20 +477,6 @@ lambda_action(Perform perform)
     return lambda_action(always_ready, perform);
 }
 
-// parameterized_action(f, args...) is used to construct actions that
-// require parameters that are represented as signals. :args should all be
-// signals. The action won't be considered ready until all signals are
-// readable. f() is the function that performs the action. Its arguments are
-// the values read from the argument signals.
-template<class Function, class... Args>
-auto
-parameterized_action(Function f, Args... args)
-{
-    return lambda_action(
-        [=]() { return signals_all_readable(args...); },
-        [=]() { return f(read_signal(args)...); });
-}
-
 } // namespace alia
 
 #endif
