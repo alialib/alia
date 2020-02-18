@@ -108,10 +108,6 @@ template<class First, class Second, class... Args>
 struct action_pair<First, Second, action_interface<Args...>>
     : action_interface<Args...>
 {
-    action_pair()
-    {
-    }
-
     action_pair(First const& first, Second const& second)
         : first_(first), second_(second)
     {
@@ -147,6 +143,64 @@ operator,(First const& first, Second const& second)
     return action_pair<First, Second, typename First::action_interface>(
         first, second);
 }
+
+// (a <<= s), where a is an action and s is a readable signal, returns another
+// action that is like :a but with the value of :s bound to its first argument.
+template<class Action, class Signal, class Interface>
+struct bound_action;
+template<class Action, class Signal, class BoundArg, class... Args>
+struct bound_action<Action, Signal, action_interface<BoundArg, Args...>>
+    : action_interface<Args...>
+{
+    bound_action(Action const& action, Signal const& signal)
+        : action_(action), signal_(signal)
+    {
+    }
+
+    bool
+    is_ready() const
+    {
+        return action_.is_ready() && signal_.is_readable();
+    }
+
+    void
+    perform(std::function<void()> const& intermediary, Args... args) const
+    {
+        action_.perform(intermediary, signal_.read(), args...);
+    }
+
+ private:
+    Action action_;
+    Signal signal_;
+};
+template<
+    class Action,
+    class Signal,
+    std::enable_if_t<
+        is_action_type<Action>::value && is_readable_signal_type<Signal>::value,
+        int> = 0>
+auto
+operator<<=(Action const& action, Signal const& signal)
+{
+    return bound_action<Action, Signal, typename Action::action_interface>(
+        action, signal);
+}
+
+#ifndef ALIA_STRICT_OPERATORS
+
+template<
+    class Action,
+    class Value,
+    std::enable_if_t<
+        is_action_type<Action>::value && !is_signal_type<Value>::value,
+        int> = 0>
+auto
+operator<<=(Action const& action, Value const& v)
+{
+    return action <<= value(v);
+}
+
+#endif
 
 // operator <<=
 //
