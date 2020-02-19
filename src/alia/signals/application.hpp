@@ -20,7 +20,7 @@ struct lazy_apply1_signal : signal<
                                 Result,
                                 read_only_signal>
 {
-    lazy_apply1_signal(Function const& f, Arg const& arg) : f_(f), arg_(arg)
+    lazy_apply1_signal(Function f, Arg arg) : f_(f), arg_(arg)
     {
     }
     id_interface const&
@@ -46,7 +46,7 @@ struct lazy_apply1_signal : signal<
 };
 template<class Function, class Arg>
 auto
-lazy_apply(Function const& f, Arg const& arg)
+lazy_apply(Function f, Arg arg)
 {
     return lazy_apply1_signal<decltype(f(read_signal(arg))), Function, Arg>(
         f, arg);
@@ -59,7 +59,7 @@ struct lazy_apply2_signal
           Result,
           read_only_signal>
 {
-    lazy_apply2_signal(Function const& f, Arg0 const& arg0, Arg1 const& arg1)
+    lazy_apply2_signal(Function f, Arg0 arg0, Arg1 arg1)
         : f_(f), arg0_(arg0), arg1_(arg1)
     {
     }
@@ -90,7 +90,7 @@ struct lazy_apply2_signal
 };
 template<class Function, class Arg0, class Arg1>
 auto
-lazy_apply(Function const& f, Arg0 const& arg0, Arg1 const& arg1)
+lazy_apply(Function f, Arg0 arg0, Arg1 arg1)
 {
     return lazy_apply2_signal<
         decltype(f(read_signal(arg0), read_signal(arg1))),
@@ -101,7 +101,7 @@ lazy_apply(Function const& f, Arg0 const& arg0, Arg1 const& arg1)
 
 template<class Function>
 auto
-lazy_lift(Function const& f)
+lazy_lift(Function f)
 {
     return [=](auto&&... args) { return lazy_apply(f, args...); };
 }
@@ -206,7 +206,7 @@ process_apply_args(
 
 template<class Function, class... Args>
 auto
-apply(context ctx, Function const& f, Args const&... args)
+apply(context ctx, Function f, Args const&... args)
 {
     apply_result_data<decltype(f(read_signal(args)...))>* data_ptr;
     get_cached_data(ctx, &data_ptr);
@@ -233,7 +233,7 @@ apply(context ctx, Function const& f, Args const&... args)
 
 template<class Function>
 auto
-lift(context ctx, Function const& f)
+lift(context ctx, Function f)
 {
     return [=](auto&&... args) { return apply(ctx, f, args...); };
 }
