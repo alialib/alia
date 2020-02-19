@@ -330,7 +330,7 @@ struct simplified_id_wrapper : regular_signal<
 };
 template<class Wrapped>
 simplified_id_wrapper<Wrapped>
-simplify_id(Wrapped const& wrapped)
+simplify_id(Wrapped wrapped)
 {
     return simplified_id_wrapper<Wrapped>(wrapped);
 }

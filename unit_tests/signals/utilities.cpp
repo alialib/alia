@@ -105,3 +105,47 @@ TEST_CASE("signals_all_readable", "[signals][utilities]")
     REQUIRE(!signals_all_readable(u, s));
     REQUIRE(!signals_all_readable(s, t, u));
 }
+
+template<class Value>
+struct preferred_id_test_signal : preferred_id_signal<
+                                      preferred_id_test_signal<Value>,
+                                      Value,
+                                      bidirectional_signal,
+                                      simple_id<std::string>>
+{
+    bool
+    is_readable() const
+    {
+        return true;
+    }
+    Value const&
+    read() const
+    {
+        static Value value = Value();
+        return value;
+    }
+    bool
+    is_writable() const
+    {
+        return false;
+    }
+    void
+    write(Value const& value) const
+    {
+    }
+    simple_id<std::string>
+    complex_value_id() const
+    {
+        return simple_id<std::string>("a very complex ID");
+    }
+};
+
+TEST_CASE("simple ID preferring", "[signals][utilities]")
+{
+    preferred_id_test_signal<int> i;
+    int zero = 0;
+    REQUIRE(i.value_id() == make_id_by_reference(zero));
+
+    preferred_id_test_signal<std::string> s;
+    REQUIRE(s.value_id() == simple_id<std::string>("a very complex ID"));
+}
