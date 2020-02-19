@@ -1,6 +1,7 @@
 #ifndef ALIA_SIGNALS_OPERATORS_HPP
 #define ALIA_SIGNALS_OPERATORS_HPP
 
+#include <alia/signals/adaptors.hpp>
 #include <alia/signals/application.hpp>
 #include <alia/signals/basic.hpp>
 #include <alia/signals/utilities.hpp>
@@ -25,7 +26,7 @@ ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(+)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(-)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(*)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(/)
-ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(^)
+ALIA_DEFINE_BINARY_SIGNAL_OPERATOR (^)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(%)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(&)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(|)
@@ -68,7 +69,7 @@ ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(+)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(-)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(*)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(/)
-ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(^)
+ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR (^)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(%)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(&)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(|)
@@ -324,18 +325,26 @@ struct signal_mux : signal<
 };
 template<class Condition, class T, class F>
 signal_mux<Condition, T, F>
-conditional(Condition const& condition, T const& t, F const& f)
+make_signal_mux(Condition condition, T t, F f)
 {
     return signal_mux<Condition, T, F>(condition, t, f);
+}
+
+template<class Condition, class T, class F>
+auto
+conditional(Condition condition, T t, F f)
+{
+    return make_signal_mux(signalize(condition), signalize(t), signalize(f));
 }
 
 // Given a signal to a structure, signal->*field_ptr returns a signal to the
 // specified field within the structure.
 template<class StructureSignal, class Field>
-struct field_signal : signal<
+struct field_signal : preferred_id_signal<
                           field_signal<StructureSignal, Field>,
                           Field,
-                          typename StructureSignal::direction_tag>
+                          typename StructureSignal::direction_tag,
+                          id_pair<id_ref, simple_id<Field*>>>
 {
     typedef typename StructureSignal::value_type structure_type;
     typedef Field structure_type::*field_ptr;
@@ -354,16 +363,15 @@ struct field_signal : signal<
         structure_type const& structure = structure_.read();
         return structure.*field_;
     }
-    id_interface const&
-    value_id() const
+    auto
+    complex_value_id() const
     {
         // Apparently pointers-to-members aren't comparable for order, so
         // instead we use the address of the field if it were in a structure
         // that started at address 0.
-        id_ = combine_ids(
+        return combine_ids(
             ref(structure_.value_id()),
             make_id(&(((structure_type*) 0)->*field_)));
-        return id_;
     }
     bool
     is_writable() const
@@ -381,7 +389,6 @@ struct field_signal : signal<
  private:
     StructureSignal structure_;
     field_ptr field_;
-    mutable id_pair<id_ref, simple_id<Field*>> id_;
 };
 template<class StructureSignal, class Field>
 std::enable_if_t<
@@ -571,12 +578,13 @@ write_subscript(
 }
 
 template<class ContainerSignal, class IndexSignal>
-struct subscript_signal : signal<
+struct subscript_signal : preferred_id_signal<
                               subscript_signal<ContainerSignal, IndexSignal>,
                               typename subscript_result_type<
                                   typename ContainerSignal::value_type,
                                   typename IndexSignal::value_type>::type,
-                              typename ContainerSignal::direction_tag>
+                              typename ContainerSignal::direction_tag,
+                              id_pair<alia::id_ref, alia::id_ref>>
 {
     subscript_signal()
     {
@@ -595,11 +603,10 @@ struct subscript_signal : signal<
     {
         return invoker_(container_.read(), index_.read());
     }
-    id_interface const&
-    value_id() const
+    auto
+    complex_value_id() const
     {
-        id_ = combine_ids(ref(container_.value_id()), ref(index_.value_id()));
-        return id_;
+        return combine_ids(ref(container_.value_id()), ref(index_.value_id()));
     }
     bool
     is_writable() const
@@ -616,7 +623,6 @@ struct subscript_signal : signal<
  private:
     ContainerSignal container_;
     IndexSignal index_;
-    mutable id_pair<alia::id_ref, alia::id_ref> id_;
     const_subscript_invoker<
         typename ContainerSignal::value_type,
         typename IndexSignal::value_type>
@@ -624,16 +630,14 @@ struct subscript_signal : signal<
 };
 template<class ContainerSignal, class IndexSignal>
 subscript_signal<ContainerSignal, IndexSignal>
-make_subscript_signal(
-    ContainerSignal const& container, IndexSignal const& index)
+make_subscript_signal(ContainerSignal container, IndexSignal index)
 {
     return subscript_signal<ContainerSignal, IndexSignal>(container, index);
 }
 
 template<class Derived, class Value, class Direction>
 template<class Index>
-auto signal_base<Derived, Value, Direction>::
-operator[](Index const& index) const
+auto signal_base<Derived, Value, Direction>::operator[](Index index) const
 {
     return make_subscript_signal(static_cast<Derived const&>(*this), index);
 }

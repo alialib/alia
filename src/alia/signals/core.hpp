@@ -144,7 +144,7 @@ struct signal_base : signal_interface<Value>
     typedef Direction direction_tag;
 
     template<class Index>
-    auto operator[](Index const& index) const;
+    auto operator[](Index index) const;
 };
 
 template<class Derived, class Value, class Direction>
