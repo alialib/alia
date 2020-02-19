@@ -238,6 +238,13 @@ lift(context ctx, Function f)
     return [=](auto&&... args) { return apply(ctx, f, args...); };
 }
 
+template<class Function>
+auto
+lift(Function f)
+{
+    return [=](context ctx, auto&&... args) { return apply(ctx, f, args...); };
+}
+
 // alia_method(m) wraps a method name in a lambda so that it can be passed as a
 // function object.
 #define ALIA_METHOD(m) [](auto&& x, auto&&... args) { return x.m(args...); }
