@@ -184,6 +184,33 @@ TEST_CASE("lift", "[signals][application]")
     }
 }
 
+TEST_CASE("context-free lift", "[signals][application]")
+{
+    int f_call_count = 0;
+    auto f = [&](int x) {
+        ++f_call_count;
+        return x + 1;
+    };
+
+    {
+        alia::system sys;
+        auto controller = [=](context ctx) {
+            auto f_lifted = lift(f);
+            auto s = f_lifted(ctx, value(0));
+
+            typedef decltype(s) signal_t;
+            REQUIRE(signal_can_read<signal_t>::value);
+            REQUIRE(!signal_can_write<signal_t>::value);
+
+            REQUIRE(signal_is_readable(s));
+            REQUIRE(read_signal(s) == 1);
+        };
+
+        do_traversal(sys, controller);
+        REQUIRE(f_call_count == 1);
+    }
+}
+
 TEST_CASE("alia_method", "[signals][application]")
 {
     auto v = value("test text");
