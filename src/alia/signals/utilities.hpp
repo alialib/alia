@@ -68,6 +68,73 @@ signals_all_readable(Signal const& signal, Rest const&... rest)
     return signal_is_readable(signal) && signals_all_readable(rest...);
 }
 
+// When assigning value IDs for signals with value type Value, should we prefer
+// to use a simple ID?
+template<class Value>
+struct type_prefers_simple_id : std::is_fundamental<Value>
+{
+};
+
+// preferred_id_signal is used to decide whether to assign a 'simple' value ID
+// (one that is simply the value itself) when a more complex form is available.
+// The simple form will of course eliminate spurious ID changes, but for large
+// values, it might be unreasonably expensive, so this tries to use the simple
+// form only for value types where it would be appropriate.
+
+template<
+    class Derived,
+    class Value,
+    class Direction,
+    class ComplexId,
+    class = void>
+struct preferred_id_signal
+{
+};
+
+template<class Derived, class Value, class Direction, class ComplexId>
+struct preferred_id_signal<
+    Derived,
+    Value,
+    Direction,
+    ComplexId,
+    std::enable_if_t<type_prefers_simple_id<Value>::value>>
+    : signal<Derived, Value, Direction>
+{
+    id_interface const&
+    value_id() const
+    {
+        if (this->is_readable())
+        {
+            id_ = make_id_by_reference(this->read());
+            return id_;
+        }
+        return no_id;
+    }
+
+ private:
+    mutable simple_id_by_reference<Value> id_;
+};
+
+template<class Derived, class Value, class Direction, class ComplexId>
+struct preferred_id_signal<
+    Derived,
+    Value,
+    Direction,
+    ComplexId,
+    std::enable_if_t<!type_prefers_simple_id<Value>::value>>
+    : signal<Derived, Value, Direction>
+{
+    id_interface const&
+    value_id() const
+    {
+        id_ = static_cast<Derived const*>(this)->complex_value_id();
+        return id_;
+    }
+
+ private:
+    mutable ComplexId id_;
+};
+
 } // namespace alia
 
 #endif
