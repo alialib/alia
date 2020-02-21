@@ -24,8 +24,8 @@ make_context(
 void
 request_animation_refresh(dataless_context ctx)
 {
-    // invoke virtual method on system interface
-    // (Also set a flag indicating that a refresh is needed.)
+    // Invoke the virtual method on the external system interface.
+    // And also set a flag to indicate that a refresh is needed.
     system& sys = *get_component<system_tag>(ctx);
     if (!sys.refresh_needed)
     {
