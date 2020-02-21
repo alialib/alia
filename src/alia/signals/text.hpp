@@ -185,12 +185,12 @@ struct bidirectional_text_signal : signal<
     void
     write(std::string const& s) const
     {
-        data_->output_text = s;
-        ++data_->output_version;
         typename Wrapped::value_type value;
         from_string(&value, s);
         data_->input_value = value;
         wrapped_.write(value);
+        data_->output_text = s;
+        ++data_->output_version;
     }
 
  private:

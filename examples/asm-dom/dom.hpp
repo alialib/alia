@@ -49,12 +49,6 @@ do_heading(dom::context ctx, Level level, Text text)
     do_heading_(ctx, signalize(level), as_text(ctx, signalize(text)));
 }
 
-struct input_data
-{
-    captured_id external_id;
-    string value;
-};
-
 void
 do_input_(dom::context ctx, bidirectional<string> value);
 
