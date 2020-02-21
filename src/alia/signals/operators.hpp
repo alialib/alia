@@ -473,7 +473,8 @@ struct subscript_result_type<
 };
 
 // has_at_indexer<Container, Index>::value yields a compile-time boolean
-// indicating whether or not Container has an 'at' method that takes an Index.
+// indicating whether or not Container has an 'at' member function that takes an
+// Index.
 template<class Container, class Index, class = void_t<>>
 struct has_at_indexer : std::false_type
 {

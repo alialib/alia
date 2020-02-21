@@ -110,4 +110,4 @@ Actions can be combined using the `,` operator:
 <div id="action-combining"></div>
 </div>
 
-!> Note that this is not meant to convey a *sequencing* of actions.
+?> Note that this is not meant to convey a *sequencing* of actions.

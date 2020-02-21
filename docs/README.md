@@ -22,9 +22,9 @@ applications. It provides a core of generic facilities for reactive programming
 and is designed to hook up to other, more traditional libraries and allow them
 to be used in a reactive manner. In particular, alia features:
 
-* **data-backed control flow** - alia provides mechanisms for tracking your
-  control flow so that you can stably associate arbitrary data objects with
-  specific points in your application's reactive presentation logic.
+* **data-backed control flow** - alia provides mechanisms for tracking portions
+  of your control flow so that you can stably associate arbitrary data objects
+  with specific points in your application's reactive presentation logic.
 
   In alia, rather than explicitly managing trees of presentation objects, you
   compose your application as a tree of function calls, each of which is capable

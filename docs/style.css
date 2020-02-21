@@ -4,7 +4,7 @@
     --code-inline-background: #0000000c;
     --sidebar-toggle-background: #f0f0f0;
     --sidebar-name-font-size: 24px;
-    --sidebar-name-font-weight: normal;
+    --sidebar-name-font-weight: 500;
 }
 
 .hide-when-deployed {

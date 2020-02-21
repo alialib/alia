@@ -5,8 +5,8 @@ Signals are the main mechanic for modeling dataflow in alia, and they're
 introduced on the [Key Features](key-features.md) page. If you haven't already,
 you should read that before continuing on here.
 
-Signal Object Lifetime
-----------------------
+Signal Objects
+--------------
 
 It's important to understand that although signals are conceptually values that
 vary over time and persist across frames of an application, actual alia signal
@@ -34,8 +34,8 @@ exist between updates. And, of course, `x` is the only real *state* here, so `x`
 is all that really *needs* to persist between frames.
 
 It's a general principle in alia that objects shouldn't persist across frames
-without a good reason &ndash; after all, it would just mean more objects to keep
-synchronized &ndash; so this is the most common way to work with signals in
+without a good reason &mdash; after all, it would just mean more objects to keep
+synchronized &mdash; so this is the most common way to work with signals in
 alia. For the sake of brevity, this documentation refers to these transient
 signal objects simply as 'signals', and from a conceptual standpoint, it's
 perfectly fine to think of `scale(direct(x), 100)` as representing a persistent
@@ -61,16 +61,6 @@ Returns a *read-only* signal carrying the value `x`.
 
 Internally, the signal stores a *copy* of the value.
 <dd>
-
-<dt>value(char const* x)</dt><dd>
-
-Returns a *read-only* signal carrying a `std::string` initialized with `x`.
-
-The value ID logic for this signal assumes that this overload is only used for
-**string literals** (i.e., that the contents of the string will never change).
-If you're doing real C-style string manipulations, you should convert them to
-`std::string` first or use a custom signal.
-</dd>
 
 <dt>direct(T& x)</dt><dd>
 
