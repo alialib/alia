@@ -26,7 +26,7 @@ TEST_CASE("simple transform", "[signals][higher_order]")
                 ctx,
                 direct(container),
                 [&](context ctx, readable<string> s) {
-                    return lazy_apply(alia_method(length), s) + value(1);
+                    return lazy_apply(alia_mem_fn(length), s) + value(1);
                 }),
             [&](context ctx, readable<size_t> value) {
                 do_text(ctx, apply(ctx, alia_lambdify(std::to_string), value));

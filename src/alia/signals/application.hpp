@@ -245,11 +245,12 @@ lift(Function f)
     return [=](context ctx, auto&&... args) { return apply(ctx, f, args...); };
 }
 
-// alia_method(m) wraps a method name in a lambda so that it can be passed as a
-// function object.
-#define ALIA_METHOD(m) [](auto&& x, auto&&... args) { return x.m(args...); }
+// alia_mem_fn(m) wraps a member function name in a lambda so that it can be
+// passed as a function object. (It's the equivalent of std::mem_fn, but there's
+// no need to provide the type name.)
+#define ALIA_MEM_FN(m) [](auto&& x, auto&&... args) { return x.m(args...); }
 #ifdef ALIA_LOWERCASE_MACROS
-#define alia_method(m) ALIA_METHOD(m)
+#define alia_mem_fn(m) ALIA_MEM_FN(m)
 #endif
 
 } // namespace alia

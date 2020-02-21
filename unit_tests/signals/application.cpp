@@ -211,10 +211,10 @@ TEST_CASE("context-free lift", "[signals][application]")
     }
 }
 
-TEST_CASE("alia_method", "[signals][application]")
+TEST_CASE("alia_mem_fn", "[signals][application]")
 {
     auto v = value("test text");
-    REQUIRE(read_signal(lazy_apply(ALIA_METHOD(length), v)) == 9);
+    REQUIRE(read_signal(lazy_apply(ALIA_MEM_FN(length), v)) == 9);
     REQUIRE(
-        read_signal(lazy_apply(alia_method(substr), v, value(5))) == "text");
+        read_signal(lazy_apply(alia_mem_fn(substr), v, value(5))) == "text");
 }
