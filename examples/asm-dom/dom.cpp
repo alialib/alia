@@ -47,7 +47,6 @@ do_input_(dom::context ctx, bidirectional<string> value)
     {
         if (!data->external_id.matches(value.value_id()))
         {
-            std::cout << "reseting to " << read_signal(value) << std::endl;
             data->value = read_signal(value);
             data->external_id.capture(value.value_id());
             data->invalid = false;
@@ -57,7 +56,6 @@ do_input_(dom::context ctx, bidirectional<string> value)
     {
         if (!data->external_id.matches(no_id))
         {
-            std::cout << "reseting to empty" << std::endl;
             data->value = string();
             data->external_id.capture(no_id);
             data->invalid = false;
