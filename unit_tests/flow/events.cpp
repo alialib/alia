@@ -14,6 +14,7 @@ namespace {
 
 struct my_event : targeted_event
 {
+    string visited;
     string result;
 };
 
@@ -30,6 +31,14 @@ do_my_thing(my_context ctx, readable<string> label)
     {
         get_component<my_tag>(ctx)->push_back(
             make_routable_node_id(ctx, this_id));
+    }
+
+    {
+        my_event* e;
+        if (detect_event(ctx, &e))
+        {
+            e->visited += read_signal(label) + ";";
+        }
     }
 
     handle_targeted_event<my_event>(
@@ -62,11 +71,13 @@ TEST_CASE("node IDs", "[flow][events]")
     {
         my_event event;
         dispatch_targeted_event(sys, event, ids[0]);
+        REQUIRE(event.visited == "one;");
         REQUIRE(event.result == "one");
     }
     {
         my_event event;
         dispatch_targeted_event(sys, event, ids[1]);
+        REQUIRE(event.visited == "one;two;");
         REQUIRE(event.result == "two");
     }
 }

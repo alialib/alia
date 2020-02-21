@@ -66,8 +66,8 @@ invoke_controller(system& sys, event_traversal& events)
     sys.controller(ctx);
 }
 
-void
-route_event(system& sys, event_traversal& traversal, routing_region* target)
+static void
+route_event_(system& sys, event_traversal& traversal, routing_region* target)
 {
     // In order to construct the path to the target, we start at the target and
     // follow the 'parent' pointers until we reach the root.
@@ -79,12 +79,30 @@ route_event(system& sys, event_traversal& traversal, routing_region* target)
         path_node.rest = traversal.path_to_target;
         path_node.node = target;
         traversal.path_to_target = &path_node;
-        route_event(sys, traversal, target->parent.get());
+        route_event_(sys, traversal, target->parent.get());
     }
     else
     {
         invoke_controller(sys, traversal);
     }
+}
+
+void
+route_event(system& sys, event_traversal& traversal, routing_region* target)
+{
+    try
+    {
+        route_event_(sys, traversal, target);
+    }
+    catch (traversal_aborted&)
+    {
+    }
+}
+
+void
+abort_traversal(dataless_context ctx)
+{
+    throw traversal_aborted();
 }
 
 } // namespace alia
