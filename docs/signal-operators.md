@@ -25,14 +25,15 @@ short-circuiting in the signal space. In particular:
 - When the first operand is readable and fully resolves the result of the
   operation, the second operand isn't read.
 
-  For example, the following code is safe because `null_signal` is never read:
+  For example, the following code is safe because although the signal
+  `bad_signal > 0` is constructed, it's never actually read from, which means
+  that `bad_reference` is never accessed:
 
   ```cpp
-  auto null_signal =
-      lamda_reader(always_readable, []() { return *(bool*)nullptr; });
-  alia_if(value(false) && null_signal)
+  auto bad_signal = direct(bad_reference);
+  alia_if(value(false) && bad_signal > 0)
   {
-      do_text(ctx, "This will never be displayed.");
+      do_text(ctx, "Of course, this will never be displayed.");
   }
   alia_end
   ```
@@ -45,8 +46,8 @@ short-circuiting in the signal space. In particular:
 
   ```cpp
   value(true) || empty<bool>()
-  value(false) && empty<bool>()
   empty<bool>() || value(true)
+  value(false) && empty<bool>()
   empty<bool>() && value(false)
   ```
 
