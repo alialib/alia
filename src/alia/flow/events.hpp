@@ -43,9 +43,9 @@ struct event_routing_path
 
 struct event_traversal
 {
-    routing_region_ptr* active_region;
+    routing_region_ptr* active_region = 0;
     bool targeted;
-    event_routing_path* path_to_target;
+    event_routing_path* path_to_target = 0;
     std::type_info const* event_type;
     void* event;
 };
@@ -71,9 +71,7 @@ dispatch_targeted_event(
     system& sys, Event& event, routing_region_ptr const& target)
 {
     event_traversal traversal;
-    traversal.active_region = 0;
     traversal.targeted = true;
-    traversal.path_to_target = 0;
     traversal.event_type = &typeid(Event);
     traversal.event = &event;
     route_event(sys, traversal, target.get());
@@ -84,13 +82,18 @@ void
 dispatch_event(system& sys, Event& event)
 {
     event_traversal traversal;
-    traversal.active_region = 0;
     traversal.targeted = false;
-    traversal.path_to_target = 0;
     traversal.event_type = &typeid(Event);
     traversal.event = &event;
     route_event(sys, traversal, 0);
 }
+
+struct traversal_aborted
+{
+};
+
+void
+abort_traversal(dataless_context ctx);
 
 struct scoped_routing_region
 {
@@ -217,6 +220,7 @@ handle_targeted_event(Context ctx, node_id id, Handler&& handler)
     ALIA_UNTRACKED_IF(detect_targeted_event(ctx, id, &e))
     {
         handler(ctx, *e);
+        abort_traversal(ctx);
     }
     ALIA_END
 }
