@@ -233,13 +233,6 @@ apply(context ctx, Function f, Args const&... args)
 
 template<class Function>
 auto
-lift(context ctx, Function f)
-{
-    return [=](auto&&... args) { return apply(ctx, f, args...); };
-}
-
-template<class Function>
-auto
 lift(Function f)
 {
     return [=](context ctx, auto&&... args) { return apply(ctx, f, args...); };
