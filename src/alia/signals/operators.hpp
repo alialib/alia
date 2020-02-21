@@ -510,7 +510,7 @@ invoke_const_subscript(
 }
 
 // const_subscript_returns_reference<Container,Index>::value yields a
-// compile-time boolean indicating where or not invoke_const_subscript returns
+// compile-time boolean indicating whether or not invoke_const_subscript returns
 // by reference (vs by value).
 template<class Container, class Index>
 struct const_subscript_returns_reference
