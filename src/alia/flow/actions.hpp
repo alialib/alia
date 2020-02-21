@@ -349,49 +349,47 @@ ALIA_DEFINE_BY_ONE_OPERATOR(--, -)
 //
 template<class Flag>
 auto
-toggle(Flag const& flag)
+toggle(Flag flag)
 {
     return flag <<= !flag;
 }
 
-// make_push_back_action(collection, item), where both :collection and :item
-// are signals, creates an action that will push the value of :item onto the
-// back of :collection.
+// push_back(container), where :container is a signal, creates an action that
+// takes an item as a parameter and pushes it onto the back of :container.
 
-template<class Collection, class Item>
-struct push_back_action : action_interface<>
+template<class Container, class Item>
+struct push_back_action : action_interface<Item>
 {
-    push_back_action(Collection const& collection, Item const& item)
-        : collection_(collection), item_(item)
+    push_back_action(Container container) : container_(container)
     {
     }
 
     bool
     is_ready() const
     {
-        return collection_.is_readable() && collection_.is_writable()
-               && item_.is_readable();
+        return container_.is_readable() && container_.is_writable();
     }
 
     void
-    perform(std::function<void()> const& intermediary) const
+    perform(std::function<void()> const& intermediary, Item item) const
     {
-        auto new_collection = collection_.read();
-        new_collection.push_back(item_.read());
+        auto new_container = container_.read();
+        new_container.push_back(item);
         intermediary();
-        collection_.write(new_collection);
+        container_.write(new_container);
     }
 
  private:
-    Collection collection_;
-    Item item_;
+    Container container_;
 };
 
-template<class Collection, class Item>
+template<class Container>
 auto
-make_push_back_action(Collection const& collection, Item const& item)
+push_back(Container container)
 {
-    return push_back_action<Collection, Item>(collection, item);
+    return push_back_action<
+        Container,
+        typename Container::value_type::value_type>(container);
 }
 
 // lambda_action(is_ready, perform) creates an action whose behavior is
