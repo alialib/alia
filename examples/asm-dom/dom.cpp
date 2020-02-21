@@ -27,6 +27,13 @@ do_heading_(
     });
 }
 
+struct input_data
+{
+    captured_id external_id;
+    string value;
+    bool invalid = false;
+};
+
 void
 do_input_(dom::context ctx, bidirectional<string> value)
 {
@@ -42,6 +49,7 @@ do_input_(dom::context ctx, bidirectional<string> value)
         {
             data->value = read_signal(value);
             data->external_id.capture(value.value_id());
+            data->invalid = false;
         }
     }
     else
@@ -50,16 +58,21 @@ do_input_(dom::context ctx, bidirectional<string> value)
         {
             data->value = string();
             data->external_id.capture(no_id);
+            data->invalid = false;
         }
     }
 
     auto* system = get_component<system_tag>(ctx);
 
     handle_event<refresh_event>(ctx, [=](auto ctx, auto& e) {
+        asmdom::Attrs attrs;
+        if (data->invalid)
+            attrs["class"] = "invalid-input";
         get_component<context_info_tag>(ctx)->current_children->push_back(
             asmdom::h(
                 "input",
                 asmdom::Data(
+                    attrs,
                     asmdom::Props{{"value", emscripten::val(data->value)}},
                     asmdom::Callbacks{
                         {"oninput", [=](emscripten::val e) {
@@ -75,7 +88,14 @@ do_input_(dom::context ctx, bidirectional<string> value)
     handle_targeted_event<value_update_event>(ctx, id, [=](auto ctx, auto& e) {
         if (signal_is_writable(value))
         {
-            write_signal(value, e.value);
+            try
+            {
+                write_signal(value, e.value);
+            }
+            catch (validation_error&)
+            {
+                data->invalid = true;
+            }
         }
         data->value = e.value;
     });
