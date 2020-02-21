@@ -38,7 +38,8 @@ to be used in a reactive manner. In particular, alia features:
 
 alia also provides a whole suite of supporting features that help keep these
 concepts practical in real-world applications: efficient change detection for
-program state, efficient routing of events, declarative event handlers, etc.
+program state, caching mechanisms, efficient routing of events, declarative
+event handlers, etc.
 
 <div class="hide-when-deployed">
 
