@@ -2,7 +2,8 @@ Actions
 =======
 
 <script>
-    init_alia_demos(['unready-copier', 'action-operators', 'action-combining']);
+    init_alia_demos(['unready-copier', 'action-operators', 'action-combining',
+        'action-latching']);
 </script>
 
 Actions are one way of responding to events in alia. They're intended to be a
@@ -99,8 +100,8 @@ action.
 
 </dl>
 
-Combining
----------
+Combining Actions
+-----------------
 
 Actions can be combined using the `,` operator:
 
@@ -110,4 +111,32 @@ Actions can be combined using the `,` operator:
 <div id="action-combining"></div>
 </div>
 
-?> Note that this is not meant to convey a *sequencing* of actions.
+Note that actions are purposefully designed to follow the semantics of latches
+from [synchronous digital
+circuits](https://en.wikipedia.org/wiki/Synchronous_circuit). Just as a digital
+circuit uses logic gates to construct signals that are latched into memory when
+the clock ticks, your application constructs signals to carry the values you
+need to perform your actions. When your actions are triggered, just like on a
+clock tick, all of them are executed *using the values that those signals
+carried into the action.*
+
+It's important to keep this in mind when constructing a combined action.
+Although the individual actions in a combined action are executed in the order
+that they're specified, you shouldn't rely on the effects of actions in the
+combination to affect signals going into actions that are later in the sequence
+*because they won't.*
+
+You can see this in action here:
+
+[source](actions.cpp ':include :fragment=action-latching')
+
+<div class="demo-panel">
+<div id="action-latching"></div>
+</div>
+
+Notice that in the combination `(in_hand <<= 0, in_bank += in_hand)`, the second
+action is *not* affected by the first.
+
+If you *need* to express imperative sequencing of effects, you should do it as
+normal C++ code inside a single action (or in a background task that you
+dispatch as an action).

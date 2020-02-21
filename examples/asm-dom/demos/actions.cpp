@@ -81,3 +81,32 @@ init_action_combining(std::string dom_id)
 }
 
 static demo action_combining("action-combining", init_action_combining);
+
+void
+do_action_latching(
+    dom::context ctx, bidirectional<int> in_hand, bidirectional<int> in_bank)
+{
+    // clang-format off
+/// [action-latching]
+dom::do_text(ctx,
+    printf(ctx,
+        "You have %d coin(s) in hand and %d in the bank.",
+        in_hand, in_bank));
+dom::do_button(ctx, "Pick Up a Coin", ++in_hand);
+dom::do_button(ctx, "Deposit Your Coins", (in_hand <<= 0, in_bank += in_hand));
+/// [action-latching]
+    // clang-format on
+}
+
+void
+init_action_latching(std::string dom_id)
+{
+    static alia::system the_system;
+    static dom::system the_dom;
+
+    initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
+        do_action_latching(ctx, get_state(ctx, 0), get_state(ctx, 0));
+    });
+}
+
+static demo action_latching("action-latching", init_action_latching);
