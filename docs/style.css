@@ -7,6 +7,10 @@
     --sidebar-name-font-weight: normal;
 }
 
+.hide-when-deployed {
+    display: none;
+}
+
 .markdown-section dt {
     font-family: monospace;
     font-size: 17px;
