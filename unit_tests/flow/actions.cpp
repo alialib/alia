@@ -177,18 +177,20 @@ TEST_CASE("push_back action", "[flow][actions]")
 {
     auto x = std::vector<int>{1, 2};
     {
-        auto a = make_push_back_action(direct(x), value(3));
+        auto a = push_back(direct(x));
+        REQUIRE(a.is_ready());
+        perform_action(a, 3);
+        REQUIRE(x == (std::vector<int>{1, 2, 3}));
+    }
+    {
+        auto a = push_back(direct(x)) <<= 4;
         REQUIRE(a.is_ready());
         perform_action(a);
-        REQUIRE(x == (std::vector<int>{1, 2, 3}));
+        REQUIRE(x == (std::vector<int>{1, 2, 3, 4}));
     }
 
     {
-        auto a = make_push_back_action(direct(x), empty<int>());
-        REQUIRE(!a.is_ready());
-    }
-    {
-        auto a = make_push_back_action(empty<std::vector<int>>(), value(3));
+        auto a = push_back(empty<std::vector<int>>());
         REQUIRE(!a.is_ready());
     }
 }
