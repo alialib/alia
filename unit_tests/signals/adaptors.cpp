@@ -284,3 +284,63 @@ TEST_CASE("signalize a value", "[signals][adaptors]")
     REQUIRE(signal_is_readable(t));
     REQUIRE(read_signal(t) == 12);
 }
+
+TEST_CASE("mask a bidirectional signal", "[signals][adaptors]")
+{
+    {
+        int x = 1;
+        auto s = mask(direct(x), true);
+
+        typedef decltype(s) signal_t;
+        REQUIRE((std::is_same<signal_t::value_type, int>::value));
+        REQUIRE(signal_can_read<signal_t>::value);
+        REQUIRE(signal_can_write<signal_t>::value);
+
+        REQUIRE(signal_is_readable(s));
+        REQUIRE(read_signal(s) == 1);
+        REQUIRE(signal_is_writable(s));
+        write_signal(s, 0);
+        REQUIRE(x == 0);
+    }
+    {
+        int x = 1;
+        auto s = mask(direct(x), false);
+        REQUIRE(!signal_is_readable(s));
+        REQUIRE(!signal_is_writable(s));
+    }
+}
+
+TEST_CASE("mask a read-only signal", "[signals][adaptors]")
+{
+    {
+        int x = 1;
+        auto s = mask(value(x), true);
+
+        typedef decltype(s) signal_t;
+        REQUIRE((std::is_same<signal_t::value_type, int>::value));
+        REQUIRE(signal_can_read<signal_t>::value);
+        REQUIRE(!signal_can_write<signal_t>::value);
+
+        REQUIRE(signal_is_readable(s));
+        REQUIRE(read_signal(s) == 1);
+    }
+    {
+        int x = 1;
+        auto s = mask(value(x), false);
+        REQUIRE(!signal_is_readable(s));
+    }
+}
+
+TEST_CASE("mask a value", "[signals][adaptors]")
+{
+    int x = 12;
+    {
+        auto s = mask(x, true);
+        REQUIRE(signal_is_readable(s));
+        REQUIRE(read_signal(s) == x);
+    }
+    {
+        auto s = mask(x, false);
+        REQUIRE(!signal_is_readable(s));
+    }
+}
