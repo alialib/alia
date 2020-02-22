@@ -3,7 +3,8 @@ Tracking Mechanisms
 
 <script>
     init_alia_demos(['numerical-analysis', 'switch-example', 'transform-demo',
-        'metered-transform-demo', 'metered-direct-counting']);
+        'metered-transform-demo', 'metered-direct-counting',
+        'loop-macros-demo']);
 </script>
 
 This page documents all the various mechanisms you can use to allow alia to
@@ -119,9 +120,43 @@ in real world applications where you might be retrieving data from remote
 sources or doing computationally-intensive background calculations, the
 difference can be significant.
 
-### alia_for
+### alia_for/while
 
-### alia_while
+!> Although alia provides macros for tracking `for` and `while` loops, these do
+   *not* integrate naturally into alia applications the way that the `if` and
+   `switch` versions do. There's an inherent tension between alia's reactive
+   style and the imperative looping constructs like `for` and `while`. While
+   alia normally discourages introducing immediate, imperative-style side
+   effects into your reactive application code, `for` and `while` *depend* on
+   those side effects to determine when to terminate the loop. And since alia's
+   signals are meant to capture values that change over the life of the
+   application (and *not* within a single traversal of your application
+   content), `for` and `while` are essentially incompatible with signals.<br>
+   <br>
+   If possible, you should use `for_each` (above), since that plays nicely with
+   signals and avoids introducing immediate side effects into your
+   application-level reactive code. The `alia_for` and `alia_while` macros are
+   provided largely as a convenience for applications that are trying to
+   transition to alia with a minimum of effort.
+
+!> Also note that these macros *assume that your iteration order remains
+   constant.* If the data that you're looping over changes order (including
+   adding or removing items in the middle of the sequence), *this will cause a
+   shift in the underlying alia objects that are associated with your items.*
+   Depending on what you're associating with your items, the effects of this can
+   vary from slight inefficiencies to complete discontinuities in your
+   interface. If you want to avoid this, you should use `named_block`s instead
+   of these macros.
+
+If you've read all the above and still want to use `alia_for` or `alia_while`,
+here's an example of how you might use `alia_for` to hook up an existing
+application's data structures to alia:
+
+[source](tracking.cpp ':include :fragment=loop-macros-demo')
+
+<div class="demo-panel">
+<div id="loop-macros-demo"></div>
+</div>
 
 Custom Flow
 -----------
