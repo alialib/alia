@@ -15,20 +15,20 @@ TEST_CASE("lazy_apply", "[signals][application]")
     auto s1 = lazy_apply([](int i) { return 2 * i; }, value(1));
 
     typedef decltype(s1) signal_t1;
-    REQUIRE(signal_can_read<signal_t1>::value);
-    REQUIRE(!signal_can_write<signal_t1>::value);
+    REQUIRE(signal_is_readable<signal_t1>::value);
+    REQUIRE(!signal_is_writable<signal_t1>::value);
 
-    REQUIRE(signal_is_readable(s1));
+    REQUIRE(signal_has_value(s1));
     REQUIRE(read_signal(s1) == 2);
 
     auto s2
         = lazy_apply([](int i, int j) { return i + j; }, value(1), value(6));
 
     typedef decltype(s2) signal_t2;
-    REQUIRE(signal_can_read<signal_t2>::value);
-    REQUIRE(!signal_can_write<signal_t2>::value);
+    REQUIRE(signal_is_readable<signal_t2>::value);
+    REQUIRE(!signal_is_writable<signal_t2>::value);
 
-    REQUIRE(signal_is_readable(s2));
+    REQUIRE(signal_has_value(s2));
     REQUIRE(read_signal(s2) == 7);
     REQUIRE(s1.value_id() != s2.value_id());
 
@@ -48,10 +48,10 @@ TEST_CASE("lazy_lift", "[signals][application]")
     auto s = lazy_lift([](int i) { return 2 * i; })(value(1));
 
     typedef decltype(s) signal_t;
-    REQUIRE(signal_can_read<signal_t>::value);
-    REQUIRE(!signal_can_write<signal_t>::value);
+    REQUIRE(signal_is_readable<signal_t>::value);
+    REQUIRE(!signal_is_writable<signal_t>::value);
 
-    REQUIRE(signal_is_readable(s));
+    REQUIRE(signal_has_value(s));
     REQUIRE(read_signal(s) == 2);
 }
 
@@ -71,10 +71,10 @@ TEST_CASE("simple apply", "[signals][application]")
             auto s = apply(ctx, f, value(x), value(y));
 
             typedef decltype(s) signal_t;
-            REQUIRE(signal_can_read<signal_t>::value);
-            REQUIRE(!signal_can_write<signal_t>::value);
+            REQUIRE(signal_is_readable<signal_t>::value);
+            REQUIRE(!signal_is_writable<signal_t>::value);
 
-            REQUIRE(signal_is_readable(s));
+            REQUIRE(signal_has_value(s));
             REQUIRE(read_signal(s) == x * 2 + y);
 
             signal_id.capture(s.value_id());
@@ -120,10 +120,10 @@ TEST_CASE("unready apply", "[signals][application]")
                 auto s = apply(ctx, f, x, y);
 
                 typedef decltype(s) signal_t;
-                REQUIRE(signal_can_read<signal_t>::value);
-                REQUIRE(!signal_can_write<signal_t>::value);
+                REQUIRE(signal_is_readable<signal_t>::value);
+                REQUIRE(!signal_is_writable<signal_t>::value);
 
-                REQUIRE(!signal_is_readable(s));
+                REQUIRE(!signal_has_value(s));
             };
         };
 
@@ -146,10 +146,10 @@ TEST_CASE("failed apply", "[signals][application]")
                 auto s = apply(ctx, f, x, y);
 
                 typedef decltype(s) signal_t;
-                REQUIRE(signal_can_read<signal_t>::value);
-                REQUIRE(!signal_can_write<signal_t>::value);
+                REQUIRE(signal_is_readable<signal_t>::value);
+                REQUIRE(!signal_is_writable<signal_t>::value);
 
-                REQUIRE(!signal_is_readable(s));
+                REQUIRE(!signal_has_value(s));
             };
         };
 
@@ -172,10 +172,10 @@ TEST_CASE("lift", "[signals][application]")
             auto s = f_lifted(ctx, value(0));
 
             typedef decltype(s) signal_t;
-            REQUIRE(signal_can_read<signal_t>::value);
-            REQUIRE(!signal_can_write<signal_t>::value);
+            REQUIRE(signal_is_readable<signal_t>::value);
+            REQUIRE(!signal_is_writable<signal_t>::value);
 
-            REQUIRE(signal_is_readable(s));
+            REQUIRE(signal_has_value(s));
             REQUIRE(read_signal(s) == 1);
         };
 

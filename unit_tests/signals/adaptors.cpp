@@ -18,10 +18,10 @@ TEST_CASE("fake_readability", "[signals][adaptors]")
             lambda_reader([&]() { return true; }, [&]() { return 0; }));
 
         typedef decltype(s) signal_t;
-        REQUIRE(signal_can_read<signal_t>::value);
-        REQUIRE(!signal_can_write<signal_t>::value);
+        REQUIRE(signal_is_readable<signal_t>::value);
+        REQUIRE(!signal_is_writable<signal_t>::value);
 
-        REQUIRE(!signal_is_readable(s));
+        REQUIRE(!signal_has_value(s));
     }
 
     {
@@ -34,12 +34,12 @@ TEST_CASE("fake_readability", "[signals][adaptors]")
             [&](int v) { x = v; }));
 
         typedef decltype(s) signal_t;
-        REQUIRE(signal_can_read<signal_t>::value);
-        REQUIRE(signal_can_write<signal_t>::value);
+        REQUIRE(signal_is_readable<signal_t>::value);
+        REQUIRE(signal_is_writable<signal_t>::value);
 
         REQUIRE(s.value_id() == no_id);
-        REQUIRE(!signal_is_readable(s));
-        REQUIRE(signal_is_writable(s));
+        REQUIRE(!signal_has_value(s));
+        REQUIRE(signal_ready_to_write(s));
         write_signal(s, 1);
         REQUIRE(x == 1);
     }
@@ -52,11 +52,11 @@ TEST_CASE("fake_writability", "[signals][adaptors]")
             lambda_reader([&]() { return true; }, [&]() { return 0; }));
 
         typedef decltype(s) signal_t;
-        REQUIRE(signal_can_read<signal_t>::value);
-        REQUIRE(signal_can_write<signal_t>::value);
+        REQUIRE(signal_is_readable<signal_t>::value);
+        REQUIRE(signal_is_writable<signal_t>::value);
 
-        REQUIRE(signal_is_readable(s));
-        REQUIRE(!signal_is_writable(s));
+        REQUIRE(signal_has_value(s));
+        REQUIRE(!signal_ready_to_write(s));
     }
 
     {
@@ -67,14 +67,14 @@ TEST_CASE("fake_writability", "[signals][adaptors]")
             [&](int x) {}));
 
         typedef decltype(s) signal_t;
-        REQUIRE(signal_can_read<signal_t>::value);
-        REQUIRE(signal_can_write<signal_t>::value);
+        REQUIRE(signal_is_readable<signal_t>::value);
+        REQUIRE(signal_is_writable<signal_t>::value);
 
-        REQUIRE(signal_is_readable(s));
+        REQUIRE(signal_has_value(s));
         REQUIRE(read_signal(s) == 0);
         int x = 0;
         REQUIRE(s.value_id() == make_id_by_reference(x));
-        REQUIRE(!signal_is_writable(s));
+        REQUIRE(!signal_ready_to_write(s));
     }
 }
 
@@ -85,76 +85,76 @@ TEST_CASE("signal_cast", "[signals][adaptors]")
 
     typedef decltype(s) signal_t;
     REQUIRE((std::is_same<signal_t::value_type, double>::value));
-    REQUIRE(signal_can_read<signal_t>::value);
-    REQUIRE(signal_can_write<signal_t>::value);
+    REQUIRE(signal_is_readable<signal_t>::value);
+    REQUIRE(signal_is_writable<signal_t>::value);
 
-    REQUIRE(signal_is_readable(s));
+    REQUIRE(signal_has_value(s));
     REQUIRE(read_signal(s) == 1.0);
-    REQUIRE(signal_is_writable(s));
+    REQUIRE(signal_ready_to_write(s));
     write_signal(s, 0.0);
     REQUIRE(x == 0);
 }
 
-TEST_CASE("is_readable", "[signals][adaptors]")
+TEST_CASE("has_value", "[signals][adaptors]")
 {
-    bool readable = false;
+    bool hv = false;
     int x = 1;
 
     {
-        auto s = is_readable(
-            lambda_reader([&]() { return readable; }, [&]() { return x; }));
+        auto s = has_value(
+            lambda_reader([&]() { return hv; }, [&]() { return x; }));
 
         typedef decltype(s) signal_t;
-        REQUIRE(signal_can_read<signal_t>::value);
-        REQUIRE(!signal_can_write<signal_t>::value);
+        REQUIRE(signal_is_readable<signal_t>::value);
+        REQUIRE(!signal_is_writable<signal_t>::value);
 
-        REQUIRE(signal_is_readable(s));
+        REQUIRE(signal_has_value(s));
         REQUIRE(read_signal(s) == false);
     }
 
-    readable = true;
+    hv = true;
 
     {
         // Recreate the signal to circumvent internal caching.
-        auto s = is_readable(
-            lambda_reader([&]() { return readable; }, [&]() { return x; }));
+        auto s = has_value(
+            lambda_reader([&]() { return hv; }, [&]() { return x; }));
 
-        REQUIRE(signal_is_readable(s));
+        REQUIRE(signal_has_value(s));
         REQUIRE(read_signal(s) == true);
     }
 }
 
-TEST_CASE("is_writable", "[signals][adaptors]")
+TEST_CASE("ready_to_write", "[signals][adaptors]")
 {
-    bool writable = false;
+    bool ready = false;
     int x = 1;
 
     {
-        auto s = is_writable(lambda_bidirectional(
-            always_readable,
+        auto s = ready_to_write(lambda_bidirectional(
+            always_has_value,
             [&]() { return x; },
-            [&]() { return writable; },
+            [&]() { return ready; },
             [&](int v) { x = v; }));
 
         typedef decltype(s) signal_t;
-        REQUIRE(signal_can_read<signal_t>::value);
-        REQUIRE(!signal_can_write<signal_t>::value);
+        REQUIRE(signal_is_readable<signal_t>::value);
+        REQUIRE(!signal_is_writable<signal_t>::value);
 
-        REQUIRE(signal_is_readable(s));
+        REQUIRE(signal_has_value(s));
         REQUIRE(read_signal(s) == false);
     }
 
-    writable = true;
+    ready = true;
 
     {
         // Recreate the signal to circumvent internal caching.
-        auto s = is_writable(lambda_bidirectional(
-            always_readable,
+        auto s = ready_to_write(lambda_bidirectional(
+            always_has_value,
             [&]() { return x; },
-            [&]() { return writable; },
+            [&]() { return ready; },
             [&](int v) { x = v; }));
 
-        REQUIRE(signal_is_readable(s));
+        REQUIRE(signal_has_value(s));
         REQUIRE(read_signal(s) == true);
     }
 }
@@ -163,40 +163,40 @@ TEST_CASE("add_fallback", "[signals][adaptors]")
 {
     int p = 1;
     int f = 0;
-    auto make_fallback = [&](bool primary_readable,
-                             bool primary_writable,
-                             bool fallback_readable) {
+    auto make_fallback = [&](bool primary_has_value,
+                             bool primary_ready_to_write,
+                             bool fallback_has_value) {
         return add_fallback(
             lambda_bidirectional(
-                [=]() { return primary_readable; },
+                [=]() { return primary_has_value; },
                 [=]() { return p; },
-                [=]() { return primary_writable; },
+                [=]() { return primary_ready_to_write; },
                 [&p](int x) { p = x; }),
             lambda_bidirectional(
-                [=]() { return fallback_readable; },
+                [=]() { return fallback_has_value; },
                 [=]() { return f; },
-                always_writable,
+                always_ready,
                 [&f](int x) { f = x; }));
     };
 
     {
         typedef decltype(make_fallback(true, true, true)) signal_t;
-        REQUIRE(signal_can_read<signal_t>::value);
-        REQUIRE(signal_can_write<signal_t>::value);
+        REQUIRE(signal_is_readable<signal_t>::value);
+        REQUIRE(signal_is_writable<signal_t>::value);
     }
 
     {
         typedef decltype(add_fallback(value(0), value(1))) signal_t;
-        REQUIRE(signal_can_read<signal_t>::value);
-        REQUIRE(!signal_can_write<signal_t>::value);
+        REQUIRE(signal_is_readable<signal_t>::value);
+        REQUIRE(!signal_is_writable<signal_t>::value);
     }
 
     {
         p = 1;
         auto s = make_fallback(true, true, true);
-        REQUIRE(signal_is_readable(s));
+        REQUIRE(signal_has_value(s));
         REQUIRE(read_signal(s) == 1);
-        REQUIRE(signal_is_writable(s));
+        REQUIRE(signal_ready_to_write(s));
         write_signal(s, 2);
         REQUIRE(p == 2);
         REQUIRE(f == 0);
@@ -205,9 +205,9 @@ TEST_CASE("add_fallback", "[signals][adaptors]")
     {
         p = 1;
         auto s = make_fallback(false, true, true);
-        REQUIRE(signal_is_readable(s));
+        REQUIRE(signal_has_value(s));
         REQUIRE(read_signal(s) == 0);
-        REQUIRE(signal_is_writable(s));
+        REQUIRE(signal_ready_to_write(s));
         write_signal(s, 2);
         REQUIRE(p == 2);
         REQUIRE(f == 0);
@@ -216,8 +216,8 @@ TEST_CASE("add_fallback", "[signals][adaptors]")
     {
         p = 1;
         auto s = make_fallback(false, true, false);
-        REQUIRE(!signal_is_readable(s));
-        REQUIRE(signal_is_writable(s));
+        REQUIRE(!signal_has_value(s));
+        REQUIRE(signal_ready_to_write(s));
         write_signal(s, 2);
         REQUIRE(p == 2);
         REQUIRE(f == 0);
@@ -226,9 +226,9 @@ TEST_CASE("add_fallback", "[signals][adaptors]")
     {
         p = 1;
         auto s = make_fallback(true, false, false);
-        REQUIRE(signal_is_readable(s));
+        REQUIRE(signal_has_value(s));
         REQUIRE(read_signal(s) == 1);
-        REQUIRE(!signal_is_writable(s));
+        REQUIRE(!signal_ready_to_write(s));
     }
 
     {
@@ -238,8 +238,8 @@ TEST_CASE("add_fallback", "[signals][adaptors]")
         p = 0;
         auto s = make_fallback(true, false, false);
         auto t = make_fallback(false, false, true);
-        REQUIRE(signal_is_readable(s));
-        REQUIRE(signal_is_readable(t));
+        REQUIRE(signal_has_value(s));
+        REQUIRE(signal_has_value(t));
         REQUIRE(read_signal(s) == read_signal(t));
         REQUIRE(s.value_id() != t.value_id());
     }
@@ -256,14 +256,14 @@ TEST_CASE("simplify_id", "[signals][adaptors]")
 
     typedef decltype(s) signal_t;
     REQUIRE((std::is_same<signal_t::value_type, std::string>::value));
-    REQUIRE(signal_can_read<signal_t>::value);
-    REQUIRE(signal_can_write<signal_t>::value);
+    REQUIRE(signal_is_readable<signal_t>::value);
+    REQUIRE(signal_is_writable<signal_t>::value);
 
     REQUIRE(s.value_id() != unwrapped.value_id());
     REQUIRE(s.value_id() == make_id_by_reference(c[2]));
-    REQUIRE(signal_is_readable(s));
+    REQUIRE(signal_has_value(s));
     REQUIRE(read_signal(s) == "1");
-    REQUIRE(signal_is_writable(s));
+    REQUIRE(signal_ready_to_write(s));
     write_signal(s, "7");
     REQUIRE((c == std::map<int, std::string>{{2, "7"}, {0, "3"}}));
 }
@@ -273,7 +273,7 @@ TEST_CASE("signalize a signal", "[signals][adaptors]")
     int x = 12;
     auto s = direct(x);
     auto t = signalize(s);
-    REQUIRE(signal_is_readable(t));
+    REQUIRE(signal_has_value(t));
     REQUIRE(read_signal(t) == 12);
 }
 
@@ -281,7 +281,7 @@ TEST_CASE("signalize a value", "[signals][adaptors]")
 {
     int x = 12;
     auto t = signalize(x);
-    REQUIRE(signal_is_readable(t));
+    REQUIRE(signal_has_value(t));
     REQUIRE(read_signal(t) == 12);
 }
 
@@ -293,20 +293,20 @@ TEST_CASE("mask a bidirectional signal", "[signals][adaptors]")
 
         typedef decltype(s) signal_t;
         REQUIRE((std::is_same<signal_t::value_type, int>::value));
-        REQUIRE(signal_can_read<signal_t>::value);
-        REQUIRE(signal_can_write<signal_t>::value);
+        REQUIRE(signal_is_readable<signal_t>::value);
+        REQUIRE(signal_is_writable<signal_t>::value);
 
-        REQUIRE(signal_is_readable(s));
+        REQUIRE(signal_has_value(s));
         REQUIRE(read_signal(s) == 1);
-        REQUIRE(signal_is_writable(s));
+        REQUIRE(signal_ready_to_write(s));
         write_signal(s, 0);
         REQUIRE(x == 0);
     }
     {
         int x = 1;
         auto s = mask(direct(x), false);
-        REQUIRE(!signal_is_readable(s));
-        REQUIRE(!signal_is_writable(s));
+        REQUIRE(!signal_has_value(s));
+        REQUIRE(!signal_ready_to_write(s));
     }
 }
 
@@ -318,16 +318,16 @@ TEST_CASE("mask a read-only signal", "[signals][adaptors]")
 
         typedef decltype(s) signal_t;
         REQUIRE((std::is_same<signal_t::value_type, int>::value));
-        REQUIRE(signal_can_read<signal_t>::value);
-        REQUIRE(!signal_can_write<signal_t>::value);
+        REQUIRE(signal_is_readable<signal_t>::value);
+        REQUIRE(!signal_is_writable<signal_t>::value);
 
-        REQUIRE(signal_is_readable(s));
+        REQUIRE(signal_has_value(s));
         REQUIRE(read_signal(s) == 1);
     }
     {
         int x = 1;
         auto s = mask(value(x), false);
-        REQUIRE(!signal_is_readable(s));
+        REQUIRE(!signal_has_value(s));
     }
 }
 
@@ -336,11 +336,11 @@ TEST_CASE("mask a value", "[signals][adaptors]")
     int x = 12;
     {
         auto s = mask(x, true);
-        REQUIRE(signal_is_readable(s));
+        REQUIRE(signal_has_value(s));
         REQUIRE(read_signal(s) == x);
     }
     {
         auto s = mask(x, false);
-        REQUIRE(!signal_is_readable(s));
+        REQUIRE(!signal_has_value(s));
     }
 }

@@ -16,14 +16,14 @@ template<class Signal>
 bool
 is_true(Signal const& x)
 {
-    return signal_is_readable(x) && read_signal(x);
+    return signal_has_value(x) && read_signal(x);
 }
 
 template<class Signal>
 bool
 is_false(Signal const& x)
 {
-    return signal_is_readable(x) && !read_signal(x);
+    return signal_has_value(x) && !read_signal(x);
 }
 
 TEST_CASE("basic signal operators", "[signals][operators][operators]")
@@ -69,16 +69,16 @@ TEST_CASE("signal &&", "[signals][operators][operators]")
     REQUIRE(is_false(value(false) && value(true)));
     REQUIRE(is_false(value(false) && value(false)));
 
-    // Check that unreadable signals are treated properly.
-    REQUIRE(!signal_is_readable(empty<bool>() && empty<bool>()));
-    REQUIRE(!signal_is_readable(value(true) && empty<bool>()));
-    REQUIRE(!signal_is_readable(empty<bool>() && value(true)));
+    // Check that empty signals are treated properly.
+    REQUIRE(!signal_has_value(empty<bool>() && empty<bool>()));
+    REQUIRE(!signal_has_value(value(true) && empty<bool>()));
+    REQUIRE(!signal_has_value(empty<bool>() && value(true)));
     REQUIRE(is_false(value(false) && empty<bool>()));
     REQUIRE(is_false(empty<bool>() && value(false)));
 
     // Check that && short-circuits.
     int access_count = 0;
-    auto access_counting_signal = lambda_reader(always_readable, [&]() {
+    auto access_counting_signal = lambda_reader(always_has_value, [&]() {
         ++access_count;
         return true;
     });
@@ -104,16 +104,16 @@ TEST_CASE("signal ||", "[signals][operators]")
     REQUIRE(is_true(value(false) || value(true)));
     REQUIRE(is_false(value(false) || value(false)));
 
-    // Check that unreadable signals are treated properly.
-    REQUIRE(!signal_is_readable(empty<bool>() || empty<bool>()));
-    REQUIRE(!signal_is_readable(value(false) || empty<bool>()));
-    REQUIRE(!signal_is_readable(empty<bool>() || value(false)));
+    // Check that empty signals are treated properly.
+    REQUIRE(!signal_has_value(empty<bool>() || empty<bool>()));
+    REQUIRE(!signal_has_value(value(false) || empty<bool>()));
+    REQUIRE(!signal_has_value(empty<bool>() || value(false)));
     REQUIRE(is_true(value(true) || empty<bool>()));
     REQUIRE(is_true(empty<bool>() || value(true)));
 
     // Check that || short-circuits.
     int access_count = 0;
-    auto access_counting_signal = lambda_reader(always_readable, [&]() {
+    auto access_counting_signal = lambda_reader(always_has_value, [&]() {
         ++access_count;
         return false;
     });
@@ -138,14 +138,14 @@ TEST_CASE("signal select", "[signals][operators]")
     auto s = conditional(direct(condition), value(1), value(2));
 
     typedef decltype(s) signal_t;
-    REQUIRE(signal_can_read<signal_t>::value);
-    REQUIRE(!signal_can_write<signal_t>::value);
+    REQUIRE(signal_is_readable<signal_t>::value);
+    REQUIRE(!signal_is_writable<signal_t>::value);
 
-    REQUIRE(signal_is_readable(s));
+    REQUIRE(signal_has_value(s));
     REQUIRE(read_signal(s) == 2);
     captured_id original_id = s.value_id();
     condition = true;
-    REQUIRE(signal_is_readable(s));
+    REQUIRE(signal_has_value(s));
     REQUIRE(read_signal(s) == 1);
     REQUIRE(original_id.get() != s.value_id());
 }
@@ -156,13 +156,13 @@ TEST_CASE("select with different directions", "[signals][operators]")
     auto s = conditional(direct(condition), empty<int>(), value(2));
 
     typedef decltype(s) signal_t;
-    REQUIRE(signal_can_read<signal_t>::value);
-    REQUIRE(!signal_can_write<signal_t>::value);
+    REQUIRE(signal_is_readable<signal_t>::value);
+    REQUIRE(!signal_is_writable<signal_t>::value);
 
-    REQUIRE(signal_is_readable(s));
+    REQUIRE(signal_has_value(s));
     REQUIRE(read_signal(s) == 2);
     condition = true;
-    REQUIRE(!signal_is_readable(s));
+    REQUIRE(!signal_has_value(s));
 }
 
 TEST_CASE("select value ID", "[signals][operators]")
@@ -178,13 +178,13 @@ TEST_CASE("select value ID", "[signals][operators]")
     REQUIRE(original_id.get() != s.value_id());
 }
 
-TEST_CASE("select with unreadable condition", "[signals][operators]")
+TEST_CASE("select with empty condition", "[signals][operators]")
 {
     int x = 0, y = 1;
     auto s = conditional(empty<bool>(), direct(x), direct(y));
-    REQUIRE(!signal_is_readable(s));
+    REQUIRE(!signal_has_value(s));
     REQUIRE(s.value_id() == no_id);
-    REQUIRE(!signal_is_writable(s));
+    REQUIRE(!signal_ready_to_write(s));
 }
 
 TEST_CASE("writable select", "[signals][operators]")
@@ -195,10 +195,10 @@ TEST_CASE("writable select", "[signals][operators]")
     auto s = conditional(direct(condition), direct(x), direct(y));
 
     typedef decltype(s) signal_t;
-    REQUIRE(signal_can_read<signal_t>::value);
-    REQUIRE(signal_can_write<signal_t>::value);
+    REQUIRE(signal_is_readable<signal_t>::value);
+    REQUIRE(signal_is_writable<signal_t>::value);
 
-    REQUIRE(signal_is_readable(s));
+    REQUIRE(signal_has_value(s));
     REQUIRE(read_signal(s) == 2);
     condition = true;
     REQUIRE(read_signal(s) == 1);
@@ -222,21 +222,21 @@ TEST_CASE("field signal", "[signals][operators]")
     };
     foo f = {2, 1.5};
     auto f_signal = lambda_bidirectional(
-        always_readable,
+        always_has_value,
         [&]() { return f; },
-        always_writable,
+        always_ready,
         [&](foo const& v) { f = v; },
         [&]() { return combine_ids(make_id(f.x), make_id(f.y)); });
     auto x_signal = f_signal->*&foo::x;
 
     typedef decltype(x_signal) x_signal_t;
     REQUIRE((std::is_same<x_signal_t::value_type, int>::value));
-    REQUIRE(signal_can_read<x_signal_t>::value);
-    REQUIRE(signal_can_write<x_signal_t>::value);
+    REQUIRE(signal_is_readable<x_signal_t>::value);
+    REQUIRE(signal_is_writable<x_signal_t>::value);
 
-    REQUIRE(signal_is_readable(x_signal));
+    REQUIRE(signal_has_value(x_signal));
     REQUIRE(read_signal(x_signal) == 2);
-    REQUIRE(signal_is_writable(x_signal));
+    REQUIRE(signal_ready_to_write(x_signal));
     write_signal(x_signal, 1);
     REQUIRE(f.x == 1);
 
@@ -244,13 +244,13 @@ TEST_CASE("field signal", "[signals][operators]")
 
     typedef decltype(y_signal) y_signal_t;
     REQUIRE((std::is_same<y_signal_t::value_type, double>::value));
-    REQUIRE(signal_can_read<y_signal_t>::value);
-    REQUIRE(signal_can_write<y_signal_t>::value);
+    REQUIRE(signal_is_readable<y_signal_t>::value);
+    REQUIRE(signal_is_writable<y_signal_t>::value);
 
     REQUIRE(y_signal.value_id() != x_signal.value_id());
-    REQUIRE(signal_is_readable(y_signal));
+    REQUIRE(signal_has_value(y_signal));
     REQUIRE(read_signal(y_signal) == 1.5);
-    REQUIRE(signal_is_writable(y_signal));
+    REQUIRE(signal_ready_to_write(y_signal));
     captured_id original_y_id = y_signal.value_id();
     write_signal(y_signal, 0.5);
     REQUIRE(y_signal.value_id() != original_y_id.get());
@@ -322,12 +322,12 @@ TEST_CASE("vector subscript", "[signals][operators]")
 
     typedef decltype(s) signal_t;
     REQUIRE((std::is_same<signal_t::value_type, int>::value));
-    REQUIRE(signal_can_read<signal_t>::value);
-    REQUIRE(signal_can_write<signal_t>::value);
+    REQUIRE(signal_is_readable<signal_t>::value);
+    REQUIRE(signal_is_writable<signal_t>::value);
 
-    REQUIRE(signal_is_readable(s));
+    REQUIRE(signal_has_value(s));
     REQUIRE(read_signal(s) == 0);
-    REQUIRE(signal_is_writable(s));
+    REQUIRE(signal_ready_to_write(s));
     captured_id original_id = s.value_id();
     write_signal(s, 1);
     REQUIRE(c == std::vector<int>({2, 1, 3}));
@@ -349,10 +349,10 @@ TEST_CASE("read-only subscript", "[signals][operators]")
 
     typedef decltype(s) signal_t;
     REQUIRE((std::is_same<signal_t::value_type, int>::value));
-    REQUIRE(signal_can_read<signal_t>::value);
-    REQUIRE(!signal_can_write<signal_t>::value);
+    REQUIRE(signal_is_readable<signal_t>::value);
+    REQUIRE(!signal_is_writable<signal_t>::value);
 
-    REQUIRE(signal_is_readable(s));
+    REQUIRE(signal_has_value(s));
     REQUIRE(read_signal(s) == 0);
 }
 
@@ -366,12 +366,12 @@ TEST_CASE("vector<bool> subscript", "[signals][operators]")
 
     typedef decltype(s) signal_t;
     REQUIRE((std::is_same<signal_t::value_type, bool>::value));
-    REQUIRE(signal_can_read<signal_t>::value);
-    REQUIRE(signal_can_write<signal_t>::value);
+    REQUIRE(signal_is_readable<signal_t>::value);
+    REQUIRE(signal_is_writable<signal_t>::value);
 
-    REQUIRE(signal_is_readable(s));
+    REQUIRE(signal_has_value(s));
     REQUIRE(read_signal(s) == false);
-    REQUIRE(signal_is_writable(s));
+    REQUIRE(signal_ready_to_write(s));
     write_signal(s, true);
     REQUIRE(c == std::vector<bool>({true, true, false}));
 }
@@ -386,12 +386,12 @@ TEST_CASE("map subscript", "[signals][operators]")
 
     typedef decltype(s) signal_t;
     REQUIRE((std::is_same<signal_t::value_type, int>::value));
-    REQUIRE(signal_can_read<signal_t>::value);
-    REQUIRE(signal_can_write<signal_t>::value);
+    REQUIRE(signal_is_readable<signal_t>::value);
+    REQUIRE(signal_is_writable<signal_t>::value);
 
-    REQUIRE(signal_is_readable(s));
+    REQUIRE(signal_has_value(s));
     REQUIRE(read_signal(s) == 1);
-    REQUIRE(signal_is_writable(s));
+    REQUIRE(signal_ready_to_write(s));
     write_signal(s, 7);
     REQUIRE((c == std::map<int, int>{{2, 7}, {0, 3}}));
 }
@@ -400,9 +400,9 @@ TEST_CASE("custom ref subscript", "[signals][operators]")
 {
     my_array c;
     auto c_signal = lambda_bidirectional(
-        always_readable,
+        always_has_value,
         [&]() { return c; },
-        always_writable,
+        always_ready,
         [&](my_array const& v) { c = v; },
         [&]() {
             return unit_id; // doesn't really matter
@@ -411,12 +411,12 @@ TEST_CASE("custom ref subscript", "[signals][operators]")
 
     typedef decltype(s) signal_t;
     REQUIRE((std::is_same<signal_t::value_type, int>::value));
-    REQUIRE(signal_can_read<signal_t>::value);
-    REQUIRE(signal_can_write<signal_t>::value);
+    REQUIRE(signal_is_readable<signal_t>::value);
+    REQUIRE(signal_is_writable<signal_t>::value);
 
-    REQUIRE(signal_is_readable(s));
+    REQUIRE(signal_has_value(s));
     REQUIRE(read_signal(s) == 3);
-    REQUIRE(signal_is_writable(s));
+    REQUIRE(signal_ready_to_write(s));
     write_signal(s, 4);
     REQUIRE(c[2] == 4);
 }
@@ -425,7 +425,7 @@ TEST_CASE("custom by-value subscript", "[signals][operators]")
 {
     my_const_array c;
     auto c_signal = lambda_reader(
-        always_readable,
+        always_has_value,
         [&]() { return c; },
         [&]() {
             return unit_id; // doesn't really matter
@@ -434,9 +434,9 @@ TEST_CASE("custom by-value subscript", "[signals][operators]")
 
     typedef decltype(s) signal_t;
     REQUIRE((std::is_same<signal_t::value_type, int>::value));
-    REQUIRE(signal_can_read<signal_t>::value);
-    REQUIRE(!signal_can_write<signal_t>::value);
+    REQUIRE(signal_is_readable<signal_t>::value);
+    REQUIRE(!signal_is_writable<signal_t>::value);
 
-    REQUIRE(signal_is_readable(s));
+    REQUIRE(signal_has_value(s));
     REQUIRE(read_signal(s) == 3);
 }

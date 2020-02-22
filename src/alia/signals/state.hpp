@@ -81,7 +81,7 @@ struct state_signal : signal<state_signal<Value>, Value, bidirectional_signal>
     }
 
     bool
-    is_readable() const
+    has_value() const
     {
         return state_->is_initialized();
     }
@@ -100,7 +100,7 @@ struct state_signal : signal<state_signal<Value>, Value, bidirectional_signal>
     }
 
     bool
-    is_writable() const
+    ready_to_write() const
     {
         return true;
     }
@@ -125,8 +125,8 @@ make_state_signal(state_holder<Value>& state)
 
 // get_state(ctx, initial_value) returns a signal carrying some persistent local
 // state whose initial value is determined by the :initial_value signal. The
-// returned signal will not be readable until :initial_value is readable or
-// a value is explicitly written to the state signal.
+// returned signal will not have a value until :initial_value has one or one is
+// explicitly written to the state signal.
 template<class Context, class InitialValue>
 auto
 get_state(Context ctx, InitialValue const& initial_value)
@@ -136,7 +136,7 @@ get_state(Context ctx, InitialValue const& initial_value)
     state_holder<typename decltype(initial_value_signal)::value_type>* state;
     get_data(ctx, &state);
 
-    if (!state->is_initialized() && signal_is_readable(initial_value_signal))
+    if (!state->is_initialized() && signal_has_value(initial_value_signal))
         state->set(read_signal(initial_value_signal));
 
     return make_state_signal(*state);

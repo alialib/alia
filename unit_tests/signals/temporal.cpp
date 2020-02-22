@@ -20,7 +20,7 @@ TEST_CASE("animation_timer", "[signals][temporal]")
     do_traversal(sys, [&](context ctx) {
         animation_timer timer(ctx);
         auto active = timer.is_active();
-        REQUIRE(signal_is_readable(active));
+        REQUIRE(signal_has_value(active));
         REQUIRE(!read_signal(active));
         auto start = timer.start() <<= 100;
         REQUIRE(action_is_ready(start));
@@ -36,10 +36,10 @@ TEST_CASE("animation_timer", "[signals][temporal]")
         get_cached_data(ctx, &state);
         animation_timer timer(ctx, *state);
         auto active = timer.is_active();
-        REQUIRE(signal_is_readable(active));
+        REQUIRE(signal_has_value(active));
         REQUIRE(read_signal(active));
         auto ticks = timer.ticks_left();
-        REQUIRE(signal_is_readable(ticks));
+        REQUIRE(signal_has_value(ticks));
         REQUIRE(read_signal(ticks) == 90);
     });
 
@@ -50,7 +50,7 @@ TEST_CASE("animation_timer", "[signals][temporal]")
     do_traversal(sys, [&](context ctx) {
         animation_timer timer(ctx);
         auto active = timer.is_active();
-        REQUIRE(signal_is_readable(active));
+        REQUIRE(signal_has_value(active));
         REQUIRE(!read_signal(active));
     });
 
@@ -173,7 +173,7 @@ TEST_CASE("smooth_value", "[signals][temporal]")
 
     do_traversal(sys, [&](context ctx) {
         auto x = smooth_value(ctx, value(0), transition);
-        REQUIRE(signal_is_readable(x));
+        REQUIRE(signal_has_value(x));
         REQUIRE(read_signal(x) == 0);
     });
     REQUIRE(!system_needs_refresh(sys));
@@ -183,7 +183,7 @@ TEST_CASE("smooth_value", "[signals][temporal]")
     set_millisecond_tick_counter(sys, 100);
     do_traversal(sys, [&](context ctx) {
         auto x = smooth_value(ctx, value(10), transition);
-        REQUIRE(signal_is_readable(x));
+        REQUIRE(signal_has_value(x));
         REQUIRE(read_signal(x) == 0);
         last_id.capture(x.value_id());
     });
@@ -192,7 +192,7 @@ TEST_CASE("smooth_value", "[signals][temporal]")
     set_millisecond_tick_counter(sys, 150);
     do_traversal(sys, [&](context ctx) {
         auto x = smooth_value(ctx, value(10), transition);
-        REQUIRE(signal_is_readable(x));
+        REQUIRE(signal_has_value(x));
         REQUIRE(read_signal(x) == 5);
         REQUIRE(last_id != x.value_id());
         last_id.capture(x.value_id());
@@ -202,7 +202,7 @@ TEST_CASE("smooth_value", "[signals][temporal]")
     set_millisecond_tick_counter(sys, 200);
     do_traversal(sys, [&](context ctx) {
         auto x = smooth_value(ctx, value(10), transition);
-        REQUIRE(signal_is_readable(x));
+        REQUIRE(signal_has_value(x));
         REQUIRE(read_signal(x) == 10);
         REQUIRE(last_id != x.value_id());
         last_id.capture(x.value_id());
@@ -212,7 +212,7 @@ TEST_CASE("smooth_value", "[signals][temporal]")
     set_millisecond_tick_counter(sys, 240);
     do_traversal(sys, [&](context ctx) {
         auto x = smooth_value(ctx, empty<int>(), transition);
-        REQUIRE(!signal_is_readable(x));
+        REQUIRE(!signal_has_value(x));
         REQUIRE(last_id != x.value_id());
     });
     REQUIRE(!system_needs_refresh(sys));

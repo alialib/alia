@@ -11,7 +11,7 @@ do_text_(dom::context ctx, readable<std::string> text)
     handle_event<refresh_event>(ctx, [text](auto ctx, auto& e) {
         get_component<context_info_tag>(ctx)->current_children->push_back(
             asmdom::h(
-                "p", signal_is_readable(text) ? read_signal(text) : string()));
+                "p", signal_has_value(text) ? read_signal(text) : string()));
     });
 }
 
@@ -22,8 +22,8 @@ do_heading_(
     handle_event<refresh_event>(ctx, [=](auto ctx, auto& e) {
         get_component<context_info_tag>(ctx)->current_children->push_back(
             asmdom::h(
-                signal_is_readable(level) ? read_signal(level) : "p",
-                signal_is_readable(text) ? read_signal(text) : string()));
+                signal_has_value(level) ? read_signal(level) : "p",
+                signal_has_value(text) ? read_signal(text) : string()));
     });
 }
 
@@ -43,7 +43,7 @@ do_input_(dom::context ctx, bidirectional<string> value)
     auto id = get_node_id(ctx);
     auto routable_id = make_routable_node_id(ctx, id);
 
-    if (signal_is_readable(value))
+    if (signal_has_value(value))
     {
         if (!data->external_id.matches(value.value_id()))
         {
@@ -86,7 +86,7 @@ do_input_(dom::context ctx, bidirectional<string> value)
                          }}})));
     });
     handle_targeted_event<value_update_event>(ctx, id, [=](auto ctx, auto& e) {
-        if (signal_is_writable(value))
+        if (signal_ready_to_write(value))
         {
             try
             {
@@ -108,7 +108,7 @@ do_button_(dom::context ctx, readable<std::string> text, action<> on_click)
     auto routable_id = make_routable_node_id(ctx, id);
     auto* system = get_component<system_tag>(ctx);
     handle_event<refresh_event>(ctx, [=](auto ctx, auto& e) {
-        if (signal_is_readable(text))
+        if (signal_has_value(text))
         {
             get_component<context_info_tag>(ctx)->current_children->push_back(
                 asmdom::h(
@@ -141,7 +141,7 @@ do_colored_box(dom::context ctx, readable<rgb8> color)
 {
     handle_event<refresh_event>(ctx, [color](auto ctx, auto& e) {
         char style[64] = {'\0'};
-        if (signal_is_readable(color))
+        if (signal_has_value(color))
         {
             rgb8 const& c = read_signal(color);
             sprintf(style, "background-color: #%02x%02x%02x", c.r, c.g, c.b);
