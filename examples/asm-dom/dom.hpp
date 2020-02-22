@@ -72,6 +72,9 @@ do_button(dom::context ctx, Text text, action<> on_click)
 void
 do_colored_box(dom::context ctx, readable<rgb8> color);
 
+void
+do_hr(dom::context ctx);
+
 struct dom_external_interface : alia::external_interface
 {
     alia::system* system;
