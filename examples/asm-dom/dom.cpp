@@ -154,6 +154,15 @@ do_colored_box(dom::context ctx, readable<rgb8> color)
     });
 }
 
+void
+do_hr(dom::context ctx)
+{
+    handle_event<refresh_event>(ctx, [=](auto ctx, auto& e) {
+        get_component<context_info_tag>(ctx)->current_children->push_back(
+            asmdom::h("hr"));
+    });
+}
+
 static void
 handle_refresh_event(dom::context ctx, system& system)
 {
