@@ -352,6 +352,67 @@ signalize(Value v)
     return value(std::move(v));
 }
 
+// mask(signal, condition) does the equivalent of bitmasking on individual
+// signals. If :condition evaluates to true, the mask evaluates to :signal.
+// Otherwise, it evaluates to an empty signal of the same type.
+template<class Primary, class Mask>
+struct masking_signal : signal<
+                            masking_signal<Primary, Mask>,
+                            typename Primary::value_type,
+                            typename Primary::direction_tag>
+{
+    masking_signal()
+    {
+    }
+    masking_signal(Primary primary, Mask mask) : primary_(primary), mask_(mask)
+    {
+    }
+    bool
+    is_readable() const
+    {
+        return mask_.is_readable() && mask_.read() && primary_.is_readable();
+    }
+    typename Primary::value_type const&
+    read() const
+    {
+        return primary_.read();
+    }
+    id_interface const&
+    value_id() const
+    {
+        if (mask_.is_readable() && mask_.read())
+            return primary_.value_id();
+        else
+            return no_id;
+    }
+    bool
+    is_writable() const
+    {
+        return mask_.is_readable() && mask_.read() && primary_.is_writable();
+    }
+    void
+    write(typename Primary::value_type const& value) const
+    {
+        primary_.write(value);
+    }
+
+ private:
+    Primary primary_;
+    Mask mask_;
+};
+template<class Signal, class Condition>
+auto
+make_masking_signal(Signal signal, Condition condition)
+{
+    return masking_signal<Signal, Condition>(signal, condition);
+}
+template<class Signal, class Condition>
+auto
+mask(Signal signal, Condition condition)
+{
+    return make_masking_signal(signalize(signal), signalize(condition));
+}
+
 } // namespace alia
 
 #endif
