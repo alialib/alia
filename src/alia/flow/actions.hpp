@@ -458,21 +458,13 @@ lambda_action(IsReady is_ready, Perform perform)
         typename lambda_action_signature<Perform>::type>(is_ready, perform);
 }
 
-// This is just a clear and concise way of indicating that a lambda action
-// is always ready.
-inline bool
-always_ready()
-{
-    return true;
-}
-
 // The single-argument version of lambda_action creates an action that's always
 // ready to perform.
 template<class Perform>
 auto
 lambda_action(Perform perform)
 {
-    return lambda_action(always_ready, perform);
+    return lambda_action([]() { return true; }, perform);
 }
 
 } // namespace alia
