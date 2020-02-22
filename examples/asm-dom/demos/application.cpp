@@ -20,8 +20,10 @@ is_prime(int n)
 
 } // namespace
 
+namespace simple_apply {
+
 void
-do_simple_apply(dom::context ctx, bidirectional<int> n)
+do_ui(dom::context ctx, bidirectional<int> n)
 {
     // clang-format off
 /// [simple-apply]
@@ -34,20 +36,24 @@ dom::do_text(ctx, conditional(n_is_prime, "N is prime!", "N is NOT prime."));
 }
 
 void
-init_simple_apply(std::string dom_id)
+init_demo(std::string dom_id)
 {
     static alia::system the_system;
     static dom::system the_dom;
 
     initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_simple_apply(ctx, get_state(ctx, empty<int>()));
+        do_ui(ctx, get_state(ctx, empty<int>()));
     });
 }
 
-static demo simple_apply("simple-apply", init_simple_apply);
+static demo the_demo("simple-apply", init_demo);
+
+} // namespace simple_apply
+
+namespace transform_demo {
 
 void
-do_transform_demo(dom::context ctx, bidirectional<std::vector<int>> numbers)
+do_ui(dom::context ctx, bidirectional<std::vector<int>> numbers)
 {
     // clang-format off
 /// [transform-demo]
@@ -75,21 +81,24 @@ dom::do_text(ctx, printf(ctx, "# of primes: %d", prime_count));
 }
 
 void
-init_transform_demo(std::string dom_id)
+init_demo(std::string dom_id)
 {
     static alia::system the_system;
     static dom::system the_dom;
 
     initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_transform_demo(ctx, get_state(ctx, std::vector<int>(3, 2)));
+        do_ui(ctx, get_state(ctx, std::vector<int>(3, 2)));
     });
 }
 
-static demo transform_demo("transform-demo", init_transform_demo);
+static demo the_demo("transform-demo", init_demo);
+
+} // namespace transform_demo
+
+namespace metered_transform_demo {
 
 void
-do_metered_transform_demo(
-    dom::context ctx, bidirectional<std::vector<int>> numbers)
+do_ui(dom::context ctx, bidirectional<std::vector<int>> numbers)
 {
     static int call_count = 0;
     auto counting_is_prime = [&](int n) {
@@ -117,21 +126,24 @@ do_metered_transform_demo(
 }
 
 void
-init_metered_transform_demo(std::string dom_id)
+init_demo(std::string dom_id)
 {
     static alia::system the_system;
     static dom::system the_dom;
 
     initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_metered_transform_demo(ctx, get_state(ctx, std::vector<int>(3, 2)));
+        do_ui(ctx, get_state(ctx, std::vector<int>(3, 2)));
     });
 }
 
-static demo metered_transform_demo(
-    "metered-transform-demo", init_metered_transform_demo);
+static demo the_demo("metered-transform-demo", init_demo);
+
+} // namespace metered_transform_demo
+
+namespace direct_counting {
 
 void
-do_direct_counting(dom::context ctx, bidirectional<std::vector<int>> numbers)
+do_ui(dom::context ctx, bidirectional<std::vector<int>> numbers)
 {
     // clang-format off
 dom::do_text(ctx, "Enter some numbers:");
@@ -152,21 +164,24 @@ dom::do_text(ctx, printf(ctx, "# of primes: %d", prime_count));
 }
 
 void
-init_direct_counting(std::string dom_id)
+init_demo(std::string dom_id)
 {
     static alia::system the_system;
     static dom::system the_dom;
 
     initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_direct_counting(ctx, get_state(ctx, std::vector<int>(3, 2)));
+        do_ui(ctx, get_state(ctx, std::vector<int>(3, 2)));
     });
 }
 
-static demo direct_counting("direct-counting", init_direct_counting);
+static demo the_demo("direct-counting", init_demo);
+
+} // namespace direct_counting
+
+namespace metered_direct_counting {
 
 void
-do_metered_direct_counting(
-    dom::context ctx, bidirectional<std::vector<int>> numbers)
+do_ui(dom::context ctx, bidirectional<std::vector<int>> numbers)
 {
     static int call_count = 0;
     auto counting_is_prime = [&](int n) {
@@ -193,15 +208,16 @@ do_metered_direct_counting(
 }
 
 void
-init_metered_direct_counting(std::string dom_id)
+init_demo(std::string dom_id)
 {
     static alia::system the_system;
     static dom::system the_dom;
 
     initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_metered_direct_counting(ctx, get_state(ctx, std::vector<int>(3, 2)));
+        do_ui(ctx, get_state(ctx, std::vector<int>(3, 2)));
     });
 }
 
-static demo metered_direct_counting(
-    "metered-direct-counting", init_metered_direct_counting);
+static demo the_demo("metered-direct-counting", init_demo);
+
+} // namespace metered_direct_counting

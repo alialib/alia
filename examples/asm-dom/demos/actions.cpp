@@ -1,7 +1,9 @@
 #include "demo.hpp"
 
+namespace unready_copier {
+
 void
-do_unready_copier(dom::context ctx, bidirectional<int> n, bidirectional<int> m)
+do_ui(dom::context ctx, bidirectional<int> n, bidirectional<int> m)
 {
     // clang-format off
 /// [unready-copier]
@@ -14,20 +16,24 @@ dom::do_button(ctx, "Set It!", n <<= m);
 }
 
 void
-init_unready_copier(std::string dom_id)
+init_demo(std::string dom_id)
 {
     static alia::system the_system;
     static dom::system the_dom;
 
     initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_unready_copier(ctx, get_state(ctx, 0), get_state(ctx, empty<int>()));
+        do_ui(ctx, get_state(ctx, 0), get_state(ctx, empty<int>()));
     });
 }
 
-static demo unready_copier("unready-copier", init_unready_copier);
+static demo the_demo("unready-copier", init_demo);
+
+} // namespace unready_copier
+
+namespace action_operators {
 
 void
-do_action_operators(dom::context ctx, bidirectional<int> n)
+do_ui(dom::context ctx, bidirectional<int> n)
 {
     // clang-format off
 /// [action-operators]
@@ -43,21 +49,24 @@ dom::do_button(ctx, "Reset", n <<= 1);
 }
 
 void
-init_action_operators(std::string dom_id)
+init_demo(std::string dom_id)
 {
     static alia::system the_system;
     static dom::system the_dom;
 
     initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_action_operators(ctx, get_state(ctx, 1));
+        do_ui(ctx, get_state(ctx, 1));
     });
 }
 
-static demo action_operators("action-operators", init_action_operators);
+static demo the_demo("action-operators", init_demo);
+
+} // namespace action_operators
+
+namespace action_combining {
 
 void
-do_action_combining(
-    dom::context ctx, bidirectional<int> m, bidirectional<int> n)
+do_ui(dom::context ctx, bidirectional<int> m, bidirectional<int> n)
 {
     // clang-format off
 /// [action-combining]
@@ -70,21 +79,24 @@ dom::do_button(ctx, "Reset Both", (m <<= 0, n <<= 0));
 }
 
 void
-init_action_combining(std::string dom_id)
+init_demo(std::string dom_id)
 {
     static alia::system the_system;
     static dom::system the_dom;
 
     initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_action_combining(ctx, get_state(ctx, 0), get_state(ctx, 0));
+        do_ui(ctx, get_state(ctx, 0), get_state(ctx, 0));
     });
 }
 
-static demo action_combining("action-combining", init_action_combining);
+static demo the_demo("action-combining", init_demo);
+
+} // namespace action_combining
+
+namespace action_latching {
 
 void
-do_action_latching(
-    dom::context ctx, bidirectional<int> in_hand, bidirectional<int> in_bank)
+do_ui(dom::context ctx, bidirectional<int> in_hand, bidirectional<int> in_bank)
 {
     // clang-format off
 /// [action-latching]
@@ -99,20 +111,24 @@ dom::do_button(ctx, "Deposit Your Coins", (in_hand <<= 0, in_bank += in_hand));
 }
 
 void
-init_action_latching(std::string dom_id)
+init_demo(std::string dom_id)
 {
     static alia::system the_system;
     static dom::system the_dom;
 
     initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_action_latching(ctx, get_state(ctx, 0), get_state(ctx, 0));
+        do_ui(ctx, get_state(ctx, 0), get_state(ctx, 0));
     });
 }
 
-static demo action_latching("action-latching", init_action_latching);
+static demo the_demo("action-latching", init_demo);
+
+} // namespace action_latching
+
+namespace action_binding {
 
 void
-do_action_binding(dom::context ctx, bidirectional<int> duration)
+do_ui(dom::context ctx, bidirectional<int> duration)
 {
     // clang-format off
 /// [action-binding]
@@ -136,20 +152,24 @@ do_button(ctx, "Start", timer.start() <<= duration);
 }
 
 void
-init_action_binding(std::string dom_id)
+init_demo(std::string dom_id)
 {
     static alia::system the_system;
     static dom::system the_dom;
 
     initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_action_binding(ctx, get_state(ctx, empty<int>()));
+        do_ui(ctx, get_state(ctx, empty<int>()));
     });
 }
 
-static demo action_binding("action-binding", init_action_binding);
+static demo the_demo("action-binding", init_demo);
+
+} // namespace action_binding
+
+namespace action_demo {
 
 void
-do_lambda_action_demo(dom::context ctx, bidirectional<std::string> message)
+do_ui(dom::context ctx, bidirectional<std::string> message)
 {
     // clang-format off
 /// [lambda-action-demo]
@@ -163,14 +183,16 @@ do_button(ctx, "Send", sender <<= message);
 }
 
 void
-init_lambda_action_demo(std::string dom_id)
+init_demo(std::string dom_id)
 {
     static alia::system the_system;
     static dom::system the_dom;
 
     initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_lambda_action_demo(ctx, get_state(ctx, std::string()));
+        do_ui(ctx, get_state(ctx, std::string()));
     });
 }
 
-static demo lambda_action_demo("lambda-action-demo", init_lambda_action_demo);
+static demo the_demo("lambda-action-demo", init_demo);
+
+} // namespace action_demo

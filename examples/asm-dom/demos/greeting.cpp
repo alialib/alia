@@ -1,5 +1,7 @@
 #include "demo.hpp"
 
+namespace hello_world {
+
 /// [greeting]
 void
 do_greeting_ui(dom::context ctx, bidirectional<string> name)
@@ -19,7 +21,7 @@ do_greeting_ui(dom::context ctx, bidirectional<string> name)
 /// [greeting]
 
 void
-init_greeting_ui(std::string dom_id)
+init_demo(std::string dom_id)
 {
     static alia::system the_system;
     static dom::system the_dom;
@@ -29,10 +31,14 @@ init_greeting_ui(std::string dom_id)
     });
 }
 
-static demo greeting_ui("greeting-ui", init_greeting_ui);
+static demo the_demo("greeting-ui", init_demo);
+
+} // namespace hello_world
+
+namespace expanded_greeting {
 
 void
-do_expanded_greeting(dom::context ctx, bidirectional<string> name)
+do_ui(dom::context ctx, bidirectional<string> name)
 {
     // clang-format off
 /// [expanded-greeting]
@@ -48,21 +54,25 @@ alia_end
 
 dom::do_text(ctx, "My name is alia."); // node e
 /// [expanded-greeting]
-    // clang-format-on
+    // clang-format on
 }
 
 void
-init_expanded_greeting(std::string dom_id)
+init_demo(std::string dom_id)
 {
     static alia::system the_system;
     static dom::system the_dom;
 
     initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_expanded_greeting(ctx, get_state(ctx, string()));
+        do_ui(ctx, get_state(ctx, string()));
     });
 }
 
-static demo expanded_greeting("expanded-greeting", init_expanded_greeting);
+static demo the_demo("expanded-greeting", init_demo);
+
+} // namespace expanded_greeting
+
+namespace hello_button {
 
 /// [hello-button]
 
@@ -81,7 +91,7 @@ do_hello_button(dom::context ctx, bidirectional<bool> show_message)
 /// [hello-button]
 
 void
-init_hello_button(std::string dom_id)
+init_demo(std::string dom_id)
 {
     static alia::system the_system;
     static dom::system the_dom;
@@ -91,7 +101,11 @@ init_hello_button(std::string dom_id)
     });
 }
 
-static demo hello_button("hello-button", init_hello_button);
+static demo the_demo("hello-button", init_demo);
+
+} // namespace hello_button
+
+namespace contrived_hello {
 
 /// [contrived-hello]
 struct widget_data
@@ -108,10 +122,7 @@ do_widget(dom::context ctx, std::string name)
     dom::do_text(
         ctx,
         printf(
-            ctx,
-            "Hi, I'm widget %s. I live at %p.",
-            value(name),
-            value(data)));
+            ctx, "Hi, I'm widget %s. I live at %p.", value(name), value(data)));
 }
 
 void
@@ -142,7 +153,7 @@ do_contrived_hello(dom::context ctx)
 /// [contrived-hello]
 
 void
-init_contrived_hello(std::string dom_id)
+init_demo(std::string dom_id)
 {
     static alia::system the_system;
     static dom::system the_dom;
@@ -152,4 +163,6 @@ init_contrived_hello(std::string dom_id)
     });
 }
 
-static demo contrived_hello("contrived-hello", init_contrived_hello);
+static demo the_demo("contrived-hello", init_demo);
+
+} // namespace contrived_hello
