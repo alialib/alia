@@ -16,7 +16,7 @@ struct regular_signal : signal<Derived, Value, Direction>
     id_interface const&
     value_id() const
     {
-        if (this->is_readable())
+        if (this->has_value())
         {
             id_ = make_id_by_reference(this->read());
             return id_;
@@ -54,18 +54,18 @@ struct lazy_reader
     mutable Value value_;
 };
 
-// signals_all_readable(signal_a, signal_b, ...) is a variadic function that
-// returns true iff all its input signals are readable.
+// signals_all_have_values(signal_a, signal_b, ...) is a variadic function that
+// returns true iff all its input signals have values.
 inline bool
-signals_all_readable()
+signals_all_have_values()
 {
     return true;
 }
 template<class Signal, class... Rest>
 bool
-signals_all_readable(Signal const& signal, Rest const&... rest)
+signals_all_have_values(Signal const& signal, Rest const&... rest)
 {
-    return signal_is_readable(signal) && signals_all_readable(rest...);
+    return signal_has_value(signal) && signals_all_have_values(rest...);
 }
 
 // When assigning value IDs for signals with value type Value, should we prefer
@@ -103,7 +103,7 @@ struct preferred_id_signal<
     id_interface const&
     value_id() const
     {
-        if (this->is_readable())
+        if (this->has_value())
         {
             id_ = make_id_by_reference(this->read());
             return id_;

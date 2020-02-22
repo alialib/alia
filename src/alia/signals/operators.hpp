@@ -116,20 +116,20 @@ struct logical_or_signal
         return id_;
     }
     bool
-    is_readable() const
+    has_value() const
     {
-        // Obviously, this is readable if both of its arguments are readable.
-        // However, it's also readable if only one is readable and its value is
-        // true.
-        return (arg0_.is_readable() && arg1_.is_readable())
-               || (arg0_.is_readable() && arg0_.read())
-               || (arg1_.is_readable() && arg1_.read());
+        // Obviously, this has a value if both of its arguments have values.
+        // However, we can also determine a value if only one input has a value
+        // but that value is true.
+        return (arg0_.has_value() && arg1_.has_value())
+               || (arg0_.has_value() && arg0_.read())
+               || (arg1_.has_value() && arg1_.read());
     }
     bool const&
     read() const
     {
-        value_ = (arg0_.is_readable() && arg0_.read())
-                 || (arg1_.is_readable() && arg1_.read());
+        value_ = (arg0_.has_value() && arg0_.read())
+                 || (arg1_.has_value() && arg1_.read());
         return value_;
     }
 
@@ -193,21 +193,21 @@ struct logical_and_signal
         return id_;
     }
     bool
-    is_readable() const
+    has_value() const
     {
-        // Obviously, this is readable if both of its arguments are readable.
-        // However, it's also readable if only one is readable and its value is
-        // false.
-        return (arg0_.is_readable() && arg1_.is_readable())
-               || (arg0_.is_readable() && !arg0_.read())
-               || (arg1_.is_readable() && !arg1_.read());
+        // Obviously, this has a value if both of its arguments have values.
+        // However, we can also determine a value if only one input has a value
+        // but that value is false.
+        return (arg0_.has_value() && arg1_.has_value())
+               || (arg0_.has_value() && !arg0_.read())
+               || (arg1_.has_value() && !arg1_.read());
     }
     bool const&
     read() const
     {
         value_
-            = !((arg0_.is_readable() && !arg0_.read())
-                || (arg1_.is_readable() && !arg1_.read()));
+            = !((arg0_.has_value() && !arg0_.read())
+                || (arg1_.has_value() && !arg1_.read()));
         return value_;
     }
 
@@ -282,10 +282,10 @@ struct signal_mux : signal<
     {
     }
     bool
-    is_readable() const
+    has_value() const
     {
-        return condition_.is_readable()
-               && (condition_.read() ? t_.is_readable() : f_.is_readable());
+        return condition_.has_value()
+               && (condition_.read() ? t_.has_value() : f_.has_value());
     }
     typename T::value_type const&
     read() const
@@ -295,7 +295,7 @@ struct signal_mux : signal<
     id_interface const&
     value_id() const
     {
-        if (!condition_.is_readable())
+        if (!condition_.has_value())
             return no_id;
         id_ = combine_ids(
             make_id(condition_.read()),
@@ -303,10 +303,11 @@ struct signal_mux : signal<
         return id_;
     }
     bool
-    is_writable() const
+    ready_to_write() const
     {
-        return condition_.is_readable()
-               && (condition_.read() ? t_.is_writable() : f_.is_writable());
+        return condition_.has_value()
+               && (condition_.read() ? t_.ready_to_write()
+                                     : f_.ready_to_write());
     }
     void
     write(typename T::value_type const& value) const
@@ -353,9 +354,9 @@ struct field_signal : preferred_id_signal<
     {
     }
     bool
-    is_readable() const
+    has_value() const
     {
-        return structure_.is_readable();
+        return structure_.has_value();
     }
     Field const&
     read() const
@@ -374,9 +375,9 @@ struct field_signal : preferred_id_signal<
             make_id(&(((structure_type*) 0)->*field_)));
     }
     bool
-    is_writable() const
+    ready_to_write() const
     {
-        return structure_.is_readable() && structure_.is_writable();
+        return structure_.has_value() && structure_.ready_to_write();
     }
     void
     write(Field const& x) const
@@ -558,7 +559,7 @@ struct const_subscript_invoker<
 };
 
 template<class ContainerSignal, class IndexSignal, class Value>
-std::enable_if_t<signal_can_write<ContainerSignal>::value>
+std::enable_if_t<signal_is_writable<ContainerSignal>::value>
 write_subscript(
     ContainerSignal const& container,
     IndexSignal const& index,
@@ -570,7 +571,7 @@ write_subscript(
 }
 
 template<class ContainerSignal, class IndexSignal, class Value>
-std::enable_if_t<!signal_can_write<ContainerSignal>::value>
+std::enable_if_t<!signal_is_writable<ContainerSignal>::value>
 write_subscript(
     ContainerSignal const& container,
     IndexSignal const& index,
@@ -595,9 +596,9 @@ struct subscript_signal : preferred_id_signal<
     {
     }
     bool
-    is_readable() const
+    has_value() const
     {
-        return container_.is_readable() && index_.is_readable();
+        return container_.has_value() && index_.has_value();
     }
     typename subscript_signal::value_type const&
     read() const
@@ -610,10 +611,10 @@ struct subscript_signal : preferred_id_signal<
         return combine_ids(ref(container_.value_id()), ref(index_.value_id()));
     }
     bool
-    is_writable() const
+    ready_to_write() const
     {
-        return container_.is_readable() && index_.is_readable()
-               && container_.is_writable();
+        return container_.has_value() && index_.has_value()
+               && container_.ready_to_write();
     }
     void
     write(typename subscript_signal::value_type const& x) const

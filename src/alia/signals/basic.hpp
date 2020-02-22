@@ -21,11 +21,11 @@ struct empty_signal : signal<empty_signal<Value>, Value, bidirectional_signal>
         return no_id;
     }
     bool
-    is_readable() const
+    has_value() const
     {
         return false;
     }
-    // Since this is never readable, read() should never be called.
+    // Since this never has a value, read() should never be called.
     // LCOV_EXCL_START
     Value const&
     read() const
@@ -41,11 +41,11 @@ struct empty_signal : signal<empty_signal<Value>, Value, bidirectional_signal>
     }
     // LCOV_EXCL_STOP
     bool
-    is_writable() const
+    ready_to_write() const
     {
         return false;
     }
-    // Since this is never writable, write() should never be called.
+    // Since this is never ready to write, write() should never be called.
     // LCOV_EXCL_START
     void
     write(Value const& value) const
@@ -69,7 +69,7 @@ struct value_signal
     {
     }
     bool
-    is_readable() const
+    has_value() const
     {
         return true;
     }
@@ -102,7 +102,7 @@ struct string_literal_signal
         return unit_id;
     }
     bool
-    is_readable() const
+    has_value() const
     {
         return true;
     }
@@ -140,7 +140,7 @@ struct direct_signal
     {
     }
     bool
-    is_readable() const
+    has_value() const
     {
         return true;
     }
@@ -150,7 +150,7 @@ struct direct_signal
         return *v_;
     }
     bool
-    is_writable() const
+    ready_to_write() const
     {
         return true;
     }
@@ -180,7 +180,7 @@ struct direct_const_signal
     {
     }
     bool
-    is_readable() const
+    has_value() const
     {
         return true;
     }

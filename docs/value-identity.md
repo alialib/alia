@@ -13,8 +13,8 @@ compare every pixel of the image every frame to make sure that the image hasn't
 changed from what's already on screen.)
 
 To address this concern, instead of using a signal's value to detect changes,
-alia requires any readable signal to provide a *value identity*. A value
-identity is a simple proxy for the actual value that is used purely for
+alia requires any signal with a value to also provide a *value identity*. A
+value identity is a simple proxy for the actual value that is used purely for
 detecting changes.
 
 *If a signal's value changes, its value identity must also change.*

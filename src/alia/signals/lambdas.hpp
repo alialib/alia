@@ -9,22 +9,22 @@
 
 namespace alia {
 
-// lambda_reader(is_readable, read) creates a read-only signal whose value is
-// determined by calling :is_readable and :read.
-template<class Value, class IsReadable, class Read>
+// lambda_reader(has_value, read) creates a read-only signal whose value is
+// determined by calling :has_value and :read.
+template<class Value, class HasValue, class Read>
 struct lambda_reader_signal : regular_signal<
-                                  lambda_reader_signal<Value, IsReadable, Read>,
+                                  lambda_reader_signal<Value, HasValue, Read>,
                                   Value,
                                   read_only_signal>
 {
-    lambda_reader_signal(IsReadable is_readable, Read read)
-        : is_readable_(is_readable), read_(read)
+    lambda_reader_signal(HasValue has_value, Read read)
+        : has_value_(has_value), read_(read)
     {
     }
     bool
-    is_readable() const
+    has_value() const
     {
-        return is_readable_();
+        return has_value_();
     }
     Value const&
     read() const
@@ -34,33 +34,31 @@ struct lambda_reader_signal : regular_signal<
     }
 
  private:
-    IsReadable is_readable_;
+    HasValue has_value_;
     Read read_;
     mutable decltype(read_()) value_;
 };
-template<class IsReadable, class Read>
+template<class HasValue, class Read>
 auto
-lambda_reader(IsReadable is_readable, Read read)
+lambda_reader(HasValue has_value, Read read)
 {
-    return lambda_reader_signal<
-        std::decay_t<decltype(read())>,
-        IsReadable,
-        Read>(is_readable, read);
+    return lambda_reader_signal<std::decay_t<decltype(read())>, HasValue, Read>(
+        has_value, read);
 }
 
-// lambda_reader(is_readable, read, generate_id) creates a read-only signal
-// whose value is determined by calling :is_readable and :read and whose ID is
+// lambda_reader(has_value, read, generate_id) creates a read-only signal
+// whose value is determined by calling :has_value and :read and whose ID is
 // determined by calling :generate_id.
-template<class Value, class IsReadable, class Read, class GenerateId>
+template<class Value, class HasValue, class Read, class GenerateId>
 struct lambda_reader_signal_with_id
     : signal<
-          lambda_reader_signal_with_id<Value, IsReadable, Read, GenerateId>,
+          lambda_reader_signal_with_id<Value, HasValue, Read, GenerateId>,
           Value,
           read_only_signal>
 {
     lambda_reader_signal_with_id(
-        IsReadable is_readable, Read read, GenerateId generate_id)
-        : is_readable_(is_readable), read_(read), generate_id_(generate_id)
+        HasValue has_value, Read read, GenerateId generate_id)
+        : has_value_(has_value), read_(read), generate_id_(generate_id)
     {
     }
     id_interface const&
@@ -70,9 +68,9 @@ struct lambda_reader_signal_with_id
         return id_;
     }
     bool
-    is_readable() const
+    has_value() const
     {
-        return is_readable_();
+        return has_value_();
     }
     Value const&
     read() const
@@ -82,54 +80,54 @@ struct lambda_reader_signal_with_id
     }
 
  private:
-    IsReadable is_readable_;
+    HasValue has_value_;
     Read read_;
     mutable decltype(read_()) value_;
     GenerateId generate_id_;
     mutable decltype(generate_id_()) id_;
 };
-template<class IsReadable, class Read, class GenerateId>
+template<class HasValue, class Read, class GenerateId>
 auto
-lambda_reader(IsReadable is_readable, Read read, GenerateId generate_id)
+lambda_reader(HasValue has_value, Read read, GenerateId generate_id)
 {
     return lambda_reader_signal_with_id<
         std::decay_t<decltype(read())>,
-        IsReadable,
+        HasValue,
         Read,
-        GenerateId>(is_readable, read, generate_id);
+        GenerateId>(has_value, read, generate_id);
 }
 
-// lambda_bidirectional(is_readable, read, is_writable, write) creates a
-// bidirectional signal whose value is read by calling :is_readable and :read
-// and written by calling :is_writable and :write.
+// lambda_bidirectional(has_value, read, ready_to_write, write) creates a
+// bidirectional signal whose value is read by calling :has_value and :read
+// and written by calling :ready_to_write and :write.
 template<
     class Value,
-    class IsReadable,
+    class HasValue,
     class Read,
-    class IsWritable,
+    class ReadyToWrite,
     class Write>
 struct lambda_bidirectional_signal : regular_signal<
                                          lambda_bidirectional_signal<
                                              Value,
-                                             IsReadable,
+                                             HasValue,
                                              Read,
-                                             IsWritable,
+                                             ReadyToWrite,
                                              Write>,
                                          Value,
                                          bidirectional_signal>
 {
     lambda_bidirectional_signal(
-        IsReadable is_readable, Read read, IsWritable is_writable, Write write)
-        : is_readable_(is_readable),
+        HasValue has_value, Read read, ReadyToWrite ready_to_write, Write write)
+        : has_value_(has_value),
           read_(read),
-          is_writable_(is_writable),
+          ready_to_write_(ready_to_write),
           write_(write)
     {
     }
     bool
-    is_readable() const
+    has_value() const
     {
-        return is_readable_();
+        return has_value_();
     }
     Value const&
     read() const
@@ -138,9 +136,9 @@ struct lambda_bidirectional_signal : regular_signal<
         return value_;
     }
     bool
-    is_writable() const
+    ready_to_write() const
     {
-        return is_writable_();
+        return ready_to_write_();
     }
     void
     write(Value const& value) const
@@ -149,57 +147,57 @@ struct lambda_bidirectional_signal : regular_signal<
     }
 
  private:
-    IsReadable is_readable_;
+    HasValue has_value_;
     Read read_;
     mutable decltype(read_()) value_;
-    IsWritable is_writable_;
+    ReadyToWrite ready_to_write_;
     Write write_;
 };
-template<class IsReadable, class Read, class IsWritable, class Write>
+template<class HasValue, class Read, class ReadyToWrite, class Write>
 auto
 lambda_bidirectional(
-    IsReadable is_readable, Read read, IsWritable is_writable, Write write)
+    HasValue has_value, Read read, ReadyToWrite ready_to_write, Write write)
 {
     return lambda_bidirectional_signal<
         std::decay_t<decltype(read())>,
-        IsReadable,
+        HasValue,
         Read,
-        IsWritable,
-        Write>(is_readable, read, is_writable, write);
+        ReadyToWrite,
+        Write>(has_value, read, ready_to_write, write);
 }
 
-// lambda_bidirectional(is_readable, read, is_writable, write, generate_id)
-// creates a bidirectional signal whose value is read by calling :is_readable
-// and :read and written by calling :is_writable and :write. Its ID is
+// lambda_bidirectional(has_value, read, ready_to_write, write, generate_id)
+// creates a bidirectional signal whose value is read by calling :has_value
+// and :read and written by calling :ready_to_write and :write. Its ID is
 // determined by calling :generate_id.
 template<
     class Value,
-    class IsReadable,
+    class HasValue,
     class Read,
-    class IsWritable,
+    class ReadyToWrite,
     class Write,
     class GenerateId>
 struct lambda_bidirectional_signal_with_id
     : signal<
           lambda_bidirectional_signal_with_id<
               Value,
-              IsReadable,
+              HasValue,
               Read,
-              IsWritable,
+              ReadyToWrite,
               Write,
               GenerateId>,
           Value,
           bidirectional_signal>
 {
     lambda_bidirectional_signal_with_id(
-        IsReadable is_readable,
+        HasValue has_value,
         Read read,
-        IsWritable is_writable,
+        ReadyToWrite ready_to_write,
         Write write,
         GenerateId generate_id)
-        : is_readable_(is_readable),
+        : has_value_(has_value),
           read_(read),
-          is_writable_(is_writable),
+          ready_to_write_(ready_to_write),
           write_(write),
           generate_id_(generate_id)
     {
@@ -211,9 +209,9 @@ struct lambda_bidirectional_signal_with_id
         return id_;
     }
     bool
-    is_readable() const
+    has_value() const
     {
-        return is_readable_();
+        return has_value_();
     }
     Value const&
     read() const
@@ -222,9 +220,9 @@ struct lambda_bidirectional_signal_with_id
         return value_;
     }
     bool
-    is_writable() const
+    ready_to_write() const
     {
-        return is_writable_();
+        return ready_to_write_();
     }
     void
     write(Value const& value) const
@@ -233,49 +231,49 @@ struct lambda_bidirectional_signal_with_id
     }
 
  private:
-    IsReadable is_readable_;
+    HasValue has_value_;
     Read read_;
     mutable decltype(read_()) value_;
-    IsWritable is_writable_;
+    ReadyToWrite ready_to_write_;
     Write write_;
     GenerateId generate_id_;
     mutable decltype(generate_id_()) id_;
 };
 template<
-    class IsReadable,
+    class HasValue,
     class Read,
-    class IsWritable,
+    class ReadyToWrite,
     class Write,
     class GenerateId>
 auto
 lambda_bidirectional(
-    IsReadable is_readable,
+    HasValue has_value,
     Read read,
-    IsWritable is_writable,
+    ReadyToWrite ready_to_write,
     Write write,
     GenerateId generate_id)
 {
     return lambda_bidirectional_signal_with_id<
         std::decay_t<decltype(read())>,
-        IsReadable,
+        HasValue,
         Read,
-        IsWritable,
+        ReadyToWrite,
         Write,
-        GenerateId>(is_readable, read, is_writable, write, generate_id);
+        GenerateId>(has_value, read, ready_to_write, write, generate_id);
 }
 
-// This is just a clear and concise way of indicating that a lambda signal is
-// always readable.
+// This is just a clear and concise way of indicating that a lambda signal
+// always has a value.
 inline bool
-always_readable()
+always_has_value()
 {
     return true;
 }
 
 // This is just a clear and concise way of indicating that a lambda signal is
-// always writable.
+// always ready to write.
 inline bool
-always_writable()
+always_ready()
 {
     return true;
 }
