@@ -20,26 +20,26 @@ more likely it is that you should just create a custom signal type...
 
 <dl>
 
-<dt>lambda_reader(is_readable, read)</dt><dd>
+<dt>lambda_reader(has_value, read)</dt><dd>
 
 Creates a read-only signal whose value is determined by calling the
-`is_readable` and `read` lambdas. (Neither takes any arguments.)
+`has_value` and `read` lambdas. (Neither takes any arguments.)
 
 The following is equivalent to `value(12)`:
 
 ```cpp
-lambda_reader(always_readable, []() { return 12; });
+lambda_reader(always_has_value, []() { return 12; });
 ```
 
-`always_readable` is just a function that always returns `true`. It's
-considered a clear and concise way to indicate that a signal is always
-readable.
+`always_has_value` is just a function that always returns `true`. It's
+considered a clear and concise way to indicate that a signal always carries a
+value.
 </dd>
 
-<dt>lambda_reader(is_readable, read, generate_id)</dt><dd>
+<dt>lambda_reader(has_value, read, generate_id)</dt><dd>
 
 Creates a read-only signal whose value is determined by calling
-`is_readable` and `read` and whose ID is determined by calling
+`has_value` and `read` and whose ID is determined by calling
 `generate_id`. (None of which take any arguments.)
 
 With this overload, you can achieve something that's impossible with the
@@ -48,7 +48,7 @@ have to touch that large value every pass. For example:
 
 ```cpp
 lambda_reader(
-    always_readable,
+    always_has_value,
     [&]() { return my_object; },
     [&]() { return make_id(my_object.uid); });
 ```
@@ -58,20 +58,19 @@ the object's value itself only has to be touched when new values are
 retrieved.
 </dd>
 
-<dt>lambda_bidirectional(is_readable, read, is_writable, write)</dt><dd>
+<dt>lambda_bidirectional(has_value, read, ready_to_write, write)</dt><dd>
 
-Creates a bidirectional signal whose value is read by calling `is_readable`
-and `read` and written by calling `is_writable` and `write`. Only
-`write` takes an argument (the new value).
+Creates a bidirectional signal whose value is read by calling `has_value` and
+`read` and written by calling `ready_to_write` and `write`. Only `write` takes
+an argument (the new value).
 </dd>
 
-<dt>lambda_bidirectional(is_readable, read, is_writable, write, generate_id)
+<dt>lambda_bidirectional(has_value, read, ready_to_write, write, generate_id)
 </dt><dd>
 
-Creates a bidirectional signal whose value is read by calling `is_readable`
-and `read` and written by calling `is_writable` and `write`. Its ID is
-determined by calling `generate_id`. Only `write` takes an argument (the
-new value).
+Creates a bidirectional signal whose value is read by calling `has_value` and
+`read` and written by calling `ready_to_write` and `write`. Its ID is determined
+by calling `generate_id`. Only `write` takes an argument (the new value).
 </dd>
 
 </dl>

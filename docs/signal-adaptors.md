@@ -33,7 +33,7 @@ available when we'd like it to be. This can be done with `add_fallback`:
 `primary` and `fallback` must be signals with the same value type.
 
 `add_fallback(primary, fallback)` yields another signal whose value is that of
-`primary` if `primary` is readable and that of `fallback` otherwise.
+`primary` if `primary` has a value and that of `fallback` otherwise.
 
 All writes go directly to `primary`.
 

@@ -67,11 +67,11 @@ TEST_CASE("is_signal_type", "[signals][core]")
     REQUIRE(!is_signal_type<std::string>::value);
 }
 
-TEST_CASE("signal_can_read", "[signals][core]")
+TEST_CASE("signal_is_readable", "[signals][core]")
 {
-    REQUIRE(signal_can_read<readable<int>>::value);
-    REQUIRE(!signal_can_read<writable<int>>::value);
-    REQUIRE(signal_can_read<bidirectional<int>>::value);
+    REQUIRE(signal_is_readable<readable<int>>::value);
+    REQUIRE(!signal_is_readable<writable<int>>::value);
+    REQUIRE(signal_is_readable<bidirectional<int>>::value);
 }
 
 TEST_CASE("is_readable_signal_type", "[signals][core]")
@@ -83,11 +83,11 @@ TEST_CASE("is_readable_signal_type", "[signals][core]")
     REQUIRE(!is_readable_signal_type<std::string>::value);
 }
 
-TEST_CASE("signal_can_write", "[signals][core]")
+TEST_CASE("signal_is_writable", "[signals][core]")
 {
-    REQUIRE(!signal_can_write<readable<int>>::value);
-    REQUIRE(signal_can_write<writable<int>>::value);
-    REQUIRE(signal_can_write<bidirectional<int>>::value);
+    REQUIRE(!signal_is_writable<readable<int>>::value);
+    REQUIRE(signal_is_writable<writable<int>>::value);
+    REQUIRE(signal_is_writable<bidirectional<int>>::value);
 }
 
 TEST_CASE("is_writable_signal_type", "[signals][core]")
@@ -115,13 +115,13 @@ TEST_CASE("signal_ref", "[signals][core]")
     signal_ref<int, bidirectional_signal> s = y;
 
     typedef decltype(s) signal_t;
-    REQUIRE(signal_can_read<signal_t>::value);
-    REQUIRE(signal_can_write<signal_t>::value);
+    REQUIRE(signal_is_readable<signal_t>::value);
+    REQUIRE(signal_is_writable<signal_t>::value);
 
-    REQUIRE(signal_is_readable(s));
+    REQUIRE(signal_has_value(s));
     REQUIRE(s.value_id() == y.value_id());
     REQUIRE(read_signal(s) == 1);
-    REQUIRE(signal_is_writable(s));
+    REQUIRE(signal_ready_to_write(s));
     write_signal(s, 0);
     REQUIRE(x == 0);
     REQUIRE(read_signal(s) == 0);

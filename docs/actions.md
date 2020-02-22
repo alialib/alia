@@ -53,8 +53,8 @@ There is one important difference between an action and a normal C++ callback:
 
 This property often allows actions to integrate more naturally into the dataflow
 of your application. For example, the copy action produced by the `<<=` signal
-operator is only considered ready if its left-hand operand is writable and its
-right-hand operand is readable.
+operator is only considered ready if its left-hand operand is ready to write and
+its right-hand operand has a value.
 
 When alia is integrated with a UI library, this property can often be leveraged
 so that widgets are disabled when the corresponding actions aren't ready to be

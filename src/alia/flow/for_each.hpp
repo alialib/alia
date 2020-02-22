@@ -56,7 +56,7 @@ template<
 void
 for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
 {
-    ALIA_IF(is_readable(container_signal))
+    ALIA_IF(has_value(container_signal))
     {
         naming_context nc(ctx);
         auto const& container = read_signal(container_signal);
@@ -88,7 +88,7 @@ template<
 void
 for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
 {
-    ALIA_IF(is_readable(container_signal))
+    ALIA_IF(has_value(container_signal))
     {
         naming_context nc(ctx);
         auto const& container = read_signal(container_signal);
@@ -125,9 +125,9 @@ struct list_item_signal : signal<
         return id_;
     }
     bool
-    is_readable() const
+    has_value() const
     {
-        return list_signal_.is_readable();
+        return list_signal_.has_value();
     }
     Item const&
     read() const
@@ -135,9 +135,9 @@ struct list_item_signal : signal<
         return *item_;
     }
     bool
-    is_writable() const
+    ready_to_write() const
     {
-        return list_signal_.is_writable();
+        return list_signal_.ready_to_write();
     }
     void
     write(Item const& value) const
@@ -171,7 +171,7 @@ template<
 void
 for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
 {
-    ALIA_IF(is_readable(container_signal))
+    ALIA_IF(has_value(container_signal))
     {
         naming_context nc(ctx);
         auto const& container = read_signal(container_signal);

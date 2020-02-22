@@ -6,11 +6,11 @@
 
 using namespace alia;
 
-struct unreadable_regular_signal
-    : regular_signal<unreadable_regular_signal, int, read_only_signal>
+struct empty_regular_signal
+    : regular_signal<empty_regular_signal, int, read_only_signal>
 {
     bool
-    is_readable() const
+    has_value() const
     {
         return false;
     }
@@ -22,15 +22,15 @@ struct unreadable_regular_signal
     }
 };
 
-TEST_CASE("unreadable regular_signal", "[signals][utilities]")
+TEST_CASE("empty regular_signal", "[signals][utilities]")
 {
-    unreadable_regular_signal s;
+    empty_regular_signal s;
 
     typedef decltype(s) signal_t;
-    REQUIRE(signal_can_read<signal_t>::value);
-    REQUIRE(!signal_can_write<signal_t>::value);
+    REQUIRE(signal_is_readable<signal_t>::value);
+    REQUIRE(!signal_is_writable<signal_t>::value);
 
-    REQUIRE(!signal_is_readable(s));
+    REQUIRE(!signal_has_value(s));
     REQUIRE(s.value_id() == no_id);
 }
 
@@ -38,7 +38,7 @@ struct normal_regular_signal
     : regular_signal<normal_regular_signal, int, bidirectional_signal>
 {
     bool
-    is_readable() const
+    has_value() const
     {
         return true;
     }
@@ -49,7 +49,7 @@ struct normal_regular_signal
         return value;
     }
     bool
-    is_writable() const
+    ready_to_write() const
     {
         return false;
     }
@@ -64,12 +64,12 @@ TEST_CASE("normal regular_signal", "[signals][utilities]")
     normal_regular_signal s;
 
     typedef decltype(s) signal_t;
-    REQUIRE(signal_can_read<signal_t>::value);
-    REQUIRE(signal_can_write<signal_t>::value);
+    REQUIRE(signal_is_readable<signal_t>::value);
+    REQUIRE(signal_is_writable<signal_t>::value);
 
-    REQUIRE(signal_is_readable(s));
+    REQUIRE(signal_has_value(s));
     REQUIRE(s.value_id() == make_id_by_reference(s.read()));
-    REQUIRE(!signal_is_writable(s));
+    REQUIRE(!signal_ready_to_write(s));
 }
 
 TEST_CASE("lazy_reader", "[signals][utilities]")
@@ -90,20 +90,20 @@ TEST_CASE("lazy_reader", "[signals][utilities]")
     REQUIRE(n == 1);
 }
 
-TEST_CASE("signals_all_readable", "[signals][utilities]")
+TEST_CASE("signals_all_have_values", "[signals][utilities]")
 {
     normal_regular_signal s;
     auto t = value(0);
-    unreadable_regular_signal u;
+    empty_regular_signal u;
 
-    REQUIRE(signals_all_readable());
-    REQUIRE(signals_all_readable(s));
-    REQUIRE(signals_all_readable(s, t));
-    REQUIRE(signals_all_readable(s, t, s));
-    REQUIRE(!signals_all_readable(u));
-    REQUIRE(!signals_all_readable(t, u));
-    REQUIRE(!signals_all_readable(u, s));
-    REQUIRE(!signals_all_readable(s, t, u));
+    REQUIRE(signals_all_have_values());
+    REQUIRE(signals_all_have_values(s));
+    REQUIRE(signals_all_have_values(s, t));
+    REQUIRE(signals_all_have_values(s, t, s));
+    REQUIRE(!signals_all_have_values(u));
+    REQUIRE(!signals_all_have_values(t, u));
+    REQUIRE(!signals_all_have_values(u, s));
+    REQUIRE(!signals_all_have_values(s, t, u));
 }
 
 template<class Value>
@@ -114,7 +114,7 @@ struct preferred_id_test_signal : preferred_id_signal<
                                       simple_id<std::string>>
 {
     bool
-    is_readable() const
+    has_value() const
     {
         return true;
     }
@@ -125,7 +125,7 @@ struct preferred_id_test_signal : preferred_id_signal<
         return value;
     }
     bool
-    is_writable() const
+    ready_to_write() const
     {
         return false;
     }

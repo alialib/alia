@@ -30,16 +30,16 @@ TEST_CASE("basic get_state", "[signals][state]")
     do_traversal(sys, [&](context ctx) {
         auto state = get_state(ctx, empty<int>());
 
-        REQUIRE(!signal_is_readable(state));
-        REQUIRE(signal_is_writable(state));
+        REQUIRE(!signal_has_value(state));
+        REQUIRE(signal_ready_to_write(state));
     });
     captured_id state_id;
     do_traversal(sys, [&](context ctx) {
         auto state = get_state(ctx, value(12));
 
-        REQUIRE(signal_is_readable(state));
+        REQUIRE(signal_has_value(state));
         REQUIRE(read_signal(state) == 12);
-        REQUIRE(signal_is_writable(state));
+        REQUIRE(signal_ready_to_write(state));
         state_id.capture(state.value_id());
 
         write_signal(state, 13);
@@ -58,11 +58,11 @@ TEST_CASE("writing to uninitialized state", "[signals][state]")
     do_traversal(sys, [&](context ctx) {
         auto state = get_state(ctx, empty<int>());
 
-        REQUIRE(!signal_is_readable(state));
-        REQUIRE(signal_is_writable(state));
+        REQUIRE(!signal_has_value(state));
+        REQUIRE(signal_ready_to_write(state));
         write_signal(state, 1);
-        REQUIRE(signal_is_readable(state));
-        REQUIRE(signal_is_writable(state));
+        REQUIRE(signal_has_value(state));
+        REQUIRE(signal_ready_to_write(state));
         REQUIRE(read_signal(state) == 1);
     });
 }
@@ -74,9 +74,9 @@ TEST_CASE("get_state with raw initial value", "[signals][state]")
     do_traversal(sys, [&](context ctx) {
         auto state = get_state(ctx, 12);
 
-        REQUIRE(signal_is_readable(state));
+        REQUIRE(signal_has_value(state));
         REQUIRE(read_signal(state) == 12);
-        REQUIRE(signal_is_writable(state));
+        REQUIRE(signal_ready_to_write(state));
         state_id.capture(state.value_id());
 
         write_signal(state, 13);

@@ -229,7 +229,7 @@ struct smoothed_signal : regular_signal<
     id_interface const&
     value_id() const
     {
-        if (wrapped_.is_readable())
+        if (wrapped_.has_value())
         {
             id_ = make_id(smoothed_value_);
             return id_;
@@ -238,9 +238,9 @@ struct smoothed_signal : regular_signal<
             return no_id;
     }
     bool
-    is_readable() const
+    has_value() const
     {
-        return wrapped_.is_readable();
+        return wrapped_.has_value();
     }
     typename Wrapped::value_type const&
     read() const
@@ -270,7 +270,7 @@ smooth_value(
     animated_transition const& transition = default_transition)
 {
     Value output = Value();
-    if (signal_is_readable(x))
+    if (signal_has_value(x))
         output = smooth_raw_value(ctx, smoother, read_signal(x), transition);
     return make_smoothed_signal(x, output);
 }

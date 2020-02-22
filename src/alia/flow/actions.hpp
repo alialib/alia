@@ -165,7 +165,7 @@ struct bound_action<Action, Signal, action_interface<BoundArg, Args...>>
     bool
     is_ready() const
     {
-        return action_.is_ready() && signal_.is_readable();
+        return action_.is_ready() && signal_.has_value();
     }
 
     void
@@ -211,8 +211,8 @@ operator<<=(Action const& action, Value const& v)
 //
 // sink <<= source, where :sink and :source are both signals, creates an
 // action that will set the value of :sink to the value held in :source. In
-// order for the action to be considered ready, :source must be readable and
-// :sink must be writable.
+// order for the action to be considered ready, :source must have a value and
+// :sink must be ready to write.
 
 template<class Sink, class Source>
 struct copy_action : action_interface<>
@@ -224,7 +224,7 @@ struct copy_action : action_interface<>
     bool
     is_ready() const
     {
-        return source_.is_readable() && sink_.is_writable();
+        return source_.has_value() && sink_.ready_to_write();
     }
 
     void
@@ -372,7 +372,7 @@ struct push_back_action : action_interface<Item>
     bool
     is_ready() const
     {
-        return container_.is_readable() && container_.is_writable();
+        return container_.has_value() && container_.ready_to_write();
     }
 
     void

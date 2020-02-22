@@ -95,7 +95,7 @@ template<class Readable>
 void
 update_text_conversion(keyed_data<std::string>* data, Readable x)
 {
-    if (signal_is_readable(x))
+    if (signal_has_value(x))
     {
         refresh_keyed_data(*data, x.value_id());
         if (!is_valid(*data))
@@ -130,7 +130,7 @@ template<class Value, class Readable>
 void
 update_bidirectional_text(bidirectional_text_data<Value>* data, Readable x)
 {
-    if (signal_is_readable(x))
+    if (signal_has_value(x))
     {
         auto const& input_id = x.value_id();
         if (!data->input_id.matches(input_id))
@@ -162,7 +162,7 @@ struct bidirectional_text_signal : signal<
     {
     }
     bool
-    is_readable() const
+    has_value() const
     {
         return data_->output_valid;
     }
@@ -178,9 +178,9 @@ struct bidirectional_text_signal : signal<
         return id_;
     }
     bool
-    is_writable() const
+    ready_to_write() const
     {
-        return wrapped_.is_writable();
+        return wrapped_.ready_to_write();
     }
     void
     write(std::string const& s) const

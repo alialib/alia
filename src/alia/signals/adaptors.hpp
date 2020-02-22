@@ -7,7 +7,7 @@
 namespace alia {
 
 // fake_readability(s), where :s is a signal, yields a wrapper for :s that
-// pretends to have read capabilities. It will never actually be readable, but
+// pretends to have read capabilities. It will never actually have a value, but
 // it will type-check as a readable signal.
 template<class Wrapped>
 struct readability_faker : signal<
@@ -26,7 +26,7 @@ struct readability_faker : signal<
         return no_id;
     }
     bool
-    is_readable() const
+    has_value() const
     {
         return false;
     }
@@ -46,9 +46,9 @@ struct readability_faker : signal<
     }
     // LCOV_EXCL_STOP
     bool
-    is_writable() const
+    ready_to_write() const
     {
-        return wrapped_.is_writable();
+        return wrapped_.ready_to_write();
     }
     void
     write(typename Wrapped::value_type const& value) const
@@ -67,8 +67,8 @@ fake_readability(Wrapped const& wrapped)
 }
 
 // fake_writability(s), where :s is a signal, yields a wrapper for :s that
-// pretends to have write capabilities. It will never actually be writable, but
-// it will type-check as a writable signal.
+// pretends to have write capabilities. It will never actually be ready to
+// write, but it will type-check as a writable signal.
 template<class Wrapped>
 struct writability_faker : signal<
                                writability_faker<Wrapped>,
@@ -86,9 +86,9 @@ struct writability_faker : signal<
         return wrapped_.value_id();
     }
     bool
-    is_readable() const
+    has_value() const
     {
-        return wrapped_.is_readable();
+        return wrapped_.has_value();
     }
     typename Wrapped::value_type const&
     read() const
@@ -96,7 +96,7 @@ struct writability_faker : signal<
         return wrapped_.read();
     }
     bool
-    is_writable() const
+    ready_to_write() const
     {
         return false;
     }
@@ -131,9 +131,9 @@ struct signal_caster : regular_signal<
     {
     }
     bool
-    is_readable() const
+    has_value() const
     {
-        return wrapped_.is_readable();
+        return wrapped_.has_value();
     }
     To const&
     read() const
@@ -142,9 +142,9 @@ struct signal_caster : regular_signal<
             [&] { return static_cast<To>(wrapped_.read()); });
     }
     bool
-    is_writable() const
+    ready_to_write() const
     {
-        return wrapped_.is_writable();
+        return wrapped_.ready_to_write();
     }
     void
     write(To const& value) const
@@ -163,24 +163,24 @@ signal_cast(Wrapped const& wrapped)
     return signal_caster<Wrapped, To>(wrapped);
 }
 
-// is_readable(x) yields a signal to a boolean which indicates whether or
-// not x is readable. (The returned signal is always readable itself.)
+// has_value(x) yields a signal to a boolean which indicates whether or not :x
+// has a value. (The returned signal itself always has a value.)
 template<class Wrapped>
-struct readability_signal
-    : regular_signal<readability_signal<Wrapped>, bool, read_only_signal>
+struct value_presence_signal
+    : regular_signal<value_presence_signal<Wrapped>, bool, read_only_signal>
 {
-    readability_signal(Wrapped const& wrapped) : wrapped_(wrapped)
+    value_presence_signal(Wrapped const& wrapped) : wrapped_(wrapped)
     {
     }
     bool
-    is_readable() const
+    has_value() const
     {
         return true;
     }
     bool const&
     read() const
     {
-        value_ = wrapped_.is_readable();
+        value_ = wrapped_.has_value();
         return value_;
     }
 
@@ -190,29 +190,29 @@ struct readability_signal
 };
 template<class Wrapped>
 auto
-is_readable(Wrapped const& wrapped)
+has_value(Wrapped const& wrapped)
 {
-    return readability_signal<Wrapped>(wrapped);
+    return value_presence_signal<Wrapped>(wrapped);
 }
 
-// is_writable(x) yields a signal to a boolean which indicates whether or
-// not x is writable. (The returned signal is always readable.)
+// ready_to_write(x) yields a signal to a boolean that indicates whether or not
+// :x is ready to write. (The returned signal always has a value.)
 template<class Wrapped>
-struct writability_signal
-    : regular_signal<writability_signal<Wrapped>, bool, read_only_signal>
+struct write_readiness_signal
+    : regular_signal<write_readiness_signal<Wrapped>, bool, read_only_signal>
 {
-    writability_signal(Wrapped const& wrapped) : wrapped_(wrapped)
+    write_readiness_signal(Wrapped const& wrapped) : wrapped_(wrapped)
     {
     }
     bool
-    is_readable() const
+    has_value() const
     {
         return true;
     }
     bool const&
     read() const
     {
-        value_ = wrapped_.is_writable();
+        value_ = wrapped_.ready_to_write();
         return value_;
     }
 
@@ -222,14 +222,14 @@ struct writability_signal
 };
 template<class Wrapped>
 auto
-is_writable(Wrapped const& wrapped)
+ready_to_write(Wrapped const& wrapped)
 {
-    return writability_signal<Wrapped>(wrapped);
+    return write_readiness_signal<Wrapped>(wrapped);
 }
 
 // add_fallback(primary, fallback), where :primary and :fallback are both
-// signals, yields another signal whose value is that of :primary if it's
-// readable and that of :fallback otherwise.
+// signals, yields another signal whose value is that of :primary if it has one
+// and that of :fallback otherwise.
 // All writes go directly to :primary.
 template<class Primary, class Fallback>
 struct fallback_signal : signal<
@@ -245,28 +245,28 @@ struct fallback_signal : signal<
     {
     }
     bool
-    is_readable() const
+    has_value() const
     {
-        return primary_.is_readable() || fallback_.is_readable();
+        return primary_.has_value() || fallback_.has_value();
     }
     typename Primary::value_type const&
     read() const
     {
-        return primary_.is_readable() ? primary_.read() : fallback_.read();
+        return primary_.has_value() ? primary_.read() : fallback_.read();
     }
     id_interface const&
     value_id() const
     {
         id_ = combine_ids(
-            make_id(primary_.is_readable()),
-            primary_.is_readable() ? ref(primary_.value_id())
-                                   : ref(fallback_.value_id()));
+            make_id(primary_.has_value()),
+            primary_.has_value() ? ref(primary_.value_id())
+                                 : ref(fallback_.value_id()));
         return id_;
     }
     bool
-    is_writable() const
+    ready_to_write() const
     {
-        return primary_.is_writable();
+        return primary_.ready_to_write();
     }
     void
     write(typename Primary::value_type const& value) const
@@ -305,9 +305,9 @@ struct simplified_id_wrapper : regular_signal<
     {
     }
     bool
-    is_readable() const
+    has_value() const
     {
-        return wrapped_.is_readable();
+        return wrapped_.has_value();
     }
     typename Wrapped::value_type const&
     read() const
@@ -315,9 +315,9 @@ struct simplified_id_wrapper : regular_signal<
         return wrapped_.read();
     }
     bool
-    is_writable() const
+    ready_to_write() const
     {
-        return wrapped_.is_writable();
+        return wrapped_.ready_to_write();
     }
     void
     write(typename Wrapped::value_type const& value) const
@@ -368,9 +368,9 @@ struct masking_signal : signal<
     {
     }
     bool
-    is_readable() const
+    has_value() const
     {
-        return mask_.is_readable() && mask_.read() && primary_.is_readable();
+        return mask_.has_value() && mask_.read() && primary_.has_value();
     }
     typename Primary::value_type const&
     read() const
@@ -380,15 +380,15 @@ struct masking_signal : signal<
     id_interface const&
     value_id() const
     {
-        if (mask_.is_readable() && mask_.read())
+        if (mask_.has_value() && mask_.read())
             return primary_.value_id();
         else
             return no_id;
     }
     bool
-    is_writable() const
+    ready_to_write() const
     {
-        return mask_.is_readable() && mask_.read() && primary_.is_writable();
+        return mask_.has_value() && mask_.read() && primary_.ready_to_write();
     }
     void
     write(typename Primary::value_type const& value) const

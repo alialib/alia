@@ -107,11 +107,11 @@ struct untyped_signal_base
 {
     // Can the signal currently be read from?
     virtual bool
-    is_readable() const = 0;
+    has_value() const = 0;
 
     // A signal must supply an ID that uniquely identifies its value.
-    // The ID is required to be valid if is_readable() returns true.
-    // (It may be valid even if is_readable() returns false, which would mean
+    // The ID is required to be valid if has_value() returns true.
+    // (It may be valid even if has_value() returns false, which would mean
     // that the signal can identify its value but doesn't know it yet.)
     // The returned ID reference is only valid as long as the signal itself is
     // valid.
@@ -120,7 +120,7 @@ struct untyped_signal_base
 
     // Can the signal currently be written to?
     virtual bool
-    is_writable() const = 0;
+    ready_to_write() const = 0;
 };
 
 template<class Value>
@@ -160,7 +160,7 @@ struct signal<Derived, Value, read_only_signal>
     // obviously won't be used on a read-only signal.
     // LCOV_EXCL_START
     bool
-    is_writable() const
+    ready_to_write() const
     {
         return false;
     }
@@ -184,7 +184,7 @@ struct signal<Derived, Value, write_only_signal>
         return no_id;
     }
     bool
-    is_readable() const
+    has_value() const
     {
         return false;
     }
@@ -226,9 +226,9 @@ struct signal_ref : signal<signal_ref<Value, Direction>, Value, Direction>
     // implementation of signal_interface...
 
     bool
-    is_readable() const
+    has_value() const
     {
-        return ref_->is_readable();
+        return ref_->has_value();
     }
     Value const&
     read() const
@@ -241,9 +241,9 @@ struct signal_ref : signal<signal_ref<Value, Direction>, Value, Direction>
         return ref_->value_id();
     }
     bool
-    is_writable() const
+    ready_to_write() const
     {
-        return ref_->is_writable();
+        return ref_->ready_to_write();
     }
     void
     write(Value const& value) const
@@ -277,12 +277,12 @@ struct is_signal_type : std::is_base_of<untyped_signal_base, T>
 {
 };
 
-// signal_can_read<Signal>::value yields a compile-time boolean indicating
+// signal_is_readable<Signal>::value yields a compile-time boolean indicating
 // whether or not the given signal type supports reading.
 template<class Signal>
-struct signal_can_read : signal_direction_is_compatible<
-                             read_only_signal,
-                             typename Signal::direction_tag>
+struct signal_is_readable : signal_direction_is_compatible<
+                                read_only_signal,
+                                typename Signal::direction_tag>
 {
 };
 
@@ -291,41 +291,41 @@ struct signal_can_read : signal_direction_is_compatible<
 template<class T>
 struct is_readable_signal_type : std::conditional_t<
                                      is_signal_type<T>::value,
-                                     signal_can_read<T>,
+                                     signal_is_readable<T>,
                                      std::false_type>
 {
 };
 
-// Is :signal currently readable?
-// Unlike calling signal.is_readable() directly, this will generate a
+// Does :signal currently have a value?
+// Unlike calling signal.has_value() directly, this will generate a
 // compile-time error if the signal's type doesn't support reading.
 template<class Signal>
-std::enable_if_t<signal_can_read<Signal>::value, bool>
-signal_is_readable(Signal const& signal)
+std::enable_if_t<signal_is_readable<Signal>::value, bool>
+signal_has_value(Signal const& signal)
 {
-    return signal.is_readable();
+    return signal.has_value();
 }
 
 // Read a signal's value.
 // Unlike calling signal.read() directly, this will generate a compile-time
 // error if the signal's type doesn't support reading and a run-time error if
-// the signal isn't currently readable.
+// the signal doesn't currently have a value.
 template<class Signal>
 std::enable_if_t<
-    signal_can_read<Signal>::value,
+    signal_is_readable<Signal>::value,
     typename Signal::value_type const&>
 read_signal(Signal const& signal)
 {
-    assert(signal.is_readable());
+    assert(signal.has_value());
     return signal.read();
 }
 
-// signal_can_write<Signal>::value yields a compile-time boolean indicating
+// signal_is_writable<Signal>::value yields a compile-time boolean indicating
 // whether or not the given signal type supports writing.
 template<class Signal>
-struct signal_can_write : signal_direction_is_compatible<
-                              write_only_signal,
-                              typename Signal::direction_tag>
+struct signal_is_writable : signal_direction_is_compatible<
+                                write_only_signal,
+                                typename Signal::direction_tag>
 {
 };
 
@@ -334,30 +334,30 @@ struct signal_can_write : signal_direction_is_compatible<
 template<class T>
 struct is_writable_signal_type : std::conditional_t<
                                      is_signal_type<T>::value,
-                                     signal_can_write<T>,
+                                     signal_is_writable<T>,
                                      std::false_type>
 {
 };
 
-// Is :signal currently writable?
-// Unlike calling signal.is_writable() directly, this will generate a
+// Is :signal ready to write?
+// Unlike calling signal.ready_to_write() directly, this will generate a
 // compile-time error if the signal's type doesn't support writing.
 template<class Signal>
-std::enable_if_t<signal_can_write<Signal>::value, bool>
-signal_is_writable(Signal const& signal)
+std::enable_if_t<signal_is_writable<Signal>::value, bool>
+signal_ready_to_write(Signal const& signal)
 {
-    return signal.is_writable();
+    return signal.ready_to_write();
 }
 
 // Write a signal's value.
 // Unlike calling signal.write() directly, this will generate a compile-time
 // error if the signal's type doesn't support writing and a run-time error if
-// the signal isn't currently writable.
+// the signal isn't currently ready to write.
 template<class Signal, class Value>
-std::enable_if_t<signal_can_write<Signal>::value>
+std::enable_if_t<signal_is_writable<Signal>::value>
 write_signal(Signal const& signal, Value const& value)
 {
-    assert(signal.is_writable());
+    assert(signal.ready_to_write());
     signal.write(value);
 }
 

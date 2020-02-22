@@ -23,9 +23,9 @@ struct scaled_signal : regular_signal<
     {
     }
     bool
-    is_readable() const
+    has_value() const
     {
-        return n_.is_readable() && scale_factor_.is_readable();
+        return n_.has_value() && scale_factor_.has_value();
     }
     typename N::value_type const&
     read() const
@@ -34,9 +34,9 @@ struct scaled_signal : regular_signal<
             [&] { return n_.read() * scale_factor_.read(); });
     }
     bool
-    is_writable() const
+    ready_to_write() const
     {
-        return n_.is_writable() && scale_factor_.is_readable();
+        return n_.ready_to_write() && scale_factor_.has_value();
     }
     void
     write(typename N::value_type const& value) const
@@ -73,9 +73,9 @@ struct offset_signal : regular_signal<
     {
     }
     bool
-    is_readable() const
+    has_value() const
     {
-        return n_.is_readable() && offset_.is_readable();
+        return n_.has_value() && offset_.has_value();
     }
     typename N::value_type const&
     read() const
@@ -83,9 +83,9 @@ struct offset_signal : regular_signal<
         return lazy_reader_.read([&] { return n_.read() + offset_.read(); });
     }
     bool
-    is_writable() const
+    ready_to_write() const
     {
-        return n_.is_writable() && offset_.is_readable();
+        return n_.ready_to_write() && offset_.has_value();
     }
     void
     write(typename N::value_type const& value) const
@@ -123,9 +123,9 @@ struct rounding_signal_wrapper : regular_signal<
     {
     }
     bool
-    is_readable() const
+    has_value() const
     {
-        return n_.is_readable();
+        return n_.has_value();
     }
     typename N::value_type const&
     read() const
@@ -133,9 +133,9 @@ struct rounding_signal_wrapper : regular_signal<
         return n_.read();
     }
     bool
-    is_writable() const
+    ready_to_write() const
     {
-        return n_.is_writable() && step_.is_readable();
+        return n_.ready_to_write() && step_.has_value();
     }
     void
     write(typename N::value_type const& value) const

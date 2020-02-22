@@ -66,30 +66,30 @@ struct loop_block : noncopyable
 // underscore and assumes that the context is a variable named 'ctx'.
 
 // condition_is_true(x), where x is a signal whose value is testable in a
-// boolean context, returns true iff x is readable and its value is true.
+// boolean context, returns true iff x has a value and that value is true.
 template<class Signal>
 std::enable_if_t<is_readable_signal_type<Signal>::value, bool>
 condition_is_true(Signal const& x)
 {
-    return signal_is_readable(x) && (read_signal(x) ? true : false);
+    return signal_has_value(x) && (read_signal(x) ? true : false);
 }
 
 // condition_is_false(x), where x is a signal whose value is testable in a
-// boolean context, returns true iff x is readable and its value is false.
+// boolean context, returns true iff x has a value and that value is false.
 template<class Signal>
 std::enable_if_t<is_readable_signal_type<Signal>::value, bool>
 condition_is_false(Signal const& x)
 {
-    return signal_is_readable(x) && (read_signal(x) ? false : true);
+    return signal_has_value(x) && (read_signal(x) ? false : true);
 }
 
-// condition_is_readable(x), where x is a readable signal type, calls
-// signal_is_readable.
+// condition_has_value(x), where x is a readable signal type, calls
+// signal_has_value.
 template<class Signal>
 std::enable_if_t<is_readable_signal_type<Signal>::value, bool>
-condition_is_readable(Signal const& x)
+condition_has_value(Signal const& x)
 {
-    return signal_is_readable(x);
+    return signal_has_value(x);
 }
 
 // read_condition(x), where x is a readable signal type, calls read_signal.
@@ -122,10 +122,10 @@ condition_is_false(T x)
     return x ? false : true;
 }
 
-// condition_is_readable(x), where x is NOT a signal type, always returns true.
+// condition_has_value(x), where x is NOT a signal type, always returns true.
 template<class T>
 std::enable_if_t<!is_signal_type<T>::value, bool>
-condition_is_readable(T const& x)
+condition_has_value(T const& x)
 {
     return true;
 }
@@ -200,7 +200,7 @@ read_condition(T const& x)
 #define ALIA_SWITCH_(ctx, x)                                                   \
     {                                                                          \
         ::alia::switch_block _alia_switch_block(ctx);                          \
-        if (::alia::condition_is_readable(x))                                  \
+        if (::alia::condition_has_value(x))                                    \
         {                                                                      \
             switch (::alia::read_condition(x))                                 \
             {

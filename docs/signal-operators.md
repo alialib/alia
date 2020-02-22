@@ -5,8 +5,8 @@ Basic Operators
 ---------------
 
 All the basic operators work as you'd expect with signals, producing other
-signals that carry the result of the operation and are only readable when both
-arguments are readable.
+signals that carry the result of the operation and only have a value when both
+arguments have a value.
 
 All the basic binary operators are provided:
 
@@ -22,7 +22,7 @@ course, like any library-defined logical operators, they don't provide the same
 type of short-circuiting behavior as the built-in versions, but they provide
 short-circuiting in the signal space. In particular:
 
-- When the first operand is readable and fully resolves the result of the
+- When the first operand has a value and fully resolves the result of the
   operation, the second operand isn't read.
 
   For example, the following code is safe because although the signal
@@ -38,11 +38,11 @@ short-circuiting in the signal space. In particular:
   alia_end
   ```
 
-- When *either* operand is readable and fully resolves the result of the
-  operation, the other is allowed to be unreadable. The result will still be
-  readable.
+- When *either* operand has a value and fully resolves the result of the
+  operation, the other is allowed to be empty. The result will still have a
+  value.
 
-  In other words, all of the following are readable signals:
+  In other words, all of the following signals have values:
 
   ```cpp
   value(true) || empty<bool>()

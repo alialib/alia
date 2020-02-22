@@ -15,12 +15,11 @@ namespace alia {
 // signal).
 //
 // The return value of transform() is a signal carrying a vector with the mapped
-// items. This signal is readable when all items are successfully transformed
-// (i.e., when the mapping function is returning a readable signal for every
-// item).
+// items. This signal has a value when all items are successfully transformed
+// (i.e., when the signals returned by the mapping function all have values).
 //
 // Note that this follows proper dataflow semantics in that the mapped values
-// are allowed to change over time. Even after the result is readable (and all
+// are allowed to change over time. Even after the result has a value (and all
 // items are successfully transformed), the mapping function will continue to be
 // invoked whenever necessary to allow events to be delivered and changes to
 // propogate.
@@ -42,8 +41,8 @@ struct mapped_sequence_signal : signal<
                                     read_only_signal>
 {
     mapped_sequence_signal(
-        mapped_sequence_data<MappedItem>& data, bool all_items_readable)
-        : data_(&data), all_items_readable_(all_items_readable)
+        mapped_sequence_data<MappedItem>& data, bool all_items_have_values)
+        : data_(&data), all_items_have_values_(all_items_have_values)
     {
     }
     id_interface const&
@@ -53,9 +52,9 @@ struct mapped_sequence_signal : signal<
         return id_;
     }
     bool
-    is_readable() const
+    has_value() const
     {
-        return all_items_readable_;
+        return all_items_have_values_;
     }
     std::vector<MappedItem> const&
     read() const
@@ -65,7 +64,7 @@ struct mapped_sequence_signal : signal<
 
  private:
     mapped_sequence_data<MappedItem>* data_;
-    bool all_items_readable_;
+    bool all_items_have_values_;
     mutable simple_id<counter_type> id_;
 };
 
@@ -81,9 +80,9 @@ transform(Context ctx, Container const& container, Function const& f)
     mapped_sequence_data<mapped_value_type>* data;
     get_cached_data(ctx, &data);
 
-    bool all_items_readable = false;
+    bool all_items_have_values = false;
 
-    ALIA_IF(is_readable(container))
+    ALIA_IF(has_value(container))
     {
         size_t container_size = read_signal(container).size();
 
@@ -95,12 +94,12 @@ transform(Context ctx, Container const& container, Function const& f)
             data->input_id.capture(container.value_id());
         }
 
-        size_t readable_item_count = 0;
+        size_t valid_item_count = 0;
         auto captured_item = data->mapped_items.begin();
         auto captured_id = data->item_ids.begin();
         for_each(ctx, container, [&](context ctx, auto item) {
             auto mapped_item = f(ctx, item);
-            if (signal_is_readable(mapped_item))
+            if (signal_has_value(mapped_item))
             {
                 if (!captured_id->matches(mapped_item.value_id()))
                 {
@@ -108,7 +107,7 @@ transform(Context ctx, Container const& container, Function const& f)
                     captured_id->capture(mapped_item.value_id());
                     ++data->output_version;
                 }
-                ++readable_item_count;
+                ++valid_item_count;
             }
             ++captured_item;
             ++captured_id;
@@ -116,11 +115,12 @@ transform(Context ctx, Container const& container, Function const& f)
         assert(captured_item == data->mapped_items.end());
         assert(captured_id == data->item_ids.end());
 
-        all_items_readable = (readable_item_count == container_size);
+        all_items_have_values = (valid_item_count == container_size);
     }
     ALIA_END
 
-    return mapped_sequence_signal<mapped_value_type>(*data, all_items_readable);
+    return mapped_sequence_signal<mapped_value_type>(
+        *data, all_items_have_values);
 }
 
 } // namespace alia

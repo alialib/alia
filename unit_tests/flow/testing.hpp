@@ -86,7 +86,7 @@ do_keyed_int(Context& ctx, int n)
     keyed_data_signal<int_object> obj;
     if (get_keyed_data(ctx, make_id(n), &obj))
     {
-        REQUIRE(!obj.is_readable());
+        REQUIRE(!obj.has_value());
         write_signal(obj, int_object(n * 2));
         the_log << "initializing keyed int: " << n << ";";
     }

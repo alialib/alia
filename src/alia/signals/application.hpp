@@ -29,9 +29,9 @@ struct lazy_apply1_signal : signal<
         return arg_.value_id();
     }
     bool
-    is_readable() const
+    has_value() const
     {
-        return arg_.is_readable();
+        return arg_.has_value();
     }
     Result const&
     read() const
@@ -70,9 +70,9 @@ struct lazy_apply2_signal
         return id_;
     }
     bool
-    is_readable() const
+    has_value() const
     {
-        return arg0_.is_readable() && arg1_.is_readable();
+        return arg0_.has_value() && arg1_.has_value();
     }
     Result const&
     read() const
@@ -149,7 +149,7 @@ struct apply_signal : signal<apply_signal<Value>, Value, read_only_signal>
         return id_;
     }
     bool
-    is_readable() const
+    has_value() const
     {
         return data_->status == apply_status::READY;
     }
@@ -190,7 +190,7 @@ process_apply_args(
     get_cached_data(ctx, &cached_id);
     if (is_refresh_event(ctx))
     {
-        if (!signal_is_readable(arg))
+        if (!signal_has_value(arg))
         {
             reset(data);
             args_ready = false;

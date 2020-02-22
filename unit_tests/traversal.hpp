@@ -20,7 +20,7 @@ void
 do_text(context ctx, Text const& text)
 {
     ostream_event* oe;
-    if (detect_event(ctx, &oe) && signal_is_readable(text))
+    if (detect_event(ctx, &oe) && signal_has_value(text))
     {
         *oe->stream << read_signal(text) << ";";
     }

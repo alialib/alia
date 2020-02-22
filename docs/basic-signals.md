@@ -88,7 +88,7 @@ Occasionally, it's useful to create a signal that never carries a value.
 <dt>empty&lt;T&gt;()</dt><dd>
 
 Returns a signal that type checks as a readable signal carrying a value of type
-`T` but never actually provides a value.
+`T` but never actually carries a value.
 
 </dd>
 

@@ -17,7 +17,7 @@ TEST_CASE("manual ticks", "[components][system]")
     do_traversal(sys, [&](context ctx) {
         REQUIRE(get_raw_animation_tick_count(ctx) == expected_tick_count);
         auto ticks = get_animation_tick_count(ctx);
-        REQUIRE(signal_is_readable(ticks));
+        REQUIRE(signal_has_value(ticks));
         REQUIRE(read_signal(ticks) == expected_tick_count);
     });
     expected_tick_count = 1;
@@ -25,7 +25,7 @@ TEST_CASE("manual ticks", "[components][system]")
     do_traversal(sys, [&](context ctx) {
         REQUIRE(get_raw_animation_tick_count(ctx) == expected_tick_count);
         auto ticks = get_animation_tick_count(ctx);
-        REQUIRE(signal_is_readable(ticks));
+        REQUIRE(signal_has_value(ticks));
         REQUIRE(read_signal(ticks) == expected_tick_count);
     });
 }

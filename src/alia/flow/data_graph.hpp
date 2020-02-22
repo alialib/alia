@@ -596,7 +596,7 @@ struct keyed_data_signal
     {
     }
     bool
-    is_readable() const
+    has_value() const
     {
         return data_->is_valid;
     }
@@ -611,7 +611,7 @@ struct keyed_data_signal
         return data_->key.is_initialized() ? data_->key.get() : no_id;
     }
     bool
-    is_writable() const
+    ready_to_write() const
     {
         return true;
     }
