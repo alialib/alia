@@ -1,5 +1,7 @@
 #include "demo.hpp"
 
+namespace addition_ui {
+
 /// [addition-ui]
 void
 do_addition_ui(
@@ -15,7 +17,7 @@ do_addition_ui(
 /// [addition-ui]
 
 void
-init_addition_ui(std::string dom_id)
+init_demo(std::string dom_id)
 {
     static alia::system the_system;
     static dom::system the_dom;
@@ -28,10 +30,14 @@ init_addition_ui(std::string dom_id)
     });
 }
 
-static demo addition_ui("addition-ui", init_addition_ui);
+static demo the_demo("addition-ui", init_demo);
+
+} // namespace addition_ui
+
+namespace numerical_analysis {
 
 void
-do_numerical_analysis(dom::context ctx, bidirectional<double> n)
+do_ui(dom::context ctx, bidirectional<double> n)
 {
     // clang-format off
 /// [analysis]
@@ -57,17 +63,21 @@ alia_end
 }
 
 void
-init_numerical_analysis(std::string dom_id)
+init_demo(std::string dom_id)
 {
     static alia::system the_system;
     static dom::system the_dom;
 
     initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_numerical_analysis(ctx, get_state(ctx, empty<double>()));
+        do_ui(ctx, get_state(ctx, empty<double>()));
     });
 }
 
-static demo addition_analysis("numerical-analysis", init_numerical_analysis);
+static demo the_demo("numerical-analysis", init_demo);
+
+} // namespace numerical_analysis
+
+namespace tip_calculator {
 
 void
 do_tip_calculator(dom::context ctx)
@@ -94,7 +104,7 @@ dom::do_text(ctx, printf(ctx, "Total: %.2f", total));
 }
 
 void
-init_tip_calculator(std::string dom_id)
+init_demo(std::string dom_id)
 {
     static alia::system the_system;
     static dom::system the_dom;
@@ -102,4 +112,6 @@ init_tip_calculator(std::string dom_id)
     initialize(the_dom, the_system, dom_id, do_tip_calculator);
 }
 
-static demo tip_calculator("tip-calculator-demo", init_tip_calculator);
+static demo the_demo("tip-calculator-demo", init_demo);
+
+} // namespace tip_calculator

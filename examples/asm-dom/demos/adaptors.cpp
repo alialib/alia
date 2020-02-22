@@ -1,7 +1,9 @@
 #include "demo.hpp"
 
+namespace numeric_adaptors {
+
 void
-do_numeric_adaptors(dom::context ctx, bidirectional<double> n)
+do_ui(dom::context ctx, bidirectional<double> n)
 {
     // clang-format off
 /// [numeric-adaptors]
@@ -15,14 +17,16 @@ dom::do_input(ctx, offset(n, 10));
 }
 
 void
-init_numeric_adaptors(std::string dom_id)
+init_demo(std::string dom_id)
 {
     static alia::system the_system;
     static dom::system the_dom;
 
     initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_numeric_adaptors(ctx, get_state(ctx, 1.));
+        do_ui(ctx, get_state(ctx, 1.));
     });
 }
 
-static demo numeric_adaptors("numeric-adaptors", init_numeric_adaptors);
+static demo the_demo("numeric-adaptors", init_demo);
+
+} // namespace numeric_adaptors
