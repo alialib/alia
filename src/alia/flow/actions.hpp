@@ -34,6 +34,11 @@ template<class... Args>
 struct action_interface : untyped_action_interface
 {
     // Perform this action.
+    //
+    // :intermediary is used to implement the latch-like semantics of actions.
+    // It should be invoked AFTER reading any signals you need to read but
+    // BEFORE invoking any side effects.
+    //
     virtual void
     perform(std::function<void()> const& intermediary, Args... args) const = 0;
 };
