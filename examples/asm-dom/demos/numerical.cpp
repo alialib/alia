@@ -85,22 +85,10 @@ dom::do_button(ctx, "18%", tip_ratio <<= 0.18);
 dom::do_button(ctx, "20%", tip_ratio <<= 0.20);
 dom::do_button(ctx, "25%", tip_ratio <<= 0.25);
 
-auto n_people = get_state(ctx, 1);
-dom::do_text(ctx, "How many people?");
-dom::do_input(ctx, n_people);
-
 auto tip = bill * tip_ratio;
 auto total = bill + tip;
 dom::do_text(ctx, printf(ctx, "Tip: %.2f", tip));
 dom::do_text(ctx, printf(ctx, "Total: %.2f", total));
-
-alia_if(n_people > 1)
-{
-    dom::do_heading(ctx, "h4", "Per Person");
-    dom::do_text(ctx, printf(ctx, "Tip: %.2f", tip / n_people));
-    dom::do_text(ctx, printf(ctx, "Total: %.2f", total / n_people));
-}
-alia_end
 /// [tip-calculator]
     // clang-format on
 }
