@@ -30,6 +30,9 @@ struct system
 void
 refresh_system(system& sys);
 
+void
+refresh_system_time(system& sys);
+
 inline void
 set_automatic_time_updates(system& sys, bool enabled)
 {

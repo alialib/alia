@@ -22,11 +22,15 @@ get_tick_count_now()
 } // namespace
 
 void
-refresh_system(system& sys)
+refresh_system_time(system& sys)
 {
     if (sys.automatic_time_updates)
         sys.tick_counter = get_tick_count_now();
+}
 
+void
+refresh_system(system& sys)
+{
     sys.refresh_needed = false;
 
     refresh_event refresh;
