@@ -90,6 +90,7 @@ route_event_(system& sys, event_traversal& traversal, routing_region* target)
 void
 route_event(system& sys, event_traversal& traversal, routing_region* target)
 {
+    refresh_system_time(sys);
     try
     {
         route_event_(sys, traversal, target);
