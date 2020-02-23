@@ -2,7 +2,9 @@
 #define ALIA_TESTING_FLOW_TESTER_HPP
 
 #include <alia/components/context.hpp>
+#include <alia/components/system.hpp>
 #include <alia/flow/data_graph.hpp>
+#include <alia/flow/events.hpp>
 
 #include <sstream>
 
@@ -103,11 +105,14 @@ void
 do_traversal(
     data_graph& graph, Controller const& controller, bool with_gc = true)
 {
+    alia::system sys;
+    event_traversal event;
+
     data_traversal data;
     scoped_data_traversal sdt(graph, data);
 
     context_component_storage storage;
-    context ctx = make_context(&storage, nullptr, nullptr, &data);
+    context ctx = make_context(&storage, sys, event, data);
 
     if (!with_gc)
         disable_gc(data);

@@ -18,7 +18,7 @@ struct foo
 {
     bool b = false;
 };
-ALIA_DEFINE_COMPONENT_TYPE(foo_tag, foo*)
+ALIA_DEFINE_COMPONENT_TYPE(foo_tag, foo&)
 struct bar
 {
     int i = 0;
@@ -29,15 +29,15 @@ struct bar
     {
     }
 };
-ALIA_DEFINE_COMPONENT_TYPE(bar_tag, bar*)
+ALIA_DEFINE_COMPONENT_TYPE(bar_tag, bar&)
 struct zap
 {
     double d = 0;
 };
-ALIA_DEFINE_COMPONENT_TYPE(zap_tag, zap*)
+ALIA_DEFINE_COMPONENT_TYPE(zap_tag, zap&)
 
 // Define some arbitrary component collection types.
-using storage_type = generic_component_storage<any_pointer>;
+using storage_type = generic_component_storage<any_ref>;
 using cc_empty = empty_component_collection<storage_type>;
 using cc_b = add_component_type_t<cc_empty, bar_tag>;
 using cc_fb = add_component_type_t<cc_b, foo_tag>;
@@ -64,22 +64,22 @@ TEST_CASE("dynamic component access", "[components][typing]")
     REQUIRE(!storage.has<bar_tag>());
 
     bar b(1);
-    cc_b mc_b = add_component<bar_tag>(mc_empty, &b);
+    cc_b mc_b = add_component<bar_tag>(mc_empty, std::ref(b));
     REQUIRE(storage.has<bar_tag>());
     REQUIRE(has_component<bar_tag>(mc_b));
-    REQUIRE(get_component<bar_tag>(mc_b)->i == 1);
+    REQUIRE(get_component<bar_tag>(mc_b).i == 1);
     REQUIRE(!storage.has<foo_tag>());
     REQUIRE(!has_component<foo_tag>(mc_b));
     REQUIRE_THROWS_AS(
         get_component<foo_tag>(mc_b), component_not_found<foo_tag>);
 
     foo f;
-    cc_fb mc_fb = add_component<foo_tag>(mc_b, &f);
-    REQUIRE(get_component<bar_tag>(mc_fb)->i == 1);
-    REQUIRE(get_component<foo_tag>(mc_fb)->b == false);
+    cc_fb mc_fb = add_component<foo_tag>(mc_b, std::ref(f));
+    REQUIRE(get_component<bar_tag>(mc_fb).i == 1);
+    REQUIRE(get_component<foo_tag>(mc_fb).b == false);
 
     cc_f mc_f = remove_component<bar_tag>(mc_fb);
-    REQUIRE(get_component<foo_tag>(mc_f)->b == false);
+    REQUIRE(get_component<foo_tag>(mc_f).b == false);
     REQUIRE_THROWS_AS(
         get_component<bar_tag>(mc_f), component_not_found<bar_tag>);
 }

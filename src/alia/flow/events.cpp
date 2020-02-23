@@ -61,7 +61,7 @@ invoke_controller(system& sys, event_traversal& events)
     data.gc_enabled = data.cache_clearing_enabled = is_refresh;
 
     context_component_storage storage;
-    context ctx = make_context(&storage, &sys, &events, &data);
+    context ctx = make_context(&storage, sys, events, data);
 
     sys.controller(ctx);
 }
