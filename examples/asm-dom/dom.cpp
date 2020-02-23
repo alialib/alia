@@ -9,7 +9,7 @@ void
 do_text_(dom::context ctx, readable<std::string> text)
 {
     handle_event<refresh_event>(ctx, [text](auto ctx, auto& e) {
-        get_component<context_info_tag>(ctx)->current_children->push_back(
+        get_component<context_info_tag>(ctx).current_children->push_back(
             asmdom::h(
                 "p", signal_has_value(text) ? read_signal(text) : string()));
     });
@@ -20,7 +20,7 @@ do_heading_(
     dom::context ctx, readable<std::string> level, readable<std::string> text)
 {
     handle_event<refresh_event>(ctx, [=](auto ctx, auto& e) {
-        get_component<context_info_tag>(ctx)->current_children->push_back(
+        get_component<context_info_tag>(ctx).current_children->push_back(
             asmdom::h(
                 signal_has_value(level) ? read_signal(level) : "p",
                 signal_has_value(text) ? read_signal(text) : string()));
@@ -68,7 +68,7 @@ do_input_(dom::context ctx, bidirectional<string> value)
         asmdom::Attrs attrs;
         if (data->invalid)
             attrs["class"] = "invalid-input";
-        get_component<context_info_tag>(ctx)->current_children->push_back(
+        get_component<context_info_tag>(ctx).current_children->push_back(
             asmdom::h(
                 "input",
                 asmdom::Data(
@@ -110,7 +110,7 @@ do_button_(dom::context ctx, readable<std::string> text, action<> on_click)
     handle_event<refresh_event>(ctx, [=](auto ctx, auto& e) {
         if (signal_has_value(text))
         {
-            get_component<context_info_tag>(ctx)->current_children->push_back(
+            get_component<context_info_tag>(ctx).current_children->push_back(
                 asmdom::h(
                     "button",
                     asmdom::Data(
@@ -146,7 +146,7 @@ do_colored_box(dom::context ctx, readable<rgb8> color)
             rgb8 const& c = read_signal(color);
             sprintf(style, "background-color: #%02x%02x%02x", c.r, c.g, c.b);
         }
-        get_component<context_info_tag>(ctx)->current_children->push_back(
+        get_component<context_info_tag>(ctx).current_children->push_back(
             asmdom::h(
                 "div",
                 asmdom::Data(asmdom::Attrs{{"class", "colored-box"},
@@ -158,7 +158,7 @@ void
 do_hr(dom::context ctx)
 {
     handle_event<refresh_event>(ctx, [=](auto ctx, auto& e) {
-        get_component<context_info_tag>(ctx)->current_children->push_back(
+        get_component<context_info_tag>(ctx).current_children->push_back(
             asmdom::h("hr"));
     });
 }
@@ -167,7 +167,7 @@ static void
 handle_refresh_event(dom::context ctx, system& system)
 {
     asmdom::Children children;
-    get_component<context_info_tag>(ctx)->current_children = &children;
+    get_component<context_info_tag>(ctx).current_children = &children;
 
     system.controller(ctx);
 
@@ -196,7 +196,7 @@ system::operator()(alia::context vanilla_ctx)
     context_info* context_info;
     get_data(vanilla_ctx, &context_info);
     dom::context ctx
-        = add_component<context_info_tag>(vanilla_ctx, context_info);
+        = add_component<context_info_tag>(vanilla_ctx, std::ref(*context_info));
 
     if (is_refresh_event(ctx))
     {

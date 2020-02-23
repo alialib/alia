@@ -48,38 +48,38 @@ struct generic_component_storage
     }
 };
 
-// any_pointer is a simple way to store pointers to any type in a
+// any_ref is a simple way to store references to any type in a
 // generic_component_storage object.
-struct any_pointer
+struct any_ref
 {
-    any_pointer()
+    any_ref()
     {
     }
 
     template<class T>
-    any_pointer(T* ptr) : ptr(ptr)
+    any_ref(std::reference_wrapper<T> ref) : ptr(&ref.get())
     {
     }
 
     void* ptr;
 };
 
-template<class Pointer>
-struct component_caster<any_pointer&, Pointer*>
+template<class T>
+struct component_caster<any_ref&, T&>
 {
-    static Pointer*
-    apply(any_pointer stored)
+    static T&
+    apply(any_ref stored)
     {
-        return reinterpret_cast<Pointer*>(stored.ptr);
+        return *reinterpret_cast<T*>(stored.ptr);
     }
 };
-template<class Pointer>
-struct component_caster<any_pointer, Pointer*>
+template<class T>
+struct component_caster<any_ref, T&>
 {
-    static Pointer*
-    apply(any_pointer stored)
+    static T&
+    apply(any_ref stored)
     {
-        return reinterpret_cast<Pointer*>(stored.ptr);
+        return *reinterpret_cast<T*>(stored.ptr);
     }
 };
 
@@ -96,7 +96,7 @@ struct component_accessor
         return storage.generic.template has<Tag>();
     }
     static void
-    add(Storage& storage, any_pointer data)
+    add(Storage& storage, any_ref data)
     {
         storage.generic.template add<Tag>(data);
     }
@@ -105,7 +105,7 @@ struct component_accessor
     {
         storage.generic.template remove<Tag>();
     }
-    static any_pointer
+    static any_ref
     get(Storage& storage)
     {
         return storage.generic.template get<Tag>();
@@ -150,7 +150,7 @@ struct component_accessor
         static void                                                            \
         add(Storage& storage, Tag::data_type data)                             \
         {                                                                      \
-            storage.name = data;                                               \
+            storage.name = &data;                                              \
         }                                                                      \
         static void                                                            \
         remove(Storage& storage)                                               \
@@ -160,7 +160,7 @@ struct component_accessor
         static Tag::data_type                                                  \
         get(Storage& storage)                                                  \
         {                                                                      \
-            return storage.name;                                               \
+            return *storage.name;                                              \
         }                                                                      \
     };
 

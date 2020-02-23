@@ -18,7 +18,7 @@ struct my_event : targeted_event
     string result;
 };
 
-ALIA_DEFINE_COMPONENT_TYPE(my_tag, std::vector<routable_node_id>*)
+ALIA_DEFINE_COMPONENT_TYPE(my_tag, std::vector<routable_node_id>&)
 
 typedef add_component_type_t<context, my_tag> my_context;
 
@@ -29,7 +29,7 @@ do_my_thing(my_context ctx, readable<string> label)
 
     if (is_refresh_event(ctx))
     {
-        get_component<my_tag>(ctx)->push_back(
+        get_component<my_tag>(ctx).push_back(
             make_routable_node_id(ctx, this_id));
     }
 
@@ -58,7 +58,7 @@ TEST_CASE("node IDs", "[flow][events]")
     std::vector<routable_node_id> ids;
 
     sys.controller = [&](context vanilla_ctx) {
-        my_context ctx = add_component<my_tag>(vanilla_ctx, &ids);
+        my_context ctx = add_component<my_tag>(vanilla_ctx, std::ref(ids));
         do_my_thing(ctx, value("one"));
         do_my_thing(ctx, value("two"));
     };

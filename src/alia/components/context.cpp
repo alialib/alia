@@ -9,9 +9,9 @@ namespace alia {
 context
 make_context(
     context_component_storage* storage,
-    system* sys,
-    event_traversal* event,
-    data_traversal* data)
+    system& sys,
+    event_traversal& event,
+    data_traversal& data)
 {
     return add_component<data_traversal_tag>(
         add_component<event_traversal_tag>(
@@ -26,7 +26,7 @@ request_animation_refresh(dataless_context ctx)
 {
     // Invoke the virtual method on the external system interface.
     // And also set a flag to indicate that a refresh is needed.
-    system& sys = *get_component<system_tag>(ctx);
+    system& sys = get_component<system_tag>(ctx);
     if (!sys.refresh_needed)
     {
         if (sys.external)
@@ -39,7 +39,7 @@ millisecond_count
 get_raw_animation_tick_count(dataless_context ctx)
 {
     request_animation_refresh(ctx);
-    return get_component<system_tag>(ctx)->tick_counter;
+    return get_component<system_tag>(ctx).tick_counter;
 }
 
 value_signal<millisecond_count>
@@ -52,7 +52,7 @@ millisecond_count
 get_raw_animation_ticks_left(dataless_context ctx, millisecond_count end_time)
 {
     int ticks_remaining
-        = int(end_time - get_component<system_tag>(ctx)->tick_counter);
+        = int(end_time - get_component<system_tag>(ctx).tick_counter);
     if (ticks_remaining > 0)
     {
         if (is_refresh_event(ctx))
