@@ -289,7 +289,8 @@ TEST_CASE("mask a bidirectional signal", "[signals][adaptors]")
 {
     {
         int x = 1;
-        auto s = mask(direct(x), true);
+        auto d = direct(x);
+        auto s = mask(d, true);
 
         typedef decltype(s) signal_t;
         REQUIRE((std::is_same<signal_t::value_type, int>::value));
@@ -298,6 +299,7 @@ TEST_CASE("mask a bidirectional signal", "[signals][adaptors]")
 
         REQUIRE(signal_has_value(s));
         REQUIRE(read_signal(s) == 1);
+        REQUIRE(s.value_id() == d.value_id());
         REQUIRE(signal_ready_to_write(s));
         write_signal(s, 0);
         REQUIRE(x == 0);
@@ -307,6 +309,7 @@ TEST_CASE("mask a bidirectional signal", "[signals][adaptors]")
         auto s = mask(direct(x), false);
         REQUIRE(!signal_has_value(s));
         REQUIRE(!signal_ready_to_write(s));
+        REQUIRE(s.value_id() == no_id);
     }
 }
 
@@ -314,7 +317,8 @@ TEST_CASE("mask a read-only signal", "[signals][adaptors]")
 {
     {
         int x = 1;
-        auto s = mask(value(x), true);
+        auto d = value(x);
+        auto s = mask(d, true);
 
         typedef decltype(s) signal_t;
         REQUIRE((std::is_same<signal_t::value_type, int>::value));
@@ -323,11 +327,13 @@ TEST_CASE("mask a read-only signal", "[signals][adaptors]")
 
         REQUIRE(signal_has_value(s));
         REQUIRE(read_signal(s) == 1);
+        REQUIRE(s.value_id() == d.value_id());
     }
     {
         int x = 1;
         auto s = mask(value(x), false);
         REQUIRE(!signal_has_value(s));
+        REQUIRE(s.value_id() == no_id);
     }
 }
 
