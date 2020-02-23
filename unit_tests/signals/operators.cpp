@@ -218,9 +218,9 @@ TEST_CASE("field signal", "[signals][operators]")
     struct foo
     {
         int x;
-        double y;
+        std::string y;
     };
-    foo f = {2, 1.5};
+    foo f = {2, "1.5"};
     auto f_signal = lambda_bidirectional(
         always_has_value,
         [&]() { return f; },
@@ -243,18 +243,18 @@ TEST_CASE("field signal", "[signals][operators]")
     auto y_signal = alia_field(f_signal, y);
 
     typedef decltype(y_signal) y_signal_t;
-    REQUIRE((std::is_same<y_signal_t::value_type, double>::value));
+    REQUIRE((std::is_same<y_signal_t::value_type, std::string>::value));
     REQUIRE(signal_is_readable<y_signal_t>::value);
     REQUIRE(signal_is_writable<y_signal_t>::value);
 
     REQUIRE(y_signal.value_id() != x_signal.value_id());
     REQUIRE(signal_has_value(y_signal));
-    REQUIRE(read_signal(y_signal) == 1.5);
+    REQUIRE(read_signal(y_signal) == "1.5");
     REQUIRE(signal_ready_to_write(y_signal));
     captured_id original_y_id = y_signal.value_id();
-    write_signal(y_signal, 0.5);
+    write_signal(y_signal, "0.5");
     REQUIRE(y_signal.value_id() != original_y_id.get());
-    REQUIRE(f.y == 0.5);
+    REQUIRE(f.y == "0.5");
 }
 
 struct my_array
@@ -439,4 +439,14 @@ TEST_CASE("custom by-value subscript", "[signals][operators]")
 
     REQUIRE(signal_has_value(s));
     REQUIRE(read_signal(s) == 3);
+}
+
+TEST_CASE("empty subscript", "[signals][operators]")
+{
+    using namespace alia;
+
+    auto s = empty<std::map<int, int>>()[value(2)];
+
+    REQUIRE(!signal_has_value(s));
+    REQUIRE(s.value_id() == no_id);
 }
