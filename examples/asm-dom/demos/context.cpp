@@ -10,13 +10,13 @@ namespace custom_components {
 // do so here.
 ALIA_DEFINE_COMPONENT_TYPE(username_tag, readable<std::string>&)
 
-// Define our app context type by extending the asm-dom context type.
+// Define our app's context type by extending the asm-dom context type.
 typedef extend_context_type_t<dom::context, username_tag> app_context;
 
 // The functions that define the internal portions of our app UI use
-// app_context and have automatic access to the username...
+// app_context and have access to the username via that context...
 void
-do_app_subsection_ui(app_context ctx)
+do_internal_app_ui(app_context ctx)
 {
     do_text(ctx, printf(ctx, "Welcome, %s!", get_component<username_tag>(ctx)));
 }
@@ -30,12 +30,12 @@ do_main_app_ui(dom::context ctx)
     // (Maybe in a real app this wouldn't be hardcoded...)
     readable<std::string> username = value("tmadden");
 
-    // Set up the app context to include the username.
+    // Extend the app context to include the username.
     app_context app_ctx
         = extend_context<username_tag>(copy_context(ctx), username);
 
-    // Pass that context along to the various parts of the app UI...
-    do_app_subsection_ui(app_ctx);
+    // Pass that context along to the internal portions of the app UI...
+    do_internal_app_ui(app_ctx);
 }
 
 /// [custom-components]
@@ -67,7 +67,7 @@ typedef extend_context_type_t<dom::context, username_tag, api_key_tag>
     app_context;
 
 void
-do_app_subsection_ui(app_context ctx)
+do_internal_app_ui(app_context ctx)
 {
     do_text(ctx, printf(ctx, "Welcome, %s!", get_component<username_tag>(ctx)));
     do_text(ctx,
@@ -87,7 +87,7 @@ do_main_app_ui(dom::context ctx)
             extend_context<username_tag>(copy_context(ctx), username),
             api_key);
 
-    do_app_subsection_ui(app_ctx);
+    do_internal_app_ui(app_ctx);
 }
 
 /// [multiple-custom-components]
