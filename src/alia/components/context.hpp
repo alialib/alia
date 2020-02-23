@@ -58,6 +58,19 @@ make_context(
     event_traversal& event,
     data_traversal& data);
 
+template<class Tag, class Context, class Data>
+auto
+extend_context(Context ctx, Data& data)
+{
+    context_component_storage* new_storage;
+    get_data(ctx, &new_storage);
+
+    Context new_ctx(new_storage);
+    *new_storage = *ctx.storage;
+
+    return add_component<Tag>(new_ctx, std::ref(data));
+}
+
 template<class Context>
 event_traversal&
 get_event_traversal(Context ctx)
