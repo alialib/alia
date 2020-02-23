@@ -416,13 +416,13 @@ make_empty_component_collection(Storage* storage)
 // new collection shares the storage of the original, so this should be used
 // with caution.
 //
-template<class Tag, class Collection>
+template<class Tag, class Collection, class Data>
 add_component_type_t<Collection, Tag>
-add_component(Collection collection, typename Tag::data_type data)
+add_component(Collection collection, Data&& data)
 {
     auto* storage = collection.storage;
     // Add the new data to the storage object.
-    storage->template add<Tag>(data);
+    storage->template add<Tag>(std::forward<Data&&>(data));
     // Create a collection with the proper type to reference the storage.
     return add_component_type_t<Collection, Tag>(storage);
 }
@@ -531,7 +531,7 @@ struct component_caster<T&, T>
 // enabled, this generates a compile-time error if :Tag isn't contained
 // in :collection.
 template<class Tag, class Collection>
-auto
+decltype(auto)
 get_component(Collection collection)
 {
 #ifdef ALIA_STATIC_COMPONENT_CHECKING

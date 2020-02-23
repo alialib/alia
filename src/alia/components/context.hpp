@@ -7,13 +7,13 @@
 namespace alia {
 
 struct data_traversal;
-ALIA_DEFINE_COMPONENT_TYPE(data_traversal_tag, data_traversal*)
+ALIA_DEFINE_COMPONENT_TYPE(data_traversal_tag, data_traversal&)
 
 struct event_traversal;
-ALIA_DEFINE_COMPONENT_TYPE(event_traversal_tag, event_traversal*)
+ALIA_DEFINE_COMPONENT_TYPE(event_traversal_tag, event_traversal&)
 
 struct system;
-ALIA_DEFINE_COMPONENT_TYPE(system_tag, system*)
+ALIA_DEFINE_COMPONENT_TYPE(system_tag, system&)
 
 // the structure we use to store components - It provides direct storage of the
 // commonly-used components in the core of alia.
@@ -26,7 +26,7 @@ struct context_component_storage
     data_traversal* data = nullptr;
 
     // generic storage for other components
-    generic_component_storage<any_pointer> generic;
+    generic_component_storage<any_ref> generic;
 
     ALIA_IMPLEMENT_STORAGE_COMPONENT_ACCESSORS(context_component_storage)
 };
@@ -54,23 +54,25 @@ typedef add_component_type_t<dataless_context, data_traversal_tag> context;
 context
 make_context(
     context_component_storage* storage,
-    system* sys,
-    event_traversal* event,
-    data_traversal* data);
+    system& sys,
+    event_traversal& event,
+    data_traversal& data);
 
 template<class Context>
 event_traversal&
 get_event_traversal(Context ctx)
 {
-    return *get_component<event_traversal_tag>(ctx);
+    return get_component<event_traversal_tag>(ctx);
 }
 
 template<class Context>
 data_traversal&
 get_data_traversal(Context ctx)
 {
-    return *get_component<data_traversal_tag>(ctx);
+    return get_component<data_traversal_tag>(ctx);
 }
+
+// And some functions for accessing the context/system timing capabilities...
 
 // Currently, alia's only sense of time is that of a monotonically increasing
 // millisecond counter. It's understood to have an arbitrary start point and is
