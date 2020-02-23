@@ -19,19 +19,26 @@ TEST_CASE("simple transform", "[signals][higher_order]")
 
     alia::system sys;
 
-    auto controller = [&](context ctx) {
-        for_each(
-            ctx,
-            transform(
+    captured_id transform_id;
+    auto controller = [&](int offset) {
+        return [&, offset](context ctx) {
+            auto transformed_signal = transform(
+                ctx, direct(container), [&](context ctx, readable<string> s) {
+                    return lazy_apply(alia_mem_fn(length), s) + value(offset);
+                });
+            transform_id.capture(transformed_signal.value_id());
+            for_each(
                 ctx,
-                direct(container),
-                [&](context ctx, readable<string> s) {
-                    return lazy_apply(alia_mem_fn(length), s) + value(1);
-                }),
-            [&](context ctx, readable<size_t> value) {
-                do_text(ctx, apply(ctx, alia_lambdify(std::to_string), value));
-            });
+                transformed_signal,
+                [&](context ctx, readable<size_t> value) {
+                    do_text(
+                        ctx, apply(ctx, alia_lambdify(std::to_string), value));
+                });
+        };
     };
 
-    check_traversal(sys, controller, "4;6;2;");
+    check_traversal(sys, controller(1), "4;6;2;");
+    captured_id last_id = transform_id;
+    check_traversal(sys, controller(0), "3;5;1;");
+    REQUIRE(last_id != transform_id);
 }
