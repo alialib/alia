@@ -62,7 +62,7 @@ do_input_(dom::context ctx, bidirectional<string> value)
         }
     }
 
-    auto* system = get_component<system_tag>(ctx);
+    auto* system = &get_component<system_tag>(ctx);
 
     handle_event<refresh_event>(ctx, [=](auto ctx, auto& e) {
         asmdom::Attrs attrs;
@@ -106,7 +106,7 @@ do_button_(dom::context ctx, readable<std::string> text, action<> on_click)
 {
     auto id = get_node_id(ctx);
     auto routable_id = make_routable_node_id(ctx, id);
-    auto* system = get_component<system_tag>(ctx);
+    auto* system = &get_component<system_tag>(ctx);
     handle_event<refresh_event>(ctx, [=](auto ctx, auto& e) {
         if (signal_has_value(text))
         {
