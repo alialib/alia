@@ -62,7 +62,8 @@ TEST_CASE("context", "[components][context]")
     REQUIRE(&get_component<event_traversal_tag>(ctx) == &event);
 
     other_traversal other;
-    auto extended = extend_context<other_traversal_tag>(ctx, other);
+    extend_context_type_t<context, other_traversal_tag> extended
+        = extend_context<other_traversal_tag>(copy_context(ctx), other);
     REQUIRE(has_component<data_traversal_tag>(extended));
     REQUIRE(&get_component<data_traversal_tag>(extended) == &data);
     REQUIRE(has_component<event_traversal_tag>(extended));
