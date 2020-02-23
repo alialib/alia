@@ -49,6 +49,8 @@ TEST_CASE("context", "[components][context]")
     data_traversal data;
     event_traversal event;
 
+    scoped_data_traversal sdt(sys.data, data);
+
     context ctx = make_context(&storage, sys, event, data);
 
     REQUIRE(has_component<data_traversal_tag>(ctx));
@@ -60,7 +62,11 @@ TEST_CASE("context", "[components][context]")
     REQUIRE(&get_component<event_traversal_tag>(ctx) == &event);
 
     other_traversal other;
-    auto extended = add_component<other_traversal_tag>(ctx, std::ref(other));
+    auto extended = extend_context<other_traversal_tag>(ctx, other);
+    REQUIRE(has_component<data_traversal_tag>(extended));
+    REQUIRE(&get_component<data_traversal_tag>(extended) == &data);
+    REQUIRE(has_component<event_traversal_tag>(extended));
+    REQUIRE(&get_component<event_traversal_tag>(extended) == &event);
     REQUIRE(has_component<other_traversal_tag>(extended));
     REQUIRE(&get_component<other_traversal_tag>(extended) == &other);
 }
