@@ -305,6 +305,29 @@ struct add_component_type<
 template<class Collection, class Tag>
 using add_component_type_t = typename add_component_type<Collection, Tag>::type;
 
+// add_component_types<Collection,Tag...>::type gives the type that results
+// from extending :Collection with the components defined by the given list of
+// tags.
+template<class Collection, class... Tag>
+struct add_component_types
+{
+};
+template<class Collection>
+struct add_component_types<Collection>
+{
+    typedef Collection type;
+};
+template<class Collection, class Tag, class... Rest>
+struct add_component_types<Collection, Tag, Rest...>
+    : add_component_types<
+          typename add_component_type<Collection, Tag>::type,
+          Rest...>
+{
+};
+template<class Collection, class... Tag>
+using add_component_types_t =
+    typename add_component_types<Collection, Tag...>::type;
+
 // remove_component_type<Collection,Tag>::type yields the type that results
 // from removing the component associated with :Tag from :Collection.
 template<class Collection, class Tag>
@@ -375,6 +398,18 @@ struct add_component_type
 };
 template<class Collection, class Tag>
 using add_component_type_t = typename add_component_type<Collection, Tag>::type;
+
+// add_component_types<Collection,Tag...>::type gives the type that results
+// from extending :Collection with the components defined by the given list of
+// tags.
+template<class Collection, class... Tag>
+struct add_component_types
+{
+    typedef Collection type;
+};
+template<class Collection, class... Tag>
+using add_component_types_t =
+    typename add_component_types<Collection, Tag...>::type;
 
 // remove_component_type<Collection,Tag>::type yields the type that results from
 // removing the component associated with :Tag from :Collection.
