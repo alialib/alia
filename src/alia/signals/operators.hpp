@@ -624,7 +624,8 @@ template<class Derived, class Value, class Direction>
 template<class Index>
 auto signal_base<Derived, Value, Direction>::operator[](Index index) const
 {
-    return make_subscript_signal(static_cast<Derived const&>(*this), index);
+    return make_subscript_signal(
+        static_cast<Derived const&>(*this), signalize(index));
 }
 
 } // namespace alia
