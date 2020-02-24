@@ -41,8 +41,6 @@ ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(>=)
 
 #undef ALIA_DEFINE_BINARY_SIGNAL_OPERATOR
 
-#ifndef ALIA_STRICT_OPERATORS
-
 #define ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(op)                         \
     template<                                                                  \
         class A,                                                               \
@@ -81,10 +79,6 @@ ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(<)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(<=)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(>)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(>=)
-
-#undef ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR
-
-#endif
 
 #define ALIA_DEFINE_UNARY_SIGNAL_OPERATOR(op)                                  \
     template<class A, std::enable_if_t<is_signal_type<A>::value, int> = 0>     \
@@ -151,8 +145,6 @@ operator||(A const& a, B const& b)
     return logical_or_signal<A, B>(a, b);
 }
 
-#ifndef ALIA_STRICT_OPERATORS
-
 template<
     class A,
     class B,
@@ -175,8 +167,6 @@ operator||(A const& a, B const& b)
 {
     return value(a) || b;
 }
-
-#endif
 
 template<class Arg0, class Arg1>
 struct logical_and_signal
@@ -229,8 +219,6 @@ operator&&(A const& a, B const& b)
     return logical_and_signal<A, B>(a, b);
 }
 
-#ifndef ALIA_STRICT_OPERATORS
-
 template<
     class A,
     class B,
@@ -253,8 +241,6 @@ operator&&(A const& a, B const& b)
 {
     return value(a) && b;
 }
-
-#endif
 
 // This is the equivalent of the ternary operator (or std::conditional) for
 // signals.
