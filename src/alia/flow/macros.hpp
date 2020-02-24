@@ -102,10 +102,6 @@ read_condition(Signal const& x)
     return read_signal(x);
 }
 
-// ALIA_STRICT_CONDITIONALS disables the definitions that allow non-signals to
-// be used in if/else/switch macros.
-#ifndef ALIA_STRICT_CONDITIONALS
-
 // condition_is_true(x) evaluates x in a boolean context.
 template<class T>
 std::enable_if_t<!is_signal_type<T>::value, bool>
@@ -137,8 +133,6 @@ read_condition(T const& x)
 {
     return x;
 }
-
-#endif
 
 // if, else_if, else
 
