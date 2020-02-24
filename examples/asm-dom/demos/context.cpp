@@ -57,7 +57,6 @@ namespace multiple_custom_components {
 
 // clang-format off
 /// [multiple-custom-components]
-
 ALIA_DEFINE_COMPONENT_TYPE(username_tag, readable<std::string>&)
 ALIA_DEFINE_COMPONENT_TYPE(api_key_tag, readable<std::string>&)
 
@@ -87,7 +86,6 @@ do_main_app_ui(dom::context ctx)
 
     do_internal_app_ui(app_ctx);
 }
-
 /// [multiple-custom-components]
 // clang-format on
 
