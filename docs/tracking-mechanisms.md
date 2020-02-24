@@ -23,7 +23,8 @@ is a simple example that makes use of all three:
    C++ keywords that they mimic. However, the uppercase form makes it more
    obvious to readers (and clang-format) that the macros are indeed macros.
    Ultimately, it's up to you which style you prefer. If you want to be strict
-   in your project, you can disable the lowercase form in the configuration.
+   in your project, you can disable the lowercase form in [the
+   configuration](configuration.md).
 
 [source](numerical.cpp ':include :fragment=analysis')
 
