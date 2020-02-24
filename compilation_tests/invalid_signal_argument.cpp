@@ -3,12 +3,12 @@
 using namespace alia;
 
 void
-f_readable(readable<int> x)
+f_readable(readable<int>)
 {
 }
 
 void
-f_bidirectional(bidirectional<int> x)
+f_bidirectional(bidirectional<int>)
 {
 }
 

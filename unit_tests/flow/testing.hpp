@@ -8,7 +8,7 @@
 
 #include <sstream>
 
-#include <catch.hpp>
+#include <testing.hpp>
 
 using namespace alia;
 

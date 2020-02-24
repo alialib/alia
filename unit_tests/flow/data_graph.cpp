@@ -4,7 +4,7 @@
 #include <alia/flow/macros.hpp>
 #include <alia/signals/basic.hpp>
 
-#include "flow/testing.hpp"
+#include <flow/testing.hpp>
 
 TEST_CASE("basic data traversal", "[flow][data_graph]")
 {

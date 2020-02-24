@@ -1,6 +1,6 @@
 #include <alia/common.hpp>
 
-#include <catch.hpp>
+#include <testing.hpp>
 
 using namespace alia;
 

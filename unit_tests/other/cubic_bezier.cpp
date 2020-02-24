@@ -1,6 +1,6 @@
 #include <alia/other/cubic_bezier.hpp>
 
-#include <catch.hpp>
+#include <testing.hpp>
 
 using namespace alia;
 

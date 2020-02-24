@@ -1,6 +1,6 @@
 #include <alia/signals/utilities.hpp>
 
-#include <catch.hpp>
+#include <testing.hpp>
 
 #include <alia/signals/basic.hpp>
 
@@ -54,7 +54,7 @@ struct normal_regular_signal
         return false;
     }
     void
-    write(int const& value) const
+    write(int const&) const
     {
     }
 };
@@ -130,7 +130,7 @@ struct preferred_id_test_signal : preferred_id_signal<
         return false;
     }
     void
-    write(Value const& value) const
+    write(Value const&) const
     {
     }
     simple_id<std::string>

@@ -173,8 +173,7 @@ make_apply_signal(apply_result_data<Value>& data)
 
 template<class Result>
 void
-process_apply_args(
-    context ctx, apply_result_data<Result>& data, bool& args_ready)
+process_apply_args(context, apply_result_data<Result>&, bool&)
 {
 }
 template<class Result, class Arg, class... Rest>

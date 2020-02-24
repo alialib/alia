@@ -1,6 +1,6 @@
 #include <alia/signals/core.hpp>
 
-#include <catch.hpp>
+#include <testing.hpp>
 
 #include <alia/signals/basic.hpp>
 
@@ -128,17 +128,17 @@ TEST_CASE("signal_ref", "[signals][core]")
 }
 
 static void
-f_readable(alia::readable<int> x)
+f_readable(alia::readable<int>)
 {
 }
 
 static void
-f_writable(alia::writable<int> x)
+f_writable(alia::writable<int>)
 {
 }
 
 static void
-f_bidirectional(alia::bidirectional<int> x)
+f_bidirectional(alia::bidirectional<int>)
 {
 }
 

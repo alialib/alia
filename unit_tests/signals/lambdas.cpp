@@ -1,6 +1,6 @@
 #include <alia/signals/lambdas.hpp>
 
-#include <catch.hpp>
+#include <testing.hpp>
 
 using namespace alia;
 

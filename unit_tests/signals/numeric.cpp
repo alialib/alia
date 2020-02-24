@@ -1,6 +1,6 @@
 #include <alia/signals/numeric.hpp>
 
-#include <catch.hpp>
+#include <testing.hpp>
 
 #include <alia/signals/basic.hpp>
 #include <alia/signals/utilities.hpp>

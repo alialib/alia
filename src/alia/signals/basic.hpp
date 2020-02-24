@@ -48,7 +48,7 @@ struct empty_signal : signal<empty_signal<Value>, Value, bidirectional_signal>
     // Since this is never ready to write, write() should never be called.
     // LCOV_EXCL_START
     void
-    write(Value const& value) const
+    write(Value const&) const
     {
     }
     // LCOV_EXCL_STOP
@@ -124,7 +124,7 @@ value(char const* text)
 
 // literal operators
 namespace literals {
-inline string_literal_signal operator"" _a(char const* s, size_t n)
+inline string_literal_signal operator"" _a(char const* s, size_t)
 {
     return string_literal_signal(s);
 }

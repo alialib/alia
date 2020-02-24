@@ -12,7 +12,7 @@
 #include <alia/signals/lambdas.hpp>
 #include <alia/signals/operators.hpp>
 
-#include <catch.hpp>
+#include <testing.hpp>
 
 #include "traversal.hpp"
 
@@ -305,7 +305,7 @@ TEST_CASE("writing string list items", "[flow][for_each]")
         for_each(
             ctx,
             direct(container),
-            [&](context ctx, bidirectional<string> const& item) {
+            [&](context, bidirectional<string> const& item) {
                 write_signal(item, "boo");
             });
     };

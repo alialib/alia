@@ -1,6 +1,6 @@
 #include <alia/components/system.hpp>
 
-#include <catch.hpp>
+#include <testing.hpp>
 
 #include <thread>
 
