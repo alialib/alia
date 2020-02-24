@@ -191,8 +191,6 @@ operator<<=(Action const& action, Signal const& signal)
         action, signal);
 }
 
-#ifndef ALIA_STRICT_OPERATORS
-
 template<
     class Action,
     class Value,
@@ -204,8 +202,6 @@ operator<<=(Action const& action, Value const& v)
 {
     return action <<= value(v);
 }
-
-#endif
 
 // operator <<=
 //
@@ -253,8 +249,6 @@ operator<<=(Sink sink, Source source)
     return copy_action<Sink, Source>(sink, source);
 }
 
-#ifndef ALIA_STRICT_OPERATORS
-
 template<
     class Sink,
     class Source,
@@ -266,8 +260,6 @@ operator<<=(Sink sink, Source source)
 {
     return sink <<= value(source);
 }
-
-#endif
 
 // For most compound assignment operators (e.g., +=), a += b, where :a and
 // :b are signals, creates an action that sets :a equal to :a + :b.
@@ -296,8 +288,6 @@ ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(|=, |)
 
 #undef ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR
 
-#ifndef ALIA_STRICT_OPERATORS
-
 #define ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(                      \
     assignment_form, normal_form)                                              \
     template<                                                                  \
@@ -320,8 +310,6 @@ ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(^=, ^)
 ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(%=, %)
 ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(&=, &)
 ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(|=, |)
-
-#endif
 
 // The increment and decrement operators work similarly.
 
