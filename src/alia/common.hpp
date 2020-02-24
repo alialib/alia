@@ -85,7 +85,7 @@ using void_t = typename make_void<Ts...>::type;
 // version of f that can be passed as an argument and still allows normal
 // overload resolution.
 #define ALIA_LAMBDIFY(f) [](auto&&... args) { return f(args...); }
-#ifdef ALIA_LOWERCASE_MACROS
+#ifndef ALIA_STRICT_MACROS
 #define alia_lambdify(f) ALIA_LAMBDIFY(f)
 #endif
 
