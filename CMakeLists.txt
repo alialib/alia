@@ -75,56 +75,19 @@ set(EXTERNAL_LIBS ${CONAN_LIBS})
 
 fips_include_directories(${PROJECT_SOURCE_DIR}/src)
 
-# MACRO - Add the given linker options on anything that gets linked.
-macro(add_link_options )
-    string(REPLACE ";" " " OPTIONS "${ARGV}")
-    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} ${OPTIONS}")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OPTIONS}")
-    set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} ${OPTIONS}")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${OPTIONS}")
-endmacro()
-
-# MACRO - Add the given linker options for executables.
-macro(add_exe_link_options )
-    string(REPLACE ";" " " OPTIONS "${ARGV}")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OPTIONS}")
-endmacro()
-
 # Enable a high level of compiler warnings and treat them as errors.
 if(FIPS_GCC)
     add_compile_options(-Wall -Werror)
     # Disable warnings that are too strict.
-    # Warnings about suggested parentheses occur naturally when using Catch.
-    add_compile_options(-Wno-parentheses)
-    # unused function parameters
-    add_compile_options(-Wno-unused-function)
 elseif(FIPS_MSVC)
     # First strip out the old warning level.
     string(REPLACE "/W3" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
     add_compile_options(/W4 /WX)
-    # Disable warnings that are too strict.
-    # "unreferenced formal parameter"
-    add_compile_options(/wd4100)
-    # "declaration hides previous local declaration"
-    add_compile_options(/wd4456)
-    # "unreferenced local function has been removed"
+    # Disable "unreferenced local function has been removed".
+    # (As far as I can tell, this warning seems to be broken.)
     add_compile_options(/wd4505)
-    # "declaration of <variable> hides function parameter"
-    add_compile_options(/wd4457)
-    # warnings about functions that are potentially insecure
-    add_definitions(/D_CRT_SECURE_NO_WARNINGS)
-    # Also suppress linker warnings about missing .pdb files that seem to
-    # inevitably creep in.
-    add_link_options(/ignore:4099)
 elseif(FIPS_CLANG)
     add_compile_options(-Wall -Werror)
-    add_compile_options(-Wno-logical-op-parentheses)
-endif()
-
-# Enable "big objects" for Visual C++ and try to speed up builds.
-if(FIPS_MSVC)
-    add_compile_options(/bigobj)
-    add_exe_link_options(/Debug:FASTLINK)
 endif()
 
 # Set build options for instrumenting test coverage.
@@ -132,7 +95,8 @@ if(FIPS_CLANG AND CMAKE_BUILD_TYPE STREQUAL "Debug")
     message(STATUS "Enabling gcov support")
     add_compile_options(-DLLVM_USE_LINKER=gold -fprofile-instr-generate
                         -fcoverage-mapping)
-    add_exe_link_options(-fprofile-instr-generate -fcoverage-mapping)
+    string(APPEND CMAKE_EXE_LINKER_FLAGS
+           " -fprofile-instr-generate -fcoverage-mapping")
 endif()
 
 # Add the alia library.

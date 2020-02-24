@@ -1,6 +1,6 @@
 #include <alia/signals/temporal.hpp>
 
-#include <catch.hpp>
+#include <testing.hpp>
 
 #include <complex>
 

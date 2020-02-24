@@ -40,7 +40,7 @@ struct is_vector_like<
 
 template<class Item>
 auto
-get_alia_id(Item const& item)
+get_alia_id(Item const&)
 {
     return no_id;
 }

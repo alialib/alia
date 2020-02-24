@@ -103,7 +103,7 @@ struct writability_faker : signal<
     // Since this is only faking writability, write() should never be called.
     // LCOV_EXCL_START
     void
-    write(typename Wrapped::value_type const& value) const
+    write(typename Wrapped::value_type const&) const
     {
     }
     // LCOV_EXCL_STOP

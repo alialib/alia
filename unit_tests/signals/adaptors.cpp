@@ -7,7 +7,7 @@
 #include <alia/signals/lambdas.hpp>
 #include <alia/signals/operators.hpp>
 
-#include <catch.hpp>
+#include <testing.hpp>
 
 using namespace alia;
 
@@ -64,7 +64,7 @@ TEST_CASE("fake_writability", "[signals][adaptors]")
             [&]() { return true; },
             [&]() { return 0; },
             [&]() { return true; },
-            [&](int x) {}));
+            [&](int) {}));
 
         typedef decltype(s) signal_t;
         REQUIRE(signal_is_readable<signal_t>::value);

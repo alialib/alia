@@ -3,7 +3,7 @@
 
 #include <alia/signals/basic.hpp>
 
-#include "flow/testing.hpp"
+#include <flow/testing.hpp>
 
 TEST_CASE("condition_is_true/false/etc", "[flow][macros]")
 {

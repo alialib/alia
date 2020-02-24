@@ -2,7 +2,7 @@
 
 #include <alia/signals/text.hpp>
 
-#include <catch.hpp>
+#include <testing.hpp>
 
 #include <alia/signals/basic.hpp>
 
