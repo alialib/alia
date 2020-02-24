@@ -20,12 +20,25 @@ more likely it is that you should just create a custom signal type...
 
 <dl>
 
+<dt>lambda_reader(read)</dt><dd>
+
+Creates a read-only signal that always has a value and whose value is determined
+by calling `read` (which doesn't take any arguments).
+
+The following is also equivalent to `value(12)`:
+
+```cpp
+lambda_reader([]() { return 12; });
+```
+
+<dl>
+
 <dt>lambda_reader(has_value, read)</dt><dd>
 
-Creates a read-only signal whose value is determined by calling the
-`has_value` and `read` lambdas. (Neither takes any arguments.)
+Creates a read-only signal whose value is determined by calling `has_value` and
+`read`. (Neither takes any arguments.)
 
-The following is equivalent to `value(12)`:
+The following is also equivalent to `value(12)`:
 
 ```cpp
 lambda_reader(always_has_value, []() { return 12; });

@@ -9,6 +9,42 @@
 
 namespace alia {
 
+// lambda_reader(read) creates a read-only signal whose value is determined by
+// calling :read.
+template<class Value, class Read>
+struct simple_lambda_reader_signal
+    : regular_signal<
+          simple_lambda_reader_signal<Value, Read>,
+          Value,
+          read_only_signal>
+{
+    simple_lambda_reader_signal(Read read) : read_(read)
+    {
+    }
+    bool
+    has_value() const
+    {
+        return true;
+    }
+    Value const&
+    read() const
+    {
+        value_ = read_();
+        return value_;
+    }
+
+ private:
+    Read read_;
+    mutable decltype(read_()) value_;
+};
+template<class Read>
+auto
+lambda_reader(Read read)
+{
+    return simple_lambda_reader_signal<std::decay_t<decltype(read())>, Read>(
+        read);
+}
+
 // lambda_reader(has_value, read) creates a read-only signal whose value is
 // determined by calling :has_value and :read.
 template<class Value, class HasValue, class Read>
