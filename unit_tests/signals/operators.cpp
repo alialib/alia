@@ -356,6 +356,23 @@ TEST_CASE("read-only subscript", "[signals][operators]")
     REQUIRE(read_signal(s) == 0);
 }
 
+TEST_CASE("subscript with raw index", "[signals][operators]")
+{
+    using namespace alia;
+
+    auto c = std::vector<int>{2, 0, 3};
+    auto c_signal = value(c);
+    auto s = c_signal[1];
+
+    typedef decltype(s) signal_t;
+    REQUIRE((std::is_same<signal_t::value_type, int>::value));
+    REQUIRE(signal_is_readable<signal_t>::value);
+    REQUIRE(!signal_is_writable<signal_t>::value);
+
+    REQUIRE(signal_has_value(s));
+    REQUIRE(read_signal(s) == 0);
+}
+
 TEST_CASE("vector<bool> subscript", "[signals][operators]")
 {
     using namespace alia;
