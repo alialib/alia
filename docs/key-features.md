@@ -41,10 +41,6 @@ the sum.
 The Data Graph
 --------------
 
-<script>
-    init_alia_demos(['addition-ui', 'addition-analysis']);
-</script>
-
 As seen in the 'Hello, World!' example, application code in alia is expressed as
 functions that declare the presence of objects in the UI (or other presentation
 layer). Whenever the UI needs to be updated, the application essentially gives a
