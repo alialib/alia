@@ -3,7 +3,6 @@
 namespace custom_components {
 
 /// [custom-components]
-
 // Define our username "component".
 // At the moment, all context components must be references, so although we
 // wouldn't normally use a reference for a readable<std::string>, we have to
@@ -37,7 +36,6 @@ do_main_app_ui(dom::context ctx)
     // Pass that context along to the internal portions of the app UI...
     do_internal_app_ui(app_ctx);
 }
-
 /// [custom-components]
 
 void
