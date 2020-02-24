@@ -1,7 +1,6 @@
 #ifndef DEMO_HPP
 #define DEMO_HPP
 
-#define ALIA_LOWERCASE_MACROS
 #include "alia.hpp"
 
 #include "dom.hpp"
