@@ -4,7 +4,7 @@
 
 #include <alia/components/storage.hpp>
 
-#include <catch.hpp>
+#include <testing.hpp>
 
 using namespace alia;
 

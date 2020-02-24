@@ -100,8 +100,7 @@ route_event(system& sys, event_traversal& traversal, routing_region* target)
     }
 }
 
-void
-abort_traversal(dataless_context ctx)
+void abort_traversal(dataless_context)
 {
     throw traversal_aborted();
 }

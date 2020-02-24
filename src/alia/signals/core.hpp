@@ -165,7 +165,7 @@ struct signal<Derived, Value, read_only_signal>
         return false;
     }
     void
-    write(Value const& value) const
+    write(Value const&) const
     {
     }
     // LCOV_EXCL_STOP

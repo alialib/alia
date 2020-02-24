@@ -572,10 +572,7 @@ write_subscript(
 
 template<class ContainerSignal, class IndexSignal, class Value>
 std::enable_if_t<!signal_is_writable<ContainerSignal>::value>
-write_subscript(
-    ContainerSignal const& container,
-    IndexSignal const& index,
-    Value const& value)
+write_subscript(ContainerSignal const&, IndexSignal const&, Value const&)
 {
 }
 

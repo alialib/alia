@@ -2,7 +2,7 @@
 
 #include <alia/signals/basic.hpp>
 
-#include <catch.hpp>
+#include <testing.hpp>
 
 using namespace alia;
 
@@ -229,6 +229,6 @@ TEST_CASE("action binding", "[flow][actions]")
     perform_action(c);
     REQUIRE(x == -1);
 
-    REQUIRE(!(lambda_action([]() { return false; }, [&](int x) {}) <<= value(0))
+    REQUIRE(!(lambda_action([]() { return false; }, [&](int) {}) <<= value(0))
                  .is_ready());
 }

@@ -2,7 +2,7 @@
 
 #include <alia/signals/higher_order.hpp>
 
-#include <catch.hpp>
+#include <testing.hpp>
 
 #include <alia/flow/for_each.hpp>
 #include <alia/signals/application.hpp>
@@ -23,7 +23,7 @@ TEST_CASE("simple transform", "[signals][higher_order]")
     auto controller = [&](int offset) {
         return [&, offset](context ctx) {
             auto transformed_signal = transform(
-                ctx, direct(container), [&](context ctx, readable<string> s) {
+                ctx, direct(container), [&](context, readable<string> s) {
                     return lazy_apply(alia_mem_fn(length), s) + value(offset);
                 });
             transform_id.capture(transformed_signal.value_id());

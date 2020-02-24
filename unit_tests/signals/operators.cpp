@@ -4,7 +4,7 @@
 
 #include <map>
 
-#include <catch.hpp>
+#include <testing.hpp>
 
 #include <alia/signals/basic.hpp>
 #include <alia/signals/lambdas.hpp>

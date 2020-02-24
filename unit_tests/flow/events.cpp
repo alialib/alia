@@ -2,7 +2,7 @@
 
 #include <alia/flow/events.hpp>
 
-#include <catch.hpp>
+#include <testing.hpp>
 
 #include <alia/components/system.hpp>
 #include <alia/signals/basic.hpp>
@@ -41,10 +41,9 @@ do_my_thing(my_context ctx, readable<string> label)
         }
     }
 
-    handle_targeted_event<my_event>(
-        ctx, this_id, [&](auto ctx, my_event& event) {
-            event.result = read_signal(label);
-        });
+    handle_targeted_event<my_event>(ctx, this_id, [&](auto, my_event& event) {
+        event.result = read_signal(label);
+    });
 }
 
 } // namespace

@@ -2,7 +2,7 @@
 
 #include <alia/signals/application.hpp>
 
-#include <catch.hpp>
+#include <testing.hpp>
 
 #include <alia/signals/basic.hpp>
 
@@ -137,7 +137,7 @@ TEST_CASE("unready apply", "[signals][application]")
 
 TEST_CASE("failed apply", "[signals][application]")
 {
-    auto f = [&](int x, int y) -> int { throw "failed"; };
+    auto f = [&](int, int) -> int { throw "failed"; };
 
     {
         alia::system sys;

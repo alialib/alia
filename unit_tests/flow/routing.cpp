@@ -5,7 +5,7 @@
 #include <alia/components/system.hpp>
 #include <alia/flow/macros.hpp>
 
-#include <catch.hpp>
+#include <testing.hpp>
 
 using namespace alia;
 
@@ -56,21 +56,21 @@ struct traversal_function
 
         REQUIRE(!get_active_routing_region(ctx));
 
-        scoped_routing_region srr(ctx);
-        ALIA_IF(srr.is_relevant())
+        scoped_routing_region srr0(ctx);
+        ALIA_IF(srr0.is_relevant())
         {
             do_label(ctx, "root");
 
             ALIA_IF(n != 0)
             {
-                scoped_routing_region srr(ctx);
-                ALIA_IF(srr.is_relevant())
+                scoped_routing_region srr1(ctx);
+                ALIA_IF(srr1.is_relevant())
                 {
                     do_label(ctx, "nonzero");
 
                     {
-                        scoped_routing_region srr(ctx);
-                        ALIA_IF(srr.is_relevant())
+                        scoped_routing_region srr2(ctx);
+                        ALIA_IF(srr2.is_relevant())
                         {
                             do_label(ctx, "deep");
                         }

@@ -490,31 +490,40 @@ remove_component(Collection collection)
 // With this version, you supply a new storage object, and the function uses it
 // if needed to ensure that the original collection's storage is left untouched.
 //
+#ifdef ALIA_STATIC_COMPONENT_CHECKING
+template<class Tag, class Collection, class Storage>
+remove_component_type_t<Collection, Tag>
+remove_component(Collection collection, Storage*)
+{
+    return remove_component_type_t<Collection, Tag>(collection.storage);
+}
+#else
 template<class Tag, class Collection, class Storage>
 remove_component_type_t<Collection, Tag>
 remove_component(Collection collection, Storage* new_storage)
 {
-#ifdef ALIA_STATIC_COMPONENT_CHECKING
-    return remove_component_type_t<Collection, Tag>(collection.storage);
-#else
     *new_storage = *collection.storage;
     new_storage->template remove<Tag>();
     return remove_component_type_t<Collection, Tag>(new_storage);
-#endif
 }
+#endif
 
 // Determine if a component is in a collection.
 // :Tag identifies the component.
+#ifdef ALIA_STATIC_COMPONENT_CHECKING
+template<class Tag, class Collection>
+bool has_component(Collection)
+{
+    return detail::component_collection_contains_tag<Collection, Tag>::value;
+}
+#else
 template<class Tag, class Collection>
 bool
 has_component(Collection collection)
 {
-#ifdef ALIA_STATIC_COMPONENT_CHECKING
-    return detail::component_collection_contains_tag<Collection, Tag>::value;
-#else
     return collection.storage->template has<Tag>();
-#endif
 }
+#endif
 
 #ifdef ALIA_DYNAMIC_COMPONENT_CHECKING
 

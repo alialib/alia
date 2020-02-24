@@ -3,7 +3,7 @@
 #include <alia/components/system.hpp>
 #include <alia/flow/events.hpp>
 
-#include <catch.hpp>
+#include <testing.hpp>
 
 using namespace alia;
 
