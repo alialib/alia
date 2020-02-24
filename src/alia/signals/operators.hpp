@@ -389,7 +389,7 @@ operator->*(
 
 // ALIA_FIELD(x, f) is equivalent to x->*T::f where T is the value type of x.
 #define ALIA_FIELD(x, f) ((x)->*&std::decay<decltype(read_signal(x))>::type::f)
-#ifdef ALIA_LOWERCASE_MACROS
+#ifndef ALIA_STRICT_MACROS
 #define alia_field(x, f) ALIA_FIELD(x, f)
 #endif
 

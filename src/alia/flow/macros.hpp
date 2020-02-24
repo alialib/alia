@@ -199,7 +199,7 @@ read_condition(T const& x)
 
 #define ALIA_ELSE ALIA_ELSE_(ctx)
 
-#ifdef ALIA_LOWERCASE_MACROS
+#ifndef ALIA_STRICT_MACROS
 #define alia_if_(ctx, condition) ALIA_IF_(ctx, condition)
 #define alia_if(condition) ALIA_IF(condition)
 #define alia_else_if_(ctx, condition) ALIA_ELSE_IF_(ctx, condition)
@@ -242,7 +242,7 @@ read_condition(T const& x)
 
 #define ALIA_DEFAULT ALIA_DEFAULT_(ctx)
 
-#ifdef ALIA_LOWERCASE_MACROS
+#ifndef ALIA_STRICT_MACROS
 #define alia_switch_(ctx, x) ALIA_SWITCH_(ctx, x)
 #define alia_switch(x) ALIA_SWITCH(x)
 #define alia_case_(ctx, c) ALIA_CASE(ctx, c)
@@ -268,7 +268,7 @@ read_condition(T const& x)
 
 #define ALIA_FOR(x) ALIA_FOR_(ctx, x)
 
-#ifdef ALIA_LOWERCASE_MACROS
+#ifndef ALIA_STRICT_MACROS
 #define alia_for_(ctx, x) ALIA_FOR_(ctx, x)
 #define alia_for(x) ALIA_FOR(x)
 #endif
@@ -290,7 +290,7 @@ read_condition(T const& x)
 
 #define ALIA_WHILE(x) ALIA_WHILE_(ctx, x)
 
-#ifdef ALIA_LOWERCASE_MACROS
+#ifndef ALIA_STRICT_MACROS
 #define alia_while_(ctx, x) ALIA_WHILE_(ctx, x)
 #define alia_while(x) ALIA_WHILE(x)
 #endif
@@ -302,7 +302,7 @@ read_condition(T const& x)
     }                                                                          \
     }
 
-#ifdef ALIA_LOWERCASE_MACROS
+#ifndef ALIA_STRICT_MACROS
 #define alia_end ALIA_END
 #endif
 
@@ -354,7 +354,7 @@ read_condition(T const& x)
 
 #define ALIA_UNTRACKED_ELSE ALIA_UNTRACKED_ELSE_(ctx)
 
-#ifdef ALIA_LOWERCASE_MACROS
+#ifndef ALIA_STRICT_MACROS
 
 #define alia_untracked_if_(ctx, condition) ALIA_UNTRACKED_IF_(ctx, condition)
 #define alia_untracked_if(condition) ALIA_UNTRACKED_IF(condition)
@@ -379,7 +379,7 @@ read_condition(T const& x)
 #define ALIA_UNTRACKED_SWITCH(expression)                                      \
     ALIA_UNTRACKED_SWITCH_(ctx, expression)
 
-#ifdef ALIA_LOWERCASE_MACROS
+#ifndef ALIA_STRICT_MACROS
 
 #define alia_untracked_switch_(ctx, x) ALIA_UNTRACKED_SWITCH_(ctx, x)
 #define alia_untracked_switch(x) ALIA_UNTRACKED_SWITCH(x)

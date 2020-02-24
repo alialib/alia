@@ -5,4 +5,8 @@
 #pragma GCC diagnostic ignored "-Wparentheses"
 #endif
 
+#ifndef ALIA_LOWERCASE_MACROS
+#define ALIA_STRICT_MACROS
+#endif
+
 #include <catch.hpp>

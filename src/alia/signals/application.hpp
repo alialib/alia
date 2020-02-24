@@ -241,7 +241,7 @@ lift(Function f)
 // passed as a function object. (It's the equivalent of std::mem_fn, but there's
 // no need to provide the type name.)
 #define ALIA_MEM_FN(m) [](auto&& x, auto&&... args) { return x.m(args...); }
-#ifdef ALIA_LOWERCASE_MACROS
+#ifndef ALIA_STRICT_MACROS
 #define alia_mem_fn(m) ALIA_MEM_FN(m)
 #endif
 
