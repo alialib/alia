@@ -9,7 +9,6 @@
 #include <string>
 
 #define ALIA_IMPLEMENTATION
-#define ALIA_LOWERCASE_MACROS
 #include "alia.hpp"
 
 #include "color.hpp"
