@@ -14,7 +14,6 @@
   - [Value Identity](value-identity.md)
   - [Custom Signals](custom-signals.md)
   - [Signals as Parameters](signals-as-parameters.md)
-  - [Time as a Signal](time-signals.md)
 
 - Control Flow
 
