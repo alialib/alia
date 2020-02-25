@@ -18,15 +18,42 @@ of `x`.
 
 </dd>
 
+<dt>fake_writability(s)</dt><dd>
+
+This essentially casts a readable signal to a bidirectional one.
+
+`fake_writability(s)`, where `s` is a signal, yields a wrapper for `s` that
+pretends to have write capabilities. It will never actually be ready to write,
+but it will type-check as a writable signal.
+
+</dd>
+
 </dl>
 
 Availability
 ------------
 
-Sometimes it's useful to provide a fallback value for a signal that isn't always
-available when we'd like it to be. This can be done with `add_fallback`:
+The following allow you to assess the availability of a signal (in signal space,
+of course):
 
 <dl>
+
+<dt>has_value(x)</dt><dd>
+
+`has_value(x)` yields a signal to a boolean which indicates whether or not `x`
+has a value. (The returned signal itself always has a value.)
+
+</dd>
+
+<dt>ready_to_write(x)</dt><dd>
+
+`ready_to_write(x)` yields a signal to a boolean that indicates whether or not
+`x` is ready to write.
+
+</dd>
+
+Sometimes it's useful to provide a fallback value for a signal that isn't always
+available when we'd like it to be:
 
 <dt>add_fallback(primary, fallback)</dt><dd>
 
