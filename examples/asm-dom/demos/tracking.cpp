@@ -47,7 +47,6 @@ namespace loop_macros_demo {
 
 // clang-format off
 /// [loop-macros-demo]
-
 struct my_record
 {
     std::string label;
@@ -128,5 +127,92 @@ init_demo(std::string dom_id)
 }
 
 static demo the_demo("loop-macros-demo", init_demo);
-
 } // namespace loop_macros_demo
+
+namespace for_each_map_demo {
+
+// clang-format off
+/// [for-each-map-demo]
+void
+do_scoreboard(
+    dom::context ctx, bidirectional<std::map<std::string, int>> scores)
+{
+    for_each(ctx, scores,
+        [](auto ctx, auto player, auto score) {
+            do_heading(ctx, "h4", player);
+            do_text(ctx, printf(ctx, "%d points", score));
+            do_button(ctx, "GOAL!", ++score);
+            do_hr(ctx);
+        });
+
+    auto new_player = get_state(ctx, string());
+    do_input(ctx, new_player);
+    do_button(ctx, "Add Player",
+        (scores[new_player] <<= mask(0, new_player != ""),
+         new_player <<= ""));
+}
+/// [for-each-map-demo]
+// clang-format on
+
+void
+init_demo(std::string dom_id)
+{
+    static alia::system the_system;
+    static dom::system the_dom;
+
+    static std::map<std::string, int> the_scores = {{"Karen", 5}, {"Tom", 2}};
+
+    initialize(the_dom, the_system, dom_id, [&](dom::context ctx) {
+        do_scoreboard(ctx, direct(the_scores));
+    });
+}
+
+static demo the_demo("for-each-map-demo", init_demo);
+
+} // namespace for_each_map_demo
+
+namespace for_each_vector_demo {
+
+// clang-format off
+/// [for-each-vector-demo]
+typedef std::pair<std::string, int> player_score;
+
+void
+do_scoreboard(dom::context ctx, bidirectional<std::vector<player_score>> scores)
+{
+    for_each(ctx, scores,
+        [](auto ctx, auto score) {
+            do_heading(ctx, "h4", alia_field(score, first));
+            do_text(ctx, printf(ctx, "%d points", alia_field(score, second)));
+            do_button(ctx, "GOAL!", ++alia_field(score, second));
+            do_hr(ctx);
+        });
+
+    auto new_player = get_state(ctx, string());
+    do_input(ctx, new_player);
+    do_button(ctx, "Add Player",
+        (push_back(scores) <<=
+            apply(ctx,
+                [](auto name) { return player_score(name, 0); },
+                mask(new_player, new_player != "")),
+         new_player <<= ""));
+}
+/// [for-each-vector-demo]
+// clang-format on
+
+void
+init_demo(std::string dom_id)
+{
+    static alia::system the_system;
+    static dom::system the_dom;
+
+    static std::vector<player_score> the_scores = {{"Karen", 5}, {"Tom", 2}};
+
+    initialize(the_dom, the_system, dom_id, [&](dom::context ctx) {
+        do_scoreboard(ctx, direct(the_scores));
+    });
+}
+
+static demo the_demo("for-each-vector-demo", init_demo);
+
+} // namespace for_each_vector_demo
