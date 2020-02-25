@@ -31,7 +31,7 @@ The following is also equivalent to `value(12)`:
 lambda_reader([]() { return 12; });
 ```
 
-<dl>
+</dd>
 
 <dt>lambda_reader(has_value, read)</dt><dd>
 
