@@ -352,7 +352,7 @@ signalize(Value v)
     return value(std::move(v));
 }
 
-// mask(signal, condition) does the equivalent of bitmasking on individual
+// mask(signal, condition) does the equivalent of bit masking on individual
 // signals. If :condition evaluates to true, the mask evaluates to :signal.
 // Otherwise, it evaluates to an empty signal of the same type.
 template<class Primary, class Mask>
