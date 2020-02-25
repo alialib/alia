@@ -4,7 +4,7 @@ Tracking Mechanisms
 <script>
     init_alia_demos(['numerical-analysis', 'switch-example', 'transform-demo',
         'metered-transform-demo', 'metered-direct-counting',
-        'loop-macros-demo']);
+        'loop-macros-demo', 'for-each-map-demo', 'for-each-vector-demo']);
 </script>
 
 This page documents all the various mechanisms you can use to allow alia to
@@ -63,6 +63,19 @@ Looping Constructs
 ------------------
 
 ### for_each
+
+[source](tracking.cpp ':include :fragment=for-each-map-demo')
+
+<div class="demo-panel">
+<div id="for-each-map-demo"></div>
+</div>
+
+[source](tracking.cpp ':include :fragment=for-each-vector-demo')
+
+<div class="demo-panel">
+<div id="for-each-vector-demo"></div>
+</div>
+
 
 ### transform
 
