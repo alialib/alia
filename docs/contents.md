@@ -33,6 +33,7 @@
   - [Configuration](configuration.md)
   - [App Design Principles](app-design.md)
   - [Efficiency Considerations](efficiency.md)
+  - [Working with IDs](working-wid-ids.md)
 
 - Development
 
