@@ -6,6 +6,23 @@
 
 namespace alia {
 
+// signalize(x) turns x into a signal if it isn't already one.
+// Or, in other words...
+// signalize(s), where s is a signal, returns s.
+// signalize(v), where v is a raw value, returns a value signal carrying s.
+template<class Signal>
+std::enable_if_t<is_readable_signal_type<Signal>::value, Signal>
+signalize(Signal s)
+{
+    return s;
+}
+template<class Value, std::enable_if_t<!is_signal_type<Value>::value, int> = 0>
+auto
+signalize(Value v)
+{
+    return value(std::move(v));
+}
+
 // fake_readability(s), where :s is a signal, yields a wrapper for :s that
 // pretends to have read capabilities. It will never actually have a value, but
 // it will type-check as a readable signal.
@@ -281,9 +298,15 @@ struct fallback_signal : signal<
 };
 template<class Primary, class Fallback>
 fallback_signal<Primary, Fallback>
-add_fallback(Primary const& primary, Fallback const& fallback)
+make_fallback_signal(Primary primary, Fallback fallback)
 {
     return fallback_signal<Primary, Fallback>(primary, fallback);
+}
+template<class Primary, class Fallback>
+auto
+add_fallback(Primary primary, Fallback fallback)
+{
+    return make_fallback_signal(signalize(primary), signalize(fallback));
 }
 
 // simplify_id(s), where :s is a signal, yields a wrapper for :s with the exact
@@ -333,23 +356,6 @@ simplified_id_wrapper<Wrapped>
 simplify_id(Wrapped wrapped)
 {
     return simplified_id_wrapper<Wrapped>(wrapped);
-}
-
-// signalize(x) turns x into a signal if it isn't already one.
-// Or, in other words...
-// signalize(s), where s is a signal, returns s.
-// signalize(v), where v is a raw value, returns a value signal carrying s.
-template<class Signal>
-std::enable_if_t<is_readable_signal_type<Signal>::value, Signal>
-signalize(Signal s)
-{
-    return s;
-}
-template<class Value, std::enable_if_t<!is_signal_type<Value>::value, int> = 0>
-auto
-signalize(Value v)
-{
-    return value(std::move(v));
 }
 
 // mask(signal, condition) does the equivalent of bit masking on individual
