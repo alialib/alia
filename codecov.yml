@@ -5,5 +5,5 @@ coverage:
     patch: off
     project:
       default:
-        target: 100%
+        target: 95%
 comment: off
