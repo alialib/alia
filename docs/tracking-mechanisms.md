@@ -64,11 +64,39 @@ Looping Constructs
 
 ### for_each
 
+`for_each` is the preferred way to loop over containers in alia. It takes care
+of flow tracking for you, and it operates on signals: you pass in the container
+as a signal, and it passes items back to you as signals.
+
+<dl>
+
+<dt>for_each(ctx, container, f)</dt><dd>
+
+Invoke `f` for each item in `container`. (`container` must be a signal.)
+
+If `container` carries a map-like container (i.e., a container that associates
+keys with values), `f` is invoked as `f(ctx, key, value)`, where `key` and
+`value` are both signals.
+
+Otherwise, `f` is invoked as `f(ctx, item)`, where `item` is a signal.
+
+In either case, `ctx` is the original context passed to `for_each` (and has all
+the same components).
+
+</dd>
+
+</dl>
+
+Here's an example of using `for_each` with a `std::map`:
+
 [source](tracking.cpp ':include :fragment=for-each-map-demo')
 
 <div class="demo-panel">
 <div id="for-each-map-demo"></div>
 </div>
+
+And here's an equivalent example using a `std::vector` to represent the same
+data:
 
 [source](tracking.cpp ':include :fragment=for-each-vector-demo')
 
@@ -76,6 +104,24 @@ Looping Constructs
 <div id="for-each-vector-demo"></div>
 </div>
 
+#### Item/Data Associations
+
+`for_each` tries to do a reasonable job of associating items consistently with
+the same nodes in the data graph, even if those items move around within the
+container. For map-like containers, it identifies items by their key. For lists,
+it uses the address of the item, which is stable. Otherwise, it simply uses the
+index, which of course isn't stable.
+
+If you use `for_each` on a `std::vector` where items can move around, *the
+underlying data associated with each item will change when the item moves.*
+Depending on what you're associating with your items, the effects of this can
+vary from slight inefficiencies to complete discontinuities in your interface.
+
+You can override the default association by defining a `get_alia_id` function
+for your item's type. (It should be accessible from within the `alia` namespace,
+either via ADL or because it's defined there.) It should take the item as a
+parameter and return an alia ID. (See [Working with IDs](working-with-ids.md).)
+It can also return `no_id` to fall back to the default ID behavior.
 
 ### transform
 
