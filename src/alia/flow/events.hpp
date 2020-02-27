@@ -160,9 +160,7 @@ typedef node_identity const* node_id;
 inline node_id
 get_node_id(context ctx)
 {
-    node_identity* id;
-    get_cached_data(ctx, &id);
-    return id;
+    return &get_cached_data<node_identity>(ctx);
 }
 
 // routable_node_id identifies a node with enough information that an event can

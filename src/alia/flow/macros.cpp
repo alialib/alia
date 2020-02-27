@@ -4,16 +4,14 @@ namespace alia {
 
 if_block::if_block(data_traversal& traversal, bool condition)
 {
-    data_block* block;
-    get_data(traversal, &block);
+    data_block& block = get_data<data_block>(traversal);
     if (condition)
     {
-        scoped_data_block_.begin(traversal, *block);
+        scoped_data_block_.begin(traversal, block);
     }
-    else
+    else if (traversal.cache_clearing_enabled)
     {
-        if (traversal.cache_clearing_enabled)
-            clear_cached_data(*block);
+        clear_cached_data(block);
     }
 }
 
