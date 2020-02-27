@@ -137,6 +137,7 @@ update_bidirectional_text(bidirectional_text_data<Value>* data, Readable x)
         {
             if (!data->output_valid || read_signal(x) != data->input_value)
             {
+                data->input_value = read_signal(x);
                 data->output_text = to_string(read_signal(x));
                 data->output_valid = true;
                 ++data->output_version;
