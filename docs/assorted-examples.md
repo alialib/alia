@@ -3,7 +3,8 @@ Assorted Examples
 
 <script>
     init_alia_demos(['tip-calculator-demo', 'loop-macros-demo',
-        'fetch-country']);
+        'for-each-map-demo', 'fetch-country', 'time-signal',
+        'value-smoothing']);
 </script>
 
 If you're more interested in code than prose, you'll like this page the best.
@@ -25,6 +26,18 @@ externalization capabilities...
 <div id="tip-calculator-demo"></div>
 </div>
 
+Containers
+----------
+
+Here's an (admittedly contrived) example of working with containers in alia.
+It uses a `std::map` to map player names to their scores.
+
+[source](tracking.cpp ':include :fragment=for-each-map-demo')
+
+<div class="demo-panel">
+<div id="for-each-map-demo"></div>
+</div>
+
 Minimal Integration
 -------------------
 
@@ -39,8 +52,8 @@ to integrate alia with your application data.
 <div id="loop-macros-demo"></div>
 </div>
 
-Fetching
---------
+Asynchronous I/O
+----------------
 
 This shows an example of using `alia::async()` to integrate an asynchronous API.
 In this case, we're using Emscripten's fetch API to remotely look up country
@@ -50,4 +63,27 @@ names on [REST Countries](https://restcountries.eu).
 
 <div class="demo-panel">
 <div id="fetch-country"></div>
+</div>
+
+Timing Signals
+--------------
+
+Although all signals in alia are conceptually time-varying values, most of them
+only care about the present (e.g., `a + b` is just whatever `a` is right now
+plus whatever `b` is). However, some signals are more closely linked to time and
+explicitly vary with it:
+
+[source](timing.cpp ':include :fragment=time-signal')
+
+<div class="demo-panel">
+<div id="time-signal"></div>
+</div>
+
+You can use this explicit notion of time to do fun things like smooth out other
+signals:
+
+[source](timing.cpp ':include :fragment=value-smoothing')
+
+<div class="demo-panel">
+<div id="value-smoothing"></div>
 </div>

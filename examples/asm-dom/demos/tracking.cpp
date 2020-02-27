@@ -119,7 +119,7 @@ init_demo(std::string dom_id)
     static alia::system the_system;
     static dom::system the_dom;
 
-    static std::vector<my_record> the_records = {{"demo record", 2, 4}};
+    static std::vector<my_record> the_records = {{"Demo Record", 2, 4}};
 
     initialize(the_dom, the_system, dom_id, [&](dom::context ctx) {
         do_records_ui(ctx, the_records);

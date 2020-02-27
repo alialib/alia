@@ -82,8 +82,8 @@ do_fetch_ui(dom::context ctx, bidirectional<std::string> country_code)
             conditional(
                 alia_field(result, successful),
                 alia_field(result, country_name),
-                "Not found!"),
-            "..."));
+                "Not found"),
+            "Fetching..."));
 }
 /// [fetch-country]
 
