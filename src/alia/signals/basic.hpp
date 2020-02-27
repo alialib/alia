@@ -18,7 +18,7 @@ struct empty_signal : signal<empty_signal<Value>, Value, bidirectional_signal>
     id_interface const&
     value_id() const
     {
-        return no_id;
+        return null_id;
     }
     bool
     has_value() const

@@ -181,7 +181,7 @@ struct signal<Derived, Value, write_only_signal>
     id_interface const&
     value_id() const
     {
-        return no_id;
+        return null_id;
     }
     bool
     has_value() const

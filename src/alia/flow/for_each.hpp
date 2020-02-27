@@ -42,7 +42,7 @@ template<class Item>
 auto
 get_alia_id(Item const&)
 {
-    return no_id;
+    return null_id;
 }
 
 // for_each for map-like containers
@@ -64,7 +64,7 @@ for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
         {
             named_block nb;
             auto iteration_id = get_alia_id(item.first);
-            if (iteration_id != no_id)
+            if (iteration_id != null_id)
                 nb.begin(nc, iteration_id);
             else
                 nb.begin(nc, make_id(&item));
@@ -97,7 +97,7 @@ for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
         {
             named_block nb;
             auto iteration_id = get_alia_id(container[index]);
-            if (iteration_id != no_id)
+            if (iteration_id != null_id)
                 nb.begin(nc, iteration_id);
             else
                 nb.begin(nc, make_id(index));
@@ -180,7 +180,7 @@ for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
         {
             named_block nb;
             auto iteration_id = get_alia_id(item);
-            if (iteration_id != no_id)
+            if (iteration_id != null_id)
                 nb.begin(nc, iteration_id);
             else
                 nb.begin(nc, make_id(&item));

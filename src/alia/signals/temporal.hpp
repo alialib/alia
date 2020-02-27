@@ -235,7 +235,7 @@ struct smoothed_signal : regular_signal<
             return id_;
         }
         else
-            return no_id;
+            return null_id;
     }
     bool
     has_value() const

@@ -37,7 +37,7 @@ TEST_CASE("fake_readability", "[signals][adaptors]")
         REQUIRE(signal_is_readable<signal_t>::value);
         REQUIRE(signal_is_writable<signal_t>::value);
 
-        REQUIRE(s.value_id() == no_id);
+        REQUIRE(s.value_id() == null_id);
         REQUIRE(!signal_has_value(s));
         REQUIRE(signal_ready_to_write(s));
         write_signal(s, 1);
@@ -309,7 +309,7 @@ TEST_CASE("mask a bidirectional signal", "[signals][adaptors]")
         auto s = mask(direct(x), false);
         REQUIRE(!signal_has_value(s));
         REQUIRE(!signal_ready_to_write(s));
-        REQUIRE(s.value_id() == no_id);
+        REQUIRE(s.value_id() == null_id);
     }
 }
 
@@ -333,7 +333,7 @@ TEST_CASE("mask a read-only signal", "[signals][adaptors]")
         int x = 1;
         auto s = mask(value(x), false);
         REQUIRE(!signal_has_value(s));
-        REQUIRE(s.value_id() == no_id);
+        REQUIRE(s.value_id() == null_id);
     }
 }
 
