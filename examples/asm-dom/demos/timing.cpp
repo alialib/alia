@@ -62,7 +62,7 @@ init_demo(std::string dom_id)
     static dom::system the_dom;
 
     initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_ui(ctx, get_state(ctx, 0), get_state(ctx, rgb8(50, 50, 55)));
+        do_ui(ctx, get_state(ctx, 42), get_state(ctx, rgb8(50, 50, 55)));
     });
 }
 
