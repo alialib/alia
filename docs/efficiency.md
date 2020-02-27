@@ -1,4 +1,0 @@
-Efficiency Considerations
-=========================
-
-Coming soon...
