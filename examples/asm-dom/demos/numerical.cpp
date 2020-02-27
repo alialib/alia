@@ -89,16 +89,16 @@ dom::do_text(ctx, "How much is the bill?");
 dom::do_input(ctx, bill);
 
 auto tip_ratio = get_state(ctx, empty<double>());
-dom::do_text(ctx, "How much do you want to tip?");
-dom::do_input(ctx, scale(tip_ratio, 100)); // Users like %.
+dom::do_text(ctx, "What percentage do you want to tip?");
+dom::do_input(ctx, scale(tip_ratio, 100));
 dom::do_button(ctx, "18%", tip_ratio <<= 0.18);
 dom::do_button(ctx, "20%", tip_ratio <<= 0.20);
 dom::do_button(ctx, "25%", tip_ratio <<= 0.25);
 
 auto tip = bill * tip_ratio;
 auto total = bill + tip;
-dom::do_text(ctx, printf(ctx, "Tip: %.2f", tip));
-dom::do_text(ctx, printf(ctx, "Total: %.2f", total));
+dom::do_text(ctx,
+    printf(ctx, "You should tip %.2f, for a total of %.2f.", tip, total));
 /// [tip-calculator]
     // clang-format on
 }
