@@ -53,6 +53,10 @@ jobs:
     # (The isn't currently a full test. It just tests that the asm-dom examples
     # build successfully.)
     - env: CACHE_NAME=emscripten
+      install:
+      - sudo add-apt-repository universe
+      - sudo apt update
+      - sudo apt install graphviz
       services:
       - docker
       script:
@@ -63,7 +67,6 @@ jobs:
         docker run -it --name emscripten -v $(pwd)/examples/asm-dom:/src
         -w /src/build trzeci/emscripten:sdk-incoming-64bit
         bash -c 'emcmake cmake -DCMAKE_BUILD_TYPE=Release .. && make'
-      - sudo apt install graphviz
       - scripts/build-docs.sh
       deploy:
       - provider: pages
