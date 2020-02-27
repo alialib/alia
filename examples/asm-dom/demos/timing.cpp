@@ -49,8 +49,8 @@ dom::do_text(ctx,
 
 dom::do_text(ctx, "Here's a smoothed view of a color:");
 dom::do_colored_box(ctx, smooth_value(ctx, color));
-dom::do_button(ctx, "Go Dark", color <<= rgb8(50, 50, 55));
 dom::do_button(ctx, "Go Light", color <<= rgb8(210, 210, 220));
+dom::do_button(ctx, "Go Dark", color <<= rgb8(50, 50, 55));
 /// [value-smoothing]
     // clang-format on
 }
