@@ -2,7 +2,8 @@ Assorted Examples
 =================
 
 <script>
-    init_alia_demos(['tip-calculator-demo', 'loop-macros-demo']);
+    init_alia_demos(['tip-calculator-demo', 'loop-macros-demo',
+        'fetch-country']);
 </script>
 
 If you're more interested in code than prose, you'll like this page the best.
@@ -36,4 +37,17 @@ to integrate alia with your application data.
 
 <div class="demo-panel">
 <div id="loop-macros-demo"></div>
+</div>
+
+Fetching
+--------
+
+This shows an example of using `alia::async()` to integrate an asynchronous API.
+In this case, we're using Emscripten's fetch API to remotely look up country
+names on [REST Countries](https://restcountries.eu).
+
+[source](fetch.cpp ':include :fragment=fetch-country')
+
+<div class="demo-panel">
+<div id="fetch-country"></div>
 </div>
