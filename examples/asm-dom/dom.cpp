@@ -5,33 +5,63 @@
 
 namespace dom {
 
+struct element_data
+{
+    asmdom::VNode* vnode = nullptr;
+    captured_id key;
+};
+
+template<class CreateElement>
+void
+add_element(
+    dom::context ctx,
+    element_data& data,
+    id_interface const& key,
+    CreateElement create_element)
+{
+    handle_event<refresh_event>(ctx, [&](auto ctx, auto& e) {
+        if (!data.key.matches(key))
+        {
+            data.vnode = create_element();
+            data.key.capture(key);
+        }
+        get_component<context_info_tag>(ctx).current_children->push_back(
+            data.vnode);
+    });
+}
+
 void
 do_text_(dom::context ctx, readable<std::string> text)
 {
-    handle_event<refresh_event>(ctx, [text](auto ctx, auto& e) {
-        get_component<context_info_tag>(ctx).current_children->push_back(
-            asmdom::h(
-                "p", signal_has_value(text) ? read_signal(text) : string()));
-    });
+    add_element(
+        ctx, get_cached_data<element_data>(ctx), text.value_id(), [=]() {
+            return asmdom::h(
+                "p", signal_has_value(text) ? read_signal(text) : string());
+        });
 }
 
 void
 do_heading_(
     dom::context ctx, readable<std::string> level, readable<std::string> text)
 {
-    handle_event<refresh_event>(ctx, [=](auto ctx, auto& e) {
-        get_component<context_info_tag>(ctx).current_children->push_back(
-            asmdom::h(
+    add_element(
+        ctx,
+        get_cached_data<element_data>(ctx),
+        combine_ids(ref(level.value_id()), ref(text.value_id())),
+        [=]() {
+            return asmdom::h(
                 signal_has_value(level) ? read_signal(level) : "p",
-                signal_has_value(text) ? read_signal(text) : string()));
-    });
+                signal_has_value(text) ? read_signal(text) : string());
+        });
 }
 
-struct input_data
+struct input_data : node_identity
 {
     captured_id external_id;
     string value;
     bool invalid = false;
+    element_data element;
+    unsigned version = 0;
 };
 
 void
@@ -40,7 +70,7 @@ do_input_(dom::context ctx, bidirectional<string> value)
     input_data* data;
     get_cached_data(ctx, &data);
 
-    auto id = get_node_id(ctx);
+    auto id = data;
     auto routable_id = make_routable_node_id(ctx, id);
 
     if (signal_has_value(value))
@@ -50,6 +80,7 @@ do_input_(dom::context ctx, bidirectional<string> value)
             data->value = read_signal(value);
             data->external_id.capture(value.value_id());
             data->invalid = false;
+            ++data->version;
         }
     }
     else
@@ -59,31 +90,29 @@ do_input_(dom::context ctx, bidirectional<string> value)
             data->value = string();
             data->external_id.capture(null_id);
             data->invalid = false;
+            ++data->version;
         }
     }
 
     auto* system = &get_component<system_tag>(ctx);
 
-    handle_event<refresh_event>(ctx, [=](auto ctx, auto& e) {
+    add_element(ctx, data->element, make_id(data->version), [&]() {
         asmdom::Attrs attrs;
         if (data->invalid)
             attrs["class"] = "invalid-input";
-        get_component<context_info_tag>(ctx).current_children->push_back(
-            asmdom::h(
-                "input",
-                asmdom::Data(
-                    attrs,
-                    asmdom::Props{{"value", emscripten::val(data->value)}},
-                    asmdom::Callbacks{
-                        {"oninput", [=](emscripten::val e) {
-                             value_update_event update;
-                             update.value
-                                 = e["target"]["value"].as<std::string>();
-                             dispatch_targeted_event(
-                                 *system, update, routable_id);
-                             refresh_system(*system);
-                             return true;
-                         }}})));
+        return asmdom::h(
+            "input",
+            asmdom::Data(
+                attrs,
+                asmdom::Props{{"value", emscripten::val(data->value)}},
+                asmdom::Callbacks{
+                    {"oninput", [=](emscripten::val e) {
+                         value_update_event update;
+                         update.value = e["target"]["value"].as<std::string>();
+                         dispatch_targeted_event(*system, update, routable_id);
+                         refresh_system(*system);
+                         return true;
+                     }}}));
     });
     handle_targeted_event<value_update_event>(ctx, id, [=](auto ctx, auto& e) {
         if (signal_ready_to_write(value))
@@ -98,6 +127,7 @@ do_input_(dom::context ctx, bidirectional<string> value)
             }
         }
         data->value = e.value;
+        ++data->version;
     });
 }
 
@@ -107,11 +137,18 @@ do_button_(dom::context ctx, readable<std::string> text, action<> on_click)
     auto id = get_node_id(ctx);
     auto routable_id = make_routable_node_id(ctx, id);
     auto* system = &get_component<system_tag>(ctx);
-    handle_event<refresh_event>(ctx, [=](auto ctx, auto& e) {
-        if (signal_has_value(text))
-        {
-            get_component<context_info_tag>(ctx).current_children->push_back(
-                asmdom::h(
+
+    element_data* element;
+    get_cached_data(ctx, &element);
+
+    if (signal_has_value(text))
+    {
+        add_element(
+            ctx,
+            get_cached_data<element_data>(ctx),
+            combine_ids(ref(text.value_id()), make_id(on_click.is_ready())),
+            [=]() {
+                return asmdom::h(
                     "button",
                     asmdom::Data(
                         asmdom::Attrs{{"class", "btn"},
@@ -125,9 +162,10 @@ do_button_(dom::context ctx, readable<std::string> text, action<> on_click)
                                                refresh_system(*system);
                                                return true;
                                            }}}),
-                    read_signal(text)));
-        }
-    });
+                    read_signal(text));
+            });
+    }
+
     handle_targeted_event<click_event>(ctx, id, [=](auto ctx, auto& e) {
         if (action_is_ready(on_click))
         {
@@ -139,27 +177,27 @@ do_button_(dom::context ctx, readable<std::string> text, action<> on_click)
 void
 do_colored_box(dom::context ctx, readable<rgb8> color)
 {
-    handle_event<refresh_event>(ctx, [color](auto ctx, auto& e) {
-        char style[64] = {'\0'};
-        if (signal_has_value(color))
-        {
-            rgb8 const& c = read_signal(color);
-            sprintf(style, "background-color: #%02x%02x%02x", c.r, c.g, c.b);
-        }
-        get_component<context_info_tag>(ctx).current_children->push_back(
-            asmdom::h(
+    add_element(
+        ctx, get_cached_data<element_data>(ctx), color.value_id(), [=]() {
+            char style[64] = {'\0'};
+            if (signal_has_value(color))
+            {
+                rgb8 const& c = read_signal(color);
+                sprintf(
+                    style, "background-color: #%02x%02x%02x", c.r, c.g, c.b);
+            }
+            return asmdom::h(
                 "div",
-                asmdom::Data(asmdom::Attrs{{"class", "colored-box"},
-                                           {"style", style}})));
-    });
+                asmdom::Data(
+                    asmdom::Attrs{{"class", "colored-box"}, {"style", style}}));
+        });
 }
 
 void
 do_hr(dom::context ctx)
 {
-    handle_event<refresh_event>(ctx, [=](auto ctx, auto& e) {
-        get_component<context_info_tag>(ctx).current_children->push_back(
-            asmdom::h("hr"));
+    add_element(ctx, get_cached_data<element_data>(ctx), unit_id, [=]() {
+        return asmdom::h("hr");
     });
 }
 
@@ -175,6 +213,7 @@ handle_refresh_event(dom::context ctx, system& system)
         "div", asmdom::Data(asmdom::Attrs{{"class", "container"}}), children);
 
     asmdom::patch(system.current_view, root);
+    delete system.current_view;
     system.current_view = root;
 }
 
@@ -221,6 +260,7 @@ initialize(
     {
         asmdom::Config config = asmdom::Config();
         config.unsafePatch = true;
+        config.clearMemory = false;
         asmdom::init(config);
         asmdom_initialized = true;
     }
