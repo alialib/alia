@@ -93,3 +93,29 @@ Returns a signal that type checks as a readable signal carrying a value of type
 </dd>
 
 </dl>
+
+State Signals
+-------------
+
+Sometimes you need some temporary, local state somewhere in your UI, for example
+to capture the open/closed state of a tree node, the selected item in a list, or
+the name of a new item that the user is going to add to the list. Thanks to
+alia's data graph, you can make this state appear where you need it by calling
+`get_state`:
+
+<dl>
+
+<dt>get_state(ctx, initial_value)</dt><dd>
+
+Returns a bidirectional signal that references some temporary, local state.
+
+`initial_value` can be another signal or a raw value. It determines the value
+type of the state and supplies the initial value. If `initial_value` is a signal
+that has no value, the state is initially empty. It will get a value when one is
+explicitly written to it or when `initial_value` produces a value (whichever
+comes first). Once the state has a value, `initial_value` is ignored. (The state
+won't change in response to changes in `initial_value`.)
+
+</dd>
+
+</dl>
