@@ -24,19 +24,13 @@
   - [The Data Graph](the-data-graph.md)
   - [The Context](the-context.md)
 
-- Integration
-
-  - [The System](the-system.md)
-
 - Other Guides
 
   - [Configuration](configuration.md)
-  - [App Design Principles](app-design.md)
-  - [Efficiency Considerations](efficiency.md)
+  - [Integration](integration.md)
   - [Working with IDs](working-with-ids.md)
 
 - Development
 
   - [Contributing](contributing.md)
   - [Roadmap](roadmap.md)
-  - [Building & Testing](building-and-testing.md)
