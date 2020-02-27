@@ -183,7 +183,7 @@ TEST_CASE("select with empty condition", "[signals][operators]")
     int x = 0, y = 1;
     auto s = conditional(empty<bool>(), direct(x), direct(y));
     REQUIRE(!signal_has_value(s));
-    REQUIRE(s.value_id() == no_id);
+    REQUIRE(s.value_id() == null_id);
     REQUIRE(!signal_ready_to_write(s));
 }
 
@@ -465,5 +465,5 @@ TEST_CASE("empty subscript", "[signals][operators]")
     auto s = empty<std::map<int, int>>()[value(2)];
 
     REQUIRE(!signal_has_value(s));
-    REQUIRE(s.value_id() == no_id);
+    REQUIRE(s.value_id() == null_id);
 }

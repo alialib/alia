@@ -21,7 +21,7 @@ struct regular_signal : signal<Derived, Value, Direction>
             id_ = make_id_by_reference(this->read());
             return id_;
         }
-        return no_id;
+        return null_id;
     }
 
  private:
@@ -108,7 +108,7 @@ struct preferred_id_signal<
             id_ = make_id_by_reference(this->read());
             return id_;
         }
-        return no_id;
+        return null_id;
     }
 
  private:

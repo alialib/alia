@@ -40,7 +40,7 @@ struct readability_faker : signal<
     id_interface const&
     value_id() const
     {
-        return no_id;
+        return null_id;
     }
     bool
     has_value() const
@@ -389,7 +389,7 @@ struct masking_signal : signal<
         if (mask_.has_value() && mask_.read())
             return primary_.value_id();
         else
-            return no_id;
+            return null_id;
     }
     bool
     ready_to_write() const

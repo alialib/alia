@@ -31,7 +31,7 @@ TEST_CASE("empty regular_signal", "[signals][utilities]")
     REQUIRE(!signal_is_writable<signal_t>::value);
 
     REQUIRE(!signal_has_value(s));
-    REQUIRE(s.value_id() == no_id);
+    REQUIRE(s.value_id() == null_id);
 }
 
 struct normal_regular_signal

@@ -54,10 +54,10 @@ do_input_(dom::context ctx, bidirectional<string> value)
     }
     else
     {
-        if (!data->external_id.matches(no_id))
+        if (!data->external_id.matches(null_id))
         {
             data->value = string();
-            data->external_id.capture(no_id);
+            data->external_id.capture(null_id);
             data->invalid = false;
         }
     }

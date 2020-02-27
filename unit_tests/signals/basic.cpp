@@ -12,7 +12,7 @@ TEST_CASE("empty signal", "[signals][basic]")
     REQUIRE(signal_is_readable<signal_t>::value);
     REQUIRE(signal_is_writable<signal_t>::value);
 
-    REQUIRE(s.value_id() == no_id);
+    REQUIRE(s.value_id() == null_id);
     REQUIRE(!signal_has_value(s));
     REQUIRE(!signal_ready_to_write(s));
 }

@@ -608,7 +608,7 @@ struct keyed_data_signal
     id_interface const&
     value_id() const
     {
-        return data_->key.is_initialized() ? data_->key.get() : no_id;
+        return data_->key.is_initialized() ? data_->key.get() : null_id;
     }
     bool
     ready_to_write() const
