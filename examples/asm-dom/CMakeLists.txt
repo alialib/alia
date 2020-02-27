@@ -7,6 +7,9 @@ include(cmake/release-mode.cmake)
 # Add the asm-dom library.
 include(cmake/asm-dom.cmake)
 
+# Add the nlohmann/json library.
+include(cmake/json.cmake)
+
 # Allow the use of Emscripten's Fetch API.
 string(APPEND CMAKE_CXX_FLAGS " -s FETCH=1")
 # Enable exceptions.
