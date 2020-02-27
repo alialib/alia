@@ -87,7 +87,7 @@ invoked.
 The primary advantage of this form is that it doesn't require a context
 parameter (it doesn't cache and thus doesn't require any internal data). This is
 handy for implementing operators and in similar situations where providing a
-context parameters would be awkward. At the moment, this is only intended to be
+context parameter would be awkward. At the moment, this is only intended to be
 used in those situations, so the implementation only supports functions of one
 or two arguments.
 
