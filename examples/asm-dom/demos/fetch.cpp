@@ -47,7 +47,7 @@ handle_fetch_failure(emscripten_fetch_t* fetch)
     handle_fetch_result(fetch, fetch_result{false, std::string()});
 }
 
-// Here's our actual reactive function for retrieving country name.
+// Here's our actual reactive function for retrieving country names.
 auto
 fetch_country_name(dom::context ctx, readable<std::string> country_code)
 {
