@@ -13,7 +13,6 @@ namespace alia {
 // id_interface defines the interface required of all ID types.
 struct id_interface
 {
- public:
     virtual ~id_interface()
     {
     }
@@ -219,8 +218,8 @@ ref(id_interface const& id)
 }
 
 // simple_id<Value> takes a regular type (Value) and implements id_interface for
-// it. The type Value must be copyable, comparable for equality and ordering
-// (i.e., supply == and < operators), and convertible to a string.
+// it. The type Value must be copyable and comparable for equality and ordering
+// (i.e., supply == and < operators).
 template<class Value>
 struct simple_id : id_interface
 {
@@ -415,11 +414,11 @@ combine_ids(Id0 const& id0)
     return id0;
 }
 
-// no_id can be used when you have nothing to identify.
-struct no_id_type
+// null_id can be used when you have nothing to identify.
+struct null_id_type
 {
 };
-static simple_id<no_id_type*> const no_id(nullptr);
+static simple_id<null_id_type*> const null_id(nullptr);
 
 // unit_id can be used when there is only possible identify.
 struct unit_id_type
