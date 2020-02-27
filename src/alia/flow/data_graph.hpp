@@ -635,7 +635,7 @@ make_signal(keyed_data<Data>* data)
 template<class Context, class Data>
 bool
 get_keyed_data(
-    Context& ctx, id_interface const& key, keyed_data_signal<Data>* signal)
+    Context ctx, id_interface const& key, keyed_data_signal<Data>* signal)
 {
     keyed_data<Data>* ptr;
     get_cached_data(ctx, &ptr);
@@ -657,7 +657,7 @@ struct raw_keyed_data
 
 template<class Context, class Data>
 bool
-get_keyed_data(Context& ctx, id_interface const& key, Data** data)
+get_keyed_data(Context ctx, id_interface const& key, Data** data)
 {
     raw_keyed_data<Data>* ptr;
     bool is_new = false;
