@@ -212,7 +212,7 @@ smooth_raw_value(
     return current_value;
 }
 
-// smooth_value is analogous to smooth_raw_value, but it deals with signals
+// smooth is analogous to smooth_raw_value, but it deals with signals
 // instead of raw values.
 
 template<class Wrapped>
@@ -263,7 +263,7 @@ make_smoothed_signal(
 
 template<class Value, class Signal>
 auto
-smooth_value(
+smooth(
     dataless_context ctx,
     value_smoother<Value>& smoother,
     Signal x,
@@ -277,14 +277,14 @@ smooth_value(
 
 template<class Signal>
 auto
-smooth_value(
+smooth(
     context ctx,
     Signal x,
     animated_transition const& transition = default_transition)
 {
     value_smoother<typename Signal::value_type>* data;
     get_cached_data(ctx, &data);
-    return smooth_value(ctx, *data, x, transition);
+    return smooth(ctx, *data, x, transition);
 }
 
 } // namespace alia
