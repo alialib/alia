@@ -20,14 +20,34 @@ add_library(demolib STATIC color.cpp dom.cpp)
 set_property(TARGET demolib PROPERTY CXX_STANDARD 17)
 target_link_libraries(demolib PRIVATE asm-dom)
 
+# Add the sandbox.
+add_executable(sandbox sandbox.cpp)
+set_property(TARGET sandbox PROPERTY CXX_STANDARD 17)
+target_link_libraries(sandbox PRIVATE asm-dom demolib)
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/index.html
+  ${CMAKE_CURRENT_BINARY_DIR}/index.html
+)
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/sandbox.css
+  ${CMAKE_CURRENT_BINARY_DIR}/sandbox.css
+)
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/pure-material.css
+  ${CMAKE_CURRENT_BINARY_DIR}/pure-material.css
+)
+
 # Add the demos target.
 include_directories(.)
-string(APPEND CMAKE_CXX_FLAGS " -s EXPORTED_FUNCTIONS='[\"_init_demo\"]'")
-string(APPEND CMAKE_CXX_FLAGS
-    " -s EXTRA_EXPORTED_RUNTIME_METHODS='[\"ccall\", \"cwrap\", \"UTF8ToString\"]'")
-string(APPEND CMAKE_CXX_FLAGS
-    " -s MODULARIZE=1 -s 'EXPORT_NAME=\"AliaDemos\"'")
 file(GLOB demo_files "demos/*.cpp")
 add_executable(demos demos.cpp ${demo_files})
+target_compile_options(demos PRIVATE
+    "SHELL:-s EXPORTED_FUNCTIONS='[\"_init_demo\"]'")
+target_compile_options(demos PRIVATE
+    "SHELL:-s EXTRA_EXPORTED_RUNTIME_METHODS='[\"ccall\", \"cwrap\", \"UTF8ToString\"]'")
+target_compile_options(demos PRIVATE
+    "SHELL:-s MODULARIZE=1")
+target_compile_options(demos PRIVATE
+    "SHELL:-s 'EXPORT_NAME=\"AliaDemos\"'")
 set_property(TARGET demos PROPERTY CXX_STANDARD 17)
 target_link_libraries(demos PRIVATE asm-dom demolib)
