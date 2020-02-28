@@ -1,5 +1,7 @@
 #include "demo.hpp"
 
+#include <random>
+
 namespace switch_example {
 
 void
@@ -109,7 +111,6 @@ do_records_ui(dom::context ctx, std::vector<my_record>& records)
              new_label <<= ""));
     }
 }
-
 /// [loop-macros-demo]
 // clang-format on
 
@@ -175,29 +176,100 @@ namespace for_each_vector_demo {
 
 // clang-format off
 /// [for-each-vector-demo]
-typedef std::pair<std::string, int> player_score;
+struct player
+{
+    std::string name;
+    int score;
+};
 
 void
-do_scoreboard(dom::context ctx, bidirectional<std::vector<player_score>> scores)
+do_scoreboard(dom::context ctx, bidirectional<std::vector<player>> players)
 {
-    for_each(ctx, scores,
-        [](auto ctx, auto score) {
-            do_heading(ctx, "h4", alia_field(score, first));
-            do_text(ctx, printf(ctx, "%d points", alia_field(score, second)));
-            do_button(ctx, "GOAL!", ++alia_field(score, second));
+    for_each(ctx, players,
+        [](auto ctx, auto player) {
+            do_heading(ctx, "h4", alia_field(player, name));
+            do_text(ctx, printf(ctx, "%d points", alia_field(player, score)));
+            do_button(ctx, "GOAL!", ++alia_field(player, score));
             do_hr(ctx);
         });
 
     auto new_player = get_state(ctx, string());
     do_input(ctx, new_player);
     do_button(ctx, "Add Player",
-        (push_back(scores) <<=
+        (push_back(players) <<=
             apply(ctx,
-                [](auto name) { return player_score(name, 0); },
+                [](auto name) { return player{name, 0}; },
                 mask(new_player, new_player != "")),
          new_player <<= ""));
 }
 /// [for-each-vector-demo]
+
+void
+init_demo(std::string dom_id)
+{
+    static alia::system the_system;
+    static dom::system the_dom;
+
+    initialize(the_dom, the_system, dom_id, [&](dom::context ctx) {
+        do_scoreboard(ctx,
+            get_state(ctx,
+                lambda_reader(
+                    always_has_value,
+                    []() {
+                        return std::vector<player>{{"Karen", 5}, {"Tom", 2}};
+                    },
+                    []() { return unit_id; })));
+    });
+}
+// clang-format on
+
+static demo the_demo("for-each-vector-demo", init_demo);
+
+} // namespace for_each_vector_demo
+
+namespace named_blocks_demo {
+
+static std::default_random_engine rng;
+
+// clang-format off
+/// [named-blocks-demo]
+struct my_record
+{
+    std::string id, label;
+    int x = 0, y = 0;
+};
+
+void
+do_records_ui(dom::context ctx, std::vector<my_record>& records)
+{
+    naming_context nc(ctx);
+    for(auto& record : records)
+    {
+        named_block nb(nc, make_id(record.id));
+
+        // Do the controls for this record, like we normally would.
+        do_heading(ctx, "h4", direct(record.label));
+        do_input(ctx, direct(record.x));
+        do_input(ctx, direct(record.y));
+
+        // Just to demonstrate that each record is associated with the same data
+        // block, we'll get some local state here. Feel free to type something
+        // in here and shuffle the records to see what happens...
+        do_text(ctx, "Local UI state associated with this record:");
+        do_input(ctx, get_state(ctx, ""));
+
+        // And, since we're doing this example as a toy without real
+        // consideration for styling, let's throw in a horizontal rule for
+        // separation between records...
+        do_hr(ctx);
+    }
+
+    do_button(ctx, "Shuffle!",
+        lambda_action(
+            [&]() { std::shuffle(records.begin(), records.end(), rng); }));
+
+}
+/// [named-blocks-demo]
 // clang-format on
 
 void
@@ -206,13 +278,15 @@ init_demo(std::string dom_id)
     static alia::system the_system;
     static dom::system the_dom;
 
-    static std::vector<player_score> the_scores = {{"Karen", 5}, {"Tom", 2}};
+    static std::vector<my_record> the_records = {{"abc", "ABC", 2, 4},
+                                                 {"def", "DEF", 5, 1},
+                                                 {"ghi", "GHI", 1, 0},
+                                                 {"jkl", "JKL", -1, 3}};
 
     initialize(the_dom, the_system, dom_id, [&](dom::context ctx) {
-        do_scoreboard(ctx, direct(the_scores));
+        do_records_ui(ctx, the_records);
     });
 }
 
-static demo the_demo("for-each-vector-demo", init_demo);
-
-} // namespace for_each_vector_demo
+static demo the_demo("named-blocks-demo", init_demo);
+} // namespace named_blocks_demo
