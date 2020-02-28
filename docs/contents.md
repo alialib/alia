@@ -19,7 +19,6 @@
 
   - [Flow Concepts](flow-concepts.md)
   - [Tracking Mechanisms](tracking-mechanisms.md)
-  - [Events](events.md)
   - [Actions](actions.md)
   - [The Data Graph](the-data-graph.md)
   - [The Context](the-context.md)
