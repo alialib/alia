@@ -1,17 +1,7 @@
-#define ALIA_IMPLEMENTATION
-#include "alia.hpp"
-
-#include "color.hpp"
-#include "dom.hpp"
-
-using namespace alia;
-using namespace dom;
-
-alia::system the_system;
-dom::system the_dom;
+#include "demo.hpp"
 
 void
-do_ui(dom::context ctx)
+do_sandbox_ui(dom::context ctx)
 {
     auto flag = get_state(ctx, false);
     dom::do_button(ctx, "Toggle!", toggle(flag));
@@ -29,9 +19,15 @@ do_ui(dom::context ctx)
     do_button(ctx, "Reset", n <<= 4);
 }
 
-int
-main()
+void
+init_sandbox(std::string dom_id)
 {
-    initialize(the_dom, the_system, "root", do_ui);
-    return 0;
+    static alia::system the_system;
+    static dom::system the_dom;
+
+    initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
+        do_sandbox_ui(ctx);
+    });
 }
+
+static demo the_sandbox_demo("sandbox", init_sandbox);
