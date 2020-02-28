@@ -42,13 +42,13 @@ dom::do_button(ctx, "1", n <<= 1);
 dom::do_button(ctx, "100", n <<= 100);
 dom::do_button(ctx, "10000", n <<= 10000);
 dom::do_text(ctx, "Here's a smoothed view of N:");
-dom::do_heading(ctx, "h4", smooth_value(ctx, n));
+dom::do_heading(ctx, "h4", smooth(ctx, n));
 
 dom::do_text(ctx,
     "You can smooth anything that provides the basic arithmetic operators.");
 
 dom::do_text(ctx, "Here's a smoothed view of a color:");
-dom::do_colored_box(ctx, smooth_value(ctx, color));
+dom::do_colored_box(ctx, smooth(ctx, color));
 dom::do_button(ctx, "Go Light", color <<= rgb8(210, 210, 220));
 dom::do_button(ctx, "Go Dark", color <<= rgb8(50, 50, 55));
 /// [value-smoothing]
