@@ -4,7 +4,8 @@ Tracking Mechanisms
 <script>
     init_alia_demos(['numerical-analysis', 'switch-example', 'transform-demo',
         'metered-transform-demo', 'metered-direct-counting',
-        'loop-macros-demo', 'for-each-map-demo', 'for-each-vector-demo']);
+        'loop-macros-demo', 'for-each-map-demo', 'for-each-vector-demo',
+        'named-blocks-demo']);
 </script>
 
 This page documents all the various mechanisms you can use to allow alia to
@@ -218,11 +219,41 @@ application's data structures to alia:
 <div id="loop-macros-demo"></div>
 </div>
 
-Custom Flow
------------
-
 ### named_block
 
-### scoped_block
+If you need more control over how you iterate over your data structures, you can
+use named blocks. By 'naming' a block of code, you ensure that the piece of the
+data graph that's associated with that code is always the same, regardless of
+what order your blocks appear in in the execution of your code. A typical usage
+follows this form:
 
-### alia_untracked_if
+```cpp
+naming_context nc(ctx);
+for(/* Iterate over your items however you want. */)
+{
+    named_block nb(nc, make_id(id_for_this_item));
+
+    // Do the UI for this item, as you normally would...
+}
+```
+
+The naming context anchors the named blocks to the data graph. It also provides
+a unique context for naming, so if you need to iterate over those same items in
+another part of your UI, you can use the same IDs without worrying about
+collisions.
+
+`named_block` is a scoped object. It takes effect immediately upon construction,
+and when its scope ends and it's destructed, your code will naturally resume
+using the normal alia data graph. It also provides `begin` and `end` member
+functions in case you need to control its scope more explicitly.
+
+See [Working with IDs](working-with-ids.md) for info about generating the IDs
+for your blocks.
+
+Here's a full example in action:
+
+[source](tracking.cpp ':include :fragment=named-blocks-demo')
+
+<div class="demo-panel">
+<div id="named-blocks-demo"></div>
+</div>
