@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-import os
-os.chdir('www')
-
 import BaseHTTPServer, SimpleHTTPServer
 
 port = 8000
