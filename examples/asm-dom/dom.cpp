@@ -20,10 +20,14 @@ add_element(
     CreateElement create_element)
 {
     handle_event<refresh_event>(ctx, [&](auto ctx, auto& e) {
-        if (!data.key.matches(key))
+        // Theoretically, we should be able to reuse the vnode if the key hasn't
+        // changed. However, asm-dom's patching semantics mean that sometimes
+        // the vnodes get overwritten or destroyed without our knowledge, so
+        // this isn't as simple as it seems.
+        // if (!data.key.matches(key))
         {
             data.vnode = create_element();
-            data.key.capture(key);
+            // data.key.capture(key);
         }
         get_component<context_info_tag>(ctx).current_children->push_back(
             data.vnode);
@@ -213,7 +217,6 @@ handle_refresh_event(dom::context ctx, system& system)
         "div", asmdom::Data(asmdom::Attrs{{"class", "container"}}), children);
 
     asmdom::patch(system.current_view, root);
-    delete system.current_view;
     system.current_view = root;
 }
 
@@ -260,7 +263,7 @@ initialize(
     {
         asmdom::Config config = asmdom::Config();
         config.unsafePatch = true;
-        config.clearMemory = false;
+        config.clearMemory = true;
         asmdom::init(config);
         asmdom_initialized = true;
     }
