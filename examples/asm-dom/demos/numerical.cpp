@@ -88,17 +88,24 @@ auto bill = get_state(ctx, empty<double>());
 dom::do_text(ctx, "How much is the bill?");
 dom::do_input(ctx, bill);
 
-auto tip_ratio = get_state(ctx, empty<double>());
+auto tip_rate = get_state(ctx, empty<double>());
 dom::do_text(ctx, "What percentage do you want to tip?");
-dom::do_input(ctx, scale(tip_ratio, 100));
-dom::do_button(ctx, "18%", tip_ratio <<= 0.18);
-dom::do_button(ctx, "20%", tip_ratio <<= 0.20);
-dom::do_button(ctx, "25%", tip_ratio <<= 0.25);
+dom::do_input(ctx, scale(tip_rate, 100));
+dom::do_button(ctx, "18%", tip_rate <<= 0.18);
+dom::do_button(ctx, "20%", tip_rate <<= 0.20);
+dom::do_button(ctx, "25%", tip_rate <<= 0.25);
 
-auto tip = bill * tip_ratio;
+auto tip = bill * tip_rate;
 auto total = bill + tip;
 dom::do_text(ctx,
     printf(ctx, "You should tip %.2f, for a total of %.2f.", tip, total));
+
+alia_if (total < 10)
+{
+    dom::do_text(ctx,
+        "You should should consider using cash for small amounts like this.");
+}
+alia_end
 /// [tip-calculator]
     // clang-format on
 }
