@@ -103,7 +103,7 @@ dom::do_text(ctx,
 alia_if (total < 10)
 {
     dom::do_text(ctx,
-        "You should should consider using cash for small amounts like this.");
+        "You should consider using cash for small amounts like this.");
 }
 alia_end
 /// [tip-calculator]
