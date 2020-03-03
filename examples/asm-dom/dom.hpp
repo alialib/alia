@@ -75,6 +75,48 @@ do_colored_box(dom::context ctx, readable<rgb8> color);
 void
 do_hr(dom::context ctx);
 
+struct div_data;
+
+struct scoped_div : noncopyable
+{
+    scoped_div(dom::context ctx, readable<std::string> class_name)
+    {
+        begin(ctx, class_name);
+    }
+
+    ~scoped_div()
+    {
+        end();
+    }
+
+    void
+    begin(dom::context ctx, readable<std::string> class_name);
+
+    void
+    end();
+
+    bool
+    is_relevant()
+    {
+        return routing_.is_relevant();
+    }
+
+ private:
+    std::optional<dom::context> ctx_;
+    div_data* data_ = nullptr;
+    asmdom::Children* parent_children_list_ = nullptr;
+    scoped_routing_region routing_;
+};
+
+template<class DoContents>
+void
+do_div(
+    dom::context ctx, readable<std::string> class_name, DoContents do_contents)
+{
+    scoped_div div(ctx, class_name);
+    do_contents(ctx);
+}
+
 struct dom_external_interface : alia::external_interface
 {
     alia::system* system;
