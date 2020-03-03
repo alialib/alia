@@ -17,7 +17,7 @@ enum class async_status
 };
 
 template<class Value>
-struct async_operation_data : node_identity
+struct async_operation_data
 {
     counter_type version = 0;
     Value result;
@@ -102,22 +102,15 @@ process_async_args(
     process_async_args(ctx, data, args_ready, rest...);
 }
 
-template<class Result>
-struct async_result_event : targeted_event
-{
-    Result result;
-    unsigned version;
-};
-
 template<class Result, class Context, class Launcher, class... Args>
 auto
 async(Context ctx, Launcher launcher, Args const&... args)
 {
-    async_operation_data<Result>* data_ptr;
-    get_cached_data(ctx, &data_ptr);
+    std::shared_ptr<async_operation_data<Result>>& data_ptr
+        = get_cached_data<std::shared_ptr<async_operation_data<Result>>>(ctx);
+    if (!data_ptr)
+        data_ptr.reset(new async_operation_data<Result>);
     auto& data = *data_ptr;
-
-    auto node_id = make_routable_node_id(ctx, data_ptr);
 
     bool args_ready = true;
     process_async_args(ctx, data, args_ready, args...);
@@ -127,14 +120,15 @@ async(Context ctx, Launcher launcher, Args const&... args)
         {
             auto* system = &get_component<system_tag>(ctx);
             auto version = data.version;
-            auto report_result = [=](Result result) {
-                async_result_event<Result> event;
-                event.result = std::move(result);
-                event.version = version;
-                dispatch_targeted_event(*system, event, node_id);
+            auto report_result = [system, version, data_ptr](Result result) {
+                auto& data = *data_ptr;
+                if (data.version == version)
+                {
+                    data.result = std::move(result);
+                    data.status = async_status::COMPLETE;
+                }
                 refresh_system(*system);
             };
-
             try
             {
                 launcher(ctx, report_result, read_signal(args)...);
@@ -145,15 +139,6 @@ async(Context ctx, Launcher launcher, Args const&... args)
             }
         }
     });
-
-    on_targeted_event<async_result_event<Result>>(
-        ctx, data_ptr, [&](auto ctx, auto& e) {
-            if (e.version == data.version)
-            {
-                data.result = std::move(e.result);
-                data.status = async_status::COMPLETE;
-            }
-        });
 
     return make_async_signal(data);
 }
