@@ -122,3 +122,73 @@ init_demo(std::string dom_id)
 static demo the_demo("tip-calculator-demo", init_demo);
 
 } // namespace tip_calculator
+
+namespace factor_tree {
+
+int
+factor(int n)
+{
+    int i;
+    for (i = int(std::sqrt(n) + 0.5); i > 1 && n % i != 0; --i)
+        ;
+    return i;
+}
+
+// clang-format off
+/// [factor-tree]
+void
+do_factor_tree(dom::context ctx, readable<int> n)
+{
+    dom::scoped_div div(ctx, value("item"));
+
+    // Get the 'best' factor that n has. (The one closest to sqrt(n).)
+    auto f = apply(ctx, factor, n);
+
+    // If that factor is 1, n is prime.
+    alia_if(f != 1)
+    {
+        dom::do_text(ctx, printf(ctx, "%i: composite", n));
+
+        // Allow the user to expand this block to see more factor.
+        auto expanded = get_state(ctx, false);
+        dom::do_button(ctx,
+            conditional(expanded, "Hide Factors", "Show Factors"),
+            toggle(expanded));
+        alia_if(expanded)
+        {
+            do_factor_tree(ctx, f);
+            do_factor_tree(ctx, n / f);
+        }
+        alia_end
+    }
+    alia_else
+    {
+        dom::do_text(ctx, printf(ctx, "%i: prime", n));
+    }
+    alia_end
+}
+
+// And here's the demo UI that invokes the top-level of the tree:
+void
+do_factor_tree_demo(dom::context ctx, bidirectional<int> n)
+{
+    dom::do_text(ctx, "Enter a number:");
+    dom::do_input(ctx, n);
+    do_factor_tree(ctx, n);
+}
+/// [factor-tree]
+// clang-format on
+
+void
+init_demo(std::string dom_id)
+{
+    static alia::system the_system;
+    static dom::system the_dom;
+
+    initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
+        do_factor_tree_demo(ctx, get_state(ctx, 600)); }
+}
+
+static demo the_demo("factor-tree", init_demo);
+
+} // namespace factor_tree

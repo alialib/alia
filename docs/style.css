@@ -77,3 +77,10 @@
     border-radius: 0.5em;
     margin: 1em 0 0.2em 0;
 }
+
+.markdown-section div[class^='demo-panel'] .item {
+    border-color: #ccd;
+    border-width: 0 0 0 3.5px;
+    border-style: solid;
+    padding: 4px 4px 4px 1em;
+}

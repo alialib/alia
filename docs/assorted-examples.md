@@ -4,7 +4,7 @@ Assorted Examples
 <script>
     init_alia_demos(['tip-calculator-demo', 'loop-macros-demo',
         'for-each-map-demo', 'fetch-country', 'time-signal',
-        'value-smoothing']);
+        'value-smoothing', 'factor-tree']);
 </script>
 
 If you're more interested in code than prose, you'll like this page the best.
@@ -47,6 +47,25 @@ to integrate alia with your application data.
 
 <div class="demo-panel">
 <div id="loop-macros-demo"></div>
+</div>
+
+Factor Trees
+------------
+
+This example displays factorization trees for numbers that you enter. It
+emulates a tree view by allowing the user to show and hide the subtree
+associated with each composite factor.
+
+What's interesting about this is that there's actually no application data that
+mirrors this tree view. The application 'model' consists entirely of a single
+integer. The structure of the UI (and the state that allows the user to expand
+and collapse nodes in the tree) is fully defined by the recursive structure of
+the calls to `do_factor_tree`.
+
+[source](numerical.cpp ':include :fragment=factor-tree')
+
+<div class="demo-panel">
+<div id="factor-tree"></div>
 </div>
 
 Asynchronous I/O
