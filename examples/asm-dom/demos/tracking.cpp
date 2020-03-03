@@ -9,21 +9,21 @@ do_ui(dom::context ctx, bidirectional<int> n)
 {
     // clang-format off
 /// [switch-example]
-do_text(ctx, "Enter a number:");
-do_input(ctx, n);
+dom::do_text(ctx, "Enter a number:");
+dom::do_input(ctx, n);
 alia_switch(n)
 {
  alia_case(0):
-    do_text(ctx, "foo");
+    dom::do_text(ctx, "foo");
     break;
  alia_case(1):
-    do_text(ctx, "bar");
+    dom::do_text(ctx, "bar");
  alia_case(2):
  alia_case(3):
-    do_text(ctx, "baz");
+    dom::do_text(ctx, "baz");
     break;
  alia_default:
-    do_text(ctx, "zub");
+    dom::do_text(ctx, "zub");
 }
 alia_end
 /// [switch-example]
@@ -71,12 +71,14 @@ do_records_ui(dom::context ctx, std::vector<my_record>& records)
     // tracking.
     alia_for(auto& record : records)
     {
+        dom::scoped_div div(ctx, value("item"));
+
         // And now, at the point that we actually connect our individual records
         // to our widgets, we'll just use 'direct' to create signals that
         // directly connect our record's fields to the widgets.
-        do_heading(ctx, "h4", direct(record.label));
-        do_input(ctx, direct(record.x));
-        do_input(ctx, direct(record.y));
+        dom::do_heading(ctx, "h4", direct(record.label));
+        dom::do_input(ctx, direct(record.x));
+        dom::do_input(ctx, direct(record.y));
 
         // We might also apply some tests to our records without worrying about
         // alia's 'proper', signal-based dataflow semantics...
@@ -85,11 +87,6 @@ do_records_ui(dom::context ctx, std::vector<my_record>& records)
             do_text(ctx, "WARNING: This is out of bounds!");
         }
         alia_end
-
-        // And, since we're doing this example as a toy without real
-        // consideration for styling, let's throw in a horizontal rule for
-        // separation between records...
-        do_hr(ctx);
     }
     alia_end
 
@@ -97,14 +94,14 @@ do_records_ui(dom::context ctx, std::vector<my_record>& records)
     {
         // Get some local state for the new label.
         auto new_label = get_state(ctx, string());
-        do_input(ctx, new_label);
+        dom::do_input(ctx, new_label);
 
         // Create an action that adds the new record.
         auto add_record = lambda_action(
             [&](std::string label) { records.push_back({label}); });
 
         // Present a button that adds the new record.
-        do_button(ctx, "Add",
+        dom::do_button(ctx, "Add",
             // Hook up the new label to our action (if the label isn't empty).
             (add_record <<= mask(new_label, new_label != ""),
              // Also add in an action that resets the label.
@@ -140,15 +137,15 @@ do_scoreboard(
 {
     for_each(ctx, scores,
         [](auto ctx, auto player, auto score) {
-            do_heading(ctx, "h4", player);
-            do_text(ctx, printf(ctx, "%d points", score));
-            do_button(ctx, "GOAL!", ++score);
-            do_hr(ctx);
+            dom::scoped_div div(ctx, value("item"));
+            dom::do_heading(ctx, "h4", player);
+            dom::do_text(ctx, printf(ctx, "%d points", score));
+            dom::do_button(ctx, "GOAL!", ++score);
         });
 
     auto new_player = get_state(ctx, string());
-    do_input(ctx, new_player);
-    do_button(ctx, "Add Player",
+    dom::do_input(ctx, new_player);
+    dom::do_button(ctx, "Add Player",
         (scores[new_player] <<= mask(0, new_player != ""),
          new_player <<= ""));
 }
@@ -187,10 +184,10 @@ do_scoreboard(dom::context ctx, bidirectional<std::vector<player>> players)
 {
     for_each(ctx, players,
         [](auto ctx, auto player) {
+            dom::scoped_div div(ctx, value("item"));
             do_heading(ctx, "h4", alia_field(player, name));
             do_text(ctx, printf(ctx, "%d points", alia_field(player, score)));
             do_button(ctx, "GOAL!", ++alia_field(player, score));
-            do_hr(ctx);
         });
 
     auto new_player = get_state(ctx, string());
@@ -247,7 +244,10 @@ do_records_ui(dom::context ctx, std::vector<my_record>& records)
     {
         named_block nb(nc, make_id(record.id));
 
-        // Do the controls for this record, like we normally would.
+        // Do the controls for this record, like we normally would...
+
+        dom::scoped_div div(ctx, value("item"));
+
         do_heading(ctx, "h4", direct(record.label));
         do_input(ctx, direct(record.x));
         do_input(ctx, direct(record.y));
@@ -257,11 +257,6 @@ do_records_ui(dom::context ctx, std::vector<my_record>& records)
         // in here and shuffle the records to see what happens...
         do_text(ctx, "Local UI state associated with this record:");
         do_input(ctx, get_state(ctx, ""));
-
-        // And, since we're doing this example as a toy without real
-        // consideration for styling, let's throw in a horizontal rule for
-        // separation between records...
-        do_hr(ctx);
     }
 
     do_button(ctx, "Shuffle!",
