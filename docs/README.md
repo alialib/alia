@@ -81,9 +81,6 @@ alia_if (total < 10)
 alia_end
 ```
 
-Other assorted examples are available <a target="_self"
-href="https://tmadden.github.io/alia/#/assorted-examples">here</a>.
-
 Project Status
 --------------
 
