@@ -139,7 +139,7 @@ factor(int n)
 void
 do_factor_tree(dom::context ctx, readable<int> n)
 {
-    dom::scoped_div div(ctx, value("item"));
+    dom::scoped_div div(ctx, value("subtree"));
 
     // Get the 'best' factor that n has. (The one closest to sqrt(n).)
     auto f = apply(ctx, factor, n);
@@ -186,7 +186,8 @@ init_demo(std::string dom_id)
     static dom::system the_dom;
 
     initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_factor_tree_demo(ctx, get_state(ctx, 600)); }
+        do_factor_tree_demo(ctx, get_state(ctx, 600));
+    });
 }
 
 static demo the_demo("factor-tree", init_demo);
