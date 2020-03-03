@@ -205,6 +205,60 @@ do_hr(dom::context ctx)
     });
 }
 
+struct div_data
+{
+    element_data element;
+    keyed_data<std::string> class_name;
+    asmdom::Children children_;
+};
+
+void
+scoped_div::begin(dom::context ctx, readable<std::string> class_name)
+{
+    ctx_ = ctx;
+
+    get_cached_data(ctx, &data_);
+
+    if (is_refresh_event(ctx))
+    {
+        auto& dom_context = get_component<context_info_tag>(ctx);
+        parent_children_list_ = dom_context.current_children;
+        dom_context.current_children = &data_->children_;
+        data_->children_.clear();
+
+        refresh_keyed_data(data_->class_name, class_name.value_id());
+        if (!is_valid(data_->class_name) && class_name.has_value())
+            set(data_->class_name, class_name.read());
+    }
+
+    routing_.begin(ctx);
+}
+
+void
+scoped_div::end()
+{
+    if (ctx_)
+    {
+        dom::context& ctx = *ctx_;
+
+        routing_.end();
+
+        auto& dom_context = get_component<context_info_tag>(ctx);
+        dom_context.current_children = parent_children_list_;
+
+        if (is_refresh_event(ctx))
+        {
+            asmdom::Attrs attrs;
+            if (is_valid(data_->class_name))
+                attrs["class"] = get(data_->class_name);
+            parent_children_list_->push_back(
+                asmdom::h("div", asmdom::Data(attrs), data_->children_));
+        }
+
+        ctx_.reset();
+    }
+}
+
 static void
 handle_refresh_event(dom::context ctx, system& system)
 {
@@ -235,10 +289,9 @@ dom_external_interface::request_animation_refresh()
 void
 system::operator()(alia::context vanilla_ctx)
 {
-    context_info* context_info;
-    get_data(vanilla_ctx, &context_info);
+    context_info context_info;
     dom::context ctx
-        = add_component<context_info_tag>(vanilla_ctx, std::ref(*context_info));
+        = extend_context<context_info_tag>(vanilla_ctx, context_info);
 
     if (is_refresh_event(ctx))
     {
