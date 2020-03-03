@@ -19,7 +19,7 @@ add_element(
     id_interface const& key,
     CreateElement create_element)
 {
-    handle_event<refresh_event>(ctx, [&](auto ctx, auto& e) {
+    on_refresh(ctx, [&](auto ctx) {
         // Theoretically, we should be able to reuse the vnode if the key hasn't
         // changed. However, asm-dom's patching semantics mean that sometimes
         // the vnodes get overwritten or destroyed without our knowledge, so
@@ -118,7 +118,7 @@ do_input_(dom::context ctx, bidirectional<string> value)
                          return true;
                      }}}));
     });
-    handle_targeted_event<value_update_event>(ctx, id, [=](auto ctx, auto& e) {
+    on_targeted_event<value_update_event>(ctx, id, [=](auto ctx, auto& e) {
         if (signal_ready_to_write(value))
         {
             try
@@ -170,7 +170,7 @@ do_button_(dom::context ctx, readable<std::string> text, action<> on_click)
             });
     }
 
-    handle_targeted_event<click_event>(ctx, id, [=](auto ctx, auto& e) {
+    on_targeted_event<click_event>(ctx, id, [=](auto ctx, auto& e) {
         if (action_is_ready(on_click))
         {
             perform_action(on_click);
@@ -219,8 +219,7 @@ scoped_div::begin(dom::context ctx, readable<std::string> class_name)
 
     get_cached_data(ctx, &data_);
 
-    if (is_refresh_event(ctx))
-    {
+    on_refresh(ctx, [&](auto ctx) {
         auto& dom_context = get_component<context_info_tag>(ctx);
         parent_children_list_ = dom_context.current_children;
         dom_context.current_children = &data_->children_;
@@ -229,7 +228,7 @@ scoped_div::begin(dom::context ctx, readable<std::string> class_name)
         refresh_keyed_data(data_->class_name, class_name.value_id());
         if (!is_valid(data_->class_name) && class_name.has_value())
             set(data_->class_name, class_name.read());
-    }
+    });
 
     routing_.begin(ctx);
 }
