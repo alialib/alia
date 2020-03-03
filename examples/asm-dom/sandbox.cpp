@@ -3,6 +3,8 @@
 void
 do_sandbox_ui(dom::context ctx)
 {
+    dom::do_text(ctx, "It seems to be working!");
+
     auto flag = get_state(ctx, false);
     dom::do_button(ctx, "Toggle!", toggle(flag));
     dom::do_colored_box(
