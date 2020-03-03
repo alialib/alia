@@ -142,7 +142,7 @@ detect_event(dataless_context ctx, Event** event)
 
 template<class Event, class Context, class Handler>
 void
-handle_event(Context ctx, Handler&& handler)
+on_event(Context ctx, Handler&& handler)
 {
     Event* e;
     ALIA_UNTRACKED_IF(detect_event(ctx, &e))
@@ -212,7 +212,7 @@ detect_targeted_event(dataless_context ctx, node_id id, Event** event)
 
 template<class Event, class Context, class Handler>
 void
-handle_targeted_event(Context ctx, node_id id, Handler&& handler)
+on_targeted_event(Context ctx, node_id id, Handler&& handler)
 {
     Event* e;
     ALIA_UNTRACKED_IF(detect_targeted_event(ctx, id, &e))
@@ -234,6 +234,17 @@ is_refresh_event(dataless_context ctx)
 {
     refresh_event* e;
     return detect_event(ctx, &e);
+}
+
+template<class Context, class Handler>
+void
+on_refresh(Context ctx, Handler handler)
+{
+    ALIA_UNTRACKED_IF(is_refresh_event(ctx))
+    {
+        handler(ctx);
+    }
+    ALIA_END
 }
 
 } // namespace alia

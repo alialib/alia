@@ -122,32 +122,31 @@ async(Context ctx, Launcher launcher, Args const&... args)
     bool args_ready = true;
     process_async_args(ctx, data, args_ready, args...);
 
-    ALIA_UNTRACKED_IF(
-        is_refresh_event(ctx) && data.status == async_status::UNREADY
-        && args_ready)
-    {
-        auto* system = &get_component<system_tag>(ctx);
-        auto version = data.version;
-        auto report_result = [=](Result result) {
-            async_result_event<Result> event;
-            event.result = std::move(result);
-            event.version = version;
-            dispatch_targeted_event(*system, event, node_id);
-            refresh_system(*system);
-        };
-
-        try
+    on_refresh(ctx, [&](auto ctx) {
+        if (data.status == async_status::UNREADY && args_ready)
         {
-            launcher(ctx, report_result, read_signal(args)...);
-        }
-        catch (...)
-        {
-            data.status = async_status::FAILED;
-        }
-    }
-    ALIA_END
+            auto* system = &get_component<system_tag>(ctx);
+            auto version = data.version;
+            auto report_result = [=](Result result) {
+                async_result_event<Result> event;
+                event.result = std::move(result);
+                event.version = version;
+                dispatch_targeted_event(*system, event, node_id);
+                refresh_system(*system);
+            };
 
-    handle_targeted_event<async_result_event<Result>>(
+            try
+            {
+                launcher(ctx, report_result, read_signal(args)...);
+            }
+            catch (...)
+            {
+                data.status = async_status::FAILED;
+            }
+        }
+    });
+
+    on_targeted_event<async_result_event<Result>>(
         ctx, data_ptr, [&](auto ctx, auto& e) {
             if (e.version == data.version)
             {
