@@ -84,7 +84,9 @@ do_records_ui(dom::context ctx, std::vector<my_record>& records)
         // alia's 'proper', signal-based dataflow semantics...
         alia_if(!in_bounds(record))
         {
-            do_text(ctx, "WARNING: This is out of bounds!");
+            // Apparently the Docsify CSS class for a warning is 'tip'.
+            dom::scoped_div div(ctx, value("tip"));
+            do_text(ctx, "This is out of bounds!");
         }
         alia_end
     }
@@ -117,7 +119,8 @@ init_demo(std::string dom_id)
     static alia::system the_system;
     static dom::system the_dom;
 
-    static std::vector<my_record> the_records = {{"Demo Record", 2, 4}};
+    static std::vector<my_record> the_records
+        = {{"Demo Record", 2, 4}, {"Fix Me!", 200, 0}};
 
     initialize(the_dom, the_system, dom_id, [&](dom::context ctx) {
         do_records_ui(ctx, the_records);

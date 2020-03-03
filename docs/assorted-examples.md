@@ -4,7 +4,7 @@ Assorted Examples
 <script>
     init_alia_demos(['tip-calculator-demo', 'loop-macros-demo',
         'for-each-map-demo', 'fetch-country', 'time-signal',
-        'value-smoothing', 'factor-tree']);
+        'number-smoothing', 'color-smoothing', 'factor-tree']);
 </script>
 
 If you're more interested in code than prose, you'll like this page the best.
@@ -98,8 +98,17 @@ explicitly vary with it:
 You can use this explicit notion of time to do fun things like smooth out other
 signals:
 
-[source](timing.cpp ':include :fragment=value-smoothing')
+[source](timing.cpp ':include :fragment=number-smoothing')
 
 <div class="demo-panel">
-<div id="value-smoothing"></div>
+<div id="number-smoothing"></div>
+</div>
+
+You can smooth anything that provides the basic arithmetic operators. Here's a
+smoothed view of a color:
+
+[source](timing.cpp ':include :fragment=color-smoothing')
+
+<div class="demo-panel">
+<div id="color-smoothing"></div>
 </div>
