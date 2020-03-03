@@ -78,9 +78,16 @@
     margin: 1em 0 0.2em 0;
 }
 
-.markdown-section div[class^='demo-panel'] .item {
-    border-color: #ccd;
+.markdown-section div[class^='demo-panel'] .subtree {
+    border-color: #d0d0e0;
     border-width: 0 0 0 3.5px;
     border-style: solid;
     padding: 4px 4px 4px 1em;
+}
+
+.markdown-section div[class^='demo-panel'] .item {
+    border-color: #dde;
+    border-width: 0 0 1px 0;
+    border-style: solid;
+    padding: 0 0 1em 0;
 }
