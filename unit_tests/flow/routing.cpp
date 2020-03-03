@@ -37,7 +37,7 @@ do_label(context ctx, std::string const& name)
 {
     do_ostream_text(ctx, name);
 
-    handle_event<find_label_event>(ctx, [name](auto ctx, auto& fle) {
+    on_event<find_label_event>(ctx, [name](auto ctx, auto& fle) {
         if (fle.name == name)
             fle.region = get_active_routing_region(ctx);
     });

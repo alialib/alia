@@ -27,21 +27,15 @@ do_my_thing(my_context ctx, readable<string> label)
 {
     node_id this_id = get_node_id(ctx);
 
-    if (is_refresh_event(ctx))
-    {
+    on_refresh(ctx, [&](auto ctx) {
         get_component<my_tag>(ctx).push_back(
             make_routable_node_id(ctx, this_id));
-    }
+    });
 
-    {
-        my_event* e;
-        if (detect_event(ctx, &e))
-        {
-            e->visited += read_signal(label) + ";";
-        }
-    }
+    on_event<my_event>(
+        ctx, [&](auto, auto& e) { e.visited += read_signal(label) + ";"; });
 
-    handle_targeted_event<my_event>(ctx, this_id, [&](auto, my_event& event) {
+    on_targeted_event<my_event>(ctx, this_id, [&](auto, my_event& event) {
         event.result = read_signal(label);
     });
 }
