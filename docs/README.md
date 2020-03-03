@@ -47,30 +47,38 @@ Check out [the documentation](https://tmadden.github.io/alia) for more info.
 
 </div>
 
-A Quick Example
----------------
+An Example
+----------
 
-Below is a simple interactive "Hello, World!" example that uses an experimental
-[asm-dom](https://github.com/mbasso/asm-dom) wrapper. To see it in action and
-read more about it, <a target="_self"
-href="https://tmadden.github.io/alia/#/reactive-hello">click here</a>.
+Below is a simple tip calculator made using alia and an experimental
+[asm-dom](https://github.com/mbasso/asm-dom) wrapper. To see it in action, along
+with some other examples, <a target="_self"
+href="https://tmadden.github.io/alia/#/assorted-examples?id=tip-calculator">
+click here</a>.
 
 ```cpp
-void
-do_greeting_ui(dom::context ctx, bidirectional<string> name)
+auto bill = get_state(ctx, empty<double>());
+dom::do_text(ctx, "How much is the bill?");
+dom::do_input(ctx, bill);
+
+auto tip_rate = get_state(ctx, empty<double>());
+dom::do_text(ctx, "What percentage do you want to tip?");
+dom::do_input(ctx, scale(tip_rate, 100));
+dom::do_button(ctx, "18%", tip_rate <<= 0.18);
+dom::do_button(ctx, "20%", tip_rate <<= 0.20);
+dom::do_button(ctx, "25%", tip_rate <<= 0.25);
+
+auto tip = bill * tip_rate;
+auto total = bill + tip;
+dom::do_text(ctx,
+    printf(ctx, "You should tip %.2f, for a total of %.2f.", tip, total));
+
+alia_if (total < 10)
 {
-    dom::do_text(ctx, "What's your name?");
-
-    // Allow the user to input their name.
-    dom::do_input(ctx, name);
-
-    // If we have a name, greet the user.
-    alia_if(name != "")
-    {
-        dom::do_text(ctx, "Hello, " + name + "!");
-    }
-    alia_end
+    dom::do_text(ctx,
+        "You should consider using cash for small amounts like this.");
 }
+alia_end
 ```
 
 Other assorted examples are available <a target="_self"

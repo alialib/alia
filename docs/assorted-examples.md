@@ -13,12 +13,9 @@ Many of these come from other sections of the documentation...
 Tip Calculator
 --------------
 
-Here's a quick-and-dirty tip calculator that shows off some
-[actions](actions.md), as well as how you can use alia's data graph to
-'magically' manifest state when and where you need it, even in the middle of
-reactive application code. Currently, this state is entirely isolated to the bit
-of code that calls `get_state`, but it's on the roadmap to add proper
-externalization capabilities...
+Here's a simple tip calculator that shows off some [actions](actions.md), as
+well as how you can use alia's data graph to 'magically' manifest state when and
+where you need it, even in the middle of reactive application code.
 
 [source](numerical.cpp ':include :fragment=tip-calculator')
 
