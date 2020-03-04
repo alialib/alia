@@ -170,12 +170,8 @@ do_button_(dom::context ctx, readable<std::string> text, action<> on_click)
             });
     }
 
-    on_targeted_event<click_event>(ctx, id, [=](auto ctx, auto& e) {
-        if (action_is_ready(on_click))
-        {
-            perform_action(on_click);
-        }
-    });
+    on_targeted_event<click_event>(
+        ctx, id, [=](auto ctx, auto& e) { perform_action(on_click); });
 }
 
 void
