@@ -1,69 +1,15 @@
-Tracking Mechanisms
-===================
+Loops
+=====
 
 <script>
-    init_alia_demos(['numerical-analysis', 'switch-example', 'transform-demo',
+    init_alia_demos(['transform-demo',
         'metered-transform-demo', 'metered-direct-counting',
         'loop-macros-demo', 'for-each-map-demo', 'for-each-vector-demo',
         'named-blocks-demo']);
 </script>
 
-This page documents all the various mechanisms you can use to allow alia to
-observe the flow of your application and properly maintain the data graph...
-
-Conditionals
-------------
-
-### alia_if/else
-
-alia provides the equivalent of `if`, `else if` and `else` as macros. Here again
-is a simple example that makes use of all three:
-
-?> The alia control flow macros come in both uppercase and lowercase forms.
-   Traditionally, they have been lowercase to more closely resemble the actual
-   C++ keywords that they mimic. However, the uppercase form makes it more
-   obvious to readers (and clang-format) that the macros are indeed macros.
-   Ultimately, it's up to you which style you prefer. If you want to be strict
-   in your project, you can disable the lowercase form in [the
-   configuration](configuration.md).
-
-[source](numerical.cpp ':include :fragment=analysis')
-
-<div class="demo-panel">
-<div id="numerical-analysis"></div>
-</div>
-
-As with all alia control flow macros, `alia_if` blocks must be terminated with
-`alia_end`.
-
-The conditions that you provide to `alia_if` (and `alia_else_if`) can be signals
-or raw C++ values. If a signal is provided and the signal has no value, alia
-considers the condition *neither true nor false.* As such, the code dependent on
-that statement isn't executed, but any subsequent `else` blocks are *also not
-considered.* A condition without a value essentially terminates the entire
-sequence of `alia_if/else` statements. As you can see in the above example,
-before `n` is given a value, none of the `do_text` calls are executed.
-
-### alia_switch
-
-alia provides a similar set of macros that mirror the behavior of `switch`,
-`case`, and `default`. Note that all the normal semantics of `switch` statements
-work as expected, including fallthrough:
-
-[source](tracking.cpp ':include :fragment=switch-example')
-
-<div class="demo-panel">
-<div id="switch-example"></div>
-</div>
-
-The value passed to `alia_switch` is a signal, and just like `alia_if`
-conditionals, if that signal doesn't have a value, none of the cases will match
-(including the default, if any).
-
-Looping Constructs
-------------------
-
-### for_each
+for_each
+--------
 
 `for_each` is the preferred way to loop over containers in alia. It takes care
 of flow tracking for you, and it operates on signals: you pass in the container
@@ -105,7 +51,7 @@ data:
 <div id="for-each-vector-demo"></div>
 </div>
 
-#### Item/Data Associations
+### Item/Data Associations
 
 `for_each` tries to do a reasonable job of associating items consistently with
 the same nodes in the data graph, even if those items move around within the
@@ -124,7 +70,8 @@ either via ADL or because it's defined there.) It should take the item as a
 parameter and return an alia ID. (See [Working with IDs](working-with-ids.md).)
 It can also return `null_id` to fall back to the default ID behavior.
 
-### transform
+transform
+---------
 
 When working with container signals, it's common to apply some function
 individually to each item in the container. Just like `std::transform` allows
@@ -181,7 +128,8 @@ in real world applications where you might be retrieving data from remote
 sources or doing computationally-intensive background calculations, the
 difference can be significant.
 
-### alia_for/while
+alia_for/while
+--------------
 
 !> Although alia provides macros for tracking `for` and `while` loops, these do
    *not* integrate naturally into alia applications the way that the `if` and
@@ -219,7 +167,8 @@ application's data structures to alia:
 <div id="loop-macros-demo"></div>
 </div>
 
-### named_block
+named_block
+-----------
 
 If you need more control over how you iterate over your data structures, you can
 use named blocks. By 'naming' a block of code, you ensure that the piece of the

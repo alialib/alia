@@ -1,8 +1,12 @@
-The Data Graph
-==============
+Flow Basics
+===========
 
-This is why our "Hello, World!" example had to use `alia_if` instead of a
-regular C++ `if` statement. Let's look at it again (with a small addition):
+The Data Graph
+--------------
+
+This section attempts to explain why
+
+Let's take a look at our "Hello, World!" example again (with a small addition):
 
 [source](greeting.cpp ':include :fragment=expanded-greeting')
 
@@ -10,8 +14,9 @@ regular C++ `if` statement. Let's look at it again (with a small addition):
 <div id="expanded-greeting"></div>
 </div>
 
-This time, the source code is annotated with the nodes that alia is keeping
-track of. Behind the scenes, alia maintains a data graph that looks like this:
+Now alia also introduces itself. And this time, the source code is annotated
+with the nodes that alia is keeping track of. Behind the scenes, alia maintains
+a data graph that looks like this:
 
 ![flow](data-graph.svg)
 

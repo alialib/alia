@@ -49,18 +49,22 @@ namespace loop_macros_demo {
 
 // clang-format off
 /// [loop-macros-demo]
+// Here's an application data type, which has nothing to do with alia.
 struct my_record
 {
     std::string label;
     int x = 0, y = 0;
 };
 
+// Here's a function that operates on that type and also has nothing to do with
+// alia.
 bool
 in_bounds(my_record const& r)
 {
     return r.x >= 0 && r.x < 100 && r.y >= -20 && r.y < 20;
 }
 
+// Here's an alia function that exposes our application data via asm-dom.
 void
 do_records_ui(dom::context ctx, std::vector<my_record>& records)
 {

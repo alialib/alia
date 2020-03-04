@@ -32,7 +32,7 @@ to be used in a reactive manner. In particular, alia features:
   presentation objects naturally reflects whatever the function calls specify.
 
 * **dataflow semantics** - alia provides tools for modeling the computations in
-  your application as a dataflow that implicitly supports the reality that
+  your application as a data flow that implicitly supports the reality that
   function inputs are often not immediately available (because they are waiting
   for user inputs, background calculations, remote queries, etc.).
 

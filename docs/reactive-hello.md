@@ -24,7 +24,7 @@ wrapper. Since alia itself focuses on the mechanics of writing reactive
 applications, it doesn't actually *do* anything to interact with the outside
 world. It's a bit like a fancy programming language with no I/O capabilities.
 It's designed to hook up to other libraries that do useful things, so for these
-examples, we've hooked it up to asm-dom. For clarity, anything specific to the
+examples, it's hooked up to asm-dom. For clarity, anything specific to the
 asm-dom wrapper is prefixed with the `dom::` namespace.
 
 If you're familiar with reactive programming, it will be obvious, but the key

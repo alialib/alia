@@ -17,10 +17,10 @@
 
 - Control Flow
 
-  - [Flow Concepts](flow-concepts.md)
-  - [Tracking Mechanisms](tracking-mechanisms.md)
+  - [Flow Basics](flow-basics.md)
+  - [Conditionals](conditionals.md)
+  - [Loops](loops.md)
   - [Actions](actions.md)
-  - [The Data Graph](the-data-graph.md)
   - [The Context](the-context.md)
 
 - Other Guides
