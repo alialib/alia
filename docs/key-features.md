@@ -9,22 +9,31 @@ Dataflow Semantics
 ------------------
 
 In reactive programming, it's useful to think of your application as defining a
-dataflow and your variables as carrying values that change over time. In alia,
-this type of variable is called a *signal.* If you think of an alia application
-as defining a dataflow graph where the inputs are application state and the
-outputs go into a presentation layer, then the edges of this graph (where the
-values live) are all signals.
+data flow and your variables as carrying values that change over time. In alia,
+this type of variable is called a *signal.* Examples of signals in an
+application might include user inputs (like `name` from our 'Hello, World!'
+example), entries in a database, and calculation results. Reasoning about
+application logic as a data flow allows us to more declaratively express the
+inherent relationships between bits of application data without worrying about
+how to propagate changes through that data.
 
-The most important difference between an alia signal and a regular C++ variable
-is the concept of *availability.* It's often useful to think of a signal in your
-dataflow as carrying no value at all (e.g., because the user hasn't input a
-value yet, or because the value is still being computed or queried from some
-remote source). Since this "not available yet" state tends to propagate through
-a dataflow, virtually all code that works with signals has to account for it.
-With alia signals, this state is implicitly part of the type and implicitly
-propagates through your application's data flow.
+In alia, signals facilitate this style of development by providing two important
+features:
 
-For example, let's write a quick app that adds numbers:
+- **value identity** - Signals are designed to allow you to efficiently detect
+  when their values have changed, independent of the size of those values. This
+  allows nodes in your data flow to efficiently detect when their inputs have
+  changed and propagate those changes forward.
+
+- **availability** - It's often useful to think of a signal in your dataflow as
+  carrying no value at all (e.g., because the user hasn't input a value yet, or
+  because the value is still being computed or queried from some remote source).
+  Since this "not available yet" state tends to propagate through a dataflow,
+  virtually all code that works with signals has to account for it. With alia
+  signals, this state is implicitly part of the type and implicitly propagates
+  through your application's data flow.
+
+To see that last point in action, let's write a quick app that adds numbers:
 
 [source](numerical.cpp ':include :fragment=addition-ui')
 
