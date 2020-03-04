@@ -66,6 +66,8 @@ invoke_controller(system& sys, event_traversal& events)
     sys.controller(ctx);
 }
 
+namespace impl {
+
 static void
 route_event_(system& sys, event_traversal& traversal, routing_region* target)
 {
@@ -99,6 +101,8 @@ route_event(system& sys, event_traversal& traversal, routing_region* target)
     {
     }
 }
+
+} // namespace impl
 
 void abort_traversal(dataless_context)
 {
