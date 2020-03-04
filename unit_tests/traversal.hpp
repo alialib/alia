@@ -47,7 +47,7 @@ check_traversal(
         ostream_event oe;
         std::ostringstream s;
         oe.stream = &s;
-        dispatch_event(sys, oe);
+        impl::dispatch_event(sys, oe);
         REQUIRE(s.str() == expected_output);
     }
 }

@@ -2,6 +2,7 @@
 #define ALIA_FLOW_EVENTS_HPP
 
 #include <alia/components/context.hpp>
+#include <alia/components/system.hpp>
 #include <alia/flow/data_graph.hpp>
 #include <alia/flow/macros.hpp>
 
@@ -59,6 +60,8 @@ get_active_routing_region(Context ctx)
                                    : routing_region_ptr();
 }
 
+namespace impl {
+
 // Set up the event traversal so that it will route the control flow to the
 // given target. (And also invoke the traversal.)
 // :target can be null, in which case no (further) routing will be done.
@@ -86,6 +89,16 @@ dispatch_event(system& sys, Event& event)
     traversal.event_type = &typeid(Event);
     traversal.event = &event;
     route_event(sys, traversal, 0);
+}
+
+} // namespace impl
+
+template<class Event>
+void
+dispatch_event(system& sys, Event& event)
+{
+    impl::dispatch_event(sys, event);
+    refresh_system(sys);
 }
 
 struct traversal_aborted
@@ -200,7 +213,8 @@ void
 dispatch_targeted_event(system& sys, Event& event, routable_node_id const& id)
 {
     event.target_id = id.id;
-    dispatch_targeted_event(sys, event, id.region);
+    impl::dispatch_targeted_event(sys, event, id.region);
+    refresh_system(sys);
 }
 
 template<class Event>

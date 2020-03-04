@@ -34,7 +34,7 @@ refresh_system(system& sys)
     sys.refresh_needed = false;
 
     refresh_event refresh;
-    dispatch_event(sys, refresh);
+    impl::dispatch_event(sys, refresh);
 }
 
 } // namespace alia
