@@ -114,7 +114,6 @@ do_input_(dom::context ctx, bidirectional<string> value)
                          value_update_event update;
                          update.value = e["target"]["value"].as<std::string>();
                          dispatch_targeted_event(*system, update, routable_id);
-                         refresh_system(*system);
                          return true;
                      }}}));
     });
@@ -163,7 +162,6 @@ do_button_(dom::context ctx, readable<std::string> text, action<> on_click)
                                                click_event click;
                                                dispatch_targeted_event(
                                                    *system, click, routable_id);
-                                               refresh_system(*system);
                                                return true;
                                            }}}),
                     read_signal(text));
