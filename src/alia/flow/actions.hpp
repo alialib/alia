@@ -63,8 +63,8 @@ template<class... Args>
 void
 perform_action(action_interface<Args...> const& action, Args... args)
 {
-    assert(action.is_ready());
-    action.perform([]() {}, args...);
+    if (action.is_ready())
+        action.perform([]() {}, args...);
 }
 
 // action_ref is a reference to an action that implements the action interface
