@@ -351,14 +351,14 @@ signal_ready_to_write(Signal const& signal)
 
 // Write a signal's value.
 // Unlike calling signal.write() directly, this will generate a compile-time
-// error if the signal's type doesn't support writing and a run-time error if
-// the signal isn't currently ready to write.
+// error if the signal's type doesn't support writing.
+// Note that if the signal isn't ready to write, this is a no op.
 template<class Signal, class Value>
 std::enable_if_t<signal_is_writable<Signal>::value>
 write_signal(Signal const& signal, Value const& value)
 {
-    assert(signal.ready_to_write());
-    signal.write(value);
+    if (signal.ready_to_write())
+        signal.write(value);
 }
 
 // signal_is_bidirectional<Signal>::value yields a compile-time boolean
