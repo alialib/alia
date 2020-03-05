@@ -22,11 +22,11 @@ init:
   # Set build version to git commit-hash
   - ps: Update-AppveyorBuild -Version "$($env:APPVEYOR_REPO_BRANCH) - $($env:APPVEYOR_REPO_COMMIT)"
   - ps: |
-    if ("$env:APPVEYOR_BUILD_WORKER_IMAGE" -eq "Visual Studio 2015") {
-      $env:VCVARSALL = "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat"
-    } else {
-      $env:VCVARSALL = "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat"
-    }
+      if ("$env:APPVEYOR_BUILD_WORKER_IMAGE" -eq "Visual Studio 2015") {
+          $env:VCVARSALL = "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat"
+      } else {
+          $env:VCVARSALL = "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat"
+      }
 
 install:
   # Set up Conan.
