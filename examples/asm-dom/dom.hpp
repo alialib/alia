@@ -19,15 +19,6 @@ ALIA_DEFINE_COMPONENT_TYPE(context_info_tag, context_info&)
 
 typedef alia::add_component_type_t<alia::context, context_info_tag> context;
 
-struct click_event : targeted_event
-{
-};
-
-struct value_update_event : targeted_event
-{
-    string value;
-};
-
 void
 do_text_(dom::context ctx, readable<std::string> text);
 
