@@ -89,6 +89,7 @@ build_script:
   # - fips make ctest
   # Test the Qt sandbox.
   - echo %Qt5_DIR%
+  - dir %Qt5_DIR%
   - C:\Python36\python scripts\generate-distributables.py
   - move alia.hpp examples\qt
   - cd examples\qt
