@@ -185,12 +185,18 @@ struct routable_node_id
 };
 
 inline routable_node_id
-make_routable_node_id(dataless_context ctx, node_id id)
+make_routable_node_id(node_id id, routing_region_ptr region)
 {
     routable_node_id routable;
     routable.id = id;
-    routable.region = get_active_routing_region(ctx);
+    routable.region = region;
     return routable;
+}
+
+inline routable_node_id
+make_routable_node_id(dataless_context ctx, node_id id)
+{
+    return make_routable_node_id(id, get_active_routing_region(ctx));
 }
 
 static routable_node_id const null_node_id;

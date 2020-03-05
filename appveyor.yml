@@ -21,6 +21,19 @@ init:
   - git config --global core.autocrlf input
   # Set build version to git commit-hash
   - ps: Update-AppveyorBuild -Version "$($env:APPVEYOR_REPO_BRANCH) - $($env:APPVEYOR_REPO_COMMIT)"
+  - set VCVARSALL14="C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat"
+  - set VCVARSALL15="C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat"
+  - ps: |
+      if ("$env:APPVEYOR_BUILD_WORKER_IMAGE" -eq "Visual Studio 2015") {
+          $env:MSVCID = "msvc2015"
+          $env:VCVARSALL = "$env:VCVARSALL14"
+          $env:QT_VERSION = "5.11.3"
+      } else {
+          $env:MSVCID = "msvc2017"
+          $env:VCVARSALL = "$env:VCVARSALL15"
+          $env:QT_VERSION = "5.13.2"
+      }
+  - set QT_ROOT_DIR=C:\Qt\%QT_VERSION%
 
 install:
   # Set up Conan.
@@ -37,6 +50,8 @@ for:
           configuration: Release
     before_build:
       - fips set config win64-vstudio-release
+      - call %VCVARSALL% x64
+      - set Qt5_DIR=%QT_ROOT_DIR%\%MSVCID%_64\lib\cmake\Qt5
     environment:
       LIBRARY_ARCHITECTURE: lib64
   - matrix:
@@ -45,6 +60,8 @@ for:
           configuration: Debug
     before_build:
       - fips set config win64-vstudio-debug
+      - call %VCVARSALL% x64
+      - set Qt5_DIR=%QT_ROOT_DIR%\%MSVCID%_64\lib\cmake\Qt5
     environment:
       LIBRARY_ARCHITECTURE: lib64
   - matrix:
@@ -53,6 +70,8 @@ for:
           configuration: Release
     before_build:
       - fips set config win32-vstudio-release
+      - call %VCVARSALL% x86
+      - set Qt5_DIR=%QT_ROOT_DIR%\%MSVCID%\lib\cmake\Qt5
     environment:
       LIBRARY_ARCHITECTURE: lib32
   - matrix:
@@ -61,6 +80,8 @@ for:
           configuration: Debug
     before_build:
       - fips set config win32-vstudio-debug
+      - call %VCVARSALL% x86
+      - set Qt5_DIR=%QT_ROOT_DIR%\%MSVCID%\lib\cmake\Qt5
     environment:
       LIBRARY_ARCHITECTURE: lib32
 
@@ -68,3 +89,11 @@ build_script:
   - set CTEST_OUTPUT_ON_FAILURE=1
   - fips gen
   - fips make ctest
+  # Test the Qt sandbox.
+  - C:\Python36\python scripts\generate-distributables.py
+  - move alia.hpp examples\qt
+  - cd examples\qt
+  - mkdir build
+  - cd build
+  - cmake -G"NMake Makefiles" ..
+  - cmake --build .

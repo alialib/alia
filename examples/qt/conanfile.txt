@@ -1,0 +1,5 @@
+[requires]
+qt/5.14.1@bincrafters/stable
+
+[generators]
+cmake
