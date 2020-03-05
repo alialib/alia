@@ -4,9 +4,13 @@
 #include <functional>
 
 #include <alia/components/context.hpp>
+#include <alia/components/timing.hpp>
 #include <alia/flow/data_graph.hpp>
 
 namespace alia {
+
+millisecond_count
+get_default_tick_count();
 
 struct external_interface
 {
@@ -15,41 +19,32 @@ struct external_interface
     request_animation_refresh()
     {
     }
+
+    // Get the current value of the system's millisecond tick counter.
+    // The default implementation of this uses std::chrono::steady_clock.
+    virtual millisecond_count
+    get_tick_count() const
+    {
+        return get_default_tick_count();
+    }
 };
 
 struct system
 {
     data_graph data;
     std::function<void(context)> controller;
-    millisecond_count tick_counter = 0;
-    bool automatic_time_updates = true;
     bool refresh_needed = false;
     external_interface* external = nullptr;
 };
-
-void
-refresh_system(system& sys);
-
-void
-refresh_system_time(system& sys);
-
-inline void
-set_automatic_time_updates(system& sys, bool enabled)
-{
-    sys.automatic_time_updates = enabled;
-}
-
-inline void
-set_millisecond_tick_counter(system& sys, millisecond_count count)
-{
-    sys.tick_counter = count;
-}
 
 inline bool
 system_needs_refresh(system const& sys)
 {
     return sys.refresh_needed;
 }
+
+void
+refresh_system(system& sys);
 
 } // namespace alia
 

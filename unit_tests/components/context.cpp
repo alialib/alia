@@ -48,10 +48,11 @@ TEST_CASE("context", "[components][context]")
     alia::system sys;
     data_traversal data;
     event_traversal event;
+    timing_component timing;
 
     scoped_data_traversal sdt(sys.data, data);
 
-    context ctx = make_context(&storage, sys, event, data);
+    context ctx = make_context(&storage, sys, event, data, timing);
 
     REQUIRE(has_component<data_traversal_tag>(ctx));
     REQUIRE(&get_component<data_traversal_tag>(ctx) == &data);

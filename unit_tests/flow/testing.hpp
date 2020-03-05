@@ -111,8 +111,11 @@ do_traversal(
     data_traversal data;
     scoped_data_traversal sdt(graph, data);
 
+    timing_component timing;
+    timing.tick_counter = 0;
+
     context_component_storage storage;
-    context ctx = make_context(&storage, sys, event, data);
+    context ctx = make_context(&storage, sys, event, data, timing);
 
     if (!with_gc)
         disable_gc(data);
