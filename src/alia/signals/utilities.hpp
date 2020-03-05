@@ -135,6 +135,34 @@ struct preferred_id_signal<
     mutable ComplexId id_;
 };
 
+// refresh_signal_shadow is useful to monitoring a signal and responding to
+// changes in its value.
+template<class Signal, class OnNewValue, class OnLostValue>
+void
+refresh_signal_shadow(
+    captured_id& id,
+    Signal signal,
+    OnNewValue&& on_new_value,
+    OnLostValue&& on_lost_value)
+{
+    if (signal.has_value())
+    {
+        if (!id.matches(signal.value_id()))
+        {
+            on_new_value(signal.read());
+            id.capture(signal.value_id());
+        }
+    }
+    else
+    {
+        if (!id.matches(null_id))
+        {
+            on_lost_value();
+            id.capture(null_id);
+        }
+    }
+}
+
 } // namespace alia
 
 #endif
