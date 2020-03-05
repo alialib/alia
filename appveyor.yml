@@ -27,11 +27,11 @@ init:
       if ("$env:APPVEYOR_BUILD_WORKER_IMAGE" -eq "Visual Studio 2015") {
           $env:MSVCID = "msvc2015"
           $env:VCVARSALL = "$env:VCVARSALL14"
-          $env:QT_VERSION=5.11.3
+          $env:QT_VERSION = "5.11.3"
       } else {
           $env:MSVCID = "msvc2017"
           $env:VCVARSALL = "$env:VCVARSALL15"
-          $env:QT_VERSION=5.13.2
+          $env:QT_VERSION = "5.13.2"
       }
   - set QT_ROOT_DIR=C:\Qt\%QT_VERSION%
 
