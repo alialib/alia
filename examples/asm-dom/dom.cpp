@@ -77,26 +77,19 @@ do_input_(dom::context ctx, bidirectional<string> value)
     auto id = data;
     auto routable_id = make_routable_node_id(ctx, id);
 
-    if (signal_has_value(value))
-    {
-        if (!data->external_id.matches(value.value_id()))
-        {
-            data->value = read_signal(value);
-            data->external_id.capture(value.value_id());
+    refresh_signal_shadow(
+        data->external_id,
+        value,
+        [&](string new_value) {
+            data->value = std::move(new_value);
             data->invalid = false;
             ++data->version;
-        }
-    }
-    else
-    {
-        if (!data->external_id.matches(null_id))
-        {
-            data->value = string();
-            data->external_id.capture(null_id);
+        },
+        [&]() {
+            data->value.clear();
             data->invalid = false;
             ++data->version;
-        }
-    }
+        });
 
     auto* system = &get_component<system_tag>(ctx);
 
