@@ -8,12 +8,22 @@
 
 using namespace alia;
 
+struct testing_external_interface : external_interface
+{
+    millisecond_count tick_count = 0;
+
+    millisecond_count
+    get_tick_count() const
+    {
+        return tick_count;
+    }
+};
+
 TEST_CASE("animation_timer", "[signals][temporal]")
 {
     alia::system sys;
-
-    set_automatic_time_updates(sys, false);
-    set_millisecond_tick_counter(sys, 0);
+    testing_external_interface external;
+    sys.external = &external;
 
     REQUIRE(!system_needs_refresh(sys));
 
@@ -29,7 +39,7 @@ TEST_CASE("animation_timer", "[signals][temporal]")
 
     REQUIRE(system_needs_refresh(sys));
 
-    set_millisecond_tick_counter(sys, 10);
+    external.tick_count = 10;
 
     do_traversal(sys, [&](context ctx) {
         animation_timer_state* state;
@@ -45,7 +55,7 @@ TEST_CASE("animation_timer", "[signals][temporal]")
 
     REQUIRE(system_needs_refresh(sys));
 
-    set_millisecond_tick_counter(sys, 110);
+    external.tick_count = 110;
 
     do_traversal(sys, [&](context ctx) {
         animation_timer timer(ctx);
@@ -72,9 +82,8 @@ TEST_CASE("interpolation", "[signals][temporal]")
 TEST_CASE("smooth_raw_value", "[signals][temporal]")
 {
     alia::system sys;
-
-    set_automatic_time_updates(sys, false);
-    set_millisecond_tick_counter(sys, 0);
+    testing_external_interface external;
+    sys.external = &external;
 
     REQUIRE(!system_needs_refresh(sys));
 
@@ -87,7 +96,7 @@ TEST_CASE("smooth_raw_value", "[signals][temporal]")
     });
     REQUIRE(!system_needs_refresh(sys));
 
-    set_millisecond_tick_counter(sys, 100);
+    external.tick_count = 100;
     do_traversal(sys, [&](context ctx) {
         int x = smooth_raw_value(
             ctx, smoother, 10, animated_transition{linear_curve, 100});
@@ -95,7 +104,7 @@ TEST_CASE("smooth_raw_value", "[signals][temporal]")
     });
     REQUIRE(system_needs_refresh(sys));
 
-    set_millisecond_tick_counter(sys, 110);
+    external.tick_count = 110;
     do_traversal(sys, [&](context ctx) {
         int x = smooth_raw_value(
             ctx, smoother, 10, animated_transition{linear_curve, 100});
@@ -103,7 +112,7 @@ TEST_CASE("smooth_raw_value", "[signals][temporal]")
     });
     REQUIRE(system_needs_refresh(sys));
 
-    set_millisecond_tick_counter(sys, 150);
+    external.tick_count = 150;
     do_traversal(sys, [&](context ctx) {
         int x = smooth_raw_value(
             ctx, smoother, 0, animated_transition{linear_curve, 100});
@@ -111,7 +120,7 @@ TEST_CASE("smooth_raw_value", "[signals][temporal]")
     });
     REQUIRE(system_needs_refresh(sys));
 
-    set_millisecond_tick_counter(sys, 170);
+    external.tick_count = 170;
     do_traversal(sys, [&](context ctx) {
         int x = smooth_raw_value(
             ctx, smoother, 0, animated_transition{linear_curve, 100});
@@ -119,7 +128,7 @@ TEST_CASE("smooth_raw_value", "[signals][temporal]")
     });
     REQUIRE(system_needs_refresh(sys));
 
-    set_millisecond_tick_counter(sys, 200);
+    external.tick_count = 200;
     do_traversal(sys, [&](context ctx) {
         int x = smooth_raw_value(
             ctx, smoother, 0, animated_transition{linear_curve, 100});
@@ -127,7 +136,7 @@ TEST_CASE("smooth_raw_value", "[signals][temporal]")
     });
     REQUIRE(!system_needs_refresh(sys));
 
-    set_millisecond_tick_counter(sys, 300);
+    external.tick_count = 300;
     do_traversal(sys, [&](context ctx) {
         int x = smooth_raw_value(
             ctx, smoother, 20, animated_transition{linear_curve, 100});
@@ -135,7 +144,7 @@ TEST_CASE("smooth_raw_value", "[signals][temporal]")
     });
     REQUIRE(system_needs_refresh(sys));
 
-    set_millisecond_tick_counter(sys, 350);
+    external.tick_count = 350;
     do_traversal(sys, [&](context ctx) {
         int x = smooth_raw_value(
             ctx, smoother, 30, animated_transition{linear_curve, 100});
@@ -143,7 +152,7 @@ TEST_CASE("smooth_raw_value", "[signals][temporal]")
     });
     REQUIRE(system_needs_refresh(sys));
 
-    set_millisecond_tick_counter(sys, 400);
+    external.tick_count = 400;
     do_traversal(sys, [&](context ctx) {
         int x = smooth_raw_value(
             ctx, smoother, 30, animated_transition{linear_curve, 100});
@@ -151,7 +160,7 @@ TEST_CASE("smooth_raw_value", "[signals][temporal]")
     });
     REQUIRE(system_needs_refresh(sys));
 
-    set_millisecond_tick_counter(sys, 450);
+    external.tick_count = 450;
     do_traversal(sys, [&](context ctx) {
         int x = smooth_raw_value(
             ctx, smoother, 30, animated_transition{linear_curve, 100});
@@ -163,9 +172,8 @@ TEST_CASE("smooth_raw_value", "[signals][temporal]")
 TEST_CASE("smooth", "[signals][temporal]")
 {
     alia::system sys;
-
-    set_automatic_time_updates(sys, false);
-    set_millisecond_tick_counter(sys, 0);
+    testing_external_interface external;
+    sys.external = &external;
 
     REQUIRE(!system_needs_refresh(sys));
 
@@ -180,7 +188,7 @@ TEST_CASE("smooth", "[signals][temporal]")
 
     captured_id last_id;
 
-    set_millisecond_tick_counter(sys, 100);
+    external.tick_count = 100;
     do_traversal(sys, [&](context ctx) {
         auto x = smooth(ctx, value(10), transition);
         REQUIRE(signal_has_value(x));
@@ -189,7 +197,7 @@ TEST_CASE("smooth", "[signals][temporal]")
     });
     REQUIRE(system_needs_refresh(sys));
 
-    set_millisecond_tick_counter(sys, 150);
+    external.tick_count = 150;
     do_traversal(sys, [&](context ctx) {
         auto x = smooth(ctx, value(10), transition);
         REQUIRE(signal_has_value(x));
@@ -199,7 +207,7 @@ TEST_CASE("smooth", "[signals][temporal]")
     });
     REQUIRE(system_needs_refresh(sys));
 
-    set_millisecond_tick_counter(sys, 200);
+    external.tick_count = 200;
     do_traversal(sys, [&](context ctx) {
         auto x = smooth(ctx, value(10), transition);
         REQUIRE(signal_has_value(x));
@@ -209,7 +217,7 @@ TEST_CASE("smooth", "[signals][temporal]")
     });
     REQUIRE(!system_needs_refresh(sys));
 
-    set_millisecond_tick_counter(sys, 240);
+    external.tick_count = 240;
     do_traversal(sys, [&](context ctx) {
         auto x = smooth(ctx, empty<int>(), transition);
         REQUIRE(!signal_has_value(x));
