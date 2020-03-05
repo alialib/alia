@@ -68,3 +68,11 @@ build_script:
   - set CTEST_OUTPUT_ON_FAILURE=1
   - fips gen
   - fips make ctest
+  # Test the Qt sandbox.
+  - python scripts\generate-distributables.py
+  - move alia.hpp examples\qt
+  - cd examples\qt
+  - mkdir build
+  - cd build
+  - cmake -G"NMake Makefiles" ..
+  - cmake --build .
