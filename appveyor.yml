@@ -21,11 +21,13 @@ init:
   - git config --global core.autocrlf input
   # Set build version to git commit-hash
   - ps: Update-AppveyorBuild -Version "$($env:APPVEYOR_REPO_BRANCH) - $($env:APPVEYOR_REPO_COMMIT)"
+  - set VCVARSALL14="C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat"
+  - set VCVARSALL15="C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat"
   - ps: |
       if ("$env:APPVEYOR_BUILD_WORKER_IMAGE" -eq "Visual Studio 2015") {
-          $env:VCVARSALL = 'C:\Program Files` (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat'
+          $env:VCVARSALL = "$env:VCVARSALL14"
       } else {
-          $env:VCVARSALL = 'C:\Program Files` (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat'
+          $env:VCVARSALL = "$env:VCVARSALL15"
       }
 
 install:
