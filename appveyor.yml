@@ -69,7 +69,7 @@ build_script:
   - fips gen
   - fips make ctest
   # Test the Qt sandbox.
-  - python scripts\generate-distributables.py
+  - C:\Python36\python scripts\generate-distributables.py
   - move alia.hpp examples\qt
   - cd examples\qt
   - mkdir build
