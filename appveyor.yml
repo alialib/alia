@@ -21,6 +21,12 @@ init:
   - git config --global core.autocrlf input
   # Set build version to git commit-hash
   - ps: Update-AppveyorBuild -Version "$($env:APPVEYOR_REPO_BRANCH) - $($env:APPVEYOR_REPO_COMMIT)"
+  - ps: |
+    if ("$env:APPVEYOR_BUILD_WORKER_IMAGE" -eq "Visual Studio 2015") {
+      $env:VCVARSALL = "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat"
+    } else {
+      $env:VCVARSALL = "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat"
+    }
 
 install:
   # Set up Conan.
@@ -37,6 +43,7 @@ for:
           configuration: Release
     before_build:
       - fips set config win64-vstudio-release
+      - call %VCVARSALL% x64
     environment:
       LIBRARY_ARCHITECTURE: lib64
   - matrix:
@@ -45,6 +52,7 @@ for:
           configuration: Debug
     before_build:
       - fips set config win64-vstudio-debug
+      - call %VCVARSALL% x64
     environment:
       LIBRARY_ARCHITECTURE: lib64
   - matrix:
@@ -53,6 +61,7 @@ for:
           configuration: Release
     before_build:
       - fips set config win32-vstudio-release
+      - call %VCVARSALL% x86
     environment:
       LIBRARY_ARCHITECTURE: lib32
   - matrix:
@@ -61,6 +70,7 @@ for:
           configuration: Debug
     before_build:
       - fips set config win32-vstudio-debug
+      - call %VCVARSALL% x86
     environment:
       LIBRARY_ARCHITECTURE: lib32
 
