@@ -68,6 +68,11 @@ struct input_data : node_identity
     unsigned version = 0;
 };
 
+struct value_update_event : targeted_event
+{
+    string value;
+};
+
 void
 do_input_(dom::context ctx, bidirectional<string> value)
 {
@@ -126,6 +131,10 @@ do_input_(dom::context ctx, bidirectional<string> value)
         ++data->version;
     });
 }
+
+struct click_event : targeted_event
+{
+};
 
 void
 do_button_(dom::context ctx, readable<std::string> text, action<> on_click)
