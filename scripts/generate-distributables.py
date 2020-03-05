@@ -17,6 +17,7 @@ def generate_single_header(single_header_path, source_dir, module):
         header_states = {}
 
         def add_header_file(path):
+            path = path.replace('\\', '/')
             if path in header_states:
                 if header_states[path] == 'done':
                     return
@@ -54,6 +55,8 @@ def generate_single_header(single_header_path, source_dir, module):
             header_states[path] = 'done'
 
         def add_source_file(path):
+            path = path.replace('\\', '/')
+
             with open(path) as f:
                 lines = f.readlines()
 
