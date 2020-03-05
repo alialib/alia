@@ -213,7 +213,9 @@ do_button(qt_context ctx, readable<string> text, action<> on_click)
                 [&system, &button]() {
                     click_event event;
                     dispatch_targeted_event(
-                        system, event, routable_node_id{&button, button.route});
+                        system,
+                        event,
+                        make_routable_node_id(&button, button.route));
                 });
         }
 
@@ -288,7 +290,9 @@ do_text_control(qt_context ctx, bidirectional<string> text)
                     event.value
                         = widget.object->toPlainText().toUtf8().constData();
                     dispatch_targeted_event(
-                        system, event, routable_node_id{&widget, widget.route});
+                        system,
+                        event,
+                        make_routable_node_id(&widget, widget.route));
                 });
         }
 
