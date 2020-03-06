@@ -1,6 +1,14 @@
 Flow Basics
 ===========
 
+High-Level Flow
+---------------
+
+![flow](reactive-flow.svg)
+
+![flow](alia-flow.svg)
+
+
 The Data Graph
 --------------
 

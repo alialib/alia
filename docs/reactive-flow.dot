@@ -1,0 +1,44 @@
+digraph flow {
+
+compound=true;
+newrank=true;
+
+rankdir="LR";
+
+edge[color="#424242"];
+node[color="#424242", fontcolor="#242424"];
+
+state [label="application\nstate", shape=note]
+
+subgraph cluster_controller {
+    label="alia controller"; style=dashed;
+    reactive_code [label="reactive\npresentation\ncode", shape=diamond];
+    event_handler [label="event\nhandler", shape=diamond];
+}
+
+ui [label="UI", shape=component]
+
+event [label="event", shape=note]
+
+effects [label="external\neffects", shape=parallelogram]
+
+state -> reactive_code [label="feeds\ninto"]
+
+reactive_code -> ui [label="produces/\nupdates"]
+
+ui -> event [label="produces          "]
+
+event -> event_handler [headlabel="feeds\ninto", labeldistance=5.7, labelangle=-18]
+
+event_handler -> state [xlabel="(maybe)\nupdates", style=dashed]
+
+event_handler -> effects
+[xlabel="\n  (maybe)\n  produces", style=dashed, minlen=2]
+
+event -> effects [style=invis]
+
+{rank = same; reactive_code; event_handler; effects;}
+
+{rank = same; ui; event;}
+
+}

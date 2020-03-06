@@ -10,4 +10,4 @@ ln -s ../docs/* .
 unzip local-favicon.zip && rm *.zip
 ln -s ../examples/asm-dom/build/*.js ../examples/asm-dom/build/*.wasm .
 ln -s ../examples/asm-dom/demos/* .
-dot -Tsvg -o data-graph.svg data-graph.dot
+../scripts/build-dot-files.sh
