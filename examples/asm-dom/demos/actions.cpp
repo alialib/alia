@@ -173,10 +173,15 @@ do_ui(dom::context ctx, bidirectional<std::string> message)
 {
     // clang-format off
 /// [lambda-action-demo]
+// Define a UI for inputting a message.
 do_text(ctx, "Enter a message for your browser's console:");
 do_input(ctx, message);
+
+// Create an action that takes a message as a parameter.
 auto sender = lambda_action(
     [](std::string message) { std::cout << message << std::endl; });
+
+// Bind the message to the action and hook them up to a button.
 do_button(ctx, "Send", sender <<= message);
 /// [lambda-action-demo]
     // clang-format on
