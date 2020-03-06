@@ -131,6 +131,13 @@ action itself is ready and the signal has a value.
 Custom Actions
 --------------
 
+Actions can also call C++ functions to produce external side effects. This is
+typically how you would integrate custom side effects into your reactive
+application logic. Just like the functions that you [apply to
+signals](function-application.md) are *normal C++ functions with no side
+effects*, the functions that you use to define actions are *normal C++ functions
+**with side effects***.
+
 For most purposes, custom actions can be specified using lambdas (or other
 function objects). There are two options for defining lambda actions:
 
@@ -151,7 +158,7 @@ The action is always ready to be performed.
 
 Creates an action whose behavior is defined by `is_ready` and `perform`.
 
-`is_ready` takes no parameters and simply returns true or false to indicate if
+`is_ready` takes no arguments and simply returns true or false to indicate if
 the action is ready to be performed.
 
 `perform` can take any number/type of arguments and defines the signature of the
@@ -161,7 +168,7 @@ action.
 
 </dl>
 
-Actions that are defined this way can take parameters, and of course those
+Actions that are defined this way can have parameters, and of course those
 parameters can be bound to signals using the `<<=` operator:
 
 [source](actions.cpp ':include :fragment=lambda-action-demo')
