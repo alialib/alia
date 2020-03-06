@@ -388,8 +388,8 @@ push_back(Container container)
 // lambda_action(is_ready, perform) creates an action whose behavior is
 // defined by two function objects.
 //
-// :is_ready takes no parameters and simply returns true or false to
-// indicate if the action is ready to be performed.
+// :is_ready takes no arguments and simply returns true or false to indicate if
+// the action is ready to be performed.
 //
 // :perform can take any number/type of arguments and defines the signature
 // of the action.

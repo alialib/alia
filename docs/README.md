@@ -1,5 +1,5 @@
-alia
-====
+alia - A Library for Interactive Applications
+=============================================
 
 <div class="hide-when-deployed">
 
