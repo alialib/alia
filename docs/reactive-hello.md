@@ -40,7 +40,7 @@ they're invoked, they declare what the application looks like **at that point in
 time** and **for that particular application state**. In our example, every time
 you type into the input box, the `name` state changes and `do_greeting_ui` is
 reinvoked to decide what the new UI looks like. Every time, it decides to show a
-message asking for your name and the input box that allows you answer, and
+message asking for your name and the input box that allows you to answer, and
 sometimes it decides to show a greeting as well.
 
 alia provides the mechanics to facilitate this style of development...

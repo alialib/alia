@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 3.11)
-project(asm-dom-fun)
+project(asm-dom-demos)
 
 # Apply some emscripten optimizations flags if we're in release mode.
 include(cmake/release-mode.cmake)
