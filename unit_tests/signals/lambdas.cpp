@@ -65,11 +65,11 @@ TEST_CASE("empty lambda readable signal with ID", "[signals][lambdas]")
     REQUIRE(!signal_has_value(s));
 }
 
-TEST_CASE("lambda bidirectional signal", "[signals][lambdas]")
+TEST_CASE("lambda duplex signal", "[signals][lambdas]")
 {
     int x = 1;
 
-    auto s = lambda_bidirectional(
+    auto s = lambda_duplex(
         always_has_value,
         [&x]() { return x; },
         always_ready,
@@ -88,11 +88,11 @@ TEST_CASE("lambda bidirectional signal", "[signals][lambdas]")
     REQUIRE(!original_id.matches(s.value_id()));
 }
 
-TEST_CASE("empty/unready lambda bidirectional signal", "[signals][lambdas]")
+TEST_CASE("empty/unready lambda duplex signal", "[signals][lambdas]")
 {
     int x = 1;
 
-    auto s = lambda_bidirectional(
+    auto s = lambda_duplex(
         []() { return false; },
         [&x]() { return x; },
         []() { return false; },
@@ -106,11 +106,11 @@ TEST_CASE("empty/unready lambda bidirectional signal", "[signals][lambdas]")
     REQUIRE(!signal_ready_to_write(s));
 }
 
-TEST_CASE("lambda bidirectional signal with ID", "[signals][lambdas]")
+TEST_CASE("lambda duplex signal with ID", "[signals][lambdas]")
 {
     int x = 1;
 
-    auto s = lambda_bidirectional(
+    auto s = lambda_duplex(
         always_has_value,
         [&x]() { return x; },
         always_ready,
@@ -130,12 +130,11 @@ TEST_CASE("lambda bidirectional signal with ID", "[signals][lambdas]")
     REQUIRE(s.value_id() == make_id(0));
 }
 
-TEST_CASE(
-    "empty/unready lambda bidirectional signal with ID", "[signals][lambdas]")
+TEST_CASE("empty/unready lambda duplex signal with ID", "[signals][lambdas]")
 {
     int x = 1;
 
-    auto s = lambda_bidirectional(
+    auto s = lambda_duplex(
         []() { return false; },
         [&x]() { return x; },
         []() { return false; },

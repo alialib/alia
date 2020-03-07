@@ -41,13 +41,13 @@ do_heading(dom::context ctx, Level level, Text text)
 }
 
 void
-do_input_(dom::context ctx, bidirectional<string> value);
+do_input_(dom::context ctx, duplex<string> value);
 
 template<class Signal>
 void
 do_input(dom::context ctx, Signal signal)
 {
-    do_input_(ctx, as_bidirectional_text(ctx, signal));
+    do_input_(ctx, as_duplex_text(ctx, signal));
 }
 
 void

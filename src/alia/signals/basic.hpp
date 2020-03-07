@@ -10,7 +10,7 @@ namespace alia {
 
 // empty<Value>() gives a signal that never has a value.
 template<class Value>
-struct empty_signal : signal<empty_signal<Value>, Value, bidirectional_signal>
+struct empty_signal : signal<empty_signal<Value>, Value, duplex_signal>
 {
     empty_signal()
     {
@@ -130,11 +130,11 @@ inline string_literal_signal operator"" _a(char const* s, size_t)
 }
 } // namespace literals
 
-// direct(x), where x is a non-const reference, creates a bidirectional signal
-// that directly exposes the value of x.
+// direct(x), where x is a non-const reference, creates a duplex signal that
+// directly exposes the value of x.
 template<class Value>
 struct direct_signal
-    : regular_signal<direct_signal<Value>, Value, bidirectional_signal>
+    : regular_signal<direct_signal<Value>, Value, duplex_signal>
 {
     explicit direct_signal(Value* v) : v_(v)
     {

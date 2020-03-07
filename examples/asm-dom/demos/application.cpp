@@ -23,7 +23,7 @@ is_prime(int n)
 namespace simple_apply {
 
 void
-do_ui(dom::context ctx, bidirectional<int> n)
+do_ui(dom::context ctx, duplex<int> n)
 {
     // clang-format off
 /// [simple-apply]
@@ -53,7 +53,7 @@ static demo the_demo("simple-apply", init_demo);
 namespace transform_demo {
 
 void
-do_ui(dom::context ctx, bidirectional<std::vector<int>> numbers)
+do_ui(dom::context ctx, duplex<std::vector<int>> numbers)
 {
     // clang-format off
 /// [transform-demo]
@@ -98,7 +98,7 @@ static demo the_demo("transform-demo", init_demo);
 namespace metered_transform_demo {
 
 void
-do_ui(dom::context ctx, bidirectional<std::vector<int>> numbers)
+do_ui(dom::context ctx, duplex<std::vector<int>> numbers)
 {
     static int call_count = 0;
     auto counting_is_prime = [&](int n) {
@@ -143,7 +143,7 @@ static demo the_demo("metered-transform-demo", init_demo);
 namespace direct_counting {
 
 void
-do_ui(dom::context ctx, bidirectional<std::vector<int>> numbers)
+do_ui(dom::context ctx, duplex<std::vector<int>> numbers)
 {
     // clang-format off
 dom::do_text(ctx, "Enter some numbers:");
@@ -181,7 +181,7 @@ static demo the_demo("direct-counting", init_demo);
 namespace metered_direct_counting {
 
 void
-do_ui(dom::context ctx, bidirectional<std::vector<int>> numbers)
+do_ui(dom::context ctx, duplex<std::vector<int>> numbers)
 {
     static int call_count = 0;
     auto counting_is_prime = [&](int n) {

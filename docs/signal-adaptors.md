@@ -20,7 +20,7 @@ of `x`.
 
 <dt>fake_writability(s)</dt><dd>
 
-This essentially casts a readable signal to a bidirectional one.
+This essentially casts a readable signal to a duplex one.
 
 `fake_writability(s)`, where `s` is a signal, yields a wrapper for `s` that
 pretends to have write capabilities. It will never actually be ready to write,
@@ -102,8 +102,8 @@ Yields a signal that presents a view of `n` that is offset by `factor`.
 
 </dl>
 
-Both of these will present bidirectional views if the underlying is
-bidirectional, as demonstrated here:
+Both of these will present duplex views if the underlying is duplex, as
+demonstrated here:
 
 [source](adaptors.cpp ':include :fragment=numeric-adaptors')
 

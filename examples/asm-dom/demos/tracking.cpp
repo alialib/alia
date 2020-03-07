@@ -5,7 +5,7 @@
 namespace switch_example {
 
 void
-do_ui(dom::context ctx, bidirectional<int> n)
+do_ui(dom::context ctx, duplex<int> n)
 {
     // clang-format off
 /// [switch-example]
@@ -139,8 +139,7 @@ namespace for_each_map_demo {
 // clang-format off
 /// [for-each-map-demo]
 void
-do_scoreboard(
-    dom::context ctx, bidirectional<std::map<std::string, int>> scores)
+do_scoreboard(dom::context ctx, duplex<std::map<std::string, int>> scores)
 {
     for_each(ctx, scores,
         [](auto ctx, auto player, auto score) {
@@ -187,7 +186,7 @@ struct player
 };
 
 void
-do_scoreboard(dom::context ctx, bidirectional<std::vector<player>> players)
+do_scoreboard(dom::context ctx, duplex<std::vector<player>> players)
 {
     for_each(ctx, players,
         [](auto ctx, auto player) {

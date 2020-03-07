@@ -3,7 +3,7 @@
 namespace unready_copier {
 
 void
-do_ui(dom::context ctx, bidirectional<int> n, bidirectional<int> m)
+do_ui(dom::context ctx, duplex<int> n, duplex<int> m)
 {
     // clang-format off
 /// [unready-copier]
@@ -33,7 +33,7 @@ static demo the_demo("unready-copier", init_demo);
 namespace action_operators {
 
 void
-do_ui(dom::context ctx, bidirectional<int> n)
+do_ui(dom::context ctx, duplex<int> n)
 {
     // clang-format off
 /// [action-operators]
@@ -66,7 +66,7 @@ static demo the_demo("action-operators", init_demo);
 namespace action_combining {
 
 void
-do_ui(dom::context ctx, bidirectional<int> m, bidirectional<int> n)
+do_ui(dom::context ctx, duplex<int> m, duplex<int> n)
 {
     // clang-format off
 /// [action-combining]
@@ -96,7 +96,7 @@ static demo the_demo("action-combining", init_demo);
 namespace action_latching {
 
 void
-do_ui(dom::context ctx, bidirectional<int> in_hand, bidirectional<int> in_bank)
+do_ui(dom::context ctx, duplex<int> in_hand, duplex<int> in_bank)
 {
     // clang-format off
 /// [action-latching]
@@ -128,7 +128,7 @@ static demo the_demo("action-latching", init_demo);
 namespace action_binding {
 
 void
-do_ui(dom::context ctx, bidirectional<int> duration)
+do_ui(dom::context ctx, duplex<int> duration)
 {
     // clang-format off
 /// [action-binding]
@@ -169,7 +169,7 @@ static demo the_demo("action-binding", init_demo);
 namespace action_demo {
 
 void
-do_ui(dom::context ctx, bidirectional<std::string> message)
+do_ui(dom::context ctx, duplex<std::string> message)
 {
     // clang-format off
 /// [lambda-action-demo]

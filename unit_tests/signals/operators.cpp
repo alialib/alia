@@ -221,7 +221,7 @@ TEST_CASE("field signal", "[signals][operators]")
         std::string y;
     };
     foo f = {2, "1.5"};
-    auto f_signal = lambda_bidirectional(
+    auto f_signal = lambda_duplex(
         always_has_value,
         [&]() { return f; },
         always_ready,
@@ -416,7 +416,7 @@ TEST_CASE("map subscript", "[signals][operators]")
 TEST_CASE("custom ref subscript", "[signals][operators]")
 {
     my_array c;
-    auto c_signal = lambda_bidirectional(
+    auto c_signal = lambda_duplex(
         always_has_value,
         [&]() { return c; },
         always_ready,

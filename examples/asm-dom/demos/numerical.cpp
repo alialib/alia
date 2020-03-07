@@ -4,8 +4,7 @@ namespace addition_ui {
 
 /// [addition-ui]
 void
-do_addition_ui(
-    dom::context ctx, bidirectional<double> a, bidirectional<double> b)
+do_addition_ui(dom::context ctx, duplex<double> a, duplex<double> b)
 {
     dom::do_text(ctx, "Enter two numbers to add:");
 
@@ -37,7 +36,7 @@ static demo the_demo("addition-ui", init_demo);
 namespace numerical_analysis {
 
 void
-do_ui(dom::context ctx, bidirectional<double> n)
+do_ui(dom::context ctx, duplex<double> n)
 {
     // clang-format off
 /// [analysis]
@@ -170,7 +169,7 @@ do_factor_tree(dom::context ctx, readable<int> n)
 
 // And here's the demo UI that invokes the top-level of the tree:
 void
-do_factor_tree_demo(dom::context ctx, bidirectional<int> n)
+do_factor_tree_demo(dom::context ctx, duplex<int> n)
 {
     dom::do_text(ctx, "Enter a number:");
     dom::do_input(ctx, n);

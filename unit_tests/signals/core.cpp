@@ -14,13 +14,13 @@ TEST_CASE("signal_direction_is_compatible", "[signals][core]")
 
     TEST_COMPATIBILITY(read_only_signal, read_only_signal, true);
     TEST_COMPATIBILITY(read_only_signal, write_only_signal, false);
-    TEST_COMPATIBILITY(read_only_signal, bidirectional_signal, true);
+    TEST_COMPATIBILITY(read_only_signal, duplex_signal, true);
     TEST_COMPATIBILITY(write_only_signal, read_only_signal, false);
     TEST_COMPATIBILITY(write_only_signal, write_only_signal, true);
-    TEST_COMPATIBILITY(write_only_signal, bidirectional_signal, true);
-    TEST_COMPATIBILITY(bidirectional_signal, read_only_signal, false);
-    TEST_COMPATIBILITY(bidirectional_signal, write_only_signal, false);
-    TEST_COMPATIBILITY(bidirectional_signal, bidirectional_signal, true);
+    TEST_COMPATIBILITY(write_only_signal, duplex_signal, true);
+    TEST_COMPATIBILITY(duplex_signal, read_only_signal, false);
+    TEST_COMPATIBILITY(duplex_signal, write_only_signal, false);
+    TEST_COMPATIBILITY(duplex_signal, duplex_signal, true);
 }
 
 TEST_CASE("signal_direction_intersection", "[signals][core]")
@@ -30,15 +30,12 @@ TEST_CASE("signal_direction_intersection", "[signals][core]")
                  value))
 
     TEST_INTERSECTION(read_only_signal, read_only_signal, read_only_signal);
-    TEST_INTERSECTION(read_only_signal, bidirectional_signal, read_only_signal);
+    TEST_INTERSECTION(read_only_signal, duplex_signal, read_only_signal);
     TEST_INTERSECTION(write_only_signal, write_only_signal, write_only_signal);
-    TEST_INTERSECTION(
-        write_only_signal, bidirectional_signal, write_only_signal);
-    TEST_INTERSECTION(bidirectional_signal, read_only_signal, read_only_signal);
-    TEST_INTERSECTION(
-        bidirectional_signal, write_only_signal, write_only_signal);
-    TEST_INTERSECTION(
-        bidirectional_signal, bidirectional_signal, bidirectional_signal);
+    TEST_INTERSECTION(write_only_signal, duplex_signal, write_only_signal);
+    TEST_INTERSECTION(duplex_signal, read_only_signal, read_only_signal);
+    TEST_INTERSECTION(duplex_signal, write_only_signal, write_only_signal);
+    TEST_INTERSECTION(duplex_signal, duplex_signal, duplex_signal);
 }
 
 TEST_CASE("signal_direction_union", "[signals][core]")
@@ -47,22 +44,21 @@ TEST_CASE("signal_direction_union", "[signals][core]")
     REQUIRE((std::is_same<signal_direction_union<A, B>::type, Result>::value))
 
     TEST_UNION(read_only_signal, read_only_signal, read_only_signal);
-    TEST_UNION(read_only_signal, write_only_signal, bidirectional_signal);
-    TEST_UNION(read_only_signal, bidirectional_signal, bidirectional_signal);
+    TEST_UNION(read_only_signal, write_only_signal, duplex_signal);
+    TEST_UNION(read_only_signal, duplex_signal, duplex_signal);
     TEST_UNION(write_only_signal, write_only_signal, write_only_signal);
-    TEST_UNION(write_only_signal, read_only_signal, bidirectional_signal);
-    TEST_UNION(write_only_signal, bidirectional_signal, bidirectional_signal);
-    TEST_UNION(bidirectional_signal, read_only_signal, bidirectional_signal);
-    TEST_UNION(bidirectional_signal, write_only_signal, bidirectional_signal);
-    TEST_UNION(
-        bidirectional_signal, bidirectional_signal, bidirectional_signal);
+    TEST_UNION(write_only_signal, read_only_signal, duplex_signal);
+    TEST_UNION(write_only_signal, duplex_signal, duplex_signal);
+    TEST_UNION(duplex_signal, read_only_signal, duplex_signal);
+    TEST_UNION(duplex_signal, write_only_signal, duplex_signal);
+    TEST_UNION(duplex_signal, duplex_signal, duplex_signal);
 }
 
 TEST_CASE("is_signal_type", "[signals][core]")
 {
     REQUIRE(is_signal_type<readable<int>>::value);
     REQUIRE(is_signal_type<writable<int>>::value);
-    REQUIRE(is_signal_type<bidirectional<int>>::value);
+    REQUIRE(is_signal_type<duplex<int>>::value);
     REQUIRE(!is_signal_type<int>::value);
     REQUIRE(!is_signal_type<std::string>::value);
 }
@@ -71,14 +67,14 @@ TEST_CASE("signal_is_readable", "[signals][core]")
 {
     REQUIRE(signal_is_readable<readable<int>>::value);
     REQUIRE(!signal_is_readable<writable<int>>::value);
-    REQUIRE(signal_is_readable<bidirectional<int>>::value);
+    REQUIRE(signal_is_readable<duplex<int>>::value);
 }
 
 TEST_CASE("is_readable_signal_type", "[signals][core]")
 {
     REQUIRE(is_readable_signal_type<readable<int>>::value);
     REQUIRE(!is_readable_signal_type<writable<int>>::value);
-    REQUIRE(is_readable_signal_type<bidirectional<int>>::value);
+    REQUIRE(is_readable_signal_type<duplex<int>>::value);
     REQUIRE(!is_readable_signal_type<int>::value);
     REQUIRE(!is_readable_signal_type<std::string>::value);
 }
@@ -87,32 +83,32 @@ TEST_CASE("signal_is_writable", "[signals][core]")
 {
     REQUIRE(!signal_is_writable<readable<int>>::value);
     REQUIRE(signal_is_writable<writable<int>>::value);
-    REQUIRE(signal_is_writable<bidirectional<int>>::value);
+    REQUIRE(signal_is_writable<duplex<int>>::value);
 }
 
 TEST_CASE("is_writable_signal_type", "[signals][core]")
 {
     REQUIRE(!is_writable_signal_type<readable<int>>::value);
     REQUIRE(is_writable_signal_type<writable<int>>::value);
-    REQUIRE(is_writable_signal_type<bidirectional<int>>::value);
+    REQUIRE(is_writable_signal_type<duplex<int>>::value);
     REQUIRE(!is_writable_signal_type<int>::value);
     REQUIRE(!is_writable_signal_type<std::string>::value);
 }
 
-TEST_CASE("is_bidirectional_signal_type", "[signals][core]")
+TEST_CASE("is_duplex_signal_type", "[signals][core]")
 {
-    REQUIRE(!is_bidirectional_signal_type<readable<int>>::value);
-    REQUIRE(!is_bidirectional_signal_type<writable<int>>::value);
-    REQUIRE(is_bidirectional_signal_type<bidirectional<int>>::value);
-    REQUIRE(!is_bidirectional_signal_type<int>::value);
-    REQUIRE(!is_bidirectional_signal_type<std::string>::value);
+    REQUIRE(!is_duplex_signal_type<readable<int>>::value);
+    REQUIRE(!is_duplex_signal_type<writable<int>>::value);
+    REQUIRE(is_duplex_signal_type<duplex<int>>::value);
+    REQUIRE(!is_duplex_signal_type<int>::value);
+    REQUIRE(!is_duplex_signal_type<std::string>::value);
 }
 
 TEST_CASE("signal_ref", "[signals][core]")
 {
     int x = 1;
     auto y = direct(x);
-    signal_ref<int, bidirectional_signal> s = y;
+    signal_ref<int, duplex_signal> s = y;
 
     typedef decltype(s) signal_t;
     REQUIRE(signal_is_readable<signal_t>::value);
@@ -138,7 +134,7 @@ f_writable(alia::writable<int>)
 }
 
 static void
-f_bidirectional(alia::bidirectional<int>)
+f_duplex(alia::duplex<int>)
 {
 }
 
@@ -146,10 +142,10 @@ TEST_CASE("signal parameter passing", "[signals][core]")
 {
     auto read_only = value(0);
     int x = 0;
-    auto bidirectional = direct(x);
+    auto duplex = direct(x);
 
     f_readable(read_only);
-    f_readable(bidirectional);
-    f_writable(bidirectional);
-    f_bidirectional(bidirectional);
+    f_readable(duplex);
+    f_writable(duplex);
+    f_duplex(duplex);
 }

@@ -269,7 +269,7 @@ operator<<=(Sink sink, Source source)
         class A,                                                               \
         class B,                                                               \
         std::enable_if_t<                                                      \
-            is_bidirectional_signal_type<A>::value                             \
+            is_duplex_signal_type<A>::value                                    \
                 && is_readable_signal_type<B>::value,                          \
             int> = 0>                                                          \
     auto operator assignment_form(A const& a, B const& b)                      \
@@ -294,8 +294,7 @@ ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(|=, |)
         class A,                                                               \
         class B,                                                               \
         std::enable_if_t<                                                      \
-            is_bidirectional_signal_type<A>::value                             \
-                && !is_signal_type<B>::value,                                  \
+            is_duplex_signal_type<A>::value && !is_signal_type<B>::value,      \
             int> = 0>                                                          \
     auto operator assignment_form(A const& a, B const& b)                      \
     {                                                                          \
@@ -316,14 +315,14 @@ ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(|=, |)
 #define ALIA_DEFINE_BY_ONE_OPERATOR(assignment_form, normal_form)              \
     template<                                                                  \
         class A,                                                               \
-        std::enable_if_t<is_bidirectional_signal_type<A>::value, int> = 0>     \
+        std::enable_if_t<is_duplex_signal_type<A>::value, int> = 0>            \
     auto operator assignment_form(A const& a)                                  \
     {                                                                          \
         return a <<= (a normal_form value(typename A::value_type(1)));         \
     }                                                                          \
     template<                                                                  \
         class A,                                                               \
-        std::enable_if_t<is_bidirectional_signal_type<A>::value, int> = 0>     \
+        std::enable_if_t<is_duplex_signal_type<A>::value, int> = 0>            \
     auto operator assignment_form(A const& a, int)                             \
     {                                                                          \
         return a <<= (a normal_form value(typename A::value_type(1)));         \

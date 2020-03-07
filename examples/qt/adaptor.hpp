@@ -16,7 +16,7 @@ void
 do_label(qt_context ctx, alia::readable<std::string> text);
 
 void
-do_text_control(qt_context ctx, alia::bidirectional<std::string> text);
+do_text_control(qt_context ctx, alia::duplex<std::string> text);
 
 void
 do_button(

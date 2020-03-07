@@ -116,9 +116,9 @@ as_text(context ctx, Readable x)
     return keyed_data_signal<std::string>(data);
 }
 
-// as_bidirectional_text(ctx, x) is similar to as_text but it's bidirectional.
+// as_duplex_text(ctx, x) is similar to as_text but it's duplex.
 template<class Value>
-struct bidirectional_text_data
+struct duplex_text_data
 {
     captured_id input_id;
     Value input_value;
@@ -128,7 +128,7 @@ struct bidirectional_text_data
 };
 template<class Value, class Readable>
 void
-update_bidirectional_text(bidirectional_text_data<Value>* data, Readable x)
+update_duplex_text(duplex_text_data<Value>* data, Readable x)
 {
     if (signal_has_value(x))
     {
@@ -151,14 +151,13 @@ update_bidirectional_text(bidirectional_text_data<Value>* data, Readable x)
     }
 }
 template<class Wrapped>
-struct bidirectional_text_signal : signal<
-                                       bidirectional_text_signal<Wrapped>,
-                                       std::string,
-                                       typename Wrapped::direction_tag>
+struct duplex_text_signal : signal<
+                                duplex_text_signal<Wrapped>,
+                                std::string,
+                                typename Wrapped::direction_tag>
 {
-    bidirectional_text_signal(
-        Wrapped wrapped,
-        bidirectional_text_data<typename Wrapped::value_type>* data)
+    duplex_text_signal(
+        Wrapped wrapped, duplex_text_data<typename Wrapped::value_type>* data)
         : wrapped_(wrapped), data_(data)
     {
     }
@@ -196,17 +195,17 @@ struct bidirectional_text_signal : signal<
 
  private:
     Wrapped wrapped_;
-    bidirectional_text_data<typename Wrapped::value_type>* data_;
+    duplex_text_data<typename Wrapped::value_type>* data_;
     mutable simple_id<counter_type> id_;
 };
 template<class Signal>
-bidirectional_text_signal<Signal>
-as_bidirectional_text(context ctx, Signal x)
+duplex_text_signal<Signal>
+as_duplex_text(context ctx, Signal x)
 {
-    bidirectional_text_data<typename Signal::value_type>* data;
+    duplex_text_data<typename Signal::value_type>* data;
     get_cached_data(ctx, &data);
-    update_bidirectional_text(data, x);
-    return bidirectional_text_signal<Signal>(x, data);
+    update_duplex_text(data, x);
+    return duplex_text_signal<Signal>(x, data);
 }
 
 } // namespace alia

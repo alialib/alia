@@ -64,7 +64,7 @@ Internally, the signal stores a *copy* of the value.
 
 <dt>direct(T& x)</dt><dd>
 
-Returns a *bidirectional* signal carrying the value `x`.
+Returns a *duplex* signal carrying the value `x`.
 
 Internally, the signal stores a *reference* to the value.
 </dd>
@@ -107,7 +107,7 @@ alia's data graph, you can make this state appear where you need it by calling
 
 <dt>get_state(ctx, initial_value)</dt><dd>
 
-Returns a bidirectional signal that references some temporary, local state.
+Returns a duplex signal that references some temporary, local state.
 
 `initial_value` can be another signal or a raw value. It determines the value
 type of the state and supplies the initial value. If `initial_value` is a signal

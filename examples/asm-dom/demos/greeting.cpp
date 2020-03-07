@@ -4,7 +4,7 @@ namespace hello_world {
 
 /// [greeting]
 void
-do_greeting_ui(dom::context ctx, bidirectional<string> name)
+do_greeting_ui(dom::context ctx, duplex<string> name)
 {
     dom::do_text(ctx, "What's your name?");
 
@@ -38,7 +38,7 @@ static demo the_demo("greeting-ui", init_demo);
 namespace expanded_greeting {
 
 void
-do_ui(dom::context ctx, bidirectional<string> name)
+do_ui(dom::context ctx, duplex<string> name)
 {
     // clang-format off
 /// [expanded-greeting]
@@ -77,7 +77,7 @@ namespace hello_button {
 /// [hello-button]
 
 void
-do_hello_button(dom::context ctx, bidirectional<bool> show_message)
+do_hello_button(dom::context ctx, duplex<bool> show_message)
 {
     dom::do_button(
         ctx, "Toggle the Secret Message", show_message <<= !show_message);

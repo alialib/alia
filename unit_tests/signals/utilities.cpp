@@ -35,7 +35,7 @@ TEST_CASE("empty regular_signal", "[signals][utilities]")
 }
 
 struct normal_regular_signal
-    : regular_signal<normal_regular_signal, int, bidirectional_signal>
+    : regular_signal<normal_regular_signal, int, duplex_signal>
 {
     bool
     has_value() const
@@ -110,7 +110,7 @@ template<class Value>
 struct preferred_id_test_signal : preferred_id_signal<
                                       preferred_id_test_signal<Value>,
                                       Value,
-                                      bidirectional_signal,
+                                      duplex_signal,
                                       simple_id<std::string>>
 {
     bool

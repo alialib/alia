@@ -81,17 +81,17 @@ TEST_CASE("as_text", "[signals][text]")
     check_traversal(sys, controller, "-121;121;hello!;1.2;");
 }
 
-TEST_CASE("as_bidirectional_text", "[signals][text]")
+TEST_CASE("as_duplex_text", "[signals][text]")
 {
     alia::system sys;
 
     auto controller = [&](context ctx) {
-        auto no_text = as_bidirectional_text(ctx, empty<int>());
+        auto no_text = as_duplex_text(ctx, empty<int>());
         REQUIRE(!signal_has_value(no_text));
 
         {
             int x = 12;
-            auto x_text = as_bidirectional_text(ctx, direct(x));
+            auto x_text = as_duplex_text(ctx, direct(x));
             REQUIRE(signal_ready_to_write(x_text));
             write_signal(x_text, "4");
             REQUIRE(x == 4);
@@ -99,7 +99,7 @@ TEST_CASE("as_bidirectional_text", "[signals][text]")
 
         {
             double x = 1.2;
-            auto x_text = as_bidirectional_text(ctx, direct(x));
+            auto x_text = as_duplex_text(ctx, direct(x));
             REQUIRE(signal_ready_to_write(x_text));
             write_signal(x_text, "4.5");
             REQUIRE(x == 4.5);
@@ -107,22 +107,22 @@ TEST_CASE("as_bidirectional_text", "[signals][text]")
 
         {
             std::string x = "hello";
-            auto x_text = as_bidirectional_text(ctx, direct(x));
+            auto x_text = as_duplex_text(ctx, direct(x));
             REQUIRE(signal_ready_to_write(x_text));
             write_signal(x_text, "world");
             REQUIRE(x == "world");
         }
 
-        do_text(ctx, as_bidirectional_text(ctx, value(-121)));
-        do_text(ctx, as_bidirectional_text(ctx, value(121u)));
-        do_text(ctx, as_bidirectional_text(ctx, value("hello!")));
-        do_text(ctx, as_bidirectional_text(ctx, value(1.2)));
+        do_text(ctx, as_duplex_text(ctx, value(-121)));
+        do_text(ctx, as_duplex_text(ctx, value(121u)));
+        do_text(ctx, as_duplex_text(ctx, value("hello!")));
+        do_text(ctx, as_duplex_text(ctx, value(1.2)));
     };
 
     check_traversal(sys, controller, "-121;121;hello!;1.2;");
 }
 
-TEST_CASE("as_bidirectional_text value_id", "[signals][text]")
+TEST_CASE("as_duplex_text value_id", "[signals][text]")
 {
     alia::system sys;
 
@@ -131,7 +131,7 @@ TEST_CASE("as_bidirectional_text value_id", "[signals][text]")
 
     auto make_controller = [&](std::string const& new_x) {
         return [&](context ctx) {
-            auto x_text = as_bidirectional_text(ctx, direct(x));
+            auto x_text = as_duplex_text(ctx, direct(x));
             REQUIRE(signal_ready_to_write(x_text));
             write_signal(x_text, new_x);
             signal_id.capture(x_text.value_id());

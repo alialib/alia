@@ -32,7 +32,7 @@ static demo the_demo("time-signal", init_demo);
 namespace number_smoothing {
 
 void
-do_ui(dom::context ctx, bidirectional<int> n)
+do_ui(dom::context ctx, duplex<int> n)
 {
     // clang-format off
 /// [number-smoothing]
@@ -65,7 +65,7 @@ static demo the_demo("number-smoothing", init_demo);
 namespace color_smoothing {
 
 void
-do_ui(dom::context ctx, bidirectional<rgb8> color)
+do_ui(dom::context ctx, duplex<rgb8> color)
 {
     // clang-format off
 /// [color-smoothing]
