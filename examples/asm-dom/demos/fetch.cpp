@@ -71,7 +71,7 @@ fetch_country_name(dom::context ctx, readable<std::string> country_code)
 
 // And here's the UI for interacting with it.
 void
-do_fetch_ui(dom::context ctx, bidirectional<std::string> country_code)
+do_fetch_ui(dom::context ctx, duplex<std::string> country_code)
 {
     dom::do_text(ctx, "Enter a country code:");
     dom::do_input(ctx, country_code);

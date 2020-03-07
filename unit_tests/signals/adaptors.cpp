@@ -27,7 +27,7 @@ TEST_CASE("fake_readability", "[signals][adaptors]")
     {
         int x = 0;
 
-        auto s = fake_readability(lambda_bidirectional(
+        auto s = fake_readability(lambda_duplex(
             [&]() { return true; },
             [&]() { return x; },
             [&]() { return true; },
@@ -60,7 +60,7 @@ TEST_CASE("fake_writability", "[signals][adaptors]")
     }
 
     {
-        auto s = fake_writability(lambda_bidirectional(
+        auto s = fake_writability(lambda_duplex(
             [&]() { return true; },
             [&]() { return 0; },
             [&]() { return true; },
@@ -130,7 +130,7 @@ TEST_CASE("ready_to_write", "[signals][adaptors]")
     int x = 1;
 
     {
-        auto s = ready_to_write(lambda_bidirectional(
+        auto s = ready_to_write(lambda_duplex(
             always_has_value,
             [&]() { return x; },
             [&]() { return ready; },
@@ -148,7 +148,7 @@ TEST_CASE("ready_to_write", "[signals][adaptors]")
 
     {
         // Recreate the signal to circumvent internal caching.
-        auto s = ready_to_write(lambda_bidirectional(
+        auto s = ready_to_write(lambda_duplex(
             always_has_value,
             [&]() { return x; },
             [&]() { return ready; },
@@ -167,12 +167,12 @@ TEST_CASE("add_fallback", "[signals][adaptors]")
                              bool primary_ready_to_write,
                              bool fallback_has_value) {
         return add_fallback(
-            lambda_bidirectional(
+            lambda_duplex(
                 [=]() { return primary_has_value; },
                 [=]() { return p; },
                 [=]() { return primary_ready_to_write; },
                 [&p](int x) { p = x; }),
-            lambda_bidirectional(
+            lambda_duplex(
                 [=]() { return fallback_has_value; },
                 [=]() { return f; },
                 always_ready,
@@ -285,7 +285,7 @@ TEST_CASE("signalize a value", "[signals][adaptors]")
     REQUIRE(read_signal(t) == 12);
 }
 
-TEST_CASE("mask a bidirectional signal", "[signals][adaptors]")
+TEST_CASE("mask a duplex signal", "[signals][adaptors]")
 {
     {
         int x = 1;

@@ -8,7 +8,7 @@ f_readable(readable<int>)
 }
 
 void
-f_bidirectional(bidirectional<int>)
+f_duplex(duplex<int>)
 {
 }
 
@@ -18,6 +18,6 @@ f()
     auto read_only = value(0);
     f_readable(read_only);
 #ifdef ALIA_TEST_COMPILATION_FAILURE
-    f_bidirectional(read_only);
+    f_duplex(read_only);
 #endif
 }

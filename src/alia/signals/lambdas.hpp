@@ -133,26 +133,22 @@ lambda_reader(HasValue has_value, Read read, GenerateId generate_id)
         GenerateId>(has_value, read, generate_id);
 }
 
-// lambda_bidirectional(has_value, read, ready_to_write, write) creates a
-// bidirectional signal whose value is read by calling :has_value and :read
-// and written by calling :ready_to_write and :write.
+// lambda_duplex(has_value, read, ready_to_write, write) creates a duplex signal
+// whose value is read by calling :has_value and :read and written by calling
+// :ready_to_write and :write.
 template<
     class Value,
     class HasValue,
     class Read,
     class ReadyToWrite,
     class Write>
-struct lambda_bidirectional_signal : regular_signal<
-                                         lambda_bidirectional_signal<
-                                             Value,
-                                             HasValue,
-                                             Read,
-                                             ReadyToWrite,
-                                             Write>,
-                                         Value,
-                                         bidirectional_signal>
+struct lambda_duplex_signal
+    : regular_signal<
+          lambda_duplex_signal<Value, HasValue, Read, ReadyToWrite, Write>,
+          Value,
+          duplex_signal>
 {
-    lambda_bidirectional_signal(
+    lambda_duplex_signal(
         HasValue has_value, Read read, ReadyToWrite ready_to_write, Write write)
         : has_value_(has_value),
           read_(read),
@@ -191,10 +187,10 @@ struct lambda_bidirectional_signal : regular_signal<
 };
 template<class HasValue, class Read, class ReadyToWrite, class Write>
 auto
-lambda_bidirectional(
+lambda_duplex(
     HasValue has_value, Read read, ReadyToWrite ready_to_write, Write write)
 {
-    return lambda_bidirectional_signal<
+    return lambda_duplex_signal<
         std::decay_t<decltype(read())>,
         HasValue,
         Read,
@@ -202,10 +198,10 @@ lambda_bidirectional(
         Write>(has_value, read, ready_to_write, write);
 }
 
-// lambda_bidirectional(has_value, read, ready_to_write, write, generate_id)
-// creates a bidirectional signal whose value is read by calling :has_value
-// and :read and written by calling :ready_to_write and :write. Its ID is
-// determined by calling :generate_id.
+// lambda_duplex(has_value, read, ready_to_write, write, generate_id) creates a
+// duplex signal whose value is read by calling :has_value and :read and written
+// by calling :ready_to_write and :write. Its ID is determined by calling
+// :generate_id.
 template<
     class Value,
     class HasValue,
@@ -213,19 +209,18 @@ template<
     class ReadyToWrite,
     class Write,
     class GenerateId>
-struct lambda_bidirectional_signal_with_id
-    : signal<
-          lambda_bidirectional_signal_with_id<
-              Value,
-              HasValue,
-              Read,
-              ReadyToWrite,
-              Write,
-              GenerateId>,
-          Value,
-          bidirectional_signal>
+struct lambda_duplex_signal_with_id : signal<
+                                          lambda_duplex_signal_with_id<
+                                              Value,
+                                              HasValue,
+                                              Read,
+                                              ReadyToWrite,
+                                              Write,
+                                              GenerateId>,
+                                          Value,
+                                          duplex_signal>
 {
-    lambda_bidirectional_signal_with_id(
+    lambda_duplex_signal_with_id(
         HasValue has_value,
         Read read,
         ReadyToWrite ready_to_write,
@@ -282,14 +277,14 @@ template<
     class Write,
     class GenerateId>
 auto
-lambda_bidirectional(
+lambda_duplex(
     HasValue has_value,
     Read read,
     ReadyToWrite ready_to_write,
     Write write,
     GenerateId generate_id)
 {
-    return lambda_bidirectional_signal_with_id<
+    return lambda_duplex_signal_with_id<
         std::decay_t<decltype(read())>,
         HasValue,
         Read,
