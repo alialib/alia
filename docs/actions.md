@@ -207,5 +207,23 @@ the back of `container`.
 
 </dl>
 
-Invoking Actions
-----------------
+'Consuming' Actions
+-------------------
+
+Actions are passed around via the `action` type. It's parameterized over the
+types of arguments that the action takes, so an action with one `int` parameter
+would be `action<int>`, and an action with no parameters would be `action<>`,
+e.g.:
+
+```cpp
+void
+do_button(my_context ctx, readable<std::string> text, action<> on_click)
+{
+    ...
+}
+```
+
+You can determine if an action is ready to be performed by calling its
+`is_ready()` member function (or using the free function `action_is_ready`), and
+you can invoke it using the free function `perform_action` (e.g.,
+(`perform_action(on_click)`)).
