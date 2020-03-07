@@ -166,10 +166,10 @@ reset_smoothing(value_smoother<Value>& smoother, Value const& value)
     smoother.initialized = true;
 }
 
-// smooth_raw_value(ctx, smoother, x, transition) returns a smoothed view of x.
+// smooth_raw(ctx, smoother, x, transition) returns a smoothed view of x.
 template<class Value>
 Value
-smooth_raw_value(
+smooth_raw(
     dataless_context ctx,
     value_smoother<Value>& smoother,
     Value const& x,
@@ -212,8 +212,8 @@ smooth_raw_value(
     return current_value;
 }
 
-// smooth is analogous to smooth_raw_value, but it deals with signals
-// instead of raw values.
+// smooth is analogous to smooth_raw, but it deals with signals instead of raw
+// values.
 
 template<class Wrapped>
 struct smoothed_signal : regular_signal<
@@ -271,7 +271,7 @@ smooth(
 {
     Value output = Value();
     if (signal_has_value(x))
-        output = smooth_raw_value(ctx, smoother, read_signal(x), transition);
+        output = smooth_raw(ctx, smoother, read_signal(x), transition);
     return make_smoothed_signal(x, output);
 }
 
