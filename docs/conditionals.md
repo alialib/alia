@@ -25,9 +25,6 @@ is a simple example that makes use of all three:
 <div id="numerical-analysis"></div>
 </div>
 
-As with all alia control flow macros, `alia_if` blocks must be terminated with
-`alia_end`.
-
 The conditions that you provide to `alia_if` (and `alia_else_if`) can be signals
 or raw C++ values. If a signal is provided and the signal has no value, alia
 considers the condition *neither true nor false.* As such, the code dependent on
@@ -35,6 +32,28 @@ that statement isn't executed, but any subsequent `else` blocks are *also not
 considered.* A condition without a value essentially terminates the entire
 sequence of `alia_if/else` statements. As you can see in the above example,
 before `n` is given a value, none of the `do_text` calls are executed.
+
+As with all alia control flow macros, `alia_if` blocks must be terminated with
+`alia_end`.
+
+### Context Naming
+
+All alia control flow macros need access to the alia *context*, so they assume
+it's available in the `ctx` variable. It will make your life much easier if you
+adopt the convention of always naming your context like this. If, however, you
+find yourself in a situation where that's inconvenient or impossible, the macros
+are all available in an alternate form that ends with an underscore and takes
+the context as a first argument. For example:
+
+```cpp
+alia_if_(my_oddly_named_context, n < 0)
+{
+    dom::do_text(my_oddly_named_context, "Hi!");
+}
+alia_end
+```
+
+(These also come in uppercase form as well.)
 
 alia_switch
 -----------
