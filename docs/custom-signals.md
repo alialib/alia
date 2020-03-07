@@ -14,9 +14,9 @@ Lambda Constructors
 
 When you need a little more control but don't want to create a custom signal
 type, you can create a signal from one or more lambdas functions (or other
-function objects). For completeness, you can create a fully functional,
-bidirectional signal using lambdas, but the further you go down this list, the
-more likely it is that you should just create a custom signal type...
+function objects). For completeness, you can create a fully functional, duplex
+signal using lambdas, but the further you go down this list, the more likely it
+is that you should just create a custom signal type...
 
 <dl>
 
@@ -51,9 +51,9 @@ value.
 
 <dt>lambda_reader(has_value, read, generate_id)</dt><dd>
 
-Creates a read-only signal whose value is determined by calling
-`has_value` and `read` and whose ID is determined by calling
-`generate_id`. (None of which take any arguments.)
+Creates a read-only signal whose value is determined by calling `has_value` and
+`read` and whose ID is determined by calling `generate_id`. (None of which take
+any arguments.)
 
 With this overload, you can achieve something that's impossible with the
 basic constructors: a signal that carries a large value but doesn't actually
@@ -71,19 +71,19 @@ the object's value itself only has to be touched when new values are
 retrieved.
 </dd>
 
-<dt>lambda_bidirectional(has_value, read, ready_to_write, write)</dt><dd>
+<dt>lambda_duplex(has_value, read, ready_to_write, write)</dt><dd>
 
-Creates a bidirectional signal whose value is read by calling `has_value` and
-`read` and written by calling `ready_to_write` and `write`. Only `write` takes
-an argument (the new value).
+Creates a duplex signal whose value is read by calling `has_value` and `read`
+and written by calling `ready_to_write` and `write`. Only `write` takes an
+argument (the new value).
 </dd>
 
-<dt>lambda_bidirectional(has_value, read, ready_to_write, write, generate_id)
+<dt>lambda_duplex(has_value, read, ready_to_write, write, generate_id)
 </dt><dd>
 
-Creates a bidirectional signal whose value is read by calling `has_value` and
-`read` and written by calling `ready_to_write` and `write`. Its ID is determined
-by calling `generate_id`. Only `write` takes an argument (the new value).
+Creates a duplex signal whose value is read by calling `has_value` and `read`
+and written by calling `ready_to_write` and `write`. Its ID is determined by
+calling `generate_id`. Only `write` takes an argument (the new value).
 </dd>
 
 </dl>
