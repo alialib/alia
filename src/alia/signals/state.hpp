@@ -74,7 +74,7 @@ struct state_holder
 };
 
 template<class Value>
-struct state_signal : signal<state_signal<Value>, Value, bidirectional_signal>
+struct state_signal : signal<state_signal<Value>, Value, duplex_signal>
 {
     explicit state_signal(state_holder<Value>* s) : state_(s)
     {

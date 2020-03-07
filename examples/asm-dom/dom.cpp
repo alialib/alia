@@ -74,7 +74,7 @@ struct value_update_event : targeted_event
 };
 
 void
-do_input_(dom::context ctx, bidirectional<string> value)
+do_input_(dom::context ctx, duplex<string> value)
 {
     input_data* data;
     get_cached_data(ctx, &data);

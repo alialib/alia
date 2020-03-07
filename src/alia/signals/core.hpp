@@ -22,7 +22,7 @@ struct read_only_signal
 struct write_only_signal
 {
 };
-struct bidirectional_signal
+struct duplex_signal
 {
 };
 
@@ -39,17 +39,15 @@ template<class Same>
 struct signal_direction_is_compatible<Same, Same> : std::true_type
 {
 };
-// A bidirectional signal can work as anything.
+// A duplex signal can work as anything.
 template<class Expected>
-struct signal_direction_is_compatible<Expected, bidirectional_signal>
-    : std::true_type
+struct signal_direction_is_compatible<Expected, duplex_signal> : std::true_type
 {
 };
 // Resolve ambiguity.
 template<>
-struct signal_direction_is_compatible<
-    bidirectional_signal,
-    bidirectional_signal> : std::true_type
+struct signal_direction_is_compatible<duplex_signal, duplex_signal>
+    : std::true_type
 {
 };
 
@@ -66,22 +64,22 @@ struct signal_direction_intersection<Same, Same>
 {
     typedef Same type;
 };
-// A bidirectional signal has both capabilities.
+// A duplex signal has both capabilities.
 template<class A>
-struct signal_direction_intersection<A, bidirectional_signal>
+struct signal_direction_intersection<A, duplex_signal>
 {
     typedef A type;
 };
 template<class B>
-struct signal_direction_intersection<bidirectional_signal, B>
+struct signal_direction_intersection<duplex_signal, B>
 {
     typedef B type;
 };
 // Resolve ambiguity.
 template<>
-struct signal_direction_intersection<bidirectional_signal, bidirectional_signal>
+struct signal_direction_intersection<duplex_signal, duplex_signal>
 {
-    typedef bidirectional_signal type;
+    typedef duplex_signal type;
 };
 
 // signal_direction_union<A,B>::type, where A and B are signal directions,
@@ -97,8 +95,8 @@ struct signal_direction_union<Same, Same>
 template<class A, class B>
 struct signal_direction_union
 {
-    // All other combinations yield bidirectional signals.
-    typedef bidirectional_signal type;
+    // All other combinations yield duplex signals.
+    typedef duplex_signal type;
 };
 
 // untyped_signal_base defines functionality common to all signals, irrespective
@@ -265,10 +263,10 @@ using readable = signal_ref<Value, read_only_signal>;
 template<class Value>
 using writable = signal_ref<Value, write_only_signal>;
 
-// bidirectional<Value> denotes a reference to a bidirectional signal carrying
-// values of type :Value.
+// duplex<Value> denotes a reference to a duplex signal carrying values of type
+// :Value.
 template<class Value>
-using bidirectional = signal_ref<Value, bidirectional_signal>;
+using duplex = signal_ref<Value, duplex_signal>;
 
 // is_signal_type<T>::value yields a compile-time boolean indicating whether or
 // not T is an alia signal type.
@@ -361,24 +359,22 @@ write_signal(Signal const& signal, Value const& value)
         signal.write(value);
 }
 
-// signal_is_bidirectional<Signal>::value yields a compile-time boolean
-// indicating whether or not the given signal type supports both reading and
-// writing.
+// signal_is_duplex<Signal>::value yields a compile-time boolean indicating
+// whether or not the given signal type supports both reading and writing.
 template<class Signal>
-struct signal_is_bidirectional : signal_direction_is_compatible<
-                                     bidirectional_signal,
-                                     typename Signal::direction_tag>
+struct signal_is_duplex : signal_direction_is_compatible<
+                              duplex_signal,
+                              typename Signal::direction_tag>
 {
 };
 
-// is_bidirectional_signal_type<T>::value yields a compile-time boolean
-// indicating whether or not T is an alia signal that supports both reading and
-// writing.
+// is_duplex_signal_type<T>::value yields a compile-time boolean indicating
+// whether or not T is an alia signal that supports both reading and writing.
 template<class T>
-struct is_bidirectional_signal_type : std::conditional_t<
-                                          is_signal_type<T>::value,
-                                          signal_is_bidirectional<T>,
-                                          std::false_type>
+struct is_duplex_signal_type : std::conditional_t<
+                                   is_signal_type<T>::value,
+                                   signal_is_duplex<T>,
+                                   std::false_type>
 {
 };
 

@@ -3,7 +3,7 @@
 namespace numeric_adaptors {
 
 void
-do_ui(dom::context ctx, bidirectional<double> n)
+do_ui(dom::context ctx, duplex<double> n)
 {
     // clang-format off
 /// [numeric-adaptors]

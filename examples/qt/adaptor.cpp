@@ -264,7 +264,7 @@ struct qt_text_control : qt_layout_node, node_identity
 };
 
 void
-do_text_control(qt_context ctx, bidirectional<string> text)
+do_text_control(qt_context ctx, duplex<string> text)
 {
     auto& widget = get_cached_data<qt_text_control>(ctx);
 

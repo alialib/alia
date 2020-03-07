@@ -147,7 +147,7 @@ TEST_CASE("simple map", "[flow][for_each]")
         for_each(
             ctx,
             direct(container),
-            [&](context ctx, readable<string> key, bidirectional<int> value) {
+            [&](context ctx, readable<string> key, duplex<int> value) {
                 do_text(ctx, apply(ctx, counting_identity, simplify_id(key)));
                 do_text(ctx, apply(ctx, alia_lambdify(std::to_string), value));
             });
@@ -187,7 +187,7 @@ TEST_CASE("item map", "[flow][for_each]")
         for_each(
             ctx,
             direct(container),
-            [&](context ctx, readable<my_item> key, bidirectional<int> value) {
+            [&](context ctx, readable<my_item> key, duplex<int> value) {
                 do_text(
                     ctx,
                     apply(
@@ -303,9 +303,7 @@ TEST_CASE("writing string list items", "[flow][for_each]")
 
     auto controller = [&](context ctx) {
         for_each(
-            ctx,
-            direct(container),
-            [&](context, bidirectional<string> const& item) {
+            ctx, direct(container), [&](context, duplex<string> const& item) {
                 write_signal(item, "boo");
             });
     };
