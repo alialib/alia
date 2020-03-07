@@ -75,12 +75,10 @@ static demo the_demo("expanded-greeting", init_demo);
 namespace hello_button {
 
 /// [hello-button]
-
 void
-do_hello_button(dom::context ctx, duplex<bool> show_message)
+do_demo(dom::context ctx, duplex<bool> show_message)
 {
-    dom::do_button(
-        ctx, "Toggle the Secret Message", show_message <<= !show_message);
+    dom::do_button(ctx, "Toggle the Message", toggle(show_message));
 
     alia_if(show_message)
     {
@@ -97,7 +95,7 @@ init_demo(std::string dom_id)
     static dom::system the_dom;
 
     initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_hello_button(ctx, get_state(ctx, false));
+        do_demo(ctx, get_state(ctx, false));
     });
 }
 
