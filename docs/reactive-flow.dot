@@ -11,12 +11,12 @@ node[color="#424242", fontcolor="#242424"];
 state [label="application\nstate", shape=note]
 
 subgraph cluster_controller {
-    label="alia controller"; style=dashed;
-    reactive_code [label="reactive\npresentation\ncode", shape=diamond];
+    label="alia controller function"; style=dashed;
+    reactive_code [label="reactive\nUI\nspecification", shape=diamond];
     event_handler [label="event\nhandler", shape=diamond];
 }
 
-ui [label="UI", shape=component]
+ui [label="user\ninterface", shape=component]
 
 event [label="event", shape=note]
 
@@ -26,14 +26,15 @@ state -> reactive_code [label="feeds\ninto"]
 
 reactive_code -> ui [label="produces/\nupdates"]
 
-ui -> event [label="produces          "]
+ui -> event [label="generates            "]
 
-event -> event_handler [headlabel="feeds\ninto", labeldistance=5.7, labelangle=-18]
+event -> event_handler
+[headlabel="feeds\ninto", labeldistance=7, labelangle=-16]
 
 event_handler -> state [xlabel="(maybe)\nupdates", style=dashed]
 
 event_handler -> effects
-[xlabel="\n  (maybe)\n  produces", style=dashed, minlen=2]
+[xlabel="\n(maybe)\nproduces", style=dashed, minlen=2]
 
 event -> effects [style=invis]
 

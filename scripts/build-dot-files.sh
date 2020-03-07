@@ -6,6 +6,7 @@ if [ $(basename $(pwd)) != "www" ]; then
 fi
 dot -Tsvg -o data-graph.svg data-graph.dot
 dot -Tsvg -o alia-flow.svg reactive-flow.dot
-sed -i 's/label="alia controller"; style=dashed;/style=invis;/' reactive-flow.dot
+sed -i 's/label="alia controller function"; style=dashed;/style=invis;/' \
+    reactive-flow.dot
 dot -Tsvg -o reactive-flow.svg reactive-flow.dot
 rm *.dot
