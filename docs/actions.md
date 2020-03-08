@@ -114,7 +114,7 @@ Parameters & Binding
 Actions can be parameterized. For example, you might define an action that takes
 a string as a parameter and sends it as a message in a chat application.
 
-When an action takes one or more parameters, you can use the `<<=` operator to
+When an action takes one or more parameters, you can use the `<<` operator to
 *bind* a signal to the first argument in that action. For example, alia's
 animation timer provides a parameterized action for starting it:
 
@@ -169,7 +169,7 @@ action.
 </dl>
 
 Actions that are defined this way can have parameters, and of course those
-parameters can be bound to signals using the `<<=` operator:
+parameters can be bound to signals using the `<<` operator:
 
 [source](actions.cpp ':include :fragment=lambda-action-demo')
 
