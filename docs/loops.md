@@ -2,8 +2,7 @@ Loops
 =====
 
 <script>
-    init_alia_demos(['transform-demo',
-        'metered-transform-demo', 'metered-direct-counting',
+    init_alia_demos([
         'loop-macros-demo', 'for-each-map-demo', 'for-each-vector-demo',
         'named-blocks-demo']);
 </script>
@@ -73,60 +72,12 @@ It can also return `null_id` to fall back to the default ID behavior.
 transform
 ---------
 
-When working with container signals, it's common to apply some function
-individually to each item in the container. Just like `std::transform` allows
-you to do this on regular C++ containers, `alia::transform` allows you to do
-this on container signals:
+Often, we loop over signal containers so that we can *map* the individual items
+to other values. Just as `std::transform` allows you to do this for raw C++
+containers, `alia::transform` allows you to do this for signal containers.
 
-<dl>
-
-<dt>transform(ctx, container, f)</dt><dd>
-
-Coming soon...
-
-</dd>
-
-</dl>
-
-[source](application.cpp ':include :fragment=transform-demo')
-
-<div class="demo-panel">
-<div id="transform-demo"></div>
-</div>
-
-Again, we also could've just counted the number of primes directly with a single
-call to `apply`, like this:
-
-[source](application.cpp ':include :fragment=direct-counting')
-
-However, there's one very important difference between the two implementations:
-In the `transform` version, the call to `apply(ctx, is_prime, n)` is
-*individually caching* the result of `is_prime` for each input number, so as we
-update them, `is_prime` is only reinvoked on the individual numbers that have
-changed. This is in contrast to the 'single apply' version where any change to
-any part of the vector causes the entire `std::count_if` calculator to be
-redone.
-
-Below are the two versions with counters to show how many times each has called
-`is_prime`.
-
-First the `transform` version:
-
-<div class="demo-panel">
-<div id="metered-transform-demo"></div>
-</div>
-
-And now the 'single apply' version:
-
-<div class="demo-panel">
-<div id="metered-direct-counting"></div>
-</div>
-
-Of course, given that this is a contrived example and `is_prime` is a fairly
-cheap function to call, it doesn't make much difference which way we do it, but
-in real world applications where you might be retrieving data from remote
-sources or doing computationally-intensive background calculations, the
-difference can be significant.
+`alia::transform` is documented [here](function-application.md#transform), along
+with the other signal function application utilities.
 
 alia_for/while
 --------------
