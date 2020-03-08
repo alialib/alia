@@ -8,22 +8,8 @@
 
 namespace alia {
 
-// This is the signals-based version of a functional transform (i.e., map). It
-// takes a sequence container and a function mapping a single container item to
-// another type. The mapping function is itself an alia traversal function, so
-// its first argument is a context (and the second is the item to map, as a
-// signal).
-//
-// The return value of transform() is a signal carrying a vector with the mapped
-// items. This signal has a value when all items are successfully transformed
-// (i.e., when the signals returned by the mapping function all have values).
-//
-// Note that this follows proper dataflow semantics in that the mapped values
-// are allowed to change over time. Even after the result has a value (and all
-// items are successfully transformed), the mapping function will continue to be
-// invoked whenever necessary to allow events to be delivered and changes to
-// propogate.
-//
+// `transform()` is the reactive version of `std::transform`. See the docs for
+// more details.
 
 template<class MappedItem>
 struct mapped_sequence_data

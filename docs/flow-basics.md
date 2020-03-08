@@ -131,5 +131,5 @@ Note that these rules only apply to the *reactive* portions of your application
 code (i.e., the parts that declare what elements of your user interface are
 present). alia is designed so that the code that [performs
 computations](function-application.md) and the code that [produces side
-effects](actions.md/custom-actions) can be written as normal C++, without
+effects](actions.md#custom-actions) can be written as normal C++, without
 worrying about flow tracking/restrictions.
