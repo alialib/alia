@@ -3,7 +3,6 @@
 
 #include <alia/signals/basic.hpp>
 #include <alia/signals/core.hpp>
-#include <alia/signals/operators.hpp>
 
 // This file defines the alia action interface, some common implementations of
 // it, and some utilities for working with it.
@@ -149,8 +148,11 @@ operator,(First const& first, Second const& second)
         first, second);
 }
 
-// (a <<= s), where a is an action and s is a readable signal, returns another
+// operator <<
+//
+// (a << s), where a is an action and s is a readable signal, returns another
 // action that is like :a but with the value of :s bound to its first argument.
+//
 template<class Action, class Signal, class Interface>
 struct bound_action;
 template<class Action, class Signal, class BoundArg, class... Args>
@@ -185,12 +187,11 @@ template<
         is_action_type<Action>::value && is_readable_signal_type<Signal>::value,
         int> = 0>
 auto
-operator<<=(Action const& action, Signal const& signal)
+operator<<(Action const& action, Signal const& signal)
 {
     return bound_action<Action, Signal, typename Action::action_interface>(
         action, signal);
 }
-
 template<
     class Action,
     class Value,
@@ -198,9 +199,9 @@ template<
         is_action_type<Action>::value && !is_signal_type<Value>::value,
         int> = 0>
 auto
-operator<<=(Action const& action, Value const& v)
+operator<<(Action const& action, Value const& v)
 {
-    return action <<= value(v);
+    return action << value(v);
 }
 
 // operator <<=
@@ -260,78 +261,6 @@ operator<<=(Sink sink, Source source)
 {
     return sink <<= value(source);
 }
-
-// For most compound assignment operators (e.g., +=), a += b, where :a and
-// :b are signals, creates an action that sets :a equal to :a + :b.
-
-#define ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(assignment_form, normal_form) \
-    template<                                                                  \
-        class A,                                                               \
-        class B,                                                               \
-        std::enable_if_t<                                                      \
-            is_duplex_signal_type<A>::value                                    \
-                && is_readable_signal_type<B>::value,                          \
-            int> = 0>                                                          \
-    auto operator assignment_form(A const& a, B const& b)                      \
-    {                                                                          \
-        return a <<= (a normal_form b);                                        \
-    }
-
-ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(+=, +)
-ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(-=, -)
-ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(*=, *)
-ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(/=, /)
-ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(^=, ^)
-ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(%=, %)
-ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(&=, &)
-ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(|=, |)
-
-#undef ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR
-
-#define ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(                      \
-    assignment_form, normal_form)                                              \
-    template<                                                                  \
-        class A,                                                               \
-        class B,                                                               \
-        std::enable_if_t<                                                      \
-            is_duplex_signal_type<A>::value && !is_signal_type<B>::value,      \
-            int> = 0>                                                          \
-    auto operator assignment_form(A const& a, B const& b)                      \
-    {                                                                          \
-        return a <<= (a normal_form value(b));                                 \
-    }
-
-ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(+=, +)
-ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(-=, -)
-ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(*=, *)
-ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(/=, /)
-ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(^=, ^)
-ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(%=, %)
-ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(&=, &)
-ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(|=, |)
-
-// The increment and decrement operators work similarly.
-
-#define ALIA_DEFINE_BY_ONE_OPERATOR(assignment_form, normal_form)              \
-    template<                                                                  \
-        class A,                                                               \
-        std::enable_if_t<is_duplex_signal_type<A>::value, int> = 0>            \
-    auto operator assignment_form(A const& a)                                  \
-    {                                                                          \
-        return a <<= (a normal_form value(typename A::value_type(1)));         \
-    }                                                                          \
-    template<                                                                  \
-        class A,                                                               \
-        std::enable_if_t<is_duplex_signal_type<A>::value, int> = 0>            \
-    auto operator assignment_form(A const& a, int)                             \
-    {                                                                          \
-        return a <<= (a normal_form value(typename A::value_type(1)));         \
-    }
-
-ALIA_DEFINE_BY_ONE_OPERATOR(++, +)
-ALIA_DEFINE_BY_ONE_OPERATOR(--, -)
-
-#undef ALIA_DEFINE_BY_ONE_OPERATOR
 
 // toggle(flag), where :flag is a signal to a boolean, creates an action
 // that will toggle the value of :flag between true and false.
