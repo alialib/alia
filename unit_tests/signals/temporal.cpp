@@ -32,7 +32,7 @@ TEST_CASE("animation_timer", "[signals][temporal]")
         auto active = timer.is_active();
         REQUIRE(signal_has_value(active));
         REQUIRE(!read_signal(active));
-        auto start = timer.start() <<= 100;
+        auto start = timer.start() << 100;
         REQUIRE(action_is_ready(start));
         perform_action(start);
     });

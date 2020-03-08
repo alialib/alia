@@ -1,6 +1,7 @@
 #include <alia/flow/actions.hpp>
 
 #include <alia/signals/basic.hpp>
+#include <alia/signals/operators.hpp>
 
 #include <testing.hpp>
 
@@ -183,7 +184,7 @@ TEST_CASE("push_back action", "[flow][actions]")
         REQUIRE(x == (std::vector<int>{1, 2, 3}));
     }
     {
-        auto a = push_back(direct(x)) <<= 4;
+        auto a = push_back(direct(x)) << 4;
         REQUIRE(a.is_ready());
         perform_action(a);
         REQUIRE(x == (std::vector<int>{1, 2, 3, 4}));
@@ -216,19 +217,25 @@ TEST_CASE("action binding", "[flow][actions]")
     int x = 0;
     auto a = lambda_action([&](int y, int z) { x = y - z; });
 
-    REQUIRE(!(a <<= empty<int>()).is_ready());
+    REQUIRE(!(a << empty<int>()).is_ready());
 
-    auto b = a <<= value(1);
+    auto b = a << value(1);
     REQUIRE(b.is_ready());
-    REQUIRE(!(b <<= empty<int>()).is_ready());
+    REQUIRE(!(b << empty<int>()).is_ready());
     perform_action(b, 4);
     REQUIRE(x == -3);
 
-    auto c = b <<= 2;
+    auto c = b << 2;
     REQUIRE(c.is_ready());
     perform_action(c);
     REQUIRE(x == -1);
 
-    REQUIRE(!(lambda_action([]() { return false; }, [&](int) {}) <<= value(0))
+    auto d = a << 3 << 2;
+    action<> e = d;
+    REQUIRE(e.is_ready());
+    perform_action(e);
+    REQUIRE(x == 1);
+
+    REQUIRE(!(lambda_action([]() { return false; }, [&](int) {}) << value(0))
                  .is_ready());
 }

@@ -5,6 +5,7 @@
 #include <alia/components/system.hpp>
 #include <alia/flow/actions.hpp>
 #include <alia/flow/data_graph.hpp>
+#include <alia/flow/events.hpp>
 #include <alia/other/cubic_bezier.hpp>
 #include <alia/signals/adaptors.hpp>
 #include <alia/signals/basic.hpp>

@@ -146,7 +146,7 @@ alia_end
 
 do_text(ctx, "Enter a duration in milliseconds:");
 do_input(ctx, duration);
-do_button(ctx, "Start", timer.start() <<= duration);
+do_button(ctx, "Start", timer.start() << duration);
 /// [action-binding]
     // clang-format on
 }
@@ -182,7 +182,7 @@ auto sender = lambda_action(
     [](std::string message) { std::cout << message << std::endl; });
 
 // Bind the message to the action and hook them up to a button.
-do_button(ctx, "Send", sender <<= message);
+do_button(ctx, "Send", sender << message);
 /// [lambda-action-demo]
     // clang-format on
 }

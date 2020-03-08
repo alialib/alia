@@ -1,6 +1,7 @@
 #ifndef ALIA_SIGNALS_OPERATORS_HPP
 #define ALIA_SIGNALS_OPERATORS_HPP
 
+#include <alia/flow/actions.hpp>
 #include <alia/signals/adaptors.hpp>
 #include <alia/signals/application.hpp>
 #include <alia/signals/basic.hpp>
@@ -26,7 +27,7 @@ ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(+)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(-)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(*)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(/)
-ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(^)
+ALIA_DEFINE_BINARY_SIGNAL_OPERATOR (^)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(%)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(&)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(|)
@@ -56,7 +57,8 @@ ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(>=)
         class A,                                                               \
         class B,                                                               \
         std::enable_if_t<                                                      \
-            !is_signal_type<A>::value && is_signal_type<B>::value,             \
+            !is_signal_type<A>::value && !is_action_type<A>::value             \
+                && is_signal_type<B>::value,                                   \
             int> = 0>                                                          \
     auto operator op(A const& a, B const& b)                                   \
     {                                                                          \
@@ -67,7 +69,7 @@ ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(+)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(-)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(*)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(/)
-ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(^)
+ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR (^)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(%)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(&)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(|)
@@ -91,6 +93,78 @@ ALIA_DEFINE_UNARY_SIGNAL_OPERATOR(-)
 ALIA_DEFINE_UNARY_SIGNAL_OPERATOR(!)
 
 #undef ALIA_DEFINE_UNARY_SIGNAL_OPERATOR
+
+// For most compound assignment operators (e.g., +=), a += b, where :a and
+// :b are signals, creates an action that sets :a equal to :a + :b.
+
+#define ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(assignment_form, normal_form) \
+    template<                                                                  \
+        class A,                                                               \
+        class B,                                                               \
+        std::enable_if_t<                                                      \
+            is_duplex_signal_type<A>::value                                    \
+                && is_readable_signal_type<B>::value,                          \
+            int> = 0>                                                          \
+    auto operator assignment_form(A const& a, B const& b)                      \
+    {                                                                          \
+        return a <<= (a normal_form b);                                        \
+    }
+
+ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(+=, +)
+ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(-=, -)
+ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(*=, *)
+ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(/=, /)
+ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(^=, ^)
+ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(%=, %)
+ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(&=, &)
+ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(|=, |)
+
+#undef ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR
+
+#define ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(                      \
+    assignment_form, normal_form)                                              \
+    template<                                                                  \
+        class A,                                                               \
+        class B,                                                               \
+        std::enable_if_t<                                                      \
+            is_duplex_signal_type<A>::value && !is_signal_type<B>::value,      \
+            int> = 0>                                                          \
+    auto operator assignment_form(A const& a, B const& b)                      \
+    {                                                                          \
+        return a <<= (a normal_form value(b));                                 \
+    }
+
+ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(+=, +)
+ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(-=, -)
+ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(*=, *)
+ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(/=, /)
+ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(^=, ^)
+ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(%=, %)
+ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(&=, &)
+ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(|=, |)
+
+// The increment and decrement operators work similarly.
+
+#define ALIA_DEFINE_BY_ONE_OPERATOR(assignment_form, normal_form)              \
+    template<                                                                  \
+        class A,                                                               \
+        std::enable_if_t<is_duplex_signal_type<A>::value, int> = 0>            \
+    auto operator assignment_form(A const& a)                                  \
+    {                                                                          \
+        return a <<= (a normal_form value(typename A::value_type(1)));         \
+    }                                                                          \
+    template<                                                                  \
+        class A,                                                               \
+        std::enable_if_t<is_duplex_signal_type<A>::value, int> = 0>            \
+    auto operator assignment_form(A const& a, int)                             \
+    {                                                                          \
+        return a <<= (a normal_form value(typename A::value_type(1)));         \
+    }
+
+ALIA_DEFINE_BY_ONE_OPERATOR(++, +)
+ALIA_DEFINE_BY_ONE_OPERATOR(--, -)
+
+#undef ALIA_DEFINE_BY_ONE_OPERATOR
 
 // The || and && operators require special implementations because they don't
 // necessarily need to evaluate both of their arguments...
