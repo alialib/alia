@@ -109,7 +109,7 @@ do_records_ui(dom::context ctx, std::vector<my_record>& records)
         // Present a button that adds the new record.
         dom::do_button(ctx, "Add",
             // Hook up the new label to our action (if the label isn't empty).
-            (add_record <<= mask(new_label, new_label != ""),
+            (add_record << mask(new_label, new_label != ""),
              // Also add in an action that resets the label.
              new_label <<= ""));
     }
@@ -199,7 +199,7 @@ do_scoreboard(dom::context ctx, duplex<std::vector<player>> players)
     auto new_player = get_state(ctx, string());
     do_input(ctx, new_player);
     do_button(ctx, "Add Player",
-        (push_back(players) <<=
+        (push_back(players) <<
             apply(ctx,
                 [](auto name) { return player{name, 0}; },
                 mask(new_player, new_player != "")),
