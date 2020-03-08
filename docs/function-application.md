@@ -2,7 +2,8 @@ Function Application
 ====================
 
 <script>
-    init_alia_demos(['simple-apply']);
+    init_alia_demos(['simple-apply', 'transform-demo',
+        'metered-transform-demo', 'metered-direct-counting']);
 </script>
 
 Of course, to write real applications, we need to be able to define more
@@ -115,7 +116,89 @@ its first argument, its other arguments are signals, and it returns a signal.
 (The lifted version of `is_prime` would call `apply` internally.)
 
 Lifting is especially useful when dealing with higher-order function
-application.
+application (like `transform`, below).
 
 `lift` also has a lazy counterpart: `lazy_lift`. Similar to `lazy_apply`, the
 lazy lifted version of a function doesn't take a context as its first argument.
+
+transform()
+-----------
+
+When working with container signals, it's common to apply some function
+individually to each item in the container. Just like `std::transform` allows
+you to do this on regular C++ containers, `alia::transform` allows you to do
+this on container signals:
+
+<dl>
+
+<dt>transform(ctx, container, f)</dt><dd>
+
+Applies a reactive function `f` individually to each item in `container` and
+returns the result as a signal container.
+
+`container` must be a signal carrying a *sequence* container value. (There's
+currently no implementation of `transform` for associative containers.)
+
+`f` is invoked as `f(ctx, item)`, where `ctx` is the same context passed into
+`transform` and `item` is a *signal* carrying the individual item to be
+transformed. It should return a *signal* carrying the result of transforming
+`item`. (Of course, it can return an empty signal if the result is unresolved.)
+
+The return value of `f` is a signal carrying a `std::vector` with the
+transformed items. This signal has a value when all items are successfully
+transformed (i.e., when the signals returned by `f` all have values).
+
+Note that `transform` follows proper dataflow semantics in that the transformed
+values are allowed to change over time. Even after the result has a value (and
+all items are successfully transformed), `f` will continue to be invoked
+whenever necessary to allow events to be delivered and changes to propagate.
+
+`transform` follows the same item/data association rules as
+[for_each](loops.md#for_each).
+
+</dd>
+
+</dl>
+
+Here's an example of how we might use `transform` and `is_prime` to count the
+number of primes in a list of inputs.
+
+[source](application.cpp ':include :fragment=transform-demo')
+
+<div class="demo-panel">
+<div id="transform-demo"></div>
+</div>
+
+Of course, we also could've just counted the number of primes directly with a
+single call to `apply`, like this:
+
+[source](application.cpp ':include :fragment=direct-counting')
+
+However, there's one very important difference between the two implementations:
+In the `transform` version, the call to `apply(ctx, is_prime, n)` is
+*individually caching* the result of `is_prime` for each input number, so as we
+update them, `is_prime` is only reinvoked on the individual numbers that have
+changed. This is in contrast to the 'single apply' version where any change to
+any part of the vector causes the entire `std::count_if` calculation to be
+redone.
+
+Below are the two versions with counters to show how many times each has called
+`is_prime`.
+
+First the `transform` version:
+
+<div class="demo-panel">
+<div id="metered-transform-demo"></div>
+</div>
+
+And now the 'single apply' version:
+
+<div class="demo-panel">
+<div id="metered-direct-counting"></div>
+</div>
+
+Of course, given that this is a contrived example and `is_prime` is a fairly
+cheap function to call, it doesn't make much difference which way we do it, but
+in real world applications where you might be retrieving data from remote
+sources or doing computationally-intensive background calculations, the
+difference can be significant.
