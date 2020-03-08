@@ -71,12 +71,12 @@ different types of IDs.
 When working with objects of type `id_interface const&`, you should be aware
 that while they do provide the same equality and ordering operators as the
 concrete signal types, they're not copyable, so if you want to, for example,
-pass one into `combine_ids()`) to construct a composite ID, you need to wrap it
+pass one into `combine_ids()` to construct a composite ID, you need to wrap it
 in a call to `ref()` first. For example, `combine_ids(ref(array_id),
 make_id(i))` might be a good ID for an item in an array.
 
 Typically, if you're consuming IDs, you'll also want to capture them and store
-them for later. This is done using the `captured_id` object. It takes care of
+them for later. This is done using the `captured_id` type. It takes care of
 properly cloning the ID and ensuring that it doesn't reference anything outside
 the object itself.
 
