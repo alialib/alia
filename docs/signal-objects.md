@@ -1,3 +1,11 @@
+Signal Objects
+==============
+
+Signal Properties
+-----------------
+
+
+
 Value Identity
 --------------
 
@@ -36,3 +44,39 @@ revision tracking.
 A simple method of generating compact value IDs is to keep an integer counter
 and increment it whenever the value changes. Many of alia's built-in signal
 types do this.
+
+See [Working with IDs](working-with-ids.md) for more on value ID objects.
+
+Consuming Signals
+-----------------
+
+When accepting a signal as a parameter to a function, the general practice is to
+use the types `readable<T>` and `duplex<T>`. `readable<T>` represents any signal
+type that carries values of type `T` and that supports reading. Similarly,
+`duplex<T>` represents any signal type that carries values of type `T` and
+supports *both reading and writing.* (There's also `writable<T>`, but it's much
+less common to want to work with a signal that you're only planning to write to,
+and you should consider whether or not you actually want an
+[action](actions.md).)
+
+Both `readable<T>` and `duplex<T>` are implemented as references internally, so
+they should be passed by value, e.g.:
+
+```cpp
+void
+do_text(context ctx, readable<std::string> text);
+
+void
+do_text_control(context ctx, duplex<std::string> text);
+```
+
+In both of these cases, `text` is an actual signal object and can be used as
+such internally. It can be passed into other functions that expects signals and
+can be part of a signal composition.
+
+?> These objects are essentially wrappers around references to the abstract base
+   class `signal_interface`. If you're wondering why we don't just directly use
+   references to that abstract base class, it's primarily because this approach
+   fits in better with alia's propensity for composing signal objects on the
+   stack (via copying). If `text` were passed in as a reference to an abstract
+   base class, then `
