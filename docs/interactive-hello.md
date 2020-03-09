@@ -1,13 +1,12 @@
-A Reactive "Hello, World!"
-==========================
+"Hello, World!"
+===============
 
 <script>
     init_alia_demos(['greeting-ui']);
 </script>
 
-alia is designed to allow you to write reactive application code that interacts
-with traditional, object-oriented C++ libraries. Let's start with a very simple
-example, an interactive 'Hello, World!':
+Since alia is designed to write interactive applications, let's start with an
+interactive version of the traditional 'Hello, World!':
 
 [source](greeting.cpp ':include :fragment=greeting')
 

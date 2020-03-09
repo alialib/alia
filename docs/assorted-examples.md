@@ -15,7 +15,7 @@ Tip Calculator
 
 Here's a simple tip calculator that shows off some [actions](actions.md), as
 well as how you can use alia's data graph to 'magically' manifest state when and
-where you need it, even in the middle of reactive application code.
+where you need it, even in the middle of declarative application code.
 
 [source](numerical.cpp ':include :fragment=tip-calculator')
 
@@ -39,7 +39,7 @@ Minimal Integration
 -------------------
 
 Although alia provides a whole suite of tools for modeling your application's
-presentation logic reactively, it tries not to *force* them on you wholesale.
+presentation logic declaratively, it tries not to *force* them on you wholesale.
 Here's an example of how you might use a smaller subset of alia's capabilities
 to integrate alia with your application data.
 

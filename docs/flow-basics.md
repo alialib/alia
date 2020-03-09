@@ -8,16 +8,15 @@ Flow Basics
 High-Level Flow
 ---------------
 
-The flow of a reactive user interface system typically looks like this:
+The flow of a declarative user interface system typically looks like this:
 
-![flow](reactive-flow.svg)
+![flow](declarative-flow.svg)
 
-The important part (and what makes it reactive) is that UI event handlers don't
-directly manipulate the UI but instead translate those events to *changes in
-application state*, which are then reflected in the UI via the reactive UI
-specification.
+The important part is that UI event handlers don't directly manipulate the UI
+but instead translate those events to *changes in application state*, which are
+then reflected in the UI via the declarative UI specification.
 
-In alia, both the reactive UI specification and the event handlers are part of
+In alia, both the declarative UI specification and the event handlers are part of
 the *controller function:*
 
 ![flow](alia-flow.svg)

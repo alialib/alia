@@ -9,8 +9,8 @@ Actions
 Actions are the preferred way for application code to respond to events in alia.
 They're a convenient, declarative way of specifying the side effects that should
 be performed when an event occurs. For the most part, you can think of them as
-simple callback functions, but as we'll see, they sometimes integrate more
-naturally into reactive code than normal C++ callbacks would...
+simple callback functions, but as we'll see, they often integrate more naturally
+into dataflow code than normal C++ callbacks would...
 
 Actions are very similar to signals in the way that they're used in an
 application. Like signals, they're typically created directly at the call site
@@ -132,7 +132,7 @@ Custom Actions
 --------------
 
 Actions can also call C++ functions to produce external side effects. This is
-typically how you would integrate custom side effects into your reactive
+typically how you would integrate custom side effects into your declarative
 application logic. Just like the functions that you [apply to
 signals](function-application.md) are *normal C++ functions with no side
 effects*, the functions that you use to define actions are *normal C++ functions

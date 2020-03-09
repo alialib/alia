@@ -120,5 +120,5 @@ Getting Started
 ---------------
 
 Continue on to <a target="_self"
-href="https://tmadden.github.io/alia/#/reactive-hello">the full
+href="https://tmadden.github.io/alia/#/interactive-hello">the full
 documentation</a> for more info.
