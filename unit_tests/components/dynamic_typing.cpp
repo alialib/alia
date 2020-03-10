@@ -1,4 +1,4 @@
-#define ALIA_DYNAMIC_COMPONENT_CHECKING
+#define ALIA_DYNAMIC_CONTEXT_CHECKS
 
 #include <alia/components/typing.hpp>
 
@@ -9,8 +9,8 @@
 using namespace alia;
 
 // This shouldn't have been defined.
-#ifdef ALIA_STATIC_COMPONENT_CHECKING
-#error ALIA_STATIC_COMPONENT_CHECKING defined
+#ifdef ALIA_STATIC_CONTEXT_CHECKS
+#error ALIA_STATIC_CONTEXT_CHECKS defined
 #endif
 
 // Define some arbitrary tag and data types.

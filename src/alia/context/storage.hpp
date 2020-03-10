@@ -65,7 +65,7 @@ struct any_ref
 };
 
 template<class T>
-struct component_caster<any_ref&, T&>
+struct tagged_data_caster<any_ref&, T&>
 {
     static T&
     apply(any_ref stored)
@@ -74,7 +74,7 @@ struct component_caster<any_ref&, T&>
     }
 };
 template<class T>
-struct component_caster<any_ref, T&>
+struct tagged_data_caster<any_ref, T&>
 {
     static T&
     apply(any_ref stored)

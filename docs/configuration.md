@@ -19,7 +19,7 @@ use this option.
 
 </dd>
 
-<dt>ALIA_DYNAMIC_COMPONENT_CHECKING</dt><dd>
+<dt>ALIA_DYNAMIC_CONTEXT_CHECKS</dt><dd>
 
 This switches to using dynamic component checking. (This is somewhat
 experimental, but more so in terms of whether or not it's useful rather than
