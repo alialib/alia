@@ -1,4 +1,4 @@
-#include <alia/components/system.hpp>
+#include <alia/system.hpp>
 
 #include <chrono>
 
