@@ -2,7 +2,7 @@
 
 #include <sstream>
 
-#include <alia/components/system.hpp>
+#include <alia/system.hpp>
 #include <alia/flow/macros.hpp>
 
 #include <testing.hpp>

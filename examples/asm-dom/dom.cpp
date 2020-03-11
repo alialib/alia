@@ -29,8 +29,7 @@ add_element(
             data.vnode = create_element();
             // data.key.capture(key);
         }
-        get_component<context_info_tag>(ctx).current_children->push_back(
-            data.vnode);
+        get<context_info_tag>(ctx).current_children->push_back(data.vnode);
     });
 }
 
@@ -96,7 +95,7 @@ do_input_(dom::context ctx, duplex<string> value)
             ++data->version;
         });
 
-    auto* system = &get_component<system_tag>(ctx);
+    auto* system = &ctx.get<system_tag>();
 
     add_element(ctx, data->element, make_id(data->version), [&]() {
         asmdom::Attrs attrs;
@@ -141,7 +140,7 @@ do_button_(dom::context ctx, readable<std::string> text, action<> on_click)
 {
     auto id = get_node_id(ctx);
     auto routable_id = make_routable_node_id(ctx, id);
-    auto* system = &get_component<system_tag>(ctx);
+    auto* system = &ctx.get<system_tag>();
 
     element_data* element;
     get_cached_data(ctx, &element);
@@ -216,7 +215,7 @@ scoped_div::begin(dom::context ctx, readable<std::string> class_name)
     get_cached_data(ctx, &data_);
 
     on_refresh(ctx, [&](auto ctx) {
-        auto& dom_context = get_component<context_info_tag>(ctx);
+        auto& dom_context = get<context_info_tag>(ctx);
         parent_children_list_ = dom_context.current_children;
         dom_context.current_children = &data_->children_;
         data_->children_.clear();
@@ -238,7 +237,7 @@ scoped_div::end()
 
         routing_.end();
 
-        auto& dom_context = get_component<context_info_tag>(ctx);
+        auto& dom_context = ctx.get<context_info_tag>();
         dom_context.current_children = parent_children_list_;
 
         if (is_refresh_event(ctx))
@@ -258,7 +257,7 @@ static void
 handle_refresh_event(dom::context ctx, system& system)
 {
     asmdom::Children children;
-    get_component<context_info_tag>(ctx).current_children = &children;
+    ctx.get<context_info_tag>().current_children = &children;
 
     system.controller(ctx);
 
@@ -285,8 +284,7 @@ void
 system::operator()(alia::context vanilla_ctx)
 {
     context_info context_info;
-    dom::context ctx
-        = extend_context<context_info_tag>(vanilla_ctx, context_info);
+    dom::context ctx = vanilla_ctx.extend<context_info_tag>(context_info);
 
     if (is_refresh_event(ctx))
     {

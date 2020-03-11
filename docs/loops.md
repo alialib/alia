@@ -26,8 +26,8 @@ keys with values), `f` is invoked as `f(ctx, key, value)`, where `key` and
 
 Otherwise, `f` is invoked as `f(ctx, item)`, where `item` is a signal.
 
-In either case, `ctx` is the original context passed to `for_each` (and has all
-the same components).
+In either case, `ctx` is the original context passed to `for_each` (and has the
+same contents).
 
 </dd>
 

@@ -1,4 +1,4 @@
-#include <alia/components/system.hpp>
+#include <alia/system.hpp>
 
 #include <testing.hpp>
 
@@ -8,7 +8,7 @@
 
 using namespace alia;
 
-TEST_CASE("automatic ticks", "[components][system]")
+TEST_CASE("automatic ticks", "[system]")
 {
     alia::system sys;
     millisecond_count last_ticks;
@@ -39,7 +39,7 @@ struct dummy_external_interface : external_interface
     }
 };
 
-TEST_CASE("get_raw_animation_ticks_left", "[components][system]")
+TEST_CASE("get_raw_animation_ticks_left", "[system]")
 {
     alia::system sys;
     dummy_external_interface external;

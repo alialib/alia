@@ -314,9 +314,10 @@ read_condition(T const& x)
 
 #define ALIA_REMOVE_DATA_TRACKING(ctx)                                         \
     ALIA_DISABLE_MACRO_WARNINGS                                                \
-    typename decltype(ctx)::storage_type _alia_storage;                        \
-    auto _alia_ctx                                                             \
-        = alia::remove_component<data_traversal_tag>(ctx, &_alia_storage);     \
+    typename decltype(ctx)::contents_type::storage_type _alia_storage;         \
+    auto _alia_ctx = alia::make_context(                                       \
+        alia::impl::remove_tagged_data<data_traversal_tag>(                    \
+            ctx.contents_, &_alia_storage));                                   \
     auto ctx = _alia_ctx;                                                      \
     ALIA_UNDISABLE_MACRO_WARNINGS
 

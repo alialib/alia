@@ -1,7 +1,7 @@
 #ifndef ALIA_COMPONENTS_TIMING_HPP
 #define ALIA_COMPONENTS_TIMING_HPP
 
-#include <alia/components/context.hpp>
+#include <alia/context/interface.hpp>
 
 namespace alia {
 

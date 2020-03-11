@@ -242,6 +242,12 @@ TEST_CASE("alia_if/alia_else_if/alia_else", "[flow][macros]")
         "destructing int;");
 }
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wimplicit-fallthrough"
+#elif __GNUC__ >= 7
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#endif
+
 TEST_CASE("alia_switch", "[flow][macros]")
 {
     clear_log();
@@ -495,18 +501,18 @@ TEST_CASE("alia_untracked_if", "[flow][macros]")
         data_graph graph;
         auto make_controller = [](int n) {
             return [=](context ctx) {
-                REQUIRE(has_component<data_traversal_tag>(ctx));
+                REQUIRE(ctx.has<data_traversal_tag>());
                 alia_untracked_if(n > 2)
                 {
-                    REQUIRE(!has_component<data_traversal_tag>(ctx));
+                    REQUIRE(!ctx.has<data_traversal_tag>());
                 }
                 alia_untracked_else_if(n > 1)
                 {
-                    REQUIRE(!has_component<data_traversal_tag>(ctx));
+                    REQUIRE(!ctx.has<data_traversal_tag>());
                 }
                 alia_untracked_else
                 {
-                    REQUIRE(!has_component<data_traversal_tag>(ctx));
+                    REQUIRE(!ctx.has<data_traversal_tag>());
                 }
                 alia_end;
                 do_int(ctx, 0);
@@ -526,10 +532,10 @@ TEST_CASE("alia_untracked_switch", "[flow][macros]")
         data_graph graph;
         auto make_controller = [](int n) {
             return [=](context ctx) {
-                REQUIRE(has_component<data_traversal_tag>(ctx));
+                REQUIRE(ctx.has<data_traversal_tag>());
 
                 auto f = [](context ctx, int x) {
-                    REQUIRE(has_component<data_traversal_tag>(ctx));
+                    REQUIRE(ctx.has<data_traversal_tag>());
                     return x;
                 };
 
@@ -537,10 +543,10 @@ TEST_CASE("alia_untracked_switch", "[flow][macros]")
                 ALIA_UNTRACKED_SWITCH(f(ctx, n))
                 {
                     case 0:
-                        REQUIRE(!has_component<data_traversal_tag>(ctx));
+                        REQUIRE(!ctx.has<data_traversal_tag>());
                         break;
                     default:
-                        REQUIRE(!has_component<data_traversal_tag>(ctx));
+                        REQUIRE(!ctx.has<data_traversal_tag>());
                         break;
                 }
                 ALIA_END

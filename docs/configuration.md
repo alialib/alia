@@ -19,13 +19,13 @@ use this option.
 
 </dd>
 
-<dt>ALIA_DYNAMIC_COMPONENT_CHECKING</dt><dd>
+<dt>ALIA_DYNAMIC_CONTEXT_CHECKS</dt><dd>
 
-This switches to using dynamic component checking. (This is somewhat
-experimental, but more so in terms of whether or not it's useful rather than
-whether or not it works correctly.)
+This switches to using dynamic context checking. (This is somewhat experimental,
+but more so in terms of whether or not it's useful rather than whether or not it
+works correctly.)
 
-Normally, when you try to call a function that requires a component that you're
+Normally, when you try to call a function that requires a tag/object that you're
 not providing in your context, you'll get a compile-time error. This changes
 that to a run-time error. This eliminates a lot of template shenanigans inside
 alia (at the expense of a few more run-time checks), so it might improve your

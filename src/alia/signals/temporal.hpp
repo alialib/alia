@@ -1,8 +1,8 @@
 #ifndef ALIA_SIGNALS_TEMPORAL_HPP
 #define ALIA_SIGNALS_TEMPORAL_HPP
 
-#include <alia/components/context.hpp>
-#include <alia/components/system.hpp>
+#include <alia/context/interface.hpp>
+#include <alia/system.hpp>
 #include <alia/flow/actions.hpp>
 #include <alia/flow/data_graph.hpp>
 #include <alia/flow/events.hpp>

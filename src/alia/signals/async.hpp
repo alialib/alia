@@ -1,7 +1,7 @@
 #ifndef ALIA_SIGNALS_ASYNC_HPP
 #define ALIA_SIGNALS_ASYNC_HPP
 
-#include <alia/components/context.hpp>
+#include <alia/context/interface.hpp>
 #include <alia/flow/data_graph.hpp>
 #include <alia/flow/events.hpp>
 #include <alia/signals/utilities.hpp>
@@ -118,7 +118,7 @@ async(Context ctx, Launcher launcher, Args const&... args)
     on_refresh(ctx, [&](auto ctx) {
         if (data.status == async_status::UNREADY && args_ready)
         {
-            auto* system = &get_component<system_tag>(ctx);
+            auto* system = &get<system_tag>(ctx);
             auto version = data.version;
             auto report_result = [system, version, data_ptr](Result result) {
                 auto& data = *data_ptr;
