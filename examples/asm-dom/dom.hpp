@@ -15,9 +15,9 @@ struct context_info
 {
     asmdom::Children* current_children;
 };
-ALIA_DEFINE_COMPONENT_TYPE(context_info_tag, context_info&)
+ALIA_DEFINE_TAGGED_TYPE(context_info_tag, context_info&)
 
-typedef alia::add_component_type_t<alia::context, context_info_tag> context;
+typedef alia::extend_context_type_t<alia::context, context_info_tag> context;
 
 void
 do_text_(dom::context ctx, readable<std::string> text);
