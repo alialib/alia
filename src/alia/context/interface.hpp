@@ -4,6 +4,8 @@
 #include <alia/context/storage.hpp>
 #include <alia/signals/basic.hpp>
 
+#include <type_traits>
+
 namespace alia {
 
 struct data_traversal;
@@ -40,9 +42,7 @@ ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(context_storage, event_traversal_tag, event)
 ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(context_storage, data_traversal_tag, data)
 ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(context_storage, timing_tag, timing)
 
-// the typedefs for the context - There are two because we want to be able to
-// represent the context with and without data capabilities.
-
+// the context interface wrapper
 template<class Contents>
 struct context_interface
 {
@@ -111,13 +111,6 @@ struct context_interface
     Contents contents_;
 };
 
-template<class Contents>
-auto
-make_context(Contents contents)
-{
-    return context_interface<Contents>(std::move(contents));
-}
-
 template<class Context, class... Tag>
 struct extend_context_type
 {
@@ -130,6 +123,9 @@ template<class Context, class... Tag>
 using extend_context_type_t =
     typename extend_context_type<Context, Tag...>::type;
 
+// the typedefs for the context - There are two because we want to be able to
+// represent the context with and without data capabilities.
+
 typedef context_interface<impl::add_tagged_data_types_t<
     impl::empty_structural_collection<context_storage>,
     system_tag,
@@ -140,6 +136,13 @@ typedef context_interface<impl::add_tagged_data_types_t<
 typedef extend_context_type_t<dataless_context, data_traversal_tag> context;
 
 // And some convenience functions...
+
+template<class Contents>
+auto
+make_context(Contents contents)
+{
+    return context_interface<Contents>(std::move(contents));
+}
 
 context
 make_context(
