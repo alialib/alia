@@ -1,6 +1,6 @@
 #include <alia/flow/events.hpp>
 
-#include <alia/components/system.hpp>
+#include <alia/system.hpp>
 #include <alia/components/timing.hpp>
 
 namespace alia {
@@ -66,7 +66,7 @@ invoke_controller(system& sys, event_traversal& events)
     timing.tick_counter = sys.external ? sys.external->get_tick_count()
                                        : get_default_tick_count();
 
-    context_component_storage storage;
+    context_storage storage;
     context ctx = make_context(&storage, sys, events, data, timing);
 
     sys.controller(ctx);
