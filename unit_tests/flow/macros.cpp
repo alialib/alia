@@ -242,6 +242,12 @@ TEST_CASE("alia_if/alia_else_if/alia_else", "[flow][macros]")
         "destructing int;");
 }
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wimplicit-fallthrough"
+#elif __GNUC__
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#endif
+
 TEST_CASE("alia_switch", "[flow][macros]")
 {
     clear_log();
@@ -257,9 +263,6 @@ TEST_CASE("alia_switch", "[flow][macros]")
                         break;
                     ALIA_CASE(1):
                         do_int(ctx, 1);
-                        #if defined(__clang__) || defined(__GNUC__)
-                        __attribute__ ((fallthrough));
-                        #endif
                     ALIA_CASE(2):
                     ALIA_CASE(3):
                         do_int(ctx, 2);
@@ -329,9 +332,6 @@ TEST_CASE("non-signal alia_switch", "[flow][macros]")
                         break;
                     alia_case(1):
                         do_int(ctx, 1);
-                        #if defined(__clang__) || defined(__GNUC__)
-                        __attribute__ ((fallthrough));
-                        #endif
                     alia_case(2):
                     alia_case(3):
                         do_int(ctx, 2);

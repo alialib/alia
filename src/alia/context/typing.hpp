@@ -381,6 +381,30 @@ struct structural_collection
     Storage* storage;
 };
 
+// structural_collection_is_convertible<From,To>::value yields a
+// compile-time boolean indicating whether or not the type :From can be
+// converted to the type :To (both must be structural_collections).
+// Since this is the dynamic version, the requirements for this are simply that
+// the storage types are the same.
+template<class From, class To>
+struct structural_collection_is_convertible
+{
+};
+// case where storage types differ
+template<class FromTags, class FromStorage, class ToTags, class ToStorage>
+struct structural_collection_is_convertible<
+    structural_collection<FromTags, FromStorage>,
+    structural_collection<ToTags, ToStorage>> : std::false_type
+{
+};
+// case where storage types are the same
+template<class Storage, class FromTags, class ToTags>
+struct structural_collection_is_convertible<
+    structural_collection<FromTags, Storage>,
+    structural_collection<ToTags, Storage>> : std::true_type
+{
+};
+
 // empty_structural_collection<Storage> yields a structural collection with no
 // item and :Storage as its storage type.
 template<class Storage>
