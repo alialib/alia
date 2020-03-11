@@ -244,7 +244,7 @@ TEST_CASE("alia_if/alia_else_if/alia_else", "[flow][macros]")
 
 #ifdef __clang__
 #pragma clang diagnostic ignored "-Wimplicit-fallthrough"
-#elif __GNUC__
+#elif __GNUC__ >= 7
 #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
 #endif
 
