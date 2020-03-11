@@ -257,6 +257,9 @@ TEST_CASE("alia_switch", "[flow][macros]")
                         break;
                     ALIA_CASE(1):
                         do_int(ctx, 1);
+                        #if defined(__clang__) || defined(__GNUC__)
+                        __attribute__ ((fallthrough));
+                        #endif
                     ALIA_CASE(2):
                     ALIA_CASE(3):
                         do_int(ctx, 2);
@@ -326,6 +329,9 @@ TEST_CASE("non-signal alia_switch", "[flow][macros]")
                         break;
                     alia_case(1):
                         do_int(ctx, 1);
+                        #if defined(__clang__) || defined(__GNUC__)
+                        __attribute__ ((fallthrough));
+                        #endif
                     alia_case(2):
                     alia_case(3):
                         do_int(ctx, 2);
@@ -495,18 +501,18 @@ TEST_CASE("alia_untracked_if", "[flow][macros]")
         data_graph graph;
         auto make_controller = [](int n) {
             return [=](context ctx) {
-                REQUIRE(has_component<data_traversal_tag>(ctx));
+                REQUIRE(ctx.has<data_traversal_tag>());
                 alia_untracked_if(n > 2)
                 {
-                    REQUIRE(!has_component<data_traversal_tag>(ctx));
+                    REQUIRE(!ctx.has<data_traversal_tag>());
                 }
                 alia_untracked_else_if(n > 1)
                 {
-                    REQUIRE(!has_component<data_traversal_tag>(ctx));
+                    REQUIRE(!ctx.has<data_traversal_tag>());
                 }
                 alia_untracked_else
                 {
-                    REQUIRE(!has_component<data_traversal_tag>(ctx));
+                    REQUIRE(!ctx.has<data_traversal_tag>());
                 }
                 alia_end;
                 do_int(ctx, 0);
@@ -526,10 +532,10 @@ TEST_CASE("alia_untracked_switch", "[flow][macros]")
         data_graph graph;
         auto make_controller = [](int n) {
             return [=](context ctx) {
-                REQUIRE(has_component<data_traversal_tag>(ctx));
+                REQUIRE(ctx.has<data_traversal_tag>());
 
                 auto f = [](context ctx, int x) {
-                    REQUIRE(has_component<data_traversal_tag>(ctx));
+                    REQUIRE(ctx.has<data_traversal_tag>());
                     return x;
                 };
 
@@ -537,10 +543,10 @@ TEST_CASE("alia_untracked_switch", "[flow][macros]")
                 ALIA_UNTRACKED_SWITCH(f(ctx, n))
                 {
                     case 0:
-                        REQUIRE(!has_component<data_traversal_tag>(ctx));
+                        REQUIRE(!ctx.has<data_traversal_tag>());
                         break;
                     default:
-                        REQUIRE(!has_component<data_traversal_tag>(ctx));
+                        REQUIRE(!ctx.has<data_traversal_tag>());
                         break;
                 }
                 ALIA_END

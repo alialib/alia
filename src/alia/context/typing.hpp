@@ -5,13 +5,14 @@
 
 #include <type_traits>
 
-// This file provides a means for defining the context of an application as an
-// arbitrary collection of data from disparate sources (the alia core, a UI
-// library adaptor, services that the application is dependent on, higher-level
-// parts of the application, etc.). This set of data obviously varies across
-// applications (and even across modules within a complex application). The goal
-// here is to allow applications to freely mix together data/objects from
-// multiple sources (which may not know about one another).
+// This file provides the underlying type mechanics that allow for defining the
+// context of an application as an arbitrary collection of data from disparate
+// sources (the alia core, a UI library adaptor, services that the application
+// is dependent on, higher-level parts of the application, etc.). This set of
+// data obviously varies across applications (and even across modules within a
+// complex application). The goal here is to allow applications to freely mix
+// together data/objects from multiple sources (which may not know about one
+// another).
 //
 // Some additional design considerations follow.
 //
@@ -65,7 +66,9 @@
 
 namespace alia {
 
-#define ALIA_DEFINE_CONTEXT_DATA_TYPE(tag, data)                               \
+namespace impl {
+
+#define ALIA_DEFINE_TAGGED_TYPE(tag, data)                                     \
     struct tag                                                                 \
     {                                                                          \
         typedef data data_type;                                                \
@@ -75,8 +78,6 @@ template<class Tags, class Storage>
 struct structural_collection;
 
 #ifdef ALIA_STATIC_CONTEXT_CHECKS
-
-namespace detail {
 
 // tag_list<Tags...> defines a simple compile-time list of tags. This is held by
 // a structural_collection to provide compile-time tracking of its contents.
@@ -241,8 +242,6 @@ struct structural_collection_is_convertible<
 {
 };
 
-} // namespace detail
-
 template<class Tags, class Storage>
 struct structural_collection
 {
@@ -257,7 +256,7 @@ struct structural_collection
     template<class Other>
     structural_collection(
         Other other,
-        std::enable_if_t<detail::structural_collection_is_convertible<
+        std::enable_if_t<structural_collection_is_convertible<
             Other,
             structural_collection>::value>* = 0)
         : storage(other.storage)
@@ -267,9 +266,8 @@ struct structural_collection
     // assignment operator (from convertible collections)
     template<class Other>
     std::enable_if_t<
-        detail::structural_collection_is_convertible<
-            Other,
-            structural_collection>::value,
+        structural_collection_is_convertible<Other, structural_collection>::
+            value,
         structural_collection&>
     operator=(Other other)
     {
@@ -283,8 +281,7 @@ struct structural_collection
 // empty_structural_collection<Storage> yields a structural collection with
 // no data and :Storage as its storage type.
 template<class Storage>
-using empty_structural_collection
-    = structural_collection<detail::tag_list<>, Storage>;
+using empty_structural_collection = structural_collection<tag_list<>, Storage>;
 
 // add_tagged_data_type<Collection,Tag>::type gives the type that results
 // from extending :Collection with the data type defined by :Tag.
@@ -294,13 +291,13 @@ struct add_tagged_data_type
 };
 template<class Tag, class Storage, class... Tags>
 struct add_tagged_data_type<
-    structural_collection<detail::tag_list<Tags...>, Storage>,
+    structural_collection<tag_list<Tags...>, Storage>,
     Tag>
 {
     static_assert(
-        !detail::list_contains_tag<detail::tag_list<Tags...>, Tag>::value,
+        !list_contains_tag<tag_list<Tags...>, Tag>::value,
         "duplicate context tag");
-    typedef structural_collection<detail::tag_list<Tag, Tags...>, Storage> type;
+    typedef structural_collection<tag_list<Tag, Tags...>, Storage> type;
 };
 template<class Collection, class Tag>
 using add_tagged_data_type_t =
@@ -339,10 +336,10 @@ template<class Tag, class Storage, class Tags>
 struct remove_tagged_data_type<structural_collection<Tags, Storage>, Tag>
 {
     static_assert(
-        detail::list_contains_tag<Tags, Tag>::value,
+        list_contains_tag<Tags, Tag>::value,
         "attempting to remove a tag that doesn't exist");
     typedef structural_collection<
-        typename detail::remove_tag_from_list<Tags, Tag>::type,
+        typename remove_tag_from_list<Tags, Tag>::type,
         Storage>
         type;
 };
@@ -357,8 +354,7 @@ template<class A, class B>
 struct merge_structural_collections
 {
     typedef structural_collection<
-        typename detail::merge_tag_lists<typename A::tags, typename B::tags>::
-            type,
+        typename merge_tag_lists<typename A::tags, typename B::tags>::type,
         typename A::storage_type>
         type;
 };
@@ -516,7 +512,7 @@ remove_tagged_data(Collection collection, Storage* new_storage)
 template<class Tag, class Collection>
 bool has_tagged_data(Collection)
 {
-    return detail::structural_collection_contains_tag<Collection, Tag>::value;
+    return structural_collection_contains_tag<Collection, Tag>::value;
 }
 #else
 template<class Tag, class Collection>
@@ -580,7 +576,7 @@ get_tagged_data(Collection collection)
 {
 #ifdef ALIA_STATIC_CONTEXT_CHECKS
     static_assert(
-        detail::structural_collection_contains_tag<Collection, Tag>::value,
+        structural_collection_contains_tag<Collection, Tag>::value,
         "tag not found in context");
 #else
     if (!has_tagged_data<Tag>(collection))
@@ -591,6 +587,8 @@ get_tagged_data(Collection collection)
         typename Tag::data_type>::apply(collection.storage
                                             ->template get<Tag>());
 }
+
+} // namespace impl
 
 } // namespace alia
 

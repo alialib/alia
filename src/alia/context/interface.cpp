@@ -1,27 +1,24 @@
-#include <alia/components/context.hpp>
+#include <alia/context/interface.hpp>
 
-#include <alia/components/system.hpp>
 #include <alia/flow/data_graph.hpp>
 #include <alia/flow/events.hpp>
+#include <alia/system.hpp>
 
 namespace alia {
 
 context
 make_context(
-    context_component_storage* storage,
+    context_storage* storage,
     system& sys,
     event_traversal& event,
     data_traversal& data,
     timing_component& timing)
 {
-    return add_component<data_traversal_tag>(
-        add_component<timing_tag>(
-            add_component<event_traversal_tag>(
-                add_component<system_tag>(
-                    make_empty_component_collection(storage), sys),
-                event),
-            timing),
-        data);
+    return make_context(impl::make_empty_structural_collection(storage))
+        .extend<system_tag>(sys)
+        .extend<event_traversal_tag>(event)
+        .extend<timing_tag>(timing)
+        .extend<data_traversal_tag>(data);
 }
 
 } // namespace alia

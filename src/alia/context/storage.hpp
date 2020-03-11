@@ -1,55 +1,57 @@
-#ifndef ALIA_COMPONENTS_STORAGE_HPP
-#define ALIA_COMPONENTS_STORAGE_HPP
+#ifndef ALIA_CONTEXT_STORAGE_HPP
+#define ALIA_CONTEXT_STORAGE_HPP
 
 #include <type_traits>
 #include <typeindex>
 #include <unordered_map>
 
-#include <alia/components/typing.hpp>
+#include <alia/context/typing.hpp>
 
 namespace alia {
 
-// generic_component_storage is one possible implementation of the underlying
-// container for storing components and their associated data.
-// :Data is the type used to store component data.
+namespace impl {
+
+// generic_tagged_storage is one possible implementation of the underlying
+// container for storing the actual data associated with a tag.
+// :Data is the type used to the store data.
 template<class Data>
-struct generic_component_storage
+struct generic_tagged_storage
 {
-    std::unordered_map<std::type_index, Data> components;
+    std::unordered_map<std::type_index, Data> objects;
 
     template<class Tag>
     bool
     has() const
     {
-        return this->components.find(std::type_index(typeid(Tag)))
-               != this->components.end();
+        return this->objects.find(std::type_index(typeid(Tag)))
+               != this->objects.end();
     }
 
-    template<class Tag, class ComponentData>
+    template<class Tag, class ObjectData>
     void
-    add(ComponentData&& data)
+    add(ObjectData&& data)
     {
-        this->components[std::type_index(typeid(Tag))]
-            = std::forward<ComponentData&&>(data);
+        this->objects[std::type_index(typeid(Tag))]
+            = std::forward<ObjectData&&>(data);
     }
 
     template<class Tag>
     void
     remove()
     {
-        this->components.erase(std::type_index(typeid(Tag)));
+        this->objects.erase(std::type_index(typeid(Tag)));
     }
 
     template<class Tag>
     Data&
     get()
     {
-        return this->components.at(std::type_index(typeid(Tag)));
+        return this->objects.at(std::type_index(typeid(Tag)));
     }
 };
 
 // any_ref is a simple way to store references to any type in a
-// generic_component_storage object.
+// generic_tagged_storage object.
 struct any_ref
 {
     any_ref()
@@ -84,11 +86,11 @@ struct tagged_data_caster<any_ref, T&>
 };
 
 // The following provides a small framework for defining more specialized
-// component storage structures with direct storage of frequently used
-// components. See context.hpp for an example of how it's used.
+// storage structures with direct storage of frequently used objects. See
+// context.hpp for an example of how it's used.
 
 template<class Storage, class Tag>
-struct component_accessor
+struct tagged_data_accessor
 {
     static bool
     has(Storage const& storage)
@@ -112,35 +114,36 @@ struct component_accessor
     }
 };
 
-#define ALIA_IMPLEMENT_STORAGE_COMPONENT_ACCESSORS(Storage)                    \
+#define ALIA_IMPLEMENT_STORAGE_OBJECT_ACCESSORS(Storage)                       \
     template<class Tag>                                                        \
     bool has() const                                                           \
     {                                                                          \
-        return component_accessor<Storage, Tag>::has(*this);                   \
+        return impl::tagged_data_accessor<Storage, Tag>::has(*this);           \
     }                                                                          \
                                                                                \
     template<class Tag, class Data>                                            \
     void add(Data&& data)                                                      \
     {                                                                          \
-        component_accessor<Storage, Tag>::add(                                 \
+        impl::tagged_data_accessor<Storage, Tag>::add(                         \
             *this, std::forward<Data&&>(data));                                \
     }                                                                          \
                                                                                \
     template<class Tag>                                                        \
     void remove()                                                              \
     {                                                                          \
-        component_accessor<Storage, Tag>::remove(*this);                       \
+        impl::tagged_data_accessor<Storage, Tag>::remove(*this);               \
     }                                                                          \
                                                                                \
     template<class Tag>                                                        \
     decltype(auto) get()                                                       \
     {                                                                          \
-        return component_accessor<Storage, Tag>::get(*this);                   \
+        return impl::tagged_data_accessor<Storage, Tag>::get(*this);           \
     }
 
-#define ALIA_ADD_DIRECT_COMPONENT_ACCESS(Storage, Tag, name)                   \
+#define ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(Storage, Tag, name)                 \
+    namespace impl {                                                           \
     template<>                                                                 \
-    struct component_accessor<Storage, Tag>                                    \
+    struct tagged_data_accessor<Storage, Tag>                                  \
     {                                                                          \
         static bool                                                            \
         has(Storage const& storage)                                            \
@@ -162,7 +165,10 @@ struct component_accessor
         {                                                                      \
             return *storage.name;                                              \
         }                                                                      \
-    };
+    };                                                                         \
+    }
+
+} // namespace impl
 
 } // namespace alia
 
