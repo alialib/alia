@@ -111,7 +111,7 @@ do_traversal(
     data_traversal data;
     scoped_data_traversal sdt(graph, data);
 
-    timing_component timing;
+    timing_subsystem timing;
     timing.tick_counter = 0;
 
     context_storage storage;

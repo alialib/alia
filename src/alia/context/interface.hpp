@@ -17,8 +17,8 @@ ALIA_DEFINE_TAGGED_TYPE(event_traversal_tag, event_traversal&)
 struct system;
 ALIA_DEFINE_TAGGED_TYPE(system_tag, system&)
 
-struct timing_component;
-ALIA_DEFINE_TAGGED_TYPE(timing_tag, timing_component&)
+struct timing_subsystem;
+ALIA_DEFINE_TAGGED_TYPE(timing_tag, timing_subsystem&)
 
 // the structure we use to store context objects - It provides direct storage of
 // the commonly-used objects in the core of alia.
@@ -29,7 +29,7 @@ struct context_storage
     system* sys = nullptr;
     event_traversal* event = nullptr;
     data_traversal* data = nullptr;
-    timing_component* timing = nullptr;
+    timing_subsystem* timing = nullptr;
 
     // generic storage for other objects
     impl::generic_tagged_storage<impl::any_ref> generic;
@@ -150,7 +150,7 @@ make_context(
     system& sys,
     event_traversal& event,
     data_traversal& data,
-    timing_component& timing);
+    timing_subsystem& timing);
 
 template<class Context>
 Context

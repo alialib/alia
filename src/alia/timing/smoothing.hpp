@@ -1,106 +1,16 @@
-#ifndef ALIA_SIGNALS_TEMPORAL_HPP
-#define ALIA_SIGNALS_TEMPORAL_HPP
+#ifndef ALIA_TIMING_SMOOTHING_HPP
+#define ALIA_TIMING_SMOOTHING_HPP
 
 #include <alia/context/interface.hpp>
-#include <alia/system.hpp>
-#include <alia/flow/actions.hpp>
 #include <alia/flow/data_graph.hpp>
 #include <alia/flow/events.hpp>
-#include <alia/other/cubic_bezier.hpp>
 #include <alia/signals/adaptors.hpp>
 #include <alia/signals/basic.hpp>
+#include <alia/timing/cubic_bezier.hpp>
 
 #include <cmath>
 
-// This file provides various signals and adaptors that work with time.
-
 namespace alia {
-
-struct animation_timer_state
-{
-    bool active = false;
-    millisecond_count end_tick;
-};
-
-struct raw_animation_timer
-{
-    raw_animation_timer(context ctx) : ctx_(ctx)
-    {
-        get_cached_data(ctx, &state_);
-        update();
-    }
-    raw_animation_timer(dataless_context ctx, animation_timer_state& state)
-        : ctx_(ctx), state_(&state)
-    {
-        update();
-    }
-    bool
-    is_active() const
-    {
-        return state_->active;
-    }
-    millisecond_count
-    ticks_left() const
-    {
-        return ticks_left_;
-    }
-    void
-    start(millisecond_count duration)
-    {
-        state_->active = true;
-        state_->end_tick = get_raw_animation_tick_count(ctx_) + duration;
-    }
-
- private:
-    void
-    update()
-    {
-        if (state_->active)
-        {
-            ticks_left_ = get_raw_animation_ticks_left(ctx_, state_->end_tick);
-            if (ticks_left_ == 0)
-                state_->active = false;
-        }
-        else
-        {
-            ticks_left_ = 0;
-        }
-    }
-
-    dataless_context ctx_;
-    animation_timer_state* state_;
-    millisecond_count ticks_left_;
-};
-
-struct animation_timer
-{
-    animation_timer(context ctx) : raw_(ctx)
-    {
-    }
-    animation_timer(dataless_context ctx, animation_timer_state& state)
-        : raw_(ctx, state)
-    {
-    }
-    auto
-    is_active() const
-    {
-        return value(raw_.is_active());
-    }
-    auto
-    ticks_left() const
-    {
-        return value(raw_.ticks_left());
-    }
-    auto
-    start()
-    {
-        return lambda_action(
-            [&](millisecond_count duration) { raw_.start(duration); });
-    }
-
- private:
-    raw_animation_timer raw_;
-};
 
 // The following are interpolation curves that can be used for animations.
 typedef unit_cubic_bezier animation_curve;

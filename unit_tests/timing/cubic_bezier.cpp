@@ -1,10 +1,10 @@
-#include <alia/other/cubic_bezier.hpp>
+#include <alia/timing/cubic_bezier.hpp>
 
 #include <testing.hpp>
 
 using namespace alia;
 
-TEST_CASE("linear cubic bezier", "[other][cubic_bezier]")
+TEST_CASE("linear cubic bezier", "[timing][cubic_bezier]")
 {
     double error_tolerance = 0.00001;
 
@@ -23,7 +23,7 @@ TEST_CASE("linear cubic bezier", "[other][cubic_bezier]")
     }
 }
 
-TEST_CASE("nonlinear cubic bezier", "[other][cubic_bezier]")
+TEST_CASE("nonlinear cubic bezier", "[timing][cubic_bezier]")
 {
     double error_tolerance = 0.0001;
 
@@ -53,7 +53,7 @@ TEST_CASE("nonlinear cubic bezier", "[other][cubic_bezier]")
     }
 }
 
-TEST_CASE("degenerate cubic bezier", "[other][cubic_bezier]")
+TEST_CASE("degenerate cubic bezier", "[timing][cubic_bezier]")
 {
     double error_tolerance = 0.0000001;
 
