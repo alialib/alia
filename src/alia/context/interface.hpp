@@ -84,7 +84,7 @@ struct context_interface
 
     template<class Tag, class Data>
     auto
-    extend(Data& data)
+    add(Data& data)
     {
         auto new_contents
             = impl::add_tagged_data<Tag>(contents_, std::ref(data));
@@ -122,6 +122,17 @@ struct extend_context_type
 template<class Context, class... Tag>
 using extend_context_type_t =
     typename extend_context_type<Context, Tag...>::type;
+
+template<class Context, class Tag>
+struct remove_context_tag
+{
+    typedef context_interface<
+        impl::remove_tagged_data_type_t<typename Context::contents_type, Tag>>
+        type;
+};
+
+template<class Context, class Tag>
+using remove_context_tag_t = typename remove_context_tag<Context, Tag>::type;
 
 // the typedefs for the context - There are two because we want to be able to
 // represent the context with and without data capabilities.
