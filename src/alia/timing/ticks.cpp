@@ -1,4 +1,4 @@
-#include <alia/components/timing.hpp>
+#include <alia/timing/ticks.hpp>
 
 #include <alia/context/interface.hpp>
 #include <alia/flow/events.hpp>

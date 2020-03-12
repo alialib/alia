@@ -3,9 +3,9 @@
 
 #include <functional>
 
-#include <alia/components/timing.hpp>
 #include <alia/context/interface.hpp>
 #include <alia/flow/data_graph.hpp>
+#include <alia/timing/ticks.hpp>
 
 namespace alia {
 

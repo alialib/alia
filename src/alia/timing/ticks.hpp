@@ -1,7 +1,9 @@
-#ifndef ALIA_COMPONENTS_TIMING_HPP
-#define ALIA_COMPONENTS_TIMING_HPP
+#ifndef ALIA_TIMING_TICKS_HPP
+#define ALIA_TIMING_TICKS_HPP
 
 #include <alia/context/interface.hpp>
+#include <alia/flow/actions.hpp>
+#include <alia/flow/data_graph.hpp>
 
 namespace alia {
 
@@ -10,7 +12,7 @@ namespace alia {
 // allowed to wrap around, so 'unsigned' is considered sufficient.
 typedef unsigned millisecond_count;
 
-struct timing_component
+struct timing_subsystem
 {
     millisecond_count tick_counter = 0;
 };
@@ -37,6 +39,92 @@ get_animation_tick_count(dataless_context ctx);
 // This ensures that the UI context refreshes until the end time is reached.
 millisecond_count
 get_raw_animation_ticks_left(dataless_context ctx, millisecond_count end_tick);
+
+struct animation_timer_state
+{
+    bool active = false;
+    millisecond_count end_tick;
+};
+
+struct raw_animation_timer
+{
+    raw_animation_timer(context ctx) : ctx_(ctx)
+    {
+        get_cached_data(ctx, &state_);
+        update();
+    }
+    raw_animation_timer(dataless_context ctx, animation_timer_state& state)
+        : ctx_(ctx), state_(&state)
+    {
+        update();
+    }
+    bool
+    is_active() const
+    {
+        return state_->active;
+    }
+    millisecond_count
+    ticks_left() const
+    {
+        return ticks_left_;
+    }
+    void
+    start(millisecond_count duration)
+    {
+        state_->active = true;
+        state_->end_tick = get_raw_animation_tick_count(ctx_) + duration;
+    }
+
+ private:
+    void
+    update()
+    {
+        if (state_->active)
+        {
+            ticks_left_ = get_raw_animation_ticks_left(ctx_, state_->end_tick);
+            if (ticks_left_ == 0)
+                state_->active = false;
+        }
+        else
+        {
+            ticks_left_ = 0;
+        }
+    }
+
+    dataless_context ctx_;
+    animation_timer_state* state_;
+    millisecond_count ticks_left_;
+};
+
+struct animation_timer
+{
+    animation_timer(context ctx) : raw_(ctx)
+    {
+    }
+    animation_timer(dataless_context ctx, animation_timer_state& state)
+        : raw_(ctx, state)
+    {
+    }
+    auto
+    is_active() const
+    {
+        return value(raw_.is_active());
+    }
+    auto
+    ticks_left() const
+    {
+        return value(raw_.ticks_left());
+    }
+    auto
+    start()
+    {
+        return lambda_action(
+            [&](millisecond_count duration) { raw_.start(duration); });
+    }
+
+ private:
+    raw_animation_timer raw_;
+};
 
 } // namespace alia
 
