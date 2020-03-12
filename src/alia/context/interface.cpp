@@ -12,7 +12,7 @@ make_context(
     system& sys,
     event_traversal& event,
     data_traversal& data,
-    timing_component& timing)
+    timing_subsystem& timing)
 {
     return make_context(impl::make_empty_structural_collection(storage))
         .extend<system_tag>(sys)
