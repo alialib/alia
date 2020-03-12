@@ -12,7 +12,7 @@ namespace custom_context {
 ALIA_DEFINE_TAGGED_TYPE(username_tag, readable<std::string>&)
 
 // Define our app's context type by extending the asm-dom context type.
-typedef extend_context_type_t<dom::context, username_tag> app_context;
+typedef add_context_tag_t<dom::context, username_tag> app_context;
 
 // The functions that define the internal portions of our app UI use
 // app_context and have access to the username via that context...
@@ -32,7 +32,7 @@ do_main_app_ui(dom::context ctx)
     readable<std::string> username = value("tmadden");
 
     // Extend the app context to include the username.
-    app_context app_ctx = ctx.extend<username_tag>(username);
+    app_context app_ctx = ctx.add<username_tag>(username);
 
     // Pass that context along to the internal portions of the app UI...
     do_internal_app_ui(app_ctx);
@@ -62,7 +62,7 @@ namespace doubly_extended_context {
 ALIA_DEFINE_TAGGED_TYPE(username_tag, readable<std::string>&)
 ALIA_DEFINE_TAGGED_TYPE(api_key_tag, readable<std::string>&)
 
-typedef extend_context_type_t<dom::context, username_tag, api_key_tag>
+typedef add_context_tag_t<dom::context, username_tag, api_key_tag>
     app_context;
 
 void
@@ -82,7 +82,7 @@ do_main_app_ui(dom::context ctx)
     readable<std::string> api_key = value("abc123");
 
     app_context app_ctx =
-        ctx.extend<username_tag>(username).extend<api_key_tag>(api_key);
+        ctx.add<username_tag>(username).add<api_key_tag>(api_key);
 
     do_internal_app_ui(app_ctx);
 }
