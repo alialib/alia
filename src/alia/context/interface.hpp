@@ -122,6 +122,18 @@ struct add_context_tag
 template<class Context, class... Tag>
 using add_context_tag_t = typename add_context_tag<Context, Tag...>::type;
 
+template<class Context, class... Tag>
+struct remove_context_tag
+{
+    typedef context_interface<impl::remove_tagged_data_types_t<
+        typename Context::contents_type,
+        Tag...>>
+        type;
+};
+
+template<class Context, class... Tag>
+using remove_context_tag_t = typename remove_context_tag<Context, Tag...>::type;
+
 // the typedefs for the context - There are two because we want to be able to
 // represent the context with and without data capabilities.
 
