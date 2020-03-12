@@ -51,7 +51,7 @@ TEST_CASE("node IDs", "[flow][events]")
     std::vector<routable_node_id> ids;
 
     sys.controller = [&](context vanilla_ctx) {
-        my_context ctx = vanilla_ctx.extend<my_tag>(ids);
+        my_context ctx = vanilla_ctx.add<my_tag>(ids);
         do_my_thing(ctx, value("one"));
         do_my_thing(ctx, value("two"));
     };

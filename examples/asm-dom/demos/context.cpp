@@ -32,7 +32,7 @@ do_main_app_ui(dom::context ctx)
     readable<std::string> username = value("tmadden");
 
     // Extend the app context to include the username.
-    app_context app_ctx = ctx.extend<username_tag>(username);
+    app_context app_ctx = ctx.add<username_tag>(username);
 
     // Pass that context along to the internal portions of the app UI...
     do_internal_app_ui(app_ctx);
@@ -82,7 +82,7 @@ do_main_app_ui(dom::context ctx)
     readable<std::string> api_key = value("abc123");
 
     app_context app_ctx =
-        ctx.extend<username_tag>(username).extend<api_key_tag>(api_key);
+        ctx.add<username_tag>(username).add<api_key_tag>(api_key);
 
     do_internal_app_ui(app_ctx);
 }
