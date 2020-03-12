@@ -48,7 +48,7 @@ TEST_CASE("context", "[context][interface]")
     alia::system sys;
     data_traversal data;
     event_traversal event;
-    timing_component timing;
+    timing_subsystem timing;
 
     scoped_data_traversal sdt(sys.data, data);
 
