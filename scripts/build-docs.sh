@@ -11,5 +11,6 @@ unzip favicon.zip && rm *.zip
 cp ../examples/asm-dom/build/*.js ../examples/asm-dom/build/*.wasm .
 cp ../examples/asm-dom/alia.hpp .
 ../scripts/build-dot-files.sh
+touch .nojekyll
 cd ..
 python scripts/process-docs.py
