@@ -284,7 +284,7 @@ void
 system::operator()(alia::context vanilla_ctx)
 {
     context_info context_info;
-    dom::context ctx = vanilla_ctx.extend<context_info_tag>(context_info);
+    dom::context ctx = vanilla_ctx.add<context_info_tag>(context_info);
 
     if (is_refresh_event(ctx))
     {
