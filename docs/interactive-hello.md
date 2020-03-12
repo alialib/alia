@@ -26,8 +26,8 @@ It's designed to hook up to other libraries that do useful things, so for these
 examples, it's hooked up to asm-dom. For clarity, anything specific to the
 asm-dom wrapper is prefixed with the `dom::` namespace.
 
-If you're familiar with reactive programming, it will be obvious, but the key
-takeaway from this example is that when using alia, application code is
+If you're familiar with declarative UI programming, it will be obvious, but the
+key takeaway from this example is that when using alia, application code is
 developed as **functions that operate on application state and declare the
 presence of objects in the presentation of the application**. In this case, our
 application presents a web UI, so our function declares what elements are in

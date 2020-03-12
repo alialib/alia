@@ -84,20 +84,19 @@ alia_for/while
 
 !> Although alia provides macros for tracking `for` and `while` loops, these do
    *not* integrate naturally into alia applications the way that the `if` and
-   `switch` versions do. There's an inherent tension between alia's reactive
+   `switch` versions do. There's an inherent tension between alia's declarative
    style and the imperative looping constructs like `for` and `while`. While
    alia normally discourages introducing immediate, imperative-style side
-   effects into your reactive application code, `for` and `while` *depend* on
-   those side effects to determine when to terminate the loop. And since alia's
+   effects into your component-level code, `for` and `while` *depend* on those
+   side effects to determine when to terminate the loop. And since alia's
    signals are meant to capture values that change over the life of the
    application (and *not* within a single traversal of your application
    content), `for` and `while` are essentially incompatible with signals.<br>
-   <br>
-   If possible, you should use `for_each` (above), since that plays nicely with
-   signals and avoids introducing immediate side effects into your
-   application-level reactive code. The `alia_for` and `alia_while` macros are
-   provided largely as a convenience for applications that are trying to
-   transition to alia with a minimum of effort.
+   <br> If possible, you should use `for_each` (above), since that plays nicely
+   with signals and avoids introducing immediate side effects into your
+   component-level code. The `alia_for` and `alia_while` macros are provided
+   largely as a convenience for applications that are trying to transition to
+   alia with a minimum of effort.
 
 !> Also note that these macros *assume that your iteration order remains
    constant.* If the data that you're looping over changes order (including
