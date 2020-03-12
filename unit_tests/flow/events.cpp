@@ -20,7 +20,7 @@ struct my_event : targeted_event
 
 ALIA_DEFINE_TAGGED_TYPE(my_tag, std::vector<routable_node_id>&)
 
-typedef add_context_tag_t<context, my_tag> my_context;
+typedef extend_context_type_t<context, my_tag> my_context;
 
 static void
 do_my_thing(my_context ctx, readable<string> label)
