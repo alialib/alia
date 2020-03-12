@@ -7,9 +7,9 @@ struct qt_traversal;
 
 ALIA_DEFINE_TAGGED_TYPE(qt_traversal_tag, qt_traversal&)
 
-typedef alia::add_tagged_data_type_t<alia::context, qt_traversal_tag> qt_context;
+typedef alia::extend_context_type_t<alia::context, qt_traversal_tag> qt_context;
 
-typedef alia::remove_tagged_data_type_t<qt_context, alia::data_traversal_tag>
+typedef alia::remove_context_tag_t<qt_context, alia::data_traversal_tag>
     dataless_qt_context;
 
 void

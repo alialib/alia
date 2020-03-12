@@ -15,10 +15,10 @@ make_context(
     timing_subsystem& timing)
 {
     return make_context(impl::make_empty_structural_collection(storage))
-        .extend<system_tag>(sys)
-        .extend<event_traversal_tag>(event)
-        .extend<timing_tag>(timing)
-        .extend<data_traversal_tag>(data);
+        .add<system_tag>(sys)
+        .add<event_traversal_tag>(event)
+        .add<timing_tag>(timing)
+        .add<data_traversal_tag>(data);
 }
 
 } // namespace alia

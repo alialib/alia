@@ -64,7 +64,7 @@ TEST_CASE("context", "[context][interface]")
 
     other_traversal other;
     extend_context_type_t<context, other_traversal_tag> extended
-        = copy_context(ctx).extend<other_traversal_tag>(other);
+        = copy_context(ctx).add<other_traversal_tag>(other);
     REQUIRE(extended.has<data_traversal_tag>());
     REQUIRE(&extended.get<data_traversal_tag>() == &data);
     REQUIRE(extended.has<event_traversal_tag>());

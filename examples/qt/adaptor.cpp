@@ -363,7 +363,7 @@ void
 qt_system::operator()(alia::context vanilla_ctx)
 {
     qt_traversal traversal;
-    qt_context ctx = extend_context<qt_traversal_tag>(vanilla_ctx, traversal);
+    qt_context ctx = vanilla_ctx.add<qt_traversal_tag>(traversal);
 
     on_refresh(ctx, [&](auto ctx) {
         traversal.next_ptr = &this->root;
