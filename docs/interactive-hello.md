@@ -19,20 +19,17 @@ C++ web UIs, you can see this example in action right here:
 </div>
 
 Many of the examples in this documentation use a mixture of alia and the asm-dom
-wrapper. Since alia itself focuses on the mechanics of writing reactive
-applications, it doesn't actually *do* anything to interact with the outside
-world. It's a bit like a fancy programming language with no I/O capabilities.
-It's designed to hook up to other libraries that do useful things, so for these
-examples, it's hooked up to asm-dom. For clarity, anything specific to the
-asm-dom wrapper is prefixed with the `dom::` namespace.
+wrapper. Since alia itself focuses on the mechanics of writing interactive
+applications in a declarative fashion, it doesn't actually *do* anything to
+interact with the outside world. It's a bit like a fancy programming language
+with no I/O capabilities. It's designed to hook up to other libraries that do
+useful things, so for these examples, it's hooked up to asm-dom. For clarity,
+anything specific to the asm-dom wrapper is prefixed with the `dom::` namespace.
 
-If you're familiar with declarative UI programming, it will be obvious, but the
-key takeaway from this example is that when using alia, application code is
-developed as **functions that operate on application state and declare the
-presence of objects in the presentation of the application**. In this case, our
-application presents a web UI, so our function declares what elements are in
-that UI, but in other scenarios, we might declare the objects in a rendering
-scene or a physics simulation.
+If you're familiar with other declarative UI programming frameworks, it will be
+obvious, but the key takeaway from this example is that when using alia,
+application code is developed as **functions that operate on application state
+and declare the presence of objects in the UI**.
 
 These functions are designed to be reinvoked as the state changes. Each time
 they're invoked, they declare what the application looks like **at that point in

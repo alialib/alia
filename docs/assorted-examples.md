@@ -13,9 +13,10 @@ Many of these come from other sections of the documentation...
 Tip Calculator
 --------------
 
-Here's a simple tip calculator that shows off some [actions](actions.md), as
-well as how you can use alia's data graph to 'magically' manifest state when and
-where you need it, even in the middle of declarative application code.
+Here's a simple tip calculator that shows off some many of the features of alia:
+[actions](actions.md), conditional widgets, as well as how you can use alia's
+data graph to 'magically' manifest state when and where you need it, even in the
+middle of declarative application code.
 
 [source](numerical.cpp ':include :fragment=tip-calculator')
 
