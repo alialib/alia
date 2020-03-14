@@ -19,8 +19,7 @@ Notice that it's a *pure* function. Its output depends only on its input, and it
 doesn't have any side effects. Other than that, it's not a very interesting
 function, which is really the point: You can use normal C++ variables, normal
 C++ control flow, etc. You can write and test this function like you would any
-other C++ function and then insert it into your UI as part of a reactive data
-flow...
+other C++ function and then insert it into your UI as part of a data flow...
 
 apply()
 -------
@@ -110,8 +109,9 @@ auto n_is_prime = lift(is_prime)(ctx, n);
 ```
 
 `lift(is_prime)` yields a version of `is_prime` that conforms to the standard
-interface conventions of reactive alia code. Specifically, it takes a context as
-its first argument, its other arguments are signals, and it returns a signal.
+interface conventions of component-level alia code. Specifically, it takes a
+context as its first argument, its other arguments are signals, and it returns a
+signal.
 
 (The lifted version of `is_prime` would call `apply` internally.)
 
@@ -133,8 +133,8 @@ this on container signals:
 
 <dt>transform(ctx, container, f)</dt><dd>
 
-Applies a reactive function `f` individually to each item in `container` and
-returns the result as a signal container.
+Applies a component-level function `f` individually to each item in `container`
+and returns the result as a signal container.
 
 `container` must be a signal carrying a *sequence* container value. (There's
 currently no implementation of `transform` for associative containers.)

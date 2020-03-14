@@ -1,7 +1,7 @@
 - Introduction
 
-  - [A Reactive "Hello, World!"](reactive-hello.md)
-  - [Key Features](key-features.md)
+  - ["Hello, World!"](interactive-hello.md)
+  - [Feature Overview](feature-overview.md)
   - [Assorted Examples](assorted-examples.md)
   - [Getting Started](getting-started.md)
 

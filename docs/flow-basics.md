@@ -8,16 +8,15 @@ Flow Basics
 High-Level Flow
 ---------------
 
-The flow of a reactive user interface system typically looks like this:
+The flow of a declarative user interface system typically looks like this:
 
-![flow](reactive-flow.svg)
+![flow](declarative-flow.svg)
 
-The important part (and what makes it reactive) is that UI event handlers don't
-directly manipulate the UI but instead translate those events to *changes in
-application state*, which are then reflected in the UI via the reactive UI
-specification.
+The important part is that UI event handlers don't directly manipulate the UI
+but instead translate those events to *changes in application state*, which are
+then reflected in the UI via the declarative UI specification.
 
-In alia, both the reactive UI specification and the event handlers are part of
+In alia, both the declarative UI specification and the event handlers are part of
 the *controller function:*
 
 ![flow](alia-flow.svg)
@@ -73,10 +72,10 @@ The Data Graph
 Much of the power of alia comes from the fact that function calls are allowed to
 maintain their own internal data. In order to make this happen, alia maintains a
 'data graph' behind the scenes that mimics the control flow graph of the
-reactive portions of the application code. As that code executes, alia follows
-along in the data graph and returns the correct node to each bit of code that
-requests one, ensuring that they every function call is consistently given the
-same data node.
+component-level portions of the application code. As that code executes, alia
+follows along in the data graph and returns the correct node to each bit of code
+that requests one, ensuring that they every function call is consistently given
+the same data node.
 
 Let's take a look back at our "Hello, World!" example (with a small addition):
 
@@ -113,9 +112,9 @@ Flow Restrictions
 In order to allow alia to do its job maintaining the data graph, you have to
 follow some simple rules:
 
-1. Wherever you have loops or conditionals in your reactive application code,
-   use the alia flow tracking mechanisms in the following sections to allow alia
-   to track it.
+1. Wherever you have loops or conditionals in your component-level application
+   code, use the alia flow tracking mechanisms in the following sections to
+   allow alia to track it.
 
 2. Don't `return` from the middle of a function. - alia doesn't actually know
    when you enter and leave functions, so if you suddenly leave a function at a
@@ -127,9 +126,8 @@ follow some simple rules:
 
 3. Don't use `goto`.
 
-Note that these rules only apply to the *reactive* portions of your application
-code (i.e., the parts that declare what elements of your user interface are
-present). alia is designed so that the code that [performs
+Note that these rules only apply to the *component-level* portions of your
+application code. alia is designed so that the code that [performs
 computations](function-application.md) and the code that [produces side
 effects](actions.md#custom-actions) can be written as normal C++, without
 worrying about flow tracking/restrictions.
