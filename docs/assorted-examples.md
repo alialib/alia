@@ -14,9 +14,9 @@ Tip Calculator
 --------------
 
 Here's a simple tip calculator that shows off some many of the features of alia:
-[actions](actions.md), conditional widgets, as well as how you can use alia's
-data graph to 'magically' manifest state when and where you need it, even in the
-middle of declarative application code.
+[actions](actions.md), conditional widgets, and how you can use alia's data
+graph to 'magically' manifest state when and where you need it, even in the
+middle of declarative component code.
 
 [source](numerical.cpp ':include :fragment=tip-calculator')
 
@@ -53,9 +53,9 @@ to integrate alia with your application data.
 Factor Trees
 ------------
 
-This example displays factorization trees for numbers that you enter. It
-emulates a tree view by allowing the user to show and hide the subtree
-associated with each composite factor.
+This example displays factorization trees for numbers that you enter. (It
+implements a poor man's tree view by allowing the user to show and hide the
+subtree associated with each composite factor.)
 
 What's interesting about this is that there's actually no application data that
 mirrors this tree view. The application 'model' consists entirely of a single

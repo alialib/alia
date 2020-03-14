@@ -8,8 +8,8 @@ is_prime(int n)
 {
     if (n < 2)
         return false;
-    int greatest_possible_factor = int(std::round(std::sqrt(n)));
-    for (int i = 2; i <= greatest_possible_factor; ++i)
+    int sqrt_n = int(std::round(std::sqrt(n)));
+    for (int i = 2; i <= sqrt_n; ++i)
     {
         if (n % i == 0)
             return false;

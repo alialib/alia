@@ -13,7 +13,7 @@ alia - A Library for Interactive Applications
 
 alia (pronounced uh-LEE-uh) is a modern C++ library for developing interactive
 applications in a declarative manner. In alia, the UI of your application is
-developed as a composition of *component functions.* These component functions:
+expressed as a composition of *component functions.* These component functions:
 
 * **are backed by data** - alia tracks the control flow of your component-level
   code so that it can maintain data corresponding to each of your individual
@@ -107,9 +107,10 @@ do_tip_calculator(dom::context ctx)
 Project Status
 --------------
 
-alia is actually a mature (in-house) library that's been used in a few major
-internal desktop applications. This open-source release is an early version in
-the latest generation of alia. This generation brings about two major changes:
+alia as a concept is actually fairly mature and has been used successfully in a
+few major internal desktop applications. This open-source release is an early
+version in the latest generation of alia. This generation brings about two major
+changes:
 
 1. The core mechanics have far better documentation and testing, plus some minor
    improvements to interfaces and terminology.
@@ -129,9 +130,11 @@ integrations for my own purposes. At the moment, I provide experimental/example
 integrations with asm-dom and Qt, but I have no immediate plans of providing
 "official" integrations for any external libraries.
 
-**So at this point, if you're interested in using alia in a real project, it
-will require some work on your part to hook it up to the libraries you need for
-user interfaces, rendering, etc.**
+**So at this point, if you're interested in using alia in anything resembling a
+real project, it will require some work on your part to hook it up to the
+libraries you need for user interfaces, rendering, etc.** *This release is
+intended for people who'd like to play around with it, provide feedback, and
+perhaps try integrating it with their favorite UI/game/physics library.*
 
 If you're interested in sharing your integrations, I'm more than happy to
 incorporate them as examples and/or link people to your projects.

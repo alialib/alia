@@ -2,74 +2,94 @@ Feature Overview
 ================
 
 <script>
-    init_alia_demos(['addition-ui', 'numerical-analysis']);
+    init_alia_demos(['stateful-component', 'addition-ui', 'numerical-analysis']);
 </script>
+
+In alia, the interactive portion of your application is expressed as functional
+components: composable, declarative functions that take in application state and
+declare the contents of your UI and how it should behave. When writing this
+'component-level' code, you are essentially programming in a mini-paradigm
+within C++.
+
+All the major features of alia are about enabling this paradigm and making it
+more efficient and more expressive...
 
 The Data Graph
 --------------
 
-As seen in the 'Hello, World!' example, application code in alia is expressed as
-*component functions* that declare the presence of objects in the UI. Whenever
-the UI needs to be updated, the application essentially gives a fresh new
-specification of what the UI should look like at that point in time. This is the
-beauty of declarative UI programming. The application developer can focus on
-*what the UI should be now* and not worry about *what the UI was before* or *how
-to transform it* from one to the other.
+It's a fact of life that UI components require some degree of persistence across
+updates: internal state must be retained, system resources must be managed,
+calculated results must be cached, etc.
 
-Of course, behind the scenes, we generally don't have this luxury. We can't
-simply throw away the old UI every time anything happens and build a new one
-according to the application's latest specification. That would be prohibitively
-expensive for more complex UIs, and it would likely lead to discontinuities in
-the behavior of the UI as scrollbar positions, cursor positions, and other bits
-of hidden state reset themselves.
+But there's a fundamental tension between this requirement and a declarative UI
+interface: How do we map the output of the declarative UI function back to the
+persistent data from the last update?
 
-Instead, as our application declares the widgets that *should* be in the UI,
-we'd like to compare that specification to what *is* there and adjust the UI
-accordingly. The mechanics of this are not trivial, which is where alia comes
-in. It makes it possible to maintain the relationship between the *declared* UI
-and the *actual* UI and efficiently detect where changes have occurred.
+alia's solution to this is to track the control flow of your component-level
+code so that every time you invoke a component, alia knows *where in your
+control flow graph* that invocation came from and can make sure that *it's
+consistently associated with the same persistent data.*
 
-alia does this by *maintaining a graph-like data structure that models the
-control flow of the component-level application code.* As this application code
-executes and makes calls to functions like `do_text` and `do_input`, alia
-ensures that **each of those calls is consistently associated with the same node
-in this data graph.**
+This tracking mechanism effectively creates a data structure that mirrors the
+control flow graph of your component-level code, so alia calls this [the data
+graph](the-data-graph.md).
 
-In order to make this work, alia asks that you notify it whenever you introduce
-branching or looping into the parts of your application that declare objects.
-There are various ways to do this, but the simplest is to use some of the
-built-in constructs that alia provides, like the `alia_if` statement in the
-'Hello, World!' example.
+This means that the component functions you write (and those you invoke) can
+leverage this structure to maintain persistent data that's local to a *single
+invocation* of that component within the UI.
+
+For example, let's implement a small "flashcard" app for learning square roots:
+
+[source](features.cpp ':include :fragment=stateful-component')
+
+<div class="demo-panel">
+<div id="stateful-component"></div>
+</div>
+
+Notice that although we're invoking the same function multiple times, each
+invocation has its own value for `answer_revealed`. Even the two invocations
+with the same arguments (the two `4`s) are independent.
 
 Dataflow Semantics
 ------------------
 
-In  programming, it's useful to think of your application as defining a
-data flow and your variables as carrying values that change over time. In alia,
-this type of variable is called a *signal.* Examples of signals in an
-application might include user inputs (like `name` from our 'Hello, World!'
-example), entries in a database, and calculation results. Reasoning about
-application logic as a data flow allows us to more declaratively express the
-inherent relationships between bits of application data without worrying about
-how to propagate changes through that data.
+In declarative UI programming, it's useful to think of your application as
+defining a flow of data that starts at your application state and goes out
+through the UI layer. In between, your data might pass through (and be
+transformed by) HTTP requests or simple, pure C++ functions. As you update your
+application state, those changes automatically propagate through whatever flow
+you've defined and drive changes in the UI.
 
-In alia, signals facilitate this style of development by providing two important
-features:
+For example, if our application is supposed to allow the user to enter a dataset
+ID, pull up the corresponding data, and then filter it based on some criteria,
+we might reason about the application like this:
+
+![flow](data-flow.svg)
+
+In alia, when you write component-level code, rather than working with 'raw' C++
+value types like `int`, `std::string` or `std::vector<float>`, your variables
+have *signal* types. A signal is simply a value that changes over time, but you
+can think of them as having *dataflow semantics.* Invoking operators on or
+applying functions to signals is the equivalent of setting up elements in your
+dataflow. (All of the arrows in the above diagram would be signals in alia.)
+
+In particular, signals extend 'raw' C++ values in two important ways:
 
 - **value identity** - Signals are designed to allow you to efficiently detect
   when their values have changed, independent of the size of those values. This
   allows nodes in your data flow to efficiently detect when their inputs have
   changed and propagate those changes forward.
 
-- **availability** - It's often useful to think of a signal in your dataflow as
+- **availability** - It's often useful to think of a signal in your data flow as
   carrying no value at all (e.g., because the user hasn't input a value yet, or
   because the value is still being computed or queried from some remote source).
-  Since this "not available yet" state tends to propagate through a dataflow,
+  Since this "not available yet" state tends to propagate through a data flow,
   virtually all code that works with signals has to account for it. With alia
   signals, this state is implicitly part of the type and implicitly propagates
   through your application's data flow.
 
-To see that last point in action, let's write a quick app that adds numbers:
+To see that last point in action, let's write a quick little component that adds
+two numbers:
 
 [source](numerical.cpp ':include :fragment=addition-ui')
 
@@ -83,23 +103,43 @@ for both `a` and `b`. The result of the `+` operator itself is a signal, and if
 either of its inputs is unavailable, that state implicitly propagates through to
 the sum.
 
+Actions
+-------
+
+While the data graph helps you model the *structure* of your UI declaratively
+and signals help you model the *computations* in your UI declaratively,
+[actions](actions.md) help you model the *transitions* in your UI declaratively.
+
+Actions are, in a nutshell, declarative descriptions of the side effects that
+should happen in response to the events that occur in your UI. There was one in
+the "flashcard" example above:
+
+```cpp
+dom::do_button(ctx, "Show Answer", answer_revealed <<= true);
+```
+
+The expression `answer_revealed <<= true` constructs an action that sets the
+state signal `answer_revealed` to `true`, and whenever the button is pressed, it
+performs that action.
+
 Synergy
 -------
 
 The various features of alia tend to work together in unexpectedly nice ways...
 
+Since the component functions that describe your UI are driven by application
+state, a state-altering action is often all you need to respond to an event and
+effect the necessary changes in the system, and the data flow mechanics are
+often what you need to construct the new state values.
+
 Since the data graph allows you to persist data in arbitrary parts of your
 component functions, the parts that are responsible for data flow can easily
 cache their results.
 
-Since the component functions that describe your UI are driven by application
-state, a state-altering action is often all you need to respond to an event
-and effect the necessary changes in the system.
-
-The control flow tracking mechanisms that alia uses to maintain the data graph
-work with signals, including those whose values aren't yet resolved. For
-example, let's write an example that classifies a number as positive, negative,
-or zero:
+Since the control flow tracking mechanisms that alia uses to maintain the data
+graph work with signals, they implicitly understand the concept of a control
+flow decision being *unresolved.* For example, let's write a UI that classifies
+a number as positive, negative, or zero:
 
 [source](numerical.cpp ':include :fragment=analysis')
 
