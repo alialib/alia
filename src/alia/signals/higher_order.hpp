@@ -8,8 +8,8 @@
 
 namespace alia {
 
-// `transform()` is the reactive version of `std::transform`. See the docs for
-// more details.
+// `transform()` is the component-level version of `std::transform`. See the
+// docs for more details.
 
 template<class MappedItem>
 struct mapped_sequence_data

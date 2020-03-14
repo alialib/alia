@@ -29,8 +29,8 @@ monitor or IDE plugin.
 
 Some parts of alia casually ignore or swallow errors. This actually hasn't been
 a problem in practice for in-house applications, but for more general usage,
-alia should provide the tools for dealing with errors that occur within reactive
-application code. (Something like React's [Error
+alia should provide the tools for dealing with errors that occur within
+controller functions. (Something like React's [Error
 Boundaries](https://reactjs.org/docs/error-boundaries.html) would be a good
 start.)
 
@@ -55,11 +55,11 @@ and actions when corresponding contexts/elements aren't valid, etc.
 ### Declarative Calculation Management
 
 In recent years, for in-house development, alia has always been paired with a
-sister library ('CRADLE') that provides declarative calculation management and
-resource retrieval. In a nutshell, the idea is that just like your reactive UI
-code analyzes application state and declares the UI elements/logic that should
-exist for that state, your application can also analyze application data and
-declare what calculation results are relevant for that data. A 'declaration of a
+sister library that provides declarative calculation management and resource
+retrieval. In a nutshell, the idea is that just like your declarative UI code
+analyzes application state and declares the UI elements/logic that should exist
+for that state, your application can also analyze application data and declare
+what calculation results are relevant for that data. A 'declaration of a
 relevant calculation result' takes the form of a calculation tree with resources
 at the leaves. An example might be an image filtering application that declares
 'I need the image at this URL, with a red eye filter applied, and then a sepia
@@ -67,9 +67,9 @@ filter applied.' Maybe that image has already been retrieved from that URL but
 hasn't had the filters applied, or maybe the red eye filter has been applied but
 not the sepia one, or maybe the image is actually already available in memory
 exactly the way the application wants it because it's been requesting the exact
-same thing on every update for the last five minutes. Just like a reactive
-application doesn't care how you get the UI to the state that it wants, the
-imaging application doesn't care how this image arrives. It just wants it
+same thing on every update for the last five minutes. Just like an application
+with a declarative UI doesn't care how you get the UI to match what it declares,
+the imaging application doesn't care how this image arrives. It just wants it
 displayed for the user.
 
 An alia application that deals with non-trivial calculations and resources can

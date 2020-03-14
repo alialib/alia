@@ -84,8 +84,10 @@ do_records_ui(dom::context ctx, std::vector<my_record>& records)
         dom::do_input(ctx, direct(record.x));
         dom::do_input(ctx, direct(record.y));
 
-        // We might also apply some tests to our records without worrying about
-        // alia's 'proper', signal-based dataflow semantics...
+        // Display a warning if the record fails our in_bounds check.
+        // Note that although alia provides signal-based dataflow mechanics for
+        // doing this test, we can also just call the function like we would in
+        // normal C++ code...
         alia_if(!in_bounds(record))
         {
             // Apparently the Docsify CSS class for a warning is 'tip'.

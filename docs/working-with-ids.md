@@ -3,9 +3,9 @@ Working with IDs
 
 alia provides a small suite of types for constructing and consuming small IDs.
 It's used primarily for identifying signal values (for the purpose of detecting
-changes), but the same system can be used to identify nodes in your reactive
-application flow so that presentation objects (and other data) can be stably
-associated with them.
+changes), but the same system can be used to identify nodes in your
+component-level application flow so that presentation objects (and other data)
+can be stably associated with them.
 
 IDs provide fairly limited capabilities: equality comparison (operators `==` and
 `!=`), order comparison (operator `<`), and copying. Any type that provides

@@ -5,8 +5,9 @@ if [ $(basename $(pwd)) != "www" ]; then
     exit 1
 fi
 dot -Tsvg -o data-graph.svg data-graph.dot
-dot -Tsvg -o alia-flow.svg reactive-flow.dot
+dot -Tsvg -o data-flow.svg data-flow.dot
+dot -Tsvg -o alia-flow.svg alia-flow.dot
 sed -i 's/label="alia controller function"; style=dashed;/style=invis;/' \
-    reactive-flow.dot
-dot -Tsvg -o reactive-flow.svg reactive-flow.dot
+    alia-flow.dot
+dot -Tsvg -o declarative-flow.svg alia-flow.dot
 rm *.dot

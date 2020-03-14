@@ -12,7 +12,7 @@ state [label="application\nstate", shape=note]
 
 subgraph cluster_controller {
     label="alia controller function"; style=dashed;
-    reactive_code [label="reactive\nUI\nspecification", shape=diamond];
+    ui_code [label="declarative\nUI\nspecification", shape=diamond];
     event_handler [label="event\nhandler", shape=diamond];
 }
 
@@ -22,9 +22,9 @@ event [label="event", shape=note]
 
 effects [label="external\neffects", shape=parallelogram]
 
-state -> reactive_code [label="feeds\ninto"]
+state -> ui_code [label="feeds\ninto"]
 
-reactive_code -> ui [label="produces/\nupdates"]
+ui_code -> ui [label="produces/\nupdates"]
 
 ui -> event [label="generates            "]
 
@@ -38,7 +38,7 @@ event_handler -> effects
 
 event -> effects [style=invis]
 
-{rank = same; reactive_code; event_handler; effects;}
+{rank = same; ui_code; event_handler; effects;}
 
 {rank = same; ui; event;}
 

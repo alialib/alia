@@ -20,7 +20,7 @@ struct fetch_result
 void
 handle_fetch_result(emscripten_fetch_t* fetch, fetch_result result)
 {
-    // Recover our callback from the Emscript fetch object.
+    // Recover our callback from the Emscripten fetch object.
     auto* result_callback
         = reinterpret_cast<std::function<void(fetch_result)>*>(fetch->userData);
 
@@ -47,7 +47,7 @@ handle_fetch_failure(emscripten_fetch_t* fetch)
     handle_fetch_result(fetch, fetch_result{false, std::string()});
 }
 
-// Here's our actual reactive function for retrieving country names.
+// Here's our actual component-level function for retrieving country names.
 auto
 fetch_country_name(dom::context ctx, readable<std::string> country_code)
 {
