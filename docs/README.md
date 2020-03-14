@@ -11,35 +11,41 @@ alia - A Library for Interactive Applications
 
 </div>
 
-**WARNING**: This project is in an unstable, pre-release state. There
-are missing links, missing documentation pages, missing features, and
-APIs that may change in the future. That said, what's there now should
-work well, so if you're interested in playing around with it, I welcome
-any feedback or contributions!
+alia (pronounced uh-LEE-uh) is a modern C++ library for developing interactive
+applications in a declarative manner. In alia, the UI of your application is
+expressed as a composition of *component functions.* These component functions:
 
-alia (pronounced uh-LEE-uh) is a modern C++ library for developing reactive
-applications. It provides a core of generic facilities for reactive programming
-and is designed to hook up to other, more traditional libraries and allow them
-to be used in a reactive manner. In particular, alia features:
+* **are backed by data** - alia tracks the control flow of your component-level
+  code so that it can maintain data corresponding to each of your individual
+  component function calls. This mechanic can be used to synchronize widget
+  objects, cache computed results, or maintain local state where you need it.
 
-* **data-backed control flow** - alia provides mechanisms for tracking portions
-  of your control flow so that you can stably associate arbitrary data objects
-  with specific points in your application's reactive presentation logic.
+* **are self-contained** - Although from an external perspective, alia component
+  functions compose just like normal functions, they are more like classes in
+  their capabilities. They can maintain internal state and respond to events
+  where needed. This means that the full description of a UI component can be
+  localized to one piece of (declarative) code.
 
-  In alia, rather than explicitly managing trees of presentation objects, you
-  compose your application as a tree of function calls, each of which is capable
-  of managing its own object(s) internally. At any point in time, the tree of
-  presentation objects naturally reflects whatever the function calls specify.
+* **naturally react to changes in application state** - alia enables you to use
+  the familiar mechanics of conditionals, loops, and functional composition to
+  model your UI as a function of application state so that *your UI naturally
+  reflects the current state of your application.*
 
-* **dataflow semantics** - alia provides tools for modeling the computations in
-  your application as a data flow that implicitly supports the reality that
-  function inputs are often not immediately available (because they are waiting
-  for user inputs, background calculations, remote queries, etc.).
+* **use dataflow semantics** - alia provides tools for modeling the computations
+  in your application as a declarative flow of data. This flow is composed of
+  pure functions and naturally supports caching and 'unready' values (values
+  that are waiting for user inputs, background calculations, remote queries,
+  etc.).
 
-alia also provides a whole suite of supporting features that help keep these
-concepts practical in real-world applications: efficient change detection for
-program state, caching mechanisms, efficient routing of events, declarative
-event handlers, etc.
+alia is agnostic to the particular UI library you use. It provides the
+*mechanics* for modeling an interactive application declaratively and is
+designed to hook up to other libraries so that your application can drive those
+libraries declaratively. (And it should be capable of driving any interactive
+system: a game, a physics simulation, etc.)
+
+**STABILITY/MATURITY WARNING:** This is the first public release of alia, so
+it's likely unstable and definitely incomplete. It's going to require some
+work/patience on your part to use it. See 'Project Status' below for details.
 
 <div class="hide-when-deployed">
 
@@ -51,74 +57,91 @@ An Example
 ----------
 
 Below is a simple tip calculator made using alia and an experimental
-[asm-dom](https://github.com/mbasso/asm-dom) wrapper. To see it in action, along
-with some other examples, <a target="_self"
+[asm-dom](https://github.com/mbasso/asm-dom) wrapper. You can see it in action
+<a target="_self"
 href="https://tmadden.github.io/alia/#/assorted-examples?id=tip-calculator">
-click here</a>.
+here</a>, along with some other examples.
 
 ```cpp
-auto bill = get_state(ctx, empty<double>());
-dom::do_text(ctx, "How much is the bill?");
-dom::do_input(ctx, bill);
-
-auto tip_rate = get_state(ctx, empty<double>());
-dom::do_text(ctx, "What percentage do you want to tip?");
-dom::do_input(ctx, scale(tip_rate, 100));
-dom::do_button(ctx, "18%", tip_rate <<= 0.18);
-dom::do_button(ctx, "20%", tip_rate <<= 0.20);
-dom::do_button(ctx, "25%", tip_rate <<= 0.25);
-
-auto tip = bill * tip_rate;
-auto total = bill + tip;
-dom::do_text(ctx,
-    printf(ctx, "You should tip %.2f, for a total of %.2f.", tip, total));
-
-alia_if (total < 10)
+void
+do_tip_calculator(dom::context ctx)
 {
+    // Get some component-local state for the bill amount.
+    auto bill = get_state(ctx, empty<double>());
+    dom::do_text(ctx, "How much is the bill?");
+    // Display an input that allows the user to manipulate our bill state.
+    dom::do_input(ctx, bill);
+
+    // Get some more component-local state for the tip rate.
+    auto tip_rate = get_state(ctx, empty<double>());
+    dom::do_text(ctx, "What percentage do you want to tip?");
+    // Users like percentages, but we want to keep the 'tip_rate' state as a
+    // rate internally, so this input presents a scaled view of it for the user.
+    dom::do_input(ctx, scale(tip_rate, 100));
+    // Add a few buttons that set the tip rate to common values.
+    dom::do_button(ctx, "18%", tip_rate <<= 0.18);
+    dom::do_button(ctx, "20%", tip_rate <<= 0.20);
+    dom::do_button(ctx, "25%", tip_rate <<= 0.25);
+
+    // Calculate the results and display them for the user.
+    // Note that these operations have dataflow semantics, and since `bill` and
+    // `tip_rate` both start out empty, nothing will actually be calculated
+    // until the user supplies values for them. (And this 'empty' state
+    // propagates through the printf, so nothing is displayed until the results
+    // are ready.)
+    auto tip = bill * tip_rate;
+    auto total = bill + tip;
     dom::do_text(ctx,
-        "You should consider using cash for small amounts like this.");
+        printf(ctx, "You should tip %.2f, for a total of %.2f.", tip, total));
+
+    // Conditionally display a message suggesting cash for small amounts.
+    alia_if (total < 10)
+    {
+        dom::do_text(ctx,
+            "You should consider using cash for small amounts like this.");
+    }
+    alia_end
 }
-alia_end
 ```
 
 Project Status
 --------------
 
-alia is the result of more than a decade of development and evolution. It began
-life as an immediate mode GUI library like [Dear
-ImGui](https://github.com/ocornut/imgui). This 'IMGUI' form of alia has been
-used in multiple generations of major in-house projects and commercial
-collaborations, and the core reactive mechanics of alia have proven themselves
-in those environments.
+alia as a concept is actually fairly mature and has been used successfully in a
+few major internal desktop applications. This open-source release is an early
+version in the latest generation of alia. This generation brings about two major
+changes:
 
-This open-source version of alia is a relatively minor evolutionary improvement
-on those core mechanics (with far better testing and documentation). The only
-revolutionary change in this version is the decision to ditch the actual GUI
-code (which other libraries do better anyway) in favor of focusing on those core
-mechanics.
+1. The core mechanics have far better documentation and testing, plus some minor
+   improvements to interfaces and terminology.
 
-This new direction for alia means that it no longer actually *does* anything out
-of the box. It needs to be integrated with other libraries that do things. While
-alia's mechanics are perfectly capable of supporting this, this is a new
-direction and new work to be done.
+2. Everything but the core mechanics has been stripped out. - Earlier
+   generations of alia were immediate mode GUI libraries (like [Dear
+   ImGui](https://github.com/ocornut/imgui)), but over the years, it became
+   clear that the actual GUI code was no longer a novel feature and that to do
+   it properly essentially required writing a traditional, "retained-mode" GUI
+   library with a declarative wrapper around it, so this version of alia focuses
+   solely on the declarative wrapper part.
 
-At the moment, I provide experimental/example integrations with asm-dom and Qt,
-but I'm still in the process of developing realistic integrations for my own
-purposes, and I have no immediate plans of providing "official" integrations for
-any external libraries.
+This generation is still new and hasn't been used yet in any major projects.
+While the mechanics should be fairly robust, I'm still in the process of
+experimenting with hooking it up to other libraries and developing realistic
+integrations for my own purposes. At the moment, I provide experimental/example
+integrations with asm-dom and Qt, but I have no immediate plans of providing
+"official" integrations for any external libraries.
 
-**So at this point, if you're interested in using alia in a real project, it
-will require some work on your part to hook it up to the libraries you need for
-user interfaces, rendering, etc.** I provide guidance and examples on how to do
-this, and in my experience, it's relatively fun and straightforward work, but it
-still needs to be done.
+**So at this point, if you're interested in using alia in anything resembling a
+real project, it will require some work on your part to hook it up to the
+libraries you need for user interfaces, rendering, etc.** *This release is
+intended for people who'd like to play around with it, provide feedback, and
+perhaps try integrating it with their favorite UI/game/physics library.*
 
-And if you're interested in sharing your integrations, I'm more than happy to
+If you're interested in sharing your integrations, I'm more than happy to
 incorporate them as examples and/or link people to your projects.
 
 Getting Started
 ---------------
 
 Continue on to <a target="_self"
-href="https://tmadden.github.io/alia/#/reactive-hello">the full
+href="https://tmadden.github.io/alia/#/interactive-hello">the full
 documentation</a> for more info.

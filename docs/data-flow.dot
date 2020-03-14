@@ -1,0 +1,24 @@
+digraph flow {
+
+edge[color="#242424"];
+node[color="#242424", fontcolor="#242424"];
+
+a [label="input widget", shape=rect]
+
+b [label="database query function", shape=rect]
+
+a -> b [label="dataset ID"]
+
+d [label="filter", shape=rect]
+
+b -> d [label="dataset"]
+
+c [label="input widget", shape=rect]
+
+c -> d [label="filter criteria"]
+
+e [label="display widget", shape=rect]
+
+d -> e [label="filtered dataset"]
+
+}
