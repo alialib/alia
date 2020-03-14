@@ -65,7 +65,7 @@ jobs:
       - mkdir examples/asm-dom/build
       - >
         docker run -it --name emscripten -v $(pwd)/examples/asm-dom:/src
-        -w /src/build trzeci/emscripten:sdk-incoming-64bit
+        -w /src/build trzeci/emscripten:sdk-tag-1.39.4-64bit
         bash -c 'emcmake cmake -DCMAKE_BUILD_TYPE=Release .. && make'
       - scripts/build-docs.sh
       deploy:
