@@ -30,7 +30,7 @@ monitor or IDE plugin.
 Some parts of alia casually ignore or swallow errors. This actually hasn't been
 a problem in practice for in-house applications, but for more general usage,
 alia should provide the tools for dealing with errors that occur within
-controller functions. (Something like React's [Error
+component functions. (Something like React's [Error
 Boundaries](https://reactjs.org/docs/error-boundaries.html) would be a good
 start.)
 
