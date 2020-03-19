@@ -54,11 +54,11 @@ Dataflow Semantics
 ------------------
 
 In declarative UI programming, it's useful to think of your application as
-defining a flow of data that starts at your application state and goes out
-through the UI layer. In between, your data might pass through (and be
-transformed by) HTTP requests or simple, pure C++ functions. As you update your
-application state, those changes automatically propagate through whatever flow
-you've defined and drive changes in the UI.
+defining a flow of data that starts at your application state and goes out to
+the UI layer. In between, your data might pass through (and be transformed by)
+HTTP requests or simple, pure C++ functions. As you update your application
+state, those changes automatically propagate through whatever flow you've
+defined and drive changes in the UI.
 
 For example, if our application is supposed to allow the user to enter a dataset
 ID, pull up the corresponding data, and then filter it based on some criteria,
@@ -70,7 +70,7 @@ In alia, when you write component-level code, rather than working with 'raw' C++
 value types like `int`, `std::string` or `std::vector<float>`, your variables
 have *signal* types. A signal is simply a value that changes over time, but you
 can think of them as having *dataflow semantics.* Invoking operators on or
-applying functions to signals is the equivalent of setting up elements in your
+applying functions to signals is the equivalent of setting up nodes in your
 dataflow. (All of the arrows in the above diagram would be signals in alia.)
 
 In particular, signals extend 'raw' C++ values in two important ways:
@@ -103,6 +103,9 @@ for both `a` and `b`. The result of the `+` operator itself is a signal, and if
 either of its inputs is unavailable, that state implicitly propagates through to
 the sum.
 
+alia even provides [adaptors](signal-adaptors.md#availability) for working with
+the availability of a signal as a property.
+
 Actions
 -------
 
@@ -130,7 +133,7 @@ The various features of alia tend to work together in unexpectedly nice ways...
 Since the component functions that describe your UI are driven by application
 state, a state-altering action is often all you need to respond to an event and
 effect the necessary changes in the system, and the data flow mechanics are
-often what you need to construct the new state values.
+often what you need to construct the new values for your state.
 
 Since the data graph allows you to persist data in arbitrary parts of your
 component functions, the parts that are responsible for data flow can easily
