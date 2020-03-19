@@ -36,10 +36,12 @@ static demo the_demo("addition-ui", init_demo);
 namespace numerical_analysis {
 
 void
-do_ui(dom::context ctx, duplex<double> n)
+do_ui(dom::context ctx)
 {
     // clang-format off
 /// [analysis]
+auto n = get_state(ctx, empty<double>());
+
 dom::do_text(ctx, "Enter a number:");
 
 dom::do_input(ctx, n);
@@ -67,9 +69,8 @@ init_demo(std::string dom_id)
     static alia::system the_system;
     static dom::system the_dom;
 
-    initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_ui(ctx, get_state(ctx, empty<double>()));
-    });
+    initialize(
+        the_dom, the_system, dom_id, [](dom::context ctx) { do_ui(ctx); });
 }
 
 static demo the_demo("numerical-analysis", init_demo);
