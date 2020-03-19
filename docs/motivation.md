@@ -71,7 +71,7 @@ application state and decide which POIs to include. Our map display
 automatically updates according to that logic whenever the application state
 changes.
 
-In other words, this simple implementation of a map display is *reactive*!
+In other words, this simple implementation of a map display is *declarative*!
 
 Of course, immediate mode rendering only gets us so far. Now imagine that we
 want the user to be able to interact with our POIs. Suppose we need to detect
@@ -83,10 +83,10 @@ popup open?).
 
 All of this of course screams "POIs are objects!" And while an object is clearly
 a good fit for these new requirements, naively introducing a list of such
-objects into our application unfortunately breaks the reactive property that we
-had before. For example, we can no longer use a simple `if` statement to decide
-if the user's location should be part of the map. Instead, we'll need to detect
-when location tracking has been enabled or disabled and add/remove the
+objects into our application unfortunately breaks the declarative property that
+we had before. For example, we can no longer use a simple `if` statement to
+decide if the user's location should be part of the map. Instead, we'll need to
+detect when location tracking has been enabled or disabled and add/remove the
 corresponding object accordingly. Maybe we do this by listening for events, or
 maybe we just write code like this now:
 
@@ -104,13 +104,13 @@ Either way, this is more cumbersome and error-prone code than what we had
 before, and we've started down a path where code complexity often scales very
 poorly with application complexity.
 
-alia is designed to bring back that reactive, 'immediate mode' style of
+alia is designed to bring back that declarative, 'immediate mode' style of
 programming to your application code while still allowing you to interact with
 objects under the hood. This library actually began life as an immediate mode
 GUI library like [Dear ImGui](https://github.com/ocornut/imgui), but in its
 current form it has ditched the actual GUI code (which other libraries do better
 anyway) in favor of focusing on the mechanics of managing objects and events in
-a reactive/IM way.
+a declarative/IM way.
 
 alia provides the tools to allow our new interactive application to be written
 like this:
@@ -158,10 +158,10 @@ it can respond to multiple types of events, and it can maintain arbitrary
 internal state. `do_poi` could even be a simple wrapper around a class. However,
 unlike normal C++ objects, we don't have to explicitly create and destroy calls
 to `do_poi`. Whatever calls are encountered during a call to `do_map` uniquely
-specify the set of POIs that are present in the map. *do\_map is reactive in the
-same way that draw\_map was!*
+specify the set of POIs that are present in the map. *do\_map is declarative in
+the same way that draw\_map was!*
 
-So, alia's goal is to allow you to write C++ application code reactively, even
+So, alia's goal is to allow you to write C++ application code declarative, even
 when your application’s functionality requires the power of objects, and even
 when you want to utilize one or more libraries with an object-oriented
 interface. The core of alia supplies the mechanics to make the above style of

@@ -1,8 +1,8 @@
 #ifndef ALIA_TEST_TRAVERSAL_HPP
 #define ALIA_TEST_TRAVERSAL_HPP
 
-#include <alia/components/system.hpp>
 #include <alia/flow/events.hpp>
+#include <alia/system.hpp>
 
 #include <sstream>
 

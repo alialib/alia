@@ -1,7 +1,7 @@
 #include <alia/flow/events.hpp>
 
-#include <alia/components/system.hpp>
-#include <alia/components/timing.hpp>
+#include <alia/system.hpp>
+#include <alia/timing/ticks.hpp>
 
 namespace alia {
 
@@ -62,11 +62,11 @@ invoke_controller(system& sys, event_traversal& events)
     // Only use refresh events to decide when data is no longer needed.
     data.gc_enabled = data.cache_clearing_enabled = is_refresh;
 
-    timing_component timing;
+    timing_subsystem timing;
     timing.tick_counter = sys.external ? sys.external->get_tick_count()
                                        : get_default_tick_count();
 
-    context_component_storage storage;
+    context_storage storage;
     context ctx = make_context(&storage, sys, events, data, timing);
 
     sys.controller(ctx);

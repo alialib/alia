@@ -1,7 +1,7 @@
 - Introduction
 
-  - [A Reactive "Hello, World!"](reactive-hello.md)
-  - [Key Features](key-features.md)
+  - ["Hello, World!"](interactive-hello.md)
+  - [Feature Overview](feature-overview.md)
   - [Assorted Examples](assorted-examples.md)
   - [Getting Started](getting-started.md)
 
@@ -17,9 +17,9 @@
 
 - Control Flow
 
-  - [Flow Basics](flow-basics.md)
-  - [Conditionals](conditionals.md)
-  - [Loops](loops.md)
+  - [High-Level Flow](high-level-flow.md)
+  - [The Data Graph](the-data-graph.md)
+  - [Flow Tracking](flow-tracking.md)
   - [Actions](actions.md)
   - [The Context](the-context.md)
 

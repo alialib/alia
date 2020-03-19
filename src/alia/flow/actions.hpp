@@ -8,10 +8,10 @@
 // it, and some utilities for working with it.
 //
 // An action is essentially a response to an event that's dispatched by alia.
-// When specifying a component element that can generate events, the application
+// When specifying a component that can generate events, the application
 // supplies the action that should be performed when the corresponding event is
 // generated. Using this style allows event handling to be written in a safer
-// and more reactive manner.
+// and more declarative manner.
 //
 // Actions are very similar to signals in the way that they are used in an
 // application. Like signals, they're typically created directly at the call

@@ -1,8 +1,8 @@
-#include <alia/components/timing.hpp>
+#include <alia/timing/ticks.hpp>
 
-#include <alia/components/context.hpp>
-#include <alia/components/system.hpp>
+#include <alia/context/interface.hpp>
 #include <alia/flow/events.hpp>
+#include <alia/system.hpp>
 
 namespace alia {
 
@@ -11,7 +11,7 @@ request_animation_refresh(dataless_context ctx)
 {
     // Invoke the virtual method on the external system interface.
     // And also set a flag to indicate that a refresh is needed.
-    system& sys = get_component<system_tag>(ctx);
+    system& sys = ctx.get<system_tag>();
     if (!sys.refresh_needed)
     {
         if (sys.external)
@@ -24,7 +24,7 @@ millisecond_count
 get_raw_animation_tick_count(dataless_context ctx)
 {
     request_animation_refresh(ctx);
-    return get_component<timing_tag>(ctx).tick_counter;
+    return ctx.get<timing_tag>().tick_counter;
 }
 
 value_signal<millisecond_count>
@@ -36,8 +36,7 @@ get_animation_tick_count(dataless_context ctx)
 millisecond_count
 get_raw_animation_ticks_left(dataless_context ctx, millisecond_count end_time)
 {
-    int ticks_remaining
-        = int(end_time - get_component<timing_tag>(ctx).tick_counter);
+    int ticks_remaining = int(end_time - ctx.get<timing_tag>().tick_counter);
     if (ticks_remaining > 0)
     {
         if (is_refresh_event(ctx))

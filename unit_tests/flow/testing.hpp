@@ -1,8 +1,8 @@
 #ifndef ALIA_TESTING_FLOW_TESTER_HPP
 #define ALIA_TESTING_FLOW_TESTER_HPP
 
-#include <alia/components/context.hpp>
-#include <alia/components/system.hpp>
+#include <alia/context/interface.hpp>
+#include <alia/system.hpp>
 #include <alia/flow/data_graph.hpp>
 #include <alia/flow/events.hpp>
 
@@ -111,10 +111,10 @@ do_traversal(
     data_traversal data;
     scoped_data_traversal sdt(graph, data);
 
-    timing_component timing;
+    timing_subsystem timing;
     timing.tick_counter = 0;
 
-    context_component_storage storage;
+    context_storage storage;
     context ctx = make_context(&storage, sys, event, data, timing);
 
     if (!with_gc)
