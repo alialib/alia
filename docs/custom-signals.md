@@ -1,11 +1,12 @@
 Custom Signals
 ==============
 
-Signal Capabilities
--------------------
-
 Custom Types
 ------------
+
+If you're going to implement a custom signal type, it's recommended that you
+read [Consuming Signals](consuming-signals.md) to understand the expected
+interface and the expectation of a value identity.
 
 
 
@@ -13,7 +14,7 @@ Lambda Constructors
 -------------------
 
 When you need a little more control but don't want to create a custom signal
-type, you can create a signal from one or more lambdas functions (or other
+type, you can create a signal from one or more lambda functions (or other
 function objects). For completeness, you can create a fully functional, duplex
 signal using lambdas, but the further you go down this list, the more likely it
 is that you should just create a custom signal type...
