@@ -78,7 +78,8 @@ In particular, signals extend 'raw' C++ values in two important ways:
 - **value identity** - Signals are designed to allow you to efficiently detect
   when their values have changed, independent of the size of those values. This
   allows nodes in your data flow to efficiently detect when their inputs have
-  changed and propagate those changes forward.
+  changed and propagate those changes forward. (alia takes a non-intrusive,
+  polling-based approach to this.)
 
 - **availability** - It's often useful to think of a signal in your data flow as
   carrying no value at all (e.g., because the user hasn't input a value yet, or

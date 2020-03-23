@@ -32,7 +32,7 @@ expressed as a composition of *component functions.* These component functions:
   reflects the current state of your application.*
 
 * **use dataflow semantics** - alia provides tools for modeling the computations
-  in your application as a declarative flow of data. This flow is composed of
+  in your application as a declarative flow of data. This flow favors the use of
   pure functions and naturally supports caching and 'unready' values (values
   that are waiting for user inputs, background calculations, remote queries,
   etc.).
