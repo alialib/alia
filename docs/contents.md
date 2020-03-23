@@ -11,9 +11,8 @@
   - [Operators](signal-operators.md)
   - [Function Application](function-application.md)
   - [Adaptors](signal-adaptors.md)
-  - [Value Identity](value-identity.md)
+  - [Consuming Signals](consuming-signals.md)
   - [Custom Signals](custom-signals.md)
-  - [Signals as Parameters](signals-as-parameters.md)
 
 - Control Flow
 

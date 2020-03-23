@@ -103,20 +103,23 @@ struct signal_direction_union
 // of the type of the value that the signal carries.
 struct untyped_signal_base
 {
-    // Can the signal currently be read from?
+    // Does the signal currently have a value?
     virtual bool
     has_value() const = 0;
 
     // A signal must supply an ID that uniquely identifies its value.
+    //
     // The ID is required to be valid if has_value() returns true.
     // (It may be valid even if has_value() returns false, which would mean
     // that the signal can identify its value but doesn't know it yet.)
-    // The returned ID reference is only valid as long as the signal itself is
-    // valid.
+    //
+    // The returned ID reference is only guaranteed to be valid as long as the
+    // signal itself is valid.
+    //
     virtual id_interface const&
     value_id() const = 0;
 
-    // Can the signal currently be written to?
+    // Is the signal currently ready to write?
     virtual bool
     ready_to_write() const = 0;
 };
@@ -127,7 +130,7 @@ struct signal_interface : untyped_signal_base
     typedef Value value_type;
 
     // Read the signal's value. The reference returned here is only guaranteed
-    // to be valid as long as the accessor itself is valid.
+    // to be valid as long as the signal object itself is valid.
     virtual Value const&
     read() const = 0;
 
