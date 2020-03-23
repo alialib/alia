@@ -108,11 +108,14 @@ struct untyped_signal_base
     has_value() const = 0;
 
     // A signal must supply an ID that uniquely identifies its value.
+    //
     // The ID is required to be valid if has_value() returns true.
     // (It may be valid even if has_value() returns false, which would mean
     // that the signal can identify its value but doesn't know it yet.)
-    // The returned ID reference is only valid as long as the signal itself is
-    // valid.
+    //
+    // The returned ID reference is only guaranteed to be valid as long as the
+    // signal itself is valid.
+    //
     virtual id_interface const&
     value_id() const = 0;
 

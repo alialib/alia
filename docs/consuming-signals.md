@@ -48,7 +48,12 @@ Does the signal currently have a value?
 
 <dt>id_interface const&<br>value_id() const</dt><dd>
 
-Get the value identity of the signal. (See below for details.)
+Get the value identity of the signal.
+
+See below for details.
+
+The returned ID reference is only guaranteed to be valid as long as the signal
+itself is valid.
 
 </dd>
 
