@@ -9,7 +9,7 @@ namespace alia {
 // signalize(x) turns x into a signal if it isn't already one.
 // Or, in other words...
 // signalize(s), where s is a signal, returns s.
-// signalize(v), where v is a raw value, returns a value signal carrying s.
+// signalize(v), where v is a raw value, returns a value signal carrying v.
 template<class Signal>
 std::enable_if_t<is_readable_signal_type<Signal>::value, Signal>
 signalize(Signal s)
