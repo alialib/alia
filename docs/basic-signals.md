@@ -2,8 +2,8 @@ Basic Usage
 ===========
 
 Signals are the main mechanic for modeling dataflow in alia, and they're
-introduced on the [Key Features](key-features.md) page. If you haven't already,
-you should read that before continuing on here.
+introduced on the [Feature Overview](feature-overview.md) page. If you haven't
+already, you should read that before continuing on here.
 
 Signal Objects
 --------------
@@ -43,15 +43,25 @@ signal that changes over time, but for the purpose of actually understanding
 what's going on in your code, it's also helpful to be aware that there's no
 actual persistent C++ object associated with that signal.
 
+Directionality
+--------------
+
+The documentation below will describe signals as either 'read-only' or 'duplex'.
+Just like raw C++ values can be either const or non-const, signals have a
+*directionality* component to their type that indicates how they allow data to
+flow. While read-only signals only allow you to read the value that they carry,
+*duplex* signals *also* allow you to *write* a value back along the signal.
+
 Basic Constructors
 ------------------
 
 The following functions allow you to construct basic signals from raw C++
-values. These are perfect for working with small values: booleans, numbers,
-small strings, and perhaps small data structures. However, all of them rely on
-making copies and invoking the equality operator to detect changes in the values
-they carry, so they are generally not the best choice for large data structures
-unless those structures are especially efficient at these operations.
+values. These are perfect for bringing in small values from your application
+data: booleans, numbers, small strings, and perhaps small data structures.
+However, all of them rely on making copies and invoking the equality operator to
+detect changes in the values they carry, so they're generally not the best
+choice for large data structures unless those structures are especially
+efficient at these operations.
 
 <dl>
 
