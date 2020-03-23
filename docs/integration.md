@@ -1,6 +1,4 @@
 Integration
 ===========
 
-The System
-----------
-
+Coming soon...
