@@ -6,65 +6,65 @@ python: 3.7
 jobs:
   include:
 
-    # The Clang job generates test coverage information.
-    - env: CACHE_NAME=clang
-      install:
-      - sudo bash scripts/set-up-system.sh
-      - scripts/set-up-travis.sh
-      before_script:
-      - export CC=`which clang-4.0`
-      - export CXX=`which clang++-4.0`
-      script:
-      - scripts/do-ci-testing.sh
-      after_success:
-      - bash <(curl -s https://codecov.io/bash) -X gcov
+  # The Clang job generates test coverage information.
+  - env: CACHE_NAME=clang
+    install:
+    - sudo bash scripts/set-up-system.sh
+    - scripts/set-up-travis.sh
+    before_script:
+    - export CC=`which clang-4.0`
+    - export CXX=`which clang++-4.0`
+    script:
+    - scripts/do-ci-testing.sh
+    after_success:
+    - bash <(curl -s https://codecov.io/bash) -X gcov
 
-    # The GCC job deploys alia.hpp releases.
-    - env: CACHE_NAME=gcc
-      install:
-      - sudo bash scripts/set-up-system.sh
-      - scripts/set-up-travis.sh
-      before_script:
-      - export CC=`which gcc`
-      - export CXX=`which g++`
-      script:
-      - scripts/do-ci-testing.sh
-      deploy:
-      - provider: releases
-        api_key:
-          secure: upz/uDNpVnHmK/oe9dSDsK04Z6lEVOgrrM1BZG8tatw/atTREJELXDkuB2eudkv21tDCRP5YRJYlkRcKrn5bvINk8HcayPXlWhmDiKaT3majietiix1B4V5llSuzbaEdH3cR24122tHoCzGpBxQeon1Vr77za0iWO9t8FkQO/YFeMn/GEU3TUbMMinp5i3WNd4x0Ps9yArSinsEMdK6342uHurFEDR54/04fpIYW1LlJobOIYqs0NYiLAfYfrunNZ/C2Zilxm7drWY4HsY8wIrrrOPsZojUEn4pAZfebDrCCUkvMyaN2SXdCC1MhsmOKLb5J38Y8LC11z8KWL+XdAhvRFxE7Q556rPeV/4WU4jaZcETmNd1yS7MQsWxHE+uCsXmiS7UerFPMNv14+xSno/qc0WjmLIzhsJOnB5hYQW8t/Y5N8DbCkAo7JTlm3niVQPXz3RBSWG55oW/X1l5TyRmNXB900v+nlovehqyheZcXaaljWx0NaiwYyt6uUEf7cUinFeEYjc0fsV6Yf0/jrw+L5Ex6TEtSzKcTfv2lz6qUi7BSwvoUmEnQfqcZfamKyulJ+9662ZpFiKILi+QuiM0ucjMPw2pMF3BwqTnEqEMLc6qBH8+jnVOFDsrAbo79eiqJ2W2HXEyUWVrXG5KruFuuVPuSXxuOMG/RA4rQtP8=
-        file: alia.hpp
-        skip_cleanup: true
-        on:
-          tags: true
-          repo: tmadden/alia
+  # The GCC job deploys alia.hpp releases.
+  - env: CACHE_NAME=gcc
+    install:
+    - sudo bash scripts/set-up-system.sh
+    - scripts/set-up-travis.sh
+    before_script:
+    - export CC=`which gcc`
+    - export CXX=`which g++`
+    script:
+    - scripts/do-ci-testing.sh
+    deploy:
+      provider: releases
+      api_key:
+        secure: ZrAOzBA2TtbVMcNg7UBjw5hP8D3mC2GxYSW05+bfYYOtNB6a41AonRhETBkIq5UfHMrKCEWy+tnvOcc6j1fQksiGYaSTbzRU8O51mmFSLKiBNuGTpN3Kro1hR0hqs3OZjKY9lp05OPdY9p++0UIwUFe68Yc+1dEdxqZi26nzt8Rpf34eblTyKb1dQZy0Hdn7dh5eUx0lTsuKA5GfUfDYKCMAmq30gnrbkOomuq7vtS5p2bm8D3NaX8bvoH372I5VDvRpXF91FPyGZfk04evOog9lPfICwq54/EnNtWeVvcLYgtDqSxMvdkjNwOwFLaAbK53lAlfHo4CSXYk0QcPqo6XoszQp1aj9gBY8pWHQzUu0D2XLFTwVg81J62iFDuXHoshe4Dv1rcDc8/Fwfqp16uUGfBPAzdxqjLVYWbHp6jevtC8+pNugOWGJC2C3xxIQZFX2k1qnOBxQ3PeEN1hwZ++UQOu0d/yTYl0SaPj3HLqO/hiVcZimx3q3nmIafBxtkPGUceM+EHU+4LWJGcE8cfqYemaAOkLuV53wR1xSGs96ftMOKrppmizAhjy4fmykIrEI62JnAV8CauMI/xwG0SYSs+s7oxL74C36rUKVCL1ib8wnyZVJfm61QLjSbPYxhU4UYs36QVIeVX03gnH3G06D44j0VDm1tBrJ+11ofbE=
+      file: alia.hpp
+      skip_cleanup: true
+      on:
+        tags: true
+        repo: tmadden/alia
 
-    # The Emscripten job deploys the documentation.
-    # (The isn't currently a full test. It just tests that the asm-dom examples
-    # build successfully.)
-    - env: CACHE_NAME=emscripten
-      install:
-      - sudo add-apt-repository universe
-      - sudo apt update
-      - sudo apt install graphviz
-      services:
-      - docker
-      script:
-      - python scripts/generate-distributables.py
-      - mv alia.hpp examples/asm-dom
-      - mkdir examples/asm-dom/build
-      - >
-        docker run -it --name emscripten -v $(pwd)/examples/asm-dom:/src
-        -w /src/build trzeci/emscripten:1.39.7-upstream
-        bash -c 'emcmake cmake -DCMAKE_BUILD_TYPE=Release .. && make'
-      - scripts/build-docs.sh
-      deploy:
-      - provider: pages
-        skip_cleanup: true
-        github_token: $GITHUB_TOKEN
-        on:
-          branch: master
-        local_dir: www
+  # The Emscripten job deploys the documentation.
+  # (The isn't currently a full test. It just tests that the asm-dom examples
+  # build successfully.)
+  - env: CACHE_NAME=emscripten
+    install:
+    - sudo add-apt-repository universe
+    - sudo apt update
+    - sudo apt install graphviz
+    services:
+    - docker
+    script:
+    - python scripts/generate-distributables.py
+    - mv alia.hpp examples/asm-dom
+    - mkdir examples/asm-dom/build
+    - >
+      docker run -it --name emscripten -v $(pwd)/examples/asm-dom:/src
+      -w /src/build trzeci/emscripten:1.39.7-upstream
+      bash -c 'emcmake cmake -DCMAKE_BUILD_TYPE=Release .. && make'
+    - scripts/build-docs.sh
+    deploy:
+    - provider: pages
+      skip_cleanup: true
+      github_token: $GITHUB_TOKEN
+      on:
+        branch: master
+      local_dir: www
 
 before_cache:
 - conan remove "*" -s -b -f
