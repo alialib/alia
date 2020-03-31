@@ -358,9 +358,10 @@ simplify_id(Wrapped wrapped)
     return simplified_id_wrapper<Wrapped>(wrapped);
 }
 
-// mask(signal, condition) does the equivalent of bit masking on individual
-// signals. If :condition evaluates to true, the mask evaluates to :signal.
-// Otherwise, it evaluates to an empty signal of the same type.
+// mask(signal, availibility_flag) does the equivalent of bit masking on
+// individual signals. If :availibility_flag evaluates to true, the mask
+// evaluates to signal equivalent to :signal. Otherwise, it evaluates to an
+// empty signal of the same type.
 template<class Primary, class Mask>
 struct masking_signal : signal<
                             masking_signal<Primary, Mask>,
@@ -406,17 +407,94 @@ struct masking_signal : signal<
     Primary primary_;
     Mask mask_;
 };
-template<class Signal, class Condition>
+template<class Signal, class AvailabilityFlag>
 auto
-make_masking_signal(Signal signal, Condition condition)
+make_masking_signal(Signal signal, AvailabilityFlag availability_flag)
 {
-    return masking_signal<Signal, Condition>(signal, condition);
+    return masking_signal<Signal, AvailabilityFlag>(signal, availability_flag);
 }
-template<class Signal, class Condition>
+template<class Signal, class AvailabilityFlag>
 auto
-mask(Signal signal, Condition condition)
+mask(Signal signal, AvailabilityFlag availability_flag)
 {
-    return make_masking_signal(signalize(signal), signalize(condition));
+    return make_masking_signal(signalize(signal), signalize(availability_flag));
+}
+
+// mask_writes(signal, writability_flag) masks writes to :signal according to
+// the value of :writability_flag.
+//
+// :writability_flag can be either a signal or a raw value. If it evaluates to
+// true (in a boolean context), the mask evaluates to a signal equivalent to
+// :signal. Otherwise, it evaluates to one with equivalent reading behavior but
+// with writing disabled.
+//
+// Note that in either case, the masked version has the same directionality as
+// :signal.
+//
+template<class Primary, class Mask>
+struct write_masking_signal : signal<
+                                  write_masking_signal<Primary, Mask>,
+                                  typename Primary::value_type,
+                                  typename Primary::direction_tag>
+{
+    write_masking_signal()
+    {
+    }
+    write_masking_signal(Primary primary, Mask mask)
+        : primary_(primary), mask_(mask)
+    {
+    }
+    bool
+    has_value() const
+    {
+        return primary_.has_value();
+    }
+    typename Primary::value_type const&
+    read() const
+    {
+        return primary_.read();
+    }
+    id_interface const&
+    value_id() const
+    {
+        return primary_.value_id();
+    }
+    bool
+    ready_to_write() const
+    {
+        return mask_.has_value() && mask_.read() && primary_.ready_to_write();
+    }
+    void
+    write(typename Primary::value_type const& value) const
+    {
+        primary_.write(value);
+    }
+
+ private:
+    Primary primary_;
+    Mask mask_;
+};
+template<class Signal, class WritabilityFlag>
+auto
+make_write_masking_signal(Signal signal, WritabilityFlag writability_flag)
+{
+    return write_masking_signal<Signal, WritabilityFlag>(
+        signal, writability_flag);
+}
+template<class Signal, class WritabilityFlag>
+auto
+mask_writes(Signal signal, WritabilityFlag writability_flag)
+{
+    return make_write_masking_signal(signal, signalize(writability_flag));
+}
+
+// disable_writes(s), where :s is a signal, yields a wrapper for :s where writes
+// are disabled. Like mask_signal, this doesn't change the directionality of :s.
+template<class Signal>
+auto
+disable_writes(Signal s)
+{
+    return mask_writes(s, false);
 }
 
 } // namespace alia
