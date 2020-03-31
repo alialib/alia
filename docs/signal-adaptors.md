@@ -76,8 +76,34 @@ boolean (conditional) context.
 
 `mask(signal, availability_flag)` does the equivalent of bit masking on
 individual signals. If `availability_flag` evaluates to `true`, the mask
-evaluates to `signal`. Otherwise, it evaluates to an empty signal of the same
-type.
+evaluates to a signal equivalent to `signal`. Otherwise, it evaluates to an
+empty signal of the same type.
+
+</dd>
+
+You can also mask a signal's ability to write:
+
+<dt>mask_writes(signal, writability_flag)</dt><dd>
+
+`mask_writes(signal, writability_flag)` masks writes to `signal` according to
+the value of `writability_flag`.
+
+`writability_flag` can be either a signal or a raw value. If it evaluates to
+true (in a boolean context), the mask evaluates to a signal equivalent to
+`signal`. Otherwise, it evaluates to one with equivalent reading behavior but
+with writing disabled.
+
+Note that in either case, the masked version has the same directionality as
+`signal`.
+
+</dd>
+
+<dt>disable_writes(signal)</dt><dd>
+
+`disable_writes(signal)` yields a wrapper for `signal` where writes are
+disabled.
+
+(This is equivalent to `mask_writes(signal, false)`.)
 
 </dd>
 
