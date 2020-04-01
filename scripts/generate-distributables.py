@@ -33,6 +33,13 @@ def generate_single_header(single_header_path, source_dir, module):
 
         header_states = {}
 
+        included_standard_headers = set()
+
+        def add_external_include(path):
+            if path not in included_standard_headers:
+                output.write('#include <{}>\n'.format(path))
+                included_standard_headers.add(path)
+
         def add_header_file(path):
             path = path.replace('\\', '/')
             if path in header_states:
@@ -56,11 +63,19 @@ def generate_single_header(single_header_path, source_dir, module):
             del lines[-1]
 
             for line in lines:
-                # Recursively process #include'd files so that they're inlined.
-                include = re.match(r'^\s*#include <(alia/[a-z0-9/_\.]+)>',
-                                   line)
-                if include:
-                    add_header_file('src/' + include.group(1))
+                # Recursively process #include'd alis files so that they're
+                # inlined.
+                internal_include = re.match(
+                    r'^\s*#include <(alia/[a-z0-9/_\.]+)>', line)
+                if internal_include:
+                    add_header_file('src/' + internal_include.group(1))
+                    continue
+
+                # For external includes, only add it if it's not already there.
+                external_include = re.match(r'^\s*#include <([a-z0-9/_\.]+)>',
+                                            line)
+                if external_include:
+                    add_external_include(external_include.group(1))
                     continue
 
                 # Strip out include guards.
@@ -79,9 +94,16 @@ def generate_single_header(single_header_path, source_dir, module):
 
             for line in lines:
                 # All internal headers should've already been included.
-                include = re.match(r'^\s*#include <(alia/[a-z0-9/_\.]+)>',
-                                   line)
-                if include:
+                internal_include = re.match(
+                    r'^\s*#include <(alia/[a-z0-9/_\.]+)>', line)
+                if internal_include:
+                    continue
+
+                # For external includes, only add it if it's not already there.
+                external_include = re.match(r'^\s*#include <([a-z0-9/_\.]+)>',
+                                            line)
+                if external_include:
+                    add_external_include(external_include.group(1))
                     continue
 
                 output.write(line)
