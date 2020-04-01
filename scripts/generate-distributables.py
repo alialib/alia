@@ -1,5 +1,7 @@
 from pathlib import Path
 import re
+import os
+import datetime
 
 
 def generate_single_header(single_header_path, source_dir, module):
@@ -9,6 +11,21 @@ def generate_single_header(single_header_path, source_dir, module):
             for line in lines:
                 output.write(('// ' + line).strip() + '\n')
 
+        output.write('\n')
+
+        timestamp = datetime.datetime.utcnow().replace(
+            tzinfo=datetime.timezone.utc).astimezone().replace(
+                microsecond=0).isoformat()
+        if 'TRAVIS_TAG' in os.environ:
+            version = "{} ({})".format(os.environ['TRAVIS_TAG'],
+                                       os.environ['TRAVIS_COMMIT'])
+        elif 'TRAVIS_BRANCH' in os.environ:
+            version = "{} branch ({})".format(os.environ['TRAVIS_BRANCH'],
+                                              os.environ['TRAVIS_COMMIT'])
+        else:
+            version = "(local)"
+        output.write('// alia.hpp - {} - generated {}\n'.format(
+            version, timestamp))
         output.write('\n')
 
         output.write('#ifndef ALIA_' + module.upper() + '_HPP\n')
