@@ -124,10 +124,43 @@ is that you should just create a custom signal type...
 
 <dl>
 
+<dt>lambda_constant(read)</dt><dd>
+
+Creates a read-only signal whose value is constant and is determined by calling
+`read` (which doesn't take any arguments).
+
+Note that `read` is expected to *always return the same value.*
+
+`lambda_constant` should be used when a signal carries a constant value and the
+construction of that value is non-trivial. Consider the following two
+statements:
+
+```cpp
+auto fruits = value(std::vector<std::string>{"apple", "banana", "cherry"});
+```
+
+```cpp
+auto fruits = lambda_constant(
+    []() { return std::vector<std::string>{"apple", "banana", "cherry"}; });
+```
+
+Although the two have equivalent behavior, in the `value` version, our vector is
+constructed *every pass through our component function.* Moreover, wherever our
+`fruits` signal is used, the consuming code will store the whole vector and,
+every pass, *compare it to the newly constructed vector to detect changes.*
+
+The use of `lambda_constant` avoids both of these inefficiencies. Our vector
+will only be constructed when it's actually needed by the consumer(s) of the
+`fruits` signal, and since the signal is explicitly marked as constant, the
+unnecessary copies and comparisons will be eliminated.
+
 <dt>lambda_reader(read)</dt><dd>
 
 Creates a read-only signal that always has a value and whose value is determined
 by calling `read` (which doesn't take any arguments).
+
+In contrast to `lambda_constant`, the signal created here is *not* considered to
+be constant, so `read` is allowed to return different values over time.
 
 The following is equivalent to `value(12)`:
 
