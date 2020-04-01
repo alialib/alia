@@ -218,12 +218,10 @@ init_demo(std::string dom_id)
     initialize(the_dom, the_system, dom_id, [&](dom::context ctx) {
         do_scoreboard(ctx,
             get_state(ctx,
-                lambda_reader(
-                    always_has_value,
+                lambda_constant(
                     []() {
                         return std::vector<player>{{"Karen", 5}, {"Tom", 2}};
-                    },
-                    []() { return unit_id; })));
+                    })));
     });
 }
 // clang-format on

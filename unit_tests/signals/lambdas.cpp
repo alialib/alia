@@ -4,6 +4,19 @@
 
 using namespace alia;
 
+TEST_CASE("simple lambda constant", "[signals][lambdas]")
+{
+    auto s = lambda_constant([]() { return 1; });
+
+    typedef decltype(s) signal_t;
+    REQUIRE(signal_is_readable<signal_t>::value);
+    REQUIRE(!signal_is_writable<signal_t>::value);
+
+    REQUIRE(signal_has_value(s));
+    REQUIRE(s.value_id() == unit_id);
+    REQUIRE(read_signal(s) == 1);
+}
+
 TEST_CASE("simple lambda readable signal", "[signals][lambdas]")
 {
     auto s = lambda_reader([]() { return 1; });
