@@ -53,10 +53,15 @@ static demo the_demo("simple-apply", init_demo);
 namespace transform_demo {
 
 void
-do_ui(dom::context ctx, duplex<std::vector<int>> numbers)
+do_ui(dom::context ctx)
 {
     // clang-format off
 /// [transform-demo]
+// We want to work with a container of integers here, so get the state to
+// represent that. (We initialize it to a vector of three 2s.)
+auto numbers = get_state(
+    ctx, lambda_constant([]() { return std::vector<int>(3, 2); }));
+
 dom::do_text(ctx, "Enter some numbers:");
 
 // Provide an input box for each number.
@@ -69,8 +74,7 @@ auto prime_flags = transform(ctx, numbers,
     [&](auto ctx, auto n) { return apply(ctx, is_prime, n); });
 
 // Count the number of true values.
-auto prime_count = apply(
-    ctx,
+auto prime_count = apply(ctx,
     [ ](auto flags) { return std::count(flags.begin(), flags.end(), true); },
     prime_flags);
 
@@ -86,9 +90,7 @@ init_demo(std::string dom_id)
     static alia::system the_system;
     static dom::system the_dom;
 
-    initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_ui(ctx, get_state(ctx, std::vector<int>(3, 2)));
-    });
+    initialize(the_dom, the_system, dom_id, do_ui);
 }
 
 static demo the_demo("transform-demo", init_demo);
@@ -98,13 +100,16 @@ static demo the_demo("transform-demo", init_demo);
 namespace metered_transform_demo {
 
 void
-do_ui(dom::context ctx, duplex<std::vector<int>> numbers)
+do_ui(dom::context ctx)
 {
     static int call_count = 0;
     auto counting_is_prime = [&](int n) {
         ++call_count;
         return is_prime(n);
     };
+
+    auto numbers = get_state(
+        ctx, lambda_constant([]() { return std::vector<int>(3, 2); }));
 
     dom::do_text(ctx, "Enter some numbers:");
 
@@ -131,9 +136,7 @@ init_demo(std::string dom_id)
     static alia::system the_system;
     static dom::system the_dom;
 
-    initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_ui(ctx, get_state(ctx, std::vector<int>(3, 2)));
-    });
+    initialize(the_dom, the_system, dom_id, do_ui);
 }
 
 static demo the_demo("metered-transform-demo", init_demo);
@@ -143,17 +146,19 @@ static demo the_demo("metered-transform-demo", init_demo);
 namespace direct_counting {
 
 void
-do_ui(dom::context ctx, duplex<std::vector<int>> numbers)
+do_ui(dom::context ctx)
 {
     // clang-format off
+auto numbers = get_state(
+    ctx, lambda_constant([]() { return std::vector<int>(3, 2); }));
+
 dom::do_text(ctx, "Enter some numbers:");
 
 for_each(ctx, numbers,
     [ ](auto ctx, auto n) { dom::do_input(ctx, n); });
 
 /// [direct-counting]
-auto prime_count = apply(
-    ctx,
+auto prime_count = apply(ctx,
     [ ](auto numbers)
     { return std::count_if(numbers.begin(), numbers.end(), is_prime); },
     numbers);
@@ -169,9 +174,7 @@ init_demo(std::string dom_id)
     static alia::system the_system;
     static dom::system the_dom;
 
-    initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_ui(ctx, get_state(ctx, std::vector<int>(3, 2)));
-    });
+    initialize(the_dom, the_system, dom_id, do_ui);
 }
 
 static demo the_demo("direct-counting", init_demo);
@@ -181,8 +184,11 @@ static demo the_demo("direct-counting", init_demo);
 namespace metered_direct_counting {
 
 void
-do_ui(dom::context ctx, duplex<std::vector<int>> numbers)
+do_ui(dom::context ctx)
 {
+    auto numbers = get_state(
+        ctx, lambda_constant([]() { return std::vector<int>(3, 2); }));
+
     static int call_count = 0;
     auto counting_is_prime = [&](int n) {
         ++call_count;
@@ -213,9 +219,7 @@ init_demo(std::string dom_id)
     static alia::system the_system;
     static dom::system the_dom;
 
-    initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_ui(ctx, get_state(ctx, std::vector<int>(3, 2)));
-    });
+    initialize(the_dom, the_system, dom_id, do_ui);
 }
 
 static demo the_demo("metered-direct-counting", init_demo);

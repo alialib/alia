@@ -178,7 +178,7 @@ However, there's one very important difference between the two implementations:
 In the `transform` version, the call to `apply(ctx, is_prime, n)` is
 *individually caching* the result of `is_prime` for each input number, so as we
 update them, `is_prime` is only reinvoked on the individual numbers that have
-changed. This is in contrast to the 'single apply' version where any change to
+changed. This is in contrast to the 'single `apply`' version where any change to
 any part of the vector causes the entire `std::count_if` calculation to be
 redone.
 
@@ -191,7 +191,7 @@ First the `transform` version:
 <div id="metered-transform-demo"></div>
 </div>
 
-And now the 'single apply' version:
+And now the 'single `apply`' version:
 
 <div class="demo-panel">
 <div id="metered-direct-counting"></div>
