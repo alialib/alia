@@ -136,17 +136,33 @@ this on container signals:
 Applies a component-level function `f` individually to each item in `container`
 and returns the result as a signal container.
 
-`container` must be a signal carrying a *sequence* container value. (There's
-currently no implementation of `transform` for associative containers.)
+`container` must be a signal carrying a container value. Both sequence
+containers and map-like associative containers are supported:
 
-`f` is invoked as `f(ctx, item)`, where `ctx` is the same context passed into
-`transform` and `item` is a *signal* carrying the individual item to be
-transformed. It should return a *signal* carrying the result of transforming
-`item`. (Of course, it can return an empty signal if the result is unresolved.)
+* **Sequence Containers**
 
-The return value of `f` is a signal carrying a `std::vector` with the
-transformed items. This signal has a value when all items are successfully
-transformed (i.e., when the signals returned by `f` all have values).
+  `f` is invoked as `f(ctx, item)`, where `ctx` is the same context passed into
+  `transform` and `item` is a *signal* carrying the individual item to be
+  transformed. It should return a *signal* carrying the result of transforming
+  `item`.
+
+  The return value of `transform` is a signal carrying a `std::vector` with the
+  transformed items.
+
+* **Map-Like Containers**
+
+  `f` is invoked as `f(ctx, key, value)`, where `ctx` is the same context passed
+  into `transform` and `key` and `value` are *signals* carrying the individual
+  key and value to be transformed. It should return a *signal* carrying the
+  transformed value.
+
+  The return value of `transform` is a signal carrying a `std::map` with the
+  *original keys* mapped to the *transformed values.*
+
+In either case, `f` is allowed to return an empty signal if the transformation
+for that item is unresolved. The returned container signal will only have a
+value when *all items are successfully transformed* (i.e., when the signals
+returned by `f` all have values).
 
 Note that `transform` follows proper dataflow semantics in that the transformed
 values are allowed to change over time. Even after the result has a value (and
