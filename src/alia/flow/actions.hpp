@@ -39,7 +39,7 @@ struct action_interface : untyped_action_interface
     // BEFORE invoking any side effects.
     //
     virtual void
-    perform(std::function<void()> const& intermediary, Args... args) const = 0;
+    perform(function_view<void()> const& intermediary, Args... args) const = 0;
 };
 
 // is_action_type<T>::value yields a compile-time boolean indicating whether or
@@ -88,7 +88,7 @@ struct action_ref : action_interface<Args...>
     }
 
     void
-    perform(std::function<void()> const& intermediary, Args... args) const
+    perform(function_view<void()> const& intermediary, Args... args) const
     {
         action_->perform(intermediary, args...);
     }
@@ -124,7 +124,7 @@ struct action_pair<First, Second, action_interface<Args...>>
     }
 
     void
-    perform(std::function<void()> const& intermediary, Args... args) const
+    perform(function_view<void()> const& intermediary, Args... args) const
     {
         second_.perform(
             [&]() { first_.perform(intermediary, args...); }, args...);
@@ -171,7 +171,7 @@ struct bound_action<Action, Signal, action_interface<BoundArg, Args...>>
     }
 
     void
-    perform(std::function<void()> const& intermediary, Args... args) const
+    perform(function_view<void()> const& intermediary, Args... args) const
     {
         action_.perform(intermediary, signal_.read(), args...);
     }
@@ -225,7 +225,7 @@ struct copy_action : action_interface<>
     }
 
     void
-    perform(std::function<void()> const& intermediary) const
+    perform(function_view<void()> const& intermediary) const
     {
         auto value = source_.read();
         intermediary();
@@ -292,7 +292,7 @@ struct push_back_action : action_interface<Item>
     }
 
     void
-    perform(std::function<void()> const& intermediary, Item item) const
+    perform(function_view<void()> const& intermediary, Item item) const
     {
         auto new_container = container_.read();
         new_container.push_back(item);
@@ -358,7 +358,7 @@ struct lambda_action_object<IsReady, Perform, action_interface<Args...>>
     }
 
     void
-    perform(std::function<void()> const& intermediary, Args... args) const
+    perform(function_view<void()> const& intermediary, Args... args) const
     {
         intermediary();
         perform_(args...);
