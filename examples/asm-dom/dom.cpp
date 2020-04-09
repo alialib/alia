@@ -284,14 +284,12 @@ struct dom_external_interface : default_external_interface
     void
     schedule_animation_refresh()
     {
-        emscripten_async_call(refresh_for_emscripten, &this.owner, -1);
+        emscripten_async_call(refresh_for_emscripten, &this->owner, -1);
     }
 };
 
 void
-dom_external_interface::schedule_animation_refresh()
-
-    void system::operator()(alia::context vanilla_ctx)
+system::operator()(alia::context vanilla_ctx)
 {
     context_info context_info;
     dom::context ctx = vanilla_ctx.add<context_info_tag>(context_info);
@@ -328,7 +326,7 @@ initialize(
     initialize_system(
         alia_system,
         std::ref(dom_system),
-        new dom_external_interface(&alia_system));
+        new dom_external_interface(alia_system));
     dom_system.controller = std::move(controller);
 
     // Replace the requested node in the DOM with our virtual DOM.
