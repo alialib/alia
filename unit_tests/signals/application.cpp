@@ -66,6 +66,8 @@ TEST_CASE("simple apply", "[signals][application]")
     captured_id signal_id;
 
     alia::system sys;
+    initialize_system(sys, [](context) {});
+
     auto make_controller = [&](int x, int y) {
         return [=, &signal_id](context ctx) {
             auto s = apply(ctx, f, value(x), value(y));
@@ -115,6 +117,8 @@ TEST_CASE("unready apply", "[signals][application]")
 
     {
         alia::system sys;
+        initialize_system(sys, [](context) {});
+
         auto make_controller = [=](auto x, auto y) {
             return [=](context ctx) {
                 auto s = apply(ctx, f, x, y);
@@ -141,6 +145,8 @@ TEST_CASE("failed apply", "[signals][application]")
 
     {
         alia::system sys;
+        initialize_system(sys, [](context) {});
+
         auto make_controller = [=](auto x, auto y) {
             return [=](context ctx) {
                 auto s = apply(ctx, f, x, y);
@@ -167,6 +173,8 @@ TEST_CASE("lift", "[signals][application]")
 
     {
         alia::system sys;
+        initialize_system(sys, [](context) {});
+
         auto controller = [=](context ctx) {
             auto f_lifted = lift(f);
             auto s = f_lifted(ctx, value(0));

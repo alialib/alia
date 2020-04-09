@@ -63,8 +63,7 @@ invoke_controller(system& sys, event_traversal& events)
     data.gc_enabled = data.cache_clearing_enabled = is_refresh;
 
     timing_subsystem timing;
-    timing.tick_counter = sys.external ? sys.external->get_tick_count()
-                                       : get_default_tick_count();
+    timing.tick_counter = sys.external->get_tick_count();
 
     context_storage storage;
     context ctx = make_context(&storage, sys, events, data, timing);

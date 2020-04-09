@@ -52,6 +52,7 @@ get_alia_id(my_item const& item)
 TEST_CASE("string vector", "[flow][for_each]")
 {
     alia::system sys;
+    initialize_system(sys, [](context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -90,6 +91,7 @@ TEST_CASE("string vector", "[flow][for_each]")
 TEST_CASE("item vector", "[flow][for_each]")
 {
     alia::system sys;
+    initialize_system(sys, [](context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -134,6 +136,7 @@ TEST_CASE("item vector", "[flow][for_each]")
 TEST_CASE("simple map", "[flow][for_each]")
 {
     alia::system sys;
+    initialize_system(sys, [](context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -174,6 +177,7 @@ TEST_CASE("simple map", "[flow][for_each]")
 TEST_CASE("item map", "[flow][for_each]")
 {
     alia::system sys;
+    initialize_system(sys, [](context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -220,6 +224,7 @@ TEST_CASE("item map", "[flow][for_each]")
 TEST_CASE("string list", "[flow][for_each]")
 {
     alia::system sys;
+    initialize_system(sys, [](context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -259,6 +264,7 @@ TEST_CASE("string list", "[flow][for_each]")
 TEST_CASE("unsimplified string list", "[flow][for_each]")
 {
     alia::system sys;
+    initialize_system(sys, [](context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -298,6 +304,7 @@ TEST_CASE("unsimplified string list", "[flow][for_each]")
 TEST_CASE("writing string list items", "[flow][for_each]")
 {
     alia::system sys;
+    initialize_system(sys, [](context) {});
 
     std::list<string> container{"foo", "bar", "baz"};
 
@@ -315,6 +322,7 @@ TEST_CASE("writing string list items", "[flow][for_each]")
 TEST_CASE("item list", "[for_each][list]")
 {
     alia::system sys;
+    initialize_system(sys, [](context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {

@@ -8,8 +8,13 @@
 
 using namespace alia;
 
-struct testing_external_interface : external_interface
+struct testing_external_interface : default_external_interface
 {
+    testing_external_interface(alia::system& sys)
+        : default_external_interface(sys)
+    {
+    }
+
     millisecond_count tick_count = 0;
 
     millisecond_count
@@ -34,8 +39,10 @@ TEST_CASE("interpolation", "[timing][smoothing]")
 TEST_CASE("smooth_raw", "[timing][smoothing]")
 {
     alia::system sys;
-    testing_external_interface external;
-    sys.external = &external;
+    auto* external_ptr = new testing_external_interface(sys);
+    initialize_system(
+        sys, [](context) {}, external_ptr);
+    auto& external = *external_ptr;
 
     REQUIRE(!system_needs_refresh(sys));
 
@@ -124,8 +131,10 @@ TEST_CASE("smooth_raw", "[timing][smoothing]")
 TEST_CASE("smooth", "[timing][smoothing]")
 {
     alia::system sys;
-    testing_external_interface external;
-    sys.external = &external;
+    auto* external_ptr = new testing_external_interface(sys);
+    initialize_system(
+        sys, [](context) {}, external_ptr);
+    auto& external = *external_ptr;
 
     REQUIRE(!system_needs_refresh(sys));
 
