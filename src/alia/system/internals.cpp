@@ -1,8 +1,6 @@
-#include <alia/system.hpp>
+#include <alia/system/internals.hpp>
 
 #include <chrono>
-
-#include <alia/flow/events.hpp>
 
 namespace alia {
 
@@ -15,15 +13,6 @@ get_default_tick_count()
                std::chrono::duration<millisecond_count, std::milli>>(
                now - start)
         .count();
-}
-
-void
-refresh_system(system& sys)
-{
-    sys.refresh_needed = false;
-
-    refresh_event refresh;
-    impl::dispatch_event(sys, refresh);
 }
 
 } // namespace alia

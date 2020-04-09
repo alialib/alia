@@ -2,7 +2,7 @@
 
 #include <alia/flow/data_graph.hpp>
 #include <alia/flow/events.hpp>
-#include <alia/system.hpp>
+#include <alia/system/interface.hpp>
 
 namespace alia {
 
