@@ -18,6 +18,7 @@ TEST_CASE("simple sequence transform", "[signals][higher_order]")
     std::vector<string> container{"foo", "barre", "q"};
 
     alia::system sys;
+    initialize_system(sys, [](context) {});
 
     captured_id transform_id;
     auto controller = [&](int offset) {
@@ -49,6 +50,7 @@ TEST_CASE("simple associative transform", "[signals][higher_order]")
         {"a", "foo"}, {"b", "barre"}, {"d", "q"}};
 
     alia::system sys;
+    initialize_system(sys, [](context) {});
 
     captured_id transform_id;
     auto controller = [&](int offset) {

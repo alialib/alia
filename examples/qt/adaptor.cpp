@@ -391,10 +391,10 @@ initialize(
     qt_system.window = new QWidget;
     qt_system.layout = new QVBoxLayout(qt_system.window);
     qt_system.window->setLayout(qt_system.layout);
+    qt_system.controller = std::move(controller);
 
     // Hook up the Qt system to the alia system.
-    alia_system.controller = std::ref(qt_system);
-    qt_system.controller = std::move(controller);
+    initialize_system(alia_system, std::ref(qt_system));
 
     // Do the initial refresh.
     refresh_system(alia_system);

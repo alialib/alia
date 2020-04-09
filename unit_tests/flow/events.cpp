@@ -45,6 +45,7 @@ do_my_thing(my_context ctx, readable<string> label)
 TEST_CASE("node IDs", "[flow][events]")
 {
     alia::system sys;
+    initialize_system(sys, [](context) {});
 
     REQUIRE(!is_valid(null_node_id));
 
