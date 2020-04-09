@@ -2,8 +2,8 @@
 
 #include <sstream>
 
-#include <alia/system.hpp>
 #include <alia/flow/macros.hpp>
+#include <alia/system/internals.hpp>
 
 #include <testing.hpp>
 

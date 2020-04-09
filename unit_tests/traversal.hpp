@@ -2,7 +2,7 @@
 #define ALIA_TEST_TRAVERSAL_HPP
 
 #include <alia/flow/events.hpp>
-#include <alia/system.hpp>
+#include <alia/system/internals.hpp>
 
 #include <sstream>
 
