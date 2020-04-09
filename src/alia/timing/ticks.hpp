@@ -20,7 +20,7 @@ struct timing_subsystem
 // Request that the UI context refresh again quickly enough for smooth
 // animation.
 void
-request_animation_refresh(dataless_context ctx);
+schedule_animation_refresh(dataless_context ctx);
 
 // Get the value of the millisecond tick counter associated with the given
 // UI context. This counter is updated every refresh pass, so it's consistent

@@ -27,7 +27,7 @@ struct dummy_external_interface : external_interface
     millisecond_count tick_count = 0;
 
     void
-    request_animation_refresh()
+    schedule_animation_refresh()
     {
         refresh_requested = true;
     }
