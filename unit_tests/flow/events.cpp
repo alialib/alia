@@ -5,7 +5,7 @@
 #include <testing.hpp>
 
 #include <alia/signals/basic.hpp>
-#include <alia/system.hpp>
+#include <alia/system/internals.hpp>
 
 using namespace alia;
 using std::string;
