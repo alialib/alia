@@ -35,7 +35,7 @@ struct external_interface
     // is necessary.)
     //
     virtual void
-    request_animation_refresh()
+    schedule_animation_refresh()
     {
     }
 

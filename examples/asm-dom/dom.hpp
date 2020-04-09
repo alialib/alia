@@ -113,7 +113,7 @@ struct dom_external_interface : alia::external_interface
     alia::system* system;
 
     void
-    request_animation_refresh();
+    schedule_animation_refresh();
 };
 
 struct system

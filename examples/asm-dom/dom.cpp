@@ -275,7 +275,7 @@ refresh_for_emscripten(void* system)
 }
 
 void
-dom_external_interface::request_animation_refresh()
+dom_external_interface::schedule_animation_refresh()
 {
     emscripten_async_call(refresh_for_emscripten, this->system, -1);
 }
