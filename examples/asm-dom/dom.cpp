@@ -274,14 +274,24 @@ refresh_for_emscripten(void* system)
     refresh_system(*reinterpret_cast<alia::system*>(system));
 }
 
-void
-dom_external_interface::schedule_animation_refresh()
+struct dom_external_interface : default_external_interface
 {
-    emscripten_async_call(refresh_for_emscripten, this->system, -1);
-}
+    dom_external_interface(alia::system& owner)
+        : default_external_interface(owner)
+    {
+    }
+
+    void
+    schedule_animation_refresh()
+    {
+        emscripten_async_call(refresh_for_emscripten, &this.owner, -1);
+    }
+};
 
 void
-system::operator()(alia::context vanilla_ctx)
+dom_external_interface::schedule_animation_refresh()
+
+    void system::operator()(alia::context vanilla_ctx)
 {
     context_info context_info;
     dom::context ctx = vanilla_ctx.add<context_info_tag>(context_info);
@@ -315,9 +325,10 @@ initialize(
     }
 
     // Hook up the dom::system to the alia::system.
-    alia_system.external = &dom_system.external;
-    dom_system.external.system = &alia_system;
-    alia_system.controller = std::ref(dom_system);
+    initialize_system(
+        alia_system,
+        std::ref(dom_system),
+        new dom_external_interface(&alia_system));
     dom_system.controller = std::move(controller);
 
     // Replace the requested node in the DOM with our virtual DOM.

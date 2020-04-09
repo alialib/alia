@@ -108,21 +108,11 @@ do_div(
     do_contents(ctx);
 }
 
-struct dom_external_interface : alia::external_interface
-{
-    alia::system* system;
-
-    void
-    schedule_animation_refresh();
-};
-
 struct system
 {
     std::function<void(dom::context)> controller;
 
     asmdom::VNode* current_view = nullptr;
-
-    dom_external_interface external;
 
     alia::system alia_system;
 
