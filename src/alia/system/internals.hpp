@@ -2,28 +2,28 @@
 #define ALIA_SYSTEM_INTERNALS_HPP
 
 #include <functional>
+#include <memory>
 
 #include <alia/context/interface.hpp>
 #include <alia/flow/data_graph.hpp>
+#include <alia/flow/events.hpp>
 #include <alia/timing/scheduler.hpp>
 #include <alia/timing/ticks.hpp>
 
 namespace alia {
 
-// Get the default implementation of the millisecond tick counter.
-// (This uses std::chrono::steady_clock.)
-millisecond_count
-get_default_tick_count();
+struct system;
 
 struct external_interface
 {
+    virtual ~external_interface()
+    {
+    }
+
     // Get the current value of the system's millisecond tick counter.
     // (The default implementation uses std::chrono::steady_clock.)
     virtual millisecond_count
-    get_tick_count() const
-    {
-        return get_default_tick_count();
-    }
+    get_tick_count() const = 0;
 
     // alia calls this every frame when an animation is in progress that's using
     // alia's internal animation timing system.
@@ -36,8 +36,7 @@ struct external_interface
     //
     virtual void
     schedule_animation_refresh()
-    {
-    }
+        = 0;
 
     // Schedule a timer event to be delivered to a specific component at some
     // future time.
@@ -47,23 +46,60 @@ struct external_interface
     // :time is the tick count at which the event should be delivered.
     //
     // alia provides an internal system for tracking outstanding requests for
-    // timer events.
-    // TODO: Finish documenting this!
+    // timer events. If this system is continuously updating anyway, you can
+    // leave this unimplemented and call process_internal_timing_events
+    // once per frame to handle timing events. (See below.)
+    //
     virtual void
     schedule_timer_event(routable_node_id component, millisecond_count time)
-    {
-        // TODO!
-    }
+        = 0;
 };
 
-struct system
+struct default_external_interface : external_interface
+{
+    system& owner;
+
+    default_external_interface(system& owner) : owner(owner)
+    {
+    }
+
+    virtual millisecond_count
+    get_tick_count() const;
+
+    void
+    schedule_animation_refresh()
+    {
+    }
+
+    void
+    schedule_timer_event(routable_node_id component, millisecond_count time);
+};
+
+struct system : noncopyable
 {
     data_graph data;
     std::function<void(context)> controller;
     bool refresh_needed = false;
-    external_interface* external = nullptr;
-    timer_event_scheduler timing;
+    std::unique_ptr<external_interface> external;
+    timer_event_scheduler scheduler;
 };
+
+void
+initialize_system(
+    system& sys,
+    std::function<void(context)> const& controller,
+    external_interface* external = nullptr);
+
+// timer event
+struct timer_event : targeted_event
+{
+    millisecond_count trigger_time;
+};
+
+// If this system is using internal timer event scheduling, this will check for
+// any events that are ready to be issued and issue them.
+void
+process_internal_timing_events(system& sys, millisecond_count now);
 
 } // namespace alia
 

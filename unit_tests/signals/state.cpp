@@ -27,6 +27,7 @@ TEST_CASE("state_holder", "[signals][state]")
 TEST_CASE("basic get_state", "[signals][state]")
 {
     alia::system sys;
+    initialize_system(sys, [](context) {});
     do_traversal(sys, [&](context ctx) {
         auto state = get_state(ctx, empty<int>());
 
@@ -55,6 +56,7 @@ TEST_CASE("basic get_state", "[signals][state]")
 TEST_CASE("writing to uninitialized state", "[signals][state]")
 {
     alia::system sys;
+    initialize_system(sys, [](context) {});
     do_traversal(sys, [&](context ctx) {
         auto state = get_state(ctx, empty<int>());
 
@@ -70,6 +72,7 @@ TEST_CASE("writing to uninitialized state", "[signals][state]")
 TEST_CASE("get_state with raw initial value", "[signals][state]")
 {
     alia::system sys;
+    initialize_system(sys, [](context) {});
     captured_id state_id;
     do_traversal(sys, [&](context ctx) {
         auto state = get_state(ctx, 12);

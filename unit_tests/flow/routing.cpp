@@ -101,7 +101,7 @@ check_traversal_path(
     int n, std::string const& label, std::string const& expected_path)
 {
     alia::system sys;
-    sys.controller = traversal_function(n);
+    initialize_system(sys, traversal_function(n));
     routing_region_ptr target;
     {
         find_label_event fle;
