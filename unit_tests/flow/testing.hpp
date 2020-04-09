@@ -2,9 +2,9 @@
 #define ALIA_TESTING_FLOW_TESTER_HPP
 
 #include <alia/context/interface.hpp>
-#include <alia/system.hpp>
 #include <alia/flow/data_graph.hpp>
 #include <alia/flow/events.hpp>
+#include <alia/system/internals.hpp>
 
 #include <sstream>
 

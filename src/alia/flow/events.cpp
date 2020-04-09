@@ -1,6 +1,6 @@
 #include <alia/flow/events.hpp>
 
-#include <alia/system.hpp>
+#include <alia/system/internals.hpp>
 #include <alia/timing/ticks.hpp>
 
 namespace alia {

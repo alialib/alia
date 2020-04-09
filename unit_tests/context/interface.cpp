@@ -1,7 +1,7 @@
 #include <alia/context/interface.hpp>
 
 #include <alia/flow/events.hpp>
-#include <alia/system.hpp>
+#include <alia/system/internals.hpp>
 
 #include <testing.hpp>
 

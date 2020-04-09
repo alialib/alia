@@ -2,9 +2,9 @@
 #define ALIA_FLOW_EVENTS_HPP
 
 #include <alia/context/interface.hpp>
-#include <alia/system.hpp>
 #include <alia/flow/data_graph.hpp>
 #include <alia/flow/macros.hpp>
+#include <alia/system/interface.hpp>
 
 // This file implements utilities for routing events through an alia content
 // traversal function.

@@ -7,6 +7,7 @@
 #include <alia/signals/adaptors.hpp>
 #include <alia/signals/basic.hpp>
 #include <alia/timing/cubic_bezier.hpp>
+#include <alia/timing/ticks.hpp>
 
 #include <cmath>
 
