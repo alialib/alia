@@ -37,20 +37,23 @@ TEST_CASE("timer_event_scheduler", "[timing][scheduler]")
     REQUIRE(!has_scheduled_events(scheduler));
 
     // Do some more complicated behavior.
-    schedule_event(scheduler, a, 25);
-    REQUIRE(has_scheduled_events(scheduler));
-    REQUIRE(get_time_until_next_event(scheduler, 15) == 10);
     schedule_event(scheduler, b, 20);
     REQUIRE(has_scheduled_events(scheduler));
     REQUIRE(get_time_until_next_event(scheduler, 15) == 5);
-    // Overwrite a's event with something sooner.
+    schedule_event(scheduler, a, 17);
+    REQUIRE(has_scheduled_events(scheduler));
+    REQUIRE(get_time_until_next_event(scheduler, 15) == 2);
+    // Add another event for a.
     schedule_event(scheduler, a, 15);
     REQUIRE(get_time_until_next_event(scheduler, 15) == 0);
     issue_ready_events(scheduler, 15, issuer);
     REQUIRE(log.str() == "a:15;");
     log.str(std::string());
     REQUIRE(has_scheduled_events(scheduler));
-    REQUIRE(get_time_until_next_event(scheduler, 15) == 5);
+    REQUIRE(get_time_until_next_event(scheduler, 15) == 2);
+    issue_ready_events(scheduler, 17, issuer);
+    REQUIRE(log.str() == "a:17;");
+    log.str(std::string());
     // Try scheduling another event during the processing of the original events
     // and make sure it's not processed immediately.
     issue_ready_events(
