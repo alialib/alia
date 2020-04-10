@@ -139,12 +139,12 @@ fake_writability(Wrapped const& wrapped)
 // the value type :Value. The proxy will apply static_casts to convert its
 // own values to and from :x's value type.
 template<class Wrapped, class To>
-struct signal_caster : regular_signal<
-                           signal_caster<Wrapped, To>,
-                           To,
-                           typename Wrapped::direction_tag>
+struct casting_signal : regular_signal<
+                            casting_signal<Wrapped, To>,
+                            To,
+                            typename Wrapped::direction_tag>
 {
-    signal_caster(Wrapped wrapped) : wrapped_(wrapped)
+    casting_signal(Wrapped wrapped) : wrapped_(wrapped)
     {
     }
     bool
@@ -173,11 +173,32 @@ struct signal_caster : regular_signal<
     Wrapped wrapped_;
     lazy_reader<To> lazy_reader_;
 };
-template<class To, class Wrapped>
-signal_caster<Wrapped, To>
-signal_cast(Wrapped const& wrapped)
+// Don't use a casting_signal if the value type is the same.
+template<class Wrapped, class To>
+struct signal_caster
 {
-    return signal_caster<Wrapped, To>(wrapped);
+    typedef casting_signal<Wrapped, To> type;
+    static type
+    apply(Wrapped wrapped)
+    {
+        return type(wrapped);
+    }
+};
+template<class Wrapped>
+struct signal_caster<Wrapped, typename Wrapped::value_type>
+{
+    typedef Wrapped type;
+    static type
+    apply(Wrapped wrapped)
+    {
+        return wrapped;
+    }
+};
+template<class To, class Wrapped>
+typename signal_caster<Wrapped, To>::type
+signal_cast(Wrapped wrapped)
+{
+    return signal_caster<Wrapped, To>::apply(wrapped);
 }
 
 // has_value(x) yields a signal to a boolean which indicates whether or not :x
