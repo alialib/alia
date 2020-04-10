@@ -33,10 +33,14 @@ restart_timer(
     dataless_context ctx, timer_data& data, millisecond_count duration)
 {
     timer_event* event;
-    assert(detect_event(ctx, &event));
-    auto trigger_time = event->trigger_time + duration;
-    data.expected_trigger_time = trigger_time;
-    schedule_timer_event(ctx, &data, trigger_time);
+    bool detected = detect_event(ctx, &event);
+    assert(detected);
+    if (detected)
+    {
+        auto trigger_time = event->trigger_time + duration;
+        data.expected_trigger_time = trigger_time;
+        schedule_timer_event(ctx, &data, trigger_time);
+    }
 }
 
 void
