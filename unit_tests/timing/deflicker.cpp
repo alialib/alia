@@ -262,7 +262,6 @@ TEST_CASE("initially empty deflicker", "[timing][deflicker]")
     auto* external_ptr = new testing_external_interface(sys);
     initialize_system(
         sys, [](context) {}, external_ptr);
-    auto& external = *external_ptr;
 
     // Test that our deflickered signal picks up an initially empty value.
     do_traversal(sys, [&](context ctx) {
