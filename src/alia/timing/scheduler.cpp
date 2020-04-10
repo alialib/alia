@@ -8,20 +8,6 @@ schedule_event(
     routable_node_id component,
     millisecond_count time)
 {
-    // If an event already exists for that ID, reschedule it.
-    for (auto& rq : scheduler.requests)
-    {
-        if (rq.component.id == component.id)
-        {
-            // The component's region shouldn't have changed.
-            assert(rq.component.region == component.region);
-            rq.trigger_time = time;
-            rq.frame_issued = scheduler.frame_counter;
-            return;
-        }
-    }
-
-    // Otherwise, add a new event.
     timer_event_request rq;
     rq.component = component;
     rq.trigger_time = time;
