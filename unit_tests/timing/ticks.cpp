@@ -8,7 +8,7 @@
 
 using namespace alia;
 
-TEST_CASE("automatic ticks", "[system]")
+TEST_CASE("automatic ticks", "[timing][ticks]")
 {
     alia::system sys;
     initialize_system(sys, [](context) {});
@@ -45,7 +45,7 @@ struct dummy_external_interface : default_external_interface
     }
 };
 
-TEST_CASE("get_raw_animation_ticks_left", "[system]")
+TEST_CASE("get_raw_animation_ticks_left", "[timing][ticks]")
 {
     alia::system sys;
     auto* external_ptr = new dummy_external_interface(sys);
@@ -83,7 +83,7 @@ TEST_CASE("get_raw_animation_ticks_left", "[system]")
     REQUIRE(!external.refresh_requested);
 }
 
-TEST_CASE("animation_timer", "[signals][temporal]")
+TEST_CASE("animation_timer", "[timing][ticks]")
 {
     alia::system sys;
     auto* external_ptr = new dummy_external_interface(sys);
