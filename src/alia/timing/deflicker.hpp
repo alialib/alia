@@ -98,7 +98,7 @@ struct deflickering_signal : signal<
     captured_value<typename Wrapped::value_type>& captured_;
 };
 
-template<class Signal, class Value, class Delay>
+template<class Signal, class Value, class Delay = millisecond_count>
 deflickering_signal<Signal>
 deflicker(
     dataless_context ctx,
@@ -151,7 +151,7 @@ deflicker(
     return deflickering_signal<Signal>(x, data.captured);
 }
 
-template<class Signal, class Delay>
+template<class Signal, class Delay = millisecond_count>
 deflickering_signal<Signal>
 deflicker(context ctx, Signal x, Delay delay = default_deflicker_delay)
 {
