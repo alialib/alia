@@ -34,14 +34,6 @@ component functions. (Something like React's [Error
 Boundaries](https://reactjs.org/docs/error-boundaries.html) would be a good
 start.)
 
-### Timer Events/Utilities
-
-alia currently has an animation timer, but earlier versions of alia also
-supported timer events. There should be a generic interface for requesting these
-that can be implemented by back ends. Timer events allow for more efficient
-implementations of timing utilities like second counters, signal deflickering,
-etc.
-
 ### Validation
 
 Although it can be treated as an entirely separate concern, validation often
