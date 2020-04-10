@@ -79,10 +79,12 @@ do_fetch_ui(dom::context ctx, duplex<std::string> country_code)
     dom::do_text(
         ctx,
         add_fallback(
-            conditional(
-                alia_field(result, successful),
-                alia_field(result, country_name),
-                "Not found"),
+            deflicker(
+                ctx,
+                conditional(
+                    alia_field(result, successful),
+                    alia_field(result, country_name),
+                    "Not found")),
             "Fetching..."));
 }
 /// [fetch-country]
