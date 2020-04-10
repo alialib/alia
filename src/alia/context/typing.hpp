@@ -335,9 +335,8 @@ struct remove_tagged_data_type
 template<class Tag, class Storage, class Tags>
 struct remove_tagged_data_type<structural_collection<Tags, Storage>, Tag>
 {
-    static_assert(
-        list_contains_tag<Tags, Tag>::value,
-        "attempting to remove a tag that doesn't exist");
+    // Note that it's considered OK to remove a tag that's not actually in the
+    // collection.
     typedef structural_collection<
         typename remove_tag_from_list<Tags, Tag>::type,
         Storage>
@@ -556,7 +555,7 @@ struct tagged_data_not_found : exception
 {
     tagged_data_not_found()
         : exception(
-              std::string("tag not found in context:\n") + typeid(Tag).name())
+            std::string("tag not found in context:\n") + typeid(Tag).name())
     {
     }
 };
