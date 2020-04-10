@@ -268,10 +268,27 @@ handle_refresh_event(dom::context ctx, system& system)
     system.current_view = root;
 }
 
-void
+static void
 refresh_for_emscripten(void* system)
 {
     refresh_system(*reinterpret_cast<alia::system*>(system));
+}
+
+struct timer_callback_data
+{
+    alia::system* system;
+    routable_node_id component;
+    millisecond_count trigger_time;
+};
+
+static void
+timer_callback(void* user_data)
+{
+    std::unique_ptr<timer_callback_data> data(
+        reinterpret_cast<timer_callback_data*>(user_data));
+    timer_event event;
+    event.trigger_time = data->trigger_time;
+    dispatch_targeted_event(*data->system, event, data->component);
 }
 
 struct dom_external_interface : default_external_interface
@@ -285,6 +302,15 @@ struct dom_external_interface : default_external_interface
     schedule_animation_refresh()
     {
         emscripten_async_call(refresh_for_emscripten, &this->owner, -1);
+    }
+
+    void
+    schedule_timer_event(routable_node_id component, millisecond_count time)
+    {
+        auto timeout_data
+            = new timer_callback_data{&this->owner, component, time};
+        emscripten_async_call(
+            timer_callback, timeout_data, time - this->get_tick_count());
     }
 };
 
