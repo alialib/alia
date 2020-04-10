@@ -114,6 +114,7 @@ deflicker(
         // If the timer is triggered, it means we were holding a stale value and
         // it's time to clear it out.
         clear(data.captured);
+        abort_traversal(ctx);
     }
 
     on_refresh(ctx, [&](auto ctx) {
