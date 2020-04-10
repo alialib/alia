@@ -82,4 +82,9 @@ TEST_CASE("dynamic tagged data access", "[context][typing]")
     REQUIRE(get_tagged_data<foo_tag>(mc_f).b == false);
     REQUIRE_THROWS_AS(
         get_tagged_data<bar_tag>(mc_f), tagged_data_not_found<bar_tag>);
+    // It's OK to remove a tag that's not in the collection.
+    cc_f mc_f2 = remove_tagged_data<bar_tag>(mc_f);
+    REQUIRE(get_tagged_data<foo_tag>(mc_f2).b == false);
+    REQUIRE_THROWS_AS(
+        get_tagged_data<bar_tag>(mc_f2), tagged_data_not_found<bar_tag>);
 }
