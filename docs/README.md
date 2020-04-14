@@ -1,15 +1,11 @@
 alia - A Library for Interactive Applications
 =============================================
 
-<div class="hide-when-deployed">
-
 [![image](https://flat.badgen.net/travis/tmadden/alia/master?icon=travis)](https://travis-ci.org/tmadden/alia/branches)
 [![image](https://flat.badgen.net/appveyor/ci/tmadden/alia/master?icon=appveyor)](https://ci.appveyor.com/project/tmadden/alia/branch/master)
 [![image](https://flat.badgen.net/codecov/c/github/tmadden/alia/master?icon=codecov)](https://codecov.io/gh/tmadden/alia/branch/master)
 ![image](https://flat.badgen.net/badge/C++/14/green)
 [![image](https://flat.badgen.net/badge/stability/unstable/yellow)](https://github.com/orangemug/stability-badges#unstable)
-
-</div>
 
 alia (pronounced uh-LEE-uh) is a modern C++ library for developing interactive
 applications in a declarative manner. In alia, the UI of your application is
@@ -86,9 +82,7 @@ do_tip_calculator(dom::context ctx)
     // Calculate the results and display them for the user.
     // Note that these operations have dataflow semantics, and since `bill` and
     // `tip_rate` both start out empty, nothing will actually be calculated
-    // until the user supplies values for them. (And this 'empty' state
-    // propagates through the printf, so nothing is displayed until the results
-    // are ready.)
+    // (or displayed) until the user supplies values for them.
     auto tip = bill * tip_rate;
     auto total = bill + tip;
     dom::do_text(ctx,

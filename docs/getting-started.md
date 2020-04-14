@@ -39,8 +39,8 @@ In your other source files, you can simply include it directly.
 
 There are also some [config options](configuration.md) that you may want to set.
 
-The Experimental Wrappers
--------------------------
+Experimental Wrappers
+---------------------
 
 If you want to play around with alia, there are experimental adaptors for
 asm-dom and Qt:
