@@ -104,9 +104,7 @@ do_tip_calculator(dom::context ctx)
     // Calculate the results and display them for the user.
     // Note that these operations have dataflow semantics, and since `bill` and
     // `tip_rate` both start out empty, nothing will actually be calculated
-    // until the user supplies values for them. (And this 'empty' state
-    // propagates through the printf, so nothing is displayed until the results
-    // are ready.)
+    // (or displayed) until the user supplies values for them.
     auto tip = bill * tip_rate;
     auto total = bill + tip;
     dom::do_text(ctx,
