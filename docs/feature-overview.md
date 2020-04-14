@@ -126,7 +126,7 @@ The expression `answer_revealed <<= true` constructs an action that sets the
 state signal `answer_revealed` to `true`, and whenever the button is pressed, it
 performs that action.
 
-Synergy
+Harmony
 -------
 
 The various features of alia tend to work together in unexpectedly nice ways...
