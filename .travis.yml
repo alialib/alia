@@ -7,7 +7,7 @@ jobs:
   include:
 
   # Clang 4.0 testing job
-  - env: CACHE_NAME=clang
+  - env: CACHE_NAME=clang-4
     install:
     - sudo apt-get update -qy
     - sudo apt-get install -y --upgrade lcov cmake git curl clang-4.0 llvm-4.0
@@ -19,7 +19,7 @@ jobs:
     - scripts/do-ci-testing.sh
 
   # Clang 5.0 testing job - This also generates test coverage information.
-  - env: CACHE_NAME=clang
+  - env: CACHE_NAME=clang-5
     install:
     - sudo apt-get update -qy
     - sudo apt-get install -y --upgrade lcov cmake git curl clang-5.0 llvm-5.0
