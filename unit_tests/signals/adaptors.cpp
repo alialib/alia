@@ -447,3 +447,41 @@ TEST_CASE("mask/disable_writes", "[signals][adaptors]")
         REQUIRE(s.value_id() == wrapped.value_id());
     }
 }
+
+#if __cplusplus >= 201703L
+
+#include <optional>
+
+TEST_CASE("unwrap a duplex signal", "[signals][adaptors]")
+{
+    {
+        auto x = std::optional<int>(1);
+        auto d = direct(x);
+        auto s = unwrap(d);
+
+        typedef decltype(s) signal_t;
+        REQUIRE((std::is_same<signal_t::value_type, int>::value));
+        REQUIRE(signal_is_readable<signal_t>::value);
+        REQUIRE(signal_is_writable<signal_t>::value);
+
+        REQUIRE(signal_has_value(s));
+        REQUIRE(read_signal(s) == 1);
+        REQUIRE(s.value_id() == d.value_id());
+        REQUIRE(signal_ready_to_write(s));
+        write_signal(s, 0);
+        REQUIRE(x.has_value());
+        REQUIRE(*x == 0);
+    }
+    {
+        auto x = std::optional<int>();
+        auto s = unwrap(direct(x));
+        REQUIRE(!signal_has_value(s));
+        REQUIRE(s.value_id() == null_id);
+        REQUIRE(signal_ready_to_write(s));
+        write_signal(s, 0);
+        REQUIRE(x.has_value());
+        REQUIRE(*x == 0);
+    }
+}
+
+#endif

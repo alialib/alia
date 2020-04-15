@@ -518,6 +518,59 @@ disable_writes(Signal s)
     return mask_writes(s, false);
 }
 
+// unwrap(signal), where :signal is a signal carrying a std::optional value,
+// yields a signal that directly carries the value wrapped inside the optional.
+template<class Wrapped>
+struct unwrapper_signal : signal<
+                              unwrapper_signal<Wrapped>,
+                              typename Wrapped::value_type::value_type,
+                              typename Wrapped::direction_tag>
+{
+    unwrapper_signal()
+    {
+    }
+    unwrapper_signal(Wrapped wrapped) : wrapped_(wrapped)
+    {
+    }
+    bool
+    has_value() const
+    {
+        return wrapped_.has_value() && wrapped_.read().has_value();
+    }
+    typename Wrapped::value_type::value_type const&
+    read() const
+    {
+        return wrapped_.read().value();
+    }
+    id_interface const&
+    value_id() const
+    {
+        if (this->has_value())
+            return wrapped_.value_id();
+        else
+            return null_id;
+    }
+    bool
+    ready_to_write() const
+    {
+        return wrapped_.ready_to_write();
+    }
+    void
+    write(typename Wrapped::value_type::value_type const& value) const
+    {
+        wrapped_.write(value);
+    }
+
+ private:
+    Wrapped wrapped_;
+};
+template<class Signal>
+auto
+unwrap(Signal signal)
+{
+    return unwrapper_signal<Signal>(signal);
+}
+
 } // namespace alia
 
 #endif
