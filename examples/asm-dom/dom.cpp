@@ -182,8 +182,13 @@ do_colored_box(dom::context ctx, readable<rgb8> color)
             if (signal_has_value(color))
             {
                 rgb8 const& c = read_signal(color);
-                sprintf(
-                    style, "background-color: #%02x%02x%02x", c.r, c.g, c.b);
+                snprintf(
+                    style,
+                    64,
+                    "background-color: #%02x%02x%02x",
+                    c.r,
+                    c.g,
+                    c.b);
             }
             return asmdom::h(
                 "div",
