@@ -51,7 +51,8 @@ struct external_interface
     // once per frame to handle timing events. (See below.)
     //
     virtual void
-    schedule_timer_event(routable_node_id component, millisecond_count time)
+    schedule_timer_event(
+        routable_component_id component, millisecond_count time)
         = 0;
 };
 
@@ -72,7 +73,8 @@ struct default_external_interface : external_interface
     }
 
     void
-    schedule_timer_event(routable_node_id component, millisecond_count time);
+    schedule_timer_event(
+        routable_component_id component, millisecond_count time);
 };
 
 struct system : noncopyable

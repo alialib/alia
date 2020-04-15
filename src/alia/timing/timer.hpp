@@ -10,7 +10,7 @@
 
 namespace alia {
 
-struct timer_data : node_identity
+struct timer_data : component_identity
 {
     bool active = false;
     millisecond_count expected_trigger_time;
