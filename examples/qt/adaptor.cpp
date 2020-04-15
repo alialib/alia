@@ -166,7 +166,7 @@ struct click_event : targeted_event
 {
 };
 
-struct qt_button : qt_layout_node, node_identity
+struct qt_button : qt_layout_node, component_identity
 {
     QPushButton* object = nullptr;
     captured_id text_id;
@@ -215,7 +215,7 @@ do_button(qt_context ctx, readable<string> text, action<> on_click)
                     dispatch_targeted_event(
                         system,
                         event,
-                        make_routable_node_id(&button, button.route));
+                        make_routable_component_id(&button, button.route));
                 });
         }
 
@@ -241,7 +241,7 @@ struct value_update_event : targeted_event
     string value;
 };
 
-struct qt_text_control : qt_layout_node, node_identity
+struct qt_text_control : qt_layout_node, component_identity
 {
     QTextEdit* object = nullptr;
     captured_id text_id;
@@ -292,7 +292,7 @@ do_text_control(qt_context ctx, duplex<string> text)
                     dispatch_targeted_event(
                         system,
                         event,
-                        make_routable_node_id(&widget, widget.route));
+                        make_routable_component_id(&widget, widget.route));
                 });
         }
 

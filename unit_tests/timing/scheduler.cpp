@@ -6,13 +6,13 @@ using namespace alia;
 
 TEST_CASE("timer_event_scheduler", "[timing][scheduler]")
 {
-    node_identity id_a, id_b;
-    routable_node_id a, b;
+    component_identity id_a, id_b;
+    routable_component_id a, b;
     a.id = &id_a;
     b.id = &id_b;
 
     std::ostringstream log;
-    auto issuer = [&](routable_node_id component, millisecond_count time) {
+    auto issuer = [&](routable_component_id component, millisecond_count time) {
         bool recognized = component.id == &id_a || component.id == &id_b;
         REQUIRE(recognized);
         REQUIRE(!component.region);
@@ -57,7 +57,9 @@ TEST_CASE("timer_event_scheduler", "[timing][scheduler]")
     // Try scheduling another event during the processing of the original events
     // and make sure it's not processed immediately.
     issue_ready_events(
-        scheduler, 30, [&](routable_node_id component, millisecond_count time) {
+        scheduler,
+        30,
+        [&](routable_component_id component, millisecond_count time) {
             issuer(component, time);
             schedule_event(scheduler, b, 25);
         });

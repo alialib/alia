@@ -165,58 +165,59 @@ on_event(Context ctx, Handler&& handler)
     ALIA_END
 }
 
-struct node_identity
+struct component_identity
 {
 };
-typedef node_identity const* node_id;
+typedef component_identity const* component_id;
 
-inline node_id
-get_node_id(context ctx)
+inline component_id
+get_component_id(context ctx)
 {
-    return &get_cached_data<node_identity>(ctx);
+    return &get_cached_data<component_identity>(ctx);
 }
 
-// routable_node_id identifies a node with enough information that an event can
-// be routed to it.
-struct routable_node_id
+// routable_component_id identifies a node with enough information that an event
+// can be routed to it.
+struct routable_component_id
 {
-    node_id id = nullptr;
+    component_id id = nullptr;
     routing_region_ptr region;
 };
 
-inline routable_node_id
-make_routable_node_id(node_id id, routing_region_ptr region)
+inline routable_component_id
+make_routable_component_id(component_id id, routing_region_ptr region)
 {
-    routable_node_id routable;
+    routable_component_id routable;
     routable.id = id;
     routable.region = region;
     return routable;
 }
 
-inline routable_node_id
-make_routable_node_id(dataless_context ctx, node_id id)
+inline routable_component_id
+make_routable_component_id(dataless_context ctx, component_id id)
 {
-    return make_routable_node_id(id, get_active_routing_region(ctx));
+    return make_routable_component_id(id, get_active_routing_region(ctx));
 }
 
-static routable_node_id const null_node_id;
+static routable_component_id const null_component_id;
 
-// Is the given routable_node_id valid?
-// (Only the null_node_id is invalid.)
+// Is the given routable_component_id valid?
+// (Only the null_component_id is invalid.)
 inline bool
-is_valid(routable_node_id const& id)
+is_valid(routable_component_id const& id)
 {
     return id.id != nullptr;
 }
 
 struct targeted_event
 {
-    node_id target_id;
+    component_id target_id;
 };
 
 template<class Event>
 void
-dispatch_targeted_event(system& sys, Event& event, routable_node_id const& id)
+dispatch_targeted_event(
+    system& sys, Event& event, routable_component_id const& id)
 {
     event.target_id = id.id;
     impl::dispatch_targeted_event(sys, event, id.region);
@@ -225,14 +226,14 @@ dispatch_targeted_event(system& sys, Event& event, routable_node_id const& id)
 
 template<class Event>
 bool
-detect_targeted_event(dataless_context ctx, node_id id, Event** event)
+detect_targeted_event(dataless_context ctx, component_id id, Event** event)
 {
     return detect_event(ctx, event) && (*event)->target_id == id;
 }
 
 template<class Event, class Context, class Handler>
 void
-on_targeted_event(Context ctx, node_id id, Handler&& handler)
+on_targeted_event(Context ctx, component_id id, Handler&& handler)
 {
     Event* e;
     ALIA_UNTRACKED_IF(detect_targeted_event(ctx, id, &e))

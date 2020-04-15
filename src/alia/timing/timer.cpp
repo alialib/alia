@@ -4,11 +4,11 @@ namespace alia {
 
 void
 schedule_timer_event(
-    dataless_context ctx, node_id id, millisecond_count trigger_time)
+    dataless_context ctx, component_id id, millisecond_count trigger_time)
 {
     auto& sys = get<system_tag>(ctx);
     sys.external->schedule_timer_event(
-        make_routable_node_id(ctx, id), trigger_time);
+        make_routable_component_id(ctx, id), trigger_time);
 }
 
 bool

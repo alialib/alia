@@ -58,7 +58,7 @@ do_heading_(
         });
 }
 
-struct input_data : node_identity
+struct input_data : component_identity
 {
     captured_id external_id;
     string value;
@@ -79,7 +79,7 @@ do_input_(dom::context ctx, duplex<string> value)
     get_cached_data(ctx, &data);
 
     auto id = data;
-    auto routable_id = make_routable_node_id(ctx, id);
+    auto routable_id = make_routable_component_id(ctx, id);
 
     refresh_signal_shadow(
         data->external_id,
@@ -138,8 +138,8 @@ struct click_event : targeted_event
 void
 do_button_(dom::context ctx, readable<std::string> text, action<> on_click)
 {
-    auto id = get_node_id(ctx);
-    auto routable_id = make_routable_node_id(ctx, id);
+    auto id = get_component_id(ctx);
+    auto routable_id = make_routable_component_id(ctx, id);
     auto* system = &ctx.get<system_tag>();
 
     element_data* element;
@@ -282,7 +282,7 @@ refresh_for_emscripten(void* system)
 struct timer_callback_data
 {
     alia::system* system;
-    routable_node_id component;
+    routable_component_id component;
     millisecond_count trigger_time;
 };
 
@@ -310,7 +310,8 @@ struct dom_external_interface : default_external_interface
     }
 
     void
-    schedule_timer_event(routable_node_id component, millisecond_count time)
+    schedule_timer_event(
+        routable_component_id component, millisecond_count time)
     {
         auto timeout_data
             = new timer_callback_data{&this->owner, component, time};
