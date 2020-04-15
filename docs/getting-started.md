@@ -7,10 +7,10 @@ The Core Library
 The core of alia should work on any C++14 compiler. It has no external
 dependencies. It's regularly tested on:
 
-- Visual C++ 2015 and 2017 (x86 and x64 for both)
-- GCC 5
-- Clang 4.0
-- Emscripten 1.39.7
+- Visual C++ 2015 and 2017 (x86 and x64 for both, C++14 features only)
+- GCC 5 (C++14 only) and 7 (with C++17 features)
+- Clang 4.0 (C++14 only) and 5.0 (with C++17 features)
+- Emscripten 1.39.7 (including C++17 features)
 
 It should support more recent versions of the above. If you find otherwise,
 please open an issue.

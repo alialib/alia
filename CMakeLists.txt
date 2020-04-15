@@ -1,7 +1,22 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(alia)
 
-set(CMAKE_CXX_STANDARD 14)
+# Decide if we should be using C++14 or C++17.
+if(FIPS_GCC)
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0)
+        set(CMAKE_CXX_STANDARD 14)
+    else()
+        set(CMAKE_CXX_STANDARD 17)
+    endif()
+elseif(FIPS_CLANG)
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.0)
+        set(CMAKE_CXX_STANDARD 14)
+    else()
+        set(CMAKE_CXX_STANDARD 17)
+    endif()
+else()
+    set(CMAKE_CXX_STANDARD 14)
+endif()
 
 enable_testing()
 
