@@ -5,7 +5,7 @@ namespace alia {
 void
 schedule_event(
     timer_event_scheduler& scheduler,
-    routable_node_id component,
+    routable_component_id component,
     millisecond_count time)
 {
     timer_event_request rq;
@@ -19,8 +19,8 @@ void
 issue_ready_events(
     timer_event_scheduler& scheduler,
     millisecond_count now,
-    function_view<
-        void(routable_node_id component, millisecond_count time)> const& issue)
+    function_view<void(
+        routable_component_id component, millisecond_count time)> const& issue)
 {
     ++scheduler.frame_counter;
     while (true)

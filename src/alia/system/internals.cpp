@@ -17,7 +17,7 @@ default_external_interface::get_tick_count() const
 
 void
 default_external_interface::schedule_timer_event(
-    routable_node_id component, millisecond_count time)
+    routable_component_id component, millisecond_count time)
 {
     schedule_event(owner.scheduler, component, time);
 }
@@ -39,7 +39,7 @@ process_internal_timing_events(system& sys, millisecond_count now)
     issue_ready_events(
         sys.scheduler,
         now,
-        [&](routable_node_id component, millisecond_count trigger_time) {
+        [&](routable_component_id component, millisecond_count trigger_time) {
             timer_event event;
             event.trigger_time = trigger_time;
             dispatch_targeted_event(sys, event, component);
