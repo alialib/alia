@@ -107,6 +107,19 @@ disabled.
 
 </dd>
 
+Finally, when working with `std::optional` signal values, you may want to expose
+the inherent notion of availability already provided by `std::optional`:
+
+<dt>unwrap(signal)</dt><dd>
+
+`unwrap(signal)`, where `signal` is a signal carrying a `std::optional` value,
+yields a signal that directly carries the value wrapped inside the optional.
+
+The returned signal will have a value if `signal` has a value *and* that value
+itself contains a value.
+
+</dd>
+
 </dl>
 
 Numeric
