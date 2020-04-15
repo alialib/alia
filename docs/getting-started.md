@@ -8,7 +8,7 @@ The core of alia should work on any C++14 compiler. It has no external
 dependencies. It's regularly tested on:
 
 - Visual C++ 2015 and 2017 (x86 and x64 for both)
-- GCC 5 (using C++14) and 8 (using C++17)
+- GCC 5 (using C++14) and 7 (using C++17)
 - Clang 4.0
 - Emscripten 1.39.7
 

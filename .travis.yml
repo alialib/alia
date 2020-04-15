@@ -42,14 +42,14 @@ jobs:
         repo: tmadden/alia
 
   # GCC 7 job
-  - env: CACHE_NAME=gcc-8
+  - env: CACHE_NAME=gcc-7
     install:
     - sudo apt-get update -qy
     - sudo apt-get install -y --upgrade cmake
     - scripts/set-up-travis.sh
     before_script:
-    - export CC=`which gcc-8`
-    - export CXX=`which g++-8`
+    - export CC=`which gcc-7`
+    - export CXX=`which g++-7`
     script:
     - scripts/do-ci-testing.sh
 
