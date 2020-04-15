@@ -1,6 +1,16 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(alia)
 
+enable_testing()
+
+# Set up fips.
+get_filename_component(FIPS_ROOT_DIR "../fips" ABSOLUTE)
+include("${FIPS_ROOT_DIR}/cmake/fips.cmake")
+set(FIPS_EXCEPTIONS ON)
+set(FIPS_RTTI ON)
+fips_setup()
+fips_project(alia)
+
 # Decide if we should be using C++14 or C++17.
 if(FIPS_GCC)
     if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0)
@@ -17,16 +27,6 @@ elseif(FIPS_CLANG)
 else()
     set(CMAKE_CXX_STANDARD 14)
 endif()
-
-enable_testing()
-
-# Set up fips.
-get_filename_component(FIPS_ROOT_DIR "../fips" ABSOLUTE)
-include("${FIPS_ROOT_DIR}/cmake/fips.cmake")
-set(FIPS_EXCEPTIONS ON)
-set(FIPS_RTTI ON)
-fips_setup()
-fips_project(alia)
 
 # Run Conan to install external C++ libraries.
 # Conan and fips disagree on various build options, so we need to override
