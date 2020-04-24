@@ -17,8 +17,16 @@ refresh_system(system& sys)
 {
     sys.refresh_needed = false;
 
-    refresh_event refresh;
-    impl::dispatch_event(sys, refresh);
+    int pass_count = 0;
+    while (true)
+    {
+        refresh_event refresh;
+        impl::dispatch_event(sys, refresh);
+        if (!refresh.incomplete)
+            break;
+        ++pass_count;
+        assert(pass_count < 64);
+    };
 }
 
 } // namespace alia
