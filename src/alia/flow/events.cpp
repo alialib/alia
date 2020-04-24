@@ -113,4 +113,13 @@ void abort_traversal(dataless_context)
     throw traversal_aborted();
 }
 
+void
+mark_refresh_incomplete(dataless_context ctx)
+{
+    refresh_event* e;
+    bool detected = detect_event(ctx, &e);
+    assert(detected);
+    e->incomplete = true;
+}
+
 } // namespace alia
