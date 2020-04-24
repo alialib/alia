@@ -19,11 +19,9 @@ follow some simple rules:
 
 2. Don't `return` from the middle of a function. - alia doesn't actually know
    when you enter and leave functions, so if you suddenly leave a function at a
-   different spot in the data graph, this confuses it.
-
-   ?> In the near future, mechanisms will be added to allow this, but since most
-      controller functions return `void` anyway, it's usually trivial to rewrite
-      your code to avoid `return`.
+   different spot in the data graph, this confuses it. Note that since most
+   controller functions return `void`, it's usually trivial to rewrite your code
+   to avoid using `return` at all.
 
 3. Don't use `goto`.
 

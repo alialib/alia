@@ -255,6 +255,7 @@ on_targeted_event(Context ctx, component_id id, Handler&& handler)
 
 struct refresh_event
 {
+    bool incomplete = false;
 };
 
 inline bool
@@ -274,6 +275,9 @@ on_refresh(Context ctx, Handler handler)
     }
     ALIA_END
 }
+
+void
+mark_refresh_incomplete(dataless_context ctx);
 
 } // namespace alia
 
