@@ -116,9 +116,9 @@ void abort_traversal(dataless_context)
 void
 mark_refresh_incomplete(dataless_context ctx)
 {
-    refresh_event* e;
-    bool detected = detect_event(ctx, &e);
-    assert(detected);
+    assert(is_refresh_event(ctx));
+    refresh_event* e = nullptr;
+    detect_event(ctx, &e);
     e->incomplete = true;
 }
 
