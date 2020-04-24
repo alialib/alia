@@ -2,6 +2,7 @@
 #define ALIA_SIGNALS_STATE_HPP
 
 #include <alia/flow/data_graph.hpp>
+#include <alia/flow/events.hpp>
 #include <alia/signals/adaptors.hpp>
 #include <alia/signals/core.hpp>
 
@@ -43,7 +44,7 @@ struct state_holder
     set(Value value)
     {
         value_ = std::move(value);
-        ++version_;
+        handle_change();
     }
 
     // If you REALLY need direct, non-const access to the underlying state,
@@ -62,15 +63,29 @@ struct state_holder
     Value&
     nonconst_get()
     {
-        ++version_;
+        handle_change();
         return value_;
     }
 
+    void
+    set_routing_region(routing_region_ptr ptr)
+    {
+        region_ = std::move(ptr);
+    }
+
  private:
+    void
+    handle_change()
+    {
+        ++version_;
+        record_content_change(region_);
+    }
+
     Value value_;
     // version_ is incremented for each change in the value of the state.
     // If this is 0, the state is considered uninitialized.
     unsigned version_;
+    routing_region_ptr region_;
 };
 
 template<class Value>

@@ -6,6 +6,17 @@
 namespace alia {
 
 void
+record_content_change(routing_region_ptr const& region)
+{
+    routing_region* r = region.get();
+    while (r && !r->dirty)
+    {
+        r->dirty = true;
+        r = r->parent.get();
+    }
+}
+
+void
 scoped_routing_region::begin(context ctx)
 {
     event_traversal& traversal = get_event_traversal(ctx);

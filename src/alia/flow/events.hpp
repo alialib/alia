@@ -34,6 +34,7 @@ typedef std::shared_ptr<routing_region> routing_region_ptr;
 struct routing_region
 {
     routing_region_ptr parent;
+    bool dirty = false;
 };
 
 struct event_routing_path
@@ -50,6 +51,12 @@ struct event_traversal
     std::type_info const* event_type;
     void* event;
 };
+
+void
+record_content_change(routing_region_ptr const& region);
+
+void
+record_content_change(context ctx);
 
 template<class Context>
 routing_region_ptr
