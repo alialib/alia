@@ -28,7 +28,7 @@ struct animated_transition
     animation_curve curve;
     millisecond_count duration;
 };
-animated_transition const default_transition = {default_curve, 400};
+animated_transition const default_transition = {default_curve, 250};
 
 // A value_smoother is used to create smoothly changing views of values that
 // actually change abruptly.
