@@ -166,11 +166,11 @@ struct click_event : targeted_event
 {
 };
 
-struct qt_button : qt_layout_node, component_identity
+struct qt_button : qt_layout_node
 {
     QPushButton* object = nullptr;
     captured_id text_id;
-    routing_region_ptr route;
+    component_identity identity;
 
     void
     update(alia::system* system, QWidget* parent, QLayout* layout)
@@ -196,7 +196,7 @@ do_button(qt_context ctx, readable<string> text, action<> on_click)
     on_refresh(ctx, [&](auto ctx) {
         auto& system = get<system_tag>(ctx);
 
-        button.route = get_active_routing_region(ctx);
+        refresh_component_identity(ctx, button.identity);
 
         if (!button.object)
         {
@@ -213,9 +213,7 @@ do_button(qt_context ctx, readable<string> text, action<> on_click)
                 [&system, &button]() {
                     click_event event;
                     dispatch_targeted_event(
-                        system,
-                        event,
-                        make_routable_component_id(&button, button.route));
+                        system, event, externalize(&button.identity));
                 });
         }
 
@@ -241,11 +239,11 @@ struct value_update_event : targeted_event
     string value;
 };
 
-struct qt_text_control : qt_layout_node, component_identity
+struct qt_text_control : qt_layout_node
 {
     QTextEdit* object = nullptr;
     captured_id text_id;
-    routing_region_ptr route;
+    component_identity identity;
 
     void
     update(alia::system* system, QWidget* parent, QLayout* layout)
@@ -271,7 +269,7 @@ do_text_control(qt_context ctx, duplex<string> text)
     on_refresh(ctx, [&](auto ctx) {
         auto& system = get<system_tag>(ctx);
 
-        widget.route = get_active_routing_region(ctx);
+        refresh_component_identity(ctx, &data.identity);
 
         if (!widget.object)
         {
@@ -290,9 +288,7 @@ do_text_control(qt_context ctx, duplex<string> text)
                     event.value
                         = widget.object->toPlainText().toUtf8().constData();
                     dispatch_targeted_event(
-                        system,
-                        event,
-                        make_routable_component_id(&widget, widget.route));
+                        system, event, externalize(&widget.identity));
                 });
         }
 

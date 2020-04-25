@@ -18,24 +18,23 @@ struct my_event : targeted_event
     string result;
 };
 
-ALIA_DEFINE_TAGGED_TYPE(my_tag, std::vector<routable_component_id>&)
+ALIA_DEFINE_TAGGED_TYPE(my_tag, std::vector<external_component_id>&)
 
 typedef extend_context_type_t<context, my_tag> my_context;
 
 static void
 do_my_thing(my_context ctx, readable<string> label)
 {
-    component_id this_id = get_component_id(ctx);
+    auto& identity = get_component_identity(ctx);
 
-    on_refresh(ctx, [&, this_id](auto ctx) {
-        ctx.template get<my_tag>().push_back(
-            make_routable_component_id(ctx, this_id));
+    on_refresh(ctx, [&](auto ctx) {
+        ctx.template get<my_tag>().push_back(externalize(&identity));
     });
 
     on_event<my_event>(
         ctx, [&](auto, auto& e) { e.visited += read_signal(label) + ";"; });
 
-    on_targeted_event<my_event>(ctx, this_id, [&](auto, my_event& event) {
+    on_targeted_event<my_event>(ctx, &identity, [&](auto, my_event& event) {
         event.result = read_signal(label);
     });
 }
@@ -49,7 +48,7 @@ TEST_CASE("node IDs", "[flow][events]")
 
     REQUIRE(!is_valid(null_component_id));
 
-    std::vector<routable_component_id> ids;
+    std::vector<external_component_id> ids;
 
     sys.controller = [&](context vanilla_ctx) {
         my_context ctx = vanilla_ctx.add<my_tag>(ids);
