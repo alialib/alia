@@ -226,12 +226,13 @@ do_button(qt_context ctx, readable<string> text, action<> on_click)
             [&]() { button.object->setText(""); });
     });
 
-    on_targeted_event<click_event>(ctx, &button, [&](auto ctx, auto& e) {
-        if (action_is_ready(on_click))
-        {
-            perform_action(on_click);
-        }
-    });
+    on_targeted_event<click_event>(
+        ctx, &button.identity, [&](auto ctx, auto& e) {
+            if (action_is_ready(on_click))
+            {
+                perform_action(on_click);
+            }
+        });
 }
 
 struct value_update_event : targeted_event
@@ -310,7 +311,9 @@ do_text_control(qt_context ctx, duplex<string> text)
     });
 
     on_targeted_event<value_update_event>(
-        ctx, &widget, [&](auto ctx, auto& e) { write_signal(text, e.value); });
+        ctx, &widget.identity, [&](auto ctx, auto& e) {
+            write_signal(text, e.value);
+        });
 }
 
 struct qt_column : qt_layout_container
