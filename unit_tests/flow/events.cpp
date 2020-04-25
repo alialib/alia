@@ -27,7 +27,7 @@ do_my_thing(my_context ctx, readable<string> label)
 {
     auto& identity = get_component_identity(ctx);
 
-    on_refresh(ctx, [&](auto ctx) {
+    on_refresh(ctx, [&identity](auto ctx) {
         ctx.template get<my_tag>().push_back(externalize(&identity));
     });
 
