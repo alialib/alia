@@ -270,7 +270,7 @@ do_text_control(qt_context ctx, duplex<string> text)
     on_refresh(ctx, [&](auto ctx) {
         auto& system = get<system_tag>(ctx);
 
-        refresh_component_identity(ctx, &widget.identity);
+        refresh_component_identity(ctx, widget.identity);
 
         if (!widget.object)
         {
