@@ -52,7 +52,7 @@ struct external_interface
     //
     virtual void
     schedule_timer_event(
-        routable_component_id component, millisecond_count time)
+        external_component_id component, millisecond_count time)
         = 0;
 };
 
@@ -74,7 +74,7 @@ struct default_external_interface : external_interface
 
     void
     schedule_timer_event(
-        routable_component_id component, millisecond_count time);
+        external_component_id component, millisecond_count time);
 };
 
 struct system : noncopyable

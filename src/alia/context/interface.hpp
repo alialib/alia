@@ -196,6 +196,62 @@ get_data_traversal(Context ctx)
     return ctx.template get<data_traversal_tag>();
 }
 
+template<class Context>
+struct optional_context
+{
+    optional_context() : ctx_(typename Context::contents_type(nullptr))
+    {
+    }
+
+    bool
+    has_value() const
+    {
+        return ctx_.contents_.storage != nullptr;
+    }
+
+    explicit operator bool() const
+    {
+        return has_value();
+    }
+
+    Context const operator*() const
+    {
+        assert(has_value());
+        return ctx_;
+    }
+    Context operator*()
+    {
+        assert(has_value());
+        return ctx_;
+    }
+
+    Context const* operator->() const
+    {
+        assert(has_value());
+        return &ctx_;
+    }
+    Context* operator->()
+    {
+        assert(has_value());
+        return &ctx_;
+    }
+
+    void
+    reset(Context ctx)
+    {
+        ctx_ = ctx;
+    }
+
+    void
+    reset()
+    {
+        ctx_ = Context(typename Context::contents_type(nullptr));
+    }
+
+ private:
+    Context ctx_;
+};
+
 } // namespace alia
 
 #endif

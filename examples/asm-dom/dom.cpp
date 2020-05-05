@@ -58,8 +58,9 @@ do_heading_(
         });
 }
 
-struct input_data : component_identity
+struct input_data
 {
+    component_identity identity;
     captured_id external_id;
     string value;
     bool invalid = false;
@@ -78,24 +79,26 @@ do_input_(dom::context ctx, duplex<string> value)
     input_data* data;
     get_cached_data(ctx, &data);
 
-    auto id = data;
-    auto routable_id = make_routable_component_id(ctx, id);
+    on_refresh(ctx, [&](auto ctx) {
+        refresh_component_identity(ctx, data->identity);
 
-    refresh_signal_shadow(
-        data->external_id,
-        value,
-        [&](string new_value) {
-            data->value = std::move(new_value);
-            data->invalid = false;
-            ++data->version;
-        },
-        [&]() {
-            data->value.clear();
-            data->invalid = false;
-            ++data->version;
-        });
+        refresh_signal_shadow(
+            data->external_id,
+            value,
+            [&](string new_value) {
+                data->value = std::move(new_value);
+                data->invalid = false;
+                ++data->version;
+            },
+            [&]() {
+                data->value.clear();
+                data->invalid = false;
+                ++data->version;
+            });
+    });
 
     auto* system = &ctx.get<system_tag>();
+    auto external_id = externalize(&data->identity);
 
     add_element(ctx, data->element, make_id(data->version), [&]() {
         asmdom::Attrs attrs;
@@ -110,25 +113,26 @@ do_input_(dom::context ctx, duplex<string> value)
                     {"oninput", [=](emscripten::val e) {
                          value_update_event update;
                          update.value = e["target"]["value"].as<std::string>();
-                         dispatch_targeted_event(*system, update, routable_id);
+                         dispatch_targeted_event(*system, update, external_id);
                          return true;
                      }}}));
     });
-    on_targeted_event<value_update_event>(ctx, id, [=](auto ctx, auto& e) {
-        if (signal_ready_to_write(value))
-        {
-            try
+    on_targeted_event<value_update_event>(
+        ctx, &data->identity, [=](auto ctx, auto& e) {
+            if (signal_ready_to_write(value))
             {
-                write_signal(value, e.value);
+                try
+                {
+                    write_signal(value, e.value);
+                }
+                catch (validation_error&)
+                {
+                    data->invalid = true;
+                }
             }
-            catch (validation_error&)
-            {
-                data->invalid = true;
-            }
-        }
-        data->value = e.value;
-        ++data->version;
-    });
+            data->value = e.value;
+            ++data->version;
+        });
 }
 
 struct click_event : targeted_event
@@ -138,8 +142,8 @@ struct click_event : targeted_event
 void
 do_button_(dom::context ctx, readable<std::string> text, action<> on_click)
 {
-    auto id = get_component_id(ctx);
-    auto routable_id = make_routable_component_id(ctx, id);
+    auto& identity = get_component_identity(ctx);
+    auto external_id = externalize(&identity);
     auto* system = &ctx.get<system_tag>();
 
     element_data* element;
@@ -162,7 +166,7 @@ do_button_(dom::context ctx, readable<std::string> text, action<> on_click)
                                            [=](emscripten::val) {
                                                click_event click;
                                                dispatch_targeted_event(
-                                                   *system, click, routable_id);
+                                                   *system, click, external_id);
                                                return true;
                                            }}}),
                     read_signal(text));
@@ -170,7 +174,7 @@ do_button_(dom::context ctx, readable<std::string> text, action<> on_click)
     }
 
     on_targeted_event<click_event>(
-        ctx, id, [=](auto ctx, auto& e) { perform_action(on_click); });
+        ctx, &identity, [=](auto ctx, auto& e) { perform_action(on_click); });
 }
 
 void
@@ -282,7 +286,7 @@ refresh_for_emscripten(void* system)
 struct timer_callback_data
 {
     alia::system* system;
-    routable_component_id component;
+    external_component_id component;
     millisecond_count trigger_time;
 };
 
@@ -311,7 +315,7 @@ struct dom_external_interface : default_external_interface
 
     void
     schedule_timer_event(
-        routable_component_id component, millisecond_count time)
+        external_component_id component, millisecond_count time)
     {
         auto timeout_data
             = new timer_callback_data{&this->owner, component, time};

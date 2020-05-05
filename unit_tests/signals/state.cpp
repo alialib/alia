@@ -91,3 +91,33 @@ TEST_CASE("get_state with raw initial value", "[signals][state]")
         REQUIRE(!state_id.matches(state.value_id()));
     });
 }
+
+struct my_state_change_event
+{
+};
+
+TEST_CASE("state changes and component dirtying", "[signals][state]")
+{
+    std::ostringstream log;
+
+    alia::system sys;
+    initialize_system(sys, [&](context ctx) {
+        scoped_routing_region srr(ctx);
+        log << (srr.is_dirty() ? "dirty;" : "clean;");
+        auto state = get_state(ctx, 12);
+        log << read_signal(state) << ";";
+        on_event<my_state_change_event>(ctx, [&](auto, auto&) {
+            log << "writing;";
+            write_signal(state, 13);
+        });
+    });
+
+    refresh_system(sys);
+
+    my_state_change_event e;
+    dispatch_event(sys, e);
+
+    refresh_system(sys);
+
+    REQUIRE(log.str() == "clean;12;clean;12;writing;dirty;13;clean;13;");
+}

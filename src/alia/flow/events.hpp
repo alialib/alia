@@ -34,6 +34,7 @@ typedef std::shared_ptr<routing_region> routing_region_ptr;
 struct routing_region
 {
     routing_region_ptr parent;
+    bool dirty = false;
 };
 
 struct event_routing_path
@@ -44,20 +45,25 @@ struct event_routing_path
 
 struct event_traversal
 {
-    routing_region_ptr* active_region = 0;
+    routing_region_ptr* active_region = nullptr;
     bool targeted;
-    event_routing_path* path_to_target = 0;
+    event_routing_path* path_to_target = nullptr;
     std::type_info const* event_type;
     void* event;
+    bool aborted = false;
 };
 
+void
+mark_component_dirty(routing_region_ptr const& region);
+
+void
+mark_component_dirty(dataless_context ctx);
+
 template<class Context>
-routing_region_ptr
+routing_region_ptr const&
 get_active_routing_region(Context ctx)
 {
-    event_traversal& traversal = get_event_traversal(ctx);
-    return traversal.active_region ? *traversal.active_region
-                                   : routing_region_ptr();
+    return *get_event_traversal(ctx).active_region;
 }
 
 namespace impl {
@@ -88,7 +94,7 @@ dispatch_event(system& sys, Event& event)
     traversal.targeted = false;
     traversal.event_type = &typeid(Event);
     traversal.event = &event;
-    route_event(sys, traversal, 0);
+    route_event(sys, traversal, nullptr);
 }
 
 } // namespace impl
@@ -101,18 +107,25 @@ dispatch_event(system& sys, Event& event)
     refresh_system(sys);
 }
 
-struct traversal_aborted
+struct traversal_abortion
 {
 };
 
 void
 abort_traversal(dataless_context ctx);
 
+inline bool
+traversal_aborted(dataless_context ctx)
+{
+    return get_event_traversal(ctx).aborted;
+}
+
 struct scoped_routing_region
 {
-    scoped_routing_region() : traversal_(0)
+    scoped_routing_region()
     {
     }
+
     scoped_routing_region(context ctx)
     {
         begin(ctx);
@@ -134,10 +147,18 @@ struct scoped_routing_region
         return is_relevant_;
     }
 
+    bool
+    is_dirty() const
+    {
+        return is_dirty_;
+    }
+
  private:
-    event_traversal* traversal_;
+    optional_context<dataless_context> ctx_;
+    routing_region_ptr* region_;
     routing_region_ptr* parent_;
     bool is_relevant_;
+    bool is_dirty_;
 };
 
 template<class Event>
@@ -165,48 +186,41 @@ on_event(Context ctx, Handler&& handler)
     ALIA_END
 }
 
-struct component_identity
-{
-};
-typedef component_identity const* component_id;
+typedef routing_region_ptr component_identity;
 
-inline component_id
-get_component_id(context ctx)
-{
-    return &get_cached_data<component_identity>(ctx);
-}
+typedef component_identity* component_id;
 
-// routable_component_id identifies a node with enough information that an event
-// can be routed to it.
-struct routable_component_id
+void
+refresh_component_identity(dataless_context ctx, component_identity& identity);
+
+component_identity&
+get_component_identity(context ctx);
+
+// external_component_id identifies a component in a form that can be safely
+// stored outside of the alia data graph.
+struct external_component_id
 {
     component_id id = nullptr;
-    routing_region_ptr region;
+    component_identity identity;
 };
 
-inline routable_component_id
-make_routable_component_id(component_id id, routing_region_ptr region)
-{
-    routable_component_id routable;
-    routable.id = id;
-    routable.region = region;
-    return routable;
-}
+static external_component_id const null_component_id;
 
-inline routable_component_id
-make_routable_component_id(dataless_context ctx, component_id id)
-{
-    return make_routable_component_id(id, get_active_routing_region(ctx));
-}
-
-static routable_component_id const null_component_id;
-
-// Is the given routable_component_id valid?
+// Is the given external_component_id valid?
 // (Only the null_component_id is invalid.)
 inline bool
-is_valid(routable_component_id const& id)
+is_valid(external_component_id const& id)
 {
     return id.id != nullptr;
+}
+
+inline external_component_id
+externalize(component_id id)
+{
+    external_component_id external;
+    external.id = id;
+    external.identity = *id;
+    return external;
 }
 
 struct targeted_event
@@ -217,10 +231,10 @@ struct targeted_event
 template<class Event>
 void
 dispatch_targeted_event(
-    system& sys, Event& event, routable_component_id const& id)
+    system& sys, Event& event, external_component_id component)
 {
-    event.target_id = id.id;
-    impl::dispatch_targeted_event(sys, event, id.region);
+    event.target_id = component.id;
+    impl::dispatch_targeted_event(sys, event, component.identity);
     refresh_system(sys);
 }
 

@@ -4,18 +4,19 @@ namespace alia {
 
 void
 schedule_timer_event(
-    dataless_context ctx, component_id id, millisecond_count trigger_time)
+    dataless_context ctx,
+    external_component_id id,
+    millisecond_count trigger_time)
 {
     auto& sys = get<system_tag>(ctx);
-    sys.external->schedule_timer_event(
-        make_routable_component_id(ctx, id), trigger_time);
+    sys.external->schedule_timer_event(id, trigger_time);
 }
 
 bool
 detect_timer_event(dataless_context ctx, timer_data& data)
 {
     timer_event* event;
-    return detect_targeted_event(ctx, &data, &event)
+    return detect_targeted_event(ctx, &data.identity, &event)
            && event->trigger_time == data.expected_trigger_time;
 }
 
@@ -25,7 +26,7 @@ start_timer(dataless_context ctx, timer_data& data, millisecond_count duration)
     auto now = ctx.get<timing_tag>().tick_counter;
     auto trigger_time = now + duration;
     data.expected_trigger_time = trigger_time;
-    schedule_timer_event(ctx, &data, trigger_time);
+    schedule_timer_event(ctx, externalize(&data.identity), trigger_time);
 }
 
 void
@@ -39,7 +40,7 @@ restart_timer(
     {
         auto trigger_time = event->trigger_time + duration;
         data.expected_trigger_time = trigger_time;
-        schedule_timer_event(ctx, &data, trigger_time);
+        schedule_timer_event(ctx, externalize(&data.identity), trigger_time);
     }
 }
 
@@ -49,6 +50,9 @@ raw_timer::update()
     triggered_ = data_->active && detect_timer_event(ctx_, *data_);
     if (triggered_)
         data_->active = false;
+    on_refresh(ctx_, [&](auto ctx) {
+        refresh_component_identity(ctx, data_->identity);
+    });
 }
 
 void
