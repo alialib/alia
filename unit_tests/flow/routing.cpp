@@ -54,8 +54,6 @@ struct traversal_function
     {
         do_ostream_text(ctx, "");
 
-        REQUIRE(!get_active_routing_region(ctx));
-
         scoped_routing_region srr0(ctx);
         ALIA_IF(srr0.is_relevant())
         {

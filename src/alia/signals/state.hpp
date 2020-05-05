@@ -2,6 +2,7 @@
 #define ALIA_SIGNALS_STATE_HPP
 
 #include <alia/flow/data_graph.hpp>
+#include <alia/flow/events.hpp>
 #include <alia/signals/adaptors.hpp>
 #include <alia/signals/core.hpp>
 
@@ -43,7 +44,7 @@ struct state_holder
     set(Value value)
     {
         value_ = std::move(value);
-        ++version_;
+        handle_change();
     }
 
     // If you REALLY need direct, non-const access to the underlying state,
@@ -62,15 +63,29 @@ struct state_holder
     Value&
     nonconst_get()
     {
-        ++version_;
+        handle_change();
         return value_;
     }
 
+    void
+    refresh_region(routing_region_ptr const& region)
+    {
+        region_ = region;
+    }
+
  private:
+    void
+    handle_change()
+    {
+        ++version_;
+        mark_component_dirty(region_);
+    }
+
     Value value_;
     // version_ is incremented for each change in the value of the state.
     // If this is 0, the state is considered uninitialized.
     unsigned version_;
+    routing_region_ptr region_;
 };
 
 template<class Value>
@@ -136,8 +151,11 @@ get_state(Context ctx, InitialValue const& initial_value)
     state_holder<typename decltype(initial_value_signal)::value_type>* state;
     get_data(ctx, &state);
 
-    if (!state->is_initialized() && signal_has_value(initial_value_signal))
-        state->set(read_signal(initial_value_signal));
+    on_refresh(ctx, [&](auto ctx) {
+        state->refresh_region(get_active_routing_region(ctx));
+        if (!state->is_initialized() && signal_has_value(initial_value_signal))
+            state->set(read_signal(initial_value_signal));
+    });
 
     return make_state_signal(*state);
 }

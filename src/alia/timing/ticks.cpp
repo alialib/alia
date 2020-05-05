@@ -18,6 +18,8 @@ schedule_animation_refresh(dataless_context ctx)
             sys.external->schedule_animation_refresh();
         sys.refresh_needed = true;
     }
+    // Ensure that this component gets visited on the next refresh pass.
+    mark_component_dirty(ctx);
 }
 
 millisecond_count

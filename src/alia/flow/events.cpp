@@ -6,13 +6,34 @@
 namespace alia {
 
 void
+mark_component_dirty(routing_region_ptr const& region)
+{
+    routing_region* r = region.get();
+    while (r && !r->dirty)
+    {
+        r->dirty = true;
+        r = r->parent.get();
+    }
+}
+
+void
+mark_component_dirty(dataless_context ctx)
+{
+    event_traversal& traversal = get_event_traversal(ctx);
+    mark_component_dirty(*traversal.active_region);
+}
+
+void
 scoped_routing_region::begin(context ctx)
 {
     event_traversal& traversal = get_event_traversal(ctx);
 
+    ctx_.reset(ctx);
+
     routing_region_ptr* region;
     if (get_data(ctx, &region))
         region->reset(new routing_region);
+    region_ = region;
 
     if (traversal.active_region)
     {
@@ -24,6 +45,8 @@ scoped_routing_region::begin(context ctx)
 
     parent_ = traversal.active_region;
     traversal.active_region = region;
+
+    is_dirty_ = (*region)->dirty;
 
     if (traversal.targeted)
     {
@@ -38,17 +61,21 @@ scoped_routing_region::begin(context ctx)
     }
     else
         is_relevant_ = true;
-
-    traversal_ = &traversal;
 }
 
 void
 scoped_routing_region::end()
 {
-    if (traversal_)
+    if (ctx_)
     {
-        traversal_->active_region = parent_;
-        traversal_ = 0;
+        auto ctx = *ctx_;
+        if (!traversal_aborted(ctx))
+        {
+            if (is_refresh_event(ctx))
+                (*region_)->dirty = false;
+            get_event_traversal(ctx).active_region = parent_;
+        }
+        ctx_.reset();
     }
 }
 
@@ -68,6 +95,8 @@ invoke_controller(system& sys, event_traversal& events)
     context_storage storage;
     context ctx = make_context(&storage, sys, events, data, timing);
 
+    scoped_routing_region root(ctx);
+
     sys.controller(ctx);
 }
 
@@ -76,10 +105,10 @@ namespace impl {
 static void
 route_event_(system& sys, event_traversal& traversal, routing_region* target)
 {
-    // In order to construct the path to the target, we start at the target and
-    // follow the 'parent' pointers until we reach the root.
-    // We do this via recursion so that the path can be constructed entirely
-    // on the stack.
+    // In order to construct the path to the target, we start at the target
+    // and follow the 'parent' pointers until we reach the root. We do this
+    // via recursion so that the path can be constructed entirely on the
+    // stack.
     if (target)
     {
         event_routing_path path_node;
@@ -101,16 +130,18 @@ route_event(system& sys, event_traversal& traversal, routing_region* target)
     {
         route_event_(sys, traversal, target);
     }
-    catch (traversal_aborted&)
+    catch (traversal_abortion&)
     {
     }
 }
 
 } // namespace impl
 
-void abort_traversal(dataless_context)
+void
+abort_traversal(dataless_context ctx)
 {
-    throw traversal_aborted();
+    get_event_traversal(ctx).aborted = true;
+    throw traversal_abortion();
 }
 
 void
@@ -120,6 +151,24 @@ mark_refresh_incomplete(dataless_context ctx)
     refresh_event* e = nullptr;
     detect_event(ctx, &e);
     e->incomplete = true;
+}
+
+void
+refresh_component_identity(dataless_context ctx, component_identity& identity)
+{
+    auto const& active_region = get_active_routing_region(ctx);
+    if (identity != active_region)
+        identity = active_region;
+}
+
+component_identity&
+get_component_identity(context ctx)
+{
+    component_identity* identity;
+    get_cached_data(ctx, &identity);
+    on_refresh(
+        ctx, [&](auto ctx) { refresh_component_identity(ctx, *identity); });
+    return *identity;
 }
 
 } // namespace alia
