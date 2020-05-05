@@ -98,32 +98,26 @@ struct my_state_change_event
 
 TEST_CASE("state changes and component dirtying", "[signals][state]")
 {
-    alia::system sys;
-    initialize_system(sys, [](context) {});
+    std::ostringstream log;
 
-    do_traversal(sys, [&](context ctx) {
+    alia::system sys;
+    initialize_system(sys, [&](context ctx) {
         scoped_routing_region srr(ctx);
-        REQUIRE(!srr.is_dirty());
+        log << (srr.is_dirty() ? "dirty;" : "clean;");
         auto state = get_state(ctx, 12);
-        REQUIRE(read_signal(state) == 12);
-        on_event<my_state_change_event>(
-            ctx, [&](auto, auto&) { write_signal(state, 13); });
+        log << read_signal(state) << ";";
+        on_event<my_state_change_event>(ctx, [&](auto, auto&) {
+            log << "writing;";
+            write_signal(state, 13);
+        });
     });
+
+    refresh_system(sys);
 
     my_state_change_event e;
-    impl::dispatch_event(sys, e);
+    dispatch_event(sys, e);
 
-    do_traversal(sys, [&](context ctx) {
-        scoped_routing_region srr(ctx);
-        REQUIRE(srr.is_dirty());
-        auto state = get_state(ctx, 12);
-        REQUIRE(read_signal(state) == 13);
-    });
+    refresh_system(sys);
 
-    do_traversal(sys, [&](context ctx) {
-        scoped_routing_region srr(ctx);
-        REQUIRE(!srr.is_dirty());
-        auto state = get_state(ctx, 12);
-        REQUIRE(read_signal(state) == 13);
-    });
+    REQUIRE(log.str() == "clean;12;clean;12;writing;dirty;13;clean;13;");
 }
