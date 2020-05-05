@@ -92,25 +92,38 @@ TEST_CASE("get_state with raw initial value", "[signals][state]")
     });
 }
 
-TEST_CASE("state changes and event routing", "[signals][state]")
+struct my_state_change_event
+{
+};
+
+TEST_CASE("state changes and component dirtying", "[signals][state]")
 {
     alia::system sys;
     initialize_system(sys, [](context) {});
-    captured_id state_id;
-    do_traversal(sys, [&](context ctx) {
-        auto state = get_state(ctx, 12);
 
-        REQUIRE(signal_has_value(state));
+    do_traversal(sys, [&](context ctx) {
+        scoped_routing_region srr(ctx);
+        REQUIRE(!srr.is_dirty());
+        auto state = get_state(ctx, 12);
         REQUIRE(read_signal(state) == 12);
-        REQUIRE(signal_ready_to_write(state));
-        state_id.capture(state.value_id());
-
-        write_signal(state, 13);
+        on_event<my_state_change_event>(
+            ctx, [&](auto, auto&) { write_signal(state, 13); });
     });
-    do_traversal(sys, [&](context ctx) {
-        auto state = get_state(ctx, 12);
 
+    my_state_change_event e;
+    impl::dispatch_event(sys, e);
+
+    do_traversal(sys, [&](context ctx) {
+        scoped_routing_region srr(ctx);
+        REQUIRE(srr.is_dirty());
+        auto state = get_state(ctx, 12);
         REQUIRE(read_signal(state) == 13);
-        REQUIRE(!state_id.matches(state.value_id()));
+    });
+
+    do_traversal(sys, [&](context ctx) {
+        scoped_routing_region srr(ctx);
+        REQUIRE(!srr.is_dirty());
+        auto state = get_state(ctx, 12);
+        REQUIRE(read_signal(state) == 13);
     });
 }

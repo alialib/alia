@@ -50,6 +50,7 @@ struct event_traversal
     event_routing_path* path_to_target = nullptr;
     std::type_info const* event_type;
     void* event;
+    bool aborted = false;
 };
 
 void
@@ -106,19 +107,22 @@ dispatch_event(system& sys, Event& event)
     refresh_system(sys);
 }
 
-struct traversal_aborted
+struct traversal_abortion
 {
 };
 
 void
 abort_traversal(dataless_context ctx);
 
+inline bool
+traversal_aborted(dataless_context ctx)
+{
+    return get_event_traversal(ctx).aborted;
+}
+
 struct scoped_routing_region
 {
-    scoped_routing_region() : traversal_(nullptr)
-    {
-    }
-    scoped_routing_region(context ctx)
+    scoped_routing_region(context ctx) : ctx_(ctx) // TODO
     {
         begin(ctx);
     }
@@ -139,10 +143,19 @@ struct scoped_routing_region
         return is_relevant_;
     }
 
+    bool
+    is_dirty() const
+    {
+        return is_dirty_;
+    }
+
  private:
-    event_traversal* traversal_;
+    bool is_active_ = false;
+    dataless_context ctx_;
+    routing_region_ptr* region_;
     routing_region_ptr* parent_;
     bool is_relevant_;
+    bool is_dirty_;
 };
 
 template<class Event>

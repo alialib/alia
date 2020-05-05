@@ -28,9 +28,12 @@ scoped_routing_region::begin(context ctx)
 {
     event_traversal& traversal = get_event_traversal(ctx);
 
+    ctx_ = ctx;
+
     routing_region_ptr* region;
     if (get_data(ctx, &region))
         region->reset(new routing_region);
+    region_ = region;
 
     if (traversal.active_region)
     {
@@ -42,6 +45,10 @@ scoped_routing_region::begin(context ctx)
 
     parent_ = traversal.active_region;
     traversal.active_region = region;
+
+    is_active_ = true;
+
+    is_dirty_ = (*region)->dirty;
 
     if (traversal.targeted)
     {
@@ -56,20 +63,20 @@ scoped_routing_region::begin(context ctx)
     }
     else
         is_relevant_ = true;
-
-    if (is_refresh_event(ctx))
-        (*region)->dirty = false;
-
-    traversal_ = &traversal;
 }
 
 void
 scoped_routing_region::end()
 {
-    if (traversal_)
+    if (is_active_)
     {
-        traversal_->active_region = parent_;
-        traversal_ = 0;
+        if (!traversal_aborted(ctx_))
+        {
+            if (is_refresh_event(ctx_))
+                (*region_)->dirty = false;
+            get_event_traversal(ctx_).active_region = parent_;
+        }
+        is_active_ = false;
     }
 }
 
@@ -124,16 +131,18 @@ route_event(system& sys, event_traversal& traversal, routing_region* target)
     {
         route_event_(sys, traversal, target);
     }
-    catch (traversal_aborted&)
+    catch (traversal_abortion&)
     {
     }
 }
 
 } // namespace impl
 
-void abort_traversal(dataless_context)
+void
+abort_traversal(dataless_context ctx)
 {
-    throw traversal_aborted();
+    get_event_traversal(ctx).aborted = true;
+    throw traversal_abortion();
 }
 
 void
