@@ -122,7 +122,11 @@ traversal_aborted(dataless_context ctx)
 
 struct scoped_routing_region
 {
-    scoped_routing_region(context ctx) : ctx_(ctx) // TODO
+    scoped_routing_region()
+    {
+    }
+
+    scoped_routing_region(context ctx)
     {
         begin(ctx);
     }
@@ -150,8 +154,7 @@ struct scoped_routing_region
     }
 
  private:
-    bool is_active_ = false;
-    dataless_context ctx_;
+    optional_context<dataless_context> ctx_;
     routing_region_ptr* region_;
     routing_region_ptr* parent_;
     bool is_relevant_;

@@ -72,3 +72,30 @@ TEST_CASE("context", "[context][interface]")
     REQUIRE(extended.has<other_traversal_tag>());
     REQUIRE(&extended.get<other_traversal_tag>() == &other);
 }
+
+TEST_CASE("optional_context", "[context][interface]")
+{
+    context_storage storage;
+
+    alia::system sys;
+    data_traversal data;
+    event_traversal event;
+    timing_subsystem timing;
+
+    scoped_data_traversal sdt(sys.data, data);
+
+    context ctx = make_context(&storage, sys, event, data, timing);
+
+    optional_context<context> optional;
+    REQUIRE(!optional);
+    optional.reset(ctx);
+    REQUIRE(optional);
+
+    REQUIRE((*optional).has<data_traversal_tag>());
+    REQUIRE(&optional->get<data_traversal_tag>() == &data);
+    dataless_context dataless = optional->remove<data_traversal_tag>();
+    REQUIRE(!dataless.has<data_traversal_tag>());
+
+    optional.reset();
+    REQUIRE(!optional);
+}

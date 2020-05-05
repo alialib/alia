@@ -28,7 +28,7 @@ scoped_routing_region::begin(context ctx)
 {
     event_traversal& traversal = get_event_traversal(ctx);
 
-    ctx_ = ctx;
+    ctx_.reset(ctx);
 
     routing_region_ptr* region;
     if (get_data(ctx, &region))
@@ -45,8 +45,6 @@ scoped_routing_region::begin(context ctx)
 
     parent_ = traversal.active_region;
     traversal.active_region = region;
-
-    is_active_ = true;
 
     is_dirty_ = (*region)->dirty;
 
@@ -68,15 +66,16 @@ scoped_routing_region::begin(context ctx)
 void
 scoped_routing_region::end()
 {
-    if (is_active_)
+    if (ctx_)
     {
-        if (!traversal_aborted(ctx_))
+        auto ctx = *ctx_;
+        if (!traversal_aborted(ctx))
         {
-            if (is_refresh_event(ctx_))
+            if (is_refresh_event(ctx))
                 (*region_)->dirty = false;
-            get_event_traversal(ctx_).active_region = parent_;
+            get_event_traversal(ctx).active_region = parent_;
         }
-        is_active_ = false;
+        ctx_.reset();
     }
 }
 
