@@ -161,14 +161,13 @@ refresh_component_identity(dataless_context ctx, component_identity& identity)
         identity = active_region;
 }
 
-component_identity&
-get_component_identity(context ctx)
+component_id
+get_component_id(context ctx)
 {
-    component_identity* identity;
-    get_cached_data(ctx, &identity);
-    on_refresh(
-        ctx, [&](auto ctx) { refresh_component_identity(ctx, *identity); });
-    return *identity;
+    component_id id;
+    get_cached_data(ctx, &id);
+    on_refresh(ctx, [&](auto ctx) { refresh_component_identity(ctx, *id); });
+    return id;
 }
 
 } // namespace alia

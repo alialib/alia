@@ -142,8 +142,8 @@ struct click_event : targeted_event
 void
 do_button_(dom::context ctx, readable<std::string> text, action<> on_click)
 {
-    auto& identity = get_component_identity(ctx);
-    auto external_id = externalize(&identity);
+    auto id = get_component_id(ctx);
+    auto external_id = externalize(id);
     auto* system = &ctx.get<system_tag>();
 
     element_data* element;
