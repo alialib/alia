@@ -25,16 +25,16 @@ typedef extend_context_type_t<context, my_tag> my_context;
 static void
 do_my_thing(my_context ctx, readable<string> label)
 {
-    auto& identity = get_component_identity(ctx);
+    auto id = get_component_id(ctx);
 
-    on_refresh(ctx, [&identity](auto ctx) {
-        ctx.template get<my_tag>().push_back(externalize(&identity));
+    on_refresh(ctx, [id](auto ctx) {
+        ctx.template get<my_tag>().push_back(externalize(id));
     });
 
     on_event<my_event>(
         ctx, [&](auto, auto& e) { e.visited += read_signal(label) + ";"; });
 
-    on_targeted_event<my_event>(ctx, &identity, [&](auto, my_event& event) {
+    on_targeted_event<my_event>(ctx, id, [&](auto, my_event& event) {
         event.result = read_signal(label);
     });
 }

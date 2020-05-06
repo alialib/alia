@@ -193,8 +193,8 @@ typedef component_identity* component_id;
 void
 refresh_component_identity(dataless_context ctx, component_identity& identity);
 
-component_identity&
-get_component_identity(context ctx);
+component_id
+get_component_id(context ctx);
 
 // external_component_id identifies a component in a form that can be safely
 // stored outside of the alia data graph.
