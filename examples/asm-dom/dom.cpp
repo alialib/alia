@@ -174,7 +174,7 @@ do_button_(dom::context ctx, readable<std::string> text, action<> on_click)
     }
 
     on_targeted_event<click_event>(
-        ctx, &identity, [=](auto ctx, auto& e) { perform_action(on_click); });
+        ctx, id, [=](auto ctx, auto& e) { perform_action(on_click); });
 }
 
 void
