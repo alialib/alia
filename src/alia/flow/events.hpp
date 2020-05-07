@@ -308,6 +308,12 @@ on_refresh(Context ctx, Handler handler)
     ALIA_END
 }
 
+void
+on_init(context ctx, action<> on_init);
+
+void
+on_activate(context ctx, action<> on_activate);
+
 } // namespace alia
 
 #endif
