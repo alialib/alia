@@ -6,7 +6,7 @@
 namespace alia {
 
 void
-mark_component_dirty(routing_region_ptr const& region)
+mark_component_as_dirty(routing_region_ptr const& region)
 {
     routing_region* r = region.get();
     while (r && !r->dirty)
@@ -17,22 +17,37 @@ mark_component_dirty(routing_region_ptr const& region)
 }
 
 void
-mark_component_dirty(dataless_context ctx)
+mark_component_as_dirty(dataless_context ctx)
 {
     event_traversal& traversal = get_event_traversal(ctx);
-    mark_component_dirty(*traversal.active_region);
+    mark_component_as_dirty(*traversal.active_region);
 }
 
 void
-scoped_routing_region::begin(context ctx)
+mark_component_as_animating(routing_region_ptr const& region)
+{
+    routing_region* r = region.get();
+    while (r && !r->animating)
+    {
+        r->animating = true;
+        r = r->parent.get();
+    }
+}
+
+void
+mark_component_as_animating(dataless_context ctx)
+{
+    event_traversal& traversal = get_event_traversal(ctx);
+    mark_component_as_animating(*traversal.active_region);
+}
+
+void
+scoped_routing_region::begin(dataless_context ctx, routing_region_ptr* region)
 {
     event_traversal& traversal = get_event_traversal(ctx);
 
     ctx_.reset(ctx);
 
-    routing_region_ptr* region;
-    if (get_data(ctx, &region))
-        region->reset(new routing_region);
     region_ = region;
 
     if (traversal.active_region)
@@ -47,6 +62,10 @@ scoped_routing_region::begin(context ctx)
     traversal.active_region = region;
 
     is_dirty_ = (*region)->dirty;
+    (*region)->dirty = false;
+
+    is_animating_ = (*region)->animating;
+    (*region)->animating = false;
 
     if (traversal.targeted)
     {
@@ -54,13 +73,23 @@ scoped_routing_region::begin(context ctx)
             && traversal.path_to_target->node == region->get())
         {
             traversal.path_to_target = traversal.path_to_target->rest;
-            is_relevant_ = true;
+            is_on_route_ = true;
         }
         else
-            is_relevant_ = false;
+            is_on_route_ = false;
     }
     else
-        is_relevant_ = true;
+        is_on_route_ = true;
+}
+
+void
+scoped_routing_region::begin(context ctx)
+{
+    routing_region_ptr* region;
+    if (get_data(ctx, &region))
+        region->reset(new routing_region);
+
+    this->begin(ctx, region);
 }
 
 void
@@ -69,12 +98,7 @@ scoped_routing_region::end()
     if (ctx_)
     {
         auto ctx = *ctx_;
-        if (!traversal_aborted(ctx))
-        {
-            if (is_refresh_event(ctx))
-                (*region_)->dirty = false;
-            get_event_traversal(ctx).active_region = parent_;
-        }
+        get_event_traversal(ctx).active_region = parent_;
         ctx_.reset();
     }
 }
@@ -95,7 +119,7 @@ invoke_controller(system& sys, event_traversal& events)
     context_storage storage;
     context ctx = make_context(&storage, sys, events, data, timing);
 
-    scoped_routing_region root(ctx);
+    scoped_routing_region root(ctx, &sys.root_region);
 
     sys.controller(ctx);
 }
@@ -140,17 +164,9 @@ route_event(system& sys, event_traversal& traversal, routing_region* target)
 void
 abort_traversal(dataless_context ctx)
 {
+    assert(!is_refresh_event(ctx));
     get_event_traversal(ctx).aborted = true;
     throw traversal_abortion();
-}
-
-void
-mark_refresh_incomplete(dataless_context ctx)
-{
-    assert(is_refresh_event(ctx));
-    refresh_event* e = nullptr;
-    detect_event(ctx, &e);
-    e->incomplete = true;
 }
 
 void
