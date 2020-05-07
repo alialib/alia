@@ -1,8 +1,8 @@
 #ifndef ALIA_FLOW_EVENTS_HPP
 #define ALIA_FLOW_EVENTS_HPP
 
-#include <alia/context/interface.hpp>
 #include <alia/flow/actions.hpp>
+#include <alia/flow/components.hpp>
 #include <alia/flow/data_graph.hpp>
 #include <alia/flow/macros.hpp>
 #include <alia/system/interface.hpp>
@@ -28,28 +28,16 @@
 namespace alia {
 
 struct system;
-struct routing_region;
-
-typedef std::shared_ptr<routing_region> routing_region_ptr;
-
-struct routing_region
-{
-    routing_region_ptr parent;
-    // The component is dirty and needs to be refreshed immediately.
-    bool dirty = false;
-    // The component is animating and would like to be refreshed soon.
-    bool animating = false;
-};
 
 struct event_routing_path
 {
-    routing_region* node;
+    component_container* node;
     event_routing_path* rest;
 };
 
 struct event_traversal
 {
-    routing_region_ptr* active_region = nullptr;
+    component_container_ptr* active_container = nullptr;
     bool targeted;
     event_routing_path* path_to_target = nullptr;
     std::type_info const* event_type;
@@ -57,23 +45,11 @@ struct event_traversal
     bool aborted = false;
 };
 
-void
-mark_component_as_dirty(routing_region_ptr const& region);
-
-void
-mark_component_as_dirty(dataless_context ctx);
-
-void
-mark_component_as_animating(routing_region_ptr const& region);
-
-void
-mark_component_as_animating(dataless_context ctx);
-
 template<class Context>
-routing_region_ptr const&
-get_active_routing_region(Context ctx)
+component_container_ptr const&
+get_active_component_container(Context ctx)
 {
-    return *get_event_traversal(ctx).active_region;
+    return *get_event_traversal(ctx).active_container;
 }
 
 namespace impl {
@@ -85,12 +61,13 @@ namespace impl {
 // entire component tree.
 //
 void
-route_event(system& sys, event_traversal& traversal, routing_region* target);
+route_event(
+    system& sys, event_traversal& traversal, component_container* target);
 
 template<class Event>
 void
 dispatch_targeted_event(
-    system& sys, Event& event, routing_region_ptr const& target)
+    system& sys, Event& event, component_container_ptr const& target)
 {
     event_traversal traversal;
     traversal.targeted = true;
@@ -133,60 +110,6 @@ traversal_aborted(dataless_context ctx)
     return get_event_traversal(ctx).aborted;
 }
 
-struct scoped_routing_region
-{
-    scoped_routing_region()
-    {
-    }
-    scoped_routing_region(context ctx)
-    {
-        begin(ctx);
-    }
-    scoped_routing_region(context ctx, routing_region_ptr* region)
-    {
-        begin(ctx, region);
-    }
-    ~scoped_routing_region()
-    {
-        end();
-    }
-
-    void
-    begin(dataless_context ctx, routing_region_ptr* region);
-
-    void
-    begin(context ctx);
-
-    void
-    end();
-
-    bool
-    is_on_route() const
-    {
-        return is_on_route_;
-    }
-
-    bool
-    is_dirty() const
-    {
-        return is_dirty_;
-    }
-
-    bool
-    is_animating() const
-    {
-        return is_animating_;
-    }
-
- private:
-    optional_context<dataless_context> ctx_;
-    routing_region_ptr* region_;
-    routing_region_ptr* parent_;
-    bool is_on_route_;
-    bool is_dirty_;
-    bool is_animating_;
-};
-
 template<class Event>
 bool
 detect_event(dataless_context ctx, Event** event)
@@ -212,7 +135,7 @@ on_event(Context ctx, Handler&& handler)
     ALIA_END
 }
 
-typedef routing_region_ptr component_identity;
+typedef component_container_ptr component_identity;
 
 typedef component_identity* component_id;
 
