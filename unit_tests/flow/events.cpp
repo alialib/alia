@@ -74,22 +74,3 @@ TEST_CASE("node IDs", "[flow][events]")
         REQUIRE(event.result == "two");
     }
 }
-
-TEST_CASE("incomplete refresh", "[flow][events]")
-{
-    alia::system sys;
-    initialize_system(sys, [](context) {});
-
-    int pass_count = 0;
-
-    sys.controller = [&](context ctx) {
-        on_refresh(ctx, [&](auto ctx) {
-            ++pass_count;
-            if (pass_count < 3)
-                mark_refresh_incomplete(ctx);
-        });
-    };
-    refresh_system(sys);
-
-    REQUIRE(pass_count == 3);
-}

@@ -55,20 +55,20 @@ struct traversal_function
         do_ostream_text(ctx, "");
 
         scoped_routing_region srr0(ctx);
-        ALIA_IF(srr0.is_relevant())
+        ALIA_IF(srr0.is_on_route())
         {
             do_label(ctx, "root");
 
             ALIA_IF(n != 0)
             {
                 scoped_routing_region srr1(ctx);
-                ALIA_IF(srr1.is_relevant())
+                ALIA_IF(srr1.is_on_route())
                 {
                     do_label(ctx, "nonzero");
 
                     {
                         scoped_routing_region srr2(ctx);
-                        ALIA_IF(srr2.is_relevant())
+                        ALIA_IF(srr2.is_on_route())
                         {
                             do_label(ctx, "deep");
                         }
@@ -82,7 +82,7 @@ struct traversal_function
             ALIA_IF(n & 1)
             {
                 scoped_routing_region srr(ctx);
-                ALIA_IF(srr.is_relevant())
+                ALIA_IF(srr.is_on_route())
                 {
                     do_label(ctx, "odd");
                 }

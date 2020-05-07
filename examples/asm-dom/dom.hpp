@@ -87,9 +87,9 @@ struct scoped_div : noncopyable
     end();
 
     bool
-    is_relevant()
+    is_on_route()
     {
-        return routing_.is_relevant();
+        return routing_.is_on_route();
     }
 
  private:

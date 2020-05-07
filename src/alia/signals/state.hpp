@@ -61,12 +61,23 @@ struct state_holder
     // expected to initialize it.
     //
     Value&
-    nonconst_get()
+    nonconst_ref()
     {
         handle_change();
         return value_;
     }
 
+    // This is even less safe. It's like above, but any changes you make will
+    // NOT be marked in the component tree, so you should only use this if you
+    // know it's safe to do so.
+    Value&
+    untracked_nonconst_ref()
+    {
+        ++version_;
+        return value_;
+    }
+
+    // Update the component region that the component is part of.
     void
     refresh_region(routing_region_ptr const& region)
     {
@@ -78,7 +89,7 @@ struct state_holder
     handle_change()
     {
         ++version_;
-        mark_component_dirty(region_);
+        mark_component_as_dirty(region_);
     }
 
     Value value_;
@@ -154,7 +165,7 @@ get_state(Context ctx, InitialValue const& initial_value)
     on_refresh(ctx, [&](auto ctx) {
         state->refresh_region(get_active_routing_region(ctx));
         if (!state->is_initialized() && signal_has_value(initial_value_signal))
-            state->set(read_signal(initial_value_signal));
+            state->untracked_nonconst_ref() = read_signal(initial_value_signal);
     });
 
     return make_state_signal(*state);
