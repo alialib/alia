@@ -84,7 +84,7 @@ struct system : noncopyable
     bool refresh_needed = false;
     std::unique_ptr<external_interface> external;
     timer_event_scheduler scheduler;
-    routing_region_ptr root_region;
+    component_container_ptr root_component;
 };
 
 void

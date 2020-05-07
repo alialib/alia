@@ -28,7 +28,7 @@ do_ostream_text(context ctx, std::string const& text)
 
 struct find_label_event
 {
-    routing_region_ptr region;
+    component_container_ptr container;
     std::string name;
 };
 
@@ -39,7 +39,7 @@ do_label(context ctx, std::string const& name)
 
     on_event<find_label_event>(ctx, [name](auto ctx, auto& fle) {
         if (fle.name == name)
-            fle.region = get_active_routing_region(ctx);
+            fle.container = get_active_component_container(ctx);
     });
 }
 
@@ -54,20 +54,20 @@ struct traversal_function
     {
         do_ostream_text(ctx, "");
 
-        scoped_routing_region srr0(ctx);
+        scoped_component_container srr0(ctx);
         ALIA_IF(srr0.is_on_route())
         {
             do_label(ctx, "root");
 
             ALIA_IF(n != 0)
             {
-                scoped_routing_region srr1(ctx);
+                scoped_component_container srr1(ctx);
                 ALIA_IF(srr1.is_on_route())
                 {
                     do_label(ctx, "nonzero");
 
                     {
-                        scoped_routing_region srr2(ctx);
+                        scoped_component_container srr2(ctx);
                         ALIA_IF(srr2.is_on_route())
                         {
                             do_label(ctx, "deep");
@@ -81,7 +81,7 @@ struct traversal_function
 
             ALIA_IF(n & 1)
             {
-                scoped_routing_region srr(ctx);
+                scoped_component_container srr(ctx);
                 ALIA_IF(srr.is_on_route())
                 {
                     do_label(ctx, "odd");
@@ -100,12 +100,12 @@ check_traversal_path(
 {
     alia::system sys;
     initialize_system(sys, traversal_function(n));
-    routing_region_ptr target;
+    component_container_ptr target;
     {
         find_label_event fle;
         fle.name = label;
         impl::dispatch_event(sys, fle);
-        target = fle.region;
+        target = fle.container;
     }
     {
         ostream_event oe;

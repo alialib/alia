@@ -96,7 +96,7 @@ struct scoped_div : noncopyable
     std::optional<dom::context> ctx_;
     div_data* data_ = nullptr;
     asmdom::Children* parent_children_list_ = nullptr;
-    scoped_routing_region routing_;
+    scoped_component_container routing_;
 };
 
 template<class DoContents>

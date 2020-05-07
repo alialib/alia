@@ -22,7 +22,7 @@ refresh_system(system& sys)
     {
         refresh_event refresh;
         impl::dispatch_event(sys, refresh);
-        if (!sys.root_region->dirty)
+        if (!sys.root_component->dirty)
             break;
         ++pass_count;
         assert(pass_count < 64);

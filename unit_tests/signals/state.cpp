@@ -9,21 +9,6 @@
 
 using namespace alia;
 
-TEST_CASE("state_holder", "[signals][state]")
-{
-    state_holder<int> s;
-    REQUIRE(!s.is_initialized());
-    REQUIRE(s.version() == 0);
-    s.set(1);
-    REQUIRE(s.is_initialized());
-    REQUIRE(s.version() == 1);
-    REQUIRE(s.get() == 1);
-    s.nonconst_ref() = 4;
-    REQUIRE(s.is_initialized());
-    REQUIRE(s.version() == 2);
-    REQUIRE(s.get() == 4);
-}
-
 TEST_CASE("basic get_state", "[signals][state]")
 {
     alia::system sys;
@@ -119,7 +104,7 @@ TEST_CASE("state changes and component dirtying", "[signals][state]")
 
     alia::system sys;
     initialize_system(sys, [&](context ctx) {
-        scoped_routing_region srr(ctx);
+        scoped_component_container srr(ctx);
         log << (srr.is_dirty() ? "dirty;" : "clean;");
         auto state = get_state(ctx, 12);
         log << read_signal(state) << ";";

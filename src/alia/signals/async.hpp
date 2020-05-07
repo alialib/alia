@@ -120,15 +120,18 @@ async(Context ctx, Launcher launcher, Args const&... args)
         {
             auto* system = &get<system_tag>(ctx);
             auto version = data.version;
-            auto report_result = [system, version, data_ptr](Result result) {
-                auto& data = *data_ptr;
-                if (data.version == version)
-                {
-                    data.result = std::move(result);
-                    data.status = async_status::COMPLETE;
-                }
-                refresh_system(*system);
-            };
+            auto container = get_active_component_container(ctx);
+            auto report_result
+                = [system, version, container, data_ptr](Result result) {
+                      auto& data = *data_ptr;
+                      if (data.version == version)
+                      {
+                          data.result = std::move(result);
+                          data.status = async_status::COMPLETE;
+                          mark_dirty_component(container);
+                          refresh_system(*system);
+                      }
+                  };
             try
             {
                 launcher(ctx, report_result, read_signal(args)...);

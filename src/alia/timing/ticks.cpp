@@ -19,7 +19,7 @@ schedule_animation_refresh(dataless_context ctx)
         sys.refresh_needed = true;
     }
     // Ensure that this component gets visited on the next refresh pass.
-    mark_component_as_animating(ctx);
+    mark_animating_component(ctx);
 }
 
 millisecond_count

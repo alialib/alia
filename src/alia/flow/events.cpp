@@ -5,104 +5,6 @@
 
 namespace alia {
 
-void
-mark_component_as_dirty(routing_region_ptr const& region)
-{
-    routing_region* r = region.get();
-    while (r && !r->dirty)
-    {
-        r->dirty = true;
-        r = r->parent.get();
-    }
-}
-
-void
-mark_component_as_dirty(dataless_context ctx)
-{
-    event_traversal& traversal = get_event_traversal(ctx);
-    mark_component_as_dirty(*traversal.active_region);
-}
-
-void
-mark_component_as_animating(routing_region_ptr const& region)
-{
-    routing_region* r = region.get();
-    while (r && !r->animating)
-    {
-        r->animating = true;
-        r = r->parent.get();
-    }
-}
-
-void
-mark_component_as_animating(dataless_context ctx)
-{
-    event_traversal& traversal = get_event_traversal(ctx);
-    mark_component_as_animating(*traversal.active_region);
-}
-
-void
-scoped_routing_region::begin(dataless_context ctx, routing_region_ptr* region)
-{
-    event_traversal& traversal = get_event_traversal(ctx);
-
-    ctx_.reset(ctx);
-
-    region_ = region;
-
-    if (traversal.active_region)
-    {
-        if ((*region)->parent != *traversal.active_region)
-            (*region)->parent = *traversal.active_region;
-    }
-    else
-        (*region)->parent.reset();
-
-    parent_ = traversal.active_region;
-    traversal.active_region = region;
-
-    is_dirty_ = (*region)->dirty;
-    (*region)->dirty = false;
-
-    is_animating_ = (*region)->animating;
-    (*region)->animating = false;
-
-    if (traversal.targeted)
-    {
-        if (traversal.path_to_target
-            && traversal.path_to_target->node == region->get())
-        {
-            traversal.path_to_target = traversal.path_to_target->rest;
-            is_on_route_ = true;
-        }
-        else
-            is_on_route_ = false;
-    }
-    else
-        is_on_route_ = true;
-}
-
-void
-scoped_routing_region::begin(context ctx)
-{
-    routing_region_ptr* region;
-    if (get_data(ctx, &region))
-        region->reset(new routing_region);
-
-    this->begin(ctx, region);
-}
-
-void
-scoped_routing_region::end()
-{
-    if (ctx_)
-    {
-        auto ctx = *ctx_;
-        get_event_traversal(ctx).active_region = parent_;
-        ctx_.reset();
-    }
-}
-
 static void
 invoke_controller(system& sys, event_traversal& events)
 {
@@ -119,7 +21,7 @@ invoke_controller(system& sys, event_traversal& events)
     context_storage storage;
     context ctx = make_context(&storage, sys, events, data, timing);
 
-    scoped_routing_region root(ctx, &sys.root_region);
+    scoped_component_container root(ctx, &sys.root_component);
 
     sys.controller(ctx);
 }
@@ -127,7 +29,8 @@ invoke_controller(system& sys, event_traversal& events)
 namespace impl {
 
 static void
-route_event_(system& sys, event_traversal& traversal, routing_region* target)
+route_event_(
+    system& sys, event_traversal& traversal, component_container* target)
 {
     // In order to construct the path to the target, we start at the target
     // and follow the 'parent' pointers until we reach the root. We do this
@@ -148,7 +51,8 @@ route_event_(system& sys, event_traversal& traversal, routing_region* target)
 }
 
 void
-route_event(system& sys, event_traversal& traversal, routing_region* target)
+route_event(
+    system& sys, event_traversal& traversal, component_container* target)
 {
     try
     {
@@ -172,9 +76,9 @@ abort_traversal(dataless_context ctx)
 void
 refresh_component_identity(dataless_context ctx, component_identity& identity)
 {
-    auto const& active_region = get_active_routing_region(ctx);
-    if (identity != active_region)
-        identity = active_region;
+    auto const& active_container = get_active_component_container(ctx);
+    if (identity != active_container)
+        identity = active_container;
 }
 
 component_id
