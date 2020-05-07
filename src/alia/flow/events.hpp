@@ -2,6 +2,7 @@
 #define ALIA_FLOW_EVENTS_HPP
 
 #include <alia/context/interface.hpp>
+#include <alia/flow/actions.hpp>
 #include <alia/flow/data_graph.hpp>
 #include <alia/flow/macros.hpp>
 #include <alia/system/interface.hpp>
@@ -34,7 +35,10 @@ typedef std::shared_ptr<routing_region> routing_region_ptr;
 struct routing_region
 {
     routing_region_ptr parent;
+    // The component is dirty and needs to be refreshed immediately.
     bool dirty = false;
+    // The component is animating and would like to be refreshed soon.
+    bool animating = false;
 };
 
 struct event_routing_path
@@ -54,10 +58,16 @@ struct event_traversal
 };
 
 void
-mark_component_dirty(routing_region_ptr const& region);
+mark_component_as_dirty(routing_region_ptr const& region);
 
 void
-mark_component_dirty(dataless_context ctx);
+mark_component_as_dirty(dataless_context ctx);
+
+void
+mark_component_as_animating(routing_region_ptr const& region);
+
+void
+mark_component_as_animating(dataless_context ctx);
 
 template<class Context>
 routing_region_ptr const&
@@ -70,7 +80,10 @@ namespace impl {
 
 // Set up the event traversal so that it will route the control flow to the
 // given target. (And also invoke the traversal.)
-// :target can be null, in which case no (further) routing will be done.
+//
+// :target can be null, in which case the event will be routed through the
+// entire component tree.
+//
 void
 route_event(system& sys, event_traversal& traversal, routing_region* target);
 
@@ -125,15 +138,21 @@ struct scoped_routing_region
     scoped_routing_region()
     {
     }
-
     scoped_routing_region(context ctx)
     {
         begin(ctx);
+    }
+    scoped_routing_region(context ctx, routing_region_ptr* region)
+    {
+        begin(ctx, region);
     }
     ~scoped_routing_region()
     {
         end();
     }
+
+    void
+    begin(dataless_context ctx, routing_region_ptr* region);
 
     void
     begin(context ctx);
@@ -142,9 +161,9 @@ struct scoped_routing_region
     end();
 
     bool
-    is_relevant() const
+    is_on_route() const
     {
-        return is_relevant_;
+        return is_on_route_;
     }
 
     bool
@@ -153,12 +172,19 @@ struct scoped_routing_region
         return is_dirty_;
     }
 
+    bool
+    is_animating() const
+    {
+        return is_animating_;
+    }
+
  private:
     optional_context<dataless_context> ctx_;
     routing_region_ptr* region_;
     routing_region_ptr* parent_;
-    bool is_relevant_;
+    bool is_on_route_;
     bool is_dirty_;
+    bool is_animating_;
 };
 
 template<class Event>
@@ -262,7 +288,6 @@ on_targeted_event(Context ctx, component_id id, Handler&& handler)
 
 struct refresh_event
 {
-    bool incomplete = false;
 };
 
 inline bool
@@ -282,9 +307,6 @@ on_refresh(Context ctx, Handler handler)
     }
     ALIA_END
 }
-
-void
-mark_refresh_incomplete(dataless_context ctx);
 
 } // namespace alia
 
