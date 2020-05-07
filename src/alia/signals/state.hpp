@@ -1,152 +1,17 @@
 #ifndef ALIA_SIGNALS_STATE_HPP
 #define ALIA_SIGNALS_STATE_HPP
 
+#include <alia/flow/components.hpp>
 #include <alia/flow/data_graph.hpp>
-#include <alia/flow/events.hpp>
 #include <alia/signals/adaptors.hpp>
-#include <alia/signals/core.hpp>
 
 namespace alia {
 
-// state_holder<Value> is designed to be stored persistently as actual
-// application state. Signals for it will track changes in it and report its ID
-// based on that.
 template<class Value>
-struct state_holder
+component_data_signal<Value, duplex_signal>
+make_state_signal(component_data<Value>& data)
 {
-    state_holder() : version_(0)
-    {
-    }
-
-    explicit state_holder(Value value) : value_(std::move(value)), version_(1)
-    {
-    }
-
-    bool
-    is_initialized() const
-    {
-        return version_ != 0;
-    }
-
-    Value const&
-    get() const
-    {
-        return value_;
-    }
-
-    unsigned
-    version() const
-    {
-        return version_;
-    }
-
-    void
-    set(Value value)
-    {
-        value_ = std::move(value);
-        handle_change();
-    }
-
-    // If you REALLY need direct, non-const access to the underlying state,
-    // you can use this. It returns a non-const reference to the value and
-    // increments the version number (assuming you'll make some changes).
-    //
-    // Note that you should be careful to use this atomically. In other words,
-    // call this to get a reference, do your update, and then discard the
-    // reference before anyone else observes the state. If you hold onto the
-    // reference and continue making changes while other alia code is accessing
-    // it, they'll end up with outdated views of the state.
-    //
-    // Also note that if you call this on an uninitialized state, you're
-    // expected to initialize it.
-    //
-    Value&
-    nonconst_ref()
-    {
-        handle_change();
-        return value_;
-    }
-
-    // This is even less safe. It's like above, but any changes you make will
-    // NOT be marked in the component tree, so you should only use this if you
-    // know it's safe to do so.
-    Value&
-    untracked_nonconst_ref()
-    {
-        ++version_;
-        return value_;
-    }
-
-    // Update the component region that the component is part of.
-    void
-    refresh_region(routing_region_ptr const& region)
-    {
-        region_ = region;
-    }
-
- private:
-    void
-    handle_change()
-    {
-        ++version_;
-        mark_component_as_dirty(region_);
-    }
-
-    Value value_;
-    // version_ is incremented for each change in the value of the state.
-    // If this is 0, the state is considered uninitialized.
-    unsigned version_;
-    routing_region_ptr region_;
-};
-
-template<class Value>
-struct state_signal : signal<state_signal<Value>, Value, duplex_signal>
-{
-    explicit state_signal(state_holder<Value>* s) : state_(s)
-    {
-    }
-
-    bool
-    has_value() const
-    {
-        return state_->is_initialized();
-    }
-
-    Value const&
-    read() const
-    {
-        return state_->get();
-    }
-
-    simple_id<unsigned> const&
-    value_id() const
-    {
-        id_ = make_id(state_->version());
-        return id_;
-    }
-
-    bool
-    ready_to_write() const
-    {
-        return true;
-    }
-
-    void
-    write(Value const& value) const
-    {
-        state_->set(value);
-    }
-
- private:
-    state_holder<Value>* state_;
-    mutable simple_id<unsigned> id_;
-};
-
-template<class Value>
-state_signal<Value>
-make_state_signal(state_holder<Value>& state)
-{
-    return state_signal<Value>(&state);
+    return component_data_signal<Value, duplex_signal>(&data);
 }
 
 // get_state(ctx, initial_value) returns a signal carrying some persistent local
@@ -159,11 +24,11 @@ get_state(Context ctx, InitialValue const& initial_value)
 {
     auto initial_value_signal = signalize(initial_value);
 
-    state_holder<typename decltype(initial_value_signal)::value_type>* state;
+    component_data<typename decltype(initial_value_signal)::value_type>* state;
     get_data(ctx, &state);
 
     on_refresh(ctx, [&](auto ctx) {
-        state->refresh_region(get_active_routing_region(ctx));
+        state->refresh_container(get_active_component_container(ctx));
         if (!state->is_initialized() && signal_has_value(initial_value_signal))
             state->untracked_nonconst_ref() = read_signal(initial_value_signal);
     });

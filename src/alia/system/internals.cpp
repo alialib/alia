@@ -31,7 +31,7 @@ initialize_system(
     sys.controller = controller;
     sys.external.reset(
         external ? external : new default_external_interface(sys));
-    sys.root_region.reset(new routing_region);
+    sys.root_component.reset(new component_container);
 }
 
 void
