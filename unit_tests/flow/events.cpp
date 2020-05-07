@@ -5,6 +5,8 @@
 #include <testing.hpp>
 
 #include <alia/signals/basic.hpp>
+#include <alia/signals/operators.hpp>
+#include <alia/signals/state.hpp>
 #include <alia/system/internals.hpp>
 
 using namespace alia;
@@ -73,4 +75,62 @@ TEST_CASE("node IDs", "[flow][events]")
         REQUIRE(event.visited == "one;two;");
         REQUIRE(event.result == "two");
     }
+}
+
+TEST_CASE("on_init/on_activate", "[signals][state]")
+{
+    bool active = false;
+
+    int init_count = 0;
+    int activate_count = 0;
+
+    alia::system sys;
+    initialize_system(sys, [&](context ctx) {
+        ALIA_IF(active)
+        {
+            on_init(ctx, ++direct(init_count));
+            on_activate(ctx, ++direct(activate_count));
+        }
+        ALIA_END
+    });
+
+    active = false;
+    refresh_system(sys);
+    REQUIRE(init_count == 0);
+    REQUIRE(activate_count == 0);
+
+    active = true;
+    refresh_system(sys);
+    REQUIRE(init_count == 1);
+    REQUIRE(activate_count == 1);
+
+    active = true;
+    refresh_system(sys);
+    REQUIRE(init_count == 1);
+    REQUIRE(activate_count == 1);
+
+    active = false;
+    refresh_system(sys);
+    REQUIRE(init_count == 1);
+    REQUIRE(activate_count == 1);
+
+    active = true;
+    refresh_system(sys);
+    REQUIRE(init_count == 1);
+    REQUIRE(activate_count == 2);
+
+    active = true;
+    refresh_system(sys);
+    REQUIRE(init_count == 1);
+    REQUIRE(activate_count == 2);
+
+    active = false;
+    refresh_system(sys);
+    REQUIRE(init_count == 1);
+    REQUIRE(activate_count == 2);
+
+    active = true;
+    refresh_system(sys);
+    REQUIRE(init_count == 1);
+    REQUIRE(activate_count == 3);
 }
