@@ -153,7 +153,7 @@ do_button_(dom::context ctx, readable<std::string> text, action<> on_click)
     {
         add_element(
             ctx,
-            get_cached_data<element_data>(ctx),
+            *element,
             combine_ids(ref(text.value_id()), make_id(on_click.is_ready())),
             [=]() {
                 return asmdom::h(
@@ -219,7 +219,7 @@ struct div_data
 void
 scoped_div::begin(dom::context ctx, readable<std::string> class_name)
 {
-    ctx_ = ctx;
+    ctx_.reset(ctx);
 
     get_cached_data(ctx, &data_);
 
@@ -242,7 +242,7 @@ scoped_div::end()
 {
     if (ctx_)
     {
-        dom::context& ctx = *ctx_;
+        dom::context ctx = *ctx_;
 
         routing_.end();
 

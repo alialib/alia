@@ -93,7 +93,7 @@ struct scoped_div : noncopyable
     }
 
  private:
-    std::optional<dom::context> ctx_;
+    optional_context<dom::context> ctx_;
     div_data* data_ = nullptr;
     asmdom::Children* parent_children_list_ = nullptr;
     scoped_component_container routing_;
