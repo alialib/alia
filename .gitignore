@@ -3,3 +3,4 @@
 .venv
 www
 coverage.txt
+build
