@@ -314,8 +314,6 @@ TEST_CASE("fluid object tree", "[flow][object_trees]")
 {
     clear_log();
 
-    int n = 0;
-
     tree_node<test_object> root;
     root.object.name = "root";
 
