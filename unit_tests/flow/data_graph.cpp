@@ -596,3 +596,64 @@ TEST_CASE("low-level get_keyed_data", "[data_graph]")
     }
     check_log("destructing int;");
 }
+
+namespace {
+
+struct verbose_int_object
+{
+    verbose_int_object() : n(-1)
+    {
+    }
+    verbose_int_object(int n) : n(n)
+    {
+    }
+    ~verbose_int_object()
+    {
+        the_log << "destructing int: " << n << ";";
+    }
+    int n;
+};
+
+template<class Context>
+void
+do_verbose_int(Context& ctx, int n)
+{
+    verbose_int_object* obj;
+    if (get_data(ctx, &obj))
+    {
+        REQUIRE(obj->n == -1);
+        obj->n = n;
+        the_log << "initializing int: " << n << ";";
+    }
+    else
+    {
+        REQUIRE(obj->n == n);
+        the_log << "visiting int: " << n << ";";
+    }
+}
+
+} // namespace
+
+TEST_CASE("data node destruction order", "[data_graph]")
+{
+    clear_log();
+    {
+        data_graph graph;
+        auto make_controller = []() {
+            return [=](context ctx) {
+                do_verbose_int(ctx, 1);
+                do_verbose_int(ctx, 2);
+                do_verbose_int(ctx, 3);
+            };
+        };
+        do_traversal(graph, make_controller());
+        check_log(
+            "initializing int: 1;"
+            "initializing int: 2;"
+            "initializing int: 3;");
+    }
+    check_log(
+        "destructing int: 3;"
+        "destructing int: 2;"
+        "destructing int: 1;");
+}
