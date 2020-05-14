@@ -14,9 +14,9 @@ struct tree_object
     truncate(Object* after)
         = 0;
 
-    Object** prev_;
-    Object* next_;
-    Object* children_;
+    Object** prev_ = nullptr;
+    Object* next_ = nullptr;
+    Object* children_ = nullptr;
 };
 
 template<class Object>
