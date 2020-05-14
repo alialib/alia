@@ -11,6 +11,14 @@ struct test_object : tree_object<test_object>
     ~test_object()
     {
         the_log << "removing " << name << "; ";
+
+        if (this->parent)
+        {
+            std::remove(
+                this->parent->children.begin(),
+                this->parent->children.end(),
+                this);
+        }
     }
 
     void
@@ -20,6 +28,31 @@ struct test_object : tree_object<test_object>
         if (after)
             the_log << " after " << after->name;
         the_log << "; ";
+
+        if (this->parent)
+        {
+            std::remove(
+                this->parent->children.begin(),
+                this->parent->children.end(),
+                this);
+        }
+
+        this->parent = &parent;
+
+        if (after)
+        {
+            this->parent->children.insert(
+                std::find(
+                    this->parent->children.begin(),
+                    this->parent->children.end(),
+                    after)
+                    + 1,
+                this);
+        }
+        else
+        {
+            this->parent->children.insert(this->parent->children.begin(), this);
+        }
     }
 
     void
@@ -31,7 +64,29 @@ struct test_object : tree_object<test_object>
         the_log << "; ";
     }
 
+    void
+    stream(std::ostream& out)
+    {
+        out << name << "(";
+        for (test_object* child : children)
+        {
+            child->stream(out);
+            out << ";";
+        }
+        out << ")";
+    }
+
+    std::string
+    to_string()
+    {
+        std::stringstream out;
+        this->stream(out);
+        return out.str();
+    }
+
     std::string name;
+    test_object* parent = nullptr;
+    std::vector<test_object*> children;
 };
 
 ALIA_DEFINE_TAGGED_TYPE(tree_traversal_tag, tree_traversal<test_object>&)
@@ -121,14 +176,15 @@ TEST_CASE("some object tree", "[flow][object_trees]")
 
     n = 0;
     refresh_system(sys);
-    check_log("truncating root; ");
+    check_log("");
+    REQUIRE(root.to_string() == "root()");
 
     n = 3;
     refresh_system(sys);
     check_log(
         "relocating bit0 into root; "
-        "relocating bit1 into root after bit0; "
-        "truncating root after bit1; ");
+        "relocating bit1 into root after bit0; ");
+    REQUIRE(root.to_string() == "root(bit0();bit1();)");
 
     n = 0;
     refresh_system(sys);
@@ -139,16 +195,16 @@ TEST_CASE("some object tree", "[flow][object_trees]")
 
     n = 2;
     refresh_system(sys);
-    check_log(
-        "relocating bit1 into root; "
-        "truncating root after bit1; ");
+    check_log("relocating bit1 into root; ");
 
     n = 15;
     refresh_system(sys);
     check_log(
         "relocating bit0 into root; "
-        "relocating bit0 into root; "
-        "relocating bit2 into root; "
-        "relocating bit3 into root; "
-        "truncating root after bit3; ");
+        "relocating bit2 into root after bit1; "
+        "relocating bit3 into root after bit2; ");
+
+    n = 13;
+    refresh_system(sys);
+    check_log("removing bit1; ");
 }

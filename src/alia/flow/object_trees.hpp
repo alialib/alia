@@ -31,10 +31,12 @@ template<class Object>
 void
 check_for_movement(tree_traversal<Object>& traversal, Object& object)
 {
-    if (*traversal.next_ptr != &object)
+    Object* expected_object = *traversal.next_ptr;
+    if (expected_object != &object)
     {
         object.relocate(*traversal.active_parent, traversal.last_sibling);
         *traversal.next_ptr = &object;
+        object.next_ = expected_object;
     }
 }
 
