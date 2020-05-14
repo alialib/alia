@@ -113,7 +113,7 @@ struct named_block_ref_node : noncopyable
                         delete node;
                     }
                     else
-                        clear_cached_data(node->block);
+                        node->block.clear_cached_data();
                 }
                 else
                     delete node;
@@ -147,7 +147,7 @@ deactivate(named_block_ref_node& ref)
     {
         --ref.node->active_count;
         if (ref.node->active_count == 0)
-            clear_cached_data(ref.node->block);
+            ref.node->block.clear_cached_data();
         ref.active = false;
     }
 }
@@ -163,40 +163,18 @@ delete_named_block_ref_list(named_block_ref_node* head)
     }
 }
 
-// Clear all cached data stored in the subgraph referenced from the given node
-// list.
-static void
-clear_cached_data(data_node* nodes)
-{
-    for (data_node* i = nodes; i; i = i->next)
-    {
-        // If this node is cached data, clear it.
-        typed_data_node<cached_data_holder>* caching_node
-            = dynamic_cast<typed_data_node<cached_data_holder>*>(i);
-        if (caching_node)
-        {
-            cached_data_holder& holder = caching_node->value;
-            delete holder.data;
-            holder.data = 0;
-        }
-
-        // If this node is a data block, clear cached data from it.
-        typed_data_node<data_block>* block
-            = dynamic_cast<typed_data_node<data_block>*>(i);
-        if (block)
-            clear_cached_data(block->value);
-    }
-}
-
 void
-clear_cached_data(data_block& block)
+data_block::clear_cached_data()
 {
-    if (!block.cache_clear)
+    if (!this->cache_clear)
     {
-        clear_cached_data(block.nodes);
-        for (named_block_ref_node* i = block.named_blocks; i; i = i->next)
+        for (data_node* i = this->nodes; i; i = i->next)
+        {
+            i->clear_cached_data();
+        }
+        for (named_block_ref_node* i = this->named_blocks; i; i = i->next)
             deactivate(*i);
-        block.cache_clear = true;
+        this->cache_clear = true;
     }
 }
 
