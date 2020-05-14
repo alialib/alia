@@ -4,14 +4,15 @@ namespace alia {
 
 if_block::if_block(data_traversal& traversal, bool condition)
 {
-    data_block& block = get_data<data_block>(traversal);
+    data_block* block;
+    get_data_node(traversal, &block);
     if (condition)
     {
-        scoped_data_block_.begin(traversal, block);
+        scoped_data_block_.begin(traversal, *block);
     }
     else if (traversal.cache_clearing_enabled)
     {
-        clear_cached_data(block);
+        block->clear_cached_data();
     }
 }
 
@@ -22,9 +23,10 @@ loop_block::loop_block(data_traversal& traversal)
 }
 loop_block::~loop_block()
 {
-    // The current block is the one we were expecting to use for the next
-    // iteration, but since the destructor is being invoked, there won't be a
-    // next iteration, which means we should clear out that block.
+    // block_ stores the data block we were expecting to use for the next
+    // iteration (and, indirectly, all subsequent iterations), but since the
+    // destructor is being invoked, there won't be a next iteration, which means
+    // we should clear out that block.
     if (!std::uncaught_exception())
         clear_data_block(*block_);
 }
