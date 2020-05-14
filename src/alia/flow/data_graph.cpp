@@ -169,9 +169,7 @@ data_block::clear_cached_data()
     if (!this->cache_clear)
     {
         for (data_node* i = this->nodes; i; i = i->next)
-        {
             i->clear_cached_data();
-        }
         for (named_block_ref_node* i = this->named_blocks; i; i = i->next)
             deactivate(*i);
         this->cache_clear = true;
@@ -183,16 +181,21 @@ data_block::~data_block()
     clear_data_block(*this);
 }
 
+// Delete nodes in reverse order to match general C++ semantics.
+static void
+clear_data_nodes(data_node* node)
+{
+    if (node)
+    {
+        clear_data_nodes(node->next);
+        delete node;
+    }
+}
+
 void
 clear_data_block(data_block& block)
 {
-    data_node* node = block.nodes;
-    while (node)
-    {
-        data_node* next = node->next;
-        delete node;
-        node = next;
-    }
+    clear_data_nodes(block.nodes);
     block.nodes = 0;
 
     delete_named_block_ref_list(block.named_blocks);
