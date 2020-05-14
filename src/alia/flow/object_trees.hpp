@@ -17,6 +17,19 @@ struct tree_node : noncopyable
             this->remove_from_list();
             object.remove();
         }
+        if (children_)
+        {
+            // The parent is being destructed before the children, so just
+            // wipe all their tracking pointers.
+            tree_node* child = children_;
+            while (child)
+            {
+                tree_node* next = child->next_;
+                child->prev_ = nullptr;
+                child->next_ = nullptr;
+                child = next;
+            }
+        }
     }
 
     void
