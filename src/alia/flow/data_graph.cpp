@@ -113,7 +113,7 @@ struct named_block_ref_node : noncopyable
                         delete node;
                     }
                     else
-                        node->block.clear_cached_data();
+                        node->block.clear_cache();
                 }
                 else
                     delete node;
@@ -147,7 +147,7 @@ deactivate(named_block_ref_node& ref)
     {
         --ref.node->active_count;
         if (ref.node->active_count == 0)
-            ref.node->block.clear_cached_data();
+            ref.node->block.clear_cache();
         ref.active = false;
     }
 }
@@ -155,23 +155,42 @@ deactivate(named_block_ref_node& ref)
 static void
 delete_named_block_ref_list(named_block_ref_node* head)
 {
-    while (head)
+    if (head)
     {
-        named_block_ref_node* next = head->next;
+        delete_named_block_ref_list(head->next);
         delete head;
-        head = next;
     }
 }
 
+// Clear node caches in reverse order to match general C++ semantics.
+static void
+clear_data_node_caches(data_node* node)
+{
+	if (node)
+	{
+		clear_data_node_caches(node->next);
+		node->clear_cache();
+	}
+}
+
+// Same with named_block_ref_nodes.
+static void
+deactivate_ref_nodes(named_block_ref_node* node)
+{
+	if (node)
+	{
+		deactivate_ref_nodes(node->next);
+		deactivate(*node);
+	}
+}
+
 void
-data_block::clear_cached_data()
+data_block::clear_cache()
 {
     if (!this->cache_clear)
     {
-        for (data_node* i = this->nodes; i; i = i->next)
-            i->clear_cached_data();
-        for (named_block_ref_node* i = this->named_blocks; i; i = i->next)
-            deactivate(*i);
+		clear_data_node_caches(this->nodes);
+		deactivate_ref_nodes(this->named_blocks);
         this->cache_clear = true;
     }
 }
@@ -195,6 +214,11 @@ clear_data_nodes(data_node* node)
 void
 clear_data_block(data_block& block)
 {
+    // This isn't strictly necessary, but it gives nodes a chance to remove
+    // themselves in a more explicit manner before they find themselves in a
+    // state of destruction.
+    block.clear_cache();
+
     clear_data_nodes(block.nodes);
     block.nodes = 0;
 

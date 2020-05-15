@@ -72,7 +72,7 @@ struct data_node : noncopyable
     }
 
     virtual void
-    clear_cached_data()
+    clear_cache()
     {
     }
 
@@ -104,7 +104,7 @@ struct data_block : data_node
     // Clear all cached data stored within a data block.
     // Note that this recursively processes child blocks.
     void
-    clear_cached_data();
+    clear_cache();
 
     ~data_block();
 };
@@ -493,7 +493,7 @@ struct cached_data_node : data_node
     std::unique_ptr<T> value;
 
     void
-    clear_cached_data()
+    clear_cache()
     {
         value.reset();
     }
