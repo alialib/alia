@@ -12,7 +12,7 @@ if_block::if_block(data_traversal& traversal, bool condition)
     }
     else if (traversal.cache_clearing_enabled)
     {
-        block->clear_cached_data();
+        block->clear_cache();
     }
 }
 
