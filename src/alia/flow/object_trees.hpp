@@ -107,7 +107,7 @@ activate_parent_node(
 
 template<class Object>
 void
-finish_sibling_list(tree_traversal<Object>& traversal)
+cap_sibling_list(tree_traversal<Object>& traversal)
 {
     if (*traversal.next_ptr)
     {
@@ -153,7 +153,7 @@ struct scoped_tree_node
     {
         if (traversal_)
         {
-            finish_sibling_list(*traversal_);
+            cap_sibling_list(*traversal_);
             traversal_->active_parent = parent_;
             depart_node(*traversal_, *node_);
             traversal_ = nullptr;
@@ -166,6 +166,46 @@ struct scoped_tree_node
     tree_node<Object>* node_;
 };
 
+template<class Object>
+struct scoped_tree_children
+{
+    scoped_tree_children() : traversal_(nullptr)
+    {
+    }
+    scoped_tree_children(
+        tree_traversal<Object>& traversal, tree_node<Object>& parent)
+    {
+        begin(traversal, parent);
+    }
+    ~scoped_tree_children()
+    {
+        end();
+    }
+
+    void
+    begin(tree_traversal<Object>& traversal, tree_node<Object>& parent)
+    {
+        traversal_ = &traversal;
+        old_traversal_state_ = traversal;
+        activate_parent_node(traversal, parent);
+    }
+
+    void
+    end()
+    {
+        if (traversal_)
+        {
+            cap_sibling_list(*traversal_);
+            *traversal_ = old_traversal_state_;
+            traversal_ = nullptr;
+        }
+    }
+
+ private:
+    tree_traversal<Object>* traversal_;
+    tree_traversal<Object> old_traversal_state_;
+};
+
 template<class Object, class Content>
 void
 traverse_object_tree(
@@ -175,7 +215,7 @@ traverse_object_tree(
 {
     activate_parent_node(traversal, root);
     content();
-    finish_sibling_list(traversal);
+    cap_sibling_list(traversal);
 }
 
 } // namespace alia

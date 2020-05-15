@@ -102,6 +102,21 @@ do_container(test_context ctx, std::string name, Contents contents)
     contents(ctx);
 }
 
+template<class Contents>
+void
+do_piecewise_container(test_context ctx, std::string name, Contents contents)
+{
+    tree_node<test_object>* node;
+    if (get_cached_data(ctx, &node))
+        node->object.name = name;
+    if (is_refresh_event(ctx))
+        refresh_tree_node(get<tree_traversal_tag>(ctx), *node);
+    scoped_tree_children<test_object> scoped;
+    if (is_refresh_event(ctx))
+        scoped.begin(get<tree_traversal_tag>(ctx), *node);
+    contents(ctx);
+}
+
 } // namespace
 
 TEST_CASE("simple object tree", "[flow][object_trees]")
@@ -417,4 +432,108 @@ TEST_CASE("fluid object tree", "[flow][object_trees]")
     REQUIRE(
         root.object.to_string()
         == "root(a_team(edgar();dot();charlie();alf(););b_team(betty(););)");
+}
+
+TEST_CASE("piecewise containers", "[flow][object_trees]")
+{
+    clear_log();
+
+    int n = 0;
+
+    tree_node<test_object> root;
+    root.object.name = "root";
+
+    auto controller = [&](test_context ctx) {
+        ALIA_IF(n & 1)
+        {
+            do_piecewise_container(ctx, "bit0", [&](test_context ctx) {
+                ALIA_IF(n & 2)
+                {
+                    do_object(ctx, "bit1");
+                }
+                ALIA_END
+
+                ALIA_IF(n & 4)
+                {
+                    do_piecewise_container(ctx, "bit2", [&](test_context ctx) {
+                        ALIA_IF(n & 8)
+                        {
+                            do_object(ctx, "bit3");
+                        }
+                        ALIA_END
+
+                        ALIA_IF(n & 16)
+                        {
+                            do_object(ctx, "bit4");
+                        }
+                        ALIA_END
+                    });
+                }
+                ALIA_END
+
+                ALIA_IF(n & 32)
+                {
+                    do_object(ctx, "bit5");
+                }
+                ALIA_END
+            });
+        }
+        ALIA_END
+
+        ALIA_IF(n & 64)
+        {
+            do_object(ctx, "bit6");
+        }
+        ALIA_END
+    };
+
+    alia::system sys;
+    initialize_system(sys, [&](context vanilla_ctx) {
+        tree_traversal<test_object> traversal;
+        auto ctx = vanilla_ctx.add<tree_traversal_tag>(traversal);
+        if (is_refresh_event(ctx))
+        {
+            traverse_object_tree(traversal, root, [&]() { controller(ctx); });
+        }
+        else
+        {
+            controller(ctx);
+        }
+    });
+
+    n = 3;
+    refresh_system(sys);
+    check_log(
+        "relocating bit0 into root; "
+        "relocating bit1 into bit0; ");
+    REQUIRE(root.object.to_string() == "root(bit0(bit1(););)");
+
+    n = 64;
+    refresh_system(sys);
+    check_log(
+        "removing bit1; "
+        "removing bit0; "
+        "relocating bit6 into root; ");
+    REQUIRE(root.object.to_string() == "root(bit6();)");
+
+    n = 125;
+    refresh_system(sys);
+    check_log(
+        "relocating bit0 into root; "
+        "relocating bit2 into bit0; "
+        "relocating bit3 into bit2; "
+        "relocating bit4 into bit2 after bit3; "
+        "relocating bit5 into bit0 after bit2; ");
+    REQUIRE(
+        root.object.to_string()
+        == "root(bit0(bit2(bit3();bit4(););bit5(););bit6();)");
+
+    n = 55;
+    refresh_system(sys);
+    check_log(
+        "relocating bit1 into bit0; "
+        "removing bit3; "
+        "removing bit6; ");
+    REQUIRE(
+        root.object.to_string() == "root(bit0(bit1();bit2(bit4(););bit5(););)");
 }
