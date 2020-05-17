@@ -99,7 +99,8 @@ struct string_literal_signal
     id_interface const&
     value_id() const
     {
-        return unit_id;
+        id_ = make_id(text_);
+        return id_;
     }
     bool
     has_value() const
@@ -115,6 +116,7 @@ struct string_literal_signal
  private:
     char const* text_;
     lazy_reader<std::string> lazy_reader_;
+    mutable simple_id<char const*> id_;
 };
 inline string_literal_signal
 value(char const* text)
