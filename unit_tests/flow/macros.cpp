@@ -135,7 +135,7 @@ TEST_CASE("alia_if/alia_else caching", "[flow][macros]")
                 ALIA_IF(condition)
                 {
                     ; // This somehow stops ClangFormat from doing weird stuff
-                      // with this block;
+                      // with this block.
                     ALIA_IF(value(true))
                     {
                         // This is nested inside an additional level of data
@@ -558,5 +558,44 @@ TEST_CASE("alia_untracked_switch", "[flow][macros]")
         do_traversal(graph, make_controller(1));
         check_log("initializing int: 0;");
         do_traversal(graph, make_controller(0));
+    }
+}
+
+TEST_CASE("alia_event_dependent_if", "[flow][macros]")
+{
+    clear_log();
+    {
+        data_graph graph;
+        auto make_controller = [](int n) {
+            return [=](context ctx) {
+                ALIA_IF(n > 1)
+                {
+                    do_cached_int(ctx, 3);
+                }
+                ALIA_END
+
+                ALIA_EVENT_DEPENDENT_IF(n > 1)
+                {
+                    do_cached_int(ctx, 2);
+                }
+                ALIA_END
+
+                do_cached_int(ctx, 1);
+            };
+        };
+        do_traversal(graph, make_controller(4));
+        check_log(
+            "initializing cached int: 3;"
+            "initializing cached int: 2;"
+            "initializing cached int: 1;");
+        do_traversal(graph, make_controller(0));
+        check_log(
+            "destructing int;"
+            "visiting cached int: 1;");
+        do_traversal(graph, make_controller(4));
+        check_log(
+            "initializing cached int: 3;"
+            "visiting cached int: 2;"
+            "visiting cached int: 1;");
     }
 }
