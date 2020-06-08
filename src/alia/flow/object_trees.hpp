@@ -239,9 +239,10 @@ struct scoped_tree_cacher
     scoped_tree_cacher(
         tree_traversal<Object>& traversal,
         tree_caching_data<Object>& data,
-        id_interface const& content_id)
+        id_interface const& content_id,
+        bool force_update)
     {
-        begin(traversal, data, content_id);
+        begin(traversal, data, content_id, force_update);
     }
     ~scoped_tree_cacher()
     {
@@ -253,11 +254,12 @@ struct scoped_tree_cacher
     begin(
         tree_traversal<Object>& traversal,
         tree_caching_data<Object>& data,
-        id_interface const& content_id)
+        id_interface const& content_id,
+        bool force_update)
     {
         traversal_ = &traversal;
         data_ = &data;
-        content_traversal_required_ = false;
+        content_traversal_required_ = force_update;
 
         // If the content ID changes, we know we have to refresh the contents.
         if (!data.content_id.matches(content_id))

@@ -563,7 +563,7 @@ TEST_CASE("object tree caching", "[flow][object_trees]")
         auto& caching_data
             = get_cached_data<tree_caching_data<test_object>>(ctx);
         scoped_tree_cacher<test_object> cacher(
-            get<tree_traversal_tag>(ctx), caching_data, make_id(n & 12));
+            get<tree_traversal_tag>(ctx), caching_data, make_id(n & 12), false);
         ALIA_EVENT_DEPENDENT_IF(cacher.content_traversal_required())
         {
             the_log << "traversing cached content; ";
