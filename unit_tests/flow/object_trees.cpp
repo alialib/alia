@@ -537,3 +537,110 @@ TEST_CASE("piecewise containers", "[flow][object_trees]")
     REQUIRE(
         root.object.to_string() == "root(bit0(bit1();bit2(bit4(););bit5(););)");
 }
+
+TEST_CASE("object tree caching", "[flow][object_trees]")
+{
+    clear_log();
+
+    int n = 0;
+
+    tree_node<test_object> root;
+    root.object.name = "root";
+
+    auto controller = [&](test_context ctx) {
+        ALIA_IF(n & 1)
+        {
+            do_object(ctx, "bit0");
+        }
+        ALIA_END
+
+        ALIA_IF(n & 2)
+        {
+            do_object(ctx, "bit1");
+        }
+        ALIA_END
+
+        auto& caching_data
+            = get_cached_data<tree_caching_data<test_object>>(ctx);
+        scoped_tree_cacher<test_object> cacher(
+            get<tree_traversal_tag>(ctx), caching_data, make_id(n & 12));
+        ALIA_EVENT_DEPENDENT_IF(cacher.content_traversal_required())
+        {
+            the_log << "traversing cached content; ";
+
+            ALIA_IF(n & 4)
+            {
+                do_object(ctx, "bit2");
+            }
+            ALIA_END
+
+            ALIA_IF(n & 8)
+            {
+                do_object(ctx, "bit3");
+            }
+            ALIA_END
+        }
+        ALIA_END
+
+        ALIA_IF(n & 16)
+        {
+            do_object(ctx, "bit4");
+        }
+        ALIA_END
+    };
+
+    alia::system sys;
+    initialize_system(sys, [&](context vanilla_ctx) {
+        tree_traversal<test_object> traversal;
+        auto ctx = vanilla_ctx.add<tree_traversal_tag>(traversal);
+        if (is_refresh_event(ctx))
+        {
+            traverse_object_tree(traversal, root, [&]() { controller(ctx); });
+        }
+        else
+        {
+            controller(ctx);
+        }
+    });
+
+    n = 0;
+    refresh_system(sys);
+    check_log("traversing cached content; ");
+    REQUIRE(root.object.to_string() == "root()");
+
+    n = 3;
+    refresh_system(sys);
+    check_log(
+        "relocating bit0 into root; "
+        "relocating bit1 into root after bit0; "
+        // This happens because the caching system can't currently handle moving
+        // the cached content.
+        "traversing cached content; ");
+    REQUIRE(root.object.to_string() == "root(bit0();bit1();)");
+
+    n = 2;
+    refresh_system(sys);
+    check_log("removing bit0; ");
+    REQUIRE(root.object.to_string() == "root(bit1();)");
+
+    n = 15;
+    refresh_system(sys);
+    check_log(
+        "relocating bit0 into root; "
+        "traversing cached content; "
+        "relocating bit2 into root after bit1; "
+        "relocating bit3 into root after bit2; ");
+    REQUIRE(root.object.to_string() == "root(bit0();bit1();bit2();bit3();)");
+
+    n = 14;
+    refresh_system(sys);
+    check_log("removing bit0; ");
+    REQUIRE(root.object.to_string() == "root(bit1();bit2();bit3();)");
+
+    n = 6;
+    refresh_system(sys);
+    check_log(
+        "traversing cached content; "
+        "removing bit3; ");
+    REQUIRE(root.object.to_string() == "root(bit1();bit2();)");
+}
