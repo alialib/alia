@@ -58,6 +58,14 @@ struct loop_block : noncopyable
     data_block* block_;
 };
 
+struct event_dependent_if_block : noncopyable
+{
+    event_dependent_if_block(data_traversal& traversal, bool condition);
+
+ private:
+    scoped_data_block scoped_data_block_;
+};
+
 // The following are macros used to annotate control flow.
 // They are used exactly like their C equivalents, but all require an alia_end
 // after the end of their scope.
@@ -385,6 +393,28 @@ read_condition(T const& x)
 #define alia_untracked_switch_(ctx, x) ALIA_UNTRACKED_SWITCH_(ctx, x)
 #define alia_untracked_switch(x) ALIA_UNTRACKED_SWITCH(x)
 
+#endif
+
+// event_dependent_if - This is used for tests that involve conditions that
+// change from event pass to another. It does not clear out cached data within
+// the block if it's skipped.
+
+#define ALIA_EVENT_DEPENDENT_IF_(ctx, condition)                               \
+    {                                                                          \
+        {                                                                      \
+            bool _alia_condition = alia::condition_is_true(condition);         \
+            ::alia::event_dependent_if_block _alia_if_block(                   \
+                get_data_traversal(ctx), _alia_condition);                     \
+            if (_alia_condition)                                               \
+            {
+
+#define ALIA_EVENT_DEPENDENT_IF(condition)                                     \
+    ALIA_EVENT_DEPENDENT_IF_(ctx, condition)
+
+#ifndef ALIA_STRICT_MACROS
+#define alia_event_dependent_if_(ctx, condition)                               \
+    ALIA_EVENT_DEPENDENT_IF_(ctx, condition)
+#define alia_event_dependent_if(condition) ALIA_EVENT_DEPENDENT_IF(condition)
 #endif
 
 } // namespace alia
