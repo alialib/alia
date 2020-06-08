@@ -2,6 +2,8 @@
 #define ALIA_FLOW_OBJECT_TREES_HPP
 
 #include <alia/common.hpp>
+#include <alia/flow/events.hpp>
+#include <alia/id.hpp>
 
 namespace alia {
 
@@ -217,6 +219,108 @@ traverse_object_tree(
     content();
     cap_sibling_list(traversal);
 }
+
+template<class Object>
+struct tree_caching_data
+{
+    captured_id content_id;
+    tree_node<Object>** predecessor = nullptr;
+    tree_node<Object>* subtree_head = nullptr;
+    tree_node<Object>** subtree_tail = nullptr;
+    tree_node<Object>* last_sibling = nullptr;
+};
+
+template<class Object>
+struct scoped_tree_cacher
+{
+    scoped_tree_cacher() : traversal_(nullptr)
+    {
+    }
+    scoped_tree_cacher(
+        tree_traversal<Object>& traversal,
+        tree_caching_data<Object>& data,
+        id_interface const& content_id)
+    {
+        begin(traversal, data, content_id);
+    }
+    ~scoped_tree_cacher()
+    {
+        if (!std::uncaught_exception())
+            end();
+    }
+
+    void
+    begin(
+        tree_traversal<Object>& traversal,
+        tree_caching_data<Object>& data,
+        id_interface const& content_id)
+    {
+        traversal_ = &traversal;
+        data_ = &data;
+        content_traversal_required_ = false;
+
+        // If the content ID changes, we know we have to refresh the contents.
+        if (!data.content_id.matches(content_id))
+            content_traversal_required_ = true;
+
+        // Check to see that we're inserting this where it's expected.
+        // If not, traverse the contents. (It's not technically necessary to do
+        // this. We could instead move the cached contents here, but this is
+        // easier and fine for now.)
+        if (data.predecessor != traversal.next_ptr)
+            content_traversal_required_ = true;
+
+        if (content_traversal_required_)
+        {
+            // If we're updating the contents, capture the content ID now (while
+            // it's still valid) so we can store it in end().
+            content_id_.capture(content_id);
+
+            // Also record the current value of the tree traversal's next_ptr.
+            predecessor_ = traversal.next_ptr;
+        }
+        else
+        {
+            // And if we're not updating the contents, just splice it in.
+            *traversal.next_ptr = data.subtree_head;
+            traversal.next_ptr = data.subtree_tail;
+            traversal.last_sibling = data.last_sibling;
+        }
+    }
+
+    void
+    end()
+    {
+        if (traversal_)
+        {
+            // If the subtree was traversed, record the head and tail of it so
+            // we can splice it in on future passes.
+            if (content_traversal_required_)
+            {
+                data_->predecessor = predecessor_;
+                data_->subtree_head = *predecessor_;
+                data_->subtree_tail = traversal_->next_ptr;
+                data_->last_sibling = traversal_->last_sibling;
+                data_->content_id = std::move(content_id_);
+            }
+
+            traversal_ = nullptr;
+        }
+    }
+
+    bool
+    content_traversal_required() const
+    {
+        return content_traversal_required_;
+    }
+
+ private:
+    tree_traversal<Object>* traversal_;
+    tree_caching_data<Object>* data_;
+    bool content_traversal_required_;
+    captured_id content_id_;
+    tree_node<Object>** predecessor_;
+};
 
 } // namespace alia
 
