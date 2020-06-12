@@ -76,7 +76,8 @@ check_for_movement(tree_traversal<Object>& traversal, tree_node<Object>& node)
         node.remove_from_list();
         node.object.relocate(
             traversal.active_parent->object,
-            traversal.last_sibling ? &traversal.last_sibling->object : nullptr);
+            traversal.last_sibling ? &traversal.last_sibling->object : nullptr,
+            expected_node ? &expected_node->object : nullptr);
         node.insert_into_list(traversal.next_ptr, expected_node);
     }
 }

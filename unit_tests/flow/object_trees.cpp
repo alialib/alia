@@ -20,7 +20,7 @@ struct test_object
     }
 
     void
-    relocate(test_object& new_parent, test_object* after)
+    relocate(test_object& new_parent, test_object* after, test_object* before)
     {
         the_log << "relocating " << name << " into " << new_parent.name;
         if (after)
@@ -38,14 +38,25 @@ struct test_object
         this->parent = &new_parent;
 
         auto& siblings = new_parent.children;
+        std::vector<test_object*>::iterator insertion_point;
         if (after)
         {
-            siblings.insert(
+            insertion_point = siblings.insert(
                 std::find(siblings.begin(), siblings.end(), after) + 1, this);
         }
         else
         {
-            siblings.insert(siblings.begin(), this);
+            insertion_point = siblings.insert(siblings.begin(), this);
+        }
+
+        ++insertion_point;
+        if (before)
+        {
+            REQUIRE(*insertion_point == before);
+        }
+        else
+        {
+            REQUIRE(insertion_point == siblings.end());
         }
     }
 
