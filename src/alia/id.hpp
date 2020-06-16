@@ -78,9 +78,9 @@ struct id_interface_pointer_less_than_test
 // (if any) and create a new clone to store there.
 void
 clone_into(id_interface*& storage, id_interface const* id);
-// Same, but where the storage is a shared_ptr.
+// Same, but where the storage is a unique_ptr.
 void
-clone_into(std::shared_ptr<id_interface>& storage, id_interface const* id);
+clone_into(std::unique_ptr<id_interface>& storage, id_interface const* id);
 
 // captured_id is used to capture an ID for long-term storage (beyond the point
 // where the id_interface reference will be valid).
@@ -149,7 +149,7 @@ struct captured_id
     }
 
  private:
-    std::shared_ptr<id_interface> id_;
+    std::unique_ptr<id_interface> id_;
 };
 bool
 operator==(captured_id const& a, captured_id const& b);
@@ -223,7 +223,6 @@ ref(id_interface const& id)
 template<class Value>
 struct simple_id : id_interface
 {
- public:
     simple_id()
     {
     }
@@ -264,7 +263,6 @@ struct simple_id : id_interface
         *static_cast<simple_id*>(copy) = *this;
     }
 
- private:
     Value value_;
 };
 
