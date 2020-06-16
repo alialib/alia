@@ -5,6 +5,8 @@
 
 #include <testing.hpp>
 
+#include "traversal.hpp"
+
 using namespace alia;
 
 struct other_traversal
@@ -54,6 +56,8 @@ TEST_CASE("context", "[context][interface]")
 
     context ctx = make_context(&storage, sys, event, data, timing);
 
+    REQUIRE(get_content_id(ctx) == unit_id);
+
     REQUIRE(ctx.has<data_traversal_tag>());
     REQUIRE(&ctx.get<data_traversal_tag>() == &data);
     dataless_context dataless = ctx.remove<data_traversal_tag>();
@@ -98,4 +102,47 @@ TEST_CASE("optional_context", "[context][interface]")
 
     optional.reset();
     REQUIRE(!optional);
+}
+
+TEST_CASE("make_context", "[context][interface]")
+{
+    alia::system sys;
+    initialize_system(sys, [](context) {});
+
+    captured_id outer_id, inner_id;
+
+    auto make_controller = [&](int outer, int inner) {
+        return [&, outer, inner](context ctx) {
+            REQUIRE(get_content_id(ctx) == unit_id);
+            scoped_context_content_id outer_content(ctx, make_id(outer));
+            outer_id.capture(get_content_id(ctx));
+            {
+                scoped_context_content_id inner_content(ctx, make_id(inner));
+                inner_id.capture(get_content_id(ctx));
+            }
+        };
+    };
+
+    do_traversal(sys, make_controller(4, 1));
+    captured_id last_outer = outer_id;
+    captured_id last_inner = inner_id;
+
+    do_traversal(sys, make_controller(4, 2));
+    REQUIRE(last_outer == outer_id);
+    REQUIRE(last_inner != inner_id);
+    last_inner = inner_id;
+
+    do_traversal(sys, make_controller(4, 2));
+    REQUIRE(last_outer == outer_id);
+    REQUIRE(last_inner == inner_id);
+
+    do_traversal(sys, make_controller(7, 2));
+    REQUIRE(last_outer != outer_id);
+    last_outer = outer_id;
+    REQUIRE(last_inner != inner_id);
+    last_inner = inner_id;
+
+    do_traversal(sys, make_controller(7, 2));
+    REQUIRE(last_outer == outer_id);
+    REQUIRE(last_inner == inner_id);
 }
