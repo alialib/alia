@@ -35,7 +35,7 @@ clone_into(id_interface*& storage, id_interface const* id)
 }
 
 void
-clone_into(std::shared_ptr<id_interface>& storage, id_interface const* id)
+clone_into(std::unique_ptr<id_interface>& storage, id_interface const* id)
 {
     if (!id)
     {
