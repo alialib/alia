@@ -9,7 +9,9 @@ alia - A Library for Interactive Applications
 
 alia (pronounced uh-LEE-uh) is a modern C++ library for developing interactive
 applications in a declarative manner. In alia, the UI of your application is
-expressed as a composition of *component functions.* These component functions:
+expressed as a composition of *component functions.*
+
+alia component functions:
 
 * **are backed by data** - alia tracks the control flow of your component-level
   code so that it can maintain data corresponding to each of your individual
