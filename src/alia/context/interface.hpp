@@ -35,6 +35,9 @@ struct context_storage
     impl::generic_tagged_storage<impl::any_ref> generic;
 
     ALIA_IMPLEMENT_STORAGE_OBJECT_ACCESSORS(context_storage)
+
+    // an ID to track changes in the context contents
+    id_interface const* content_id = nullptr;
 };
 
 ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(context_storage, system_tag, sys)
@@ -196,6 +199,14 @@ get_data_traversal(Context ctx)
     return ctx.template get<data_traversal_tag>();
 }
 
+inline id_interface const&
+get_content_id(context ctx)
+{
+    return *ctx.contents_.storage->content_id;
+}
+
+// optional_context is basically just std::optional for contexts.
+// (alia supports C++14, which is why we don't use std::optional directly.)
 template<class Context>
 struct optional_context
 {
@@ -250,6 +261,34 @@ struct optional_context
 
  private:
     Context ctx_;
+};
+
+// scoped_context_content_id is used to fold another ID into the overall ID for
+// a context's content.
+struct scoped_context_content_id
+{
+    scoped_context_content_id()
+    {
+    }
+    scoped_context_content_id(context ctx, id_interface const& id)
+    {
+        begin(ctx, id);
+    }
+    ~scoped_context_content_id()
+    {
+        end();
+    }
+
+    void
+    begin(context ctx, id_interface const& id);
+
+    void
+    end();
+
+ private:
+    optional_context<dataless_context> ctx_;
+    simple_id<unsigned> this_id_;
+    id_interface const* parent_id_;
 };
 
 } // namespace alia
