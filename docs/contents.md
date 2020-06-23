@@ -13,6 +13,7 @@
   - [Adaptors](signal-adaptors.md)
   - [Consuming Signals](consuming-signals.md)
   - [Custom Signals](custom-signals.md)
+  - [Time as a Signal](time-as-a-signal.md)
 
 - Control Flow
 
