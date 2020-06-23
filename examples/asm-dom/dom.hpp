@@ -63,6 +63,12 @@ do_button(dom::context ctx, Text text, action<> on_click)
 void
 do_colored_box(dom::context ctx, readable<rgb8> color);
 
+inline void
+do_colored_box(dom::context ctx, rgb8 const& color)
+{
+    do_colored_box(ctx, value(color));
+}
+
 void
 do_hr(dom::context ctx);
 

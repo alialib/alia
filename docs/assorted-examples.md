@@ -106,7 +106,7 @@ signals:
 </div>
 
 You can smooth anything that provides the basic arithmetic operators. Here's a
-smoothed view of a color:
+smoothed view of a color with a custom transition:
 
 [source](timing.cpp ':include :fragment=color-smoothing')
 
