@@ -16,7 +16,7 @@ string(APPEND CMAKE_CXX_FLAGS " -s FETCH=1")
 string(APPEND CMAKE_CXX_FLAGS " -s DISABLE_EXCEPTION_CATCHING=0")
 
 # Create a library of common demo functionality.
-add_library(demolib STATIC color.cpp dom.cpp)
+add_library(demolib STATIC color.cpp dom.cpp emscripten.cpp)
 set_property(TARGET demolib PROPERTY CXX_STANDARD 17)
 target_link_libraries(demolib PRIVATE asm-dom)
 
@@ -34,6 +34,7 @@ string(APPEND CMAKE_CXX_FLAGS
     " -s 'EXPORT_NAME=\"AliaDemos\"'")
 string(APPEND CMAKE_CXX_FLAGS
     " -s ENVIRONMENT=web")
+
 set_property(TARGET demos PROPERTY CXX_STANDARD 17)
 target_link_libraries(demos PRIVATE asm-dom demolib)
 
