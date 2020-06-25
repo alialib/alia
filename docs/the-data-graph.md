@@ -10,8 +10,8 @@ maintain their own internal data. In order to make this happen, alia maintains a
 'data graph' behind the scenes that mimics the control flow graph of the
 component-level portions of the application code. As that code executes, alia
 follows along in the data graph and returns the correct node to each bit of code
-that requests one, ensuring that they every function call is consistently given
-the same data node.
+that requests one, ensuring that every function call is consistently given the
+same data node.
 
 Let's take a look back at our "Hello, World!" example (with a small addition):
 
