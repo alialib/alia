@@ -19,7 +19,7 @@ Building
 
 2. Get a copy of `alia.hpp`:
    ```shell
-   wget https://tmadden.github.io/alia/alia.hpp
+   wget https://alia.dev/alia.hpp
    ```
 
 3. Create a build directory:

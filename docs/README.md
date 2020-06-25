@@ -47,7 +47,7 @@ work/patience on your part to use it. See 'Project Status' below for details.
 
 <div class="hide-when-deployed">
 
-Check out [the documentation](https://tmadden.github.io/alia) for more info.
+Check out [the documentation](https://alia.dev) for more info.
 
 </div>
 
@@ -57,7 +57,7 @@ An Example
 Below is a simple tip calculator made using alia and an experimental
 [asm-dom](https://github.com/mbasso/asm-dom) wrapper. You can see it in action
 <a target="_self"
-href="https://tmadden.github.io/alia/#/assorted-examples?id=tip-calculator">
+href="https://alia.dev/#/assorted-examples?id=tip-calculator">
 here</a>, along with some other examples.
 
 ```cpp
@@ -139,5 +139,5 @@ Getting Started
 ---------------
 
 Continue on to <a target="_self"
-href="https://tmadden.github.io/alia/#/interactive-hello">the full
+href="https://alia.dev/#/interactive-hello">the full
 documentation</a> for more info.

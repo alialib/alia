@@ -30,7 +30,7 @@ obvious changes to the commands:
 
 1. Get a copy of `alia.hpp`:
    ```shell
-   wget https://tmadden.github.io/alia/alia.hpp
+   wget https://alia.dev/alia.hpp
    ```
 
 1. Build the project:
