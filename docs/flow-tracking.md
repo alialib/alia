@@ -29,7 +29,7 @@ Note that these rules only apply to the *component-level* portions of your
 application code. alia is designed so that the code that [performs
 computations](function-application.md) and the code that [produces side
 effects](actions.md#custom-actions) can be written as normal C++, without
-worrying about flow tracking/restrictions.
+worrying about flow tracking.
 
 alia_if/else
 ------------

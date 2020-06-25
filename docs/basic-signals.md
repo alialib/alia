@@ -10,10 +10,10 @@ Signal Objects
 
 It's important to understand that although signals are conceptually values that
 vary over time and persist across frames of an application, actual alia signal
-objects are generally just transient interfaces to the underlying signal. It's
-common to create signal objects on the stack, when and where they're needed, and
-even adapt/compose them on the spot to create more interesting signals. For
-example, assuming we have some floating point variable `x` that represents some
+objects are just transient interfaces to the underlying signal. It's common to
+create signal objects on the stack, when and where they're needed, and even
+adapt/compose them on the spot to create more interesting signals. For example,
+assuming we have some floating point variable `x` that represents some
 persistent application state, we might write code like this:
 
 ```cpp
@@ -59,9 +59,10 @@ The following functions allow you to construct basic signals from raw C++
 values. These are perfect for bringing in small values from your application
 data: booleans, numbers, small strings, and perhaps small data structures.
 However, all of them rely on making copies and invoking the equality operator to
-detect changes in the values they carry, so they're generally not the best
-choice for large data structures unless those structures are especially
-efficient at these operations.
+detect changes in the values they carry, so use caution when applying them to
+larger data structures. (The exception to this rule is data structures that are
+particularly efficient at copying and testing for equality (like immutable and
+copy-on-write types). These tend to naturally work well with alia.)
 
 <dl>
 
