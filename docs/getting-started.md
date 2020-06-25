@@ -25,7 +25,7 @@ https://github.com/tmadden/alia/releases/latest/download/alia.hpp
 If you want to play around with the latest version on the `master` branch, that
 header is available via GitHub Pages:
 
-https://tmadden.github.io/alia/alia.hpp
+https://alia.dev/alia.hpp
 
 ### Using It
 
