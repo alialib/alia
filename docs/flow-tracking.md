@@ -156,9 +156,11 @@ vary from slight inefficiencies to complete discontinuities in your interface.
 
 You can override the default association by defining a `get_alia_id` function
 for your item's type. (It should be accessible from within the `alia` namespace,
-either via ADL or because it's defined there.) It should take the item as a
-parameter and return an alia ID. (See [Working with IDs](working-with-ids.md).)
-It can also return `null_id` to fall back to the default ID behavior.
+either via [argument-dependent
+lookup](https://en.cppreference.com/w/cpp/language/adl) or because it's defined
+there.) It should take the item as a parameter and return an alia ID. (See
+[Working with IDs](working-with-ids.md).) It can also return `null_id` to fall
+back to the default ID behavior.
 
 transform
 ---------
