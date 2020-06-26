@@ -43,6 +43,16 @@ struct scaled_signal : regular_signal<
     {
         n_.write(value / scale_factor_.read());
     }
+    bool
+    invalidate(std::exception_ptr error) const
+    {
+        return n_.invalidate(error);
+    }
+    bool
+    is_invalidated() const
+    {
+        return n_.is_invalidated();
+    }
 
  private:
     N n_;
@@ -91,6 +101,16 @@ struct offset_signal : regular_signal<
     write(typename N::value_type const& value) const
     {
         n_.write(value - offset_.read());
+    }
+    bool
+    invalidate(std::exception_ptr error) const
+    {
+        return n_.invalidate(error);
+    }
+    bool
+    is_invalidated() const
+    {
+        return n_.is_invalidated();
     }
 
  private:
@@ -142,6 +162,16 @@ struct rounding_signal_wrapper : regular_signal<
     {
         typename N::value_type step = step_.read();
         n_.write(std::floor(value / step + typename N::value_type(0.5)) * step);
+    }
+    bool
+    invalidate(std::exception_ptr error) const
+    {
+        return n_.invalidate(error);
+    }
+    bool
+    is_invalidated() const
+    {
+        return n_.is_invalidated();
     }
 
  private:

@@ -24,8 +24,8 @@ init_demo(std::string dom_id)
     initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
         do_addition_ui(
             ctx,
-            get_state(ctx, empty<double>()),
-            get_state(ctx, empty<double>()));
+            get_state(ctx, enforce_validity(ctx, empty<double>())),
+            get_state(ctx, enforce_validity(ctx, empty<double>())));
     });
 }
 
@@ -38,10 +38,10 @@ namespace numerical_analysis {
 void
 do_ui(dom::context ctx)
 {
+    auto n = enforce_validity(ctx, get_state(ctx, empty<double>()));
+
     // clang-format off
 /// [analysis]
-auto n = get_state(ctx, empty<double>());
-
 dom::do_text(ctx, "Enter a number:");
 
 dom::do_input(ctx, n);
@@ -197,7 +197,7 @@ init_demo(std::string dom_id)
     static dom::system the_dom;
 
     initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_factor_tree_demo(ctx, get_state(ctx, 600));
+        do_factor_tree_demo(ctx, enforce_validity(ctx, get_state(ctx, 600)));
     });
 }
 

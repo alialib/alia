@@ -12,7 +12,7 @@ namespace alia {
 // They're typically created directly at the call site as function arguments
 // and are only valid for the life of the function call.
 // Signals wrappers are templated and store copies of the actual wrapped
-// accessor, which allows them to be easily composed at the call site,
+// signal, which allows them to be easily composed at the call site,
 // without requiring any memory allocation.
 
 // direction tags
@@ -122,6 +122,28 @@ struct untyped_signal_base
     // Is the signal currently ready to write?
     virtual bool
     ready_to_write() const = 0;
+
+    // WARNING: EXPERIMENTAL VALIDATION STUFF FOLLOWS...
+
+    // Handle a validation error.
+    //
+    // This is called when there's an attempt to write to the signal and a
+    // validation_error is thrown. (The argument is the error.)
+    //
+    // The return value should be true iff the validation error was handled.
+    //
+    virtual bool
+    invalidate(std::exception_ptr error) const
+    {
+        return false;
+    }
+
+    // Is this signal currently invalidated?
+    virtual bool
+    is_invalidated() const
+    {
+        return false;
+    }
 };
 
 template<class Value>
@@ -251,6 +273,16 @@ struct signal_ref : signal<signal_ref<Value, Direction>, Value, Direction>
     {
         ref_->write(value);
     }
+    bool
+    invalidate(std::exception_ptr error) const
+    {
+        return ref_->invalidate(error);
+    }
+    bool
+    is_invalidated() const
+    {
+        return ref_->is_invalidated();
+    }
 
  private:
     signal_interface<Value> const* ref_;
@@ -321,6 +353,18 @@ read_signal(Signal const& signal)
     return signal.read();
 }
 
+// When a value is written to a signal, the signal is allowed to throw a
+// validation_error if the value isn't acceptable.
+struct validation_error : exception
+{
+    validation_error(std::string const& message) : exception(message)
+    {
+    }
+    ~validation_error() noexcept(true)
+    {
+    }
+};
+
 // signal_is_writable<Signal>::value yields a compile-time boolean indicating
 // whether or not the given signal type supports writing.
 template<class Signal>
@@ -359,7 +403,21 @@ std::enable_if_t<signal_is_writable<Signal>::value>
 write_signal(Signal const& signal, Value const& value)
 {
     if (signal.ready_to_write())
-        signal.write(value);
+    {
+        try
+        {
+            signal.write(value);
+        }
+        catch (validation_error&)
+        {
+            // EXPERIMENTAL VALIDATION LOGIC: Try to let the signal handle the
+            // validation error (at some level). If it can't, rethrow the
+            // exception.
+            auto e = std::current_exception();
+            if (!signal.invalidate(e))
+                std::rethrow_exception(e);
+        }
+    }
 }
 
 // signal_is_duplex<Signal>::value yields a compile-time boolean indicating
@@ -379,18 +437,6 @@ struct is_duplex_signal_type : std::conditional_t<
                                    signal_is_duplex<T>,
                                    std::false_type>
 {
-};
-
-// When a value is written to a signal, the signal is allowed to throw a
-// validation_error if the value isn't acceptable.
-struct validation_error : exception
-{
-    validation_error(std::string const& message) : exception(message)
-    {
-    }
-    ~validation_error() noexcept(true)
-    {
-    }
 };
 
 } // namespace alia
