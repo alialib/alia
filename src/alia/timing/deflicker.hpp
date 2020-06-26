@@ -92,6 +92,16 @@ struct deflickering_signal : signal<
     {
         wrapped_.write(value);
     }
+    bool
+    invalidate(std::exception_ptr error) const
+    {
+        return wrapped_.invalidate(error);
+    }
+    bool
+    is_invalidated() const
+    {
+        return wrapped_.is_invalidated();
+    }
 
  private:
     Wrapped wrapped_;

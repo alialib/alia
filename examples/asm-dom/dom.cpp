@@ -63,7 +63,7 @@ struct input_data
     component_identity identity;
     captured_id external_id;
     string value;
-    bool invalid = false;
+    signal_validation_data validation;
     element_data element;
     unsigned version = 0;
 };
@@ -74,27 +74,30 @@ struct value_update_event : targeted_event
 };
 
 void
-do_input_(dom::context ctx, duplex<string> value)
+do_input_(dom::context ctx, duplex<string> value_)
 {
     input_data* data;
     get_cached_data(ctx, &data);
 
+    auto value = enforce_validity(ctx, value_, data->validation);
+
     on_refresh(ctx, [&](auto ctx) {
         refresh_component_identity(ctx, data->identity);
 
-        refresh_signal_shadow(
-            data->external_id,
-            value,
-            [&](string new_value) {
-                data->value = std::move(new_value);
-                data->invalid = false;
-                ++data->version;
-            },
-            [&]() {
-                data->value.clear();
-                data->invalid = false;
-                ++data->version;
-            });
+        if (!value.is_invalidated())
+        {
+            refresh_signal_shadow(
+                data->external_id,
+                value,
+                [&](string new_value) {
+                    data->value = std::move(new_value);
+                    ++data->version;
+                },
+                [&]() {
+                    data->value.clear();
+                    ++data->version;
+                });
+        }
     });
 
     auto* system = &ctx.get<system_tag>();
@@ -102,7 +105,7 @@ do_input_(dom::context ctx, duplex<string> value)
 
     add_element(ctx, data->element, make_id(data->version), [&]() {
         asmdom::Attrs attrs;
-        if (data->invalid)
+        if (value.is_invalidated())
             attrs["class"] = "invalid-input";
         return asmdom::h(
             "input",
@@ -119,17 +122,7 @@ do_input_(dom::context ctx, duplex<string> value)
     });
     on_targeted_event<value_update_event>(
         ctx, &data->identity, [=](auto ctx, auto& e) {
-            if (signal_ready_to_write(value))
-            {
-                try
-                {
-                    write_signal(value, e.value);
-                }
-                catch (validation_error&)
-                {
-                    data->invalid = true;
-                }
-            }
+            write_signal(value, e.value);
             data->value = e.value;
             ++data->version;
         });

@@ -27,7 +27,7 @@ ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(+)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(-)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(*)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(/)
-ALIA_DEFINE_BINARY_SIGNAL_OPERATOR (^)
+ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(^)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(%)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(&)
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(|)
@@ -69,7 +69,7 @@ ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(+)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(-)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(*)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(/)
-ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR (^)
+ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(^)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(%)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(&)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(|)
@@ -376,6 +376,22 @@ struct signal_mux : signal<
             t_.write(value);
         else
             f_.write(value);
+    }
+    bool
+    invalidate(std::exception_ptr error) const
+    {
+        if (condition_.read())
+            return t_.invalidate(error);
+        else
+            return f_.invalidate(error);
+    }
+    bool
+    is_invalidated() const
+    {
+        if (condition_.read())
+            return t_.is_invalidated();
+        else
+            return f_.is_invalidated();
     }
 
  private:

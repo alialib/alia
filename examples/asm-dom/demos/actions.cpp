@@ -22,7 +22,10 @@ init_demo(std::string dom_id)
     static dom::system the_dom;
 
     initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_ui(ctx, get_state(ctx, 0), get_state(ctx, empty<int>()));
+        do_ui(
+            ctx,
+            enforce_validity(ctx, get_state(ctx, 0)),
+            enforce_validity(ctx, get_state(ctx, empty<int>())));
     });
 }
 
@@ -55,7 +58,7 @@ init_demo(std::string dom_id)
     static dom::system the_dom;
 
     initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_ui(ctx, get_state(ctx, 1));
+        do_ui(ctx, enforce_validity(ctx, get_state(ctx, 1)));
     });
 }
 
@@ -158,7 +161,7 @@ init_demo(std::string dom_id)
     static dom::system the_dom;
 
     initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_ui(ctx, get_state(ctx, empty<int>()));
+        do_ui(ctx, enforce_validity(ctx, get_state(ctx, empty<int>())));
     });
 }
 

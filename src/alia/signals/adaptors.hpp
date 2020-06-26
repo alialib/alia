@@ -72,6 +72,16 @@ struct readability_faker : signal<
     {
         return wrapped_.write(value);
     }
+    bool
+    invalidate(std::exception_ptr error) const
+    {
+        return wrapped_.invalidate(error);
+    }
+    bool
+    is_invalidated() const
+    {
+        return wrapped_.is_invalidated();
+    }
 
  private:
     Wrapped wrapped_;
@@ -167,6 +177,16 @@ struct casting_signal : regular_signal<
     write(To const& value) const
     {
         return wrapped_.write(static_cast<typename Wrapped::value_type>(value));
+    }
+    bool
+    invalidate(std::exception_ptr error) const
+    {
+        return wrapped_.invalidate(error);
+    }
+    bool
+    is_invalidated() const
+    {
+        return wrapped_.is_invalidated();
     }
 
  private:
@@ -311,6 +331,16 @@ struct fallback_signal : signal<
     {
         primary_.write(value);
     }
+    bool
+    invalidate(std::exception_ptr error) const
+    {
+        return primary_.invalidate(error);
+    }
+    bool
+    is_invalidated() const
+    {
+        return primary_.is_invalidated();
+    }
 
  private:
     mutable id_pair<simple_id<bool>, id_ref> id_;
@@ -368,6 +398,16 @@ struct simplified_id_wrapper : regular_signal<
     {
         return wrapped_.write(value);
     }
+    bool
+    invalidate(std::exception_ptr error) const
+    {
+        return wrapped_.invalidate(error);
+    }
+    bool
+    is_invalidated() const
+    {
+        return wrapped_.is_invalidated();
+    }
 
  private:
     Wrapped wrapped_;
@@ -422,6 +462,16 @@ struct masking_signal : signal<
     write(typename Primary::value_type const& value) const
     {
         primary_.write(value);
+    }
+    bool
+    invalidate(std::exception_ptr error) const
+    {
+        return primary_.invalidate(error);
+    }
+    bool
+    is_invalidated() const
+    {
+        return primary_.is_invalidated();
     }
 
  private:
@@ -489,6 +539,16 @@ struct write_masking_signal : signal<
     write(typename Primary::value_type const& value) const
     {
         primary_.write(value);
+    }
+    bool
+    invalidate(std::exception_ptr error) const
+    {
+        return primary_.invalidate(error);
+    }
+    bool
+    is_invalidated() const
+    {
+        return primary_.is_invalidated();
     }
 
  private:
@@ -559,6 +619,16 @@ struct unwrapper_signal : signal<
     write(typename Wrapped::value_type::value_type const& value) const
     {
         wrapped_.write(value);
+    }
+    bool
+    invalidate(std::exception_ptr error) const
+    {
+        return wrapped_.invalidate(error);
+    }
+    bool
+    is_invalidated() const
+    {
+        return wrapped_.is_invalidated();
     }
 
  private:
