@@ -37,7 +37,7 @@ init_demo(std::string dom_id)
     static dom::system the_dom;
 
     initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_ui(ctx, get_state(ctx, empty<int>()));
+        do_ui(ctx, enforce_validity(ctx, get_state(ctx, empty<int>())));
     });
 }
 
