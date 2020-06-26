@@ -90,7 +90,7 @@ ALIA_DECLARE_STRING_CONVERSIONS(float)
 ALIA_DECLARE_STRING_CONVERSIONS(double)
 ALIA_DECLARE_STRING_CONVERSIONS(std::string)
 
-// as_text(ctx, x) creates a text-based interface to the accessor x.
+// as_text(ctx, x) creates a text-based interface to the signal x.
 template<class Readable>
 void
 update_text_conversion(keyed_data<std::string>* data, Readable x)
@@ -191,6 +191,16 @@ struct duplex_text_signal : signal<
         wrapped_.write(value);
         data_->output_text = s;
         ++data_->output_version;
+    }
+    bool
+    invalidate(std::exception_ptr error) const
+    {
+        return wrapped_.invalidate(error);
+    }
+    bool
+    is_invalidated() const
+    {
+        return wrapped_.is_invalidated();
     }
 
  private:
