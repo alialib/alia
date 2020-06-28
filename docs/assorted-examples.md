@@ -36,20 +36,6 @@ It uses a `std::map` to map player names to their scores.
 <div id="for-each-map-demo"></div>
 </div>
 
-Minimal Integration
--------------------
-
-Although alia provides a whole suite of tools for modeling your application's
-presentation logic declaratively, it tries not to *force* them on you wholesale.
-Here's an example of how you might use a smaller subset of alia's capabilities
-to integrate alia with your application data.
-
-[source](tracking.cpp ':include :fragment=loop-macros-demo')
-
-<div class="demo-panel">
-<div id="loop-macros-demo"></div>
-</div>
-
 Factor Trees
 ------------
 
