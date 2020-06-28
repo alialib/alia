@@ -154,12 +154,12 @@ factor_tree(dom::context ctx, readable<int> n)
     dom::scoped_div div(ctx, value("subtree"));
 
     // Get the 'best' factor that n has. (The one closest to sqrt(n).)
-    auto f = apply(ctx, factor, n);
+    auto f = alia::apply(ctx, factor, n);
 
     // If that factor is 1, n is prime.
     alia_if(f != 1)
     {
-        dom::text(ctx, printf(ctx, "%i: composite", n));
+        dom::text(ctx, alia::printf(ctx, "%i: composite", n));
 
         // Allow the user to expand this block to see more factor.
         auto expanded = get_state(ctx, false);
@@ -175,7 +175,7 @@ factor_tree(dom::context ctx, readable<int> n)
     }
     alia_else
     {
-        dom::text(ctx, printf(ctx, "%i: prime", n));
+        dom::text(ctx, alia::printf(ctx, "%i: prime", n));
     }
     alia_end
 }

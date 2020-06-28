@@ -24,7 +24,9 @@ applications in a declarative fashion, it doesn't actually *do* anything to
 interact with the outside world. It's a bit like a fancy programming language
 with no I/O capabilities. It's designed to hook up to other libraries that do
 useful things, so for these examples, it's hooked up to asm-dom. For clarity,
-anything specific to the asm-dom wrapper is prefixed with the `dom::` namespace.
+anything specific to the asm-dom wrapper is prefixed with the `dom::` namespace,
+and the `alia::` namespace is explicitly used in many cases where it wouldn't be
+in real code.
 
 If you're familiar with other declarative UI programming frameworks, it will be
 obvious, but the key takeaway from this example is that when using alia,

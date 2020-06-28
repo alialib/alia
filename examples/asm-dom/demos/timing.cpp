@@ -12,7 +12,7 @@ demo_ui(dom::context ctx)
     // clang-format off
 /// [time-signal]
 dom::text(ctx,
-    printf(ctx,
+    alia::printf(ctx,
         "It's been %d seconds since you started looking at this page.",
         get_animation_tick_count(ctx) / 1000));
 /// [time-signal]

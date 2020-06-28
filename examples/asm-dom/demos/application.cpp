@@ -29,7 +29,7 @@ demo_ui(dom::context ctx, duplex<int> n)
 /// [simple-apply]
 dom::text(ctx, "Enter N:");
 dom::input(ctx, n);
-auto n_is_prime = apply(ctx, is_prime, n);
+auto n_is_prime = alia::apply(ctx, is_prime, n);
 dom::text(ctx, conditional(n_is_prime, "N is prime!", "N is NOT prime."));
 /// [simple-apply]
     // clang-format on
@@ -59,26 +59,26 @@ demo_ui(dom::context ctx)
 /// [transform-demo]
 // We want to work with a container of integers here, so get the state to
 // represent that. (We initialize it to a vector of three 2s.)
-auto numbers = get_state(
+auto numbers = alia::get_state(
     ctx, lambda_constant([]() { return std::vector<int>(3, 2); }));
 
 dom::text(ctx, "Enter some numbers:");
 
 // Provide an input box for each number.
-for_each(ctx, numbers,
+alia::for_each(ctx, numbers,
     [ ](auto ctx, auto n) { dom::input(ctx, n); });
 
 // Transform the vector of numbers to a vector of bools, indicating whether or
 // not each number is prime.
-auto prime_flags = transform(ctx, numbers,
-    [&](auto ctx, auto n) { return apply(ctx, is_prime, n); });
+auto prime_flags = alia::transform(ctx, numbers,
+    [&](auto ctx, auto n) { return alia::apply(ctx, is_prime, n); });
 
 // Count the number of true values.
-auto prime_count = apply(ctx,
+auto prime_count = alia::apply(ctx,
     [ ](auto flags) { return std::count(flags.begin(), flags.end(), true); },
     prime_flags);
 
-dom::text(ctx, printf(ctx, "# of primes: %d", prime_count));
+dom::text(ctx, alia::printf(ctx, "# of primes: %d", prime_count));
 
 /// [transform-demo]
     // clang-format on
@@ -108,26 +108,27 @@ demo_ui(dom::context ctx)
         return is_prime(n);
     };
 
-    auto numbers = get_state(
+    auto numbers = alia::get_state(
         ctx, lambda_constant([]() { return std::vector<int>(3, 2); }));
 
     dom::text(ctx, "Enter some numbers:");
 
-    for_each(ctx, numbers, [](auto ctx, auto n) { dom::input(ctx, n); });
+    alia::for_each(ctx, numbers, [](auto ctx, auto n) { dom::input(ctx, n); });
 
-    auto prime_flags = transform(ctx, numbers, lift(counting_is_prime));
+    auto prime_flags = alia::transform(ctx, numbers, lift(counting_is_prime));
 
-    auto prime_count = apply(
+    auto prime_count = alia::apply(
         ctx,
         [&](auto flags) {
             return std::count(flags.begin(), flags.end(), true);
         },
         prime_flags);
 
-    dom::text(ctx, printf(ctx, "# of primes: %d", prime_count));
+    dom::text(ctx, alia::printf(ctx, "# of primes: %d", prime_count));
 
     dom::text(
-        ctx, printf(ctx, "is_prime has been called %d times.", call_count));
+        ctx,
+        alia::printf(ctx, "is_prime has been called %d times.", call_count));
 }
 
 void
@@ -149,22 +150,22 @@ void
 demo_ui(dom::context ctx)
 {
     // clang-format off
-auto numbers = get_state(
+auto numbers = alia::get_state(
     ctx, lambda_constant([]() { return std::vector<int>(3, 2); }));
 
 dom::text(ctx, "Enter some numbers:");
 
-for_each(ctx, numbers,
+alia::for_each(ctx, numbers,
     [ ](auto ctx, auto n) { dom::input(ctx, n); });
 
 /// [direct-counting]
-auto prime_count = apply(ctx,
+auto prime_count = alia::apply(ctx,
     [ ](auto numbers)
     { return std::count_if(numbers.begin(), numbers.end(), is_prime); },
     numbers);
 /// [direct-counting]
 
-dom::text(ctx, printf(ctx, "# of primes: %d", prime_count));
+dom::text(ctx, alia::printf(ctx, "# of primes: %d", prime_count));
     // clang-format on
 }
 
@@ -186,7 +187,7 @@ namespace metered_direct_counting {
 void
 demo_ui(dom::context ctx)
 {
-    auto numbers = get_state(
+    auto numbers = alia::get_state(
         ctx, lambda_constant([]() { return std::vector<int>(3, 2); }));
 
     static int call_count = 0;
@@ -197,9 +198,9 @@ demo_ui(dom::context ctx)
 
     dom::text(ctx, "Enter some numbers:");
 
-    for_each(ctx, numbers, [](auto ctx, auto n) { dom::input(ctx, n); });
+    alia::for_each(ctx, numbers, [](auto ctx, auto n) { dom::input(ctx, n); });
 
-    auto prime_count = apply(
+    auto prime_count = alia::apply(
         ctx,
         [&](auto numbers) {
             return std::count_if(
@@ -207,10 +208,11 @@ demo_ui(dom::context ctx)
         },
         numbers);
 
-    dom::text(ctx, printf(ctx, "# of primes: %d", prime_count));
+    dom::text(ctx, alia::printf(ctx, "# of primes: %d", prime_count));
 
     dom::text(
-        ctx, printf(ctx, "is_prime has been called %d times.", call_count));
+        ctx,
+        alia::printf(ctx, "is_prime has been called %d times.", call_count));
 }
 
 void
