@@ -2,7 +2,7 @@ Assorted Examples
 =================
 
 <script>
-    init_alia_demos(['tip-calculator-demo', 'loop-macros-demo',
+    init_alia_demos(['tip-calculator-demo',
         'for-each-map-demo', 'fetch-country', 'time-signal',
         'number-smoothing', 'color-smoothing', 'factor-tree']);
 </script>
