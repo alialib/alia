@@ -35,13 +35,13 @@ install_element_callback(
     };
     EM_ASM_(
         {
-            const element = Module.nodes[$0];
-            const type = Module['UTF8ToString']($2);
-            const handler = function(e)
+            var element = Module.nodes[$0];
+            var type = Module['UTF8ToString']($2);
+            var handler = function(e)
             {
-                const start = window.performance.now();
+                var start = window.performance.now();
                 Module.callback_proxy($1, e);
-                const end = window.performance.now();
+                var end = window.performance.now();
                 console.log(
                     "total event time: " + (((end - start) * 1000) | 0)
                     + " µs");
@@ -171,7 +171,7 @@ set_element_property(
     // this to track what it needs to clean up when recycling a DOM node.
     EM_ASM_(
         {
-            const element = Module.nodes[$0];
+            var element = Module.nodes[$0];
             if (!element.hasOwnProperty('asmDomRaws'))
                 element['asmDomRaws'] = [];
             element['asmDomRaws'].push(Module['UTF8ToString']($1));
@@ -189,8 +189,8 @@ clear_element_property(element_object& object, char const* name)
             delete node[$1];
 
             // Remove the property name from the element's 'asmDomRaws' list.
-            const asmDomRaws = node['asmDomRaws'];
-            const index = asmDomRaws.indexOf(Module['UTF8ToString']($1));
+            var asmDomRaws = node['asmDomRaws'];
+            var index = asmDomRaws.indexOf(Module['UTF8ToString']($1));
             if (index > -1)
             {
                 asmDomRaws.splice(index, 1);
