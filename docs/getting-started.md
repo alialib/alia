@@ -47,6 +47,8 @@ asm-dom and Qt:
 
 https://github.com/tmadden/alia/tree/master/examples
 
-They're both very limited and aren't meant for production use, but they're fine
-for playing around with alia. Both have small sandbox projects and README files
-with instructions on building them.
+The asm-dom adaptor is in much better shape at the moment, and might actually be
+useful in a real application. The Qt one is really just an experiment at the
+moment and isn't even up-to-date with the latest core capabilities, but it
+should still be fine if you just want to play around with alia. Both have small
+sandbox projects and README files with instructions on building them.
