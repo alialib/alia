@@ -367,19 +367,8 @@ system::operator()(alia::context vanilla_ctx)
 
     if (is_refresh_event(ctx))
     {
-        // std::chrono::steady_clock::time_point begin
-        //     = std::chrono::steady_clock::now();
-
         traverse_object_tree(
             traversal, this->root_node, [&]() { this->controller(ctx); });
-
-        // std::chrono::steady_clock::time_point end
-        //     = std::chrono::steady_clock::now();
-        // std::cout << "refresh time: "
-        //           << std::chrono::duration_cast<std::chrono::microseconds>(
-        //                  end - begin)
-        //                  .count()
-        //           << "[µs]" << std::endl;
     }
     else
     {
@@ -416,6 +405,12 @@ initialize(
     emscripten::val document = emscripten::val::global("document");
     emscripten::val placeholder
         = document.call<emscripten::val>("getElementById", dom_node_id);
+    if (placeholder.isNull())
+    {
+        auto msg = dom_node_id + " not found in document";
+        EM_ASM_({ console.error(Module['UTF8ToString']($0)); }, msg.c_str());
+        throw exception(msg);
+    }
     // For now, just create a div to hold all our content.
     emscripten::val root = document.call<emscripten::val>(
         "createElement", emscripten::val("div"));
