@@ -19,7 +19,7 @@ typedef extend_context_type_t<dom::context, username_tag> app_context;
 void
 internal_app_ui(app_context ctx)
 {
-    dom::text(ctx, printf(ctx, "Welcome, %s!", ctx.get<username_tag>()));
+    dom::text(ctx, alia::printf(ctx, "Welcome, %s!", ctx.get<username_tag>()));
 }
 
 // Our top-level UI function takes the context that the asm-dom wrapper provides
@@ -68,9 +68,9 @@ typedef extend_context_type_t<dom::context, username_tag, api_key_tag>
 void
 internal_app_ui(app_context ctx)
 {
-    dom::text(ctx, printf(ctx, "Welcome, %s!", ctx.get<username_tag>()));
+    dom::text(ctx, alia::printf(ctx, "Welcome, %s!", ctx.get<username_tag>()));
     dom::text(ctx,
-        printf(ctx,
+        alia::printf(ctx,
             "Your secret key is %s! Keep it safe!",
             ctx.get<api_key_tag>()));
 }

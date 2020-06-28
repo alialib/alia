@@ -7,7 +7,7 @@ demo_ui(dom::context ctx, duplex<int> n, duplex<int> m)
 {
     // clang-format off
 /// [unready-copier]
-dom::text(ctx, printf(ctx, "N is %d.", n));
+dom::text(ctx, alia::printf(ctx, "N is %d.", n));
 dom::text(ctx, "What would you like to set N to?");
 dom::input(ctx, m);
 dom::button(ctx, "Set It!", n <<= m);
@@ -40,7 +40,7 @@ demo_ui(dom::context ctx, duplex<int> n)
 {
     // clang-format off
 /// [action-operators]
-dom::text(ctx, printf(ctx, "N is %d.", n));
+dom::text(ctx, alia::printf(ctx, "N is %d.", n));
 dom::button(ctx, "Double", n *= 2);
 dom::button(ctx, "Halve", n /= 2);
 dom::button(ctx, "Square", n *= n);
@@ -73,7 +73,7 @@ demo_ui(dom::context ctx, duplex<int> m, duplex<int> n)
 {
     // clang-format off
 /// [action-combining]
-dom::text(ctx, printf(ctx, "M is %d and N is %d.", m, n));
+dom::text(ctx, alia::printf(ctx, "M is %d and N is %d.", m, n));
 dom::button(ctx, "Increment M", ++m);
 dom::button(ctx, "Increment N", ++n);
 dom::button(ctx, "Reset Both", (m <<= 0, n <<= 0));
@@ -104,7 +104,7 @@ demo_ui(dom::context ctx, duplex<int> in_hand, duplex<int> in_bank)
     // clang-format off
 /// [action-latching]
 dom::text(ctx,
-    printf(ctx,
+    alia::printf(ctx,
         "You have %d coin(s) in hand and %d in the bank.",
         in_hand, in_bank));
 dom::button(ctx, "Pick Up a Coin", ++in_hand);
@@ -139,7 +139,7 @@ animation_timer timer(ctx);
 
 alia_if(timer.is_active())
 {
-    dom::text(ctx, printf(ctx, "%d ms left.", timer.ticks_left()));
+    dom::text(ctx, alia::printf(ctx, "%d ms left.", timer.ticks_left()));
 }
 alia_else
 {
