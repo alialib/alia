@@ -24,8 +24,8 @@ init_demo(std::string dom_id)
     initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
         addition_ui(
             ctx,
-            get_state(ctx, enforce_validity(ctx, empty<double>())),
-            get_state(ctx, enforce_validity(ctx, empty<double>())));
+            enforce_validity(ctx, get_state(ctx, empty<double>())),
+            enforce_validity(ctx, get_state(ctx, empty<double>())));
     });
 }
 
