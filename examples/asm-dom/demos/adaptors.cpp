@@ -7,7 +7,7 @@ demo_ui(dom::context ctx, duplex<double> n)
 {
     // clang-format off
 /// [numeric-adaptors]
-dom::text(ctx, printf(ctx, "N is %g.", n));
+dom::text(ctx, alia::printf(ctx, "N is %g.", n));
 dom::text(ctx, "Here you can edit a scaled view of N:");
 dom::input(ctx, scale(n, 10));
 dom::text(ctx, "Here you can edit an offset view of N:");

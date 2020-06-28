@@ -101,7 +101,7 @@ records_ui(dom::context ctx, std::vector<my_record>& records)
     // Also present a little UI for adding new records...
     {
         // Get some local state for the new label.
-        auto new_label = get_state(ctx, string());
+        auto new_label = alia::get_state(ctx, string());
         dom::input(ctx, new_label);
 
         // Create an action that adds the new record.
@@ -111,7 +111,7 @@ records_ui(dom::context ctx, std::vector<my_record>& records)
         // Present a button that adds the new record.
         dom::button(ctx, "Add",
             // Hook up the new label to our action (if the label isn't empty).
-            (add_record << mask(new_label, new_label != ""),
+            (add_record << alia::mask(new_label, new_label != ""),
              // Also add in an action that resets the label.
              new_label <<= ""));
     }
@@ -143,18 +143,18 @@ namespace for_each_map_demo {
 void
 scoreboard(dom::context ctx, duplex<std::map<std::string, int>> scores)
 {
-    for_each(ctx, scores,
+    alia::for_each(ctx, scores,
         [](auto ctx, auto player, auto score) {
             dom::scoped_div div(ctx, value("item"));
             dom::element(ctx, "h4").text(player);
-            dom::text(ctx, printf(ctx, "%d points", score));
+            dom::text(ctx, alia::printf(ctx, "%d points", score));
             dom::button(ctx, "GOAL!", ++score);
         });
 
-    auto new_player = get_state(ctx, string());
+    auto new_player = alia::get_state(ctx, string());
     dom::input(ctx, new_player);
     dom::button(ctx, "Add Player",
-        (scores[new_player] <<= mask(0, new_player != ""),
+        (scores[new_player] <<= alia::mask(0, new_player != ""),
          new_player <<= ""));
 }
 /// [for-each-map-demo]
@@ -190,21 +190,22 @@ struct player
 void
 scoreboard(dom::context ctx, duplex<std::vector<player>> players)
 {
-    for_each(ctx, players,
+    alia::for_each(ctx, players,
         [](auto ctx, auto player) {
             dom::scoped_div div(ctx, value("item"));
             dom::element(ctx, "h4").text(alia_field(player, name));
-            dom::text(ctx, printf(ctx, "%d points", alia_field(player, score)));
+            dom::text(ctx,
+                alia::printf(ctx, "%d points", alia_field(player, score)));
             dom::button(ctx, "GOAL!", ++alia_field(player, score));
         });
 
-    auto new_player = get_state(ctx, string());
+    auto new_player = alia::get_state(ctx, string());
     dom::input(ctx, new_player);
     dom::button(ctx, "Add Player",
-        (push_back(players) <<
-            apply(ctx,
+        (alia::push_back(players) <<
+            alia::apply(ctx,
                 [](auto name) { return player{name, 0}; },
-                mask(new_player, new_player != "")),
+                alia::mask(new_player, new_player != "")),
          new_player <<= ""));
 }
 /// [for-each-vector-demo]
@@ -262,7 +263,7 @@ records_ui(dom::context ctx, std::vector<my_record>& records)
         // block, we'll get some local state here. Feel free to type something
         // in here and shuffle the records to see what happens...
         dom::text(ctx, "Local UI state associated with this record:");
-        dom::input(ctx, get_state(ctx, ""));
+        dom::input(ctx, alia::get_state(ctx, ""));
     }
 
     dom::button(ctx, "Shuffle!",
