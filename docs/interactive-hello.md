@@ -34,7 +34,7 @@ and declare the presence of objects in the UI**.
 These functions are designed to be reinvoked as the state changes. Each time
 they're invoked, they declare what the application looks like **at that point in
 time** and **for that particular application state**. In our example, every time
-you type into the input box, the `name` state changes and `do_greeting_ui` is
+you type into the input box, the `name` state changes and `greeting_ui` is
 reinvoked to decide what the new UI looks like. Every time, it decides to show a
 message asking for your name and the input box that allows you to answer, and
 sometimes it decides to show a greeting as well.

@@ -217,7 +217,7 @@ e.g.:
 
 ```cpp
 void
-do_button(my_context ctx, readable<std::string> text, action<> on_click)
+button(my_context ctx, readable<std::string> text, action<> on_click)
 {
     ...
 }

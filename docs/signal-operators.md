@@ -33,7 +33,7 @@ short-circuiting in the signal space. In particular:
   auto bad_signal = direct(bad_reference);
   alia_if(value(false) && bad_signal > 0)
   {
-      do_text(ctx, "Of course, this will never be displayed.");
+      dom::text(ctx, "Of course, this will never be displayed.");
   }
   alia_end
   ```
