@@ -36,28 +36,28 @@ Here's a very simple example that demonstrates both of these roles:
 
 When you interact with this demo, the sequence of events is as follows:
 
-1. The asm-dom wrapper invokes `do_demo` to determine the initial contents of
-   the UI, and in response to what `do_demo` declares, a 'Toggle the Message'
+1. The asm-dom wrapper invokes `demo_ui` to determine the initial contents of
+   the UI, and in response to what `demo_ui` declares, a 'Toggle the Message'
    button is created.
 
 2. At some point, you (the user) click the button and the asm-dom wrapper
-   invokes `do_demo` again with a button click event. `do_demo` calls
-   `dom::do_button`, and `dom::do_button` recognizes that the button click event
-   is meant for it, so it invokes its [action](actions.md), which toggles the
-   state of `show_message`.
+   invokes `demo_ui` again with a button click event. `demo_ui` calls
+   `dom::button`, and `dom::button` recognizes that the button click event is
+   meant for it, so it invokes its [action](actions.md), which toggles the state
+   of `show_message`.
 
-3. Immediately after this, the asm-dom wrapper invokes `do_demo` *again* to
-   refresh the UI. `do_demo` again declares that the 'Toggle the Message' button
+3. Immediately after this, the asm-dom wrapper invokes `demo_ui` *again* to
+   refresh the UI. `demo_ui` again declares that the 'Toggle the Message' button
    should be there, but since `show_message` is now set to `true`, it *also*
    declares that the 'Hello, World!' message should be included.
 
 ... And so on.
 
-Note that all of this is transparent to `do_demo`. The event that's being
+Note that all of this is transparent to `demo_ui`. The event that's being
 transported through the UI tree is tucked away in the context argument. All
-`do_demo` has to do is declare what should be there and what it should do. The
-leaves of the tree (e.g., `dom::do_button`) worry about what type of event is
-being processed and how to respond to it. (In fact, steps 1 and 3 above are
-actually just 'refresh' events. `dom::do_button` responds to refresh events by
-making sure that there is a button in the DOM where it should be and that the
-label is correct.)
+`demo_ui` has to do is declare what should be there and what it should do. The
+leaves of the tree (e.g., `dom::button`) worry about what type of event is being
+processed and how to respond to it. (In fact, steps 1 and 3 above are actually
+just 'refresh' events. `dom::button` responds to refresh events by making sure
+that there is a button in the DOM where it should be and that the label is
+correct.)

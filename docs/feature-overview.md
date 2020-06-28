@@ -119,7 +119,7 @@ should happen in response to the events that occur in your UI. There was one in
 the "flashcard" example above:
 
 ```cpp
-dom::do_button(ctx, "Show Answer", answer_revealed <<= true);
+dom::button(ctx, "Show Answer", answer_revealed <<= true);
 ```
 
 The expression `answer_revealed <<= true` constructs an action that sets the

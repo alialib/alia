@@ -71,12 +71,12 @@ fetch_country_name(dom::context ctx, readable<std::string> country_code)
 
 // And here's the UI for interacting with it.
 void
-do_fetch_ui(dom::context ctx, duplex<std::string> country_code)
+fetch_ui(dom::context ctx, duplex<std::string> country_code)
 {
-    dom::do_text(ctx, "Enter a country code:");
-    dom::do_input(ctx, country_code);
+    dom::text(ctx, "Enter a country code:");
+    dom::input(ctx, country_code);
     auto result = fetch_country_name(ctx, country_code);
-    dom::do_text(
+    dom::text(
         ctx,
         add_fallback(
             deflicker(
@@ -96,7 +96,7 @@ init_demo(std::string dom_id)
     static dom::system the_dom;
 
     initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_fetch_ui(ctx, get_state(ctx, "us"));
+        fetch_ui(ctx, get_state(ctx, "us"));
     });
 }
 

@@ -5,25 +5,25 @@
 namespace switch_example {
 
 void
-do_ui(dom::context ctx, duplex<int> n)
+demo_ui(dom::context ctx, duplex<int> n)
 {
     // clang-format off
 /// [switch-example]
-dom::do_text(ctx, "Enter a number:");
-dom::do_input(ctx, n);
+dom::text(ctx, "Enter a number:");
+dom::input(ctx, n);
 alia_switch(n)
 {
  alia_case(0):
-    dom::do_text(ctx, "foo");
+    dom::text(ctx, "foo");
     break;
  alia_case(1):
-    dom::do_text(ctx, "bar");
+    dom::text(ctx, "bar");
  alia_case(2):
  alia_case(3):
-    dom::do_text(ctx, "baz");
+    dom::text(ctx, "baz");
     break;
  alia_default:
-    dom::do_text(ctx, "zub");
+    dom::text(ctx, "zub");
 }
 alia_end
 /// [switch-example]
@@ -37,7 +37,7 @@ init_demo(std::string dom_id)
     static dom::system the_dom;
 
     initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        do_ui(ctx, enforce_validity(ctx, get_state(ctx, empty<int>())));
+        demo_ui(ctx, enforce_validity(ctx, get_state(ctx, empty<int>())));
     });
 }
 
@@ -66,7 +66,7 @@ in_bounds(my_record const& r)
 
 // Here's an alia function that exposes our application data via asm-dom.
 void
-do_records_ui(dom::context ctx, std::vector<my_record>& records)
+records_ui(dom::context ctx, std::vector<my_record>& records)
 {
     // Loop through our records and present a UI for each of them...
     // Since we're trying to integrate our application's data structure with the
@@ -80,9 +80,9 @@ do_records_ui(dom::context ctx, std::vector<my_record>& records)
         // And now, at the point that we actually connect our individual records
         // to our widgets, we'll just use 'direct' to create signals that
         // directly connect our record's fields to the widgets.
-        dom::do_heading(ctx, "h4", direct(record.label));
-        dom::do_input(ctx, direct(record.x));
-        dom::do_input(ctx, direct(record.y));
+        dom::element(ctx, "h4").text(direct(record.label));
+        dom::input(ctx, direct(record.x));
+        dom::input(ctx, direct(record.y));
 
         // Display a warning if the record fails our in_bounds check.
         // Note that although alia provides signal-based dataflow mechanics for
@@ -92,7 +92,7 @@ do_records_ui(dom::context ctx, std::vector<my_record>& records)
         {
             // Apparently the Docsify CSS class for a warning is 'tip'.
             dom::scoped_div div(ctx, value("tip"));
-            do_text(ctx, "This is out of bounds!");
+            dom::text(ctx, "This is out of bounds!");
         }
         alia_end
     }
@@ -102,14 +102,14 @@ do_records_ui(dom::context ctx, std::vector<my_record>& records)
     {
         // Get some local state for the new label.
         auto new_label = get_state(ctx, string());
-        dom::do_input(ctx, new_label);
+        dom::input(ctx, new_label);
 
         // Create an action that adds the new record.
         auto add_record = lambda_action(
             [&](std::string label) { records.push_back({label}); });
 
         // Present a button that adds the new record.
-        dom::do_button(ctx, "Add",
+        dom::button(ctx, "Add",
             // Hook up the new label to our action (if the label isn't empty).
             (add_record << mask(new_label, new_label != ""),
              // Also add in an action that resets the label.
@@ -129,7 +129,7 @@ init_demo(std::string dom_id)
         = {{"Demo Record", 2, 4}, {"Fix Me!", 200, 0}};
 
     initialize(the_dom, the_system, dom_id, [&](dom::context ctx) {
-        do_records_ui(ctx, the_records);
+        records_ui(ctx, the_records);
     });
 }
 
@@ -141,19 +141,19 @@ namespace for_each_map_demo {
 // clang-format off
 /// [for-each-map-demo]
 void
-do_scoreboard(dom::context ctx, duplex<std::map<std::string, int>> scores)
+scoreboard(dom::context ctx, duplex<std::map<std::string, int>> scores)
 {
     for_each(ctx, scores,
         [](auto ctx, auto player, auto score) {
             dom::scoped_div div(ctx, value("item"));
-            dom::do_heading(ctx, "h4", player);
-            dom::do_text(ctx, printf(ctx, "%d points", score));
-            dom::do_button(ctx, "GOAL!", ++score);
+            dom::element(ctx, "h4").text(player);
+            dom::text(ctx, printf(ctx, "%d points", score));
+            dom::button(ctx, "GOAL!", ++score);
         });
 
     auto new_player = get_state(ctx, string());
-    dom::do_input(ctx, new_player);
-    dom::do_button(ctx, "Add Player",
+    dom::input(ctx, new_player);
+    dom::button(ctx, "Add Player",
         (scores[new_player] <<= mask(0, new_player != ""),
          new_player <<= ""));
 }
@@ -169,7 +169,7 @@ init_demo(std::string dom_id)
     static std::map<std::string, int> the_scores = {{"Karen", 5}, {"Tom", 2}};
 
     initialize(the_dom, the_system, dom_id, [&](dom::context ctx) {
-        do_scoreboard(ctx, direct(the_scores));
+        scoreboard(ctx, direct(the_scores));
     });
 }
 
@@ -188,19 +188,19 @@ struct player
 };
 
 void
-do_scoreboard(dom::context ctx, duplex<std::vector<player>> players)
+scoreboard(dom::context ctx, duplex<std::vector<player>> players)
 {
     for_each(ctx, players,
         [](auto ctx, auto player) {
             dom::scoped_div div(ctx, value("item"));
-            do_heading(ctx, "h4", alia_field(player, name));
-            do_text(ctx, printf(ctx, "%d points", alia_field(player, score)));
-            do_button(ctx, "GOAL!", ++alia_field(player, score));
+            dom::element(ctx, "h4").text(alia_field(player, name));
+            dom::text(ctx, printf(ctx, "%d points", alia_field(player, score)));
+            dom::button(ctx, "GOAL!", ++alia_field(player, score));
         });
 
     auto new_player = get_state(ctx, string());
-    do_input(ctx, new_player);
-    do_button(ctx, "Add Player",
+    dom::input(ctx, new_player);
+    dom::button(ctx, "Add Player",
         (push_back(players) <<
             apply(ctx,
                 [](auto name) { return player{name, 0}; },
@@ -216,7 +216,7 @@ init_demo(std::string dom_id)
     static dom::system the_dom;
 
     initialize(the_dom, the_system, dom_id, [&](dom::context ctx) {
-        do_scoreboard(ctx,
+        scoreboard(ctx,
             get_state(ctx,
                 lambda_constant(
                     []() {
@@ -243,7 +243,7 @@ struct my_record
 };
 
 void
-do_records_ui(dom::context ctx, std::vector<my_record>& records)
+records_ui(dom::context ctx, std::vector<my_record>& records)
 {
     naming_context nc(ctx);
     for(auto& record : records)
@@ -254,18 +254,18 @@ do_records_ui(dom::context ctx, std::vector<my_record>& records)
 
         dom::scoped_div div(ctx, value("item"));
 
-        do_heading(ctx, "h4", direct(record.label));
-        do_input(ctx, direct(record.x));
-        do_input(ctx, direct(record.y));
+        dom::element(ctx, "h4").text(direct(record.label));
+        dom::input(ctx, direct(record.x));
+        dom::input(ctx, direct(record.y));
 
         // Just to demonstrate that each record is associated with the same data
         // block, we'll get some local state here. Feel free to type something
         // in here and shuffle the records to see what happens...
-        do_text(ctx, "Local UI state associated with this record:");
-        do_input(ctx, get_state(ctx, ""));
+        dom::text(ctx, "Local UI state associated with this record:");
+        dom::input(ctx, get_state(ctx, ""));
     }
 
-    do_button(ctx, "Shuffle!",
+    dom::button(ctx, "Shuffle!",
         lambda_action(
             [&]() { std::shuffle(records.begin(), records.end(), rng); }));
 
@@ -285,7 +285,7 @@ init_demo(std::string dom_id)
                                                  {"jkl", "JKL", -1, 3}};
 
     initialize(the_dom, the_system, dom_id, [&](dom::context ctx) {
-        do_records_ui(ctx, the_records);
+        records_ui(ctx, the_records);
     });
 }
 

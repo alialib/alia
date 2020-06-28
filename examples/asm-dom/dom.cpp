@@ -1,80 +1,215 @@
 #include "dom.hpp"
 
+#include <emscripten/bind.h>
 #include <emscripten/emscripten.h>
 #include <emscripten/val.h>
 
+#include <chrono>
+
 namespace dom {
 
-struct element_data
+void
+callback_proxy(std::uintptr_t callback, emscripten::val event)
 {
-    asmdom::VNode* vnode = nullptr;
-    captured_id key;
+    (*reinterpret_cast<std::function<void(emscripten::val)>*>(callback))(event);
 };
 
-template<class CreateElement>
-void
-add_element(
-    dom::context ctx,
-    element_data& data,
-    id_interface const& key,
-    CreateElement create_element)
+EMSCRIPTEN_BINDINGS(callback_proxy)
 {
-    on_refresh(ctx, [&](auto ctx) {
-        // Theoretically, we should be able to reuse the vnode if the key hasn't
-        // changed. However, asm-dom's patching semantics mean that sometimes
-        // the vnodes get overwritten or destroyed without our knowledge, so
-        // this isn't as simple as it seems.
-        // if (!data.key.matches(key))
+    emscripten::function(
+        "callback_proxy", &callback_proxy, emscripten::allow_raw_pointers());
+};
+
+void
+install_element_callback(
+    context ctx,
+    element_object& object,
+    callback_data& data,
+    char const* event_type)
+{
+    auto external_id = externalize(&data.identity);
+    auto* system = &get<system_tag>(ctx);
+    data.callback = [=](emscripten::val v) {
+        dom_event event(v);
+        dispatch_targeted_event(*system, event, external_id);
+    };
+    EM_ASM_(
         {
-            data.vnode = create_element();
-            // data.key.capture(key);
-        }
-        get<context_info_tag>(ctx).current_children->push_back(data.vnode);
+            const element = Module.nodes[$0];
+            const type = Module['UTF8ToString']($2);
+            const handler = function(e)
+            {
+                const start = window.performance.now();
+                Module.callback_proxy($1, e);
+                const end = window.performance.now();
+                console.log(
+                    "total event time: " + (((end - start) * 1000) | 0)
+                    + " µs");
+            };
+            element.addEventListener(type, handler);
+            // Add the handler to asm-dom's event list so that it knows to clear
+            // it out before recycling this DOM node.
+            if (!element.hasOwnProperty('asmDomEvents'))
+                element['asmDomEvents'] = {};
+            element['asmDomEvents'][type] = handler;
+        },
+        object.js_id,
+        reinterpret_cast<std::uintptr_t>(&data.callback),
+        event_type);
+}
+
+struct text_node_data
+{
+    tree_node<element_object> node;
+    captured_id value_id;
+};
+
+void
+text_node_(dom::context ctx, readable<string> text)
+{
+    text_node_data* data;
+    if (get_cached_data(ctx, &data))
+        data->node.object.create_as_text_node("");
+    if (is_refresh_event(ctx))
+    {
+        refresh_tree_node(get<tree_traversal_tag>(ctx), data->node);
+        refresh_signal_shadow(
+            data->value_id,
+            text,
+            [&](std::string const& new_value) {
+                EM_ASM_(
+                    { Module.setNodeValue($0, Module['UTF8ToString']($1)); },
+                    data->node.object.js_id,
+                    new_value.c_str());
+            },
+            [&]() {
+                EM_ASM_(
+                    { Module.setNodeValue($0, ""); }, data->node.object.js_id);
+            });
+    }
+}
+
+void
+do_element_attribute(
+    context ctx,
+    element_object& object,
+    char const* name,
+    readable<string> value)
+{
+    auto& stored_id = get_cached_data<captured_id>(ctx);
+    on_refresh(ctx, [&](auto ctx) {
+        refresh_signal_shadow(
+            stored_id,
+            value,
+            [&](string const& new_value) {
+                EM_ASM_(
+                    {
+                        Module.setAttribute(
+                            $0,
+                            Module['UTF8ToString']($1),
+                            Module['UTF8ToString']($2));
+                    },
+                    object.js_id,
+                    name,
+                    new_value.c_str());
+            },
+            [&]() {
+                EM_ASM_(
+                    { Module.removeAttribute($0, Module['UTF8ToString']($1)); },
+                    object.js_id,
+                    name);
+            });
     });
 }
 
 void
-do_text_(dom::context ctx, readable<std::string> text)
+do_element_attribute(
+    context ctx, element_object& object, char const* name, readable<bool> value)
 {
-    add_element(
-        ctx, get_cached_data<element_data>(ctx), text.value_id(), [=]() {
-            return asmdom::h(
-                "p", signal_has_value(text) ? read_signal(text) : string());
-        });
+    auto& stored_id = get_cached_data<captured_id>(ctx);
+    on_refresh(ctx, [&](auto ctx) {
+        refresh_signal_shadow(
+            stored_id,
+            value,
+            [&](bool new_value) {
+                if (new_value)
+                {
+                    EM_ASM_(
+                        {
+                            Module.setAttribute(
+                                $0,
+                                Module['UTF8ToString']($1),
+                                Module['UTF8ToString']($2));
+                        },
+                        object.js_id,
+                        name,
+                        "");
+                }
+                else
+                {
+                    EM_ASM_(
+                        {
+                            Module.removeAttribute(
+                                $0, Module['UTF8ToString']($1));
+                        },
+                        object.js_id,
+                        name);
+                }
+            },
+            [&]() {});
+    });
 }
 
 void
-do_heading_(
-    dom::context ctx, readable<std::string> level, readable<std::string> text)
+set_element_property(
+    element_object& object, char const* name, emscripten::val value)
 {
-    add_element(
-        ctx,
-        get_cached_data<element_data>(ctx),
-        combine_ids(ref(level.value_id()), ref(text.value_id())),
-        [=]() {
-            return asmdom::h(
-                signal_has_value(level) ? read_signal(level) : "p",
-                signal_has_value(text) ? read_signal(text) : string());
-        });
+    emscripten::val::global("window")["asmDomHelpers"]["nodes"][object.js_id]
+        .set(name, value);
+
+    // Add the property name to the element's 'asmDomRaws' list. asm-dom uses
+    // this to track what it needs to clean up when recycling a DOM node.
+    EM_ASM_(
+        {
+            const element = Module.nodes[$0];
+            if (!element.hasOwnProperty('asmDomRaws'))
+                element['asmDomRaws'] = [];
+            element['asmDomRaws'].push(Module['UTF8ToString']($1));
+        },
+        object.js_id,
+        name);
+}
+
+void
+clear_element_property(element_object& object, char const* name)
+{
+    EM_ASM_(
+        {
+            var node = Module.nodes[$0];
+            delete node[$1];
+
+            // Remove the property name from the element's 'asmDomRaws' list.
+            const asmDomRaws = node['asmDomRaws'];
+            const index = asmDomRaws.indexOf(Module['UTF8ToString']($1));
+            if (index > -1)
+            {
+                asmDomRaws.splice(index, 1);
+            }
+        },
+        object.js_id,
+        name);
 }
 
 struct input_data
 {
-    component_identity identity;
-    captured_id external_id;
+    captured_id value_id;
     string value;
     signal_validation_data validation;
-    element_data element;
     unsigned version = 0;
 };
 
-struct value_update_event : targeted_event
-{
-    string value;
-};
-
 void
-do_input_(dom::context ctx, duplex<string> value_)
+input_(dom::context ctx, duplex<string> value_)
 {
     input_data* data;
     get_cached_data(ctx, &data);
@@ -82,12 +217,10 @@ do_input_(dom::context ctx, duplex<string> value_)
     auto value = enforce_validity(ctx, value_, data->validation);
 
     on_refresh(ctx, [&](auto ctx) {
-        refresh_component_identity(ctx, data->identity);
-
         if (!value.is_invalidated())
         {
             refresh_signal_shadow(
-                data->external_id,
+                data->value_id,
                 value,
                 [&](string new_value) {
                     data->value = std::move(new_value);
@@ -100,174 +233,83 @@ do_input_(dom::context ctx, duplex<string> value_)
         }
     });
 
-    auto* system = &ctx.get<system_tag>();
-    auto external_id = externalize(&data->identity);
-
-    add_element(ctx, data->element, make_id(data->version), [&]() {
-        asmdom::Attrs attrs;
-        if (value.is_invalidated())
-            attrs["class"] = "invalid-input";
-        return asmdom::h(
-            "input",
-            asmdom::Data(
-                attrs,
-                asmdom::Props{{"value", emscripten::val(data->value)}},
-                asmdom::Callbacks{
-                    {"oninput", [=](emscripten::val e) {
-                         value_update_event update;
-                         update.value = e["target"]["value"].as<std::string>();
-                         dispatch_targeted_event(*system, update, external_id);
-                         return true;
-                     }}}));
-    });
-    on_targeted_event<value_update_event>(
-        ctx, &data->identity, [=](auto ctx, auto& e) {
-            write_signal(value, e.value);
-            data->value = e.value;
+    element(ctx, "input")
+        .attr(
+            "class",
+            conditional(
+                value.is_invalidated(), "invalid-input", "form-control"))
+        .prop("value", data->value)
+        .callback("input", [=](emscripten::val& e) {
+            auto new_value = e["target"]["value"].as<std::string>();
+            write_signal(value, new_value);
+            data->value = new_value;
             ++data->version;
         });
 }
 
-struct click_event : targeted_event
-{
-};
-
 void
-do_button_(dom::context ctx, readable<std::string> text, action<> on_click)
+button_(dom::context ctx, readable<std::string> text, action<> on_click)
 {
-    auto id = get_component_id(ctx);
-    auto external_id = externalize(id);
-    auto* system = &ctx.get<system_tag>();
-
-    element_data* element;
-    get_cached_data(ctx, &element);
-
-    if (signal_has_value(text))
-    {
-        add_element(
-            ctx,
-            *element,
-            combine_ids(ref(text.value_id()), make_id(on_click.is_ready())),
-            [=]() {
-                return asmdom::h(
-                    "button",
-                    asmdom::Data(
-                        asmdom::Attrs{{"class", "btn"},
-                                      {"disabled",
-                                       on_click.is_ready() ? "false" : "true"}},
-                        asmdom::Callbacks{{"onclick",
-                                           [=](emscripten::val) {
-                                               click_event click;
-                                               dispatch_targeted_event(
-                                                   *system, click, external_id);
-                                               return true;
-                                           }}}),
-                    read_signal(text));
-            });
-    }
-
-    on_targeted_event<click_event>(
-        ctx, id, [=](auto ctx, auto& e) { perform_action(on_click); });
+    element(ctx, "button")
+        .attr("class", "btn")
+        .attr("disabled", !on_click.is_ready())
+        .callback("click", [&](auto& e) { perform_action(on_click); })
+        .text(text);
 }
 
 void
-do_colored_box(dom::context ctx, readable<rgb8> color)
+checkbox_(dom::context ctx, duplex<bool> value, readable<std::string> label)
 {
-    add_element(
-        ctx, get_cached_data<element_data>(ctx), color.value_id(), [=]() {
-            char style[64] = {'\0'};
-            if (signal_has_value(color))
-            {
-                rgb8 const& c = read_signal(color);
-                snprintf(
-                    style,
-                    64,
-                    "background-color: #%02x%02x%02x",
-                    c.r,
-                    c.g,
-                    c.b);
-            }
-            return asmdom::h(
-                "div",
-                asmdom::Data(
-                    asmdom::Attrs{{"class", "colored-box"}, {"style", style}}));
+    bool determinate = value.has_value();
+    bool checked = determinate && value.read();
+    bool disabled = !value.ready_to_write();
+
+    element(ctx, "div")
+        .attr("class", "custom-control custom-checkbox")
+        .children([&](auto ctx) {
+            element(ctx, "input")
+                .attr("type", "checkbox")
+                .attr("class", "custom-control-input")
+                .attr("disabled", disabled)
+                .attr("id", "custom-check-1")
+                .prop("indeterminate", !determinate)
+                .prop("checked", checked)
+                .callback("change", [&](emscripten::val e) {
+                    write_signal(value, e["target"]["checked"].as<bool>());
+                });
+            element(ctx, "label")
+                .attr("class", "custom-control-label")
+                .attr("for", "custom-check-1")
+                .text(label);
         });
 }
 
 void
-do_hr(dom::context ctx)
+link_(dom::context ctx, readable<std::string> text, action<> on_click)
 {
-    add_element(ctx, get_cached_data<element_data>(ctx), unit_id, [=]() {
-        return asmdom::h("hr");
+    element(ctx, "li").children([&](auto ctx) {
+        element(ctx, "a")
+            .attr("href", "javascript: void(0);")
+            .attr("disabled", on_click.is_ready() ? "false" : "true")
+            .children([&](auto ctx) { text_node(ctx, text); })
+            .callback(
+                "click", [&](emscripten::val) { perform_action(on_click); });
     });
 }
 
-struct div_data
-{
-    element_data element;
-    keyed_data<std::string> class_name;
-    asmdom::Children children_;
-};
-
 void
-scoped_div::begin(dom::context ctx, readable<std::string> class_name)
+colored_box(dom::context ctx, readable<rgb8> color)
 {
-    ctx_.reset(ctx);
-
-    get_cached_data(ctx, &data_);
-
-    on_refresh(ctx, [&](auto ctx) {
-        auto& dom_context = get<context_info_tag>(ctx);
-        parent_children_list_ = dom_context.current_children;
-        dom_context.current_children = &data_->children_;
-        data_->children_.clear();
-
-        refresh_keyed_data(data_->class_name, class_name.value_id());
-        if (!is_valid(data_->class_name) && class_name.has_value())
-            set(data_->class_name, class_name.read());
-    });
-
-    routing_.begin(ctx);
-}
-
-void
-scoped_div::end()
-{
-    if (ctx_)
-    {
-        dom::context ctx = *ctx_;
-
-        routing_.end();
-
-        auto& dom_context = ctx.get<context_info_tag>();
-        dom_context.current_children = parent_children_list_;
-
-        if (is_refresh_event(ctx))
-        {
-            asmdom::Attrs attrs;
-            if (is_valid(data_->class_name))
-                attrs["class"] = get(data_->class_name);
-            parent_children_list_->push_back(
-                asmdom::h("div", asmdom::Data(attrs), data_->children_));
-        }
-
-        ctx_.reset();
-    }
-}
-
-static void
-handle_refresh_event(dom::context ctx, system& system)
-{
-    asmdom::Children children;
-    ctx.get<context_info_tag>().current_children = &children;
-
-    system.controller(ctx);
-
-    asmdom::VNode* root = asmdom::h(
-        "div", asmdom::Data(asmdom::Attrs{{"class", "container"}}), children);
-
-    asmdom::patch(system.current_view, root);
-    system.current_view = root;
+    element(ctx, "div")
+        .attr("class", "colored-box")
+        .attr(
+            "style",
+            printf(
+                ctx,
+                "background-color: #%02x%02x%02x",
+                alia_field(color, r),
+                alia_field(color, g),
+                alia_field(color, b)));
 }
 
 static void
@@ -320,12 +362,24 @@ struct dom_external_interface : default_external_interface
 void
 system::operator()(alia::context vanilla_ctx)
 {
-    context_info context_info;
-    dom::context ctx = vanilla_ctx.add<context_info_tag>(context_info);
+    tree_traversal<element_object> traversal;
+    auto ctx = vanilla_ctx.add<tree_traversal_tag>(traversal);
 
     if (is_refresh_event(ctx))
     {
-        handle_refresh_event(ctx, *this);
+        // std::chrono::steady_clock::time_point begin
+        //     = std::chrono::steady_clock::now();
+
+        traverse_object_tree(
+            traversal, this->root_node, [&]() { this->controller(ctx); });
+
+        // std::chrono::steady_clock::time_point end
+        //     = std::chrono::steady_clock::now();
+        // std::cout << "refresh time: "
+        //           << std::chrono::duration_cast<std::chrono::microseconds>(
+        //                  end - begin)
+        //                  .count()
+        //           << "[µs]" << std::endl;
     }
     else
     {
@@ -351,7 +405,7 @@ initialize(
         asmdom_initialized = true;
     }
 
-    // Hook up the dom::system to the alia::system.
+    // Initialize the alia::system and hook it up to the dom::system.
     initialize_system(
         alia_system,
         std::ref(dom_system),
@@ -360,10 +414,16 @@ initialize(
 
     // Replace the requested node in the DOM with our virtual DOM.
     emscripten::val document = emscripten::val::global("document");
-    emscripten::val root
+    emscripten::val placeholder
         = document.call<emscripten::val>("getElementById", dom_node_id);
-    dom_system.current_view = asmdom::h("div", std::string(""));
-    asmdom::patch(root, dom_system.current_view);
+    // For now, just create a div to hold all our content.
+    emscripten::val root = document.call<emscripten::val>(
+        "createElement", emscripten::val("div"));
+    placeholder["parentNode"].call<emscripten::val>(
+        "replaceChild", root, placeholder);
+    dom_system.root_node.object.js_id
+        = emscripten::val::global("window")["asmDomHelpers"]["domApi"]
+              .call<int>("addNode", root);
 
     // Update the virtual DOM.
     refresh_system(alia_system);

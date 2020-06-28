@@ -149,11 +149,11 @@ they should be passed by value, e.g.:
 ```cpp
 // Do a simple text display widget.
 void
-do_text(context ctx, readable<std::string> text);
+text(context ctx, readable<std::string> text);
 
 // Do a widget for editing a string of text.
 void
-do_text_control(context ctx, duplex<std::string> text);
+text_control(context ctx, duplex<std::string> text);
 ```
 
 In both of these cases, `text` is an actual signal object and can be used as
@@ -178,7 +178,7 @@ If you try to write a function like the following, you'll run into problems:
 ```cpp
 template<class T>
 void
-do_input(context ctx, duplex<T> x)
+input(context ctx, duplex<T> x)
 {
    ...
 }
@@ -192,7 +192,7 @@ parameter to be the signal type itself:
 ```cpp
 template<class Signal>
 void
-do_input(context ctx, Signal const& x)
+input(context ctx, Signal const& x)
 {
    // We can still access the actual value type...
    typedef typename Signal::value_type value_t;
@@ -207,7 +207,7 @@ To narrow down the function so that it only works on signal types, you can use
 ```cpp
 template<class Signal>
 std::enable_if_t<is_duplex_signal_type<Signal>::value, void>
-do_input(context ctx, Signal const& x)
+input(context ctx, Signal const& x)
 {
     return signal_has_value(x) && (read_signal(x) ? true : false);
 }
