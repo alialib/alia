@@ -61,7 +61,7 @@ What's interesting about this is that there's actually no application data that
 mirrors this tree view. The application 'model' consists entirely of a single
 integer. The structure of the UI (and the state that allows the user to expand
 and collapse nodes in the tree) is fully defined by the recursive structure of
-the calls to `do_factor_tree`.
+the calls to `factor_tree`.
 
 [source](numerical.cpp ':include :fragment=factor-tree')
 
