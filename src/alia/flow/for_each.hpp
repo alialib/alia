@@ -65,9 +65,13 @@ for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
             named_block nb;
             auto iteration_id = get_alia_id(item.first);
             if (iteration_id != null_id)
+            {
                 nb.begin(nc, iteration_id);
+            }
             else
-                nb.begin(nc, make_id(&item));
+            {
+                nb.begin(nc, make_id(item.first));
+            }
             auto key = direct(item.first);
             auto value = container_signal[key];
             fn(ctx, key, value);
