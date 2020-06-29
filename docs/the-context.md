@@ -2,8 +2,11 @@ The Context
 ===========
 
 <script>
-    init_alia_demos(['custom-context', 'doubly-extended-context']);
+    init_alia_demos(['custom-context']);
 </script>
+
+!> Contexts are in the midst of change! The basic concepts are still the same,
+   but the examples here is incomplete. Beware!
 
 Almost every function in alia takes a context as its first parameter. The
 context is how application code accesses the utilities provided by alia: the
@@ -38,13 +41,4 @@ as a globally accessible property in your app.
 
 <div class="demo-panel">
 <div id="custom-context"></div>
-</div>
-
-And of course, your application can extend the context with as many objects as
-it wants...
-
-[source](context.cpp ':include :fragment=doubly-extended-context')
-
-<div class="demo-panel">
-<div id="doubly-extended-context"></div>
 </div>
