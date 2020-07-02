@@ -54,7 +54,7 @@ struct normal_regular_signal
         return false;
     }
     void
-    write(int const&) const
+    write(int) const
     {
     }
 };
@@ -129,8 +129,7 @@ struct preferred_id_test_signal : preferred_id_signal<
     {
         return false;
     }
-    void
-    write(Value const&) const
+    void write(Value) const
     {
     }
     simple_id<std::string>

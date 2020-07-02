@@ -68,9 +68,9 @@ struct readability_faker : signal<
         return wrapped_.ready_to_write();
     }
     void
-    write(typename Wrapped::value_type const& value) const
+    write(typename Wrapped::value_type value) const
     {
-        return wrapped_.write(value);
+        wrapped_.write(std::move(value));
     }
     bool
     invalidate(std::exception_ptr error) const
@@ -129,8 +129,7 @@ struct writability_faker : signal<
     }
     // Since this is only faking writability, write() should never be called.
     // LCOV_EXCL_START
-    void
-    write(typename Wrapped::value_type const&) const
+    void write(typename Wrapped::value_type) const
     {
     }
     // LCOV_EXCL_STOP
@@ -174,7 +173,7 @@ struct casting_signal : regular_signal<
         return wrapped_.ready_to_write();
     }
     void
-    write(To const& value) const
+    write(To value) const
     {
         return wrapped_.write(static_cast<typename Wrapped::value_type>(value));
     }
@@ -327,9 +326,9 @@ struct fallback_signal : signal<
         return primary_.ready_to_write();
     }
     void
-    write(typename Primary::value_type const& value) const
+    write(typename Primary::value_type value) const
     {
-        primary_.write(value);
+        primary_.write(std::move(value));
     }
     bool
     invalidate(std::exception_ptr error) const
@@ -394,9 +393,9 @@ struct simplified_id_wrapper : regular_signal<
         return wrapped_.ready_to_write();
     }
     void
-    write(typename Wrapped::value_type const& value) const
+    write(typename Wrapped::value_type value) const
     {
-        return wrapped_.write(value);
+        return wrapped_.write(std::move(value));
     }
     bool
     invalidate(std::exception_ptr error) const
@@ -459,9 +458,9 @@ struct masking_signal : signal<
         return mask_.has_value() && mask_.read() && primary_.ready_to_write();
     }
     void
-    write(typename Primary::value_type const& value) const
+    write(typename Primary::value_type value) const
     {
-        primary_.write(value);
+        primary_.write(std::move(value));
     }
     bool
     invalidate(std::exception_ptr error) const
@@ -536,9 +535,9 @@ struct write_masking_signal : signal<
         return mask_.has_value() && mask_.read() && primary_.ready_to_write();
     }
     void
-    write(typename Primary::value_type const& value) const
+    write(typename Primary::value_type value) const
     {
-        primary_.write(value);
+        primary_.write(std::move(value));
     }
     bool
     invalidate(std::exception_ptr error) const
@@ -616,9 +615,9 @@ struct unwrapper_signal : signal<
         return wrapped_.ready_to_write();
     }
     void
-    write(typename Wrapped::value_type::value_type const& value) const
+    write(typename Wrapped::value_type::value_type value) const
     {
-        wrapped_.write(value);
+        wrapped_.write(std::move(value));
     }
     bool
     invalidate(std::exception_ptr error) const
