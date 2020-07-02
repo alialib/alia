@@ -183,12 +183,12 @@ struct duplex_text_signal : signal<
         return wrapped_.ready_to_write();
     }
     void
-    write(std::string const& s) const
+    write(std::string s) const
     {
         typename Wrapped::value_type value;
         from_string(&value, s);
         data_->input_value = value;
-        wrapped_.write(value);
+        wrapped_.write(std::move(value));
         data_->output_text = s;
         ++data_->output_version;
     }

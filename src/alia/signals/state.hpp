@@ -133,9 +133,9 @@ struct state_signal : signal<state_signal<Value, Direction>, Value, Direction>
     }
 
     void
-    write(Value const& value) const
+    write(Value value) const
     {
-        data_->set(value);
+        data_->set(std::move(value));
     }
 
  private:

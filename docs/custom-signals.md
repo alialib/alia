@@ -63,9 +63,9 @@ struct direct_signal
     }
 
     void
-    write(Value const& value) const
+    write(Value value) const
     {
-        *v_ = value;
+        *v_ = std::move(value);
     }
 
  private:
