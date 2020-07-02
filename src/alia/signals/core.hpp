@@ -157,7 +157,7 @@ struct signal_interface : untyped_signal_base
 
     // Write the signal's value.
     virtual void
-    write(Value const& value) const = 0;
+    write(Value value) const = 0;
 };
 
 template<class Derived, class Value, class Direction>
@@ -166,7 +166,8 @@ struct signal_base : signal_interface<Value>
     typedef Direction direction_tag;
 
     template<class Index>
-    auto operator[](Index index) const;
+    auto
+    operator[](Index index) const;
 };
 
 template<class Derived, class Value, class Direction>
@@ -186,8 +187,7 @@ struct signal<Derived, Value, read_only_signal>
     {
         return false;
     }
-    void
-    write(Value const&) const
+    void write(Value) const
     {
     }
     // LCOV_EXCL_STOP
@@ -268,9 +268,9 @@ struct signal_ref : signal<signal_ref<Value, Direction>, Value, Direction>
         return ref_->ready_to_write();
     }
     void
-    write(Value const& value) const
+    write(Value value) const
     {
-        ref_->write(value);
+        ref_->write(std::move(value));
     }
     bool
     invalidate(std::exception_ptr error) const
@@ -399,13 +399,13 @@ signal_ready_to_write(Signal const& signal)
 // Note that if the signal isn't ready to write, this is a no op.
 template<class Signal, class Value>
 std::enable_if_t<signal_is_writable<Signal>::value>
-write_signal(Signal const& signal, Value const& value)
+write_signal(Signal const& signal, Value value)
 {
     if (signal.ready_to_write())
     {
         try
         {
-            signal.write(value);
+            signal.write(std::move(value));
         }
         catch (validation_error&)
         {

@@ -74,7 +74,7 @@ Is the signal currently ready to write?
 
 </dd>
 
-<dt>void<br>write(Value const& value) const</dt><dd>
+<dt>void<br>write(Value value) const</dt><dd>
 
 Write the signal's value.
 

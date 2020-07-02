@@ -579,9 +579,9 @@ refresh_keyed_data(keyed_data<Data>& data, id_interface const& key)
 
 template<class Data>
 void
-set(keyed_data<Data>& data, Data const& value)
+set(keyed_data<Data>& data, Data value)
 {
-    data.value = value;
+    data.value = std::move(value);
     mark_valid(data);
 }
 
@@ -623,9 +623,9 @@ struct keyed_data_signal : signal<keyed_data_signal<Data>, Data, duplex_signal>
         return true;
     }
     void
-    write(Data const& value) const
+    write(Data value) const
     {
-        alia::set(*data_, value);
+        alia::set(*data_, std::move(value));
     }
 
  private:

@@ -47,8 +47,7 @@ struct empty_signal : signal<empty_signal<Value>, Value, duplex_signal>
     }
     // Since this is never ready to write, write() should never be called.
     // LCOV_EXCL_START
-    void
-    write(Value const&) const
+    void write(Value) const
     {
     }
     // LCOV_EXCL_STOP
@@ -157,9 +156,9 @@ struct direct_signal
         return true;
     }
     void
-    write(Value const& value) const
+    write(Value value) const
     {
-        *v_ = value;
+        *v_ = std::move(value);
     }
 
  private:

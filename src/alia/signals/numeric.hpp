@@ -39,7 +39,7 @@ struct scaled_signal : regular_signal<
         return n_.ready_to_write() && scale_factor_.has_value();
     }
     void
-    write(typename N::value_type const& value) const
+    write(typename N::value_type value) const
     {
         n_.write(value / scale_factor_.read());
     }
@@ -98,7 +98,7 @@ struct offset_signal : regular_signal<
         return n_.ready_to_write() && offset_.has_value();
     }
     void
-    write(typename N::value_type const& value) const
+    write(typename N::value_type value) const
     {
         n_.write(value - offset_.read());
     }
@@ -158,7 +158,7 @@ struct rounding_signal_wrapper : regular_signal<
         return n_.ready_to_write() && step_.has_value();
     }
     void
-    write(typename N::value_type const& value) const
+    write(typename N::value_type value) const
     {
         typename N::value_type step = step_.read();
         n_.write(std::floor(value / step + typename N::value_type(0.5)) * step);

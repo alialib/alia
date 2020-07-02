@@ -370,7 +370,7 @@ struct signal_mux : signal<
                                      : f_.ready_to_write());
     }
     void
-    write(typename T::value_type const& value) const
+    write(typename T::value_type value) const
     {
         if (condition_.read())
             t_.write(value);
@@ -456,7 +456,7 @@ struct field_signal : preferred_id_signal<
         return structure_.has_value() && structure_.ready_to_write();
     }
     void
-    write(Field const& x) const
+    write(Field x) const
     {
         structure_type s = structure_.read();
         s.*field_ = x;
@@ -637,18 +637,16 @@ struct const_subscript_invoker<
 template<class ContainerSignal, class IndexSignal, class Value>
 std::enable_if_t<signal_is_writable<ContainerSignal>::value>
 write_subscript(
-    ContainerSignal const& container,
-    IndexSignal const& index,
-    Value const& value)
+    ContainerSignal const& container, IndexSignal const& index, Value value)
 {
     auto new_container = container.read();
-    new_container[index.read()] = value;
-    container.write(new_container);
+    new_container[index.read()] = std::move(value);
+    container.write(std::move(new_container));
 }
 
 template<class ContainerSignal, class IndexSignal, class Value>
 std::enable_if_t<!signal_is_writable<ContainerSignal>::value>
-write_subscript(ContainerSignal const&, IndexSignal const&, Value const&)
+write_subscript(ContainerSignal const&, IndexSignal const&, Value)
 {
 }
 
@@ -690,9 +688,9 @@ struct subscript_signal : preferred_id_signal<
                && container_.ready_to_write();
     }
     void
-    write(typename subscript_signal::value_type const& x) const
+    write(typename subscript_signal::value_type x) const
     {
-        write_subscript(container_, index_, x);
+        write_subscript(container_, index_, std::move(x));
     }
 
  private:
@@ -712,7 +710,8 @@ make_subscript_signal(ContainerSignal container, IndexSignal index)
 
 template<class Derived, class Value, class Direction>
 template<class Index>
-auto signal_base<Derived, Value, Direction>::operator[](Index index) const
+auto
+signal_base<Derived, Value, Direction>::operator[](Index index) const
 {
     return make_subscript_signal(
         static_cast<Derived const&>(*this), signalize(index));

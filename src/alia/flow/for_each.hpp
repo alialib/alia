@@ -144,9 +144,9 @@ struct list_item_signal : signal<
         return list_signal_.ready_to_write();
     }
     void
-    write(Item const& value) const
+    write(Item value) const
     {
-        *item_ = value;
+        *item_ = std::move(value);
     }
 
  private:

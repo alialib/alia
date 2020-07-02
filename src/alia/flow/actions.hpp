@@ -229,7 +229,7 @@ struct copy_action : action_interface<>
     {
         auto value = source_.read();
         intermediary();
-        sink_.write(value);
+        sink_.write(std::move(value));
     }
 
  private:
@@ -297,7 +297,7 @@ struct push_back_action : action_interface<Item>
         auto new_container = container_.read();
         new_container.push_back(item);
         intermediary();
-        container_.write(new_container);
+        container_.write(std::move(new_container));
     }
 
  private:

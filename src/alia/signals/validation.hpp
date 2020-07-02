@@ -45,9 +45,9 @@ struct validated_signal : signal<
         return wrapped_.ready_to_write();
     }
     void
-    write(typename Wrapped::value_type const& value) const
+    write(typename Wrapped::value_type value) const
     {
-        wrapped_.write(value);
+        wrapped_.write(std::move(value));
     }
     bool
     invalidate(std::exception_ptr error) const

@@ -9,7 +9,7 @@ clear_log()
 }
 
 void
-check_log(std::string const& expected_contents)
+    check_log(std::string const& expected_contents)
 {
     REQUIRE(the_log.str() == expected_contents);
     clear_log();

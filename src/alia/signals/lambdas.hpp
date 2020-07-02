@@ -214,9 +214,9 @@ struct lambda_duplex_signal
         return ready_to_write_();
     }
     void
-    write(Value const& value) const
+    write(Value value) const
     {
-        write_(value);
+        write_(std::move(value));
     }
 
  private:
@@ -297,9 +297,9 @@ struct lambda_duplex_signal_with_id : signal<
         return ready_to_write_();
     }
     void
-    write(Value const& value) const
+    write(Value value) const
     {
-        write_(value);
+        write_(std::move(value));
     }
 
  private:
