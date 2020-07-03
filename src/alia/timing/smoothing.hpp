@@ -128,31 +128,28 @@ smooth_raw(
 // values.
 
 template<class Wrapped>
-struct smoothed_signal : regular_signal<
+struct smoothed_signal : signal_wrapper<
                              smoothed_signal<Wrapped>,
+                             Wrapped,
                              typename Wrapped::value_type,
                              read_only_signal>
 {
     smoothed_signal(
         Wrapped wrapped, typename Wrapped::value_type smoothed_value)
-        : wrapped_(wrapped), smoothed_value_(smoothed_value)
+        : smoothed_signal::signal_wrapper(wrapped),
+          smoothed_value_(smoothed_value)
     {
     }
     id_interface const&
     value_id() const
     {
-        if (wrapped_.has_value())
+        if (this->wrapped_.has_value())
         {
             id_ = make_id(smoothed_value_);
             return id_;
         }
         else
             return null_id;
-    }
-    bool
-    has_value() const
-    {
-        return wrapped_.has_value();
     }
     typename Wrapped::value_type const&
     read() const
@@ -161,7 +158,6 @@ struct smoothed_signal : regular_signal<
     }
 
  private:
-    Wrapped wrapped_;
     typename Wrapped::value_type smoothed_value_;
     mutable simple_id<typename Wrapped::value_type> id_;
 };

@@ -12,42 +12,19 @@ struct signal_validation_data
 };
 
 template<class Wrapped>
-struct validated_signal : signal<
-                              validated_signal<Wrapped>,
-                              typename Wrapped::value_type,
-                              typename Wrapped::direction_tag>
+struct validated_signal : signal_wrapper<validated_signal<Wrapped>, Wrapped>
 {
     validated_signal()
     {
     }
     validated_signal(signal_validation_data* data, Wrapped wrapped)
-        : data_(data), wrapped_(wrapped)
+        : validated_signal::signal_wrapper(wrapped), data_(data)
     {
     }
     bool
     has_value() const
     {
         return !data_->error && wrapped_.has_value();
-    }
-    typename Wrapped::value_type const&
-    read() const
-    {
-        return wrapped_.read();
-    }
-    id_interface const&
-    value_id() const
-    {
-        return wrapped_.value_id();
-    }
-    bool
-    ready_to_write() const
-    {
-        return wrapped_.ready_to_write();
-    }
-    void
-    write(typename Wrapped::value_type value) const
-    {
-        wrapped_.write(std::move(value));
     }
     bool
     invalidate(std::exception_ptr error) const
