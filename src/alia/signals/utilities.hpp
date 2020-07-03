@@ -163,6 +163,105 @@ refresh_signal_shadow(
     }
 }
 
+// signal_wrapper is a utility for wrapping another signal. It's designed to be
+// used as a base class. By default, it passes every signal function through to
+// the wrapped signal (a protected member named wrapped_). You customize your
+// wrapper by overriding what's different.
+template<
+    class Derived,
+    class Wrapped,
+    class Value = typename Wrapped::value_type,
+    class Direction = typename Wrapped::direction_tag>
+struct signal_wrapper : signal<Derived, Value, Direction>
+{
+    signal_wrapper(Wrapped wrapped) : wrapped_(wrapped)
+    {
+    }
+    bool
+    has_value() const
+    {
+        return wrapped_.has_value();
+    }
+    typename Wrapped::value_type const&
+    read() const
+    {
+        return wrapped_.read();
+    }
+    id_interface const&
+    value_id() const
+    {
+        return wrapped_.value_id();
+    }
+    bool
+    ready_to_write() const
+    {
+        return wrapped_.ready_to_write();
+    }
+    void
+    write(typename Wrapped::value_type value) const
+    {
+        return wrapped_.write(std::move(value));
+    }
+    bool
+    invalidate(std::exception_ptr error) const
+    {
+        return wrapped_.invalidate(error);
+    }
+    bool
+    is_invalidated() const
+    {
+        return wrapped_.is_invalidated();
+    }
+
+ protected:
+    Wrapped wrapped_;
+};
+
+// casting_signal_wrapper is similar to signal_wrapper but it doesn't try to
+// implement any functions that depend on the value type of the signal. It's
+// intended for wrappers that plan to cast the wrapped signal value to a
+// different type. Using signal_wrapper in those cases would result in errors in
+// the default implementations of read(), write(), etc.
+template<
+    class Derived,
+    class Wrapped,
+    class Value,
+    class Direction = typename Wrapped::direction_tag>
+struct casting_signal_wrapper : signal<Derived, Value, Direction>
+{
+    casting_signal_wrapper(Wrapped wrapped) : wrapped_(wrapped)
+    {
+    }
+    bool
+    has_value() const
+    {
+        return wrapped_.has_value();
+    }
+    id_interface const&
+    value_id() const
+    {
+        return wrapped_.value_id();
+    }
+    bool
+    ready_to_write() const
+    {
+        return wrapped_.ready_to_write();
+    }
+    bool
+    invalidate(std::exception_ptr error) const
+    {
+        return wrapped_.invalidate(error);
+    }
+    bool
+    is_invalidated() const
+    {
+        return wrapped_.is_invalidated();
+    }
+
+ protected:
+    Wrapped wrapped_;
+};
+
 } // namespace alia
 
 #endif
