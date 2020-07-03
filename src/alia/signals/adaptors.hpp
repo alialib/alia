@@ -425,7 +425,7 @@ disable_writes(Signal s)
 // unwrap(signal), where :signal is a signal carrying a std::optional value,
 // yields a signal that directly carries the value wrapped inside the optional.
 template<class Wrapped>
-struct unwrapper_signal : signal_wrapper<
+struct unwrapper_signal : casting_signal_wrapper<
                               unwrapper_signal<Wrapped>,
                               Wrapped,
                               typename Wrapped::value_type::value_type>
@@ -434,35 +434,32 @@ struct unwrapper_signal : signal_wrapper<
     {
     }
     unwrapper_signal(Wrapped wrapped)
-        : unwrapper_signal::signal_wrapper(wrapped)
+        : unwrapper_signal::casting_signal_wrapper(wrapped)
     {
     }
     bool
     has_value() const
     {
-        return wrapped_.has_value() && wrapped_.read().has_value();
+        return this->wrapped_.has_value() && this->wrapped_.read().has_value();
     }
     typename Wrapped::value_type::value_type const&
     read() const
     {
-        return wrapped_.read().value();
+        return this->wrapped_.read().value();
     }
     id_interface const&
     value_id() const
     {
         if (this->has_value())
-            return wrapped_.value_id();
+            return this->wrapped_.value_id();
         else
             return null_id;
     }
     void
     write(typename Wrapped::value_type::value_type value) const
     {
-        wrapped_.write(std::move(value));
+        this->wrapped_.write(std::move(value));
     }
-
- private:
-    Wrapped wrapped_;
 };
 template<class Signal>
 auto
