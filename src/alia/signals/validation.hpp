@@ -24,24 +24,23 @@ struct validated_signal : signal_wrapper<validated_signal<Wrapped>, Wrapped>
     bool
     has_value() const
     {
-        return !data_->error && wrapped_.has_value();
+        return !data_->error && this->wrapped_.has_value();
     }
     bool
     invalidate(std::exception_ptr error) const
     {
         data_->error = error;
-        wrapped_.invalidate(error);
+        this->wrapped_.invalidate(error);
         return true;
     }
     bool
     is_invalidated() const
     {
-        return data_->error || wrapped_.is_invalidated();
+        return data_->error || this->wrapped_.is_invalidated();
     }
 
  private:
     signal_validation_data* data_;
-    Wrapped wrapped_;
 };
 
 template<class Signal>
