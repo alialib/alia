@@ -151,14 +151,12 @@ update_duplex_text(duplex_text_data<Value>* data, Readable x)
     }
 }
 template<class Wrapped>
-struct duplex_text_signal : signal<
-                                duplex_text_signal<Wrapped>,
-                                std::string,
-                                typename Wrapped::direction_tag>
+struct duplex_text_signal
+    : casting_signal_wrapper<duplex_text_signal<Wrapped>, Wrapped, std::string>
 {
     duplex_text_signal(
         Wrapped wrapped, duplex_text_data<typename Wrapped::value_type>* data)
-        : wrapped_(wrapped), data_(data)
+        : duplex_text_signal::casting_signal_wrapper(wrapped), data_(data)
     {
     }
     bool
@@ -177,34 +175,18 @@ struct duplex_text_signal : signal<
         id_ = make_id(data_->output_version);
         return id_;
     }
-    bool
-    ready_to_write() const
-    {
-        return wrapped_.ready_to_write();
-    }
     void
     write(std::string s) const
     {
         typename Wrapped::value_type value;
         from_string(&value, s);
         data_->input_value = value;
-        wrapped_.write(std::move(value));
+        this->wrapped_.write(std::move(value));
         data_->output_text = s;
         ++data_->output_version;
     }
-    bool
-    invalidate(std::exception_ptr error) const
-    {
-        return wrapped_.invalidate(error);
-    }
-    bool
-    is_invalidated() const
-    {
-        return wrapped_.is_invalidated();
-    }
 
  private:
-    Wrapped wrapped_;
     duplex_text_data<typename Wrapped::value_type>* data_;
     mutable simple_id<counter_type> id_;
 };
