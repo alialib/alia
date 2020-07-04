@@ -158,6 +158,22 @@ struct signal_interface : untyped_signal_base
     // Write the signal's value.
     virtual void
     write(Value value) const = 0;
+
+    // WARNING: EXPERIMENTAL MOVEMENT STUFF FOLLOWS...
+
+    // Get a value that can be moved out.
+    // (The default implementation of this just returns a copy.)
+    virtual Value
+    movable_value() const
+    {
+        return this->read();
+    }
+
+    virtual Value
+    move() const
+    {
+        return this->read();
+    }
 };
 
 template<class Derived, class Value, class Direction>

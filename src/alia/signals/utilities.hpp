@@ -174,7 +174,7 @@ template<
     class Direction = typename Wrapped::direction_tag>
 struct signal_wrapper : signal<Derived, Value, Direction>
 {
-    signal_wrapper(Wrapped wrapped) : wrapped_(wrapped)
+    signal_wrapper(Wrapped wrapped) : wrapped_(std::move(wrapped))
     {
     }
     bool
