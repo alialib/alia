@@ -214,7 +214,7 @@ operator<<(Action const& action, Value const& v)
 template<class Sink, class Source>
 struct copy_action : action_interface<>
 {
-    copy_action(Sink sink, Source source) : sink_(sink), source_(source)
+    copy_action(Sink sink, Source source) : sink_(std::move(sink)), source_(std::move(source))
     {
     }
 
@@ -227,9 +227,9 @@ struct copy_action : action_interface<>
     void
     perform(function_view<void()> const& intermediary) const
     {
-        auto value = source_.read();
+        typename Source::value_type source_value = std::move(source_.move());
         intermediary();
-        sink_.write(std::move(value));
+        sink_.write(std::move(source_value));
     }
 
  private:
@@ -247,7 +247,7 @@ template<
 auto
 operator<<=(Sink sink, Source source)
 {
-    return copy_action<Sink, Source>(sink, source);
+    return copy_action<Sink, Source>(std::move(sink), std::move(source));
 }
 
 template<
