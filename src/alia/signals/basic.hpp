@@ -64,7 +64,7 @@ template<class Value>
 struct value_signal
     : regular_signal<value_signal<Value>, Value, read_only_signal>
 {
-    explicit value_signal(Value const& v) : v_(v)
+    explicit value_signal(Value v) : v_(std::move(v))
     {
     }
     bool
@@ -77,15 +77,21 @@ struct value_signal
     {
         return v_;
     }
+    Value
+    movable_value() const
+    {
+        Value movable = std::move(v_);
+        return movable;
+    }
 
  private:
-    Value v_;
+    mutable Value v_;
 };
 template<class Value>
 value_signal<Value>
-value(Value const& v)
+value(Value v)
 {
-    return value_signal<Value>(v);
+    return value_signal<Value>(std::move(v));
 }
 
 // This is a special overload of value() for C-style string literals.
@@ -159,6 +165,12 @@ struct direct_signal
     write(Value value) const
     {
         *v_ = std::move(value);
+    }
+    Value
+    movable_value() const
+    {
+        Value movable = std::move(*v_);
+        return movable;
     }
 
  private:

@@ -44,6 +44,11 @@ struct int_object
         moved_out = false;
         other.moved_out = true;
     }
+    int_object(int_object const& other)
+    {
+        n = other.n;
+        moved_out = false;
+    }
     int_object&
     operator=(int_object&& other)
     {

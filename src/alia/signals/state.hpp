@@ -138,6 +138,13 @@ struct state_signal : signal<state_signal<Value, Direction>, Value, Direction>
         data_->set(std::move(value));
     }
 
+    Value
+    movable_value() const
+    {
+        Value movable = std::move(data_->untracked_nonconst_ref());
+        return movable;
+    }
+
  private:
     state_storage<Value>* data_;
     mutable simple_id<unsigned> id_;

@@ -319,7 +319,7 @@ simplify_id(Wrapped wrapped)
 
 // mask(signal, availibility_flag) does the equivalent of bit masking on
 // individual signals. If :availibility_flag evaluates to true, the mask
-// evaluates to signal equivalent to :signal. Otherwise, it evaluates to an
+// evaluates to a signal equivalent to :signal. Otherwise, it evaluates to an
 // empty signal of the same type.
 template<class Primary, class Mask>
 struct masking_signal : signal_wrapper<masking_signal<Primary, Mask>, Primary>
@@ -466,6 +466,33 @@ auto
 unwrap(Signal signal)
 {
     return unwrapper_signal<Signal>(signal);
+}
+
+// move(signal) returns a signal with move semantics enabled. If you call
+// move() on the returned signal, it will actually move the value out of
+// the signal (if the underlying signal supports it).
+template<class Wrapped>
+struct movable_signal : signal_wrapper<movable_signal<Wrapped>, Wrapped>
+{
+    movable_signal()
+    {
+    }
+    movable_signal(Wrapped wrapped) : movable_signal::signal_wrapper(std::move(wrapped))
+    {
+    }
+    typename Wrapped::value_type
+    move() const
+    {
+        typename Wrapped::value_type movable
+            = std::move(this->wrapped_.movable_value());
+        return movable;
+    }
+};
+template<class Signal>
+auto
+move(Signal signal)
+{
+    return movable_signal<Signal>(std::move(signal));
 }
 
 } // namespace alia

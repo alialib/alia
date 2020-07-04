@@ -627,6 +627,12 @@ struct keyed_data_signal : signal<keyed_data_signal<Data>, Data, duplex_signal>
     {
         alia::set(*data_, std::move(value));
     }
+    Data
+    movable_value() const
+    {
+        Data movable = std::move(data_->value);
+        return movable;
+    }
 
  private:
     keyed_data<Data>* data_;
