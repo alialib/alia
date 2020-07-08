@@ -9,4 +9,6 @@
 #define ALIA_STRICT_MACROS
 #endif
 
+#define CATCH_CONFIG_ENABLE_BENCHMARKING
+
 #include <catch2/catch.hpp>
