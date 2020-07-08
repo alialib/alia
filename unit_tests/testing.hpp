@@ -9,4 +9,4 @@
 #define ALIA_STRICT_MACROS
 #endif
 
-#include <catch.hpp>
+#include <catch2/catch.hpp>

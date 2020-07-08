@@ -4,7 +4,7 @@ import os
 
 class AliaConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
-    requires = ("Catch/1.12.1@bincrafters/stable", )
+    requires = ("Catch2/2.12.4@catchorg/stable", )
     generators = "cmake"
     default_options = "*:shared=False"
 

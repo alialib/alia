@@ -2,3 +2,4 @@
 @echo off
 echo "Setting up Conan..."
 conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan || exit /b
+conan remote add catchorg https://api.bintray.com/conan/catchorg/Catch2
