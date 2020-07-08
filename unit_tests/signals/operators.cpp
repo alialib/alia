@@ -260,11 +260,13 @@ TEST_CASE("field signal", "[signals][operators]")
 struct my_array
 {
     int x[3] = {1, 2, 3};
-    int& operator[](int i)
+    int&
+    operator[](int i)
     {
         return x[i];
     }
-    int const& operator[](int i) const
+    int const&
+    operator[](int i) const
     {
         return x[i];
     }
@@ -273,7 +275,8 @@ struct my_array
 struct my_const_array
 {
     int x[3] = {1, 2, 3};
-    int operator[](int i) const
+    int
+    operator[](int i) const
     {
         return x[i];
     }
@@ -319,6 +322,11 @@ TEST_CASE("vector subscript", "[signals][operators]")
     auto c = std::vector<int>{2, 0, 3};
     auto c_signal = direct(c);
     auto s = c_signal[value(1)];
+
+    BENCHMARK("subscript signal creation")
+    {
+        return c_signal[value(1)];
+    };
 
     typedef decltype(s) signal_t;
     REQUIRE((std::is_same<signal_t::value_type, int>::value));
