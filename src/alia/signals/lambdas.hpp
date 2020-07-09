@@ -18,7 +18,9 @@ struct simple_lambda_constant_signal
           Value,
           read_only_signal>
 {
-    simple_lambda_constant_signal(Read read) : read_(read)
+    simple_lambda_constant_signal(Read read)
+        : read_(read), value_(decltype(read())())
+
     {
     }
     bool
@@ -59,7 +61,8 @@ struct simple_lambda_reader_signal
           Value,
           read_only_signal>
 {
-    simple_lambda_reader_signal(Read read) : read_(read)
+    simple_lambda_reader_signal(Read read)
+        : read_(read), value_(decltype(read())())
     {
     }
     bool
@@ -95,7 +98,7 @@ struct lambda_reader_signal : regular_signal<
                                   read_only_signal>
 {
     lambda_reader_signal(HasValue has_value, Read read)
-        : has_value_(has_value), read_(read)
+        : has_value_(has_value), read_(read), value_(decltype(read())())
     {
     }
     bool
@@ -135,7 +138,10 @@ struct lambda_reader_signal_with_id
 {
     lambda_reader_signal_with_id(
         HasValue has_value, Read read, GenerateId generate_id)
-        : has_value_(has_value), read_(read), generate_id_(generate_id)
+        : has_value_(has_value),
+          read_(read),
+          value_(decltype(read())()),
+          generate_id_(generate_id)
     {
     }
     id_interface const&
@@ -193,6 +199,7 @@ struct lambda_duplex_signal
         HasValue has_value, Read read, ReadyToWrite ready_to_write, Write write)
         : has_value_(has_value),
           read_(read),
+          value_(decltype(read())()),
           ready_to_write_(ready_to_write),
           write_(write)
     {
@@ -269,6 +276,7 @@ struct lambda_duplex_signal_with_id : signal<
         GenerateId generate_id)
         : has_value_(has_value),
           read_(read),
+          value_(decltype(read())()),
           ready_to_write_(ready_to_write),
           write_(write),
           generate_id_(generate_id)
