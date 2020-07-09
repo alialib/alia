@@ -3,6 +3,7 @@
 #include <alia/signals/basic.hpp>
 #include <alia/signals/operators.hpp>
 
+#include <move_testing.hpp>
 #include <testing.hpp>
 
 using namespace alia;
@@ -193,6 +194,27 @@ TEST_CASE("push_back action", "[flow][actions]")
     {
         auto a = push_back(empty<std::vector<int>>());
         REQUIRE(!a.is_ready());
+    }
+
+    {
+        auto a = push_back(empty<std::vector<int>>());
+        REQUIRE(!a.is_ready());
+    }
+}
+
+TEST_CASE("push_back movable", "[flow][actions]")
+{
+    auto x = std::vector<movable_object>{movable_object(1), movable_object(2)};
+    {
+        auto a = push_back(direct(x)) << alia::move(value(movable_object(3)));
+        REQUIRE(a.is_ready());
+        copy_count = 0;
+        perform_action(a);
+        REQUIRE(copy_count == 0);
+        REQUIRE(
+            x
+            == (std::vector<movable_object>{
+                movable_object(1), movable_object(2), movable_object(3)}));
     }
 }
 

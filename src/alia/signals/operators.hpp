@@ -663,7 +663,7 @@ struct subscript_signal : preferred_id_signal<
     {
     }
     subscript_signal(ContainerSignal array, IndexSignal index)
-        : container_(array), index_(index)
+        : container_(std::move(array)), index_(std::move(index))
     {
     }
     bool
@@ -705,7 +705,8 @@ template<class ContainerSignal, class IndexSignal>
 subscript_signal<ContainerSignal, IndexSignal>
 make_subscript_signal(ContainerSignal container, IndexSignal index)
 {
-    return subscript_signal<ContainerSignal, IndexSignal>(container, index);
+    return subscript_signal<ContainerSignal, IndexSignal>(
+        std::move(container), std::move(index));
 }
 
 template<class Derived, class Value, class Direction>
@@ -714,7 +715,7 @@ auto
 signal_base<Derived, Value, Direction>::operator[](Index index) const
 {
     return make_subscript_signal(
-        static_cast<Derived const&>(*this), signalize(index));
+        static_cast<Derived const&>(*this), signalize(std::move(index)));
 }
 
 } // namespace alia
