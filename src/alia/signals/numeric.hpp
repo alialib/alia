@@ -17,7 +17,8 @@ template<class N, class Factor>
 struct scaled_signal : signal_wrapper<scaled_signal<N, Factor>, N>
 {
     scaled_signal(N n, Factor scale_factor)
-        : scaled_signal::signal_wrapper(n), scale_factor_(scale_factor)
+        : scaled_signal::signal_wrapper(std::move(n)),
+          scale_factor_(std::move(scale_factor))
     {
     }
     bool
@@ -58,13 +59,13 @@ template<class N, class Factor>
 scaled_signal<N, Factor>
 make_scaled_signal(N n, Factor scale_factor)
 {
-    return scaled_signal<N, Factor>(n, scale_factor);
+    return scaled_signal<N, Factor>(std::move(n), std::move(scale_factor));
 }
 template<class N, class Factor>
 auto
 scale(N n, Factor scale_factor)
 {
-    return make_scaled_signal(n, signalize(scale_factor));
+    return make_scaled_signal(std::move(n), signalize(std::move(scale_factor)));
 }
 
 // offset(n, offset) presents an offset view of :n.
@@ -72,7 +73,8 @@ template<class N, class Offset>
 struct offset_signal : signal_wrapper<offset_signal<N, Offset>, N>
 {
     offset_signal(N n, Offset offset)
-        : offset_signal::signal_wrapper(n), offset_(offset)
+        : offset_signal::signal_wrapper(std::move(n)),
+          offset_(std::move(offset))
     {
     }
     bool
@@ -113,13 +115,13 @@ template<class N, class Offset>
 offset_signal<N, Offset>
 make_offset_signal(N n, Offset offset)
 {
-    return offset_signal<N, Offset>(n, offset);
+    return offset_signal<N, Offset>(std::move(n), std::move(offset));
 }
 template<class N, class Offset>
 auto
 offset(N n, Offset offset)
 {
-    return make_offset_signal(n, signalize(offset));
+    return make_offset_signal(std::move(n), signalize(std::move(offset)));
 }
 
 // round_signal_writes(n, step) yields a wrapper which rounds any writes to
@@ -129,7 +131,8 @@ struct rounding_signal_wrapper
     : signal_wrapper<rounding_signal_wrapper<N, Step>, N>
 {
     rounding_signal_wrapper(N n, Step step)
-        : rounding_signal_wrapper::signal_wrapper(n), step_(step)
+        : rounding_signal_wrapper::signal_wrapper(std::move(n)),
+          step_(std::move(step))
     {
     }
     bool
@@ -152,13 +155,14 @@ template<class N, class Step>
 rounding_signal_wrapper<N, Step>
 make_rounding_signal_wrapper(N n, Step step)
 {
-    return rounding_signal_wrapper<N, Step>(n, step);
+    return rounding_signal_wrapper<N, Step>(std::move(n), std::move(step));
 }
 template<class N, class Step>
 auto
 round_signal_writes(N n, Step step)
 {
-    return make_rounding_signal_wrapper(n, signalize(step));
+    return make_rounding_signal_wrapper(
+        std::move(n), signalize(std::move(step)));
 }
 
 } // namespace alia

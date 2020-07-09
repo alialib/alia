@@ -454,6 +454,18 @@ struct is_duplex_signal_type : std::conditional_t<
 {
 };
 
+// Force a signal to move its value out (if it supports it).
+// This bypasses the requirement that a signal opt into movement.
+// It's intended to be used in mutating actions where you read a signal
+// immediately before writing back to it.
+template<class Signal>
+std::enable_if_t<signal_is_readable<Signal>::value, typename Signal::value_type>
+force_move(Signal const& signal)
+{
+    assert(signal.has_value());
+    return signal.movable_value();
+}
+
 } // namespace alia
 
 #endif
