@@ -36,7 +36,7 @@ struct readability_faker : signal_wrapper<
                                    typename Wrapped::direction_tag>::type>
 {
     readability_faker(Wrapped wrapped)
-        : readability_faker::signal_wrapper(wrapped)
+        : readability_faker::signal_wrapper(std::move(wrapped))
     {
     }
     id_interface const&
@@ -67,9 +67,9 @@ struct readability_faker : signal_wrapper<
 };
 template<class Wrapped>
 readability_faker<Wrapped>
-fake_readability(Wrapped const& wrapped)
+fake_readability(Wrapped wrapped)
 {
-    return readability_faker<Wrapped>(wrapped);
+    return readability_faker<Wrapped>(std::move(wrapped));
 }
 
 // fake_writability(s), where :s is a signal, yields a wrapper for :s that
@@ -85,7 +85,7 @@ struct writability_faker : signal_wrapper<
                                    typename Wrapped::direction_tag>::type>
 {
     writability_faker(Wrapped wrapped)
-        : writability_faker::signal_wrapper(wrapped)
+        : writability_faker::signal_wrapper(std::move(wrapped))
     {
     }
     bool
@@ -102,9 +102,9 @@ struct writability_faker : signal_wrapper<
 };
 template<class Wrapped>
 writability_faker<Wrapped>
-fake_writability(Wrapped const& wrapped)
+fake_writability(Wrapped wrapped)
 {
-    return writability_faker<Wrapped>(wrapped);
+    return writability_faker<Wrapped>(std::move(wrapped));
 }
 
 // signal_cast<Value>(x), where :x is a signal, yields a proxy for :x with
@@ -115,7 +115,7 @@ struct casting_signal
     : casting_signal_wrapper<casting_signal<Wrapped, To>, Wrapped, To>
 {
     casting_signal(Wrapped wrapped)
-        : casting_signal::casting_signal_wrapper(wrapped)
+        : casting_signal::casting_signal_wrapper(std::move(wrapped))
     {
     }
     To const&
@@ -134,7 +134,9 @@ struct casting_signal
  private:
     lazy_reader<To> lazy_reader_;
 };
-// Don't use a casting_signal if the value type is the same.
+// signal_caster is just another level of indirection that allows us to
+// eliminate the casting_signal entirely if it's just going to cast to the same
+// type.
 template<class Wrapped, class To>
 struct signal_caster
 {
@@ -142,7 +144,7 @@ struct signal_caster
     static type
     apply(Wrapped wrapped)
     {
-        return type(wrapped);
+        return type(std::move(wrapped));
     }
 };
 template<class Wrapped>
@@ -159,7 +161,7 @@ template<class To, class Wrapped>
 typename signal_caster<Wrapped, To>::type
 signal_cast(Wrapped wrapped)
 {
-    return signal_caster<Wrapped, To>::apply(wrapped);
+    return signal_caster<Wrapped, To>::apply(std::move(wrapped));
 }
 
 // has_value(x) yields a signal to a boolean which indicates whether or not :x
@@ -168,7 +170,7 @@ template<class Wrapped>
 struct value_presence_signal
     : regular_signal<value_presence_signal<Wrapped>, bool, read_only_signal>
 {
-    value_presence_signal(Wrapped const& wrapped) : wrapped_(wrapped)
+    value_presence_signal(Wrapped wrapped) : wrapped_(std::move(wrapped))
     {
     }
     bool
@@ -189,9 +191,9 @@ struct value_presence_signal
 };
 template<class Wrapped>
 auto
-has_value(Wrapped const& wrapped)
+has_value(Wrapped wrapped)
 {
-    return value_presence_signal<Wrapped>(wrapped);
+    return value_presence_signal<Wrapped>(std::move(wrapped));
 }
 
 // ready_to_write(x) yields a signal to a boolean that indicates whether or not
@@ -200,7 +202,7 @@ template<class Wrapped>
 struct write_readiness_signal
     : regular_signal<write_readiness_signal<Wrapped>, bool, read_only_signal>
 {
-    write_readiness_signal(Wrapped const& wrapped) : wrapped_(wrapped)
+    write_readiness_signal(Wrapped wrapped) : wrapped_(std::move(wrapped))
     {
     }
     bool
@@ -221,9 +223,9 @@ struct write_readiness_signal
 };
 template<class Wrapped>
 auto
-ready_to_write(Wrapped const& wrapped)
+ready_to_write(Wrapped wrapped)
 {
-    return write_readiness_signal<Wrapped>(wrapped);
+    return write_readiness_signal<Wrapped>(std::move(wrapped));
 }
 
 // add_fallback(primary, fallback), where :primary and :fallback are both
@@ -238,7 +240,8 @@ struct fallback_signal
     {
     }
     fallback_signal(Primary primary, Fallback fallback)
-        : fallback_signal::signal_wrapper(primary), fallback_(fallback)
+        : fallback_signal::signal_wrapper(std::move(primary)),
+          fallback_(std::move(fallback))
     {
     }
     bool
@@ -270,13 +273,15 @@ template<class Primary, class Fallback>
 fallback_signal<Primary, Fallback>
 make_fallback_signal(Primary primary, Fallback fallback)
 {
-    return fallback_signal<Primary, Fallback>(primary, fallback);
+    return fallback_signal<Primary, Fallback>(
+        std::move(primary), std::move(fallback));
 }
 template<class Primary, class Fallback>
 auto
 add_fallback(Primary primary, Fallback fallback)
 {
-    return make_fallback_signal(signalize(primary), signalize(fallback));
+    return make_fallback_signal(
+        signalize(std::move(primary)), signalize(std::move(fallback)));
 }
 
 // simplify_id(s), where :s is a signal, yields a wrapper for :s with the exact
@@ -293,7 +298,7 @@ struct simplified_id_wrapper
     : signal_wrapper<simplified_id_wrapper<Wrapped>, Wrapped>
 {
     simplified_id_wrapper(Wrapped wrapped)
-        : simplified_id_wrapper::signal_wrapper(wrapped)
+        : simplified_id_wrapper::signal_wrapper(std::move(wrapped))
     {
     }
     id_interface const&
@@ -314,7 +319,7 @@ template<class Wrapped>
 simplified_id_wrapper<Wrapped>
 simplify_id(Wrapped wrapped)
 {
-    return simplified_id_wrapper<Wrapped>(wrapped);
+    return simplified_id_wrapper<Wrapped>(std::move(wrapped));
 }
 
 // mask(signal, availibility_flag) does the equivalent of bit masking on
@@ -328,7 +333,8 @@ struct masking_signal : signal_wrapper<masking_signal<Primary, Mask>, Primary>
     {
     }
     masking_signal(Primary primary, Mask mask)
-        : masking_signal::signal_wrapper(primary), mask_(mask)
+        : masking_signal::signal_wrapper(std::move(primary)),
+          mask_(std::move(mask))
     {
     }
     bool
@@ -358,13 +364,15 @@ template<class Signal, class AvailabilityFlag>
 auto
 make_masking_signal(Signal signal, AvailabilityFlag availability_flag)
 {
-    return masking_signal<Signal, AvailabilityFlag>(signal, availability_flag);
+    return masking_signal<Signal, AvailabilityFlag>(
+        std::move(signal), std::move(availability_flag));
 }
 template<class Signal, class AvailabilityFlag>
 auto
 mask(Signal signal, AvailabilityFlag availability_flag)
 {
-    return make_masking_signal(signalize(signal), signalize(availability_flag));
+    return make_masking_signal(
+        signalize(std::move(signal)), signalize(std::move(availability_flag)));
 }
 
 // mask_writes(signal, writability_flag) masks writes to :signal according to
@@ -386,7 +394,8 @@ struct write_masking_signal
     {
     }
     write_masking_signal(Primary primary, Mask mask)
-        : write_masking_signal::signal_wrapper(primary), mask_(mask)
+        : write_masking_signal::signal_wrapper(std::move(primary)),
+          mask_(std::move(mask))
     {
     }
     bool
@@ -404,13 +413,14 @@ auto
 make_write_masking_signal(Signal signal, WritabilityFlag writability_flag)
 {
     return write_masking_signal<Signal, WritabilityFlag>(
-        signal, writability_flag);
+        std::move(signal), std::move(writability_flag));
 }
 template<class Signal, class WritabilityFlag>
 auto
 mask_writes(Signal signal, WritabilityFlag writability_flag)
 {
-    return make_write_masking_signal(signal, signalize(writability_flag));
+    return make_write_masking_signal(
+        std::move(signal), signalize(std::move(writability_flag)));
 }
 
 // disable_writes(s), where :s is a signal, yields a wrapper for :s where writes
@@ -419,7 +429,7 @@ template<class Signal>
 auto
 disable_writes(Signal s)
 {
-    return mask_writes(s, false);
+    return mask_writes(std::move(s), false);
 }
 
 // unwrap(signal), where :signal is a signal carrying a std::optional value,
@@ -434,7 +444,7 @@ struct unwrapper_signal : casting_signal_wrapper<
     {
     }
     unwrapper_signal(Wrapped wrapped)
-        : unwrapper_signal::casting_signal_wrapper(wrapped)
+        : unwrapper_signal::casting_signal_wrapper(std::move(wrapped))
     {
     }
     bool
@@ -465,7 +475,7 @@ template<class Signal>
 auto
 unwrap(Signal signal)
 {
-    return unwrapper_signal<Signal>(signal);
+    return unwrapper_signal<Signal>(std::move(signal));
 }
 
 // move(signal) returns a signal with move semantics enabled. If you call
@@ -477,7 +487,8 @@ struct movable_signal : signal_wrapper<movable_signal<Wrapped>, Wrapped>
     movable_signal()
     {
     }
-    movable_signal(Wrapped wrapped) : movable_signal::signal_wrapper(std::move(wrapped))
+    movable_signal(Wrapped wrapped)
+        : movable_signal::signal_wrapper(std::move(wrapped))
     {
     }
     typename Wrapped::value_type

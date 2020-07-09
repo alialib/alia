@@ -10,23 +10,23 @@ struct movable_object
     movable_object(int n) : n(n)
     {
     }
-    movable_object(movable_object&& other)
+    movable_object(movable_object&& other) noexcept
     {
         n = other.n;
     }
-    movable_object(movable_object const& other)
+    movable_object(movable_object const& other) noexcept
     {
         n = other.n;
         ++copy_count;
     }
     movable_object&
-    operator=(movable_object&& other)
+    operator=(movable_object&& other) noexcept
     {
         n = other.n;
         return *this;
     }
     movable_object&
-    operator=(movable_object const& other)
+    operator=(movable_object const& other) noexcept
     {
         n = other.n;
         ++copy_count;
