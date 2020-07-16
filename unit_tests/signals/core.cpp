@@ -44,10 +44,12 @@ TEST_CASE("signal_direction_union", "[signals][core]")
     REQUIRE((std::is_same<signal_direction_union<A, B>::type, Result>::value))
 
     TEST_UNION(read_only_signal, read_only_signal, read_only_signal);
-    TEST_UNION(read_only_signal, write_only_signal, duplex_signal);
+    typedef signal_directionality<signal_readable, signal_writable>
+        read_write_signal;
+    TEST_UNION(read_only_signal, write_only_signal, read_write_signal);
     TEST_UNION(read_only_signal, duplex_signal, duplex_signal);
     TEST_UNION(write_only_signal, write_only_signal, write_only_signal);
-    TEST_UNION(write_only_signal, read_only_signal, duplex_signal);
+    TEST_UNION(write_only_signal, read_only_signal, read_write_signal);
     TEST_UNION(write_only_signal, duplex_signal, duplex_signal);
     TEST_UNION(duplex_signal, read_only_signal, duplex_signal);
     TEST_UNION(duplex_signal, write_only_signal, duplex_signal);
@@ -123,18 +125,15 @@ TEST_CASE("signal_ref", "[signals][core]")
     REQUIRE(read_signal(s) == 0);
 }
 
-static void
-f_readable(alia::readable<int>)
+static void f_readable(alia::readable<int>)
 {
 }
 
-static void
-f_writable(alia::writable<int>)
+static void f_writable(alia::writable<int>)
 {
 }
 
-static void
-f_duplex(alia::duplex<int>)
+static void f_duplex(alia::duplex<int>)
 {
 }
 

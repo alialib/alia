@@ -482,13 +482,14 @@ unwrap(Signal signal)
 // move() on the returned signal, it will actually move the value out of
 // the signal (if the underlying signal supports it).
 template<class Wrapped>
-struct movable_signal : signal_wrapper<movable_signal<Wrapped>, Wrapped>
+struct movable_signal_wrapper
+    : signal_wrapper<movable_signal_wrapper<Wrapped>, Wrapped>
 {
-    movable_signal()
+    movable_signal_wrapper()
     {
     }
-    movable_signal(Wrapped wrapped)
-        : movable_signal::signal_wrapper(std::move(wrapped))
+    movable_signal_wrapper(Wrapped wrapped)
+        : movable_signal_wrapper::signal_wrapper(std::move(wrapped))
     {
     }
     typename Wrapped::value_type
@@ -503,7 +504,7 @@ template<class Signal>
 auto
 move(Signal signal)
 {
-    return movable_signal<Signal>(std::move(signal));
+    return movable_signal_wrapper<Signal>(std::move(signal));
 }
 
 } // namespace alia
