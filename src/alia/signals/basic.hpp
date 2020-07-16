@@ -34,12 +34,12 @@ struct empty_signal : signal<empty_signal<Value>, Value, readable_duplex_signal>
     Value const&
     read() const
     {
-        return *(Value const*) nullptr;
+        throw nullptr;
     }
     Value
     movable_value() const
     {
-        return *(Value const*) nullptr;
+        throw nullptr;
     }
 #ifdef __clang__
 #pragma clang diagnostic pop
