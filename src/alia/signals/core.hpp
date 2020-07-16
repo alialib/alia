@@ -15,39 +15,90 @@ namespace alia {
 // signal, which allows them to be easily composed at the call site,
 // without requiring any memory allocation.
 
-// direction tags
-struct read_only_signal
+// The following enumerate the possible levels of capabilities that signals can
+// have with respect to reading values (from the signal). These are cumulative,
+// so each level includes all the capabilities before it.
+
+// The signal has no reading capabilities.
+struct signal_unreadable
 {
+    static constexpr unsigned level = 0;
 };
-struct write_only_signal
+// The signal can return a const reference to its value.
+struct signal_readable
 {
+    static constexpr unsigned level = 1;
 };
-struct duplex_signal
+// The signal is capable of copying its value.
+// It could also move but there may be side effects, so it requires explicit
+// activation.
+struct signal_copyable
 {
+    static constexpr unsigned level = 2;
+};
+// The signal is ready to move its value.
+struct signal_movable
+{
+    static constexpr unsigned level = 3;
+};
+
+// The following are the same, but for writing. (Writing is essentially a
+// boolean property so it only has two levels.)
+struct signal_unwritable
+{
+    static constexpr unsigned level = 0;
+};
+struct signal_writable
+{
+    static constexpr unsigned level = 1;
+};
+
+// combined direction tags
+template<class Reading, class Writing>
+struct signal_directionality
+{
+    typedef Reading reading;
+    typedef Writing writing;
+};
+
+// useful signal directionality combinations
+typedef signal_directionality<signal_readable, signal_unwritable>
+    read_only_signal;
+typedef signal_directionality<signal_unreadable, signal_writable>
+    write_only_signal;
+typedef signal_directionality<signal_copyable, signal_writable> duplex_signal;
+
+// signal_rw_capability_is_compatible<Expected,Actual>::value yields a
+// compile-time boolean indicating whether or not a signal with :Actual
+// reading/writing capbilities can be used in a context expecting :Expected
+// capabilities.
+template<class Expected, class Actual>
+struct signal_rw_capability_is_compatible
+{
+    static constexpr bool value = Expected::level <= Actual::level;
 };
 
 // signal_direction_is_compatible<Expected,Actual>::value yields a compile-time
 // boolean indicating whether or not a signal with :Actual direction can be used
 // in a context expecting :Expected direction.
-// In the general case, the signals are not compatible.
 template<class Expected, class Actual>
-struct signal_direction_is_compatible : std::false_type
+struct signal_direction_is_compatible
+    : std::conditional_t<
+          signal_rw_capability_is_compatible<
+              typename Expected::reading,
+              typename Actual::reading>::value,
+          signal_rw_capability_is_compatible<
+              typename Expected::writing,
+              typename Actual::writing>,
+          std::false_type>
 {
 };
-// If the directions are the same, this is trivially true.
-template<class Same>
-struct signal_direction_is_compatible<Same, Same> : std::true_type
-{
-};
-// A duplex signal can work as anything.
-template<class Expected>
-struct signal_direction_is_compatible<Expected, duplex_signal> : std::true_type
-{
-};
-// Resolve ambiguity.
-template<>
-struct signal_direction_is_compatible<duplex_signal, duplex_signal>
-    : std::true_type
+
+// signal_rw_capability_intersection<A,B>::type yields the type representing the
+// intersection of the read/write capabilities :A and :B.
+template<class A, class B>
+struct signal_rw_capability_intersection
+    : std::conditional<A::level <= B::level, A, B>
 {
 };
 
@@ -57,46 +108,36 @@ struct signal_direction_is_compatible<duplex_signal, duplex_signal>
 template<class A, class B>
 struct signal_direction_intersection
 {
+    typedef signal_directionality<
+        typename signal_rw_capability_intersection<
+            typename A::reading,
+            typename B::reading>::type,
+        typename signal_rw_capability_intersection<
+            typename A::writing,
+            typename B::writing>::type>
+        type;
 };
-// If the directions are the same, this is trivial.
-template<class Same>
-struct signal_direction_intersection<Same, Same>
+
+// signal_rw_capability_union<A,B>::type yields the type representing the
+// union of the read/write capabilities :A and :B.
+template<class A, class B>
+struct signal_rw_capability_union : std::conditional<A::level <= B::level, B, A>
 {
-    typedef Same type;
-};
-// A duplex signal has both capabilities.
-template<class A>
-struct signal_direction_intersection<A, duplex_signal>
-{
-    typedef A type;
-};
-template<class B>
-struct signal_direction_intersection<duplex_signal, B>
-{
-    typedef B type;
-};
-// Resolve ambiguity.
-template<>
-struct signal_direction_intersection<duplex_signal, duplex_signal>
-{
-    typedef duplex_signal type;
 };
 
 // signal_direction_union<A,B>::type, where A and B are signal directions,
 // yields a direction that has the union of the capabilities of A and B.
 template<class A, class B>
-struct signal_direction_union;
-// If the directions are the same, this is trivial.
-template<class Same>
-struct signal_direction_union<Same, Same>
-{
-    typedef Same type;
-};
-template<class A, class B>
 struct signal_direction_union
 {
-    // All other combinations yield duplex signals.
-    typedef duplex_signal type;
+    typedef signal_directionality<
+        typename signal_rw_capability_union<
+            typename A::reading,
+            typename B::reading>::type,
+        typename signal_rw_capability_union<
+            typename A::writing,
+            typename B::writing>::type>
+        type;
 };
 
 // untyped_signal_base defines functionality common to all signals, irrespective
