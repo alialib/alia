@@ -235,10 +235,6 @@ struct signal : signal_base<Derived, Value, Direction>
 // signal...
 
 // LCOV_EXCL_START
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wnull-dereference"
-#endif
 
 #define ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)                       \
     bool ready_to_write() const override                                       \
@@ -252,7 +248,7 @@ struct signal : signal_base<Derived, Value, Direction>
 #define ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)                        \
     Value movable_value() const override                                       \
     {                                                                          \
-        return *(Value const*) nullptr;                                        \
+        throw nullptr;                                                         \
     }
 
 #define ALIA_DEFINE_UNUSED_SIGNAL_READ_INTERFACE(Value)                        \
@@ -267,7 +263,7 @@ struct signal : signal_base<Derived, Value, Direction>
     }                                                                          \
     Value const& read() const override                                         \
     {                                                                          \
-        return *(Value const*) nullptr;                                        \
+        throw nullptr;                                                         \
     }
 
 template<class Derived, class Value>
@@ -324,9 +320,6 @@ struct signal<
     ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)
 };
 
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 // LCOV_EXCL_STOP
 
 // signal_ref is a reference to a signal that acts as a signal itself.
