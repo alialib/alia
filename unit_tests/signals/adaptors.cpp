@@ -503,13 +503,14 @@ TEST_CASE("signal value movement", "[signals][adaptors]")
     state.set(std::move(n));
     auto state_signal = make_state_signal(state);
     REQUIRE(copy_count == 0);
-    perform_action(state_signal <<= value(movable_object(4)));
+    movable_object x(4);
+    perform_action(state_signal <<= direct(x));
     REQUIRE(copy_count == 1);
     REQUIRE(state.get().n == 4);
 
     // Test that the use of move() eliminates the copies.
     copy_count = 0;
-    perform_action(state_signal <<= move(value(movable_object(4))));
+    perform_action(state_signal <<= move(direct(x)));
     REQUIRE(copy_count == 0);
     REQUIRE(state.get().n == 4);
 }

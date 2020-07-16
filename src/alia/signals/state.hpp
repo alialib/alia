@@ -151,10 +151,10 @@ struct state_signal : signal<state_signal<Value, Direction>, Value, Direction>
 };
 
 template<class Value>
-state_signal<Value, duplex_signal>
+state_signal<Value, copyable_duplex_signal>
 make_state_signal(state_storage<Value>& data)
 {
-    return state_signal<Value, duplex_signal>(&data);
+    return state_signal<Value, copyable_duplex_signal>(&data);
 }
 
 // get_state(ctx, initial_value) returns a signal carrying some persistent local

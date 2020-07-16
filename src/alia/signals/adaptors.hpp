@@ -121,8 +121,13 @@ struct casting_signal
     To const&
     read() const
     {
-        return lazy_reader_.read(
-            [&] { return static_cast<To>(this->wrapped_.read()); });
+        value_ = this->movable_value();
+        return value_;
+    }
+    To
+    movable_value() const
+    {
+        return static_cast<To>(forward_signal(this->wrapped_));
     }
     void
     write(To value) const
@@ -132,7 +137,7 @@ struct casting_signal
     }
 
  private:
-    lazy_reader<To> lazy_reader_;
+    mutable To value_;
 };
 // signal_caster is just another level of indirection that allows us to
 // eliminate the casting_signal entirely if it's just going to cast to the same
@@ -457,6 +462,11 @@ struct unwrapper_signal : casting_signal_wrapper<
     {
         return this->wrapped_.read().value();
     }
+    typename Wrapped::value_type::value_type
+    movable_value() const
+    {
+        return this->wrapped_.movable_value().value();
+    }
     id_interface const&
     value_id() const
     {
@@ -478,33 +488,49 @@ unwrap(Signal signal)
     return unwrapper_signal<Signal>(std::move(signal));
 }
 
-// move(signal) returns a signal with move semantics enabled. If you call
-// move() on the returned signal, it will actually move the value out of
-// the signal (if the underlying signal supports it).
+// move(signal) returns a signal with movement activated (if possible).
+//
+// If the input signal supports movement, the returned signal's value can be
+// moved out with move_signal() or forward_signal().
+//
+// If the input signal doesn't support movement, it's returned unchanged.
+//
 template<class Wrapped>
-struct movable_signal_wrapper
-    : signal_wrapper<movable_signal_wrapper<Wrapped>, Wrapped>
+struct signal_movement_activator
+    : signal_wrapper<
+          signal_movement_activator<Wrapped>,
+          Wrapped,
+          typename Wrapped::value_type,
+          signal_directionality<
+              signal_movable,
+              typename Wrapped::direction_tag::writing>>
 {
-    movable_signal_wrapper()
+    signal_movement_activator()
     {
     }
-    movable_signal_wrapper(Wrapped wrapped)
-        : movable_signal_wrapper::signal_wrapper(std::move(wrapped))
+    signal_movement_activator(Wrapped wrapped)
+        : signal_movement_activator::signal_wrapper(std::move(wrapped))
     {
-    }
-    typename Wrapped::value_type
-    move() const
-    {
-        typename Wrapped::value_type movable
-            = std::move(this->wrapped_.movable_value());
-        return movable;
     }
 };
-template<class Signal>
+template<
+    class Signal,
+    std::enable_if_t<is_copyable_signal_type<Signal>::value, int> = 0>
 auto
 move(Signal signal)
 {
-    return movable_signal_wrapper<Signal>(std::move(signal));
+    return signal_movement_activator<Signal>(std::move(signal));
+}
+template<
+    class Signal,
+    std::enable_if_t<
+        is_signal_type<Signal>::value && signal_is_readable<Signal>::value
+            && !signal_is_copyable<Signal>::value,
+        int> = 0>
+auto
+move(Signal signal)
+{
+    return signal;
 }
 
 } // namespace alia

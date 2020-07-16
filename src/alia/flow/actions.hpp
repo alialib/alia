@@ -1,6 +1,7 @@
 #ifndef ALIA_FLOW_ACTIONS_HPP
 #define ALIA_FLOW_ACTIONS_HPP
 
+#include <alia/signals/adaptors.hpp>
 #include <alia/signals/basic.hpp>
 #include <alia/signals/core.hpp>
 
@@ -173,7 +174,8 @@ struct bound_action<Action, Signal, action_interface<BoundArg, Args...>>
     void
     perform(function_view<void()> const& intermediary, Args... args) const
     {
-        action_.perform(intermediary, signal_.move(), std::move(args)...);
+        action_.perform(
+            intermediary, forward_signal(signal_), std::move(args)...);
     }
 
  private:
@@ -228,7 +230,7 @@ struct copy_action : action_interface<>
     void
     perform(function_view<void()> const& intermediary) const
     {
-        typename Source::value_type source_value = std::move(source_.move());
+        typename Source::value_type source_value = forward_signal(source_);
         intermediary();
         sink_.write(std::move(source_value));
     }
@@ -295,7 +297,7 @@ struct push_back_action : action_interface<Item>
     void
     perform(function_view<void()> const& intermediary, Item item) const
     {
-        auto new_container = force_move(container_);
+        auto new_container = forward_signal(alia::move(container_));
         new_container.push_back(std::move(item));
         intermediary();
         container_.write(std::move(new_container));

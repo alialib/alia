@@ -15,7 +15,7 @@ namespace alia {
 // just doing the two overloads I need for now...
 
 template<class Result, class Function, class Arg>
-struct lazy_apply1_signal : signal<
+struct lazy_apply1_signal : lazy_signal<
                                 lazy_apply1_signal<Result, Function, Arg>,
                                 Result,
                                 read_only_signal>
@@ -34,16 +34,15 @@ struct lazy_apply1_signal : signal<
     {
         return arg_.has_value();
     }
-    Result const&
-    read() const
+    Result
+    movable_value() const
     {
-        return lazy_reader_.read([&] { return f_(std::move(arg_.move())); });
+        return f_(forward_signal(arg_));
     }
 
  private:
     Function f_;
     Arg arg_;
-    lazy_reader<Result> lazy_reader_;
 };
 template<class Function, class Arg>
 auto
@@ -55,7 +54,7 @@ lazy_apply(Function f, Arg arg)
 
 template<class Result, class Function, class Arg0, class Arg1>
 struct lazy_apply2_signal
-    : signal<
+    : lazy_signal<
           lazy_apply2_signal<Result, Function, Arg0, Arg1>,
           Result,
           read_only_signal>
@@ -75,12 +74,10 @@ struct lazy_apply2_signal
     {
         return arg0_.has_value() && arg1_.has_value();
     }
-    Result const&
-    read() const
+    Result
+    movable_value() const
     {
-        return lazy_reader_.read([&]() {
-            return f_(std::move(arg0_.move()), std::move(arg1_.move()));
-        });
+        return f_(forward_signal(arg0_), forward_signal(arg1_));
     }
 
  private:
@@ -88,7 +85,6 @@ struct lazy_apply2_signal
     Arg0 arg0_;
     Arg1 arg1_;
     mutable id_pair<id_ref, id_ref> id_;
-    lazy_reader<Result> lazy_reader_;
 };
 template<class Function, class Arg0, class Arg1>
 auto
