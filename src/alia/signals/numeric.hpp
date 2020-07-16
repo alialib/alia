@@ -14,10 +14,10 @@ namespace alia {
 // scale(n, factor) creates a new signal that presents a scaled view of :n,
 // where :n and :factor are both numeric signals.
 template<class N, class Factor>
-struct scaled_signal : signal_wrapper<scaled_signal<N, Factor>, N>
+struct scaled_signal : lazy_signal_wrapper<scaled_signal<N, Factor>, N>
 {
     scaled_signal(N n, Factor scale_factor)
-        : scaled_signal::signal_wrapper(std::move(n)),
+        : scaled_signal::lazy_signal_wrapper(std::move(n)),
           scale_factor_(std::move(scale_factor))
     {
     }
@@ -26,11 +26,10 @@ struct scaled_signal : signal_wrapper<scaled_signal<N, Factor>, N>
     {
         return this->wrapped_.has_value() && scale_factor_.has_value();
     }
-    typename N::value_type const&
-    read() const
+    typename N::value_type
+    movable_value() const
     {
-        return lazy_reader_.read(
-            [&] { return this->wrapped_.read() * scale_factor_.read(); });
+        return this->wrapped_.read() * scale_factor_.read();
     }
     id_interface const&
     value_id() const
@@ -47,12 +46,11 @@ struct scaled_signal : signal_wrapper<scaled_signal<N, Factor>, N>
     void
     write(typename N::value_type value) const
     {
-        this->wrapped_.write(value / scale_factor_.read());
+        this->wrapped_.write(value / forward_signal(scale_factor_));
     }
 
  private:
     Factor scale_factor_;
-    lazy_reader<typename N::value_type> lazy_reader_;
     mutable id_pair<id_ref, id_ref> id_;
 };
 template<class N, class Factor>
@@ -70,10 +68,10 @@ scale(N n, Factor scale_factor)
 
 // offset(n, offset) presents an offset view of :n.
 template<class N, class Offset>
-struct offset_signal : signal_wrapper<offset_signal<N, Offset>, N>
+struct offset_signal : lazy_signal_wrapper<offset_signal<N, Offset>, N>
 {
     offset_signal(N n, Offset offset)
-        : offset_signal::signal_wrapper(std::move(n)),
+        : offset_signal::lazy_signal_wrapper(std::move(n)),
           offset_(std::move(offset))
     {
     }
@@ -82,11 +80,10 @@ struct offset_signal : signal_wrapper<offset_signal<N, Offset>, N>
     {
         return this->wrapped_.has_value() && offset_.has_value();
     }
-    typename N::value_type const&
-    read() const
+    typename N::value_type
+    movable_value() const
     {
-        return lazy_reader_.read(
-            [&] { return this->wrapped_.read() + offset_.read(); });
+        return this->wrapped_.read() + offset_.read();
     }
     id_interface const&
     value_id() const
@@ -103,12 +100,11 @@ struct offset_signal : signal_wrapper<offset_signal<N, Offset>, N>
     void
     write(typename N::value_type value) const
     {
-        this->wrapped_.write(value - offset_.read());
+        this->wrapped_.write(value - forward_signal(offset_));
     }
 
  private:
     Offset offset_;
-    lazy_reader<typename N::value_type> lazy_reader_;
     mutable id_pair<id_ref, id_ref> id_;
 };
 template<class N, class Offset>

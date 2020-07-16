@@ -206,7 +206,7 @@ TEST_CASE("push_back movable", "[flow][actions]")
 {
     auto x = std::vector<movable_object>{movable_object(1), movable_object(2)};
     {
-        auto a = push_back(direct(x)) << alia::move(value(movable_object(3)));
+        auto a = push_back(direct(x)) << value(movable_object(3));
         REQUIRE(a.is_ready());
         copy_count = 0;
         perform_action(a);

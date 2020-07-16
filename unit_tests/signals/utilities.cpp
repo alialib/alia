@@ -35,7 +35,7 @@ TEST_CASE("empty regular_signal", "[signals][utilities]")
 }
 
 struct normal_regular_signal
-    : regular_signal<normal_regular_signal, int, duplex_signal>
+    : regular_signal<normal_regular_signal, int, readable_duplex_signal>
 {
     bool
     has_value() const
@@ -72,24 +72,6 @@ TEST_CASE("normal regular_signal", "[signals][utilities]")
     REQUIRE(!signal_ready_to_write(s));
 }
 
-TEST_CASE("lazy_reader", "[signals][utilities]")
-{
-    int n = 0;
-
-    auto generator = [&]() {
-        ++n;
-        return 12;
-    };
-
-    lazy_reader<int> reader;
-
-    REQUIRE(reader.read(generator) == 12);
-    REQUIRE(n == 1);
-    // Check that it is caching and not re-invoking the generator.
-    REQUIRE(reader.read(generator) == 12);
-    REQUIRE(n == 1);
-}
-
 TEST_CASE("signals_all_have_values", "[signals][utilities]")
 {
     normal_regular_signal s;
@@ -110,7 +92,7 @@ template<class Value>
 struct preferred_id_test_signal : preferred_id_signal<
                                       preferred_id_test_signal<Value>,
                                       Value,
-                                      duplex_signal,
+                                      readable_duplex_signal,
                                       simple_id<std::string>>
 {
     bool

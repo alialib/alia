@@ -151,8 +151,13 @@ update_duplex_text(duplex_text_data<Value>* data, Readable x)
     }
 }
 template<class Wrapped>
-struct duplex_text_signal
-    : casting_signal_wrapper<duplex_text_signal<Wrapped>, Wrapped, std::string>
+struct duplex_text_signal : casting_signal_wrapper<
+                                duplex_text_signal<Wrapped>,
+                                Wrapped,
+                                std::string,
+                                typename signal_direction_intersection<
+                                    readable_duplex_signal,
+                                    typename Wrapped::direction_tag>::type>
 {
     duplex_text_signal(
         Wrapped wrapped, duplex_text_data<typename Wrapped::value_type>* data)

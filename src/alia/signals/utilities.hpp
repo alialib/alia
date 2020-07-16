@@ -28,32 +28,6 @@ struct regular_signal : signal<Derived, Value, Direction>
     mutable simple_id_by_reference<Value> id_;
 };
 
-// lazy_reader is used to create signals that lazily generate their values.
-// It provides storage for the computed value and ensures that it's only
-// computed once.
-template<class Value>
-struct lazy_reader
-{
-    lazy_reader() : already_generated_(false)
-    {
-    }
-    template<class Generator>
-    Value const&
-    read(Generator const& generator) const
-    {
-        if (!already_generated_)
-        {
-            value_ = generator();
-            already_generated_ = true;
-        }
-        return value_;
-    }
-
- private:
-    mutable bool already_generated_;
-    mutable Value value_;
-};
-
 // signals_all_have_values(signal_a, signal_b, ...) is a variadic function that
 // returns true iff all its input signals have values.
 inline bool
@@ -187,6 +161,11 @@ struct signal_wrapper : signal<Derived, Value, Direction>
     {
         return wrapped_.read();
     }
+    typename Wrapped::value_type
+    movable_value() const
+    {
+        return wrapped_.movable_value();
+    }
     id_interface const&
     value_id() const
     {
@@ -260,6 +239,46 @@ struct casting_signal_wrapper : signal<Derived, Value, Direction>
 
  protected:
     Wrapped wrapped_;
+};
+
+// lazy_signal is used to create signals that lazily generate their values.
+// It provides storage for the computed value and automatically implements
+// read() in terms of movable_value().
+template<class Derived, class Value, class Direction>
+struct lazy_signal : signal<Derived, Value, Direction>
+{
+    Value const&
+    read() const override
+    {
+        value_ = static_cast<Derived const&>(*this).movable_value();
+        return value_;
+    }
+
+ private:
+    mutable Value value_;
+};
+
+// lazy_signal_wrapper is the combination of signal_wrapper and lazy_signal.
+template<
+    class Derived,
+    class Wrapped,
+    class Value = typename Wrapped::value_type,
+    class Direction = typename Wrapped::direction_tag>
+struct lazy_signal_wrapper : signal_wrapper<Derived, Wrapped, Value, Direction>
+{
+    lazy_signal_wrapper(Wrapped wrapped)
+        : lazy_signal_wrapper::signal_wrapper(std::move(wrapped))
+    {
+    }
+    Value const&
+    read() const override
+    {
+        value_ = static_cast<Derived const&>(*this).movable_value();
+        return value_;
+    }
+
+ private:
+    mutable Value value_;
 };
 
 } // namespace alia
