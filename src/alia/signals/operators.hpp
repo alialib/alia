@@ -352,6 +352,11 @@ struct signal_mux : signal<
     {
         return condition_.read() ? t_.read() : f_.read();
     }
+    typename T::value_type
+    movable_value() const
+    {
+        return condition_.read() ? t_.movable_value() : f_.movable_value();
+    }
     id_interface const&
     value_id() const
     {
@@ -673,6 +678,11 @@ struct subscript_signal : preferred_id_signal<
     }
     typename subscript_signal::value_type const&
     read() const
+    {
+        return invoker_(container_.read(), index_.read());
+    }
+    typename subscript_signal::value_type
+    movable_value() const
     {
         return invoker_(container_.read(), index_.read());
     }

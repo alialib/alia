@@ -193,7 +193,7 @@ struct lambda_duplex_signal
     : regular_signal<
           lambda_duplex_signal<Value, HasValue, Read, ReadyToWrite, Write>,
           Value,
-          duplex_signal>
+          signal_directionality<signal_readable, signal_writable>>
 {
     lambda_duplex_signal(
         HasValue has_value, Read read, ReadyToWrite ready_to_write, Write write)
@@ -257,16 +257,17 @@ template<
     class ReadyToWrite,
     class Write,
     class GenerateId>
-struct lambda_duplex_signal_with_id : signal<
-                                          lambda_duplex_signal_with_id<
-                                              Value,
-                                              HasValue,
-                                              Read,
-                                              ReadyToWrite,
-                                              Write,
-                                              GenerateId>,
-                                          Value,
-                                          duplex_signal>
+struct lambda_duplex_signal_with_id
+    : signal<
+          lambda_duplex_signal_with_id<
+              Value,
+              HasValue,
+              Read,
+              ReadyToWrite,
+              Write,
+              GenerateId>,
+          Value,
+          signal_directionality<signal_readable, signal_writable>>
 {
     lambda_duplex_signal_with_id(
         HasValue has_value,

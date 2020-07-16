@@ -594,7 +594,8 @@ get(keyed_data<Data> const& data)
 }
 
 template<class Data>
-struct keyed_data_signal : signal<keyed_data_signal<Data>, Data, duplex_signal>
+struct keyed_data_signal
+    : signal<keyed_data_signal<Data>, Data, readable_duplex_signal>
 {
     keyed_data_signal()
     {

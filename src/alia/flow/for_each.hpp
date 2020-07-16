@@ -138,6 +138,11 @@ struct list_item_signal : signal<
     {
         return *item_;
     }
+    Item
+    movable_value() const
+    {
+        return *item_;
+    }
     bool
     ready_to_write() const
     {

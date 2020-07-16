@@ -14,13 +14,13 @@ TEST_CASE("signal_direction_is_compatible", "[signals][core]")
 
     TEST_COMPATIBILITY(read_only_signal, read_only_signal, true);
     TEST_COMPATIBILITY(read_only_signal, write_only_signal, false);
-    TEST_COMPATIBILITY(read_only_signal, duplex_signal, true);
+    TEST_COMPATIBILITY(read_only_signal, readable_duplex_signal, true);
     TEST_COMPATIBILITY(write_only_signal, read_only_signal, false);
     TEST_COMPATIBILITY(write_only_signal, write_only_signal, true);
-    TEST_COMPATIBILITY(write_only_signal, duplex_signal, true);
-    TEST_COMPATIBILITY(duplex_signal, read_only_signal, false);
-    TEST_COMPATIBILITY(duplex_signal, write_only_signal, false);
-    TEST_COMPATIBILITY(duplex_signal, duplex_signal, true);
+    TEST_COMPATIBILITY(write_only_signal, readable_duplex_signal, true);
+    TEST_COMPATIBILITY(readable_duplex_signal, read_only_signal, false);
+    TEST_COMPATIBILITY(readable_duplex_signal, write_only_signal, false);
+    TEST_COMPATIBILITY(readable_duplex_signal, readable_duplex_signal, true);
 }
 
 TEST_CASE("signal_direction_intersection", "[signals][core]")
@@ -30,12 +30,17 @@ TEST_CASE("signal_direction_intersection", "[signals][core]")
                  value))
 
     TEST_INTERSECTION(read_only_signal, read_only_signal, read_only_signal);
-    TEST_INTERSECTION(read_only_signal, duplex_signal, read_only_signal);
+    TEST_INTERSECTION(
+        read_only_signal, readable_duplex_signal, read_only_signal);
     TEST_INTERSECTION(write_only_signal, write_only_signal, write_only_signal);
-    TEST_INTERSECTION(write_only_signal, duplex_signal, write_only_signal);
-    TEST_INTERSECTION(duplex_signal, read_only_signal, read_only_signal);
-    TEST_INTERSECTION(duplex_signal, write_only_signal, write_only_signal);
-    TEST_INTERSECTION(duplex_signal, duplex_signal, duplex_signal);
+    TEST_INTERSECTION(
+        write_only_signal, readable_duplex_signal, write_only_signal);
+    TEST_INTERSECTION(
+        readable_duplex_signal, read_only_signal, read_only_signal);
+    TEST_INTERSECTION(
+        readable_duplex_signal, write_only_signal, write_only_signal);
+    TEST_INTERSECTION(
+        readable_duplex_signal, readable_duplex_signal, readable_duplex_signal);
 }
 
 TEST_CASE("signal_direction_union", "[signals][core]")
@@ -44,16 +49,19 @@ TEST_CASE("signal_direction_union", "[signals][core]")
     REQUIRE((std::is_same<signal_direction_union<A, B>::type, Result>::value))
 
     TEST_UNION(read_only_signal, read_only_signal, read_only_signal);
-    typedef signal_directionality<signal_readable, signal_writable>
-        read_write_signal;
-    TEST_UNION(read_only_signal, write_only_signal, read_write_signal);
-    TEST_UNION(read_only_signal, duplex_signal, duplex_signal);
+    TEST_UNION(read_only_signal, write_only_signal, readable_duplex_signal);
+    TEST_UNION(
+        read_only_signal, readable_duplex_signal, readable_duplex_signal);
     TEST_UNION(write_only_signal, write_only_signal, write_only_signal);
-    TEST_UNION(write_only_signal, read_only_signal, read_write_signal);
-    TEST_UNION(write_only_signal, duplex_signal, duplex_signal);
-    TEST_UNION(duplex_signal, read_only_signal, duplex_signal);
-    TEST_UNION(duplex_signal, write_only_signal, duplex_signal);
-    TEST_UNION(duplex_signal, duplex_signal, duplex_signal);
+    TEST_UNION(write_only_signal, read_only_signal, readable_duplex_signal);
+    TEST_UNION(
+        write_only_signal, readable_duplex_signal, readable_duplex_signal);
+    TEST_UNION(
+        readable_duplex_signal, read_only_signal, readable_duplex_signal);
+    TEST_UNION(
+        readable_duplex_signal, write_only_signal, readable_duplex_signal);
+    TEST_UNION(
+        readable_duplex_signal, readable_duplex_signal, readable_duplex_signal);
 }
 
 TEST_CASE("is_signal_type", "[signals][core]")
@@ -110,7 +118,7 @@ TEST_CASE("signal_ref", "[signals][core]")
 {
     int x = 1;
     auto y = direct(x);
-    signal_ref<int, duplex_signal> s = y;
+    signal_ref<int, readable_duplex_signal> s = y;
 
     typedef decltype(s) signal_t;
     REQUIRE(signal_is_readable<signal_t>::value);
