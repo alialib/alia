@@ -425,7 +425,9 @@ template<class StructureSignal, class Field>
 struct field_signal : preferred_id_signal<
                           field_signal<StructureSignal, Field>,
                           Field,
-                          typename StructureSignal::direction_tag,
+                          typename signal_direction_intersection<
+                              typename StructureSignal::direction_tag,
+                              readable_duplex_signal>::type,
                           id_pair<id_ref, simple_id<Field*>>>
 {
     typedef typename StructureSignal::value_type structure_type;
