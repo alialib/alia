@@ -156,7 +156,7 @@ struct duplex_text_signal : casting_signal_wrapper<
                                 Wrapped,
                                 std::string,
                                 typename signal_direction_intersection<
-                                    readable_duplex_signal,
+                                    copyable_duplex_signal,
                                     typename Wrapped::direction_tag>::type>
 {
     duplex_text_signal(
@@ -173,6 +173,11 @@ struct duplex_text_signal : casting_signal_wrapper<
     read() const
     {
         return data_->output_text;
+    }
+    std::string
+    movable_value() const
+    {
+        return this->read();
     }
     id_interface const&
     value_id() const
