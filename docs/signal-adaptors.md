@@ -93,7 +93,7 @@ true (in a boolean context), the mask evaluates to a signal equivalent to
 `signal`. Otherwise, it evaluates to one with equivalent reading behavior but
 with writing disabled.
 
-Note that in either case, the masked version has the same directionality as
+Note that in either case, the masked version has the same capabilities as
 `signal`.
 
 </dd>
