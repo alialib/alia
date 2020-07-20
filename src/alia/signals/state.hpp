@@ -100,8 +100,9 @@ struct state_storage
     component_container_ptr container_;
 };
 
-template<class Value, class Direction>
-struct state_signal : signal<state_signal<Value, Direction>, Value, Direction>
+template<class Value, class Capabilities>
+struct state_signal
+    : signal<state_signal<Value, Capabilities>, Value, Capabilities>
 {
     explicit state_signal(state_storage<Value>* data) : data_(data)
     {

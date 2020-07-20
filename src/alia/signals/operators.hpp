@@ -333,9 +333,9 @@ template<class Condition, class T, class F>
 struct signal_mux : signal<
                         signal_mux<Condition, T, F>,
                         typename T::value_type,
-                        typename signal_direction_intersection<
-                            typename T::direction_tag,
-                            typename F::direction_tag>::type>
+                        typename signal_capabilities_intersection<
+                            typename T::capabilities,
+                            typename F::capabilities>::type>
 {
     signal_mux(Condition condition, T t, F f)
         : condition_(condition), t_(t), f_(f)
@@ -425,8 +425,8 @@ template<class StructureSignal, class Field>
 struct field_signal : preferred_id_signal<
                           field_signal<StructureSignal, Field>,
                           Field,
-                          typename signal_direction_intersection<
-                              typename StructureSignal::direction_tag,
+                          typename signal_capabilities_intersection<
+                              typename StructureSignal::capabilities,
                               readable_duplex_signal>::type,
                           id_pair<id_ref, simple_id<Field*>>>
 {
@@ -663,7 +663,7 @@ struct subscript_signal : preferred_id_signal<
                               typename subscript_result_type<
                                   typename ContainerSignal::value_type,
                                   typename IndexSignal::value_type>::type,
-                              typename ContainerSignal::direction_tag,
+                              typename ContainerSignal::capabilities,
                               id_pair<alia::id_ref, alia::id_ref>>
 {
     subscript_signal()
@@ -721,10 +721,10 @@ make_subscript_signal(ContainerSignal container, IndexSignal index)
         std::move(container), std::move(index));
 }
 
-template<class Derived, class Value, class Direction>
+template<class Derived, class Value, class Capabilities>
 template<class Index>
 auto
-signal_base<Derived, Value, Direction>::operator[](Index index) const
+signal_base<Derived, Value, Capabilities>::operator[](Index index) const
 {
     return make_subscript_signal(
         static_cast<Derived const&>(*this), signalize(std::move(index)));

@@ -53,33 +53,34 @@ struct signal_writable
     static constexpr unsigned level = 1;
 };
 
-// combined direction tags
+// combined capabilities tags
 template<class Reading, class Writing>
-struct signal_directionality
+struct signal_capabilities
 {
     typedef Reading reading;
     typedef Writing writing;
 };
 
-// useful signal directionality combinations
-typedef signal_directionality<signal_readable, signal_unwritable>
+// useful signal capabilities combinations
+typedef signal_capabilities<signal_readable, signal_unwritable>
     read_only_signal;
-typedef signal_directionality<signal_copyable, signal_unwritable>
+typedef signal_capabilities<signal_copyable, signal_unwritable>
     copyable_read_only_signal;
-typedef signal_directionality<signal_movable, signal_unwritable>
+typedef signal_capabilities<signal_movable, signal_unwritable>
     movable_read_only_signal;
-typedef signal_directionality<signal_unreadable, signal_writable>
+typedef signal_capabilities<signal_unreadable, signal_writable>
     write_only_signal;
-typedef signal_directionality<signal_readable, signal_writable>
+typedef signal_capabilities<signal_readable, signal_writable>
     readable_duplex_signal;
-typedef signal_directionality<signal_copyable, signal_writable>
+typedef signal_capabilities<signal_copyable, signal_writable>
     copyable_duplex_signal;
-typedef signal_directionality<signal_movable, signal_writable>
+typedef signal_capabilities<signal_movable, signal_writable>
     movable_duplex_signal;
+typedef readable_duplex_signal duplex_signal;
 
 // signal_rw_capability_is_compatible<Expected,Actual>::value yields a
 // compile-time boolean indicating whether or not a signal with :Actual
-// reading/writing capbilities can be used in a context expecting :Expected
+// reading/writing capabilities can be used in a context expecting :Expected
 // capabilities.
 template<class Expected, class Actual>
 struct signal_rw_capability_is_compatible
@@ -87,11 +88,11 @@ struct signal_rw_capability_is_compatible
     static constexpr bool value = Expected::level <= Actual::level;
 };
 
-// signal_direction_is_compatible<Expected,Actual>::value yields a compile-time
-// boolean indicating whether or not a signal with :Actual direction can be used
-// in a context expecting :Expected direction.
+// signal_capabilities_compatible<Expected,Actual>::value yields a compile-time
+// boolean indicating whether or not a signal with :Actual capabilities can be
+// used in a context expecting :Expected capabilities.
 template<class Expected, class Actual>
-struct signal_direction_is_compatible
+struct signal_capabilities_compatible
     : std::conditional_t<
           signal_rw_capability_is_compatible<
               typename Expected::reading,
@@ -111,13 +112,13 @@ struct signal_rw_capability_intersection
 {
 };
 
-// signal_direction_intersection<A,B>::type, where A and B are signal
-// directions, yields a direction that only has the capabilities that are common
+// signal_capabilities_intersection<A,B>::type, where A and B are signal
+// capability tags, yields a tag that only has the capabilities that are common
 // to both A and B.
 template<class A, class B>
-struct signal_direction_intersection
+struct signal_capabilities_intersection
 {
-    typedef signal_directionality<
+    typedef signal_capabilities<
         typename signal_rw_capability_intersection<
             typename A::reading,
             typename B::reading>::type,
@@ -134,12 +135,12 @@ struct signal_rw_capability_union : std::conditional<A::level <= B::level, B, A>
 {
 };
 
-// signal_direction_union<A,B>::type, where A and B are signal directions,
-// yields a direction that has the union of the capabilities of A and B.
+// signal_capabilities_union<A,B>::type, where A and B are signal capability
+// tags, yields a tag that has the union of the capabilities of A and B.
 template<class A, class B>
-struct signal_direction_union
+struct signal_capabilities_union
 {
-    typedef signal_directionality<
+    typedef signal_capabilities<
         typename signal_rw_capability_union<
             typename A::reading,
             typename B::reading>::type,
@@ -215,23 +216,23 @@ struct signal_interface : untyped_signal_base
     write(Value value) const = 0;
 };
 
-template<class Derived, class Value, class Direction>
+template<class Derived, class Value, class Capabilities>
 struct signal_base : signal_interface<Value>
 {
-    typedef Direction direction_tag;
+    typedef Capabilities capabilities;
 
     template<class Index>
     auto
     operator[](Index index) const;
 };
 
-template<class Derived, class Value, class Direction>
-struct signal : signal_base<Derived, Value, Direction>
+template<class Derived, class Value, class Capabilities>
+struct signal : signal_base<Derived, Value, Capabilities>
 {
 };
 
 // The following implement the various unused functions that are required by the
-// signal_interface but won't be used because of the directionality of the
+// signal_interface but won't be used because of the capabilities of the
 // signal...
 
 // LCOV_EXCL_START
@@ -278,11 +279,11 @@ template<class Derived, class Value>
 struct signal<
     Derived,
     Value,
-    signal_directionality<signal_movable, signal_unwritable>>
+    signal_capabilities<signal_movable, signal_unwritable>>
     : signal_base<
           Derived,
           Value,
-          signal_directionality<signal_movable, signal_unwritable>>
+          signal_capabilities<signal_movable, signal_unwritable>>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)
 };
@@ -291,11 +292,11 @@ template<class Derived, class Value>
 struct signal<
     Derived,
     Value,
-    signal_directionality<signal_copyable, signal_unwritable>>
+    signal_capabilities<signal_copyable, signal_unwritable>>
     : signal_base<
           Derived,
           Value,
-          signal_directionality<signal_copyable, signal_unwritable>>
+          signal_capabilities<signal_copyable, signal_unwritable>>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)
 };
@@ -311,11 +312,11 @@ template<class Derived, class Value>
 struct signal<
     Derived,
     Value,
-    signal_directionality<signal_readable, signal_writable>>
+    signal_capabilities<signal_readable, signal_writable>>
     : signal_base<
           Derived,
           Value,
-          signal_directionality<signal_readable, signal_writable>>
+          signal_capabilities<signal_readable, signal_writable>>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)
 };
@@ -323,22 +324,23 @@ struct signal<
 // LCOV_EXCL_STOP
 
 // signal_ref is a reference to a signal that acts as a signal itself.
-template<class Value, class Direction>
-struct signal_ref : signal<signal_ref<Value, Direction>, Value, Direction>
+template<class Value, class Capabilities>
+struct signal_ref : signal<signal_ref<Value, Capabilities>, Value, Capabilities>
 {
-    // Construct from any signal with compatible direction.
-    template<class OtherSignal, class OtherDirection>
+    // Construct from any signal with compatible capabilities.
+    template<class OtherSignal, class OtherCapabilities>
     signal_ref(
-        signal<OtherSignal, Value, OtherDirection> const& signal,
+        signal<OtherSignal, Value, OtherCapabilities> const& signal,
         std::enable_if_t<
-            signal_direction_is_compatible<Direction, OtherDirection>::value,
+            signal_capabilities_compatible<Capabilities, OtherCapabilities>::
+                value,
             int> = 0)
         : ref_(&signal)
     {
     }
     // Construct from another signal_ref. - This is meant to prevent unnecessary
     // layers of indirection.
-    signal_ref(signal_ref<Value, Direction> const& other) : ref_(other.ref_)
+    signal_ref(signal_ref<Value, Capabilities> const& other) : ref_(other.ref_)
     {
     }
 
@@ -414,9 +416,9 @@ struct is_signal_type : std::is_base_of<untyped_signal_base, T>
 // signal_is_readable<Signal>::value yields a compile-time boolean indicating
 // whether or not the given signal type supports reading.
 template<class Signal>
-struct signal_is_readable : signal_direction_is_compatible<
+struct signal_is_readable : signal_capabilities_compatible<
                                 read_only_signal,
-                                typename Signal::direction_tag>
+                                typename Signal::capabilities>
 {
 };
 
@@ -469,9 +471,9 @@ struct validation_error : exception
 // signal_is_writable<Signal>::value yields a compile-time boolean indicating
 // whether or not the given signal type supports writing.
 template<class Signal>
-struct signal_is_writable : signal_direction_is_compatible<
+struct signal_is_writable : signal_capabilities_compatible<
                                 write_only_signal,
-                                typename Signal::direction_tag>
+                                typename Signal::capabilities>
 {
 };
 
@@ -524,9 +526,9 @@ write_signal(Signal const& signal, Value value)
 // signal_is_duplex<Signal>::value yields a compile-time boolean indicating
 // whether or not the given signal type supports both reading and writing.
 template<class Signal>
-struct signal_is_duplex : signal_direction_is_compatible<
+struct signal_is_duplex : signal_capabilities_compatible<
                               readable_duplex_signal,
-                              typename Signal::direction_tag>
+                              typename Signal::capabilities>
 {
 };
 
@@ -545,7 +547,7 @@ struct is_duplex_signal_type : std::conditional_t<
 template<class Signal>
 struct signal_is_copyable : signal_rw_capability_is_compatible<
                                 signal_copyable,
-                                typename Signal::direction_tag::reading>
+                                typename Signal::capabilities::reading>
 {
 };
 
@@ -564,7 +566,7 @@ struct is_copyable_signal_type : std::conditional_t<
 template<class Signal>
 struct signal_is_movable : signal_rw_capability_is_compatible<
                                signal_movable,
-                               typename Signal::direction_tag::reading>
+                               typename Signal::capabilities::reading>
 {
 };
 

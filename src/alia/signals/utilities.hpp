@@ -10,8 +10,8 @@ namespace alia {
 
 // regular_signal is a partial implementation of the signal interface for
 // cases where the value ID of the signal is simply the value itself.
-template<class Derived, class Value, class Direction>
-struct regular_signal : signal<Derived, Value, Direction>
+template<class Derived, class Value, class Capabilities>
+struct regular_signal : signal<Derived, Value, Capabilities>
 {
     id_interface const&
     value_id() const
@@ -58,21 +58,21 @@ struct type_prefers_simple_id : std::is_fundamental<Value>
 template<
     class Derived,
     class Value,
-    class Direction,
+    class Capabilities,
     class ComplexId,
     class = void>
 struct preferred_id_signal
 {
 };
 
-template<class Derived, class Value, class Direction, class ComplexId>
+template<class Derived, class Value, class Capabilities, class ComplexId>
 struct preferred_id_signal<
     Derived,
     Value,
-    Direction,
+    Capabilities,
     ComplexId,
     std::enable_if_t<type_prefers_simple_id<Value>::value>>
-    : signal<Derived, Value, Direction>
+    : signal<Derived, Value, Capabilities>
 {
     id_interface const&
     value_id() const
@@ -89,14 +89,14 @@ struct preferred_id_signal<
     mutable simple_id_by_reference<Value> id_;
 };
 
-template<class Derived, class Value, class Direction, class ComplexId>
+template<class Derived, class Value, class Capabilities, class ComplexId>
 struct preferred_id_signal<
     Derived,
     Value,
-    Direction,
+    Capabilities,
     ComplexId,
     std::enable_if_t<!type_prefers_simple_id<Value>::value>>
-    : signal<Derived, Value, Direction>
+    : signal<Derived, Value, Capabilities>
 {
     id_interface const&
     value_id() const
@@ -145,8 +145,8 @@ template<
     class Derived,
     class Wrapped,
     class Value = typename Wrapped::value_type,
-    class Direction = typename Wrapped::direction_tag>
-struct signal_wrapper : signal<Derived, Value, Direction>
+    class Capabilities = typename Wrapped::capabilities>
+struct signal_wrapper : signal<Derived, Value, Capabilities>
 {
     signal_wrapper(Wrapped wrapped) : wrapped_(std::move(wrapped))
     {
@@ -205,8 +205,8 @@ template<
     class Derived,
     class Wrapped,
     class Value,
-    class Direction = typename Wrapped::direction_tag>
-struct casting_signal_wrapper : signal<Derived, Value, Direction>
+    class Capabilities = typename Wrapped::capabilities>
+struct casting_signal_wrapper : signal<Derived, Value, Capabilities>
 {
     casting_signal_wrapper(Wrapped wrapped) : wrapped_(std::move(wrapped))
     {
@@ -244,8 +244,8 @@ struct casting_signal_wrapper : signal<Derived, Value, Direction>
 // lazy_signal is used to create signals that lazily generate their values.
 // It provides storage for the computed value and automatically implements
 // read() in terms of movable_value().
-template<class Derived, class Value, class Direction>
-struct lazy_signal : signal<Derived, Value, Direction>
+template<class Derived, class Value, class Capabilities>
+struct lazy_signal : signal<Derived, Value, Capabilities>
 {
     Value const&
     read() const override
@@ -263,8 +263,9 @@ template<
     class Derived,
     class Wrapped,
     class Value = typename Wrapped::value_type,
-    class Direction = typename Wrapped::direction_tag>
-struct lazy_signal_wrapper : signal_wrapper<Derived, Wrapped, Value, Direction>
+    class Capabilities = typename Wrapped::capabilities>
+struct lazy_signal_wrapper
+    : signal_wrapper<Derived, Wrapped, Value, Capabilities>
 {
     lazy_signal_wrapper(Wrapped wrapped)
         : lazy_signal_wrapper::signal_wrapper(std::move(wrapped))
