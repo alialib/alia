@@ -166,22 +166,22 @@ delete_named_block_ref_list(named_block_ref_node* head)
 static void
 clear_data_node_caches(data_node* node)
 {
-	if (node)
-	{
-		clear_data_node_caches(node->next);
-		node->clear_cache();
-	}
+    if (node)
+    {
+        clear_data_node_caches(node->next);
+        node->clear_cache();
+    }
 }
 
 // Same with named_block_ref_nodes.
 static void
 deactivate_ref_nodes(named_block_ref_node* node)
 {
-	if (node)
-	{
-		deactivate_ref_nodes(node->next);
-		deactivate(*node);
-	}
+    if (node)
+    {
+        deactivate_ref_nodes(node->next);
+        deactivate(*node);
+    }
 }
 
 void
@@ -189,8 +189,8 @@ data_block::clear_cache()
 {
     if (!this->cache_clear)
     {
-		clear_data_node_caches(this->nodes);
-		deactivate_ref_nodes(this->named_blocks);
+        clear_data_node_caches(this->nodes);
+        deactivate_ref_nodes(this->named_blocks);
         this->cache_clear = true;
     }
 }

@@ -539,10 +539,7 @@ TEST_CASE("signal-based get_keyed_data", "[data_graph]")
         };
         do_traversal(graph, make_controller(1));
         check_log(
-            // A destruction happens during every initialization.
-            "destructing int;"
             "initializing keyed int: 1;"
-            "destructing int;"
             "initializing keyed int: 0;");
         do_traversal(graph, make_controller(1));
         check_log(
@@ -550,7 +547,6 @@ TEST_CASE("signal-based get_keyed_data", "[data_graph]")
             "visiting keyed int: 0;");
         do_traversal(graph, make_controller(2));
         check_log(
-            "destructing int;"
             "initializing keyed int: 2;"
             "visiting keyed int: 0;");
         do_traversal(graph, make_controller(2));
@@ -588,9 +584,7 @@ TEST_CASE("low-level get_keyed_data", "[data_graph]")
         do_traversal(graph, make_controller(1));
         check_log("visiting keyed int: 1;");
         do_traversal(graph, make_controller(2));
-        check_log(
-            "destructing int;"
-            "initializing keyed int: 2;");
+        check_log("initializing keyed int: 2;");
         do_traversal(graph, make_controller(2));
         check_log("visiting keyed int: 2;");
     }

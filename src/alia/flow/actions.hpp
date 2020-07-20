@@ -1,6 +1,7 @@
 #ifndef ALIA_FLOW_ACTIONS_HPP
 #define ALIA_FLOW_ACTIONS_HPP
 
+#include <alia/signals/adaptors.hpp>
 #include <alia/signals/basic.hpp>
 #include <alia/signals/core.hpp>
 
@@ -63,7 +64,7 @@ void
 perform_action(action_interface<Args...> const& action, Args... args)
 {
     if (action.is_ready())
-        action.perform([]() {}, args...);
+        action.perform([]() {}, std::move(args)...);
 }
 
 // action_ref is a reference to an action that implements the action interface
@@ -90,7 +91,7 @@ struct action_ref : action_interface<Args...>
     void
     perform(function_view<void()> const& intermediary, Args... args) const
     {
-        action_->perform(intermediary, args...);
+        action_->perform(intermediary, std::move(args)...);
     }
 
  private:
@@ -159,8 +160,8 @@ template<class Action, class Signal, class BoundArg, class... Args>
 struct bound_action<Action, Signal, action_interface<BoundArg, Args...>>
     : action_interface<Args...>
 {
-    bound_action(Action const& action, Signal const& signal)
-        : action_(action), signal_(signal)
+    bound_action(Action action, Signal signal)
+        : action_(std::move(action)), signal_(std::move(signal))
     {
     }
 
@@ -173,7 +174,8 @@ struct bound_action<Action, Signal, action_interface<BoundArg, Args...>>
     void
     perform(function_view<void()> const& intermediary, Args... args) const
     {
-        action_.perform(intermediary, signal_.read(), args...);
+        action_.perform(
+            intermediary, forward_signal(signal_), std::move(args)...);
     }
 
  private:
@@ -187,10 +189,10 @@ template<
         is_action_type<Action>::value && is_readable_signal_type<Signal>::value,
         int> = 0>
 auto
-operator<<(Action const& action, Signal const& signal)
+operator<<(Action action, Signal signal)
 {
     return bound_action<Action, Signal, typename Action::action_interface>(
-        action, signal);
+        std::move(action), std::move(signal));
 }
 template<
     class Action,
@@ -199,9 +201,9 @@ template<
         is_action_type<Action>::value && !is_signal_type<Value>::value,
         int> = 0>
 auto
-operator<<(Action const& action, Value const& v)
+operator<<(Action action, Value v)
 {
-    return action << value(v);
+    return std::move(action) << value(std::move(v));
 }
 
 // operator <<=
@@ -214,7 +216,8 @@ operator<<(Action const& action, Value const& v)
 template<class Sink, class Source>
 struct copy_action : action_interface<>
 {
-    copy_action(Sink sink, Source source) : sink_(sink), source_(source)
+    copy_action(Sink sink, Source source)
+        : sink_(std::move(sink)), source_(std::move(source))
     {
     }
 
@@ -227,9 +230,9 @@ struct copy_action : action_interface<>
     void
     perform(function_view<void()> const& intermediary) const
     {
-        auto value = source_.read();
+        typename Source::value_type source_value = forward_signal(source_);
         intermediary();
-        sink_.write(value);
+        sink_.write(std::move(source_value));
     }
 
  private:
@@ -247,7 +250,7 @@ template<
 auto
 operator<<=(Sink sink, Source source)
 {
-    return copy_action<Sink, Source>(sink, source);
+    return copy_action<Sink, Source>(std::move(sink), std::move(source));
 }
 
 template<
@@ -281,7 +284,7 @@ toggle(Flag flag)
 template<class Container, class Item>
 struct push_back_action : action_interface<Item>
 {
-    push_back_action(Container container) : container_(container)
+    push_back_action(Container container) : container_(std::move(container))
     {
     }
 
@@ -294,10 +297,10 @@ struct push_back_action : action_interface<Item>
     void
     perform(function_view<void()> const& intermediary, Item item) const
     {
-        auto new_container = container_.read();
-        new_container.push_back(item);
+        auto new_container = forward_signal(alia::move(container_));
+        new_container.push_back(std::move(item));
         intermediary();
-        container_.write(new_container);
+        container_.write(std::move(new_container));
     }
 
  private:
@@ -310,7 +313,7 @@ push_back(Container container)
 {
     return push_back_action<
         Container,
-        typename Container::value_type::value_type>(container);
+        typename Container::value_type::value_type>(std::move(container));
 }
 
 // lambda_action(is_ready, perform) creates an action whose behavior is

@@ -10,7 +10,7 @@ namespace alia {
 
 // empty<Value>() gives a signal that never has a value.
 template<class Value>
-struct empty_signal : signal<empty_signal<Value>, Value, duplex_signal>
+struct empty_signal : signal<empty_signal<Value>, Value, readable_duplex_signal>
 {
     empty_signal()
     {
@@ -27,18 +27,23 @@ struct empty_signal : signal<empty_signal<Value>, Value, duplex_signal>
     }
     // Since this never has a value, read() should never be called.
     // LCOV_EXCL_START
-    Value const&
-    read() const
-    {
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wnull-dereference"
 #endif
-        return *(Value const*) nullptr;
+    Value const&
+    read() const
+    {
+        throw nullptr;
+    }
+    Value
+    movable_value() const
+    {
+        throw nullptr;
+    }
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
-    }
     // LCOV_EXCL_STOP
     bool
     ready_to_write() const
@@ -47,8 +52,7 @@ struct empty_signal : signal<empty_signal<Value>, Value, duplex_signal>
     }
     // Since this is never ready to write, write() should never be called.
     // LCOV_EXCL_START
-    void
-    write(Value const&) const
+    void write(Value) const
     {
     }
     // LCOV_EXCL_STOP
@@ -63,9 +67,9 @@ empty()
 // value(v) creates a read-only signal that carries the value v.
 template<class Value>
 struct value_signal
-    : regular_signal<value_signal<Value>, Value, read_only_signal>
+    : regular_signal<value_signal<Value>, Value, movable_read_only_signal>
 {
-    explicit value_signal(Value const& v) : v_(v)
+    explicit value_signal(Value v) : v_(std::move(v))
     {
     }
     bool
@@ -78,20 +82,26 @@ struct value_signal
     {
         return v_;
     }
+    Value
+    movable_value() const
+    {
+        Value movable = std::move(v_);
+        return movable;
+    }
 
  private:
-    Value v_;
+    mutable Value v_;
 };
 template<class Value>
 value_signal<Value>
-value(Value const& v)
+value(Value v)
 {
-    return value_signal<Value>(v);
+    return value_signal<Value>(std::move(v));
 }
 
 // This is a special overload of value() for C-style string literals.
 struct string_literal_signal
-    : signal<string_literal_signal, std::string, read_only_signal>
+    : lazy_signal<string_literal_signal, std::string, read_only_signal>
 {
     string_literal_signal(char const* x) : text_(x)
     {
@@ -107,15 +117,14 @@ struct string_literal_signal
     {
         return true;
     }
-    std::string const&
-    read() const
+    std::string
+    movable_value() const
     {
-        return lazy_reader_.read([&] { return std::string(text_); });
+        return std::string(text_);
     }
 
  private:
     char const* text_;
-    lazy_reader<std::string> lazy_reader_;
     mutable simple_id<char const*> id_;
 };
 inline string_literal_signal
@@ -136,7 +145,7 @@ inline string_literal_signal operator"" _a(char const* s, size_t)
 // directly exposes the value of x.
 template<class Value>
 struct direct_signal
-    : regular_signal<direct_signal<Value>, Value, duplex_signal>
+    : regular_signal<direct_signal<Value>, Value, copyable_duplex_signal>
 {
     explicit direct_signal(Value* v) : v_(v)
     {
@@ -151,15 +160,21 @@ struct direct_signal
     {
         return *v_;
     }
+    Value
+    movable_value() const
+    {
+        Value movable = std::move(*v_);
+        return movable;
+    }
     bool
     ready_to_write() const
     {
         return true;
     }
     void
-    write(Value const& value) const
+    write(Value value) const
     {
-        *v_ = value;
+        *v_ = std::move(value);
     }
 
  private:

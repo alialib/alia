@@ -27,14 +27,16 @@ signalize(Value v)
 // pretends to have read capabilities. It will never actually have a value, but
 // it will type-check as a readable signal.
 template<class Wrapped>
-struct readability_faker : signal<
+struct readability_faker : signal_wrapper<
                                readability_faker<Wrapped>,
+                               Wrapped,
                                typename Wrapped::value_type,
-                               typename signal_direction_union<
+                               typename signal_capabilities_union<
                                    read_only_signal,
-                                   typename Wrapped::direction_tag>::type>
+                                   typename Wrapped::capabilities>::type>
 {
-    readability_faker(Wrapped wrapped) : wrapped_(wrapped)
+    readability_faker(Wrapped wrapped)
+        : readability_faker::signal_wrapper(std::move(wrapped))
     {
     }
     id_interface const&
@@ -62,65 +64,29 @@ struct readability_faker : signal<
 #endif
     }
     // LCOV_EXCL_STOP
-    bool
-    ready_to_write() const
-    {
-        return wrapped_.ready_to_write();
-    }
-    void
-    write(typename Wrapped::value_type const& value) const
-    {
-        return wrapped_.write(value);
-    }
-    bool
-    invalidate(std::exception_ptr error) const
-    {
-        return wrapped_.invalidate(error);
-    }
-    bool
-    is_invalidated() const
-    {
-        return wrapped_.is_invalidated();
-    }
-
- private:
-    Wrapped wrapped_;
 };
 template<class Wrapped>
 readability_faker<Wrapped>
-fake_readability(Wrapped const& wrapped)
+fake_readability(Wrapped wrapped)
 {
-    return readability_faker<Wrapped>(wrapped);
+    return readability_faker<Wrapped>(std::move(wrapped));
 }
 
 // fake_writability(s), where :s is a signal, yields a wrapper for :s that
 // pretends to have write capabilities. It will never actually be ready to
 // write, but it will type-check as a writable signal.
 template<class Wrapped>
-struct writability_faker : signal<
+struct writability_faker : signal_wrapper<
                                writability_faker<Wrapped>,
+                               Wrapped,
                                typename Wrapped::value_type,
-                               typename signal_direction_union<
+                               typename signal_capabilities_union<
                                    write_only_signal,
-                                   typename Wrapped::direction_tag>::type>
+                                   typename Wrapped::capabilities>::type>
 {
-    writability_faker(Wrapped wrapped) : wrapped_(wrapped)
+    writability_faker(Wrapped wrapped)
+        : writability_faker::signal_wrapper(std::move(wrapped))
     {
-    }
-    id_interface const&
-    value_id() const
-    {
-        return wrapped_.value_id();
-    }
-    bool
-    has_value() const
-    {
-        return wrapped_.has_value();
-    }
-    typename Wrapped::value_type const&
-    read() const
-    {
-        return wrapped_.read();
     }
     bool
     ready_to_write() const
@@ -129,71 +95,53 @@ struct writability_faker : signal<
     }
     // Since this is only faking writability, write() should never be called.
     // LCOV_EXCL_START
-    void
-    write(typename Wrapped::value_type const&) const
+    void write(typename Wrapped::value_type) const
     {
     }
     // LCOV_EXCL_STOP
-
- private:
-    Wrapped wrapped_;
 };
 template<class Wrapped>
 writability_faker<Wrapped>
-fake_writability(Wrapped const& wrapped)
+fake_writability(Wrapped wrapped)
 {
-    return writability_faker<Wrapped>(wrapped);
+    return writability_faker<Wrapped>(std::move(wrapped));
 }
 
 // signal_cast<Value>(x), where :x is a signal, yields a proxy for :x with
 // the value type :Value. The proxy will apply static_casts to convert its
 // own values to and from :x's value type.
 template<class Wrapped, class To>
-struct casting_signal : regular_signal<
-                            casting_signal<Wrapped, To>,
-                            To,
-                            typename Wrapped::direction_tag>
+struct casting_signal
+    : casting_signal_wrapper<casting_signal<Wrapped, To>, Wrapped, To>
 {
-    casting_signal(Wrapped wrapped) : wrapped_(wrapped)
+    casting_signal(Wrapped wrapped)
+        : casting_signal::casting_signal_wrapper(std::move(wrapped))
     {
-    }
-    bool
-    has_value() const
-    {
-        return wrapped_.has_value();
     }
     To const&
     read() const
     {
-        return lazy_reader_.read(
-            [&] { return static_cast<To>(wrapped_.read()); });
+        value_ = this->movable_value();
+        return value_;
     }
-    bool
-    ready_to_write() const
+    To
+    movable_value() const
     {
-        return wrapped_.ready_to_write();
+        return static_cast<To>(forward_signal(this->wrapped_));
     }
     void
-    write(To const& value) const
+    write(To value) const
     {
-        return wrapped_.write(static_cast<typename Wrapped::value_type>(value));
-    }
-    bool
-    invalidate(std::exception_ptr error) const
-    {
-        return wrapped_.invalidate(error);
-    }
-    bool
-    is_invalidated() const
-    {
-        return wrapped_.is_invalidated();
+        return this->wrapped_.write(
+            static_cast<typename Wrapped::value_type>(value));
     }
 
  private:
-    Wrapped wrapped_;
-    lazy_reader<To> lazy_reader_;
+    mutable To value_;
 };
-// Don't use a casting_signal if the value type is the same.
+// signal_caster is just another level of indirection that allows us to
+// eliminate the casting_signal entirely if it's just going to cast to the same
+// type.
 template<class Wrapped, class To>
 struct signal_caster
 {
@@ -201,7 +149,7 @@ struct signal_caster
     static type
     apply(Wrapped wrapped)
     {
-        return type(wrapped);
+        return type(std::move(wrapped));
     }
 };
 template<class Wrapped>
@@ -218,7 +166,7 @@ template<class To, class Wrapped>
 typename signal_caster<Wrapped, To>::type
 signal_cast(Wrapped wrapped)
 {
-    return signal_caster<Wrapped, To>::apply(wrapped);
+    return signal_caster<Wrapped, To>::apply(std::move(wrapped));
 }
 
 // has_value(x) yields a signal to a boolean which indicates whether or not :x
@@ -227,7 +175,7 @@ template<class Wrapped>
 struct value_presence_signal
     : regular_signal<value_presence_signal<Wrapped>, bool, read_only_signal>
 {
-    value_presence_signal(Wrapped const& wrapped) : wrapped_(wrapped)
+    value_presence_signal(Wrapped wrapped) : wrapped_(std::move(wrapped))
     {
     }
     bool
@@ -248,9 +196,9 @@ struct value_presence_signal
 };
 template<class Wrapped>
 auto
-has_value(Wrapped const& wrapped)
+has_value(Wrapped wrapped)
 {
-    return value_presence_signal<Wrapped>(wrapped);
+    return value_presence_signal<Wrapped>(std::move(wrapped));
 }
 
 // ready_to_write(x) yields a signal to a boolean that indicates whether or not
@@ -259,7 +207,7 @@ template<class Wrapped>
 struct write_readiness_signal
     : regular_signal<write_readiness_signal<Wrapped>, bool, read_only_signal>
 {
-    write_readiness_signal(Wrapped const& wrapped) : wrapped_(wrapped)
+    write_readiness_signal(Wrapped wrapped) : wrapped_(std::move(wrapped))
     {
     }
     bool
@@ -280,9 +228,9 @@ struct write_readiness_signal
 };
 template<class Wrapped>
 auto
-ready_to_write(Wrapped const& wrapped)
+ready_to_write(Wrapped wrapped)
 {
-    return write_readiness_signal<Wrapped>(wrapped);
+    return write_readiness_signal<Wrapped>(std::move(wrapped));
 }
 
 // add_fallback(primary, fallback), where :primary and :fallback are both
@@ -290,74 +238,55 @@ ready_to_write(Wrapped const& wrapped)
 // and that of :fallback otherwise.
 // All writes go directly to :primary.
 template<class Primary, class Fallback>
-struct fallback_signal : signal<
-                             fallback_signal<Primary, Fallback>,
-                             typename Primary::value_type,
-                             typename Primary::direction_tag>
+struct fallback_signal
+    : signal_wrapper<fallback_signal<Primary, Fallback>, Primary>
 {
     fallback_signal()
     {
     }
     fallback_signal(Primary primary, Fallback fallback)
-        : primary_(primary), fallback_(fallback)
+        : fallback_signal::signal_wrapper(std::move(primary)),
+          fallback_(std::move(fallback))
     {
     }
     bool
     has_value() const
     {
-        return primary_.has_value() || fallback_.has_value();
+        return this->wrapped_.has_value() || fallback_.has_value();
     }
     typename Primary::value_type const&
     read() const
     {
-        return primary_.has_value() ? primary_.read() : fallback_.read();
+        return this->wrapped_.has_value() ? this->wrapped_.read()
+                                          : fallback_.read();
     }
     id_interface const&
     value_id() const
     {
         id_ = combine_ids(
-            make_id(primary_.has_value()),
-            primary_.has_value() ? ref(primary_.value_id())
-                                 : ref(fallback_.value_id()));
+            make_id(this->wrapped_.has_value()),
+            this->wrapped_.has_value() ? ref(this->wrapped_.value_id())
+                                       : ref(fallback_.value_id()));
         return id_;
-    }
-    bool
-    ready_to_write() const
-    {
-        return primary_.ready_to_write();
-    }
-    void
-    write(typename Primary::value_type const& value) const
-    {
-        primary_.write(value);
-    }
-    bool
-    invalidate(std::exception_ptr error) const
-    {
-        return primary_.invalidate(error);
-    }
-    bool
-    is_invalidated() const
-    {
-        return primary_.is_invalidated();
     }
 
  private:
     mutable id_pair<simple_id<bool>, id_ref> id_;
-    Primary primary_;
     Fallback fallback_;
 };
 template<class Primary, class Fallback>
 fallback_signal<Primary, Fallback>
 make_fallback_signal(Primary primary, Fallback fallback)
 {
-    return fallback_signal<Primary, Fallback>(primary, fallback);
+    return fallback_signal<Primary, Fallback>(
+        std::move(primary), std::move(fallback));
 }
 template<class Primary, class Fallback>
 auto
 add_fallback(Primary primary, Fallback fallback)
 {
-    return make_fallback_signal(signalize(primary), signalize(fallback));
+    return make_fallback_signal(
+        signalize(std::move(primary)), signalize(std::move(fallback)));
 }
 
 // simplify_id(s), where :s is a signal, yields a wrapper for :s with the exact
@@ -370,125 +299,85 @@ add_fallback(Primary primary, Fallback fallback)
 // might change superfluously.
 //
 template<class Wrapped>
-struct simplified_id_wrapper : regular_signal<
-                                   simplified_id_wrapper<Wrapped>,
-                                   typename Wrapped::value_type,
-                                   typename Wrapped::direction_tag>
+struct simplified_id_wrapper
+    : signal_wrapper<simplified_id_wrapper<Wrapped>, Wrapped>
 {
-    simplified_id_wrapper(Wrapped wrapped) : wrapped_(wrapped)
+    simplified_id_wrapper(Wrapped wrapped)
+        : simplified_id_wrapper::signal_wrapper(std::move(wrapped))
     {
     }
-    bool
-    has_value() const
+    id_interface const&
+    value_id() const
     {
-        return wrapped_.has_value();
-    }
-    typename Wrapped::value_type const&
-    read() const
-    {
-        return wrapped_.read();
-    }
-    bool
-    ready_to_write() const
-    {
-        return wrapped_.ready_to_write();
-    }
-    void
-    write(typename Wrapped::value_type const& value) const
-    {
-        return wrapped_.write(value);
-    }
-    bool
-    invalidate(std::exception_ptr error) const
-    {
-        return wrapped_.invalidate(error);
-    }
-    bool
-    is_invalidated() const
-    {
-        return wrapped_.is_invalidated();
+        if (this->has_value())
+        {
+            id_ = make_id_by_reference(this->read());
+            return id_;
+        }
+        return null_id;
     }
 
  private:
-    Wrapped wrapped_;
+    mutable simple_id_by_reference<typename Wrapped::value_type> id_;
 };
 template<class Wrapped>
 simplified_id_wrapper<Wrapped>
 simplify_id(Wrapped wrapped)
 {
-    return simplified_id_wrapper<Wrapped>(wrapped);
+    return simplified_id_wrapper<Wrapped>(std::move(wrapped));
 }
 
 // mask(signal, availibility_flag) does the equivalent of bit masking on
 // individual signals. If :availibility_flag evaluates to true, the mask
-// evaluates to signal equivalent to :signal. Otherwise, it evaluates to an
+// evaluates to a signal equivalent to :signal. Otherwise, it evaluates to an
 // empty signal of the same type.
 template<class Primary, class Mask>
-struct masking_signal : signal<
-                            masking_signal<Primary, Mask>,
-                            typename Primary::value_type,
-                            typename Primary::direction_tag>
+struct masking_signal : signal_wrapper<masking_signal<Primary, Mask>, Primary>
 {
     masking_signal()
     {
     }
-    masking_signal(Primary primary, Mask mask) : primary_(primary), mask_(mask)
+    masking_signal(Primary primary, Mask mask)
+        : masking_signal::signal_wrapper(std::move(primary)),
+          mask_(std::move(mask))
     {
     }
     bool
     has_value() const
     {
-        return mask_.has_value() && mask_.read() && primary_.has_value();
-    }
-    typename Primary::value_type const&
-    read() const
-    {
-        return primary_.read();
+        return mask_.has_value() && mask_.read() && this->wrapped_.has_value();
     }
     id_interface const&
     value_id() const
     {
         if (mask_.has_value() && mask_.read())
-            return primary_.value_id();
+            return this->wrapped_.value_id();
         else
             return null_id;
     }
     bool
     ready_to_write() const
     {
-        return mask_.has_value() && mask_.read() && primary_.ready_to_write();
-    }
-    void
-    write(typename Primary::value_type const& value) const
-    {
-        primary_.write(value);
-    }
-    bool
-    invalidate(std::exception_ptr error) const
-    {
-        return primary_.invalidate(error);
-    }
-    bool
-    is_invalidated() const
-    {
-        return primary_.is_invalidated();
+        return mask_.has_value() && mask_.read()
+               && this->wrapped_.ready_to_write();
     }
 
  private:
-    Primary primary_;
     Mask mask_;
 };
 template<class Signal, class AvailabilityFlag>
 auto
 make_masking_signal(Signal signal, AvailabilityFlag availability_flag)
 {
-    return masking_signal<Signal, AvailabilityFlag>(signal, availability_flag);
+    return masking_signal<Signal, AvailabilityFlag>(
+        std::move(signal), std::move(availability_flag));
 }
 template<class Signal, class AvailabilityFlag>
 auto
 mask(Signal signal, AvailabilityFlag availability_flag)
 {
-    return make_masking_signal(signalize(signal), signalize(availability_flag));
+    return make_masking_signal(
+        signalize(std::move(signal)), signalize(std::move(availability_flag)));
 }
 
 // mask_writes(signal, writability_flag) masks writes to :signal according to
@@ -499,60 +388,29 @@ mask(Signal signal, AvailabilityFlag availability_flag)
 // :signal. Otherwise, it evaluates to one with equivalent reading behavior but
 // with writing disabled.
 //
-// Note that in either case, the masked version has the same directionality as
+// Note that in either case, the masked version has the same capabilities as
 // :signal.
 //
 template<class Primary, class Mask>
-struct write_masking_signal : signal<
-                                  write_masking_signal<Primary, Mask>,
-                                  typename Primary::value_type,
-                                  typename Primary::direction_tag>
+struct write_masking_signal
+    : signal_wrapper<write_masking_signal<Primary, Mask>, Primary>
 {
     write_masking_signal()
     {
     }
     write_masking_signal(Primary primary, Mask mask)
-        : primary_(primary), mask_(mask)
+        : write_masking_signal::signal_wrapper(std::move(primary)),
+          mask_(std::move(mask))
     {
-    }
-    bool
-    has_value() const
-    {
-        return primary_.has_value();
-    }
-    typename Primary::value_type const&
-    read() const
-    {
-        return primary_.read();
-    }
-    id_interface const&
-    value_id() const
-    {
-        return primary_.value_id();
     }
     bool
     ready_to_write() const
     {
-        return mask_.has_value() && mask_.read() && primary_.ready_to_write();
-    }
-    void
-    write(typename Primary::value_type const& value) const
-    {
-        primary_.write(value);
-    }
-    bool
-    invalidate(std::exception_ptr error) const
-    {
-        return primary_.invalidate(error);
-    }
-    bool
-    is_invalidated() const
-    {
-        return primary_.is_invalidated();
+        return mask_.has_value() && mask_.read()
+               && this->wrapped_.ready_to_write();
     }
 
  private:
-    Primary primary_;
     Mask mask_;
 };
 template<class Signal, class WritabilityFlag>
@@ -560,85 +418,119 @@ auto
 make_write_masking_signal(Signal signal, WritabilityFlag writability_flag)
 {
     return write_masking_signal<Signal, WritabilityFlag>(
-        signal, writability_flag);
+        std::move(signal), std::move(writability_flag));
 }
 template<class Signal, class WritabilityFlag>
 auto
 mask_writes(Signal signal, WritabilityFlag writability_flag)
 {
-    return make_write_masking_signal(signal, signalize(writability_flag));
+    return make_write_masking_signal(
+        std::move(signal), signalize(std::move(writability_flag)));
 }
 
 // disable_writes(s), where :s is a signal, yields a wrapper for :s where writes
-// are disabled. Like mask_signal, this doesn't change the directionality of :s.
+// are disabled. Like mask_signal, this doesn't change the capabilities of :s.
 template<class Signal>
 auto
 disable_writes(Signal s)
 {
-    return mask_writes(s, false);
+    return mask_writes(std::move(s), false);
 }
 
 // unwrap(signal), where :signal is a signal carrying a std::optional value,
 // yields a signal that directly carries the value wrapped inside the optional.
 template<class Wrapped>
-struct unwrapper_signal : signal<
+struct unwrapper_signal : casting_signal_wrapper<
                               unwrapper_signal<Wrapped>,
-                              typename Wrapped::value_type::value_type,
-                              typename Wrapped::direction_tag>
+                              Wrapped,
+                              typename Wrapped::value_type::value_type>
 {
     unwrapper_signal()
     {
     }
-    unwrapper_signal(Wrapped wrapped) : wrapped_(wrapped)
+    unwrapper_signal(Wrapped wrapped)
+        : unwrapper_signal::casting_signal_wrapper(std::move(wrapped))
     {
     }
     bool
     has_value() const
     {
-        return wrapped_.has_value() && wrapped_.read().has_value();
+        return this->wrapped_.has_value() && this->wrapped_.read().has_value();
     }
     typename Wrapped::value_type::value_type const&
     read() const
     {
-        return wrapped_.read().value();
+        return this->wrapped_.read().value();
+    }
+    typename Wrapped::value_type::value_type
+    movable_value() const
+    {
+        return this->wrapped_.movable_value().value();
     }
     id_interface const&
     value_id() const
     {
         if (this->has_value())
-            return wrapped_.value_id();
+            return this->wrapped_.value_id();
         else
             return null_id;
     }
-    bool
-    ready_to_write() const
-    {
-        return wrapped_.ready_to_write();
-    }
     void
-    write(typename Wrapped::value_type::value_type const& value) const
+    write(typename Wrapped::value_type::value_type value) const
     {
-        wrapped_.write(value);
+        this->wrapped_.write(std::move(value));
     }
-    bool
-    invalidate(std::exception_ptr error) const
-    {
-        return wrapped_.invalidate(error);
-    }
-    bool
-    is_invalidated() const
-    {
-        return wrapped_.is_invalidated();
-    }
-
- private:
-    Wrapped wrapped_;
 };
 template<class Signal>
 auto
 unwrap(Signal signal)
 {
-    return unwrapper_signal<Signal>(signal);
+    return unwrapper_signal<Signal>(std::move(signal));
+}
+
+// move(signal) returns a signal with movement activated (if possible).
+//
+// If the input signal supports movement, the returned signal's value can be
+// moved out with move_signal() or forward_signal().
+//
+// If the input signal doesn't support movement, it's returned unchanged.
+//
+template<class Wrapped>
+struct signal_movement_activator
+    : signal_wrapper<
+          signal_movement_activator<Wrapped>,
+          Wrapped,
+          typename Wrapped::value_type,
+          signal_capabilities<
+              signal_movable,
+              typename Wrapped::capabilities::writing>>
+{
+    signal_movement_activator()
+    {
+    }
+    signal_movement_activator(Wrapped wrapped)
+        : signal_movement_activator::signal_wrapper(std::move(wrapped))
+    {
+    }
+};
+template<
+    class Signal,
+    std::enable_if_t<is_copyable_signal_type<Signal>::value, int> = 0>
+auto
+move(Signal signal)
+{
+    return signal_movement_activator<Signal>(std::move(signal));
+}
+template<
+    class Signal,
+    std::enable_if_t<
+        is_signal_type<Signal>::value && signal_is_readable<Signal>::value
+            && !signal_is_copyable<Signal>::value,
+        int> = 0>
+auto
+move(Signal signal)
+{
+    return signal;
 }
 
 } // namespace alia

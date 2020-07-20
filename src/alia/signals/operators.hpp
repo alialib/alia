@@ -333,9 +333,9 @@ template<class Condition, class T, class F>
 struct signal_mux : signal<
                         signal_mux<Condition, T, F>,
                         typename T::value_type,
-                        typename signal_direction_intersection<
-                            typename T::direction_tag,
-                            typename F::direction_tag>::type>
+                        typename signal_capabilities_intersection<
+                            typename T::capabilities,
+                            typename F::capabilities>::type>
 {
     signal_mux(Condition condition, T t, F f)
         : condition_(condition), t_(t), f_(f)
@@ -351,6 +351,11 @@ struct signal_mux : signal<
     read() const
     {
         return condition_.read() ? t_.read() : f_.read();
+    }
+    typename T::value_type
+    movable_value() const
+    {
+        return condition_.read() ? t_.movable_value() : f_.movable_value();
     }
     id_interface const&
     value_id() const
@@ -370,7 +375,7 @@ struct signal_mux : signal<
                                      : f_.ready_to_write());
     }
     void
-    write(typename T::value_type const& value) const
+    write(typename T::value_type value) const
     {
         if (condition_.read())
             t_.write(value);
@@ -420,7 +425,9 @@ template<class StructureSignal, class Field>
 struct field_signal : preferred_id_signal<
                           field_signal<StructureSignal, Field>,
                           Field,
-                          typename StructureSignal::direction_tag,
+                          typename signal_capabilities_intersection<
+                              typename StructureSignal::capabilities,
+                              readable_duplex_signal>::type,
                           id_pair<id_ref, simple_id<Field*>>>
 {
     typedef typename StructureSignal::value_type structure_type;
@@ -456,7 +463,7 @@ struct field_signal : preferred_id_signal<
         return structure_.has_value() && structure_.ready_to_write();
     }
     void
-    write(Field const& x) const
+    write(Field x) const
     {
         structure_type s = structure_.read();
         s.*field_ = x;
@@ -637,18 +644,16 @@ struct const_subscript_invoker<
 template<class ContainerSignal, class IndexSignal, class Value>
 std::enable_if_t<signal_is_writable<ContainerSignal>::value>
 write_subscript(
-    ContainerSignal const& container,
-    IndexSignal const& index,
-    Value const& value)
+    ContainerSignal const& container, IndexSignal const& index, Value value)
 {
     auto new_container = container.read();
-    new_container[index.read()] = value;
-    container.write(new_container);
+    new_container[index.read()] = std::move(value);
+    container.write(std::move(new_container));
 }
 
 template<class ContainerSignal, class IndexSignal, class Value>
 std::enable_if_t<!signal_is_writable<ContainerSignal>::value>
-write_subscript(ContainerSignal const&, IndexSignal const&, Value const&)
+write_subscript(ContainerSignal const&, IndexSignal const&, Value)
 {
 }
 
@@ -658,14 +663,14 @@ struct subscript_signal : preferred_id_signal<
                               typename subscript_result_type<
                                   typename ContainerSignal::value_type,
                                   typename IndexSignal::value_type>::type,
-                              typename ContainerSignal::direction_tag,
+                              typename ContainerSignal::capabilities,
                               id_pair<alia::id_ref, alia::id_ref>>
 {
     subscript_signal()
     {
     }
     subscript_signal(ContainerSignal array, IndexSignal index)
-        : container_(array), index_(index)
+        : container_(std::move(array)), index_(std::move(index))
     {
     }
     bool
@@ -675,6 +680,11 @@ struct subscript_signal : preferred_id_signal<
     }
     typename subscript_signal::value_type const&
     read() const
+    {
+        return invoker_(container_.read(), index_.read());
+    }
+    typename subscript_signal::value_type
+    movable_value() const
     {
         return invoker_(container_.read(), index_.read());
     }
@@ -690,9 +700,9 @@ struct subscript_signal : preferred_id_signal<
                && container_.ready_to_write();
     }
     void
-    write(typename subscript_signal::value_type const& x) const
+    write(typename subscript_signal::value_type x) const
     {
-        write_subscript(container_, index_, x);
+        write_subscript(container_, index_, std::move(x));
     }
 
  private:
@@ -707,15 +717,17 @@ template<class ContainerSignal, class IndexSignal>
 subscript_signal<ContainerSignal, IndexSignal>
 make_subscript_signal(ContainerSignal container, IndexSignal index)
 {
-    return subscript_signal<ContainerSignal, IndexSignal>(container, index);
+    return subscript_signal<ContainerSignal, IndexSignal>(
+        std::move(container), std::move(index));
 }
 
-template<class Derived, class Value, class Direction>
+template<class Derived, class Value, class Capabilities>
 template<class Index>
-auto signal_base<Derived, Value, Direction>::operator[](Index index) const
+auto
+signal_base<Derived, Value, Capabilities>::operator[](Index index) const
 {
     return make_subscript_signal(
-        static_cast<Derived const&>(*this), signalize(index));
+        static_cast<Derived const&>(*this), signalize(std::move(index)));
 }
 
 } // namespace alia

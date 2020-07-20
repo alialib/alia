@@ -100,8 +100,9 @@ struct state_storage
     component_container_ptr container_;
 };
 
-template<class Value, class Direction>
-struct state_signal : signal<state_signal<Value, Direction>, Value, Direction>
+template<class Value, class Capabilities>
+struct state_signal
+    : signal<state_signal<Value, Capabilities>, Value, Capabilities>
 {
     explicit state_signal(state_storage<Value>* data) : data_(data)
     {
@@ -133,9 +134,16 @@ struct state_signal : signal<state_signal<Value, Direction>, Value, Direction>
     }
 
     void
-    write(Value const& value) const
+    write(Value value) const
     {
-        data_->set(value);
+        data_->set(std::move(value));
+    }
+
+    Value
+    movable_value() const
+    {
+        Value movable = std::move(data_->untracked_nonconst_ref());
+        return movable;
     }
 
  private:
@@ -144,10 +152,10 @@ struct state_signal : signal<state_signal<Value, Direction>, Value, Direction>
 };
 
 template<class Value>
-state_signal<Value, duplex_signal>
+state_signal<Value, copyable_duplex_signal>
 make_state_signal(state_storage<Value>& data)
 {
-    return state_signal<Value, duplex_signal>(&data);
+    return state_signal<Value, copyable_duplex_signal>(&data);
 }
 
 // get_state(ctx, initial_value) returns a signal carrying some persistent local
