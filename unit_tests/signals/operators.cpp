@@ -150,7 +150,7 @@ TEST_CASE("signal select", "[signals][operators]")
     REQUIRE(original_id.get() != s.value_id());
 }
 
-TEST_CASE("select with different directions", "[signals][operators]")
+TEST_CASE("select with different capabilities", "[signals][operators]")
 {
     bool condition = false;
     auto s = conditional(direct(condition), empty<int>(), value(2));

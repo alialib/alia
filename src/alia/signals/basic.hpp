@@ -160,6 +160,12 @@ struct direct_signal
     {
         return *v_;
     }
+    Value
+    movable_value() const
+    {
+        Value movable = std::move(*v_);
+        return movable;
+    }
     bool
     ready_to_write() const
     {
@@ -169,12 +175,6 @@ struct direct_signal
     write(Value value) const
     {
         *v_ = std::move(value);
-    }
-    Value
-    movable_value() const
-    {
-        Value movable = std::move(*v_);
-        return movable;
     }
 
  private:

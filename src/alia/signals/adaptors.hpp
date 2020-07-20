@@ -31,9 +31,9 @@ struct readability_faker : signal_wrapper<
                                readability_faker<Wrapped>,
                                Wrapped,
                                typename Wrapped::value_type,
-                               typename signal_direction_union<
+                               typename signal_capabilities_union<
                                    read_only_signal,
-                                   typename Wrapped::direction_tag>::type>
+                                   typename Wrapped::capabilities>::type>
 {
     readability_faker(Wrapped wrapped)
         : readability_faker::signal_wrapper(std::move(wrapped))
@@ -80,9 +80,9 @@ struct writability_faker : signal_wrapper<
                                writability_faker<Wrapped>,
                                Wrapped,
                                typename Wrapped::value_type,
-                               typename signal_direction_union<
+                               typename signal_capabilities_union<
                                    write_only_signal,
-                                   typename Wrapped::direction_tag>::type>
+                                   typename Wrapped::capabilities>::type>
 {
     writability_faker(Wrapped wrapped)
         : writability_faker::signal_wrapper(std::move(wrapped))
@@ -388,7 +388,7 @@ mask(Signal signal, AvailabilityFlag availability_flag)
 // :signal. Otherwise, it evaluates to one with equivalent reading behavior but
 // with writing disabled.
 //
-// Note that in either case, the masked version has the same directionality as
+// Note that in either case, the masked version has the same capabilities as
 // :signal.
 //
 template<class Primary, class Mask>
@@ -429,7 +429,7 @@ mask_writes(Signal signal, WritabilityFlag writability_flag)
 }
 
 // disable_writes(s), where :s is a signal, yields a wrapper for :s where writes
-// are disabled. Like mask_signal, this doesn't change the directionality of :s.
+// are disabled. Like mask_signal, this doesn't change the capabilities of :s.
 template<class Signal>
 auto
 disable_writes(Signal s)
@@ -501,9 +501,9 @@ struct signal_movement_activator
           signal_movement_activator<Wrapped>,
           Wrapped,
           typename Wrapped::value_type,
-          signal_directionality<
+          signal_capabilities<
               signal_movable,
-              typename Wrapped::direction_tag::writing>>
+              typename Wrapped::capabilities::writing>>
 {
     signal_movement_activator()
     {
