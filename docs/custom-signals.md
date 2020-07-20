@@ -15,7 +15,7 @@ interface](consuming-signals.md#the-signal-interface). The signature of `signal`
 is as follows:
 
 ```cpp
-template<class Derived, class Value, class Direction>
+template<class Derived, class Value, class Capabilities>
 struct signal;
 ```
 
@@ -23,9 +23,10 @@ struct signal;
 
 `Value` is the type of value carried by the signal.
 
-`Direction` is a tag type indicating the directionality of the signal. It should
-be one of the following: `read_only_signal`, `write_only_signal`,
-`duplex_signal`.
+`Capabilities` is a tag type indicating the read/write capabilities of the
+signal. It's common to simply use `read_only_signal` or `duplex_signal` here.
+For a full explanation of capabilities, see [the
+code](https://github.com/tmadden/alia/blob/master/src/alia/signals/core.hpp).
 
 For signals with small value types, it's common for the value ID to simply be a
 copy of the signal value. These are called 'regular' signals and can be
@@ -33,39 +34,42 @@ implemented by deriving from `regular_signal` instead. It has the same signature
 as `signal` but provides the implementation of `value_id` for you.
 
 For illustration, here's the actual implementation of the signal you create when
-calling `direct()` on a non-const reference. It's a regular, duplex signal:
+calling `direct()` on a non-const reference. It's a regular, duplex signal whose
+values are copyable:
 
 ```cpp
 template<class Value>
 struct direct_signal
-    : regular_signal<direct_signal<Value>, Value, duplex_signal>
+    : regular_signal<direct_signal<Value>, Value, copyable_duplex_signal>
 {
     explicit direct_signal(Value* v) : v_(v)
     {
     }
-
     bool
     has_value() const
     {
         return true;
     }
-
     Value const&
     read() const
     {
         return *v_;
     }
-
+    Value
+    movable_value() const
+    {
+        Value movable = std::move(*v_);
+        return movable;
+    }
     bool
     ready_to_write() const
     {
         return true;
     }
-
     void
-    write(Value const& value) const
+    write(Value value) const
     {
-        *v_ = value;
+        *v_ = std::move(value);
     }
 
  private:

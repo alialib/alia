@@ -23,14 +23,12 @@ a typedef for the type of value that the signal carries
 
 <dd>
 
-<dt>direction_tag</dt><dd>
+<dt>capabilities</dt><dd>
 
-a type tag representing the directionality of the signal - It will always be one
-of the following:
-
-- `read_only_signal`
-- `write_only_signal` (uncommon)
-- `duplex_signal`
+a type tag representing the capabilities of the signal - It's common to simply
+use `read_only_signal` or `duplex_signal` here. For a full explanation of
+capabilities, see [the
+code](https://github.com/tmadden/alia/blob/master/src/alia/signals/core.hpp).
 
 <dd>
 
@@ -74,7 +72,7 @@ Is the signal currently ready to write?
 
 </dd>
 
-<dt>void<br>write(Value const& value) const</dt><dd>
+<dt>void<br>write(Value value) const</dt><dd>
 
 Write the signal's value.
 

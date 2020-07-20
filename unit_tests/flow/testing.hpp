@@ -38,11 +38,27 @@ struct int_object
     int_object(int n) : n(n)
     {
     }
+    int_object(int_object&& other)
+    {
+        n = other.n;
+        moved_out = false;
+        other.moved_out = true;
+    }
+    int_object&
+    operator=(int_object&& other)
+    {
+        n = other.n;
+        moved_out = false;
+        other.moved_out = true;
+        return *this;
+    }
     ~int_object()
     {
-        the_log << "destructing int;";
+        if (!moved_out)
+            the_log << "destructing int;";
     }
     int n;
+    bool moved_out = false;
 };
 
 template<class Context>
