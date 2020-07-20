@@ -98,7 +98,7 @@ struct captured_id
         if (other.is_initialized())
             this->capture(other.get());
     }
-    captured_id(captured_id&& other)
+    captured_id(captured_id&& other) noexcept
     {
         id_ = std::move(other.id_);
     }
@@ -112,7 +112,7 @@ struct captured_id
         return *this;
     }
     captured_id&
-    operator=(captured_id&& other)
+    operator=(captured_id&& other) noexcept
     {
         id_ = std::move(other.id_);
         return *this;
@@ -143,7 +143,7 @@ struct captured_id
         return id_ && *id_ == id;
     }
     friend void
-    swap(captured_id& a, captured_id& b)
+    swap(captured_id& a, captured_id& b) noexcept
     {
         swap(a.id_, b.id_);
     }
@@ -348,7 +348,7 @@ struct id_pair : id_interface
     {
     }
 
-    id_pair(Id0 const& id0, Id1 const& id1) : id0_(id0), id1_(id1)
+    id_pair(Id0 id0, Id1 id1) : id0_(std::move(id0)), id1_(std::move(id1))
     {
     }
 
@@ -391,23 +391,24 @@ struct id_pair : id_interface
 // combine_ids(id0, id1) combines id0 and id1 into a single ID pair.
 template<class Id0, class Id1>
 auto
-combine_ids(Id0 const& id0, Id1 const& id1)
+combine_ids(Id0 id0, Id1 id1)
 {
-    return id_pair<Id0, Id1>(id0, id1);
+    return id_pair<Id0, Id1>(std::move(id0), std::move(id1));
 }
 
 // Combine more than two IDs into nested pairs.
 template<class Id0, class Id1, class... Rest>
 auto
-combine_ids(Id0 const& id0, Id1 const& id1, Rest const&... rest)
+combine_ids(Id0 id0, Id1 id1, Rest... rest)
 {
-    return combine_ids(combine_ids(id0, id1), rest...);
+    return combine_ids(
+        combine_ids(std::move(id0), std::move(id1)), std::move(rest)...);
 }
 
 // Allow combine_ids() to take a single argument for variadic purposes.
 template<class Id0>
 auto
-combine_ids(Id0 const& id0)
+combine_ids(Id0 id0)
 {
     return id0;
 }

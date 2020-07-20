@@ -15,88 +15,139 @@ namespace alia {
 // signal, which allows them to be easily composed at the call site,
 // without requiring any memory allocation.
 
-// direction tags
-struct read_only_signal
+// The following enumerate the possible levels of capabilities that signals can
+// have with respect to reading values (from the signal). These are cumulative,
+// so each level includes all the capabilities before it.
+
+// The signal has no reading capabilities.
+struct signal_unreadable
 {
+    static constexpr unsigned level = 0;
 };
-struct write_only_signal
+// The signal can return a const reference to its value.
+struct signal_readable
 {
+    static constexpr unsigned level = 1;
 };
-struct duplex_signal
+// The signal is capable of copying its value.
+// It could also move but there may be side effects, so it requires explicit
+// activation.
+struct signal_copyable
 {
+    static constexpr unsigned level = 2;
+};
+// The signal is ready to move its value.
+struct signal_movable
+{
+    static constexpr unsigned level = 3;
 };
 
-// signal_direction_is_compatible<Expected,Actual>::value yields a compile-time
-// boolean indicating whether or not a signal with :Actual direction can be used
-// in a context expecting :Expected direction.
-// In the general case, the signals are not compatible.
+// The following are the same, but for writing. (Writing is essentially a
+// boolean property so it only has two levels.)
+struct signal_unwritable
+{
+    static constexpr unsigned level = 0;
+};
+struct signal_writable
+{
+    static constexpr unsigned level = 1;
+};
+
+// combined capabilities tags
+template<class Reading, class Writing>
+struct signal_capabilities
+{
+    typedef Reading reading;
+    typedef Writing writing;
+};
+
+// useful signal capabilities combinations
+typedef signal_capabilities<signal_readable, signal_unwritable>
+    read_only_signal;
+typedef signal_capabilities<signal_copyable, signal_unwritable>
+    copyable_read_only_signal;
+typedef signal_capabilities<signal_movable, signal_unwritable>
+    movable_read_only_signal;
+typedef signal_capabilities<signal_unreadable, signal_writable>
+    write_only_signal;
+typedef signal_capabilities<signal_readable, signal_writable>
+    readable_duplex_signal;
+typedef signal_capabilities<signal_copyable, signal_writable>
+    copyable_duplex_signal;
+typedef signal_capabilities<signal_movable, signal_writable>
+    movable_duplex_signal;
+typedef readable_duplex_signal duplex_signal;
+
+// signal_rw_capability_is_compatible<Expected,Actual>::value yields a
+// compile-time boolean indicating whether or not a signal with :Actual
+// reading/writing capabilities can be used in a context expecting :Expected
+// capabilities.
 template<class Expected, class Actual>
-struct signal_direction_is_compatible : std::false_type
+struct signal_rw_capability_is_compatible
 {
+    static constexpr bool value = Expected::level <= Actual::level;
 };
-// If the directions are the same, this is trivially true.
-template<class Same>
-struct signal_direction_is_compatible<Same, Same> : std::true_type
-{
-};
-// A duplex signal can work as anything.
-template<class Expected>
-struct signal_direction_is_compatible<Expected, duplex_signal> : std::true_type
-{
-};
-// Resolve ambiguity.
-template<>
-struct signal_direction_is_compatible<duplex_signal, duplex_signal>
-    : std::true_type
+
+// signal_capabilities_compatible<Expected,Actual>::value yields a compile-time
+// boolean indicating whether or not a signal with :Actual capabilities can be
+// used in a context expecting :Expected capabilities.
+template<class Expected, class Actual>
+struct signal_capabilities_compatible
+    : std::conditional_t<
+          signal_rw_capability_is_compatible<
+              typename Expected::reading,
+              typename Actual::reading>::value,
+          signal_rw_capability_is_compatible<
+              typename Expected::writing,
+              typename Actual::writing>,
+          std::false_type>
 {
 };
 
-// signal_direction_intersection<A,B>::type, where A and B are signal
-// directions, yields a direction that only has the capabilities that are common
+// signal_rw_capability_intersection<A,B>::type yields the type representing the
+// intersection of the read/write capabilities :A and :B.
+template<class A, class B>
+struct signal_rw_capability_intersection
+    : std::conditional<A::level <= B::level, A, B>
+{
+};
+
+// signal_capabilities_intersection<A,B>::type, where A and B are signal
+// capability tags, yields a tag that only has the capabilities that are common
 // to both A and B.
 template<class A, class B>
-struct signal_direction_intersection
+struct signal_capabilities_intersection
 {
-};
-// If the directions are the same, this is trivial.
-template<class Same>
-struct signal_direction_intersection<Same, Same>
-{
-    typedef Same type;
-};
-// A duplex signal has both capabilities.
-template<class A>
-struct signal_direction_intersection<A, duplex_signal>
-{
-    typedef A type;
-};
-template<class B>
-struct signal_direction_intersection<duplex_signal, B>
-{
-    typedef B type;
-};
-// Resolve ambiguity.
-template<>
-struct signal_direction_intersection<duplex_signal, duplex_signal>
-{
-    typedef duplex_signal type;
+    typedef signal_capabilities<
+        typename signal_rw_capability_intersection<
+            typename A::reading,
+            typename B::reading>::type,
+        typename signal_rw_capability_intersection<
+            typename A::writing,
+            typename B::writing>::type>
+        type;
 };
 
-// signal_direction_union<A,B>::type, where A and B are signal directions,
-// yields a direction that has the union of the capabilities of A and B.
+// signal_rw_capability_union<A,B>::type yields the type representing the
+// union of the read/write capabilities :A and :B.
 template<class A, class B>
-struct signal_direction_union;
-// If the directions are the same, this is trivial.
-template<class Same>
-struct signal_direction_union<Same, Same>
+struct signal_rw_capability_union : std::conditional<A::level <= B::level, B, A>
 {
-    typedef Same type;
 };
+
+// signal_capabilities_union<A,B>::type, where A and B are signal capability
+// tags, yields a tag that has the union of the capabilities of A and B.
 template<class A, class B>
-struct signal_direction_union
+struct signal_capabilities_union
 {
-    // All other combinations yield duplex signals.
-    typedef duplex_signal type;
+    typedef signal_capabilities<
+        typename signal_rw_capability_union<
+            typename A::reading,
+            typename B::reading>::type,
+        typename signal_rw_capability_union<
+            typename A::writing,
+            typename B::writing>::type>
+        type;
 };
 
 // untyped_signal_base defines functionality common to all signals, irrespective
@@ -155,93 +206,141 @@ struct signal_interface : untyped_signal_base
     virtual Value const&
     read() const = 0;
 
+    // Move out the signal's value.
+    // This is expected to be implemented by copyable and movable signals.
+    virtual Value
+    movable_value() const = 0;
+
     // Write the signal's value.
     virtual void
-    write(Value const& value) const = 0;
+    write(Value value) const = 0;
 };
 
-template<class Derived, class Value, class Direction>
+template<class Derived, class Value, class Capabilities>
 struct signal_base : signal_interface<Value>
 {
-    typedef Direction direction_tag;
+    typedef Capabilities capabilities;
 
     template<class Index>
-    auto operator[](Index index) const;
+    auto
+    operator[](Index index) const;
 };
 
-template<class Derived, class Value, class Direction>
-struct signal : signal_base<Derived, Value, Direction>
+template<class Derived, class Value, class Capabilities>
+struct signal : signal_base<Derived, Value, Capabilities>
 {
 };
+
+// The following implement the various unused functions that are required by the
+// signal_interface but won't be used because of the capabilities of the
+// signal...
+
+// LCOV_EXCL_START
+
+#define ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)                       \
+    bool ready_to_write() const override                                       \
+    {                                                                          \
+        return false;                                                          \
+    }                                                                          \
+    void write(Value) const override                                           \
+    {                                                                          \
+    }
+
+#define ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)                        \
+    Value movable_value() const override                                       \
+    {                                                                          \
+        throw nullptr;                                                         \
+    }
+
+#define ALIA_DEFINE_UNUSED_SIGNAL_READ_INTERFACE(Value)                        \
+    ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)                            \
+    id_interface const& value_id() const override                              \
+    {                                                                          \
+        return null_id;                                                        \
+    }                                                                          \
+    bool has_value() const override                                            \
+    {                                                                          \
+        return false;                                                          \
+    }                                                                          \
+    Value const& read() const override                                         \
+    {                                                                          \
+        throw nullptr;                                                         \
+    }
 
 template<class Derived, class Value>
 struct signal<Derived, Value, read_only_signal>
     : signal_base<Derived, Value, read_only_signal>
 {
-    // These must be defined to satisfy the interface requirements, but they
-    // obviously won't be used on a read-only signal.
-    // LCOV_EXCL_START
-    bool
-    ready_to_write() const
-    {
-        return false;
-    }
-    void
-    write(Value const&) const
-    {
-    }
-    // LCOV_EXCL_STOP
+    ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)
+    ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)
+};
+
+template<class Derived, class Value>
+struct signal<
+    Derived,
+    Value,
+    signal_capabilities<signal_movable, signal_unwritable>>
+    : signal_base<
+          Derived,
+          Value,
+          signal_capabilities<signal_movable, signal_unwritable>>
+{
+    ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)
+};
+
+template<class Derived, class Value>
+struct signal<
+    Derived,
+    Value,
+    signal_capabilities<signal_copyable, signal_unwritable>>
+    : signal_base<
+          Derived,
+          Value,
+          signal_capabilities<signal_copyable, signal_unwritable>>
+{
+    ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)
 };
 
 template<class Derived, class Value>
 struct signal<Derived, Value, write_only_signal>
     : signal_base<Derived, Value, write_only_signal>
 {
-    // These must be defined to satisfy the interface requirements, but they
-    // obviously won't be used on a write-only signal.
-    // LCOV_EXCL_START
-    id_interface const&
-    value_id() const
-    {
-        return null_id;
-    }
-    bool
-    has_value() const
-    {
-        return false;
-    }
-    Value const&
-    read() const
-    {
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wnull-dereference"
-#endif
-        return *(Value const*) nullptr;
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
-    }
-    // LCOV_EXCL_STOP
+    ALIA_DEFINE_UNUSED_SIGNAL_READ_INTERFACE(Value)
 };
 
-// signal_ref is a reference to a signal that acts as a signal itself.
-template<class Value, class Direction>
-struct signal_ref : signal<signal_ref<Value, Direction>, Value, Direction>
+template<class Derived, class Value>
+struct signal<
+    Derived,
+    Value,
+    signal_capabilities<signal_readable, signal_writable>>
+    : signal_base<
+          Derived,
+          Value,
+          signal_capabilities<signal_readable, signal_writable>>
 {
-    // Construct from any signal with compatible direction.
-    template<class OtherSignal, class OtherDirection>
+    ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)
+};
+
+// LCOV_EXCL_STOP
+
+// signal_ref is a reference to a signal that acts as a signal itself.
+template<class Value, class Capabilities>
+struct signal_ref : signal<signal_ref<Value, Capabilities>, Value, Capabilities>
+{
+    // Construct from any signal with compatible capabilities.
+    template<class OtherSignal, class OtherCapabilities>
     signal_ref(
-        signal<OtherSignal, Value, OtherDirection> const& signal,
+        signal<OtherSignal, Value, OtherCapabilities> const& signal,
         std::enable_if_t<
-            signal_direction_is_compatible<Direction, OtherDirection>::value,
+            signal_capabilities_compatible<Capabilities, OtherCapabilities>::
+                value,
             int> = 0)
         : ref_(&signal)
     {
     }
     // Construct from another signal_ref. - This is meant to prevent unnecessary
     // layers of indirection.
-    signal_ref(signal_ref<Value, Direction> const& other) : ref_(other.ref_)
+    signal_ref(signal_ref<Value, Capabilities> const& other) : ref_(other.ref_)
     {
     }
 
@@ -257,6 +356,11 @@ struct signal_ref : signal<signal_ref<Value, Direction>, Value, Direction>
     {
         return ref_->read();
     }
+    Value
+    movable_value() const
+    {
+        return ref_->movable_value();
+    }
     id_interface const&
     value_id() const
     {
@@ -268,9 +372,9 @@ struct signal_ref : signal<signal_ref<Value, Direction>, Value, Direction>
         return ref_->ready_to_write();
     }
     void
-    write(Value const& value) const
+    write(Value value) const
     {
-        ref_->write(value);
+        ref_->write(std::move(value));
     }
     bool
     invalidate(std::exception_ptr error) const
@@ -300,7 +404,7 @@ using writable = signal_ref<Value, write_only_signal>;
 // duplex<Value> denotes a reference to a duplex signal carrying values of type
 // :Value.
 template<class Value>
-using duplex = signal_ref<Value, duplex_signal>;
+using duplex = signal_ref<Value, readable_duplex_signal>;
 
 // is_signal_type<T>::value yields a compile-time boolean indicating whether or
 // not T is an alia signal type.
@@ -312,9 +416,9 @@ struct is_signal_type : std::is_base_of<untyped_signal_base, T>
 // signal_is_readable<Signal>::value yields a compile-time boolean indicating
 // whether or not the given signal type supports reading.
 template<class Signal>
-struct signal_is_readable : signal_direction_is_compatible<
+struct signal_is_readable : signal_capabilities_compatible<
                                 read_only_signal,
-                                typename Signal::direction_tag>
+                                typename Signal::capabilities>
 {
 };
 
@@ -367,9 +471,9 @@ struct validation_error : exception
 // signal_is_writable<Signal>::value yields a compile-time boolean indicating
 // whether or not the given signal type supports writing.
 template<class Signal>
-struct signal_is_writable : signal_direction_is_compatible<
+struct signal_is_writable : signal_capabilities_compatible<
                                 write_only_signal,
-                                typename Signal::direction_tag>
+                                typename Signal::capabilities>
 {
 };
 
@@ -399,13 +503,13 @@ signal_ready_to_write(Signal const& signal)
 // Note that if the signal isn't ready to write, this is a no op.
 template<class Signal, class Value>
 std::enable_if_t<signal_is_writable<Signal>::value>
-write_signal(Signal const& signal, Value const& value)
+write_signal(Signal const& signal, Value value)
 {
     if (signal.ready_to_write())
     {
         try
         {
-            signal.write(value);
+            signal.write(std::move(value));
         }
         catch (validation_error&)
         {
@@ -422,9 +526,9 @@ write_signal(Signal const& signal, Value const& value)
 // signal_is_duplex<Signal>::value yields a compile-time boolean indicating
 // whether or not the given signal type supports both reading and writing.
 template<class Signal>
-struct signal_is_duplex : signal_direction_is_compatible<
-                              duplex_signal,
-                              typename Signal::direction_tag>
+struct signal_is_duplex : signal_capabilities_compatible<
+                              readable_duplex_signal,
+                              typename Signal::capabilities>
 {
 };
 
@@ -437,6 +541,73 @@ struct is_duplex_signal_type : std::conditional_t<
                                    std::false_type>
 {
 };
+
+// signal_is_copyable<Signal>::value yields a compile-time boolean indicating
+// whether or not the given signal type supports copying.
+template<class Signal>
+struct signal_is_copyable : signal_rw_capability_is_compatible<
+                                signal_copyable,
+                                typename Signal::capabilities::reading>
+{
+};
+
+// is_copyable_signal_type<T>::value yields a compile-time boolean indicating
+// whether or not T is an alia signal that supports value copying.
+template<class T>
+struct is_copyable_signal_type : std::conditional_t<
+                                     is_signal_type<T>::value,
+                                     signal_is_copyable<T>,
+                                     std::false_type>
+{
+};
+
+// signal_is_movable<Signal>::value yields a compile-time boolean indicating
+// whether or not the given signal type allows moving.
+template<class Signal>
+struct signal_is_movable : signal_rw_capability_is_compatible<
+                               signal_movable,
+                               typename Signal::capabilities::reading>
+{
+};
+
+// is_movable_signal_type<T>::value yields a compile-time boolean indicating
+// whether or not T is an alia signal that supports value movement.
+template<class T>
+struct is_movable_signal_type : std::conditional_t<
+                                    is_signal_type<T>::value,
+                                    signal_is_movable<T>,
+                                    std::false_type>
+{
+};
+
+// Move out a signal's value.
+template<class Signal>
+std::enable_if_t<signal_is_movable<Signal>::value, typename Signal::value_type>
+move_signal(Signal const& signal)
+{
+    assert(signal.has_value());
+    return signal.movable_value();
+}
+
+// Forward along a signal's value.
+// This will move out the value if movement is activated or return a reference
+// otherwise.
+template<class Signal>
+std::enable_if_t<signal_is_movable<Signal>::value, typename Signal::value_type>
+forward_signal(Signal const& signal)
+{
+    assert(signal.has_value());
+    return signal.movable_value();
+}
+template<class Signal>
+std::enable_if_t<
+    !signal_is_movable<Signal>::value && signal_is_readable<Signal>::value,
+    typename Signal::value_type const&>
+forward_signal(Signal const& signal)
+{
+    assert(signal.has_value());
+    return signal.read();
+}
 
 } // namespace alia
 

@@ -15,12 +15,13 @@ namespace alia {
 // just doing the two overloads I need for now...
 
 template<class Result, class Function, class Arg>
-struct lazy_apply1_signal : signal<
+struct lazy_apply1_signal : lazy_signal<
                                 lazy_apply1_signal<Result, Function, Arg>,
                                 Result,
                                 read_only_signal>
 {
-    lazy_apply1_signal(Function f, Arg arg) : f_(f), arg_(arg)
+    lazy_apply1_signal(Function f, Arg arg)
+        : f_(std::move(f)), arg_(std::move(arg))
     {
     }
     id_interface const&
@@ -33,34 +34,33 @@ struct lazy_apply1_signal : signal<
     {
         return arg_.has_value();
     }
-    Result const&
-    read() const
+    Result
+    movable_value() const
     {
-        return lazy_reader_.read([&] { return f_(arg_.read()); });
+        return f_(forward_signal(arg_));
     }
 
  private:
     Function f_;
     Arg arg_;
-    lazy_reader<Result> lazy_reader_;
 };
 template<class Function, class Arg>
 auto
 lazy_apply(Function f, Arg arg)
 {
     return lazy_apply1_signal<decltype(f(read_signal(arg))), Function, Arg>(
-        f, arg);
+        std::move(f), std::move(arg));
 }
 
 template<class Result, class Function, class Arg0, class Arg1>
 struct lazy_apply2_signal
-    : signal<
+    : lazy_signal<
           lazy_apply2_signal<Result, Function, Arg0, Arg1>,
           Result,
           read_only_signal>
 {
     lazy_apply2_signal(Function f, Arg0 arg0, Arg1 arg1)
-        : f_(f), arg0_(arg0), arg1_(arg1)
+        : f_(std::move(f)), arg0_(std::move(arg0)), arg1_(std::move(arg1))
     {
     }
     id_interface const&
@@ -74,11 +74,10 @@ struct lazy_apply2_signal
     {
         return arg0_.has_value() && arg1_.has_value();
     }
-    Result const&
-    read() const
+    Result
+    movable_value() const
     {
-        return lazy_reader_.read(
-            [&]() { return f_(arg0_.read(), arg1_.read()); });
+        return f_(forward_signal(arg0_), forward_signal(arg1_));
     }
 
  private:
@@ -86,7 +85,6 @@ struct lazy_apply2_signal
     Arg0 arg0_;
     Arg1 arg1_;
     mutable id_pair<id_ref, id_ref> id_;
-    lazy_reader<Result> lazy_reader_;
 };
 template<class Function, class Arg0, class Arg1>
 auto
@@ -96,14 +94,14 @@ lazy_apply(Function f, Arg0 arg0, Arg1 arg1)
         decltype(f(read_signal(arg0), read_signal(arg1))),
         Function,
         Arg0,
-        Arg1>(f, arg0, arg1);
+        Arg1>(f, std::move(arg0), std::move(arg1));
 }
 
 template<class Function>
 auto
 lazy_lift(Function f)
 {
-    return [=](auto&&... args) { return lazy_apply(f, args...); };
+    return [=](auto... args) { return lazy_apply(f, std::move(args)...); };
 }
 
 // apply(ctx, f, args...), where :args are all signals, yields a signal to the
@@ -234,13 +232,18 @@ template<class Function>
 auto
 lift(Function f)
 {
-    return [=](context ctx, auto&&... args) { return apply(ctx, f, args...); };
+    return [=](context ctx, auto&&... args) {
+        return apply(ctx, std::move(f), std::move(args)...);
+    };
 }
 
 // alia_mem_fn(m) wraps a member function name in a lambda so that it can be
 // passed as a function object. (It's the equivalent of std::mem_fn, but there's
 // no need to provide the type name.)
-#define ALIA_MEM_FN(m) [](auto&& x, auto&&... args) { return x.m(args...); }
+#define ALIA_MEM_FN(m)                                                         \
+    [](auto&& x, auto&&... args) {                                             \
+        return x.m(std::forward<decltype(args)>(args)...);                     \
+    }
 #ifndef ALIA_STRICT_MACROS
 #define alia_mem_fn(m) ALIA_MEM_FN(m)
 #endif

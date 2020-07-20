@@ -116,7 +116,7 @@ template<class ListSignal, class Item>
 struct list_item_signal : signal<
                               list_item_signal<ListSignal, Item>,
                               Item,
-                              typename ListSignal::direction_tag>
+                              typename ListSignal::capabilities>
 {
     list_item_signal(ListSignal const& list_signal, size_t index, Item* item)
         : list_signal_(list_signal), index_(index), item_(item)
@@ -138,15 +138,20 @@ struct list_item_signal : signal<
     {
         return *item_;
     }
+    Item
+    movable_value() const
+    {
+        return *item_;
+    }
     bool
     ready_to_write() const
     {
         return list_signal_.ready_to_write();
     }
     void
-    write(Item const& value) const
+    write(Item value) const
     {
-        *item_ = value;
+        *item_ = std::move(value);
     }
 
  private:

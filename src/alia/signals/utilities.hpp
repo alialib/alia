@@ -10,8 +10,8 @@ namespace alia {
 
 // regular_signal is a partial implementation of the signal interface for
 // cases where the value ID of the signal is simply the value itself.
-template<class Derived, class Value, class Direction>
-struct regular_signal : signal<Derived, Value, Direction>
+template<class Derived, class Value, class Capabilities>
+struct regular_signal : signal<Derived, Value, Capabilities>
 {
     id_interface const&
     value_id() const
@@ -26,32 +26,6 @@ struct regular_signal : signal<Derived, Value, Direction>
 
  private:
     mutable simple_id_by_reference<Value> id_;
-};
-
-// lazy_reader is used to create signals that lazily generate their values.
-// It provides storage for the computed value and ensures that it's only
-// computed once.
-template<class Value>
-struct lazy_reader
-{
-    lazy_reader() : already_generated_(false)
-    {
-    }
-    template<class Generator>
-    Value const&
-    read(Generator const& generator) const
-    {
-        if (!already_generated_)
-        {
-            value_ = generator();
-            already_generated_ = true;
-        }
-        return value_;
-    }
-
- private:
-    mutable bool already_generated_;
-    mutable Value value_;
 };
 
 // signals_all_have_values(signal_a, signal_b, ...) is a variadic function that
@@ -84,21 +58,21 @@ struct type_prefers_simple_id : std::is_fundamental<Value>
 template<
     class Derived,
     class Value,
-    class Direction,
+    class Capabilities,
     class ComplexId,
     class = void>
 struct preferred_id_signal
 {
 };
 
-template<class Derived, class Value, class Direction, class ComplexId>
+template<class Derived, class Value, class Capabilities, class ComplexId>
 struct preferred_id_signal<
     Derived,
     Value,
-    Direction,
+    Capabilities,
     ComplexId,
     std::enable_if_t<type_prefers_simple_id<Value>::value>>
-    : signal<Derived, Value, Direction>
+    : signal<Derived, Value, Capabilities>
 {
     id_interface const&
     value_id() const
@@ -115,14 +89,14 @@ struct preferred_id_signal<
     mutable simple_id_by_reference<Value> id_;
 };
 
-template<class Derived, class Value, class Direction, class ComplexId>
+template<class Derived, class Value, class Capabilities, class ComplexId>
 struct preferred_id_signal<
     Derived,
     Value,
-    Direction,
+    Capabilities,
     ComplexId,
     std::enable_if_t<!type_prefers_simple_id<Value>::value>>
-    : signal<Derived, Value, Direction>
+    : signal<Derived, Value, Capabilities>
 {
     id_interface const&
     value_id() const
@@ -162,6 +136,151 @@ refresh_signal_shadow(
         }
     }
 }
+
+// signal_wrapper is a utility for wrapping another signal. It's designed to be
+// used as a base class. By default, it passes every signal function through to
+// the wrapped signal (a protected member named wrapped_). You customize your
+// wrapper by overriding what's different.
+template<
+    class Derived,
+    class Wrapped,
+    class Value = typename Wrapped::value_type,
+    class Capabilities = typename Wrapped::capabilities>
+struct signal_wrapper : signal<Derived, Value, Capabilities>
+{
+    signal_wrapper(Wrapped wrapped) : wrapped_(std::move(wrapped))
+    {
+    }
+    bool
+    has_value() const
+    {
+        return wrapped_.has_value();
+    }
+    typename Wrapped::value_type const&
+    read() const
+    {
+        return wrapped_.read();
+    }
+    typename Wrapped::value_type
+    movable_value() const
+    {
+        return wrapped_.movable_value();
+    }
+    id_interface const&
+    value_id() const
+    {
+        return wrapped_.value_id();
+    }
+    bool
+    ready_to_write() const
+    {
+        return wrapped_.ready_to_write();
+    }
+    void
+    write(typename Wrapped::value_type value) const
+    {
+        return wrapped_.write(std::move(value));
+    }
+    bool
+    invalidate(std::exception_ptr error) const
+    {
+        return wrapped_.invalidate(error);
+    }
+    bool
+    is_invalidated() const
+    {
+        return wrapped_.is_invalidated();
+    }
+
+ protected:
+    Wrapped wrapped_;
+};
+
+// casting_signal_wrapper is similar to signal_wrapper but it doesn't try to
+// implement any functions that depend on the value type of the signal. It's
+// intended for wrappers that plan to cast the wrapped signal value to a
+// different type. Using signal_wrapper in those cases would result in errors in
+// the default implementations of read(), write(), etc.
+template<
+    class Derived,
+    class Wrapped,
+    class Value,
+    class Capabilities = typename Wrapped::capabilities>
+struct casting_signal_wrapper : signal<Derived, Value, Capabilities>
+{
+    casting_signal_wrapper(Wrapped wrapped) : wrapped_(std::move(wrapped))
+    {
+    }
+    bool
+    has_value() const
+    {
+        return wrapped_.has_value();
+    }
+    id_interface const&
+    value_id() const
+    {
+        return wrapped_.value_id();
+    }
+    bool
+    ready_to_write() const
+    {
+        return wrapped_.ready_to_write();
+    }
+    bool
+    invalidate(std::exception_ptr error) const
+    {
+        return wrapped_.invalidate(error);
+    }
+    bool
+    is_invalidated() const
+    {
+        return wrapped_.is_invalidated();
+    }
+
+ protected:
+    Wrapped wrapped_;
+};
+
+// lazy_signal is used to create signals that lazily generate their values.
+// It provides storage for the computed value and automatically implements
+// read() in terms of movable_value().
+template<class Derived, class Value, class Capabilities>
+struct lazy_signal : signal<Derived, Value, Capabilities>
+{
+    Value const&
+    read() const override
+    {
+        value_ = static_cast<Derived const&>(*this).movable_value();
+        return value_;
+    }
+
+ private:
+    mutable Value value_;
+};
+
+// lazy_signal_wrapper is the combination of signal_wrapper and lazy_signal.
+template<
+    class Derived,
+    class Wrapped,
+    class Value = typename Wrapped::value_type,
+    class Capabilities = typename Wrapped::capabilities>
+struct lazy_signal_wrapper
+    : signal_wrapper<Derived, Wrapped, Value, Capabilities>
+{
+    lazy_signal_wrapper(Wrapped wrapped)
+        : lazy_signal_wrapper::signal_wrapper(std::move(wrapped))
+    {
+    }
+    Value const&
+    read() const override
+    {
+        value_ = static_cast<Derived const&>(*this).movable_value();
+        return value_;
+    }
+
+ private:
+    mutable Value value_;
+};
 
 } // namespace alia
 

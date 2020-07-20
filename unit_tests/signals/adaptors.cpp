@@ -6,7 +6,9 @@
 #include <alia/signals/basic.hpp>
 #include <alia/signals/lambdas.hpp>
 #include <alia/signals/operators.hpp>
+#include <alia/signals/state.hpp>
 
+#include <move_testing.hpp>
 #include <testing.hpp>
 
 using namespace alia;
@@ -485,3 +487,30 @@ TEST_CASE("unwrap a duplex signal", "[signals][adaptors]")
 }
 
 #endif
+
+TEST_CASE("signal value movement", "[signals][adaptors]")
+{
+    // Test that copy counting work.
+    REQUIRE(copy_count == 0);
+    movable_object m = 2;
+    movable_object n = m;
+    REQUIRE(copy_count == 1);
+
+    // Test that updating a state value via an action would normally involve
+    // copying.
+    copy_count = 0;
+    state_storage<movable_object> state;
+    state.set(std::move(n));
+    auto state_signal = make_state_signal(state);
+    REQUIRE(copy_count == 0);
+    movable_object x(4);
+    perform_action(state_signal <<= direct(x));
+    REQUIRE(copy_count == 1);
+    REQUIRE(state.get().n == 4);
+
+    // Test that the use of move() eliminates the copies.
+    copy_count = 0;
+    perform_action(state_signal <<= move(direct(x)));
+    REQUIRE(copy_count == 0);
+    REQUIRE(state.get().n == 4);
+}

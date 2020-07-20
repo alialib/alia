@@ -54,17 +54,15 @@ struct deflickering_data
 };
 
 template<class Wrapped>
-struct deflickering_signal : signal<
-                                 deflickering_signal<Wrapped>,
-                                 typename Wrapped::value_type,
-                                 typename Wrapped::direction_tag>
+struct deflickering_signal
+    : signal_wrapper<deflickering_signal<Wrapped>, Wrapped>
 {
     deflickering_signal()
     {
     }
     deflickering_signal(
         Wrapped wrapped, captured_value<typename Wrapped::value_type>& captured)
-        : wrapped_(wrapped), captured_(captured)
+        : deflickering_signal::signal_wrapper(wrapped), captured_(captured)
     {
     }
     bool
@@ -82,29 +80,8 @@ struct deflickering_signal : signal<
     {
         return captured_.id.is_initialized() ? captured_.id.get() : null_id;
     }
-    bool
-    ready_to_write() const
-    {
-        return wrapped_.ready_to_write();
-    }
-    void
-    write(typename Wrapped::value_type const& value) const
-    {
-        wrapped_.write(value);
-    }
-    bool
-    invalidate(std::exception_ptr error) const
-    {
-        return wrapped_.invalidate(error);
-    }
-    bool
-    is_invalidated() const
-    {
-        return wrapped_.is_invalidated();
-    }
 
  private:
-    Wrapped wrapped_;
     captured_value<typename Wrapped::value_type>& captured_;
 };
 
