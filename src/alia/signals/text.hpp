@@ -155,9 +155,9 @@ struct duplex_text_signal : casting_signal_wrapper<
                                 duplex_text_signal<Wrapped>,
                                 Wrapped,
                                 std::string,
-                                typename signal_direction_intersection<
+                                typename signal_capabilities_intersection<
                                     copyable_duplex_signal,
-                                    typename Wrapped::direction_tag>::type>
+                                    typename Wrapped::capabilities>::type>
 {
     duplex_text_signal(
         Wrapped wrapped, duplex_text_data<typename Wrapped::value_type>* data)

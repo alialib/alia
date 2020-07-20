@@ -116,7 +116,7 @@ template<class ListSignal, class Item>
 struct list_item_signal : signal<
                               list_item_signal<ListSignal, Item>,
                               Item,
-                              typename ListSignal::direction_tag>
+                              typename ListSignal::capabilities>
 {
     list_item_signal(ListSignal const& list_signal, size_t index, Item* item)
         : list_signal_(list_signal), index_(index), item_(item)

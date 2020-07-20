@@ -6,11 +6,11 @@
 
 using namespace alia;
 
-TEST_CASE("signal_direction_is_compatible", "[signals][core]")
+TEST_CASE("signal_capabilities_compatible", "[signals][core]")
 {
 #define TEST_COMPATIBILITY(Expected, Actual, result)                           \
     REQUIRE(                                                                   \
-        (signal_direction_is_compatible<Expected, Actual>::value) == (result))
+        (signal_capabilities_compatible<Expected, Actual>::value) == (result))
 
     TEST_COMPATIBILITY(read_only_signal, read_only_signal, true);
     TEST_COMPATIBILITY(read_only_signal, write_only_signal, false);
@@ -23,11 +23,12 @@ TEST_CASE("signal_direction_is_compatible", "[signals][core]")
     TEST_COMPATIBILITY(readable_duplex_signal, readable_duplex_signal, true);
 }
 
-TEST_CASE("signal_direction_intersection", "[signals][core]")
+TEST_CASE("signal_capabilities_intersection", "[signals][core]")
 {
 #define TEST_INTERSECTION(A, B, Result)                                        \
-    REQUIRE((std::is_same<signal_direction_intersection<A, B>::type, Result>:: \
-                 value))
+    REQUIRE(                                                                   \
+        (std::is_same<signal_capabilities_intersection<A, B>::type, Result>::  \
+             value))
 
     TEST_INTERSECTION(read_only_signal, read_only_signal, read_only_signal);
     TEST_INTERSECTION(
@@ -43,10 +44,11 @@ TEST_CASE("signal_direction_intersection", "[signals][core]")
         readable_duplex_signal, readable_duplex_signal, readable_duplex_signal);
 }
 
-TEST_CASE("signal_direction_union", "[signals][core]")
+TEST_CASE("signal_capabilities_union", "[signals][core]")
 {
 #define TEST_UNION(A, B, Result)                                               \
-    REQUIRE((std::is_same<signal_direction_union<A, B>::type, Result>::value))
+    REQUIRE(                                                                   \
+        (std::is_same<signal_capabilities_union<A, B>::type, Result>::value))
 
     TEST_UNION(read_only_signal, read_only_signal, read_only_signal);
     TEST_UNION(read_only_signal, write_only_signal, readable_duplex_signal);
