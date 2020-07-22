@@ -45,6 +45,56 @@ get_alia_id(Item const&)
     return null_id;
 }
 
+// invoke_map_iteration_body selects the appropriate way to invoke the iteration
+// body function provided to for_each (for map-like containers).
+template<
+    class IterationBody,
+    class Context,
+    class NamedBlockBegin,
+    class Key,
+    class Value,
+    std::enable_if_t<
+        is_invocable<
+            IterationBody&&,
+            Context,
+            naming_context&,
+            Key&&,
+            Value&&>::value,
+        int> = 0>
+void
+invoke_map_iteration_body(
+    IterationBody&& body,
+    Context ctx,
+    naming_context& nc,
+    NamedBlockBegin&&,
+    Key&& key,
+    Value&& value)
+{
+    body(ctx, nc, key, value);
+}
+template<
+    class IterationBody,
+    class Context,
+    class NamedBlockBegin,
+    class Key,
+    class Value,
+    std::enable_if_t<
+        is_invocable<IterationBody&&, Context, Key&&, Value&&>::value,
+        int> = 0>
+void
+invoke_map_iteration_body(
+    IterationBody&& body,
+    Context ctx,
+    naming_context&,
+    NamedBlockBegin&& nb_begin,
+    Key&& key,
+    Value&& value)
+{
+    named_block nb;
+    nb_begin(nb);
+    body(ctx, key, value);
+}
+
 // for_each for map-like containers
 template<
     class Context,
@@ -62,22 +112,106 @@ for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
         auto const& container = read_signal(container_signal);
         for (auto const& item : container)
         {
-            named_block nb;
-            auto iteration_id = get_alia_id(item.first);
-            if (iteration_id != null_id)
-            {
-                nb.begin(nc, iteration_id);
-            }
-            else
-            {
-                nb.begin(nc, make_id(item.first));
-            }
             auto key = direct(item.first);
             auto value = container_signal[key];
-            fn(ctx, key, value);
+            invoke_map_iteration_body(
+                std::forward<Fn>(fn),
+                ctx,
+                nc,
+                [&](named_block& nb) { nb.begin(nc, make_id(item.first)); },
+                key,
+                value);
         }
     }
     ALIA_END
+}
+
+// invoke_sequence_iteration_body selects the appropriate way to invoke the
+// iteration body function provided to for_each (for sequence containers).
+template<
+    class IterationBody,
+    class Context,
+    class NamedBlockBegin,
+    class Item,
+    std::enable_if_t<
+        is_invocable<
+            IterationBody&&,
+            Context,
+            naming_context&,
+            size_t,
+            Item&&>::value,
+        int> = 0>
+void
+invoke_sequence_iteration_body(
+    IterationBody&& body,
+    Context ctx,
+    naming_context& nc,
+    NamedBlockBegin&&,
+    size_t index,
+    Item&& item)
+{
+    body(ctx, nc, index, item);
+}
+template<
+    class IterationBody,
+    class Context,
+    class NamedBlockBegin,
+    class Item,
+    std::enable_if_t<
+        is_invocable<IterationBody&&, Context, size_t, Item&&>::value,
+        int> = 0>
+void
+invoke_sequence_iteration_body(
+    IterationBody&& body,
+    Context ctx,
+    naming_context&,
+    NamedBlockBegin&& nb_begin,
+    size_t index,
+    Item&& item)
+{
+    named_block nb;
+    nb_begin(nb);
+    body(ctx, index, item);
+}
+template<
+    class IterationBody,
+    class Context,
+    class NamedBlockBegin,
+    class Item,
+    std::enable_if_t<
+        is_invocable<IterationBody&&, Context, naming_context&, Item&&>::value,
+        int> = 0>
+void
+invoke_sequence_iteration_body(
+    IterationBody&& body,
+    Context ctx,
+    naming_context& nc,
+    NamedBlockBegin&&,
+    size_t,
+    Item&& item)
+{
+    body(ctx, nc, item);
+}
+template<
+    class IterationBody,
+    class Context,
+    class NamedBlockBegin,
+    class Item,
+    std::enable_if_t<
+        is_invocable<IterationBody&&, Context, Item&&>::value,
+        int> = 0>
+void
+invoke_sequence_iteration_body(
+    IterationBody&& body,
+    Context ctx,
+    naming_context&,
+    NamedBlockBegin&& nb_begin,
+    size_t,
+    Item&& item)
+{
+    named_block nb;
+    nb_begin(nb);
+    body(ctx, item);
 }
 
 // for_each for vector-like containers
@@ -99,13 +233,19 @@ for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
         size_t const item_count = container.size();
         for (size_t index = 0; index != item_count; ++index)
         {
-            named_block nb;
-            auto iteration_id = get_alia_id(container[index]);
-            if (iteration_id != null_id)
-                nb.begin(nc, iteration_id);
-            else
-                nb.begin(nc, make_id(index));
-            fn(ctx, container_signal[value(index)]);
+            invoke_sequence_iteration_body(
+                std::forward<Fn>(fn),
+                ctx,
+                nc,
+                [&](named_block& nb) {
+                    auto iteration_id = get_alia_id(container[index]);
+                    if (iteration_id != null_id)
+                        nb.begin(nc, iteration_id);
+                    else
+                        nb.begin(nc, make_id(index));
+                },
+                index,
+                container_signal[value(index)]);
         }
     }
     ALIA_END
@@ -187,13 +327,19 @@ for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
         size_t index = 0;
         for (auto const& item : container)
         {
-            named_block nb;
-            auto iteration_id = get_alia_id(item);
-            if (iteration_id != null_id)
-                nb.begin(nc, iteration_id);
-            else
-                nb.begin(nc, make_id(&item));
-            fn(ctx, make_list_item_signal(container_signal, index, &item));
+            invoke_sequence_iteration_body(
+                std::forward<Fn>(fn),
+                ctx,
+                nc,
+                [&](named_block& nb) {
+                    auto iteration_id = get_alia_id(item);
+                    if (iteration_id != null_id)
+                        nb.begin(nc, iteration_id);
+                    else
+                        nb.begin(nc, make_id(&item));
+                },
+                index,
+                make_list_item_signal(container_signal, index, &item));
             ++index;
         }
     }

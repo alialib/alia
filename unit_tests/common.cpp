@@ -29,3 +29,19 @@ TEST_CASE("function_view", "[common]")
             [](bool x) { return x ? 3 : 0; }, [](int x) { return x * 2; })
         == 27);
 }
+
+TEST_CASE("is_invocable", "[common]")
+{
+    auto f = [](double, int) {};
+    static_assert(
+        alia::is_invocable<decltype(f), double, int>::value, "invocable");
+    static_assert(
+        !alia::is_invocable<decltype(f), double, std::string>::value,
+        "type mismatch");
+    static_assert(
+        !alia::is_invocable<decltype(f), std::string>::value,
+        "not enough arguments");
+    static_assert(
+        !alia::is_invocable<decltype(f), int, int, std::string>::value,
+        "too many arguments");
+}
