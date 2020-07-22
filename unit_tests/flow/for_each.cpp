@@ -88,6 +88,132 @@ TEST_CASE("string vector", "[flow][for_each]")
     REQUIRE(call_count == 5);
 }
 
+TEST_CASE("string vector with naming", "[flow][for_each]")
+{
+    alia::system sys;
+    initialize_system(sys, [](context) {});
+
+    int call_count = 0;
+    auto counting_identity = [&](string s) {
+        ++call_count;
+        return s;
+    };
+
+    std::vector<string> container{"foo", "bar", "baz"};
+
+    auto controller = [&](context ctx) {
+        for_each(
+            ctx,
+            direct(container),
+            [&](context ctx, naming_context& nc, readable<string> const& item) {
+                named_block nb(nc, make_id(read_signal(item)));
+                do_text(ctx, apply(ctx, counting_identity, simplify_id(item)));
+            });
+    };
+
+    // The first time the traversal is done, there is one initial call for each
+    // item.
+    check_traversal(sys, controller, "foo;bar;baz;");
+    REQUIRE(call_count == 3);
+
+    // For sanity, check that when we reinvoke the same traversal, no additional
+    // calls are made.
+    check_traversal(sys, controller, "foo;bar;baz;");
+    REQUIRE(call_count == 3);
+
+    std::reverse(container.begin(), container.end());
+
+    // Since we're doing our own custom naming, there should be no additional
+    // calls even after items move around.
+    check_traversal(sys, controller, "baz;bar;foo;");
+    REQUIRE(call_count == 3);
+}
+
+TEST_CASE("string vector with index", "[flow][for_each]")
+{
+    alia::system sys;
+    initialize_system(sys, [](context) {});
+
+    int call_count = 0;
+    auto counting_identity = [&](string s) {
+        ++call_count;
+        return s;
+    };
+
+    std::vector<string> container{"foo", "bar", "baz"};
+
+    auto controller = [&](context ctx) {
+        for_each(
+            ctx,
+            direct(container),
+            [&](context ctx, size_t index, readable<string> const& item) {
+                do_text(ctx, value(index));
+                do_text(ctx, apply(ctx, counting_identity, simplify_id(item)));
+            });
+    };
+
+    // The first time the traversal is done, there is one initial call for each
+    // item.
+    check_traversal(sys, controller, "0;foo;1;bar;2;baz;");
+    REQUIRE(call_count == 3);
+
+    // For sanity, check that when we reinvoke the same traversal, no additional
+    // calls are made.
+    check_traversal(sys, controller, "0;foo;1;bar;2;baz;");
+    REQUIRE(call_count == 3);
+
+    std::reverse(container.begin(), container.end());
+
+    // Since two items switched places, two additional calls were made.
+    check_traversal(sys, controller, "0;baz;1;bar;2;foo;");
+    REQUIRE(call_count == 5);
+}
+
+TEST_CASE("string vector with naming and index", "[flow][for_each]")
+{
+    alia::system sys;
+    initialize_system(sys, [](context) {});
+
+    int call_count = 0;
+    auto counting_identity = [&](string s) {
+        ++call_count;
+        return s;
+    };
+
+    std::vector<string> container{"foo", "bar", "baz"};
+
+    auto controller = [&](context ctx) {
+        for_each(
+            ctx,
+            direct(container),
+            [&](context ctx,
+                naming_context& nc,
+                size_t index,
+                readable<string> const& item) {
+                named_block nb(nc, make_id(read_signal(item)));
+                do_text(ctx, value(index));
+                do_text(ctx, apply(ctx, counting_identity, simplify_id(item)));
+            });
+    };
+
+    // The first time the traversal is done, there is one initial call for each
+    // item.
+    check_traversal(sys, controller, "0;foo;1;bar;2;baz;");
+    REQUIRE(call_count == 3);
+
+    // For sanity, check that when we reinvoke the same traversal, no additional
+    // calls are made.
+    check_traversal(sys, controller, "0;foo;1;bar;2;baz;");
+    REQUIRE(call_count == 3);
+
+    std::reverse(container.begin(), container.end());
+
+    // Since we're doing our own custom naming, there should be no additional
+    // calls even after items move around.
+    check_traversal(sys, controller, "0;baz;1;bar;2;foo;");
+    REQUIRE(call_count == 3);
+}
+
 TEST_CASE("item vector", "[flow][for_each]")
 {
     alia::system sys;
@@ -191,7 +317,11 @@ TEST_CASE("item map", "[flow][for_each]")
         for_each(
             ctx,
             direct(container),
-            [&](context ctx, readable<my_item> key, duplex<int> value) {
+            [&](context ctx,
+                naming_context& nc,
+                readable<my_item> key,
+                duplex<int> value) {
+                named_block nb(nc, make_id(read_signal(key)));
                 do_text(
                     ctx,
                     apply(
@@ -215,8 +345,8 @@ TEST_CASE("item map", "[flow][for_each]")
     my_item alpha{"alpha"};
     container[alpha] = 1;
 
-    // Since my_item defines get_alia_id, the graph data properly follows the
-    // items, so the only additional call is for the new item.
+    // Since we provided a custom ID, the graph data properly follows the items,
+    // so the only additional call is for the new item.
     check_traversal(sys, controller, "alpha;1;bar;0;baz;3;foo;2;");
     REQUIRE(call_count == 4);
 }
