@@ -4,6 +4,7 @@
 #include <cassert>
 #include <cstdint>
 #include <exception>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <ostream>
@@ -80,6 +81,15 @@ struct make_void
 };
 template<typename... Ts>
 using void_t = typename make_void<Ts...>::type;
+
+// implementation of C++17's is_invocable for C++14
+template<class F, class... Args>
+struct is_invocable
+    : std::is_constructible<
+          std::function<void(Args...)>,
+          std::reference_wrapper<typename std::remove_reference<F>::type>>
+{
+};
 
 // ALIA_LAMBDIFY(f) produces a lambda that calls f, which is essentially a
 // version of f that can be passed as an argument and still allows normal
