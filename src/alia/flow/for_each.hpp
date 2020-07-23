@@ -34,7 +34,10 @@ struct is_vector_like : std::false_type
 template<class Container>
 struct is_vector_like<
     Container,
-    void_t<decltype(std::declval<Container>()[size_t(0)])>> : std::true_type
+    void_t<
+        typename Container::value_type,
+        typename Container::size_type,
+        decltype(std::declval<Container>().at(size_t(0)))>> : std::true_type
 {
 };
 
@@ -101,7 +104,8 @@ template<
     class ContainerSignal,
     class Fn,
     std::enable_if_t<
-        is_map_like<typename ContainerSignal::value_type>::value,
+        is_signal_type<ContainerSignal>::value
+            && is_map_like<typename ContainerSignal::value_type>::value,
         int> = 0>
 void
 for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
@@ -115,7 +119,7 @@ for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
             auto key = direct(item.first);
             auto value = container_signal[key];
             invoke_map_iteration_body(
-                std::forward<Fn>(fn),
+                fn,
                 ctx,
                 nc,
                 [&](named_block& nb) { nb.begin(nc, make_id(item.first)); },
@@ -214,13 +218,14 @@ invoke_sequence_iteration_body(
     body(ctx, item);
 }
 
-// for_each for vector-like containers
+// for_each for signals carrying vector-like containers
 template<
     class Context,
     class ContainerSignal,
     class Fn,
     std::enable_if_t<
-        !is_map_like<typename ContainerSignal::value_type>::value
+        is_signal_type<ContainerSignal>::value
+            && !is_map_like<typename ContainerSignal::value_type>::value
             && is_vector_like<typename ContainerSignal::value_type>::value,
         int> = 0>
 void
@@ -234,7 +239,7 @@ for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
         for (size_t index = 0; index != item_count; ++index)
         {
             invoke_sequence_iteration_body(
-                std::forward<Fn>(fn),
+                fn,
                 ctx,
                 nc,
                 [&](named_block& nb) {
@@ -249,6 +254,84 @@ for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
         }
     }
     ALIA_END
+}
+
+// for_each for vector-like containers of signals
+template<
+    class Context,
+    class Container,
+    class Fn,
+    std::enable_if_t<
+        !is_signal_type<
+            std::remove_cv_t<std::remove_reference_t<Container>>>::value
+            && !is_map_like<
+                std::remove_cv_t<std::remove_reference_t<Container>>>::value
+            && is_vector_like<
+                std::remove_cv_t<std::remove_reference_t<Container>>>::value
+            && is_signal_type<typename std::remove_cv_t<
+                std::remove_reference_t<Container>>::value_type>::value,
+        int> = 0>
+void
+for_each(Context ctx, Container&& container, Fn&& fn)
+{
+    naming_context nc(ctx);
+    size_t index = 0;
+    for (auto&& item : container)
+    {
+        invoke_sequence_iteration_body(
+            fn,
+            ctx,
+            nc,
+            [&](named_block& nb) {
+                // We don't try to use get_alia_id() here because we want to
+                // support the use case where the UI is present even when the
+                // item isn't available, and we want to keep the block ID
+                // stable in that scenario.
+                nb.begin(nc, make_id(index));
+            },
+            index,
+            item);
+        ++index;
+    }
+}
+
+// for_each for vector-like containers of raw values
+template<
+    class Context,
+    class Container,
+    class Fn,
+    std::enable_if_t<
+        !is_signal_type<
+            std::remove_cv_t<std::remove_reference_t<Container>>>::value
+            && !is_map_like<
+                std::remove_cv_t<std::remove_reference_t<Container>>>::value
+            && is_vector_like<
+                std::remove_cv_t<std::remove_reference_t<Container>>>::value
+            && !is_signal_type<typename std::remove_cv_t<
+                std::remove_reference_t<Container>>::value_type>::value,
+        int> = 0>
+void
+for_each(Context ctx, Container&& container, Fn&& fn)
+{
+    naming_context nc(ctx);
+    size_t index = 0;
+    for (auto&& item : container)
+    {
+        invoke_sequence_iteration_body(
+            fn,
+            ctx,
+            nc,
+            [&](named_block& nb) {
+                auto iteration_id = get_alia_id(item);
+                if (iteration_id != null_id)
+                    nb.begin(nc, iteration_id);
+                else
+                    nb.begin(nc, make_id(index));
+            },
+            index,
+            item);
+        ++index;
+    }
 }
 
 // signal type for accessing items within a list
@@ -308,13 +391,14 @@ make_list_item_signal(ListSignal const& signal, size_t index, Item const* item)
         signal, index, const_cast<Item*>(item));
 }
 
-// for_each for list-like containers
+// for_each for list-like signal containers
 template<
     class Context,
     class ContainerSignal,
     class Fn,
     std::enable_if_t<
-        !is_map_like<typename ContainerSignal::value_type>::value
+        is_signal_type<ContainerSignal>::value
+            && !is_map_like<typename ContainerSignal::value_type>::value
             && !is_vector_like<typename ContainerSignal::value_type>::value,
         int> = 0>
 void
@@ -328,7 +412,7 @@ for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
         for (auto const& item : container)
         {
             invoke_sequence_iteration_body(
-                std::forward<Fn>(fn),
+                fn,
                 ctx,
                 nc,
                 [&](named_block& nb) {
@@ -344,6 +428,84 @@ for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
         }
     }
     ALIA_END
+}
+
+// for_each for list-like containers of signals
+template<
+    class Context,
+    class Container,
+    class Fn,
+    std::enable_if_t<
+        !is_signal_type<
+            std::remove_cv_t<std::remove_reference_t<Container>>>::value
+            && !is_map_like<
+                std::remove_cv_t<std::remove_reference_t<Container>>>::value
+            && !is_vector_like<
+                std::remove_cv_t<std::remove_reference_t<Container>>>::value
+            && is_signal_type<typename std::remove_cv_t<
+                std::remove_reference_t<Container>>::value_type>::value,
+        int> = 0>
+void
+for_each(Context ctx, Container&& container, Fn&& fn)
+{
+    naming_context nc(ctx);
+    size_t index = 0;
+    for (auto&& item : container)
+    {
+        invoke_sequence_iteration_body(
+            fn,
+            ctx,
+            nc,
+            [&](named_block& nb) {
+                // We don't try to use get_alia_id() here because we want to
+                // support the use case where the UI is present even when the
+                // item isn't available, and we want to keep the block ID stable
+                // in that scenario.
+                nb.begin(nc, make_id(&item));
+            },
+            index,
+            item);
+        ++index;
+    }
+}
+
+// for_each for list-like containers of raw values
+template<
+    class Context,
+    class Container,
+    class Fn,
+    std::enable_if_t<
+        !is_signal_type<
+            std::remove_cv_t<std::remove_reference_t<Container>>>::value
+            && !is_map_like<
+                std::remove_cv_t<std::remove_reference_t<Container>>>::value
+            && !is_vector_like<
+                std::remove_cv_t<std::remove_reference_t<Container>>>::value
+            && !is_signal_type<typename std::remove_cv_t<
+                std::remove_reference_t<Container>>::value_type>::value,
+        int> = 0>
+void
+for_each(Context ctx, Container&& container, Fn&& fn)
+{
+    naming_context nc(ctx);
+    size_t index = 0;
+    for (auto&& item : container)
+    {
+        invoke_sequence_iteration_body(
+            fn,
+            ctx,
+            nc,
+            [&](named_block& nb) {
+                auto iteration_id = get_alia_id(item);
+                if (iteration_id != null_id)
+                    nb.begin(nc, iteration_id);
+                else
+                    nb.begin(nc, make_id(&item));
+            },
+            index,
+            item);
+        ++index;
+    }
 }
 
 } // namespace alia
