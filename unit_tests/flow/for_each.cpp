@@ -88,6 +88,78 @@ TEST_CASE("string vector", "[flow][for_each]")
     REQUIRE(call_count == 5);
 }
 
+TEST_CASE("raw string vector", "[flow][for_each]")
+{
+    alia::system sys;
+    initialize_system(sys, [](context) {});
+
+    int call_count = 0;
+    auto counting_identity = [&](string s) {
+        ++call_count;
+        return s;
+    };
+
+    std::vector<string> container{"foo", "bar", "baz"};
+
+    auto controller = [&](context ctx) {
+        for_each(ctx, container, [&](context ctx, string& item) {
+            do_text(ctx, apply(ctx, counting_identity, direct(item)));
+        });
+    };
+
+    // The first time the traversal is done, there is one initial call for each
+    // item.
+    check_traversal(sys, controller, "foo;bar;baz;");
+    REQUIRE(call_count == 3);
+
+    // For sanity, check that when we reinvoke the same traversal, no additional
+    // calls are made.
+    check_traversal(sys, controller, "foo;bar;baz;");
+    REQUIRE(call_count == 3);
+
+    std::reverse(container.begin(), container.end());
+
+    // Since two items switched places, two additional calls were made.
+    check_traversal(sys, controller, "baz;bar;foo;");
+    REQUIRE(call_count == 5);
+}
+
+TEST_CASE("for_each over vector of string signals", "[flow][for_each]")
+{
+    alia::system sys;
+    initialize_system(sys, [](context) {});
+
+    int call_count = 0;
+    auto counting_identity = [&](string s) {
+        ++call_count;
+        return s;
+    };
+
+    std::vector<string_literal_signal> container{"foo", "bar", "baz"};
+
+    auto controller = [&](context ctx) {
+        for_each(ctx, container, [&](context ctx, auto item) {
+            do_text(ctx, apply(ctx, counting_identity, item));
+        });
+    };
+
+    // The first time the traversal is done, there is one initial call for each
+    // item.
+    check_traversal(sys, controller, "foo;bar;baz;");
+    REQUIRE(call_count == 3);
+
+    // For sanity, check that when we reinvoke the same traversal, no additional
+    // calls are made.
+    check_traversal(sys, controller, "foo;bar;baz;");
+    REQUIRE(call_count == 3);
+
+    std::reverse(container.begin(), container.end());
+
+    // Since two items switched places, two additional calls were made.
+    check_traversal(sys, controller, "baz;bar;foo;");
+    REQUIRE(call_count == 5);
+}
+
 TEST_CASE("string vector with naming", "[flow][for_each]")
 {
     alia::system sys;
@@ -464,9 +536,7 @@ TEST_CASE("item list", "[for_each][list]")
 
     auto controller = [&](context ctx) {
         for_each(
-            ctx,
-            direct(container),
-            [&](context ctx, readable<my_item> const& item) {
+            ctx, direct(container), [&](context ctx, readable<my_item> item) {
                 do_text(
                     ctx,
                     apply(
@@ -491,6 +561,92 @@ TEST_CASE("item list", "[for_each][list]")
     {
         refresh_system(sys);
     };
+
+    std::reverse(container.begin(), container.end());
+
+    // Since my_item defines get_alia_id(), the graph data properly follows
+    // the items around, so there are no additional calls.
+    check_traversal(sys, controller, "cherry;banana;apple;");
+    REQUIRE(call_count == 3);
+}
+
+TEST_CASE("for_each over list of item signals", "[for_each][list]")
+{
+    alia::system sys;
+    initialize_system(sys, [](context) {});
+
+    int call_count = 0;
+    auto counting_identity = [&](string s) {
+        ++call_count;
+        return s;
+    };
+
+    std::list<value_signal<my_item>> container{
+        value(my_item{"apple"}),
+        value(my_item{"banana"}),
+        value(my_item{"cherry"})};
+
+    auto controller = [&](context ctx) {
+        for_each(
+            ctx,
+            container,
+            [&](context ctx, naming_context& nc, readable<my_item> item) {
+                named_block nb(nc, make_id(read_signal(item).id));
+                do_text(
+                    ctx,
+                    apply(
+                        ctx,
+                        counting_identity,
+                        simplify_id(alia_field(item, id))));
+            });
+    };
+
+    // The first time the traversal is done, there is one initial call for each
+    // item.
+    check_traversal(sys, controller, "apple;banana;cherry;");
+    REQUIRE(call_count == 3);
+
+    // For sanity, check that when we reinvoke the same traversal, no additional
+    // calls are made.
+    check_traversal(sys, controller, "apple;banana;cherry;");
+    REQUIRE(call_count == 3);
+
+    std::reverse(container.begin(), container.end());
+
+    // Since we provided a custom naming scheme, the graph data properly
+    // follows the items around, so there are no additional calls.
+    check_traversal(sys, controller, "cherry;banana;apple;");
+    REQUIRE(call_count == 3);
+}
+
+TEST_CASE("for_each over a list of raw items", "[for_each][list]")
+{
+    alia::system sys;
+    initialize_system(sys, [](context) {});
+
+    int call_count = 0;
+    auto counting_identity = [&](string s) {
+        ++call_count;
+        return s;
+    };
+
+    std::list<my_item> container{{"apple"}, {"banana"}, {"cherry"}};
+
+    auto controller = [&](context ctx) {
+        for_each(ctx, container, [&](context ctx, my_item& item) {
+            do_text(ctx, apply(ctx, counting_identity, value(item.id)));
+        });
+    };
+
+    // The first time the traversal is done, there is one initial call for each
+    // item.
+    check_traversal(sys, controller, "apple;banana;cherry;");
+    REQUIRE(call_count == 3);
+
+    // For sanity, check that when we reinvoke the same traversal, no additional
+    // calls are made.
+    check_traversal(sys, controller, "apple;banana;cherry;");
+    REQUIRE(call_count == 3);
 
     std::reverse(container.begin(), container.end());
 
