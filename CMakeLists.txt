@@ -167,13 +167,14 @@ add_custom_target(
 # On Linux debug builds, the proper CMake test associated with the unit tests
 # includes test coverage reporting.
 if(IS_CLANG AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+    string(REPLACE clang llvm-profdata LLVM_PROFDATA $ENV{CC})
+    string(REPLACE clang llvm-cov LLVM_COV $ENV{CC})
     add_custom_target(
         unit_test_coverage
         COMMAND ${CMAKE_COMMAND} --build . --target unit_tests
-        COMMAND llvm-profdata-${CLANG_MAJOR_MINOR_VERSION} merge -sparse
-                unit-testing/default.profraw -o default.profdata
-        COMMAND llvm-cov-${CLANG_MAJOR_MINOR_VERSION} show
-                -instr-profile=default.profdata
+        COMMAND ${LLVM_PROFDATA} merge -sparse unit-testing/default.profraw
+                -o default.profdata
+        COMMAND ${LLVM_COV} show -instr-profile=default.profdata
                 ${PROJECT_BINARY_DIR}/unit_test_runner
                 >${PROJECT_SOURCE_DIR}/coverage.txt
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
