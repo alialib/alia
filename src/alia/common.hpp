@@ -99,6 +99,15 @@ struct is_invocable
 #define alia_lambdify(f) ALIA_LAMBDIFY(f)
 #endif
 
+// ALIA_AGGREGATOR(f) produces a lambda that assembles its arguments into an
+// aggregate expression (i.e., "{args...}") and passes that into f.
+// This is useful, for example, when you want to explicitly refer to the
+// aggregate constructor of a type as an invocable function.
+#define ALIA_AGGREGATOR(f) [](auto&&... args) { return f{args...}; }
+#ifndef ALIA_STRICT_MACROS
+#define alia_aggregator(f) ALIA_AGGREGATOR(f)
+#endif
+
 // function_view is the non-owning equivalent of std::function.
 template<class Signature>
 class function_view;
