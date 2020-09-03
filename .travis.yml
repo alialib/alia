@@ -11,6 +11,7 @@ jobs:
     install:
     - sudo apt-get update -qy
     - sudo apt-get install -y --upgrade lcov git curl clang-4.0 llvm-4.0
+    - sudo scripts/install-cmake.sh
     - scripts/set-up-travis.sh
     before_script:
     - export CC=`which clang-4.0`
@@ -23,6 +24,7 @@ jobs:
     install:
     - sudo apt-get update -qy
     - sudo apt-get install -y --upgrade lcov git curl clang-5.0 llvm-5.0
+    - sudo scripts/install-cmake.sh
     - scripts/set-up-travis.sh
     before_script:
     - export CC=`which clang-5.0`
@@ -37,6 +39,7 @@ jobs:
     install:
     - sudo apt-get update -qy
     - sudo apt-get install -y --upgrade g++-5 gcc-5
+    - sudo scripts/install-cmake.sh
     - scripts/set-up-travis.sh
     before_script:
     - export CC=`which gcc-5`
@@ -56,6 +59,7 @@ jobs:
   # GCC 7 testing job
   - env: CACHE_NAME=gcc-7
     install:
+    - sudo scripts/install-cmake.sh
     - scripts/set-up-travis.sh
     before_script:
     - export CC=`which gcc-7`
