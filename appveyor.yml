@@ -49,7 +49,6 @@ for:
         - platform: x64
           configuration: Release
     before_build:
-      - fips set config win64-vstudio-release
       - call %VCVARSALL% x64
       - set Qt5_DIR=%QT_ROOT_DIR%\%MSVCID%_64\lib\cmake\Qt5
     environment:
@@ -59,7 +58,6 @@ for:
         - platform: x64
           configuration: Debug
     before_build:
-      - fips set config win64-vstudio-debug
       - call %VCVARSALL% x64
       - set Qt5_DIR=%QT_ROOT_DIR%\%MSVCID%_64\lib\cmake\Qt5
     environment:
@@ -69,7 +67,6 @@ for:
         - platform: x86
           configuration: Release
     before_build:
-      - fips set config win32-vstudio-release
       - call %VCVARSALL% x86
       - set Qt5_DIR=%QT_ROOT_DIR%\%MSVCID%\lib\cmake\Qt5
     environment:
@@ -79,7 +76,6 @@ for:
         - platform: x86
           configuration: Debug
     before_build:
-      - fips set config win32-vstudio-debug
       - call %VCVARSALL% x86
       - set Qt5_DIR=%QT_ROOT_DIR%\%MSVCID%\lib\cmake\Qt5
     environment:
@@ -87,13 +83,16 @@ for:
 
 build_script:
   - set CTEST_OUTPUT_ON_FAILURE=1
-  - fips gen
-  - fips make ctest
-  # Test the Qt sandbox.
+  - mkdir build
+  - cd build
+  - cmake -DCMAKE_BUILD_TYPE=%CONFIGURATION% -G"NMake Makefiles" ..
+  - cmake --build . --target ctest
+  - cd ..
+  # Also test the Qt sandbox.
   - C:\Python36\python scripts\generate-distributables.py
   - move alia.hpp examples\qt
   - cd examples\qt
   - mkdir build
   - cd build
-  - cmake -G"NMake Makefiles" ..
+  - cmake -DCMAKE_BUILD_TYPE=%CONFIGURATION% -G"NMake Makefiles" ..
   - cmake --build .

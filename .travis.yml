@@ -10,7 +10,8 @@ jobs:
   - env: CACHE_NAME=clang-4
     install:
     - sudo apt-get update -qy
-    - sudo apt-get install -y --upgrade lcov cmake git curl clang-4.0 llvm-4.0
+    - sudo apt-get install -y --upgrade lcov git curl clang-4.0 llvm-4.0
+    - sudo scripts/install-cmake.sh
     - scripts/set-up-travis.sh
     before_script:
     - export CC=`which clang-4.0`
@@ -22,7 +23,8 @@ jobs:
   - env: CACHE_NAME=clang-5
     install:
     - sudo apt-get update -qy
-    - sudo apt-get install -y --upgrade lcov cmake git curl clang-5.0 llvm-5.0
+    - sudo apt-get install -y --upgrade lcov git curl clang-5.0 llvm-5.0
+    - sudo scripts/install-cmake.sh
     - scripts/set-up-travis.sh
     before_script:
     - export CC=`which clang-5.0`
@@ -36,7 +38,8 @@ jobs:
   - env: CACHE_NAME=gcc-5
     install:
     - sudo apt-get update -qy
-    - sudo apt-get install -y --upgrade g++-5 gcc-5 cmake
+    - sudo apt-get install -y --upgrade g++-5 gcc-5
+    - sudo scripts/install-cmake.sh
     - scripts/set-up-travis.sh
     before_script:
     - export CC=`which gcc-5`
@@ -56,8 +59,7 @@ jobs:
   # GCC 7 testing job
   - env: CACHE_NAME=gcc-7
     install:
-    - sudo apt-get update -qy
-    - sudo apt-get install -y --upgrade cmake
+    - sudo scripts/install-cmake.sh
     - scripts/set-up-travis.sh
     before_script:
     - export CC=`which gcc-7`
@@ -71,7 +73,7 @@ jobs:
   - env: CACHE_NAME=emscripten
     install:
     - sudo add-apt-repository universe
-    - sudo apt update
+    - sudo apt-get update -qy
     - sudo apt install graphviz
     services:
     - docker
