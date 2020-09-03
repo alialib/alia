@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.11)
+cmake_minimum_required (VERSION 3.14)
 project(asm-dom-demos)
 
 # Apply some emscripten optimizations flags if we're in release mode.
