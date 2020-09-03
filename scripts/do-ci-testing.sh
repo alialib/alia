@@ -13,9 +13,11 @@ python scripts/generate-single-header-tests.py
 mkdir debug-build
 cd debug-build
 cmake -DCMAKE_BUILD_TYPE=Debug -G"Unix Makefiles" ..
-cmake -build . --target test
+cmake --build . --target ctest
+cd ..
 
 mkdir release-build
 cd release-build
 cmake -DCMAKE_BUILD_TYPE=Release -G"Unix Makefiles" ..
-cmake -build . --target test
+cmake --build . --target ctest
+cd ..
