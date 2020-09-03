@@ -12,6 +12,21 @@ TEST_CASE("exception", "[common]")
     REQUIRE(e.what() == std::string("just a test\nin here"));
 }
 
+struct aggregatable_struct
+{
+    int a;
+    std::string b;
+};
+
+TEST_CASE("ALIA_AGGREGATOR", "[common]")
+{
+    std::function<aggregatable_struct(int, std::string)> f;
+    f = ALIA_AGGREGATOR(aggregatable_struct);
+    auto x = f(4, "foo");
+    REQUIRE(x.a == 4);
+    REQUIRE(x.b == "foo");
+}
+
 int
 invoke_function_views(function_view<int(bool)> a, function_view<int(int)> b)
 {
