@@ -3,8 +3,8 @@
 
 set -x -e
 
-sudo apt-get install apt-transport-https ca-certificates gnupg software-properties-common wget
-wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
-sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic-rc main'
-sudo apt-get update
-sudo apt-get install cmake
+rm -rf /usr/local/cmake-*
+
+curl -sSL https://cmake.org/files/v3.18/cmake-3.18.2-Linux-x86_64.sh -o install-cmake.sh
+chmod +x install-cmake.sh
+./install-cmake.sh --prefix=/usr/local --skip-license
