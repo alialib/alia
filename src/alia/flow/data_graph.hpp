@@ -139,15 +139,15 @@ struct naming_map;
 // data_graph.
 struct data_traversal
 {
-    data_graph* graph;
-    naming_map* active_map;
-    data_block* active_block;
-    named_block_ref_node* predicted_named_block;
-    named_block_ref_node* used_named_blocks;
-    named_block_ref_node** named_block_next_ptr;
-    data_node** next_data_ptr;
-    bool gc_enabled;
-    bool cache_clearing_enabled;
+    data_graph* graph = nullptr;
+    naming_map* active_map = nullptr;
+    data_block* active_block = nullptr;
+    named_block_ref_node* predicted_named_block = nullptr;
+    named_block_ref_node* used_named_blocks = nullptr;
+    named_block_ref_node** named_block_next_ptr = nullptr;
+    data_node** next_data_ptr = nullptr;
+    bool gc_enabled = false;
+    bool cache_clearing_enabled = false;
 };
 
 // The utilities here operate on data_traversals. However, the data_graph
