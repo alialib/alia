@@ -16,7 +16,7 @@ TEST_CASE("automatic ticks", "[timing][ticks]")
     do_traversal(sys, [&](context ctx) {
         last_ticks = get_raw_animation_tick_count(ctx);
     });
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::this_thread::sleep_for(std::chrono::milliseconds(2));
     do_traversal(sys, [&](context ctx) {
         REQUIRE(get_raw_animation_tick_count(ctx) != last_ticks);
     });
