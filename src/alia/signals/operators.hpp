@@ -322,8 +322,8 @@ operator&&(A const& a, B const& b)
 // conditional(b, t, f), where :b, :t and :f are all signals, yields :t
 // if :b's value is true and :f if :b's value is false.
 //
-// :t and :f must have the same value type, and :b's value type must be testable
-// in a boolean context.
+// :t and :f must have the same value type, and :b's value type must be
+// testable in a boolean context.
 //
 // Note that this is a normal function call, so, unlike an if statement or the
 // ternary operator, both :t and :f are fully evaluated. However, they are only
@@ -501,9 +501,9 @@ struct has_value_type<T, void_t<typename T::value_type>> : std::true_type
 {
 };
 
-// has_mapped_type<T>::value yields a compile-time boolean indicating whether or
-// not T has a mapped_type member (which is the case for standard associative
-// containers, or at least the ones that aren't sets).
+// has_mapped_type<T>::value yields a compile-time boolean indicating whether
+// or not T has a mapped_type member (which is the case for standard
+// associative containers, or at least the ones that aren't sets).
 template<class T, class = void_t<>>
 struct has_mapped_type : std::false_type
 {
@@ -514,8 +514,8 @@ struct has_mapped_type<T, void_t<typename T::mapped_type>> : std::true_type
 };
 
 // subscript_result_type<Container, Index>::type gives the expected type of the
-// value that results from invoking the subscript operator on a Container. (This
-// is necessary to deal with containers that return proxies.)
+// value that results from invoking the subscript operator on a Container.
+// (This is necessary to deal with containers that return proxies.)
 //
 // The logic is as follows:
 // 1 - If the container has a mapped_type field, use that.
@@ -557,8 +557,8 @@ struct subscript_result_type<
 };
 
 // has_at_indexer<Container, Index>::value yields a compile-time boolean
-// indicating whether or not Container has an 'at' member function that takes an
-// Index.
+// indicating whether or not Container has an 'at' member function that takes
+// an Index.
 template<class Container, class Index, class = void_t<>>
 struct has_at_indexer : std::false_type
 {
@@ -595,8 +595,8 @@ invoke_const_subscript(
 }
 
 // const_subscript_returns_reference<Container,Index>::value yields a
-// compile-time boolean indicating whether or not invoke_const_subscript returns
-// by reference (vs by value).
+// compile-time boolean indicating whether or not invoke_const_subscript
+// returns by reference (vs by value).
 template<class Container, class Index>
 struct const_subscript_returns_reference
     : std::is_reference<decltype(invoke_const_subscript(
@@ -723,8 +723,7 @@ make_subscript_signal(ContainerSignal container, IndexSignal index)
 
 template<class Derived, class Value, class Capabilities>
 template<class Index>
-auto
-signal_base<Derived, Value, Capabilities>::operator[](Index index) const
+auto signal_base<Derived, Value, Capabilities>::operator[](Index index) const
 {
     return make_subscript_signal(
         static_cast<Derived const&>(*this), signalize(std::move(index)));
