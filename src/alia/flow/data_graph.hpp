@@ -12,11 +12,11 @@
 // even if there is no specific external identifier for that node.
 //
 // More generally, if you replace "node" with "subexpression evaluation" in the
-// previous sentence, it can be used to associate data with particular points in
-// the evaluation of any function. This can be useful in situations where you
-// need to evaluate a particular function many times with slightly different
-// inputs and you want to reuse the work that was done in earlier evaluations
-// without a lot of manual bookkeeping.
+// previous sentence, it can be used to associate data with particular points
+// in the evaluation of any function. This can be useful in situations where
+// you need to evaluate a particular function many times with slightly
+// different inputs and you want to reuse the work that was done in earlier
+// evaluations without a lot of manual bookkeeping.
 //
 // To understand what's going on here, imagine the evaluation of a function on
 // a simple in-order, single-threaded processor. We can represent all possible
@@ -83,8 +83,8 @@ struct named_block_ref_node;
 
 // A data_block represents a block of execution. During a single traversal of
 // the data graph, either all nodes in the block are executed or all nodes are
-// bypassed, and, if executed, they are always executed in the same order. (It's
-// conceptually similar to a 'basic block' except that other nodes may be
+// bypassed, and, if executed, they are always executed in the same order.
+// (It's conceptually similar to a 'basic block' except that other nodes may be
 // executed in between nodes in a data_block.)
 struct data_block : data_node
 {
@@ -152,10 +152,10 @@ struct data_traversal
 
 // The utilities here operate on data_traversals. However, the data_graph
 // library is intended to be used in scenarios where the data_traversal object
-// is part of a larger context. Thus, any utilities here that are intended to be
-// used directly by the application developer are designed to accept a generic
-// context parameter. The only requirement on that paramater is that it defines
-// the function get_data_traversal(ctx), which returns a reference to a
+// is part of a larger context. Thus, any utilities here that are intended to
+// be used directly by the application developer are designed to accept a
+// generic context parameter. The only requirement on that paramater is that it
+// defines the function get_data_traversal(ctx), which returns a reference to a
 // data_traversal.
 
 // If using this library directly, the data_traversal itself can serve as the
@@ -229,10 +229,10 @@ struct scoped_data_block : noncopyable
 // inactive regions of the graph. However, it still may not always do what you
 // want. In those cases, you can specify the manual_delete flag. This will
 // prevent the library from collecting the block. It can be deleted manually by
-// calling delete_named_data(ctx, id). If that never happens, it will be deleted
-// when the data_graph that it belongs to is destroyed. (But this is likely to
-// still be a memory leak, since the data_graph might live on as long as the
-// application is running.)
+// calling delete_named_data(ctx, id). If that never happens, it will be
+// deleted when the data_graph that it belongs to is destroyed. (But this is
+// likely to still be a memory leak, since the data_graph might live on as long
+// as the application is running.)
 
 // The manual deletion flag is specified via its own structure to make it very
 // obvious at the call site.
@@ -366,10 +366,11 @@ delete_named_block(Context& ctx, id_interface const& id)
 // combined ID.
 // This is not as generally useful as naming_context, but it can be used to
 // identify the combinaion of a function and its argument.
-#define ALIA_BEGIN_LOCATION_SPECIFIC_NAMED_BLOCK(ctx, named_block, id)         \
-    {                                                                          \
-        static int _alia_dummy_static;                                         \
-        named_block.begin(ctx, combine_ids(make_id(&_alia_dummy_static), id)); \
+#define ALIA_BEGIN_LOCATION_SPECIFIC_NAMED_BLOCK(ctx, named_block, id)        \
+    {                                                                         \
+        static int _alia_dummy_static;                                        \
+        named_block.begin(                                                    \
+            ctx, combine_ids(make_id(&_alia_dummy_static), id));              \
     }
 
 // disable_gc(traversal) disables the garbage collector for a data traversal.

@@ -132,7 +132,8 @@ struct scoped_tree_node
     scoped_tree_node() : traversal_(nullptr)
     {
     }
-    scoped_tree_node(tree_traversal<Object>& traversal, tree_node<Object>& node)
+    scoped_tree_node(
+        tree_traversal<Object>& traversal, tree_node<Object>& node)
     {
         begin(traversal, node);
     }
@@ -275,8 +276,8 @@ struct scoped_tree_cacher
 
         if (content_traversal_required_)
         {
-            // If we're updating the contents, capture the content ID now (while
-            // it's still valid) so we can store it in end().
+            // If we're updating the contents, capture the content ID now
+            // (while it's still valid) so we can store it in end().
             content_id_.capture(content_id);
 
             // Also record the current value of the tree traversal's next_ptr.

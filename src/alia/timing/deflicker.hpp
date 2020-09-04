@@ -36,9 +36,9 @@ capture(captured_value<Value>& captured, Signal const& signal)
 // deflicker(ctx, x, delay) returns a deflickered version of the signal :x.
 //
 // Whenever :x has a value, the deflickered signal carries the same value.
-// Whenever :x loses its value, the deflickered signal retains the old value for
-// a period of time, given by :delay. (If a new value arrives on :x during this
-// period, it will pick that up instead.)
+// Whenever :x loses its value, the deflickered signal retains the old value
+// for a period of time, given by :delay. (If a new value arrives on :x during
+// this period, it will pick that up instead.)
 //
 // :delay is specified in milliseconds and can be either a raw value or a
 // signal. It defaults to 250 ms.
@@ -61,7 +61,8 @@ struct deflickering_signal
     {
     }
     deflickering_signal(
-        Wrapped wrapped, captured_value<typename Wrapped::value_type>& captured)
+        Wrapped wrapped,
+        captured_value<typename Wrapped::value_type>& captured)
         : deflickering_signal::signal_wrapper(wrapped), captured_(captured)
     {
     }
@@ -98,8 +99,8 @@ deflicker(
     raw_timer timer(ctx, data.timer);
     if (timer.is_triggered())
     {
-        // If the timer is triggered, it means we were holding a stale value and
-        // it's time to clear it out.
+        // If the timer is triggered, it means we were holding a stale value
+        // and it's time to clear it out.
         clear(data.captured);
         abort_traversal(ctx);
     }
@@ -128,8 +129,8 @@ deflicker(
                 }
                 else
                 {
-                    // If the delay isn't readable, we can't start the timer, so
-                    // just drop the value immediately.
+                    // If the delay isn't readable, we can't start the timer,
+                    // so just drop the value immediately.
                     clear(data.captured);
                 }
             }

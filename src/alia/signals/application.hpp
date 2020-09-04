@@ -105,8 +105,8 @@ lazy_lift(Function f)
 }
 
 // apply(ctx, f, args...), where :args are all signals, yields a signal to the
-// result of applying the function :f to the values of :args. Unlike lazy_apply,
-// this is eager and caches and the result.
+// result of applying the function :f to the values of :args. Unlike
+// lazy_apply, this is eager and caches and the result.
 
 enum class apply_status
 {
@@ -238,11 +238,11 @@ lift(Function f)
 }
 
 // alia_mem_fn(m) wraps a member function name in a lambda so that it can be
-// passed as a function object. (It's the equivalent of std::mem_fn, but there's
-// no need to provide the type name.)
-#define ALIA_MEM_FN(m)                                                         \
-    [](auto&& x, auto&&... args) {                                             \
-        return x.m(std::forward<decltype(args)>(args)...);                     \
+// passed as a function object. (It's the equivalent of std::mem_fn, but
+// there's no need to provide the type name.)
+#define ALIA_MEM_FN(m)                                                        \
+    [](auto&& x, auto&&... args) {                                            \
+        return x.m(std::forward<decltype(args)>(args)...);                    \
     }
 #ifndef ALIA_STRICT_MACROS
 #define alia_mem_fn(m) ALIA_MEM_FN(m)

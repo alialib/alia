@@ -428,8 +428,9 @@ mask_writes(Signal signal, WritabilityFlag writability_flag)
         std::move(signal), signalize(std::move(writability_flag)));
 }
 
-// disable_writes(s), where :s is a signal, yields a wrapper for :s where writes
-// are disabled. Like mask_signal, this doesn't change the capabilities of :s.
+// disable_writes(s), where :s is a signal, yields a wrapper for :s where
+// writes are disabled. Like mask_signal, this doesn't change the capabilities
+// of :s.
 template<class Signal>
 auto
 disable_writes(Signal s)

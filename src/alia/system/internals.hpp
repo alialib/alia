@@ -25,8 +25,8 @@ struct external_interface
     virtual millisecond_count
     get_tick_count() const = 0;
 
-    // alia calls this every frame when an animation is in progress that's using
-    // alia's internal animation timing system.
+    // alia calls this every frame when an animation is in progress that's
+    // using alia's internal animation timing system.
     //
     // If this system isn't already refreshing continuously, this requests that
     // it refresh again within a reasonable animation time frame.

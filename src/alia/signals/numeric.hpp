@@ -63,7 +63,8 @@ template<class N, class Factor>
 auto
 scale(N n, Factor scale_factor)
 {
-    return make_scaled_signal(std::move(n), signalize(std::move(scale_factor)));
+    return make_scaled_signal(
+        std::move(n), signalize(std::move(scale_factor)));
 }
 
 // offset(n, offset) presents an offset view of :n.

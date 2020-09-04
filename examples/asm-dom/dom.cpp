@@ -11,7 +11,8 @@ namespace dom {
 void
 callback_proxy(std::uintptr_t callback, emscripten::val event)
 {
-    (*reinterpret_cast<std::function<void(emscripten::val)>*>(callback))(event);
+    (*reinterpret_cast<std::function<void(emscripten::val)>*>(callback))(
+        event);
 };
 
 EMSCRIPTEN_BINDINGS(callback_proxy)
@@ -47,8 +48,8 @@ install_element_callback(
                     + " µs");
             };
             element.addEventListener(type, handler);
-            // Add the handler to asm-dom's event list so that it knows to clear
-            // it out before recycling this DOM node.
+            // Add the handler to asm-dom's event list so that it knows to
+            // clear it out before recycling this DOM node.
             if (!element.hasOwnProperty('asmDomEvents'))
                 element['asmDomEvents'] = {};
             element['asmDomEvents'][type] = handler;
@@ -115,7 +116,9 @@ do_element_attribute(
             },
             [&]() {
                 EM_ASM_(
-                    { Module.removeAttribute($0, Module['UTF8ToString']($1)); },
+                    {
+                        Module.removeAttribute($0, Module['UTF8ToString']($1));
+                    },
                     object.js_id,
                     name);
             });
@@ -124,7 +127,10 @@ do_element_attribute(
 
 void
 do_element_attribute(
-    context ctx, element_object& object, char const* name, readable<bool> value)
+    context ctx,
+    element_object& object,
+    char const* name,
+    readable<bool> value)
 {
     auto& stored_id = get_cached_data<captured_id>(ctx);
     on_refresh(ctx, [&](auto ctx) {

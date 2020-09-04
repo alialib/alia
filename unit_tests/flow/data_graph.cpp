@@ -80,7 +80,6 @@ TEST_CASE("mobile named blocks", "[flow][data_graph]")
                 naming_context nc(ctx);
                 ALIA_FOR(auto i : indices)
                 {
-                    ;
                     ALIA_IF(i < divider)
                     {
                         named_block nb(nc, make_id(i));
@@ -91,7 +90,6 @@ TEST_CASE("mobile named blocks", "[flow][data_graph]")
                 ALIA_END
                 alia_for(auto i : indices)
                 {
-                    ;
                     alia_if(i >= divider)
                     {
                         named_block nb(nc, make_id(i));
@@ -286,7 +284,8 @@ TEST_CASE("manual deletion", "[data_graph]")
                 for (auto i : indices)
                 {
                     // Odd indices will require manual deletion.
-                    named_block nb(nc, make_id(i), manual_delete((i & 1) != 0));
+                    named_block nb(
+                        nc, make_id(i), manual_delete((i & 1) != 0));
                     do_int(ctx, i);
                 }
                 do_int(ctx, 0);

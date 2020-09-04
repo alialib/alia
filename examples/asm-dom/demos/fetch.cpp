@@ -22,7 +22,8 @@ handle_fetch_result(emscripten_fetch_t* fetch, fetch_result result)
 {
     // Recover our callback from the Emscripten fetch object.
     auto* result_callback
-        = reinterpret_cast<std::function<void(fetch_result)>*>(fetch->userData);
+        = reinterpret_cast<std::function<void(fetch_result)>*>(
+            fetch->userData);
 
     // Report the result.
     (*result_callback)(result);

@@ -76,8 +76,8 @@ struct action_ref : action_interface<Args...>
     action_ref(action_interface<Args...> const& ref) : action_(&ref)
     {
     }
-    // Construct from another action_ref. - This is meant to prevent unnecessary
-    // layers of indirection.
+    // Construct from another action_ref. - This is meant to prevent
+    // unnecessary layers of indirection.
     action_ref(action_ref<Args...> const& other) : action_(other.action_)
     {
     }
@@ -186,7 +186,8 @@ template<
     class Action,
     class Signal,
     std::enable_if_t<
-        is_action_type<Action>::value && is_readable_signal_type<Signal>::value,
+        is_action_type<Action>::value
+            && is_readable_signal_type<Signal>::value,
         int> = 0>
 auto
 operator<<(Action action, Signal signal)

@@ -11,16 +11,16 @@
 
 namespace alia {
 
-#define ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(op)                                 \
-    template<                                                                  \
-        class A,                                                               \
-        class B,                                                               \
-        std::enable_if_t<                                                      \
-            is_signal_type<A>::value && is_signal_type<B>::value,              \
-            int> = 0>                                                          \
-    auto operator op(A const& a, B const& b)                                   \
-    {                                                                          \
-        return lazy_apply([](auto a, auto b) { return a op b; }, a, b);        \
+#define ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(op)                                \
+    template<                                                                 \
+        class A,                                                              \
+        class B,                                                              \
+        std::enable_if_t<                                                     \
+            is_signal_type<A>::value && is_signal_type<B>::value,             \
+            int> = 0>                                                         \
+    auto operator op(A const& a, B const& b)                                  \
+    {                                                                         \
+        return lazy_apply([](auto a, auto b) { return a op b; }, a, b);       \
     }
 
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(+)
@@ -42,27 +42,29 @@ ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(>=)
 
 #undef ALIA_DEFINE_BINARY_SIGNAL_OPERATOR
 
-#define ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(op)                         \
-    template<                                                                  \
-        class A,                                                               \
-        class B,                                                               \
-        std::enable_if_t<                                                      \
-            is_signal_type<A>::value && !is_signal_type<B>::value,             \
-            int> = 0>                                                          \
-    auto operator op(A const& a, B const& b)                                   \
-    {                                                                          \
-        return lazy_apply([](auto a, auto b) { return a op b; }, a, value(b)); \
-    }                                                                          \
-    template<                                                                  \
-        class A,                                                               \
-        class B,                                                               \
-        std::enable_if_t<                                                      \
-            !is_signal_type<A>::value && !is_action_type<A>::value             \
-                && is_signal_type<B>::value,                                   \
-            int> = 0>                                                          \
-    auto operator op(A const& a, B const& b)                                   \
-    {                                                                          \
-        return lazy_apply([](auto a, auto b) { return a op b; }, value(a), b); \
+#define ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(op)                        \
+    template<                                                                 \
+        class A,                                                              \
+        class B,                                                              \
+        std::enable_if_t<                                                     \
+            is_signal_type<A>::value && !is_signal_type<B>::value,            \
+            int> = 0>                                                         \
+    auto operator op(A const& a, B const& b)                                  \
+    {                                                                         \
+        return lazy_apply(                                                    \
+            [](auto a, auto b) { return a op b; }, a, value(b));              \
+    }                                                                         \
+    template<                                                                 \
+        class A,                                                              \
+        class B,                                                              \
+        std::enable_if_t<                                                     \
+            !is_signal_type<A>::value && !is_action_type<A>::value            \
+                && is_signal_type<B>::value,                                  \
+            int> = 0>                                                         \
+    auto operator op(A const& a, B const& b)                                  \
+    {                                                                         \
+        return lazy_apply(                                                    \
+            [](auto a, auto b) { return a op b; }, value(a), b);              \
     }
 
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(+)
@@ -82,11 +84,11 @@ ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(<=)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(>)
 ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(>=)
 
-#define ALIA_DEFINE_UNARY_SIGNAL_OPERATOR(op)                                  \
-    template<class A, std::enable_if_t<is_signal_type<A>::value, int> = 0>     \
-    auto operator op(A const& a)                                               \
-    {                                                                          \
-        return lazy_apply([](auto a) { return op a; }, a);                     \
+#define ALIA_DEFINE_UNARY_SIGNAL_OPERATOR(op)                                 \
+    template<class A, std::enable_if_t<is_signal_type<A>::value, int> = 0>    \
+    auto operator op(A const& a)                                              \
+    {                                                                         \
+        return lazy_apply([](auto a) { return op a; }, a);                    \
     }
 
 ALIA_DEFINE_UNARY_SIGNAL_OPERATOR(-)
@@ -97,17 +99,18 @@ ALIA_DEFINE_UNARY_SIGNAL_OPERATOR(!)
 // For most compound assignment operators (e.g., +=), a += b, where :a and
 // :b are signals, creates an action that sets :a equal to :a + :b.
 
-#define ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(assignment_form, normal_form) \
-    template<                                                                  \
-        class A,                                                               \
-        class B,                                                               \
-        std::enable_if_t<                                                      \
-            is_duplex_signal_type<A>::value                                    \
-                && is_readable_signal_type<B>::value,                          \
-            int> = 0>                                                          \
-    auto operator assignment_form(A const& a, B const& b)                      \
-    {                                                                          \
-        return a <<= (a normal_form b);                                        \
+#define ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(                             \
+    assignment_form, normal_form)                                             \
+    template<                                                                 \
+        class A,                                                              \
+        class B,                                                              \
+        std::enable_if_t<                                                     \
+            is_duplex_signal_type<A>::value                                   \
+                && is_readable_signal_type<B>::value,                         \
+            int> = 0>                                                         \
+    auto operator assignment_form(A const& a, B const& b)                     \
+    {                                                                         \
+        return a <<= (a normal_form b);                                       \
     }
 
 ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(+=, +)
@@ -121,17 +124,17 @@ ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(|=, |)
 
 #undef ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR
 
-#define ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(                      \
-    assignment_form, normal_form)                                              \
-    template<                                                                  \
-        class A,                                                               \
-        class B,                                                               \
-        std::enable_if_t<                                                      \
-            is_duplex_signal_type<A>::value && !is_signal_type<B>::value,      \
-            int> = 0>                                                          \
-    auto operator assignment_form(A const& a, B const& b)                      \
-    {                                                                          \
-        return a <<= (a normal_form value(b));                                 \
+#define ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(                     \
+    assignment_form, normal_form)                                             \
+    template<                                                                 \
+        class A,                                                              \
+        class B,                                                              \
+        std::enable_if_t<                                                     \
+            is_duplex_signal_type<A>::value && !is_signal_type<B>::value,     \
+            int> = 0>                                                         \
+    auto operator assignment_form(A const& a, B const& b)                     \
+    {                                                                         \
+        return a <<= (a normal_form value(b));                                \
     }
 
 ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(+=, +)
@@ -145,20 +148,20 @@ ALIA_DEFINE_LIBERAL_COMPOUND_ASSIGNMENT_OPERATOR(|=, |)
 
 // The increment and decrement operators work similarly.
 
-#define ALIA_DEFINE_BY_ONE_OPERATOR(assignment_form, normal_form)              \
-    template<                                                                  \
-        class A,                                                               \
-        std::enable_if_t<is_duplex_signal_type<A>::value, int> = 0>            \
-    auto operator assignment_form(A const& a)                                  \
-    {                                                                          \
-        return a <<= (a normal_form value(typename A::value_type(1)));         \
-    }                                                                          \
-    template<                                                                  \
-        class A,                                                               \
-        std::enable_if_t<is_duplex_signal_type<A>::value, int> = 0>            \
-    auto operator assignment_form(A const& a, int)                             \
-    {                                                                          \
-        return a <<= (a normal_form value(typename A::value_type(1)));         \
+#define ALIA_DEFINE_BY_ONE_OPERATOR(assignment_form, normal_form)             \
+    template<                                                                 \
+        class A,                                                              \
+        std::enable_if_t<is_duplex_signal_type<A>::value, int> = 0>           \
+    auto operator assignment_form(A const& a)                                 \
+    {                                                                         \
+        return a <<= (a normal_form value(typename A::value_type(1)));        \
+    }                                                                         \
+    template<                                                                 \
+        class A,                                                              \
+        std::enable_if_t<is_duplex_signal_type<A>::value, int> = 0>           \
+    auto operator assignment_form(A const& a, int)                            \
+    {                                                                         \
+        return a <<= (a normal_form value(typename A::value_type(1)));        \
     }
 
 ALIA_DEFINE_BY_ONE_OPERATOR(++, +)
@@ -479,7 +482,8 @@ std::enable_if_t<
     is_signal_type<StructureSignal>::value,
     field_signal<StructureSignal, Field>>
 operator->*(
-    StructureSignal const& structure, Field StructureSignal::value_type::*field)
+    StructureSignal const& structure,
+    Field StructureSignal::value_type::*field)
 {
     return field_signal<StructureSignal, Field>(structure, field);
 }
@@ -539,7 +543,8 @@ struct subscript_result_type<
     Container,
     Index,
     std::enable_if_t<
-        !has_mapped_type<Container>::value && has_value_type<Container>::value>>
+        !has_mapped_type<Container>::value
+        && has_value_type<Container>::value>>
 {
     typedef typename Container::value_type type;
 };
@@ -723,7 +728,8 @@ make_subscript_signal(ContainerSignal container, IndexSignal index)
 
 template<class Derived, class Value, class Capabilities>
 template<class Index>
-auto signal_base<Derived, Value, Capabilities>::operator[](Index index) const
+auto
+signal_base<Derived, Value, Capabilities>::operator[](Index index) const
 {
     return make_subscript_signal(
         static_cast<Derived const&>(*this), signalize(std::move(index)));

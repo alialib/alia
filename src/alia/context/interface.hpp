@@ -20,8 +20,8 @@ ALIA_DEFINE_TAGGED_TYPE(system_tag, system&)
 struct timing_subsystem;
 ALIA_DEFINE_TAGGED_TYPE(timing_tag, timing_subsystem&)
 
-// the structure we use to store context objects - It provides direct storage of
-// the commonly-used objects in the core of alia.
+// the structure we use to store context objects - It provides direct storage
+// of the commonly-used objects in the core of alia.
 
 struct context_storage
 {
@@ -225,23 +225,27 @@ struct optional_context
         return has_value();
     }
 
-    Context const operator*() const
+    Context const
+    operator*() const
     {
         assert(has_value());
         return ctx_;
     }
-    Context operator*()
+    Context
+    operator*()
     {
         assert(has_value());
         return ctx_;
     }
 
-    Context const* operator->() const
+    Context const*
+    operator->() const
     {
         assert(has_value());
         return &ctx_;
     }
-    Context* operator->()
+    Context*
+    operator->()
     {
         assert(has_value());
         return &ctx_;

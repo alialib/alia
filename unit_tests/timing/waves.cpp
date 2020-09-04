@@ -85,7 +85,8 @@ TEST_CASE("square_wave", "[timing][waves]")
     });
 
     // It should respond properly if we give it asymmetric durations...
-    square_wave_invoker = [&](context ctx) { return square_wave(ctx, 50, 10); };
+    square_wave_invoker
+        = [&](context ctx) { return square_wave(ctx, 50, 10); };
     external.tick_count = 140;
     process_timing_events();
     do_traversal(sys, [&](context ctx) {

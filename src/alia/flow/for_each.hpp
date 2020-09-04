@@ -48,8 +48,8 @@ get_alia_id(Item const&)
     return null_id;
 }
 
-// invoke_map_iteration_body selects the appropriate way to invoke the iteration
-// body function provided to for_each (for map-like containers).
+// invoke_map_iteration_body selects the appropriate way to invoke the
+// iteration body function provided to for_each (for map-like containers).
 template<
     class IterationBody,
     class Context,
@@ -459,8 +459,8 @@ for_each(Context ctx, Container&& container, Fn&& fn)
             [&](named_block& nb) {
                 // We don't try to use get_alia_id() here because we want to
                 // support the use case where the UI is present even when the
-                // item isn't available, and we want to keep the block ID stable
-                // in that scenario.
+                // item isn't available, and we want to keep the block ID
+                // stable in that scenario.
                 nb.begin(nc, make_id(&item));
             },
             index,

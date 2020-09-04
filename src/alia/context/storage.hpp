@@ -114,58 +114,58 @@ struct tagged_data_accessor
     }
 };
 
-#define ALIA_IMPLEMENT_STORAGE_OBJECT_ACCESSORS(Storage)                       \
-    template<class Tag>                                                        \
-    bool has() const                                                           \
-    {                                                                          \
-        return impl::tagged_data_accessor<Storage, Tag>::has(*this);           \
-    }                                                                          \
-                                                                               \
-    template<class Tag, class Data>                                            \
-    void add(Data&& data)                                                      \
-    {                                                                          \
-        impl::tagged_data_accessor<Storage, Tag>::add(                         \
-            *this, std::forward<Data&&>(data));                                \
-    }                                                                          \
-                                                                               \
-    template<class Tag>                                                        \
-    void remove()                                                              \
-    {                                                                          \
-        impl::tagged_data_accessor<Storage, Tag>::remove(*this);               \
-    }                                                                          \
-                                                                               \
-    template<class Tag>                                                        \
-    decltype(auto) get()                                                       \
-    {                                                                          \
-        return impl::tagged_data_accessor<Storage, Tag>::get(*this);           \
+#define ALIA_IMPLEMENT_STORAGE_OBJECT_ACCESSORS(Storage)                      \
+    template<class Tag>                                                       \
+    bool has() const                                                          \
+    {                                                                         \
+        return impl::tagged_data_accessor<Storage, Tag>::has(*this);          \
+    }                                                                         \
+                                                                              \
+    template<class Tag, class Data>                                           \
+    void add(Data&& data)                                                     \
+    {                                                                         \
+        impl::tagged_data_accessor<Storage, Tag>::add(                        \
+            *this, std::forward<Data&&>(data));                               \
+    }                                                                         \
+                                                                              \
+    template<class Tag>                                                       \
+    void remove()                                                             \
+    {                                                                         \
+        impl::tagged_data_accessor<Storage, Tag>::remove(*this);              \
+    }                                                                         \
+                                                                              \
+    template<class Tag>                                                       \
+    decltype(auto) get()                                                      \
+    {                                                                         \
+        return impl::tagged_data_accessor<Storage, Tag>::get(*this);          \
     }
 
-#define ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(Storage, Tag, name)                 \
-    namespace impl {                                                           \
-    template<>                                                                 \
-    struct tagged_data_accessor<Storage, Tag>                                  \
-    {                                                                          \
-        static bool                                                            \
-        has(Storage const& storage)                                            \
-        {                                                                      \
-            return storage.name != nullptr;                                    \
-        }                                                                      \
-        static void                                                            \
-        add(Storage& storage, Tag::data_type data)                             \
-        {                                                                      \
-            storage.name = &data;                                              \
-        }                                                                      \
-        static void                                                            \
-        remove(Storage& storage)                                               \
-        {                                                                      \
-            storage.name = nullptr;                                            \
-        }                                                                      \
-        static Tag::data_type                                                  \
-        get(Storage& storage)                                                  \
-        {                                                                      \
-            return *storage.name;                                              \
-        }                                                                      \
-    };                                                                         \
+#define ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(Storage, Tag, name)                \
+    namespace impl {                                                          \
+    template<>                                                                \
+    struct tagged_data_accessor<Storage, Tag>                                 \
+    {                                                                         \
+        static bool                                                           \
+        has(Storage const& storage)                                           \
+        {                                                                     \
+            return storage.name != nullptr;                                   \
+        }                                                                     \
+        static void                                                           \
+        add(Storage& storage, Tag::data_type data)                            \
+        {                                                                     \
+            storage.name = &data;                                             \
+        }                                                                     \
+        static void                                                           \
+        remove(Storage& storage)                                              \
+        {                                                                     \
+            storage.name = nullptr;                                           \
+        }                                                                     \
+        static Tag::data_type                                                 \
+        get(Storage& storage)                                                 \
+        {                                                                     \
+            return *storage.name;                                             \
+        }                                                                     \
+    };                                                                        \
     }
 
 } // namespace impl

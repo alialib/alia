@@ -134,13 +134,11 @@ TEST_CASE("alia_if/alia_else caching", "[flow][macros]")
             return [=](context ctx) {
                 ALIA_IF(condition)
                 {
-                    ; // This somehow stops ClangFormat from doing weird stuff
-                      // with this block.
                     ALIA_IF(value(true))
                     {
-                        // This is nested inside an additional level of data
-                        // blocks, so it triggers a different case in the cache
-                        // clearing code.
+                        // This is nested inside an additional level of
+                        // data blocks, so it triggers a different case
+                        // in the cache clearing code.
                         do_cached_int(ctx, 0);
                     }
                     ALIA_END
@@ -153,9 +151,9 @@ TEST_CASE("alia_if/alia_else caching", "[flow][macros]")
                 do_int(ctx, 2);
             };
         };
-        // Cached data isn't retained inside inactive parts of the traversal, so
-        // our cached ints will get destructed and recreated from one traversal
-        // to another.
+        // Cached data isn't retained inside inactive parts of the traversal,
+        // so our cached ints will get destructed and recreated from one
+        // traversal to another.
         do_traversal(graph, make_controller(value(false)));
         check_log(
             "initializing cached int: 1;"
@@ -203,7 +201,7 @@ TEST_CASE("alia_if/alia_else_if/alia_else", "[flow][macros]")
                 {
                     do_int(ctx, 2);
                 }
-                alia_end; // The ';' helps ClangFormat.
+                alia_end
 
                 do_int(ctx, 3);
             };

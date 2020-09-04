@@ -14,9 +14,9 @@ using namespace alia;
 
 // The following define a small framework for testing data traversal mechanics.
 // The idea is that we execute various traversals over test data graphs
-// (generally multiple times over each graph) and log various events (allocating
-// new nodes, destroying old ones, and visiting existing nodes). We can then
-// check that the log matches expectations.
+// (generally multiple times over each graph) and log various events
+// (allocating new nodes, destroying old ones, and visiting existing nodes). We
+// can then check that the log matches expectations.
 
 extern std::stringstream the_log;
 

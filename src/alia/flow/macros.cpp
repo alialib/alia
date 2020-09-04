@@ -25,8 +25,8 @@ loop_block::~loop_block()
 {
     // block_ stores the data block we were expecting to use for the next
     // iteration (and, indirectly, all subsequent iterations), but since the
-    // destructor is being invoked, there won't be a next iteration, which means
-    // we should clear out that block.
+    // destructor is being invoked, there won't be a next iteration, which
+    // means we should clear out that block.
     if (!std::uncaught_exception())
         clear_data_block(*block_);
 }

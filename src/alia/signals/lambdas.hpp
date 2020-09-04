@@ -122,8 +122,10 @@ template<class HasValue, class Read>
 auto
 lambda_reader(HasValue has_value, Read read)
 {
-    return lambda_reader_signal<std::decay_t<decltype(read())>, HasValue, Read>(
-        has_value, read);
+    return lambda_reader_signal<
+        std::decay_t<decltype(read())>,
+        HasValue,
+        Read>(has_value, read);
 }
 
 // lambda_reader(has_value, read, generate_id) creates a read-only signal
@@ -180,9 +182,9 @@ lambda_reader(HasValue has_value, Read read, GenerateId generate_id)
         GenerateId>(has_value, read, generate_id);
 }
 
-// lambda_duplex(has_value, read, ready_to_write, write) creates a duplex signal
-// whose value is read by calling :has_value and :read and written by calling
-// :ready_to_write and :write.
+// lambda_duplex(has_value, read, ready_to_write, write) creates a duplex
+// signal whose value is read by calling :has_value and :read and written by
+// calling :ready_to_write and :write.
 template<
     class Value,
     class HasValue,
@@ -196,7 +198,10 @@ struct lambda_duplex_signal
           signal_capabilities<signal_readable, signal_writable>>
 {
     lambda_duplex_signal(
-        HasValue has_value, Read read, ReadyToWrite ready_to_write, Write write)
+        HasValue has_value,
+        Read read,
+        ReadyToWrite ready_to_write,
+        Write write)
         : has_value_(has_value),
           read_(read),
           value_(decltype(read())()),
@@ -247,9 +252,9 @@ lambda_duplex(
 }
 
 // lambda_duplex(has_value, read, ready_to_write, write, generate_id) creates a
-// duplex signal whose value is read by calling :has_value and :read and written
-// by calling :ready_to_write and :write. Its ID is determined by calling
-// :generate_id.
+// duplex signal whose value is read by calling :has_value and :read and
+// written by calling :ready_to_write and :write. Its ID is determined by
+// calling :generate_id.
 template<
     class Value,
     class HasValue,
