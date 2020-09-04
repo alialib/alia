@@ -128,7 +128,11 @@ SpaceBeforeSquareBrackets: false
 Standard:        Latest
 StatementMacros:
   - ALIA_END
+  - ALIA_CASE
+  - ALIA_DEFAULT
   - alia_end
+  - alia_case
+  - alia_default
 TabWidth:        8
 UseCRLF:         false
 UseTab:          Never
