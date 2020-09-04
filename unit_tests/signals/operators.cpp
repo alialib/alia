@@ -300,8 +300,8 @@ TEST_CASE("subscript metafunctions", "[signals][operators]")
     REQUIRE((std::is_same<
              subscript_result_type<std::vector<bool>, int>::type,
              bool>::value));
-    REQUIRE(
-        (std::is_same<subscript_result_type<my_array, int>::type, int>::value));
+    REQUIRE((
+        std::is_same<subscript_result_type<my_array, int>::type, int>::value));
     REQUIRE(
         (std::is_same<subscript_result_type<my_const_array, int>::type, int>::
              value));

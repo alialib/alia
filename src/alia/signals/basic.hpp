@@ -10,7 +10,8 @@ namespace alia {
 
 // empty<Value>() gives a signal that never has a value.
 template<class Value>
-struct empty_signal : signal<empty_signal<Value>, Value, readable_duplex_signal>
+struct empty_signal
+    : signal<empty_signal<Value>, Value, readable_duplex_signal>
 {
     empty_signal()
     {

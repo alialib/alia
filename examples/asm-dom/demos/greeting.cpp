@@ -120,7 +120,10 @@ widget(dom::context ctx, std::string name)
     dom::text(
         ctx,
         alia::printf(
-            ctx, "Hi, I'm widget %s. I live at %p.", value(name), value(data)));
+            ctx,
+            "Hi, I'm widget %s. I live at %p.",
+            value(name),
+            value(data)));
 }
 
 void

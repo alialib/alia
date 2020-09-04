@@ -35,8 +35,9 @@ void
 issue_ready_events(
     timer_event_scheduler& scheduler,
     millisecond_count now,
-    function_view<void(
-        external_component_id component, millisecond_count time)> const& issue);
+    function_view<
+        void(external_component_id component, millisecond_count time)> const&
+        issue);
 
 // Are there any scheduled events?
 bool

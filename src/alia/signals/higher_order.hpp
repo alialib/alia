@@ -67,10 +67,11 @@ template<
 auto
 transform(Context ctx, Container const& container, Function&& f)
 {
-    typedef typename decltype(f(
-        ctx,
-        std::declval<readable<typename Container::value_type::value_type>>()))::
-        value_type mapped_value_type;
+    typedef typename decltype(
+        f(ctx,
+          std::declval<readable<
+              typename Container::value_type::value_type>>()))::value_type
+        mapped_value_type;
 
     mapped_sequence_data<mapped_value_type>* data;
     get_cached_data(ctx, &data);
@@ -192,8 +193,8 @@ transform(Context ctx, Container const& container, Function&& f)
 
         if (!data->input_id.matches(container.value_id()))
         {
-            // There's probably a less heavy-handed approach to this, but this
-            // works for now.
+            // There's probably a less heavy-handed approach to this, but
+            // this works for now.
             data->mapped_items.clear();
             data->item_ids.clear();
             data->item_ids.resize(container_size);

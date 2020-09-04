@@ -199,8 +199,8 @@ struct signal_wrapper : signal<Derived, Value, Capabilities>
 // casting_signal_wrapper is similar to signal_wrapper but it doesn't try to
 // implement any functions that depend on the value type of the signal. It's
 // intended for wrappers that plan to cast the wrapped signal value to a
-// different type. Using signal_wrapper in those cases would result in errors in
-// the default implementations of read(), write(), etc.
+// different type. Using signal_wrapper in those cases would result in errors
+// in the default implementations of read(), write(), etc.
 template<
     class Derived,
     class Wrapped,

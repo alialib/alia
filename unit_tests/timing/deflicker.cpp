@@ -71,7 +71,8 @@ TEST_CASE("deflicker", "[timing][deflicker]")
         REQUIRE(read_signal(d) == 2);
     });
 
-    // Our deflickered signal should maintain its value when :x loses its value.
+    // Our deflickered signal should maintain its value when :x loses its
+    // value.
     external.tick_count = 20;
     process_timing_events();
     x_valid = false;

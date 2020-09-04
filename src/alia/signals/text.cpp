@@ -38,14 +38,14 @@ float_from_string(T* value, std::string const& str)
         throw validation_error("This input expects a number.");
 }
 
-#define ALIA_FLOAT_CONVERSIONS(T)                                              \
-    void from_string(T* value, std::string const& str)                         \
-    {                                                                          \
-        float_from_string(value, str);                                         \
-    }                                                                          \
-    std::string to_string(T value)                                             \
-    {                                                                          \
-        return value_to_string(value);                                         \
+#define ALIA_FLOAT_CONVERSIONS(T)                                             \
+    void from_string(T* value, std::string const& str)                        \
+    {                                                                         \
+        float_from_string(value, str);                                        \
+    }                                                                         \
+    std::string to_string(T value)                                            \
+    {                                                                         \
+        return value_to_string(value);                                        \
     }
 
 ALIA_FLOAT_CONVERSIONS(float)
@@ -77,24 +77,24 @@ unsigned_integer_from_string(T* value, std::string const& str)
     *value = x;
 }
 
-#define ALIA_SIGNED_INTEGER_CONVERSIONS(T)                                     \
-    void from_string(T* value, std::string const& str)                         \
-    {                                                                          \
-        signed_integer_from_string(value, str);                                \
-    }                                                                          \
-    std::string to_string(T value)                                             \
-    {                                                                          \
-        return value_to_string(value);                                         \
+#define ALIA_SIGNED_INTEGER_CONVERSIONS(T)                                    \
+    void from_string(T* value, std::string const& str)                        \
+    {                                                                         \
+        signed_integer_from_string(value, str);                               \
+    }                                                                         \
+    std::string to_string(T value)                                            \
+    {                                                                         \
+        return value_to_string(value);                                        \
     }
 
-#define ALIA_UNSIGNED_INTEGER_CONVERSIONS(T)                                   \
-    void from_string(T* value, std::string const& str)                         \
-    {                                                                          \
-        unsigned_integer_from_string(value, str);                              \
-    }                                                                          \
-    std::string to_string(T value)                                             \
-    {                                                                          \
-        return value_to_string(value);                                         \
+#define ALIA_UNSIGNED_INTEGER_CONVERSIONS(T)                                  \
+    void from_string(T* value, std::string const& str)                        \
+    {                                                                         \
+        unsigned_integer_from_string(value, str);                             \
+    }                                                                         \
+    std::string to_string(T value)                                            \
+    {                                                                         \
+        return value_to_string(value);                                        \
     }
 
 ALIA_SIGNED_INTEGER_CONVERSIONS(short int)

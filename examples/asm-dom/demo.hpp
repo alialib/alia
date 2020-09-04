@@ -7,7 +7,8 @@
 
 using namespace alia;
 
-extern std::map<std::string, std::function<void(std::string dom_id)>> the_demos;
+extern std::map<std::string, std::function<void(std::string dom_id)>>
+    the_demos;
 
 struct demo : noncopyable
 {

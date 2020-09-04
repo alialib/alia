@@ -66,8 +66,8 @@ printf(context ctx, Format format, Args... args)
 // the text-based widgets and utilities provided here, that type must
 // implement these functions.
 
-#define ALIA_DECLARE_STRING_CONVERSIONS(T)                                     \
-    void from_string(T* value, std::string const& s);                          \
+#define ALIA_DECLARE_STRING_CONVERSIONS(T)                                    \
+    void from_string(T* value, std::string const& s);                         \
     std::string to_string(T value);
 
 // from_string(value, s) should parse the string s and store it in *value.

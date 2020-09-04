@@ -12,16 +12,17 @@ TEST_CASE("timer_event_scheduler", "[timing][scheduler]")
     b = &id_b;
 
     std::ostringstream log;
-    auto issuer = [&](external_component_id component, millisecond_count time) {
-        bool recognized = component.id == a || component.id == b;
-        REQUIRE(recognized);
-        REQUIRE(!component.identity);
-        if (component.id == a)
-            log << "a:";
-        else
-            log << "b:";
-        log << time << ";";
-    };
+    auto issuer
+        = [&](external_component_id component, millisecond_count time) {
+              bool recognized = component.id == a || component.id == b;
+              REQUIRE(recognized);
+              REQUIRE(!component.identity);
+              if (component.id == a)
+                  log << "a:";
+              else
+                  log << "b:";
+              log << time << ";";
+          };
 
     timer_event_scheduler scheduler;
     REQUIRE(!has_scheduled_events(scheduler));
@@ -54,8 +55,8 @@ TEST_CASE("timer_event_scheduler", "[timing][scheduler]")
     issue_ready_events(scheduler, 17, issuer);
     REQUIRE(log.str() == "a:17;");
     log.str(std::string());
-    // Try scheduling another event during the processing of the original events
-    // and make sure it's not processed immediately.
+    // Try scheduling another event during the processing of the original
+    // events and make sure it's not processed immediately.
     issue_ready_events(
         scheduler,
         30,
