@@ -8,12 +8,12 @@ namespace alia {
 static void
 invoke_controller(system& sys, event_traversal& events)
 {
-    bool is_refresh = (events.event_type == &typeid(refresh_event));
+    events.is_refresh = (events.event_type == &typeid(refresh_event));
 
     data_traversal data;
     scoped_data_traversal sdt(sys.data, data);
     // Only use refresh events to decide when data is no longer needed.
-    data.gc_enabled = data.cache_clearing_enabled = is_refresh;
+    data.gc_enabled = data.cache_clearing_enabled = events.is_refresh;
 
     timing_subsystem timing;
     timing.tick_counter = sys.external->get_tick_count();

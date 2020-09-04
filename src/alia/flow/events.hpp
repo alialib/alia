@@ -40,6 +40,7 @@ struct event_traversal
     component_container_ptr* active_container = nullptr;
     bool targeted;
     event_routing_path* path_to_target = nullptr;
+    bool is_refresh;
     std::type_info const* event_type;
     void* event;
     bool aborted = false;
@@ -216,8 +217,7 @@ struct refresh_event
 inline bool
 is_refresh_event(dataless_context ctx)
 {
-    refresh_event* e;
-    return detect_event(ctx, &e);
+    return get_event_traversal(ctx).is_refresh;
 }
 
 template<class Context, class Handler>
