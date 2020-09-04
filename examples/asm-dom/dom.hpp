@@ -50,7 +50,8 @@ struct element_object
     {
         assert(this->js_id == 0);
         this->js_id = EM_ASM_INT(
-            { return Module.createElement(Module['UTF8ToString']($0)); }, type);
+            { return Module.createElement(Module['UTF8ToString']($0)); },
+            type);
     }
 
     void
