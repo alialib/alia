@@ -104,8 +104,8 @@ struct signal_capabilities_compatible
 {
 };
 
-// signal_rw_capability_intersection<A,B>::type yields the type representing the
-// intersection of the read/write capabilities :A and :B.
+// signal_rw_capability_intersection<A,B>::type yields the type representing
+// the intersection of the read/write capabilities :A and :B.
 template<class A, class B>
 struct signal_rw_capability_intersection
     : std::conditional<A::level <= B::level, A, B>
@@ -131,7 +131,8 @@ struct signal_capabilities_intersection
 // signal_rw_capability_union<A,B>::type yields the type representing the
 // union of the read/write capabilities :A and :B.
 template<class A, class B>
-struct signal_rw_capability_union : std::conditional<A::level <= B::level, B, A>
+struct signal_rw_capability_union
+    : std::conditional<A::level <= B::level, B, A>
 {
 };
 
@@ -150,8 +151,8 @@ struct signal_capabilities_union
         type;
 };
 
-// untyped_signal_base defines functionality common to all signals, irrespective
-// of the type of the value that the signal carries.
+// untyped_signal_base defines functionality common to all signals,
+// irrespective of the type of the value that the signal carries.
 struct untyped_signal_base
 {
     // Does the signal currently have a value?
@@ -231,40 +232,40 @@ struct signal : signal_base<Derived, Value, Capabilities>
 {
 };
 
-// The following implement the various unused functions that are required by the
-// signal_interface but won't be used because of the capabilities of the
+// The following implement the various unused functions that are required by
+// the signal_interface but won't be used because of the capabilities of the
 // signal...
 
 // LCOV_EXCL_START
 
-#define ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)                       \
-    bool ready_to_write() const override                                       \
-    {                                                                          \
-        return false;                                                          \
-    }                                                                          \
-    void write(Value) const override                                           \
-    {                                                                          \
+#define ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)                      \
+    bool ready_to_write() const override                                      \
+    {                                                                         \
+        return false;                                                         \
+    }                                                                         \
+    void write(Value) const override                                          \
+    {                                                                         \
     }
 
-#define ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)                        \
-    Value movable_value() const override                                       \
-    {                                                                          \
-        throw nullptr;                                                         \
+#define ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)                       \
+    Value movable_value() const override                                      \
+    {                                                                         \
+        throw nullptr;                                                        \
     }
 
-#define ALIA_DEFINE_UNUSED_SIGNAL_READ_INTERFACE(Value)                        \
-    ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)                            \
-    id_interface const& value_id() const override                              \
-    {                                                                          \
-        return null_id;                                                        \
-    }                                                                          \
-    bool has_value() const override                                            \
-    {                                                                          \
-        return false;                                                          \
-    }                                                                          \
-    Value const& read() const override                                         \
-    {                                                                          \
-        throw nullptr;                                                         \
+#define ALIA_DEFINE_UNUSED_SIGNAL_READ_INTERFACE(Value)                       \
+    ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)                           \
+    id_interface const& value_id() const override                             \
+    {                                                                         \
+        return null_id;                                                       \
+    }                                                                         \
+    bool has_value() const override                                           \
+    {                                                                         \
+        return false;                                                         \
+    }                                                                         \
+    Value const& read() const override                                        \
+    {                                                                         \
+        throw nullptr;                                                        \
     }
 
 template<class Derived, class Value>
@@ -325,7 +326,8 @@ struct signal<
 
 // signal_ref is a reference to a signal that acts as a signal itself.
 template<class Value, class Capabilities>
-struct signal_ref : signal<signal_ref<Value, Capabilities>, Value, Capabilities>
+struct signal_ref
+    : signal<signal_ref<Value, Capabilities>, Value, Capabilities>
 {
     // Construct from any signal with compatible capabilities.
     template<class OtherSignal, class OtherCapabilities>
@@ -338,8 +340,8 @@ struct signal_ref : signal<signal_ref<Value, Capabilities>, Value, Capabilities>
         : ref_(&signal)
     {
     }
-    // Construct from another signal_ref. - This is meant to prevent unnecessary
-    // layers of indirection.
+    // Construct from another signal_ref. - This is meant to prevent
+    // unnecessary layers of indirection.
     signal_ref(signal_ref<Value, Capabilities> const& other) : ref_(other.ref_)
     {
     }

@@ -100,8 +100,8 @@ smooth_raw(
                 transition.curve,
                 1. - double(ticks_left) / smoother.duration,
                 1. / smoother.duration);
-            current_value
-                = interpolate(smoother.old_value, smoother.new_value, fraction);
+            current_value = interpolate(
+                smoother.old_value, smoother.new_value, fraction);
         }
         else
             smoother.in_transition = false;
@@ -113,7 +113,8 @@ smooth_raw(
             // amount of time it took to get here.
             smoother.in_transition && x == smoother.old_value
                 ? (transition.duration
-                   - get_raw_animation_ticks_left(ctx, smoother.transition_end))
+                   - get_raw_animation_ticks_left(
+                       ctx, smoother.transition_end))
                 : transition.duration;
         smoother.transition_end
             = get_raw_animation_tick_count(ctx) + smoother.duration;

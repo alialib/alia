@@ -8,9 +8,10 @@ using namespace alia;
 
 TEST_CASE("signal_capabilities_compatible", "[signals][core]")
 {
-#define TEST_COMPATIBILITY(Expected, Actual, result)                           \
-    REQUIRE(                                                                   \
-        (signal_capabilities_compatible<Expected, Actual>::value) == (result))
+#define TEST_COMPATIBILITY(Expected, Actual, result)                          \
+    REQUIRE(                                                                  \
+        (signal_capabilities_compatible<Expected, Actual>::value)             \
+        == (result))
 
     TEST_COMPATIBILITY(read_only_signal, read_only_signal, true);
     TEST_COMPATIBILITY(read_only_signal, write_only_signal, false);
@@ -20,7 +21,8 @@ TEST_CASE("signal_capabilities_compatible", "[signals][core]")
     TEST_COMPATIBILITY(copyable_read_only_signal, read_only_signal, false);
     TEST_COMPATIBILITY(
         copyable_read_only_signal, movable_read_only_signal, true);
-    TEST_COMPATIBILITY(movable_read_only_signal, copyable_duplex_signal, false);
+    TEST_COMPATIBILITY(
+        movable_read_only_signal, copyable_duplex_signal, false);
     TEST_COMPATIBILITY(write_only_signal, read_only_signal, false);
     TEST_COMPATIBILITY(write_only_signal, write_only_signal, true);
     TEST_COMPATIBILITY(write_only_signal, readable_duplex_signal, true);
@@ -39,9 +41,9 @@ TEST_CASE("signal_capabilities_compatible", "[signals][core]")
 
 TEST_CASE("signal_capabilities_intersection", "[signals][core]")
 {
-#define TEST_INTERSECTION(A, B, Result)                                        \
-    REQUIRE(                                                                   \
-        (std::is_same<signal_capabilities_intersection<A, B>::type, Result>::  \
+#define TEST_INTERSECTION(A, B, Result)                                       \
+    REQUIRE(                                                                  \
+        (std::is_same<signal_capabilities_intersection<A, B>::type, Result>:: \
              value))
 
     TEST_INTERSECTION(read_only_signal, read_only_signal, read_only_signal);
@@ -63,7 +65,9 @@ TEST_CASE("signal_capabilities_intersection", "[signals][core]")
     TEST_INTERSECTION(
         readable_duplex_signal, write_only_signal, write_only_signal);
     TEST_INTERSECTION(
-        readable_duplex_signal, readable_duplex_signal, readable_duplex_signal);
+        readable_duplex_signal,
+        readable_duplex_signal,
+        readable_duplex_signal);
     TEST_INTERSECTION(
         copyable_duplex_signal, movable_duplex_signal, copyable_duplex_signal);
     TEST_INTERSECTION(
@@ -74,13 +78,15 @@ TEST_CASE("signal_capabilities_intersection", "[signals][core]")
 
 TEST_CASE("signal_capabilities_union", "[signals][core]")
 {
-#define TEST_UNION(A, B, Result)                                               \
-    REQUIRE(                                                                   \
+#define TEST_UNION(A, B, Result)                                              \
+    REQUIRE(                                                                  \
         (std::is_same<signal_capabilities_union<A, B>::type, Result>::value))
 
     TEST_UNION(read_only_signal, read_only_signal, read_only_signal);
     TEST_UNION(
-        read_only_signal, copyable_read_only_signal, copyable_read_only_signal);
+        read_only_signal,
+        copyable_read_only_signal,
+        copyable_read_only_signal);
     TEST_UNION(
         read_only_signal, movable_read_only_signal, movable_read_only_signal);
     TEST_UNION(
@@ -99,7 +105,9 @@ TEST_CASE("signal_capabilities_union", "[signals][core]")
     TEST_UNION(
         readable_duplex_signal, write_only_signal, readable_duplex_signal);
     TEST_UNION(
-        readable_duplex_signal, readable_duplex_signal, readable_duplex_signal);
+        readable_duplex_signal,
+        readable_duplex_signal,
+        readable_duplex_signal);
     TEST_UNION(
         copyable_duplex_signal, movable_duplex_signal, movable_duplex_signal);
     TEST_UNION(

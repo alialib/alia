@@ -12,7 +12,8 @@ types_match(id_interface const& a, id_interface const& b)
 bool
 operator<(id_interface const& a, id_interface const& b)
 {
-    return typeid(a).before(typeid(b)) || (types_match(a, b) && a.less_than(b));
+    return typeid(a).before(typeid(b))
+           || (types_match(a, b) && a.less_than(b));
 }
 
 void

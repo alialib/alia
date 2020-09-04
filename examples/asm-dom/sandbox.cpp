@@ -27,8 +27,9 @@ init_sandbox(std::string dom_id)
     static alia::system the_system;
     static dom::system the_dom;
 
-    initialize(
-        the_dom, the_system, dom_id, [](dom::context ctx) { sandbox_ui(ctx); });
+    initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
+        sandbox_ui(ctx);
+    });
 }
 
 static demo the_sandbox_demo("sandbox", init_sandbox);

@@ -72,10 +72,10 @@ struct id_interface_pointer_less_than_test
     }
 };
 
-// Given an ID and some storage, clone the ID into the storage as efficiently as
-// possible. Specifically, if :storage already contains an ID of the same type,
-// perform a deep copy into the existing ID. Otherwise, delete the existing ID
-// (if any) and create a new clone to store there.
+// Given an ID and some storage, clone the ID into the storage as efficiently
+// as possible. Specifically, if :storage already contains an ID of the same
+// type, perform a deep copy into the existing ID. Otherwise, delete the
+// existing ID (if any) and create a new clone to store there.
 void
 clone_into(id_interface*& storage, id_interface const* id);
 // Same, but where the storage is a unique_ptr.
@@ -217,9 +217,9 @@ ref(id_interface const& id)
     return id_ref(id);
 }
 
-// simple_id<Value> takes a regular type (Value) and implements id_interface for
-// it. The type Value must be copyable and comparable for equality and ordering
-// (i.e., supply == and < operators).
+// simple_id<Value> takes a regular type (Value) and implements id_interface
+// for it. The type Value must be copyable and comparable for equality and
+// ordering (i.e., supply == and < operators).
 template<class Value>
 struct simple_id : id_interface
 {
@@ -372,7 +372,8 @@ struct id_pair : id_interface
     {
         id_pair const& other_id = static_cast<id_pair const&>(other);
         return id0_.less_than(other_id.id0_)
-               || (id0_.equals(other_id.id0_) && id1_.less_than(other_id.id1_));
+               || (id0_.equals(other_id.id0_)
+                   && id1_.less_than(other_id.id1_));
     }
 
     void

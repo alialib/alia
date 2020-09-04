@@ -29,7 +29,8 @@ issue_ready_events(
         // sorted relative to the current tick count (to handle wrapping),
         // and the list is generally not very long anyway.
         auto next_event = scheduler.requests.end();
-        for (auto i = scheduler.requests.begin(); i != scheduler.requests.end();
+        for (auto i = scheduler.requests.begin();
+             i != scheduler.requests.end();
              ++i)
         {
             if (i->frame_issued != scheduler.frame_counter

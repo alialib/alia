@@ -280,10 +280,11 @@ init_demo(std::string dom_id)
     static alia::system the_system;
     static dom::system the_dom;
 
-    static std::vector<my_record> the_records = {{"abc", "ABC", 2, 4},
-                                                 {"def", "DEF", 5, 1},
-                                                 {"ghi", "GHI", 1, 0},
-                                                 {"jkl", "JKL", -1, 3}};
+    static std::vector<my_record> the_records
+        = {{"abc", "ABC", 2, 4},
+           {"def", "DEF", 5, 1},
+           {"ghi", "GHI", 1, 0},
+           {"jkl", "JKL", -1, 3}};
 
     initialize(the_dom, the_system, dom_id, [&](dom::context ctx) {
         records_ui(ctx, the_records);

@@ -17,7 +17,8 @@ sqrt_flashcard(dom::context ctx, readable<int> n)
     // Get the local state we need for this component.
     auto answer_revealed = alia::get_state(ctx, false);
 
-    // If the answer is revealed, show it. Otherwise show a button to reveal it.
+    // If the answer is revealed, show it. Otherwise show a button to reveal
+    // it.
     alia_if(answer_revealed)
     {
         dom::text(ctx, alia::printf(ctx, "The square root is %d.", n));

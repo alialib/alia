@@ -76,8 +76,8 @@ TEST_CASE("string vector", "[flow][for_each]")
     check_traversal(sys, controller, "foo;bar;baz;");
     REQUIRE(call_count == 3);
 
-    // For sanity, check that when we reinvoke the same traversal, no additional
-    // calls are made.
+    // For sanity, check that when we reinvoke the same traversal, no
+    // additional calls are made.
     check_traversal(sys, controller, "foo;bar;baz;");
     REQUIRE(call_count == 3);
 
@@ -112,8 +112,8 @@ TEST_CASE("raw string vector", "[flow][for_each]")
     check_traversal(sys, controller, "foo;bar;baz;");
     REQUIRE(call_count == 3);
 
-    // For sanity, check that when we reinvoke the same traversal, no additional
-    // calls are made.
+    // For sanity, check that when we reinvoke the same traversal, no
+    // additional calls are made.
     check_traversal(sys, controller, "foo;bar;baz;");
     REQUIRE(call_count == 3);
 
@@ -148,8 +148,8 @@ TEST_CASE("for_each over vector of string signals", "[flow][for_each]")
     check_traversal(sys, controller, "foo;bar;baz;");
     REQUIRE(call_count == 3);
 
-    // For sanity, check that when we reinvoke the same traversal, no additional
-    // calls are made.
+    // For sanity, check that when we reinvoke the same traversal, no
+    // additional calls are made.
     check_traversal(sys, controller, "foo;bar;baz;");
     REQUIRE(call_count == 3);
 
@@ -177,7 +177,9 @@ TEST_CASE("string vector with naming", "[flow][for_each]")
         for_each(
             ctx,
             direct(container),
-            [&](context ctx, naming_context& nc, readable<string> const& item) {
+            [&](context ctx,
+                naming_context& nc,
+                readable<string> const& item) {
                 named_block nb(nc, make_id(read_signal(item)));
                 do_text(ctx, apply(ctx, counting_identity, simplify_id(item)));
             });
@@ -188,8 +190,8 @@ TEST_CASE("string vector with naming", "[flow][for_each]")
     check_traversal(sys, controller, "foo;bar;baz;");
     REQUIRE(call_count == 3);
 
-    // For sanity, check that when we reinvoke the same traversal, no additional
-    // calls are made.
+    // For sanity, check that when we reinvoke the same traversal, no
+    // additional calls are made.
     check_traversal(sys, controller, "foo;bar;baz;");
     REQUIRE(call_count == 3);
 
@@ -229,8 +231,8 @@ TEST_CASE("string vector with index", "[flow][for_each]")
     check_traversal(sys, controller, "0;foo;1;bar;2;baz;");
     REQUIRE(call_count == 3);
 
-    // For sanity, check that when we reinvoke the same traversal, no additional
-    // calls are made.
+    // For sanity, check that when we reinvoke the same traversal, no
+    // additional calls are made.
     check_traversal(sys, controller, "0;foo;1;bar;2;baz;");
     REQUIRE(call_count == 3);
 
@@ -273,8 +275,8 @@ TEST_CASE("string vector with naming and index", "[flow][for_each]")
     check_traversal(sys, controller, "0;foo;1;bar;2;baz;");
     REQUIRE(call_count == 3);
 
-    // For sanity, check that when we reinvoke the same traversal, no additional
-    // calls are made.
+    // For sanity, check that when we reinvoke the same traversal, no
+    // additional calls are made.
     check_traversal(sys, controller, "0;foo;1;bar;2;baz;");
     REQUIRE(call_count == 3);
 
@@ -318,8 +320,8 @@ TEST_CASE("item vector", "[flow][for_each]")
     check_traversal(sys, controller, "apple;banana;cherry;");
     REQUIRE(call_count == 3);
 
-    // For sanity, check that when we reinvoke the same traversal, no additional
-    // calls are made.
+    // For sanity, check that when we reinvoke the same traversal, no
+    // additional calls are made.
     check_traversal(sys, controller, "apple;banana;cherry;");
     REQUIRE(call_count == 3);
 
@@ -359,8 +361,8 @@ TEST_CASE("simple map", "[flow][for_each]")
     check_traversal(sys, controller, "bar;0;baz;3;foo;2;");
     REQUIRE(call_count == 3);
 
-    // For sanity, check that when we reinvoke the same traversal, no additional
-    // calls are made.
+    // For sanity, check that when we reinvoke the same traversal, no
+    // additional calls are made.
     check_traversal(sys, controller, "bar;0;baz;3;foo;2;");
     REQUIRE(call_count == 3);
 
@@ -409,16 +411,16 @@ TEST_CASE("item map", "[flow][for_each]")
     check_traversal(sys, controller, "bar;0;baz;3;foo;2;");
     REQUIRE(call_count == 3);
 
-    // For sanity, check that when we reinvoke the same traversal, no additional
-    // calls are made.
+    // For sanity, check that when we reinvoke the same traversal, no
+    // additional calls are made.
     check_traversal(sys, controller, "bar;0;baz;3;foo;2;");
     REQUIRE(call_count == 3);
 
     my_item alpha{"alpha"};
     container[alpha] = 1;
 
-    // Since we provided a custom ID, the graph data properly follows the items,
-    // so the only additional call is for the new item.
+    // Since we provided a custom ID, the graph data properly follows the
+    // items, so the only additional call is for the new item.
     check_traversal(sys, controller, "alpha;1;bar;0;baz;3;foo;2;");
     REQUIRE(call_count == 4);
 }
@@ -450,8 +452,8 @@ TEST_CASE("string list", "[flow][for_each]")
     check_traversal(sys, controller, "foo;bar;baz;");
     REQUIRE(call_count == 3);
 
-    // For sanity, check that when we reinvoke the same traversal, no additional
-    // calls are made.
+    // For sanity, check that when we reinvoke the same traversal, no
+    // additional calls are made.
     check_traversal(sys, controller, "foo;bar;baz;");
     REQUIRE(call_count == 3);
 
@@ -490,8 +492,8 @@ TEST_CASE("unsimplified string list", "[flow][for_each]")
     check_traversal(sys, controller, "foo;bar;baz;");
     REQUIRE(call_count == 3);
 
-    // For sanity, check that when we reinvoke the same traversal, no additional
-    // calls are made.
+    // For sanity, check that when we reinvoke the same traversal, no
+    // additional calls are made.
     check_traversal(sys, controller, "foo;bar;baz;");
     REQUIRE(call_count == 3);
 
@@ -551,8 +553,8 @@ TEST_CASE("item list", "[for_each][list]")
     check_traversal(sys, controller, "apple;banana;cherry;");
     REQUIRE(call_count == 3);
 
-    // For sanity, check that when we reinvoke the same traversal, no additional
-    // calls are made.
+    // For sanity, check that when we reinvoke the same traversal, no
+    // additional calls are made.
     check_traversal(sys, controller, "apple;banana;cherry;");
     REQUIRE(call_count == 3);
 
@@ -606,8 +608,8 @@ TEST_CASE("for_each over list of item signals", "[for_each][list]")
     check_traversal(sys, controller, "apple;banana;cherry;");
     REQUIRE(call_count == 3);
 
-    // For sanity, check that when we reinvoke the same traversal, no additional
-    // calls are made.
+    // For sanity, check that when we reinvoke the same traversal, no
+    // additional calls are made.
     check_traversal(sys, controller, "apple;banana;cherry;");
     REQUIRE(call_count == 3);
 
@@ -643,8 +645,8 @@ TEST_CASE("for_each over a list of raw items", "[for_each][list]")
     check_traversal(sys, controller, "apple;banana;cherry;");
     REQUIRE(call_count == 3);
 
-    // For sanity, check that when we reinvoke the same traversal, no additional
-    // calls are made.
+    // For sanity, check that when we reinvoke the same traversal, no
+    // additional calls are made.
     check_traversal(sys, controller, "apple;banana;cherry;");
     REQUIRE(call_count == 3);
 

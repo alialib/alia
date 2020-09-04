@@ -25,22 +25,22 @@ TEST_CASE("copy actions", "[flow][actions]")
     REQUIRE(x == 4);
 }
 
-#define TEST_COMPOUND_ASSIGNMENT_OPERATOR(op, normal_form)                     \
-    {                                                                          \
-        int x = 21;                                                            \
-        REQUIRE(!(empty<int>() op empty<int>()).is_ready());                   \
-        REQUIRE(!(direct(x) op empty<int>()).is_ready());                      \
-        REQUIRE(!(empty<int>() op direct(x)).is_ready());                      \
-        auto a = direct(x) op value(7);                                        \
-        REQUIRE(a.is_ready());                                                 \
-        REQUIRE(x == 21);                                                      \
-        perform_action(a);                                                     \
-        REQUIRE(x == (21 normal_form 7));                                      \
-        x = 2;                                                                 \
-        auto liberal = direct(x) op 6;                                         \
-        REQUIRE(liberal.is_ready());                                           \
-        perform_action(liberal);                                               \
-        REQUIRE(x == (2 normal_form 6));                                       \
+#define TEST_COMPOUND_ASSIGNMENT_OPERATOR(op, normal_form)                    \
+    {                                                                         \
+        int x = 21;                                                           \
+        REQUIRE(!(empty<int>() op empty<int>()).is_ready());                  \
+        REQUIRE(!(direct(x) op empty<int>()).is_ready());                     \
+        REQUIRE(!(empty<int>() op direct(x)).is_ready());                     \
+        auto a = direct(x) op value(7);                                       \
+        REQUIRE(a.is_ready());                                                \
+        REQUIRE(x == 21);                                                     \
+        perform_action(a);                                                    \
+        REQUIRE(x == (21 normal_form 7));                                     \
+        x = 2;                                                                \
+        auto liberal = direct(x) op 6;                                        \
+        REQUIRE(liberal.is_ready());                                          \
+        perform_action(liberal);                                              \
+        REQUIRE(x == (2 normal_form 6));                                      \
     }
 
 TEST_CASE("compound assignment action operators", "[flow][actions]")
@@ -57,24 +57,24 @@ TEST_CASE("compound assignment action operators", "[flow][actions]")
 
 #undef TEST_BY_ONE_OPERATOR
 
-#define TEST_BY_ONE_OPERATOR(op, normal_form)                                  \
-    {                                                                          \
-        int x = 21;                                                            \
-        REQUIRE(!(empty<int>() op).is_ready());                                \
-        REQUIRE(!(op empty<int>()).is_ready());                                \
-        {                                                                      \
-            auto a = direct(x) op;                                             \
-            REQUIRE(a.is_ready());                                             \
-            REQUIRE(x == 21);                                                  \
-            perform_action(a);                                                 \
-            REQUIRE(x == (21 normal_form 1));                                  \
-        }                                                                      \
-        {                                                                      \
-            auto a = op direct(x);                                             \
-            REQUIRE(a.is_ready());                                             \
-            perform_action(a);                                                 \
-            REQUIRE(x == (21 normal_form 2));                                  \
-        }                                                                      \
+#define TEST_BY_ONE_OPERATOR(op, normal_form)                                 \
+    {                                                                         \
+        int x = 21;                                                           \
+        REQUIRE(!(empty<int>() op).is_ready());                               \
+        REQUIRE(!(op empty<int>()).is_ready());                               \
+        {                                                                     \
+            auto a = direct(x) op;                                            \
+            REQUIRE(a.is_ready());                                            \
+            REQUIRE(x == 21);                                                 \
+            perform_action(a);                                                \
+            REQUIRE(x == (21 normal_form 1));                                 \
+        }                                                                     \
+        {                                                                     \
+            auto a = op direct(x);                                            \
+            REQUIRE(a.is_ready());                                            \
+            perform_action(a);                                                \
+            REQUIRE(x == (21 normal_form 2));                                 \
+        }                                                                     \
     }
 
 TEST_CASE("increment/decrement operators", "[flow][actions]")

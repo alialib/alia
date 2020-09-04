@@ -17,22 +17,24 @@
 // Some additional design considerations follow.
 //
 // 1. An application should be able to easily define its own data types and mix
-//    those into its context. This includes application-level state. If there is
-//    state that is essentially global to the application (e.g., the active
+//    those into its context. This includes application-level state. If there
+//    is state that is essentially global to the application (e.g., the active
 //    user), application code should be able to retrieve this from the
 //    application context. Similarly, a component of the application should be
 //    able to extend the application's context with state that is specific to
 //    that component (but ubiquitous within it).
 //
-// 2. Functions that take contexts as arguments should be able to define the set
-//    of context elements that they require as part of the type signature of the
-//    context. (Context elements would be identified by compile-time type tags.)
-//    Any caller whose context includes a superset of those tags should be able
-//    to call the function with an implicit conversion of the context parameter.
-//    This should all be possible without needing to define functions as
-//    templates (otherwise alia-based applications would end up being entirely
-//    header-based) and with minimal (ideally zero) runtime overhead in
-//    converting the caller's context to the type expected by the function.
+// 2. Functions that take contexts as arguments should be able to define the
+// set
+//    of context elements that they require as part of the type signature of
+//    the context. (Context elements would be identified by compile-time type
+//    tags.) Any caller whose context includes a superset of those tags should
+//    be able to call the function with an implicit conversion of the context
+//    parameter. This should all be possible without needing to define
+//    functions as templates (otherwise alia-based applications would end up
+//    being entirely header-based) and with minimal (ideally zero) runtime
+//    overhead in converting the caller's context to the type expected by the
+//    function.
 //
 // 3. Retrieving frames/capabilities from a context should require minimal
 //    (ideally zero) runtime overhead.
@@ -45,17 +47,17 @@
 //
 // In order to satisfy #4, this file looks for a #define called
 // ALIA_DYNAMIC_CONTEXT_CHECKS. If this is set, code related to statically
-// checking context contents is omitted and dynamic checks are substituted where
-// appropriate. Note that when ALIA_DYNAMIC_CONTEXT_CHECKS is NOT set,
+// checking context contents is omitted and dynamic checks are substituted
+// where appropriate. Note that when ALIA_DYNAMIC_CONTEXT_CHECKS is NOT set,
 // ALIA_STATIC_CONTEXT_CHECKS is set and static checks are included.
 //
 // The statically typed structural_collection object is a simple wrapper around
 // the dynamically typed storage object. It adds a compile-time type list
 // indicating what's actually supposed to be in the collection. This allows
 // collections to be converted to other collection types without any run-time
-// overhead. This does imply some run-time overhead for retrieving data from the
-// collection, but that can be mitigated by providing zero-cost retrieval for
-// select (core) data. This also implies that the collection object must be
+// overhead. This does imply some run-time overhead for retrieving data from
+// the collection, but that can be mitigated by providing zero-cost retrieval
+// for select (core) data. This also implies that the collection object must be
 // passed by value (or const& - though there's no real point in that) whereas
 // passing by reference would be more obvious, but that seems unavoidable given
 // the requirements.
@@ -68,10 +70,10 @@ namespace alia {
 
 namespace impl {
 
-#define ALIA_DEFINE_TAGGED_TYPE(tag, data)                                     \
-    struct tag                                                                 \
-    {                                                                          \
-        typedef data data_type;                                                \
+#define ALIA_DEFINE_TAGGED_TYPE(tag, data)                                    \
+    struct tag                                                                \
+    {                                                                         \
+        typedef data data_type;                                               \
     };
 
 template<class Tags, class Storage>
@@ -79,8 +81,8 @@ struct structural_collection;
 
 #ifdef ALIA_STATIC_CONTEXT_CHECKS
 
-// tag_list<Tags...> defines a simple compile-time list of tags. This is held by
-// a structural_collection to provide compile-time tracking of its contents.
+// tag_list<Tags...> defines a simple compile-time list of tags. This is held
+// by a structural_collection to provide compile-time tracking of its contents.
 template<class... Tags>
 struct tag_list
 {
@@ -123,8 +125,8 @@ struct structural_collection_contains_tag<
 {
 };
 
-// add_tag_to_list<List,Tag>::type yields the list that results from adding :Tag
-// to the head of :List.
+// add_tag_to_list<List,Tag>::type yields the list that results from adding
+// :Tag to the head of :List.
 //
 // Note that this doesn't perform any checks for duplicates.
 //
@@ -141,8 +143,8 @@ struct add_tag_to_list<tag_list<Tags...>, Tag>
 // remove_tag_from_list<List,Tag>::type yields the list that results from
 // removing the tag matching :Tag from :List.
 //
-// Note that removing a tag that's not actually in the list is not considered an
-// error.
+// Note that removing a tag that's not actually in the list is not considered
+// an error.
 //
 template<class List, class Tag>
 struct remove_tag_from_list
@@ -169,8 +171,9 @@ struct remove_tag_from_list<tag_list<OtherTag, Rest...>, Tag>
 {
 };
 
-// collection_contains_all_tags<Collection,Tags...>::value yields a compile-time
-// boolean indicating whether or not :Collection contains all tags in :Tags.
+// collection_contains_all_tags<Collection,Tags...>::value yields a
+// compile-time boolean indicating whether or not :Collection contains all tags
+// in :Tags.
 template<class Collection, class... Tags>
 struct collection_contains_all_tags
 {
@@ -470,9 +473,9 @@ make_empty_structural_collection(Storage* storage)
 // :Tag is the tag of the new data.
 // :data is the data.
 //
-// Note that although this returns a new collection (with the correct type), the
-// new collection shares the storage of the original, so this should be used
-// with caution.
+// Note that although this returns a new collection (with the correct type),
+// the new collection shares the storage of the original, so this should be
+// used with caution.
 //
 template<class Tag, class Collection, class Data>
 add_tagged_data_type_t<Collection, Tag>
@@ -510,7 +513,8 @@ remove_tagged_data(Collection collection)
 // Remove an item from a collection.
 //
 // With this version, you supply a new storage object, and the function uses it
-// if needed to ensure that the original collection's storage is left untouched.
+// if needed to ensure that the original collection's storage is left
+// untouched.
 //
 #ifdef ALIA_STATIC_CONTEXT_CHECKS
 template<class Tag, class Collection, class Storage>
