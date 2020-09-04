@@ -429,13 +429,69 @@ mask_writes(Signal signal, WritabilityFlag writability_flag)
 }
 
 // disable_writes(s), where :s is a signal, yields a wrapper for :s where
-// writes are disabled. Like mask_signal, this doesn't change the capabilities
+// writes are disabled. Like mask_writes, this doesn't change the capabilities
 // of :s.
 template<class Signal>
 auto
 disable_writes(Signal s)
 {
     return mask_writes(std::move(s), false);
+}
+
+// mask_reads(signal, readality_flag) masks reads to :signal according to the
+// value of :readality_flag.
+//
+// :readality_flag can be either a signal or a raw value. If it evaluates to
+// true (in a boolean context), the mask evaluates to a signal equivalent to
+// :signal. Otherwise, it evaluates to one with equivalent writing behavior but
+// with reading disabled.
+//
+// Note that in either case, the masked version has the same capabilities as
+// :signal.
+//
+template<class Primary, class Mask>
+struct read_masking_signal
+    : signal_wrapper<read_masking_signal<Primary, Mask>, Primary>
+{
+    read_masking_signal()
+    {
+    }
+    read_masking_signal(Primary primary, Mask mask)
+        : read_masking_signal::signal_wrapper(std::move(primary)),
+          mask_(std::move(mask))
+    {
+    }
+    bool
+    has_value() const
+    {
+        return mask_.has_value() && mask_.read() && this->wrapped_.has_value();
+    }
+
+ private:
+    Mask mask_;
+};
+template<class Signal, class ReadabilityFlag>
+auto
+make_read_masking_signal(Signal signal, ReadabilityFlag readability_flag)
+{
+    return read_masking_signal<Signal, ReadabilityFlag>(
+        std::move(signal), std::move(readability_flag));
+}
+template<class Signal, class ReadabilityFlag>
+auto
+mask_reads(Signal signal, ReadabilityFlag readability_flag)
+{
+    return make_read_masking_signal(
+        std::move(signal), signalize(std::move(readability_flag)));
+}
+
+// disable_reads(s), where :s is a signal, yields a wrapper for :s where reads
+// are disabled. Like mask_reads, this doesn't change the capabilities of :s.
+template<class Signal>
+auto
+disable_reads(Signal s)
+{
+    return mask_reads(std::move(s), false);
 }
 
 // unwrap(signal), where :signal is a signal carrying a std::optional value,

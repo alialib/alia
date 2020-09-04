@@ -450,6 +450,75 @@ TEST_CASE("mask/disable_writes", "[signals][adaptors]")
     }
 }
 
+TEST_CASE("mask/disable_reads", "[signals][adaptors]")
+{
+    // duplex signal, unmasked
+    {
+        int x = 1;
+        auto wrapped = direct(x);
+        auto s = mask_reads(wrapped, value(true));
+
+        typedef decltype(s) signal_t;
+        REQUIRE(signal_is_readable<signal_t>::value);
+        REQUIRE(signal_is_writable<signal_t>::value);
+
+        REQUIRE(signal_has_value(s));
+        REQUIRE(read_signal(s) == 1);
+        REQUIRE(s.value_id() == wrapped.value_id());
+        REQUIRE(signal_ready_to_write(s));
+        write_signal(s, 0);
+        REQUIRE(x == 0);
+    }
+
+    // duplex signal, masked (via disable_reads)
+    {
+        int x = 1;
+        auto wrapped = direct(x);
+        auto s = disable_reads(wrapped);
+
+        typedef decltype(s) signal_t;
+        REQUIRE(signal_is_readable<signal_t>::value);
+        REQUIRE(signal_is_writable<signal_t>::value);
+
+        REQUIRE(!signal_has_value(s));
+        REQUIRE(signal_ready_to_write(s));
+        write_signal(s, 0);
+        REQUIRE(x == 0);
+    }
+
+    // duplex signal, masked (via empty signal)
+    {
+        int x = 1;
+        auto wrapped = direct(x);
+        auto s = mask_reads(wrapped, empty<bool>());
+
+        typedef decltype(s) signal_t;
+        REQUIRE(signal_is_readable<signal_t>::value);
+        REQUIRE(signal_is_writable<signal_t>::value);
+
+        REQUIRE(!signal_has_value(s));
+        REQUIRE(signal_ready_to_write(s));
+        write_signal(s, 0);
+        REQUIRE(x == 0);
+    }
+
+    // duplex signal, masked (via raw flag)
+    {
+        int x = 1;
+        auto wrapped = direct(x);
+        auto s = mask_reads(wrapped, false);
+
+        typedef decltype(s) signal_t;
+        REQUIRE(signal_is_readable<signal_t>::value);
+        REQUIRE(signal_is_writable<signal_t>::value);
+
+        REQUIRE(!signal_has_value(s));
+        REQUIRE(signal_ready_to_write(s));
+        write_signal(s, 0);
+        REQUIRE(x == 0);
+    }
+}
+
 #if __cplusplus >= 201703L
 
 #include <optional>
