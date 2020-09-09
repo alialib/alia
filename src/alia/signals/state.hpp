@@ -26,7 +26,7 @@ struct state_storage
     bool
     is_initialized() const
     {
-        return version_ != 0;
+        return (version_ & 1) != 0;
     }
 
     Value const&
@@ -45,7 +45,15 @@ struct state_storage
     set(Value value)
     {
         value_ = std::move(value);
-        handle_change();
+        set_valid_flag();
+        handle_tracked_change();
+    }
+
+    void
+    clear()
+    {
+        clear_valid_flag();
+        handle_tracked_change();
     }
 
     // If you REALLY need direct, non-const access to the underlying state,
@@ -64,7 +72,8 @@ struct state_storage
     Value&
     nonconst_ref()
     {
-        handle_change();
+        set_valid_flag();
+        handle_tracked_change();
         return value_;
     }
 
@@ -74,8 +83,17 @@ struct state_storage
     Value&
     untracked_nonconst_ref()
     {
-        ++version_;
+        set_valid_flag();
+        inc_version();
         return value_;
+    }
+
+    // Similarly unsafe way to clear the value.
+    void
+    untracked_clear()
+    {
+        clear_valid_flag();
+        inc_version();
     }
 
     // Update the container that the state is part of.
@@ -87,15 +105,33 @@ struct state_storage
 
  private:
     void
-    handle_change()
+    set_valid_flag()
     {
-        ++version_;
+        version_ |= 1;
+    }
+
+    void
+    clear_valid_flag()
+    {
+        version_ &= ~1;
+    }
+
+    void
+    inc_version()
+    {
+        version_ += 2;
+    }
+
+    void
+    handle_tracked_change()
+    {
+        inc_version();
         mark_dirty_component(container_);
     }
 
     Value value_;
-    // version_ is incremented for each change in the value of the state.
-    // If this is 0, the state is considered uninitialized.
+    // version_ is incremented for each change in the value (or validity) of
+    // the state. The lowest bit of this indicates if the value is valid.
     unsigned version_;
     component_container_ptr container_;
 };

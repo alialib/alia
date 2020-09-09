@@ -14,14 +14,24 @@ TEST_CASE("state_storage", "[signals][state]")
     state_storage<int> s;
     REQUIRE(!s.is_initialized());
     REQUIRE(s.version() == 0);
+    unsigned version = 0;
+
     s.set(1);
     REQUIRE(s.is_initialized());
-    REQUIRE(s.version() == 1);
+    REQUIRE(s.version() != 0);
+    version = s.version();
     REQUIRE(s.get() == 1);
+
     s.nonconst_ref() = 4;
     REQUIRE(s.is_initialized());
-    REQUIRE(s.version() == 2);
+    REQUIRE(s.version() != version);
+    version = s.version();
     REQUIRE(s.get() == 4);
+
+    s.clear();
+    REQUIRE(!s.is_initialized());
+    REQUIRE(s.version() != version);
+    version = s.version();
 }
 
 TEST_CASE("basic get_state", "[signals][state]")
