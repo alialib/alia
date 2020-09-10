@@ -93,9 +93,3 @@ jobs:
       on:
         branch: master
       local_dir: www
-
-before_cache:
-- conan remove "*" -s -b -f
-cache:
-  directories:
-  - $HOME/.conan/data

@@ -3,5 +3,3 @@
 set -x -e
 
 pip install -r requirements.txt
-
-scripts/set-up-conan.sh
