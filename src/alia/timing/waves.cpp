@@ -32,7 +32,7 @@ square_wave(
         auto duration = conditional(
             data.value,
             true_duration,
-            add_fallback(false_duration, true_duration));
+            add_default(false_duration, true_duration));
         if (signal_has_value(duration))
         {
             timer.start(read_signal(duration));
