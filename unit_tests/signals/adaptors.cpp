@@ -161,41 +161,41 @@ TEST_CASE("ready_to_write", "[signals][adaptors]")
     }
 }
 
-TEST_CASE("add_fallback", "[signals][adaptors]")
+TEST_CASE("add_default", "[signals][adaptors]")
 {
     int p = 1;
     int f = 0;
-    auto make_fallback = [&](bool primary_has_value,
-                             bool primary_ready_to_write,
-                             bool fallback_has_value) {
-        return add_fallback(
+    auto make_default = [&](bool primary_has_value,
+                            bool primary_ready_to_write,
+                            bool default_has_value) {
+        return add_default(
             lambda_duplex(
                 [=]() { return primary_has_value; },
                 [=]() { return p; },
                 [=]() { return primary_ready_to_write; },
                 [&p](int x) { p = x; }),
             lambda_duplex(
-                [=]() { return fallback_has_value; },
+                [=]() { return default_has_value; },
                 [=]() { return f; },
                 always_ready,
                 [&f](int x) { f = x; }));
     };
 
     {
-        typedef decltype(make_fallback(true, true, true)) signal_t;
+        typedef decltype(make_default(true, true, true)) signal_t;
         REQUIRE(signal_is_readable<signal_t>::value);
         REQUIRE(signal_is_writable<signal_t>::value);
     }
 
     {
-        typedef decltype(add_fallback(value(0), value(1))) signal_t;
+        typedef decltype(add_default(value(0), value(1))) signal_t;
         REQUIRE(signal_is_readable<signal_t>::value);
         REQUIRE(!signal_is_writable<signal_t>::value);
     }
 
     {
         p = 1;
-        auto s = make_fallback(true, true, true);
+        auto s = make_default(true, true, true);
         REQUIRE(signal_has_value(s));
         REQUIRE(read_signal(s) == 1);
         REQUIRE(signal_ready_to_write(s));
@@ -206,7 +206,7 @@ TEST_CASE("add_fallback", "[signals][adaptors]")
 
     {
         p = 1;
-        auto s = make_fallback(false, true, true);
+        auto s = make_default(false, true, true);
         REQUIRE(signal_has_value(s));
         REQUIRE(read_signal(s) == 0);
         REQUIRE(signal_ready_to_write(s));
@@ -217,7 +217,7 @@ TEST_CASE("add_fallback", "[signals][adaptors]")
 
     {
         p = 1;
-        auto s = make_fallback(false, true, false);
+        auto s = make_default(false, true, false);
         REQUIRE(!signal_has_value(s));
         REQUIRE(signal_ready_to_write(s));
         write_signal(s, 2);
@@ -227,7 +227,7 @@ TEST_CASE("add_fallback", "[signals][adaptors]")
 
     {
         p = 1;
-        auto s = make_fallback(true, false, false);
+        auto s = make_default(true, false, false);
         REQUIRE(signal_has_value(s));
         REQUIRE(read_signal(s) == 1);
         REQUIRE(!signal_ready_to_write(s));
@@ -235,11 +235,11 @@ TEST_CASE("add_fallback", "[signals][adaptors]")
 
     {
         // Check that the overall signal produces a different value ID when
-        // using the primary vs the fallback, even when the two component
+        // using the primary vs the default, even when the two component
         // signals have the same value ID.
         p = 0;
-        auto s = make_fallback(true, false, false);
-        auto t = make_fallback(false, false, true);
+        auto s = make_default(true, false, false);
+        auto t = make_default(false, false, true);
         REQUIRE(signal_has_value(s));
         REQUIRE(signal_has_value(t));
         REQUIRE(read_signal(s) == read_signal(t));

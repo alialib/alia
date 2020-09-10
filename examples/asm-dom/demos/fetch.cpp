@@ -79,7 +79,7 @@ fetch_ui(dom::context ctx, duplex<std::string> country_code)
     auto result = fetch_country_name(ctx, country_code);
     dom::text(
         ctx,
-        add_fallback(
+        add_default(
             deflicker(
                 ctx,
                 conditional(
