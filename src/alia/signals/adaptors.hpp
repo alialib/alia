@@ -233,32 +233,32 @@ ready_to_write(Wrapped wrapped)
     return write_readiness_signal<Wrapped>(std::move(wrapped));
 }
 
-// add_fallback(primary, fallback), where :primary and :fallback are both
+// add_default(primary, default), where :primary and :default are both
 // signals, yields another signal whose value is that of :primary if it has one
-// and that of :fallback otherwise.
+// and that of :default otherwise.
 // All writes go directly to :primary.
-template<class Primary, class Fallback>
-struct fallback_signal
-    : signal_wrapper<fallback_signal<Primary, Fallback>, Primary>
+template<class Primary, class Default>
+struct default_value_signal
+    : signal_wrapper<default_value_signal<Primary, Default>, Primary>
 {
-    fallback_signal()
+    default_value_signal()
     {
     }
-    fallback_signal(Primary primary, Fallback fallback)
-        : fallback_signal::signal_wrapper(std::move(primary)),
-          fallback_(std::move(fallback))
+    default_value_signal(Primary primary, Default default_value)
+        : default_value_signal::signal_wrapper(std::move(primary)),
+          default_(std::move(default_value))
     {
     }
     bool
     has_value() const
     {
-        return this->wrapped_.has_value() || fallback_.has_value();
+        return this->wrapped_.has_value() || default_.has_value();
     }
     typename Primary::value_type const&
     read() const
     {
         return this->wrapped_.has_value() ? this->wrapped_.read()
-                                          : fallback_.read();
+                                          : default_.read();
     }
     id_interface const&
     value_id() const
@@ -266,27 +266,27 @@ struct fallback_signal
         id_ = combine_ids(
             make_id(this->wrapped_.has_value()),
             this->wrapped_.has_value() ? ref(this->wrapped_.value_id())
-                                       : ref(fallback_.value_id()));
+                                       : ref(default_.value_id()));
         return id_;
     }
 
  private:
     mutable id_pair<simple_id<bool>, id_ref> id_;
-    Fallback fallback_;
+    Default default_;
 };
-template<class Primary, class Fallback>
-fallback_signal<Primary, Fallback>
-make_fallback_signal(Primary primary, Fallback fallback)
+template<class Primary, class Default>
+default_value_signal<Primary, Default>
+make_default_value_signal(Primary primary, Default default_)
 {
-    return fallback_signal<Primary, Fallback>(
-        std::move(primary), std::move(fallback));
+    return default_value_signal<Primary, Default>(
+        std::move(primary), std::move(default_));
 }
-template<class Primary, class Fallback>
+template<class Primary, class Default>
 auto
-add_fallback(Primary primary, Fallback fallback)
+add_default(Primary primary, Default default_)
 {
-    return make_fallback_signal(
-        signalize(std::move(primary)), signalize(std::move(fallback)));
+    return make_default_value_signal(
+        signalize(std::move(primary)), signalize(std::move(default_)));
 }
 
 // simplify_id(s), where :s is a signal, yields a wrapper for :s with the exact

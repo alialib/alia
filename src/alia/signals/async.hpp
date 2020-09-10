@@ -102,6 +102,12 @@ process_async_args(
     process_async_args(ctx, data, args_ready, rest...);
 }
 
+template<class Result>
+struct async_reporter
+{
+    
+};
+
 template<class Result, class Context, class Launcher, class... Args>
 auto
 async(Context ctx, Launcher launcher, Args const&... args)
