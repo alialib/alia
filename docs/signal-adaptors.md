@@ -52,15 +52,15 @@ has a value. (The returned signal itself always has a value.)
 
 </dd>
 
-Sometimes it's useful to provide a fallback value for a signal that isn't always
+Sometimes it's useful to provide a default value for a signal that isn't always
 available when we'd like it to be:
 
-<dt>add_fallback(primary, fallback)</dt><dd>
+<dt>add_default(primary, default)</dt><dd>
 
-`primary` and `fallback` must be signals with the same value type.
+`primary` and `default` must be signals with the same value type.
 
-`add_fallback(primary, fallback)` yields another signal whose value is that of
-`primary` if `primary` has a value and that of `fallback` otherwise.
+`add_default(primary, default)` yields another signal whose value is that of
+`primary` if `primary` has a value and that of `default` otherwise.
 
 All writes go directly to `primary`.
 
