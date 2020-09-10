@@ -57,6 +57,11 @@ elseif(IS_MSVC)
     # Disable "unreferenced local function has been removed".
     # (As far as I can tell, this warning seems to be broken.)
     add_compile_options(/wd4505)
+    # On VS2015, disable "unreachable code".
+    # (Again, this warning seems to be broken.)
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 15.0)
+        add_compile_options(/wd4702)
+    endif()
 elseif(IS_CLANG)
     add_compile_options(-Wall -Werror)
 endif()
