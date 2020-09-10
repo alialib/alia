@@ -35,14 +35,6 @@ init:
       }
   - set QT_ROOT_DIR=C:\Qt\%QT_VERSION%
 
-install:
-  # Set up Conan.
-  - set PATH=%PATH%;%PYTHON%/Scripts/
-  - pip.exe install conan
-  - conan user
-  - conan --version
-  - scripts\set-up-conan.bat
-
 for:
   - matrix:
       only:
