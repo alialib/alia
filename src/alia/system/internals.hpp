@@ -82,6 +82,7 @@ struct system : noncopyable
     data_graph data;
     std::function<void(context)> controller;
     bool refresh_needed = false;
+    counter_type refresh_counter = 0;
     std::unique_ptr<external_interface> external;
     timer_event_scheduler scheduler;
     component_container_ptr root_component;
