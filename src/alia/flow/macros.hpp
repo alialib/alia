@@ -307,6 +307,7 @@ read_condition(T const& x)
 // end
 
 #define ALIA_END                                                              \
+    ;                                                                         \
     }                                                                         \
     }                                                                         \
     }
