@@ -16,6 +16,7 @@ void
 refresh_system(system& sys)
 {
     sys.refresh_needed = false;
+    ++sys.refresh_counter;
 
     int pass_count = 0;
     while (true)
