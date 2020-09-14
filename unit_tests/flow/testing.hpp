@@ -31,8 +31,6 @@ clear_log();
 void
 check_log(std::string const& expected_contents);
 
-namespace {
-
 struct int_object
 {
     int_object() : n(-1)
@@ -226,14 +224,7 @@ typedef alia::extend_context_type_t<alia::context, tree_traversal_tag>
     test_context;
 
 void
-do_object(test_context ctx, std::string name)
-{
-    tree_node<test_object>* node;
-    if (get_cached_data(ctx, &node))
-        node->object.name = name;
-    if (is_refresh_event(ctx))
-        refresh_tree_node(get<tree_traversal_tag>(ctx), *node);
-}
+do_object(test_context ctx, std::string name);
 
 template<class Contents>
 void
@@ -262,7 +253,5 @@ do_piecewise_container(test_context ctx, std::string name, Contents contents)
         scoped.begin(get<tree_traversal_tag>(ctx), *node);
     contents(ctx);
 }
-
-} // namespace
 
 #endif
