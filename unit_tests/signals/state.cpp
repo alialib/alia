@@ -149,29 +149,30 @@ TEST_CASE("state changes and component dirtying", "[signals][state]")
     REQUIRE(log.str() == "clean;12;clean;12;writing;dirty;13;clean;13;");
 
     // And some benchmarking...
-    BENCHMARK("deep state changes")
-    {
-        refresh_system(sys);
+    // BENCHMARK("deep state changes")
+    // {
+    //     refresh_system(sys);
 
-        my_state_change_event e;
-        dispatch_event(sys, e);
-    };
+    //     my_state_change_event e;
+    //     dispatch_event(sys, e);
+    // };
 }
 
 TEST_CASE("get_state benchmarks", "[signals][state]")
 {
-    BENCHMARK("get_state")
-    {
-        alia::system sys;
-        initialize_system(sys, [&](context ctx) {
-            scoped_component_container srr(ctx);
-            // The get_state call is all we really want to benchmark, but
-            // somehow, invoking the BENCHMARK macro inside component code
-            // causes a stack overflow, so we just repeat it many times so that
-            // it dominates the results.
-            for (int i = 0; i != 20; ++i)
-                get_state(ctx, 12);
-        });
-        refresh_system(sys);
-    };
+    // BENCHMARK("get_state")
+    // {
+    //     alia::system sys;
+    //     initialize_system(sys, [&](context ctx) {
+    //         scoped_component_container srr(ctx);
+    //         // The get_state call is all we really want to benchmark, but
+    //         // somehow, invoking the BENCHMARK macro inside component code
+    //         // causes a stack overflow, so we just repeat it many times so
+    //         that
+    //         // it dominates the results.
+    //         for (int i = 0; i != 20; ++i)
+    //             get_state(ctx, 12);
+    //     });
+    //     refresh_system(sys);
+    // };
 }

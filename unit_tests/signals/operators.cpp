@@ -323,10 +323,10 @@ TEST_CASE("vector subscript", "[signals][operators]")
     auto c_signal = direct(c);
     auto s = c_signal[value(1)];
 
-    BENCHMARK("subscript signal creation")
-    {
-        return c_signal[value(1)];
-    };
+    // BENCHMARK("subscript signal creation")
+    // {
+    //     return c_signal[value(1)];
+    // };
 
     typedef decltype(s) signal_t;
     REQUIRE((std::is_same<signal_t::value_type, int>::value));
