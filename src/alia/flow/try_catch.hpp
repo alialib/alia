@@ -73,45 +73,17 @@ struct try_block_data
 {
     counter_type last_refresh = 0;
     std::exception_ptr exception;
+    bool uncaught = false;
 };
 
 struct try_block
 {
-    try_block(alia::context ctx) : ctx_(ctx)
-    {
-        get_cached_data(ctx, &data_);
-        on_refresh(ctx, [&](auto ctx) {
-            auto refresh_counter = get<system_tag>(ctx).refresh_counter;
-            if (data_->last_refresh != refresh_counter)
-            {
-                data_->exception = nullptr;
-                data_->last_refresh = refresh_counter;
-            }
-        });
-        uncaught_ = data_->exception ? true : false;
-    }
+    try_block(context ctx);
 
     void
-    operator<<(function_view<void()> body)
-    {
-        ALIA_IF_(ctx_, !data_->exception)
-        {
-            try
-            {
-                body();
-            }
-            catch (alia::traversal_abortion&)
-            {
-                throw;
-            }
-            catch (...)
-            {
-                data_->exception = std::current_exception();
-                mark_dirty_component(ctx_);
-            }
-        }
-        ALIA_END
-    }
+    operator<<(function_view<void()> body);
+
+    ~try_block();
 
     context ctx_;
     try_block_data* data_;
