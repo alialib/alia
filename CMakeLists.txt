@@ -151,7 +151,7 @@ add_custom_target(
     COMMAND ${CMAKE_COMMAND} -E make_directory unit-testing
     COMMAND ${CMAKE_COMMAND} -E chdir unit-testing ${CMAKE_COMMAND}
                              -E env ALIA_DEPLOY_DIR=${PROJECT_BINARY_DIR}
-                             ${PROJECT_BINARY_DIR}/unit_test_runner
+                             $<TARGET_FILE:unit_test_runner>
     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
     DEPENDS unit_test_runner)
 
@@ -165,7 +165,7 @@ add_custom_target(
     COMMAND ${CMAKE_COMMAND} -E make_directory single-header-testing
     COMMAND ${CMAKE_COMMAND} -E chdir single-header-testing ${CMAKE_COMMAND}
                              -E env ALIA_DEPLOY_DIR=${PROJECT_BINARY_DIR}
-                             ${PROJECT_BINARY_DIR}/single_header_tester
+                             $<TARGET_FILE:single_header_tester>
     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
     DEPENDS single_header_tester)
 
@@ -180,7 +180,7 @@ if(IS_CLANG AND CMAKE_BUILD_TYPE STREQUAL "Debug")
         COMMAND ${LLVM_PROFDATA} merge -sparse unit-testing/default.profraw
                 -o default.profdata
         COMMAND ${LLVM_COV} show -instr-profile=default.profdata
-                ${PROJECT_BINARY_DIR}/unit_test_runner
+                $<TARGET_FILE:unit_test_runner>
                 >${PROJECT_SOURCE_DIR}/coverage.txt
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
     add_test(
