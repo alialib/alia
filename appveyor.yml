@@ -28,10 +28,12 @@ init:
           $env:MSVCID = "msvc2015"
           $env:VCVARSALL = "$env:VCVARSALL14"
           $env:QT_VERSION = "5.11.3"
+          $env:GENERATOR_BASE = "Visual Studio 14 2015"
       } else {
           $env:MSVCID = "msvc2017"
           $env:VCVARSALL = "$env:VCVARSALL15"
           $env:QT_VERSION = "5.13.2"
+          $env:GENERATOR_BASE = "Visual Studio 15 2017"
       }
   - set QT_ROOT_DIR=C:\Qt\%QT_VERSION%
 
@@ -42,6 +44,7 @@ for:
           configuration: Release
     before_build:
       - call %VCVARSALL% x64
+      - set GENERATOR="%GENERATOR_BASE% Win64"
       - set Qt5_DIR=%QT_ROOT_DIR%\%MSVCID%_64\lib\cmake\Qt5
     environment:
       LIBRARY_ARCHITECTURE: lib64
@@ -51,6 +54,7 @@ for:
           configuration: Debug
     before_build:
       - call %VCVARSALL% x64
+      - set GENERATOR="%GENERATOR_BASE% Win64"
       - set Qt5_DIR=%QT_ROOT_DIR%\%MSVCID%_64\lib\cmake\Qt5
     environment:
       LIBRARY_ARCHITECTURE: lib64
@@ -60,6 +64,7 @@ for:
           configuration: Release
     before_build:
       - call %VCVARSALL% x86
+      - set GENERATOR="%GENERATOR_BASE%"
       - set Qt5_DIR=%QT_ROOT_DIR%\%MSVCID%\lib\cmake\Qt5
     environment:
       LIBRARY_ARCHITECTURE: lib32
@@ -69,6 +74,7 @@ for:
           configuration: Debug
     before_build:
       - call %VCVARSALL% x86
+      - set GENERATOR="%GENERATOR_BASE%"
       - set Qt5_DIR=%QT_ROOT_DIR%\%MSVCID%\lib\cmake\Qt5
     environment:
       LIBRARY_ARCHITECTURE: lib32
@@ -77,8 +83,7 @@ build_script:
   - set CTEST_OUTPUT_ON_FAILURE=1
   - mkdir build
   - cd build
-  - cmake -DCMAKE_BUILD_TYPE=%CONFIGURATION% -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -G"Ninja" ..
-  - ninja unit_tests
+  - cmake -DCMAKE_BUILD_TYPE=%CONFIGURATION% -G"%GENERATOR%" ..
   - ctest
   - cd ..
   # Also test the Qt sandbox.
