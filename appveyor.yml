@@ -78,7 +78,8 @@ build_script:
   - mkdir build
   - cd build
   - cmake -DCMAKE_BUILD_TYPE=%CONFIGURATION% -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -G"Ninja" ..
-  - ninja ctest
+  - ninja unit_tests
+  - ctest
   - cd ..
   # Also test the Qt sandbox.
   - C:\Python36\python scripts\generate-distributables.py
