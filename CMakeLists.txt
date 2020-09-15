@@ -76,14 +76,21 @@ if(IS_CLANG AND CMAKE_BUILD_TYPE STREQUAL "Debug")
            " -fprofile-instr-generate -fcoverage-mapping")
 endif()
 
+# The CONFIGURE_DEPENDS option for globbing seems to hang on AppVeyor.
+if(DEFINED ENV{APPVEYOR})
+    set(GLOB_OPTIONS "")
+else()
+    set(GLOB_OPTIONS "CONFIGURE_DEPENDS")
+endif()
+
 # Add the alia library.
 include_directories(src)
-file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS "src/*.cpp")
+file(GLOB_RECURSE SRC_FILES ${GLOB_OPTIONS} "src/*.cpp")
 add_library(alia STATIC ${SRC_FILES})
 
 # Add the unit test runner.
 include_directories(src)
-file(GLOB_RECURSE UNIT_TEST_FILES CONFIGURE_DEPENDS "unit_tests/*.cpp")
+file(GLOB_RECURSE UNIT_TEST_FILES ${GLOB_OPTIONS} "unit_tests/*.cpp")
 add_executable(unit_test_runner ${UNIT_TEST_FILES})
 target_link_libraries(unit_test_runner alia Catch2::Catch2)
 target_include_directories(unit_test_runner
@@ -93,7 +100,7 @@ target_include_directories(unit_test_runner
 # version of the library.
 # (Note that this comes as an empty test and requires some external setup to
 # run properly. This is normally only done within Travis.)
-file(GLOB_RECURSE SINGLE_HEADER_TEST_FILES CONFIGURE_DEPENDS
+file(GLOB_RECURSE SINGLE_HEADER_TEST_FILES ${GLOB_OPTIONS}
      "single_header_tests/*.cpp")
 add_executable(single_header_tester ${SINGLE_HEADER_TEST_FILES})
 target_link_libraries(single_header_tester alia Catch2::Catch2)
