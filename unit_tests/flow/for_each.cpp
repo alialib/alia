@@ -559,10 +559,10 @@ TEST_CASE("item list", "[for_each][list]")
     REQUIRE(call_count == 3);
 
     // Also do some benchmarking while we're here.
-    // BENCHMARK("stable list for_each")
-    // {
-    //     refresh_system(sys);
-    // };
+    BENCHMARK("stable list for_each")
+    {
+        refresh_system(sys);
+    };
 
     std::reverse(container.begin(), container.end());
 
