@@ -77,7 +77,7 @@ build_script:
   - set CTEST_OUTPUT_ON_FAILURE=1
   - mkdir build
   - cd build
-  - cmake -DCMAKE_BUILD_TYPE=%CONFIGURATION% -G"NMake Makefiles" ..
+  - cmake -DCMAKE_BUILD_TYPE=%CONFIGURATION% -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -G"NMake Makefiles" ..
   - cmake --build . --target unit_tests
   - cmake --build . --target ctest
   - cd ..
