@@ -84,7 +84,7 @@ build_script:
   - mkdir build
   - cd build
   - cmake -DCMAKE_BUILD_TYPE=%CONFIGURATION% -G"%GENERATOR%" ..
-  - ctest
+  - ctest -C %CONFIGURATION%
   - cd ..
   # Also test the Qt sandbox.
   - C:\Python36\python scripts\generate-distributables.py
