@@ -8,7 +8,7 @@
 
 struct my_exception
 {
-    int x = 0;
+    int x;
 };
 
 TEST_CASE("try_catch", "[flow][try_catch]")
