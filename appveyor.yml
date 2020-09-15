@@ -78,6 +78,7 @@ build_script:
   - mkdir build
   - cd build
   - cmake -DCMAKE_BUILD_TYPE=%CONFIGURATION% -G"NMake Makefiles" ..
+  - cmake --build . --target unit_tests
   - cmake --build . --target ctest
   - cd ..
   # Also test the Qt sandbox.
