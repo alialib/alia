@@ -77,9 +77,8 @@ build_script:
   - set CTEST_OUTPUT_ON_FAILURE=1
   - mkdir build
   - cd build
-  - cmake -DCMAKE_BUILD_TYPE=%CONFIGURATION% -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -G"NMake Makefiles" ..
-  - cmake --build . --target unit_tests
-  - cmake --build . --target ctest
+  - cmake -DCMAKE_BUILD_TYPE=%CONFIGURATION% -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -G"Ninja" ..
+  - ninja ctest
   - cd ..
   # Also test the Qt sandbox.
   - C:\Python36\python scripts\generate-distributables.py
