@@ -44,7 +44,7 @@ for:
           configuration: Release
     before_build:
       - call %VCVARSALL% x64
-      - set GENERATOR="%GENERATOR_BASE% Win64"
+      - set "GENERATOR=%GENERATOR_BASE% Win64"
       - set Qt5_DIR=%QT_ROOT_DIR%\%MSVCID%_64\lib\cmake\Qt5
     environment:
       LIBRARY_ARCHITECTURE: lib64
@@ -54,7 +54,7 @@ for:
           configuration: Debug
     before_build:
       - call %VCVARSALL% x64
-      - set GENERATOR="%GENERATOR_BASE% Win64"
+      - set "GENERATOR=%GENERATOR_BASE% Win64"
       - set Qt5_DIR=%QT_ROOT_DIR%\%MSVCID%_64\lib\cmake\Qt5
     environment:
       LIBRARY_ARCHITECTURE: lib64
@@ -64,7 +64,7 @@ for:
           configuration: Release
     before_build:
       - call %VCVARSALL% x86
-      - set GENERATOR="%GENERATOR_BASE%"
+      - set "GENERATOR=%GENERATOR_BASE%"
       - set Qt5_DIR=%QT_ROOT_DIR%\%MSVCID%\lib\cmake\Qt5
     environment:
       LIBRARY_ARCHITECTURE: lib32
@@ -74,7 +74,7 @@ for:
           configuration: Debug
     before_build:
       - call %VCVARSALL% x86
-      - set GENERATOR="%GENERATOR_BASE%"
+      - set "GENERATOR=%GENERATOR_BASE%"
       - set Qt5_DIR=%QT_ROOT_DIR%\%MSVCID%\lib\cmake\Qt5
     environment:
       LIBRARY_ARCHITECTURE: lib32
