@@ -28,11 +28,8 @@ template<class Value>
 void
 reset(async_operation_data<Value>& data)
 {
-    if (data.status != async_status::UNREADY)
-    {
-        ++data.version;
-        data.status = async_status::UNREADY;
-    }
+    ++data.version;
+    data.status = async_status::UNREADY;
 }
 
 template<class Value>
@@ -105,7 +102,6 @@ process_async_args(
 template<class Result>
 struct async_reporter
 {
-    
 };
 
 template<class Result, class Context, class Launcher, class... Args>
@@ -141,6 +137,7 @@ async(Context ctx, Launcher launcher, Args const&... args)
             try
             {
                 launcher(ctx, report_result, read_signal(args)...);
+                data.status = async_status::LAUNCHED;
             }
             catch (...)
             {

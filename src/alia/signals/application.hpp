@@ -132,11 +132,8 @@ template<class Value>
 void
 reset(apply_result_data<Value>& data)
 {
-    if (data.status != apply_status::UNCOMPUTED)
-    {
-        ++data.version;
-        data.status = apply_status::UNCOMPUTED;
-    }
+    ++data.version;
+    data.status = apply_status::UNCOMPUTED;
 }
 
 template<class Value>
