@@ -149,6 +149,7 @@ TEST_CASE("state changes and component dirtying", "[signals][state]")
     REQUIRE(log.str() == "clean;12;clean;12;writing;dirty;13;clean;13;");
 
     // And some benchmarking...
+#ifdef NDEBUG
     BENCHMARK("deep state changes")
     {
         refresh_system(sys);
@@ -156,8 +157,10 @@ TEST_CASE("state changes and component dirtying", "[signals][state]")
         my_state_change_event e;
         dispatch_event(sys, e);
     };
+#endif
 }
 
+#ifdef NDEBUG
 TEST_CASE("get_state benchmarks", "[signals][state]")
 {
     BENCHMARK("get_state")
@@ -175,3 +178,4 @@ TEST_CASE("get_state benchmarks", "[signals][state]")
         refresh_system(sys);
     };
 }
+#endif
