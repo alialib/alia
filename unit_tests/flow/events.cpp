@@ -77,6 +77,29 @@ TEST_CASE("node IDs", "[flow][events]")
     }
 }
 
+namespace {
+
+struct bad_event
+{
+};
+
+} // namespace
+
+TEST_CASE("event error propagation", "[flow][events]")
+{
+    alia::system sys;
+    initialize_system(sys, [&](context ctx) {
+        on_event<bad_event>(ctx, [&](auto, auto&) { std::string().at(0); });
+    });
+
+    refresh_system(sys);
+
+    bad_event event;
+    REQUIRE_THROWS_AS(dispatch_event(sys, event), std::out_of_range);
+
+    refresh_system(sys);
+}
+
 TEST_CASE("on_init/on_activate", "[signals][state]")
 {
     bool active = false;
