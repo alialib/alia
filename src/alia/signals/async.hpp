@@ -19,9 +19,14 @@ enum class async_status
 template<class Value>
 struct async_operation_data
 {
-    counter_type version = 0;
-    Value result;
     async_status status = async_status::UNREADY;
+    // This is used to identify the result of the operation. It's incremented
+    // every time the inputs change.
+    counter_type version = 0;
+    // If status is COMPLETE, this is the result.
+    Value result;
+    // If status is FAILED, this is the error.
+    std::exception_ptr error;
 };
 
 template<class Value>
@@ -102,6 +107,36 @@ process_async_args(
 template<class Result>
 struct async_reporter
 {
+    void
+    report_success(Result result)
+    {
+        auto& data = *data_;
+        if (data.version == version_)
+        {
+            data.result = std::move(result);
+            data.status = async_status::COMPLETE;
+            mark_dirty_component(container_);
+            refresh_system(*system_);
+        }
+    }
+
+    void
+    report_failure(std::exception_ptr error)
+    {
+        auto& data = *data_;
+        if (data.version == version_)
+        {
+            data.status = async_status::FAILED;
+            data.error = error;
+            mark_dirty_component(container_);
+            refresh_system(*system_);
+        }
+    }
+
+    std::shared_ptr<async_operation_data<Result>> data_;
+    counter_type version_;
+    alia::system* system_;
+    component_container_ptr container_;
 };
 
 template<class Result, class Context, class Launcher, class... Args>
@@ -120,30 +155,24 @@ async(Context ctx, Launcher launcher, Args const&... args)
     on_refresh(ctx, [&](auto ctx) {
         if (data.status == async_status::UNREADY && args_ready)
         {
-            auto* system = &get<system_tag>(ctx);
-            auto version = data.version;
-            auto container = get_active_component_container(ctx);
-            auto report_result
-                = [system, version, container, data_ptr](Result result) {
-                      auto& data = *data_ptr;
-                      if (data.version == version)
-                      {
-                          data.result = std::move(result);
-                          data.status = async_status::COMPLETE;
-                          mark_dirty_component(container);
-                          refresh_system(*system);
-                      }
-                  };
             try
             {
-                launcher(ctx, report_result, read_signal(args)...);
+                async_reporter<Result> reporter;
+                reporter.system_ = &get<system_tag>(ctx);
+                reporter.version_ = data.version;
+                reporter.container_ = get_active_component_container(ctx);
+                reporter.data_ = data_ptr;
+                launcher(ctx, reporter, read_signal(args)...);
                 data.status = async_status::LAUNCHED;
             }
             catch (...)
             {
+                data.error = std::current_exception();
                 data.status = async_status::FAILED;
             }
         }
+        if (data.status == async_status::FAILED)
+            std::rethrow_exception(data.error);
     });
 
     return make_async_signal(data);

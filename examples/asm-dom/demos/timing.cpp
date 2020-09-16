@@ -140,9 +140,9 @@ dom::button(ctx, "++", ++n);
 dom::text(ctx, "Here's a flickering signal carrying N * 2:");
 dom::text(ctx,
     alia::async<int>(ctx,
-        [](auto ctx, auto report_result, auto n) {
+        [](auto ctx, auto reporter, auto n) {
             web::async_call([=]() {
-                report_result(n * 2);
+                reporter.report_success(n * 2);
             }, 200);
         },
         n));
@@ -179,9 +179,9 @@ dom::text(ctx, "Here's the same signal from above with deflickering:");
 dom::text(ctx,
     deflicker(ctx,
         alia::async<int>(ctx,
-            [](auto ctx, auto report_result, auto n) {
+            [](auto ctx, auto reporter, auto n) {
                 web::async_call([=]() {
-                    report_result(n * 2);
+                    reporter.report_success(n * 2);
                 }, 200);
             },
             n)));
