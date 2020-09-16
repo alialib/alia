@@ -4,7 +4,8 @@
 
 #include <testing.hpp>
 
-#include <alia/signals/basic.hpp>
+#include <alia/flow/macros.hpp>
+#include <alia/flow/try_catch.hpp>
 
 #include "traversal.hpp"
 
@@ -21,11 +22,19 @@ TEST_CASE("printf", "[signals][text]")
         // MSVC is too forgiving of bad format strings, so this test doesn't
         // actually work there.
 #ifndef _MSC_VER
-        do_text(ctx, printf(ctx, "bad format: %q", value(0)));
+        alia_try
+        {
+            do_text(ctx, printf(ctx, "bad format: %q", value(0)));
+        }
+        alia_catch(...)
+        {
+            do_text(ctx, value("(error)"));
+        }
+        alia_end
 #endif
     };
 
-    check_traversal(sys, controller, "hello world;n is  2.1;");
+    check_traversal(sys, controller, "hello world;n is  2.1;(error);");
 }
 
 TEST_CASE("text conversions", "[signals][text]")
