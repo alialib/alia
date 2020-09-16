@@ -54,14 +54,17 @@ fetch_country_name(dom::context ctx, readable<std::string> country_code)
 {
     // This will be invoked to launch the fetch operation whenever necessary
     // (i.e., whenever we get a new country code).
-    auto launcher = [](auto ctx, auto report_result, auto country_code) {
+    auto launcher = [](auto ctx, auto reporter, auto country_code) {
         emscripten_fetch_attr_t attr;
         emscripten_fetch_attr_init(&attr);
         strcpy(attr.requestMethod, "GET");
         attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
         attr.onsuccess = handle_fetch_success;
         attr.onerror = handle_fetch_failure;
-        attr.userData = new std::function<void(fetch_result)>(report_result);
+        attr.userData = new std::function<void(fetch_result)>(
+            [reporter](fetch_result result) {
+                reporter.report_success(result);
+            });
         auto url = "https://restcountries.eu/rest/v2/alpha/" + country_code;
         emscripten_fetch(&attr, url.c_str());
     };

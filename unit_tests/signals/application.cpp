@@ -1,10 +1,10 @@
 #define ALIA_LOWERCASE_MACROS
 
-#include <alia/flow/try_catch.hpp>
 #include <alia/signals/application.hpp>
 
 #include <testing.hpp>
 
+#include <alia/flow/try_catch.hpp>
 #include <alia/signals/basic.hpp>
 
 #include <flow/testing.hpp>
