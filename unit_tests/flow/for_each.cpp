@@ -558,11 +558,13 @@ TEST_CASE("item list", "[for_each][list]")
     check_traversal(sys, controller, "apple;banana;cherry;");
     REQUIRE(call_count == 3);
 
+#ifdef NDEBUG
     // Also do some benchmarking while we're here.
     BENCHMARK("stable list for_each")
     {
         refresh_system(sys);
     };
+#endif
 
     std::reverse(container.begin(), container.end());
 
