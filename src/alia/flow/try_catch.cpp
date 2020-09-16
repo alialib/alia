@@ -25,7 +25,7 @@ try_block::try_block(context ctx) : ctx_(ctx)
 void
 try_block::operator<<(function_view<void()> body)
 {
-    ALIA_IF_(ctx_, !data_->exception)
+    ALIA_EVENT_DEPENDENT_IF_(ctx_, !data_->exception)
     {
         try
         {

@@ -118,9 +118,14 @@ enum class apply_status
 template<class Value>
 struct apply_result_data
 {
-    counter_type result_version = 0;
-    Value result;
     apply_status status = apply_status::UNCOMPUTED;
+    // This is used to identify the result of the apply. It's incremented every
+    // time the inputs change.
+    counter_type version = 0;
+    // If status is READY, this is the result.
+    Value result;
+    // If status is FAILED, this is the error.
+    std::exception_ptr error;
 };
 
 template<class Value>
@@ -129,7 +134,7 @@ reset(apply_result_data<Value>& data)
 {
     if (data.status != apply_status::UNCOMPUTED)
     {
-        ++data.result_version;
+        ++data.version;
         data.status = apply_status::UNCOMPUTED;
     }
 }
@@ -143,7 +148,7 @@ struct apply_signal : signal<apply_signal<Value>, Value, read_only_signal>
     id_interface const&
     value_id() const
     {
-        id_ = make_id(data_->result_version);
+        id_ = make_id(data_->version);
         return id_;
     }
     bool
@@ -221,9 +226,12 @@ apply(context ctx, Function f, Args const&... args)
             }
             catch (...)
             {
+                data.error = std::current_exception();
                 data.status = apply_status::FAILED;
             }
         }
+        if (data.status == apply_status::FAILED)
+            std::rethrow_exception(data.error);
     }
     return make_apply_signal(data);
 }
