@@ -1,12 +1,14 @@
 #define ALIA_LOWERCASE_MACROS
 
+#include <alia/flow/try_catch.hpp>
 #include <alia/signals/application.hpp>
 
 #include <testing.hpp>
 
 #include <alia/signals/basic.hpp>
 
-#include "traversal.hpp"
+#include <flow/testing.hpp>
+#include <traversal.hpp>
 
 using namespace alia;
 
@@ -41,6 +43,68 @@ TEST_CASE("lazy_apply", "[signals][application]")
     REQUIRE(s2.value_id() != s3.value_id());
     REQUIRE(s2.value_id() != s4.value_id());
     REQUIRE(s3.value_id() != s4.value_id());
+}
+
+TEST_CASE("failing lazy_apply", "[signals][application]")
+{
+    clear_log();
+
+    tree_node<test_object> root;
+    root.object.name = "root";
+
+    auto f = [&](size_t i) { return std::string("abcdef").substr(i); };
+
+    int n = 0;
+
+    auto controller = [&](test_context ctx) {
+        alia_try
+        {
+            do_object(ctx, lazy_apply(f, value(n)));
+        }
+        alia_catch(...)
+        {
+            do_object(ctx, "error");
+        }
+        alia_end
+    };
+
+    alia::system sys;
+    initialize_system(sys, [&](context vanilla_ctx) {
+        tree_traversal<test_object> traversal;
+        auto ctx = vanilla_ctx.add<tree_traversal_tag>(traversal);
+        if (is_refresh_event(ctx))
+        {
+            traverse_object_tree(traversal, root, [&]() { controller(ctx); });
+        }
+        else
+        {
+            controller(ctx);
+        }
+    });
+
+    n = 0;
+    refresh_system(sys);
+    REQUIRE(root.object.to_string() == "root(abcdef();)");
+
+    n = 3;
+    refresh_system(sys);
+    REQUIRE(root.object.to_string() == "root(def();)");
+
+    n = 7;
+    refresh_system(sys);
+    REQUIRE(root.object.to_string() == "root(error();)");
+
+    n = 7;
+    refresh_system(sys);
+    REQUIRE(root.object.to_string() == "root(error();)");
+
+    n = 2;
+    refresh_system(sys);
+    REQUIRE(root.object.to_string() == "root(cdef();)");
+
+    n = 17;
+    refresh_system(sys);
+    REQUIRE(root.object.to_string() == "root(error();)");
 }
 
 TEST_CASE("lazy_lift", "[signals][application]")
@@ -139,28 +203,51 @@ TEST_CASE("unready apply", "[signals][application]")
     }
 }
 
-TEST_CASE("failed apply", "[signals][application]")
+TEST_CASE("failing apply", "[signals][application]")
 {
-    auto f = [&](int, int) -> int { throw "failed"; };
+    int f_call_count = 0;
+    auto f = [&](size_t i) {
+        ++f_call_count;
+        return std::string("abcdef").substr(i);
+    };
 
-    {
-        alia::system sys;
-        initialize_system(sys, [](context) {});
+    alia::system sys;
+    initialize_system(sys, [](context) {});
 
-        auto make_controller = [=](auto x, auto y) {
-            return [=](context ctx) {
-                auto s = apply(ctx, f, x, y);
-
-                typedef decltype(s) signal_t;
-                REQUIRE(signal_is_readable<signal_t>::value);
-                REQUIRE(!signal_is_writable<signal_t>::value);
-
-                REQUIRE(!signal_has_value(s));
-            };
+    auto make_controller = [&](size_t i) {
+        return [=](context ctx) {
+            alia_try
+            {
+                do_text(ctx, apply(ctx, f, value(i)));
+            }
+            alia_catch(...)
+            {
+                do_text(ctx, value("(error)"));
+            }
+            alia_end
         };
+    };
 
-        do_traversal(sys, make_controller(value(1), value(2)));
-    }
+    check_traversal(sys, make_controller(0), "abcdef;");
+    REQUIRE(f_call_count == 1);
+
+    check_traversal(sys, make_controller(0), "abcdef;");
+    REQUIRE(f_call_count == 1);
+
+    check_traversal(sys, make_controller(3), "def;");
+    REQUIRE(f_call_count == 2);
+
+    check_traversal(sys, make_controller(7), "(error);");
+    REQUIRE(f_call_count == 3);
+
+    check_traversal(sys, make_controller(7), "(error);");
+    REQUIRE(f_call_count == 3);
+
+    check_traversal(sys, make_controller(3), "def;");
+    REQUIRE(f_call_count == 4);
+
+    check_traversal(sys, make_controller(17), "(error);");
+    REQUIRE(f_call_count == 5);
 }
 
 TEST_CASE("lift", "[signals][application]")
