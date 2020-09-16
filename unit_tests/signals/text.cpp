@@ -31,6 +31,8 @@ TEST_CASE("printf", "[signals][text]")
             do_text(ctx, value("(error)"));
         }
         alia_end
+#else
+        do_text(ctx, value("(error)"));
 #endif
     };
 
