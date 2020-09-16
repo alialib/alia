@@ -13,7 +13,7 @@ Many of these come from other sections of the documentation...
 Tip Calculator
 --------------
 
-Here's a simple tip calculator that shows off some many of the features of alia:
+Here's a simple tip calculator that shows off some of the features of alia:
 [actions](actions.md), conditional widgets, and how you can use alia's data
 graph to 'magically' manifest state when and where you need it, even in the
 middle of declarative component code.
