@@ -224,6 +224,9 @@ typedef alia::extend_context_type_t<alia::context, tree_traversal_tag>
     test_context;
 
 void
+do_object(test_context ctx, readable<std::string> name);
+
+void
 do_object(test_context ctx, std::string name);
 
 template<class Contents>
