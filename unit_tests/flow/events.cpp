@@ -89,7 +89,8 @@ TEST_CASE("event error propagation", "[flow][events]")
 {
     alia::system sys;
     initialize_system(sys, [&](context ctx) {
-        on_event<bad_event>(ctx, [&](auto, auto&) { std::string().at(0); });
+        on_event<bad_event>(
+            ctx, [&](auto, auto&) { static_cast<void>(std::string().at(0)); });
     });
 
     refresh_system(sys);
