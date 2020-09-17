@@ -108,7 +108,7 @@ template<class Result>
 struct async_reporter
 {
     void
-    report_success(Result result)
+    report_success(Result result) const
     {
         auto& data = *data_;
         if (data.version == version_)
@@ -121,7 +121,7 @@ struct async_reporter
     }
 
     void
-    report_failure(std::exception_ptr error)
+    report_failure(std::exception_ptr error) const
     {
         auto& data = *data_;
         if (data.version == version_)
