@@ -185,7 +185,7 @@ found in
 Action 'Library'
 ----------------
 
-alia provides a small 'library' of actions that are generally useful:
+alia provides a small library of actions that are generally useful:
 
 <dl>
 
@@ -202,6 +202,30 @@ This is exactly equivalent to `signal <<= !signal`.
 `push_back(container)`, where `container` is a signal carrying a container,
 creates an action that takes a compatible item as a parameter and pushes it onto
 the back of `container`.
+
+</dd>
+
+<dt>noop_action()</dt><dd>
+
+`noop_action()` creates an action that is always ready to perform but does
+nothing.
+
+This can be useful when you are mocking up a UI and aren't ready to fill in
+real actions.
+
+You can optionally provide type parameters to indicate the types of the
+action's parameters. e.g., `noop_action<int>()` creates an action that takes a
+single parameter of type `int`.
+
+</dd>
+
+<dt>unready_action()</dt><dd>
+
+`unready_action()` creates an action that is never ready to perform.
+
+Similar to `noop_action`, you can provide optional type parameters.
+`unready_action<int>()` creates an action that takes a single parameter of type
+`int`.
 
 </dd>
 
