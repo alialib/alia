@@ -40,10 +40,9 @@ is a simple example that makes use of all three:
 ?> The alia control flow macros come in both uppercase and lowercase forms.
    Traditionally, they have been lowercase to more closely resemble the actual
    C++ keywords that they mimic. However, the uppercase form makes it more
-   obvious to readers (and clang-format) that the macros are indeed macros.
-   Ultimately, it's up to you which style you prefer. If you want to be strict
-   in your project, you can disable the lowercase form in [the
-   configuration](configuration.md).
+   obvious to readers that the macros are indeed macros. Ultimately, it's up to
+   you which style you prefer. If you want to be strict in your project, you
+   can disable the lowercase form in [the configuration](configuration.md).
 
 [source](numerical.cpp ':include :fragment=analysis')
 
@@ -61,6 +60,16 @@ before `n` is given a value, none of the `dom::text` calls are executed.
 
 As with all alia control flow macros, `alia_if` blocks must be terminated with
 `alia_end`.
+
+?> If you use ClangFormat, the following options are recommended to help it
+   understand alia's macros:<br><br>
+   <code style="display: block; white-space: pre-line;">StatementMacros:
+     - ALIA_END
+     - ALIA_CASE
+     - ALIA_DEFAULT
+     - alia_end
+     - alia_case
+     - alia_default</code>
 
 ### Context Naming
 
