@@ -266,6 +266,63 @@ operator<<=(Sink sink, Source source)
     return sink <<= value(source);
 }
 
+// The noop_action is always ready to perform but does nothing.
+template<class... Args>
+struct noop_action_type : action_interface<Args...>
+{
+    noop_action_type()
+    {
+    }
+
+    bool
+    is_ready() const
+    {
+        return true;
+    }
+
+    void
+    perform(function_view<void()> const& intermediary, Args...) const
+    {
+        intermediary();
+    }
+};
+template<class... Args>
+noop_action_type<Args...>
+noop_action()
+{
+    return noop_action_type<Args...>();
+}
+
+// The unready_action is never ready to perform.
+template<class... Args>
+struct unready_action_type : action_interface<Args...>
+{
+    unready_action_type()
+    {
+    }
+
+    bool
+    is_ready() const
+    {
+        return false;
+    }
+
+    // LCOV_EXCL_START
+    void
+    perform(function_view<void()> const&, Args...) const
+    {
+        // This action is never supposed to be performed!
+        assert(0);
+    }
+    // LCOV_EXCL_STOP
+};
+template<class... Args>
+unready_action_type<Args...>
+unready_action()
+{
+    return unready_action_type<Args...>();
+}
+
 // toggle(flag), where :flag is a signal to a boolean, creates an action
 // that will toggle the value of :flag between true and false.
 //

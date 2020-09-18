@@ -153,6 +153,20 @@ TEST_CASE("action parameter passing", "[flow][actions]")
     f(a);
 }
 
+TEST_CASE("unready action", "[flow][actions]")
+{
+    REQUIRE(!unready_action().is_ready());
+    REQUIRE(!unready_action<int>().is_ready());
+}
+
+TEST_CASE("noop action", "[flow][actions]")
+{
+    REQUIRE(noop_action().is_ready());
+    perform_action(noop_action());
+    REQUIRE(noop_action<int>().is_ready());
+    perform_action(noop_action<int>(), 1);
+}
+
 TEST_CASE("toggle action", "[flow][actions]")
 {
     bool x = false;
