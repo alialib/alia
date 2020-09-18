@@ -25,7 +25,6 @@ if(NOT asm-dom_POPULATED)
     ${CMAKE_CURRENT_BINARY_DIR}/asm-dom.js
   )
 
-  string(APPEND CMAKE_CXX_FLAGS " -s EXTRA_EXPORTED_RUNTIME_METHODS='UTF8ToString'")
   string(APPEND CMAKE_CXX_FLAGS " -s WASM=1 --bind")
 endif()
 message(STATUS "Checking for asm-dom: DONE")
