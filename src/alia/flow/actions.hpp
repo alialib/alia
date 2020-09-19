@@ -449,6 +449,24 @@ lambda_action(Perform perform)
     return lambda_action([]() { return true; }, perform);
 }
 
+// actionize(x) returns the action form of x (if it isn't already one).
+// Specifically, if x is a callable object, this returns lambda_action(x).
+// If x is an action, this returns x itself.
+template<class Action>
+std::enable_if_t<is_action_type<Action>::value, Action>
+actionize(Action x)
+{
+    return x;
+}
+template<
+    class Callable,
+    std::enable_if_t<!is_action_type<Callable>::value, int> = 0>
+auto
+actionize(Callable x)
+{
+    return lambda_action(std::move(x));
+}
+
 } // namespace alia
 
 #endif
