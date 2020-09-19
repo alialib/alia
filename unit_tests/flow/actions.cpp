@@ -275,3 +275,21 @@ TEST_CASE("action binding", "[flow][actions]")
     REQUIRE(!(lambda_action([]() { return false; }, [&](int) {}) << value(0))
                  .is_ready());
 }
+
+TEST_CASE("actionize an action", "[flow][actions]")
+{
+    int x = 0;
+    auto a = actionize(direct(x) <<= 1);
+    REQUIRE(a.is_ready());
+    perform_action(a);
+    REQUIRE(x == 1);
+}
+
+TEST_CASE("actionize a lambda", "[flow][actions]")
+{
+    int x = 0;
+    auto a = actionize([&] { x = 1; });
+    REQUIRE(a.is_ready());
+    perform_action(a);
+    REQUIRE(x == 1);
+}
