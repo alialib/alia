@@ -56,6 +56,7 @@ struct loop_block : noncopyable
  private:
     data_traversal* traversal_;
     data_block* block_;
+    uncaught_exception_detector exception_detector_;
 };
 
 struct event_dependent_if_block : noncopyable
