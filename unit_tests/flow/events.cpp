@@ -5,6 +5,7 @@
 #include <testing.hpp>
 
 #include <alia/signals/basic.hpp>
+#include <alia/signals/lambdas.hpp>
 #include <alia/signals/operators.hpp>
 #include <alia/signals/state.hpp>
 #include <alia/system/internals.hpp>
@@ -101,7 +102,7 @@ TEST_CASE("event error propagation", "[flow][events]")
     refresh_system(sys);
 }
 
-TEST_CASE("on_init/on_activate", "[signals][state]")
+TEST_CASE("on_init/on_activate", "[flow][events]")
 {
     bool active = false;
 
@@ -157,4 +158,120 @@ TEST_CASE("on_init/on_activate", "[signals][state]")
     refresh_system(sys);
     REQUIRE(init_count == 1);
     REQUIRE(activate_count == 3);
+}
+
+TEST_CASE("on_value events", "[flow][events]")
+{
+    bool has_value = false;
+    int value = 0;
+
+    int gain_count = 0;
+    int gain_shadow = 0;
+
+    int loss_count = 0;
+    int loss_shadow = 0;
+
+    int change_count = 0;
+    int change_shadow = 0;
+
+    alia::system sys;
+    initialize_system(sys, [&](context ctx) {
+        on_refresh(ctx, [&](auto) {
+            gain_shadow = gain_count;
+            loss_shadow = loss_count;
+            change_shadow = change_count;
+        });
+
+        auto signal
+            = lambda_reader([&] { return has_value; }, [&] { return value; });
+
+        on_value_gain(ctx, signal, ++direct(gain_count));
+        on_value_loss(ctx, signal, ++direct(loss_count));
+        on_value_change(ctx, signal, ++direct(change_count));
+    });
+
+    refresh_system(sys);
+    REQUIRE(gain_count == 0);
+    REQUIRE(gain_shadow == 0);
+    REQUIRE(loss_count == 0);
+    REQUIRE(loss_shadow == 0);
+    REQUIRE(change_count == 0);
+    REQUIRE(change_shadow == 0);
+
+    refresh_system(sys);
+    REQUIRE(gain_count == 0);
+    REQUIRE(gain_shadow == 0);
+    REQUIRE(loss_count == 0);
+    REQUIRE(loss_shadow == 0);
+    REQUIRE(change_count == 0);
+    REQUIRE(change_shadow == 0);
+
+    has_value = true;
+    refresh_system(sys);
+    REQUIRE(gain_count == 1);
+    REQUIRE(gain_shadow == 1);
+    REQUIRE(loss_count == 0);
+    REQUIRE(loss_shadow == 0);
+    REQUIRE(change_count == 1);
+    REQUIRE(change_shadow == 1);
+
+    refresh_system(sys);
+    REQUIRE(gain_count == 1);
+    REQUIRE(gain_shadow == 1);
+    REQUIRE(loss_count == 0);
+    REQUIRE(loss_shadow == 0);
+    REQUIRE(change_count == 1);
+    REQUIRE(change_shadow == 1);
+
+    value = 2;
+    refresh_system(sys);
+    REQUIRE(gain_count == 1);
+    REQUIRE(gain_shadow == 1);
+    REQUIRE(loss_count == 0);
+    REQUIRE(loss_shadow == 0);
+    REQUIRE(change_count == 2);
+    REQUIRE(change_shadow == 2);
+
+    refresh_system(sys);
+    REQUIRE(gain_count == 1);
+    REQUIRE(gain_shadow == 1);
+    REQUIRE(loss_count == 0);
+    REQUIRE(loss_shadow == 0);
+    REQUIRE(change_count == 2);
+    REQUIRE(change_shadow == 2);
+
+    value = 1;
+    refresh_system(sys);
+    REQUIRE(gain_count == 1);
+    REQUIRE(gain_shadow == 1);
+    REQUIRE(loss_count == 0);
+    REQUIRE(loss_shadow == 0);
+    REQUIRE(change_count == 3);
+    REQUIRE(change_shadow == 3);
+
+    has_value = false;
+    refresh_system(sys);
+    REQUIRE(gain_count == 1);
+    REQUIRE(gain_shadow == 1);
+    REQUIRE(loss_count == 1);
+    REQUIRE(loss_shadow == 1);
+    REQUIRE(change_count == 4);
+    REQUIRE(change_shadow == 4);
+
+    refresh_system(sys);
+    REQUIRE(gain_count == 1);
+    REQUIRE(gain_shadow == 1);
+    REQUIRE(loss_count == 1);
+    REQUIRE(loss_shadow == 1);
+    REQUIRE(change_count == 4);
+    REQUIRE(change_shadow == 4);
+
+    value = 3;
+    refresh_system(sys);
+    REQUIRE(gain_count == 1);
+    REQUIRE(gain_shadow == 1);
+    REQUIRE(loss_count == 1);
+    REQUIRE(loss_shadow == 1);
+    REQUIRE(change_count == 4);
+    REQUIRE(change_shadow == 4);
 }
