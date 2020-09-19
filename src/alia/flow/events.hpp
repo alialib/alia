@@ -237,6 +237,85 @@ on_init(context ctx, action<> on_init);
 void
 on_activate(context ctx, action<> on_activate);
 
+template<class Value>
+struct value_change_detection_data
+{
+    captured_id id;
+    bool has_value;
+    Value value;
+};
+
+template<class Signal>
+void
+on_value_change(context ctx, Signal signal, action<> on_change)
+{
+    value_change_detection_data<typename Signal::value_type>* data;
+    if (get_data(ctx, &data))
+    {
+        data->has_value = signal_has_value(signal);
+        if (data->has_value)
+            data->value = read_signal(signal);
+    }
+    refresh_signal_shadow(
+        data->id,
+        signal,
+        [&](auto const& new_value) {
+            if (!data->has_value || data->value != new_value)
+            {
+                perform_action(on_change);
+                mark_dirty_component(ctx);
+                data->has_value = true;
+                data->value = new_value;
+            }
+        },
+        [&] {
+            if (data->has_value)
+            {
+                perform_action(on_change);
+                mark_dirty_component(ctx);
+                data->has_value = false;
+            }
+        });
+}
+
+template<class Signal>
+void
+on_value_gain(context ctx, Signal signal, action<> on_gain)
+{
+    bool* saved_state;
+    if (get_data(ctx, &saved_state))
+        *saved_state = true;
+    if (is_refresh_event(ctx))
+    {
+        bool current_state = signal_has_value(signal);
+        if (current_state && !*saved_state)
+        {
+            perform_action(on_gain);
+            mark_dirty_component(ctx);
+        }
+        *saved_state = current_state;
+    }
+}
+
+template<class Signal>
+void
+on_value_loss(context ctx, Signal signal, action<> on_loss)
+{
+    bool* saved_state;
+    if (get_data(ctx, &saved_state))
+        *saved_state = false;
+    if (is_refresh_event(ctx))
+    {
+        bool current_state = signal_has_value(signal);
+        if (!current_state && *saved_state)
+        {
+            perform_action(on_loss);
+            mark_dirty_component(ctx);
+        }
+        *saved_state = current_state;
+    }
+}
+
 } // namespace alia
 
 #endif
