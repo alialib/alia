@@ -87,6 +87,7 @@ struct try_block
 
     context ctx_;
     try_block_data* data_;
+    uncaught_exception_detector exception_detector_;
     bool uncaught_;
 };
 

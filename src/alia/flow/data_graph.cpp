@@ -256,7 +256,7 @@ scoped_data_block::end()
 
         // If GC is enabled, record which named blocks were used and clear out
         // the unused ones.
-        if (traversal.gc_enabled && !std::uncaught_exception())
+        if (traversal.gc_enabled && !exception_detector_.detect())
         {
             traversal.active_block->named_blocks = traversal.used_named_blocks;
             delete_named_block_ref_list(traversal.predicted_named_block);
