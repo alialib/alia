@@ -60,3 +60,37 @@ TEST_CASE("is_invocable", "[common]")
         !alia::is_invocable<decltype(f), int, int, std::string>::value,
         "too many arguments");
 }
+
+struct uncaught_exception_tester
+{
+    uncaught_exception_tester(bool* result) : result(result)
+    {
+    }
+
+    ~uncaught_exception_tester()
+    {
+        *result = detector.detect();
+    }
+
+    bool* result;
+    uncaught_exception_detector detector;
+};
+
+TEST_CASE("uncaught_exception_detector", "[common]")
+{
+    bool detected = false;
+    try
+    {
+        uncaught_exception_tester tester(&detected);
+        throw nullptr;
+    }
+    catch (...)
+    {
+    }
+    REQUIRE(detected);
+
+    {
+        uncaught_exception_tester tester(&detected);
+    }
+    REQUIRE(!detected);
+}

@@ -47,7 +47,7 @@ try_block::operator<<(function_view<void()> body)
 
 try_block::~try_block()
 {
-    if (uncaught_ && !std::uncaught_exception())
+    if (uncaught_ && !exception_detector_.detect())
     {
         mark_dirty_component(ctx_);
         data_->uncaught = true;

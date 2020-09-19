@@ -27,7 +27,7 @@ loop_block::~loop_block()
     // iteration (and, indirectly, all subsequent iterations), but since the
     // destructor is being invoked, there won't be a next iteration, which
     // means we should clear out that block.
-    if (!std::uncaught_exception())
+    if (!exception_detector_.detect())
         clear_data_block(*block_);
 }
 void

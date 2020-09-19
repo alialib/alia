@@ -138,6 +138,42 @@ class function_view<Return(Args...)> final
     }
 };
 
+// uncaught_exception_detector is a utility for detecting whether or not an
+// object is being destructed due to an uncaught exception. It uses
+// std::uncaught_exceptions() if available and std::uncaught_exception() if
+// not.
+#if __cplusplus >= 201703L
+struct uncaught_exception_detector
+{
+    uncaught_exception_detector()
+    {
+        base_exception_count_ = std::uncaught_exceptions();
+    }
+
+    bool
+    detect()
+    {
+        return base_exception_count_ != std::uncaught_exceptions();
+    }
+
+ private:
+    int base_exception_count_;
+};
+#else
+struct uncaught_exception_detector
+{
+    uncaught_exception_detector()
+    {
+    }
+
+    bool
+    detect()
+    {
+        return std::uncaught_exception();
+    }
+};
+#endif
+
 } // namespace alia
 
 #endif

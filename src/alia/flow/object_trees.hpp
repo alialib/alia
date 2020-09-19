@@ -248,7 +248,7 @@ struct scoped_tree_cacher
     }
     ~scoped_tree_cacher()
     {
-        if (!std::uncaught_exception())
+        if (!exception_detector_.detect())
             end();
     }
 
@@ -324,6 +324,7 @@ struct scoped_tree_cacher
     bool content_traversal_required_;
     captured_id content_id_;
     tree_node<Object>** predecessor_;
+    uncaught_exception_detector exception_detector_;
 };
 
 } // namespace alia

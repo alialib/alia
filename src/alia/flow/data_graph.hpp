@@ -204,6 +204,7 @@ struct scoped_data_block : noncopyable
 
  private:
     data_traversal* traversal_;
+    uncaught_exception_detector exception_detector_;
     // old state
     data_block* old_active_block_;
     named_block_ref_node* old_predicted_named_block_;
