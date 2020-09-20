@@ -4,6 +4,7 @@
 
 #include <alia/flow/try_catch.hpp>
 #include <alia/signals/basic.hpp>
+#include <alia/signals/operators.hpp>
 #include <alia/signals/text.hpp>
 
 #include <traversal.hpp>
@@ -35,7 +36,7 @@ TEST_CASE("async", "[signals][async]")
                                     else
                                         reporter = r;
                                 },
-                                value(x)),
+                                conditional(x >= -1, value(x), empty<int>())),
                             0)));
             }
             ALIA_CATCH(...)
@@ -46,6 +47,7 @@ TEST_CASE("async", "[signals][async]")
         };
     };
 
+    check_traversal(sys, make_controller(-2), "0;");
     check_traversal(sys, make_controller(-1), "(error);");
     check_traversal(sys, make_controller(0), "0;");
     reporter.report_success(1);
