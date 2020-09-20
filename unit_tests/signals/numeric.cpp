@@ -18,9 +18,14 @@ TEST_CASE("offset signal", "[signals][numeric]")
 
     REQUIRE(signal_has_value(s));
     REQUIRE(read_signal(s) == 1.5);
+    captured_id id;
+    id.capture(s.value_id());
+    REQUIRE(id.matches(scale(direct(x), value(0.5)).value_id()));
+
     REQUIRE(signal_ready_to_write(s));
     write_signal(s, 4);
     REQUIRE(x == 3.5);
+    REQUIRE(!id.matches(offset(direct(x), value(0.5)).value_id()));
 }
 
 TEST_CASE("scaled signal", "[signals][numeric]")
@@ -34,9 +39,14 @@ TEST_CASE("scaled signal", "[signals][numeric]")
 
     REQUIRE(signal_has_value(s));
     REQUIRE(read_signal(s) == 0.5);
+    captured_id id;
+    id.capture(s.value_id());
+    REQUIRE(id.matches(scale(direct(x), value(0.5)).value_id()));
+
     REQUIRE(signal_ready_to_write(s));
     write_signal(s, 2);
     REQUIRE(x == 4);
+    REQUIRE(!id.matches(scale(direct(x), value(0.5)).value_id()));
 }
 
 TEST_CASE("round_signal_writes", "[signals][numeric]")
