@@ -102,7 +102,8 @@ on_init(context ctx, action<> on_init)
     on_refresh(ctx, [&](auto) {
         if (!data.initialized && on_init.is_ready())
         {
-            perform_action(on_init);
+            isolate_errors(ctx, [&] { perform_action(on_init); });
+            mark_dirty_component(ctx);
             data.initialized = true;
         }
     });
@@ -116,7 +117,8 @@ on_activate(context ctx, action<> on_activate)
     on_refresh(ctx, [&](auto) {
         if (!data.initialized && on_activate.is_ready())
         {
-            perform_action(on_activate);
+            isolate_errors(ctx, [&] { perform_action(on_activate); });
+            mark_dirty_component(ctx);
             data.initialized = true;
         }
     });
