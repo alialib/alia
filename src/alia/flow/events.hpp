@@ -5,6 +5,7 @@
 #include <alia/flow/components.hpp>
 #include <alia/flow/data_graph.hpp>
 #include <alia/flow/macros.hpp>
+#include <alia/flow/try_catch.hpp>
 #include <alia/system/interface.hpp>
 
 // This file implements utilities for routing events through an alia content
@@ -262,7 +263,7 @@ on_value_change(context ctx, Signal signal, action<> on_change)
         [&](auto const& new_value) {
             if (!data->has_value || data->value != new_value)
             {
-                perform_action(on_change);
+                isolate_errors(ctx, [&] { perform_action(on_change); });
                 mark_dirty_component(ctx);
                 data->has_value = true;
                 data->value = new_value;
@@ -271,7 +272,7 @@ on_value_change(context ctx, Signal signal, action<> on_change)
         [&] {
             if (data->has_value)
             {
-                perform_action(on_change);
+                isolate_errors(ctx, [&] { perform_action(on_change); });
                 mark_dirty_component(ctx);
                 data->has_value = false;
             }
@@ -290,7 +291,7 @@ on_value_gain(context ctx, Signal signal, action<> on_gain)
         bool current_state = signal_has_value(signal);
         if (current_state && !*saved_state)
         {
-            perform_action(on_gain);
+            isolate_errors(ctx, [&] { perform_action(on_gain); });
             mark_dirty_component(ctx);
         }
         *saved_state = current_state;
@@ -309,7 +310,7 @@ on_value_loss(context ctx, Signal signal, action<> on_loss)
         bool current_state = signal_has_value(signal);
         if (!current_state && *saved_state)
         {
-            perform_action(on_loss);
+            isolate_errors(ctx, [&] { perform_action(on_loss); });
             mark_dirty_component(ctx);
         }
         *saved_state = current_state;
