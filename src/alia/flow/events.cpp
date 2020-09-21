@@ -124,4 +124,18 @@ on_activate(context ctx, action<> on_activate)
     });
 }
 
+void
+isolate_errors(system& sys, function_view<void()> const& function)
+{
+    try
+    {
+        function();
+    }
+    catch (...)
+    {
+        if (sys.error_handler)
+            sys.error_handler(std::current_exception());
+    }
+}
+
 } // namespace alia

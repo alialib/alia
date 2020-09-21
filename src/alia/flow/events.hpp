@@ -5,7 +5,6 @@
 #include <alia/flow/components.hpp>
 #include <alia/flow/data_graph.hpp>
 #include <alia/flow/macros.hpp>
-#include <alia/flow/try_catch.hpp>
 #include <alia/system/interface.hpp>
 
 // This file implements utilities for routing events through an alia content
@@ -230,6 +229,16 @@ on_refresh(Context ctx, Handler handler)
         handler(ctx);
     }
     ALIA_END
+}
+
+void
+isolate_errors(system& sys, function_view<void()> const& function);
+
+template<class Context>
+void
+isolate_errors(Context ctx, function_view<void()> const& function)
+{
+    isolate_errors(get<system_tag>(ctx), function);
 }
 
 void
