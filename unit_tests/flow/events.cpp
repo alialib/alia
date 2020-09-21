@@ -275,3 +275,36 @@ TEST_CASE("on_value events", "[flow][events]")
     REQUIRE(change_count == 4);
     REQUIRE(change_shadow == 4);
 }
+
+TEST_CASE("error isolation", "[flow][events]")
+{
+    int n = 0;
+
+    alia::system sys;
+    initialize_system(sys, [&](context ctx) {
+        on_value_change(ctx, value(n), lambda_action([&] {
+                            static_cast<void>(std::string("abc").at(n));
+                        }));
+    });
+
+    int error_count = 0;
+    set_error_handler(sys, [&](std::exception_ptr) { ++error_count; });
+
+    refresh_system(sys);
+    REQUIRE(error_count == 0);
+
+    n = 2;
+    refresh_system(sys);
+    REQUIRE(error_count == 0);
+
+    ++n;
+    refresh_system(sys);
+    REQUIRE(error_count == 1);
+
+    refresh_system(sys);
+    REQUIRE(error_count == 1);
+
+    ++n;
+    refresh_system(sys);
+    REQUIRE(error_count == 2);
+}

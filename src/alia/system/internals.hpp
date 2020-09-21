@@ -86,6 +86,7 @@ struct system : noncopyable
     std::unique_ptr<external_interface> external;
     timer_event_scheduler scheduler;
     component_container_ptr root_component;
+    std::function<void(std::exception_ptr)> error_handler;
 };
 
 void

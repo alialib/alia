@@ -30,4 +30,10 @@ refresh_system(system& sys)
     };
 }
 
+void
+set_error_handler(system& sys, std::function<void(std::exception_ptr)> handler)
+{
+    sys.error_handler = handler;
+}
+
 } // namespace alia

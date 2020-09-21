@@ -148,6 +148,28 @@ struct catch_block
 #define alia_catch(pattern) ALIA_CATCH(pattern)
 #endif
 
+template<class Function>
+void
+isolate_errors(system& sys, Function&& function)
+{
+    try
+    {
+        std::forward<Function>(function)();
+    }
+    catch (...)
+    {
+        if (sys.error_handler)
+            sys.error_handler(std::current_exception());
+    }
+}
+
+template<class Function>
+void
+isolate_errors(dataless_context ctx, Function&& function)
+{
+    isolate_errors(get<system_tag>(ctx), std::forward<Function>(function));
+}
+
 } // namespace alia
 
 #endif
