@@ -439,6 +439,62 @@ get_tagged_data(Collection collection)
 
 } // namespace detail
 
+// fold_over_collection(collection, f, z) performs a functional fold over the
+// objects in a structural collection, invoking f as f(tag, data, z) for each
+// object (and accumulating in z).
+
+template<class Collection, class Function, class Initial>
+auto
+fold_over_collection(Collection collection, Function f, Initial z);
+
+namespace detail {
+
+// collection_folder is a helper struct for doing compile-time component
+// collection folding...
+template<class Collection>
+struct collection_folder
+{
+};
+// the empty case
+template<class Storage>
+struct collection_folder<structural_collection<tag_list<>, Storage>>
+{
+    template<class Collection, class Function, class Initial>
+    static auto
+    apply(Collection, Function, Initial z)
+    {
+        return z;
+    }
+};
+// the recursive case
+template<class Storage, class Tag, class... Rest>
+struct collection_folder<
+    structural_collection<tag_list<Tag, Rest...>, Storage>>
+{
+    template<class Collection, class Function, class Initial>
+    static auto
+    apply(Collection collection, Function f, Initial z)
+    {
+        return f(
+            Tag(),
+            get_tagged_data<Tag>(collection),
+            fold_over_collection(
+                structural_collection<detail::tag_list<Rest...>, Storage>(
+                    collection.storage),
+                f,
+                z));
+    }
+};
+
+} // namespace detail
+
+template<class Collection, class Function, class Initial>
+auto
+fold_over_collection(Collection collection, Function f, Initial z)
+{
+    return detail::collection_folder<Collection>::apply(collection, f, z);
+}
+
 } // namespace alia
 
 #endif
