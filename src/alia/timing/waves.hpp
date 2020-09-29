@@ -8,7 +8,7 @@
 
 namespace alia {
 
-namespace impl {
+namespace detail {
 
 value_signal<bool>
 square_wave(
@@ -42,7 +42,7 @@ square_wave(
     TrueDuration true_duration,
     FalseDuration false_duration = empty<millisecond_count>())
 {
-    return impl::square_wave(
+    return detail::square_wave(
         ctx,
         signal_cast<millisecond_count>(signalize(true_duration)),
         signal_cast<millisecond_count>(signalize(false_duration)));

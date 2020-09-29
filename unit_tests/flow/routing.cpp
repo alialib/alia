@@ -104,14 +104,14 @@ check_traversal_path(
     {
         find_label_event fle;
         fle.name = label;
-        impl::dispatch_event(sys, fle);
+        detail::dispatch_event(sys, fle);
         target = fle.container;
     }
     {
         ostream_event oe;
         std::ostringstream s;
         oe.stream = &s;
-        impl::dispatch_targeted_event(sys, oe, target);
+        detail::dispatch_targeted_event(sys, oe, target);
         REQUIRE(s.str() == expected_path);
     }
 }
