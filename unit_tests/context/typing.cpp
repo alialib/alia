@@ -152,3 +152,57 @@ TEST_CASE("tagged data casting", "[context][typing]")
     auto ctx = add_tagged_data<int_tag>(empty, 1);
     REQUIRE(get_tagged_data<int_tag>(ctx) == 1);
 }
+
+namespace {
+
+using std::string;
+
+template<class Tag>
+struct tagged_data_printer
+{
+};
+
+template<>
+struct tagged_data_printer<foo_tag>
+{
+    static string
+    apply(foo const& f)
+    {
+        return f.b ? "foo: true; " : "foo: false; ";
+    }
+};
+
+template<>
+struct tagged_data_printer<bar_tag>
+{
+    static string
+    apply(bar const& b)
+    {
+        return "bar: " + std::to_string(b.i) + "; ";
+    }
+};
+
+struct reducer
+{
+    template<class Tag, class Data>
+    string
+    operator()(Tag, Data data, string z)
+    {
+        return tagged_data_printer<Tag>::apply(data) + z;
+    }
+};
+
+} // namespace
+
+TEST_CASE("collection folding", "[context][typing]")
+{
+    storage_type storage;
+    auto mc_empty = make_empty_structural_collection(&storage);
+    bar b(1);
+    auto mc_b = add_tagged_data<bar_tag>(mc_empty, std::ref(b));
+    foo f;
+    auto mc_fb = add_tagged_data<foo_tag>(mc_b, std::ref(f));
+
+    auto reduction = alia::fold_over_collection(mc_fb, reducer(), string());
+    REQUIRE(reduction == "foo: false; bar: 1; ");
+}
