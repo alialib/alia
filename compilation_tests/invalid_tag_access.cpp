@@ -2,7 +2,7 @@
 
 #include <alia/context/storage.hpp>
 
-using namespace alia::impl;
+using namespace alia::detail;
 
 ALIA_DEFINE_TAGGED_TYPE(foo_tag, int)
 ALIA_DEFINE_TAGGED_TYPE(bar_tag, int)

@@ -6,7 +6,7 @@
 
 namespace alia {
 
-namespace impl {
+namespace detail {
 
 struct square_wave_data
 {
@@ -45,6 +45,6 @@ square_wave(
     return value(data.value);
 }
 
-} // namespace impl
+} // namespace detail
 
 } // namespace alia

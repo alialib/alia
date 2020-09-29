@@ -9,7 +9,7 @@
 
 namespace alia {
 
-namespace impl {
+namespace detail {
 
 // generic_tagged_storage is one possible implementation of the underlying
 // container for storing the actual data associated with a tag.
@@ -118,30 +118,30 @@ struct tagged_data_accessor
     template<class Tag>                                                       \
     bool has() const                                                          \
     {                                                                         \
-        return impl::tagged_data_accessor<Storage, Tag>::has(*this);          \
+        return detail::tagged_data_accessor<Storage, Tag>::has(*this);        \
     }                                                                         \
                                                                               \
     template<class Tag, class Data>                                           \
     void add(Data&& data)                                                     \
     {                                                                         \
-        impl::tagged_data_accessor<Storage, Tag>::add(                        \
+        detail::tagged_data_accessor<Storage, Tag>::add(                      \
             *this, std::forward<Data&&>(data));                               \
     }                                                                         \
                                                                               \
     template<class Tag>                                                       \
     void remove()                                                             \
     {                                                                         \
-        impl::tagged_data_accessor<Storage, Tag>::remove(*this);              \
+        detail::tagged_data_accessor<Storage, Tag>::remove(*this);            \
     }                                                                         \
                                                                               \
     template<class Tag>                                                       \
     decltype(auto) get()                                                      \
     {                                                                         \
-        return impl::tagged_data_accessor<Storage, Tag>::get(*this);          \
+        return detail::tagged_data_accessor<Storage, Tag>::get(*this);        \
     }
 
 #define ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(Storage, Tag, name)                \
-    namespace impl {                                                          \
+    namespace detail {                                                        \
     template<>                                                                \
     struct tagged_data_accessor<Storage, Tag>                                 \
     {                                                                         \
@@ -168,7 +168,7 @@ struct tagged_data_accessor
     };                                                                        \
     }
 
-} // namespace impl
+} // namespace detail
 
 } // namespace alia
 

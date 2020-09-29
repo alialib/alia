@@ -51,7 +51,7 @@
 
 namespace alia {
 
-namespace impl {
+namespace detail {
 
 #define ALIA_DEFINE_TAGGED_TYPE(tag, data)                                    \
     struct tag                                                                \
@@ -437,7 +437,7 @@ get_tagged_data(Collection collection)
                                             ->template get<Tag>());
 }
 
-} // namespace impl
+} // namespace detail
 
 } // namespace alia
 

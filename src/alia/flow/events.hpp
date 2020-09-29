@@ -53,7 +53,7 @@ get_active_component_container(Context ctx)
     return *get_event_traversal(ctx).active_container;
 }
 
-namespace impl {
+namespace detail {
 
 // Set up the event traversal so that it will route the control flow to the
 // given target. (And also invoke the traversal.)
@@ -88,13 +88,13 @@ dispatch_event(system& sys, Event& event)
     route_event(sys, traversal, nullptr);
 }
 
-} // namespace impl
+} // namespace detail
 
 template<class Event>
 void
 dispatch_event(system& sys, Event& event)
 {
-    impl::dispatch_event(sys, event);
+    detail::dispatch_event(sys, event);
     refresh_system(sys);
 }
 
@@ -184,7 +184,7 @@ dispatch_targeted_event(
     system& sys, Event& event, external_component_id component)
 {
     event.target_id = component.id;
-    impl::dispatch_targeted_event(sys, event, component.identity);
+    detail::dispatch_targeted_event(sys, event, component.identity);
     refresh_system(sys);
 }
 

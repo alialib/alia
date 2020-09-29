@@ -22,7 +22,7 @@ refresh_system(system& sys)
     while (true)
     {
         refresh_event refresh;
-        impl::dispatch_event(sys, refresh);
+        detail::dispatch_event(sys, refresh);
         if (!sys.root_component->dirty)
             break;
         ++pass_count;

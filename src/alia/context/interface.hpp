@@ -32,7 +32,7 @@ struct context_storage
     timing_subsystem* timing = nullptr;
 
     // generic storage for other objects
-    impl::generic_tagged_storage<impl::any_ref> generic;
+    detail::generic_tagged_storage<detail::any_ref> generic;
 
     ALIA_IMPLEMENT_STORAGE_OBJECT_ACCESSORS(context_storage)
 
@@ -57,7 +57,7 @@ struct context_interface
     template<class OtherContents>
     context_interface(
         context_interface<OtherContents> other,
-        std::enable_if_t<impl::structural_collection_is_convertible<
+        std::enable_if_t<detail::structural_collection_is_convertible<
             OtherContents,
             Contents>::value>* = 0)
         : contents_(other.contents_)
@@ -67,7 +67,7 @@ struct context_interface
     // assignment operator (from convertible collections)
     template<class OtherContents>
     std::enable_if_t<
-        impl::structural_collection_is_convertible<OtherContents, Contents>::
+        detail::structural_collection_is_convertible<OtherContents, Contents>::
             value,
         context_interface&>
     operator=(context_interface<OtherContents> other)
@@ -82,7 +82,7 @@ struct context_interface
     bool
     has() const
     {
-        return impl::has_tagged_data<Tag>(contents_);
+        return detail::has_tagged_data<Tag>(contents_);
     }
 
     template<class Tag, class Data>
@@ -90,7 +90,7 @@ struct context_interface
     add(Data& data)
     {
         auto new_contents
-            = impl::add_tagged_data<Tag>(contents_, std::ref(data));
+            = detail::add_tagged_data<Tag>(contents_, std::ref(data));
         return context_interface<decltype(new_contents)>(
             std::move(new_contents));
     }
@@ -99,7 +99,7 @@ struct context_interface
     auto
     remove()
     {
-        auto new_contents = impl::remove_tagged_data<Tag>(contents_);
+        auto new_contents = detail::remove_tagged_data<Tag>(contents_);
         return context_interface<decltype(new_contents)>(
             std::move(new_contents));
     }
@@ -108,7 +108,7 @@ struct context_interface
     decltype(auto)
     get()
     {
-        return impl::get_tagged_data<Tag>(contents_);
+        return detail::get_tagged_data<Tag>(contents_);
     }
 
     Contents contents_;
@@ -117,8 +117,9 @@ struct context_interface
 template<class Context, class... Tag>
 struct extend_context_type
 {
-    typedef context_interface<
-        impl::add_tagged_data_types_t<typename Context::contents_type, Tag...>>
+    typedef context_interface<detail::add_tagged_data_types_t<
+        typename Context::contents_type,
+        Tag...>>
         type;
 };
 
@@ -129,8 +130,9 @@ using extend_context_type_t =
 template<class Context, class Tag>
 struct remove_context_tag
 {
-    typedef context_interface<
-        impl::remove_tagged_data_type_t<typename Context::contents_type, Tag>>
+    typedef context_interface<detail::remove_tagged_data_type_t<
+        typename Context::contents_type,
+        Tag>>
         type;
 };
 
@@ -140,8 +142,8 @@ using remove_context_tag_t = typename remove_context_tag<Context, Tag>::type;
 // the typedefs for the context - There are two because we want to be able to
 // represent the context with and without data capabilities.
 
-typedef context_interface<impl::add_tagged_data_types_t<
-    impl::empty_structural_collection<context_storage>,
+typedef context_interface<detail::add_tagged_data_types_t<
+    detail::empty_structural_collection<context_storage>,
     system_tag,
     event_traversal_tag,
     timing_tag>>
