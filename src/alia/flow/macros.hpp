@@ -323,23 +323,12 @@ read_condition(T const& x)
 // This means that any attempt to retrieve data within the block will result
 // in an error (as it should).
 
-#ifdef ALIA_STATIC_CONTEXT_CHECKS
 #define ALIA_REMOVE_DATA_TRACKING(ctx)                                        \
     ALIA_DISABLE_MACRO_WARNINGS                                               \
     auto _alia_ctx = alia::make_context(                                      \
         alia::impl::remove_tagged_data<data_traversal_tag>(ctx.contents_));   \
     auto ctx = _alia_ctx;                                                     \
     ALIA_UNDISABLE_MACRO_WARNINGS
-#else
-#define ALIA_REMOVE_DATA_TRACKING(ctx)                                        \
-    ALIA_DISABLE_MACRO_WARNINGS                                               \
-    typename decltype(ctx)::contents_type::storage_type _alia_storage;        \
-    auto _alia_ctx = alia::make_context(                                      \
-        alia::impl::remove_tagged_data<data_traversal_tag>(                   \
-            ctx.contents_, &_alia_storage));                                  \
-    auto ctx = _alia_ctx;                                                     \
-    ALIA_UNDISABLE_MACRO_WARNINGS
-#endif
 
 #define ALIA_UNTRACKED_IF_(ctx, condition)                                    \
     if (alia::condition_is_true(condition))                                   \

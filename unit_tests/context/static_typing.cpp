@@ -6,11 +6,6 @@
 
 using namespace alia::impl;
 
-// structural_collection.hpp is supposed to define this by default.
-#ifndef ALIA_STATIC_CONTEXT_CHECKS
-#error ALIA_STATIC_CONTEXT_CHECKS not defined
-#endif
-
 // Define some arbitrary tag and data types.
 struct foo
 {
