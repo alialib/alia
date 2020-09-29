@@ -15,7 +15,7 @@ make_context(
     timing_subsystem& timing)
 {
     storage->content_id = &unit_id;
-    return make_context(impl::make_empty_structural_collection(storage))
+    return make_context(detail::make_empty_structural_collection(storage))
         .add<system_tag>(sys)
         .add<event_traversal_tag>(event)
         .add<timing_tag>(timing)

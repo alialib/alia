@@ -128,7 +128,7 @@ struct catch_block
         {                                                                     \
             alia::try_block _alia_try_block(ctx);                             \
             {                                                                 \
-                _alia_try_block << [&]() ALIA_UNDISABLE_MACRO_WARNINGS
+                _alia_try_block << [&]() ALIA_REENABLE_MACRO_WARNINGS
 
 #define ALIA_TRY ALIA_TRY_(ctx)
 
@@ -137,7 +137,7 @@ struct catch_block
     }                                                                         \
     {                                                                         \
         alia::catch_block _alia_catch_block(_alia_try_block);                 \
-        _alia_catch_block << [&](pattern) ALIA_UNDISABLE_MACRO_WARNINGS
+        _alia_catch_block << [&](pattern) ALIA_REENABLE_MACRO_WARNINGS
 
 #define ALIA_CATCH(pattern) ALIA_CATCH_(ctx, pattern)
 

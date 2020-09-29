@@ -26,7 +26,7 @@ invoke_controller(system& sys, event_traversal& events)
     sys.controller(ctx);
 }
 
-namespace impl {
+namespace detail {
 
 static void
 route_event_(
@@ -63,7 +63,7 @@ route_event(
     }
 }
 
-} // namespace impl
+} // namespace detail
 
 void
 abort_traversal(dataless_context ctx)

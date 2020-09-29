@@ -4,7 +4,7 @@
 
 #include <testing.hpp>
 
-using namespace alia::impl;
+using namespace alia::detail;
 
 // Define some arbitrary tag and data types.
 struct foo

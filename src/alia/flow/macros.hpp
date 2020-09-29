@@ -150,10 +150,10 @@ read_condition(T const& x)
 #define ALIA_DISABLE_MACRO_WARNINGS                                           \
     __pragma(warning(push)) __pragma(warning(disable : 4456))                 \
         __pragma(warning(disable : 4457))
-#define ALIA_UNDISABLE_MACRO_WARNINGS __pragma(warning(pop))
+#define ALIA_REENABLE_MACRO_WARNINGS __pragma(warning(pop))
 #else
 #define ALIA_DISABLE_MACRO_WARNINGS
-#define ALIA_UNDISABLE_MACRO_WARNINGS
+#define ALIA_REENABLE_MACRO_WARNINGS
 #endif
 
 // if, else_if, else
@@ -172,7 +172,7 @@ read_condition(T const& x)
                 get_data_traversal(ctx), _alia_if_condition);                 \
             if (_alia_if_condition)                                           \
             {                                                                 \
-                ALIA_UNDISABLE_MACRO_WARNINGS
+                ALIA_REENABLE_MACRO_WARNINGS
 
 #define ALIA_IF(condition) ALIA_IF_(ctx, condition)
 
@@ -192,7 +192,7 @@ read_condition(T const& x)
             get_data_traversal(ctx), _alia_else_if_condition);                \
         if (_alia_else_if_condition)                                          \
         {                                                                     \
-            ALIA_UNDISABLE_MACRO_WARNINGS
+            ALIA_REENABLE_MACRO_WARNINGS
 
 #define ALIA_ELSE_IF(condition) ALIA_ELSE_IF_(ctx, condition)
 
@@ -205,7 +205,7 @@ read_condition(T const& x)
             get_data_traversal(ctx), _alia_else_condition);                   \
         if (_alia_else_condition)                                             \
         {                                                                     \
-            ALIA_UNDISABLE_MACRO_WARNINGS
+            ALIA_REENABLE_MACRO_WARNINGS
 
 #define ALIA_ELSE ALIA_ELSE_(ctx)
 
@@ -229,7 +229,7 @@ read_condition(T const& x)
         {                                                                     \
             switch (::alia::read_condition(_alia_switch_value))               \
             {                                                                 \
-                ALIA_UNDISABLE_MACRO_WARNINGS
+                ALIA_REENABLE_MACRO_WARNINGS
 
 #define ALIA_SWITCH(x) ALIA_SWITCH_(ctx, x)
 
@@ -274,7 +274,7 @@ read_condition(T const& x)
                 _alia_scope.begin(                                            \
                     _alia_looper.traversal(), _alia_looper.block());          \
                 _alia_looper.next();                                          \
-                ALIA_UNDISABLE_MACRO_WARNINGS
+                ALIA_REENABLE_MACRO_WARNINGS
 
 #define ALIA_FOR(x) ALIA_FOR_(ctx, x)
 
@@ -296,7 +296,7 @@ read_condition(T const& x)
                 _alia_scope.begin(                                            \
                     _alia_looper.traversal(), _alia_looper.block());          \
                 _alia_looper.next();                                          \
-                ALIA_UNDISABLE_MACRO_WARNINGS
+                ALIA_REENABLE_MACRO_WARNINGS
 
 #define ALIA_WHILE(x) ALIA_WHILE_(ctx, x)
 
@@ -325,10 +325,9 @@ read_condition(T const& x)
 
 #define ALIA_REMOVE_DATA_TRACKING(ctx)                                        \
     ALIA_DISABLE_MACRO_WARNINGS                                               \
-    auto _alia_ctx = alia::make_context(                                      \
-        alia::impl::remove_tagged_data<data_traversal_tag>(ctx.contents_));   \
+    auto _alia_ctx = ctx.remove<data_traversal_tag>();                        \
     auto ctx = _alia_ctx;                                                     \
-    ALIA_UNDISABLE_MACRO_WARNINGS
+    ALIA_REENABLE_MACRO_WARNINGS
 
 #define ALIA_UNTRACKED_IF_(ctx, condition)                                    \
     if (alia::condition_is_true(condition))                                   \
@@ -384,7 +383,7 @@ read_condition(T const& x)
             ALIA_REMOVE_DATA_TRACKING(ctx)                                    \
             switch (_alia_switch_value)                                       \
             {                                                                 \
-                ALIA_UNDISABLE_MACRO_WARNINGS
+                ALIA_REENABLE_MACRO_WARNINGS
 
 #define ALIA_UNTRACKED_SWITCH(expression)                                     \
     ALIA_UNTRACKED_SWITCH_(ctx, expression)
