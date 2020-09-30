@@ -238,7 +238,7 @@ template<class Context>
 void
 isolate_errors(Context ctx, function_view<void()> const& function)
 {
-    isolate_errors(get<system_tag>(ctx), function);
+    isolate_errors(get_object<system_tag>(ctx), function);
 }
 
 void

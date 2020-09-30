@@ -153,7 +153,7 @@ struct element_handle : noncopyable
         if (initializing_)
             node_->object.create_as_element(type);
         if (is_refresh_event(ctx))
-            refresh_tree_node(get<tree_traversal_tag>(ctx), *node_);
+            refresh_tree_node(get_object<tree_traversal_tag>(ctx), *node_);
     }
 
     template<class Value>
@@ -238,7 +238,7 @@ struct scoped_element : noncopyable
         if (initializing_)
             node_->object.create_as_element(type);
         if (is_refresh_event(ctx))
-            tree_scoping_.begin(get<tree_traversal_tag>(ctx), *node_);
+            tree_scoping_.begin(get_object<tree_traversal_tag>(ctx), *node_);
         return *this;
     }
 
@@ -386,7 +386,7 @@ cached_content(Context ctx, id_interface const& id, Function&& fn)
     if (is_refresh_event(ctx))
     {
         cacher.begin(
-            get<tree_traversal_tag>(ctx),
+            get_object<tree_traversal_tag>(ctx),
             data->caching,
             id,
             container.is_dirty());

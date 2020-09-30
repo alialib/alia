@@ -160,7 +160,7 @@ async(Context ctx, Launcher launcher, Args const&... args)
                 auto reporter = async_reporter<Result>{
                     data_ptr,
                     data.version,
-                    &get<system_tag>(ctx),
+                    &get_object<system_tag>(ctx),
                     get_active_component_container(ctx)};
                 launcher(ctx, reporter, read_signal(args)...);
                 data.status = async_status::LAUNCHED;

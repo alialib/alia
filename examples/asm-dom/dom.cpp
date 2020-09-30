@@ -29,7 +29,7 @@ install_element_callback(
     char const* event_type)
 {
     auto external_id = externalize(&data.identity);
-    auto* system = &get<system_tag>(ctx);
+    auto* system = &get_object<system_tag>(ctx);
     data.callback = [=](emscripten::val v) {
         dom_event event(v);
         dispatch_targeted_event(*system, event, external_id);
@@ -73,7 +73,7 @@ text_node_(dom::context ctx, readable<string> text)
         data->node.object.create_as_text_node("");
     if (is_refresh_event(ctx))
     {
-        refresh_tree_node(get<tree_traversal_tag>(ctx), data->node);
+        refresh_tree_node(get_object<tree_traversal_tag>(ctx), data->node);
         refresh_signal_shadow(
             data->value_id,
             text,
@@ -369,7 +369,7 @@ void
 system::operator()(alia::context vanilla_ctx)
 {
     tree_traversal<element_object> traversal;
-    auto ctx = vanilla_ctx.add<tree_traversal_tag>(traversal);
+    auto ctx = add_object<tree_traversal_tag>(vanilla_ctx, traversal);
 
     if (is_refresh_event(ctx))
     {

@@ -45,6 +45,15 @@ ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(context_storage, event_traversal_tag, event)
 ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(context_storage, data_traversal_tag, data)
 ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(context_storage, timing_tag, timing)
 
+// Context objects implement this interface if they provide state that might
+// influence the component-level application code.
+struct stateful_context_object
+{
+    virtual id_interface const&
+    value_id()
+        = 0;
+};
+
 // the context interface wrapper
 template<class Contents>
 struct context_interface
@@ -78,41 +87,41 @@ struct context_interface
 
     typedef Contents contents_type;
 
-    template<class Tag>
-    bool
-    has() const
-    {
-        return detail::has_tagged_data<Tag>(contents_);
-    }
-
-    template<class Tag, class Data>
-    auto
-    add(Data& data)
-    {
-        auto new_contents
-            = detail::add_tagged_data<Tag>(contents_, std::ref(data));
-        return context_interface<decltype(new_contents)>(
-            std::move(new_contents));
-    }
-
-    template<class Tag>
-    auto
-    remove()
-    {
-        auto new_contents = detail::remove_tagged_data<Tag>(contents_);
-        return context_interface<decltype(new_contents)>(
-            std::move(new_contents));
-    }
-
-    template<class Tag>
-    decltype(auto)
-    get()
-    {
-        return detail::get_tagged_data<Tag>(contents_);
-    }
-
     Contents contents_;
 };
+
+// manipulation of context objects...
+
+template<class Tag, class Contents>
+bool
+has_object(context_interface<Contents> ctx)
+{
+    return detail::has_tagged_data<Tag>(ctx.contents_);
+}
+
+template<class Tag, class Contents, class Data>
+auto
+add_object(context_interface<Contents> ctx, Data& data)
+{
+    auto new_contents
+        = detail::add_tagged_data<Tag>(ctx.contents_, std::ref(data));
+    return context_interface<decltype(new_contents)>(std::move(new_contents));
+}
+
+template<class Tag, class Contents>
+auto
+remove_object(context_interface<Contents> ctx)
+{
+    auto new_contents = detail::remove_tagged_data<Tag>(ctx.contents_);
+    return context_interface<decltype(new_contents)>(std::move(new_contents));
+}
+
+template<class Tag, class Contents>
+decltype(auto)
+get_object(context_interface<Contents> ctx)
+{
+    return detail::get_tagged_data<Tag>(ctx.contents_);
+}
 
 template<class Context, class... Tag>
 struct extend_context_type
@@ -180,25 +189,18 @@ copy_context(Context ctx)
     return Context(typename Context::contents_type(new_storage));
 }
 
-template<class Tag, class Contents>
-decltype(auto)
-get(context_interface<Contents> context)
-{
-    return context.template get<Tag>();
-}
-
 template<class Context>
 event_traversal&
 get_event_traversal(Context ctx)
 {
-    return ctx.template get<event_traversal_tag>();
+    return get_object<event_traversal_tag>(ctx);
 }
 
 template<class Context>
 data_traversal&
 get_data_traversal(Context ctx)
 {
-    return ctx.template get<data_traversal_tag>();
+    return get_object<data_traversal_tag>(ctx);
 }
 
 inline id_interface const&

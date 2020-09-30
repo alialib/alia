@@ -499,18 +499,18 @@ TEST_CASE("alia_untracked_if", "[flow][macros]")
         data_graph graph;
         auto make_controller = [](int n) {
             return [=](context ctx) {
-                REQUIRE(ctx.has<data_traversal_tag>());
+                REQUIRE(has_object<data_traversal_tag>(ctx));
                 alia_untracked_if(n > 2)
                 {
-                    REQUIRE(!ctx.has<data_traversal_tag>());
+                    REQUIRE(!has_object<data_traversal_tag>(ctx));
                 }
                 alia_untracked_else_if(n > 1)
                 {
-                    REQUIRE(!ctx.has<data_traversal_tag>());
+                    REQUIRE(!has_object<data_traversal_tag>(ctx));
                 }
                 alia_untracked_else
                 {
-                    REQUIRE(!ctx.has<data_traversal_tag>());
+                    REQUIRE(!has_object<data_traversal_tag>(ctx));
                 }
                 alia_end;
                 do_int(ctx, 0);
@@ -530,10 +530,10 @@ TEST_CASE("alia_untracked_switch", "[flow][macros]")
         data_graph graph;
         auto make_controller = [](int n) {
             return [=](context ctx) {
-                REQUIRE(ctx.has<data_traversal_tag>());
+                REQUIRE(has_object<data_traversal_tag>(ctx));
 
                 auto f = [](context ctx, int x) {
-                    REQUIRE(ctx.has<data_traversal_tag>());
+                    REQUIRE(has_object<data_traversal_tag>(ctx));
                     return x;
                 };
 
@@ -541,10 +541,10 @@ TEST_CASE("alia_untracked_switch", "[flow][macros]")
                 ALIA_UNTRACKED_SWITCH(f(ctx, n))
                 {
                     case 0:
-                        REQUIRE(!ctx.has<data_traversal_tag>());
+                        REQUIRE(!has_object<data_traversal_tag>(ctx));
                         break;
                     default:
-                        REQUIRE(!ctx.has<data_traversal_tag>());
+                        REQUIRE(!has_object<data_traversal_tag>(ctx));
                         break;
                 }
                 ALIA_END

@@ -64,7 +64,7 @@ set_next_node(qt_traversal& traversal, qt_layout_node* node)
 void
 add_layout_node(dataless_qt_context ctx, qt_layout_node* node)
 {
-    qt_traversal& traversal = ctx.get<qt_traversal_tag>();
+    qt_traversal& traversal = get_object<qt_traversal_tag>(ctx);
     set_next_node(traversal, node);
     traversal.next_ptr = &node->next;
 }
@@ -89,7 +89,7 @@ void
 scoped_layout_container::begin(qt_context ctx, qt_layout_container* container)
 {
     on_refresh(ctx, [&](auto ctx) {
-        traversal_ = &ctx.get<qt_traversal_tag>();
+        traversal_ = &get_object<qt_traversal_tag>(ctx);
         qt_traversal& traversal = *traversal_;
 
         set_next_node(traversal, container);
@@ -141,11 +141,11 @@ do_label(qt_context ctx, readable<string> text)
     auto& label = get_cached_data<qt_label>(ctx);
 
     on_refresh(ctx, [&](auto ctx) {
-        auto& system = ctx.get<system_tag>();
+        auto& system = get_object<system_tag>(ctx);
 
         if (!label.object)
         {
-            auto& traversal = get<qt_traversal_tag>(ctx);
+            auto& traversal = get_object<qt_traversal_tag>(ctx);
             auto* parent = traversal.active_parent;
             label.object = new QLabel(parent);
             if (parent->isVisible())
@@ -194,13 +194,13 @@ do_button(qt_context ctx, readable<string> text, action<> on_click)
     auto& button = get_cached_data<qt_button>(ctx);
 
     on_refresh(ctx, [&](auto ctx) {
-        auto& system = get<system_tag>(ctx);
+        auto& system = get_object<system_tag>(ctx);
 
         refresh_component_identity(ctx, button.identity);
 
         if (!button.object)
         {
-            auto& traversal = get<qt_traversal_tag>(ctx);
+            auto& traversal = get_object<qt_traversal_tag>(ctx);
             auto* parent = traversal.active_parent;
             button.object = new QPushButton(parent);
             if (parent->isVisible())
@@ -268,13 +268,13 @@ do_text_control(qt_context ctx, duplex<string> text)
     auto& widget = get_cached_data<qt_text_control>(ctx);
 
     on_refresh(ctx, [&](auto ctx) {
-        auto& system = get<system_tag>(ctx);
+        auto& system = get_object<system_tag>(ctx);
 
         refresh_component_identity(ctx, widget.identity);
 
         if (!widget.object)
         {
-            auto& traversal = get<qt_traversal_tag>(ctx);
+            auto& traversal = get_object<qt_traversal_tag>(ctx);
             auto* parent = traversal.active_parent;
             widget.object = new QTextEdit(parent);
             if (parent->isVisible())
@@ -362,7 +362,7 @@ void
 qt_system::operator()(alia::context vanilla_ctx)
 {
     qt_traversal traversal;
-    qt_context ctx = vanilla_ctx.add<qt_traversal_tag>(traversal);
+    qt_context ctx = add_object<qt_traversal_tag>(vanilla_ctx, traversal);
 
     on_refresh(ctx, [&](auto ctx) {
         traversal.next_ptr = &this->root;

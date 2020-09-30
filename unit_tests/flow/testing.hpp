@@ -238,7 +238,7 @@ do_container(test_context ctx, std::string name, Contents contents)
     if (get_cached_data(ctx, &node))
         node->object.name = name;
     if (is_refresh_event(ctx))
-        scoped.begin(get<tree_traversal_tag>(ctx), *node);
+        scoped.begin(get_object<tree_traversal_tag>(ctx), *node);
     contents(ctx);
 }
 
@@ -250,10 +250,10 @@ do_piecewise_container(test_context ctx, std::string name, Contents contents)
     if (get_cached_data(ctx, &node))
         node->object.name = name;
     if (is_refresh_event(ctx))
-        refresh_tree_node(get<tree_traversal_tag>(ctx), *node);
+        refresh_tree_node(get_object<tree_traversal_tag>(ctx), *node);
     scoped_tree_children<test_object> scoped;
     if (is_refresh_event(ctx))
-        scoped.begin(get<tree_traversal_tag>(ctx), *node);
+        scoped.begin(get_object<tree_traversal_tag>(ctx), *node);
     contents(ctx);
 }
 

@@ -31,7 +31,7 @@ do_my_thing(my_context ctx, readable<string> label)
     auto id = get_component_id(ctx);
 
     on_refresh(ctx, [id](auto ctx) {
-        ctx.template get<my_tag>().push_back(externalize(id));
+        get_object<my_tag>(ctx).push_back(externalize(id));
     });
 
     on_event<my_event>(
@@ -54,7 +54,7 @@ TEST_CASE("node IDs", "[flow][events]")
     std::vector<external_component_id> ids;
 
     sys.controller = [&](context vanilla_ctx) {
-        my_context ctx = vanilla_ctx.add<my_tag>(ids);
+        my_context ctx = add_object<my_tag>(vanilla_ctx, ids);
         do_my_thing(ctx, value("one"));
         do_my_thing(ctx, value("two"));
     };
