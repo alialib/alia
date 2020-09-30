@@ -1,4 +1,4 @@
-#include <alia/context/typing.hpp>
+#include <alia/context/structural_typing.hpp>
 
 #include <alia/context/storage.hpp>
 
