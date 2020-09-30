@@ -19,7 +19,8 @@ typedef extend_context_type_t<dom::context, username_tag> app_context;
 void
 internal_app_ui(app_context ctx)
 {
-    dom::text(ctx, alia::printf(ctx, "Welcome, %s!", ctx.get<username_tag>()));
+    dom::text(ctx,
+        alia::printf(ctx, "Welcome, %s!", get_object<username_tag>(ctx)));
 }
 
 // Our top-level UI function takes the context that the asm-dom wrapper provides
@@ -32,7 +33,7 @@ main_app_ui(dom::context ctx)
     readable<std::string> username = value("tmadden");
 
     // Extend the app context to include the username.
-    app_context app_ctx = ctx.add<username_tag>(username);
+    app_context app_ctx = add_object<username_tag>(ctx, username);
 
     // Pass that context along to the internal portions of the app UI...
     internal_app_ui(app_ctx);
@@ -54,52 +55,3 @@ init_demo(std::string dom_id)
 static demo the_demo("custom-context", init_demo);
 
 } // namespace custom_context
-
-namespace doubly_extended_context {
-
-// clang-format off
-/// [doubly-extended-context]
-ALIA_DEFINE_TAGGED_TYPE(username_tag, readable<std::string>&)
-ALIA_DEFINE_TAGGED_TYPE(api_key_tag, readable<std::string>&)
-
-typedef extend_context_type_t<dom::context, username_tag, api_key_tag>
-    app_context;
-
-void
-internal_app_ui(app_context ctx)
-{
-    dom::text(ctx, alia::printf(ctx, "Welcome, %s!", ctx.get<username_tag>()));
-    dom::text(ctx,
-        alia::printf(ctx,
-            "Your secret key is %s! Keep it safe!",
-            ctx.get<api_key_tag>()));
-}
-
-void
-main_app_ui(dom::context ctx)
-{
-    readable<std::string> username = value("tmadden");
-    readable<std::string> api_key = value("abc123");
-
-    app_context app_ctx =
-        ctx.add<username_tag>(username).add<api_key_tag>(api_key);
-
-    internal_app_ui(app_ctx);
-}
-/// [doubly-extended-context]
-// clang-format on
-
-void
-init_demo(std::string dom_id)
-{
-    static alia::system the_system;
-    static dom::system the_dom;
-
-    initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        main_app_ui(ctx);
-    });
-}
-
-static demo the_demo("doubly-extended-context", init_demo);
-
-} // namespace doubly_extended_context
