@@ -325,8 +325,8 @@ read_condition(T const& x)
 
 #define ALIA_REMOVE_DATA_TRACKING(ctx)                                        \
     ALIA_DISABLE_MACRO_WARNINGS                                               \
-    auto _alia_ctx = alia::make_context(                                      \
-        alia::detail::remove_tagged_data<data_traversal_tag>(ctx.contents_)); \
+    auto _alia_ctx                                                            \
+        = alia::detail::remove_context_object<data_traversal_tag>(ctx);       \
     auto ctx = _alia_ctx;                                                     \
     ALIA_REENABLE_MACRO_WARNINGS
 

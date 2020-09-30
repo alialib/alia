@@ -92,16 +92,9 @@ struct context_interface
 
 // manipulation of context objects...
 
-template<class Tag, class Contents>
-bool
-has_object(context_interface<Contents> ctx)
-{
-    return detail::has_tagged_data<Tag>(ctx.contents_);
-}
-
 template<class Tag, class Contents, class Data>
 auto
-add_object(context_interface<Contents> ctx, Data& data)
+extend_context(context_interface<Contents> ctx, Data& data)
 {
     auto new_contents
         = detail::add_tagged_data<Tag>(ctx.contents_, std::ref(data));
@@ -109,19 +102,30 @@ add_object(context_interface<Contents> ctx, Data& data)
 }
 
 template<class Tag, class Contents>
+decltype(auto)
+get(context_interface<Contents> ctx)
+{
+    return detail::get_tagged_data<Tag>(ctx.contents_);
+}
+
+namespace detail {
+
+template<class Tag, class Contents>
+bool
+has_context_object(context_interface<Contents> ctx)
+{
+    return detail::has_tagged_data<Tag>(ctx.contents_);
+}
+
+template<class Tag, class Contents>
 auto
-remove_object(context_interface<Contents> ctx)
+remove_context_object(context_interface<Contents> ctx)
 {
     auto new_contents = detail::remove_tagged_data<Tag>(ctx.contents_);
     return context_interface<decltype(new_contents)>(std::move(new_contents));
 }
 
-template<class Tag, class Contents>
-decltype(auto)
-get_object(context_interface<Contents> ctx)
-{
-    return detail::get_tagged_data<Tag>(ctx.contents_);
-}
+} // namespace detail
 
 template<class Context, class... Tag>
 struct extend_context_type
@@ -147,6 +151,13 @@ struct remove_context_tag
 
 template<class Context, class Tag>
 using remove_context_tag_t = typename remove_context_tag<Context, Tag>::type;
+
+template<class Context, class Tag>
+struct context_has_tag : detail::structural_collection_contains_tag<
+                             typename Context::contents_type,
+                             Tag>
+{
+};
 
 // the typedefs for the context - There are two because we want to be able to
 // represent the context with and without data capabilities.
@@ -193,14 +204,14 @@ template<class Context>
 event_traversal&
 get_event_traversal(Context ctx)
 {
-    return get_object<event_traversal_tag>(ctx);
+    return get<event_traversal_tag>(ctx);
 }
 
 template<class Context>
 data_traversal&
 get_data_traversal(Context ctx)
 {
-    return get_object<data_traversal_tag>(ctx);
+    return get<data_traversal_tag>(ctx);
 }
 
 inline id_interface const&
