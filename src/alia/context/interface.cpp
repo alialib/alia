@@ -15,11 +15,16 @@ make_context(
     timing_subsystem& timing)
 {
     storage->content_id = &unit_id;
-    return make_context(detail::make_empty_structural_collection(storage))
-        .add<system_tag>(sys)
-        .add<event_traversal_tag>(event)
-        .add<timing_tag>(timing)
-        .add<data_traversal_tag>(data);
+    return add_object<data_traversal_tag>(
+        add_object<timing_tag>(
+            add_object<event_traversal_tag>(
+                add_object<system_tag>(
+                    make_context(
+                        detail::make_empty_structural_collection(storage)),
+                    sys),
+                event),
+            timing),
+        data);
 }
 
 struct scoped_context_content_id_data

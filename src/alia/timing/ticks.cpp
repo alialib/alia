@@ -11,7 +11,7 @@ schedule_animation_refresh(dataless_context ctx)
 {
     // Invoke the virtual method on the external system interface.
     // And also set a flag to indicate that a refresh is needed.
-    system& sys = ctx.get<system_tag>();
+    system& sys = get_object<system_tag>(ctx);
     if (!sys.refresh_needed)
     {
         if (sys.external)
@@ -26,7 +26,7 @@ millisecond_count
 get_raw_animation_tick_count(dataless_context ctx)
 {
     schedule_animation_refresh(ctx);
-    return ctx.get<timing_tag>().tick_counter;
+    return get_object<timing_tag>(ctx).tick_counter;
 }
 
 value_signal<millisecond_count>
@@ -38,7 +38,8 @@ get_animation_tick_count(dataless_context ctx)
 millisecond_count
 get_raw_animation_ticks_left(dataless_context ctx, millisecond_count end_time)
 {
-    int ticks_remaining = int(end_time - ctx.get<timing_tag>().tick_counter);
+    int ticks_remaining
+        = int(end_time - get_object<timing_tag>(ctx).tick_counter);
     if (ticks_remaining > 0)
     {
         if (is_refresh_event(ctx))
