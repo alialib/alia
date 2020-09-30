@@ -5,7 +5,7 @@
 #include <typeindex>
 #include <unordered_map>
 
-#include <alia/context/typing.hpp>
+#include <alia/context/structural_typing.hpp>
 
 namespace alia {
 
