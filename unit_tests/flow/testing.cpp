@@ -24,7 +24,7 @@ do_object(test_context ctx, readable<std::string> name)
     {
         if (signal_has_value(name))
             node->object.name = read_signal(name);
-        refresh_tree_node(get_object<tree_traversal_tag>(ctx), *node);
+        refresh_tree_node(get<tree_traversal_tag>(ctx), *node);
     }
 }
 

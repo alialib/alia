@@ -58,23 +58,24 @@ TEST_CASE("context", "[context][interface]")
 
     REQUIRE(get_content_id(ctx) == unit_id);
 
-    REQUIRE(has_object<data_traversal_tag>(ctx));
-    REQUIRE(&get_object<data_traversal_tag>(ctx) == &data);
-    dataless_context dataless = remove_object<data_traversal_tag>(ctx);
-    REQUIRE(!has_object<data_traversal_tag>(dataless));
+    REQUIRE(detail::has_context_object<data_traversal_tag>(ctx));
+    REQUIRE(&get<data_traversal_tag>(ctx) == &data);
+    dataless_context dataless
+        = detail::remove_context_object<data_traversal_tag>(ctx);
+    REQUIRE(!detail::has_context_object<data_traversal_tag>(dataless));
 
-    REQUIRE(has_object<event_traversal_tag>(ctx));
-    REQUIRE(&get_object<event_traversal_tag>(ctx) == &event);
+    REQUIRE(detail::has_context_object<event_traversal_tag>(ctx));
+    REQUIRE(&get<event_traversal_tag>(ctx) == &event);
 
     other_traversal other;
     extend_context_type_t<context, other_traversal_tag> extended
-        = add_object<other_traversal_tag>(copy_context(ctx), other);
-    REQUIRE(has_object<data_traversal_tag>(extended));
-    REQUIRE(&get_object<data_traversal_tag>(extended) == &data);
-    REQUIRE(has_object<event_traversal_tag>(extended));
-    REQUIRE(&get_object<event_traversal_tag>(extended) == &event);
-    REQUIRE(has_object<other_traversal_tag>(extended));
-    REQUIRE(&get_object<other_traversal_tag>(extended) == &other);
+        = extend_context<other_traversal_tag>(copy_context(ctx), other);
+    REQUIRE(detail::has_context_object<data_traversal_tag>(extended));
+    REQUIRE(&get<data_traversal_tag>(extended) == &data);
+    REQUIRE(detail::has_context_object<event_traversal_tag>(extended));
+    REQUIRE(&get<event_traversal_tag>(extended) == &event);
+    REQUIRE(detail::has_context_object<other_traversal_tag>(extended));
+    REQUIRE(&get<other_traversal_tag>(extended) == &other);
 }
 
 TEST_CASE("optional_context", "[context][interface]")
@@ -95,10 +96,11 @@ TEST_CASE("optional_context", "[context][interface]")
     optional.reset(ctx);
     REQUIRE(optional);
 
-    REQUIRE(has_object<data_traversal_tag>(*optional));
-    REQUIRE(&get_object<data_traversal_tag>(*optional) == &data);
-    dataless_context dataless = remove_object<data_traversal_tag>(*optional);
-    REQUIRE(!has_object<data_traversal_tag>(dataless));
+    REQUIRE(detail::has_context_object<data_traversal_tag>(*optional));
+    REQUIRE(&get<data_traversal_tag>(*optional) == &data);
+    dataless_context dataless
+        = detail::remove_context_object<data_traversal_tag>(*optional);
+    REQUIRE(!detail::has_context_object<data_traversal_tag>(dataless));
 
     optional.reset();
     REQUIRE(!optional);

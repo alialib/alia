@@ -8,7 +8,7 @@ schedule_timer_event(
     external_component_id id,
     millisecond_count trigger_time)
 {
-    auto& sys = get_object<system_tag>(ctx);
+    auto& sys = get<system_tag>(ctx);
     sys.external->schedule_timer_event(id, trigger_time);
 }
 
@@ -23,7 +23,7 @@ detect_timer_event(dataless_context ctx, timer_data& data)
 void
 start_timer(dataless_context ctx, timer_data& data, millisecond_count duration)
 {
-    auto now = get_object<timing_tag>(ctx).tick_counter;
+    auto now = get<timing_tag>(ctx).tick_counter;
     auto trigger_time = now + duration;
     data.expected_trigger_time = trigger_time;
     schedule_timer_event(ctx, externalize(&data.identity), trigger_time);

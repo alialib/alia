@@ -369,7 +369,7 @@ void
 system::operator()(alia::context vanilla_ctx)
 {
     tree_traversal<element_object> traversal;
-    auto ctx = add_object<tree_traversal_tag>(vanilla_ctx, traversal);
+    auto ctx = extend_context<tree_traversal_tag>(vanilla_ctx, traversal);
 
     if (is_refresh_event(ctx))
     {

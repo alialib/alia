@@ -499,18 +499,21 @@ TEST_CASE("alia_untracked_if", "[flow][macros]")
         data_graph graph;
         auto make_controller = [](int n) {
             return [=](context ctx) {
-                REQUIRE(has_object<data_traversal_tag>(ctx));
+                REQUIRE(detail::has_context_object<data_traversal_tag>(ctx));
                 alia_untracked_if(n > 2)
                 {
-                    REQUIRE(!has_object<data_traversal_tag>(ctx));
+                    REQUIRE(
+                        !detail::has_context_object<data_traversal_tag>(ctx));
                 }
                 alia_untracked_else_if(n > 1)
                 {
-                    REQUIRE(!has_object<data_traversal_tag>(ctx));
+                    REQUIRE(
+                        !detail::has_context_object<data_traversal_tag>(ctx));
                 }
                 alia_untracked_else
                 {
-                    REQUIRE(!has_object<data_traversal_tag>(ctx));
+                    REQUIRE(
+                        !detail::has_context_object<data_traversal_tag>(ctx));
                 }
                 alia_end;
                 do_int(ctx, 0);
@@ -530,10 +533,11 @@ TEST_CASE("alia_untracked_switch", "[flow][macros]")
         data_graph graph;
         auto make_controller = [](int n) {
             return [=](context ctx) {
-                REQUIRE(has_object<data_traversal_tag>(ctx));
+                REQUIRE(detail::has_context_object<data_traversal_tag>(ctx));
 
                 auto f = [](context ctx, int x) {
-                    REQUIRE(has_object<data_traversal_tag>(ctx));
+                    REQUIRE(
+                        detail::has_context_object<data_traversal_tag>(ctx));
                     return x;
                 };
 
@@ -541,10 +545,10 @@ TEST_CASE("alia_untracked_switch", "[flow][macros]")
                 ALIA_UNTRACKED_SWITCH(f(ctx, n))
                 {
                     case 0:
-                        REQUIRE(!has_object<data_traversal_tag>(ctx));
+                        REQUIRE(!detail::has_context_object<data_traversal_tag>(ctx));
                         break;
                     default:
-                        REQUIRE(!has_object<data_traversal_tag>(ctx));
+                        REQUIRE(!detail::has_context_object<data_traversal_tag>(ctx));
                         break;
                 }
                 ALIA_END
