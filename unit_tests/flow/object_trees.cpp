@@ -449,6 +449,15 @@ TEST_CASE("object tree caching", "[flow][object_trees]")
         }
         ALIA_END
 
+        // Objects inside named blocks aren't necessarily deleted in order, so
+        // this tests different code paths.
+        naming_context nc(ctx);
+        if (n & 32)
+        {
+            named_block nb(nc, make_id(32));
+            do_object(ctx, "bit5");
+        }
+
         auto& caching_data
             = get_cached_data<tree_caching_data<test_object>>(ctx);
         scoped_tree_cacher<test_object> cacher(
@@ -496,27 +505,24 @@ TEST_CASE("object tree caching", "[flow][object_trees]")
         }
     });
 
-    n = 0;
+    n = 0b000000;
     refresh_system(sys);
     check_log("traversing cached content; ");
     REQUIRE(root.object.to_string() == "root()");
 
-    n = 3;
+    n = 0b000011;
     refresh_system(sys);
     check_log(
         "relocating bit0 into root; "
-        "relocating bit1 into root after bit0; "
-        // This happens because the caching system can't currently handle
-        // moving the cached content.
-        "traversing cached content; ");
+        "relocating bit1 into root after bit0; ");
     REQUIRE(root.object.to_string() == "root(bit0();bit1();)");
 
-    n = 2;
+    n = 0b000010;
     refresh_system(sys);
     check_log("removing bit0; ");
     REQUIRE(root.object.to_string() == "root(bit1();)");
 
-    n = 15;
+    n = 0b001111;
     refresh_system(sys);
     check_log(
         "relocating bit0 into root; "
@@ -525,15 +531,43 @@ TEST_CASE("object tree caching", "[flow][object_trees]")
         "relocating bit3 into root after bit2; ");
     REQUIRE(root.object.to_string() == "root(bit0();bit1();bit2();bit3();)");
 
-    n = 14;
+    n = 0b001110;
     refresh_system(sys);
     check_log("removing bit0; ");
     REQUIRE(root.object.to_string() == "root(bit1();bit2();bit3();)");
 
-    n = 6;
+    n = 0b101110;
+    refresh_system(sys);
+    check_log("relocating bit5 into root after bit1; ");
+    REQUIRE(root.object.to_string() == "root(bit1();bit5();bit2();bit3();)");
+
+    n = 0b101100;
+    refresh_system(sys);
+    check_log("removing bit1; ");
+    REQUIRE(root.object.to_string() == "root(bit5();bit2();bit3();)");
+
+    n = 0b101101;
+    refresh_system(sys);
+    check_log("relocating bit0 into root; ");
+    REQUIRE(root.object.to_string() == "root(bit0();bit5();bit2();bit3();)");
+
+    n = 0b001101;
+    refresh_system(sys);
+    check_log(
+        "relocating bit2 into root after bit0; "
+        "relocating bit3 into root after bit2; "
+        "removing bit5; ");
+    REQUIRE(root.object.to_string() == "root(bit0();bit2();bit3();)");
+
+    n = 0b000101;
     refresh_system(sys);
     check_log(
         "traversing cached content; "
         "removing bit3; ");
-    REQUIRE(root.object.to_string() == "root(bit1();bit2();)");
+    REQUIRE(root.object.to_string() == "root(bit0();bit2();)");
+
+    n = 0b100100;
+    refresh_system(sys);
+    check_log("removing bit0; relocating bit5 into root; ");
+    REQUIRE(root.object.to_string() == "root(bit5();bit2();)");
 }

@@ -53,8 +53,16 @@ struct tree_node : noncopyable
             next->prev_ = &this->next_;
     }
 
+    // prev_ points to whatever pointer anchors this node in the tree.
+    // If this node is the first child amongst its siblings, then this will
+    // point back to its parent's children_ pointer.
+    // Otherwise, this points to the previous sibling's next_ pointer.
     tree_node** prev_ = nullptr;
+
+    // next_ points to the next sibling in this node's sibling list (if any).
     tree_node* next_ = nullptr;
+
+    // children_ points to this node's first child (if any).
     tree_node* children_ = nullptr;
 };
 
@@ -226,7 +234,6 @@ template<class Object>
 struct tree_caching_data
 {
     captured_id content_id;
-    tree_node<Object>** predecessor = nullptr;
     tree_node<Object>* subtree_head = nullptr;
     tree_node<Object>** subtree_tail = nullptr;
     tree_node<Object>* last_sibling = nullptr;
@@ -267,13 +274,6 @@ struct scoped_tree_cacher
         if (!data.content_id.matches(content_id))
             content_traversal_required_ = true;
 
-        // Check to see that we're inserting this where it's expected.
-        // If not, traverse the contents. (It's not technically necessary to do
-        // this. We could instead move the cached contents here, but this is
-        // easier and fine for now.)
-        if (data.predecessor != traversal.next_ptr)
-            content_traversal_required_ = true;
-
         if (content_traversal_required_)
         {
             // If we're updating the contents, capture the content ID now
@@ -283,12 +283,72 @@ struct scoped_tree_cacher
             // Also record the current value of the tree traversal's next_ptr.
             predecessor_ = traversal.next_ptr;
         }
-        else
+        else if (data.subtree_head)
         {
-            // And if we're not updating the contents, just splice it in.
-            *traversal.next_ptr = data.subtree_head;
-            traversal.next_ptr = data.subtree_tail;
-            traversal.last_sibling = data.last_sibling;
+            // There's no need to refresh, but we have cached content, so we
+            // need to splice it in...
+
+            // Check to see if we're inserting this where we expected.
+            if (data.subtree_head->prev_ == traversal.next_ptr)
+            {
+                // If so, the objects are already in place, so we just need to
+                // update the traversal state to skip over them.
+                *traversal.next_ptr = data.subtree_head;
+                traversal.next_ptr = data.subtree_tail;
+                traversal.last_sibling = data.last_sibling;
+            }
+            else
+            {
+                // If not, we need to relocate all the top-level cached objects
+                // to the new position in the object tree...
+
+                // Remove the whole cached subtree from wherever it is in the
+                // object tree.
+                {
+                    tree_node<Object>** prev = data.subtree_head->prev_;
+                    tree_node<Object>* next = *data.subtree_tail;
+                    if (next)
+                        next->prev_ = prev;
+                    if (prev)
+                        *prev = next;
+                }
+
+                // Relocate all the actual objects.
+                tree_node<Object>* last_sibling = traversal.last_sibling;
+                {
+                    tree_node<Object>* expected_node = *traversal.next_ptr;
+                    Object* node_after
+                        = expected_node ? &expected_node->object : nullptr;
+                    tree_node<Object>* current_node = data.subtree_head;
+                    tree_node<Object>** next_ptr = nullptr;
+                    while (next_ptr != data.subtree_tail)
+                    {
+                        current_node->object.relocate(
+                            traversal.active_parent->object,
+                            last_sibling ? &last_sibling->object : nullptr,
+                            node_after);
+                        last_sibling = current_node;
+                        next_ptr = &current_node->next_;
+                        current_node = current_node->next_;
+                    }
+                }
+
+                // Splice the subtree into its new place in the object tree.
+                {
+                    tree_node<Object>* expected_node = *traversal.next_ptr;
+
+                    data.subtree_head->prev_ = traversal.next_ptr;
+                    *traversal.next_ptr = data.subtree_head;
+
+                    last_sibling->next_ = expected_node;
+                    if (expected_node)
+                        expected_node->prev_ = &last_sibling->next_;
+                }
+
+                // Update the traversal state.
+                traversal.last_sibling = data.last_sibling;
+                traversal.next_ptr = data.subtree_tail;
+            }
         }
     }
 
@@ -297,11 +357,10 @@ struct scoped_tree_cacher
     {
         if (traversal_)
         {
-            // If the subtree was traversed, record the head and tail of it so
-            // we can splice it in on future passes.
+            // If the subtree was traversed, record the head and tail of it
+            // so we can splice it in on future passes.
             if (content_traversal_required_)
             {
-                data_->predecessor = predecessor_;
                 data_->subtree_head = *predecessor_;
                 data_->subtree_tail = traversal_->next_ptr;
                 data_->last_sibling = traversal_->last_sibling;
