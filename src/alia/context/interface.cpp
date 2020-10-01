@@ -15,10 +15,10 @@ make_context(
     timing_subsystem& timing)
 {
     storage->content_id = &unit_id;
-    return extend_context<data_traversal_tag>(
-        extend_context<timing_tag>(
-            extend_context<event_traversal_tag>(
-                extend_context<system_tag>(
+    return detail::add_context_object<data_traversal_tag>(
+        detail::add_context_object<timing_tag>(
+            detail::add_context_object<event_traversal_tag>(
+                detail::add_context_object<system_tag>(
                     make_context(
                         detail::make_empty_structural_collection(storage)),
                     sys),
@@ -27,45 +27,37 @@ make_context(
         data);
 }
 
-struct scoped_context_content_id_data
+namespace detail {
+
+struct context_content_id_folding_data
 {
     captured_id id_from_above;
     captured_id id_from_here;
-    unsigned id_to_present = 0;
+    simple_id<unsigned> id_to_present = {0};
 };
 
 void
-scoped_context_content_id::begin(context ctx, id_interface const& id)
+fold_in_content_id(context ctx, id_interface const& id)
 {
-    ctx_.reset(ctx);
-    parent_id_ = ctx.contents_.storage->content_id;
+    id_interface const* id_from_above = ctx.contents_.storage->content_id;
 
-    auto& data = get_cached_data<scoped_context_content_id_data>(ctx);
+    auto& data = get_cached_data<context_content_id_folding_data>(ctx);
 
-    if (!data.id_from_above.matches(*parent_id_))
+    if (!data.id_from_above.matches(*id_from_above))
     {
-        ++data.id_to_present;
-        data.id_from_above.capture(*parent_id_);
+        ++data.id_to_present.value_;
+        data.id_from_above.capture(*id_from_above);
     }
 
     if (!data.id_from_here.matches(id))
     {
-        ++data.id_to_present;
+        ++data.id_to_present.value_;
         data.id_from_here.capture(id);
     }
 
-    this_id_ = make_id(data.id_to_present);
-    ctx.contents_.storage->content_id = &this_id_;
+    ctx.contents_.storage->content_id = &data.id_to_present;
 }
 
-void
-scoped_context_content_id::end()
-{
-    if (ctx_)
-    {
-        ctx_->contents_.storage->content_id = parent_id_;
-        ctx_.reset();
-    }
-}
+} // namespace detail
 
 } // namespace alia
