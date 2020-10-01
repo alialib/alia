@@ -46,7 +46,14 @@ actual persistent C++ object associated with that signal.
 Capabilities
 ------------
 
-In C++, when you want to pass a `std::string` parameter into a function, you might do so using `std::string`, `std::string&`, `std::string const&` or even `std::string&&` depending on the intended usage. Each, in effect, conveys a different set of capabilities to the function receiving the parameter: the ability to write back to the string, the ability to move it efficiently somewhere else, the ability to refer to it by reference, etc. In alia, a signal's type carries a similar set of information as a 'capabilities' type tag.
+In C++, when you want to pass a `std::string` parameter into a function, you
+might do so using `std::string`, `std::string&`, `std::string const&` or even
+`std::string&&` depending on the intended usage. Each, in effect, conveys a
+different set of capabilities to the function receiving the parameter: the
+ability to write back to the string, the ability to move it efficiently
+somewhere else, the ability to refer to it by reference, etc. In alia, a
+signal's type carries a similar set of information as a 'capabilities' type
+tag.
 
 Capabilities will be discussed more in depth later on. For now, it's sufficient
 to understand that not all signals have the same capabilities with respect to
