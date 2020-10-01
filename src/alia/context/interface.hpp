@@ -92,23 +92,23 @@ struct context_interface
 
 // manipulation of context objects...
 
-template<class Tag, class Contents, class Data>
+namespace detail {
+
+template<class Contents>
+auto&
+get_storage_object(context_interface<Contents> ctx)
+{
+    return *ctx.contents_.storage;
+}
+
+template<class Tag, class Contents, class Object>
 auto
-extend_context(context_interface<Contents> ctx, Data& data)
+add_context_object(context_interface<Contents> ctx, Object& object)
 {
     auto new_contents
-        = detail::add_tagged_data<Tag>(ctx.contents_, std::ref(data));
+        = detail::add_tagged_data<Tag>(ctx.contents_, std::ref(object));
     return context_interface<decltype(new_contents)>(std::move(new_contents));
 }
-
-template<class Tag, class Contents>
-decltype(auto)
-get(context_interface<Contents> ctx)
-{
-    return detail::get_tagged_data<Tag>(ctx.contents_);
-}
-
-namespace detail {
 
 template<class Tag, class Contents>
 bool
@@ -171,7 +171,7 @@ typedef context_interface<detail::add_tagged_data_types_t<
 
 typedef extend_context_type_t<dataless_context, data_traversal_tag> context;
 
-// And some convenience functions...
+// And various small functions for working with contexts...
 
 template<class Contents>
 auto
@@ -199,6 +199,71 @@ copy_context(Context ctx)
 
     return Context(typename Context::contents_type(new_storage));
 }
+
+namespace detail {
+
+template<class Object, class = void_t<>>
+struct has_value_id : std::false_type
+{
+};
+template<class Object>
+struct has_value_id<
+    Object,
+    void_t<decltype(static_cast<id_interface const&>(
+        std::declval<Object>().value_id()))>> : std::true_type
+{
+};
+
+void
+fold_in_content_id(context ctx, id_interface const& id);
+
+template<class Object>
+std::enable_if_t<has_value_id<Object>::value>
+fold_in_object_id(context ctx, Object const& object)
+{
+    fold_in_content_id(ctx, object.value_id());
+}
+
+template<class Object>
+std::enable_if_t<!has_value_id<Object>::value>
+fold_in_object_id(context, Object const&)
+{
+}
+
+} // namespace detail
+
+template<class Tag, class Contents, class Object>
+auto
+extend_context(context_interface<Contents> ctx, Object& object)
+{
+    auto extended_ctx
+        = detail::add_context_object<Tag>(copy_context(ctx), object);
+    fold_in_object_id(extended_ctx, object);
+    return extended_ctx;
+}
+
+template<class Tag, class Contents>
+decltype(auto)
+get(context_interface<Contents> ctx)
+{
+    return detail::get_tagged_data<Tag>(ctx.contents_);
+}
+
+template<class Contents>
+void
+recalculate_content_id(context_interface<Contents> ctx)
+{
+    get_storage_object(ctx).content_id = &unit_id;
+    alia::fold_over_collection(
+        ctx.contents_,
+        [](auto, auto& object, auto ctx) {
+            fold_in_object_id(ctx, object);
+            return ctx;
+        },
+        ctx);
+}
+
+// convenience accessors...
 
 template<class Context>
 event_traversal&
@@ -280,34 +345,6 @@ struct optional_context
 
  private:
     Context ctx_;
-};
-
-// scoped_context_content_id is used to fold another ID into the overall ID for
-// a context's content.
-struct scoped_context_content_id
-{
-    scoped_context_content_id()
-    {
-    }
-    scoped_context_content_id(context ctx, id_interface const& id)
-    {
-        begin(ctx, id);
-    }
-    ~scoped_context_content_id()
-    {
-        end();
-    }
-
-    void
-    begin(context ctx, id_interface const& id);
-
-    void
-    end();
-
- private:
-    optional_context<dataless_context> ctx_;
-    simple_id<unsigned> this_id_;
-    id_interface const* parent_id_;
 };
 
 } // namespace alia
