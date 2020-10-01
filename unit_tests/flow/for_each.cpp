@@ -42,7 +42,7 @@ operator<(my_item a, my_item b)
 }
 
 auto
-get_alia_id(my_item const& item)
+get_alia_item_id(my_item const& item)
 {
     return make_id(item.id);
 }
@@ -327,7 +327,7 @@ TEST_CASE("item vector", "[flow][for_each]")
 
     std::reverse(container.begin(), container.end());
 
-    // Since my_item defines get_alia_id(), the graph data properly follows
+    // Since my_item defines get_alia_item_id(), the graph data properly follows
     // the items around, so there are no additional calls.
     check_traversal(sys, controller, "cherry;banana;apple;");
     REQUIRE(call_count == 3);
@@ -568,7 +568,7 @@ TEST_CASE("item list", "[for_each][list]")
 
     std::reverse(container.begin(), container.end());
 
-    // Since my_item defines get_alia_id(), the graph data properly follows
+    // Since my_item defines get_alia_item_id(), the graph data properly follows
     // the items around, so there are no additional calls.
     check_traversal(sys, controller, "cherry;banana;apple;");
     REQUIRE(call_count == 3);
@@ -654,7 +654,7 @@ TEST_CASE("for_each over a list of raw items", "[for_each][list]")
 
     std::reverse(container.begin(), container.end());
 
-    // Since my_item defines get_alia_id(), the graph data properly follows
+    // Since my_item defines get_alia_item_id(), the graph data properly follows
     // the items around, so there are no additional calls.
     check_traversal(sys, controller, "cherry;banana;apple;");
     REQUIRE(call_count == 3);

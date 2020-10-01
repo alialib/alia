@@ -43,7 +43,7 @@ struct is_vector_like<
 
 template<class Item>
 auto
-get_alia_id(Item const&)
+get_alia_item_id(Item const&)
 {
     return null_id;
 }
@@ -243,7 +243,7 @@ for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
                 ctx,
                 nc,
                 [&](named_block& nb) {
-                    auto iteration_id = get_alia_id(container[index]);
+                    auto iteration_id = get_alia_item_id(container[index]);
                     if (iteration_id != null_id)
                         nb.begin(nc, iteration_id);
                     else
@@ -283,9 +283,9 @@ for_each(Context ctx, Container&& container, Fn&& fn)
             ctx,
             nc,
             [&](named_block& nb) {
-                // We don't try to use get_alia_id() here because we want to
-                // support the use case where the UI is present even when the
-                // item isn't available, and we want to keep the block ID
+                // We don't try to use get_alia_item_id() here because we want
+                // to support the use case where the UI is present even when
+                // the item isn't available, and we want to keep the block ID
                 // stable in that scenario.
                 nb.begin(nc, make_id(index));
             },
@@ -322,7 +322,7 @@ for_each(Context ctx, Container&& container, Fn&& fn)
             ctx,
             nc,
             [&](named_block& nb) {
-                auto iteration_id = get_alia_id(item);
+                auto iteration_id = get_alia_item_id(item);
                 if (iteration_id != null_id)
                     nb.begin(nc, iteration_id);
                 else
@@ -416,7 +416,7 @@ for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
                 ctx,
                 nc,
                 [&](named_block& nb) {
-                    auto iteration_id = get_alia_id(item);
+                    auto iteration_id = get_alia_item_id(item);
                     if (iteration_id != null_id)
                         nb.begin(nc, iteration_id);
                     else
@@ -457,9 +457,9 @@ for_each(Context ctx, Container&& container, Fn&& fn)
             ctx,
             nc,
             [&](named_block& nb) {
-                // We don't try to use get_alia_id() here because we want to
-                // support the use case where the UI is present even when the
-                // item isn't available, and we want to keep the block ID
+                // We don't try to use get_alia_item_id() here because we want
+                // to support the use case where the UI is present even when
+                // the item isn't available, and we want to keep the block ID
                 // stable in that scenario.
                 nb.begin(nc, make_id(&item));
             },
@@ -496,7 +496,7 @@ for_each(Context ctx, Container&& container, Fn&& fn)
             ctx,
             nc,
             [&](named_block& nb) {
-                auto iteration_id = get_alia_id(item);
+                auto iteration_id = get_alia_item_id(item);
                 if (iteration_id != null_id)
                     nb.begin(nc, iteration_id);
                 else

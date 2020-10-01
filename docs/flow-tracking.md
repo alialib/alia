@@ -163,7 +163,7 @@ underlying data associated with each item will change when the item moves.*
 Depending on what you're associating with your items, the effects of this can
 vary from slight inefficiencies to complete discontinuities in your interface.
 
-You can override the default association by defining a `get_alia_id` function
+You can override the default association by defining a `get_alia_item_id` function
 for your item's type. (It should be accessible from within the `alia` namespace,
 either via [argument-dependent
 lookup](https://en.cppreference.com/w/cpp/language/adl) or because it's defined
