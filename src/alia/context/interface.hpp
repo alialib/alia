@@ -214,14 +214,37 @@ struct has_value_id<
 {
 };
 
+} // namespace detail
+
+template<class Object>
+std::enable_if_t<detail::has_value_id<Object>::value, id_interface const&>
+get_alia_value_id(Object const& object)
+{
+    return object.value_id();
+}
+
+namespace detail {
+
+template<class Object, class = void_t<>>
+struct has_alia_value_id : std::false_type
+{
+};
+template<class Object>
+struct has_alia_value_id<
+    Object,
+    void_t<decltype(static_cast<id_interface const&>(
+        get_alia_value_id(std::declval<Object>())))>> : std::true_type
+{
+};
+
 void
 fold_in_content_id(context ctx, id_interface const& id);
 
 template<class Object>
-std::enable_if_t<has_value_id<Object>::value>
+std::enable_if_t<has_alia_value_id<Object>::value>
 fold_in_object_id(context ctx, Object const& object)
 {
-    fold_in_content_id(ctx, object.value_id());
+    fold_in_content_id(ctx, get_alia_value_id(object));
 }
 
 template<class Object>
