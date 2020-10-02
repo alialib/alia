@@ -86,7 +86,7 @@ struct context_interface
 namespace detail {
 
 template<class Contents>
-auto
+Contents
 get_structural_collection(context_interface<Contents> ctx)
 {
     return ctx.contents_;
