@@ -153,7 +153,7 @@ struct element_handle : noncopyable
         if (initializing_)
             node_->object.create_as_element(type);
         if (is_refresh_event(ctx))
-            refresh_tree_node(get_object<tree_traversal_tag>(ctx), *node_);
+            refresh_tree_node(get<tree_traversal_tag>(ctx), *node_);
     }
 
     template<class Value>
@@ -238,7 +238,7 @@ struct scoped_element : noncopyable
         if (initializing_)
             node_->object.create_as_element(type);
         if (is_refresh_event(ctx))
-            tree_scoping_.begin(get_object<tree_traversal_tag>(ctx), *node_);
+            tree_scoping_.begin(get<tree_traversal_tag>(ctx), *node_);
         return *this;
     }
 
@@ -363,46 +363,6 @@ struct scoped_div : scoped_element
         return *this;
     }
 };
-
-struct cached_content_data
-{
-    component_container_ptr container;
-    tree_caching_data<element_object> caching;
-};
-
-template<class Context, class Function>
-void
-cached_content(Context ctx, id_interface const& id, Function&& fn)
-{
-    cached_content_data* data;
-    if (get_data(ctx, &data))
-        data->container.reset(new component_container);
-
-    scoped_component_container container(ctx, &data->container);
-
-    scoped_tree_cacher<element_object> cacher;
-
-    bool content_traversal_required;
-    if (is_refresh_event(ctx))
-    {
-        cacher.begin(
-            get_object<tree_traversal_tag>(ctx),
-            data->caching,
-            id,
-            container.is_dirty());
-        content_traversal_required = cacher.content_traversal_required();
-    }
-    else
-    {
-        content_traversal_required = container.is_on_route();
-    }
-
-    ALIA_EVENT_DEPENDENT_IF(content_traversal_required)
-    {
-        fn(ctx);
-    }
-    ALIA_END
-}
 
 struct system
 {
