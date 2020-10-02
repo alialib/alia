@@ -45,15 +45,6 @@ ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(context_storage, event_traversal_tag, event)
 ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(context_storage, data_traversal_tag, data)
 ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(context_storage, timing_tag, timing)
 
-// Context objects implement this interface if they provide state that might
-// influence the component-level application code.
-struct stateful_context_object
-{
-    virtual id_interface const&
-    value_id()
-        = 0;
-};
-
 // the context interface wrapper
 template<class Contents>
 struct context_interface
@@ -99,6 +90,13 @@ auto&
 get_storage_object(context_interface<Contents> ctx)
 {
     return *ctx.contents_.storage;
+}
+
+template<class Contents>
+auto
+get_structural_collection(context_interface<Contents> ctx)
+{
+    return ctx.contents_;
 }
 
 template<class Tag, class Contents, class Object>
