@@ -19,7 +19,7 @@ struct component_caching_data
     data_block context_setup_block;
     data_block content_block;
     component_container_ptr container;
-    captured_id args_id;
+    captured_id content_id;
 };
 
 template<class Context, class Component, class... Args>
@@ -41,8 +41,9 @@ invoke_pure_component(Context ctx, Component&& component, Args&&... args)
     {
         bool content_traversal_required = container.is_dirty();
 
-        auto args_id = combine_ids(ref(args.value_id())...);
-        if (!data->args_id.matches(args_id))
+        auto content_id
+            = combine_ids(ref(get_content_id(ctx)), ref(args.value_id())...);
+        if (!data->content_id.matches(content_id))
             content_traversal_required = true;
 
         scoped_data_block context_setup(ctx, data->context_setup_block);
@@ -61,7 +62,7 @@ invoke_pure_component(Context ctx, Component&& component, Args&&... args)
             });
         invoker();
 
-        data->args_id.capture(args_id);
+        data->content_id.capture(content_id);
     }
     else
     {
