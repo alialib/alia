@@ -379,7 +379,7 @@ implement_alia_content_caching(
 {
     tree_caching_data<Object>* data;
     get_data(ctx, &data);
-    return [=, &traversal, &data] {
+    return [=, &traversal] {
         scoped_tree_cacher<Object> cacher(
             traversal, *data, content_traversal_required);
         content();
