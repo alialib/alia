@@ -20,7 +20,7 @@ void
 internal_app_ui(app_context ctx)
 {
     dom::text(ctx,
-        alia::printf(ctx, "Welcome, %s!", get_object<username_tag>(ctx)));
+        alia::printf(ctx, "Welcome, %s!", get<username_tag>(ctx)));
 }
 
 // Our top-level UI function takes the context that the asm-dom wrapper provides

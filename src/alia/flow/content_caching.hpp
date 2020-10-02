@@ -4,6 +4,7 @@
 #include <alia/context/interface.hpp>
 #include <alia/flow/components.hpp>
 #include <alia/flow/data_graph.hpp>
+#include <alia/flow/events.hpp>
 
 namespace alia {
 
