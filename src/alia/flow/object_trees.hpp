@@ -248,10 +248,9 @@ struct scoped_tree_cacher
     scoped_tree_cacher(
         tree_traversal<Object>& traversal,
         tree_caching_data<Object>& data,
-        id_interface const& content_id,
-        bool force_update)
+        bool content_traversal_required)
     {
-        begin(traversal, data, content_id, force_update);
+        begin(traversal, data, content_traversal_required);
     }
     ~scoped_tree_cacher()
     {
@@ -263,30 +262,22 @@ struct scoped_tree_cacher
     begin(
         tree_traversal<Object>& traversal,
         tree_caching_data<Object>& data,
-        id_interface const& content_id,
-        bool force_update)
+        bool content_traversal_required)
     {
         traversal_ = &traversal;
         data_ = &data;
-        content_traversal_required_ = force_update;
+        content_traversal_required_ = content_traversal_required;
 
-        // If the content ID changes, we know we have to refresh the contents.
-        if (!data.content_id.matches(content_id))
-            content_traversal_required_ = true;
-
-        if (content_traversal_required_)
+        if (content_traversal_required)
         {
-            // If we're updating the contents, capture the content ID now
-            // (while it's still valid) so we can store it in end().
-            content_id_.capture(content_id);
-
-            // Also record the current value of the tree traversal's next_ptr.
+            // We're going to traverse the content, so record where we started
+            // inserting it into the tree.
             predecessor_ = traversal.next_ptr;
         }
         else if (data.subtree_head)
         {
-            // There's no need to refresh, but we have cached content, so we
-            // need to splice it in...
+            // There's no need to actually traverse the content, but we do have
+            // cached content, so we need to splice it in...
 
             // Check to see if we're inserting this where we expected.
             if (data.subtree_head->prev_ == traversal.next_ptr)
@@ -364,27 +355,36 @@ struct scoped_tree_cacher
                 data_->subtree_head = *predecessor_;
                 data_->subtree_tail = traversal_->next_ptr;
                 data_->last_sibling = traversal_->last_sibling;
-                data_->content_id = std::move(content_id_);
             }
 
             traversal_ = nullptr;
         }
     }
 
-    bool
-    content_traversal_required() const
-    {
-        return content_traversal_required_;
-    }
-
  private:
     tree_traversal<Object>* traversal_;
     tree_caching_data<Object>* data_;
     bool content_traversal_required_;
-    captured_id content_id_;
     tree_node<Object>** predecessor_;
     uncaught_exception_detector exception_detector_;
 };
+
+template<class Object, class Content>
+auto
+implement_alia_content_caching(
+    context ctx,
+    tree_traversal<Object>& traversal,
+    bool content_traversal_required,
+    Content content)
+{
+    tree_caching_data<Object>* data;
+    get_data(ctx, &data);
+    return [=, &traversal, &data] {
+        scoped_tree_cacher<Object> cacher(
+            traversal, *data, content_traversal_required);
+        content();
+    };
+}
 
 } // namespace alia
 
