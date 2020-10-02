@@ -5,9 +5,6 @@ The Context
     init_alia_demos(['custom-context']);
 </script>
 
-!> Contexts are in the midst of change! The basic concepts are still the same,
-   but the example here is incomplete. Beware!
-
 Almost every function in alia takes a context as its first parameter. The
 context is how application code accesses the utilities provided by alia: the
 data graph, event dispatch info, etc.
