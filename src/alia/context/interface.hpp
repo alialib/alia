@@ -86,25 +86,25 @@ struct context_interface
 namespace detail {
 
 template<class Contents>
-auto&
-get_storage_object(context_interface<Contents> ctx)
-{
-    return *ctx.contents_.storage;
-}
-
-template<class Contents>
 auto
 get_structural_collection(context_interface<Contents> ctx)
 {
     return ctx.contents_;
 }
 
+template<class Contents>
+context_storage&
+get_storage_object(context_interface<Contents> ctx)
+{
+    return *get_structural_collection(ctx).storage;
+}
+
 template<class Tag, class Contents, class Object>
 auto
 add_context_object(context_interface<Contents> ctx, Object& object)
 {
-    auto new_contents
-        = detail::add_tagged_data<Tag>(ctx.contents_, std::ref(object));
+    auto new_contents = detail::add_tagged_data<Tag>(
+        get_structural_collection(ctx), std::ref(object));
     return context_interface<decltype(new_contents)>(std::move(new_contents));
 }
 
@@ -112,14 +112,15 @@ template<class Tag, class Contents>
 bool
 has_context_object(context_interface<Contents> ctx)
 {
-    return detail::has_tagged_data<Tag>(ctx.contents_);
+    return detail::has_tagged_data<Tag>(get_structural_collection(ctx));
 }
 
 template<class Tag, class Contents>
 auto
 remove_context_object(context_interface<Contents> ctx)
 {
-    auto new_contents = detail::remove_tagged_data<Tag>(ctx.contents_);
+    auto new_contents
+        = detail::remove_tagged_data<Tag>(get_structural_collection(ctx));
     return context_interface<decltype(new_contents)>(std::move(new_contents));
 }
 
@@ -274,7 +275,7 @@ template<class Contents>
 void
 recalculate_content_id(context_interface<Contents> ctx)
 {
-    get_storage_object(ctx).content_id = &unit_id;
+    detail::get_storage_object(ctx).content_id = &unit_id;
     alia::fold_over_collection(
         ctx.contents_,
         [](auto, auto& object, auto ctx) {
