@@ -122,11 +122,15 @@ TEST_CASE("content IDs", "[context][interface]")
             REQUIRE(get_content_id(root_ctx) == unit_id);
             auto outer_signal = value(outer);
             auto outer_ctx = extend_context<outer_tag>(root_ctx, outer_signal);
+            // To avoid warnings about unused typedefs.
+            REQUIRE(signal_has_value(get<outer_tag>(outer_ctx)));
             outer_id.capture(get_content_id(outer_ctx));
             {
                 auto inner_signal = value(inner);
                 auto inner_ctx
                     = extend_context<inner_tag>(outer_ctx, inner_signal);
+                // To avoid warnings about unused typedefs.
+                REQUIRE(signal_has_value(get<inner_tag>(inner_ctx)));
                 inner_id.capture(get_content_id(inner_ctx));
                 {
                     decltype(outer_ctx) downcast_ctx = inner_ctx;
