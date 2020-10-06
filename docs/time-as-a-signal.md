@@ -68,7 +68,9 @@ smoothed view will change smoothly according to `transition`.
 
 </dl>
 
-See `alia/timing/smoothing.hpp` for details on specifying custom transitions,  abruptly changing a smoothed signal, and the interfaces required of a value that needs to be smoothed.
+See `alia/timing/smoothing.hpp` for details on specifying custom transitions,
+abruptly changing a smoothed signal, and the interfaces required of a value
+that needs to be smoothed.
 
 Here's an example of basic number smoothing:
 
@@ -113,7 +115,8 @@ then the deflickered view will also lose its value.)
 
 </dl>
 
-To see `deflicker()` in action, let's first create a signal that flickers. We can do this artificially using `alia::async` and a simple delayed callback...
+To see `deflicker()` in action, let's first create a signal that flickers. We
+can do this artificially using `alia::async` and a simple delayed callback...
 
 [source](timing.cpp ':include :fragment=flickering')
 
