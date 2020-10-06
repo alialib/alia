@@ -374,8 +374,8 @@ push_back(Container container)
         typename Container::value_type::value_type>(std::move(container));
 }
 
-// lambda_action(is_ready, perform) creates an action whose behavior is
-// defined by two function objects.
+// callback(is_ready, perform) creates an action whose behavior is defined by
+// two function objects.
 //
 // :is_ready takes no arguments and simply returns true or false to indicate if
 // the action is ready to be performed.
@@ -395,19 +395,19 @@ struct call_operator_action_signature<R (T::*)(Args...) const>
 };
 
 template<class Lambda>
-struct lambda_action_signature
+struct callback_action_signature
     : call_operator_action_signature<decltype(&Lambda::operator())>
 {
 };
 
 template<class IsReady, class Perform, class Interface>
-struct lambda_action_object;
+struct callback_action;
 
 template<class IsReady, class Perform, class... Args>
-struct lambda_action_object<IsReady, Perform, action_interface<Args...>>
+struct callback_action<IsReady, Perform, action_interface<Args...>>
     : action_interface<Args...>
 {
-    lambda_action_object(IsReady is_ready, Perform perform)
+    callback_action(IsReady is_ready, Perform perform)
         : is_ready_(is_ready), perform_(perform)
     {
     }
@@ -432,25 +432,25 @@ struct lambda_action_object<IsReady, Perform, action_interface<Args...>>
 
 template<class IsReady, class Perform>
 auto
-lambda_action(IsReady is_ready, Perform perform)
+callback(IsReady is_ready, Perform perform)
 {
-    return lambda_action_object<
+    return callback_action<
         IsReady,
         Perform,
-        typename lambda_action_signature<Perform>::type>(is_ready, perform);
+        typename callback_action_signature<Perform>::type>(is_ready, perform);
 }
 
-// The single-argument version of lambda_action creates an action that's always
+// The single-argument version of callback() creates an action that's always
 // ready to perform.
 template<class Perform>
 auto
-lambda_action(Perform perform)
+callback(Perform perform)
 {
-    return lambda_action([]() { return true; }, perform);
+    return callback([]() { return true; }, perform);
 }
 
 // actionize(x) returns the action form of x (if it isn't already one).
-// Specifically, if x is a callable object, this returns lambda_action(x).
+// Specifically, if x is a callable object, this returns callback(x).
 // If x is an action, this returns x itself.
 template<class Action>
 std::enable_if_t<is_action_type<Action>::value, Action>
@@ -464,7 +464,7 @@ template<
 auto
 actionize(Callable x)
 {
-    return lambda_action(std::move(x));
+    return callback(std::move(x));
 }
 
 // add_write_action(signal, on_write) wraps signal in a similar signal that

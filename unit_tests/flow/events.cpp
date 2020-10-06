@@ -281,7 +281,7 @@ TEST_CASE("error isolation", "[flow][events]")
 
     alia::system sys;
     initialize_system(sys, [&](context ctx) {
-        on_value_change(ctx, value(n), lambda_action([&] {
+        on_value_change(ctx, value(n), callback([&] {
                             static_cast<void>(std::string("abc").at(n));
                         }));
     });

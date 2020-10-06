@@ -110,8 +110,8 @@ TEST_CASE("latch-like action", "[flow][actions]")
 TEST_CASE("parameterized combined action", "[flow][actions]")
 {
     int x = 0, y = 0;
-    auto a = lambda_action([&](int n) { x += n; });
-    auto b = lambda_action([&](int n) { y -= n; });
+    auto a = callback([&](int n) { x += n; });
+    auto b = callback([&](int n) { y -= n; });
     perform_action((a, b), 4);
     REQUIRE(x == 4);
     REQUIRE(y == -4);
@@ -235,12 +235,12 @@ TEST_CASE("push_back movable", "[flow][actions]")
 TEST_CASE("lambda actions", "[flow][actions]")
 {
     int x = 0;
-    auto a = lambda_action([&](int y, int z) { x = y + z; });
+    auto a = callback([&](int y, int z) { x = y + z; });
     perform_action(a, 1, 2);
     REQUIRE(x == 3);
 
     bool ready = false;
-    auto b = lambda_action([&]() { return ready; }, [&](int y) { x += y; });
+    auto b = callback([&]() { return ready; }, [&](int y) { x += y; });
     REQUIRE(!b.is_ready());
     ready = true;
     REQUIRE(b.is_ready());
@@ -251,7 +251,7 @@ TEST_CASE("lambda actions", "[flow][actions]")
 TEST_CASE("action binding", "[flow][actions]")
 {
     int x = 0;
-    auto a = lambda_action([&](int y, int z) { x = y - z; });
+    auto a = callback([&](int y, int z) { x = y - z; });
 
     REQUIRE(!(a << empty<int>()).is_ready());
 
@@ -272,7 +272,7 @@ TEST_CASE("action binding", "[flow][actions]")
     perform_action(e);
     REQUIRE(x == 1);
 
-    REQUIRE(!(lambda_action([]() { return false; }, [&](int) {}) << value(0))
+    REQUIRE(!(callback([]() { return false; }, [&](int) {}) << value(0))
                  .is_ready());
 }
 
@@ -298,8 +298,8 @@ TEST_CASE("add_write_action", "[flow][actions]")
 {
     int x = 0;
     bool written = false;
-    auto s = add_write_action(
-        direct(x), lambda_action([&](int) { written = true; }));
+    auto s
+        = add_write_action(direct(x), callback([&](int) { written = true; }));
 
     typedef decltype(s) signal_t;
     REQUIRE(signal_is_readable<signal_t>::value);

@@ -175,18 +175,18 @@ void
 demo_ui(dom::context ctx, duplex<std::string> message)
 {
     // clang-format off
-/// [lambda-action-demo]
+/// [callback-demo]
 // Define a UI for inputting a message.
 dom::text(ctx, "Enter a message for your browser's console:");
 dom::input(ctx, message);
 
 // Create an action that takes a message as a parameter.
-auto sender = lambda_action(
+auto sender = callback(
     [](std::string message) { std::cout << message << std::endl; });
 
 // Bind the message to the action and hook them up to a button.
 dom::button(ctx, "Send", sender << message);
-/// [lambda-action-demo]
+/// [callback-demo]
     // clang-format on
 }
 
@@ -201,6 +201,6 @@ init_demo(std::string dom_id)
     });
 }
 
-static demo the_demo("lambda-action-demo", init_demo);
+static demo the_demo("callback-demo", init_demo);
 
 } // namespace action_demo
