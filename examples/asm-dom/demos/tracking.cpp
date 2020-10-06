@@ -105,7 +105,7 @@ records_ui(dom::context ctx, std::vector<my_record>& records)
         dom::input(ctx, new_label);
 
         // Create an action that adds the new record.
-        auto add_record = lambda_action(
+        auto add_record = callback(
             [&](std::string label) { records.push_back({label}); });
 
         // Present a button that adds the new record.
@@ -267,7 +267,7 @@ records_ui(dom::context ctx, std::vector<my_record>& records)
     }
 
     dom::button(ctx, "Shuffle!",
-        lambda_action(
+        callback(
             [&]() { std::shuffle(records.begin(), records.end(), rng); }));
 
 }

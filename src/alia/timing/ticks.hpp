@@ -118,7 +118,7 @@ struct animation_timer
     auto
     start()
     {
-        return lambda_action(
+        return callback(
             [&](millisecond_count duration) { raw_.start(duration); });
     }
 

@@ -3,7 +3,7 @@ Actions
 
 <script>
     init_alia_demos(['unready-copier', 'action-operators', 'action-combining',
-        'action-latching', 'action-binding', 'lambda-action-demo']);
+        'action-latching', 'action-binding', 'callback-demo']);
 </script>
 
 Actions are the preferred way for application code to respond to events in alia.
@@ -143,18 +143,20 @@ function objects). There are two options for defining lambda actions:
 
 <dl>
 
-<dt>lambda_action(perform)</dt><dd>
+<dt>callback(perform)</dt><dd>
 
-Creates an action that calls `perform`.
+Creates an action that's equivalent to a simple C++ callback.
+
+`perform` is any callable C++ object.
+
+The action is always considered ready and simply calls `perform` when invoked.
 
 `perform` can take any number/type of arguments and defines the signature of the
 action.
 
-The action is always ready to be performed.
-
 </dd>
 
-<dt>lambda_action(is_ready, perform)</dt><dd>
+<dt>callback(is_ready, perform)</dt><dd>
 
 Creates an action whose behavior is defined by `is_ready` and `perform`.
 
@@ -171,10 +173,10 @@ action.
 Actions that are defined this way can have parameters, and of course those
 parameters can be bound to signals using the `<<` operator:
 
-[source](actions.cpp ':include :fragment=lambda-action-demo')
+[source](actions.cpp ':include :fragment=callback-demo')
 
 <div class="demo-panel">
-<div id="lambda-action-demo"></div>
+<div id="callback-demo"></div>
 </div>
 
 If you want to do something more interesting, you may want to implement the
