@@ -1,4 +1,4 @@
-name: VS2017
+name: Windows
 
 on:
   push:
@@ -12,15 +12,15 @@ env:
   CTEST_OUTPUT_ON_FAILURE: 1
 
 jobs:
-  build:
 
+  vs2017:
     runs-on: windows-2016
 
-    strategy:
+    strategy: &build_strategy
       matrix:
         config: [Debug, Release]
 
-    steps:
+    steps: &build_steps
     - uses: actions/checkout@v2
 
     - name: Configure
@@ -38,3 +38,8 @@ jobs:
     - name: Test
       run: |
         cmake --build build --config ${{matrix.config}} --target ctest
+
+  vs2019:
+    runs-on: windows-2019
+    strategy: *build_strategy
+    steps: *build_steps
