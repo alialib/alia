@@ -25,7 +25,6 @@ jobs:
 
     - name: test
       run: |
-        call %VCVARSALL% x86
         set CTEST_OUTPUT_ON_FAILURE=1
         mkdir build
         cd build
