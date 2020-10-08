@@ -30,9 +30,10 @@ jobs:
     - name: Build tests
       run: >
         cmake --build build --config ${{matrix.config}}
-          --target unit_test_runner -j4\n
+        --target unit_test_runner -j4
+
         cmake --build build --config ${{matrix.config}}
-          --target single_header_tester\n
+        --target single_header_tester
 
     - name: Test
       run: |
