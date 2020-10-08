@@ -26,8 +26,8 @@ jobs:
 
     - name: Build Tests
       run: |
-        cmake --build build --target unit_test_runner -j
-        cmake --build build --target single_header_tester -j
+        cmake --build build --target unit_test_runner -j4
+        cmake --build build --target single_header_tester -j4
 
     - name: Test
       run: |
