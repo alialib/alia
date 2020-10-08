@@ -4,7 +4,7 @@ alia - A Library for Interactive Applications
 <div class="hide-when-deployed">
 
 [![image](https://flat.badgen.net/travis/tmadden/alia/master?icon=travis)](https://travis-ci.org/tmadden/alia/branches)
-[![image](https://github.com/tmadden/alia/workflows/Windows/badge.svg)](https://github.com/TheLartians/ModernCppStarter/actions)
+[![image](https://github.com/tmadden/alia/workflows/Windows/badge.svg)](https://github.com/tmadden/alia/actions)
 [![image](https://flat.badgen.net/codecov/c/github/tmadden/alia/master?icon=codecov)](https://codecov.io/gh/tmadden/alia/branch/master)
 ![image](https://flat.badgen.net/badge/C++/14%2C17/green)
 [![image](https://flat.badgen.net/badge/stability/unstable/yellow)](https://github.com/orangemug/stability-badges#unstable)
