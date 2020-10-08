@@ -20,8 +20,12 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Add msbuild to PATH
+      uses: microsoft/setup-msbuild@v1.0.2
+
     - name: test
       run: |
+        call %VCVARSALL% x86
         set CTEST_OUTPUT_ON_FAILURE=1
         mkdir build
         cd build
