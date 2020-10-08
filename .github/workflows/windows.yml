@@ -13,7 +13,7 @@ env:
 
 jobs:
 
-  vs2017:
+  VS2017:
     runs-on: windows-2016
 
     strategy:
@@ -39,7 +39,7 @@ jobs:
       run: |
         cmake --build build --config ${{matrix.config}} --target ctest
 
-  vs2019:
+  VS2019:
     runs-on: windows-2019
 
     strategy:
