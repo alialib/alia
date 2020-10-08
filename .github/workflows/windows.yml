@@ -22,5 +22,5 @@ jobs:
 
     - name: test
       run: |
-        cmake -Bbuild -DCMAKE_BUILD_TYPE=%CONFIGURATION% ..
+        cmake -Bbuild -DCMAKE_BUILD_TYPE=%CONFIGURATION% .
         cmake --build build --target ctest
