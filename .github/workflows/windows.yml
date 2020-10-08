@@ -10,25 +10,29 @@ on:
 
 env:
   CTEST_OUTPUT_ON_FAILURE: 1
-  CONFIGURATION: Debug
 
 jobs:
   build:
 
     runs-on: windows-latest
 
+    strategy:
+      fail-fast: false
+      matrix:
+        config: [Debug, Release]
+
     steps:
     - uses: actions/checkout@v2
 
     - name: Configure
       run: |
-        cmake -Bbuild -DCMAKE_BUILD_TYPE=%CONFIGURATION% .
+        cmake -Bbuild -DCMAKE_BUILD_TYPE=${{Config}} .
 
-    - name: Build Tests
+    - name: Build tests
       run: |
-        cmake --build build --target unit_test_runner -j4
-        cmake --build build --target single_header_tester -j4
+        cmake --build build --config ${{Config}} --target unit_test_runner -j4
+        cmake --build build --config ${{Config}} --target single_header_tester
 
     - name: Test
       run: |
-        cmake --build build --target ctest
+        cmake --build build --config ${{Config}} --target ctest
