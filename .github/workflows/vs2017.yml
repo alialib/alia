@@ -1,0 +1,40 @@
+name: VS2017
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+env:
+  CTEST_OUTPUT_ON_FAILURE: 1
+
+jobs:
+  build:
+
+    runs-on: windows-2016
+
+    strategy:
+      matrix:
+        config: [Debug, Release]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Configure
+      run: |
+        cmake -Bbuild -DCMAKE_BUILD_TYPE=${{matrix.config}} .
+
+    - name: Build tests
+      run: >
+        cmake --build build --config ${{matrix.config}}
+        --target unit_test_runner -j4
+
+        cmake --build build --config ${{matrix.config}}
+        --target single_header_tester
+
+    - name: Test
+      run: |
+        cmake --build build --config ${{matrix.config}} --target ctest
