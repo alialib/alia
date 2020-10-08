@@ -37,7 +37,8 @@ jobs:
 
     - name: Test
       run: |
-        cmake --build build --config ${{matrix.config}} --target ctest
+        cd build
+        ctest --build-config ${{matrix.config}}
 
   VS2019:
     runs-on: windows-2019
@@ -63,4 +64,5 @@ jobs:
 
     - name: Test
       run: |
-        cmake --build build --config ${{matrix.config}} --target ctest
+        cd build
+        ctest --build-config ${{matrix.config}}
