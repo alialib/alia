@@ -26,13 +26,13 @@ jobs:
 
     - name: Configure
       run: |
-        cmake -Bbuild -DCMAKE_BUILD_TYPE=${{Config}} .
+        cmake -Bbuild -DCMAKE_BUILD_TYPE=${{config}} .
 
     - name: Build tests
       run: |
-        cmake --build build --config ${{Config}} --target unit_test_runner -j4
-        cmake --build build --config ${{Config}} --target single_header_tester
+        cmake --build build --config ${{config}} --target unit_test_runner -j4
+        cmake --build build --config ${{config}} --target single_header_tester
 
     - name: Test
       run: |
-        cmake --build build --config ${{Config}} --target ctest
+        cmake --build build --config ${{config}} --target ctest
