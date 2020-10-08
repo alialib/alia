@@ -13,33 +13,6 @@ env:
 
 jobs:
 
-  VS2017:
-    runs-on: windows-2016
-
-    strategy:
-      matrix:
-        config: [Debug, Release]
-
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: Configure
-      run: |
-        cmake -Bbuild -DCMAKE_BUILD_TYPE=${{matrix.config}} .
-
-    - name: Build tests
-      run: >
-        cmake --build build --config ${{matrix.config}}
-        --target unit_test_runner -j4
-
-        cmake --build build --config ${{matrix.config}}
-        --target single_header_tester
-
-    - name: Test
-      run: |
-        cd build
-        ctest --build-config ${{matrix.config}}
-
   VS2019:
     runs-on: windows-2019
 
