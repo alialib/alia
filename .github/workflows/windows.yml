@@ -20,7 +20,15 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: test
+    - name: Configure
       run: |
         cmake -Bbuild -DCMAKE_BUILD_TYPE=%CONFIGURATION% .
+
+    - name: Build Tests
+      run: |
+        cmake --build build --target unit_test_runner -j
+        cmake --build build --target single_header_tester -j
+
+    - name: Test
+      run: |
         cmake --build build --target ctest
