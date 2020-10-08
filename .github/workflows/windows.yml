@@ -10,6 +10,7 @@ on:
 
 env:
   CTEST_OUTPUT_ON_FAILURE: 1
+  CONFIGURATION: Debug
 
 jobs:
   build:
@@ -19,13 +20,10 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: configure
-      run: cmake -Htest -Bbuild
-
-    - name: build
-      run: cmake --build build --config Debug -j4
-
     - name: test
       run: |
+        set CTEST_OUTPUT_ON_FAILURE=1
+        mkdir build
         cd build
-        ctest --build-config Debug
+        cmake -DCMAKE_BUILD_TYPE=%CONFIGURATION% -G"NMake Makefiles" ..
+        cmake --build . --target ctest
