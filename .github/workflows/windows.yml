@@ -28,9 +28,11 @@ jobs:
         cmake -Bbuild -DCMAKE_BUILD_TYPE=${{matrix.config}} .
 
     - name: Build tests
-      run: |
-        cmake --build build --config ${{matrix.config}} --target unit_test_runner -j4
-        cmake --build build --config ${{matrix.config}} --target single_header_tester
+      run: >
+        cmake --build build --config ${{matrix.config}}\n
+          --target unit_test_runner -j4
+        cmake --build build --config ${{matrix.config}}\n
+          --target single_header_tester
 
     - name: Test
       run: |
