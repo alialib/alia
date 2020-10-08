@@ -20,13 +20,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Add msbuild to PATH
-      uses: microsoft/setup-msbuild@v1.0.2
-
     - name: test
       run: |
-        set CTEST_OUTPUT_ON_FAILURE=1
-        mkdir build
-        cd build
-        cmake -DCMAKE_BUILD_TYPE=%CONFIGURATION% -G"NMake Makefiles" ..
-        cmake --build . --target ctest
+        cmake -Bbuild -DCMAKE_BUILD_TYPE=%CONFIGURATION% ..
+        cmake --build build --target ctest
