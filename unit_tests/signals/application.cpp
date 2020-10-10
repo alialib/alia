@@ -287,3 +287,57 @@ TEST_CASE("alia_mem_fn", "[signals][application]")
     REQUIRE(
         read_signal(lazy_apply(alia_mem_fn(substr), v, value(5))) == "text");
 }
+
+TEST_CASE("duplex apply", "[signals][application]")
+{
+    alia::system sys;
+    initialize_system(sys, [](context) {});
+
+    int n = 0;
+
+    captured_id signal_id;
+
+    auto make_controller = [&](double new_value) {
+        return [=, &n, &signal_id](context ctx) {
+            auto f = [](int x) -> double { return x * 2.0; };
+            auto r = [](double x) -> int { return int(x / 2.0 + 0.5); };
+
+            auto s = duplex_apply(ctx, f, r, direct(n));
+
+            typedef decltype(s) signal_t;
+            REQUIRE(signal_is_readable<signal_t>::value);
+            REQUIRE(signal_is_writable<signal_t>::value);
+
+            REQUIRE(signal_has_value(s));
+            REQUIRE(read_signal(s) == n * 2.0);
+
+            signal_id.capture(s.value_id());
+
+            REQUIRE(s.ready_to_write());
+            if (new_value > 0)
+                write_signal(s, new_value);
+        };
+    };
+
+    do_traversal(sys, make_controller(0));
+    REQUIRE(n == 0);
+
+    {
+        captured_id last_id = signal_id;
+        do_traversal(sys, make_controller(4));
+        REQUIRE(n == 2);
+
+        do_traversal(sys, make_controller(4));
+        REQUIRE(n == 2);
+        REQUIRE(last_id != signal_id);
+    }
+
+    do_traversal(sys, make_controller(0));
+    REQUIRE(n == 2);
+
+    do_traversal(sys, make_controller(2));
+    REQUIRE(n == 1);
+
+    do_traversal(sys, make_controller(0));
+    REQUIRE(n == 1);
+}
