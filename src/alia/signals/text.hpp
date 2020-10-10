@@ -92,28 +92,10 @@ ALIA_DECLARE_STRING_CONVERSIONS(std::string)
 
 // as_text(ctx, x) creates a text-based interface to the signal x.
 template<class Readable>
-void
-update_text_conversion(keyed_data<std::string>* data, Readable x)
-{
-    if (signal_has_value(x))
-    {
-        refresh_keyed_data(*data, x.value_id());
-        if (!is_valid(*data))
-            set(*data, to_string(read_signal(x)));
-    }
-    else
-    {
-        invalidate(*data);
-    }
-}
-template<class Readable>
-keyed_data_signal<std::string>
+auto
 as_text(context ctx, Readable x)
 {
-    keyed_data<std::string>* data;
-    get_cached_data(ctx, &data);
-    update_text_conversion(data, x);
-    return keyed_data_signal<std::string>(data);
+    return apply(ctx, ALIA_LAMBDIFY(to_string), x);
 }
 
 // as_duplex_text(ctx, x) is similar to as_text but it's duplex.
