@@ -55,7 +55,7 @@ TEST_CASE("duplex_lazy_apply", "[signals][application]")
     captured_id signal_id;
 
     auto make_controller = [&](double new_value) {
-        return [=, &n, &signal_id](context ctx) {
+        return [=, &n, &signal_id](context) {
             auto f = [](int x) -> double { return x * 2.0; };
             auto r = [](double x) -> int { return int(x / 2.0 + 0.5); };
 
