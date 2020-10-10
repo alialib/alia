@@ -167,7 +167,7 @@ add_custom_target(
     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
     DEPENDS single_header_tester)
 
-# On Linux debug builds, the proper CMake test associated with the unit tests
+# On Clang debug builds, the proper CMake test associated with the unit tests
 # includes test coverage reporting.
 if(IS_CLANG AND CMAKE_BUILD_TYPE STREQUAL "Debug")
     string(REPLACE clang llvm-profdata LLVM_PROFDATA $ENV{CC})
