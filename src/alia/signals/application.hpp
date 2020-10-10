@@ -104,6 +104,72 @@ lazy_lift(Function f)
     return [=](auto... args) { return lazy_apply(f, std::move(args)...); };
 }
 
+// duplex_lazy_apply(forward, reverse, arg), where :arg is a duplex signal,
+// yields another duplex signal whose value is the result of applying :forward
+// to the value of :arg. Writing to the resulting signal applies :reverse and
+// writes the result to :arg.
+// The applications in both directions are done lazily, on demand.
+
+namespace detail {
+
+template<class Result, class Forward, class Reverse, class Arg>
+struct lazy_duplex_apply_signal
+    : lazy_signal<
+          lazy_duplex_apply_signal<Result, Forward, Reverse, Arg>,
+          Result,
+          duplex_signal>
+{
+    lazy_duplex_apply_signal(Forward forward, Reverse reverse, Arg arg)
+        : forward_(std::move(forward)),
+          reverse_(std::move(reverse)),
+          arg_(std::move(arg))
+    {
+    }
+    id_interface const&
+    value_id() const
+    {
+        return arg_.value_id();
+    }
+    bool
+    has_value() const
+    {
+        return arg_.has_value();
+    }
+    Result
+    movable_value() const
+    {
+        return forward_(forward_signal(arg_));
+    }
+    bool
+    ready_to_write() const
+    {
+        return arg_.ready_to_write();
+    }
+    void
+    write(Result value) const
+    {
+        arg_.write(reverse_(std::move(value)));
+    }
+
+ private:
+    Forward forward_;
+    Reverse reverse_;
+    Arg arg_;
+};
+
+} // namespace detail
+
+template<class Forward, class Reverse, class Arg>
+auto
+lazy_duplex_apply(Forward forward, Reverse reverse, Arg arg)
+{
+    return detail::lazy_duplex_apply_signal<
+        decltype(forward(read_signal(arg))),
+        Forward,
+        Reverse,
+        Arg>(std::move(forward), std::move(reverse), std::move(arg));
+}
+
 // apply(ctx, f, args...), where :args are all signals, yields a signal to the
 // result of applying the function :f to the values of :args. Unlike
 // lazy_apply, this is eager and caches and the result.
@@ -253,6 +319,12 @@ lift(Function f)
     };
 }
 
+// duplex_apply(ctx, forward, reverse, arg), where :arg is a duplex signal,
+// yields another duplex signal whose value is the result of applying :forward
+// to the value of :arg. Writing to the resulting signal applies :reverse and
+// writes the result to :arg.
+// Similar to apply(ctx, f, arg), this is eager and caches the forward result.
+
 namespace detail {
 
 template<class Value, class Wrapped, class Reverse>
@@ -290,7 +362,7 @@ struct duplex_apply_signal : signal<
         return wrapped_.ready_to_write();
     }
     void
-    write(typename Value value) const
+    write(Value value) const
     {
         wrapped_.write(reverse_(std::move(value)));
     }
