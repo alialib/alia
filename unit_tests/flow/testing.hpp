@@ -98,25 +98,6 @@ do_cached_int(Context& ctx, int n)
     }
 }
 
-template<class Context>
-void
-do_keyed_int(Context& ctx, int n)
-{
-    keyed_data_signal<int_object> obj;
-    if (get_keyed_data(ctx, make_id(n), &obj))
-    {
-        REQUIRE(!obj.has_value());
-        write_signal(obj, int_object(n * 2));
-        the_log << "initializing keyed int: " << n << ";";
-    }
-    else
-    {
-        REQUIRE(read_signal(obj).n == n * 2);
-        REQUIRE(obj.value_id() == make_id(n));
-        the_log << "visiting keyed int: " << n << ";";
-    }
-}
-
 template<class Controller>
 void
 do_traversal(
