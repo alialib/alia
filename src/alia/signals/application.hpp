@@ -108,6 +108,8 @@ lazy_lift(Function f)
 // result of applying the function :f to the values of :args. Unlike
 // lazy_apply, this is eager and caches and the result.
 
+namespace detail {
+
 enum class apply_status
 {
     UNCOMPUTED,
@@ -204,8 +206,8 @@ process_apply_args(
 }
 
 template<class Function, class... Args>
-auto
-apply(context ctx, Function f, Args const&... args)
+auto&
+process_apply(context ctx, Function f, Args const&... args)
 {
     apply_result_data<decltype(f(read_signal(args)...))>* data_ptr;
     get_cached_data(ctx, &data_ptr);
@@ -230,7 +232,16 @@ apply(context ctx, Function f, Args const&... args)
         if (data.status == apply_status::FAILED)
             std::rethrow_exception(data.error);
     }
-    return make_apply_signal(data);
+    return data;
+}
+
+} // namespace detail
+
+template<class Function, class... Args>
+auto
+apply(context ctx, Function f, Args const&... args)
+{
+    return detail::make_apply_signal(detail::process_apply(ctx, f, args...));
 }
 
 template<class Function>
@@ -240,6 +251,73 @@ lift(Function f)
     return [=](context ctx, auto&&... args) {
         return apply(ctx, std::move(f), std::move(args)...);
     };
+}
+
+namespace detail {
+
+template<class Value, class Wrapped, class Reverse>
+struct duplex_apply_signal : signal<
+                                 duplex_apply_signal<Value, Wrapped, Reverse>,
+                                 Value,
+                                 duplex_signal>
+{
+    duplex_apply_signal(
+        apply_result_data<Value>& data, Wrapped wrapped, Reverse reverse)
+        : data_(&data),
+          wrapped_(std::move(wrapped)),
+          reverse_(std::move(reverse))
+    {
+    }
+    id_interface const&
+    value_id() const
+    {
+        id_ = make_id(data_->version);
+        return id_;
+    }
+    bool
+    has_value() const
+    {
+        return data_->status == apply_status::READY;
+    }
+    Value const&
+    read() const
+    {
+        return data_->result;
+    }
+    bool
+    ready_to_write() const
+    {
+        return wrapped_.ready_to_write();
+    }
+    void
+    write(typename Value value) const
+    {
+        wrapped_.write(reverse_(std::move(value)));
+    }
+
+ private:
+    apply_result_data<Value>* data_;
+    mutable simple_id<counter_type> id_;
+    Wrapped wrapped_;
+    Reverse reverse_;
+};
+template<class Value, class Wrapped, class Reverse>
+auto
+make_duplex_apply_signal(
+    apply_result_data<Value>& data, Wrapped wrapped, Reverse reverse)
+{
+    return duplex_apply_signal<Value, Wrapped, Reverse>(
+        data, std::move(wrapped), std::move(reverse));
+}
+
+} // namespace detail
+
+template<class Forward, class Reverse, class Arg>
+auto
+duplex_apply(context ctx, Forward forward, Reverse reverse, Arg arg)
+{
+    return detail::make_duplex_apply_signal(
+        detail::process_apply(ctx, forward, arg), arg, reverse);
 }
 
 // alia_mem_fn(m) wraps a member function name in a lambda so that it can be
