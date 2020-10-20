@@ -8,13 +8,13 @@ namespace detail {
 struct input_data
 {
     captured_id value_id;
-    string value;
+    std::string value;
     signal_validation_data validation;
     unsigned version = 0;
 };
 
 element_handle<html::context>
-input(html::context ctx, duplex<string> value_)
+input(html::context ctx, duplex<std::string> value_)
 {
     input_data* data;
     get_cached_data(ctx, &data);
@@ -27,7 +27,7 @@ input(html::context ctx, duplex<string> value_)
             refresh_signal_shadow(
                 data->value_id,
                 value,
-                [&](string new_value) {
+                [&](std::string new_value) {
                     data->value = std::move(new_value);
                     ++data->version;
                 },

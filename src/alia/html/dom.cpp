@@ -9,6 +9,52 @@
 namespace alia {
 namespace html {
 
+void
+element_object::create_as_element(char const* type)
+{
+    assert(this->js_id == 0);
+    this->js_id = EM_ASM_INT(
+        { return Module.createElement(Module['UTF8ToString']($0)); }, type);
+}
+
+void
+element_object::create_as_text_node(char const* value)
+{
+    assert(this->js_id == 0);
+    this->js_id = EM_ASM_INT(
+        { return Module.createTextNode(Module['UTF8ToString']($0)); }, value);
+}
+
+void
+element_object::relocate(
+    element_object& parent, element_object* after, element_object* before)
+{
+    assert(this->js_id != 0);
+    EM_ASM_(
+        { Module.insertBefore($0, $1, $2); },
+        parent.js_id,
+        this->js_id,
+        before ? before->js_id : 0);
+}
+
+void
+element_object::remove()
+{
+    assert(this->js_id != 0);
+    EM_ASM_({ Module.removeChild($0); }, this->js_id);
+    // In asm-dom, removing a child from its parent also destroys it, so we
+    // have to mark it as uninitialized here.
+    this->js_id = 0;
+}
+
+element_object::~element_object()
+{
+    if (this->js_id != 0)
+    {
+        this->remove();
+    }
+}
+
 namespace detail {
 
 void
@@ -96,7 +142,7 @@ struct text_node_data
 };
 
 void
-text_node(html::context ctx, readable<string> text)
+text_node(html::context ctx, readable<std::string> text)
 {
     text_node_data* data;
     if (get_cached_data(ctx, &data))
@@ -125,14 +171,14 @@ do_element_attribute(
     context ctx,
     element_object& object,
     char const* name,
-    readable<string> value)
+    readable<std::string> value)
 {
     auto& stored_id = get_cached_data<captured_id>(ctx);
     on_refresh(ctx, [&](auto ctx) {
         refresh_signal_shadow(
             stored_id,
             value,
-            [&](string const& new_value) {
+            [&](std::string const& new_value) {
                 EM_ASM_(
                     {
                         Module.setAttribute(
@@ -236,6 +282,18 @@ clear_element_property(element_object& object, char const* name)
 }
 
 } // namespace detail
+
+scoped_element&
+scoped_element::begin(context ctx, char const* type)
+{
+    ctx_.reset(ctx);
+    initializing_ = get_cached_data(ctx, &node_);
+    if (initializing_)
+        node_->object.create_as_element(type);
+    if (is_refresh_event(ctx))
+        tree_scoping_.begin(get<tree_traversal_tag>(ctx), *node_);
+    return *this;
+}
 
 } // namespace html
 } // namespace alia

@@ -6,7 +6,7 @@ namespace alia {
 namespace html {
 
 std::string
-to_string(http_method method);
+to_string(http_method method)
 {
     switch (method)
     {

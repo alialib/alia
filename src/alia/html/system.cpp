@@ -1,5 +1,7 @@
 #include <alia/html/system.hpp>
 
+#include <alia/html/dom.hpp>
+
 namespace alia {
 namespace html {
 
@@ -111,10 +113,10 @@ initialize(
     static bool asmdom_initialized = false;
     if (!asmdom_initialized)
     {
-        asmhtml::Config config = asmhtml::Config();
+        asmdom::Config config = asmdom::Config();
         config.unsafePatch = true;
         config.clearMemory = true;
-        asmhtml::init(config);
+        asmdom::init(config);
         asmdom_initialized = true;
     }
 
@@ -145,7 +147,8 @@ initialize(
         update_location_hash(dom_system);
         refresh_system(alia_system);
     };
-    install_onhashchange_callback(&dom_system.onhashchange);
+    detail::install_onhashchange_callback(&dom_system.onhashchange);
+    detail::install_onpopstate_callback(&dom_system.onhashchange);
 
     // Update our DOM.
     refresh_system(alia_system);
