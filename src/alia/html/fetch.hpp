@@ -1,8 +1,8 @@
 #ifndef ALIA_HTML_FETCH_HPP
 #define ALIA_HTML_FETCH_HPP
 
-#include "alia.hpp"
-#include "common.hpp"
+#include <alia.hpp>
+#include <alia/html/common.hpp>
 
 namespace alia {
 namespace html {

@@ -1,18 +1,37 @@
 #ifndef ALIA_HTML_DOM_HPP
 #define ALIA_HTML_DOM_HPP
 
-#include "alia.hpp"
-#include "asm-dom.hpp"
+#include <asm-dom.hpp>
 
-#include <functional>
+#include <alia.hpp>
 
 #include <emscripten/emscripten.h>
 #include <emscripten/val.h>
 
-using std::string;
+#include <alia/html/context.hpp>
 
 namespace alia {
 namespace html {
+
+struct element_object
+{
+    void
+    create_as_element(char const* type);
+
+    void
+    create_as_text_node(char const* value);
+
+    void
+    relocate(
+        element_object& parent, element_object* after, element_object* before);
+
+    void
+    remove();
+
+    ~element_object();
+
+    int js_id = 0;
+};
 
 namespace detail {
 
@@ -37,68 +56,23 @@ install_element_callback(
     callback_data& data,
     char const* event_type);
 
-struct element_object
-{
-    void
-    create_as_element(char const* type)
-    {
-        assert(this->js_id == 0);
-        this->js_id = EM_ASM_INT(
-            { return Module.createElement(Module['UTF8ToString']($0)); },
-            type);
-    }
-
-    void
-    create_as_text_node(char const* value)
-    {
-        assert(this->js_id == 0);
-        this->js_id = EM_ASM_INT(
-            { return Module.createTextNode(Module['UTF8ToString']($0)); },
-            value);
-    }
-
-    void
-    relocate(
-        element_object& parent, element_object* after, element_object* before)
-    {
-        assert(this->js_id != 0);
-        EM_ASM_(
-            { Module.insertBefore($0, $1, $2); },
-            parent.js_id,
-            this->js_id,
-            before ? before->js_id : 0);
-    }
-
-    void
-    remove()
-    {
-        assert(this->js_id != 0);
-        EM_ASM_({ Module.removeChild($0); }, this->js_id);
-        // In asm-dom, removing a child from its parent also destroys it, so we
-        // have to mark it as uninitialized here.
-        this->js_id = 0;
-    }
-
-    ~element_object()
-    {
-        if (this->js_id != 0)
-        {
-            this->remove();
-        }
-    }
-
-    int js_id = 0;
-};
+void
+install_onpopstate_callback(
+    std::function<void(emscripten::val)> const* function);
 
 void
-text_node(html::context ctx, readable<string> text);
+install_onhashchange_callback(
+    std::function<void(emscripten::val)> const* function);
+
+void
+text_node(html::context ctx, readable<std::string> text);
 
 void
 do_element_attribute(
     context ctx,
     element_object& object,
     char const* name,
-    readable<string> value);
+    readable<std::string> value);
 
 void
 do_element_attribute(
@@ -174,13 +148,13 @@ struct element_handle
     element_handle&
     callback(char const* event_type, Function&& fn)
     {
-        auto& data = get_cached_data<callback_data>(ctx_);
+        auto& data = get_cached_data<detail::callback_data>(ctx_);
         if (initializing_)
         {
             detail::install_element_callback(
                 ctx_, node_->object, data, event_type);
         }
-        on_targeted_event<dom_event>(
+        on_targeted_event<detail::dom_event>(
             ctx_, &data.identity, [&](auto ctx, auto& e) {
                 std::forward<Function>(fn)(e.event);
             });
@@ -243,16 +217,7 @@ struct scoped_element : noncopyable
     }
 
     scoped_element&
-    begin(context ctx, char const* type)
-    {
-        ctx_.reset(ctx);
-        initializing_ = get_cached_data(ctx, &node_);
-        if (initializing_)
-            node_->object.create_as_element(type);
-        if (is_refresh_event(ctx))
-            tree_scoping_.begin(get<tree_traversal_tag>(ctx), *node_);
-        return *this;
-    }
+    begin(context ctx, char const* type);
 
     void
     end()
@@ -264,7 +229,8 @@ struct scoped_element : noncopyable
     scoped_element&
     attr(char const* name, Value value)
     {
-        do_element_attribute(*ctx_, node_->object, name, signalize(value));
+        detail::do_element_attribute(
+            *ctx_, node_->object, name, signalize(value));
         return *this;
     }
 
@@ -272,7 +238,8 @@ struct scoped_element : noncopyable
     scoped_element&
     prop(char const* name, Value value)
     {
-        do_element_property(*ctx_, node_->object, name, signalize(value));
+        detail::do_element_property(
+            *ctx_, node_->object, name, signalize(value));
         return *this;
     }
 
@@ -281,13 +248,13 @@ struct scoped_element : noncopyable
     callback(char const* event_type, Function&& fn)
     {
         auto ctx = *ctx_;
-        auto& data = get_cached_data<callback_data>(ctx);
+        auto& data = get_cached_data<detail::callback_data>(ctx);
         if (initializing_)
         {
             detail::install_element_callback(
                 ctx, node_->object, data, event_type);
         }
-        on_targeted_event<dom_event>(
+        on_targeted_event<detail::dom_event>(
             ctx, &data.identity, [&](auto ctx, auto& e) {
                 std::forward<Function>(fn)(e.event);
             });

@@ -15,7 +15,7 @@ text(html::context ctx, Signal signal)
 
 namespace detail {
 element_handle<html::context>
-input(html::context ctx, duplex<string> value);
+input(html::context ctx, duplex<std::string> value);
 }
 template<class Signal>
 element_handle<html::context>

@@ -1,6 +1,13 @@
 #ifndef ALIA_HTML_SYSTEM_HPP
 #define ALIA_HTML_SYSTEM_HPP
 
+#include <functional>
+
+#include <emscripten/val.h>
+
+#include <alia/html/context.hpp>
+#include <alia/html/dom.hpp>
+
 namespace alia {
 namespace html {
 
