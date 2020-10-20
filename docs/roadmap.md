@@ -25,25 +25,6 @@ at the right place. Custom tools could help this situation. alia itself might
 have to provide some instrumentation that could connect to an external
 monitor or IDE plugin.
 
-### Error Handling
-
-Some parts of alia casually ignore or swallow errors. This actually hasn't been
-a problem in practice for in-house applications, but for more general usage,
-alia should provide the tools for dealing with errors that occur within
-component functions. (Something like React's [Error
-Boundaries](https://reactjs.org/docs/error-boundaries.html) would be a good
-start.)
-
-### Validation
-
-Although it can be treated as an entirely separate concern, validation often
-overlaps with some of the core alia concerns. (Why isn't this action ready to be
-performed? Why did this signal reject the value entered by the user?) alia
-provides very cursory support for validation at the moment. It would be nice to
-provide a more fully featured system that could be used to track validation
-errors, define validation scopes, provide feedback to UI elements, mask signals
-and actions when corresponding contexts/elements aren't valid, etc.
-
 ### Declarative Calculation Management
 
 In recent years, for in-house development, alia has always been paired with a
