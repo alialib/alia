@@ -43,7 +43,7 @@ target_include_directories(alia PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
 
 # Set up the alia-html library.
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp")
-add_library(alia_html ${SOURCES})
+add_library(alia_html STATIC ${SOURCES})
 target_link_libraries(alia_html
     PUBLIC asm-dom scn::scn alia nlohmann_json::nlohmann_json)
 target_include_directories(alia_html PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
