@@ -2,6 +2,8 @@
 #define ALIA_HTML_ROUTING_HPP
 
 #include <alia/html/context.hpp>
+#include <alia/html/history.hpp>
+#include <alia/html/system.hpp>
 
 namespace alia {
 namespace html {
@@ -14,9 +16,11 @@ struct path_component
 };
 
 } // namespace detail
+} // namespace html
+} // namespace alia
 
 template<typename Char>
-struct scn::scanner<Char, ::detail::path_component>
+struct scn::scanner<Char, alia::html::detail::path_component>
 {
     template<typename ParseContext>
     error
@@ -48,7 +52,7 @@ struct scn::scanner<Char, ::detail::path_component>
 
     template<typename Context>
     error
-    scan(::detail::path_component& val, Context& ctx)
+    scan(alia::html::detail::path_component& val, Context& ctx)
     {
         using char_type = typename Context::char_type;
         auto is_separator = [&](char_type ch) {
@@ -71,6 +75,9 @@ struct scn::scanner<Char, ::detail::path_component>
 
     bool is_subpath = false;
 };
+
+namespace alia {
+namespace html {
 
 namespace detail {
 
@@ -194,10 +201,10 @@ struct router_handle
     router_handle&
     route(char const* pattern, Page&& page)
     {
-        std::size_t constexpr N = ::detail::page_arity<Context, Page>::value;
-        ::detail::route_parser<N> parser{pattern};
+        std::size_t constexpr N = detail::page_arity<Context, Page>::value;
+        detail::route_parser<N> parser{pattern};
         auto parse_result = alia::apply(ctx, parser, make_state_signal(path));
-        ::detail::page_invoker<N>::invoke(
+        detail::page_invoker<N>::invoke(
             ctx, std::forward<Page>(page), parse_result);
         return *this;
     }
@@ -233,7 +240,7 @@ router(Context ctx)
 auto
 set_route(html::context ctx)
 {
-    auto& system = get<dom::system_tag>(ctx);
+    auto& system = get<html::system_tag>(ctx);
     return callback([&system](std::string new_route) {
         history().push_url("#" + std::move(new_route));
         update_location_hash(system);
