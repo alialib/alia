@@ -44,12 +44,13 @@ target_include_directories(alia PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
 # Set up the alia-html library.
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 add_library(alia_html ${SOURCES})
-target_link_libraries(alia_html asm-dom scn::scn alia)
+target_link_libraries(alia_html
+    PUBLIC asm-dom scn::scn alia nlohmann_json::nlohmann_json)
 target_include_directories(alia_html PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 # Create an example executable.
 add_library(example examples/main.cpp)
-target_link_libraries(example asm-dom scn::scn alia)
+target_link_libraries(example alia_html)
 
 # Create symlinks for index.html and style.css file in the build directory.
 # (Or copy them if we're on Travis so that deployment works.)
