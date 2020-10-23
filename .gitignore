@@ -3,4 +3,5 @@
 www
 coverage.txt
 *build*
+release
 debug.log
