@@ -67,6 +67,12 @@ struct scn::scanner<Char, alia::html::detail::path_component>
                 error::invalid_operation,
                 "Cannot read a path component from a non-contiguous range");
         }
+        // Allow empty subpaths.
+        if (is_subpath && ctx.range().begin() == ctx.range().end())
+        {
+            val.text = std::string_view();
+            return {};
+        }
         auto s = read_until_space_zero_copy(ctx.range(), is_separator, false);
         if (!s)
             return s.error();
