@@ -5,6 +5,8 @@
 #include <alia/html/history.hpp>
 #include <alia/html/system.hpp>
 
+#include <scn/scn.h>
+
 namespace alia {
 namespace html {
 
