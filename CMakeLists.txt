@@ -49,7 +49,7 @@ target_link_libraries(alia_html
 target_include_directories(alia_html PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 # Create an example executable.
-add_library(example examples/main.cpp)
+add_executable(example examples/main.cpp)
 target_link_libraries(example alia_html)
 
 # Create symlinks for index.html and style.css file in the build directory.
