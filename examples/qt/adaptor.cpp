@@ -154,7 +154,7 @@ do_label(qt_context ctx, readable<string> text)
 
         add_layout_node(ctx, &label);
 
-        refresh_signal_shadow(
+        refresh_signal_view(
             label.text_id,
             text,
             [&](auto text) { label.object->setText(text.c_str()); },
@@ -219,7 +219,7 @@ do_button(qt_context ctx, readable<string> text, action<> on_click)
 
         add_layout_node(ctx, &button);
 
-        refresh_signal_shadow(
+        refresh_signal_view(
             button.text_id,
             text,
             [&](auto text) { button.object->setText(text.c_str()); },
@@ -295,7 +295,7 @@ do_text_control(qt_context ctx, duplex<string> text)
 
         add_layout_node(ctx, &widget);
 
-        refresh_signal_shadow(
+        refresh_signal_view(
             widget.text_id,
             text,
             [&](auto text) {

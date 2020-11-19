@@ -266,7 +266,7 @@ on_value_change(context ctx, Signal signal, action<> on_change)
         if (data->has_value)
             data->value = read_signal(signal);
     }
-    refresh_signal_shadow(
+    refresh_signal_view(
         data->id,
         signal,
         [&](auto const& new_value) {
