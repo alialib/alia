@@ -74,7 +74,7 @@ text_node_(dom::context ctx, readable<string> text)
     if (is_refresh_event(ctx))
     {
         refresh_tree_node(get<tree_traversal_tag>(ctx), data->node);
-        refresh_signal_shadow(
+        refresh_signal_view(
             data->value_id,
             text,
             [&](std::string const& new_value) {
@@ -99,7 +99,7 @@ do_element_attribute(
 {
     auto& stored_id = get_cached_data<captured_id>(ctx);
     on_refresh(ctx, [&](auto ctx) {
-        refresh_signal_shadow(
+        refresh_signal_view(
             stored_id,
             value,
             [&](string const& new_value) {
@@ -134,7 +134,7 @@ do_element_attribute(
 {
     auto& stored_id = get_cached_data<captured_id>(ctx);
     on_refresh(ctx, [&](auto ctx) {
-        refresh_signal_shadow(
+        refresh_signal_view(
             stored_id,
             value,
             [&](bool new_value) {
@@ -225,7 +225,7 @@ input_(dom::context ctx, duplex<string> value_)
     on_refresh(ctx, [&](auto ctx) {
         if (!value.is_invalidated())
         {
-            refresh_signal_shadow(
+            refresh_signal_view(
                 data->value_id,
                 value,
                 [&](string new_value) {

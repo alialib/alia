@@ -134,7 +134,7 @@ do_element_property(
 {
     auto& stored_id = get_cached_data<captured_id>(ctx);
     on_refresh(ctx, [&](auto ctx) {
-        refresh_signal_shadow(
+        refresh_signal_view(
             stored_id,
             value,
             [&](auto const& new_value) {
