@@ -109,11 +109,11 @@ struct preferred_id_signal<
     mutable ComplexId id_;
 };
 
-// refresh_signal_shadow is useful to monitoring a signal and responding to
+// refresh_signal_view is useful to monitoring a signal and responding to
 // changes in its value.
 template<class Signal, class OnNewValue, class OnLostValue>
 void
-refresh_signal_shadow(
+refresh_signal_view(
     captured_id& id,
     Signal signal,
     OnNewValue&& on_new_value,
