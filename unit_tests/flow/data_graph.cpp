@@ -63,11 +63,13 @@ TEST_CASE("simple named blocks", "[flow][data_graph]")
             "visiting int: 3;"
             "visiting int: 0;");
     }
-    check_log(
-        "destructing int: 0;"
-        "destructing int: 3;"
-        "destructing int: 1;"
-        "destructing int: 2;");
+    match_log(
+        // The named blocks go first (in arbitrary order).
+        "destructing int: [1-3];"
+        "destructing int: [1-3];"
+        "destructing int: [1-3];"
+        // Then the fixed content goes.
+        "destructing int: 0;");
 }
 
 TEST_CASE("mobile named blocks", "[flow][data_graph]")
@@ -116,9 +118,9 @@ TEST_CASE("mobile named blocks", "[flow][data_graph]")
             "visiting int: 3;");
     }
     check_log(
-        "destructing int: 1;"
+        "destructing int: 3;"
         "destructing int: 2;"
-        "destructing int: 3;");
+        "destructing int: 1;");
 }
 
 TEST_CASE("multiple naming contexts", "[flow][data_graph]")
@@ -179,12 +181,14 @@ TEST_CASE("multiple naming contexts", "[flow][data_graph]")
             "destructing int: 2;"
             "destructing int: 1;");
     }
-    check_log(
-        "destructing int: 0;"
-        "destructing int: 6;"
-        "destructing int: 4;"
-        "destructing int: 3;"
-        "destructing int: 2;");
+    match_log(
+        // The named blocks go first (in arbitrary order).
+        "destructing int: [2-6];"
+        "destructing int: [2-6];"
+        "destructing int: [2-6];"
+        "destructing int: [2-6];"
+        // Then the fixed content goes.
+        "destructing int: 0;");
 }
 
 TEST_CASE("unexecuted named blocks", "[data_graph]")
@@ -220,10 +224,12 @@ TEST_CASE("unexecuted named blocks", "[data_graph]")
             "visiting int: 1;"
             "visiting int: 0;");
     }
-    check_log(
+    match_log(
+        // This goes first because it's not a sibling of the named blocks.
         "destructing int: 0;"
-        "destructing int: 1;"
-        "destructing int: 2;");
+        // These go in arbitrary order.
+        "destructing int: [1-2];"
+        "destructing int: [1-2];");
 }
 
 TEST_CASE("GC disabling", "[data_graph]")
@@ -261,16 +267,16 @@ TEST_CASE("GC disabling", "[data_graph]")
             "visiting int: 2;"
             "visiting int: 1;"
             "visiting int: 0;");
-        // This traversal is an error because it tries to change the order
+    // This traversal is an error because it tries to change the order
         // with GC disabled.
         REQUIRE_THROWS_AS(
             do_traversal(graph, make_controller({1, 2}), false),
             named_block_out_of_order);
     }
-    check_log(
-        "destructing int: 0;"
-        "destructing int: 1;"
-        "destructing int: 2;");
+    match_log(
+        "destructing int: [1-2];"
+        "destructing int: [1-2];"
+        "destructing int: 0;");
 }
 
 TEST_CASE("manual deletion", "[data_graph]")
@@ -331,8 +337,10 @@ TEST_CASE("manual deletion", "[data_graph]")
             "visiting int: 0;");
     }
     check_log(
-        "destructing int: 0;"
-        "destructing int: 1;");
+        // First the named block.
+        "destructing int: 1;"
+        // Then the fixed block.
+        "destructing int: 0;");
 }
 
 TEST_CASE("named block caching", "[data_graph]")
