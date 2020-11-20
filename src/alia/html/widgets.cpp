@@ -24,7 +24,7 @@ input(html::context ctx, duplex<std::string> value_)
     on_refresh(ctx, [&](auto ctx) {
         if (!value.is_invalidated())
         {
-            refresh_signal_shadow(
+            refresh_signal_view(
                 data->value_id,
                 value,
                 [&](std::string new_value) {
@@ -39,10 +39,7 @@ input(html::context ctx, duplex<std::string> value_)
     });
 
     return element(ctx, "input")
-        .attr(
-            "class",
-            conditional(
-                value.is_invalidated(), "invalid-input", "form-control"))
+        .attr("class", "form-control")
         .prop("value", data->value)
         .callback("input", [=](emscripten::val& e) {
             auto new_value = e["target"]["value"].as<std::string>();

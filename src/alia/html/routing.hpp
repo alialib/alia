@@ -224,7 +224,7 @@ router(Context ctx, readable<std::string> path)
 {
     auto& data = get_cached_data<router_data>(ctx);
     on_refresh(ctx, [&](auto ctx) {
-        refresh_signal_shadow(
+        refresh_signal_view(
             data.path_id,
             path,
             [&](std::string const& new_value) { data.path.set(new_value); },
