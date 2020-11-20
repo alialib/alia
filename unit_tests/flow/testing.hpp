@@ -56,7 +56,7 @@ struct int_object
     ~int_object()
     {
         if (!moved_out)
-            the_log << "destructing int;";
+            the_log << "destructing int: " << n << ";";
     }
     int n;
     bool moved_out = false;

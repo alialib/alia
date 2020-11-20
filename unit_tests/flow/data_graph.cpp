@@ -17,7 +17,7 @@ TEST_CASE("basic data traversal", "[flow][data_graph]")
         do_traversal(graph, controller);
         check_log("visiting int: 0;");
     }
-    check_log("destructing int;");
+    check_log("destructing int: 0;");
 }
 
 TEST_CASE("simple named blocks", "[flow][data_graph]")
@@ -44,7 +44,7 @@ TEST_CASE("simple named blocks", "[flow][data_graph]")
         check_log(
             "initializing int: 2;"
             "visiting int: 0;"
-            "destructing int;");
+            "destructing int: 1;");
         do_traversal(graph, make_controller({1, 2}));
         check_log(
             "initializing int: 1;"
@@ -55,7 +55,7 @@ TEST_CASE("simple named blocks", "[flow][data_graph]")
             "visiting int: 2;"
             "initializing int: 3;"
             "visiting int: 0;"
-            "destructing int;");
+            "destructing int: 1;");
         do_traversal(graph, make_controller({2, 1, 3}));
         check_log(
             "visiting int: 2;"
@@ -64,10 +64,10 @@ TEST_CASE("simple named blocks", "[flow][data_graph]")
             "visiting int: 0;");
     }
     check_log(
-        "destructing int;"
-        "destructing int;"
-        "destructing int;"
-        "destructing int;");
+        "destructing int: 0;"
+        "destructing int: 3;"
+        "destructing int: 1;"
+        "destructing int: 2;");
 }
 
 TEST_CASE("mobile named blocks", "[flow][data_graph]")
@@ -116,9 +116,9 @@ TEST_CASE("mobile named blocks", "[flow][data_graph]")
             "visiting int: 3;");
     }
     check_log(
-        "destructing int;"
-        "destructing int;"
-        "destructing int;");
+        "destructing int: 1;"
+        "destructing int: 2;"
+        "destructing int: 3;");
 }
 
 TEST_CASE("multiple naming contexts", "[flow][data_graph]")
@@ -160,8 +160,8 @@ TEST_CASE("multiple naming contexts", "[flow][data_graph]")
             "initializing int: 2;"
             "initializing int: 4;"
             "visiting int: 0;"
-            "destructing int;"
-            "destructing int;");
+            "destructing int: 2;"
+            "destructing int: 1;");
         do_traversal(graph, make_controller({1, 2}));
         check_log(
             "initializing int: 1;"
@@ -176,15 +176,15 @@ TEST_CASE("multiple naming contexts", "[flow][data_graph]")
             "visiting int: 4;"
             "initializing int: 6;"
             "visiting int: 0;"
-            "destructing int;"
-            "destructing int;");
+            "destructing int: 2;"
+            "destructing int: 1;");
     }
     check_log(
-        "destructing int;"
-        "destructing int;"
-        "destructing int;"
-        "destructing int;"
-        "destructing int;");
+        "destructing int: 0;"
+        "destructing int: 6;"
+        "destructing int: 4;"
+        "destructing int: 3;"
+        "destructing int: 2;");
 }
 
 TEST_CASE("unexecuted named blocks", "[data_graph]")
@@ -221,9 +221,9 @@ TEST_CASE("unexecuted named blocks", "[data_graph]")
             "visiting int: 0;");
     }
     check_log(
-        "destructing int;"
-        "destructing int;"
-        "destructing int;");
+        "destructing int: 0;"
+        "destructing int: 1;"
+        "destructing int: 2;");
 }
 
 TEST_CASE("GC disabling", "[data_graph]")
@@ -268,9 +268,9 @@ TEST_CASE("GC disabling", "[data_graph]")
             named_block_out_of_order);
     }
     check_log(
-        "destructing int;"
-        "destructing int;"
-        "destructing int;");
+        "destructing int: 0;"
+        "destructing int: 1;"
+        "destructing int: 2;");
 }
 
 TEST_CASE("manual deletion", "[data_graph]")
@@ -306,7 +306,7 @@ TEST_CASE("manual deletion", "[data_graph]")
         check_log(
             "visiting int: 1;"
             "visiting int: 0;"
-            "destructing int;");
+            "destructing int: 2;");
         // Test that normal blocks are still GC'd.
         do_traversal(graph, make_controller({3, 1}));
         check_log(
@@ -320,7 +320,7 @@ TEST_CASE("manual deletion", "[data_graph]")
             "visiting int: 0;");
         // Test manual deletion.
         delete_named_block(graph, make_id(3));
-        check_log("destructing int;");
+        check_log("destructing int: 3;");
         // Test that manual deletion has no effect on blocks that are still
         // active.
         delete_named_block(graph, make_id(1));
@@ -331,8 +331,8 @@ TEST_CASE("manual deletion", "[data_graph]")
             "visiting int: 0;");
     }
     check_log(
-        "destructing int;"
-        "destructing int;");
+        "destructing int: 0;"
+        "destructing int: 1;");
 }
 
 TEST_CASE("named block caching", "[data_graph]")
@@ -369,31 +369,31 @@ TEST_CASE("named block caching", "[data_graph]")
         do_traversal(graph, make_controller(value(true), {1}));
         check_log(
             "visiting cached int: 1;"
-            "destructing int;");
+            "destructing int: 2;");
         do_traversal(graph, make_controller(value(true), {2, 1}));
         check_log(
             "initializing cached int: 2;"
             "visiting cached int: 1;");
         do_traversal(graph, make_controller(value(false), {2, 1}));
         check_log(
-            "destructing int;"
-            "destructing int;");
+            "destructing int: 1;"
+            "destructing int: 2;");
         do_traversal(graph, make_controller(value(true), {2, 1}));
         check_log(
             "initializing cached int: 2;"
             "initializing cached int: 1;");
         do_traversal(graph, make_controller(value(false), {}));
         check_log(
-            "destructing int;"
-            "destructing int;");
+            "destructing int: 1;"
+            "destructing int: 2;");
         do_traversal(graph, make_controller(value(true), {2, 1}));
         check_log(
             "initializing cached int: 2;"
             "initializing cached int: 1;");
     }
     check_log(
-        "destructing int;"
-        "destructing int;");
+        "destructing int: 1;"
+        "destructing int: 2;");
 }
 
 TEST_CASE("naming_map lifetime", "[data_graph]")
@@ -433,11 +433,11 @@ TEST_CASE("naming_map lifetime", "[data_graph]")
         check_log(
             "visiting int: 2;"
             "visiting int: 1;"
-            "destructing int;");
+            "destructing int: 3;");
         do_traversal(graph, make_controller(value(true), {}));
         check_log(
-            "destructing int;"
-            "destructing int;");
+            "destructing int: 1;"
+            "destructing int: 2;");
     }
 }
 
@@ -478,7 +478,7 @@ TEST_CASE("scoped_cache_clearing_disabler", "[data_graph]")
         do_traversal(graph, make_controller(value(false)));
         check_log(
             "visiting cached int: 1;"
-            "destructing int;");
+            "destructing int: 2;");
         do_traversal(graph, make_controller(empty<bool>()));
         check_log("");
         do_traversal(graph, make_controller(value(true)));
@@ -488,49 +488,12 @@ TEST_CASE("scoped_cache_clearing_disabler", "[data_graph]")
         do_traversal(graph, make_controller(value(false)));
         check_log(
             "visiting cached int: 1;"
-            "destructing int;");
+            "destructing int: 2;");
     }
     check_log(
-        "destructing int;"
-        "destructing int;");
+        "destructing int: 1;"
+        "destructing int: 0;");
 }
-
-namespace {
-
-struct verbose_int_object
-{
-    verbose_int_object() : n(-1)
-    {
-    }
-    verbose_int_object(int n) : n(n)
-    {
-    }
-    ~verbose_int_object()
-    {
-        the_log << "destructing int: " << n << ";";
-    }
-    int n;
-};
-
-template<class Context>
-void
-do_verbose_int(Context& ctx, int n)
-{
-    verbose_int_object* obj;
-    if (get_data(ctx, &obj))
-    {
-        REQUIRE(obj->n == -1);
-        obj->n = n;
-        the_log << "initializing int: " << n << ";";
-    }
-    else
-    {
-        REQUIRE(obj->n == n);
-        the_log << "visiting int: " << n << ";";
-    }
-}
-
-} // namespace
 
 TEST_CASE("data node destruction order", "[data_graph]")
 {
@@ -539,9 +502,9 @@ TEST_CASE("data node destruction order", "[data_graph]")
         data_graph graph;
         auto make_controller = []() {
             return [=](context ctx) {
-                do_verbose_int(ctx, 1);
-                do_verbose_int(ctx, 2);
-                do_verbose_int(ctx, 3);
+                do_int(ctx, 1);
+                do_int(ctx, 2);
+                do_int(ctx, 3);
             };
         };
         do_traversal(graph, make_controller());

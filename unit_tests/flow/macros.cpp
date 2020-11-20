@@ -43,8 +43,8 @@ TEST_CASE("basic alia_if", "[flow][macros]")
         check_log("visiting int: 1;");
     }
     check_log(
-        "destructing int;"
-        "destructing int;");
+        "destructing int: 1;"
+        "destructing int: 0;");
 }
 
 TEST_CASE("alia_if/alia_else", "[flow][macros]")
@@ -82,9 +82,9 @@ TEST_CASE("alia_if/alia_else", "[flow][macros]")
         check_log("visiting int: 2;");
     }
     check_log(
-        "destructing int;"
-        "destructing int;"
-        "destructing int;");
+        "destructing int: 2;"
+        "destructing int: 1;"
+        "destructing int: 0;");
 }
 
 TEST_CASE("non-signal alia_if/alia_else", "[flow][macros]")
@@ -120,9 +120,9 @@ TEST_CASE("non-signal alia_if/alia_else", "[flow][macros]")
             "visiting int: 2;");
     }
     check_log(
-        "destructing int;"
-        "destructing int;"
-        "destructing int;");
+        "destructing int: 2;"
+        "destructing int: 1;"
+        "destructing int: 0;");
 }
 
 TEST_CASE("alia_if/alia_else caching", "[flow][macros]")
@@ -161,16 +161,16 @@ TEST_CASE("alia_if/alia_else caching", "[flow][macros]")
         do_traversal(graph, make_controller(value(true)));
         check_log(
             "initializing cached int: 0;"
-            "destructing int;"
+            "destructing int: 1;"
             "visiting int: 2;");
         do_traversal(graph, make_controller(value(false)));
         check_log(
-            "destructing int;"
+            "destructing int: 0;"
             "initializing cached int: 1;"
             "visiting int: 2;");
         do_traversal(graph, make_controller(empty<bool>()));
         check_log(
-            "destructing int;"
+            "destructing int: 1;"
             "visiting int: 2;");
         do_traversal(graph, make_controller(value(true)));
         check_log(
@@ -178,8 +178,8 @@ TEST_CASE("alia_if/alia_else caching", "[flow][macros]")
             "visiting int: 2;");
     }
     check_log(
-        "destructing int;"
-        "destructing int;");
+        "destructing int: 2;"
+        "destructing int: 0;");
 }
 
 TEST_CASE("alia_if/alia_else_if/alia_else", "[flow][macros]")
@@ -234,10 +234,10 @@ TEST_CASE("alia_if/alia_else_if/alia_else", "[flow][macros]")
             "visiting int: 3;");
     }
     check_log(
-        "destructing int;"
-        "destructing int;"
-        "destructing int;"
-        "destructing int;");
+        "destructing int: 3;"
+        "destructing int: 2;"
+        "destructing int: 1;"
+        "destructing int: 0;");
 }
 
 #ifdef __clang__
@@ -293,7 +293,7 @@ TEST_CASE("alia_switch", "[flow][macros]")
         check_log(
             "initializing int: 4;"
             "visiting int: -2;"
-            "destructing int;");
+            "destructing int: 3;");
         do_traversal(graph, make_controller(value(1)));
         check_log(
             "visiting int: 1;"
@@ -307,12 +307,12 @@ TEST_CASE("alia_switch", "[flow][macros]")
             "visiting int: -2;");
     }
     check_log(
-        "destructing int;"
-        "destructing int;"
-        "destructing int;"
-        "destructing int;"
-        "destructing int;"
-        "destructing int;");
+        "destructing int: -2;"
+        "destructing int: 4;"
+        "destructing int: 3;"
+        "destructing int: 2;"
+        "destructing int: 1;"
+        "destructing int: 0;");
 }
 
 TEST_CASE("non-signal alia_switch", "[flow][macros]")
