@@ -46,7 +46,7 @@ struct dom_event : targeted_event
 struct callback_data
 {
     component_identity identity;
-    std::function<void(emscripten::val)> callback;
+    std::function<bool(emscripten::val)> callback;
 };
 
 void
@@ -83,7 +83,7 @@ do_element_attribute(
 
 void
 set_element_property(
-    element_object& object, char const* name, emscripten::val value);
+    element_object& object, char const* name, emscripten::val const& value);
 
 void
 clear_element_property(element_object& object, char const* name);
@@ -95,7 +95,7 @@ do_element_property(
 {
     auto& stored_id = get_cached_data<captured_id>(ctx);
     on_refresh(ctx, [&](auto ctx) {
-        refresh_signal_shadow(
+        refresh_signal_view(
             stored_id,
             value,
             [&](auto const& new_value) {
@@ -185,8 +185,14 @@ struct element_handle
     on_init(Callback callback)
     {
         if (initializing_)
-            callback();
+            callback(*this);
         return *this;
+    }
+
+    int
+    asmdom_id()
+    {
+        return node_->object.js_id;
     }
 
  private:
@@ -266,8 +272,14 @@ struct scoped_element : noncopyable
     on_init(Callback callback)
     {
         if (initializing_)
-            callback();
+            callback(*this);
         return *this;
+    }
+
+    int
+    asmdom_id()
+    {
+        return node_->object.js_id;
     }
 
  private:

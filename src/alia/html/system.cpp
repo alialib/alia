@@ -137,9 +137,7 @@ initialize(
         "setAttribute", emscripten::val("class"), emscripten::val("h-100"));
     placeholder_dom_node["parentNode"].call<emscripten::val>(
         "replaceChild", root, placeholder_dom_node);
-    dom_system.root_node.object.js_id
-        = emscripten::val::global("window")["asmDomHelpers"]["domApi"]
-              .call<int>("addNode", root);
+    dom_system.root_node.object.js_id = asmdom::direct::toElement(root);
 
     // Query the hash and install an event handler to monitor it.
     update_location_hash(dom_system);

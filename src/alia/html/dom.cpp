@@ -13,16 +13,18 @@ void
 element_object::create_as_element(char const* type)
 {
     assert(this->js_id == 0);
-    this->js_id = EM_ASM_INT(
-        { return Module.createElement(Module['UTF8ToString']($0)); }, type);
+    // std::cout << "asmdom::direct::createElement: " << type << std::endl;
+    this->js_id = asmdom::direct::createElement(type);
+    // std::cout << "-> " << this->js_id << std::endl;
 }
 
 void
 element_object::create_as_text_node(char const* value)
 {
     assert(this->js_id == 0);
-    this->js_id = EM_ASM_INT(
-        { return Module.createTextNode(Module['UTF8ToString']($0)); }, value);
+    // std::cout << "asmdom::direct::createTextNode: " << value << std::endl;
+    this->js_id = asmdom::direct::createTextNode(value);
+    // std::cout << "-> " << this->js_id << std::endl;
 }
 
 void
@@ -30,21 +32,19 @@ element_object::relocate(
     element_object& parent, element_object* after, element_object* before)
 {
     assert(this->js_id != 0);
-    EM_ASM_(
-        { Module.insertBefore($0, $1, $2); },
-        parent.js_id,
-        this->js_id,
-        before ? before->js_id : 0);
+    // std::cout << "asmdom::direct::insertBefore: " << parent.js_id << ", "
+    //           << this->js_id << ", " << (before ? before->js_id : 0)
+    //           << std::endl;
+    asmdom::direct::insertBefore(
+        parent.js_id, this->js_id, before ? before->js_id : 0);
 }
 
 void
 element_object::remove()
 {
     assert(this->js_id != 0);
-    EM_ASM_({ Module.removeChild($0); }, this->js_id);
-    // In asm-dom, removing a child from its parent also destroys it, so we
-    // have to mark it as uninitialized here.
-    this->js_id = 0;
+    // std::cout << "asmdom::direct::remove: " << this->js_id << std::endl;
+    asmdom::direct::remove(this->js_id);
 }
 
 element_object::~element_object()
@@ -52,6 +52,9 @@ element_object::~element_object()
     if (this->js_id != 0)
     {
         this->remove();
+        // std::cout << "asmdom::direct::deleteElement: " << this->js_id
+        //           << std::endl;
+        asmdom::direct::deleteElement(this->js_id);
     }
 }
 
@@ -105,34 +108,24 @@ install_element_callback(
     callback_data& data,
     char const* event_type)
 {
+    // std::cout << "install callback" << std::endl;
     auto external_id = externalize(&data.identity);
     auto* system = &get<alia::system_tag>(ctx);
+    // TODO: Probably don't need to store the callback in data anymore.
     data.callback = [=](emscripten::val v) {
         dom_event event(v);
+        auto start = std::chrono::high_resolution_clock::now();
         dispatch_targeted_event(*system, event, external_id);
+        auto elapsed_ms
+            = std::chrono::duration_cast<std::chrono::microseconds>(
+                  std::chrono::high_resolution_clock::now() - start)
+                  .count();
+        std::cout << "event time: " << elapsed_ms << " µs" << std::endl;
+        // TODO: Report whether or not it was actually handled?
+        return true;
     };
-    EM_ASM_(
-        {
-            var element = Module.nodes[$0];
-            var type = Module['UTF8ToString']($2);
-            var handler = function(e)
-            {
-                var start = window.performance.now();
-                Module.callback_proxy($1, e);
-                var end = window.performance.now();
-                console.log(
-                    "total event time: " + (((end - start) * 1000) | 0)
-                    + " µs");
-            };
-            element.addEventListener(type, handler);
-            // Add the handler to asm-dom's event list so that it knows to
-            // clear it out before recycling this DOM node.
-            element['asmDomEvents'] = element['asmDomEvents'] || {};
-            element['asmDomEvents'][type] = handler;
-        },
-        object.js_id,
-        reinterpret_cast<std::uintptr_t>(&data.callback),
-        event_type);
+    asmdom::direct::setCallback(object.js_id, event_type, data.callback);
+    // std::cout << "worked!" << std::endl;
 }
 
 struct text_node_data
@@ -150,18 +143,21 @@ text_node(html::context ctx, readable<std::string> text)
     if (is_refresh_event(ctx))
     {
         refresh_tree_node(get<tree_traversal_tag>(ctx), data->node);
-        refresh_signal_shadow(
+        refresh_signal_view(
             data->value_id,
             text,
             [&](std::string const& new_value) {
-                EM_ASM_(
-                    { Module.setNodeValue($0, Module['UTF8ToString']($1)); },
-                    data->node.object.js_id,
-                    new_value.c_str());
+                // std::cout << "asmdom::direct::setNodeValue: "
+                //           << data->node.object.js_id << ": " << new_value
+                //           << std::endl;
+                asmdom::direct::setNodeValue(
+                    data->node.object.js_id, new_value.c_str());
             },
             [&]() {
-                EM_ASM_(
-                    { Module.setNodeValue($0, ""); }, data->node.object.js_id);
+                // std::cout << "asmdom::direct::setNodeValue: "
+                //           << data->node.object.js_id << ": (null)"
+                //           << std::endl;
+                asmdom::direct::setNodeValue(data->node.object.js_id, "");
             });
     }
 }
@@ -175,29 +171,14 @@ do_element_attribute(
 {
     auto& stored_id = get_cached_data<captured_id>(ctx);
     on_refresh(ctx, [&](auto ctx) {
-        refresh_signal_shadow(
+        refresh_signal_view(
             stored_id,
             value,
             [&](std::string const& new_value) {
-                EM_ASM_(
-                    {
-                        Module.setAttribute(
-                            $0,
-                            Module['UTF8ToString']($1),
-                            Module['UTF8ToString']($2));
-                    },
-                    object.js_id,
-                    name,
-                    new_value.c_str());
+                asmdom::direct::setAttribute(
+                    object.js_id, name, new_value.c_str());
             },
-            [&]() {
-                EM_ASM_(
-                    {
-                        Module.removeAttribute($0, Module['UTF8ToString']($1));
-                    },
-                    object.js_id,
-                    name);
-            });
+            [&]() { asmdom::direct::removeAttribute(object.js_id, name); });
     });
 }
 
@@ -210,75 +191,35 @@ do_element_attribute(
 {
     auto& stored_id = get_cached_data<captured_id>(ctx);
     on_refresh(ctx, [&](auto ctx) {
-        refresh_signal_shadow(
+        refresh_signal_view(
             stored_id,
             value,
             [&](bool new_value) {
                 if (new_value)
-                {
-                    EM_ASM_(
-                        {
-                            Module.setAttribute(
-                                $0,
-                                Module['UTF8ToString']($1),
-                                Module['UTF8ToString']($2));
-                        },
-                        object.js_id,
-                        name,
-                        "");
-                }
+                    asmdom::direct::setAttribute(object.js_id, name, "");
                 else
-                {
-                    EM_ASM_(
-                        {
-                            Module.removeAttribute(
-                                $0, Module['UTF8ToString']($1));
-                        },
-                        object.js_id,
-                        name);
-                }
+                    asmdom::direct::removeAttribute(object.js_id, name);
             },
-            [&]() {});
+            [&]() { asmdom::direct::removeAttribute(object.js_id, name); });
     });
 }
 
 void
 set_element_property(
-    element_object& object, char const* name, emscripten::val value)
+    element_object& object, char const* name, emscripten::val const& value)
 {
-    emscripten::val::global("window")["asmDomHelpers"]["nodes"][object.js_id]
-        .set(name, value);
-
-    // Add the property name to the element's 'asmDomRaws' list. asm-dom uses
-    // this to track what it needs to clean up when recycling a DOM node.
-    EM_ASM_(
-        {
-            var element = Module.nodes[$0];
-            element['asmDomRaws'] = element['asmDomRaws'] || [];
-            element['asmDomRaws'].push(Module['UTF8ToString']($1));
-        },
-        object.js_id,
-        name);
+    // std::cout << "asmdom::direct::setProperty: " << object.js_id << "." <<
+    // name
+    //           << ": " << value.as<std::string>() << std::endl;
+    asmdom::direct::setProperty(object.js_id, name, value);
 }
 
 void
 clear_element_property(element_object& object, char const* name)
 {
-    EM_ASM_(
-        {
-            var node = Module.nodes[$0];
-            delete node[$1];
-
-            // Remove the property name from the element's 'asmDomRaws' list.
-            var asmDomRaws = node['asmDomRaws'];
-            var index = asmDomRaws.indexOf(Module['UTF8ToString']($1));
-            if (index > -1)
-            {
-                asmDomRaws.splice(index, 1);
-            }
-        },
-        object.js_id,
-        name);
+    // std::cout << "asmdom::direct::removeProperty: " << object.js_id << "."
+    //           << name << std::endl;
+    asmdom::direct::removeProperty(object.js_id, name);
 }
 
 } // namespace detail
