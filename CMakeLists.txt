@@ -32,10 +32,10 @@ endif()
 # Download alia.hpp and set it up as a library.
 # TODO: Improve this!
 file(DOWNLOAD
-     https://alia.dev/alia.hpp
+     https://github.com/tmadden/alia/releases/latest/download/alia.hpp
      ${CMAKE_CURRENT_BINARY_DIR}/alia.hpp)
 file(DOWNLOAD
-     https://alia.dev/alia.hpp
+     https://github.com/tmadden/alia/releases/latest/download/alia.hpp
      ${CMAKE_CURRENT_BINARY_DIR}/alia.cpp)
 add_library(alia ${CMAKE_CURRENT_BINARY_DIR}/alia.cpp)
 target_compile_definitions(alia PRIVATE -DALIA_IMPLEMENTATION)
