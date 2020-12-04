@@ -30,10 +30,10 @@ main_app_ui(html::context ctx)
 {
     // Get the username.
     // (Maybe in a real app this wouldn't be hardcoded...)
-    readable<std::string> username = value("tmadden");
+    readable<std::string> username = alia::value("tmadden");
 
     // Extend the app context to include the username.
-    app_context app_ctx = extend_context<username_tag>(ctx, username);
+    app_context app_ctx = alia::extend_context<username_tag>(ctx, username);
 
     // Pass that context along to the internal portions of the app UI...
     internal_app_ui(app_ctx);

@@ -60,7 +60,7 @@ demo_ui(html::context ctx)
 // We want to work with a container of integers here, so get the state to
 // represent that. (We initialize it to a vector of three 2s.)
 auto numbers = alia::get_state(
-    ctx, lambda_constant([]() { return std::vector<int>(3, 2); }));
+    ctx, alia::lambda_constant([]() { return std::vector<int>(3, 2); }));
 
 html::text(ctx, "Enter some numbers:");
 
