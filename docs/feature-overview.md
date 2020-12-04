@@ -11,8 +11,8 @@ declare the contents of your UI and how it should behave. When writing this
 'component-level' code, you are essentially programming in a mini-paradigm
 within C++.
 
-All the major features of alia are about enabling this paradigm and making it
-more efficient and more expressive...
+All the major features of alia are about enabling this paradigm in a way that's
+efficient, expressive, and feels as much like normal C++ as possible...
 
 The Data Graph
 --------------
@@ -104,9 +104,6 @@ for both `a` and `b`. The result of the `+` operator itself is a signal, and if
 either of its inputs is unavailable, that state implicitly propagates through to
 the sum.
 
-alia even provides [adaptors](signal-adaptors.md#availability) for working with
-the availability of a signal as a property.
-
 Actions
 -------
 
@@ -155,3 +152,5 @@ Notice that although our `if`/`else` branches have seemingly accounted for all
 possibilities on the number line, there is still the possibility that we haven't
 filled in the input yet and `n` doesn't have a value. The alia macros account
 for this automatically, and in that case, none of the branches are taken.
+
+(And yes, if you need to explicitly handle the case where the conditional is unresolved, alia [has that covered](signal-adaptors.md#availability).)
