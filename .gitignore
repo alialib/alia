@@ -2,6 +2,6 @@
 .venv
 www
 coverage.txt
-*build*
+/*build*
 release
 debug.log
