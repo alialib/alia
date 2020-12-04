@@ -17,7 +17,7 @@ if(NOT asm-dom_POPULATED)
   target_include_directories(asm-dom PUBLIC ${asm-dom_SOURCE_DIR}/cpp/)
   configure_file(
     ${asm-dom_SOURCE_DIR}/dist/js/asm-dom.js
-    ${CMAKE_CURRENT_BINARY_DIR}/asm-dom.js
+    ${CMAKE_BINARY_DIR}/asm-dom.js
   )
 
   string(APPEND CMAKE_CXX_FLAGS " -s EXTRA_EXPORTED_RUNTIME_METHODS=['UTF8ToString']")
