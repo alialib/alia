@@ -293,3 +293,92 @@ init_demo(std::string dom_id)
 
 static demo the_demo("named-blocks-demo", init_demo);
 } // namespace named_blocks_demo
+
+namespace basic_try_catch_demo {
+
+static std::default_random_engine rng;
+
+void
+demo_ui(html::context ctx, duplex<int> i)
+{
+    // clang-format off
+/// [basic-try-catch-demo]
+
+auto message = value("Hello, World!");
+
+html::text(ctx, "Enter a character index:");
+html::input(ctx, i);
+
+alia_try
+{
+    html::text(ctx,
+        alia::printf(ctx, "The character at position %i is '%c'.", i, message[i]));
+}
+alia_catch(std::out_of_range&)
+{
+    html::text(ctx, "Oops! Looks like that index is out of range!");
+}
+alia_end
+
+/// [basic-try-catch-demo]
+    // clang-format on
+}
+
+void
+init_demo(std::string dom_id)
+{
+    static alia::system the_system;
+    static html::system the_dom;
+
+    initialize(the_dom, the_system, dom_id, [&](html::context ctx) {
+        demo_ui(ctx, enforce_validity(ctx, get_state(ctx, empty<int>())));
+    });
+}
+
+static demo the_demo("basic-try-catch-demo", init_demo);
+} // namespace basic_try_catch_demo
+
+namespace try_catch_atomicity_demo {
+
+static std::default_random_engine rng;
+
+void
+demo_ui(html::context ctx, duplex<int> i)
+{
+    // clang-format off
+/// [try-catch-atomicity-demo]
+
+auto message = value("Hello, Again!");
+
+html::text(ctx, "Enter a character index:");
+html::input(ctx, i);
+
+alia_try
+{
+    html::text(ctx, "Let's see...");
+    html::text(ctx,
+        alia::printf(ctx, "The character at position %i is '%c'.", i, message[i]));
+}
+alia_catch(std::out_of_range&)
+{
+    html::text(ctx, "Oops! Looks like that index is out of range!");
+}
+alia_end
+
+/// [try-catch-atomicity-demo]
+    // clang-format on
+}
+
+void
+init_demo(std::string dom_id)
+{
+    static alia::system the_system;
+    static html::system the_dom;
+
+    initialize(the_dom, the_system, dom_id, [&](html::context ctx) {
+        demo_ui(ctx, enforce_validity(ctx, get_state(ctx, empty<int>())));
+    });
+}
+
+static demo the_demo("try-catch-atomicity-demo", init_demo);
+} // namespace try_catch_atomicity_demo

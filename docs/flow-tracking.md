@@ -4,7 +4,8 @@ Flow Tracking
 <script>
     init_alia_demos(['numerical-analysis', 'switch-example',
         'loop-macros-demo', 'for-each-map-demo', 'for-each-vector-demo',
-        'named-blocks-demo']);
+        'named-blocks-demo', 'basic-try-catch-demo',
+        'try-catch-atomicity-demo']);
 </script>
 
 General Rules
@@ -258,3 +259,39 @@ Here's a full example in action:
 <div class="demo-panel">
 <div id="named-blocks-demo"></div>
 </div>
+
+alia_try/catch
+--------------
+
+alia supports exceptions as you might expect:
+
+[source](tracking.cpp ':include :fragment=basic-try-catch-demo')
+
+<div class="demo-panel">
+<div id="basic-try-catch-demo"></div>
+</div>
+
+In the above example, the expression `message[i]` throws `std::out_of_range` if
+`i` is out of range ([signal subscripts are
+safe](signals-operators.md#subscripts)). This is caught by the `alia_catch`
+block and "handled" by presenting a substitute UI.
+
+As with regular C++ exceptions, you can have multiple `alia_catch` blocks
+following a single `alia_try` block to catch different types of exceptions
+(including `alia_catch(...)` to catch anything). And as you'd expect, uncaught
+exceptions are passed on to be handled by enclosing `alia_catch` blocks.
+
+### Atomicity
+
+One subtle difference between exceptions in raw C++ and in alia is that
+`alia_try` blocks are *atomic*. If any part of the block throws, it's as if the
+entire block never happened:
+
+[source](tracking.cpp ':include :fragment=try-catch-atomicity-demo')
+
+<div class="demo-panel">
+<div id="try-catch-atomicity-demo"></div>
+</div>
+
+Notice that when the index goes out of bounds, the "Let's see..." text is
+discarded along with it.
