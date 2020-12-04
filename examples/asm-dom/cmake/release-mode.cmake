@@ -1,7 +1,0 @@
-if (CMAKE_BUILD_TYPE STREQUAL "Release")
-  string(APPEND CMAKE_CXX_FLAGS " -Oz")
-  string(APPEND CMAKE_CXX_FLAGS " --js-opts 1")
-  string(APPEND CMAKE_CXX_FLAGS " --llvm-lto 3")
-  string(APPEND CMAKE_CXX_FLAGS " --llvm-opts 3")
-  string(APPEND CMAKE_CXX_FLAGS " --closure 0")
-endif()
