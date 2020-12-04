@@ -91,6 +91,10 @@ Subscripts
 The subscript operator is defined for signals that carry containers. The index
 can either be another signal or a raw value.
 
+?> alia prefers safe subscripts for signals, so for containers that offer an
+   `at` indexer, the signal subscript operator will invoke that instead of using
+   the actual subscript operator on the raw container.
+
 Field Access
 ------------
 
