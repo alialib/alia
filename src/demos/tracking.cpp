@@ -303,8 +303,7 @@ demo_ui(html::context ctx, duplex<int> i)
 {
     // clang-format off
 /// [basic-try-catch-demo]
-
-auto message = value("Hello, World!");
+auto message = alia::value("Hello, World!");
 
 html::text(ctx, "Enter a character index:");
 html::input(ctx, i);
@@ -319,7 +318,6 @@ alia_catch(std::out_of_range&)
     html::text(ctx, "Oops! Looks like that index is out of range!");
 }
 alia_end
-
 /// [basic-try-catch-demo]
     // clang-format on
 }
@@ -347,8 +345,7 @@ demo_ui(html::context ctx, duplex<int> i)
 {
     // clang-format off
 /// [try-catch-atomicity-demo]
-
-auto message = value("Hello, Again!");
+auto message = alia::value("Hello, Again!");
 
 html::text(ctx, "Enter a character index:");
 html::input(ctx, i);
@@ -364,7 +361,6 @@ alia_catch(std::out_of_range&)
     html::text(ctx, "Oops! Looks like that index is out of range!");
 }
 alia_end
-
 /// [try-catch-atomicity-demo]
     // clang-format on
 }

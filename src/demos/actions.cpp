@@ -135,7 +135,7 @@ demo_ui(html::context ctx, duplex<int> duration)
 {
     // clang-format off
 /// [action-binding]
-animation_timer timer(ctx);
+alia::animation_timer timer(ctx);
 
 alia_if(timer.is_active())
 {
@@ -181,7 +181,7 @@ html::text(ctx, "Enter a message for your browser's console:");
 html::input(ctx, message);
 
 // Create an action that takes a message as a parameter.
-auto sender = callback(
+auto sender = alia::callback(
     [](std::string message) { std::cout << message << std::endl; });
 
 // Bind the message to the action and hook them up to a button.
