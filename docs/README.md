@@ -66,24 +66,24 @@ here</a>, along with some other examples.
 
 ```cpp
 void
-tip_calculator(dom::context ctx)
+tip_calculator(html::context ctx)
 {
     // Get some component-local state for the bill amount.
     auto bill = alia::get_state(ctx, empty<double>());
-    dom::text(ctx, "How much is the bill?");
+    html::text(ctx, "How much is the bill?");
     // Display an input that allows the user to manipulate our bill state.
-    dom::input(ctx, bill);
+    html::input(ctx, bill);
 
     // Get some more component-local state for the tip rate.
     auto tip_rate = alia::get_state(ctx, empty<double>());
-    dom::text(ctx, "What percentage do you want to tip?");
+    html::text(ctx, "What percentage do you want to tip?");
     // Users like percentages, but we want to keep the 'tip_rate' state as a
     // rate internally, so this input presents a scaled view of it for the user.
-    dom::input(ctx, scale(tip_rate, 100));
+    html::input(ctx, scale(tip_rate, 100));
     // Add a few buttons that set the tip rate to common values.
-    dom::button(ctx, "18%", tip_rate <<= 0.18);
-    dom::button(ctx, "20%", tip_rate <<= 0.20);
-    dom::button(ctx, "25%", tip_rate <<= 0.25);
+    html::button(ctx, "18%", tip_rate <<= 0.18);
+    html::button(ctx, "20%", tip_rate <<= 0.20);
+    html::button(ctx, "25%", tip_rate <<= 0.25);
 
     // Calculate the results and display them for the user.
     // Note that these operations have dataflow semantics, and since `bill` and
@@ -91,14 +91,14 @@ tip_calculator(dom::context ctx)
     // (or displayed) until the user supplies values for them.
     auto tip = bill * tip_rate;
     auto total = bill + tip;
-    dom::text(ctx,
+    html::text(ctx,
         alia::printf(ctx,
           "You should tip %.2f, for a total of %.2f.", tip, total));
 
     // Conditionally display a message suggesting cash for small amounts.
     alia_if (total < 10)
     {
-        dom::text(ctx,
+        html::text(ctx,
             "You should consider using cash for small amounts like this.");
     }
     alia_end

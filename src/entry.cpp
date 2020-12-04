@@ -1,5 +1,3 @@
-#define ALIA_IMPLEMENTATION
-
 #include "demo.hpp"
 
 using namespace alia;

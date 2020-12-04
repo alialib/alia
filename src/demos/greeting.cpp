@@ -4,17 +4,17 @@ namespace hello_world {
 
 /// [greeting]
 void
-greeting_ui(dom::context ctx, duplex<string> name)
+greeting_ui(html::context ctx, duplex<std::string> name)
 {
-    dom::text(ctx, "What's your name?");
+    html::text(ctx, "What's your name?");
 
     // Allow the user to input their name.
-    dom::input(ctx, name);
+    html::input(ctx, name);
 
     // If we have a name, greet the user.
     alia_if(name != "")
     {
-        dom::text(ctx, "Hello, " + name + "!");
+        html::text(ctx, "Hello, " + name + "!");
     }
     alia_end
 }
@@ -24,10 +24,10 @@ void
 init_demo(std::string dom_id)
 {
     static alia::system the_system;
-    static dom::system the_dom;
+    static html::system the_dom;
 
-    initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        greeting_ui(ctx, get_state(ctx, string()));
+    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
+        greeting_ui(ctx, get_state(ctx, std::string()));
     });
 }
 
@@ -38,21 +38,21 @@ static demo the_demo("greeting-ui", init_demo);
 namespace expanded_greeting {
 
 void
-demo_ui(dom::context ctx, duplex<string> name)
+demo_ui(html::context ctx, duplex<std::string> name)
 {
     // clang-format off
 /// [expanded-greeting]
-dom::text(ctx, "What's your name?"); // node a
+html::text(ctx, "What's your name?"); // node a
 
-dom::input(ctx, name); // node b
+html::input(ctx, name); // node b
 
 alia_if(name != "") // node c
 {
-    dom::text(ctx, "Hello, " + name + "!"); // node d
+    html::text(ctx, "Hello, " + name + "!"); // node d
 }
 alia_end
 
-dom::text(ctx, "My name is alia."); // node e
+html::text(ctx, "My name is alia."); // node e
 /// [expanded-greeting]
     // clang-format on
 }
@@ -61,10 +61,10 @@ void
 init_demo(std::string dom_id)
 {
     static alia::system the_system;
-    static dom::system the_dom;
+    static html::system the_dom;
 
-    initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
-        demo_ui(ctx, get_state(ctx, string()));
+    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
+        demo_ui(ctx, get_state(ctx, std::string()));
     });
 }
 
@@ -76,13 +76,13 @@ namespace hello_button {
 
 /// [hello-button]
 void
-demo_ui(dom::context ctx, duplex<bool> show_message)
+demo_ui(html::context ctx, duplex<bool> show_message)
 {
-    dom::button(ctx, "Toggle the Message", toggle(show_message));
+    html::button(ctx, "Toggle the Message", toggle(show_message));
 
     alia_if(show_message)
     {
-        dom::text(ctx, "Hello, World!");
+        html::text(ctx, "Hello, World!");
     }
     alia_end
 }
@@ -92,9 +92,9 @@ void
 init_demo(std::string dom_id)
 {
     static alia::system the_system;
-    static dom::system the_dom;
+    static html::system the_dom;
 
-    initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
+    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
         demo_ui(ctx, get_state(ctx, false));
     });
 }
@@ -112,12 +112,12 @@ struct widget_data
 };
 
 void
-widget(dom::context ctx, std::string name)
+widget(html::context ctx, std::string name)
 {
     widget_data* data;
     get_data(ctx, &data);
 
-    dom::text(
+    html::text(
         ctx,
         alia::printf(
             ctx,
@@ -127,7 +127,7 @@ widget(dom::context ctx, std::string name)
 }
 
 void
-contrived_hello(dom::context ctx)
+contrived_hello(html::context ctx)
 {
     auto n = get_animation_tick_count(ctx) % 2000;
 
@@ -157,9 +157,9 @@ void
 init_demo(std::string dom_id)
 {
     static alia::system the_system;
-    static dom::system the_dom;
+    static html::system the_dom;
 
-    initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
+    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
         contrived_hello(ctx);
     });
 }

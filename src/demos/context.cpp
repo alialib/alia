@@ -12,21 +12,21 @@ namespace custom_context {
 ALIA_DEFINE_TAGGED_TYPE(username_tag, readable<std::string>&)
 
 // Define our app's context type by extending the asm-dom context type.
-typedef extend_context_type_t<dom::context, username_tag> app_context;
+typedef extend_context_type_t<html::context, username_tag> app_context;
 
 // The functions that define the internal portions of our app UI use
 // app_context and have access to the username via that context...
 void
 internal_app_ui(app_context ctx)
 {
-    dom::text(ctx,
+    html::text(ctx,
         alia::printf(ctx, "Welcome, %s!", get<username_tag>(ctx)));
 }
 
 // Our top-level UI function takes the context that the asm-dom wrapper provides
 // and extends it to what our app needs...
 void
-main_app_ui(dom::context ctx)
+main_app_ui(html::context ctx)
 {
     // Get the username.
     // (Maybe in a real app this wouldn't be hardcoded...)
@@ -45,9 +45,9 @@ void
 init_demo(std::string dom_id)
 {
     static alia::system the_system;
-    static dom::system the_dom;
+    static html::system the_dom;
 
-    initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
+    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
         main_app_ui(ctx);
     });
 }

@@ -11,7 +11,7 @@ data graph, event dispatch info, etc.
 
 The context is designed to be extended with externally defined objects to give
 applications additional capabilities. All of the examples in this documentation
-use a `dom::context`, which is defined by the asm-dom wrapper. `dom::context`
+use a `html::context`, which is defined by the asm-dom wrapper. `html::context`
 extends `alia::context` to add the ability to interact with asm-dom and control
 a portion of the DOM.
 

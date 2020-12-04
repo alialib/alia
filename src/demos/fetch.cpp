@@ -50,7 +50,7 @@ handle_fetch_failure(emscripten_fetch_t* fetch)
 
 // Here's our actual component-level function for retrieving country names.
 auto
-fetch_country_name(dom::context ctx, readable<std::string> country_code)
+fetch_country_name(html::context ctx, readable<std::string> country_code)
 {
     // This will be invoked to launch the fetch operation whenever necessary
     // (i.e., whenever we get a new country code).
@@ -75,12 +75,12 @@ fetch_country_name(dom::context ctx, readable<std::string> country_code)
 
 // And here's the UI for interacting with it.
 void
-fetch_ui(dom::context ctx, duplex<std::string> country_code)
+fetch_ui(html::context ctx, duplex<std::string> country_code)
 {
-    dom::text(ctx, "Enter a country code:");
-    dom::input(ctx, country_code);
+    html::text(ctx, "Enter a country code:");
+    html::input(ctx, country_code);
     auto result = fetch_country_name(ctx, country_code);
-    dom::text(
+    html::text(
         ctx,
         add_default(
             deflicker(
@@ -97,9 +97,9 @@ void
 init_demo(std::string dom_id)
 {
     static alia::system the_system;
-    static dom::system the_dom;
+    static html::system the_dom;
 
-    initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
+    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
         fetch_ui(ctx, get_state(ctx, "us"));
     });
 }

@@ -56,7 +56,7 @@ considers the condition *neither true nor false.* As such, the code dependent on
 that statement isn't executed, but any subsequent `else` blocks are *also not
 considered.* A condition without a value essentially terminates the entire
 sequence of `alia_if/else` statements. As you can see in the above example,
-before `n` is given a value, none of the `dom::text` calls are executed.
+before `n` is given a value, none of the `html::text` calls are executed.
 
 As with all alia control flow macros, `alia_if` blocks must be terminated with
 `alia_end`.
@@ -83,7 +83,7 @@ the context as a first argument. For example:
 ```cpp
 alia_if_(my_oddly_named_context, n < 0)
 {
-    dom::text(my_oddly_named_context, "Hi!");
+    html::text(my_oddly_named_context, "Hi!");
 }
 alia_end
 ```

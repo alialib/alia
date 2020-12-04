@@ -17,19 +17,19 @@ assuming we have some floating point variable `x` that represents some
 persistent application state, we might write code like this:
 
 ```cpp
-dom::input(ctx, scale(direct(x), 100));
+html::input(ctx, scale(direct(x), 100));
 ```
 
 `direct(x)` creates a signal object that directly exposes the variable `x` as a
 signal. `scale(direct(x), 100)` presents a view of `x` scaled up by a factor of
-100 (as another signal object), which is then passed into `dom::input` to allow
+100 (as another signal object), which is then passed into `html::input` to allow
 the user to edit it. (This might be done because the user wants to edit `x` as a
 percentage, while in code we want it as a simple ratio.)
 
 Remember that that line of code lives in a function that is reinvoked on every
 update, so while `x` persists across the lifetime of the application, the signal
 objects created by `direct()` and `scale()` *do not.* They're created on the
-stack solely for the purpose of exposing `x` to `dom::input`, and they cease to
+stack solely for the purpose of exposing `x` to `html::input`, and they cease to
 exist between updates. And, of course, `x` is the only real *state* here, so `x`
 is all that really *needs* to persist between frames.
 

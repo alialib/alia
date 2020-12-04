@@ -58,7 +58,7 @@ its right-hand operand has a value.
 
 When alia is integrated with a UI library, this property can often be leveraged
 so that widgets are disabled when the corresponding actions aren't ready to be
-performed. The following example shows a DOM button picking up the (un)ready
+performed. The following example shows an HTML button picking up the (un)ready
 status of a copy action.
 
 [source](actions.cpp ':include :fragment=unready-copier')

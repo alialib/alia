@@ -3,14 +3,14 @@
 namespace unready_copier {
 
 void
-demo_ui(dom::context ctx, duplex<int> n, duplex<int> m)
+demo_ui(html::context ctx, duplex<int> n, duplex<int> m)
 {
     // clang-format off
 /// [unready-copier]
-dom::text(ctx, alia::printf(ctx, "N is %d.", n));
-dom::text(ctx, "What would you like to set N to?");
-dom::input(ctx, m);
-dom::button(ctx, "Set It!", n <<= m);
+html::text(ctx, alia::printf(ctx, "N is %d.", n));
+html::text(ctx, "What would you like to set N to?");
+html::input(ctx, m);
+html::button(ctx, "Set It!", n <<= m);
 /// [unready-copier]
     // clang-format on
 }
@@ -19,9 +19,9 @@ void
 init_demo(std::string dom_id)
 {
     static alia::system the_system;
-    static dom::system the_dom;
+    static html::system the_dom;
 
-    initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
+    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
         demo_ui(
             ctx,
             enforce_validity(ctx, get_state(ctx, 0)),
@@ -36,17 +36,17 @@ static demo the_demo("unready-copier", init_demo);
 namespace action_operators {
 
 void
-demo_ui(dom::context ctx, duplex<int> n)
+demo_ui(html::context ctx, duplex<int> n)
 {
     // clang-format off
 /// [action-operators]
-dom::text(ctx, alia::printf(ctx, "N is %d.", n));
-dom::button(ctx, "Double", n *= 2);
-dom::button(ctx, "Halve", n /= 2);
-dom::button(ctx, "Square", n *= n);
-dom::button(ctx, "Increment", ++n);
-dom::button(ctx, "Decrement", n--);
-dom::button(ctx, "Reset", n <<= 1);
+html::text(ctx, alia::printf(ctx, "N is %d.", n));
+html::button(ctx, "Double", n *= 2);
+html::button(ctx, "Halve", n /= 2);
+html::button(ctx, "Square", n *= n);
+html::button(ctx, "Increment", ++n);
+html::button(ctx, "Decrement", n--);
+html::button(ctx, "Reset", n <<= 1);
 /// [action-operators]
     // clang-format on
 }
@@ -55,9 +55,9 @@ void
 init_demo(std::string dom_id)
 {
     static alia::system the_system;
-    static dom::system the_dom;
+    static html::system the_dom;
 
-    initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
+    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
         demo_ui(ctx, enforce_validity(ctx, get_state(ctx, 1)));
     });
 }
@@ -69,14 +69,14 @@ static demo the_demo("action-operators", init_demo);
 namespace action_combining {
 
 void
-demo_ui(dom::context ctx, duplex<int> m, duplex<int> n)
+demo_ui(html::context ctx, duplex<int> m, duplex<int> n)
 {
     // clang-format off
 /// [action-combining]
-dom::text(ctx, alia::printf(ctx, "M is %d and N is %d.", m, n));
-dom::button(ctx, "Increment M", ++m);
-dom::button(ctx, "Increment N", ++n);
-dom::button(ctx, "Reset Both", (m <<= 0, n <<= 0));
+html::text(ctx, alia::printf(ctx, "M is %d and N is %d.", m, n));
+html::button(ctx, "Increment M", ++m);
+html::button(ctx, "Increment N", ++n);
+html::button(ctx, "Reset Both", (m <<= 0, n <<= 0));
 /// [action-combining]
     // clang-format on
 }
@@ -85,9 +85,9 @@ void
 init_demo(std::string dom_id)
 {
     static alia::system the_system;
-    static dom::system the_dom;
+    static html::system the_dom;
 
-    initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
+    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
         demo_ui(ctx, get_state(ctx, 0), get_state(ctx, 0));
     });
 }
@@ -99,16 +99,16 @@ static demo the_demo("action-combining", init_demo);
 namespace action_latching {
 
 void
-demo_ui(dom::context ctx, duplex<int> in_hand, duplex<int> in_bank)
+demo_ui(html::context ctx, duplex<int> in_hand, duplex<int> in_bank)
 {
     // clang-format off
 /// [action-latching]
-dom::text(ctx,
+html::text(ctx,
     alia::printf(ctx,
         "You have %d coin(s) in hand and %d in the bank.",
         in_hand, in_bank));
-dom::button(ctx, "Pick Up a Coin", ++in_hand);
-dom::button(ctx, "Deposit Your Coins", (in_hand <<= 0, in_bank += in_hand));
+html::button(ctx, "Pick Up a Coin", ++in_hand);
+html::button(ctx, "Deposit Your Coins", (in_hand <<= 0, in_bank += in_hand));
 /// [action-latching]
     // clang-format on
 }
@@ -117,9 +117,9 @@ void
 init_demo(std::string dom_id)
 {
     static alia::system the_system;
-    static dom::system the_dom;
+    static html::system the_dom;
 
-    initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
+    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
         demo_ui(ctx, get_state(ctx, 0), get_state(ctx, 0));
     });
 }
@@ -131,7 +131,7 @@ static demo the_demo("action-latching", init_demo);
 namespace action_binding {
 
 void
-demo_ui(dom::context ctx, duplex<int> duration)
+demo_ui(html::context ctx, duplex<int> duration)
 {
     // clang-format off
 /// [action-binding]
@@ -139,17 +139,17 @@ animation_timer timer(ctx);
 
 alia_if(timer.is_active())
 {
-    dom::text(ctx, alia::printf(ctx, "%d ms left.", timer.ticks_left()));
+    html::text(ctx, alia::printf(ctx, "%d ms left.", timer.ticks_left()));
 }
 alia_else
 {
-    dom::text(ctx, "The timer is stopped.");
+    html::text(ctx, "The timer is stopped.");
 }
 alia_end
 
-dom::text(ctx, "Enter a duration in milliseconds:");
-dom::input(ctx, duration);
-dom::button(ctx, "Start", timer.start() << duration);
+html::text(ctx, "Enter a duration in milliseconds:");
+html::input(ctx, duration);
+html::button(ctx, "Start", timer.start() << duration);
 /// [action-binding]
     // clang-format on
 }
@@ -158,9 +158,9 @@ void
 init_demo(std::string dom_id)
 {
     static alia::system the_system;
-    static dom::system the_dom;
+    static html::system the_dom;
 
-    initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
+    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
         demo_ui(ctx, enforce_validity(ctx, get_state(ctx, empty<int>())));
     });
 }
@@ -172,20 +172,20 @@ static demo the_demo("action-binding", init_demo);
 namespace action_demo {
 
 void
-demo_ui(dom::context ctx, duplex<std::string> message)
+demo_ui(html::context ctx, duplex<std::string> message)
 {
     // clang-format off
 /// [callback-demo]
 // Define a UI for inputting a message.
-dom::text(ctx, "Enter a message for your browser's console:");
-dom::input(ctx, message);
+html::text(ctx, "Enter a message for your browser's console:");
+html::input(ctx, message);
 
 // Create an action that takes a message as a parameter.
 auto sender = callback(
     [](std::string message) { std::cout << message << std::endl; });
 
 // Bind the message to the action and hook them up to a button.
-dom::button(ctx, "Send", sender << message);
+html::button(ctx, "Send", sender << message);
 /// [callback-demo]
     // clang-format on
 }
@@ -194,9 +194,9 @@ void
 init_demo(std::string dom_id)
 {
     static alia::system the_system;
-    static dom::system the_dom;
+    static html::system the_dom;
 
-    initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
+    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
         demo_ui(ctx, get_state(ctx, std::string()));
     });
 }

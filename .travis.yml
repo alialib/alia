@@ -1,0 +1,28 @@
+dist: bionic
+
+language: python
+python: 3.7
+
+jobs:
+  include:
+  - env: CACHE_NAME=emscripten
+    install:
+    - sudo add-apt-repository universe
+    - sudo apt-get update -qy
+    - sudo apt install graphviz
+    services:
+    - docker
+    script:
+    - mkdir build
+    - >
+      docker run -it --name emscripten -v $(pwd)/src:/src -v $(pwd)/build:/build
+      -w / trzeci/emscripten:1.39.7-upstream
+      bash -c 'emcmake cmake -DCMAKE_BUILD_TYPE=Release /src && make'
+    - scripts/build-docs.sh
+    deploy:
+    - provider: pages
+      skip_cleanup: true
+      github_token: $GITHUB_TOKEN
+      on:
+        branch: master
+      local_dir: www

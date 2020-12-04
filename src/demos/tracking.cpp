@@ -5,25 +5,25 @@
 namespace switch_example {
 
 void
-demo_ui(dom::context ctx, duplex<int> n)
+demo_ui(html::context ctx, duplex<int> n)
 {
     // clang-format off
 /// [switch-example]
-dom::text(ctx, "Enter a number:");
-dom::input(ctx, n);
+html::text(ctx, "Enter a number:");
+html::input(ctx, n);
 alia_switch(n)
 {
  alia_case(0):
-    dom::text(ctx, "foo");
+    html::text(ctx, "foo");
     break;
  alia_case(1):
-    dom::text(ctx, "bar");
+    html::text(ctx, "bar");
  alia_case(2):
  alia_case(3):
-    dom::text(ctx, "baz");
+    html::text(ctx, "baz");
     break;
  alia_default:
-    dom::text(ctx, "zub");
+    html::text(ctx, "zub");
 }
 alia_end
 /// [switch-example]
@@ -34,9 +34,9 @@ void
 init_demo(std::string dom_id)
 {
     static alia::system the_system;
-    static dom::system the_dom;
+    static html::system the_dom;
 
-    initialize(the_dom, the_system, dom_id, [](dom::context ctx) {
+    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
         demo_ui(ctx, enforce_validity(ctx, get_state(ctx, empty<int>())));
     });
 }
@@ -66,7 +66,7 @@ in_bounds(my_record const& r)
 
 // Here's an alia function that exposes our application data via asm-dom.
 void
-records_ui(dom::context ctx, std::vector<my_record>& records)
+records_ui(html::context ctx, std::vector<my_record>& records)
 {
     // Loop through our records and present a UI for each of them...
     // Since we're trying to integrate our application's data structure with the
@@ -75,14 +75,14 @@ records_ui(dom::context ctx, std::vector<my_record>& records)
     // tracking.
     alia_for(auto& record : records)
     {
-        dom::scoped_div div(ctx, value("item"));
+        html::scoped_div div(ctx, value("item"));
 
         // And now, at the point that we actually connect our individual records
         // to our widgets, we'll just use 'direct' to create signals that
         // directly connect our record's fields to the widgets.
-        dom::element(ctx, "h4").text(direct(record.label));
-        dom::input(ctx, direct(record.x));
-        dom::input(ctx, direct(record.y));
+        html::element(ctx, "h4").text(direct(record.label));
+        html::input(ctx, direct(record.x));
+        html::input(ctx, direct(record.y));
 
         // Display a warning if the record fails our in_bounds check.
         // Note that although alia provides signal-based dataflow mechanics for
@@ -91,8 +91,8 @@ records_ui(dom::context ctx, std::vector<my_record>& records)
         alia_if(!in_bounds(record))
         {
             // Apparently the Docsify CSS class for a warning is 'tip'.
-            dom::scoped_div div(ctx, value("tip"));
-            dom::text(ctx, "This is out of bounds!");
+            html::scoped_div div(ctx, value("tip"));
+            html::text(ctx, "This is out of bounds!");
         }
         alia_end
     }
@@ -101,15 +101,15 @@ records_ui(dom::context ctx, std::vector<my_record>& records)
     // Also present a little UI for adding new records...
     {
         // Get some local state for the new label.
-        auto new_label = alia::get_state(ctx, string());
-        dom::input(ctx, new_label);
+        auto new_label = alia::get_state(ctx, std::string());
+        html::input(ctx, new_label);
 
         // Create an action that adds the new record.
         auto add_record = callback(
             [&](std::string label) { records.push_back({label}); });
 
         // Present a button that adds the new record.
-        dom::button(ctx, "Add",
+        html::button(ctx, "Add",
             // Hook up the new label to our action (if the label isn't empty).
             (add_record << alia::mask(new_label, new_label != ""),
              // Also add in an action that resets the label.
@@ -123,12 +123,12 @@ void
 init_demo(std::string dom_id)
 {
     static alia::system the_system;
-    static dom::system the_dom;
+    static html::system the_dom;
 
     static std::vector<my_record> the_records
         = {{"Demo Record", 2, 4}, {"Fix Me!", 200, 0}};
 
-    initialize(the_dom, the_system, dom_id, [&](dom::context ctx) {
+    initialize(the_dom, the_system, dom_id, [&](html::context ctx) {
         records_ui(ctx, the_records);
     });
 }
@@ -141,19 +141,19 @@ namespace for_each_map_demo {
 // clang-format off
 /// [for-each-map-demo]
 void
-scoreboard(dom::context ctx, duplex<std::map<std::string, int>> scores)
+scoreboard(html::context ctx, duplex<std::map<std::string, int>> scores)
 {
     alia::for_each(ctx, scores,
         [](auto ctx, auto player, auto score) {
-            dom::scoped_div div(ctx, value("item"));
-            dom::element(ctx, "h4").text(player);
-            dom::text(ctx, alia::printf(ctx, "%d points", score));
-            dom::button(ctx, "GOAL!", ++score);
+            html::scoped_div div(ctx, value("item"));
+            html::element(ctx, "h4").text(player);
+            html::text(ctx, alia::printf(ctx, "%d points", score));
+            html::button(ctx, "GOAL!", ++score);
         });
 
-    auto new_player = alia::get_state(ctx, string());
-    dom::input(ctx, new_player);
-    dom::button(ctx, "Add Player",
+    auto new_player = alia::get_state(ctx, std::string());
+    html::input(ctx, new_player);
+    html::button(ctx, "Add Player",
         (scores[new_player] <<= alia::mask(0, new_player != ""),
          new_player <<= ""));
 }
@@ -164,11 +164,11 @@ void
 init_demo(std::string dom_id)
 {
     static alia::system the_system;
-    static dom::system the_dom;
+    static html::system the_dom;
 
     static std::map<std::string, int> the_scores = {{"Karen", 5}, {"Tom", 2}};
 
-    initialize(the_dom, the_system, dom_id, [&](dom::context ctx) {
+    initialize(the_dom, the_system, dom_id, [&](html::context ctx) {
         scoreboard(ctx, direct(the_scores));
     });
 }
@@ -188,20 +188,20 @@ struct player
 };
 
 void
-scoreboard(dom::context ctx, duplex<std::vector<player>> players)
+scoreboard(html::context ctx, duplex<std::vector<player>> players)
 {
     alia::for_each(ctx, players,
         [](auto ctx, auto player) {
-            dom::scoped_div div(ctx, value("item"));
-            dom::element(ctx, "h4").text(alia_field(player, name));
-            dom::text(ctx,
+            html::scoped_div div(ctx, value("item"));
+            html::element(ctx, "h4").text(alia_field(player, name));
+            html::text(ctx,
                 alia::printf(ctx, "%d points", alia_field(player, score)));
-            dom::button(ctx, "GOAL!", ++alia_field(player, score));
+            html::button(ctx, "GOAL!", ++alia_field(player, score));
         });
 
-    auto new_player = alia::get_state(ctx, string());
-    dom::input(ctx, new_player);
-    dom::button(ctx, "Add Player",
+    auto new_player = alia::get_state(ctx, std::string());
+    html::input(ctx, new_player);
+    html::button(ctx, "Add Player",
         (alia::push_back(players) <<
             alia::apply(ctx,
                 [](auto name) { return player{name, 0}; },
@@ -214,9 +214,9 @@ void
 init_demo(std::string dom_id)
 {
     static alia::system the_system;
-    static dom::system the_dom;
+    static html::system the_dom;
 
-    initialize(the_dom, the_system, dom_id, [&](dom::context ctx) {
+    initialize(the_dom, the_system, dom_id, [&](html::context ctx) {
         scoreboard(ctx,
             get_state(ctx,
                 lambda_constant(
@@ -244,7 +244,7 @@ struct my_record
 };
 
 void
-records_ui(dom::context ctx, std::vector<my_record>& records)
+records_ui(html::context ctx, std::vector<my_record>& records)
 {
     naming_context nc(ctx);
     for(auto& record : records)
@@ -253,20 +253,20 @@ records_ui(dom::context ctx, std::vector<my_record>& records)
 
         // Do the controls for this record, like we normally would...
 
-        dom::scoped_div div(ctx, value("item"));
+        html::scoped_div div(ctx, value("item"));
 
-        dom::element(ctx, "h4").text(direct(record.label));
-        dom::input(ctx, direct(record.x));
-        dom::input(ctx, direct(record.y));
+        html::element(ctx, "h4").text(direct(record.label));
+        html::input(ctx, direct(record.x));
+        html::input(ctx, direct(record.y));
 
         // Just to demonstrate that each record is associated with the same data
         // block, we'll get some local state here. Feel free to type something
         // in here and shuffle the records to see what happens...
-        dom::text(ctx, "Local UI state associated with this record:");
-        dom::input(ctx, alia::get_state(ctx, ""));
+        html::text(ctx, "Local UI state associated with this record:");
+        html::input(ctx, alia::get_state(ctx, ""));
     }
 
-    dom::button(ctx, "Shuffle!",
+    html::button(ctx, "Shuffle!",
         callback(
             [&]() { std::shuffle(records.begin(), records.end(), rng); }));
 
@@ -278,7 +278,7 @@ void
 init_demo(std::string dom_id)
 {
     static alia::system the_system;
-    static dom::system the_dom;
+    static html::system the_dom;
 
     static std::vector<my_record> the_records
         = {{"abc", "ABC", 2, 4},
@@ -286,7 +286,7 @@ init_demo(std::string dom_id)
            {"ghi", "GHI", 1, 0},
            {"jkl", "JKL", -1, 3}};
 
-    initialize(the_dom, the_system, dom_id, [&](dom::context ctx) {
+    initialize(the_dom, the_system, dom_id, [&](html::context ctx) {
         records_ui(ctx, the_records);
     });
 }
