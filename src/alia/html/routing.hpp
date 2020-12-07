@@ -241,7 +241,10 @@ router(Context ctx)
         ctx,
         apply(
             ctx,
-            [](auto path) { return path.substr(1); },
+            [](auto path) {
+                return (!path.empty() && path[0] == '#') ? path.substr(1)
+                                                         : std::string();
+            },
             get_location_hash(ctx)));
 }
 

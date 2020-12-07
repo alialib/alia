@@ -1,6 +1,7 @@
 #include <alia/html/system.hpp>
 
 #include <alia/html/dom.hpp>
+#include <alia/html/history.hpp>
 
 namespace alia {
 namespace html {
@@ -98,8 +99,14 @@ get_location_hash(html::context ctx)
 void
 update_location_hash(html::system& dom_system)
 {
-    dom_system.hash = emscripten::val::global("window")["location"]["hash"]
-                          .as<std::string>();
+    auto hash = emscripten::val::global("window")["location"]["hash"]
+                    .as<std::string>();
+    if (hash.empty() || hash[0] != '#')
+    {
+        hash = "#/";
+        history().push_url(hash);
+    }
+    dom_system.hash = hash;
 }
 
 void
