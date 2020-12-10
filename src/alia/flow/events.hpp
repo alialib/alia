@@ -247,6 +247,8 @@ on_init(context ctx, action<> on_init);
 void
 on_activate(context ctx, action<> on_activate);
 
+namespace detail {
+
 template<class Value>
 struct value_change_detection_data
 {
@@ -255,75 +257,128 @@ struct value_change_detection_data
     Value value;
 };
 
+template<class Value, class Signal>
+void
+common_value_change_logic(
+    context ctx,
+    value_change_detection_data<Value>& data,
+    Signal const& signal,
+    action<> on_change)
+{
+    refresh_signal_view(
+        data.id,
+        signal,
+        [&](auto const& new_value) {
+            if (!data.has_value || data.value != new_value)
+            {
+                isolate_errors(ctx, [&] { perform_action(on_change); });
+                mark_dirty_component(ctx);
+                data.has_value = true;
+                data.value = new_value;
+            }
+        },
+        [&] {
+            if (data.has_value)
+            {
+                isolate_errors(ctx, [&] { perform_action(on_change); });
+                mark_dirty_component(ctx);
+                data.has_value = false;
+            }
+        });
+}
+
+} // namespace detail
+
 template<class Signal>
 void
-on_value_change(context ctx, Signal signal, action<> on_change)
+on_value_change(context ctx, Signal const& signal, action<> on_change)
 {
-    value_change_detection_data<typename Signal::value_type>* data;
-    if (get_data(ctx, &data))
+    detail::value_change_detection_data<typename Signal::value_type>* data;
+    if (get_cached_data(ctx, &data))
+    {
+        isolate_errors(ctx, [&] { perform_action(on_change); });
+        mark_dirty_component(ctx);
+        data->has_value = signal_has_value(signal);
+        if (data->has_value)
+            data->value = read_signal(signal);
+    }
+    detail::common_value_change_logic(ctx, *data, signal, on_change);
+}
+
+template<class Signal>
+void
+on_observed_value_change(context ctx, Signal const& signal, action<> on_change)
+{
+    detail::value_change_detection_data<typename Signal::value_type>* data;
+    if (get_cached_data(ctx, &data))
     {
         data->has_value = signal_has_value(signal);
         if (data->has_value)
             data->value = read_signal(signal);
     }
-    refresh_signal_view(
-        data->id,
-        signal,
-        [&](auto const& new_value) {
-            if (!data->has_value || data->value != new_value)
-            {
-                isolate_errors(ctx, [&] { perform_action(on_change); });
-                mark_dirty_component(ctx);
-                data->has_value = true;
-                data->value = new_value;
-            }
-        },
-        [&] {
-            if (data->has_value)
-            {
-                isolate_errors(ctx, [&] { perform_action(on_change); });
-                mark_dirty_component(ctx);
-                data->has_value = false;
-            }
-        });
+    detail::common_value_change_logic(ctx, *data, signal, on_change);
 }
 
-template<class Signal>
+namespace detail {
+
+template<bool TriggeringState, class Signal>
 void
-on_value_gain(context ctx, Signal signal, action<> on_gain)
+common_value_edge_logic(
+    context ctx, bool* saved_state, Signal const& signal, action<> on_edge)
 {
-    bool* saved_state;
-    if (get_data(ctx, &saved_state))
-        *saved_state = true;
     if (is_refresh_event(ctx))
     {
         bool current_state = signal_has_value(signal);
-        if (current_state && !*saved_state)
+        if (current_state == TriggeringState
+            && *saved_state != TriggeringState)
         {
-            isolate_errors(ctx, [&] { perform_action(on_gain); });
+            isolate_errors(ctx, [&] { perform_action(on_edge); });
             mark_dirty_component(ctx);
         }
         *saved_state = current_state;
     }
 }
 
+} // namespace detail
+
 template<class Signal>
 void
-on_value_loss(context ctx, Signal signal, action<> on_loss)
+on_value_gain(context ctx, Signal const& signal, action<> on_gain)
 {
     bool* saved_state;
-    if (get_data(ctx, &saved_state))
+    if (get_cached_data(ctx, &saved_state))
         *saved_state = false;
-    if (is_refresh_event(ctx))
-    {
-        bool current_state = signal_has_value(signal);
-        if (!current_state && *saved_state)
-        {
-            isolate_errors(ctx, [&] { perform_action(on_loss); });
-            mark_dirty_component(ctx);
-        }
-        *saved_state = current_state;
-    }
+    detail::common_value_edge_logic<true>(ctx, saved_state, signal, on_gain);
+}
+
+template<class Signal>
+void
+on_observed_value_gain(context ctx, Signal const& signal, action<> on_gain)
+{
+    bool* saved_state;
+    if (get_cached_data(ctx, &saved_state))
+        *saved_state = true;
+    detail::common_value_edge_logic<true>(ctx, saved_state, signal, on_gain);
+}
+
+template<class Signal>
+void
+on_value_loss(context ctx, Signal const& signal, action<> on_loss)
+{
+    bool* saved_state;
+    if (get_cached_data(ctx, &saved_state))
+        *saved_state = true;
+    detail::common_value_edge_logic<false>(ctx, saved_state, signal, on_loss);
+}
+
+template<class Signal>
+void
+on_observed_value_loss(context ctx, Signal const& signal, action<> on_loss)
+{
+    bool* saved_state;
+    if (get_cached_data(ctx, &saved_state))
+        *saved_state = false;
+    detail::common_value_edge_logic<false>(ctx, saved_state, signal, on_loss);
 }
 
 } // namespace alia
