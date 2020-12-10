@@ -179,3 +179,74 @@ TEST_CASE("get_state benchmarks", "[signals][state]")
     };
 }
 #endif
+
+TEST_CASE("get_transient_state", "[signals][state]")
+{
+    // The first few passes are all the same as the normal state tests...
+    alia::system sys;
+    initialize_system(sys, [](context) {});
+    do_traversal(sys, [&](context ctx) {
+        ALIA_IF(true)
+        {
+            auto state = get_transient_state(ctx, empty<int>());
+
+            REQUIRE(!signal_has_value(state));
+            REQUIRE(signal_ready_to_write(state));
+        }
+        ALIA_END
+    });
+    captured_id state_id;
+    do_traversal(sys, [&](context ctx) {
+        ALIA_IF(true)
+        {
+            auto state = get_transient_state(ctx, value(12));
+
+            REQUIRE(signal_has_value(state));
+            REQUIRE(read_signal(state) == 12);
+            REQUIRE(signal_ready_to_write(state));
+            state_id.capture(state.value_id());
+        }
+        ALIA_END
+    });
+    do_traversal(sys, [&](context ctx) {
+        ALIA_IF(true)
+        {
+            auto state = get_transient_state(ctx, value(12));
+
+            if (read_signal(state) != 13)
+                write_signal(state, 13);
+        }
+        ALIA_END
+    });
+    do_traversal(sys, [&](context ctx) {
+        ALIA_IF(true)
+        {
+            auto state = get_transient_state(ctx, value(12));
+
+            REQUIRE(read_signal(state) == 13);
+            REQUIRE(!state_id.matches(state.value_id()));
+            state_id.capture(state.value_id());
+        }
+        ALIA_END
+    });
+    // Now test that if the state goes inactivate for a pass, it's reset.
+    do_traversal(sys, [&](context ctx) {
+        ALIA_IF(false)
+        {
+            auto state = get_transient_state(ctx, value(12));
+        }
+        ALIA_END
+    });
+    do_traversal(sys, [&](context ctx) {
+        ALIA_IF(true)
+        {
+            auto state = get_transient_state(ctx, value(12));
+
+            REQUIRE(signal_has_value(state));
+            REQUIRE(read_signal(state) == 12);
+            REQUIRE(!state_id.matches(state.value_id()));
+            REQUIRE(signal_ready_to_write(state));
+        }
+        ALIA_END
+    });
+}
