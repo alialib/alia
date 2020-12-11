@@ -82,6 +82,10 @@ do_element_attribute(
     readable<bool> value);
 
 void
+do_element_class_token(
+    context ctx, element_object& object, readable<std::string> value);
+
+void
 set_element_property(
     element_object& object, char const* name, emscripten::val const& value);
 
@@ -132,6 +136,16 @@ struct element_handle
     {
         detail::do_element_attribute(
             ctx_, node_->object, name, signalize(value));
+        return *this;
+    }
+
+    template<class... Tokens>
+    element_handle&
+    class_(Tokens... tokens)
+    {
+        (detail::do_element_class_token(
+             ctx_, node_->object, signalize(tokens)),
+         ...);
         return *this;
     }
 

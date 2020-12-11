@@ -204,6 +204,63 @@ do_element_attribute(
     });
 }
 
+struct element_class_token_data
+{
+    std::string existing_value;
+    captured_id value_id;
+};
+
+void
+clear_class_token(int js_id, std::string const& token)
+{
+    EM_ASM(
+        {
+            var node = Module['nodes'][$0];
+            node.classList.remove(Module['UTF8ToString']($1));
+        },
+        js_id,
+        token.c_str());
+}
+
+void
+add_class_token(int js_id, std::string const& token)
+{
+    EM_ASM(
+        {
+            var node = Module['nodes'][$0];
+            node.classList.add(Module['UTF8ToString']($1));
+        },
+        js_id,
+        token.c_str());
+}
+
+void
+do_element_class_token(
+    context ctx, element_object& object, readable<std::string> value)
+{
+    auto& data = get_cached_data<element_class_token_data>(ctx);
+    on_refresh(ctx, [&](auto ctx) {
+        refresh_signal_view(
+            data.value_id,
+            value,
+            [&](std::string const& new_value) {
+                if (!data.existing_value.empty())
+                {
+                    clear_class_token(object.js_id, data.existing_value);
+                }
+                add_class_token(object.js_id, new_value);
+                data.existing_value = new_value;
+            },
+            [&]() {
+                if (!data.existing_value.empty())
+                {
+                    clear_class_token(object.js_id, data.existing_value);
+                    data.existing_value.clear();
+                }
+            });
+    });
+}
+
 void
 set_element_property(
     element_object& object, char const* name, emscripten::val const& value)
