@@ -426,3 +426,94 @@ TEST_CASE("piecewise containers", "[flow][object_trees]")
         root.object.to_string()
         == "root(bit0(bit1();bit2(bit4(););bit5(););)");
 }
+
+TEST_CASE("floating object tree root", "[flow][object_trees]")
+{
+    clear_log();
+
+    int n = 0;
+
+    tree_node<test_object> root;
+    root.object.name = "root";
+
+    tree_node<test_object> floating_root;
+    floating_root.object.name = "floater";
+
+    auto controller = [&](test_context ctx) {
+        ALIA_IF(n & 1)
+        {
+            do_container(ctx, "bit0", [&](test_context ctx) {
+                ALIA_IF(n & 2)
+                {
+                    do_object(ctx, "bit1");
+                }
+                ALIA_END
+
+                {
+                    scoped_tree_root<test_object> floating_subtree(
+                        get<tree_traversal_tag>(ctx), floating_root);
+
+                    ALIA_IF(n & 4)
+                    {
+                        do_container(ctx, "bit2", [&](test_context ctx) {
+                            ALIA_IF(n & 8)
+                            {
+                                do_object(ctx, "bit3");
+                            }
+                            ALIA_END
+
+                            ALIA_IF(n & 16)
+                            {
+                                do_object(ctx, "bit4");
+                            }
+                            ALIA_END
+                        });
+                    }
+                    ALIA_END
+                }
+
+                ALIA_IF(n & 32)
+                {
+                    do_object(ctx, "bit5");
+                }
+                ALIA_END
+            });
+        }
+        ALIA_END
+
+        ALIA_IF(n & 64)
+        {
+            do_object(ctx, "bit6");
+        }
+        ALIA_END
+    };
+
+    alia::system sys;
+    initialize_system(sys, [&](context vanilla_ctx) {
+        tree_traversal<test_object> traversal;
+        auto ctx = detail::add_context_object<tree_traversal_tag>(
+            vanilla_ctx, traversal);
+        if (is_refresh_event(ctx))
+        {
+            traverse_object_tree(traversal, root, [&]() { controller(ctx); });
+        }
+        else
+        {
+            controller(ctx);
+        }
+    });
+
+    n = 127;
+    refresh_system(sys);
+    check_log(
+        "relocating bit0 into root; "
+        "relocating bit1 into bit0; "
+        "relocating bit2 into floater; "
+        "relocating bit3 into bit2; "
+        "relocating bit4 into bit2 after bit3; "
+        "relocating bit5 into bit0 after bit1; "
+        "relocating bit6 into root after bit0; ");
+    REQUIRE(root.object.to_string() == "root(bit0(bit1();bit5(););bit6();)");
+    REQUIRE(
+        floating_root.object.to_string() == "floater(bit2(bit3();bit4(););)");
+}

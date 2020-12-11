@@ -218,6 +218,48 @@ struct scoped_tree_children
     tree_traversal<Object> old_traversal_state_;
 };
 
+// scoped_tree_root is used to activate an independent root node in the middle
+// of a tree traversal.
+template<class Object>
+struct scoped_tree_root
+{
+    scoped_tree_root() : traversal_(nullptr)
+    {
+    }
+    scoped_tree_root(
+        tree_traversal<Object>& traversal, tree_node<Object>& new_root)
+    {
+        begin(traversal, new_root);
+    }
+    ~scoped_tree_root()
+    {
+        end();
+    }
+
+    void
+    begin(tree_traversal<Object>& traversal, tree_node<Object>& new_root)
+    {
+        traversal_ = &traversal;
+        old_traversal_state_ = traversal;
+        activate_parent_node(traversal, new_root);
+    }
+
+    void
+    end()
+    {
+        if (traversal_)
+        {
+            cap_sibling_list(*traversal_);
+            *traversal_ = old_traversal_state_;
+            traversal_ = nullptr;
+        }
+    }
+
+ private:
+    tree_traversal<Object>* traversal_;
+    tree_traversal<Object> old_traversal_state_;
+};
+
 template<class Object, class Content>
 void
 traverse_object_tree(
