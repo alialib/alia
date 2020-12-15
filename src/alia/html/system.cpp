@@ -139,12 +139,39 @@ initialize(
     // For now, just create a div to hold all our content.
     emscripten::val root = document.call<emscripten::val>(
         "createElement", emscripten::val("div"));
-    // HACK to get the root elements to fill the whole window.
+    // HACK to get the root element to fill the whole window.
     root.call<void>(
         "setAttribute", emscripten::val("class"), emscripten::val("h-100"));
     placeholder_dom_node["parentNode"].call<emscripten::val>(
         "replaceChild", root, placeholder_dom_node);
     dom_system.root_node.object.js_id = asmdom::direct::toElement(root);
+
+    // Create another root node to hold modals.
+    emscripten::val modal_root = document.call<emscripten::val>(
+        "createElement", emscripten::val("div"));
+    // Same hack as for the root node.
+    emscripten::val modal_placeholder = document.call<emscripten::val>(
+        "getElementById", emscripten::val("alia-modal"));
+    modal_placeholder["parentNode"].call<emscripten::val>(
+        "replaceChild", modal_root, modal_placeholder);
+    dom_system.modal_root.object.js_id = asmdom::direct::toElement(modal_root);
+    asmdom::direct::setAttribute(
+        dom_system.modal_root.object.js_id, "class", "modal fade");
+    asmdom::direct::setAttribute(
+        dom_system.modal_root.object.js_id, "id", "alia-modal");
+    asmdom::direct::setAttribute(
+        dom_system.modal_root.object.js_id, "tabindex", "-1");
+    asmdom::direct::setAttribute(
+        dom_system.modal_root.object.js_id, "role", "dialog");
+
+    // Install a callback to track when the modal is hidden.
+    // asmdom::direct::setCallback(
+    //     dom_system.modal_root.object.js_id,
+    //     "hide.bs.modal",
+    //     [&dom_system](emscripten::val) {
+    //         dom_system.active_modal = nullptr;
+    //         return true;
+    //     });
 
     // Query the hash and install an event handler to monitor it.
     update_location_hash(dom_system);

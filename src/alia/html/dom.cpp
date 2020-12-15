@@ -13,18 +13,18 @@ void
 element_object::create_as_element(char const* type)
 {
     assert(this->js_id == 0);
-    // std::cout << "asmdom::direct::createElement: " << type << std::endl;
+    std::cout << "asmdom::direct::createElement: " << type << std::endl;
     this->js_id = asmdom::direct::createElement(type);
-    // std::cout << "-> " << this->js_id << std::endl;
+    std::cout << "-> " << this->js_id << std::endl;
 }
 
 void
 element_object::create_as_text_node(char const* value)
 {
     assert(this->js_id == 0);
-    // std::cout << "asmdom::direct::createTextNode: " << value << std::endl;
+    std::cout << "asmdom::direct::createTextNode: " << value << std::endl;
     this->js_id = asmdom::direct::createTextNode(value);
-    // std::cout << "-> " << this->js_id << std::endl;
+    std::cout << "-> " << this->js_id << std::endl;
 }
 
 void
@@ -32,9 +32,9 @@ element_object::relocate(
     element_object& parent, element_object* after, element_object* before)
 {
     assert(this->js_id != 0);
-    // std::cout << "asmdom::direct::insertBefore: " << parent.js_id << ", "
-    //           << this->js_id << ", " << (before ? before->js_id : 0)
-    //           << std::endl;
+    std::cout << "asmdom::direct::insertBefore: " << parent.js_id << ", "
+              << this->js_id << ", " << (before ? before->js_id : 0)
+              << std::endl;
     asmdom::direct::insertBefore(
         parent.js_id, this->js_id, before ? before->js_id : 0);
 }
@@ -43,7 +43,7 @@ void
 element_object::remove()
 {
     assert(this->js_id != 0);
-    // std::cout << "asmdom::direct::remove: " << this->js_id << std::endl;
+    std::cout << "asmdom::direct::remove: " << this->js_id << std::endl;
     asmdom::direct::remove(this->js_id);
 }
 
@@ -52,8 +52,8 @@ element_object::~element_object()
     if (this->js_id != 0)
     {
         this->remove();
-        // std::cout << "asmdom::direct::deleteElement: " << this->js_id
-        //           << std::endl;
+        std::cout << "asmdom::direct::deleteElement: " << this->js_id
+                  << std::endl;
         asmdom::direct::deleteElement(this->js_id);
     }
 }
@@ -108,7 +108,7 @@ install_element_callback(
     callback_data& data,
     char const* event_type)
 {
-    // std::cout << "install callback" << std::endl;
+    std::cout << "install callback" << std::endl;
     auto external_id = externalize(&data.identity);
     auto* system = &get<alia::system_tag>(ctx);
     // TODO: Probably don't need to store the callback in data anymore.
@@ -125,7 +125,7 @@ install_element_callback(
         return true;
     };
     asmdom::direct::setCallback(object.js_id, event_type, data.callback);
-    // std::cout << "worked!" << std::endl;
+    std::cout << "worked!" << std::endl;
 }
 
 struct text_node_data
@@ -147,16 +147,16 @@ text_node(html::context ctx, readable<std::string> text)
             data->value_id,
             text,
             [&](std::string const& new_value) {
-                // std::cout << "asmdom::direct::setNodeValue: "
-                //           << data->node.object.js_id << ": " << new_value
-                //           << std::endl;
+                std::cout << "asmdom::direct::setNodeValue: "
+                          << data->node.object.js_id << ": " << new_value
+                          << std::endl;
                 asmdom::direct::setNodeValue(
                     data->node.object.js_id, new_value.c_str());
             },
             [&]() {
-                // std::cout << "asmdom::direct::setNodeValue: "
-                //           << data->node.object.js_id << ": (null)"
-                //           << std::endl;
+                std::cout << "asmdom::direct::setNodeValue: "
+                          << data->node.object.js_id << ": (null)"
+                          << std::endl;
                 asmdom::direct::setNodeValue(data->node.object.js_id, "");
             });
     }
@@ -265,17 +265,16 @@ void
 set_element_property(
     element_object& object, char const* name, emscripten::val const& value)
 {
-    // std::cout << "asmdom::direct::setProperty: " << object.js_id << "." <<
-    // name
-    //           << ": " << value.as<std::string>() << std::endl;
+    std::cout << "asmdom::direct::setProperty: " << object.js_id << "." << name
+              << ": " << value.as<std::string>() << std::endl;
     asmdom::direct::setProperty(object.js_id, name, value);
 }
 
 void
 clear_element_property(element_object& object, char const* name)
 {
-    // std::cout << "asmdom::direct::removeProperty: " << object.js_id << "."
-    //           << name << std::endl;
+    std::cout << "asmdom::direct::removeProperty: " << object.js_id << "."
+              << name << std::endl;
     asmdom::direct::removeProperty(object.js_id, name);
 }
 
