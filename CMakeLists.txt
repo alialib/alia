@@ -63,11 +63,11 @@ if(DEFINED ENV{TRAVIS})
         DESTINATION .)
 else()
     file(CREATE_LINK
-        ${CMAKE_CURRENT_SOURCE_DIR}/example/index.html
+        ${CMAKE_CURRENT_SOURCE_DIR}/examples/index.html
         ${CMAKE_CURRENT_BINARY_DIR}/index.html
         SYMBOLIC)
     file(CREATE_LINK
-        ${CMAKE_CURRENT_SOURCE_DIR}/example/style.css
+        ${CMAKE_CURRENT_SOURCE_DIR}/examples/style.css
         ${CMAKE_CURRENT_BINARY_DIR}/style.css
         SYMBOLIC)
 endif()
