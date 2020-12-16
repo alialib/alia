@@ -134,33 +134,34 @@ struct test_object
     }
 
     void
-    relocate(test_object& new_parent, test_object* after, test_object* before)
+    relocate(test_object& new_child, test_object* after, test_object* before)
     {
-        the_log << "relocating " << name << " into " << new_parent.name;
+        the_log << "relocating " << new_child.name << " into " << this->name;
         if (after)
             the_log << " after " << after->name;
         the_log << "; ";
 
-        if (this->parent)
+        if (new_child.parent)
         {
-            auto& siblings = this->parent->children;
+            auto& siblings = new_child.parent->children;
             siblings.erase(
-                std::remove(siblings.begin(), siblings.end(), this),
+                std::remove(siblings.begin(), siblings.end(), &new_child),
                 siblings.end());
         }
 
-        this->parent = &new_parent;
+        new_child.parent = this;
 
-        auto& siblings = new_parent.children;
+        auto& siblings = this->children;
         std::vector<test_object*>::iterator insertion_point;
         if (after)
         {
             insertion_point = siblings.insert(
-                std::find(siblings.begin(), siblings.end(), after) + 1, this);
+                std::find(siblings.begin(), siblings.end(), after) + 1,
+                &new_child);
         }
         else
         {
-            insertion_point = siblings.insert(siblings.begin(), this);
+            insertion_point = siblings.insert(siblings.begin(), &new_child);
         }
 
         ++insertion_point;

@@ -82,8 +82,8 @@ check_for_movement(tree_traversal<Object>& traversal, tree_node<Object>& node)
     if (expected_node != &node)
     {
         node.remove_from_list();
-        node.object.relocate(
-            traversal.active_parent->object,
+        traversal.active_parent->object.relocate(
+            node.object,
             traversal.last_sibling ? &traversal.last_sibling->object : nullptr,
             expected_node ? &expected_node->object : nullptr);
         node.insert_into_list(traversal.next_ptr, expected_node);
@@ -356,8 +356,8 @@ struct scoped_tree_cacher
                     tree_node<Object>** next_ptr = nullptr;
                     while (next_ptr != data.subtree_tail)
                     {
-                        current_node->object.relocate(
-                            traversal.active_parent->object,
+                        traversal.active_parent->object.relocate(
+                            current_node->object,
                             last_sibling ? &last_sibling->object : nullptr,
                             node_after);
                         last_sibling = current_node;
