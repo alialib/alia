@@ -94,7 +94,8 @@ struct is_invocable
 // ALIA_LAMBDIFY(f) produces a lambda that calls f, which is essentially a
 // version of f that can be passed as an argument and still allows normal
 // overload resolution.
-#define ALIA_LAMBDIFY(f) [](auto&&... args) { return f(args...); }
+#define ALIA_LAMBDIFY(f)                                                      \
+    [](auto&&... args) { return f(std::forward<decltype(args)>(args)...); }
 #ifndef ALIA_STRICT_MACROS
 #define alia_lambdify(f) ALIA_LAMBDIFY(f)
 #endif
@@ -103,7 +104,8 @@ struct is_invocable
 // aggregate expression (i.e., "{args...}") and passes that into f.
 // This is useful, for example, when you want to explicitly refer to the
 // aggregate constructor of a type as an invocable function.
-#define ALIA_AGGREGATOR(f) [](auto&&... args) { return f{args...}; }
+#define ALIA_AGGREGATOR(f)                                                    \
+    [](auto&&... args) { return f{std::forward<decltype(args)>(args)...}; }
 #ifndef ALIA_STRICT_MACROS
 #define alia_aggregator(f) ALIA_AGGREGATOR(f)
 #endif
