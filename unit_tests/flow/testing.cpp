@@ -1,4 +1,5 @@
 #include <flow/testing.hpp>
+#include <regex>
 
 std::stringstream the_log;
 
@@ -9,10 +10,24 @@ clear_log()
 }
 
 void
-check_log(std::string const& expected_contents)
+check_log(std::string const& expected_log)
 {
-    REQUIRE(the_log.str() == expected_contents);
+    auto actual_log = the_log.str();
     clear_log();
+
+    REQUIRE(actual_log == expected_log);
+}
+
+void
+match_log(std::string const& expected_pattern)
+{
+    auto actual_log = the_log.str();
+    clear_log();
+
+    CAPTURE(actual_log);
+    CAPTURE(expected_pattern);
+
+    REQUIRE(std::regex_match(actual_log, std::regex(expected_pattern)));
 }
 
 void

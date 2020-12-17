@@ -44,8 +44,8 @@ TEST_CASE("conditional functions", "[flow][macros]")
         check_log("");
     }
     check_log(
-        "destructing int;"
-        "destructing int;"
-        "destructing int;"
-        "destructing int;");
+        "destructing int: 2;"
+        "destructing int: 1;"
+        "destructing int: 0;"
+        "destructing int: -1;");
 }
