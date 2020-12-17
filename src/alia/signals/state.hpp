@@ -194,6 +194,25 @@ make_state_signal(state_storage<Value>& data)
     return state_signal<Value, copyable_duplex_signal>(&data);
 }
 
+namespace detail {
+
+template<class Context, class Value, class InitialValueSignal>
+void
+common_state_signal_logic(
+    Context ctx,
+    state_storage<Value>* state,
+    InitialValueSignal const& initial_value_signal)
+{
+    on_refresh(ctx, [&](auto ctx) {
+        state->refresh_container(get_active_component_container(ctx));
+        if (!state->is_initialized() && signal_has_value(initial_value_signal))
+            state->untracked_nonconst_ref()
+                = read_signal(initial_value_signal);
+    });
+}
+
+} // namespace detail
+
 // get_state(ctx, initial_value) returns a signal carrying some persistent
 // local state whose initial value is determined by the :initial_value signal.
 // The returned signal will not have a value until :initial_value has one or
@@ -207,12 +226,30 @@ get_state(Context ctx, InitialValue const& initial_value)
     state_storage<typename decltype(initial_value_signal)::value_type>* state;
     get_data(ctx, &state);
 
-    on_refresh(ctx, [&](auto ctx) {
-        state->refresh_container(get_active_component_container(ctx));
-        if (!state->is_initialized() && signal_has_value(initial_value_signal))
-            state->untracked_nonconst_ref()
-                = read_signal(initial_value_signal);
-    });
+    detail::common_state_signal_logic(ctx, state, initial_value_signal);
+
+    return make_state_signal(*state);
+}
+
+// get_transient_state(ctx, initial_value) returns a signal carrying some
+// transient local state whose initial value is determined by the
+// :initial_value signal. The returned signal will not have a value until
+// :initial_value has one or one is explicitly written to the state signal.
+//
+// Unlike get_state, this returns state that does *not* persist when the
+// component is inactive. Rather, it is reinitialized whenever the component is
+// activated.
+//
+template<class Context, class InitialValue>
+auto
+get_transient_state(Context ctx, InitialValue const& initial_value)
+{
+    auto initial_value_signal = signalize(initial_value);
+
+    state_storage<typename decltype(initial_value_signal)::value_type>* state;
+    get_cached_data(ctx, &state);
+
+    detail::common_state_signal_logic(ctx, state, initial_value_signal);
 
     return make_state_signal(*state);
 }

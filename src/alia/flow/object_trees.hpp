@@ -82,8 +82,8 @@ check_for_movement(tree_traversal<Object>& traversal, tree_node<Object>& node)
     if (expected_node != &node)
     {
         node.remove_from_list();
-        node.object.relocate(
-            traversal.active_parent->object,
+        traversal.active_parent->object.relocate(
+            node.object,
             traversal.last_sibling ? &traversal.last_sibling->object : nullptr,
             expected_node ? &expected_node->object : nullptr);
         node.insert_into_list(traversal.next_ptr, expected_node);
@@ -218,6 +218,48 @@ struct scoped_tree_children
     tree_traversal<Object> old_traversal_state_;
 };
 
+// scoped_tree_root is used to activate an independent root node in the middle
+// of a tree traversal.
+template<class Object>
+struct scoped_tree_root
+{
+    scoped_tree_root() : traversal_(nullptr)
+    {
+    }
+    scoped_tree_root(
+        tree_traversal<Object>& traversal, tree_node<Object>& new_root)
+    {
+        begin(traversal, new_root);
+    }
+    ~scoped_tree_root()
+    {
+        end();
+    }
+
+    void
+    begin(tree_traversal<Object>& traversal, tree_node<Object>& new_root)
+    {
+        traversal_ = &traversal;
+        old_traversal_state_ = traversal;
+        activate_parent_node(traversal, new_root);
+    }
+
+    void
+    end()
+    {
+        if (traversal_)
+        {
+            cap_sibling_list(*traversal_);
+            *traversal_ = old_traversal_state_;
+            traversal_ = nullptr;
+        }
+    }
+
+ private:
+    tree_traversal<Object>* traversal_;
+    tree_traversal<Object> old_traversal_state_;
+};
+
 template<class Object, class Content>
 void
 traverse_object_tree(
@@ -314,8 +356,8 @@ struct scoped_tree_cacher
                     tree_node<Object>** next_ptr = nullptr;
                     while (next_ptr != data.subtree_tail)
                     {
-                        current_node->object.relocate(
-                            traversal.active_parent->object,
+                        traversal.active_parent->object.relocate(
+                            current_node->object,
                             last_sibling ? &last_sibling->object : nullptr,
                             node_after);
                         last_sibling = current_node;
