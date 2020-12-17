@@ -219,11 +219,11 @@ clear_data_block(data_block& block)
     // state of destruction.
     block.clear_cache();
 
-    clear_data_nodes(block.nodes);
-    block.nodes = 0;
-
     delete_named_block_ref_list(block.named_blocks);
     block.named_blocks = 0;
+
+    clear_data_nodes(block.nodes);
+    block.nodes = 0;
 
     block.cache_clear = true;
 }

@@ -29,7 +29,11 @@ clear_log();
 
 // Check that the log contains the expected contents and clear it.
 void
-check_log(std::string const& expected_contents);
+check_log(std::string const& expected_log);
+
+// Check that the log matches the expected regex and clear it.
+void
+match_log(std::string const& expected_pattern);
 
 struct int_object
 {
@@ -56,7 +60,7 @@ struct int_object
     ~int_object()
     {
         if (!moved_out)
-            the_log << "destructing int;";
+            the_log << "destructing int: " << n << ";";
     }
     int n;
     bool moved_out = false;
