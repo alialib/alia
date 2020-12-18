@@ -25,3 +25,7 @@ html {
     border-radius: 0.5em;
     margin: 1em 0em;
 }
+
+.modal-open .container-fluid, .modal-open  .container {
+    -webkit-filter: blur(5px) grayscale(90%);
+}

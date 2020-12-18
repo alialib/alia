@@ -268,37 +268,37 @@ full_page_ui(Context ctx, Ui ui)
 }
 
 void
-clear_canvas(int js_id)
+clear_canvas(int asmdom_id)
 {
     EM_ASM(
         {
             var ctx = Module['nodes'][$0].getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         },
-        js_id);
+        asmdom_id);
 }
 
 void
-set_fill_style(int js_id, char const* style)
+set_fill_style(int asmdom_id, char const* style)
 {
     EM_ASM(
         {
             var ctx = Module['nodes'][$0].getContext('2d');
             ctx.fillStyle = Module['UTF8ToString']($1);
         },
-        js_id,
+        asmdom_id,
         style);
 }
 
 void
-fill_rect(int js_id, double x, double y, double width, double height)
+fill_rect(int asmdom_id, double x, double y, double width, double height)
 {
     EM_ASM(
         {
             var ctx = Module['nodes'][$0].getContext('2d');
             ctx.fillRect($1, $2, $3, $4);
         },
-        js_id,
+        asmdom_id,
         x,
         y,
         width,
@@ -401,25 +401,72 @@ invoke_tree(
     (std::forward<Content>(content))();
 }
 
+struct modal_data
+{
+    element_object root;
+};
+
+// void
+// activate_modal(html::context ctx, modal_data& data)
+// {
+//     // Create a top-level DOM element to hold the modal.
+//     emscripten::val document = emscripten::val::global("document");
+//     emscripten::val modal_root = document.call<emscripten::val>(
+//         "createElement", emscripten::val("div"));
+//     document["body"].call<emscripten::val>("appendChild", modal_root);
+//     auto asmdom_id = asmdom::direct::toElement(modal_root);
+//     asmdom::direct::setAttribute(asmdom_id, "class", "modal fade");
+//     asmdom::direct::setAttribute(asmdom_id, "id", "alia-modal");
+//     asmdom::direct::setAttribute(asmdom_id, "tabindex", "-1");
+//     asmdom::direct::setAttribute(asmdom_id, "role", "dialog");
+//     data.root.object.asmdom_id = asmdom_id;
+
+//     // Install a callback to track when the modal is hidden.
+//     asmdom::direct::setCallback(
+//         dom_system.modal_root.object.asmdom_id,
+//         "hide.bs.modal",
+//         [&dom_system](emscripten::val) {
+//             dom_system.active_modal = nullptr;
+//             return true;
+//         });
+// }
+
 void
 main_page(html::context ctx)
 {
     do_switch_test(ctx);
 
-    {
-        // invoke_pure_component(ctx, [&](auto ctx) {
-        invoke_tree(
-            ctx, get<html::system_tag>(ctx).modal_root, [&] { modal(ctx); });
-        //   });
-    }
+    tree_node<element_object>* modal_root;
+    if (get_cached_data(ctx, &modal_root))
+        create_as_modal_root(modal_root->object);
+
+    int modal_asmdom_id;
+
+    // invoke_pure_component(ctx, [&](auto ctx) {
+    invoke_tree(ctx, *modal_root, [&] {
+        auto& top_level_modal = element(ctx, "div")
+                                    .class_("modal", "fade")
+                                    .attr("id", "alia-modal")
+                                    .attr("tabindex", "-1")
+                                    .attr("role", "dialog")
+                                    .children([&] { modal(ctx); });
+        modal_asmdom_id = top_level_modal.asmdom_id();
+    });
+    //});
+
     // on_init(ctx, callback([&] {
     //             emscripten_run_script(
     //                 "jQuery(\"#alia-modal\").modal('show');");
     //         }));
+    // button(ctx, "Activate", callback([&] {
+    //            EM_ASM(
+    //                { jQuery("#alia-modal").modal("show");");
+    //        }));
+
     button(ctx, "Activate", callback([&] {
                EM_ASM(
                    { jQuery(Module['nodes'][$0]).modal('show'); },
-                   get<html::system_tag>(ctx).modal_root.object.js_id);
+                   modal_asmdom_id);
            }));
 }
 
@@ -436,5 +483,5 @@ main()
 {
     static alia::system the_sys;
     static html::system the_dom;
-    initialize(the_dom, the_sys, "root", root_ui);
+    initialize(the_dom, the_sys, "alia-placeholder", root_ui);
 };
