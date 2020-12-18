@@ -17,10 +17,6 @@ struct system
 
     tree_node<element_object> root_node;
 
-    // for managing modals
-    tree_node<element_object> modal_root;
-    component_id active_modal;
-
     alia::system alia_system;
 
     void
