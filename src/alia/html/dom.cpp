@@ -291,7 +291,7 @@ add_class_token(int asmdom_id, std::string const& token)
 
 void
 do_element_class_token(
-    context ctx, element_object& object, readable<std::string> value)
+    context ctx, element_object& object, bool, readable<std::string> value)
 {
     auto& data = get_cached_data<element_class_token_data>(ctx);
     on_refresh(ctx, [&](auto ctx) {
@@ -313,6 +313,16 @@ do_element_class_token(
                     data.existing_value.clear();
                 }
             });
+    });
+}
+
+void
+do_element_class_token(
+    context ctx, element_object& object, bool initializing, char const* value)
+{
+    on_refresh(ctx, [&](auto ctx) {
+        if (initializing)
+            add_class_token(object.asmdom_id, value);
     });
 }
 

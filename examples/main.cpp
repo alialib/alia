@@ -9,6 +9,7 @@ using json = nlohmann::json;
 
 #include <alia.hpp>
 
+#include <alia/html/bootstrap.hpp>
 #include <alia/html/dom.hpp>
 #include <alia/html/fetch.hpp>
 #include <alia/html/routing.hpp>
@@ -17,6 +18,7 @@ using json = nlohmann::json;
 
 using namespace alia;
 using namespace html;
+using namespace bootstrap;
 
 using std::string;
 
@@ -85,8 +87,6 @@ labeled_form_input(html::context ctx, Label label, Type type, Value value)
         input(ctx, value).attr("type", type).attr("class", "form-control");
     });
 }
-
-#define ALIA_AGGREGATOR(f) [](auto&&... args) { return f{args...}; }
 
 template<class Context, class Dialog>
 void
@@ -352,42 +352,41 @@ do_switch_test(html::context ctx)
 }
 
 void
+modal_content(html::context ctx)
+{
+}
+
+void
 modal(html::context ctx)
 {
-    div(ctx, "modal-dialog modal-dialog-centered")
-        .attr("role", "document")
-        .children([&] {
-            div(ctx, "modal-content", [&] {
-                div(ctx, "modal-header", [&] {
-                    element(ctx, "h5")
-                        .class_("modal-title")
-                        .text("New report");
-                    element(ctx, "button")
-                        .attr("type", "button")
-                        .class_("close")
-                        .attr("data-dismiss", "modal")
-                        .attr("aria-label", "Close")
-                        .children([&] {
-                            element(ctx, "span")
-                                .attr("aria-hidden", "true")
-                                .text(u8"\u00D7");
-                        });
+    div(ctx, "modal-content", [&] {
+        div(ctx, "modal-header", [&] {
+            element(ctx, "h5").class_("modal-title").text("New report");
+            element(ctx, "button")
+                .attr("type", "button")
+                .class_("close")
+                .attr("data-dismiss", "modal")
+                .attr("aria-label", "Close")
+                .children([&] {
+                    element(ctx, "span")
+                        .attr("aria-hidden", "true")
+                        .text(u8"\u00D7");
                 });
-                div(ctx, "modal-body", [&] {
-                    element(ctx, "p").text("Some text...");
-                });
-                div(ctx, "modal-footer", [&] {
-                    button(ctx, "Close", callback([&] {
-                               emscripten_run_script(
-                                   "jQuery(\"#alia-modal\").modal('hide');");
-                           }));
-                    element(ctx, "button")
-                        .attr("type", "button")
-                        .class_("btn", "btn-primary")
-                        .text("Save changes");
-                });
-            });
         });
+        div(ctx, "modal-body", [&] {
+            element(ctx, "p").text("Some text...");
+        });
+        div(ctx, "modal-footer", [&] {
+            button(ctx, "Close", callback([&] {
+                       emscripten_run_script(
+                           "jQuery(\"#alia-modal\").modal('hide');");
+                   }));
+            element(ctx, "button")
+                .attr("type", "button")
+                .class_("btn", "btn-primary")
+                .text("Save changes");
+        });
+    });
 }
 
 template<class Content>
@@ -400,11 +399,6 @@ invoke_tree(
         scoped_root.begin(get<html::tree_traversal_tag>(ctx), root);
     (std::forward<Content>(content))();
 }
-
-struct modal_data
-{
-    element_object root;
-};
 
 // void
 // activate_modal(html::context ctx, modal_data& data)
@@ -431,43 +425,182 @@ struct modal_data
 //         });
 // }
 
+struct modal_data
+{
+    tree_node<element_object> root;
+    bool active = false;
+};
+
+struct modal_handle
+{
+    void
+    activate()
+    {
+        data.active = true;
+        EM_ASM({ jQuery(Module['nodes'][$0]).modal('show'); }, asmdom_id);
+    }
+
+    modal_data& data;
+    int asmdom_id;
+};
+
+// Do the 'x' in the top right corner of a modal that serves as a close button.
+void
+modal_close_button(html::context ctx)
+{
+    element(ctx, "button")
+        .attr("type", "button")
+        .class_("close")
+        .attr("data-dismiss", "modal")
+        .attr("aria-label", "Close")
+        .children([&] {
+            element(ctx, "span").attr("aria-hidden", "true").text(u8"\u00D7");
+        });
+}
+
+// Do a standard modal header with a title and a close button.
+template<class Title>
+void
+standard_modal_header(html::context ctx, Title const& title)
+{
+    div(ctx, "modal-header", [&] {
+        element(ctx, "h5").class_("modal-title").text(title);
+        modal_close_button(ctx);
+    });
+}
+
+// Do a modal header with custom content.
+// This wraps the content in a 'modal-header' div and supplies a close button.
+template<class Content>
+void
+modal_header(html::context ctx, Content&& content)
+{
+    div(ctx, "modal-header", [&] {
+        invoke_component_function(ctx, std::forward<Content>(content));
+        modal_close_button(ctx);
+    });
+}
+
+// Do a modal body with custom content.
+// This wraps the content in a 'modal-body' div.
+template<class Content>
+void
+modal_body(html::context ctx, Content&& content)
+{
+    div(ctx, "modal-body", [&] {
+        invoke_component_function(ctx, std::forward<Content>(content));
+    });
+}
+
+// Do a modal footer with custom content.
+// This wraps the content in a 'modal-footer' div.
+template<class Content>
+void
+modal_footer(html::context ctx, Content&& content)
+{
+    div(ctx, "modal-footer", [&] {
+        invoke_component_function(ctx, std::forward<Content>(content));
+    });
+}
+
+// Close the active modal.
+void
+close_modal()
+{
+    emscripten_run_script("jQuery(\"#alia-modal\").modal('hide');");
+}
+
+template<class Content>
+modal_handle
+modal(html::context ctx, Content&& content)
+{
+    modal_data* data;
+    if (get_cached_data(ctx, &data))
+        create_as_modal_root(data->root.object);
+
+    int asmdom_id;
+
+    invoke_tree(ctx, data->root, [&] {
+        auto top_level_modal = element(ctx, "div");
+        top_level_modal.class_("modal", "fade")
+            .attr("id", "alia-modal")
+            .attr("tabindex", "-1")
+            .attr("role", "dialog")
+            .children([&] {
+                div(ctx, "modal-dialog modal-dialog-centered")
+                    .attr("role", "document")
+                    .children([&] {
+                        alia_if(data->active)
+                        {
+                            div(ctx, "modal-content", [&] {
+                                std::forward<Content>(content)(ctx);
+                            });
+                        }
+                        alia_end
+                    });
+            });
+        top_level_modal.callback(
+            "hidden.bs.modal", [&](auto) { data->active = false; });
+        asmdom_id = top_level_modal.asmdom_id();
+    });
+
+    on_refresh(ctx, [&](auto ctx) {
+        EM_ASM(
+            { jQuery(Module['nodes'][$0]).modal('handleUpdate'); }, asmdom_id);
+    });
+
+    return modal_handle{*data, asmdom_id};
+}
+
 void
 main_page(html::context ctx)
 {
-    do_switch_test(ctx);
+    // do_switch_test(ctx);
 
     tree_node<element_object>* modal_root;
     if (get_cached_data(ctx, &modal_root))
         create_as_modal_root(modal_root->object);
 
-    int modal_asmdom_id;
+    auto some_string = get_state(ctx, "Test");
+    input(ctx, some_string);
 
-    // invoke_pure_component(ctx, [&](auto ctx) {
-    invoke_tree(ctx, *modal_root, [&] {
-        auto& top_level_modal = element(ctx, "div")
-                                    .class_("modal", "fade")
-                                    .attr("id", "alia-modal")
-                                    .attr("tabindex", "-1")
-                                    .attr("role", "dialog")
-                                    .children([&] { modal(ctx); });
-        modal_asmdom_id = top_level_modal.asmdom_id();
+    auto my_modal = modal(ctx, [&](auto ctx) {
+        standard_modal_header(ctx, "My Modal");
+        modal_body(ctx, [&] {
+            element(ctx, "p").text(some_string);
+
+            auto some_int = get_state(ctx, 4);
+            input(ctx, some_int);
+
+            alia_if(some_int > 1)
+            {
+                element(ctx, "p").text("Some text...");
+            }
+            alia_end
+            alia_if(some_int > 10)
+            {
+                element(ctx, "p").text("Some more text...");
+            }
+            alia_end
+        });
+        modal_footer(ctx, [&] {
+            bootstrap::button(ctx, "Close", callback([&] { close_modal(); }))
+                .class_("btn-secondary");
+            element(ctx, "button")
+                .attr("type", "button")
+                .class_("btn", "btn-primary")
+                .text("Save changes");
+        });
     });
-    //});
 
-    // on_init(ctx, callback([&] {
-    //             emscripten_run_script(
-    //                 "jQuery(\"#alia-modal\").modal('show');");
-    //         }));
-    // button(ctx, "Activate", callback([&] {
-    //            EM_ASM(
-    //                { jQuery("#alia-modal").modal("show");");
-    //        }));
-
-    button(ctx, "Activate", callback([&] {
-               EM_ASM(
-                   { jQuery(Module['nodes'][$0]).modal('show'); },
-                   modal_asmdom_id);
-           }));
+    bootstrap::button(ctx, callback([&] { my_modal.activate(); }))
+        .class_("btn-secondary")
+        .children([&] {
+            text_node(ctx, "Activate");
+            element(ctx, "span")
+                .attr("class", "badge badge-primary")
+                .text("4");
+        });
 }
 
 void
