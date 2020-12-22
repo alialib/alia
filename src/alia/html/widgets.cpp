@@ -39,51 +39,12 @@ input(html::context ctx, duplex<std::string> value_)
     });
 
     return element(ctx, "input")
-        .attr("class", "form-control")
         .prop("value", data->value)
         .callback("input", [=](emscripten::val& e) {
             auto new_value = e["target"]["value"].as<std::string>();
             write_signal(value, new_value);
             data->value = new_value;
             ++data->version;
-        });
-}
-
-void
-button(html::context ctx, readable<std::string> text, action<> on_click)
-{
-    element(ctx, "button")
-        .attr("type", "button")
-        .attr("class", "btn btn-primary btn-block")
-        .attr("disabled", !on_click.is_ready())
-        .callback("click", [&](auto& e) { perform_action(on_click); })
-        .text(text);
-}
-
-void
-checkbox(html::context ctx, duplex<bool> value, readable<std::string> label)
-{
-    bool determinate = value.has_value();
-    bool checked = determinate && value.read();
-    bool disabled = !value.ready_to_write();
-
-    element(ctx, "div")
-        .attr("class", "custom-control custom-checkbox")
-        .children([&](auto ctx) {
-            element(ctx, "input")
-                .attr("type", "checkbox")
-                .attr("class", "custom-control-input")
-                .attr("disabled", disabled)
-                .attr("id", "custom-check-1")
-                .prop("indeterminate", !determinate)
-                .prop("checked", checked)
-                .callback("change", [&](emscripten::val e) {
-                    write_signal(value, e["target"]["checked"].as<bool>());
-                });
-            element(ctx, "label")
-                .attr("class", "custom-control-label")
-                .attr("for", "custom-check-1")
-                .text(label);
         });
 }
 
@@ -98,6 +59,27 @@ link(html::context ctx, readable<std::string> text, action<> on_click)
 }
 
 } // namespace detail
+
+element_handle<html::context>
+button(html::context ctx, action<> on_click)
+{
+    return element(ctx, "button")
+        .attr("type", "button")
+        .attr("disabled", !on_click.is_ready())
+        .callback("click", [&](auto& e) { perform_action(on_click); });
+}
+
+element_handle<html::context>
+button(html::context ctx, readable<std::string> text, action<> on_click)
+{
+    return button(ctx, on_click).text(text);
+}
+
+element_handle<html::context>
+button(html::context ctx, char const* text, action<> on_click)
+{
+    return button(ctx, on_click).text(value(text));
+}
 
 } // namespace html
 } // namespace alia

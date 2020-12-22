@@ -108,7 +108,14 @@ do_element_attribute(
 
 void
 do_element_class_token(
-    context ctx, element_object& object, readable<std::string> value);
+    context ctx,
+    element_object& object,
+    bool initializing,
+    readable<std::string> value);
+
+void
+do_element_class_token(
+    context ctx, element_object& object, bool initializing, char const* value);
 
 void
 set_element_property(
@@ -169,7 +176,7 @@ struct element_handle
     class_(Tokens... tokens)
     {
         (detail::do_element_class_token(
-             ctx_, node_->object, signalize(tokens)),
+             ctx_, node_->object, initializing_, tokens),
          ...);
         return *this;
     }
