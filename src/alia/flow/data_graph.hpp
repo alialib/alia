@@ -76,7 +76,7 @@ struct data_node : noncopyable
     {
     }
 
-    data_node* next = nullptr;
+    data_node* alia_next_data_node_ = nullptr;
 };
 
 // A data_block represents a block of execution. During a single traversal of
@@ -110,7 +110,7 @@ struct data_block_node : data_node
 {
     data_block block;
 
-    virtual void
+    void
     clear_cache()
     {
         clear_data_block_cache(this->block);
@@ -424,7 +424,7 @@ get_data_node(Context& ctx, Node** ptr)
     if (node)
     {
         assert(dynamic_cast<Node*>(node));
-        traversal.next_data_ptr = &node->next;
+        traversal.next_data_ptr = &node->alia_next_data_node_;
         *ptr = static_cast<Node*>(node);
         return false;
     }
@@ -432,7 +432,7 @@ get_data_node(Context& ctx, Node** ptr)
     {
         Node* new_node = new Node;
         *traversal.next_data_ptr = new_node;
-        traversal.next_data_ptr = &new_node->next;
+        traversal.next_data_ptr = &new_node->alia_next_data_node_;
         *ptr = new_node;
         return true;
     }

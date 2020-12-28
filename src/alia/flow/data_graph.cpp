@@ -72,7 +72,7 @@ struct naming_map
 
 // naming_maps are always created via a naming_map_node, which takes care of
 // associating them with the data graph.
-struct naming_map_node : noncopyable
+struct naming_map_node : data_node
 {
     naming_map map;
 
@@ -118,9 +118,7 @@ release_named_block_node(naming_map& map, named_block_node* node)
     else
     {
         clear_data_block_cache(node->content_block);
-        // Clear the next pointer to indicate that the node is no longer in
-        // use.
-        node->next = nullptr;
+        node->prev = node->next = nullptr;
     }
 }
 
@@ -145,7 +143,7 @@ clear_data_node_caches(data_node* node)
     // Note that the same concerns exist here as in delete_data_nodes().
     if (node)
     {
-        clear_data_node_caches(node->next);
+        clear_data_node_caches(node->alia_next_data_node_);
         node->clear_cache();
     }
 }
@@ -173,7 +171,7 @@ delete_data_nodes(data_node* node)
     //
     if (node)
     {
-        delete_data_nodes(node->next);
+        delete_data_nodes(node->alia_next_data_node_);
         delete node;
     }
 }
@@ -223,7 +221,7 @@ naming_map*
 retrieve_naming_map(data_traversal& traversal)
 {
     naming_map_node* map_node;
-    if (get_data(traversal, &map_node))
+    if (get_data_node(traversal, &map_node))
     {
         data_graph& graph = *traversal.graph;
         map_node->graph = &graph;
@@ -278,13 +276,16 @@ naming_context::end()
                         traversal.predicted->prev = nullptr;
                 }
             }
+            map_->first = traversal.seen_blocks;
         }
         else
         {
             if (traversal.divergence_detected)
             {
-                // Release all remaining nodes from the 'predicted' list.
+                // The lists are already separate, so just release all
+                // remaining nodes from the 'predicted' list.
                 release_named_block_node_list(*map_, traversal.predicted);
+                map_->first = traversal.seen_blocks;
             }
             else
             {
@@ -297,11 +298,10 @@ naming_context::end()
                     if (traversal.last_seen)
                         traversal.last_seen->next = nullptr;
                     else
-                        traversal.seen_blocks = nullptr;
+                        map_->first = nullptr;
                 }
             }
         }
-        map_->first = traversal.seen_blocks;
     }
 }
 
@@ -399,10 +399,9 @@ delete_named_block(data_graph& graph, id_interface const& id)
         if (j != i->map.blocks.end())
         {
             named_block_node* node = &j->second;
-            // If the node's next pointer is valid, the block is still
-            // active, so we don't want to delete it. We just want to
-            // clear the manual_delete flag.
-            if (node->next)
+            // If the block is still active, so we don't want to delete it. We
+            // just want to clear the manual_delete flag.
+            if (node->next || i->map.first == node)
                 node->manual_delete = false;
             else
                 i->map.blocks.erase(&id);

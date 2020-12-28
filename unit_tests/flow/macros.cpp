@@ -297,8 +297,8 @@ TEST_CASE("alia_switch", "[flow][macros]")
         check_log(
             "visiting int: -1;"
             "initializing int: 4;"
-            "visiting int: 5;"
-            "destructing int: 3;");
+            "destructing int: 3;"
+            "visiting int: 5;");
         do_traversal(graph, make_controller(value(1)));
         check_log(
             "visiting int: -1;"
@@ -316,12 +316,13 @@ TEST_CASE("alia_switch", "[flow][macros]")
     match_log(
         // 3 is cached, so it's definitely first.
         "destructing int: 3;"
-        // The destruction order of the others is arbitrary.
-        "destructing int: [0-5];"
-        "destructing int: [0-5];"
-        "destructing int: [0-5];"
-        "destructing int: [0-5];"
-        "destructing int: [0-5];"
+        // 5 is fixed at the bottom, so it's next..
+        "destructing int: 5;"
+        // The destruction order of the case statements is arbitrary.
+        "destructing int: [0-4];"
+        "destructing int: [0-4];"
+        "destructing int: [0-4];"
+        "destructing int: [0-4];"
         // -1 is fixed at the top, so it goes last.
         "destructing int: -1;");
 }
@@ -377,8 +378,8 @@ TEST_CASE("non-signal alia_switch", "[flow][macros]")
         check_log(
             "visiting int: -1;"
             "initializing int: 4;"
-            "visiting int: 5;"
-            "destructing int: 3;");
+            "destructing int: 3;"
+            "visiting int: 5;");
         do_traversal(graph, make_controller(1));
         check_log(
             "visiting int: -1;"
@@ -396,12 +397,13 @@ TEST_CASE("non-signal alia_switch", "[flow][macros]")
     match_log(
         // 3 is cached, so it's definitely first.
         "destructing int: 3;"
-        // The destruction order of the others is arbitrary.
-        "destructing int: [0-5];"
-        "destructing int: [0-5];"
-        "destructing int: [0-5];"
-        "destructing int: [0-5];"
-        "destructing int: [0-5];"
+        // 5 is fixed at the bottom, so it's next..
+        "destructing int: 5;"
+        // The destruction order of the case statements is arbitrary.
+        "destructing int: [0-4];"
+        "destructing int: [0-4];"
+        "destructing int: [0-4];"
+        "destructing int: [0-4];"
         // -1 is fixed at the top, so it goes last.
         "destructing int: -1;");
 }
@@ -438,10 +440,10 @@ TEST_CASE("alia_switch cached destruction order", "[flow][macros]")
         do_traversal(graph, make_controller(value(1)));
         check_log(
             "visiting int: -1;"
-            "visiting int: 5;"
             "destructing int: 2;"
             "destructing int: 1;"
-            "destructing int: 0;");
+            "destructing int: 0;"
+            "visiting int: 5;");
         do_traversal(graph, make_controller(value(0)));
         check_log(
             "visiting int: -1;"
@@ -452,10 +454,10 @@ TEST_CASE("alia_switch cached destruction order", "[flow][macros]")
         do_traversal(graph, make_controller(value(1)));
         check_log(
             "visiting int: -1;"
-            "visiting int: 5;"
             "destructing int: 2;"
             "destructing int: 1;"
-            "destructing int: 0;");
+            "destructing int: 0;"
+            "visiting int: 5;");
         do_traversal(graph, make_controller(value(0)));
         check_log(
             "visiting int: -1;"

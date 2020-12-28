@@ -343,10 +343,8 @@ TEST_CASE("manual deletion", "[data_graph]")
             "visiting int: 0;");
     }
     check_log(
-        // First the named block.
-        "destructing int: 1;"
-        // Then the fixed block.
-        "destructing int: 0;");
+        "destructing int: 0;"
+        "destructing int: 1;");
 }
 
 TEST_CASE("named block caching", "[data_graph]")
@@ -449,9 +447,9 @@ TEST_CASE("naming_map lifetime", "[data_graph]")
             "visiting int: 1;"
             "destructing int: 3;");
         do_traversal(graph, make_controller(value(true), {}));
-        check_log(
-            "destructing int: 1;"
-            "destructing int: 2;");
+        match_log(
+            "destructing int: [12];"
+            "destructing int: [12];");
     }
 }
 
