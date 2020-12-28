@@ -27,6 +27,7 @@ TEST_CASE("simple named blocks", "[flow][data_graph]")
         data_graph graph;
         auto make_controller = [](std::vector<int> indices) {
             return [=](context ctx) {
+                do_int(ctx, -1);
                 naming_context nc(ctx);
                 for (auto i : indices)
                 {
@@ -38,38 +39,43 @@ TEST_CASE("simple named blocks", "[flow][data_graph]")
         };
         do_traversal(graph, make_controller({1}));
         check_log(
+            "initializing int: -1;"
             "initializing int: 1;"
             "initializing int: 0;");
         do_traversal(graph, make_controller({2}));
         check_log(
+            "visiting int: -1;"
             "initializing int: 2;"
             "visiting int: 0;"
             "destructing int: 1;");
         do_traversal(graph, make_controller({1, 2}));
         check_log(
+            "visiting int: -1;"
             "initializing int: 1;"
             "visiting int: 2;"
             "visiting int: 0;");
         do_traversal(graph, make_controller({2, 3}));
         check_log(
+            "visiting int: -1;"
             "visiting int: 2;"
             "initializing int: 3;"
             "visiting int: 0;"
             "destructing int: 1;");
         do_traversal(graph, make_controller({2, 1, 3}));
         check_log(
+            "visiting int: -1;"
             "visiting int: 2;"
             "initializing int: 1;"
             "visiting int: 3;"
             "visiting int: 0;");
     }
     match_log(
-        // The named blocks go first (in arbitrary order).
+        "destructing int: 0;"
+        // The named blocks are destructed in arbitrary order.
         "destructing int: [1-3];"
         "destructing int: [1-3];"
         "destructing int: [1-3];"
-        // Then the fixed content goes.
-        "destructing int: 0;");
+        "destructing int: -1;");
 }
 
 TEST_CASE("mobile named blocks", "[flow][data_graph]")
@@ -115,12 +121,13 @@ TEST_CASE("mobile named blocks", "[flow][data_graph]")
         do_traversal(graph, make_controller({3, 1}, 3));
         check_log(
             "visiting int: 1;"
-            "visiting int: 3;");
+            "visiting int: 3;"
+            "destructing int: 2;");
     }
-    check_log(
-        "destructing int: 3;"
-        "destructing int: 2;"
-        "destructing int: 1;");
+    match_log(
+        // 1 and 3 still have to be destructed, but we don't know the order.
+        "destructing int: [13];"
+        "destructing int: [13];");
 }
 
 TEST_CASE("multiple naming contexts", "[flow][data_graph]")
@@ -160,10 +167,10 @@ TEST_CASE("multiple naming contexts", "[flow][data_graph]")
         do_traversal(graph, make_controller({2}));
         check_log(
             "initializing int: 2;"
+            "destructing int: 1;"
             "initializing int: 4;"
-            "visiting int: 0;"
             "destructing int: 2;"
-            "destructing int: 1;");
+            "visiting int: 0;");
         do_traversal(graph, make_controller({1, 2}));
         check_log(
             "initializing int: 1;"
@@ -175,20 +182,19 @@ TEST_CASE("multiple naming contexts", "[flow][data_graph]")
         check_log(
             "visiting int: 2;"
             "initializing int: 3;"
+            "destructing int: 1;"
             "visiting int: 4;"
             "initializing int: 6;"
-            "visiting int: 0;"
             "destructing int: 2;"
-            "destructing int: 1;");
+            "visiting int: 0;");
     }
     match_log(
-        // The named blocks go first (in arbitrary order).
+        "destructing int: 0;"
+        // The named blocks are destructed in arbitrary order.
         "destructing int: [2-6];"
         "destructing int: [2-6];"
         "destructing int: [2-6];"
-        "destructing int: [2-6];"
-        // Then the fixed content goes.
-        "destructing int: 0;");
+        "destructing int: [2-6];");
 }
 
 TEST_CASE("unexecuted named blocks", "[data_graph]")
@@ -267,16 +273,16 @@ TEST_CASE("GC disabling", "[data_graph]")
             "visiting int: 2;"
             "visiting int: 1;"
             "visiting int: 0;");
-    // This traversal is an error because it tries to change the order
+        // This traversal is an error because it tries to change the order
         // with GC disabled.
         REQUIRE_THROWS_AS(
             do_traversal(graph, make_controller({1, 2}), false),
             named_block_out_of_order);
     }
     match_log(
+        "destructing int: 0;"
         "destructing int: [1-2];"
-        "destructing int: [1-2];"
-        "destructing int: 0;");
+        "destructing int: [1-2];");
 }
 
 TEST_CASE("manual deletion", "[data_graph]")
