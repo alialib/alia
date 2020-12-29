@@ -16,14 +16,31 @@ jobs:
   gcc-7:
     runs-on: ubuntu-20.04
 
+    strategy:
+      matrix:
+        config: [Debug, Release]
+
     steps:
     - uses: actions/checkout@v1
 
-    - name: install
+    - name: Install
       run: sudo pip install gcovr
 
-    - name: test
+    - name: Configure
       run: |
         export CC=`which gcc-7`
         export CXX=`which g++-7`
-        scripts/do-ci-testing.sh
+        cmake -Bbuild -DCMAKE_BUILD_TYPE=${{matrix.config}} .
+
+    - name: Build
+      run: >
+        cmake --build build --config ${{matrix.config}}
+        --target unit_test_runner -j4
+
+        cmake --build build --config ${{matrix.config}}
+        --target single_header_tester
+
+    - name: Test
+      run: |
+        cd build
+        ctest --build-config ${{matrix.config}}

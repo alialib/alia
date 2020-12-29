@@ -27,7 +27,7 @@ jobs:
       run: |
         cmake -Bbuild -DCMAKE_BUILD_TYPE=${{matrix.config}} .
 
-    - name: Build tests
+    - name: Build
       run: >
         cmake --build build --config ${{matrix.config}}
         --target unit_test_runner -j4
