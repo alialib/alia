@@ -76,35 +76,21 @@ struct data_node : noncopyable
     {
     }
 
-    data_node* next = nullptr;
+    data_node* alia_next_data_node_ = nullptr;
 };
-
-struct named_block_ref_node;
 
 // A data_block represents a block of execution. During a single traversal of
 // the data graph, either all nodes in the block are executed or all nodes are
 // bypassed, and, if executed, they are always executed in the same order.
 // (It's conceptually similar to a 'basic block' except that other nodes may be
 // executed in between nodes in a data_block.)
-struct data_block : data_node
+struct data_block
 {
     // the list of nodes in this block
     data_node* nodes = nullptr;
 
     // a flag to track if the block's cache is clear
     bool cache_clear = true;
-
-    // list of named blocks referenced from this data block - The references
-    // maintain shared ownership of the named blocks. The order of the
-    // references indicates the order in which the block references appeared in
-    // the last pass. When the content graph is stable and this order is
-    // constant, we can find the blocks with a very small, constant cost.
-    named_block_ref_node* named_blocks = nullptr;
-
-    // Clear all cached data stored within a data block.
-    // Note that this recursively processes child blocks.
-    void
-    clear_cache();
 
     ~data_block();
 };
@@ -114,37 +100,44 @@ struct data_block : data_node
 void
 clear_data_block(data_block& block);
 
+// Clear all cached data stored within a data block.
+// Note that this recursively processes child blocks.
+void
+clear_data_block_cache(data_block& block);
+
+// a data_node that stores a data_block
+struct data_block_node : data_node
+{
+    data_block block;
+
+    void
+    clear_cache()
+    {
+        clear_data_block_cache(this->block);
+    }
+};
+
 struct naming_map_node;
 
-// data_graph stores the data graph associated with a function.
+// an actual data graph
 struct data_graph : noncopyable
 {
     data_block root_block;
 
     naming_map_node* map_list = nullptr;
-
-    // This list stores unused references to named blocks. When named block
-    // references disappear from a traversal, it's possible that they've done
-    // so only because the traversal was interrupted by an exception.
-    // Therefore, they're kept here temporarily to keep the named blocks alive
-    // until a complete traversal can establish new references to the named
-    // blocks. They're cleaned up when someone calls gc_named_data(graph)
-    // following a complete traversal.
-    named_block_ref_node* unused_named_block_refs = nullptr;
 };
 
+struct naming_context;
 struct naming_map;
+struct named_block_node;
+struct naming_context_traversal_state;
 
 // data_traversal stores the state associated with a single traversal of a
 // data_graph.
 struct data_traversal
 {
     data_graph* graph = nullptr;
-    naming_map* active_map = nullptr;
     data_block* active_block = nullptr;
-    named_block_ref_node* predicted_named_block = nullptr;
-    named_block_ref_node* used_named_blocks = nullptr;
-    named_block_ref_node** named_block_next_ptr = nullptr;
     data_node** next_data_ptr = nullptr;
     bool gc_enabled = false;
     bool cache_clearing_enabled = false;
@@ -158,8 +151,8 @@ struct data_traversal
 // defines the function get_data_traversal(ctx), which returns a reference to a
 // data_traversal.
 
-// If using this library directly, the data_traversal itself can serve as the
-// context.
+// If using the data graph functionality directly, the data_traversal itself
+// can serve as the context.
 inline data_traversal&
 get_data_traversal(data_traversal& ctx)
 {
@@ -170,11 +163,11 @@ get_data_traversal(data_traversal& ctx)
 // of its scope and deactivates it at the end. It's useful anytime there is a
 // branch in the code and you need to activate the block associated with the
 // taken branch while that branch is active.
-// Note that the macros defined below make heavy use of this and reduce the
+// Note that the alia control flow macros make heavy use of this and reduce the
 // need for applications to use it directly.
 struct scoped_data_block : noncopyable
 {
-    scoped_data_block() : traversal_(0)
+    scoped_data_block() : traversal_(nullptr)
     {
     }
 
@@ -204,12 +197,8 @@ struct scoped_data_block : noncopyable
 
  private:
     data_traversal* traversal_;
-    uncaught_exception_detector exception_detector_;
-    // old state
+    // old (i.e., parent) state
     data_block* old_active_block_;
-    named_block_ref_node* old_predicted_named_block_;
-    named_block_ref_node* old_used_named_blocks_;
-    named_block_ref_node** old_named_block_next_ptr_;
     data_node** old_next_data_ptr_;
 };
 
@@ -225,15 +214,40 @@ struct scoped_data_block : noncopyable
 // context can be reused within another without conflict.
 //
 // named_blocks are automatically garbage collected when the library detects
-// that they've disappeared from the graph. The logic for this is fairly
-// sophisticated, and it generally won't mistakingly collect named_blocks in
-// inactive regions of the graph. However, it still may not always do what you
-// want. In those cases, you can specify the manual_delete flag. This will
-// prevent the library from collecting the block. It can be deleted manually by
-// calling delete_named_data(ctx, id). If that never happens, it will be
-// deleted when the data_graph that it belongs to is destroyed. (But this is
-// likely to still be a memory leak, since the data_graph might live on as long
-// as the application is running.)
+// that they've disappeared from the graph. A block is determined to have
+// disappeared on any uninterrupted pass where GC is enabled and the block's
+// naming_context is seen but the block itself is not seen. However, it still
+// may not always do what you want. In those cases, you can specify the
+// manual_delete flag. This will prevent the library from collecting the block.
+// It can be deleted manually by calling delete_named_data(ctx, id). If that
+// never happens, it will be deleted when the data_graph that it belongs to is
+// destroyed. (But this is likely to still be a memory leak, since the
+// data_graph might live on as long as the application is running.)
+
+// all the traversal state related to a naming context
+struct naming_context_traversal_state
+{
+    // Traversal is optimized for the case where the blocks will be traversed
+    // in exactly the same order as before. In that case, we don't even write
+    // anything to the nodes. We just observe that the order is the same.
+    // :divergence_detected indicates whether or not a divergence has been
+    // detected and forced us out of that mode.
+    bool divergence_detected = false;
+
+    // If :divergence_detected is false, this is the next node that we expect
+    // to see (i.e., it is a simple pointer into the list of nodes). If and
+    // when :divergence_detected is set, this becomes an independent list that
+    // stores nodes that *should have* been seen but haven't been yet.
+    named_block_node* predicted = nullptr;
+
+    // This accumulates the named blocks that have already been seen this pass.
+    // It's only relevant if :divergence_detected is true.
+    named_block_node* seen_blocks = nullptr;
+
+    // This is always the last block that has been seen.
+    // (Before anything is seen, it's a null pointer.)
+    named_block_node* last_seen = nullptr;
+};
 
 // The manual deletion flag is specified via its own structure to make it very
 // obvious at the call site.
@@ -251,31 +265,19 @@ struct named_block : noncopyable
     {
     }
 
-    template<class Context>
     named_block(
-        Context& ctx,
+        naming_context& nc,
         id_interface const& id,
         manual_delete manual = manual_delete(false))
     {
-        begin(ctx, id, manual);
-    }
-
-    template<class Context>
-    void
-    begin(
-        Context& ctx,
-        id_interface const& id,
-        manual_delete manual = manual_delete(false))
-    {
-        begin(get_data_traversal(ctx), get_naming_map(ctx), id, manual);
+        begin(nc, id, manual);
     }
 
     void
     begin(
-        data_traversal& traversal,
-        naming_map& map,
+        naming_context& nc,
         id_interface const& id,
-        manual_delete manual);
+        manual_delete manual = manual_delete(false));
 
     void
     end();
@@ -312,35 +314,15 @@ struct naming_context : noncopyable
     begin(data_traversal& traversal);
 
     void
-    end()
-    {
-    }
-
-    data_traversal&
-    traversal()
-    {
-        return *traversal_;
-    }
-    naming_map&
-    map()
-    {
-        return *map_;
-    }
+    end();
 
  private:
-    data_traversal* traversal_;
+    data_traversal* data_traversal_;
     naming_map* map_;
+    naming_context_traversal_state inner_traversal_;
+    uncaught_exception_detector exception_detector_;
+    friend struct named_block;
 };
-inline data_traversal&
-get_data_traversal(naming_context& ctx)
-{
-    return ctx.traversal();
-}
-inline naming_map&
-get_naming_map(naming_context& ctx)
-{
-    return ctx.map();
-}
 
 // retrieve_naming_map gets a data_map from a data_traveral and registers it
 // with the underlying graph. It can be used to retrieve additional naming maps
@@ -442,7 +424,7 @@ get_data_node(Context& ctx, Node** ptr)
     if (node)
     {
         assert(dynamic_cast<Node*>(node));
-        traversal.next_data_ptr = &node->next;
+        traversal.next_data_ptr = &node->alia_next_data_node_;
         *ptr = static_cast<Node*>(node);
         return false;
     }
@@ -450,7 +432,7 @@ get_data_node(Context& ctx, Node** ptr)
     {
         Node* new_node = new Node;
         *traversal.next_data_ptr = new_node;
-        traversal.next_data_ptr = &new_node->next;
+        traversal.next_data_ptr = &new_node->alia_next_data_node_;
         *ptr = new_node;
         return true;
     }
