@@ -102,12 +102,12 @@ struct catch_block
     operator<<(Body&& body)
     {
         auto ctx = try_block_->ctx_;
-        data_block* block;
-        get_data_node(ctx, &block);
+        data_block_node* node;
+        get_data_node(ctx, &node);
         if (try_block_->uncaught_)
         {
             if (invoke_catch_clause(
-                    ctx, try_block_->data_->exception, *block, body))
+                    ctx, try_block_->data_->exception, node->block, body))
             {
                 try_block_->uncaught_ = false;
                 return;
@@ -115,7 +115,7 @@ struct catch_block
         }
         if (get_data_traversal(ctx).cache_clearing_enabled)
         {
-            block->clear_cache();
+            clear_data_block_cache(node->block);
         }
     }
 

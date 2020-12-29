@@ -4,15 +4,15 @@ namespace alia {
 
 if_block::if_block(data_traversal& traversal, bool condition)
 {
-    data_block* block;
-    get_data_node(traversal, &block);
+    data_block_node* node;
+    get_data_node(traversal, &node);
     if (condition)
     {
-        scoped_data_block_.begin(traversal, *block);
+        scoped_data_block_.begin(traversal, node->block);
     }
     else if (traversal.cache_clearing_enabled)
     {
-        block->clear_cache();
+        clear_data_block_cache(node->block);
     }
 }
 
@@ -39,11 +39,11 @@ loop_block::next()
 event_dependent_if_block::event_dependent_if_block(
     data_traversal& traversal, bool condition)
 {
-    data_block* block;
-    get_data_node(traversal, &block);
+    data_block_node* node;
+    get_data_node(traversal, &node);
     if (condition)
     {
-        scoped_data_block_.begin(traversal, *block);
+        scoped_data_block_.begin(traversal, node->block);
     }
 }
 
