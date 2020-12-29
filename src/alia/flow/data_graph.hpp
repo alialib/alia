@@ -406,18 +406,31 @@ struct scoped_cache_clearing_disabler
     bool old_cache_clearing_state_;
 };
 
-// get_data_node(ctx, &ptr) represents a data node in the data graph.
+// A call to get_data_node() represents a data node in the data graph.
 //
-// The call retrieves data from the graph at the current point in the
-// traversal, assigns its address to *ptr, and advances the traversal to the
-// next node.
+// It comes in two forms:
 //
-// The return value is true if the data at the node was just constructed and
-// false if it already existed.
+// (1) get_data_node(ctx, &ptr, create)
+// (2) get_data_node(ctx, &ptr)
 //
-template<class Context, class Node>
+// In both forms, the call retrieves data from the graph at the current point
+// in the traversal, assigns its address to :ptr, and advances the traversal to
+// the next node.
+//
+// In (1), you specify a custom function (:create) which allocates and
+// initializes a new object (using `new`) and returns a pointer to it.
+// get_data_node() will call this function when necessary to allocate and
+// initialize the object at this node.
+//
+// In (2), alia uses a default allocater/initializer that simply calls `new`
+// to create a default-constructed object.
+//
+// In both forms, the return value is true if the data at the node was just
+// constructed and false if it already existed.
+//
+template<class Context, class Node, class Create>
 bool
-get_data_node(Context& ctx, Node** ptr)
+get_data_node(Context& ctx, Node** ptr, Create&& create)
 {
     data_traversal& traversal = get_data_traversal(ctx);
     data_node* node = *traversal.next_data_ptr;
@@ -430,12 +443,19 @@ get_data_node(Context& ctx, Node** ptr)
     }
     else
     {
-        Node* new_node = new Node;
+        Node* new_node = std::forward<Create>(create)();
         *traversal.next_data_ptr = new_node;
         traversal.next_data_ptr = &new_node->alia_next_data_node_;
         *ptr = new_node;
         return true;
     }
+}
+
+template<class Context, class Node>
+bool
+get_data_node(Context& ctx, Node** ptr)
+{
+    return get_data_node(ctx, ptr, [&] { return new Node; });
 }
 
 template<class T>
