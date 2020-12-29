@@ -1,0 +1,29 @@
+name: GCC
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+env:
+  CTEST_OUTPUT_ON_FAILURE: 1
+
+jobs:
+
+  gcc-7:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: install
+      run: sudo pip install gcovr
+
+    - name: test
+      run: |
+        export CC=`which gcc-7`
+        export CXX=`which g++-7`
+        scripts/do-ci-testing.sh
