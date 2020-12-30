@@ -1,0 +1,29 @@
+name: Release Deployment
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+
+  alia-single-header:
+    runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+        config: [Debug, Release]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Build
+      run: python3 scripts/generate-distributables.py
+
+    - name: Upload binaries to release
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: alia.hpp
+        tag: ${{ github.ref }}
+        overwrite: true
