@@ -59,7 +59,6 @@ jobs:
 
     - name: Install
       run: |
-        sudo apt install clang-10 libc++-10-dev
         sudo pip install gcovr
 
     - name: Configure
@@ -70,6 +69,10 @@ jobs:
 
     - name: Build
       run: >
+        cd build
+
+        make VERBOSE=1 unit_test_runner
+
         cmake --build build --config ${{matrix.config}}
         --target unit_test_runner -j4
 
