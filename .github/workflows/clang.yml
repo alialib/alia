@@ -1,4 +1,4 @@
-name: GCC
+name: Clang
 
 on:
   push:
@@ -13,7 +13,7 @@ env:
 
 jobs:
 
-  gcc-7:
+  clang-5:
     runs-on: ubuntu-20.04
 
     strategy:
@@ -23,10 +23,14 @@ jobs:
     steps:
     - uses: actions/checkout@v1
 
+    - name: Install
+      run: |
+        sudo apt install clang-5.0 llvm-5.0
+
     - name: Configure
       run: |
-        export CC=`which gcc-7`
-        export CXX=`which g++-7`
+        export CC=`which clang-5.0`
+        export CXX=`which clang++-5.0`
         cmake -Bbuild -DCMAKE_BUILD_TYPE=${{matrix.config}} .
 
     - name: Build
@@ -54,12 +58,13 @@ jobs:
 
     - name: Install
       run: |
-        sudo apt install gcc-10
+        sudo apt install clang-10 llvm-10
+        sudo pip install gcovr
 
     - name: Configure
       run: |
-        export CC=`which gcc-10`
-        export CXX=`which g++-10`
+        export CC=`which clang-10`
+        export CXX=`which clang-10`
         cmake -Bbuild -DCMAKE_BUILD_TYPE=${{matrix.config}} .
 
     - name: Build
