@@ -152,8 +152,8 @@ struct mapped_map_signal : signal<
     {
         return all_items_have_values_;
     }
-    std::map<Key, MappedItem> const& override
-    read() const
+    std::map<Key, MappedItem> const&
+    read() const override
     {
         return data_->mapped_items;
     }

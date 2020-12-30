@@ -31,8 +31,6 @@ jobs:
     - export CXX=`which clang++-5.0`
     script:
     - scripts/do-ci-testing.sh
-    after_success:
-    - bash <(curl -s https://codecov.io/bash) -X gcov
 
   # GCC 5 testing job - This also deploys alia.hpp releases.
   - env: CACHE_NAME=gcc-5
