@@ -4,7 +4,9 @@
 #include <alia/common.hpp>
 #include <alia/id.hpp>
 #include <alia/signals/core.hpp>
+
 #include <cassert>
+#include <optional>
 
 // This file defines the data retrieval library used for associating mutable
 // state and cached data with alia content graphs. It is designed so that each
@@ -493,8 +495,7 @@ get_data(Context& ctx)
 template<class T>
 struct cached_data_node : data_node
 {
-    // TODO: Use optional instead.
-    std::unique_ptr<T> value;
+    std::optional<T> value;
 
     void
     clear_cache()
@@ -509,10 +510,13 @@ get_cached_data(Context& ctx, T** ptr)
 {
     cached_data_node<T>* node;
     get_data_node(ctx, &node);
-    bool is_new = !node->value;
-    if (is_new)
-        node->value.reset(new T);
-    *ptr = node->value.get();
+    bool is_new = false;
+    if (!node->value)
+    {
+        node->value.emplace();
+        is_new = true;
+    }
+    *ptr = &*node->value;
     return is_new;
 }
 
