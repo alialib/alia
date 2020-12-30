@@ -1,16 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 project(alia)
 
-include(FetchContent)
-
-# Include Catch.
-FetchContent_Declare(
-  catch
-  GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-  GIT_TAG        v2.13.0
-)
-FetchContent_MakeAvailable(catch)
-
 # Detect the compiler.
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     set(IS_CLANG true)
@@ -57,9 +47,6 @@ elseif(IS_MSVC)
     # Disable "unreferenced local function has been removed".
     # (As far as I can tell, this warning seems to be broken.)
     add_compile_options(/wd4505)
-    # On VS2015, disable "unreachable code".
-    # (Again, this warning seems to be broken.)
-    add_compile_options(/wd4702)
 elseif(IS_CLANG)
     add_compile_options(-Wall -Werror)
 endif()
@@ -79,24 +66,31 @@ include_directories(src)
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS "src/*.cpp")
 add_library(alia STATIC ${SRC_FILES})
 
+# Download Catch.
+file(DOWNLOAD
+     https://github.com/catchorg/Catch2/releases/download/v2.13.4/catch.hpp
+     ${CMAKE_CURRENT_BINARY_DIR}/catch2/catch.hpp)
+
 # Add the unit test runner.
 include_directories(src)
 file(GLOB_RECURSE UNIT_TEST_FILES CONFIGURE_DEPENDS "unit_tests/*.cpp")
 add_executable(unit_test_runner ${UNIT_TEST_FILES})
-target_link_libraries(unit_test_runner alia Catch2::Catch2)
+target_link_libraries(unit_test_runner alia)
 target_include_directories(unit_test_runner
-    PRIVATE ${PROJECT_SOURCE_DIR}/unit_tests)
+    PRIVATE ${PROJECT_SOURCE_DIR}/unit_tests ${CMAKE_CURRENT_BINARY_DIR})
 
 # Create another version of the unit tests that run against the single-header
 # version of the library.
 # (Note that this comes as an empty test and requires some external setup to
-# run properly. This is normally only done within Travis.)
+# run properly. This is normally only done within CI.)
 file(GLOB_RECURSE SINGLE_HEADER_TEST_FILES CONFIGURE_DEPENDS
      "single_header_tests/*.cpp")
 add_executable(single_header_tester ${SINGLE_HEADER_TEST_FILES})
-target_link_libraries(single_header_tester alia Catch2::Catch2)
+target_link_libraries(single_header_tester alia)
 target_include_directories(single_header_tester
-    PRIVATE ${PROJECT_SOURCE_DIR}/single_header_tests)
+    PRIVATE
+    ${PROJECT_SOURCE_DIR}/single_header_tests
+    ${CMAKE_CURRENT_BINARY_DIR})
 
 # Add tests that are supposed to cause compilation errors.
 # Specifically, find all .cpp files in the compilation_tests/ directory and

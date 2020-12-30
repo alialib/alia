@@ -1,0 +1,17 @@
+name: Test Deployment
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+
+  alia-single-header:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Build
+      run: python3 scripts/generate-distributables.py
