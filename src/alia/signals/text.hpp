@@ -133,13 +133,14 @@ update_duplex_text(duplex_text_data<Value>* data, Readable x)
     }
 }
 template<class Wrapped>
-struct duplex_text_signal : casting_signal_wrapper<
-                                duplex_text_signal<Wrapped>,
-                                Wrapped,
-                                std::string,
-                                typename signal_capabilities_intersection<
-                                    copyable_duplex_signal,
-                                    typename Wrapped::capabilities>::type>
+struct duplex_text_signal final
+    : casting_signal_wrapper<
+          duplex_text_signal<Wrapped>,
+          Wrapped,
+          std::string,
+          typename signal_capabilities_intersection<
+              copyable_duplex_signal,
+              typename Wrapped::capabilities>::type>
 {
     duplex_text_signal(
         Wrapped wrapped, duplex_text_data<typename Wrapped::value_type>* data)
@@ -147,28 +148,28 @@ struct duplex_text_signal : casting_signal_wrapper<
     {
     }
     bool
-    has_value() const
+    has_value() const override
     {
         return data_->output_valid;
     }
     std::string const&
-    read() const
+    read() const override
     {
         return data_->output_text;
     }
     std::string
-    movable_value() const
+    movable_value() const override
     {
         return this->read();
     }
     id_interface const&
-    value_id() const
+    value_id() const override
     {
         id_ = make_id(data_->output_version);
         return id_;
     }
     void
-    write(std::string s) const
+    write(std::string s) const override
     {
         typename Wrapped::value_type value;
         from_string(&value, s);

@@ -24,10 +24,10 @@ struct mapped_sequence_data
 };
 
 template<class MappedItem>
-struct mapped_sequence_signal : signal<
-                                    mapped_sequence_signal<MappedItem>,
-                                    std::vector<MappedItem>,
-                                    read_only_signal>
+struct mapped_sequence_signal final : signal<
+                                          mapped_sequence_signal<MappedItem>,
+                                          std::vector<MappedItem>,
+                                          read_only_signal>
 {
     mapped_sequence_signal(
         mapped_sequence_data<MappedItem>& data, bool all_items_have_values)
@@ -35,18 +35,18 @@ struct mapped_sequence_signal : signal<
     {
     }
     id_interface const&
-    value_id() const
+    value_id() const override
     {
         id_ = make_id(data_->output_version);
         return id_;
     }
     bool
-    has_value() const
+    has_value() const override
     {
         return all_items_have_values_;
     }
     std::vector<MappedItem> const&
-    read() const
+    read() const override
     {
         return data_->mapped_items;
     }
@@ -142,18 +142,18 @@ struct mapped_map_signal : signal<
     {
     }
     id_interface const&
-    value_id() const
+    value_id() const override
     {
         id_ = make_id(data_->output_version);
         return id_;
     }
     bool
-    has_value() const
+    has_value() const override
     {
         return all_items_have_values_;
     }
     std::map<Key, MappedItem> const&
-    read() const
+    read() const override
     {
         return data_->mapped_items;
     }

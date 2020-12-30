@@ -14,7 +14,7 @@ template<class Derived, class Value, class Capabilities>
 struct regular_signal : signal<Derived, Value, Capabilities>
 {
     id_interface const&
-    value_id() const
+    value_id() const override
     {
         if (this->has_value())
         {
@@ -75,7 +75,7 @@ struct preferred_id_signal<
     : signal<Derived, Value, Capabilities>
 {
     id_interface const&
-    value_id() const
+    value_id() const override
     {
         if (this->has_value())
         {
@@ -152,42 +152,42 @@ struct signal_wrapper : signal<Derived, Value, Capabilities>
     {
     }
     bool
-    has_value() const
+    has_value() const override
     {
         return wrapped_.has_value();
     }
     typename Wrapped::value_type const&
-    read() const
+    read() const override
     {
         return wrapped_.read();
     }
     typename Wrapped::value_type
-    movable_value() const
+    movable_value() const override
     {
         return wrapped_.movable_value();
     }
     id_interface const&
-    value_id() const
+    value_id() const override
     {
         return wrapped_.value_id();
     }
     bool
-    ready_to_write() const
+    ready_to_write() const override
     {
         return wrapped_.ready_to_write();
     }
     void
-    write(typename Wrapped::value_type value) const
+    write(typename Wrapped::value_type value) const override
     {
         return wrapped_.write(std::move(value));
     }
     bool
-    invalidate(std::exception_ptr error) const
+    invalidate(std::exception_ptr error) const override
     {
         return wrapped_.invalidate(error);
     }
     bool
-    is_invalidated() const
+    is_invalidated() const override
     {
         return wrapped_.is_invalidated();
     }
@@ -212,27 +212,27 @@ struct casting_signal_wrapper : signal<Derived, Value, Capabilities>
     {
     }
     bool
-    has_value() const
+    has_value() const override
     {
         return wrapped_.has_value();
     }
     id_interface const&
-    value_id() const
+    value_id() const override
     {
         return wrapped_.value_id();
     }
     bool
-    ready_to_write() const
+    ready_to_write() const override
     {
         return wrapped_.ready_to_write();
     }
     bool
-    invalidate(std::exception_ptr error) const
+    invalidate(std::exception_ptr error) const override
     {
         return wrapped_.invalidate(error);
     }
     bool
-    is_invalidated() const
+    is_invalidated() const override
     {
         return wrapped_.is_invalidated();
     }

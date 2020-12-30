@@ -326,7 +326,7 @@ struct signal<
 
 // signal_ref is a reference to a signal that acts as a signal itself.
 template<class Value, class Capabilities>
-struct signal_ref
+struct signal_ref final
     : signal<signal_ref<Value, Capabilities>, Value, Capabilities>
 {
     // Construct from any signal with compatible capabilities.
@@ -349,42 +349,42 @@ struct signal_ref
     // implementation of signal_interface...
 
     bool
-    has_value() const
+    has_value() const override
     {
         return ref_->has_value();
     }
     Value const&
-    read() const
+    read() const override
     {
         return ref_->read();
     }
     Value
-    movable_value() const
+    movable_value() const override
     {
         return ref_->movable_value();
     }
     id_interface const&
-    value_id() const
+    value_id() const override
     {
         return ref_->value_id();
     }
     bool
-    ready_to_write() const
+    ready_to_write() const override
     {
         return ref_->ready_to_write();
     }
     void
-    write(Value value) const
+    write(Value value) const override
     {
         ref_->write(std::move(value));
     }
     bool
-    invalidate(std::exception_ptr error) const
+    invalidate(std::exception_ptr error) const override
     {
         return ref_->invalidate(error);
     }
     bool
-    is_invalidated() const
+    is_invalidated() const override
     {
         return ref_->is_invalidated();
     }
