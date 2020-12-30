@@ -201,14 +201,14 @@ copy_context(Context ctx)
 
 namespace detail {
 
-template<class Object, class = void_t<>>
+template<class Object, class = std::void_t<>>
 struct has_value_id : std::false_type
 {
 };
 template<class Object>
 struct has_value_id<
     Object,
-    void_t<decltype(static_cast<id_interface const&>(
+    std::void_t<decltype(static_cast<id_interface const&>(
         std::declval<Object>().value_id()))>> : std::true_type
 {
 };
@@ -224,14 +224,14 @@ get_alia_value_id(Object const& object)
 
 namespace detail {
 
-template<class Object, class = void_t<>>
+template<class Object, class = std::void_t<>>
 struct has_alia_value_id : std::false_type
 {
 };
 template<class Object>
 struct has_alia_value_id<
     Object,
-    void_t<decltype(static_cast<id_interface const&>(
+    std::void_t<decltype(static_cast<id_interface const&>(
         get_alia_value_id(std::declval<Object>())))>> : std::true_type
 {
 };
@@ -308,7 +308,7 @@ get_content_id(context ctx)
 }
 
 // optional_context is basically just std::optional for contexts.
-// (alia supports C++14, which is why we don't use std::optional directly.)
+// (Its existence may or may not be justified now that alia requires C++17.)
 template<class Context>
 struct optional_context
 {
