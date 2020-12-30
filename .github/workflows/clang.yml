@@ -1,0 +1,84 @@
+name: Clang
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+env:
+  CTEST_OUTPUT_ON_FAILURE: 1
+
+jobs:
+
+  clang-5:
+    runs-on: ubuntu-18.04
+
+    strategy:
+      matrix:
+        config: [Debug, Release]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install
+      run: |
+        sudo apt install clang-5.0
+        sudo pip install gcovr
+
+    - name: Configure
+      run: |
+        export CC=`which clang-5.0`
+        export CXX=`which clang++-5.0`
+        cmake -Bbuild -DCMAKE_BUILD_TYPE=${{matrix.config}} .
+
+    - name: Build
+      run: >
+        cmake --build build --config ${{matrix.config}}
+        --target unit_test_runner -j4
+
+        cmake --build build --config ${{matrix.config}}
+        --target single_header_tester
+
+    - name: Test
+      run: |
+        cd build
+        ctest --build-config ${{matrix.config}}
+
+  clang-10:
+    runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+        config: [Debug, Release]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install
+      run: |
+        sudo pip install gcovr
+
+    - name: Configure
+      run: |
+        export CC=`which clang-10`
+        export CXX=`which clang++-10`
+        cmake -Bbuild -DCMAKE_BUILD_TYPE=${{matrix.config}} .
+
+    - name: Build
+      run: >
+        cmake --build build --config ${{matrix.config}}
+        --target unit_test_runner -j4
+
+        cmake --build build --config ${{matrix.config}}
+        --target single_header_tester
+
+    - name: Test
+      run: |
+        cd build
+        ctest --build-config ${{matrix.config}}
+
+    - name: Upload coverage report
+      run: bash <(curl -s https://codecov.io/bash) -X gcov

@@ -16,12 +16,9 @@ def generate_single_header(single_header_path, source_dir, module):
         timestamp = datetime.datetime.utcnow().replace(
             tzinfo=datetime.timezone.utc).astimezone().replace(
                 microsecond=0).isoformat()
-        if 'TRAVIS_TAG' in os.environ:
-            version = "{} ({})".format(os.environ['TRAVIS_TAG'],
-                                       os.environ['TRAVIS_COMMIT'])
-        elif 'TRAVIS_BRANCH' in os.environ:
-            version = "{} branch ({})".format(os.environ['TRAVIS_BRANCH'],
-                                              os.environ['TRAVIS_COMMIT'])
+        if 'GITHUB_ACTIONS' in os.environ:
+            version = "{} ({})".format(os.environ['GITHUB_REF'],
+                                       os.environ['GITHUB_SHA'])
         else:
             version = "(local)"
         output.write('// alia.hpp - {} - generated {}\n'.format(
