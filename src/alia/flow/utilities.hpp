@@ -13,13 +13,10 @@ namespace alia {
 template<class T>
 struct returnable_ref_node : data_node
 {
-    // TODO: Use optional instead.
-    std::unique_ptr<T> value;
+    T value;
 
-    void
-    clear_cache()
+    returnable_ref_node(T& x) : value(std::move(x))
     {
-        value.reset();
     }
 };
 
@@ -28,11 +25,12 @@ T&
 make_returnable_ref(context ctx, T x)
 {
     returnable_ref_node<T>* node;
-    if (get_data_node(ctx, &node))
-        node->value.reset(new T(x));
-    else
-        *node->value = std::move(x);
-    return *node->value;
+    if (!get_data_node(
+            ctx, &node, [&] { return new returnable_ref_node<T>(x); }))
+    {
+        node->value = std::move(x);
+    }
+    return node->value;
 }
 
 } // namespace alia
