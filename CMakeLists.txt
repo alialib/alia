@@ -18,22 +18,7 @@ else()
     set(IS_MSVC false)
 endif()
 
-# Decide if we should be using C++14 or C++17.
-if(IS_GCC)
-    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0)
-        set(CMAKE_CXX_STANDARD 14)
-    else()
-        set(CMAKE_CXX_STANDARD 17)
-    endif()
-elseif(IS_CLANG)
-    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.0)
-        set(CMAKE_CXX_STANDARD 14)
-    else()
-        set(CMAKE_CXX_STANDARD 17)
-    endif()
-else()
-    set(CMAKE_CXX_STANDARD 14)
-endif()
+set(CMAKE_CXX_STANDARD 17)
 
 # Enable a high level of compiler warnings and treat them as errors.
 if(IS_GCC)

@@ -7,14 +7,14 @@
 namespace alia {
 
 template<class Context, class Function>
-std::enable_if_t<is_invocable<Function>::value>
+std::enable_if_t<std::is_invocable<Function>::value>
 invoke_component_function(Context, Function&& function)
 {
     std::forward<Function>(function)();
 }
 
 template<class Context, class Function>
-std::enable_if_t<is_invocable<Function, Context>::value>
+std::enable_if_t<std::is_invocable<Function, Context>::value>
 invoke_component_function(Context ctx, Function&& function)
 {
     std::forward<Function>(function)(ctx);

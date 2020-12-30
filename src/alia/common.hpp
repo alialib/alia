@@ -73,24 +73,6 @@ struct exception : std::exception
 #define ALIA_UNUSED
 #endif
 
-// implementation of C++17's void_t that works on C++11 compilers
-template<typename... Ts>
-struct make_void
-{
-    typedef void type;
-};
-template<typename... Ts>
-using void_t = typename make_void<Ts...>::type;
-
-// implementation of C++17's is_invocable for C++14
-template<class F, class... Args>
-struct is_invocable
-    : std::is_constructible<
-          std::function<void(Args...)>,
-          std::reference_wrapper<typename std::remove_reference<F>::type>>
-{
-};
-
 // ALIA_LAMBDIFY(f) produces a lambda that calls f, which is essentially a
 // version of f that can be passed as an argument and still allows normal
 // overload resolution.
@@ -141,10 +123,7 @@ class function_view<Return(Args...)> final
 };
 
 // uncaught_exception_detector is a utility for detecting whether or not an
-// object is being destructed due to an uncaught exception. It uses
-// std::uncaught_exceptions() if available and std::uncaught_exception() if
-// not.
-#if __cplusplus >= 201703L
+// object is being destructed due to an uncaught exception.
 struct uncaught_exception_detector
 {
     uncaught_exception_detector()
@@ -161,20 +140,6 @@ struct uncaught_exception_detector
  private:
     int base_exception_count_;
 };
-#else
-struct uncaught_exception_detector
-{
-    uncaught_exception_detector()
-    {
-    }
-
-    bool
-    detect()
-    {
-        return std::uncaught_exception();
-    }
-};
-#endif
 
 } // namespace alia
 

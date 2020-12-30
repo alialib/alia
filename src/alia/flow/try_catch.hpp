@@ -21,14 +21,14 @@ struct lambda_arg_type : call_operator_arg_type<decltype(&Lambda::operator())>
 {
 };
 
-template<class Clause, class = void_t<>>
+template<class Clause, class = std::void_t<>>
 struct is_concrete_clause : std::false_type
 {
 };
 template<class Clause>
 struct is_concrete_clause<
     Clause,
-    void_t<typename lambda_arg_type<Clause>::type>> : std::true_type
+    std::void_t<typename lambda_arg_type<Clause>::type>> : std::true_type
 {
 };
 

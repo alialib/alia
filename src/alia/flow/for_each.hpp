@@ -12,12 +12,14 @@ namespace alia {
 // whether or not Container behaves like a map for the purposes of alia
 // iteration and indexing. (This is determined by checking whether or not
 // Container has both a key_type and a mapped_type member.)
-template<class T, class = void_t<>>
+template<class T, class = std::void_t<>>
 struct is_map_like : std::false_type
 {
 };
 template<class T>
-struct is_map_like<T, void_t<typename T::key_type, typename T::mapped_type>>
+struct is_map_like<
+    T,
+    std::void_t<typename T::key_type, typename T::mapped_type>>
     : std::true_type
 {
 };
@@ -27,14 +29,14 @@ struct is_map_like<T, void_t<typename T::key_type, typename T::mapped_type>>
 // iteration and indexing. (This is determined by checking whether or not
 // Container can be subscripted with a size_t. This is sufficient because the
 // main purpose is to distinguish vector-like containers from list-like ones.)
-template<class Container, class = void_t<>>
+template<class Container, class = std::void_t<>>
 struct is_vector_like : std::false_type
 {
 };
 template<class Container>
 struct is_vector_like<
     Container,
-    void_t<
+    std::void_t<
         typename Container::value_type,
         typename Container::size_type,
         decltype(std::declval<Container>().at(size_t(0)))>> : std::true_type
@@ -57,7 +59,7 @@ template<
     class Key,
     class Value,
     std::enable_if_t<
-        is_invocable<
+        std::is_invocable<
             IterationBody&&,
             Context,
             naming_context&,
@@ -82,7 +84,7 @@ template<
     class Key,
     class Value,
     std::enable_if_t<
-        is_invocable<IterationBody&&, Context, Key&&, Value&&>::value,
+        std::is_invocable<IterationBody&&, Context, Key&&, Value&&>::value,
         int> = 0>
 void
 invoke_map_iteration_body(
@@ -138,7 +140,7 @@ template<
     class NamedBlockBegin,
     class Item,
     std::enable_if_t<
-        is_invocable<
+        std::is_invocable<
             IterationBody&&,
             Context,
             naming_context&,
@@ -162,7 +164,7 @@ template<
     class NamedBlockBegin,
     class Item,
     std::enable_if_t<
-        is_invocable<IterationBody&&, Context, size_t, Item&&>::value,
+        std::is_invocable<IterationBody&&, Context, size_t, Item&&>::value,
         int> = 0>
 void
 invoke_sequence_iteration_body(
@@ -183,7 +185,8 @@ template<
     class NamedBlockBegin,
     class Item,
     std::enable_if_t<
-        is_invocable<IterationBody&&, Context, naming_context&, Item&&>::value,
+        std::is_invocable<IterationBody&&, Context, naming_context&, Item&&>::
+            value,
         int> = 0>
 void
 invoke_sequence_iteration_body(
@@ -202,7 +205,7 @@ template<
     class NamedBlockBegin,
     class Item,
     std::enable_if_t<
-        is_invocable<IterationBody&&, Context, Item&&>::value,
+        std::is_invocable<IterationBody&&, Context, Item&&>::value,
         int> = 0>
 void
 invoke_sequence_iteration_body(
