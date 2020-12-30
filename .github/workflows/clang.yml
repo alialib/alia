@@ -14,7 +14,7 @@ env:
 jobs:
 
   clang-5:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-18.04
 
     strategy:
       matrix:
@@ -46,7 +46,7 @@ jobs:
         cd build
         ctest --build-config ${{matrix.config}}
 
-  gcc-10:
+  clang-10:
     runs-on: ubuntu-20.04
 
     strategy:
