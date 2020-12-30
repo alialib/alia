@@ -7,7 +7,7 @@ include(FetchContent)
 FetchContent_Declare(
   catch
   GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-  GIT_TAG        v2.13.0
+  GIT_TAG        v2.13.4
 )
 FetchContent_MakeAvailable(catch)
 
@@ -87,7 +87,7 @@ target_include_directories(unit_test_runner
 # Create another version of the unit tests that run against the single-header
 # version of the library.
 # (Note that this comes as an empty test and requires some external setup to
-# run properly. This is normally only done within Travis.)
+# run properly. This is normally only done within CI.)
 file(GLOB_RECURSE SINGLE_HEADER_TEST_FILES CONFIGURE_DEPENDS
      "single_header_tests/*.cpp")
 add_executable(single_header_tester ${SINGLE_HEADER_TEST_FILES})
