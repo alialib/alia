@@ -7,7 +7,7 @@ alia - A Library for Interactive Applications
 [![GCC Build Status](https://github.com/tmadden/alia/workflows/GCC/badge.svg)](https://github.com/tmadden/alia/actions)
 [![Clang Build Status](https://github.com/tmadden/alia/workflows/Clang/badge.svg)](https://github.com/tmadden/alia/actions)
 [![codecov](https://codecov.io/gh/tmadden/alia/branch/master/graph/badge.svg)](https://codecov.io/gh/tmadden/alia)
-![C++ Support](https://badgen.net/badge/C++/14%2C17/green)
+![C++ Support](https://badgen.net/badge/C++/17/green)
 [![Stability](https://badgen.net/badge/stability/unstable/yellow)](https://github.com/orangemug/stability-badges#unstable)
 
 </div>

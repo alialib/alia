@@ -9,6 +9,7 @@
 #include <alia/signals/state.hpp>
 
 #include <move_testing.hpp>
+#include <optional>
 #include <testing.hpp>
 
 using namespace alia;
@@ -519,10 +520,6 @@ TEST_CASE("mask/disable_reads", "[signals][adaptors]")
     }
 }
 
-#if __cplusplus >= 201703L
-
-#include <optional>
-
 TEST_CASE("unwrap a duplex signal", "[signals][adaptors]")
 {
     {
@@ -554,8 +551,6 @@ TEST_CASE("unwrap a duplex signal", "[signals][adaptors]")
         REQUIRE(*x == 0);
     }
 }
-
-#endif
 
 TEST_CASE("signal value movement", "[signals][adaptors]")
 {
