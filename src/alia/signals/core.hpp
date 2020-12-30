@@ -326,7 +326,7 @@ struct signal<
 
 // signal_ref is a reference to a signal that acts as a signal itself.
 template<class Value, class Capabilities>
-struct signal_ref final
+struct signal_ref
     : signal<signal_ref<Value, Capabilities>, Value, Capabilities>
 {
     // Construct from any signal with compatible capabilities.
