@@ -451,7 +451,7 @@ struct field_signal final : preferred_id_signal<
         return structure.*field_;
     }
     auto
-    complex_value_id() const override
+    complex_value_id() const
     {
         // Apparently pointers-to-members aren't comparable for order, so
         // instead we use the address of the field if it were in a structure
@@ -695,7 +695,7 @@ struct subscript_signal final
         return invoker_(container_.read(), index_.read());
     }
     auto
-    complex_value_id() const override
+    complex_value_id() const
     {
         return combine_ids(ref(container_.value_id()), ref(index_.value_id()));
     }
