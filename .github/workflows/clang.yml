@@ -25,7 +25,7 @@ jobs:
 
     - name: Install
       run: |
-        sudo apt install clang-5.0 llvm-5.0
+        sudo apt install clang-5.0
 
     - name: Configure
       run: |
@@ -58,7 +58,7 @@ jobs:
 
     - name: Install
       run: |
-        sudo apt install clang-10 llvm-10
+        sudo apt install clang-10
         sudo pip install gcovr
 
     - name: Configure

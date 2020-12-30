@@ -14,7 +14,7 @@ namespace alia {
 // scale(n, factor) creates a new signal that presents a scaled view of :n,
 // where :n and :factor are both numeric signals.
 template<class N, class Factor>
-struct scaled_signal : lazy_signal_wrapper<scaled_signal<N, Factor>, N>
+struct scaled_signal final : lazy_signal_wrapper<scaled_signal<N, Factor>, N>
 {
     scaled_signal(N n, Factor scale_factor)
         : scaled_signal::lazy_signal_wrapper(std::move(n)),
@@ -22,29 +22,29 @@ struct scaled_signal : lazy_signal_wrapper<scaled_signal<N, Factor>, N>
     {
     }
     bool
-    has_value() const
+    has_value() const override
     {
         return this->wrapped_.has_value() && scale_factor_.has_value();
     }
     typename N::value_type
-    movable_value() const
+    movable_value() const override
     {
         return this->wrapped_.read() * scale_factor_.read();
     }
     id_interface const&
-    value_id() const
+    value_id() const override
     {
         id_ = combine_ids(
             ref(this->wrapped_.value_id()), ref(scale_factor_.value_id()));
         return id_;
     }
     bool
-    ready_to_write() const
+    ready_to_write() const override
     {
         return this->wrapped_.ready_to_write() && scale_factor_.has_value();
     }
     void
-    write(typename N::value_type value) const
+    write(typename N::value_type value) const override
     {
         this->wrapped_.write(value / forward_signal(scale_factor_));
     }
@@ -69,7 +69,7 @@ scale(N n, Factor scale_factor)
 
 // offset(n, offset) presents an offset view of :n.
 template<class N, class Offset>
-struct offset_signal : lazy_signal_wrapper<offset_signal<N, Offset>, N>
+struct offset_signal final : lazy_signal_wrapper<offset_signal<N, Offset>, N>
 {
     offset_signal(N n, Offset offset)
         : offset_signal::lazy_signal_wrapper(std::move(n)),
@@ -77,29 +77,29 @@ struct offset_signal : lazy_signal_wrapper<offset_signal<N, Offset>, N>
     {
     }
     bool
-    has_value() const
+    has_value() const override
     {
         return this->wrapped_.has_value() && offset_.has_value();
     }
     typename N::value_type
-    movable_value() const
+    movable_value() const override
     {
         return this->wrapped_.read() + offset_.read();
     }
     id_interface const&
-    value_id() const
+    value_id() const override
     {
         id_ = combine_ids(
             ref(this->wrapped_.value_id()), ref(offset_.value_id()));
         return id_;
     }
     bool
-    ready_to_write() const
+    ready_to_write() const override
     {
         return this->wrapped_.ready_to_write() && offset_.has_value();
     }
     void
-    write(typename N::value_type value) const
+    write(typename N::value_type value) const override
     {
         this->wrapped_.write(value - forward_signal(offset_));
     }
@@ -124,7 +124,7 @@ offset(N n, Offset offset)
 // round_signal_writes(n, step) yields a wrapper which rounds any writes to
 // :n so that values are always a multiple of :step.
 template<class N, class Step>
-struct rounding_signal_wrapper
+struct rounding_signal_wrapper final
     : signal_wrapper<rounding_signal_wrapper<N, Step>, N>
 {
     rounding_signal_wrapper(N n, Step step)
@@ -133,12 +133,12 @@ struct rounding_signal_wrapper
     {
     }
     bool
-    ready_to_write() const
+    ready_to_write() const override
     {
         return this->wrapped_.ready_to_write() && step_.has_value();
     }
     void
-    write(typename N::value_type value) const
+    write(typename N::value_type value) const override
     {
         typename N::value_type step = step_.read();
         this->wrapped_.write(
