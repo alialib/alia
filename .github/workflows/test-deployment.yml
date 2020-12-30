@@ -18,7 +18,4 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Build
-      run: |
-        python3 scripts/generate-distributables.py
-        mkdir build
-        mv alia.hpp build
+      run: python3 scripts/generate-distributables.py
