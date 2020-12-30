@@ -1,0 +1,24 @@
+name: Test Deployment
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+
+  alia-single-header:
+    runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+        config: [Debug, Release]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Build
+      run: |
+        python3 scripts/generate-distributables.py
+        mkdir build
+        mv alia.hpp build

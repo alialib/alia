@@ -46,7 +46,7 @@ jobs:
         cd build
         ctest --build-config ${{matrix.config}}
 
-  clang-10:
+  clang-9:
     runs-on: ubuntu-20.04
 
     strategy:
@@ -58,13 +58,13 @@ jobs:
 
     - name: Install
       run: |
-        sudo apt install clang-10
+        sudo apt install clang-9
         sudo pip install gcovr
 
     - name: Configure
       run: |
-        export CC=`which clang-10`
-        export CXX=`which clang-10`
+        export CC=`which clang-9`
+        export CXX=`which clang-9`
         cmake -Bbuild -DCMAKE_BUILD_TYPE=${{matrix.config}} .
 
     - name: Build
