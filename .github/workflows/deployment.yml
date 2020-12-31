@@ -18,7 +18,7 @@ jobs:
       run: >
         mkdir build
 
-        docker run -it --name emscripten -v $(pwd):/alia-docs
+        docker run --name emscripten -v $(pwd):/alia-docs
         -w /alia-docs/build trzeci/emscripten:1.39.7-upstream
         bash -c 'emcmake cmake -DCMAKE_BUILD_TYPE=Release .. && make'
 
