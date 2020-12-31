@@ -10,8 +10,10 @@ using json = nlohmann::json;
 #include <alia.hpp>
 
 #include <alia/html/bootstrap.hpp>
+#include <alia/html/document.hpp>
 #include <alia/html/dom.hpp>
 #include <alia/html/fetch.hpp>
+#include <alia/html/history.hpp>
 #include <alia/html/routing.hpp>
 #include <alia/html/storage.hpp>
 #include <alia/html/widgets.hpp>
@@ -21,62 +23,6 @@ using namespace html;
 using namespace bootstrap;
 
 using std::string;
-
-#define ALIA_PP_CONCAT(a, b) ALIA_PP_CONCAT1(a, b)
-#define ALIA_PP_CONCAT1(a, b) ALIA_PP_CONCAT2(a, b)
-#define ALIA_PP_CONCAT2(a, b) a##b
-
-#define ALIA_PP_FE_2_0(F, a, b)
-#define ALIA_PP_FE_2_1(F, a, b, x) F(a, b, x)
-#define ALIA_PP_FE_2_2(F, a, b, x, ...)                                       \
-    F(a, b, x) ALIA_PP_FE_2_1(F, a, b, __VA_ARGS__)
-#define ALIA_PP_FE_2_3(F, a, b, x, ...)                                       \
-    F(a, b, x) ALIA_PP_FE_2_2(F, a, b, __VA_ARGS__)
-#define ALIA_PP_FE_2_4(F, a, b, x, ...)                                       \
-    F(a, b, x) ALIA_PP_FE_2_3(F, a, b, __VA_ARGS__)
-#define ALIA_PP_FE_2_5(F, a, b, x, ...)                                       \
-    F(a, b, x) ALIA_PP_FE_2_4(F, a, b, __VA_ARGS__)
-
-#define ALIA_PP_GET_MACRO(_0, _1, _2, _3, _4, _5, NAME, ...) NAME
-#define ALIA_PP_FOR_EACH_2(F, a, b, ...)                                      \
-    ALIA_PP_GET_MACRO(                                                        \
-        _0,                                                                   \
-        __VA_ARGS__,                                                          \
-        ALIA_PP_FE_2_5,                                                       \
-        ALIA_PP_FE_2_4,                                                       \
-        ALIA_PP_FE_2_3,                                                       \
-        ALIA_PP_FE_2_2,                                                       \
-        ALIA_PP_FE_2_1,                                                       \
-        ALIA_PP_FE_2_0)                                                       \
-    (F, a, b, __VA_ARGS__)
-
-#define ALIA_DEFINE_STRUCT_SIGNAL_FIELD(signal_type, struct_name, field_name) \
-    auto ALIA_PP_CONCAT(ALIA_PP_CONCAT(_get_, field_name), _signal)()         \
-    {                                                                         \
-        return (*this)->*&struct_name::field_name;                            \
-    }                                                                         \
-    __declspec(property(                                                      \
-        get = ALIA_PP_CONCAT(ALIA_PP_CONCAT(_get_, field_name), _signal)))    \
-        alia::field_signal<                                                   \
-            ALIA_PP_CONCAT(ALIA_PP_CONCAT(signal_type, _), struct_name),      \
-            decltype(struct_name::field_name)>                                \
-            field_name;
-
-#define ALIA_DEFINE_STRUCT_SIGNAL_FIELDS(signal_type, struct_name, ...)       \
-    ALIA_PP_FOR_EACH_2(                                                       \
-        ALIA_DEFINE_STRUCT_SIGNAL_FIELD,                                      \
-        signal_type,                                                          \
-        struct_name,                                                          \
-        __VA_ARGS__)
-
-#define ALIA_DEFINE_STRUCT_SIGNAL(signal_type, struct_name, ...)              \
-    struct ALIA_PP_CONCAT(ALIA_PP_CONCAT(signal_type, _), struct_name)        \
-        : signal_type<struct_name>                                            \
-    {                                                                         \
-        using signal_ref::signal_ref;                                         \
-        ALIA_DEFINE_STRUCT_SIGNAL_FIELDS(                                     \
-            signal_type, struct_name, __VA_ARGS__)                            \
-    };
 
 template<class Label, class Type, class Value>
 void
@@ -131,126 +77,12 @@ dropdown_button(html::context ctx, ButtonContents button_contents, Menu menu)
     });
 }
 
-void
-page_header(html::context ctx)
-{
-    element(ctx, "header")
-        .attr("class", "navbar navbar-expand-md navbar-dark")
-        .children([&] {
-            div(ctx, "container-xl", [&] {
-                link(ctx, "Some App", noop_action())
-                    .attr(
-                        "class", "navbar-brand navbar-brand-autodark mb-0 h1");
-            });
-        });
-}
-
-template<class Title>
-void
-page_title(html::context ctx, Title title)
-{
-    div(ctx, "page-header", [&] {
-        div(ctx, "row align-items-center", [&] {
-            div(ctx, "col-auto", [&] {
-                element(ctx, "h2").attr("class", "page-title").text(title);
-            });
-        });
-    });
-}
-
-struct document_object
-{
-    document_object() : val_(emscripten::val::global("document"))
-    {
-    }
-
-    void
-    set_title(std::string title)
-    {
-        val_.set("title", std::move(title));
-    }
-    std::string
-    get_title()
-    {
-        return val_["title"].as<std::string>();
-    }
-    __declspec(property(get = get_title, put = set_title)) std::string title;
-
-    void
-    set_body(emscripten::val body)
-    {
-        val_.set("body", std::move(body));
-    }
-    emscripten::val
-    get_body()
-    {
-        return val_["body"];
-    }
-    __declspec(property(get = get_body, put = set_body)) emscripten::val body;
-
- private:
-    emscripten::val val_;
-};
-
-void
-document_title(html::context ctx, readable<std::string> title)
-{
-    auto& id = get_data<captured_id>(ctx);
-    refresh_signal_view(
-        id,
-        add_default(title, ""),
-        [](auto new_title) {
-            emscripten::val::global("document").set("title", new_title);
-        },
-        [] {});
-}
-
-auto
-get_storage_state(
-    html::context ctx,
-    std::string const& storage_name,
-    std::string const& key,
-    readable<std::string> default_value)
-{
-    return add_write_action(
-        get_state(
-            ctx,
-            add_default(
-                lambda_reader(
-                    [=] { return storage_object(storage_name).has_item(key); },
-                    [=] {
-                        return storage_object(storage_name).get_item(key);
-                    }),
-                default_value)),
-        callback([=](std::string new_value) {
-            storage_object(storage_name).set_item(key, new_value);
-        }));
-}
-
-auto
-get_session_state(
-    html::context ctx,
-    std::string const& key,
-    readable<std::string> default_value)
-{
-    return get_storage_state(ctx, "sessionStorage", key, default_value);
-}
-
-auto
-get_local_state(
-    html::context ctx,
-    std::string const& key,
-    readable<std::string> default_value)
-{
-    return get_storage_state(ctx, "localStorage", key, default_value);
-}
-
 template<class Context, class Ui>
 void
 full_page_ui(Context ctx, Ui ui)
 {
     div(ctx, "page", [&] {
-        page_header(ctx);
+        // page_header(ctx);
         alia_try
         {
             div(ctx, "content", [&] { div(ctx, "container-xl", ui); });
@@ -331,225 +163,24 @@ do_switch_test(html::context ctx)
     auto n = enforce_validity(ctx, get_state(ctx, empty<int>()));
 
     // clang-format off
-    text(ctx, "Enter a number:");
+    p(ctx, "Enter a number:");
     input(ctx, n);
     alia_switch(n)
     {
         alia_case(0):
-            text(ctx, "foo");
+            p(ctx, "foo");
             break;
         alia_case(1):
-            text(ctx, "bar");
+            p(ctx, "bar");
         alia_case(2):
         alia_case(3):
-            text(ctx, "baz");
+            p(ctx, "baz");
             break;
         alia_default:
-            text(ctx, "zub");
+            p(ctx, "zub");
     }
     alia_end
     // clang-format on
-}
-
-void
-modal_content(html::context ctx)
-{
-}
-
-void
-modal(html::context ctx)
-{
-    div(ctx, "modal-content", [&] {
-        div(ctx, "modal-header", [&] {
-            element(ctx, "h5").class_("modal-title").text("New report");
-            element(ctx, "button")
-                .attr("type", "button")
-                .class_("close")
-                .attr("data-dismiss", "modal")
-                .attr("aria-label", "Close")
-                .children([&] {
-                    element(ctx, "span")
-                        .attr("aria-hidden", "true")
-                        .text(u8"\u00D7");
-                });
-        });
-        div(ctx, "modal-body", [&] {
-            element(ctx, "p").text("Some text...");
-        });
-        div(ctx, "modal-footer", [&] {
-            button(ctx, "Close", callback([&] {
-                       emscripten_run_script(
-                           "jQuery(\"#alia-modal\").modal('hide');");
-                   }));
-            element(ctx, "button")
-                .attr("type", "button")
-                .class_("btn", "btn-primary")
-                .text("Save changes");
-        });
-    });
-}
-
-template<class Content>
-void
-invoke_tree(
-    html::context ctx, tree_node<element_object>& root, Content&& content)
-{
-    scoped_tree_root<element_object> scoped_root;
-    if (is_refresh_event(ctx))
-        scoped_root.begin(get<html::tree_traversal_tag>(ctx), root);
-    (std::forward<Content>(content))();
-}
-
-// void
-// activate_modal(html::context ctx, modal_data& data)
-// {
-//     // Create a top-level DOM element to hold the modal.
-//     emscripten::val document = emscripten::val::global("document");
-//     emscripten::val modal_root = document.call<emscripten::val>(
-//         "createElement", emscripten::val("div"));
-//     document["body"].call<emscripten::val>("appendChild", modal_root);
-//     auto asmdom_id = asmdom::direct::toElement(modal_root);
-//     asmdom::direct::setAttribute(asmdom_id, "class", "modal fade");
-//     asmdom::direct::setAttribute(asmdom_id, "id", "alia-modal");
-//     asmdom::direct::setAttribute(asmdom_id, "tabindex", "-1");
-//     asmdom::direct::setAttribute(asmdom_id, "role", "dialog");
-//     data.root.object.asmdom_id = asmdom_id;
-
-//     // Install a callback to track when the modal is hidden.
-//     asmdom::direct::setCallback(
-//         dom_system.modal_root.object.asmdom_id,
-//         "hide.bs.modal",
-//         [&dom_system](emscripten::val) {
-//             dom_system.active_modal = nullptr;
-//             return true;
-//         });
-// }
-
-struct modal_data
-{
-    tree_node<element_object> root;
-    bool active = false;
-};
-
-struct modal_handle
-{
-    void
-    activate()
-    {
-        data.active = true;
-        EM_ASM({ jQuery(Module['nodes'][$0]).modal('show'); }, asmdom_id);
-    }
-
-    modal_data& data;
-    int asmdom_id;
-};
-
-// Do the 'x' in the top right corner of a modal that serves as a close button.
-void
-modal_close_button(html::context ctx)
-{
-    element(ctx, "button")
-        .attr("type", "button")
-        .class_("close")
-        .attr("data-dismiss", "modal")
-        .attr("aria-label", "Close")
-        .children([&] {
-            element(ctx, "span").attr("aria-hidden", "true").text(u8"\u00D7");
-        });
-}
-
-// Do a standard modal header with a title and a close button.
-template<class Title>
-void
-standard_modal_header(html::context ctx, Title const& title)
-{
-    div(ctx, "modal-header", [&] {
-        element(ctx, "h5").class_("modal-title").text(title);
-        modal_close_button(ctx);
-    });
-}
-
-// Do a modal header with custom content.
-// This wraps the content in a 'modal-header' div and supplies a close button.
-template<class Content>
-void
-modal_header(html::context ctx, Content&& content)
-{
-    div(ctx, "modal-header", [&] {
-        invoke_component_function(ctx, std::forward<Content>(content));
-        modal_close_button(ctx);
-    });
-}
-
-// Do a modal body with custom content.
-// This wraps the content in a 'modal-body' div.
-template<class Content>
-void
-modal_body(html::context ctx, Content&& content)
-{
-    div(ctx, "modal-body", [&] {
-        invoke_component_function(ctx, std::forward<Content>(content));
-    });
-}
-
-// Do a modal footer with custom content.
-// This wraps the content in a 'modal-footer' div.
-template<class Content>
-void
-modal_footer(html::context ctx, Content&& content)
-{
-    div(ctx, "modal-footer", [&] {
-        invoke_component_function(ctx, std::forward<Content>(content));
-    });
-}
-
-// Close the active modal.
-void
-close_modal()
-{
-    emscripten_run_script("jQuery(\"#alia-modal\").modal('hide');");
-}
-
-template<class Content>
-modal_handle
-modal(html::context ctx, Content&& content)
-{
-    modal_data* data;
-    if (get_cached_data(ctx, &data))
-        create_as_modal_root(data->root.object);
-
-    int asmdom_id;
-
-    invoke_tree(ctx, data->root, [&] {
-        auto top_level_modal = element(ctx, "div");
-        top_level_modal.class_("modal", "fade")
-            .attr("id", "alia-modal")
-            .attr("tabindex", "-1")
-            .attr("role", "dialog")
-            .children([&] {
-                div(ctx, "modal-dialog modal-dialog-centered")
-                    .attr("role", "document")
-                    .children([&] {
-                        alia_if(data->active)
-                        {
-                            div(ctx, "modal-content", [&] {
-                                std::forward<Content>(content)(ctx);
-                            });
-                        }
-                        alia_end
-                    });
-            });
-        top_level_modal.callback(
-            "hidden.bs.modal", [&](auto) { data->active = false; });
-        asmdom_id = top_level_modal.asmdom_id();
-    });
-
-    on_refresh(ctx, [&](auto ctx) {
-        EM_ASM(
-            { jQuery(Module['nodes'][$0]).modal('handleUpdate'); }, asmdom_id);
-    });
-
-    return modal_handle{*data, asmdom_id};
 }
 
 void
@@ -564,7 +195,7 @@ main_page(html::context ctx)
     auto some_string = get_state(ctx, "Test");
     input(ctx, some_string);
 
-    auto my_modal = modal(ctx, [&](auto ctx) {
+    auto my_modal = modal(ctx, [&] {
         standard_modal_header(ctx, "My Modal");
         modal_body(ctx, [&] {
             element(ctx, "p").text(some_string);

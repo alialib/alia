@@ -179,7 +179,7 @@ struct page_has_n_arity
 
 template<class Context, class Page, std::size_t N, std::size_t... S>
 struct page_has_n_arity<Context, Page, N, std::index_sequence<S...>>
-    : is_invocable<Page, Context, route_arg_n<S>...>
+    : std::is_invocable<Page, Context, route_arg_n<S>...>
 {
 };
 
