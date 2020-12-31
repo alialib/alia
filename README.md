@@ -34,4 +34,4 @@ python2 ../scripts/run-web-server.py
 ```
 
 If you use this script, you can navigate to
-[localhost:8000](http://localhost:8000) to see (and interact with) the sandbox.
+[localhost:8000](http://localhost:8000) to see it.
