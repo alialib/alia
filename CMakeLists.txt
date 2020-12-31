@@ -42,7 +42,7 @@ target_compile_definitions(alia PRIVATE -DALIA_IMPLEMENTATION)
 target_include_directories(alia PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
 
 # Set up the alia-html library.
-file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp")
+file(GLOB_RECURSE SOURCES "src/*.cpp")
 add_library(alia_html STATIC ${SOURCES})
 target_link_libraries(alia_html
     PUBLIC asm-dom scn::scn alia nlohmann_json::nlohmann_json)
@@ -56,32 +56,51 @@ target_link_libraries(example alia_html)
 # (Or copy them if we're on Travis so that deployment works.)
 if(DEFINED ENV{TRAVIS})
     file(COPY
-        src/index.html
+        examples/index.html
         DESTINATION .)
     file(COPY
-        src/style.css
+        examples/style.css
         DESTINATION .)
 else()
     file(CREATE_LINK
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/index.html
+        ${CMAKE_CURRENT_SOURCE_DIR}/examples/index.html
         ${CMAKE_CURRENT_BINARY_DIR}/index.html
         SYMBOLIC)
     file(CREATE_LINK
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/style.css
+        ${CMAKE_CURRENT_SOURCE_DIR}/examples/style.css
         ${CMAKE_CURRENT_BINARY_DIR}/style.css
         SYMBOLIC)
 endif()
 
+# Download and extract Argon.
+if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/assets")
+    message(STATUS "Downloading Argon")
+    file(DOWNLOAD "https://github.com/creativetimofficial/argon-design-system/archive/ecb062bab4394a67de1507cc92a1d3b5a3fbc28c.zip"
+                  # "https://github.com/creativetimofficial/argon-design-system/archive/master.zip"
+                  "${CMAKE_CURRENT_BINARY_DIR}/argon.zip"
+                  TLS_VERIFY ON)
+    message(STATUS "Extracting Argon")
+    file(ARCHIVE_EXTRACT
+        INPUT "${CMAKE_CURRENT_BINARY_DIR}/argon.zip"
+        DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+    file(COPY
+        "${CMAKE_CURRENT_BINARY_DIR}/argon-design-system-ecb062bab4394a67de1507cc92a1d3b5a3fbc28c/assets"
+        DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/")
+endif()
+
 # Download the Bootstrap/Tabler CSS/JS files.
 file(DOWNLOAD
-     https://preview-dev.tabler.io/dist/css/tabler.min.css?1588343458
+     https://preview.tabler.io/dist/css/tabler.min.css?1608396916
      ${CMAKE_CURRENT_BINARY_DIR}/tabler.min.css)
+# file(DOWNLOAD
+#     https://preview.tabler.io/dist/css/tabler-buttons.min.css?1608396916
+#     ${CMAKE_CURRENT_BINARY_DIR}/tabler-buttons.min.css)
 file(DOWNLOAD
-     https://preview-dev.tabler.io/dist/css/tabler-buttons.min.css?1588343458
-     ${CMAKE_CURRENT_BINARY_DIR}/tabler-buttons.min.css)
+     https://preview.tabler.io/dist/libs/jquery/dist/jquery.slim.min.js?1608396916
+     ${CMAKE_CURRENT_BINARY_DIR}/jquery.slim.min.js)
 file(DOWNLOAD
-     https://preview-dev.tabler.io/dist/libs/bootstrap/dist/js/bootstrap.bundle.min.js?1588343458
+     https://preview.tabler.io/dist/libs/bootstrap/dist/js/bootstrap.bundle.min.js?1608396916
      ${CMAKE_CURRENT_BINARY_DIR}/bootstrap.bundle.min.js)
 file(DOWNLOAD
-     https://preview-dev.tabler.io/dist/libs/bootstrap/dist/js/tabler.min.js?1588343458
+     https://preview.tabler.io/dist/libs/bootstrap/dist/js/tabler.min.js?1608396916
      ${CMAKE_CURRENT_BINARY_DIR}/tabler.min.js)

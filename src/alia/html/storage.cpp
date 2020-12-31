@@ -58,5 +58,45 @@ session_storage()
     return storage_object("sessionStorage");
 }
 
+duplex<std::string>
+get_storage_state(
+    html::context ctx,
+    std::string const& storage_name,
+    std::string const& key,
+    readable<std::string> default_value)
+{
+    return add_write_action(
+        get_state(
+            ctx,
+            add_default(
+                lambda_reader(
+                    [=] { return storage_object(storage_name).has_item(key); },
+                    [=] {
+                        return storage_object(storage_name).get_item(key);
+                    }),
+                default_value)),
+        callback([=](std::string new_value) {
+            storage_object(storage_name).set_item(key, new_value);
+        }));
+}
+
+auto
+get_session_state(
+    html::context ctx,
+    std::string const& key,
+    readable<std::string> default_value)
+{
+    return get_storage_state(ctx, "sessionStorage", key, default_value);
+}
+
+auto
+get_local_state(
+    html::context ctx,
+    std::string const& key,
+    readable<std::string> default_value)
+{
+    return get_storage_state(ctx, "localStorage", key, default_value);
+}
+
 } // namespace html
 } // namespace alia
