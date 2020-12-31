@@ -228,10 +228,10 @@ struct element_handle
 
     template<class Callback>
     element_handle&
-    on_init(Callback callback)
+    on_init(Callback&& callback)
     {
         if (initializing_)
-            callback(*this);
+            std::forward<Callback>(callback)(*this);
         return *this;
     }
 
@@ -334,6 +334,16 @@ struct scoped_element : noncopyable
     scoped_tree_node<element_object> tree_scoping_;
     bool initializing_;
 };
+
+template<class Content>
+void
+invoke_tree(context ctx, tree_node<element_object>& root, Content&& content)
+{
+    scoped_tree_root<element_object> scoped_root;
+    if (is_refresh_event(ctx))
+        scoped_root.begin(get<html::tree_traversal_tag>(ctx), root);
+    std::forward<Content>(content)();
+}
 
 } // namespace html
 } // namespace alia

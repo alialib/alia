@@ -1,10 +1,14 @@
 #ifndef ALIA_HTML_STORAGE_HPP
 #define ALIA_HTML_STORAGE_HPP
 
+#include <alia/html/context.hpp>
+
 #include <emscripten/val.h>
 
 namespace alia {
 namespace html {
+
+// RAW ACCESS
 
 struct storage_object
 {
@@ -37,6 +41,27 @@ local_storage();
 
 storage_object
 session_storage();
+
+// SIGNALIZED ACCESS
+
+duplex<std::string>
+get_storage_state(
+    html::context ctx,
+    std::string const& storage_name,
+    std::string const& key,
+    readable<std::string> default_value);
+
+auto
+get_session_state(
+    html::context ctx,
+    std::string const& key,
+    readable<std::string> default_value);
+
+auto
+get_local_state(
+    html::context ctx,
+    std::string const& key,
+    readable<std::string> default_value);
 
 } // namespace html
 } // namespace alia
