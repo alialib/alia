@@ -1,5 +1,7 @@
 #include <alia/html/canvas.hpp>
 
+#include <emscripten/emscripten.h>
+
 namespace alia {
 namespace html {
 

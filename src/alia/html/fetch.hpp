@@ -4,6 +4,9 @@
 #include <alia.hpp>
 #include <alia/html/common.hpp>
 
+#include <map>
+#include <string>
+
 namespace alia {
 namespace html {
 
