@@ -5,26 +5,29 @@ on:
     branches:
       - master
 
-runs-on: ubuntu-20.04
+jobs:
 
-steps:
+  docs:
+    runs-on: ubuntu-20.04
 
-- uses: actions/checkout@v2
+    steps:
 
-- name: Build
-  run: >
-    mkdir build
+    - uses: actions/checkout@v2
 
-    docker run -it --name emscripten -v $(pwd):/alia-docs
-    -w /alia-docs/build trzeci/emscripten:1.39.7-upstream
-    bash -c 'emcmake cmake -DCMAKE_BUILD_TYPE=Release .. && make'
+    - name: Build
+      run: >
+        mkdir build
 
-    scripts/build-docs.sh
+        docker run -it --name emscripten -v $(pwd):/alia-docs
+        -w /alia-docs/build trzeci/emscripten:1.39.7-upstream
+        bash -c 'emcmake cmake -DCMAKE_BUILD_TYPE=Release .. && make'
 
-- name: Deploy
-  uses: JamesIves/github-pages-deploy-action@3.7.1
-  with:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    BRANCH: gh-pages
-    FOLDER: build
-    CLEAN: true
+        scripts/build-docs.sh
+
+    - name: Deploy
+      uses: JamesIves/github-pages-deploy-action@3.7.1
+      with:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        BRANCH: gh-pages
+        FOLDER: build
+        CLEAN: true
