@@ -1,6 +1,7 @@
 MIT License
 
-Copyright (c) 2012 - present  .decimal, LLC & Partners HealthCare
+Original work Copyright (c) 2012 - 2021 .decimal, LLC & Partners HealthCare
+Modified work Copyright (c) 2019 - 2021 Thomas Madden
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
