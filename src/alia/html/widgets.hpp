@@ -6,12 +6,17 @@
 namespace alia {
 namespace html {
 
+// TEXT
+
+// paragraphs
 template<class Signal>
-void
-text(html::context ctx, Signal signal)
+element_handle<html::context>
+p(html::context ctx, Signal signal)
 {
-    html::element(ctx, "p").text(signal);
+    return html::element(ctx, "p").text(signal);
 }
+
+// INPUTS
 
 namespace detail {
 element_handle<html::context>
@@ -24,32 +29,28 @@ input(html::context ctx, Signal signal)
     return detail::input(ctx, as_duplex_text(ctx, signal));
 }
 
-namespace detail {
-void
-button(html::context ctx, readable<std::string> text, action<> on_click);
-}
-template<class Text>
-void
-button(html::context ctx, Text text, action<> on_click)
-{
-    detail::button(ctx, signalize(text), on_click);
-}
+// BUTTONS
 
-namespace detail {
-void
-checkbox(html::context ctx, duplex<bool> value, readable<std::string> label);
-}
-template<class Label>
-void
-checkbox(html::context ctx, duplex<bool> value, Label label)
-{
-    detail::checkbox(ctx, value, signalize(label));
-}
+// basic button container - You're expected to specify the content.
+element_handle<html::context>
+button(html::context ctx, action<> on_click);
+
+// button with text label (as a signal)
+element_handle<html::context>
+button(html::context ctx, readable<std::string> text, action<> on_click);
+
+// button with text label (as a string literal)
+element_handle<html::context>
+button(html::context ctx, char const* text, action<> on_click);
+
+// LINKS
 
 namespace detail {
 element_handle<html::context>
 link(html::context ctx, readable<std::string> text, action<> on_click);
 }
+
+// link with a custom action
 template<class Text>
 element_handle<html::context>
 link(html::context ctx, Text text, action<> on_click)
@@ -57,36 +58,41 @@ link(html::context ctx, Text text, action<> on_click)
     return detail::link(ctx, signalize(text), on_click);
 }
 
-template<class Context, class ClassName>
+// DIVS
+
+// div with a class - You supply the content (if any).
+template<class Context>
 element_handle<Context>
-div(Context ctx, ClassName class_name)
+div(Context ctx, char const* class_name)
 {
-    return element(ctx, "div").attr("class", signalize(class_name));
+    return element(ctx, "div").attr("class", class_name);
 }
 
-template<class Context, class ClassName, class Children>
+// div with a class and content
+template<class Context, class Children>
 element_handle<Context>
-div(Context ctx, ClassName class_name, Children&& children)
+div(Context ctx, char const* class_name, Children&& children)
 {
     return div(ctx, class_name).children(std::forward<Children>(children));
 }
 
+// div as an RAII container
 struct scoped_div : scoped_element
 {
     scoped_div()
     {
     }
-    scoped_div(html::context ctx, readable<std::string> class_name)
+    scoped_div(html::context ctx, char const* class_name)
     {
         begin(ctx, class_name);
     }
     ~scoped_div()
     {
-        end();
+        this->scoped_element::end();
     }
 
     scoped_div&
-    begin(html::context ctx, readable<std::string> class_name)
+    begin(html::context ctx, char const* class_name)
     {
         this->scoped_element::begin(ctx, "div").attr("class", class_name);
         return *this;

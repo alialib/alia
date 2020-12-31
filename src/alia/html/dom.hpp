@@ -13,14 +13,9 @@
 namespace alia {
 namespace html {
 
+// This implements the interface required of alia object_tree objects.
 struct element_object
 {
-    void
-    create_as_element(char const* type);
-
-    void
-    create_as_text_node(char const* value);
-
     void
     relocate(
         element_object& parent, element_object* after, element_object* before);
@@ -30,8 +25,38 @@ struct element_object
 
     ~element_object();
 
-    int js_id = 0;
+    enum node_type
+    {
+        UNINITIALIZED = 0,
+        // a normal element; asmdom_id is the ID of the element itself
+        NORMAL,
+        // a root element that places its children before a placeholder element
+        // in the DOM; asmdom_id is the ID of the placeholder
+        PLACEHOLDER_ROOT,
+        // a root element that places its children at the end of the document
+        // body; asmdom_id is irrelevant
+        MODAL_ROOT
+    };
+    node_type type = UNINITIALIZED;
+
+    int asmdom_id = 0;
 };
+
+void
+create_as_element(element_object& object, char const* type);
+
+void
+create_as_text_node(element_object& object, char const* value);
+
+void
+create_as_placeholder_root(
+    element_object& object, emscripten::val placeholder);
+
+void
+create_as_placeholder_root(element_object& object, char const* placeholder_id);
+
+void
+create_as_modal_root(element_object& object);
 
 namespace detail {
 
@@ -83,7 +108,14 @@ do_element_attribute(
 
 void
 do_element_class_token(
-    context ctx, element_object& object, readable<std::string> value);
+    context ctx,
+    element_object& object,
+    bool initializing,
+    readable<std::string> value);
+
+void
+do_element_class_token(
+    context ctx, element_object& object, bool initializing, char const* value);
 
 void
 set_element_property(
@@ -125,7 +157,7 @@ struct element_handle
     {
         initializing_ = get_cached_data(ctx, &node_);
         if (initializing_)
-            node_->object.create_as_element(type);
+            create_as_element(node_->object, type);
         if (is_refresh_event(ctx))
             refresh_tree_node(get<tree_traversal_tag>(ctx), *node_);
     }
@@ -144,7 +176,7 @@ struct element_handle
     class_(Tokens... tokens)
     {
         (detail::do_element_class_token(
-             ctx_, node_->object, signalize(tokens)),
+             ctx_, node_->object, initializing_, tokens),
          ...);
         return *this;
     }
@@ -196,17 +228,17 @@ struct element_handle
 
     template<class Callback>
     element_handle&
-    on_init(Callback callback)
+    on_init(Callback&& callback)
     {
         if (initializing_)
-            callback(*this);
+            std::forward<Callback>(callback)(*this);
         return *this;
     }
 
     int
     asmdom_id()
     {
-        return node_->object.js_id;
+        return node_->object.asmdom_id;
     }
 
  private:
@@ -293,7 +325,7 @@ struct scoped_element : noncopyable
     int
     asmdom_id()
     {
-        return node_->object.js_id;
+        return node_->object.asmdom_id;
     }
 
  private:
@@ -302,6 +334,16 @@ struct scoped_element : noncopyable
     scoped_tree_node<element_object> tree_scoping_;
     bool initializing_;
 };
+
+template<class Content>
+void
+invoke_tree(context ctx, tree_node<element_object>& root, Content&& content)
+{
+    scoped_tree_root<element_object> scoped_root;
+    if (is_refresh_event(ctx))
+        scoped_root.begin(get<html::tree_traversal_tag>(ctx), root);
+    std::forward<Content>(content)();
+}
 
 } // namespace html
 } // namespace alia

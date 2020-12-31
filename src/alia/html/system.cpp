@@ -136,15 +136,11 @@ initialize(
 
     // Replace the requested node in the DOM with our root DOM node.
     emscripten::val document = emscripten::val::global("document");
-    // For now, just create a div to hold all our content.
-    emscripten::val root = document.call<emscripten::val>(
-        "createElement", emscripten::val("div"));
-    // HACK to get the root elements to fill the whole window.
-    root.call<void>(
-        "setAttribute", emscripten::val("class"), emscripten::val("h-100"));
-    placeholder_dom_node["parentNode"].call<emscripten::val>(
-        "replaceChild", root, placeholder_dom_node);
-    dom_system.root_node.object.js_id = asmdom::direct::toElement(root);
+    // HACK to get the root element to fill the whole window.
+    // root.call<void>(
+    //     "setAttribute", emscripten::val("class"), emscripten::val("h-100"));
+    create_as_placeholder_root(
+        dom_system.root_node.object, placeholder_dom_node);
 
     // Query the hash and install an event handler to monitor it.
     update_location_hash(dom_system);
