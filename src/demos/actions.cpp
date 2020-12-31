@@ -7,8 +7,8 @@ demo_ui(html::context ctx, duplex<int> n, duplex<int> m)
 {
     // clang-format off
 /// [unready-copier]
-html::text(ctx, alia::printf(ctx, "N is %d.", n));
-html::text(ctx, "What would you like to set N to?");
+html::p(ctx, alia::printf(ctx, "N is %d.", n));
+html::p(ctx, "What would you like to set N to?");
 html::input(ctx, m);
 html::button(ctx, "Set It!", n <<= m);
 /// [unready-copier]
@@ -40,7 +40,7 @@ demo_ui(html::context ctx, duplex<int> n)
 {
     // clang-format off
 /// [action-operators]
-html::text(ctx, alia::printf(ctx, "N is %d.", n));
+html::p(ctx, alia::printf(ctx, "N is %d.", n));
 html::button(ctx, "Double", n *= 2);
 html::button(ctx, "Halve", n /= 2);
 html::button(ctx, "Square", n *= n);
@@ -73,7 +73,7 @@ demo_ui(html::context ctx, duplex<int> m, duplex<int> n)
 {
     // clang-format off
 /// [action-combining]
-html::text(ctx, alia::printf(ctx, "M is %d and N is %d.", m, n));
+html::p(ctx, alia::printf(ctx, "M is %d and N is %d.", m, n));
 html::button(ctx, "Increment M", ++m);
 html::button(ctx, "Increment N", ++n);
 html::button(ctx, "Reset Both", (m <<= 0, n <<= 0));
@@ -103,7 +103,7 @@ demo_ui(html::context ctx, duplex<int> in_hand, duplex<int> in_bank)
 {
     // clang-format off
 /// [action-latching]
-html::text(ctx,
+html::p(ctx,
     alia::printf(ctx,
         "You have %d coin(s) in hand and %d in the bank.",
         in_hand, in_bank));
@@ -139,15 +139,15 @@ alia::animation_timer timer(ctx);
 
 alia_if(timer.is_active())
 {
-    html::text(ctx, alia::printf(ctx, "%d ms left.", timer.ticks_left()));
+    html::p(ctx, alia::printf(ctx, "%d ms left.", timer.ticks_left()));
 }
 alia_else
 {
-    html::text(ctx, "The timer is stopped.");
+    html::p(ctx, "The timer is stopped.");
 }
 alia_end
 
-html::text(ctx, "Enter a duration in milliseconds:");
+html::p(ctx, "Enter a duration in milliseconds:");
 html::input(ctx, duration);
 html::button(ctx, "Start", timer.start() << duration);
 /// [action-binding]
@@ -177,7 +177,7 @@ demo_ui(html::context ctx, duplex<std::string> message)
     // clang-format off
 /// [callback-demo]
 // Define a UI for inputting a message.
-html::text(ctx, "Enter a message for your browser's console:");
+html::p(ctx, "Enter a message for your browser's console:");
 html::input(ctx, message);
 
 // Create an action that takes a message as a parameter.

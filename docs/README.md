@@ -70,13 +70,13 @@ tip_calculator(html::context ctx)
 {
     // Get some component-local state for the bill amount.
     auto bill = alia::get_state(ctx, empty<double>());
-    html::text(ctx, "How much is the bill?");
+    html::p(ctx, "How much is the bill?");
     // Display an input that allows the user to manipulate our bill state.
     html::input(ctx, bill);
 
     // Get some more component-local state for the tip rate.
     auto tip_rate = alia::get_state(ctx, empty<double>());
-    html::text(ctx, "What percentage do you want to tip?");
+    html::p(ctx, "What percentage do you want to tip?");
     // Users like percentages, but we want to keep the 'tip_rate' state as a
     // rate internally, so this input presents a scaled view of it for the user.
     html::input(ctx, scale(tip_rate, 100));
@@ -91,14 +91,14 @@ tip_calculator(html::context ctx)
     // (or displayed) until the user supplies values for them.
     auto tip = bill * tip_rate;
     auto total = bill + tip;
-    html::text(ctx,
+    html::p(ctx,
         alia::printf(ctx,
           "You should tip %.2f, for a total of %.2f.", tip, total));
 
     // Conditionally display a message suggesting cash for small amounts.
     alia_if (total < 10)
     {
-        html::text(ctx,
+        html::p(ctx,
             "You should consider using cash for small amounts like this.");
     }
     alia_end

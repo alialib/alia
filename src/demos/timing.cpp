@@ -11,7 +11,7 @@ demo_ui(html::context ctx)
 {
     // clang-format off
 /// [time-signal]
-html::text(ctx,
+html::p(ctx,
     alia::printf(ctx,
         "It's been %d seconds since you started looking at this page.",
         get_animation_tick_count(ctx) / 1000));
@@ -71,13 +71,13 @@ demo_ui(html::context ctx, duplex<int> n)
 {
     // clang-format off
 /// [number-smoothing]
-html::text(ctx, "Enter N:");
+html::p(ctx, "Enter N:");
 html::input(ctx, n);
 html::button(ctx, "1", n <<= 1);
 html::button(ctx, "100", n <<= 100);
 html::button(ctx, "10000", n <<= 10000);
-html::text(ctx, "Here's a smoothed view of N:");
-html::text(ctx, smooth(ctx, n));
+html::p(ctx, "Here's a smoothed view of N:");
+html::p(ctx, smooth(ctx, n));
 /// [number-smoothing]
     // clang-format on
 }
@@ -134,11 +134,11 @@ demo_ui(html::context ctx, duplex<int> n)
 {
     // clang-format off
 /// [flickering]
-html::text(ctx, "Enter N:");
+html::p(ctx, "Enter N:");
 html::input(ctx, n);
 html::button(ctx, "++", ++n);
-html::text(ctx, "Here's a flickering signal carrying N * 2:");
-html::text(ctx,
+html::p(ctx, "Here's a flickering signal carrying N * 2:");
+html::p(ctx,
     alia::async<int>(ctx,
         [](auto ctx, auto reporter, auto n) {
             html::async_call([=]() {
@@ -172,11 +172,11 @@ demo_ui(html::context ctx, duplex<int> n)
 {
     // clang-format off
 /// [deflickering]
-html::text(ctx, "Enter N:");
+html::p(ctx, "Enter N:");
 html::input(ctx, n);
 html::button(ctx, "++", ++n);
-html::text(ctx, "Here's the same signal from above with deflickering:");
-html::text(ctx,
+html::p(ctx, "Here's the same signal from above with deflickering:");
+html::p(ctx,
     deflicker(ctx,
         alia::async<int>(ctx,
             [](auto ctx, auto reporter, auto n) {

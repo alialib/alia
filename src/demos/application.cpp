@@ -27,10 +27,10 @@ demo_ui(html::context ctx, duplex<int> n)
 {
     // clang-format off
 /// [simple-apply]
-html::text(ctx, "Enter N:");
+html::p(ctx, "Enter N:");
 html::input(ctx, n);
 auto n_is_prime = alia::apply(ctx, is_prime, n);
-html::text(ctx, conditional(n_is_prime, "N is prime!", "N is NOT prime."));
+html::p(ctx, conditional(n_is_prime, "N is prime!", "N is NOT prime."));
 /// [simple-apply]
     // clang-format on
 }
@@ -62,7 +62,7 @@ demo_ui(html::context ctx)
 auto numbers = alia::get_state(
     ctx, alia::lambda_constant([]() { return std::vector<int>(3, 2); }));
 
-html::text(ctx, "Enter some numbers:");
+html::p(ctx, "Enter some numbers:");
 
 // Provide an input box for each number.
 alia::for_each(ctx, numbers,
@@ -78,7 +78,7 @@ auto prime_count = alia::apply(ctx,
     [ ](auto flags) { return std::count(flags.begin(), flags.end(), true); },
     prime_flags);
 
-html::text(ctx, alia::printf(ctx, "# of primes: %d", prime_count));
+html::p(ctx, alia::printf(ctx, "# of primes: %d", prime_count));
 
 /// [transform-demo]
     // clang-format on
@@ -111,7 +111,7 @@ demo_ui(html::context ctx)
     auto numbers = alia::get_state(
         ctx, lambda_constant([]() { return std::vector<int>(3, 2); }));
 
-    html::text(ctx, "Enter some numbers:");
+    html::p(ctx, "Enter some numbers:");
 
     alia::for_each(
         ctx, numbers, [](auto ctx, auto n) { html::input(ctx, n); });
@@ -125,9 +125,9 @@ demo_ui(html::context ctx)
         },
         prime_flags);
 
-    html::text(ctx, alia::printf(ctx, "# of primes: %d", prime_count));
+    html::p(ctx, alia::printf(ctx, "# of primes: %d", prime_count));
 
-    html::text(
+    html::p(
         ctx,
         alia::printf(ctx, "is_prime has been called %d times.", call_count));
 }
@@ -154,7 +154,7 @@ demo_ui(html::context ctx)
 auto numbers = alia::get_state(
     ctx, lambda_constant([]() { return std::vector<int>(3, 2); }));
 
-html::text(ctx, "Enter some numbers:");
+html::p(ctx, "Enter some numbers:");
 
 alia::for_each(ctx, numbers,
     [ ](auto ctx, auto n) { html::input(ctx, n); });
@@ -166,7 +166,7 @@ auto prime_count = alia::apply(ctx,
     numbers);
 /// [direct-counting]
 
-html::text(ctx, alia::printf(ctx, "# of primes: %d", prime_count));
+html::p(ctx, alia::printf(ctx, "# of primes: %d", prime_count));
     // clang-format on
 }
 
@@ -197,7 +197,7 @@ demo_ui(html::context ctx)
         return is_prime(n);
     };
 
-    html::text(ctx, "Enter some numbers:");
+    html::p(ctx, "Enter some numbers:");
 
     alia::for_each(
         ctx, numbers, [](auto ctx, auto n) { html::input(ctx, n); });
@@ -210,9 +210,9 @@ demo_ui(html::context ctx)
         },
         numbers);
 
-    html::text(ctx, alia::printf(ctx, "# of primes: %d", prime_count));
+    html::p(ctx, alia::printf(ctx, "# of primes: %d", prime_count));
 
-    html::text(
+    html::p(
         ctx,
         alia::printf(ctx, "is_prime has been called %d times.", call_count));
 }

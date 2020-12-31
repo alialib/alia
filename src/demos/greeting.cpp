@@ -6,7 +6,7 @@ namespace hello_world {
 void
 greeting_ui(html::context ctx, duplex<std::string> name)
 {
-    html::text(ctx, "What's your name?");
+    html::p(ctx, "What's your name?");
 
     // Allow the user to input their name.
     html::input(ctx, name);
@@ -14,7 +14,7 @@ greeting_ui(html::context ctx, duplex<std::string> name)
     // If we have a name, greet the user.
     alia_if(name != "")
     {
-        html::text(ctx, "Hello, " + name + "!");
+        html::p(ctx, "Hello, " + name + "!");
     }
     alia_end
 }
@@ -42,17 +42,17 @@ demo_ui(html::context ctx, duplex<std::string> name)
 {
     // clang-format off
 /// [expanded-greeting]
-html::text(ctx, "What's your name?"); // node a
+html::p(ctx, "What's your name?"); // node a
 
 html::input(ctx, name); // node b
 
 alia_if(name != "") // node c
 {
-    html::text(ctx, "Hello, " + name + "!"); // node d
+    html::p(ctx, "Hello, " + name + "!"); // node d
 }
 alia_end
 
-html::text(ctx, "My name is alia."); // node e
+html::p(ctx, "My name is alia."); // node e
 /// [expanded-greeting]
     // clang-format on
 }
@@ -82,7 +82,7 @@ demo_ui(html::context ctx, duplex<bool> show_message)
 
     alia_if(show_message)
     {
-        html::text(ctx, "Hello, World!");
+        html::p(ctx, "Hello, World!");
     }
     alia_end
 }
@@ -117,7 +117,7 @@ widget(html::context ctx, std::string name)
     widget_data* data;
     get_data(ctx, &data);
 
-    html::text(
+    html::p(
         ctx,
         alia::printf(
             ctx,

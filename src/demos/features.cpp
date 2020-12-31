@@ -9,10 +9,10 @@ void
 sqrt_flashcard(html::context ctx, readable<int> n)
 {
     // Put this whole component inside an 'item' div...
-    html::scoped_div div(ctx, value("item"));
+    html::scoped_div div(ctx, "item");
 
     // Show the square.
-    html::text(ctx, n * n);
+    html::p(ctx, n * n);
 
     // Get the local state we need for this component.
     auto answer_revealed = alia::get_state(ctx, false);
@@ -21,7 +21,7 @@ sqrt_flashcard(html::context ctx, readable<int> n)
     // it.
     alia_if(answer_revealed)
     {
-        html::text(ctx, alia::printf(ctx, "The square root is %d.", n));
+        html::p(ctx, alia::printf(ctx, "The square root is %d.", n));
     }
     alia_else
     {
@@ -34,7 +34,7 @@ sqrt_flashcard(html::context ctx, readable<int> n)
 void
 app_ui(html::context ctx)
 {
-    html::text(ctx, "Try to figure out the square roots of these numbers...");
+    html::p(ctx, "Try to figure out the square roots of these numbers...");
     sqrt_flashcard(ctx, value(9));
     sqrt_flashcard(ctx, value(4));
     sqrt_flashcard(ctx, value(5));

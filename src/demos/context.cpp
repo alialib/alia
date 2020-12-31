@@ -19,7 +19,7 @@ typedef extend_context_type_t<html::context, username_tag> app_context;
 void
 internal_app_ui(app_context ctx)
 {
-    html::text(ctx,
+    html::p(ctx,
         alia::printf(ctx, "Welcome, %s!", get<username_tag>(ctx)));
 }
 

@@ -7,10 +7,10 @@ demo_ui(html::context ctx, duplex<double> n)
 {
     // clang-format off
 /// [numeric-adaptors]
-html::text(ctx, alia::printf(ctx, "N is %g.", n));
-html::text(ctx, "Here you can edit a scaled view of N:");
+html::p(ctx, alia::printf(ctx, "N is %g.", n));
+html::p(ctx, "Here you can edit a scaled view of N:");
 html::input(ctx, scale(n, 10));
-html::text(ctx, "Here you can edit an offset view of N:");
+html::p(ctx, "Here you can edit an offset view of N:");
 html::input(ctx, offset(n, 10));
 /// [numeric-adaptors]
     // clang-format on
