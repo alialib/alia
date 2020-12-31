@@ -6,12 +6,12 @@ namespace addition_ui {
 void
 addition_ui(html::context ctx, duplex<double> a, duplex<double> b)
 {
-    html::text(ctx, "Enter two numbers to add:");
+    html::p(ctx, "Enter two numbers to add:");
 
     html::input(ctx, a);
     html::input(ctx, b);
 
-    html::text(ctx, a + b);
+    html::p(ctx, a + b);
 }
 /// [addition-ui]
 
@@ -42,21 +42,21 @@ demo_ui(html::context ctx)
 
     // clang-format off
 /// [analysis]
-html::text(ctx, "Enter a number:");
+html::p(ctx, "Enter a number:");
 
 html::input(ctx, n);
 
 alia_if(n > 0)
 {
-    html::text(ctx, "The number is positive!");
+    html::p(ctx, "The number is positive!");
 }
 alia_else_if(n < 0)
 {
-    html::text(ctx, "The number is negative!");
+    html::p(ctx, "The number is negative!");
 }
 alia_else
 {
-    html::text(ctx, "The number is zero!");
+    html::p(ctx, "The number is zero!");
 }
 alia_end
 /// [analysis]
@@ -86,13 +86,13 @@ tip_calculator(html::context ctx)
 {
     // Get some component-local state for the bill amount.
     auto bill = alia::get_state(ctx, empty<double>());
-    html::text(ctx, "How much is the bill?");
+    html::p(ctx, "How much is the bill?");
     // Display an input that allows the user to manipulate our bill state.
     html::input(ctx, bill);
 
     // Get some more component-local state for the tip rate.
     auto tip_rate = alia::get_state(ctx, empty<double>());
-    html::text(ctx, "What percentage do you want to tip?");
+    html::p(ctx, "What percentage do you want to tip?");
     // Users like percentages, but we want to keep the 'tip_rate' state as a
     // rate internally, so this input presents a scaled view of it for the user.
     html::input(ctx, scale(tip_rate, 100));
@@ -107,14 +107,14 @@ tip_calculator(html::context ctx)
     // (or displayed) until the user supplies values for them.
     auto tip = bill * tip_rate;
     auto total = bill + tip;
-    html::text(ctx,
+    html::p(ctx,
         alia::printf(ctx,
             "You should tip %.2f, for a total of %.2f.", tip, total));
 
     // Conditionally display a message suggesting cash for small amounts.
     alia_if (total < 10)
     {
-        html::text(ctx,
+        html::p(ctx,
             "You should consider using cash for small amounts like this.");
     }
     alia_end
@@ -151,7 +151,7 @@ factor(int n)
 void
 factor_tree(html::context ctx, readable<int> n)
 {
-    html::scoped_div div(ctx, value("subtree"));
+    html::scoped_div div(ctx, "subtree");
 
     // Get the 'best' factor that n has. (The one closest to sqrt(n).)
     auto f = alia::apply(ctx, factor, n);
@@ -159,7 +159,7 @@ factor_tree(html::context ctx, readable<int> n)
     // If that factor is 1, n is prime.
     alia_if(f != 1)
     {
-        html::text(ctx, alia::printf(ctx, "%i: composite", n));
+        html::p(ctx, alia::printf(ctx, "%i: composite", n));
 
         // Allow the user to expand this block to see more factor.
         auto expanded = get_state(ctx, false);
@@ -175,7 +175,7 @@ factor_tree(html::context ctx, readable<int> n)
     }
     alia_else
     {
-        html::text(ctx, alia::printf(ctx, "%i: prime", n));
+        html::p(ctx, alia::printf(ctx, "%i: prime", n));
     }
     alia_end
 }
@@ -184,7 +184,7 @@ factor_tree(html::context ctx, readable<int> n)
 void
 factor_tree_demo(html::context ctx, duplex<int> n)
 {
-    html::text(ctx, "Enter a number:");
+    html::p(ctx, "Enter a number:");
     html::input(ctx, n);
     factor_tree(ctx, n);
 }

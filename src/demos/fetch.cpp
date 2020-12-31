@@ -77,10 +77,10 @@ fetch_country_name(html::context ctx, readable<std::string> country_code)
 void
 fetch_ui(html::context ctx, duplex<std::string> country_code)
 {
-    html::text(ctx, "Enter a country code:");
+    html::p(ctx, "Enter a country code:");
     html::input(ctx, country_code);
     auto result = fetch_country_name(ctx, country_code);
-    html::text(
+    html::p(
         ctx,
         add_default(
             deflicker(

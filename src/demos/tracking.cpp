@@ -9,21 +9,21 @@ demo_ui(html::context ctx, duplex<int> n)
 {
     // clang-format off
 /// [switch-example]
-html::text(ctx, "Enter a number:");
+html::p(ctx, "Enter a number:");
 html::input(ctx, n);
 alia_switch(n)
 {
  alia_case(0):
-    html::text(ctx, "foo");
+    html::p(ctx, "foo");
     break;
  alia_case(1):
-    html::text(ctx, "bar");
+    html::p(ctx, "bar");
  alia_case(2):
  alia_case(3):
-    html::text(ctx, "baz");
+    html::p(ctx, "baz");
     break;
  alia_default:
-    html::text(ctx, "zub");
+    html::p(ctx, "zub");
 }
 alia_end
 /// [switch-example]
@@ -75,7 +75,7 @@ records_ui(html::context ctx, std::vector<my_record>& records)
     // tracking.
     alia_for(auto& record : records)
     {
-        html::scoped_div div(ctx, value("item"));
+        html::scoped_div div(ctx, "item");
 
         // And now, at the point that we actually connect our individual records
         // to our widgets, we'll just use 'direct' to create signals that
@@ -91,8 +91,8 @@ records_ui(html::context ctx, std::vector<my_record>& records)
         alia_if(!in_bounds(record))
         {
             // Apparently the Docsify CSS class for a warning is 'tip'.
-            html::scoped_div div(ctx, value("tip"));
-            html::text(ctx, "This is out of bounds!");
+            html::scoped_div div(ctx, "tip");
+            html::p(ctx, "This is out of bounds!");
         }
         alia_end
     }
@@ -145,9 +145,9 @@ scoreboard(html::context ctx, duplex<std::map<std::string, int>> scores)
 {
     alia::for_each(ctx, scores,
         [](auto ctx, auto player, auto score) {
-            html::scoped_div div(ctx, value("item"));
+            html::scoped_div div(ctx, "item");
             html::element(ctx, "h4").text(player);
-            html::text(ctx, alia::printf(ctx, "%d points", score));
+            html::p(ctx, alia::printf(ctx, "%d points", score));
             html::button(ctx, "GOAL!", ++score);
         });
 
@@ -192,9 +192,9 @@ scoreboard(html::context ctx, duplex<std::vector<player>> players)
 {
     alia::for_each(ctx, players,
         [](auto ctx, auto player) {
-            html::scoped_div div(ctx, value("item"));
+            html::scoped_div div(ctx, "item");
             html::element(ctx, "h4").text(alia_field(player, name));
-            html::text(ctx,
+            html::p(ctx,
                 alia::printf(ctx, "%d points", alia_field(player, score)));
             html::button(ctx, "GOAL!", ++alia_field(player, score));
         });
@@ -253,7 +253,7 @@ records_ui(html::context ctx, std::vector<my_record>& records)
 
         // Do the controls for this record, like we normally would...
 
-        html::scoped_div div(ctx, value("item"));
+        html::scoped_div div(ctx, "item");
 
         html::element(ctx, "h4").text(direct(record.label));
         html::input(ctx, direct(record.x));
@@ -262,7 +262,7 @@ records_ui(html::context ctx, std::vector<my_record>& records)
         // Just to demonstrate that each record is associated with the same data
         // block, we'll get some local state here. Feel free to type something
         // in here and shuffle the records to see what happens...
-        html::text(ctx, "Local UI state associated with this record:");
+        html::p(ctx, "Local UI state associated with this record:");
         html::input(ctx, alia::get_state(ctx, ""));
     }
 
@@ -305,17 +305,17 @@ demo_ui(html::context ctx, duplex<int> i)
 /// [basic-try-catch-demo]
 auto message = alia::value("Hello, World!");
 
-html::text(ctx, "Enter a character index:");
+html::p(ctx, "Enter a character index:");
 html::input(ctx, i);
 
 alia_try
 {
-    html::text(ctx,
+    html::p(ctx,
         alia::printf(ctx, "The character at position %i is '%c'.", i, message[i]));
 }
 alia_catch(std::out_of_range&)
 {
-    html::text(ctx, "Oops! Looks like that index is out of range!");
+    html::p(ctx, "Oops! Looks like that index is out of range!");
 }
 alia_end
 /// [basic-try-catch-demo]
@@ -347,18 +347,18 @@ demo_ui(html::context ctx, duplex<int> i)
 /// [try-catch-atomicity-demo]
 auto message = alia::value("Hello, Again!");
 
-html::text(ctx, "Enter a character index:");
+html::p(ctx, "Enter a character index:");
 html::input(ctx, i);
 
 alia_try
 {
-    html::text(ctx, "Let's see...");
-    html::text(ctx,
+    html::p(ctx, "Let's see...");
+    html::p(ctx,
         alia::printf(ctx, "The character at position %i is '%c'.", i, message[i]));
 }
 alia_catch(std::out_of_range&)
 {
-    html::text(ctx, "Oops! Looks like that index is out of range!");
+    html::p(ctx, "Oops! Looks like that index is out of range!");
 }
 alia_end
 /// [try-catch-atomicity-demo]
