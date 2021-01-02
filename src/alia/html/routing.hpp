@@ -7,19 +7,14 @@
 
 #include <scn/scn.h>
 
-namespace alia {
-namespace html {
-
-namespace detail {
+namespace alia { namespace html { namespace detail {
 
 struct path_component
 {
     std::string_view text;
 };
 
-} // namespace detail
-} // namespace html
-} // namespace alia
+}}} // namespace alia::html::detail
 
 template<typename Char>
 struct scn::scanner<Char, alia::html::detail::path_component>
@@ -84,8 +79,7 @@ struct scn::scanner<Char, alia::html::detail::path_component>
     bool is_subpath = false;
 };
 
-namespace alia {
-namespace html {
+namespace alia { namespace html {
 
 namespace detail {
 
@@ -258,7 +252,6 @@ set_route(html::context ctx)
     });
 }
 
-} // namespace html
-} // namespace alia
+}} // namespace alia::html
 
 #endif

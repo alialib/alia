@@ -2,8 +2,7 @@
 
 #include <iostream>
 
-namespace alia {
-namespace html {
+namespace alia { namespace html {
 
 storage_object::storage_object(std::string const& name)
     : object_(emscripten::val::global(name.c_str()))
@@ -98,5 +97,4 @@ get_local_state(
     return get_storage_state(ctx, "localStorage", key, default_value);
 }
 
-} // namespace html
-} // namespace alia
+}} // namespace alia::html

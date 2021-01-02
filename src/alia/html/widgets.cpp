@@ -1,7 +1,6 @@
 #include <alia/html/widgets.hpp>
 
-namespace alia {
-namespace html {
+namespace alia { namespace html {
 
 namespace detail {
 
@@ -81,5 +80,4 @@ button(html::context ctx, char const* text, action<> on_click)
     return button(ctx, on_click).text(value(text));
 }
 
-} // namespace html
-} // namespace alia
+}} // namespace alia::html

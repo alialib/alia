@@ -5,8 +5,7 @@
 
 #include <alia/html/context.hpp>
 
-namespace alia {
-namespace html {
+namespace alia { namespace html {
 
 struct document_object
 {
@@ -31,7 +30,6 @@ struct document_object
 void
 document_title(html::context ctx, readable<std::string> title);
 
-} // namespace html
-} // namespace alia
+}} // namespace alia::html
 
 #endif

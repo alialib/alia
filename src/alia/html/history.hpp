@@ -3,8 +3,7 @@
 
 #include <emscripten/val.h>
 
-namespace alia {
-namespace html {
+namespace alia { namespace html {
 
 struct history_object
 {
@@ -38,7 +37,6 @@ struct history_object
 history_object
 history();
 
-} // namespace html
-} // namespace alia
+}} // namespace alia::html
 
 #endif

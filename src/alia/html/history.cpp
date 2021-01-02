@@ -2,8 +2,7 @@
 
 #include <iostream>
 
-namespace alia {
-namespace html {
+namespace alia { namespace html {
 
 history_object::history_object()
     : object_(emscripten::val::global("window")["history"])
@@ -55,5 +54,4 @@ history()
     return history_object();
 }
 
-} // namespace html
-} // namespace alia
+}} // namespace alia::html

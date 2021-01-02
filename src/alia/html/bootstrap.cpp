@@ -2,9 +2,7 @@
 
 #include <alia/html/widgets.hpp>
 
-namespace alia {
-namespace html {
-namespace bootstrap {
+namespace alia { namespace html { namespace bootstrap {
 namespace detail {
 
 element_handle<html::context>
@@ -103,6 +101,4 @@ modal(html::context ctx, alia::function_view<void()> content)
     return modal_handle{*data, asmdom_id};
 }
 
-} // namespace bootstrap
-} // namespace html
-} // namespace alia
+}}} // namespace alia::html::bootstrap

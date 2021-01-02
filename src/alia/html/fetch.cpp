@@ -2,8 +2,7 @@
 
 #include <emscripten/fetch.h>
 
-namespace alia {
-namespace html {
+namespace alia { namespace html {
 
 std::string
 to_string(http_method method)
@@ -147,5 +146,4 @@ fetch(alia::context ctx, readable<http_request> request)
     return async<http_response>(ctx, launch_fetch_operation, request);
 }
 
-} // namespace html
-} // namespace alia
+}} // namespace alia::html

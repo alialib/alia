@@ -3,8 +3,7 @@
 
 #include <any>
 
-namespace alia {
-namespace html {
+namespace alia { namespace html {
 
 struct blob
 {
@@ -27,7 +26,6 @@ struct array_deleter
 blob
 to_blob(std::string s);
 
-} // namespace html
-} // namespace alia
+}} // namespace alia::html
 
 #endif

@@ -5,8 +5,7 @@
 
 #include <emscripten/val.h>
 
-namespace alia {
-namespace html {
+namespace alia { namespace html {
 
 // RAW ACCESS
 
@@ -63,7 +62,6 @@ get_local_state(
     std::string const& key,
     readable<std::string> default_value);
 
-} // namespace html
-} // namespace alia
+}} // namespace alia::html
 
 #endif

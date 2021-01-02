@@ -3,8 +3,7 @@
 
 #include <alia/html/dom.hpp>
 
-namespace alia {
-namespace html {
+namespace alia { namespace html {
 
 // TEXT
 
@@ -99,7 +98,6 @@ struct scoped_div : scoped_element
     }
 };
 
-} // namespace html
-} // namespace alia
+}} // namespace alia::html
 
 #endif

@@ -6,8 +6,7 @@
 
 #include <chrono>
 
-namespace alia {
-namespace html {
+namespace alia { namespace html {
 
 void
 create_as_element(element_object& object, char const* type)
@@ -357,5 +356,4 @@ scoped_element::begin(context ctx, char const* type)
     return *this;
 }
 
-} // namespace html
-} // namespace alia
+}} // namespace alia::html

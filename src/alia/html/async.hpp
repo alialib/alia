@@ -3,8 +3,7 @@
 
 #include <functional>
 
-namespace alia {
-namespace html {
+namespace alia { namespace html {
 
 // Call a function object asynchronously after a delay.
 //
@@ -17,7 +16,6 @@ namespace html {
 void
 async_call(std::function<void()> func, int millis);
 
-} // namespace html
-} // namespace alia
+}} // namespace alia::html
 
 #endif

@@ -3,8 +3,7 @@
 #include <alia/html/dom.hpp>
 #include <alia/html/history.hpp>
 
-namespace alia {
-namespace html {
+namespace alia { namespace html {
 
 static void
 refresh_for_emscripten(void* system)
@@ -155,5 +154,4 @@ initialize(
     refresh_system(alia_system);
 }
 
-} // namespace html
-} // namespace alia
+}} // namespace alia::html
