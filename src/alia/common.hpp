@@ -20,8 +20,7 @@ typedef long long counter_type;
 
 // Inspired by Boost, inheriting from noncopyable disables copying for a type.
 // The namespace prevents unintended ADL if used by applications.
-namespace detail {
-namespace noncopyable_ {
+namespace detail { namespace noncopyable_ {
 struct noncopyable
 {
     noncopyable()
@@ -34,8 +33,7 @@ struct noncopyable
     operator=(noncopyable const& other)
         = delete;
 };
-} // namespace noncopyable_
-} // namespace detail
+}} // namespace detail::noncopyable_
 typedef detail::noncopyable_::noncopyable noncopyable;
 
 // general-purpose exception class for alia

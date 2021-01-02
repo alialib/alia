@@ -327,8 +327,8 @@ TEST_CASE("item vector", "[flow][for_each]")
 
     std::reverse(container.begin(), container.end());
 
-    // Since my_item defines get_alia_item_id(), the graph data properly follows
-    // the items around, so there are no additional calls.
+    // Since my_item defines get_alia_item_id(), the graph data properly
+    // follows the items around, so there are no additional calls.
     check_traversal(sys, controller, "cherry;banana;apple;");
     REQUIRE(call_count == 3);
 }
@@ -568,8 +568,8 @@ TEST_CASE("item list", "[for_each][list]")
 
     std::reverse(container.begin(), container.end());
 
-    // Since my_item defines get_alia_item_id(), the graph data properly follows
-    // the items around, so there are no additional calls.
+    // Since my_item defines get_alia_item_id(), the graph data properly
+    // follows the items around, so there are no additional calls.
     check_traversal(sys, controller, "cherry;banana;apple;");
     REQUIRE(call_count == 3);
 }
@@ -654,8 +654,8 @@ TEST_CASE("for_each over a list of raw items", "[for_each][list]")
 
     std::reverse(container.begin(), container.end());
 
-    // Since my_item defines get_alia_item_id(), the graph data properly follows
-    // the items around, so there are no additional calls.
+    // Since my_item defines get_alia_item_id(), the graph data properly
+    // follows the items around, so there are no additional calls.
     check_traversal(sys, controller, "cherry;banana;apple;");
     REQUIRE(call_count == 3);
 }
