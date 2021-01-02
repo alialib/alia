@@ -35,6 +35,7 @@ jobs:
           cd build
           emcmake cmake -DCMAKE_BUILD_TYPE=Release ..
           make -j
+          cd ..
           scripts/build-docs.sh
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@3.7.1
