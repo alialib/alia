@@ -7,9 +7,7 @@
 
 #include <alia/context/structural_typing.hpp>
 
-namespace alia {
-
-namespace detail {
+namespace alia { namespace detail {
 
 // generic_tagged_storage is one possible implementation of the underlying
 // container for storing the actual data associated with a tag.
@@ -168,8 +166,6 @@ struct tagged_data_accessor
     };                                                                        \
     }
 
-} // namespace detail
-
-} // namespace alia
+}} // namespace alia::detail
 
 #endif

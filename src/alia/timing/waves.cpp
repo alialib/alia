@@ -4,9 +4,7 @@
 #include <alia/signals/operators.hpp>
 #include <alia/timing/timer.hpp>
 
-namespace alia {
-
-namespace detail {
+namespace alia { namespace detail {
 
 struct square_wave_data
 {
@@ -45,6 +43,4 @@ square_wave(
     return value(data.value);
 }
 
-} // namespace detail
-
-} // namespace alia
+}} // namespace alia::detail

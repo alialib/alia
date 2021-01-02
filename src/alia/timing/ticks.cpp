@@ -38,8 +38,7 @@ get_animation_tick_count(dataless_context ctx)
 millisecond_count
 get_raw_animation_ticks_left(dataless_context ctx, millisecond_count end_time)
 {
-    int ticks_remaining
-        = int(end_time - get<timing_tag>(ctx).tick_counter);
+    int ticks_remaining = int(end_time - get<timing_tag>(ctx).tick_counter);
     if (ticks_remaining > 0)
     {
         if (is_refresh_event(ctx))
