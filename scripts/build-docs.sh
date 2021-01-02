@@ -12,4 +12,4 @@ wget https://github.com/tmadden/alia/releases/latest/download/alia.hpp
 ../scripts/build-dot-files.sh
 touch .nojekyll
 cd ..
-python scripts/process-docs.py
+python3 scripts/process-docs.py
