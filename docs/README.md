@@ -1,16 +1,6 @@
 alia - A Library for Interactive Applications
 =============================================
 
-<div class="hide-when-deployed">
-
-[![Linux Build Status](https://travis-ci.org/tmadden/alia.svg?branch=master)](https://travis-ci.org/tmadden/alia)
-[![Windows Build Status](https://github.com/tmadden/alia/workflows/Windows/badge.svg)](https://github.com/tmadden/alia/actions)
-[![codecov](https://codecov.io/gh/tmadden/alia/branch/master/graph/badge.svg)](https://codecov.io/gh/tmadden/alia)
-![C++ Support](https://badgen.net/badge/C++/14%2C17/green)
-[![Stability](https://badgen.net/badge/stability/unstable/yellow)](https://github.com/orangemug/stability-badges#unstable)
-
-</div>
-
 alia (pronounced uh-LEE-uh) is a modern C++ library for developing interactive
 applications in a declarative manner. In alia, the UI of your application is
 expressed as a composition of *component functions.*
@@ -48,12 +38,6 @@ system: a game, a physics simulation, etc.)
 **STABILITY/MATURITY WARNING:** This is the first public release of alia, so
 it's likely unstable and definitely incomplete. It's going to require some
 work/patience on your part to use it. See 'Project Status' below for details.
-
-<div class="hide-when-deployed">
-
-Check out [the documentation](https://alia.dev) for more info.
-
-</div>
 
 An Example
 ----------
@@ -139,10 +123,3 @@ perhaps try integrating it with their favorite UI/game/physics library.*
 
 If you're interested in sharing your integrations, I'm more than happy to
 incorporate them as examples and/or link people to your projects.
-
-Getting Started
----------------
-
-Continue on to <a target="_self"
-href="https://alia.dev/#/interactive-hello">the full
-documentation</a> for more info.
