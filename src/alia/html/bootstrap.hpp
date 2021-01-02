@@ -3,9 +3,7 @@
 
 #include <alia/html/widgets.hpp>
 
-namespace alia {
-namespace html {
-namespace bootstrap {
+namespace alia { namespace html { namespace bootstrap {
 
 // BUTTONS
 
@@ -131,8 +129,6 @@ struct modal_handle
 modal_handle
 modal(html::context ctx, alia::function_view<void()> content);
 
-} // namespace bootstrap
-} // namespace html
-} // namespace alia
+}}} // namespace alia::html::bootstrap
 
 #endif

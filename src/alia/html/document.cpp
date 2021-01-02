@@ -2,8 +2,7 @@
 
 #include <emscripten/val.h>
 
-namespace alia {
-namespace html {
+namespace alia { namespace html {
 
 document_object::document_object() : val_(emscripten::val::global("document"))
 {
@@ -44,5 +43,4 @@ document_title(html::context ctx, readable<std::string> title)
         [] {});
 }
 
-} // namespace html
-} // namespace alia
+}} // namespace alia::html

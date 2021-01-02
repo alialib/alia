@@ -10,8 +10,7 @@
 
 #include <alia/html/context.hpp>
 
-namespace alia {
-namespace html {
+namespace alia { namespace html {
 
 // This implements the interface required of alia object_tree objects.
 struct element_object
@@ -345,7 +344,6 @@ invoke_tree(context ctx, tree_node<element_object>& root, Content&& content)
     std::forward<Content>(content)();
 }
 
-} // namespace html
-} // namespace alia
+}} // namespace alia::html
 
 #endif

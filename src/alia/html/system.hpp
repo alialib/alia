@@ -8,8 +8,7 @@
 #include <alia/html/context.hpp>
 #include <alia/html/dom.hpp>
 
-namespace alia {
-namespace html {
+namespace alia { namespace html {
 
 struct system
 {
@@ -46,7 +45,6 @@ initialize(
     emscripten::val placeholder_dom_node,
     std::function<void(html::context)> controller);
 
-} // namespace html
-} // namespace alia
+}} // namespace alia::html
 
 #endif

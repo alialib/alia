@@ -2,8 +2,7 @@
 
 #include <emscripten/emscripten.h>
 
-namespace alia {
-namespace html {
+namespace alia { namespace html {
 
 struct async_call_data
 {
@@ -25,5 +24,4 @@ async_call(std::function<void()> func, int millis)
     emscripten_async_call(async_call_callback, data, millis);
 }
 
-} // namespace html
-} // namespace alia
+}} // namespace alia::html

@@ -7,8 +7,7 @@
 #include <map>
 #include <string>
 
-namespace alia {
-namespace html {
+namespace alia { namespace html {
 
 enum class http_method
 {
@@ -46,7 +45,6 @@ struct http_error
 async_signal<http_response>
 fetch(alia::context ctx, readable<http_request> request);
 
-} // namespace html
-} // namespace alia
+}} // namespace alia::html
 
 #endif

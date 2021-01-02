@@ -2,8 +2,7 @@
 
 #include <emscripten/emscripten.h>
 
-namespace alia {
-namespace html {
+namespace alia { namespace html {
 
 void
 clear_canvas(int asmdom_id)
@@ -43,5 +42,4 @@ fill_rect(int asmdom_id, double x, double y, double width, double height)
         height);
 }
 
-} // namespace html
-} // namespace alia
+}} // namespace alia::html
