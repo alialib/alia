@@ -155,6 +155,13 @@ struct signal_capabilities_union
 // irrespective of the type of the value that the signal carries.
 struct untyped_signal_base
 {
+    // virtual destructor - Signals really aren't meant to be stored by a
+    // pointer-to-base, so in theory this shouldn't be necessary, but it seems
+    // there's no way to avoid warnings without.
+    virtual ~untyped_signal_base()
+    {
+    }
+
     // Does the signal currently have a value?
     virtual bool
     has_value() const = 0;
