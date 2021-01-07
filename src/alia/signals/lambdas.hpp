@@ -12,7 +12,7 @@ namespace alia {
 // lambda_constant(read) creates a read-only signal whose value is constant and
 // is determined by calling :read.
 template<class Value, class Read>
-struct simple_lambda_constant_signal final
+struct simple_lambda_constant_signal
     : signal<
           simple_lambda_constant_signal<Value, Read>,
           Value,
@@ -24,17 +24,17 @@ struct simple_lambda_constant_signal final
     {
     }
     bool
-    has_value() const final
+    has_value() const override final
     {
         return true;
     }
     id_interface const&
-    value_id() const final
+    value_id() const override final
     {
         return unit_id;
     }
     Value const&
-    read() const final
+    read() const override final
     {
         value_ = read_();
         return value_;
@@ -55,7 +55,7 @@ lambda_constant(Read read)
 // lambda_reader(read) creates a read-only signal whose value is determined by
 // calling :read.
 template<class Value, class Read>
-struct simple_lambda_reader_signal final
+struct simple_lambda_reader_signal
     : regular_signal<
           simple_lambda_reader_signal<Value, Read>,
           Value,
@@ -66,12 +66,12 @@ struct simple_lambda_reader_signal final
     {
     }
     bool
-    has_value() const final
+    has_value() const override final
     {
         return true;
     }
     Value const&
-    read() const final
+    read() const override final
     {
         value_ = read_();
         return value_;
@@ -92,23 +92,22 @@ lambda_reader(Read read)
 // lambda_reader(has_value, read) creates a read-only signal whose value is
 // determined by calling :has_value and :read.
 template<class Value, class HasValue, class Read>
-struct lambda_reader_signal final
-    : regular_signal<
-          lambda_reader_signal<Value, HasValue, Read>,
-          Value,
-          read_only_signal>
+struct lambda_reader_signal : regular_signal<
+                                  lambda_reader_signal<Value, HasValue, Read>,
+                                  Value,
+                                  read_only_signal>
 {
     lambda_reader_signal(HasValue has_value, Read read)
         : has_value_(has_value), read_(read), value_(decltype(read())())
     {
     }
     bool
-    has_value() const override
+    has_value() const override final
     {
         return has_value_();
     }
     Value const&
-    read() const override
+    read() const override final
     {
         value_ = read_();
         return value_;
@@ -133,7 +132,7 @@ lambda_reader(HasValue has_value, Read read)
 // whose value is determined by calling :has_value and :read and whose ID is
 // determined by calling :generate_id.
 template<class Value, class HasValue, class Read, class GenerateId>
-struct lambda_reader_signal_with_id final
+struct lambda_reader_signal_with_id
     : signal<
           lambda_reader_signal_with_id<Value, HasValue, Read, GenerateId>,
           Value,
@@ -148,18 +147,18 @@ struct lambda_reader_signal_with_id final
     {
     }
     id_interface const&
-    value_id() const override
+    value_id() const override final
     {
         id_ = generate_id_();
         return id_;
     }
     bool
-    has_value() const override
+    has_value() const override final
     {
         return has_value_();
     }
     Value const&
-    read() const override
+    read() const override final
     {
         value_ = read_();
         return value_;
@@ -192,7 +191,7 @@ template<
     class Read,
     class ReadyToWrite,
     class Write>
-struct lambda_duplex_signal final
+struct lambda_duplex_signal
     : regular_signal<
           lambda_duplex_signal<Value, HasValue, Read, ReadyToWrite, Write>,
           Value,
@@ -211,23 +210,23 @@ struct lambda_duplex_signal final
     {
     }
     bool
-    has_value() const override
+    has_value() const override final
     {
         return has_value_();
     }
     Value const&
-    read() const override
+    read() const override final
     {
         value_ = read_();
         return value_;
     }
     bool
-    ready_to_write() const override
+    ready_to_write() const override final
     {
         return ready_to_write_();
     }
     void
-    write(Value value) const override
+    write(Value value) const override final
     {
         write_(std::move(value));
     }
@@ -263,7 +262,7 @@ template<
     class ReadyToWrite,
     class Write,
     class GenerateId>
-struct lambda_duplex_signal_with_id final
+struct lambda_duplex_signal_with_id
     : signal<
           lambda_duplex_signal_with_id<
               Value,
@@ -290,29 +289,29 @@ struct lambda_duplex_signal_with_id final
     {
     }
     id_interface const&
-    value_id() const override
+    value_id() const override final
     {
         id_ = generate_id_();
         return id_;
     }
     bool
-    has_value() const override
+    has_value() const override final
     {
         return has_value_();
     }
     Value const&
-    read() const override
+    read() const override final
     {
         value_ = read_();
         return value_;
     }
     bool
-    ready_to_write() const override
+    ready_to_write() const override final
     {
         return ready_to_write_();
     }
     void
-    write(Value value) const override
+    write(Value value) const override final
     {
         write_(std::move(value));
     }

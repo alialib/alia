@@ -137,7 +137,7 @@ struct state_storage
 };
 
 template<class Value, class Capabilities>
-struct state_signal final
+struct state_signal
     : signal<state_signal<Value, Capabilities>, Value, Capabilities>
 {
     explicit state_signal(state_storage<Value>* data) : data_(data)
@@ -145,38 +145,38 @@ struct state_signal final
     }
 
     bool
-    has_value() const override
+    has_value() const override final
     {
         return data_->is_initialized();
     }
 
     Value const&
-    read() const override
+    read() const override final
     {
         return data_->get();
     }
 
     simple_id<unsigned> const&
-    value_id() const override
+    value_id() const override final
     {
         id_ = make_id(data_->version());
         return id_;
     }
 
     bool
-    ready_to_write() const override
+    ready_to_write() const override final
     {
         return true;
     }
 
     void
-    write(Value value) const override
+    write(Value value) const override final
     {
         data_->set(std::move(value));
     }
 
     Value
-    movable_value() const override
+    movable_value() const override final
     {
         Value movable = std::move(data_->untracked_nonconst_ref());
         return movable;

@@ -94,7 +94,7 @@ struct exception : std::exception
 template<class Signature>
 class function_view;
 template<class Return, class... Args>
-class function_view<Return(Args...)> final
+class function_view<Return(Args...)>
 {
  private:
     using signature_type = Return(void*, Args...);
