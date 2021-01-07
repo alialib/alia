@@ -12,8 +12,7 @@ struct signal_validation_data
 };
 
 template<class Wrapped>
-struct validated_signal final
-    : signal_wrapper<validated_signal<Wrapped>, Wrapped>
+struct validated_signal : signal_wrapper<validated_signal<Wrapped>, Wrapped>
 {
     validated_signal()
     {
@@ -23,19 +22,19 @@ struct validated_signal final
     {
     }
     bool
-    has_value() const override
+    has_value() const override final
     {
         return !data_->error && this->wrapped_.has_value();
     }
     bool
-    invalidate(std::exception_ptr error) const override
+    invalidate(std::exception_ptr error) const override final
     {
         data_->error = error;
         this->wrapped_.invalidate(error);
         return true;
     }
     bool
-    is_invalidated() const override
+    is_invalidated() const override final
     {
         return data_->error || this->wrapped_.is_invalidated();
     }
