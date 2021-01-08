@@ -45,6 +45,11 @@ initialize(
     emscripten::val placeholder_dom_node,
     std::function<void(html::context)> controller);
 
+// Install an event handler to monitor the hash.
+// This needs to be done to enable SPA-style routing.
+void
+enable_hash_monitoring(html::system& dom_system);
+
 }} // namespace alia::html
 
 #endif
