@@ -242,6 +242,8 @@ router(Context ctx)
             get_location_hash(ctx)));
 }
 
+namespace {
+
 auto
 set_route(html::context ctx)
 {
@@ -251,6 +253,8 @@ set_route(html::context ctx)
         update_location_hash(system);
     });
 }
+
+} // namespace
 
 }} // namespace alia::html
 

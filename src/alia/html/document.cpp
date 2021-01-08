@@ -38,7 +38,8 @@ document_title(html::context ctx, readable<std::string> title)
         id,
         add_default(title, ""),
         [](auto new_title) {
-            emscripten::val::global("document").set("title", new_title);
+            emscripten::val::global("document")
+                .set("title", emscripten::val(new_title));
         },
         [] {});
 }
