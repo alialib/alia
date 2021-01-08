@@ -135,23 +135,25 @@ initialize(
 
     // Replace the requested node in the DOM with our root DOM node.
     emscripten::val document = emscripten::val::global("document");
-    // HACK to get the root element to fill the whole window.
-    // root.call<void>(
-    //     "setAttribute", emscripten::val("class"), emscripten::val("h-100"));
     create_as_placeholder_root(
         dom_system.root_node.object, placeholder_dom_node);
 
-    // Query the hash and install an event handler to monitor it.
+    // Query the hash.
     update_location_hash(dom_system);
-    dom_system.onhashchange = [&](emscripten::val) {
-        update_location_hash(dom_system);
-        refresh_system(alia_system);
-    };
-    detail::install_onhashchange_callback(&dom_system.onhashchange);
-    detail::install_onpopstate_callback(&dom_system.onhashchange);
 
     // Update our DOM.
     refresh_system(alia_system);
+}
+
+void
+enable_hash_monitoring(html::system& dom_system)
+{
+    dom_system.onhashchange = [&](emscripten::val) {
+        update_location_hash(dom_system);
+        refresh_system(dom_system.alia_system);
+    };
+    detail::install_onhashchange_callback(&dom_system.onhashchange);
+    detail::install_onpopstate_callback(&dom_system.onhashchange);
 }
 
 }} // namespace alia::html
