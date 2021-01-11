@@ -1,4 +1,4 @@
-.btn {
+.markdown-section div[class^='demo-panel'] button {
     position: relative;
     display: inline-block;
     box-sizing: border-box;
@@ -24,13 +24,13 @@
     transition: box-shadow 0.2s;
 }
 
-.btn::-moz-focus-inner {
+.markdown-section div[class^='demo-panel'] button {
     border: none;
 }
 
 /* Overlay */
 
-.btn::before {
+.markdown-section div[class^='demo-panel'] button::before {
     content: "";
     position: absolute;
     top: 0;
@@ -44,7 +44,7 @@
 
 /* Ripple */
 
-.btn::after {
+.markdown-section div[class^='demo-panel'] button::after {
     content: "";
     position: absolute;
     left: 50%;
@@ -63,29 +63,29 @@
 
 /* Hover, Focus */
 
-.btn:hover, .btn:focus {
+.markdown-section div[class^='demo-panel'] button:hover, ..markdown-section div[class^='demo-panel'] button:focus {
     box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.2), 0 4px 5px 0 rgba(0, 0, 0, 0.14), 0 1px 10px 0 rgba(0, 0, 0, 0.12);
 }
 
-.btn:hover::before {
+.markdown-section div[class^='demo-panel'] button:hover::before {
     opacity: 0.08;
 }
 
-.btn:focus::before {
+.markdown-section div[class^='demo-panel'] button:focus::before {
     opacity: 0.24;
 }
 
-.btn:hover:focus::before {
+.markdown-section div[class^='demo-panel'] button:hover:focus::before {
     opacity: 0.3;
 }
 
 /* Active */
 
-.btn:active {
+.markdown-section div[class^='demo-panel'] button:active {
     box-shadow: 0 5px 5px -3px rgba(0, 0, 0, 0.2), 0 8px 10px 1px rgba(0, 0, 0, 0.14), 0 3px 14px 2px rgba(0, 0, 0, 0.12);
 }
 
-.btn:active::after {
+.markdown-section div[class^='demo-panel'] button:active::after {
     opacity: 0.32;
     transform: translate(-50%, -50%) scale(0);
     transition: transform 0s;
@@ -93,17 +93,17 @@
 
 /* Disabled */
 
-.btn:disabled {
+.markdown-section div[class^='demo-panel'] button:disabled {
     color: rgba(var(--pure-material-onsurface-rgb, 0, 0, 0), 0.38);
     background-color: rgba(var(--pure-material-onsurface-rgb, 0, 0, 0), 0.12);
     box-shadow: none;
     cursor: initial;
 }
 
-.btn:disabled::before {
+.markdown-section div[class^='demo-panel'] button:disabled::before {
     opacity: 0;
 }
 
-.btn:disabled::after {
+.markdown-section div[class^='demo-panel'] button:disabled::after {
     opacity: 0;
 }
