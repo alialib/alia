@@ -155,6 +155,13 @@ struct signal_capabilities_union
 // irrespective of the type of the value that the signal carries.
 struct untyped_signal_base
 {
+    // virtual destructor - Signals really aren't meant to be stored by a
+    // pointer-to-base, so in theory this shouldn't be necessary, but it seems
+    // there's no way to avoid warnings without.
+    virtual ~untyped_signal_base()
+    {
+    }
+
     // Does the signal currently have a value?
     virtual bool
     has_value() const = 0;
@@ -326,7 +333,7 @@ struct signal<
 
 // signal_ref is a reference to a signal that acts as a signal itself.
 template<class Value, class Capabilities>
-struct signal_ref final
+struct signal_ref
     : signal<signal_ref<Value, Capabilities>, Value, Capabilities>
 {
     // Construct from any signal with compatible capabilities.
@@ -349,42 +356,42 @@ struct signal_ref final
     // implementation of signal_interface...
 
     bool
-    has_value() const override
+    has_value() const override final
     {
         return ref_->has_value();
     }
     Value const&
-    read() const override
+    read() const override final
     {
         return ref_->read();
     }
     Value
-    movable_value() const override
+    movable_value() const override final
     {
         return ref_->movable_value();
     }
     id_interface const&
-    value_id() const override
+    value_id() const override final
     {
         return ref_->value_id();
     }
     bool
-    ready_to_write() const override
+    ready_to_write() const override final
     {
         return ref_->ready_to_write();
     }
     void
-    write(Value value) const override
+    write(Value value) const override final
     {
         ref_->write(std::move(value));
     }
     bool
-    invalidate(std::exception_ptr error) const override
+    invalidate(std::exception_ptr error) const override final
     {
         return ref_->invalidate(error);
     }
     bool
-    is_invalidated() const override
+    is_invalidated() const override final
     {
         return ref_->is_invalidated();
     }
