@@ -166,6 +166,17 @@ TEST_CASE("is_duplex_signal_type", "[signals][core]")
     REQUIRE(!is_duplex_signal_type<std::string>::value);
 }
 
+TEST_CASE("is_clearable_signal_type", "[signals][core]")
+{
+    REQUIRE(!is_clearable_signal_type<readable<int>>::value);
+    REQUIRE(!is_clearable_signal_type<writable<int>>::value);
+    REQUIRE(!is_clearable_signal_type<duplex<int>>::value);
+    REQUIRE(
+        is_clearable_signal_type<signal_ref<int, clearable_signal>>::value);
+    REQUIRE(!is_clearable_signal_type<int>::value);
+    REQUIRE(!is_clearable_signal_type<std::string>::value);
+}
+
 TEST_CASE("signal_ref", "[signals][core]")
 {
     int x = 1;

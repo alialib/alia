@@ -53,37 +53,72 @@ struct signal_writable
     static constexpr unsigned level = 1;
 };
 
+// The following are the same, but for clearing. (Clearing is also a boolean
+// property, so it also only has two levels.)
+struct signal_unclearable
+{
+    static constexpr unsigned level = 0;
+};
+struct signal_clearable
+{
+    static constexpr unsigned level = 1;
+};
+
 // combined capabilities tags
-template<class Reading, class Writing>
+template<class Reading, class Writing, class Clearing>
 struct signal_capabilities
 {
     typedef Reading reading;
     typedef Writing writing;
+    typedef Clearing clearing;
 };
 
-// useful signal capabilities combinations
-typedef signal_capabilities<signal_readable, signal_unwritable>
+// supposedly useful signal capability combinations
+typedef signal_capabilities<
+    signal_readable,
+    signal_unwritable,
+    signal_unclearable>
     read_only_signal;
-typedef signal_capabilities<signal_copyable, signal_unwritable>
+typedef signal_capabilities<
+    signal_copyable,
+    signal_unwritable,
+    signal_unclearable>
     copyable_read_only_signal;
-typedef signal_capabilities<signal_movable, signal_unwritable>
+typedef signal_capabilities<
+    signal_movable,
+    signal_unwritable,
+    signal_unclearable>
     movable_read_only_signal;
-typedef signal_capabilities<signal_unreadable, signal_writable>
+typedef signal_capabilities<
+    signal_unreadable,
+    signal_writable,
+    signal_unclearable>
     write_only_signal;
-typedef signal_capabilities<signal_readable, signal_writable>
+typedef signal_capabilities<
+    signal_readable,
+    signal_writable,
+    signal_unclearable>
     readable_duplex_signal;
-typedef signal_capabilities<signal_copyable, signal_writable>
+typedef signal_capabilities<
+    signal_copyable,
+    signal_writable,
+    signal_unclearable>
     copyable_duplex_signal;
-typedef signal_capabilities<signal_movable, signal_writable>
+typedef signal_capabilities<
+    signal_movable,
+    signal_writable,
+    signal_unclearable>
     movable_duplex_signal;
 typedef readable_duplex_signal duplex_signal;
+typedef signal_capabilities<signal_readable, signal_writable, signal_clearable>
+    clearable_signal;
 
-// signal_rw_capability_is_compatible<Expected,Actual>::value yields a
+// signal_capability_level_is_compatible<Expected,Actual>::value yields a
 // compile-time boolean indicating whether or not a signal with :Actual
-// reading/writing capabilities can be used in a context expecting :Expected
-// capabilities.
+// capability level can be used in a context expecting :Expected capability
+// level.
 template<class Expected, class Actual>
-struct signal_rw_capability_is_compatible
+struct signal_capability_level_is_compatible
 {
     static constexpr bool value = Expected::level <= Actual::level;
 };
@@ -94,20 +129,25 @@ struct signal_rw_capability_is_compatible
 template<class Expected, class Actual>
 struct signal_capabilities_compatible
     : std::conditional_t<
-          signal_rw_capability_is_compatible<
+          signal_capability_level_is_compatible<
               typename Expected::reading,
               typename Actual::reading>::value,
-          signal_rw_capability_is_compatible<
-              typename Expected::writing,
-              typename Actual::writing>,
+          std::conditional_t<
+              signal_capability_level_is_compatible<
+                  typename Expected::writing,
+                  typename Actual::writing>::value,
+              signal_capability_level_is_compatible<
+                  typename Expected::clearing,
+                  typename Actual::clearing>,
+              std::false_type>,
           std::false_type>
 {
 };
 
-// signal_rw_capability_intersection<A,B>::type yields the type representing
-// the intersection of the read/write capabilities :A and :B.
+// signal_capability_level_intersection<A,B>::type yields the type representing
+// the intersection of the capability levels :A and :B.
 template<class A, class B>
-struct signal_rw_capability_intersection
+struct signal_capability_level_intersection
     : std::conditional<A::level <= B::level, A, B>
 {
 };
@@ -119,19 +159,22 @@ template<class A, class B>
 struct signal_capabilities_intersection
 {
     typedef signal_capabilities<
-        typename signal_rw_capability_intersection<
+        typename signal_capability_level_intersection<
             typename A::reading,
             typename B::reading>::type,
-        typename signal_rw_capability_intersection<
+        typename signal_capability_level_intersection<
             typename A::writing,
-            typename B::writing>::type>
+            typename B::writing>::type,
+        typename signal_capability_level_intersection<
+            typename A::clearing,
+            typename B::clearing>::type>
         type;
 };
 
-// signal_rw_capability_union<A,B>::type yields the type representing the
-// union of the read/write capabilities :A and :B.
+// signal_level_capability_union<A,B>::type yields the type representing the
+// union of the capability levels :A and :B.
 template<class A, class B>
-struct signal_rw_capability_union
+struct signal_capability_level_union
     : std::conditional<A::level <= B::level, B, A>
 {
 };
@@ -142,12 +185,15 @@ template<class A, class B>
 struct signal_capabilities_union
 {
     typedef signal_capabilities<
-        typename signal_rw_capability_union<
+        typename signal_capability_level_union<
             typename A::reading,
             typename B::reading>::type,
-        typename signal_rw_capability_union<
+        typename signal_capability_level_union<
             typename A::writing,
-            typename B::writing>::type>
+            typename B::writing>::type,
+        typename signal_capability_level_union<
+            typename A::clearing,
+            typename B::clearing>::type>
         type;
 };
 
@@ -181,6 +227,10 @@ struct untyped_signal_base
     // Is the signal currently ready to write?
     virtual bool
     ready_to_write() const = 0;
+
+    // Clear the signal.
+    virtual void
+    clear() const = 0;
 
     // WARNING: EXPERIMENTAL VALIDATION STUFF FOLLOWS...
 
@@ -275,38 +325,35 @@ struct signal : signal_base<Derived, Value, Capabilities>
         throw nullptr;                                                        \
     }
 
+#define ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()                           \
+    void clear() const override                                               \
+    {                                                                         \
+        throw nullptr;                                                        \
+    }
+
 template<class Derived, class Value>
 struct signal<Derived, Value, read_only_signal>
     : signal_base<Derived, Value, read_only_signal>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)
     ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)
+    ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
 };
 
 template<class Derived, class Value>
-struct signal<
-    Derived,
-    Value,
-    signal_capabilities<signal_movable, signal_unwritable>>
-    : signal_base<
-          Derived,
-          Value,
-          signal_capabilities<signal_movable, signal_unwritable>>
+struct signal<Derived, Value, movable_read_only_signal>
+    : signal_base<Derived, Value, movable_read_only_signal>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)
+    ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
 };
 
 template<class Derived, class Value>
-struct signal<
-    Derived,
-    Value,
-    signal_capabilities<signal_copyable, signal_unwritable>>
-    : signal_base<
-          Derived,
-          Value,
-          signal_capabilities<signal_copyable, signal_unwritable>>
+struct signal<Derived, Value, copyable_read_only_signal>
+    : signal_base<Derived, Value, copyable_read_only_signal>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)
+    ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
 };
 
 template<class Derived, class Value>
@@ -314,19 +361,29 @@ struct signal<Derived, Value, write_only_signal>
     : signal_base<Derived, Value, write_only_signal>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_READ_INTERFACE(Value)
+    ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
 };
 
 template<class Derived, class Value>
-struct signal<
-    Derived,
-    Value,
-    signal_capabilities<signal_readable, signal_writable>>
-    : signal_base<
-          Derived,
-          Value,
-          signal_capabilities<signal_readable, signal_writable>>
+struct signal<Derived, Value, readable_duplex_signal>
+    : signal_base<Derived, Value, readable_duplex_signal>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)
+    ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
+};
+
+template<class Derived, class Value>
+struct signal<Derived, Value, movable_duplex_signal>
+    : signal_base<Derived, Value, movable_duplex_signal>
+{
+    ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
+};
+
+template<class Derived, class Value>
+struct signal<Derived, Value, copyable_duplex_signal>
+    : signal_base<Derived, Value, copyable_duplex_signal>
+{
+    ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
 };
 
 // LCOV_EXCL_STOP
@@ -425,9 +482,9 @@ struct is_signal_type : std::is_base_of<untyped_signal_base, T>
 // signal_is_readable<Signal>::value yields a compile-time boolean indicating
 // whether or not the given signal type supports reading.
 template<class Signal>
-struct signal_is_readable : signal_capabilities_compatible<
-                                read_only_signal,
-                                typename Signal::capabilities>
+struct signal_is_readable : signal_capability_level_is_compatible<
+                                signal_readable,
+                                typename Signal::capabilities::reading>
 {
 };
 
@@ -480,9 +537,9 @@ struct validation_error : exception
 // signal_is_writable<Signal>::value yields a compile-time boolean indicating
 // whether or not the given signal type supports writing.
 template<class Signal>
-struct signal_is_writable : signal_capabilities_compatible<
-                                write_only_signal,
-                                typename Signal::capabilities>
+struct signal_is_writable : signal_capability_level_is_compatible<
+                                signal_writable,
+                                typename Signal::capabilities::writing>
 {
 };
 
@@ -554,7 +611,7 @@ struct is_duplex_signal_type : std::conditional_t<
 // signal_is_copyable<Signal>::value yields a compile-time boolean indicating
 // whether or not the given signal type supports copying.
 template<class Signal>
-struct signal_is_copyable : signal_rw_capability_is_compatible<
+struct signal_is_copyable : signal_capability_level_is_compatible<
                                 signal_copyable,
                                 typename Signal::capabilities::reading>
 {
@@ -573,7 +630,7 @@ struct is_copyable_signal_type : std::conditional_t<
 // signal_is_movable<Signal>::value yields a compile-time boolean indicating
 // whether or not the given signal type allows moving.
 template<class Signal>
-struct signal_is_movable : signal_rw_capability_is_compatible<
+struct signal_is_movable : signal_capability_level_is_compatible<
                                signal_movable,
                                typename Signal::capabilities::reading>
 {
@@ -616,6 +673,35 @@ forward_signal(Signal const& signal)
 {
     assert(signal.has_value());
     return signal.read();
+}
+
+// signal_is_clearable<Signal>::value yields a compile-time boolean indicating
+// whether or not the given signal type supports clearing.
+template<class Signal>
+struct signal_is_clearable : signal_capability_level_is_compatible<
+                                 signal_clearable,
+                                 typename Signal::capabilities::clearing>
+{
+};
+
+// is_clearable_signal_type<T>::value yields a compile-time boolean indicating
+// whether or not T is an alia signal that supports clearing.
+template<class T>
+struct is_clearable_signal_type : std::conditional_t<
+                                      is_signal_type<T>::value,
+                                      signal_is_clearable<T>,
+                                      std::false_type>
+{
+};
+
+// Clear a signal's value.
+// Unlike calling signal.clear() directly, this will generate a compile-time
+// error if the signal's type doesn't support clearing.
+template<class Signal>
+std::enable_if_t<signal_is_clearable<Signal>::value>
+clear_signal(Signal const& signal)
+{
+    signal.clear();
 }
 
 } // namespace alia

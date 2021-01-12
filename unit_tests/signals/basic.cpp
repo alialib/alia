@@ -11,6 +11,7 @@ TEST_CASE("empty signal", "[signals][basic]")
     typedef decltype(s) signal_t;
     REQUIRE(signal_is_readable<signal_t>::value);
     REQUIRE(signal_is_writable<signal_t>::value);
+    REQUIRE(!signal_is_clearable<signal_t>::value);
 
     REQUIRE(s.value_id() == null_id);
     REQUIRE(!signal_has_value(s));
@@ -24,6 +25,7 @@ TEST_CASE("value signal", "[signals][basic]")
     typedef decltype(s) signal_t;
     REQUIRE(signal_is_readable<signal_t>::value);
     REQUIRE(!signal_is_writable<signal_t>::value);
+    REQUIRE(!signal_is_clearable<signal_t>::value);
 
     REQUIRE(signal_has_value(s));
     REQUIRE(read_signal(s) == 1);
@@ -41,6 +43,7 @@ TEST_CASE("direct signal", "[signals][basic]")
     typedef decltype(s) signal_t;
     REQUIRE(signal_is_readable<signal_t>::value);
     REQUIRE(signal_is_writable<signal_t>::value);
+    REQUIRE(!signal_is_clearable<signal_t>::value);
 
     REQUIRE(signal_has_value(s));
     REQUIRE(read_signal(s) == 1);
@@ -58,6 +61,7 @@ TEST_CASE("direct const signal", "[signals][basic]")
     typedef decltype(s) signal_t;
     REQUIRE(signal_is_readable<signal_t>::value);
     REQUIRE(!signal_is_writable<signal_t>::value);
+    REQUIRE(!signal_is_clearable<signal_t>::value);
 
     REQUIRE(signal_has_value(s));
     REQUIRE(read_signal(s) == 1);
@@ -70,6 +74,7 @@ TEST_CASE("string literal signal", "[signals][basic]")
     typedef decltype(s) signal_t;
     REQUIRE(signal_is_readable<signal_t>::value);
     REQUIRE(!signal_is_writable<signal_t>::value);
+    REQUIRE(!signal_is_clearable<signal_t>::value);
 
     REQUIRE(signal_has_value(s));
     REQUIRE(read_signal(s) == std::string("hello"));
@@ -86,6 +91,7 @@ TEST_CASE("string literal operator", "[signals][basic]")
     typedef decltype(s) signal_t;
     REQUIRE(signal_is_readable<signal_t>::value);
     REQUIRE(!signal_is_writable<signal_t>::value);
+    REQUIRE(!signal_is_clearable<signal_t>::value);
 
     REQUIRE(signal_has_value(s));
     REQUIRE(read_signal(s) == std::string("hello"));
