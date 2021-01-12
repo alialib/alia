@@ -10,6 +10,7 @@ TEST_CASE("simple object tree", "[flow][object_trees]")
 
     tree_node<test_object> root;
     root.object.name = "root";
+    REQUIRE(get_object(root).name == "root");
 
     auto controller = [&](test_context ctx) {
         ALIA_IF(n & 1)
