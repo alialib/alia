@@ -27,32 +27,32 @@ signalize(Value v)
 // pretends to have read capabilities. It will never actually have a value, but
 // it will type-check as a readable signal.
 template<class Wrapped>
-struct readability_faker final : signal_wrapper<
-                                     readability_faker<Wrapped>,
-                                     Wrapped,
-                                     typename Wrapped::value_type,
-                                     typename signal_capabilities_union<
-                                         read_only_signal,
-                                         typename Wrapped::capabilities>::type>
+struct readability_faker : signal_wrapper<
+                               readability_faker<Wrapped>,
+                               Wrapped,
+                               typename Wrapped::value_type,
+                               typename signal_capabilities_union<
+                                   read_only_signal,
+                                   typename Wrapped::capabilities>::type>
 {
     readability_faker(Wrapped wrapped)
         : readability_faker::signal_wrapper(std::move(wrapped))
     {
     }
     id_interface const&
-    value_id() const override
+    value_id() const override final
     {
         return null_id;
     }
     bool
-    has_value() const override
+    has_value() const override final
     {
         return false;
     }
     // Since this is only faking readability, read() should never be called.
     // LCOV_EXCL_START
     typename Wrapped::value_type const&
-    read() const override
+    read() const override final
     {
 #ifdef __clang__
 #pragma clang diagnostic push
@@ -76,26 +76,26 @@ fake_readability(Wrapped wrapped)
 // pretends to have write capabilities. It will never actually be ready to
 // write, but it will type-check as a writable signal.
 template<class Wrapped>
-struct writability_faker final : signal_wrapper<
-                                     writability_faker<Wrapped>,
-                                     Wrapped,
-                                     typename Wrapped::value_type,
-                                     typename signal_capabilities_union<
-                                         write_only_signal,
-                                         typename Wrapped::capabilities>::type>
+struct writability_faker : signal_wrapper<
+                               writability_faker<Wrapped>,
+                               Wrapped,
+                               typename Wrapped::value_type,
+                               typename signal_capabilities_union<
+                                   write_only_signal,
+                                   typename Wrapped::capabilities>::type>
 {
     writability_faker(Wrapped wrapped)
         : writability_faker::signal_wrapper(std::move(wrapped))
     {
     }
     bool
-    ready_to_write() const override
+    ready_to_write() const override final
     {
         return false;
     }
     // Since this is only faking writability, write() should never be called.
     // LCOV_EXCL_START
-    void write(typename Wrapped::value_type) const override
+    void write(typename Wrapped::value_type) const override final
     {
     }
     // LCOV_EXCL_STOP
@@ -111,7 +111,7 @@ fake_writability(Wrapped wrapped)
 // the value type :Value. The proxy will apply static_casts to convert its
 // own values to and from :x's value type.
 template<class Wrapped, class To>
-struct casting_signal final
+struct casting_signal
     : casting_signal_wrapper<casting_signal<Wrapped, To>, Wrapped, To>
 {
     casting_signal(Wrapped wrapped)
@@ -119,18 +119,18 @@ struct casting_signal final
     {
     }
     To const&
-    read() const override
+    read() const override final
     {
         value_ = this->movable_value();
         return value_;
     }
     To
-    movable_value() const override
+    movable_value() const override final
     {
         return static_cast<To>(forward_signal(this->wrapped_));
     }
     void
-    write(To value) const override
+    write(To value) const override final
     {
         return this->wrapped_.write(
             static_cast<typename Wrapped::value_type>(value));
@@ -172,19 +172,19 @@ signal_cast(Wrapped wrapped)
 // has_value(x) yields a signal to a boolean which indicates whether or not :x
 // has a value. (The returned signal itself always has a value.)
 template<class Wrapped>
-struct value_presence_signal final
+struct value_presence_signal
     : regular_signal<value_presence_signal<Wrapped>, bool, read_only_signal>
 {
     value_presence_signal(Wrapped wrapped) : wrapped_(std::move(wrapped))
     {
     }
     bool
-    has_value() const override
+    has_value() const override final
     {
         return true;
     }
     bool const&
-    read() const override
+    read() const override final
     {
         value_ = wrapped_.has_value();
         return value_;
@@ -204,19 +204,19 @@ has_value(Wrapped wrapped)
 // ready_to_write(x) yields a signal to a boolean that indicates whether or not
 // :x is ready to write. (The returned signal always has a value.)
 template<class Wrapped>
-struct write_readiness_signal final
+struct write_readiness_signal
     : regular_signal<write_readiness_signal<Wrapped>, bool, read_only_signal>
 {
     write_readiness_signal(Wrapped wrapped) : wrapped_(std::move(wrapped))
     {
     }
     bool
-    has_value() const override
+    has_value() const override final
     {
         return true;
     }
     bool const&
-    read() const override
+    read() const override final
     {
         value_ = wrapped_.ready_to_write();
         return value_;
@@ -238,7 +238,7 @@ ready_to_write(Wrapped wrapped)
 // and that of :default otherwise.
 // All writes go directly to :primary.
 template<class Primary, class Default>
-struct default_value_signal final
+struct default_value_signal
     : signal_wrapper<default_value_signal<Primary, Default>, Primary>
 {
     default_value_signal()
@@ -250,18 +250,18 @@ struct default_value_signal final
     {
     }
     bool
-    has_value() const override
+    has_value() const override final
     {
         return this->wrapped_.has_value() || default_.has_value();
     }
     typename Primary::value_type const&
-    read() const override
+    read() const override final
     {
         return this->wrapped_.has_value() ? this->wrapped_.read()
                                           : default_.read();
     }
     id_interface const&
-    value_id() const override
+    value_id() const override final
     {
         id_ = combine_ids(
             make_id(this->wrapped_.has_value()),
@@ -332,8 +332,7 @@ simplify_id(Wrapped wrapped)
 // evaluates to a signal equivalent to :signal. Otherwise, it evaluates to an
 // empty signal of the same type.
 template<class Primary, class Mask>
-struct masking_signal final
-    : signal_wrapper<masking_signal<Primary, Mask>, Primary>
+struct masking_signal : signal_wrapper<masking_signal<Primary, Mask>, Primary>
 {
     masking_signal()
     {
@@ -344,12 +343,12 @@ struct masking_signal final
     {
     }
     bool
-    has_value() const override
+    has_value() const override final
     {
         return mask_.has_value() && mask_.read() && this->wrapped_.has_value();
     }
     id_interface const&
-    value_id() const override
+    value_id() const override final
     {
         if (mask_.has_value() && mask_.read())
             return this->wrapped_.value_id();
@@ -357,7 +356,7 @@ struct masking_signal final
             return null_id;
     }
     bool
-    ready_to_write() const override
+    ready_to_write() const override final
     {
         return mask_.has_value() && mask_.read()
                && this->wrapped_.ready_to_write();
@@ -393,7 +392,7 @@ mask(Signal signal, AvailabilityFlag availability_flag)
 // :signal.
 //
 template<class Primary, class Mask>
-struct write_masking_signal final
+struct write_masking_signal
     : signal_wrapper<write_masking_signal<Primary, Mask>, Primary>
 {
     write_masking_signal()
@@ -405,7 +404,7 @@ struct write_masking_signal final
     {
     }
     bool
-    ready_to_write() const override
+    ready_to_write() const override final
     {
         return mask_.has_value() && mask_.read()
                && this->wrapped_.ready_to_write();
@@ -451,7 +450,7 @@ disable_writes(Signal s)
 // :signal.
 //
 template<class Primary, class Mask>
-struct read_masking_signal final
+struct read_masking_signal
     : signal_wrapper<read_masking_signal<Primary, Mask>, Primary>
 {
     read_masking_signal()
@@ -463,7 +462,7 @@ struct read_masking_signal final
     {
     }
     bool
-    has_value() const override
+    has_value() const override final
     {
         return mask_.has_value() && mask_.read() && this->wrapped_.has_value();
     }
@@ -498,10 +497,10 @@ disable_reads(Signal s)
 // unwrap(signal), where :signal is a signal carrying a std::optional value,
 // yields a signal that directly carries the value wrapped inside the optional.
 template<class Wrapped>
-struct unwrapper_signal final : casting_signal_wrapper<
-                                    unwrapper_signal<Wrapped>,
-                                    Wrapped,
-                                    typename Wrapped::value_type::value_type>
+struct unwrapper_signal : casting_signal_wrapper<
+                              unwrapper_signal<Wrapped>,
+                              Wrapped,
+                              typename Wrapped::value_type::value_type>
 {
     unwrapper_signal()
     {
@@ -511,22 +510,22 @@ struct unwrapper_signal final : casting_signal_wrapper<
     {
     }
     bool
-    has_value() const override
+    has_value() const override final
     {
         return this->wrapped_.has_value() && this->wrapped_.read().has_value();
     }
     typename Wrapped::value_type::value_type const&
-    read() const override
+    read() const override final
     {
         return this->wrapped_.read().value();
     }
     typename Wrapped::value_type::value_type
-    movable_value() const override
+    movable_value() const override final
     {
         return this->wrapped_.movable_value().value();
     }
     id_interface const&
-    value_id() const override
+    value_id() const override final
     {
         if (this->has_value())
             return this->wrapped_.value_id();
