@@ -38,10 +38,9 @@ html::p(ctx, conditional(n_is_prime, "N is prime!", "N is NOT prime."));
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
+    initialize(the_system, dom_id, [](html::context ctx) {
         demo_ui(ctx, enforce_validity(ctx, get_state(ctx, empty<int>())));
     });
 }
@@ -87,10 +86,9 @@ html::p(ctx, alia::printf(ctx, "# of primes: %d", prime_count));
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, demo_ui);
+    initialize(the_system, dom_id, demo_ui);
 }
 
 static demo the_demo("transform-demo", init_demo);
@@ -135,10 +133,9 @@ demo_ui(html::context ctx)
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, demo_ui);
+    initialize(the_system, dom_id, demo_ui);
 }
 
 static demo the_demo("metered-transform-demo", init_demo);
@@ -173,10 +170,9 @@ html::p(ctx, alia::printf(ctx, "# of primes: %d", prime_count));
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, demo_ui);
+    initialize(the_system, dom_id, demo_ui);
 }
 
 static demo the_demo("direct-counting", init_demo);
@@ -220,10 +216,9 @@ demo_ui(html::context ctx)
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, demo_ui);
+    initialize(the_system, dom_id, demo_ui);
 }
 
 static demo the_demo("metered-direct-counting", init_demo);

@@ -96,10 +96,9 @@ fetch_ui(html::context ctx, duplex<std::string> country_code)
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
+    initialize(the_system, dom_id, [](html::context ctx) {
         fetch_ui(ctx, get_state(ctx, "us"));
     });
 }

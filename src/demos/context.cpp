@@ -44,12 +44,10 @@ main_app_ui(html::context ctx)
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
-        main_app_ui(ctx);
-    });
+    initialize(
+        the_system, dom_id, [](html::context ctx) { main_app_ui(ctx); });
 }
 
 static demo the_demo("custom-context", init_demo);

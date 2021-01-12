@@ -33,10 +33,9 @@ alia_end
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
+    initialize(the_system, dom_id, [](html::context ctx) {
         demo_ui(ctx, enforce_validity(ctx, get_state(ctx, empty<int>())));
     });
 }
@@ -122,13 +121,12 @@ records_ui(html::context ctx, std::vector<my_record>& records)
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
     static std::vector<my_record> the_records
         = {{"Demo Record", 2, 4}, {"Fix Me!", 200, 0}};
 
-    initialize(the_dom, the_system, dom_id, [&](html::context ctx) {
+    initialize(the_system, dom_id, [&](html::context ctx) {
         records_ui(ctx, the_records);
     });
 }
@@ -163,12 +161,11 @@ scoreboard(html::context ctx, duplex<std::map<std::string, int>> scores)
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
     static std::map<std::string, int> the_scores = {{"Karen", 5}, {"Tom", 2}};
 
-    initialize(the_dom, the_system, dom_id, [&](html::context ctx) {
+    initialize(the_system, dom_id, [&](html::context ctx) {
         scoreboard(ctx, direct(the_scores));
     });
 }
@@ -213,10 +210,9 @@ scoreboard(html::context ctx, duplex<std::vector<player>> players)
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, [&](html::context ctx) {
+    initialize(the_system, dom_id, [&](html::context ctx) {
         scoreboard(ctx,
             get_state(ctx,
                 lambda_constant(
@@ -277,8 +273,7 @@ records_ui(html::context ctx, std::vector<my_record>& records)
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
     static std::vector<my_record> the_records
         = {{"abc", "ABC", 2, 4},
@@ -286,7 +281,7 @@ init_demo(std::string dom_id)
            {"ghi", "GHI", 1, 0},
            {"jkl", "JKL", -1, 3}};
 
-    initialize(the_dom, the_system, dom_id, [&](html::context ctx) {
+    initialize(the_system, dom_id, [&](html::context ctx) {
         records_ui(ctx, the_records);
     });
 }
@@ -325,10 +320,9 @@ alia_end
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, [&](html::context ctx) {
+    initialize(the_system, dom_id, [&](html::context ctx) {
         demo_ui(ctx, enforce_validity(ctx, get_state(ctx, empty<int>())));
     });
 }
@@ -368,10 +362,9 @@ alia_end
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, [&](html::context ctx) {
+    initialize(the_system, dom_id, [&](html::context ctx) {
         demo_ui(ctx, enforce_validity(ctx, get_state(ctx, empty<int>())));
     });
 }

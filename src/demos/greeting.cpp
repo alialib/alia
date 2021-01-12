@@ -23,10 +23,9 @@ greeting_ui(html::context ctx, duplex<std::string> name)
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
+    initialize(the_system, dom_id, [](html::context ctx) {
         greeting_ui(ctx, get_state(ctx, std::string()));
     });
 }
@@ -60,10 +59,9 @@ html::p(ctx, "My name is alia."); // node e
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
+    initialize(the_system, dom_id, [](html::context ctx) {
         demo_ui(ctx, get_state(ctx, std::string()));
     });
 }
@@ -91,10 +89,9 @@ demo_ui(html::context ctx, duplex<bool> show_message)
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
+    initialize(the_system, dom_id, [](html::context ctx) {
         demo_ui(ctx, get_state(ctx, false));
     });
 }
@@ -156,12 +153,10 @@ contrived_hello(html::context ctx)
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
-        contrived_hello(ctx);
-    });
+    initialize(
+        the_system, dom_id, [](html::context ctx) { contrived_hello(ctx); });
 }
 
 static demo the_demo("contrived-hello", init_demo);

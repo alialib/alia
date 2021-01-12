@@ -18,10 +18,9 @@ addition_ui(html::context ctx, duplex<double> a, duplex<double> b)
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
+    initialize(the_system, dom_id, [](html::context ctx) {
         addition_ui(
             ctx,
             enforce_validity(ctx, get_state(ctx, empty<double>())),
@@ -66,11 +65,10 @@ alia_end
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
     initialize(
-        the_dom, the_system, dom_id, [](html::context ctx) { demo_ui(ctx); });
+        the_system, dom_id, [](html::context ctx) { demo_ui(ctx); });
 }
 
 static demo the_demo("numerical-analysis", init_demo);
@@ -125,10 +123,9 @@ tip_calculator(html::context ctx)
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, tip_calculator);
+    initialize(the_system, dom_id, tip_calculator);
 }
 
 static demo the_demo("tip-calculator-demo", init_demo);
@@ -194,10 +191,9 @@ factor_tree_demo(html::context ctx, duplex<int> n)
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
+    initialize(the_system, dom_id, [](html::context ctx) {
         factor_tree_demo(ctx, enforce_validity(ctx, get_state(ctx, 600)));
     });
 }
