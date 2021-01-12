@@ -9,6 +9,9 @@
 
 namespace alia { namespace html { namespace detail {
 
+// A small/experimental routing framework for alia/HTML.
+// See the docs for usage and examples.
+
 struct path_component
 {
     std::string_view text;
@@ -255,6 +258,10 @@ set_route(html::context ctx)
 }
 
 } // namespace
+
+// Get the current location hash for the HTML context.
+direct_const_signal<std::string>
+get_location_hash(html::context ctx);
 
 }} // namespace alia::html
 

@@ -61,8 +61,9 @@ system::operator()(alia::context vanilla_ctx)
 
     if (is_refresh_event(ctx))
     {
-        traverse_object_tree(
-            traversal, this->root_node, [&]() { this->controller(ctx); });
+        traverse_object_tree(traversal, this->placeholder_node, [&]() {
+            this->controller(ctx);
+        });
     }
     else
     {
@@ -72,47 +73,26 @@ system::operator()(alia::context vanilla_ctx)
 
 void
 initialize(
-    html::system& dom_system,
-    alia::system& alia_system,
-    std::string const& dom_node_id,
+    html::system& system,
+    std::string const& placeholder_node_id,
     std::function<void(html::context)> controller)
 {
     emscripten::val document = emscripten::val::global("document");
-    emscripten::val placeholder
-        = document.call<emscripten::val>("getElementById", dom_node_id);
+    emscripten::val placeholder = document.call<emscripten::val>(
+        "getElementById", placeholder_node_id);
     if (placeholder.isNull())
     {
-        auto msg = dom_node_id + " not found in document";
+        auto msg = placeholder_node_id + " not found in document";
         EM_ASM_({ console.error(Module['UTF8ToString']($0)); }, msg.c_str());
         throw exception(msg);
     }
-    initialize(dom_system, alia_system, placeholder, controller);
-}
-
-direct_const_signal<std::string>
-get_location_hash(html::context ctx)
-{
-    return direct(const_cast<std::string const&>(get<system_tag>(ctx).hash));
-}
-
-void
-update_location_hash(html::system& dom_system)
-{
-    auto hash = emscripten::val::global("window")["location"]["hash"]
-                    .as<std::string>();
-    if (hash.empty() || hash[0] != '#')
-    {
-        hash = "#/";
-        history().push_url(hash);
-    }
-    dom_system.hash = hash;
+    initialize(system, placeholder, controller);
 }
 
 void
 initialize(
-    html::system& dom_system,
-    alia::system& alia_system,
-    emscripten::val placeholder_dom_node,
+    html::system& system,
+    emscripten::val placeholder_node,
     std::function<void(html::context)> controller)
 {
     // Initialize asm-dom (once).
@@ -128,32 +108,45 @@ initialize(
 
     // Initialize the alia::system and hook it up to the html::system.
     initialize_system(
-        alia_system,
-        std::ref(dom_system),
-        new dom_external_interface(alia_system));
-    dom_system.controller = std::move(controller);
+        system.alia_system,
+        std::ref(system),
+        new dom_external_interface(system.alia_system));
+    system.controller = std::move(controller);
 
     // Replace the requested node in the DOM with our root DOM node.
     emscripten::val document = emscripten::val::global("document");
     create_as_placeholder_root(
-        dom_system.root_node.object, placeholder_dom_node);
-
-    // Query the hash.
-    update_location_hash(dom_system);
+        system.placeholder_node.object, placeholder_node);
 
     // Update our DOM.
-    refresh_system(alia_system);
+    refresh_system(system.alia_system);
 }
 
 void
-enable_hash_monitoring(html::system& dom_system)
+update_location_hash(html::system& sys)
 {
-    dom_system.onhashchange = [&](emscripten::val) {
-        update_location_hash(dom_system);
-        refresh_system(dom_system.alia_system);
+    auto hash = emscripten::val::global("window")["location"]["hash"]
+                    .as<std::string>();
+    if (hash.empty() || hash[0] != '#')
+    {
+        hash = "#/";
+        history().push_url(hash);
+    }
+    sys.hash = hash;
+}
+
+void
+enable_hash_monitoring(html::system& sys)
+{
+    // Do an initial query.
+    update_location_hash(sys);
+    // Install monitors.
+    sys.onhashchange = [&sys](emscripten::val) {
+        update_location_hash(sys);
+        refresh_system(sys.alia_system);
     };
-    detail::install_onhashchange_callback(&dom_system.onhashchange);
-    detail::install_onpopstate_callback(&dom_system.onhashchange);
+    detail::install_onhashchange_callback(&sys.onhashchange);
+    detail::install_onpopstate_callback(&sys.onhashchange);
 }
 
 }} // namespace alia::html
