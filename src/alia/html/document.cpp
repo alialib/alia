@@ -4,32 +4,6 @@
 
 namespace alia { namespace html {
 
-document_object::document_object() : val_(emscripten::val::global("document"))
-{
-}
-
-void
-document_object::set_title(std::string title)
-{
-    val_.set("title", std::move(title));
-}
-std::string
-document_object::get_title()
-{
-    return val_["title"].as<std::string>();
-}
-
-void
-document_object::set_body(emscripten::val body)
-{
-    val_.set("body", std::move(body));
-}
-emscripten::val
-document_object::get_body()
-{
-    return val_["body"];
-}
-
 void
 document_title(html::context ctx, readable<std::string> title)
 {
