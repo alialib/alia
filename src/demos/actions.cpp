@@ -18,10 +18,9 @@ html::button(ctx, "Set It!", n <<= m);
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
+    initialize(the_system, dom_id, [](html::context ctx) {
         demo_ui(
             ctx,
             enforce_validity(ctx, get_state(ctx, 0)),
@@ -54,10 +53,9 @@ html::button(ctx, "Reset", n <<= 1);
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
+    initialize(the_system, dom_id, [](html::context ctx) {
         demo_ui(ctx, enforce_validity(ctx, get_state(ctx, 1)));
     });
 }
@@ -84,10 +82,9 @@ html::button(ctx, "Reset Both", (m <<= 0, n <<= 0));
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
+    initialize(the_system, dom_id, [](html::context ctx) {
         demo_ui(ctx, get_state(ctx, 0), get_state(ctx, 0));
     });
 }
@@ -116,10 +113,9 @@ html::button(ctx, "Deposit Your Coins", (in_hand <<= 0, in_bank += in_hand));
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
+    initialize(the_system, dom_id, [](html::context ctx) {
         demo_ui(ctx, get_state(ctx, 0), get_state(ctx, 0));
     });
 }
@@ -157,10 +153,9 @@ html::button(ctx, "Start", timer.start() << duration);
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
+    initialize(the_system, dom_id, [](html::context ctx) {
         demo_ui(ctx, enforce_validity(ctx, get_state(ctx, empty<int>())));
     });
 }
@@ -193,10 +188,9 @@ html::button(ctx, "Send", sender << message);
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
+    initialize(the_system, dom_id, [](html::context ctx) {
         demo_ui(ctx, get_state(ctx, std::string()));
     });
 }

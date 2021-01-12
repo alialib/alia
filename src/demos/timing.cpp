@@ -22,11 +22,9 @@ html::p(ctx,
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(
-        the_dom, the_system, dom_id, [](html::context ctx) { demo_ui(ctx); });
+    initialize(the_system, dom_id, [](html::context ctx) { demo_ui(ctx); });
 }
 
 static demo the_demo("time-signal", init_demo);
@@ -53,11 +51,9 @@ colored_box(
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(
-        the_dom, the_system, dom_id, [](html::context ctx) { demo_ui(ctx); });
+    initialize(the_system, dom_id, [](html::context ctx) { demo_ui(ctx); });
 }
 
 static demo the_demo("simple-animation", init_demo);
@@ -85,10 +81,9 @@ html::p(ctx, smooth(ctx, n));
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
+    initialize(the_system, dom_id, [](html::context ctx) {
         demo_ui(ctx, enforce_validity(ctx, get_state(ctx, 42)));
     });
 }
@@ -115,10 +110,9 @@ html::button(ctx, "Go Dark", color <<= rgb8(50, 50, 55));
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
+    initialize(the_system, dom_id, [](html::context ctx) {
         demo_ui(ctx, get_state(ctx, rgb8(50, 50, 55)));
     });
 }
@@ -153,10 +147,9 @@ html::p(ctx,
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
+    initialize(the_system, dom_id, [](html::context ctx) {
         demo_ui(ctx, enforce_validity(ctx, get_state(ctx, 1)));
     });
 }
@@ -192,10 +185,9 @@ html::p(ctx,
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
+    initialize(the_system, dom_id, [](html::context ctx) {
         demo_ui(ctx, get_state(ctx, 1));
     });
 }

@@ -19,10 +19,9 @@ html::input(ctx, offset(n, 10));
 void
 init_demo(std::string dom_id)
 {
-    static alia::system the_system;
-    static html::system the_dom;
+    static html::system the_system;
 
-    initialize(the_dom, the_system, dom_id, [](html::context ctx) {
+    initialize(the_system, dom_id, [](html::context ctx) {
         demo_ui(ctx, enforce_validity(ctx, get_state(ctx, 1.)));
     });
 }
