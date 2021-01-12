@@ -13,23 +13,27 @@ TEST_CASE("state_storage", "[signals][state]")
 {
     state_storage<int> s;
     REQUIRE(!s.is_initialized());
+    REQUIRE(!s.has_value());
     REQUIRE(s.version() == 0);
     unsigned version = 0;
 
     s.set(1);
     REQUIRE(s.is_initialized());
+    REQUIRE(s.has_value());
     REQUIRE(s.version() != 0);
     version = s.version();
     REQUIRE(s.get() == 1);
 
     s.nonconst_ref() = 4;
     REQUIRE(s.is_initialized());
+    REQUIRE(s.has_value());
     REQUIRE(s.version() != version);
     version = s.version();
     REQUIRE(s.get() == 4);
 
     s.clear();
-    REQUIRE(!s.is_initialized());
+    REQUIRE(s.is_initialized());
+    REQUIRE(!s.has_value());
     REQUIRE(s.version() != version);
     version = s.version();
 }
@@ -40,6 +44,8 @@ TEST_CASE("basic get_state", "[signals][state]")
     initialize_system(sys, [](context) {});
     do_traversal(sys, [&](context ctx) {
         auto state = get_state(ctx, empty<int>());
+
+        REQUIRE(signal_is_clearable<decltype(state)>::value);
 
         REQUIRE(!signal_has_value(state));
         REQUIRE(signal_ready_to_write(state));
@@ -56,6 +62,8 @@ TEST_CASE("basic get_state", "[signals][state]")
     do_traversal(sys, [&](context ctx) {
         auto state = get_state(ctx, value(12));
 
+        // Since we're not actually responding to an event here, we have to
+        // check to make sure we only do this once to avoid an infinite loop.
         if (read_signal(state) != 13)
             write_signal(state, 13);
     });
@@ -63,6 +71,20 @@ TEST_CASE("basic get_state", "[signals][state]")
         auto state = get_state(ctx, value(12));
 
         REQUIRE(read_signal(state) == 13);
+        REQUIRE(!state_id.matches(state.value_id()));
+        state_id.capture(state.value_id());
+    });
+    do_traversal(sys, [&](context ctx) {
+        auto state = get_state(ctx, value(12));
+
+        // Since we're not actually responding to an event here, we have to
+        // check to make sure we only do this once to avoid an infinite loop.
+        if (signal_has_value(state))
+            clear_signal(state);
+    });
+    do_traversal(sys, [&](context ctx) {
+        auto state = get_state(ctx, value(12));
+        REQUIRE(!signal_has_value(state));
         REQUIRE(!state_id.matches(state.value_id()));
     });
 }
