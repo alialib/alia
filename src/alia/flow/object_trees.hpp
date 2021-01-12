@@ -66,6 +66,14 @@ struct tree_node : noncopyable
     tree_node* children_ = nullptr;
 };
 
+// Get the object from a tree_node in a future-proof way.
+template<class Object>
+Object&
+get_object(tree_node<Object>& node)
+{
+    return node.object;
+}
+
 template<class Object>
 struct tree_traversal
 {
