@@ -560,7 +560,8 @@ struct signal_movement_activator
           typename Wrapped::value_type,
           signal_capabilities<
               signal_movable,
-              typename Wrapped::capabilities::writing>>
+              typename Wrapped::capabilities::writing,
+              typename Wrapped::capabilities::clearing>>
 {
     signal_movement_activator()
     {

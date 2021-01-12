@@ -26,6 +26,12 @@ struct state_storage
     bool
     is_initialized() const
     {
+        return version_ != 0;
+    }
+
+    bool
+    has_value() const
+    {
         return (version_ & 1) != 0;
     }
 
@@ -136,9 +142,14 @@ struct state_storage
     component_container_ptr container_;
 };
 
-template<class Value, class Capabilities>
-struct state_signal
-    : signal<state_signal<Value, Capabilities>, Value, Capabilities>
+template<class Value>
+struct state_signal : signal<
+                          state_signal<Value>,
+                          Value,
+                          signal_capabilities<
+                              signal_copyable,
+                              signal_writable,
+                              signal_clearable>>
 {
     explicit state_signal(state_storage<Value>* data) : data_(data)
     {
@@ -147,7 +158,7 @@ struct state_signal
     bool
     has_value() const override final
     {
-        return data_->is_initialized();
+        return data_->has_value();
     }
 
     Value const&
@@ -182,16 +193,22 @@ struct state_signal
         return movable;
     }
 
+    void
+    clear() const override final
+    {
+        data_->clear();
+    }
+
  private:
     state_storage<Value>* data_;
     mutable simple_id<unsigned> id_;
 };
 
 template<class Value>
-state_signal<Value, copyable_duplex_signal>
+state_signal<Value>
 make_state_signal(state_storage<Value>& data)
 {
-    return state_signal<Value, copyable_duplex_signal>(&data);
+    return state_signal<Value>(&data);
 }
 
 namespace detail {
