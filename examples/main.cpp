@@ -208,7 +208,6 @@ root_ui(html::context ctx)
 int
 main()
 {
-    static alia::system the_sys;
-    static html::system the_dom;
-    initialize(the_dom, the_sys, "alia-placeholder", root_ui);
+    static html::system the_sys;
+    initialize(the_sys, "alia-placeholder", root_ui);
 };
