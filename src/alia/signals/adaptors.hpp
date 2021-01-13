@@ -496,11 +496,34 @@ disable_reads(Signal s)
 
 // unwrap(signal), where :signal is a signal carrying a std::optional value,
 // yields a signal that directly carries the value wrapped inside the optional.
+
+template<class OptionalCapabilities>
+struct unwrapper_signal_capabilities
+{
+};
+template<class Reading, class Writing>
+struct unwrapper_signal_capabilities<signal_capabilities<Reading, Writing>>
+{
+    // If the std::optional signal is writable, then the 'unwrapped' signal
+    // is clearable.
+    typedef signal_capabilities<Reading, signal_clearable> type;
+};
+template<class Reading>
+struct unwrapper_signal_capabilities<
+    signal_capabilities<Reading, signal_unwritable>>
+{
+    // If the std::optional signal is NOT writable, then the 'unwrapped' signal
+    // also isn't.
+    typedef signal_capabilities<Reading, signal_unwritable> type;
+};
+
 template<class Wrapped>
 struct unwrapper_signal : casting_signal_wrapper<
                               unwrapper_signal<Wrapped>,
                               Wrapped,
-                              typename Wrapped::value_type::value_type>
+                              typename Wrapped::value_type::value_type,
+                              typename unwrapper_signal_capabilities<
+                                  typename Wrapped::capabilities>::type>
 {
     unwrapper_signal()
     {
@@ -536,6 +559,11 @@ struct unwrapper_signal : casting_signal_wrapper<
     write(typename Wrapped::value_type::value_type value) const override
     {
         this->wrapped_.write(std::move(value));
+    }
+    void
+    clear() const override
+    {
+        this->wrapped_.write(typename Wrapped::value_type());
     }
 };
 template<class Signal>
