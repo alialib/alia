@@ -17,12 +17,12 @@ struct empty_signal
     {
     }
     id_interface const&
-    value_id() const override final
+    value_id() const override
     {
         return null_id;
     }
     bool
-    has_value() const override final
+    has_value() const override
     {
         return false;
     }
@@ -33,12 +33,12 @@ struct empty_signal
 #pragma clang diagnostic ignored "-Wnull-dereference"
 #endif
     Value const&
-    read() const override final
+    read() const override
     {
         throw nullptr;
     }
     Value
-    movable_value() const override final
+    movable_value() const override
     {
         throw nullptr;
     }
@@ -47,13 +47,13 @@ struct empty_signal
 #endif
     // LCOV_EXCL_STOP
     bool
-    ready_to_write() const override final
+    ready_to_write() const override
     {
         return false;
     }
     // Since this is never ready to write, write() should never be called.
     // LCOV_EXCL_START
-    void write(Value) const override final
+    void write(Value) const override
     {
     }
     // LCOV_EXCL_STOP
@@ -74,17 +74,17 @@ struct value_signal
     {
     }
     bool
-    has_value() const override final
+    has_value() const override
     {
         return true;
     }
     Value const&
-    read() const override final
+    read() const override
     {
         return v_;
     }
     Value
-    movable_value() const override final
+    movable_value() const override
     {
         Value movable = std::move(v_);
         return movable;
@@ -108,18 +108,18 @@ struct string_literal_signal
     {
     }
     id_interface const&
-    value_id() const override final
+    value_id() const override
     {
         id_ = make_id(text_);
         return id_;
     }
     bool
-    has_value() const override final
+    has_value() const override
     {
         return true;
     }
     std::string
-    movable_value() const override final
+    movable_value() const override
     {
         return std::string(text_);
     }
@@ -152,28 +152,28 @@ struct direct_signal
     {
     }
     bool
-    has_value() const override final
+    has_value() const override
     {
         return true;
     }
     Value const&
-    read() const override final
+    read() const override
     {
         return *v_;
     }
     Value
-    movable_value() const override final
+    movable_value() const override
     {
         Value movable = std::move(*v_);
         return movable;
     }
     bool
-    ready_to_write() const override final
+    ready_to_write() const override
     {
         return true;
     }
     void
-    write(Value value) const override final
+    write(Value value) const override
     {
         *v_ = std::move(value);
     }
@@ -198,12 +198,12 @@ struct direct_const_signal
     {
     }
     bool
-    has_value() const override final
+    has_value() const override
     {
         return true;
     }
     Value const&
-    read() const override final
+    read() const override
     {
         return *v_;
     }
