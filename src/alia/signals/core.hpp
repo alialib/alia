@@ -254,7 +254,14 @@ struct signal : signal_base<Derived, Value, Capabilities>
 
 // LCOV_EXCL_START
 
+#define ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()                           \
+    void clear() const override                                               \
+    {                                                                         \
+        throw nullptr;                                                        \
+    }
+
 #define ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)                      \
+    ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()                               \
     bool ready_to_write() const override                                      \
     {                                                                         \
         return false;                                                         \
@@ -284,19 +291,12 @@ struct signal : signal_base<Derived, Value, Capabilities>
         throw nullptr;                                                        \
     }
 
-#define ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()                           \
-    void clear() const override                                               \
-    {                                                                         \
-        throw nullptr;                                                        \
-    }
-
 template<class Derived, class Value>
 struct signal<Derived, Value, read_only_signal>
     : signal_base<Derived, Value, read_only_signal>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)
     ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)
-    ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
 };
 
 template<class Derived, class Value>
@@ -304,7 +304,6 @@ struct signal<Derived, Value, movable_read_only_signal>
     : signal_base<Derived, Value, movable_read_only_signal>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)
-    ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
 };
 
 template<class Derived, class Value>
@@ -312,7 +311,6 @@ struct signal<Derived, Value, copyable_read_only_signal>
     : signal_base<Derived, Value, copyable_read_only_signal>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)
-    ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
 };
 
 template<class Derived, class Value>
