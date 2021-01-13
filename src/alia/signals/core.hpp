@@ -257,7 +257,6 @@ struct signal : signal_base<Derived, Value, Capabilities>
 #define ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()                           \
     void clear() const override                                               \
     {                                                                         \
-        throw nullptr;                                                        \
     }
 
 #define ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)                      \
