@@ -143,13 +143,11 @@ struct state_storage
 };
 
 template<class Value>
-struct state_signal : signal<
-                          state_signal<Value>,
-                          Value,
-                          signal_capabilities<
-                              signal_copyable,
-                              signal_writable,
-                              signal_clearable>>
+struct state_signal
+    : signal<
+          state_signal<Value>,
+          Value,
+          signal_capabilities<signal_copyable, signal_clearable>>
 {
     explicit state_signal(state_storage<Value>* data) : data_(data)
     {
