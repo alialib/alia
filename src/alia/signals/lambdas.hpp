@@ -24,17 +24,17 @@ struct simple_lambda_constant_signal
     {
     }
     bool
-    has_value() const override final
+    has_value() const override
     {
         return true;
     }
     id_interface const&
-    value_id() const override final
+    value_id() const override
     {
         return unit_id;
     }
     Value const&
-    read() const override final
+    read() const override
     {
         value_ = read_();
         return value_;
@@ -66,12 +66,12 @@ struct simple_lambda_reader_signal
     {
     }
     bool
-    has_value() const override final
+    has_value() const override
     {
         return true;
     }
     Value const&
-    read() const override final
+    read() const override
     {
         value_ = read_();
         return value_;
@@ -102,12 +102,12 @@ struct lambda_reader_signal : regular_signal<
     {
     }
     bool
-    has_value() const override final
+    has_value() const override
     {
         return has_value_();
     }
     Value const&
-    read() const override final
+    read() const override
     {
         value_ = read_();
         return value_;
@@ -147,18 +147,18 @@ struct lambda_reader_signal_with_id
     {
     }
     id_interface const&
-    value_id() const override final
+    value_id() const override
     {
         id_ = generate_id_();
         return id_;
     }
     bool
-    has_value() const override final
+    has_value() const override
     {
         return has_value_();
     }
     Value const&
-    read() const override final
+    read() const override
     {
         value_ = read_();
         return value_;
@@ -210,23 +210,23 @@ struct lambda_duplex_signal
     {
     }
     bool
-    has_value() const override final
+    has_value() const override
     {
         return has_value_();
     }
     Value const&
-    read() const override final
+    read() const override
     {
         value_ = read_();
         return value_;
     }
     bool
-    ready_to_write() const override final
+    ready_to_write() const override
     {
         return ready_to_write_();
     }
     void
-    write(Value value) const override final
+    write(Value value) const override
     {
         write_(std::move(value));
     }
@@ -288,29 +288,29 @@ struct lambda_duplex_signal_with_id : signal<
     {
     }
     id_interface const&
-    value_id() const override final
+    value_id() const override
     {
         id_ = generate_id_();
         return id_;
     }
     bool
-    has_value() const override final
+    has_value() const override
     {
         return has_value_();
     }
     Value const&
-    read() const override final
+    read() const override
     {
         value_ = read_();
         return value_;
     }
     bool
-    ready_to_write() const override final
+    ready_to_write() const override
     {
         return ready_to_write_();
     }
     void
-    write(Value value) const override final
+    write(Value value) const override
     {
         write_(std::move(value));
     }

@@ -147,28 +147,28 @@ struct duplex_text_signal : casting_signal_wrapper<
     {
     }
     bool
-    has_value() const override final
+    has_value() const override
     {
         return data_->output_valid;
     }
     std::string const&
-    read() const override final
+    read() const override
     {
         return data_->output_text;
     }
     std::string
-    movable_value() const override final
+    movable_value() const override
     {
         return this->read();
     }
     id_interface const&
-    value_id() const override final
+    value_id() const override
     {
         id_ = make_id(data_->output_version);
         return id_;
     }
     void
-    write(std::string s) const override final
+    write(std::string s) const override
     {
         typename Wrapped::value_type value;
         from_string(&value, s);

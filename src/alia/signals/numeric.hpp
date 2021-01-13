@@ -22,29 +22,29 @@ struct scaled_signal : lazy_signal_wrapper<scaled_signal<N, Factor>, N>
     {
     }
     bool
-    has_value() const override final
+    has_value() const override
     {
         return this->wrapped_.has_value() && scale_factor_.has_value();
     }
     typename N::value_type
-    movable_value() const override final
+    movable_value() const override
     {
         return this->wrapped_.read() * scale_factor_.read();
     }
     id_interface const&
-    value_id() const override final
+    value_id() const override
     {
         id_ = combine_ids(
             ref(this->wrapped_.value_id()), ref(scale_factor_.value_id()));
         return id_;
     }
     bool
-    ready_to_write() const override final
+    ready_to_write() const override
     {
         return this->wrapped_.ready_to_write() && scale_factor_.has_value();
     }
     void
-    write(typename N::value_type value) const override final
+    write(typename N::value_type value) const override
     {
         this->wrapped_.write(value / forward_signal(scale_factor_));
     }
@@ -77,29 +77,29 @@ struct offset_signal : lazy_signal_wrapper<offset_signal<N, Offset>, N>
     {
     }
     bool
-    has_value() const override final
+    has_value() const override
     {
         return this->wrapped_.has_value() && offset_.has_value();
     }
     typename N::value_type
-    movable_value() const override final
+    movable_value() const override
     {
         return this->wrapped_.read() + offset_.read();
     }
     id_interface const&
-    value_id() const override final
+    value_id() const override
     {
         id_ = combine_ids(
             ref(this->wrapped_.value_id()), ref(offset_.value_id()));
         return id_;
     }
     bool
-    ready_to_write() const override final
+    ready_to_write() const override
     {
         return this->wrapped_.ready_to_write() && offset_.has_value();
     }
     void
-    write(typename N::value_type value) const override final
+    write(typename N::value_type value) const override
     {
         this->wrapped_.write(value - forward_signal(offset_));
     }
@@ -133,12 +133,12 @@ struct rounding_signal_wrapper
     {
     }
     bool
-    ready_to_write() const override final
+    ready_to_write() const override
     {
         return this->wrapped_.ready_to_write() && step_.has_value();
     }
     void
-    write(typename N::value_type value) const override final
+    write(typename N::value_type value) const override
     {
         typename N::value_type step = step_.read();
         this->wrapped_.write(

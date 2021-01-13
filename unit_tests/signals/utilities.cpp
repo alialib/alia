@@ -231,17 +231,17 @@ struct transparent_casting_wrapper : casting_signal_wrapper<
     }
 
     typename Wrapped::value_type const&
-    read() const override final
+    read() const override
     {
         return this->wrapped_.read();
     }
     typename Wrapped::value_type
-    movable_value() const override final
+    movable_value() const override
     {
         return this->wrapped_.movable_value();
     }
     void
-    write(typename Wrapped::value_type value) const override final
+    write(typename Wrapped::value_type value) const override
     {
         this->wrapped_.write(value);
     }

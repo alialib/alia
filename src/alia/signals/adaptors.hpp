@@ -40,19 +40,19 @@ struct readability_faker : signal_wrapper<
     {
     }
     id_interface const&
-    value_id() const override final
+    value_id() const override
     {
         return null_id;
     }
     bool
-    has_value() const override final
+    has_value() const override
     {
         return false;
     }
     // Since this is only faking readability, read() should never be called.
     // LCOV_EXCL_START
     typename Wrapped::value_type const&
-    read() const override final
+    read() const override
     {
 #ifdef __clang__
 #pragma clang diagnostic push
@@ -89,13 +89,13 @@ struct writability_faker : signal_wrapper<
     {
     }
     bool
-    ready_to_write() const override final
+    ready_to_write() const override
     {
         return false;
     }
     // Since this is only faking writability, write() should never be called.
     // LCOV_EXCL_START
-    void write(typename Wrapped::value_type) const override final
+    void write(typename Wrapped::value_type) const override
     {
     }
     // LCOV_EXCL_STOP
@@ -119,18 +119,18 @@ struct casting_signal
     {
     }
     To const&
-    read() const override final
+    read() const override
     {
         value_ = this->movable_value();
         return value_;
     }
     To
-    movable_value() const override final
+    movable_value() const override
     {
         return static_cast<To>(forward_signal(this->wrapped_));
     }
     void
-    write(To value) const override final
+    write(To value) const override
     {
         return this->wrapped_.write(
             static_cast<typename Wrapped::value_type>(value));
@@ -179,12 +179,12 @@ struct value_presence_signal
     {
     }
     bool
-    has_value() const override final
+    has_value() const override
     {
         return true;
     }
     bool const&
-    read() const override final
+    read() const override
     {
         value_ = wrapped_.has_value();
         return value_;
@@ -211,12 +211,12 @@ struct write_readiness_signal
     {
     }
     bool
-    has_value() const override final
+    has_value() const override
     {
         return true;
     }
     bool const&
-    read() const override final
+    read() const override
     {
         value_ = wrapped_.ready_to_write();
         return value_;
@@ -250,18 +250,18 @@ struct default_value_signal
     {
     }
     bool
-    has_value() const override final
+    has_value() const override
     {
         return this->wrapped_.has_value() || default_.has_value();
     }
     typename Primary::value_type const&
-    read() const override final
+    read() const override
     {
         return this->wrapped_.has_value() ? this->wrapped_.read()
                                           : default_.read();
     }
     id_interface const&
-    value_id() const override final
+    value_id() const override
     {
         id_ = combine_ids(
             make_id(this->wrapped_.has_value()),
@@ -343,12 +343,12 @@ struct masking_signal : signal_wrapper<masking_signal<Primary, Mask>, Primary>
     {
     }
     bool
-    has_value() const override final
+    has_value() const override
     {
         return mask_.has_value() && mask_.read() && this->wrapped_.has_value();
     }
     id_interface const&
-    value_id() const override final
+    value_id() const override
     {
         if (mask_.has_value() && mask_.read())
             return this->wrapped_.value_id();
@@ -356,7 +356,7 @@ struct masking_signal : signal_wrapper<masking_signal<Primary, Mask>, Primary>
             return null_id;
     }
     bool
-    ready_to_write() const override final
+    ready_to_write() const override
     {
         return mask_.has_value() && mask_.read()
                && this->wrapped_.ready_to_write();
@@ -404,7 +404,7 @@ struct write_masking_signal
     {
     }
     bool
-    ready_to_write() const override final
+    ready_to_write() const override
     {
         return mask_.has_value() && mask_.read()
                && this->wrapped_.ready_to_write();
@@ -462,7 +462,7 @@ struct read_masking_signal
     {
     }
     bool
-    has_value() const override final
+    has_value() const override
     {
         return mask_.has_value() && mask_.read() && this->wrapped_.has_value();
     }
@@ -533,22 +533,22 @@ struct unwrapper_signal : casting_signal_wrapper<
     {
     }
     bool
-    has_value() const override final
+    has_value() const override
     {
         return this->wrapped_.has_value() && this->wrapped_.read().has_value();
     }
     typename Wrapped::value_type::value_type const&
-    read() const override final
+    read() const override
     {
         return this->wrapped_.read().value();
     }
     typename Wrapped::value_type::value_type
-    movable_value() const override final
+    movable_value() const override
     {
         return this->wrapped_.movable_value().value();
     }
     id_interface const&
-    value_id() const override final
+    value_id() const override
     {
         if (this->has_value())
             return this->wrapped_.value_id();

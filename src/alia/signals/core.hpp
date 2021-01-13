@@ -370,42 +370,42 @@ struct signal_ref
     // implementation of signal_interface...
 
     bool
-    has_value() const override final
+    has_value() const override
     {
         return ref_->has_value();
     }
     Value const&
-    read() const override final
+    read() const override
     {
         return ref_->read();
     }
     Value
-    movable_value() const override final
+    movable_value() const override
     {
         return ref_->movable_value();
     }
     id_interface const&
-    value_id() const override final
+    value_id() const override
     {
         return ref_->value_id();
     }
     bool
-    ready_to_write() const override final
+    ready_to_write() const override
     {
         return ref_->ready_to_write();
     }
     void
-    write(Value value) const override final
+    write(Value value) const override
     {
         ref_->write(std::move(value));
     }
     bool
-    invalidate(std::exception_ptr error) const override final
+    invalidate(std::exception_ptr error) const override
     {
         return ref_->invalidate(error);
     }
     bool
-    is_invalidated() const override final
+    is_invalidated() const override
     {
         return ref_->is_invalidated();
     }

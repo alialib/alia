@@ -22,19 +22,19 @@ struct validated_signal : signal_wrapper<validated_signal<Wrapped>, Wrapped>
     {
     }
     bool
-    has_value() const override final
+    has_value() const override
     {
         return !data_->error && this->wrapped_.has_value();
     }
     bool
-    invalidate(std::exception_ptr error) const override final
+    invalidate(std::exception_ptr error) const override
     {
         data_->error = error;
         this->wrapped_.invalidate(error);
         return true;
     }
     bool
-    is_invalidated() const override final
+    is_invalidated() const override
     {
         return data_->error || this->wrapped_.is_invalidated();
     }

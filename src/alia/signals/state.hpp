@@ -154,45 +154,45 @@ struct state_signal
     }
 
     bool
-    has_value() const override final
+    has_value() const override
     {
         return data_->has_value();
     }
 
     Value const&
-    read() const override final
+    read() const override
     {
         return data_->get();
     }
 
     simple_id<unsigned> const&
-    value_id() const override final
+    value_id() const override
     {
         id_ = make_id(data_->version());
         return id_;
     }
 
     bool
-    ready_to_write() const override final
+    ready_to_write() const override
     {
         return true;
     }
 
     void
-    write(Value value) const override final
+    write(Value value) const override
     {
         data_->set(std::move(value));
     }
 
     Value
-    movable_value() const override final
+    movable_value() const override
     {
         Value movable = std::move(data_->untracked_nonconst_ref());
         return movable;
     }
 
     void
-    clear() const override final
+    clear() const override
     {
         data_->clear();
     }
