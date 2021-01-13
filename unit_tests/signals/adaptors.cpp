@@ -550,6 +550,12 @@ TEST_CASE("unwrap a duplex signal", "[signals][adaptors]")
         REQUIRE(x.has_value());
         REQUIRE(*x == 0);
     }
+    {
+        auto x = std::optional<int>(1);
+        auto s = unwrap(direct(x));
+        clear_signal(s);
+        REQUIRE(!x.has_value());
+    }
 }
 
 TEST_CASE("signal value movement", "[signals][adaptors]")
