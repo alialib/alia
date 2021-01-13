@@ -2,7 +2,9 @@
 
 #include <testing.hpp>
 
+#include <alia/signals/adaptors.hpp>
 #include <alia/signals/basic.hpp>
+#include <alia/signals/state.hpp>
 
 using namespace alia;
 
@@ -168,4 +170,115 @@ TEST_CASE("refresh_signal_view", "[signals][utilities]")
     refresh_signal_view(id, value(0), on_new_value(0), on_lost_value);
     REQUIRE(new_value_count == 3);
     REQUIRE(lost_value_count == 1);
+}
+
+template<class Wrapped>
+struct transparent_wrapper
+    : signal_wrapper<transparent_wrapper<Wrapped>, Wrapped>
+{
+    transparent_wrapper(Wrapped wrapped)
+        : transparent_wrapper::signal_wrapper(std::move(wrapped))
+    {
+    }
+};
+template<class Wrapped>
+transparent_wrapper<Wrapped>
+make_transparent_wrapper(Wrapped wrapped)
+{
+    return transparent_wrapper<Wrapped>(std::move(wrapped));
+}
+
+TEST_CASE("signal_wrapper", "[signals][utilities]")
+{
+    state_storage<std::string> storage;
+    auto w = make_state_signal(storage);
+    auto s = make_transparent_wrapper(w);
+
+    typedef decltype(s) signal_t;
+    REQUIRE(signal_is_readable<signal_t>::value);
+    REQUIRE(signal_is_writable<signal_t>::value);
+    REQUIRE(signal_is_clearable<signal_t>::value);
+
+    REQUIRE(!signal_has_value(s));
+    REQUIRE(s.value_id() == w.value_id());
+
+    REQUIRE(signal_ready_to_write(s));
+    write_signal(s, "foo");
+    REQUIRE(signal_has_value(s));
+    REQUIRE(read_signal(s) == "foo");
+
+    std::string x = move_signal(alia::move(s));
+    REQUIRE(x == "foo");
+
+    write_signal(s, "bar");
+    REQUIRE(signal_has_value(s));
+    REQUIRE(read_signal(s) == "bar");
+
+    clear_signal(s);
+    REQUIRE(!signal_has_value(s));
+}
+
+template<class Wrapped>
+struct transparent_casting_wrapper : casting_signal_wrapper<
+                                         transparent_casting_wrapper<Wrapped>,
+                                         Wrapped,
+                                         typename Wrapped::value_type>
+{
+    transparent_casting_wrapper(Wrapped wrapped)
+        : transparent_casting_wrapper::casting_signal_wrapper(
+            std::move(wrapped))
+    {
+    }
+
+    typename Wrapped::value_type const&
+    read() const override final
+    {
+        return this->wrapped_.read();
+    }
+    typename Wrapped::value_type
+    movable_value() const override final
+    {
+        return this->wrapped_.movable_value();
+    }
+    void
+    write(typename Wrapped::value_type value) const override final
+    {
+        this->wrapped_.write(value);
+    }
+};
+template<class Wrapped>
+transparent_casting_wrapper<Wrapped>
+make_transparent_casting_wrapper(Wrapped wrapped)
+{
+    return transparent_casting_wrapper<Wrapped>(std::move(wrapped));
+}
+
+TEST_CASE("casting_signal_wrapper", "[signals][utilities]")
+{
+    state_storage<std::string> storage;
+    auto w = make_state_signal(storage);
+    auto s = make_transparent_casting_wrapper(w);
+
+    typedef decltype(s) signal_t;
+    REQUIRE(signal_is_readable<signal_t>::value);
+    REQUIRE(signal_is_writable<signal_t>::value);
+    REQUIRE(signal_is_clearable<signal_t>::value);
+
+    REQUIRE(!signal_has_value(s));
+    REQUIRE(s.value_id() == w.value_id());
+
+    REQUIRE(signal_ready_to_write(s));
+    write_signal(s, "foo");
+    REQUIRE(signal_has_value(s));
+    REQUIRE(read_signal(s) == "foo");
+
+    std::string x = move_signal(alia::move(s));
+    REQUIRE(x == "foo");
+
+    write_signal(s, "bar");
+    REQUIRE(signal_has_value(s));
+    REQUIRE(read_signal(s) == "bar");
+
+    clear_signal(s);
+    REQUIRE(!signal_has_value(s));
 }
