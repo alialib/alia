@@ -179,7 +179,12 @@ struct signal_wrapper : signal<Derived, Value, Capabilities>
     void
     write(typename Wrapped::value_type value) const override
     {
-        return wrapped_.write(std::move(value));
+        wrapped_.write(std::move(value));
+    }
+    void
+    clear() const override
+    {
+        wrapped_.clear();
     }
     bool
     invalidate(std::exception_ptr error) const override
@@ -225,6 +230,11 @@ struct casting_signal_wrapper : signal<Derived, Value, Capabilities>
     ready_to_write() const override
     {
         return wrapped_.ready_to_write();
+    }
+    void
+    clear() const override
+    {
+        wrapped_.clear();
     }
     bool
     invalidate(std::exception_ptr error) const override
