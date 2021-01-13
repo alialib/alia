@@ -42,8 +42,7 @@ struct signal_movable
     static constexpr unsigned level = 3;
 };
 
-// The following are the same, but for writing. (Writing is essentially a
-// boolean property so it only has two levels.)
+// The following are the same, but for writing.
 struct signal_unwritable
 {
     static constexpr unsigned level = 0;
@@ -52,65 +51,36 @@ struct signal_writable
 {
     static constexpr unsigned level = 1;
 };
-
-// The following are the same, but for clearing. (Clearing is also a boolean
-// property, so it also only has two levels.)
-struct signal_unclearable
-{
-    static constexpr unsigned level = 0;
-};
 struct signal_clearable
 {
-    static constexpr unsigned level = 1;
+    static constexpr unsigned level = 2;
 };
 
 // combined capabilities tags
-template<class Reading, class Writing, class Clearing>
+template<class Reading, class Writing>
 struct signal_capabilities
 {
     typedef Reading reading;
     typedef Writing writing;
-    typedef Clearing clearing;
 };
 
-// supposedly useful signal capability combinations
-typedef signal_capabilities<
-    signal_readable,
-    signal_unwritable,
-    signal_unclearable>
+// useful signal capability combinations
+typedef signal_capabilities<signal_readable, signal_unwritable>
     read_only_signal;
-typedef signal_capabilities<
-    signal_copyable,
-    signal_unwritable,
-    signal_unclearable>
+typedef signal_capabilities<signal_copyable, signal_unwritable>
     copyable_read_only_signal;
-typedef signal_capabilities<
-    signal_movable,
-    signal_unwritable,
-    signal_unclearable>
+typedef signal_capabilities<signal_movable, signal_unwritable>
     movable_read_only_signal;
-typedef signal_capabilities<
-    signal_unreadable,
-    signal_writable,
-    signal_unclearable>
+typedef signal_capabilities<signal_unreadable, signal_writable>
     write_only_signal;
-typedef signal_capabilities<
-    signal_readable,
-    signal_writable,
-    signal_unclearable>
+typedef signal_capabilities<signal_readable, signal_writable>
     readable_duplex_signal;
-typedef signal_capabilities<
-    signal_copyable,
-    signal_writable,
-    signal_unclearable>
+typedef signal_capabilities<signal_copyable, signal_writable>
     copyable_duplex_signal;
-typedef signal_capabilities<
-    signal_movable,
-    signal_writable,
-    signal_unclearable>
+typedef signal_capabilities<signal_movable, signal_writable>
     movable_duplex_signal;
 typedef readable_duplex_signal duplex_signal;
-typedef signal_capabilities<signal_readable, signal_writable, signal_clearable>
+typedef signal_capabilities<signal_readable, signal_clearable>
     clearable_signal;
 
 // signal_capability_level_is_compatible<Expected,Actual>::value yields a
@@ -132,14 +102,9 @@ struct signal_capabilities_compatible
           signal_capability_level_is_compatible<
               typename Expected::reading,
               typename Actual::reading>::value,
-          std::conditional_t<
-              signal_capability_level_is_compatible<
-                  typename Expected::writing,
-                  typename Actual::writing>::value,
-              signal_capability_level_is_compatible<
-                  typename Expected::clearing,
-                  typename Actual::clearing>,
-              std::false_type>,
+          signal_capability_level_is_compatible<
+              typename Expected::writing,
+              typename Actual::writing>,
           std::false_type>
 {
 };
@@ -164,10 +129,7 @@ struct signal_capabilities_intersection
             typename B::reading>::type,
         typename signal_capability_level_intersection<
             typename A::writing,
-            typename B::writing>::type,
-        typename signal_capability_level_intersection<
-            typename A::clearing,
-            typename B::clearing>::type>
+            typename B::writing>::type>
         type;
 };
 
@@ -190,10 +152,7 @@ struct signal_capabilities_union
             typename B::reading>::type,
         typename signal_capability_level_union<
             typename A::writing,
-            typename B::writing>::type,
-        typename signal_capability_level_union<
-            typename A::clearing,
-            typename B::clearing>::type>
+            typename B::writing>::type>
         type;
 };
 
@@ -680,7 +639,7 @@ forward_signal(Signal const& signal)
 template<class Signal>
 struct signal_is_clearable : signal_capability_level_is_compatible<
                                  signal_clearable,
-                                 typename Signal::capabilities::clearing>
+                                 typename Signal::capabilities::writing>
 {
 };
 
@@ -697,11 +656,13 @@ struct is_clearable_signal_type : std::conditional_t<
 // Clear a signal's value.
 // Unlike calling signal.clear() directly, this will generate a compile-time
 // error if the signal's type doesn't support clearing.
+// Note that if the signal isn't ready to write, this is a no op.
 template<class Signal>
 std::enable_if_t<signal_is_clearable<Signal>::value>
 clear_signal(Signal const& signal)
 {
-    signal.clear();
+    if (signal.ready_to_write())
+        signal.clear();
 }
 
 } // namespace alia
