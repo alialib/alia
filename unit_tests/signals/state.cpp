@@ -38,14 +38,40 @@ TEST_CASE("state_storage", "[signals][state]")
     version = s.version();
 }
 
+TEST_CASE("state_signal", "[signals][state]")
+{
+    state_storage<std::string> storage;
+    auto s = make_state_signal(storage);
+
+    typedef decltype(s) signal_t;
+    REQUIRE(signal_is_readable<signal_t>::value);
+    REQUIRE(signal_is_writable<signal_t>::value);
+    REQUIRE(signal_is_clearable<signal_t>::value);
+
+    REQUIRE(!signal_has_value(s));
+
+    REQUIRE(signal_ready_to_write(s));
+    write_signal(s, "foo");
+    REQUIRE(signal_has_value(s));
+    REQUIRE(read_signal(s) == "foo");
+
+    std::string x = move_signal(alia::move(s));
+    REQUIRE(x == "foo");
+
+    write_signal(s, "bar");
+    REQUIRE(signal_has_value(s));
+    REQUIRE(read_signal(s) == "bar");
+
+    clear_signal(s);
+    REQUIRE(!signal_has_value(s));
+}
+
 TEST_CASE("basic get_state", "[signals][state]")
 {
     alia::system sys;
     initialize_system(sys, [](context) {});
     do_traversal(sys, [&](context ctx) {
         auto state = get_state(ctx, empty<int>());
-
-        REQUIRE(signal_is_clearable<decltype(state)>::value);
 
         REQUIRE(!signal_has_value(state));
         REQUIRE(signal_ready_to_write(state));
