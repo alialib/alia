@@ -35,18 +35,18 @@ struct mapped_sequence_signal : signal<
     {
     }
     id_interface const&
-    value_id() const override final
+    value_id() const override
     {
         id_ = make_id(data_->output_version);
         return id_;
     }
     bool
-    has_value() const override final
+    has_value() const override
     {
         return all_items_have_values_;
     }
     std::vector<MappedItem> const&
-    read() const override final
+    read() const override
     {
         return data_->mapped_items;
     }

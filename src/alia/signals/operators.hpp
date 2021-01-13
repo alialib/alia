@@ -181,13 +181,13 @@ struct logical_or_signal
     {
     }
     id_interface const&
-    value_id() const override final
+    value_id() const override
     {
         id_ = combine_ids(ref(arg0_.value_id()), ref(arg1_.value_id()));
         return id_;
     }
     bool
-    has_value() const override final
+    has_value() const override
     {
         // Obviously, this has a value if both of its arguments have values.
         // However, we can also determine a value if only one input has a value
@@ -197,7 +197,7 @@ struct logical_or_signal
                || (arg1_.has_value() && arg1_.read());
     }
     bool const&
-    read() const override final
+    read() const override
     {
         value_ = (arg0_.has_value() && arg0_.read())
                  || (arg1_.has_value() && arg1_.read());
@@ -254,13 +254,13 @@ struct logical_and_signal
     {
     }
     id_interface const&
-    value_id() const override final
+    value_id() const override
     {
         id_ = combine_ids(ref(arg0_.value_id()), ref(arg1_.value_id()));
         return id_;
     }
     bool
-    has_value() const override final
+    has_value() const override
     {
         // Obviously, this has a value if both of its arguments have values.
         // However, we can also determine a value if only one input has a value
@@ -270,7 +270,7 @@ struct logical_and_signal
                || (arg1_.has_value() && !arg1_.read());
     }
     bool const&
-    read() const override final
+    read() const override
     {
         value_
             = !((arg0_.has_value() && !arg0_.read())
@@ -345,23 +345,23 @@ struct signal_mux : signal<
     {
     }
     bool
-    has_value() const override final
+    has_value() const override
     {
         return condition_.has_value()
                && (condition_.read() ? t_.has_value() : f_.has_value());
     }
     typename T::value_type const&
-    read() const override final
+    read() const override
     {
         return condition_.read() ? t_.read() : f_.read();
     }
     typename T::value_type
-    movable_value() const override final
+    movable_value() const override
     {
         return condition_.read() ? t_.movable_value() : f_.movable_value();
     }
     id_interface const&
-    value_id() const override final
+    value_id() const override
     {
         if (!condition_.has_value())
             return null_id;
@@ -371,14 +371,14 @@ struct signal_mux : signal<
         return id_;
     }
     bool
-    ready_to_write() const override final
+    ready_to_write() const override
     {
         return condition_.has_value()
                && (condition_.read() ? t_.ready_to_write()
                                      : f_.ready_to_write());
     }
     void
-    write(typename T::value_type value) const override final
+    write(typename T::value_type value) const override
     {
         if (condition_.read())
             t_.write(value);
@@ -386,7 +386,7 @@ struct signal_mux : signal<
             f_.write(value);
     }
     bool
-    invalidate(std::exception_ptr error) const override final
+    invalidate(std::exception_ptr error) const override
     {
         if (condition_.read())
             return t_.invalidate(error);
@@ -394,7 +394,7 @@ struct signal_mux : signal<
             return f_.invalidate(error);
     }
     bool
-    is_invalidated() const override final
+    is_invalidated() const override
     {
         if (condition_.read())
             return t_.is_invalidated();
@@ -440,12 +440,12 @@ struct field_signal : preferred_id_signal<
     {
     }
     bool
-    has_value() const override final
+    has_value() const override
     {
         return structure_.has_value();
     }
     Field const&
-    read() const override final
+    read() const override
     {
         structure_type const& structure = structure_.read();
         return structure.*field_;
@@ -461,12 +461,12 @@ struct field_signal : preferred_id_signal<
             make_id(&(((structure_type*) 0)->*field_)));
     }
     bool
-    ready_to_write() const override final
+    ready_to_write() const override
     {
         return structure_.has_value() && structure_.ready_to_write();
     }
     void
-    write(Field x) const override final
+    write(Field x) const override
     {
         structure_type s = structure_.read();
         s.*field_ = x;
@@ -680,17 +680,17 @@ struct subscript_signal : preferred_id_signal<
     {
     }
     bool
-    has_value() const override final
+    has_value() const override
     {
         return container_.has_value() && index_.has_value();
     }
     typename subscript_signal::value_type const&
-    read() const override final
+    read() const override
     {
         return invoker_(container_.read(), index_.read());
     }
     typename subscript_signal::value_type
-    movable_value() const override final
+    movable_value() const override
     {
         return invoker_(container_.read(), index_.read());
     }
@@ -700,13 +700,13 @@ struct subscript_signal : preferred_id_signal<
         return combine_ids(ref(container_.value_id()), ref(index_.value_id()));
     }
     bool
-    ready_to_write() const override final
+    ready_to_write() const override
     {
         return container_.has_value() && index_.has_value()
                && container_.ready_to_write();
     }
     void
-    write(typename subscript_signal::value_type x) const override final
+    write(typename subscript_signal::value_type x) const override
     {
         write_subscript(container_, index_, std::move(x));
     }
