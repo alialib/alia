@@ -127,7 +127,7 @@ void
 install_onpopstate_callback(
     std::function<void(emscripten::val)> const* function)
 {
-    EM_ASM_(
+    EM_ASM(
         {
             window.onpopstate = function(event)
             {
@@ -141,7 +141,7 @@ void
 install_onhashchange_callback(
     std::function<void(emscripten::val)> const* function)
 {
-    EM_ASM_(
+    EM_ASM(
         {
             window.onhashchange = function()
             {
@@ -161,8 +161,7 @@ install_element_callback(
     std::cout << "install callback" << std::endl;
     auto external_id = externalize(&data.identity);
     auto* system = &get<alia::system_tag>(ctx);
-    // TODO: Probably don't need to store the callback in data anymore.
-    data.callback = [=](emscripten::val v) {
+    auto callback = [=](emscripten::val v) {
         dom_event event(v);
         auto start = std::chrono::high_resolution_clock::now();
         dispatch_targeted_event(*system, event, external_id);
@@ -171,10 +170,9 @@ install_element_callback(
                   std::chrono::high_resolution_clock::now() - start)
                   .count();
         std::cout << "event time: " << elapsed_ms << " µs" << std::endl;
-        // TODO: Report whether or not it was actually handled?
         return true;
     };
-    asmdom::direct::setCallback(object.asmdom_id, event_type, data.callback);
+    asmdom::direct::setCallback(object.asmdom_id, event_type, callback);
     std::cout << "worked!" << std::endl;
 }
 

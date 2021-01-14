@@ -70,7 +70,6 @@ struct dom_event : targeted_event
 struct callback_data
 {
     component_identity identity;
-    std::function<bool(emscripten::val)> callback;
 };
 
 void

@@ -83,7 +83,7 @@ initialize(
     if (placeholder.isNull())
     {
         auto msg = placeholder_node_id + " not found in document";
-        EM_ASM_({ console.error(Module['UTF8ToString']($0)); }, msg.c_str());
+        EM_ASM({ console.error(Module['UTF8ToString']($0)); }, msg.c_str());
         throw exception(msg);
     }
     initialize(system, placeholder, controller);
