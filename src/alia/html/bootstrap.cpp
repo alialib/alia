@@ -57,6 +57,13 @@ modal_close_button(html::context ctx)
 }
 
 void
+modal_handle::activate()
+{
+    data.active = true;
+    EM_ASM({ jQuery(Module['nodes'][$0]).modal('show'); }, asmdom_id);
+}
+
+void
 close_modal()
 {
     emscripten_run_script("jQuery(\"#alia-modal\").modal('hide');");
