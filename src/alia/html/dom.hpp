@@ -299,8 +299,17 @@ body(Context ctx)
     tree_node<element_object>* node;
     bool initializing = get_cached_data(ctx, &node);
     if (initializing)
+    {
         create_as_existing(
             node->object, emscripten::val::global("document")["body"]);
+        // Clear out existing children.
+        EM_ASM(
+            {
+                var node = Module['nodes'][$0];
+                node.innerHTML = "";
+            },
+            node->object.asmdom_id);
+    }
     return body_handle<Context>(ctx, node, initializing);
 }
 
