@@ -301,8 +301,6 @@ body(Context ctx)
     if (initializing)
         create_as_existing(
             node->object, emscripten::val::global("document")["body"]);
-    if (is_refresh_event(ctx))
-        refresh_tree_node(get<tree_traversal_tag>(ctx), *node);
     return body_handle<Context>(ctx, node, initializing);
 }
 
