@@ -91,6 +91,14 @@ modal(html::context ctx, alia::function_view<void()> content)
                         alia_if(data->active)
                         {
                             div(ctx, "modal-content", content);
+                            on_refresh(ctx, [&](auto ctx) {
+                                EM_ASM(
+                                    {
+                                        jQuery(Module['nodes'][$0])
+                                            .modal('handleUpdate');
+                                    },
+                                    top_level_modal.asmdom_id());
+                            });
                         }
                         alia_end
                     });
@@ -98,11 +106,6 @@ modal(html::context ctx, alia::function_view<void()> content)
         top_level_modal.callback(
             "hidden.bs.modal", [&](auto) { data->active = false; });
         asmdom_id = top_level_modal.asmdom_id();
-    });
-
-    on_refresh(ctx, [&](auto ctx) {
-        EM_ASM(
-            { jQuery(Module['nodes'][$0]).modal('handleUpdate'); }, asmdom_id);
     });
 
     return modal_handle{*data, asmdom_id};
