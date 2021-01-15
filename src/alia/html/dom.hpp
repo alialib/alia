@@ -151,45 +151,45 @@ text_node(html::context ctx, Text text)
     detail::text_node(ctx, as_text(ctx, signalize(text)));
 }
 
-template<class Context>
-struct element_handle
+template<class Context, class Derived>
+struct element_handle_base
 {
-    element_handle(
+    element_handle_base(
         Context ctx, tree_node<element_object>* node, bool initializing)
         : ctx_(ctx), node_(node), initializing_(initializing)
     {
     }
 
     template<class Value>
-    element_handle&
+    Derived&
     attr(char const* name, Value value)
     {
         detail::do_element_attribute(
             ctx_, node_->object, name, signalize(value));
-        return *this;
+        return static_cast<Derived&>(*this);
     }
 
     template<class... Tokens>
-    element_handle&
+    Derived&
     class_(Tokens... tokens)
     {
         (detail::do_element_class_token(
              ctx_, node_->object, initializing_, tokens),
          ...);
-        return *this;
+        return static_cast<Derived&>(*this);
     }
 
     template<class Value>
-    element_handle&
+    Derived&
     prop(char const* name, Value value)
     {
         detail::do_element_property(
             ctx_, node_->object, name, signalize(value));
-        return *this;
+        return static_cast<Derived&>(*this);
     }
 
     template<class Function>
-    element_handle&
+    Derived&
     callback(char const* event_type, Function&& fn)
     {
         auto& data = get_cached_data<detail::callback_data>(ctx_);
@@ -202,18 +202,48 @@ struct element_handle
             ctx_, &data.identity, [&](auto ctx, auto& e) {
                 std::forward<Function>(fn)(e.event);
             });
-        return *this;
+        return static_cast<Derived&>(*this);
+    }
+
+    template<class Callback>
+    Derived&
+    on_init(Callback&& callback)
+    {
+        if (initializing_)
+            std::forward<Callback>(callback)(*this);
+        return static_cast<Derived&>(*this);
+    }
+
+    int
+    asmdom_id()
+    {
+        return node_->object.asmdom_id;
+    }
+
+ protected:
+    Context ctx_;
+    tree_node<element_object>* node_;
+    bool initializing_;
+};
+
+template<class Context>
+struct element_handle : element_handle_base<Context, element_handle<Context>>
+{
+    element_handle(
+        Context ctx, tree_node<element_object>* node, bool initializing)
+        : element_handle::element_handle_base(ctx, node, initializing)
+    {
     }
 
     template<class Function>
     element_handle&
     children(Function&& fn)
     {
-        auto& traversal = get<tree_traversal_tag>(ctx_);
+        auto& traversal = get<tree_traversal_tag>(this->ctx_);
         scoped_tree_children<element_object> tree_scope;
-        if (is_refresh_event(ctx_))
-            tree_scope.begin(traversal, *node_);
-        invoke_component_function(ctx_, std::forward<Function>(fn));
+        if (is_refresh_event(this->ctx_))
+            tree_scope.begin(traversal, *this->node_);
+        invoke_component_function(this->ctx_, std::forward<Function>(fn));
         return *this;
     }
 
@@ -223,26 +253,6 @@ struct element_handle
     {
         return children([&](auto ctx) { text_node(ctx, text); });
     }
-
-    template<class Callback>
-    element_handle&
-    on_init(Callback&& callback)
-    {
-        if (initializing_)
-            std::forward<Callback>(callback)(*this);
-        return *this;
-    }
-
-    int
-    asmdom_id()
-    {
-        return node_->object.asmdom_id;
-    }
-
- private:
-    Context ctx_;
-    tree_node<element_object>* node_;
-    bool initializing_;
 };
 
 template<class Context>
@@ -259,6 +269,30 @@ element(Context ctx, char const* type)
 }
 
 template<class Context>
+struct body_handle : element_handle_base<Context, body_handle<Context>>
+{
+    body_handle(
+        Context ctx, tree_node<element_object>* node, bool initializing)
+        : body_handle::element_handle_base(ctx, node, initializing)
+    {
+    }
+
+    template<class Function>
+    body_handle&
+    children(Function&& fn)
+    {
+        scoped_tree_root<element_object> tree_scope;
+        if (is_refresh_event(this->ctx_))
+        {
+            tree_scope.begin(
+                get<tree_traversal_tag>(this->ctx_), *this->node_);
+        }
+        invoke_component_function(this->ctx_, std::forward<Function>(fn));
+        return *this;
+    }
+};
+
+template<class Context>
 element_handle<Context>
 body(Context ctx)
 {
@@ -269,7 +303,7 @@ body(Context ctx)
             node->object, emscripten::val::global("document")["body"]);
     if (is_refresh_event(ctx))
         refresh_tree_node(get<tree_traversal_tag>(ctx), *node);
-    return element_handle<Context>(ctx, node, initializing);
+    return body_handle<Context>(ctx, node, initializing);
 }
 
 struct scoped_element : noncopyable
