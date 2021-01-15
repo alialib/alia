@@ -29,8 +29,17 @@ create_as_text_node(element_object& object, char const* value)
 }
 
 void
+create_as_existing(element_object& object, emscripten::val node)
+{
+    assert(object.asmdom_id == 0);
+    object.asmdom_id = asmdom::direct::toElement(node);
+    object.type = element_object::NORMAL;
+}
+
+void
 create_as_placeholder_root(element_object& object, emscripten::val placeholder)
 {
+    assert(object.asmdom_id == 0);
     object.type = element_object::PLACEHOLDER_ROOT;
     object.asmdom_id = asmdom::direct::toElement(placeholder);
     asmdom::direct::toElement(placeholder["parentNode"]);

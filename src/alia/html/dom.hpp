@@ -48,6 +48,9 @@ void
 create_as_text_node(element_object& object, char const* value);
 
 void
+create_as_existing(element_object& object, emscripten::val node);
+
+void
 create_as_placeholder_root(
     element_object& object, emscripten::val placeholder);
 
@@ -151,13 +154,10 @@ text_node(html::context ctx, Text text)
 template<class Context>
 struct element_handle
 {
-    element_handle(Context ctx, char const* type) : ctx_(ctx)
+    element_handle(
+        Context ctx, tree_node<element_object>* node, bool initializing)
+        : ctx_(ctx), node_(node), initializing_(initializing)
     {
-        initializing_ = get_cached_data(ctx, &node_);
-        if (initializing_)
-            create_as_element(node_->object, type);
-        if (is_refresh_event(ctx))
-            refresh_tree_node(get<tree_traversal_tag>(ctx), *node_);
     }
 
     template<class Value>
@@ -249,6 +249,26 @@ template<class Context>
 element_handle<Context>
 element(Context ctx, char const* type)
 {
+    tree_node<element_object>* node;
+    bool initializing = get_cached_data(ctx, &node);
+    if (initializing)
+        create_as_element(node->object, type);
+    if (is_refresh_event(ctx))
+        refresh_tree_node(get<tree_traversal_tag>(ctx), *node);
+    return element_handle<Context>(ctx, type);
+}
+
+template<class Context>
+element_handle<Context>
+body(Context ctx)
+{
+    tree_node<element_object>* node;
+    bool initializing = get_cached_data(ctx, &node);
+    if (initializing)
+        create_as_existing(
+            node->object, emscripten::val::global("document")["body"]);
+    if (is_refresh_event(ctx))
+        refresh_tree_node(get<tree_traversal_tag>(ctx), *node);
     return element_handle<Context>(ctx, type);
 }
 
