@@ -255,7 +255,7 @@ element(Context ctx, char const* type)
         create_as_element(node->object, type);
     if (is_refresh_event(ctx))
         refresh_tree_node(get<tree_traversal_tag>(ctx), *node);
-    return element_handle<Context>(ctx, type);
+    return element_handle<Context>(ctx, node, initializing);
 }
 
 template<class Context>
@@ -269,7 +269,7 @@ body(Context ctx)
             node->object, emscripten::val::global("document")["body"]);
     if (is_refresh_event(ctx))
         refresh_tree_node(get<tree_traversal_tag>(ctx), *node);
-    return element_handle<Context>(ctx, type);
+    return element_handle<Context>(ctx, node, initializing);
 }
 
 struct scoped_element : noncopyable
