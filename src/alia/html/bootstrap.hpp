@@ -115,11 +115,7 @@ struct modal_data
 struct modal_handle
 {
     void
-    activate()
-    {
-        data.active = true;
-        EM_ASM({ jQuery(Module['nodes'][$0]).modal('show'); }, asmdom_id);
-    }
+    activate();
 
     modal_data& data;
     int asmdom_id;
