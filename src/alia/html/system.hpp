@@ -14,8 +14,6 @@ struct system
 {
     std::function<void(html::context)> controller;
 
-    tree_node<element_object> placeholder_node;
-
     alia::system alia_system;
 
     void
@@ -25,21 +23,11 @@ struct system
     std::function<void(emscripten::val)> onhashchange;
 };
 
-// Initialize the HTML system so that it places its top-level DOM elements
-// before the element whose ID is placeholder_node_id.
+// Initialize the HTML system with no root DOM element.
+// You're required to root your elements yourself.
 void
 initialize(
-    html::system& system,
-    std::string const& placeholder_node_id,
-    std::function<void(html::context)> controller);
-
-// Initialize the HTML system so that it places its top-level DOM elements
-// before placeholder_node.
-void
-initialize(
-    html::system& system,
-    emscripten::val placeholder_node,
-    std::function<void(html::context)> controller);
+    html::system& system, std::function<void(html::context)> controller);
 
 // Get the core alia system object associated with the HTML system.
 static inline alia::system&
