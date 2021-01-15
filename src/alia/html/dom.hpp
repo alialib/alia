@@ -24,6 +24,12 @@ struct element_object
 
     ~element_object();
 
+    bool
+    is_initialized() const
+    {
+        return type != UNINITIALIZED;
+    }
+
     enum node_type
     {
         UNINITIALIZED = 0,
