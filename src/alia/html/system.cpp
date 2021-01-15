@@ -59,41 +59,11 @@ system::operator()(alia::context vanilla_ctx)
     auto ctx = extend_context<system_tag>(
         extend_context<tree_traversal_tag>(vanilla_ctx, traversal), *this);
 
-    if (is_refresh_event(ctx))
-    {
-        traverse_object_tree(traversal, this->placeholder_node, [&]() {
-            this->controller(ctx);
-        });
-    }
-    else
-    {
-        this->controller(ctx);
-    }
+    this->controller(ctx);
 }
 
 void
-initialize(
-    html::system& system,
-    std::string const& placeholder_node_id,
-    std::function<void(html::context)> controller)
-{
-    emscripten::val document = emscripten::val::global("document");
-    emscripten::val placeholder = document.call<emscripten::val>(
-        "getElementById", placeholder_node_id);
-    if (placeholder.isNull())
-    {
-        auto msg = placeholder_node_id + " not found in document";
-        EM_ASM({ console.error(Module['UTF8ToString']($0)); }, msg.c_str());
-        throw exception(msg);
-    }
-    initialize(system, placeholder, controller);
-}
-
-void
-initialize(
-    html::system& system,
-    emscripten::val placeholder_node,
-    std::function<void(html::context)> controller)
+initialize(html::system& system, std::function<void(html::context)> controller)
 {
     // Initialize asm-dom (once).
     static bool asmdom_initialized = false;
@@ -112,11 +82,6 @@ initialize(
         std::ref(system),
         new dom_external_interface(system.alia_system));
     system.controller = std::move(controller);
-
-    // Replace the requested node in the DOM with our root DOM node.
-    emscripten::val document = emscripten::val::global("document");
-    create_as_placeholder_root(
-        system.placeholder_node.object, placeholder_node);
 
     // Update our DOM.
     refresh_system(system.alia_system);
