@@ -293,7 +293,7 @@ struct body_handle : element_handle_base<Context, body_handle<Context>>
 };
 
 template<class Context>
-element_handle<Context>
+body_handle<Context>
 body(Context ctx)
 {
     tree_node<element_object>* node;
