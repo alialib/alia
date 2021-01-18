@@ -51,6 +51,9 @@ create_as_placeholder_root(element_object& object, char const* placeholder_id)
     emscripten::val document = emscripten::val::global("document");
     emscripten::val placeholder = document.call<emscripten::val>(
         "getElementById", emscripten::val(placeholder_id));
+    // Strip out the ID to creating duplicate IDs through template reuse.
+    // It's not longer needed once we've find it.
+    placeholder.call<void>("removeAttribute", emscripten::val("id"));
     create_as_placeholder_root(object, placeholder);
 }
 
