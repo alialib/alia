@@ -124,9 +124,6 @@ element_object::remove()
 
 element_object::~element_object()
 {
-    if (this->type == element_object::NORMAL)
-        this->remove();
-
     if (this->asmdom_id != 0)
     {
         std::cout << "asmdom::direct::deleteElement: " << this->asmdom_id
