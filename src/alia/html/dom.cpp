@@ -40,8 +40,10 @@ void
 create_as_body(element_object& object)
 {
     assert(object.asmdom_id == 0);
+    std::cout << "create_as_body" << std::endl;
     object.asmdom_id = asmdom::direct::toElement(
         emscripten::val::global("document")["body"]);
+    std::cout << "-> " << object.asmdom_id << std::endl;
     object.type = element_object::BODY;
 }
 
