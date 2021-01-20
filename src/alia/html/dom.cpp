@@ -114,6 +114,7 @@ element_object::relocate(
 void
 element_object::remove()
 {
+
     assert(this->asmdom_id != 0);
     std::cout << "asmdom::direct::remove: " << this->asmdom_id << std::endl;
     asmdom::direct::remove(this->asmdom_id);
@@ -123,11 +124,11 @@ element_object::~element_object()
 {
     if (this->is_initialized())
     {
-        this->remove();
+        if (this->type == element_object::NORMAL)
+            this->remove();
         std::cout << "asmdom::direct::deleteElement: " << this->asmdom_id
                   << std::endl;
-        if (this->type != element_object::BODY)
-            asmdom::direct::deleteElement(this->asmdom_id);
+        asmdom::direct::deleteElement(this->asmdom_id);
     }
 }
 
