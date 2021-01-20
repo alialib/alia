@@ -312,11 +312,13 @@ body(Context ctx)
     if (initializing)
     {
         create_as_body(node->object);
-        // Clear out existing children.
+        // Clear out existing children/attributes.
         EM_ASM(
             {
                 var node = Module['nodes'][$0];
                 node.innerHTML = "";
+                while (node.attributes.length > 0)
+                    node.removeAttribute(node.attributes[0].name);
             },
             node->object.asmdom_id);
     }
