@@ -32,7 +32,9 @@ void
 create_as_existing(element_object& object, emscripten::val node)
 {
     assert(object.asmdom_id == 0);
+    std::cout << "create_as_existing" << std::endl;
     object.asmdom_id = asmdom::direct::toElement(node);
+    std::cout << "-> " << object.asmdom_id << std::endl;
     object.type = element_object::NORMAL;
 }
 
