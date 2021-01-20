@@ -82,6 +82,7 @@ element_object::relocate(
     switch (new_parent.type)
     {
         case element_object::NORMAL:
+        case element_object::BODY:
             assert(new_parent.asmdom_id != 0);
             std::cout << "asmdom::direct::insertBefore: "
                       << new_parent.asmdom_id << ", " << this->asmdom_id
