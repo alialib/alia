@@ -37,6 +37,15 @@ create_as_existing(element_object& object, emscripten::val node)
 }
 
 void
+create_as_body(element_object& object)
+{
+    assert(object.asmdom_id == 0);
+    object.asmdom_id = asmdom::direct::toElement(
+        emscripten::val::global("document")["body"]);
+    object.type = element_object::BODY;
+}
+
+void
 create_as_placeholder_root(element_object& object, emscripten::val placeholder)
 {
     assert(object.asmdom_id == 0);
@@ -111,12 +120,13 @@ element_object::remove()
 
 element_object::~element_object()
 {
-    if (this->asmdom_id != 0)
+    if (this->is_initialized())
     {
         this->remove();
         std::cout << "asmdom::direct::deleteElement: " << this->asmdom_id
                   << std::endl;
-        asmdom::direct::deleteElement(this->asmdom_id);
+        if (this->type != element_object::BODY)
+            asmdom::direct::deleteElement(this->asmdom_id);
     }
 }
 
