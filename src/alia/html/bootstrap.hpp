@@ -16,7 +16,6 @@ button(Args&&... args)
     return html::button(std::forward<Args>(args)...).class_("btn");
 }
 
-// primary button
 template<class... Args>
 element_handle<html::context>
 primary_button(Args&&... args)
@@ -24,12 +23,60 @@ primary_button(Args&&... args)
     return button(std::forward<Args>(args)...).class_("btn-primary");
 }
 
-// secondary button
 template<class... Args>
 element_handle<html::context>
 secondary_button(Args&&... args)
 {
     return button(std::forward<Args>(args)...).class_("btn-primary");
+}
+
+template<class... Args>
+element_handle<html::context>
+success_button(Args&&... args)
+{
+    return button(std::forward<Args>(args)...).class_("btn-success");
+}
+
+template<class... Args>
+element_handle<html::context>
+danger_button(Args&&... args)
+{
+    return button(std::forward<Args>(args)...).class_("btn-danger");
+}
+
+template<class... Args>
+element_handle<html::context>
+warning_button(Args&&... args)
+{
+    return button(std::forward<Args>(args)...).class_("btn-warning");
+}
+
+template<class... Args>
+element_handle<html::context>
+info_button(Args&&... args)
+{
+    return button(std::forward<Args>(args)...).class_("btn-info");
+}
+
+template<class... Args>
+element_handle<html::context>
+light_button(Args&&... args)
+{
+    return button(std::forward<Args>(args)...).class_("btn-light");
+}
+
+template<class... Args>
+element_handle<html::context>
+dark_button(Args&&... args)
+{
+    return button(std::forward<Args>(args)...).class_("btn-dark");
+}
+
+template<class... Args>
+element_handle<html::context>
+link_button(Args&&... args)
+{
+    return button(std::forward<Args>(args)...).class_("btn-link");
 }
 
 // CHECKBOXES
