@@ -27,7 +27,7 @@ template<class... Args>
 element_handle<html::context>
 secondary_button(Args&&... args)
 {
-    return button(std::forward<Args>(args)...).class_("btn-primary");
+    return button(std::forward<Args>(args)...).class_("btn-secondary");
 }
 
 template<class... Args>
