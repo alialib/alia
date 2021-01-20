@@ -40,7 +40,9 @@ struct element_object
         PLACEHOLDER_ROOT,
         // a root element that places its children at the end of the document
         // body; asmdom_id is irrelevant
-        MODAL_ROOT
+        MODAL_ROOT,
+        // the document body itself; asmdom_id is the ID of the body
+        BODY
     };
     node_type type = UNINITIALIZED;
 
@@ -55,6 +57,9 @@ create_as_text_node(element_object& object, char const* value);
 
 void
 create_as_existing(element_object& object, emscripten::val node);
+
+void
+create_as_body(element_object& object);
 
 void
 create_as_placeholder_root(
@@ -306,8 +311,7 @@ body(Context ctx)
     bool initializing = get_cached_data(ctx, &node);
     if (initializing)
     {
-        create_as_existing(
-            node->object, emscripten::val::global("document")["body"]);
+        create_as_body(node->object);
         // Clear out existing children.
         EM_ASM(
             {
