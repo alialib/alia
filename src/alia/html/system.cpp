@@ -105,6 +105,7 @@ enable_hash_monitoring(html::system& sys)
 {
     // Do an initial query.
     update_location_hash(sys);
+    refresh_system(sys.alia_system);
     // Install monitors.
     sys.onhashchange = [&sys](emscripten::val) {
         update_location_hash(sys);
