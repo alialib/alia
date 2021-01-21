@@ -118,7 +118,6 @@ element_object::relocate(
 void
 element_object::remove()
 {
-    assert(this->type == element_object::NORMAL);
     assert(this->asmdom_id != 0);
     std::cout << "asmdom::direct::remove: " << this->asmdom_id << std::endl;
     asmdom::direct::remove(this->asmdom_id);
