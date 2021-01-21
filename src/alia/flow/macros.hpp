@@ -397,8 +397,8 @@ read_condition(T const& x)
 #endif
 
 // event_dependent_if - This is used for tests that involve conditions that
-// change from event pass to another. It does not clear out cached data within
-// the block if it's skipped.
+// change from one event pass to another. It does not clear out cached data
+// within the block if it's skipped.
 
 #define ALIA_EVENT_DEPENDENT_IF_(ctx, condition)                              \
     {                                                                         \
