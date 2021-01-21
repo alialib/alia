@@ -104,16 +104,33 @@ struct catch_block
         auto ctx = try_block_->ctx_;
         data_block_node* node;
         get_data_node(ctx, &node);
+
+        // If we're trying to handle an uncaught exception, try invoking this
+        // clause.
         if (try_block_->uncaught_)
         {
             if (invoke_catch_clause(
                     ctx, try_block_->data_->exception, node->block, body))
             {
+                // This clause handled it, so mark it as caught and return.
                 try_block_->uncaught_ = false;
                 return;
             }
         }
-        if (get_data_traversal(ctx).cache_clearing_enabled)
+
+        // We'll get here for one of three reasons:
+        //
+        // 1 - There was no exception.
+        // 2 - There was an exception but this clause couldn't handle it.
+        // 3 - We just tried to refresh the TRY clause and it threw an
+        //     exception, so we marked the component as dirty and we're going
+        //     to revisit this whole block.
+        //
+        // In cases 1 and 2, we want to clear out the cache of this block, but
+        // we have to make sure not to do so in case 3.
+        //
+        if (!(*get_event_traversal(ctx).active_container)->dirty
+            && get_data_traversal(ctx).cache_clearing_enabled)
         {
             clear_data_block_cache(node->block);
         }
