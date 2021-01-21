@@ -1,6 +1,7 @@
 #define ALIA_LOWERCASE_MACROS
 #include <alia/flow/try_catch.hpp>
 
+#include <alia/signals/async.hpp>
 #include <alia/signals/basic.hpp>
 #include <alia/signals/text.hpp>
 
@@ -146,4 +147,56 @@ TEST_CASE("try_catch", "[flow][try_catch]")
     refresh_system(sys);
     REQUIRE(
         root.object.to_string() == "root(main(something();else();tail(););)");
+}
+
+TEST_CASE("async within catch", "[flow][try_catch]")
+{
+    clear_log();
+
+    tree_node<test_object> root;
+    root.object.name = "root";
+
+    async_reporter<std::string> reporter;
+
+    auto controller = [&](test_context ctx) {
+        do_container(ctx, "main", [&](test_context ctx) {
+            alia_try
+            {
+                std::string(4, std::string().at(0));
+            }
+            alia_catch(...)
+            {
+                do_object(ctx, "caught");
+
+                auto message = async<std::string>(
+                    ctx, [&](auto, auto r, auto) { reporter = r; }, value(2));
+                do_object(ctx, message);
+            }
+            alia_end
+
+            do_object(ctx, "tail");
+        });
+    };
+
+    alia::system sys;
+    initialize_system(sys, [&](context vanilla_ctx) {
+        tree_traversal<test_object> traversal;
+        auto ctx = detail::add_context_object<tree_traversal_tag>(
+            vanilla_ctx, traversal);
+        if (is_refresh_event(ctx))
+        {
+            traverse_object_tree(traversal, root, [&]() { controller(ctx); });
+        }
+        else
+        {
+            controller(ctx);
+        }
+    });
+
+    refresh_system(sys);
+    REQUIRE(root.object.to_string() == "root(main(caught();();tail(););)");
+
+    reporter.report_success("asyncd");
+    REQUIRE(
+        root.object.to_string() == "root(main(caught();asyncd();tail(););)");
 }
