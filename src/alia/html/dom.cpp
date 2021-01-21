@@ -12,9 +12,13 @@ void
 create_as_element(element_object& object, char const* type)
 {
     assert(object.asmdom_id == 0);
+#ifdef ALIA_HTML_LOGGING
     std::cout << "asmdom::direct::createElement: " << type << std::endl;
+#endif
     object.asmdom_id = asmdom::direct::createElement(type);
+#ifdef ALIA_HTML_LOGGING
     std::cout << "-> " << object.asmdom_id << std::endl;
+#endif
     object.type = element_object::NORMAL;
 }
 
@@ -22,9 +26,13 @@ void
 create_as_text_node(element_object& object, char const* value)
 {
     assert(object.asmdom_id == 0);
+#ifdef ALIA_HTML_LOGGING
     std::cout << "asmdom::direct::createTextNode: " << value << std::endl;
+#endif
     object.asmdom_id = asmdom::direct::createTextNode(value);
+#ifdef ALIA_HTML_LOGGING
     std::cout << "-> " << object.asmdom_id << std::endl;
+#endif
     object.type = element_object::NORMAL;
 }
 
@@ -32,9 +40,13 @@ void
 create_as_existing(element_object& object, emscripten::val node)
 {
     assert(object.asmdom_id == 0);
+#ifdef ALIA_HTML_LOGGING
     std::cout << "create_as_existing" << std::endl;
+#endif
     object.asmdom_id = asmdom::direct::toElement(node);
+#ifdef ALIA_HTML_LOGGING
     std::cout << "-> " << object.asmdom_id << std::endl;
+#endif
     object.type = element_object::NORMAL;
 }
 
@@ -42,10 +54,14 @@ void
 create_as_body(element_object& object)
 {
     assert(object.asmdom_id == 0);
+#ifdef ALIA_HTML_LOGGING
     std::cout << "create_as_body" << std::endl;
+#endif
     object.asmdom_id = asmdom::direct::toElement(
         emscripten::val::global("document")["body"]);
+#ifdef ALIA_HTML_LOGGING
     std::cout << "-> " << object.asmdom_id << std::endl;
+#endif
     object.type = element_object::BODY;
 }
 
@@ -88,9 +104,11 @@ element_object::relocate(
         case element_object::NORMAL:
         case element_object::BODY:
             assert(new_parent.asmdom_id != 0);
+#ifdef ALIA_HTML_LOGGING
             std::cout << "asmdom::direct::insertBefore: "
                       << new_parent.asmdom_id << ", " << this->asmdom_id
                       << ", " << (before ? before->asmdom_id : 0) << std::endl;
+#endif
             asmdom::direct::insertBefore(
                 new_parent.asmdom_id,
                 this->asmdom_id,
@@ -119,7 +137,9 @@ void
 element_object::remove()
 {
     assert(this->asmdom_id != 0);
+#ifdef ALIA_HTML_LOGGING
     std::cout << "asmdom::direct::remove: " << this->asmdom_id << std::endl;
+#endif
     asmdom::direct::remove(this->asmdom_id);
 }
 
@@ -184,22 +204,27 @@ install_element_callback(
     callback_data& data,
     char const* event_type)
 {
+#ifdef ALIA_HTML_LOGGING
     std::cout << "install callback" << std::endl;
+#endif
     auto external_id = externalize(&data.identity);
     auto* system = &get<alia::system_tag>(ctx);
     auto callback = [=](emscripten::val v) {
         dom_event event(v);
+#ifdef ALIA_HTML_LOGGING
         auto start = std::chrono::high_resolution_clock::now();
+#endif
         dispatch_targeted_event(*system, event, external_id);
+#ifdef ALIA_HTML_LOGGING
         auto elapsed_ms
             = std::chrono::duration_cast<std::chrono::microseconds>(
                   std::chrono::high_resolution_clock::now() - start)
                   .count();
         std::cout << "event time: " << elapsed_ms << " µs" << std::endl;
+#endif
         return true;
     };
     asmdom::direct::setCallback(object.asmdom_id, event_type, callback);
-    std::cout << "worked!" << std::endl;
 }
 
 struct text_node_data
@@ -221,16 +246,20 @@ text_node(html::context ctx, readable<std::string> text)
             data->value_id,
             text,
             [&](std::string const& new_value) {
+#ifdef ALIA_HTML_LOGGING
                 std::cout << "asmdom::direct::setNodeValue: "
                           << data->node.object.asmdom_id << ": " << new_value
                           << std::endl;
+#endif
                 asmdom::direct::setNodeValue(
                     data->node.object.asmdom_id, new_value.c_str());
             },
             [&]() {
+#ifdef ALIA_HTML_LOGGING
                 std::cout << "asmdom::direct::setNodeValue: "
                           << data->node.object.asmdom_id << ": (null)"
                           << std::endl;
+#endif
                 asmdom::direct::setNodeValue(data->node.object.asmdom_id, "");
             });
     }
@@ -353,16 +382,20 @@ void
 set_element_property(
     element_object& object, char const* name, emscripten::val const& value)
 {
+#ifdef ALIA_HTML_LOGGING
     std::cout << "asmdom::direct::setProperty: " << object.asmdom_id << "."
               << name << ": " << value.as<std::string>() << std::endl;
+#endif
     asmdom::direct::setProperty(object.asmdom_id, name, value);
 }
 
 void
 clear_element_property(element_object& object, char const* name)
 {
+#ifdef ALIA_HTML_LOGGING
     std::cout << "asmdom::direct::removeProperty: " << object.asmdom_id << "."
               << name << std::endl;
+#endif
     asmdom::direct::removeProperty(object.asmdom_id, name);
 }
 
