@@ -127,9 +127,10 @@ element_object::~element_object()
 {
     if (this->asmdom_id != 0)
     {
-        std::cout << "asmdom::direct::deleteElement: " << this->asmdom_id
-                  << std::endl;
-        asmdom::direct::deleteElement(this->asmdom_id);
+        // Using asmdom::direct::deleteElement invokes the node recycler, which
+        // seems to cause problems when external JS code messes around with our
+        // elements. Instead, we just delete it from the node table.
+        EM_ASM({ delete Module['nodes'][$0]; }, this->asmdom_id);
     }
 }
 
