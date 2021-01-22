@@ -30,7 +30,7 @@ initialize(
     html::system& system, std::function<void(html::context)> controller);
 
 // Get the core alia system object associated with the HTML system.
-static inline alia::system&
+inline alia::system&
 get_alia_system(html::system& sys)
 {
     return sys.alia_system;
@@ -42,8 +42,15 @@ get_alia_system(html::system& sys)
 // called on this system or if you're manually calling update_location_hash()
 // when necessary.
 //
-std::string
-get_location_hash(html::system& sys);
+inline std::string const&
+get_location_hash(html::system const& sys)
+{
+    return sys.hash;
+}
+
+// Set the current location hash associated with the HTML system.
+void
+set_location_hash(html::system& sys, std::string new_hash);
 
 // Install an event handler to monitor the hash.
 // This needs to be done to enable SPA-style routing.

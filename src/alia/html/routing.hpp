@@ -245,19 +245,18 @@ router(Context ctx)
             get_location_hash(ctx)));
 }
 
-namespace {
+namespace actions { namespace {
 
 auto
-set_route(html::context ctx)
+set_location_hash(html::context ctx)
 {
-    auto& system = get<html::system_tag>(ctx);
-    return callback([&system](std::string new_route) {
-        history().push_url("#" + std::move(new_route));
-        update_location_hash(system);
+    auto& sys = get<html::system_tag>(ctx);
+    return callback([&sys](std::string new_route) {
+        set_location_hash(sys, std::move(new_route));
     });
 }
 
-} // namespace
+}} // namespace actions::
 
 // Get the current location hash for the HTML context.
 direct_const_signal<std::string>
