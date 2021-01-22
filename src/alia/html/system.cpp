@@ -88,6 +88,13 @@ initialize(html::system& system, std::function<void(html::context)> controller)
 }
 
 void
+set_location_hash(html::system& sys, std::string new_hash)
+{
+    history().push_url(std::move(new_hash));
+    update_location_hash(sys);
+}
+
+void
 update_location_hash(html::system& sys)
 {
     auto hash = emscripten::val::global("window")["location"]["hash"]
