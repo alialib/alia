@@ -146,4 +146,25 @@ fetch(alia::context ctx, readable<http_request> request)
     return async<http_response>(ctx, launch_fetch_operation, request);
 }
 
+namespace {
+
+http_request
+make_text_request(std::string const& path)
+{
+    return http_request{http_method::GET, path, http_headers{}, blob()};
+}
+
+} // namespace
+
+apply_signal<std::string>
+fetch_text(html::context ctx, readable<std::string> path)
+{
+    return apply(
+        ctx,
+        [](auto result) {
+            return std::string(result.body.data, result.body.size);
+        },
+        fetch(ctx, apply(ctx, make_text_request, path)));
+}
+
 }} // namespace alia::html
