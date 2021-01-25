@@ -234,18 +234,25 @@ struct element_handle_base
         return node_->object.asmdom_id;
     }
 
- protected:
     context ctx_;
     tree_node<element_object>* node_;
     bool initializing_;
 };
 
-struct element_handle : element_handle_base<element_handle>
+template<class Derived>
+struct regular_element_handle : element_handle_base<Derived>
 {
-    using element_handle_base::element_handle_base;
+    using regular_element_handle::element_handle_base::element_handle_base;
+
+    template<class Other>
+    regular_element_handle(regular_element_handle<Other> const& other)
+        : regular_element_handle::element_handle_base(
+            other.ctx_, other.node_, other.initializing_)
+    {
+    }
 
     template<class Function>
-    element_handle&
+    Derived&
     children(Function&& fn)
     {
         auto& traversal = get<tree_traversal_tag>(this->ctx_);
@@ -253,15 +260,20 @@ struct element_handle : element_handle_base<element_handle>
         if (is_refresh_event(this->ctx_))
             tree_scope.begin(traversal, *this->node_);
         std::forward<Function>(fn)();
-        return *this;
+        return static_cast<Derived&>(*this);
     }
 
     template<class Text>
-    element_handle&
+    Derived&
     text(Text text)
     {
         return children([&] { text_node(this->ctx_, text); });
     }
+};
+
+struct element_handle : regular_element_handle<element_handle>
+{
+    using regular_element_handle::regular_element_handle;
 };
 
 element_handle

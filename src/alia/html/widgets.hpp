@@ -17,11 +17,9 @@ p(html::context ctx, Signal signal)
 
 // INPUTS
 
-struct input_handle : element_handle
+struct input_handle : regular_element_handle<input_handle>
 {
-    input_handle(element_handle base) : element_handle(base)
-    {
-    }
+    using regular_element_handle::regular_element_handle;
 
     // Define an action to be performed when the Enter key is pressed on the
     // input.
