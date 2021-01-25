@@ -242,11 +242,7 @@ struct element_handle_base
 
 struct element_handle : element_handle_base<element_handle>
 {
-    element_handle(
-        context ctx, tree_node<element_object>* node, bool initializing)
-        : element_handle::element_handle_base(ctx, node, initializing)
-    {
-    }
+    using element_handle_base::element_handle_base;
 
     template<class Function>
     element_handle&
@@ -273,11 +269,7 @@ element(context ctx, char const* type);
 
 struct body_handle : element_handle_base<body_handle>
 {
-    body_handle(
-        context ctx, tree_node<element_object>* node, bool initializing)
-        : body_handle::element_handle_base(ctx, node, initializing)
-    {
-    }
+    using element_handle_base::element_handle_base;
 
     template<class Function>
     body_handle&
