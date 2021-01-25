@@ -157,7 +157,7 @@ make_text_request(std::string const& path)
 } // namespace
 
 apply_signal<std::string>
-fetch_text(html::context ctx, readable<std::string> path)
+fetch_text(alia::context ctx, readable<std::string> path)
 {
     return apply(
         ctx,
