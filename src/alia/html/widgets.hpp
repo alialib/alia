@@ -17,12 +17,24 @@ p(html::context ctx, Signal signal)
 
 // INPUTS
 
+struct input_handle : element_handle
+{
+    input_handle(element_handle base) : element_handle(base)
+    {
+    }
+
+    // Define an action to be performed when the Enter key is pressed on the
+    // input.
+    void
+    on_enter(action<> on_enter);
+};
+
 namespace detail {
-element_handle
+input_handle
 input(html::context ctx, duplex<std::string> value);
 }
 template<class Signal>
-element_handle
+input_handle
 input(html::context ctx, Signal signal)
 {
     return detail::input(ctx, as_duplex_text(ctx, signal));

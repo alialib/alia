@@ -2,6 +2,15 @@
 
 namespace alia { namespace html {
 
+void
+input_handle::on_enter(action<> on_enter)
+{
+    this->callback("keyup", [&](emscripten::val& e) {
+        if (e["key"].as<std::string>() == "Enter")
+            perform_action(on_enter);
+    });
+}
+
 namespace detail {
 
 struct input_data
@@ -12,7 +21,7 @@ struct input_data
     unsigned version = 0;
 };
 
-element_handle
+input_handle
 input(html::context ctx, duplex<std::string> value_)
 {
     input_data* data;
