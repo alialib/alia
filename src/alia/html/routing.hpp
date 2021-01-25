@@ -247,6 +247,7 @@ router(Context ctx)
 
 namespace actions { namespace {
 
+// An action that sets the location hash.
 auto
 set_location_hash(html::context ctx)
 {
@@ -261,6 +262,25 @@ set_location_hash(html::context ctx)
 // Get the current location hash for the HTML context.
 direct_const_signal<std::string>
 get_location_hash(html::context ctx);
+
+// This implements an 'internal' link to a different page in the SPA.
+template<class Context>
+element_handle<Context>
+internal_link(Context ctx, readable<string> text, readable<string> path)
+{
+    return element(ctx, "a")
+        .attr("href", path)
+        .attr("disabled", path.has_value() ? "false" : "true")
+        .text(text)
+        .callback("click", [&](emscripten::val& e) {
+            e.call<void>("preventDefault");
+            if (path.has_value())
+            {
+                set_location_hash(
+                    get<html::system_tag>(ctx), "#" + read_signal(path));
+            }
+        });
+}
 
 }} // namespace alia::html
 
