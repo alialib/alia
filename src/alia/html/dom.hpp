@@ -24,6 +24,9 @@ struct element_object
 
     ~element_object();
 
+    void
+    destroy();
+
     bool
     is_initialized() const
     {
@@ -415,6 +418,15 @@ invoke_tree(context ctx, tree_node<element_object>& root, Content&& content)
         scoped_root.begin(get<html::tree_traversal_tag>(ctx), root);
     std::forward<Content>(content)();
 }
+
+void
+placeholder_root(
+    html::context ctx,
+    char const* placeholder_id,
+    alia::function_view<void()> content);
+
+void
+modal_root(html::context ctx, alia::function_view<void()> content);
 
 }} // namespace alia::html
 

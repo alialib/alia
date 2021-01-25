@@ -145,13 +145,21 @@ element_object::remove()
 
 element_object::~element_object()
 {
+    this->destroy();
+}
+
+void
+element_object::destroy()
+{
     if (this->asmdom_id != 0)
     {
         // Using asmdom::direct::deleteElement invokes the node recycler, which
         // seems to cause problems when external JS code messes around with our
         // elements. Instead, we just delete it from the node table.
         EM_ASM({ delete Module['nodes'][$0]; }, this->asmdom_id);
+        this->asmdom_id = 0;
     }
+    this->type = element_object::UNINITIALIZED;
 }
 
 namespace detail {
@@ -411,6 +419,29 @@ scoped_element::begin(context ctx, char const* type)
     if (is_refresh_event(ctx))
         tree_scoping_.begin(get<tree_traversal_tag>(ctx), *node_);
     return *this;
+}
+
+void
+placeholder_root(
+    html::context ctx,
+    char const* placeholder_id,
+    alia::function_view<void()> content)
+{
+    tree_node<element_object>* node;
+    if (get_cached_data(ctx, &node))
+        create_as_placeholder_root(node->object, placeholder_id);
+
+    invoke_tree(ctx, *node, content);
+}
+
+void
+modal_root(html::context ctx, alia::function_view<void()> content)
+{
+    tree_node<element_object>* node;
+    if (get_cached_data(ctx, &node))
+        create_as_modal_root(node->object);
+
+    invoke_tree(ctx, *node, content);
 }
 
 }} // namespace alia::html
