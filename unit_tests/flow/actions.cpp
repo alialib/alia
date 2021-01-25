@@ -155,36 +155,36 @@ TEST_CASE("action parameter passing", "[flow][actions]")
 
 TEST_CASE("unready action", "[flow][actions]")
 {
-    REQUIRE(!unready_action().is_ready());
-    REQUIRE(!unready_action<int>().is_ready());
+    REQUIRE(!actions::unready().is_ready());
+    REQUIRE(!actions::unready<int>().is_ready());
 }
 
 TEST_CASE("noop action", "[flow][actions]")
 {
-    REQUIRE(noop_action().is_ready());
-    perform_action(noop_action());
-    REQUIRE(noop_action<int>().is_ready());
-    perform_action(noop_action<int>(), 1);
+    REQUIRE(actions::noop().is_ready());
+    perform_action(actions::noop());
+    REQUIRE(actions::noop<int>().is_ready());
+    perform_action(actions::noop<int>(), 1);
 }
 
 TEST_CASE("toggle action", "[flow][actions]")
 {
     bool x = false;
     {
-        auto a = toggle(direct(x));
+        auto a = actions::toggle(direct(x));
         REQUIRE(a.is_ready());
         perform_action(a);
         REQUIRE(x);
     }
     {
-        auto a = toggle(direct(x));
+        auto a = actions::toggle(direct(x));
         REQUIRE(a.is_ready());
         perform_action(a);
         REQUIRE(!x);
     }
 
     {
-        auto a = toggle(empty<bool>());
+        auto a = actions::toggle(empty<bool>());
         REQUIRE(!a.is_ready());
     }
 }
@@ -193,25 +193,25 @@ TEST_CASE("push_back action", "[flow][actions]")
 {
     auto x = std::vector<int>{1, 2};
     {
-        auto a = push_back(direct(x));
+        auto a = actions::push_back(direct(x));
         REQUIRE(a.is_ready());
         perform_action(a, 3);
         REQUIRE(x == (std::vector<int>{1, 2, 3}));
     }
     {
-        auto a = push_back(direct(x)) << 4;
+        auto a = actions::push_back(direct(x)) << 4;
         REQUIRE(a.is_ready());
         perform_action(a);
         REQUIRE(x == (std::vector<int>{1, 2, 3, 4}));
     }
 
     {
-        auto a = push_back(empty<std::vector<int>>());
+        auto a = actions::push_back(empty<std::vector<int>>());
         REQUIRE(!a.is_ready());
     }
 
     {
-        auto a = push_back(empty<std::vector<int>>());
+        auto a = actions::push_back(empty<std::vector<int>>());
         REQUIRE(!a.is_ready());
     }
 }
@@ -220,7 +220,7 @@ TEST_CASE("push_back movable", "[flow][actions]")
 {
     auto x = std::vector<movable_object>{movable_object(1), movable_object(2)};
     {
-        auto a = push_back(direct(x)) << value(movable_object(3));
+        auto a = actions::push_back(direct(x)) << value(movable_object(3));
         REQUIRE(a.is_ready());
         copy_count = 0;
         perform_action(a);
