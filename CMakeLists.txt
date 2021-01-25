@@ -48,26 +48,26 @@ target_link_libraries(alia_html
     PUBLIC asm-dom scn::scn alia nlohmann_json::nlohmann_json)
 target_include_directories(alia_html PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
-# Create an example executable.
-add_executable(example examples/main.cpp)
-target_link_libraries(example alia_html)
+# # Create an example executable.
+# add_executable(example examples/main.cpp)
+# target_link_libraries(example alia_html)
 
-# Create symlinks for index.html and style.css file in the build directory.
-# (Or copy them if we're on Travis so that deployment works.)
-if(DEFINED ENV{TRAVIS})
-    file(COPY
-        examples/index.html
-        DESTINATION .)
-    file(COPY
-        examples/style.css
-        DESTINATION .)
-else()
-    file(CREATE_LINK
-        ${CMAKE_CURRENT_SOURCE_DIR}/examples/index.html
-        ${CMAKE_CURRENT_BINARY_DIR}/index.html
-        SYMBOLIC)
-    file(CREATE_LINK
-        ${CMAKE_CURRENT_SOURCE_DIR}/examples/style.css
-        ${CMAKE_CURRENT_BINARY_DIR}/style.css
-        SYMBOLIC)
-endif()
+# # Create symlinks for index.html and style.css file in the build directory.
+# # (Or copy them if we're on Travis so that deployment works.)
+# if(DEFINED ENV{TRAVIS})
+#     file(COPY
+#         examples/index.html
+#         DESTINATION .)
+#     file(COPY
+#         examples/style.css
+#         DESTINATION .)
+# else()
+#     file(CREATE_LINK
+#         ${CMAKE_CURRENT_SOURCE_DIR}/examples/index.html
+#         ${CMAKE_CURRENT_BINARY_DIR}/index.html
+#         SYMBOLIC)
+#     file(CREATE_LINK
+#         ${CMAKE_CURRENT_SOURCE_DIR}/examples/style.css
+#         ${CMAKE_CURRENT_BINARY_DIR}/style.css
+#         SYMBOLIC)
+# endif()
