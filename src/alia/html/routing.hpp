@@ -264,24 +264,9 @@ direct_const_signal<std::string>
 get_location_hash(html::context ctx);
 
 // This implements an 'internal' link to a different page in the SPA.
-template<class Context>
-element_handle<Context>
+element_handle
 internal_link(
-    Context ctx, readable<std::string> text, readable<std::string> path)
-{
-    return element(ctx, "a")
-        .attr("href", path)
-        .attr("disabled", path.has_value() ? "false" : "true")
-        .text(text)
-        .callback("click", [&](emscripten::val& e) {
-            e.call<void>("preventDefault");
-            if (path.has_value())
-            {
-                set_location_hash(
-                    get<html::system_tag>(ctx), "#" + read_signal(path));
-            }
-        });
-}
+    context ctx, readable<std::string> text, readable<std::string> path);
 
 }} // namespace alia::html
 
