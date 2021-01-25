@@ -28,8 +28,8 @@ do_sandbox_ui(qt_context ctx)
     }
     ALIA_END
 
-    do_button(ctx, x, toggle(state));
-    do_button(ctx, value("Toggle!"), toggle(state));
+    do_button(ctx, x, actions::toggle(state));
+    do_button(ctx, value("Toggle!"), actions::toggle(state));
 }
 
 alia::system the_system;

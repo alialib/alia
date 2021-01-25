@@ -266,11 +266,12 @@ operator<<=(Sink sink, Source source)
     return sink <<= value(source);
 }
 
-// The noop_action is always ready to perform but does nothing.
+// The noop action is always ready to perform but does nothing.
+
 template<class... Args>
-struct noop_action_type : action_interface<Args...>
+struct noop_action : action_interface<Args...>
 {
-    noop_action_type()
+    noop_action()
     {
     }
 
@@ -286,18 +287,24 @@ struct noop_action_type : action_interface<Args...>
         intermediary();
     }
 };
+
+namespace actions {
+
 template<class... Args>
-noop_action_type<Args...>
-noop_action()
+noop_action<Args...>
+noop()
 {
-    return noop_action_type<Args...>();
+    return noop_action<Args...>();
 }
 
-// The unready_action is never ready to perform.
+} // namespace actions
+
+// The unready action is never ready to perform.
+
 template<class... Args>
-struct unready_action_type : action_interface<Args...>
+struct unready_action : action_interface<Args...>
 {
-    unready_action_type()
+    unready_action()
     {
     }
 
@@ -316,25 +323,34 @@ struct unready_action_type : action_interface<Args...>
     }
     // LCOV_EXCL_STOP
 };
+
+namespace actions {
+
 template<class... Args>
-unready_action_type<Args...>
-unready_action()
+unready_action<Args...>
+unready()
 {
-    return unready_action_type<Args...>();
+    return unready_action<Args...>();
 }
+
+} // namespace actions
 
 // toggle(flag), where :flag is a signal to a boolean, creates an action
 // that will toggle the value of :flag between true and false.
 //
 // Note that this could also be used with other value types as long as the !
 // operator provides a reasonable "toggle" function.
-//
+
+namespace actions {
+
 template<class Flag>
 auto
 toggle(Flag flag)
 {
     return flag <<= !flag;
 }
+
+} // namespace actions
 
 // push_back(container), where :container is a signal, creates an action that
 // takes an item as a parameter and pushes it onto the back of :container.
@@ -365,6 +381,8 @@ struct push_back_action : action_interface<Item>
     Container container_;
 };
 
+namespace actions {
+
 template<class Container>
 auto
 push_back(Container container)
@@ -373,6 +391,8 @@ push_back(Container container)
         Container,
         typename Container::value_type::value_type>(std::move(container));
 }
+
+} // namespace actions
 
 // callback(is_ready, perform) creates an action whose behavior is defined by
 // two function objects.
