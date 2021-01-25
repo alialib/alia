@@ -209,7 +209,7 @@ reset(apply_result_data<Value>& data)
 template<class Value>
 struct apply_signal : signal<apply_signal<Value>, Value, read_only_signal>
 {
-    apply_signal(apply_result_data<Value>& data) : data_(&data)
+    apply_signal(detail::apply_result_data<Value>& data) : data_(&data)
     {
     }
     id_interface const&
@@ -221,7 +221,7 @@ struct apply_signal : signal<apply_signal<Value>, Value, read_only_signal>
     bool
     has_value() const
     {
-        return data_->status == apply_status::READY;
+        return data_->status == detail::apply_status::READY;
     }
     Value const&
     read() const
@@ -230,7 +230,7 @@ struct apply_signal : signal<apply_signal<Value>, Value, read_only_signal>
     }
 
  private:
-    apply_result_data<Value>* data_;
+    detail::apply_result_data<Value>* data_;
     mutable simple_id<counter_type> id_;
 };
 
