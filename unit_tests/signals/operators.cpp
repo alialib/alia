@@ -484,11 +484,11 @@ TEST_CASE("state subscript", "[signals][operators]")
     using namespace alia;
 
     state_storage<std::map<int, int>> state;
+    state.set(std::map<int, int>());
     auto state_signal = make_state_signal(state);
 
     auto s = state_signal[value(2)];
 
-    REQUIRE(!signal_has_value(s));
     perform_action(s <<= value(3));
     REQUIRE(state.nonconst_ref()[2] == 3);
 }
