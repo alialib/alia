@@ -99,7 +99,7 @@ struct preferred_id_signal<
     : signal<Derived, Value, Capabilities>
 {
     id_interface const&
-    value_id() const
+    value_id() const override
     {
         id_ = static_cast<Derived const*>(this)->complex_value_id();
         return id_;

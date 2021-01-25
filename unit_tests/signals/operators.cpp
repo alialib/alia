@@ -8,6 +8,7 @@
 
 #include <alia/signals/basic.hpp>
 #include <alia/signals/lambdas.hpp>
+#include <alia/signals/state.hpp>
 #include <alia/signals/utilities.hpp>
 
 using namespace alia;
@@ -476,4 +477,18 @@ TEST_CASE("empty subscript", "[signals][operators]")
 
     REQUIRE(!signal_has_value(s));
     REQUIRE(s.value_id() == null_id);
+}
+
+TEST_CASE("state subscript", "[signals][operators]")
+{
+    using namespace alia;
+
+    state_storage<std::map<int, int>> state;
+    auto state_signal = make_state_signal(state);
+
+    auto s = state_signal[value(2)];
+
+    REQUIRE(!signal_has_value(s));
+    perform_action(s <<= value(3));
+    REQUIRE(state.nonconst_ref()[2] == 3);
 }
