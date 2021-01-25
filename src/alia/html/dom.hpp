@@ -436,27 +436,7 @@ struct html_fragment_handle
 };
 
 html_fragment_handle
-html_fragment(context ctx, readable<std::string> html)
-{
-    auto elm = element(ctx, "div");
-    auto& captured_html_id = get_cached_data<captured_id>(ctx);
-    bool just_loaded = false;
-    refresh_signal_view(
-        captured_html_id,
-        html,
-        [&](std::string const& new_html) {
-            EM_ASM(
-                {
-                    var node = Module['nodes'][$0];
-                    node.innerHTML = Module['UTF8ToString']($1);
-                },
-                elm.asmdom_id(),
-                new_html.c_str());
-            just_loaded = true;
-        },
-        [&] {});
-    return html_fragment_handle{ctx, just_loaded};
-}
+html_fragment(context ctx, readable<std::string> html);
 
 }} // namespace alia::html
 
