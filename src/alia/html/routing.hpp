@@ -156,7 +156,7 @@ struct page_invoker<N, std::index_sequence<S...>>
         ALIA_IF(ALIA_FIELD(result, matched))
         {
             auto args = ALIA_FIELD(result, arguments);
-            std::forward<Page>(page)(ctx, args[S]...);
+            std::forward<Page>(page)(args[S]...);
         }
         ALIA_END
     }
