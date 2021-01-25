@@ -46,7 +46,7 @@ async_signal<http_response>
 fetch(alia::context ctx, readable<http_request> request);
 
 apply_signal<std::string>
-fetch_text(html::context ctx, readable<std::string> path);
+fetch_text(alia::context ctx, readable<std::string> path);
 
 }} // namespace alia::html
 

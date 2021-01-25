@@ -266,7 +266,8 @@ get_location_hash(html::context ctx);
 // This implements an 'internal' link to a different page in the SPA.
 template<class Context>
 element_handle<Context>
-internal_link(Context ctx, readable<string> text, readable<string> path)
+internal_link(
+    Context ctx, readable<std::string> text, readable<std::string> path)
 {
     return element(ctx, "a")
         .attr("href", path)
