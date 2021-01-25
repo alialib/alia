@@ -204,6 +204,8 @@ reset(apply_result_data<Value>& data)
     data.status = apply_status::UNCOMPUTED;
 }
 
+} // namespace detail
+
 template<class Value>
 struct apply_signal : signal<apply_signal<Value>, Value, read_only_signal>
 {
@@ -231,6 +233,8 @@ struct apply_signal : signal<apply_signal<Value>, Value, read_only_signal>
     apply_result_data<Value>* data_;
     mutable simple_id<counter_type> id_;
 };
+
+namespace detail {
 
 template<class Value>
 apply_signal<Value>
