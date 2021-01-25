@@ -1,6 +1,19 @@
 #include "demo.hpp"
 
 void
+initialize(
+    html::system& sys,
+    std::string const& placeholder_id,
+    std::function<void(html::context)> const& controller)
+{
+    auto rootless_controller = [=](html::context ctx) {
+        placeholder_root(
+            ctx, placeholder_id.c_str(), [&]() { controller(ctx); });
+    };
+    initialize(sys, rootless_controller);
+}
+
+void
 colored_box(html::context ctx, readable<rgb8> color)
 {
     element(ctx, "div")

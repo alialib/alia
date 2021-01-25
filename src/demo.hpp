@@ -23,6 +23,12 @@ struct demo : noncopyable
 };
 
 void
+initialize(
+    html::system& sys,
+    std::string const& placeholder_id,
+    std::function<void(html::context)> const& controller);
+
+void
 colored_box(html::context ctx, readable<rgb8> color);
 
 inline void
