@@ -669,7 +669,9 @@ struct subscript_signal : preferred_id_signal<
                               typename subscript_result_type<
                                   typename ContainerSignal::value_type,
                                   typename IndexSignal::value_type>::type,
-                              typename ContainerSignal::capabilities,
+                              typename signal_capabilities_intersection<
+                                  typename ContainerSignal::capabilities,
+                                  readable_duplex_signal>::type,
                               id_pair<alia::id_ref, alia::id_ref>>
 {
     subscript_signal()
