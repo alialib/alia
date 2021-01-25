@@ -428,6 +428,69 @@ placeholder_root(
 void
 modal_root(html::context ctx, alia::function_view<void()> content);
 
+struct override_data
+{
+    tree_node<element_object> node;
+
+    ~override_data()
+    {
+        node.object.remove();
+    }
+};
+
+template<class Context>
+struct html_fragment_handle
+{
+    Context ctx;
+    bool just_loaded;
+
+    template<class Content>
+    html_fragment_handle&
+    override(char const* placeholder_id, Content&& content)
+    {
+        override_data* data;
+        get_cached_data(ctx, &data);
+        if (just_loaded)
+        {
+            // It's possible the node was already in use, so destroy it first.
+            data->node.object.destroy();
+            create_as_placeholder_root(data->node.object, placeholder_id);
+        }
+
+        ALIA_IF(data->node.object.is_initialized())
+        {
+            invoke_tree(ctx, data->node, content);
+        }
+        ALIA_END
+
+        return *this;
+    }
+};
+
+template<class Context>
+html_fragment_handle<Context>
+html_fragment(Context ctx, readable<std::string> html)
+{
+    auto elm = element(ctx, "div");
+    auto& captured_html_id = get_cached_data<captured_id>(ctx);
+    bool just_loaded = false;
+    refresh_signal_view(
+        captured_html_id,
+        html,
+        [&](std::string const& new_html) {
+            EM_ASM(
+                {
+                    var node = Module['nodes'][$0];
+                    node.innerHTML = Module['UTF8ToString']($1);
+                },
+                elm.asmdom_id(),
+                new_html.c_str());
+            just_loaded = true;
+        },
+        [&] {});
+    return html_fragment_handle<Context>{ctx, just_loaded};
+}
+
 }} // namespace alia::html
 
 #endif
