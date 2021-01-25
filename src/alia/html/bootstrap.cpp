@@ -5,7 +5,7 @@
 namespace alia { namespace html { namespace bootstrap {
 namespace detail {
 
-element_handle<html::context>
+element_handle
 checkbox(html::context ctx, duplex<bool> value, readable<std::string> label)
 {
     bool determinate = value.has_value();
@@ -14,7 +14,7 @@ checkbox(html::context ctx, duplex<bool> value, readable<std::string> label)
 
     return element(ctx, "div")
         .class_("custom-control", "custom-checkbox")
-        .children([&](auto ctx) {
+        .children([&] {
             element(ctx, "input")
                 .attr("type", "checkbox")
                 .class_("custom-control-input")
@@ -36,7 +36,7 @@ checkbox(html::context ctx, duplex<bool> value, readable<std::string> label)
 
 // COMMON
 
-html::element_handle<html::context>
+html::element_handle
 close_button(html::context ctx)
 {
     return element(ctx, "button")
@@ -50,7 +50,7 @@ close_button(html::context ctx)
 
 // MODALS
 
-html::element_handle<html::context>
+html::element_handle
 modal_close_button(html::context ctx)
 {
     return close_button(ctx).attr("data-dismiss", "modal");

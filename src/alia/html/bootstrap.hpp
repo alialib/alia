@@ -10,70 +10,70 @@ namespace alia { namespace html { namespace bootstrap {
 // button - Note that for this overload you MUST also add a style class (e.g.,
 // "btn-primary"). Alternatively, you can use one of the overloads below.
 template<class... Args>
-element_handle<html::context>
+element_handle
 button(Args&&... args)
 {
     return html::button(std::forward<Args>(args)...).class_("btn");
 }
 
 template<class... Args>
-element_handle<html::context>
+element_handle
 primary_button(Args&&... args)
 {
     return button(std::forward<Args>(args)...).class_("btn-primary");
 }
 
 template<class... Args>
-element_handle<html::context>
+element_handle
 secondary_button(Args&&... args)
 {
     return button(std::forward<Args>(args)...).class_("btn-secondary");
 }
 
 template<class... Args>
-element_handle<html::context>
+element_handle
 success_button(Args&&... args)
 {
     return button(std::forward<Args>(args)...).class_("btn-success");
 }
 
 template<class... Args>
-element_handle<html::context>
+element_handle
 danger_button(Args&&... args)
 {
     return button(std::forward<Args>(args)...).class_("btn-danger");
 }
 
 template<class... Args>
-element_handle<html::context>
+element_handle
 warning_button(Args&&... args)
 {
     return button(std::forward<Args>(args)...).class_("btn-warning");
 }
 
 template<class... Args>
-element_handle<html::context>
+element_handle
 info_button(Args&&... args)
 {
     return button(std::forward<Args>(args)...).class_("btn-info");
 }
 
 template<class... Args>
-element_handle<html::context>
+element_handle
 light_button(Args&&... args)
 {
     return button(std::forward<Args>(args)...).class_("btn-light");
 }
 
 template<class... Args>
-element_handle<html::context>
+element_handle
 dark_button(Args&&... args)
 {
     return button(std::forward<Args>(args)...).class_("btn-dark");
 }
 
 template<class... Args>
-element_handle<html::context>
+element_handle
 link_button(Args&&... args)
 {
     return button(std::forward<Args>(args)...).class_("btn-link");
@@ -82,11 +82,11 @@ link_button(Args&&... args)
 // CHECKBOXES
 
 namespace detail {
-element_handle<html::context>
+element_handle
 checkbox(html::context ctx, duplex<bool> value, readable<std::string> label);
 }
 template<class Label>
-element_handle<html::context>
+element_handle
 checkbox(html::context ctx, duplex<bool> value, Label label)
 {
     return detail::checkbox(ctx, value, signalize(label));
@@ -95,18 +95,18 @@ checkbox(html::context ctx, duplex<bool> value, Label label)
 // COMMON
 
 // Do the 'x' that serves as a close button.
-html::element_handle<html::context>
+html::element_handle
 close_button(html::context ctx);
 
 // MODALS
 
 // Do the 'x' in the top right corner of a modal that serves as a close button.
-html::element_handle<html::context>
+html::element_handle
 modal_close_button(html::context ctx);
 
 // Do a standard modal header with a title and a close button.
 template<class Title>
-html::element_handle<html::context>
+html::element_handle
 standard_modal_header(html::context ctx, Title const& title)
 {
     return div(ctx, "modal-header", [&] {
@@ -118,7 +118,7 @@ standard_modal_header(html::context ctx, Title const& title)
 // Do a modal header with custom content.
 // This wraps the content in a 'modal-header' div and supplies a close button.
 template<class Content>
-html::element_handle<html::context>
+html::element_handle
 modal_header(html::context ctx, Content&& content)
 {
     return div(ctx, "modal-header", [&] {
@@ -130,7 +130,7 @@ modal_header(html::context ctx, Content&& content)
 // Do a modal body with custom content.
 // This wraps the content in a 'modal-body' div.
 template<class Content>
-html::element_handle<html::context>
+html::element_handle
 modal_body(html::context ctx, Content&& content)
 {
     return div(ctx, "modal-body", [&] {
@@ -141,7 +141,7 @@ modal_body(html::context ctx, Content&& content)
 // Do a modal footer with custom content.
 // This wraps the content in a 'modal-footer' div.
 template<class Content>
-html::element_handle<html::context>
+html::element_handle
 modal_footer(html::context ctx, Content&& content)
 {
     return div(ctx, "modal-footer", [&] {

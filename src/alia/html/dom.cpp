@@ -409,6 +409,39 @@ clear_element_property(element_object& object, char const* name)
 
 } // namespace detail
 
+element_handle
+element(context ctx, char const* type)
+{
+    tree_node<element_object>* node;
+    bool initializing = get_cached_data(ctx, &node);
+    if (initializing)
+        create_as_element(node->object, type);
+    if (is_refresh_event(ctx))
+        refresh_tree_node(get<tree_traversal_tag>(ctx), *node);
+    return element_handle(ctx, node, initializing);
+}
+
+body_handle
+body(context ctx)
+{
+    tree_node<element_object>* node;
+    bool initializing = get_cached_data(ctx, &node);
+    if (initializing)
+    {
+        create_as_body(node->object);
+        // Clear out existing children/attributes.
+        EM_ASM(
+            {
+                var node = Module['nodes'][$0];
+                node.innerHTML = "";
+                while (node.attributes.length > 0)
+                    node.removeAttribute(node.attributes[0].name);
+            },
+            node->object.asmdom_id);
+    }
+    return body_handle(ctx, node, initializing);
+}
+
 scoped_element&
 scoped_element::begin(context ctx, char const* type)
 {

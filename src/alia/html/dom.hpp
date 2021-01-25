@@ -165,11 +165,11 @@ text_node(html::context ctx, Text text)
     detail::text_node(ctx, as_text(ctx, signalize(text)));
 }
 
-template<class Context, class Derived>
+template<class Derived>
 struct element_handle_base
 {
     element_handle_base(
-        Context ctx, tree_node<element_object>* node, bool initializing)
+        context ctx, tree_node<element_object>* node, bool initializing)
         : ctx_(ctx), node_(node), initializing_(initializing)
     {
     }
@@ -235,16 +235,15 @@ struct element_handle_base
     }
 
  protected:
-    Context ctx_;
+    context ctx_;
     tree_node<element_object>* node_;
     bool initializing_;
 };
 
-template<class Context>
-struct element_handle : element_handle_base<Context, element_handle<Context>>
+struct element_handle : element_handle_base<element_handle>
 {
     element_handle(
-        Context ctx, tree_node<element_object>* node, bool initializing)
+        context ctx, tree_node<element_object>* node, bool initializing)
         : element_handle::element_handle_base(ctx, node, initializing)
     {
     }
@@ -257,7 +256,7 @@ struct element_handle : element_handle_base<Context, element_handle<Context>>
         scoped_tree_children<element_object> tree_scope;
         if (is_refresh_event(this->ctx_))
             tree_scope.begin(traversal, *this->node_);
-        invoke_component_function(this->ctx_, std::forward<Function>(fn));
+        std::forward<Function>(fn)();
         return *this;
     }
 
@@ -265,28 +264,17 @@ struct element_handle : element_handle_base<Context, element_handle<Context>>
     element_handle&
     text(Text text)
     {
-        return children([&](auto ctx) { text_node(ctx, text); });
+        return children([&] { text_node(this->ctx_, text); });
     }
 };
 
-template<class Context>
-element_handle<Context>
-element(Context ctx, char const* type)
-{
-    tree_node<element_object>* node;
-    bool initializing = get_cached_data(ctx, &node);
-    if (initializing)
-        create_as_element(node->object, type);
-    if (is_refresh_event(ctx))
-        refresh_tree_node(get<tree_traversal_tag>(ctx), *node);
-    return element_handle<Context>(ctx, node, initializing);
-}
+element_handle
+element(context ctx, char const* type);
 
-template<class Context>
-struct body_handle : element_handle_base<Context, body_handle<Context>>
+struct body_handle : element_handle_base<body_handle>
 {
     body_handle(
-        Context ctx, tree_node<element_object>* node, bool initializing)
+        context ctx, tree_node<element_object>* node, bool initializing)
         : body_handle::element_handle_base(ctx, node, initializing)
     {
     }
@@ -301,32 +289,13 @@ struct body_handle : element_handle_base<Context, body_handle<Context>>
             tree_scope.begin(
                 get<tree_traversal_tag>(this->ctx_), *this->node_);
         }
-        invoke_component_function(this->ctx_, std::forward<Function>(fn));
+        std::forward<Function>(fn)();
         return *this;
     }
 };
 
-template<class Context>
-body_handle<Context>
-body(Context ctx)
-{
-    tree_node<element_object>* node;
-    bool initializing = get_cached_data(ctx, &node);
-    if (initializing)
-    {
-        create_as_body(node->object);
-        // Clear out existing children/attributes.
-        EM_ASM(
-            {
-                var node = Module['nodes'][$0];
-                node.innerHTML = "";
-                while (node.attributes.length > 0)
-                    node.removeAttribute(node.attributes[0].name);
-            },
-            node->object.asmdom_id);
-    }
-    return body_handle<Context>(ctx, node, initializing);
-}
+body_handle
+body(context ctx);
 
 struct scoped_element : noncopyable
 {
@@ -438,10 +407,9 @@ struct override_data
     }
 };
 
-template<class Context>
 struct html_fragment_handle
 {
-    Context ctx;
+    context ctx;
     bool just_loaded;
 
     template<class Content>
@@ -467,9 +435,8 @@ struct html_fragment_handle
     }
 };
 
-template<class Context>
-html_fragment_handle<Context>
-html_fragment(Context ctx, readable<std::string> html)
+html_fragment_handle
+html_fragment(context ctx, readable<std::string> html)
 {
     auto elm = element(ctx, "div");
     auto& captured_html_id = get_cached_data<captured_id>(ctx);
@@ -488,7 +455,7 @@ html_fragment(Context ctx, readable<std::string> html)
             just_loaded = true;
         },
         [&] {});
-    return html_fragment_handle<Context>{ctx, just_loaded};
+    return html_fragment_handle{ctx, just_loaded};
 }
 
 }} // namespace alia::html

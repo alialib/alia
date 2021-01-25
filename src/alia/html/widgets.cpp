@@ -12,7 +12,7 @@ struct input_data
     unsigned version = 0;
 };
 
-element_handle<html::context>
+element_handle
 input(html::context ctx, duplex<std::string> value_)
 {
     input_data* data;
@@ -47,19 +47,19 @@ input(html::context ctx, duplex<std::string> value_)
         });
 }
 
-element_handle<html::context>
+element_handle
 link(html::context ctx, readable<std::string> text, action<> on_click)
 {
     return element(ctx, "a")
         .attr("href", "javascript: void(0);")
         .attr("disabled", on_click.is_ready() ? "false" : "true")
-        .children([&](auto ctx) { text_node(ctx, text); })
+        .children([&] { text_node(ctx, text); })
         .callback("click", [&](emscripten::val) { perform_action(on_click); });
 }
 
 } // namespace detail
 
-element_handle<html::context>
+element_handle
 button(html::context ctx, action<> on_click)
 {
     return element(ctx, "button")
@@ -68,16 +68,22 @@ button(html::context ctx, action<> on_click)
         .callback("click", [&](auto& e) { perform_action(on_click); });
 }
 
-element_handle<html::context>
+element_handle
 button(html::context ctx, readable<std::string> text, action<> on_click)
 {
     return button(ctx, on_click).text(text);
 }
 
-element_handle<html::context>
+element_handle
 button(html::context ctx, char const* text, action<> on_click)
 {
     return button(ctx, on_click).text(value(text));
+}
+
+element_handle
+div(context ctx, char const* class_name)
+{
+    return element(ctx, "div").attr("class", class_name);
 }
 
 }} // namespace alia::html
