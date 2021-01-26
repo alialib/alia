@@ -67,8 +67,7 @@ init_demo(std::string dom_id)
 {
     static html::system the_system;
 
-    initialize(
-        the_system, dom_id, [](html::context ctx) { demo_ui(ctx); });
+    initialize(the_system, dom_id, [](html::context ctx) { demo_ui(ctx); });
 }
 
 static demo the_demo("numerical-analysis", init_demo);
@@ -162,7 +161,7 @@ factor_tree(html::context ctx, readable<int> n)
         auto expanded = get_state(ctx, false);
         html::button(ctx,
             conditional(expanded, "Hide Factors", "Show Factors"),
-            toggle(expanded));
+            actions::toggle(expanded));
         alia_if(expanded)
         {
             factor_tree(ctx, f);

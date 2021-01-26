@@ -187,13 +187,18 @@ found in
 Action 'Library'
 ----------------
 
-alia provides a small library of actions that are generally useful:
+alia provides a small library of actions that are generally useful.
+
+This library resides in the `alia::actions` namespace. This is meant to avoid
+confusion between functions that create actions and functions that are actually
+imperative.
 
 <dl>
 
 <dt>toggle(signal)</dt><dd>
 
-Creates an action that toggles `signal` by applying the `!` operator.
+`actions::toggle(signal)` creates an action that toggles `signal` by applying
+the `!` operator.
 
 This is exactly equivalent to `signal <<= !signal`.
 
@@ -201,33 +206,33 @@ This is exactly equivalent to `signal <<= !signal`.
 
 <dt>push_back(container)</dt><dd>
 
-`push_back(container)`, where `container` is a signal carrying a container,
-creates an action that takes a compatible item as a parameter and pushes it onto
-the back of `container`.
+`actions::push_back(container)`, where `container` is a signal carrying a
+container, creates an action that takes a compatible item as a parameter and
+pushes it onto the back of `container`.
 
 </dd>
 
-<dt>noop_action()</dt><dd>
+<dt>noop()</dt><dd>
 
-`noop_action()` creates an action that is always ready to perform but does
+`actions::noop()` creates an action that is always ready to perform but does
 nothing.
 
 This can be useful when you are mocking up a UI and aren't ready to fill in
 real actions.
 
 You can optionally provide type parameters to indicate the types of the
-action's parameters. e.g., `noop_action<int>()` creates an action that takes a
-single parameter of type `int`.
+action's parameters. e.g., `actions::noop<int>()` creates an action that takes
+a single parameter of type `int`.
 
 </dd>
 
-<dt>unready_action()</dt><dd>
+<dt>unready()</dt><dd>
 
-`unready_action()` creates an action that is never ready to perform.
+`actions::unready()` creates an action that is never ready to perform.
 
-Similar to `noop_action`, you can provide optional type parameters.
-`unready_action<int>()` creates an action that takes a single parameter of type
-`int`.
+Similar to `noop`, you can provide optional type parameters.
+`actions::unready<int>()` creates an action that takes a single parameter of
+type `int`.
 
 </dd>
 
