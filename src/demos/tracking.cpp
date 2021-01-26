@@ -199,7 +199,7 @@ scoreboard(html::context ctx, duplex<std::vector<player>> players)
     auto new_player = alia::get_state(ctx, std::string());
     html::input(ctx, new_player);
     html::button(ctx, "Add Player",
-        (alia::push_back(players) <<
+        (alia::actions::push_back(players) <<
             alia::apply(ctx,
                 [](auto name) { return player{name, 0}; },
                 alia::mask(new_player, new_player != "")),

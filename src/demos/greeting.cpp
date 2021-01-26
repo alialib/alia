@@ -76,7 +76,7 @@ namespace hello_button {
 void
 demo_ui(html::context ctx, duplex<bool> show_message)
 {
-    html::button(ctx, "Toggle the Message", toggle(show_message));
+    html::button(ctx, "Toggle the Message", actions::toggle(show_message));
 
     alia_if(show_message)
     {
