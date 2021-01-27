@@ -260,9 +260,13 @@ direct_const_signal<std::string>
 get_location_hash(html::context ctx);
 
 // This implements an 'internal' link to a different page in the SPA.
+// with a label
 element_handle
 internal_link(
     context ctx, readable<std::string> text, readable<std::string> path);
+// without a label - You provide the content.
+element_handle
+internal_link(context ctx, readable<std::string> path);
 
 }} // namespace alia::html
 

@@ -9,13 +9,11 @@ get_location_hash(html::context ctx)
 }
 
 element_handle
-internal_link(
-    context ctx, readable<std::string> text, readable<std::string> path)
+internal_link(context ctx, readable<std::string> path)
 {
     return element(ctx, "a")
         .attr("href", path)
         .attr("disabled", path.has_value() ? "false" : "true")
-        .text(text)
         .callback("click", [&](emscripten::val& e) {
             e.call<void>("preventDefault");
             if (path.has_value())
@@ -24,6 +22,13 @@ internal_link(
                     get<html::system_tag>(ctx), "#" + read_signal(path));
             }
         });
+}
+
+element_handle
+internal_link(
+    context ctx, readable<std::string> text, readable<std::string> path)
+{
+    return internal_link(ctx, path).text(text);
 }
 
 }} // namespace alia::html
