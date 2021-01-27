@@ -400,17 +400,17 @@ struct scoped_element_handle_storage
 };
 
 template<class Derived>
-struct scoped_element
+struct scoped_element_base
     : element_handle_base<Derived, scoped_element_handle_storage>
 {
-    scoped_element()
+    scoped_element_base()
     {
     }
-    scoped_element(context ctx, char const* type)
+    scoped_element_base(context ctx, char const* type)
     {
         begin(ctx, type);
     }
-    ~scoped_element()
+    ~scoped_element_base()
     {
         end();
     }
@@ -436,6 +436,11 @@ struct scoped_element
 
  private:
     scoped_tree_node<element_object> tree_scoping_;
+};
+
+struct scoped_element : scoped_element_base<scoped_element>
+{
+    using scoped_element_base::scoped_element_base;
 };
 
 template<class Content>

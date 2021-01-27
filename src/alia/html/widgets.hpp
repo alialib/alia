@@ -82,7 +82,7 @@ div(context ctx, char const* class_name, Children&& children)
 }
 
 // div as an RAII container
-struct scoped_div : scoped_element<scoped_div>
+struct scoped_div : scoped_element_base<scoped_div>
 {
     scoped_div()
     {
@@ -93,13 +93,13 @@ struct scoped_div : scoped_element<scoped_div>
     }
     ~scoped_div()
     {
-        this->scoped_element::end();
+        this->scoped_element_base::end();
     }
 
     scoped_div&
     begin(html::context ctx, char const* class_name)
     {
-        this->scoped_element::begin(ctx, "div").attr("class", class_name);
+        this->scoped_element_base::begin(ctx, "div").attr("class", class_name);
         return *this;
     }
 };
