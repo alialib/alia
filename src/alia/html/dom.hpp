@@ -165,21 +165,29 @@ text_node(html::context ctx, Text text)
     detail::text_node(ctx, as_text(ctx, signalize(text)));
 }
 
-template<class Derived>
-struct element_handle_base
+struct element_handle_storage
 {
-    element_handle_base(
-        context ctx, tree_node<element_object>* node, bool initializing)
-        : ctx_(ctx), node_(node), initializing_(initializing)
+    html::context ctx;
+
+    html::context
+    context()
     {
+        return ctx;
     }
 
+    tree_node<element_object>* node;
+    bool initializing;
+};
+
+template<class Derived, class Storage>
+struct element_handle_base
+{
     template<class Value>
     Derived&
     attr(char const* name, Value value)
     {
         detail::do_element_attribute(
-            ctx_, node_->object, name, signalize(value));
+            this->context(), this->node().object, name, signalize(value));
         return static_cast<Derived&>(*this);
     }
 
@@ -188,7 +196,10 @@ struct element_handle_base
     class_(Tokens... tokens)
     {
         (detail::do_element_class_token(
-             ctx_, node_->object, initializing_, tokens),
+             this->context(),
+             this->node().object,
+             this->initializing(),
+             tokens),
          ...);
         return static_cast<Derived&>(*this);
     }
@@ -198,7 +209,7 @@ struct element_handle_base
     prop(char const* name, Value value)
     {
         detail::do_element_property(
-            ctx_, node_->object, name, signalize(value));
+            this->context(), this->node().object, name, signalize(value));
         return static_cast<Derived&>(*this);
     }
 
@@ -206,14 +217,14 @@ struct element_handle_base
     Derived&
     callback(char const* event_type, Function&& fn)
     {
-        auto& data = get_cached_data<detail::callback_data>(ctx_);
-        if (initializing_)
+        auto& data = get_cached_data<detail::callback_data>(this->context());
+        if (this->initializing())
         {
             detail::install_element_callback(
-                ctx_, node_->object, data, event_type);
+                this->context(), this->node().object, data, event_type);
         }
         on_targeted_event<detail::dom_event>(
-            ctx_, &data.identity, [&](auto ctx, auto& e) {
+            this->context(), &data.identity, [&](auto ctx, auto& e) {
                 std::forward<Function>(fn)(e.event);
             });
         return static_cast<Derived&>(*this);
@@ -223,7 +234,7 @@ struct element_handle_base
     Derived&
     on_init(Callback&& callback)
     {
-        if (initializing_)
+        if (this->initializing())
             std::forward<Callback>(callback)(*this);
         return static_cast<Derived&>(*this);
     }
@@ -231,23 +242,42 @@ struct element_handle_base
     int
     asmdom_id()
     {
-        return node_->object.asmdom_id;
+        return this->node().object.asmdom_id;
     }
 
-    context ctx_;
-    tree_node<element_object>* node_;
-    bool initializing_;
+    html::context
+    context()
+    {
+        return storage_.context();
+    }
+    tree_node<element_object>&
+    node()
+    {
+        return *storage_.node;
+    }
+    bool
+    initializing()
+    {
+        return storage_.initializing;
+    }
+
+    Storage storage_;
 };
 
 template<class Derived>
-struct regular_element_handle : element_handle_base<Derived>
+struct regular_element_handle
+    : element_handle_base<Derived, element_handle_storage>
 {
-    using regular_element_handle::element_handle_base::element_handle_base;
+    regular_element_handle(
+        context ctx, tree_node<element_object>* node, bool initializing)
+        : regular_element_handle::element_handle_base{
+            element_handle_storage{ctx, node, initializing}}
+    {
+    }
 
     template<class Other>
     regular_element_handle(regular_element_handle<Other> const& other)
-        : regular_element_handle::element_handle_base(
-            other.ctx_, other.node_, other.initializing_)
+        : regular_element_handle::element_handle_base{other.storage_}
     {
     }
 
@@ -255,10 +285,10 @@ struct regular_element_handle : element_handle_base<Derived>
     Derived&
     children(Function&& fn)
     {
-        auto& traversal = get<tree_traversal_tag>(this->ctx_);
+        auto& traversal = get<tree_traversal_tag>(this->context());
         scoped_tree_children<element_object> tree_scope;
-        if (is_refresh_event(this->ctx_))
-            tree_scope.begin(traversal, *this->node_);
+        if (is_refresh_event(this->context()))
+            tree_scope.begin(traversal, this->node());
         std::forward<Function>(fn)();
         return static_cast<Derived&>(*this);
     }
@@ -267,7 +297,7 @@ struct regular_element_handle : element_handle_base<Derived>
     Derived&
     text(Text text)
     {
-        return children([&] { text_node(this->ctx_, text); });
+        return children([&] { text_node(this->context(), text); });
     }
 };
 
@@ -279,19 +309,24 @@ struct element_handle : regular_element_handle<element_handle>
 element_handle
 element(context ctx, char const* type);
 
-struct body_handle : element_handle_base<body_handle>
+struct body_handle : element_handle_base<body_handle, element_handle_storage>
 {
-    using element_handle_base::element_handle_base;
+    body_handle(
+        html::context ctx, tree_node<element_object>* node, bool initializing)
+        : body_handle::element_handle_base{
+            element_handle_storage{ctx, node, initializing}}
+    {
+    }
 
     template<class Function>
     body_handle&
     children(Function&& fn)
     {
         scoped_tree_root<element_object> tree_scope;
-        if (is_refresh_event(this->ctx_))
+        if (is_refresh_event(this->context()))
         {
             tree_scope.begin(
-                get<tree_traversal_tag>(this->ctx_), *this->node_);
+                get<tree_traversal_tag>(this->context()), this->node());
         }
         std::forward<Function>(fn)();
         return *this;
@@ -301,7 +336,23 @@ struct body_handle : element_handle_base<body_handle>
 body_handle
 body(context ctx);
 
-struct scoped_element : noncopyable
+struct scoped_element_handle_storage
+{
+    optional_context<html::context> ctx;
+
+    html::context
+    context()
+    {
+        return *ctx;
+    }
+
+    tree_node<element_object>* node;
+    bool initializing;
+};
+
+template<class Derived>
+struct scoped_element
+    : element_handle_base<Derived, scoped_element_handle_storage>
 {
     scoped_element()
     {
@@ -315,8 +366,18 @@ struct scoped_element : noncopyable
         end();
     }
 
-    scoped_element&
-    begin(context ctx, char const* type);
+    Derived&
+    begin(context ctx, char const* type)
+    {
+        this->storage_.ctx.reset(ctx);
+        bool initializing = get_cached_data(ctx, &this->storage_.node);
+        this->storage_.initializing = initializing;
+        if (initializing)
+            create_as_element(this->node().object, type);
+        if (is_refresh_event(ctx))
+            tree_scoping_.begin(get<tree_traversal_tag>(ctx), this->node());
+        return static_cast<Derived&>(*this);
+    }
 
     void
     end()
@@ -324,62 +385,8 @@ struct scoped_element : noncopyable
         tree_scoping_.end();
     }
 
-    template<class Value>
-    scoped_element&
-    attr(char const* name, Value value)
-    {
-        detail::do_element_attribute(
-            *ctx_, node_->object, name, signalize(value));
-        return *this;
-    }
-
-    template<class Value>
-    scoped_element&
-    prop(char const* name, Value value)
-    {
-        detail::do_element_property(
-            *ctx_, node_->object, name, signalize(value));
-        return *this;
-    }
-
-    template<class Function>
-    scoped_element&
-    callback(char const* event_type, Function&& fn)
-    {
-        auto ctx = *ctx_;
-        auto& data = get_cached_data<detail::callback_data>(ctx);
-        if (initializing_)
-        {
-            detail::install_element_callback(
-                ctx, node_->object, data, event_type);
-        }
-        on_targeted_event<detail::dom_event>(
-            ctx, &data.identity, [&](auto ctx, auto& e) {
-                std::forward<Function>(fn)(e.event);
-            });
-        return *this;
-    }
-
-    template<class Callback>
-    scoped_element&
-    on_init(Callback callback)
-    {
-        if (initializing_)
-            callback(*this);
-        return *this;
-    }
-
-    int
-    asmdom_id()
-    {
-        return node_->object.asmdom_id;
-    }
-
  private:
-    optional_context<context> ctx_;
-    tree_node<element_object>* node_;
     scoped_tree_node<element_object> tree_scoping_;
-    bool initializing_;
 };
 
 template<class Content>

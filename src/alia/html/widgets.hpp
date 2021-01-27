@@ -82,7 +82,7 @@ div(context ctx, char const* class_name, Children&& children)
 }
 
 // div as an RAII container
-struct scoped_div : scoped_element
+struct scoped_div : scoped_element<scoped_div>
 {
     scoped_div()
     {
