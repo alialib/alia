@@ -136,7 +136,7 @@ struct naming_context_traversal_state;
 
 // data_traversal stores the state associated with a single traversal of a
 // data_graph.
-struct data_traversal
+struct data_traversal : noncopyable
 {
     data_graph* graph = nullptr;
     data_block* active_block = nullptr;
@@ -174,9 +174,9 @@ struct scoped_data_block : noncopyable
     }
 
     template<class Context>
-    scoped_data_block(Context& ctx, data_block& block)
+    scoped_data_block(Context ctx, data_block& block)
     {
-        begin(ctx, block);
+        begin(get_data_traversal(ctx), block);
     }
 
     ~scoped_data_block()
@@ -186,7 +186,7 @@ struct scoped_data_block : noncopyable
 
     template<class Context>
     void
-    begin(Context& ctx, data_block& block)
+    begin(Context ctx, data_block& block)
     {
         begin(get_data_traversal(ctx), block);
     }
@@ -295,9 +295,9 @@ struct naming_context : noncopyable
     }
 
     template<class Context>
-    naming_context(Context& ctx)
+    naming_context(Context ctx)
     {
-        begin(ctx);
+        begin(get_data_traversal(ctx));
     }
 
     ~naming_context()
@@ -307,7 +307,7 @@ struct naming_context : noncopyable
 
     template<class Context>
     void
-    begin(Context& ctx)
+    begin(Context ctx)
     {
         begin(get_data_traversal(ctx));
     }
@@ -340,7 +340,7 @@ delete_named_block(data_graph& graph, id_interface const& id);
 
 template<class Context>
 void
-delete_named_block(Context& ctx, id_interface const& id)
+delete_named_block(Context ctx, id_interface const& id)
 {
     delete_named_block(*get_data_traversal(ctx).graph, id);
 }
@@ -384,7 +384,7 @@ struct scoped_cache_clearing_disabler
     {
     }
     template<class Context>
-    scoped_cache_clearing_disabler(Context& ctx)
+    scoped_cache_clearing_disabler(Context ctx)
     {
         begin(ctx);
     }
@@ -394,7 +394,7 @@ struct scoped_cache_clearing_disabler
     }
     template<class Context>
     void
-    begin(Context& ctx)
+    begin(Context ctx)
     {
         begin(get_data_traversal(ctx));
     }
@@ -430,11 +430,10 @@ struct scoped_cache_clearing_disabler
 // In both forms, the return value is true if the data at the node was just
 // constructed and false if it already existed.
 //
-template<class Context, class Node, class Create>
+template<class Node, class Create>
 bool
-get_data_node(Context& ctx, Node** ptr, Create&& create)
+get_data_node(data_traversal& traversal, Node** ptr, Create&& create)
 {
-    data_traversal& traversal = get_data_traversal(ctx);
     data_node* node = *traversal.next_data_ptr;
     if (node)
     {
@@ -452,12 +451,19 @@ get_data_node(Context& ctx, Node** ptr, Create&& create)
         return true;
     }
 }
-
+template<class Context, class Node, class Create>
+bool
+get_data_node(Context ctx, Node** ptr, Create&& create)
+{
+    return get_data_node(
+        get_data_traversal(ctx), ptr, std::forward<Create>(create));
+}
 template<class Context, class Node>
 bool
-get_data_node(Context& ctx, Node** ptr)
+get_data_node(Context ctx, Node** ptr)
 {
-    return get_data_node(ctx, ptr, [&] { return new Node; });
+    return get_data_node(
+        get_data_traversal(ctx), ptr, [&] { return new Node; });
 }
 
 template<class T>
@@ -468,7 +474,7 @@ struct persistent_data_node : data_node
 
 template<class Context, class T>
 bool
-get_data(Context& ctx, T** ptr)
+get_data(Context ctx, T** ptr)
 {
     persistent_data_node<T>* node;
     bool is_new = get_data_node(ctx, &node);
@@ -480,7 +486,7 @@ get_data(Context& ctx, T** ptr)
 // initializing the data at the call site.
 template<class Data, class Context>
 Data&
-get_data(Context& ctx)
+get_data(Context ctx)
 {
     Data* data;
     get_data(ctx, &data);
@@ -506,7 +512,7 @@ struct cached_data_node : data_node
 
 template<class Context, class T>
 bool
-get_cached_data(Context& ctx, T** ptr)
+get_cached_data(Context ctx, T** ptr)
 {
     cached_data_node<T>* node;
     get_data_node(ctx, &node);
@@ -524,7 +530,7 @@ get_cached_data(Context& ctx, T** ptr)
 // initializing the data at the call site.
 template<class Data, class Context>
 Data&
-get_cached_data(Context& ctx)
+get_cached_data(Context ctx)
 {
     Data* data;
     get_cached_data(ctx, &data);
