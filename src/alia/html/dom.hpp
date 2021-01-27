@@ -116,6 +116,10 @@ do_element_attribute(
 
 void
 do_element_attribute(
+    context ctx, element_object& object, char const* name, char const* value);
+
+void
+do_element_attribute(
     context ctx,
     element_object& object,
     char const* name,
@@ -182,15 +186,48 @@ struct element_handle_storage
 template<class Derived, class Storage>
 struct element_handle_base
 {
-    template<class Value>
+    // Specify an attribute value...
+    // as a constant string value
     Derived&
-    attr(char const* name, Value value)
+    attr(char const* name, char const* value)
+    {
+        if (this->initializing())
+            asmdom::direct::setAttribute(this->asmdom_id(), name, value);
+        return static_cast<Derived&>(*this);
+    }
+    // dynamically, via a string signal
+    Derived&
+    attr(char const* name, readable<std::string> value)
     {
         detail::do_element_attribute(
-            this->context(), this->node().object, name, signalize(value));
+            this->context(), this->node().object, name, value);
+        return static_cast<Derived&>(*this);
+    }
+    // via a boolean signal
+    Derived&
+    attr(char const* name, readable<bool> value)
+    {
+        detail::do_element_attribute(
+            this->context(), this->node().object, name, value);
+        return static_cast<Derived&>(*this);
+    }
+    // via a raw boolean
+    Derived&
+    attr(char const* name, bool value)
+    {
+        detail::do_element_attribute(
+            this->context(), this->node().object, name, alia::value(value));
         return static_cast<Derived&>(*this);
     }
 
+    // Specify a CONSTANT value for the 'class' attribute.
+    Derived&
+    classes(char const* value)
+    {
+        return this->attr("class", value);
+    }
+    // Dynamically specify one or more individual tokens on the class
+    // attribute.
     template<class... Tokens>
     Derived&
     class_(Tokens... tokens)
@@ -204,6 +241,7 @@ struct element_handle_base
         return static_cast<Derived&>(*this);
     }
 
+    // Specify the value of a property.
     template<class Value>
     Derived&
     prop(char const* name, Value value)
@@ -213,6 +251,7 @@ struct element_handle_base
         return static_cast<Derived&>(*this);
     }
 
+    // Specify a callback for a DOM event.
     template<class Function>
     Derived&
     callback(char const* event_type, Function&& fn)
@@ -230,6 +269,7 @@ struct element_handle_base
         return static_cast<Derived&>(*this);
     }
 
+    // Specify a callback to call on element initialization.
     template<class Callback>
     Derived&
     on_init(Callback&& callback)
