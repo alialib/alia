@@ -5,7 +5,7 @@ namespace alia {
 if_block::if_block(data_traversal& traversal, bool condition)
 {
     data_block_node* node;
-    get_data_node(traversal, &node);
+    get_data_node(traversal, &node, [&] { return new data_block_node; });
     if (condition)
     {
         scoped_data_block_.begin(traversal, node->block);
@@ -19,7 +19,7 @@ if_block::if_block(data_traversal& traversal, bool condition)
 loop_block::loop_block(data_traversal& traversal)
 {
     traversal_ = &traversal;
-    get_data(traversal, &block_);
+    next();
 }
 loop_block::~loop_block()
 {
@@ -33,14 +33,16 @@ loop_block::~loop_block()
 void
 loop_block::next()
 {
-    get_data(*traversal_, &block_);
+    data_block_node* node;
+    get_data_node(*traversal_, &node, [&] { return new data_block_node; });
+    block_ = &node->block;
 }
 
 event_dependent_if_block::event_dependent_if_block(
     data_traversal& traversal, bool condition)
 {
     data_block_node* node;
-    get_data_node(traversal, &node);
+    get_data_node(traversal, &node, [&] { return new data_block_node; });
     if (condition)
     {
         scoped_data_block_.begin(traversal, node->block);

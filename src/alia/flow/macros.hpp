@@ -19,7 +19,7 @@ struct if_block : noncopyable
 struct switch_block : noncopyable
 {
     template<class Context>
-    switch_block(Context& ctx)
+    switch_block(Context ctx)
     {
         nc_.begin(ctx);
     }
