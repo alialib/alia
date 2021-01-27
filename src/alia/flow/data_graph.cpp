@@ -221,7 +221,8 @@ naming_map*
 retrieve_naming_map(data_traversal& traversal)
 {
     naming_map_node* map_node;
-    if (get_data_node(traversal, &map_node))
+    if (get_data_node(
+            traversal, &map_node, [&] { return new naming_map_node; }))
     {
         data_graph& graph = *traversal.graph;
         map_node->graph = &graph;

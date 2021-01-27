@@ -68,7 +68,7 @@ struct int_object
 
 template<class Context>
 void
-do_int(Context& ctx, int n)
+do_int(Context ctx, int n)
 {
     int_object* obj;
     if (get_data(ctx, &obj))
@@ -86,7 +86,7 @@ do_int(Context& ctx, int n)
 
 template<class Context>
 void
-do_cached_int(Context& ctx, int n)
+do_cached_int(Context ctx, int n)
 {
     int_object* obj;
     if (get_cached_data(ctx, &obj))
