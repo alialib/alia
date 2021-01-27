@@ -281,8 +281,9 @@ internal_link(context ctx, Text text, Path path)
 }
 
 // without a label - You provide the content.
+template<class Path>
 element_handle
-internal_link(context ctx, readable<std::string> path)
+internal_link(context ctx, Path path)
 {
     return detail::internal_link(ctx, signalize(path));
 }
