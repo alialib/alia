@@ -442,18 +442,6 @@ body(context ctx)
     return body_handle(ctx, node, initializing);
 }
 
-scoped_element&
-scoped_element::begin(context ctx, char const* type)
-{
-    ctx_.reset(ctx);
-    initializing_ = get_cached_data(ctx, &node_);
-    if (initializing_)
-        create_as_element(node_->object, type);
-    if (is_refresh_event(ctx))
-        tree_scoping_.begin(get<tree_traversal_tag>(ctx), *node_);
-    return *this;
-}
-
 void
 placeholder_root(
     html::context ctx,
