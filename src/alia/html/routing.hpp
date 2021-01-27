@@ -165,26 +165,22 @@ struct page_invoker<N, std::index_sequence<S...>>
 template<std::size_t>
 using route_arg_n = readable<std::string>;
 
-template<
-    class Context,
-    class Page,
-    std::size_t N,
-    typename = std::make_index_sequence<N>>
+template<class Page, std::size_t N, typename = std::make_index_sequence<N>>
 struct page_has_n_arity
 {
 };
 
-template<class Context, class Page, std::size_t N, std::size_t... S>
-struct page_has_n_arity<Context, Page, N, std::index_sequence<S...>>
-    : std::is_invocable<Page, Context, route_arg_n<S>...>
+template<class Page, std::size_t N, std::size_t... S>
+struct page_has_n_arity<Page, N, std::index_sequence<S...>>
+    : std::is_invocable<Page, route_arg_n<S>...>
 {
 };
 
-template<class Context, class Page, std::size_t N = 0>
+template<class Page, std::size_t N = 0>
 struct page_arity : std::conditional_t<
-                        page_has_n_arity<Context, Page, N>::value,
+                        page_has_n_arity<Page, N>::value,
                         std::integral_constant<std::size_t, N>,
-                        page_arity<Context, Page, N + 1>>
+                        page_arity<Page, N + 1>>
 {
 };
 
@@ -206,7 +202,7 @@ struct router_handle
     router_handle&
     route(char const* pattern, Page&& page)
     {
-        std::size_t constexpr N = detail::page_arity<Context, Page>::value;
+        std::size_t constexpr N = detail::page_arity<Page>::value;
         detail::route_parser<N> parser{pattern};
         auto parse_result = alia::apply(ctx, parser, make_state_signal(path));
         detail::page_invoker<N>::invoke(
