@@ -219,6 +219,15 @@ struct element_handle_base
             this->context(), this->node().object, name, alia::value(value));
         return static_cast<Derived&>(*this);
     }
+    // as a constant with no value - This is equivalent to setting a boolean
+    // attribute to a constant value of 'true'.
+    Derived&
+    attr(char const* name)
+    {
+        if (this->initializing())
+            asmdom::direct::setAttribute(this->asmdom_id(), name, "");
+        return static_cast<Derived&>(*this);
+    }
 
     // Specify a CONSTANT value for the 'class' attribute.
     Derived&
