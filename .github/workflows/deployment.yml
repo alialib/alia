@@ -44,3 +44,5 @@ jobs:
           BRANCH: gh-pages
           FOLDER: www
           CLEAN: true
+          SINGLE_COMMIT: true
+
