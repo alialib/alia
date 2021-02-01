@@ -1,0 +1,21 @@
+.demo-panel {
+    background: #f8f8f8;
+    padding: 8px;
+}
+
+.demo-panel .btn {
+    margin: 2px 2px;
+}
+
+input {
+    display: block;
+    margin: 4px 2px 8px;
+}
+
+.demo-panel p {
+    margin: 4px 2px 8px;
+}
+
+.bs-docs-link + h5 {
+    margin-top: 4px !important;
+}

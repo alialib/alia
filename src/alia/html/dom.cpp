@@ -213,7 +213,8 @@ install_element_callback(
     char const* event_type)
 {
 #ifdef ALIA_HTML_LOGGING
-    std::cout << "install callback" << std::endl;
+    std::cout << "install callback: " << object.asmdom_id << ": " << event_type
+              << std::endl;
 #endif
     auto external_id = externalize(&data.identity);
     auto* system = &get<alia::system_tag>(ctx);

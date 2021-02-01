@@ -5,6 +5,13 @@
 
 namespace alia { namespace html {
 
+// hr
+inline element_handle
+hr(html::context ctx)
+{
+    return html::element(ctx, "hr");
+}
+
 // TEXT
 
 // paragraphs
@@ -60,11 +67,25 @@ link(html::context ctx, readable<std::string> text, action<> on_click);
 }
 
 // link with a custom action
-template<class Text>
-element_handle
-link(html::context ctx, Text text, action<> on_click)
+template<class Text, class Action>
+std::enable_if_t<is_action_type<Action>::value, element_handle>
+link(html::context ctx, Text text, Action on_click)
 {
     return detail::link(ctx, signalize(text), on_click);
+}
+
+namespace detail {
+element_handle
+link(
+    html::context ctx, readable<std::string> text, readable<std::string> href);
+}
+
+// link with an href
+template<class Text, class Href>
+std::enable_if_t<!is_action_type<Href>::value, element_handle>
+link(html::context ctx, Text text, Href href)
+{
+    return detail::link(ctx, signalize(text), signalize(href));
 }
 
 // DIVS

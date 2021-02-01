@@ -48,26 +48,38 @@ target_link_libraries(alia_html
     PUBLIC asm-dom scn::scn alia nlohmann_json::nlohmann_json)
 target_include_directories(alia_html PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
-# # Create an example executable.
-# add_executable(example examples/main.cpp)
-# target_link_libraries(example alia_html)
+# Deploy the given file to the given directory.
+# In normal development, this creates a symlink of the file for more rapid
+# iteration.
+# In CI, it copies the file.
+function(deploy file_path destination_directory)
+     get_filename_component(file_name "${file_path}" NAME)
+     if(DEFINED ENV{CI})
+          file(COPY
+               ${file_path}
+               DESTINATION ${destination_directory}/${file_name})
+     else()
+          file(CREATE_LINK ${file_path}
+               ${destination_directory}/${file_name}
+               SYMBOLIC)
+     endif()
+endfunction()
 
-# # Create symlinks for index.html and style.css file in the build directory.
-# # (Or copy them if we're on Travis so that deployment works.)
-# if(DEFINED ENV{TRAVIS})
-#     file(COPY
-#         examples/index.html
-#         DESTINATION .)
-#     file(COPY
-#         examples/style.css
-#         DESTINATION .)
-# else()
-#     file(CREATE_LINK
-#         ${CMAKE_CURRENT_SOURCE_DIR}/examples/index.html
-#         ${CMAKE_CURRENT_BINARY_DIR}/index.html
-#         SYMBOLIC)
-#     file(CREATE_LINK
-#         ${CMAKE_CURRENT_SOURCE_DIR}/examples/style.css
-#         ${CMAKE_CURRENT_BINARY_DIR}/style.css
-#         SYMBOLIC)
-# endif()
+# Set up the build for an example.
+function(define_example name)
+     file(GLOB source_files "${CMAKE_CURRENT_SOURCE_DIR}/examples/${name}/*")
+     add_executable(${name} examples/${name}/main.cpp)
+     set_target_properties(${name} PROPERTIES OUTPUT_NAME ${name})
+     target_link_libraries(${name} alia_html)
+     set(deploy_dir "${CMAKE_CURRENT_BINARY_DIR}/${name}")
+     file(MAKE_DIRECTORY ${deploy_dir})
+     foreach(file_path ${source_files})
+          deploy(${file_path} ${deploy_dir})
+     endforeach()
+     deploy(${CMAKE_CURRENT_BINARY_DIR}/${name}.js ${deploy_dir})
+     deploy(${CMAKE_CURRENT_BINARY_DIR}/${name}.wasm ${deploy_dir})
+     deploy(${CMAKE_CURRENT_BINARY_DIR}/asm-dom.js ${deploy_dir})
+endfunction()
+
+# Define the examples.
+define_example(bootstrap-demo)
