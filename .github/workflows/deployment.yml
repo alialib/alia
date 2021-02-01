@@ -10,13 +10,13 @@ env:
   EM_CACHE_FOLDER: 'emsdk-cache'
 
 jobs:
-  pages:
+  gh-pages:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: true
-      - name: Setup cache
+      - name: Set up cache
         id: cache-system-libraries
         uses: actions/cache@v2
         with:
