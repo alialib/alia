@@ -35,17 +35,3 @@ ALIA_IMPLEMENTAITON` before including `alia.hpp`.*
 In your other source files, you can simply include it directly.
 
 There are also some [config options](configuration.md) that you may want to set.
-
-Experimental Wrappers
----------------------
-
-If you want to play around with alia, there are experimental adaptors for
-asm-dom and Qt:
-
-https://github.com/tmadden/alia/tree/master/examples
-
-The asm-dom adaptor is in much better shape at the moment, and might actually be
-useful in a real application. The Qt one is really just an experiment at the
-moment and isn't even up-to-date with the latest core capabilities, but it
-should still be fine if you just want to play around with alia. Both have small
-sandbox projects and README files with instructions on building them.
