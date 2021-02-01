@@ -55,7 +55,7 @@ target_include_directories(alia_html PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 function(deploy target file_path destination_directory)
     get_filename_component(file_name "${file_path}" NAME)
     if(DEFINED ENV{CI})
-        add_custom_command(TARGET ${mylibrary} POST_BUILD
+        add_custom_command(TARGET ${target} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy ${file_path}
                 ${destination_directory}/${file_name})
     else()
