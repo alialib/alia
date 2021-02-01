@@ -51,64 +51,78 @@ close_button(html::context ctx)
 // MODALS
 
 html::element_handle
-modal_close_button(html::context ctx)
+internal_modal_handle::close_button()
 {
-    return close_button(ctx).attr("data-dismiss", "modal");
+    return bootstrap::close_button(this->context())
+        .attr("data-dismiss", "modal");
+}
+
+void
+internal_modal_handle::close()
+{
+    EM_ASM({ jQuery(Module['nodes'][$0]).modal('hide'); }, this->asmdom_id());
 }
 
 void
 modal_handle::activate()
 {
     data.active = true;
-    EM_ASM({ jQuery(Module['nodes'][$0]).modal('show'); }, asmdom_id);
-}
-
-void
-close_modal()
-{
-    emscripten_run_script("jQuery(\"#alia-modal\").modal('hide');");
+    EM_ASM({ jQuery(Module['nodes'][$0]).modal('show'); }, this->asmdom_id());
 }
 
 modal_handle
-modal(html::context ctx, alia::function_view<void()> content)
+modal(
+    html::context ctx,
+    alia::function_view<void(internal_modal_handle)> content)
 {
     modal_data* data;
     if (get_cached_data(ctx, &data))
         create_as_modal_root(data->root.object);
 
-    int asmdom_id;
+    scoped_tree_root<element_object> scoped_root;
+    if (is_refresh_event(ctx))
+        scoped_root.begin(get<html::tree_traversal_tag>(ctx), data->root);
 
-    invoke_tree(ctx, data->root, [&] {
-        auto top_level_modal = element(ctx, "div");
-        top_level_modal.class_("modal", "fade")
-            .attr("id", "alia-modal")
-            .attr("tabindex", "-1")
-            .attr("role", "dialog")
-            .children([&] {
-                div(ctx, "modal-dialog modal-dialog-centered")
-                    .attr("role", "document")
-                    .children([&] {
-                        alia_if(data->active)
-                        {
-                            div(ctx, "modal-content", content);
-                            on_refresh(ctx, [&](auto ctx) {
-                                EM_ASM(
-                                    {
-                                        jQuery(Module['nodes'][$0])
-                                            .modal('handleUpdate');
-                                    },
-                                    top_level_modal.asmdom_id());
-                            });
-                        }
-                        alia_end
-                    });
-            });
-        top_level_modal.callback(
-            "hidden.bs.modal", [&](auto) { data->active = false; });
-        asmdom_id = top_level_modal.asmdom_id();
+    element_handle modal = element(ctx, "div");
+    modal.class_("modal")
+        .attr("tabindex", "-1")
+        .attr("role", "dialog")
+        .children([&] {
+            div(ctx, "modal-dialog modal-dialog-centered")
+                .attr("role", "document")
+                .children([&] {
+                    ALIA_IF(data->active)
+                    {
+                        div(ctx, "modal-content", [&] {
+                            content(internal_modal_handle(modal));
+                        });
+                        on_refresh(ctx, [&](auto ctx) {
+                            EM_ASM(
+                                {
+                                    jQuery(Module['nodes'][$0])
+                                        .modal('handleUpdate');
+                                },
+                                modal.asmdom_id());
+                        });
+                    }
+                    ALIA_END
+                });
+        });
+    modal.on_init([&](auto&) {
+        EM_ASM(
+            {
+                jQuery(Module['nodes'][$0])
+                    .on(
+                        "hidden.bs.modal", function(e) {
+                            Module['nodes'][$0].dispatchEvent(
+                                new CustomEvent("bs.modal.hidden"));
+                        });
+            },
+            modal.asmdom_id());
     });
+    modal.callback("bs.modal.hidden", [&](auto) { data->active = false; });
 
-    return modal_handle{*data, asmdom_id};
+    return modal_handle(modal, *data);
 }
 
 }}} // namespace alia::html::bootstrap

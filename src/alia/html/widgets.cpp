@@ -66,6 +66,15 @@ link(html::context ctx, readable<std::string> text, action<> on_click)
         .callback("click", [&](emscripten::val) { perform_action(on_click); });
 }
 
+element_handle
+link(html::context ctx, readable<std::string> text, readable<std::string> href)
+{
+    return element(ctx, "a")
+        .attr("href", href)
+        .attr("disabled", href.has_value() ? "false" : "true")
+        .children([&] { text_node(ctx, text); });
+}
+
 } // namespace detail
 
 element_handle
