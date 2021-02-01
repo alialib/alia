@@ -19,7 +19,7 @@ jobs:
           sudo add-apt-repository universe
           sudo apt-get update -qy
           sudo apt install graphviz
-      - name: Setup cache
+      - name: Set up cache
         id: cache-system-libraries
         uses: actions/cache@v2
         with:
@@ -34,7 +34,7 @@ jobs:
           mkdir build
           cd build
           emcmake cmake -DCMAKE_BUILD_TYPE=Release ..
-          make -j
+          make -j demos
           cd ..
           scripts/build-docs.sh
       - name: Deploy
