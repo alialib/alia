@@ -1,54 +1,9 @@
-#include <alia/html/bootstrap.hpp>
+#include <alia/html/bootstrap/modals.hpp>
 
+#include <alia/html/bootstrap/utilities.hpp>
 #include <alia/html/widgets.hpp>
 
 namespace alia { namespace html { namespace bootstrap {
-namespace detail {
-
-element_handle
-checkbox(html::context ctx, duplex<bool> value, readable<std::string> label)
-{
-    bool determinate = value.has_value();
-    bool checked = determinate && value.read();
-    bool disabled = !value.ready_to_write();
-
-    return element(ctx, "div")
-        .class_("custom-control", "custom-checkbox")
-        .children([&] {
-            element(ctx, "input")
-                .attr("type", "checkbox")
-                .class_("custom-control-input")
-                .attr("disabled", disabled)
-                .attr("id", "custom-check-1")
-                .prop("indeterminate", !determinate)
-                .prop("checked", checked)
-                .callback("change", [&](emscripten::val e) {
-                    write_signal(value, e["target"]["checked"].as<bool>());
-                });
-            element(ctx, "label")
-                .class_("custom-control-label")
-                .attr("for", "custom-check-1")
-                .text(label);
-        });
-}
-
-} // namespace detail
-
-// COMMON
-
-html::element_handle
-close_button(html::context ctx)
-{
-    return element(ctx, "button")
-        .attr("type", "button")
-        .class_("close")
-        .attr("aria-label", "Close")
-        .children([&] {
-            element(ctx, "span").attr("aria-hidden", "true").text(u8"\u00D7");
-        });
-}
-
-// MODALS
 
 html::element_handle
 internal_modal_handle::close_button()
