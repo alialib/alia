@@ -6,20 +6,6 @@
 
 namespace alia {
 
-template<class Context, class Function>
-std::enable_if_t<std::is_invocable<Function>::value>
-invoke_component_function(Context, Function&& function)
-{
-    std::forward<Function>(function)();
-}
-
-template<class Context, class Function>
-std::enable_if_t<std::is_invocable<Function, Context>::value>
-invoke_component_function(Context ctx, Function&& function)
-{
-    std::forward<Function>(function)(ctx);
-}
-
 namespace detail {
 
 template<class Context>
@@ -45,7 +31,7 @@ if_(Context ctx, bool inherited_condition, Condition condition, Body&& body)
 
     ALIA_IF(inherited_condition && condition)
     {
-        invoke_component_function(ctx, body);
+        std::forward<Body>(body)();
     }
     // Hacking the macros...
     // clang-format off
