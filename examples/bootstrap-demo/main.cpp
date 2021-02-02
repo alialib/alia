@@ -48,7 +48,7 @@ section_heading(
 void
 subsection_heading(html::context ctx, char const* label)
 {
-    element(ctx, "h5").classes("mt-4 mb-3").text(label);
+    element(ctx, "h4").classes("mt-4 mb-3").text(label);
 }
 
 std::string
@@ -216,6 +216,48 @@ modals_demo(demo_context ctx)
 }
 
 void
+tooltips_demo(demo_context ctx)
+{
+    section_heading(ctx, "tooltips", "Tooltips", "components/tooltips/");
+
+    subsection_heading(ctx, "On Buttons");
+    element(ctx, "p").children([&] {
+        text_node(ctx, "Buttons directly provide a ");
+        element(ctx, "code").text(".tooltip()");
+        text_node(ctx, " member.");
+    });
+    div(ctx, "demo-panel", [&] {
+        /// [button-tooltips]
+        bs::primary_button(ctx, "Button w/tooltip", actions::noop())
+            .tooltip("Automatically positioned tooltip");
+        bs::primary_button(ctx, "w/tooltip on top", actions::noop())
+            .tooltip("Tooltip on top", "top");
+        bs::primary_button(ctx, "w/tooltip on bottom", actions::noop())
+            .tooltip("Tooltip on bottom", "bottom");
+        bs::primary_button(ctx, "w/tooltip on left", actions::noop())
+            .tooltip("Tooltip on left", "left");
+        bs::primary_button(ctx, "w/tooltip on right", actions::noop())
+            .tooltip("Tooltip on right", "right");
+        /// [button-tooltips]
+    });
+    code_snippet(ctx, "button-tooltips");
+
+    subsection_heading(ctx, "In General");
+    element(ctx, "p").children([&] {
+        text_node(ctx, "You can also use the free function ");
+        element(ctx, "code").text("tooltip()");
+        text_node(ctx, " to add tooltips to other elements.");
+    });
+    div(ctx, "demo-panel", [&] {
+        /// [general-tooltips]
+        auto my_link = link(ctx, "link w/tooltip", actions::noop());
+        bs::tooltip(my_link, "Tooltip on link");
+        /// [general-tooltips]
+    });
+    code_snippet(ctx, "general-tooltips");
+}
+
+void
 root_ui(html::context vanilla_ctx)
 {
     auto src = fetch_text(vanilla_ctx, value("main.cpp"));
@@ -234,6 +276,7 @@ root_ui(html::context vanilla_ctx)
                     breadcrumb_demo(ctx);
                     buttons_demo(ctx);
                     modals_demo(ctx);
+                    tooltips_demo(ctx);
                 });
             });
         });
