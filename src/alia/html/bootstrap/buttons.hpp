@@ -1,6 +1,7 @@
 #ifndef ALIA_HTML_BOOTSTRAP_BUTTONS_HPP
 #define ALIA_HTML_BOOTSTRAP_BUTTONS_HPP
 
+#include <alia/html/bootstrap/tooltips.hpp>
 #include <alia/html/widgets.hpp>
 
 namespace alia { namespace html { namespace bootstrap {
@@ -8,6 +9,25 @@ namespace alia { namespace html { namespace bootstrap {
 struct button_handle : regular_element_handle<button_handle>
 {
     using regular_element_handle::regular_element_handle;
+
+    template<class Text>
+    button_handle&
+    tooltip(Text&& text)
+    {
+        bootstrap::tooltip(*this, std::forward<Text>(text));
+        return *this;
+    }
+
+    template<class Text, class Placement>
+    button_handle&
+    tooltip(Text&& text, Placement&& placement)
+    {
+        bootstrap::tooltip(
+            *this,
+            std::forward<Text>(text),
+            std::forward<Placement>(placement));
+        return *this;
+    }
 };
 
 // button - Note that for this overload you MUST also add a style class (e.g.,
