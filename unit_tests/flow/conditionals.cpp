@@ -14,13 +14,13 @@ TEST_CASE("conditional functions", "[flow][macros]")
         data_graph graph;
         auto make_controller = [](auto n) {
             return [=](context ctx) {
-                if_(ctx, n < 0, [&]() {
+                if_(ctx, n < 0, [&] {
                     do_int(ctx, -1);
                 }).else_if_(n == 0, [&] {
                       do_int(ctx, 0);
                   }).else_([&] { do_int(ctx, 1); });
 
-                if_(ctx, n != 17, [](auto ctx) { do_int(ctx, 2); });
+                if_(ctx, n != 17, [&] { do_int(ctx, 2); });
             };
         };
 
