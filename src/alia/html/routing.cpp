@@ -14,7 +14,7 @@ element_handle
 internal_link(context ctx, readable<std::string> path)
 {
     return element(ctx, "a")
-        .attr("href", path)
+        .attr("href", "#" + path)
         .attr("disabled", path.has_value() ? "false" : "true")
         .callback("click", [&](emscripten::val& e) {
             e.call<void>("preventDefault");
