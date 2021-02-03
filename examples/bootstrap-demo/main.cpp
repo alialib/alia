@@ -5,14 +5,12 @@
 #include <alia/html/widgets.hpp>
 #include <sstream>
 
+#include "../demo-utilities/utilities.hpp"
+
 /// [namespace]
 using namespace alia;
 namespace bs = alia::html::bootstrap;
 /// [namespace]
-
-ALIA_DEFINE_TAGGED_TYPE(src_tag, apply_signal<std::string>&)
-
-typedef extend_context_type_t<html::context, src_tag> demo_context;
 
 void
 bootstrap_docs_link(html::context ctx, char const* path)
@@ -49,65 +47,6 @@ void
 subsection_heading(html::context ctx, char const* label)
 {
     element(ctx, "h4").classes("mt-4 mb-3").text(label);
-}
-
-std::string
-extract_code_snippet(std::string const& code, std::string const& tag)
-{
-    std::string marker = "/// [" + tag + "]";
-    auto start = code.find(marker);
-    if (start == std::string::npos)
-        return "Whoops! The code snippet [" + tag + "] is missing!";
-
-    start += marker.length() + 1;
-    auto end = code.find(marker, start);
-    if (end == std::string::npos)
-        return "Whoops! The code snippet [" + tag + "] is missing!";
-
-    // Determine the indentation. We assume the first line of the code snippet
-    // is the least indented (or at least tied for that distinction).
-    int indentation = 0;
-    while (std::isspace(code[start + indentation]))
-        ++indentation;
-
-    std::ostringstream snippet;
-    auto i = start;
-    while (true)
-    {
-        // Skip the indentation.
-        int x = 0;
-        while (x < indentation && code[i + x] == ' ')
-            ++x;
-        i += x;
-
-        if (i >= end)
-            break;
-
-        // Copy the actual code line.
-        while (code[i] != '\n')
-        {
-            snippet << code[i];
-            ++i;
-        }
-        snippet << '\n';
-        ++i;
-    }
-
-    return snippet.str();
-}
-
-void
-code_snippet(demo_context ctx, char const* tag)
-{
-    auto src = apply(ctx, extract_code_snippet, get<src_tag>(ctx), value(tag));
-    auto code = element(ctx, "pre").class_("language-cpp").children([&] {
-        element(ctx, "code").text(src);
-    });
-    on_value_gain(ctx, src, callback([&] {
-                      EM_ASM(
-                          { Prism.highlightElement(Module.nodes[$0]); },
-                          code.asmdom_id());
-                  }));
 }
 
 void
@@ -297,25 +236,17 @@ tooltips_demo(demo_context ctx)
 void
 root_ui(html::context vanilla_ctx)
 {
-    auto src = fetch_text(vanilla_ctx, value("main.cpp"));
+    with_demo_context(vanilla_ctx, [&](auto ctx) {
+        placeholder_root(ctx, "demos", [&] {
+            p(ctx,
+              "All code snippets assume the following namespace "
+              "declarations are in effect:");
+            code_snippet(ctx, "namespace");
 
-    auto ctx = extend_context<src_tag>(vanilla_ctx, src);
-
-    placeholder_root(ctx, "demos", [&] {
-        div(ctx, "container", [&] {
-            div(ctx, "row", [&] {
-                div(ctx, "col-12", [&] {
-                    p(ctx,
-                      "All code snippets assume the following namespace "
-                      "declarations are in effect:");
-                    code_snippet(ctx, "namespace");
-
-                    breadcrumb_demo(ctx);
-                    buttons_demo(ctx);
-                    modals_demo(ctx);
-                    tooltips_demo(ctx);
-                });
-            });
+            breadcrumb_demo(ctx);
+            buttons_demo(ctx);
+            modals_demo(ctx);
+            tooltips_demo(ctx);
         });
     });
 }

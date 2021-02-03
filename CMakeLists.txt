@@ -68,7 +68,9 @@ endfunction()
 # Set up the build for an example.
 function(define_example name)
     file(GLOB source_files "${CMAKE_CURRENT_SOURCE_DIR}/examples/${name}/*")
-    add_executable(${name} examples/${name}/main.cpp)
+    add_executable(${name}
+        examples/${name}/main.cpp
+        examples/demo-utilities/utilities.cpp)
     set_target_properties(${name} PROPERTIES OUTPUT_NAME ${name})
     target_link_libraries(${name} alia_html)
     set(deploy_dir "${CMAKE_CURRENT_BINARY_DIR}/deploy/${name}")
