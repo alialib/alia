@@ -151,12 +151,14 @@ struct page_invoker<N, std::index_sequence<S...>>
 {
     template<class Context, class Page, class Result>
     static void
-    invoke(Context ctx, Page&& page, Result const& result)
+    invoke(
+        Context ctx, Page&& page, Result const& result, bool& already_matched)
     {
-        ALIA_IF(ALIA_FIELD(result, matched))
+        ALIA_IF(!already_matched && ALIA_FIELD(result, matched))
         {
             auto args = ALIA_FIELD(result, arguments);
             std::forward<Page>(page)(args[S]...);
+            already_matched = true;
         }
         ALIA_END
     }
@@ -197,6 +199,7 @@ struct router_handle
 {
     Context ctx;
     alia::state_storage<std::string>& path;
+    bool already_matched;
 
     template<class Page>
     router_handle&
@@ -206,7 +209,7 @@ struct router_handle
         detail::route_parser<N> parser{pattern};
         auto parse_result = alia::apply(ctx, parser, make_state_signal(path));
         detail::page_invoker<N>::invoke(
-            ctx, std::forward<Page>(page), parse_result);
+            ctx, std::forward<Page>(page), parse_result, already_matched);
         return *this;
     }
 };
@@ -223,7 +226,7 @@ router(Context ctx, readable<std::string> path)
             [&](std::string const& new_value) { data.path.set(new_value); },
             [&]() { data.path.clear(); });
     });
-    return router_handle<Context>{ctx, data.path};
+    return router_handle<Context>{ctx, data.path, false};
 }
 
 template<class Context>
