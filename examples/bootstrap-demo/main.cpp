@@ -36,8 +36,10 @@ section_heading(
             .attr("name", anchor)
             .attr(
                 "style",
-                "padding-top: 112px; margin-top: -112px; "
-                "display: inline-block;")
+                "padding-top: 112px; "
+                "margin-top: -112px; "
+                "display: inline-block; "
+                "pointer-events: none; ")
             .text(label);
     });
     bootstrap_docs_link(ctx, bs_docs_path);
