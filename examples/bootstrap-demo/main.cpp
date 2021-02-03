@@ -171,44 +171,81 @@ modals_demo(demo_context ctx)
     subsection_heading(ctx, "Simple");
     div(ctx, "demo-panel", [&] {
         /// [simple-modal]
-        auto my_modal = bs::modal(ctx, [&](auto modal) {
+        auto modal = bs::modal(ctx, [&](auto modal) {
             modal.title("Simple Modal");
             modal.body([&] { p(ctx, "There's not much to see here."); });
             modal.footer([&] {
                 bs::primary_button(ctx, "Close", modal.close_action());
             });
         });
-        bs::primary_button(ctx, "Activate", my_modal.activate_action());
+
+        bs::primary_button(ctx, "Activate", modal.activate_action());
         /// [simple-modal]
     });
     code_snippet(ctx, "simple-modal");
 
+    subsection_heading(ctx, "w/Fade Effect");
+    p(ctx,
+      "The handle that you get for the modal is also a normal element handle "
+      "for the top-level modal element, so you can add in Bootstrap classes "
+      "to enable effects like fading.");
+    div(ctx, "demo-panel", [&] {
+        /// [fading-modal]
+        auto modal = bs::modal(ctx, [&](auto modal) {
+            modal.title("Fading Modal");
+            modal.body([&] { p(ctx, "There's still not much to see here."); });
+            modal.footer([&] {
+                bs::primary_button(ctx, "Close", modal.close_action());
+            });
+        });
+
+        // Add the 'fade' class.
+        // Note that this needs to be done outside the modal itself so that
+        // Bootstrap actually sees the class before the modal is opened.
+        modal.class_("fade");
+
+        bs::primary_button(ctx, "Activate", modal.activate_action());
+        /// [fading-modal]
+    });
+    code_snippet(ctx, "fading-modal");
+
     subsection_heading(ctx, "w/Shared State");
+    p(ctx,
+      "Since modals are defined within the components that invoke them, they "
+      "can naturally access the state from those components. Here's an "
+      "example of using a modal to do a cancelable edit of state from the "
+      "parent component.");
     // clang-format off
     div(ctx, "demo-panel", [&] {
         /// [shared-state-modal]
+        p(ctx, "Here's some state that we'll edit inside the modal. "
+            "Feel free to edit it out here too:");
         auto my_state = get_state(ctx, "Edit me!");
-        p(ctx, "Here's some state that we'll pass to the modal for editing:");
         input(ctx, my_state);
-        auto my_modal = bs::modal(ctx, [&](auto modal) {
+
+        auto modal = bs::modal(ctx, [&](auto modal) {
             modal.title("State Sharing Modal");
-            // The state is naturally visible in here, so just make a local
-            // copy of it.
+
+            // Create a local copy of the state that we can edit (and
+            // potentially discard) within the modal.
+            // We use transient state here so that it's reset whenever the
+            // modal reopens.
             auto local_copy = get_transient_state(ctx, my_state);
+
             modal.body([&] {
                 p(ctx, "Here's a local copy of the state to edit.");
                 p(ctx, "OK this dialog to save the changes.");
                 input(ctx, local_copy);
             });
+
             modal.footer([&] {
-                bs::link_button(ctx, "Cancel", modal.close_action());
+                bs::secondary_button(ctx, "Cancel", modal.close_action());
                 bs::primary_button(ctx, "OK",
                     (my_state <<= local_copy, modal.close_action()));
             });
         });
-        // Add a fade effect.
-        my_modal.class_("fade");
-        bs::primary_button(ctx, "Activate", my_modal.activate_action());
+
+        bs::primary_button(ctx, "Activate", modal.activate_action());
         /// [shared-state-modal]
     });
     // clang-format on
@@ -228,15 +265,15 @@ tooltips_demo(demo_context ctx)
     });
     div(ctx, "demo-panel", [&] {
         /// [button-tooltips]
-        bs::primary_button(ctx, "Button w/tooltip", actions::noop())
+        bs::dark_button(ctx, "Button w/tooltip", actions::noop())
             .tooltip("Automatically positioned tooltip");
-        bs::primary_button(ctx, "w/tooltip on top", actions::noop())
+        bs::dark_button(ctx, "w/tooltip on top", actions::noop())
             .tooltip("Tooltip on top", "top");
-        bs::primary_button(ctx, "w/tooltip on bottom", actions::noop())
+        bs::dark_button(ctx, "w/tooltip on bottom", actions::noop())
             .tooltip("Tooltip on bottom", "bottom");
-        bs::primary_button(ctx, "w/tooltip on left", actions::noop())
+        bs::dark_button(ctx, "w/tooltip on left", actions::noop())
             .tooltip("Tooltip on left", "left");
-        bs::primary_button(ctx, "w/tooltip on right", actions::noop())
+        bs::dark_button(ctx, "w/tooltip on right", actions::noop())
             .tooltip("Tooltip on right", "right");
         /// [button-tooltips]
     });
@@ -245,7 +282,7 @@ tooltips_demo(demo_context ctx)
     subsection_heading(ctx, "In General");
     element(ctx, "p").children([&] {
         text_node(ctx, "You can also use the free function ");
-        element(ctx, "code").text("tooltip()");
+        element(ctx, "code").text("bootstrap::tooltip()");
         text_node(ctx, " to add tooltips to other elements.");
     });
     div(ctx, "demo-panel", [&] {
