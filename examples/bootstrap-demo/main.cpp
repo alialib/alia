@@ -108,6 +108,7 @@ dropdowns_demo(demo_context ctx)
 {
     section_heading(ctx, "dropdowns", "Dropdowns", "components/dropdowns/");
 
+    subsection_heading(ctx, "Basic");
     div(ctx, "demo-panel", [&] {
         /// [dropdown-button]
         bs::dropdown_button(ctx, "btn-primary", "Dropdown", [&](auto& menu) {
@@ -121,6 +122,22 @@ dropdowns_demo(demo_context ctx)
         /// [dropdown-button]
     });
     code_snippet(ctx, "dropdown-button");
+
+    subsection_heading(ctx, "Right-Aligned, w/Alternate Styling");
+    div(ctx, "demo-panel", [&] {
+        /// [right-aligned-dropdown]
+        bs::dropdown_button(ctx, "btn-info", "Dropdown", [&](auto& menu) {
+            menu.align_right();
+            menu.heading("Options");
+            menu.option("Option 1", actions::noop());
+            menu.option("Option 2", actions::noop());
+            menu.option("Option 3", actions::noop());
+            menu.divider();
+            menu.option("Something Different", actions::noop());
+        });
+        /// [right-aligned-dropdown]
+    });
+    code_snippet(ctx, "right-aligned-dropdown");
 }
 
 void
