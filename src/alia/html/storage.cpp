@@ -1,6 +1,8 @@
-#include "storage.hpp"
+#include <alia/html/storage.hpp>
 
 #include <iostream>
+
+#include <alia/html/dom.hpp>
 
 namespace alia { namespace html {
 
@@ -57,44 +59,104 @@ session_storage()
     return storage_object("sessionStorage");
 }
 
-duplex<std::string>
-get_storage_state(
-    html::context ctx,
-    std::string const& storage_name,
-    std::string const& key,
-    readable<std::string> default_value)
+storage_signal::storage_signal(storage_signal_data* data) : data_(data)
 {
-    return add_write_action(
-        get_state(
-            ctx,
-            add_default(
-                lambda_reader(
-                    [=] { return storage_object(storage_name).has_item(key); },
-                    [=] {
-                        return storage_object(storage_name).get_item(key);
-                    }),
-                default_value)),
-        callback([=](std::string new_value) {
-            storage_object(storage_name).set_item(key, new_value);
-        }));
 }
 
-auto
-get_session_state(
-    html::context ctx,
-    std::string const& key,
-    readable<std::string> default_value)
+bool
+storage_signal::has_value() const
 {
-    return get_storage_state(ctx, "sessionStorage", key, default_value);
+    return data_->value.has_value();
 }
 
-auto
-get_local_state(
-    html::context ctx,
-    std::string const& key,
-    readable<std::string> default_value)
+std::string const&
+storage_signal::read() const
 {
-    return get_storage_state(ctx, "localStorage", key, default_value);
+    return data_->value.get();
 }
 
+simple_id<unsigned> const&
+storage_signal::value_id() const
+{
+    id_ = make_id(data_->value.version());
+    return id_;
+}
+
+bool
+storage_signal::ready_to_write() const
+{
+    return true;
+}
+
+void
+storage_signal::write(std::string value) const
+{
+    storage_object(data_->storage).set_item(data_->key, value);
+    data_->value.set(std::move(value));
+}
+
+std::string
+storage_signal::movable_value() const
+{
+    std::string movable = std::move(data_->value.untracked_nonconst_ref());
+    return movable;
+}
+
+void
+storage_signal::clear() const
+{
+    data_->value.clear();
+    storage_object(data_->storage).remove_item(data_->key);
+}
+
+storage_signal
+get_storage_state(html::context ctx, char const* storage_name, char const* key)
+{
+    storage_signal_data* data;
+    if (get_cached_data(ctx, &data))
+    {
+        // Record the storage name and key.
+        data->storage = storage_name;
+        data->key = key;
+
+        // Query the initial value.
+        storage_object storage(storage_name);
+        if (storage.has_item(key))
+            data->value.untracked_nonconst_ref() = storage.get_item(key);
+
+        // Install a handler for the HTML window's 'storage' event to monitor
+        // changes in the underlying value of the signal.
+        {
+            alia::system* sys = &get<alia::system_tag>(ctx);
+            detail::install_window_callback(
+                data->on_storage_event, "storage", [=](emscripten::val event) {
+                    // The event will fire for any storage activity related to
+                    // our domain, so we have to check that the key matches.
+                    if (event["key"].as<std::string>() == data->key)
+                    {
+                        data->value.set(event["newValue"].as<std::string>());
+                        refresh_system(*sys);
+                    }
+                });
+        }
+    }
+
+    on_refresh(ctx, [&](auto ctx) {
+        data->value.refresh_container(get_active_component_container(ctx));
+    });
+
+    return storage_signal(data);
+}
+
+storage_signal
+get_session_state(html::context ctx, char const* key)
+{
+    return get_storage_state(ctx, "sessionStorage", key);
+}
+
+storage_signal
+get_local_state(html::context ctx, char const* key)
+{
+    return get_storage_state(ctx, "localStorage", key);
+}
 }} // namespace alia::html

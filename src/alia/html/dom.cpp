@@ -205,6 +205,48 @@ install_onhashchange_callback(
         reinterpret_cast<std::uintptr_t>(function));
 }
 
+window_callback::~window_callback()
+{
+    EM_ASM(
+        {
+            if ('aliaEventHandlers' in Module)
+            {
+                var aliaEventHandlers = Module['aliaEventHandlers'];
+                window.removeEventListener(
+                    Module['UTF8ToString']($0), aliaEventHandlers[$1]);
+                delete aliaEventHandlers[$1];
+            }
+        },
+        this->event.c_str(),
+        reinterpret_cast<std::uintptr_t>(&this->function));
+}
+
+void
+install_window_callback(
+    window_callback& callback,
+    char const* event,
+    std::function<void(emscripten::val)> function)
+{
+    callback.event = event;
+    callback.function = std::move(function);
+    EM_ASM(
+        {
+            var event = Module['UTF8ToString']($0);
+            var handler = function(e)
+            {
+                Module.callback_proxy($1, e);
+            };
+
+            if (!('aliaEventHandlers' in Module))
+                Module['aliaEventHandlers'] = {};
+            Module['aliaEventHandlers'][$1] = handler;
+
+            window.addEventListener(event, handler);
+        },
+        event,
+        reinterpret_cast<std::uintptr_t>(&callback.function));
+}
+
 void
 install_element_callback(
     context ctx,
