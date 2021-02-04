@@ -31,24 +31,8 @@ section_heading(
     char const* label,
     char const* bs_docs_path)
 {
-    element(ctx, "h2").classes("mt-5 mb-3").children([&] {
-        element(ctx, "a")
-            .attr("name", anchor)
-            .attr(
-                "style",
-                "padding-top: 112px; "
-                "margin-top: -112px; "
-                "display: inline-block; "
-                "pointer-events: none; ")
-            .text(label);
-    });
+    section_heading(ctx, anchor, label);
     bootstrap_docs_link(ctx, bs_docs_path);
-}
-
-void
-subsection_heading(html::context ctx, char const* label)
-{
-    element(ctx, "h4").classes("mt-4 mb-3").text(label);
 }
 
 void

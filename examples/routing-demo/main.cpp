@@ -14,28 +14,6 @@ namespace bs = alia::html::bootstrap;
 /// [namespace]
 
 void
-section_heading(html::context ctx, char const* anchor, char const* label)
-{
-    element(ctx, "h2").classes("mt-5 mb-3").children([&] {
-        element(ctx, "a")
-            .attr("name", anchor)
-            .attr(
-                "style",
-                "padding-top: 112px; "
-                "margin-top: -112px; "
-                "display: inline-block; "
-                "pointer-events: none; ")
-            .text(label);
-    });
-}
-
-void
-subsection_heading(html::context ctx, char const* label)
-{
-    element(ctx, "h4").classes("mt-4 mb-3").text(label);
-}
-
-void
 basic_routing_demo(demo_context ctx)
 {
     section_heading(ctx, "basic", "Basic Routing");
