@@ -30,150 +30,132 @@ struct button_handle : regular_element_handle<button_handle>
     }
 };
 
-// button - Note that for this overload you MUST also add a style class (e.g.,
-// "btn-primary"). Alternatively, you can use one of the overloads below.
-template<class... Args>
+template<class Style, class... Args>
 button_handle
-button(Args&&... args)
+button(html::context ctx, Style&& style, Args&&... args)
 {
-    return button_handle(
-        html::button(std::forward<Args>(args)...).class_("btn"));
+    return button_handle(html::button(ctx, std::forward<Args>(args)...)
+                             .class_("btn")
+                             .class_(std::forward<Style>(style)));
 }
 
 template<class... Args>
 button_handle
-primary_button(Args&&... args)
+primary_button(html::context ctx, Args&&... args)
 {
-    return button_handle(
-        button(std::forward<Args>(args)...).class_("btn-primary"));
+    return button(ctx, "btn-primary", std::forward<Args>(args)...);
 }
 
 template<class... Args>
 button_handle
-secondary_button(Args&&... args)
+secondary_button(html::context ctx, Args&&... args)
 {
-    return button_handle(
-        button(std::forward<Args>(args)...).class_("btn-secondary"));
+    return button(ctx, "btn-secondary", std::forward<Args>(args)...);
 }
 
 template<class... Args>
 button_handle
-success_button(Args&&... args)
+success_button(html::context ctx, Args&&... args)
 {
-    return button_handle(
-        button(std::forward<Args>(args)...).class_("btn-success"));
+    return button(ctx, "btn-success", std::forward<Args>(args)...);
 }
 
 template<class... Args>
 button_handle
-danger_button(Args&&... args)
+danger_button(html::context ctx, Args&&... args)
 {
-    return button_handle(
-        button(std::forward<Args>(args)...).class_("btn-danger"));
+    return button(ctx, "btn-danger", std::forward<Args>(args)...);
 }
 
 template<class... Args>
 button_handle
-warning_button(Args&&... args)
+warning_button(html::context ctx, Args&&... args)
 {
-    return button_handle(
-        button(std::forward<Args>(args)...).class_("btn-warning"));
+    return button(ctx, "btn-warning", std::forward<Args>(args)...);
 }
 
 template<class... Args>
 button_handle
-info_button(Args&&... args)
+info_button(html::context ctx, Args&&... args)
 {
-    return button_handle(
-        button(std::forward<Args>(args)...).class_("btn-info"));
+    return button(ctx, "btn-info", std::forward<Args>(args)...);
 }
 
 template<class... Args>
 button_handle
-light_button(Args&&... args)
+light_button(html::context ctx, Args&&... args)
 {
-    return button_handle(
-        button(std::forward<Args>(args)...).class_("btn-light"));
+    return button(ctx, "btn-light", std::forward<Args>(args)...);
 }
 
 template<class... Args>
 button_handle
-dark_button(Args&&... args)
+dark_button(html::context ctx, Args&&... args)
 {
-    return button_handle(
-        button(std::forward<Args>(args)...).class_("btn-dark"));
+    return button(ctx, "btn-dark", std::forward<Args>(args)...);
 }
 
 template<class... Args>
 button_handle
-link_button(Args&&... args)
+link_button(html::context ctx, Args&&... args)
 {
-    return button_handle(
-        button(std::forward<Args>(args)...).class_("btn-link"));
+    return button(ctx, "btn-link", std::forward<Args>(args)...);
 }
 
 template<class... Args>
 button_handle
-outline_primary_button(Args&&... args)
+outline_primary_button(html::context ctx, Args&&... args)
 {
-    return button_handle(
-        button(std::forward<Args>(args)...).class_("btn-outline-primary"));
+    return button(ctx, "btn-outline-primary", std::forward<Args>(args)...);
 }
 
 template<class... Args>
 button_handle
-outline_secondary_button(Args&&... args)
+outline_secondary_button(html::context ctx, Args&&... args)
 {
-    return button_handle(
-        button(std::forward<Args>(args)...).class_("btn-outline-secondary"));
+    return button(ctx, "btn-outline-secondary", std::forward<Args>(args)...);
 }
 
 template<class... Args>
 button_handle
-outline_success_button(Args&&... args)
+outline_success_button(html::context ctx, Args&&... args)
 {
-    return button_handle(
-        button(std::forward<Args>(args)...).class_("btn-outline-success"));
+    return button(ctx, "btn-outline-success", std::forward<Args>(args)...);
 }
 
 template<class... Args>
 button_handle
-outline_danger_button(Args&&... args)
+outline_danger_button(html::context ctx, Args&&... args)
 {
-    return button_handle(
-        button(std::forward<Args>(args)...).class_("btn-outline-danger"));
+    return button(ctx, "btn-outline-danger", std::forward<Args>(args)...);
 }
 
 template<class... Args>
 button_handle
-outline_warning_button(Args&&... args)
+outline_warning_button(html::context ctx, Args&&... args)
 {
-    return button_handle(
-        button(std::forward<Args>(args)...).class_("btn-outline-warning"));
+    return button(ctx, "btn-outline-warning", std::forward<Args>(args)...);
 }
 
 template<class... Args>
 button_handle
-outline_info_button(Args&&... args)
+outline_info_button(html::context ctx, Args&&... args)
 {
-    return button_handle(
-        button(std::forward<Args>(args)...).class_("btn-outline-info"));
+    return button(ctx, "btn-outline-info", std::forward<Args>(args)...);
 }
 
 template<class... Args>
 button_handle
-outline_light_button(Args&&... args)
+outline_light_button(html::context ctx, Args&&... args)
 {
-    return button_handle(
-        button(std::forward<Args>(args)...).class_("btn-outline-light"));
+    return button(ctx, "btn-outline-light", std::forward<Args>(args)...);
 }
 
 template<class... Args>
 button_handle
-outline_dark_button(Args&&... args)
+outline_dark_button(html::context ctx, Args&&... args)
 {
-    return button_handle(
-        button(std::forward<Args>(args)...).class_("btn-outline-dark"));
+    return button(ctx, "btn-outline-dark", std::forward<Args>(args)...);
 }
 
 }}} // namespace alia::html::bootstrap
