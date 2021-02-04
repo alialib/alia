@@ -207,18 +207,21 @@ install_onhashchange_callback(
 
 window_callback::~window_callback()
 {
-    EM_ASM(
-        {
-            if ('aliaEventHandlers' in Module)
+    if (this->installed)
+    {
+        EM_ASM(
             {
-                var aliaEventHandlers = Module['aliaEventHandlers'];
-                window.removeEventListener(
-                    Module['UTF8ToString']($0), aliaEventHandlers[$1]);
-                delete aliaEventHandlers[$1];
-            }
-        },
-        this->event.c_str(),
-        reinterpret_cast<std::uintptr_t>(&this->function));
+                if ('aliaEventHandlers' in Module)
+                {
+                    var aliaEventHandlers = Module['aliaEventHandlers'];
+                    window.removeEventListener(
+                        Module['UTF8ToString']($0), aliaEventHandlers[$1]);
+                    delete aliaEventHandlers[$1];
+                }
+            },
+            this->event.c_str(),
+            reinterpret_cast<std::uintptr_t>(&this->function));
+    }
 }
 
 void
@@ -245,6 +248,7 @@ install_window_callback(
         },
         event,
         reinterpret_cast<std::uintptr_t>(&callback.function));
+    callback.installed = true;
 }
 
 void

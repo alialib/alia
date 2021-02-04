@@ -126,6 +126,7 @@ get_storage_state(html::context ctx, char const* storage_name, char const* key)
 
         // Install a handler for the HTML window's 'storage' event to monitor
         // changes in the underlying value of the signal.
+        if (!strcmp(storage_name, "localStorage"))
         {
             alia::system* sys = &get<alia::system_tag>(ctx);
             detail::install_window_callback(
