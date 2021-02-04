@@ -86,3 +86,4 @@ endfunction()
 # Define the examples.
 define_example(bootstrap-demo)
 define_example(routing-demo)
+define_example(core-demos)
