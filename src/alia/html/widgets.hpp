@@ -9,17 +9,127 @@ namespace alia { namespace html {
 inline element_handle
 hr(html::context ctx)
 {
-    return html::element(ctx, "hr");
+    return element(ctx, "hr");
 }
 
 // TEXT
 
-// paragraphs
-template<class Signal>
-element_handle
-p(html::context ctx, Signal signal)
+inline element_handle
+p(html::context ctx)
 {
-    return html::element(ctx, "p").text(signal);
+    return element(ctx, "p");
+}
+// paragraph w/text
+inline element_handle
+p(html::context ctx, readable<std::string> text)
+{
+    return element(ctx, "p").text(text);
+}
+inline element_handle
+p(html::context ctx, char const* text)
+{
+    return element(ctx, "p").text(text);
+}
+// paragraph as a container
+template<class Content>
+std::enable_if_t<std::is_invocable_v<Content&&>, element_handle>
+p(html::context ctx, Content&& content)
+{
+    return element(ctx, "p").children(std::forward<Content>(content));
+}
+
+// code
+inline element_handle
+code(html::context ctx)
+{
+    return element(ctx, "code");
+}
+template<class Text>
+element_handle
+code(html::context ctx, Text text)
+{
+    return element(ctx, "code").text(text);
+}
+
+// pre
+inline element_handle
+pre(html::context ctx)
+{
+    return element(ctx, "pre");
+}
+template<class Text>
+element_handle
+pre(html::context ctx, Text text)
+{
+    return element(ctx, "pre").text(text);
+}
+
+// headings
+inline element_handle
+h1(html::context ctx)
+{
+    return element(ctx, "h1");
+}
+template<class Text>
+element_handle
+h1(html::context ctx, Text text)
+{
+    return element(ctx, "h1").text(text);
+}
+inline element_handle
+h2(html::context ctx)
+{
+    return element(ctx, "h2");
+}
+template<class Text>
+element_handle
+h2(html::context ctx, Text text)
+{
+    return element(ctx, "h2").text(text);
+}
+inline element_handle
+h3(html::context ctx)
+{
+    return element(ctx, "h3");
+}
+template<class Text>
+element_handle
+h3(html::context ctx, Text text)
+{
+    return element(ctx, "h3").text(text);
+}
+inline element_handle
+h4(html::context ctx)
+{
+    return element(ctx, "h4");
+}
+template<class Text>
+element_handle
+h4(html::context ctx, Text text)
+{
+    return element(ctx, "h4").text(text);
+}
+inline element_handle
+h5(html::context ctx)
+{
+    return element(ctx, "h5");
+}
+template<class Text>
+element_handle
+h5(html::context ctx, Text text)
+{
+    return element(ctx, "h5").text(text);
+}
+inline element_handle
+h6(html::context ctx)
+{
+    return element(ctx, "h6");
+}
+template<class Text>
+element_handle
+h6(html::context ctx, Text text)
+{
+    return element(ctx, "h6").text(text);
 }
 
 // INPUTS
