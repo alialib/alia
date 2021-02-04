@@ -131,7 +131,7 @@ modals_demo(demo_context ctx)
     subsection_heading(ctx, "Simple");
     div(ctx, "demo-panel", [&] {
         /// [simple-modal]
-        auto modal = bs::modal(ctx, [&](auto modal) {
+        auto modal = bs::modal(ctx, [&](auto& modal) {
             modal.title("Simple Modal");
             modal.body([&] { p(ctx, "There's not much to see here."); });
             modal.footer([&] {
@@ -151,7 +151,7 @@ modals_demo(demo_context ctx)
       "to enable effects like fading.");
     div(ctx, "demo-panel", [&] {
         /// [fading-modal]
-        auto modal = bs::modal(ctx, [&](auto modal) {
+        auto modal = bs::modal(ctx, [&](auto& modal) {
             modal.title("Fading Modal");
             modal.body([&] { p(ctx, "There's still not much to see here."); });
             modal.footer([&] {
@@ -183,7 +183,7 @@ modals_demo(demo_context ctx)
         auto my_state = get_state(ctx, "Edit me!");
         input(ctx, my_state);
 
-        auto modal = bs::modal(ctx, [&](auto modal) {
+        auto modal = bs::modal(ctx, [&](auto& modal) {
             modal.title("State Sharing Modal");
 
             // Create a local copy of the state that we can edit (and

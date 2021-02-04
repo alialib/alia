@@ -103,7 +103,7 @@ struct modal_handle : regular_element_handle<modal_handle>
 modal_handle
 modal(
     html::context ctx,
-    alia::function_view<void(internal_modal_handle)> content);
+    alia::function_view<void(internal_modal_handle&)> content);
 
 }}} // namespace alia::html::bootstrap
 
