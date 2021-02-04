@@ -108,6 +108,7 @@ struct window_callback : noncopyable
 {
     ~window_callback();
 
+    bool installed = false;
     std::string event;
     std::function<void(emscripten::val)> function;
 };
