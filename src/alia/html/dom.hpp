@@ -104,6 +104,20 @@ void
 install_onhashchange_callback(
     std::function<void(emscripten::val)> const* function);
 
+struct window_callback : noncopyable
+{
+    ~window_callback();
+
+    std::string event;
+    std::function<void(emscripten::val)> function;
+};
+
+void
+install_window_callback(
+    window_callback& callback,
+    char const* event,
+    std::function<void(emscripten::val)> function);
+
 void
 text_node(html::context ctx, readable<std::string> text);
 

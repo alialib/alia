@@ -1,9 +1,10 @@
 #ifndef ALIA_HTML_STORAGE_HPP
 #define ALIA_HTML_STORAGE_HPP
 
-#include <alia/html/context.hpp>
-
 #include <emscripten/val.h>
+
+#include <alia/html/context.hpp>
+#include <alia/html/dom.hpp>
 
 namespace alia { namespace html {
 
@@ -43,24 +44,57 @@ session_storage();
 
 // SIGNALIZED ACCESS
 
-duplex<std::string>
+struct storage_signal_data
+{
+    std::string storage;
+    std::string key;
+    state_storage<std::string> value;
+    detail::window_callback on_storage_event;
+};
+
+struct storage_signal
+    : signal<
+          storage_signal,
+          std::string,
+          signal_capabilities<signal_copyable, signal_clearable>>
+{
+    explicit storage_signal(storage_signal_data* data);
+
+    bool
+    has_value() const override;
+
+    std::string const&
+    read() const override;
+
+    simple_id<unsigned> const&
+    value_id() const override;
+
+    bool
+    ready_to_write() const override;
+
+    void
+    write(std::string value) const override;
+
+    std::string
+    movable_value() const override;
+
+    void
+    clear() const override;
+
+ private:
+    storage_signal_data* data_;
+    mutable simple_id<unsigned> id_;
+};
+
+storage_signal
 get_storage_state(
-    html::context ctx,
-    std::string const& storage_name,
-    std::string const& key,
-    readable<std::string> default_value);
+    html::context ctx, char const* storage_name, char const* key);
 
-auto
-get_session_state(
-    html::context ctx,
-    std::string const& key,
-    readable<std::string> default_value);
+storage_signal
+get_session_state(html::context ctx, char const* key);
 
-auto
-get_local_state(
-    html::context ctx,
-    std::string const& key,
-    readable<std::string> default_value);
+storage_signal
+get_local_state(html::context ctx, char const* key);
 
 }} // namespace alia::html
 
