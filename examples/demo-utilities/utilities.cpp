@@ -4,6 +4,28 @@
 
 using namespace alia;
 
+void
+section_heading(html::context ctx, char const* anchor, char const* label)
+{
+    element(ctx, "h2").classes("mt-5 mb-3").children([&] {
+        element(ctx, "a")
+            .attr("name", anchor)
+            .attr(
+                "style",
+                "padding-top: 112px; "
+                "margin-top: -112px; "
+                "display: inline-block; "
+                "pointer-events: none; ")
+            .text(label);
+    });
+}
+
+void
+subsection_heading(html::context ctx, char const* label)
+{
+    element(ctx, "h4").classes("mt-4 mb-3").text(label);
+}
+
 std::string
 extract_code_snippet(std::string const& code, std::string const& tag)
 {

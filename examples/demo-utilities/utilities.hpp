@@ -10,6 +10,13 @@ ALIA_DEFINE_TAGGED_TYPE(src_tag, alia::apply_signal<std::string>&)
 
 typedef alia::extend_context_type_t<alia::html::context, src_tag> demo_context;
 
+void
+section_heading(
+    alia::html::context ctx, char const* anchor, char const* label);
+
+void
+subsection_heading(alia::html::context ctx, char const* label);
+
 std::string
 extract_code_snippet(std::string const& code, std::string const& tag);
 
