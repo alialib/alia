@@ -28,7 +28,7 @@ modal_handle::activate()
 modal_handle
 modal(
     html::context ctx,
-    alia::function_view<void(internal_modal_handle)> content)
+    alia::function_view<void(internal_modal_handle&)> content)
 {
     modal_data* data;
     if (get_cached_data(ctx, &data))
@@ -49,7 +49,8 @@ modal(
                     ALIA_IF(data->active)
                     {
                         div(ctx, "modal-content", [&] {
-                            content(internal_modal_handle(modal));
+                            internal_modal_handle handle(modal);
+                            content(handle);
                         });
                         on_refresh(ctx, [&](auto ctx) {
                             EM_ASM(
