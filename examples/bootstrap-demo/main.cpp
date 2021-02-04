@@ -152,11 +152,11 @@ modals_demo(demo_context ctx)
             modal.title("Simple Modal");
             modal.body([&] { p(ctx, "There's not much to see here."); });
             modal.footer([&] {
-                bs::primary_button(ctx, "Close", modal.close_action());
+                bs::primary_button(ctx, "Close", actions::close(modal));
             });
         });
 
-        bs::primary_button(ctx, "Activate", modal.activate_action());
+        bs::primary_button(ctx, "Activate", actions::activate(modal));
         /// [simple-modal]
     });
     code_snippet(ctx, "simple-modal");
@@ -172,7 +172,7 @@ modals_demo(demo_context ctx)
             modal.title("Fading Modal");
             modal.body([&] { p(ctx, "There's still not much to see here."); });
             modal.footer([&] {
-                bs::primary_button(ctx, "Close", modal.close_action());
+                bs::primary_button(ctx, "Close", actions::close(modal));
             });
         });
 
@@ -181,7 +181,7 @@ modals_demo(demo_context ctx)
         // Bootstrap actually sees the class before the modal is opened.
         modal.class_("fade");
 
-        bs::primary_button(ctx, "Activate", modal.activate_action());
+        bs::primary_button(ctx, "Activate", actions::activate(modal));
         /// [fading-modal]
     });
     code_snippet(ctx, "fading-modal");
@@ -216,13 +216,13 @@ modals_demo(demo_context ctx)
             });
 
             modal.footer([&] {
-                bs::secondary_button(ctx, "Cancel", modal.close_action());
+                bs::secondary_button(ctx, "Cancel", actions::close(modal));
                 bs::primary_button(ctx, "OK",
-                    (my_state <<= local_copy, modal.close_action()));
+                    (my_state <<= local_copy, actions::close(modal)));
             });
         });
 
-        bs::primary_button(ctx, "Activate", modal.activate_action());
+        bs::primary_button(ctx, "Activate", actions::activate(modal));
         /// [shared-state-modal]
     });
     // clang-format on

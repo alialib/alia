@@ -3,7 +3,8 @@
 
 #include <alia/html/dom.hpp>
 
-namespace alia { namespace html { namespace bootstrap {
+namespace alia {
+namespace html { namespace bootstrap {
 
 struct internal_modal_handle : regular_element_handle<internal_modal_handle>
 {
@@ -63,13 +64,6 @@ struct internal_modal_handle : regular_element_handle<internal_modal_handle>
     // Close this modal.
     void
     close();
-
-    // Get an action that closes this modal.
-    auto
-    close_action()
-    {
-        return alia::callback([this] { this->close(); });
-    }
 };
 
 struct modal_data
@@ -89,13 +83,6 @@ struct modal_handle : regular_element_handle<modal_handle>
     void
     activate();
 
-    // Get an action that activates this modal.
-    auto
-    activate_action()
-    {
-        return alia::callback([this] { this->activate(); });
-    }
-
     modal_data& data;
 };
 
@@ -105,6 +92,26 @@ modal(
     html::context ctx,
     alia::function_view<void(internal_modal_handle&)> content);
 
-}}} // namespace alia::html::bootstrap
+}} // namespace html::bootstrap
+
+namespace actions {
+
+// Get an action that closes the given modal.
+inline auto
+close(html::bootstrap::internal_modal_handle& modal)
+{
+    return alia::callback([&modal] { modal.close(); });
+}
+
+// Get an action that activates the given modal.
+inline auto
+activate(html::bootstrap::modal_handle& modal)
+{
+    return alia::callback([&modal] { modal.activate(); });
+}
+
+} // namespace actions
+
+} // namespace alia
 
 #endif
