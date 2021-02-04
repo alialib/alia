@@ -86,6 +86,41 @@ buttons_demo(demo_context ctx)
         /// [outline-buttons]
     });
     code_snippet(ctx, "outline-buttons");
+
+    subsection_heading(ctx, "w/Dynamic Style");
+    p(ctx,
+      "You can also specify a button's style dynamically if needed. In this "
+      "demo, the button's style class is controlled through the input above "
+      "it.");
+
+    div(ctx, "demo-panel", [&] {
+        /// [dynamic-button-style]
+        auto style = get_state(ctx, "btn-danger");
+        input(ctx, style);
+        bs::button(ctx, style, "Dynamic", actions::noop());
+        /// [dynamic-button-style]
+    });
+    code_snippet(ctx, "dynamic-button-style");
+}
+
+void
+dropdowns_demo(demo_context ctx)
+{
+    section_heading(ctx, "dropdowns", "Dropdowns", "components/dropdowns/");
+
+    div(ctx, "demo-panel", [&] {
+        /// [dropdown-button]
+        bs::dropdown_button(ctx, "btn-primary", "Dropdown", [&](auto& menu) {
+            menu.heading("Options");
+            menu.option("Option 1", actions::noop());
+            menu.option("Option 2", actions::noop());
+            menu.option("Option 3", actions::noop());
+            menu.divider();
+            menu.option("Something Different", actions::noop());
+        });
+        /// [dropdown-button]
+    });
+    code_snippet(ctx, "dropdown-button");
 }
 
 void
@@ -231,6 +266,7 @@ root_ui(html::context vanilla_ctx)
 
             breadcrumb_demo(ctx);
             buttons_demo(ctx);
+            dropdowns_demo(ctx);
             modals_demo(ctx);
             tooltips_demo(ctx);
         });
