@@ -1,13 +1,14 @@
 #include "utilities.hpp"
 
 #include <alia/html/dom.hpp>
+#include <alia/html/widgets.hpp>
 
 using namespace alia;
 
 void
 section_heading(html::context ctx, char const* anchor, char const* label)
 {
-    element(ctx, "h2").classes("mt-5 mb-3").children([&] {
+    h2(ctx).classes("mt-5 mb-3").children([&] {
         element(ctx, "a")
             .attr("name", anchor)
             .attr(
@@ -23,7 +24,7 @@ section_heading(html::context ctx, char const* anchor, char const* label)
 void
 subsection_heading(html::context ctx, char const* label)
 {
-    element(ctx, "h4").classes("mt-4 mb-3").text(label);
+    h4(ctx).classes("mt-4 mb-3").text(label);
 }
 
 std::string
@@ -75,13 +76,12 @@ void
 code_snippet(demo_context ctx, char const* tag)
 {
     auto src = apply(ctx, extract_code_snippet, get<src_tag>(ctx), value(tag));
-    auto code = element(ctx, "pre").class_("language-cpp").children([&] {
-        element(ctx, "code").text(src);
-    });
+    auto code_block
+        = pre(ctx).class_("language-cpp").children([&] { code(ctx, src); });
     on_value_gain(ctx, src, callback([&] {
                       EM_ASM(
                           { Prism.highlightElement(Module.nodes[$0]); },
-                          code.asmdom_id());
+                          code_block.asmdom_id());
                   }));
 }
 

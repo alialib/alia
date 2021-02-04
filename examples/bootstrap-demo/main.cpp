@@ -235,9 +235,9 @@ tooltips_demo(demo_context ctx)
     section_heading(ctx, "tooltips", "Tooltips", "components/tooltips/");
 
     subsection_heading(ctx, "On Buttons");
-    element(ctx, "p").children([&] {
+    p(ctx, [&] {
         text_node(ctx, "Buttons directly provide a ");
-        element(ctx, "code").text(".tooltip()");
+        code(ctx, ".tooltip()");
         text_node(ctx, " member.");
     });
     div(ctx, "demo-panel", [&] {
@@ -257,9 +257,9 @@ tooltips_demo(demo_context ctx)
     code_snippet(ctx, "button-tooltips");
 
     subsection_heading(ctx, "In General");
-    element(ctx, "p").children([&] {
+    p(ctx, [&] {
         text_node(ctx, "You can also use the free function ");
-        element(ctx, "code").text("bootstrap::tooltip()");
+        code(ctx, "bootstrap::tooltip()");
         text_node(ctx, " to add tooltips to other elements.");
     });
     div(ctx, "demo-panel", [&] {

@@ -32,7 +32,7 @@ basic_routing_demo(demo_context ctx)
             .route("/", [&] { p(ctx, "Welcome to the routing demo!"); })
             .route("/about", [&] { p(ctx, "You've found the About page!"); })
             .route("/users", [&] {
-                element(ctx, "h4").text("Users");
+                h4(ctx, "Users");
                 p(ctx, "Calvin");
                 p(ctx, "Hobbes");
             });
@@ -62,12 +62,12 @@ parameters_demo(demo_context ctx)
 {
     section_heading(ctx, "parameters", "Route Parameters");
 
-    element(ctx, "p").children([&] {
+    p(ctx, [&] {
         text_node(
             ctx,
             "Routes can include parameters. "
             "These are represented by the token ");
-        element(ctx, "code").text("{}");
+        code(ctx, "{}");
         text_node(ctx, " in the pattern string.");
     });
 
@@ -84,12 +84,12 @@ parameters_demo(demo_context ctx)
             .route(
                 "/users",
                 [&] {
-                    element(ctx, "h4").text("Users");
+                    h4(ctx, "Users");
                     p(ctx, "Calvin");
                     p(ctx, "Hobbes");
                 })
             .route("/users/{}", [&](auto user) {
-                element(ctx, "h4").text(user);
+                h4(ctx, user);
                 p(ctx, "Pretending to fetch info about this user...");
             });
         /// [routing-parameters]
@@ -109,17 +109,17 @@ subpaths_demo(demo_context ctx)
 {
     section_heading(ctx, "subpaths", "Subpaths");
 
-    element(ctx, "p").children([&] {
+    p(ctx, [&] {
         text_node(ctx, "While ");
-        element(ctx, "code").text("{}");
+        code(ctx, "{}");
         text_node(
             ctx, " will only match one level in the route path, the token ");
-        element(ctx, "code").text("{:/}");
+        code(ctx, "{:/}");
         text_node(
             ctx,
             " can match multiple levels (i.e., the string that it matches can "
             "include the ");
-        element(ctx, "code").text("/");
+        code(ctx, "/");
         text_node(ctx, " character.");
     });
 
@@ -132,7 +132,7 @@ subpaths_demo(demo_context ctx)
     div(ctx, "demo-panel routed-content", [&] {
         /// [routing-subpaths]
         router(ctx).route("/accounts/{}{:/}", [&](auto account, auto subpath) {
-            element(ctx, "h4").text(account);
+            h4(ctx, account);
             // Set up another router to match against the subpath.
             // (In real code, we might split this out into its own function.)
             router(ctx, subpath)
@@ -162,8 +162,8 @@ default_match_demo(demo_context ctx)
 {
     section_heading(ctx, "default", "The Default Case");
 
-    element(ctx, "p").children([&] {
-        element(ctx, "code").text("\"{:/}\"");
+    p(ctx, [&] {
+        code(ctx, "\"{:/}\"");
         text_node(
             ctx,
             " as a pattern string by itself will match anything, so you can "
@@ -178,7 +178,7 @@ default_match_demo(demo_context ctx)
         router(ctx)
             .route("/about", [&] { p(ctx, "You've found the About page!"); })
             .route("{:/}", [&](auto path) {
-                element(ctx, "h4").text("404");
+                h4(ctx, "404");
                 p(ctx, path + " not found");
             });
         /// [default-case]
@@ -197,7 +197,7 @@ root_ui(html::context vanilla_ctx)
 {
     with_demo_context(vanilla_ctx, [&](auto ctx) {
         placeholder_root(ctx, "demos", [&] {
-            element(ctx, "h1").classes("mt-5 mb-3").text("alia/HTML Routing");
+            h1(ctx).classes("mt-5 mb-3").text("alia/HTML Routing");
 
             p(ctx,
               "The following is a demonstration of alia/HTML's hash-based "

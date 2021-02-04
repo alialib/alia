@@ -15,6 +15,15 @@ namespace bs = alia::html::bootstrap;
 /// [namespace]
 
 void
+text_demo(demo_context ctx)
+{
+    section_heading(ctx, "text", "Text");
+
+    h1(ctx, "Heading 1");
+    h1(ctx, "Heading 1");
+}
+
+void
 storage_demo(demo_context ctx)
 {
     section_heading(ctx, "storage", "Storage");
@@ -60,9 +69,7 @@ root_ui(html::context vanilla_ctx)
 {
     with_demo_context(vanilla_ctx, [&](auto ctx) {
         placeholder_root(ctx, "demos", [&] {
-            element(ctx, "h1")
-                .classes("mt-5 mb-3")
-                .text("alia/HTML Core Demos");
+            h1(ctx).classes("mt-5 mb-3").text("alia/HTML Core Demos");
 
             p(ctx,
               "The following demonstrate some of the core capabilities of "

@@ -34,7 +34,7 @@ struct internal_dropdown_handle
     element_handle
     heading(Text text)
     {
-        return element(ctx, "h6").class_("dropdown-header").text(text);
+        return h6(ctx).class_("dropdown-header").text(text);
     }
 };
 
