@@ -56,7 +56,7 @@ void
 create_as_element(element_object& object, char const* type);
 
 void
-create_as_text_node(element_object& object, char const* value);
+create_as_text(element_object& object, char const* value);
 
 void
 create_as_existing(element_object& object, emscripten::val node);
@@ -120,7 +120,7 @@ install_window_callback(
     std::function<void(emscripten::val)> function);
 
 void
-text_node(html::context ctx, readable<std::string> text);
+text(html::context ctx, readable<std::string> text);
 
 void
 do_element_attribute(
@@ -179,9 +179,9 @@ do_element_property(
 
 template<class Text>
 void
-text_node(html::context ctx, Text text)
+text(html::context ctx, Text text)
 {
-    detail::text_node(ctx, as_text(ctx, signalize(text)));
+    detail::text(ctx, as_text(ctx, signalize(text)));
 }
 
 struct element_handle_storage
@@ -361,7 +361,7 @@ struct regular_element_handle
     Derived&
     text(Text text)
     {
-        return children([&] { text_node(this->context(), text); });
+        return children([&] { html::text(this->context(), text); });
     }
 };
 
