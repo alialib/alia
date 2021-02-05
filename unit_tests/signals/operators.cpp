@@ -63,6 +63,13 @@ TEST_CASE("basic signal operators", "[signals][operators]")
     REQUIRE(is_false(!(value(2) == value(2))));
 }
 
+TEST_CASE("unary operator *", "[signals][operators]")
+{
+    auto x = value(std::optional<int>(2));
+    REQUIRE(is_true(*x == value(2)));
+    REQUIRE(is_false(*x + 1 == value(2)));
+}
+
 TEST_CASE("signal &&", "[signals][operators]")
 {
     REQUIRE(is_true(value(true) && value(true)));
