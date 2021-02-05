@@ -2,13 +2,14 @@
 
 namespace alia { namespace html {
 
-void
+input_handle&
 input_handle::on_enter(action<> on_enter)
 {
     this->callback("keyup", [&](emscripten::val& e) {
         if (e["key"].as<std::string>() == "Enter")
             perform_action(on_enter);
     });
+    return *this;
 }
 
 namespace detail {
@@ -96,12 +97,6 @@ element_handle
 button(html::context ctx, char const* text, action<> on_click)
 {
     return button(ctx, on_click).text(value(text));
-}
-
-element_handle
-div(context ctx, char const* class_name)
-{
-    return element(ctx, "div").attr("class", class_name);
 }
 
 }} // namespace alia::html
