@@ -38,99 +38,35 @@ p(html::context ctx, Content&& content)
     return element(ctx, "p").children(std::forward<Content>(content));
 }
 
-// code
-inline element_handle
-code(html::context ctx)
-{
-    return element(ctx, "code");
-}
-template<class Text>
-element_handle
-code(html::context ctx, Text text)
-{
-    return element(ctx, "code").text(text);
-}
+#define ALIA_HTML_DEFINE_TEXT_ELEMENT_INTERFACE(name)                         \
+    inline element_handle name(html::context ctx)                             \
+    {                                                                         \
+        return element(ctx, #name);                                           \
+    }                                                                         \
+    template<class Text>                                                      \
+    element_handle name(html::context ctx, Text text)                         \
+    {                                                                         \
+        return element(ctx, #name).text(text);                                \
+    }
 
-// pre
-inline element_handle
-pre(html::context ctx)
-{
-    return element(ctx, "pre");
-}
-template<class Text>
-element_handle
-pre(html::context ctx, Text text)
-{
-    return element(ctx, "pre").text(text);
-}
-
-// headings
-inline element_handle
-h1(html::context ctx)
-{
-    return element(ctx, "h1");
-}
-template<class Text>
-element_handle
-h1(html::context ctx, Text text)
-{
-    return element(ctx, "h1").text(text);
-}
-inline element_handle
-h2(html::context ctx)
-{
-    return element(ctx, "h2");
-}
-template<class Text>
-element_handle
-h2(html::context ctx, Text text)
-{
-    return element(ctx, "h2").text(text);
-}
-inline element_handle
-h3(html::context ctx)
-{
-    return element(ctx, "h3");
-}
-template<class Text>
-element_handle
-h3(html::context ctx, Text text)
-{
-    return element(ctx, "h3").text(text);
-}
-inline element_handle
-h4(html::context ctx)
-{
-    return element(ctx, "h4");
-}
-template<class Text>
-element_handle
-h4(html::context ctx, Text text)
-{
-    return element(ctx, "h4").text(text);
-}
-inline element_handle
-h5(html::context ctx)
-{
-    return element(ctx, "h5");
-}
-template<class Text>
-element_handle
-h5(html::context ctx, Text text)
-{
-    return element(ctx, "h5").text(text);
-}
-inline element_handle
-h6(html::context ctx)
-{
-    return element(ctx, "h6");
-}
-template<class Text>
-element_handle
-h6(html::context ctx, Text text)
-{
-    return element(ctx, "h6").text(text);
-}
+ALIA_HTML_DEFINE_TEXT_ELEMENT_INTERFACE(code)
+ALIA_HTML_DEFINE_TEXT_ELEMENT_INTERFACE(pre)
+ALIA_HTML_DEFINE_TEXT_ELEMENT_INTERFACE(h1)
+ALIA_HTML_DEFINE_TEXT_ELEMENT_INTERFACE(h2)
+ALIA_HTML_DEFINE_TEXT_ELEMENT_INTERFACE(h3)
+ALIA_HTML_DEFINE_TEXT_ELEMENT_INTERFACE(h4)
+ALIA_HTML_DEFINE_TEXT_ELEMENT_INTERFACE(h5)
+ALIA_HTML_DEFINE_TEXT_ELEMENT_INTERFACE(h6)
+ALIA_HTML_DEFINE_TEXT_ELEMENT_INTERFACE(b)
+ALIA_HTML_DEFINE_TEXT_ELEMENT_INTERFACE(strong)
+ALIA_HTML_DEFINE_TEXT_ELEMENT_INTERFACE(i)
+ALIA_HTML_DEFINE_TEXT_ELEMENT_INTERFACE(em)
+ALIA_HTML_DEFINE_TEXT_ELEMENT_INTERFACE(mark)
+ALIA_HTML_DEFINE_TEXT_ELEMENT_INTERFACE(small)
+ALIA_HTML_DEFINE_TEXT_ELEMENT_INTERFACE(del)
+ALIA_HTML_DEFINE_TEXT_ELEMENT_INTERFACE(ins)
+ALIA_HTML_DEFINE_TEXT_ELEMENT_INTERFACE(sub)
+ALIA_HTML_DEFINE_TEXT_ELEMENT_INTERFACE(sup)
 
 // INPUTS
 
