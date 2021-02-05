@@ -367,7 +367,7 @@ struct signal_mux : signal<
         if (!condition_.has_value())
             return null_id;
         id_ = combine_ids(
-            make_id(condition_.read()),
+            make_id(condition_.read() ? true : false),
             condition_.read() ? ref(t_.value_id()) : ref(f_.value_id()));
         return id_;
     }
