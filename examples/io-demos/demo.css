@@ -17,6 +17,10 @@ input {
     margin: 4px 2px 8px;
 }
 
+b {
+    font-weight: bold;
+}
+
 p {
     margin: 12px 0px 8px;
 }
