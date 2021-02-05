@@ -2,8 +2,7 @@ Assorted Examples
 =================
 
 <script>
-    init_alia_demos(['tip-calculator-demo',
-        'for-each-map-demo', 'fetch-country', 'time-signal',
+    init_alia_demos(['tip-calculator-demo', 'for-each-map-demo', 'time-signal',
         'number-smoothing', 'color-smoothing', 'factor-tree']);
 </script>
 
@@ -53,19 +52,6 @@ the calls to `factor_tree`.
 
 <div class="demo-panel">
 <div id="factor-tree"></div>
-</div>
-
-Asynchronous I/O
-----------------
-
-This shows an example of using `alia::async()` to integrate an asynchronous API.
-In this case, we're using Emscripten's fetch API to remotely look up country
-names on [REST Countries](https://restcountries.eu).
-
-[source](fetch.cpp ':include :fragment=fetch-country')
-
-<div class="demo-panel">
-<div id="fetch-country"></div>
 </div>
 
 Timing Signals
