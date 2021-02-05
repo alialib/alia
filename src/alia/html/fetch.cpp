@@ -73,32 +73,6 @@ handle_fetch_response(emscripten_fetch_t* fetch)
 }
 
 void
-handle_fetch_error(emscripten_fetch_t* fetch)
-{
-    std::shared_ptr<scoped_emscripten_fetch> fetch_ownership(
-        new scoped_emscripten_fetch(fetch));
-
-    // Grab our data from the Emscripten fetch object and assume ownership of
-    // it.
-    std::unique_ptr<fetch_user_data> data(
-        reinterpret_cast<fetch_user_data*>(fetch->userData));
-
-    // Construct the response.
-    http_response response;
-    response.status_code = fetch->status;
-    response.body = blob{fetch->data, fetch->numBytes, fetch_ownership};
-
-    try
-    {
-        throw http_error{data->request, response};
-    }
-    catch (...)
-    {
-        data->reporter.report_failure(std::current_exception());
-    }
-}
-
-void
 launch_fetch_operation(
     alia::dataless_context ctx,
     async_reporter<http_response> reporter,
@@ -106,9 +80,16 @@ launch_fetch_operation(
 {
     emscripten_fetch_attr_t attr;
     emscripten_fetch_attr_init(&attr);
+
     attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
+
     attr.onsuccess = handle_fetch_response;
-    attr.onerror = handle_fetch_error;
+    // Emscripten doesn't seem to have a way to distinguish between actual
+    // network errors and HTTP status codes outside the 2xx range, so I think
+    // the best approach for now is to just send back all responses as part of
+    // the normal data flow and let the application handle non-2xx codes how it
+    // sees fit.
+    attr.onerror = handle_fetch_response;
 
     std::unique_ptr<fetch_user_data> user_data(new fetch_user_data);
     user_data->request = request;
