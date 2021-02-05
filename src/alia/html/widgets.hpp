@@ -64,6 +64,7 @@ ALIA_HTML_DEFINE_TEXT_ELEMENT_INTERFACE(del)
 ALIA_HTML_DEFINE_TEXT_ELEMENT_INTERFACE(ins)
 ALIA_HTML_DEFINE_TEXT_ELEMENT_INTERFACE(sub)
 ALIA_HTML_DEFINE_TEXT_ELEMENT_INTERFACE(sup)
+ALIA_HTML_DEFINE_TEXT_ELEMENT_INTERFACE(label)
 
 // INPUTS
 
@@ -71,9 +72,26 @@ struct input_handle : regular_element_handle<input_handle>
 {
     using regular_element_handle::regular_element_handle;
 
+    // Add placeholder text.
+    template<class Text>
+    input_handle&
+    placeholder(Text text)
+    {
+        attr("placeholder", text);
+        return *this;
+    }
+
+    // Set the autofocus attribute.
+    input_handle&
+    autofocus()
+    {
+        attr("autofocus");
+        return *this;
+    }
+
     // Define an action to be performed when the Enter key is pressed on the
     // input.
-    void
+    input_handle&
     on_enter(action<> on_enter);
 };
 
@@ -131,19 +149,35 @@ link(html::context ctx, Text text, Href href)
     return detail::link(ctx, signalize(text), signalize(href));
 }
 
-// DIVS
+// CONTAINERS
 
-// div with a class - You supply the content (if any).
-element_handle
-div(context ctx, char const* class_name);
+#define ALIA_HTML_DEFINE_CONTAINER_ELEMENT_INTERFACE(name)                    \
+    inline element_handle name(context ctx)                                   \
+    {                                                                         \
+        return element(ctx, #name);                                           \
+    }                                                                         \
+    template<class Classes>                                                   \
+    inline element_handle name(context ctx, Classes classes)                  \
+    {                                                                         \
+        return element(ctx, #name).attr("class", classes);                    \
+    }                                                                         \
+    template<class Classes, class Content>                                    \
+    element_handle name(context ctx, Classes classes, Content&& content)      \
+    {                                                                         \
+        return name(ctx, classes).children(std::forward<Content>(content));   \
+    }
 
-// div with a class and content
-template<class Children>
-element_handle
-div(context ctx, char const* class_name, Children&& children)
-{
-    return div(ctx, class_name).children(std::forward<Children>(children));
-}
+ALIA_HTML_DEFINE_CONTAINER_ELEMENT_INTERFACE(header)
+ALIA_HTML_DEFINE_CONTAINER_ELEMENT_INTERFACE(footer)
+ALIA_HTML_DEFINE_CONTAINER_ELEMENT_INTERFACE(div)
+ALIA_HTML_DEFINE_CONTAINER_ELEMENT_INTERFACE(span)
+ALIA_HTML_DEFINE_CONTAINER_ELEMENT_INTERFACE(nav)
+ALIA_HTML_DEFINE_CONTAINER_ELEMENT_INTERFACE(article)
+ALIA_HTML_DEFINE_CONTAINER_ELEMENT_INTERFACE(section)
+ALIA_HTML_DEFINE_CONTAINER_ELEMENT_INTERFACE(aside)
+ALIA_HTML_DEFINE_CONTAINER_ELEMENT_INTERFACE(ul)
+ALIA_HTML_DEFINE_CONTAINER_ELEMENT_INTERFACE(ol)
+ALIA_HTML_DEFINE_CONTAINER_ELEMENT_INTERFACE(li)
 
 // div as an RAII container
 struct scoped_div : scoped_element_base<scoped_div>
