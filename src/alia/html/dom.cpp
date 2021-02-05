@@ -23,7 +23,7 @@ create_as_element(element_object& object, char const* type)
 }
 
 void
-create_as_text_node(element_object& object, char const* value)
+create_as_text(element_object& object, char const* value)
 {
     assert(object.asmdom_id == 0);
 #ifdef ALIA_HTML_LOGGING
@@ -282,18 +282,18 @@ install_element_callback(
     asmdom::direct::setCallback(object.asmdom_id, event_type, callback);
 }
 
-struct text_node_data
+struct text_data
 {
     tree_node<element_object> node;
     captured_id value_id;
 };
 
 void
-text_node(html::context ctx, readable<std::string> text)
+text(html::context ctx, readable<std::string> text)
 {
-    text_node_data* data;
+    text_data* data;
     if (get_cached_data(ctx, &data))
-        create_as_text_node(data->node.object, "");
+        create_as_text(data->node.object, "");
     if (is_refresh_event(ctx))
     {
         refresh_tree_node(get<tree_traversal_tag>(ctx), data->node);

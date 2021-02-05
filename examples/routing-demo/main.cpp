@@ -63,12 +63,12 @@ parameters_demo(demo_context ctx)
     section_heading(ctx, "parameters", "Route Parameters");
 
     p(ctx, [&] {
-        text_node(
+        text(
             ctx,
             "Routes can include parameters. "
             "These are represented by the token ");
         code(ctx, "{}");
-        text_node(ctx, " in the pattern string.");
+        text(ctx, " in the pattern string.");
     });
 
     p(ctx,
@@ -110,17 +110,16 @@ subpaths_demo(demo_context ctx)
     section_heading(ctx, "subpaths", "Subpaths");
 
     p(ctx, [&] {
-        text_node(ctx, "While ");
+        text(ctx, "While ");
         code(ctx, "{}");
-        text_node(
-            ctx, " will only match one level in the route path, the token ");
+        text(ctx, " will only match one level in the route path, the token ");
         code(ctx, "{:/}");
-        text_node(
+        text(
             ctx,
             " can match multiple levels (i.e., the string that it matches can "
             "include the ");
         code(ctx, "/");
-        text_node(ctx, " character.");
+        text(ctx, " character.");
     });
 
     p(ctx,
@@ -164,7 +163,7 @@ default_match_demo(demo_context ctx)
 
     p(ctx, [&] {
         code(ctx, "\"{:/}\"");
-        text_node(
+        text(
             ctx,
             " as a pattern string by itself will match anything, so you can "
             "use it at the end of your router to catch anything that wasn't "

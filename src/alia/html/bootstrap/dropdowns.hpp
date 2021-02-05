@@ -60,7 +60,7 @@ dropdown_button(
     function_view<void(internal_dropdown_handle&)> const& content)
 {
     return detail::dropdown_button(
-        ctx, signalize(style), [&] { text_node(ctx, label); }, content);
+        ctx, signalize(style), [&] { text(ctx, label); }, content);
 }
 
 template<class Style>
@@ -72,7 +72,7 @@ dropdown_button(
     function_view<void(internal_dropdown_handle&)> const& content)
 {
     return detail::dropdown_button(
-        ctx, signalize(style), [&] { text_node(ctx, label); }, content);
+        ctx, signalize(style), [&] { text(ctx, label); }, content);
 }
 
 template<class Style>

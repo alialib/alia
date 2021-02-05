@@ -62,7 +62,7 @@ link(html::context ctx, readable<std::string> text, action<> on_click)
     return element(ctx, "a")
         .attr("href", "javascript: void(0);")
         .attr("disabled", on_click.is_ready() ? "false" : "true")
-        .children([&] { text_node(ctx, text); })
+        .text(text)
         .callback("click", [&](emscripten::val) { perform_action(on_click); });
 }
 
@@ -72,7 +72,7 @@ link(html::context ctx, readable<std::string> text, readable<std::string> href)
     return element(ctx, "a")
         .attr("href", href)
         .attr("disabled", href.has_value() ? "false" : "true")
-        .children([&] { text_node(ctx, text); });
+        .text(text);
 }
 
 } // namespace detail

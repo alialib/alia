@@ -18,9 +18,6 @@ void
 text_demo(demo_context ctx)
 {
     section_heading(ctx, "text", "Text");
-
-    h1(ctx, "Heading 1");
-    h1(ctx, "Heading 1");
 }
 
 void
