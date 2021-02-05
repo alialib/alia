@@ -158,6 +158,14 @@ TEST_CASE("signal select", "[signals][operators]")
     REQUIRE(original_id.get() != s.value_id());
 }
 
+TEST_CASE("non-boolean signal select", "[signals][operators]")
+{
+    auto x = value(std::optional<int>(2));
+    REQUIRE(is_true(conditional(x, *x, value(0)) == value(2)));
+    auto y = value(std::optional<int>());
+    REQUIRE(is_true(conditional(y, *y, value(0)) == value(0)));
+}
+
 TEST_CASE("select with different capabilities", "[signals][operators]")
 {
     bool condition = false;
