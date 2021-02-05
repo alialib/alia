@@ -14,19 +14,16 @@ hr(html::context ctx)
 
 // TEXT
 
+// paragraph element by itself
 inline element_handle
 p(html::context ctx)
 {
     return element(ctx, "p");
 }
 // paragraph w/text
-inline element_handle
-p(html::context ctx, readable<std::string> text)
-{
-    return element(ctx, "p").text(text);
-}
-inline element_handle
-p(html::context ctx, char const* text)
+template<class Text>
+std::enable_if_t<!std::is_invocable_v<Text>, element_handle>
+p(html::context ctx, Text text)
 {
     return element(ctx, "p").text(text);
 }
