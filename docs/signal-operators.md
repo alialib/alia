@@ -12,7 +12,7 @@ All the basic binary operators are provided:
 
 `+` `-` `*` `/` `%` `^` `&` `|` `<<` `>>` `==` `!=` `<` `<=` `>` `>=`
 
-The unary operators `-` and `!` are also provided.
+The unary operators `-`, `*` and `!` are also provided.
 
 Logical Operators
 -----------------
