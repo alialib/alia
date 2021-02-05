@@ -55,10 +55,10 @@ void
 country_name_lookup_ui(html::context ctx)
 {
     auto country_code = get_state(ctx, "us");
-    html::p(ctx, "Enter a country code:");
-    html::input(ctx, country_code);
+    p(ctx, "Enter a country code:");
+    input(ctx, country_code);
     auto name = fetch_country_name(ctx, country_code);
-    html::p(ctx,
+    p(ctx,
         add_default(
             deflicker(ctx, conditional(name, *name, "Not found")),
             "Fetching..."));
