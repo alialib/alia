@@ -27,7 +27,7 @@ is_false(Signal const& x)
     return signal_has_value(x) && !read_signal(x);
 }
 
-TEST_CASE("basic signal operators", "[signals][operators][operators]")
+TEST_CASE("basic signal operators", "[signals][operators]")
 {
     REQUIRE(is_true(value(2) == value(2)));
     REQUIRE(is_false(value(6) == value(2)));
@@ -63,7 +63,7 @@ TEST_CASE("basic signal operators", "[signals][operators][operators]")
     REQUIRE(is_false(!(value(2) == value(2))));
 }
 
-TEST_CASE("signal &&", "[signals][operators][operators]")
+TEST_CASE("signal &&", "[signals][operators]")
 {
     REQUIRE(is_true(value(true) && value(true)));
     REQUIRE(is_false(value(true) && value(false)));
