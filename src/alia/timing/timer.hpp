@@ -17,14 +17,14 @@ struct timer_data
     millisecond_count expected_trigger_time;
 };
 
-struct raw_timer
+struct timer
 {
-    raw_timer(context ctx) : ctx_(ctx)
+    timer(context ctx) : ctx_(ctx)
     {
         get_cached_data(ctx, &data_);
         update();
     }
-    raw_timer(dataless_context ctx, timer_data& data) : ctx_(ctx), data_(&data)
+    timer(dataless_context ctx, timer_data& data) : ctx_(ctx), data_(&data)
     {
         update();
     }
@@ -58,6 +58,23 @@ struct raw_timer
     timer_data* data_;
     bool triggered_;
 };
+
+namespace actions {
+
+inline auto
+start(timer& timer)
+{
+    return callback(
+        [&](millisecond_count duration) { timer.start(duration); });
+}
+
+inline auto
+stop(timer& timer)
+{
+    return callback([&]() { timer.stop(); });
+}
+
+} // namespace actions
 
 } // namespace alia
 

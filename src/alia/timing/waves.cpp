@@ -20,7 +20,7 @@ square_wave(
 {
     auto& data = get_cached_data<square_wave_data>(ctx);
 
-    raw_timer timer(ctx, data.timer);
+    timer timer(ctx, data.timer);
 
     if (timer.is_triggered())
         data.value = !data.value;
