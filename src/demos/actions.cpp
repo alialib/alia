@@ -145,7 +145,7 @@ alia_end
 
 html::p(ctx, "Enter a duration in milliseconds:");
 html::input(ctx, duration);
-html::button(ctx, "Start", timer.start() << duration);
+html::button(ctx, "Start", actions::start(timer) << duration);
 /// [action-binding]
     // clang-format on
 }
