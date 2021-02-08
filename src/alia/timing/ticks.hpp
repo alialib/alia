@@ -46,14 +46,14 @@ struct animation_timer_state
     millisecond_count end_tick;
 };
 
-struct raw_animation_timer
+struct animation_timer
 {
-    raw_animation_timer(context ctx) : ctx_(ctx)
+    animation_timer(context ctx) : ctx_(ctx)
     {
         get_cached_data(ctx, &state_);
         update();
     }
-    raw_animation_timer(dataless_context ctx, animation_timer_state& state)
+    animation_timer(dataless_context ctx, animation_timer_state& state)
         : ctx_(ctx), state_(&state)
     {
         update();
@@ -96,35 +96,16 @@ struct raw_animation_timer
     millisecond_count ticks_left_;
 };
 
-struct animation_timer
-{
-    animation_timer(context ctx) : raw_(ctx)
-    {
-    }
-    animation_timer(dataless_context ctx, animation_timer_state& state)
-        : raw_(ctx, state)
-    {
-    }
-    auto
-    is_active() const
-    {
-        return value(raw_.is_active());
-    }
-    auto
-    ticks_left() const
-    {
-        return value(raw_.ticks_left());
-    }
-    auto
-    start()
-    {
-        return callback(
-            [&](millisecond_count duration) { raw_.start(duration); });
-    }
+namespace actions {
 
- private:
-    raw_animation_timer raw_;
-};
+inline auto
+start(animation_timer& timer)
+{
+    return callback(
+        [&](millisecond_count duration) { timer.start(duration); });
+}
+
+} // namespace actions
 
 } // namespace alia
 

@@ -45,7 +45,7 @@ restart_timer(
 }
 
 void
-raw_timer::update()
+timer::update()
 {
     triggered_ = data_->active && detect_timer_event(ctx_, *data_);
     if (triggered_)
@@ -56,7 +56,7 @@ raw_timer::update()
 }
 
 void
-raw_timer::start(unsigned duration)
+timer::start(unsigned duration)
 {
     if (triggered_)
         restart_timer(ctx_, *data_, duration);

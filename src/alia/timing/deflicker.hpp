@@ -96,7 +96,7 @@ deflicker(
 {
     auto delay_signal = signalize(delay);
 
-    raw_timer timer(ctx, data.timer);
+    timer timer(ctx, data.timer);
     if (timer.is_triggered())
     {
         // If the timer is triggered, it means we were holding a stale value

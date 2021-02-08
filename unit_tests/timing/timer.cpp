@@ -22,7 +22,7 @@ struct testing_external_interface : default_external_interface
     }
 };
 
-TEST_CASE("raw_timer", "[timing][timer]")
+TEST_CASE("timer", "[timing][timer]")
 {
     alia::system sys;
     auto* external_ptr = new testing_external_interface(sys);
@@ -31,7 +31,7 @@ TEST_CASE("raw_timer", "[timing][timer]")
     auto& external = *external_ptr;
 
     do_traversal(sys, [&](context ctx) {
-        raw_timer timer(ctx);
+        timer timer(ctx);
         REQUIRE(!timer.is_active());
         REQUIRE(!timer.is_triggered());
         timer.start(100);
@@ -40,7 +40,7 @@ TEST_CASE("raw_timer", "[timing][timer]")
     auto count_timer_events = [&]() {
         int event_count = 0;
         sys.controller = [&](context ctx) {
-            raw_timer timer(ctx);
+            timer timer(ctx);
             if (timer.is_triggered())
                 ++event_count;
         };
@@ -56,7 +56,7 @@ TEST_CASE("raw_timer", "[timing][timer]")
 
     external.tick_count = 120;
     do_traversal(sys, [&](context ctx) {
-        raw_timer timer(ctx);
+        timer timer(ctx);
         REQUIRE(!timer.is_active());
         REQUIRE(!timer.is_triggered());
         timer.start(50);
@@ -66,7 +66,7 @@ TEST_CASE("raw_timer", "[timing][timer]")
     do_traversal(sys, [&](context ctx) {
         timer_data* data;
         get_cached_data(ctx, &data);
-        raw_timer timer(ctx, *data);
+        timer timer(ctx, *data);
         REQUIRE(timer.is_active());
         REQUIRE(!timer.is_triggered());
     });
@@ -79,7 +79,7 @@ TEST_CASE("raw_timer", "[timing][timer]")
 
     external.tick_count = 200;
     do_traversal(sys, [&](context ctx) {
-        raw_timer timer(ctx);
+        timer timer(ctx);
         REQUIRE(!timer.is_active());
         REQUIRE(!timer.is_triggered());
         timer.start(100);
@@ -87,15 +87,15 @@ TEST_CASE("raw_timer", "[timing][timer]")
 
     external.tick_count = 210;
     do_traversal(sys, [&](context ctx) {
-        raw_timer timer(ctx);
+        timer timer(ctx);
         REQUIRE(timer.is_active());
         REQUIRE(!timer.is_triggered());
-        timer.stop();
+        perform_action(actions::stop(timer));
     });
 
     external.tick_count = 220;
     do_traversal(sys, [&](context ctx) {
-        raw_timer timer(ctx);
+        timer timer(ctx);
         REQUIRE(!timer.is_active());
         REQUIRE(!timer.is_triggered());
     });
@@ -105,16 +105,16 @@ TEST_CASE("raw_timer", "[timing][timer]")
 
     external.tick_count = 350;
     do_traversal(sys, [&](context ctx) {
-        raw_timer timer(ctx);
+        timer timer(ctx);
         REQUIRE(!timer.is_active());
         REQUIRE(!timer.is_triggered());
-        timer.start(100);
+        perform_action(actions::start(timer) << 100);
     });
 
     auto count_and_restart = [&]() {
         int event_count = 0;
         sys.controller = [&](context ctx) {
-            raw_timer timer(ctx);
+            timer timer(ctx);
             if (timer.is_triggered())
             {
                 ++event_count;
@@ -133,7 +133,7 @@ TEST_CASE("raw_timer", "[timing][timer]")
 
     external.tick_count = 520;
     do_traversal(sys, [&](context ctx) {
-        raw_timer timer(ctx);
+        timer timer(ctx);
         REQUIRE(timer.is_active());
         REQUIRE(!timer.is_triggered());
     });
@@ -145,7 +145,7 @@ TEST_CASE("raw_timer", "[timing][timer]")
 
     external.tick_count = 555;
     do_traversal(sys, [&](context ctx) {
-        raw_timer timer(ctx);
+        timer timer(ctx);
         REQUIRE(!timer.is_active());
         REQUIRE(!timer.is_triggered());
     });
