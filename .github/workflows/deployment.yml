@@ -3,7 +3,7 @@ name: Deployment
 on:
   push:
     branches:
-      - master
+      - main
 
 env:
   EM_VERSION: 1.39.18
