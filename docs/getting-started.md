@@ -19,7 +19,7 @@ asset to every release in GitHub. You can download the latest release here:
 
 https://github.com/tmadden/alia/releases/latest/download/alia.hpp
 
-If you want to play around with the latest version on the `master` branch, that
+If you want to play around with the latest version on the `main` branch, that
 header is available via GitHub Pages:
 
 https://alia.dev/alia.hpp

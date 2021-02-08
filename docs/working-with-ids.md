@@ -109,4 +109,4 @@ process_id(my_persistent_data& data, id_interface const& id, ...)
 
 The full definition of `captured_id` (and everything else mentioned on this
 page) can be found in
-[id.hpp](https://github.com/tmadden/alia/blob/master/src/alia/id.hpp).
+[id.hpp](https://github.com/tmadden/alia/blob/main/src/alia/id.hpp).
