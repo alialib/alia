@@ -95,10 +95,8 @@ TEST_CASE("animation_timer", "[timing][ticks]")
 
     do_traversal(sys, [&](context ctx) {
         animation_timer timer(ctx);
-        auto active = timer.is_active();
-        REQUIRE(signal_has_value(active));
-        REQUIRE(!read_signal(active));
-        auto start = timer.start() << 100;
+        REQUIRE(!timer.is_active());
+        auto start = actions::start(timer) << 100;
         REQUIRE(action_is_ready(start));
         perform_action(start);
     });
@@ -111,12 +109,8 @@ TEST_CASE("animation_timer", "[timing][ticks]")
         animation_timer_state* state;
         get_cached_data(ctx, &state);
         animation_timer timer(ctx, *state);
-        auto active = timer.is_active();
-        REQUIRE(signal_has_value(active));
-        REQUIRE(read_signal(active));
-        auto ticks = timer.ticks_left();
-        REQUIRE(signal_has_value(ticks));
-        REQUIRE(read_signal(ticks) == 90);
+        REQUIRE(timer.is_active());
+        REQUIRE(timer.ticks_left() == 90);
     });
 
     REQUIRE(system_needs_refresh(sys));
@@ -125,9 +119,7 @@ TEST_CASE("animation_timer", "[timing][ticks]")
 
     do_traversal(sys, [&](context ctx) {
         animation_timer timer(ctx);
-        auto active = timer.is_active();
-        REQUIRE(signal_has_value(active));
-        REQUIRE(!read_signal(active));
+        REQUIRE(!timer.is_active());
     });
 
     REQUIRE(!system_needs_refresh(sys));
