@@ -177,34 +177,6 @@ EMSCRIPTEN_BINDINGS(callback_proxy)
         "callback_proxy", &callback_proxy, emscripten::allow_raw_pointers());
 };
 
-void
-install_onpopstate_callback(
-    std::function<void(emscripten::val)> const* function)
-{
-    EM_ASM(
-        {
-            window.onpopstate = function(event)
-            {
-                Module.callback_proxy($0, event);
-            };
-        },
-        reinterpret_cast<std::uintptr_t>(function));
-}
-
-void
-install_onhashchange_callback(
-    std::function<void(emscripten::val)> const* function)
-{
-    EM_ASM(
-        {
-            window.onhashchange = function()
-            {
-                Module.callback_proxy($0, null);
-            };
-        },
-        reinterpret_cast<std::uintptr_t>(function));
-}
-
 window_callback::~window_callback()
 {
     if (this->installed)

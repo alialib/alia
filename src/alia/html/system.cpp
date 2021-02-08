@@ -114,12 +114,13 @@ enable_hash_monitoring(html::system& sys)
     update_location_hash(sys);
     refresh_system(sys.alia_system);
     // Install monitors.
-    sys.onhashchange = [&sys](emscripten::val) {
+    auto onhashchange = [&sys](emscripten::val) {
         update_location_hash(sys);
         refresh_system(sys.alia_system);
     };
-    detail::install_onhashchange_callback(&sys.onhashchange);
-    detail::install_onpopstate_callback(&sys.onhashchange);
+    detail::install_window_callback(
+        sys.hashchange, "hashchange", onhashchange);
+    detail::install_window_callback(sys.popstate, "popstate", onhashchange);
 }
 
 }} // namespace alia::html

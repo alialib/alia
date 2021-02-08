@@ -96,14 +96,6 @@ install_element_callback(
     callback_data& data,
     char const* event_type);
 
-void
-install_onpopstate_callback(
-    std::function<void(emscripten::val)> const* function);
-
-void
-install_onhashchange_callback(
-    std::function<void(emscripten::val)> const* function);
-
 struct window_callback : noncopyable
 {
     ~window_callback();
