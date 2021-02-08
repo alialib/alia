@@ -141,20 +141,18 @@ containers and map-like associative containers are supported:
 
 * **Sequence Containers**
 
-  `f` is invoked as `f(ctx, item)`, where `ctx` is the same context passed into
-  `transform` and `item` is a *signal* carrying the individual item to be
-  transformed. It should return a *signal* carrying the result of transforming
-  `item`.
+  `f` is invoked as `f(item)`, where `item` is a *signal* carrying the
+  individual item to be transformed. It should return a *signal* carrying the
+  result of transforming `item`.
 
   The return value of `transform` is a signal carrying a `std::vector` with the
   transformed items.
 
 * **Map-Like Containers**
 
-  `f` is invoked as `f(ctx, key, value)`, where `ctx` is the same context passed
-  into `transform` and `key` and `value` are *signals* carrying the individual
-  key and value to be transformed. It should return a *signal* carrying the
-  transformed value.
+  `f` is invoked as `f(key, value)`, where `key` and `value` are *signals*
+  carrying the individual key and value to be transformed. It should return a
+  *signal* carrying the transformed value.
 
   The return value of `transform` is a signal carrying a `std::map` with the
   *original keys* mapped to the *transformed values.*
@@ -170,7 +168,7 @@ all items are successfully transformed), `f` will continue to be invoked
 whenever necessary to allow events to be delivered and changes to propagate.
 
 `transform` follows the same item/data association rules as
-[for_each](loops.md#for_each).
+[for_each](tracking.md#for_each).
 
 </dd>
 
@@ -215,6 +213,5 @@ And now the 'single `apply`' version:
 
 Of course, given that this is a contrived example and `is_prime` is a fairly
 cheap function to call, it doesn't make much difference which way we do it, but
-in real world applications where you might be retrieving data from remote
-sources or doing computationally-intensive background calculations, the
-difference can be significant.
+in real world applications with more intensive workloads, the difference can be
+significant.

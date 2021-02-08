@@ -112,23 +112,48 @@ for_each
 --------
 
 `for_each` is the preferred way to loop over containers in alia. It takes care
-of flow tracking for you, and it operates on signals: you pass in the container
-as a signal, and it passes items back to you as signals.
+of flow tracking for you, and it can operate directly on signals, allowing you
+to pass in the container as a signal and efficiently get access to the
+individual items as signals as well.
 
 <dl>
 
-<dt>for_each(ctx, container, f)</dt><dd>
+<dt>for_each(ctx, container, body)</dt><dd>
 
-Invoke `f` for each item in `container`. (`container` must be a signal.)
+Invoke `body` for each item in `container`.
 
-If `container` carries a map-like container (i.e., a container that associates
-keys with values), `f` is invoked as `f(ctx, key, value)`, where `key` and
-`value` are both signals.
+`container` can be any of the following:
 
-Otherwise, `f` is invoked as `f(ctx, item)`, where `item` is a signal.
+* a signal carrying a container (e.g., `alia::duplex<std::vector<int>>`)
+* a raw container carrying individual signals
+  (e.g., `std::vector<alia::duplex<int>>`)
+* a raw container (e.g., `std::vector<int>`)
 
-In either case, `ctx` is the original context passed to `for_each` (and has the
-same contents).
+The container can be either a map-like container (i.e., a container that
+associates keys with values) or a sequence-like container (e.g., `std::vector`,
+`std::list`, etc.).
+
+`body` is a lambda function representing the body of your loop.
+
+For map-like containers, `body` is invoked as `body([nc,] key, value)`, where:
+
+* `nc` is an *optional* parameter of type `naming_context&`. If you add this
+  parameter to your body, it means that the code in your body is assuming
+  responsibility for establishing a unique ID for each item in your container.
+  Your body must establish a [named_block](#named_block) within this context.
+* `key` is a signal carrying the key associated with the current the item.
+* `value` is a signal carrying the value associated with the current the item.
+
+For sequence-like containers, `body` is invoked as `body([nc,] [index,] item)`,
+where:
+
+* `nc` is an *optional* parameter of type `naming_context&`. If you add this
+  parameter to your body, it means that the code in your body is assuming
+  responsibility for establishing a unique ID for each item in your container.
+  Your body must establish a [named_block](#named_block) within this context.
+* `index` is an *optional* parameter of type `size_t` that gives you the
+  0-based index of the current iteration.
+* `item` is a signal carrying the current item.
 
 </dd>
 
@@ -153,20 +178,23 @@ data:
 
 ### Item/Data Associations
 
-`for_each` tries to do a reasonable job of associating items consistently with
-the same nodes in the data graph, even if those items move around within the
-container. For map-like containers, it identifies items by their key. For lists,
-it uses the address of the item, which is stable. Otherwise, it simply uses the
-index, which of course isn't stable.
+If your body function *doesn't* accept an `nc` parameter as its first argument,
+you are leaving `for_each` in charge of establishing a consistent association
+between the items in your container and the nodes in the data graph.
 
-If you use `for_each` on a `std::vector` where items can move around, *the
-underlying data associated with each item will change when the item moves.*
-Depending on what you're associating with your items, the effects of this can
-vary from slight inefficiencies to complete discontinuities in your interface.
+Where it can, it will try to use the properties of the container to create a
+stable association. For map-like containers, it identifies items by their key.
+For `std::list` containers, it uses the address of the item, which is stable.
 
-You can override the default association by defining a `get_alia_item_id` function
-for your item's type. (It should be accessible from within the `alia` namespace,
-either via [argument-dependent
+Otherwise, it simply uses the index, which of course isn't stable. If you use
+`for_each` on a `std::vector` where items can move around, *the underlying data
+associated with each item will change when the item moves.* Depending on what
+you're associating with your items, the effects of this can vary from slight
+inefficiencies to complete discontinuities in your interface.
+
+You can override the default association by defining a `get_alia_item_id`
+function for your item's type. (It should be accessible from within the `alia`
+namespace, either via [argument-dependent
 lookup](https://en.cppreference.com/w/cpp/language/adl) or because it's defined
 there.) It should take the item as a parameter and return an alia ID. (See
 [Working with IDs](working-with-ids.md).) It can also return `null_id` to fall
