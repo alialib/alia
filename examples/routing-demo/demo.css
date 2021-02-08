@@ -4,6 +4,9 @@
     border-left: 2px solid #659bf1;
     margin: 8px 0px;
 }
+.routed-content {
+    min-height: 120px;
+}
 
 .demo-panel .btn {
     margin: 2px 2px;
