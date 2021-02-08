@@ -142,7 +142,7 @@ void
 scoreboard(html::context ctx, duplex<std::map<std::string, int>> scores)
 {
     alia::for_each(ctx, scores,
-        [](auto ctx, auto player, auto score) {
+        [&](auto player, auto score) {
             html::scoped_div div(ctx, "item");
             html::element(ctx, "h4").text(player);
             html::p(ctx, alia::printf(ctx, "%d points", score));
@@ -163,7 +163,8 @@ init_demo(std::string dom_id)
 {
     static html::system the_system;
 
-    static std::map<std::string, int> the_scores = {{"Karen", 5}, {"Tom", 2}};
+    static std::map<std::string, int> the_scores
+        = {{"Calvin", 5}, {"Hobbes", 2}};
 
     initialize(the_system, dom_id, [&](html::context ctx) {
         scoreboard(ctx, direct(the_scores));
@@ -188,7 +189,7 @@ void
 scoreboard(html::context ctx, duplex<std::vector<player>> players)
 {
     alia::for_each(ctx, players,
-        [](auto ctx, auto player) {
+        [&](auto player) {
             html::scoped_div div(ctx, "item");
             html::element(ctx, "h4").text(alia_field(player, name));
             html::p(ctx,
@@ -217,7 +218,8 @@ init_demo(std::string dom_id)
             get_state(ctx,
                 lambda_constant(
                     []() {
-                        return std::vector<player>{{"Karen", 5}, {"Tom", 2}};
+                        return std::vector<player>{
+                            {"Calvin", 5}, {"Hobbes", 2}};
                     })));
     });
 }
@@ -255,11 +257,13 @@ records_ui(html::context ctx, std::vector<my_record>& records)
         html::input(ctx, direct(record.x));
         html::input(ctx, direct(record.y));
 
-        // Just to demonstrate that each record is associated with the same data
-        // block, we'll get some local state here. Feel free to type something
-        // in here and shuffle the records to see what happens...
+        // Just to demonstrate that each record is associated with the same
+        // data block, we'll add some randomly initialized local state here.
+        // Feel free to enter another integer in here and shuffle the records
+        // to see what happens...
         html::p(ctx, "Local UI state associated with this record:");
-        html::input(ctx, alia::get_state(ctx, ""));
+        html::input(ctx,
+            alia::get_state(ctx, lambda_constant([] { return rand() % 100; })));
     }
 
     html::button(ctx, "Shuffle!",

@@ -65,12 +65,12 @@ html::p(ctx, "Enter some numbers:");
 
 // Provide an input box for each number.
 alia::for_each(ctx, numbers,
-    [ ](auto ctx, auto n) { html::input(ctx, n); });
+    [&](auto n) { html::input(ctx, n); });
 
 // Transform the vector of numbers to a vector of bools, indicating whether or
 // not each number is prime.
 auto prime_flags = alia::transform(ctx, numbers,
-    [&](auto ctx, auto n) { return alia::apply(ctx, is_prime, n); });
+    [&](auto n) { return alia::apply(ctx, is_prime, n); });
 
 // Count the number of true values.
 auto prime_count = alia::apply(ctx,
@@ -111,10 +111,11 @@ demo_ui(html::context ctx)
 
     html::p(ctx, "Enter some numbers:");
 
-    alia::for_each(
-        ctx, numbers, [](auto ctx, auto n) { html::input(ctx, n); });
+    alia::for_each(ctx, numbers, [&](auto n) { html::input(ctx, n); });
 
-    auto prime_flags = alia::transform(ctx, numbers, lift(counting_is_prime));
+    auto prime_flags = alia::transform(ctx, numbers, [&](auto n) {
+        return alia::apply(ctx, counting_is_prime, n);
+    });
 
     auto prime_count = alia::apply(
         ctx,
@@ -154,7 +155,7 @@ auto numbers = alia::get_state(
 html::p(ctx, "Enter some numbers:");
 
 alia::for_each(ctx, numbers,
-    [ ](auto ctx, auto n) { html::input(ctx, n); });
+    [&](auto n) { html::input(ctx, n); });
 
 /// [direct-counting]
 auto prime_count = alia::apply(ctx,
@@ -195,8 +196,7 @@ demo_ui(html::context ctx)
 
     html::p(ctx, "Enter some numbers:");
 
-    alia::for_each(
-        ctx, numbers, [](auto ctx, auto n) { html::input(ctx, n); });
+    alia::for_each(ctx, numbers, [&](auto n) { html::input(ctx, n); });
 
     auto prime_count = alia::apply(
         ctx,
