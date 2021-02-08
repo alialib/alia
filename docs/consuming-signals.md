@@ -28,7 +28,7 @@ a typedef for the type of value that the signal carries
 a type tag representing the capabilities of the signal - It's common to simply
 use `read_only_signal` or `duplex_signal` here. For a full explanation of
 capabilities, see [the
-code](https://github.com/tmadden/alia/blob/master/src/alia/signals/core.hpp).
+code](https://github.com/tmadden/alia/blob/main/src/alia/signals/core.hpp).
 
 <dd>
 
