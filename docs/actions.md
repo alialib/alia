@@ -6,11 +6,11 @@ Actions
         'action-latching', 'action-binding', 'callback-demo']);
 </script>
 
-Actions are the preferred way for application code to respond to events in alia.
-They're a convenient, declarative way of specifying the side effects that should
-be performed when an event occurs. For the most part, you can think of them as
-simple callback functions, but as we'll see, they often integrate more naturally
-into dataflow code than normal C++ callbacks would...
+Actions are the preferred way for application code to respond to events in
+alia. They're a convenient, declarative way of specifying the side effects that
+should be performed when an event occurs. For the most part, you can think of
+them as simple callback functions, but as we'll see, they often integrate more
+naturally into dataflow code than normal C++ callbacks would...
 
 Actions are very similar to signals in the way that they're used in an
 application. Like signals, they're typically created directly at the call site
@@ -20,9 +20,9 @@ Signal Operators
 ----------------
 
 The easiest way to create an action is through signal manipulation. When you
-invoke an operator on a signal that would normally cause a mutation, you instead
-create an action that performs that mutation. All of the following compound
-assignment operators are overloaded in this fashion:
+invoke an operator on a signal that would normally cause a mutation, you
+instead create an action that performs that mutation. All of the following
+compound assignment operators are overloaded in this fashion:
 
 `+=` `-=` `*=` `/=` `%=` `^=` `&=` `|=`
 
@@ -51,10 +51,10 @@ There is one important difference between an action and a normal C++ callback:
 
 **Like signals, actions have an implicit *unready* state.**
 
-This property often allows actions to integrate more naturally into the dataflow
-of your application. For example, the copy action produced by the `<<=` signal
-operator is only considered ready if its left-hand operand is ready to write and
-its right-hand operand has a value.
+This property often allows actions to integrate more naturally into the
+dataflow of your application. For example, the copy action produced by the
+`<<=` signal operator is only considered ready if its left-hand operand is
+ready to write and its right-hand operand has a value.
 
 When alia is integrated with a UI library, this property can often be leveraged
 so that widgets are disabled when the corresponding actions aren't ready to be
@@ -101,8 +101,8 @@ You can see this in action here:
 <div id="action-latching"></div>
 </div>
 
-Notice that in the combination `(in_hand <<= 0, in_bank += in_hand)`, the second
-action is *not* affected by the first.
+Notice that in the combination `(in_hand <<= 0, in_bank += in_hand)`, the
+second action is *not* affected by the first.
 
 If you *need* to express imperative sequencing of effects, you should do it as
 normal C++ code inside a single action (or in a background task that you
@@ -111,8 +111,8 @@ dispatch as an action).
 Parameters & Binding
 --------------------
 
-Actions can be parameterized. For example, you might define an action that takes
-a string as a parameter and sends it as a message in a chat application.
+Actions can be parameterized. For example, you might define an action that
+takes a string as a parameter and sends it as a message in a chat application.
 
 When an action takes one or more parameters, you can use the `<<` operator to
 *bind* a signal to the first argument in that action. For example, alia's
@@ -125,8 +125,8 @@ animation timer provides a parameterized action for starting it:
 </div>
 
 Just like when we apply the `<<=` operator to copy signals, the action that
-results from binding a signal to an action parameter will only be ready when the
-action itself is ready and the signal has a value.
+results from binding a signal to an action parameter will only be ready when
+the action itself is ready and the signal has a value.
 
 Custom Actions
 --------------
@@ -135,8 +135,8 @@ Actions can also call C++ functions to produce external side effects. This is
 typically how you would integrate custom side effects into your declarative
 application logic. Just like the functions that you [apply to
 signals](function-application.md) are *normal C++ functions with no side
-effects*, the functions that you use to define actions are *normal C++ functions
-**with side effects***.
+effects*, the functions that you use to define actions are *normal C++
+functions **with side effects***.
 
 For most purposes, custom actions can be specified using lambdas (or other
 function objects). There are two options for defining lambda actions:
@@ -151,8 +151,8 @@ Creates an action that's equivalent to a simple C++ callback.
 
 The action is always considered ready and simply calls `perform` when invoked.
 
-`perform` can take any number/type of arguments and defines the signature of the
-action.
+`perform` can take any number/type of arguments and defines the signature of
+the action.
 
 </dd>
 
@@ -163,8 +163,8 @@ Creates an action whose behavior is defined by `is_ready` and `perform`.
 `is_ready` takes no arguments and simply returns true or false to indicate if
 the action is ready to be performed.
 
-`perform` can take any number/type of arguments and defines the signature of the
-action.
+`perform` can take any number/type of arguments and defines the signature of
+the action.
 
 </dd>
 
@@ -255,6 +255,6 @@ button(my_context ctx, readable<std::string> text, action<> on_click)
 ```
 
 You can determine if an action is ready to be performed by calling its
-`is_ready()` member function (or using the free function `action_is_ready`), and
-you can invoke it using the free function `perform_action` (e.g.,
+`is_ready()` member function (or using the free function `action_is_ready`),
+and you can invoke it using the free function `perform_action` (e.g.,
 (`perform_action(on_click)`)).

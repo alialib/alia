@@ -9,9 +9,9 @@ Time as a Signal
 
 Although all signals in alia are conceptually time-varying values, most of them
 only care about the present (e.g., `a + b` is just whatever `a` is right now
-plus whatever `b` is). However, sometimes we want our signals to explicitly vary
-with time (for example, for animation purposes). This section discusses some of
-the utilities that alia provides for that purpose.
+plus whatever `b` is). However, sometimes we want our signals to explicitly
+vary with time (for example, for animation purposes). This section discusses
+some of the utilities that alia provides for that purpose.
 
 The Time Signal
 ---------------
@@ -27,8 +27,8 @@ just a simple millisecond counter:
 
 Calling `get_animation_tick_count` will cause alia to request that the
 underlying system issue a new refresh event (after a small animation-friendly
-delay) and will also ensure that any component calling it gets refreshed as part
-of that event. This means that you can very easily create animations using
+delay) and will also ensure that any component calling it gets refreshed as
+part of that event. This means that you can very easily create animations using
 the animation tick count:
 
 [source](timing.cpp ':include :fragment=simple-animation')
@@ -53,8 +53,8 @@ Smoothing
 ---------
 
 A common case where you want to make explicit use of time is to provide a
-smoothed view of a signal as it changes. alia provides the `smooth` function for
-this purpose:
+smoothed view of a signal as it changes. alia provides the `smooth` function
+for this purpose:
 
 <dl>
 
@@ -81,8 +81,8 @@ Here's an example of basic number smoothing:
 </div>
 
 One option for making your value compatible with smoothing is to simply provide
-the basic arithmetic operators. Here's a smoothed view of a color (with a custom
-transition thrown in as well):
+the basic arithmetic operators. Here's a smoothed view of a color (with a
+custom transition thrown in as well):
 
 [source](timing.cpp ':include :fragment=color-smoothing')
 
@@ -94,10 +94,11 @@ Deflickering
 ------------
 
 Sometimes your signals will suffer from flickering. This is common on signals
-that are calculated (or retrieved) in the background, especially when the signal
-is updated based on some input from the user. For signals like this, the default
-behavior is to appear empty while the value is being calculated, and when the
-calculation is nearly instantaneous, the user will perceive this as flickering.
+that are calculated (or retrieved) in the background, especially when the
+signal is updated based on some input from the user. For signals like this, the
+default behavior is to appear empty while the value is being calculated, and
+when the calculation is nearly instantaneous, the user will perceive this as
+flickering.
 
 alia provides a utility for deflickering a signal:
 
@@ -108,8 +109,8 @@ alia provides a utility for deflickering a signal:
 `deflicker(ctx, x, delay)`, where `x` is a signal, yields another signal that
 carries a deflickered view of the value in `x`. If `x` loses its value for less
 than `delay` milliseconds, the deflickered view will *maintain the last value
-that `x` carried.* (If `x` doesn't take on a new value before the delay elapses,
-then the deflickered view will also lose its value.)
+that `x` carried.* (If `x` doesn't take on a new value before the delay
+elapses, then the deflickered view will also lose its value.)
 
 </dd>
 

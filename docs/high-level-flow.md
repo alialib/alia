@@ -43,21 +43,21 @@ When you interact with this demo, the sequence of events is as follows:
 2. At some point, you (the user) click the button and the asm-dom wrapper
    invokes `demo_ui` again with a button click event. `demo_ui` calls
    `html::button`, and `html::button` recognizes that the button click event is
-   meant for it, so it invokes its [action](actions.md), which toggles the state
-   of `show_message`.
+   meant for it, so it invokes its [action](actions.md), which toggles the
+   state of `show_message`.
 
 3. Immediately after this, the asm-dom wrapper invokes `demo_ui` *again* to
-   refresh the UI. `demo_ui` again declares that the 'Toggle the Message' button
-   should be there, but since `show_message` is now set to `true`, it *also*
-   declares that the 'Hello, World!' message should be included.
+   refresh the UI. `demo_ui` again declares that the 'Toggle the Message'
+   button should be there, but since `show_message` is now set to `true`, it
+   *also* declares that the 'Hello, World!' message should be included.
 
 ... And so on.
 
 Note that all of this is transparent to `demo_ui`. The event that's being
 transported through the UI tree is tucked away in the context argument. All
 `demo_ui` has to do is declare what should be there and what it should do. The
-leaves of the tree (e.g., `html::button`) worry about what type of event is being
-processed and how to respond to it. (In fact, steps 1 and 3 above are actually
-just 'refresh' events. `html::button` responds to refresh events by making sure
-that there is a button in the DOM where it should be and that the label is
-correct.)
+leaves of the tree (e.g., `html::button`) worry about what type of event is
+being processed and how to respond to it. (In fact, steps 1 and 3 above are
+actually just 'refresh' events. `html::button` responds to refresh events by
+making sure that there is a button in the DOM where it should be and that the
+label is correct.)

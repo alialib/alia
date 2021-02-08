@@ -5,14 +5,14 @@ Custom Signal Types
 -------------------
 
 Implementing your own signal type is often the best way to integrate complex
-application data types into alia's dataflow system. Before attempting this, it's
-recommended that you read [Consuming Signals](consuming-signals.md) to
+application data types into alia's dataflow system. Before attempting this,
+it's recommended that you read [Consuming Signals](consuming-signals.md) to
 understand the expected interface and the expectation of a value identity.
 
 To implement a custom signal type, you create a `struct`/`class` that derives
 from `signal` and implements the relevant parts of [the signal
-interface](consuming-signals.md#the-signal-interface). The signature of `signal`
-is as follows:
+interface](consuming-signals.md#the-signal-interface). The signature of
+`signal` is as follows:
 
 ```cpp
 template<class Derived, class Value, class Capabilities>
@@ -30,12 +30,12 @@ code](https://github.com/tmadden/alia/blob/master/src/alia/signals/core.hpp).
 
 For signals with small value types, it's common for the value ID to simply be a
 copy of the signal value. These are called 'regular' signals and can be
-implemented by deriving from `regular_signal` instead. It has the same signature
-as `signal` but provides the implementation of `value_id` for you.
+implemented by deriving from `regular_signal` instead. It has the same
+signature as `signal` but provides the implementation of `value_id` for you.
 
-For illustration, here's the actual implementation of the signal you create when
-calling `direct()` on a non-const reference. It's a regular, duplex signal whose
-values are copyable:
+For illustration, here's the actual implementation of the signal you create
+when calling `direct()` on a non-const reference. It's a regular, duplex signal
+whose values are copyable:
 
 ```cpp
 template<class Value>
@@ -114,8 +114,8 @@ struct async_signal : signal<async_signal<Value>, Value, read_only_signal>
 ```
 
 This is the signal that you get when calling `async()`. The source code is full
-of other examples and should be a good source of guidance if you're implementing
-your own signals or signal adaptors.
+of other examples and should be a good source of guidance if you're
+implementing your own signals or signal adaptors.
 
 Lambda Constructors
 -------------------
@@ -148,10 +148,11 @@ auto fruits = lambda_constant(
     []() { return std::vector<std::string>{"apple", "banana", "cherry"}; });
 ```
 
-Although the two have equivalent behavior, in the `value` version, our vector is
-constructed *every pass through our component function.* Moreover, wherever our
-`fruits` signal is used, the consuming code will store the whole vector and,
-every pass, *compare it to the newly constructed vector to detect changes.*
+Although the two have equivalent behavior, in the `value` version, our vector
+is constructed *every pass through our component function.* Moreover, wherever
+our `fruits` signal is used, the consuming code will store the whole vector
+and, every pass, *compare it to the newly constructed vector to detect
+changes.*
 
 The use of `lambda_constant` avoids both of these inefficiencies. Our vector
 will only be constructed when it's actually needed by the consumer(s) of the
@@ -160,11 +161,11 @@ unnecessary copies and comparisons will be eliminated.
 
 <dt>lambda_reader(read)</dt><dd>
 
-Creates a read-only signal that always has a value and whose value is determined
-by calling `read` (which doesn't take any arguments).
+Creates a read-only signal that always has a value and whose value is
+determined by calling `read` (which doesn't take any arguments).
 
-In contrast to `lambda_constant`, the signal created here is *not* considered to
-be constant, so `read` is allowed to return different values over time.
+In contrast to `lambda_constant`, the signal created here is *not* considered
+to be constant, so `read` is allowed to return different values over time.
 
 The following is equivalent to `value(12)`:
 
@@ -193,8 +194,8 @@ value.
 <dt>lambda_reader(has_value, read, generate_id)</dt><dd>
 
 Creates a read-only signal whose value is determined by calling `has_value` and
-`read` and whose value ID is determined by calling `generate_id`. (None of which
-take any arguments.)
+`read` and whose value ID is determined by calling `generate_id`. (None of
+which take any arguments.)
 
 With this overload, you can achieve something that's impossible with the
 basic constructors: a signal that carries a large value but doesn't actually
@@ -207,8 +208,9 @@ lambda_reader(
     [&]() { return make_id(my_object.uid); });
 ```
 
-With the above signal, change detection can be done using the object's `uid`, so
-the object's value itself only has to be touched when new values are retrieved.
+With the above signal, change detection can be done using the object's `uid`,
+so the object's value itself only has to be touched when new values are
+retrieved.
 </dd>
 
 <dt>lambda_duplex(has_value, read, ready_to_write, write)</dt><dd>

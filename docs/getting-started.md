@@ -34,4 +34,5 @@ ALIA_IMPLEMENTAITON` before including `alia.hpp`.*
 
 In your other source files, you can simply include it directly.
 
-There are also some [config options](configuration.md) that you may want to set.
+There are also some [config options](configuration.md) that you may want to
+set.

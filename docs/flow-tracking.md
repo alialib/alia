@@ -207,8 +207,8 @@ Often, we loop over signal containers so that we can *map* the individual items
 to other values. Just as `std::transform` allows you to do this for raw C++
 containers, `alia::transform` allows you to do this for signal containers.
 
-`alia::transform` is documented [here](function-application.md#transform), along
-with the other signal function application utilities.
+`alia::transform` is documented [here](function-application.md#transform),
+along with the other signal function application utilities.
 
 alia_for/while
 --------------
@@ -233,8 +233,8 @@ alia_for/while
    constant.* If the data that you're looping over changes order (including
    adding or removing items in the middle of the sequence), *this will cause a
    shift in the underlying alia objects that are associated with your items.*
-   Depending on what you're associating with your items, the effects of this can
-   vary from slight inefficiencies to complete discontinuities in your
+   Depending on what you're associating with your items, the effects of this
+   can vary from slight inefficiencies to complete discontinuities in your
    interface. If you want to avoid this, you should use `named_block`s instead
    of these macros.
 
@@ -251,11 +251,11 @@ application's data structures to alia:
 named_block
 -----------
 
-If you need more control over how you iterate over your data structures, you can
-use named blocks. By 'naming' a block of code, you ensure that the piece of the
-data graph that's associated with that code is always the same, regardless of
-what order your blocks appear in in the execution of your code. A typical usage
-follows this form:
+If you need more control over how you iterate over your data structures, you
+can use named blocks. By 'naming' a block of code, you ensure that the piece of
+the data graph that's associated with that code is always the same, regardless
+of what order your blocks appear in in the execution of your code. A typical
+usage follows this form:
 
 ```cpp
 naming_context nc(ctx);
@@ -272,10 +272,10 @@ a unique context for naming, so if you need to iterate over those same items in
 another part of your UI, you can use the same IDs without worrying about
 collisions.
 
-`named_block` is a scoped object. It takes effect immediately upon construction,
-and when its scope ends and it's destructed, your code will naturally resume
-using the normal alia data graph. It also provides `begin` and `end` member
-functions in case you need to control its scope more explicitly.
+`named_block` is a scoped object. It takes effect immediately upon
+construction, and when its scope ends and it's destructed, your code will
+naturally resume using the normal alia data graph. It also provides `begin` and
+`end` member functions in case you need to control its scope more explicitly.
 
 See [Working with IDs](working-with-ids.md) for info about generating the IDs
 for your blocks.
