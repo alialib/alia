@@ -54,42 +54,34 @@ get_alia_item_id(Item const&)
 // iteration body function provided to for_each (for map-like containers).
 template<
     class IterationBody,
-    class Context,
     class NamedBlockBegin,
     class Key,
     class Value,
     std::enable_if_t<
-        std::is_invocable<
-            IterationBody&&,
-            Context,
-            naming_context&,
-            Key&&,
-            Value&&>::value,
+        std::is_invocable<IterationBody&&, naming_context&, Key&&, Value&&>::
+            value,
         int> = 0>
 void
 invoke_map_iteration_body(
     IterationBody&& body,
-    Context ctx,
     naming_context& nc,
     NamedBlockBegin&&,
     Key&& key,
     Value&& value)
 {
-    body(ctx, nc, key, value);
+    body(nc, key, value);
 }
 template<
     class IterationBody,
-    class Context,
     class NamedBlockBegin,
     class Key,
     class Value,
     std::enable_if_t<
-        std::is_invocable<IterationBody&&, Context, Key&&, Value&&>::value,
+        std::is_invocable<IterationBody&&, Key&&, Value&&>::value,
         int> = 0>
 void
 invoke_map_iteration_body(
     IterationBody&& body,
-    Context ctx,
     naming_context&,
     NamedBlockBegin&& nb_begin,
     Key&& key,
@@ -97,7 +89,7 @@ invoke_map_iteration_body(
 {
     named_block nb;
     nb_begin(nb);
-    body(ctx, key, value);
+    body(key, value);
 }
 
 // for_each for map-like containers
@@ -122,7 +114,6 @@ for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
             auto value = container_signal[key];
             invoke_map_iteration_body(
                 fn,
-                ctx,
                 nc,
                 [&](named_block& nb) { nb.begin(nc, make_id(item.first)); },
                 key,
@@ -136,81 +127,68 @@ for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
 // iteration body function provided to for_each (for sequence containers).
 template<
     class IterationBody,
-    class Context,
     class NamedBlockBegin,
     class Item,
     std::enable_if_t<
-        std::is_invocable<
-            IterationBody&&,
-            Context,
-            naming_context&,
-            size_t,
-            Item&&>::value,
-        int> = 0>
-void
-invoke_sequence_iteration_body(
-    IterationBody&& body,
-    Context ctx,
-    naming_context& nc,
-    NamedBlockBegin&&,
-    size_t index,
-    Item&& item)
-{
-    body(ctx, nc, index, item);
-}
-template<
-    class IterationBody,
-    class Context,
-    class NamedBlockBegin,
-    class Item,
-    std::enable_if_t<
-        std::is_invocable<IterationBody&&, Context, size_t, Item&&>::value,
-        int> = 0>
-void
-invoke_sequence_iteration_body(
-    IterationBody&& body,
-    Context ctx,
-    naming_context&,
-    NamedBlockBegin&& nb_begin,
-    size_t index,
-    Item&& item)
-{
-    named_block nb;
-    nb_begin(nb);
-    body(ctx, index, item);
-}
-template<
-    class IterationBody,
-    class Context,
-    class NamedBlockBegin,
-    class Item,
-    std::enable_if_t<
-        std::is_invocable<IterationBody&&, Context, naming_context&, Item&&>::
+        std::is_invocable<IterationBody&&, naming_context&, size_t, Item&&>::
             value,
         int> = 0>
 void
 invoke_sequence_iteration_body(
     IterationBody&& body,
-    Context ctx,
+    naming_context& nc,
+    NamedBlockBegin&&,
+    size_t index,
+    Item&& item)
+{
+    body(nc, index, item);
+}
+template<
+    class IterationBody,
+    class NamedBlockBegin,
+    class Item,
+    std::enable_if_t<
+        std::is_invocable<IterationBody&&, size_t, Item&&>::value,
+        int> = 0>
+void
+invoke_sequence_iteration_body(
+    IterationBody&& body,
+    naming_context&,
+    NamedBlockBegin&& nb_begin,
+    size_t index,
+    Item&& item)
+{
+    named_block nb;
+    nb_begin(nb);
+    body(index, item);
+}
+template<
+    class IterationBody,
+    class NamedBlockBegin,
+    class Item,
+    std::enable_if_t<
+        std::is_invocable<IterationBody&&, naming_context&, Item&&>::value,
+        int> = 0>
+void
+invoke_sequence_iteration_body(
+    IterationBody&& body,
     naming_context& nc,
     NamedBlockBegin&&,
     size_t,
     Item&& item)
 {
-    body(ctx, nc, item);
+    body(nc, item);
 }
 template<
     class IterationBody,
-    class Context,
     class NamedBlockBegin,
     class Item,
     std::enable_if_t<
-        std::is_invocable<IterationBody&&, Context, Item&&>::value,
+        std::is_invocable<IterationBody&&, Item&&>::value,
         int> = 0>
 void
 invoke_sequence_iteration_body(
     IterationBody&& body,
-    Context ctx,
     naming_context&,
     NamedBlockBegin&& nb_begin,
     size_t,
@@ -218,7 +196,7 @@ invoke_sequence_iteration_body(
 {
     named_block nb;
     nb_begin(nb);
-    body(ctx, item);
+    body(item);
 }
 
 // for_each for signals carrying vector-like containers
@@ -243,7 +221,6 @@ for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
         {
             invoke_sequence_iteration_body(
                 fn,
-                ctx,
                 nc,
                 [&](named_block& nb) {
                     auto iteration_id = get_alia_item_id(container[index]);
@@ -283,7 +260,6 @@ for_each(Context ctx, Container&& container, Fn&& fn)
     {
         invoke_sequence_iteration_body(
             fn,
-            ctx,
             nc,
             [&](named_block& nb) {
                 // We don't try to use get_alia_item_id() here because we want
@@ -322,7 +298,6 @@ for_each(Context ctx, Container&& container, Fn&& fn)
     {
         invoke_sequence_iteration_body(
             fn,
-            ctx,
             nc,
             [&](named_block& nb) {
                 auto iteration_id = get_alia_item_id(item);
@@ -416,7 +391,6 @@ for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
         {
             invoke_sequence_iteration_body(
                 fn,
-                ctx,
                 nc,
                 [&](named_block& nb) {
                     auto iteration_id = get_alia_item_id(item);
@@ -457,7 +431,6 @@ for_each(Context ctx, Container&& container, Fn&& fn)
     {
         invoke_sequence_iteration_body(
             fn,
-            ctx,
             nc,
             [&](named_block& nb) {
                 // We don't try to use get_alia_item_id() here because we want
@@ -496,7 +469,6 @@ for_each(Context ctx, Container&& container, Fn&& fn)
     {
         invoke_sequence_iteration_body(
             fn,
-            ctx,
             nc,
             [&](named_block& nb) {
                 auto iteration_id = get_alia_item_id(item);
