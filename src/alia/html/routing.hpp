@@ -262,35 +262,6 @@ set_location_hash(html::context ctx)
 direct_const_signal<std::string>
 get_location_hash(html::context ctx);
 
-// internal_link() implements an 'internal' link to a different page in an SPA.
-
-namespace detail {
-
-element_handle
-internal_link(
-    context ctx, readable<std::string> text, readable<std::string> path);
-
-element_handle
-internal_link(context ctx, readable<std::string> path);
-
-} // namespace detail
-
-// with a label
-template<class Text, class Path>
-element_handle
-internal_link(context ctx, Text text, Path path)
-{
-    return detail::internal_link(ctx, signalize(text), signalize(path));
-}
-
-// without a label - You provide the content.
-template<class Path>
-element_handle
-internal_link(context ctx, Path path)
-{
-    return detail::internal_link(ctx, signalize(path));
-}
-
 }} // namespace alia::html
 
 #endif

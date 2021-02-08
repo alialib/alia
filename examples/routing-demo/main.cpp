@@ -46,9 +46,9 @@ basic_routing_demo(demo_context ctx)
 
     div(ctx, "demo-panel", [&] {
         /// [basic-links]
-        internal_link(ctx, "Home", "/");
-        internal_link(ctx, "About", "/about");
-        internal_link(ctx, "Users", "/users");
+        link(ctx, "Home", "#/");
+        link(ctx, "About", "#/about");
+        link(ctx, "Users", "#/users");
         /// [basic-links]
     });
 
@@ -98,9 +98,9 @@ parameters_demo(demo_context ctx)
     p(ctx, "Now our demo works with routes like this:");
 
     div(ctx, "demo-panel", [&] {
-        internal_link(ctx, "/users", "/users");
-        internal_link(ctx, "/users/calvin", "/users/calvin");
-        internal_link(ctx, "/users/hobbes", "/users/hobbes");
+        link(ctx, "/users", "#/users");
+        link(ctx, "/users/calvin", "#/users/calvin");
+        link(ctx, "/users/hobbes", "#/users/hobbes");
     });
 }
 
@@ -151,8 +151,8 @@ subpaths_demo(demo_context ctx)
     p(ctx, "Now our demo works with routes like this:");
 
     div(ctx, "demo-panel", [&] {
-        internal_link(ctx, "/accounts/acme/", "/accounts/acme/");
-        internal_link(ctx, "/accounts/alia/users", "/accounts/alia/users");
+        link(ctx, "/accounts/acme/", "#/accounts/acme/");
+        link(ctx, "/accounts/alia/users", "#/accounts/alia/users");
     });
 }
 
@@ -186,8 +186,8 @@ default_match_demo(demo_context ctx)
     p(ctx, "Try it:");
 
     div(ctx, "demo-panel", [&] {
-        internal_link(ctx, "/about", "/about");
-        internal_link(ctx, "/unsupported-path", "/unsupported-path");
+        link(ctx, "/about", "#/about");
+        link(ctx, "/unsupported-path", "#/unsupported-path");
     });
 }
 
