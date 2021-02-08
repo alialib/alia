@@ -134,8 +134,8 @@ Returns a duplex signal that references some temporary, local state.
 type of the state and supplies the initial value. If `initial_value` is a signal
 that has no value, the state is initially empty. It will get a value when one is
 explicitly written to it or when `initial_value` produces a value (whichever
-comes first). Once the state has a value, `initial_value` is ignored. (The state
-won't change in response to changes in `initial_value`.)
+happens first). Once the state has a value, `initial_value` is ignored. (The
+state won't change in response to changes in `initial_value`.)
 
 </dd>
 

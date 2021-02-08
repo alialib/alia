@@ -113,10 +113,7 @@ interface conventions of component-level alia code. Specifically, it takes a
 context as its first argument, its other arguments are signals, and it returns a
 signal.
 
-(The lifted version of `is_prime` would call `apply` internally.)
-
-Lifting is especially useful when dealing with higher-order function
-application (like `transform`, below).
+(The lifted version of `is_prime` calls `apply` internally.)
 
 `lift` also has a lazy counterpart: `lazy_lift`. Similar to `lazy_apply`, the
 lazy lifted version of a function doesn't take a context as its first argument.
