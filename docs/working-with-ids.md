@@ -7,8 +7,8 @@ changes), but the same system can be used to identify nodes in your
 component-level application flow so that presentation objects (and other data)
 can be stably associated with them.
 
-IDs provide fairly limited capabilities: equality comparison (operators `==` and
-`!=`), order comparison (operator `<`), and copying. Any type that provides
+IDs provide fairly limited capabilities: equality comparison (operators `==`
+and `!=`), order comparison (operator `<`), and copying. Any type that provides
 these capabilities can serve as an ID (with a little bit of help). Common ID
 types include integers, strings, and pointers.
 
@@ -39,8 +39,9 @@ Combines one or more IDs to create a tuple-like ID.
 
 `unit_id` is a constant that represents 'the unit ID'. (Think ['the unit
 type'](https://en.wikipedia.org/wiki/Unit_type).) This is useful when you need
-to identify something that has only one possible identity. For example, a signal
-that carries a constant value could use the unit ID as its value identity.
+to identify something that has only one possible identity. For example, a
+signal that carries a constant value could use the unit ID as its value
+identity.
 
 </dd>
 
@@ -49,8 +50,8 @@ that carries a constant value could use the unit ID as its value identity.
 `null_id` is a constant that represents 'the null ID'. This is similar to
 `nullptr` and, by convention, conveys that no ID is available (yet). In
 particular, if a signal supplies the null ID as its value identity, observers
-will know that it doesn't have a value and, furthermore, doesn't yet know how to
-identify that value.
+will know that it doesn't have a value and, furthermore, doesn't yet know how
+to identify that value.
 
 </dd>
 
@@ -60,8 +61,8 @@ Consuming IDs
 -------------
 
 All ID types implement the `id_interface` base class. Typically, if you need to
-write a function that takes in an ID as a type, you can accept a const reference
-to that type.
+write a function that takes in an ID as a type, you can accept a const
+reference to that type.
 
 Note that `id_interface` is *not* templated. It doesn't matter if the ID is
 provided as a number or a string or a pointer or some user-defined 3D vector

@@ -25,11 +25,11 @@ inheritance-based system, it doesn't matter what order you add the objects to
 your context.)
 
 Applications are also free to extend the context. The context can be a good
-place to store information and resources that are repeatedly accessed throughout
-your application code: the active user, session info, workspace info, I/O
-objects, etc. The information doesn't even have to be global to your
-application. You might create different contexts for different pages or displays
-within your application.
+place to store information and resources that are repeatedly accessed
+throughout your application code: the active user, session info, workspace
+info, I/O objects, etc. The information doesn't even have to be global to your
+application. You might create different contexts for different pages or
+displays within your application.
 
 Here's an example of how you might use a custom context to establish a username
 as a globally accessible property in your app.

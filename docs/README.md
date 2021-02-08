@@ -12,22 +12,22 @@ alia component functions:
   component function calls. This mechanic can be used to synchronize widget
   objects, cache computed results, or maintain local state where you need it.
 
-* **are self-contained** - Although from an external perspective, alia component
-  functions compose just like normal functions, they are more like classes in
-  their capabilities. They can maintain internal state and respond to events
-  where needed. This means that the full description of a UI component can be
-  localized to one piece of (declarative) code.
+* **are self-contained** - Although from an external perspective, alia
+  component functions compose just like normal functions, they are more like
+  classes in their capabilities. They can maintain internal state and respond
+  to events where needed. This means that the full description of a UI
+  component can be localized to one piece of (declarative) code.
 
 * **naturally react to changes in application state** - alia enables you to use
   the familiar mechanics of conditionals, loops, and functional composition to
   model your UI as a function of application state so that *your UI naturally
   reflects the current state of your application.*
 
-* **use dataflow semantics** - alia provides tools for modeling the computations
-  in your application as a declarative flow of data. This flow favors the use of
-  pure functions and naturally supports caching and 'unready' values (values
-  that are waiting for user inputs, background calculations, remote queries,
-  etc.).
+* **use dataflow semantics** - alia provides tools for modeling the
+  computations in your application as a declarative flow of data. This flow
+  favors the use of pure functions and naturally supports caching and 'unready'
+  values (values that are waiting for user inputs, background calculations,
+  remote queries, etc.).
 
 alia is agnostic to the particular UI library you use. It provides the
 *mechanics* for modeling an interactive application declaratively and is
@@ -94,19 +94,19 @@ Project Status
 
 alia as a concept is actually fairly mature and has been used successfully in a
 few major internal desktop applications. This open-source release is an early
-version in the latest generation of alia. This generation brings about two major
-changes:
+version in the latest generation of alia. This generation brings about two
+major changes:
 
-1. The core mechanics have far better documentation and testing, plus some minor
-   improvements to interfaces and terminology.
+1. The core mechanics have far better documentation and testing, plus some
+   minor improvements to interfaces and terminology.
 
 2. Everything but the core mechanics has been stripped out. - Earlier
    generations of alia were immediate mode GUI libraries (like [Dear
    ImGui](https://github.com/ocornut/imgui)), but over the years, it became
    clear that the actual GUI code was no longer a novel feature and that to do
    it properly essentially required writing a traditional, "retained-mode" GUI
-   library with a declarative wrapper around it, so this version of alia focuses
-   solely on the declarative wrapper part.
+   library with a declarative wrapper around it, so this version of alia
+   focuses solely on the declarative wrapper part.
 
 This generation is still new and hasn't been used yet in any major projects.
 While the mechanics should be fairly robust, I'm still in the process of

@@ -59,8 +59,8 @@ Timing Signals
 
 Although all signals in alia are conceptually time-varying values, most of them
 only care about the present (e.g., `a + b` is just whatever `a` is right now
-plus whatever `b` is). However, some signals are more closely linked to time and
-explicitly vary with it:
+plus whatever `b` is). However, some signals are more closely linked to time
+and explicitly vary with it:
 
 [source](timing.cpp ':include :fragment=time-signal')
 

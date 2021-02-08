@@ -13,8 +13,8 @@ could be mapped to JSON or YAML for persistence. (Just like application code
 dynamically determines the structure of alia's data graph, it could dynamically
 determine the structure of this state. - A first attempt at this would likely
 ignore issues related to versioning the state, so chunks of it might have to be
-thrown away when the corresponding code changes, but that's fine if the state is
-used for things like tree node open/close flags, selected items, temporary
+thrown away when the corresponding code changes, but that's fine if the state
+is used for things like tree node open/close flags, selected items, temporary
 dialog parameters, etc.)
 
 ### Debugging
@@ -33,17 +33,17 @@ retrieval. In a nutshell, the idea is that just like your declarative UI code
 analyzes application state and declares the UI elements/logic that should exist
 for that state, your application can also analyze application data and declare
 what calculation results are relevant for that data. A 'declaration of a
-relevant calculation result' takes the form of a calculation tree with resources
-at the leaves. An example might be an image filtering application that declares
-'I need the image at this URL, with a red eye filter applied, and then a sepia
-filter applied.' Maybe that image has already been retrieved from that URL but
-hasn't had the filters applied, or maybe the red eye filter has been applied but
-not the sepia one, or maybe the image is actually already available in memory
-exactly the way the application wants it because it's been requesting the exact
-same thing on every update for the last five minutes. Just like an application
-with a declarative UI doesn't care how you get the UI to match what it declares,
-the imaging application doesn't care how this image arrives. It just wants it
-displayed for the user.
+relevant calculation result' takes the form of a calculation tree with
+resources at the leaves. An example might be an image filtering application
+that declares 'I need the image at this URL, with a red eye filter applied, and
+then a sepia filter applied.' Maybe that image has already been retrieved from
+that URL but hasn't had the filters applied, or maybe the red eye filter has
+been applied but not the sepia one, or maybe the image is actually already
+available in memory exactly the way the application wants it because it's been
+requesting the exact same thing on every update for the last five minutes. Just
+like an application with a declarative UI doesn't care how you get the UI to
+match what it declares, the imaging application doesn't care how this image
+arrives. It just wants it displayed for the user.
 
 An alia application that deals with non-trivial calculations and resources can
 benefit a lot from capabilities like this, but alia currently falls short of
@@ -54,8 +54,9 @@ Integrations
 ------------
 
 Obviously, it would be nice to have stable, production-ready integrations with
-popular C++ libraries for creating user interfaces and rendering. These probably
-don't belong in the core of alia, but they are essential to it being useful.
+popular C++ libraries for creating user interfaces and rendering. These
+probably don't belong in the core of alia, but they are essential to it being
+useful.
 
 Similarly, it would be useful to provide more utilities for interacting with
 common resources as signals and actions.

@@ -85,8 +85,8 @@ invoked.
 </dl>
 
 The primary advantage of this form is that it doesn't require a context
-parameter (it doesn't cache and thus doesn't require any internal data). This is
-handy for implementing operators and in similar situations where providing a
+parameter (it doesn't cache and thus doesn't require any internal data). This
+is handy for implementing operators and in similar situations where providing a
 context parameter would be awkward. At the moment, this is only intended to be
 used in those situations, so the implementation only supports functions of one
 or two arguments.
@@ -110,8 +110,8 @@ auto n_is_prime = lift(is_prime)(ctx, n);
 
 `lift(is_prime)` yields a version of `is_prime` that conforms to the standard
 interface conventions of component-level alia code. Specifically, it takes a
-context as its first argument, its other arguments are signals, and it returns a
-signal.
+context as its first argument, its other arguments are signals, and it returns
+a signal.
 
 (The lifted version of `is_prime` calls `apply` internally.)
 
@@ -189,8 +189,8 @@ However, there's one very important difference between the two implementations:
 In the `transform` version, the call to `apply(ctx, is_prime, n)` is
 *individually caching* the result of `is_prime` for each input number, so as we
 update them, `is_prime` is only reinvoked on the individual numbers that have
-changed. This is in contrast to the 'single `apply`' version where any change to
-any part of the vector causes the entire `std::count_if` calculation to be
+changed. This is in contrast to the 'single `apply`' version where any change
+to any part of the vector causes the entire `std::count_if` calculation to be
 redone.
 
 Below are the two versions with counters to show how many times each has called

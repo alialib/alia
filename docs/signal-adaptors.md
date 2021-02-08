@@ -13,8 +13,8 @@ Casts
 <dt>signal_cast&lt;Value&gt;(x)</dt><dd>
 
 Yields a signal with the value type `Value` that acts as a proxy for `x`. The
-proxy applies `static_cast` to convert its own values to and from the value type
-of `x`.
+proxy applies `static_cast` to convert its own values to and from the value
+type of `x`.
 
 </dd>
 
@@ -33,8 +33,8 @@ but it will type-check as a writable signal.
 Availability
 ------------
 
-The following allow you to assess the availability of a signal (in signal space,
-of course):
+The following allow you to assess the availability of a signal (in signal
+space, of course):
 
 <dl>
 
@@ -107,8 +107,8 @@ disabled.
 
 </dd>
 
-Finally, when working with `std::optional` signal values, you may want to expose
-the inherent notion of availability already provided by `std::optional`:
+Finally, when working with `std::optional` signal values, you may want to
+expose the inherent notion of availability already provided by `std::optional`:
 
 <dt>unwrap(signal)</dt><dd>
 

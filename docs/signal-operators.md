@@ -92,15 +92,15 @@ The subscript operator is defined for signals that carry containers. The index
 can either be another signal or a raw value.
 
 ?> alia prefers safe subscripts for signals, so for containers that offer an
-   `at` indexer, the signal subscript operator will invoke that instead of using
-   the actual subscript operator on the raw container.
+   `at` indexer, the signal subscript operator will invoke that instead of
+   using the actual subscript operator on the raw container.
 
 Field Access
 ------------
 
 The `->*` operator can be used for accessing fields within a structure. For
 example, if `p` is a signal carrying a structure of type `point`, then
-`p->*&point::x` is a signal carrying the field `x` within `p`. Since this syntax
-is a little verbose, alia provides the `ALIA_FIELD` macro. `ALIA_FIELD(p, x)` is
-equivalent to the above (as is `alia_field(p, x)` if you allow alia to define
-lowercase macros).
+`p->*&point::x` is a signal carrying the field `x` within `p`. Since this
+syntax is a little verbose, alia provides the `ALIA_FIELD` macro.
+`ALIA_FIELD(p, x)` is equivalent to the above (as is `alia_field(p, x)` if you
+allow alia to define lowercase macros).

@@ -6,8 +6,8 @@ Feature Overview
 </script>
 
 In alia, the interactive portion of your application is expressed as functional
-components: composable, declarative functions that take in application state and
-declare the contents of your UI and how it should behave. When writing this
+components: composable, declarative functions that take in application state
+and declare the contents of your UI and how it should behave. When writing this
 'component-level' code, you are essentially programming in a mini-paradigm
 within C++.
 
@@ -17,9 +17,9 @@ efficient, expressive, and feels as much like normal C++ as possible...
 The Data Graph
 --------------
 
-It's a fact of life that UI components require some degree of persistence across
-updates: internal state must be retained, system resources must be managed,
-calculated results must be cached, etc.
+It's a fact of life that UI components require some degree of persistence
+across updates: internal state must be retained, system resources must be
+managed, calculated results must be cached, etc.
 
 But there's a fundamental tension between this requirement and a declarative UI
 interface: How do we map the output of the declarative UI function back to the
@@ -60,18 +60,19 @@ HTTP requests or simple, pure C++ functions. As you update your application
 state, those changes automatically propagate through whatever flow you've
 defined and drive changes in the UI.
 
-For example, if our application is supposed to allow the user to enter a dataset
-ID, pull up the corresponding data, and then filter it based on some criteria,
-we might reason about the application like this:
+For example, if our application is supposed to allow the user to enter a
+dataset ID, pull up the corresponding data, and then filter it based on some
+criteria, we might reason about the application like this:
 
 ![flow](data-flow.svg)
 
-In alia, when you write component-level code, rather than working with 'raw' C++
-value types like `int`, `std::string` or `std::vector<float>`, your variables
-have *signal* types. A signal is simply a value that changes over time, but you
-can think of them as having *dataflow semantics.* Invoking operators on or
-applying functions to signals is the equivalent of setting up nodes in your
-dataflow. (All of the arrows in the above diagram would be signals in alia.)
+In alia, when you write component-level code, rather than working with 'raw'
+C++ value types like `int`, `std::string` or `std::vector<float>`, your
+variables have *signal* types. A signal is simply a value that changes over
+time, but you can think of them as having *dataflow semantics.* Invoking
+operators on or applying functions to signals is the equivalent of setting up
+nodes in your dataflow. (All of the arrows in the above diagram would be
+signals in alia.)
 
 In particular, signals extend 'raw' C++ values in two important ways:
 
@@ -81,16 +82,16 @@ In particular, signals extend 'raw' C++ values in two important ways:
   changed and propagate those changes forward. (alia takes a non-intrusive,
   polling-based approach to this.)
 
-- **availability** - It's often useful to think of a signal in your data flow as
-  carrying no value at all (e.g., because the user hasn't input a value yet, or
-  because the value is still being computed or queried from some remote source).
-  Since this "not available yet" state tends to propagate through a data flow,
-  virtually all code that works with signals has to account for it. With alia
-  signals, this state is implicitly part of the type and implicitly propagates
-  through your application's data flow.
+- **availability** - It's often useful to think of a signal in your data flow
+  as carrying no value at all (e.g., because the user hasn't input a value yet,
+  or because the value is still being computed or queried from some remote
+  source). Since this "not available yet" state tends to propagate through a
+  data flow, virtually all code that works with signals has to account for it.
+  With alia signals, this state is implicitly part of the type and implicitly
+  propagates through your application's data flow.
 
-To see that last point in action, let's write a quick little component that adds
-two numbers:
+To see that last point in action, let's write a quick little component that
+adds two numbers:
 
 [source](numerical.cpp ':include :fragment=addition-ui')
 
@@ -101,15 +102,16 @@ two numbers:
 As simple as this example is, it's actually setting up a dataflow (via the `+`
 operator). Notice that the sum doesn't actually appear until we supply a value
 for both `a` and `b`. The result of the `+` operator itself is a signal, and if
-either of its inputs is unavailable, that state implicitly propagates through to
-the sum.
+either of its inputs is unavailable, that state implicitly propagates through
+to the sum.
 
 Actions
 -------
 
 While the data graph helps you model the *structure* of your UI declaratively
 and signals help you model the *computations* in your UI declaratively,
-[actions](actions.md) help you model the *transitions* in your UI declaratively.
+[actions](actions.md) help you model the *transitions* in your UI
+declaratively.
 
 Actions are, in a nutshell, declarative descriptions of the side effects that
 should happen in response to the events that occur in your UI. There was one in
@@ -120,8 +122,8 @@ html::button(ctx, "Show Answer", answer_revealed <<= true);
 ```
 
 The expression `answer_revealed <<= true` constructs an action that sets the
-state signal `answer_revealed` to `true`, and whenever the button is pressed, it
-performs that action.
+state signal `answer_revealed` to `true`, and whenever the button is pressed,
+it performs that action.
 
 Harmony
 -------
@@ -149,8 +151,10 @@ a number as positive, negative, or zero:
 </div>
 
 Notice that although our `if`/`else` branches have seemingly accounted for all
-possibilities on the number line, there is still the possibility that we haven't
-filled in the input yet and `n` doesn't have a value. The alia macros account
-for this automatically, and in that case, none of the branches are taken.
+possibilities on the number line, there is still the possibility that we
+haven't filled in the input yet and `n` doesn't have a value. The alia macros
+account for this automatically, and in that case, none of the branches are
+taken.
 
-(And yes, if you need to explicitly handle the case where the conditional is unresolved, alia [has that covered](signal-adaptors.md#availability).)
+(And yes, if you need to explicitly handle the case where the conditional is
+unresolved, alia [has that covered](signal-adaptors.md#availability).)

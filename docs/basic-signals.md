@@ -22,21 +22,21 @@ html::input(ctx, scale(direct(x), 100));
 
 `direct(x)` creates a signal object that directly exposes the variable `x` as a
 signal. `scale(direct(x), 100)` presents a view of `x` scaled up by a factor of
-100 (as another signal object), which is then passed into `html::input` to allow
-the user to edit it. (This might be done because the user wants to edit `x` as a
-percentage, while in code we want it as a simple ratio.)
+100 (as another signal object), which is then passed into `html::input` to
+allow the user to edit it. (This might be done because the user wants to edit
+`x` as a percentage, while in code we want it as a simple ratio.)
 
 Remember that that line of code lives in a function that is reinvoked on every
-update, so while `x` persists across the lifetime of the application, the signal
-objects created by `direct()` and `scale()` *do not.* They're created on the
-stack solely for the purpose of exposing `x` to `html::input`, and they cease to
-exist between updates. And, of course, `x` is the only real *state* here, so `x`
-is all that really *needs* to persist between frames.
+update, so while `x` persists across the lifetime of the application, the
+signal objects created by `direct()` and `scale()` *do not.* They're created on
+the stack solely for the purpose of exposing `x` to `html::input`, and they
+cease to exist between updates. And, of course, `x` is the only real *state*
+here, so `x` is all that really *needs* to persist between frames.
 
 It's a general principle in alia that objects shouldn't persist across frames
-without a good reason &mdash; after all, it would just mean more objects to keep
-synchronized &mdash; so this is the most common way to work with signals in
-alia. For the sake of brevity, this documentation refers to these transient
+without a good reason &mdash; after all, it would just mean more objects to
+keep synchronized &mdash; so this is the most common way to work with signals
+in alia. For the sake of brevity, this documentation refers to these transient
 signal objects simply as 'signals', and from a conceptual standpoint, it's
 perfectly fine to think of `scale(direct(x), 100)` as representing a persistent
 signal that changes over time, but for the purpose of actually understanding
@@ -68,11 +68,11 @@ Basic Constructors
 The following functions allow you to construct basic signals from raw C++
 values. These are perfect for bringing in small values from your application
 data: booleans, numbers, small strings, and perhaps small data structures.
-However, all of them rely on making copies and invoking the equality operator to
-detect changes in the values they carry, so use caution when applying them to
-larger data structures. (The exception to this rule is data structures that are
-particularly efficient at copying and testing for equality (like immutable and
-copy-on-write types). These tend to naturally work well with alia.)
+However, all of them rely on making copies and invoking the equality operator
+to detect changes in the values they carry, so use caution when applying them
+to larger data structures. (The exception to this rule is data structures that
+are particularly efficient at copying and testing for equality (like immutable
+and copy-on-write types). These tend to naturally work well with alia.)
 
 <dl>
 
@@ -118,11 +118,11 @@ Returns a signal that type checks as a readable signal carrying a value of type
 State Signals
 -------------
 
-Sometimes you need some temporary, local state somewhere in your UI, for example
-to capture the open/closed state of a tree node, the selected item in a list, or
-the name of a new item that the user is going to add to the list. Thanks to
-alia's data graph, you can make this state appear where you need it by calling
-`get_state`:
+Sometimes you need some temporary, local state somewhere in your UI, for
+example to capture the open/closed state of a tree node, the selected item in a
+list, or the name of a new item that the user is going to add to the list.
+Thanks to alia's data graph, you can make this state appear where you need it
+by calling `get_state`:
 
 <dl>
 
@@ -131,11 +131,11 @@ alia's data graph, you can make this state appear where you need it by calling
 Returns a duplex signal that references some temporary, local state.
 
 `initial_value` can be another signal or a raw value. It determines the value
-type of the state and supplies the initial value. If `initial_value` is a signal
-that has no value, the state is initially empty. It will get a value when one is
-explicitly written to it or when `initial_value` produces a value (whichever
-happens first). Once the state has a value, `initial_value` is ignored. (The
-state won't change in response to changes in `initial_value`.)
+type of the state and supplies the initial value. If `initial_value` is a
+signal that has no value, the state is initially empty. It will get a value
+when one is explicitly written to it or when `initial_value` produces a value
+(whichever happens first). Once the state has a value, `initial_value` is
+ignored. (The state won't change in response to changes in `initial_value`.)
 
 </dd>
 
