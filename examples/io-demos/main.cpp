@@ -32,22 +32,29 @@ make_country_request(std::string const& country_code)
 std::optional<std::string>
 parse_country_response(html::http_response const& response)
 {
+    // The REST Countries API returns an error status code if the country isn't
+    // found.
     if (response.status_code != 200)
         return std::nullopt;
+
     auto const& body = response.body;
     return json::parse(body.data, body.data + body.size)["name"];
 }
 
 // Here's our signal-based interface for fetching country names.
+// This essentially defines a small dataflow pipeline that maps country codes
+// to country names via a trip to the REST Countries server.
 auto
 fetch_country_name(html::context ctx, readable<std::string> country_code)
 {
-    return apply(ctx,
-        parse_country_response,
-        // html::fetch() does the brunt of the work. It takes care of detecting
-        // when the input request changes, issuing the new request, and
-        // presenting the response (when it arrives) as its output.
-        html::fetch(ctx, apply(ctx, make_country_request, country_code)));
+    auto request = apply(ctx, make_country_request, country_code);
+
+    // html::fetch() does the brunt of the work. It takes care of detecting
+    // when the input request changes, issuing the new request, and presenting
+    // the response (when it arrives) as its output.
+    auto response = html::fetch(ctx, request);
+
+    return apply(ctx, parse_country_response, response);
 }
 
 // And here's the UI for interacting with it.
@@ -57,6 +64,7 @@ country_name_lookup_ui(html::context ctx)
     auto country_code = get_state(ctx, "us");
     p(ctx, "Enter a country code:");
     input(ctx, country_code);
+
     auto name = fetch_country_name(ctx, country_code);
     p(ctx,
         add_default(
