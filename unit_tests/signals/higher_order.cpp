@@ -24,17 +24,13 @@ TEST_CASE("simple sequence transform", "[signals][higher_order]")
     auto controller = [&](int offset) {
         return [&, offset](context ctx) {
             auto transformed_signal = transform(
-                ctx, direct(container), [&](context, readable<string> s) {
+                ctx, direct(container), [&](readable<string> s) {
                     return lazy_apply(alia_mem_fn(length), s) + value(offset);
                 });
             transform_id.capture(transformed_signal.value_id());
-            for_each(
-                ctx,
-                transformed_signal,
-                [&](context ctx, readable<size_t> value) {
-                    do_text(
-                        ctx, apply(ctx, alia_lambdify(std::to_string), value));
-                });
+            for_each(ctx, transformed_signal, [&](readable<size_t> value) {
+                do_text(ctx, apply(ctx, alia_lambdify(std::to_string), value));
+            });
         };
     };
 
@@ -58,14 +54,14 @@ TEST_CASE("simple associative transform", "[signals][higher_order]")
             auto transformed_signal = transform(
                 ctx,
                 direct(container),
-                [&](context, readable<string>, readable<string> v) {
+                [&](readable<string>, readable<string> v) {
                     return lazy_apply(alia_mem_fn(length), v) + value(offset);
                 });
             transform_id.capture(transformed_signal.value_id());
             for_each(
                 ctx,
                 transformed_signal,
-                [&](context ctx, readable<string> k, readable<size_t> v) {
+                [&](readable<string> k, readable<size_t> v) {
                     do_text(ctx, k);
                     do_text(ctx, apply(ctx, alia_lambdify(std::to_string), v));
                 });

@@ -68,8 +68,7 @@ auto
 transform(Context ctx, Container const& container, Function&& f)
 {
     typedef typename decltype(
-        f(ctx,
-          std::declval<readable<
+        f(std::declval<readable<
               typename Container::value_type::value_type>>()))::value_type
         mapped_value_type;
 
@@ -93,8 +92,8 @@ transform(Context ctx, Container const& container, Function&& f)
         size_t valid_item_count = 0;
         auto captured_item = data->mapped_items.begin();
         auto captured_id = data->item_ids.begin();
-        for_each(ctx, container, [&](context ctx, auto item) {
-            auto mapped_item = f(ctx, item);
+        for_each(ctx, container, [&](auto item) {
+            auto mapped_item = f(item);
             if (signal_has_value(mapped_item))
             {
                 if (!captured_id->matches(mapped_item.value_id()))
@@ -176,8 +175,7 @@ transform(Context ctx, Container const& container, Function&& f)
 {
     typedef typename Container::value_type::key_type key_type;
     typedef typename decltype(
-        f(ctx,
-          std::declval<readable<key_type>>(),
+        f(std::declval<readable<key_type>>(),
           std::declval<readable<
               typename Container::value_type::mapped_type>>()))::value_type
         mapped_value_type;
@@ -204,8 +202,8 @@ transform(Context ctx, Container const& container, Function&& f)
 
         size_t valid_item_count = 0;
         auto captured_id = data->item_ids.begin();
-        for_each(ctx, container, [&](context ctx, auto key, auto value) {
-            auto mapped_item = f(ctx, key, value);
+        for_each(ctx, container, [&](auto key, auto value) {
+            auto mapped_item = f(key, value);
             if (signal_has_value(mapped_item))
             {
                 if (!captured_id->matches(mapped_item.value_id()))

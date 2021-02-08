@@ -63,12 +63,9 @@ TEST_CASE("string vector", "[flow][for_each]")
     std::vector<string> container{"foo", "bar", "baz"};
 
     auto controller = [&](context ctx) {
-        for_each(
-            ctx,
-            direct(container),
-            [&](context ctx, readable<string> const& item) {
-                do_text(ctx, apply(ctx, counting_identity, simplify_id(item)));
-            });
+        for_each(ctx, direct(container), [&](readable<string> const& item) {
+            do_text(ctx, apply(ctx, counting_identity, simplify_id(item)));
+        });
     };
 
     // The first time the traversal is done, there is one initial call for each
@@ -102,7 +99,7 @@ TEST_CASE("raw string vector", "[flow][for_each]")
     std::vector<string> container{"foo", "bar", "baz"};
 
     auto controller = [&](context ctx) {
-        for_each(ctx, container, [&](context ctx, string& item) {
+        for_each(ctx, container, [&](string& item) {
             do_text(ctx, apply(ctx, counting_identity, direct(item)));
         });
     };
@@ -138,7 +135,7 @@ TEST_CASE("for_each over vector of string signals", "[flow][for_each]")
     std::vector<string_literal_signal> container{"foo", "bar", "baz"};
 
     auto controller = [&](context ctx) {
-        for_each(ctx, container, [&](context ctx, auto item) {
+        for_each(ctx, container, [&](auto item) {
             do_text(ctx, apply(ctx, counting_identity, item));
         });
     };
@@ -177,9 +174,7 @@ TEST_CASE("string vector with naming", "[flow][for_each]")
         for_each(
             ctx,
             direct(container),
-            [&](context ctx,
-                naming_context& nc,
-                readable<string> const& item) {
+            [&](naming_context& nc, readable<string> const& item) {
                 named_block nb(nc, make_id(read_signal(item)));
                 do_text(ctx, apply(ctx, counting_identity, simplify_id(item)));
             });
@@ -220,7 +215,7 @@ TEST_CASE("string vector with index", "[flow][for_each]")
         for_each(
             ctx,
             direct(container),
-            [&](context ctx, size_t index, readable<string> const& item) {
+            [&](size_t index, readable<string> const& item) {
                 do_text(ctx, value(index));
                 do_text(ctx, apply(ctx, counting_identity, simplify_id(item)));
             });
@@ -260,8 +255,7 @@ TEST_CASE("string vector with naming and index", "[flow][for_each]")
         for_each(
             ctx,
             direct(container),
-            [&](context ctx,
-                naming_context& nc,
+            [&](naming_context& nc,
                 size_t index,
                 readable<string> const& item) {
                 named_block nb(nc, make_id(read_signal(item)));
@@ -302,17 +296,14 @@ TEST_CASE("item vector", "[flow][for_each]")
     std::vector<my_item> container{{"apple"}, {"banana"}, {"cherry"}};
 
     auto controller = [&](context ctx) {
-        for_each(
-            ctx,
-            direct(container),
-            [&](context ctx, readable<my_item> const& item) {
-                do_text(
+        for_each(ctx, direct(container), [&](readable<my_item> const& item) {
+            do_text(
+                ctx,
+                apply(
                     ctx,
-                    apply(
-                        ctx,
-                        counting_identity,
-                        simplify_id(alia_field(item, id))));
-            });
+                    counting_identity,
+                    simplify_id(alia_field(item, id))));
+        });
     };
 
     // The first time the traversal is done, there is one initial call for each
@@ -350,7 +341,7 @@ TEST_CASE("simple map", "[flow][for_each]")
         for_each(
             ctx,
             direct(container),
-            [&](context ctx, readable<string> key, duplex<int> value) {
+            [&](readable<string> key, duplex<int> value) {
                 do_text(ctx, apply(ctx, counting_identity, simplify_id(key)));
                 do_text(ctx, apply(ctx, alia_lambdify(std::to_string), value));
             });
@@ -391,10 +382,7 @@ TEST_CASE("item map", "[flow][for_each]")
         for_each(
             ctx,
             direct(container),
-            [&](context ctx,
-                naming_context& nc,
-                readable<my_item> key,
-                duplex<int> value) {
+            [&](naming_context& nc, readable<my_item> key, duplex<int> value) {
                 named_block nb(nc, make_id(read_signal(key)));
                 do_text(
                     ctx,
@@ -439,12 +427,9 @@ TEST_CASE("string list", "[flow][for_each]")
     std::list<string> container{"foo", "bar", "baz"};
 
     auto controller = [&](context ctx) {
-        for_each(
-            ctx,
-            direct(container),
-            [&](context ctx, readable<string> const& item) {
-                do_text(ctx, apply(ctx, counting_identity, simplify_id(item)));
-            });
+        for_each(ctx, direct(container), [&](readable<string> const& item) {
+            do_text(ctx, apply(ctx, counting_identity, simplify_id(item)));
+        });
     };
 
     // The first time the traversal is done, there is one initial call for each
@@ -479,12 +464,9 @@ TEST_CASE("unsimplified string list", "[flow][for_each]")
     std::list<string> container{"foo", "bar", "baz"};
 
     auto controller = [&](context ctx) {
-        for_each(
-            ctx,
-            direct(container),
-            [&](context ctx, readable<string> const& item) {
-                do_text(ctx, apply(ctx, counting_identity, item));
-            });
+        for_each(ctx, direct(container), [&](readable<string> const& item) {
+            do_text(ctx, apply(ctx, counting_identity, item));
+        });
     };
 
     // The first time the traversal is done, there is one initial call for each
@@ -513,10 +495,9 @@ TEST_CASE("writing string list items", "[flow][for_each]")
     std::list<string> container{"foo", "bar", "baz"};
 
     auto controller = [&](context ctx) {
-        for_each(
-            ctx, direct(container), [&](context, duplex<string> const& item) {
-                write_signal(item, "boo");
-            });
+        for_each(ctx, direct(container), [&](duplex<string> const& item) {
+            write_signal(item, "boo");
+        });
     };
 
     check_traversal(sys, controller, "");
@@ -537,15 +518,14 @@ TEST_CASE("item list", "[for_each][list]")
     std::list<my_item> container{{"apple"}, {"banana"}, {"cherry"}};
 
     auto controller = [&](context ctx) {
-        for_each(
-            ctx, direct(container), [&](context ctx, readable<my_item> item) {
-                do_text(
+        for_each(ctx, direct(container), [&](readable<my_item> item) {
+            do_text(
+                ctx,
+                apply(
                     ctx,
-                    apply(
-                        ctx,
-                        counting_identity,
-                        simplify_id(alia_field(item, id))));
-            });
+                    counting_identity,
+                    simplify_id(alia_field(item, id))));
+        });
     };
 
     // The first time the traversal is done, there is one initial call for each
@@ -592,9 +572,7 @@ TEST_CASE("for_each over list of item signals", "[for_each][list]")
 
     auto controller = [&](context ctx) {
         for_each(
-            ctx,
-            container,
-            [&](context ctx, naming_context& nc, readable<my_item> item) {
+            ctx, container, [&](naming_context& nc, readable<my_item> item) {
                 named_block nb(nc, make_id(read_signal(item).id));
                 do_text(
                     ctx,
@@ -637,7 +615,7 @@ TEST_CASE("for_each over a list of raw items", "[for_each][list]")
     std::list<my_item> container{{"apple"}, {"banana"}, {"cherry"}};
 
     auto controller = [&](context ctx) {
-        for_each(ctx, container, [&](context ctx, my_item& item) {
+        for_each(ctx, container, [&](my_item& item) {
             do_text(ctx, apply(ctx, counting_identity, value(item.id)));
         });
     };
