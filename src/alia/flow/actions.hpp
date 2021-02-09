@@ -335,8 +335,8 @@ unready()
 
 } // namespace actions
 
-// toggle(flag), where :flag is a signal to a boolean, creates an action
-// that will toggle the value of :flag between true and false.
+// actions::toggle(flag), where :flag is a signal to a boolean, creates an
+// action that will toggle the value of :flag between true and false.
 //
 // Note that this could also be used with other value types as long as the !
 // operator provides a reasonable "toggle" function.
@@ -352,8 +352,9 @@ toggle(Flag flag)
 
 } // namespace actions
 
-// push_back(container), where :container is a signal, creates an action that
-// takes an item as a parameter and pushes it onto the back of :container.
+// actions::push_back(container), where :container is a signal, creates an
+// action that takes an item as a parameter and pushes it onto the back of
+// :container.
 
 template<class Container, class Item>
 struct push_back_action : action_interface<Item>
@@ -390,6 +391,53 @@ push_back(Container container)
     return push_back_action<
         Container,
         typename Container::value_type::value_type>(std::move(container));
+}
+
+} // namespace actions
+
+// actions::erase_index(container, index) creates an actions that erases the
+// item at :index from :container.
+// :container must be a duplex signal carrying a container.
+// :index can be either a raw size_t or a readable signal carrying a size_t.
+
+template<class Container, class Index>
+struct erase_index_action : action_interface<>
+{
+    erase_index_action(Container container, Index index)
+        : container_(std::move(container)), index_(std::move(index))
+    {
+    }
+
+    bool
+    is_ready() const
+    {
+        return container_.has_value() && container_.ready_to_write()
+               && index_.has_value();
+    }
+
+    void
+    perform(function_view<void()> const& intermediary) const
+    {
+        auto new_container = forward_signal(alia::move(container_));
+        new_container.erase(new_container.begin() + read_signal(index_));
+        intermediary();
+        container_.write(std::move(new_container));
+    }
+
+ private:
+    Container container_;
+    Index index_;
+};
+
+namespace actions {
+
+template<class Container, class Index>
+auto
+erase_index(Container container, Index index)
+{
+    auto index_signal = signalize(std::move(index));
+    return erase_index_action<Container, decltype(index_signal)>(
+        std::move(container), std::move(index_signal));
 }
 
 } // namespace actions

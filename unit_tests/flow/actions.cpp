@@ -232,6 +232,54 @@ TEST_CASE("push_back movable", "[flow][actions]")
     }
 }
 
+TEST_CASE("erase_index action", "[flow][actions]")
+{
+    auto x = std::vector<int>{1, 2, 3, 4};
+    {
+        auto a = actions::erase_index(direct(x), 2);
+        REQUIRE(a.is_ready());
+        perform_action(a);
+        REQUIRE(x == (std::vector<int>{1, 2, 4}));
+    }
+    {
+        auto a = actions::erase_index(direct(x), value(0));
+        REQUIRE(a.is_ready());
+        perform_action(a);
+        REQUIRE(x == (std::vector<int>{2, 4}));
+    }
+
+    {
+        auto a = actions::erase_index(direct(x), empty<size_t>());
+        REQUIRE(!a.is_ready());
+    }
+    {
+        auto a = actions::erase_index(empty<std::vector<int>>(), value(0));
+        REQUIRE(!a.is_ready());
+    }
+    {
+        auto a = actions::erase_index(
+            fake_writability(value(std::vector<int>(1, 2))), value(0));
+        REQUIRE(!a.is_ready());
+    }
+}
+
+TEST_CASE("erase_index movable", "[flow][actions]")
+{
+    auto x = std::vector<movable_object>{
+        movable_object(1), movable_object(2), movable_object(3)};
+    {
+        auto a = actions::erase_index(direct(x), 1);
+        REQUIRE(a.is_ready());
+        copy_count = 0;
+        perform_action(a);
+        REQUIRE(copy_count == 0);
+        REQUIRE(
+            x
+            == (std::vector<movable_object>{
+                movable_object(1), movable_object(3)}));
+    }
+}
+
 TEST_CASE("lambda actions", "[flow][actions]")
 {
     int x = 0;
