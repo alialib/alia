@@ -12,15 +12,10 @@ namespace alia {
 // lambda_constant(read) creates a read-only signal whose value is constant and
 // is determined by calling :read.
 template<class Value, class Read>
-struct simple_lambda_constant_signal
-    : signal<
-          simple_lambda_constant_signal<Value, Read>,
-          Value,
-          read_only_signal>
+struct lambda_constant_signal
+    : signal<lambda_constant_signal<Value, Read>, Value, move_activated_signal>
 {
-    simple_lambda_constant_signal(Read read)
-        : read_(read), value_(decltype(read())())
-
+    lambda_constant_signal(Read read) : read_(read)
     {
     }
     bool
@@ -39,6 +34,11 @@ struct simple_lambda_constant_signal
         value_ = read_();
         return value_;
     }
+    Value
+    move_out() const override
+    {
+        return read_();
+    }
 
  private:
     Read read_;
@@ -48,8 +48,7 @@ template<class Read>
 auto
 lambda_constant(Read read)
 {
-    return simple_lambda_constant_signal<std::decay_t<decltype(read())>, Read>(
-        read);
+    return lambda_constant_signal<std::decay_t<decltype(read())>, Read>(read);
 }
 
 // lambda_reader(read) creates a read-only signal whose value is determined by

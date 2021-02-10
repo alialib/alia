@@ -18,7 +18,7 @@ template<class Result, class Function, class Arg>
 struct lazy_apply1_signal : lazy_signal<
                                 lazy_apply1_signal<Result, Function, Arg>,
                                 Result,
-                                read_only_signal>
+                                move_activated_signal>
 {
     lazy_apply1_signal(Function f, Arg arg)
         : f_(std::move(f)), arg_(std::move(arg))
@@ -57,7 +57,7 @@ struct lazy_apply2_signal
     : lazy_signal<
           lazy_apply2_signal<Result, Function, Arg0, Arg1>,
           Result,
-          read_only_signal>
+          move_activated_signal>
 {
     lazy_apply2_signal(Function f, Arg0 arg0, Arg1 arg1)
         : f_(std::move(f)), arg0_(std::move(arg0)), arg1_(std::move(arg1))
@@ -117,7 +117,7 @@ struct lazy_duplex_apply_signal
     : lazy_signal<
           lazy_duplex_apply_signal<Result, Forward, Reverse, Arg>,
           Result,
-          duplex_signal>
+          readable_duplex_signal>
 {
     lazy_duplex_apply_signal(Forward forward, Reverse reverse, Arg arg)
         : forward_(std::move(forward)),
@@ -335,7 +335,7 @@ template<class Value, class Wrapped, class Reverse>
 struct duplex_apply_signal : signal<
                                  duplex_apply_signal<Value, Wrapped, Reverse>,
                                  Value,
-                                 duplex_signal>
+                                 readable_duplex_signal>
 {
     duplex_apply_signal(
         apply_result_data<Value>& data, Wrapped wrapped, Reverse reverse)
