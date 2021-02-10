@@ -14,7 +14,7 @@ template<class Signal>
 std::enable_if_t<is_readable_signal_type<Signal>::value, Signal>
 signalize(Signal s)
 {
-    return s;
+    return std::move(s);
 }
 template<class Value, std::enable_if_t<!is_signal_type<Value>::value, int> = 0>
 auto

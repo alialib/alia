@@ -3,6 +3,7 @@
 #include <testing.hpp>
 
 #include <alia/signals/basic.hpp>
+#include <alia/signals/lambdas.hpp>
 #include <alia/signals/operators.hpp>
 
 #include "traversal.hpp"
@@ -164,6 +165,41 @@ TEST_CASE("get_state with raw initial value", "[signals][state]")
 
         REQUIRE(read_signal(state) == 13);
         REQUIRE(!state_id.matches(state.value_id()));
+    });
+}
+
+namespace {
+
+struct state_test_object
+{
+    int x;
+
+    state_test_object(state_test_object const&) = delete;
+    state_test_object&
+    operator=(state_test_object const&)
+        = delete;
+    state_test_object(state_test_object&&) = default;
+    state_test_object&
+    operator=(state_test_object&&)
+        = default;
+    state_test_object() = default;
+};
+
+} // namespace
+
+TEST_CASE("get_state with lambda initial value", "[signals][state]")
+{
+    alia::system sys;
+    initialize_system(sys, [](context) {});
+    captured_id state_id;
+    do_traversal(sys, [&](context ctx) {
+        auto state = get_state(
+            ctx, lambda_constant([] { return state_test_object{12}; }));
+
+        REQUIRE(signal_has_value(state));
+        REQUIRE(read_signal(state).x == 12);
+        REQUIRE(signal_ready_to_write(state));
+        state_id.capture(state.value_id());
     });
 }
 

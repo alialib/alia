@@ -221,8 +221,10 @@ common_state_signal_logic(
     on_refresh(ctx, [&](auto ctx) {
         state->refresh_container(get_active_component_container(ctx));
         if (!state->is_initialized() && signal_has_value(initial_value_signal))
+        {
             state->untracked_nonconst_ref()
-                = read_signal(initial_value_signal);
+                = forward_signal(initial_value_signal);
+        }
     });
 }
 
@@ -234,9 +236,9 @@ common_state_signal_logic(
 // one is explicitly written to the state signal.
 template<class Context, class InitialValue>
 auto
-get_state(Context ctx, InitialValue const& initial_value)
+get_state(Context ctx, InitialValue initial_value)
 {
-    auto initial_value_signal = signalize(initial_value);
+    auto initial_value_signal = signalize(std::move(initial_value));
 
     state_storage<typename decltype(initial_value_signal)::value_type>* state;
     get_data(ctx, &state);
@@ -257,9 +259,9 @@ get_state(Context ctx, InitialValue const& initial_value)
 //
 template<class Context, class InitialValue>
 auto
-get_transient_state(Context ctx, InitialValue const& initial_value)
+get_transient_state(Context ctx, InitialValue initial_value)
 {
-    auto initial_value_signal = signalize(initial_value);
+    auto initial_value_signal = signalize(std::move(initial_value));
 
     state_storage<typename decltype(initial_value_signal)::value_type>* state;
     get_cached_data(ctx, &state);

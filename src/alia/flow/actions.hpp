@@ -113,8 +113,8 @@ template<class First, class Second, class... Args>
 struct action_pair<First, Second, action_interface<Args...>>
     : action_interface<Args...>
 {
-    action_pair(First const& first, Second const& second)
-        : first_(first), second_(second)
+    action_pair(First first, Second second)
+        : first_(std::move(first)), second_(std::move(second))
     {
     }
 
@@ -143,10 +143,10 @@ template<
         is_action_type<First>::value && is_action_type<Second>::value,
         int> = 0>
 auto
-operator,(First const& first, Second const& second)
+operator,(First first, Second second)
 {
     return action_pair<First, Second, typename First::action_interface>(
-        first, second);
+        std::move(first), std::move(second));
 }
 
 // operator <<
