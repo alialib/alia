@@ -56,7 +56,7 @@ struct storage_signal
     : signal<
           storage_signal,
           std::string,
-          signal_capabilities<signal_copyable, signal_clearable>>
+          signal_capabilities<signal_movable, signal_clearable>>
 {
     explicit storage_signal(storage_signal_data* data);
 
@@ -76,7 +76,7 @@ struct storage_signal
     write(std::string value) const override;
 
     std::string
-    movable_value() const override;
+    move_out() const override;
 
     void
     clear() const override;

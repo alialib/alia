@@ -96,10 +96,10 @@ storage_signal::write(std::string value) const
 }
 
 std::string
-storage_signal::movable_value() const
+storage_signal::move_out() const
 {
-    std::string movable = std::move(data_->value.untracked_nonconst_ref());
-    return movable;
+    std::string moved = std::move(data_->value.untracked_nonconst_ref());
+    return moved;
 }
 
 void
