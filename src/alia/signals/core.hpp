@@ -425,7 +425,7 @@ using writable = signal_ref<Value, write_only_signal>;
 // duplex<Value> denotes a reference to a duplex signal carrying values of type
 // :Value.
 template<class Value>
-using duplex = signal_ref<Value, readable_duplex_signal>;
+using duplex = signal_ref<Value, duplex_signal>;
 
 // is_signal_type<T>::value yields a compile-time boolean indicating whether or
 // not T is an alia signal type.
