@@ -33,7 +33,8 @@ TEST_CASE("signal_capabilities_compatible", "[signals][core]")
         readable_duplex_signal, movable_read_only_signal, false);
     TEST_COMPATIBILITY(
         readable_duplex_signal, move_activated_duplex_signal, true);
-    TEST_COMPATIBILITY(movable_duplex_signal, duplex_signal, false);
+    TEST_COMPATIBILITY(movable_duplex_signal, duplex_signal, true);
+    TEST_COMPATIBILITY(move_activated_duplex_signal, duplex_signal, false);
     TEST_COMPATIBILITY(
         movable_duplex_signal, move_activated_duplex_signal, true);
     TEST_COMPATIBILITY(

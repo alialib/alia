@@ -78,7 +78,7 @@ typedef signal_capabilities<signal_movable, signal_writable>
     movable_duplex_signal;
 typedef signal_capabilities<signal_move_activated, signal_writable>
     move_activated_duplex_signal;
-typedef readable_duplex_signal duplex_signal;
+typedef movable_duplex_signal duplex_signal;
 typedef signal_capabilities<signal_readable, signal_clearable>
     clearable_signal;
 
@@ -567,8 +567,8 @@ struct is_duplex_signal_type : std::conditional_t<
 // whether or not the given signal type supports copying.
 template<class Signal>
 struct signal_is_movable : signal_capability_level_is_compatible<
-                                signal_movable,
-                                typename Signal::capabilities::reading>
+                               signal_movable,
+                               typename Signal::capabilities::reading>
 {
 };
 
@@ -576,9 +576,9 @@ struct signal_is_movable : signal_capability_level_is_compatible<
 // whether or not T is an alia signal that supports value copying.
 template<class T>
 struct is_movable_signal_type : std::conditional_t<
-                                     is_signal_type<T>::value,
-                                     signal_is_movable<T>,
-                                     std::false_type>
+                                    is_signal_type<T>::value,
+                                    signal_is_movable<T>,
+                                    std::false_type>
 {
 };
 

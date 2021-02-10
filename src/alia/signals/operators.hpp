@@ -431,13 +431,13 @@ struct field_signal : preferred_id_signal<
                           Field,
                           typename signal_capabilities_intersection<
                               typename StructureSignal::capabilities,
-                              readable_duplex_signal>::type,
+                              movable_duplex_signal>::type,
                           id_pair<id_ref, simple_id<Field*>>>
 {
     typedef typename StructureSignal::value_type structure_type;
     typedef Field structure_type::*field_ptr;
     field_signal(StructureSignal structure, field_ptr field)
-        : structure_(structure), field_(field)
+        : structure_(std::move(structure)), field_(std::move(field))
     {
     }
     bool
@@ -451,14 +451,23 @@ struct field_signal : preferred_id_signal<
         structure_type const& structure = structure_.read();
         return structure.*field_;
     }
+    Field
+    move_out() const override
+    {
+        structure_type structure = structure_.move_out();
+        Field field = std::move(structure.*field_);
+        structure_.write(std::move(structure));
+        return field;
+    }
     auto
     complex_value_id() const
     {
-        // Apparently pointers-to-members aren't comparable for order, so
-        // instead we use the address of the field if it were in a structure
-        // that started at address 0.
         return combine_ids(
             ref(structure_.value_id()),
+            // Apparently pointers-to-members aren't comparable for order,
+            // which means they don't meet the requirements for serving as an
+            // alia ID, so instead we use the address of the field if it were
+            // in a structure that started at address 0.
             make_id(&(((structure_type*) 0)->*field_)));
     }
     bool
@@ -469,9 +478,9 @@ struct field_signal : preferred_id_signal<
     void
     write(Field x) const override
     {
-        structure_type s = structure_.read();
-        s.*field_ = x;
-        structure_.write(s);
+        structure_type s = forward_signal(alia::move(structure_));
+        s.*field_ = std::move(x);
+        structure_.write(std::move(s));
     }
 
  private:
@@ -653,7 +662,7 @@ std::enable_if_t<signal_is_writable<ContainerSignal>::value>
 write_subscript(
     ContainerSignal const& container, IndexSignal const& index, Value value)
 {
-    auto new_container = container.read();
+    auto new_container = forward_signal(alia::move(container));
     new_container[index.read()] = std::move(value);
     container.write(std::move(new_container));
 }
@@ -672,7 +681,7 @@ struct subscript_signal : preferred_id_signal<
                                   typename IndexSignal::value_type>::type,
                               typename signal_capabilities_intersection<
                                   typename ContainerSignal::capabilities,
-                                  readable_duplex_signal>::type,
+                                  movable_duplex_signal>::type,
                               id_pair<alia::id_ref, alia::id_ref>>
 {
     subscript_signal()
@@ -695,7 +704,11 @@ struct subscript_signal : preferred_id_signal<
     typename subscript_signal::value_type
     move_out() const override
     {
-        return invoker_(container_.read(), index_.read());
+        auto container = container_.move_out();
+        typename subscript_signal::value_type moved_out
+            = std::move(container[index_.read()]);
+        container_.write(std::move(container));
+        return moved_out;
     }
     auto
     complex_value_id() const
