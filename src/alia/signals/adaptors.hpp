@@ -121,11 +121,11 @@ struct casting_signal
     To const&
     read() const override
     {
-        value_ = this->movable_value();
+        value_ = this->move_out();
         return value_;
     }
     To
-    movable_value() const override
+    move_out() const override
     {
         return static_cast<To>(forward_signal(this->wrapped_));
     }
@@ -543,9 +543,9 @@ struct unwrapper_signal : casting_signal_wrapper<
         return this->wrapped_.read().value();
     }
     typename Wrapped::value_type::value_type
-    movable_value() const override
+    move_out() const override
     {
-        return this->wrapped_.movable_value().value();
+        return this->wrapped_.move_out().value();
     }
     id_interface const&
     value_id() const override
@@ -587,7 +587,7 @@ struct signal_movement_activator
           Wrapped,
           typename Wrapped::value_type,
           signal_capabilities<
-              signal_movable,
+              signal_move_activated,
               typename Wrapped::capabilities::writing>>
 {
     signal_movement_activator()
@@ -600,7 +600,7 @@ struct signal_movement_activator
 };
 template<
     class Signal,
-    std::enable_if_t<is_copyable_signal_type<Signal>::value, int> = 0>
+    std::enable_if_t<is_movable_signal_type<Signal>::value, int> = 0>
 auto
 move(Signal signal)
 {
@@ -610,7 +610,7 @@ template<
     class Signal,
     std::enable_if_t<
         is_signal_type<Signal>::value && signal_is_readable<Signal>::value
-            && !signal_is_copyable<Signal>::value,
+            && !signal_is_movable<Signal>::value,
         int> = 0>
 auto
 move(Signal signal)

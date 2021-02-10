@@ -29,15 +29,14 @@ struct signal_readable
 {
     static constexpr unsigned level = 1;
 };
-// The signal is capable of copying its value.
-// It could also move but there may be side effects, so it requires explicit
-// activation.
-struct signal_copyable
+// The signal is capable of moving its value but there may be side effects, so
+// it requires explicit activation.
+struct signal_movable
 {
     static constexpr unsigned level = 2;
 };
 // The signal is ready to move its value.
-struct signal_movable
+struct signal_move_activated
 {
     static constexpr unsigned level = 3;
 };
@@ -67,18 +66,18 @@ struct signal_capabilities
 // useful signal capability combinations
 typedef signal_capabilities<signal_readable, signal_unwritable>
     read_only_signal;
-typedef signal_capabilities<signal_copyable, signal_unwritable>
-    copyable_read_only_signal;
 typedef signal_capabilities<signal_movable, signal_unwritable>
     movable_read_only_signal;
+typedef signal_capabilities<signal_move_activated, signal_unwritable>
+    move_activated_signal;
 typedef signal_capabilities<signal_unreadable, signal_writable>
     write_only_signal;
 typedef signal_capabilities<signal_readable, signal_writable>
     readable_duplex_signal;
-typedef signal_capabilities<signal_copyable, signal_writable>
-    copyable_duplex_signal;
 typedef signal_capabilities<signal_movable, signal_writable>
     movable_duplex_signal;
+typedef signal_capabilities<signal_move_activated, signal_writable>
+    move_activated_duplex_signal;
 typedef readable_duplex_signal duplex_signal;
 typedef signal_capabilities<signal_readable, signal_clearable>
     clearable_signal;
@@ -224,9 +223,9 @@ struct signal_interface : untyped_signal_base
     read() const = 0;
 
     // Move out the signal's value.
-    // This is expected to be implemented by copyable and movable signals.
+    // This is expected to be implemented by movable signals.
     virtual Value
-    movable_value() const = 0;
+    move_out() const = 0;
 
     // Write the signal's value.
     virtual void
@@ -270,7 +269,7 @@ struct signal : signal_base<Derived, Value, Capabilities>
     }
 
 #define ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)                       \
-    Value movable_value() const override                                      \
+    Value move_out() const override                                           \
     {                                                                         \
         throw nullptr;                                                        \
     }
@@ -299,15 +298,15 @@ struct signal<Derived, Value, read_only_signal>
 };
 
 template<class Derived, class Value>
-struct signal<Derived, Value, movable_read_only_signal>
-    : signal_base<Derived, Value, movable_read_only_signal>
+struct signal<Derived, Value, move_activated_signal>
+    : signal_base<Derived, Value, move_activated_signal>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)
 };
 
 template<class Derived, class Value>
-struct signal<Derived, Value, copyable_read_only_signal>
-    : signal_base<Derived, Value, copyable_read_only_signal>
+struct signal<Derived, Value, movable_read_only_signal>
+    : signal_base<Derived, Value, movable_read_only_signal>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)
 };
@@ -329,15 +328,15 @@ struct signal<Derived, Value, readable_duplex_signal>
 };
 
 template<class Derived, class Value>
-struct signal<Derived, Value, movable_duplex_signal>
-    : signal_base<Derived, Value, movable_duplex_signal>
+struct signal<Derived, Value, move_activated_duplex_signal>
+    : signal_base<Derived, Value, move_activated_duplex_signal>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
 };
 
 template<class Derived, class Value>
-struct signal<Derived, Value, copyable_duplex_signal>
-    : signal_base<Derived, Value, copyable_duplex_signal>
+struct signal<Derived, Value, movable_duplex_signal>
+    : signal_base<Derived, Value, movable_duplex_signal>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
 };
@@ -379,9 +378,9 @@ struct signal_ref
         return ref_->read();
     }
     Value
-    movable_value() const override
+    move_out() const override
     {
-        return ref_->movable_value();
+        return ref_->move_out();
     }
     id_interface const&
     value_id() const override
@@ -564,66 +563,71 @@ struct is_duplex_signal_type : std::conditional_t<
 {
 };
 
-// signal_is_copyable<Signal>::value yields a compile-time boolean indicating
+// signal_is_movable<Signal>::value yields a compile-time boolean indicating
 // whether or not the given signal type supports copying.
 template<class Signal>
-struct signal_is_copyable : signal_capability_level_is_compatible<
-                                signal_copyable,
+struct signal_is_movable : signal_capability_level_is_compatible<
+                                signal_movable,
                                 typename Signal::capabilities::reading>
 {
 };
 
-// is_copyable_signal_type<T>::value yields a compile-time boolean indicating
+// is_movable_signal_type<T>::value yields a compile-time boolean indicating
 // whether or not T is an alia signal that supports value copying.
 template<class T>
-struct is_copyable_signal_type : std::conditional_t<
+struct is_movable_signal_type : std::conditional_t<
                                      is_signal_type<T>::value,
-                                     signal_is_copyable<T>,
+                                     signal_is_movable<T>,
                                      std::false_type>
 {
 };
 
-// signal_is_movable<Signal>::value yields a compile-time boolean indicating
-// whether or not the given signal type allows moving.
+// signal_is_move_activated<Signal>::value yields a compile-time boolean
+// indicating whether or not the given signal type allows moving.
 template<class Signal>
-struct signal_is_movable : signal_capability_level_is_compatible<
-                               signal_movable,
-                               typename Signal::capabilities::reading>
+struct signal_is_move_activated : signal_capability_level_is_compatible<
+                                      signal_move_activated,
+                                      typename Signal::capabilities::reading>
 {
 };
 
-// is_movable_signal_type<T>::value yields a compile-time boolean indicating
-// whether or not T is an alia signal that supports value movement.
+// is_move_activated_signal_type<T>::value yields a compile-time boolean
+// indicating whether or not T is an alia signal that supports value movement.
 template<class T>
-struct is_movable_signal_type : std::conditional_t<
-                                    is_signal_type<T>::value,
-                                    signal_is_movable<T>,
-                                    std::false_type>
+struct is_move_activated_signal_type : std::conditional_t<
+                                           is_signal_type<T>::value,
+                                           signal_is_move_activated<T>,
+                                           std::false_type>
 {
 };
 
 // Move out a signal's value.
 template<class Signal>
-std::enable_if_t<signal_is_movable<Signal>::value, typename Signal::value_type>
+std::enable_if_t<
+    signal_is_move_activated<Signal>::value,
+    typename Signal::value_type>
 move_signal(Signal const& signal)
 {
     assert(signal.has_value());
-    return signal.movable_value();
+    return signal.move_out();
 }
 
 // Forward along a signal's value.
 // This will move out the value if movement is activated or return a reference
 // otherwise.
 template<class Signal>
-std::enable_if_t<signal_is_movable<Signal>::value, typename Signal::value_type>
+std::enable_if_t<
+    signal_is_move_activated<Signal>::value,
+    typename Signal::value_type>
 forward_signal(Signal const& signal)
 {
     assert(signal.has_value());
-    return signal.movable_value();
+    return signal.move_out();
 }
 template<class Signal>
 std::enable_if_t<
-    !signal_is_movable<Signal>::value && signal_is_readable<Signal>::value,
+    !signal_is_move_activated<Signal>::value
+        && signal_is_readable<Signal>::value,
     typename Signal::value_type const&>
 forward_signal(Signal const& signal)
 {

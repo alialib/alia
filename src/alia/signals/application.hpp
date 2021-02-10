@@ -35,7 +35,7 @@ struct lazy_apply1_signal : lazy_signal<
         return arg_.has_value();
     }
     Result
-    movable_value() const
+    move_out() const
     {
         return f_(forward_signal(arg_));
     }
@@ -75,7 +75,7 @@ struct lazy_apply2_signal
         return arg0_.has_value() && arg1_.has_value();
     }
     Result
-    movable_value() const
+    move_out() const
     {
         return f_(forward_signal(arg0_), forward_signal(arg1_));
     }
@@ -136,7 +136,7 @@ struct lazy_duplex_apply_signal
         return arg_.has_value();
     }
     Result
-    movable_value() const
+    move_out() const
     {
         return forward_(forward_signal(arg_));
     }

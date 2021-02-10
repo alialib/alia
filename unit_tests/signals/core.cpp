@@ -16,27 +16,28 @@ TEST_CASE("signal_capabilities_compatible", "[signals][core]")
     TEST_COMPATIBILITY(read_only_signal, read_only_signal, true);
     TEST_COMPATIBILITY(read_only_signal, write_only_signal, false);
     TEST_COMPATIBILITY(read_only_signal, readable_duplex_signal, true);
-    TEST_COMPATIBILITY(read_only_signal, copyable_read_only_signal, true);
-    TEST_COMPATIBILITY(read_only_signal, movable_duplex_signal, true);
-    TEST_COMPATIBILITY(copyable_read_only_signal, read_only_signal, false);
-    TEST_COMPATIBILITY(
-        copyable_read_only_signal, movable_read_only_signal, true);
-    TEST_COMPATIBILITY(
-        movable_read_only_signal, copyable_duplex_signal, false);
+    TEST_COMPATIBILITY(read_only_signal, movable_read_only_signal, true);
+    TEST_COMPATIBILITY(read_only_signal, move_activated_duplex_signal, true);
+    TEST_COMPATIBILITY(movable_read_only_signal, read_only_signal, false);
+    TEST_COMPATIBILITY(movable_read_only_signal, move_activated_signal, true);
+    TEST_COMPATIBILITY(move_activated_signal, movable_duplex_signal, false);
     TEST_COMPATIBILITY(write_only_signal, read_only_signal, false);
     TEST_COMPATIBILITY(write_only_signal, write_only_signal, true);
     TEST_COMPATIBILITY(write_only_signal, readable_duplex_signal, true);
-    TEST_COMPATIBILITY(write_only_signal, copyable_read_only_signal, false);
-    TEST_COMPATIBILITY(write_only_signal, movable_duplex_signal, true);
+    TEST_COMPATIBILITY(write_only_signal, movable_read_only_signal, false);
+    TEST_COMPATIBILITY(write_only_signal, move_activated_duplex_signal, true);
     TEST_COMPATIBILITY(readable_duplex_signal, read_only_signal, false);
     TEST_COMPATIBILITY(readable_duplex_signal, write_only_signal, false);
     TEST_COMPATIBILITY(readable_duplex_signal, readable_duplex_signal, true);
     TEST_COMPATIBILITY(
-        readable_duplex_signal, copyable_read_only_signal, false);
-    TEST_COMPATIBILITY(readable_duplex_signal, movable_duplex_signal, true);
-    TEST_COMPATIBILITY(copyable_duplex_signal, duplex_signal, false);
-    TEST_COMPATIBILITY(copyable_duplex_signal, movable_duplex_signal, true);
-    TEST_COMPATIBILITY(movable_duplex_signal, copyable_duplex_signal, false);
+        readable_duplex_signal, movable_read_only_signal, false);
+    TEST_COMPATIBILITY(
+        readable_duplex_signal, move_activated_duplex_signal, true);
+    TEST_COMPATIBILITY(movable_duplex_signal, duplex_signal, false);
+    TEST_COMPATIBILITY(
+        movable_duplex_signal, move_activated_duplex_signal, true);
+    TEST_COMPATIBILITY(
+        move_activated_duplex_signal, movable_duplex_signal, false);
 }
 
 TEST_CASE("signal_capabilities_intersection", "[signals][core]")
@@ -48,13 +49,13 @@ TEST_CASE("signal_capabilities_intersection", "[signals][core]")
 
     TEST_INTERSECTION(read_only_signal, read_only_signal, read_only_signal);
     TEST_INTERSECTION(
-        read_only_signal, copyable_read_only_signal, read_only_signal);
-    TEST_INTERSECTION(
         read_only_signal, movable_read_only_signal, read_only_signal);
     TEST_INTERSECTION(
-        copyable_read_only_signal,
+        read_only_signal, move_activated_signal, read_only_signal);
+    TEST_INTERSECTION(
         movable_read_only_signal,
-        copyable_read_only_signal);
+        move_activated_signal,
+        movable_read_only_signal);
     TEST_INTERSECTION(
         read_only_signal, readable_duplex_signal, read_only_signal);
     TEST_INTERSECTION(write_only_signal, write_only_signal, write_only_signal);
@@ -69,11 +70,13 @@ TEST_CASE("signal_capabilities_intersection", "[signals][core]")
         readable_duplex_signal,
         readable_duplex_signal);
     TEST_INTERSECTION(
-        copyable_duplex_signal, movable_duplex_signal, copyable_duplex_signal);
+        movable_duplex_signal,
+        move_activated_duplex_signal,
+        movable_duplex_signal);
     TEST_INTERSECTION(
-        copyable_duplex_signal,
-        movable_read_only_signal,
-        copyable_read_only_signal);
+        movable_duplex_signal,
+        move_activated_signal,
+        movable_read_only_signal);
 }
 
 TEST_CASE("signal_capabilities_union", "[signals][core]")
@@ -84,15 +87,12 @@ TEST_CASE("signal_capabilities_union", "[signals][core]")
 
     TEST_UNION(read_only_signal, read_only_signal, read_only_signal);
     TEST_UNION(
-        read_only_signal,
-        copyable_read_only_signal,
-        copyable_read_only_signal);
-    TEST_UNION(
         read_only_signal, movable_read_only_signal, movable_read_only_signal);
+    TEST_UNION(read_only_signal, move_activated_signal, move_activated_signal);
     TEST_UNION(
-        copyable_read_only_signal,
         movable_read_only_signal,
-        movable_read_only_signal);
+        move_activated_signal,
+        move_activated_signal);
     TEST_UNION(read_only_signal, write_only_signal, readable_duplex_signal);
     TEST_UNION(
         read_only_signal, readable_duplex_signal, readable_duplex_signal);
@@ -109,11 +109,13 @@ TEST_CASE("signal_capabilities_union", "[signals][core]")
         readable_duplex_signal,
         readable_duplex_signal);
     TEST_UNION(
-        copyable_duplex_signal, movable_duplex_signal, movable_duplex_signal);
+        movable_duplex_signal,
+        move_activated_duplex_signal,
+        move_activated_duplex_signal);
     TEST_UNION(
-        copyable_duplex_signal,
-        movable_read_only_signal,
-        movable_duplex_signal);
+        movable_duplex_signal,
+        move_activated_signal,
+        move_activated_duplex_signal);
 }
 
 TEST_CASE("is_signal_type", "[signals][core]")

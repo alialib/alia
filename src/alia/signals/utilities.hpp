@@ -162,9 +162,9 @@ struct signal_wrapper : signal<Derived, Value, Capabilities>
         return wrapped_.read();
     }
     typename Wrapped::value_type
-    movable_value() const override
+    move_out() const override
     {
-        return wrapped_.movable_value();
+        return wrapped_.move_out();
     }
     id_interface const&
     value_id() const override
@@ -253,14 +253,14 @@ struct casting_signal_wrapper : signal<Derived, Value, Capabilities>
 
 // lazy_signal is used to create signals that lazily generate their values.
 // It provides storage for the computed value and automatically implements
-// read() in terms of movable_value().
+// read() in terms of move_out().
 template<class Derived, class Value, class Capabilities>
 struct lazy_signal : signal<Derived, Value, Capabilities>
 {
     Value const&
     read() const override
     {
-        value_ = static_cast<Derived const&>(*this).movable_value();
+        value_ = static_cast<Derived const&>(*this).move_out();
         return value_;
     }
 
@@ -284,7 +284,7 @@ struct lazy_signal_wrapper
     Value const&
     read() const override
     {
-        value_ = static_cast<Derived const&>(*this).movable_value();
+        value_ = static_cast<Derived const&>(*this).move_out();
         return value_;
     }
 

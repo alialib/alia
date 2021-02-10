@@ -11,7 +11,7 @@ namespace alia {
 // empty<Value>() gives a signal that never has a value.
 template<class Value>
 struct empty_signal
-    : signal<empty_signal<Value>, Value, readable_duplex_signal>
+    : signal<empty_signal<Value>, Value, move_activated_duplex_signal>
 {
     empty_signal()
     {
@@ -38,7 +38,7 @@ struct empty_signal
         throw nullptr;
     }
     Value
-    movable_value() const override
+    move_out() const override
     {
         throw nullptr;
     }
@@ -68,7 +68,7 @@ empty()
 // value(v) creates a read-only signal that carries the value v.
 template<class Value>
 struct value_signal
-    : regular_signal<value_signal<Value>, Value, movable_read_only_signal>
+    : regular_signal<value_signal<Value>, Value, move_activated_signal>
 {
     explicit value_signal(Value v) : v_(std::move(v))
     {
@@ -84,10 +84,10 @@ struct value_signal
         return v_;
     }
     Value
-    movable_value() const override
+    move_out() const override
     {
-        Value movable = std::move(v_);
-        return movable;
+        Value moved = std::move(v_);
+        return moved;
     }
 
  private:
@@ -119,7 +119,7 @@ struct string_literal_signal
         return true;
     }
     std::string
-    movable_value() const override
+    move_out() const override
     {
         return std::string(text_);
     }
@@ -146,7 +146,7 @@ inline string_literal_signal operator"" _a(char const* s, size_t)
 // directly exposes the value of x.
 template<class Value>
 struct direct_signal
-    : regular_signal<direct_signal<Value>, Value, copyable_duplex_signal>
+    : regular_signal<direct_signal<Value>, Value, movable_duplex_signal>
 {
     explicit direct_signal(Value* v) : v_(v)
     {
@@ -162,10 +162,10 @@ struct direct_signal
         return *v_;
     }
     Value
-    movable_value() const override
+    move_out() const override
     {
-        Value movable = std::move(*v_);
-        return movable;
+        Value moved = std::move(*v_);
+        return moved;
     }
     bool
     ready_to_write() const override

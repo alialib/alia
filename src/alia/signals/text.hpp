@@ -138,7 +138,7 @@ struct duplex_text_signal : casting_signal_wrapper<
                                 Wrapped,
                                 std::string,
                                 typename signal_capabilities_intersection<
-                                    copyable_duplex_signal,
+                                    movable_duplex_signal,
                                     typename Wrapped::capabilities>::type>
 {
     duplex_text_signal(
@@ -157,7 +157,7 @@ struct duplex_text_signal : casting_signal_wrapper<
         return data_->output_text;
     }
     std::string
-    movable_value() const override
+    move_out() const override
     {
         return this->read();
     }

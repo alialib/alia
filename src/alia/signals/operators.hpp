@@ -357,9 +357,9 @@ struct signal_mux : signal<
         return condition_.read() ? t_.read() : f_.read();
     }
     typename T::value_type
-    movable_value() const override
+    move_out() const override
     {
-        return condition_.read() ? t_.movable_value() : f_.movable_value();
+        return condition_.read() ? t_.move_out() : f_.move_out();
     }
     id_interface const&
     value_id() const override
@@ -693,7 +693,7 @@ struct subscript_signal : preferred_id_signal<
         return invoker_(container_.read(), index_.read());
     }
     typename subscript_signal::value_type
-    movable_value() const override
+    move_out() const override
     {
         return invoker_(container_.read(), index_.read());
     }

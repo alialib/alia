@@ -340,7 +340,7 @@ struct list_item_signal : signal<
         return *item_;
     }
     Item
-    movable_value() const
+    move_out() const
     {
         return *item_;
     }
