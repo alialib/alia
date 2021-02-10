@@ -27,7 +27,7 @@ struct scaled_signal : lazy_signal_wrapper<scaled_signal<N, Factor>, N>
         return this->wrapped_.has_value() && scale_factor_.has_value();
     }
     typename N::value_type
-    movable_value() const override
+    move_out() const override
     {
         return this->wrapped_.read() * scale_factor_.read();
     }
@@ -82,7 +82,7 @@ struct offset_signal : lazy_signal_wrapper<offset_signal<N, Offset>, N>
         return this->wrapped_.has_value() && offset_.has_value();
     }
     typename N::value_type
-    movable_value() const override
+    move_out() const override
     {
         return this->wrapped_.read() + offset_.read();
     }
