@@ -147,7 +147,7 @@ struct state_signal
     : signal<
           state_signal<Value>,
           Value,
-          signal_capabilities<signal_copyable, signal_clearable>>
+          signal_capabilities<signal_movable, signal_clearable>>
 {
     explicit state_signal(state_storage<Value>* data) : data_(data)
     {
@@ -185,10 +185,10 @@ struct state_signal
     }
 
     Value
-    movable_value() const override
+    move_out() const override
     {
-        Value movable = std::move(data_->untracked_nonconst_ref());
-        return movable;
+        Value moved = std::move(data_->untracked_nonconst_ref());
+        return moved;
     }
 
     void
