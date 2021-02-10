@@ -242,18 +242,25 @@ struct element_handle_base
     {
         return this->attr("class", value);
     }
-    // Dynamically specify one or more individual tokens on the class
-    // attribute.
-    template<class... Tokens>
+    // Dynamically specify an individual token on the class attribute.
+    template<class Token>
     Derived&
-    class_(Tokens... tokens)
+    class_(Token token)
     {
-        (detail::do_element_class_token(
-             this->context(),
-             this->node().object,
-             this->initializing(),
-             tokens),
-         ...);
+        detail::do_element_class_token(
+            this->context(), this->node().object, this->initializing(), token);
+        return static_cast<Derived&>(*this);
+    }
+    // Dynamically specify a conditional token on the class attribute.
+    template<class Token, class Condition>
+    Derived&
+    class_(Token token, Condition condition)
+    {
+        detail::do_element_class_token(
+            this->context(),
+            this->node().object,
+            this->initializing(),
+            mask(std::move(token), std::move(condition)));
         return static_cast<Derived&>(*this);
     }
 
