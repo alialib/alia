@@ -86,6 +86,12 @@ TEST_CASE("context", "[context][interface]")
     auto more_extended = extend_context<by_value_string_tag>(extended, "test");
     REQUIRE(detail::has_context_object<by_value_string_tag>(more_extended));
     REQUIRE(get<by_value_string_tag>(more_extended) == "test");
+
+    with_extended_context<by_value_string_tag>(
+        extended, "with", [&](auto with_ctx) {
+            REQUIRE(detail::has_context_object<by_value_string_tag>(with_ctx));
+            REQUIRE(get<by_value_string_tag>(with_ctx) == "with");
+        });
 }
 
 TEST_CASE("optional_context", "[context][interface]")
