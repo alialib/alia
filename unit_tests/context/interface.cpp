@@ -14,6 +14,8 @@ struct other_traversal
 };
 ALIA_DEFINE_TAGGED_TYPE(other_traversal_tag, other_traversal&)
 
+ALIA_DEFINE_TAGGED_TYPE(by_value_string_tag, std::string)
+
 TEST_CASE("context_storage", "[context][interface]")
 {
     context_storage storage;
@@ -38,7 +40,10 @@ TEST_CASE("context_storage", "[context][interface]")
     other_traversal other;
     storage.add<other_traversal_tag>(std::ref(other));
     REQUIRE(storage.has<other_traversal_tag>());
-    REQUIRE(storage.get<other_traversal_tag>().ptr == &other);
+    REQUIRE(
+        &detail::tagged_data_caster<std::any&, other_traversal&>::apply(
+            storage.get<other_traversal_tag>())
+        == &other);
     storage.remove<other_traversal_tag>();
     REQUIRE(!storage.has<other_traversal_tag>());
 }
@@ -77,6 +82,10 @@ TEST_CASE("context", "[context][interface]")
     REQUIRE(&get<event_traversal_tag>(extended) == &event);
     REQUIRE(detail::has_context_object<other_traversal_tag>(extended));
     REQUIRE(&get<other_traversal_tag>(extended) == &other);
+
+    auto more_extended = extend_context<by_value_string_tag>(extended, "test");
+    REQUIRE(detail::has_context_object<by_value_string_tag>(more_extended));
+    REQUIRE(get<by_value_string_tag>(more_extended) == "test");
 }
 
 TEST_CASE("optional_context", "[context][interface]")
