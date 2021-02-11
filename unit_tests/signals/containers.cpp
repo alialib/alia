@@ -4,6 +4,20 @@
 
 using namespace alia;
 
+TEST_CASE("container size query", "[signals][adaptors]")
+{
+    std::string x = "foob";
+    auto wrapped = direct(x);
+    auto s = size(wrapped);
+
+    typedef decltype(s) signal_t;
+    REQUIRE(signal_is_readable<signal_t>::value);
+    REQUIRE(!signal_is_writable<signal_t>::value);
+
+    REQUIRE(signal_has_value(s));
+    REQUIRE(read_signal(s) == 4);
+}
+
 TEST_CASE("is_empty on empty string", "[signals][adaptors]")
 {
     std::string x;
