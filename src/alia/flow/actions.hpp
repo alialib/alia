@@ -575,6 +575,25 @@ add_write_action(Wrapped wrapped, OnWrite on_write)
         std::move(wrapped), std::move(on_write));
 }
 
+// actions::apply(f, state, [args...]), where :state is a signal, creates an
+// action that will apply :f to the value of :state and write the result back
+// to :state. Any :args should also be signals and will be passed along as
+// additional arguments to :f.
+
+namespace actions {
+
+template<class Function, class PrimaryState, class... Args>
+auto
+apply(Function&& f, PrimaryState state, Args... args)
+{
+    return state <<= lazy_apply(
+               std::forward<Function>(f),
+               alia::move(state),
+               std::move(args)...);
+}
+
+} // namespace actions
+
 } // namespace alia
 
 #endif
