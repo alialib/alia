@@ -17,7 +17,7 @@ TEST_CASE("lazy_apply", "[signals][application]")
     auto s1 = lazy_apply([](int i) { return 2 * i; }, value(1));
 
     typedef decltype(s1) signal_t1;
-    REQUIRE(signal_is_readable<signal_t1>::value);
+    REQUIRE(signal_is_move_activated<signal_t1>::value);
     REQUIRE(!signal_is_writable<signal_t1>::value);
 
     REQUIRE(signal_has_value(s1));
@@ -27,7 +27,7 @@ TEST_CASE("lazy_apply", "[signals][application]")
         = lazy_apply([](int i, int j) { return i + j; }, value(1), value(6));
 
     typedef decltype(s2) signal_t2;
-    REQUIRE(signal_is_readable<signal_t2>::value);
+    REQUIRE(signal_is_move_activated<signal_t2>::value);
     REQUIRE(!signal_is_writable<signal_t2>::value);
 
     REQUIRE(signal_has_value(s2));
@@ -62,7 +62,7 @@ TEST_CASE("duplex_lazy_apply", "[signals][application]")
             auto s = lazy_duplex_apply(f, r, direct(n));
 
             typedef decltype(s) signal_t;
-            REQUIRE(signal_is_readable<signal_t>::value);
+            REQUIRE(signal_is_move_activated<signal_t>::value);
             REQUIRE(signal_is_writable<signal_t>::value);
 
             REQUIRE(signal_has_value(s));
@@ -192,7 +192,7 @@ TEST_CASE("simple apply", "[signals][application]")
             auto s = apply(ctx, f, value(x), value(y));
 
             typedef decltype(s) signal_t;
-            REQUIRE(signal_is_readable<signal_t>::value);
+            REQUIRE(signal_is_movable<signal_t>::value);
             REQUIRE(!signal_is_writable<signal_t>::value);
 
             REQUIRE(signal_has_value(s));
@@ -243,7 +243,7 @@ TEST_CASE("unready apply", "[signals][application]")
                 auto s = apply(ctx, f, x, y);
 
                 typedef decltype(s) signal_t;
-                REQUIRE(signal_is_readable<signal_t>::value);
+                REQUIRE(signal_is_movable<signal_t>::value);
                 REQUIRE(!signal_is_writable<signal_t>::value);
 
                 REQUIRE(!signal_has_value(s));
@@ -322,7 +322,7 @@ TEST_CASE("lift", "[signals][application]")
             auto s = f_lifted(ctx, value(0));
 
             typedef decltype(s) signal_t;
-            REQUIRE(signal_is_readable<signal_t>::value);
+            REQUIRE(signal_is_movable<signal_t>::value);
             REQUIRE(!signal_is_writable<signal_t>::value);
 
             REQUIRE(signal_has_value(s));
@@ -351,7 +351,7 @@ TEST_CASE("duplex_apply", "[signals][application]")
             auto s = duplex_apply(ctx, f, r, direct(n));
 
             typedef decltype(s) signal_t;
-            REQUIRE(signal_is_readable<signal_t>::value);
+            REQUIRE(signal_is_movable<signal_t>::value);
             REQUIRE(signal_is_writable<signal_t>::value);
 
             REQUIRE(signal_has_value(s));

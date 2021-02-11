@@ -117,7 +117,7 @@ struct lazy_duplex_apply_signal
     : lazy_signal<
           lazy_duplex_apply_signal<Result, Forward, Reverse, Arg>,
           Result,
-          readable_duplex_signal>
+          move_activated_duplex_signal>
 {
     lazy_duplex_apply_signal(Forward forward, Reverse reverse, Arg arg)
         : forward_(std::move(forward)),
@@ -207,7 +207,8 @@ reset(apply_result_data<Value>& data)
 } // namespace detail
 
 template<class Value>
-struct apply_signal : signal<apply_signal<Value>, Value, read_only_signal>
+struct apply_signal
+    : signal<apply_signal<Value>, Value, movable_read_only_signal>
 {
     apply_signal(detail::apply_result_data<Value>& data) : data_(&data)
     {
@@ -227,6 +228,13 @@ struct apply_signal : signal<apply_signal<Value>, Value, read_only_signal>
     read() const
     {
         return data_->result;
+    }
+    Value
+    move_out() const
+    {
+        auto moved_out = std::move(data_->result);
+        data_->status = detail::apply_status::UNCOMPUTED;
+        return moved_out;
     }
 
  private:
@@ -335,7 +343,7 @@ template<class Value, class Wrapped, class Reverse>
 struct duplex_apply_signal : signal<
                                  duplex_apply_signal<Value, Wrapped, Reverse>,
                                  Value,
-                                 readable_duplex_signal>
+                                 movable_duplex_signal>
 {
     duplex_apply_signal(
         apply_result_data<Value>& data, Wrapped wrapped, Reverse reverse)
@@ -359,6 +367,13 @@ struct duplex_apply_signal : signal<
     read() const
     {
         return data_->result;
+    }
+    Value
+    move_out() const
+    {
+        auto moved_out = std::move(data_->result);
+        data_->status = apply_status::UNCOMPUTED;
+        return moved_out;
     }
     bool
     ready_to_write() const
