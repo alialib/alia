@@ -32,7 +32,7 @@ struct context_storage
     timing_subsystem* timing = nullptr;
 
     // generic storage for other objects
-    detail::generic_tagged_storage<detail::any_ref> generic;
+    detail::generic_tagged_storage<std::any> generic;
 
     ALIA_IMPLEMENT_STORAGE_OBJECT_ACCESSORS(context_storage)
 
@@ -99,12 +99,29 @@ get_storage_object(context_interface<Contents> ctx)
     return *get_structural_collection(ctx).storage;
 }
 
-template<class Tag, class Contents, class Object>
+template<
+    class Tag,
+    class Contents,
+    class Object,
+    std::enable_if_t<std::is_reference_v<typename Tag::data_type>, int> = 0>
 auto
 add_context_object(context_interface<Contents> ctx, Object& object)
 {
     auto new_contents = detail::add_tagged_data<Tag>(
-        get_structural_collection(ctx), std::ref(object));
+        get_structural_collection(ctx),
+        std::ref<std::remove_reference_t<typename Tag::data_type>>(object));
+    return context_interface<decltype(new_contents)>(std::move(new_contents));
+}
+template<
+    class Tag,
+    class Contents,
+    class Object,
+    std::enable_if_t<!std::is_reference_v<typename Tag::data_type>, int> = 0>
+auto
+add_context_object(context_interface<Contents> ctx, Object object)
+{
+    auto new_contents = detail::add_tagged_data<Tag>(
+        get_structural_collection(ctx), typename Tag::data_type(object));
     return context_interface<decltype(new_contents)>(std::move(new_contents));
 }
 
@@ -254,9 +271,26 @@ fold_in_object_id(context, Object const&)
 
 } // namespace detail
 
-template<class Tag, class Contents, class Object>
+template<
+    class Tag,
+    class Contents,
+    class Object,
+    std::enable_if_t<std::is_reference_v<typename Tag::data_type>, int> = 0>
 auto
 extend_context(context_interface<Contents> ctx, Object& object)
+{
+    auto extended_ctx
+        = detail::add_context_object<Tag>(copy_context(ctx), object);
+    fold_in_object_id(extended_ctx, object);
+    return extended_ctx;
+}
+template<
+    class Tag,
+    class Contents,
+    class Object,
+    std::enable_if_t<!std::is_reference_v<typename Tag::data_type>, int> = 0>
+auto
+extend_context(context_interface<Contents> ctx, Object object)
 {
     auto extended_ctx
         = detail::add_context_object<Tag>(copy_context(ctx), object);

@@ -539,8 +539,13 @@ actionize(Callable x)
 // will invoke on_write whenever the signal is written to. (on_write will be
 // passed the value that was written to the signal.)
 template<class Wrapped, class OnWrite>
-struct write_action_signal
-    : signal_wrapper<write_action_signal<Wrapped, OnWrite>, Wrapped>
+struct write_action_signal : signal_wrapper<
+                                 write_action_signal<Wrapped, OnWrite>,
+                                 Wrapped,
+                                 typename Wrapped::value_type,
+                                 typename signal_capabilities_union<
+                                     write_only_signal,
+                                     typename Wrapped::capabilities>::type>
 {
     write_action_signal(Wrapped wrapped, OnWrite on_write)
         : write_action_signal::signal_wrapper(std::move(wrapped)),
