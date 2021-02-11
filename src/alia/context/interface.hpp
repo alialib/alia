@@ -298,6 +298,14 @@ extend_context(context_interface<Contents> ctx, Object object)
     return extended_ctx;
 }
 
+template<class Tag, class Context, class Object, class Content>
+void
+with_extended_context(Context ctx, Object&& object, Content&& content)
+{
+    std::forward<Content>(content)(
+        extend_context<Tag>(ctx, std::forward<Object>(object)));
+}
+
 template<class Tag, class Contents>
 decltype(auto)
 get(context_interface<Contents> ctx)
