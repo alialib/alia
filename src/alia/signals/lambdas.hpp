@@ -58,7 +58,7 @@ struct simple_lambda_reader_signal
     : regular_signal<
           simple_lambda_reader_signal<Value, Read>,
           Value,
-          read_only_signal>
+          move_activated_signal>
 {
     simple_lambda_reader_signal(Read read)
         : read_(read), value_(decltype(read())())
@@ -74,6 +74,11 @@ struct simple_lambda_reader_signal
     {
         value_ = read_();
         return value_;
+    }
+    Value
+    move_out() const override
+    {
+        return read_();
     }
 
  private:
@@ -94,7 +99,7 @@ template<class Value, class HasValue, class Read>
 struct lambda_reader_signal : regular_signal<
                                   lambda_reader_signal<Value, HasValue, Read>,
                                   Value,
-                                  read_only_signal>
+                                  move_activated_signal>
 {
     lambda_reader_signal(HasValue has_value, Read read)
         : has_value_(has_value), read_(read), value_(decltype(read())())
@@ -110,6 +115,11 @@ struct lambda_reader_signal : regular_signal<
     {
         value_ = read_();
         return value_;
+    }
+    Value
+    move_out() const override
+    {
+        return read_();
     }
 
  private:
@@ -135,7 +145,7 @@ struct lambda_reader_signal_with_id
     : signal<
           lambda_reader_signal_with_id<Value, HasValue, Read, GenerateId>,
           Value,
-          read_only_signal>
+          move_activated_signal>
 {
     lambda_reader_signal_with_id(
         HasValue has_value, Read read, GenerateId generate_id)
@@ -161,6 +171,11 @@ struct lambda_reader_signal_with_id
     {
         value_ = read_();
         return value_;
+    }
+    Value
+    move_out() const override
+    {
+        return read_();
     }
 
  private:
@@ -194,7 +209,7 @@ struct lambda_duplex_signal
     : regular_signal<
           lambda_duplex_signal<Value, HasValue, Read, ReadyToWrite, Write>,
           Value,
-          readable_duplex_signal>
+          move_activated_duplex_signal>
 {
     lambda_duplex_signal(
         HasValue has_value,
@@ -218,6 +233,11 @@ struct lambda_duplex_signal
     {
         value_ = read_();
         return value_;
+    }
+    Value
+    move_out() const override
+    {
+        return read_();
     }
     bool
     ready_to_write() const override
@@ -270,7 +290,7 @@ struct lambda_duplex_signal_with_id : signal<
                                               Write,
                                               GenerateId>,
                                           Value,
-                                          readable_duplex_signal>
+                                          move_activated_duplex_signal>
 {
     lambda_duplex_signal_with_id(
         HasValue has_value,
@@ -302,6 +322,11 @@ struct lambda_duplex_signal_with_id : signal<
     {
         value_ = read_();
         return value_;
+    }
+    Value
+    move_out() const override
+    {
+        return read_();
     }
     bool
     ready_to_write() const override

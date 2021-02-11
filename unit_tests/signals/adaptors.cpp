@@ -184,13 +184,13 @@ TEST_CASE("add_default", "[signals][adaptors]")
 
     {
         typedef decltype(make_default(true, true, true)) signal_t;
-        REQUIRE(signal_is_readable<signal_t>::value);
+        REQUIRE(signal_is_move_activated<signal_t>::value);
         REQUIRE(signal_is_writable<signal_t>::value);
     }
 
     {
         typedef decltype(add_default(value(0), value(1))) signal_t;
-        REQUIRE(signal_is_readable<signal_t>::value);
+        REQUIRE(signal_is_move_activated<signal_t>::value);
         REQUIRE(!signal_is_writable<signal_t>::value);
     }
 
@@ -199,6 +199,7 @@ TEST_CASE("add_default", "[signals][adaptors]")
         auto s = make_default(true, true, true);
         REQUIRE(signal_has_value(s));
         REQUIRE(read_signal(s) == 1);
+        REQUIRE(move_signal(s) == 1);
         REQUIRE(signal_ready_to_write(s));
         write_signal(s, 2);
         REQUIRE(p == 2);
@@ -210,6 +211,7 @@ TEST_CASE("add_default", "[signals][adaptors]")
         auto s = make_default(false, true, true);
         REQUIRE(signal_has_value(s));
         REQUIRE(read_signal(s) == 0);
+        REQUIRE(move_signal(s) == 0);
         REQUIRE(signal_ready_to_write(s));
         write_signal(s, 2);
         REQUIRE(p == 2);
@@ -231,6 +233,7 @@ TEST_CASE("add_default", "[signals][adaptors]")
         auto s = make_default(true, false, false);
         REQUIRE(signal_has_value(s));
         REQUIRE(read_signal(s) == 1);
+        REQUIRE(move_signal(s) == 1);
         REQUIRE(!signal_ready_to_write(s));
     }
 
@@ -244,6 +247,7 @@ TEST_CASE("add_default", "[signals][adaptors]")
         REQUIRE(signal_has_value(s));
         REQUIRE(signal_has_value(t));
         REQUIRE(read_signal(s) == read_signal(t));
+        REQUIRE(move_signal(s) == move_signal(t));
         REQUIRE(s.value_id() != t.value_id());
     }
 }

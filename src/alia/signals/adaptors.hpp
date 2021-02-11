@@ -239,7 +239,15 @@ ready_to_write(Wrapped wrapped)
 // All writes go directly to :primary.
 template<class Primary, class Default>
 struct default_value_signal
-    : signal_wrapper<default_value_signal<Primary, Default>, Primary>
+    : signal_wrapper<
+          default_value_signal<Primary, Default>,
+          Primary,
+          typename Primary::value_type,
+          signal_capabilities<
+              typename signal_capability_level_intersection<
+                  typename Primary::capabilities::reading,
+                  typename Default::capabilities::reading>::type,
+              typename Primary::capabilities::writing>>
 {
     default_value_signal()
     {
@@ -259,6 +267,12 @@ struct default_value_signal
     {
         return this->wrapped_.has_value() ? this->wrapped_.read()
                                           : default_.read();
+    }
+    typename Primary::value_type
+    move_out() const override
+    {
+        return this->wrapped_.has_value() ? this->wrapped_.move_out()
+                                          : default_.move_out();
     }
     id_interface const&
     value_id() const override
