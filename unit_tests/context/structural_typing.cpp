@@ -77,7 +77,7 @@ static_assert(list_contains_tag<list_z_, zap_tag>::value, "");
 } // namespace list_tests
 
 // Define some arbitrary collection types.
-using storage_type = generic_tagged_storage<any_ref>;
+using storage_type = generic_tagged_storage<std::any>;
 using cc_empty = empty_structural_collection<storage_type>;
 using cc_b = add_tagged_data_type_t<cc_empty, bar_tag>;
 using cc_fb = add_tagged_data_type_t<cc_b, foo_tag>;

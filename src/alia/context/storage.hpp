@@ -1,6 +1,7 @@
 #ifndef ALIA_CONTEXT_STORAGE_HPP
 #define ALIA_CONTEXT_STORAGE_HPP
 
+#include <any>
 #include <type_traits>
 #include <typeindex>
 #include <unordered_map>
@@ -48,38 +49,22 @@ struct generic_tagged_storage
     }
 };
 
-// any_ref is a simple way to store references to any type in a
-// generic_tagged_storage object.
-struct any_ref
-{
-    any_ref()
-    {
-    }
-
-    template<class T>
-    any_ref(std::reference_wrapper<T> ref) : ptr(&ref.get())
-    {
-    }
-
-    void* ptr;
-};
-
 template<class T>
-struct tagged_data_caster<any_ref&, T&>
+struct tagged_data_caster<std::any&, T&>
 {
     static T&
-    apply(any_ref stored)
+    apply(std::any& stored)
     {
-        return *reinterpret_cast<T*>(stored.ptr);
+        return std::any_cast<std::reference_wrapper<T>>(stored);
     }
 };
 template<class T>
-struct tagged_data_caster<any_ref, T&>
+struct tagged_data_caster<std::any&, T>
 {
     static T&
-    apply(any_ref stored)
+    apply(std::any& stored)
     {
-        return *reinterpret_cast<T*>(stored.ptr);
+        return std::any_cast<T&>(stored);
     }
 };
 
@@ -96,16 +81,16 @@ struct tagged_data_accessor
         return storage.generic.template has<Tag>();
     }
     static void
-    add(Storage& storage, any_ref data)
+    add(Storage& storage, std::any data)
     {
-        storage.generic.template add<Tag>(data);
+        storage.generic.template add<Tag>(std::move(data));
     }
     static void
     remove(Storage& storage)
     {
         storage.generic.template remove<Tag>();
     }
-    static any_ref
+    static std::any&
     get(Storage& storage)
     {
         return storage.generic.template get<Tag>();
