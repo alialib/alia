@@ -371,3 +371,13 @@ TEST_CASE("unready add_write_action", "[flow][actions]")
 
     REQUIRE(!signal_ready_to_write(s));
 }
+
+TEST_CASE("actions::apply", "[flow][actions]")
+{
+    auto add = [](int x, int y) { return x + y; };
+    int x = 0;
+    auto a = actions::apply(add, direct(x), value(1));
+    REQUIRE(a.is_ready());
+    perform_action(a);
+    REQUIRE(x == 1);
+}
