@@ -216,13 +216,6 @@ copy_context(Context ctx)
     return Context(typename Context::contents_type(new_storage));
 }
 
-template<class Tag, class Contents>
-decltype(auto)
-get(context_interface<Contents> ctx)
-{
-    return detail::get_tagged_data<Tag>(ctx.contents_);
-}
-
 namespace detail {
 
 template<class Object, class = std::void_t<>>
@@ -278,13 +271,30 @@ fold_in_object_id(context, Object const&)
 
 } // namespace detail
 
-template<class Tag, class Contents, class Object>
+template<
+    class Tag,
+    class Contents,
+    class Object,
+    std::enable_if_t<std::is_reference_v<typename Tag::data_type>, int> = 0>
 auto
-extend_context(context_interface<Contents> ctx, Object&& object)
+extend_context(context_interface<Contents> ctx, Object& object)
 {
-    auto extended_ctx = detail::add_context_object<Tag>(
-        copy_context(ctx), std::forward<Object>(object));
-    fold_in_object_id(extended_ctx, get<Tag>(extended_ctx));
+    auto extended_ctx
+        = detail::add_context_object<Tag>(copy_context(ctx), object);
+    fold_in_object_id(extended_ctx, object);
+    return extended_ctx;
+}
+template<
+    class Tag,
+    class Contents,
+    class Object,
+    std::enable_if_t<!std::is_reference_v<typename Tag::data_type>, int> = 0>
+auto
+extend_context(context_interface<Contents> ctx, Object object)
+{
+    auto extended_ctx
+        = detail::add_context_object<Tag>(copy_context(ctx), object);
+    fold_in_object_id(extended_ctx, object);
     return extended_ctx;
 }
 
@@ -294,6 +304,13 @@ with_extended_context(Context ctx, Object&& object, Content&& content)
 {
     std::forward<Content>(content)(
         extend_context<Tag>(ctx, std::forward<Object>(object)));
+}
+
+template<class Tag, class Contents>
+decltype(auto)
+get(context_interface<Contents> ctx)
+{
+    return detail::get_tagged_data<Tag>(ctx.contents_);
 }
 
 template<class Contents>
