@@ -65,6 +65,16 @@ function(deploy target file_path destination_directory)
     endif()
 endfunction()
 
+# Create a subdirectory in the build dir that we'll use to accumulate all the
+# files that need to be deployed to the web.
+set(deploy_dir ${CMAKE_CURRENT_BINARY_DIR}/deploy)
+file(MAKE_DIRECTORY ${deploy_dir})
+
+# On CI, create the CNAME file for GitHub Pages.
+if(DEFINED ENV{CI})
+    file(WRITE ${deploy_dir}/CNAME "html.alia.dev")
+endif()
+
 # Set up the build for an example.
 function(define_example name)
     file(GLOB source_files "${CMAKE_CURRENT_SOURCE_DIR}/examples/${name}/*")
@@ -73,14 +83,14 @@ function(define_example name)
         examples/demo-utilities/utilities.cpp)
     set_target_properties(${name} PROPERTIES OUTPUT_NAME ${name})
     target_link_libraries(${name} alia_html)
-    set(deploy_dir "${CMAKE_CURRENT_BINARY_DIR}/deploy/${name}")
-    file(MAKE_DIRECTORY ${deploy_dir})
+    set(deploy_subdir "${deploy_dir}/${name}")
+    file(MAKE_DIRECTORY ${deploy_subdir})
     foreach(file_path ${source_files})
-        deploy(${name} ${file_path} ${deploy_dir})
+        deploy(${name} ${file_path} ${deploy_subdir})
     endforeach()
-    deploy(${name} ${CMAKE_CURRENT_BINARY_DIR}/${name}.js ${deploy_dir})
-    deploy(${name} ${CMAKE_CURRENT_BINARY_DIR}/${name}.wasm ${deploy_dir})
-    deploy(${name} ${CMAKE_CURRENT_BINARY_DIR}/asm-dom.js ${deploy_dir})
+    deploy(${name} ${CMAKE_CURRENT_BINARY_DIR}/${name}.js ${deploy_subdir})
+    deploy(${name} ${CMAKE_CURRENT_BINARY_DIR}/${name}.wasm ${deploy_subdir})
+    deploy(${name} ${CMAKE_CURRENT_BINARY_DIR}/asm-dom.js ${deploy_subdir})
 endfunction()
 
 # Define the examples.
