@@ -1,11 +1,8 @@
 .demo-panel {
     background: #f8f8f8;
-    padding: 12px 8px 4px;
-    border-left: 2px solid #659bf1;
+    padding: 12px 10px;
+    border-left: 2px solid #6898e6;
     margin: 8px 0px;
-}
-.routed-content {
-    min-height: 120px;
 }
 
 .demo-panel .btn {
@@ -36,8 +33,4 @@ p {
 .demo-panel a {
     display: block;
     margin: 4px;
-}
-
-.bs-docs-link + h5 {
-    margin-top: 4px !important;
 }
