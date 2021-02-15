@@ -7,7 +7,7 @@
 #include <alia/html/widgets.hpp>
 #include <sstream>
 
-#include "../demo-utilities/utilities.hpp"
+#include "../demolib/utilities.hpp"
 
 using namespace alia;
 namespace bs = alia::html::bootstrap;

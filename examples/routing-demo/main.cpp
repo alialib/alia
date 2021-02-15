@@ -6,7 +6,7 @@
 #include <alia/html/widgets.hpp>
 #include <sstream>
 
-#include "../demo-utilities/utilities.hpp"
+#include "../demolib/utilities.hpp"
 
 /// [namespace]
 using namespace alia;
@@ -26,7 +26,7 @@ basic_routing_demo(demo_context ctx)
 
     p(ctx, "And here it is in action:");
 
-    div(ctx, "demo-panel routed-content", [&] {
+    div(ctx, "demo-panel", [&] {
         /// [basic-routing]
         router(ctx)
             .route("/", [&] { p(ctx, "Welcome to the routing demo!"); })
@@ -37,7 +37,7 @@ basic_routing_demo(demo_context ctx)
                 p(ctx, "Hobbes");
             });
         /// [basic-routing]
-    });
+    }).attr("style", "min-height: 120px");
 
     p(ctx,
       "You can control the content of that panel by typing in different "
@@ -78,7 +78,7 @@ parameters_demo(demo_context ctx)
 
     code_snippet(ctx, "routing-parameters");
 
-    div(ctx, "demo-panel routed-content", [&] {
+    div(ctx, "demo-panel", [&] {
         /// [routing-parameters]
         router(ctx)
             .route(
@@ -93,7 +93,7 @@ parameters_demo(demo_context ctx)
                 p(ctx, "Pretending to fetch info about this user...");
             });
         /// [routing-parameters]
-    });
+    }).attr("style", "min-height: 120px");
 
     p(ctx, "Now our demo works with routes like this:");
 
@@ -128,7 +128,7 @@ subpaths_demo(demo_context ctx)
 
     code_snippet(ctx, "routing-subpaths");
 
-    div(ctx, "demo-panel routed-content", [&] {
+    div(ctx, "demo-panel", [&] {
         /// [routing-subpaths]
         router(ctx).route("/accounts/{}{:/}", [&](auto account, auto subpath) {
             h4(ctx, account);
@@ -146,7 +146,7 @@ subpaths_demo(demo_context ctx)
                 });
         });
         /// [routing-subpaths]
-    });
+    }).attr("style", "min-height: 120px");
 
     p(ctx, "Now our demo works with routes like this:");
 
@@ -172,7 +172,7 @@ default_match_demo(demo_context ctx)
 
     code_snippet(ctx, "default-case");
 
-    div(ctx, "demo-panel routed-content", [&] {
+    div(ctx, "demo-panel", [&] {
         /// [default-case]
         router(ctx)
             .route("/about", [&] { p(ctx, "You've found the About page!"); })
@@ -181,7 +181,7 @@ default_match_demo(demo_context ctx)
                 p(ctx, path + " not found");
             });
         /// [default-case]
-    });
+    }).attr("style", "min-height: 120px");
 
     p(ctx, "Try it:");
 

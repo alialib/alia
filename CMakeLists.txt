@@ -76,25 +76,35 @@ if(DEFINED ENV{CI})
 endif()
 
 # Set up the build for an example.
-function(define_example name)
+function(add_example name dir)
     file(GLOB source_files "${CMAKE_CURRENT_SOURCE_DIR}/examples/${name}/*")
     add_executable(${name}
-        examples/${name}/main.cpp
-        examples/demo-utilities/utilities.cpp)
-    set_target_properties(${name} PROPERTIES OUTPUT_NAME ${name})
+        examples/${name}/main.cpp)
     target_link_libraries(${name} alia_html)
-    set(deploy_subdir "${deploy_dir}/${name}")
+    set(deploy_subdir "${deploy_dir}/${dir}")
     file(MAKE_DIRECTORY ${deploy_subdir})
+    set_target_properties(${name} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${deploy_subdir}
+        OUTPUT_NAME app)
     foreach(file_path ${source_files})
         deploy(${name} ${file_path} ${deploy_subdir})
     endforeach()
-    deploy(${name} ${CMAKE_CURRENT_BINARY_DIR}/${name}.js ${deploy_subdir})
-    deploy(${name} ${CMAKE_CURRENT_BINARY_DIR}/${name}.wasm ${deploy_subdir})
     deploy(${name} ${CMAKE_CURRENT_BINARY_DIR}/asm-dom.js ${deploy_subdir})
 endfunction()
 
-# Define the examples.
-define_example(bootstrap-demo)
-define_example(routing-demo)
-define_example(io-demos)
-define_example(elements-demo)
+# Set up the build for a demo.
+function(add_demo name dir)
+    add_example(${name} ${dir})
+    target_sources(${name} PRIVATE
+        examples/demolib/utilities.cpp)
+    set(deploy_subdir "${deploy_dir}/${dir}")
+    deploy(${name}
+        ${CMAKE_CURRENT_SOURCE_DIR}/examples/demolib/demo.css
+        ${deploy_subdir})
+endfunction()
+
+# Define the demos.
+add_demo(bootstrap-demo demos/bootstrap)
+add_demo(routing-demo demos/routing)
+add_demo(io-demos demos/io)
+add_demo(elements-demo demos/elements)
