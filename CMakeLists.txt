@@ -92,6 +92,10 @@ file(MAKE_DIRECTORY ${deploy_dir})
 deploy(
     "${CMAKE_CURRENT_SOURCE_DIR}/examples/index.html"
     "${deploy_dir}")
+# Extract and deploy the favicon.
+file(ARCHIVE_EXTRACT
+    INPUT "${CMAKE_CURRENT_SOURCE_DIR}/examples/favicon.zip"
+    DESTINATION "${deploy_dir}")
 
 # On CI, create the CNAME file for GitHub Pages.
 if(DEFINED ENV{CI})
