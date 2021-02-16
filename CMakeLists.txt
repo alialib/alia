@@ -51,8 +51,26 @@ target_include_directories(alia_html PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 # "Deploy" the given file to the given directory.
 # In normal development, this creates a symlink of the file for more rapid
 # iteration.
+# In CI, it copies the file.
+function(deploy file_path destination_directory)
+    if(DEFINED ENV{CI})
+        file(COPY
+            ${file_path}
+            DESTINATION ${destination_directory})
+    else()
+        get_filename_component(file_name "${file_path}" NAME)
+        file(CREATE_LINK
+            ${file_path}
+            ${destination_directory}/${file_name}
+            SYMBOLIC)
+    endif()
+endfunction()
+
+# "Deploy" a built file to the given directory.
+# In normal development, this creates a symlink of the file for more rapid
+# iteration.
 # In CI, it sets up a post-build step to copy the file.
-function(deploy target file_path destination_directory)
+function(post_build_deploy target file_path destination_directory)
     get_filename_component(file_name "${file_path}" NAME)
     if(DEFINED ENV{CI})
         add_custom_command(TARGET ${target} POST_BUILD
@@ -69,6 +87,11 @@ endfunction()
 # files that need to be deployed to the web.
 set(deploy_dir ${CMAKE_CURRENT_BINARY_DIR}/deploy)
 file(MAKE_DIRECTORY ${deploy_dir})
+
+# Deploy the root index.html file.
+deploy(
+    "${CMAKE_CURRENT_SOURCE_DIR}/examples/index.html"
+    "${deploy_dir}")
 
 # On CI, create the CNAME file for GitHub Pages.
 if(DEFINED ENV{CI})
@@ -87,9 +110,11 @@ function(add_example name dir)
         RUNTIME_OUTPUT_DIRECTORY ${deploy_subdir}
         OUTPUT_NAME app)
     foreach(file_path ${source_files})
-        deploy(${name} ${file_path} ${deploy_subdir})
+        deploy(${file_path} ${deploy_subdir})
     endforeach()
-    deploy(${name} ${CMAKE_CURRENT_BINARY_DIR}/asm-dom.js ${deploy_subdir})
+    post_build_deploy(${name}
+        ${CMAKE_CURRENT_BINARY_DIR}/asm-dom.js
+        ${deploy_subdir})
 endfunction()
 
 # Set up the build for a demo.
@@ -98,10 +123,10 @@ function(add_demo name dir)
     target_sources(${name} PRIVATE
         examples/demolib/utilities.cpp)
     set(deploy_subdir "${deploy_dir}/${dir}")
-    deploy(${name}
+    deploy(
         ${CMAKE_CURRENT_SOURCE_DIR}/examples/demolib/demo.css
         ${deploy_subdir})
-    deploy(${name}
+    deploy(
         ${CMAKE_CURRENT_SOURCE_DIR}/examples/demolib/index.html
         ${deploy_subdir})
 endfunction()
