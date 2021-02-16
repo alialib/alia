@@ -344,6 +344,11 @@ struct list_item_signal : signal<
     {
         return *item_;
     }
+    Item&
+    destructive_ref() const
+    {
+        return *item_;
+    }
     bool
     ready_to_write() const
     {
