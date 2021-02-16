@@ -11,7 +11,7 @@ namespace alia {
 // empty<Value>() gives a signal that never has a value.
 template<class Value>
 struct empty_signal
-    : signal<empty_signal<Value>, Value, move_activated_duplex_signal>
+    : signal<empty_signal<Value>, Value, move_activated_clearable_signal>
 {
     empty_signal()
     {
@@ -26,7 +26,7 @@ struct empty_signal
     {
         return false;
     }
-    // Since this never has a value, read() should never be called.
+    // Since this never has a value, none of this should ever be called.
     // LCOV_EXCL_START
 #ifdef __clang__
 #pragma clang diagnostic push
@@ -56,9 +56,13 @@ struct empty_signal
     {
         return false;
     }
-    // Since this is never ready to write, write() should never be called.
+    // Since this is never ready to write, none of this should ever be called.
     // LCOV_EXCL_START
     void write(Value) const override
+    {
+    }
+    void
+    clear() const override
     {
     }
     // LCOV_EXCL_STOP
