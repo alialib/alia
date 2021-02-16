@@ -268,6 +268,12 @@ struct lazy_signal : signal<Derived, Value, Capabilities>
         value_ = static_cast<Derived const&>(*this).move_out();
         return value_;
     }
+    Value&
+    destructive_ref() const override
+    {
+        value_ = static_cast<Derived const&>(*this).move_out();
+        return value_;
+    }
 
  private:
     mutable Value value_;
@@ -288,6 +294,12 @@ struct lazy_signal_wrapper
     }
     Value const&
     read() const override
+    {
+        value_ = static_cast<Derived const&>(*this).move_out();
+        return value_;
+    }
+    Value&
+    destructive_ref() const override
     {
         value_ = static_cast<Derived const&>(*this).move_out();
         return value_;
