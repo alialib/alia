@@ -78,8 +78,8 @@ endif()
 # Set up the build for an example.
 function(add_example name dir)
     file(GLOB source_files "${CMAKE_CURRENT_SOURCE_DIR}/examples/${name}/*")
-    add_executable(${name}
-        examples/${name}/main.cpp)
+    file(GLOB cpp_files "${CMAKE_CURRENT_SOURCE_DIR}/examples/${name}/*.cpp")
+    add_executable(${name} ${cpp_files})
     target_link_libraries(${name} alia_html)
     set(deploy_subdir "${deploy_dir}/${dir}")
     file(MAKE_DIRECTORY ${deploy_subdir})
@@ -101,9 +101,12 @@ function(add_demo name dir)
     deploy(${name}
         ${CMAKE_CURRENT_SOURCE_DIR}/examples/demolib/demo.css
         ${deploy_subdir})
+    deploy(${name}
+        ${CMAKE_CURRENT_SOURCE_DIR}/examples/demolib/index.html
+        ${deploy_subdir})
 endfunction()
 
-# Define the demos.
+# Add the demos.
 add_demo(bootstrap-demo demos/bootstrap)
 add_demo(routing-demo demos/routing)
 add_demo(io-demos demos/io)

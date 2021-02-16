@@ -1,4 +1,5 @@
 #include <alia/html/bootstrap.hpp>
+#include <alia/html/document.hpp>
 #include <alia/html/dom.hpp>
 #include <alia/html/fetch.hpp>
 #include <alia/html/routing.hpp>

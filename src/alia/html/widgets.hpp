@@ -149,6 +149,21 @@ link(html::context ctx, Text text, Href href)
     return detail::link(ctx, signalize(text), signalize(href));
 }
 
+// LEAF ELEMENTS
+
+#define ALIA_HTML_DEFINE_LEAF_ELEMENT_INTERFACE(name)                         \
+    inline element_handle name(context ctx)                                   \
+    {                                                                         \
+        return element(ctx, #name);                                           \
+    }                                                                         \
+    template<class Classes>                                                   \
+    inline element_handle name(context ctx, Classes classes)                  \
+    {                                                                         \
+        return element(ctx, #name).attr("class", classes);                    \
+    }
+
+ALIA_HTML_DEFINE_LEAF_ELEMENT_INTERFACE(a)
+
 // CONTAINERS
 
 #define ALIA_HTML_DEFINE_CONTAINER_ELEMENT_INTERFACE(name)                    \
