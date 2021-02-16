@@ -361,6 +361,11 @@ struct signal_mux : signal<
     {
         return condition_.read() ? t_.move_out() : f_.move_out();
     }
+    typename T::value_type&
+    destructive_ref() const override
+    {
+        return condition_.read() ? t_.destructive_ref() : f_.destructive_ref();
+    }
     id_interface const&
     value_id() const override
     {
@@ -385,6 +390,14 @@ struct signal_mux : signal<
             t_.write(value);
         else
             f_.write(value);
+    }
+    void
+    clear() const override
+    {
+        if (condition_.read())
+            t_.clear();
+        else
+            f_.clear();
     }
     bool
     invalidate(std::exception_ptr error) const override
@@ -458,6 +471,12 @@ struct field_signal : preferred_id_signal<
         Field field = std::move(structure.*field_);
         structure_.write(std::move(structure));
         return field;
+    }
+    Field&
+    destructive_ref() const override
+    {
+        structure_type& structure = structure_.destructive_ref();
+        return structure.*field_;
     }
     auto
     complex_value_id() const
@@ -572,6 +591,16 @@ struct subscript_result_type<
         type;
 };
 
+// subscript_returns_reference<Container,Index>::value yields a
+// compile-time boolean indicating whether or not the subscript operator
+// for a type returns by reference (vs by value).
+template<class Container, class Index>
+struct subscript_returns_reference
+    : std::is_reference<decltype(
+          std::declval<Container>()[std::declval<Index>()])>
+{
+};
+
 // has_at_indexer<Container, Index>::value yields a compile-time boolean
 // indicating whether or not Container has an 'at' member function that takes
 // an Index.
@@ -674,15 +703,21 @@ write_subscript(ContainerSignal const&, IndexSignal const&, Value)
 }
 
 template<class ContainerSignal, class IndexSignal>
-struct subscript_signal : preferred_id_signal<
-                              subscript_signal<ContainerSignal, IndexSignal>,
-                              typename subscript_result_type<
-                                  typename ContainerSignal::value_type,
-                                  typename IndexSignal::value_type>::type,
-                              typename signal_capabilities_intersection<
-                                  typename ContainerSignal::capabilities,
-                                  movable_duplex_signal>::type,
-                              id_pair<alia::id_ref, alia::id_ref>>
+struct subscript_signal
+    : preferred_id_signal<
+          subscript_signal<ContainerSignal, IndexSignal>,
+          typename subscript_result_type<
+              typename ContainerSignal::value_type,
+              typename IndexSignal::value_type>::type,
+          typename signal_capabilities_intersection<
+              typename ContainerSignal::capabilities,
+              typename std::conditional<
+                  subscript_returns_reference<
+                      typename ContainerSignal::value_type,
+                      typename IndexSignal::value_type>::value,
+                  movable_duplex_signal,
+                  move_activated_duplex_signal>::type>::type,
+          id_pair<alia::id_ref, alia::id_ref>>
 {
     subscript_signal()
     {
@@ -709,6 +744,25 @@ struct subscript_signal : preferred_id_signal<
             = std::move(container[index_.read()]);
         container_.write(std::move(container));
         return moved_out;
+    }
+    typename subscript_signal::value_type&
+    destructive_ref() const override
+    {
+        if constexpr (subscript_returns_reference<
+                          typename ContainerSignal::value_type,
+                          typename IndexSignal::value_type>::value)
+        {
+            auto& container = container_.destructive_ref();
+            return container[index_.read()];
+        }
+        else
+        {
+            // The signal capabilities system should prevent us from ever
+            // getting here.
+            // LCOV_EXCL_START
+            throw nullptr;
+            // LCOV_EXCL_STOP
+        }
     }
     auto
     complex_value_id() const
