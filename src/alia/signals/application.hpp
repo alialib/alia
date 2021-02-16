@@ -236,6 +236,12 @@ struct apply_signal
         data_->status = detail::apply_status::UNCOMPUTED;
         return moved_out;
     }
+    Value&
+    destructive_ref() const
+    {
+        data_->status = detail::apply_status::UNCOMPUTED;
+        return data_->result;
+    }
 
  private:
     detail::apply_result_data<Value>* data_;
@@ -374,6 +380,12 @@ struct duplex_apply_signal : signal<
         auto moved_out = std::move(data_->result);
         data_->status = apply_status::UNCOMPUTED;
         return moved_out;
+    }
+    Value&
+    destructive_ref() const
+    {
+        data_->status = apply_status::UNCOMPUTED;
+        return data_->result;
     }
     bool
     ready_to_write() const

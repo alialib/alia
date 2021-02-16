@@ -111,8 +111,13 @@ fake_writability(Wrapped wrapped)
 // the value type :Value. The proxy will apply static_casts to convert its
 // own values to and from :x's value type.
 template<class Wrapped, class To>
-struct casting_signal
-    : casting_signal_wrapper<casting_signal<Wrapped, To>, Wrapped, To>
+struct casting_signal : casting_signal_wrapper<
+                            casting_signal<Wrapped, To>,
+                            Wrapped,
+                            To,
+                            typename signal_capabilities_intersection<
+                                typename Wrapped::capabilities,
+                                move_activated_clearable_signal>::type>
 {
     casting_signal(Wrapped wrapped)
         : casting_signal::casting_signal_wrapper(std::move(wrapped))
@@ -244,10 +249,10 @@ struct default_value_signal
           Primary,
           typename Primary::value_type,
           signal_capabilities<
-              typename signal_capability_level_intersection<
-                  typename Primary::capabilities::reading,
-                  typename Default::capabilities::reading>::type,
-              typename Primary::capabilities::writing>>
+              signal_capability_level_intersection<
+                  Primary::capabilities::reading,
+                  Default::capabilities::reading>::value,
+              Primary::capabilities::writing>>
 {
     default_value_signal()
     {
@@ -273,6 +278,12 @@ struct default_value_signal
     {
         return this->wrapped_.has_value() ? this->wrapped_.move_out()
                                           : default_.move_out();
+    }
+    typename Primary::value_type&
+    destructive_ref() const override
+    {
+        return this->wrapped_.has_value() ? this->wrapped_.destructive_ref()
+                                          : default_.destructive_ref();
     }
     id_interface const&
     value_id() const override
@@ -515,14 +526,14 @@ template<class OptionalCapabilities>
 struct unwrapper_signal_capabilities
 {
 };
-template<class Reading, class Writing>
+template<unsigned Reading, unsigned Writing>
 struct unwrapper_signal_capabilities<signal_capabilities<Reading, Writing>>
 {
     // If the std::optional signal is writable, then the 'unwrapped' signal
     // is clearable.
     typedef signal_capabilities<Reading, signal_clearable> type;
 };
-template<class Reading>
+template<unsigned Reading>
 struct unwrapper_signal_capabilities<
     signal_capabilities<Reading, signal_unwritable>>
 {
@@ -559,7 +570,12 @@ struct unwrapper_signal : casting_signal_wrapper<
     typename Wrapped::value_type::value_type
     move_out() const override
     {
-        return this->wrapped_.move_out().value();
+        return *this->wrapped_.move_out();
+    }
+    typename Wrapped::value_type::value_type&
+    destructive_ref() const override
+    {
+        return *this->wrapped_.destructive_ref();
     }
     id_interface const&
     value_id() const override
@@ -595,14 +611,13 @@ unwrap(Signal signal)
 // If the input signal doesn't support movement, it's returned unchanged.
 //
 template<class Wrapped>
-struct signal_movement_activator
-    : signal_wrapper<
-          signal_movement_activator<Wrapped>,
-          Wrapped,
-          typename Wrapped::value_type,
-          signal_capabilities<
-              signal_move_activated,
-              typename Wrapped::capabilities::writing>>
+struct signal_movement_activator : signal_wrapper<
+                                       signal_movement_activator<Wrapped>,
+                                       Wrapped,
+                                       typename Wrapped::value_type,
+                                       signal_capabilities<
+                                           signal_move_activated,
+                                           Wrapped::capabilities::writing>>
 {
     signal_movement_activator()
     {

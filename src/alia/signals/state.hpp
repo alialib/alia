@@ -153,23 +153,32 @@ struct state_signal
     {
     }
 
-    bool
-    has_value() const override
-    {
-        return data_->has_value();
-    }
-
-    Value const&
-    read() const override
-    {
-        return data_->get();
-    }
-
     simple_id<unsigned> const&
     value_id() const override
     {
         id_ = make_id(data_->version());
         return id_;
+    }
+    bool
+    has_value() const override
+    {
+        return data_->has_value();
+    }
+    Value const&
+    read() const override
+    {
+        return data_->get();
+    }
+    Value
+    move_out() const override
+    {
+        Value moved = std::move(data_->untracked_nonconst_ref());
+        return moved;
+    }
+    Value&
+    destructive_ref() const override
+    {
+        return data_->untracked_nonconst_ref();
     }
 
     bool
@@ -177,20 +186,11 @@ struct state_signal
     {
         return true;
     }
-
     void
     write(Value value) const override
     {
         data_->set(std::move(value));
     }
-
-    Value
-    move_out() const override
-    {
-        Value moved = std::move(data_->untracked_nonconst_ref());
-        return moved;
-    }
-
     void
     clear() const override
     {

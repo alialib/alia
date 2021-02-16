@@ -14,7 +14,12 @@ namespace alia {
 // scale(n, factor) creates a new signal that presents a scaled view of :n,
 // where :n and :factor are both numeric signals.
 template<class N, class Factor>
-struct scaled_signal : lazy_signal_wrapper<scaled_signal<N, Factor>, N>
+struct scaled_signal
+    : lazy_signal_wrapper<
+          scaled_signal<N, Factor>,
+          N,
+          typename N::value_type,
+          signal_capabilities<signal_move_activated, N::capabilities::writing>>
 {
     scaled_signal(N n, Factor scale_factor)
         : scaled_signal::lazy_signal_wrapper(std::move(n)),
@@ -69,7 +74,12 @@ scale(N n, Factor scale_factor)
 
 // offset(n, offset) presents an offset view of :n.
 template<class N, class Offset>
-struct offset_signal : lazy_signal_wrapper<offset_signal<N, Offset>, N>
+struct offset_signal
+    : lazy_signal_wrapper<
+          offset_signal<N, Offset>,
+          N,
+          typename N::value_type,
+          signal_capabilities<signal_move_activated, N::capabilities::writing>>
 {
     offset_signal(N n, Offset offset)
         : offset_signal::lazy_signal_wrapper(std::move(n)),

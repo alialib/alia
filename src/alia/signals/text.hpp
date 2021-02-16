@@ -159,7 +159,17 @@ struct duplex_text_signal : casting_signal_wrapper<
     std::string
     move_out() const override
     {
-        return this->read();
+        std::string moved_out = std::move(data_->output_text);
+        data_->input_id.clear();
+        data_->output_valid = false;
+        return moved_out;
+    }
+    std::string&
+    destructive_ref() const override
+    {
+        data_->input_id.clear();
+        data_->output_valid = false;
+        return data_->output_text;
     }
     id_interface const&
     value_id() const override

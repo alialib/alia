@@ -240,6 +240,11 @@ struct transparent_casting_wrapper : casting_signal_wrapper<
     {
         return this->wrapped_.move_out();
     }
+    typename Wrapped::value_type&
+    destructive_ref() const override
+    {
+        return this->wrapped_.destructive_ref();
+    }
     void
     write(typename Wrapped::value_type value) const override
     {

@@ -16,51 +16,34 @@ namespace alia {
 // without requiring any memory allocation.
 
 // The following enumerate the possible levels of capabilities that signals can
-// have with respect to reading values (from the signal). These are cumulative,
-// so each level includes all the capabilities before it.
+// have with respect to reading values (from the signal). The bit flags
+// indicate subtyping relationships.
 
 // The signal has no reading capabilities.
-struct signal_unreadable
-{
-    static constexpr unsigned level = 0;
-};
+constexpr unsigned signal_unreadable = 0b0000;
 // The signal can return a const reference to its value.
-struct signal_readable
-{
-    static constexpr unsigned level = 1;
-};
-// The signal is capable of moving its value but there may be side effects, so
-// it requires explicit activation.
-struct signal_movable
-{
-    static constexpr unsigned level = 2;
-};
-// The signal is ready to move its value.
-struct signal_move_activated
-{
-    static constexpr unsigned level = 3;
-};
+constexpr unsigned signal_readable = 0b0001;
+// The signal can move out its value.
+constexpr unsigned signal_move_activated = 0b0011;
+// The signal can provide a reference to its value that the caller can
+// destructively manipulate.
+constexpr unsigned signal_destructively_referenceable = 0b0111;
+// The signal is capable of moving out its value and providing a destructive
+// reference to it, but there may be side effects, so it requires explicit
+// activation.
+constexpr unsigned signal_movable = 0b1001;
 
 // The following are the same, but for writing.
-struct signal_unwritable
-{
-    static constexpr unsigned level = 0;
-};
-struct signal_writable
-{
-    static constexpr unsigned level = 1;
-};
-struct signal_clearable
-{
-    static constexpr unsigned level = 2;
-};
+constexpr unsigned signal_unwritable = 0b00;
+constexpr unsigned signal_writable = 0b01;
+constexpr unsigned signal_clearable = 0b11;
 
-// combined capabilities tags
-template<class Reading, class Writing>
+// combined capabilities
+template<unsigned Reading, unsigned Writing>
 struct signal_capabilities
 {
-    typedef Reading reading;
-    typedef Writing writing;
+    static constexpr unsigned reading = Reading;
+    static constexpr unsigned writing = Writing;
 };
 
 // useful signal capability combinations
@@ -70,6 +53,10 @@ typedef signal_capabilities<signal_movable, signal_unwritable>
     movable_read_only_signal;
 typedef signal_capabilities<signal_move_activated, signal_unwritable>
     move_activated_signal;
+typedef signal_capabilities<
+    signal_destructively_referenceable,
+    signal_unwritable>
+    destructively_referenceable_signal;
 typedef signal_capabilities<signal_unreadable, signal_writable>
     write_only_signal;
 typedef signal_capabilities<signal_readable, signal_writable>
@@ -78,18 +65,24 @@ typedef signal_capabilities<signal_movable, signal_writable>
     movable_duplex_signal;
 typedef signal_capabilities<signal_move_activated, signal_writable>
     move_activated_duplex_signal;
+typedef signal_capabilities<
+    signal_destructively_referenceable,
+    signal_writable>
+    destructively_referenceable_duplex_signal;
 typedef movable_duplex_signal duplex_signal;
 typedef signal_capabilities<signal_readable, signal_clearable>
     clearable_signal;
+typedef signal_capabilities<signal_move_activated, signal_clearable>
+    move_activated_clearable_signal;
 
 // signal_capability_level_is_compatible<Expected,Actual>::value yields a
 // compile-time boolean indicating whether or not a signal with :Actual
 // capability level can be used in a context expecting :Expected capability
 // level.
-template<class Expected, class Actual>
+template<unsigned Expected, unsigned Actual>
 struct signal_capability_level_is_compatible
 {
-    static constexpr bool value = Expected::level <= Actual::level;
+    static constexpr bool value = (Expected & Actual) == Expected;
 };
 
 // signal_capabilities_compatible<Expected,Actual>::value yields a compile-time
@@ -99,21 +92,21 @@ template<class Expected, class Actual>
 struct signal_capabilities_compatible
     : std::conditional_t<
           signal_capability_level_is_compatible<
-              typename Expected::reading,
-              typename Actual::reading>::value,
+              Expected::reading,
+              Actual::reading>::value,
           signal_capability_level_is_compatible<
-              typename Expected::writing,
-              typename Actual::writing>,
+              Expected::writing,
+              Actual::writing>,
           std::false_type>
 {
 };
 
-// signal_capability_level_intersection<A,B>::type yields the type representing
+// signal_capability_level_intersection<A,B> yields the type representing
 // the intersection of the capability levels :A and :B.
-template<class A, class B>
+template<unsigned A, unsigned B>
 struct signal_capability_level_intersection
-    : std::conditional<A::level <= B::level, A, B>
 {
+    static constexpr unsigned value = A & B;
 };
 
 // signal_capabilities_intersection<A,B>::type, where A and B are signal
@@ -123,21 +116,17 @@ template<class A, class B>
 struct signal_capabilities_intersection
 {
     typedef signal_capabilities<
-        typename signal_capability_level_intersection<
-            typename A::reading,
-            typename B::reading>::type,
-        typename signal_capability_level_intersection<
-            typename A::writing,
-            typename B::writing>::type>
+        signal_capability_level_intersection<A::reading, B::reading>::value,
+        signal_capability_level_intersection<A::writing, B::writing>::value>
         type;
 };
 
-// signal_level_capability_union<A,B>::type yields the type representing the
+// signal_level_capability_union<A,B> yields the type representing the
 // union of the capability levels :A and :B.
-template<class A, class B>
+template<unsigned A, unsigned B>
 struct signal_capability_level_union
-    : std::conditional<A::level <= B::level, B, A>
 {
+    static constexpr unsigned value = A | B;
 };
 
 // signal_capabilities_union<A,B>::type, where A and B are signal capability
@@ -146,12 +135,8 @@ template<class A, class B>
 struct signal_capabilities_union
 {
     typedef signal_capabilities<
-        typename signal_capability_level_union<
-            typename A::reading,
-            typename B::reading>::type,
-        typename signal_capability_level_union<
-            typename A::writing,
-            typename B::writing>::type>
+        signal_capability_level_union<A::reading, B::reading>::value,
+        signal_capability_level_union<A::writing, B::writing>::value>
         type;
 };
 
@@ -227,6 +212,12 @@ struct signal_interface : untyped_signal_base
     virtual Value
     move_out() const = 0;
 
+    // Get a reference to the signal's value that the caller can manipulate
+    // as it pleases. This is expected to be implemented by destructively
+    // referenceable signals.
+    virtual Value&
+    destructive_ref() const = 0;
+
     // Write the signal's value.
     virtual void
     write(Value value) const = 0;
@@ -268,7 +259,14 @@ struct signal : signal_base<Derived, Value, Capabilities>
     {                                                                         \
     }
 
+#define ALIA_DEFINE_UNUSED_SIGNAL_DESTRUCTIVE_REF_INTERFACE(Value)            \
+    Value& destructive_ref() const override                                   \
+    {                                                                         \
+        throw nullptr;                                                        \
+    }
+
 #define ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)                       \
+    ALIA_DEFINE_UNUSED_SIGNAL_DESTRUCTIVE_REF_INTERFACE(Value)                \
     Value move_out() const override                                           \
     {                                                                         \
         throw nullptr;                                                        \
@@ -298,9 +296,17 @@ struct signal<Derived, Value, read_only_signal>
 };
 
 template<class Derived, class Value>
+struct signal<Derived, Value, destructively_referenceable_signal>
+    : signal_base<Derived, Value, destructively_referenceable_signal>
+{
+    ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)
+};
+
+template<class Derived, class Value>
 struct signal<Derived, Value, move_activated_signal>
     : signal_base<Derived, Value, move_activated_signal>
 {
+    ALIA_DEFINE_UNUSED_SIGNAL_DESTRUCTIVE_REF_INTERFACE(Value)
     ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)
 };
 
@@ -328,17 +334,39 @@ struct signal<Derived, Value, readable_duplex_signal>
 };
 
 template<class Derived, class Value>
-struct signal<Derived, Value, move_activated_duplex_signal>
-    : signal_base<Derived, Value, move_activated_duplex_signal>
+struct signal<Derived, Value, movable_duplex_signal>
+    : signal_base<Derived, Value, movable_duplex_signal>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
 };
 
 template<class Derived, class Value>
-struct signal<Derived, Value, movable_duplex_signal>
-    : signal_base<Derived, Value, movable_duplex_signal>
+struct signal<Derived, Value, move_activated_duplex_signal>
+    : signal_base<Derived, Value, move_activated_duplex_signal>
+{
+    ALIA_DEFINE_UNUSED_SIGNAL_DESTRUCTIVE_REF_INTERFACE(Value)
+    ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
+};
+
+template<class Derived, class Value>
+struct signal<Derived, Value, destructively_referenceable_duplex_signal>
+    : signal_base<Derived, Value, destructively_referenceable_duplex_signal>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
+};
+
+template<class Derived, class Value>
+struct signal<Derived, Value, clearable_signal>
+    : signal_base<Derived, Value, clearable_signal>
+{
+    ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)
+};
+
+template<class Derived, class Value>
+struct signal<Derived, Value, move_activated_clearable_signal>
+    : signal_base<Derived, Value, move_activated_clearable_signal>
+{
+    ALIA_DEFINE_UNUSED_SIGNAL_DESTRUCTIVE_REF_INTERFACE(Value)
 };
 
 // LCOV_EXCL_STOP
@@ -381,6 +409,11 @@ struct signal_ref
     move_out() const override
     {
         return ref_->move_out();
+    }
+    Value&
+    destructive_ref() const override
+    {
+        return ref_->destructive_ref();
     }
     id_interface const&
     value_id() const override
@@ -439,7 +472,7 @@ struct is_signal_type : std::is_base_of<untyped_signal_base, T>
 template<class Signal>
 struct signal_is_readable : signal_capability_level_is_compatible<
                                 signal_readable,
-                                typename Signal::capabilities::reading>
+                                Signal::capabilities::reading>
 {
 };
 
@@ -494,7 +527,7 @@ struct validation_error : exception
 template<class Signal>
 struct signal_is_writable : signal_capability_level_is_compatible<
                                 signal_writable,
-                                typename Signal::capabilities::writing>
+                                Signal::capabilities::writing>
 {
 };
 
@@ -568,7 +601,7 @@ struct is_duplex_signal_type : std::conditional_t<
 template<class Signal>
 struct signal_is_movable : signal_capability_level_is_compatible<
                                signal_movable,
-                               typename Signal::capabilities::reading>
+                               Signal::capabilities::reading>
 {
 };
 
@@ -587,7 +620,7 @@ struct is_movable_signal_type : std::conditional_t<
 template<class Signal>
 struct signal_is_move_activated : signal_capability_level_is_compatible<
                                       signal_move_activated,
-                                      typename Signal::capabilities::reading>
+                                      Signal::capabilities::reading>
 {
 };
 
@@ -640,7 +673,7 @@ forward_signal(Signal const& signal)
 template<class Signal>
 struct signal_is_clearable : signal_capability_level_is_compatible<
                                  signal_clearable,
-                                 typename Signal::capabilities::writing>
+                                 Signal::capabilities::writing>
 {
 };
 

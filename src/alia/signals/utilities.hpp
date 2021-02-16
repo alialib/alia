@@ -166,6 +166,11 @@ struct signal_wrapper : signal<Derived, Value, Capabilities>
     {
         return wrapped_.move_out();
     }
+    typename Wrapped::value_type&
+    destructive_ref() const override
+    {
+        return wrapped_.destructive_ref();
+    }
     id_interface const&
     value_id() const override
     {

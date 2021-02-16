@@ -42,6 +42,11 @@ struct empty_signal
     {
         throw nullptr;
     }
+    Value&
+    destructive_ref() const override
+    {
+        throw nullptr;
+    }
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
@@ -67,8 +72,10 @@ empty()
 
 // value(v) creates a read-only signal that carries the value v.
 template<class Value>
-struct value_signal
-    : regular_signal<value_signal<Value>, Value, move_activated_signal>
+struct value_signal : regular_signal<
+                          value_signal<Value>,
+                          Value,
+                          destructively_referenceable_signal>
 {
     explicit value_signal(Value v) : v_(std::move(v))
     {
@@ -89,6 +96,11 @@ struct value_signal
         Value moved = std::move(v_);
         return moved;
     }
+    Value&
+    destructive_ref() const override
+    {
+        return v_;
+    }
 
  private:
     mutable Value v_;
@@ -102,7 +114,7 @@ value(Value v)
 
 // This is a special overload of value() for C-style string literals.
 struct string_literal_signal
-    : lazy_signal<string_literal_signal, std::string, read_only_signal>
+    : lazy_signal<string_literal_signal, std::string, move_activated_signal>
 {
     string_literal_signal(char const* x) : text_(x)
     {
@@ -166,6 +178,11 @@ struct direct_signal
     {
         Value moved = std::move(*v_);
         return moved;
+    }
+    Value&
+    destructive_ref() const override
+    {
+        return *v_;
     }
     bool
     ready_to_write() const override
