@@ -467,9 +467,8 @@ struct field_signal : preferred_id_signal<
     Field
     move_out() const override
     {
-        structure_type structure = structure_.move_out();
+        structure_type& structure = structure_.destructive_ref();
         Field field = std::move(structure.*field_);
-        structure_.write(std::move(structure));
         return field;
     }
     Field&
@@ -739,10 +738,9 @@ struct subscript_signal
     typename subscript_signal::value_type
     move_out() const override
     {
-        auto container = container_.move_out();
+        auto& container = container_.destructive_ref();
         typename subscript_signal::value_type moved_out
             = std::move(container[index_.read()]);
-        container_.write(std::move(container));
         return moved_out;
     }
     typename subscript_signal::value_type&
