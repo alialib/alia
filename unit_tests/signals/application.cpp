@@ -6,6 +6,7 @@
 
 #include <alia/flow/try_catch.hpp>
 #include <alia/signals/basic.hpp>
+#include <alia/signals/state.hpp>
 
 #include <flow/testing.hpp>
 #include <traversal.hpp>
@@ -360,7 +361,7 @@ TEST_CASE("duplex_apply", "[signals][application]")
             signal_id.capture(s.value_id());
 
             REQUIRE(s.ready_to_write());
-            if (new_value > 0)
+            if (new_value > 0 && read_signal(s) != new_value)
                 write_signal(s, new_value);
         };
     };
@@ -386,6 +387,57 @@ TEST_CASE("duplex_apply", "[signals][application]")
 
     do_traversal(sys, make_controller(0));
     REQUIRE(n == 1);
+}
+
+TEST_CASE("duplex_apply on state", "[signals][application]")
+{
+    alia::system sys;
+    initialize_system(sys, [](context) {});
+
+    int f_call_count = 0;
+    auto f = [&](int x) -> double {
+        ++f_call_count;
+        return x * 2.0;
+    };
+    int r_call_count = 0;
+    auto r = [&](double x) -> int {
+        ++r_call_count;
+        return int(x / 2.0 + 0.5);
+    };
+
+    auto make_controller = [&](double new_value) {
+        return [&, new_value](context ctx) {
+            auto n = get_state(ctx, 0);
+            auto s = duplex_apply(ctx, f, r, n);
+
+            typedef decltype(s) signal_t;
+            REQUIRE(signal_is_movable<signal_t>::value);
+            REQUIRE(signal_is_writable<signal_t>::value);
+
+            REQUIRE(signal_has_value(s));
+            REQUIRE(read_signal(s) == read_signal(n) * 2.0);
+
+            REQUIRE(s.ready_to_write());
+            if (new_value > 0 && read_signal(s) != new_value)
+                write_signal(s, new_value);
+        };
+    };
+
+    do_traversal(sys, make_controller(0));
+    REQUIRE(f_call_count == 1);
+    REQUIRE(r_call_count == 0);
+
+    do_traversal(sys, make_controller(0));
+    REQUIRE(f_call_count == 1);
+    REQUIRE(r_call_count == 0);
+
+    do_traversal(sys, make_controller(2));
+    REQUIRE(f_call_count == 1);
+    REQUIRE(r_call_count == 1);
+
+    do_traversal(sys, make_controller(0));
+    REQUIRE(f_call_count == 1);
+    REQUIRE(r_call_count == 1);
 }
 
 TEST_CASE("alia_mem_fn", "[signals][application]")

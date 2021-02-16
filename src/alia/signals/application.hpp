@@ -48,7 +48,7 @@ template<class Function, class Arg>
 auto
 lazy_apply(Function f, Arg arg)
 {
-    return lazy_apply1_signal<decltype(f(read_signal(arg))), Function, Arg>(
+    return lazy_apply1_signal<decltype(f(forward_signal(arg))), Function, Arg>(
         std::move(f), std::move(arg));
 }
 
@@ -91,7 +91,7 @@ auto
 lazy_apply(Function f, Arg0 arg0, Arg1 arg1)
 {
     return lazy_apply2_signal<
-        decltype(f(read_signal(arg0), read_signal(arg1))),
+        decltype(f(forward_signal(arg0), forward_signal(arg1))),
         Function,
         Arg0,
         Arg1>(f, std::move(arg0), std::move(arg1));
@@ -164,7 +164,7 @@ auto
 lazy_duplex_apply(Forward forward, Reverse reverse, Arg arg)
 {
     return detail::lazy_duplex_apply_signal<
-        decltype(forward(read_signal(arg))),
+        decltype(forward(forward_signal(arg))),
         Forward,
         Reverse,
         Arg>(std::move(forward), std::move(reverse), std::move(arg));
@@ -191,7 +191,7 @@ struct apply_result_data
     // time the inputs change.
     counter_type version = 0;
     // If status is READY, this is the result.
-    Value result;
+    Value value;
     // If status is FAILED, this is the error.
     std::exception_ptr error;
 };
@@ -227,12 +227,12 @@ struct apply_signal
     Value const&
     read() const
     {
-        return data_->result;
+        return data_->value;
     }
     Value
     move_out() const
     {
-        auto moved_out = std::move(data_->result);
+        auto moved_out = std::move(data_->value);
         data_->status = detail::apply_status::UNCOMPUTED;
         return moved_out;
     }
@@ -240,7 +240,7 @@ struct apply_signal
     destructive_ref() const
     {
         data_->status = detail::apply_status::UNCOMPUTED;
-        return data_->result;
+        return data_->value;
     }
 
  private:
@@ -255,6 +255,30 @@ apply_signal<Value>
 make_apply_signal(apply_result_data<Value>& data)
 {
     return apply_signal<Value>(data);
+}
+
+template<class Result, class Arg>
+void
+process_apply_arg(
+    context ctx,
+    apply_result_data<Result>& data,
+    bool& args_ready,
+    captured_id& cached_id,
+    Arg const& arg)
+{
+    if (is_refresh_event(ctx))
+    {
+        if (!signal_has_value(arg))
+        {
+            reset(data);
+            args_ready = false;
+        }
+        else if (!cached_id.matches(arg.value_id()))
+        {
+            reset(data);
+            cached_id.capture(arg.value_id());
+        }
+    }
 }
 
 template<class Result>
@@ -273,38 +297,27 @@ process_apply_args(
 {
     captured_id* cached_id;
     get_cached_data(ctx, &cached_id);
-    if (is_refresh_event(ctx))
-    {
-        if (!signal_has_value(arg))
-        {
-            reset(data);
-            args_ready = false;
-        }
-        else if (!cached_id->matches(arg.value_id()))
-        {
-            reset(data);
-            cached_id->capture(arg.value_id());
-        }
-    }
+    process_apply_arg(ctx, data, args_ready, *cached_id, arg);
     process_apply_args(ctx, data, args_ready, rest...);
 }
 
-template<class Function, class... Args>
-auto&
-process_apply(context ctx, Function f, Args const&... args)
+template<class Value, class Function, class... Args>
+void
+process_apply_body(
+    context ctx,
+    apply_result_data<Value>& data,
+    bool args_ready,
+    Function&& f,
+    Args const&... args)
 {
-    apply_result_data<decltype(f(read_signal(args)...))>* data_ptr;
-    get_cached_data(ctx, &data_ptr);
-    auto& data = *data_ptr;
-    bool args_ready = true;
-    process_apply_args(ctx, data, args_ready, args...);
     if (is_refresh_event(ctx))
     {
         if (data.status == apply_status::UNCOMPUTED && args_ready)
         {
             try
             {
-                data.result = f(read_signal(args)...);
+                data.value
+                    = std::forward<Function>(f)(forward_signal(args)...);
                 data.status = apply_status::READY;
             }
             catch (...)
@@ -316,16 +329,22 @@ process_apply(context ctx, Function f, Args const&... args)
         if (data.status == apply_status::FAILED)
             std::rethrow_exception(data.error);
     }
-    return data;
 }
 
 } // namespace detail
 
 template<class Function, class... Args>
 auto
-apply(context ctx, Function f, Args const&... args)
+apply(context ctx, Function&& f, Args const&... args)
 {
-    return detail::make_apply_signal(detail::process_apply(ctx, f, args...));
+    detail::apply_result_data<decltype(f(forward_signal(args)...))>* data_ptr;
+    get_cached_data(ctx, &data_ptr);
+    auto& data = *data_ptr;
+    bool args_ready = true;
+    process_apply_args(ctx, data, args_ready, args...);
+    process_apply_body(
+        ctx, data, args_ready, std::forward<Function>(f), args...);
+    return detail::make_apply_signal(data);
 }
 
 template<class Function>
@@ -345,82 +364,109 @@ lift(Function f)
 
 namespace detail {
 
-template<class Value, class Wrapped, class Reverse>
+template<class Value>
+struct duplex_apply_data
+{
+    apply_result_data<Value> result;
+    captured_id input_id;
+};
+
+template<class Value, class Input, class Reverse>
 struct duplex_apply_signal : signal<
-                                 duplex_apply_signal<Value, Wrapped, Reverse>,
+                                 duplex_apply_signal<Value, Input, Reverse>,
                                  Value,
                                  movable_duplex_signal>
 {
     duplex_apply_signal(
-        apply_result_data<Value>& data, Wrapped wrapped, Reverse reverse)
-        : data_(&data),
-          wrapped_(std::move(wrapped)),
-          reverse_(std::move(reverse))
+        duplex_apply_data<Value>& data, Input input, Reverse reverse)
+        : data_(&data), input_(std::move(input)), reverse_(std::move(reverse))
     {
     }
     id_interface const&
     value_id() const
     {
-        id_ = make_id(data_->version);
+        id_ = make_id(data_->result.version);
         return id_;
     }
     bool
     has_value() const
     {
-        return data_->status == apply_status::READY;
+        return data_->result.status == apply_status::READY;
     }
     Value const&
     read() const
     {
-        return data_->result;
+        return data_->result.value;
     }
     Value
     move_out() const
     {
-        auto moved_out = std::move(data_->result);
-        data_->status = apply_status::UNCOMPUTED;
+        auto moved_out = std::move(data_->result.value);
+        data_->result.status = apply_status::UNCOMPUTED;
         return moved_out;
     }
     Value&
     destructive_ref() const
     {
-        data_->status = apply_status::UNCOMPUTED;
-        return data_->result;
+        data_->result.status = apply_status::UNCOMPUTED;
+        return data_->result.value;
     }
     bool
     ready_to_write() const
     {
-        return wrapped_.ready_to_write();
+        return input_.ready_to_write();
     }
     void
     write(Value value) const
     {
-        wrapped_.write(reverse_(std::move(value)));
+        input_.write(reverse_(value));
+        // This is sort of hackish, but the idea here is that if we do nothing
+        // right now, on the next refresh, we're going to detect that the input
+        // signal has changed, and then apply the forward mapping to convert
+        // that value back to the one we're writing right now, which is
+        // obviously wasted effort.
+        // To attempt to avoid this, we capture the value ID of the input after
+        // writing to it in the hopes that it has already changed. (That is the
+        // case for some signal types, but not all.)
+        // To do this properly, we should probably allow signal write()
+        // functions to return a new value ID.
+        data_->input_id.capture(input_.value_id());
+        ++data_->result.version;
+        data_->result.value = std::move(value);
+        data_->result.status = apply_status::READY;
     }
 
  private:
-    apply_result_data<Value>* data_;
+    duplex_apply_data<Value>* data_;
     mutable simple_id<counter_type> id_;
-    Wrapped wrapped_;
+    Input input_;
     Reverse reverse_;
 };
-template<class Value, class Wrapped, class Reverse>
+template<class Value, class Input, class Reverse>
 auto
 make_duplex_apply_signal(
-    apply_result_data<Value>& data, Wrapped wrapped, Reverse reverse)
+    duplex_apply_data<Value>& data, Input input, Reverse reverse)
 {
-    return duplex_apply_signal<Value, Wrapped, Reverse>(
-        data, std::move(wrapped), std::move(reverse));
+    return duplex_apply_signal<Value, Input, Reverse>(
+        data, std::move(input), std::move(reverse));
 }
 
 } // namespace detail
 
 template<class Forward, class Reverse, class Arg>
 auto
-duplex_apply(context ctx, Forward forward, Reverse reverse, Arg arg)
+duplex_apply(context ctx, Forward&& forward, Reverse reverse, Arg arg)
 {
+    detail::duplex_apply_data<decltype(forward(forward_signal(arg)))>*
+        data_ptr;
+    get_cached_data(ctx, &data_ptr);
+    auto& data = *data_ptr;
+    bool args_ready = true;
+    process_apply_arg(ctx, data.result, args_ready, data.input_id, arg);
+    process_apply_body(
+        ctx, data.result, args_ready, std::forward<Forward>(forward), arg);
     return detail::make_duplex_apply_signal(
-        detail::process_apply(ctx, forward, arg), arg, reverse);
+        data, std::move(arg), std::move(reverse));
 }
 
 // alia_mem_fn(m) wraps a member function name in a lambda so that it can be
