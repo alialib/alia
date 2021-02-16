@@ -278,7 +278,61 @@ void
 root_ui(html::context vanilla_ctx)
 {
     with_demo_context(vanilla_ctx, [&](auto ctx) {
+        placeholder_root(ctx, "nav-content", [&] {
+            li(ctx, "nav-item dropdown", [&] {
+                a(ctx)
+                    .attr("class", "nav-link dropdown-toggle")
+                    .attr("href", "#")
+                    .attr("data-toggle", "dropdown")
+                    .text("Components");
+                div(ctx, "dropdown-menu dropdown-menu-right", [&] {
+                    a(ctx)
+                        .attr("class", "dropdown-item")
+                        .attr("href", "#breadcrumbs")
+                        .text("Breadcrumbs");
+                    a(ctx)
+                        .attr("class", "dropdown-item")
+                        .attr("href", "#buttons")
+                        .text("Buttons");
+                    a(ctx)
+                        .attr("class", "dropdown-item")
+                        .attr("href", "#dropdowns")
+                        .text("Dropdowns");
+                    a(ctx)
+                        .attr("class", "dropdown-item")
+                        .attr("href", "#modals")
+                        .text("Modals");
+                    a(ctx)
+                        .attr("class", "dropdown-item")
+                        .attr("href", "#tooltips")
+                        .text("Tooltips");
+                });
+            });
+        });
+
         placeholder_root(ctx, "demos", [&] {
+            h1(ctx, "alia/HTML Bootstrap Interface")
+                .attr("class", "mt-5 mb-3");
+
+            p(ctx,
+              "This is a demonstration of alia/HTML's interface to "
+              "Bootstrap components. Not all Bootstrap components "
+              "currently have dedicated interfaces, but more will be "
+              "added here as they're created.");
+
+            p(ctx, [&] {
+                text(ctx, "This page is styled with ");
+                link(
+                    ctx,
+                    "the Bootswatch Lux theme",
+                    "https://bootswatch.com/lux/");
+                text(
+                    ctx,
+                    " but nothing in the code is specific to that theme, so "
+                    "you should be free to use any Bootstrap-compatible "
+                    "theme. (alia/HTML currently targets Bootstrap 4.5.x.)");
+            });
+
             p(ctx,
               "All code snippets assume the following namespace "
               "declarations are in effect:");

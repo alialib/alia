@@ -18,4 +18,13 @@ document_title(html::context ctx, readable<std::string> title)
         [] {});
 }
 
+void
+document_title(html::context ctx, char const* title)
+{
+    on_init(ctx, callback([&] {
+                emscripten::val::global("document")
+                    .set("title", emscripten::val(title));
+            }));
+}
+
 }} // namespace alia::html

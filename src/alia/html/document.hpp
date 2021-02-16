@@ -10,6 +10,9 @@ namespace alia { namespace html {
 void
 document_title(html::context ctx, readable<std::string> title);
 
+void
+document_title(html::context ctx, char const* title);
+
 }} // namespace alia::html
 
 #endif
