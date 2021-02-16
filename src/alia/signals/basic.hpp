@@ -72,10 +72,8 @@ empty()
 
 // value(v) creates a read-only signal that carries the value v.
 template<class Value>
-struct value_signal : regular_signal<
-                          value_signal<Value>,
-                          Value,
-                          destructively_referenceable_signal>
+struct value_signal
+    : regular_signal<value_signal<Value>, Value, move_activated_signal>
 {
     explicit value_signal(Value v) : v_(std::move(v))
     {

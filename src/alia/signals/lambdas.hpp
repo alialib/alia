@@ -39,6 +39,12 @@ struct lambda_constant_signal
     {
         return read_();
     }
+    Value&
+    destructive_ref() const override
+    {
+        value_ = read_();
+        return value_;
+    }
 
  private:
     Read read_;
@@ -80,6 +86,12 @@ struct simple_lambda_reader_signal
     {
         return read_();
     }
+    Value&
+    destructive_ref() const override
+    {
+        value_ = read_();
+        return value_;
+    }
 
  private:
     Read read_;
@@ -120,6 +132,12 @@ struct lambda_reader_signal : regular_signal<
     move_out() const override
     {
         return read_();
+    }
+    Value&
+    destructive_ref() const override
+    {
+        value_ = read_();
+        return value_;
     }
 
  private:
@@ -176,6 +194,12 @@ struct lambda_reader_signal_with_id
     move_out() const override
     {
         return read_();
+    }
+    Value&
+    destructive_ref() const override
+    {
+        value_ = read_();
+        return value_;
     }
 
  private:
@@ -238,6 +262,12 @@ struct lambda_duplex_signal
     move_out() const override
     {
         return read_();
+    }
+    Value&
+    destructive_ref() const override
+    {
+        value_ = read_();
+        return value_;
     }
     bool
     ready_to_write() const override
@@ -327,6 +357,12 @@ struct lambda_duplex_signal_with_id : signal<
     move_out() const override
     {
         return read_();
+    }
+    Value&
+    destructive_ref() const override
+    {
+        value_ = read_();
+        return value_;
     }
     bool
     ready_to_write() const override

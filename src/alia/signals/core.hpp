@@ -23,15 +23,11 @@ namespace alia {
 constexpr unsigned signal_unreadable = 0b0000;
 // The signal can return a const reference to its value.
 constexpr unsigned signal_readable = 0b0001;
+// The signal is capable of moving out its value, but there may be side
+// effects, so it requires explicit activation.
+constexpr unsigned signal_movable = 0b0011;
 // The signal can move out its value.
-constexpr unsigned signal_move_activated = 0b0011;
-// The signal can provide a reference to its value that the caller can
-// destructively manipulate.
-constexpr unsigned signal_destructively_referenceable = 0b0111;
-// The signal is capable of moving out its value and providing a destructive
-// reference to it, but there may be side effects, so it requires explicit
-// activation.
-constexpr unsigned signal_movable = 0b1001;
+constexpr unsigned signal_move_activated = 0b0111;
 
 // The following are the same, but for writing.
 constexpr unsigned signal_unwritable = 0b00;
@@ -53,10 +49,6 @@ typedef signal_capabilities<signal_movable, signal_unwritable>
     movable_read_only_signal;
 typedef signal_capabilities<signal_move_activated, signal_unwritable>
     move_activated_signal;
-typedef signal_capabilities<
-    signal_destructively_referenceable,
-    signal_unwritable>
-    destructively_referenceable_signal;
 typedef signal_capabilities<signal_unreadable, signal_writable>
     write_only_signal;
 typedef signal_capabilities<signal_readable, signal_writable>
@@ -65,10 +57,6 @@ typedef signal_capabilities<signal_movable, signal_writable>
     movable_duplex_signal;
 typedef signal_capabilities<signal_move_activated, signal_writable>
     move_activated_duplex_signal;
-typedef signal_capabilities<
-    signal_destructively_referenceable,
-    signal_writable>
-    destructively_referenceable_duplex_signal;
 typedef movable_duplex_signal duplex_signal;
 typedef signal_capabilities<signal_readable, signal_clearable>
     clearable_signal;
@@ -213,8 +201,8 @@ struct signal_interface : untyped_signal_base
     move_out() const = 0;
 
     // Get a reference to the signal's value that the caller can manipulate
-    // as it pleases. This is expected to be implemented by destructively
-    // referenceable signals.
+    // as it pleases.
+    // This is expected to be implemented by movable signals.
     virtual Value&
     destructive_ref() const = 0;
 
@@ -259,15 +247,12 @@ struct signal : signal_base<Derived, Value, Capabilities>
     {                                                                         \
     }
 
-#define ALIA_DEFINE_UNUSED_SIGNAL_DESTRUCTIVE_REF_INTERFACE(Value)            \
-    Value& destructive_ref() const override                                   \
+#define ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)                       \
+    Value move_out() const override                                           \
     {                                                                         \
         throw nullptr;                                                        \
-    }
-
-#define ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)                       \
-    ALIA_DEFINE_UNUSED_SIGNAL_DESTRUCTIVE_REF_INTERFACE(Value)                \
-    Value move_out() const override                                           \
+    }                                                                         \
+    Value& destructive_ref() const override                                   \
     {                                                                         \
         throw nullptr;                                                        \
     }
@@ -296,17 +281,9 @@ struct signal<Derived, Value, read_only_signal>
 };
 
 template<class Derived, class Value>
-struct signal<Derived, Value, destructively_referenceable_signal>
-    : signal_base<Derived, Value, destructively_referenceable_signal>
-{
-    ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)
-};
-
-template<class Derived, class Value>
 struct signal<Derived, Value, move_activated_signal>
     : signal_base<Derived, Value, move_activated_signal>
 {
-    ALIA_DEFINE_UNUSED_SIGNAL_DESTRUCTIVE_REF_INTERFACE(Value)
     ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)
 };
 
@@ -344,14 +321,6 @@ template<class Derived, class Value>
 struct signal<Derived, Value, move_activated_duplex_signal>
     : signal_base<Derived, Value, move_activated_duplex_signal>
 {
-    ALIA_DEFINE_UNUSED_SIGNAL_DESTRUCTIVE_REF_INTERFACE(Value)
-    ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
-};
-
-template<class Derived, class Value>
-struct signal<Derived, Value, destructively_referenceable_duplex_signal>
-    : signal_base<Derived, Value, destructively_referenceable_duplex_signal>
-{
     ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
 };
 
@@ -360,13 +329,6 @@ struct signal<Derived, Value, clearable_signal>
     : signal_base<Derived, Value, clearable_signal>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)
-};
-
-template<class Derived, class Value>
-struct signal<Derived, Value, move_activated_clearable_signal>
-    : signal_base<Derived, Value, move_activated_clearable_signal>
-{
-    ALIA_DEFINE_UNUSED_SIGNAL_DESTRUCTIVE_REF_INTERFACE(Value)
 };
 
 // LCOV_EXCL_STOP

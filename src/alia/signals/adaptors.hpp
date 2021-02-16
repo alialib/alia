@@ -134,6 +134,12 @@ struct casting_signal : casting_signal_wrapper<
     {
         return static_cast<To>(forward_signal(this->wrapped_));
     }
+    To&
+    destructive_ref() const override
+    {
+        value_ = this->move_out();
+        return value_;
+    }
     void
     write(To value) const override
     {
