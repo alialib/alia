@@ -11,7 +11,6 @@ TEST_CASE("empty signal", "[signals][basic]")
     typedef decltype(s) signal_t;
     REQUIRE(signal_is_readable<signal_t>::value);
     REQUIRE(signal_is_writable<signal_t>::value);
-    REQUIRE(!signal_is_clearable<signal_t>::value);
 
     REQUIRE(s.value_id() == null_id);
     REQUIRE(!signal_has_value(s));
