@@ -42,7 +42,7 @@ struct breadcrumb
     {
         return element(this->nav.context(), "li")
             .class_("breadcrumb-item")
-            .children([&] { std::forward<Link>(link)(); });
+            .content([&] { std::forward<Link>(link)(); });
     }
 
     element_handle

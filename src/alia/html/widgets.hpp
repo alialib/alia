@@ -32,7 +32,7 @@ template<class Content>
 std::enable_if_t<std::is_invocable_v<Content&&>, element_handle>
 p(html::context ctx, Content&& content)
 {
-    return element(ctx, "p").children(std::forward<Content>(content));
+    return element(ctx, "p").content(std::forward<Content>(content));
 }
 
 #define ALIA_HTML_DEFINE_TEXT_ELEMENT_INTERFACE(name)                         \
@@ -197,7 +197,7 @@ ALIA_HTML_DEFINE_LEAF_ELEMENT_INTERFACE(a)
     template<class Classes, class Content>                                    \
     element_handle name(context ctx, Classes classes, Content&& content)      \
     {                                                                         \
-        return name(ctx, classes).children(std::forward<Content>(content));   \
+        return name(ctx, classes).content(std::forward<Content>(content));    \
     }
 
 ALIA_HTML_DEFINE_CONTAINER_ELEMENT_INTERFACE(header)

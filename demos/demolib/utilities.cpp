@@ -8,7 +8,7 @@ using namespace alia;
 void
 section_heading(html::context ctx, char const* anchor, char const* label)
 {
-    h2(ctx).classes("mt-5 mb-3").children([&] {
+    h2(ctx).classes("mt-5 mb-3").content([&] {
         element(ctx, "a")
             .attr("name", anchor)
             .attr(
@@ -77,7 +77,7 @@ code_snippet(demo_context ctx, char const* tag)
 {
     auto src = apply(ctx, extract_code_snippet, get<src_tag>(ctx), value(tag));
     auto code_block
-        = pre(ctx).class_("language-cpp").children([&] { code(ctx, src); });
+        = pre(ctx).class_("language-cpp").content([&] { code(ctx, src); });
     on_value_gain(ctx, src, callback([&] {
                       EM_ASM(
                           { Prism.highlightElement(Module.nodes[$0]); },

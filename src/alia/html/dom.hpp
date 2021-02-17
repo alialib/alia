@@ -360,7 +360,7 @@ struct regular_element_handle
 
     template<class Function>
     Derived&
-    children(Function&& fn)
+    content(Function&& fn)
     {
         auto& traversal = get<tree_traversal_tag>(this->context());
         scoped_tree_children<element_object> tree_scope;
@@ -374,7 +374,7 @@ struct regular_element_handle
     Derived&
     text(Text text)
     {
-        return children([&] { html::text(this->context(), text); });
+        return content([&] { html::text(this->context(), text); });
     }
 };
 
@@ -397,7 +397,7 @@ struct body_handle : element_handle_base<body_handle, element_handle_storage>
 
     template<class Function>
     body_handle&
-    children(Function&& fn)
+    content(Function&& fn)
     {
         scoped_tree_root<element_object> tree_scope;
         if (is_refresh_event(this->context()))
