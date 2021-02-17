@@ -74,8 +74,7 @@ TEST_CASE("context", "[context][interface]")
 
     other_traversal other;
     extend_context_type_t<context, other_traversal_tag> extended
-        = detail::add_context_object<other_traversal_tag>(
-            copy_context(ctx), other);
+        = extend_context<other_traversal_tag>(ctx, other);
     REQUIRE(detail::has_context_object<data_traversal_tag>(extended));
     REQUIRE(&get<data_traversal_tag>(extended) == &data);
     REQUIRE(detail::has_context_object<event_traversal_tag>(extended));
