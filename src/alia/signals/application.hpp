@@ -178,9 +178,18 @@ namespace detail {
 
 enum class apply_status
 {
+    // The value hasn't been computed since the last time the inputs changed.
     UNCOMPUTED,
+    // The calculation for the current value threw an exception.
+    FAILED,
+    // The value is calculated and up-to-date.
     READY,
-    FAILED
+    // The value was calculated but was subsequently moved out or accessed in
+    // a destructive manner. This is an in between state that should only
+    // exist in the middle of an action. The value is there, but probably isn't
+    // whole enough to be considered valid, so it should be recomputed on the
+    // next refresh.
+    MOVED
 };
 
 template<class Value>
@@ -222,7 +231,8 @@ struct apply_signal
     bool
     has_value() const
     {
-        return data_->status == detail::apply_status::READY;
+        return data_->status == detail::apply_status::READY
+               || data_->status == detail::apply_status::MOVED;
     }
     Value const&
     read() const
@@ -233,13 +243,13 @@ struct apply_signal
     move_out() const
     {
         auto moved_out = std::move(data_->value);
-        data_->status = detail::apply_status::UNCOMPUTED;
+        data_->status = detail::apply_status::MOVED;
         return moved_out;
     }
     Value&
     destructive_ref() const
     {
-        data_->status = detail::apply_status::UNCOMPUTED;
+        data_->status = detail::apply_status::MOVED;
         return data_->value;
     }
 
@@ -312,7 +322,9 @@ process_apply_body(
 {
     if (is_refresh_event(ctx))
     {
-        if (data.status == apply_status::UNCOMPUTED && args_ready)
+        if ((data.status == apply_status::UNCOMPUTED
+             || data.status == apply_status::MOVED)
+            && args_ready)
         {
             try
             {
@@ -391,7 +403,8 @@ struct duplex_apply_signal : signal<
     bool
     has_value() const
     {
-        return data_->result.status == apply_status::READY;
+        return data_->result.status == apply_status::READY
+               || data_->result.status == apply_status::MOVED;
     }
     Value const&
     read() const
@@ -402,13 +415,13 @@ struct duplex_apply_signal : signal<
     move_out() const
     {
         auto moved_out = std::move(data_->result.value);
-        data_->result.status = apply_status::UNCOMPUTED;
+        data_->result.status = apply_status::MOVED;
         return moved_out;
     }
     Value&
     destructive_ref() const
     {
-        data_->result.status = apply_status::UNCOMPUTED;
+        data_->result.status = apply_status::MOVED;
         return data_->result.value;
     }
     bool
