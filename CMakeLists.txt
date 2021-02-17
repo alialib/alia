@@ -90,11 +90,11 @@ file(MAKE_DIRECTORY ${deploy_dir})
 
 # Deploy the root index.html file.
 deploy(
-    "${CMAKE_CURRENT_SOURCE_DIR}/examples/index.html"
+    "${CMAKE_CURRENT_SOURCE_DIR}/demos/index.html"
     "${deploy_dir}")
 # Extract and deploy the favicon.
 file(ARCHIVE_EXTRACT
-    INPUT "${CMAKE_CURRENT_SOURCE_DIR}/examples/favicon.zip"
+    INPUT "${CMAKE_CURRENT_SOURCE_DIR}/demos/favicon.zip"
     DESTINATION "${deploy_dir}")
 
 # On CI, create the CNAME file for GitHub Pages.
@@ -103,9 +103,10 @@ if(DEFINED ENV{CI})
 endif()
 
 # Set up the build for an example.
-function(add_example name dir)
-    file(GLOB source_files "${CMAKE_CURRENT_SOURCE_DIR}/examples/${name}/*")
-    file(GLOB cpp_files "${CMAKE_CURRENT_SOURCE_DIR}/examples/${name}/*.cpp")
+function(add_example dir)
+    get_filename_component(name "${dir}" NAME)
+    file(GLOB source_files "${CMAKE_CURRENT_SOURCE_DIR}/${dir}/*")
+    file(GLOB cpp_files "${CMAKE_CURRENT_SOURCE_DIR}/${dir}/*.cpp")
     add_executable(${name} ${cpp_files})
     target_link_libraries(${name} alia_html)
     set(deploy_subdir "${deploy_dir}/${dir}")
@@ -122,26 +123,27 @@ function(add_example name dir)
 endfunction()
 
 # Set up the build for a demo.
-function(add_demo name dir)
-    add_example(${name} ${dir})
+function(add_demo dir)
+    get_filename_component(name "${dir}" NAME)
+    add_example(${dir})
     target_sources(${name} PRIVATE
-        examples/demolib/utilities.cpp)
+        demos/demolib/utilities.cpp)
     set(deploy_subdir "${deploy_dir}/${dir}")
     deploy(
-        ${CMAKE_CURRENT_SOURCE_DIR}/examples/demolib/demo.css
+        ${CMAKE_CURRENT_SOURCE_DIR}/demos/demolib/demo.css
         ${deploy_subdir})
     deploy(
-        ${CMAKE_CURRENT_SOURCE_DIR}/examples/demolib/index.html
+        ${CMAKE_CURRENT_SOURCE_DIR}/demos/demolib/index.html
         ${deploy_subdir})
 endfunction()
 
 # Add the demos.
-add_demo(bootstrap-demo demos/bootstrap)
-add_demo(routing-demo demos/routing)
-add_demo(io-demos demos/io)
-add_demo(elements-demo demos/elements)
+add_demo(demos/bootstrap)
+add_demo(demos/routing)
+add_demo(demos/io)
+add_demo(demos/elements)
 
 # Add the examples.
-add_example(todo-mvc examples/todo-mvc)
+add_example(examples/todo-mvc)
 target_include_directories(todo-mvc PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/external/cereal/include)
