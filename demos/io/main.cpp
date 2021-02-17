@@ -83,8 +83,8 @@ fetch_demo(demo_context ctx)
         link(ctx, "REST Countries API", "https://restcountries.eu/");
         text(
             ctx,
-            " to translate two- and three-letter country codes into "
-            "country names.");
+            " (directly from your browser) to translate two- and three-letter "
+            "country codes into country names.");
     });
     div(ctx, "demo-panel", [&] { country_name_lookup_ui(ctx); });
     code_snippet(ctx, "fetch-demo");
