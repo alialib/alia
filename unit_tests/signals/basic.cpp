@@ -17,6 +17,20 @@ TEST_CASE("empty signal", "[signals][basic]")
     REQUIRE(!signal_ready_to_write(s));
 }
 
+TEST_CASE("default-initialized signal", "[signals][basic]")
+{
+    auto s = default_initialized<std::string>();
+
+    typedef decltype(s) signal_t;
+    REQUIRE(signal_is_readable<signal_t>::value);
+
+    REQUIRE(s.value_id() == unit_id);
+    REQUIRE(signal_has_value(s));
+    REQUIRE(read_signal(s) == std::string());
+    REQUIRE(s.destructive_ref() == std::string());
+    REQUIRE(move_signal(s) == std::string());
+}
+
 TEST_CASE("value signal", "[signals][basic]")
 {
     auto s = value(1);

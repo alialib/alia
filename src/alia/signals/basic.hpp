@@ -74,6 +74,51 @@ empty()
     return empty_signal<Value>();
 }
 
+// default_initialized<Value>() creates a read-only signal whose value is a
+// default-initialized value of type Value.
+template<class Value>
+struct default_initialized_signal
+    : signal<default_initialized_signal<Value>, Value, move_activated_signal>
+{
+    default_initialized_signal()
+    {
+    }
+    bool
+    has_value() const override
+    {
+        return true;
+    }
+    id_interface const&
+    value_id() const override
+    {
+        return unit_id;
+    }
+    Value const&
+    read() const override
+    {
+        return value_;
+    }
+    Value
+    move_out() const override
+    {
+        return Value();
+    }
+    Value&
+    destructive_ref() const override
+    {
+        return value_;
+    }
+
+ private:
+    mutable Value value_;
+};
+template<class Value>
+default_initialized_signal<Value>
+default_initialized()
+{
+    return default_initialized_signal<Value>();
+}
+
 // value(v) creates a read-only signal that carries the value v.
 template<class Value>
 struct value_signal
