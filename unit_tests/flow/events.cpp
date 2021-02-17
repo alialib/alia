@@ -53,7 +53,7 @@ TEST_CASE("node IDs", "[flow][events]")
     std::vector<external_component_id> ids;
 
     sys.controller = [&](context vanilla_ctx) {
-        my_context ctx = detail::add_context_object<my_tag>(vanilla_ctx, ids);
+        my_context ctx = extend_context<my_tag>(vanilla_ctx, ids);
         do_my_thing(ctx, value("one"));
         do_my_thing(ctx, value("two"));
     };

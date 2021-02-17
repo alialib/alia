@@ -47,8 +47,7 @@ TEST_CASE("simple object tree", "[flow][object_trees]")
     alia::system sys;
     initialize_system(sys, [&](context vanilla_ctx) {
         tree_traversal<test_object> traversal;
-        auto ctx = detail::add_context_object<tree_traversal_tag>(
-            vanilla_ctx, traversal);
+        auto ctx = extend_context<tree_traversal_tag>(vanilla_ctx, traversal);
         if (is_refresh_event(ctx))
         {
             traverse_object_tree(traversal, root, [&]() { controller(ctx); });
@@ -162,8 +161,7 @@ TEST_CASE("multilevel object tree", "[flow][object_trees]")
     alia::system sys;
     initialize_system(sys, [&](context vanilla_ctx) {
         tree_traversal<test_object> traversal;
-        auto ctx = detail::add_context_object<tree_traversal_tag>(
-            vanilla_ctx, traversal);
+        auto ctx = extend_context<tree_traversal_tag>(vanilla_ctx, traversal);
         if (is_refresh_event(ctx))
         {
             traverse_object_tree(traversal, root, [&]() { controller(ctx); });
@@ -242,8 +240,7 @@ TEST_CASE("fluid object tree", "[flow][object_trees]")
     alia::system sys;
     initialize_system(sys, [&](context vanilla_ctx) {
         tree_traversal<test_object> traversal;
-        auto ctx = detail::add_context_object<tree_traversal_tag>(
-            vanilla_ctx, traversal);
+        auto ctx = extend_context<tree_traversal_tag>(vanilla_ctx, traversal);
         if (is_refresh_event(ctx))
         {
             traverse_object_tree(traversal, root, [&]() { controller(ctx); });
@@ -378,8 +375,7 @@ TEST_CASE("piecewise containers", "[flow][object_trees]")
     alia::system sys;
     initialize_system(sys, [&](context vanilla_ctx) {
         tree_traversal<test_object> traversal;
-        auto ctx = detail::add_context_object<tree_traversal_tag>(
-            vanilla_ctx, traversal);
+        auto ctx = extend_context<tree_traversal_tag>(vanilla_ctx, traversal);
         if (is_refresh_event(ctx))
         {
             traverse_object_tree(traversal, root, [&]() { controller(ctx); });
@@ -492,8 +488,7 @@ TEST_CASE("floating object tree root", "[flow][object_trees]")
     alia::system sys;
     initialize_system(sys, [&](context vanilla_ctx) {
         tree_traversal<test_object> traversal;
-        auto ctx = detail::add_context_object<tree_traversal_tag>(
-            vanilla_ctx, traversal);
+        auto ctx = extend_context<tree_traversal_tag>(vanilla_ctx, traversal);
         if (is_refresh_event(ctx))
         {
             traverse_object_tree(traversal, root, [&]() { controller(ctx); });
