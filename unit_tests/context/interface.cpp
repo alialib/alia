@@ -82,6 +82,13 @@ TEST_CASE("context", "[context][interface]")
     REQUIRE(detail::has_context_object<other_traversal_tag>(extended));
     REQUIRE(&get<other_traversal_tag>(extended) == &other);
 
+    with_extended_context<other_traversal_tag>(ctx, other, [&](auto with_ctx) {
+        REQUIRE(detail::has_context_object<event_traversal_tag>(with_ctx));
+        REQUIRE(&get<event_traversal_tag>(with_ctx) == &event);
+        REQUIRE(detail::has_context_object<other_traversal_tag>(with_ctx));
+        REQUIRE(&get<other_traversal_tag>(with_ctx) == &other);
+    });
+
     auto more_extended = extend_context<by_value_string_tag>(extended, "test");
     REQUIRE(detail::has_context_object<by_value_string_tag>(more_extended));
     REQUIRE(get<by_value_string_tag>(more_extended) == "test");
