@@ -5,7 +5,7 @@ namespace alia { namespace html { namespace bootstrap {
 void
 attach_tooltip(element_handle& element)
 {
-    element.on_init([&](auto&) {
+    element.init([&](auto&) {
         EM_ASM(
             { jQuery(Module['nodes'][$0]).tooltip(); }, element.asmdom_id());
     });

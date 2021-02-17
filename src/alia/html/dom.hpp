@@ -311,7 +311,7 @@ struct element_handle_base
     // Specify a callback to call on element initialization.
     template<class Callback>
     Derived&
-    on_init(Callback&& callback)
+    init(Callback&& callback)
     {
         if (this->initializing())
             std::forward<Callback>(callback)(static_cast<Derived&>(*this));

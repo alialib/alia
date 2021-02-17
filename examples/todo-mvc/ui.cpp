@@ -63,7 +63,7 @@ todo_item_ui(app_context ctx, size_t index, duplex<todo_item> todo)
 
                 input(ctx, new_title)
                     .class_("edit")
-                    .on_init([](auto& self) { focus(self); })
+                    .init([](auto& self) { focus(self); })
                     // If the edit control loses focus or Enter is pressed,
                     // save the edits.
                     .on("blur", save)

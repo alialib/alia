@@ -15,7 +15,7 @@ tooltip(element_handle element, Text&& text, Placement&& placement)
     element.attr("data-toggle", "tooltip")
         .attr("title", std::forward<Text>(text))
         .attr("data-placement", std::forward<Placement>(placement))
-        .on_init([&](auto&) { attach_tooltip(element); });
+        .init([&](auto&) { attach_tooltip(element); });
 }
 
 template<class Text>
@@ -24,7 +24,7 @@ tooltip(element_handle element, Text&& text)
 {
     element.attr("data-toggle", "tooltip")
         .attr("title", std::forward<Text>(text))
-        .on_init([&](auto&) { attach_tooltip(element); });
+        .init([&](auto&) { attach_tooltip(element); });
 }
 
 }}} // namespace alia::html::bootstrap
