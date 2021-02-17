@@ -100,14 +100,14 @@ namespace actions {
 inline auto
 close(html::bootstrap::internal_modal_handle& modal)
 {
-    return alia::callback([&modal] { modal.close(); });
+    return callback([&modal] { modal.close(); });
 }
 
 // Get an action that activates the given modal.
 inline auto
 activate(html::bootstrap::modal_handle& modal)
 {
-    return alia::callback([&modal] { modal.activate(); });
+    return callback([&modal] { modal.activate(); });
 }
 
 } // namespace actions

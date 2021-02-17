@@ -279,10 +279,12 @@ struct element_handle_base
         return static_cast<Derived&>(*this);
     }
 
-    // Specify a callback for a DOM event.
+    // Specify a handler for a DOM event.
+    // The JS event object will be passed to the handler function as an
+    // emscripten::val.
     template<class Function>
     Derived&
-    callback(char const* event_type, Function&& fn)
+    handler(char const* event_type, Function&& fn)
     {
         auto& data
             = get_cached_data<detail::element_callback>(this->context());
@@ -302,7 +304,7 @@ struct element_handle_base
     Derived&
     on(char const* event_type, action<> const& action)
     {
-        return callback(
+        return handler(
             event_type, [&](emscripten::val) { perform_action(action); });
     }
 

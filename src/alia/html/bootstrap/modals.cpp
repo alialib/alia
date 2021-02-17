@@ -76,7 +76,7 @@ modal(
             },
             modal.asmdom_id());
     });
-    modal.callback("bs.modal.hidden", [&](auto) { data->active = false; });
+    modal.handler("bs.modal.hidden", [&](auto) { data->active = false; });
 
     return modal_handle(modal, *data);
 }
