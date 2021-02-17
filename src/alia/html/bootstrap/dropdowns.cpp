@@ -9,7 +9,7 @@ dropdown_button(
     function_view<void()> const& label,
     function_view<void(internal_dropdown_handle&)> const& content)
 {
-    return element(ctx, "btn-group").children([&] {
+    return element(ctx, "btn-group").content([&] {
         element(ctx, "button")
             .attr("type", "button")
             .attr("class", "btn dropdown-toggle")
@@ -17,10 +17,10 @@ dropdown_button(
             .attr("aria-haspopup", "true")
             .attr("aria-expanded", "false")
             .class_(style)
-            .children(label);
+            .content(label);
 
         auto menu = div(ctx, "dropdown-menu");
-        menu.children([&] {
+        menu.content([&] {
             internal_dropdown_handle handle{ctx, menu};
             content(handle);
         });

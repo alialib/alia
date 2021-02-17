@@ -9,7 +9,7 @@ close_button(html::context ctx)
         .attr("type", "button")
         .class_("close")
         .attr("aria-label", "Close")
-        .children([&] {
+        .content([&] {
             element(ctx, "span").attr("aria-hidden", "true").text(u8"\u00D7");
         });
 }

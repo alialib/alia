@@ -46,7 +46,7 @@ todo_item_ui(app_context ctx, size_t index, duplex<todo_item> todo)
     li(ctx)
         .class_("completed", alia_field(todo, completed))
         .class_("editing", editing)
-        .children([&] {
+        .content([&] {
             alia_if(editing)
             {
                 // In editing mode, we need to track the new value for the
@@ -76,7 +76,7 @@ todo_item_ui(app_context ctx, size_t index, duplex<todo_item> todo)
                 // In viewing mode, we need a "view" div to contain our viewing
                 // elements.
                 auto view = div(ctx, "view");
-                view.children([&] {
+                view.content([&] {
                     // This checkbox is hooked up to the 'completed' field of
                     // the TODO item.
                     checkbox(ctx, alia_field(todo, completed))
@@ -156,7 +156,7 @@ filter_selection_ui(app_context ctx)
         // that generates the UI for a single filter link.
         // (We could also split this out into a separate function.)
         auto filter_link = [&](auto label, auto href, auto value) {
-            li(ctx).children([&] {
+            li(ctx).content([&] {
                 link(ctx, label, href).class_("selected", filter == value);
             });
         };

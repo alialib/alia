@@ -42,10 +42,10 @@ modal(
     modal.class_("modal")
         .attr("tabindex", "-1")
         .attr("role", "dialog")
-        .children([&] {
+        .content([&] {
             div(ctx, "modal-dialog modal-dialog-centered")
                 .attr("role", "document")
-                .children([&] {
+                .content([&] {
                     ALIA_IF(data->active)
                     {
                         div(ctx, "modal-content", [&] {

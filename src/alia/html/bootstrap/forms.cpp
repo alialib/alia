@@ -9,7 +9,7 @@ checkbox(html::context ctx, duplex<bool> value, readable<std::string> label)
     bool checked = determinate && value.read();
     bool disabled = !value.ready_to_write();
 
-    return div(ctx, "custom-control custom-checkbox").children([&] {
+    return div(ctx, "custom-control custom-checkbox").content([&] {
         element(ctx, "input")
             .attr("type", "checkbox")
             .attr("class", "custom-control-input")
