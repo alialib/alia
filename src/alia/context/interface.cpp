@@ -21,10 +21,10 @@ make_context(
                 detail::add_context_object<system_tag>(
                     make_context(
                         detail::make_empty_structural_collection(storage)),
-                    sys),
-                event),
-            timing),
-        data);
+                    std::ref(sys)),
+                std::ref(event)),
+            std::ref(timing)),
+        std::ref(data));
 }
 
 namespace detail {
