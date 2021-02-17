@@ -78,6 +78,9 @@ struct storage_signal
     std::string
     move_out() const override;
 
+    std::string&
+    destructive_ref() const override;
+
     void
     clear() const override;
 

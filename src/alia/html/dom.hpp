@@ -84,16 +84,21 @@ struct dom_event : targeted_event
     emscripten::val event;
 };
 
-struct callback_data
+struct element_callback : noncopyable
 {
+    ~element_callback();
+
     component_identity identity;
+    int asmdom_id = 0;
+    std::string event;
+    std::function<void(emscripten::val)> function;
 };
 
 void
 install_element_callback(
     context ctx,
     element_object& object,
-    callback_data& data,
+    element_callback& callback,
     char const* event_type);
 
 struct window_callback : noncopyable
@@ -279,7 +284,8 @@ struct element_handle_base
     Derived&
     callback(char const* event_type, Function&& fn)
     {
-        auto& data = get_cached_data<detail::callback_data>(this->context());
+        auto& data
+            = get_cached_data<detail::element_callback>(this->context());
         if (this->initializing())
         {
             detail::install_element_callback(
@@ -292,13 +298,21 @@ struct element_handle_base
         return static_cast<Derived&>(*this);
     }
 
+    // Specify an action to perform in response to a DOM event.
+    Derived&
+    on(char const* event_type, action<> const& action)
+    {
+        return callback(
+            event_type, [&](emscripten::val) { perform_action(action); });
+    }
+
     // Specify a callback to call on element initialization.
     template<class Callback>
     Derived&
     on_init(Callback&& callback)
     {
         if (this->initializing())
-            std::forward<Callback>(callback)(*this);
+            std::forward<Callback>(callback)(static_cast<Derived&>(*this));
         return static_cast<Derived&>(*this);
     }
 
@@ -516,6 +530,12 @@ struct html_fragment_handle
 
 html_fragment_handle
 html_fragment(context ctx, readable<std::string> html);
+
+void
+focus(element_handle element);
+
+bool
+mouse_inside(context ctx, html::element_handle element);
 
 }} // namespace alia::html
 
