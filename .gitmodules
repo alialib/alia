@@ -1,3 +1,6 @@
 [submodule "external/scnlib"]
 	path = external/scnlib
 	url = https://github.com/eliaskosunen/scnlib
+[submodule "external/cereal"]
+	path = external/cereal
+	url = https://github.com/USCiLab/cereal

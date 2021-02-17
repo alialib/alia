@@ -102,6 +102,12 @@ storage_signal::move_out() const
     return moved;
 }
 
+std::string&
+storage_signal::destructive_ref() const
+{
+    return data_->value.untracked_nonconst_ref();
+}
+
 void
 storage_signal::clear() const
 {
@@ -135,6 +141,7 @@ get_storage_state(html::context ctx, char const* storage_name, char const* key)
                     // our domain, so we have to check that the key matches.
                     if (event["key"].as<std::string>() == data->key)
                     {
+                        std::cout << "storage event!" << std::endl;
                         data->value.set(event["newValue"].as<std::string>());
                         refresh_system(*sys);
                     }

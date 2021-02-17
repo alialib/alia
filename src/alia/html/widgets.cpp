@@ -5,9 +5,19 @@ namespace alia { namespace html {
 input_handle&
 input_handle::on_enter(action<> on_enter)
 {
-    this->callback("keyup", [&](emscripten::val& e) {
+    this->callback("keydown", [&](emscripten::val& e) {
         if (e["key"].as<std::string>() == "Enter")
             perform_action(on_enter);
+    });
+    return *this;
+}
+
+input_handle&
+input_handle::on_escape(action<> on_escape)
+{
+    this->callback("keydown", [&](emscripten::val& e) {
+        if (e["key"].as<std::string>() == "Escape")
+            perform_action(on_escape);
     });
     return *this;
 }
@@ -97,6 +107,23 @@ element_handle
 button(html::context ctx, char const* text, action<> on_click)
 {
     return button(ctx, on_click).text(value(text));
+}
+
+element_handle
+checkbox(html::context ctx, duplex<bool> value)
+{
+    bool determinate = value.has_value();
+    bool checked = determinate && value.read();
+    bool disabled = !value.ready_to_write();
+
+    return element(ctx, "input")
+        .attr("type", "checkbox")
+        .attr("disabled", disabled)
+        .prop("indeterminate", !determinate)
+        .prop("checked", checked)
+        .callback("change", [&](emscripten::val e) {
+            write_signal(value, e["target"]["checked"].as<bool>());
+        });
 }
 
 }} // namespace alia::html

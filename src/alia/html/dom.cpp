@@ -223,20 +223,41 @@ install_window_callback(
     callback.installed = true;
 }
 
+element_callback::~element_callback()
+{
+    if (this->asmdom_id != 0)
+    {
+        EM_ASM(
+            {
+                if ('aliaEventHandlers' in Module)
+                {
+                    var aliaEventHandlers = Module['aliaEventHandlers'];
+                    var node = Module['nodes'][$0];
+                    node.removeEventListener(
+                        Module['UTF8ToString']($1), aliaEventHandlers[$2]);
+                    delete aliaEventHandlers[$2];
+                }
+            },
+            this->asmdom_id,
+            this->event.c_str(),
+            reinterpret_cast<std::uintptr_t>(&this->function));
+    }
+}
+
 void
 install_element_callback(
     context ctx,
     element_object& object,
-    callback_data& data,
+    element_callback& callback,
     char const* event_type)
 {
 #ifdef ALIA_HTML_LOGGING
     std::cout << "install callback: " << object.asmdom_id << ": " << event_type
               << std::endl;
 #endif
-    auto external_id = externalize(&data.identity);
+    auto external_id = externalize(&callback.identity);
     auto* system = &get<alia::system_tag>(ctx);
-    auto callback = [=](emscripten::val v) {
+    callback.function = [=](emscripten::val v) {
         dom_event event(v);
 #ifdef ALIA_HTML_LOGGING
         auto start = std::chrono::high_resolution_clock::now();
@@ -251,7 +272,28 @@ install_element_callback(
 #endif
         return true;
     };
-    asmdom::direct::setCallback(object.asmdom_id, event_type, callback);
+
+    EM_ASM(
+        {
+            var node = Module['nodes'][$0];
+            var event = Module['UTF8ToString']($1);
+            var handler = function(e)
+            {
+                Module.callback_proxy($2, e);
+            };
+
+            if (!('aliaEventHandlers' in Module))
+                Module['aliaEventHandlers'] = {};
+            Module['aliaEventHandlers'][$2] = handler;
+
+            node.addEventListener(event, handler);
+        },
+        object.asmdom_id,
+        event_type,
+        reinterpret_cast<std::uintptr_t>(&callback.function));
+
+    callback.asmdom_id = object.asmdom_id;
+    callback.event = event_type;
 }
 
 struct text_data
@@ -505,6 +547,36 @@ html_fragment(context ctx, readable<std::string> html)
         },
         [&] {});
     return html_fragment_handle{ctx, just_loaded};
+}
+
+void
+focus(element_handle element)
+{
+    EM_ASM(
+        {
+            var node = Module['nodes'][$0];
+            node.focus();
+        },
+        element.asmdom_id());
+}
+
+bool
+mouse_inside(context ctx, html::element_handle element)
+{
+    bool* state;
+    if (get_data(ctx, &state))
+        *state = false;
+
+    element.callback("mouseenter", [&](auto) {
+        *state = true;
+        mark_dirty_component(ctx);
+    });
+    element.callback("mouseleave", [&](auto) {
+        *state = false;
+        mark_dirty_component(ctx);
+    });
+
+    return *state;
 }
 
 }} // namespace alia::html

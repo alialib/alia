@@ -95,7 +95,18 @@ struct input_handle : regular_element_handle<input_handle>
     // input.
     input_handle&
     on_enter(action<> on_enter);
+
+    // Define an action to be performed when the Escape key is pressed on the
+    // input.
+    input_handle&
+    on_escape(action<> on_escape);
 };
+
+inline input_handle
+input(html::context ctx)
+{
+    return input_handle(element(ctx, "input"));
+}
 
 namespace detail {
 input_handle
@@ -150,6 +161,11 @@ link(html::context ctx, Text text, Href href)
 {
     return detail::link(ctx, signalize(text), signalize(href));
 }
+
+// CHECKBOX
+
+element_handle
+checkbox(html::context ctx, duplex<bool> value);
 
 // LEAF ELEMENTS
 
