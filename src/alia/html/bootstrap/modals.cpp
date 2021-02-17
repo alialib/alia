@@ -64,7 +64,7 @@ modal(
                     ALIA_END
                 });
         });
-    modal.on_init([&](auto&) {
+    modal.init([&](auto&) {
         EM_ASM(
             {
                 jQuery(Module['nodes'][$0])
