@@ -280,12 +280,12 @@ extend_context(context_interface<Contents> ctx, typename Tag::data_type object)
     return extended_ctx;
 }
 
-template<class Tag, class Context, class Object, class Content>
+template<class Tag, class Context, class Content>
 void
-with_extended_context(Context ctx, Object&& object, Content&& content)
+with_extended_context(
+    Context ctx, typename Tag::data_type object, Content&& content)
 {
-    std::forward<Content>(content)(
-        extend_context<Tag>(ctx, std::forward<Object>(object)));
+    std::forward<Content>(content)(extend_context<Tag>(ctx, object));
 }
 
 template<class Tag, class Contents>
