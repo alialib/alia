@@ -567,11 +567,11 @@ mouse_inside(context ctx, html::element_handle element)
     if (get_data(ctx, &state))
         *state = false;
 
-    element.callback("mouseenter", [&](auto) {
+    element.handler("mouseenter", [&](auto) {
         *state = true;
         mark_dirty_component(ctx);
     });
-    element.callback("mouseleave", [&](auto) {
+    element.handler("mouseleave", [&](auto) {
         *state = false;
         mark_dirty_component(ctx);
     });

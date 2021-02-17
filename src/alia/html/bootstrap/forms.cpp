@@ -17,7 +17,7 @@ checkbox(html::context ctx, duplex<bool> value, readable<std::string> label)
             .attr("id", "custom-check-1")
             .prop("indeterminate", !determinate)
             .prop("checked", checked)
-            .callback("change", [&](emscripten::val e) {
+            .handler("change", [&](emscripten::val e) {
                 write_signal(value, e["target"]["checked"].as<bool>());
             });
         element(ctx, "label")

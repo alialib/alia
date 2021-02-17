@@ -5,7 +5,7 @@ namespace alia { namespace html {
 input_handle&
 input_handle::on_enter(action<> on_enter)
 {
-    this->callback("keydown", [&](emscripten::val& e) {
+    this->handler("keydown", [&](emscripten::val& e) {
         if (e["key"].as<std::string>() == "Enter")
             perform_action(on_enter);
     });
@@ -15,7 +15,7 @@ input_handle::on_enter(action<> on_enter)
 input_handle&
 input_handle::on_escape(action<> on_escape)
 {
-    this->callback("keydown", [&](emscripten::val& e) {
+    this->handler("keydown", [&](emscripten::val& e) {
         if (e["key"].as<std::string>() == "Escape")
             perform_action(on_escape);
     });
@@ -59,7 +59,7 @@ input(html::context ctx, duplex<std::string> value_)
 
     return element(ctx, "input")
         .prop("value", data->value)
-        .callback("input", [=](emscripten::val& e) {
+        .handler("input", [=](emscripten::val& e) {
             auto new_value = e["target"]["value"].as<std::string>();
             write_signal(value, new_value);
             data->value = new_value;
@@ -74,7 +74,7 @@ link(html::context ctx, readable<std::string> text, action<> on_click)
         .attr("href", "javascript: void(0);")
         .attr("disabled", on_click.is_ready() ? "false" : "true")
         .text(text)
-        .callback("click", [&](emscripten::val) { perform_action(on_click); });
+        .handler("click", [&](emscripten::val) { perform_action(on_click); });
 }
 
 element_handle
@@ -94,7 +94,7 @@ button(html::context ctx, action<> on_click)
     return element(ctx, "button")
         .attr("type", "button")
         .attr("disabled", !on_click.is_ready())
-        .callback("click", [&](auto& e) { perform_action(on_click); });
+        .handler("click", [&](auto& e) { perform_action(on_click); });
 }
 
 element_handle
@@ -121,7 +121,7 @@ checkbox(html::context ctx, duplex<bool> value)
         .attr("disabled", disabled)
         .prop("indeterminate", !determinate)
         .prop("checked", checked)
-        .callback("change", [&](emscripten::val e) {
+        .handler("change", [&](emscripten::val e) {
             write_signal(value, e["target"]["checked"].as<bool>());
         });
 }
