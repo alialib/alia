@@ -20,7 +20,7 @@ struct system
     operator()(alia::context ctx);
 
     std::string hash;
-    detail::window_callback hashchange, popstate;
+    detail::window_callback hashchange;
 };
 
 // Initialize the HTML system with no root DOM element.
