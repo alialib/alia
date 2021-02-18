@@ -120,7 +120,6 @@ enable_hash_monitoring(html::system& sys)
     };
     detail::install_window_callback(
         sys.hashchange, "hashchange", onhashchange);
-    detail::install_window_callback(sys.popstate, "popstate", onhashchange);
 }
 
 }} // namespace alia::html
