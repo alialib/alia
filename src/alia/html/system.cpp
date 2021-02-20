@@ -102,7 +102,8 @@ update_location_hash(html::system& sys)
     if (hash.empty() || hash[0] != '#')
     {
         hash = "#/";
-        history().push_url(hash);
+        emscripten::val::global("window")["location"].call<void>(
+            "replace", emscripten::val(hash));
     }
     sys.hash = hash;
 }
