@@ -1,4 +1,5 @@
 #include <alia/html/bootstrap.hpp>
+#include <alia/html/document.hpp>
 #include <alia/html/dom.hpp>
 #include <alia/html/fetch.hpp>
 #include <alia/html/system.hpp>
@@ -278,6 +279,8 @@ void
 root_ui(html::context vanilla_ctx)
 {
     with_demo_context(vanilla_ctx, [&](auto ctx) {
+        document_title(ctx, "alia/HTML Bootstrap Demo");
+
         placeholder_root(ctx, "nav-content", [&] {
             li(ctx, "nav-item dropdown", [&] {
                 a(ctx)

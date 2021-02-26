@@ -1,4 +1,5 @@
 #include <alia/html/bootstrap.hpp>
+#include <alia/html/document.hpp>
 #include <alia/html/dom.hpp>
 #include <alia/html/fetch.hpp>
 #include <alia/html/routing.hpp>
@@ -64,6 +65,8 @@ void
 root_ui(html::context vanilla_ctx)
 {
     with_demo_context(vanilla_ctx, [&](auto ctx) {
+        document_title(ctx, "alia/HTML Element Demos");
+
         placeholder_root(ctx, "demos", [&] {
             h1(ctx).classes("mt-5 mb-3").text("alia/HTML Element Demos");
 
