@@ -23,6 +23,13 @@
   - [Actions](actions.md)
   - [The Context](the-context.md)
 
+- HTML
+
+  - [Introduction](html-introduction.md)
+  - [Getting Started](getting-started-with-html.md)
+  - [Elements](elements.md)
+  - [Going Further](going-further-with-html.md)
+
 - Other Guides
 
   - [Configuration](configuration.md)
@@ -31,5 +38,5 @@
 
 - Development
 
-  - [Contributing](contributing.md)
   - [Roadmap](roadmap.md)
+  - [Contributing](contributing.md)
