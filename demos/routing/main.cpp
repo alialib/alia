@@ -196,6 +196,8 @@ void
 root_ui(html::context vanilla_ctx)
 {
     with_demo_context(vanilla_ctx, [&](auto ctx) {
+        document_title(ctx, "alia/HTML Routing Demo");
+
         placeholder_root(ctx, "demos", [&] {
             h1(ctx).classes("mt-5 mb-3").text("alia/HTML Routing");
 
