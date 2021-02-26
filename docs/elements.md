@@ -86,8 +86,8 @@ or a boolean signal.)
 #### Classes
 
 Class attributes receive special treatment in alia/HTML because they are so
-commonly used and because their native representation as a space-separated
-token list can be painful to work with in C++.
+commonly used and because their native representation can be painful to work
+with in C++.
 
 Two separate interfaces are provided for specifying class tokens: one that
 mimics the HTML `class` attribute and one that is more token-based and
@@ -113,6 +113,7 @@ div(ctx).class_("badge").class_("badge-primary").class_("text-wrap");
 signal) which masks the class token:
 
 ```cpp
+// The "text-wrap" class token will only be present when `wrapped` is true.
 div(ctx).class_("text-wrap", wrapped);
 ```
 
@@ -125,7 +126,7 @@ div(ctx).classes("badge badge-primary").class_("text-wrap", wrapped);
 ```
 
 !> As with attributes in general, the same incompatibility with `if/alia_if`
-   statements applies to `classes()` and `class()`.
+   statements applies to `classes()` and `class_()`.
 
 ### Properties
 
@@ -147,16 +148,16 @@ signal-based interface:
 <div id="dynamic-element-property"></div>
 </div>
 
-Note that this does *NOT* create a two-way binding between the property and the
-signal (as you can probably see if you try interacting with the checkbox). To
-do this, you need to register an event handler...
+Note that this does **not** create a two-way binding between the property and
+the signal (as you can probably see if you try interacting with the checkbox).
+To do this, you need to register an event handler. Read on.
 
 ### Event Handling
 
 #### handler() - The Low-Level Interface
 
 `.handler()` allows you to attach a handler for a Javascript event on your
-element. This allows us to implement fix our checkbox demo from above:
+element. This allows us to fix our checkbox demo from above:
 
 [source](elements.cpp ':include :fragment=element-handler')
 
@@ -252,7 +253,7 @@ Rooting Your Content
 In order to actually integrate your alia/HTML elements into a web app, you need
 to root them somewhere in the HTML document. The usual way to do this is to
 create a placeholder element in the document and use `placeholder_root` in your
-app to root your content:
+app to root your content at that element:
 
 ```cpp
 // Any elements specified within `my_app_content` will appear at the HTML
@@ -267,10 +268,10 @@ Raw HTML Fragments
 
 Often, we only need very limited programmatic control over our HTML content,
 and in those cases, transliterating the HTML to C++ can be unnecessarily
-painful. As we saw above, we can often solve this by providing the skeleton
-of our app in regular HTML and then selectively rooting our C++ content at
-particular placeholders in the HTML tree. However, what if we want to invert
-that relationship and invoke raw HTML content from within C++?
+painful. We can often solve this by providing the skeleton of our app in
+regular HTML and then selectively rooting our C++ content at particular
+placeholders in the HTML tree. However, what if we want to invert that
+relationship and invoke raw HTML content from within C++?
 
 To address this need, alia provides `html_fragment`, which takes a string of
 raw HTML and incorporates it into the UI:
