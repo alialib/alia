@@ -533,6 +533,12 @@ struct html_fragment_handle
 html_fragment_handle
 html_fragment(context ctx, readable<std::string> html);
 
+inline html_fragment_handle
+html_fragment(context ctx, char const* html)
+{
+    return html_fragment(ctx, value(html));
+}
+
 void
 focus(element_handle element);
 
