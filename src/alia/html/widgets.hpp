@@ -190,9 +190,16 @@ ALIA_HTML_DEFINE_LEAF_ELEMENT_INTERFACE(a)
         return element(ctx, #name);                                           \
     }                                                                         \
     template<class Classes>                                                   \
-    inline element_handle name(context ctx, Classes classes)                  \
+    inline std::enable_if_t<!std::is_function_v<Classes>, element_handle>     \
+    name(context ctx, Classes classes)                                        \
     {                                                                         \
-        return element(ctx, #name).attr("class", classes);                    \
+        return name(ctx).attr("class", classes);                              \
+    }                                                                         \
+    template<class Content>                                                   \
+    std::enable_if_t<std::is_function_v<Content>, element_handle> name(       \
+        context ctx, Content&& content)                                       \
+    {                                                                         \
+        return name(ctx).content(std::forward<Content>(content));             \
     }                                                                         \
     template<class Classes, class Content>                                    \
     element_handle name(context ctx, Classes classes, Content&& content)      \
