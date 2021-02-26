@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import BaseHTTPServer, SimpleHTTPServer
 
-port = 8000
+port = 8006
 print "Running on port %d" % port
 
 SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map[
