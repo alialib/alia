@@ -48,6 +48,12 @@ fetch(alia::context ctx, readable<http_request> request);
 apply_signal<std::string>
 fetch_text(alia::context ctx, readable<std::string> path);
 
+inline apply_signal<std::string>
+fetch_text(alia::context ctx, char const* path)
+{
+    return fetch_text(ctx, value(path));
+}
+
 }} // namespace alia::html
 
 #endif
