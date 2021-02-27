@@ -13,7 +13,8 @@ Elements
 </script>
 
 The heart of a web app is obviously its HTML content. This section documents
-the interfaces that alia/API provides for specifying HTML elements in your app.
+the interfaces that alia/HTML provides for specifying HTML elements in your
+app.
 
 element()
 ---------
