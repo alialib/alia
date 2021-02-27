@@ -50,7 +50,8 @@ specifications for the element...
 
 ### Attributes
 
-Calling `.attr()` on an `element_handle` will set an attribute on the element:
+Calling `.attr()` on an `element_handle` will specify an attribute on the
+element:
 
 [source](elements.cpp ':include :fragment=element-attribute')
 
