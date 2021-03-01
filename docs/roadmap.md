@@ -46,6 +46,13 @@ reference.
 
 Provide a tutorial that walks through the creation of a simple app.
 
+Performance Benchmarks
+----------------------
+
+Add proper benchmarks for the overhead that alia introduces into an app, both
+at runtime and compile time. Start working on specific improvements to reduce
+those overheads.
+
 alia on the Desktop
 -------------------
 
