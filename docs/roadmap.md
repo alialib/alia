@@ -1,74 +1,79 @@
 Roadmap
 =======
 
-Features
---------
+This is the current roadmap for alia, very roughly in order of priority. If
+you're interested in helping out with any of it, or you'd like guidance on
+extending alia in a different direction, feel free to get in touch!
 
-### State Externalization
+Developer Experience Improvements
+---------------------------------
 
-alia's data graph provides the ability to 'magically' get state where you need
-it in a UI, but currently, that state vanishes when the UI is closed. It would
-be nice to be able to have that state pulled from a dynamic data structure that
-could be mapped to JSON or YAML for persistence. (Just like application code
-dynamically determines the structure of alia's data graph, it could dynamically
-determine the structure of this state. - A first attempt at this would likely
-ignore issues related to versioning the state, so chunks of it might have to be
-thrown away when the corresponding code changes, but that's fine if the state
-is used for things like tree node open/close flags, selected items, temporary
-dialog parameters, etc.)
+**Escape Emscripten** - Emscripten is awesome for deploying C++ to the web, but
+it's pretty terrible for debugging. alia/HTML should provide a separate
+development mode where your C++ code runs natively (from an IDE) and
+communicates with a special web server (and/or webview) for manipulating the
+DOM and executing JS. This could largely be transparent to the application
+code, but a lot of work is needed at lower levels to make this happen.
 
-### Debugging
+**Debugging Tools** - Perhaps building off the above, provide alia-specific
+debugging tools:
+* Visualize the component hierarchy
+* Inspect individual signal values
+* Break inside component instance
+* Break when a signal value changes
+* Visual signal values over time
+* View event logs
+* Externalize state for hot reloading or time travel
+* Natvis for signals
+* etc.
 
-alia applications can be difficult to debug: signal values can be difficult to
-access, and alia's control flow principles can make it hard to set breakpoints
-at the right place. Custom tools could help this situation. alia itself might
-have to provide some instrumentation that could connect to an external
-monitor or IDE plugin.
+Expanded Web API
+----------------
 
-### Declarative Calculation Management
+Flesh out alia's bindings for the HTML API: canvas rendering, fullscreen mode,
+better input event detection, etc. Also add C++-oriented APIs for popular JS
+libraries or REST APIs.
 
-In recent years, for in-house development, alia has always been paired with a
-sister library that provides declarative calculation management and resource
-retrieval. In a nutshell, the idea is that just like your declarative UI code
-analyzes application state and declares the UI elements/logic that should exist
-for that state, your application can also analyze application data and declare
-what calculation results are relevant for that data. A 'declaration of a
-relevant calculation result' takes the form of a calculation tree with
-resources at the leaves. An example might be an image filtering application
-that declares 'I need the image at this URL, with a red eye filter applied, and
-then a sepia filter applied.' Maybe that image has already been retrieved from
-that URL but hasn't had the filters applied, or maybe the red eye filter has
-been applied but not the sepia one, or maybe the image is actually already
-available in memory exactly the way the application wants it because it's been
-requesting the exact same thing on every update for the last five minutes. Just
-like an application with a declarative UI doesn't care how you get the UI to
-match what it declares, the imaging application doesn't care how this image
-arrives. It just wants it displayed for the user.
-
-An alia application that deals with non-trivial calculations and resources can
-benefit a lot from capabilities like this, but alia currently falls short of
-providing them itself. It would be nice to either provide them in some form or
-integrate with a library that does.
-
-Integrations
-------------
-
-Obviously, it would be nice to have stable, production-ready integrations with
-popular C++ libraries for creating user interfaces and rendering. These
-probably don't belong in the core of alia, but they are essential to it being
-useful.
-
-Similarly, it would be useful to provide more utilities for interacting with
-common resources as signals and actions.
-
-Additionally, there are certain like-minded, complementary libraries that it
-might be useful for alia to integrate with more at the core level, like
-[lager](https://sinusoid.es/lager/) and [immer](https://sinusoid.es/immer/).
-
-Documentation
--------------
+Documentation Improvements
+--------------------------
 
 Provide better guidance on application design/structure principles, integrating
 alia with external libraries, performance considerations, etc.
 
-Provide some tutorials and examples of realistic applications.
+Start using an automated system like Doxygen to provide reference documentation
+and give the documentation as a whole a better separation into guides and
+reference.
+
+Provide a tutorial that walks through the creation of a simple app.
+
+alia on the Desktop
+-------------------
+
+Building off of the "Escape Emscripten" goal above, allow alia/HTML apps to
+actually be deployed as desktop apps (inside a webview). The sweet spot for
+this would be intensely graphical applications (e.g., games and scientific
+visualizations) where C++ is needed for rendering and you'd like a sane,
+professional-looking C++ UI solution for adding overlays and side panels (and
+you don't mind wasting another 200MB of RAM running a browser inside your app).
+The same could apply for non-graphical apps where C++ is the meat of the code
+for performance or hardware reasons and you want to create a modern-looking UI
+without first exposing everything to JavaScript.
+
+Another avenue for getting alia onto the desktop would be to simply hook it up
+to one of the many C++ UI frameworks out there. I would definitely support such
+efforts, but I'm not personally prioritizing it.
+
+The long-term, pie-in-the-sky vision for this would be to eventually define a
+common set of UI capabilities that are available through both the web and some
+reasonable C++ desktop library (Qt?) and allow alia apps to compile natively to
+either environment.
+
+Expanded Dataflow Capabilities
+------------------------------
+
+`alia::apply` and `alia::async` do a reasonable job of ensuring performance in
+applications with modest computation needs while still allowing you to express
+your dataflow declaratively. However, when computations get more expensive,
+it's important to share results across the application and potentially across
+time. alia should facilitate this too (potentially through interfaces to
+external libraries).
