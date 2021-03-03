@@ -1,6 +1,7 @@
 #include <alia/html/bootstrap/modals.hpp>
 
 #include <alia/html/bootstrap/utilities.hpp>
+#include <alia/html/elements.hpp>
 #include <alia/html/widgets.hpp>
 
 namespace alia { namespace html { namespace bootstrap {

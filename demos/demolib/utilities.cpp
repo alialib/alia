@@ -1,7 +1,6 @@
 #include "utilities.hpp"
 
-#include <alia/html/dom.hpp>
-#include <alia/html/widgets.hpp>
+#include <alia/html/elements.hpp>
 
 using namespace alia;
 

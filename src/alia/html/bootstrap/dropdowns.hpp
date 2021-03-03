@@ -2,7 +2,7 @@
 #define ALIA_HTML_BOOTSTRAP_DROPDOWNS_HPP
 
 #include <alia/html/bootstrap/buttons.hpp>
-#include <alia/html/widgets.hpp>
+#include <alia/html/elements.hpp>
 
 namespace alia { namespace html { namespace bootstrap {
 
