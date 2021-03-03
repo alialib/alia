@@ -5,6 +5,11 @@ High-Level Flow
     init_alia_demos(['hello-button']);
 </script>
 
+This section will focus on how alia applications handle changes over time: how
+events happen, how to respond to them, and how to explicitly handle the passage
+of time. First, let's take a look at the flow of an alia application from a
+high-level perspective...
+
 The flow of a declarative user interface system generally looks something like
 this:
 
@@ -36,15 +41,15 @@ Here's a very simple example that demonstrates both of these roles:
 
 When you interact with this demo, the sequence of events is as follows:
 
-1. The asm-dom wrapper invokes `demo_ui` to determine the initial contents of
-   the UI, and in response to what `demo_ui` declares, a 'Toggle the Message'
-   button is created.
+1. alia/HTML invokes `demo_ui` to determine the initial contents of the UI, and
+   in response to what `demo_ui` declares, a 'Toggle the Message' button is
+   created.
 
-2. At some point, you (the user) click the button and the asm-dom wrapper
-   invokes `demo_ui` again with a button click event. `demo_ui` calls
-   `html::button`, and `html::button` recognizes that the button click event is
-   meant for it, so it invokes its [action](actions.md), which toggles the
-   state of `show_message`.
+2. At some point, you (the user) click the button and alia/HTML invokes
+   `demo_ui` again with a button click event. `demo_ui` calls `html::button`,
+   and `html::button` recognizes that the button click event is meant for it,
+   so it invokes its [action](actions.md), which toggles the state of
+   `show_message`.
 
 3. Immediately after this, the asm-dom wrapper invokes `demo_ui` *again* to
    refresh the UI. `demo_ui` again declares that the 'Toggle the Message'

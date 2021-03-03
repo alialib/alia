@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 3.14)
-project(asm-dom-demos)
+project(alia-docs)
 
 # Apply some emscripten optimizations flags if we're in release mode.
 include(cmake/release-mode.cmake)

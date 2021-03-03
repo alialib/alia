@@ -97,7 +97,7 @@ C++-friendly:
 
 `.classes()` takes a space-separated string of class tokens and applies them
 all to the element. You should only call this once per element and the list of
-tokens should static. (No signal-based interface is provided.)
+tokens should be static. (No signal-based interface is provided.)
 
 ```cpp
 div(ctx).classes("badge badge-primary text-wrap")
@@ -151,8 +151,9 @@ signal-based interface:
 </div>
 
 Note that this does **not** create a two-way binding between the property and
-the signal (as you can probably see if you try interacting with the checkbox).
-To do this, you need to register an event handler. Read on.
+the signal (as you can probably see if you switch between toggling the checkbox
+directly and toggling it via the button). To do this, you need to register an
+event handler. Read on.
 
 ### Event Handling
 
