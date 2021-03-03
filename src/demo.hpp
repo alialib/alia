@@ -4,6 +4,7 @@
 #include <alia.hpp>
 
 #include <alia/html/dom.hpp>
+#include <alia/html/elements.hpp>
 #include <alia/html/system.hpp>
 #include <alia/html/widgets.hpp>
 
