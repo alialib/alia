@@ -5,7 +5,7 @@
   - [Assorted Examples](assorted-examples.md)
   - [Getting Started](getting-started.md)
 
-- Signals
+- Dataflow / Signals
 
   - [Basic Usage](basic-signals.md)
   - [Operators](signal-operators.md)
@@ -13,15 +13,20 @@
   - [Adaptors](signal-adaptors.md)
   - [Consuming Signals](consuming-signals.md)
   - [Custom Signals](custom-signals.md)
-  - [Time as a Signal](time-as-a-signal.md)
 
-- Control Flow
+- The Component Tree
 
-  - [High-Level Flow](high-level-flow.md)
   - [The Data Graph](the-data-graph.md)
   - [Flow Tracking](flow-tracking.md)
-  - [Actions](actions.md)
+  - [Pure Components](pure-components.md)
   - [The Context](the-context.md)
+
+- The Fourth Dimension
+
+  - [High-Level Flow](high-level-flow.md)
+  - [Actions](actions.md)
+  - [Event Triggers](event-triggers.md)
+  - [Time as a Signal](time-as-a-signal.md)
 
 - HTML
 

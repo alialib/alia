@@ -91,14 +91,14 @@ Value Identity
 
 alia doesn't place any requirements on a signal to have any sort of
 *notification* mechanisms. Instead, it relies on polling. When interfacing alia
-with a library (like asm-dom), we frequently have to write code that asks "Is
-this value the same as the last time we saw it?" For small values like names
-and numbers, it's trivial to just store the old value and check it against the
-new one. However, just like regular values in C++, a signal value can be
-arbitrarily large, and this naive method of detecting changes can become
-impractical. (If, for example, we were using alia to display a large image, we
-wouldn't want to compare every pixel of the image every frame to make sure that
-the image hasn't changed from what's already on screen.)
+with a library, we frequently have to write code that asks "Is this value the
+same as the last time we saw it?" For small values like names and numbers, it's
+trivial to just store the old value and check it against the new one. However,
+just like regular values in C++, a signal value can be arbitrarily large, and
+this naive method of detecting changes can become impractical. (If, for
+example, we were using alia to display a large image, we wouldn't want to
+compare every pixel of the image every frame to make sure that the image hasn't
+changed from what's already on screen.)
 
 To address this concern, instead of using a signal's value to detect changes,
 alia requires any signal with a value to also provide a *value identity*. A
