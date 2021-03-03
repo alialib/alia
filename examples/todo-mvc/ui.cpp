@@ -5,15 +5,14 @@
 
 using namespace alia;
 
-// Define the objects in our app's context.
-ALIA_DEFINE_TAGGED_TYPE(app_state_tag, duplex<app_state>)
+// Define our app's context.
+// We'll include the active view filter as part of the app context.
 ALIA_DEFINE_TAGGED_TYPE(view_filter_tag, readable<item_filter>)
-typedef extend_context_type_t<html::context, app_state_tag, view_filter_tag>
-    app_context;
+typedef extend_context_type_t<html::context, view_filter_tag> app_context;
 
 // Do the UI for adding a new TODO item to the list.
 void
-new_todo_ui(app_context ctx)
+new_todo_ui(app_context ctx, duplex<app_state> state)
 {
     // Get some component-local state to store the title of the new TODO.
     auto new_todo = get_state(ctx, std::string());
@@ -29,16 +28,16 @@ new_todo_ui(app_context ctx)
             // - Invoke 'add_todo' to add it to our app's state.
             // - Reset new_todo to an empty string.
             (actions::apply(
-                 add_todo,
-                 get<app_state_tag>(ctx),
-                 hide_if_empty(lazy_apply(trim, new_todo))),
+                 add_todo, state, hide_if_empty(lazy_apply(trim, new_todo))),
              new_todo <<= ""));
 }
 
 // Do the UI for a single TODO item.
 void
-todo_item_ui(app_context ctx, size_t index, duplex<todo_item> todo)
+todo_item_ui(app_context ctx, duplex<todo_list> todos, size_t index)
 {
+    auto todo = todos[index];
+
     // The UI for a single item has two modes: editing and viewing, so we need
     // a bit of state to track which we're in.
     auto editing = get_transient_state(ctx, false);
@@ -90,11 +89,7 @@ todo_item_ui(app_context ctx, size_t index, duplex<todo_item> todo)
                     // button that will erase it from the list.
                     alia_if(mouse_inside(ctx, view))
                     {
-                        button(
-                            ctx,
-                            actions::erase_index(
-                                alia_field(get<app_state_tag>(ctx), todos),
-                                index))
+                        button(ctx, actions::erase_index(todos, index))
                             .class_("destroy");
                     }
                     alia_end
@@ -113,16 +108,15 @@ get_alia_id(todo_item const& item)
 
 // Do the UI for the list of TODO items.
 void
-todo_list_ui(app_context ctx)
+todo_list_ui(app_context ctx, duplex<todo_list> todos)
 {
-    auto todos = alia_field(get<app_state_tag>(ctx), todos);
     ul(ctx, "todo-list", [&] {
         for_each(ctx, todos, [&](size_t index, auto todo) {
             auto matches
                 = apply(ctx, matches_filter, get<view_filter_tag>(ctx), todo);
             alia_if(matches)
             {
-                todo_item_ui(ctx, index, todo);
+                todo_item_ui(ctx, todos, index);
             }
             alia_end
         });
@@ -131,18 +125,17 @@ todo_list_ui(app_context ctx)
 
 // Do the checkbox that toggles the state of all TODO items.
 void
-toggle_all_checkbox(app_context ctx, readable<bool> all_complete)
+toggle_all_checkbox(app_context ctx, duplex<todo_list> todos)
 {
+    auto items_left = apply(ctx, incomplete_count, todos);
+    auto all_complete = items_left == size(todos);
     element(ctx, "input")
         .attr("id", "toggle-all")
         .attr("class", "toggle-all")
         .attr("type", "checkbox")
         .prop("checked", !all_complete)
         .on("change",
-            actions::apply(
-                set_completed_flags,
-                alia_field(get<app_state_tag>(ctx), todos),
-                !all_complete));
+            actions::apply(set_completed_flags, todos, !all_complete));
     label(ctx, "Mark all as complete").attr("for", "toggle-all");
 }
 
@@ -169,27 +162,25 @@ filter_selection_ui(app_context ctx)
 
 // Do the top-level UI for our app content.
 void
-app_ui(app_context ctx)
+app_ui(app_context ctx, duplex<app_state> state)
 {
-    auto todos = alia_field(get<app_state_tag>(ctx), todos);
-
     header(ctx, "header", [&] {
         h1(ctx, "todos");
-        new_todo_ui(ctx);
+        new_todo_ui(ctx, state);
     });
 
     // None of the following should be shown when the TODO list is empty.
+    auto todos = alia_field(state, todos);
     alia_if(!is_empty(todos))
     {
-        auto items_left = apply(ctx, incomplete_count, todos);
-
         section(ctx, "main", [&] {
-            toggle_all_checkbox(ctx, items_left == size(todos));
-            todo_list_ui(ctx);
+            toggle_all_checkbox(ctx, todos);
+            todo_list_ui(ctx, todos);
         });
 
         footer(ctx, "footer", [&] {
             // Display the count of incomplete items.
+            auto items_left = apply(ctx, incomplete_count, todos);
             span(ctx, "todo-count", [&] {
                 strong(ctx, as_text(ctx, items_left));
                 text(
@@ -238,13 +229,11 @@ root_ui(html::context ctx)
     auto filter = apply(ctx, hash_to_filter, get_location_hash(ctx));
 
     // Add both signals to the alia/HTML context to create our app context.
-    with_extended_context<app_state_tag>(ctx, state, [&](auto ctx) {
-        with_extended_context<view_filter_tag>(ctx, filter, [&](auto ctx) {
-            // Root the app UI in the HTML DOM tree.
-            // Our app's UI will be placed at the placeholder HTML element
-            // with the ID "app-content". (See index.html.)
-            placeholder_root(ctx, "app-content", [&] { app_ui(ctx); });
-        });
+    with_extended_context<view_filter_tag>(ctx, filter, [&](auto ctx) {
+        // Root the app UI in the HTML DOM tree.
+        // Our app's UI will be placed at the placeholder HTML element
+        // with the ID "app-content". (See index.html.)
+        placeholder_root(ctx, "app-content", [&] { app_ui(ctx, state); });
     });
 }
 
