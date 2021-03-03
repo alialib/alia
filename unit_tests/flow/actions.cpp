@@ -263,7 +263,7 @@ TEST_CASE("erase_index action", "[flow][actions]")
     }
 }
 
-TEST_CASE("erase_index movable", "[flow][actions]")
+TEST_CASE("erase_index movement", "[flow][actions]")
 {
     auto x = std::vector<movable_object>{
         movable_object(1), movable_object(2), movable_object(3)};
@@ -277,6 +277,54 @@ TEST_CASE("erase_index movable", "[flow][actions]")
             x
             == (std::vector<movable_object>{
                 movable_object(1), movable_object(3)}));
+    }
+}
+
+TEST_CASE("erase_key action", "[flow][actions]")
+{
+    auto x = std::map<int, int>{{1, 2}, {2, 4}, {3, 6}};
+    {
+        auto a = actions::erase_key(direct(x), 2);
+        REQUIRE(a.is_ready());
+        perform_action(a);
+        REQUIRE(x == (std::map<int, int>{{1, 2}, {3, 6}}));
+    }
+    {
+        auto a = actions::erase_key(direct(x), value(1));
+        REQUIRE(a.is_ready());
+        perform_action(a);
+        REQUIRE(x == (std::map<int, int>{{3, 6}}));
+    }
+    {
+        auto a = actions::erase_key(direct(x), empty<size_t>());
+        REQUIRE(!a.is_ready());
+    }
+    {
+        auto a = actions::erase_key(empty<std::map<int, int>>(), value(0));
+        REQUIRE(!a.is_ready());
+    }
+    {
+        auto a = actions::erase_key(
+            fake_writability(value(std::map<int, int>{{1, 2}})), value(0));
+        REQUIRE(!a.is_ready());
+    }
+}
+TEST_CASE("erase_key movement", "[flow][actions]")
+{
+    auto x = std::map<int, movable_object>{
+        {1, movable_object(1)},
+        {2, movable_object(2)},
+        {3, movable_object(3)}};
+    {
+        auto a = actions::erase_key(direct(x), 1);
+        REQUIRE(a.is_ready());
+        copy_count = 0;
+        perform_action(a);
+        REQUIRE(copy_count == 0);
+        REQUIRE(
+            x
+            == (std::map<int, movable_object>{
+                {2, movable_object(2)}, {3, movable_object(3)}}));
     }
 }
 

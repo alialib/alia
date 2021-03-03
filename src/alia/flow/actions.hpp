@@ -397,7 +397,7 @@ push_back(Container container)
 
 // actions::erase_index(container, index) creates an actions that erases the
 // item at :index from :container.
-// :container must be a duplex signal carrying a container.
+// :container must be a duplex signal carrying a random access container.
 // :index can be either a raw size_t or a readable signal carrying a size_t.
 
 template<class Container, class Index>
@@ -438,6 +438,53 @@ erase_index(Container container, Index index)
     auto index_signal = signalize(std::move(index));
     return erase_index_action<Container, decltype(index_signal)>(
         std::move(container), std::move(index_signal));
+}
+
+} // namespace actions
+
+// actions::erase_key(container, key) creates an actions that erases the
+// item associated with :key from :container.
+// :container must be a duplex signal carrying an associative container.
+// :key can be either a raw size_t or a readable signal carrying a size_t.
+
+template<class Container, class Key>
+struct erase_key_action : action_interface<>
+{
+    erase_key_action(Container container, Key key)
+        : container_(std::move(container)), key_(std::move(key))
+    {
+    }
+
+    bool
+    is_ready() const
+    {
+        return container_.has_value() && container_.ready_to_write()
+               && key_.has_value();
+    }
+
+    void
+    perform(function_view<void()> const& intermediary) const
+    {
+        auto new_container = forward_signal(alia::move(container_));
+        new_container.erase(read_signal(key_));
+        intermediary();
+        container_.write(std::move(new_container));
+    }
+
+ private:
+    Container container_;
+    Key key_;
+};
+
+namespace actions {
+
+template<class Container, class Key>
+auto
+erase_key(Container container, Key key)
+{
+    auto key_signal = signalize(std::move(key));
+    return erase_key_action<Container, decltype(key_signal)>(
+        std::move(container), std::move(key_signal));
 }
 
 } // namespace actions
