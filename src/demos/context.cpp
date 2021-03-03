@@ -6,10 +6,8 @@ namespace custom_context {
 /// [custom-context]
 
 // Define our username context tag.
-// At the moment, all context objects must be stored by reference, so although
-// we wouldn't normally use a reference for a readable<std::string>, we have to
-// do so here.
-ALIA_DEFINE_TAGGED_TYPE(username_tag, readable<std::string>&)
+// The object that we associate with it will be a read-only string signal.
+ALIA_DEFINE_TAGGED_TYPE(username_tag, readable<std::string>)
 
 // Define our app's context type by extending the asm-dom context type.
 typedef extend_context_type_t<html::context, username_tag> app_context;
@@ -23,20 +21,23 @@ internal_app_ui(app_context ctx)
         alia::printf(ctx, "Welcome, %s!", get<username_tag>(ctx)));
 }
 
-// Our top-level UI function takes the context that the asm-dom wrapper provides
-// and extends it to what our app needs...
+// Our top-level UI function takes the context that alia/HTML provides and
+// extends it to what our app needs...
 void
 main_app_ui(html::context ctx)
 {
     // Get the username.
     // (Maybe in a real app this wouldn't be hardcoded...)
-    readable<std::string> username = alia::value("tmadden");
+    auto username = value("tmadden");
 
-    // Extend the app context to include the username.
-    app_context app_ctx = alia::extend_context<username_tag>(ctx, username);
-
-    // Pass that context along to the internal portions of the app UI...
-    internal_app_ui(app_ctx);
+    // Extend the context by associating our username tag with its value.
+    with_extended_context<username_tag>(ctx, username,
+        // The 'ctx' parameter that we get inside this lambda is our extended
+        // context.
+        [&](auto ctx) {
+            // Pass that context along to the internal portions of the app UI.
+            internal_app_ui(ctx);
+        });
 }
 /// [custom-context]
 // clang-format on

@@ -11,9 +11,9 @@ data graph, event dispatch info, etc.
 
 The context is designed to be extended with externally defined objects to give
 applications additional capabilities. All of the examples in this documentation
-use a `html::context`, which is defined by the asm-dom wrapper. `html::context`
-extends `alia::context` to add the ability to interact with asm-dom and control
-a portion of the DOM.
+use an `html::context`, which is defined by alia/HTML (the HTML bindings for
+alia). `html::context` extends `alia::context` to add the ability to interact
+with the browser and control the contents of the web page.
 
 A context is essentially an unordered collection of objects. Context objects
 have compile-time tags (to identify them) and run-time data (so they can do
@@ -39,3 +39,12 @@ as a globally accessible property in your app.
 <div class="demo-panel">
 <div id="custom-context"></div>
 </div>
+
+Note that when determining if a pure component needs to refreshed, alia factors
+in any signals that are accessible to that component from its context. So if
+you're concerned about the performance of your UI, you should be mindful of
+what signals you add to the context, especially at the app-wide level. The
+example above is sensible because we wouldn't expect the username to change
+very often, and when it does, it likely triggers far-reaching changes in the
+UI. However, it would be ill-advised to add, say, a time signal to the app-wide
+context.
