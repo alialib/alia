@@ -34,10 +34,8 @@ new_todo_ui(app_context ctx, duplex<app_state> state)
 
 // Do the UI for a single TODO item.
 void
-todo_item_ui(app_context ctx, duplex<todo_list> todos, size_t index)
+todo_item_ui(app_context ctx, duplex<todo_item> todo, action<> erase_action)
 {
-    auto todo = todos[index];
-
     // The UI for a single item has two modes: editing and viewing, so we need
     // a bit of state to track which we're in.
     auto editing = get_transient_state(ctx, false);
@@ -89,8 +87,7 @@ todo_item_ui(app_context ctx, duplex<todo_list> todos, size_t index)
                     // button that will erase it from the list.
                     alia_if(mouse_inside(ctx, view))
                     {
-                        button(ctx, actions::erase_index(todos, index))
-                            .class_("destroy");
+                        button(ctx, erase_action).class_("destroy");
                     }
                     alia_end
                 });
@@ -116,7 +113,7 @@ todo_list_ui(app_context ctx, duplex<todo_list> todos)
                 = apply(ctx, matches_filter, get<view_filter_tag>(ctx), todo);
             alia_if(matches)
             {
-                todo_item_ui(ctx, todos, index);
+                todo_item_ui(ctx, todo, actions::erase_index(todos, index));
             }
             alia_end
         });
