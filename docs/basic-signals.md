@@ -9,7 +9,7 @@ Signal Objects
 --------------
 
 It's important to understand that although signals are conceptually values that
-vary over time and persist across frames of an application, actual alia signal
+vary over time and persist across frames of an application, actual signal
 objects are just transient interfaces to the underlying signal. It's common to
 create signal objects on the stack, when and where they're needed, and even
 adapt/compose them on the spot to create more interesting signals. For example,

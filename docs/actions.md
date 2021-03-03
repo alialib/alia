@@ -184,8 +184,8 @@ If you want to do something more interesting, you may want to implement the
 found in
 [actions.hpp](https://github.com/tmadden/alia/blob/main/src/alia/flow/actions.hpp).
 
-Action 'Library'
-----------------
+Action Library
+--------------
 
 alia provides a small library of actions that are generally useful.
 
@@ -200,7 +200,7 @@ imperative.
 `actions::toggle(signal)` creates an action that toggles `signal` by applying
 the `!` operator.
 
-This is exactly equivalent to `signal <<= !signal`.
+This is equivalent to `signal <<= !signal`.
 
 </dd>
 
