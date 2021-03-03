@@ -7,10 +7,11 @@ Actions
 </script>
 
 Actions are the preferred way for application code to respond to events in
-alia. They're a convenient, declarative way of specifying the side effects that
-should be performed when an event occurs. For the most part, you can think of
-them as simple callback functions, but as we'll see, they often integrate more
-naturally into dataflow code than normal C++ callbacks would...
+alia. They're a convenient way of specifying the side effects that should be
+performed when an event occurs. For the most part, you can think of them as
+simple callback functions, but they often integrate more naturally into
+dataflow code than normal C++ callbacks would. (And when you just want to write
+a callback function, you can.)
 
 Actions are very similar to signals in the way that they're used in an
 application. Like signals, they're typically created directly at the call site
@@ -195,23 +196,6 @@ imperative.
 
 <dl>
 
-<dt>toggle(signal)</dt><dd>
-
-`actions::toggle(signal)` creates an action that toggles `signal` by applying
-the `!` operator.
-
-This is equivalent to `signal <<= !signal`.
-
-</dd>
-
-<dt>push_back(container)</dt><dd>
-
-`actions::push_back(container)`, where `container` is a signal carrying a
-container, creates an action that takes a compatible item as a parameter and
-pushes it onto the back of `container`.
-
-</dd>
-
 <dt>noop()</dt><dd>
 
 `actions::noop()` creates an action that is always ready to perform but does
@@ -233,6 +217,59 @@ a single parameter of type `int`.
 Similar to `noop`, you can provide optional type parameters.
 `actions::unready<int>()` creates an action that takes a single parameter of
 type `int`.
+
+</dd>
+
+<dt>apply(f, state, [arg])</dt><dd>
+
+`actions::apply` is used when you want to apply a function to a state signal to
+transform it to a new state.
+
+When the action is performed, `state` is passed into `f` as an argument (along
+with `arg`, if provided), and the result of `f` is written back to `state`. If
+`state` allows it, its value will be moved out and back in, so if `f` is
+written with normal value semantics, this action won't actually invoke any copy
+constructors for the state.
+
+This is roughly equivalent to the following:
+
+```cpp
+state <<= lazy_apply(f, alia::move(state), arg);
+```
+
+</dd>
+
+<dt>toggle(signal)</dt><dd>
+
+`actions::toggle(signal)` creates an action that toggles `signal` by applying
+the `!` operator.
+
+This is equivalent to `signal <<= !signal`.
+
+</dd>
+
+<dt>push_back(container)</dt><dd>
+
+`actions::push_back(container)`, where `container` is a signal carrying a
+container, creates an action that takes a compatible item as a parameter and
+pushes it onto the back of `container`.
+
+</dd>
+
+<dt>erase_index(container, index)</dt><dd>
+
+`actions::erase_index(container, index)`, where `container` is a signal
+carrying a random access container and `index` is a signal (or raw value)
+carrying a `size_t`, creates an action that erases the item at `index` from
+`container`.
+
+</dd>
+
+<dt>erase_key(container, key)</dt><dd>
+
+`actions::erase_key(container, key)`, where `container` is a signal carrying an
+associative container and `index` is a signal (or raw value) carrying a key for
+that container, creates an action that erases `key` from `container`.
 
 </dd>
 
