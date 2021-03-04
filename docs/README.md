@@ -1,9 +1,9 @@
 alia - A Library for Interactive Applications
 =============================================
 
-alia (pronounced uh-LEE-uh) is a modern C++ library for developing interactive
-applications in a declarative manner. In alia, the UI of your application is
-expressed as a composition of *component functions.*
+alia (pronounced uh-LEE-uh) is a modern C++ library for declaratively
+developing user interfaces. It currently targets the web. In alia, the UI of
+your application is expressed as a composition of *component functions.*
 
 alia component functions:
 
@@ -29,23 +29,14 @@ alia component functions:
   values (values that are waiting for user inputs, background calculations,
   remote queries, etc.).
 
-alia is agnostic to the particular UI library you use. It provides the
-*mechanics* for modeling an interactive application declaratively and is
-designed to hook up to other libraries so that your application can drive those
-libraries declaratively. (And it should be capable of driving any interactive
-system: a game, a physics simulation, etc.)
+Although alia is currently focused on web development, its core mechanics are
+generic, and the intention is to eventually extend it to other environments.
 
-**STABILITY/MATURITY WARNING:** This is the first public release of alia, so
-it's likely unstable and definitely incomplete. It's going to require some
-work/patience on your part to use it. See 'Project Status' below for details.
+Some Code
+---------
 
-An Example
-----------
-
-Below is a simple tip calculator made using alia and an experimental
-[asm-dom](https://github.com/mbasso/asm-dom) wrapper. You can see it in action
-<a target="_self"
-href="https://alia.dev/#/assorted-examples?id=tip-calculator">
+Below is a simple tip calculator made using alia. You can see it in action <a
+target="_self" href="https://alia.dev/#/assorted-examples?id=tip-calculator">
 here</a>, along with some other examples.
 
 ```cpp
@@ -92,34 +83,27 @@ tip_calculator(html::context ctx)
 Project Status
 --------------
 
-alia as a concept is actually fairly mature and has been used successfully in a
-few major internal desktop applications. This open-source release is an early
-version in the latest generation of alia. This generation brings about two
-major changes:
+alia is somewhere between experimental and production-ready. It has a long
+history as an IMGUI library used internally in desktop applications (in the
+domain of medical imaging and scientific computing). Experience with alia has
+shown that writing a professional-quality IMGUI library requires first writing
+a professional-quality retained-mode GUI library and then wrapping a
+declarative interface around it, and since there are plenty of existing
+retained-mode GUI libraries out there, alia now focuses on the "wrapping a
+declarative interface around it" part.
 
-1. The core mechanics have far better documentation and testing, plus some
-   minor improvements to interfaces and terminology.
+This open-source release represents a major refresh of the core mechanics of
+alia (dataflow, component identity management, etc.) with far better
+documentation and testing and a focus on being able to integrate with
+object-oriented GUI libraries and drive their object hierarchies declaratively.
 
-2. Everything but the core mechanics has been stripped out. - Earlier
-   generations of alia were immediate mode GUI libraries (like [Dear
-   ImGui](https://github.com/ocornut/imgui)), but over the years, it became
-   clear that the actual GUI code was no longer a novel feature and that to do
-   it properly essentially required writing a traditional, "retained-mode" GUI
-   library with a declarative wrapper around it, so this version of alia
-   focuses solely on the declarative wrapper part.
+The only integration that currently exists is
+[alia/HTML](html-introduction.md), which connects alia to HTML5 and allows you
+to write client-side web apps in alia. I'm currently using this for in-house
+web apps, but it definitely shouldn't be considered mature.
 
-This generation is still new and hasn't been used yet in any major projects.
-While the mechanics should be fairly robust, I'm still in the process of
-experimenting with hooking it up to other libraries and developing realistic
-integrations for my own purposes. At the moment, I provide experimental/example
-integrations with asm-dom and Qt, but I have no immediate plans of providing
-"official" integrations for any external libraries.
-
-**So at this point, if you're interested in using alia in anything resembling a
-real project, it will require some work on your part to hook it up to the
-libraries you need for user interfaces, rendering, etc.** *This release is
-intended for people who'd like to play around with it, provide feedback, and
-perhaps try integrating it with their favorite UI/game/physics library.*
-
-If you're interested in sharing your integrations, I'm more than happy to
-incorporate them as examples and/or link people to your projects.
+alia is part of a long-term vision to enable declarative development of
+computationally intensive user interfaces in C++. If you're interested in where
+it's going, check out [the roadmap](roadmap.md), and if you're interested in
+helping steer it, please don't hesitate to get in touch. I appreciate any
+feedback or interest you might have.

@@ -31,7 +31,6 @@
 - HTML
 
   - [Introduction](html-introduction.md)
-  - [Getting Started](getting-started-with-html.md)
   - [Elements](elements.md)
   - [Going Further](going-further-with-html.md)
 

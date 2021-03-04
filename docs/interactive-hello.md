@@ -10,23 +10,17 @@ interactive version of the traditional 'Hello, World!':
 
 [source](greeting.cpp ':include :fragment=greeting')
 
-This example uses an experimental wrapper for [the asm-dom
-library](https://github.com/mbasso/asm-dom). Since asm-dom allows us to write
-C++ web UIs, you can see this example in action right here:
+This example uses alia/HTML, which allows us to develop web apps in alia, so
+you can see it in action right here:
 
 <div class="demo-panel">
 <div id="greeting-ui"></div>
 </div>
 
-Many of the examples in this documentation use a mixture of alia and the
-asm-dom wrapper. Since alia itself focuses on the mechanics of writing
-interactive applications in a declarative fashion, it doesn't actually *do*
-anything to interact with the outside world. It's a bit like a fancy
-programming language with no I/O capabilities. It's designed to hook up to
-other libraries that do useful things, so for these examples, it's hooked up to
-asm-dom. For clarity, anything specific to the asm-dom wrapper is prefixed with
-the `html::` namespace, and the `alia::` namespace is explicitly used in many
-cases where it wouldn't be in real code.
+?> We'll use alia/HTML a lot here so that we can demonstrate alia's core
+   capabilities in your browser. For clarity, most of the examples make very
+   explicit use of the namespaces `alia::` and `html::` to help illustrate
+   what's part of the core of alia and what's alia/HTML.
 
 If you're familiar with other declarative UI programming frameworks, it will be
 obvious, but the key takeaway from this example is that when using alia,

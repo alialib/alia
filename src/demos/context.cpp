@@ -9,7 +9,7 @@ namespace custom_context {
 // The object that we associate with it will be a read-only string signal.
 ALIA_DEFINE_TAGGED_TYPE(username_tag, readable<std::string>)
 
-// Define our app's context type by extending the asm-dom context type.
+// Define our app's context type by extending the alia/HTML context type.
 typedef extend_context_type_t<html::context, username_tag> app_context;
 
 // The functions that define the internal portions of our app UI use
