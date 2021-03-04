@@ -105,7 +105,7 @@ deflicker(
         abort_traversal(ctx);
     }
 
-    on_refresh(ctx, [&](auto) {
+    refresh_handler(ctx, [&](auto) {
         if (x.has_value())
         {
             if (x.value_id() != data.captured.id)
