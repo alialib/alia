@@ -445,7 +445,7 @@ erase_index(Container container, Index index)
 // actions::erase_key(container, key) creates an actions that erases the
 // item associated with :key from :container.
 // :container must be a duplex signal carrying an associative container.
-// :key can be either a raw size_t or a readable signal carrying a size_t.
+// :key can be either a raw key or a readable signal carrying a key.
 
 template<class Container, class Key>
 struct erase_key_action : action_interface<>
