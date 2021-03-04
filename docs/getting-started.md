@@ -4,13 +4,13 @@ Getting Started
 The Core Library
 ----------------
 
-The core of alia should work on any C++14 compiler. It has no external
+The core of alia should work on any C++17 compiler. It has no external
 dependencies. The following compilers are officially supported:
 
-- Visual C++ 2015 and higher
-- GCC 5 and higher
-- Clang 4.0 and higher
-- Emscripten 1.39.7 and higher
+- Visual C++ 2019 and higher
+- GCC 7 and higher
+- Clang 5 and higher
+- Emscripten 1.39.18 and higher
 
 ### Getting It
 
