@@ -1,24 +1,25 @@
 cmake_minimum_required (VERSION 3.14)
-project(asm-dom-fun)
+project(alia-html)
 
 set(CMAKE_CXX_STANDARD 17)
+
+# Determine if we're being built through FetchContent.
+if (${CMAKE_SOURCE_DIR} STREQUAL ${PROJECT_SOURCE_DIR})
+    set(is_fetched FALSE)
+else()
+    set(is_fetched TRUE)
+endif()
 
 # Add the asm-dom library.
 include(cmake/asm-dom.cmake)
 
-# Add the nlohmann/json library.
-include(cmake/json.cmake)
-
-# Enable properties!
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdeclspec")
+# Add scnlib.
+add_subdirectory(external/scnlib EXCLUDE_FROM_ALL)
 
 # Allow the use of Emscripten's Fetch API.
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s FETCH=1")
 # Enable exceptions.
 string(APPEND CMAKE_CXX_FLAGS " -s DISABLE_EXCEPTION_CATCHING=0")
-
-# Add scnlib.
-add_subdirectory(external/scnlib EXCLUDE_FROM_ALL)
 
 # Set some Emscripten optimizations flags for release mode.
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -45,8 +46,14 @@ target_include_directories(alia PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 add_library(alia_html STATIC ${SOURCES})
 target_link_libraries(alia_html
-    PUBLIC asm-dom scn::scn alia nlohmann_json::nlohmann_json)
+    PUBLIC asm-dom scn::scn alia)
 target_include_directories(alia_html PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
+
+# The rest of this is concerned with building/deploying the examples and demos,
+# which we don't want to do if we're just building as a dependency.
+if (is_fetched)
+    return()
+endif()
 
 # "Deploy" the given file to the given directory.
 # In normal development, this creates a symlink of the file for more rapid
@@ -128,6 +135,8 @@ function(add_demo dir)
     add_example(${dir})
     target_sources(${name} PRIVATE
         demos/demolib/utilities.cpp)
+    target_link_libraries(alia_html
+        PRIVATE nlohman_json::nlohman_json)
     set(deploy_subdir "${deploy_dir}/${dir}")
     deploy(
         ${CMAKE_CURRENT_SOURCE_DIR}/demos/demolib/demo.css
