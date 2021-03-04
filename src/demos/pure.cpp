@@ -65,7 +65,7 @@ init_demo(std::string dom_id)
 {
     static html::system the_system;
 
-    initialize(the_system, dom_id, [](html::context ctx) { demo_ui(ctx); });
+    initialize(the_system, dom_id, [](html::context ctx) { main_ui(ctx); });
 }
 
 static demo the_demo("pure-component", init_demo);
