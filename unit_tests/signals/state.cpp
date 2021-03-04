@@ -217,7 +217,7 @@ TEST_CASE("state changes and component dirtying", "[signals][state]")
         log << (srr.is_dirty() ? "dirty;" : "clean;");
         auto state = get_state(ctx, 12);
         log << read_signal(state) << ";";
-        on_event<my_state_change_event>(ctx, [&](auto, auto&) {
+        event_handler<my_state_change_event>(ctx, [&](auto, auto&) {
             log << "writing;";
             write_signal(state, 13);
         });

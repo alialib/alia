@@ -7,7 +7,7 @@ namespace alia {
 try_block::try_block(context ctx) : ctx_(ctx)
 {
     get_cached_data(ctx, &data_);
-    on_refresh(ctx, [&](auto ctx) {
+    refresh_handler(ctx, [&](auto ctx) {
         auto refresh_counter = get<system_tag>(ctx).refresh_counter;
         if (data_->last_refresh != refresh_counter)
         {

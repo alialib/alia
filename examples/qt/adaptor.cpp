@@ -88,7 +88,7 @@ qt_layout_container::record_change()
 void
 scoped_layout_container::begin(qt_context ctx, qt_layout_container* container)
 {
-    on_refresh(ctx, [&](auto ctx) {
+    refresh_handler(ctx, [&](auto ctx) {
         traversal_ = &get<qt_traversal_tag>(ctx);
         qt_traversal& traversal = *traversal_;
 
@@ -140,7 +140,7 @@ do_label(qt_context ctx, readable<string> text)
 {
     auto& label = get_cached_data<qt_label>(ctx);
 
-    on_refresh(ctx, [&](auto ctx) {
+    refresh_handler(ctx, [&](auto ctx) {
         auto& system = get<system_tag>(ctx);
 
         if (!label.object)
@@ -193,7 +193,7 @@ do_button(qt_context ctx, readable<string> text, action<> on_click)
 {
     auto& button = get_cached_data<qt_button>(ctx);
 
-    on_refresh(ctx, [&](auto ctx) {
+    refresh_handler(ctx, [&](auto ctx) {
         auto& system = get<system_tag>(ctx);
 
         refresh_component_identity(ctx, button.identity);
@@ -226,7 +226,7 @@ do_button(qt_context ctx, readable<string> text, action<> on_click)
             [&]() { button.object->setText(""); });
     });
 
-    on_targeted_event<click_event>(
+    targeted_event_handler<click_event>(
         ctx, &button.identity, [&](auto ctx, auto& e) {
             if (action_is_ready(on_click))
             {
@@ -267,7 +267,7 @@ do_text_control(qt_context ctx, duplex<string> text)
 {
     auto& widget = get_cached_data<qt_text_control>(ctx);
 
-    on_refresh(ctx, [&](auto ctx) {
+    refresh_handler(ctx, [&](auto ctx) {
         auto& system = get<system_tag>(ctx);
 
         refresh_component_identity(ctx, widget.identity);
@@ -310,7 +310,7 @@ do_text_control(qt_context ctx, duplex<string> text)
             });
     });
 
-    on_targeted_event<value_update_event>(
+    targeted_event_handler<value_update_event>(
         ctx, &widget.identity, [&](auto ctx, auto& e) {
             write_signal(text, e.value);
         });
@@ -364,14 +364,14 @@ qt_system::operator()(alia::context vanilla_ctx)
     qt_traversal traversal;
     qt_context ctx = extend_context<qt_traversal_tag>(vanilla_ctx, traversal);
 
-    on_refresh(ctx, [&](auto ctx) {
+    refresh_handler(ctx, [&](auto ctx) {
         traversal.next_ptr = &this->root;
         traversal.active_parent = this->window;
     });
 
     this->controller(ctx);
 
-    on_refresh(ctx, [&](auto ctx) {
+    refresh_handler(ctx, [&](auto ctx) {
         while (this->layout->takeAt(0))
             ;
         this->root->update(this->system, this->window, this->layout);

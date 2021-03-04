@@ -30,13 +30,13 @@ do_my_thing(my_context ctx, readable<string> label)
 {
     auto id = get_component_id(ctx);
 
-    on_refresh(
+    refresh_handler(
         ctx, [id](auto ctx) { get<my_tag>(ctx).push_back(externalize(id)); });
 
-    on_event<my_event>(
+    event_handler<my_event>(
         ctx, [&](auto, auto& e) { e.visited += read_signal(label) + ";"; });
 
-    on_targeted_event<my_event>(ctx, id, [&](auto, my_event& event) {
+    targeted_event_handler<my_event>(ctx, id, [&](auto, my_event& event) {
         event.result = read_signal(label);
     });
 }
@@ -89,7 +89,7 @@ TEST_CASE("event error propagation", "[flow][events]")
 {
     alia::system sys;
     initialize_system(sys, [&](context ctx) {
-        on_event<bad_event>(
+        event_handler<bad_event>(
             ctx, [&](auto, auto&) { static_cast<void>(std::string().at(0)); });
     });
 
@@ -175,7 +175,7 @@ TEST_CASE("on_observed_value events", "[flow][events]")
 
     alia::system sys;
     initialize_system(sys, [&](context ctx) {
-        on_refresh(ctx, [&](auto) {
+        refresh_handler(ctx, [&](auto) {
             gain_shadow = gain_count;
             loss_shadow = loss_count;
             change_shadow = change_count;
@@ -291,7 +291,7 @@ TEST_CASE("on_value events", "[flow][events]")
 
     alia::system sys;
     initialize_system(sys, [&](context ctx) {
-        on_refresh(ctx, [&](auto) {
+        refresh_handler(ctx, [&](auto) {
             gain_shadow = gain_count;
             loss_shadow = loss_count;
             change_shadow = change_count;

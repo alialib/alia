@@ -86,7 +86,7 @@ get_component_id(context ctx)
 {
     component_id id;
     get_cached_data(ctx, &id);
-    on_refresh(ctx, [&](auto ctx) { refresh_component_identity(ctx, *id); });
+    refresh_handler(ctx, [&](auto ctx) { refresh_component_identity(ctx, *id); });
     return id;
 }
 
@@ -99,7 +99,7 @@ void
 on_init(context ctx, action<> on_init)
 {
     initialization_detection& data = get_data<initialization_detection>(ctx);
-    on_refresh(ctx, [&](auto) {
+    refresh_handler(ctx, [&](auto) {
         if (!data.initialized && on_init.is_ready())
         {
             isolate_errors(ctx, [&] { perform_action(on_init); });
@@ -114,7 +114,7 @@ on_activate(context ctx, action<> on_activate)
 {
     initialization_detection& data
         = get_cached_data<initialization_detection>(ctx);
-    on_refresh(ctx, [&](auto) {
+    refresh_handler(ctx, [&](auto) {
         if (!data.initialized && on_activate.is_ready())
         {
             isolate_errors(ctx, [&] { perform_action(on_activate); });

@@ -48,7 +48,7 @@ auto
 enforce_validity(
     dataless_context ctx, Signal signal, signal_validation_data& data)
 {
-    on_refresh(ctx, [&](auto) {
+    refresh_handler(ctx, [&](auto) {
         if (!signal.is_invalidated()
             && !data.value_id.matches(signal.value_id()))
         {
