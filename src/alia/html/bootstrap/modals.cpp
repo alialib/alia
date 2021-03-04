@@ -53,7 +53,7 @@ modal(
                             internal_modal_handle handle(modal);
                             content(handle);
                         });
-                        on_refresh(ctx, [&](auto ctx) {
+                        refresh_handler(ctx, [&](auto ctx) {
                             EM_ASM(
                                 {
                                     jQuery(Module['nodes'][$0])

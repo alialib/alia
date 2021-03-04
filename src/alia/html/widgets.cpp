@@ -40,7 +40,7 @@ input(html::context ctx, duplex<std::string> value_)
 
     auto value = enforce_validity(ctx, value_, data->validation);
 
-    on_refresh(ctx, [&](auto ctx) {
+    refresh_handler(ctx, [&](auto ctx) {
         if (!value.is_invalidated())
         {
             refresh_signal_view(
