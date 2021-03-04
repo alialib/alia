@@ -18,6 +18,7 @@ checkbox(html::context ctx, duplex<bool> value, readable<std::string> label)
             .attr("for", id)
             .text(label);
     });
+    return checkbox;
 }
 
 }}}} // namespace alia::html::bootstrap::detail
