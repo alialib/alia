@@ -296,7 +296,7 @@ TEST_CASE("erase_key action", "[flow][actions]")
         REQUIRE(x == (std::map<int, int>{{3, 6}}));
     }
     {
-        auto a = actions::erase_key(direct(x), empty<size_t>());
+        auto a = actions::erase_key(direct(x), empty<int>());
         REQUIRE(!a.is_ready());
     }
     {
