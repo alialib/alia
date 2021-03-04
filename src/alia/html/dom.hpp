@@ -161,7 +161,7 @@ do_element_property(
     context ctx, element_object& object, char const* name, Value const& value)
 {
     auto& stored_id = get_cached_data<captured_id>(ctx);
-    on_refresh(ctx, [&](auto ctx) {
+    refresh_handler(ctx, [&](auto ctx) {
         refresh_signal_view(
             stored_id,
             value,
@@ -294,7 +294,7 @@ struct element_handle_base
             detail::install_element_callback(
                 this->context(), this->node().object, data, event_type);
         }
-        on_targeted_event<detail::dom_event>(
+        targeted_event_handler<detail::dom_event>(
             this->context(), &data.identity, [&](auto ctx, auto& e) {
                 std::forward<Function>(fn)(e.event);
             });

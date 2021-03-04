@@ -149,7 +149,7 @@ get_storage_state(html::context ctx, char const* storage_name, char const* key)
         }
     }
 
-    on_refresh(ctx, [&](auto ctx) {
+    refresh_handler(ctx, [&](auto ctx) {
         data->value.refresh_container(get_active_component_container(ctx));
     });
 

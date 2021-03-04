@@ -342,7 +342,7 @@ do_element_attribute(
     readable<std::string> value)
 {
     auto& stored_id = get_cached_data<captured_id>(ctx);
-    on_refresh(ctx, [&](auto ctx) {
+    refresh_handler(ctx, [&](auto ctx) {
         refresh_signal_view(
             stored_id,
             value,
@@ -364,7 +364,7 @@ do_element_attribute(
     readable<bool> value)
 {
     auto& stored_id = get_cached_data<captured_id>(ctx);
-    on_refresh(ctx, [&](auto ctx) {
+    refresh_handler(ctx, [&](auto ctx) {
         refresh_signal_view(
             stored_id,
             value,
@@ -415,7 +415,7 @@ do_element_class_token(
     context ctx, element_object& object, bool, readable<std::string> value)
 {
     auto& data = get_cached_data<element_class_token_data>(ctx);
-    on_refresh(ctx, [&](auto ctx) {
+    refresh_handler(ctx, [&](auto ctx) {
         refresh_signal_view(
             data.value_id,
             value,
@@ -441,7 +441,7 @@ void
 do_element_class_token(
     context ctx, element_object& object, bool initializing, char const* value)
 {
-    on_refresh(ctx, [&](auto ctx) {
+    refresh_handler(ctx, [&](auto ctx) {
         if (initializing)
             add_class_token(object.asmdom_id, value);
     });
