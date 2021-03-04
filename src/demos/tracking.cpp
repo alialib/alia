@@ -63,7 +63,7 @@ in_bounds(my_record const& r)
     return r.x >= 0 && r.x < 100 && r.y >= -20 && r.y < 20;
 }
 
-// Here's an alia function that exposes our application data via asm-dom.
+// Here's an alia UI function that exposes our application data.
 void
 records_ui(html::context ctx, std::vector<my_record>& records)
 {

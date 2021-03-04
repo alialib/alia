@@ -41,9 +41,9 @@ Here's a very simple example that demonstrates both of these roles:
 
 When you interact with this demo, the sequence of events is as follows:
 
-1. alia/HTML invokes `demo_ui` to determine the initial contents of the UI, and
-   in response to what `demo_ui` declares, a 'Toggle the Message' button is
-   created.
+1. The alia/HTML system invokes `demo_ui` to determine the initial contents of
+   the UI, and in response to what `demo_ui` declares, a 'Toggle the Message'
+   button is created.
 
 2. At some point, you (the user) click the button and alia/HTML invokes
    `demo_ui` again with a button click event. `demo_ui` calls `html::button`,
@@ -51,10 +51,10 @@ When you interact with this demo, the sequence of events is as follows:
    so it invokes its [action](actions.md), which toggles the state of
    `show_message`.
 
-3. Immediately after this, the asm-dom wrapper invokes `demo_ui` *again* to
-   refresh the UI. `demo_ui` again declares that the 'Toggle the Message'
-   button should be there, but since `show_message` is now set to `true`, it
-   *also* declares that the 'Hello, World!' message should be included.
+3. Immediately after this, alia/HTML invokes `demo_ui` *again* to refresh the
+   UI. `demo_ui` again declares that the 'Toggle the Message' button should be
+   there, but since `show_message` is now set to `true`, it *also* declares
+   that the 'Hello, World!' message should be included.
 
 ... And so on.
 

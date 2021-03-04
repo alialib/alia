@@ -7,7 +7,9 @@ Assorted Examples
 </script>
 
 If you're more interested in code than prose, you'll like this page the best.
-Many of these come from other sections of the documentation...
+Many of these come from other sections of the documentation.
+
+You may also want to check out the [alia/HTML demos](https://html.alia.dev/).
 
 Tip Calculator
 --------------
