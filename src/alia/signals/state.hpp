@@ -218,7 +218,7 @@ common_state_signal_logic(
     state_storage<Value>* state,
     InitialValueSignal const& initial_value_signal)
 {
-    on_refresh(ctx, [&](auto ctx) {
+    refresh_handler(ctx, [&](auto ctx) {
         state->refresh_container(get_active_component_container(ctx));
         if (!state->is_initialized() && signal_has_value(initial_value_signal))
         {

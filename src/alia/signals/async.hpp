@@ -152,7 +152,7 @@ async(Context ctx, Launcher launcher, Args const&... args)
     bool args_ready = true;
     process_async_args(ctx, data, args_ready, args...);
 
-    on_refresh(ctx, [&](auto ctx) {
+    refresh_handler(ctx, [&](auto ctx) {
         if (data.status == async_status::UNREADY && args_ready)
         {
             try

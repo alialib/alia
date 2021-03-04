@@ -37,7 +37,7 @@ do_label(context ctx, std::string const& name)
 {
     do_ostream_text(ctx, name);
 
-    on_event<find_label_event>(ctx, [name](auto ctx, auto& fle) {
+    event_handler<find_label_event>(ctx, [name](auto ctx, auto& fle) {
         if (fle.name == name)
             fle.container = get_active_component_container(ctx);
     });

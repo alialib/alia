@@ -50,7 +50,7 @@ timer::update()
     triggered_ = data_->active && detect_timer_event(ctx_, *data_);
     if (triggered_)
         data_->active = false;
-    on_refresh(ctx_, [&](auto ctx) {
+    refresh_handler(ctx_, [&](auto ctx) {
         refresh_component_identity(ctx, data_->identity);
     });
 }
