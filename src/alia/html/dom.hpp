@@ -288,6 +288,7 @@ struct element_handle_base
     {
         auto& data
             = get_cached_data<detail::element_callback>(this->context());
+        refresh_component_identity(this->context(), data.identity);
         if (this->initializing())
         {
             detail::install_element_callback(
