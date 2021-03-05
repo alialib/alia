@@ -1,10 +1,10 @@
 alia - A Library for Interactive Applications
 =============================================
 
-[![MSVC Build Status](https://github.com/tmadden/alia/workflows/MSVC/badge.svg)](https://github.com/tmadden/alia/actions)
-[![GCC Build Status](https://github.com/tmadden/alia/workflows/GCC/badge.svg)](https://github.com/tmadden/alia/actions)
-[![Clang Build Status](https://github.com/tmadden/alia/workflows/Clang/badge.svg)](https://github.com/tmadden/alia/actions)
-[![Code Coverage](https://codecov.io/gh/tmadden/alia/branch/main/graph/badge.svg)](https://codecov.io/gh/tmadden/alia)
+[![MSVC Build Status](https://github.com/alialib/alia/workflows/MSVC/badge.svg)](https://github.com/alialib/alia/actions)
+[![GCC Build Status](https://github.com/alialib/alia/workflows/GCC/badge.svg)](https://github.com/alialib/alia/actions)
+[![Clang Build Status](https://github.com/alialib/alia/workflows/Clang/badge.svg)](https://github.com/alialib/alia/actions)
+[![Code Coverage](https://codecov.io/gh/alialib/alia/branch/main/graph/badge.svg)](https://codecov.io/gh/alialib/alia)
 ![C++ Support](https://img.shields.io/badge/C++-17-blue?logo=c%2B%2B)
 [![Stability](https://img.shields.io/badge/stability-unstable-yellow.svg)](https://github.com/orangemug/stability-badges#unstable)
 
