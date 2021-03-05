@@ -26,7 +26,7 @@ struct signal;
 `Capabilities` is a tag type indicating the read/write capabilities of the
 signal. It's common to simply use `read_only_signal` or `duplex_signal` here.
 For a full explanation of capabilities, see [the
-code](https://github.com/tmadden/alia/blob/main/src/alia/signals/core.hpp).
+code](https://github.com/alialib/alia/blob/main/src/alia/signals/core.hpp).
 
 For signals with small value types, it's common for the value ID to simply be a
 copy of the signal value. These are called 'regular' signals and can be

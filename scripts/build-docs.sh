@@ -8,7 +8,7 @@ rm -rf *
 cp ../docs/* .
 unzip favicon.zip && rm *.zip
 cp ../build/*.js ../build/*.wasm .
-wget https://github.com/tmadden/alia/releases/latest/download/alia.hpp
+wget https://github.com/alialib/alia/releases/latest/download/alia.hpp
 ../scripts/build-dot-files.sh
 touch .nojekyll
 cd ..

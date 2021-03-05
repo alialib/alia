@@ -17,7 +17,7 @@ dependencies. The following compilers are officially supported:
 alia is distributed as a single header (`alia.hpp`) which is attached as an
 asset to every release in GitHub. You can download the latest release here:
 
-https://github.com/tmadden/alia/releases/latest/download/alia.hpp
+https://github.com/alialib/alia/releases/latest/download/alia.hpp
 
 If you want to play around with the latest version on the `main` branch, that
 header is available via GitHub Pages:
