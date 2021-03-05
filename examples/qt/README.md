@@ -13,7 +13,7 @@ Building
 
 1. Clone this repository and change to this directory:
    ```shell
-   git clone https://github.com/tmadden/alia
+   git clone https://github.com/alialib/alia
    cd alia/examples/qt
    ```
 
