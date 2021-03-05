@@ -3,11 +3,16 @@
     --code-theme-selector: var(--code-theme-tag);
     --code-inline-background: #0000000c;
     --sidebar-toggle-background: #f0f0f0;
-    --sidebar-name-font-size: 24px;
+    --sidebar-name-font-family: 'Niramit', sans-serif;
+    --sidebar-name-font-size: 30px;
     --sidebar-name-font-weight: 500;
     --heading-h1-padding: 0 0 16px 0;
     --heading-h1-border-color: #e3e3e3;
     --heading-h1-border-width: 0 0 1.5px 0;
+}
+
+.cover-main h1 {
+    font-family: 'Niramit', sans-serif;
 }
 
 .hide-when-deployed {
