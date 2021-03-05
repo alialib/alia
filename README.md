@@ -1,7 +1,7 @@
 alia-docs
 =========
 
-[![Deployment Status](https://github.com/tmadden/alia-docs/workflows/Deployment/badge.svg)](https://github.com/tmadden/alia-docs/actions)
+[![Deployment Status](https://github.com/alialib/alia-docs/workflows/Deployment/badge.svg)](https://github.com/alialib/alia-docs/actions)
 
 This the documentation for alia. It's deployed here:
 
