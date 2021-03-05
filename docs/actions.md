@@ -183,7 +183,7 @@ parameters can be bound to signals using the `<<` operator:
 If you want to do something more interesting, you may want to implement the
 `action_interface`. The interface itself and example implementations can be
 found in
-[actions.hpp](https://github.com/tmadden/alia/blob/main/src/alia/flow/actions.hpp).
+[actions.hpp](https://github.com/alialib/alia/blob/main/src/alia/flow/actions.hpp).
 
 Action Library
 --------------
