@@ -13,6 +13,9 @@
     <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
     <link rel="manifest" href="site.webmanifest">
 
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Niramit:wght@700&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify-themeable@0/dist/css/theme-simple.css">
     <link rel="stylesheet" href="pure-material.css">
     <link rel="stylesheet" href="style.css">
@@ -38,9 +41,11 @@
             name: 'alia',
             repo: 'tmadden/alia',
             loadSidebar: 'contents.md',
+            coverpage: 'landing.md',
             subMaxLevel: 2,
             alias: {
-                '/.*/contents.md': '/contents.md'
+                '/.*/contents.md': '/contents.md',
+                '/.*/landing.md': '/landing.md'
             },
             search: {
                 depth: 3,
