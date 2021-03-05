@@ -2,7 +2,7 @@
 
 > A Library for Interactive Applications
 
-- Declarative UI library for C++
+- Declarative UI library for C++17
 - Currently targeting HTML5 and the web
 - MIT license
 
