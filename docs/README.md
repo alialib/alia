@@ -1,5 +1,5 @@
-alia - A Library for Interactive Applications
-=============================================
+alia
+====
 
 alia (pronounced uh-LEE-uh) is a modern C++ library for declaratively
 developing user interfaces. It currently targets the web. In alia, the UI of
@@ -37,7 +37,7 @@ Some Code
 
 Below is a simple tip calculator made using alia. You can see it in action <a
 target="_self" href="https://alia.dev/#/assorted-examples?id=tip-calculator">
-here</a>, along with some other examples.
+here</a>, along with other examples.
 
 ```cpp
 void
@@ -45,12 +45,14 @@ tip_calculator(html::context ctx)
 {
     // Get some component-local state for the bill amount.
     auto bill = alia::get_state(ctx, empty<double>());
+
     html::p(ctx, "How much is the bill?");
     // Display an input that allows the user to manipulate our bill state.
     html::input(ctx, bill);
 
     // Get some more component-local state for the tip rate.
     auto tip_rate = alia::get_state(ctx, empty<double>());
+
     html::p(ctx, "What percentage do you want to tip?");
     // Users like percentages, but we want to keep the 'tip_rate' state as a
     // rate internally, so this input presents a scaled view of it for the user.
