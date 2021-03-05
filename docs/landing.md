@@ -6,6 +6,6 @@
 - Currently targeting HTML5 and the web
 - MIT license
 
-[Docs](#alia-a-library-for-interactive-applications)
+[Docs](#alia)
 [Demos](https://html.alia.dev/)
 [Code](https://github.com/tmadden/alia/)
