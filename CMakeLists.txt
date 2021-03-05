@@ -55,6 +55,9 @@ if (is_fetched)
     return()
 endif()
 
+# Add the nlohmann/json library.
+include(cmake/json.cmake)
+
 # "Deploy" the given file to the given directory.
 # In normal development, this creates a symlink of the file for more rapid
 # iteration.
@@ -135,8 +138,7 @@ function(add_demo dir)
     add_example(${dir})
     target_sources(${name} PRIVATE
         demos/demolib/utilities.cpp)
-    target_link_libraries(alia_html
-        PRIVATE nlohman_json::nlohman_json)
+    target_link_libraries(${name} nlohmann_json::nlohmann_json)
     set(deploy_subdir "${deploy_dir}/${dir}")
     deploy(
         ${CMAKE_CURRENT_SOURCE_DIR}/demos/demolib/demo.css
