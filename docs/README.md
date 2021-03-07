@@ -1,5 +1,5 @@
-alia
-====
+alia - A Library for Interactive Applications
+=============================================
 
 alia (pronounced uh-LEE-uh) is a modern C++ library for declaratively
 developing user interfaces. It currently targets the web. In alia, the UI of
