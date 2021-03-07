@@ -21,7 +21,7 @@ debugging tools:
 * Inspect individual signal values
 * Break inside component instance
 * Break when a signal value changes
-* Visual signal values over time
+* Visualize signal values over time
 * View event logs
 * Externalize state for hot reloading or time travel
 * Natvis for signals
