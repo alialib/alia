@@ -39,5 +39,5 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@4.1.0
         with:
           branch: gh-pages
-          folder: build/deploy/
+          folder: build/deploy
           single-commit: true
