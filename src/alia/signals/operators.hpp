@@ -399,22 +399,6 @@ struct signal_mux : signal<
         else
             f_.clear();
     }
-    bool
-    invalidate(std::exception_ptr error) const override
-    {
-        if (condition_.read())
-            return t_.invalidate(error);
-        else
-            return f_.invalidate(error);
-    }
-    bool
-    is_invalidated() const override
-    {
-        if (condition_.read())
-            return t_.is_invalidated();
-        else
-            return f_.is_invalidated();
-    }
 
  private:
     Condition condition_;

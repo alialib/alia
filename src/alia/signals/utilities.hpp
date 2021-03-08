@@ -191,16 +191,6 @@ struct signal_wrapper : signal<Derived, Value, Capabilities>
     {
         wrapped_.clear();
     }
-    bool
-    invalidate(std::exception_ptr error) const override
-    {
-        return wrapped_.invalidate(error);
-    }
-    bool
-    is_invalidated() const override
-    {
-        return wrapped_.is_invalidated();
-    }
 
  protected:
     Wrapped wrapped_;
@@ -240,16 +230,6 @@ struct casting_signal_wrapper : signal<Derived, Value, Capabilities>
     clear() const override
     {
         wrapped_.clear();
-    }
-    bool
-    invalidate(std::exception_ptr error) const override
-    {
-        return wrapped_.invalidate(error);
-    }
-    bool
-    is_invalidated() const override
-    {
-        return wrapped_.is_invalidated();
     }
 
  protected:
