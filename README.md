@@ -1,6 +1,6 @@
 # alia-html
 
-[![Deployment Status](https://github.com/alialib/alia-html/workflows/Deployment/badge.svg)](https://github.com/alialib/alia-html/actions)
-[![Staging Status](https://github.com/alialib/alia-html/workflows/Staging/badge.svg)](https://github.com/alialib/alia-html/actions)
+[![Deployment](https://github.com/alialib/alia-html/actions/workflows/deployment.yml/badge.svg)](https://github.com/alialib/alia-html/actions/workflows/deployment.yml)
+[![Staging](https://github.com/alialib/alia-html/actions/workflows/staging.yml/badge.svg)](https://github.com/alialib/alia-html/actions/workflows/staging.yml)
 
 alia bindings for HTML5/asm-dom
