@@ -22,7 +22,7 @@ init_demo(std::string dom_id)
     static html::system the_system;
 
     initialize(the_system, dom_id, [](html::context ctx) {
-        demo_ui(ctx, get_state(ctx, 1.));
+        demo_ui(ctx, enforce_validity(ctx, get_state(ctx, 1.)));
     });
 }
 
