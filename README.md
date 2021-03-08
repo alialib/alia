@@ -1,7 +1,8 @@
 alia-docs
 =========
 
-[![Deployment Status](https://github.com/alialib/alia-docs/workflows/Deployment/badge.svg)](https://github.com/alialib/alia-docs/actions)
+[![Deployment](https://github.com/alialib/alia-docs/actions/workflows/deployment.yml/badge.svg)](https://github.com/alialib/alia-docs/actions/workflows/deployment.yml)
+[![Staging](https://github.com/alialib/alia-docs/actions/workflows/staging.yml/badge.svg)](https://github.com/alialib/alia-docs/actions/workflows/staging.yml)
 
 This the documentation for alia. It's deployed here:
 
@@ -16,7 +17,7 @@ Building the docs requires Linux (or the Windows Subsystem for Linux.)
    https://emscripten.org/docs/getting_started/downloads.html) and activate it
    for your shell.
 
-1. Build the demos:
+2. Build the demos:
    ```shell
    mkdir build
    cd build
@@ -24,7 +25,7 @@ Building the docs requires Linux (or the Windows Subsystem for Linux.)
    make -j
    ```
 
-1. Run `scripts/link-docs.sh`. This sets up the `www` directory with the
+3. Run `scripts/link-docs.sh`. This sets up the `www` directory with the
    documentation using symbolic links for (almost) everything, so when you edit
    the `.md` files or rebuild the demos, the effects will propagate
    immediately.
