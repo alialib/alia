@@ -23,8 +23,8 @@ init_demo(std::string dom_id)
     initialize(the_system, dom_id, [](html::context ctx) {
         addition_ui(
             ctx,
-            enforce_validity(ctx, get_state(ctx, empty<double>())),
-            enforce_validity(ctx, get_state(ctx, empty<double>())));
+            get_state(ctx, empty<double>()),
+            get_state(ctx, empty<double>()));
     });
 }
 
@@ -37,7 +37,7 @@ namespace numerical_analysis {
 void
 demo_ui(html::context ctx)
 {
-    auto n = enforce_validity(ctx, get_state(ctx, empty<double>()));
+    auto n = get_state(ctx, empty<double>());
 
     // clang-format off
 /// [analysis]
@@ -193,7 +193,7 @@ init_demo(std::string dom_id)
     static html::system the_system;
 
     initialize(the_system, dom_id, [](html::context ctx) {
-        factor_tree_demo(ctx, enforce_validity(ctx, get_state(ctx, 600)));
+        factor_tree_demo(ctx, get_state(ctx, 600));
     });
 }
 
