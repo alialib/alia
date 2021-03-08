@@ -40,5 +40,5 @@ jobs:
           target-folder: html/
           token: ${{ secrets.ALIA_STAGING_DEPLOYMENT_TOKEN }}
           branch: gh-pages
-          folder: build/deploy/
+          folder: build/deploy
           single-commit: true
