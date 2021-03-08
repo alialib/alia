@@ -37,7 +37,7 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@4.1.0
         with:
           repository-name: alialib/alia-staging
-          target-folder: html/
+          target-folder: html
           token: ${{ secrets.ALIA_STAGING_DEPLOYMENT_TOKEN }}
           branch: gh-pages
           folder: build/deploy
