@@ -1,4 +1,4 @@
-name: Deployment
+name: Staging
 
 on:
   push:
@@ -37,6 +37,7 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@3.7.1
         with:
           repository-name: alialib/alia-staging
+          target-folder: html/
           token: ${{ secrets.ALIA_STAGING_DEPLOYMENT_TOKEN }}
           branch: gh-pages
           folder: build/deploy/
