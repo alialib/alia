@@ -34,7 +34,7 @@ jobs:
           emcmake cmake -DCMAKE_BUILD_TYPE=Release ..
           make -j
       - name: Deploy
-        uses: JamesIves/github-pages-deploy-action@3.7.1
+        uses: JamesIves/github-pages-deploy-action@4.1.0
         with:
           repository-name: alialib/alia-staging
           target-folder: html/
