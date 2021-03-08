@@ -28,33 +28,27 @@ struct input_data
 {
     captured_id value_id;
     std::string value;
-    signal_validation_data validation;
     unsigned version = 0;
 };
 
 input_handle
-input(html::context ctx, duplex<std::string> value_)
+input(html::context ctx, duplex<std::string> value)
 {
     input_data* data;
     get_cached_data(ctx, &data);
 
-    auto value = enforce_validity(ctx, value_, data->validation);
-
     refresh_handler(ctx, [&](auto ctx) {
-        if (!value.is_invalidated())
-        {
-            refresh_signal_view(
-                data->value_id,
-                value,
-                [&](std::string new_value) {
-                    data->value = std::move(new_value);
-                    ++data->version;
-                },
-                [&]() {
-                    data->value.clear();
-                    ++data->version;
-                });
-        }
+        refresh_signal_view(
+            data->value_id,
+            value,
+            [&](std::string new_value) {
+                data->value = std::move(new_value);
+                ++data->version;
+            },
+            [&]() {
+                data->value.clear();
+                ++data->version;
+            });
     });
 
     return element(ctx, "input")
