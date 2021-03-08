@@ -162,6 +162,27 @@ struct untyped_signal_base
     // Clear the signal.
     virtual void
     clear() const = 0;
+
+    // WARNING: EXPERIMENTAL VALIDATION STUFF FOLLOWS...
+
+    // Handle a validation error.
+    //
+    // This is called when there's an attempt to write to the signal and a
+    // validation_error is thrown. (The argument is the error.)
+    //
+    // The return value should be true iff the validation error was handled.
+    //
+    virtual bool invalidate(std::exception_ptr) const
+    {
+        return false;
+    }
+
+    // Is this signal currently invalidated?
+    virtual bool
+    is_invalidated() const
+    {
+        return false;
+    }
 };
 
 template<class Value>
@@ -371,6 +392,16 @@ struct signal_ref
     {
         ref_->write(std::move(value));
     }
+    bool
+    invalidate(std::exception_ptr error) const override
+    {
+        return ref_->invalidate(error);
+    }
+    bool
+    is_invalidated() const override
+    {
+        return ref_->is_invalidated();
+    }
 
  private:
     signal_interface<Value> const* ref_;
@@ -441,37 +472,6 @@ read_signal(Signal const& signal)
     return signal.read();
 }
 
-// signal_is_clearable<Signal>::value yields a compile-time boolean indicating
-// whether or not the given signal type supports clearing.
-template<class Signal>
-struct signal_is_clearable : signal_capability_level_is_compatible<
-                                 signal_clearable,
-                                 Signal::capabilities::writing>
-{
-};
-
-// is_clearable_signal_type<T>::value yields a compile-time boolean indicating
-// whether or not T is an alia signal that supports clearing.
-template<class T>
-struct is_clearable_signal_type : std::conditional_t<
-                                      is_signal_type<T>::value,
-                                      signal_is_clearable<T>,
-                                      std::false_type>
-{
-};
-
-// Clear a signal's value.
-// Unlike calling signal.clear() directly, this will generate a compile-time
-// error if the signal's type doesn't support clearing.
-// Note that if the signal isn't ready to write, this is a no op.
-template<class Signal>
-std::enable_if_t<signal_is_clearable<Signal>::value>
-clear_signal(Signal const& signal)
-{
-    if (signal.ready_to_write())
-        signal.clear();
-}
-
 // When a value is written to a signal, the signal is allowed to throw a
 // validation_error if the value isn't acceptable.
 struct validation_error : exception
@@ -529,9 +529,12 @@ write_signal(Signal const& signal, Value value)
         }
         catch (validation_error&)
         {
-            // EXPERIMENTAL VALIDATION LOGIC
-            if constexpr (signal_is_clearable<Signal>::value)
-                clear_signal(signal);
+            // EXPERIMENTAL VALIDATION LOGIC: Try to let the signal handle the
+            // validation error (at some level). If it can't, rethrow the
+            // exception.
+            auto e = std::current_exception();
+            if (!signal.invalidate(e))
+                std::rethrow_exception(e);
         }
     }
 }
@@ -625,6 +628,37 @@ forward_signal(Signal const& signal)
 {
     assert(signal.has_value());
     return signal.read();
+}
+
+// signal_is_clearable<Signal>::value yields a compile-time boolean indicating
+// whether or not the given signal type supports clearing.
+template<class Signal>
+struct signal_is_clearable : signal_capability_level_is_compatible<
+                                 signal_clearable,
+                                 Signal::capabilities::writing>
+{
+};
+
+// is_clearable_signal_type<T>::value yields a compile-time boolean indicating
+// whether or not T is an alia signal that supports clearing.
+template<class T>
+struct is_clearable_signal_type : std::conditional_t<
+                                      is_signal_type<T>::value,
+                                      signal_is_clearable<T>,
+                                      std::false_type>
+{
+};
+
+// Clear a signal's value.
+// Unlike calling signal.clear() directly, this will generate a compile-time
+// error if the signal's type doesn't support clearing.
+// Note that if the signal isn't ready to write, this is a no op.
+template<class Signal>
+std::enable_if_t<signal_is_clearable<Signal>::value>
+clear_signal(Signal const& signal)
+{
+    if (signal.ready_to_write())
+        signal.clear();
 }
 
 } // namespace alia
