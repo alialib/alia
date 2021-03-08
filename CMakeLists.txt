@@ -107,11 +107,6 @@ file(ARCHIVE_EXTRACT
     INPUT "${CMAKE_CURRENT_SOURCE_DIR}/demos/favicon.zip"
     DESTINATION "${deploy_dir}")
 
-# On CI, create the CNAME file for GitHub Pages.
-if(DEFINED ENV{CI})
-    file(WRITE ${deploy_dir}/CNAME "html.alia.dev")
-endif()
-
 # Set up the build for an example.
 function(add_example dir)
     get_filename_component(name "${dir}" NAME)
