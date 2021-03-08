@@ -44,4 +44,5 @@ jobs:
           target-folder: docs
           token: ${{ secrets.ALIA_STAGING_DEPLOYMENT_TOKEN }}
           branch: gh-pages
-          folder: build/deploy
+          folder: www
+
