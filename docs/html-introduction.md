@@ -15,4 +15,6 @@ https://html.alia.dev/
 Getting Started
 ---------------
 
-Coming soon...
+alia/HTML provides a starter template repository:
+
+https://github.com/alialib/alia-html-starter

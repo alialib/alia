@@ -1,8 +1,20 @@
 Getting Started
 ===============
 
+alia/HTML
+---------
+
+The easiest way to get started with alia is through the alia/HTML starter
+project:
+
+https://github.com/alialib/alia-html-starter
+
 The Core Library
 ----------------
+
+If you're brave and want to use the core of alia separately from alia/HTML, the
+following instructions apply, but beware that you'll have to spend some time
+integrating it with a library that actually provides a user interface.
 
 The core of alia should work on any C++17 compiler. It has no external
 dependencies. The following compilers are officially supported:
