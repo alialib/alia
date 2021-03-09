@@ -1,9 +1,6 @@
 cmake_minimum_required (VERSION 3.14)
 project(alia-docs)
 
-# Apply some emscripten optimizations flags if we're in release mode.
-include(cmake/release-mode.cmake)
-
 # Add alia-html.
 include(cmake/alia-html.cmake)
 
