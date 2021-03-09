@@ -24,7 +24,6 @@ string(APPEND CMAKE_CXX_FLAGS " -s DISABLE_EXCEPTION_CATCHING=0")
 # Set some Emscripten optimizations flags for release mode.
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
   string(APPEND CMAKE_CXX_FLAGS " -Oz")
-  string(APPEND CMAKE_CXX_FLAGS " --js-opts 3")
   string(APPEND CMAKE_CXX_FLAGS " -flto")
   string(APPEND CMAKE_CXX_FLAGS " --llvm-opts 3")
   string(APPEND CMAKE_CXX_FLAGS " --closure 0")
