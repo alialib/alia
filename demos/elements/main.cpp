@@ -52,7 +52,7 @@ text_demo(demo_context ctx)
             R"(
             <p>
                 <code>&lt;p&gt;</code> elements can also serve as
-                <i>containers,</i> and you can <b>mix in</b> other style of
+                <i>containers,</i> and you can <b>mix in</b> other styles of
                 text.
             </p>
             )");
@@ -70,7 +70,7 @@ text_demo(demo_context ctx)
             i(ctx, "containers,");
             text(ctx, " and you can ");
             b(ctx, "mix in");
-            text(ctx, " other style of text.");
+            text(ctx, " other styles of text.");
         });
         /// [formatted-text-cpp]
     });
@@ -138,8 +138,8 @@ root_ui(html::context vanilla_ctx)
             h1(ctx).classes("mt-5 mb-3").text("alia/HTML Element Demos");
 
             p(ctx,
-              "The following demonstrate alia/HTML's interface to some of the "
-              "core HTML elements.");
+              "This is a (partial) demonstration of some of alia/HTML's "
+              "interfaces to the core HTML elements.");
 
             text_demo(ctx);
             checkboxes_demo(ctx);
