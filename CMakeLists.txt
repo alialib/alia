@@ -153,7 +153,5 @@ include(cmake/cereal.cmake)
 
 # Add the examples.
 add_example(examples/todo-mvc)
-message("--- CEREAL")
-message("${cereal_SOURCE_DIR}")
 target_include_directories(todo-mvc PUBLIC
     ${cereal_SOURCE_DIR}/include)
