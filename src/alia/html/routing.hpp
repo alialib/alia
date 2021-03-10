@@ -82,7 +82,8 @@ struct scn::scanner<Char, alia::html::detail::path_component>
     bool is_subpath = false;
 };
 
-namespace alia { namespace html {
+namespace alia {
+namespace html {
 
 namespace detail {
 
@@ -243,6 +244,8 @@ router(Context ctx)
             get_location_hash(ctx)));
 }
 
+} // namespace html
+
 namespace actions { namespace {
 
 // An action that sets the location hash.
@@ -257,10 +260,13 @@ set_location_hash(html::context ctx)
 
 }} // namespace actions::
 
+namespace html {
+
 // Get the current location hash for the HTML context.
 direct_const_signal<std::string>
 get_location_hash(html::context ctx);
 
-}} // namespace alia::html
+} // namespace html
+} // namespace alia
 
 #endif
