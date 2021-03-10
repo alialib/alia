@@ -88,11 +88,12 @@ storage_signal::ready_to_write() const
     return true;
 }
 
-void
+id_interface const&
 storage_signal::write(std::string value) const
 {
     storage_object(data_->storage).set_item(data_->key, value);
     data_->value.set(std::move(value));
+    return this->value_id();
 }
 
 std::string
