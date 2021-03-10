@@ -207,7 +207,10 @@ struct signal_interface : untyped_signal_base
     destructive_ref() const = 0;
 
     // Write the signal's value.
-    virtual void
+    // The signal can *optionally* return the new value ID of the signal (after
+    // taking on the value that was written in by this call). If this is
+    // impractical, it can just return null_id instead.
+    virtual id_interface const&
     write(Value value) const = 0;
 };
 
@@ -243,8 +246,9 @@ struct signal : signal_base<Derived, Value, Capabilities>
     {                                                                         \
         return false;                                                         \
     }                                                                         \
-    void write(Value) const override                                          \
+    id_interface const& write(Value) const override                           \
     {                                                                         \
+        return null_id;                                                       \
     }
 
 #define ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)                       \
@@ -387,10 +391,10 @@ struct signal_ref
     {
         return ref_->ready_to_write();
     }
-    void
+    id_interface const&
     write(Value value) const override
     {
-        ref_->write(std::move(value));
+        return ref_->write(std::move(value));
     }
     bool
     invalidate(std::exception_ptr error) const override
@@ -518,14 +522,14 @@ signal_ready_to_write(Signal const& signal)
 // error if the signal's type doesn't support writing.
 // Note that if the signal isn't ready to write, this is a no op.
 template<class Signal, class Value>
-std::enable_if_t<signal_is_writable<Signal>::value>
+std::enable_if_t<signal_is_writable<Signal>::value, id_interface const&>
 write_signal(Signal const& signal, Value value)
 {
     if (signal.ready_to_write())
     {
         try
         {
-            signal.write(std::move(value));
+            return signal.write(std::move(value));
         }
         catch (validation_error&)
         {
@@ -537,6 +541,7 @@ write_signal(Signal const& signal, Value value)
                 std::rethrow_exception(e);
         }
     }
+    return null_id;
 }
 
 // signal_is_duplex<Signal>::value yields a compile-time boolean indicating

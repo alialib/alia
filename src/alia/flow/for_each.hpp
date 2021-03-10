@@ -354,10 +354,11 @@ struct list_item_signal : signal<
     {
         return list_signal_.ready_to_write();
     }
-    void
+    id_interface const&
     write(Item value) const
     {
         *item_ = std::move(value);
+        return null_id;
     }
 
  private:

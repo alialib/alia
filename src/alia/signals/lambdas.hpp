@@ -274,10 +274,11 @@ struct lambda_duplex_signal
     {
         return ready_to_write_();
     }
-    void
+    id_interface const&
     write(Value value) const override
     {
         write_(std::move(value));
+        return null_id;
     }
 
  private:
@@ -369,10 +370,11 @@ struct lambda_duplex_signal_with_id : signal<
     {
         return ready_to_write_();
     }
-    void
+    id_interface const&
     write(Value value) const override
     {
         write_(std::move(value));
+        return null_id;
     }
 
  private:
