@@ -1,4 +1,7 @@
 include(FetchContent)
+
+message(STATUS "Fetching asm-dom")
+
 FetchContent_Declare(asm-dom
   GIT_REPOSITORY https://github.com/mbasso/asm-dom
   GIT_TAG feature/dom-api

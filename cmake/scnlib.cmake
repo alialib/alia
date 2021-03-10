@@ -1,5 +1,7 @@
 include(FetchContent)
 
+message(STATUS "Fetching scnlib")
+
 FetchContent_Declare(scnlib
   GIT_REPOSITORY
   https://github.com/eliaskosunen/scnlib
