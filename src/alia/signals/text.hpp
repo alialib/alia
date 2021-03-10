@@ -177,7 +177,7 @@ struct duplex_text_signal : casting_signal_wrapper<
         id_ = make_id(data_->output_version);
         return id_;
     }
-    void
+    id_interface const&
     write(std::string s) const override
     {
         typename Wrapped::value_type value;
@@ -186,6 +186,7 @@ struct duplex_text_signal : casting_signal_wrapper<
         this->wrapped_.write(std::move(value));
         data_->output_text = s;
         ++data_->output_version;
+        return this->value_id();
     }
 
  private:

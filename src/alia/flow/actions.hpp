@@ -604,11 +604,11 @@ struct write_action_signal : signal_wrapper<
     {
         return this->wrapped_.ready_to_write() && on_write_.is_ready();
     }
-    void
+    id_interface const&
     write(typename Wrapped::value_type value) const
     {
         perform_action(on_write_, value);
-        this->wrapped_.write(std::move(value));
+        return this->wrapped_.write(std::move(value));
     }
 
  private:

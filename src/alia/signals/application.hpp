@@ -145,10 +145,10 @@ struct lazy_duplex_apply_signal
     {
         return arg_.ready_to_write();
     }
-    void
+    id_interface const&
     write(Result value) const
     {
-        arg_.write(reverse_(std::move(value)));
+        return arg_.write(reverse_(std::move(value)));
     }
 
  private:
@@ -429,24 +429,29 @@ struct duplex_apply_signal : signal<
     {
         return input_.ready_to_write();
     }
-    void
+    id_interface const&
     write(Value value) const
     {
-        input_.write(reverse_(value));
-        // This is sort of hackish, but the idea here is that if we do nothing
-        // right now, on the next refresh, we're going to detect that the input
-        // signal has changed, and then apply the forward mapping to convert
-        // that value back to the one we're writing right now, which is
-        // obviously wasted effort.
-        // To attempt to avoid this, we capture the value ID of the input after
-        // writing to it in the hopes that it has already changed. (That is the
-        // case for some signal types, but not all.)
-        // To do this properly, we should probably allow signal write()
-        // functions to return a new value ID.
-        data_->input_id.capture(input_.value_id());
-        ++data_->result.version;
-        data_->result.value = std::move(value);
-        data_->result.status = apply_status::READY;
+        id_interface const& new_value_id = input_.write(reverse_(value));
+        // If we stop here, then on the next refresh, we're going to detect
+        // that the input signal has changed (to what we just set it to), and
+        // then apply the forward mapping to convert that value back to the one
+        // we just received, which is obviously wasted effort. To avoid this,
+        // we need to just record the new value as our ouput and record the
+        // input's new value ID to go along with it. (This is only possible
+        // though if the input signal actually supplies its new value ID.)
+        if (new_value_id != null_id)
+        {
+            data_->input_id.capture(new_value_id);
+            ++data_->result.version;
+            data_->result.value = std::move(value);
+            data_->result.status = apply_status::READY;
+            return this->value_id();
+        }
+        else
+        {
+            return null_id;
+        }
     }
 
  private:

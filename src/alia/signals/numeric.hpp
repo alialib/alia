@@ -48,10 +48,11 @@ struct scaled_signal
     {
         return this->wrapped_.ready_to_write() && scale_factor_.has_value();
     }
-    void
+    id_interface const&
     write(typename N::value_type value) const override
     {
         this->wrapped_.write(value / forward_signal(scale_factor_));
+        return null_id;
     }
 
  private:
@@ -108,10 +109,11 @@ struct offset_signal
     {
         return this->wrapped_.ready_to_write() && offset_.has_value();
     }
-    void
+    id_interface const&
     write(typename N::value_type value) const override
     {
         this->wrapped_.write(value - forward_signal(offset_));
+        return null_id;
     }
 
  private:
@@ -147,12 +149,13 @@ struct rounding_signal_wrapper
     {
         return this->wrapped_.ready_to_write() && step_.has_value();
     }
-    void
+    id_interface const&
     write(typename N::value_type value) const override
     {
         typename N::value_type step = step_.read();
         this->wrapped_.write(
             std::floor(value / step + typename N::value_type(0.5)) * step);
+        return null_id;
     }
 
  private:
