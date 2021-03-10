@@ -33,98 +33,18 @@ copy of the signal value. These are called 'regular' signals and can be
 implemented by deriving from `regular_signal` instead. It has the same
 signature as `signal` but provides the implementation of `value_id` for you.
 
-For illustration, here's the actual implementation of the signal you create
-when calling `direct()` on a non-const reference. It's a regular, duplex signal
-whose values are copyable:
-
-```cpp
-template<class Value>
-struct direct_signal
-    : regular_signal<direct_signal<Value>, Value, copyable_duplex_signal>
-{
-    explicit direct_signal(Value* v) : v_(v)
-    {
-    }
-    bool
-    has_value() const
-    {
-        return true;
-    }
-    Value const&
-    read() const
-    {
-        return *v_;
-    }
-    Value
-    movable_value() const
-    {
-        Value movable = std::move(*v_);
-        return movable;
-    }
-    bool
-    ready_to_write() const
-    {
-        return true;
-    }
-    void
-    write(Value value) const
-    {
-        *v_ = std::move(value);
-    }
-
- private:
-    Value* v_;
-};
-```
-
-And here's an example of a read-only signal that uses a version counter as its
-value ID:
-
-```cpp
-template<class Value>
-struct async_signal : signal<async_signal<Value>, Value, read_only_signal>
-{
-    async_signal(async_operation_data<Value>& data) : data_(&data)
-    {
-    }
-
-    id_interface const&
-    value_id() const
-    {
-        id_ = make_id(data_->version);
-        return id_;
-    }
-
-    bool
-    has_value() const
-    {
-        return data_->status == async_status::COMPLETE;
-    }
-
-    Value const&
-    read() const
-    {
-        return data_->result;
-    }
-
- private:
-    async_operation_data<Value>* data_;
-    mutable simple_id<counter_type> id_;
-};
-```
-
-This is the signal that you get when calling `async()`. The source code is full
-of other examples and should be a good source of guidance if you're
-implementing your own signals or signal adaptors.
+The `alia/signals` directory is full of example implementations of signals. If
+you're looking to write your own, you might want to start off by looking at the
+"basic" signal implementations in `basic.hpp`.
 
 Lambda Constructors
 -------------------
 
 When you need a little more control but don't want to create a custom signal
 type, you can create a signal from one or more lambda functions (or other
-function objects). For completeness, you can create a fully functional, duplex
-signal using lambdas, but the further you go down this list, the more likely it
-is that you should just create a custom signal type...
+function objects). For completeness, you can create a (more-or-less) fully
+functional, duplex signal using lambdas, but the further you go down this list,
+the more likely it is that you should just create a custom signal type...
 
 <dl>
 
