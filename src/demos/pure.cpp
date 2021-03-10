@@ -12,6 +12,10 @@ static int player_ui_invocation_count = 0;
 void
 player_ui(html::context ctx, duplex<std::string> name)
 {
+    // Don't do this! This is just to illustrate when this component is
+    // actually invoked.
+    ++player_ui_invocation_count;
+
     // Pure components can have internal state.
     auto score = get_state(ctx, 0);
 
@@ -21,10 +25,6 @@ player_ui(html::context ctx, duplex<std::string> name)
         p(ctx, printf(ctx, "%d points", score));
         button(ctx, "GOAL!", ++score);
     });
-
-    // Don't do this! This is just to illustrate when this component is
-    // actually invoked.
-    ++player_ui_invocation_count;
 }
 
 void
