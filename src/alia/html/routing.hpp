@@ -117,8 +117,7 @@ struct route_parser<N, std::index_sequence<S...>>
     operator()(std::string const& route)
     {
         path_component components[N];
-        auto scan_result
-            = scn::scan(scn::make_view(route), pattern, components[S]...);
+        auto scan_result = scn::scan(route, pattern, components[S]...);
         route_parse_result<N> result;
         result.matched = scan_result && scan_result.range().empty();
         for (std::size_t i = 0; i != N; ++i)

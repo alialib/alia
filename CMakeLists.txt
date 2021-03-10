@@ -14,7 +14,7 @@ endif()
 include(cmake/asm-dom.cmake)
 
 # Add scnlib.
-add_subdirectory(external/scnlib EXCLUDE_FROM_ALL)
+include(cmake/scnlib.cmake)
 
 # Allow the use of Emscripten's Fetch API.
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s FETCH=1")
