@@ -72,7 +72,7 @@ struct storage_signal
     bool
     ready_to_write() const override;
 
-    void
+    id_interface const&
     write(std::string value) const override;
 
     std::string
