@@ -7,11 +7,6 @@ include(cmake/alia-html.cmake)
 # Add the nlohmann/json library.
 include(cmake/json.cmake)
 
-# Allow the use of Emscripten's Fetch API.
-string(APPEND CMAKE_CXX_FLAGS " -s FETCH=1")
-# Enable exceptions.
-string(APPEND CMAKE_CXX_FLAGS " -s DISABLE_EXCEPTION_CATCHING=0")
-
 # Add the demos target.
 include_directories(src)
 file(GLOB demo_files "src/demos/*.cpp")
