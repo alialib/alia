@@ -2,6 +2,7 @@ include(FetchContent)
 FetchContent_Declare(asm-dom
   GIT_REPOSITORY https://github.com/mbasso/asm-dom
   GIT_TAG feature/dom-api
+  GIT_SHALLOW TRUE
 )
 
 FetchContent_GetProperties(asm-dom)
