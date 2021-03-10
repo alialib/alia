@@ -148,7 +148,12 @@ add_demo(demos/routing)
 add_demo(demos/io)
 add_demo(demos/elements)
 
+# Add the Cereal library.
+include(cmake/cereal.cmake)
+
 # Add the examples.
 add_example(examples/todo-mvc)
+message("--- CEREAL")
+message("${cereal_SOURCE_DIR}")
 target_include_directories(todo-mvc PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/external/cereal/include)
+    ${cereal_SOURCE_DIR}/include)
