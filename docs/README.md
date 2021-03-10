@@ -40,15 +40,13 @@ Live Example
 ------------
 
 Below is a simple tip calculator made using alia. You can see some other
-assorted examples [here](asoorted-examples.md).
-
-[source](numerical.cpp ':include :fragment=tip-calculator')
-
-And here it is live...
+assorted examples [here](assorted-examples.md).
 
 <div class="demo-panel">
 <div id="tip-calculator-demo"></div>
 </div>
+
+[source](numerical.cpp ':include :fragment=tip-calculator')
 
 Project Status
 --------------
