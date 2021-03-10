@@ -4,7 +4,7 @@ message(STATUS "Fetching alia-html")
 
 FetchContent_Declare(alia-html
   GIT_REPOSITORY https://github.com/alialib/alia-html
-  GIT_TAG 0.8.0
+  GIT_TAG 0.3.0
   GIT_SHALLOW TRUE
 )
 FetchContent_MakeAvailable(alia-html)
