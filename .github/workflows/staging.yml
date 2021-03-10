@@ -15,7 +15,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: true
           lfs: true
       - name: Set up cache
         id: cache-system-libraries
