@@ -44,21 +44,88 @@ text_demo(demo_context ctx)
     code_snippet(ctx, "paragraphs");
 
     subsection_heading(ctx, "Formatted Text");
+    p(ctx, "Directly as HTML...");
     div(ctx, "demo-panel", [&] {
-        /// [formatted-text]
+        // clang-format off
+        /// [formatted-text-html]
+        html_fragment(ctx,
+            R"(
+            <p>
+                <code>&lt;p&gt;</code> elements can also serve as
+                <i>containers,</i> and you can <b>mix in</b> other style of
+                text.
+            </p>
+            )");
+        /// [formatted-text-html]
+        // clang-format on
+    });
+    code_snippet(ctx, "formatted-text-html");
+
+    p(ctx, "In C++...");
+    div(ctx, "demo-panel", [&] {
+        /// [formatted-text-cpp]
         p(ctx, [&] {
-            text(ctx, "Paragraphs can also serve as ");
+            code(ctx, "<p>");
+            text(ctx, " elements can also serve as ");
             i(ctx, "containers,");
             text(ctx, " and you can ");
             b(ctx, "mix in");
-            text(ctx, " other ");
-            code(ctx, "styles");
-            text(ctx, " of ");
-            ins(ctx, "text.");
+            text(ctx, " other style of text.");
         });
-        /// [formatted-text]
+        /// [formatted-text-cpp]
     });
-    code_snippet(ctx, "formatted-text");
+    code_snippet(ctx, "formatted-text-cpp");
+}
+
+void
+checkboxes_demo(demo_context ctx)
+{
+    section_heading(ctx, "checkboxes", "Checkboxes");
+
+    p(ctx,
+      "alia/HTML provides more natural interfaces to elements like "
+      "checkboxes.");
+
+    subsection_heading(ctx, "Normal");
+    p(ctx,
+      "Checkboxes can connect directly to signals to display and manipulate "
+      "their values.");
+    div(ctx, "demo-panel", [&] {
+        /// [checkbox]
+        auto my_state = get_state(ctx, false);
+        checkbox(ctx, my_state);
+        alia_if(my_state)
+        {
+            p(ctx, "Box is checked!");
+        }
+        alia_end
+        /// [checkbox]
+    });
+    code_snippet(ctx, "checkbox");
+
+    subsection_heading(ctx, "Disabled");
+    p(ctx,
+      "Checkboxes automatically disable themselves when the associated signal "
+      "isn't ready to write.");
+    div(ctx, "demo-panel", [&] {
+        /// [disabled-checkbox]
+        auto my_state = get_state(ctx, false);
+        checkbox(ctx, disable_writes(my_state));
+        /// [disabled-checkbox]
+    });
+    code_snippet(ctx, "disabled-checkbox");
+
+    subsection_heading(ctx, "Indeterminate");
+    p(ctx,
+      "Checkboxes go into the indeterminate state when the associated signal "
+      "doesn't carry a value.");
+    div(ctx, "demo-panel", [&] {
+        /// [indeterminate-checkbox]
+        auto my_state = get_state(ctx, empty<bool>());
+        checkbox(ctx, my_state);
+        /// [indeterminate-checkbox]
+    });
+    code_snippet(ctx, "indeterminate-checkbox");
 }
 
 void
@@ -75,6 +142,7 @@ root_ui(html::context vanilla_ctx)
               "core HTML elements.");
 
             text_demo(ctx);
+            checkboxes_demo(ctx);
 
             div(ctx, "my-5");
         });
