@@ -31,13 +31,12 @@ endif()
 
 # Download alia.hpp and set it up as a library.
 # TODO: Improve this!
-file(DOWNLOAD
-    https://github.com/alialib/alia/releases/download/0.8.0/alia.hpp
+set(alia_hpp_url
+    https://github.com/alialib/alia/releases/download/0.8.0/alia.hpp)
+file(DOWNLOAD ${alia_hpp_url}
     ${CMAKE_CURRENT_BINARY_DIR}/alia.hpp)
-file(CREATE_LINK
-    ${CMAKE_CURRENT_BINARY_DIR}/alia.hpp
-    ${CMAKE_CURRENT_BINARY_DIR}/alia.cpp
-    SYMBOLIC)
+file(DOWNLOAD ${alia_hpp_url}
+    ${CMAKE_CURRENT_BINARY_DIR}/alia.cpp)
 add_library(alia ${CMAKE_CURRENT_BINARY_DIR}/alia.cpp)
 target_compile_definitions(alia PRIVATE -DALIA_IMPLEMENTATION)
 target_include_directories(alia PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
