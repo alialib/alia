@@ -95,8 +95,9 @@ struct writability_faker : signal_wrapper<
     }
     // Since this is only faking writability, write() should never be called.
     // LCOV_EXCL_START
-    void write(typename Wrapped::value_type) const override
+    id_interface const& write(typename Wrapped::value_type) const override
     {
+        return null_id;
     }
     // LCOV_EXCL_STOP
 };
@@ -140,7 +141,7 @@ struct casting_signal : casting_signal_wrapper<
         value_ = this->move_out();
         return value_;
     }
-    void
+    id_interface const&
     write(To value) const override
     {
         return this->wrapped_.write(
@@ -591,10 +592,10 @@ struct unwrapper_signal : casting_signal_wrapper<
         else
             return null_id;
     }
-    void
+    id_interface const&
     write(typename Wrapped::value_type::value_type value) const override
     {
-        this->wrapped_.write(std::move(value));
+        return this->wrapped_.write(std::move(value));
     }
     void
     clear() const override

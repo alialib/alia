@@ -383,13 +383,14 @@ struct signal_mux : signal<
                && (condition_.read() ? t_.ready_to_write()
                                      : f_.ready_to_write());
     }
-    void
+    id_interface const&
     write(typename T::value_type value) const override
     {
         if (condition_.read())
             t_.write(value);
         else
             f_.write(value);
+        return null_id;
     }
     void
     clear() const override
@@ -493,12 +494,13 @@ struct field_signal : preferred_id_signal<
     {
         return structure_.has_value() && structure_.ready_to_write();
     }
-    void
+    id_interface const&
     write(Field x) const override
     {
         structure_type s = forward_signal(alia::move(structure_));
         s.*field_ = std::move(x);
         structure_.write(std::move(s));
+        return null_id;
     }
 
  private:
@@ -773,10 +775,11 @@ struct subscript_signal
         return container_.has_value() && index_.has_value()
                && container_.ready_to_write();
     }
-    void
+    id_interface const&
     write(typename subscript_signal::value_type x) const override
     {
         write_subscript(container_, index_, std::move(x));
+        return null_id;
     }
 
  private:

@@ -186,10 +186,11 @@ struct state_signal
     {
         return true;
     }
-    void
+    id_interface const&
     write(Value value) const override
     {
         data_->set(std::move(value));
+        return this->value_id();
     }
     void
     clear() const override

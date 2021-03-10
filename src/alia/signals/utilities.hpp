@@ -181,10 +181,10 @@ struct signal_wrapper : signal<Derived, Value, Capabilities>
     {
         return wrapped_.ready_to_write();
     }
-    void
+    id_interface const&
     write(typename Wrapped::value_type value) const override
     {
-        wrapped_.write(std::move(value));
+        return wrapped_.write(std::move(value));
     }
     void
     clear() const override

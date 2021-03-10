@@ -55,9 +55,10 @@ struct normal_regular_signal
     {
         return false;
     }
-    void
+    id_interface const&
     write(int) const
     {
+        return null_id;
     }
 };
 
@@ -113,8 +114,9 @@ struct preferred_id_test_signal : preferred_id_signal<
     {
         return false;
     }
-    void write(Value) const
+    id_interface const& write(Value) const
     {
+        return null_id;
     }
     simple_id<std::string>
     complex_value_id() const
@@ -245,10 +247,10 @@ struct transparent_casting_wrapper : casting_signal_wrapper<
     {
         return this->wrapped_.destructive_ref();
     }
-    void
+    id_interface const&
     write(typename Wrapped::value_type value) const override
     {
-        this->wrapped_.write(value);
+        return this->wrapped_.write(value);
     }
 };
 template<class Wrapped>

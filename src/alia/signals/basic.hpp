@@ -58,8 +58,9 @@ struct empty_signal
     }
     // Since this is never ready to write, none of this should ever be called.
     // LCOV_EXCL_START
-    void write(Value) const override
+    id_interface const& write(Value) const override
     {
+        return null_id;
     }
     void
     clear() const override
@@ -236,10 +237,11 @@ struct direct_signal
     {
         return true;
     }
-    void
+    id_interface const&
     write(Value value) const override
     {
         *v_ = std::move(value);
+        return this->value_id();
     }
 
  private:
