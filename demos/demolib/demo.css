@@ -10,7 +10,7 @@
 }
 
 input {
-    display: block;
+    display: table;
     margin: 4px 2px 8px;
 }
 
@@ -31,6 +31,6 @@ p {
 }
 
 .demo-panel a {
-    display: block;
+    display: table;
     margin: 4px;
 }
