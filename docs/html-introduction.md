@@ -18,3 +18,5 @@ Getting Started
 alia/HTML provides a starter template repository:
 
 https://github.com/alialib/alia-html-starter
+
+Full instructions are included there!

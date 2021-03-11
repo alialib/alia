@@ -2,7 +2,7 @@ Assorted Examples
 =================
 
 <script>
-    init_alia_demos(['tip-calculator-demo', 'for-each-map-demo', 'time-signal',
+    init_alia_demos(['for-each-map-demo', 'time-signal',
         'number-smoothing', 'color-smoothing', 'factor-tree']);
 </script>
 
@@ -11,25 +11,16 @@ Many of these come from other sections of the documentation.
 
 You may also want to check out the [alia/HTML demos](https://html.alia.dev/).
 
-Tip Calculator
---------------
-
-Here's a simple tip calculator that shows off some of the features of alia:
-[actions](actions.md), conditional widgets, and how you can use alia's data
-graph to 'magically' manifest state when and where you need it, even in the
-middle of declarative component code.
-
-[source](numerical.cpp ':include :fragment=tip-calculator')
-
-<div class="demo-panel">
-<div id="tip-calculator-demo"></div>
-</div>
-
 Containers
 ----------
 
 Here's an (admittedly contrived) example of working with containers in alia.
 It uses a `std::map` to map player names to their scores.
+
+Like the tip calculator on the landing page, it also shows off some of the more
+basic features of alia, like [actions](actions.md) and how you can use alia's
+data graph to 'magically' manifest state when and where you need it, even in
+the middle of declarative component code.
 
 [source](tracking.cpp ':include :fragment=for-each-map-demo')
 
