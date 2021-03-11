@@ -22,7 +22,7 @@
     line-height: 36px;
     overflow: hidden;
     outline: none;
-    cursor: pointer;
+    cursor: default;
     transition: box-shadow 0.2s;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
@@ -142,7 +142,7 @@
     width: 100%;
     height: 36px;
     background-color: transparent;
-    cursor: pointer;
+    cursor: default;
 }
 
 /* Without Span */
