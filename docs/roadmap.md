@@ -2,8 +2,9 @@ Roadmap
 =======
 
 This is the current roadmap for alia, very roughly in order of priority. If
-you're interested in helping out with any of it, or you'd like guidance on
-extending alia in a different direction, feel free to get in touch!
+you're interested in helping out, providing feedback, or you'd like guidance on
+extending alia in a different direction, feel free to [get in
+touch](https://github.com/alialib/alia/discussions)!
 
 Developer Experience Improvements
 ---------------------------------
@@ -30,9 +31,9 @@ debugging tools:
 Expanded Web API
 ----------------
 
-Flesh out alia's bindings for the HTML API: canvas rendering, fullscreen mode,
-better input event detection, etc. Also add C++-oriented APIs for popular JS
-libraries or REST APIs.
+Flesh out alia's bindings for the HTML API: more Bootstrap components, canvas
+rendering, fullscreen mode, better input event detection, etc. Also add
+C++-oriented APIs for popular JS libraries or REST APIs.
 
 Documentation Improvements
 --------------------------

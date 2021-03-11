@@ -11,5 +11,4 @@ https://html.alia.dev/
 Keep in mind too that the full power of Emscripten is also at your disposal
 when using alia/HTML.
 
-And feel free to [raise an issue](https://github.com/alialib/alia-html/issues)
-if you have any questions about it.
+And feel free to [start a discussion](https://github.com/alialib/alia/discussions) if you have any questions about it.
