@@ -74,5 +74,6 @@ shouldn't be considered mature.
 alia is part of a long-term vision to enable declarative development of
 computationally intensive user interfaces in C++. If you're interested in where
 it's going, check out [the roadmap](roadmap.md), and if you're interested in
-helping steer it, please don't hesitate to get in touch. I appreciate any
-feedback or interest you might have.
+helping steer it, please don't hesitate to [get in
+touch](https://github.com/alialib/alia/discussions). I appreciate any feedback
+or interest you might have.
