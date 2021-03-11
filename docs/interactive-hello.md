@@ -20,7 +20,8 @@ you can see it in action right here:
 ?> We'll use alia/HTML a lot here so that we can demonstrate alia's core
    capabilities in your browser. For clarity, most of the examples make very
    explicit use of the namespaces `alia::` and `html::` to help illustrate
-   what's part of the core of alia and what's alia/HTML.
+   what's part of the core of alia and what's alia/HTML. (Normal code would be
+   slightly less verbose.)
 
 If you're familiar with other declarative UI programming frameworks, it will be
 obvious, but the key takeaway from this example is that when using alia,

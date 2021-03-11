@@ -6,8 +6,9 @@ alia - A Library for Interactive Applications
 </script>
 
 alia (pronounced uh-LEE-uh) is a modern C++ library for declaratively
-developing user interfaces. It currently targets the web. In alia, the UI of
-your application is expressed as a composition of *component functions.*
+developing user interfaces. It currently targets HTML5 and client-side web
+apps. In alia, the UI of your application is expressed as a composition of
+*component functions.*
 
 alia component functions:
 
@@ -39,8 +40,9 @@ generic, and the intention is to eventually extend it to other environments.
 Live Example
 ------------
 
-Below is a simple tip calculator made using alia. You can see some other
-assorted examples [here](assorted-examples.md).
+Below is a simple tip calculator coded in alia and running live in your
+browser. You can see some other assorted examples [here](assorted-examples.md)
+and [here](https://html.alia.dev).
 
 <div class="demo-panel">
 <div id="tip-calculator-demo"></div>
@@ -68,8 +70,8 @@ object-oriented GUI libraries and drive their object hierarchies declaratively.
 The only integration that currently exists is
 [alia/HTML](html-introduction.md), which connects alia to HTML5 and allows you
 to write client-side web apps in alia. I'm currently using this for in-house
-web apps and adding additional capabilities as I need them, but it definitely
-shouldn't be considered mature.
+web apps and adding additional capabilities as I need them, so it definitely
+shouldn't be considered mature, but it's headed in that direction.
 
 alia is part of a long-term vision to enable declarative development of
 computationally intensive user interfaces in C++. If you're interested in where
@@ -77,3 +79,11 @@ it's going, check out [the roadmap](roadmap.md), and if you're interested in
 helping steer it, please don't hesitate to [get in
 touch](https://github.com/alialib/alia/discussions). I appreciate any feedback
 or interest you might have.
+
+Onward
+------
+
+[Read on](interactive-hello.md) for an introduction to some of the concepts and
+techniques used in alia to create declarative app UIs in C++. Or, if you want
+to jump right in, try out [the starter
+template](https://github.com/alialib/alia-html-starter).

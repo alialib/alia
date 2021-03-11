@@ -9,6 +9,8 @@ project:
 
 https://github.com/alialib/alia-html-starter
 
+Full instructions are included there!
+
 The Core Library
 ----------------
 
