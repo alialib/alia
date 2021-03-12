@@ -41,8 +41,9 @@ Live Example
 ------------
 
 Below is a simple tip calculator coded in alia and running live in your
-browser. You can see some other assorted examples [here](assorted-examples.md)
-and [here](https://html.alia.dev).
+browser. (This is possible thanks to [Emscripten](https://emscripten.org/) and
+[asm-dom](https://github.com/mbasso/asm-dom).) You can see some other assorted
+examples [here](assorted-examples.md) and [here](https://html.alia.dev).
 
 <div class="demo-panel">
 <div id="tip-calculator-demo"></div>
