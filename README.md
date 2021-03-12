@@ -22,9 +22,8 @@ For more info on alia, see [its website](https://alia.dev/).
 
 Obligatory pretty picture and code...
 
-<a href="[default.asp](https://alia.dev/#/?id=live-example)"><img
-src=".github/teaser.png" alt="alia/HTML Tip Calculator - Click for the
-interactive version!" height="248"></a>
+[<img src=".github/teaser.png" alt="alia/HTML Tip Calculator - Click for the
+interactive version!" height="320">](https://alia.dev/#/?id=live-example)
 
 ```cpp
 void
