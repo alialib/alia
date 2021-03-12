@@ -20,10 +20,10 @@ native desktop applications. Stay tuned...
 
 For more info on alia, see [its website](https://alia.dev/).
 
-Obligatory pretty picture and code...
+Obligatory pretty picture and code... (Click the image for the
+interactive version!)
 
-[<img src=".github/teaser.png" alt="alia/HTML Tip Calculator - Click for the
-interactive version!" height="320">](https://alia.dev/#/?id=live-example)
+[<img src=".github/teaser.png" alt="alia/HTML Tip Calculator" height="320">](https://alia.dev/#/?id=live-example)
 
 ```cpp
 void
