@@ -170,7 +170,7 @@ struct id_ref : id_interface
     }
 
     id_interface*
-    clone() const
+    clone() const override
     {
         id_ref* copy = new id_ref;
         this->deep_copy(copy);
@@ -178,21 +178,21 @@ struct id_ref : id_interface
     }
 
     bool
-    equals(id_interface const& other) const
+    equals(id_interface const& other) const override
     {
         id_ref const& other_id = static_cast<id_ref const&>(other);
         return *id_ == *other_id.id_;
     }
 
     bool
-    less_than(id_interface const& other) const
+    less_than(id_interface const& other) const override
     {
         id_ref const& other_id = static_cast<id_ref const&>(other);
         return *id_ < *other_id.id_;
     }
 
     void
-    deep_copy(id_interface* copy) const
+    deep_copy(id_interface* copy) const override
     {
         auto& typed_copy = *static_cast<id_ref*>(copy);
         if (ownership_)
@@ -238,27 +238,27 @@ struct simple_id : id_interface
     }
 
     id_interface*
-    clone() const
+    clone() const override
     {
         return new simple_id(value_);
     }
 
     bool
-    equals(id_interface const& other) const
+    equals(id_interface const& other) const override
     {
         simple_id const& other_id = static_cast<simple_id const&>(other);
         return value_ == other_id.value_;
     }
 
     bool
-    less_than(id_interface const& other) const
+    less_than(id_interface const& other) const override
     {
         simple_id const& other_id = static_cast<simple_id const&>(other);
         return value_ < other_id.value_;
     }
 
     void
-    deep_copy(id_interface* copy) const
+    deep_copy(id_interface* copy) const override
     {
         *static_cast<simple_id*>(copy) = *this;
     }
@@ -288,7 +288,7 @@ struct simple_id_by_reference : id_interface
     }
 
     id_interface*
-    clone() const
+    clone() const override
     {
         simple_id_by_reference* copy = new simple_id_by_reference;
         this->deep_copy(copy);
@@ -296,7 +296,7 @@ struct simple_id_by_reference : id_interface
     }
 
     bool
-    equals(id_interface const& other) const
+    equals(id_interface const& other) const override
     {
         simple_id_by_reference const& other_id
             = static_cast<simple_id_by_reference const&>(other);
@@ -304,7 +304,7 @@ struct simple_id_by_reference : id_interface
     }
 
     bool
-    less_than(id_interface const& other) const
+    less_than(id_interface const& other) const override
     {
         simple_id_by_reference const& other_id
             = static_cast<simple_id_by_reference const&>(other);
@@ -312,7 +312,7 @@ struct simple_id_by_reference : id_interface
     }
 
     void
-    deep_copy(id_interface* copy) const
+    deep_copy(id_interface* copy) const override
     {
         auto& typed_copy = *static_cast<simple_id_by_reference*>(copy);
         if (storage_)
@@ -353,7 +353,7 @@ struct id_pair : id_interface
     }
 
     id_interface*
-    clone() const
+    clone() const override
     {
         id_pair* copy = new id_pair;
         this->deep_copy(copy);
@@ -361,14 +361,14 @@ struct id_pair : id_interface
     }
 
     bool
-    equals(id_interface const& other) const
+    equals(id_interface const& other) const override
     {
         id_pair const& other_id = static_cast<id_pair const&>(other);
         return id0_.equals(other_id.id0_) && id1_.equals(other_id.id1_);
     }
 
     bool
-    less_than(id_interface const& other) const
+    less_than(id_interface const& other) const override
     {
         id_pair const& other_id = static_cast<id_pair const&>(other);
         return id0_.less_than(other_id.id0_)
@@ -377,7 +377,7 @@ struct id_pair : id_interface
     }
 
     void
-    deep_copy(id_interface* copy) const
+    deep_copy(id_interface* copy) const override
     {
         id_pair* typed_copy = static_cast<id_pair*>(copy);
         id0_.deep_copy(&typed_copy->id0_);
