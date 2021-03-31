@@ -39,6 +39,11 @@ elseif(IS_CLANG)
     add_compile_options(-Wall -Werror)
 endif()
 
+# Use absolute paths for error messages.
+if (IS_MSVC)
+    add_compile_options(/FC)
+endif()
+
 # Set build options for instrumenting test coverage.
 enable_testing()
 if(IS_CLANG AND CMAKE_BUILD_TYPE STREQUAL "Debug")
