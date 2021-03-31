@@ -53,6 +53,8 @@ get_active_component_container(Context ctx)
     return *get_event_traversal(ctx).active_container;
 }
 
+typedef component_container_ptr::weak_type component_identity;
+
 namespace detail {
 
 // Set up the event traversal so that it will route the control flow to the
@@ -68,13 +70,20 @@ route_event(
 template<class Event>
 void
 dispatch_targeted_event(
-    system& sys, Event& event, component_container_ptr const& target)
+    system& sys, Event& event, component_identity const& target)
 {
-    event_traversal traversal;
-    traversal.targeted = true;
-    traversal.event_type = &typeid(Event);
-    traversal.event = &event;
-    route_event(sys, traversal, target.get());
+    // `target` is a weak_ptr, so we have to acquire a lock on it. It's
+    // possible that the target has actually been destroyed and we're trying to
+    // deliver an event to an non-existent target, in which case the lock will
+    // fail.
+    if (auto target_container = target.lock())
+    {
+        event_traversal traversal;
+        traversal.targeted = true;
+        traversal.event_type = &typeid(Event);
+        traversal.event = &event;
+        route_event(sys, traversal, target_container.get());
+    }
 }
 
 template<class Event>
@@ -135,8 +144,6 @@ event_handler(Context ctx, Handler&& handler)
     }
     ALIA_END
 }
-
-typedef component_container_ptr component_identity;
 
 typedef component_identity* component_id;
 
