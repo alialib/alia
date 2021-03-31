@@ -120,21 +120,21 @@ check_traversal_path(
 
 TEST_CASE("targeted_event_dispatch", "[flow][routing]")
 {
-    check_traversal_path(0, "absent", ";");
+    check_traversal_path(0, "absent", "");
     check_traversal_path(0, "root", ";root;");
-    check_traversal_path(0, "nonzero", ";");
-    check_traversal_path(0, "odd", ";");
-    check_traversal_path(0, "deep", ";");
+    check_traversal_path(0, "nonzero", "");
+    check_traversal_path(0, "odd", "");
+    check_traversal_path(0, "deep", "");
 
-    check_traversal_path(1, "absent", ";");
+    check_traversal_path(1, "absent", "");
     check_traversal_path(1, "root", ";root;");
     check_traversal_path(1, "nonzero", ";root;nonzero;");
     check_traversal_path(1, "odd", ";root;odd;");
     check_traversal_path(1, "deep", ";root;nonzero;deep;");
 
-    check_traversal_path(2, "absent", ";");
+    check_traversal_path(2, "absent", "");
     check_traversal_path(2, "root", ";root;");
     check_traversal_path(2, "nonzero", ";root;nonzero;");
-    check_traversal_path(2, "odd", ";");
+    check_traversal_path(2, "odd", "");
     check_traversal_path(2, "deep", ";root;nonzero;deep;");
 }

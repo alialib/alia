@@ -77,8 +77,12 @@ void
 refresh_component_identity(dataless_context ctx, component_identity& identity)
 {
     auto const& active_container = get_active_component_container(ctx);
-    if (identity != active_container)
+    // Only update to the active container if it's actually different.
+    if (identity.owner_before(active_container)
+        || active_container.owner_before(identity))
+    {
         identity = active_container;
+    }
 }
 
 component_id
@@ -86,7 +90,8 @@ get_component_id(context ctx)
 {
     component_id id;
     get_cached_data(ctx, &id);
-    refresh_handler(ctx, [&](auto ctx) { refresh_component_identity(ctx, *id); });
+    refresh_handler(
+        ctx, [&](auto ctx) { refresh_component_identity(ctx, *id); });
     return id;
 }
 

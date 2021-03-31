@@ -16,7 +16,7 @@ TEST_CASE("timer_event_scheduler", "[timing][scheduler]")
         = [&](external_component_id component, millisecond_count time) {
               bool recognized = component.id == a || component.id == b;
               REQUIRE(recognized);
-              REQUIRE(!component.identity);
+              REQUIRE(component.identity.use_count() == 0);
               if (component.id == a)
                   log << "a:";
               else
