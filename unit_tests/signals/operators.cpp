@@ -155,7 +155,7 @@ TEST_CASE("signal select", "[signals][operators]")
     condition = true;
     REQUIRE(signal_has_value(s));
     REQUIRE(read_signal(s) == 1);
-    REQUIRE(original_id.get() != s.value_id());
+    REQUIRE(*original_id != s.value_id());
 }
 
 TEST_CASE("non-boolean signal select", "[signals][operators]")
@@ -191,7 +191,7 @@ TEST_CASE("select value ID", "[signals][operators]")
 
     captured_id original_id = s.value_id();
     condition = true;
-    REQUIRE(original_id.get() != s.value_id());
+    REQUIRE(*original_id != s.value_id());
 }
 
 TEST_CASE("select with empty condition", "[signals][operators]")
@@ -269,7 +269,7 @@ TEST_CASE("field signal", "[signals][operators]")
     REQUIRE(signal_ready_to_write(y_signal));
     captured_id original_y_id = y_signal.value_id();
     write_signal(y_signal, "0.5");
-    REQUIRE(y_signal.value_id() != original_y_id.get());
+    REQUIRE(y_signal.value_id() != *original_y_id);
     REQUIRE(f.y == "0.5");
 }
 

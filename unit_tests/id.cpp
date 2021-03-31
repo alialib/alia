@@ -75,7 +75,7 @@ TEST_CASE("captured_id basics", "[id]")
     REQUIRE(c.is_initialized());
     REQUIRE(c.matches(make_id(0)));
     REQUIRE(!c.matches(make_id(1)));
-    REQUIRE(c.get() == make_id(0));
+    REQUIRE(*c == make_id(0));
     c.clear();
     REQUIRE(!c.is_initialized());
 }

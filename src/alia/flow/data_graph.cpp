@@ -113,7 +113,7 @@ release_named_block_node(naming_map& map, named_block_node* node)
 {
     if (!node->manual_delete)
     {
-        map.blocks.erase(&node->id.get());
+        map.blocks.erase(&*node->id);
     }
     else
     {
@@ -360,7 +360,7 @@ find_named_block(
         named_block_node new_node;
         new_node.id.capture(id);
         new_node.manual_delete = manual.value;
-        id_interface const* new_id = &new_node.id.get();
+        id_interface const* new_id = &*new_node.id;
         i = map.blocks.emplace(new_id, std::move(new_node)).first;
     }
 

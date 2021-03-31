@@ -79,7 +79,7 @@ struct deflickering_signal
     id_interface const&
     value_id() const
     {
-        return captured_.id.is_initialized() ? captured_.id.get() : null_id;
+        return captured_.id.is_initialized() ? *captured_.id : null_id;
     }
 
  private:
