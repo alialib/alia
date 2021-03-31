@@ -56,7 +56,7 @@ bool
 operator==(captured_id const& a, captured_id const& b)
 {
     return a.is_initialized() == b.is_initialized()
-           && (!a.is_initialized() || a.get() == b.get());
+           && (!a.is_initialized() || *a == *b);
 }
 bool
 operator!=(captured_id const& a, captured_id const& b)
@@ -66,7 +66,7 @@ operator!=(captured_id const& a, captured_id const& b)
 bool
 operator<(captured_id const& a, captured_id const& b)
 {
-    return b.is_initialized() && (!a.is_initialized() || a.get() < b.get());
+    return b.is_initialized() && (!a.is_initialized() || *a < *b);
 }
 
 } // namespace alia
