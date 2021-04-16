@@ -85,13 +85,14 @@ struct action_ref : action_interface<Args...>
     }
 
     bool
-    is_ready() const
+    is_ready() const override
     {
         return action_->is_ready();
     }
 
     void
-    perform(function_view<void()> const& intermediary, Args... args) const
+    perform(
+        function_view<void()> const& intermediary, Args... args) const override
     {
         action_->perform(intermediary, std::move(args)...);
     }
@@ -121,13 +122,14 @@ struct action_pair<First, Second, action_interface<Args...>>
     }
 
     bool
-    is_ready() const
+    is_ready() const override
     {
         return first_.is_ready() && second_.is_ready();
     }
 
     void
-    perform(function_view<void()> const& intermediary, Args... args) const
+    perform(
+        function_view<void()> const& intermediary, Args... args) const override
     {
         second_.perform(
             [&]() { first_.perform(intermediary, args...); }, args...);
@@ -168,13 +170,14 @@ struct bound_action<Action, Signal, action_interface<BoundArg, Args...>>
     }
 
     bool
-    is_ready() const
+    is_ready() const override
     {
         return action_.is_ready() && signal_.has_value();
     }
 
     void
-    perform(function_view<void()> const& intermediary, Args... args) const
+    perform(
+        function_view<void()> const& intermediary, Args... args) const override
     {
         action_.perform(
             intermediary, forward_signal(signal_), std::move(args)...);
@@ -225,13 +228,13 @@ struct copy_action : action_interface<>
     }
 
     bool
-    is_ready() const
+    is_ready() const override
     {
         return source_.has_value() && sink_.ready_to_write();
     }
 
     void
-    perform(function_view<void()> const& intermediary) const
+    perform(function_view<void()> const& intermediary) const override
     {
         typename Source::value_type source_value = forward_signal(source_);
         intermediary();
@@ -278,13 +281,13 @@ struct noop_action : action_interface<Args...>
     }
 
     bool
-    is_ready() const
+    is_ready() const override
     {
         return true;
     }
 
     void
-    perform(function_view<void()> const& intermediary, Args...) const
+    perform(function_view<void()> const& intermediary, Args...) const override
     {
         intermediary();
     }
@@ -311,14 +314,14 @@ struct unready_action : action_interface<Args...>
     }
 
     bool
-    is_ready() const
+    is_ready() const override
     {
         return false;
     }
 
     // LCOV_EXCL_START
     void
-    perform(function_view<void()> const&, Args...) const
+    perform(function_view<void()> const&, Args...) const override
     {
         // This action is never supposed to be performed!
         assert(0);
@@ -366,13 +369,14 @@ struct push_back_action : action_interface<Item>
     }
 
     bool
-    is_ready() const
+    is_ready() const override
     {
         return container_.has_value() && container_.ready_to_write();
     }
 
     void
-    perform(function_view<void()> const& intermediary, Item item) const
+    perform(
+        function_view<void()> const& intermediary, Item item) const override
     {
         auto new_container = forward_signal(alia::move(container_));
         new_container.push_back(std::move(item));
@@ -411,14 +415,14 @@ struct erase_index_action : action_interface<>
     }
 
     bool
-    is_ready() const
+    is_ready() const override
     {
         return container_.has_value() && container_.ready_to_write()
                && index_.has_value();
     }
 
     void
-    perform(function_view<void()> const& intermediary) const
+    perform(function_view<void()> const& intermediary) const override
     {
         auto new_container = forward_signal(alia::move(container_));
         new_container.erase(new_container.begin() + read_signal(index_));
@@ -458,14 +462,14 @@ struct erase_key_action : action_interface<>
     }
 
     bool
-    is_ready() const
+    is_ready() const override
     {
         return container_.has_value() && container_.ready_to_write()
                && key_.has_value();
     }
 
     void
-    perform(function_view<void()> const& intermediary) const
+    perform(function_view<void()> const& intermediary) const override
     {
         auto new_container = forward_signal(alia::move(container_));
         new_container.erase(read_signal(key_));
@@ -534,13 +538,14 @@ struct callback_action<IsReady, Perform, action_interface<Args...>>
     }
 
     bool
-    is_ready() const
+    is_ready() const override
     {
         return is_ready_();
     }
 
     void
-    perform(function_view<void()> const& intermediary, Args... args) const
+    perform(
+        function_view<void()> const& intermediary, Args... args) const override
     {
         intermediary();
         perform_(args...);
@@ -607,12 +612,12 @@ struct write_action_signal : signal_wrapper<
     {
     }
     bool
-    ready_to_write() const
+    ready_to_write() const override
     {
         return this->wrapped_.ready_to_write() && on_write_.is_ready();
     }
     id_interface const&
-    write(typename Wrapped::value_type value) const
+    write(typename Wrapped::value_type value) const override
     {
         perform_action(on_write_, value);
         return this->wrapped_.write(std::move(value));
@@ -669,13 +674,14 @@ struct only_if_ready_adaptor<Wrapped, action_interface<Args...>>
     }
 
     bool
-    is_ready() const
+    is_ready() const override
     {
         return true;
     }
 
     void
-    perform(function_view<void()> const& intermediary, Args... args) const
+    perform(
+        function_view<void()> const& intermediary, Args... args) const override
     {
         if (wrapped_.is_ready())
             wrapped_.perform(intermediary, std::move(args)...);
