@@ -498,6 +498,8 @@ erase_key(Container container, Key key)
 // :perform can take any number/type of arguments and defines the signature
 // of the action.
 
+namespace detail {
+
 template<class Function>
 struct call_operator_action_signature
 {
@@ -514,6 +516,8 @@ struct callback_action_signature
     : call_operator_action_signature<decltype(&Lambda::operator())>
 {
 };
+
+} // namespace detail
 
 template<class IsReady, class Perform, class Interface>
 struct callback_action;
@@ -552,7 +556,8 @@ callback(IsReady is_ready, Perform perform)
     return callback_action<
         IsReady,
         Perform,
-        typename callback_action_signature<Perform>::type>(is_ready, perform);
+        typename detail::callback_action_signature<Perform>::type>(
+        is_ready, perform);
 }
 
 // The single-argument version of callback() creates an action that's always
