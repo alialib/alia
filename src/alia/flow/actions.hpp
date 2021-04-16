@@ -33,6 +33,8 @@ struct untyped_action_interface
 template<class... Args>
 struct action_interface : untyped_action_interface
 {
+    typedef action_interface action_type;
+
     // Perform this action.
     //
     // :intermediary is used to implement the latch-like semantics of actions.
@@ -645,6 +647,56 @@ apply(Function&& f, PrimaryState state, Args... args)
 }
 
 } // namespace actions
+
+namespace detail {
+
+// only_if_ready(a), where :a is an action, returns an equivalent action that
+// claims to always be ready to perform but will only actually perform :a if :a
+// is ready.
+//
+// This is useful when you want to fold in an action if it's ready but don't
+// want it to block the larger action that it's part of.
+//
+template<class Wrapped, class Action>
+struct only_if_ready_adaptor;
+
+template<class Wrapped, class... Args>
+struct only_if_ready_adaptor<Wrapped, action_interface<Args...>>
+    : Wrapped::action_type
+{
+    only_if_ready_adaptor(Wrapped wrapped) : wrapped_(std::move(wrapped))
+    {
+    }
+
+    bool
+    is_ready() const
+    {
+        return true;
+    }
+
+    void
+    perform(function_view<void()> const& intermediary, Args... args) const
+    {
+        if (wrapped_.is_ready())
+            wrapped_.perform(intermediary, std::move(args)...);
+        else
+            intermediary();
+    }
+
+ private:
+    Wrapped wrapped_;
+};
+
+} // namespace detail
+
+template<class Wrapped>
+auto
+only_if_ready(Wrapped wrapped)
+{
+    return detail::
+        only_if_ready_adaptor<Wrapped, typename Wrapped::action_type>(
+            std::move(wrapped));
+}
 
 } // namespace alia
 
