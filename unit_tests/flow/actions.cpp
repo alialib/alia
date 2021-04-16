@@ -429,3 +429,34 @@ TEST_CASE("actions::apply", "[flow][actions]")
     perform_action(a);
     REQUIRE(x == 1);
 }
+
+TEST_CASE("only_if_ready (not ready)", "[flow][actions]")
+{
+    bool a_ran = false;
+    auto a = callback([&] { a_ran = true; });
+
+    int x = 0;
+    auto b = direct(x) <<= empty<int>();
+    REQUIRE(!b.is_ready());
+
+    auto combined = (a, only_if_ready(b));
+    REQUIRE(combined.is_ready());
+    perform_action(combined);
+    REQUIRE(a_ran);
+}
+
+TEST_CASE("only_if_ready (ready)", "[flow][actions]")
+{
+    bool a_ran = false;
+    auto a = callback([&] { a_ran = true; });
+
+    int x = 0;
+    auto b = direct(x) <<= value(1);
+    REQUIRE(b.is_ready());
+
+    auto combined = (a, only_if_ready(b));
+    REQUIRE(combined.is_ready());
+    perform_action(combined);
+    REQUIRE(a_ran);
+    REQUIRE(x == 1);
+}
