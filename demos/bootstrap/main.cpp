@@ -108,6 +108,44 @@ buttons_demo(demo_context ctx)
 }
 
 void
+cards_demo(demo_context ctx)
+{
+    section_heading(ctx, "cards", "Cards", "components/card/");
+
+    subsection_heading(ctx, "Basic");
+    div(ctx, "demo-panel", [&] {
+        /// [basic-card]
+        bs::card(ctx, [&](auto& card) {
+            card.attr("style", "width: 18rem;");
+            card.body([&] {
+                card.title("h5", "Basic Card");
+                card.text("There's not much to see here.");
+                card.link("Card Link", actions::noop());
+            });
+        });
+        /// [basic-card]
+    });
+    code_snippet(ctx, "basic-card");
+
+    subsection_heading(ctx, "Headers & Footers");
+    div(ctx, "demo-panel", [&] {
+        /// [header-footer-card]
+        bs::card(ctx, [&](auto& card) {
+            card.attr("style", "width: 18rem;");
+            card.header([&] { text(ctx, "Header"); });
+            card.body([&] {
+                card.title("h5", "Card w/Header & Footer");
+                card.text("There's still not much to see here.");
+                card.link("Card Link", actions::noop());
+            });
+            card.footer([&] { text(ctx, "Footer"); });
+        });
+        /// [header-footer-card]
+    });
+    code_snippet(ctx, "header-footer-card");
+}
+
+void
 dropdowns_demo(demo_context ctx)
 {
     section_heading(ctx, "dropdowns", "Dropdowns", "components/dropdowns/");
@@ -167,8 +205,10 @@ modals_demo(demo_context ctx)
 
     subsection_heading(ctx, "w/Fade Effect");
     p(ctx,
-      "The handle that you get for the modal is also a normal element handle "
-      "for the top-level modal element, so you can add in Bootstrap classes "
+      "The handle that you get for the modal is also a normal element "
+      "handle "
+      "for the top-level modal element, so you can add in Bootstrap "
+      "classes "
       "to enable effects like fading.");
     div(ctx, "demo-panel", [&] {
         /// [fading-modal]
@@ -192,7 +232,8 @@ modals_demo(demo_context ctx)
 
     subsection_heading(ctx, "w/Shared State");
     p(ctx,
-      "Since modals are defined within the components that invoke them, they "
+      "Since modals are defined within the components that invoke them, "
+      "they "
       "can naturally access the state from those components. Here's an "
       "example of using a modal to do a cancelable edit of state from the "
       "parent component.");
@@ -299,6 +340,10 @@ root_ui(html::context vanilla_ctx)
                         .text("Buttons");
                     a(ctx)
                         .attr("class", "dropdown-item")
+                        .attr("href", "#cards")
+                        .text("Cards");
+                    a(ctx)
+                        .attr("class", "dropdown-item")
                         .attr("href", "#dropdowns")
                         .text("Dropdowns");
                     a(ctx)
@@ -331,9 +376,11 @@ root_ui(html::context vanilla_ctx)
                     "https://bootswatch.com/lux/");
                 text(
                     ctx,
-                    " but nothing in the code is specific to that theme, so "
+                    " but nothing in the code is specific to that theme, "
+                    "so "
                     "you should be free to use any Bootstrap-compatible "
-                    "theme. (alia/HTML currently targets Bootstrap 4.5.x.)");
+                    "theme. (alia/HTML currently targets Bootstrap "
+                    "4.5.x.)");
             });
 
             p(ctx,
@@ -343,6 +390,7 @@ root_ui(html::context vanilla_ctx)
 
             breadcrumb_demo(ctx);
             buttons_demo(ctx);
+            cards_demo(ctx);
             dropdowns_demo(ctx);
             modals_demo(ctx);
             tooltips_demo(ctx);
