@@ -147,7 +147,7 @@ struct smoothed_signal : signal_wrapper<
     {
     }
     id_interface const&
-    value_id() const
+    value_id() const override
     {
         if (this->wrapped_.has_value())
         {
@@ -158,7 +158,7 @@ struct smoothed_signal : signal_wrapper<
             return null_id;
     }
     typename Wrapped::value_type const&
-    read() const
+    read() const override
     {
         return smoothed_value_;
     }
