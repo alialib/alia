@@ -133,11 +133,16 @@ struct smoothed_signal : signal_wrapper<
                              smoothed_signal<Wrapped>,
                              Wrapped,
                              typename Wrapped::value_type,
-                             read_only_signal>
+                             typename signal_capabilities_intersection<
+                                 typename Wrapped::capabilities,
+                                 readable_duplex_signal>::type>
 {
     smoothed_signal(
-        Wrapped wrapped, typename Wrapped::value_type smoothed_value)
+        Wrapped wrapped,
+        value_smoother<typename Wrapped::value_type>& smoother,
+        typename Wrapped::value_type smoothed_value)
         : smoothed_signal::signal_wrapper(wrapped),
+          smoother_(smoother),
           smoothed_value_(smoothed_value)
     {
     }
@@ -157,17 +162,27 @@ struct smoothed_signal : signal_wrapper<
     {
         return smoothed_value_;
     }
+    id_interface const&
+    write(typename Wrapped::value_type value) const override
+    {
+        this->wrapped_.write(value);
+        reset_smoothing(smoother_, value);
+        return null_id;
+    }
 
  private:
+    value_smoother<typename Wrapped::value_type>& smoother_;
     typename Wrapped::value_type smoothed_value_;
     mutable simple_id<typename Wrapped::value_type> id_;
 };
 template<class Wrapped>
 smoothed_signal<Wrapped>
 make_smoothed_signal(
-    Wrapped wrapped, typename Wrapped::value_type smoothed_value)
+    Wrapped wrapped,
+    value_smoother<typename Wrapped::value_type>& smoother,
+    typename Wrapped::value_type smoothed_value)
 {
-    return smoothed_signal<Wrapped>(wrapped, smoothed_value);
+    return smoothed_signal<Wrapped>(wrapped, smoother, smoothed_value);
 }
 
 template<class Value, class Signal>
@@ -181,7 +196,7 @@ smooth(
     Value output = Value();
     if (signal_has_value(x))
         output = smooth_raw(ctx, smoother, read_signal(x), transition);
-    return make_smoothed_signal(x, output);
+    return make_smoothed_signal(x, smoother, output);
 }
 
 template<class Signal>

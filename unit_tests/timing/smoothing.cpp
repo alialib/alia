@@ -186,3 +186,53 @@ TEST_CASE("smooth", "[timing][smoothing]")
     });
     REQUIRE(!system_needs_refresh(sys));
 }
+
+TEST_CASE("smooth writing", "[timing][smoothing]")
+{
+    alia::system sys;
+    auto* external_ptr = new testing_external_interface(sys);
+    initialize_system(
+        sys, [](context) {}, external_ptr);
+    auto& external = *external_ptr;
+
+    REQUIRE(!system_needs_refresh(sys));
+
+    auto transition = animated_transition{linear_curve, 100};
+
+    int raw_x = 0;
+
+    do_traversal(sys, [&](context ctx) {
+        auto x = smooth(ctx, direct(raw_x), transition);
+        REQUIRE(signal_has_value(x));
+        REQUIRE(read_signal(x) == 0);
+    });
+    REQUIRE(!system_needs_refresh(sys));
+
+    raw_x = 10;
+
+    external.tick_count = 100;
+    do_traversal(sys, [&](context ctx) {
+        auto x = smooth(ctx, direct(raw_x), transition);
+        REQUIRE(signal_has_value(x));
+        REQUIRE(read_signal(x) == 0);
+    });
+    REQUIRE(system_needs_refresh(sys));
+
+    external.tick_count = 150;
+    do_traversal(sys, [&](context ctx) {
+        auto x = smooth(ctx, direct(raw_x), transition);
+        REQUIRE(signal_has_value(x));
+        REQUIRE(read_signal(x) == 5);
+        write_signal(x, 20);
+    });
+
+    REQUIRE(raw_x == 20);
+
+    external.tick_count = 160;
+    do_traversal(sys, [&](context ctx) {
+        auto x = smooth(ctx, direct(raw_x), transition);
+        REQUIRE(signal_has_value(x));
+        REQUIRE(read_signal(x) == 20);
+    });
+    REQUIRE(!system_needs_refresh(sys));
+}
