@@ -24,7 +24,7 @@ make_country_request(std::string const& country_code)
 {
     return html::http_request{
         html::http_method::GET,
-        "https://restcountries.eu/rest/v2/alpha/" + country_code,
+        "https://restcountries.com/rest/v2/alpha/" + country_code,
         html::http_headers(), // no headers
         html::blob()}; // no body
 }
@@ -81,7 +81,7 @@ fetch_demo(demo_context ctx)
     section_heading(ctx, "fetch", "HTTP Fetch");
     p(ctx, [&] {
         text(ctx, "This demo uses the ");
-        link(ctx, "REST Countries API", "https://restcountries.eu/");
+        link(ctx, "REST Countries API", "https://restcountries.com/");
         text(
             ctx,
             " (directly from your browser) to translate two- and three-letter "
