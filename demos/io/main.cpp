@@ -24,7 +24,7 @@ make_country_request(std::string const& country_code)
 {
     return html::http_request{
         html::http_method::GET,
-        "https://restcountries.com/rest/v2/alpha/" + country_code,
+        "https://restcountries.com/v3.1/alpha/" + country_code,
         html::http_headers(), // no headers
         html::blob()}; // no body
 }
