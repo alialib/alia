@@ -1,8 +1,10 @@
 #include <alia/system/internals.hpp>
 
-#include <testing.hpp>
-
 #include <thread>
+
+#include <alia/actions/operators.hpp>
+
+#include <testing.hpp>
 
 #include "traversal.hpp"
 
