@@ -92,9 +92,9 @@ struct exception : std::exception
 
 // function_view is the non-owning equivalent of std::function.
 template<class Signature>
-class function_view;
+struct function_view;
 template<class Return, class... Args>
-class function_view<Return(Args...)>
+struct function_view<Return(Args...)>
 {
  private:
     using signature_type = Return(void*, Args...);
