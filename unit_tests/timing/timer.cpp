@@ -1,5 +1,7 @@
 #include <alia/timing/timer.hpp>
 
+#include <alia/actions/operators.hpp>
+
 #include <testing.hpp>
 
 #include "traversal.hpp"
