@@ -275,6 +275,47 @@ TEST_CASE("simplify_id", "[signals][adaptors]")
     REQUIRE((c == std::map<int, std::string>{{2, "7"}, {0, "3"}}));
 }
 
+TEST_CASE("minimize_id_changes", "[signals][adaptors]")
+{
+    alia::system sys;
+    initialize_system(sys, [](context) {});
+
+captured_id signal_id;
+
+    auto make_controller = [&](std::string const& expected) {
+        return [=, &signal_id](context ctx) {
+
+    auto c = std::map<int, std::string>{{2, "a"}, {0, "b"}};
+    auto c_signal = direct(c);
+    auto unwrapped = c_signal[value(2)];
+    auto s = minimize_id_changes(ctx, unwrapped);
+
+    typedef decltype(s) signal_t;
+    REQUIRE((std::is_same<signal_t::value_type, std::string>::value));
+    REQUIRE(signal_is_readable<signal_t>::value);
+    REQUIRE(signal_is_writable<signal_t>::value);
+
+    REQUIRE(s.value_id() != unwrapped.value_id());
+            signal_id.capture(s.value_id());
+    REQUIRE(signal_has_value(s));
+    REQUIRE(read_signal(s) == "1");
+    REQUIRE(signal_ready_to_write(s));
+    write_signal(s, "c");
+    REQUIRE((c == std::map<int, std::string>{{2, "c"}, {0, "b"}}));
+
+        };
+    };
+
+    do_traversal(sys, make_controller("a"));
+    REQUIRE(f_call_count == 1);
+    captured_id last_id = signal_id;
+
+    do_traversal(sys, make_controller(1, 2));
+    REQUIRE(f_call_count == 1);
+    REQUIRE(last_id == signal_id);
+    last_id = signal_id;
+}
+
 TEST_CASE("signalize a signal", "[signals][adaptors]")
 {
     int x = 12;

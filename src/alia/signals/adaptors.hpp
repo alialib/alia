@@ -359,8 +359,81 @@ simplify_id(Wrapped wrapped)
     return simplified_id_wrapper<Wrapped>(std::move(wrapped));
 }
 
-// mask(signal, availibility_flag) does the equivalent of bit masking on
-// individual signals. If :availibility_flag evaluates to true, the mask
+// minimize_id_changes(ctx, x), where :x is a signal, yields a new signal to
+// x's value with a local ID that only changes when x's value actually changes.
+template<class Value>
+struct id_change_minimization_data
+{
+    captured_id input_id;
+    counter_type version = 0;
+    Value value;
+    bool is_valid = false;
+};
+template<class Wrapped>
+struct id_change_minimization_signal
+    : signal_wrapper<id_change_minimization_signal<Wrapped>, Wrapped>
+{
+    id_change_minimization_signal(
+        Wrapped wrapped,
+        id_change_minimization_data<typename Wrapped::value_type>* data)
+        : id_change_minimization_signal::signal_wrapper(std::move(wrapped)),
+          data_(data)
+    {
+    }
+    id_interface const&
+    value_id() const
+    {
+        id_ = make_id(data_->version);
+        return id_;
+    }
+
+ private:
+    id_change_minimization_data<typename Wrapped::value_type>* data_;
+    mutable simple_id<counter_type> id_;
+};
+template<class Signal>
+void
+update_id_change_minimization_data(
+    id_change_minimization_data<typename Signal::value_type>* data,
+    Signal const& x)
+{
+    if (!data->input_id.matches(x.value_id()))
+    {
+        // Only change the output ID if the value has actually changed.
+        if (!(data->is_valid && signal_has_value(x)
+              && data->value == read_signal(x)))
+        {
+            ++data->version;
+            data->is_valid = false;
+        }
+        data->input_id.capture(x.value_id());
+    }
+    if (!data->is_valid && signal_has_value(x))
+    {
+        data->value = read_signal(x);
+        data->is_valid = true;
+    }
+}
+template<class Signal, class Value>
+id_change_minimization_signal<Signal>
+minimize_id_changes(
+    dataless_context ctx, id_change_minimization_data<Value>* data, Signal x)
+{
+    if (is_refresh_event(ctx))
+        update_id_change_minimization_data(data, x);
+    return id_change_minimization_signal<Signal>(std::move(x), data);
+}
+template<class Signal>
+id_change_minimization_signal<Signal>
+minimize_id_changes(context ctx, Signal x)
+{
+    id_change_minimization_data<typename Signal::value_type>* data;
+    get_cached_data(ctx, &data);
+    return minimize_id_changes(ctx, data, std::move(x));
+}
+
+// mask(signal, availability_flag) does the equivalent of bit masking on
+// individual signals. If :availability_flag evaluates to true, the mask
 // evaluates to a signal equivalent to :signal. Otherwise, it evaluates to an
 // empty signal of the same type.
 template<class Primary, class Mask>
