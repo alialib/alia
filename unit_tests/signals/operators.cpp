@@ -6,6 +6,7 @@
 
 #include <testing.hpp>
 
+#include <alia/actions/operators.hpp>
 #include <alia/signals/basic.hpp>
 #include <alia/signals/lambdas.hpp>
 #include <alia/signals/state.hpp>

@@ -1,7 +1,7 @@
 #ifndef ALIA_SIGNALS_OPERATORS_HPP
 #define ALIA_SIGNALS_OPERATORS_HPP
 
-#include <alia/flow/actions.hpp>
+#include <alia/actions/core.hpp>
 #include <alia/signals/adaptors.hpp>
 #include <alia/signals/application.hpp>
 #include <alia/signals/basic.hpp>
