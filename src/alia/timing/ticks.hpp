@@ -1,8 +1,8 @@
 #ifndef ALIA_TIMING_TICKS_HPP
 #define ALIA_TIMING_TICKS_HPP
 
+#include <alia/actions/basic.hpp>
 #include <alia/context/interface.hpp>
-#include <alia/flow/actions.hpp>
 #include <alia/flow/data_graph.hpp>
 
 namespace alia {
