@@ -280,40 +280,64 @@ TEST_CASE("minimize_id_changes", "[signals][adaptors]")
     alia::system sys;
     initialize_system(sys, [](context) {});
 
-captured_id signal_id;
+    std::map<int, std::string> container;
 
-    auto make_controller = [&](std::string const& expected) {
-        return [=, &signal_id](context ctx) {
+    auto make_controller = [&](auto&& test_code) {
+        return [&](context ctx) {
+            auto unwrapped = direct(container)[value(2)];
+            auto signal = minimize_id_changes(ctx, unwrapped);
 
-    auto c = std::map<int, std::string>{{2, "a"}, {0, "b"}};
-    auto c_signal = direct(c);
-    auto unwrapped = c_signal[value(2)];
-    auto s = minimize_id_changes(ctx, unwrapped);
+            // Test various properties of the signal that should always be
+            // true.
+            typedef decltype(signal) signal_t;
+            REQUIRE((std::is_same<signal_t::value_type, std::string>::value));
+            REQUIRE(signal_is_readable<signal_t>::value);
+            REQUIRE(signal_is_writable<signal_t>::value);
+            REQUIRE(signal_has_value(signal));
+            REQUIRE(signal_ready_to_write(signal));
 
-    typedef decltype(s) signal_t;
-    REQUIRE((std::is_same<signal_t::value_type, std::string>::value));
-    REQUIRE(signal_is_readable<signal_t>::value);
-    REQUIRE(signal_is_writable<signal_t>::value);
-
-    REQUIRE(s.value_id() != unwrapped.value_id());
-            signal_id.capture(s.value_id());
-    REQUIRE(signal_has_value(s));
-    REQUIRE(read_signal(s) == "1");
-    REQUIRE(signal_ready_to_write(s));
-    write_signal(s, "c");
-    REQUIRE((c == std::map<int, std::string>{{2, "c"}, {0, "b"}}));
-
+            // Do custom tests for this pass.
+            test_code(signal);
         };
     };
 
-    do_traversal(sys, make_controller("a"));
-    REQUIRE(f_call_count == 1);
-    captured_id last_id = signal_id;
+    captured_id signal_id;
 
-    do_traversal(sys, make_controller(1, 2));
-    REQUIRE(f_call_count == 1);
-    REQUIRE(last_id == signal_id);
-    last_id = signal_id;
+    // Set an initial container value and check that our signal works.
+    container = {{2, "a"}, {0, "b"}};
+    do_traversal(sys, make_controller([&](auto signal) {
+                     signal_id.capture(signal.value_id());
+                     REQUIRE(read_signal(signal) == "a");
+                 }));
+
+    // If we update the outer container but don't touch the entry for the
+    // signal that we're looking at, it shouldn't change the ID.
+    container = {{2, "a"}, {0, "c"}};
+    do_traversal(sys, make_controller([&](auto signal) {
+                     REQUIRE(signal_id.matches(signal.value_id()));
+                     REQUIRE(read_signal(signal) == "a");
+                 }));
+
+    // If we update the outer container but DO touch the entry for the
+    // signal that we're looking at, it SHOULD change the ID.
+    container = {{2, "b"}, {0, "c"}};
+    do_traversal(sys, make_controller([&](auto signal) {
+                     REQUIRE(!signal_id.matches(signal.value_id()));
+                     signal_id.capture(signal.value_id());
+                     REQUIRE(read_signal(signal) == "b");
+                 }));
+
+    // Test that we can successfully back through our signal.
+    do_traversal(
+        sys, make_controller([&](auto signal) { write_signal("d"); }));
+    REQUIRE(container == ({{2, "d"}, {0, "c"}}));
+
+    // Test that we observe our writes on the next pass.
+    do_traversal(sys, make_controller([&](auto signal) {
+                     REQUIRE(!signal_id.matches(signal.value_id()));
+                     signal_id.capture(signal.value_id());
+                     REQUIRE(read_signal(signal) == "d");
+                 }));
 }
 
 TEST_CASE("signalize a signal", "[signals][adaptors]")

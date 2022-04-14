@@ -1,6 +1,9 @@
 #ifndef ALIA_SIGNALS_ADAPTORS_HPP
 #define ALIA_SIGNALS_ADAPTORS_HPP
 
+#include <alia/context/interface.hpp>
+#include <alia/flow/data_graph.hpp>
+#include <alia/flow/events.hpp>
 #include <alia/signals/basic.hpp>
 #include <alia/signals/utilities.hpp>
 
