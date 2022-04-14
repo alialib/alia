@@ -1,6 +1,7 @@
 #include <alia/signals/adaptors.hpp>
 
 #include <map>
+#include <optional>
 #include <type_traits>
 
 #include <alia/actions/operators.hpp>
@@ -9,9 +10,9 @@
 #include <alia/signals/operators.hpp>
 #include <alia/signals/state.hpp>
 
+#include <flow/testing.hpp>
 #include <move_testing.hpp>
-#include <optional>
-#include <testing.hpp>
+#include <traversal.hpp>
 
 using namespace alia;
 
@@ -330,8 +331,8 @@ TEST_CASE("minimize_id_changes", "[signals][adaptors]")
 
     // Test that we can successfully back through our signal.
     do_traversal(
-        sys, make_controller([&](auto signal) { write_signal("d"); }));
-    REQUIRE(container == ({{2, "d"}, {0, "c"}}));
+        sys, make_controller([&](auto signal) { write_signal(signal, "d"); }));
+    REQUIRE(container == (std::map<int, std::string>{{2, "d"}, {0, "c"}}));
 
     // Test that we observe our writes on the next pass.
     do_traversal(sys, make_controller([&](auto signal) {
