@@ -157,8 +157,8 @@ add_custom_target(
 # On Clang debug builds, the proper CMake test associated with the unit tests
 # includes test coverage reporting.
 if(IS_CLANG AND CMAKE_BUILD_TYPE STREQUAL "Debug")
-    string(REPLACE clang llvm-profdata LLVM_PROFDATA $ENV{CC})
-    string(REPLACE clang llvm-cov LLVM_COV $ENV{CC})
+    string(REPLACE clang++ llvm-profdata LLVM_PROFDATA ${CMAKE_CXX_COMPILER})
+    string(REPLACE clang++ llvm-cov LLVM_COV ${CMAKE_CXX_COMPILER})
     add_custom_target(
         unit_test_coverage
         COMMAND ${CMAKE_COMMAND} --build . --target unit_tests
