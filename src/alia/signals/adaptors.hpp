@@ -473,14 +473,20 @@ struct masking_signal : signal_wrapper<masking_signal<Primary, Mask>, Primary>
  private:
     Mask mask_;
 };
-template<class Signal, class AvailabilityFlag>
+template<
+    class Signal,
+    class AvailabilityFlag,
+    std::enable_if_t<is_signal_type<Signal>::value, int> = 0>
 auto
 make_masking_signal(Signal signal, AvailabilityFlag availability_flag)
 {
     return masking_signal<Signal, AvailabilityFlag>(
         std::move(signal), std::move(availability_flag));
 }
-template<class Signal, class AvailabilityFlag>
+template<
+    class Signal,
+    class AvailabilityFlag,
+    std::enable_if_t<!is_action_type<Signal>::value, int> = 0>
 auto
 mask(Signal signal, AvailabilityFlag availability_flag)
 {

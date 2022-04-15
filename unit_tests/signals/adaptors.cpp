@@ -411,7 +411,7 @@ TEST_CASE("mask a read-only signal", "[signals][adaptors]")
     }
 }
 
-TEST_CASE("mask a value", "[signals][adaptors]")
+TEST_CASE("mask a raw value", "[signals][adaptors]")
 {
     int x = 12;
     {
