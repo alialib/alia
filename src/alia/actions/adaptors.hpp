@@ -4,6 +4,7 @@
 #include <type_traits>
 
 #include <alia/actions/basic.hpp>
+#include <alia/signals/adaptors.hpp>
 
 namespace alia {
 
@@ -74,6 +75,57 @@ auto
 actionize(Callable x)
 {
     return callback(std::move(x));
+}
+
+// mask(a, s), where :a is an action and :s is a signal, returns an equivalent
+// action that's only ready if :a is ready and :s has a value that evaluates to
+// :true.
+//
+template<class Wrapped, class ReadinessMask, class Action>
+struct action_masking_adaptor;
+
+template<class Wrapped, class ReadinessMask, class... Args>
+struct action_masking_adaptor<
+    Wrapped,
+    ReadinessMask,
+    action_interface<Args...>> : Wrapped::action_type
+{
+    action_masking_adaptor(Wrapped wrapped, ReadinessMask mask)
+        : wrapped_(std::move(wrapped)), mask_(std::move(mask))
+    {
+    }
+
+    bool
+    is_ready() const override
+    {
+        return wrapped_.is_ready() && signal_has_value(mask_)
+               && read_signal(mask_);
+    }
+
+    void
+    perform(
+        function_view<void()> const& intermediary, Args... args) const override
+    {
+        wrapped_.perform(intermediary, std::move(args)...);
+    }
+
+ private:
+    Wrapped wrapped_;
+    ReadinessMask mask_;
+};
+
+template<
+    class Action,
+    class ReadinessMask,
+    std::enable_if_t<is_action_type<Action>::value, int> = 0>
+auto
+mask(Action action, ReadinessMask readiness_mask)
+{
+    return action_masking_adaptor<
+        Action,
+        decltype(signalize(readiness_mask)),
+        typename Action::action_type>(
+        std::move(action), signalize(readiness_mask));
 }
 
 } // namespace alia
