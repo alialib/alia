@@ -55,3 +55,17 @@ TEST_CASE("only_if_ready on a ready input action", "[actions][adaptors]")
     REQUIRE(a_ran);
     REQUIRE(x == 1);
 }
+
+TEST_CASE("mask an action", "[actions][adaptors]")
+{
+    bool a_ran = false;
+    auto a = callback([&] { a_ran = true; });
+
+    auto masked_off = mask(a, false);
+    REQUIRE(!masked_off.is_ready());
+
+    auto masked_on = mask(a, value(true));
+    REQUIRE(masked_on.is_ready());
+    perform_action(masked_on);
+    REQUIRE(a_ran);
+}
