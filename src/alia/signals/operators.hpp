@@ -481,7 +481,7 @@ struct field_signal : preferred_id_signal<
     auto
     complex_value_id() const
     {
-        return combine_ids(
+        return alia::combine_ids(
             ref(structure_.value_id()),
             // Apparently pointers-to-members aren't comparable for order,
             // which means they don't meet the requirements for serving as an
