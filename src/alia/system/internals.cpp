@@ -23,6 +23,14 @@ default_external_interface::schedule_timer_event(
 }
 
 void
+default_external_interface::schedule_asynchronous_update(
+    std::function<void()> update)
+{
+    update();
+    refresh_system(owner);
+}
+
+void
 initialize_system(
     system& sys,
     std::function<void(context)> const& controller,

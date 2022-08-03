@@ -110,26 +110,26 @@ struct async_reporter
     void
     report_success(Result result) const
     {
-        auto& data = *data_;
-        if (data.version == version_)
+        if (data_->version == version_)
         {
-            data.result = std::move(result);
-            data.status = async_status::COMPLETE;
-            mark_dirty_component(container_);
-            refresh_system(*system_);
+            schedule_asynchronous_update(*system_, [=]() {
+                data_->result = std::move(result);
+                data_->status = async_status::COMPLETE;
+                mark_dirty_component(container_);
+            });
         }
     }
 
     void
     report_failure(std::exception_ptr error) const
     {
-        auto& data = *data_;
-        if (data.version == version_)
+        if (data_->version == version_)
         {
-            data.status = async_status::FAILED;
-            data.error = error;
-            mark_dirty_component(container_);
-            refresh_system(*system_);
+            schedule_asynchronous_update(*system_, [=]() {
+                data_->status = async_status::FAILED;
+                data_->error = error;
+                mark_dirty_component(container_);
+            });
         }
     }
 
