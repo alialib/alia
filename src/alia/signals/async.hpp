@@ -112,11 +112,14 @@ struct async_reporter
     {
         if (data_->version == version_)
         {
-            schedule_asynchronous_update(*system_, [=]() {
-                data_->result = std::move(result);
-                data_->status = async_status::COMPLETE;
-                mark_dirty_component(container_);
-            });
+            auto data = std::move(data_);
+            auto container = std::move(container_);
+            schedule_asynchronous_update(
+                *system_, [data, container, result]() {
+                    data->result = std::move(result);
+                    data->status = async_status::COMPLETE;
+                    mark_dirty_component(container);
+                });
         }
     }
 
@@ -125,10 +128,12 @@ struct async_reporter
     {
         if (data_->version == version_)
         {
-            schedule_asynchronous_update(*system_, [=]() {
-                data_->status = async_status::FAILED;
-                data_->error = error;
-                mark_dirty_component(container_);
+            auto data = std::move(data_);
+            auto container = std::move(container_);
+            schedule_asynchronous_update(*system_, [data, container, error]() {
+                data->status = async_status::FAILED;
+                data->error = error;
+                mark_dirty_component(container);
             });
         }
     }
