@@ -31,9 +31,6 @@ struct external_interface
     // If this system isn't already refreshing continuously, this requests that
     // it refresh again within a reasonable animation time frame.
     //
-    // (You can also call system_needs_refresh (see below) to test if a refresh
-    // is necessary.)
-    //
     virtual void
     schedule_animation_refresh()
         = 0;
@@ -47,12 +44,21 @@ struct external_interface
     //
     // alia provides an internal system for tracking outstanding requests for
     // timer events. If this system is continuously updating anyway, you can
-    // leave this unimplemented and call process_internal_timing_events
+    // leave this unimplemented and call `process_internal_timing_events`
     // once per frame to handle timing events. (See below.)
     //
     virtual void
     schedule_timer_event(
         external_component_id component, millisecond_count time)
+        = 0;
+
+    // alia calls this when it needs to schedule an update asynchronously.
+    //
+    // The system should schedule the given update function to run on the UI
+    // thread as soon as possible.
+    //
+    virtual void
+    schedule_asynchronous_update(std::function<void()> update)
         = 0;
 };
 
@@ -65,16 +71,19 @@ struct default_external_interface : external_interface
     }
 
     virtual millisecond_count
-    get_tick_count() const;
+    get_tick_count() const override;
 
-    void
-    schedule_animation_refresh()
+    virtual void
+    schedule_animation_refresh() override
     {
     }
 
-    void
+    virtual void
     schedule_timer_event(
-        external_component_id component, millisecond_count time);
+        external_component_id component, millisecond_count time) override;
+
+    virtual void
+    schedule_asynchronous_update(std::function<void()> update) override;
 };
 
 struct system : noncopyable

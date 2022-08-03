@@ -36,4 +36,10 @@ set_error_handler(system& sys, std::function<void(std::exception_ptr)> handler)
     sys.error_handler = handler;
 }
 
+void
+schedule_asynchronous_update(system& sys, std::function<void()> update)
+{
+    sys.external->schedule_asynchronous_update(std::move(update));
+}
+
 } // namespace alia
