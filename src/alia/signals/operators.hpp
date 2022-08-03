@@ -487,7 +487,7 @@ struct field_signal : preferred_id_signal<
             // which means they don't meet the requirements for serving as an
             // alia ID, so instead we use the address of the field if it were
             // in a structure that started at address 0.
-            make_id(&(((structure_type*) 0)->*field_)));
+            alia::make_id(&(((structure_type*) 0)->*field_)));
     }
     bool
     ready_to_write() const override
@@ -587,8 +587,8 @@ struct subscript_result_type<
         !has_mapped_type<Container>::value
         && !has_value_type<Container>::value>>
 {
-    typedef std::decay_t<decltype(
-        std::declval<Container>()[std::declval<Index>()])>
+    typedef std::decay_t<
+        decltype(std::declval<Container>()[std::declval<Index>()])>
         type;
 };
 
@@ -597,8 +597,8 @@ struct subscript_result_type<
 // for a type returns by reference (vs by value).
 template<class Container, class Index>
 struct subscript_returns_reference
-    : std::is_reference<decltype(
-          std::declval<Container>()[std::declval<Index>()])>
+    : std::is_reference<
+          decltype(std::declval<Container>()[std::declval<Index>()])>
 {
 };
 
