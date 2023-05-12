@@ -1,4 +1,4 @@
-name: Staging
+name: Documentation Staging
 
 on:
   push:
@@ -31,6 +31,7 @@ jobs:
           actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
       - name: Build
         run: |
+          cd docs
           mkdir build
           cd build
           emcmake cmake -DCMAKE_BUILD_TYPE=Release ..
@@ -44,5 +45,4 @@ jobs:
           target-folder: docs
           token: ${{ secrets.ALIA_STAGING_DEPLOYMENT_TOKEN }}
           branch: gh-pages
-          folder: www
-
+          folder: docs/www

@@ -1,4 +1,4 @@
-name: Deployment
+name: Documentation Deployment
 
 on:
   push:
@@ -31,6 +31,7 @@ jobs:
           actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
       - name: Build
         run: |
+          cd docs
           mkdir build
           cd build
           emcmake cmake -DCMAKE_BUILD_TYPE=Release ..
@@ -41,5 +42,5 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@4.1.0
         with:
           branch: gh-pages
-          folder: www
+          folder: docs/www
           single-commit: true
