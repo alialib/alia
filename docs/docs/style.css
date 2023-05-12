@@ -1,0 +1,102 @@
+:root {
+    --code-theme-background: #fafafa;
+    --code-theme-selector: var(--code-theme-tag);
+    --code-inline-background: #0000000c;
+    --sidebar-toggle-background: #f0f0f0;
+    --sidebar-name-font-family: 'Niramit', sans-serif;
+    --sidebar-name-font-size: 30px;
+    --sidebar-name-font-weight: 500;
+    --heading-h1-padding: 0 0 16px 0;
+    --heading-h1-border-color: #e3e3e3;
+    --heading-h1-border-width: 0 0 1.5px 0;
+}
+
+.cover-main h1 {
+    font-family: 'Niramit', sans-serif;
+}
+
+.hide-when-deployed {
+    display: none;
+}
+
+.markdown-section dt {
+    font-family: monospace;
+    font-size: 17px;
+    font-weight: bold;
+    color: rgb(40, 107, 136);
+    margin: 20px 0 -10px 0;
+}
+
+.sidebar-nav li p {
+    text-transform: uppercase;
+    color: rgb(151, 168, 175);
+    font-weight: 600;
+    user-select: none;
+}
+
+.demo-panel {
+    margin: 0.5em 0 1.5em;
+    padding: 1.5em;
+    border-width: var(--blockquote-border-width, 0);
+    border-style: var(--blockquote-border-style);
+    border-color: var(--blockquote-border-color);
+    border-radius: var(--blockquote-border-radius);
+    background: #fafafa;
+    color: var(--blockquote-color);
+}
+
+.demo-panel * {
+    margin: 1em 1em 0 0;
+}
+
+.demo-panel *:first-child {
+    margin: 0 1em 0 0;
+}
+
+.demo-panel input {
+    font-family: var(--base-font-family);
+    font-size: 100%;
+    border-radius: 2px;
+    border-color: #ddd;
+    border-width: 1px;
+    border-style: solid;
+    background: #fff;
+    outline: none;
+    padding: 4px;
+}
+
+.demo-panel input:focus {
+    border-color: rgb(179, 211, 231);
+    box-shadow: 0px 0px 3px 1px rgb(179, 211, 231);
+}
+
+.demo-panel .invalid-input {
+    border-color: rgb(231, 179, 179);
+}
+
+.demo-panel .invalid-input:focus {
+    border-color: rgb(231, 179, 179);
+    box-shadow: 0px 0px 3px 1px rgb(231, 179, 179);
+}
+
+.demo-panel .colored-box {
+    width: 2.5em;
+    height: 2.5em;
+    border-radius: 0.5em;
+    margin: 1em 0 0.2em 0;
+}
+
+.demo-panel .subtree {
+    border-color: #d0d0e0;
+    border-width: 0 0 0 3.5px;
+    border-style: solid;
+    padding: 4px 4px 4px 1em;
+}
+
+.demo-panel .item {
+    border-color: #dde;
+    border-width: 0 0 1px 0;
+    border-style: solid;
+    padding: 0 0 1em 0;
+}
+
