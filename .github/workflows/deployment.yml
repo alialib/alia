@@ -27,13 +27,14 @@ jobs:
           actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
       - name: Build
         run: |
+          cd html
           mkdir build
           cd build
           emcmake cmake -DCMAKE_BUILD_TYPE=Release ..
           make -j
       - name: Create CNAME file
         run: |
-          echo "html.alia.dev" >build/deploy/CNAME
+          echo "html.alia.dev" >html/build/deploy/CNAME
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@4.1.0
         with:
