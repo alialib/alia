@@ -41,6 +41,7 @@ jobs:
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@4.1.0
         with:
+          repository-name: alialib/alia-docs
           branch: gh-pages
           token: ${{ secrets.ALIA_GHPAGES_DEPLOYMENT_TOKEN }}
           folder: docs/www
