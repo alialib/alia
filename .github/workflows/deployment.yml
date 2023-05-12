@@ -39,6 +39,6 @@ jobs:
         with:
           repository-name: alialib/alia-html
           branch: gh-pages
-          token: ${{ secrets.ALIA_STAGING_DEPLOYMENT_TOKEN }}
+          token: ${{ secrets.ALIA_GHPAGES_DEPLOYMENT_TOKEN }}
           folder: html/build/deploy
           single-commit: true

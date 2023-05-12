@@ -38,6 +38,6 @@ jobs:
         with:
           repository-name: alialib/alia-staging
           target-folder: html
-          token: ${{ secrets.ALIA_STAGING_DEPLOYMENT_TOKEN }}
+          token: ${{ secrets.ALIA_GHPAGES_DEPLOYMENT_TOKEN }}
           branch: gh-pages
           folder: html/build/deploy
