@@ -1,9 +1,8 @@
-name: Staging
+name: HTML Deployment
 
 on:
-  push:
-    branches:
-      - main
+  release:
+    types: [published]
 
 env:
   EM_VERSION: 1.39.18
@@ -33,11 +32,14 @@ jobs:
           cd build
           emcmake cmake -DCMAKE_BUILD_TYPE=Release ..
           make -j
+      - name: Create CNAME file
+        run: |
+          echo "html.alia.dev" >html/build/deploy/CNAME
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@4.1.0
         with:
-          repository-name: alialib/alia-staging
-          target-folder: html
-          token: ${{ secrets.ALIA_GHPAGES_DEPLOYMENT_TOKEN }}
+          repository-name: alialib/alia-html
           branch: gh-pages
+          token: ${{ secrets.ALIA_GHPAGES_DEPLOYMENT_TOKEN }}
           folder: html/build/deploy
+          single-commit: true
