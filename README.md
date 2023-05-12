@@ -1,8 +1,8 @@
 alia-docs
 =========
 
-[![Deployment](https://github.com/alialib/alia-docs/actions/workflows/deployment.yml/badge.svg?branch=live)](https://github.com/alialib/alia-docs/actions/workflows/deployment.yml)
-[![Staging](https://github.com/alialib/alia-docs/actions/workflows/staging.yml/badge.svg)](https://github.com/alialib/alia-docs/actions/workflows/staging.yml)
+[![Deployment](https://github.com/alialib/alia-docs/actions/workflows/docs-deployment.yml/badge.svg?branch=live)](https://github.com/alialib/alia-docs/actions/workflows/docs-deployment.yml)
+[![Staging](https://github.com/alialib/alia-docs/actions/workflows/docs-staging.yml/badge.svg)](https://github.com/alialib/alia-docs/actions/workflows/docs-staging.yml)
 
 This the documentation for alia. It's deployed here:
 
