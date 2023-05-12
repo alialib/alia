@@ -1,0 +1,36 @@
+.demo-panel {
+    background: #f8f8f8;
+    padding: 12px 10px;
+    border-left: 2px solid #6898e6;
+    margin: 8px 0px;
+}
+
+.demo-panel .btn {
+    margin: 2px 2px;
+}
+
+input {
+    display: table;
+    margin: 4px 2px 8px;
+}
+
+b {
+    font-weight: bold;
+}
+
+p {
+    margin: 12px 0px 8px;
+}
+
+.demo-panel p {
+    margin: 4px 4px 8px;
+}
+
+.demo-panel h4 {
+    margin: 4px 4px 8px;
+}
+
+.demo-panel a {
+    display: table;
+    margin: 4px;
+}
