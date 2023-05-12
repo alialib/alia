@@ -28,6 +28,7 @@ jobs:
           actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
       - name: Build
         run: |
+          cd html
           mkdir build
           cd build
           emcmake cmake -DCMAKE_BUILD_TYPE=Release ..
@@ -39,4 +40,4 @@ jobs:
           target-folder: html
           token: ${{ secrets.ALIA_STAGING_DEPLOYMENT_TOKEN }}
           branch: gh-pages
-          folder: build/deploy
+          folder: html/build/deploy
