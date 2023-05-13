@@ -107,7 +107,7 @@ dispatch_event(system& sys, Event& event)
     refresh_system(sys);
 }
 
-struct traversal_abortion
+struct traversal_aborted
 {
 };
 

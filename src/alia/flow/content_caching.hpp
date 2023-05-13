@@ -93,7 +93,7 @@ invoke_pure_component(Context ctx, Component&& component, Args&&... args)
                     {
                         invoke_content();
                     }
-                    catch (alia::traversal_abortion&)
+                    catch (alia::traversal_aborted&)
                     {
                         throw;
                     }
