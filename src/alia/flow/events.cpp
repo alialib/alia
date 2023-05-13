@@ -58,7 +58,7 @@ route_event(
     {
         route_event_(sys, traversal, target);
     }
-    catch (traversal_abortion&)
+    catch (traversal_aborted&)
     {
     }
 }
@@ -70,7 +70,7 @@ abort_traversal(dataless_context ctx)
 {
     assert(!is_refresh_event(ctx));
     get_event_traversal(ctx).aborted = true;
-    throw traversal_abortion();
+    throw traversal_aborted();
 }
 
 void

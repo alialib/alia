@@ -56,7 +56,7 @@ try_block::operator<<(function_view<void()> body)
             else
             {
                 // An exception was thrown by an event handler. (This could
-                // just be a normal traversal_abortion event.) Just pass it
+                // just be a normal traversal_aborted event.) Just pass it
                 // along.
                 throw;
             }
