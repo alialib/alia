@@ -14,7 +14,7 @@ env:
 jobs:
 
   clang-5:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
 
     strategy:
       matrix:
@@ -25,13 +25,12 @@ jobs:
 
     - name: Install
       run: |
-        sudo apt install clang-5.0
         sudo pip install gcovr
 
     - name: Configure
       run: |
-        export CC=`which clang-5.0`
-        export CXX=`which clang++-5.0`
+        export CC=`which clang-16`
+        export CXX=`which clang++-16`
         cmake -Bbuild -DCMAKE_BUILD_TYPE=${{matrix.config}} .
 
     - name: Build
