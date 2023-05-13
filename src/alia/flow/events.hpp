@@ -115,7 +115,7 @@ void
 abort_traversal(dataless_context ctx);
 
 inline bool
-traversal_aborted(dataless_context ctx)
+traversal_was_aborted(dataless_context ctx)
 {
     return get_event_traversal(ctx).aborted;
 }
