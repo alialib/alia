@@ -2,6 +2,7 @@
 #define ALIA_SYSTEM_INTERFACE_HPP
 
 #include <functional>
+#include <exception>
 
 namespace alia {
 
