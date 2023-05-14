@@ -61,7 +61,7 @@ add_library(alia STATIC ${SRC_FILES})
 
 # Download Catch.
 file(DOWNLOAD
-     https://github.com/catchorg/Catch2/releases/download/v2.13.4/catch.hpp
+     https://github.com/catchorg/Catch2/releases/download/v2.13.10/catch.hpp
      ${CMAKE_CURRENT_BINARY_DIR}/catch2/catch.hpp)
 
 # Add the unit test runner.
