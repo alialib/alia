@@ -15,16 +15,11 @@ set_property(TARGET demos PROPERTY CXX_STANDARD 17)
 target_link_libraries(demos PRIVATE alia_html)
 
 # Set various other Emscripten options...
-# TODO: Improve some of this from the alia-html side.
-string(APPEND CMAKE_CXX_FLAGS
-    " -s EXPORTED_FUNCTIONS='[\"_init_demo\"]'")
-string(APPEND CMAKE_CXX_FLAGS
-    " -s EXTRA_EXPORTED_RUNTIME_METHODS='[\"ccall\", \"cwrap\", \"UTF8ToString\"]'")
-string(APPEND CMAKE_CXX_FLAGS
-    " -s MODULARIZE=1")
-string(APPEND CMAKE_CXX_FLAGS
-    " -s 'EXPORT_NAME=\"AliaDemos\"'")
-string(APPEND CMAKE_CXX_FLAGS
-    " -s ENVIRONMENT=web")
-string(APPEND CMAKE_CXX_FLAGS
-    " -s WASM=1 --bind")
+target_link_options(demos PRIVATE
+    "-sEXPORTED_FUNCTIONS=[\"_init_demo\"]")
+target_link_options(demos PRIVATE
+    "-sEXTRA_EXPORTED_RUNTIME_METHODS=[\"ccall\", \"cwrap\", \"UTF8ToString\"]")
+target_link_options(demos PRIVATE
+    "-sMODULARIZE=1")
+target_link_options(demos PRIVATE
+    "-sEXPORT_NAME=\"AliaDemos\"")

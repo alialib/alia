@@ -7,6 +7,6 @@ cd www
 rm -rf *
 ln -s ../docs/* .
 unzip local-favicon.zip && rm *.zip
-ln -s ../build/*.js ../build/*.wasm .
+ln -s ../../build/*.js ../../build/*.wasm .
 ln -s ../src/demos/* .
 ../scripts/build-dot-files.sh

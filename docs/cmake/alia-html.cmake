@@ -1,27 +1,5 @@
 include(FetchContent)
 
-message(STATUS "Fetching alia-html")
-
-FetchContent_Declare(alia-html
-  GIT_REPOSITORY https://github.com/alialib/alia-html
-  GIT_TAG 0.3.0
-  GIT_SHALLOW TRUE
-)
-FetchContent_MakeAvailable(alia-html)
-
-# Set various other Emscripten options...
-string(APPEND CMAKE_CXX_FLAGS
-    " -s EXTRA_EXPORTED_RUNTIME_METHODS='[\"UTF8ToString\"]'")
-string(APPEND CMAKE_CXX_FLAGS
-    " -s ENVIRONMENT=web")
-string(APPEND CMAKE_CXX_FLAGS
-    " -s WASM=1 --bind")
-
-# Allow the use of Emscripten's Fetch API.
-string(APPEND CMAKE_CXX_FLAGS " -s FETCH=1")
-# Enable exceptions.
-string(APPEND CMAKE_CXX_FLAGS " -s DISABLE_EXCEPTION_CATCHING=0")
-
 # "Deploy" the given file to the given directory.
 # In normal development, this creates a symlink of the file for more rapid
 # iteration.
