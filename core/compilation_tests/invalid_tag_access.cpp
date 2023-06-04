@@ -1,6 +1,6 @@
-#include <alia/context/structural_typing.hpp>
+#include <alia/core/context/structural_typing.hpp>
 
-#include <alia/context/storage.hpp>
+#include <alia/core/context/storage.hpp>
 
 using namespace alia::detail;
 
