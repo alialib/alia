@@ -1,7 +1,7 @@
 #ifndef DEMO_HPP
 #define DEMO_HPP
 
-#include <alia.hpp>
+#include <alia/core.hpp>
 
 #include <alia/html/dom.hpp>
 #include <alia/html/elements.hpp>

@@ -34,9 +34,6 @@ jobs:
         cmake --build build --config ${{matrix.config}}
         --target unit_test_runner -j4
 
-        cmake --build build --config ${{matrix.config}}
-        --target single_header_tester -j4
-
     - name: Test
       run: |
         cd build
@@ -66,9 +63,6 @@ jobs:
       run: >
         cmake --build build --config ${{matrix.config}}
         --target unit_test_runner -j4
-
-        cmake --build build --config ${{matrix.config}}
-        --target single_header_tester -j4
 
     - name: Test
       run: |
