@@ -1,4 +1,4 @@
-name: HTML Deployment
+name: HTML Release
 
 on:
   release:

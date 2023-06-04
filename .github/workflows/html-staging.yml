@@ -1,4 +1,4 @@
-name: HTML Staging
+name: HTML
 
 on:
   push:
