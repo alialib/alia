@@ -33,11 +33,11 @@ jobs:
           actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
       - name: Build
         run: |
-          mkdir build
-          cd build
+          mkdir -p build/emscripten
+          cd build/emscripten
           emcmake cmake -DCMAKE_BUILD_TYPE=Release ..
           make -j demos
-          cd ../docs
+          cd ../../docs
           scripts/build-docs.sh
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@4.1.0
