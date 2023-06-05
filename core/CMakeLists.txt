@@ -8,6 +8,7 @@ endif()
 file(GLOB_RECURSE ALIA_CORE_SRC_FILES ${ALIA_GLOB_OPTIONS} "src/*.cpp")
 add_library(alia_core STATIC ${ALIA_CORE_SRC_FILES})
 target_include_directories(alia_core PUBLIC src)
+target_compile_features(alia_core PUBLIC cxx_std_17)
 
 # Download Catch.
 file(DOWNLOAD
@@ -48,7 +49,7 @@ foreach(TEST_FILE ${COMPILATION_TEST_FILES})
                           EXCLUDE_FROM_DEFAULT_BUILD 1)
     add_test(NAME ${TEST_NAME}_control
         COMMAND ${CMAKE_COMMAND} --build . --target ${TEST_NAME}_control
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+        WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
 
     # This is the actual failure case.
     add_library(${TEST_NAME} ${TEST_FILE})
@@ -59,7 +60,7 @@ foreach(TEST_FILE ${COMPILATION_TEST_FILES})
                           EXCLUDE_FROM_DEFAULT_BUILD 1)
     add_test(NAME ${TEST_NAME}
         COMMAND ${CMAKE_COMMAND} --build . --target ${TEST_NAME}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+        WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
     set_tests_properties(${TEST_NAME} PROPERTIES WILL_FAIL TRUE)
 endforeach()
 
@@ -93,12 +94,12 @@ if(IS_CLANG AND CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_test(
         NAME unit_test_coverage
         COMMAND ${CMAKE_COMMAND} --build . --target unit_test_coverage
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+        WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
 else()
     add_test(
         NAME unit_tests
         COMMAND ${CMAKE_COMMAND} --build . --target unit_tests
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+        WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
 endif()
 
 # CMake doesn't seem to generate a test target in some cases (which I haven't
