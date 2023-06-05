@@ -39,4 +39,4 @@ jobs:
           target-folder: html
           token: ${{ secrets.ALIA_GHPAGES_DEPLOYMENT_TOKEN }}
           branch: gh-pages
-          folder: html/build/deploy
+          folder: build/modules/html/deploy
