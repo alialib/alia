@@ -18,7 +18,7 @@ target_link_libraries(demos PRIVATE alia_html)
 target_link_options(demos PRIVATE
     "-sEXPORTED_FUNCTIONS=[\"_init_demo\"]")
 target_link_options(demos PRIVATE
-    "-sEXTRA_EXPORTED_RUNTIME_METHODS=[\"ccall\", \"cwrap\", \"UTF8ToString\"]")
+    "-sEXPORTED_RUNTIME_METHODS=[\"ccall\", \"cwrap\", \"UTF8ToString\"]")
 target_link_options(demos PRIVATE
     "-sMODULARIZE=1")
 target_link_options(demos PRIVATE

@@ -30,8 +30,6 @@ target_link_options(alia_core PUBLIC "-fwasm-exceptions")
 target_link_options(alia_core PUBLIC "-sSTACK_SIZE=5MB")
 
 # Set various other Emscripten options...
-# target_link_options(alia_html PUBLIC
-#     " -s EXTRA_EXPORTED_RUNTIME_METHODS='[\"UTF8ToString\"]'")
 target_link_options(alia_html PUBLIC
     "-sENVIRONMENT=web")
 target_link_options(alia_html PUBLIC
@@ -104,6 +102,8 @@ function(add_example dir)
     file(GLOB cpp_files "${CMAKE_CURRENT_SOURCE_DIR}/${dir}/*.cpp")
     add_executable(${name} ${cpp_files})
     target_link_libraries(${name} alia_html)
+    target_link_options(${name} PUBLIC
+        "-sEXPORTED_RUNTIME_METHODS=[\"UTF8ToString\"]")
     set(deploy_subdir "${deploy_dir}/${dir}")
     file(MAKE_DIRECTORY ${deploy_subdir})
     set_target_properties(${name} PROPERTIES
@@ -113,7 +113,7 @@ function(add_example dir)
         deploy(${file_path} ${deploy_subdir})
     endforeach()
     post_build_deploy(${name}
-        ${CMAKE_CURRENT_BINARY_DIR}/asm-dom.js
+        ${CMAKE_BINARY_DIR}/asm-dom.js
         ${deploy_subdir})
 endfunction()
 
