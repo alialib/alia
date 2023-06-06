@@ -10,6 +10,10 @@ if(NOT DEFINED ALIA_IS_MAIN_PROJECT)
     endif()
 endif()
 
+include(core/cmake/utilities.cmake)
+
+alia_detect_compiler()
+
 # Define our options...
 # As we define the options, we also add the corresponding vcpkg options.
 
@@ -27,7 +31,7 @@ cmake_dependent_option(
     ALIA_ENABLE_HTML
     "Enable integration with HTML5"
     ${ALIA_IS_MAIN_PROJECT}
-    "IS_EMSCRIPTEN"
+    "EMSCRIPTEN"
     OFF)
 if(ALIA_ENABLE_HTML)
   list(APPEND VCPKG_MANIFEST_FEATURES "html")
@@ -37,7 +41,7 @@ cmake_dependent_option(
     ALIA_ENABLE_UI
     "Enable the UI library"
     ON
-    "NOT IS_EMSCRIPTEN"
+    "IS_EMSCRIPTEN"
     OFF)
 if(ALIA_ENABLE_UI)
   list(APPEND VCPKG_MANIFEST_FEATURES "ui")
@@ -47,12 +51,11 @@ cmake_dependent_option(
     ALIA_BUILD_DOCS
     "Build the docs"
     ${ALIA_IS_MAIN_PROJECT}
-    "IS_EMSCRIPTEN"
+    "EMSCRIPTEN"
     OFF)
 
+# We can only declare the project after we've set the vcpkg manifest features.
 project(alia)
-
-include(core/cmake/utilities.cmake)
 
 # If alia is the main project, set some global development flags.
 if (ALIA_IS_MAIN_PROJECT)
