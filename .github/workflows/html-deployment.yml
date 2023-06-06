@@ -37,7 +37,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          emcmake cmake -DCMAKE_BUILD_TYPE=Release \
+          emcmake cmake -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release \
             -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake \
             -DVCPKG_TARGET_TRIPLET=wasm32-emscripten \
             -D"CMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
