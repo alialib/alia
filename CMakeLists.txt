@@ -27,7 +27,7 @@ cmake_dependent_option(
     ALIA_ENABLE_HTML
     "Enable integration with HTML5"
     ${ALIA_IS_MAIN_PROJECT}
-    "EMSCRIPTEN"
+    "IS_EMSCRIPTEN"
     OFF)
 if(ALIA_ENABLE_HTML)
   list(APPEND VCPKG_MANIFEST_FEATURES "html")
@@ -37,7 +37,7 @@ cmake_dependent_option(
     ALIA_ENABLE_UI
     "Enable the UI library"
     ON
-    "NOT EMSCRIPTEN"
+    "NOT IS_EMSCRIPTEN"
     OFF)
 if(ALIA_ENABLE_UI)
   list(APPEND VCPKG_MANIFEST_FEATURES "ui")
@@ -47,7 +47,7 @@ cmake_dependent_option(
     ALIA_BUILD_DOCS
     "Build the docs"
     ${ALIA_IS_MAIN_PROJECT}
-    "EMSCRIPTEN"
+    "IS_EMSCRIPTEN"
     OFF)
 
 project(alia)

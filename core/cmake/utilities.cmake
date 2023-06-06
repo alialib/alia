@@ -15,6 +15,11 @@ macro(detect_compiler)
     else()
         set(IS_MSVC false)
     endif()
+    if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+        set(IS_EMSCRIPTEN true)
+    else()
+        set(IS_EMSCRIPTEN false)
+    endif()
 endmacro()
 
 # Set the (global) warning flags to what we want for alia development.
