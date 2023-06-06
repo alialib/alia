@@ -33,15 +33,13 @@ jobs:
         sudo pip install gcovr
 
     - name: Configure
-      run: >
+      run: |
         export CC=`which clang-16`
-
         export CXX=`which clang++-16`
-
-        cmake -Bbuild -DCMAKE_BUILD_TYPE=${{matrix.config}}
-        -D"CMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
-        -DALIA_ENABLE_UI=OFF \
-        .
+        cmake -Bbuild -DCMAKE_BUILD_TYPE=${{matrix.config}} \
+          -D"CMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
+          -DALIA_ENABLE_UI=OFF \
+          . \
 
     - name: Build
       run: >

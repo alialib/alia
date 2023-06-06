@@ -31,7 +31,7 @@ jobs:
     - name: Configure
       run: >
         cmake -Bbuild -DCMAKE_BUILD_TYPE=${{matrix.config}}
-        -D"CMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake"
+        -D"CMAKE_TOOLCHAIN_FILE=$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
         .
 
     - name: Build
