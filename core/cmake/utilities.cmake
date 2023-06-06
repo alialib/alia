@@ -1,5 +1,5 @@
 # Detect the compiler and set IS_CLANG, IS_GCC, and IS_MSVC accordingly.
-macro(detect_compiler)
+macro(alia_detect_compiler)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         set(IS_CLANG true)
     else()
@@ -14,11 +14,6 @@ macro(detect_compiler)
         set(IS_MSVC true)
     else()
         set(IS_MSVC false)
-    endif()
-    if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
-        set(IS_EMSCRIPTEN true)
-    else()
-        set(IS_EMSCRIPTEN false)
     endif()
 endmacro()
 
