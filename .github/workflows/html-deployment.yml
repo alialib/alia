@@ -42,7 +42,7 @@ jobs:
             -DVCPKG_TARGET_TRIPLET=wasm32-emscripten \
             -D"CMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
             -DALIA_BUILD_DOCS=OFF \
-            ../..
+            ..
           make -j
 
       - name: Create CNAME file
