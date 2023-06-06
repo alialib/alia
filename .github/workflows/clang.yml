@@ -60,7 +60,8 @@ jobs:
     - uses: actions/checkout@v2
 
     - uses: friendlyanon/setup-vcpkg@v1
-      with: { committish: 662dbb50e63af15baa2909b7eac5b1b87e86a0aa }
+      with:
+        committish: 662dbb50e63af15baa2909b7eac5b1b87e86a0aa
         path: the-vcpkg
 
     - name: Install
