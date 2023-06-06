@@ -13,6 +13,9 @@ jobs:
   gh-pages:
     runs-on: ubuntu-latest
     steps:
+      - uses: friendlyanon/setup-vcpkg@v1
+        with: { committish: 662dbb50e63af15baa2909b7eac5b1b87e86a0aa }
+
       - uses: actions/checkout@v2
         with:
           lfs: true
@@ -28,9 +31,6 @@ jobs:
         with:
           version: ${{env.EM_VERSION}}
           actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
-
-      - uses: friendlyanon/setup-vcpkg@v1
-        with: { committish: 662dbb50e63af15baa2909b7eac5b1b87e86a0aa }
 
       - name: Build
         run: |
