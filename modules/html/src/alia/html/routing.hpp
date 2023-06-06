@@ -17,36 +17,53 @@ struct path_component
     std::string_view text;
 };
 
+// scnlib-style predicate for testing if a character is a path separator
+template<typename CharT>
+struct is_path_separator
+{
+    using char_type = CharT;
+
+    // If this is set, slashes don't count as separators because we're allowing
+    // full subpaths to be parsed.
+    bool allow_subpaths = false;
+
+    bool
+    operator()(scn::span<const char_type> ch)
+    {
+        return !allow_subpaths
+               && ch[0] == scn::detail::ascii_widen<char_type>('/');
+    }
+
+    constexpr bool
+    is_multibyte() const
+    {
+        return false;
+    }
+};
+
 }}} // namespace alia::html::detail
 
-template<typename Char>
-struct scn::scanner<Char, alia::html::detail::path_component>
+template<>
+struct scn::scanner<alia::html::detail::path_component> : scn::common_parser
 {
     template<typename ParseContext>
     error
     parse(ParseContext& pctx)
     {
         using char_type = typename ParseContext::char_type;
-        pctx.arg_begin();
-        if (SCN_UNLIKELY(!pctx))
+
+        std::array<char_type, 3> options{
+            {scn::detail::ascii_widen<char_type>('/')}};
+        auto e = parse_common(
+            pctx,
+            span<const char_type>{options.begin(), options.end()},
+            span<bool>{&is_subpath, 3},
+            null_type_cb<ParseContext>);
+        if (!e)
         {
-            return error(
-                error::invalid_format_string, "Unexpected format string end");
+            return e;
         }
-        for (auto ch = pctx.next(); pctx && !pctx.check_arg_end();
-             pctx.advance(), ch = pctx.next())
-        {
-            if (ch == detail::ascii_widen<char_type>('/'))
-                is_subpath = true;
-            else
-                break;
-        }
-        if (!pctx.check_arg_end())
-        {
-            return error(
-                error::invalid_format_string, "Expected argument end");
-        }
-        pctx.arg_end();
+
         return {};
     }
 
@@ -55,10 +72,6 @@ struct scn::scanner<Char, alia::html::detail::path_component>
     scan(alia::html::detail::path_component& val, Context& ctx)
     {
         using char_type = typename Context::char_type;
-        auto is_separator = [&](char_type ch) {
-            return !is_subpath
-                   && ch == scn::detail::ascii_widen<char_type>('/');
-        };
         if (!Context::range_type::is_contiguous)
         {
             return error(
@@ -71,7 +84,10 @@ struct scn::scanner<Char, alia::html::detail::path_component>
             val.text = std::string_view();
             return {};
         }
-        auto s = read_until_space_zero_copy(ctx.range(), is_separator, false);
+        auto s = read_until_space_zero_copy(
+            ctx.range(),
+            alia::html::detail::is_path_separator<char_type>{is_subpath},
+            false);
         if (!s)
             return s.error();
         val.text
@@ -258,7 +274,7 @@ set_location_hash(html::context ctx)
     });
 }
 
-}} // namespace actions::
+}} // namespace actions
 
 namespace html {
 

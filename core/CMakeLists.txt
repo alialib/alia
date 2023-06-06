@@ -10,17 +10,19 @@ add_library(alia_core STATIC ${ALIA_CORE_SRC_FILES})
 target_include_directories(alia_core PUBLIC src)
 target_compile_features(alia_core PUBLIC cxx_std_17)
 
-# Download Catch.
-file(DOWNLOAD
-     https://github.com/catchorg/Catch2/releases/download/v2.13.10/catch.hpp
-     ${CMAKE_CURRENT_BINARY_DIR}/catch2/catch.hpp)
+if (NOT ALIA_ENABLE_TESTING)
+    return()
+endif()
+
+find_package(Catch2 REQUIRED)
 
 # Add the unit test runner.
 file(GLOB_RECURSE UNIT_TEST_FILES CONFIGURE_DEPENDS "unit_tests/*.cpp")
 add_executable(unit_test_runner ${UNIT_TEST_FILES})
-target_link_libraries(unit_test_runner alia_core)
+target_link_libraries(unit_test_runner
+    PRIVATE alia_core Catch2::Catch2WithMain)
 target_include_directories(unit_test_runner
-    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/unit_tests ${CMAKE_CURRENT_BINARY_DIR})
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/unit_tests)
 
 # Add tests that are supposed to cause compilation errors.
 # Specifically, find all .cpp files in the compilation_tests/ directory and

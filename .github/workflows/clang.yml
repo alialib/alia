@@ -23,15 +23,21 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Install
+    - uses: friendlyanon/setup-vcpkg@v1
+      with: { committish: 662dbb50e63af15baa2909b7eac5b1b87e86a0aa }
+
+    - name: Install gcovr
       run: |
         sudo pip install gcovr
 
     - name: Configure
-      run: |
+      run: >
         export CC=`which clang-16`
+
         export CXX=`which clang++-16`
-        cmake -Bbuild -DCMAKE_BUILD_TYPE=${{matrix.config}} .
+
+        cmake -Bbuild -DCMAKE_BUILD_TYPE=${{matrix.config}}
+        -D"CMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" .
 
     - name: Build
       run: >
@@ -53,6 +59,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - uses: friendlyanon/setup-vcpkg@v1
+      with: { committish: 662dbb50e63af15baa2909b7eac5b1b87e86a0aa }
+
     - name: Install
       run: |
         sudo pip install gcovr
@@ -61,13 +70,14 @@ jobs:
       run: |
         export CC=`which clang-10`
         export CXX=`which clang++-10`
-        cmake -Bbuild -DCMAKE_BUILD_TYPE=${{matrix.config}} .
+        cmake -Bbuild -DCMAKE_BUILD_TYPE=${{matrix.config}} \
+          -D"CMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
+          .
 
     - name: Build
       run: >
         cmake --build build --config ${{matrix.config}}
         --target unit_test_runner -j4
-
 
     - name: Test
       run: |

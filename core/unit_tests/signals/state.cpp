@@ -1,12 +1,13 @@
 #include <alia/core/signals/state.hpp>
 
-#include <testing.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <alia/core/signals/basic.hpp>
 #include <alia/core/signals/lambdas.hpp>
 #include <alia/core/signals/operators.hpp>
 
 #include "traversal.hpp"
+#include <catch2/benchmark/catch_benchmark.hpp>
 
 using namespace alia;
 

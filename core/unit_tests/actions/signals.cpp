@@ -3,7 +3,7 @@
 #include <alia/core/actions/basic.hpp>
 #include <alia/core/signals/basic.hpp>
 
-#include <testing.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 using namespace alia;
 

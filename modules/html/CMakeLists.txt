@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 17)
 include(cmake/asm-dom.cmake)
 
 # Add scnlib.
-include(cmake/scnlib.cmake)
+find_package(scn CONFIG REQUIRED)
 
 # Set up the alia-html library.
 file(GLOB_RECURSE ALIA_HTML_SOURCES ${ALIA_GLOB_OPTIONS} "src/*.cpp")
@@ -44,7 +44,7 @@ if (NOT ALIA_IS_MAIN_PROJECT)
 endif()
 
 # Add the nlohmann/json library.
-include(cmake/json.cmake)
+find_package(nlohmann_json CONFIG REQUIRED)
 
 # "Deploy" the given file to the given directory.
 # In normal development, this creates a symlink of the file for more rapid
@@ -140,9 +140,8 @@ add_demo(demos/io)
 add_demo(demos/elements)
 
 # Add the Cereal library.
-include(cmake/cereal.cmake)
+find_package(cereal CONFIG REQUIRED)
 
 # Add the examples.
 add_example(examples/todo-mvc)
-target_include_directories(todo-mvc PUBLIC
-    ${cereal_SOURCE_DIR}/include)
+target_link_libraries(todo-mvc cereal::cereal)

@@ -3,7 +3,7 @@
 #include <alia/core/flow/events.hpp>
 #include <alia/core/system/internals.hpp>
 
-#include <testing.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include "traversal.hpp"
 

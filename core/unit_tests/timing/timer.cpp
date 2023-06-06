@@ -2,7 +2,7 @@
 
 #include <alia/core/actions/operators.hpp>
 
-#include <testing.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include "traversal.hpp"
 

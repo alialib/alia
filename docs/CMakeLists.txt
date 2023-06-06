@@ -1,11 +1,7 @@
 cmake_minimum_required (VERSION 3.14)
 project(alia-docs)
 
-# Add alia-html.
-include(cmake/alia-html.cmake)
-
-# Add the nlohmann/json library.
-include(cmake/json.cmake)
+include(cmake/utilities.cmake)
 
 # Add the demos target.
 include_directories(src)

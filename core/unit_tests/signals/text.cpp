@@ -2,7 +2,7 @@
 
 #include <alia/core/signals/text.hpp>
 
-#include <testing.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <alia/core/flow/macros.hpp>
 #include <alia/core/flow/try_catch.hpp>

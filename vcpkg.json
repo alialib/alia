@@ -1,0 +1,51 @@
+{
+    "name": "alia",
+    "builtin-baseline": "662dbb50e63af15baa2909b7eac5b1b87e86a0aa",
+    "features": {
+        "html": {
+            "description": "Build HTML integration",
+            "dependencies": [
+                "nlohmann-json",
+                "cereal",
+                "scnlib"
+            ]
+        },
+        "tests": {
+            "description": "Build tests",
+            "dependencies": [
+                "catch2"
+            ]
+        },
+        "ui": {
+            "description": "Build UI library",
+            "dependencies": [
+                "glfw3",
+                "fmt",
+                {
+                    "name": "skia",
+                    "default-features": false,
+                    "features": [
+                        "harfbuzz",
+                        "icu",
+                        "gl"
+                    ]
+                }
+            ]
+        }
+    },
+    "vcpkg-configuration": {
+        "registries": [
+            {
+                "kind": "git",
+                "repository": "https://github.com/alialib/vcpkg-registry",
+                "baseline": "4db9a932e08aa2fe816019058b23b1572d426f90",
+                "packages": [
+                    "skia"
+                ]
+            }
+        ],
+        "overlay-triplets": [
+            "vcpkg/triplets/"
+        ]
+    }
+}

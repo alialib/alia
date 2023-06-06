@@ -1,6 +1,7 @@
 #include <alia/core/timing/smoothing.hpp>
 
-#include <testing.hpp>
+#include <catch2/catch_approx.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <complex>
 
@@ -26,14 +27,14 @@ struct testing_external_interface : default_external_interface
 
 TEST_CASE("interpolation", "[timing][smoothing]")
 {
-    REQUIRE(interpolate(-1., 1., 0.6) == Approx(0.2));
+    REQUIRE(interpolate(-1., 1., 0.6) == Catch::Approx(0.2));
     REQUIRE(interpolate(0, 10, 0.57) == 6);
     REQUIRE(interpolate(0, 10, 0.64) == 6);
-    REQUIRE(interpolate(1.f, 3.f, 0.5) == Approx(2.f));
+    REQUIRE(interpolate(1.f, 3.f, 0.5) == Catch::Approx(2.f));
     REQUIRE(
         interpolate(std::complex<double>(0), std::complex<double>(4), 0.25)
             .real()
-        == Approx(1));
+        == Catch::Approx(1));
 }
 
 TEST_CASE("smooth_raw", "[timing][smoothing]")

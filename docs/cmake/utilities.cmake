@@ -1,5 +1,3 @@
-include(FetchContent)
-
 # "Deploy" the given file to the given directory.
 # In normal development, this creates a symlink of the file for more rapid
 # iteration.

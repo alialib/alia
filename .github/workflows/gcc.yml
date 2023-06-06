@@ -49,6 +49,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - uses: friendlyanon/setup-vcpkg@v1
+      with: { committish: 662dbb50e63af15baa2909b7eac5b1b87e86a0aa }
+
     - name: Install
       run: |
         sudo apt install gcc-10
@@ -57,7 +60,9 @@ jobs:
       run: |
         export CC=`which gcc-10`
         export CXX=`which g++-10`
-        cmake -Bbuild -DCMAKE_BUILD_TYPE=${{matrix.config}} .
+        cmake -Bbuild -DCMAKE_BUILD_TYPE=${{matrix.config}} \
+          -D"CMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
+          .
 
     - name: Build
       run: >

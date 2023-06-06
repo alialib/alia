@@ -1,6 +1,7 @@
 #include <alia/core/timing/cubic_bezier.hpp>
 
-#include <testing.hpp>
+#include <catch2/catch_approx.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 using namespace alia;
 
@@ -14,12 +15,12 @@ TEST_CASE("linear cubic bezier", "[timing][cubic_bezier]")
     {
         REQUIRE(
             solve_for_t_at_x(coeff, 0.1 * i, error_tolerance)
-            == Approx(solve_for_t_at_x_with_bisection_search(
-                          coeff, 0.1 * i, error_tolerance))
+            == Catch::Approx(solve_for_t_at_x_with_bisection_search(
+                                 coeff, 0.1 * i, error_tolerance))
                    .margin(error_tolerance * 2));
         REQUIRE(
             eval_curve_at_x(curve, 0.1 * i, error_tolerance)
-            == Approx(0.1 * i).margin(error_tolerance));
+            == Catch::Approx(0.1 * i).margin(error_tolerance));
     }
 }
 
@@ -45,12 +46,12 @@ TEST_CASE("nonlinear cubic bezier", "[timing][cubic_bezier]")
     {
         REQUIRE(
             solve_for_t_at_x(coeff, 0.1 * i, error_tolerance)
-            == Approx(solve_for_t_at_x_with_bisection_search(
-                          coeff, 0.1 * i, error_tolerance))
+            == Catch::Approx(solve_for_t_at_x_with_bisection_search(
+                                 coeff, 0.1 * i, error_tolerance))
                    .margin(error_tolerance * 2));
         REQUIRE(
             eval_curve_at_x(curve, test_values[i][0], error_tolerance)
-            == Approx(test_values[i][1]).margin(error_tolerance));
+            == Catch::Approx(test_values[i][1]).margin(error_tolerance));
     }
 }
 
@@ -65,14 +66,14 @@ TEST_CASE("degenerate cubic bezier", "[timing][cubic_bezier]")
     {
         REQUIRE(
             solve_for_t_at_x(coeff, 0.1 * i, error_tolerance)
-            == Approx(solve_for_t_at_x_with_bisection_search(
-                          coeff, 0.1 * i, error_tolerance))
+            == Catch::Approx(solve_for_t_at_x_with_bisection_search(
+                                 coeff, 0.1 * i, error_tolerance))
                    .margin(error_tolerance * 2));
     }
 
     REQUIRE(
         solve_for_t_at_x(coeff, 0.00001, error_tolerance)
-        == Approx(solve_for_t_at_x_with_bisection_search(
-                      coeff, 0.00001, error_tolerance))
+        == Catch::Approx(solve_for_t_at_x_with_bisection_search(
+                             coeff, 0.00001, error_tolerance))
                .margin(error_tolerance * 2));
 }
