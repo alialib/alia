@@ -29,10 +29,10 @@ jobs:
         path: the-vcpkg
 
     - name: Configure
-      run: |
-        cmake -Bbuild -DCMAKE_BUILD_TYPE=${{matrix.config}} \
-          -D"CMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
-          .
+      run: >
+        cmake -Bbuild -DCMAKE_BUILD_TYPE=${{matrix.config}}
+        -D"CMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
+        .
 
     - name: Build
       run: >
