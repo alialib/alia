@@ -48,6 +48,7 @@ jobs:
             -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake \
             -DVCPKG_TARGET_TRIPLET=wasm32-emscripten \
             -D"CMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
+            -DALIA_ENABLE_UI=OFF \
             ../..
           make -j demos
           cd ../../docs
