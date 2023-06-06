@@ -1,10 +1,12 @@
 #include <alia/core/actions/library.hpp>
 
+#include <map>
+
 #include <alia/core/signals/basic.hpp>
 #include <alia/core/signals/operators.hpp>
 
+#include <catch2/catch_test_macros.hpp>
 #include <move_testing.hpp>
-#include <testing.hpp>
 
 using namespace alia;
 

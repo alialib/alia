@@ -16,29 +16,41 @@ jobs:
       - uses: actions/checkout@v2
         with:
           lfs: true
+
       - name: Install Graphviz
         run: |
           sudo add-apt-repository universe
           sudo apt-get update -qy
           sudo apt install graphviz
+
       - name: Set up cache
         id: cache-system-libraries
         uses: actions/cache@v2
         with:
           path: ${{env.EM_CACHE_FOLDER}}
           key: ${{env.EM_VERSION}}-${{ runner.os }}
+
       - uses: mymindstorm/setup-emsdk@v12
         with:
           version: ${{env.EM_VERSION}}
           actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
+
+      - uses: friendlyanon/setup-vcpkg@v1
+        with: { committish: 662dbb50e63af15baa2909b7eac5b1b87e86a0aa }
+
       - name: Build
         run: |
           mkdir -p build/emscripten
           cd build/emscripten
-          emcmake cmake -DCMAKE_BUILD_TYPE=Release ../..
+          emcmake cmake -DCMAKE_BUILD_TYPE=Release \
+            -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake \
+            -DVCPKG_TARGET_TRIPLET=wasm32-emscripten \
+            -D"CMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
+            ../..
           make -j demos
           cd ../../docs
           scripts/build-docs.sh
+
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@4.1.0
         with:

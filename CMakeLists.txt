@@ -1,9 +1,4 @@
 cmake_minimum_required(VERSION 3.16)
-project(alia)
-
-include(core/cmake/utilities.cmake)
-
-set(CMAKE_CXX_STANDARD 17)
 
 # ALIA_IS_MAIN_PROJECT defines whether we are building alia as the main
 # project or as a dependency of another project.
@@ -16,11 +11,15 @@ if(NOT DEFINED ALIA_IS_MAIN_PROJECT)
 endif()
 
 # Define our options...
+# As we define the options, we also add the corresponding vcpkg options.
 
 option(
     ALIA_ENABLE_TESTING
     "Generate targets for testing alia"
     ${ALIA_IS_MAIN_PROJECT})
+if(ALIA_ENABLE_TESTING)
+  list(APPEND VCPKG_MANIFEST_FEATURES "tests")
+endif()
 
 include(CMakeDependentOption)
 
@@ -30,6 +29,19 @@ cmake_dependent_option(
     ${ALIA_IS_MAIN_PROJECT}
     "EMSCRIPTEN"
     OFF)
+if(ALIA_ENABLE_HTML)
+  list(APPEND VCPKG_MANIFEST_FEATURES "html")
+endif()
+
+cmake_dependent_option(
+    ALIA_ENABLE_UI
+    "Enable the UI library"
+    ON
+    "NOT EMSCRIPTEN"
+    OFF)
+if(ALIA_ENABLE_UI)
+  list(APPEND VCPKG_MANIFEST_FEATURES "ui")
+endif()
 
 cmake_dependent_option(
     ALIA_BUILD_DOCS
@@ -37,6 +49,10 @@ cmake_dependent_option(
     ${ALIA_IS_MAIN_PROJECT}
     "EMSCRIPTEN"
     OFF)
+
+project(alia)
+
+include(core/cmake/utilities.cmake)
 
 # If alia is the main project, set some global development flags.
 if (ALIA_IS_MAIN_PROJECT)

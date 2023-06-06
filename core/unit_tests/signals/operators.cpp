@@ -4,7 +4,8 @@
 
 #include <map>
 
-#include <testing.hpp>
+#include <catch2/benchmark/catch_benchmark.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <alia/core/actions/operators.hpp>
 #include <alia/core/signals/basic.hpp>
