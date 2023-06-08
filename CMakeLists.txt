@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
+include(core/cmake/utilities.cmake)
+
 # ALIA_IS_MAIN_PROJECT defines whether we are building alia as the main
 # project or as a dependency of another project.
 if(NOT DEFINED ALIA_IS_MAIN_PROJECT)
@@ -10,9 +12,17 @@ if(NOT DEFINED ALIA_IS_MAIN_PROJECT)
     endif()
 endif()
 
-include(core/cmake/utilities.cmake)
+alia_detect_emscripten()
 
-alia_detect_compiler()
+# Set VCPKG target triplet to support the Skia build.
+if (ALIA_IS_MAIN_PROJECT AND WIN32)
+    # This assumes we're doing a 64-bit build. It seems impossible to verify
+    # that at this point in the CMake execution - it's possible after the call
+    # to `project()`, but we need to set these variables before that - but we
+    # could add an option to support 32-bit builds.
+    set(VCPKG_TARGET_TRIPLET x64-windows-mixed)
+    set(VCPKG_HOST_TRIPLET x64-windows-mixed)
+endif()
 
 # Define our options...
 # As we define the options, we also add the corresponding vcpkg options.
@@ -56,6 +66,8 @@ cmake_dependent_option(
 
 # We can only declare the project after we've set the vcpkg manifest features.
 project(alia)
+
+alia_detect_compiler()
 
 # If alia is the main project, set some global development flags.
 if (ALIA_IS_MAIN_PROJECT)

@@ -1,7 +1,4 @@
 cmake_minimum_required (VERSION 3.14)
-project(alia-html)
-
-set(CMAKE_CXX_STANDARD 17)
 
 # Add the asm-dom library.
 include(cmake/asm-dom.cmake)
