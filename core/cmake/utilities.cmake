@@ -15,8 +15,12 @@ macro(alia_detect_compiler)
     else()
         set(IS_MSVC false)
     endif()
-    # Note that the Emscripten toolchain file defines EMSCRIPTEN as a CMake
-    # variable, but this allows us to detect it before the toolchain is active.
+endmacro()
+
+# Detect if Emscripten is active.
+# Note that the Emscripten toolchain file defines EMSCRIPTEN as a CMake
+# variable, but this allows us to detect it before the toolchain is active.
+macro(alia_detect_emscripten)
     if(DEFINED ENV{EMSDK})
         set(IS_EMSCRIPTEN true)
     else()
