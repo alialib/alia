@@ -103,8 +103,8 @@ set_completed_flags(todo_list todos, bool new_value)
 bool
 matches_filter(item_filter filter, todo_item const& item)
 {
-    return item.completed && filter != item_filter::ACTIVE
-           || !item.completed && filter != item_filter::COMPLETED;
+    return (item.completed && filter != item_filter::ACTIVE)
+           || (!item.completed && filter != item_filter::COMPLETED);
 }
 
 // Trim a string.
