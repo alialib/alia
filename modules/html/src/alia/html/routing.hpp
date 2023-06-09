@@ -262,10 +262,10 @@ router(Context ctx)
 
 } // namespace html
 
-namespace actions { namespace {
+namespace actions {
 
 // An action that sets the location hash.
-auto
+inline auto
 set_location_hash(html::context ctx)
 {
     auto& sys = get<html::system_tag>(ctx);
@@ -274,7 +274,7 @@ set_location_hash(html::context ctx)
     });
 }
 
-}} // namespace actions
+} // namespace actions
 
 namespace html {
 
