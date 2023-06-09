@@ -18,15 +18,17 @@ refresh_system(system& sys)
     sys.refresh_needed = false;
     ++sys.refresh_counter;
 
-    int pass_count = 0;
+    // TODO: Track pass_count and handle excessive counts in useful ways.
+    // ("Useful" is probably different for development/release builds.)
+    // int pass_count = 0;
     while (true)
     {
         refresh_event refresh;
         detail::dispatch_event(sys, refresh);
         if (!sys.root_component->dirty)
             break;
-        ++pass_count;
-        assert(pass_count < 64);
+        // ++pass_count;
+        // assert(pass_count < 64);
     };
 }
 
