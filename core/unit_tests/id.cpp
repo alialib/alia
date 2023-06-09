@@ -47,7 +47,7 @@ test_different_ids(A const& a, B const& b)
     test_single_id(a);
     test_single_id(b);
     REQUIRE(a != b);
-    REQUIRE((a < b && !(b < a) || b < a && !(a < b)));
+    REQUIRE(((a < b && !(b < a)) || (b < a && !(a < b))));
 }
 
 TEST_CASE("simple_id", "[id]")
