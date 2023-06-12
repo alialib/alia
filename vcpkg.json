@@ -10,14 +10,8 @@
                 "scnlib"
             ]
         },
-        "tests": {
-            "description": "Build tests",
-            "dependencies": [
-                "catch2"
-            ]
-        },
-        "ui": {
-            "description": "Build UI library",
+        "indie": {
+            "description": "Build the 'Indie' UI library",
             "dependencies": [
                 "glfw3",
                 "fmt",
@@ -30,6 +24,12 @@
                         "gl"
                     ]
                 }
+            ]
+        },
+        "tests": {
+            "description": "Build tests",
+            "dependencies": [
+                "catch2"
             ]
         }
     },

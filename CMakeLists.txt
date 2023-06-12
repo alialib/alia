@@ -48,13 +48,13 @@ if(ALIA_ENABLE_HTML)
 endif()
 
 cmake_dependent_option(
-    ALIA_ENABLE_UI
-    "Enable the UI library"
+    ALIA_ENABLE_INDIE
+    "Enable the Indie UI library"
     ON
     "NOT IS_EMSCRIPTEN"
     OFF)
-if(ALIA_ENABLE_UI)
-  list(APPEND VCPKG_MANIFEST_FEATURES "ui")
+if(ALIA_ENABLE_INDIE)
+  list(APPEND VCPKG_MANIFEST_FEATURES "indie")
 endif()
 
 cmake_dependent_option(
@@ -102,4 +102,9 @@ endif()
 # Add the docs.
 if (ALIA_BUILD_DOCS)
     add_subdirectory(docs)
+endif()
+
+# Add the Indie UI library.
+if (ALIA_ENABLE_INDIE)
+    add_subdirectory("modules/indie")
 endif()
