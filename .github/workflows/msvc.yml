@@ -37,7 +37,7 @@ jobs:
     - name: Build
       run: >
         cmake --build build --config ${{matrix.config}}
-        --target unit_test_runner -j4
+        --target unit_test_runner indie_unit_test_runner -j4
 
     - name: Test
       run: |

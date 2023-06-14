@@ -26,8 +26,32 @@ add_custom_target(
     # tests with that.
     COMMAND ${CMAKE_COMMAND} -E remove_directory unit-testing
     COMMAND ${CMAKE_COMMAND} -E make_directory unit-testing
-    COMMAND ${CMAKE_COMMAND} -E chdir unit-testing ${CMAKE_COMMAND}
-                             -E env ALIA_DEPLOY_DIR=${CMAKE_CURRENT_BINARY_DIR}
+    COMMAND ${CMAKE_COMMAND} -E chdir unit-testing
                              $<TARGET_FILE:indie_unit_test_runner>
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS indie_unit_test_runner)
+
+# On Clang debug builds, the proper CMake test associated with the unit tests
+# includes test coverage reporting.
+if(IS_CLANG AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+    string(REPLACE clang++ llvm-profdata LLVM_PROFDATA ${CMAKE_CXX_COMPILER})
+    string(REPLACE clang++ llvm-cov LLVM_COV ${CMAKE_CXX_COMPILER})
+    add_custom_target(
+        indie_unit_test_coverage
+        COMMAND ${CMAKE_COMMAND} --build . --target indie_unit_tests
+        COMMAND ${LLVM_PROFDATA} merge -sparse unit-testing/default.profraw
+                -o default.profdata
+        COMMAND ${LLVM_COV} show -instr-profile=default.profdata
+                $<TARGET_FILE:indie_unit_test_runner>
+                >${CMAKE_CURRENT_SOURCE_DIR}/coverage.txt
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    add_test(
+        NAME indie_unit_test_coverage
+        COMMAND ${CMAKE_COMMAND} --build . --target indie_unit_test_coverage
+        WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
+else()
+    add_test(
+        NAME indie_unit_tests
+        COMMAND ${CMAKE_COMMAND} --build . --target indie_unit_tests
+        WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
+endif()
