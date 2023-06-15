@@ -32,6 +32,8 @@ jobs:
       run: >
         cmake -Bbuild -DCMAKE_BUILD_TYPE=${{matrix.config}}
         -D"CMAKE_TOOLCHAIN_FILE=$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
+        -DALIA_ENABLE_INDIE=ON
+        -DALIA_ENABLE_GLFW=OFF
         .
 
     - name: Build

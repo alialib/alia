@@ -13,7 +13,6 @@
         "indie": {
             "description": "Build the 'Indie' UI library",
             "dependencies": [
-                "glfw3",
                 "fmt",
                 {
                     "name": "skia",
@@ -24,6 +23,12 @@
                         "gl"
                     ]
                 }
+            ]
+        },
+        "glfw": {
+            "description": "GLFW backend for Indie library",
+            "dependencies": [
+                "glfw3"
             ]
         },
         "tests": {
