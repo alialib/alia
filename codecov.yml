@@ -1,5 +1,5 @@
 ignore:
-  - unit_tests
+  - "**/unit_tests"
 coverage:
   status:
     patch: off
