@@ -58,6 +58,16 @@ if(ALIA_ENABLE_INDIE)
 endif()
 
 cmake_dependent_option(
+    ALIA_ENABLE_GLFW
+    "Enable the GLFW backend for the Indie library"
+    ON
+    "ALIA_ENABLE_INDIE"
+    OFF)
+if(ALIA_ENABLE_GLFW)
+  list(APPEND VCPKG_MANIFEST_FEATURES "glfw")
+endif()
+
+cmake_dependent_option(
     ALIA_BUILD_DOCS
     "Build the docs"
     ${ALIA_IS_MAIN_PROJECT}
