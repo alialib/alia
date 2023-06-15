@@ -28,8 +28,10 @@ jobs:
         committish: 662dbb50e63af15baa2909b7eac5b1b87e86a0aa
         path: the-vcpkg
 
-    - name: Install gcovr
+    - name: Install System Dependencies
       run: |
+        sudo apt update -y
+        sudo apt install -y pkg-config autoconf autoconf-archive libgles2-mesa-dev
         sudo pip install gcovr
 
     - name: Configure
