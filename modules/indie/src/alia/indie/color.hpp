@@ -37,9 +37,8 @@ operator<<(std::ostream& s, rgb8 const& c);
 
 } // namespace alia
 
-namespace std {
 template<class Channel>
-struct hash<alia::rgb<Channel>>
+struct std::hash<alia::rgb<Channel>>
 {
     size_t
     operator()(alia::rgb<Channel> const& x) const
@@ -49,7 +48,6 @@ struct hash<alia::rgb<Channel>>
             hash<Channel>()(x.b));
     }
 };
-} // namespace std
 
 namespace alia {
 
@@ -114,9 +112,8 @@ operator<<(std::ostream& s, rgba8 const& c);
 
 } // namespace alia
 
-namespace std {
 template<class Channel>
-struct hash<alia::rgba<Channel>>
+struct std::hash<alia::rgba<Channel>>
 {
     size_t
     operator()(alia::rgba<Channel> const& x) const
@@ -126,7 +123,6 @@ struct hash<alia::rgba<Channel>>
             alia::combine_hashes(hash<Channel>()(x.b), hash<Channel>()(x.a)));
     }
 };
-} // namespace std
 
 namespace alia {
 

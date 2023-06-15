@@ -354,6 +354,7 @@ ALIA_DECLARE_LAYOUT_LOGIC(rotated_layout_logic)
     {
         // The layout protocol requires that we ask for horizontal
         // requirements first.
+        [[maybe_unused]]
         layout_requirements x = alia::get_horizontal_requirements(ctx, *i);
         layout_requirements y
             = alia::get_vertical_requirements(ctx, *i, 100000);

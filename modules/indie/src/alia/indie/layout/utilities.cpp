@@ -46,18 +46,6 @@ add_layout_node(layout_traversal& traversal, layout_node* node)
     traversal.next_ptr = &node->next;
 }
 
-static void
-record_container_change(
-    layout_traversal& traversal, layout_container* container)
-{
-    while (container
-           && container->last_content_change != traversal.refresh_counter)
-    {
-        container->last_content_change = traversal.refresh_counter;
-        container = container->parent;
-    }
-}
-
 void
 layout_container::record_change(layout_traversal& traversal)
 {
@@ -379,7 +367,7 @@ resolve_layout_spec(
                  ? (spec.flags.code & PADDING_MASK_CODE)
                  : (default_flags.code & PADDING_MASK_CODE));
     if ((resolved.flags & PADDED
-         || !(resolved.flags & UNPADDED) && (default_flags & PADDED)))
+         || (!(resolved.flags & UNPADDED) && (default_flags & PADDED))))
     {
         resolved.padding_size = traversal.style_info->padding_size;
     }
@@ -896,9 +884,9 @@ is_visible(geometry_context& ctx, box<2, double> const& region)
         = transform(ctx.transformation_matrix, get_high_corner(region));
     for (unsigned i = 0; i != 2; ++i)
     {
-        if (region_low[i] < window_low[i] && region_high[i] < window_low[i]
-            || region_low[i] > window_high[i]
-                   && region_high[i] > window_high[i])
+        if ((region_low[i] < window_low[i] && region_high[i] < window_low[i])
+            || (region_low[i] > window_high[i]
+                   && region_high[i] > window_high[i]))
         {
             return false;
         }
