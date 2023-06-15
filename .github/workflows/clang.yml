@@ -28,8 +28,10 @@ jobs:
         committish: 662dbb50e63af15baa2909b7eac5b1b87e86a0aa
         path: the-vcpkg
 
-    - name: Install gcovr
+    - name: Install System Dependencies
       run: |
+        sudo apt update -y
+        sudo apt install -y pkg-config autoconf autoconf-archive libgles2-mesa-dev
         sudo pip install gcovr
 
     - name: Configure
@@ -38,13 +40,14 @@ jobs:
         export CXX=`which clang++-16`
         cmake -Bbuild -DCMAKE_BUILD_TYPE=${{matrix.config}} \
           -D"CMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
-          -DALIA_ENABLE_UI=OFF \
+          -DALIA_ENABLE_INDIE=ON \
+          -DALIA_ENABLE_GLFW=OFF \
           . \
 
     - name: Build
       run: >
         cmake --build build --config ${{matrix.config}}
-        --target unit_test_runner -j4
+        --target unit_test_runner indie_unit_test_runner -j4
 
     - name: Test
       run: |
@@ -76,7 +79,7 @@ jobs:
         export CXX=`which clang++-10`
         cmake -Bbuild -DCMAKE_BUILD_TYPE=${{matrix.config}} \
           -D"CMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
-          -DALIA_ENABLE_UI=OFF \
+          -DALIA_ENABLE_INDIE=OFF \
           .
 
     - name: Build

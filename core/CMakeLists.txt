@@ -73,8 +73,7 @@ add_custom_target(
     # tests with that.
     COMMAND ${CMAKE_COMMAND} -E remove_directory unit-testing
     COMMAND ${CMAKE_COMMAND} -E make_directory unit-testing
-    COMMAND ${CMAKE_COMMAND} -E chdir unit-testing ${CMAKE_COMMAND}
-                             -E env ALIA_DEPLOY_DIR=${CMAKE_CURRENT_BINARY_DIR}
+    COMMAND ${CMAKE_COMMAND} -E chdir unit-testing
                              $<TARGET_FILE:unit_test_runner>
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS unit_test_runner)

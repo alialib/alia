@@ -10,16 +10,9 @@
                 "scnlib"
             ]
         },
-        "tests": {
-            "description": "Build tests",
+        "indie": {
+            "description": "Build the 'Indie' UI library",
             "dependencies": [
-                "catch2"
-            ]
-        },
-        "ui": {
-            "description": "Build UI library",
-            "dependencies": [
-                "glfw3",
                 "fmt",
                 {
                     "name": "skia",
@@ -30,6 +23,18 @@
                         "gl"
                     ]
                 }
+            ]
+        },
+        "glfw": {
+            "description": "GLFW backend for Indie library",
+            "dependencies": [
+                "glfw3"
+            ]
+        },
+        "tests": {
+            "description": "Build tests",
+            "dependencies": [
+                "catch2"
             ]
         }
     },

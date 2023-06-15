@@ -174,9 +174,9 @@ struct scoped_data_block : noncopyable
     }
 
     template<class Context>
-    scoped_data_block(Context ctx, data_block& block)
+    scoped_data_block(Context&& ctx, data_block& block)
     {
-        begin(get_data_traversal(ctx), block);
+        begin(get_data_traversal(std::forward<Context>(ctx)), block);
     }
 
     ~scoped_data_block()
@@ -186,9 +186,9 @@ struct scoped_data_block : noncopyable
 
     template<class Context>
     void
-    begin(Context ctx, data_block& block)
+    begin(Context&& ctx, data_block& block)
     {
-        begin(get_data_traversal(ctx), block);
+        begin(get_data_traversal(std::forward<Context>(ctx)), block);
     }
 
     void
@@ -295,9 +295,9 @@ struct naming_context : noncopyable
     }
 
     template<class Context>
-    naming_context(Context ctx)
+    naming_context(Context&& ctx)
     {
-        begin(get_data_traversal(ctx));
+        begin(get_data_traversal(std::forward<Context>(ctx)));
     }
 
     ~naming_context()
@@ -307,9 +307,9 @@ struct naming_context : noncopyable
 
     template<class Context>
     void
-    begin(Context ctx)
+    begin(Context&& ctx)
     {
-        begin(get_data_traversal(ctx));
+        begin(get_data_traversal(std::forward<Context>(ctx)));
     }
 
     void
@@ -340,9 +340,10 @@ delete_named_block(data_graph& graph, id_interface const& id);
 
 template<class Context>
 void
-delete_named_block(Context ctx, id_interface const& id)
+delete_named_block(Context&& ctx, id_interface const& id)
 {
-    delete_named_block(*get_data_traversal(ctx).graph, id);
+    delete_named_block(
+        *get_data_traversal(std::forward<Context>(ctx)).graph, id);
 }
 
 // This is a macro that, given a context, an uninitialized named_block, and an
@@ -384,9 +385,9 @@ struct scoped_cache_clearing_disabler
     {
     }
     template<class Context>
-    scoped_cache_clearing_disabler(Context ctx)
+    scoped_cache_clearing_disabler(Context&& ctx)
     {
-        begin(ctx);
+        begin(std::forward<Context>(ctx));
     }
     ~scoped_cache_clearing_disabler()
     {
@@ -394,9 +395,9 @@ struct scoped_cache_clearing_disabler
     }
     template<class Context>
     void
-    begin(Context ctx)
+    begin(Context&& ctx)
     {
-        begin(get_data_traversal(ctx));
+        begin(get_data_traversal(std::forward<Context>(ctx)));
     }
     void
     begin(data_traversal& traversal);
@@ -453,17 +454,21 @@ get_data_node(data_traversal& traversal, Node** ptr, Create&& create)
 }
 template<class Context, class Node, class Create>
 bool
-get_data_node(Context ctx, Node** ptr, Create&& create)
+get_data_node(Context&& ctx, Node** ptr, Create&& create)
 {
     return get_data_node(
-        get_data_traversal(ctx), ptr, std::forward<Create>(create));
+        get_data_traversal(std::forward<Context>(ctx)),
+        ptr,
+        std::forward<Create>(create));
 }
 template<class Context, class Node>
 bool
-get_data_node(Context ctx, Node** ptr)
+get_data_node(Context&& ctx, Node** ptr)
 {
     return get_data_node(
-        get_data_traversal(ctx), ptr, [&] { return new Node; });
+        get_data_traversal(std::forward<Context>(ctx)), ptr, [&] {
+            return new Node;
+        });
 }
 
 template<class T>
@@ -474,10 +479,10 @@ struct persistent_data_node : data_node
 
 template<class Context, class T>
 bool
-get_data(Context ctx, T** ptr)
+get_data(Context&& ctx, T** ptr)
 {
     persistent_data_node<T>* node;
-    bool is_new = get_data_node(ctx, &node);
+    bool is_new = get_data_node(std::forward<Context>(ctx), &node);
     *ptr = &node->value;
     return is_new;
 }
@@ -486,10 +491,10 @@ get_data(Context ctx, T** ptr)
 // initializing the data at the call site.
 template<class Data, class Context>
 Data&
-get_data(Context ctx)
+get_data(Context&& ctx)
 {
     Data* data;
-    get_data(ctx, &data);
+    get_data(std::forward<Context>(ctx), &data);
     return *data;
 }
 
@@ -512,10 +517,10 @@ struct cached_data_node : data_node
 
 template<class Context, class T>
 bool
-get_cached_data(Context ctx, T** ptr)
+get_cached_data(Context&& ctx, T** ptr)
 {
     cached_data_node<T>* node;
-    get_data_node(ctx, &node);
+    get_data_node(std::forward<Context>(ctx), &node);
     bool is_new = false;
     if (!node->value)
     {
@@ -530,10 +535,10 @@ get_cached_data(Context ctx, T** ptr)
 // initializing the data at the call site.
 template<class Data, class Context>
 Data&
-get_cached_data(Context ctx)
+get_cached_data(Context&& ctx)
 {
     Data* data;
-    get_cached_data(ctx, &data);
+    get_cached_data(std::forward<Context>(ctx), &data);
     return *data;
 }
 
