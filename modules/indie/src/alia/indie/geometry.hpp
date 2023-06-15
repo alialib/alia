@@ -273,11 +273,11 @@ uniform_vector(T value)
     return r;
 }
 
-// hash function
 } // namespace alia
-namespace std {
+
+// hash function
 template<unsigned N, class T>
-struct hash<alia::vector<N, T>>
+struct std::hash<alia::vector<N, T>>
 {
     size_t
     operator()(alia::vector<N, T> const& v) const
@@ -288,7 +288,7 @@ struct hash<alia::vector<N, T>>
         return h;
     }
 };
-} // namespace std
+
 namespace alia {
 
 // BOX
@@ -352,7 +352,7 @@ template<unsigned N, class T>
 bool
 operator<(box<N, T> const& a, box<N, T> const& b)
 {
-    return a.corner < b.corner || a.corner == b.corner && a.size < b.size;
+    return a.corner < b.corner || (a.corner == b.corner && a.size < b.size);
 }
 
 template<unsigned N, class T>
