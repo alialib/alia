@@ -13,26 +13,26 @@ namespace alia {
 // type is changed.
 
 // Cast a floating point number/vector to a layout scalar representing a size.
-static inline layout_scalar as_layout_size(double x)
+inline layout_scalar as_layout_size(double x)
 { return layout_scalar(std::ceil(x)); }
-static inline layout_scalar as_layout_size(float x)
+inline layout_scalar as_layout_size(float x)
 { return layout_scalar(std::ceil(x)); }
-static inline layout_scalar as_layout_size(int x)
+inline layout_scalar as_layout_size(int x)
 { return layout_scalar(x); }
-static inline layout_vector as_layout_size(vector<2,double> const& x)
+inline layout_vector as_layout_size(vector<2,double> const& x)
 { return make_vector(as_layout_size(x[0]), as_layout_size(x[1])); }
-static inline layout_vector as_layout_size(vector<2,float> const& x)
+inline layout_vector as_layout_size(vector<2,float> const& x)
 { return make_vector(as_layout_size(x[0]), as_layout_size(x[1])); }
-static inline layout_vector as_layout_size(vector<2,int> const& x)
+inline layout_vector as_layout_size(vector<2,int> const& x)
 { return make_vector(as_layout_size(x[0]), as_layout_size(x[1])); }
 // Cast a floating point number to a layout scalar by rounding.
-static inline layout_scalar round_to_layout_scalar(float x)
+inline layout_scalar round_to_layout_scalar(float x)
 { return layout_scalar(x + 0.5); }
-static inline layout_scalar round_to_layout_scalar(double x)
+inline layout_scalar round_to_layout_scalar(double x)
 { return layout_scalar(x + 0.5); }
 
 // Test if two layout scalars are almost equal to each other.
-static inline bool layout_scalars_almost_equal(
+inline bool layout_scalars_almost_equal(
     layout_scalar a, layout_scalar b)
 {
     return a == b;
@@ -46,7 +46,7 @@ void fold_in_requirements(layout_requirements& current,
     layout_requirements const& additional);
 
 // Get a unique cacher ID from the layout system.
-static inline counter_type get_cacher_id(layout_system& system)
+inline counter_type get_cacher_id(layout_system& system)
 { return system.cacher_id_counter++; }
 
 // The following are all utility functions for adding default values to
@@ -70,13 +70,13 @@ calculate_initial_x(
 void wrap_row(wrapping_assignment_state& state);
 
 // Alternate forms for invoking the layout_node interface.
-static inline layout_requirements
+inline layout_requirements
 get_horizontal_requirements(
     layout_calculation_context& ctx, layout_node& node)
 {
     return node.get_horizontal_requirements(ctx);
 }
-static inline layout_requirements
+inline layout_requirements
 get_vertical_requirements(
     layout_calculation_context& ctx,
     layout_node& node,
@@ -84,7 +84,7 @@ get_vertical_requirements(
 {
     return node.get_vertical_requirements(ctx, assigned_width);
 }
-static inline void
+inline void
 set_relative_assignment(
     layout_calculation_context& ctx,
     layout_node& node,
@@ -382,7 +382,7 @@ struct relative_region_assignment
     named_block named_block_;
 };
 // Get the resolved relative assignment for a layout cacher.
-static inline relative_layout_assignment const&
+inline relative_layout_assignment const&
 get_assignment(layout_cacher const& cacher)
 { return cacher.resolved_relative_assignment; }
 

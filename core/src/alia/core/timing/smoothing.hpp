@@ -54,7 +54,7 @@ interpolate(Value const& a, Value const& b, double factor)
     return a * (1 - factor) + b * factor;
 }
 // Overload it for floats to eliminate warnings about conversions.
-static inline float
+inline float
 interpolate(float a, float b, double factor)
 {
     return float(a * (1 - factor) + b * factor);

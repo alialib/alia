@@ -20,12 +20,12 @@ struct rgb
 };
 typedef rgb<uint8_t> rgb8;
 
-static inline bool
+inline bool
 operator==(rgb8 const& a, rgb8 const& b)
 {
     return a.r == b.r && a.g == b.g && a.b == b.b;
 }
-static inline bool
+inline bool
 operator!=(rgb8 const& a, rgb8 const& b)
 {
     return !(a == b);

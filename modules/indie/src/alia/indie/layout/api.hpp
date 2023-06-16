@@ -15,7 +15,7 @@ namespace alia {
 typedef int layout_scalar;
 
 typedef vector<2, layout_scalar> layout_vector;
-static inline layout_vector
+inline layout_vector
 make_layout_vector(layout_scalar x, layout_scalar y)
 {
     return make_vector(x, y);
@@ -134,12 +134,12 @@ operator!=(
 }
 
 // some convenience functions for specifying widget sizes
-static inline absolute_size
+inline absolute_size
 size(float w, float h, layout_units u)
 {
     return make_vector(absolute_length(w, u), absolute_length(h, u));
 }
-static inline absolute_size
+inline absolute_size
 size(float w, layout_units wu, float h, layout_units hu)
 {
     return make_vector(absolute_length(w, wu), absolute_length(h, hu));
@@ -147,12 +147,12 @@ size(float w, layout_units wu, float h, layout_units hu)
 // These only specify a single dimension.
 // Note that setting the other dimension to 0 is harmless as these are
 // specifying a minimum size.
-static inline absolute_size
+inline absolute_size
 width(float w, layout_units u)
 {
     return make_vector(absolute_length(w, u), absolute_length(0, PIXELS));
 }
-static inline absolute_size
+inline absolute_size
 height(float h, layout_units u)
 {
     return make_vector(absolute_length(0, PIXELS), absolute_length(h, u));
@@ -333,7 +333,7 @@ struct geometry_context
 
 // geometry_contexts are specified by the same generic Context concept as is
 // used in data_graph.hpp.
-static inline geometry_context&
+inline geometry_context&
 get_geometry_context(geometry_context& ctx)
 {
     return ctx;
