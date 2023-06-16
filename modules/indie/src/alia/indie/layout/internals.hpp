@@ -62,13 +62,13 @@ struct relative_layout_assignment
     {
     }
 };
-static inline bool
+inline bool
 operator==(
     relative_layout_assignment const& a, relative_layout_assignment const& b)
 {
     return a.region == b.region && a.baseline_y == b.baseline_y;
 }
-static inline bool
+inline bool
 operator!=(
     relative_layout_assignment const& a, relative_layout_assignment const& b)
 {
@@ -90,7 +90,7 @@ struct layout_style_info
 // context, so utilities that want to operate directly on that context will
 // accept any context parameter and call get_layout_traversal(ctx).
 
-static inline layout_traversal&
+inline layout_traversal&
 get_layout_traversal(layout_traversal& ctx)
 {
     return ctx;
@@ -104,7 +104,7 @@ struct layout_calculation_context
     naming_context naming;
     bool for_measurement;
 };
-static inline data_traversal&
+inline data_traversal&
 get_data_traversal(layout_calculation_context& ctx)
 {
     return ctx.data;
