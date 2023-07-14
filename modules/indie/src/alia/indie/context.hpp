@@ -3,16 +3,29 @@
 
 #include <alia/core/context/interface.hpp>
 
-namespace alia { namespace indie {
-
-// struct element_object;
-// ALIA_DEFINE_TAGGED_TYPE(tree_traversal_tag, tree_traversal<element_object>&)
+namespace alia {
+namespace indie {
 
 struct system;
 ALIA_DEFINE_TAGGED_TYPE(system_tag, system&)
 
-typedef extend_context_type_t<alia::context, system_tag> context;
+struct render_traversal;
+ALIA_DEFINE_TAGGED_TYPE(render_traversal_tag, render_traversal&)
 
-}} // namespace alia::indie
+// TODO: Fix
+} // namespace indie
+struct layout_traversal;
+namespace indie {
+ALIA_DEFINE_TAGGED_TYPE(layout_traversal_tag, layout_traversal&)
+
+typedef extend_context_type_t<
+    alia::context,
+    system_tag,
+    layout_traversal_tag,
+    render_traversal_tag>
+    context;
+
+} // namespace indie
+} // namespace alia
 
 #endif

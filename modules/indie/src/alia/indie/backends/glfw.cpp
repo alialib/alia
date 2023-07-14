@@ -27,6 +27,8 @@
 #include "include/utils/SkRandom.h"
 #pragma warning(pop)
 
+#include <alia/indie/layout/system.hpp>
+#include <alia/indie/rendering.hpp>
 #include <alia/indie/system/object.hpp>
 
 namespace alia { namespace indie {
@@ -155,8 +157,37 @@ glfw_window::do_main_loop()
 {
     while (!glfwWindowShouldClose(impl_->glfw_window_))
     {
-        render(impl_->system, *impl_->skia_surface_->getCanvas());
+        refresh_system(impl_->system.alia_system);
+
+        // TODO: Track this ourselves.
+        int width, height;
+        glfwGetWindowSize(impl_->glfw_window_, &width, &height);
+
+        resolve_layout(impl_->system.layout, make_vector(width, height));
+
+        auto& canvas = *impl_->skia_surface_->getCanvas();
+        canvas.clipRect(SkRect::MakeWH(SkScalar(width), SkScalar(height)));
+
+        // TODO: Don't clear automatically.
+        {
+            SkPaint paint;
+            paint.setColor(SK_ColorWHITE);
+            canvas.drawPaint(paint);
+        }
+
+        if (impl_->system.render_root)
+        {
+            impl_->system.render_root->render(
+                *impl_->skia_surface_->getCanvas());
+        }
+        else
+        {
+            // TODO: Clear the canvas?
+        }
+
+        impl_->skia_graphics_context_->flush();
         glfwSwapBuffers(impl_->glfw_window_);
+
         glfwWaitEvents();
     }
 }
