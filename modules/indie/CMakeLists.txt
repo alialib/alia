@@ -1,9 +1,21 @@
+find_package(glfw3 3.3 CONFIG REQUIRED)
+find_package(unofficial-skia CONFIG REQUIRED)
+
 # Set up the alia-indie library.
 file(GLOB_RECURSE ALIA_INDIE_SOURCES ${ALIA_GLOB_OPTIONS} "src/*.cpp")
 add_library(alia_indie STATIC ${ALIA_INDIE_SOURCES})
-target_link_libraries(alia_indie
-    PUBLIC alia_core)
 target_include_directories(alia_indie PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
+target_link_libraries(alia_indie PUBLIC
+    alia_core
+    glfw
+    unofficial::skia::skia
+    unofficial::skia::skparagraph
+    unofficial::skia::skshaper
+    unofficial::skia::skunicode)
+
+# Add the unit test runner.
+add_executable(test_example examples/test.cpp)
+target_link_libraries(test_example alia_indie)
 
 if (NOT ALIA_ENABLE_TESTING)
     return()

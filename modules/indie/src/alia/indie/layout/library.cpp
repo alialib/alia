@@ -12,22 +12,6 @@
 
 namespace alia {
 
-template<class T>
-bool
-get_cached_data(data_traversal& traversal, T** ptr)
-{
-    cached_data_node<T>* node;
-    get_data_node(traversal, &node);
-    bool is_new = false;
-    if (!node->value)
-    {
-        node->value.emplace();
-        is_new = true;
-    }
-    *ptr = &*node->value;
-    return is_new;
-}
-
 void
 do_spacer(
     layout_traversal& traversal,
@@ -354,8 +338,8 @@ ALIA_DECLARE_LAYOUT_LOGIC(rotated_layout_logic)
     {
         // The layout protocol requires that we ask for horizontal
         // requirements first.
-        [[maybe_unused]]
-        layout_requirements x = alia::get_horizontal_requirements(ctx, *i);
+        [[maybe_unused]] layout_requirements x
+            = alia::get_horizontal_requirements(ctx, *i);
         layout_requirements y
             = alia::get_vertical_requirements(ctx, *i, 100000);
         width = (std::max)(y.size, width);
@@ -1054,13 +1038,13 @@ fold_in_requirements(
 }
 
 // Get the requirements for the nth column.
-static layout_requirements const&
+inline layout_requirements const&
 get_column_requirements(
     grid_column_requirements<nonuniform_grid_tag> const& x, size_t n)
 {
     return x.columns[n];
 }
-static layout_requirements const&
+inline layout_requirements const&
 get_column_requirements(
     grid_column_requirements<uniform_grid_tag> const& x, size_t /*n*/)
 {

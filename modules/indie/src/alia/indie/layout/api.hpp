@@ -182,7 +182,7 @@ ALIA_DEFINE_FLAG(layout, 0x000f, X_ALIGNMENT_MASK)
 
 // Y alignment flags - Note that the Y codes are the same as the X codes but
 // shifted left by X_TO_Y_SHIFT bits.
-static unsigned const X_TO_Y_SHIFT = 4;
+unsigned const X_TO_Y_SHIFT = 4;
 ALIA_DEFINE_FLAG(layout, CENTER_X_CODE << X_TO_Y_SHIFT, CENTER_Y)
 ALIA_DEFINE_FLAG(layout, LEFT_CODE << X_TO_Y_SHIFT, TOP)
 ALIA_DEFINE_FLAG(layout, RIGHT_CODE << X_TO_Y_SHIFT, BOTTOM)
@@ -193,9 +193,9 @@ ALIA_DEFINE_FLAG(
     layout, X_ALIGNMENT_MASK_CODE << X_TO_Y_SHIFT, Y_ALIGNMENT_MASK)
 
 // combined alignment flags - These specify both X and Y simultaneously.
-static layout_flag_set const CENTER = CENTER_X | CENTER_Y;
-static layout_flag_set const FILL = FILL_X | FILL_Y;
-static layout_flag_set const GROW = GROW_X | GROW_Y;
+layout_flag_set const CENTER = CENTER_X | CENTER_Y;
+layout_flag_set const FILL = FILL_X | FILL_Y;
+layout_flag_set const GROW = GROW_X | GROW_Y;
 // PROPORTIONAL_FILL and PROPORTIONAL_GROW are like FILL and GROW, but the
 // width and height are constrained to their original ratio. These should
 // only be used for leaf element, not containers.
@@ -232,7 +232,7 @@ operator==(layout const& a, layout const& b);
 bool
 operator!=(layout const& a, layout const& b);
 
-static layout const default_layout;
+layout const default_layout;
 
 struct data_traversal;
 struct geometry_context;

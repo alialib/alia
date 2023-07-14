@@ -161,7 +161,7 @@ struct external_component_id
     component_identity identity;
 };
 
-static external_component_id const null_component_id;
+external_component_id const null_component_id;
 
 // Is the given external_component_id valid?
 // (Only the null_component_id is invalid.)
