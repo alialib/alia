@@ -12,17 +12,43 @@ struct render_node
     virtual void
     render(SkCanvas& canvas)
         = 0;
+
+    render_node* next = nullptr;
 };
 
 struct render_container : render_node
 {
-    std::vector<std::unique_ptr<render_node>> children;
+    render_node* children = nullptr;
 };
 
-struct system;
+void
+render_children(render_container& container);
+
+struct render_traversal
+{
+    render_node** next_ptr = nullptr;
+};
 
 void
-render(indie::system& system, SkCanvas& canvas);
+add_render_node(render_traversal& traversal, render_node* node);
+
+struct scoped_render_container
+{
+    ~scoped_render_container()
+    {
+        end();
+    }
+
+    void
+    begin(render_traversal& traversal, render_container* container);
+
+    void
+    end();
+
+ private:
+    render_traversal* traversal_ = nullptr;
+    render_container* container_;
+};
 
 }} // namespace alia::indie
 

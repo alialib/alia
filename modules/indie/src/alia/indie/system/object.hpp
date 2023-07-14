@@ -3,10 +3,12 @@
 
 #include <alia/core/system/internals.hpp>
 #include <alia/indie/context.hpp>
-#include <alia/indie/rendering.hpp>
+#include <alia/indie/layout/internals.hpp>
 #include <alia/indie/system/defines.hpp>
 
 namespace alia { namespace indie {
+
+struct render_node;
 
 struct system
 {
@@ -17,7 +19,9 @@ struct system
 
     alia::system alia_system;
 
-    std::unique_ptr<render_node> render_root;
+    layout_system layout;
+
+    render_node* render_root;
 };
 
 void
