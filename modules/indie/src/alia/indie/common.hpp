@@ -6,9 +6,10 @@
 namespace alia {
 
 // Combine two hash values.
-size_t inline
-combine_hashes(size_t a, size_t b)
-{ return a ^ (0x9e3779b9 + (a << 6) + (a >> 2) + b); }
+size_t inline combine_hashes(size_t a, size_t b)
+{
+    return a ^ (0x9e3779b9 + (a << 6) + (a >> 2) + b);
+}
 
 // A flag_set is a set of flags, each of which represents a boolean property.
 // It is implemented as a simple unsigned integer, where each bit represents
@@ -23,7 +24,7 @@ combine_hashes(size_t a, size_t b)
 struct null_flag_set
 {
 };
-static null_flag_set const NO_FLAGS = null_flag_set();
+null_flag_set const NO_FLAGS = null_flag_set();
 
 template<class Tag>
 struct flag_set
@@ -116,7 +117,7 @@ struct std::hash<alia::flag_set<Tag>>
     typedef alia::flag_set<type_prefix##_flag_tag> type_prefix##_flag_set;
 
 #define ALIA_DEFINE_FLAG(type_prefix, code, name)                             \
-    static unsigned const name##_CODE = code;                                 \
-    static alia::flag_set<type_prefix##_flag_tag> const name(code);
+    unsigned const name##_CODE = code;                                        \
+    alia::flag_set<type_prefix##_flag_tag> const name(code);
 
 #endif
