@@ -959,36 +959,6 @@ transform_box(matrix<3, 3, T> const& m, box<2, T> const& b)
     return result;
 }
 
-// CUBIC BEZIERS
-
-// unit_cubic_bezier represents a cubic bezier whose end points are (0, 0)
-// and (1, 1).
-struct unit_cubic_bezier
-{
-    vector<2, double> p1, p2;
-
-    unit_cubic_bezier()
-    {
-    }
-    unit_cubic_bezier(vector<2, double> const& p1, vector<2, double> const& p2)
-        : p1(p1), p2(p2)
-    {
-    }
-    unit_cubic_bezier(double p1x, double p1y, double p2x, double p2y)
-    {
-        p1[0] = p1x;
-        p1[1] = p1y;
-        p2[0] = p2x;
-        p2[1] = p2y;
-    }
-};
-
-// Evaluate a unit_cubic_bezier at the given x value.
-// Since this is an approximation, the caller must specify an epsilon value
-// to control the error in the result.
-double
-eval_curve_at_x(unit_cubic_bezier const& curve, double x, double epsilon);
-
 } // namespace alia
 
 #endif

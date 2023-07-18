@@ -22,8 +22,8 @@ system::operator()(alia::context vanilla_ctx)
     }
     else
     {
-        // TODO:
-        // slt.begin(this->layout, lt, ...
+        static alia::geometry_context geo;
+        slt.begin(this->layout, lt, geo, make_vector<float>(200, 200));
     }
 
     auto ctx = extend_context<render_traversal_tag>(

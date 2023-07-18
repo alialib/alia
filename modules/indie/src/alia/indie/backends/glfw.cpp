@@ -31,6 +31,8 @@
 #include <alia/indie/rendering.hpp>
 #include <alia/indie/system/object.hpp>
 
+#include <chrono>
+
 namespace alia { namespace indie {
 
 struct glfw_window_impl
@@ -69,6 +71,28 @@ struct glfw_global_init
         glfwTerminate();
     }
 };
+
+glfw_window_impl&
+get_impl(GLFWwindow* window)
+{
+    return *reinterpret_cast<glfw_window_impl*>(
+        glfwGetWindowUserPointer(window));
+}
+
+void
+cursor_position_callback(GLFWwindow*, double, double)
+{
+}
+
+void
+mouse_button_callback(GLFWwindow* window, int button, int action, int /*mods*/)
+{
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+    {
+        mouse_click_event e;
+        dispatch_event(get_impl(window).system.alia_system, e);
+    }
+}
 
 void
 reset_skia(glfw_window_impl& impl, vector<2, unsigned> size)
@@ -115,11 +139,19 @@ init_window(
     glfwWindowHint(GLFW_STENCIL_BITS, 0);
     glfwWindowHint(GLFW_DEPTH_BITS, 0);
 
-    impl.glfw_window_
+    GLFWwindow* window
         = glfwCreateWindow(size[0], size[1], title.c_str(), NULL, NULL);
-    if (!impl.glfw_window_)
+    if (!window)
         throw alia::exception("GLFW window creation failed");
-    glfwMakeContextCurrent(impl.glfw_window_);
+    glfwSetWindowUserPointer(window, &impl);
+
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetCursorPosCallback(window, cursor_position_callback);
+
+    // TODO: Do this elsewhere?
+    glfwMakeContextCurrent(window);
+
+    impl.glfw_window_ = window;
 }
 
 void
@@ -157,13 +189,38 @@ glfw_window::do_main_loop()
 {
     while (!glfwWindowShouldClose(impl_->glfw_window_))
     {
-        refresh_system(impl_->system.alia_system);
-
         // TODO: Track this ourselves.
         int width, height;
         glfwGetWindowSize(impl_->glfw_window_, &width, &height);
 
+        std::chrono::steady_clock::time_point begin
+            = std::chrono::steady_clock::now();
+
+        refresh_system(impl_->system.alia_system);
+
+        {
+            std::chrono::steady_clock::time_point end
+                = std::chrono::steady_clock::now();
+            std::cout << "refresh: "
+                      << std::chrono::duration_cast<std::chrono::microseconds>(
+                             end - begin)
+                             .count()
+                      << "[us]\n";
+            begin = end;
+        }
+
         resolve_layout(impl_->system.layout, make_vector(width, height));
+
+        {
+            std::chrono::steady_clock::time_point end
+                = std::chrono::steady_clock::now();
+            std::cout << "layout: "
+                      << std::chrono::duration_cast<std::chrono::microseconds>(
+                             end - begin)
+                             .count()
+                      << "[us]\n";
+            begin = end;
+        }
 
         auto& canvas = *impl_->skia_surface_->getCanvas();
         canvas.clipRect(SkRect::MakeWH(SkScalar(width), SkScalar(height)));
@@ -185,10 +242,21 @@ glfw_window::do_main_loop()
             // TODO: Clear the canvas?
         }
 
+        {
+            std::chrono::steady_clock::time_point end
+                = std::chrono::steady_clock::now();
+            std::cout << "render: "
+                      << std::chrono::duration_cast<std::chrono::microseconds>(
+                             end - begin)
+                             .count()
+                      << "[us]\n";
+            begin = end;
+        }
+
         impl_->skia_graphics_context_->flush();
         glfwSwapBuffers(impl_->glfw_window_);
 
-        glfwWaitEvents();
+        glfwPollEvents();
     }
 }
 

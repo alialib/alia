@@ -83,8 +83,19 @@ alia_detect_compiler()
 if (ALIA_IS_MAIN_PROJECT)
     alia_set_development_warning_flags()
 
-    # Use absolute paths for error messages.
     if (IS_MSVC)
+        # Use EditAndContinue-style debug info for MSVC.
+        # TODO: Use CMAKE_MSVC_DEBUG_INFORMATION_FORMAT once it's more widely
+        # supported:
+        # set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT
+        #    "$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>")
+        string(REGEX REPLACE "/Zi" "/ZI"
+            CMAKE_CXX_FLAGS_RELWITHDEBINFO 
+            "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
+        string(REGEX REPLACE "/Zi" "/ZI"
+            CMAKE_CXX_FLAGS_DEBUG
+            "${CMAKE_CXX_FLAGS_DEBUG}")
+        # Use absolute paths for error messages.
         add_compile_options(/FC)
     endif()
 endif()
