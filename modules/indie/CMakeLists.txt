@@ -1,6 +1,12 @@
 find_package(glfw3 3.3 CONFIG REQUIRED)
 find_package(unofficial-skia CONFIG REQUIRED)
 
+include(FetchContent)
+FetchContent_Declare(dmilos_color
+   GIT_REPOSITORY https://github.com/dmilos/color.git
+   GIT_TAG 84dc0512cb5fcf6536d79f0bee2530e678c01b03)
+FetchContent_Populate(dmilos_color)
+
 # Set up the alia-indie library.
 file(GLOB_RECURSE ALIA_INDIE_SOURCES ${ALIA_GLOB_OPTIONS} "src/*.cpp")
 add_library(alia_indie STATIC ${ALIA_INDIE_SOURCES})
@@ -12,10 +18,13 @@ target_link_libraries(alia_indie PUBLIC
     unofficial::skia::skparagraph
     unofficial::skia::skshaper
     unofficial::skia::skunicode)
+target_include_directories(alia_indie PUBLIC "${dmilos_color_SOURCE_DIR}/src")
+target_precompile_headers(alia_indie PUBLIC
+    src/alia/indie.hpp)
 
-# Add the unit test runner.
-add_executable(test_example examples/test.cpp)
-target_link_libraries(test_example alia_indie)
+# Add the test example.
+add_executable(test_example examples/test.cpp examples/runner.cpp)
+target_link_libraries(test_example PRIVATE alia_indie)
 
 if (NOT ALIA_ENABLE_TESTING)
     return()

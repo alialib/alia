@@ -22,7 +22,7 @@ struct render_container : render_node
 };
 
 void
-render_children(render_container& container);
+render_children(SkCanvas& canvas, render_container& container);
 
 struct render_traversal
 {
