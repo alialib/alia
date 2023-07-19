@@ -232,9 +232,9 @@ glfw_window::do_main_loop()
             canvas.drawPaint(paint);
         }
 
-        if (impl_->system.render_root)
+        if (impl_->system.root_widget)
         {
-            impl_->system.render_root->render(
+            impl_->system.root_widget->render(
                 *impl_->skia_surface_->getCanvas());
         }
         else

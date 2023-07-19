@@ -17,7 +17,7 @@ system::operator()(alia::context vanilla_ctx)
 
     if (is_refresh_event(vanilla_ctx))
     {
-        rt.next_ptr = &this->render_root;
+        rt.next_ptr = &this->root_widget;
         slr.begin(this->layout, lt, make_vector<float>(200, 200)); // TODO
     }
     else

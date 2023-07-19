@@ -6,7 +6,7 @@
 
 using namespace alia;
 
-struct box_node : indie::render_node
+struct box_node : indie::widget
 {
     virtual void
     render(SkCanvas& canvas)
@@ -33,7 +33,7 @@ do_box(indie::context ctx, SkColor color)
     {
         auto& node = get_cached_data<box_node>(ctx);
         node.color_ = color;
-        add_render_node(get<indie::render_traversal_tag>(ctx), &node);
+        add_widget(get<indie::render_traversal_tag>(ctx), &node);
         node.layout_.refresh_layout(
             get<indie::layout_traversal_tag>(ctx),
             alia::layout(TOP | LEFT | PADDED),
@@ -53,7 +53,7 @@ get_layout_traversal(context ctx)
 
 }} // namespace alia::indie
 
-struct simple_render_container : indie::render_container
+struct simple_widget_container : indie::widget_container
 {
     void
     render(SkCanvas& canvas)
@@ -65,11 +65,12 @@ struct simple_render_container : indie::render_container
 void
 my_ui(indie::context ctx)
 {
-    static simple_render_container container;
-    indie::scoped_render_container container_scope;
+    static simple_widget_container container;
+    indie::scoped_widget_container container_scope;
     if (is_refresh_event(ctx))
     {
-        container_scope.begin(get<indie::render_traversal_tag>(ctx), &container);
+        container_scope.begin(
+            get<indie::render_traversal_tag>(ctx), &container);
     }
     row_layout row(ctx);
     do_box(ctx, SK_ColorMAGENTA);
