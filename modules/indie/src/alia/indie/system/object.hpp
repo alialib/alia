@@ -8,7 +8,7 @@
 
 namespace alia { namespace indie {
 
-struct render_node;
+struct widget;
 
 struct system
 {
@@ -21,7 +21,7 @@ struct system
 
     layout_system layout;
 
-    render_node* render_root;
+    widget* root_widget;
 };
 
 void

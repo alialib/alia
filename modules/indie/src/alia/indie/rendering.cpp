@@ -4,22 +4,22 @@
 namespace alia { namespace indie {
 
 void
-render_children(SkCanvas& canvas, render_container& container)
+render_children(SkCanvas& canvas, widget_container& container)
 {
-    for (render_node* node = container.children; node; node = node->next)
+    for (widget* node = container.children; node; node = node->next)
         node->render(canvas);
 }
 
 void
-add_render_node(render_traversal& traversal, render_node* node)
+add_widget(render_traversal& traversal, widget* node)
 {
     *traversal.next_ptr = node;
     traversal.next_ptr = &node->next;
 }
 
 void
-scoped_render_container::begin(
-    render_traversal& traversal, render_container* container)
+scoped_widget_container::begin(
+    render_traversal& traversal, widget_container* container)
 {
     traversal_ = &traversal;
     container_ = container;
@@ -29,7 +29,7 @@ scoped_render_container::begin(
 }
 
 void
-scoped_render_container::end()
+scoped_widget_container::end()
 {
     if (traversal_)
     {

@@ -5,49 +5,54 @@
 
 #include <include/core/SkCanvas.h>
 
+#include <alia/indie/events.hpp>
+
 namespace alia { namespace indie {
 
-struct render_node
+struct widget
 {
     virtual void
     render(SkCanvas& canvas)
         = 0;
 
-    render_node* next = nullptr;
+    virtual void
+    process_region_event(region_event& event);
+
+    widget* next = nullptr;
 };
 
-struct render_container : render_node
+struct widget_container : widget
 {
-    render_node* children = nullptr;
+    widget* children = nullptr;
 };
 
 void
-render_children(SkCanvas& canvas, render_container& container);
+render_children(SkCanvas& canvas, widget_container& container);
 
 struct render_traversal
 {
-    render_node** next_ptr = nullptr;
+    widget** next_ptr = nullptr;
 };
 
 void
-add_render_node(render_traversal& traversal, render_node* node);
+add_widget(render_traversal& traversal, widget* node);
 
-struct scoped_render_container
+struct scoped_widget_container
 {
-    ~scoped_render_container()
+    ~scoped_widget_container()
     {
         end();
     }
 
     void
-    begin(render_traversal& traversal, render_container* container);
+    begin(render_traversal& traversal, widget_container* container);
 
     void
     end();
 
  private:
     render_traversal* traversal_ = nullptr;
-    render_container* container_;
+    widget_container* container_;
 };
 
 }} // namespace alia::indie
