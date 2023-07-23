@@ -18,7 +18,7 @@ ALIA_DEFINE_TAGGED_TYPE(by_value_string_tag, std::string)
 
 TEST_CASE("context_storage", "[context][interface]")
 {
-    context_storage<untyped_system> storage;
+    context_storage storage;
 
     REQUIRE(!storage.has<data_traversal_tag>());
     data_traversal data;
@@ -50,7 +50,7 @@ TEST_CASE("context_storage", "[context][interface]")
 
 TEST_CASE("context", "[context][interface]")
 {
-    context_storage<untyped_system> storage;
+    context_storage storage;
 
     alia::system sys;
     data_traversal data;
@@ -102,7 +102,7 @@ TEST_CASE("context", "[context][interface]")
 
 TEST_CASE("optional_context", "[context][interface]")
 {
-    context_storage<untyped_system> storage;
+    context_storage storage;
 
     alia::system sys;
     data_traversal data;

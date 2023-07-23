@@ -1,5 +1,5 @@
-#include <alia/indie/rendering.hpp>
 #include <alia/indie/system/object.hpp>
+#include <alia/indie/widget.hpp>
 
 namespace alia { namespace indie {
 
@@ -11,7 +11,7 @@ render_children(SkCanvas& canvas, widget_container& container)
 }
 
 void
-add_widget(render_traversal& traversal, widget* node)
+add_widget(widget_traversal& traversal, widget* node)
 {
     *traversal.next_ptr = node;
     traversal.next_ptr = &node->next;
@@ -19,7 +19,7 @@ add_widget(render_traversal& traversal, widget* node)
 
 void
 scoped_widget_container::begin(
-    render_traversal& traversal, widget_container* container)
+    widget_traversal& traversal, widget_container* container)
 {
     traversal_ = &traversal;
     container_ = container;

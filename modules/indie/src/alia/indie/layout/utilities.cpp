@@ -463,17 +463,13 @@ resolve_assigned_width(
     return size - spec.padding_size[0] * 2;
 }
 
-void
+relative_layout_assignment
 resolve_relative_assignment(
-    relative_layout_assignment& resolved_assignment,
     resolved_layout_spec const& spec,
     relative_layout_assignment const& assignment,
     layout_requirements const& horizontal_requirements,
     layout_requirements const& vertical_requirements)
 {
-    // assert(assignment.baseline_y >= vertical_requirements.ascent);
-    // assert(assignment.baseline_y + vertical_requirements.descent <=
-    //     assignment.region.size[1]);
     layout_scalar x_offset, x_size;
     resolve_axis_assignment(
         x_offset,
@@ -492,7 +488,7 @@ resolve_relative_assignment(
         assignment.baseline_y,
         vertical_requirements.size,
         vertical_requirements.ascent);
-    resolved_assignment = relative_layout_assignment(
+    return relative_layout_assignment(
         layout_box(
             assignment.region.corner + make_layout_vector(x_offset, y_offset)
                 + spec.padding_size,
@@ -573,8 +569,7 @@ relative_region_assignment::relative_region_assignment(
         cacher_->last_relative_assignment != last_content_change_
         || cacher_->relative_assignment != assignment)
     {
-        relative_layout_assignment resolved_assignment;
-        resolve_relative_assignment(
+        auto resolved_assignment = resolve_relative_assignment(
             resolved_assignment,
             cacher_->resolved_spec,
             assignment,
@@ -886,7 +881,7 @@ is_visible(geometry_context& ctx, box<2, double> const& region)
     {
         if ((region_low[i] < window_low[i] && region_high[i] < window_low[i])
             || (region_low[i] > window_high[i]
-                   && region_high[i] > window_high[i]))
+                && region_high[i] > window_high[i]))
         {
             return false;
         }

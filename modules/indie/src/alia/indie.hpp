@@ -6,7 +6,7 @@
 #include <alia/indie/backends/glfw.hpp>
 #include <alia/indie/layout/api.hpp>
 #include <alia/indie/layout/utilities.hpp>
-#include <alia/indie/rendering.hpp>
 #include <alia/indie/system/object.hpp>
+#include <alia/indie/widget.hpp>
 
 #endif

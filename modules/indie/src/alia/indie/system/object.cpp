@@ -2,45 +2,54 @@
 
 #include <alia/indie/layout/api.hpp>
 #include <alia/indie/layout/system.hpp>
-#include <alia/indie/rendering.hpp>
+#include <alia/indie/widget.hpp>
 
 namespace alia { namespace indie {
 
-void
-system::operator()(alia::context vanilla_ctx)
+struct controller_wrapper
 {
-    render_traversal rt;
+    indie::system& system;
 
-    layout_traversal lt;
-    scoped_layout_refresh slr;
-    scoped_layout_traversal slt;
-
-    if (is_refresh_event(vanilla_ctx))
+    void
+    operator()(indie::vanilla_context vanilla_ctx)
     {
-        rt.next_ptr = &this->root_widget;
-        slr.begin(this->layout, lt, make_vector<float>(200, 200)); // TODO
-    }
-    else
-    {
-        static alia::geometry_context geo;
-        slt.begin(this->layout, lt, geo, make_vector<float>(200, 200));
-    }
+        indie::traversal traversal;
 
-    auto ctx = extend_context<render_traversal_tag>(
-        extend_context<layout_traversal_tag>(
-            extend_context<system_tag>(vanilla_ctx, *this), lt),
-        rt);
+        scoped_layout_refresh slr;
+        scoped_layout_traversal slt;
 
-    this->controller(ctx);
-    rt.next_ptr = nullptr;
-}
+        if (is_refresh_event(vanilla_ctx))
+        {
+            traversal.widgets.next_ptr = &system.root_widget;
+            slr.begin(
+                system.layout,
+                traversal.layout,
+                make_vector<float>(200, 200)); // TODO
+        }
+        else
+        {
+            static alia::geometry_context geo;
+            slt.begin(
+                system.layout,
+                traversal.layout,
+                geo,
+                make_vector<float>(200, 200));
+        }
+
+        auto ctx = extend_context<traversal_tag>(vanilla_ctx, traversal);
+
+        system.controller(ctx);
+        traversal.widgets.next_ptr = nullptr;
+    }
+};
 
 void
 initialize(
     indie::system& system, std::function<void(indie::context)> controller)
 {
     // Initialize the alia::system and hook it up to the indie::system.
-    initialize_system(system.alia_system, std::ref(system), nullptr);
+    initialize_system<indie::vanilla_context>(
+        system, controller_wrapper{system}, nullptr);
     system.controller = std::move(controller);
 }
 
