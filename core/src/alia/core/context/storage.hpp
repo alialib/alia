@@ -2,9 +2,9 @@
 #define ALIA_CORE_CONTEXT_STORAGE_HPP
 
 #include <any>
+#include <map>
 #include <type_traits>
 #include <typeindex>
-#include <unordered_map>
 
 #include <alia/core/context/structural_typing.hpp>
 
@@ -16,7 +16,7 @@ namespace alia { namespace detail {
 template<class Data>
 struct generic_tagged_storage
 {
-    std::unordered_map<std::type_index, Data> objects;
+    std::map<std::type_index, Data> objects;
 
     template<class Tag>
     bool

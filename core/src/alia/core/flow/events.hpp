@@ -5,7 +5,6 @@
 #include <alia/core/flow/components.hpp>
 #include <alia/core/flow/data_graph.hpp>
 #include <alia/core/flow/macros.hpp>
-#include <alia/core/system/interface.hpp>
 
 // This file implements utilities for routing events through an alia content
 // traversal function.
@@ -54,58 +53,6 @@ get_active_component_container(Context ctx)
 }
 
 typedef component_container_ptr::weak_type component_identity;
-
-namespace detail {
-
-// Set up the event traversal so that it will route the control flow to the
-// given target. (And also invoke the traversal.)
-//
-// :target can be null, in which case the event will be routed through the
-// entire component tree.
-//
-void
-route_event(
-    system& sys, event_traversal& traversal, component_container* target);
-
-template<class Event>
-void
-dispatch_targeted_event(
-    system& sys, Event& event, component_identity const& target)
-{
-    // `target` is a weak_ptr, so we have to acquire a lock on it. It's
-    // possible that the target has actually been destroyed and we're trying to
-    // deliver an event to an non-existent target, in which case the lock will
-    // fail.
-    if (auto target_container = target.lock())
-    {
-        event_traversal traversal;
-        traversal.targeted = true;
-        traversal.event_type = &typeid(Event);
-        traversal.event = &event;
-        route_event(sys, traversal, target_container.get());
-    }
-}
-
-template<class Event>
-void
-dispatch_event(system& sys, Event& event)
-{
-    event_traversal traversal;
-    traversal.targeted = false;
-    traversal.event_type = &typeid(Event);
-    traversal.event = &event;
-    route_event(sys, traversal, nullptr);
-}
-
-} // namespace detail
-
-template<class Event>
-void
-dispatch_event(system& sys, Event& event)
-{
-    detail::dispatch_event(sys, event);
-    refresh_system(sys);
-}
 
 struct traversal_aborted
 {
@@ -186,16 +133,6 @@ struct targeted_event
 };
 
 template<class Event>
-void
-dispatch_targeted_event(
-    system& sys, Event& event, external_component_id component)
-{
-    event.target_id = component.id;
-    detail::dispatch_targeted_event(sys, event, component.identity);
-    refresh_system(sys);
-}
-
-template<class Event>
 bool
 detect_targeted_event(dataless_context ctx, component_id id, Event** event)
 {
@@ -239,7 +176,7 @@ refresh_handler(Context ctx, Handler handler)
 }
 
 void
-isolate_errors(system& sys, function_view<void()> const& function);
+isolate_errors(untyped_system& sys, function_view<void()> const& function);
 
 template<class Context>
 void
@@ -330,7 +267,7 @@ namespace detail {
 
 template<bool TriggeringState, class Signal>
 void
-common_value_edge_logic(
+value_edge_logic(
     context ctx, bool* saved_state, Signal const& signal, action<> on_edge)
 {
     if (is_refresh_event(ctx))
@@ -355,7 +292,7 @@ on_value_gain(context ctx, Signal const& signal, action<> on_gain)
     bool* saved_state;
     if (get_cached_data(ctx, &saved_state))
         *saved_state = false;
-    detail::common_value_edge_logic<true>(ctx, saved_state, signal, on_gain);
+    detail::value_edge_logic<true>(ctx, saved_state, signal, on_gain);
 }
 
 template<class Signal>
@@ -365,7 +302,7 @@ on_observed_value_gain(context ctx, Signal const& signal, action<> on_gain)
     bool* saved_state;
     if (get_cached_data(ctx, &saved_state))
         *saved_state = true;
-    detail::common_value_edge_logic<true>(ctx, saved_state, signal, on_gain);
+    detail::value_edge_logic<true>(ctx, saved_state, signal, on_gain);
 }
 
 template<class Signal>
@@ -375,7 +312,7 @@ on_value_loss(context ctx, Signal const& signal, action<> on_loss)
     bool* saved_state;
     if (get_cached_data(ctx, &saved_state))
         *saved_state = true;
-    detail::common_value_edge_logic<false>(ctx, saved_state, signal, on_loss);
+    detail::value_edge_logic<false>(ctx, saved_state, signal, on_loss);
 }
 
 template<class Signal>
@@ -385,7 +322,7 @@ on_observed_value_loss(context ctx, Signal const& signal, action<> on_loss)
     bool* saved_state;
     if (get_cached_data(ctx, &saved_state))
         *saved_state = false;
-    detail::common_value_edge_logic<false>(ctx, saved_state, signal, on_loss);
+    detail::value_edge_logic<false>(ctx, saved_state, signal, on_loss);
 }
 
 } // namespace alia

@@ -5,6 +5,7 @@
 #include <alia/core/flow/data_graph.hpp>
 #include <alia/core/flow/events.hpp>
 #include <alia/core/flow/object_trees.hpp>
+#include <alia/core/flow/top_level.hpp>
 #include <alia/core/system/internals.hpp>
 
 #include <sstream>
@@ -116,7 +117,7 @@ do_traversal(
     timing_subsystem timing;
     timing.tick_counter = 0;
 
-    context_storage storage;
+    context_storage<untyped_system> storage;
     context ctx = make_context(&storage, sys, event, data, timing);
 
     if (!with_gc)

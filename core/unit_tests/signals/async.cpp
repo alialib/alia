@@ -14,7 +14,7 @@ using namespace alia;
 TEST_CASE("async", "[signals][async]")
 {
     alia::system sys;
-    initialize_system(sys, [](context) {});
+    initialize_system<context>(sys, [](context) {});
 
     async_reporter<int> reporter;
 

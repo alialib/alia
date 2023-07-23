@@ -202,27 +202,26 @@ struct merge_tag_lists<tag_list<AHead, ARest...>, B>
 // structural_collection_is_convertible<From,To>::value yields a
 // compile-time boolean indicating whether or not the type :From can be
 // converted to the type :To (both must be structural_collections).
-// The requirements for this are that a) the storage types are the same and b)
-// the tags of :From are a superset of those of :To.
+//
+// The requirements for this are that:
+// a) :From::storage_type* is convertible to :To::storage_type*
+// and
+// b) the tags of :From are a superset of those of :To.
+//
 template<class From, class To>
 struct structural_collection_is_convertible
 {
 };
-// case where storage types differ
-template<class FromTags, class FromStorage, class ToTags, class ToStorage>
+template<class FromTags, class FromStorage, class ToStorage, class... ToTags>
 struct structural_collection_is_convertible<
     structural_collection<FromTags, FromStorage>,
-    structural_collection<ToTags, ToStorage>> : std::false_type
-{
-};
-// case where storage types are the same, so tags must be checked
-template<class Storage, class FromTags, class... ToTags>
-struct structural_collection_is_convertible<
-    structural_collection<FromTags, Storage>,
-    structural_collection<tag_list<ToTags...>, Storage>>
-    : collection_contains_all_tags<
-          structural_collection<FromTags, Storage>,
-          ToTags...>
+    structural_collection<tag_list<ToTags...>, ToStorage>>
+    : std::conditional_t<
+          std::is_convertible_v<FromStorage*, ToStorage*>,
+          collection_contains_all_tags<
+              structural_collection<FromTags, FromStorage>,
+              ToTags...>,
+          std::false_type>
 {
 };
 
@@ -388,7 +387,8 @@ remove_tagged_data(Collection collection)
 
 // Determine if a tag is in a collection.
 template<class Tag, class Collection>
-bool has_tagged_data(Collection)
+bool
+has_tagged_data(Collection)
 {
     return structural_collection_contains_tag<Collection, Tag>::value;
 }

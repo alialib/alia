@@ -5,6 +5,7 @@
 #include <alia/core/flow/data_graph.hpp>
 #include <alia/core/flow/events.hpp>
 #include <alia/core/signals/utilities.hpp>
+#include <alia/core/system/interface.hpp>
 
 namespace alia {
 
@@ -140,7 +141,7 @@ struct async_reporter
 
     std::shared_ptr<async_operation_data<Result>> data_;
     counter_type version_;
-    alia::system* system_;
+    alia::untyped_system* system_;
     component_container_ptr container_;
 };
 

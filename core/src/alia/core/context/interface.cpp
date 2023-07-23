@@ -4,30 +4,7 @@
 #include <alia/core/flow/events.hpp>
 #include <alia/core/system/interface.hpp>
 
-namespace alia {
-
-context
-make_context(
-    context_storage* storage,
-    system& sys,
-    event_traversal& event,
-    data_traversal& data,
-    timing_subsystem& timing)
-{
-    storage->content_id = &unit_id;
-    return detail::add_context_object<data_traversal_tag>(
-        detail::add_context_object<timing_tag>(
-            detail::add_context_object<event_traversal_tag>(
-                detail::add_context_object<system_tag>(
-                    make_context(
-                        detail::make_empty_structural_collection(storage)),
-                    std::ref(sys)),
-                std::ref(event)),
-            std::ref(timing)),
-        std::ref(data));
-}
-
-namespace detail {
+namespace alia { namespace detail {
 
 struct context_content_id_folding_data
 {
@@ -58,6 +35,4 @@ fold_in_content_id(context ctx, id_interface const& id)
     ctx.contents_.storage->content_id = &data.id_to_present;
 }
 
-} // namespace detail
-
-} // namespace alia
+}} // namespace alia::detail
