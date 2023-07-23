@@ -3,6 +3,7 @@
 #include <thread>
 
 #include <alia/core/actions/operators.hpp>
+#include <alia/core/system/interface.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -13,7 +14,7 @@ using namespace alia;
 TEST_CASE("automatic ticks", "[timing][ticks]")
 {
     alia::system sys;
-    initialize_system(sys, [](context) {});
+    initialize_system<context>(sys, [](context) {});
     millisecond_count last_ticks;
     do_traversal(sys, [&](context ctx) {
         last_ticks = get_raw_animation_tick_count(ctx);
@@ -51,7 +52,7 @@ TEST_CASE("get_raw_animation_ticks_left", "[timing][ticks]")
 {
     alia::system sys;
     auto* external_ptr = new dummy_external_interface(sys);
-    initialize_system(
+    initialize_system<context>(
         sys, [](context) {}, external_ptr);
     auto& external = *external_ptr;
 
@@ -89,7 +90,7 @@ TEST_CASE("animation_timer", "[timing][ticks]")
 {
     alia::system sys;
     auto* external_ptr = new dummy_external_interface(sys);
-    initialize_system(
+    initialize_system<context>(
         sys, [](context) {}, external_ptr);
     auto& external = *external_ptr;
 

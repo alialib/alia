@@ -3,6 +3,7 @@
 #include <sstream>
 
 #include <alia/core/flow/macros.hpp>
+#include <alia/core/flow/top_level.hpp>
 #include <alia/core/system/internals.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -99,12 +100,12 @@ check_traversal_path(
     int n, std::string const& label, std::string const& expected_path)
 {
     alia::system sys;
-    initialize_system(sys, traversal_function(n));
+    initialize_system<context>(sys, traversal_function(n));
     component_container_ptr target;
     {
         find_label_event fle;
         fle.name = label;
-        detail::dispatch_event(sys, fle);
+        detail::dispatch_untargeted_event(sys, fle);
         target = fle.container;
     }
     {

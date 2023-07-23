@@ -1,7 +1,7 @@
 #ifndef ALIA_CORE_UNIT_TESTS_TRAVERSAL_HPP
 #define ALIA_CORE_UNIT_TESTS_TRAVERSAL_HPP
 
-#include <alia/core/flow/events.hpp>
+#include <alia/core/flow/top_level.hpp>
 #include <alia/core/system/internals.hpp>
 
 #include <sstream>
@@ -47,7 +47,7 @@ check_traversal(
         ostream_event oe;
         std::ostringstream s;
         oe.stream = &s;
-        detail::dispatch_event(sys, oe);
+        detail::dispatch_untargeted_event(sys, oe);
         REQUIRE(s.str() == expected_output);
     }
 }

@@ -14,8 +14,8 @@ ALIA_DEFINE_TAGGED_TYPE(data_traversal_tag, data_traversal&)
 struct event_traversal;
 ALIA_DEFINE_TAGGED_TYPE(event_traversal_tag, event_traversal&)
 
-struct system;
-ALIA_DEFINE_TAGGED_TYPE(system_tag, system&)
+struct untyped_system;
+ALIA_DEFINE_TAGGED_TYPE(system_tag, untyped_system&)
 
 struct timing_subsystem;
 ALIA_DEFINE_TAGGED_TYPE(timing_tag, timing_subsystem&)
@@ -23,10 +23,11 @@ ALIA_DEFINE_TAGGED_TYPE(timing_tag, timing_subsystem&)
 // the structure we use to store context objects - It provides direct storage
 // of the commonly-used objects in the core of alia.
 
+template<class System>
 struct context_storage
 {
     // directly-stored objects
-    system* sys = nullptr;
+    System* sys = nullptr;
     event_traversal* event = nullptr;
     data_traversal* data = nullptr;
     timing_subsystem* timing = nullptr;
@@ -40,10 +41,13 @@ struct context_storage
     id_interface const* content_id = nullptr;
 };
 
-ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(context_storage, system_tag, sys)
-ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(context_storage, event_traversal_tag, event)
-ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(context_storage, data_traversal_tag, data)
-ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(context_storage, timing_tag, timing)
+#define ALIA_ADD_CORE_CONTEXT_ACCESSORS(storage)                              \
+    ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(storage, system_tag, sys)              \
+    ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(storage, event_traversal_tag, event)   \
+    ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(storage, data_traversal_tag, data)     \
+    ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(storage, timing_tag, timing)
+
+ALIA_ADD_CORE_CONTEXT_ACCESSORS(context_storage<untyped_system>)
 
 // the context interface wrapper
 template<class Contents>
@@ -93,7 +97,7 @@ get_structural_collection(context_interface<Contents> ctx)
 }
 
 template<class Contents>
-context_storage&
+auto&
 get_storage_object(context_interface<Contents> ctx)
 {
     return *get_structural_collection(ctx).storage;
@@ -158,11 +162,52 @@ struct context_has_tag : detail::structural_collection_contains_tag<
 {
 };
 
+template<class Contents>
+auto
+make_context(Contents contents)
+{
+    return context_interface<Contents>(std::move(contents));
+}
+
+template<class System, class Storage>
+auto
+make_context(
+    Storage* storage,
+    System& sys,
+    event_traversal& event,
+    data_traversal& data,
+    timing_subsystem& timing)
+{
+    storage->content_id = &unit_id;
+    return detail::add_context_object<data_traversal_tag>(
+        detail::add_context_object<timing_tag>(
+            detail::add_context_object<event_traversal_tag>(
+                detail::add_context_object<system_tag>(
+                    make_context(
+                        detail::make_empty_structural_collection(storage)),
+                    std::ref(sys)),
+                std::ref(event)),
+            std::ref(timing)),
+        std::ref(data));
+}
+
+template<class Context>
+Context
+copy_context(Context ctx)
+{
+    typename Context::contents_type::storage_type* new_storage;
+    get_data(ctx, &new_storage);
+
+    *new_storage = *ctx.contents_.storage;
+
+    return Context(typename Context::contents_type(new_storage));
+}
+
 // the typedefs for the context - There are two because we want to be able to
 // represent the context with and without data capabilities.
 
 typedef context_interface<detail::add_tagged_data_types_t<
-    detail::empty_structural_collection<context_storage>,
+    detail::empty_structural_collection<context_storage<untyped_system>>,
     system_tag,
     event_traversal_tag,
     timing_tag>>
@@ -171,33 +216,6 @@ typedef context_interface<detail::add_tagged_data_types_t<
 typedef extend_context_type_t<dataless_context, data_traversal_tag> context;
 
 // And various small functions for working with contexts...
-
-template<class Contents>
-auto
-make_context(Contents contents)
-{
-    return context_interface<Contents>(std::move(contents));
-}
-
-context
-make_context(
-    context_storage* storage,
-    system& sys,
-    event_traversal& event,
-    data_traversal& data,
-    timing_subsystem& timing);
-
-template<class Context>
-Context
-copy_context(Context ctx)
-{
-    context_storage* new_storage;
-    get_data(ctx, &new_storage);
-
-    *new_storage = *ctx.contents_.storage;
-
-    return Context(typename Context::contents_type(new_storage));
-}
 
 namespace detail {
 
