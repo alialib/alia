@@ -8,14 +8,14 @@
 
 namespace alia {
 
+struct untyped_system;
+ALIA_DEFINE_TAGGED_TYPE(system_tag, untyped_system&)
+
 struct data_traversal;
 ALIA_DEFINE_TAGGED_TYPE(data_traversal_tag, data_traversal&)
 
 struct event_traversal;
 ALIA_DEFINE_TAGGED_TYPE(event_traversal_tag, event_traversal&)
-
-struct untyped_system;
-ALIA_DEFINE_TAGGED_TYPE(system_tag, untyped_system&)
 
 struct timing_subsystem;
 ALIA_DEFINE_TAGGED_TYPE(timing_tag, timing_subsystem&)
@@ -23,11 +23,10 @@ ALIA_DEFINE_TAGGED_TYPE(timing_tag, timing_subsystem&)
 // the structure we use to store context objects - It provides direct storage
 // of the commonly-used objects in the core of alia.
 
-template<class System>
 struct context_storage
 {
     // directly-stored objects
-    System* sys = nullptr;
+    untyped_system* sys = nullptr;
     event_traversal* event = nullptr;
     data_traversal* data = nullptr;
     timing_subsystem* timing = nullptr;
@@ -47,7 +46,7 @@ struct context_storage
     ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(storage, data_traversal_tag, data)     \
     ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(storage, timing_tag, timing)
 
-ALIA_ADD_CORE_CONTEXT_ACCESSORS(context_storage<untyped_system>)
+ALIA_ADD_CORE_CONTEXT_ACCESSORS(context_storage)
 
 // the context interface wrapper
 template<class Contents>
@@ -207,7 +206,7 @@ copy_context(Context ctx)
 // represent the context with and without data capabilities.
 
 typedef context_interface<detail::add_tagged_data_types_t<
-    detail::empty_structural_collection<context_storage<untyped_system>>,
+    detail::empty_structural_collection<context_storage>,
     system_tag,
     event_traversal_tag,
     timing_tag>>
