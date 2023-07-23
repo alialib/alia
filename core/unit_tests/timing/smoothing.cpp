@@ -1,9 +1,11 @@
 #include <alia/core/timing/smoothing.hpp>
 
+#include <complex>
+
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-#include <complex>
+#include <alia/core/system/interface.hpp>
 
 #include "traversal.hpp"
 
@@ -41,7 +43,7 @@ TEST_CASE("smooth_raw", "[timing][smoothing]")
 {
     alia::system sys;
     auto* external_ptr = new testing_external_interface(sys);
-    initialize_system(
+    initialize_system<context>(
         sys, [](context) {}, external_ptr);
     auto& external = *external_ptr;
 
@@ -133,7 +135,7 @@ TEST_CASE("smooth", "[timing][smoothing]")
 {
     alia::system sys;
     auto* external_ptr = new testing_external_interface(sys);
-    initialize_system(
+    initialize_system<context>(
         sys, [](context) {}, external_ptr);
     auto& external = *external_ptr;
 
@@ -192,7 +194,7 @@ TEST_CASE("smooth writing", "[timing][smoothing]")
 {
     alia::system sys;
     auto* external_ptr = new testing_external_interface(sys);
-    initialize_system(
+    initialize_system<context>(
         sys, [](context) {}, external_ptr);
     auto& external = *external_ptr;
 

@@ -11,7 +11,7 @@ schedule_animation_refresh(dataless_context ctx)
 {
     // Invoke the virtual method on the external system interface.
     // And also set a flag to indicate that a refresh is needed.
-    system& sys = get<system_tag>(ctx);
+    untyped_system& sys = get<system_tag>(ctx);
     if (!sys.refresh_needed)
     {
         if (sys.external)
