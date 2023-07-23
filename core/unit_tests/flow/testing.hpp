@@ -117,7 +117,7 @@ do_traversal(
     timing_subsystem timing;
     timing.tick_counter = 0;
 
-    context_storage<untyped_system> storage;
+    context_storage storage;
     context ctx = make_context(&storage, sys, event, data, timing);
 
     if (!with_gc)

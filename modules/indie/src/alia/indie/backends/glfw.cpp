@@ -28,8 +28,8 @@
 #pragma warning(pop)
 
 #include <alia/indie/layout/system.hpp>
-#include <alia/indie/rendering.hpp>
 #include <alia/indie/system/object.hpp>
+#include <alia/indie/widget.hpp>
 
 #include <chrono>
 
@@ -90,7 +90,7 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int /*mods*/)
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
     {
         mouse_click_event e;
-        dispatch_event(get_impl(window).system.alia_system, e);
+        dispatch_event(get_impl(window).system, e);
     }
 }
 
@@ -175,7 +175,7 @@ glfw_window::glfw_window(
     init_skia(*impl_, size);
 
     // Perform the initial update.
-    refresh_system(impl_->system.alia_system);
+    refresh_system(impl_->system);
 }
 
 void*
@@ -196,7 +196,7 @@ glfw_window::do_main_loop()
         std::chrono::steady_clock::time_point begin
             = std::chrono::steady_clock::now();
 
-        refresh_system(impl_->system.alia_system);
+        refresh_system(impl_->system);
 
         {
             std::chrono::steady_clock::time_point end

@@ -10,14 +10,9 @@ namespace alia { namespace indie {
 
 struct widget;
 
-struct system
+struct system : alia::typed_system<indie::vanilla_context>
 {
     std::function<void(indie::context)> controller;
-
-    void
-    operator()(alia::context ctx);
-
-    alia::system alia_system;
 
     layout_system layout;
 

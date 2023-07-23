@@ -1,10 +1,5 @@
 #include <alia/indie/backends/glfw.hpp>
-#include <alia/indie/layout/api.hpp>
-#include <alia/indie/layout/utilities.hpp>
-#include <alia/indie/rendering.hpp>
-#include <alia/indie/system/object.hpp>
-
-#include <GLFW/glfw3.h>
+#include <alia/indie/widget.hpp>
 
 using namespace alia;
 
