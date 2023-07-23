@@ -12,7 +12,7 @@ namespace alia {
 // All positioning is currently done in integer coordinates, but these
 // typedefs are used to keep open the possibility of changing that one day.
 
-typedef int layout_scalar;
+typedef float layout_scalar;
 
 typedef vector<2, layout_scalar> layout_vector;
 inline layout_vector

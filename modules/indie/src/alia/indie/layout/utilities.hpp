@@ -47,12 +47,12 @@ as_layout_size(vector<2, int> const& x)
 inline layout_scalar
 round_to_layout_scalar(float x)
 {
-    return layout_scalar(x + 0.5);
+    return layout_scalar(x);
 }
 inline layout_scalar
 round_to_layout_scalar(double x)
 {
-    return layout_scalar(x + 0.5);
+    return layout_scalar(x);
 }
 
 // Test if two layout scalars are almost equal to each other.

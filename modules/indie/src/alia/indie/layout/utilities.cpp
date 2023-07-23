@@ -570,7 +570,6 @@ relative_region_assignment::relative_region_assignment(
         || cacher_->relative_assignment != assignment)
     {
         auto resolved_assignment = resolve_relative_assignment(
-            resolved_assignment,
             cacher_->resolved_spec,
             assignment,
             cacher_->horizontal_requirements,
@@ -713,8 +712,7 @@ layout_leaf::set_relative_assignment(
             requirements_.size[1],
             requirements_.ascent,
             requirements_.descent));
-    resolve_relative_assignment(
-        relative_assignment_,
+    relative_assignment_ = resolve_relative_assignment(
         resolved_spec_,
         assignment,
         horizontal_requirements,

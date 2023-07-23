@@ -79,9 +79,9 @@ operator!=(
 // specifications that refer to the current style.
 struct layout_style_info
 {
-    vector<2, int> padding_size;
+    vector<2, layout_scalar> padding_size;
     float font_size;
-    vector<2, float> character_size;
+    vector<2, layout_scalar> character_size;
     float x_height;
     float magnification;
 };
