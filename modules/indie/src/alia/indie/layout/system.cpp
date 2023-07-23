@@ -22,7 +22,7 @@ initialize_traversal(
     traversal.ppi = ppi;
 
     style->font_size = 0;
-    style->character_size = make_vector<float>(0, 0);
+    style->character_size = make_vector<layout_scalar>(0, 0);
     style->x_height = 0;
     style->padding_size = make_layout_vector(0, 0);
     style->magnification = 1;
