@@ -114,7 +114,8 @@ struct preferred_id_test_signal : preferred_id_signal<
     {
         return false;
     }
-    id_interface const& write(Value) const
+    id_interface const&
+    write(Value) const
     {
         return null_id;
     }

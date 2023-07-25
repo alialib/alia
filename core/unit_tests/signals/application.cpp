@@ -49,7 +49,7 @@ TEST_CASE("lazy_apply", "[signals][application]")
 TEST_CASE("duplex_lazy_apply", "[signals][application]")
 {
     alia::system sys;
-    initialize_system<context>(sys, [](context) {});
+    initialize_standalone_system(sys, [](context) {});
 
     int n = 0;
 
@@ -124,7 +124,7 @@ TEST_CASE("failing lazy_apply", "[signals][application]")
     };
 
     alia::system sys;
-    initialize_system<context>(sys, [&](context vanilla_ctx) {
+    initialize_standalone_system(sys, [&](context vanilla_ctx) {
         tree_traversal<test_object> traversal;
         auto ctx = extend_context<tree_traversal_tag>(vanilla_ctx, traversal);
         if (is_refresh_event(ctx))
@@ -185,7 +185,7 @@ TEST_CASE("simple apply", "[signals][application]")
     captured_id signal_id;
 
     alia::system sys;
-    initialize_system<context>(sys, [](context) {});
+    initialize_standalone_system(sys, [](context) {});
 
     auto make_controller = [&](int x, int y) {
         return [=, &signal_id](context ctx) {
@@ -236,7 +236,7 @@ TEST_CASE("unready apply", "[signals][application]")
 
     {
         alia::system sys;
-        initialize_system<context>(sys, [](context) {});
+        initialize_standalone_system(sys, [](context) {});
 
         auto make_controller = [=](auto x, auto y) {
             return [=](context ctx) {
@@ -267,7 +267,7 @@ TEST_CASE("failing apply", "[signals][application]")
     };
 
     alia::system sys;
-    initialize_system<context>(sys, [](context) {});
+    initialize_standalone_system(sys, [](context) {});
 
     auto make_controller = [&](size_t i) {
         return [=](context ctx) {
@@ -315,7 +315,7 @@ TEST_CASE("lift", "[signals][application]")
 
     {
         alia::system sys;
-        initialize_system<context>(sys, [](context) {});
+        initialize_standalone_system(sys, [](context) {});
 
         auto controller = [=](context ctx) {
             auto f_lifted = lift(f);
@@ -337,7 +337,7 @@ TEST_CASE("lift", "[signals][application]")
 TEST_CASE("duplex_apply", "[signals][application]")
 {
     alia::system sys;
-    initialize_system<context>(sys, [](context) {});
+    initialize_standalone_system(sys, [](context) {});
 
     int n = 0;
 
@@ -391,7 +391,7 @@ TEST_CASE("duplex_apply", "[signals][application]")
 TEST_CASE("duplex_apply on state", "[signals][application]")
 {
     alia::system sys;
-    initialize_system<context>(sys, [](context) {});
+    initialize_standalone_system(sys, [](context) {});
 
     int f_call_count = 0;
     auto f = [&](int x) -> double {

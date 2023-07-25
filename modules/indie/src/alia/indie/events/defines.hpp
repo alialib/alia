@@ -1,5 +1,5 @@
-#ifndef ALIA_INDIE_SYSTEM_DEFINES_HPP
-#define ALIA_INDIE_SYSTEM_DEFINES_HPP
+#ifndef ALIA_INDIE_EVENTS_DEFINES_HPP
+#define ALIA_INDIE_EVENTS_DEFINES_HPP
 
 #include <alia/indie/common.hpp>
 

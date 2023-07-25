@@ -26,7 +26,7 @@ invoke_controller(System& sys, event_traversal& events)
 
     scoped_component_container root(ctx, &sys.root_component);
 
-    sys.typed_system::controller(ctx);
+    sys.invoke_controller(ctx);
 }
 
 namespace detail {

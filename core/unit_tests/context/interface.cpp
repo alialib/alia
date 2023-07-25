@@ -131,7 +131,7 @@ TEST_CASE("optional_context", "[context][interface]")
 TEST_CASE("content IDs", "[context][interface]")
 {
     alia::system sys;
-    initialize_system<context>(sys, [](context) {});
+    initialize_standalone_system(sys, [](context) {});
 
     captured_id outer_id, inner_id, downcast_id, recalculated_id;
 

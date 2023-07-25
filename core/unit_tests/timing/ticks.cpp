@@ -14,7 +14,7 @@ using namespace alia;
 TEST_CASE("automatic ticks", "[timing][ticks]")
 {
     alia::system sys;
-    initialize_system<context>(sys, [](context) {});
+    initialize_standalone_system(sys, [](context) {});
     millisecond_count last_ticks;
     do_traversal(sys, [&](context ctx) {
         last_ticks = get_raw_animation_tick_count(ctx);
@@ -52,7 +52,7 @@ TEST_CASE("get_raw_animation_ticks_left", "[timing][ticks]")
 {
     alia::system sys;
     auto* external_ptr = new dummy_external_interface(sys);
-    initialize_system<context>(
+    initialize_standalone_system(
         sys, [](context) {}, external_ptr);
     auto& external = *external_ptr;
 
@@ -90,7 +90,7 @@ TEST_CASE("animation_timer", "[timing][ticks]")
 {
     alia::system sys;
     auto* external_ptr = new dummy_external_interface(sys);
-    initialize_system<context>(
+    initialize_standalone_system(
         sys, [](context) {}, external_ptr);
     auto& external = *external_ptr;
 

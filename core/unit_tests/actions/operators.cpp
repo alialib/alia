@@ -4,8 +4,8 @@
 #include <alia/core/signals/basic.hpp>
 #include <alia/core/signals/operators.hpp>
 
-#include <move_testing.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <move_testing.hpp>
 
 using namespace alia;
 
@@ -44,17 +44,15 @@ TEST_CASE("copy actions", "[actions][operators]")
         REQUIRE(x == (2 normal_form 6));                                      \
     }
 
-TEST_CASE("compound assignment action operators", "[actions][operators]")
-{
+TEST_CASE("compound assignment action operators", "[actions][operators]"){
     TEST_COMPOUND_ASSIGNMENT_OPERATOR(+=, +)
-    TEST_COMPOUND_ASSIGNMENT_OPERATOR(-=, -)
-    TEST_COMPOUND_ASSIGNMENT_OPERATOR(*=, *)
-    TEST_COMPOUND_ASSIGNMENT_OPERATOR(/=, /)
-    TEST_COMPOUND_ASSIGNMENT_OPERATOR(^=, ^)
-    TEST_COMPOUND_ASSIGNMENT_OPERATOR(%=, %)
-    TEST_COMPOUND_ASSIGNMENT_OPERATOR(&=, &)
-    TEST_COMPOUND_ASSIGNMENT_OPERATOR(|=, |)
-}
+        TEST_COMPOUND_ASSIGNMENT_OPERATOR(-=, -)
+            TEST_COMPOUND_ASSIGNMENT_OPERATOR(*=, *)
+                TEST_COMPOUND_ASSIGNMENT_OPERATOR(/=, /)
+                    TEST_COMPOUND_ASSIGNMENT_OPERATOR(^=, ^)
+                        TEST_COMPOUND_ASSIGNMENT_OPERATOR(%=, %)
+                            TEST_COMPOUND_ASSIGNMENT_OPERATOR(&=, &)
+                                TEST_COMPOUND_ASSIGNMENT_OPERATOR(|=, |)}
 
 #undef TEST_COMPOUND_ASSIGNMENT_OPERATOR
 
@@ -78,11 +76,8 @@ TEST_CASE("compound assignment action operators", "[actions][operators]")
         }                                                                     \
     }
 
-TEST_CASE("increment/decrement operators", "[actions][operators]")
-{
-    TEST_BY_ONE_OPERATOR(++, +)
-    TEST_BY_ONE_OPERATOR(--, -)
-}
+TEST_CASE("increment/decrement operators", "[actions][operators]"){
+    TEST_BY_ONE_OPERATOR(++, +) TEST_BY_ONE_OPERATOR(--, -)}
 
 #undef TEST_BY_ONE_OPERATOR
 

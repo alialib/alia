@@ -8,12 +8,12 @@
 
 using namespace alia;
 
-struct box_node : indie::widget
+struct box_node : indie::leaf_widget
 {
-    virtual void
-    render(SkCanvas& canvas)
+    void
+    render(SkCanvas& canvas) override
     {
-        auto const& region = this->layout_.assignment().region;
+        auto const& region = this->assignment().region;
 
         // SkPaint paint;
         // paint.setColor(color_);
@@ -28,11 +28,34 @@ struct box_node : indie::widget
         canvas.translate(
             SkScalar(region.corner[0]), SkScalar(region.corner[1]));
         canvas.drawPicture(picture_.get());
+
         canvas.restore();
     }
 
+    void
+    handle_region_event(indie::region_event& event) override
+    {
+        switch (event.type)
+        {
+            case indie::region_event_type::MOUSE_HIT_TEST: {
+                auto& hit_test
+                    = static_cast<indie::mouse_hit_test_event&>(event);
+                if (is_inside(
+                        this->assignment().region,
+                        vector<2, float>(hit_test.parameters.mouse_position)))
+                {
+                    hit_test.response = indie::mouse_hit_response{
+                        null_component_id,
+                        indie::mouse_cursor::POINTER,
+                        this->assignment().region,
+                        ""};
+                }
+                break;
+            }
+        }
+    }
+
     SkColor color_ = SK_ColorWHITE;
-    alia::layout_leaf layout_;
     sk_sp<SkPicture> picture_;
 };
 
@@ -43,12 +66,12 @@ do_box(indie::context ctx, SkColor color)
     if (is_refresh_event(ctx))
     {
         add_widget(get<indie::traversal_tag>(ctx).widgets, &node);
-        node.layout_.refresh_layout(
+        node.refresh_layout(
             get<indie::traversal_tag>(ctx).layout,
             alia::layout(TOP | LEFT | PADDED),
             alia::leaf_layout_requirements(
                 alia::make_layout_vector(100, 100), 0, 0));
-        add_layout_node(get<indie::traversal_tag>(ctx).layout, &node.layout_);
+        add_layout_node(get<indie::traversal_tag>(ctx).layout, &node);
 
         if (color != node.color_)
         {
@@ -85,21 +108,80 @@ get_layout_traversal(context ctx)
     return get<indie::traversal_tag>(ctx).layout;
 }
 
-}} // namespace alia::indie
+bool
+region_event_is_relevant(
+    region_event const& event, box<2, float> const& region)
+{
+    switch (event.type)
+    {
+        case region_event_type::MOUSE_HIT_TEST:
+            return is_inside(
+                region,
+                vector<2, float>(
+                    static_cast<mouse_hit_test_event const&>(event)
+                        .parameters.mouse_position));
+        // case region_event_type::WHEEL_HIT_TEST:
+        //     return is_inside(
+        //         region,
+        //         static_cast<wheel_hit_test_event const&>(event)
+        //             .parameters.position);
+        // case region_event_type::WIDGET_VISIBILITY:
+        //     return overlapping(region,
+        //     static_cast<widget_visibility_event
+        //     const&>(event).parameters.region);
+        default:
+            return false;
+    }
+}
 
-struct simple_widget_container : indie::widget_container
+template<class LayoutContainer>
+struct layout_container_widget : widget_container, LayoutContainer
 {
     void
-    render(SkCanvas& canvas)
+    render(SkCanvas& canvas) override
     {
         indie::render_children(canvas, *this);
     }
+
+    void
+    handle_region_event(region_event& event) override
+    {
+        auto region = this->LayoutContainer::region();
+        if (region_event_is_relevant(event, region))
+        {
+            for (widget* node = this->widget_container::children; node;
+                 node = node->next)
+                node->handle_region_event(event);
+        }
+    }
 };
+
+struct simple_container_widget : widget_container
+{
+    void
+    render(SkCanvas& canvas) override
+    {
+        indie::render_children(canvas, *this);
+    }
+
+    void
+    handle_region_event(region_event& event) override
+    {
+        for (widget* node = this->widget_container::children; node;
+             node = node->next)
+        {
+            node->handle_region_event(event);
+        }
+    }
+};
+
+}} // namespace alia::indie
 
 void
 my_ui(indie::context ctx)
 {
-    static simple_widget_container container;
+    // static indie::layout_container_widget<column_layout> container;
+    static indie::simple_container_widget container;
     indie::scoped_widget_container container_scope;
     if (is_refresh_event(ctx))
     {

@@ -205,14 +205,22 @@ copy_context(Context ctx)
 // the typedefs for the context - There are two because we want to be able to
 // represent the context with and without data capabilities.
 
-typedef context_interface<detail::add_tagged_data_types_t<
-    detail::empty_structural_collection<context_storage>,
-    system_tag,
-    event_traversal_tag,
-    timing_tag>>
-    dataless_context;
+template<class Storage>
+using dataless_context_type_for_storage_t
+    = context_interface<detail::add_tagged_data_types_t<
+        detail::empty_structural_collection<Storage>,
+        system_tag,
+        event_traversal_tag,
+        timing_tag>>;
 
-typedef extend_context_type_t<dataless_context, data_traversal_tag> context;
+template<class Storage>
+using context_type_for_storage_t = extend_context_type_t<
+    dataless_context_type_for_storage_t<Storage>,
+    data_traversal_tag>;
+
+using dataless_context = dataless_context_type_for_storage_t<context_storage>;
+
+using context = context_type_for_storage_t<context_storage>;
 
 // And various small functions for working with contexts...
 

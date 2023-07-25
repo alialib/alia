@@ -43,7 +43,7 @@ TEST_CASE("smooth_raw", "[timing][smoothing]")
 {
     alia::system sys;
     auto* external_ptr = new testing_external_interface(sys);
-    initialize_system<context>(
+    initialize_standalone_system(
         sys, [](context) {}, external_ptr);
     auto& external = *external_ptr;
 
@@ -135,7 +135,7 @@ TEST_CASE("smooth", "[timing][smoothing]")
 {
     alia::system sys;
     auto* external_ptr = new testing_external_interface(sys);
-    initialize_system<context>(
+    initialize_standalone_system(
         sys, [](context) {}, external_ptr);
     auto& external = *external_ptr;
 
@@ -194,7 +194,7 @@ TEST_CASE("smooth writing", "[timing][smoothing]")
 {
     alia::system sys;
     auto* external_ptr = new testing_external_interface(sys);
-    initialize_system<context>(
+    initialize_standalone_system(
         sys, [](context) {}, external_ptr);
     auto& external = *external_ptr;
 

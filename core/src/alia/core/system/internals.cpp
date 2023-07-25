@@ -32,4 +32,14 @@ default_external_interface::schedule_asynchronous_update(
     owner.refresh();
 }
 
+void
+initialize_standalone_system(
+    system& sys,
+    std::function<void(context)> const& controller,
+    external_interface* external)
+{
+    initialize_core_system(sys, external);
+    sys.controller = controller;
+}
+
 } // namespace alia

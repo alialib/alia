@@ -58,7 +58,8 @@ struct empty_signal
     }
     // Since this is never ready to write, none of this should ever be called.
     // LCOV_EXCL_START
-    id_interface const& write(Value) const override
+    id_interface const&
+    write(Value) const override
     {
         return null_id;
     }

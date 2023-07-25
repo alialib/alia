@@ -18,19 +18,35 @@ namespace alia {
 // scoped_layout_traversal sets up a non-refresh traversal for a layout system.
 struct scoped_layout_traversal
 {
-    scoped_layout_traversal() {}
+    scoped_layout_traversal()
+    {
+    }
 
     scoped_layout_traversal(
-        layout_system& system, layout_traversal& traversal,
-        geometry_context& geometry, vector<2,float> const& ppi)
-    { begin(system, traversal, geometry, ppi); }
+        layout_system& system,
+        layout_traversal& traversal,
+        geometry_context& geometry,
+        vector<2, float> const& ppi)
+    {
+        begin(system, traversal, geometry, ppi);
+    }
 
-    ~scoped_layout_traversal() { end(); }
+    ~scoped_layout_traversal()
+    {
+        end();
+    }
 
-    void begin(layout_system& system, layout_traversal& traversal,
-        geometry_context& geometry, vector<2,float> const& ppi);
+    void
+    begin(
+        layout_system& system,
+        layout_traversal& traversal,
+        geometry_context& geometry,
+        vector<2, float> const& ppi);
 
-    void end() {}
+    void
+    end()
+    {
+    }
 
  private:
     layout_style_info dummy_style_info_;
@@ -39,36 +55,54 @@ struct scoped_layout_traversal
 // scoped_layout_refresh sets up a refresh for a layout system.
 struct scoped_layout_refresh
 {
-    scoped_layout_refresh() {}
+    scoped_layout_refresh()
+    {
+    }
 
     scoped_layout_refresh(
-        layout_system& system, layout_traversal& traversal,
-        vector<2,float> const& ppi)
-    { begin(system, traversal, ppi); }
+        layout_system& system,
+        layout_traversal& traversal,
+        vector<2, float> const& ppi)
+    {
+        begin(system, traversal, ppi);
+    }
 
-    ~scoped_layout_refresh() { end(); }
+    ~scoped_layout_refresh()
+    {
+        end();
+    }
 
-    void begin(layout_system& system, layout_traversal& traversal,
-        vector<2,float> const& ppi);
+    void
+    begin(
+        layout_system& system,
+        layout_traversal& traversal,
+        vector<2, float> const& ppi);
 
-    void end() {}
+    void
+    end()
+    {
+    }
 
  private:
     layout_style_info dummy_style_info_;
 };
 
 // Calculate the minimum space needed by the given layout system.
-layout_vector get_minimum_size(layout_system& system);
+layout_vector
+get_minimum_size(layout_system& system);
 // Same, but with arguments broken up for flexibility.
-layout_vector get_minimum_size(layout_node* root_node, data_graph& cache);
+layout_vector
+get_minimum_size(layout_node* root_node, data_graph& cache);
 
 // Given the available space, calculate the proper regions for all nodes in
 // the given layout system.
-void resolve_layout(layout_system& system, layout_vector const& size);
+void
+resolve_layout(layout_system& system, layout_vector const& size);
 // Same, but with arguments broken up for flexibility.
-void resolve_layout(layout_node* root_node, data_graph& cache,
-    layout_vector const& size);
+void
+resolve_layout(
+    layout_node* root_node, data_graph& cache, layout_vector const& size);
 
-}
+} // namespace alia
 
 #endif

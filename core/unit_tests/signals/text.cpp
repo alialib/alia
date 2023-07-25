@@ -14,7 +14,7 @@ using namespace alia;
 TEST_CASE("printf", "[signals][text]")
 {
     alia::system sys;
-    initialize_system<context>(sys, [](context) {});
+    initialize_standalone_system(sys, [](context) {});
 
     auto controller = [&](context ctx) {
         do_text(ctx, printf(ctx, "hello %s", value("world")));
@@ -79,7 +79,7 @@ TEST_CASE("text conversions", "[signals][text]")
 TEST_CASE("as_text", "[signals][text]")
 {
     alia::system sys;
-    initialize_system<context>(sys, [](context) {});
+    initialize_standalone_system(sys, [](context) {});
 
     auto controller = [&](context ctx) {
         auto no_text = as_text(ctx, empty<int>());
@@ -97,7 +97,7 @@ TEST_CASE("as_text", "[signals][text]")
 TEST_CASE("as_duplex_text", "[signals][text]")
 {
     alia::system sys;
-    initialize_system<context>(sys, [](context) {});
+    initialize_standalone_system(sys, [](context) {});
 
     auto controller = [&](context ctx) {
         auto no_text = as_duplex_text(ctx, empty<int>());
@@ -139,7 +139,7 @@ TEST_CASE("as_duplex_text", "[signals][text]")
 TEST_CASE("as_duplex_text value_id", "[signals][text]")
 {
     alia::system sys;
-    initialize_system<context>(sys, [](context) {});
+    initialize_standalone_system(sys, [](context) {});
 
     int x = 1;
     captured_id signal_id;
