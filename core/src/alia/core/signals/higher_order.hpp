@@ -67,9 +67,9 @@ template<
 auto
 transform(Context ctx, Container const& container, Function&& f)
 {
-    typedef typename decltype(
-        f(std::declval<readable<
-              typename Container::value_type::value_type>>()))::value_type
+    typedef typename decltype(f(
+        std::declval<readable<
+            typename Container::value_type::value_type>>()))::value_type
         mapped_value_type;
 
     mapped_sequence_data<mapped_value_type>* data;
@@ -174,10 +174,10 @@ auto
 transform(Context ctx, Container const& container, Function&& f)
 {
     typedef typename Container::value_type::key_type key_type;
-    typedef typename decltype(
-        f(std::declval<readable<key_type>>(),
-          std::declval<readable<
-              typename Container::value_type::mapped_type>>()))::value_type
+    typedef typename decltype(f(
+        std::declval<readable<key_type>>(),
+        std::declval<readable<
+            typename Container::value_type::mapped_type>>()))::value_type
         mapped_value_type;
 
     mapped_map_data<key_type, mapped_value_type>* data;

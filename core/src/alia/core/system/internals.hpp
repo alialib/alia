@@ -126,30 +126,46 @@ template<class Context>
 struct typed_system : untyped_system
 {
     typedef Context context_type;
-    std::function<void(Context)> controller;
+
     void
     refresh() override
     {
         refresh_system(*this);
     }
-};
 
-struct system : typed_system<context>
-{
+    virtual void
+    invoke_controller(Context ctx)
+        = 0;
 };
 
 template<class Context>
 void
-initialize_system(
-    typed_system<Context>& sys,
-    std::function<void(Context)> const& controller,
-    external_interface* external = nullptr)
+initialize_core_system(
+    typed_system<Context>& sys, external_interface* external = nullptr)
 {
-    sys.controller = controller;
-    sys.external.reset(
-        external ? external : new default_external_interface(sys));
-    sys.root_component.reset(new component_container);
+    if (external)
+        sys.external.reset(external);
+    else
+        sys.external = std::make_unique<default_external_interface>(sys);
+    sys.root_component = std::make_shared<component_container>();
 }
+
+struct system : typed_system<context>
+{
+    std::function<void(context)> controller;
+
+    virtual void
+    invoke_controller(context ctx)
+    {
+        controller(ctx);
+    }
+};
+
+void
+initialize_standalone_system(
+    system& sys,
+    std::function<void(context)> const& controller,
+    external_interface* external = nullptr);
 
 // timer event
 struct timer_event : targeted_event

@@ -172,7 +172,8 @@ struct untyped_signal_base
     //
     // The return value should be true iff the validation error was handled.
     //
-    virtual bool invalidate(std::exception_ptr) const
+    virtual bool
+    invalidate(std::exception_ptr) const
     {
         return false;
     }

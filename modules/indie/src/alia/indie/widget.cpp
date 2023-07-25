@@ -4,17 +4,17 @@
 namespace alia { namespace indie {
 
 void
-render_children(SkCanvas& canvas, widget_container& container)
-{
-    for (widget* node = container.children; node; node = node->next)
-        node->render(canvas);
-}
-
-void
 add_widget(widget_traversal& traversal, widget* node)
 {
     *traversal.next_ptr = node;
     traversal.next_ptr = &node->next;
+}
+
+void
+render_children(SkCanvas& canvas, widget_container& container)
+{
+    for (widget* node = container.children; node; node = node->next)
+        node->render(canvas);
 }
 
 void
