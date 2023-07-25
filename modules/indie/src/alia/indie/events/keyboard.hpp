@@ -1,7 +1,7 @@
-#ifndef ALIA_INDIE_EVENTS_DEFINES_HPP
-#define ALIA_INDIE_EVENTS_DEFINES_HPP
+#ifndef ALIA_INDIE_EVENTS_KEYBOARD_HPP
+#define ALIA_INDIE_EVENTS_KEYBOARD_HPP
 
-#include <alia/indie/common.hpp>
+#include <alia/indie/events/input.hpp>
 
 namespace alia { namespace indie {
 
@@ -142,26 +142,6 @@ ALIA_DEFINE_FLAG(kmod, 0x02, KMOD_CTRL)
 ALIA_DEFINE_FLAG(kmod, 0x04, KMOD_ALT)
 ALIA_DEFINE_FLAG(kmod, 0x08, KMOD_WIN)
 ALIA_DEFINE_FLAG(kmod, 0x10, KMOD_META)
-
-enum class mouse_button
-{
-    LEFT,
-    MIDDLE,
-    RIGHT
-};
-
-// standard mouse cursors that are expected to be supplied by the backend
-enum class mouse_cursor
-{
-    DEFAULT,
-    CROSSHAIR,
-    NONE,
-    TEXT,
-    POINTER,
-    MOVE,
-    EW_RESIZE,
-    NS_RESIZE,
-};
 
 }} // namespace alia::indie
 
