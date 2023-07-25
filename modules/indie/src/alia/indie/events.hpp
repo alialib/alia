@@ -29,33 +29,6 @@ struct mouse_cursor_query : ui_event
 enum ui_event_type
 {
 
-    // keyboard
-    TEXT_INPUT_EVENT,
-    BACKGROUND_TEXT_INPUT_EVENT,
-    KEY_PRESS_EVENT,
-    BACKGROUND_KEY_PRESS_EVENT,
-    KEY_RELEASE_EVENT,
-    BACKGROUND_KEY_RELEASE_EVENT,
-
-    // focus notifications
-    FOCUS_GAIN_EVENT,
-    FOCUS_LOSS_EVENT,
-
-    // focus queries
-    FOCUS_PREDECESSOR_EVENT,
-    FOCUS_SUCCESSOR_EVENT,
-    FOCUS_RECOVERY_EVENT,
-
-    // mouse
-    MOUSE_PRESS_EVENT,
-    DOUBLE_CLICK_EVENT,
-    MOUSE_RELEASE_EVENT,
-    MOUSE_MOTION_EVENT,
-    MOUSE_WHEEL_EVENT,
-    MOUSE_CURSOR_QUERY_EVENT,
-    MOUSE_GAIN_EVENT,
-    MOUSE_LOSS_EVENT,
-    MOUSE_HOVER_EVENT,
 };
 
 struct ui_event
