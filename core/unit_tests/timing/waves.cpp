@@ -28,7 +28,7 @@ TEST_CASE("square_wave", "[timing][waves]")
 {
     alia::system sys;
     auto* external_ptr = new testing_external_interface(sys);
-    initialize_system<context>(
+    initialize_standalone_system(
         sys, [](context) {}, external_ptr);
     auto& external = *external_ptr;
 

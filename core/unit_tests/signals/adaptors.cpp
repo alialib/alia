@@ -280,7 +280,7 @@ TEST_CASE("simplify_id", "[signals][adaptors]")
 TEST_CASE("minimize_id_changes", "[signals][adaptors]")
 {
     alia::system sys;
-    initialize_system<context>(sys, [](context) {});
+    initialize_standalone_system(sys, [](context) {});
 
     std::map<int, std::string> container;
 

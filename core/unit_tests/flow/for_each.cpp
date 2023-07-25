@@ -54,7 +54,7 @@ get_alia_item_id(my_item const& item)
 TEST_CASE("string vector", "[flow][for_each]")
 {
     alia::system sys;
-    initialize_system<context>(sys, [](context) {});
+    initialize_standalone_system(sys, [](context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -90,7 +90,7 @@ TEST_CASE("string vector", "[flow][for_each]")
 TEST_CASE("raw string vector", "[flow][for_each]")
 {
     alia::system sys;
-    initialize_system<context>(sys, [](context) {});
+    initialize_standalone_system(sys, [](context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -126,7 +126,7 @@ TEST_CASE("raw string vector", "[flow][for_each]")
 TEST_CASE("for_each over vector of string signals", "[flow][for_each]")
 {
     alia::system sys;
-    initialize_system<context>(sys, [](context) {});
+    initialize_standalone_system(sys, [](context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -162,7 +162,7 @@ TEST_CASE("for_each over vector of string signals", "[flow][for_each]")
 TEST_CASE("string vector with naming", "[flow][for_each]")
 {
     alia::system sys;
-    initialize_system<context>(sys, [](context) {});
+    initialize_standalone_system(sys, [](context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -203,7 +203,7 @@ TEST_CASE("string vector with naming", "[flow][for_each]")
 TEST_CASE("string vector with index", "[flow][for_each]")
 {
     alia::system sys;
-    initialize_system<context>(sys, [](context) {});
+    initialize_standalone_system(sys, [](context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -243,7 +243,7 @@ TEST_CASE("string vector with index", "[flow][for_each]")
 TEST_CASE("string vector with naming and index", "[flow][for_each]")
 {
     alia::system sys;
-    initialize_system<context>(sys, [](context) {});
+    initialize_standalone_system(sys, [](context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -287,7 +287,7 @@ TEST_CASE("string vector with naming and index", "[flow][for_each]")
 TEST_CASE("item vector", "[flow][for_each]")
 {
     alia::system sys;
-    initialize_system<context>(sys, [](context) {});
+    initialize_standalone_system(sys, [](context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -329,7 +329,7 @@ TEST_CASE("item vector", "[flow][for_each]")
 TEST_CASE("simple map", "[flow][for_each]")
 {
     alia::system sys;
-    initialize_system<context>(sys, [](context) {});
+    initialize_standalone_system(sys, [](context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -370,7 +370,7 @@ TEST_CASE("simple map", "[flow][for_each]")
 TEST_CASE("item map", "[flow][for_each]")
 {
     alia::system sys;
-    initialize_system<context>(sys, [](context) {});
+    initialize_standalone_system(sys, [](context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -418,7 +418,7 @@ TEST_CASE("item map", "[flow][for_each]")
 TEST_CASE("string list", "[flow][for_each]")
 {
     alia::system sys;
-    initialize_system<context>(sys, [](context) {});
+    initialize_standalone_system(sys, [](context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -455,7 +455,7 @@ TEST_CASE("string list", "[flow][for_each]")
 TEST_CASE("unsimplified string list", "[flow][for_each]")
 {
     alia::system sys;
-    initialize_system<context>(sys, [](context) {});
+    initialize_standalone_system(sys, [](context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -492,7 +492,7 @@ TEST_CASE("unsimplified string list", "[flow][for_each]")
 TEST_CASE("writing string list items", "[flow][for_each]")
 {
     alia::system sys;
-    initialize_system<context>(sys, [](context) {});
+    initialize_standalone_system(sys, [](context) {});
 
     std::list<string> container{"foo", "bar", "baz"};
 
@@ -509,7 +509,7 @@ TEST_CASE("writing string list items", "[flow][for_each]")
 TEST_CASE("item list", "[for_each][list]")
 {
     alia::system sys;
-    initialize_system<context>(sys, [](context) {});
+    initialize_standalone_system(sys, [](context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -559,7 +559,7 @@ TEST_CASE("item list", "[for_each][list]")
 TEST_CASE("for_each over list of item signals", "[for_each][list]")
 {
     alia::system sys;
-    initialize_system<context>(sys, [](context) {});
+    initialize_standalone_system(sys, [](context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -606,7 +606,7 @@ TEST_CASE("for_each over list of item signals", "[for_each][list]")
 TEST_CASE("for_each over a list of raw items", "[for_each][list]")
 {
     alia::system sys;
-    initialize_system<context>(sys, [](context) {});
+    initialize_standalone_system(sys, [](context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {

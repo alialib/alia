@@ -5,7 +5,8 @@
 
 #include <include/core/SkCanvas.h>
 
-#include <alia/indie/events.hpp>
+#include <alia/indie/events/region.hpp>
+#include <alia/indie/layout/utilities.hpp>
 
 namespace alia { namespace indie {
 
@@ -15,10 +16,15 @@ struct widget
     render(SkCanvas& canvas)
         = 0;
 
-    // virtual void
-    // process_region_event(region_event& event) = 0;
+    virtual void
+    handle_region_event(region_event& event)
+        = 0;
 
     widget* next = nullptr;
+};
+
+struct leaf_widget : widget, layout_leaf
+{
 };
 
 struct widget_container : widget

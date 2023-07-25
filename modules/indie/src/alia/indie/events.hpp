@@ -1,17 +1,33 @@
 #ifndef ALIA_INDIE_EVENTS_HPP
 #define ALIA_INDIE_EVENTS_HPP
 
+#include <alia/core/flow/events.hpp>
 #include <alia/core/timing/ticks.hpp>
 
-namespace alia {
+#include <alia/indie/events/input.hpp>
+
+namespace alia { namespace indie {
+
+#if 0
+
+// If there is an active widget and it's not the one under the mouse cursor,
+// we have to query it to see what cursor it wants.
+struct mouse_cursor_query : ui_event
+{
+    widget_id id;
+    mouse_cursor cursor;
+
+    mouse_cursor_query(widget_id id)
+        : ui_event(REGION_CATEGORY, MOUSE_CURSOR_QUERY_EVENT),
+          id(id),
+          cursor(DEFAULT_CURSOR)
+    {
+    }
+};
 
 // UI events recognized by alia
 enum ui_event_type
 {
-    // regions
-    MAKE_WIDGET_VISIBLE_EVENT,
-    MOUSE_HIT_TEST_EVENT,
-    WHEEL_HIT_TEST_EVENT,
 
     // keyboard
     TEXT_INPUT_EVENT,
@@ -125,20 +141,6 @@ struct input_event : ui_event
 //     }
 //     widget_id target;
 // };
-// struct mouse_hit_test_event : ui_event
-// {
-//     routable_widget_id id;
-//     mouse_cursor cursor;
-//     layout_box hit_box;
-//     string tooltip_message;
-
-//     mouse_hit_test_event()
-//         : ui_event(REGION_CATEGORY, MOUSE_HIT_TEST_EVENT),
-//           id(null_widget_id),
-//           cursor(DEFAULT_CURSOR)
-//     {
-//     }
-// };
 
 // struct mouse_wheel_event : input_event
 // {
@@ -150,55 +152,6 @@ struct input_event : ui_event
 //           target(target)
 //     {
 //     }
-// };
-// struct wheel_hit_test_event : ui_event
-// {
-//     routable_widget_id id;
-
-//     wheel_hit_test_event()
-//         : ui_event(REGION_CATEGORY, WHEEL_HIT_TEST_EVENT),
-//         id(null_widget_id)
-//     {
-//     }
-// };
-
-// // If there is an active widget and it's not the one under the mouse cursor,
-// // we have to query it to see what cursor it wants.
-// struct mouse_cursor_query : ui_event
-// {
-//     widget_id id;
-//     mouse_cursor cursor;
-
-//     mouse_cursor_query(widget_id id)
-//         : ui_event(REGION_CATEGORY, MOUSE_CURSOR_QUERY_EVENT),
-//           id(id),
-//           cursor(DEFAULT_CURSOR)
-//     {
-//     }
-// };
-
-// struct widget_visibility_request
-// {
-//     routable_widget_id widget;
-//     // If this is set, the UI will jump abruptly instead of smoothly
-//     scrolling. bool abrupt;
-//     // If this is set, the widget will be moved to the top of the UI instead
-//     // of just being made visible.
-//     bool move_to_top;
-// };
-
-// struct make_widget_visible_event : ui_event
-// {
-//     make_widget_visible_event(widget_visibility_request const& request)
-//         : ui_event(REGION_CATEGORY, MAKE_WIDGET_VISIBLE_EVENT),
-//           request(request),
-//           acknowledged(false)
-//     {
-//     }
-//     widget_visibility_request request;
-//     // This gets filled in once we find the widget in question.
-//     box<2, double> region;
-//     bool acknowledged;
 // };
 
 // struct resolve_location_event : ui_event
@@ -223,6 +176,8 @@ struct input_event : ui_event
 //     widget_id target;
 // };
 
-} // namespace alia
+#endif
+
+}} // namespace alia::indie
 
 #endif

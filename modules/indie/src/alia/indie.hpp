@@ -4,6 +4,7 @@
 #include <alia/core.hpp>
 
 #include <alia/indie/backends/glfw.hpp>
+#include <alia/indie/events/region.hpp>
 #include <alia/indie/layout/api.hpp>
 #include <alia/indie/layout/utilities.hpp>
 #include <alia/indie/system/object.hpp>

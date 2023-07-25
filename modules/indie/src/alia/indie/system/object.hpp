@@ -3,8 +3,8 @@
 
 #include <alia/core/system/internals.hpp>
 #include <alia/indie/context.hpp>
+#include <alia/indie/events/defines.hpp>
 #include <alia/indie/layout/internals.hpp>
-#include <alia/indie/system/defines.hpp>
 
 namespace alia { namespace indie {
 
@@ -13,10 +13,12 @@ struct widget;
 struct system : alia::typed_system<indie::vanilla_context>
 {
     std::function<void(indie::context)> controller;
+    void invoke_controller(indie::vanilla_context) override;
 
     layout_system layout;
-
     widget* root_widget;
+
+    mouse_cursor current_cursor = mouse_cursor::DEFAULT;
 };
 
 void

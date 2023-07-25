@@ -196,15 +196,18 @@ TEST_CASE("signal_ref", "[signals][core]")
     REQUIRE(read_signal(s) == 0);
 }
 
-static void f_readable(alia::readable<int>)
+static void
+f_readable(alia::readable<int>)
 {
 }
 
-static void f_writable(alia::writable<int>)
+static void
+f_writable(alia::writable<int>)
 {
 }
 
-static void f_duplex(alia::duplex<int>)
+static void
+f_duplex(alia::duplex<int>)
 {
 }
 

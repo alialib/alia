@@ -27,6 +27,7 @@
 #include "include/utils/SkRandom.h"
 #pragma warning(pop)
 
+#include <alia/indie/events/region.hpp>
 #include <alia/indie/layout/system.hpp>
 #include <alia/indie/system/object.hpp>
 #include <alia/indie/widget.hpp>
@@ -196,6 +197,7 @@ glfw_window::do_main_loop()
         std::chrono::steady_clock::time_point begin
             = std::chrono::steady_clock::now();
 
+        // for (int i = 0; i != 1000; ++i)
         refresh_system(impl_->system);
 
         {
@@ -209,7 +211,8 @@ glfw_window::do_main_loop()
             begin = end;
         }
 
-        resolve_layout(impl_->system.layout, make_vector(width, height));
+        resolve_layout(
+            impl_->system.layout, make_vector(float(width), float(height)));
 
         {
             std::chrono::steady_clock::time_point end
@@ -220,6 +223,25 @@ glfw_window::do_main_loop()
                              .count()
                       << "[us]\n";
             begin = end;
+        }
+
+        if (impl_->system.root_widget)
+        {
+            double xpos, ypos;
+            glfwGetCursorPos(impl_->glfw_window_, &xpos, &ypos);
+            mouse_hit_test_event hit_test(
+                hit_test_parameters{make_vector(xpos, ypos)});
+            impl_->system.root_widget->handle_region_event(hit_test);
+            if (hit_test.response)
+            {
+                glfwSetCursor(
+                    impl_->glfw_window_,
+                    glfwCreateStandardCursor(GLFW_HAND_CURSOR));
+            }
+            else
+            {
+                glfwSetCursor(impl_->glfw_window_, nullptr);
+            }
         }
 
         auto& canvas = *impl_->skia_surface_->getCanvas();
@@ -270,5 +292,4 @@ glfw_window::~glfw_window()
         destroy_window(*impl_);
     }
 }
-
 }} // namespace alia::indie
