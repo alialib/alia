@@ -27,7 +27,7 @@
 #include "include/utils/SkRandom.h"
 #pragma warning(pop)
 
-#include <alia/indie/events/region.hpp>
+#include <alia/indie/events/mouse.hpp>
 #include <alia/indie/layout/system.hpp>
 #include <alia/indie/system/object.hpp>
 #include <alia/indie/widget.hpp>
@@ -229,10 +229,9 @@ glfw_window::do_main_loop()
         {
             double xpos, ypos;
             glfwGetCursorPos(impl_->glfw_window_, &xpos, &ypos);
-            mouse_hit_test_event hit_test(
-                hit_test_parameters{make_vector(xpos, ypos)});
-            impl_->system.root_widget->handle_region_event(hit_test);
-            if (hit_test.response)
+            mouse_hit_test test{make_vector(xpos, ypos)};
+            impl_->system.root_widget->hit_test(test);
+            if (test.result)
             {
                 glfwSetCursor(
                     impl_->glfw_window_,

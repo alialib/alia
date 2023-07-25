@@ -1,3 +1,4 @@
+#include "alia/indie/widget.hpp"
 #include <alia/indie.hpp>
 
 #include <color/color.hpp>
@@ -33,24 +34,26 @@ struct box_node : indie::leaf_widget
     }
 
     void
-    handle_region_event(indie::region_event& event) override
+    hit_test(indie::hit_test_base& test) override
     {
-        switch (event.type)
+        if (is_inside(this->assignment().region, vector<2, float>(test.point)))
         {
-            case indie::region_event_type::MOUSE_HIT_TEST: {
-                auto& hit_test
-                    = static_cast<indie::mouse_hit_test_event&>(event);
-                if (is_inside(
-                        this->assignment().region,
-                        vector<2, float>(hit_test.parameters.mouse_position)))
-                {
-                    hit_test.response = indie::mouse_hit_response{
-                        null_component_id,
-                        indie::mouse_cursor::POINTER,
-                        this->assignment().region,
-                        ""};
+            switch (test.type)
+            {
+                case indie::hit_test_type::MOUSE: {
+                    static_cast<indie::mouse_hit_test&>(test).result
+                        = indie::mouse_hit_test_result{
+                            null_component_id,
+                            indie::mouse_cursor::POINTER,
+                            this->assignment().region,
+                            ""};
+                    break;
                 }
-                break;
+                case indie::hit_test_type::WHEEL: {
+                    static_cast<indie::wheel_hit_test&>(test).result
+                        = null_component_id;
+                    break;
+                }
             }
         }
     }
@@ -108,32 +111,6 @@ get_layout_traversal(context ctx)
     return get<indie::traversal_tag>(ctx).layout;
 }
 
-bool
-region_event_is_relevant(
-    region_event const& event, box<2, float> const& region)
-{
-    switch (event.type)
-    {
-        case region_event_type::MOUSE_HIT_TEST:
-            return is_inside(
-                region,
-                vector<2, float>(
-                    static_cast<mouse_hit_test_event const&>(event)
-                        .parameters.mouse_position));
-        // case region_event_type::WHEEL_HIT_TEST:
-        //     return is_inside(
-        //         region,
-        //         static_cast<wheel_hit_test_event const&>(event)
-        //             .parameters.position);
-        // case region_event_type::WIDGET_VISIBILITY:
-        //     return overlapping(region,
-        //     static_cast<widget_visibility_event
-        //     const&>(event).parameters.region);
-        default:
-            return false;
-    }
-}
-
 template<class LayoutContainer>
 struct layout_container_widget : widget_container, LayoutContainer
 {
@@ -144,14 +121,16 @@ struct layout_container_widget : widget_container, LayoutContainer
     }
 
     void
-    handle_region_event(region_event& event) override
+    hit_test(hit_test_base& test) override
     {
         auto region = this->LayoutContainer::region();
-        if (region_event_is_relevant(event, region))
+        if (is_inside(region, vector<2, float>(test.point)))
         {
             for (widget* node = this->widget_container::children; node;
                  node = node->next)
-                node->handle_region_event(event);
+            {
+                node->hit_test(test);
+            }
         }
     }
 };
@@ -165,12 +144,12 @@ struct simple_container_widget : widget_container
     }
 
     void
-    handle_region_event(region_event& event) override
+    hit_test(hit_test_base& test) override
     {
         for (widget* node = this->widget_container::children; node;
              node = node->next)
         {
-            node->handle_region_event(event);
+            node->hit_test(test);
         }
     }
 };

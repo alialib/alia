@@ -3,7 +3,7 @@
 
 #include <alia/core/system/internals.hpp>
 #include <alia/indie/context.hpp>
-#include <alia/indie/events/defines.hpp>
+#include <alia/indie/events/mouse.hpp>
 #include <alia/indie/layout/internals.hpp>
 
 namespace alia { namespace indie {
