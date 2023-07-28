@@ -10,10 +10,6 @@ namespace alia { namespace indie {
 
 struct glfw_window_impl;
 
-struct mouse_click_event
-{
-};
-
 struct glfw_window
 {
     glfw_window(

@@ -27,9 +27,13 @@
 #include "include/utils/SkRandom.h"
 #pragma warning(pop)
 
-#include <alia/indie/events/mouse.hpp>
+#include <alia/indie/events/input.hpp>
 #include <alia/indie/layout/system.hpp>
+#include <alia/indie/system/api.hpp>
+#include <alia/indie/system/input_processing.hpp>
 #include <alia/indie/system/object.hpp>
+#include <alia/indie/system/os_interface.hpp>
+#include <alia/indie/system/window_interface.hpp>
 #include <alia/indie/widget.hpp>
 
 #include <chrono>
@@ -38,14 +42,75 @@ namespace alia { namespace indie {
 
 struct glfw_window_impl
 {
-    GLFWwindow* glfw_window_ = nullptr;
+    GLFWwindow* glfw_window = nullptr;
 
     // TODO: Bundle this up into a Skia structure?
-    std::unique_ptr<GrDirectContext> skia_graphics_context_;
-    std::unique_ptr<SkSurface> skia_surface_;
+    std::unique_ptr<GrDirectContext> skia_graphics_context;
+    std::unique_ptr<SkSurface> skia_surface;
 
     // TODO: Does this go here?
     indie::system system;
+};
+
+struct glfw_os_interface : os_interface
+{
+    glfw_os_interface(glfw_window_impl& impl) : impl_(impl)
+    {
+    }
+
+    void
+    set_clipboard_text(std::string text) override
+    {
+        glfwSetClipboardString(impl_.glfw_window, text.c_str());
+    }
+
+    std::optional<std::string>
+    get_clipboard_text() override
+    {
+        char const* text = glfwGetClipboardString(impl_.glfw_window);
+        if (text)
+            return std::string(text);
+        else
+            return std::nullopt;
+    }
+
+    glfw_window_impl& impl_;
+};
+
+struct glfw_window_interface : window_interface
+{
+    glfw_window_interface(glfw_window_impl& impl) : impl_(impl)
+    {
+    }
+
+    void
+    set_mouse_cursor(mouse_cursor cursor) override
+    {
+        GLFWcursor* glfw_cursor = nullptr;
+        switch (cursor)
+        {
+            case mouse_cursor::CROSSHAIR:
+                glfw_cursor = glfwCreateStandardCursor(GLFW_CROSSHAIR_CURSOR);
+                break;
+            case mouse_cursor::TEXT:
+                glfw_cursor = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
+                break;
+            case mouse_cursor::POINTER:
+                glfw_cursor = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
+                break;
+            case mouse_cursor::EW_RESIZE:
+                glfw_cursor = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
+                break;
+            case mouse_cursor::NS_RESIZE:
+                glfw_cursor = glfwCreateStandardCursor(GLFW_VRESIZE_CURSOR);
+                break;
+            default:
+                break;
+        }
+        glfwSetCursor(impl_.glfw_window, glfw_cursor);
+    }
+
+    glfw_window_impl& impl_;
 };
 
 namespace {
@@ -80,18 +145,30 @@ get_impl(GLFWwindow* window)
         glfwGetWindowUserPointer(window));
 }
 
-void
-cursor_position_callback(GLFWwindow*, double, double)
+system&
+get_system(GLFWwindow* window)
 {
+    return get_impl(window).system;
+}
+
+void
+mouse_motion_callback(GLFWwindow* window, double x, double y)
+{
+    process_mouse_motion(get_system(window), make_vector(x, y));
 }
 
 void
 mouse_button_callback(GLFWwindow* window, int button, int action, int /*mods*/)
 {
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+    switch (action)
     {
-        mouse_click_event e;
-        dispatch_event(get_impl(window).system, e);
+        case GLFW_PRESS:
+            process_mouse_press(get_impl(window).system, mouse_button(button));
+            break;
+        case GLFW_RELEASE:
+            process_mouse_release(
+                get_impl(window).system, mouse_button(button));
+            break;
     }
 }
 
@@ -105,9 +182,9 @@ reset_skia(glfw_window_impl& impl, vector<2, unsigned> size)
     GrBackendRenderTarget backend_render_target(
         size[0], size[1], 0, 0, framebuffer_info);
 
-    impl.skia_surface_.reset();
+    impl.skia_surface.reset();
     auto surface = SkSurface::MakeFromBackendRenderTarget(
-        impl.skia_graphics_context_.get(),
+        impl.skia_graphics_context.get(),
         backend_render_target,
         kBottomLeft_GrSurfaceOrigin,
         kRGBA_8888_SkColorType,
@@ -115,14 +192,14 @@ reset_skia(glfw_window_impl& impl, vector<2, unsigned> size)
         nullptr);
     if (!surface.get())
         throw alia::exception("Skia surface creation failed");
-    impl.skia_surface_.reset(surface.release());
+    impl.skia_surface.reset(surface.release());
 }
 
 void
 init_skia(glfw_window_impl& impl, vector<2, unsigned> size)
 {
     auto interface = GrGLMakeNativeInterface();
-    impl.skia_graphics_context_.reset(
+    impl.skia_graphics_context.reset(
         GrDirectContext::MakeGL(interface).release());
     reset_skia(impl, size);
 }
@@ -147,18 +224,18 @@ init_window(
     glfwSetWindowUserPointer(window, &impl);
 
     glfwSetMouseButtonCallback(window, mouse_button_callback);
-    glfwSetCursorPosCallback(window, cursor_position_callback);
+    glfwSetCursorPosCallback(window, mouse_motion_callback);
 
     // TODO: Do this elsewhere?
     glfwMakeContextCurrent(window);
 
-    impl.glfw_window_ = window;
+    impl.glfw_window = window;
 }
 
 void
 destroy_window(glfw_window_impl& impl)
 {
-    glfwDestroyWindow(impl.glfw_window_);
+    glfwDestroyWindow(impl.glfw_window);
 }
 
 } // namespace
@@ -169,9 +246,19 @@ glfw_window::glfw_window(
     std::function<void(indie::context)> controller)
     : impl_(new glfw_window_impl)
 {
-    initialize(impl_->system, controller);
+    initialize(
+        impl_->system,
+        controller,
+        std::make_shared<glfw_os_interface>(*impl_),
+        std::make_shared<glfw_window_interface>(*impl_));
 
     init_window(*impl_, title, size);
+
+    // TODO: Do this in a better way.
+    int width, height;
+    glfwGetFramebufferSize(impl_->glfw_window, &width, &height);
+    impl_->system.surface_size[0] = width;
+    impl_->system.surface_size[1] = height;
 
     init_skia(*impl_, size);
 
@@ -182,23 +269,24 @@ glfw_window::glfw_window(
 void*
 glfw_window::handle() const
 {
-    return impl_->glfw_window_;
+    return impl_->glfw_window;
 }
 
 void
 glfw_window::do_main_loop()
 {
-    while (!glfwWindowShouldClose(impl_->glfw_window_))
+    while (!glfwWindowShouldClose(impl_->glfw_window))
     {
         // TODO: Track this ourselves.
         int width, height;
-        glfwGetWindowSize(impl_->glfw_window_, &width, &height);
+        glfwGetFramebufferSize(impl_->glfw_window, &width, &height);
 
         std::chrono::steady_clock::time_point begin
             = std::chrono::steady_clock::now();
 
         // for (int i = 0; i != 1000; ++i)
         refresh_system(impl_->system);
+        update(impl_->system);
 
         {
             std::chrono::steady_clock::time_point end
@@ -225,25 +313,7 @@ glfw_window::do_main_loop()
             begin = end;
         }
 
-        if (impl_->system.root_widget)
-        {
-            double xpos, ypos;
-            glfwGetCursorPos(impl_->glfw_window_, &xpos, &ypos);
-            mouse_hit_test test{make_vector(xpos, ypos)};
-            impl_->system.root_widget->hit_test(test);
-            if (test.result)
-            {
-                glfwSetCursor(
-                    impl_->glfw_window_,
-                    glfwCreateStandardCursor(GLFW_HAND_CURSOR));
-            }
-            else
-            {
-                glfwSetCursor(impl_->glfw_window_, nullptr);
-            }
-        }
-
-        auto& canvas = *impl_->skia_surface_->getCanvas();
+        auto& canvas = *impl_->skia_surface->getCanvas();
         canvas.clipRect(SkRect::MakeWH(SkScalar(width), SkScalar(height)));
 
         // TODO: Don't clear automatically.
@@ -256,7 +326,7 @@ glfw_window::do_main_loop()
         if (impl_->system.root_widget)
         {
             impl_->system.root_widget->render(
-                *impl_->skia_surface_->getCanvas());
+                *impl_->skia_surface->getCanvas());
         }
         else
         {
@@ -274,8 +344,8 @@ glfw_window::do_main_loop()
             begin = end;
         }
 
-        impl_->skia_graphics_context_->flush();
-        glfwSwapBuffers(impl_->glfw_window_);
+        impl_->skia_graphics_context->flush();
+        glfwSwapBuffers(impl_->glfw_window);
 
         glfwPollEvents();
     }
@@ -285,10 +355,11 @@ glfw_window::~glfw_window()
 {
     if (impl_)
     {
-        impl_->skia_surface_.reset();
-        impl_->skia_graphics_context_.reset();
+        impl_->skia_surface.reset();
+        impl_->skia_graphics_context.reset();
 
         destroy_window(*impl_);
     }
 }
+
 }} // namespace alia::indie

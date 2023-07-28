@@ -1,5 +1,8 @@
-#include "alia/indie/widget.hpp"
+#include <alia/core/flow/data_graph.hpp>
+#include <alia/core/flow/events.hpp>
 #include <alia/indie.hpp>
+#include <alia/indie/utilities/mouse.hpp>
+#include <alia/indie/widget.hpp>
 
 #include <color/color.hpp>
 
@@ -16,21 +19,49 @@ struct box_node : indie::leaf_widget
     {
         auto const& region = this->assignment().region;
 
-        // SkPaint paint;
-        // paint.setColor(color_);
-        // SkRect rect;
-        // rect.fLeft = SkScalar(region.corner[0]);
-        // rect.fTop = SkScalar(region.corner[1]);
-        // rect.fRight = SkScalar(region.corner[0] + region.size[0]);
-        // rect.fBottom = SkScalar(region.corner[1] + region.size[1]);
-        // canvas.drawRect(rect, paint);
+        double blend_factor = 0;
 
-        canvas.save();
-        canvas.translate(
-            SkScalar(region.corner[0]), SkScalar(region.corner[1]));
-        canvas.drawPicture(picture_.get());
+        if (indie::is_click_in_progress(
+                *sys_, id_.id, indie::mouse_button::LEFT))
+        {
+            blend_factor = 0.4;
+        }
+        else if (is_component_hot(*sys_, id_.id))
+        {
+            blend_factor = 0.2;
+        }
 
-        canvas.restore();
+        ::color::rgb<std::uint8_t> c;
+        c = ::color::rgb<std::uint8_t>(
+            {SkColorGetR(color_), SkColorGetG(color_), SkColorGetB(color_)});
+        if (blend_factor != 0)
+        {
+            ::color::yiq<std::uint8_t> color;
+            color = c;
+            ::color::yiq<std::uint8_t> white = ::color::constant::white_t{};
+            ::color::yiq<std::uint8_t> mix
+                = ::color::operation::mix(color, blend_factor, white);
+            c = mix;
+        }
+
+        SkPaint paint;
+        paint.setColor(SkColorSetARGB(
+            0xff,
+            ::color::get::red(c),
+            ::color::get::green(c),
+            ::color::get::blue(c)));
+        SkRect rect;
+        rect.fLeft = SkScalar(region.corner[0]);
+        rect.fTop = SkScalar(region.corner[1]);
+        rect.fRight = SkScalar(region.corner[0] + region.size[0]);
+        rect.fBottom = SkScalar(region.corner[1] + region.size[1]);
+        canvas.drawRect(rect, paint);
+
+        // canvas.save();
+        // canvas.translate(
+        //     SkScalar(region.corner[0]), SkScalar(region.corner[1]));
+        // canvas.drawPicture(picture_.get());
+        // canvas.restore();
     }
 
     void
@@ -43,29 +74,40 @@ struct box_node : indie::leaf_widget
                 case indie::hit_test_type::MOUSE: {
                     static_cast<indie::mouse_hit_test&>(test).result
                         = indie::mouse_hit_test_result{
-                            null_component_id,
+                            id_,
                             indie::mouse_cursor::POINTER,
                             this->assignment().region,
                             ""};
                     break;
                 }
                 case indie::hit_test_type::WHEEL: {
-                    static_cast<indie::wheel_hit_test&>(test).result
-                        = null_component_id;
+                    static_cast<indie::wheel_hit_test&>(test).result = id_;
                     break;
                 }
             }
         }
     }
 
+    indie::system* sys_;
+    external_component_id id_;
     SkColor color_ = SK_ColorWHITE;
-    sk_sp<SkPicture> picture_;
+    // sk_sp<SkPicture> picture_;
 };
 
 void
 do_box(indie::context ctx, SkColor color)
 {
-    auto& node = get_cached_data<box_node>(ctx);
+    box_node* node_ptr;
+    if (get_cached_data(ctx, &node_ptr))
+    {
+        node_ptr->sys_ = &get_system(ctx);
+        node_ptr->color_ = color;
+    }
+
+    auto& node = *node_ptr;
+
+    auto id = get_component_id(ctx);
+
     if (is_refresh_event(ctx))
     {
         add_widget(get<indie::traversal_tag>(ctx).widgets, &node);
@@ -76,30 +118,36 @@ do_box(indie::context ctx, SkColor color)
                 alia::make_layout_vector(100, 100), 0, 0));
         add_layout_node(get<indie::traversal_tag>(ctx).layout, &node);
 
-        if (color != node.color_)
-        {
-            SkPictureRecorder recorder;
-            SkRect bounds;
-            bounds.fLeft = 0;
-            bounds.fTop = 0;
-            bounds.fRight = 100;
-            bounds.fBottom = 100;
-            SkCanvas* canvas = recorder.beginRecording(bounds);
+        node.id_ = externalize(id);
 
-            {
-                SkPaint paint;
-                paint.setColor(color);
-                SkRect rect;
-                rect.fLeft = 0;
-                rect.fTop = 0;
-                rect.fRight = 100;
-                rect.fBottom = 100;
-                canvas->drawRect(rect, paint);
-            }
+        // if (color != node.color_)
+        // {
+        //     SkPictureRecorder recorder;
+        //     SkRect bounds;
+        //     bounds.fLeft = 0;
+        //     bounds.fTop = 0;
+        //     bounds.fRight = 100;
+        //     bounds.fBottom = 100;
+        //     SkCanvas* canvas = recorder.beginRecording(bounds);
 
-            node.picture_ = recorder.finishRecordingAsPicture();
-            node.color_ = color;
-        }
+        //     {
+        //         SkPaint paint;
+        //         paint.setColor(color);
+        //         SkRect rect;
+        //         rect.fLeft = 0;
+        //         rect.fTop = 0;
+        //         rect.fRight = 100;
+        //         rect.fBottom = 100;
+        //         canvas->drawRect(rect, paint);
+        //     }
+
+        //     node.picture_ = recorder.finishRecordingAsPicture();
+        // }
+    }
+
+    if (detect_click(ctx, id, indie::mouse_button::LEFT))
+    {
+        node.color_ = SK_ColorBLUE;
     }
 }
 
@@ -193,7 +241,7 @@ my_ui(indie::context ctx)
             ::color::get::blue(r)));
 
     static SkColor clicky_color = SK_ColorRED;
-    event_handler<indie::mouse_click_event>(
-        ctx, [&](auto, auto&) { clicky_color = SK_ColorBLUE; });
+    // event_handler<indie::mouse_button_event>(
+    //     ctx, [&](auto, auto&) { clicky_color = SK_ColorBLUE; });
     do_box(ctx, clicky_color);
 }

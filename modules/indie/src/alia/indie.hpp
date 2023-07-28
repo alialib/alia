@@ -4,8 +4,7 @@
 #include <alia/core.hpp>
 
 #include <alia/indie/backends/glfw.hpp>
-#include <alia/indie/events/keyboard.hpp>
-#include <alia/indie/events/mouse.hpp>
+#include <alia/indie/events/input.hpp>
 #include <alia/indie/layout/api.hpp>
 #include <alia/indie/layout/utilities.hpp>
 #include <alia/indie/system/object.hpp>
