@@ -10,9 +10,16 @@ void
 system::invoke_controller(vanilla_context vanilla_ctx)
 {
     indie::traversal traversal;
+    traversal.indie_sys = this;
 
     scoped_layout_refresh slr;
     scoped_layout_traversal slt;
+
+    geometry_context geometry;
+    initialize(
+        geometry,
+        box<2, double>(
+            make_vector<double>(0, 0), vector<2, double>(this->surface_size)));
 
     if (is_refresh_event(vanilla_ctx))
     {
@@ -24,23 +31,17 @@ system::invoke_controller(vanilla_context vanilla_ctx)
     }
     else
     {
-        static alia::geometry_context geo;
         slt.begin(
-            this->layout, traversal.layout, geo, make_vector<float>(200, 200));
+            this->layout,
+            traversal.layout,
+            geometry,
+            make_vector<float>(200, 200));
     }
 
     auto ctx = extend_context<traversal_tag>(vanilla_ctx, traversal);
 
     this->controller(ctx);
     traversal.widgets.next_ptr = nullptr;
-}
-
-void
-initialize(
-    indie::system& system, std::function<void(indie::context)> controller)
-{
-    initialize_core_system<indie::vanilla_context>(system, nullptr);
-    system.controller = controller;
 }
 
 }} // namespace alia::indie
