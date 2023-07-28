@@ -51,6 +51,24 @@ using vanilla_context = context_interface<detail::add_tagged_data_types_t<
     timing_tag,
     data_traversal_tag>>;
 
+inline system&
+get_system(dataless_context ctx)
+{
+    return *get<indie::traversal_tag>(ctx).indie_sys;
+}
+
+inline layout_traversal&
+get_layout_traversal(dataless_context ctx)
+{
+    return get<indie::traversal_tag>(ctx).layout;
+}
+
+inline widget_traversal&
+get_widget_traversal(dataless_context ctx)
+{
+    return get<indie::traversal_tag>(ctx).widgets;
+}
+
 } // namespace indie
 } // namespace alia
 

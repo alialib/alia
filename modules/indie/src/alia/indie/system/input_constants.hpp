@@ -1,12 +1,37 @@
-#ifndef ALIA_INDIE_EVENTS_KEYBOARD_HPP
-#define ALIA_INDIE_EVENTS_KEYBOARD_HPP
+#ifndef ALIA_INDIE_SYSTEM_INPUT_CONSTANTS_HPP
+#define ALIA_INDIE_SYSTEM_INPUT_CONSTANTS_HPP
 
-#include <alia/indie/events/input.hpp>
+// This file defines various enumerations for input devices.
 
 namespace alia { namespace indie {
 
+// All mouse buttons have a code.
+using mouse_button_code = int;
+
+// The 'standard' mouse buttons have names.
+// (Other buttons may exist, but they don't have names.)
+enum class mouse_button
+{
+    LEFT,
+    MIDDLE,
+    RIGHT
+};
+
+// standard mouse cursors that are expected to be supplied by the backend
+enum class mouse_cursor
+{
+    DEFAULT,
+    CROSSHAIR,
+    NONE,
+    TEXT,
+    POINTER,
+    MOVE,
+    EW_RESIZE,
+    NS_RESIZE,
+};
+
 // codes for all the keyboard keys recognized by alia
-enum key
+enum key_code
 {
     UNKNOWN = -1,
     SPACE = 32,
@@ -142,6 +167,12 @@ ALIA_DEFINE_FLAG(kmod, 0x02, KMOD_CTRL)
 ALIA_DEFINE_FLAG(kmod, 0x04, KMOD_ALT)
 ALIA_DEFINE_FLAG(kmod, 0x08, KMOD_WIN)
 ALIA_DEFINE_FLAG(kmod, 0x10, KMOD_META)
+
+struct modded_key
+{
+    key_code code;
+    key_modifiers mods;
+};
 
 }} // namespace alia::indie
 
