@@ -97,30 +97,10 @@ struct untyped_system : noncopyable
     std::function<void(std::exception_ptr)> error_handler;
 
     virtual void
-    refresh()
+    create_core_context_and_invoke_controller(
+        event_traversal& event, data_traversal& data, timing_subsystem& timing)
         = 0;
 };
-
-template<class System>
-void
-refresh_system(System& sys)
-{
-    sys.refresh_needed = false;
-    ++sys.refresh_counter;
-
-    // TODO: Track pass_count and handle excessive counts in useful ways.
-    // ("Useful" is probably different for development/release builds.)
-    // int pass_count = 0;
-    while (true)
-    {
-        refresh_event refresh;
-        detail::dispatch_untargeted_event(sys, refresh);
-        if (!sys.root_component->dirty)
-            break;
-        // ++pass_count;
-        // assert(pass_count < 64);
-    };
-}
 
 template<class Context>
 struct typed_system : untyped_system
@@ -128,9 +108,15 @@ struct typed_system : untyped_system
     typedef Context context_type;
 
     void
-    refresh() override
+    create_core_context_and_invoke_controller(
+        event_traversal& event,
+        data_traversal& dt,
+        timing_subsystem& timing) override
     {
-        refresh_system(*this);
+        typename Context::contents_type::storage_type storage;
+        auto ctx = make_context(&storage, *this, event, dt, timing);
+        scoped_component_container root(ctx, &this->root_component);
+        this->invoke_controller(ctx);
     }
 
     virtual void

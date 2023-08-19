@@ -29,7 +29,7 @@ default_external_interface::schedule_asynchronous_update(
     std::function<void()> update)
 {
     update();
-    owner.refresh();
+    refresh_system(owner);
 }
 
 void
