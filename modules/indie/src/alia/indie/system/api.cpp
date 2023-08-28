@@ -97,11 +97,11 @@ update(system& ui)
     // the widget under the mouse. However, if there's a different widget
     // that's active, it should take priority, so we need to see what cursor
     // it wants.
-    // if (ui.input.active_id.id && ui.input.active_id.id !=
+    // if (ui.input.id_with_capture.id && ui.input.id_with_capture.id !=
     // ui.input.hot_id.id)
     // {
-    //     mouse_cursor_query query(ui.input.active_id.id);
-    //     issue_targeted_event(ui, query, ui.input.active_id);
+    //     mouse_cursor_query query(ui.input.id_with_capture.id);
+    //     issue_targeted_event(ui, query, ui.input.id_with_capture);
     //     resolved_cursor = query.cursor;
     // }
 
@@ -513,7 +513,7 @@ update_tooltip(ui_system& ui)
 
     // If the UI has been hovering over a widget with a tooltip for a while, enable
     // the tooltip overlay.
-    if (!is_valid(ui.input.active_id) && !ui.tooltip.message.empty() &&
+    if (!is_valid(ui.input.id_with_capture) && !ui.tooltip.message.empty() &&
         ui.millisecond_tick_count - ui.input.hover_start_time > 500)
     {
         tooltips_enabled = true;
@@ -723,7 +723,7 @@ clear_focus(system& ui)
 void
 set_component_with_capture(system& ui, external_component_id id)
 {
-    ui.input.active_id = id;
+    ui.input.id_with_capture = id;
 }
 
 void
@@ -731,7 +731,7 @@ set_hot_component(system& ui, external_component_id hot_id)
 {
     // If there's no active widget and the mouse is moving to a different
     // widget, set the hover_start_time.
-    if (!is_valid(ui.input.active_id) && ui.input.hot_id.id != hot_id.id)
+    if (!is_valid(ui.input.id_with_capture) && ui.input.hot_id.id != hot_id.id)
     {
         // TODO:
         // ui.input.hover_start_time = ui.tick_count;

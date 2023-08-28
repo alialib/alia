@@ -16,13 +16,13 @@ is_component_hot(system& sys, component_id id)
 bool
 component_has_capture(system& sys, component_id id)
 {
-    return sys.input.active_id.id == id;
+    return sys.input.id_with_capture.id == id;
 }
 
 bool
 no_component_has_capture(system& sys)
 {
-    return !is_valid(sys.input.active_id);
+    return !is_valid(sys.input.id_with_capture);
 }
 
 vector<2, double>
