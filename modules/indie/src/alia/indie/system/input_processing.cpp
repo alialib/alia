@@ -9,7 +9,8 @@ namespace alia { namespace indie {
 inline external_component_id
 get_mouse_target(system& ui)
 {
-    return is_valid(ui.input.active_id) ? ui.input.active_id : ui.input.hot_id;
+    return is_valid(ui.input.id_with_capture) ? ui.input.id_with_capture
+                                              : ui.input.hot_id;
 }
 
 void

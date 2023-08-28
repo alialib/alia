@@ -30,7 +30,7 @@ struct window_input_state
 
     // the ID of the component that has the mouse captured - Note that this
     // isn't necessarily the same as the hot_id.
-    external_component_id active_id;
+    external_component_id id_with_capture;
 
     // the ID of the component that has the keyboard focus
     external_component_id focused_id;
