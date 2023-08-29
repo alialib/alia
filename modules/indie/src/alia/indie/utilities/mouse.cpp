@@ -4,25 +4,26 @@
 #include <alia/indie/events/input.hpp>
 #include <alia/indie/layout/internals.hpp>
 #include <alia/indie/system/api.hpp>
+#include <alia/indie/widget.hpp>
 
 namespace alia { namespace indie {
 
 bool
-is_component_hot(system& sys, component_id id)
+is_widget_hot(system& sys, widget const* widget)
 {
-    return sys.input.hot_id.id == id;
+    return sys.input.hot_widget.matches(widget);
 }
 
 bool
-component_has_capture(system& sys, component_id id)
+widget_has_capture(system& sys, widget const* widget)
 {
-    return sys.input.id_with_capture.id == id;
+    return sys.input.widget_with_capture.matches(widget);
 }
 
 bool
 no_component_has_capture(system& sys)
 {
-    return !is_valid(sys.input.id_with_capture);
+    return !sys.input.widget_with_capture;
 }
 
 vector<2, double>
@@ -62,11 +63,12 @@ detect_mouse_press(dataless_context ctx, mouse_button button)
 }
 
 bool
-detect_mouse_press(dataless_context ctx, component_id id, mouse_button button)
+detect_mouse_press(
+    dataless_context ctx, widget const* widget, mouse_button button)
 {
-    if (detect_mouse_press(ctx, button) && is_component_hot(ctx, id))
+    if (detect_mouse_press(ctx, button) && is_widget_hot(ctx, widget))
     {
-        set_component_with_capture(get_system(ctx), externalize(id));
+        set_widget_with_capture(get_system(ctx), externalize(widget));
         return true;
     }
     else
@@ -85,17 +87,18 @@ detect_mouse_release(dataless_context ctx, mouse_button button)
 
 bool
 detect_mouse_release(
-    dataless_context ctx, component_id id, mouse_button button)
+    dataless_context ctx, widget const* widget, mouse_button button)
 {
-    return detect_mouse_release(ctx, button) && component_has_capture(ctx, id);
+    return detect_mouse_release(ctx, button)
+           && widget_has_capture(ctx, widget);
 }
 
 bool
-detect_mouse_motion(dataless_context ctx, component_id id)
+detect_mouse_motion(dataless_context ctx, widget const* widget)
 {
     mouse_motion_event* event;
-    return detect_event(ctx, &event) && component_has_capture(ctx, id)
-           || no_component_has_capture(ctx) && is_component_hot(ctx, id);
+    return detect_event(ctx, &event) && widget_has_capture(ctx, widget)
+           || no_component_has_capture(ctx) && is_widget_hot(ctx, widget);
 }
 
 bool
@@ -107,50 +110,52 @@ detect_double_click(dataless_context ctx, mouse_button button)
 }
 
 bool
-detect_double_click(dataless_context ctx, component_id id, mouse_button button)
+detect_double_click(
+    dataless_context ctx, widget const* widget, mouse_button button)
 {
-    return detect_double_click(ctx, button) && is_component_hot(ctx, id);
+    return detect_double_click(ctx, button) && is_widget_hot(ctx, widget);
 }
 
 bool
-detect_click(dataless_context ctx, component_id id, mouse_button button)
+detect_click(dataless_context ctx, widget const* widget, mouse_button button)
 {
-    detect_mouse_press(ctx, id, button);
-    return detect_mouse_release(ctx, id, button) && is_component_hot(ctx, id);
+    detect_mouse_press(ctx, widget, button);
+    return detect_mouse_release(ctx, widget, button)
+           && is_widget_hot(ctx, widget);
 }
 
 bool
-is_click_possible(system& sys, component_id id)
+is_click_possible(system& sys, widget const* widget)
 {
-    return is_component_hot(sys, id) && no_component_has_capture(sys);
+    return is_widget_hot(sys, widget) && no_component_has_capture(sys);
 }
 
 bool
-is_click_in_progress(system& sys, component_id id, mouse_button button)
+is_click_in_progress(system& sys, widget const* widget, mouse_button button)
 {
-    return is_component_hot(sys, id) && component_has_capture(sys, id)
+    return is_widget_hot(sys, widget) && widget_has_capture(sys, widget)
            && is_mouse_button_pressed(sys, button);
 }
 
 #if 0
 
 bool
-detect_drag(dataless_context ctx, component_id id, mouse_button button)
+detect_drag(dataless_context ctx, widget const* widget, mouse_button button)
 {
-    detect_mouse_press(ctx, id, button);
+    detect_mouse_press(ctx, widget, button);
     return detect_event(ctx, MOUSE_MOTION_EVENT)
            && is_mouse_button_pressed(ctx, button)
-           && component_has_capture(ctx, id);
+           && component_has_capture(ctx, widget);
 }
 
 bool
 detect_press_or_drag(
-    dataless_context ctx, component_id id, mouse_button button)
+    dataless_context ctx, widget const* widget, mouse_button button)
 {
-    return (detect_mouse_press(ctx, id, button)
+    return (detect_mouse_press(ctx, widget, button)
             || detect_event(ctx, MOUSE_MOTION_EVENT)
                    && is_mouse_button_pressed(ctx, button))
-           && component_has_capture(ctx, id);
+           && component_has_capture(ctx, widget);
 }
 
 vector<2, double>
@@ -164,33 +169,38 @@ get_drag_delta(dataless_context ctx)
 }
 
 bool
-is_drag_in_progress(dataless_context ctx, component_id id, mouse_button button)
+is_drag_in_progress(
+    dataless_context ctx, widget const* widget, mouse_button button)
 {
     return is_mouse_button_pressed(ctx, button)
-           && component_has_capture(ctx, id) && get_system(ctx).input.dragging;
+           && component_has_capture(ctx, widget)
+           && get_system(ctx).input.dragging;
 }
 
 bool
-detect_drag_release(dataless_context ctx, component_id id, mouse_button button)
+detect_drag_release(
+    dataless_context ctx, widget const* widget, mouse_button button)
 {
-    return is_drag_in_progress(ctx, id, button)
+    return is_drag_in_progress(ctx, widget, button)
            && detect_mouse_release(ctx, button);
 }
 
 bool
 detect_stationary_click(
-    dataless_context ctx, component_id id, mouse_button button)
+    dataless_context ctx, widget const* widget, mouse_button button)
 {
-    return detect_click(ctx, id, button) && !get_system(ctx).input.dragging;
+    return detect_click(ctx, widget, button)
+           && !get_system(ctx).input.dragging;
 }
 
 bool
-detect_wheel_movement(dataless_context ctx, float* movement, component_id id)
+detect_wheel_movement(
+    dataless_context ctx, float* movement, widget const* widget)
 {
     if (ctx.event->type == MOUSE_WHEEL_EVENT)
     {
         mouse_wheel_event& e = get_event<mouse_wheel_event>(ctx);
-        if (e.target == id)
+        if (e.target == widget)
         {
             *movement = e.movement;
             acknowledge_input_event(ctx);
@@ -201,7 +211,7 @@ detect_wheel_movement(dataless_context ctx, float* movement, component_id id)
 }
 
 bool
-detect_mouse_gain(dataless_context ctx, component_id id)
+detect_mouse_gain(dataless_context ctx, widget const* widget)
 {
     if (ctx.event->type == MOUSE_GAIN_EVENT)
     {
@@ -213,7 +223,7 @@ detect_mouse_gain(dataless_context ctx, component_id id)
 }
 
 bool
-detect_mouse_loss(dataless_context ctx, component_id id)
+detect_mouse_loss(dataless_context ctx, widget const* widget)
 {
     if (ctx.event->type == MOUSE_LOSS_EVENT)
     {

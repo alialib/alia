@@ -26,7 +26,7 @@ struct hit_test_base
 
 struct mouse_hit_test_result
 {
-    std::weak_ptr<external_component_id> widget;
+    external_widget_handle widget;
     mouse_cursor cursor;
     layout_box hit_box;
     std::string tooltip_message;
@@ -44,7 +44,7 @@ struct mouse_hit_test : hit_test_base
 
 struct wheel_hit_test : hit_test_base
 {
-    std::optional<external_component_id> result;
+    std::optional<external_widget_handle> result;
 
     wheel_hit_test(vector<2, double> point)
         : hit_test_base{hit_test_type::WHEEL, point}
