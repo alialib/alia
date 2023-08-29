@@ -79,7 +79,7 @@ update(system& ui)
         ui.root_widget->hit_test(hit_test);
         if (hit_test.result)
         {
-            set_hot_component(ui, hit_test.result->id);
+            set_hot_component(ui, hit_test.result->widget);
             resolved_cursor = hit_test.result->cursor;
             // record_tooltip(ui, hit_test);
         }
@@ -721,23 +721,23 @@ clear_focus(system& ui)
 }
 
 void
-set_component_with_capture(system& ui, external_component_id id)
+set_widget_with_capture(system& ui, std::weak_ptr<widget> widget)
 {
-    ui.input.id_with_capture = id;
+    ui.input.widget_with_capture = std::move(widget);
 }
 
 void
-set_hot_component(system& ui, external_component_id hot_id)
+set_hot_widget(system& ui, std::weak_ptr<widget> widget)
 {
-    // If there's no active widget and the mouse is moving to a different
-    // widget, set the hover_start_time.
-    if (!is_valid(ui.input.id_with_capture) && ui.input.hot_id.id != hot_id.id)
+    // If no widget has capture and the mouse is moving to a different widget,
+    // this marks the start of a hover.
+    if (!ui.input.widget_with_capture && ui.input.hot_widget != widget)
     {
         // TODO:
         // ui.input.hover_start_time = ui.tick_count;
     }
 
-    ui.input.hot_id = hot_id;
+    ui.input.widget = std::move(widget);
 }
 
 #if 0

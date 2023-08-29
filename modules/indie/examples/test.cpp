@@ -26,7 +26,7 @@ struct box_node : indie::leaf_widget
         {
             blend_factor = 0.4;
         }
-        else if (is_component_hot(*sys_, id_.id))
+        else if (is_click_possible(*sys_, id_.id))
         {
             blend_factor = 0.2;
         }
@@ -65,7 +65,7 @@ struct box_node : indie::leaf_widget
     }
 
     void
-    hit_test(indie::hit_test_base& test) override
+    hit_test(indie::hit_test_base& test) const override
     {
         if (is_inside(this->assignment().region, vector<2, float>(test.point)))
         {
@@ -74,7 +74,7 @@ struct box_node : indie::leaf_widget
                 case indie::hit_test_type::MOUSE: {
                     static_cast<indie::mouse_hit_test&>(test).result
                         = indie::mouse_hit_test_result{
-                            id_,
+                            this->shared_from_this(),
                             indie::mouse_cursor::POINTER,
                             this->assignment().region,
                             ""};
@@ -88,6 +88,14 @@ struct box_node : indie::leaf_widget
         }
     }
 
+    void
+    process_input(input_event& event) override
+    {
+    }
+
+    external_component_id
+    identity() const {return }
+
     indie::system* sys_;
     external_component_id id_;
     SkColor color_ = SK_ColorWHITE;
@@ -97,11 +105,12 @@ struct box_node : indie::leaf_widget
 void
 do_box(indie::context ctx, SkColor color)
 {
-    box_node* node_ptr;
+    std::shared_ptr<box_node>* node_ptr;
     if (get_cached_data(ctx, &node_ptr))
     {
-        node_ptr->sys_ = &get_system(ctx);
-        node_ptr->color_ = color;
+        *node_ptr = std::make_shared<box_node>();
+        (*node_ptr)->sys_ = &get_system(ctx);
+        (*node_ptr)->color_ = color;
     }
 
     auto& node = *node_ptr;
