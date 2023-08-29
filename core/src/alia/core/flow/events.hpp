@@ -104,7 +104,12 @@ get_component_id(context ctx);
 // stored outside of the alia data graph.
 struct external_component_id
 {
+    // :id captures the original ID pointer used for the component within the
+    // data graph.
     component_id id = nullptr;
+    // :identity stores a copy of the actual weak_ptr to the component identity
+    // so that it can be tested externally to see if the component still exists
+    // within the data graph.
     component_identity identity;
 };
 

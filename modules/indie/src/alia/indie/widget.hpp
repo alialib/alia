@@ -8,22 +8,27 @@
 #include <alia/indie/events/input.hpp>
 #include <alia/indie/layout/utilities.hpp>
 #include <alia/indie/utilities/hit_testing.hpp>
+#include <memory>
 
 namespace alia { namespace indie {
 
-struct widget
+struct widget : std::enable_shared_from_this<widget>
 {
     virtual void
     render(SkCanvas& canvas)
         = 0;
 
     virtual void
-    hit_test(hit_test_base& test)
+    hit_test(hit_test_base& test) const
         = 0;
 
-    // virtual void
-    // handle_input(input_event& event)
-    //     = 0;
+    virtual void
+    process_input(input_event& event)
+        = 0;
+
+    virtual component_identity
+    identity() const
+        = 0;
 
     widget* next = nullptr;
 };

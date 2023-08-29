@@ -33,7 +33,7 @@ enum class input_event_type
     MOUSE_HOVER,
 
     // scrolling (via the mouse wheel, gesture, etc.)
-    SCROLLING,
+    SCROLL,
 };
 
 struct input_event : targeted_event
@@ -58,8 +58,8 @@ struct mouse_notification_event : input_event
 {
 };
 
-// SCROLLING
-struct scrolling_event : input_event
+// SCROLL
+struct scroll_event : input_event
 {
     double movement;
 };

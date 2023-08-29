@@ -4,6 +4,7 @@
 #include <alia/core/flow/events.hpp>
 #include <alia/indie/events/input.hpp>
 #include <alia/indie/geometry.hpp>
+#include <alia/indie/widget.hpp>
 
 namespace alia { namespace indie {
 
@@ -25,7 +26,7 @@ struct hit_test_base
 
 struct mouse_hit_test_result
 {
-    external_component_id id;
+    std::weak_ptr<external_component_id> widget;
     mouse_cursor cursor;
     layout_box hit_box;
     std::string tooltip_message;
