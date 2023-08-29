@@ -9,6 +9,7 @@
 #include <alia/indie/layout/internals.hpp>
 #include <alia/indie/system/os_interface.hpp>
 #include <alia/indie/system/window_interface.hpp>
+#include <alia/indie/widget.hpp>
 
 namespace alia { namespace indie {
 
@@ -25,15 +26,15 @@ struct window_input_state
     // the raw mouse position inside the window
     vector<2, double> mouse_position;
 
-    // the ID of the component that the mouse is over
-    external_component_id hot_id;
+    // the widget that the mouse is over
+    external_widget_handle hot_widget;
 
-    // the ID of the component that has the mouse captured - Note that this
-    // isn't necessarily the same as the hot_id.
-    external_component_id id_with_capture;
+    // the widget that has the mouse captured - Note that this isn't
+    // necessarily the same as the hot_widget.
+    external_widget_handle widget_with_capture;
 
-    // the ID of the component that has the keyboard focus
-    external_component_id focused_id;
+    // the widget that has the keyboard focus
+    external_widget_handle focused_id;
 
     // Is the user currently dragging the mouse (with a button pressed)?
     bool dragging = false;
@@ -45,9 +46,9 @@ struct window_input_state
     // is used as a hint to display focus indicators.
     bool keyboard_interaction = false;
 
-    // If the mouse is hovering over a component (identified by hot_id), this
+    // If the mouse is hovering over a widget (identified by hot_widget), this
     // is the time at which the hovering started. Note that hovering is only
-    // possible if no component has captured the mouse.
+    // possible if no widget has captured the mouse.
     millisecond_count hover_start_time;
 
     // the mouse cursor that's currently set for our window
