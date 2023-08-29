@@ -1,3 +1,4 @@
+#include "alia/indie/widget.hpp"
 #include <alia/indie/system/input_processing.hpp>
 
 #include <alia/core/flow/events.hpp>
@@ -6,12 +7,29 @@
 
 namespace alia { namespace indie {
 
-inline external_component_id
+namespace {
+
+std::shared_ptr<widget>
 get_mouse_target(system& ui)
 {
-    return ui.input.widget_with_capture ? ui.input.id_with_capture
-                                        : ui.input.hot_id;
+    // The widget with mouse capture takes precedence as the target for mouse
+    // events.
+    std::shared_ptr<widget> target = ui.input.widget_with_capture.lock();
+    // But if no widget has capture, send events to the widget under the mouse.
+    if (!target)
+        target = ui.input.hot_widget.lock();
+    return target;
 }
+
+void
+dispatch_mouse_event(system& ui, input_event& event)
+{
+    auto mouse_target = get_mouse_target(ui);
+    if (mouse_target)
+        mouse_target->process_input(event);
+}
+
+} // namespace
 
 void
 process_mouse_motion(system& ui, vector<2, double> const& position)
@@ -20,7 +38,7 @@ process_mouse_motion(system& ui, vector<2, double> const& position)
     {
         mouse_motion_event event{
             {{}, input_event_type::MOUSE_MOTION}, position};
-        dispatch_targeted_event(ui, event, get_mouse_target(ui));
+        dispatch_mouse_event(ui, event);
 
         ui.input.mouse_position = position;
         ui.input.mouse_inside_window = true;
@@ -40,10 +58,10 @@ void
 process_mouse_press(system& ui, mouse_button button, key_modifiers)
 {
     auto target = get_mouse_target(ui);
-    if (is_valid(target))
+    if (target)
     {
         mouse_button_event event{{{}, input_event_type::MOUSE_PRESS}, button};
-        dispatch_targeted_event(ui, event, target);
+        target->process_input(event);
     }
     else
     {
@@ -56,12 +74,17 @@ process_mouse_press(system& ui, mouse_button button, key_modifiers)
 void
 process_mouse_release(system& ui, mouse_button button)
 {
-    mouse_button_event event{{{}, input_event_type::MOUSE_RELEASE}, button};
-    dispatch_targeted_event(ui, event, get_mouse_target(ui));
+    auto target = get_mouse_target(ui);
+    if (target)
+    {
+        mouse_button_event event{
+            {{}, input_event_type::MOUSE_RELEASE}, button};
+        target->process_input(event);
+    }
     ui.input.mouse_button_state &= ~(1 << int(button));
     if (ui.input.mouse_button_state == 0)
     {
-        set_component_with_capture(ui, null_component_id);
+        set_widget_with_capture(ui, external_widget_handle());
         ui.input.dragging = false;
     }
 }
@@ -69,8 +92,12 @@ process_mouse_release(system& ui, mouse_button button)
 void
 process_double_click(system& ui, mouse_button button)
 {
-    mouse_button_event event{{{}, input_event_type::DOUBLE_CLICK}, button};
-    dispatch_targeted_event(ui, event, get_mouse_target(ui));
+    auto target = get_mouse_target(ui);
+    if (target)
+    {
+        mouse_button_event event{{{}, input_event_type::DOUBLE_CLICK}, button};
+        target->process_input(event);
+    }
     ui.input.mouse_button_state |= 1 << int(button);
     ui.input.keyboard_interaction = false;
 }

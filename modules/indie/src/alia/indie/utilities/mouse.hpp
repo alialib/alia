@@ -9,21 +9,21 @@
 namespace alia { namespace indie {
 
 bool
-is_component_hot(system& sys, component_id id);
+is_widget_hot(system& sys, widget const* widget);
 
 inline bool
-is_component_hot(dataless_context ctx, component_id id)
+is_widget_hot(dataless_context ctx, widget const* widget)
 {
-    return is_component_hot(get_system(ctx), id);
+    return is_widget_hot(get_system(ctx), widget);
 }
 
 bool
-component_has_capture(system& sys, component_id id);
+widget_has_capture(system& sys, widget const* widget);
 
 inline bool
-component_has_capture(dataless_context ctx, component_id id)
+widget_has_capture(dataless_context ctx, widget const* widget)
 {
-    return component_has_capture(get_system(ctx), id);
+    return widget_has_capture(get_system(ctx), widget);
 }
 
 bool
@@ -60,45 +60,46 @@ bool
 detect_mouse_press(dataless_context ctx, mouse_button button);
 
 bool
-detect_mouse_press(dataless_context ctx, component_id id, mouse_button button);
+detect_mouse_press(
+    dataless_context ctx, widget const* widget, mouse_button button);
 
 bool
 detect_mouse_release(dataless_context ctx, mouse_button button);
 
 bool
 detect_mouse_release(
-    dataless_context ctx, component_id id, mouse_button button);
+    dataless_context ctx, widget const* widget, mouse_button button);
 
 bool
-detect_mouse_motion(dataless_context ctx, component_id id);
+detect_mouse_motion(dataless_context ctx, widget const* widget);
 
 bool
 detect_double_click(dataless_context ctx, mouse_button button);
 
 bool
 detect_double_click(
-    dataless_context ctx, component_id id, mouse_button button);
+    dataless_context ctx, widget const* widget, mouse_button button);
 
 bool
-detect_click(dataless_context ctx, component_id id, mouse_button button);
+detect_click(dataless_context ctx, widget const* widget, mouse_button button);
 
 bool
-is_click_possible(system& sys, component_id id);
+is_click_possible(system& sys, widget const* widget);
 
 inline bool
-is_click_possible(dataless_context ctx, component_id id)
+is_click_possible(dataless_context ctx, widget const* widget)
 {
-    return is_click_possible(get_system(ctx), id);
+    return is_click_possible(get_system(ctx), widget);
 }
 
 bool
-is_click_in_progress(system& sys, component_id id, mouse_button button);
+is_click_in_progress(system& sys, widget const* widget, mouse_button button);
 
 inline bool
 is_click_in_progress(
-    dataless_context ctx, component_id id, mouse_button button)
+    dataless_context ctx, widget const* widget, mouse_button button)
 {
-    return is_click_in_progress(get_system(ctx), id, button);
+    return is_click_in_progress(get_system(ctx), widget, button);
 }
 
 }} // namespace alia::indie

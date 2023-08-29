@@ -1,7 +1,9 @@
+#include "alia/indie/widget.hpp"
 #include <alia/indie/system/api.hpp>
 
 #include <alia/core/flow/events.hpp>
 #include <alia/indie/system/object.hpp>
+#include <alia/indie/utilities/hit_testing.hpp>
 
 namespace alia { namespace indie {
 
@@ -79,18 +81,18 @@ update(system& ui)
         ui.root_widget->hit_test(hit_test);
         if (hit_test.result)
         {
-            set_hot_component(ui, hit_test.result->widget);
+            set_hot_widget(ui, hit_test.result->widget);
             resolved_cursor = hit_test.result->cursor;
             // record_tooltip(ui, hit_test);
         }
         else
         {
-            set_hot_component(ui, null_component_id);
+            set_hot_widget(ui, external_widget_handle());
         }
     }
     else
     {
-        set_hot_component(ui, null_component_id);
+        set_hot_widget(ui, external_widget_handle());
     }
 
     // The block above gives us the mouse cursor that's been requested by
@@ -717,17 +719,17 @@ regress_focus(system&)
 void
 clear_focus(system& ui)
 {
-    ui.input.focused_id = null_component_id;
+    ui.input.focused_id = external_widget_handle();
 }
 
 void
-set_widget_with_capture(system& ui, std::weak_ptr<widget> widget)
+set_widget_with_capture(system& ui, external_widget_handle widget)
 {
     ui.input.widget_with_capture = std::move(widget);
 }
 
 void
-set_hot_widget(system& ui, std::weak_ptr<widget> widget)
+set_hot_widget(system& ui, external_widget_handle widget)
 {
     // If no widget has capture and the mouse is moving to a different widget,
     // this marks the start of a hover.
@@ -737,7 +739,7 @@ set_hot_widget(system& ui, std::weak_ptr<widget> widget)
         // ui.input.hover_start_time = ui.tick_count;
     }
 
-    ui.input.widget = std::move(widget);
+    ui.input.hot_widget = std::move(widget);
 }
 
 #if 0

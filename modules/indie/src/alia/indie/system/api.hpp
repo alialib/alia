@@ -2,6 +2,7 @@
 #define ALIA_INDIE_SYSTEM_API_HPP
 
 #include <alia/core/flow/events.hpp>
+#include <alia/indie/widget.hpp>
 
 namespace alia { namespace indie {
 
@@ -129,11 +130,11 @@ on_ui_style_change(system& system)
 
 // Set the widget that has the mouse captured.
 void
-set_component_with_capture(system& ui, external_component_id id);
+set_widget_with_capture(system& ui, external_widget_handle widget);
 
 // Set the widget that's under the mouse.
 void
-set_hot_component(system& ui, external_component_id id);
+set_hot_widget(system& ui, external_widget_handle widget);
 
 }} // namespace alia::indie
 

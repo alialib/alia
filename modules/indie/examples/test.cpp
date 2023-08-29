@@ -1,6 +1,7 @@
 #include <alia/core/flow/data_graph.hpp>
 #include <alia/core/flow/events.hpp>
 #include <alia/indie.hpp>
+#include <alia/indie/utilities/hit_testing.hpp>
 #include <alia/indie/utilities/mouse.hpp>
 #include <alia/indie/widget.hpp>
 
@@ -22,11 +23,11 @@ struct box_node : indie::leaf_widget
         double blend_factor = 0;
 
         if (indie::is_click_in_progress(
-                *sys_, id_.id, indie::mouse_button::LEFT))
+                *sys_, this, indie::mouse_button::LEFT))
         {
             blend_factor = 0.4;
         }
-        else if (is_click_possible(*sys_, id_.id))
+        else if (is_click_possible(*sys_, this))
         {
             blend_factor = 0.2;
         }
@@ -74,14 +75,15 @@ struct box_node : indie::leaf_widget
                 case indie::hit_test_type::MOUSE: {
                     static_cast<indie::mouse_hit_test&>(test).result
                         = indie::mouse_hit_test_result{
-                            this->shared_from_this(),
+                            externalize(this),
                             indie::mouse_cursor::POINTER,
                             this->assignment().region,
                             ""};
                     break;
                 }
                 case indie::hit_test_type::WHEEL: {
-                    static_cast<indie::wheel_hit_test&>(test).result = id_;
+                    static_cast<indie::wheel_hit_test&>(test).result
+                        = externalize(this);
                     break;
                 }
             }
@@ -89,15 +91,18 @@ struct box_node : indie::leaf_widget
     }
 
     void
-    process_input(input_event& event) override
+    process_input(indie::input_event&) override
     {
     }
 
-    external_component_id
-    identity() const {return }
+    // external_component_id
+    // identity() const
+    // {
+    //     return id_;
+    // }
 
     indie::system* sys_;
-    external_component_id id_;
+    // external_component_id id_;
     SkColor color_ = SK_ColorWHITE;
     // sk_sp<SkPicture> picture_;
 };
@@ -113,9 +118,9 @@ do_box(indie::context ctx, SkColor color)
         (*node_ptr)->color_ = color;
     }
 
-    auto& node = *node_ptr;
+    auto& node = **node_ptr;
 
-    auto id = get_component_id(ctx);
+    // auto id = get_component_id(ctx);
 
     if (is_refresh_event(ctx))
     {
@@ -127,7 +132,7 @@ do_box(indie::context ctx, SkColor color)
                 alia::make_layout_vector(100, 100), 0, 0));
         add_layout_node(get<indie::traversal_tag>(ctx).layout, &node);
 
-        node.id_ = externalize(id);
+        // node.id_ = externalize(id);
 
         // if (color != node.color_)
         // {
@@ -154,7 +159,7 @@ do_box(indie::context ctx, SkColor color)
         // }
     }
 
-    if (detect_click(ctx, id, indie::mouse_button::LEFT))
+    if (detect_click(ctx, &node, indie::mouse_button::LEFT))
     {
         node.color_ = SK_ColorBLUE;
     }
@@ -178,7 +183,7 @@ struct layout_container_widget : widget_container, LayoutContainer
     }
 
     void
-    hit_test(hit_test_base& test) override
+    hit_test(hit_test_base& test) const override
     {
         auto region = this->LayoutContainer::region();
         if (is_inside(region, vector<2, float>(test.point)))
@@ -189,6 +194,11 @@ struct layout_container_widget : widget_container, LayoutContainer
                 node->hit_test(test);
             }
         }
+    }
+
+    void
+    process_input(indie::input_event&) override
+    {
     }
 };
 
@@ -201,13 +211,18 @@ struct simple_container_widget : widget_container
     }
 
     void
-    hit_test(hit_test_base& test) override
+    hit_test(hit_test_base& test) const override
     {
         for (widget* node = this->widget_container::children; node;
              node = node->next)
         {
             node->hit_test(test);
         }
+    }
+
+    void
+    process_input(indie::input_event&) override
+    {
     }
 };
 
