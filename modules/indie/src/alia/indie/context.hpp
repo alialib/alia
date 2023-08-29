@@ -4,43 +4,56 @@
 #include <alia/core/context/interface.hpp>
 
 #include <alia/indie/layout/api.hpp>
-#include <alia/indie/widget.hpp>
 
 namespace alia {
 namespace indie {
 
-struct traversal
+struct system;
+ALIA_DEFINE_TAGGED_TYPE(system_tag, system&)
+
+// TODO: Move this elsewhere.
+struct widget;
+struct widget_traversal
 {
-    system* indie_sys = nullptr;
-
-    widget_traversal widgets;
-
-    layout_traversal layout;
+    widget** next_ptr = nullptr;
 };
 
-ALIA_DEFINE_TAGGED_TYPE(traversal_tag, traversal)
+struct traversal
+{
+    widget_traversal widgets;
+    layout_traversal layout;
+};
+ALIA_DEFINE_TAGGED_TYPE(traversal_tag, traversal&)
 
 struct context_storage : alia::context_storage
 {
-    indie::traversal* indie = nullptr;
+    system* indie_sys = nullptr;
+    indie::traversal* indie_traversal = nullptr;
+
+    ALIA_IMPLEMENT_STORAGE_OBJECT_ACCESSORS(context_storage)
 };
 
 } // namespace indie
 
 #define ALIA_ADD_UI_CONTEXT_ACCESSORS(storage)                                \
     ALIA_ADD_CORE_CONTEXT_ACCESSORS(storage)                                  \
-    ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(storage, indie::traversal_tag, indie)
+    ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(storage, indie::system_tag, indie_sys) \
+    ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(                                       \
+        storage, indie::traversal_tag, indie_traversal)
 
 ALIA_ADD_UI_CONTEXT_ACCESSORS(indie::context_storage)
 
 namespace indie {
 
-using dataless_context = context_interface<detail::add_tagged_data_types_t<
+using event_context = context_interface<detail::add_tagged_data_types_t<
     detail::empty_structural_collection<indie::context_storage>,
     alia::system_tag,
     event_traversal_tag,
     timing_tag,
-    indie::traversal_tag>>;
+    indie::system_tag>>;
+
+using dataless_context
+    = extend_context_type_t<event_context, indie::traversal_tag>;
 
 using context = extend_context_type_t<dataless_context, data_traversal_tag>;
 
@@ -52,9 +65,9 @@ using vanilla_context = context_interface<detail::add_tagged_data_types_t<
     data_traversal_tag>>;
 
 inline system&
-get_system(dataless_context ctx)
+get_system(event_context ctx)
 {
-    return *get<indie::traversal_tag>(ctx).indie_sys;
+    return *ctx.contents_.storage->indie_sys;
 }
 
 inline layout_traversal&
