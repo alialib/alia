@@ -91,8 +91,12 @@ struct box_node : indie::leaf_widget
     }
 
     void
-    process_input(indie::input_event&) override
+    process_input(indie::event_context ctx) override
     {
+        if (detect_click(ctx, this, indie::mouse_button::LEFT))
+        {
+            this->color_ = SK_ColorBLUE;
+        }
     }
 
     // external_component_id
@@ -158,11 +162,6 @@ do_box(indie::context ctx, SkColor color)
         //     node.picture_ = recorder.finishRecordingAsPicture();
         // }
     }
-
-    if (detect_click(ctx, &node, indie::mouse_button::LEFT))
-    {
-        node.color_ = SK_ColorBLUE;
-    }
 }
 
 namespace alia { namespace indie {
@@ -197,7 +196,7 @@ struct layout_container_widget : widget_container, LayoutContainer
     }
 
     void
-    process_input(indie::input_event&) override
+    process_input(event_context) override
     {
     }
 };
@@ -221,7 +220,7 @@ struct simple_container_widget : widget_container
     }
 
     void
-    process_input(indie::input_event&) override
+    process_input(event_context) override
     {
     }
 };

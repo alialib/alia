@@ -10,7 +10,6 @@ void
 system::invoke_controller(vanilla_context vanilla_ctx)
 {
     indie::traversal traversal;
-    traversal.indie_sys = this;
 
     scoped_layout_refresh slr;
     scoped_layout_traversal slt;
@@ -38,7 +37,8 @@ system::invoke_controller(vanilla_context vanilla_ctx)
             make_vector<float>(200, 200));
     }
 
-    auto ctx = extend_context<traversal_tag>(vanilla_ctx, traversal);
+    auto ctx = extend_context<traversal_tag>(
+        extend_context<system_tag>(vanilla_ctx, *this), traversal);
 
     this->controller(ctx);
     traversal.widgets.next_ptr = nullptr;

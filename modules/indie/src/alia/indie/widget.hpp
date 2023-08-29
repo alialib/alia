@@ -1,13 +1,15 @@
 #ifndef ALIA_INDIE_RENDERING_HPP
 #define ALIA_INDIE_RENDERING_HPP
 
+#include <memory>
+
 #include <include/core/SkCanvas.h>
 
 #include <alia/core/flow/events.hpp>
 #include <alia/indie/common.hpp>
+#include <alia/indie/context.hpp>
 #include <alia/indie/events/input.hpp>
 #include <alia/indie/layout/utilities.hpp>
-#include <memory>
 
 namespace alia { namespace indie {
 
@@ -24,7 +26,7 @@ struct widget : std::enable_shared_from_this<widget>
         = 0;
 
     virtual void
-    process_input(input_event& event)
+    process_input(event_context ctx)
         = 0;
 
     // virtual component_identity
@@ -45,11 +47,6 @@ struct widget_container : widget
 
 void
 render_children(SkCanvas& canvas, widget_container& container);
-
-struct widget_traversal
-{
-    widget** next_ptr = nullptr;
-};
 
 void
 add_widget(widget_traversal& traversal, widget* node);
