@@ -106,7 +106,7 @@ struct box_node : indie::leaf_widget
         if (detect_click(ctx, this, indie::mouse_button::LEFT))
         {
             this->color_ = SK_ColorBLUE;
-            advance_focus(get_system(ctx));
+            // advance_focus(get_system(ctx));
         }
         indie::focus_on_click(ctx, this);
     }
@@ -250,33 +250,38 @@ my_ui(indie::context ctx)
         container_scope.begin(
             get<indie::traversal_tag>(ctx).widgets, &container);
     }
-    row_layout row(ctx);
-    do_box(ctx, SK_ColorMAGENTA);
 
-    color::yiq<std::uint8_t> y1 = ::color::constant::blue_t{};
-    color::yiq<std::uint8_t> y2 = ::color::constant::red_t{};
-    color::yiq<std::uint8_t> yr = color::operation::mix(
-        y1,
-        std::max(
-            0.0,
-            std::min(
-                1.0,
-                std::fabs(
-                    std::sin(get_raw_animation_tick_count(ctx) / 1000.0)))),
-        y2);
-    color::rgb<std::uint8_t> r(yr);
-    // color::rgb<std::uint8_t> r(y1);
+    flow_layout flow(ctx, GROW);
 
-    do_box(
-        ctx,
-        SkColorSetARGB(
-            0xff,
-            ::color::get::red(r),
-            ::color::get::green(r),
-            ::color::get::blue(r)));
+    for (int i = 0; i != 100; ++i)
+    {
+        do_box(ctx, SK_ColorMAGENTA);
 
-    static SkColor clicky_color = SK_ColorRED;
-    // event_handler<indie::mouse_button_event>(
-    //     ctx, [&](auto, auto&) { clicky_color = SK_ColorBLUE; });
-    do_box(ctx, clicky_color);
+        color::yiq<std::uint8_t> y1 = ::color::constant::blue_t{};
+        color::yiq<std::uint8_t> y2 = ::color::constant::red_t{};
+        color::yiq<std::uint8_t> yr = color::operation::mix(
+            y1,
+            std::max(
+                0.0,
+                std::min(
+                    1.0,
+                    std::fabs(std::sin(
+                        get_raw_animation_tick_count(ctx) / 1000.0)))),
+            y2);
+        color::rgb<std::uint8_t> r(yr);
+        // color::rgb<std::uint8_t> r(y1);
+
+        do_box(
+            ctx,
+            SkColorSetARGB(
+                0xff,
+                ::color::get::red(r),
+                ::color::get::green(r),
+                ::color::get::blue(r)));
+
+        static SkColor clicky_color = SK_ColorRED;
+        // event_handler<indie::mouse_button_event>(
+        //     ctx, [&](auto, auto&) { clicky_color = SK_ColorBLUE; });
+        do_box(ctx, clicky_color);
+    }
 }
