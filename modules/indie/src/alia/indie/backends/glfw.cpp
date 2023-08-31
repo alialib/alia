@@ -223,6 +223,99 @@ init_skia(glfw_window_impl& impl, vector<2, unsigned> size)
 }
 
 void
+render_ui(glfw_window_impl& impl)
+{
+    // TODO: Track this ourselves.
+    int width, height;
+    glfwGetFramebufferSize(impl.glfw_window, &width, &height);
+
+    std::chrono::steady_clock::time_point begin
+        = std::chrono::steady_clock::now();
+
+    auto& canvas = *impl.skia_surface->getCanvas();
+    canvas.clipRect(SkRect::MakeWH(SkScalar(width), SkScalar(height)));
+
+    // TODO: Don't clear automatically.
+    {
+        SkPaint paint;
+        paint.setColor(SK_ColorWHITE);
+        canvas.drawPaint(paint);
+    }
+
+    if (impl.system.root_widget)
+    {
+        impl.system.root_widget->render(*impl.skia_surface->getCanvas());
+    }
+    else
+    {
+        // TODO: Clear the canvas?
+    }
+
+    {
+        std::chrono::steady_clock::time_point end
+            = std::chrono::steady_clock::now();
+        std::cout << "render: "
+                  << std::chrono::duration_cast<std::chrono::microseconds>(
+                         end - begin)
+                         .count()
+                  << "[us]\n";
+    }
+
+    impl.skia_graphics_context->flush();
+    glfwSwapBuffers(impl.glfw_window);
+}
+
+void
+update_ui(glfw_window_impl& impl)
+{
+    // TODO: Track this ourselves.
+    int width, height;
+    glfwGetFramebufferSize(impl.glfw_window, &width, &height);
+
+    std::chrono::steady_clock::time_point begin
+        = std::chrono::steady_clock::now();
+
+    // for (int i = 0; i != 1000; ++i)
+    refresh_system(impl.system);
+    update(impl.system);
+
+    {
+        std::chrono::steady_clock::time_point end
+            = std::chrono::steady_clock::now();
+        std::cout << "refresh: "
+                  << std::chrono::duration_cast<std::chrono::microseconds>(
+                         end - begin)
+                         .count()
+                  << "[us]\n";
+        begin = end;
+    }
+
+    resolve_layout(
+        impl.system.layout, make_vector(float(width), float(height)));
+
+    {
+        std::chrono::steady_clock::time_point end
+            = std::chrono::steady_clock::now();
+        std::cout << "layout: "
+                  << std::chrono::duration_cast<std::chrono::microseconds>(
+                         end - begin)
+                         .count()
+                  << "[us]\n";
+        begin = end;
+    }
+
+    render_ui(impl);
+}
+
+void
+framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+    auto& impl = get_impl(window);
+    reset_skia(impl, make_vector<unsigned>(width, height));
+    update_ui(impl);
+}
+
+void
 init_window(
     glfw_window_impl& impl, std::string const& title, vector<2, unsigned> size)
 {
@@ -245,6 +338,8 @@ init_window(
     glfwSetCursorPosCallback(window, mouse_motion_callback);
 
     glfwSetKeyCallback(window, key_event_callback);
+
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     // TODO: Do this elsewhere?
     glfwMakeContextCurrent(window);
@@ -297,75 +392,7 @@ glfw_window::do_main_loop()
 {
     while (!glfwWindowShouldClose(impl_->glfw_window))
     {
-        // TODO: Track this ourselves.
-        int width, height;
-        glfwGetFramebufferSize(impl_->glfw_window, &width, &height);
-
-        std::chrono::steady_clock::time_point begin
-            = std::chrono::steady_clock::now();
-
-        // for (int i = 0; i != 1000; ++i)
-        refresh_system(impl_->system);
-        update(impl_->system);
-
-        {
-            std::chrono::steady_clock::time_point end
-                = std::chrono::steady_clock::now();
-            std::cout << "refresh: "
-                      << std::chrono::duration_cast<std::chrono::microseconds>(
-                             end - begin)
-                             .count()
-                      << "[us]\n";
-            begin = end;
-        }
-
-        resolve_layout(
-            impl_->system.layout, make_vector(float(width), float(height)));
-
-        {
-            std::chrono::steady_clock::time_point end
-                = std::chrono::steady_clock::now();
-            std::cout << "layout: "
-                      << std::chrono::duration_cast<std::chrono::microseconds>(
-                             end - begin)
-                             .count()
-                      << "[us]\n";
-            begin = end;
-        }
-
-        auto& canvas = *impl_->skia_surface->getCanvas();
-        canvas.clipRect(SkRect::MakeWH(SkScalar(width), SkScalar(height)));
-
-        // TODO: Don't clear automatically.
-        {
-            SkPaint paint;
-            paint.setColor(SK_ColorWHITE);
-            canvas.drawPaint(paint);
-        }
-
-        if (impl_->system.root_widget)
-        {
-            impl_->system.root_widget->render(
-                *impl_->skia_surface->getCanvas());
-        }
-        else
-        {
-            // TODO: Clear the canvas?
-        }
-
-        {
-            std::chrono::steady_clock::time_point end
-                = std::chrono::steady_clock::now();
-            std::cout << "render: "
-                      << std::chrono::duration_cast<std::chrono::microseconds>(
-                             end - begin)
-                             .count()
-                      << "[us]\n";
-            begin = end;
-        }
-
-        impl_->skia_graphics_context->flush();
-        glfwSwapBuffers(impl_->glfw_window);
+        update_ui(*impl_);
 
         glfwPollEvents();
     }
