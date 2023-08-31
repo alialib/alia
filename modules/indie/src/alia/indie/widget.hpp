@@ -34,6 +34,8 @@ struct widget : std::enable_shared_from_this<widget>
     //     = 0;
 
     widget* next = nullptr;
+    // TODO: Move to container?
+    widget* children = nullptr;
 };
 
 struct leaf_widget : widget, layout_leaf
@@ -42,7 +44,6 @@ struct leaf_widget : widget, layout_leaf
 
 struct widget_container : widget
 {
-    widget* children = nullptr;
 };
 
 void
@@ -124,9 +125,33 @@ operator!=(external_widget_handle const& a, external_widget_handle const& b)
 inline external_widget_handle
 externalize(widget const* widget)
 {
-    // TODO: Get rid of the const_cast.
-    return external_widget_handle(
-        const_cast<indie::widget*>(widget)->shared_from_this());
+    if (widget)
+    {
+        // The const cast here is a bit unfortunate, but I think it's
+        // reasonable to say that when you are converting an internal widget
+        // reference to a form that can be handed off externally, you should
+        // also expect that it might at some point be used in a non-const
+        // manner.
+        return external_widget_handle(
+            const_cast<indie::widget*>(widget)->shared_from_this());
+    }
+    else
+    {
+        return external_widget_handle();
+    }
+}
+
+template<class Visitor>
+void
+walk_widget_tree(widget* widget, Visitor&& visitor)
+{
+    // Visit this node.
+    std::forward<Visitor>(visitor)(widget);
+    // Visit all its children.
+    for (indie::widget* w = widget->children; w != nullptr; w = w->next)
+    {
+        walk_widget_tree(w, std::forward<Visitor>(visitor));
+    }
 }
 
 }} // namespace alia::indie

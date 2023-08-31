@@ -152,6 +152,24 @@ get_system(GLFWwindow* window)
 }
 
 void
+key_event_callback(
+    GLFWwindow* window, int key, int /*scancode*/, int action, int mods)
+{
+    if (action == GLFW_PRESS || action == GLFW_REPEAT)
+    {
+        switch (key)
+        {
+            case GLFW_KEY_TAB:
+                if (mods == GLFW_MOD_SHIFT)
+                    regress_focus(get_system(window));
+                else if (mods == 0)
+                    advance_focus(get_system(window));
+                break;
+        }
+    }
+}
+
+void
 mouse_motion_callback(GLFWwindow* window, double x, double y)
 {
     process_mouse_motion(get_system(window), make_vector(x, y));
@@ -225,6 +243,8 @@ init_window(
 
     glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetCursorPosCallback(window, mouse_motion_callback);
+
+    glfwSetKeyCallback(window, key_event_callback);
 
     // TODO: Do this elsewhere?
     glfwMakeContextCurrent(window);

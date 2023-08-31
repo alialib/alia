@@ -1,7 +1,9 @@
 #include <alia/core/flow/data_graph.hpp>
 #include <alia/core/flow/events.hpp>
 #include <alia/indie.hpp>
+#include <alia/indie/system/api.hpp>
 #include <alia/indie/utilities/hit_testing.hpp>
+#include <alia/indie/utilities/keyboard.hpp>
 #include <alia/indie/utilities/mouse.hpp>
 #include <alia/indie/widget.hpp>
 
@@ -58,6 +60,13 @@ struct box_node : indie::leaf_widget
         rect.fBottom = SkScalar(region.corner[1] + region.size[1]);
         canvas.drawRect(rect, paint);
 
+        if (indie::widget_has_focus(*sys_, this))
+        {
+            paint.setStyle(SkPaint::kStroke_Style);
+            paint.setStrokeWidth(4);
+            paint.setColor(SK_ColorBLACK);
+            canvas.drawRect(rect, paint);
+        }
         // canvas.save();
         // canvas.translate(
         //     SkScalar(region.corner[0]), SkScalar(region.corner[1]));
@@ -93,10 +102,13 @@ struct box_node : indie::leaf_widget
     void
     process_input(indie::event_context ctx) override
     {
+        indie::add_to_focus_order(ctx, this);
         if (detect_click(ctx, this, indie::mouse_button::LEFT))
         {
             this->color_ = SK_ColorBLUE;
+            advance_focus(get_system(ctx));
         }
+        indie::focus_on_click(ctx, this);
     }
 
     // external_component_id

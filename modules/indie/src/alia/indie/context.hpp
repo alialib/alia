@@ -11,7 +11,6 @@ namespace indie {
 struct system;
 ALIA_DEFINE_TAGGED_TYPE(system_tag, system&)
 
-// TODO: Move this elsewhere.
 struct widget;
 struct widget_traversal
 {

@@ -1,9 +1,11 @@
+#include "alia/indie/events/input.hpp"
 #include "alia/indie/widget.hpp"
 #include <alia/indie/system/api.hpp>
 
 #include <alia/core/flow/events.hpp>
 #include <alia/indie/system/object.hpp>
 #include <alia/indie/utilities/hit_testing.hpp>
+#include <alia/indie/utilities/keyboard.hpp>
 
 namespace alia { namespace indie {
 
@@ -185,35 +187,97 @@ setup_initial_styling(ui_context& ctx)
     ctx.style.theme = &ctx.system->style.theme;
 }
 
-static routable_widget_id
-get_focus_successor(ui_system& ui, widget_id input_id)
+#endif
+
+template<class Event>
+void
+deliver_input_event(system& sys, widget* widget, Event& event)
 {
-    focus_successor_event e(input_id);
-    // Initialize just_saw_input to true.
-    // In cases where the input_id is null, this will cause the first widget to
-    // become the successor.
-    // (And in other cases, the correct widget will simply overwrite the first
-    // one.)
-    e.just_saw_input = true;
-    issue_event(ui, e);
-    return e.successor;
+    event_traversal traversal;
+    traversal.is_refresh = false;
+    traversal.targeted = true;
+    traversal.event_type = &typeid(Event);
+    traversal.event = &event;
+
+    timing_subsystem timing;
+    timing.tick_counter = sys.external->get_tick_count();
+
+    context_storage storage;
+    storage.content_id = &unit_id;
+    auto ctx = detail::add_context_object<indie::system_tag>(
+        detail::add_context_object<timing_tag>(
+            detail::add_context_object<event_traversal_tag>(
+                detail::add_context_object<alia::system_tag>(
+                    make_context(
+                        detail::make_empty_structural_collection(&storage)),
+                    std::ref(sys)),
+                std::ref(traversal)),
+            std::ref(timing)),
+        std::ref(sys));
+
+    widget->process_input(ctx);
 }
 
-static routable_widget_id
-get_focus_successor_no_wrap(ui_system& ui, widget_id input_id)
+static external_widget_handle
+get_focus_successor(system& sys, widget const* target)
 {
-    focus_successor_event e(input_id);
-    issue_event(ui, e);
-    return e.successor;
+    widget const* successor = nullptr;
+
+    // Initializing :just_saw_target to true handles the cases where no widget
+    // has focus or where the focus is on the last widget in the focus
+    // sequence. The correct successor here is the very first widget, so by
+    // initializing :just_saw_target to true, we'll pick up that first widget
+    // as the default answer to the query. (And in cases where another widget
+    // is the correct successor, it'll overwrite that answer.)
+    bool just_saw_target = true;
+
+    walk_widget_tree(sys.root_widget, [&](widget* widget) {
+        if (just_saw_target)
+        {
+            focus_query_event query;
+            // TODO: Don't repeat setup.
+            deliver_input_event(sys, widget, query);
+            if (query.widget_wants_focus)
+            {
+                successor = widget;
+                just_saw_target = false;
+            }
+        }
+        if (widget == target)
+        {
+            just_saw_target = true;
+        }
+    });
+
+    return externalize(successor);
 }
 
-static routable_widget_id
-get_focus_predecessor(ui_system& ui, widget_id input_id)
+static external_widget_handle
+get_focus_predecessor(system& sys, widget const* target)
 {
-    focus_predecessor_event e(input_id);
-    issue_event(ui, e);
-    return e.predecessor;
+    widget const* predecessor = nullptr;
+
+    bool saw_input = false;
+
+    walk_widget_tree(sys.root_widget, [&](widget* widget) {
+        if (widget == target && predecessor)
+        {
+            saw_input = true;
+        }
+        if (!saw_input)
+        {
+            focus_query_event query;
+            // TODO: Don't repeat setup.
+            deliver_input_event(sys, widget, query);
+            if (query.widget_wants_focus)
+                predecessor = widget;
+        }
+    });
+
+    return externalize(predecessor);
 }
+
+#if 0
 
 struct tooltip_overlay_state
 {
@@ -705,21 +769,24 @@ void process_focus_gain(ui_system& ui, ui_time_type time)
 #endif
 
 void
-advance_focus(system&)
+advance_focus(system& sys)
 {
-    // set_focus(ui, get_focus_successor(ui, ui.input.focused_id.id));
+    set_focus(
+        sys, get_focus_successor(sys, sys.input.widget_with_focus.raw_ptr()));
 }
 
 void
-regress_focus(system&)
+regress_focus(system& sys)
 {
-    // set_focus(ui, get_focus_predecessor(ui, ui.input.focused_id.id));
+    set_focus(
+        sys,
+        get_focus_predecessor(sys, sys.input.widget_with_focus.raw_ptr()));
 }
 
 void
 clear_focus(system& ui)
 {
-    ui.input.focused_id = external_widget_handle();
+    ui.input.widget_with_focus = external_widget_handle();
 }
 
 void
