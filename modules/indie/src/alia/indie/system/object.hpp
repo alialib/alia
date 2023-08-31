@@ -34,7 +34,7 @@ struct window_input_state
     external_widget_handle widget_with_capture;
 
     // the widget that has the keyboard focus
-    external_widget_handle focused_id;
+    external_widget_handle widget_with_focus;
 
     // Is the user currently dragging the mouse (with a button pressed)?
     bool dragging = false;

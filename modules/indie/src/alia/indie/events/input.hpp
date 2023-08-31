@@ -19,7 +19,8 @@ enum class input_event_type
     KEY_PRESS,
     KEY_RELEASE,
 
-    // focus notifications
+    // focus
+    FOCUS_QUERY,
     FOCUS_GAIN,
     FOCUS_LOSS,
 
@@ -79,6 +80,12 @@ struct key_event : input_event
 // FOCUS_GAIN and FOCUS_LOSS
 struct focus_notification_event : input_event
 {
+};
+
+// FOCUS_QUERY
+struct focus_query_event : input_event
+{
+    bool widget_wants_focus = false;
 };
 
 }} // namespace alia::indie

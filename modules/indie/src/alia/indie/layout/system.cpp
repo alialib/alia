@@ -24,7 +24,7 @@ initialize_traversal(
     style->font_size = 0;
     style->character_size = make_vector<layout_scalar>(0, 0);
     style->x_height = 0;
-    style->padding_size = make_layout_vector(0, 0);
+    style->padding_size = make_layout_vector(4, 4);
     style->magnification = 1;
 }
 void
