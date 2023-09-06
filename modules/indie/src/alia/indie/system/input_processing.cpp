@@ -1,47 +1,13 @@
-#include "alia/indie/system/object.hpp"
-#include "alia/indie/widget.hpp"
 #include <alia/indie/system/input_processing.hpp>
 
 #include <alia/core/flow/events.hpp>
+#include <alia/indie/events/delivery.hpp>
 #include <alia/indie/events/input.hpp>
 #include <alia/indie/system/api.hpp>
 
 namespace alia { namespace indie {
 
 namespace {
-
-template<class Event>
-void
-deliver_input_event(
-    system& sys, std::shared_ptr<widget> const& widget, Event& event)
-{
-    if (widget)
-    {
-        event_traversal traversal;
-        traversal.is_refresh = false;
-        traversal.targeted = true;
-        traversal.event_type = &typeid(Event);
-        traversal.event = &event;
-
-        timing_subsystem timing;
-        timing.tick_counter = sys.external->get_tick_count();
-
-        context_storage storage;
-        storage.content_id = &unit_id;
-        auto ctx = detail::add_context_object<indie::system_tag>(
-            detail::add_context_object<timing_tag>(
-                detail::add_context_object<event_traversal_tag>(
-                    detail::add_context_object<alia::system_tag>(
-                        make_context(detail::make_empty_structural_collection(
-                            &storage)),
-                        std::ref(sys)),
-                    std::ref(traversal)),
-                std::ref(timing)),
-            std::ref(sys));
-
-        widget->process_input(ctx);
-    }
-}
 
 std::shared_ptr<widget>
 get_mouse_target(system& ui)
@@ -155,5 +121,59 @@ process_double_click(system& ui, mouse_button button)
 //         issue_targeted_event(ui, event, target);
 //     }
 // }
+
+bool
+process_focused_key_press(system& ui, modded_key const& info)
+{
+    key_event event{{{}, input_event_type::KEY_PRESS}, info};
+    auto target = ui.input.widget_with_focus.lock();
+    deliver_input_event(ui, target, event);
+    return event.acknowledged;
+}
+
+bool
+process_background_key_press(system& /*ui*/, modded_key const& /*info*/)
+{
+    // key_event event{{{}, input_event_type::DOUBLE_CLICK}, info};
+    // key_event e(BACKGROUND_KEY_PRESS_EVENT, time, info);
+    // issue_event(ui, e);
+    // if (!e.acknowledged && info.code == input_event_type::KEY_PRESS)
+    // {
+    //     if (info.mods == KMOD_SHIFT)
+    //     {
+    //         regress_focus(ui);
+    //         e.acknowledged = true;
+    //     }
+    //     else if (info.mods == 0)
+    //     {
+    //         advance_focus(ui);
+    //         e.acknowledged = true;
+    //     }
+    // }
+    // return e.acknowledged;
+    return false;
+}
+
+bool
+process_focused_key_release(system& ui, modded_key const& info)
+{
+    key_event event{{{}, input_event_type::KEY_RELEASE}, info};
+    auto target = ui.input.widget_with_focus.lock();
+    deliver_input_event(ui, target, event);
+    return event.acknowledged;
+}
+bool
+process_key_press(system& ui, modded_key const& info)
+{
+    ui.input.keyboard_interaction = true;
+    return process_focused_key_press(ui, info);
+}
+
+bool
+process_key_release(system& ui, modded_key const& info)
+{
+    ui.input.keyboard_interaction = true;
+    return process_focused_key_release(ui, info);
+}
 
 }} // namespace alia::indie

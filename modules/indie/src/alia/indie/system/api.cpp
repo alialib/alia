@@ -1,8 +1,7 @@
-#include "alia/indie/events/input.hpp"
-#include "alia/indie/widget.hpp"
 #include <alia/indie/system/api.hpp>
 
 #include <alia/core/flow/events.hpp>
+#include <alia/indie/events/delivery.hpp>
 #include <alia/indie/system/object.hpp>
 #include <alia/indie/utilities/hit_testing.hpp>
 #include <alia/indie/utilities/keyboard.hpp>
@@ -189,35 +188,6 @@ setup_initial_styling(ui_context& ctx)
 
 #endif
 
-template<class Event>
-void
-deliver_input_event(system& sys, widget* widget, Event& event)
-{
-    event_traversal traversal;
-    traversal.is_refresh = false;
-    traversal.targeted = true;
-    traversal.event_type = &typeid(Event);
-    traversal.event = &event;
-
-    timing_subsystem timing;
-    timing.tick_counter = sys.external->get_tick_count();
-
-    context_storage storage;
-    storage.content_id = &unit_id;
-    auto ctx = detail::add_context_object<indie::system_tag>(
-        detail::add_context_object<timing_tag>(
-            detail::add_context_object<event_traversal_tag>(
-                detail::add_context_object<alia::system_tag>(
-                    make_context(
-                        detail::make_empty_structural_collection(&storage)),
-                    std::ref(sys)),
-                std::ref(traversal)),
-            std::ref(timing)),
-        std::ref(sys));
-
-    widget->process_input(ctx);
-}
-
 static external_widget_handle
 get_focus_successor(system& sys, widget const* target)
 {
@@ -231,12 +201,13 @@ get_focus_successor(system& sys, widget const* target)
     // is the correct successor, it'll overwrite that answer.)
     bool just_saw_target = true;
 
+    event_delivery_fixture<focus_query_event> delivery_fixture(sys);
+
     walk_widget_tree(sys.root_widget, [&](widget* widget) {
         if (just_saw_target)
         {
             focus_query_event query;
-            // TODO: Don't repeat setup.
-            deliver_input_event(sys, widget, query);
+            delivery_fixture.deliver(widget, query);
             if (query.widget_wants_focus)
             {
                 successor = widget;
@@ -259,6 +230,8 @@ get_focus_predecessor(system& sys, widget const* target)
 
     bool saw_input = false;
 
+    event_delivery_fixture<focus_query_event> delivery_fixture(sys);
+
     walk_widget_tree(sys.root_widget, [&](widget* widget) {
         if (widget == target && predecessor)
         {
@@ -267,8 +240,7 @@ get_focus_predecessor(system& sys, widget const* target)
         if (!saw_input)
         {
             focus_query_event query;
-            // TODO: Don't repeat setup.
-            deliver_input_event(sys, widget, query);
+            delivery_fixture.deliver(widget, query);
             if (query.widget_wants_focus)
                 predecessor = widget;
         }
