@@ -165,7 +165,17 @@ key_event_callback(
                 else if (mods == 0)
                     advance_focus(get_system(window));
                 break;
+            default:
+                process_key_press(
+                    get_system(window),
+                    modded_key{key_code(key), key_modifiers(mods)});
         }
+    }
+    else if (action == GLFW_RELEASE)
+    {
+        process_key_release(
+            get_system(window),
+            modded_key{key_code(key), key_modifiers(mods)});
     }
 }
 
@@ -275,34 +285,39 @@ update_ui(glfw_window_impl& impl)
     std::chrono::steady_clock::time_point begin
         = std::chrono::steady_clock::now();
 
-    // for (int i = 0; i != 1000; ++i)
     refresh_system(impl.system);
     update(impl.system);
 
+    std::chrono::steady_clock::duration refresh_time;
     {
         std::chrono::steady_clock::time_point end
             = std::chrono::steady_clock::now();
-        std::cout << "refresh: "
-                  << std::chrono::duration_cast<std::chrono::microseconds>(
-                         end - begin)
-                         .count()
-                  << "[us]\n";
+        refresh_time = end - begin;
         begin = end;
     }
 
     resolve_layout(
         impl.system.layout, make_vector(float(width), float(height)));
 
+    std::chrono::steady_clock::duration layout_time;
     {
         std::chrono::steady_clock::time_point end
             = std::chrono::steady_clock::now();
-        std::cout << "layout: "
-                  << std::chrono::duration_cast<std::chrono::microseconds>(
-                         end - begin)
-                         .count()
-                  << "[us]\n";
+        layout_time = end - begin;
         begin = end;
     }
+
+    std::cout << "refresh: "
+              << std::chrono::duration_cast<std::chrono::microseconds>(
+                     refresh_time)
+                     .count()
+              << "[us]\n";
+
+    std::cout << "layout: "
+              << std::chrono::duration_cast<std::chrono::microseconds>(
+                     layout_time)
+                     .count()
+              << "[us]\n";
 
     render_ui(impl);
 }
@@ -343,6 +358,7 @@ init_window(
 
     // TODO: Do this elsewhere?
     glfwMakeContextCurrent(window);
+    glfwSwapInterval(0);
 
     impl.glfw_window = window;
 }

@@ -75,6 +75,7 @@ struct text_input_event : input_event
 struct key_event : input_event
 {
     modded_key key;
+    bool acknowledged = false;
 };
 
 // FOCUS_GAIN and FOCUS_LOSS

@@ -1,7 +1,6 @@
 #ifndef ALIA_INDIE_UTILITIES_KEYBOARD_HPP
 #define ALIA_INDIE_UTILITIES_KEYBOARD_HPP
 
-#include "alia/indie/widget.hpp"
 #include <alia/core/flow/events.hpp>
 #include <alia/indie/context.hpp>
 #include <alia/indie/events/input.hpp>
@@ -54,35 +53,33 @@ focus_on_click(event_context ctx, widget const* widget);
 // The following are used to detect general keyboard events related to
 // any key...
 
-// Detect if a key press just occurred and was directed at the given
-// widget.  The return value indicates whether or not an event occured.
-// If one did, the 'info' argument is filled with the info.
-bool
-detect_key_press(event_context ctx, modded_key* info, component_id id);
+// Detect if a key press just occurred and was directed at the given widget.
+std::optional<modded_key>
+detect_key_press(event_context ctx, widget const* widget);
 // same, but without ID (as background)
-bool
-detect_key_press(event_context ctx, modded_key* info);
+// bool
+// detect_key_press(event_context ctx, modded_key* info);
 
-// Detect if a key release just occurred and was directed at the given
-// widget.  Note that many key presses may be received before the
-// corresponding (single) key release is received.
-bool
-detect_key_release(event_context ctx, modded_key* info, component_id id);
+// Detect if a key release just occurred and was directed at the given widget.
+// Note that many key presses may be received before the corresponding (single)
+// key release is received.
+std::optional<modded_key>
+detect_key_release(event_context ctx, widget const* widget);
 // same, but without ID (as background)
-bool
-detect_key_release(event_context ctx, modded_key* info);
+// bool
+// detect_key_release(event_context ctx, modded_key* info);
 
 // Detect text input (as UTF-8 text) directed to a component.
-bool
-detect_text_input(event_context ctx, std::string* text, component_id id);
+std::optional<std::string>
+detect_text_input(event_context ctx, widget const* widget);
 // same, but without ID (as background)
-bool
-detect_text_input(event_context ctx, std::string* text);
+// bool
+// detect_text_input(event_context ctx, std::string* text);
 
 // If you use any of the above detect_ functions, you need to call this
 // if you actually process the event.
 void
-acknowledge_input_event(event_context ctx);
+acknowledge_key_event(event_context ctx);
 
 // The following are used to detect specific keys...
 // The acknowledgement is done automatically.
@@ -91,19 +88,19 @@ acknowledge_input_event(event_context ctx);
 bool
 detect_key_press(
     event_context ctx,
-    component_id id,
+    widget const* widget,
     key_code code,
     key_modifiers modifiers = KMOD_NONE);
 // same, but without ID (as background)
-bool
-detect_key_press(
-    event_context ctx, key_code code, key_modifiers modifiers = KMOD_NONE);
+// bool
+// detect_key_press(
+//     event_context ctx, key_code code, key_modifiers modifiers = KMOD_NONE);
 
 // Detect if the given key (plus optional modifiers) was just released.
 bool
 detect_key_release(
     event_context ctx,
-    component_id id,
+    widget const* widget,
     key_code code,
     key_modifiers modifiers = KMOD_NONE);
 // same, but without ID (as background)
@@ -122,7 +119,7 @@ struct keyboard_click_state
     }
     int state;
 };
-static inline bool
+inline bool
 is_pressed(keyboard_click_state const& state)
 {
     return state.state == 1;
@@ -132,14 +129,7 @@ bool
 detect_keyboard_click(
     event_context ctx,
     keyboard_click_state& state,
-    component_id id,
-    key_code code = key_code::SPACE,
-    key_modifiers modifiers = KMOD_NONE);
-// same, but without ID (as background)
-bool
-detect_keyboard_click(
-    event_context ctx,
-    keyboard_click_state& state,
+    widget const* widget,
     key_code code = key_code::SPACE,
     key_modifiers modifiers = KMOD_NONE);
 
