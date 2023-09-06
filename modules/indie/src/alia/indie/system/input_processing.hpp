@@ -22,6 +22,14 @@ process_mouse_press(
 void
 process_mouse_release(system& ui, mouse_button button);
 
+// Process a key press.
+bool
+process_key_press(system& ui, modded_key const& info);
+
+// Process a key release.
+bool
+process_key_release(system& ui, modded_key const& info);
+
 }} // namespace alia::indie
 
 #endif

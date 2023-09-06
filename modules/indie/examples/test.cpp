@@ -24,8 +24,8 @@ struct box_node : indie::leaf_widget
 
         double blend_factor = 0;
 
-        if (indie::is_click_in_progress(
-                *sys_, this, indie::mouse_button::LEFT))
+        if (indie::is_click_in_progress(*sys_, this, indie::mouse_button::LEFT)
+            || is_pressed(keyboard_click_state_))
         {
             blend_factor = 0.4;
         }
@@ -35,8 +35,17 @@ struct box_node : indie::leaf_widget
         }
 
         ::color::rgb<std::uint8_t> c;
-        c = ::color::rgb<std::uint8_t>(
-            {SkColorGetR(color_), SkColorGetG(color_), SkColorGetB(color_)});
+        if (state_)
+        {
+            c = ::color::rgb<std::uint8_t>({0x00, 0x00, 0xff});
+        }
+        else
+        {
+            c = ::color::rgb<std::uint8_t>(
+                {SkColorGetR(color_),
+                 SkColorGetG(color_),
+                 SkColorGetB(color_)});
+        }
         if (blend_factor != 0)
         {
             ::color::yiq<std::uint8_t> color;
@@ -105,10 +114,18 @@ struct box_node : indie::leaf_widget
         indie::add_to_focus_order(ctx, this);
         if (detect_click(ctx, this, indie::mouse_button::LEFT))
         {
-            this->color_ = SK_ColorBLUE;
+            state_ = !state_;
             // advance_focus(get_system(ctx));
         }
-        indie::focus_on_click(ctx, this);
+        // if (detect_key_press(ctx, this, indie::key_code::SPACE))
+        // {
+        //     state_ = !state_;
+        //     // advance_focus(get_system(ctx));
+        // }
+        if (detect_keyboard_click(ctx, keyboard_click_state_, this))
+        {
+            state_ = !state_;
+        }
     }
 
     // external_component_id
@@ -119,7 +136,9 @@ struct box_node : indie::leaf_widget
 
     indie::system* sys_;
     // external_component_id id_;
+    bool state_ = false;
     SkColor color_ = SK_ColorWHITE;
+    indie::keyboard_click_state keyboard_click_state_;
     // sk_sp<SkPicture> picture_;
 };
 
