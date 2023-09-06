@@ -2,6 +2,7 @@
 #include <alia/core/flow/events.hpp>
 #include <alia/indie.hpp>
 #include <alia/indie/system/api.hpp>
+#include <alia/indie/system/input_constants.hpp>
 #include <alia/indie/utilities/hit_testing.hpp>
 #include <alia/indie/utilities/keyboard.hpp>
 #include <alia/indie/utilities/mouse.hpp>
@@ -11,6 +12,7 @@
 
 #include <cmath>
 
+#include <include/core/SkColor.h>
 #include <include/core/SkPictureRecorder.h>
 
 using namespace alia;
@@ -274,33 +276,39 @@ my_ui(indie::context ctx)
 
     for (int i = 0; i != 100; ++i)
     {
-        do_box(ctx, SK_ColorMAGENTA);
+        {
+            // column_layout col(ctx);
 
-        color::yiq<std::uint8_t> y1 = ::color::constant::blue_t{};
-        color::yiq<std::uint8_t> y2 = ::color::constant::red_t{};
-        color::yiq<std::uint8_t> yr = color::operation::mix(
-            y1,
-            std::max(
-                0.0,
-                std::min(
-                    1.0,
-                    std::fabs(std::sin(
-                        get_raw_animation_tick_count(ctx) / 1000.0)))),
-            y2);
-        color::rgb<std::uint8_t> r(yr);
-        // color::rgb<std::uint8_t> r(y1);
+            do_box(ctx, SK_ColorMAGENTA);
 
-        do_box(
-            ctx,
-            SkColorSetARGB(
-                0xff,
-                ::color::get::red(r),
-                ::color::get::green(r),
-                ::color::get::blue(r)));
+            // color::yiq<std::uint8_t> y1 = ::color::constant::blue_t{};
+            // color::yiq<std::uint8_t> y2 = ::color::constant::red_t{};
+            // color::yiq<std::uint8_t> yr = color::operation::mix(
+            //     y1,
+            //     std::max(
+            //         0.0,
+            //         std::min(
+            //             1.0,
+            //             std::fabs(std::sin(
+            //                 get_raw_animation_tick_count(ctx) / 1000.0)))),
+            //     y2);
+            // color::rgb<std::uint8_t> r(yr);
+            // color::rgb<std::uint8_t> r(y1);
 
-        static SkColor clicky_color = SK_ColorRED;
-        // event_handler<indie::mouse_button_event>(
-        //     ctx, [&](auto, auto&) { clicky_color = SK_ColorBLUE; });
-        do_box(ctx, clicky_color);
+            do_box(ctx, SK_ColorLTGRAY);
+        }
+
+        {
+            // column_layout col(ctx);
+
+            static SkColor clicky_color = SK_ColorRED;
+            // event_handler<indie::mouse_button_event>(
+            //     ctx, [&](auto, auto&) { clicky_color = SK_ColorBLUE; });
+            do_box(ctx, clicky_color);
+
+            do_box(ctx, SK_ColorDKGRAY);
+
+            do_box(ctx, SK_ColorGRAY);
+        }
     }
 }
