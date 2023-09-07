@@ -86,9 +86,10 @@ struct box_node : indie::leaf_widget
     }
 
     void
-    hit_test(indie::hit_test_base& test) const override
+    hit_test(indie::hit_test_base& test, vector<2, double> const& point)
+        const override
     {
-        if (is_inside(this->assignment().region, vector<2, float>(test.point)))
+        if (is_inside(this->assignment().region, vector<2, float>(point)))
         {
             switch (test.type)
             {
@@ -197,7 +198,11 @@ do_box(indie::context ctx, SkColor color)
     }
 }
 
-namespace alia { namespace indie {
+namespace alia {
+
+ALIA_DECLARE_LAYOUT_LOGIC(column_layout_logic)
+
+namespace indie {
 
 layout_traversal&
 get_layout_traversal(context ctx)
@@ -211,19 +216,26 @@ struct layout_container_widget : widget_container, LayoutContainer
     void
     render(SkCanvas& canvas) override
     {
+        canvas.save();
+        auto const& offset = get_container_offset(*this);
+        canvas.translate(offset[0], offset[1]);
         indie::render_children(canvas, *this);
+        canvas.restore();
     }
 
     void
-    hit_test(hit_test_base& test) const override
+    hit_test(
+        hit_test_base& test, vector<2, double> const& point) const override
     {
-        auto region = this->LayoutContainer::region();
-        if (is_inside(region, vector<2, float>(test.point)))
+        auto local_point
+            = point - vector<2, double>(get_container_offset(*this));
+        auto region = get_container_region(*this);
+        if (is_inside(region, vector<2, float>(local_point)))
         {
             for (widget* node = this->widget_container::children; node;
                  node = node->next)
             {
-                node->hit_test(test);
+                node->hit_test(test, local_point);
             }
         }
     }
@@ -243,12 +255,13 @@ struct simple_container_widget : widget_container
     }
 
     void
-    hit_test(hit_test_base& test) const override
+    hit_test(
+        hit_test_base& test, vector<2, double> const& point) const override
     {
         for (widget* node = this->widget_container::children; node;
              node = node->next)
         {
-            node->hit_test(test);
+            node->hit_test(test, point);
         }
     }
 
@@ -258,7 +271,115 @@ struct simple_container_widget : widget_container
     }
 };
 
-}} // namespace alia::indie
+// get_simple_layout_container is a utility function for retrieving a
+// simple_layout_container with a specific type of logic from a UI context's
+// data graph and refreshing it.
+template<class Logic>
+struct layout_widget_container_storage
+{
+    layout_container_widget<simple_layout_container> container;
+    Logic logic;
+};
+template<class Logic>
+void
+get_layout_widget_container(
+    layout_traversal& traversal,
+    data_traversal& data,
+    layout_container_widget<simple_layout_container>** container,
+    Logic** logic,
+    layout const& layout_spec)
+{
+    layout_widget_container_storage<Logic>* storage;
+    if (get_cached_data(data, &storage))
+        storage->container.logic = &storage->logic;
+
+    *container = &storage->container;
+
+    if (is_refresh_pass(traversal))
+    {
+        if (update_layout_cacher(
+                traversal, (*container)->cacher, layout_spec, FILL | UNPADDED))
+        {
+            // Since this container isn't active yet, it didn't get marked as
+            // needing recalculation, so we need to do that manually here.
+            (*container)->last_content_change = traversal.refresh_counter;
+        }
+    }
+
+    *logic = &storage->logic;
+}
+
+struct scoped_column
+{
+    scoped_column() : container_(nullptr)
+    {
+    }
+
+    scoped_column(context ctx, layout const& layout_spec = default_layout)
+    {
+        begin(ctx, layout_spec);
+    }
+
+    ~scoped_column()
+    {
+        end();
+    }
+
+    void
+    begin(context ctx, layout const& layout_spec = default_layout)
+    {
+        column_layout_logic* logic;
+        get_layout_widget_container(
+            get_layout_traversal(ctx),
+            get_data_traversal(ctx),
+            &container_,
+            &logic,
+            layout_spec);
+        slc_.begin(get_layout_traversal(ctx), container_);
+        begin_layout_transform(
+            transform_, get_layout_traversal(ctx), container_->cacher);
+        widget_scope_.begin(get_widget_traversal(ctx), container_);
+    }
+
+    void
+    end()
+    {
+        if (container_)
+        {
+            widget_scope_.end();
+            transform_.end();
+            slc_.end();
+            container_ = 0;
+        }
+    }
+
+    layout_box
+    region() const
+    {
+        return get_container_region(*container_);
+    }
+
+    layout_box
+    padded_region() const
+    {
+        return get_padded_container_region(*container_);
+    }
+
+    layout_vector
+    offset() const
+    {
+        return get_container_offset(*container_);
+    }
+
+ private:
+    layout_container_widget<simple_layout_container>* container_;
+    scoped_layout_container slc_;
+    scoped_transformation transform_;
+    scoped_widget_container widget_scope_;
+};
+
+} // namespace indie
+} // namespace alia
 
 void
 my_ui(indie::context ctx)
@@ -277,7 +398,7 @@ my_ui(indie::context ctx)
     for (int i = 0; i != 100; ++i)
     {
         {
-            // column_layout col(ctx);
+            indie::scoped_column col(ctx);
 
             do_box(ctx, SK_ColorMAGENTA);
 
@@ -299,7 +420,7 @@ my_ui(indie::context ctx)
         }
 
         {
-            // column_layout col(ctx);
+            indie::scoped_column col(ctx);
 
             static SkColor clicky_color = SK_ColorRED;
             // event_handler<indie::mouse_button_event>(

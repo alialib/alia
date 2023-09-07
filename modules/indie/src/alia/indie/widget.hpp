@@ -9,6 +9,7 @@
 #include <alia/indie/common.hpp>
 #include <alia/indie/context.hpp>
 #include <alia/indie/events/input.hpp>
+#include <alia/indie/geometry.hpp>
 #include <alia/indie/layout/utilities.hpp>
 
 namespace alia { namespace indie {
@@ -22,7 +23,7 @@ struct widget : std::enable_shared_from_this<widget>
         = 0;
 
     virtual void
-    hit_test(hit_test_base& test) const
+    hit_test(hit_test_base& test, vector<2, double> const& point) const
         = 0;
 
     virtual void
