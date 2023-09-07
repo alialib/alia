@@ -20,8 +20,6 @@ struct hit_test_base
 {
     // the type of test
     hit_test_type type;
-    // the point we're testing
-    vector<2, double> point;
 };
 
 struct mouse_hit_test_result
@@ -36,8 +34,7 @@ struct mouse_hit_test : hit_test_base
 {
     std::optional<mouse_hit_test_result> result;
 
-    mouse_hit_test(vector<2, double> point)
-        : hit_test_base{hit_test_type::MOUSE, point}
+    mouse_hit_test() : hit_test_base{hit_test_type::MOUSE}
     {
     }
 };
@@ -46,8 +43,7 @@ struct wheel_hit_test : hit_test_base
 {
     std::optional<external_widget_handle> result;
 
-    wheel_hit_test(vector<2, double> point)
-        : hit_test_base{hit_test_type::WHEEL, point}
+    wheel_hit_test() : hit_test_base{hit_test_type::WHEEL}
     {
     }
 };

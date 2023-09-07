@@ -78,8 +78,8 @@ update(system& ui)
     // Determine which widget is under the mouse cursor.
     if (ui.input.mouse_inside_window && ui.root_widget)
     {
-        mouse_hit_test hit_test{ui.input.mouse_position};
-        ui.root_widget->hit_test(hit_test);
+        mouse_hit_test hit_test;
+        ui.root_widget->hit_test(hit_test, ui.input.mouse_position);
         if (hit_test.result)
         {
             set_hot_widget(ui, hit_test.result->widget);

@@ -383,8 +383,8 @@ class scoped_clip_region : noncopyable
     box<2, double> old_region_;
 };
 
-// scoped_clip_region_resets the clip region to the full geometry region for
-// its scope. This can be useful for drawing overlays which are meant to
+// scoped_clip_region_reset resets the clip region to the full geometry region
+// for its scope. This can be useful for drawing overlays that are meant to
 // extend beyond the clip region normally associated with their scope.
 class scoped_clip_region_reset : noncopyable
 {
