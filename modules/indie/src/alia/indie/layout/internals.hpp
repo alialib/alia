@@ -154,16 +154,6 @@ struct layout_node
         relative_layout_assignment const& assignment)
         = 0;
 
-    // an alternate interface for nodes that can wrap
-    // (Default implementations are supplied for nodes that don't wrap.)
-    virtual layout_requirements
-    get_minimal_horizontal_requirements(layout_calculation_context& ctx);
-    virtual void
-    calculate_wrapping(layout_calculation_context& ctx, wrapping_state& state);
-    virtual void
-    assign_wrapped_regions(
-        layout_calculation_context& ctx, wrapping_assignment_state& state);
-
     // next node in the list of siblings
     layout_node* next;
 };
