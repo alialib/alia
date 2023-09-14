@@ -438,9 +438,61 @@ flow_layout_logic::get_horizontal_requirements(
     for (layout_node* i = children; i; i = i->next)
     {
         fold_in_requirements(
-            requirements, i->get_minimal_horizontal_requirements(ctx));
+            requirements, i->get_horizontal_requirements(ctx));
     }
     return requirements;
+}
+
+void
+wrap_row(wrapping_state& state)
+{
+    state.active_row.width = state.visible_width;
+    state.active_row.requirements.size = (std::max)(
+        state.active_row.requirements.size,
+        state.active_row.requirements.ascent
+            + state.active_row.requirements.descent);
+    if (state.rows)
+        state.rows->push_back(state.active_row);
+    state.active_row.y += state.active_row.requirements.size;
+    state.active_row.requirements = layout_requirements(0, 0, 0, 0);
+    state.accumulated_width = state.visible_width = 0;
+}
+layout_scalar
+calculate_initial_x(
+    layout_scalar assigned_width,
+    layout_flag_set x_alignment,
+    wrapped_row const& row)
+{
+    switch (x_alignment.code)
+    {
+        case RIGHT_CODE:
+            return assigned_width - row.width;
+        case CENTER_X_CODE:
+            return (assigned_width - row.width) / 2;
+        default:
+            return 0;
+    }
+}
+void
+wrap_row(wrapping_assignment_state& state)
+{
+    ++state.active_row;
+    state.x = state.active_row != state.end_row ? calculate_initial_x(
+                  state.assigned_width, state.x_alignment, *state.active_row)
+                                                : 0;
+}
+
+void
+calculate_node_wrapping(
+    layout_calculation_context& ctx, wrapping_state& state, layout_node& node)
+{
+    layout_requirements x = node.get_horizontal_requirements(ctx);
+    if (state.accumulated_width + x.size > state.assigned_width)
+        wrap_row(state);
+    layout_requirements y = node.get_vertical_requirements(ctx, x.size);
+    state.visible_width += x.size;
+    state.accumulated_width += x.size;
+    fold_in_requirements(state.active_row.requirements, y);
 }
 
 static layout_scalar
@@ -458,7 +510,7 @@ calculate_wrapping(
     state.rows = rows;
 
     for (layout_node* i = children; i; i = i->next)
-        i->calculate_wrapping(ctx, state);
+        calculate_node_wrapping(ctx, state, *i);
     // Include the last/current row in the height requirements.
     wrap_row(state);
 
@@ -492,6 +544,26 @@ flow_layout_logic::get_vertical_requirements(
 }
 
 void
+assign_wrapped_regions(
+    layout_calculation_context& ctx,
+    wrapping_assignment_state& state,
+    layout_node& node)
+{
+    layout_requirements x = node.get_horizontal_requirements(ctx);
+    if (state.x + x.size > state.assigned_width)
+        wrap_row(state);
+    layout_scalar row_height = state.active_row->requirements.size;
+    node.set_relative_assignment(
+        ctx,
+        relative_layout_assignment(
+            layout_box(
+                make_layout_vector(state.x, state.active_row->y),
+                make_layout_vector(x.size, row_height)),
+            state.active_row->requirements.ascent));
+    state.x += x.size;
+}
+
+void
 flow_layout_logic::set_relative_assignment(
     layout_calculation_context& ctx,
     layout_node* children,
@@ -513,7 +585,7 @@ flow_layout_logic::set_relative_assignment(
     state.end_row = rows.end();
     state.x_alignment = x_alignment_;
     for (layout_node* i = children; i; i = i->next)
-        i->assign_wrapped_regions(ctx, state);
+        assign_wrapped_regions(ctx, state, *i);
 }
 
 void
