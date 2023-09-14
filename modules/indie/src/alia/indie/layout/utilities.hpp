@@ -93,17 +93,6 @@ add_default_alignment(
     layout_flag_set x_alignment,
     layout_flag_set y_alignment);
 
-// The following are utilities for working with wrapped layouts.
-void
-wrap_row(wrapping_state& state);
-layout_scalar
-calculate_initial_x(
-    layout_scalar assigned_width,
-    layout_flag_set x_alignment,
-    wrapped_row const& row);
-void
-wrap_row(wrapping_assignment_state& state);
-
 // Alternate forms for invoking the layout_node interface.
 inline layout_requirements
 get_horizontal_requirements(layout_calculation_context& ctx, layout_node& node)

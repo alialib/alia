@@ -31,7 +31,7 @@ enum class mouse_cursor
 };
 
 // codes for all the keyboard keys recognized by alia
-enum key_code
+enum class key_code
 {
     UNKNOWN = -1,
     SPACE = 32,
