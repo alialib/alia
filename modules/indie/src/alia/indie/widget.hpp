@@ -34,61 +34,17 @@ struct widget : std::enable_shared_from_this<widget>
     process_input(event_context ctx)
         = 0;
 
-    // layout interface
-    virtual layout_requirements
-    get_horizontal_requirements(layout_calculation_context& ctx)
-        = 0;
-    virtual layout_requirements
-    get_vertical_requirements(
-        layout_calculation_context& ctx, layout_scalar assigned_width)
-        = 0;
-    virtual void
-    set_relative_assignment(
-        layout_calculation_context& ctx,
-        relative_layout_assignment const& assignment)
-        = 0;
+    // virtual component_identity
+    // identity() const
+    //     = 0;
 
-    // next node in the list of siblings
     widget* next = nullptr;
-    // children
+    // TODO: Move to container?
     widget* children = nullptr;
 };
 
-struct leaf_widget : widget
+struct leaf_widget : widget, layout_leaf
 {
-    void
-    refresh_layout(
-        layout_traversal& traversal,
-        layout const& layout_spec,
-        leaf_layout_requirements const& requirements,
-        layout_flag_set default_flags = TOP | LEFT | PADDED);
-
-    relative_layout_assignment const&
-    assignment() const
-    {
-        return relative_assignment_;
-    }
-
-    // implementation of layout interface
-    layout_requirements
-    get_horizontal_requirements(layout_calculation_context& ctx);
-    layout_requirements
-    get_vertical_requirements(
-        layout_calculation_context& ctx, layout_scalar assigned_width);
-    void
-    set_relative_assignment(
-        layout_calculation_context& ctx,
-        relative_layout_assignment const& assignment);
-
- private:
-    // the resolved spec
-    resolved_layout_spec resolved_spec_;
-
-    // requirements supplied by the widget
-    leaf_layout_requirements requirements_;
-
-    // resolved relative assignment
-    alia::relative_layout_assignment relative_assignment_;
 };
 
 struct widget_container : widget
