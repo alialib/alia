@@ -92,7 +92,7 @@ layout_vector
 get_minimum_size(layout_system& system);
 // Same, but with arguments broken up for flexibility.
 layout_vector
-get_minimum_size(layout_node* root_node, data_graph& cache);
+get_minimum_size(layout_node* root_node);
 
 // Given the available space, calculate the proper regions for all nodes in
 // the given layout system.
@@ -100,8 +100,7 @@ void
 resolve_layout(layout_system& system, layout_vector const& size);
 // Same, but with arguments broken up for flexibility.
 void
-resolve_layout(
-    layout_node* root_node, data_graph& cache, layout_vector const& size);
+resolve_layout(layout_node* root_node, layout_vector const& size);
 
 } // namespace alia
 

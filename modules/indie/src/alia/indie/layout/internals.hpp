@@ -96,20 +96,6 @@ get_layout_traversal(layout_traversal& ctx)
     return ctx;
 }
 
-// layout_calculation_context is a context for calculating layout.
-// It contains a data traversal for caching layout results.
-struct layout_calculation_context
-{
-    data_traversal data;
-    naming_context naming;
-    bool for_measurement;
-};
-inline data_traversal&
-get_data_traversal(layout_calculation_context& ctx)
-{
-    return ctx.data;
-}
-
 // These are used when working with wrapped layouts.
 struct wrapped_row
 {
@@ -142,16 +128,13 @@ struct layout_node
 
     // the interface required to be implemented by all layout nodes
     virtual layout_requirements
-    get_horizontal_requirements(layout_calculation_context& ctx)
+    get_horizontal_requirements()
         = 0;
     virtual layout_requirements
-    get_vertical_requirements(
-        layout_calculation_context& ctx, layout_scalar assigned_width)
+    get_vertical_requirements(layout_scalar assigned_width)
         = 0;
     virtual void
-    set_relative_assignment(
-        layout_calculation_context& ctx,
-        relative_layout_assignment const& assignment)
+    set_relative_assignment(relative_layout_assignment const& assignment)
         = 0;
 
     // next node in the list of siblings
@@ -161,47 +144,25 @@ struct layout_node
 // All nodes in a layout tree with children derive from this.
 struct layout_container : layout_node
 {
-    layout_node* children;
+    layout_node* children = nullptr;
 
     // This records the last refresh in which the contents of the container
     // changed. It's updated during the refresh pass and is used to determine
     // when the container's layout needs to be recomputed.
-    counter_type last_content_change;
+    counter_type last_content_change = 1;
 
     virtual void
     record_change(layout_traversal& traversal);
 
-    layout_container* parent;
-
-    layout_container() : children(0), last_content_change(0), parent(0)
-    {
-    }
+    layout_container* parent = nullptr;
 };
 
-// layout_system stores the persistent (interpass) state associated with an
-// instance of the layout system.
+// layout_system stores the persistent state associated with an instance of the
+// layout system.
 struct layout_system
 {
-    counter_type refresh_counter;
-
-    layout_node* root_node;
-
-    // This is used to cache results of the layout calculation.
-    // The entire layout calculation can be viewed as a tree of pure function
-    // evaluations.
-    // Branches of that tree may be referenced by multiple parents.
-    // Also, branches may remain constant across frames.
-    // In both cases, it is wasteful to recompute the functions.
-    // (In fact, in the former case, it changes the whole complexity of the
-    // problem.)
-    data_graph calculation_cache;
-
-    // This is used to generate unique IDs for cached layout data.
-    counter_type cacher_id_counter;
-
-    layout_system() : refresh_counter(1), root_node(0), cacher_id_counter(1)
-    {
-    }
+    counter_type refresh_counter = 1;
+    layout_node* root_node = nullptr;
 };
 
 } // namespace alia

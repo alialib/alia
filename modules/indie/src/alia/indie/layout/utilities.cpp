@@ -428,8 +428,6 @@ update_layout_cacher(
     layout const& layout_spec,
     layout_flag_set default_flags)
 {
-    if (cacher.id == 0)
-        cacher.id = get_cacher_id(*traversal.system);
     resolved_layout_spec resolved_spec;
     resolve_layout_spec(traversal, resolved_spec, layout_spec, default_flags);
     return detect_layout_change(
@@ -437,13 +435,9 @@ update_layout_cacher(
 }
 
 horizontal_layout_query::horizontal_layout_query(
-    layout_calculation_context& ctx,
-    layout_cacher& cacher,
-    counter_type last_content_change)
+    layout_cacher& cacher, counter_type last_content_change)
     : cacher_(&cacher), last_content_change_(last_content_change)
 {
-    ALIA_BEGIN_LOCATION_SPECIFIC_NAMED_BLOCK(
-        ctx.naming, named_block_, make_id(cacher.id));
 }
 void
 horizontal_layout_query::update(
@@ -458,47 +452,38 @@ horizontal_layout_query::update(
 }
 
 vertical_layout_query::vertical_layout_query(
-    layout_calculation_context& ctx,
     layout_cacher& cacher,
     counter_type last_content_change,
     layout_scalar assigned_width)
-    : cacher_(&cacher), last_content_change_(last_content_change)
+    : cacher_(&cacher),
+      last_content_change_(last_content_change),
+      assigned_width_(assigned_width)
 {
-    ALIA_BEGIN_LOCATION_SPECIFIC_NAMED_BLOCK(
-        ctx.naming,
-        named_block_,
-        combine_ids(make_id(cacher.id), make_id(assigned_width)))
-    update_required_ = get_data(ctx, &data_)
-                       || data_->last_vertical_query != last_content_change_;
 }
 void
 vertical_layout_query::update(calculated_layout_requirements const& calculated)
 {
     resolve_requirements(
-        data_->vertical_requirements, cacher_->resolved_spec, 1, calculated);
-    data_->last_vertical_query = last_content_change_;
+        cacher_->vertical_requirements, cacher_->resolved_spec, 1, calculated);
+    cacher_->last_vertical_query = last_content_change_;
+    cacher_->assigned_width = assigned_width_;
 }
 
 relative_region_assignment::relative_region_assignment(
-    layout_calculation_context& ctx,
     layout_node& node,
     layout_cacher& cacher,
     counter_type last_content_change,
     relative_layout_assignment const& assignment)
     : cacher_(&cacher), last_content_change_(last_content_change)
 {
-    ALIA_BEGIN_LOCATION_SPECIFIC_NAMED_BLOCK(
-        ctx.naming, named_block_, make_id(cacher.id));
-
-    ALIA_IF(
-        cacher_->last_relative_assignment != last_content_change_
+    if (cacher_->last_relative_assignment != last_content_change_
         || cacher_->relative_assignment != assignment)
     {
         auto resolved_assignment = resolve_relative_assignment(
             cacher_->resolved_spec,
             assignment,
             cacher_->horizontal_requirements,
-            get_vertical_requirements(ctx, node, assignment.region.size[0]));
+            get_vertical_requirements(node, assignment.region.size[0]));
         if (cacher_->resolved_relative_assignment.region.size
                 != resolved_assignment.region.size
             || cacher_->resolved_relative_assignment.baseline_y
@@ -510,7 +495,6 @@ relative_region_assignment::relative_region_assignment(
         cacher_->resolved_relative_assignment = resolved_assignment;
         cacher_->relative_assignment = assignment;
     }
-    ALIA_END
 
     update_required_
         = cacher_->last_relative_assignment != last_content_change_;
@@ -528,54 +512,46 @@ initialize(layout_traversal& traversal, layout_container& container)
 }
 
 layout_requirements
-simple_layout_container::get_horizontal_requirements(
-    layout_calculation_context& ctx)
+simple_layout_container::get_horizontal_requirements()
 {
-    horizontal_layout_query query(ctx, cacher, last_content_change);
-    alia_if(query.update_required())
+    horizontal_layout_query query(cacher, last_content_change);
+    if (query.update_required())
     {
-        query.update(logic->get_horizontal_requirements(ctx, children));
+        query.update(logic->get_horizontal_requirements(children));
     }
-    alia_end
     return query.result();
 }
 layout_requirements
 simple_layout_container::get_vertical_requirements(
-    layout_calculation_context& ctx, layout_scalar assigned_width)
+    layout_scalar assigned_width)
 {
-    vertical_layout_query query(
-        ctx, cacher, last_content_change, assigned_width);
-    alia_if(query.update_required())
+    vertical_layout_query query(cacher, last_content_change, assigned_width);
+    if (query.update_required())
     {
         query.update(logic->get_vertical_requirements(
-            ctx,
             children,
             resolve_assigned_width(
                 this->cacher.resolved_spec,
                 assigned_width,
-                this->get_horizontal_requirements(ctx))));
+                this->get_horizontal_requirements())));
     }
-    alia_end
     return query.result();
 }
 void
 simple_layout_container::set_relative_assignment(
-    layout_calculation_context& ctx,
     relative_layout_assignment const& assignment)
 {
     relative_region_assignment rra(
-        ctx, *this, cacher, last_content_change, assignment);
-    alia_if(rra.update_required())
+        *this, cacher, last_content_change, assignment);
+    if (rra.update_required())
     {
         this->assigned_size = rra.resolved_assignment().region.size;
         logic->set_relative_assignment(
-            ctx,
             children,
             rra.resolved_assignment().region.size,
             rra.resolved_assignment().baseline_y);
         rra.update();
     }
-    alia_end
 }
 
 bool
@@ -593,7 +569,7 @@ operator!=(
 }
 
 layout_requirements
-layout_leaf::get_horizontal_requirements(layout_calculation_context& /*ctx*/)
+layout_leaf::get_horizontal_requirements()
 {
     layout_requirements requirements;
     resolve_requirements(
@@ -604,8 +580,7 @@ layout_leaf::get_horizontal_requirements(layout_calculation_context& /*ctx*/)
     return requirements;
 }
 layout_requirements
-layout_leaf::get_vertical_requirements(
-    layout_calculation_context& /*ctx*/, layout_scalar /*assigned_width*/)
+layout_leaf::get_vertical_requirements(layout_scalar /*assigned_width*/)
 {
     layout_requirements requirements;
     resolve_requirements(
@@ -620,7 +595,6 @@ layout_leaf::get_vertical_requirements(
 }
 void
 layout_leaf::set_relative_assignment(
-    layout_calculation_context& /*ctx*/,
     relative_layout_assignment const& assignment)
 {
     layout_requirements horizontal_requirements, vertical_requirements;
@@ -827,44 +801,38 @@ begin_layout_transform(
 }
 
 layout_scalar
-get_max_child_width(layout_calculation_context& ctx, layout_node* children)
+get_max_child_width(layout_node* children)
 {
     layout_scalar width = 0;
     for (layout_node* i = children; i; i = i->next)
     {
-        layout_requirements x = alia::get_horizontal_requirements(ctx, *i);
+        layout_requirements x = alia::get_horizontal_requirements(*i);
         width = (std::max)(x.size, width);
     }
     return width;
 }
 
 calculated_layout_requirements
-fold_horizontal_child_requirements(
-    layout_calculation_context& ctx, layout_node* children)
+fold_horizontal_child_requirements(layout_node* children)
 {
-    return calculated_layout_requirements(
-        get_max_child_width(ctx, children), 0, 0);
+    return calculated_layout_requirements(get_max_child_width(children), 0, 0);
 }
 
 calculated_layout_requirements
 fold_vertical_child_requirements(
-    layout_calculation_context& ctx,
-    layout_node* children,
-    layout_scalar assigned_width)
+    layout_node* children, layout_scalar assigned_width)
 {
     calculated_layout_requirements requirements(0, 0, 0);
     for (layout_node* i = children; i; i = i->next)
     {
         fold_in_requirements(
-            requirements,
-            alia::get_vertical_requirements(ctx, *i, assigned_width));
+            requirements, alia::get_vertical_requirements(*i, assigned_width));
     }
     return requirements;
 }
 
 void
 assign_identical_child_regions(
-    layout_calculation_context& ctx,
     layout_node* children,
     layout_vector const& assigned_size,
     layout_scalar assigned_baseline_y)
@@ -872,7 +840,6 @@ assign_identical_child_regions(
     for (layout_node* i = children; i; i = i->next)
     {
         alia::set_relative_assignment(
-            ctx,
             *i,
             relative_layout_assignment(
                 layout_box(make_layout_vector(0, 0), assigned_size),
@@ -881,16 +848,13 @@ assign_identical_child_regions(
 }
 
 layout_scalar
-compute_total_height(
-    layout_calculation_context& ctx,
-    layout_node* children,
-    layout_scalar assigned_width)
+compute_total_height(layout_node* children, layout_scalar assigned_width)
 {
     layout_scalar total_height = 0;
     for (layout_node* i = children; i; i = i->next)
     {
         layout_requirements y
-            = alia::get_vertical_requirements(ctx, *i, assigned_width);
+            = alia::get_vertical_requirements(*i, assigned_width);
         total_height += y.size;
     }
     return total_height;

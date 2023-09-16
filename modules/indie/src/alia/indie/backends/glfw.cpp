@@ -239,8 +239,8 @@ render_ui(glfw_window_impl& impl)
     int width, height;
     glfwGetFramebufferSize(impl.glfw_window, &width, &height);
 
-    // std::chrono::steady_clock::time_point begin
-    //     = std::chrono::steady_clock::now();
+    std::chrono::steady_clock::time_point begin
+        = std::chrono::steady_clock::now();
 
     auto& canvas = *impl.skia_surface->getCanvas();
     canvas.clipRect(SkRect::MakeWH(SkScalar(width), SkScalar(height)));
@@ -261,15 +261,15 @@ render_ui(glfw_window_impl& impl)
         // TODO: Clear the canvas?
     }
 
-    // {
-    //     std::chrono::steady_clock::time_point end
-    //         = std::chrono::steady_clock::now();
-    //     std::cout << "render: "
-    //               << std::chrono::duration_cast<std::chrono::microseconds>(
-    //                      end - begin)
-    //                      .count()
-    //               << "[us]\n";
-    // }
+    {
+        std::chrono::steady_clock::time_point end
+            = std::chrono::steady_clock::now();
+        std::cout << "render: "
+                  << std::chrono::duration_cast<std::chrono::microseconds>(
+                         end - begin)
+                         .count()
+                  << "[us]\n";
+    }
 
     impl.skia_graphics_context->flush();
     glfwSwapBuffers(impl.glfw_window);
@@ -282,19 +282,19 @@ update_ui(glfw_window_impl& impl)
     int width, height;
     glfwGetFramebufferSize(impl.glfw_window, &width, &height);
 
+    std::chrono::steady_clock::time_point begin
+        = std::chrono::steady_clock::now();
+
     refresh_system(impl.system);
     update(impl.system);
 
-    // std::chrono::steady_clock::duration refresh_time;
-    // {
-    //     std::chrono::steady_clock::time_point end
-    //         = std::chrono::steady_clock::now();
-    //     refresh_time = end - begin;
-    //     begin = end;
-    // }
-
-    std::chrono::steady_clock::time_point begin
-        = std::chrono::steady_clock::now();
+    std::chrono::steady_clock::duration refresh_time;
+    {
+        std::chrono::steady_clock::time_point end
+            = std::chrono::steady_clock::now();
+        refresh_time = end - begin;
+        begin = end;
+    }
 
     resolve_layout(
         impl.system.layout, make_vector(float(width), float(height)));
@@ -307,11 +307,11 @@ update_ui(glfw_window_impl& impl)
         begin = end;
     }
 
-    // std::cout << "refresh: "
-    //           << std::chrono::duration_cast<std::chrono::microseconds>(
-    //                  refresh_time)
-    //                  .count()
-    //           << "[us]\n";
+    std::cout << "refresh: "
+              << std::chrono::duration_cast<std::chrono::microseconds>(
+                     refresh_time)
+                     .count()
+              << "[us]\n";
 
     std::cout << "layout: "
               << std::chrono::duration_cast<std::chrono::microseconds>(

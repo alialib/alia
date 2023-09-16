@@ -70,13 +70,6 @@ void
 fold_in_requirements(
     layout_requirements& current, layout_requirements const& additional);
 
-// Get a unique cacher ID from the layout system.
-inline counter_type
-get_cacher_id(layout_system& system)
-{
-    return system.cacher_id_counter++;
-}
-
 // The following are all utility functions for adding default values to
 // layout specifications.
 layout
@@ -95,25 +88,20 @@ add_default_alignment(
 
 // Alternate forms for invoking the layout_node interface.
 inline layout_requirements
-get_horizontal_requirements(layout_calculation_context& ctx, layout_node& node)
+get_horizontal_requirements(layout_node& node)
 {
-    return node.get_horizontal_requirements(ctx);
+    return node.get_horizontal_requirements();
 }
 inline layout_requirements
-get_vertical_requirements(
-    layout_calculation_context& ctx,
-    layout_node& node,
-    layout_scalar assigned_width)
+get_vertical_requirements(layout_node& node, layout_scalar assigned_width)
 {
-    return node.get_vertical_requirements(ctx, assigned_width);
+    return node.get_vertical_requirements(assigned_width);
 }
 inline void
 set_relative_assignment(
-    layout_calculation_context& ctx,
-    layout_node& node,
-    relative_layout_assignment const& assignment)
+    layout_node& node, relative_layout_assignment const& assignment)
 {
-    node.set_relative_assignment(ctx, assignment);
+    node.set_relative_assignment(assignment);
 }
 
 // Initialize a container for use within the given context.
@@ -355,24 +343,23 @@ resolve_relative_assignment(
 // of their layout calculations.
 struct layout_cacher
 {
-    layout_cacher()
-        : id(0), last_horizontal_query(0), last_relative_assignment(0)
-    {
-    }
-
-    // the unique ID of this cacher
-    counter_type id;
-
     // the resolved layout spec supplied by the user
     resolved_layout_spec resolved_spec;
 
     // the last frame in which there was a horizontal requirements query
-    counter_type last_horizontal_query;
+    counter_type last_horizontal_query = 0;
     // the result of that query
     layout_requirements horizontal_requirements;
 
+    // the last frame in which there was a vertical requirements query
+    counter_type last_vertical_query = 0;
+    // the assigned_width associated with that query
+    layout_scalar assigned_width;
+    // the result of that query
+    layout_requirements vertical_requirements;
+
     // last time set_relative_assignment was called
-    counter_type last_relative_assignment;
+    counter_type last_relative_assignment = 0;
     // the last value that was passed to set_relative_assignment
     relative_layout_assignment relative_assignment;
     // the actual assignment that that value resolved to
@@ -387,9 +374,7 @@ update_layout_cacher(
 struct horizontal_layout_query
 {
     horizontal_layout_query(
-        layout_calculation_context& ctx,
-        layout_cacher& cacher,
-        counter_type last_content_change);
+        layout_cacher& cacher, counter_type last_content_change);
     bool
     update_required() const
     {
@@ -406,47 +391,36 @@ struct horizontal_layout_query
  private:
     layout_cacher* cacher_;
     counter_type last_content_change_;
-    named_block named_block_;
 };
-struct cached_vertical_requirements
-{
-    counter_type last_vertical_query;
-    layout_requirements vertical_requirements;
-    cached_vertical_requirements() : last_vertical_query(0)
-    {
-    }
-};
+
 struct vertical_layout_query
 {
     vertical_layout_query(
-        layout_calculation_context& ctx,
         layout_cacher& cacher,
         counter_type last_content_change,
         layout_scalar assigned_width);
     bool
     update_required() const
     {
-        return update_required_;
+        return cacher_->assigned_width != assigned_width_
+               || cacher_->last_vertical_query != last_content_change_;
     }
     void
     update(calculated_layout_requirements const& calculated);
     layout_requirements const&
     result() const
     {
-        return data_->vertical_requirements;
+        return cacher_->vertical_requirements;
     }
 
  private:
     layout_cacher* cacher_;
-    cached_vertical_requirements* data_;
-    bool update_required_;
     counter_type last_content_change_;
-    named_block named_block_;
+    layout_scalar assigned_width_;
 };
 struct relative_region_assignment
 {
     relative_region_assignment(
-        layout_calculation_context& ctx,
         layout_node& node,
         layout_cacher& cacher,
         counter_type last_content_change,
@@ -468,7 +442,6 @@ struct relative_region_assignment
     layout_cacher* cacher_;
     counter_type last_content_change_;
     bool update_required_;
-    named_block named_block_;
 };
 // Get the resolved relative assignment for a layout cacher.
 inline relative_layout_assignment const&
@@ -486,18 +459,14 @@ get_assignment(layout_cacher const& cacher)
 struct layout_logic
 {
     virtual calculated_layout_requirements
-    get_horizontal_requirements(
-        layout_calculation_context& ctx, layout_node* children)
+    get_horizontal_requirements(layout_node* children)
         = 0;
     virtual calculated_layout_requirements
     get_vertical_requirements(
-        layout_calculation_context& ctx,
-        layout_node* children,
-        layout_scalar assigned_width)
+        layout_node* children, layout_scalar assigned_width)
         = 0;
     virtual void
     set_relative_assignment(
-        layout_calculation_context& ctx,
         layout_node* children,
         layout_vector const& size,
         layout_scalar baseline_y)
@@ -507,14 +476,11 @@ struct simple_layout_container : layout_container
 {
     // implementation of layout interface
     layout_requirements
-    get_horizontal_requirements(layout_calculation_context& ctx);
+    get_horizontal_requirements();
     layout_requirements
-    get_vertical_requirements(
-        layout_calculation_context& ctx, layout_scalar assigned_width);
+    get_vertical_requirements(layout_scalar assigned_width);
     void
-    set_relative_assignment(
-        layout_calculation_context& ctx,
-        relative_layout_assignment const& assignment);
+    set_relative_assignment(relative_layout_assignment const& assignment);
 
     layout_logic* logic;
 
@@ -609,14 +575,11 @@ struct layout_leaf : layout_node
 
     // implementation of layout interface
     layout_requirements
-    get_horizontal_requirements(layout_calculation_context& ctx);
+    get_horizontal_requirements();
     layout_requirements
-    get_vertical_requirements(
-        layout_calculation_context& ctx, layout_scalar assigned_width);
+    get_vertical_requirements(layout_scalar assigned_width);
     void
-    set_relative_assignment(
-        layout_calculation_context& ctx,
-        relative_layout_assignment const& assignment);
+    set_relative_assignment(relative_layout_assignment const& assignment);
 
  private:
     // the resolved spec
@@ -654,16 +617,12 @@ is_visible(geometry_context& ctx, box<2, double> const& region);
     struct logic_type : layout_logic                                          \
     {                                                                         \
         calculated_layout_requirements                                        \
-        get_horizontal_requirements(                                          \
-            layout_calculation_context& ctx, layout_node* children);          \
+        get_horizontal_requirements(layout_node* children);                   \
         calculated_layout_requirements                                        \
         get_vertical_requirements(                                            \
-            layout_calculation_context& ctx,                                  \
-            layout_node* children,                                            \
-            layout_scalar assigned_width);                                    \
+            layout_node* children, layout_scalar assigned_width);             \
         void                                                                  \
         set_relative_assignment(                                              \
-            layout_calculation_context& ctx,                                  \
             layout_node* children,                                            \
             layout_vector const& assigned_size,                               \
             layout_scalar assigned_baseline_y);                               \
@@ -690,36 +649,29 @@ begin_layout_transform(
 
 // Get the required width of the widest child in the list.
 layout_scalar
-get_max_child_width(layout_calculation_context& ctx, layout_node* children);
+get_max_child_width(layout_node* children);
 
 // Get the horizontal requirements of all the children in the list, fold them
 // together, and return the result.
 calculated_layout_requirements
-fold_horizontal_child_requirements(
-    layout_calculation_context& ctx, layout_node* children);
+fold_horizontal_child_requirements(layout_node* children);
 
 // Get the vertical requirements of all the children in the list, fold them
 // together, and return the result.
 calculated_layout_requirements
 fold_vertical_child_requirements(
-    layout_calculation_context& ctx,
-    layout_node* children,
-    layout_scalar assigned_width);
+    layout_node* children, layout_scalar assigned_width);
 
 // Assign the same layout region to all children in the list.
 void
 assign_identical_child_regions(
-    layout_calculation_context& ctx,
     layout_node* children,
     layout_vector const& assigned_size,
     layout_scalar assigned_baseline_y);
 
 // Get the total height of all children in the list.
 layout_scalar
-compute_total_height(
-    layout_calculation_context& ctx,
-    layout_node* children,
-    layout_scalar assigned_width);
+compute_total_height(layout_node* children, layout_scalar assigned_width);
 
 } // namespace alia
 
