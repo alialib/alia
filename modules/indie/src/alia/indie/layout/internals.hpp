@@ -146,15 +146,15 @@ struct layout_container : layout_node
 {
     layout_node* children = nullptr;
 
+    layout_container* parent = nullptr;
+
     // This records the last refresh in which the contents of the container
     // changed. It's updated during the refresh pass and is used to determine
     // when the container's layout needs to be recomputed.
     counter_type last_content_change = 1;
 
     virtual void
-    record_change(layout_traversal& traversal);
-
-    layout_container* parent = nullptr;
+    record_content_change(layout_traversal& traversal);
 };
 
 // layout_system stores the persistent state associated with an instance of the

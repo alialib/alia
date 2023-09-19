@@ -1012,7 +1012,7 @@ struct grid_row_container : layout_container
     set_relative_assignment(relative_layout_assignment const& assignment);
 
     void
-    record_change(layout_traversal& traversal);
+    record_content_change(layout_traversal& traversal);
     void
     record_self_change(layout_traversal& traversal);
 
@@ -1256,13 +1256,13 @@ grid_row_container<Uniformity>::set_relative_assignment(
 
 template<class Uniformity>
 void
-grid_row_container<Uniformity>::record_change(layout_traversal& traversal)
+grid_row_container<Uniformity>::record_content_change(layout_traversal& traversal)
 {
     if (this->last_content_change != traversal.refresh_counter)
     {
         this->last_content_change = traversal.refresh_counter;
         if (this->parent)
-            this->parent->record_change(traversal);
+            this->parent->record_content_change(traversal);
         for (grid_row_container<Uniformity>* row = this->grid->rows; row;
              row = row->next)
         {
@@ -1279,7 +1279,7 @@ grid_row_container<Uniformity>::record_self_change(layout_traversal& traversal)
     {
         this->last_content_change = traversal.refresh_counter;
         if (this->parent)
-            this->parent->record_change(traversal);
+            this->parent->record_content_change(traversal);
     }
 }
 
