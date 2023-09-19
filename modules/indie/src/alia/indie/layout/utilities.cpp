@@ -47,13 +47,13 @@ add_layout_node(layout_traversal& traversal, layout_node* node)
 }
 
 void
-layout_container::record_change(layout_traversal& traversal)
+layout_container::record_content_change(layout_traversal& traversal)
 {
     if (this->last_content_change != traversal.refresh_counter)
     {
         this->last_content_change = traversal.refresh_counter;
         if (this->parent)
-            this->parent->record_change(traversal);
+            this->parent->record_content_change(traversal);
     }
 }
 
@@ -61,7 +61,7 @@ void
 record_layout_change(layout_traversal& traversal)
 {
     if (traversal.active_container)
-        traversal.active_container->record_change(traversal);
+        traversal.active_container->record_content_change(traversal);
 }
 
 layout
