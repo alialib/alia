@@ -350,8 +350,6 @@ struct scoped_column
             &logic,
             layout_spec);
         slc_.begin(get_layout_traversal(ctx), container_);
-        begin_layout_transform(
-            transform_, get_layout_traversal(ctx), container_->cacher);
         widget_scope_.begin(get_widget_traversal(ctx), container_);
     }
 
@@ -361,7 +359,6 @@ struct scoped_column
         if (container_)
         {
             widget_scope_.end();
-            transform_.end();
             slc_.end();
             container_ = nullptr;
         }
@@ -388,7 +385,6 @@ struct scoped_column
  private:
     layout_container_widget<simple_layout_container>* container_ = nullptr;
     scoped_layout_container slc_;
-    scoped_transformation transform_;
     scoped_widget_container widget_scope_;
 };
 
@@ -432,8 +428,6 @@ struct scoped_flow_layout
             adjusted_layout_spec);
         logic->x_alignment_ = x_alignment;
         slc_.begin(get_layout_traversal(ctx), container_);
-        begin_layout_transform(
-            transform_, get_layout_traversal(ctx), container_->cacher);
         widget_scope_.begin(get_widget_traversal(ctx), container_);
     }
 
@@ -443,7 +437,6 @@ struct scoped_flow_layout
         if (container_)
         {
             widget_scope_.end();
-            transform_.end();
             slc_.end();
             container_ = nullptr;
         }
@@ -470,7 +463,6 @@ struct scoped_flow_layout
  private:
     layout_container_widget<simple_layout_container>* container_ = nullptr;
     scoped_layout_container slc_;
-    scoped_transformation transform_;
     scoped_widget_container widget_scope_;
 };
 
@@ -692,7 +684,6 @@ struct scoped_grid_layout
     void
     end()
     {
-        transform_.end();
         container_.end();
     }
 
@@ -707,7 +698,6 @@ struct scoped_grid_layout
     friend struct scoped_grid_row;
 
     scoped_layout_container container_;
-    scoped_transformation transform_;
     layout_traversal* traversal_;
     data_traversal* data_traversal_;
     grid_data<nonuniform_grid_tag>* data_;
@@ -731,8 +721,6 @@ scoped_grid_layout::concrete_begin(
     get_layout_widget_container(
         traversal, data, &container, &logic, layout_spec);
     container_.begin(traversal, container);
-
-    begin_layout_transform(transform_, traversal, container->cacher);
 
     data_->container = container;
 
@@ -767,7 +755,6 @@ struct scoped_grid_row
 
  private:
     scoped_layout_container container_;
-    scoped_transformation transform_;
     scoped_widget_container widget_scope_;
 };
 
@@ -1110,15 +1097,12 @@ scoped_grid_row::begin(
 
     container_.begin(traversal, row);
 
-    begin_layout_transform(transform_, traversal, row->cacher);
-
     widget_scope_.begin(get_widget_traversal(ctx), row);
 }
 
 void
 scoped_grid_row::end()
 {
-    transform_.end();
     container_.end();
 }
 
@@ -1128,7 +1112,7 @@ do_spacer(indie::context ctx, layout const& layout_spec)
     layout_leaf* node;
     get_cached_data(ctx, &node);
 
-    if (is_refresh_pass(ctx))
+    if (get<indie::traversal_tag>(ctx).layout.is_refresh_pass)
     {
         node->refresh_layout(
             get<indie::traversal_tag>(ctx).layout,
@@ -1158,21 +1142,20 @@ my_ui(indie::context ctx)
     do_box(ctx, SK_ColorLTGRAY);
     do_spacer(ctx, height(100, PIXELS));
 
-    {
-        indie::scoped_grid_layout grid(ctx);
-        {
-            indie::scoped_grid_row row(ctx, grid);
-            do_box(ctx, SK_ColorMAGENTA, width(200, PIXELS));
-            do_box(ctx, SK_ColorMAGENTA, width(200, PIXELS));
-        }
-        {
-            indie::scoped_grid_row row(ctx, grid);
-            do_box(ctx, SK_ColorLTGRAY);
-            do_box(ctx, SK_ColorLTGRAY);
-        }
-    }
-
-    do_spacer(ctx, height(100, PIXELS));
+    // {
+    //     indie::scoped_grid_layout grid(ctx);
+    //     {
+    //         indie::scoped_grid_row row(ctx, grid);
+    //         do_box(ctx, SK_ColorMAGENTA, width(200, PIXELS));
+    //         do_box(ctx, SK_ColorMAGENTA, width(200, PIXELS));
+    //     }
+    //     {
+    //         indie::scoped_grid_row row(ctx, grid);
+    //         do_box(ctx, SK_ColorLTGRAY);
+    //         do_box(ctx, SK_ColorLTGRAY);
+    //     }
+    // }
+    // do_spacer(ctx, height(100, PIXELS));
 
     {
         indie::scoped_flow_layout flow(ctx, GROW | UNPADDED);

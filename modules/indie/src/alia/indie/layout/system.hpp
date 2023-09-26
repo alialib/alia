@@ -25,10 +25,9 @@ struct scoped_layout_traversal
     scoped_layout_traversal(
         layout_system& system,
         layout_traversal& traversal,
-        geometry_context& geometry,
         vector<2, float> const& ppi)
     {
-        begin(system, traversal, geometry, ppi);
+        begin(system, traversal, ppi);
     }
 
     ~scoped_layout_traversal()
@@ -40,7 +39,6 @@ struct scoped_layout_traversal
     begin(
         layout_system& system,
         layout_traversal& traversal,
-        geometry_context& geometry,
         vector<2, float> const& ppi);
 
     void
