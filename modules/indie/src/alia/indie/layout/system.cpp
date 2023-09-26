@@ -8,7 +8,6 @@ initialize_traversal(
     layout_system& system,
     layout_traversal& traversal,
     bool is_refresh,
-    geometry_context* geometry,
     layout_style_info* style,
     vector<2, float> const& ppi)
 {
@@ -17,7 +16,6 @@ initialize_traversal(
     traversal.next_ptr = &system.root_node;
     traversal.is_refresh_pass = is_refresh;
     traversal.refresh_counter = system.refresh_counter;
-    traversal.geometry = geometry;
     traversal.style_info = style;
     traversal.ppi = ppi;
 
@@ -31,11 +29,9 @@ void
 scoped_layout_traversal::begin(
     layout_system& system,
     layout_traversal& traversal,
-    geometry_context& geometry,
     vector<2, float> const& ppi)
 {
-    initialize_traversal(
-        system, traversal, false, &geometry, &dummy_style_info_, ppi);
+    initialize_traversal(system, traversal, false, &dummy_style_info_, ppi);
 }
 void
 scoped_layout_refresh::begin(
@@ -43,7 +39,7 @@ scoped_layout_refresh::begin(
     layout_traversal& traversal,
     vector<2, float> const& ppi)
 {
-    initialize_traversal(system, traversal, true, 0, &dummy_style_info_, ppi);
+    initialize_traversal(system, traversal, true, &dummy_style_info_, ppi);
 }
 
 void

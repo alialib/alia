@@ -235,7 +235,6 @@ operator!=(layout const& a, layout const& b);
 layout const default_layout;
 
 struct data_traversal;
-struct geometry_context;
 
 // forward declarations from layout_system.hpp
 struct layout_system;
@@ -262,10 +261,6 @@ struct layout_traversal
 
     // This is incremented each refresh pass.
     counter_type refresh_counter;
-
-    // This is the geometry context that the layout system manipulates during
-    // non-refresh passes.
-    geometry_context* geometry;
 
     // This is required for resolving layout specs that are specified in
     // physical units or characters.
@@ -302,152 +297,6 @@ struct scoped_layout_container : noncopyable
 
  private:
     layout_traversal* traversal_;
-};
-
-// GEOMETRY CONTEXT
-
-// geometry_context represents a context for defining 2D geometry.
-// It provides a transformation matrix, which maps the current frame of
-// reference for the context to its root frame of reference.
-// It also provides a clip region, which is a rectangle defined in the root
-// frame of reference.
-// An object may 'subscribe' to a geometry_context so that it is informed of
-// changes in the state of the context.
-struct geometry_context_subscriber
-{
-    virtual void
-    set_transformation_matrix(
-        matrix<3, 3, double> const& transformation_matrix)
-        = 0;
-    virtual void
-    set_clip_region(box<2, double> const& clip_region)
-        = 0;
-};
-struct geometry_context
-{
-    box<2, double> full_region;
-    matrix<3, 3, double> transformation_matrix;
-    box<2, double> clip_region;
-    geometry_context_subscriber* subscriber;
-};
-
-// geometry_contexts are specified by the same generic Context concept as is
-// used in data_graph.hpp.
-inline geometry_context&
-get_geometry_context(geometry_context& ctx)
-{
-    return ctx;
-}
-
-// scoped_clip_region is a scoped object that further restricts the clip region
-// of a geometry_context while it's active. While it's active, the context's
-// clip region will be set to the intersection of the old region and what's
-// passed to set().
-// The region is specified in the current frame of reference for the context.
-// However, since the region for the context must be an axis-aligned rectangle
-// in the root frame of reference, this will only work properly if the current
-// transformation matrix is composed only of translations, scaling, and
-// 90-degree rotations.
-class scoped_clip_region : noncopyable
-{
- public:
-    scoped_clip_region() : ctx_(0)
-    {
-    }
-    template<class Context>
-    scoped_clip_region(Context& ctx)
-    {
-        begin(get_geometry_context(ctx));
-    }
-    template<class Context>
-    scoped_clip_region(Context& ctx, box<2, double> const& region)
-    {
-        begin(ctx);
-        set(region);
-    }
-    ~scoped_clip_region()
-    {
-        end();
-    }
-    void
-    begin(geometry_context& ctx);
-    void
-    set(box<2, double> const& region);
-    void
-    restore();
-    void
-    end();
-
- private:
-    geometry_context* ctx_;
-    box<2, double> old_region_;
-};
-
-// scoped_clip_region_reset resets the clip region to the full geometry region
-// for its scope. This can be useful for drawing overlays that are meant to
-// extend beyond the clip region normally associated with their scope.
-class scoped_clip_region_reset : noncopyable
-{
- public:
-    scoped_clip_region_reset() : ctx_(0)
-    {
-    }
-    template<class Context>
-    scoped_clip_region_reset(Context& ctx)
-    {
-        begin(get_geometry_context(ctx));
-    }
-    ~scoped_clip_region_reset()
-    {
-        end();
-    }
-    void
-    begin(geometry_context& ctx);
-    void
-    end();
-
- private:
-    geometry_context* ctx_;
-    box<2, double> old_region_;
-};
-
-// scoped_transformation is a scoped object that applies a transformation to a
-// geometry_context. While it's active, the context's transformation matrix
-// will be set to the product of the old matrix and what's passed to set().
-class scoped_transformation : noncopyable
-{
- public:
-    scoped_transformation() : ctx_(0)
-    {
-    }
-    template<class Context>
-    scoped_transformation(Context& ctx)
-    {
-        begin(get_geometry_context(ctx));
-    }
-    template<class Context>
-    scoped_transformation(
-        Context& ctx, matrix<3, 3, double> const& transformation)
-    {
-        begin(get_geometry_context(ctx));
-        set(transformation);
-    }
-    ~scoped_transformation()
-    {
-        end();
-    }
-    void
-    begin(geometry_context& ctx);
-    void
-    set(matrix<3, 3, double> const& transformation);
-    void
-    restore();
-    void
-    end();
-
- private:
-    geometry_context* ctx_;
-    matrix<3, 3, double> old_matrix_;
 };
 
 // LIBRARY
@@ -529,7 +378,6 @@ get_container_offset(simple_layout_container const& container);
         {                                                                     \
             if (container_)                                                   \
             {                                                                 \
-                transform_.end();                                             \
                 slc_.end();                                                   \
                 container_ = 0;                                               \
             }                                                                 \
@@ -562,7 +410,6 @@ get_container_offset(simple_layout_container const& container);
                                                                               \
         simple_layout_container* container_;                                  \
         scoped_layout_container slc_;                                         \
-        scoped_transformation transform_;                                     \
     };
 
 #define ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(container_name, Arg)    \
@@ -603,7 +450,6 @@ get_container_offset(simple_layout_container const& container);
         void                                                                  \
         end()                                                                 \
         {                                                                     \
-            transform_.end();                                                 \
             slc_.end();                                                       \
         }                                                                     \
                                                                               \
@@ -635,7 +481,6 @@ get_container_offset(simple_layout_container const& container);
                                                                               \
         simple_layout_container* container_;                                  \
         scoped_layout_container slc_;                                         \
-        scoped_transformation transform_;                                     \
     };
 
 // A row layout places all its children in a horizontal row.
@@ -730,7 +575,6 @@ ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(clip_evasion_layout)
         void                                                                  \
         end()                                                                 \
         {                                                                     \
-            transform_.end();                                                 \
             container_.end();                                                 \
         }                                                                     \
                                                                               \
@@ -745,7 +589,6 @@ ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(clip_evasion_layout)
         friend struct row_type;                                               \
                                                                               \
         scoped_layout_container container_;                                   \
-        scoped_transformation transform_;                                     \
         layout_traversal* traversal_;                                         \
         data_traversal* data_traversal_;                                      \
         grid_type##_data* data_;                                              \
@@ -772,7 +615,6 @@ ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(clip_evasion_layout)
                                                                               \
      private:                                                                 \
         scoped_layout_container container_;                                   \
-        scoped_transformation transform_;                                     \
     };
 
 // A grid layout is used to arrange widgets in a grid. To use it, create
@@ -851,7 +693,7 @@ struct floating_layout
     layout_node** old_next_ptr_;
     layout_node* floating_root_;
     floating_layout_data* data_;
-    scoped_clip_region_reset clipping_reset_;
+    // scoped_clip_region_reset clipping_reset_;
     layout_vector min_size_, max_size_;
 };
 
