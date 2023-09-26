@@ -592,25 +592,6 @@ struct layout_leaf : layout_node
     alia::relative_layout_assignment relative_assignment_;
 };
 
-// Utilities for working with a geometry context.
-
-void
-initialize(geometry_context& ctx, box<2, double> const& full_region);
-
-void
-set_subscriber(geometry_context& ctx, geometry_context_subscriber& subscriber);
-
-void
-set_clip_region(geometry_context& ctx, box<2, double> const& clip_region);
-
-void
-set_transformation_matrix(
-    geometry_context& ctx, matrix<3, 3, double> const& matrix);
-
-// Is any part of the given region visible through the clipping rectangle?
-bool
-is_visible(geometry_context& ctx, box<2, double> const& region);
-
 // Some macros for implementing simple layout containers.
 
 #define ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA(logic_type, data)                 \
@@ -632,18 +613,11 @@ is_visible(geometry_context& ctx, box<2, double> const& region);
 #define ALIA_DECLARE_LAYOUT_LOGIC(logic_type)                                 \
     ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA(logic_type, )
 
-void
-begin_layout_transform(
-    scoped_transformation& transform,
-    layout_traversal const& traversal,
-    layout_cacher const& cacher);
-
 #define ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(logic_type)                        \
     logic_type* logic;                                                        \
     get_simple_layout_container(                                              \
         traversal, data, &container_, &logic, layout_spec);                   \
-    slc_.begin(traversal, container_);                                        \
-    begin_layout_transform(transform_, traversal, container_->cacher);
+    slc_.begin(traversal, container_);
 
 // Various utilities for working with layout children...
 

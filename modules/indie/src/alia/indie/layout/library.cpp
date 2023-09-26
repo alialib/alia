@@ -266,7 +266,6 @@ linear_layout::concrete_begin(
     }
     ALIA_END
     slc_.begin(traversal, container_);
-    begin_layout_transform(transform_, traversal, container_->cacher);
 }
 
 // LAYERED LAYOUT
@@ -572,93 +571,9 @@ void
 vertical_flow_layout::concrete_begin(
     layout_traversal& traversal,
     data_traversal& data,
-    layout const& layout_spec){
-    ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(vertical_flow_layout_logic)}
-
-// CLIP EVASION LAYOUT
-
-ALIA_DECLARE_LAYOUT_LOGIC(clip_evasion_layout_logic)
-
-    calculated_layout_requirements
-    clip_evasion_layout_logic::get_horizontal_requirements(
-        layout_node* children)
-{
-    return fold_horizontal_child_requirements(children);
-}
-
-calculated_layout_requirements
-clip_evasion_layout_logic::get_vertical_requirements(
-    layout_node* children, layout_scalar assigned_width)
-{
-    return fold_vertical_child_requirements(children, assigned_width);
-}
-
-void
-clip_evasion_layout_logic::set_relative_assignment(
-    layout_node* children,
-    layout_vector const& assigned_size,
-    layout_scalar assigned_baseline_y)
-{
-    assign_identical_child_regions(
-        children, assigned_size, assigned_baseline_y);
-}
-
-void
-clip_evasion_layout::concrete_begin(
-    layout_traversal& traversal,
-    data_traversal& data,
     layout const& layout_spec)
 {
-    clip_evasion_layout_logic* logic;
-    get_simple_layout_container(
-        traversal, data, &container_, &logic, layout_spec);
-    slc_.begin(traversal, container_);
-
-    if (!traversal.is_refresh_pass)
-    {
-        vector<2, double> corner_on_surface = transform(
-            traversal.geometry->transformation_matrix,
-            vector<2, double>(
-                get_assignment(container_->cacher).region.corner));
-        vector<2, double> high_corner_on_surface = transform(
-            traversal.geometry->transformation_matrix,
-            vector<2, double>(
-                get_high_corner(get_assignment(container_->cacher).region)));
-        vector<2, double> offset;
-        for (unsigned i = 0; i != 2; ++i)
-        {
-            // If the content is smaller than the clip region, just prevent it
-            // from scrolling off the top of the clip region.
-            if (high_corner_on_surface[i] - corner_on_surface[i]
-                < traversal.geometry->clip_region.size[i])
-            {
-                offset[i] = (std::max)(
-                    0.,
-                    traversal.geometry->clip_region.corner[i]
-                        - corner_on_surface[i]);
-            }
-            // Otherwise, just make sure that it's not scrolled to the point
-            // that there's empty space.
-            else if (
-                corner_on_surface[i]
-                > traversal.geometry->clip_region.corner[i])
-            {
-                offset[i] = traversal.geometry->clip_region.corner[i]
-                            - corner_on_surface[i];
-            }
-            else if (
-                high_corner_on_surface[i]
-                < get_high_corner(traversal.geometry->clip_region)[i])
-            {
-                offset[i] = get_high_corner(traversal.geometry->clip_region)[i]
-                            - high_corner_on_surface[i];
-            }
-            else
-                offset[i] = 0;
-        }
-        transform_.begin(*traversal.geometry);
-        transform_.set(translation_matrix(offset));
-    }
+    ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(vertical_flow_layout_logic)
 }
 
 // CLAMPED LAYOUT
@@ -738,7 +653,6 @@ clamped_layout::concrete_begin(
     get_simple_layout_container(
         traversal, data, &container_, &logic, layout_spec);
     slc_.begin(traversal, container_);
-    begin_layout_transform(transform_, traversal, container_->cacher);
     if (traversal.is_refresh_pass)
     {
         detect_layout_change(
@@ -818,7 +732,6 @@ bordered_layout::concrete_begin(
     get_simple_layout_container(
         traversal, data, &container_, &logic, layout_spec);
     slc_.begin(traversal, container_);
-    begin_layout_transform(transform_, traversal, container_->cacher);
     if (traversal.is_refresh_pass)
     {
         detect_layout_change(
@@ -1341,8 +1254,6 @@ grid_layout::concrete_begin(
         traversal, data, &container, &logic, layout_spec);
     container_.begin(traversal, container);
 
-    begin_layout_transform(transform_, traversal, container->cacher);
-
     data_->container = container;
 
     layout_scalar resolved_spacing = as_layout_size(
@@ -1362,14 +1273,11 @@ grid_row::begin(grid_layout const& grid, layout const& layout_spec)
     refresh_grid_row(traversal, *grid.data_, *row, layout_spec);
 
     container_.begin(traversal, row);
-
-    begin_layout_transform(transform_, traversal, row->cacher);
 }
 
 void
 grid_row::end()
 {
-    transform_.end();
     container_.end();
 }
 
@@ -1398,8 +1306,6 @@ uniform_grid_layout::concrete_begin(
         traversal, data, &container, &logic, layout_spec);
     container_.begin(traversal, container);
 
-    begin_layout_transform(transform_, traversal, container->cacher);
-
     data_->container = container;
 
     layout_scalar resolved_spacing = as_layout_size(
@@ -1422,14 +1328,11 @@ uniform_grid_row::begin(
     refresh_grid_row(traversal, *grid.data_, *row, GROW | UNPADDED);
 
     container_.begin(traversal, row);
-
-    begin_layout_transform(transform_, traversal, row->cacher);
 }
 
 void
 uniform_grid_row::end()
 {
-    transform_.end();
     container_.end();
 }
 
@@ -1467,8 +1370,8 @@ floating_layout::concrete_begin(
         max_size_ = max_size;
     }
 
-    if (traversal.geometry)
-        clipping_reset_.begin(*traversal.geometry);
+    // if (traversal.geometry)
+    //     clipping_reset_.begin(*traversal.geometry);
 }
 
 void
@@ -1495,7 +1398,7 @@ floating_layout::end()
             resolve_layout(floating_root_, data_->size);
         }
 
-        clipping_reset_.end();
+        // clipping_reset_.end();
 
         traversal_ = 0;
     }
