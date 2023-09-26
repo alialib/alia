@@ -1256,7 +1256,8 @@ grid_row_container<Uniformity>::set_relative_assignment(
 
 template<class Uniformity>
 void
-grid_row_container<Uniformity>::record_content_change(layout_traversal& traversal)
+grid_row_container<Uniformity>::record_content_change(
+    layout_traversal& traversal)
 {
     if (this->last_content_change != traversal.refresh_counter)
     {

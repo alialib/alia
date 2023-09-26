@@ -205,7 +205,8 @@ do_box(
 namespace alia {
 
 ALIA_DECLARE_LAYOUT_LOGIC(column_layout_logic)
-ALIA_DECLARE_LAYOUT_LOGIC(flow_layout_logic)
+ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA(flow_layout_logic,
+                                    layout_flag_set x_alignment_;)
 
 namespace indie {
 
@@ -244,8 +245,7 @@ struct layout_container_widget : widget_container, LayoutContainer
         auto const& region = get_assignment(this->cacher).region;
         if (is_inside(region, vector<2, float>(point)))
         {
-            auto local_point
-                = point - vector<2, double>(region.corner);
+            auto local_point = point - vector<2, double>(region.corner);
             for (widget* node = this->widget_container::children; node;
                  node = node->next)
             {
@@ -325,7 +325,7 @@ get_layout_widget_container(
 
 struct scoped_column
 {
-    scoped_column() : container_(nullptr)
+    scoped_column()
     {
     }
 
@@ -363,7 +363,7 @@ struct scoped_column
             widget_scope_.end();
             transform_.end();
             slc_.end();
-            container_ = 0;
+            container_ = nullptr;
         }
     }
 
@@ -386,7 +386,7 @@ struct scoped_column
     }
 
  private:
-    layout_container_widget<simple_layout_container>* container_;
+    layout_container_widget<simple_layout_container>* container_ = nullptr;
     scoped_layout_container slc_;
     scoped_transformation transform_;
     scoped_widget_container widget_scope_;
@@ -394,7 +394,7 @@ struct scoped_column
 
 struct scoped_flow_layout
 {
-    scoped_flow_layout() : container_(nullptr)
+    scoped_flow_layout()
     {
     }
 
@@ -411,13 +411,26 @@ struct scoped_flow_layout
     void
     begin(context ctx, layout const& layout_spec = default_layout)
     {
+        // With a flow layout, we want to have the layout itself always fill
+        // the horizontal space and use the requested X alignment to position
+        // the individual rows in the flow.
+        auto adjusted_layout_spec = add_default_padding(layout_spec, PADDED);
+        layout_flag_set x_alignment = FILL_X;
+        if ((layout_spec.flags.code & 0x3) != 0)
+        {
+            x_alignment.code
+                = adjusted_layout_spec.flags.code & X_ALIGNMENT_MASK_CODE;
+            adjusted_layout_spec.flags.code &= ~X_ALIGNMENT_MASK_CODE;
+            adjusted_layout_spec.flags.code |= FILL_X_CODE;
+        }
         flow_layout_logic* logic;
         get_layout_widget_container(
             get_layout_traversal(ctx),
             get_data_traversal(ctx),
             &container_,
             &logic,
-            layout_spec);
+            adjusted_layout_spec);
+        logic->x_alignment_ = x_alignment;
         slc_.begin(get_layout_traversal(ctx), container_);
         begin_layout_transform(
             transform_, get_layout_traversal(ctx), container_->cacher);
@@ -432,7 +445,7 @@ struct scoped_flow_layout
             widget_scope_.end();
             transform_.end();
             slc_.end();
-            container_ = 0;
+            container_ = nullptr;
         }
     }
 
@@ -455,7 +468,7 @@ struct scoped_flow_layout
     }
 
  private:
-    layout_container_widget<simple_layout_container>* container_;
+    layout_container_widget<simple_layout_container>* container_ = nullptr;
     scoped_layout_container slc_;
     scoped_transformation transform_;
     scoped_widget_container widget_scope_;
@@ -590,10 +603,10 @@ template<class Uniformity>
 struct grid_data
 {
     // the container that contains the whole grid
-    layout_container* container;
+    layout_container* container = nullptr;
 
     // list of rows in the grid
-    grid_row_container<Uniformity>* rows;
+    grid_row_container<Uniformity>* rows = nullptr;
 
     // spacing between columns
     layout_scalar column_spacing;
@@ -734,10 +747,11 @@ struct scoped_grid_row
     {
     }
     scoped_grid_row(
+        indie::context ctx,
         scoped_grid_layout const& g,
         layout const& layout_spec = default_layout)
     {
-        begin(g, layout_spec);
+        begin(ctx, g, layout_spec);
     }
     ~scoped_grid_row()
     {
@@ -745,6 +759,7 @@ struct scoped_grid_row
     }
     void
     begin(
+        indie::context ctx,
         scoped_grid_layout const& g,
         layout const& layout_spec = default_layout);
     void
@@ -753,21 +768,63 @@ struct scoped_grid_row
  private:
     scoped_layout_container container_;
     scoped_transformation transform_;
+    scoped_widget_container widget_scope_;
 };
 
 template<class Uniformity>
-struct grid_row_container : layout_container
+struct grid_row_container : layout_container, widget_container
 {
-    // implementation of layout interface
-    layout_requirements
-    get_horizontal_requirements();
-    layout_requirements
-    get_vertical_requirements(layout_scalar assigned_width);
     void
-    set_relative_assignment(relative_layout_assignment const& assignment);
+    render(SkCanvas& canvas) override
+    {
+        auto const& region = get_assignment(this->cacher).region;
+        SkRect bounds;
+        bounds.fLeft = SkScalar(region.corner[0]);
+        bounds.fTop = SkScalar(region.corner[1]);
+        bounds.fRight = SkScalar(region.corner[0] + region.size[0]);
+        bounds.fBottom = SkScalar(region.corner[1] + region.size[1]);
+        if (!canvas.quickReject(bounds))
+        {
+            canvas.save();
+            auto const& offset = region.corner;
+            canvas.translate(offset[0], offset[1]);
+            indie::render_children(canvas, *this);
+            canvas.restore();
+        }
+    }
 
     void
-    record_content_change(layout_traversal& traversal);
+    hit_test(
+        hit_test_base& test, vector<2, double> const& point) const override
+    {
+        auto const& region = get_assignment(this->cacher).region;
+        if (is_inside(region, vector<2, float>(point)))
+        {
+            auto local_point = point - vector<2, double>(region.corner);
+            for (widget* node = this->widget_container::children; node;
+                 node = node->next)
+            {
+                node->hit_test(test, local_point);
+            }
+        }
+    }
+
+    void
+    process_input(event_context) override
+    {
+    }
+
+    // implementation of layout interface
+    layout_requirements
+    get_horizontal_requirements() override;
+    layout_requirements
+    get_vertical_requirements(layout_scalar assigned_width) override;
+    void
+    set_relative_assignment(
+        relative_layout_assignment const& assignment) override;
+
+    void
+    record_content_change(layout_traversal& traversal) override;
     void
     record_self_change(layout_traversal& traversal);
 
@@ -775,17 +832,13 @@ struct grid_row_container : layout_container
 
     // cached requirements for cells within this row
     grid_column_requirements<Uniformity> requirements;
-    counter_type last_content_query;
+    counter_type last_content_query = 0;
 
     // reference to the data for the grid that this row belongs to
-    grid_data<Uniformity>* grid;
+    grid_data<Uniformity>* grid = nullptr;
 
     // next row in this grid
-    grid_row_container* next;
-
-    grid_row_container() : last_content_query(0)
-    {
-    }
+    grid_row_container* next = nullptr;
 };
 
 // Update the requirements for a grid's columns by querying its contents.
@@ -807,7 +860,8 @@ update_grid_column_requirements(grid_data<Uniformity>& grid)
             if (row->last_content_query != row->last_content_change)
             {
                 clear_requirements(row->requirements);
-                for (layout_node* child = row->children; child;
+                for (layout_node* child = row->layout_container::children;
+                     child;
                      child = child->next)
                 {
                     layout_requirements x
@@ -906,7 +960,8 @@ calculate_grid_row_vertical_requirements(
         = calculate_column_assignments(grid, assigned_width);
     calculated_layout_requirements requirements(0, 0, 0);
     size_t column_index = 0;
-    for (layout_node* i = row.children; i; i = i->next, ++column_index)
+    for (layout_node* i = row.layout_container::children; i;
+         i = i->next, ++column_index)
     {
         fold_in_requirements(
             requirements,
@@ -936,7 +991,7 @@ calculate_grid_row_vertical_requirements(
              row = row->next)
         {
             size_t column_index = 0;
-            for (layout_node* child = row->children; child;
+            for (layout_node* child = row->layout_container::children; child;
                  child = child->next, ++column_index)
             {
                 fold_in_requirements(
@@ -1002,7 +1057,7 @@ grid_row_container<Uniformity>::set_relative_assignment(
     {
         set_grid_row_relative_assignment(
             *grid,
-            children,
+            layout_container::children,
             rra.resolved_assignment().region.size,
             rra.resolved_assignment().baseline_y);
         rra.update();
@@ -1011,7 +1066,8 @@ grid_row_container<Uniformity>::set_relative_assignment(
 
 template<class Uniformity>
 void
-grid_row_container<Uniformity>::record_content_change(layout_traversal& traversal)
+grid_row_container<Uniformity>::record_content_change(
+    layout_traversal& traversal)
 {
     if (this->last_content_change != traversal.refresh_counter)
     {
@@ -1040,7 +1096,9 @@ grid_row_container<Uniformity>::record_self_change(layout_traversal& traversal)
 
 void
 scoped_grid_row::begin(
-    scoped_grid_layout const& grid, layout const& layout_spec)
+    indie::context ctx,
+    scoped_grid_layout const& grid,
+    layout const& layout_spec)
 {
     layout_traversal& traversal = *grid.traversal_;
 
@@ -1053,6 +1111,8 @@ scoped_grid_row::begin(
     container_.begin(traversal, row);
 
     begin_layout_transform(transform_, traversal, row->cacher);
+
+    widget_scope_.begin(get_widget_traversal(ctx), row);
 }
 
 void
@@ -1060,6 +1120,22 @@ scoped_grid_row::end()
 {
     transform_.end();
     container_.end();
+}
+
+void
+do_spacer(indie::context ctx, layout const& layout_spec)
+{
+    layout_leaf* node;
+    get_cached_data(ctx, &node);
+
+    if (is_refresh_pass(ctx))
+    {
+        node->refresh_layout(
+            get<indie::traversal_tag>(ctx).layout,
+            layout_spec,
+            leaf_layout_requirements(make_layout_vector(0, 0), 0, 0));
+        add_layout_node(get<indie::traversal_tag>(ctx).layout, node);
+    }
 }
 
 } // namespace indie
@@ -1077,23 +1153,26 @@ my_ui(indie::context ctx)
             get<indie::traversal_tag>(ctx).widgets, &container);
     }
 
-    // indie::scoped_column column(ctx, GROW | UNPADDED);
+    indie::scoped_column column(ctx, GROW | PADDED);
 
-    // do_spacer(ctx, height(12, EM));
+    do_box(ctx, SK_ColorLTGRAY);
+    do_spacer(ctx, height(100, PIXELS));
 
-    // {
-    //     indie::scoped_grid_layout grid(ctx);
-    //     {
-    //         indie::scoped_grid_row row(grid);
-    //         do_box(ctx, SK_ColorMAGENTA, width(200, PIXELS));
-    //         do_box(ctx, SK_ColorMAGENTA, width(200, PIXELS));
-    //     }
-    //     {
-    //         indie::scoped_grid_row row(grid);
-    //         do_box(ctx, SK_ColorLTGRAY);
-    //         do_box(ctx, SK_ColorLTGRAY);
-    //     }
-    // }
+    {
+        indie::scoped_grid_layout grid(ctx);
+        {
+            indie::scoped_grid_row row(ctx, grid);
+            do_box(ctx, SK_ColorMAGENTA, width(200, PIXELS));
+            do_box(ctx, SK_ColorMAGENTA, width(200, PIXELS));
+        }
+        {
+            indie::scoped_grid_row row(ctx, grid);
+            do_box(ctx, SK_ColorLTGRAY);
+            do_box(ctx, SK_ColorLTGRAY);
+        }
+    }
+
+    do_spacer(ctx, height(100, PIXELS));
 
     {
         indie::scoped_flow_layout flow(ctx, GROW | UNPADDED);
