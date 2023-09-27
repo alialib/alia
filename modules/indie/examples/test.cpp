@@ -513,7 +513,7 @@ static void
 clear_requirements(grid_column_requirements<uniform_grid_tag>& x)
 {
     x.n_columns = 0;
-    x.requirements = layout_requirements(0, 0, 0, 1);
+    x.requirements = layout_requirements{0, 0, 0, 1};
 }
 
 // Add the requirements for a column.
@@ -541,7 +541,7 @@ fold_in_requirements(
 {
     size_t n_columns = get_column_count(y);
     if (get_column_count(x) < n_columns)
-        x.columns.resize(n_columns, layout_requirements(0, 0, 0, 0));
+        x.columns.resize(n_columns, layout_requirements{0, 0, 0, 0});
     for (size_t i = 0; i != n_columns; ++i)
     {
         layout_requirements& xi = x.columns[i];
@@ -978,9 +978,9 @@ set_grid_row_relative_assignment(
     for (layout_node* i = children; i; i = i->next, ++n)
     {
         layout_scalar this_width = column_widths[n];
-        i->set_relative_assignment(relative_layout_assignment(
+        i->set_relative_assignment(relative_layout_assignment{
             layout_box(p, make_layout_vector(this_width, assigned_size[1])),
-            assigned_baseline_y));
+            assigned_baseline_y});
         p[0] += this_width + grid.column_spacing;
     }
 }

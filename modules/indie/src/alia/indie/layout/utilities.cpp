@@ -413,12 +413,12 @@ resolve_relative_assignment(
         assignment.baseline_y,
         vertical_requirements.size,
         vertical_requirements.ascent);
-    return relative_layout_assignment(
+    return relative_layout_assignment{
         layout_box(
             assignment.region.corner + make_layout_vector(x_offset, y_offset)
                 + spec.padding_size,
             make_layout_vector(x_size, y_size) - spec.padding_size * 2),
-        vertical_requirements.ascent - spec.padding_size[1]);
+        vertical_requirements.ascent - spec.padding_size[1]};
 }
 
 bool
@@ -641,11 +641,10 @@ layout_scalar
 get_max_child_width(layout_node* children)
 {
     layout_scalar width = 0;
-    for (layout_node* i = children; i; i = i->next)
-    {
-        layout_requirements x = i->get_horizontal_requirements();
+    walk_layout_children(children, [&](layout_node& node) {
+        layout_requirements x = node.get_horizontal_requirements();
         width = (std::max)(x.size, width);
-    }
+    });
     return width;
 }
 
@@ -660,11 +659,10 @@ fold_vertical_child_requirements(
     layout_node* children, layout_scalar assigned_width)
 {
     calculated_layout_requirements requirements(0, 0, 0);
-    for (layout_node* i = children; i; i = i->next)
-    {
+    walk_layout_children(children, [&](layout_node& node) {
         fold_in_requirements(
-            requirements, i->get_vertical_requirements(assigned_width));
-    }
+            requirements, node.get_vertical_requirements(assigned_width));
+    });
     return requirements;
 }
 
@@ -674,23 +672,21 @@ assign_identical_child_regions(
     layout_vector const& assigned_size,
     layout_scalar assigned_baseline_y)
 {
-    for (layout_node* i = children; i; i = i->next)
-    {
-        i->set_relative_assignment(relative_layout_assignment(
+    walk_layout_children(children, [&](layout_node& node) {
+        node.set_relative_assignment(relative_layout_assignment{
             layout_box(make_layout_vector(0, 0), assigned_size),
-            assigned_baseline_y));
-    }
+            assigned_baseline_y});
+    });
 }
 
 layout_scalar
 compute_total_height(layout_node* children, layout_scalar assigned_width)
 {
     layout_scalar total_height = 0;
-    for (layout_node* i = children; i; i = i->next)
-    {
-        layout_requirements y = i->get_vertical_requirements(assigned_width);
+    walk_layout_children(children, [&](layout_node& node) {
+        layout_requirements y = node.get_vertical_requirements(assigned_width);
         total_height += y.size;
-    }
+    });
     return total_height;
 }
 

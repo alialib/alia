@@ -15,75 +15,13 @@
 
 namespace alia { namespace indie {
 
-// scoped_layout_traversal sets up a non-refresh traversal for a layout system.
-struct scoped_layout_traversal
-{
-    scoped_layout_traversal()
-    {
-    }
-
-    scoped_layout_traversal(
-        layout_system& system,
-        layout_traversal& traversal,
-        vector<2, float> const& ppi)
-    {
-        begin(system, traversal, ppi);
-    }
-
-    ~scoped_layout_traversal()
-    {
-        end();
-    }
-
-    void
-    begin(
-        layout_system& system,
-        layout_traversal& traversal,
-        vector<2, float> const& ppi);
-
-    void
-    end()
-    {
-    }
-
- private:
-    layout_style_info dummy_style_info_;
-};
-
-// scoped_layout_refresh sets up a refresh for a layout system.
-struct scoped_layout_refresh
-{
-    scoped_layout_refresh()
-    {
-    }
-
-    scoped_layout_refresh(
-        layout_system& system,
-        layout_traversal& traversal,
-        vector<2, float> const& ppi)
-    {
-        begin(system, traversal, ppi);
-    }
-
-    ~scoped_layout_refresh()
-    {
-        end();
-    }
-
-    void
-    begin(
-        layout_system& system,
-        layout_traversal& traversal,
-        vector<2, float> const& ppi);
-
-    void
-    end()
-    {
-    }
-
- private:
-    layout_style_info dummy_style_info_;
-};
+void
+initialize_layout_traversal(
+    layout_system& system,
+    layout_traversal& traversal,
+    bool is_refresh,
+    layout_style_info* style,
+    vector<2, float> const& ppi);
 
 // Calculate the minimum space needed by the given layout system.
 layout_vector
