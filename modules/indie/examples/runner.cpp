@@ -10,6 +10,6 @@ int
 main(void)
 {
     indie::glfw_window the_window(
-        "alia test", make_vector<unsigned>(1200, 1600), my_ui);
+        "alia test", indie::make_vector<unsigned>(1200, 1600), my_ui);
     the_window.do_main_loop();
 }
