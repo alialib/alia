@@ -10,7 +10,7 @@
 // that are needed by a 2D UI library: vectors, boxes, transformation matrices,
 // etc.
 
-namespace alia {
+namespace alia { namespace indie {
 
 // VECTOR
 
@@ -273,14 +273,14 @@ uniform_vector(T value)
     return r;
 }
 
-} // namespace alia
+}} // namespace alia::indie
 
 // hash function
 template<unsigned N, class T>
-struct std::hash<alia::vector<N, T>>
+struct std::hash<alia::indie::vector<N, T>>
 {
     size_t
-    operator()(alia::vector<N, T> const& v) const
+    operator()(alia::indie::vector<N, T> const& v) const
     {
         size_t h = 0;
         for (unsigned i = 0; i != N; ++i)
@@ -289,7 +289,7 @@ struct std::hash<alia::vector<N, T>>
     }
 };
 
-namespace alia {
+namespace alia { namespace indie {
 
 // BOX
 
@@ -443,7 +443,7 @@ template<unsigned N, class T>
 box<N, T>
 add_border(box<N, T> const& box, T border)
 {
-    return alia::box<N, T>(
+    return indie::box<N, T>(
         box.corner - uniform_vector<N, T>(border),
         box.size + uniform_vector<N, T>(border * 2));
 }
@@ -453,7 +453,7 @@ template<unsigned N, class T>
 box<N, T>
 add_border(box<N, T> const& box, vector<N, T> const& border)
 {
-    return alia::box<N, T>(box.corner - border, box.size + border * 2);
+    return indie::box<N, T>(box.corner - border, box.size + border * 2);
 }
 
 template<typename T>
@@ -867,14 +867,14 @@ inverse(matrix<2, 2, T> const& m)
     return inv;
 }
 
+}} // namespace alia::indie
+
 // hash function
-} // namespace alia
-namespace std {
 template<unsigned M, unsigned N, class T>
-struct hash<alia::matrix<M, N, T>>
+struct std::hash<alia::indie::matrix<M, N, T>>
 {
     size_t
-    operator()(alia::matrix<M, N, T> const& m) const
+    operator()(alia::indie::matrix<M, N, T> const& m) const
     {
         size_t h = 0;
         for (unsigned i = 0; i != M; ++i)
@@ -885,8 +885,8 @@ struct hash<alia::matrix<M, N, T>>
         return h;
     }
 };
-} // namespace std
-namespace alia {
+
+namespace alia { namespace indie {
 
 // ANGLES
 
@@ -959,6 +959,6 @@ transform_box(matrix<3, 3, T> const& m, box<2, T> const& b)
     return result;
 }
 
-} // namespace alia
+}} // namespace alia::indie
 
 #endif

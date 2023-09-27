@@ -1,5 +1,6 @@
 #include <alia/indie/layout/api.hpp>
 #include <alia/indie/layout/system.hpp>
+#include <alia/indie/layout/traversal.hpp>
 #include <alia/indie/layout/utilities.hpp>
 
 #include <utility>

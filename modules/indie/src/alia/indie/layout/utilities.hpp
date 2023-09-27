@@ -5,7 +5,7 @@
 
 // This file defines various utilities for working with the layout system.
 
-namespace alia {
+namespace alia { namespace indie {
 
 // A lot of layout calculations are done in floating point and then converted
 // to integer coordinates (e.g., by rounding up sizes to a full pixel).
@@ -85,24 +85,6 @@ add_default_alignment(
     layout const& layout_spec,
     layout_flag_set x_alignment,
     layout_flag_set y_alignment);
-
-// Alternate forms for invoking the layout_node interface.
-inline layout_requirements
-get_horizontal_requirements(layout_node& node)
-{
-    return node.get_horizontal_requirements();
-}
-inline layout_requirements
-get_vertical_requirements(layout_node& node, layout_scalar assigned_width)
-{
-    return node.get_vertical_requirements(assigned_width);
-}
-inline void
-set_relative_assignment(
-    layout_node& node, relative_layout_assignment const& assignment)
-{
-    node.set_relative_assignment(assignment);
-}
 
 // Initialize a container for use within the given context.
 void
@@ -225,9 +207,9 @@ operator+=(box_border_width<Scalar>& a, box_border_width<Scalar> const& b)
 template<class Scalar>
 box<2, Scalar>
 add_border(
-    alia::box<2, Scalar> const& box, box_border_width<Scalar> const& border)
+    indie::box<2, Scalar> const& box, box_border_width<Scalar> const& border)
 {
-    return alia::box<2, Scalar>(
+    return indie::box<2, Scalar>(
         box.corner - make_vector(border.left, border.top),
         box.size
             + make_vector(
@@ -239,7 +221,7 @@ box<2, Scalar>
 remove_border(
     box<2, Scalar> const& box, box_border_width<Scalar> const& border)
 {
-    return alia::box<2, Scalar>(
+    return indie::box<2, Scalar>(
         box.corner + make_vector(border.left, border.top),
         box.size
             - make_vector(
@@ -589,7 +571,7 @@ struct layout_leaf : layout_node
     leaf_layout_requirements requirements_;
 
     // resolved relative assignment
-    alia::relative_layout_assignment relative_assignment_;
+    indie::relative_layout_assignment relative_assignment_;
 };
 
 // Some macros for implementing simple layout containers.
@@ -647,6 +629,6 @@ assign_identical_child_regions(
 layout_scalar
 compute_total_height(layout_node* children, layout_scalar assigned_width);
 
-} // namespace alia
+}} // namespace alia::indie
 
 #endif
