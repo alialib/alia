@@ -603,6 +603,15 @@ struct layout_leaf : layout_node
 
 // Various utilities for working with layout children...
 
+// Walk through the children of a layout container.
+template<class Visitor>
+void
+walk_layout_children(layout_node* children, Visitor&& visitor)
+{
+    for (layout_node* child = children; child; child = child->next)
+        std::forward<Visitor>(visitor)(*child);
+}
+
 // Get the required width of the widest child in the list.
 layout_scalar
 get_max_child_width(layout_node* children);

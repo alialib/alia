@@ -64,10 +64,16 @@ struct absolute_length
     {
     }
 };
-bool
-operator==(absolute_length const& a, absolute_length const& b);
-bool
-operator!=(absolute_length const& a, absolute_length const& b);
+inline bool
+operator==(absolute_length const& a, absolute_length const& b)
+{
+    return a.length == b.length && a.units == b.units;
+}
+inline bool
+operator!=(absolute_length const& a, absolute_length const& b)
+{
+    return !(a == b);
+}
 
 // 2D version of absolute_length
 typedef vector<2, absolute_length> absolute_size;
@@ -92,10 +98,17 @@ struct relative_length
     {
     }
 };
-bool
-operator==(relative_length const& a, relative_length const& b);
-bool
-operator!=(relative_length const& a, relative_length const& b);
+inline bool
+operator==(relative_length const& a, relative_length const& b)
+{
+    return a.length == b.length && a.is_relative == b.is_relative
+           && (!a.is_relative || a.units == b.units);
+}
+inline bool
+operator!=(relative_length const& a, relative_length const& b)
+{
+    return !(a == b);
+}
 
 // 2D version of relative_length
 typedef vector<2, relative_length> relative_size;
@@ -228,10 +241,17 @@ struct layout
     layout_flag_set flags;
     float growth_factor;
 };
-bool
-operator==(layout const& a, layout const& b);
-bool
-operator!=(layout const& a, layout const& b);
+inline bool
+operator==(layout const& a, layout const& b)
+{
+    return a.size == b.size && a.flags == b.flags
+           && a.growth_factor == b.growth_factor;
+}
+inline bool
+operator!=(layout const& a, layout const& b)
+{
+    return !(a == b);
+}
 
 layout const default_layout;
 

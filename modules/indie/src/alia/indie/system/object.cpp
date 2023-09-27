@@ -12,28 +12,24 @@ system::invoke_controller(vanilla_context vanilla_ctx)
 {
     indie::traversal traversal;
 
-    scoped_layout_refresh slr;
-    scoped_layout_traversal slt;
+    layout_style_info style_info;
+    initialize_layout_traversal(
+        this->layout,
+        traversal.layout,
+        is_refresh_event(vanilla_ctx),
+        &style_info,
+        make_vector<float>(200, 200)); // TODO
 
     if (is_refresh_event(vanilla_ctx))
-    {
         traversal.widgets.next_ptr = &this->root_widget;
-        slr.begin(
-            this->layout,
-            traversal.layout,
-            make_vector<float>(200, 200)); // TODO
-    }
-    else
-    {
-        slt.begin(
-            this->layout, traversal.layout, make_vector<float>(200, 200));
-    }
 
     auto ctx = extend_context<traversal_tag>(
         extend_context<system_tag>(vanilla_ctx, *this), traversal);
 
     this->controller(ctx);
-    traversal.widgets.next_ptr = nullptr;
+
+    if (is_refresh_event(vanilla_ctx))
+        *traversal.widgets.next_ptr = nullptr;
 }
 
 }} // namespace alia::indie

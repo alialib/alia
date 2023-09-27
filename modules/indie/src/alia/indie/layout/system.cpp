@@ -3,8 +3,8 @@
 
 namespace alia { namespace indie {
 
-static void
-initialize_traversal(
+void
+initialize_layout_traversal(
     layout_system& system,
     layout_traversal& traversal,
     bool is_refresh,
@@ -25,22 +25,6 @@ initialize_traversal(
     style->padding_size = make_layout_vector(4, 4);
     style->magnification = 1;
 }
-void
-scoped_layout_traversal::begin(
-    layout_system& system,
-    layout_traversal& traversal,
-    vector<2, float> const& ppi)
-{
-    initialize_traversal(system, traversal, false, &dummy_style_info_, ppi);
-}
-void
-scoped_layout_refresh::begin(
-    layout_system& system,
-    layout_traversal& traversal,
-    vector<2, float> const& ppi)
-{
-    initialize_traversal(system, traversal, true, &dummy_style_info_, ppi);
-}
 
 void
 resolve_layout(layout_node* root_node, layout_vector const& size)
@@ -49,8 +33,8 @@ resolve_layout(layout_node* root_node, layout_vector const& size)
     {
         root_node->get_horizontal_requirements();
         layout_requirements y = root_node->get_vertical_requirements(size[0]);
-        root_node->set_relative_assignment(relative_layout_assignment(
-            layout_box(make_layout_vector(0, 0), size), y.ascent));
+        root_node->set_relative_assignment(relative_layout_assignment{
+            layout_box(make_layout_vector(0, 0), size), y.ascent});
     }
 }
 
