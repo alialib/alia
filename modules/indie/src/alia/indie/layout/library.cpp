@@ -116,12 +116,11 @@ compute_total_width_and_growth(
 {
     *total_width = 0;
     *total_growth = 0;
-    for (layout_node* i = children; i; i = i->next)
-    {
-        layout_requirements r = i->get_horizontal_requirements();
+    walk_layout_children(children, [&](layout_node& node) {
+        layout_requirements r = node.get_horizontal_requirements();
         *total_width += r.size;
         *total_growth += r.growth_factor;
-    }
+    });
 }
 
 calculated_layout_requirements
@@ -162,14 +161,13 @@ row_layout_logic::get_vertical_requirements(
     layout_scalar remaining_extra_size = assigned_width - total_size;
     float remaining_growth = total_growth;
     calculated_layout_requirements requirements(0, 0, 0);
-    for (layout_node* i = children; i; i = i->next)
-    {
-        layout_requirements x = i->get_horizontal_requirements();
+    walk_layout_children(children, [&](layout_node& node) {
+        layout_requirements x = node.get_horizontal_requirements();
         layout_scalar this_width = calculate_child_size(
             remaining_extra_size, remaining_growth, x.size, x.growth_factor);
         fold_in_requirements(
-            requirements, i->get_vertical_requirements(this_width));
-    }
+            requirements, node.get_vertical_requirements(this_width));
+    });
     return requirements;
 }
 
@@ -185,16 +183,15 @@ row_layout_logic::set_relative_assignment(
     layout_vector p = make_layout_vector(0, 0);
     layout_scalar remaining_extra_size = assigned_size[0] - total_size;
     float remaining_growth = total_growth;
-    for (layout_node* i = children; i; i = i->next)
-    {
-        layout_requirements x = i->get_horizontal_requirements();
+    walk_layout_children(children, [&](layout_node& node) {
+        layout_requirements x = node.get_horizontal_requirements();
         layout_scalar this_width = calculate_child_size(
             remaining_extra_size, remaining_growth, x.size, x.growth_factor);
-        i->set_relative_assignment(relative_layout_assignment(
+        node.set_relative_assignment(relative_layout_assignment{
             layout_box(p, make_layout_vector(this_width, assigned_size[1])),
-            assigned_baseline_y));
+            assigned_baseline_y});
         p[0] += this_width;
-    }
+    });
 }
 
 void
@@ -220,23 +217,22 @@ column_layout_logic::get_vertical_requirements(
 {
     layout_scalar total_height = 0;
     layout_scalar ascent = 0, descent = 0;
-    for (layout_node* i = children; i; i = i->next)
-    {
-        layout_requirements r = i->get_vertical_requirements(assigned_width);
+    walk_layout_children(children, [&](layout_node& node) {
+        layout_requirements r = node.get_vertical_requirements(assigned_width);
         total_height += r.size;
         // The ascent of a column is the ascent of its first child.
-        // Its descent is the descent of its first child plus the total height
-        // of all other children.
-        // However, if the first child doesn't care about the baseline, then
-        // the column ignores it as well.
-        if (i == children)
+        // Its descent is the descent of its first child plus the total
+        // height of all other children. However, if the first child
+        // doesn't care about the baseline, then the column ignores it as
+        // well.
+        if (&node == children)
         {
             ascent = r.ascent;
             descent = r.descent;
         }
         else if (ascent != 0 || descent != 0)
             descent += r.size;
-    }
+    });
     return calculated_layout_requirements(total_height, ascent, descent);
 }
 
@@ -248,33 +244,34 @@ column_layout_logic::set_relative_assignment(
 {
     layout_scalar total_size = 0;
     float total_growth = 0;
-    for (layout_node* i = children; i; i = i->next)
-    {
-        layout_requirements x = i->get_vertical_requirements(assigned_size[0]);
+    walk_layout_children(children, [&](layout_node& node) {
+        layout_requirements x
+            = node.get_vertical_requirements(assigned_size[0]);
         total_size += x.size;
         total_growth += x.growth_factor;
-    }
+    });
     layout_vector p = make_layout_vector(0, 0);
     layout_scalar remaining_extra_size = assigned_size[1] - total_size;
     float remaining_growth = total_growth;
-    for (layout_node* i = children; i; i = i->next)
-    {
-        layout_requirements y = i->get_vertical_requirements(assigned_size[0]);
+    walk_layout_children(children, [&](layout_node& node) {
+        layout_requirements y
+            = node.get_vertical_requirements(assigned_size[0]);
         layout_scalar this_height = calculate_child_size(
             remaining_extra_size, remaining_growth, y.size, y.growth_factor);
-        // If this is the first child, assign it the baseline of the column.
-        // The exception to this rule is when the column was allocated more
-        // space than it requested. In this case, the baseline calculation
-        // may have been inconsistent with how the column is planning to
-        // allocate the extra space.
+        // If this is the first child, assign it the baseline of the
+        // column. The exception to this rule is when the column was
+        // allocated more space than it requested. In this case, the
+        // baseline calculation may have been inconsistent with how the
+        // column is planning to allocate the extra space.
         layout_scalar this_baseline
-            = i == children && remaining_extra_size == 0 ? assigned_baseline_y
-                                                         : y.ascent;
-        i->set_relative_assignment(relative_layout_assignment(
+            = &node == children && remaining_extra_size == 0
+                  ? assigned_baseline_y
+                  : y.ascent;
+        node.set_relative_assignment(relative_layout_assignment{
             layout_box(p, make_layout_vector(assigned_size[0], this_height)),
-            this_baseline));
+            this_baseline});
         p[1] += this_height;
-    }
+    });
 }
 
 void
@@ -354,12 +351,12 @@ ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA(flow_layout_logic,
     flow_layout_logic::get_horizontal_requirements(layout_node* children)
 {
     // In the worst case scenario, we can put one child on each row, so the
-    // required width is simply the minimal width required by the widest child.
+    // required width is simply the minimal width required by the widest
+    // child.
     calculated_layout_requirements requirements(0, 0, 0);
-    for (layout_node* i = children; i; i = i->next)
-    {
-        fold_in_requirements(requirements, i->get_horizontal_requirements());
-    }
+    walk_layout_children(children, [&](layout_node& node) {
+        fold_in_requirements(requirements, node.get_horizontal_requirements());
+    });
     return requirements;
 }
 
@@ -374,7 +371,7 @@ wrap_row(wrapping_state& state)
     if (state.rows)
         state.rows->push_back(state.active_row);
     state.active_row.y += state.active_row.requirements.size;
-    state.active_row.requirements = layout_requirements(0, 0, 0, 0);
+    state.active_row.requirements = layout_requirements{0, 0, 0, 0};
     state.accumulated_width = state.visible_width = 0;
 }
 layout_scalar
@@ -423,12 +420,13 @@ calculate_wrapping(
     wrapping_state state;
     state.assigned_width = assigned_width;
     state.accumulated_width = 0;
-    state.active_row.requirements = layout_requirements(0, 0, 0, 0);
+    state.active_row.requirements = layout_requirements{0, 0, 0, 0};
     state.active_row.y = 0;
     state.rows = rows;
 
-    for (layout_node* i = children; i; i = i->next)
-        calculate_node_wrapping(state, *i);
+    walk_layout_children(children, [&](layout_node& node) {
+        calculate_node_wrapping(state, node);
+    });
     // Include the last/current row in the height requirements.
     wrap_row(state);
 
@@ -443,8 +441,8 @@ flow_layout_logic::get_vertical_requirements(
     layout_scalar total_height
         = calculate_wrapping(children, assigned_width, &rows);
 
-    // Similar to the column, the flow layout uses the baseline of the first
-    // row as the baseline of the whole layout (if there is one).
+    // Similar to the column, the flow layout uses the baseline of the
+    // first row as the baseline of the whole layout (if there is one).
     layout_scalar ascent = 0, descent = 0;
     if (!rows.empty())
     {
@@ -466,11 +464,11 @@ assign_wrapped_regions(wrapping_assignment_state& state, layout_node& node)
     if (state.x + x.size > state.assigned_width)
         wrap_row(state);
     layout_scalar row_height = state.active_row->requirements.size;
-    node.set_relative_assignment(relative_layout_assignment(
+    node.set_relative_assignment(relative_layout_assignment{
         layout_box(
             make_layout_vector(state.x, state.active_row->y),
             make_layout_vector(x.size, row_height)),
-        state.active_row->requirements.ascent));
+        state.active_row->requirements.ascent});
     state.x += x.size;
 }
 
@@ -480,8 +478,8 @@ flow_layout_logic::set_relative_assignment(
     layout_vector const& assigned_size,
     layout_scalar /*assigned_baseline_y*/)
 {
-    // First, compute the wrapping for the assigned width so that we know the
-    // vertical requirements on each row.
+    // First, compute the wrapping for the assigned width so that we know
+    // the vertical requirements on each row.
     std::vector<wrapped_row> rows;
     calculate_wrapping(children, assigned_size[0], &rows);
 
@@ -494,8 +492,9 @@ flow_layout_logic::set_relative_assignment(
     state.active_row = rows.begin();
     state.end_row = rows.end();
     state.x_alignment = x_alignment_;
-    for (layout_node* i = children; i; i = i->next)
-        assign_wrapped_regions(state, *i);
+    walk_layout_children(children, [&](layout_node& node) {
+        assign_wrapped_regions(state, node);
+    });
 }
 
 void
@@ -504,9 +503,9 @@ flow_layout::concrete_begin(
     data_traversal& data,
     layout const& requested_layout_spec)
 {
-    // With a flow layout, we want to have the layout itself always fill the
-    // horizontal space and use the requested X alignment to position the
-    // individual rows in the flow.
+    // With a flow layout, we want to have the layout itself always fill
+    // the horizontal space and use the requested X alignment to position
+    // the individual rows in the flow.
     auto layout_spec = add_default_padding(requested_layout_spec, PADDED);
     layout_flag_set x_alignment = FILL_X;
     if ((layout_spec.flags.code & 0x3) != 0)
@@ -529,8 +528,9 @@ ALIA_DECLARE_LAYOUT_LOGIC(vertical_flow_layout_logic)
 calculated_layout_requirements
 vertical_flow_layout_logic::get_horizontal_requirements(layout_node* children)
 {
-    // In the worst case scenario, we can put all children in one column, so
-    // the required width is simply the width required by the widest child.
+    // In the worst case scenario, we can put all children in one column,
+    // so the required width is simply the width required by the widest
+    // child.
     return fold_horizontal_child_requirements(children);
 }
 
@@ -546,26 +546,25 @@ vertical_flow_layout_logic::get_vertical_requirements(
 
     layout_scalar average_column_height = total_height / n_columns;
 
-    // Break the children into columns and determine the longest column size.
-    // Each column accumulates children until it's at least as big as the
-    // average height. There are other strategies that would yield smaller and
-    // more balanced placements, but this one is simple and gives reasonable
-    // results.
+    // Break the children into columns and determine the longest column
+    // size. Each column accumulates children until it's at least as big as
+    // the average height. There are other strategies that would yield
+    // smaller and more balanced placements, but this one is simple and
+    // gives reasonable results.
     layout_scalar max_column_height = 0;
-    layout_node* child_i = children;
-    for (int i = 0; i != n_columns; ++i)
-    {
-        layout_scalar column_height = 0;
-        while (child_i && column_height < average_column_height)
+    layout_scalar current_column_height = 0;
+    int column_index = 0;
+    walk_layout_children(children, [&](layout_node& node) {
+        if (current_column_height >= average_column_height)
         {
-            layout_requirements y
-                = child_i->get_vertical_requirements(column_width);
-            column_height += y.size;
-            child_i = child_i->next;
+            if (current_column_height > max_column_height)
+                max_column_height = current_column_height;
+            ++column_index;
+            current_column_height = 0;
         }
-        if (column_height > max_column_height)
-            max_column_height = column_height;
-    }
+        layout_requirements y = node.get_vertical_requirements(column_width);
+        current_column_height += y.size;
+    });
 
     return calculated_layout_requirements(max_column_height, 0, 0);
 }
@@ -586,26 +585,24 @@ vertical_flow_layout_logic::set_relative_assignment(
 
     // Break the children into columns and assign their regions.
     // Each column accumulates children until it's at least as big as the
-    // average height. There are other strategies that would yield smaller and
-    // more balanced placements, but this one is simple and gives reasonable
-    // results.
-    layout_node* child_i = children;
-    layout_scalar bottom = average_column_height;
-    for (int i = 0; i != n_columns; ++i)
-    {
-        layout_vector p = make_layout_vector(0, 0);
-        p[0] += i * column_width;
-        while (child_i && p[1] < bottom)
+    // average height. There are other strategies that would yield smaller
+    // and more balanced placements, but this one is simple and gives
+    // reasonable results.
+    layout_vector p = make_layout_vector(0, 0);
+    int column_index = 0;
+    walk_layout_children(children, [&](layout_node& node) {
+        if (p[1] >= average_column_height)
         {
-            layout_requirements y
-                = child_i->get_vertical_requirements(column_width);
-            child_i->set_relative_assignment(relative_layout_assignment(
-                layout_box(p, make_layout_vector(column_width, y.size)),
-                y.ascent));
-            p[1] += y.size;
-            child_i = child_i->next;
+            ++column_index;
+            p[0] += column_width;
+            p[1] = 0;
         }
-    }
+        layout_requirements y = node.get_vertical_requirements(column_width);
+        node.set_relative_assignment(relative_layout_assignment{
+            layout_box(p, make_layout_vector(column_width, y.size)),
+            y.ascent});
+        p[1] += y.size;
+    });
 }
 
 void
@@ -671,13 +668,13 @@ clamped_layout_logic::set_relative_assignment(
                   ? assigned_size[i]
                   : (std::min)(assigned_size[i], this->max_size[i]);
     }
-    for (layout_node* i = children; i; i = i->next)
-    {
-        layout_requirements y = i->get_vertical_requirements(clamped_size[0]);
-        i->set_relative_assignment(relative_layout_assignment(
+    walk_layout_children(children, [&](layout_node& node) {
+        layout_requirements y
+            = node.get_vertical_requirements(clamped_size[0]);
+        node.set_relative_assignment(relative_layout_assignment{
             layout_box((assigned_size - clamped_size) / 2, clamped_size),
-            y.ascent));
-    }
+            y.ascent});
+    });
 }
 
 void
@@ -744,17 +741,16 @@ bordered_layout_logic::set_relative_assignment(
     layout_vector const& assigned_size,
     layout_scalar assigned_baseline_y)
 {
-    for (layout_node* i = children; i; i = i->next)
-    {
-        i->set_relative_assignment(relative_layout_assignment(
+    walk_layout_children(children, [&](layout_node& node) {
+        node.set_relative_assignment(relative_layout_assignment{
             layout_box(
                 make_layout_vector(border.left, border.top),
                 assigned_size
                     - make_layout_vector(
                         border.left + border.right,
                         border.top + border.bottom)),
-            assigned_baseline_y - border.top));
-    }
+            assigned_baseline_y - border.top});
+    });
 }
 
 void
@@ -848,7 +844,7 @@ static void
 clear_requirements(grid_column_requirements<uniform_grid_tag>& x)
 {
     x.n_columns = 0;
-    x.requirements = layout_requirements(0, 0, 0, 1);
+    x.requirements = layout_requirements{0, 0, 0, 1};
 }
 
 // Add the requirements for a column.
@@ -876,7 +872,7 @@ fold_in_requirements(
 {
     size_t n_columns = get_column_count(y);
     if (get_column_count(x) < n_columns)
-        x.columns.resize(n_columns, layout_requirements(0, 0, 0, 0));
+        x.columns.resize(n_columns, layout_requirements{0, 0, 0, 0});
     for (size_t i = 0; i != n_columns; ++i)
     {
         layout_requirements& xi = x.columns[i];
@@ -987,12 +983,13 @@ template<class Uniformity>
 void
 update_grid_column_requirements(grid_data<Uniformity>& grid)
 {
-    // Only update if something in the grid has changed since the last update.
+    // Only update if something in the grid has changed since the last
+    // update.
     if (grid.last_content_query != grid.container->last_content_change)
     {
-        // Clear the requirements for the grid and recompute them by iterating
-        // through the rows and folding each row's requirements into the main
-        // grid requirements.
+        // Clear the requirements for the grid and recompute them by
+        // iterating through the rows and folding each row's requirements
+        // into the main grid requirements.
         clear_requirements(grid.requirements);
         for (grid_row_container<Uniformity>* row = grid.rows; row;
              row = row->next)
@@ -1001,13 +998,10 @@ update_grid_column_requirements(grid_data<Uniformity>& grid)
             if (row->last_content_query != row->last_content_change)
             {
                 clear_requirements(row->requirements);
-                for (layout_node* child = row->children; child;
-                     child = child->next)
-                {
-                    layout_requirements x
-                        = child->get_horizontal_requirements();
+                walk_layout_children(row->children, [&](layout_node& node) {
+                    layout_requirements x = node.get_horizontal_requirements();
                     add_requirements(row->requirements, x);
-                }
+                });
                 row->last_content_query = row->last_content_change;
             }
             fold_in_requirements(grid.requirements, row->requirements);
@@ -1100,12 +1094,12 @@ calculate_grid_row_vertical_requirements(
         = calculate_column_assignments(grid, assigned_width);
     calculated_layout_requirements requirements(0, 0, 0);
     size_t column_index = 0;
-    for (layout_node* i = row.children; i; i = i->next, ++column_index)
-    {
+    walk_layout_children(row.children, [&](layout_node& node) {
         fold_in_requirements(
             requirements,
-            i->get_vertical_requirements(column_widths[column_index]));
-    }
+            node.get_vertical_requirements(column_widths[column_index]));
+        ++column_index;
+    });
     return requirements;
 }
 
@@ -1130,13 +1124,12 @@ calculate_grid_row_vertical_requirements(
              row = row->next)
         {
             size_t column_index = 0;
-            for (layout_node* child = row->children; child;
-                 child = child->next, ++column_index)
-            {
+            walk_layout_children(row->children, [&](layout_node& node) {
                 fold_in_requirements(
                     grid_requirements,
-                    child->get_vertical_requirements(widths[column_index]));
-            }
+                    node.get_vertical_requirements(widths[column_index]));
+                ++column_index;
+            });
         }
 
         cache.last_update = grid.container->last_content_change;
@@ -1171,14 +1164,13 @@ set_grid_row_relative_assignment(
         = calculate_column_assignments(grid, assigned_size[0]);
     size_t n = 0;
     layout_vector p = make_layout_vector(0, 0);
-    for (layout_node* i = children; i; i = i->next, ++n)
-    {
+    walk_layout_children(children, [&](layout_node& node) {
         layout_scalar this_width = column_widths[n];
-        i->set_relative_assignment(relative_layout_assignment(
+        node.set_relative_assignment(relative_layout_assignment{
             layout_box(p, make_layout_vector(this_width, assigned_size[1])),
-            assigned_baseline_y));
+            assigned_baseline_y});
         p[0] += this_width + grid.column_spacing;
-    }
+    });
 }
 
 template<class Uniformity>
@@ -1249,8 +1241,8 @@ refresh_grid_row(
     layout const& layout_spec)
 {
     // Add this row to the grid's list of rows.
-    // It doesn't matter what order the list is in, and adding the row to the
-    // front of the list is easier.
+    // It doesn't matter what order the list is in, and adding the row to
+    // the front of the list is easier.
     if (traversal.is_refresh_pass)
     {
         row.next = grid.rows;
@@ -1441,5 +1433,4 @@ floating_layout::size() const
 {
     return data_->size;
 }
-
 }} // namespace alia::indie

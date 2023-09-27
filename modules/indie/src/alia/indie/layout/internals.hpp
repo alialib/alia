@@ -17,31 +17,15 @@ namespace alia { namespace indie {
 // single axis.
 struct layout_requirements
 {
-    layout_scalar size;
+    layout_scalar size = 0;
 
     // The minimum space required on either side of the baseline.
-    layout_scalar ascent, descent;
+    layout_scalar ascent = 0, descent = 0;
 
     // If these is extra space in a container (above the minimum required by
     // its contents), it's apportioned to the individual widgets according to
     // the values they specify here.
-    float growth_factor;
-
-    layout_requirements()
-    {
-    }
-
-    layout_requirements(
-        layout_scalar size,
-        layout_scalar ascent,
-        layout_scalar descent,
-        float growth_factor)
-        : size(size),
-          ascent(ascent),
-          descent(descent),
-          growth_factor(growth_factor)
-    {
-    }
+    float growth_factor = 0;
 };
 
 // relative_layout_assignment stores the information that's passed down to a
@@ -52,16 +36,6 @@ struct relative_layout_assignment
 
     // the distance from the top of the region to the baseline
     layout_scalar baseline_y;
-
-    relative_layout_assignment()
-    {
-    }
-
-    relative_layout_assignment(
-        layout_box const& region, layout_scalar baseline_y)
-        : region(region), baseline_y(baseline_y)
-    {
-    }
 };
 inline bool
 operator==(
@@ -139,7 +113,7 @@ struct layout_node
         = 0;
 
     // next node in the list of siblings
-    layout_node* next;
+    layout_node* next = nullptr;
 };
 
 // All nodes in a layout tree with children derive from this.
