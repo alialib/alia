@@ -13,7 +13,7 @@
 // querying the nodes in that tree. It also uses this representation to track
 // changes in the tree and detect when it can reuse cached results.
 
-namespace alia {
+namespace alia { namespace indie {
 
 // scoped_layout_traversal sets up a non-refresh traversal for a layout system.
 struct scoped_layout_traversal
@@ -100,6 +100,6 @@ resolve_layout(layout_system& system, layout_vector const& size);
 void
 resolve_layout(layout_node* root_node, layout_vector const& size);
 
-} // namespace alia
+}} // namespace alia::indie
 
 #endif

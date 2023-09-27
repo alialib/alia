@@ -2,6 +2,7 @@
 
 #include <alia/indie/layout/api.hpp>
 #include <alia/indie/layout/system.hpp>
+#include <alia/indie/layout/traversal.hpp>
 #include <alia/indie/widget.hpp>
 
 namespace alia { namespace indie {

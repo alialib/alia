@@ -1,17 +1,69 @@
-#include "alia/indie/layout/internals.hpp"
-#include <alia/indie/layout/api.hpp>
-#include <alia/indie/layout/system.hpp>
-#include <alia/indie/layout/utilities.hpp>
-
-#include <alia/core/flow/macros.hpp>
+#include <alia/indie/layout/library.hpp>
 
 #include <algorithm>
 #include <vector>
 
+#include <alia/core/flow/macros.hpp>
+
+#include <alia/indie/layout/system.hpp>
+#include <alia/indie/layout/traversal.hpp>
+#include <alia/indie/layout/utilities.hpp>
+
 // This file implements the standard library of layout containers (and the
 // spacer, which is the only standard leaf).
 
-namespace alia {
+namespace alia { namespace indie {
+
+void
+scoped_layout_container::begin(
+    layout_traversal& traversal, layout_container* container)
+{
+    if (traversal.is_refresh_pass)
+    {
+        traversal_ = &traversal;
+
+        set_next_node(traversal, container);
+        container->parent = traversal.active_container;
+
+        traversal.next_ptr = &container->children;
+        traversal.active_container = container;
+    }
+}
+void
+scoped_layout_container::end()
+{
+    if (traversal_)
+    {
+        set_next_node(*traversal_, 0);
+
+        layout_container* container = traversal_->active_container;
+        traversal_->next_ptr = &container->next;
+        traversal_->active_container = container->parent;
+
+        traversal_ = 0;
+    }
+}
+
+layout_box
+get_container_region(simple_layout_container const& container)
+{
+    return layout_box(make_layout_vector(0, 0), container.assigned_size);
+}
+
+layout_box
+get_padded_container_region(simple_layout_container const& container)
+{
+    return layout_box(
+        container.cacher.relative_assignment.region.corner
+            - container.cacher.resolved_relative_assignment.region.corner,
+        container.cacher.relative_assignment.region.size);
+}
+
+layout_vector
+get_container_offset(simple_layout_container const& container)
+{
+    return get_assignment(container.cacher).region.corner;
+}
 
 void
 do_spacer(
@@ -66,7 +118,7 @@ compute_total_width_and_growth(
     *total_growth = 0;
     for (layout_node* i = children; i; i = i->next)
     {
-        layout_requirements r = get_horizontal_requirements(*i);
+        layout_requirements r = i->get_horizontal_requirements();
         *total_width += r.size;
         *total_growth += r.growth_factor;
     }
@@ -112,11 +164,11 @@ row_layout_logic::get_vertical_requirements(
     calculated_layout_requirements requirements(0, 0, 0);
     for (layout_node* i = children; i; i = i->next)
     {
-        layout_requirements x = alia::get_horizontal_requirements(*i);
+        layout_requirements x = i->get_horizontal_requirements();
         layout_scalar this_width = calculate_child_size(
             remaining_extra_size, remaining_growth, x.size, x.growth_factor);
         fold_in_requirements(
-            requirements, alia::get_vertical_requirements(*i, this_width));
+            requirements, i->get_vertical_requirements(this_width));
     }
     return requirements;
 }
@@ -135,15 +187,12 @@ row_layout_logic::set_relative_assignment(
     float remaining_growth = total_growth;
     for (layout_node* i = children; i; i = i->next)
     {
-        layout_requirements x = alia::get_horizontal_requirements(*i);
+        layout_requirements x = i->get_horizontal_requirements();
         layout_scalar this_width = calculate_child_size(
             remaining_extra_size, remaining_growth, x.size, x.growth_factor);
-        alia::set_relative_assignment(
-            *i,
-            relative_layout_assignment(
-                layout_box(
-                    p, make_layout_vector(this_width, assigned_size[1])),
-                assigned_baseline_y));
+        i->set_relative_assignment(relative_layout_assignment(
+            layout_box(p, make_layout_vector(this_width, assigned_size[1])),
+            assigned_baseline_y));
         p[0] += this_width;
     }
 }
@@ -173,8 +222,7 @@ column_layout_logic::get_vertical_requirements(
     layout_scalar ascent = 0, descent = 0;
     for (layout_node* i = children; i; i = i->next)
     {
-        layout_requirements r
-            = alia::get_vertical_requirements(*i, assigned_width);
+        layout_requirements r = i->get_vertical_requirements(assigned_width);
         total_height += r.size;
         // The ascent of a column is the ascent of its first child.
         // Its descent is the descent of its first child plus the total height
@@ -202,8 +250,7 @@ column_layout_logic::set_relative_assignment(
     float total_growth = 0;
     for (layout_node* i = children; i; i = i->next)
     {
-        layout_requirements x
-            = alia::get_vertical_requirements(*i, assigned_size[0]);
+        layout_requirements x = i->get_vertical_requirements(assigned_size[0]);
         total_size += x.size;
         total_growth += x.growth_factor;
     }
@@ -212,8 +259,7 @@ column_layout_logic::set_relative_assignment(
     float remaining_growth = total_growth;
     for (layout_node* i = children; i; i = i->next)
     {
-        layout_requirements y
-            = alia::get_vertical_requirements(*i, assigned_size[0]);
+        layout_requirements y = i->get_vertical_requirements(assigned_size[0]);
         layout_scalar this_height = calculate_child_size(
             remaining_extra_size, remaining_growth, y.size, y.growth_factor);
         // If this is the first child, assign it the baseline of the column.
@@ -224,12 +270,9 @@ column_layout_logic::set_relative_assignment(
         layout_scalar this_baseline
             = i == children && remaining_extra_size == 0 ? assigned_baseline_y
                                                          : y.ascent;
-        alia::set_relative_assignment(
-            *i,
-            relative_layout_assignment(
-                layout_box(
-                    p, make_layout_vector(assigned_size[0], this_height)),
-                this_baseline));
+        i->set_relative_assignment(relative_layout_assignment(
+            layout_box(p, make_layout_vector(assigned_size[0], this_height)),
+            this_baseline));
         p[1] += this_height;
     }
 }
@@ -516,7 +559,7 @@ vertical_flow_layout_logic::get_vertical_requirements(
         while (child_i && column_height < average_column_height)
         {
             layout_requirements y
-                = alia::get_vertical_requirements(*child_i, column_width);
+                = child_i->get_vertical_requirements(column_width);
             column_height += y.size;
             child_i = child_i->next;
         }
@@ -555,12 +598,10 @@ vertical_flow_layout_logic::set_relative_assignment(
         while (child_i && p[1] < bottom)
         {
             layout_requirements y
-                = alia::get_vertical_requirements(*child_i, column_width);
-            alia::set_relative_assignment(
-                *child_i,
-                relative_layout_assignment(
-                    layout_box(p, make_layout_vector(column_width, y.size)),
-                    y.ascent));
+                = child_i->get_vertical_requirements(column_width);
+            child_i->set_relative_assignment(relative_layout_assignment(
+                layout_box(p, make_layout_vector(column_width, y.size)),
+                y.ascent));
             p[1] += y.size;
             child_i = child_i->next;
         }
@@ -632,13 +673,10 @@ clamped_layout_logic::set_relative_assignment(
     }
     for (layout_node* i = children; i; i = i->next)
     {
-        layout_requirements y
-            = alia::get_vertical_requirements(*i, clamped_size[0]);
-        alia::set_relative_assignment(
-            *i,
-            relative_layout_assignment(
-                layout_box((assigned_size - clamped_size) / 2, clamped_size),
-                y.ascent));
+        layout_requirements y = i->get_vertical_requirements(clamped_size[0]);
+        i->set_relative_assignment(relative_layout_assignment(
+            layout_box((assigned_size - clamped_size) / 2, clamped_size),
+            y.ascent));
     }
 }
 
@@ -708,16 +746,14 @@ bordered_layout_logic::set_relative_assignment(
 {
     for (layout_node* i = children; i; i = i->next)
     {
-        alia::set_relative_assignment(
-            *i,
-            relative_layout_assignment(
-                layout_box(
-                    make_layout_vector(border.left, border.top),
-                    assigned_size
-                        - make_layout_vector(
-                            border.left + border.right,
-                            border.top + border.bottom)),
-                assigned_baseline_y - border.top));
+        i->set_relative_assignment(relative_layout_assignment(
+            layout_box(
+                make_layout_vector(border.left, border.top),
+                assigned_size
+                    - make_layout_vector(
+                        border.left + border.right,
+                        border.top + border.bottom)),
+            assigned_baseline_y - border.top));
     }
 }
 
@@ -969,7 +1005,7 @@ update_grid_column_requirements(grid_data<Uniformity>& grid)
                      child = child->next)
                 {
                     layout_requirements x
-                        = alia::get_horizontal_requirements(*child);
+                        = child->get_horizontal_requirements();
                     add_requirements(row->requirements, x);
                 }
                 row->last_content_query = row->last_content_change;
@@ -1068,7 +1104,7 @@ calculate_grid_row_vertical_requirements(
     {
         fold_in_requirements(
             requirements,
-            get_vertical_requirements(*i, column_widths[column_index]));
+            i->get_vertical_requirements(column_widths[column_index]));
     }
     return requirements;
 }
@@ -1099,8 +1135,7 @@ calculate_grid_row_vertical_requirements(
             {
                 fold_in_requirements(
                     grid_requirements,
-                    alia::get_vertical_requirements(
-                        *child, widths[column_index]));
+                    child->get_vertical_requirements(widths[column_index]));
             }
         }
 
@@ -1139,12 +1174,9 @@ set_grid_row_relative_assignment(
     for (layout_node* i = children; i; i = i->next, ++n)
     {
         layout_scalar this_width = column_widths[n];
-        alia::set_relative_assignment(
-            *i,
-            relative_layout_assignment(
-                layout_box(
-                    p, make_layout_vector(this_width, assigned_size[1])),
-                assigned_baseline_y));
+        i->set_relative_assignment(relative_layout_assignment(
+            layout_box(p, make_layout_vector(this_width, assigned_size[1])),
+            assigned_baseline_y));
         p[0] += this_width + grid.column_spacing;
     }
 }
@@ -1410,4 +1442,4 @@ floating_layout::size() const
     return data_->size;
 }
 
-} // namespace alia
+}} // namespace alia::indie

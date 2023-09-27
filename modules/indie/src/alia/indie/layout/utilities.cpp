@@ -4,7 +4,7 @@
 
 #include <algorithm>
 
-namespace alia {
+namespace alia { namespace indie {
 
 void
 fold_in_requirements(
@@ -483,7 +483,7 @@ relative_region_assignment::relative_region_assignment(
             cacher_->resolved_spec,
             assignment,
             cacher_->horizontal_requirements,
-            get_vertical_requirements(node, assignment.region.size[0]));
+            node.get_vertical_requirements(assignment.region.size[0]));
         if (cacher_->resolved_relative_assignment.region.size
                 != resolved_assignment.region.size
             || cacher_->resolved_relative_assignment.baseline_y
@@ -643,7 +643,7 @@ get_max_child_width(layout_node* children)
     layout_scalar width = 0;
     for (layout_node* i = children; i; i = i->next)
     {
-        layout_requirements x = alia::get_horizontal_requirements(*i);
+        layout_requirements x = i->get_horizontal_requirements();
         width = (std::max)(x.size, width);
     }
     return width;
@@ -663,7 +663,7 @@ fold_vertical_child_requirements(
     for (layout_node* i = children; i; i = i->next)
     {
         fold_in_requirements(
-            requirements, alia::get_vertical_requirements(*i, assigned_width));
+            requirements, i->get_vertical_requirements(assigned_width));
     }
     return requirements;
 }
@@ -676,11 +676,9 @@ assign_identical_child_regions(
 {
     for (layout_node* i = children; i; i = i->next)
     {
-        alia::set_relative_assignment(
-            *i,
-            relative_layout_assignment(
-                layout_box(make_layout_vector(0, 0), assigned_size),
-                assigned_baseline_y));
+        i->set_relative_assignment(relative_layout_assignment(
+            layout_box(make_layout_vector(0, 0), assigned_size),
+            assigned_baseline_y));
     }
 }
 
@@ -690,11 +688,10 @@ compute_total_height(layout_node* children, layout_scalar assigned_width)
     layout_scalar total_height = 0;
     for (layout_node* i = children; i; i = i->next)
     {
-        layout_requirements y
-            = alia::get_vertical_requirements(*i, assigned_width);
+        layout_requirements y = i->get_vertical_requirements(assigned_width);
         total_height += y.size;
     }
     return total_height;
 }
 
-} // namespace alia
+}} // namespace alia::indie

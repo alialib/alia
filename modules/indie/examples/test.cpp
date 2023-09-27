@@ -1,6 +1,7 @@
 #include <alia/core/flow/data_graph.hpp>
 #include <alia/core/flow/events.hpp>
 #include <alia/indie.hpp>
+#include <alia/indie/layout/library.hpp>
 #include <alia/indie/layout/utilities.hpp>
 #include <alia/indie/system/api.hpp>
 #include <alia/indie/system/input_constants.hpp>
@@ -17,6 +18,7 @@
 #include <include/core/SkPictureRecorder.h>
 
 using namespace alia;
+using namespace alia::indie;
 
 struct box_node : indie::leaf_widget
 {
@@ -150,7 +152,7 @@ void
 do_box(
     indie::context ctx,
     SkColor color,
-    layout const& layout_spec = alia::layout(TOP | LEFT | PADDED))
+    layout const& layout_spec = layout(TOP | LEFT | PADDED))
 {
     std::shared_ptr<box_node>* node_ptr;
     if (get_cached_data(ctx, &node_ptr))
@@ -170,8 +172,7 @@ do_box(
         node.refresh_layout(
             get<indie::traversal_tag>(ctx).layout,
             layout_spec,
-            alia::leaf_layout_requirements(
-                alia::make_layout_vector(100, 100), 0, 0));
+            leaf_layout_requirements(make_layout_vector(100, 100), 0, 0));
         add_layout_node(get<indie::traversal_tag>(ctx).layout, &node);
 
         // node.id_ = externalize(id);
@@ -202,13 +203,11 @@ do_box(
     }
 }
 
-namespace alia {
+namespace alia { namespace indie {
 
 ALIA_DECLARE_LAYOUT_LOGIC(column_layout_logic)
 ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA(flow_layout_logic,
                                     layout_flag_set x_alignment_;)
-
-namespace indie {
 
 layout_traversal&
 get_layout_traversal(context ctx)
@@ -852,7 +851,7 @@ update_grid_column_requirements(grid_data<Uniformity>& grid)
                      child = child->next)
                 {
                     layout_requirements x
-                        = alia::get_horizontal_requirements(*child);
+                        = child->get_horizontal_requirements();
                     add_requirements(row->requirements, x);
                 }
                 row->last_content_query = row->last_content_change;
@@ -941,57 +940,13 @@ calculated_layout_requirements
 calculate_grid_row_vertical_requirements(
     grid_data<nonuniform_grid_tag>& grid,
     grid_row_container<nonuniform_grid_tag>& row,
-    layout_scalar assigned_width)
-{
-    std::vector<layout_scalar> const& column_widths
-        = calculate_column_assignments(grid, assigned_width);
-    calculated_layout_requirements requirements(0, 0, 0);
-    size_t column_index = 0;
-    for (layout_node* i = row.layout_container::children; i;
-         i = i->next, ++column_index)
-    {
-        fold_in_requirements(
-            requirements,
-            get_vertical_requirements(*i, column_widths[column_index]));
-    }
-    return requirements;
-}
+    layout_scalar assigned_width);
 
 calculated_layout_requirements
 calculate_grid_row_vertical_requirements(
     grid_data<uniform_grid_tag>& grid,
-    grid_row_container<uniform_grid_tag>& /*row*/,
-    layout_scalar assigned_width)
-{
-    named_block nb;
-    auto& cache = grid.vertical_requirements_cache;
-    if (cache.last_update != grid.container->last_content_change)
-    {
-        update_grid_column_requirements(grid);
-
-        std::vector<layout_scalar> const& widths
-            = calculate_column_assignments(grid, assigned_width);
-
-        calculated_layout_requirements& grid_requirements = cache.requirements;
-        grid_requirements = calculated_layout_requirements(0, 0, 0);
-        for (grid_row_container<uniform_grid_tag>* row = grid.rows; row;
-             row = row->next)
-        {
-            size_t column_index = 0;
-            for (layout_node* child = row->layout_container::children; child;
-                 child = child->next, ++column_index)
-            {
-                fold_in_requirements(
-                    grid_requirements,
-                    alia::get_vertical_requirements(
-                        *child, widths[column_index]));
-            }
-        }
-
-        cache.last_update = grid.container->last_content_change;
-    }
-    return cache.requirements;
-}
+    grid_row_container<uniform_grid_tag>& row,
+    layout_scalar assigned_width);
 
 template<class Uniformity>
 layout_requirements
@@ -1023,12 +978,9 @@ set_grid_row_relative_assignment(
     for (layout_node* i = children; i; i = i->next, ++n)
     {
         layout_scalar this_width = column_widths[n];
-        alia::set_relative_assignment(
-            *i,
-            relative_layout_assignment(
-                layout_box(
-                    p, make_layout_vector(this_width, assigned_size[1])),
-                assigned_baseline_y));
+        i->set_relative_assignment(relative_layout_assignment(
+            layout_box(p, make_layout_vector(this_width, assigned_size[1])),
+            assigned_baseline_y));
         p[0] += this_width + grid.column_spacing;
     }
 }
@@ -1122,8 +1074,7 @@ do_spacer(indie::context ctx, layout const& layout_spec)
     }
 }
 
-} // namespace indie
-} // namespace alia
+}} // namespace alia::indie
 
 void
 my_ui(indie::context ctx)

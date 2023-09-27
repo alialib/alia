@@ -1,7 +1,7 @@
 #include <alia/indie/layout/system.hpp>
 #include <alia/indie/layout/utilities.hpp>
 
-namespace alia {
+namespace alia { namespace indie {
 
 static void
 initialize_traversal(
@@ -47,12 +47,10 @@ resolve_layout(layout_node* root_node, layout_vector const& size)
 {
     if (root_node)
     {
-        get_horizontal_requirements(*root_node);
-        layout_requirements y = get_vertical_requirements(*root_node, size[0]);
-        set_relative_assignment(
-            *root_node,
-            relative_layout_assignment(
-                layout_box(make_layout_vector(0, 0), size), y.ascent));
+        root_node->get_horizontal_requirements();
+        layout_requirements y = root_node->get_vertical_requirements(size[0]);
+        root_node->set_relative_assignment(relative_layout_assignment(
+            layout_box(make_layout_vector(0, 0), size), y.ascent));
     }
 }
 
@@ -72,9 +70,9 @@ get_minimum_size(layout_node* root_node)
     if (root_node)
     {
         layout_requirements horizontal
-            = get_horizontal_requirements(*root_node);
+            = root_node->get_horizontal_requirements();
         layout_requirements vertical
-            = get_vertical_requirements(*root_node, horizontal.size);
+            = root_node->get_vertical_requirements(horizontal.size);
         return make_layout_vector(horizontal.size, vertical.size);
     }
     else
@@ -87,4 +85,4 @@ get_minimum_size(layout_system& system)
     return get_minimum_size(system.root_node);
 }
 
-} // namespace alia
+}} // namespace alia::indie
