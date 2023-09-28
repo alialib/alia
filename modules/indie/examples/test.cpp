@@ -2,6 +2,7 @@
 #include <alia/core/flow/events.hpp>
 #include <alia/indie.hpp>
 #include <alia/indie/layout/library.hpp>
+#include <alia/indie/layout/logic.hpp>
 #include <alia/indie/layout/utilities.hpp>
 #include <alia/indie/system/api.hpp>
 #include <alia/indie/system/input_constants.hpp>
@@ -205,9 +206,8 @@ do_box(
 
 namespace alia { namespace indie {
 
-ALIA_DECLARE_LAYOUT_LOGIC(column_layout_logic)
-ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA(flow_layout_logic,
-                                    layout_flag_set x_alignment_;)
+ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA_OLD(flow_layout_logic,
+                                        layout_flag_set x_alignment_;)
 
 layout_traversal&
 get_layout_traversal(context ctx)
@@ -253,7 +253,8 @@ struct layout_container_widget : widget_container, LayoutContainer
         }
     }
 
-    void process_input(event_context) override
+    void
+    process_input(event_context) override
     {
     }
 };
@@ -277,7 +278,8 @@ struct simple_container_widget : widget_container
         }
     }
 
-    void process_input(event_context) override
+    void
+    process_input(event_context) override
     {
     }
 };
@@ -798,7 +800,8 @@ struct grid_row_container : layout_container, widget_container
         }
     }
 
-    void process_input(event_context) override
+    void
+    process_input(event_context) override
     {
     }
 
