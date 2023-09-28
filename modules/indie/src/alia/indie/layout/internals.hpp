@@ -94,10 +94,9 @@ struct wrapping_assignment_state
     layout_scalar x;
 };
 
-// layout_nodes make up the layout tree that is built by the system.
-struct layout_node
+struct layout_interface
 {
-    virtual ~layout_node()
+    virtual ~layout_interface()
     {
     }
 
@@ -111,7 +110,11 @@ struct layout_node
     virtual void
     set_relative_assignment(relative_layout_assignment const& assignment)
         = 0;
+};
 
+// layout_nodes make up the layout tree that is built by the system.
+struct layout_node : layout_interface
+{
     // next node in the list of siblings
     layout_node* next = nullptr;
 };
