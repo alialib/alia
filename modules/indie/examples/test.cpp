@@ -253,8 +253,7 @@ struct layout_container_widget : widget_container, LayoutContainer
         }
     }
 
-    void
-    process_input(event_context) override
+    void process_input(event_context) override
     {
     }
 };
@@ -278,8 +277,7 @@ struct simple_container_widget : widget_container
         }
     }
 
-    void
-    process_input(event_context) override
+    void process_input(event_context) override
     {
     }
 };
@@ -290,7 +288,7 @@ struct simple_container_widget : widget_container
 template<class Logic>
 struct layout_widget_container_storage
 {
-    layout_container_widget<simple_layout_container> container;
+    layout_container_widget<simple_layout_container<Logic>> container;
     Logic logic;
 };
 template<class Logic>
@@ -298,7 +296,7 @@ void
 get_layout_widget_container(
     layout_traversal& traversal,
     data_traversal& data,
-    layout_container_widget<simple_layout_container>** container,
+    layout_container_widget<simple_layout_container<Logic>>** container,
     Logic** logic,
     layout const& layout_spec)
 {
@@ -382,7 +380,9 @@ struct scoped_column
     }
 
  private:
-    layout_container_widget<simple_layout_container>* container_ = nullptr;
+    layout_container_widget<simple_layout_container<column_layout_logic>>*
+        container_
+        = nullptr;
     scoped_layout_container slc_;
     scoped_widget_container widget_scope_;
 };
@@ -460,7 +460,9 @@ struct scoped_flow_layout
     }
 
  private:
-    layout_container_widget<simple_layout_container>* container_ = nullptr;
+    layout_container_widget<simple_layout_container<flow_layout_logic>>*
+        container_
+        = nullptr;
     scoped_layout_container slc_;
     scoped_widget_container widget_scope_;
 };
@@ -715,7 +717,8 @@ scoped_grid_layout::concrete_begin(
     get_cached_data(data, &data_);
     refresh_grid(traversal, *data_);
 
-    layout_container_widget<simple_layout_container>* container;
+    layout_container_widget<simple_layout_container<column_layout_logic>>*
+        container;
     column_layout_logic* logic;
     get_layout_widget_container(
         traversal, data, &container, &logic, layout_spec);
@@ -795,8 +798,7 @@ struct grid_row_container : layout_container, widget_container
         }
     }
 
-    void
-    process_input(event_context) override
+    void process_input(event_context) override
     {
     }
 
