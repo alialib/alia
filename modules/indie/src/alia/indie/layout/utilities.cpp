@@ -537,7 +537,7 @@ layout_leaf::get_horizontal_requirements()
     return requirements;
 }
 layout_requirements
-    layout_leaf::get_vertical_requirements(layout_scalar /*assigned_width*/)
+layout_leaf::get_vertical_requirements(layout_scalar /*assigned_width*/)
 {
     layout_requirements requirements;
     resolve_requirements(
@@ -598,7 +598,7 @@ layout_scalar
 get_max_child_width(layout_node* children)
 {
     layout_scalar width = 0;
-    walk_layout_children(children, [&](layout_node& node) {
+    walk_layout_nodes(children, [&](layout_node& node) {
         layout_requirements x = node.get_horizontal_requirements();
         width = (std::max)(x.size, width);
     });
@@ -616,7 +616,7 @@ fold_vertical_child_requirements(
     layout_node* children, layout_scalar assigned_width)
 {
     calculated_layout_requirements requirements(0, 0, 0);
-    walk_layout_children(children, [&](layout_node& node) {
+    walk_layout_nodes(children, [&](layout_node& node) {
         fold_in_requirements(
             requirements, node.get_vertical_requirements(assigned_width));
     });
@@ -629,7 +629,7 @@ assign_identical_child_regions(
     layout_vector const& assigned_size,
     layout_scalar assigned_baseline_y)
 {
-    walk_layout_children(children, [&](layout_node& node) {
+    walk_layout_nodes(children, [&](layout_node& node) {
         node.set_relative_assignment(relative_layout_assignment{
             layout_box(make_layout_vector(0, 0), assigned_size),
             assigned_baseline_y});
@@ -640,7 +640,7 @@ layout_scalar
 compute_total_height(layout_node* children, layout_scalar assigned_width)
 {
     layout_scalar total_height = 0;
-    walk_layout_children(children, [&](layout_node& node) {
+    walk_layout_nodes(children, [&](layout_node& node) {
         layout_requirements y = node.get_vertical_requirements(assigned_width);
         total_height += y.size;
     });

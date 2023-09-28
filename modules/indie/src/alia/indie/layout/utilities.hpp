@@ -597,7 +597,7 @@ struct layout_leaf : layout_node
 
 // Some macros for implementing simple layout containers.
 
-#define ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA(logic_type, data)                 \
+#define ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA_OLD(logic_type, data)             \
     struct logic_type                                                         \
     {                                                                         \
         calculated_layout_requirements                                        \
@@ -613,8 +613,8 @@ struct layout_leaf : layout_node
         data                                                                  \
     };
 
-#define ALIA_DECLARE_LAYOUT_LOGIC(logic_type)                                 \
-    ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA(logic_type, )
+#define ALIA_DECLARE_LAYOUT_LOGIC_OLD(logic_type)                             \
+    ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA_OLD(logic_type, )
 
 #define ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(logic_type)                        \
     logic_type* logic;                                                        \
@@ -627,7 +627,7 @@ struct layout_leaf : layout_node
 // Walk through the children of a layout container.
 template<class Visitor>
 void
-walk_layout_children(layout_node* children, Visitor&& visitor)
+walk_layout_nodes(layout_node* children, Visitor&& visitor)
 {
     for (layout_node* child = children; child; child = child->next)
         std::forward<Visitor>(visitor)(*child);
