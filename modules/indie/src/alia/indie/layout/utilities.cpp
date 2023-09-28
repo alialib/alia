@@ -511,49 +511,6 @@ initialize(layout_traversal& traversal, layout_container& container)
     container.last_content_change = traversal.refresh_counter;
 }
 
-layout_requirements
-simple_layout_container::get_horizontal_requirements()
-{
-    horizontal_layout_query query(cacher, last_content_change);
-    if (query.update_required())
-    {
-        query.update(logic->get_horizontal_requirements(children));
-    }
-    return query.result();
-}
-layout_requirements
-simple_layout_container::get_vertical_requirements(
-    layout_scalar assigned_width)
-{
-    vertical_layout_query query(cacher, last_content_change, assigned_width);
-    if (query.update_required())
-    {
-        query.update(logic->get_vertical_requirements(
-            children,
-            resolve_assigned_width(
-                this->cacher.resolved_spec,
-                assigned_width,
-                this->get_horizontal_requirements())));
-    }
-    return query.result();
-}
-void
-simple_layout_container::set_relative_assignment(
-    relative_layout_assignment const& assignment)
-{
-    relative_region_assignment rra(
-        *this, cacher, last_content_change, assignment);
-    if (rra.update_required())
-    {
-        this->assigned_size = rra.resolved_assignment().region.size;
-        logic->set_relative_assignment(
-            children,
-            rra.resolved_assignment().region.size,
-            rra.resolved_assignment().baseline_y);
-        rra.update();
-    }
-}
-
 bool
 operator==(
     leaf_layout_requirements const& a, leaf_layout_requirements const& b)
@@ -580,7 +537,7 @@ layout_leaf::get_horizontal_requirements()
     return requirements;
 }
 layout_requirements
-layout_leaf::get_vertical_requirements(layout_scalar /*assigned_width*/)
+    layout_leaf::get_vertical_requirements(layout_scalar /*assigned_width*/)
 {
     layout_requirements requirements;
     resolve_requirements(

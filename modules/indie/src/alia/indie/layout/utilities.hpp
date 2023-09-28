@@ -436,35 +436,56 @@ get_assignment(layout_cacher const& cacher)
 // logic they use to calculate their requirements and divide their space
 // amongst their children.
 // All the shared behavior is refactored into simple_layout_container.
-// layout_logic is implemented for each individual container to define the
-// container-specific layout behavior.
-struct layout_logic
-{
-    virtual calculated_layout_requirements
-    get_horizontal_requirements(layout_node* children)
-        = 0;
-    virtual calculated_layout_requirements
-    get_vertical_requirements(
-        layout_node* children, layout_scalar assigned_width)
-        = 0;
-    virtual void
-    set_relative_assignment(
-        layout_node* children,
-        layout_vector const& size,
-        layout_scalar baseline_y)
-        = 0;
-};
+template<class Logic>
 struct simple_layout_container : layout_container
 {
     // implementation of layout interface
     layout_requirements
-    get_horizontal_requirements();
-    layout_requirements
-    get_vertical_requirements(layout_scalar assigned_width);
-    void
-    set_relative_assignment(relative_layout_assignment const& assignment);
+    get_horizontal_requirements() override
+    {
+        horizontal_layout_query query(cacher, last_content_change);
+        if (query.update_required())
+        {
+            query.update(logic->get_horizontal_requirements(children));
+        }
+        return query.result();
+    }
 
-    layout_logic* logic;
+    layout_requirements
+    get_vertical_requirements(layout_scalar assigned_width) override
+    {
+        vertical_layout_query query(
+            cacher, last_content_change, assigned_width);
+        if (query.update_required())
+        {
+            query.update(logic->get_vertical_requirements(
+                children,
+                resolve_assigned_width(
+                    this->cacher.resolved_spec,
+                    assigned_width,
+                    this->get_horizontal_requirements())));
+        }
+        return query.result();
+    }
+
+    void
+    set_relative_assignment(
+        relative_layout_assignment const& assignment) override
+    {
+        relative_region_assignment rra(
+            *this, cacher, last_content_change, assignment);
+        if (rra.update_required())
+        {
+            this->assigned_size = rra.resolved_assignment().region.size;
+            logic->set_relative_assignment(
+                children,
+                rra.resolved_assignment().region.size,
+                rra.resolved_assignment().baseline_y);
+            rra.update();
+        }
+    }
+
+    Logic* logic;
 
     layout_cacher cacher;
 
@@ -477,7 +498,7 @@ struct simple_layout_container : layout_container
 template<class Logic>
 struct simple_layout_container_storage
 {
-    simple_layout_container container;
+    simple_layout_container<Logic> container;
     Logic logic;
 };
 template<class Logic>
@@ -485,7 +506,7 @@ void
 get_simple_layout_container(
     layout_traversal& traversal,
     data_traversal& data,
-    simple_layout_container** container,
+    simple_layout_container<Logic>** container,
     Logic** logic,
     layout const& layout_spec)
 {
@@ -577,7 +598,7 @@ struct layout_leaf : layout_node
 // Some macros for implementing simple layout containers.
 
 #define ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA(logic_type, data)                 \
-    struct logic_type : layout_logic                                          \
+    struct logic_type                                                         \
     {                                                                         \
         calculated_layout_requirements                                        \
         get_horizontal_requirements(layout_node* children);                   \

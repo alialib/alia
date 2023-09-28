@@ -44,27 +44,6 @@ scoped_layout_container::end()
     }
 }
 
-layout_box
-get_container_region(simple_layout_container const& container)
-{
-    return layout_box(make_layout_vector(0, 0), container.assigned_size);
-}
-
-layout_box
-get_padded_container_region(simple_layout_container const& container)
-{
-    return layout_box(
-        container.cacher.relative_assignment.region.corner
-            - container.cacher.resolved_relative_assignment.region.corner,
-        container.cacher.relative_assignment.region.size);
-}
-
-layout_vector
-get_container_offset(simple_layout_container const& container)
-{
-    return get_assignment(container.cacher).region.corner;
-}
-
 void
 do_spacer(
     layout_traversal& traversal,
@@ -194,19 +173,19 @@ row_layout_logic::set_relative_assignment(
     });
 }
 
-void
-row_layout::concrete_begin(
-    layout_traversal& traversal,
-    data_traversal& data,
-    layout const& layout_spec){
-    ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(row_layout_logic)}
+// void
+// row_layout::concrete_begin(
+//     layout_traversal& traversal,
+//     data_traversal& data,
+//     layout const& layout_spec){
+//     ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(row_layout_logic)}
 
 // COLUMN LAYOUT
 
 ALIA_DECLARE_LAYOUT_LOGIC(column_layout_logic)
 
-    calculated_layout_requirements
-    column_layout_logic::get_horizontal_requirements(layout_node* children)
+calculated_layout_requirements
+column_layout_logic::get_horizontal_requirements(layout_node* children)
 {
     return fold_horizontal_child_requirements(children);
 }
@@ -274,39 +253,39 @@ column_layout_logic::set_relative_assignment(
     });
 }
 
-void
-column_layout::concrete_begin(
-    layout_traversal& traversal,
-    data_traversal& data,
-    layout const& layout_spec)
-{
-    ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(column_layout_logic)
-}
+// void
+// column_layout::concrete_begin(
+//     layout_traversal& traversal,
+//     data_traversal& data,
+//     layout const& layout_spec)
+// {
+//     ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(column_layout_logic)
+// }
 
 // LINEAR LAYOUT - This just chooses between row and column logic.
 
-void
-linear_layout::concrete_begin(
-    layout_traversal& traversal,
-    data_traversal& data,
-    linear_layout_flag_set flags,
-    layout const& layout_spec)
-{
-    ALIA_IF_(data, flags & VERTICAL_LAYOUT)
-    {
-        column_layout_logic* logic;
-        get_simple_layout_container(
-            traversal, data, &container_, &logic, layout_spec);
-    }
-    ALIA_ELSE_(data)
-    {
-        row_layout_logic* logic;
-        get_simple_layout_container(
-            traversal, data, &container_, &logic, layout_spec);
-    }
-    ALIA_END
-    slc_.begin(traversal, container_);
-}
+// void
+// linear_layout::concrete_begin(
+//     layout_traversal& traversal,
+//     data_traversal& data,
+//     linear_layout_flag_set flags,
+//     layout const& layout_spec)
+// {
+//     ALIA_IF_(data, flags & VERTICAL_LAYOUT)
+//     {
+//         column_layout_logic* logic;
+//         get_simple_layout_container(
+//             traversal, data, &container_, &logic, layout_spec);
+//     }
+//     ALIA_ELSE_(data)
+//     {
+//         row_layout_logic* logic;
+//         get_simple_layout_container(
+//             traversal, data, &container_, &logic, layout_spec);
+//     }
+//     ALIA_END
+//     slc_.begin(traversal, container_);
+// }
 
 // LAYERED LAYOUT
 
@@ -335,20 +314,20 @@ layered_layout_logic::set_relative_assignment(
         children, assigned_size, assigned_baseline_y);
 }
 
-void
-layered_layout::concrete_begin(
-    layout_traversal& traversal,
-    data_traversal& data,
-    layout const& layout_spec){
-    ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(layered_layout_logic)}
+// void
+// layered_layout::concrete_begin(
+//     layout_traversal& traversal,
+//     data_traversal& data,
+//     layout const& layout_spec){
+//     ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(layered_layout_logic)}
 
 // FLOW LAYOUT
 
 ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA(flow_layout_logic,
                                     layout_flag_set x_alignment_;)
 
-    calculated_layout_requirements
-    flow_layout_logic::get_horizontal_requirements(layout_node* children)
+calculated_layout_requirements
+flow_layout_logic::get_horizontal_requirements(layout_node* children)
 {
     // In the worst case scenario, we can put one child on each row, so the
     // required width is simply the minimal width required by the widest
@@ -497,26 +476,26 @@ flow_layout_logic::set_relative_assignment(
     });
 }
 
-void
-flow_layout::concrete_begin(
-    layout_traversal& traversal,
-    data_traversal& data,
-    layout const& requested_layout_spec)
-{
-    // With a flow layout, we want to have the layout itself always fill
-    // the horizontal space and use the requested X alignment to position
-    // the individual rows in the flow.
-    auto layout_spec = add_default_padding(requested_layout_spec, PADDED);
-    layout_flag_set x_alignment = FILL_X;
-    if ((layout_spec.flags.code & 0x3) != 0)
-    {
-        x_alignment.code = layout_spec.flags.code & X_ALIGNMENT_MASK_CODE;
-        layout_spec.flags.code &= ~X_ALIGNMENT_MASK_CODE;
-        layout_spec.flags.code |= FILL_X_CODE;
-    }
-    ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(flow_layout_logic)
-    logic->x_alignment_ = x_alignment;
-}
+// void
+// flow_layout::concrete_begin(
+//     layout_traversal& traversal,
+//     data_traversal& data,
+//     layout const& requested_layout_spec)
+// {
+//     // With a flow layout, we want to have the layout itself always fill
+//     // the horizontal space and use the requested X alignment to position
+//     // the individual rows in the flow.
+//     auto layout_spec = add_default_padding(requested_layout_spec, PADDED);
+//     layout_flag_set x_alignment = FILL_X;
+//     if ((layout_spec.flags.code & 0x3) != 0)
+//     {
+//         x_alignment.code = layout_spec.flags.code & X_ALIGNMENT_MASK_CODE;
+//         layout_spec.flags.code &= ~X_ALIGNMENT_MASK_CODE;
+//         layout_spec.flags.code |= FILL_X_CODE;
+//     }
+//     ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(flow_layout_logic)
+//     logic->x_alignment_ = x_alignment;
+// }
 
 // VERTICAL FLOW LAYOUT
 
@@ -605,18 +584,18 @@ vertical_flow_layout_logic::set_relative_assignment(
     });
 }
 
-void
-vertical_flow_layout::concrete_begin(
-    layout_traversal& traversal,
-    data_traversal& data,
-    layout const& layout_spec)
-{
-    ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(vertical_flow_layout_logic)
-}
+// void
+// vertical_flow_layout::concrete_begin(
+//     layout_traversal& traversal,
+//     data_traversal& data,
+//     layout const& layout_spec)
+// {
+//     ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(vertical_flow_layout_logic)
+// }
 
 // CLAMPED LAYOUT
 
-struct clamped_layout_logic : layout_logic
+struct clamped_layout_logic
 {
     calculated_layout_requirements
     get_horizontal_requirements(layout_node* children);
@@ -677,29 +656,29 @@ clamped_layout_logic::set_relative_assignment(
     });
 }
 
-void
-clamped_layout::concrete_begin(
-    layout_traversal& traversal,
-    data_traversal& data,
-    absolute_size max_size,
-    layout const& layout_spec)
-{
-    clamped_layout_logic* logic;
-    get_simple_layout_container(
-        traversal, data, &container_, &logic, layout_spec);
-    slc_.begin(traversal, container_);
-    if (traversal.is_refresh_pass)
-    {
-        detect_layout_change(
-            traversal,
-            &logic->max_size,
-            as_layout_size(resolve_absolute_size(traversal, max_size)));
-    }
-}
+// void
+// clamped_layout::concrete_begin(
+//     layout_traversal& traversal,
+//     data_traversal& data,
+//     absolute_size max_size,
+//     layout const& layout_spec)
+// {
+//     clamped_layout_logic* logic;
+//     get_simple_layout_container(
+//         traversal, data, &container_, &logic, layout_spec);
+//     slc_.begin(traversal, container_);
+//     if (traversal.is_refresh_pass)
+//     {
+//         detect_layout_change(
+//             traversal,
+//             &logic->max_size,
+//             as_layout_size(resolve_absolute_size(traversal, max_size)));
+//     }
+// }
 
 // BORDERED LAYOUT
 
-struct bordered_layout_logic : layout_logic
+struct bordered_layout_logic
 {
     calculated_layout_requirements
     get_horizontal_requirements(layout_node* children);
@@ -753,25 +732,25 @@ bordered_layout_logic::set_relative_assignment(
     });
 }
 
-void
-bordered_layout::concrete_begin(
-    layout_traversal& traversal,
-    data_traversal& data,
-    box_border_width<absolute_length> border,
-    layout const& layout_spec)
-{
-    bordered_layout_logic* logic;
-    get_simple_layout_container(
-        traversal, data, &container_, &logic, layout_spec);
-    slc_.begin(traversal, container_);
-    if (traversal.is_refresh_pass)
-    {
-        detect_layout_change(
-            traversal,
-            &logic->border,
-            as_layout_size(resolve_box_border_width(traversal, border)));
-    }
-}
+// void
+// bordered_layout::concrete_begin(
+//     layout_traversal& traversal,
+//     data_traversal& data,
+//     box_border_width<absolute_length> border,
+//     layout const& layout_spec)
+// {
+//     bordered_layout_logic* logic;
+//     get_simple_layout_container(
+//         traversal, data, &container_, &logic, layout_spec);
+//     slc_.begin(traversal, container_);
+//     if (traversal.is_refresh_pass)
+//     {
+//         detect_layout_change(
+//             traversal,
+//             &logic->border,
+//             as_layout_size(resolve_box_border_width(traversal, border)));
+//     }
+// }
 
 // GRIDS
 
@@ -1272,7 +1251,7 @@ grid_layout::concrete_begin(
     get_cached_data(data, &data_);
     refresh_grid(traversal, *data_);
 
-    simple_layout_container* container;
+    simple_layout_container<column_layout_logic>* container;
     column_layout_logic* logic;
     get_simple_layout_container(
         traversal, data, &container, &logic, layout_spec);
@@ -1324,7 +1303,7 @@ uniform_grid_layout::concrete_begin(
     get_cached_data(*data_traversal_, &data_);
     refresh_grid(traversal, *data_);
 
-    simple_layout_container* container;
+    simple_layout_container<column_layout_logic>* container;
     column_layout_logic* logic;
     get_simple_layout_container(
         traversal, data, &container, &logic, layout_spec);
