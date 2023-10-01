@@ -17,7 +17,8 @@ namespace alia { namespace indie {
 
 void
 scoped_layout_container::begin(
-    layout_traversal& traversal, layout_container* container)
+    layout_traversal<layout_container, layout_node>& traversal,
+    layout_container* container)
 {
     if (traversal.is_refresh_pass)
     {
@@ -45,115 +46,48 @@ scoped_layout_container::end()
     }
 }
 
-void
-do_spacer(
-    layout_traversal& traversal,
-    data_traversal& data,
-    layout const& layout_spec)
-{
-    layout_leaf* node;
-    get_cached_data(data, &node);
+// void
+// do_spacer(
+//     layout_traversal& traversal,
+//     data_traversal& data,
+//     layout const& layout_spec)
+// {
+//     layout_leaf* node;
+//     get_cached_data(data, &node);
 
-    if (traversal.is_refresh_pass)
-    {
-        node->refresh_layout(
-            traversal,
-            layout_spec,
-            leaf_layout_requirements(make_layout_vector(0, 0), 0, 0));
-        add_layout_node(traversal, node);
-    }
-}
+//     if (traversal.is_refresh_pass)
+//     {
+//         node->refresh_layout(
+//             traversal,
+//             layout_spec,
+//             leaf_layout_requirements(make_layout_vector(0, 0), 0, 0));
+//         add_layout_node(traversal, node);
+//     }
+// }
 
-void
-do_spacer(
-    layout_traversal& traversal,
-    data_traversal& data,
-    layout_box* region,
-    layout const& layout_spec)
-{
-    layout_leaf* node;
-    get_cached_data(data, &node);
+// void
+// do_spacer(
+//     layout_traversal& traversal,
+//     data_traversal& data,
+//     layout_box* region,
+//     layout const& layout_spec)
+// {
+//     layout_leaf* node;
+//     get_cached_data(data, &node);
 
-    if (traversal.is_refresh_pass)
-    {
-        node->refresh_layout(
-            traversal,
-            layout_spec,
-            leaf_layout_requirements(make_layout_vector(0, 0), 0, 0));
-        add_layout_node(traversal, node);
-    }
-    else
-        *region = node->assignment().region;
-}
+//     if (traversal.is_refresh_pass)
+//     {
+//         node->refresh_layout(
+//             traversal,
+//             layout_spec,
+//             leaf_layout_requirements(make_layout_vector(0, 0), 0, 0));
+//         add_layout_node(traversal, node);
+//     }
+//     else
+//         *region = node->assignment().region;
+// }
 
 // ROW LAYOUT
-
-ALIA_DECLARE_LAYOUT_LOGIC_OLD(row_layout_logic)
-
-static void
-compute_total_width_and_growth(
-    layout_scalar* total_width, float* total_growth, layout_node* children)
-{
-    *total_width = 0;
-    *total_growth = 0;
-    walk_layout_nodes(children, [&](layout_node& node) {
-        layout_requirements r = node.get_horizontal_requirements();
-        *total_width += r.size;
-        *total_growth += r.growth_factor;
-    });
-}
-
-calculated_layout_requirements
-row_layout_logic::get_horizontal_requirements(layout_node* children)
-{
-    layout_scalar total_size;
-    float total_growth;
-    compute_total_width_and_growth(&total_size, &total_growth, children);
-    return calculated_layout_requirements(total_size, 0, 0);
-}
-
-calculated_layout_requirements
-row_layout_logic::get_vertical_requirements(
-    layout_node* children, layout_scalar assigned_width)
-{
-    layout_scalar total_size;
-    float total_growth;
-    compute_total_width_and_growth(&total_size, &total_growth, children);
-    layout_scalar remaining_extra_size = assigned_width - total_size;
-    float remaining_growth = total_growth;
-    calculated_layout_requirements requirements(0, 0, 0);
-    walk_layout_nodes(children, [&](layout_node& node) {
-        layout_requirements x = node.get_horizontal_requirements();
-        layout_scalar this_width = calculate_child_size(
-            remaining_extra_size, remaining_growth, x.size, x.growth_factor);
-        fold_in_requirements(
-            requirements, node.get_vertical_requirements(this_width));
-    });
-    return requirements;
-}
-
-void
-row_layout_logic::set_relative_assignment(
-    layout_node* children,
-    layout_vector const& assigned_size,
-    layout_scalar assigned_baseline_y)
-{
-    layout_scalar total_size;
-    float total_growth;
-    compute_total_width_and_growth(&total_size, &total_growth, children);
-    layout_vector p = make_layout_vector(0, 0);
-    layout_scalar remaining_extra_size = assigned_size[0] - total_size;
-    float remaining_growth = total_growth;
-    walk_layout_nodes(children, [&](layout_node& node) {
-        layout_requirements x = node.get_horizontal_requirements();
-        layout_scalar this_width = calculate_child_size(
-            remaining_extra_size, remaining_growth, x.size, x.growth_factor);
-        node.set_relative_assignment(relative_layout_assignment{
-            layout_box(p, make_layout_vector(this_width, assigned_size[1])),
-            assigned_baseline_y});
-        p[0] += this_width;
-    });
-}
 
 // void
 // row_layout::concrete_begin(
@@ -200,31 +134,6 @@ row_layout_logic::set_relative_assignment(
 
 // LAYERED LAYOUT
 
-ALIA_DECLARE_LAYOUT_LOGIC_OLD(layered_layout_logic)
-
-calculated_layout_requirements
-layered_layout_logic::get_horizontal_requirements(layout_node* children)
-{
-    return fold_horizontal_child_requirements(children);
-}
-
-calculated_layout_requirements
-layered_layout_logic::get_vertical_requirements(
-    layout_node* children, layout_scalar assigned_width)
-{
-    return fold_vertical_child_requirements(children, assigned_width);
-}
-
-void
-layered_layout_logic::set_relative_assignment(
-    layout_node* children,
-    layout_vector const& assigned_size,
-    layout_scalar assigned_baseline_y)
-{
-    assign_identical_child_regions(
-        children, assigned_size, assigned_baseline_y);
-}
-
 // void
 // layered_layout::concrete_begin(
 //     layout_traversal& traversal,
@@ -233,159 +142,6 @@ layered_layout_logic::set_relative_assignment(
 //     ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(layered_layout_logic)}
 
 // FLOW LAYOUT
-
-ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA_OLD(flow_layout_logic,
-                                        layout_flag_set x_alignment_;)
-
-calculated_layout_requirements
-flow_layout_logic::get_horizontal_requirements(layout_node* children)
-{
-    // In the worst case scenario, we can put one child on each row, so the
-    // required width is simply the minimal width required by the widest
-    // child.
-    calculated_layout_requirements requirements(0, 0, 0);
-    walk_layout_nodes(children, [&](layout_node& node) {
-        fold_in_requirements(requirements, node.get_horizontal_requirements());
-    });
-    return requirements;
-}
-
-void
-wrap_row(wrapping_state& state)
-{
-    state.active_row.width = state.visible_width;
-    state.active_row.requirements.size = (std::max)(
-        state.active_row.requirements.size,
-        state.active_row.requirements.ascent
-            + state.active_row.requirements.descent);
-    if (state.rows)
-        state.rows->push_back(state.active_row);
-    state.active_row.y += state.active_row.requirements.size;
-    state.active_row.requirements = layout_requirements{0, 0, 0, 0};
-    state.accumulated_width = state.visible_width = 0;
-}
-layout_scalar
-calculate_initial_x(
-    layout_scalar assigned_width,
-    layout_flag_set x_alignment,
-    wrapped_row const& row)
-{
-    switch (x_alignment.code)
-    {
-        case RIGHT_CODE:
-            return assigned_width - row.width;
-        case CENTER_X_CODE:
-            return (assigned_width - row.width) / 2;
-        default:
-            return 0;
-    }
-}
-void
-wrap_row(wrapping_assignment_state& state)
-{
-    ++state.active_row;
-    state.x = state.active_row != state.end_row ? calculate_initial_x(
-                  state.assigned_width, state.x_alignment, *state.active_row)
-                                                : 0;
-}
-
-void
-calculate_node_wrapping(wrapping_state& state, layout_node& node)
-{
-    layout_requirements x = node.get_horizontal_requirements();
-    if (state.accumulated_width + x.size > state.assigned_width)
-        wrap_row(state);
-    layout_requirements y = node.get_vertical_requirements(x.size);
-    state.visible_width += x.size;
-    state.accumulated_width += x.size;
-    fold_in_requirements(state.active_row.requirements, y);
-}
-
-static layout_scalar
-calculate_wrapping(
-    layout_node* children,
-    layout_scalar assigned_width,
-    std::vector<wrapped_row>* rows)
-{
-    wrapping_state state;
-    state.assigned_width = assigned_width;
-    state.accumulated_width = 0;
-    state.active_row.requirements = layout_requirements{0, 0, 0, 0};
-    state.active_row.y = 0;
-    state.rows = rows;
-
-    walk_layout_nodes(children, [&](layout_node& node) {
-        calculate_node_wrapping(state, node);
-    });
-    // Include the last/current row in the height requirements.
-    wrap_row(state);
-
-    return state.active_row.y;
-}
-
-calculated_layout_requirements
-flow_layout_logic::get_vertical_requirements(
-    layout_node* children, layout_scalar assigned_width)
-{
-    std::vector<wrapped_row> rows;
-    layout_scalar total_height
-        = calculate_wrapping(children, assigned_width, &rows);
-
-    // Similar to the column, the flow layout uses the baseline of the
-    // first row as the baseline of the whole layout (if there is one).
-    layout_scalar ascent = 0, descent = 0;
-    if (!rows.empty())
-    {
-        layout_requirements const& row0 = rows.front().requirements;
-        if (row0.ascent != 0 || row0.descent != 0)
-        {
-            ascent = row0.ascent;
-            descent = row0.descent + (total_height - row0.size);
-        }
-    }
-
-    return calculated_layout_requirements(total_height, ascent, descent);
-}
-
-void
-assign_wrapped_regions(wrapping_assignment_state& state, layout_node& node)
-{
-    layout_requirements x = node.get_horizontal_requirements();
-    if (state.x + x.size > state.assigned_width)
-        wrap_row(state);
-    layout_scalar row_height = state.active_row->requirements.size;
-    node.set_relative_assignment(relative_layout_assignment{
-        layout_box(
-            make_layout_vector(state.x, state.active_row->y),
-            make_layout_vector(x.size, row_height)),
-        state.active_row->requirements.ascent});
-    state.x += x.size;
-}
-
-void
-flow_layout_logic::set_relative_assignment(
-    layout_node* children,
-    layout_vector const& assigned_size,
-    layout_scalar /*assigned_baseline_y*/)
-{
-    // First, compute the wrapping for the assigned width so that we know
-    // the vertical requirements on each row.
-    std::vector<wrapped_row> rows;
-    calculate_wrapping(children, assigned_size[0], &rows);
-
-    // Now actually do the assignments.
-    wrapping_assignment_state state;
-    state.x = !rows.empty() ? calculate_initial_x(
-                  assigned_size[0], x_alignment_, rows.front())
-                            : 0;
-    state.assigned_width = assigned_size[0];
-    state.active_row = rows.begin();
-    state.end_row = rows.end();
-    state.x_alignment = x_alignment_;
-    walk_layout_nodes(children, [&](layout_node& node) {
-        assign_wrapped_regions(state, node);
-    });
-}
 
 // void
 // flow_layout::concrete_begin(
@@ -410,91 +166,6 @@ flow_layout_logic::set_relative_assignment(
 
 // VERTICAL FLOW LAYOUT
 
-// The vertical flow algorithm is a bit simplistic. All columns have the
-// same width.
-
-ALIA_DECLARE_LAYOUT_LOGIC_OLD(vertical_flow_layout_logic)
-
-calculated_layout_requirements
-vertical_flow_layout_logic::get_horizontal_requirements(layout_node* children)
-{
-    // In the worst case scenario, we can put all children in one column,
-    // so the required width is simply the width required by the widest
-    // child.
-    return fold_horizontal_child_requirements(children);
-}
-
-calculated_layout_requirements
-vertical_flow_layout_logic::get_vertical_requirements(
-    layout_node* children, layout_scalar assigned_width)
-{
-    layout_scalar column_width = get_max_child_width(children);
-
-    layout_scalar total_height = compute_total_height(children, column_width);
-
-    int n_columns = (std::max)(int(assigned_width / column_width), 1);
-
-    layout_scalar average_column_height = total_height / n_columns;
-
-    // Break the children into columns and determine the longest column
-    // size. Each column accumulates children until it's at least as big as
-    // the average height. There are other strategies that would yield
-    // smaller and more balanced placements, but this one is simple and
-    // gives reasonable results.
-    layout_scalar max_column_height = 0;
-    layout_scalar current_column_height = 0;
-    int column_index = 0;
-    walk_layout_nodes(children, [&](layout_node& node) {
-        if (current_column_height >= average_column_height)
-        {
-            if (current_column_height > max_column_height)
-                max_column_height = current_column_height;
-            ++column_index;
-            current_column_height = 0;
-        }
-        layout_requirements y = node.get_vertical_requirements(column_width);
-        current_column_height += y.size;
-    });
-
-    return calculated_layout_requirements(max_column_height, 0, 0);
-}
-
-void
-vertical_flow_layout_logic::set_relative_assignment(
-    layout_node* children,
-    layout_vector const& assigned_size,
-    layout_scalar /*assigned_baseline_y*/)
-{
-    layout_scalar column_width = get_max_child_width(children);
-
-    layout_scalar total_height = compute_total_height(children, column_width);
-
-    int n_columns = (std::max)(int(assigned_size[0] / column_width), 1);
-
-    layout_scalar average_column_height = total_height / n_columns;
-
-    // Break the children into columns and assign their regions.
-    // Each column accumulates children until it's at least as big as the
-    // average height. There are other strategies that would yield smaller
-    // and more balanced placements, but this one is simple and gives
-    // reasonable results.
-    layout_vector p = make_layout_vector(0, 0);
-    int column_index = 0;
-    walk_layout_nodes(children, [&](layout_node& node) {
-        if (p[1] >= average_column_height)
-        {
-            ++column_index;
-            p[0] += column_width;
-            p[1] = 0;
-        }
-        layout_requirements y = node.get_vertical_requirements(column_width);
-        node.set_relative_assignment(relative_layout_assignment{
-            layout_box(p, make_layout_vector(column_width, y.size)),
-            y.ascent});
-        p[1] += y.size;
-    });
-}
-
 // void
 // vertical_flow_layout::concrete_begin(
 //     layout_traversal& traversal,
@@ -505,67 +176,6 @@ vertical_flow_layout_logic::set_relative_assignment(
 // }
 
 // CLAMPED LAYOUT
-
-struct clamped_layout_logic
-{
-    calculated_layout_requirements
-    get_horizontal_requirements(layout_node* children);
-    calculated_layout_requirements
-    get_vertical_requirements(
-        layout_node* children, layout_scalar assigned_width);
-    void
-    set_relative_assignment(
-        layout_node* children,
-        layout_vector const& assigned_size,
-        layout_scalar assigned_baseline_y);
-
-    layout_vector max_size;
-};
-
-calculated_layout_requirements
-clamped_layout_logic::get_horizontal_requirements(layout_node* children)
-{
-    calculated_layout_requirements requirements
-        = fold_horizontal_child_requirements(children);
-    return requirements;
-}
-
-calculated_layout_requirements
-clamped_layout_logic::get_vertical_requirements(
-    layout_node* children, layout_scalar assigned_width)
-{
-    calculated_layout_requirements requirements
-        = fold_horizontal_child_requirements(children);
-    layout_scalar clamped_width = (std::max)(
-        requirements.size,
-        this->max_size[0] <= 0
-            ? assigned_width
-            : (std::min)(assigned_width, this->max_size[0]));
-    return fold_vertical_child_requirements(children, clamped_width);
-}
-
-void
-clamped_layout_logic::set_relative_assignment(
-    layout_node* children,
-    layout_vector const& assigned_size,
-    layout_scalar /*assigned_baseline_y*/)
-{
-    layout_vector clamped_size;
-    for (int i = 0; i != 2; ++i)
-    {
-        clamped_size[i]
-            = this->max_size[i] <= 0
-                  ? assigned_size[i]
-                  : (std::min)(assigned_size[i], this->max_size[i]);
-    }
-    walk_layout_nodes(children, [&](layout_node& node) {
-        layout_requirements y
-            = node.get_vertical_requirements(clamped_size[0]);
-        node.set_relative_assignment(relative_layout_assignment{
-            layout_box((assigned_size - clamped_size) / 2, clamped_size),
-            y.ascent});
-    });
-}
 
 // void
 // clamped_layout::concrete_begin(
@@ -608,8 +218,8 @@ struct bordered_layout_logic
 calculated_layout_requirements
 bordered_layout_logic::get_horizontal_requirements(layout_node* children)
 {
-    return calculated_layout_requirements(
-        get_max_child_width(children) + (border.left + border.right), 0, 0);
+    return calculated_layout_requirements{
+        get_max_child_width(children) + (border.left + border.right), 0, 0};
 }
 
 calculated_layout_requirements
@@ -619,10 +229,10 @@ bordered_layout_logic::get_vertical_requirements(
     calculated_layout_requirements requirements
         = fold_vertical_child_requirements(
             children, assigned_width - (border.left + border.right));
-    return calculated_layout_requirements(
+    return calculated_layout_requirements{
         requirements.size + border.top + border.bottom,
         requirements.ascent + border.top,
-        requirements.descent + border.bottom);
+        requirements.descent + border.bottom};
 }
 
 void
@@ -662,6 +272,8 @@ bordered_layout_logic::set_relative_assignment(
 //             as_layout_size(resolve_box_border_width(traversal, border)));
 //     }
 // }
+
+#if 0
 
 // GRIDS
 
@@ -1323,4 +935,7 @@ floating_layout::size() const
 {
     return data_->size;
 }
+
+#endif
+
 }} // namespace alia::indie

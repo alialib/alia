@@ -87,30 +87,55 @@ add_default_alignment(
     layout_flag_set y_alignment);
 
 // Initialize a container for use within the given context.
-void
-initialize(layout_traversal& traversal, layout_container& container);
-
-void
-set_next_node(layout_traversal& traversal, layout_node* node);
-
-// Add a layout node to the layout tree being traversed.
-void
-add_layout_node(layout_traversal& traversal, layout_node* node);
+inline void
+initialize(
+    layout_traversal<layout_container, layout_node>& traversal,
+    layout_container& container)
+{
+    container.last_content_change = traversal.refresh_counter;
+}
 
 // Record a change in the layout at the current position in the traversal.
-void
-record_layout_change(layout_traversal& traversal);
+inline void
+record_layout_change(
+    layout_traversal<layout_container, layout_node>& traversal)
+{
+    if (traversal.active_container)
+        traversal.active_container->record_content_change(traversal);
+}
+
+inline void
+set_next_node(
+    layout_traversal<layout_container, layout_node>& traversal,
+    layout_node* node)
+{
+    if (*traversal.next_ptr != node)
+    {
+        record_layout_change(traversal);
+        *traversal.next_ptr = node;
+    }
+}
+
+// Add a layout node to the layout tree being traversed.
+inline void
+add_layout_node(
+    layout_traversal<layout_container, layout_node>& traversal,
+    layout_node* node)
+{
+    set_next_node(traversal, node);
+    traversal.next_ptr = &node->next;
+}
 
 // detect_layout_change(ctx, value_storage, new_value) detects if new_value is
 // different from the value stored in value_storage.
 // If it is, it records the change in the layout tree and updates the stored
 // value.
 // The return value indicates whether or not a change was detected.
-template<class Context, class T>
+template<class Traversal, class T>
 bool
-detect_layout_change(Context& ctx, T* value_storage, T const& new_value)
+detect_layout_change(
+    Traversal& traversal, T* value_storage, T const& new_value)
 {
-    layout_traversal& traversal = get_layout_traversal(ctx);
     if (traversal.is_refresh_pass && *value_storage != new_value)
     {
         record_layout_change(traversal);
@@ -134,12 +159,21 @@ resolve_absolute_size(
     layout_style_info const& style_info,
     absolute_size const& size);
 // Same as above, but the PPI an style_info are taken from the context.
+template<class Traversal>
 float
 resolve_absolute_length(
-    layout_traversal& traversal, unsigned axis, absolute_length const& length);
+    Traversal const& traversal, unsigned axis, absolute_length const& length)
+{
+    return resolve_absolute_length(
+        traversal.ppi, *traversal.style_info, axis, length);
+}
 // 2D version
+template<class Traversal>
 vector<2, float>
-resolve_absolute_size(layout_traversal& traversal, absolute_size const& size);
+resolve_absolute_size(Traversal& traversal, absolute_size const& size)
+{
+    return resolve_absolute_size(traversal.ppi, *traversal.style_info, size);
+}
 
 // Resolve a relative length into an actual length, in pixels.
 float
@@ -156,25 +190,43 @@ resolve_relative_size(
     layout_style_info const& style_info,
     relative_size const& size,
     vector<2, float> const& full_size);
+
 // Same as above, but the PPI an style_info are taken from the context.
+template<class Traversal>
 float
 resolve_relative_length(
-    layout_traversal& traversal,
+    Traversal& traversal,
     unsigned axis,
     relative_length const& length,
-    float full_length);
+    float full_length)
+{
+    return resolve_relative_length(
+        traversal.ppi, *traversal.style_info, axis, length, full_length);
+}
 // 2D version
+template<class Traversal>
 vector<2, float>
 resolve_relative_size(
-    layout_traversal& traversal,
+    Traversal& traversal,
     relative_size const& size,
-    vector<2, float> const& full_size);
+    vector<2, float> const& full_size)
+{
+    return resolve_relative_size(
+        traversal.ppi, *traversal.style_info, size, full_size);
+}
 
 // Resolve a box_border_width into actual widths, in pixels.
+template<class Traversal>
 box_border_width<float>
 resolve_box_border_width(
-    layout_traversal& traversal,
-    box_border_width<absolute_length> const& border);
+    Traversal& traversal, box_border_width<absolute_length> const& border)
+{
+    return box_border_width<float>(
+        resolve_absolute_length(traversal, 1, border.top),
+        resolve_absolute_length(traversal, 0, border.right),
+        resolve_absolute_length(traversal, 1, border.bottom),
+        resolve_absolute_length(traversal, 0, border.left));
+}
 
 // Convert a resolved box_border_width to layout_scalars, rounding up.
 box_border_width<layout_scalar>
@@ -260,7 +312,7 @@ bool
 operator!=(resolved_layout_spec const& a, resolved_layout_spec const& b);
 void
 resolve_layout_spec(
-    layout_traversal& traversal,
+    layout_traversal<layout_container, layout_node>& traversal,
     resolved_layout_spec& resolved,
     layout const& spec,
     layout_flag_set default_flags);
@@ -271,18 +323,8 @@ struct calculated_layout_requirements
 {
     layout_scalar size;
 
-    // The minimum space required on either side of the baseline.
+    // the minimum space required on either side of the baseline
     layout_scalar ascent, descent;
-
-    calculated_layout_requirements()
-    {
-    }
-
-    calculated_layout_requirements(
-        layout_scalar size, layout_scalar ascent, layout_scalar descent)
-        : size(size), ascent(ascent), descent(descent)
-    {
-    }
 };
 
 // Update 'current' so that it includes the additional requirements specified
@@ -349,7 +391,7 @@ struct layout_cacher
 };
 bool
 update_layout_cacher(
-    layout_traversal& traversal,
+    layout_traversal<layout_container, layout_node>& traversal,
     layout_cacher& cacher,
     layout const& layout_spec,
     layout_flag_set default_flags);
@@ -495,40 +537,42 @@ struct simple_layout_container : layout_container
 // get_simple_layout_container is a utility function for retrieving a
 // simple_layout_container with a specific type of logic from a UI context's
 // data graph and refreshing it.
-template<class Logic>
-struct simple_layout_container_storage
-{
-    simple_layout_container<Logic> container;
-    Logic logic;
-};
-template<class Logic>
-void
-get_simple_layout_container(
-    layout_traversal& traversal,
-    data_traversal& data,
-    simple_layout_container<Logic>** container,
-    Logic** logic,
-    layout const& layout_spec)
-{
-    simple_layout_container_storage<Logic>* storage;
-    if (get_cached_data(data, &storage))
-        storage->container.logic = &storage->logic;
+// template<class Logic>
+// struct simple_layout_container_storage
+// {
+//     simple_layout_container<Logic> container;
+//     Logic logic;
+// };
+// template<class Logic>
+// void
+// get_simple_layout_container(
+//     layout_traversal& traversal,
+//     data_traversal& data,
+//     simple_layout_container<Logic>** container,
+//     Logic** logic,
+//     layout const& layout_spec)
+// {
+//     simple_layout_container_storage<Logic>* storage;
+//     if (get_cached_data(data, &storage))
+//         storage->container.logic = &storage->logic;
 
-    *container = &storage->container;
+//     *container = &storage->container;
 
-    if (is_refresh_pass(traversal))
-    {
-        if (update_layout_cacher(
-                traversal, (*container)->cacher, layout_spec, FILL | UNPADDED))
-        {
-            // Since this container isn't active yet, it didn't get marked as
-            // needing recalculation, so we need to do that manually here.
-            (*container)->last_content_change = traversal.refresh_counter;
-        }
-    }
+//     if (is_refresh_pass(traversal))
+//     {
+//         if (update_layout_cacher(
+//                 traversal, (*container)->cacher, layout_spec, FILL |
+//                 UNPADDED))
+//         {
+//             // Since this container isn't active yet, it didn't get marked
+//             as
+//             // needing recalculation, so we need to do that manually here.
+//             (*container)->last_content_change = traversal.refresh_counter;
+//         }
+//     }
 
-    *logic = &storage->logic;
-}
+//     *logic = &storage->logic;
+// }
 
 // layout_leaf is used to represent simple leaves in the layout tree.
 // Each refresh pass, the associated widget function calls refresh_layout(...)
@@ -565,7 +609,7 @@ struct layout_leaf : layout_node
 
     void
     refresh_layout(
-        layout_traversal& traversal,
+        layout_traversal<layout_container, layout_node>& traversal,
         layout const& layout_spec,
         leaf_layout_requirements const& requirements,
         layout_flag_set default_flags = TOP | LEFT | PADDED);

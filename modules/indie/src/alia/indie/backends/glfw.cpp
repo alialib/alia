@@ -297,7 +297,9 @@ update_ui(glfw_window_impl& impl)
     }
 
     resolve_layout(
-        impl.system.layout, make_vector(float(width), float(height)));
+        impl.system.layout_root,
+        impl.system.layout_state,
+        make_vector(float(width), float(height)));
 
     std::chrono::steady_clock::duration layout_time;
     {

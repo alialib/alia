@@ -2,41 +2,79 @@
 #define ALIA_INDIE_LAYOUT_SYSTEM_HPP
 
 #include <alia/indie/layout/internals.hpp>
+#include <alia/indie/layout/utilities.hpp>
 
 // This file defines the top-level interface to the layout system.
 
-// alia's layout system uses an immediate mode interface for specifying the
-// contents of the UI. However, such an interface imposes limitations on the
-// types of layout algorithms that can be implemented efficiently.
-// Thus, alia builds an internal, hierarchical representation of the UI tree
-// that is specified by the application, and evaluates its layout by directly
-// querying the nodes in that tree. It also uses this representation to track
-// changes in the tree and detect when it can reuse cached results.
-
 namespace alia { namespace indie {
 
+// the persistent state associated with an instance of the layout system
+struct persistent_layout_state
+{
+    counter_type refresh_counter = 1;
+};
+
+template<class Container, class Node>
 void
 initialize_layout_traversal(
-    layout_system& system,
-    layout_traversal& traversal,
+    layout_traversal<Container, Node>& traversal,
+    persistent_layout_state& persistent_state,
+    Node** root_node,
     bool is_refresh,
     layout_style_info* style,
-    vector<2, float> const& ppi);
+    vector<2, float> const& ppi)
+{
+    traversal.active_container = 0;
+    traversal.next_ptr = root_node;
+    traversal.is_refresh_pass = is_refresh;
+    traversal.refresh_counter = persistent_state.refresh_counter;
+    traversal.style_info = style;
+    traversal.ppi = ppi;
 
-// Calculate the minimum space needed by the given layout system.
-layout_vector
-get_minimum_size(layout_system& system);
-// Same, but with arguments broken up for flexibility.
-layout_vector
-get_minimum_size(layout_node* root_node);
+    style->font_size = 0;
+    style->character_size = make_vector<layout_scalar>(0, 0);
+    style->x_height = 0;
+    style->padding_size = make_layout_vector(4, 4);
+    style->magnification = 1;
+}
 
-// Given the available space, calculate the proper regions for all nodes in
-// the given layout system.
+template<class Container>
 void
-resolve_layout(layout_system& system, layout_vector const& size);
-// Same, but with arguments broken up for flexibility.
-void
-resolve_layout(layout_node* root_node, layout_vector const& size);
+resolve_layout(
+    Container* root_node,
+    persistent_layout_state& persistent_state,
+    layout_vector const& size)
+{
+    if (root_node)
+    {
+        root_node->get_horizontal_requirements();
+        layout_requirements y = root_node->get_vertical_requirements(size[0]);
+        root_node->set_relative_assignment(relative_layout_assignment{
+            layout_box(make_layout_vector(0, 0), size), y.ascent});
+    }
+    // Increment the refresh counter immediately after resolving layout so
+    // that any changes detected after this will be associated with the new
+    // counter value and thus cause a recalculation.
+    ++persistent_state.refresh_counter;
+}
+
+template<class Container>
+layout_vector
+get_minimum_size(Container* root_node)
+{
+    if (root_node)
+    {
+        layout_requirements horizontal
+            = root_node->get_horizontal_requirements();
+        layout_requirements vertical
+            = root_node->get_vertical_requirements(horizontal.size);
+        return make_layout_vector(horizontal.size, vertical.size);
+    }
+    else
+    {
+        return make_layout_vector(0, 0);
+    }
+}
 
 }} // namespace alia::indie
 
