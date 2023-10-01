@@ -30,24 +30,8 @@ fold_in_requirements(
 }
 
 void
-set_next_node(layout_traversal& traversal, layout_node* node)
-{
-    if (*traversal.next_ptr != node)
-    {
-        record_layout_change(traversal);
-        *traversal.next_ptr = node;
-    }
-}
-
-void
-add_layout_node(layout_traversal& traversal, layout_node* node)
-{
-    set_next_node(traversal, node);
-    traversal.next_ptr = &node->next;
-}
-
-void
-layout_container::record_content_change(layout_traversal& traversal)
+layout_container::record_content_change(
+    layout_traversal<layout_container, layout_node>& traversal)
 {
     if (this->last_content_change != traversal.refresh_counter)
     {
@@ -55,13 +39,6 @@ layout_container::record_content_change(layout_traversal& traversal)
         if (this->parent)
             this->parent->record_content_change(traversal);
     }
-}
-
-void
-record_layout_change(layout_traversal& traversal)
-{
-    if (traversal.active_container)
-        traversal.active_container->record_content_change(traversal);
 }
 
 layout
@@ -174,20 +151,6 @@ resolve_absolute_size(
 }
 
 float
-resolve_absolute_length(
-    layout_traversal& traversal, unsigned axis, absolute_length const& length)
-{
-    return resolve_absolute_length(
-        traversal.ppi, *traversal.style_info, axis, length);
-}
-
-vector<2, float>
-resolve_absolute_size(layout_traversal& traversal, absolute_size const& size)
-{
-    return resolve_absolute_size(traversal.ppi, *traversal.style_info, size);
-}
-
-float
 resolve_relative_length(
     vector<2, float> const& ppi,
     layout_style_info const& style_info,
@@ -216,39 +179,6 @@ resolve_relative_size(
         resolve_relative_length(ppi, style_info, 1, size[1], full_size[1]));
 }
 
-float
-resolve_relative_length(
-    layout_traversal& traversal,
-    unsigned axis,
-    relative_length const& length,
-    float full_length)
-{
-    return resolve_relative_length(
-        traversal.ppi, *traversal.style_info, axis, length, full_length);
-}
-
-vector<2, float>
-resolve_relative_size(
-    layout_traversal& traversal,
-    relative_size const& size,
-    vector<2, float> const& full_size)
-{
-    return resolve_relative_size(
-        traversal.ppi, *traversal.style_info, size, full_size);
-}
-
-box_border_width<float>
-resolve_box_border_width(
-    layout_traversal& traversal,
-    box_border_width<absolute_length> const& border)
-{
-    return box_border_width<float>(
-        resolve_absolute_length(traversal, 1, border.top),
-        resolve_absolute_length(traversal, 0, border.right),
-        resolve_absolute_length(traversal, 1, border.bottom),
-        resolve_absolute_length(traversal, 0, border.left));
-}
-
 box_border_width<layout_scalar>
 as_layout_size(box_border_width<float> const& border)
 {
@@ -274,7 +204,7 @@ operator!=(resolved_layout_spec const& a, resolved_layout_spec const& b)
 
 void
 resolve_layout_spec(
-    layout_traversal& traversal,
+    layout_traversal<layout_container, layout_node>& traversal,
     resolved_layout_spec& resolved,
     layout const& spec,
     layout_flag_set default_flags)
@@ -423,7 +353,7 @@ resolve_relative_assignment(
 
 bool
 update_layout_cacher(
-    layout_traversal& traversal,
+    layout_traversal<layout_container, layout_node>& traversal,
     layout_cacher& cacher,
     layout const& layout_spec,
     layout_flag_set default_flags)
@@ -505,12 +435,6 @@ relative_region_assignment::update()
     cacher_->last_relative_assignment = last_content_change_;
 }
 
-void
-initialize(layout_traversal& traversal, layout_container& container)
-{
-    container.last_content_change = traversal.refresh_counter;
-}
-
 bool
 operator==(
     leaf_layout_requirements const& a, leaf_layout_requirements const& b)
@@ -533,7 +457,7 @@ layout_leaf::get_horizontal_requirements()
         requirements,
         resolved_spec_,
         0,
-        calculated_layout_requirements(requirements_.size[0], 0, 0));
+        calculated_layout_requirements{requirements_.size[0], 0, 0});
     return requirements;
 }
 layout_requirements
@@ -544,10 +468,10 @@ layout_leaf::get_vertical_requirements(layout_scalar /*assigned_width*/)
         requirements,
         resolved_spec_,
         1,
-        calculated_layout_requirements(
+        calculated_layout_requirements{
             requirements_.size[1],
             requirements_.ascent,
-            requirements_.descent));
+            requirements_.descent});
     return requirements;
 }
 void
@@ -559,15 +483,15 @@ layout_leaf::set_relative_assignment(
         horizontal_requirements,
         resolved_spec_,
         0,
-        calculated_layout_requirements(requirements_.size[0], 0, 0));
+        calculated_layout_requirements{requirements_.size[0], 0, 0});
     resolve_requirements(
         vertical_requirements,
         resolved_spec_,
         1,
-        calculated_layout_requirements(
+        calculated_layout_requirements{
             requirements_.size[1],
             requirements_.ascent,
-            requirements_.descent));
+            requirements_.descent});
     relative_assignment_ = resolve_relative_assignment(
         resolved_spec_,
         assignment,
@@ -577,7 +501,7 @@ layout_leaf::set_relative_assignment(
 
 void
 layout_leaf::refresh_layout(
-    layout_traversal& traversal,
+    layout_traversal<layout_container, layout_node>& traversal,
     layout const& layout_spec,
     leaf_layout_requirements const& requirements,
     layout_flag_set default_flags)
@@ -608,14 +532,14 @@ get_max_child_width(layout_node* children)
 calculated_layout_requirements
 fold_horizontal_child_requirements(layout_node* children)
 {
-    return calculated_layout_requirements(get_max_child_width(children), 0, 0);
+    return calculated_layout_requirements{get_max_child_width(children), 0, 0};
 }
 
 calculated_layout_requirements
 fold_vertical_child_requirements(
     layout_node* children, layout_scalar assigned_width)
 {
-    calculated_layout_requirements requirements(0, 0, 0);
+    calculated_layout_requirements requirements{0, 0, 0};
     walk_layout_nodes(children, [&](layout_node& node) {
         fold_in_requirements(
             requirements, node.get_vertical_requirements(assigned_width));
