@@ -3,6 +3,7 @@
 
 #include <alia/core/context/interface.hpp>
 
+#include <alia/indie/layout/internals.hpp>
 #include <alia/indie/layout/traversal.hpp>
 
 namespace alia {
@@ -20,7 +21,7 @@ struct widget_traversal
 struct traversal
 {
     widget_traversal widgets;
-    layout_traversal layout;
+    layout_traversal<layout_container, layout_node> layout;
 };
 ALIA_DEFINE_TAGGED_TYPE(traversal_tag, traversal&)
 
@@ -69,7 +70,7 @@ get_system(event_context ctx)
     return *ctx.contents_.storage->indie_sys;
 }
 
-inline layout_traversal&
+inline layout_traversal<layout_container, layout_node>&
 get_layout_traversal(dataless_context ctx)
 {
     return get<indie::traversal_tag>(ctx).layout;

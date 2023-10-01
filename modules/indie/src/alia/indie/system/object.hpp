@@ -6,7 +6,7 @@
 #include <alia/core/timing/ticks.hpp>
 #include <alia/indie/context.hpp>
 #include <alia/indie/events/input.hpp>
-#include <alia/indie/layout/internals.hpp>
+#include <alia/indie/layout/system.hpp>
 #include <alia/indie/system/os_interface.hpp>
 #include <alia/indie/system/window_interface.hpp>
 #include <alia/indie/widget.hpp>
@@ -60,7 +60,8 @@ struct system : alia::typed_system<indie::vanilla_context>
     std::function<void(indie::context)> controller;
     void invoke_controller(indie::vanilla_context) override;
 
-    layout_system layout;
+    persistent_layout_state layout_state;
+    layout_node* layout_root;
 
     widget* root_widget;
 

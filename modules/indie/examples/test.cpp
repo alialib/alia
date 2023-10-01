@@ -206,10 +206,7 @@ do_box(
 
 namespace alia { namespace indie {
 
-ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA_OLD(flow_layout_logic,
-                                        layout_flag_set x_alignment_;)
-
-layout_traversal&
+auto&
 get_layout_traversal(context ctx)
 {
     return get<indie::traversal_tag>(ctx).layout;
@@ -296,7 +293,7 @@ struct layout_widget_container_storage
 template<class Logic>
 void
 get_layout_widget_container(
-    layout_traversal& traversal,
+    layout_traversal<layout_container, layout_node>& traversal,
     data_traversal& data,
     layout_container_widget<simple_layout_container<Logic>>** container,
     Logic** logic,
@@ -308,7 +305,7 @@ get_layout_widget_container(
 
     *container = &storage->container;
 
-    if (is_refresh_pass(traversal))
+    if (traversal.is_refresh_pass)
     {
         if (update_layout_cacher(
                 traversal, (*container)->cacher, layout_spec, FILL | UNPADDED))
@@ -427,7 +424,7 @@ struct scoped_flow_layout
             &container_,
             &logic,
             adjusted_layout_spec);
-        logic->x_alignment_ = x_alignment;
+        logic->x_alignment = x_alignment;
         slc_.begin(get_layout_traversal(ctx), container_);
         widget_scope_.begin(get_widget_traversal(ctx), container_);
     }
@@ -468,6 +465,8 @@ struct scoped_flow_layout
     scoped_layout_container slc_;
     scoped_widget_container widget_scope_;
 };
+
+#if 0
 
 struct nonuniform_grid_tag
 {
@@ -1062,6 +1061,8 @@ scoped_grid_row::end()
 {
     container_.end();
 }
+
+#endif
 
 void
 do_spacer(indie::context ctx, layout const& layout_spec)

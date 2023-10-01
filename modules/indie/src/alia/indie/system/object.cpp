@@ -14,8 +14,9 @@ system::invoke_controller(vanilla_context vanilla_ctx)
 
     layout_style_info style_info;
     initialize_layout_traversal(
-        this->layout,
         traversal.layout,
+        this->layout_state,
+        &this->layout_root,
         is_refresh_event(vanilla_ctx),
         &style_info,
         make_vector<float>(200, 200)); // TODO
