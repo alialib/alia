@@ -1,17 +1,12 @@
-#ifndef ALIA_INDIE_LAYOUT_API_HPP
-#define ALIA_INDIE_LAYOUT_API_HPP
+#ifndef ALIA_INDIE_LAYOUT_SPECIFICATION_HPP
+#define ALIA_INDIE_LAYOUT_SPECIFICATION_HPP
 
-#include "alia/core/flow/data_graph.hpp"
 #include <alia/indie/geometry.hpp>
 
-// This file defines all types and functions necessary for interfacing with the
-// layout system from the application end, including a library of standard
-// containers.
+// This file defines the types and flags available to the application to
+// specify layout properties.
 
 namespace alia { namespace indie {
-
-// All positioning is currently done in integer coordinates, but these
-// typedefs are used to keep open the possibility of changing that one day.
 
 typedef float layout_scalar;
 

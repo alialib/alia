@@ -1,7 +1,7 @@
 #ifndef ALIA_INDIE_LAYOUT_LIBRARY_HPP
 #define ALIA_INDIE_LAYOUT_LIBRARY_HPP
 
-#include <alia/indie/layout/api.hpp>
+#include <alia/indie/layout/specification.hpp>
 
 namespace alia {
 
