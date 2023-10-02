@@ -60,8 +60,7 @@ struct system : alia::typed_system<indie::vanilla_context>
     std::function<void(indie::context)> controller;
     void invoke_controller(indie::vanilla_context) override;
 
-    persistent_layout_state layout_state;
-    layout_node* layout_root;
+    counter_type refresh_counter = 1;
 
     widget* root_widget;
 

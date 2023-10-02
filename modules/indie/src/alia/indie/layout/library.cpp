@@ -16,8 +16,8 @@ namespace alia { namespace indie {
 
 void
 scoped_layout_container::begin(
-    layout_traversal<layout_container, layout_node>& traversal,
-    layout_container* container)
+    layout_traversal<widget_container, widget>& traversal,
+    widget_container* container)
 {
     if (traversal.is_refresh_pass)
     {
@@ -35,13 +35,13 @@ scoped_layout_container::end()
 {
     if (traversal_)
     {
-        set_next_node(*traversal_, 0);
+        set_next_node(*traversal_, nullptr);
 
-        layout_container* container = traversal_->active_container;
+        widget_container* container = traversal_->active_container;
         traversal_->next_ptr = &container->next;
         traversal_->active_container = container->parent;
 
-        traversal_ = 0;
+        traversal_ = nullptr;
     }
 }
 
@@ -372,7 +372,7 @@ template<class Uniformity>
 struct grid_data
 {
     // the container that contains the whole grid
-    layout_container* container;
+    widget_container* container;
 
     // list of rows in the grid
     grid_row_container<Uniformity>* rows;
@@ -393,7 +393,7 @@ struct grid_data
 };
 
 template<class Uniformity>
-struct grid_row_container : layout_container
+struct grid_row_container : widget_container
 {
     // implementation of layout interface
     layout_requirements
@@ -445,7 +445,7 @@ update_grid_column_requirements(grid_data<Uniformity>& grid)
             if (row->last_content_query != row->last_content_change)
             {
                 clear_requirements(row->requirements);
-                walk_layout_nodes(row->children, [&](layout_node& node) {
+                walk_layout_nodes(row->children, [&](layout_node_interface& node) {
                     layout_requirements x = node.get_horizontal_requirements();
                     add_requirements(row->requirements, x);
                 });
@@ -541,7 +541,7 @@ calculate_grid_row_vertical_requirements(
         = calculate_column_assignments(grid, assigned_width);
     calculated_layout_requirements requirements(0, 0, 0);
     size_t column_index = 0;
-    walk_layout_nodes(row.children, [&](layout_node& node) {
+    walk_layout_nodes(row.children, [&](layout_node_interface& node) {
         fold_in_requirements(
             requirements,
             node.get_vertical_requirements(column_widths[column_index]));
@@ -571,7 +571,7 @@ calculate_grid_row_vertical_requirements(
              row = row->next)
         {
             size_t column_index = 0;
-            walk_layout_nodes(row->children, [&](layout_node& node) {
+            walk_layout_nodes(row->children, [&](layout_node_interface& node) {
                 fold_in_requirements(
                     grid_requirements,
                     node.get_vertical_requirements(widths[column_index]));
@@ -611,7 +611,7 @@ set_grid_row_relative_assignment(
         = calculate_column_assignments(grid, assigned_size[0]);
     size_t n = 0;
     layout_vector p = make_layout_vector(0, 0);
-    walk_layout_nodes(children, [&](layout_node& node) {
+    walk_layout_nodes(children, [&](layout_node_interface& node) {
         layout_scalar this_width = column_widths[n];
         node.set_relative_assignment(relative_layout_assignment{
             layout_box(p, make_layout_vector(this_width, assigned_size[1])),
