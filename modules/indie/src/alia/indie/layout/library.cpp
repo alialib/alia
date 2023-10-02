@@ -5,7 +5,6 @@
 
 #include <alia/core/flow/macros.hpp>
 
-#include <alia/indie/layout/logic.hpp>
 #include <alia/indie/layout/system.hpp>
 #include <alia/indie/layout/traversal.hpp>
 #include <alia/indie/layout/utilities.hpp>
@@ -198,60 +197,6 @@ scoped_layout_container::end()
 // }
 
 // BORDERED LAYOUT
-
-struct bordered_layout_logic
-{
-    calculated_layout_requirements
-    get_horizontal_requirements(layout_node* children);
-    calculated_layout_requirements
-    get_vertical_requirements(
-        layout_node* children, layout_scalar assigned_width);
-    void
-    set_relative_assignment(
-        layout_node* children,
-        layout_vector const& assigned_size,
-        layout_scalar assigned_baseline_y);
-
-    box_border_width<layout_scalar> border;
-};
-
-calculated_layout_requirements
-bordered_layout_logic::get_horizontal_requirements(layout_node* children)
-{
-    return calculated_layout_requirements{
-        get_max_child_width(children) + (border.left + border.right), 0, 0};
-}
-
-calculated_layout_requirements
-bordered_layout_logic::get_vertical_requirements(
-    layout_node* children, layout_scalar assigned_width)
-{
-    calculated_layout_requirements requirements
-        = fold_vertical_child_requirements(
-            children, assigned_width - (border.left + border.right));
-    return calculated_layout_requirements{
-        requirements.size + border.top + border.bottom,
-        requirements.ascent + border.top,
-        requirements.descent + border.bottom};
-}
-
-void
-bordered_layout_logic::set_relative_assignment(
-    layout_node* children,
-    layout_vector const& assigned_size,
-    layout_scalar assigned_baseline_y)
-{
-    walk_layout_nodes(children, [&](layout_node& node) {
-        node.set_relative_assignment(relative_layout_assignment{
-            layout_box(
-                make_layout_vector(border.left, border.top),
-                assigned_size
-                    - make_layout_vector(
-                        border.left + border.right,
-                        border.top + border.bottom)),
-            assigned_baseline_y - border.top});
-    });
-}
 
 // void
 // bordered_layout::concrete_begin(

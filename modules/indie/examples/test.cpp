@@ -1,8 +1,11 @@
 #include <alia/core/flow/data_graph.hpp>
 #include <alia/core/flow/events.hpp>
 #include <alia/indie.hpp>
+#include <alia/indie/layout/containers/utilities.hpp>
 #include <alia/indie/layout/library.hpp>
-#include <alia/indie/layout/logic.hpp>
+#include <alia/indie/layout/logic/flow.hpp>
+#include <alia/indie/layout/logic/linear.hpp>
+#include <alia/indie/layout/spacer.hpp>
 #include <alia/indie/layout/utilities.hpp>
 #include <alia/indie/system/api.hpp>
 #include <alia/indie/system/input_constants.hpp>
@@ -1063,22 +1066,6 @@ scoped_grid_row::end()
 }
 
 #endif
-
-void
-do_spacer(indie::context ctx, layout const& layout_spec)
-{
-    layout_leaf* node;
-    get_cached_data(ctx, &node);
-
-    if (get<indie::traversal_tag>(ctx).layout.is_refresh_pass)
-    {
-        node->refresh_layout(
-            get<indie::traversal_tag>(ctx).layout,
-            layout_spec,
-            leaf_layout_requirements(make_layout_vector(0, 0), 0, 0));
-        add_layout_node(get<indie::traversal_tag>(ctx).layout, node);
-    }
-}
 
 }} // namespace alia::indie
 
