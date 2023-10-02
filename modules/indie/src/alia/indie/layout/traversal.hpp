@@ -1,7 +1,7 @@
 #ifndef ALIA_INDIE_LAYOUT_TRAVERSAL_HPP
 #define ALIA_INDIE_LAYOUT_TRAVERSAL_HPP
 
-#include <alia/indie/layout/api.hpp>
+#include <alia/indie/layout/specification.hpp>
 
 namespace alia { namespace indie {
 
@@ -30,13 +30,6 @@ struct layout_traversal
     vector<2, float> ppi;
     layout_style_info const* style_info;
 };
-
-// template<class Context>
-// bool
-// is_refresh_pass(Context& ctx)
-// {
-//     return get_layout_traversal(ctx).is_refresh_pass;
-// }
 
 }} // namespace alia::indie
 

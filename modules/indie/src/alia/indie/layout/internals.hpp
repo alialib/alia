@@ -5,7 +5,7 @@
 
 #include <alia/core/flow/data_graph.hpp>
 
-#include <alia/indie/layout/api.hpp>
+#include <alia/indie/layout/specification.hpp>
 #include <alia/indie/layout/traversal.hpp>
 
 // This file declares various internal types that are necessary to implement
