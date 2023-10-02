@@ -2,6 +2,7 @@
 #define ALIA_INDIE_LAYOUT_UTILITIES_HPP
 
 #include <alia/indie/layout/internals.hpp>
+#include <alia/indie/widget.hpp>
 
 // This file defines various utilities for working with the layout system.
 
@@ -89,16 +90,15 @@ add_default_alignment(
 // Initialize a container for use within the given context.
 inline void
 initialize(
-    layout_traversal<layout_container, layout_node>& traversal,
-    layout_container& container)
+    layout_traversal<widget_container, widget>& traversal,
+    widget_container& container)
 {
     container.last_content_change = traversal.refresh_counter;
 }
 
 // Record a change in the layout at the current position in the traversal.
 inline void
-record_layout_change(
-    layout_traversal<layout_container, layout_node>& traversal)
+record_layout_change(layout_traversal<widget_container, widget>& traversal)
 {
     if (traversal.active_container)
         traversal.active_container->record_content_change(traversal);
@@ -106,8 +106,7 @@ record_layout_change(
 
 inline void
 set_next_node(
-    layout_traversal<layout_container, layout_node>& traversal,
-    layout_node* node)
+    layout_traversal<widget_container, widget>& traversal, widget* node)
 {
     if (*traversal.next_ptr != node)
     {
@@ -119,8 +118,7 @@ set_next_node(
 // Add a layout node to the layout tree being traversed.
 inline void
 add_layout_node(
-    layout_traversal<layout_container, layout_node>& traversal,
-    layout_node* node)
+    layout_traversal<widget_container, widget>& traversal, widget* node)
 {
     set_next_node(traversal, node);
     traversal.next_ptr = &node->next;
@@ -312,7 +310,7 @@ bool
 operator!=(resolved_layout_spec const& a, resolved_layout_spec const& b);
 void
 resolve_layout_spec(
-    layout_traversal<layout_container, layout_node>& traversal,
+    layout_traversal<widget_container, widget>& traversal,
     resolved_layout_spec& resolved,
     layout const& spec,
     layout_flag_set default_flags);
@@ -390,7 +388,7 @@ operator==(
 bool
 operator!=(
     leaf_layout_requirements const& a, leaf_layout_requirements const& b);
-struct layout_leaf : layout_node
+struct layout_leaf : widget
 {
     layout_leaf()
     {
@@ -398,7 +396,7 @@ struct layout_leaf : layout_node
 
     void
     refresh_layout(
-        layout_traversal<layout_container, layout_node>& traversal,
+        layout_traversal<widget_container, widget>& traversal,
         layout const& layout_spec,
         leaf_layout_requirements const& requirements,
         layout_flag_set default_flags = TOP | LEFT | PADDED);
@@ -433,9 +431,9 @@ struct layout_leaf : layout_node
 // Walk through the children of a layout container.
 template<class Visitor>
 void
-walk_layout_nodes(layout_node* children, Visitor&& visitor)
+walk_layout_nodes(widget* children, Visitor&& visitor)
 {
-    for (layout_node* child = children; child; child = child->next)
+    for (widget* child = children; child; child = child->next)
         std::forward<Visitor>(visitor)(*child);
 }
 

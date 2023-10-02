@@ -30,8 +30,8 @@ fold_in_requirements(
 }
 
 void
-layout_container::record_content_change(
-    layout_traversal<layout_container, layout_node>& traversal)
+widget_container::record_content_change(
+    layout_traversal<widget_container, widget>& traversal)
 {
     if (this->last_content_change != traversal.refresh_counter)
     {
@@ -204,7 +204,7 @@ operator!=(resolved_layout_spec const& a, resolved_layout_spec const& b)
 
 void
 resolve_layout_spec(
-    layout_traversal<layout_container, layout_node>& traversal,
+    layout_traversal<widget_container, widget>& traversal,
     resolved_layout_spec& resolved,
     layout const& spec,
     layout_flag_set default_flags)
@@ -417,7 +417,7 @@ layout_leaf::set_relative_assignment(
 
 void
 layout_leaf::refresh_layout(
-    layout_traversal<layout_container, layout_node>& traversal,
+    layout_traversal<widget_container, widget>& traversal,
     layout const& layout_spec,
     leaf_layout_requirements const& requirements,
     layout_flag_set default_flags)

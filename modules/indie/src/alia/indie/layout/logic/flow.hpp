@@ -44,7 +44,8 @@ struct flow_layout_logic
         calculated_layout_requirements requirements{
             layout_scalar(0), layout_scalar(0), layout_scalar(0)};
         walk_layout_nodes(
-            std::forward<Children>(children), [&](layout_node& node) {
+            std::forward<Children>(children),
+            [&](layout_node_interface& node) {
                 fold_in_requirements(
                     requirements, node.get_horizontal_requirements());
             });
@@ -94,7 +95,7 @@ struct flow_layout_logic
     }
 
     static void
-    calculate_node_wrapping(wrapping_state& state, layout_node& node)
+    calculate_node_wrapping(wrapping_state& state, layout_node_interface& node)
     {
         layout_requirements x = node.get_horizontal_requirements();
         if (state.accumulated_width + x.size > state.assigned_width)
@@ -121,7 +122,9 @@ struct flow_layout_logic
 
         walk_layout_nodes(
             std::forward<Children>(children),
-            [&](layout_node& node) { calculate_node_wrapping(state, node); });
+            [&](layout_node_interface& node) {
+                calculate_node_wrapping(state, node);
+            });
         // Include the last/current row in the height requirements.
         wrap_row(state);
 
@@ -154,7 +157,8 @@ struct flow_layout_logic
     }
 
     static void
-    assign_wrapped_regions(wrapping_assignment_state& state, layout_node& node)
+    assign_wrapped_regions(
+        wrapping_assignment_state& state, layout_node_interface& node)
     {
         layout_requirements x = node.get_horizontal_requirements();
         if (state.x + x.size > state.assigned_width)
@@ -192,7 +196,9 @@ struct flow_layout_logic
         state.x_alignment = x_alignment;
         walk_layout_nodes(
             std::forward<Children>(children),
-            [&](layout_node& node) { assign_wrapped_regions(state, node); });
+            [&](layout_node_interface& node) {
+                assign_wrapped_regions(state, node);
+            });
     }
 };
 
@@ -233,7 +239,8 @@ struct vertical_flow_layout_logic
         layout_scalar max_column_height = 0;
         layout_scalar current_column_height = 0;
         walk_layout_nodes(
-            std::forward<Children>(children), [&](layout_node& node) {
+            std::forward<Children>(children),
+            [&](layout_node_interface& node) {
                 if (current_column_height >= average_column_height)
                 {
                     if (current_column_height > max_column_height)
@@ -272,7 +279,8 @@ struct vertical_flow_layout_logic
         // reasonable results.
         layout_vector p = make_layout_vector(0, 0);
         walk_layout_nodes(
-            std::forward<Children>(children), [&](layout_node& node) {
+            std::forward<Children>(children),
+            [&](layout_node_interface& node) {
                 if (p[1] >= average_column_height)
                 {
                     p[0] += column_width;

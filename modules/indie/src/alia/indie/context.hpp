@@ -13,15 +13,11 @@ struct system;
 ALIA_DEFINE_TAGGED_TYPE(system_tag, system&)
 
 struct widget;
-struct widget_traversal
-{
-    widget** next_ptr = nullptr;
-};
+struct widget_container;
 
 struct traversal
 {
-    widget_traversal widgets;
-    layout_traversal<layout_container, layout_node> layout;
+    layout_traversal<widget_container, widget> layout;
 };
 ALIA_DEFINE_TAGGED_TYPE(traversal_tag, traversal&)
 
@@ -70,16 +66,10 @@ get_system(event_context ctx)
     return *ctx.contents_.storage->indie_sys;
 }
 
-inline layout_traversal<layout_container, layout_node>&
+inline layout_traversal<widget_container, widget>&
 get_layout_traversal(dataless_context ctx)
 {
     return get<indie::traversal_tag>(ctx).layout;
-}
-
-inline widget_traversal&
-get_widget_traversal(dataless_context ctx)
-{
-    return get<indie::traversal_tag>(ctx).widgets;
 }
 
 } // namespace indie

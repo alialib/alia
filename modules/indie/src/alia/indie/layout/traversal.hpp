@@ -5,7 +5,6 @@
 
 namespace alia { namespace indie {
 
-struct persistent_layout_state;
 struct layout_style_info;
 
 // layout_traversal is the state associated with a traversal of the scene

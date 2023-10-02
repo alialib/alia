@@ -12,10 +12,11 @@ struct bordered_layout_logic
 
     template<class Children>
     calculated_layout_requirements
-    get_horizontal_requirements(layout_node* children)
+    get_horizontal_requirements(Children&& children)
     {
         return calculated_layout_requirements{
-            get_max_child_width(children) + (border.left + border.right),
+            get_max_child_width(std::forward<Children>(children))
+                + (border.left + border.right),
             0,
             0};
     }
@@ -23,11 +24,12 @@ struct bordered_layout_logic
     template<class Children>
     calculated_layout_requirements
     get_vertical_requirements(
-        layout_node* children, layout_scalar assigned_width)
+        Children&& children, layout_scalar assigned_width)
     {
         calculated_layout_requirements requirements
             = fold_vertical_child_requirements(
-                children, assigned_width - (border.left + border.right));
+                std::forward<Children>(children),
+                assigned_width - (border.left + border.right));
         return calculated_layout_requirements{
             requirements.size + border.top + border.bottom,
             requirements.ascent + border.top,
@@ -37,20 +39,22 @@ struct bordered_layout_logic
     template<class Children>
     void
     set_relative_assignment(
-        layout_node* children,
+        Children&& children,
         layout_vector const& assigned_size,
         layout_scalar assigned_baseline_y)
     {
-        walk_layout_nodes(children, [&](layout_node& node) {
-            node.set_relative_assignment(relative_layout_assignment{
-                layout_box(
-                    make_layout_vector(border.left, border.top),
-                    assigned_size
-                        - make_layout_vector(
-                            border.left + border.right,
-                            border.top + border.bottom)),
-                assigned_baseline_y - border.top});
-        });
+        walk_layout_nodes(
+            std::forward<Children>(children),
+            [&](layout_node_interface& node) {
+                node.set_relative_assignment(relative_layout_assignment{
+                    layout_box(
+                        make_layout_vector(border.left, border.top),
+                        assigned_size
+                            - make_layout_vector(
+                                border.left + border.right,
+                                border.top + border.bottom)),
+                    assigned_baseline_y - border.top});
+            });
     }
 };
 

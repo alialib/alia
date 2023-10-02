@@ -297,9 +297,12 @@ update_ui(glfw_window_impl& impl)
     }
 
     resolve_layout(
-        impl.system.layout_root,
-        impl.system.layout_state,
-        make_vector(float(width), float(height)));
+        impl.system.root_widget, make_vector(float(width), float(height)));
+
+    // Increment the refresh counter immediately after resolving layout so
+    // that any changes detected after this will be associated with the new
+    // counter value and thus cause a recalculation.
+    ++impl.system.refresh_counter;
 
     std::chrono::steady_clock::duration layout_time;
     {
