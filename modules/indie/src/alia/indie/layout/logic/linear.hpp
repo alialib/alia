@@ -14,7 +14,7 @@ compute_total_width_and_growth(
     *total_width = 0;
     *total_growth = 0;
     walk_layout_nodes(
-        std::forward<Children>(children), [&](layout_node& node) {
+        std::forward<Children>(children), [&](layout_node_interface& node) {
             layout_requirements r = node.get_horizontal_requirements();
             *total_width += r.size;
             *total_growth += r.growth_factor;
@@ -67,7 +67,7 @@ struct row_layout_logic
         layout_scalar remaining_extra_size = assigned_width - total_size;
         float remaining_growth = total_growth;
         calculated_layout_requirements requirements{0, 0, 0};
-        walk_layout_nodes(children, [&](layout_node& node) {
+        walk_layout_nodes(children, [&](layout_node_interface& node) {
             layout_requirements x = node.get_horizontal_requirements();
             layout_scalar this_width = calculate_child_size(
                 remaining_extra_size,
@@ -95,7 +95,8 @@ struct row_layout_logic
         layout_scalar remaining_extra_size = assigned_size[0] - total_size;
         float remaining_growth = total_growth;
         walk_layout_nodes(
-            std::forward<Children>(children), [&](layout_node& node) {
+            std::forward<Children>(children),
+            [&](layout_node_interface& node) {
                 layout_requirements x = node.get_horizontal_requirements();
                 layout_scalar this_width = calculate_child_size(
                     remaining_extra_size,
@@ -130,7 +131,8 @@ struct column_layout_logic
         layout_scalar ascent = 0, descent = 0;
         bool is_first = true;
         walk_layout_nodes(
-            std::forward<Children>(children), [&](layout_node& node) {
+            std::forward<Children>(children),
+            [&](layout_node_interface& node) {
                 layout_requirements r
                     = node.get_vertical_requirements(assigned_width);
                 total_height += r.size;

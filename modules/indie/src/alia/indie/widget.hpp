@@ -16,7 +16,7 @@ namespace alia { namespace indie {
 
 struct hit_test_base;
 
-struct widget : std::enable_shared_from_this<widget>
+struct widget : layout_node_interface, std::enable_shared_from_this<widget>
 {
     ~widget()
     {
@@ -43,37 +43,22 @@ struct widget : std::enable_shared_from_this<widget>
     widget* children = nullptr;
 };
 
-struct leaf_widget : widget, layout_leaf
-{
-};
-
 struct widget_container : widget
 {
+    widget_container* parent = nullptr;
+
+    // This records the last refresh in which the contents of the container
+    // changed. It's updated during the refresh pass and is used to determine
+    // when the container's layout needs to be recomputed.
+    counter_type last_content_change = 1;
+
+    virtual void
+    record_content_change(
+        layout_traversal<widget_container, widget>& traversal);
 };
 
 void
 render_children(SkCanvas& canvas, widget_container& container);
-
-void
-add_widget(widget_traversal& traversal, widget* node);
-
-struct scoped_widget_container
-{
-    ~scoped_widget_container()
-    {
-        end();
-    }
-
-    void
-    begin(widget_traversal& traversal, widget_container* container);
-
-    void
-    end();
-
- private:
-    widget_traversal* traversal_ = nullptr;
-    widget_container* container_;
-};
 
 struct external_widget_handle
 {

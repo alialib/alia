@@ -4,7 +4,7 @@ namespace alia { namespace indie {
 
 bool
 update_layout_cacher(
-    layout_traversal<layout_container, layout_node>& traversal,
+    layout_traversal<widget_container, widget>& traversal,
     layout_cacher& cacher,
     layout const& layout_spec,
     layout_flag_set default_flags)
@@ -51,7 +51,7 @@ vertical_layout_query::update(calculated_layout_requirements const& calculated)
 }
 
 relative_region_assignment::relative_region_assignment(
-    layout_node& node,
+    layout_node_interface& node,
     layout_cacher& cacher,
     counter_type last_content_change,
     relative_layout_assignment const& assignment)

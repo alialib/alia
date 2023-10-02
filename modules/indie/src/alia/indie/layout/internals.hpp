@@ -50,17 +50,6 @@ operator!=(
     return !(a == b);
 }
 
-// This information is required by the layout system to resolve layout
-// specifications that refer to the current style.
-struct layout_style_info
-{
-    vector<2, layout_scalar> padding_size;
-    float font_size;
-    vector<2, layout_scalar> character_size;
-    float x_height;
-    float magnification;
-};
-
 struct layout_node_interface
 {
     virtual ~layout_node_interface()
@@ -77,30 +66,6 @@ struct layout_node_interface
     virtual void
     set_relative_assignment(relative_layout_assignment const& assignment)
         = 0;
-};
-
-// layout_nodes make up the layout tree that is built by the system.
-struct layout_node : layout_node_interface
-{
-    // next node in the list of siblings
-    layout_node* next = nullptr;
-};
-
-// All nodes in a layout tree with children derive from this.
-struct layout_container : layout_node
-{
-    layout_node* children = nullptr;
-
-    layout_container* parent = nullptr;
-
-    // This records the last refresh in which the contents of the container
-    // changed. It's updated during the refresh pass and is used to determine
-    // when the container's layout needs to be recomputed.
-    counter_type last_content_change = 1;
-
-    virtual void
-    record_content_change(
-        layout_traversal<layout_container, layout_node>& traversal);
 };
 
 }} // namespace alia::indie

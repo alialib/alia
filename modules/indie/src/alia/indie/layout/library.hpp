@@ -10,8 +10,8 @@ struct data_traversal;
 namespace indie {
 
 struct layout_system;
-struct layout_container;
-struct layout_node;
+struct widget_container;
+struct widget;
 struct layout_style_info;
 template<class Logic>
 struct simple_layout_container;
@@ -23,8 +23,8 @@ struct scoped_layout_container : noncopyable
     {
     }
     scoped_layout_container(
-        layout_traversal<layout_container, layout_node>& traversal,
-        layout_container* container)
+        layout_traversal<widget_container, widget>& traversal,
+        widget_container* container)
     {
         begin(traversal, container);
     }
@@ -34,13 +34,13 @@ struct scoped_layout_container : noncopyable
     }
     void
     begin(
-        layout_traversal<layout_container, layout_node>& traversal,
-        layout_container* container);
+        layout_traversal<widget_container, widget>& traversal,
+        widget_container* container);
     void
     end();
 
  private:
-    layout_traversal<layout_container, layout_node>* traversal_;
+    layout_traversal<widget_container, widget>* traversal_;
 };
 
 // // A spacer simply fills space in a layout.
@@ -459,7 +459,7 @@ get_container_offset(simple_layout_container<Logic> const& container)
 //         layout_vector const& max_size);
 
 //     layout_traversal* traversal_;
-//     layout_container* old_container_;
+//     widget_container* old_container_;
 //     layout_node** old_next_ptr_;
 //     layout_node* floating_root_;
 //     floating_layout_data* data_;

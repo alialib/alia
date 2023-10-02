@@ -24,7 +24,7 @@
 using namespace alia;
 using namespace alia::indie;
 
-struct box_node : indie::leaf_widget
+struct box_node : indie::layout_leaf
 {
     void
     render(SkCanvas& canvas) override
@@ -172,7 +172,6 @@ do_box(
 
     if (is_refresh_event(ctx))
     {
-        add_widget(get<indie::traversal_tag>(ctx).widgets, &node);
         node.refresh_layout(
             get<indie::traversal_tag>(ctx).layout,
             layout_spec,
@@ -216,7 +215,7 @@ get_layout_traversal(context ctx)
 }
 
 template<class LayoutContainer>
-struct layout_container_widget : widget_container, LayoutContainer
+struct layout_container_widget : LayoutContainer
 {
     void
     render(SkCanvas& canvas) override
@@ -296,7 +295,7 @@ struct layout_widget_container_storage
 template<class Logic>
 void
 get_layout_widget_container(
-    layout_traversal<layout_container, layout_node>& traversal,
+    layout_traversal<widget_container, widget>& traversal,
     data_traversal& data,
     layout_container_widget<simple_layout_container<Logic>>** container,
     Logic** logic,
@@ -349,7 +348,6 @@ struct scoped_column
             &logic,
             layout_spec);
         slc_.begin(get_layout_traversal(ctx), container_);
-        widget_scope_.begin(get_widget_traversal(ctx), container_);
     }
 
     void
@@ -357,7 +355,6 @@ struct scoped_column
     {
         if (container_)
         {
-            widget_scope_.end();
             slc_.end();
             container_ = nullptr;
         }
@@ -386,7 +383,6 @@ struct scoped_column
         container_
         = nullptr;
     scoped_layout_container slc_;
-    scoped_widget_container widget_scope_;
 };
 
 struct scoped_flow_layout
@@ -429,7 +425,6 @@ struct scoped_flow_layout
             adjusted_layout_spec);
         logic->x_alignment = x_alignment;
         slc_.begin(get_layout_traversal(ctx), container_);
-        widget_scope_.begin(get_widget_traversal(ctx), container_);
     }
 
     void
@@ -437,7 +432,6 @@ struct scoped_flow_layout
     {
         if (container_)
         {
-            widget_scope_.end();
             slc_.end();
             container_ = nullptr;
         }
@@ -466,7 +460,6 @@ struct scoped_flow_layout
         container_
         = nullptr;
     scoped_layout_container slc_;
-    scoped_widget_container widget_scope_;
 };
 
 #if 0
@@ -600,7 +593,7 @@ template<class Uniformity>
 struct grid_data
 {
     // the container that contains the whole grid
-    layout_container* container = nullptr;
+    widget_container* container = nullptr;
 
     // list of rows in the grid
     grid_row_container<Uniformity>* rows = nullptr;
@@ -765,7 +758,7 @@ struct scoped_grid_row
 };
 
 template<class Uniformity>
-struct grid_row_container : layout_container, widget_container
+struct grid_row_container : widget_container, widget_container
 {
     void
     render(SkCanvas& canvas) override
@@ -853,7 +846,7 @@ update_grid_column_requirements(grid_data<Uniformity>& grid)
             if (row->last_content_query != row->last_content_change)
             {
                 clear_requirements(row->requirements);
-                for (layout_node* child = row->layout_container::children;
+                for (layout_node* child = row->widget_container::children;
                      child;
                      child = child->next)
                 {
@@ -1003,7 +996,7 @@ grid_row_container<Uniformity>::set_relative_assignment(
     {
         set_grid_row_relative_assignment(
             *grid,
-            layout_container::children,
+            widget_container::children,
             rra.resolved_assignment().region.size,
             rra.resolved_assignment().baseline_y);
         rra.update();
@@ -1073,13 +1066,13 @@ void
 my_ui(indie::context ctx)
 {
     // static indie::layout_container_widget<column_layout> container;
-    static indie::simple_container_widget container;
-    indie::scoped_widget_container container_scope;
-    if (is_refresh_event(ctx))
-    {
-        container_scope.begin(
-            get<indie::traversal_tag>(ctx).widgets, &container);
-    }
+    // static indie::simple_container_widget container;
+    // indie::scoped_widget_container container_scope;
+    // if (is_refresh_event(ctx))
+    // {
+    //     container_scope.begin(
+    //         get<indie::traversal_tag>(ctx).widgets, &container);
+    // }
 
     indie::scoped_column column(ctx, GROW | PADDED);
 
@@ -1106,7 +1099,6 @@ my_ui(indie::context ctx)
 
         for (int i = 0; i != 100; ++i)
         {
-
             {
                 indie::scoped_column col(ctx);
 

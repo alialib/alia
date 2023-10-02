@@ -11,7 +11,7 @@ get_max_child_width(Children&& children)
 {
     layout_scalar width = 0;
     walk_layout_nodes(
-        std::forward<Children>(children), [&](layout_node& node) {
+        std::forward<Children>(children), [&](layout_node_interface& node) {
             layout_requirements x = node.get_horizontal_requirements();
             width = (std::max)(x.size, width);
         });
@@ -33,7 +33,7 @@ fold_vertical_child_requirements(
 {
     calculated_layout_requirements requirements{0, 0, 0};
     walk_layout_nodes(
-        std::forward<Children>(children), [&](layout_node& node) {
+        std::forward<Children>(children), [&](layout_node_interface& node) {
             fold_in_requirements(
                 requirements, node.get_vertical_requirements(assigned_width));
         });
@@ -48,7 +48,7 @@ assign_identical_child_regions(
     layout_scalar assigned_baseline_y)
 {
     walk_layout_nodes(
-        std::forward<Children>(children), [&](layout_node& node) {
+        std::forward<Children>(children), [&](layout_node_interface& node) {
             node.set_relative_assignment(relative_layout_assignment{
                 layout_box(make_layout_vector(0, 0), assigned_size),
                 assigned_baseline_y});
@@ -61,7 +61,7 @@ compute_total_height(Children&& children, layout_scalar assigned_width)
 {
     layout_scalar total_height = 0;
     walk_layout_nodes(
-        std::forward<Children>(children), [&](layout_node& node) {
+        std::forward<Children>(children), [&](layout_node_interface& node) {
             layout_requirements y
                 = node.get_vertical_requirements(assigned_width);
             total_height += y.size;

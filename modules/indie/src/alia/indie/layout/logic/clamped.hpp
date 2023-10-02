@@ -53,7 +53,8 @@ struct clamped_layout_logic
                       : (std::min)(assigned_size[i], this->max_size[i]);
         }
         walk_layout_nodes(
-            std::forward<Children>(children), [&](layout_node& node) {
+            std::forward<Children>(children),
+            [&](layout_node_interface& node) {
                 layout_requirements y
                     = node.get_vertical_requirements(clamped_size[0]);
                 node.set_relative_assignment(relative_layout_assignment{

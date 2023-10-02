@@ -8,26 +8,31 @@
 
 namespace alia { namespace indie {
 
-// the persistent state associated with an instance of the layout system
-struct persistent_layout_state
+// This information is required by the layout system to resolve layout
+// specifications that refer to the current style.
+struct layout_style_info
 {
-    counter_type refresh_counter = 1;
+    vector<2, layout_scalar> padding_size;
+    float font_size;
+    vector<2, layout_scalar> character_size;
+    float x_height;
+    float magnification;
 };
 
 template<class Container, class Node>
 void
 initialize_layout_traversal(
     layout_traversal<Container, Node>& traversal,
-    persistent_layout_state& persistent_state,
     Node** root_node,
     bool is_refresh,
+    counter_type refresh_counter,
     layout_style_info* style,
     vector<2, float> const& ppi)
 {
     traversal.active_container = 0;
     traversal.next_ptr = root_node;
     traversal.is_refresh_pass = is_refresh;
-    traversal.refresh_counter = persistent_state.refresh_counter;
+    traversal.refresh_counter = refresh_counter;
     traversal.style_info = style;
     traversal.ppi = ppi;
 
@@ -40,10 +45,7 @@ initialize_layout_traversal(
 
 template<class Container>
 void
-resolve_layout(
-    Container* root_node,
-    persistent_layout_state& persistent_state,
-    layout_vector const& size)
+resolve_layout(Container* root_node, layout_vector const& size)
 {
     if (root_node)
     {
@@ -52,10 +54,6 @@ resolve_layout(
         root_node->set_relative_assignment(relative_layout_assignment{
             layout_box(make_layout_vector(0, 0), size), y.ascent});
     }
-    // Increment the refresh counter immediately after resolving layout so
-    // that any changes detected after this will be associated with the new
-    // counter value and thus cause a recalculation.
-    ++persistent_state.refresh_counter;
 }
 
 template<class Container>

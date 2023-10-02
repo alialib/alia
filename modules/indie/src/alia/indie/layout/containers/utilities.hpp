@@ -31,7 +31,7 @@ struct layout_cacher
 };
 bool
 update_layout_cacher(
-    layout_traversal<layout_container, layout_node>& traversal,
+    layout_traversal<widget_container, widget>& traversal,
     layout_cacher& cacher,
     layout const& layout_spec,
     layout_flag_set default_flags);
@@ -85,7 +85,7 @@ struct vertical_layout_query
 struct relative_region_assignment
 {
     relative_region_assignment(
-        layout_node& node,
+        layout_node_interface& node,
         layout_cacher& cacher,
         counter_type last_content_change,
         relative_layout_assignment const& assignment);
@@ -119,7 +119,7 @@ get_assignment(layout_cacher const& cacher)
 // amongst their children.
 // All the shared behavior is refactored into simple_layout_container.
 template<class Logic>
-struct simple_layout_container : layout_container
+struct simple_layout_container : widget_container
 {
     // implementation of layout interface
     layout_requirements
