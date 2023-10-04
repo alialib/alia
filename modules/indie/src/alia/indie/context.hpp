@@ -3,7 +3,7 @@
 
 #include <alia/core/context/interface.hpp>
 
-#include <alia/indie/layout/internals.hpp>
+#include <alia/indie/layout/node_interface.hpp>
 #include <alia/indie/layout/traversal.hpp>
 
 namespace alia {

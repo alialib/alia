@@ -14,37 +14,6 @@
 
 namespace alia { namespace indie {
 
-void
-scoped_layout_container::begin(
-    layout_traversal<widget_container, widget>& traversal,
-    widget_container* container)
-{
-    if (traversal.is_refresh_pass)
-    {
-        traversal_ = &traversal;
-
-        set_next_node(traversal, container);
-        container->parent = traversal.active_container;
-
-        traversal.next_ptr = &container->children;
-        traversal.active_container = container;
-    }
-}
-void
-scoped_layout_container::end()
-{
-    if (traversal_)
-    {
-        set_next_node(*traversal_, nullptr);
-
-        widget_container* container = traversal_->active_container;
-        traversal_->next_ptr = &container->next;
-        traversal_->active_container = container->parent;
-
-        traversal_ = nullptr;
-    }
-}
-
 // void
 // do_spacer(
 //     layout_traversal& traversal,
@@ -531,58 +500,7 @@ calculate_column_assignments(
     return grid.assignments;
 }
 
-calculated_layout_requirements
-calculate_grid_row_vertical_requirements(
-    grid_data<nonuniform_grid_tag>& grid,
-    grid_row_container<nonuniform_grid_tag>& row,
-    layout_scalar assigned_width)
-{
-    std::vector<layout_scalar> const& column_widths
-        = calculate_column_assignments(grid, assigned_width);
-    calculated_layout_requirements requirements(0, 0, 0);
-    size_t column_index = 0;
-    walk_layout_nodes(row.children, [&](layout_node_interface& node) {
-        fold_in_requirements(
-            requirements,
-            node.get_vertical_requirements(column_widths[column_index]));
-        ++column_index;
-    });
-    return requirements;
-}
 
-calculated_layout_requirements
-calculate_grid_row_vertical_requirements(
-    grid_data<uniform_grid_tag>& grid,
-    grid_row_container<uniform_grid_tag>& /*row*/,
-    layout_scalar assigned_width)
-{
-    named_block nb;
-    auto& cache = grid.vertical_requirements_cache;
-    if (cache.last_update != grid.container->last_content_change)
-    {
-        update_grid_column_requirements(grid);
-
-        std::vector<layout_scalar> const& widths
-            = calculate_column_assignments(grid, assigned_width);
-
-        calculated_layout_requirements& grid_requirements = cache.requirements;
-        grid_requirements = calculated_layout_requirements(0, 0, 0);
-        for (grid_row_container<uniform_grid_tag>* row = grid.rows; row;
-             row = row->next)
-        {
-            size_t column_index = 0;
-            walk_layout_nodes(row->children, [&](layout_node_interface& node) {
-                fold_in_requirements(
-                    grid_requirements,
-                    node.get_vertical_requirements(widths[column_index]));
-                ++column_index;
-            });
-        }
-
-        cache.last_update = grid.container->last_content_change;
-    }
-    return cache.requirements;
-}
 
 template<class Uniformity>
 layout_requirements
