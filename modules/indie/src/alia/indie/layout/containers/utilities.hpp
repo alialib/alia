@@ -3,6 +3,33 @@
 
 namespace alia { namespace indie {
 
+// scoped_layout_container makes a layout container active for its scope.
+struct scoped_layout_container : noncopyable
+{
+    scoped_layout_container() : traversal_(0)
+    {
+    }
+    scoped_layout_container(
+        layout_traversal<widget_container, widget>& traversal,
+        widget_container* container)
+    {
+        begin(traversal, container);
+    }
+    ~scoped_layout_container()
+    {
+        end();
+    }
+    void
+    begin(
+        layout_traversal<widget_container, widget>& traversal,
+        widget_container* container);
+    void
+    end();
+
+ private:
+    layout_traversal<widget_container, widget>* traversal_;
+};
+
 // layout_cacher is a utility used by layout containers to cache the results
 // of their layout calculations.
 struct layout_cacher
@@ -35,78 +62,78 @@ update_layout_cacher(
     layout_cacher& cacher,
     layout const& layout_spec,
     layout_flag_set default_flags);
-struct horizontal_layout_query
+
+template<class Calculator>
+layout_requirements const&
+cache_horizontal_layout_requirements(
+    layout_cacher& cacher,
+    counter_type last_content_change,
+    Calculator&& calculator)
 {
-    horizontal_layout_query(
-        layout_cacher& cacher, counter_type last_content_change);
-    bool
-    update_required() const
+    if (cacher.last_horizontal_query != last_content_change)
     {
-        return cacher_->last_horizontal_query != last_content_change_;
+        resolve_requirements(
+            cacher.horizontal_requirements,
+            cacher.resolved_spec,
+            0,
+            std::forward<Calculator>(calculator)());
+        cacher.last_horizontal_query = last_content_change;
     }
-    void
-    update(calculated_layout_requirements const& calculated);
-    layout_requirements const&
-    result() const
-    {
-        return cacher_->horizontal_requirements;
-    }
+    return cacher.horizontal_requirements;
+}
 
- private:
-    layout_cacher* cacher_;
-    counter_type last_content_change_;
-};
-
-struct vertical_layout_query
+template<class Calculator>
+layout_requirements const&
+cache_vertical_layout_requirements(
+    layout_cacher& cacher,
+    counter_type last_content_change,
+    layout_scalar assigned_width,
+    Calculator&& calculator)
 {
-    vertical_layout_query(
-        layout_cacher& cacher,
-        counter_type last_content_change,
-        layout_scalar assigned_width);
-    bool
-    update_required() const
+    if (cacher.assigned_width != assigned_width
+        || cacher.last_vertical_query != last_content_change)
     {
-        return cacher_->assigned_width != assigned_width_
-               || cacher_->last_vertical_query != last_content_change_;
+        resolve_requirements(
+            cacher.vertical_requirements,
+            cacher.resolved_spec,
+            1,
+            std::forward<Calculator>(calculator)());
+        cacher.last_vertical_query = last_content_change;
+        cacher.assigned_width = assigned_width;
     }
-    void
-    update(calculated_layout_requirements const& calculated);
-    layout_requirements const&
-    result() const
-    {
-        return cacher_->vertical_requirements;
-    }
+    return cacher.vertical_requirements;
+}
 
- private:
-    layout_cacher* cacher_;
-    counter_type last_content_change_;
-    layout_scalar assigned_width_;
-};
-struct relative_region_assignment
+template<class Assigner>
+void
+update_relative_assignment(
+    layout_node_interface& node,
+    layout_cacher& cacher,
+    counter_type last_content_change,
+    relative_layout_assignment const& assignment,
+    Assigner&& assigner)
 {
-    relative_region_assignment(
-        layout_node_interface& node,
-        layout_cacher& cacher,
-        counter_type last_content_change,
-        relative_layout_assignment const& assignment);
-    bool
-    update_required() const
+    if (cacher.last_relative_assignment != last_content_change
+        || cacher.relative_assignment != assignment)
     {
-        return update_required_;
+        auto resolved_assignment = resolve_relative_assignment(
+            cacher.resolved_spec,
+            assignment,
+            cacher.horizontal_requirements,
+            node.get_vertical_requirements(assignment.region.size[0]));
+        if (cacher.resolved_relative_assignment.region.size
+                != resolved_assignment.region.size
+            || cacher.resolved_relative_assignment.baseline_y
+                   != resolved_assignment.baseline_y)
+        {
+            std::forward<Assigner>(assigner)(resolved_assignment);
+            cacher.last_relative_assignment = last_content_change;
+        }
+        cacher.resolved_relative_assignment = resolved_assignment;
+        cacher.relative_assignment = assignment;
     }
-    relative_layout_assignment const&
-    resolved_assignment() const
-    {
-        return cacher_->resolved_relative_assignment;
-    }
-    void
-    update();
+}
 
- private:
-    layout_cacher* cacher_;
-    counter_type last_content_change_;
-    bool update_required_;
-};
 // Get the resolved relative assignment for a layout cacher.
 inline relative_layout_assignment const&
 get_assignment(layout_cacher const& cacher)
@@ -114,105 +141,49 @@ get_assignment(layout_cacher const& cacher)
     return cacher.resolved_relative_assignment;
 }
 
-// The vast majority of layout containers behave identically except for the
-// logic they use to calculate their requirements and divide their space
-// amongst their children.
-// All the shared behavior is refactored into simple_layout_container.
-template<class Logic>
-struct simple_layout_container : widget_container
+template<class LayoutContainer>
+struct layout_container_widget : LayoutContainer
 {
-    // implementation of layout interface
-    layout_requirements
-    get_horizontal_requirements() override
+    void
+    render(SkCanvas& canvas) override
     {
-        horizontal_layout_query query(cacher, last_content_change);
-        if (query.update_required())
+        auto const& region = get_assignment(this->cacher).region;
+        SkRect bounds;
+        bounds.fLeft = SkScalar(region.corner[0]);
+        bounds.fTop = SkScalar(region.corner[1]);
+        bounds.fRight = SkScalar(region.corner[0] + region.size[0]);
+        bounds.fBottom = SkScalar(region.corner[1] + region.size[1]);
+        if (!canvas.quickReject(bounds))
         {
-            query.update(logic->get_horizontal_requirements(children));
+            canvas.save();
+            auto const& offset = region.corner;
+            canvas.translate(offset[0], offset[1]);
+            indie::render_children(canvas, *this);
+            canvas.restore();
         }
-        return query.result();
-    }
-
-    layout_requirements
-    get_vertical_requirements(layout_scalar assigned_width) override
-    {
-        vertical_layout_query query(
-            cacher, last_content_change, assigned_width);
-        if (query.update_required())
-        {
-            query.update(logic->get_vertical_requirements(
-                children,
-                resolve_assigned_width(
-                    this->cacher.resolved_spec,
-                    assigned_width,
-                    this->get_horizontal_requirements())));
-        }
-        return query.result();
     }
 
     void
-    set_relative_assignment(
-        relative_layout_assignment const& assignment) override
+    hit_test(
+        hit_test_base& test, vector<2, double> const& point) const override
     {
-        relative_region_assignment rra(
-            *this, cacher, last_content_change, assignment);
-        if (rra.update_required())
+        auto const& region = get_assignment(this->cacher).region;
+        if (is_inside(region, vector<2, float>(point)))
         {
-            this->assigned_size = rra.resolved_assignment().region.size;
-            logic->set_relative_assignment(
-                children,
-                rra.resolved_assignment().region.size,
-                rra.resolved_assignment().baseline_y);
-            rra.update();
+            auto local_point = point - vector<2, double>(region.corner);
+            for (widget* node = this->widget_container::children; node;
+                 node = node->next)
+            {
+                node->hit_test(test, local_point);
+            }
         }
     }
 
-    Logic* logic;
-
-    layout_cacher cacher;
-
-    layout_vector assigned_size;
+    void
+    process_input(event_context) override
+    {
+    }
 };
-
-// get_simple_layout_container is a utility function for retrieving a
-// simple_layout_container with a specific type of logic from a UI context's
-// data graph and refreshing it.
-// template<class Logic>
-// struct simple_layout_container_storage
-// {
-//     simple_layout_container<Logic> container;
-//     Logic logic;
-// };
-// template<class Logic>
-// void
-// get_simple_layout_container(
-//     layout_traversal& traversal,
-//     data_traversal& data,
-//     simple_layout_container<Logic>** container,
-//     Logic** logic,
-//     layout const& layout_spec)
-// {
-//     simple_layout_container_storage<Logic>* storage;
-//     if (get_cached_data(data, &storage))
-//         storage->container.logic = &storage->logic;
-
-//     *container = &storage->container;
-
-//     if (is_refresh_pass(traversal))
-//     {
-//         if (update_layout_cacher(
-//                 traversal, (*container)->cacher, layout_spec, FILL |
-//                 UNPADDED))
-//         {
-//             // Since this container isn't active yet, it didn't get marked
-//             as
-//             // needing recalculation, so we need to do that manually here.
-//             (*container)->last_content_change = traversal.refresh_counter;
-//         }
-//     }
-
-//     *logic = &storage->logic;
-// }
 
 #define ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(logic_type)                        \
     logic_type* logic;                                                        \

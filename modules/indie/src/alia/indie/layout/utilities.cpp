@@ -351,20 +351,6 @@ resolve_relative_assignment(
         vertical_requirements.ascent - spec.padding_size[1]};
 }
 
-bool
-operator==(
-    leaf_layout_requirements const& a, leaf_layout_requirements const& b)
-{
-    return a.size == b.size && a.ascent == b.ascent && a.descent == b.descent;
-}
-
-bool
-operator!=(
-    leaf_layout_requirements const& a, leaf_layout_requirements const& b)
-{
-    return !(a == b);
-}
-
 layout_requirements
 layout_leaf::get_horizontal_requirements()
 {

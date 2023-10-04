@@ -38,8 +38,10 @@ struct widget : layout_node_interface, std::enable_shared_from_this<widget>
     // identity() const
     //     = 0;
 
+    // the next widget in the widget's sibling list
     widget* next = nullptr;
-    // TODO: Move to container?
+
+    // the first child of this widget
     widget* children = nullptr;
 };
 

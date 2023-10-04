@@ -1,7 +1,7 @@
 #ifndef ALIA_INDIE_LAYOUT_SYSTEM_HPP
 #define ALIA_INDIE_LAYOUT_SYSTEM_HPP
 
-#include <alia/indie/layout/internals.hpp>
+#include <alia/indie/layout/node_interface.hpp>
 #include <alia/indie/layout/utilities.hpp>
 
 // This file defines the top-level interface to the layout system.

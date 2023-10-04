@@ -1,7 +1,7 @@
 #ifndef ALIA_INDIE_LAYOUT_UTILITIES_HPP
 #define ALIA_INDIE_LAYOUT_UTILITIES_HPP
 
-#include <alia/indie/layout/internals.hpp>
+#include <alia/indie/layout/node_interface.hpp>
 #include <alia/indie/widget.hpp>
 
 // This file defines various utilities for working with the layout system.
@@ -382,12 +382,18 @@ struct leaf_layout_requirements
     layout_vector size;
     layout_scalar ascent, descent;
 };
-bool
+inline bool
 operator==(
-    leaf_layout_requirements const& a, leaf_layout_requirements const& b);
-bool
+    leaf_layout_requirements const& a, leaf_layout_requirements const& b)
+{
+    return a.size == b.size && a.ascent == b.ascent && a.descent == b.descent;
+}
+inline bool
 operator!=(
-    leaf_layout_requirements const& a, leaf_layout_requirements const& b);
+    leaf_layout_requirements const& a, leaf_layout_requirements const& b)
+{
+    return !(a == b);
+}
 struct layout_leaf : widget
 {
     layout_leaf()
@@ -423,7 +429,7 @@ struct layout_leaf : widget
     leaf_layout_requirements requirements_;
 
     // resolved relative assignment
-    indie::relative_layout_assignment relative_assignment_;
+    relative_layout_assignment relative_assignment_;
 };
 
 // Various utilities for working with layout children...

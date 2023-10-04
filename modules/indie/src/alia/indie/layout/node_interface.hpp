@@ -1,5 +1,5 @@
-#ifndef ALIA_INDIE_LAYOUT_INTERNALS_HPP
-#define ALIA_INDIE_LAYOUT_INTERNALS_HPP
+#ifndef ALIA_INDIE_LAYOUT_NODE_INTERFACE_HPP
+#define ALIA_INDIE_LAYOUT_NODE_INTERFACE_HPP
 
 #include <vector>
 
@@ -7,6 +7,9 @@
 
 #include <alia/indie/layout/specification.hpp>
 #include <alia/indie/layout/traversal.hpp>
+
+// This file declares various internal types that are necessary to implement
+// the layout system and utilities for working with it.
 
 namespace alia { namespace indie {
 

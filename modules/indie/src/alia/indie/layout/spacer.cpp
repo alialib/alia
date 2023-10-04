@@ -4,20 +4,38 @@
 
 namespace alia { namespace indie {
 
-void
-do_spacer(indie::context /*ctx*/, layout const& /*layout_spec*/)
+struct spacer_node : layout_leaf
 {
-    // layout_leaf* node;
-    // get_cached_data(ctx, &node);
+    void
+    render(SkCanvas&) override
+    {
+    }
 
-    // if (get<indie::traversal_tag>(ctx).layout.is_refresh_pass)
-    // {
-    //     node->refresh_layout(
-    //         get<indie::traversal_tag>(ctx).layout,
-    //         layout_spec,
-    //         leaf_layout_requirements(make_layout_vector(0, 0), 0, 0));
-    //     add_layout_node(get<indie::traversal_tag>(ctx).layout, node);
-    // }
+    void
+    hit_test(hit_test_base&, vector<2, double> const&) const override
+    {
+    }
+
+    void
+    process_input(event_context) override
+    {
+    }
+};
+
+void
+do_spacer(indie::context ctx, layout const& layout_spec)
+{
+    spacer_node* node;
+    get_cached_data(ctx, &node);
+
+    if (get<indie::traversal_tag>(ctx).layout.is_refresh_pass)
+    {
+        node->refresh_layout(
+            get<indie::traversal_tag>(ctx).layout,
+            layout_spec,
+            leaf_layout_requirements(make_layout_vector(0, 0), 0, 0));
+        add_layout_node(get<indie::traversal_tag>(ctx).layout, node);
+    }
 }
 
 }} // namespace alia::indie
