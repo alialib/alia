@@ -4,7 +4,7 @@
 
 #include <alia/core/flow/events.hpp>
 #include <alia/indie/events/input.hpp>
-#include <alia/indie/layout/internals.hpp>
+#include <alia/indie/layout/node_interface.hpp>
 #include <alia/indie/system/api.hpp>
 #include <optional>
 
