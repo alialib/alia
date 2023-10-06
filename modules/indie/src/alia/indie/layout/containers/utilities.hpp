@@ -121,8 +121,9 @@ update_relative_assignment(
             assignment,
             cacher.horizontal_requirements,
             node.get_vertical_requirements(assignment.region.size[0]));
-        if (cacher.resolved_relative_assignment.region.size
-                != resolved_assignment.region.size
+        if (cacher.last_relative_assignment != last_content_change
+            || cacher.resolved_relative_assignment.region.size
+                   != resolved_assignment.region.size
             || cacher.resolved_relative_assignment.baseline_y
                    != resolved_assignment.baseline_y)
         {

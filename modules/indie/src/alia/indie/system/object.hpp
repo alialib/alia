@@ -11,6 +11,9 @@
 #include <alia/indie/system/window_interface.hpp>
 #include <alia/indie/widget.hpp>
 
+// TODO: Get rid of this.
+#include "modules/skparagraph/include/FontCollection.h"
+
 namespace alia { namespace indie {
 
 struct widget;
@@ -73,6 +76,9 @@ struct system : alia::typed_system<indie::vanilla_context>
     std::shared_ptr<window_interface> window;
 
     window_input_state input;
+
+    // TODO: Clean this up.
+    sk_sp<skia::textlayout::FontCollection> font_collection;
 
     // ui_style style;
 
