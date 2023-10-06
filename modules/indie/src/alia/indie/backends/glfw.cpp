@@ -25,6 +25,22 @@
 #include "include/gpu/GrDirectContext.h"
 #include "include/gpu/gl/GrGLInterface.h"
 #include "include/utils/SkRandom.h"
+
+// #include "icu/SkLoadICU.h"
+
+#if defined(_WIN32) && defined(SK_USING_THIRD_PARTY_ICU)
+bool
+SkLoadICU();
+#else
+static inline bool
+SkLoadICU()
+{
+    return true;
+}
+#endif // defined(_WIN32) && defined(SK_USING_THIRD_PARTY_ICU)
+
+#include "modules/skparagraph/include/FontCollection.h"
+
 #pragma warning(pop)
 
 #include <alia/indie/events/input.hpp>
@@ -47,6 +63,8 @@ struct glfw_window_impl
     // TODO: Bundle this up into a Skia structure?
     std::unique_ptr<GrDirectContext> skia_graphics_context;
     std::unique_ptr<SkSurface> skia_surface;
+
+    sk_sp<skia::textlayout::FontCollection> font_collection;
 
     // TODO: Does this go here?
     indie::system system;
@@ -226,6 +244,18 @@ reset_skia(glfw_window_impl& impl, vector<2, unsigned> size)
 void
 init_skia(glfw_window_impl& impl, vector<2, unsigned> size)
 {
+    static bool globally_initialized = false;
+    if (!globally_initialized)
+    {
+        if (!SkLoadICU())
+        {
+            throw alia::exception("SkLoadICU failed");
+        }
+    }
+
+    impl.font_collection = sk_make_sp<skia::textlayout::FontCollection>();
+    impl.font_collection->setDefaultFontManager(SkFontMgr::RefDefault());
+
     auto interface = GrGLMakeNativeInterface();
     impl.skia_graphics_context.reset(
         GrDirectContext::MakeGL(interface).release());
@@ -397,6 +427,9 @@ glfw_window::glfw_window(
     impl_->system.surface_size[1] = height;
 
     init_skia(*impl_, size);
+
+    // TODO: Not this.
+    impl_->system.font_collection = impl_->font_collection;
 
     // Perform the initial update.
     refresh_system(impl_->system);

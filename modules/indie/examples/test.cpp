@@ -21,9 +21,25 @@
 
 #include <include/core/SkColor.h>
 #include <include/core/SkPictureRecorder.h>
+#include <include/core/SkTextBlob.h>
+#include <limits>
+#include <modules/skshaper/include/SkShaper.h>
+
+#include "alia/core/flow/top_level.hpp"
+#include "alia/indie/context.hpp"
+#include "modules/skparagraph/include/Paragraph.h"
+#include "modules/skparagraph/include/TextStyle.h"
+#include "modules/skparagraph/src/ParagraphBuilderImpl.h"
+#include "modules/skparagraph/src/ParagraphImpl.h"
 
 using namespace alia;
 using namespace alia::indie;
+
+// std::unique_ptr<SkShaper> the_shaper;
+
+struct click_event : targeted_event
+{
+};
 
 struct box_node : indie::layout_leaf
 {
@@ -86,11 +102,6 @@ struct box_node : indie::layout_leaf
             paint.setColor(SK_ColorBLACK);
             canvas.drawRect(rect, paint);
         }
-        // canvas.save();
-        // canvas.translate(
-        //     SkScalar(region.corner[0]), SkScalar(region.corner[1]));
-        // canvas.drawPicture(picture_.get());
-        // canvas.restore();
     }
 
     void
@@ -125,7 +136,9 @@ struct box_node : indie::layout_leaf
         indie::add_to_focus_order(ctx, this);
         if (detect_click(ctx, this, indie::mouse_button::LEFT))
         {
-            state_ = !state_;
+            click_event event;
+            dispatch_targeted_event(*sys_, event, this->id_);
+            // state_ = !state_;
             // advance_focus(get_system(ctx));
         }
         // if (detect_key_press(ctx, this, indie::key_code::SPACE))
@@ -146,7 +159,7 @@ struct box_node : indie::layout_leaf
     // }
 
     indie::system* sys_;
-    // external_component_id id_;
+    external_component_id id_;
     bool state_ = false;
     SkColor color_ = SK_ColorWHITE;
     indie::keyboard_click_state keyboard_click_state_;
@@ -157,6 +170,7 @@ void
 do_box(
     indie::context ctx,
     SkColor color,
+    action<> on_click,
     layout const& layout_spec = layout(TOP | LEFT | PADDED))
 {
     std::shared_ptr<box_node>* node_ptr;
@@ -169,7 +183,7 @@ do_box(
 
     auto& node = **node_ptr;
 
-    // auto id = get_component_id(ctx);
+    auto id = get_component_id(ctx);
 
     if (is_refresh_event(ctx))
     {
@@ -177,6 +191,153 @@ do_box(
             get<indie::traversal_tag>(ctx).layout,
             layout_spec,
             leaf_layout_requirements(make_layout_vector(40, 40), 0, 0));
+        add_layout_node(get<indie::traversal_tag>(ctx).layout, &node);
+
+        node.id_ = externalize(id);
+
+        // if (color != node.color_)
+        // {
+        //     SkPictureRecorder recorder;
+        //     SkRect bounds;
+        //     bounds.fLeft = 0;
+        //     bounds.fTop = 0;
+        //     bounds.fRight = 100;
+        //     bounds.fBottom = 100;
+        //     SkCanvas* canvas = recorder.beginRecording(bounds);
+
+        //     {
+        //         SkPaint paint;
+        //         paint.setColor(color);
+        //         SkRect rect;
+        //         rect.fLeft = 0;
+        //         rect.fTop = 0;
+        //         rect.fRight = 100;
+        //         rect.fBottom = 100;
+        //         canvas->drawRect(rect, paint);
+        //     }
+
+        //     node.picture_ = recorder.finishRecordingAsPicture();
+        // }
+    }
+    click_event* click;
+    if (detect_targeted_event(ctx, id, &click))
+    {
+        perform_action(on_click);
+        abort_traversal(ctx);
+    }
+}
+
+struct text_node : indie::layout_leaf
+{
+    void
+    render(SkCanvas& canvas) override
+    {
+        auto const& region = this->assignment().region;
+
+        SkRect bounds;
+        bounds.fLeft = SkScalar(region.corner[0]);
+        bounds.fTop = SkScalar(region.corner[1]);
+        bounds.fRight = SkScalar(region.corner[0] + region.size[0]);
+        bounds.fBottom = SkScalar(region.corner[1] + region.size[1]);
+        if (canvas.quickReject(bounds))
+            return;
+        SkPaint paint;
+        paint.setAntiAlias(true);
+        paint.setColor(SK_ColorBLACK);
+        // paragraph->paint(&canvas, region.corner[0], region.corner[1]);
+        // canvas.drawColor(SK_ColorBLACK);
+        canvas.drawTextBlob(
+            text_blob_.get(), region.corner[0], region.corner[1], paint);
+    }
+
+    void
+    hit_test(indie::hit_test_base&, vector<2, double> const&) const override
+    {
+    }
+
+    void
+    process_input(indie::event_context) override
+    {
+    }
+
+    indie::system* sys_;
+    // std::unique_ptr<skia::textlayout::Paragraph> paragraph;
+    sk_sp<SkTextBlob> text_blob_;
+};
+
+void
+do_text(
+    indie::context ctx,
+    readable<std::string> text,
+    layout const& layout_spec = default_layout)
+{
+    std::shared_ptr<text_node>* node_ptr;
+    if (get_cached_data(ctx, &node_ptr))
+    {
+        *node_ptr = std::make_shared<text_node>();
+        (*node_ptr)->sys_ = &get_system(ctx);
+
+#if 0
+        SkPaint paint;
+        paint.setAntiAlias(true);
+        paint.setColor(SK_ColorBLACK);
+        skia::textlayout::TextStyle defaultStyle;
+        defaultStyle.setForegroundColor(paint);
+        skia::textlayout::ParagraphStyle paraStyle;
+
+        defaultStyle.setFontSize(SkScalar(24));
+        paraStyle.setTextStyle(defaultStyle);
+        skia::textlayout::ParagraphBuilderImpl builder(
+            paraStyle, get_system(ctx).font_collection);
+
+        skia::textlayout::TextStyle style;
+        style.setFontFamilies({SkString("Roboto")});
+        SkFontStyle fontStyle(
+            false ? SkFontStyle::Weight::kBold_Weight
+                  : SkFontStyle::Weight::kNormal_Weight,
+            SkFontStyle::Width::kNormal_Width,
+            false ? SkFontStyle::Slant::kItalic_Slant
+                  : SkFontStyle::Slant::kUpright_Slant);
+        style.setForegroundColor(paint);
+        style.setFontStyle(fontStyle);
+        style.setFontSize(24);
+        // if (false)
+        // {
+        //     style.addShadow(skia::textlayout::TextShadow(
+        //         SK_ColorBLACK, SkPoint::Make(5, 5), 2));
+        // }
+        // bool test
+        //     = (skia::textlayout::TextDecoration) 0
+        //       != skia::textlayout::TextDecoration::kNoDecoration;
+        // if (test)
+        // {
+        //     style.setDecoration((TextDecoration) decoration);
+        //     style.setDecorationStyle(std::get<7>(para));
+        //     style.setDecorationColor(std::get<5>(para));
+        // }
+        builder.pushStyle(style);
+        builder.addText(read_signal(text).c_str());
+        builder.pop();
+
+        (*node_ptr)->paragraph = builder.Build();
+        (*node_ptr)->paragraph->layout(
+            std::numeric_limits<SkScalar>::infinity());
+#else
+        (*node_ptr)->text_blob_ = SkTextBlob::MakeFromString(
+            read_signal(text).c_str(), SkFont(nullptr, 24));
+#endif
+    }
+
+    auto& node = **node_ptr;
+
+    // auto id = get_component_id(ctx);
+
+    if (is_refresh_event(ctx))
+    {
+        node.refresh_layout(
+            get<indie::traversal_tag>(ctx).layout,
+            layout_spec,
+            leaf_layout_requirements(make_layout_vector(80, 40), 0, 0));
         add_layout_node(get<indie::traversal_tag>(ctx).layout, &node);
 
         // node.id_ = externalize(id);
@@ -216,9 +377,9 @@ struct scoped_flow_layout : simple_scoped_layout<flow_layout_logic>
     void
     begin(context ctx, layout const& layout_spec = default_layout)
     {
-        // With a flow layout, we want to have the layout itself always fill
-        // the horizontal space and use the requested X alignment to position
-        // the individual rows in the flow.
+        // With a flow layout, we want to have the layout itself
+        // always fill the horizontal space and use the requested X
+        // alignment to position the individual rows in the flow.
         auto adjusted_layout_spec = add_default_padding(layout_spec, PADDED);
         layout_flag_set x_alignment = FILL_X;
         if ((layout_spec.flags.code & 0x3) != 0)
@@ -613,14 +774,15 @@ update_grid_column_requirements(grid_data<Uniformity>& grid)
     // Only update if something in the grid has changed since the last update.
     if (grid.last_content_query != grid.container->last_content_change)
     {
-        // Clear the requirements for the grid and recompute them by iterating
-        // through the rows and folding each row's requirements into the main
-        // grid requirements.
+        // Clear the requirements for the grid and recompute them
+        // by iterating through the rows and folding each row's
+        // requirements into the main grid requirements.
         clear_requirements(grid.requirements);
         for (grid_row_container<Uniformity>* row = grid.rows; row;
              row = row->next)
         {
-            // Again, only update if something in the row has changed.
+            // Again, only update if something in the row has
+            // changed.
             if (row->last_content_query != row->last_content_change)
             {
                 clear_requirements(row->requirements);
@@ -884,20 +1046,22 @@ my_ui(indie::context ctx)
 
     indie::scoped_column column(ctx, GROW | PADDED);
 
-    do_box(ctx, SK_ColorLTGRAY);
+    auto show_text = get_state(ctx, false);
+
+    do_box(ctx, SK_ColorLTGRAY, actions::toggle(show_text));
     do_spacer(ctx, height(100, PIXELS));
 
     {
         indie::scoped_grid_layout grid(ctx);
         {
             indie::scoped_grid_row row(ctx, grid);
-            do_box(ctx, SK_ColorMAGENTA, width(200, PIXELS));
-            do_box(ctx, SK_ColorMAGENTA, width(200, PIXELS));
+            do_box(ctx, SK_ColorMAGENTA, actions::noop(), width(200, PIXELS));
+            do_box(ctx, SK_ColorMAGENTA, actions::noop(), width(200, PIXELS));
         }
         {
             indie::scoped_grid_row row(ctx, grid);
-            do_box(ctx, SK_ColorLTGRAY);
-            do_box(ctx, SK_ColorLTGRAY);
+            do_box(ctx, SK_ColorLTGRAY, actions::noop());
+            do_box(ctx, SK_ColorLTGRAY, actions::noop());
         }
     }
     do_spacer(ctx, height(100, PIXELS));
@@ -905,29 +1069,39 @@ my_ui(indie::context ctx)
     {
         indie::scoped_flow_layout flow(ctx, GROW | UNPADDED);
 
-        for (int i = 0; i != 1000; ++i)
+        for (int i = 0; i != 100; ++i)
         {
+            alia_if(show_text)
+            {
+                do_text(ctx, alia::printf(ctx, "text%i", i));
+            }
+            alia_end
+
             {
                 indie::scoped_column col(ctx);
 
-                do_box(ctx, SK_ColorMAGENTA, width(100, PIXELS));
+                do_box(
+                    ctx, SK_ColorMAGENTA, actions::noop(), width(100, PIXELS));
 
-                // color::yiq<std::uint8_t> y1 = ::color::constant::blue_t{};
-                // color::yiq<std::uint8_t> y2 = ::color::constant::red_t{};
-                // color::yiq<std::uint8_t> yr = color::operation::mix(
+                // color::yiq<std::uint8_t> y1 =
+                // ::color::constant::blue_t{};
+                // color::yiq<std::uint8_t> y2 =
+                // ::color::constant::red_t{};
+                // color::yiq<std::uint8_t> yr =
+                // color::operation::mix(
                 //     y1,
                 //     std::max(
                 //         0.0,
                 //         std::min(
                 //             1.0,
                 //             std::fabs(std::sin(
-                //                 get_raw_animation_tick_count(ctx) /
-                //                 1000.0)))),
+                //                 get_raw_animation_tick_count(ctx)
+                //                 / 1000.0)))),
                 //     y2);
                 // color::rgb<std::uint8_t> r(yr);
                 // color::rgb<std::uint8_t> r(y1);
 
-                do_box(ctx, SK_ColorLTGRAY);
+                do_box(ctx, SK_ColorLTGRAY, actions::noop());
             }
 
             {
@@ -935,12 +1109,13 @@ my_ui(indie::context ctx)
 
                 static SkColor clicky_color = SK_ColorRED;
                 // event_handler<indie::mouse_button_event>(
-                //     ctx, [&](auto, auto&) { clicky_color = SK_ColorBLUE; });
-                do_box(ctx, clicky_color);
+                //     ctx, [&](auto, auto&) { clicky_color =
+                //     SK_ColorBLUE; });
+                do_box(ctx, clicky_color, actions::noop());
 
-                do_box(ctx, SK_ColorDKGRAY);
+                do_box(ctx, SK_ColorDKGRAY, actions::noop());
 
-                do_box(ctx, SK_ColorGRAY);
+                do_box(ctx, SK_ColorGRAY, actions::noop());
             }
         }
     }
