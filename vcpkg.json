@@ -43,7 +43,7 @@
             {
                 "kind": "git",
                 "repository": "https://github.com/alialib/vcpkg-registry",
-                "baseline": "4db9a932e08aa2fe816019058b23b1572d426f90",
+                "baseline": "be55918daaa02817e2a48fea215a335f6721f50e",
                 "packages": [
                     "skia"
                 ]
