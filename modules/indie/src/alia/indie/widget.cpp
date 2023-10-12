@@ -4,10 +4,10 @@
 namespace alia { namespace indie {
 
 void
-render_children(SkCanvas& canvas, widget_container& container)
+render_children(render_event& event, widget_container& container)
 {
     for (widget* node = container.children; node; node = node->next)
-        node->render(canvas);
+        node->render(event);
 }
 
 }} // namespace alia::indie

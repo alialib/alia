@@ -1,6 +1,7 @@
 #ifndef ALIA_INDIE_RENDERING_HPP
 #define ALIA_INDIE_RENDERING_HPP
 
+#include "alia/indie/layout/specification.hpp"
 #include <memory>
 
 #include <include/core/SkCanvas.h>
@@ -16,14 +17,21 @@ namespace alia { namespace indie {
 
 struct hit_test_base;
 
-struct widget : layout_node_interface, std::enable_shared_from_this<widget>
+struct render_event
+{
+    layout_vector current_offset = make_layout_vector(0, 0);
+
+    SkCanvas* canvas = nullptr;
+};
+
+struct widget : layout_node_interface
 {
     ~widget()
     {
     }
 
     virtual void
-    render(SkCanvas& canvas)
+    render(render_event& event)
         = 0;
 
     virtual void
@@ -60,7 +68,7 @@ struct widget_container : widget
 };
 
 void
-render_children(SkCanvas& canvas, widget_container& container);
+render_children(render_event& event, widget_container& container);
 
 struct external_widget_handle
 {

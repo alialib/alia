@@ -219,6 +219,12 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int /*mods*/)
 }
 
 void
+scroll_callback(GLFWwindow* window, double x, double y)
+{
+    process_scroll(get_impl(window).system, make_vector(x, y));
+}
+
+void
 reset_skia(glfw_window_impl& impl, vector<2, unsigned> size)
 {
     GrGLFramebufferInfo framebuffer_info;
@@ -284,7 +290,9 @@ render_ui(glfw_window_impl& impl)
 
     if (impl.system.root_widget)
     {
-        impl.system.root_widget->render(*impl.skia_surface->getCanvas());
+        render_event event;
+        event.canvas = impl.skia_surface->getCanvas();
+        impl.system.root_widget->render(event);
     }
     else
     {
@@ -294,11 +302,14 @@ render_ui(glfw_window_impl& impl)
     {
         std::chrono::steady_clock::time_point end
             = std::chrono::steady_clock::now();
-        std::cout << "render: "
-                  << std::chrono::duration_cast<std::chrono::microseconds>(
-                         end - begin)
-                         .count()
-                  << "[us]\n";
+        auto render_time
+            = std::chrono::duration_cast<std::chrono::microseconds>(
+                  end - begin)
+                  .count();
+        static long long max_render_time = 0;
+        max_render_time = (std::max)(render_time, max_render_time);
+        std::cout << "render: " << render_time << "[us]\n";
+        std::cout << "max_render_time: " << max_render_time << "[us]\n";
     }
 
     impl.skia_graphics_context->flush();
@@ -318,11 +329,13 @@ update_ui(glfw_window_impl& impl)
     refresh_system(impl.system);
     update(impl.system);
 
-    std::chrono::steady_clock::duration refresh_time;
+    long long refresh_time;
     {
         std::chrono::steady_clock::time_point end
             = std::chrono::steady_clock::now();
-        refresh_time = end - begin;
+        refresh_time = std::chrono::duration_cast<std::chrono::microseconds>(
+                           end - begin)
+                           .count();
         begin = end;
     }
 
@@ -334,27 +347,34 @@ update_ui(glfw_window_impl& impl)
     // counter value and thus cause a recalculation.
     ++impl.system.refresh_counter;
 
-    std::chrono::steady_clock::duration layout_time;
+    long long layout_time;
     {
         std::chrono::steady_clock::time_point end
             = std::chrono::steady_clock::now();
-        layout_time = end - begin;
+        layout_time = std::chrono::duration_cast<std::chrono::microseconds>(
+                          end - begin)
+                          .count();
         begin = end;
     }
 
-    std::cout << "refresh: "
-              << std::chrono::duration_cast<std::chrono::microseconds>(
-                     refresh_time)
-                     .count()
-              << "[us]\n";
+    static long long max_refresh_time = 0;
+    max_refresh_time = (std::max)(refresh_time, max_refresh_time);
+    std::cout << "refresh: " << refresh_time << "[us]\n";
+    std::cout << "max_refresh_time: " << max_refresh_time << "[us]\n";
 
-    std::cout << "layout: "
-              << std::chrono::duration_cast<std::chrono::microseconds>(
-                     layout_time)
-                     .count()
-              << "[us]\n";
+    static long long max_layout_time = 0;
+    max_layout_time = (std::max)(layout_time, max_layout_time);
+    std::cout << "layout: " << layout_time << "[us]\n";
+    std::cout << "max_layout_time: " << max_layout_time << "[us]\n";
 
     render_ui(impl);
+
+    int resource_count;
+    size_t resource_bytes;
+    impl.skia_graphics_context->getResourceCacheUsage(
+        &resource_count, &resource_bytes);
+    std::cout << "resource_count: " << resource_count << "\n";
+    std::cout << "resource_bytes: " << resource_bytes << "\n";
 }
 
 void
@@ -386,6 +406,8 @@ init_window(
 
     glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetCursorPosCallback(window, mouse_motion_callback);
+
+    glfwSetScrollCallback(window, scroll_callback);
 
     glfwSetKeyCallback(window, key_event_callback);
 

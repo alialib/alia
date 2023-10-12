@@ -62,7 +62,7 @@ struct mouse_notification_event : input_event
 // SCROLL
 struct scroll_event : input_event
 {
-    double movement;
+    vector<2, double> delta;
 };
 
 // TEXT_INPUT
