@@ -146,21 +146,20 @@ template<class LayoutContainer>
 struct layout_container_widget : LayoutContainer
 {
     void
-    render(SkCanvas& canvas) override
+    render(render_event& event) override
     {
         auto const& region = get_assignment(this->cacher).region;
         SkRect bounds;
-        bounds.fLeft = SkScalar(region.corner[0]);
-        bounds.fTop = SkScalar(region.corner[1]);
-        bounds.fRight = SkScalar(region.corner[0] + region.size[0]);
-        bounds.fBottom = SkScalar(region.corner[1] + region.size[1]);
-        if (!canvas.quickReject(bounds))
+        bounds.fLeft = SkScalar(region.corner[0] + event.current_offset[0]);
+        bounds.fTop = SkScalar(region.corner[1] + event.current_offset[1]);
+        bounds.fRight = bounds.fLeft + SkScalar(region.size[0]);
+        bounds.fBottom = bounds.fTop + SkScalar(region.size[1]);
+        if (!event.canvas->quickReject(bounds))
         {
-            canvas.save();
-            auto const& offset = region.corner;
-            canvas.translate(offset[0], offset[1]);
-            indie::render_children(canvas, *this);
-            canvas.restore();
+            auto original_offset = event.current_offset;
+            event.current_offset += region.corner;
+            indie::render_children(event, *this);
+            event.current_offset = original_offset;
         }
     }
 

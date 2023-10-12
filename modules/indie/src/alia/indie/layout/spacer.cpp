@@ -7,7 +7,7 @@ namespace alia { namespace indie {
 struct spacer_node : layout_leaf
 {
     void
-    render(SkCanvas&) override
+    render(render_event&) override
     {
     }
 

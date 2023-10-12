@@ -22,6 +22,10 @@ process_mouse_press(
 void
 process_mouse_release(system& ui, mouse_button button);
 
+// Process scroll inputs (e.g., the mouse wheel).
+void
+process_scroll(system& ui, vector<2, double> const& delta);
+
 // Process a key press.
 bool
 process_key_press(system& ui, modded_key const& info);
