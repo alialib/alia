@@ -4,6 +4,7 @@
 #include <alia/indie/events/delivery.hpp>
 #include <alia/indie/events/input.hpp>
 #include <alia/indie/system/api.hpp>
+#include <alia/indie/utilities/hit_testing.hpp>
 
 namespace alia { namespace indie {
 
@@ -121,6 +122,18 @@ process_double_click(system& ui, mouse_button button)
 //         issue_targeted_event(ui, event, target);
 //     }
 // }
+
+void
+process_scroll(system& ui, vector<2, double> const& delta)
+{
+    wheel_hit_test hit_test;
+    ui.root_widget->hit_test(hit_test, ui.input.mouse_position);
+    if (hit_test.result)
+    {
+        scroll_event event{{{}, input_event_type::SCROLL}, delta};
+        deliver_input_event(ui, *hit_test.result, event);
+    }
+}
 
 bool
 process_focused_key_press(system& ui, modded_key const& info)
