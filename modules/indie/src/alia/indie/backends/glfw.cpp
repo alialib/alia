@@ -454,7 +454,7 @@ glfw_window::glfw_window(
     impl_->system.font_collection = impl_->font_collection;
 
     // Perform the initial update.
-    refresh_system(impl_->system);
+    update_ui(*impl_);
 }
 
 void*
