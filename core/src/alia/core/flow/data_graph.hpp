@@ -79,6 +79,7 @@ struct data_node : noncopyable
     }
 
     data_node* alia_next_data_node_ = nullptr;
+    data_node* alia_previous_data_node_ = nullptr;
 };
 
 // A data_block represents a block of execution. During a single traversal of
@@ -89,7 +90,8 @@ struct data_node : noncopyable
 struct data_block
 {
     // the list of nodes in this block
-    data_node* nodes = nullptr;
+    data_node* nodes_head = nullptr;
+    data_node* nodes_tail = nullptr;
 
     // a flag to track if the block's cache is clear
     bool cache_clear = true;
@@ -141,6 +143,7 @@ struct data_traversal : noncopyable
     data_graph* graph = nullptr;
     data_block* active_block = nullptr;
     data_node** next_data_ptr = nullptr;
+    data_node* previous_node = nullptr;
     bool gc_enabled = false;
     bool cache_clearing_enabled = false;
 };
@@ -202,6 +205,7 @@ struct scoped_data_block : noncopyable
     // old (i.e., parent) state
     data_block* old_active_block_;
     data_node** old_next_data_ptr_;
+    data_node* old_previous_node_;
 };
 
 // A named_block is like a scoped_data_block, but instead of supplying a
@@ -413,14 +417,14 @@ struct scoped_cache_clearing_disabler
 //
 // It comes in two forms:
 //
-// (1) get_data_node(ctx, &ptr, create)
-// (2) get_data_node(ctx, &ptr)
+// 1. get_data_node(ctx, &ptr, create)
+// 2. get_data_node(ctx, &ptr)
 //
 // In both forms, the call retrieves data from the graph at the current point
 // in the traversal, assigns its address to :ptr, and advances the traversal to
 // the next node.
 //
-// In (1), you specify a custom function (:create) which allocates and
+// In (1), you specify a custom function (`create`) which allocates and
 // initializes a new object (using `new`) and returns a pointer to it.
 // get_data_node() will call this function when necessary to allocate and
 // initialize the object at this node.
@@ -440,6 +444,8 @@ get_data_node(data_traversal& traversal, Node** ptr, Create&& create)
     {
         assert(dynamic_cast<Node*>(node));
         traversal.next_data_ptr = &node->alia_next_data_node_;
+        node->alia_previous_data_node_ = traversal.previous_node;
+        traversal.previous_node = node;
         *ptr = static_cast<Node*>(node);
         return false;
     }
@@ -448,6 +454,8 @@ get_data_node(data_traversal& traversal, Node** ptr, Create&& create)
         Node* new_node = std::forward<Create>(create)();
         *traversal.next_data_ptr = new_node;
         traversal.next_data_ptr = &new_node->alia_next_data_node_;
+        new_node->alia_previous_data_node_ = traversal.previous_node;
+        traversal.previous_node = new_node;
         *ptr = new_node;
         return true;
     }
