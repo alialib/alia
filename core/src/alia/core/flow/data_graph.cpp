@@ -136,43 +136,18 @@ release_named_block_node_list(naming_map& map, named_block_node* head)
     }
 }
 
-static void
-clear_data_node_caches(data_node* node)
-{
-    // Clear node caches in reverse order to match general C++ semantics.
-    // Note that the same concerns exist here as in delete_data_nodes().
-    if (node)
-    {
-        clear_data_node_caches(node->alia_next_data_node_);
-        node->clear_cache();
-    }
-}
-
 void
 clear_data_block_cache(data_block& block)
 {
     if (!block.cache_clear)
     {
-        clear_data_node_caches(block.nodes);
+        // Clear node caches in reverse order to match general C++ semantics.
+        for (data_node* node = block.nodes_tail; node;
+             node = node->alia_previous_data_node_)
+        {
+            node->clear_cache();
+        }
         block.cache_clear = true;
-    }
-}
-
-static void
-delete_data_nodes(data_node* node)
-{
-    // Delete nodes in reverse order to match general C++ semantics.
-    //
-    // Note that this is a potential stack overflow waiting to happen.
-    // It might be worth storing a doubly linked list of nodes so that we can
-    // directly traverse them in reverse order. Of course, it's also worth
-    // considering alternate data structures that would reduce allocations and
-    // fragmentation, so I'm leaving this for the future...
-    //
-    if (node)
-    {
-        delete_data_nodes(node->alia_next_data_node_);
-        delete node;
     }
 }
 
@@ -184,8 +159,17 @@ clear_data_block(data_block& block)
     // state of destruction.
     clear_data_block_cache(block);
 
-    delete_data_nodes(block.nodes);
-    block.nodes = nullptr;
+    // Delete nodes in reverse order to match general C++ semantics.
+    data_node* node = block.nodes_tail;
+    while (node)
+    {
+        data_node* next = node->alia_previous_data_node_;
+        delete node;
+        node = next;
+    }
+
+    block.nodes_head = nullptr;
+    block.nodes_tail = nullptr;
 }
 
 data_block::~data_block()
@@ -200,9 +184,11 @@ scoped_data_block::begin(data_traversal& traversal, data_block& block)
 
     old_active_block_ = traversal.active_block;
     old_next_data_ptr_ = traversal.next_data_ptr;
+    old_previous_node_ = traversal.previous_node;
 
     traversal.active_block = &block;
-    traversal.next_data_ptr = &block.nodes;
+    traversal.next_data_ptr = &block.nodes_head;
+    traversal.previous_node = nullptr;
 
     block.cache_clear = false;
 }
@@ -213,6 +199,7 @@ scoped_data_block::end()
     {
         traversal_->active_block = old_active_block_;
         traversal_->next_data_ptr = old_next_data_ptr_;
+        traversal_->previous_node = old_previous_node_;
         traversal_ = nullptr;
     }
 }
