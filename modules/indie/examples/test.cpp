@@ -13,6 +13,7 @@
 #include <alia/indie/utilities/hit_testing.hpp>
 #include <alia/indie/utilities/keyboard.hpp>
 #include <alia/indie/utilities/mouse.hpp>
+#include <alia/indie/utilities/scrolling.hpp>
 #include <alia/indie/widget.hpp>
 
 #include <color/color.hpp>
@@ -20,42 +21,148 @@
 #include <cmath>
 
 #include <include/core/SkColor.h>
+#include <include/core/SkFontTypes.h>
+#include <include/core/SkMaskFilter.h>
 #include <include/core/SkPictureRecorder.h>
 #include <include/core/SkTextBlob.h>
 #include <limits>
 #include <modules/skshaper/include/SkShaper.h>
 
+#include "alia/core/flow/components.hpp"
 #include "alia/core/flow/top_level.hpp"
+#include "alia/core/signals/core.hpp"
+#include "alia/core/timing/ticks.hpp"
 #include "alia/indie/context.hpp"
+#include "alia/indie/geometry.hpp"
 #include "modules/skparagraph/include/Paragraph.h"
 #include "modules/skparagraph/include/TextStyle.h"
 #include "modules/skparagraph/src/ParagraphBuilderImpl.h"
 #include "modules/skparagraph/src/ParagraphImpl.h"
+
+#include <alia/indie/scrolling.hpp>
 
 using namespace alia;
 using namespace alia::indie;
 
 // std::unique_ptr<SkShaper> the_shaper;
 
+// TODO
+static std::unique_ptr<SkFont> the_font;
+
 struct click_event : targeted_event
 {
 };
 
-struct box_node : indie::layout_leaf
+// smooth_raw(ctx, smoother, x, transition) returns a smoothed view of x.
+template<class Value>
+Value
+smooth_position(
+    value_smoother<Value>& smoother,
+    Value const& x,
+    millisecond_count tick_counter,
+    animated_transition const& transition = default_transition)
 {
-    void
-    render(SkCanvas& canvas) override
+    if (!smoother.initialized)
+        reset_smoothing(smoother, x);
+    Value current_value = smoother.new_value;
+    if (smoother.in_transition)
     {
+        auto ticks_left = millisecond_count(
+            (std::max)(0, int(smoother.transition_end - tick_counter)));
+        if (ticks_left > 0)
+        {
+            double fraction = eval_curve_at_x(
+                transition.curve,
+                1. - double(ticks_left) / smoother.duration,
+                1. / smoother.duration);
+            current_value = interpolate(
+                smoother.old_value, smoother.new_value, fraction);
+        }
+        else
+            smoother.in_transition = false;
+    }
+    if (x != smoother.new_value)
+    {
+        smoother.duration =
+            // If we're just going back to the old value, go back in the same
+            // amount of time it took to get here.
+            smoother.in_transition && x == smoother.old_value
+                ? (transition.duration
+                   - millisecond_count((std::max)(
+                       0, int(smoother.transition_end - tick_counter))))
+                : transition.duration;
+        smoother.transition_end = tick_counter + smoother.duration;
+        smoother.old_value = current_value;
+        smoother.new_value = x;
+        smoother.in_transition = true;
+    }
+    return current_value;
+}
+
+struct box_node : indie::widget
+{
+    layout_requirements
+    get_horizontal_requirements() override
+    {
+        layout_requirements requirements;
+        resolve_requirements(
+            requirements,
+            resolved_spec_,
+            0,
+            calculated_layout_requirements{40, 0, 0});
+        return requirements;
+    }
+    layout_requirements
+    get_vertical_requirements(layout_scalar /*assigned_width*/) override
+    {
+        layout_requirements requirements;
+        resolve_requirements(
+            requirements,
+            resolved_spec_,
+            1,
+            calculated_layout_requirements{40, 0, 0});
+        return requirements;
+    }
+    void
+    set_relative_assignment(
+        relative_layout_assignment const& assignment) override
+    {
+        layout_requirements horizontal_requirements, vertical_requirements;
+        resolve_requirements(
+            horizontal_requirements,
+            resolved_spec_,
+            0,
+            calculated_layout_requirements{40, 0, 0});
+        resolve_requirements(
+            vertical_requirements,
+            resolved_spec_,
+            1,
+            calculated_layout_requirements{40, 0, 0});
+        relative_assignment_ = resolve_relative_assignment(
+            resolved_spec_,
+            assignment,
+            horizontal_requirements,
+            vertical_requirements);
+    }
+
+    void
+    render(render_event& event) override
+    {
+        SkCanvas& canvas = *event.canvas;
+
         auto const& region = this->assignment().region;
 
         double blend_factor = 0;
 
-        if (indie::is_click_in_progress(*sys_, this, indie::mouse_button::LEFT)
+        if (indie::is_click_in_progress(
+                *sys_,
+                internal_element_ref{*this, 0},
+                indie::mouse_button::LEFT)
             || is_pressed(keyboard_click_state_))
         {
             blend_factor = 0.4;
         }
-        else if (is_click_possible(*sys_, this))
+        else if (is_click_possible(*sys_, internal_element_ref{*this, 0}))
         {
             blend_factor = 0.2;
         }
@@ -63,7 +170,7 @@ struct box_node : indie::layout_leaf
         ::color::rgb<std::uint8_t> c;
         if (state_)
         {
-            c = ::color::rgb<std::uint8_t>({0x00, 0x00, 0xff});
+            c = ::color::rgb<std::uint8_t>({0x40, 0x40, 0x40});
         }
         else
         {
@@ -82,6 +189,13 @@ struct box_node : indie::layout_leaf
             c = mix;
         }
 
+        // auto position = smooth_position(
+        //     position_,
+        //     region.corner + event.current_offset,
+        //     tick_counter_,
+        //     {default_curve, 80});
+        auto position = region.corner + event.current_offset;
+
         SkPaint paint;
         paint.setColor(SkColorSetARGB(
             0xff,
@@ -89,13 +203,22 @@ struct box_node : indie::layout_leaf
             ::color::get::green(c),
             ::color::get::blue(c)));
         SkRect rect;
-        rect.fLeft = SkScalar(region.corner[0]);
-        rect.fTop = SkScalar(region.corner[1]);
-        rect.fRight = SkScalar(region.corner[0] + region.size[0]);
-        rect.fBottom = SkScalar(region.corner[1] + region.size[1]);
+        rect.fLeft = SkScalar(position[0]);
+        rect.fTop = SkScalar(position[1]);
+        rect.fRight = SkScalar(position[0] + region.size[0]);
+        rect.fBottom = SkScalar(position[1] + region.size[1]);
         canvas.drawRect(rect, paint);
 
-        if (indie::widget_has_focus(*sys_, this))
+        if (rect.width() > 200)
+        {
+            SkPaint blur(paint);
+            blur.setAlpha(200);
+            blur.setMaskFilter(
+                SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, 40, false));
+            canvas.drawRect(rect, blur);
+        }
+
+        if (indie::element_has_focus(*sys_, internal_element_ref{*this, 0}))
         {
             paint.setStyle(SkPaint::kStroke_Style);
             paint.setStrokeWidth(4);
@@ -110,22 +233,14 @@ struct box_node : indie::layout_leaf
     {
         if (is_inside(this->assignment().region, vector<2, float>(point)))
         {
-            switch (test.type)
+            if (test.type == indie::hit_test_type::MOUSE)
             {
-                case indie::hit_test_type::MOUSE: {
-                    static_cast<indie::mouse_hit_test&>(test).result
-                        = indie::mouse_hit_test_result{
-                            externalize(this),
-                            indie::mouse_cursor::POINTER,
-                            this->assignment().region,
-                            ""};
-                    break;
-                }
-                case indie::hit_test_type::WHEEL: {
-                    static_cast<indie::wheel_hit_test&>(test).result
-                        = externalize(this);
-                    break;
-                }
+                static_cast<indie::mouse_hit_test&>(test).result
+                    = indie::mouse_hit_test_result{
+                        externalize(internal_element_ref{*this, 0}),
+                        indie::mouse_cursor::POINTER,
+                        this->assignment().region,
+                        ""};
             }
         }
     }
@@ -133,12 +248,15 @@ struct box_node : indie::layout_leaf
     void
     process_input(indie::event_context ctx) override
     {
-        indie::add_to_focus_order(ctx, this);
-        if (detect_click(ctx, this, indie::mouse_button::LEFT))
+        indie::add_to_focus_order(ctx, internal_element_ref{*this, 0});
+        if (detect_click(
+                ctx,
+                internal_element_ref{*this, 0},
+                indie::mouse_button::LEFT))
         {
             click_event event;
             dispatch_targeted_event(*sys_, event, this->id_);
-            // state_ = !state_;
+            state_ = !state_;
             // advance_focus(get_system(ctx));
         }
         // if (detect_key_press(ctx, this, indie::key_code::SPACE))
@@ -146,10 +264,23 @@ struct box_node : indie::layout_leaf
         //     state_ = !state_;
         //     // advance_focus(get_system(ctx));
         // }
-        if (detect_keyboard_click(ctx, keyboard_click_state_, this))
+        if (detect_keyboard_click(
+                ctx, keyboard_click_state_, internal_element_ref{*this, 0}))
         {
             state_ = !state_;
         }
+    }
+
+    matrix<3, 3, double>
+    transformation() const override
+    {
+        return parent->transformation();
+    }
+
+    relative_layout_assignment const&
+    assignment() const
+    {
+        return relative_assignment_;
     }
 
     // external_component_id
@@ -163,7 +294,13 @@ struct box_node : indie::layout_leaf
     bool state_ = false;
     SkColor color_ = SK_ColorWHITE;
     indie::keyboard_click_state keyboard_click_state_;
+    // value_smoother<layout_vector> position_;
+    // TODO: Move this into the system.
     // sk_sp<SkPicture> picture_;
+    // the resolved spec
+    resolved_layout_spec resolved_spec_;
+    // resolved relative assignment
+    relative_layout_assignment relative_assignment_;
 };
 
 void
@@ -180,20 +317,34 @@ do_box(
         (*node_ptr)->sys_ = &get_system(ctx);
         (*node_ptr)->color_ = color;
     }
-
     auto& node = **node_ptr;
+    // box_node* node_ptr;
+    // if (get_cached_data(ctx, &node_ptr))
+    // {
+    //     node_ptr->sys_ = &get_system(ctx);
+    //     node_ptr->color_ = color;
+    // }
+    // auto& node = *node_ptr;
 
     auto id = get_component_id(ctx);
 
     if (is_refresh_event(ctx))
     {
-        node.refresh_layout(
+        resolved_layout_spec resolved_spec;
+        resolve_layout_spec(
             get<indie::traversal_tag>(ctx).layout,
+            resolved_spec,
             layout_spec,
-            leaf_layout_requirements(make_layout_vector(40, 40), 0, 0));
+            TOP | LEFT | PADDED);
+        detect_layout_change(
+            get<indie::traversal_tag>(ctx).layout,
+            &node.resolved_spec_,
+            resolved_spec);
+
         add_layout_node(get<indie::traversal_tag>(ctx).layout, &node);
 
         node.id_ = externalize(id);
+        // node.tick_counter_ = get_raw_animation_tick_count(ctx);
 
         // if (color != node.color_)
         // {
@@ -230,15 +381,17 @@ do_box(
 struct text_node : indie::layout_leaf
 {
     void
-    render(SkCanvas& canvas) override
+    render(render_event& event) override
     {
+        SkCanvas& canvas = *event.canvas;
+
         auto const& region = this->assignment().region;
 
         SkRect bounds;
-        bounds.fLeft = SkScalar(region.corner[0]);
-        bounds.fTop = SkScalar(region.corner[1]);
-        bounds.fRight = SkScalar(region.corner[0] + region.size[0]);
-        bounds.fBottom = SkScalar(region.corner[1] + region.size[1]);
+        bounds.fLeft = SkScalar(region.corner[0] + event.current_offset[0]);
+        bounds.fTop = SkScalar(region.corner[1] + event.current_offset[1]);
+        bounds.fRight = bounds.fLeft + SkScalar(region.size[0]);
+        bounds.fBottom = bounds.fTop + SkScalar(region.size[1]);
         if (canvas.quickReject(bounds))
             return;
         SkPaint paint;
@@ -246,8 +399,10 @@ struct text_node : indie::layout_leaf
         paint.setColor(SK_ColorBLACK);
         // paragraph->paint(&canvas, region.corner[0], region.corner[1]);
         // canvas.drawColor(SK_ColorBLACK);
+        if (!text_blob_)
+            text_blob_ = SkTextBlob::MakeFromString(text_.c_str(), *the_font);
         canvas.drawTextBlob(
-            text_blob_.get(), region.corner[0], region.corner[1], paint);
+            text_blob_.get(), bounds.fLeft, bounds.fBottom, paint);
     }
 
     void
@@ -260,8 +415,16 @@ struct text_node : indie::layout_leaf
     {
     }
 
+    matrix<3, 3, double>
+    transformation() const override
+    {
+        return parent->transformation();
+    }
+
     indie::system* sys_;
     // std::unique_ptr<skia::textlayout::Paragraph> paragraph;
+    std::string text_;
+    SkRect bounds_;
     sk_sp<SkTextBlob> text_blob_;
 };
 
@@ -271,11 +434,13 @@ do_text(
     readable<std::string> text,
     layout const& layout_spec = default_layout)
 {
-    std::shared_ptr<text_node>* node_ptr;
+    if (!the_font)
+        the_font.reset(new SkFont(nullptr, 24));
+
+    text_node* node_ptr;
     if (get_cached_data(ctx, &node_ptr))
     {
-        *node_ptr = std::make_shared<text_node>();
-        (*node_ptr)->sys_ = &get_system(ctx);
+        node_ptr->sys_ = &get_system(ctx);
 
 #if 0
         SkPaint paint;
@@ -323,12 +488,16 @@ do_text(
         (*node_ptr)->paragraph->layout(
             std::numeric_limits<SkScalar>::infinity());
 #else
-        (*node_ptr)->text_blob_ = SkTextBlob::MakeFromString(
-            read_signal(text).c_str(), SkFont(nullptr, 24));
+        node_ptr->text_ = read_signal(text);
+        the_font->measureText(
+            read_signal(text).c_str(),
+            read_signal(text).length(),
+            SkTextEncoding::kUTF8,
+            &node_ptr->bounds_);
 #endif
     }
 
-    auto& node = **node_ptr;
+    auto& node = *node_ptr;
 
     // auto id = get_component_id(ctx);
 
@@ -337,7 +506,11 @@ do_text(
         node.refresh_layout(
             get<indie::traversal_tag>(ctx).layout,
             layout_spec,
-            leaf_layout_requirements(make_layout_vector(80, 40), 0, 0));
+            leaf_layout_requirements(
+                make_layout_vector(
+                    node.bounds_.width(), node.bounds_.height()),
+                0,
+                0));
         add_layout_node(get<indie::traversal_tag>(ctx).layout, &node);
 
         // node.id_ = externalize(id);
@@ -367,6 +540,629 @@ do_text(
         // }
     }
 }
+
+// ---
+
+#pragma warning(push, 0)
+
+class RunHandler final : public SkShaper::RunHandler
+{
+ public:
+    RunHandler(const char* utf8Text, size_t) : fUtf8Text(utf8Text)
+    {
+    }
+    using RunCallback = void (*)(
+        void* context,
+        const char* utf8Text,
+        size_t utf8TextBytes,
+        size_t glyphCount,
+        const SkGlyphID* glyphs,
+        const SkPoint* positions,
+        const uint32_t* clusters,
+        const SkFont& font);
+    void
+    setRunCallback(RunCallback f, void* context)
+    {
+        fCallbackContext = context;
+        fCallbackFunction = f;
+    }
+    sk_sp<SkTextBlob>
+    makeBlob();
+    SkPoint
+    endPoint() const
+    {
+        return fOffset;
+    }
+    SkPoint
+    finalPosition() const
+    {
+        return fCurrentPosition;
+    }
+    void
+    beginLine() override;
+    void
+    runInfo(const RunInfo&) override;
+    void
+    commitRunInfo() override;
+    SkShaper::RunHandler::Buffer
+    runBuffer(const RunInfo&) override;
+    void
+    commitRunBuffer(const RunInfo&) override;
+    void
+    commitLine() override;
+    const std::vector<size_t>&
+    lineEndOffsets() const
+    {
+        return fLineEndOffsets;
+    }
+    SkRect
+    finalRect(const SkFont& font) const
+    {
+        if (0 == fMaxRunAscent || 0 == fMaxRunDescent)
+        {
+            SkFontMetrics metrics;
+            font.getMetrics(&metrics);
+            return {
+                fCurrentPosition.x(),
+                fCurrentPosition.y(),
+                fCurrentPosition.x() + font.getSize(),
+                fCurrentPosition.y() + metrics.fDescent - metrics.fAscent};
+        }
+        else
+        {
+            return {
+                fCurrentPosition.x(),
+                fCurrentPosition.y() + fMaxRunAscent,
+                fCurrentPosition.x() + font.getSize(),
+                fCurrentPosition.y() + fMaxRunDescent};
+        }
+    }
+
+ private:
+    SkTextBlobBuilder fBuilder;
+    std::vector<size_t> fLineEndOffsets;
+    const SkGlyphID* fCurrentGlyphs = nullptr;
+    const SkPoint* fCurrentPoints = nullptr;
+    void* fCallbackContext = nullptr;
+    RunCallback fCallbackFunction = nullptr;
+    char const* const fUtf8Text;
+    size_t fTextOffset = 0;
+    uint32_t* fClusters = nullptr;
+    int fClusterOffset = 0;
+    int fGlyphCount = 0;
+    SkScalar fMaxRunAscent = 0;
+    SkScalar fMaxRunDescent = 0;
+    SkScalar fMaxRunLeading = 0;
+    SkPoint fCurrentPosition = {0, 0};
+    SkPoint fOffset = {0, 0};
+};
+
+void
+RunHandler::beginLine()
+{
+    fCurrentPosition = fOffset;
+    fMaxRunAscent = 0;
+    fMaxRunDescent = 0;
+    fMaxRunLeading = 0;
+}
+void
+RunHandler::runInfo(const SkShaper::RunHandler::RunInfo& info)
+{
+    SkFontMetrics metrics;
+    info.fFont.getMetrics(&metrics);
+    fMaxRunAscent = std::min(fMaxRunAscent, metrics.fAscent);
+    fMaxRunDescent = std::max(fMaxRunDescent, metrics.fDescent);
+    fMaxRunLeading = std::max(fMaxRunLeading, metrics.fLeading);
+}
+void
+RunHandler::commitRunInfo()
+{
+    fCurrentPosition.fY -= fMaxRunAscent;
+}
+SkShaper::RunHandler::Buffer
+RunHandler::runBuffer(const RunInfo& info)
+{
+    int glyphCount
+        = SkTFitsIn<int>(info.glyphCount) ? info.glyphCount : INT_MAX;
+    int utf8RangeSize = SkTFitsIn<int>(info.utf8Range.size())
+                            ? info.utf8Range.size()
+                            : INT_MAX;
+    const auto& runBuffer
+        = fBuilder.allocRunTextPos(info.fFont, glyphCount, utf8RangeSize);
+    fCurrentGlyphs = runBuffer.glyphs;
+    fCurrentPoints = runBuffer.points();
+    if (runBuffer.utf8text && fUtf8Text)
+    {
+        memcpy(
+            runBuffer.utf8text,
+            fUtf8Text + info.utf8Range.begin(),
+            utf8RangeSize);
+    }
+    fClusters = runBuffer.clusters;
+    fGlyphCount = glyphCount;
+    fClusterOffset = info.utf8Range.begin();
+    return {
+        runBuffer.glyphs,
+        runBuffer.points(),
+        nullptr,
+        runBuffer.clusters,
+        fCurrentPosition};
+}
+void
+RunHandler::commitRunBuffer(const RunInfo& info)
+{
+    // for (size_t i = 0; i < info.glyphCount; ++i) {
+    //     SkASSERT(fClusters[i] >= info.utf8Range.begin());
+    //     // this fails for khmer example.
+    //     SkASSERT(fClusters[i] <  info.utf8Range.end());
+    // }
+    if (fCallbackFunction)
+    {
+        fCallbackFunction(
+            fCallbackContext,
+            fUtf8Text,
+            info.utf8Range.end(),
+            info.glyphCount,
+            fCurrentGlyphs,
+            fCurrentPoints,
+            fClusters,
+            info.fFont);
+    }
+    SkASSERT(0 <= fClusterOffset);
+    for (int i = 0; i < fGlyphCount; ++i)
+    {
+        SkASSERT(fClusters[i] >= (unsigned) fClusterOffset);
+        fClusters[i] -= fClusterOffset;
+    }
+    fCurrentPosition += info.fAdvance;
+    fTextOffset = std::max(fTextOffset, info.utf8Range.end());
+}
+void
+RunHandler::commitLine()
+{
+    if (fLineEndOffsets.empty() || fTextOffset > fLineEndOffsets.back())
+    {
+        // Ensure that fLineEndOffsets is monotonic.
+        fLineEndOffsets.push_back(fTextOffset);
+    }
+    fOffset += {0, fMaxRunDescent + fMaxRunLeading - fMaxRunAscent};
+}
+sk_sp<SkTextBlob>
+RunHandler::makeBlob()
+{
+    return fBuilder.make();
+}
+static SkRect
+selection_box(const SkFontMetrics& metrics, float advance, SkPoint pos)
+{
+    if (fabsf(advance) < 1.0f)
+    {
+        advance = copysignf(1.0f, advance);
+    }
+    return SkRect{
+        pos.x(),
+        pos.y() + metrics.fAscent,
+        pos.x() + advance,
+        pos.y() + metrics.fDescent}
+        .makeSorted();
+}
+static void
+set_character_bounds(
+    void* context,
+    const char* utf8Text,
+    size_t utf8TextBytes,
+    size_t glyphCount,
+    const SkGlyphID* glyphs,
+    const SkPoint* positions,
+    const uint32_t* clusters,
+    const SkFont& font)
+{
+    SkASSERT(context);
+    SkASSERT(glyphCount > 0);
+    SkRect* cursors = (SkRect*) context;
+    SkFontMetrics metrics;
+    font.getMetrics(&metrics);
+    std::unique_ptr<float[]> advances(new float[glyphCount]);
+    font.getWidths(glyphs, glyphCount, advances.get());
+    // Loop over each cluster in this run.
+    size_t clusterStart = 0;
+    for (size_t glyphIndex = 0; glyphIndex < glyphCount; ++glyphIndex)
+    {
+        if (glyphIndex + 1 < glyphCount // more glyphs
+            && clusters[glyphIndex] == clusters[glyphIndex + 1])
+        {
+            continue; // multi-glyph cluster
+        }
+        unsigned textBegin = clusters[glyphIndex];
+        unsigned textEnd = utf8TextBytes;
+        for (size_t i = 0; i < glyphCount; ++i)
+        {
+            if (clusters[i] >= textEnd)
+            {
+                textEnd = clusters[i] + 1;
+            }
+        }
+        for (size_t i = 0; i < glyphCount; ++i)
+        {
+            if (clusters[i] > textBegin && clusters[i] < textEnd)
+            {
+                textEnd = clusters[i];
+                if (textEnd == textBegin + 1)
+                {
+                    break;
+                }
+            }
+        }
+        SkASSERT(glyphIndex + 1 > clusterStart);
+        unsigned clusterGlyphCount = glyphIndex + 1 - clusterStart;
+        const SkPoint* clusterGlyphPositions = &positions[clusterStart];
+        const float* clusterAdvances = &advances[clusterStart];
+        clusterStart = glyphIndex + 1; // for next loop
+        SkRect clusterBox = selection_box(
+            metrics, clusterAdvances[0], clusterGlyphPositions[0]);
+        for (unsigned i = 1; i < clusterGlyphCount; ++i)
+        { // multiple glyphs
+            clusterBox.join(selection_box(
+                metrics, clusterAdvances[i], clusterGlyphPositions[i]));
+        }
+        if (textBegin + 1 == textEnd)
+        { // single byte, fast path.
+            cursors[textBegin] = clusterBox;
+            continue;
+        }
+        int textCount = textEnd - textBegin;
+        int codePointCount = SkUTF::CountUTF8(utf8Text + textBegin, textCount);
+        if (codePointCount == 1)
+        { // single codepoint, fast path.
+            cursors[textBegin] = clusterBox;
+            continue;
+        }
+        float width = clusterBox.width() / codePointCount;
+        SkASSERT(width > 0);
+        const char* ptr = utf8Text + textBegin;
+        const char* end = utf8Text + textEnd;
+        float x = clusterBox.left();
+        while (ptr < end)
+        { // for each codepoint in cluster
+            const char* nextPtr = ptr;
+            SkUTF::NextUTF8(&nextPtr, end);
+            int firstIndex = ptr - utf8Text;
+            float nextX = x + width;
+            cursors[firstIndex]
+                = SkRect{x, clusterBox.top(), nextX, clusterBox.bottom()};
+            x = nextX;
+            ptr = nextPtr;
+        }
+    }
+}
+
+struct ShapeResult
+{
+    sk_sp<SkTextBlob> blob;
+    std::vector<std::size_t> lineBreakOffsets;
+    std::vector<SkRect> glyphBounds;
+    int verticalAdvance;
+};
+
+ShapeResult
+Shape(
+    const char* utf8Text, size_t textByteLen, const SkFont& font, float width)
+{
+    ShapeResult result;
+    if (SkUTF::CountUTF8(utf8Text, textByteLen) < 0)
+    {
+        utf8Text = nullptr;
+        textByteLen = 0;
+    }
+    std::unique_ptr<SkShaper> shaper = SkShaper::Make();
+    float height = font.getSpacing();
+    RunHandler runHandler(utf8Text, textByteLen);
+    if (textByteLen)
+    {
+        result.glyphBounds.resize(textByteLen);
+        for (SkRect& c : result.glyphBounds)
+        {
+            c = SkRect{-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX};
+        }
+        runHandler.setRunCallback(
+            set_character_bounds, result.glyphBounds.data());
+        // TODO: make use of locale in shaping.
+        shaper->shape(utf8Text, textByteLen, font, true, width, &runHandler);
+        if (runHandler.lineEndOffsets().size() > 1)
+        {
+            result.lineBreakOffsets = runHandler.lineEndOffsets();
+            SkASSERT(result.lineBreakOffsets.size() > 0);
+            result.lineBreakOffsets.pop_back();
+        }
+        height = std::max(height, runHandler.endPoint().y());
+        result.blob = runHandler.makeBlob();
+    }
+    result.glyphBounds.push_back(runHandler.finalRect(font));
+    result.verticalAdvance = (int) ceilf(height);
+    return result;
+}
+
+// ---
+
+struct wrapped_text_node : indie::widget
+{
+    void
+    render(render_event& event) override
+    {
+        SkCanvas& canvas = *event.canvas;
+
+        auto const& region = this->relative_assignment_.region;
+
+        SkRect bounds;
+        bounds.fLeft = SkScalar(region.corner[0] + event.current_offset[0]);
+        bounds.fTop = SkScalar(region.corner[1] + event.current_offset[1]);
+        bounds.fRight = bounds.fLeft + SkScalar(region.size[0]);
+        bounds.fBottom = bounds.fTop + SkScalar(region.size[1]);
+        if (canvas.quickReject(bounds))
+            return;
+
+        SkPaint paint;
+        paint.setAntiAlias(true);
+        paint.setColor(SK_ColorBLACK);
+
+        canvas.drawTextBlob(
+            shape_.blob.get(), bounds.fLeft, bounds.fTop, paint);
+    }
+
+    void
+    hit_test(indie::hit_test_base&, vector<2, double> const&) const override
+    {
+    }
+
+    void
+    process_input(indie::event_context) override
+    {
+    }
+
+    matrix<3, 3, double>
+    transformation() const override
+    {
+        return parent->transformation();
+    }
+
+    layout_requirements
+    get_horizontal_requirements() override
+    {
+        layout_requirements requirements;
+        resolve_requirements(
+            requirements,
+            resolved_spec_,
+            0,
+            // TODO: What should the actual minimum width be here?
+            calculated_layout_requirements{12, 0, 0});
+        return requirements;
+    }
+    layout_requirements
+    get_vertical_requirements(layout_scalar assigned_width) override
+    {
+        if (shape_width_ != assigned_width)
+        {
+            shape_ = Shape(
+                text_.c_str(), text_.size(), *the_font, assigned_width);
+            shape_width_ = assigned_width;
+        }
+
+        layout_requirements requirements;
+        resolve_requirements(
+            requirements,
+            resolved_spec_,
+            1,
+            calculated_layout_requirements{
+                layout_scalar(shape_.verticalAdvance),
+                0 /* TODO: ascent */,
+                0 /* TODO: descent */});
+        return requirements;
+    }
+    void
+    set_relative_assignment(
+        relative_layout_assignment const& assignment) override
+    {
+        layout_requirements horizontal_requirements;
+        resolve_requirements(
+            horizontal_requirements,
+            resolved_spec_,
+            0,
+            // TODO: What should the actual minimum width be here?
+            calculated_layout_requirements{12, 0, 0});
+
+        if (shape_width_ != assignment.region.size[0])
+        {
+            shape_ = Shape(
+                text_.c_str(),
+                text_.size(),
+                *the_font,
+                assignment.region.size[0]);
+            shape_width_ = assignment.region.size[0];
+        }
+
+        layout_requirements vertical_requirements;
+        resolve_requirements(
+            vertical_requirements,
+            resolved_spec_,
+            1,
+            calculated_layout_requirements{
+                layout_scalar(shape_.verticalAdvance),
+                0 /* TODO: ascent */,
+                0 /* TODO: descent */});
+
+        relative_assignment_ = resolve_relative_assignment(
+            resolved_spec_,
+            assignment,
+            horizontal_requirements,
+            vertical_requirements);
+    }
+
+    indie::system* sys_;
+
+    captured_id text_id_;
+    std::string text_;
+
+    double shape_width_ = 0;
+    ShapeResult shape_;
+
+    // the resolved spec
+    resolved_layout_spec resolved_spec_;
+    // resolved relative assignment
+    relative_layout_assignment relative_assignment_;
+};
+
+void
+do_wrapped_text(
+    indie::context ctx,
+    readable<std::string> text,
+    layout const& layout_spec = default_layout)
+{
+    if (!the_font)
+        the_font.reset(new SkFont(nullptr, 24));
+
+    wrapped_text_node* node_ptr;
+    if (get_cached_data(ctx, &node_ptr))
+    {
+        node_ptr->sys_ = &get_system(ctx);
+
+        node_ptr->text_ = read_signal(text);
+    }
+
+    auto& node = *node_ptr;
+
+    if (is_refresh_event(ctx))
+    {
+        // TODO: Cache this?
+        resolved_layout_spec resolved_spec;
+        resolve_layout_spec(
+            get_layout_traversal(ctx),
+            resolved_spec,
+            layout_spec,
+            TOP | LEFT | PADDED);
+        detect_layout_change(
+            get_layout_traversal(ctx), &node.resolved_spec_, resolved_spec);
+
+        refresh_signal_view(
+            node.text_id_,
+            text,
+            [&](std::string const& new_value) { node.text_ = new_value; },
+            [&]() { node.text_.clear(); });
+
+        add_layout_node(get<indie::traversal_tag>(ctx).layout, &node);
+    }
+}
+
+// namespace alia {
+
+// template<class Value>
+// struct readable_signal_type
+// {
+//     using type = readable<Value>;
+// };
+
+// template<class Value>
+// struct in : readable_signal_type<Value>::type
+// {
+//     using signal_ref::signal_ref;
+// };
+
+// } // namespace alia
+
+// #define ALIA_PP_CONCAT(a, b) ALIA_PP_CONCAT1(a, b)
+// #define ALIA_PP_CONCAT1(a, b) ALIA_PP_CONCAT2(a, b)
+// #define ALIA_PP_CONCAT2(a, b) a##b
+
+// #define ALIA_PP_FE_2_0(F, a, b)
+// #define ALIA_PP_FE_2_1(F, a, b, x) F(a, b, x)
+// #define ALIA_PP_FE_2_2(F, a, b, x, ...) \
+//     F(a, b, x) ALIA_PP_FE_2_1(F, a, b, __VA_ARGS__)
+// #define ALIA_PP_FE_2_3(F, a, b, x, ...) \
+//     F(a, b, x) ALIA_PP_FE_2_2(F, a, b, __VA_ARGS__)
+// #define ALIA_PP_FE_2_4(F, a, b, x, ...) \
+//     F(a, b, x) ALIA_PP_FE_2_3(F, a, b, __VA_ARGS__)
+// #define ALIA_PP_FE_2_5(F, a, b, x, ...) \
+//     F(a, b, x) ALIA_PP_FE_2_4(F, a, b, __VA_ARGS__)
+// #define ALIA_PP_FE_2_6(F, a, b, x, ...) \
+//     F(a, b, x) ALIA_PP_FE_2_5(F, a, b, __VA_ARGS__)
+
+// #define ALIA_PP_GET_MACRO(_0, _1, _2, _3, _4, _5, _6, NAME, ...) NAME
+// #define ALIA_PP_FOR_EACH_2(F, a, b, ...) \
+//     ALIA_PP_GET_MACRO( \
+//         _0, \
+//         __VA_ARGS__, \
+//         ALIA_PP_FE_2_6, \
+//         ALIA_PP_FE_2_5, \
+//         ALIA_PP_FE_2_4, \
+//         ALIA_PP_FE_2_3, \
+//         ALIA_PP_FE_2_2, \
+//         ALIA_PP_FE_2_1, \
+//         ALIA_PP_FE_2_0) \
+//     (F, a, b, __VA_ARGS__)
+
+// #define ALIA_DEFINE_STRUCT_SIGNAL_FIELD(signal_type, struct_name, field_name) \
+//     auto ALIA_PP_CONCAT(ALIA_PP_CONCAT(_get_, field_name), _signal)()         \
+//     {                                                                         \
+//         return (*this)->*&struct_name::field_name;                            \
+//     }                                                                         \
+//     __declspec(property(                                                      \
+//         get = ALIA_PP_CONCAT(ALIA_PP_CONCAT(_get_, field_name), _signal)))    \
+//         alia::field_signal<                                                   \
+//             ALIA_PP_CONCAT(ALIA_PP_CONCAT(signal_type, _), struct_name),      \
+//             decltype(struct_name::field_name)>                                \
+//             field_name;
+
+// #define ALIA_DEFINE_STRUCT_SIGNAL_FIELDS(signal_type, struct_name, ...)       \
+//     ALIA_PP_FOR_EACH_2(                                                       \
+//         ALIA_DEFINE_STRUCT_SIGNAL_FIELD,                                      \
+//         signal_type,                                                          \
+//         struct_name,                                                          \
+//         __VA_ARGS__)
+
+// #define ALIA_DEFINE_CUSTOM_STRUCT_SIGNAL(                                     \
+//     signal_name, signal_type, struct_name, ...)                               \
+//     struct ALIA_PP_CONCAT(ALIA_PP_CONCAT(signal_type, _), struct_name)        \
+//         : signal_type<struct_name>                                            \
+//     {                                                                         \
+//         using signal_ref::signal_ref;                                         \
+//         ALIA_DEFINE_STRUCT_SIGNAL_FIELDS(                                     \
+//             signal_type, struct_name, __VA_ARGS__)                            \
+//     };
+
+// #define ALIA_DEFINE_STRUCT_SIGNAL(signal_type, struct_name, ...)              \
+//     ALIA_DEFINE_CUSTOM_STRUCT_SIGNAL(                                         \
+//         ALIA_PP_CONCAT(ALIA_PP_CONCAT(signal_type, _), struct_name),          \
+//         signal_type,                                                          \
+//         struct_name,                                                          \
+//         __VA_ARGS__)
+
+// #define ALIA_DEFINE_STRUCT_SIGNALS(struct_name, ...)                          \
+//     ALIA_DEFINE_STRUCT_SIGNAL(readable, struct_name, __VA_ARGS__)             \
+//     ALIA_DEFINE_STRUCT_SIGNAL(duplex, struct_name, __VA_ARGS__)
+
+// struct realm
+// {
+//     std::string name;
+//     std::string description;
+// };
+// ALIA_DEFINE_STRUCT_SIGNALS(realm, name, description)
+
+// template<>
+// struct alia::readable_signal_type<realm>
+// {
+//     using type = readable_realm;
+// };
+
+// in<realm>
+// get_realm_name(indie::context ctx)
+// {
+//     auto foo = value("focus");
+//     return alia::apply(
+//         ctx,
+//         [] {
+//             return realm{foo, "a realm for " + foo};
+//         },
+//         foo);
+// }
 
 namespace alia { namespace indie {
 
@@ -572,8 +1368,8 @@ refresh_grid_row(
     layout const& layout_spec)
 {
     // Add this row to the grid's list of rows.
-    // It doesn't matter what order the list is in, and adding the row to the
-    // front of the list is easier.
+    // It doesn't matter what order the list is in, and adding the row to
+    // the front of the list is easier.
     if (traversal.is_refresh_pass)
     {
         row.next = grid.rows;
@@ -699,21 +1495,20 @@ template<class Uniformity>
 struct grid_row_container : widget_container
 {
     void
-    render(SkCanvas& canvas) override
+    render(render_event& event) override
     {
         auto const& region = get_assignment(this->cacher).region;
         SkRect bounds;
-        bounds.fLeft = SkScalar(region.corner[0]);
-        bounds.fTop = SkScalar(region.corner[1]);
-        bounds.fRight = SkScalar(region.corner[0] + region.size[0]);
-        bounds.fBottom = SkScalar(region.corner[1] + region.size[1]);
-        if (!canvas.quickReject(bounds))
+        bounds.fLeft = SkScalar(region.corner[0] + event.current_offset[0]);
+        bounds.fTop = SkScalar(region.corner[1] + event.current_offset[1]);
+        bounds.fRight = bounds.fLeft + SkScalar(region.size[0]);
+        bounds.fBottom = bounds.fTop + SkScalar(region.size[1]);
+        if (!event.canvas->quickReject(bounds))
         {
-            canvas.save();
-            auto const& offset = region.corner;
-            canvas.translate(offset[0], offset[1]);
-            indie::render_children(canvas, *this);
-            canvas.restore();
+            auto original_offset = event.current_offset;
+            event.current_offset += region.corner;
+            indie::render_children(event, *this);
+            event.current_offset = original_offset;
         }
     }
 
@@ -736,6 +1531,12 @@ struct grid_row_container : widget_container
     void
     process_input(event_context) override
     {
+    }
+
+    matrix<3, 3, double>
+    transformation() const override
+    {
+        return parent->transformation();
     }
 
     // implementation of layout interface
@@ -771,7 +1572,8 @@ template<class Uniformity>
 void
 update_grid_column_requirements(grid_data<Uniformity>& grid)
 {
-    // Only update if something in the grid has changed since the last update.
+    // Only update if something in the grid has changed since the last
+    // update.
     if (grid.last_content_query != grid.container->last_content_change)
     {
         // Clear the requirements for the grid and recompute them
@@ -1030,11 +1832,435 @@ scoped_grid_row::end()
     container_.end();
 }
 
+struct scrollable_view_data
+{
+    // This is the actual, unsmoothed scroll position.
+    // If the user supplies external storage, then this is a copy of the value
+    // stored there. Otherwise, this is the actual value.
+    // (Either way, it's OK to read it, but writing should go through the
+    // set_scroll_position function.)
+    layout_vector scroll_position;
+
+    // If this is true, the scroll_position has changed internally and needs
+    // to be communicated to the external storage.
+    // bool scroll_position_changed;
+
+    // the smoothed version of the scroll position
+    layout_vector smoothed_scroll_position;
+    // for smoothing the scroll position
+    value_smoother<layout_scalar> smoothers[2];
+
+    // set by caller and copied here
+    unsigned scrollable_axes, reserved_axes;
+
+    // determined at usage site and needed by layout
+    layout_scalar scrollbar_width, minimum_window_size, line_size;
+
+    // determined by layout and stored here to communicate back to usage site
+    bool hsb_on, vsb_on;
+    layout_vector content_size, window_size;
+
+    // // data for scrollbars
+    scrollbar_data hsb_data, vsb_data;
+
+    // // rendering data for junction
+    // themed_rendering_data junction_rendering;
+
+    // // layout container
+    // scrollable_layout_container container;
+};
+
+struct scrollable_view : widget_container
+{
+    static float constexpr scrollbar_width = 30;
+
+    void
+    refresh(dataless_context ctx)
+    {
+        layout_box bg_area = get_assignment(this->cacher).region;
+        bg_area.corner[0] += bg_area.size[0] - scrollbar_width;
+        bg_area.size[0] = scrollbar_width;
+        auto dsa = direct(scroll_amount);
+        duplex<layout_scalar> position = dsa;
+        refresh_scrollbar(
+            ctx,
+            scrollbar_parameters{
+                &data.vsb_data,
+                1,
+                &position,
+                bg_area,
+                data.content_size[1],
+                data.window_size[1],
+                120,
+                2400,
+                internal_widget_ref{*this},
+                0});
+    }
+
+    // implementation of layout interface
+    layout_requirements
+    get_horizontal_requirements() override
+    {
+        auto child_requirements = cache_horizontal_layout_requirements(
+            cacher, last_content_change, [&] {
+                return logic->get_horizontal_requirements(children);
+            });
+        child_requirements.size += scrollbar_width;
+        return child_requirements;
+    }
+
+    layout_requirements
+    get_vertical_requirements(layout_scalar assigned_width) override
+    {
+        return cache_vertical_layout_requirements(
+            cacher, last_content_change, assigned_width, [&] {
+                // TODO: Find a better way to determine the minimum window
+                // size.
+                return calculated_layout_requirements{100, 0, 0};
+            });
+    }
+
+    void
+    set_relative_assignment(
+        relative_layout_assignment const& assignment) override
+    {
+        update_relative_assignment(
+            *this,
+            cacher,
+            last_content_change,
+            assignment,
+            [&](auto const& resolved_assignment) {
+                layout_vector available_size = resolved_assignment.region.size;
+
+                calculated_layout_requirements x
+                    = logic->get_horizontal_requirements(children);
+                if (available_size[0] < x.size)
+                {
+                    data.hsb_on = true;
+                    available_size[1] -= data.scrollbar_width;
+                }
+                else
+                    data.hsb_on = false;
+
+                calculated_layout_requirements y
+                    = logic->get_vertical_requirements(
+                        children, (std::max)(available_size[0], x.size));
+                if (available_size[1] < y.size)
+                {
+                    data.vsb_on = true;
+                    available_size[0] -= data.scrollbar_width;
+                    if (!data.hsb_on && available_size[0] < x.size)
+                    {
+                        data.hsb_on = true;
+                        available_size[1] -= data.scrollbar_width;
+                    }
+                }
+                else
+                    data.vsb_on = false;
+
+                if ((data.reserved_axes & 1) != 0 && !data.hsb_on)
+                    available_size[1] -= data.scrollbar_width;
+                if ((data.reserved_axes & 2) != 0 && !data.vsb_on)
+                    available_size[0] -= data.scrollbar_width;
+
+                layout_scalar content_width
+                    = (std::max)(available_size[0], x.size);
+
+                y = logic->get_vertical_requirements(children, content_width);
+
+                layout_scalar content_height
+                    = (std::max)(available_size[1], y.size);
+
+                layout_vector content_size
+                    = make_layout_vector(content_width, content_height);
+
+                // If the panel is scrolled all the way to the end, and the
+                // content grows, scroll to show the new content.
+                for (unsigned i = 0; i != 2; ++i)
+                {
+                    layout_scalar sp = data.smoothed_scroll_position[i];
+                    if (sp != 0
+                        && sp + data.window_size[i] >= data.content_size[i]
+                        && sp + available_size[i] < data.content_size[i])
+                    {
+                        // TODO
+                        // set_scroll_position_abruptly(
+                        //     data, i, content_size[i] - available_size[i]);
+                    }
+                }
+
+                data.content_size = content_size;
+                data.window_size = available_size;
+
+                // If the scroll position needs to be clamped because of
+                // changes in content size, then do it abruptly, not smoothly.
+                // TODO
+                // for (unsigned i = 0; i != 2; ++i)
+                // {
+                //     layout_scalar original =
+                //     data.smoothed_scroll_position[i]; layout_scalar clamped
+                //         = clamp_scroll_position(data, i, original);
+                //     if (clamped != original)
+                //         set_scroll_position_abruptly(data, i, clamped);
+                // }
+
+                logic->set_relative_assignment(
+                    children, content_size, content_height - y.descent);
+
+                // this->assigned_size = resolved_assignment.region.size;
+                // auto child_assignment = resolved_assignment;
+                // child_assignment.region.size[0] -= scrollbar_width;
+                // logic->set_relative_assignment(
+                //     children,
+                //     child_assignment.region.size,
+                //     child_assignment.baseline_y);
+            });
+    }
+
+    // layout_scalar
+    // get_max_physical_position()
+    // {
+    //     return data.window_size[1]
+    //            * (1 - data.window_size[1] / data.content_size[1]);
+    // }
+
+    // layout_scalar
+    // get_max_logical_position()
+    // {
+    //     return data.content_size[1] - data.window_size[1];
+    // }
+
+    // layout_scalar
+    // logical_position_to_physical(layout_scalar position)
+    // {
+    //     layout_scalar max_physical = get_max_physical_position();
+    //     layout_scalar max_logical = get_max_logical_position();
+    //     // return clamp(position * max_physical / max_logical, 0,
+    //     // max_physical);
+    //     return position * max_physical / max_logical;
+    // }
+
+    // layout_box
+    // get_thumb_area()
+    // {
+    //     layout_box bg_area = get_assignment(this->cacher).region;
+    //     bg_area.corner[0] += bg_area.size[0] - scrollbar_width;
+    //     bg_area.size[0] = scrollbar_width;
+    //     layout_box area = bg_area;
+    //     area.size[1] = (std::max)(
+    //         layout_scalar(0), // get_metrics(sb).minimum_thumb_length,
+    //         data.window_size[1] * bg_area.size[1] / data.content_size[1]);
+    //     area.corner[1]
+    //         = bg_area.corner[1] +
+    //         logical_position_to_physical(-scroll_amount);
+    //     return area;
+    // }
+
+    void
+    render(render_event& event) override
+    {
+        auto const& region = get_assignment(this->cacher).region;
+        SkRect bounds;
+        bounds.fLeft = SkScalar(region.corner[0] + event.current_offset[0]);
+        bounds.fTop = SkScalar(region.corner[1] + event.current_offset[1]);
+        bounds.fRight = bounds.fLeft + SkScalar(region.size[0]);
+        bounds.fBottom = bounds.fTop + SkScalar(region.size[1]);
+        if (!event.canvas->quickReject(bounds))
+        {
+            event.canvas->save();
+            auto original_offset = event.current_offset;
+            event.canvas->clipRect(bounds);
+            event.canvas->translate(0, -scroll_amount);
+            event.current_offset += region.corner;
+            indie::render_children(event, *this);
+            event.current_offset = original_offset;
+            event.canvas->restore();
+            // {
+            //     SkPaint paint;
+            //     paint.setColor(SK_ColorDKGRAY);
+            //     auto thumb_area = get_thumb_area();
+            //     SkRect box;
+            //     box.fLeft
+            //         = SkScalar(thumb_area.corner[0] +
+            //         event.current_offset[0]);
+            //     box.fTop
+            //         = SkScalar(thumb_area.corner[1] +
+            //         event.current_offset[1]);
+            //     box.fRight = box.fLeft + SkScalar(thumb_area.size[0]);
+            //     box.fBottom = box.fTop + SkScalar(thumb_area.size[1]);
+            //     event.canvas->drawRect(box, paint);
+            // }
+            layout_box bg_area = get_assignment(this->cacher).region;
+            bg_area.corner[0] += bg_area.size[0] - scrollbar_width;
+            bg_area.size[0] = scrollbar_width;
+            auto dsa = direct(scroll_amount);
+            duplex<layout_scalar> position = dsa;
+            render_scrollbar(
+                event,
+                scrollbar_parameters{
+                    &data.vsb_data,
+                    1,
+                    &position,
+                    bg_area,
+                    data.content_size[1],
+                    data.window_size[1],
+                    120,
+                    2400,
+                    internal_widget_ref{*this},
+                    0});
+        }
+    }
+
+    void
+    hit_test(
+        hit_test_base& test, vector<2, double> const& point) const override
+    {
+        auto const& region = get_assignment(this->cacher).region;
+        if (is_inside(region, vector<2, float>(point)))
+        {
+            if (test.type == indie::hit_test_type::WHEEL)
+            {
+                static_cast<indie::wheel_hit_test&>(test).result
+                    = externalize(internal_element_ref{*this, 0});
+            }
+            auto local_point = point - vector<2, double>(region.corner);
+            local_point[1] += scroll_amount;
+            for (widget* node = this->widget_container::children; node;
+                 node = node->next)
+            {
+                node->hit_test(test, local_point);
+            }
+
+            layout_box bg_area = get_assignment(this->cacher).region;
+            bg_area.corner[0] += bg_area.size[0] - scrollbar_width;
+            bg_area.size[0] = scrollbar_width;
+            auto dsa = direct(scroll_amount);
+            duplex<layout_scalar> position = dsa;
+            hit_test_scrollbar(
+                scrollbar_parameters{
+                    &data.vsb_data,
+                    1,
+                    &position,
+                    bg_area,
+                    data.content_size[1],
+                    data.window_size[1],
+                    120,
+                    2400,
+                    internal_widget_ref{*this},
+                    0},
+                test,
+                point);
+        }
+    }
+
+    void
+    process_input(event_context ctx) override
+    {
+        auto delta = detect_scroll(ctx, internal_element_ref{*this, 0});
+        if (delta)
+            scroll_amount -= (*delta)[1] * 120;
+
+        layout_box bg_area = get_assignment(this->cacher).region;
+        bg_area.corner[0] += bg_area.size[0] - scrollbar_width;
+        bg_area.size[0] = scrollbar_width;
+        auto dsa = direct(scroll_amount);
+        duplex<layout_scalar> position = dsa;
+        process_scrollbar_input(
+            ctx,
+            scrollbar_parameters{
+                &data.vsb_data,
+                1,
+                &position,
+                bg_area,
+                data.content_size[1],
+                data.window_size[1],
+                120,
+                2400,
+                internal_widget_ref{*this},
+                0});
+    }
+
+    matrix<3, 3, double>
+    transformation() const override
+    {
+        return parent->transformation();
+    }
+
+    mutable scrollable_view_data data;
+
+    column_layout_logic* logic;
+    layout_cacher cacher;
+    layout_vector assigned_size;
+
+    mutable float scroll_amount = 0;
+    value_smoother<float> smoother;
+};
+
+void
+get_scrollable_view(
+    indie::context ctx,
+    std::shared_ptr<scrollable_view>** container,
+    layout const& layout_spec)
+{
+    if (get_data(ctx, container))
+        **container = std::make_shared<scrollable_view>();
+
+    if (get_layout_traversal(ctx).is_refresh_pass)
+    {
+        (**container)->refresh(ctx);
+
+        if (update_layout_cacher(
+                get_layout_traversal(ctx),
+                (**container)->cacher,
+                layout_spec,
+                FILL | UNPADDED))
+        {
+            // Since this container isn't active yet, it didn't get marked
+            // as needing recalculation, so we need to do that manually
+            // here.
+            (**container)->last_content_change
+                = get_layout_traversal(ctx).refresh_counter;
+        }
+    }
+}
+
+struct scoped_scrollable_view
+{
+    scoped_scrollable_view()
+    {
+    }
+    scoped_scrollable_view(
+        indie::context ctx, layout const& layout_spec = default_layout)
+    {
+        begin(ctx, layout_spec);
+    }
+    ~scoped_scrollable_view()
+    {
+        end();
+    }
+    void
+    begin(indie::context ctx, layout const& layout_spec = default_layout)
+    {
+        std::shared_ptr<scrollable_view>* container;
+        get_scrollable_view(ctx, &container, layout_spec);
+        container_.begin(get_layout_traversal(ctx), container->get());
+    }
+    void
+    end()
+    {
+        container_.end();
+    }
+
+ private:
+    scoped_layout_container container_;
+};
 }} // namespace alia::indie
 
 void
 my_ui(indie::context ctx)
 {
+    std::cout << "sizeof(layout): " << sizeof(layout) << "\n";
+
     // static indie::layout_container_widget<column_layout> container;
     // static indie::simple_container_widget container;
     // indie::scoped_widget_container container_scope;
@@ -1067,55 +2293,99 @@ my_ui(indie::context ctx)
     do_spacer(ctx, height(100, PIXELS));
 
     {
-        indie::scoped_flow_layout flow(ctx, GROW | UNPADDED);
+        scoped_scrollable_view scrollable(ctx, GROW);
 
-        for (int i = 0; i != 100; ++i)
+        for (int outer = 0; outer != 10; ++outer)
         {
-            alia_if(show_text)
+            // do_wrapped_text(
+            //     ctx,
+            //     value("Lorem ipsum dolor sit amet, consectetur adipiscing "
+            //           "elit, "
+            //           "sed do "
+            //           "eiusmod tempor incididunt ut labore "
+            //           "et dolore magna "
+            //           "aliqua. Ut "
+            //           "enim ad minim veniam, quis nostrud "
+            //           "exercitation ullamco "
+            //           "laboris "
+            //           "nisi ut aliquip ex ea commodo "
+            //           "consequat. Duis aute irure "
+            //           "dolor "
+            //           "in reprehenderit in voluptate velit esse cillum "
+            //           "dolore "
+            //           "eu "
+            //           "fugiat "
+            //           "nulla pariatur. Excepteur sint "
+            //           "occaecat cupidatat non "
+            //           "proident, "
+            //           "sunt in culpa qui officia deserunt "
+            //           "mollit anim id est "
+            //           "laborum."),
+            //     FILL);
+        }
+
+        // do_box(
+        //     ctx,
+        //     SK_ColorRED,
+        //     actions::toggle(show_text),
+        //     size(400, 400, PIXELS));
+        // do_spacer(ctx, height(100, PIXELS));
+
+        for (int outer = 0; outer != 10; ++outer)
+        {
+            indie::scoped_flow_layout flow(ctx, UNPADDED);
+
+            for (int i = 0; i != 100; ++i)
             {
-                do_text(ctx, alia::printf(ctx, "text%i", i));
-            }
-            alia_end
+                if_(ctx, show_text, [&] {
+                    // do_spacer(ctx, size(60, 40, PIXELS));
+                    do_text(ctx, alia::printf(ctx, "text%i", i));
+                    do_text(ctx, value("Könnten Sie mir das übersetzen?"));
+                });
 
-            {
-                indie::scoped_column col(ctx);
+                {
+                    indie::scoped_column col(ctx);
 
-                do_box(
-                    ctx, SK_ColorMAGENTA, actions::noop(), width(100, PIXELS));
+                    do_box(
+                        ctx,
+                        SK_ColorMAGENTA,
+                        actions::noop(),
+                        width(100, PIXELS));
 
-                // color::yiq<std::uint8_t> y1 =
-                // ::color::constant::blue_t{};
-                // color::yiq<std::uint8_t> y2 =
-                // ::color::constant::red_t{};
-                // color::yiq<std::uint8_t> yr =
-                // color::operation::mix(
-                //     y1,
-                //     std::max(
-                //         0.0,
-                //         std::min(
-                //             1.0,
-                //             std::fabs(std::sin(
-                //                 get_raw_animation_tick_count(ctx)
-                //                 / 1000.0)))),
-                //     y2);
-                // color::rgb<std::uint8_t> r(yr);
-                // color::rgb<std::uint8_t> r(y1);
+                    // color::yiq<std::uint8_t> y1 =
+                    // ::color::constant::blue_t{};
+                    // color::yiq<std::uint8_t> y2 =
+                    // ::color::constant::red_t{};
+                    // color::yiq<std::uint8_t> yr =
+                    // color::operation::mix(
+                    //     y1,
+                    //     std::max(
+                    //         0.0,
+                    //         std::min(
+                    //             1.0,
+                    //             std::fabs(std::sin(
+                    //                 get_raw_animation_tick_count(ctx)
+                    //                 / 1000.0)))),
+                    //     y2);
+                    // color::rgb<std::uint8_t> r(yr);
+                    // color::rgb<std::uint8_t> r(y1);
 
-                do_box(ctx, SK_ColorLTGRAY, actions::noop());
-            }
+                    do_box(ctx, SK_ColorLTGRAY, actions::noop());
+                }
 
-            {
-                indie::scoped_column col(ctx);
+                {
+                    indie::scoped_column col(ctx);
 
-                static SkColor clicky_color = SK_ColorRED;
-                // event_handler<indie::mouse_button_event>(
-                //     ctx, [&](auto, auto&) { clicky_color =
-                //     SK_ColorBLUE; });
-                do_box(ctx, clicky_color, actions::noop());
+                    static SkColor clicky_color = SK_ColorRED;
+                    // event_handler<indie::mouse_button_event>(
+                    //     ctx, [&](auto, auto&) { clicky_color =
+                    //     SK_ColorBLUE; });
+                    do_box(ctx, clicky_color, actions::noop());
 
-                do_box(ctx, SK_ColorDKGRAY, actions::noop());
+                    do_box(ctx, SK_ColorDKGRAY, actions::noop());
 
-                do_box(ctx, SK_ColorGRAY, actions::noop());
+                    do_box(ctx, SK_ColorGRAY, actions::noop());
+                }
             }
         }
     }

@@ -3,7 +3,7 @@
 namespace alia { namespace indie {
 
 std::optional<vector<2, double>>
-detect_scroll(event_context ctx, widget const*)
+detect_scroll(event_context ctx, internal_element_ref)
 {
     scroll_event* event;
     if (detect_event(ctx, &event))

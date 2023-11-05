@@ -30,14 +30,14 @@ struct window_input_state
     vector<2, double> mouse_position;
 
     // the widget that the mouse is over
-    external_widget_handle hot_widget;
+    external_element_ref hot_element;
 
     // the widget that has the mouse captured - Note that this isn't
-    // necessarily the same as the hot_widget.
-    external_widget_handle widget_with_capture;
+    // necessarily the same as the hot_element.
+    external_element_ref element_with_capture;
 
     // the widget that has the keyboard focus
-    external_widget_handle widget_with_focus;
+    external_element_ref element_with_focus;
 
     // Is the user currently dragging the mouse (with a button pressed)?
     bool dragging = false;
@@ -49,7 +49,7 @@ struct window_input_state
     // is used as a hint to display focus indicators.
     bool keyboard_interaction = false;
 
-    // If the mouse is hovering over a widget (identified by hot_widget), this
+    // If the mouse is hovering over a widget (identified by hot_element), this
     // is the time at which the hovering started. Note that hovering is only
     // possible if no widget has captured the mouse.
     millisecond_count hover_start_time;

@@ -122,6 +122,7 @@ add_layout_node(
 {
     set_next_node(traversal, node);
     traversal.next_ptr = &node->next;
+    node->parent = traversal.active_container;
 }
 
 // detect_layout_change(ctx, value_storage, new_value) detects if new_value is

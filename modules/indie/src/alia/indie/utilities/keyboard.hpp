@@ -10,68 +10,60 @@
 
 namespace alia { namespace indie {
 
-// Add the given widget to the list of components that will be traversed when
-// the user presses Tab.
+// Add the given element to the list that will be traversed when the user
+// presses Tab.
 void
-add_to_focus_order(event_context ctx, widget const* widget);
+add_to_focus_order(event_context ctx, internal_element_ref element);
 
-// Determine if the given widget has the keyboard focus.
+// Determine if the given element has the keyboard focus.
 bool
-widget_has_focus(system& sys, widget const* widget);
+element_has_focus(system& sys, internal_element_ref element);
 
-// Determine if the given widget has the keyboard focus.
+// Determine if the given element has the keyboard focus.
 inline bool
-widget_has_focus(event_context ctx, widget const* widget)
+element_has_focus(event_context ctx, internal_element_ref element)
 {
-    return widget_has_focus(get_system(ctx), widget);
+    return element_has_focus(get_system(ctx), element);
 }
 
 // Set the component with focus and ensure that it's visible.
 void
-set_focus(system& sys, external_widget_handle widget);
-
-// Get the widget before the one with the focus.
-component_id
-get_widget_before_focus(system& sys);
-
-// Get the widget before the one with the focus.
-component_id
-get_widget_before_focus(system& sys);
+set_focus(system& sys, external_element_ref element);
 
 // Detect if a component has just gained focus.
 bool
-detect_focus_gain(event_context ctx, widget const* widget);
+detect_focus_gain(event_context ctx, internal_element_ref element);
 
 // Detect if a component has just lost focus.
 bool
-detect_focus_loss(event_context ctx, widget const* widget);
+detect_focus_loss(event_context ctx, internal_element_ref element);
 
-// Calling this ensure that a widget will steal the focus if it's click on.
+// Calling this ensure that a element will steal the focus if it's click on.
 void
-focus_on_click(event_context ctx, widget const* widget);
+focus_on_click(event_context ctx, internal_element_ref element);
 
 // The following are used to detect general keyboard events related to
 // any key...
 
-// Detect if a key press just occurred and was directed at the given widget.
+// Detect if a key press just occurred and was directed at the given element.
 std::optional<modded_key>
-detect_key_press(event_context ctx, widget const* widget);
+detect_key_press(event_context ctx, internal_element_ref element);
 // same, but without ID (as background)
 // bool
 // detect_key_press(event_context ctx, modded_key* info);
 
-// Detect if a key release just occurred and was directed at the given widget.
+// Detect if a key release just occurred and was directed at the given element.
 // Note that many key presses may be received before the corresponding (single)
 // key release is received.
 std::optional<modded_key>
-detect_key_release(event_context ctx, widget const* widget);
+detect_key_release(event_context ctx, internal_element_ref element);
 // same, but without ID (as background)
 // bool
 // detect_key_release(event_context ctx, modded_key* info);
 
 // Detect text input (as UTF-8 text) directed to a component.
 std::optional<std::string>
-detect_text_input(event_context ctx, widget const* widget);
+detect_text_input(event_context ctx, internal_element_ref element);
 // same, but without ID (as background)
 // bool
 // detect_text_input(event_context ctx, std::string* text);
@@ -88,7 +80,7 @@ acknowledge_key_event(event_context ctx);
 bool
 detect_key_press(
     event_context ctx,
-    widget const* widget,
+    internal_element_ref element,
     key_code code,
     key_modifiers modifiers = KMOD_NONE);
 // same, but without ID (as background)
@@ -100,7 +92,7 @@ detect_key_press(
 bool
 detect_key_release(
     event_context ctx,
-    widget const* widget,
+    internal_element_ref element,
     key_code code,
     key_modifiers modifiers = KMOD_NONE);
 // same, but without ID (as background)
@@ -129,7 +121,7 @@ bool
 detect_keyboard_click(
     event_context ctx,
     keyboard_click_state& state,
-    widget const* widget,
+    internal_element_ref element,
     key_code code = key_code::SPACE,
     key_modifiers modifiers = KMOD_NONE);
 

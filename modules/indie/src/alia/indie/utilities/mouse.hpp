@@ -9,34 +9,37 @@
 namespace alia { namespace indie {
 
 bool
-is_widget_hot(system& sys, widget const* widget);
+is_element_hot(system& sys, internal_element_ref element);
 
 inline bool
-is_widget_hot(event_context ctx, widget const* widget)
+is_element_hot(event_context ctx, internal_element_ref element)
 {
-    return is_widget_hot(get_system(ctx), widget);
+    return is_element_hot(get_system(ctx), element);
 }
 
 bool
-widget_has_capture(system& sys, widget const* widget);
+element_has_capture(system& sys, internal_element_ref element);
 
 inline bool
-widget_has_capture(event_context ctx, widget const* widget)
+element_has_capture(event_context ctx, internal_element_ref element)
 {
-    return widget_has_capture(get_system(ctx), widget);
+    return element_has_capture(get_system(ctx), element);
 }
 
 bool
-no_component_has_capture(system& sys);
+no_element_has_capture(system& sys);
 
 inline bool
-no_component_has_capture(event_context ctx)
+no_element_has_capture(event_context ctx)
 {
-    return no_component_has_capture(get_system(ctx));
+    return no_element_has_capture(get_system(ctx));
 }
 
-// vector<2, double>
-// get_mouse_position(dataless_context ctx);
+vector<2, double>
+get_mouse_position(system& sys, widget const& widget);
+
+vector<2, int>
+get_integer_mouse_position(system& sys, widget const& widget);
 
 bool
 is_mouse_in_surface(system& sys);
@@ -61,45 +64,69 @@ detect_mouse_press(event_context ctx, mouse_button button);
 
 bool
 detect_mouse_press(
-    event_context ctx, widget const* widget, mouse_button button);
+    event_context ctx, internal_element_ref element, mouse_button button);
 
 bool
 detect_mouse_release(event_context ctx, mouse_button button);
 
 bool
 detect_mouse_release(
-    event_context ctx, widget const* widget, mouse_button button);
+    event_context ctx, internal_element_ref element, mouse_button button);
 
 bool
-detect_mouse_motion(event_context ctx, widget const* widget);
+detect_mouse_motion(event_context ctx, internal_element_ref element);
 
 bool
 detect_double_click(event_context ctx, mouse_button button);
 
 bool
 detect_double_click(
-    event_context ctx, widget const* widget, mouse_button button);
+    event_context ctx, internal_element_ref element, mouse_button button);
 
 bool
-detect_click(event_context ctx, widget const* widget, mouse_button button);
+detect_click(
+    event_context ctx, internal_element_ref element, mouse_button button);
 
 bool
-is_click_possible(system& sys, widget const* widget);
+is_click_possible(system& sys, internal_element_ref element);
 
 inline bool
-is_click_possible(event_context ctx, widget const* widget)
+is_click_possible(event_context ctx, internal_element_ref element)
 {
-    return is_click_possible(get_system(ctx), widget);
+    return is_click_possible(get_system(ctx), element);
 }
 
 bool
-is_click_in_progress(system& sys, widget const* widget, mouse_button button);
+is_click_in_progress(
+    system& sys, internal_element_ref element, mouse_button button);
 
 inline bool
 is_click_in_progress(
-    event_context ctx, widget const* widget, mouse_button button)
+    event_context ctx, internal_element_ref element, mouse_button button)
 {
-    return is_click_in_progress(get_system(ctx), widget, button);
+    return is_click_in_progress(get_system(ctx), element, button);
+}
+
+bool
+detect_drag(
+    event_context ctx, internal_element_ref element, mouse_button button);
+
+bool
+detect_press_or_drag(
+    event_context ctx, internal_element_ref element, mouse_button button);
+
+vector<2, double>
+get_mouse_motion_delta(event_context ctx, widget const& widget);
+
+bool
+is_drag_in_progress(
+    system& sys, internal_element_ref element, mouse_button button);
+
+inline bool
+is_drag_in_progress(
+    event_context ctx, internal_element_ref element, mouse_button button)
+{
+    return is_drag_in_progress(get_system(ctx), element, button);
 }
 
 }} // namespace alia::indie

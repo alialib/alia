@@ -183,6 +183,12 @@ struct layout_container_widget : LayoutContainer
     process_input(event_context) override
     {
     }
+
+    matrix<3, 3, double>
+    transformation() const override
+    {
+        return identity_matrix<3, double>();
+    }
 };
 
 #define ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(logic_type)                        \
