@@ -557,6 +557,8 @@ refresh_scrollbar(dataless_context ctx, scrollbar_parameters const& sb)
     }
 }
 
+#if 0
+
 struct scrolling_data;
 
 struct scrollable_layout_container : layout_container
