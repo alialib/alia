@@ -4,6 +4,7 @@
 #include <alia/core/flow/events.hpp>
 #include <alia/indie/common.hpp>
 #include <alia/indie/system/input_constants.hpp>
+#include <alia/indie/widget.hpp>
 
 // This file enumerates the various input events that are delivered from the UI
 // system to individual widgets.
@@ -20,7 +21,8 @@ enum class input_event_type
     KEY_RELEASE,
 
     // focus
-    FOCUS_QUERY,
+    FOCUS_SUCCESSOR,
+    FOCUS_PREDECESSOR,
     FOCUS_GAIN,
     FOCUS_LOSS,
 
@@ -83,10 +85,20 @@ struct focus_notification_event : input_event
 {
 };
 
-// FOCUS_QUERY
-struct focus_query_event : input_event
+// FOCUS_SUCCESSOR
+struct focus_successor_event : input_event
 {
-    bool widget_wants_focus = false;
+    internal_element_ref target;
+    internal_element_ref successor;
+    bool just_saw_target = false;
+};
+
+// FOCUS_PREDECESSOR
+struct focus_predecessor_event : input_event
+{
+    internal_element_ref target;
+    internal_element_ref predecessor;
+    bool saw_target = false;
 };
 
 }} // namespace alia::indie

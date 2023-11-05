@@ -9,7 +9,7 @@
 namespace alia { namespace indie {
 
 std::optional<vector<2, double>>
-detect_scroll(event_context ctx, widget const* widget);
+detect_scroll(event_context ctx, internal_element_ref element);
 
 }} // namespace alia::indie
 
