@@ -292,6 +292,7 @@ render_ui(glfw_window_impl& impl)
     {
         render_event event;
         event.canvas = impl.skia_surface->getCanvas();
+        event.sys = &impl.system;
         impl.system.root_widget->render(event);
     }
     else
@@ -369,12 +370,12 @@ update_ui(glfw_window_impl& impl)
 
     render_ui(impl);
 
-    int resource_count;
-    size_t resource_bytes;
-    impl.skia_graphics_context->getResourceCacheUsage(
-        &resource_count, &resource_bytes);
-    std::cout << "resource_count: " << resource_count << "\n";
-    std::cout << "resource_bytes: " << resource_bytes << "\n";
+    // int resource_count;
+    // size_t resource_bytes;
+    // impl.skia_graphics_context->getResourceCacheUsage(
+    //     &resource_count, &resource_bytes);
+    // std::cout << "resource_count: " << resource_count << "\n";
+    // std::cout << "resource_bytes: " << resource_bytes << "\n";
 }
 
 void

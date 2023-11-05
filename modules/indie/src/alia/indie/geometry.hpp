@@ -245,8 +245,7 @@ length(vector<N, T> const& v)
     return std::sqrt(length2(v));
 }
 
-// vector length squared - This is more efficient, and it's sufficient if
-// you're using the length for comparison purposes.
+// vector length squared
 template<unsigned N, class T>
 T
 length2(vector<N, T> const& v)
@@ -272,6 +271,13 @@ uniform_vector(T value)
         r[i] = value;
     return r;
 }
+
+#define ALIA_DEFINE_GEOMETRY_TYPEDEFS(type)                                   \
+    using type##2d = type<2, double>;                                         \
+    using type##2f = type<2, float>;                                          \
+    using type##2i = type<2, int>;
+
+ALIA_DEFINE_GEOMETRY_TYPEDEFS(vector)
 
 }} // namespace alia::indie
 
@@ -516,6 +522,8 @@ get_edge_index(box<2, T> const& box, vector<2, T> const& point)
     }
     return index;
 }
+
+ALIA_DEFINE_GEOMETRY_TYPEDEFS(box)
 
 // MATRIX
 

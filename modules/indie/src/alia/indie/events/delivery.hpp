@@ -63,7 +63,7 @@ deliver_input_event(
 
 template<class Event>
 void
-deliver_input_event(system& sys, external_widget_handle widget, Event& event)
+deliver_input_event(system& sys, external_widget_ref widget, Event& event)
 {
     deliver_input_event(sys, widget.lock(), event);
 }

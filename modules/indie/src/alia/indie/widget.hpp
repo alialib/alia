@@ -9,9 +9,7 @@
 #include <alia/core/flow/events.hpp>
 #include <alia/indie/common.hpp>
 #include <alia/indie/context.hpp>
-#include <alia/indie/events/input.hpp>
 #include <alia/indie/geometry.hpp>
-#include <alia/indie/layout/utilities.hpp>
 
 namespace alia { namespace indie {
 
@@ -19,17 +17,15 @@ struct hit_test_base;
 
 struct render_event
 {
-    layout_vector current_offset = make_layout_vector(0, 0);
+    system* sys = nullptr;
 
     SkCanvas* canvas = nullptr;
+
+    layout_vector current_offset = make_layout_vector(0, 0);
 };
 
-struct widget : layout_node_interface
+struct widget_interface
 {
-    ~widget()
-    {
-    }
-
     virtual void
     render(render_event& event)
         = 0;
@@ -42,21 +38,34 @@ struct widget : layout_node_interface
     process_input(event_context ctx)
         = 0;
 
+    virtual matrix<3, 3, double>
+    transformation() const = 0;
+
     // virtual component_identity
     // identity() const
     //     = 0;
+};
+
+struct widget : layout_node_interface,
+                widget_interface,
+                std::enable_shared_from_this<widget>
+{
+    ~widget()
+    {
+    }
 
     // the next widget in the widget's sibling list
     widget* next = nullptr;
 
     // the first child of this widget
     widget* children = nullptr;
+
+    // the parent of the widget
+    widget_container* parent = nullptr;
 };
 
 struct widget_container : widget
 {
-    widget_container* parent = nullptr;
-
     // This records the last refresh in which the contents of the container
     // changed. It's updated during the refresh pass and is used to determine
     // when the container's layout needs to be recomputed.
@@ -70,26 +79,68 @@ struct widget_container : widget
 void
 render_children(render_event& event, widget_container& container);
 
-struct external_widget_handle
+struct internal_widget_ref
 {
-    external_widget_handle()
+    internal_widget_ref()
     {
     }
 
-    external_widget_handle(std::shared_ptr<widget> widget)
-        : raw_ptr_(widget.get()), ownership_(widget)
+    internal_widget_ref(widget const& widget)
+        : raw_ptr(const_cast<indie::widget*>(&widget))
+    {
+    }
+
+    explicit operator bool() const
+    {
+        return raw_ptr != nullptr;
+    }
+
+    widget const&
+    operator*() const
+    {
+        return *raw_ptr;
+    }
+
+    widget const*
+    operator->() const
+    {
+        return raw_ptr;
+    }
+
+    widget* raw_ptr = nullptr;
+};
+
+inline bool
+operator==(internal_widget_ref const& a, internal_widget_ref const& b)
+{
+    return a.raw_ptr == b.raw_ptr;
+}
+inline bool
+operator!=(internal_widget_ref const& a, internal_widget_ref const& b)
+{
+    return !(a == b);
+}
+
+struct external_widget_ref
+{
+    external_widget_ref()
+    {
+    }
+
+    external_widget_ref(std::shared_ptr<widget> widget)
+        : internal_(*widget), ownership_(widget)
     {
     }
 
     explicit operator bool() const noexcept
     {
-        return raw_ptr_ != nullptr;
+        return internal_ != internal_widget_ref{};
     }
 
     bool
-    matches(widget const* ptr) const noexcept
+    matches(internal_widget_ref internal) const noexcept
     {
-        return raw_ptr_ == ptr;
+        return internal_ == internal;
     }
 
     std::shared_ptr<widget>
@@ -98,47 +149,98 @@ struct external_widget_handle
         return ownership_.lock();
     }
 
-    widget const*
+    internal_widget_ref
     raw_ptr() const
     {
-        return raw_ptr_;
+        return internal_;
     }
 
  private:
     // maintained for comparison purposes
-    widget const* raw_ptr_ = nullptr;
+    internal_widget_ref internal_;
     // maintained for externally invoking
     std::weak_ptr<widget> ownership_;
 };
 
 inline bool
-operator==(external_widget_handle const& a, external_widget_handle const& b)
+operator==(external_widget_ref const& a, external_widget_ref const& b)
 {
     return a.raw_ptr() == b.raw_ptr();
 }
 inline bool
-operator!=(external_widget_handle const& a, external_widget_handle const& b)
+operator!=(external_widget_ref const& a, external_widget_ref const& b)
 {
     return !(a == b);
 }
 
-inline external_widget_handle
-externalize(widget const* widget)
+inline external_widget_ref
+externalize(internal_widget_ref widget)
 {
     if (widget)
     {
-        // The const cast here is a bit unfortunate, but I think it's
-        // reasonable to say that when you are converting an internal widget
-        // reference to a form that can be handed off externally, you should
-        // also expect that it might at some point be used in a non-const
-        // manner.
-        return external_widget_handle(
-            const_cast<indie::widget*>(widget)->shared_from_this());
+        return external_widget_ref(widget.raw_ptr->shared_from_this());
     }
     else
     {
-        return external_widget_handle();
+        return external_widget_ref();
     }
+}
+
+struct internal_element_ref
+{
+    internal_widget_ref widget;
+    int id;
+
+    explicit operator bool() const
+    {
+        return widget ? true : false;
+    }
+};
+
+inline bool
+operator==(internal_element_ref const& a, internal_element_ref const& b)
+{
+    return a.widget == b.widget && a.id == b.id;
+}
+inline bool
+operator!=(internal_element_ref const& a, internal_element_ref const& b)
+{
+    return !(a == b);
+}
+
+struct external_element_ref
+{
+    external_widget_ref widget;
+    int id;
+
+    explicit operator bool() const
+    {
+        return widget ? true : false;
+    }
+
+    bool
+    matches(internal_element_ref internal) const noexcept
+    {
+        return this->widget.matches(internal.widget)
+               && this->id == internal.id;
+    }
+};
+
+inline bool
+operator==(external_element_ref const& a, external_element_ref const& b)
+{
+    return a.widget == b.widget && a.id == b.id;
+}
+inline bool
+operator!=(external_element_ref const& a, external_element_ref const& b)
+{
+    return !(a == b);
+}
+
+inline external_element_ref
+externalize(internal_element_ref element)
+{
+    return external_element_ref{externalize(element.widget), element.id};
 }
 
 template<class Visitor>

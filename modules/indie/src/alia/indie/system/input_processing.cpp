@@ -15,10 +15,11 @@ get_mouse_target(system& ui)
 {
     // The widget with mouse capture takes precedence as the target for mouse
     // events.
-    std::shared_ptr<widget> target = ui.input.widget_with_capture.lock();
+    std::shared_ptr<widget> target
+        = ui.input.element_with_capture.widget.lock();
     // But if no widget has capture, send events to the widget under the mouse.
     if (!target)
-        target = ui.input.hot_widget.lock();
+        target = ui.input.hot_element.widget.lock();
     return target;
 }
 
@@ -77,7 +78,7 @@ process_mouse_release(system& ui, mouse_button button)
     ui.input.mouse_button_state &= ~(1 << int(button));
     if (ui.input.mouse_button_state == 0)
     {
-        set_widget_with_capture(ui, external_widget_handle());
+        set_element_with_capture(ui, external_element_ref());
         ui.input.dragging = false;
     }
 }
@@ -131,7 +132,7 @@ process_scroll(system& ui, vector<2, double> const& delta)
     if (hit_test.result)
     {
         scroll_event event{{{}, input_event_type::SCROLL}, delta};
-        deliver_input_event(ui, *hit_test.result, event);
+        deliver_input_event(ui, hit_test.result->widget, event);
     }
 }
 
@@ -139,7 +140,7 @@ bool
 process_focused_key_press(system& ui, modded_key const& info)
 {
     key_event event{{{}, input_event_type::KEY_PRESS}, info};
-    auto target = ui.input.widget_with_focus.lock();
+    auto target = ui.input.element_with_focus.widget.lock();
     deliver_input_event(ui, target, event);
     return event.acknowledged;
 }
@@ -171,7 +172,7 @@ bool
 process_focused_key_release(system& ui, modded_key const& info)
 {
     key_event event{{{}, input_event_type::KEY_RELEASE}, info};
-    auto target = ui.input.widget_with_focus.lock();
+    auto target = ui.input.element_with_focus.widget.lock();
     deliver_input_event(ui, target, event);
     return event.acknowledged;
 }
