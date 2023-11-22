@@ -3,13 +3,13 @@
 namespace alia {
 
 void
-schedule_event(
+schedule_callback(
     timer_event_scheduler& scheduler,
-    external_component_id component,
+    std::function<void()> callback,
     millisecond_count time)
 {
     timer_event_request rq;
-    rq.component = component;
+    rq.callback = std::move(callback);
     rq.trigger_time = time;
     rq.frame_issued = scheduler.frame_counter;
     scheduler.requests.push_back(rq);
@@ -19,8 +19,7 @@ void
 issue_ready_events(
     timer_event_scheduler& scheduler,
     millisecond_count now,
-    function_view<void(
-        external_component_id component, millisecond_count time)> const& issue)
+    function_view<void(std::function<void()> const&)> issue)
 {
     ++scheduler.frame_counter;
     while (true)
@@ -47,7 +46,7 @@ issue_ready_events(
         timer_event_request request = *next_event;
         scheduler.requests.erase(next_event);
 
-        issue(request.component, request.trigger_time);
+        issue(request.callback);
     }
 }
 

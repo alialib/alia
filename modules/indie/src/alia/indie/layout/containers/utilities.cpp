@@ -17,6 +17,10 @@ scoped_layout_container::begin(
         traversal.next_ptr = &container->children;
         traversal.active_container = container;
     }
+    else
+    {
+        traversal_ = nullptr;
+    }
 }
 void
 scoped_layout_container::end()
