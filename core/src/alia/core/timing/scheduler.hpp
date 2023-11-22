@@ -13,7 +13,7 @@ namespace alia {
 struct timer_event_request
 {
     millisecond_count trigger_time;
-    external_component_id component;
+    std::function<void()> callback;
     unsigned frame_issued;
 };
 
@@ -25,9 +25,9 @@ struct timer_event_scheduler
 
 // Schedule an event.
 void
-schedule_event(
+schedule_callback(
     timer_event_scheduler& scheduler,
-    external_component_id component,
+    std::function<void()> callback,
     millisecond_count time);
 
 // Issue any events that are ready to be issued.
@@ -35,9 +35,7 @@ void
 issue_ready_events(
     timer_event_scheduler& scheduler,
     millisecond_count now,
-    function_view<
-        void(external_component_id component, millisecond_count time)> const&
-        issue);
+    function_view<void(std::function<void()> const&)> issue);
 
 // Are there any scheduled events?
 bool

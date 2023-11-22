@@ -34,16 +34,12 @@ struct external_interface
     schedule_animation_refresh()
         = 0;
 
-    // Schedule a timer event to be delivered to a specific component at some
-    // future time.
+    // Schedule a callback to run at some future time.
     //
-    // :id is the ID of the component that the event should be delivered to.
-    //
-    // :time is the tick count at which the event should be delivered.
+    // :time is the tick count at which the callback will run.
     //
     virtual void
-    schedule_timer_event(
-        external_component_id component, millisecond_count time)
+    schedule_callback(std::function<void()> callback, millisecond_count time)
         = 0;
 
     // alia calls this when it needs to schedule an update asynchronously.
@@ -71,16 +67,16 @@ struct default_external_interface : external_interface
     {
     }
 
-    virtual void
+    void
     schedule_animation_refresh() override
     {
     }
 
-    virtual void
-    schedule_timer_event(
-        external_component_id component, millisecond_count time) override;
+    void
+    schedule_callback(
+        std::function<void()> callback, millisecond_count time) override;
 
-    virtual void
+    void
     schedule_asynchronous_update(std::function<void()> update) override;
 };
 
@@ -158,22 +154,6 @@ struct timer_event : targeted_event
 {
     millisecond_count trigger_time;
 };
-
-// If this system is using internal timer event scheduling, this will check for
-// any events that are ready to be issued and issue them.
-template<class System>
-void
-process_internal_timing_events(System& sys, millisecond_count now)
-{
-    issue_ready_events(
-        sys.scheduler,
-        now,
-        [&](external_component_id component, millisecond_count trigger_time) {
-            timer_event event;
-            event.trigger_time = trigger_time;
-            dispatch_targeted_event(sys, event, component);
-        });
-}
 
 } // namespace alia
 

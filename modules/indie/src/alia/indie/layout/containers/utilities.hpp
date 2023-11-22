@@ -1,12 +1,13 @@
 #ifndef ALIA_INDIE_LAYOUT_CONTAINERS_UTILITIES_HPP
 #define ALIA_INDIE_LAYOUT_CONTAINERS_UTILITIES_HPP
 
+#include "alia/indie/geometry.hpp"
 namespace alia { namespace indie {
 
 // scoped_layout_container makes a layout container active for its scope.
 struct scoped_layout_container : noncopyable
 {
-    scoped_layout_container() : traversal_(0)
+    scoped_layout_container() : traversal_(nullptr)
     {
     }
     scoped_layout_container(
@@ -187,7 +188,21 @@ struct layout_container_widget : LayoutContainer
     matrix<3, 3, double>
     transformation() const override
     {
-        return identity_matrix<3, double>();
+        auto this_level = translation_matrix(
+            vector2d(get_assignment(this->cacher).region.corner));
+        return parent ? (parent->transformation() * this_level) : this_level;
+    }
+
+    layout_box
+    bounding_box() const override
+    {
+        return get_assignment(this->cacher).region;
+    }
+
+    void
+    reveal_region(region_reveal_request const& request) override
+    {
+        parent->reveal_region(request);
     }
 };
 

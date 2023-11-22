@@ -26,6 +26,18 @@ struct spacer_node : layout_leaf
     {
         return identity_matrix<3, double>();
     }
+
+    layout_box
+    bounding_box() const override
+    {
+        return this->assignment().region;
+    }
+
+    void
+    reveal_region(region_reveal_request const& request) override
+    {
+        parent->reveal_region(request);
+    }
 };
 
 void

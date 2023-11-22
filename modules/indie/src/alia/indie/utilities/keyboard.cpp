@@ -1,4 +1,5 @@
 #include "alia/indie/events/delivery.hpp"
+#include "alia/indie/geometry.hpp"
 #include "alia/indie/utilities/mouse.hpp"
 #include <alia/indie/utilities/keyboard.hpp>
 
@@ -85,12 +86,19 @@ set_focus(system& sys, external_element_ref element)
 
     if (different && element)
     {
-        // TODO: Make the new widget visible.
-        // widget_visibility_request request;
-        // request.widget = id;
-        // request.move_to_top = false;
-        // request.abrupt = false;
-        // ui.pending_visibility_requests.push_back(request);
+        // Make the new widget visible.
+        {
+            auto widget = element.widget.lock();
+            if (widget && widget->parent)
+            {
+                widget->parent->reveal_region(region_reveal_request{
+                    layout_box(transform_box(
+                        widget->transformation(),
+                        box2d(widget->bounding_box()))),
+                    false,
+                    false});
+            }
+        }
 
         focus_notification_event event{{{}, input_event_type::FOCUS_GAIN}};
         deliver_input_event(sys, element.widget, event);
@@ -106,7 +114,6 @@ focus_on_click(event_context ctx, internal_element_ref element)
             || event->type == input_event_type::DOUBLE_CLICK))
     {
         set_focus(get_system(ctx), externalize(element));
-        // TODO: end_pass(ctx);
     }
 }
 
@@ -134,6 +141,19 @@ detect_key_press(event_context ctx, internal_element_ref element)
     key_event* event;
     if (element_has_focus(ctx, element) && detect_event(ctx, &event)
         && event->type == input_event_type::KEY_PRESS)
+    {
+        if (!event->acknowledged)
+            return event->key;
+    }
+    return std::nullopt;
+}
+
+std::optional<modded_key>
+detect_key_press(event_context ctx)
+{
+    key_event* event;
+    if (detect_event(ctx, &event)
+        && event->type == input_event_type::BACKGROUND_KEY_PRESS)
     {
         if (!event->acknowledged)
             return event->key;

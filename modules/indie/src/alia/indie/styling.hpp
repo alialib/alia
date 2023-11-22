@@ -11,14 +11,14 @@ struct element_state_flag_tag
 };
 typedef flag_set<element_state_flag_tag> element_state;
 // primary state
-ALIA_DEFINE_FLAG(element_state, 0x01, WIDGET_NORMAL)
-ALIA_DEFINE_FLAG(element_state, 0x02, WIDGET_DISABLED)
-ALIA_DEFINE_FLAG(element_state, 0x03, WIDGET_HOT)
-ALIA_DEFINE_FLAG(element_state, 0x04, WIDGET_DEPRESSED)
-ALIA_DEFINE_FLAG(element_state, 0x05, WIDGET_SELECTED)
-ALIA_DEFINE_FLAG(element_state, 0x0f, WIDGET_PRIMARY_STATE_MASK)
+ALIA_DEFINE_FLAG(element_state, 0x01, ELEMENT_NORMAL)
+ALIA_DEFINE_FLAG(element_state, 0x02, ELEMENT_DISABLED)
+ALIA_DEFINE_FLAG(element_state, 0x03, ELEMENT_HOT)
+ALIA_DEFINE_FLAG(element_state, 0x04, ELEMENT_DEPRESSED)
+ALIA_DEFINE_FLAG(element_state, 0x05, ELEMENT_SELECTED)
+ALIA_DEFINE_FLAG(element_state, 0x0f, ELEMENT_PRIMARY_STATE_MASK)
 // additional (independent) states
-ALIA_DEFINE_FLAG(element_state, 0x10, WIDGET_FOCUSED)
+ALIA_DEFINE_FLAG(element_state, 0x10, ELEMENT_FOCUSED)
 
 }} // namespace alia::indie
 

@@ -146,26 +146,18 @@ process_focused_key_press(system& ui, modded_key const& info)
 }
 
 bool
-process_background_key_press(system& /*ui*/, modded_key const& /*info*/)
+process_background_key_press(system& ui, modded_key const& info)
 {
-    // key_event event{{{}, input_event_type::DOUBLE_CLICK}, info};
-    // key_event e(BACKGROUND_KEY_PRESS_EVENT, time, info);
-    // issue_event(ui, e);
-    // if (!e.acknowledged && info.code == input_event_type::KEY_PRESS)
-    // {
-    //     if (info.mods == KMOD_SHIFT)
-    //     {
-    //         regress_focus(ui);
-    //         e.acknowledged = true;
-    //     }
-    //     else if (info.mods == 0)
-    //     {
-    //         advance_focus(ui);
-    //         e.acknowledged = true;
-    //     }
-    // }
-    // return e.acknowledged;
-    return false;
+    key_event event{{{}, input_event_type::BACKGROUND_KEY_PRESS}, info};
+    event_delivery_fixture<key_event> fixture(ui);
+    auto focus = ui.input.element_with_focus.widget.lock();
+    widget* target = focus.get();
+    while (target)
+    {
+        fixture.deliver(target, event);
+        target = target->parent;
+    }
+    return event.acknowledged;
 }
 
 bool
@@ -180,7 +172,8 @@ bool
 process_key_press(system& ui, modded_key const& info)
 {
     ui.input.keyboard_interaction = true;
-    return process_focused_key_press(ui, info);
+    return process_focused_key_press(ui, info)
+           || process_background_key_press(ui, info);
 }
 
 bool

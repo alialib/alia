@@ -283,11 +283,17 @@ struct box_node : indie::widget
         return relative_assignment_;
     }
 
-    // external_component_id
-    // identity() const
-    // {
-    //     return id_;
-    // }
+    layout_box
+    bounding_box() const override
+    {
+        return add_border(this->assignment().region, 4.f);
+    }
+
+    void
+    reveal_region(region_reveal_request const& request) override
+    {
+        parent->reveal_region(request);
+    }
 
     indie::system* sys_;
     external_component_id id_;
@@ -419,6 +425,18 @@ struct text_node : indie::layout_leaf
     transformation() const override
     {
         return parent->transformation();
+    }
+
+    layout_box
+    bounding_box() const override
+    {
+        return this->assignment().region;
+    }
+
+    void
+    reveal_region(region_reveal_request const& request) override
+    {
+        parent->reveal_region(request);
     }
 
     indie::system* sys_;
@@ -905,6 +923,12 @@ struct wrapped_text_node : indie::widget
         paint.setAntiAlias(true);
         paint.setColor(SK_ColorBLACK);
 
+        if (shape_width_ != region.size[0])
+        {
+            shape_ = Shape(
+                text_.c_str(), text_.size(), *the_font, region.size[0]);
+            shape_width_ = region.size[0];
+        }
         canvas.drawTextBlob(
             shape_.blob.get(), bounds.fLeft, bounds.fTop, paint);
     }
@@ -995,6 +1019,18 @@ struct wrapped_text_node : indie::widget
             assignment,
             horizontal_requirements,
             vertical_requirements);
+    }
+
+    layout_box
+    bounding_box() const override
+    {
+        return relative_assignment_.region;
+    }
+
+    void
+    reveal_region(region_reveal_request const& request) override
+    {
+        parent->reveal_region(request);
     }
 
     indie::system* sys_;
@@ -1539,6 +1575,18 @@ struct grid_row_container : widget_container
         return parent->transformation();
     }
 
+    layout_box
+    bounding_box() const override
+    {
+        return this->cacher.relative_assignment.region;
+    }
+
+    void
+    reveal_region(region_reveal_request const& request) override
+    {
+        parent->reveal_region(request);
+    }
+
     // implementation of layout interface
     layout_requirements
     get_horizontal_requirements() override;
@@ -1832,443 +1880,12 @@ scoped_grid_row::end()
     container_.end();
 }
 
-struct scrollable_view_data
-{
-    // This is the actual, unsmoothed scroll position.
-    // If the user supplies external storage, then this is a copy of the value
-    // stored there. Otherwise, this is the actual value.
-    // (Either way, it's OK to read it, but writing should go through the
-    // set_scroll_position function.)
-    layout_vector scroll_position;
-
-    // If this is true, the scroll_position has changed internally and needs
-    // to be communicated to the external storage.
-    // bool scroll_position_changed;
-
-    // the smoothed version of the scroll position
-    layout_vector smoothed_scroll_position;
-    // for smoothing the scroll position
-    value_smoother<layout_scalar> smoothers[2];
-
-    // set by caller and copied here
-    unsigned scrollable_axes, reserved_axes;
-
-    // determined at usage site and needed by layout
-    layout_scalar scrollbar_width, minimum_window_size, line_size;
-
-    // determined by layout and stored here to communicate back to usage site
-    bool hsb_on, vsb_on;
-    layout_vector content_size, window_size;
-
-    // // data for scrollbars
-    scrollbar_data hsb_data, vsb_data;
-
-    // // rendering data for junction
-    // themed_rendering_data junction_rendering;
-
-    // // layout container
-    // scrollable_layout_container container;
-};
-
-struct scrollable_view : widget_container
-{
-    static float constexpr scrollbar_width = 30;
-
-    void
-    refresh(dataless_context ctx)
-    {
-        layout_box bg_area = get_assignment(this->cacher).region;
-        bg_area.corner[0] += bg_area.size[0] - scrollbar_width;
-        bg_area.size[0] = scrollbar_width;
-        auto dsa = direct(scroll_amount);
-        duplex<layout_scalar> position = dsa;
-        refresh_scrollbar(
-            ctx,
-            scrollbar_parameters{
-                &data.vsb_data,
-                1,
-                &position,
-                bg_area,
-                data.content_size[1],
-                data.window_size[1],
-                120,
-                2400,
-                internal_widget_ref{*this},
-                0});
-    }
-
-    // implementation of layout interface
-    layout_requirements
-    get_horizontal_requirements() override
-    {
-        auto child_requirements = cache_horizontal_layout_requirements(
-            cacher, last_content_change, [&] {
-                return logic->get_horizontal_requirements(children);
-            });
-        child_requirements.size += scrollbar_width;
-        return child_requirements;
-    }
-
-    layout_requirements
-    get_vertical_requirements(layout_scalar assigned_width) override
-    {
-        return cache_vertical_layout_requirements(
-            cacher, last_content_change, assigned_width, [&] {
-                // TODO: Find a better way to determine the minimum window
-                // size.
-                return calculated_layout_requirements{100, 0, 0};
-            });
-    }
-
-    void
-    set_relative_assignment(
-        relative_layout_assignment const& assignment) override
-    {
-        update_relative_assignment(
-            *this,
-            cacher,
-            last_content_change,
-            assignment,
-            [&](auto const& resolved_assignment) {
-                layout_vector available_size = resolved_assignment.region.size;
-
-                calculated_layout_requirements x
-                    = logic->get_horizontal_requirements(children);
-                if (available_size[0] < x.size)
-                {
-                    data.hsb_on = true;
-                    available_size[1] -= data.scrollbar_width;
-                }
-                else
-                    data.hsb_on = false;
-
-                calculated_layout_requirements y
-                    = logic->get_vertical_requirements(
-                        children, (std::max)(available_size[0], x.size));
-                if (available_size[1] < y.size)
-                {
-                    data.vsb_on = true;
-                    available_size[0] -= data.scrollbar_width;
-                    if (!data.hsb_on && available_size[0] < x.size)
-                    {
-                        data.hsb_on = true;
-                        available_size[1] -= data.scrollbar_width;
-                    }
-                }
-                else
-                    data.vsb_on = false;
-
-                if ((data.reserved_axes & 1) != 0 && !data.hsb_on)
-                    available_size[1] -= data.scrollbar_width;
-                if ((data.reserved_axes & 2) != 0 && !data.vsb_on)
-                    available_size[0] -= data.scrollbar_width;
-
-                layout_scalar content_width
-                    = (std::max)(available_size[0], x.size);
-
-                y = logic->get_vertical_requirements(children, content_width);
-
-                layout_scalar content_height
-                    = (std::max)(available_size[1], y.size);
-
-                layout_vector content_size
-                    = make_layout_vector(content_width, content_height);
-
-                // If the panel is scrolled all the way to the end, and the
-                // content grows, scroll to show the new content.
-                for (unsigned i = 0; i != 2; ++i)
-                {
-                    layout_scalar sp = data.smoothed_scroll_position[i];
-                    if (sp != 0
-                        && sp + data.window_size[i] >= data.content_size[i]
-                        && sp + available_size[i] < data.content_size[i])
-                    {
-                        // TODO
-                        // set_scroll_position_abruptly(
-                        //     data, i, content_size[i] - available_size[i]);
-                    }
-                }
-
-                data.content_size = content_size;
-                data.window_size = available_size;
-
-                // If the scroll position needs to be clamped because of
-                // changes in content size, then do it abruptly, not smoothly.
-                // TODO
-                // for (unsigned i = 0; i != 2; ++i)
-                // {
-                //     layout_scalar original =
-                //     data.smoothed_scroll_position[i]; layout_scalar clamped
-                //         = clamp_scroll_position(data, i, original);
-                //     if (clamped != original)
-                //         set_scroll_position_abruptly(data, i, clamped);
-                // }
-
-                logic->set_relative_assignment(
-                    children, content_size, content_height - y.descent);
-
-                // this->assigned_size = resolved_assignment.region.size;
-                // auto child_assignment = resolved_assignment;
-                // child_assignment.region.size[0] -= scrollbar_width;
-                // logic->set_relative_assignment(
-                //     children,
-                //     child_assignment.region.size,
-                //     child_assignment.baseline_y);
-            });
-    }
-
-    // layout_scalar
-    // get_max_physical_position()
-    // {
-    //     return data.window_size[1]
-    //            * (1 - data.window_size[1] / data.content_size[1]);
-    // }
-
-    // layout_scalar
-    // get_max_logical_position()
-    // {
-    //     return data.content_size[1] - data.window_size[1];
-    // }
-
-    // layout_scalar
-    // logical_position_to_physical(layout_scalar position)
-    // {
-    //     layout_scalar max_physical = get_max_physical_position();
-    //     layout_scalar max_logical = get_max_logical_position();
-    //     // return clamp(position * max_physical / max_logical, 0,
-    //     // max_physical);
-    //     return position * max_physical / max_logical;
-    // }
-
-    // layout_box
-    // get_thumb_area()
-    // {
-    //     layout_box bg_area = get_assignment(this->cacher).region;
-    //     bg_area.corner[0] += bg_area.size[0] - scrollbar_width;
-    //     bg_area.size[0] = scrollbar_width;
-    //     layout_box area = bg_area;
-    //     area.size[1] = (std::max)(
-    //         layout_scalar(0), // get_metrics(sb).minimum_thumb_length,
-    //         data.window_size[1] * bg_area.size[1] / data.content_size[1]);
-    //     area.corner[1]
-    //         = bg_area.corner[1] +
-    //         logical_position_to_physical(-scroll_amount);
-    //     return area;
-    // }
-
-    void
-    render(render_event& event) override
-    {
-        auto const& region = get_assignment(this->cacher).region;
-        SkRect bounds;
-        bounds.fLeft = SkScalar(region.corner[0] + event.current_offset[0]);
-        bounds.fTop = SkScalar(region.corner[1] + event.current_offset[1]);
-        bounds.fRight = bounds.fLeft + SkScalar(region.size[0]);
-        bounds.fBottom = bounds.fTop + SkScalar(region.size[1]);
-        if (!event.canvas->quickReject(bounds))
-        {
-            event.canvas->save();
-            auto original_offset = event.current_offset;
-            event.canvas->clipRect(bounds);
-            event.canvas->translate(0, -scroll_amount);
-            event.current_offset += region.corner;
-            indie::render_children(event, *this);
-            event.current_offset = original_offset;
-            event.canvas->restore();
-            // {
-            //     SkPaint paint;
-            //     paint.setColor(SK_ColorDKGRAY);
-            //     auto thumb_area = get_thumb_area();
-            //     SkRect box;
-            //     box.fLeft
-            //         = SkScalar(thumb_area.corner[0] +
-            //         event.current_offset[0]);
-            //     box.fTop
-            //         = SkScalar(thumb_area.corner[1] +
-            //         event.current_offset[1]);
-            //     box.fRight = box.fLeft + SkScalar(thumb_area.size[0]);
-            //     box.fBottom = box.fTop + SkScalar(thumb_area.size[1]);
-            //     event.canvas->drawRect(box, paint);
-            // }
-            layout_box bg_area = get_assignment(this->cacher).region;
-            bg_area.corner[0] += bg_area.size[0] - scrollbar_width;
-            bg_area.size[0] = scrollbar_width;
-            auto dsa = direct(scroll_amount);
-            duplex<layout_scalar> position = dsa;
-            render_scrollbar(
-                event,
-                scrollbar_parameters{
-                    &data.vsb_data,
-                    1,
-                    &position,
-                    bg_area,
-                    data.content_size[1],
-                    data.window_size[1],
-                    120,
-                    2400,
-                    internal_widget_ref{*this},
-                    0});
-        }
-    }
-
-    void
-    hit_test(
-        hit_test_base& test, vector<2, double> const& point) const override
-    {
-        auto const& region = get_assignment(this->cacher).region;
-        if (is_inside(region, vector<2, float>(point)))
-        {
-            if (test.type == indie::hit_test_type::WHEEL)
-            {
-                static_cast<indie::wheel_hit_test&>(test).result
-                    = externalize(internal_element_ref{*this, 0});
-            }
-            auto local_point = point - vector<2, double>(region.corner);
-            local_point[1] += scroll_amount;
-            for (widget* node = this->widget_container::children; node;
-                 node = node->next)
-            {
-                node->hit_test(test, local_point);
-            }
-
-            layout_box bg_area = get_assignment(this->cacher).region;
-            bg_area.corner[0] += bg_area.size[0] - scrollbar_width;
-            bg_area.size[0] = scrollbar_width;
-            auto dsa = direct(scroll_amount);
-            duplex<layout_scalar> position = dsa;
-            hit_test_scrollbar(
-                scrollbar_parameters{
-                    &data.vsb_data,
-                    1,
-                    &position,
-                    bg_area,
-                    data.content_size[1],
-                    data.window_size[1],
-                    120,
-                    2400,
-                    internal_widget_ref{*this},
-                    0},
-                test,
-                point);
-        }
-    }
-
-    void
-    process_input(event_context ctx) override
-    {
-        auto delta = detect_scroll(ctx, internal_element_ref{*this, 0});
-        if (delta)
-            scroll_amount -= (*delta)[1] * 120;
-
-        layout_box bg_area = get_assignment(this->cacher).region;
-        bg_area.corner[0] += bg_area.size[0] - scrollbar_width;
-        bg_area.size[0] = scrollbar_width;
-        auto dsa = direct(scroll_amount);
-        duplex<layout_scalar> position = dsa;
-        process_scrollbar_input(
-            ctx,
-            scrollbar_parameters{
-                &data.vsb_data,
-                1,
-                &position,
-                bg_area,
-                data.content_size[1],
-                data.window_size[1],
-                120,
-                2400,
-                internal_widget_ref{*this},
-                0});
-    }
-
-    matrix<3, 3, double>
-    transformation() const override
-    {
-        return parent->transformation();
-    }
-
-    mutable scrollable_view_data data;
-
-    column_layout_logic* logic;
-    layout_cacher cacher;
-    layout_vector assigned_size;
-
-    mutable float scroll_amount = 0;
-    value_smoother<float> smoother;
-};
-
-void
-get_scrollable_view(
-    indie::context ctx,
-    std::shared_ptr<scrollable_view>** container,
-    layout const& layout_spec)
-{
-    if (get_data(ctx, container))
-        **container = std::make_shared<scrollable_view>();
-
-    if (get_layout_traversal(ctx).is_refresh_pass)
-    {
-        (**container)->refresh(ctx);
-
-        if (update_layout_cacher(
-                get_layout_traversal(ctx),
-                (**container)->cacher,
-                layout_spec,
-                FILL | UNPADDED))
-        {
-            // Since this container isn't active yet, it didn't get marked
-            // as needing recalculation, so we need to do that manually
-            // here.
-            (**container)->last_content_change
-                = get_layout_traversal(ctx).refresh_counter;
-        }
-    }
-}
-
-struct scoped_scrollable_view
-{
-    scoped_scrollable_view()
-    {
-    }
-    scoped_scrollable_view(
-        indie::context ctx, layout const& layout_spec = default_layout)
-    {
-        begin(ctx, layout_spec);
-    }
-    ~scoped_scrollable_view()
-    {
-        end();
-    }
-    void
-    begin(indie::context ctx, layout const& layout_spec = default_layout)
-    {
-        std::shared_ptr<scrollable_view>* container;
-        get_scrollable_view(ctx, &container, layout_spec);
-        container_.begin(get_layout_traversal(ctx), container->get());
-    }
-    void
-    end()
-    {
-        container_.end();
-    }
-
- private:
-    scoped_layout_container container_;
-};
 }} // namespace alia::indie
 
 void
 my_ui(indie::context ctx)
 {
-    std::cout << "sizeof(layout): " << sizeof(layout) << "\n";
-
-    // static indie::layout_container_widget<column_layout> container;
-    // static indie::simple_container_widget container;
-    // indie::scoped_widget_container container_scope;
-    // if (is_refresh_event(ctx))
-    // {
-    //     container_scope.begin(
-    //         get<indie::traversal_tag>(ctx).widgets, &container);
-    // }
+    scoped_scrollable_view scrollable(ctx, GROW);
 
     indie::scoped_column column(ctx, GROW | PADDED);
 
@@ -2293,35 +1910,67 @@ my_ui(indie::context ctx)
     do_spacer(ctx, height(100, PIXELS));
 
     {
-        scoped_scrollable_view scrollable(ctx, GROW);
-
         for (int outer = 0; outer != 10; ++outer)
         {
-            // do_wrapped_text(
-            //     ctx,
-            //     value("Lorem ipsum dolor sit amet, consectetur adipiscing "
-            //           "elit, "
-            //           "sed do "
-            //           "eiusmod tempor incididunt ut labore "
-            //           "et dolore magna "
-            //           "aliqua. Ut "
-            //           "enim ad minim veniam, quis nostrud "
-            //           "exercitation ullamco "
-            //           "laboris "
-            //           "nisi ut aliquip ex ea commodo "
-            //           "consequat. Duis aute irure "
-            //           "dolor "
-            //           "in reprehenderit in voluptate velit esse cillum "
-            //           "dolore "
-            //           "eu "
-            //           "fugiat "
-            //           "nulla pariatur. Excepteur sint "
-            //           "occaecat cupidatat non "
-            //           "proident, "
-            //           "sunt in culpa qui officia deserunt "
-            //           "mollit anim id est "
-            //           "laborum."),
-            //     FILL);
+            do_wrapped_text(
+                ctx,
+                value(
+                    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. "
+                    "Phasellus lacinia elementum diam consequat aliquet. "
+                    "Vestibulum ut libero justo. Pellentesque lectus lectus, "
+                    "scelerisque a elementum sed, bibendum id libero. "
+                    "Maecenas venenatis est sed sem consequat mollis. Ut "
+                    "neque odio, hendrerit ut justo venenatis, consequat "
+                    "molestie eros. Nam fermentum, mi malesuada eleifend "
+                    "dapibus, lectus dolor luctus orci, nec posuere dolor "
+                    "lorem ac sem. Nullam interdum laoreet ipsum in "
+                    "dictum.\n\n"
+                    "Duis quis blandit felis. Pellentesque et lectus magna. "
+                    "Maecenas dui lacus, sollicitudin a eros in, vehicula "
+                    "posuere metus. Etiam nec dolor mattis, tincidunt sem "
+                    "vitae, maximus tellus. Vestibulum ut nisi nec neque "
+                    "rutrum interdum. In justo massa, consequat quis dui "
+                    "eget, cursus ultricies sem. Quisque a lectus quis est "
+                    "porttitor ullamcorper ac sed odio.\n\n"
+                    "Vestibulum sed turpis et lacus rutrum scelerisque et sit "
+                    "amet ipsum. Sed congue hendrerit augue, sed pellentesque "
+                    "neque. Integer efficitur nisi id massa placerat, at "
+                    "ullamcorper arcu fermentum. Donec sed tellus quis velit "
+                    "placerat viverra nec vel diam. Vestibulum faucibus "
+                    "molestie ipsum eget rhoncus. Donec vitae bibendum nibh, "
+                    "quis pellentesque enim. Donec eget consectetur massa, "
+                    "eget mollis elit. Orci varius natoque penatibus et "
+                    "magnis dis parturient montes, nascetur ridiculus mus. "
+                    "Donec accumsan, nisi egestas sollicitudin ullamcorper, "
+                    "diam dolor faucibus neque, eu scelerisque mi erat vel "
+                    "erat. Etiam nec leo ac risus porta ornare ut accumsan "
+                    "lorem.\n\n"
+                    "Aenean at euismod ligula. Sed augue est, imperdiet ut "
+                    "sem sit amet, efficitur dictum enim. Nam sodales id "
+                    "risus non pulvinar. Morbi id mollis massa. Nunc elit "
+                    "velit, pellentesque et lobortis ut, luctus sed justo. "
+                    "Morbi eleifend quam vel magna accumsan, eu consequat "
+                    "nisl ultrices. Mauris dictum eu quam sit amet aliquet. "
+                    "Sed rhoncus turpis quis sagittis imperdiet. Lorem ipsum "
+                    "dolor sit amet, consectetur adipiscing elit. "
+                    "Pellentesque convallis suscipit ex et hendrerit. Donec "
+                    "est ex, varius eu nulla id, tristique lobortis metus. "
+                    "Sed id sem justo. Nulla at porta neque, id elementum "
+                    "lacus.\n\n"
+                    "Mauris leo tortor, tincidunt sit amet sem sit amet, "
+                    "egestas tempor massa. In diam ipsum, fermentum pulvinar "
+                    "posuere ut, scelerisque sit amet odio. Nam nec justo "
+                    "quis felis ultrices ornare sit amet eu massa. Nam "
+                    "gravida lacus eget tortor porttitor, eget scelerisque "
+                    "est imperdiet. Duis quis imperdiet libero. Nullam justo "
+                    "erat, blandit et nisi sit amet, aliquet mattis leo. Sed "
+                    "a augue non felis lacinia ultrices. Aenean porttitor "
+                    "bibendum sem, in consectetur arcu suscipit id. Etiam "
+                    "varius dictum gravida. Nulla molestie fermentum odio "
+                    "vitae tincidunt. Quisque dictum, magna vitae porttitor "
+                    "accumsan, felis felis consectetur nisi, ut venenatis "
+                    "felis justo ut ante.\n\n"),
+                FILL);
         }
 
         // do_box(
@@ -2331,7 +1980,7 @@ my_ui(indie::context ctx)
         //     size(400, 400, PIXELS));
         // do_spacer(ctx, height(100, PIXELS));
 
-        for (int outer = 0; outer != 10; ++outer)
+        for (int outer = 0; outer != 4; ++outer)
         {
             indie::scoped_flow_layout flow(ctx, UNPADDED);
 
@@ -2382,7 +2031,7 @@ my_ui(indie::context ctx)
                     //     SK_ColorBLUE; });
                     do_box(ctx, clicky_color, actions::noop());
 
-                    do_box(ctx, SK_ColorDKGRAY, actions::noop());
+                    do_box(ctx, SK_ColorLTGRAY, actions::noop());
 
                     do_box(ctx, SK_ColorGRAY, actions::noop());
                 }

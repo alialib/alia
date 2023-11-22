@@ -2,6 +2,7 @@
 
 #include <alia/html/dom.hpp>
 #include <alia/html/history.hpp>
+#include <functional>
 
 namespace alia { namespace html {
 
@@ -13,9 +14,7 @@ refresh_for_emscripten(void* system)
 
 struct timer_callback_data
 {
-    alia::system* system;
-    external_component_id component;
-    millisecond_count trigger_time;
+    std::function<void()> callback;
 };
 
 static void
@@ -23,9 +22,7 @@ timer_callback(void* user_data)
 {
     std::unique_ptr<timer_callback_data> data(
         reinterpret_cast<timer_callback_data*>(user_data));
-    timer_event event;
-    event.trigger_time = data->trigger_time;
-    dispatch_targeted_event(*data->system, event, data->component);
+    data->callback();
 }
 
 struct dom_external_interface : default_external_interface
@@ -42,11 +39,9 @@ struct dom_external_interface : default_external_interface
     }
 
     void
-    schedule_timer_event(
-        external_component_id component, millisecond_count time)
+    schedule_callback(std::function<void()> callback, millisecond_count time)
     {
-        auto timeout_data
-            = new timer_callback_data{&this->owner, component, time};
+        auto timeout_data = new timer_callback_data{std::move(callback)};
         emscripten_async_call(
             timer_callback, timeout_data, time - this->get_tick_count());
     }

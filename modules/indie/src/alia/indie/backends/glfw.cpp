@@ -56,6 +56,10 @@ SkLoadICU()
 
 namespace alia { namespace indie {
 
+struct root_widget
+{
+};
+
 struct glfw_window_impl
 {
     GLFWwindow* glfw_window = nullptr;
@@ -329,6 +333,15 @@ update_ui(glfw_window_impl& impl)
 
     refresh_system(impl.system);
     update(impl.system);
+
+    issue_ready_events(
+        impl.system.scheduler,
+        impl.system.external->get_tick_count(),
+        [&](std::function<void()> const& callback) {
+            callback();
+            refresh_system(impl.system);
+            update(impl.system);
+        });
 
     long long refresh_time;
     {
