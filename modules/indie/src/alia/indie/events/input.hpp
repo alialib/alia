@@ -1,6 +1,7 @@
 #ifndef ALIA_INDIE_EVENTS_INPUT_HPP
 #define ALIA_INDIE_EVENTS_INPUT_HPP
 
+#include "alia/core/timing/ticks.hpp"
 #include <alia/core/flow/events.hpp>
 #include <alia/indie/common.hpp>
 #include <alia/indie/system/input_constants.hpp>
@@ -19,6 +20,8 @@ enum class input_event_type
     TEXT_INPUT,
     KEY_PRESS,
     KEY_RELEASE,
+    BACKGROUND_KEY_PRESS,
+    BACKGROUND_KEY_RELEASE,
 
     // focus
     FOCUS_SUCCESSOR,
@@ -37,6 +40,9 @@ enum class input_event_type
 
     // scrolling (via the mouse wheel, gesture, etc.)
     SCROLL,
+
+    // timing
+    TIMER,
 };
 
 struct input_event : targeted_event
@@ -99,6 +105,13 @@ struct focus_predecessor_event : input_event
     internal_element_ref target;
     internal_element_ref predecessor;
     bool saw_target = false;
+};
+
+// TIMER
+struct prototype_timer_event : input_event
+{
+    internal_element_ref target;
+    millisecond_count trigger_time;
 };
 
 }} // namespace alia::indie

@@ -9,7 +9,13 @@ schedule_timer_event(
     millisecond_count trigger_time)
 {
     auto& sys = get<system_tag>(ctx);
-    sys.external->schedule_timer_event(id, trigger_time);
+    sys.external->schedule_callback(
+        [&sys, id, trigger_time] {
+            timer_event event;
+            event.trigger_time = trigger_time;
+            dispatch_targeted_event(sys, event, id);
+        },
+        trigger_time);
 }
 
 bool

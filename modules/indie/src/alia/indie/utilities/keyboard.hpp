@@ -49,8 +49,8 @@ focus_on_click(event_context ctx, internal_element_ref element);
 std::optional<modded_key>
 detect_key_press(event_context ctx, internal_element_ref element);
 // same, but without ID (as background)
-// bool
-// detect_key_press(event_context ctx, modded_key* info);
+std::optional<modded_key>
+detect_key_press(event_context ctx);
 
 // Detect if a key release just occurred and was directed at the given element.
 // Note that many key presses may be received before the corresponding (single)

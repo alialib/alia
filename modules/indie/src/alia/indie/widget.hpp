@@ -15,6 +15,16 @@ namespace alia { namespace indie {
 
 struct hit_test_base;
 
+struct region_reveal_request
+{
+    layout_box region;
+    // If this is set, the UI will jump abruptly instead of smoothly scrolling.
+    bool abrupt;
+    // If this is set, the region will be moved to the top of the UI instead
+    // of just being made visible.
+    bool move_to_top;
+};
+
 struct render_event
 {
     system* sys = nullptr;
@@ -38,12 +48,24 @@ struct widget_interface
     process_input(event_context ctx)
         = 0;
 
+    // Get the transformation from the root frame of reference to this widget's
+    // frame of reference.
+    // Note that there are no particular geometric guarantees about a widget's
+    // frame of refernece. (e.g., The origin of this frame is often the
+    // top-left corner of the widget's bounding box, but this isn't
+    // guaranteed.)
     virtual matrix<3, 3, double>
     transformation() const = 0;
 
-    // virtual component_identity
-    // identity() const
-    //     = 0;
+    // Get the bounding box for this widget in its own frame of reference.
+    // The bounding box can
+    virtual layout_box
+    bounding_box() const
+        = 0;
+
+    virtual void
+    reveal_region(region_reveal_request const& request)
+        = 0;
 };
 
 struct widget : layout_node_interface,

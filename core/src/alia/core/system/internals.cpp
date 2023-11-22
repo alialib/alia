@@ -3,6 +3,7 @@
 #include <chrono>
 
 #include <alia/core/flow/top_level.hpp>
+#include <alia/core/timing/scheduler.hpp>
 
 namespace alia {
 
@@ -18,10 +19,10 @@ external_interface::get_tick_count() const
 }
 
 void
-default_external_interface::schedule_timer_event(
-    external_component_id component, millisecond_count time)
+default_external_interface::schedule_callback(
+    std::function<void()> callback, millisecond_count time)
 {
-    schedule_event(owner.scheduler, component, time);
+    alia::schedule_callback(owner.scheduler, std::move(callback), time);
 }
 
 void

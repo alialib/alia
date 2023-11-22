@@ -1,6 +1,7 @@
 #ifndef ALIA_INDIE_EVENTS_DELIVERY_HPP
 #define ALIA_INDIE_EVENTS_DELIVERY_HPP
 
+#include "alia/core/flow/events.hpp"
 #include <alia/indie/context.hpp>
 #include <alia/indie/widget.hpp>
 
@@ -34,7 +35,13 @@ struct event_delivery_fixture
     deliver(widget* widget, Event& event)
     {
         traversal_.event = &event;
-        widget->process_input(ctx_);
+        try
+        {
+            widget->process_input(ctx_);
+        }
+        catch (traversal_aborted&)
+        {
+        }
     }
 
  private:
