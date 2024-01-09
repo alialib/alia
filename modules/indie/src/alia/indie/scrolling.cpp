@@ -803,9 +803,9 @@ struct scrollable_view : widget_container
 
                 // Track whether or not we're going to include the scrollbar
                 // width in the available width for content.
-                bool exclude_scrollbar_
+                bool exclude_scrollbar_width[2] = {false, false};
 
-                    calculated_layout_requirements x
+                calculated_layout_requirements x
                     = logic->get_horizontal_requirements(children);
                 if (available_size[0] < x.size)
                 {
@@ -1019,7 +1019,7 @@ struct scrollable_view : widget_container
         auto delta = detect_scroll(ctx, internal_element_ref{*this, 0});
         if (delta)
         {
-            set_logical_position(
+            set_logical_position_abruptly(
                 sb(1),
                 data.sb_data[1].scroll_position -= float((*delta)[1] * 120));
         }

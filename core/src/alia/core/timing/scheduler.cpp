@@ -4,11 +4,11 @@ namespace alia {
 
 void
 schedule_callback(
-    timer_event_scheduler& scheduler,
+    callback_scheduler& scheduler,
     std::function<void()> callback,
     millisecond_count time)
 {
-    timer_event_request rq;
+    callback_request rq;
     rq.callback = std::move(callback);
     rq.trigger_time = time;
     rq.frame_issued = scheduler.frame_counter;
@@ -16,10 +16,11 @@ schedule_callback(
 }
 
 void
-issue_ready_events(
-    timer_event_scheduler& scheduler,
+invoke_ready_callbacks(
+    callback_scheduler& scheduler,
     millisecond_count now,
-    function_view<void(std::function<void()> const&)> issue)
+    function_view<void(std::function<void()> const&, millisecond_count)> const&
+        invoker)
 {
     ++scheduler.frame_counter;
     while (true)
@@ -27,38 +28,38 @@ issue_ready_events(
         // Ideally, the list would be stored sorted, but it has to be
         // sorted relative to the current tick count (to handle wrapping),
         // and the list is generally not very long anyway.
-        auto next_event = scheduler.requests.end();
+        auto next_callback = scheduler.requests.end();
         for (auto i = scheduler.requests.begin();
              i != scheduler.requests.end();
              ++i)
         {
             if (i->frame_issued != scheduler.frame_counter
                 && int(now - i->trigger_time) >= 0
-                && (next_event == scheduler.requests.end()
-                    || int(next_event->trigger_time - i->trigger_time) >= 0))
+                && (next_callback == scheduler.requests.end()
+                    || int(next_callback->trigger_time - i->trigger_time)
+                           >= 0))
             {
-                next_event = i;
+                next_callback = i;
             }
         }
-        if (next_event == scheduler.requests.end())
+        if (next_callback == scheduler.requests.end())
             break;
 
-        timer_event_request request = *next_event;
-        scheduler.requests.erase(next_event);
+        callback_request request = *next_callback;
+        scheduler.requests.erase(next_callback);
 
-        issue(request.callback);
+        invoker(request.callback, request.trigger_time);
     }
 }
 
 bool
-has_scheduled_events(timer_event_scheduler const& scheduler)
+has_scheduled_callbacks(callback_scheduler const& scheduler)
 {
     return !scheduler.requests.empty();
 }
 
 millisecond_count
-get_time_until_next_event(
-    timer_event_scheduler& scheduler, millisecond_count now)
+time_until_next_callback(callback_scheduler& scheduler, millisecond_count now)
 {
     auto next_event = scheduler.requests.end();
     for (auto i = scheduler.requests.begin(); i != scheduler.requests.end();

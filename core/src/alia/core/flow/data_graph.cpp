@@ -136,13 +136,29 @@ release_named_block_node_list(naming_map& map, named_block_node* head)
     }
 }
 
+inline data_node*
+data_block_tail(data_block& block)
+{
+    // TODO: Look into storing (and maintaining) this.
+    data_node* node = block.nodes_head;
+    if (!node)
+        return nullptr;
+    while (true)
+    {
+        data_node* const next = node->alia_next_data_node_;
+        if (!next)
+            return node;
+        node = next;
+    }
+}
+
 void
 clear_data_block_cache(data_block& block)
 {
     if (!block.cache_clear)
     {
         // Clear node caches in reverse order to match general C++ semantics.
-        for (data_node* node = block.nodes_tail; node;
+        for (data_node* node = data_block_tail(block); node;
              node = node->alia_previous_data_node_)
         {
             node->clear_cache();
@@ -160,7 +176,7 @@ clear_data_block(data_block& block)
     clear_data_block_cache(block);
 
     // Delete nodes in reverse order to match general C++ semantics.
-    data_node* node = block.nodes_tail;
+    data_node* node = data_block_tail(block);
     while (node)
     {
         data_node* next = node->alia_previous_data_node_;
@@ -169,7 +185,6 @@ clear_data_block(data_block& block)
     }
 
     block.nodes_head = nullptr;
-    block.nodes_tail = nullptr;
 }
 
 data_block::~data_block()
@@ -387,7 +402,7 @@ delete_named_block(data_graph& graph, id_interface const& id)
         if (j != i->map.blocks.end())
         {
             named_block_node* node = &j->second;
-            // If the block is still active, so we don't want to delete it. We
+            // If the block is still active, we don't want to delete it. We
             // just want to clear the manual_delete flag.
             if (node->next || i->map.first == node)
                 node->manual_delete = false;
