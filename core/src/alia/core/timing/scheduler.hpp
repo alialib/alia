@@ -10,42 +10,42 @@
 
 namespace alia {
 
-struct timer_event_request
+struct callback_request
 {
     millisecond_count trigger_time;
     std::function<void()> callback;
     unsigned frame_issued;
 };
 
-struct timer_event_scheduler
+struct callback_scheduler
 {
-    std::vector<timer_event_request> requests;
+    std::vector<callback_request> requests;
     unsigned frame_counter = 0;
 };
 
 // Schedule an event.
 void
 schedule_callback(
-    timer_event_scheduler& scheduler,
+    callback_scheduler& scheduler,
     std::function<void()> callback,
     millisecond_count time);
 
-// Issue any events that are ready to be issued.
+// Invoke any callbacks that are due to be called.
 void
-issue_ready_events(
-    timer_event_scheduler& scheduler,
+invoke_ready_callbacks(
+    callback_scheduler& scheduler,
     millisecond_count now,
-    function_view<void(std::function<void()> const&)> issue);
+    function_view<void(std::function<void()> const&, millisecond_count)> const&
+        invoker);
 
-// Are there any scheduled events?
+// Are there any scheduled callbacks?
 bool
-has_scheduled_events(timer_event_scheduler const& scheduler);
+has_scheduled_callbacks(callback_scheduler const& scheduler);
 
-// Get the time until the next scheduled event.
-// The behavior is undefined if there are no scheduled events.
+// Get the time until the next scheduled callback.
+// The behavior is undefined if there are no scheduled callbacks.
 millisecond_count
-get_time_until_next_event(
-    timer_event_scheduler& scheduler, millisecond_count now);
+time_until_next_callback(callback_scheduler& scheduler, millisecond_count now);
 
 } // namespace alia
 
