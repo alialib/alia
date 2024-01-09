@@ -43,4 +43,14 @@ initialize_standalone_system(
     sys.controller = controller;
 }
 
+void
+process_internal_callbacks(
+    system& sys,
+    millisecond_count now,
+    function_view<void(std::function<void()> const&, millisecond_count)> const&
+        invoker)
+{
+    invoke_ready_callbacks(sys.scheduler, now, invoker);
+}
+
 } // namespace alia

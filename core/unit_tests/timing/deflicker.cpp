@@ -42,7 +42,7 @@ TEST_CASE("deflicker", "[timing][deflicker]")
                 [&]() { return x_valid; }, [&]() { return x_value; });
             auto d = deflicker(ctx, x, 50);
         };
-        process_internal_timing_events(sys, external.tick_count);
+        process_internal_callbacks(sys, external.tick_count);
     };
 
     // Our deflickered signal should pick up its initial value.

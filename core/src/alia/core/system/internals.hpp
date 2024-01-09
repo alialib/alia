@@ -54,10 +54,10 @@ struct external_interface
 
 struct untyped_system;
 
-// alia provides an internal system for tracking outstanding requests for timer
-// events. If this system is continuously updating anyway, you can use this
-// default implementation and call `process_internal_timing_events` once per
-// frame to handle timing events. (See below.)
+// alia provides an internal system for tracking outstanding requests for timed
+// callbacks. If this system is continuously updating anyway, you can use this
+// default implementation and call `process_internal_callbacks` once per frame
+// to handle callbacks. (See below.)
 //
 struct default_external_interface : external_interface
 {
@@ -88,7 +88,7 @@ struct untyped_system : noncopyable
     bool refresh_needed = false;
     counter_type refresh_counter = 0;
     std::unique_ptr<external_interface> external;
-    timer_event_scheduler scheduler;
+    callback_scheduler scheduler;
     component_container_ptr root_component;
     std::function<void(std::exception_ptr)> error_handler;
 
@@ -154,6 +154,13 @@ struct timer_event : targeted_event
 {
     millisecond_count trigger_time;
 };
+
+void
+process_internal_callbacks(
+    system& sys,
+    millisecond_count now,
+    function_view<void(std::function<void()> const&, millisecond_count)> const&
+        invoker);
 
 } // namespace alia
 

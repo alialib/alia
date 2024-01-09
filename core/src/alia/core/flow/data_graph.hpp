@@ -91,7 +91,7 @@ struct data_block
 {
     // the list of nodes in this block
     data_node* nodes_head = nullptr;
-    data_node* nodes_tail = nullptr;
+    // data_node* nodes_tail = nullptr;
 
     // a flag to track if the block's cache is clear
     bool cache_clear = true;

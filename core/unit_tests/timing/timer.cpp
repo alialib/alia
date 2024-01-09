@@ -46,7 +46,7 @@ TEST_CASE("timer", "[timing][timer]")
             if (timer.is_triggered())
                 ++event_count;
         };
-        process_internal_timing_events(sys, external.tick_count);
+        process_internal_callbacks(sys, external.tick_count);
         return event_count;
     };
 
@@ -123,7 +123,7 @@ TEST_CASE("timer", "[timing][timer]")
                 timer.start(100);
             }
         };
-        process_internal_timing_events(sys, external.tick_count);
+        process_internal_callbacks(sys, external.tick_count);
         return event_count;
     };
 
