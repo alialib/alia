@@ -38,7 +38,10 @@ TEST_CASE("square_wave", "[timing][waves]")
     // Define a utility function for processing timing events.
     auto process_timing_events = [&]() {
         sys.controller = [&](context ctx) { square_wave_invoker(ctx); };
-        process_internal_callbacks(sys, external.tick_count);
+        process_internal_callbacks(
+            sys, external.tick_count, [&](auto&& f, millisecond_count) {
+                f();
+            });
     };
 
     // Our square wave should start out at true.
