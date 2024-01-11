@@ -4,6 +4,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "alia/core/timing/ticks.hpp"
 #include "traversal.hpp"
 
 using namespace alia;
@@ -46,7 +47,10 @@ TEST_CASE("timer", "[timing][timer]")
             if (timer.is_triggered())
                 ++event_count;
         };
-        process_internal_callbacks(sys, external.tick_count);
+        process_internal_callbacks(
+            sys, external.tick_count, [&](auto&& f, millisecond_count) {
+                f();
+            });
         return event_count;
     };
 
@@ -123,7 +127,10 @@ TEST_CASE("timer", "[timing][timer]")
                 timer.start(100);
             }
         };
-        process_internal_callbacks(sys, external.tick_count);
+        process_internal_callbacks(
+            sys, external.tick_count, [&](auto&& f, millisecond_count) {
+                f();
+            });
         return event_count;
     };
 
