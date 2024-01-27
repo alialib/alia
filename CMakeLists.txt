@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-include(core/cmake/utilities.cmake)
+include(cmake/utilities.cmake)
 
 # ALIA_IS_MAIN_PROJECT defines whether we are building alia as the main
 # project or as a dependency of another project.
@@ -38,30 +38,20 @@ endif()
 include(CMakeDependentOption)
 
 cmake_dependent_option(
-    ALIA_ENABLE_HTML
-    "Enable integration with HTML5"
-    ${ALIA_IS_MAIN_PROJECT}
-    "IS_EMSCRIPTEN"
-    OFF)
-if(ALIA_ENABLE_HTML)
-  list(APPEND VCPKG_MANIFEST_FEATURES "html")
-endif()
-
-cmake_dependent_option(
-    ALIA_ENABLE_INDIE
-    "Enable the Indie UI library"
+    ALIA_ENABLE_UI
+    "Enable the UI library"
     ON
     "NOT IS_EMSCRIPTEN"
     OFF)
-if(ALIA_ENABLE_INDIE)
-  list(APPEND VCPKG_MANIFEST_FEATURES "indie")
+if(ALIA_ENABLE_UI)
+  list(APPEND VCPKG_MANIFEST_FEATURES "ui")
 endif()
 
 cmake_dependent_option(
     ALIA_ENABLE_GLFW
-    "Enable the GLFW backend for the Indie library"
+    "Enable the GLFW backend for the UI library"
     ON
-    "ALIA_ENABLE_INDIE"
+    "ALIA_ENABLE_UI"
     OFF)
 if(ALIA_ENABLE_GLFW)
   list(APPEND VCPKG_MANIFEST_FEATURES "glfw")
@@ -73,6 +63,16 @@ cmake_dependent_option(
     ${ALIA_IS_MAIN_PROJECT}
     "IS_EMSCRIPTEN"
     OFF)
+
+cmake_dependent_option(
+    ALIA_ENABLE_HTML
+    "Enable integration with HTML5"
+    ${ALIA_IS_MAIN_PROJECT}
+    "IS_EMSCRIPTEN"
+    OFF)
+if(ALIA_ENABLE_HTML)
+  list(APPEND VCPKG_MANIFEST_FEATURES "html")
+endif()
 
 # We can only declare the project after we've set the vcpkg manifest features.
 project(alia)
@@ -90,7 +90,7 @@ if (ALIA_IS_MAIN_PROJECT)
         # set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT
         #    "$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>")
         string(REGEX REPLACE "/Zi" "/ZI"
-            CMAKE_CXX_FLAGS_RELWITHDEBINFO 
+            CMAKE_CXX_FLAGS_RELWITHDEBINFO
             "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
         string(REGEX REPLACE "/Zi" "/ZI"
             CMAKE_CXX_FLAGS_DEBUG
@@ -113,7 +113,26 @@ if(ALIA_ENABLE_TESTING)
 endif()
 
 # Add the core library.
-add_subdirectory(core)
+include_directories(src)
+if (ALIA_IS_MAIN_PROJECT)
+    set(ALIA_GLOB_OPTIONS "CONFIGURE_DEPENDS")
+else()
+    set(ALIA_GLOB_OPTIONS "")
+endif()
+file(GLOB_RECURSE ALIA_CORE_SRC_FILES ${ALIA_GLOB_OPTIONS} "src/core/*.cpp")
+add_library(alia_core STATIC ${ALIA_CORE_SRC_FILES})
+target_include_directories(alia_core PUBLIC src)
+target_compile_features(alia_core PUBLIC cxx_std_17)
+
+# Add the UI library.
+if (ALIA_ENABLE_UI)
+
+endif()
+
+# Add the tests.
+if (NOT ALIA_ENABLE_TESTING)
+    add_subdirectory("tests")
+endif()
 
 # Add alia/HTML.
 if (ALIA_ENABLE_HTML)
@@ -123,9 +142,4 @@ endif()
 # Add the docs.
 if (ALIA_BUILD_DOCS)
     add_subdirectory(docs)
-endif()
-
-# Add the Indie UI library.
-if (ALIA_ENABLE_INDIE)
-    add_subdirectory("modules/indie")
 endif()
