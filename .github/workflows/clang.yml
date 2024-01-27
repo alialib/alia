@@ -92,5 +92,9 @@ jobs:
         cd build
         ctest --build-config ${{matrix.config}}
 
-    - name: Upload coverage report
-      run: bash <(curl -s https://codecov.io/bash) -X gcov
+    - name: Upload coverage reports
+      run: |
+        bash <(curl -s https://codecov.io/bash) -X gcov -F core \
+          -f build/tests/core_coverage.txt
+        bash <(curl -s https://codecov.io/bash) -X gcov -F ui \
+          -f build/tests/ui_coverage.txt

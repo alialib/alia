@@ -1,7 +1,5 @@
 .vscode
 .vs
-.venv
-coverage.txt
 /*build*
 debug.log
 /docs/www
