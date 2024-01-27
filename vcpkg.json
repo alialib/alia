@@ -10,8 +10,8 @@
                 "scnlib"
             ]
         },
-        "indie": {
-            "description": "Build the 'Indie' UI library",
+        "ui": {
+            "description": "Build the UI library",
             "dependencies": [
                 "fmt",
                 {
@@ -26,7 +26,7 @@
             ]
         },
         "glfw": {
-            "description": "GLFW backend for Indie library",
+            "description": "GLFW backend for UI library",
             "dependencies": [
                 "glfw3"
             ]

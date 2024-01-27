@@ -64,6 +64,11 @@ cmake_dependent_option(
     "IS_EMSCRIPTEN"
     OFF)
 
+option(
+    ALIA_BUILD_EXAMPLES
+    "Build examples"
+    ${ALIA_IS_MAIN_PROJECT})
+
 cmake_dependent_option(
     ALIA_ENABLE_HTML
     "Enable integration with HTML5"
@@ -119,19 +124,49 @@ if (ALIA_IS_MAIN_PROJECT)
 else()
     set(ALIA_GLOB_OPTIONS "")
 endif()
-file(GLOB_RECURSE ALIA_CORE_SRC_FILES ${ALIA_GLOB_OPTIONS} "src/core/*.cpp")
+file(GLOB_RECURSE ALIA_CORE_SRC_FILES ${ALIA_GLOB_OPTIONS}
+    "src/alia/core/*.cpp")
 add_library(alia_core STATIC ${ALIA_CORE_SRC_FILES})
 target_include_directories(alia_core PUBLIC src)
 target_compile_features(alia_core PUBLIC cxx_std_17)
 
 # Add the UI library.
 if (ALIA_ENABLE_UI)
+    find_package(glfw3 3.3 CONFIG REQUIRED)
+    find_package(unofficial-skia CONFIG REQUIRED)
 
+    include(FetchContent)
+    FetchContent_Declare(dmilos_color
+    GIT_REPOSITORY https://github.com/dmilos/color.git
+    GIT_TAG 84dc0512cb5fcf6536d79f0bee2530e678c01b03)
+    FetchContent_Populate(dmilos_color)
+
+    file(GLOB_RECURSE ALIA_INDIE_SOURCES ${ALIA_GLOB_OPTIONS}
+        "src/alia/ui/*.cpp")
+    add_library(alia_ui STATIC ${ALIA_INDIE_SOURCES})
+    target_include_directories(alia_ui PUBLIC
+        "${CMAKE_CURRENT_SOURCE_DIR}/src")
+    target_link_libraries(alia_ui PUBLIC
+        alia_core
+        glfw
+        unofficial::skia::skia
+        unofficial::skia::skparagraph
+        unofficial::skia::skshaper
+        unofficial::skia::skunicode)
+    target_include_directories(alia_ui PUBLIC
+        "${dmilos_color_SOURCE_DIR}/src")
+    target_precompile_headers(alia_ui PUBLIC
+        src/alia/ui.hpp)
 endif()
 
 # Add the tests.
-if (NOT ALIA_ENABLE_TESTING)
+if (ALIA_ENABLE_TESTING)
     add_subdirectory("tests")
+endif()
+
+# Add the examples.
+if (ALIA_BUILD_EXAMPLES)
+    add_subdirectory(examples)
 endif()
 
 # Add alia/HTML.
