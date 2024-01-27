@@ -1,20 +1,20 @@
 find_package(Catch2 REQUIRED)
 
 # Add the unit test runner.
-file(GLOB_RECURSE UNIT_TEST_FILES CONFIGURE_DEPENDS "unit_tests/*.cpp")
+file(GLOB_RECURSE UNIT_TEST_FILES CONFIGURE_DEPENDS "unit/*.cpp")
 add_executable(unit_test_runner ${UNIT_TEST_FILES})
 target_link_libraries(unit_test_runner
     PRIVATE alia_core Catch2::Catch2WithMain)
 target_include_directories(unit_test_runner
-    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/unit_tests)
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/unit)
 
 # Add tests that are supposed to cause compilation errors.
-# Specifically, find all .cpp files in the compilation_tests/ directory and
+# Specifically, find all .cpp files in the compilation/ directory and
 # generate test cases that try to compile them once with
 # ALIA_TEST_COMPILATION_FAILURE #defined and once without it. The files are
 # expected to compile successfully without the #define but generate a
 # compilation error when the #define is provided.
-file(GLOB_RECURSE COMPILATION_TEST_FILES "compilation_tests/*.cpp")
+file(GLOB_RECURSE COMPILATION_TEST_FILES "compilation/*.cpp")
 set(COMPILATION_TEST_SCRIPT
     "${CMAKE_CURRENT_BINARY_DIR}/invoke_compilation_tests.cmake")
 file(WRITE ${COMPILATION_TEST_SCRIPT} "")
