@@ -7,11 +7,11 @@
 namespace alia {
 
 void
-schedule_animation_refresh(dataless_context ctx)
+schedule_animation_refresh(dataless_core_context ctx)
 {
     // Invoke the virtual method on the external system interface.
     // And also set a flag to indicate that a refresh is needed.
-    untyped_system& sys = get<system_tag>(ctx);
+    untyped_system& sys = get<core_system_tag>(ctx);
     if (!sys.refresh_needed)
     {
         if (sys.external)
@@ -23,20 +23,21 @@ schedule_animation_refresh(dataless_context ctx)
 }
 
 millisecond_count
-get_raw_animation_tick_count(dataless_context ctx)
+get_raw_animation_tick_count(dataless_core_context ctx)
 {
     schedule_animation_refresh(ctx);
     return get<timing_tag>(ctx).tick_counter;
 }
 
 value_signal<millisecond_count>
-get_animation_tick_count(dataless_context ctx)
+get_animation_tick_count(dataless_core_context ctx)
 {
     return value(get_raw_animation_tick_count(ctx));
 }
 
 millisecond_count
-get_raw_animation_ticks_left(dataless_context ctx, millisecond_count end_time)
+get_raw_animation_ticks_left(
+    dataless_core_context ctx, millisecond_count end_time)
 {
     int ticks_remaining = int(end_time - get<timing_tag>(ctx).tick_counter);
     if (ticks_remaining > 0)

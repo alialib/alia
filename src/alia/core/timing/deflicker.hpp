@@ -89,7 +89,7 @@ struct deflickering_signal
 template<class Signal, class Value, class Delay = millisecond_count>
 deflickering_signal<Signal>
 deflicker(
-    dataless_context ctx,
+    dataless_core_context ctx,
     deflickering_data<Value>& data,
     Signal x,
     Delay delay = default_deflicker_delay)
@@ -142,7 +142,7 @@ deflicker(
 
 template<class Signal, class Delay = millisecond_count>
 deflickering_signal<Signal>
-deflicker(context ctx, Signal x, Delay delay = default_deflicker_delay)
+deflicker(core_context ctx, Signal x, Delay delay = default_deflicker_delay)
 {
     typedef typename Signal::value_type value_type;
     auto& data = get_cached_data<deflickering_data<value_type>>(ctx);

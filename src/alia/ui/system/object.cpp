@@ -1,15 +1,15 @@
-#include "alia/indie/context.hpp"
-#include "alia/indie/geometry.hpp"
-#include <alia/indie/system/object.hpp>
+#include "alia/ui/context.hpp"
+#include "alia/ui/geometry.hpp"
+#include <alia/ui/system/object.hpp>
 
-#include <alia/indie/layout/containers/simple.hpp>
-#include <alia/indie/layout/logic/linear.hpp>
-#include <alia/indie/layout/specification.hpp>
-#include <alia/indie/layout/system.hpp>
-#include <alia/indie/layout/traversal.hpp>
-#include <alia/indie/widget.hpp>
+#include <alia/ui/layout/containers/simple.hpp>
+#include <alia/ui/layout/logic/linear.hpp>
+#include <alia/ui/layout/specification.hpp>
+#include <alia/ui/layout/system.hpp>
+#include <alia/ui/layout/traversal.hpp>
+#include <alia/ui/widget.hpp>
 
-namespace alia { namespace indie {
+namespace alia {
 
 struct root_widget : simple_layout_container<column_layout_logic>
 {
@@ -22,8 +22,8 @@ struct root_widget : simple_layout_container<column_layout_logic>
     }
 
     void
-    hit_test(indie::hit_test_base& test, vector<2, double> const& point)
-        const override
+    hit_test(
+        hit_test_base& test, vector<2, double> const& point) const override
     {
         for (widget* node = this->widget_container::children; node;
              node = node->next)
@@ -33,7 +33,7 @@ struct root_widget : simple_layout_container<column_layout_logic>
     }
 
     void
-    process_input(indie::event_context) override
+    process_input(ui_event_context) override
     {
     }
 
@@ -56,11 +56,11 @@ struct root_widget : simple_layout_container<column_layout_logic>
 };
 
 void
-system::invoke_controller(vanilla_context vanilla_ctx)
+ui_system::invoke_controller(vanilla_ui_context vanilla_ctx)
 {
     layout_style_info style_info;
 
-    indie::traversal traversal;
+    ui_traversal traversal;
     initialize_layout_traversal(
         traversal.layout,
         &this->root_widget,
@@ -69,10 +69,10 @@ system::invoke_controller(vanilla_context vanilla_ctx)
         &style_info,
         make_vector<float>(200, 200)); // TODO
 
-    auto ctx = extend_context<traversal_tag>(
-        extend_context<system_tag>(vanilla_ctx, *this), traversal);
+    auto ctx = extend_context<ui_traversal_tag>(
+        extend_context<ui_system_tag>(vanilla_ctx, *this), traversal);
 
-    indie::root_widget* root;
+    alia::root_widget* root;
     if (get_data(ctx, &root))
         root->logic = &root->logic_storage;
 
@@ -95,4 +95,4 @@ system::invoke_controller(vanilla_context vanilla_ctx)
     this->controller(ctx);
 }
 
-}} // namespace alia::indie
+} // namespace alia

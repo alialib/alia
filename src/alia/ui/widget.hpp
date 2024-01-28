@@ -1,17 +1,17 @@
-#ifndef ALIA_INDIE_RENDERING_HPP
-#define ALIA_INDIE_RENDERING_HPP
+#ifndef ALIA_UI_RENDERING_HPP
+#define ALIA_UI_RENDERING_HPP
 
-#include "alia/indie/layout/specification.hpp"
+#include "alia/ui/layout/specification.hpp"
 #include <memory>
 
 #include <include/core/SkCanvas.h>
 
 #include <alia/core/flow/events.hpp>
-#include <alia/indie/common.hpp>
-#include <alia/indie/context.hpp>
-#include <alia/indie/geometry.hpp>
+#include <alia/ui/common.hpp>
+#include <alia/ui/context.hpp>
+#include <alia/ui/geometry.hpp>
 
-namespace alia { namespace indie {
+namespace alia {
 
 struct hit_test_base;
 
@@ -27,7 +27,7 @@ struct region_reveal_request
 
 struct render_event
 {
-    system* sys = nullptr;
+    ui_system* sys = nullptr;
 
     SkCanvas* canvas = nullptr;
 
@@ -45,7 +45,7 @@ struct widget_interface
         = 0;
 
     virtual void
-    process_input(event_context ctx)
+    process_input(ui_event_context ctx)
         = 0;
 
     // Get the transformation from the root frame of reference to this widget's
@@ -108,7 +108,7 @@ struct internal_widget_ref
     }
 
     internal_widget_ref(widget const& widget)
-        : raw_ptr(const_cast<indie::widget*>(&widget))
+        : raw_ptr(const_cast<alia::widget*>(&widget))
     {
     }
 
@@ -272,12 +272,12 @@ walk_widget_tree(widget* widget, Visitor&& visitor)
     // Visit this node.
     std::forward<Visitor>(visitor)(widget);
     // Visit all its children.
-    for (indie::widget* w = widget->children; w != nullptr; w = w->next)
+    for (auto* w = widget->children; w != nullptr; w = w->next)
     {
         walk_widget_tree(w, std::forward<Visitor>(visitor));
     }
 }
 
-}} // namespace alia::indie
+} // namespace alia
 
 #endif

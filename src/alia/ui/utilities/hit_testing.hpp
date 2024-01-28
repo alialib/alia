@@ -1,13 +1,13 @@
-#ifndef ALIA_INDIE_UTILITIES_HIT_TESTING_HPP
-#define ALIA_INDIE_UTILITIES_HIT_TESTING_HPP
+#ifndef ALIA_UI_UTILITIES_HIT_TESTING_HPP
+#define ALIA_UI_UTILITIES_HIT_TESTING_HPP
 
-#include "alia/indie/system/input_constants.hpp"
+#include "alia/ui/system/input_constants.hpp"
 #include <alia/core/flow/events.hpp>
-#include <alia/indie/events/input.hpp>
-#include <alia/indie/geometry.hpp>
-#include <alia/indie/widget.hpp>
+#include <alia/ui/events/input.hpp>
+#include <alia/ui/geometry.hpp>
+#include <alia/ui/widget.hpp>
 
-namespace alia { namespace indie {
+namespace alia {
 
 enum class hit_test_type
 {
@@ -58,6 +58,6 @@ hit_test_box(
     layout_box const& box,
     mouse_cursor cursor = mouse_cursor::DEFAULT);
 
-}} // namespace alia::indie
+} // namespace alia
 
 #endif

@@ -36,7 +36,7 @@ default_external_interface::schedule_asynchronous_update(
 void
 initialize_standalone_system(
     system& sys,
-    std::function<void(context)> const& controller,
+    std::function<void(core_context)> const& controller,
     external_interface* external)
 {
     initialize_core_system(sys, external);

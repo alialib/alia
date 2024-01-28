@@ -1,7 +1,7 @@
-#ifndef ALIA_INDIE_COLOR_HPP
-#define ALIA_INDIE_COLOR_HPP
+#ifndef ALIA_UI_COLOR_HPP
+#define ALIA_UI_COLOR_HPP
 
-#include <alia/indie/common.hpp>
+#include <alia/ui/common.hpp>
 
 namespace alia {
 

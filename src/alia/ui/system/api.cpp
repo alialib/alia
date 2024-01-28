@@ -1,23 +1,23 @@
-#include "alia/indie/events/input.hpp"
-#include "alia/indie/widget.hpp"
-#include <alia/indie/system/api.hpp>
+#include "alia/ui/events/input.hpp"
+#include "alia/ui/widget.hpp"
+#include <alia/ui/system/api.hpp>
 
 #include <alia/core/flow/events.hpp>
-#include <alia/indie/events/delivery.hpp>
-#include <alia/indie/system/object.hpp>
-#include <alia/indie/utilities/hit_testing.hpp>
-#include <alia/indie/utilities/keyboard.hpp>
+#include <alia/ui/events/delivery.hpp>
+#include <alia/ui/system/object.hpp>
+#include <alia/ui/utilities/hit_testing.hpp>
+#include <alia/ui/utilities/keyboard.hpp>
 
-namespace alia { namespace indie {
+namespace alia {
 
 void
 initialize(
-    indie::system& ui,
-    std::function<void(indie::context)> controller,
+    ui_system& ui,
+    std::function<void(ui_context)> controller,
     std::shared_ptr<os_interface> os,
     std::shared_ptr<window_interface> window)
 {
-    initialize_core_system<indie::vanilla_context>(ui, nullptr);
+    initialize_core_system<vanilla_ui_context>(ui, nullptr);
     ui.controller = std::move(controller);
     ui.os = std::move(os);
     ui.window = std::move(window);
@@ -46,7 +46,7 @@ initialize(
 // }
 
 void
-update(system& ui)
+update(ui_system& ui)
 {
     // refresh_ui(ui);
 
@@ -142,7 +142,7 @@ update(system& ui)
 }
 
 void
-update_window_size(system& ui, vector<2, unsigned> const& new_size)
+update_window_size(ui_system& ui, vector<2, unsigned> const& new_size)
 {
     // // If the surface changes size, that could invalidate popup positioning,
     // // so close any active popups.
@@ -191,7 +191,7 @@ setup_initial_styling(ui_context& ctx)
 #endif
 
 static external_element_ref
-get_focus_successor(system& sys, internal_element_ref target)
+get_focus_successor(ui_system& sys, internal_element_ref target)
 {
     focus_successor_event event;
     event.target = target;
@@ -212,7 +212,7 @@ get_focus_successor(system& sys, internal_element_ref target)
 }
 
 static external_element_ref
-get_focus_predecessor(system& sys, internal_element_ref target)
+get_focus_predecessor(ui_system& sys, internal_element_ref target)
 {
     focus_predecessor_event event;
     event.target = target;
@@ -718,7 +718,7 @@ void process_focus_gain(ui_system& ui, ui_time_type time)
 #endif
 
 void
-advance_focus(system& sys)
+advance_focus(ui_system& sys)
 {
     set_focus(
         sys,
@@ -730,7 +730,7 @@ advance_focus(system& sys)
 }
 
 void
-regress_focus(system& sys)
+regress_focus(ui_system& sys)
 {
     set_focus(
         sys,
@@ -742,19 +742,19 @@ regress_focus(system& sys)
 }
 
 void
-clear_focus(system& ui)
+clear_focus(ui_system& ui)
 {
     ui.input.element_with_focus = external_element_ref();
 }
 
 void
-set_element_with_capture(system& ui, external_element_ref element)
+set_element_with_capture(ui_system& ui, external_element_ref element)
 {
     ui.input.element_with_capture = std::move(element);
 }
 
 void
-set_hot_element(system& ui, external_element_ref element)
+set_hot_element(ui_system& ui, external_element_ref element)
 {
     // If no element has capture and the mouse is moving to a different
     // element, this marks the start of a hover.
@@ -777,4 +777,4 @@ void set_system_style(ui_system& system,
 }
 
 #endif
-}} // namespace alia::indie
+} // namespace alia

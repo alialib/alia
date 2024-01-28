@@ -64,7 +64,7 @@ TEST_CASE("simple content caching", "[flow][content_caching]")
     };
 
     alia::system sys;
-    initialize_standalone_system(sys, [&](context vanilla_ctx) {
+    initialize_standalone_system(sys, [&](core_context vanilla_ctx) {
         tree_traversal<test_object> traversal;
         auto ctx = extend_context<tree_traversal_tag>(vanilla_ctx, traversal);
         if (is_refresh_event(ctx))
@@ -204,7 +204,7 @@ TEST_CASE("exceptional content caching", "[flow][content_caching]")
     };
 
     alia::system sys;
-    initialize_standalone_system(sys, [&](context vanilla_ctx) {
+    initialize_standalone_system(sys, [&](core_context vanilla_ctx) {
         tree_traversal<test_object> traversal;
         auto ctx = extend_context<tree_traversal_tag>(vanilla_ctx, traversal);
         if (is_refresh_event(ctx))

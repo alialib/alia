@@ -1,20 +1,20 @@
-#ifndef ALIA_INDIE_EVENTS_DELIVERY_HPP
-#define ALIA_INDIE_EVENTS_DELIVERY_HPP
+#ifndef ALIA_UI_EVENTS_DELIVERY_HPP
+#define ALIA_UI_EVENTS_DELIVERY_HPP
 
 #include "alia/core/flow/events.hpp"
-#include <alia/indie/context.hpp>
-#include <alia/indie/widget.hpp>
+#include <alia/ui/context.hpp>
+#include <alia/ui/widget.hpp>
 
-namespace alia { namespace indie {
+namespace alia {
 
 template<class Event>
 struct event_delivery_fixture
 {
-    event_delivery_fixture(system& sys)
-        : ctx_(detail::add_context_object<indie::system_tag>(
+    event_delivery_fixture(ui_system& sys)
+        : ctx_(detail::add_context_object<ui_system_tag>(
             detail::add_context_object<timing_tag>(
                 detail::add_context_object<event_traversal_tag>(
-                    detail::add_context_object<alia::system_tag>(
+                    detail::add_context_object<core_system_tag>(
                         make_context(detail::make_empty_structural_collection(
                             &storage_)),
                         std::ref(sys)),
@@ -47,13 +47,13 @@ struct event_delivery_fixture
  private:
     event_traversal traversal_;
     timing_subsystem timing_;
-    context_storage storage_;
-    event_context ctx_;
+    ui_context_storage storage_;
+    ui_event_context ctx_;
 };
 
 template<class Event>
 void
-deliver_input_event(system& sys, widget* widget, Event& event)
+deliver_input_event(ui_system& sys, widget* widget, Event& event)
 {
     event_delivery_fixture<Event> fixture(sys);
     fixture.deliver(widget, event);
@@ -62,7 +62,7 @@ deliver_input_event(system& sys, widget* widget, Event& event)
 template<class Event>
 void
 deliver_input_event(
-    system& sys, std::shared_ptr<widget> const& widget, Event& event)
+    ui_system& sys, std::shared_ptr<widget> const& widget, Event& event)
 {
     if (widget)
         deliver_input_event(sys, widget.get(), event);
@@ -70,11 +70,11 @@ deliver_input_event(
 
 template<class Event>
 void
-deliver_input_event(system& sys, external_widget_ref widget, Event& event)
+deliver_input_event(ui_system& sys, external_widget_ref widget, Event& event)
 {
     deliver_input_event(sys, widget.lock(), event);
 }
 
-}} // namespace alia::indie
+} // namespace alia
 
 #endif

@@ -1,4 +1,4 @@
 
-namespace alia { namespace indie {
+namespace alia {
 
-}} // namespace alia::indie
+}

@@ -1,10 +1,10 @@
-#ifndef ALIA_INDIE_SCROLLING_HPP
-#define ALIA_INDIE_SCROLLING_HPP
+#ifndef ALIA_UI_SCROLLING_HPP
+#define ALIA_UI_SCROLLING_HPP
 
-#include <alia/indie/layout/containers/utilities.hpp>
-#include <alia/indie/tosort.hpp>
+#include <alia/ui/layout/containers/utilities.hpp>
+#include <alia/ui/tosort.hpp>
 
-namespace alia { namespace indie {
+namespace alia {
 
 struct scrollbar_metrics
 {
@@ -76,10 +76,10 @@ hit_test_scrollbar(
     vector<2, double> const& point);
 
 void
-process_scrollbar_input(event_context ctx, scrollbar_parameters const& sb);
+process_scrollbar_input(ui_event_context ctx, scrollbar_parameters const& sb);
 
 void
-refresh_scrollbar(dataless_context ctx, scrollbar_parameters const& sb);
+refresh_scrollbar(dataless_ui_context ctx, scrollbar_parameters const& sb);
 
 struct scoped_scrollable_view
 {
@@ -87,7 +87,7 @@ struct scoped_scrollable_view
     {
     }
     scoped_scrollable_view(
-        indie::context ctx, layout const& layout_spec = default_layout)
+        ui_context ctx, layout const& layout_spec = default_layout)
     {
         begin(ctx, layout_spec);
     }
@@ -97,7 +97,7 @@ struct scoped_scrollable_view
     }
 
     void
-    begin(indie::context ctx, layout const& layout_spec = default_layout);
+    begin(ui_context ctx, layout const& layout_spec = default_layout);
     void
     end();
 
@@ -105,6 +105,6 @@ struct scoped_scrollable_view
     scoped_layout_container container_;
 };
 
-}} // namespace alia::indie
+} // namespace alia
 
 #endif

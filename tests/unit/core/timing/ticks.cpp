@@ -14,13 +14,13 @@ using namespace alia;
 TEST_CASE("automatic ticks", "[timing][ticks]")
 {
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
+    initialize_standalone_system(sys, [](core_context) {});
     millisecond_count last_ticks;
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         last_ticks = get_raw_animation_tick_count(ctx);
     });
     std::this_thread::sleep_for(std::chrono::milliseconds(2));
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         REQUIRE(get_raw_animation_tick_count(ctx) != last_ticks);
     });
 }
@@ -53,12 +53,12 @@ TEST_CASE("get_raw_animation_ticks_left", "[timing][ticks]")
     alia::system sys;
     auto* external_ptr = new dummy_external_interface(sys);
     initialize_standalone_system(
-        sys, [](context) {}, external_ptr);
+        sys, [](core_context) {}, external_ptr);
     auto& external = *external_ptr;
 
     REQUIRE(!system_needs_refresh(sys));
 
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         REQUIRE(get_raw_animation_ticks_left(ctx, 100) == 100);
     });
 
@@ -68,7 +68,7 @@ TEST_CASE("get_raw_animation_ticks_left", "[timing][ticks]")
 
     external.tick_count = 10;
 
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         REQUIRE(get_raw_animation_ticks_left(ctx, 100) == 90);
     });
 
@@ -78,7 +78,7 @@ TEST_CASE("get_raw_animation_ticks_left", "[timing][ticks]")
 
     external.tick_count = 110;
 
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         REQUIRE(get_raw_animation_ticks_left(ctx, 100) == 0);
     });
 
@@ -91,12 +91,12 @@ TEST_CASE("animation_timer", "[timing][ticks]")
     alia::system sys;
     auto* external_ptr = new dummy_external_interface(sys);
     initialize_standalone_system(
-        sys, [](context) {}, external_ptr);
+        sys, [](core_context) {}, external_ptr);
     auto& external = *external_ptr;
 
     REQUIRE(!system_needs_refresh(sys));
 
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         animation_timer timer(ctx);
         REQUIRE(!timer.is_active());
         auto start = actions::start(timer) << 100;
@@ -108,7 +108,7 @@ TEST_CASE("animation_timer", "[timing][ticks]")
 
     external.tick_count = 10;
 
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         animation_timer_state* state;
         get_cached_data(ctx, &state);
         animation_timer timer(ctx, *state);
@@ -120,7 +120,7 @@ TEST_CASE("animation_timer", "[timing][ticks]")
 
     external.tick_count = 110;
 
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         animation_timer timer(ctx);
         REQUIRE(!timer.is_active());
     });

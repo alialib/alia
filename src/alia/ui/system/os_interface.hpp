@@ -1,9 +1,9 @@
-#ifndef ALIA_INDIE_SYSTEM_OS_INTERFACE_HPP
-#define ALIA_INDIE_SYSTEM_OS_INTERFACE_HPP
+#ifndef ALIA_UI_SYSTEM_OS_INTERFACE_HPP
+#define ALIA_UI_SYSTEM_OS_INTERFACE_HPP
 
-#include <alia/indie/system/input_constants.hpp>
+#include <alia/ui/system/input_constants.hpp>
 
-namespace alia { namespace indie {
+namespace alia {
 
 struct os_interface
 {
@@ -15,6 +15,6 @@ struct os_interface
     get_clipboard_text() = 0;
 };
 
-}} // namespace alia::indie
+} // namespace alia
 
 #endif

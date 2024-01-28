@@ -117,8 +117,8 @@ do_traversal(
     timing_subsystem timing;
     timing.tick_counter = 0;
 
-    context_storage storage;
-    context ctx = make_context(&storage, sys, event, data, timing);
+    core_context_storage storage;
+    core_context ctx = make_context(&storage, sys, event, data, timing);
 
     if (!with_gc)
         disable_gc(data);
@@ -206,7 +206,7 @@ struct test_object
 
 ALIA_DEFINE_TAGGED_TYPE(tree_traversal_tag, tree_traversal<test_object>&)
 
-typedef alia::extend_context_type_t<alia::context, tree_traversal_tag>
+typedef alia::extend_context_type_t<alia::core_context, tree_traversal_tag>
     test_context;
 
 void

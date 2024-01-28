@@ -1,9 +1,9 @@
-#ifndef ALIA_INDIE_SYSTEM_INPUT_CONSTANTS_HPP
-#define ALIA_INDIE_SYSTEM_INPUT_CONSTANTS_HPP
+#ifndef ALIA_UI_SYSTEM_INPUT_CONSTANTS_HPP
+#define ALIA_UI_SYSTEM_INPUT_CONSTANTS_HPP
 
 // This file defines various enumerations for input devices.
 
-namespace alia { namespace indie {
+namespace alia {
 
 // All mouse buttons have a code.
 using mouse_button_code = int;
@@ -174,6 +174,6 @@ struct modded_key
     key_modifiers mods;
 };
 
-}} // namespace alia::indie
+} // namespace alia
 
 #endif

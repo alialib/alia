@@ -30,10 +30,10 @@ TEST_CASE("timer", "[timing][timer]")
     alia::system sys;
     auto* external_ptr = new testing_external_interface(sys);
     initialize_standalone_system(
-        sys, [](context) {}, external_ptr);
+        sys, [](core_context) {}, external_ptr);
     auto& external = *external_ptr;
 
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         timer timer(ctx);
         REQUIRE(!timer.is_active());
         REQUIRE(!timer.is_triggered());
@@ -42,7 +42,7 @@ TEST_CASE("timer", "[timing][timer]")
 
     auto count_timer_events = [&]() {
         int event_count = 0;
-        sys.controller = [&](context ctx) {
+        sys.controller = [&](core_context ctx) {
             timer timer(ctx);
             if (timer.is_triggered())
                 ++event_count;
@@ -61,7 +61,7 @@ TEST_CASE("timer", "[timing][timer]")
     REQUIRE(count_timer_events() == 1);
 
     external.tick_count = 120;
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         timer timer(ctx);
         REQUIRE(!timer.is_active());
         REQUIRE(!timer.is_triggered());
@@ -69,7 +69,7 @@ TEST_CASE("timer", "[timing][timer]")
     });
 
     external.tick_count = 130;
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         timer_data* data;
         get_cached_data(ctx, &data);
         timer timer(ctx, *data);
@@ -84,7 +84,7 @@ TEST_CASE("timer", "[timing][timer]")
     REQUIRE(count_timer_events() == 1);
 
     external.tick_count = 200;
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         timer timer(ctx);
         REQUIRE(!timer.is_active());
         REQUIRE(!timer.is_triggered());
@@ -92,7 +92,7 @@ TEST_CASE("timer", "[timing][timer]")
     });
 
     external.tick_count = 210;
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         timer timer(ctx);
         REQUIRE(timer.is_active());
         REQUIRE(!timer.is_triggered());
@@ -100,7 +100,7 @@ TEST_CASE("timer", "[timing][timer]")
     });
 
     external.tick_count = 220;
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         timer timer(ctx);
         REQUIRE(!timer.is_active());
         REQUIRE(!timer.is_triggered());
@@ -110,7 +110,7 @@ TEST_CASE("timer", "[timing][timer]")
     REQUIRE(count_timer_events() == 0);
 
     external.tick_count = 350;
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         timer timer(ctx);
         REQUIRE(!timer.is_active());
         REQUIRE(!timer.is_triggered());
@@ -119,7 +119,7 @@ TEST_CASE("timer", "[timing][timer]")
 
     auto count_and_restart = [&]() {
         int event_count = 0;
-        sys.controller = [&](context ctx) {
+        sys.controller = [&](core_context ctx) {
             timer timer(ctx);
             if (timer.is_triggered())
             {
@@ -141,7 +141,7 @@ TEST_CASE("timer", "[timing][timer]")
     REQUIRE(count_and_restart() == 1);
 
     external.tick_count = 520;
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         timer timer(ctx);
         REQUIRE(timer.is_active());
         REQUIRE(!timer.is_triggered());
@@ -153,7 +153,7 @@ TEST_CASE("timer", "[timing][timer]")
     REQUIRE(count_timer_events() == 1);
 
     external.tick_count = 555;
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         timer timer(ctx);
         REQUIRE(!timer.is_active());
         REQUIRE(!timer.is_triggered());

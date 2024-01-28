@@ -18,11 +18,11 @@ TEST_CASE("simple sequence transform", "[signals][higher_order]")
     std::vector<string> container{"foo", "barre", "q"};
 
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
+    initialize_standalone_system(sys, [](core_context) {});
 
     captured_id transform_id;
     auto controller = [&](int offset) {
-        return [&, offset](context ctx) {
+        return [&, offset](core_context ctx) {
             auto transformed_signal = transform(
                 ctx, direct(container), [&](readable<string> s) {
                     return lazy_apply(alia_mem_fn(length), s) + value(offset);
@@ -46,11 +46,11 @@ TEST_CASE("simple associative transform", "[signals][higher_order]")
         {"a", "foo"}, {"b", "barre"}, {"d", "q"}};
 
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
+    initialize_standalone_system(sys, [](core_context) {});
 
     captured_id transform_id;
     auto controller = [&](int offset) {
-        return [&, offset](context ctx) {
+        return [&, offset](core_context ctx) {
             auto transformed_signal = transform(
                 ctx,
                 direct(container),

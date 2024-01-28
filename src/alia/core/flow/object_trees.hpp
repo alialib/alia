@@ -422,7 +422,7 @@ struct scoped_tree_cacher
 template<class Object, class Content>
 auto
 implement_alia_content_caching(
-    context ctx,
+    core_context ctx,
     tree_traversal<Object>& traversal,
     bool content_traversal_required,
     Content content)

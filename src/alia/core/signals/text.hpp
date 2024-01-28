@@ -52,7 +52,7 @@ invoke_snprintf(std::string const& format, Args const&... args)
 
 template<class Format, class... Args>
 auto
-printf(context ctx, Format format, Args... args)
+printf(core_context ctx, Format format, Args... args)
 {
     return apply(
         ctx,
@@ -93,7 +93,7 @@ ALIA_DECLARE_STRING_CONVERSIONS(std::string)
 // as_text(ctx, x) creates a text-based interface to the signal x.
 template<class Readable>
 auto
-as_text(context ctx, Readable x)
+as_text(core_context ctx, Readable x)
 {
     return apply(ctx, ALIA_LAMBDIFY(to_string), x);
 }
@@ -195,7 +195,7 @@ struct duplex_text_signal : casting_signal_wrapper<
 };
 template<class Signal>
 duplex_text_signal<Signal>
-as_duplex_text(context ctx, Signal x)
+as_duplex_text(core_context ctx, Signal x)
 {
     duplex_text_data<typename Signal::value_type>* data;
     get_cached_data(ctx, &data);

@@ -14,9 +14,9 @@ using namespace alia;
 TEST_CASE("printf", "[signals][text]")
 {
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
+    initialize_standalone_system(sys, [](core_context) {});
 
-    auto controller = [&](context ctx) {
+    auto controller = [&](core_context ctx) {
         do_text(ctx, printf(ctx, "hello %s", value("world")));
         do_text(ctx, printf(ctx, "n is %4.1f", value(2.125)));
         // MSVC is too forgiving of bad format strings, so this test doesn't
@@ -79,9 +79,9 @@ TEST_CASE("text conversions", "[signals][text]")
 TEST_CASE("as_text", "[signals][text]")
 {
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
+    initialize_standalone_system(sys, [](core_context) {});
 
-    auto controller = [&](context ctx) {
+    auto controller = [&](core_context ctx) {
         auto no_text = as_text(ctx, empty<int>());
         REQUIRE(!signal_has_value(no_text));
 
@@ -97,9 +97,9 @@ TEST_CASE("as_text", "[signals][text]")
 TEST_CASE("as_duplex_text", "[signals][text]")
 {
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
+    initialize_standalone_system(sys, [](core_context) {});
 
-    auto controller = [&](context ctx) {
+    auto controller = [&](core_context ctx) {
         auto no_text = as_duplex_text(ctx, empty<int>());
         REQUIRE(!signal_has_value(no_text));
 
@@ -139,13 +139,13 @@ TEST_CASE("as_duplex_text", "[signals][text]")
 TEST_CASE("as_duplex_text value_id", "[signals][text]")
 {
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
+    initialize_standalone_system(sys, [](core_context) {});
 
     int x = 1;
     captured_id signal_id;
 
     auto make_controller = [&](std::string const& new_x) {
-        return [&](context ctx) {
+        return [&](core_context ctx) {
             auto x_text = as_duplex_text(ctx, direct(x));
             REQUIRE(signal_ready_to_write(x_text));
             write_signal(x_text, new_x);

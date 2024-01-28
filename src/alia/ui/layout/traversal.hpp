@@ -1,9 +1,9 @@
-#ifndef ALIA_INDIE_LAYOUT_TRAVERSAL_HPP
-#define ALIA_INDIE_LAYOUT_TRAVERSAL_HPP
+#ifndef ALIA_UI_LAYOUT_TRAVERSAL_HPP
+#define ALIA_UI_LAYOUT_TRAVERSAL_HPP
 
-#include <alia/indie/layout/specification.hpp>
+#include <alia/ui/layout/specification.hpp>
 
-namespace alia { namespace indie {
+namespace alia {
 
 struct layout_style_info;
 
@@ -30,6 +30,6 @@ struct layout_traversal
     layout_style_info const* style_info;
 };
 
-}} // namespace alia::indie
+} // namespace alia
 
 #endif

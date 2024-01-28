@@ -46,7 +46,7 @@ struct validated_signal : signal_wrapper<validated_signal<Wrapped>, Wrapped>
 template<class Signal>
 auto
 enforce_validity(
-    dataless_context ctx, Signal signal, signal_validation_data& data)
+    dataless_core_context ctx, Signal signal, signal_validation_data& data)
 {
     refresh_handler(ctx, [&](auto) {
         if (!signal.is_invalidated()
@@ -61,7 +61,7 @@ enforce_validity(
 
 template<class Signal>
 auto
-enforce_validity(context ctx, Signal signal)
+enforce_validity(core_context ctx, Signal signal)
 {
     auto& data = get_cached_data<signal_validation_data>(ctx);
     return enforce_validity(ctx, signal, data);

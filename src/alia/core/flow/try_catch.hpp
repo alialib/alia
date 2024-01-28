@@ -78,14 +78,14 @@ struct try_block_data
 
 struct try_block
 {
-    try_block(context ctx);
+    try_block(core_context ctx);
 
     void
     operator<<(function_view<void()> body);
 
     ~try_block();
 
-    context ctx_;
+    core_context ctx_;
     try_block_data* data_;
     uncaught_exception_detector exception_detector_;
     bool uncaught_;

@@ -82,7 +82,7 @@ reset_smoothing(value_smoother<Value>& smoother, Value const& value)
 template<class Value>
 Value
 smooth_raw(
-    dataless_context ctx,
+    dataless_core_context ctx,
     value_smoother<Value>& smoother,
     Value const& x,
     animated_transition const& transition = default_transition)
@@ -188,7 +188,7 @@ make_smoothed_signal(
 template<class Value, class Signal>
 auto
 smooth(
-    dataless_context ctx,
+    dataless_core_context ctx,
     value_smoother<Value>& smoother,
     Signal x,
     animated_transition const& transition = default_transition)
@@ -202,7 +202,7 @@ smooth(
 template<class Signal>
 auto
 smooth(
-    context ctx,
+    core_context ctx,
     Signal x,
     animated_transition const& transition = default_transition)
 {

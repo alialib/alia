@@ -1,12 +1,12 @@
-#ifndef ALIA_INDIE_BACKENDS_GLFW_HPP
-#define ALIA_INDIE_BACKENDS_GLFW_HPP
+#ifndef ALIA_UI_BACKENDS_GLFW_HPP
+#define ALIA_UI_BACKENDS_GLFW_HPP
 
 #include <memory>
 
-#include <alia/indie/context.hpp>
-#include <alia/indie/geometry.hpp>
+#include <alia/ui/context.hpp>
+#include <alia/ui/geometry.hpp>
 
-namespace alia { namespace indie {
+namespace alia {
 
 struct glfw_window_impl;
 
@@ -15,7 +15,7 @@ struct glfw_window
     glfw_window(
         std::string const& title,
         vector<2, unsigned> size,
-        std::function<void(indie::context)> controller);
+        std::function<void(ui_context)> controller);
     ~glfw_window();
 
     void*
@@ -29,6 +29,6 @@ struct glfw_window
     std::unique_ptr<glfw_window_impl> impl_;
 };
 
-}} // namespace alia::indie
+} // namespace alia
 
 #endif

@@ -1,9 +1,9 @@
-#ifndef ALIA_INDIE_LAYOUT_LOGIC_UTILITIES_HPP
-#define ALIA_INDIE_LAYOUT_LOGIC_UTILITIES_HPP
+#ifndef ALIA_UI_LAYOUT_LOGIC_UTILITIES_HPP
+#define ALIA_UI_LAYOUT_LOGIC_UTILITIES_HPP
 
-#include <alia/indie/layout/specification.hpp>
+#include <alia/ui/layout/specification.hpp>
 
-namespace alia { namespace indie {
+namespace alia {
 
 template<class Children>
 layout_scalar
@@ -69,6 +69,6 @@ compute_total_height(Children&& children, layout_scalar assigned_width)
     return total_height;
 }
 
-}} // namespace alia::indie
+} // namespace alia
 
 #endif

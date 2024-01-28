@@ -20,7 +20,7 @@ struct timing_subsystem
 // Request that the UI context refresh again quickly enough for smooth
 // animation.
 void
-schedule_animation_refresh(dataless_context ctx);
+schedule_animation_refresh(dataless_core_context ctx);
 
 // Get the value of the millisecond tick counter associated with the given
 // UI context. This counter is updated every refresh pass, so it's consistent
@@ -28,17 +28,18 @@ schedule_animation_refresh(dataless_context ctx);
 // When this is called, it's assumed that something is currently animating, so
 // it also requests a refresh.
 millisecond_count
-get_raw_animation_tick_count(dataless_context ctx);
+get_raw_animation_tick_count(dataless_core_context ctx);
 
 // Same as above, but returns a signal rather than a raw integer.
 value_signal<millisecond_count>
-get_animation_tick_count(dataless_context ctx);
+get_animation_tick_count(dataless_core_context ctx);
 
 // Get the number of ticks remaining until the given end time.
 // If the time has passed, this returns 0.
 // This ensures that the UI context refreshes until the end time is reached.
 millisecond_count
-get_raw_animation_ticks_left(dataless_context ctx, millisecond_count end_tick);
+get_raw_animation_ticks_left(
+    dataless_core_context ctx, millisecond_count end_tick);
 
 struct animation_timer_state
 {
@@ -48,12 +49,12 @@ struct animation_timer_state
 
 struct animation_timer
 {
-    animation_timer(context ctx) : ctx_(ctx)
+    animation_timer(core_context ctx) : ctx_(ctx)
     {
         get_cached_data(ctx, &state_);
         update();
     }
-    animation_timer(dataless_context ctx, animation_timer_state& state)
+    animation_timer(dataless_core_context ctx, animation_timer_state& state)
         : ctx_(ctx), state_(&state)
     {
         update();
@@ -91,7 +92,7 @@ struct animation_timer
         }
     }
 
-    dataless_context ctx_;
+    dataless_core_context ctx_;
     animation_timer_state* state_;
     millisecond_count ticks_left_;
 };
