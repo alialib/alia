@@ -6,7 +6,7 @@
 namespace alia {
 
 void
-abort_traversal(dataless_context ctx)
+abort_traversal(dataless_core_context ctx)
 {
     assert(!is_refresh_event(ctx));
     get_event_traversal(ctx).aborted = true;
@@ -14,7 +14,8 @@ abort_traversal(dataless_context ctx)
 }
 
 void
-refresh_component_identity(dataless_context ctx, component_identity& identity)
+refresh_component_identity(
+    dataless_core_context ctx, component_identity& identity)
 {
     auto const& active_container = get_active_component_container(ctx);
     // Only update to the active container if it's actually different.
@@ -26,7 +27,7 @@ refresh_component_identity(dataless_context ctx, component_identity& identity)
 }
 
 component_id
-get_component_id(context ctx)
+get_component_id(core_context ctx)
 {
     component_id id;
     get_cached_data(ctx, &id);
@@ -41,7 +42,7 @@ struct initialization_detection
 };
 
 void
-on_init(context ctx, action<> on_init)
+on_init(core_context ctx, action<> on_init)
 {
     initialization_detection& data = get_data<initialization_detection>(ctx);
     refresh_handler(ctx, [&](auto) {
@@ -55,7 +56,7 @@ on_init(context ctx, action<> on_init)
 }
 
 void
-on_activate(context ctx, action<> on_activate)
+on_activate(core_context ctx, action<> on_activate)
 {
     initialization_detection& data
         = get_cached_data<initialization_detection>(ctx);

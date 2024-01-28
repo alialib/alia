@@ -32,14 +32,14 @@ jobs:
       run: >
         cmake -Bbuild -DCMAKE_BUILD_TYPE=${{matrix.config}}
         -D"CMAKE_TOOLCHAIN_FILE=$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
-        -DALIA_ENABLE_INDIE=ON
+        -DALIA_ENABLE_UI=ON
         -DALIA_ENABLE_GLFW=OFF
         .
 
     - name: Build
       run: >
         cmake --build build --config ${{matrix.config}}
-        --target unit_test_runner indie_unit_test_runner -j4
+        --target core_unit_test_runner ui_unit_test_runner -j4
 
     - name: Test
       run: |

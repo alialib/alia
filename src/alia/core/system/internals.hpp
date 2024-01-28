@@ -132,12 +132,12 @@ initialize_core_system(
     sys.root_component = std::make_shared<component_container>();
 }
 
-struct system : typed_system<context>
+struct system : typed_system<core_context>
 {
-    std::function<void(context)> controller;
+    std::function<void(core_context)> controller;
 
     virtual void
-    invoke_controller(context ctx)
+    invoke_controller(core_context ctx)
     {
         controller(ctx);
     }
@@ -146,7 +146,7 @@ struct system : typed_system<context>
 void
 initialize_standalone_system(
     system& sys,
-    std::function<void(context)> const& controller,
+    std::function<void(core_context)> const& controller,
     external_interface* external = nullptr);
 
 // timer event

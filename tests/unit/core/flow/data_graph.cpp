@@ -11,7 +11,7 @@ TEST_CASE("basic data traversal", "[flow][data_graph]")
     clear_log();
     {
         data_graph graph;
-        auto controller = [](context ctx) { do_int(ctx, 0); };
+        auto controller = [](core_context ctx) { do_int(ctx, 0); };
         do_traversal(graph, controller);
         check_log("initializing int: 0;");
         do_traversal(graph, controller);
@@ -26,7 +26,7 @@ TEST_CASE("simple named blocks", "[flow][data_graph]")
     {
         data_graph graph;
         auto make_controller = [](std::vector<int> indices) {
-            return [=](context ctx) {
+            return [=](core_context ctx) {
                 do_int(ctx, -1);
                 naming_context nc(ctx);
                 for (auto i : indices)
@@ -84,7 +84,7 @@ TEST_CASE("mobile named blocks", "[flow][data_graph]")
     {
         data_graph graph;
         auto make_controller = [](std::vector<int> indices, int divider) {
-            return [=](context ctx) {
+            return [=](core_context ctx) {
                 naming_context nc(ctx);
                 ALIA_FOR(auto i : indices)
                 {
@@ -136,7 +136,7 @@ TEST_CASE("multiple naming contexts", "[flow][data_graph]")
     {
         data_graph graph;
         auto make_controller = [](std::vector<int> indices) {
-            return [=](context ctx) {
+            return [=](core_context ctx) {
                 {
                     naming_context nc(ctx);
                     for (auto i : indices)
@@ -204,7 +204,7 @@ TEST_CASE("unexecuted named blocks", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](auto condition, std::vector<int> indices) {
-            return [=](context ctx) {
+            return [=](core_context ctx) {
                 ALIA_IF(condition)
                 {
                     naming_context nc(ctx);
@@ -244,7 +244,7 @@ TEST_CASE("GC disabling", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](std::vector<int> indices) {
-            return [=](context ctx) {
+            return [=](core_context ctx) {
                 {
                     naming_context nc(ctx);
                     for (auto i : indices)
@@ -291,7 +291,7 @@ TEST_CASE("manual deletion", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](std::vector<int> indices) {
-            return [=](context ctx) {
+            return [=](core_context ctx) {
                 naming_context nc(ctx);
                 for (auto i : indices)
                 {
@@ -353,7 +353,7 @@ TEST_CASE("named block caching", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](auto condition, std::vector<int> indices) {
-            return [=](context ctx) {
+            return [=](core_context ctx) {
                 ALIA_IF(condition)
                 {
                     naming_context nc(ctx);
@@ -415,7 +415,7 @@ TEST_CASE("naming_map lifetime", "[data_graph]")
         data_graph graph;
 
         auto make_controller = [](auto condition, std::vector<int> indices) {
-            return [=](context ctx) {
+            return [=](core_context ctx) {
                 ALIA_IF(condition)
                 {
                     naming_context nc(ctx);
@@ -459,7 +459,7 @@ TEST_CASE("scoped_cache_clearing_disabler", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = [](auto condition) {
-            return [=](context ctx) {
+            return [=](core_context ctx) {
                 {
                     scoped_cache_clearing_disabler disabler(ctx);
                     ALIA_IF(condition)
@@ -513,7 +513,7 @@ TEST_CASE("data node destruction order", "[data_graph]")
     {
         data_graph graph;
         auto make_controller = []() {
-            return [=](context ctx) {
+            return [=](core_context ctx) {
                 do_int(ctx, 1);
                 do_int(ctx, 2);
                 do_int(ctx, 3);

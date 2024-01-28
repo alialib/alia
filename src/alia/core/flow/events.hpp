@@ -59,17 +59,17 @@ struct traversal_aborted
 };
 
 void
-abort_traversal(dataless_context ctx);
+abort_traversal(dataless_core_context ctx);
 
 inline bool
-traversal_was_aborted(dataless_context ctx)
+traversal_was_aborted(dataless_core_context ctx)
 {
     return get_event_traversal(ctx).aborted;
 }
 
 template<class Event>
 bool
-detect_event(dataless_context ctx, Event** event)
+detect_event(dataless_core_context ctx, Event** event)
 {
     event_traversal& traversal = get_event_traversal(ctx);
     if (*traversal.event_type == typeid(Event))
@@ -95,10 +95,11 @@ event_handler(Context ctx, Handler&& handler)
 typedef component_identity* component_id;
 
 void
-refresh_component_identity(dataless_context ctx, component_identity& identity);
+refresh_component_identity(
+    dataless_core_context ctx, component_identity& identity);
 
 component_id
-get_component_id(context ctx);
+get_component_id(core_context ctx);
 
 // external_component_id identifies a component in a form that can be safely
 // stored outside of the alia data graph.
@@ -139,7 +140,8 @@ struct targeted_event
 
 template<class Event>
 bool
-detect_targeted_event(dataless_context ctx, component_id id, Event** event)
+detect_targeted_event(
+    dataless_core_context ctx, component_id id, Event** event)
 {
     return detect_event(ctx, event) && (*event)->target_id == id;
 }
@@ -164,7 +166,7 @@ struct refresh_event
 };
 
 inline bool
-is_refresh_event(dataless_context ctx)
+is_refresh_event(dataless_core_context ctx)
 {
     return get_event_traversal(ctx).is_refresh;
 }
@@ -187,14 +189,14 @@ template<class Context>
 void
 isolate_errors(Context ctx, function_view<void()> const& function)
 {
-    isolate_errors(get<system_tag>(ctx), function);
+    isolate_errors(get<core_system_tag>(ctx), function);
 }
 
 void
-on_init(context ctx, action<> on_init);
+on_init(core_context ctx, action<> on_init);
 
 void
-on_activate(context ctx, action<> on_activate);
+on_activate(core_context ctx, action<> on_activate);
 
 namespace detail {
 
@@ -209,7 +211,7 @@ struct value_change_detection_data
 template<class Value, class Signal>
 void
 common_value_change_logic(
-    context ctx,
+    core_context ctx,
     value_change_detection_data<Value>& data,
     Signal const& signal,
     action<> on_change)
@@ -240,7 +242,7 @@ common_value_change_logic(
 
 template<class Signal>
 void
-on_value_change(context ctx, Signal const& signal, action<> on_change)
+on_value_change(core_context ctx, Signal const& signal, action<> on_change)
 {
     detail::value_change_detection_data<typename Signal::value_type>* data;
     if (get_cached_data(ctx, &data))
@@ -256,7 +258,8 @@ on_value_change(context ctx, Signal const& signal, action<> on_change)
 
 template<class Signal>
 void
-on_observed_value_change(context ctx, Signal const& signal, action<> on_change)
+on_observed_value_change(
+    core_context ctx, Signal const& signal, action<> on_change)
 {
     detail::value_change_detection_data<typename Signal::value_type>* data;
     if (get_cached_data(ctx, &data))
@@ -273,7 +276,10 @@ namespace detail {
 template<bool TriggeringState, class Signal>
 void
 value_edge_logic(
-    context ctx, bool* saved_state, Signal const& signal, action<> on_edge)
+    core_context ctx,
+    bool* saved_state,
+    Signal const& signal,
+    action<> on_edge)
 {
     if (is_refresh_event(ctx))
     {
@@ -292,7 +298,7 @@ value_edge_logic(
 
 template<class Signal>
 void
-on_value_gain(context ctx, Signal const& signal, action<> on_gain)
+on_value_gain(core_context ctx, Signal const& signal, action<> on_gain)
 {
     bool* saved_state;
     if (get_cached_data(ctx, &saved_state))
@@ -302,7 +308,8 @@ on_value_gain(context ctx, Signal const& signal, action<> on_gain)
 
 template<class Signal>
 void
-on_observed_value_gain(context ctx, Signal const& signal, action<> on_gain)
+on_observed_value_gain(
+    core_context ctx, Signal const& signal, action<> on_gain)
 {
     bool* saved_state;
     if (get_cached_data(ctx, &saved_state))
@@ -312,7 +319,7 @@ on_observed_value_gain(context ctx, Signal const& signal, action<> on_gain)
 
 template<class Signal>
 void
-on_value_loss(context ctx, Signal const& signal, action<> on_loss)
+on_value_loss(core_context ctx, Signal const& signal, action<> on_loss)
 {
     bool* saved_state;
     if (get_cached_data(ctx, &saved_state))
@@ -322,7 +329,8 @@ on_value_loss(context ctx, Signal const& signal, action<> on_loss)
 
 template<class Signal>
 void
-on_observed_value_loss(context ctx, Signal const& signal, action<> on_loss)
+on_observed_value_loss(
+    core_context ctx, Signal const& signal, action<> on_loss)
 {
     bool* saved_state;
     if (get_cached_data(ctx, &saved_state))

@@ -1,14 +1,11 @@
-#ifndef ALIA_INDIE_LAYOUT_LIBRARY_HPP
-#define ALIA_INDIE_LAYOUT_LIBRARY_HPP
+#ifndef ALIA_UI_LAYOUT_LIBRARY_HPP
+#define ALIA_UI_LAYOUT_LIBRARY_HPP
 
-#include <alia/indie/layout/specification.hpp>
+#include <alia/ui/layout/specification.hpp>
 
 namespace alia {
 
 struct data_traversal;
-
-namespace indie {
-
 struct layout_system;
 struct widget_container;
 struct widget;
@@ -416,7 +413,6 @@ struct simple_layout_container;
 //     layout_vector min_size_, max_size_;
 // };
 
-} // namespace indie
 } // namespace alia
 
 #endif

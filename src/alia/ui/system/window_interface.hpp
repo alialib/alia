@@ -1,10 +1,10 @@
-#ifndef ALIA_INDIE_SYSTEM_WINDOW_INTERFACE_HPP
-#define ALIA_INDIE_SYSTEM_WINDOW_INTERFACE_HPP
+#ifndef ALIA_UI_SYSTEM_WINDOW_INTERFACE_HPP
+#define ALIA_UI_SYSTEM_WINDOW_INTERFACE_HPP
 
-#include <alia/indie/geometry.hpp>
-#include <alia/indie/system/input_constants.hpp>
+#include <alia/ui/geometry.hpp>
+#include <alia/ui/system/input_constants.hpp>
 
-namespace alia { namespace indie {
+namespace alia {
 
 struct window_interface
 {
@@ -13,6 +13,6 @@ struct window_interface
         = 0;
 };
 
-}} // namespace alia::indie
+} // namespace alia
 
 #endif

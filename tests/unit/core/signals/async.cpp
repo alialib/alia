@@ -14,12 +14,12 @@ using namespace alia;
 TEST_CASE("async", "[signals][async]")
 {
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
+    initialize_standalone_system(sys, [](core_context) {});
 
     async_reporter<int> reporter;
 
     auto make_controller = [&](int x) {
-        return [=, &reporter](context ctx) {
+        return [=, &reporter](core_context ctx) {
             ALIA_TRY
             {
                 do_text(

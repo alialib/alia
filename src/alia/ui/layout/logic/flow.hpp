@@ -1,10 +1,10 @@
-#ifndef ALIA_INDIE_LAYOUT_LOGIC_FLOW_HPP
-#define ALIA_INDIE_LAYOUT_LOGIC_FLOW_HPP
+#ifndef ALIA_UI_LAYOUT_LOGIC_FLOW_HPP
+#define ALIA_UI_LAYOUT_LOGIC_FLOW_HPP
 
-#include <alia/indie/layout/logic/utilities.hpp>
-#include <alia/indie/layout/specification.hpp>
+#include <alia/ui/layout/logic/utilities.hpp>
+#include <alia/ui/layout/specification.hpp>
 
-namespace alia { namespace indie {
+namespace alia {
 
 struct flow_layout_logic
 {
@@ -296,6 +296,6 @@ struct vertical_flow_layout_logic
     }
 };
 
-}} // namespace alia::indie
+} // namespace alia
 
 #endif

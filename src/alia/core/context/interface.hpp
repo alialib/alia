@@ -9,7 +9,7 @@
 namespace alia {
 
 struct untyped_system;
-ALIA_DEFINE_TAGGED_TYPE(system_tag, untyped_system&)
+ALIA_DEFINE_TAGGED_TYPE(core_system_tag, untyped_system&)
 
 struct data_traversal;
 ALIA_DEFINE_TAGGED_TYPE(data_traversal_tag, data_traversal&)
@@ -20,10 +20,10 @@ ALIA_DEFINE_TAGGED_TYPE(event_traversal_tag, event_traversal&)
 struct timing_subsystem;
 ALIA_DEFINE_TAGGED_TYPE(timing_tag, timing_subsystem&)
 
-// the structure we use to store context objects - It provides direct storage
-// of the commonly-used objects in the core of alia.
+// the structure we use to store the core context objects - It provides direct
+// storage of the commonly-used objects in the core of alia.
 
-struct context_storage
+struct core_context_storage
 {
     // directly-stored objects
     untyped_system* sys = nullptr;
@@ -34,19 +34,19 @@ struct context_storage
     // generic storage for other objects
     detail::generic_tagged_storage<std::any> generic;
 
-    ALIA_IMPLEMENT_STORAGE_OBJECT_ACCESSORS(context_storage)
+    ALIA_IMPLEMENT_STORAGE_OBJECT_ACCESSORS(core_context_storage)
 
     // an ID to track changes in the context contents
     id_interface const* content_id = nullptr;
 };
 
 #define ALIA_ADD_CORE_CONTEXT_ACCESSORS(storage)                              \
-    ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(storage, system_tag, sys)              \
+    ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(storage, core_system_tag, sys)         \
     ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(storage, event_traversal_tag, event)   \
     ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(storage, data_traversal_tag, data)     \
     ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(storage, timing_tag, timing)
 
-ALIA_ADD_CORE_CONTEXT_ACCESSORS(context_storage)
+ALIA_ADD_CORE_CONTEXT_ACCESSORS(core_context_storage)
 
 // the context interface wrapper
 template<class Contents>
@@ -181,7 +181,7 @@ make_context(
     return detail::add_context_object<data_traversal_tag>(
         detail::add_context_object<timing_tag>(
             detail::add_context_object<event_traversal_tag>(
-                detail::add_context_object<system_tag>(
+                detail::add_context_object<core_system_tag>(
                     make_context(
                         detail::make_empty_structural_collection(storage)),
                     std::ref(sys)),
@@ -209,7 +209,7 @@ template<class Storage>
 using dataless_context_type_for_storage_t
     = context_interface<detail::add_tagged_data_types_t<
         detail::empty_structural_collection<Storage>,
-        system_tag,
+        core_system_tag,
         event_traversal_tag,
         timing_tag>>;
 
@@ -218,9 +218,10 @@ using context_type_for_storage_t = extend_context_type_t<
     dataless_context_type_for_storage_t<Storage>,
     data_traversal_tag>;
 
-using dataless_context = dataless_context_type_for_storage_t<context_storage>;
+using dataless_core_context
+    = dataless_context_type_for_storage_t<core_context_storage>;
 
-using context = context_type_for_storage_t<context_storage>;
+using core_context = context_type_for_storage_t<core_context_storage>;
 
 // And various small functions for working with contexts...
 
@@ -262,18 +263,18 @@ struct has_alia_value_id<
 };
 
 void
-fold_in_content_id(context ctx, id_interface const& id);
+fold_in_content_id(core_context ctx, id_interface const& id);
 
 template<class Object>
 std::enable_if_t<has_alia_value_id<Object>::value>
-fold_in_object_id(context ctx, Object const& object)
+fold_in_object_id(core_context ctx, Object const& object)
 {
     fold_in_content_id(ctx, get_alia_value_id(object));
 }
 
 template<class Object>
 std::enable_if_t<!has_value_id<Object>::value>
-fold_in_object_id(context, Object const&)
+fold_in_object_id(core_context, Object const&)
 {
 }
 
@@ -351,7 +352,7 @@ get_data_traversal(Context ctx)
 }
 
 inline id_interface const&
-get_content_id(context ctx)
+get_content_id(core_context ctx)
 {
     return *ctx.contents_.storage->content_id;
 }

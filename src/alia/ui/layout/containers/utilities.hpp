@@ -1,8 +1,8 @@
-#ifndef ALIA_INDIE_LAYOUT_CONTAINERS_UTILITIES_HPP
-#define ALIA_INDIE_LAYOUT_CONTAINERS_UTILITIES_HPP
+#ifndef ALIA_UI_LAYOUT_CONTAINERS_UTILITIES_HPP
+#define ALIA_UI_LAYOUT_CONTAINERS_UTILITIES_HPP
 
-#include "alia/indie/geometry.hpp"
-namespace alia { namespace indie {
+#include "alia/ui/geometry.hpp"
+namespace alia {
 
 // scoped_layout_container makes a layout container active for its scope.
 struct scoped_layout_container : noncopyable
@@ -159,7 +159,7 @@ struct layout_container_widget : LayoutContainer
         {
             auto original_offset = event.current_offset;
             event.current_offset += region.corner;
-            indie::render_children(event, *this);
+            alia::render_children(event, *this);
             event.current_offset = original_offset;
         }
     }
@@ -181,7 +181,7 @@ struct layout_container_widget : LayoutContainer
     }
 
     void
-    process_input(event_context) override
+    process_input(ui_event_context) override
     {
     }
 
@@ -212,6 +212,6 @@ struct layout_container_widget : LayoutContainer
         traversal, data, &container_, &logic, layout_spec);                   \
     slc_.begin(traversal, container_);
 
-}} // namespace alia::indie
+} // namespace alia
 
 #endif

@@ -10,7 +10,7 @@ namespace alia {
 
 template<class Object, class Content>
 auto
-implement_alia_content_caching(context, Object&, bool, Content content)
+implement_alia_content_caching(core_context, Object&, bool, Content content)
 {
     return content;
 }

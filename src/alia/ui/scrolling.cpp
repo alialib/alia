@@ -1,39 +1,39 @@
 #include "alia/core/signals/lambdas.hpp"
 #include "alia/core/timing/ticks.hpp"
-#include <alia/indie/scrolling.hpp>
+#include <alia/ui/scrolling.hpp>
 
 #include <algorithm>
 
 #include <alia/core/signals/core.hpp>
 #include <alia/core/timing/smoothing.hpp>
-#include <alia/indie/common.hpp>
-#include <alia/indie/context.hpp>
-#include <alia/indie/events/delivery.hpp>
-#include <alia/indie/events/input.hpp>
-#include <alia/indie/geometry.hpp>
-#include <alia/indie/layout/containers/utilities.hpp>
-#include <alia/indie/layout/logic/linear.hpp>
-#include <alia/indie/layout/specification.hpp>
-#include <alia/indie/layout/utilities.hpp>
-#include <alia/indie/styling.hpp>
-#include <alia/indie/system/input_constants.hpp>
-#include <alia/indie/utilities/hit_testing.hpp>
-#include <alia/indie/utilities/keyboard.hpp>
-#include <alia/indie/utilities/mouse.hpp>
-#include <alia/indie/utilities/scrolling.hpp>
-#include <alia/indie/utilities/skia.hpp>
-#include <alia/indie/widget.hpp>
+#include <alia/ui/common.hpp>
+#include <alia/ui/context.hpp>
+#include <alia/ui/events/delivery.hpp>
+#include <alia/ui/events/input.hpp>
+#include <alia/ui/geometry.hpp>
+#include <alia/ui/layout/containers/utilities.hpp>
+#include <alia/ui/layout/logic/linear.hpp>
+#include <alia/ui/layout/specification.hpp>
+#include <alia/ui/layout/utilities.hpp>
+#include <alia/ui/styling.hpp>
+#include <alia/ui/system/input_constants.hpp>
+#include <alia/ui/utilities/hit_testing.hpp>
+#include <alia/ui/utilities/keyboard.hpp>
+#include <alia/ui/utilities/mouse.hpp>
+#include <alia/ui/utilities/scrolling.hpp>
+#include <alia/ui/utilities/skia.hpp>
+#include <alia/ui/widget.hpp>
 
 #include <include/core/SkColor.h>
 #include <ratio>
 
-namespace alia { namespace indie {
+namespace alia {
 
 // TODO: Move
 
 element_state
 get_element_state(
-    system& sys,
+    ui_system& sys,
     internal_element_ref element,
     element_state overrides = NO_FLAGS)
 {
@@ -74,7 +74,7 @@ get_element_state(
 struct scrollbar_renderer
 {
     virtual scrollbar_metrics
-    get_metrics(dataless_context ctx) const
+    get_metrics(dataless_ui_context ctx) const
         = 0;
 
     virtual void
@@ -118,7 +118,7 @@ struct scrollbar_junction_renderer
 struct default_scrollbar_renderer : scrollbar_renderer
 {
     virtual scrollbar_metrics
-    get_metrics(dataless_context) const override
+    get_metrics(dataless_ui_context) const override
     {
         // style_path_storage storage;
         // style_search_path const* path
@@ -436,7 +436,7 @@ get_line_increment(scrollbar_parameters const&)
 
 void
 process_button_input(
-    event_context ctx,
+    ui_event_context ctx,
     scrollbar_parameters const& sb,
     internal_element_ref element,
     layout_scalar increment)
@@ -518,7 +518,7 @@ clamp_scroll_position(scrollbar_parameters const& sb, layout_scalar position)
 }
 
 void
-refresh_scrollbar(dataless_context ctx, scrollbar_parameters const& sb)
+refresh_scrollbar(dataless_ui_context ctx, scrollbar_parameters const& sb)
 {
     scrollbar_renderer const* renderer;
     // TODO: get_themed_renderer(ctx, data.rendering, &renderer,
@@ -626,7 +626,7 @@ hit_test_scrollbar(
 }
 
 void
-process_scrollbar_input(event_context ctx, scrollbar_parameters const& sb)
+process_scrollbar_input(ui_event_context ctx, scrollbar_parameters const& sb)
 {
     scrollbar_data& data = *sb.data;
 
@@ -696,7 +696,7 @@ is_scrollbar_on(scrollable_view_data const& data, unsigned axis)
 struct scrollable_view : widget_container
 {
     void
-    refresh(dataless_context ctx)
+    refresh(dataless_ui_context ctx)
     {
         for (unsigned axis = 0; axis != 2; ++axis)
         {
@@ -963,7 +963,7 @@ struct scrollable_view : widget_container
                 -data.sb_data[0].smoothed_scroll_position,
                 -data.sb_data[1].smoothed_scroll_position);
             event.current_offset += region.corner;
-            indie::render_children(event, *this);
+            alia::render_children(event, *this);
             event.current_offset = original_offset;
             event.canvas->restore();
             // {
@@ -994,9 +994,9 @@ struct scrollable_view : widget_container
         {
             hit_test_box(test, point, internal_element_ref{*this, 0}, region);
 
-            if (test.type == indie::hit_test_type::WHEEL)
+            if (test.type == alia::hit_test_type::WHEEL)
             {
-                static_cast<indie::wheel_hit_test&>(test).result
+                static_cast<alia::wheel_hit_test&>(test).result
                     = externalize(internal_element_ref{*this, 0});
             }
 
@@ -1014,7 +1014,7 @@ struct scrollable_view : widget_container
     }
 
     void
-    process_input(event_context ctx) override
+    process_input(ui_event_context ctx) override
     {
         auto delta = detect_scroll(ctx, internal_element_ref{*this, 0});
         if (delta)
@@ -1051,7 +1051,7 @@ struct scrollable_view : widget_container
         auto box = request.region;
         auto const inverse_transform = inverse(this->transformation());
         auto const transformed_box
-            = transform_box(inverse_transform, indie::box<2, double>(box));
+            = transform_box(inverse_transform, alia::box<2, double>(box));
         auto const region_ul = transformed_box.corner;
         auto const region_lr = get_high_corner(transformed_box);
         auto const window_ul = make_vector<double>(
@@ -1354,7 +1354,7 @@ scrollable_region::begin(
 
 void
 get_scrollable_view(
-    indie::context ctx,
+    ui_context ctx,
     std::shared_ptr<scrollable_view>** container,
     layout const& layout_spec)
 {
@@ -1381,7 +1381,7 @@ get_scrollable_view(
 }
 
 void
-scoped_scrollable_view::begin(indie::context ctx, layout const& layout_spec)
+scoped_scrollable_view::begin(ui_context ctx, layout const& layout_spec)
 {
     std::shared_ptr<scrollable_view>* container;
     get_scrollable_view(ctx, &container, layout_spec);
@@ -1394,4 +1394,4 @@ scoped_scrollable_view::end()
     container_.end();
 }
 
-}} // namespace alia::indie
+} // namespace alia

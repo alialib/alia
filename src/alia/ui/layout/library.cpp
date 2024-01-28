@@ -1,18 +1,18 @@
-#include <alia/indie/layout/library.hpp>
+#include <alia/ui/layout/library.hpp>
 
 #include <algorithm>
 #include <vector>
 
 #include <alia/core/flow/macros.hpp>
 
-#include <alia/indie/layout/system.hpp>
-#include <alia/indie/layout/traversal.hpp>
-#include <alia/indie/layout/utilities.hpp>
+#include <alia/ui/layout/system.hpp>
+#include <alia/ui/layout/traversal.hpp>
+#include <alia/ui/layout/utilities.hpp>
 
 // This file implements the standard library of layout containers (and the
 // spacer, which is the only standard leaf).
 
-namespace alia { namespace indie {
+namespace alia {
 
 // void
 // do_spacer(
@@ -801,4 +801,4 @@ floating_layout::size() const
 
 #endif
 
-}} // namespace alia::indie
+} // namespace alia

@@ -18,7 +18,7 @@ ALIA_DEFINE_TAGGED_TYPE(by_value_string_tag, std::string)
 
 TEST_CASE("context_storage", "[context][interface]")
 {
-    context_storage storage;
+    core_context_storage storage;
 
     REQUIRE(!storage.has<data_traversal_tag>());
     data_traversal data;
@@ -50,7 +50,7 @@ TEST_CASE("context_storage", "[context][interface]")
 
 TEST_CASE("context", "[context][interface]")
 {
-    context_storage storage;
+    core_context_storage storage;
 
     alia::system sys;
     data_traversal data;
@@ -59,13 +59,13 @@ TEST_CASE("context", "[context][interface]")
 
     scoped_data_traversal sdt(sys.data, data);
 
-    context ctx = make_context(&storage, sys, event, data, timing);
+    core_context ctx = make_context(&storage, sys, event, data, timing);
 
     REQUIRE(get_content_id(ctx) == unit_id);
 
     REQUIRE(detail::has_context_object<data_traversal_tag>(ctx));
     REQUIRE(&get<data_traversal_tag>(ctx) == &data);
-    dataless_context dataless
+    dataless_core_context dataless
         = detail::remove_context_object<data_traversal_tag>(ctx);
     REQUIRE(!detail::has_context_object<data_traversal_tag>(dataless));
 
@@ -73,7 +73,7 @@ TEST_CASE("context", "[context][interface]")
     REQUIRE(&get<event_traversal_tag>(ctx) == &event);
 
     other_traversal other;
-    extend_context_type_t<context, other_traversal_tag> extended
+    extend_context_type_t<core_context, other_traversal_tag> extended
         = extend_context<other_traversal_tag>(ctx, other);
     REQUIRE(detail::has_context_object<data_traversal_tag>(extended));
     REQUIRE(&get<data_traversal_tag>(extended) == &data);
@@ -102,7 +102,7 @@ TEST_CASE("context", "[context][interface]")
 
 TEST_CASE("optional_context", "[context][interface]")
 {
-    context_storage storage;
+    core_context_storage storage;
 
     alia::system sys;
     data_traversal data;
@@ -111,16 +111,16 @@ TEST_CASE("optional_context", "[context][interface]")
 
     scoped_data_traversal sdt(sys.data, data);
 
-    context ctx = make_context(&storage, sys, event, data, timing);
+    core_context ctx = make_context(&storage, sys, event, data, timing);
 
-    optional_context<context> optional;
+    optional_context<core_context> optional;
     REQUIRE(!optional);
     optional.reset(ctx);
     REQUIRE(optional);
 
     REQUIRE(detail::has_context_object<data_traversal_tag>(*optional));
     REQUIRE(&get<data_traversal_tag>(*optional) == &data);
-    dataless_context dataless
+    dataless_core_context dataless
         = detail::remove_context_object<data_traversal_tag>(*optional);
     REQUIRE(!detail::has_context_object<data_traversal_tag>(dataless));
 
@@ -131,7 +131,7 @@ TEST_CASE("optional_context", "[context][interface]")
 TEST_CASE("content IDs", "[context][interface]")
 {
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
+    initialize_standalone_system(sys, [](core_context) {});
 
     captured_id outer_id, inner_id, downcast_id, recalculated_id;
 
@@ -139,7 +139,7 @@ TEST_CASE("content IDs", "[context][interface]")
     ALIA_DEFINE_TAGGED_TYPE(inner_tag, value_signal<int>&)
 
     auto make_controller = [&](int outer, int inner) {
-        return [&, outer, inner](context root_ctx) {
+        return [&, outer, inner](core_context root_ctx) {
             REQUIRE(get_content_id(root_ctx) == unit_id);
             auto outer_signal = value(outer);
             auto outer_ctx = extend_context<outer_tag>(root_ctx, outer_signal);

@@ -1,12 +1,12 @@
-#ifndef ALIA_INDIE_LAYOUT_SPECIFICATION_HPP
-#define ALIA_INDIE_LAYOUT_SPECIFICATION_HPP
+#ifndef ALIA_UI_LAYOUT_SPECIFICATION_HPP
+#define ALIA_UI_LAYOUT_SPECIFICATION_HPP
 
-#include <alia/indie/geometry.hpp>
+#include <alia/ui/geometry.hpp>
 
 // This file defines the types and flags available to the application to
 // specify layout properties.
 
-namespace alia { namespace indie {
+namespace alia {
 
 typedef float layout_scalar;
 
@@ -220,14 +220,14 @@ ALIA_DEFINE_FLAG(layout, 0x3000, PADDING_MASK)
 struct layout
 {
     layout(
-        absolute_size const& size = indie::size(0, 0, PIXELS),
+        absolute_size const& size = alia::size(0, 0, PIXELS),
         layout_flag_set flags = NO_FLAGS,
         float growth_factor = 0)
         : size(size), flags(flags), growth_factor(growth_factor)
     {
     }
     layout(layout_flag_set flags, float growth_factor = 0)
-        : size(indie::size(0, 0, PIXELS)),
+        : size(alia::size(0, 0, PIXELS)),
           flags(flags),
           growth_factor(growth_factor)
     {
@@ -250,6 +250,6 @@ operator!=(layout const& a, layout const& b)
 
 layout const default_layout;
 
-}} // namespace alia::indie
+} // namespace alia
 
 #endif

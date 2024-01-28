@@ -1,10 +1,10 @@
-#include <alia/indie/layout/utilities.hpp>
+#include <alia/ui/layout/utilities.hpp>
 
 #include <alia/core/flow/macros.hpp>
 
 #include <algorithm>
 
-namespace alia { namespace indie {
+namespace alia {
 
 void
 fold_in_requirements(
@@ -420,4 +420,4 @@ layout_leaf::refresh_layout(
     }
 }
 
-}} // namespace alia::indie
+} // namespace alia

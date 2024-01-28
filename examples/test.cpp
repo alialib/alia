@@ -1,20 +1,20 @@
 #include <alia/core/flow/data_graph.hpp>
 #include <alia/core/flow/events.hpp>
-#include <alia/indie.hpp>
-#include <alia/indie/layout/containers/simple.hpp>
-#include <alia/indie/layout/containers/utilities.hpp>
-#include <alia/indie/layout/library.hpp>
-#include <alia/indie/layout/logic/flow.hpp>
-#include <alia/indie/layout/logic/linear.hpp>
-#include <alia/indie/layout/spacer.hpp>
-#include <alia/indie/layout/utilities.hpp>
-#include <alia/indie/system/api.hpp>
-#include <alia/indie/system/input_constants.hpp>
-#include <alia/indie/utilities/hit_testing.hpp>
-#include <alia/indie/utilities/keyboard.hpp>
-#include <alia/indie/utilities/mouse.hpp>
-#include <alia/indie/utilities/scrolling.hpp>
-#include <alia/indie/widget.hpp>
+#include <alia/ui.hpp>
+#include <alia/ui/layout/containers/simple.hpp>
+#include <alia/ui/layout/containers/utilities.hpp>
+#include <alia/ui/layout/library.hpp>
+#include <alia/ui/layout/logic/flow.hpp>
+#include <alia/ui/layout/logic/linear.hpp>
+#include <alia/ui/layout/spacer.hpp>
+#include <alia/ui/layout/utilities.hpp>
+#include <alia/ui/system/api.hpp>
+#include <alia/ui/system/input_constants.hpp>
+#include <alia/ui/utilities/hit_testing.hpp>
+#include <alia/ui/utilities/keyboard.hpp>
+#include <alia/ui/utilities/mouse.hpp>
+#include <alia/ui/utilities/scrolling.hpp>
+#include <alia/ui/widget.hpp>
 
 #include <color/color.hpp>
 
@@ -32,17 +32,16 @@
 #include "alia/core/flow/top_level.hpp"
 #include "alia/core/signals/core.hpp"
 #include "alia/core/timing/ticks.hpp"
-#include "alia/indie/context.hpp"
-#include "alia/indie/geometry.hpp"
+#include "alia/ui/context.hpp"
+#include "alia/ui/geometry.hpp"
 #include "modules/skparagraph/include/Paragraph.h"
 #include "modules/skparagraph/include/TextStyle.h"
 #include "modules/skparagraph/src/ParagraphBuilderImpl.h"
 #include "modules/skparagraph/src/ParagraphImpl.h"
 
-#include <alia/indie/scrolling.hpp>
+#include <alia/ui/scrolling.hpp>
 
 using namespace alia;
-using namespace alia::indie;
 
 // std::unique_ptr<SkShaper> the_shaper;
 
@@ -99,7 +98,7 @@ smooth_position(
     return current_value;
 }
 
-struct box_node : indie::widget
+struct box_node : widget
 {
     layout_requirements
     get_horizontal_requirements() override
@@ -154,10 +153,8 @@ struct box_node : indie::widget
 
         double blend_factor = 0;
 
-        if (indie::is_click_in_progress(
-                *sys_,
-                internal_element_ref{*this, 0},
-                indie::mouse_button::LEFT)
+        if (is_click_in_progress(
+                *sys_, internal_element_ref{*this, 0}, mouse_button::LEFT)
             || is_pressed(keyboard_click_state_))
         {
             blend_factor = 0.4;
@@ -218,7 +215,7 @@ struct box_node : indie::widget
             canvas.drawRect(rect, blur);
         }
 
-        if (indie::element_has_focus(*sys_, internal_element_ref{*this, 0}))
+        if (element_has_focus(*sys_, internal_element_ref{*this, 0}))
         {
             paint.setStyle(SkPaint::kStroke_Style);
             paint.setStrokeWidth(4);
@@ -228,17 +225,17 @@ struct box_node : indie::widget
     }
 
     void
-    hit_test(indie::hit_test_base& test, vector<2, double> const& point)
-        const override
+    hit_test(
+        hit_test_base& test, vector<2, double> const& point) const override
     {
         if (is_inside(this->assignment().region, vector<2, float>(point)))
         {
-            if (test.type == indie::hit_test_type::MOUSE)
+            if (test.type == hit_test_type::MOUSE)
             {
-                static_cast<indie::mouse_hit_test&>(test).result
-                    = indie::mouse_hit_test_result{
+                static_cast<mouse_hit_test&>(test).result
+                    = mouse_hit_test_result{
                         externalize(internal_element_ref{*this, 0}),
-                        indie::mouse_cursor::POINTER,
+                        mouse_cursor::POINTER,
                         this->assignment().region,
                         ""};
             }
@@ -246,20 +243,18 @@ struct box_node : indie::widget
     }
 
     void
-    process_input(indie::event_context ctx) override
+    process_input(ui_event_context ctx) override
     {
-        indie::add_to_focus_order(ctx, internal_element_ref{*this, 0});
+        add_to_focus_order(ctx, internal_element_ref{*this, 0});
         if (detect_click(
-                ctx,
-                internal_element_ref{*this, 0},
-                indie::mouse_button::LEFT))
+                ctx, internal_element_ref{*this, 0}, mouse_button::LEFT))
         {
             click_event event;
             dispatch_targeted_event(*sys_, event, this->id_);
             state_ = !state_;
             // advance_focus(get_system(ctx));
         }
-        // if (detect_key_press(ctx, this, indie::key_code::SPACE))
+        // if (detect_key_press(ctx, this, key_code::SPACE))
         // {
         //     state_ = !state_;
         //     // advance_focus(get_system(ctx));
@@ -295,11 +290,11 @@ struct box_node : indie::widget
         parent->reveal_region(request);
     }
 
-    indie::system* sys_;
+    system* sys_;
     external_component_id id_;
     bool state_ = false;
     SkColor color_ = SK_ColorWHITE;
-    indie::keyboard_click_state keyboard_click_state_;
+    keyboard_click_state keyboard_click_state_;
     // value_smoother<layout_vector> position_;
     // TODO: Move this into the system.
     // sk_sp<SkPicture> picture_;
@@ -311,7 +306,7 @@ struct box_node : indie::widget
 
 void
 do_box(
-    indie::context ctx,
+    context ctx,
     SkColor color,
     action<> on_click,
     layout const& layout_spec = layout(TOP | LEFT | PADDED))
@@ -338,16 +333,16 @@ do_box(
     {
         resolved_layout_spec resolved_spec;
         resolve_layout_spec(
-            get<indie::traversal_tag>(ctx).layout,
+            get<traversal_tag>(ctx).layout,
             resolved_spec,
             layout_spec,
             TOP | LEFT | PADDED);
         detect_layout_change(
-            get<indie::traversal_tag>(ctx).layout,
+            get<traversal_tag>(ctx).layout,
             &node.resolved_spec_,
             resolved_spec);
 
-        add_layout_node(get<indie::traversal_tag>(ctx).layout, &node);
+        add_layout_node(get<traversal_tag>(ctx).layout, &node);
 
         node.id_ = externalize(id);
         // node.tick_counter_ = get_raw_animation_tick_count(ctx);
@@ -384,7 +379,7 @@ do_box(
     }
 }
 
-struct text_node : indie::layout_leaf
+struct text_node : layout_leaf
 {
     void
     render(render_event& event) override
@@ -412,12 +407,12 @@ struct text_node : indie::layout_leaf
     }
 
     void
-    hit_test(indie::hit_test_base&, vector<2, double> const&) const override
+    hit_test(hit_test_base&, vector<2, double> const&) const override
     {
     }
 
     void
-    process_input(indie::event_context) override
+    process_input(ui_event_context) override
     {
     }
 
@@ -439,7 +434,7 @@ struct text_node : indie::layout_leaf
         parent->reveal_region(request);
     }
 
-    indie::system* sys_;
+    system* sys_;
     // std::unique_ptr<skia::textlayout::Paragraph> paragraph;
     std::string text_;
     SkRect bounds_;
@@ -448,7 +443,7 @@ struct text_node : indie::layout_leaf
 
 void
 do_text(
-    indie::context ctx,
+    context ctx,
     readable<std::string> text,
     layout const& layout_spec = default_layout)
 {
@@ -522,14 +517,14 @@ do_text(
     if (is_refresh_event(ctx))
     {
         node.refresh_layout(
-            get<indie::traversal_tag>(ctx).layout,
+            get<traversal_tag>(ctx).layout,
             layout_spec,
             leaf_layout_requirements(
                 make_layout_vector(
                     node.bounds_.width(), node.bounds_.height()),
                 0,
                 0));
-        add_layout_node(get<indie::traversal_tag>(ctx).layout, &node);
+        add_layout_node(get<traversal_tag>(ctx).layout, &node);
 
         // node.id_ = externalize(id);
 
@@ -902,7 +897,7 @@ Shape(
 
 // ---
 
-struct wrapped_text_node : indie::widget
+struct wrapped_text_node : widget
 {
     void
     render(render_event& event) override
@@ -934,12 +929,12 @@ struct wrapped_text_node : indie::widget
     }
 
     void
-    hit_test(indie::hit_test_base&, vector<2, double> const&) const override
+    hit_test(hit_test_base&, vector<2, double> const&) const override
     {
     }
 
     void
-    process_input(indie::event_context) override
+    process_input(ui_event_context) override
     {
     }
 
@@ -1033,7 +1028,7 @@ struct wrapped_text_node : indie::widget
         parent->reveal_region(request);
     }
 
-    indie::system* sys_;
+    system* sys_;
 
     captured_id text_id_;
     std::string text_;
@@ -1049,7 +1044,7 @@ struct wrapped_text_node : indie::widget
 
 void
 do_wrapped_text(
-    indie::context ctx,
+    context ctx,
     readable<std::string> text,
     layout const& layout_spec = default_layout)
 {
@@ -1084,7 +1079,7 @@ do_wrapped_text(
             [&](std::string const& new_value) { node.text_ = new_value; },
             [&]() { node.text_.clear(); });
 
-        add_layout_node(get<indie::traversal_tag>(ctx).layout, &node);
+        add_layout_node(get<traversal_tag>(ctx).layout, &node);
     }
 }
 
@@ -1189,7 +1184,7 @@ do_wrapped_text(
 // };
 
 // in<realm>
-// get_realm_name(indie::context ctx)
+// get_realm_name(context ctx)
 // {
 //     auto foo = value("focus");
 //     return alia::apply(
@@ -1200,7 +1195,7 @@ do_wrapped_text(
 //         foo);
 // }
 
-namespace alia { namespace indie {
+namespace alia {
 
 struct scoped_flow_layout : simple_scoped_layout<flow_layout_logic>
 {
@@ -1505,7 +1500,7 @@ struct scoped_grid_row
     {
     }
     scoped_grid_row(
-        indie::context ctx,
+        context ctx,
         scoped_grid_layout const& g,
         layout const& layout_spec = default_layout)
     {
@@ -1517,7 +1512,7 @@ struct scoped_grid_row
     }
     void
     begin(
-        indie::context ctx,
+        context ctx,
         scoped_grid_layout const& g,
         layout const& layout_spec = default_layout);
     void
@@ -1543,7 +1538,7 @@ struct grid_row_container : widget_container
         {
             auto original_offset = event.current_offset;
             event.current_offset += region.corner;
-            indie::render_children(event, *this);
+            render_children(event, *this);
             event.current_offset = original_offset;
         }
     }
@@ -1565,7 +1560,7 @@ struct grid_row_container : widget_container
     }
 
     void
-    process_input(event_context) override
+    process_input(ui_event_context) override
     {
     }
 
@@ -1861,7 +1856,7 @@ grid_row_container<Uniformity>::record_self_change(
 
 void
 scoped_grid_row::begin(
-    indie::context, scoped_grid_layout const& grid, layout const& layout_spec)
+    context, scoped_grid_layout const& grid, layout const& layout_spec)
 {
     layout_traversal<widget_container, widget>& traversal = *grid.traversal_;
 
@@ -1880,14 +1875,14 @@ scoped_grid_row::end()
     container_.end();
 }
 
-}} // namespace alia::indie
+} // namespace alia
 
 void
-my_ui(indie::context ctx)
+my_ui(context ctx)
 {
     scoped_scrollable_view scrollable(ctx, GROW);
 
-    indie::scoped_column column(ctx, GROW | PADDED);
+    scoped_column column(ctx, GROW | PADDED);
 
     auto show_text = get_state(ctx, false);
 
@@ -1895,14 +1890,14 @@ my_ui(indie::context ctx)
     do_spacer(ctx, height(100, PIXELS));
 
     {
-        indie::scoped_grid_layout grid(ctx);
+        scoped_grid_layout grid(ctx);
         {
-            indie::scoped_grid_row row(ctx, grid);
+            scoped_grid_row row(ctx, grid);
             do_box(ctx, SK_ColorMAGENTA, actions::noop(), width(200, PIXELS));
             do_box(ctx, SK_ColorMAGENTA, actions::noop(), width(200, PIXELS));
         }
         {
-            indie::scoped_grid_row row(ctx, grid);
+            scoped_grid_row row(ctx, grid);
             do_box(ctx, SK_ColorLTGRAY, actions::noop());
             do_box(ctx, SK_ColorLTGRAY, actions::noop());
         }
@@ -1982,7 +1977,7 @@ my_ui(indie::context ctx)
 
         for (int outer = 0; outer != 4; ++outer)
         {
-            indie::scoped_flow_layout flow(ctx, UNPADDED);
+            scoped_flow_layout flow(ctx, UNPADDED);
 
             for (int i = 0; i != 100; ++i)
             {
@@ -1993,7 +1988,7 @@ my_ui(indie::context ctx)
                 });
 
                 {
-                    indie::scoped_column col(ctx);
+                    scoped_column col(ctx);
 
                     do_box(
                         ctx,
@@ -2023,10 +2018,10 @@ my_ui(indie::context ctx)
                 }
 
                 {
-                    indie::scoped_column col(ctx);
+                    scoped_column col(ctx);
 
                     static SkColor clicky_color = SK_ColorRED;
-                    // event_handler<indie::mouse_button_event>(
+                    // event_handler<mouse_button_event>(
                     //     ctx, [&](auto, auto&) { clicky_color =
                     //     SK_ColorBLUE; });
                     do_box(ctx, clicky_color, actions::noop());

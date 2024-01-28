@@ -1,9 +1,9 @@
-#ifndef ALIA_INDIE_STYLING_HPP
-#define ALIA_INDIE_STYLING_HPP
+#ifndef ALIA_UI_STYLING_HPP
+#define ALIA_UI_STYLING_HPP
 
-#include <alia/indie/common.hpp>
+#include <alia/ui/common.hpp>
 
-namespace alia { namespace indie {
+namespace alia {
 
 // widget state flags
 struct element_state_flag_tag
@@ -20,6 +20,6 @@ ALIA_DEFINE_FLAG(element_state, 0x0f, ELEMENT_PRIMARY_STATE_MASK)
 // additional (independent) states
 ALIA_DEFINE_FLAG(element_state, 0x10, ELEMENT_FOCUSED)
 
-}} // namespace alia::indie
+} // namespace alia
 
 #endif
