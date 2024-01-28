@@ -1,7 +1,7 @@
-#include <alia/indie/system/object.hpp>
-#include <alia/indie/widget.hpp>
+#include <alia/ui/system/object.hpp>
+#include <alia/ui/widget.hpp>
 
-namespace alia { namespace indie {
+namespace alia {
 
 void
 render_children(render_event& event, widget_container& container)
@@ -10,4 +10,4 @@ render_children(render_event& event, widget_container& container)
         node->render(event);
 }
 
-}} // namespace alia::indie
+} // namespace alia

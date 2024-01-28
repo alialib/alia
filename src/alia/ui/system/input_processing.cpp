@@ -1,17 +1,17 @@
-#include <alia/indie/system/input_processing.hpp>
+#include <alia/ui/system/input_processing.hpp>
 
 #include <alia/core/flow/events.hpp>
-#include <alia/indie/events/delivery.hpp>
-#include <alia/indie/events/input.hpp>
-#include <alia/indie/system/api.hpp>
-#include <alia/indie/utilities/hit_testing.hpp>
+#include <alia/ui/events/delivery.hpp>
+#include <alia/ui/events/input.hpp>
+#include <alia/ui/system/api.hpp>
+#include <alia/ui/utilities/hit_testing.hpp>
 
-namespace alia { namespace indie {
+namespace alia {
 
 namespace {
 
 std::shared_ptr<widget>
-get_mouse_target(system& ui)
+get_mouse_target(ui_system& ui)
 {
     // The widget with mouse capture takes precedence as the target for mouse
     // events.
@@ -26,7 +26,7 @@ get_mouse_target(system& ui)
 } // namespace
 
 void
-process_mouse_motion(system& ui, vector<2, double> const& position)
+process_mouse_motion(ui_system& ui, vector<2, double> const& position)
 {
     if (!ui.input.mouse_inside_window || ui.input.mouse_position != position)
     {
@@ -43,13 +43,13 @@ process_mouse_motion(system& ui, vector<2, double> const& position)
 }
 
 void
-process_mouse_loss(system& ui)
+process_mouse_loss(ui_system& ui)
 {
     ui.input.mouse_inside_window = false;
 }
 
 void
-process_mouse_press(system& ui, mouse_button button, key_modifiers)
+process_mouse_press(ui_system& ui, mouse_button button, key_modifiers)
 {
     auto target = get_mouse_target(ui);
     if (target)
@@ -66,7 +66,7 @@ process_mouse_press(system& ui, mouse_button button, key_modifiers)
 }
 
 void
-process_mouse_release(system& ui, mouse_button button)
+process_mouse_release(ui_system& ui, mouse_button button)
 {
     auto target = get_mouse_target(ui);
     if (target)
@@ -84,7 +84,7 @@ process_mouse_release(system& ui, mouse_button button)
 }
 
 void
-process_double_click(system& ui, mouse_button button)
+process_double_click(ui_system& ui, mouse_button button)
 {
     auto target = get_mouse_target(ui);
     if (target)
@@ -125,7 +125,7 @@ process_double_click(system& ui, mouse_button button)
 // }
 
 void
-process_scroll(system& ui, vector<2, double> const& delta)
+process_scroll(ui_system& ui, vector<2, double> const& delta)
 {
     wheel_hit_test hit_test;
     ui.root_widget->hit_test(hit_test, ui.input.mouse_position);
@@ -137,7 +137,7 @@ process_scroll(system& ui, vector<2, double> const& delta)
 }
 
 bool
-process_focused_key_press(system& ui, modded_key const& info)
+process_focused_key_press(ui_system& ui, modded_key const& info)
 {
     key_event event{{{}, input_event_type::KEY_PRESS}, info};
     auto target = ui.input.element_with_focus.widget.lock();
@@ -146,7 +146,7 @@ process_focused_key_press(system& ui, modded_key const& info)
 }
 
 bool
-process_background_key_press(system& ui, modded_key const& info)
+process_background_key_press(ui_system& ui, modded_key const& info)
 {
     key_event event{{{}, input_event_type::BACKGROUND_KEY_PRESS}, info};
     event_delivery_fixture<key_event> fixture(ui);
@@ -161,7 +161,7 @@ process_background_key_press(system& ui, modded_key const& info)
 }
 
 bool
-process_focused_key_release(system& ui, modded_key const& info)
+process_focused_key_release(ui_system& ui, modded_key const& info)
 {
     key_event event{{{}, input_event_type::KEY_RELEASE}, info};
     auto target = ui.input.element_with_focus.widget.lock();
@@ -169,7 +169,7 @@ process_focused_key_release(system& ui, modded_key const& info)
     return event.acknowledged;
 }
 bool
-process_key_press(system& ui, modded_key const& info)
+process_key_press(ui_system& ui, modded_key const& info)
 {
     ui.input.keyboard_interaction = true;
     return process_focused_key_press(ui, info)
@@ -177,10 +177,10 @@ process_key_press(system& ui, modded_key const& info)
 }
 
 bool
-process_key_release(system& ui, modded_key const& info)
+process_key_release(ui_system& ui, modded_key const& info)
 {
     ui.input.keyboard_interaction = true;
     return process_focused_key_release(ui, info);
 }
 
-}} // namespace alia::indie
+} // namespace alia

@@ -72,15 +72,15 @@ TEST_CASE("state_signal", "[signals][state]")
 TEST_CASE("basic get_state", "[signals][state]")
 {
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
-    do_traversal(sys, [&](context ctx) {
+    initialize_standalone_system(sys, [](core_context) {});
+    do_traversal(sys, [&](core_context ctx) {
         auto state = get_state(ctx, empty<int>());
 
         REQUIRE(!signal_has_value(state));
         REQUIRE(signal_ready_to_write(state));
     });
     captured_id state_id;
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto state = get_state(ctx, value(12));
 
         REQUIRE(signal_has_value(state));
@@ -88,7 +88,7 @@ TEST_CASE("basic get_state", "[signals][state]")
         REQUIRE(signal_ready_to_write(state));
         state_id.capture(state.value_id());
     });
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto state = get_state(ctx, value(12));
 
         // Since we're not actually responding to an event here, we have to
@@ -96,14 +96,14 @@ TEST_CASE("basic get_state", "[signals][state]")
         if (read_signal(state) != 13)
             write_signal(state, 13);
     });
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto state = get_state(ctx, value(12));
 
         REQUIRE(read_signal(state) == 13);
         REQUIRE(!state_id.matches(state.value_id()));
         state_id.capture(state.value_id());
     });
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto state = get_state(ctx, value(12));
 
         // Since we're not actually responding to an event here, we have to
@@ -111,7 +111,7 @@ TEST_CASE("basic get_state", "[signals][state]")
         if (signal_has_value(state))
             clear_signal(state);
     });
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto state = get_state(ctx, value(12));
         REQUIRE(!signal_has_value(state));
         REQUIRE(!state_id.matches(state.value_id()));
@@ -121,20 +121,20 @@ TEST_CASE("basic get_state", "[signals][state]")
 TEST_CASE("writing to uninitialized state", "[signals][state]")
 {
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
-    do_traversal(sys, [&](context ctx) {
+    initialize_standalone_system(sys, [](core_context) {});
+    do_traversal(sys, [&](core_context ctx) {
         auto state = get_state(ctx, empty<int>());
 
         REQUIRE(!signal_has_value(state));
         REQUIRE(signal_ready_to_write(state));
     });
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto state = get_state(ctx, empty<int>());
 
         if (!signal_has_value(state))
             write_signal(state, 1);
     });
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto state = get_state(ctx, empty<int>());
 
         REQUIRE(signal_has_value(state));
@@ -146,9 +146,9 @@ TEST_CASE("writing to uninitialized state", "[signals][state]")
 TEST_CASE("get_state with raw initial value", "[signals][state]")
 {
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
+    initialize_standalone_system(sys, [](core_context) {});
     captured_id state_id;
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto state = get_state(ctx, 12);
 
         REQUIRE(signal_has_value(state));
@@ -156,13 +156,13 @@ TEST_CASE("get_state with raw initial value", "[signals][state]")
         REQUIRE(signal_ready_to_write(state));
         state_id.capture(state.value_id());
     });
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto state = get_state(ctx, 12);
 
         if (read_signal(state) != 13)
             write_signal(state, 13);
     });
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto state = get_state(ctx, 12);
 
         REQUIRE(read_signal(state) == 13);
@@ -192,9 +192,9 @@ struct state_test_object
 TEST_CASE("get_state with lambda initial value", "[signals][state]")
 {
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
+    initialize_standalone_system(sys, [](core_context) {});
     captured_id state_id;
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto state = get_state(
             ctx, lambda_constant([] { return state_test_object{12}; }));
 
@@ -214,7 +214,7 @@ TEST_CASE("state changes and component dirtying", "[signals][state]")
     std::ostringstream log;
 
     alia::system sys;
-    initialize_standalone_system(sys, [&](context ctx) {
+    initialize_standalone_system(sys, [&](core_context ctx) {
         scoped_component_container srr(ctx);
         log << (srr.is_dirty() ? "dirty;" : "clean;");
         auto state = get_state(ctx, 12);
@@ -252,7 +252,7 @@ TEST_CASE("get_state benchmarks", "[signals][state]")
     BENCHMARK("get_state")
     {
         alia::system sys;
-        initialize_standalone_system(sys, [&](context ctx) {
+        initialize_standalone_system(sys, [&](core_context ctx) {
             scoped_component_container srr(ctx);
             // The get_state call is all we really want to benchmark, but
             // somehow, invoking the BENCHMARK macro inside component code
@@ -270,8 +270,8 @@ TEST_CASE("get_transient_state", "[signals][state]")
 {
     // The first few passes are all the same as the normal state tests...
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
-    do_traversal(sys, [&](context ctx) {
+    initialize_standalone_system(sys, [](core_context) {});
+    do_traversal(sys, [&](core_context ctx) {
         ALIA_IF(true)
         {
             auto state = get_transient_state(ctx, empty<int>());
@@ -282,7 +282,7 @@ TEST_CASE("get_transient_state", "[signals][state]")
         ALIA_END
     });
     captured_id state_id;
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         ALIA_IF(true)
         {
             auto state = get_transient_state(ctx, value(12));
@@ -294,7 +294,7 @@ TEST_CASE("get_transient_state", "[signals][state]")
         }
         ALIA_END
     });
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         ALIA_IF(true)
         {
             auto state = get_transient_state(ctx, value(12));
@@ -304,7 +304,7 @@ TEST_CASE("get_transient_state", "[signals][state]")
         }
         ALIA_END
     });
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         ALIA_IF(true)
         {
             auto state = get_transient_state(ctx, value(12));
@@ -316,14 +316,14 @@ TEST_CASE("get_transient_state", "[signals][state]")
         ALIA_END
     });
     // Now test that if the state goes inactivate for a pass, it's reset.
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         ALIA_IF(false)
         {
             auto state = get_transient_state(ctx, value(12));
         }
         ALIA_END
     });
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         ALIA_IF(true)
         {
             auto state = get_transient_state(ctx, value(12));

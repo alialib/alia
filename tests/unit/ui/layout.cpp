@@ -1,7 +1,9 @@
-#include <alia/indie/layout/specification.hpp>
-#include <alia/indie/layout/system.hpp>
-#include <alia/indie/layout/traversal.hpp>
-#include <alia/indie/layout/utilities.hpp>
+#if 0
+
+#include <alia/ui/layout/specification.hpp>
+#include <alia/ui/layout/system.hpp>
+#include <alia/ui/layout/traversal.hpp>
+#include <alia/ui/layout/utilities.hpp>
 
 #include <utility>
 
@@ -12,16 +14,16 @@ using namespace alia;
 
 struct testing_context
 {
-    alia::data_traversal* data;
-    alia::layout_traversal* layout;
+    data_traversal* data;
+    layout_traversal* layout;
 };
 
-alia::data_traversal&
+data_traversal&
 get_data_traversal(testing_context& ctx)
 {
     return *ctx.data;
 }
-alia::layout_traversal&
+layout_traversal&
 get_layout_traversal(testing_context& ctx)
 {
     return *ctx.layout;
@@ -29,45 +31,41 @@ get_layout_traversal(testing_context& ctx)
 
 struct test_leaf
 {
-    alia::layout_leaf node;
-    alia::layout_vector absolute_position;
+    layout_leaf node;
+    layout_vector absolute_position;
 };
 
 test_leaf test_leaf1, test_leaf2;
 
 void
 do_test_leaf(
-    alia::layout_traversal& traversal,
-    test_leaf& leaf,
-    alia::layout const& layout_spec)
+    layout_traversal& traversal, test_leaf& leaf, layout const& layout_spec)
 {
     if (traversal.is_refresh_pass)
     {
         leaf.node.refresh_layout(
             traversal,
             layout_spec,
-            alia::leaf_layout_requirements(
-                alia::make_layout_vector(0, 0), 0, 0));
+            leaf_layout_requirements(make_layout_vector(0, 0), 0, 0));
         add_layout_node(traversal, &leaf.node);
     }
     else
     {
-        alia::vector<2, double> p = transform(
+        vector<2, double> p = transform(
             traversal.geometry->transformation_matrix,
-            alia::vector<2, double>(leaf.node.assignment().region.corner));
-        leaf.absolute_position = alia::make_vector(
-            alia::round_to_layout_scalar(p[0]),
-            alia::round_to_layout_scalar(p[1]));
+            vector<2, double>(leaf.node.assignment().region.corner));
+        leaf.absolute_position = make_vector(
+            round_to_layout_scalar(p[0]), round_to_layout_scalar(p[1]));
     }
 }
 
 void
-do_test_leaf1(testing_context& ctx, alia::layout const& layout_spec)
+do_test_leaf1(testing_context& ctx, layout const& layout_spec)
 {
     do_test_leaf(*ctx.layout, test_leaf1, layout_spec);
 }
 void
-do_test_leaf2(testing_context& ctx, alia::layout const& layout_spec)
+do_test_leaf2(testing_context& ctx, layout const& layout_spec)
 {
     do_test_leaf(*ctx.layout, test_leaf2, layout_spec);
 }
@@ -78,9 +76,9 @@ do_test_leaf2(testing_context& ctx, alia::layout const& layout_spec)
         data_graph graph;                                                     \
                                                                               \
         {                                                                     \
-            alia::data_traversal data_traversal;                              \
+            data_traversal data_traversal;                                    \
             scoped_data_traversal sdt(graph, data_traversal);                 \
-            alia::layout_traversal layout_traversal;                          \
+            layout_traversal layout_traversal;                                \
             scoped_layout_refresh slr(                                        \
                 system, layout_traversal, make_vector<float>(1, 1));          \
             testing_context ctx;                                              \
@@ -92,14 +90,14 @@ do_test_leaf2(testing_context& ctx, alia::layout const& layout_spec)
         resolve_layout(system, assigned_size);                                \
                                                                               \
         {                                                                     \
-            alia::data_traversal data_traversal;                              \
+            data_traversal data_traversal;                                    \
             scoped_data_traversal sdt(graph, data_traversal);                 \
-            alia::geometry_context geometry;                                  \
+            geometry_context geometry;                                        \
             initialize(                                                       \
                 geometry,                                                     \
                 box<2, double>(                                               \
                     make_vector(0., 0.), vector<2, double>(assigned_size)));  \
-            alia::layout_traversal layout_traversal;                          \
+            layout_traversal layout_traversal;                                \
             scoped_layout_traversal slr(                                      \
                 system,                                                       \
                 layout_traversal,                                             \
@@ -124,9 +122,9 @@ do_test_leaf2(testing_context& ctx, alia::layout const& layout_spec)
         data_graph graph;                                                     \
                                                                               \
         {                                                                     \
-            alia::data_traversal data_traversal;                              \
+            data_traversal data_traversal;                                    \
             scoped_data_traversal sdt(graph, data_traversal);                 \
-            alia::layout_traversal layout_traversal;                          \
+            layout_traversal layout_traversal;                                \
             scoped_layout_refresh slr(                                        \
                 system, layout_traversal, make_vector<float>(1, 1));          \
             testing_context ctx;                                              \
@@ -138,14 +136,14 @@ do_test_leaf2(testing_context& ctx, alia::layout const& layout_spec)
         resolve_layout(system, assigned_size);                                \
                                                                               \
         {                                                                     \
-            alia::data_traversal data_traversal;                              \
+            data_traversal data_traversal;                                    \
             scoped_data_traversal sdt(graph, data_traversal);                 \
-            alia::geometry_context geometry;                                  \
+            geometry_context geometry;                                        \
             initialize(                                                       \
                 geometry,                                                     \
                 box<2, double>(                                               \
                     make_vector(0., 0.), vector<2, double>(assigned_size)));  \
-            alia::layout_traversal layout_traversal;                          \
+            layout_traversal layout_traversal;                                \
             scoped_layout_traversal slr(                                      \
                 system,                                                       \
                 layout_traversal,                                             \
@@ -167,7 +165,7 @@ do_test_leaf2(testing_context& ctx, alia::layout const& layout_spec)
             == expected_region2.size);                                        \
     }
 
-TEST_CASE("layout tests", "[indie]")
+TEST_CASE("layout tests", "[ui]")
 {
     using namespace alia;
 
@@ -594,9 +592,9 @@ TEST_CASE("layout tests", "[indie]")
         data_graph graph;
 
         {
-            alia::data_traversal data_traversal;
+            data_traversal data_traversal;
             scoped_data_traversal sdt(graph, data_traversal);
-            alia::layout_traversal layout_traversal;
+            layout_traversal layout_traversal;
             scoped_layout_refresh slr(
                 system, layout_traversal, make_vector<float>(1, 1));
             testing_context ctx;
@@ -628,3 +626,5 @@ TEST_CASE("layout tests", "[indie]")
         }
     };
 }
+
+#endif

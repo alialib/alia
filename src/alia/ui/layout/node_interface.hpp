@@ -1,17 +1,17 @@
-#ifndef ALIA_INDIE_LAYOUT_NODE_INTERFACE_HPP
-#define ALIA_INDIE_LAYOUT_NODE_INTERFACE_HPP
+#ifndef ALIA_UI_LAYOUT_NODE_INTERFACE_HPP
+#define ALIA_UI_LAYOUT_NODE_INTERFACE_HPP
 
 #include <vector>
 
 #include <alia/core/flow/data_graph.hpp>
 
-#include <alia/indie/layout/specification.hpp>
-#include <alia/indie/layout/traversal.hpp>
+#include <alia/ui/layout/specification.hpp>
+#include <alia/ui/layout/traversal.hpp>
 
 // This file declares various internal types that are necessary to implement
 // the layout system and utilities for working with it.
 
-namespace alia { namespace indie {
+namespace alia {
 
 // layout_requirements stores the requirements for a layout element along a
 // single axis.
@@ -68,6 +68,6 @@ struct layout_node_interface
         = 0;
 };
 
-}} // namespace alia::indie
+} // namespace alia
 
 #endif

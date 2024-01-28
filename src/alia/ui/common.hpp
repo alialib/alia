@@ -1,5 +1,5 @@
-#ifndef ALIA_INDIE_COMMON_HPP
-#define ALIA_INDIE_COMMON_HPP
+#ifndef ALIA_UI_COMMON_HPP
+#define ALIA_UI_COMMON_HPP
 
 #include <alia/core/common.hpp>
 

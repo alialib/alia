@@ -22,7 +22,7 @@ struct returnable_ref_node : data_node
 
 template<class T>
 T&
-make_returnable_ref(context ctx, T x)
+make_returnable_ref(core_context ctx, T x)
 {
     returnable_ref_node<T>* node;
     if (!get_data_node(

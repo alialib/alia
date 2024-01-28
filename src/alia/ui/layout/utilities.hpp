@@ -1,12 +1,12 @@
-#ifndef ALIA_INDIE_LAYOUT_UTILITIES_HPP
-#define ALIA_INDIE_LAYOUT_UTILITIES_HPP
+#ifndef ALIA_UI_LAYOUT_UTILITIES_HPP
+#define ALIA_UI_LAYOUT_UTILITIES_HPP
 
-#include <alia/indie/layout/node_interface.hpp>
-#include <alia/indie/widget.hpp>
+#include <alia/ui/layout/node_interface.hpp>
+#include <alia/ui/widget.hpp>
 
 // This file defines various utilities for working with the layout system.
 
-namespace alia { namespace indie {
+namespace alia {
 
 // A lot of layout calculations are done in floating point and then converted
 // to integer coordinates (e.g., by rounding up sizes to a full pixel).
@@ -258,9 +258,9 @@ operator+=(box_border_width<Scalar>& a, box_border_width<Scalar> const& b)
 template<class Scalar>
 box<2, Scalar>
 add_border(
-    indie::box<2, Scalar> const& box, box_border_width<Scalar> const& border)
+    alia::box<2, Scalar> const& box, box_border_width<Scalar> const& border)
 {
-    return indie::box<2, Scalar>(
+    return alia::box<2, Scalar>(
         box.corner - make_vector(border.left, border.top),
         box.size
             + make_vector(
@@ -272,7 +272,7 @@ box<2, Scalar>
 remove_border(
     box<2, Scalar> const& box, box_border_width<Scalar> const& border)
 {
-    return indie::box<2, Scalar>(
+    return alia::box<2, Scalar>(
         box.corner + make_vector(border.left, border.top),
         box.size
             - make_vector(
@@ -444,6 +444,6 @@ walk_layout_nodes(widget* children, Visitor&& visitor)
         std::forward<Visitor>(visitor)(*child);
 }
 
-}} // namespace alia::indie
+} // namespace alia
 
 #endif

@@ -1,11 +1,11 @@
-#ifndef ALIA_INDIE_LAYOUT_CONTAINERS_SIMPLE_HPP
-#define ALIA_INDIE_LAYOUT_CONTAINERS_SIMPLE_HPP
+#ifndef ALIA_UI_LAYOUT_CONTAINERS_SIMPLE_HPP
+#define ALIA_UI_LAYOUT_CONTAINERS_SIMPLE_HPP
 
-#include <alia/indie/layout/containers/utilities.hpp>
-#include <alia/indie/layout/library.hpp>
-#include <alia/indie/layout/logic/linear.hpp>
+#include <alia/ui/layout/containers/utilities.hpp>
+#include <alia/ui/layout/library.hpp>
+#include <alia/ui/layout/logic/linear.hpp>
 
-namespace alia { namespace indie {
+namespace alia {
 
 // The vast majority of layout containers behave identically except for the
 // logic they use to calculate their requirements and divide their space
@@ -133,7 +133,7 @@ struct simple_scoped_layout
     }
 
     simple_scoped_layout(
-        context ctx, layout const& layout_spec = default_layout)
+        ui_context ctx, layout const& layout_spec = default_layout)
     {
         begin(ctx, layout_spec);
     }
@@ -144,7 +144,7 @@ struct simple_scoped_layout
     }
 
     void
-    begin(context ctx, layout const& layout_spec = default_layout)
+    begin(ui_context ctx, layout const& layout_spec = default_layout)
     {
         Logic* logic;
         get_simple_layout_container(
@@ -191,6 +191,6 @@ struct simple_scoped_layout
 
 using scoped_column = simple_scoped_layout<column_layout_logic>;
 
-}} // namespace alia::indie
+} // namespace alia
 
 #endif

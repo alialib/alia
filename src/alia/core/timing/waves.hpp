@@ -12,7 +12,7 @@ namespace detail {
 
 value_signal<bool>
 square_wave(
-    context ctx,
+    core_context ctx,
     readable<millisecond_count> true_duration,
     readable<millisecond_count> false_duration);
 
@@ -38,7 +38,7 @@ template<
     class FalseDuration = empty_signal<millisecond_count>>
 value_signal<bool>
 square_wave(
-    context ctx,
+    core_context ctx,
     TrueDuration true_duration,
     FalseDuration false_duration = empty<millisecond_count>())
 {

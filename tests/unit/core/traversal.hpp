@@ -17,7 +17,7 @@ struct ostream_event
 
 template<class Text>
 void
-do_text(context ctx, Text const& text)
+do_text(core_context ctx, Text const& text)
 {
     ostream_event* oe;
     if (detect_event(ctx, &oe) && signal_has_value(text))

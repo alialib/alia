@@ -1,16 +1,16 @@
-#ifndef ALIA_INDIE_EVENTS_INPUT_HPP
-#define ALIA_INDIE_EVENTS_INPUT_HPP
+#ifndef ALIA_UI_EVENTS_INPUT_HPP
+#define ALIA_UI_EVENTS_INPUT_HPP
 
 #include "alia/core/timing/ticks.hpp"
 #include <alia/core/flow/events.hpp>
-#include <alia/indie/common.hpp>
-#include <alia/indie/system/input_constants.hpp>
-#include <alia/indie/widget.hpp>
+#include <alia/ui/common.hpp>
+#include <alia/ui/system/input_constants.hpp>
+#include <alia/ui/widget.hpp>
 
 // This file enumerates the various input events that are delivered from the UI
 // system to individual widgets.
 
-namespace alia { namespace indie {
+namespace alia {
 
 struct system;
 
@@ -114,6 +114,6 @@ struct prototype_timer_event : input_event
     millisecond_count trigger_time;
 };
 
-}} // namespace alia::indie
+} // namespace alia
 
 #endif

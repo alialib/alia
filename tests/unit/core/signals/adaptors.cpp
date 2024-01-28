@@ -280,12 +280,12 @@ TEST_CASE("simplify_id", "[signals][adaptors]")
 TEST_CASE("minimize_id_changes", "[signals][adaptors]")
 {
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
+    initialize_standalone_system(sys, [](core_context) {});
 
     std::map<int, std::string> container;
 
     auto make_controller = [&](auto&& test_code) {
-        return [&](context ctx) {
+        return [&](core_context ctx) {
             auto unwrapped = direct(container)[value(2)];
             auto signal = minimize_id_changes(ctx, unwrapped);
 

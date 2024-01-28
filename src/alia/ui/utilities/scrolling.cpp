@@ -1,9 +1,9 @@
-#include <alia/indie/utilities/scrolling.hpp>
+#include <alia/ui/utilities/scrolling.hpp>
 
-namespace alia { namespace indie {
+namespace alia {
 
 std::optional<vector<2, double>>
-detect_scroll(event_context ctx, internal_element_ref)
+detect_scroll(ui_event_context ctx, internal_element_ref)
 {
     scroll_event* event;
     if (detect_event(ctx, &event))
@@ -12,4 +12,4 @@ detect_scroll(event_context ctx, internal_element_ref)
         return std::nullopt;
 }
 
-}} // namespace alia::indie
+} // namespace alia

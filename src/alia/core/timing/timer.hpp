@@ -19,12 +19,13 @@ struct timer_data
 
 struct timer
 {
-    timer(context ctx) : ctx_(ctx)
+    timer(core_context ctx) : ctx_(ctx)
     {
         get_cached_data(ctx, &data_);
         update();
     }
-    timer(dataless_context ctx, timer_data& data) : ctx_(ctx), data_(&data)
+    timer(dataless_core_context ctx, timer_data& data)
+        : ctx_(ctx), data_(&data)
     {
         update();
     }
@@ -54,7 +55,7 @@ struct timer
     void
     update();
 
-    dataless_context ctx_;
+    dataless_core_context ctx_;
     timer_data* data_;
     bool triggered_;
 };

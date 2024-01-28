@@ -29,7 +29,7 @@ TEST_CASE("deflicker", "[timing][deflicker]")
     alia::system sys;
     auto* external_ptr = new testing_external_interface(sys);
     initialize_standalone_system(
-        sys, [](context) {}, external_ptr);
+        sys, [](core_context) {}, external_ptr);
     auto& external = *external_ptr;
 
     int x_value = 1;
@@ -37,7 +37,7 @@ TEST_CASE("deflicker", "[timing][deflicker]")
 
     // Define a utility function for processing timing events.
     auto process_timing_events = [&]() {
-        sys.controller = [&](context ctx) {
+        sys.controller = [&](core_context ctx) {
             auto x = lambda_reader(
                 [&]() { return x_valid; }, [&]() { return x_value; });
             auto d = deflicker(ctx, x, 50);
@@ -49,7 +49,7 @@ TEST_CASE("deflicker", "[timing][deflicker]")
     };
 
     // Our deflickered signal should pick up its initial value.
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto x = lambda_reader(
             [&]() { return x_valid; }, [&]() { return x_value; });
         REQUIRE(signal_has_value(x));
@@ -64,7 +64,7 @@ TEST_CASE("deflicker", "[timing][deflicker]")
     external.tick_count = 10;
     process_timing_events();
     x_value = 2;
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto x = lambda_reader(
             [&]() { return x_valid; }, [&]() { return x_value; });
         REQUIRE(signal_has_value(x));
@@ -79,7 +79,7 @@ TEST_CASE("deflicker", "[timing][deflicker]")
     external.tick_count = 20;
     process_timing_events();
     x_valid = false;
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto x = lambda_reader(
             [&]() { return x_valid; }, [&]() { return x_value; });
         REQUIRE(!signal_has_value(x));
@@ -91,7 +91,7 @@ TEST_CASE("deflicker", "[timing][deflicker]")
     // ... and continue to do so.
     external.tick_count = 60;
     process_timing_events();
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto x = lambda_reader(
             [&]() { return x_valid; }, [&]() { return x_value; });
         REQUIRE(!signal_has_value(x));
@@ -103,7 +103,7 @@ TEST_CASE("deflicker", "[timing][deflicker]")
     // After its delay runs out, our deflickered signal should lose its value.
     external.tick_count = 70;
     process_timing_events();
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto x = lambda_reader(
             [&]() { return x_valid; }, [&]() { return x_value; });
         REQUIRE(!signal_has_value(x));
@@ -116,7 +116,7 @@ TEST_CASE("deflicker", "[timing][deflicker]")
     process_timing_events();
     x_value = 1;
     x_valid = true;
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto x = lambda_reader(
             [&]() { return x_valid; }, [&]() { return x_value; });
         REQUIRE(signal_has_value(x));
@@ -131,7 +131,7 @@ TEST_CASE("deflicker", "[timing][deflicker]")
     external.tick_count = 90;
     process_timing_events();
     x_valid = false;
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto x = lambda_reader(
             [&]() { return x_valid; }, [&]() { return x_value; });
         REQUIRE(!signal_has_value(x));
@@ -144,7 +144,7 @@ TEST_CASE("deflicker", "[timing][deflicker]")
     process_timing_events();
     x_value = 1;
     x_valid = true;
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto x = lambda_reader(
             [&]() { return x_valid; }, [&]() { return x_value; });
         REQUIRE(signal_has_value(x));
@@ -158,7 +158,7 @@ TEST_CASE("deflicker", "[timing][deflicker]")
     external.tick_count = 110;
     process_timing_events();
     x_valid = false;
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto x = lambda_reader(
             [&]() { return x_valid; }, [&]() { return x_value; });
         REQUIRE(!signal_has_value(x));
@@ -173,7 +173,7 @@ TEST_CASE("deflicker", "[timing][deflicker]")
     process_timing_events();
     x_value = 2;
     x_valid = true;
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto x = lambda_reader(
             [&]() { return x_valid; }, [&]() { return x_value; });
         REQUIRE(signal_has_value(x));
@@ -186,7 +186,7 @@ TEST_CASE("deflicker", "[timing][deflicker]")
     // ... and it should maintain the new value even after the delay runs out.
     external.tick_count = 200;
     process_timing_events();
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto x = lambda_reader(
             [&]() { return x_valid; }, [&]() { return x_value; });
         REQUIRE(signal_has_value(x));
@@ -202,7 +202,7 @@ TEST_CASE("deflicker", "[timing][deflicker]")
     process_timing_events();
     x_value = 1;
     x_valid = true;
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto x = lambda_reader(
             [&]() { return x_valid; }, [&]() { return x_value; });
         auto d = deflicker(ctx, x, value(50));
@@ -212,7 +212,7 @@ TEST_CASE("deflicker", "[timing][deflicker]")
     external.tick_count = 210;
     process_timing_events();
     x_valid = false;
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto x = lambda_reader(
             [&]() { return x_valid; }, [&]() { return x_value; });
         auto d = deflicker(ctx, x, value(50));
@@ -223,7 +223,7 @@ TEST_CASE("deflicker", "[timing][deflicker]")
     process_timing_events();
     x_value = 2;
     x_valid = true;
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto x = lambda_reader(
             [&]() { return x_valid; }, [&]() { return x_value; });
         auto d = deflicker(ctx, x, value(50));
@@ -233,7 +233,7 @@ TEST_CASE("deflicker", "[timing][deflicker]")
     external.tick_count = 230;
     process_timing_events();
     x_valid = false;
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto x = lambda_reader(
             [&]() { return x_valid; }, [&]() { return x_value; });
         auto d = deflicker(ctx, x, value(50));
@@ -243,7 +243,7 @@ TEST_CASE("deflicker", "[timing][deflicker]")
     external.tick_count = 270;
     process_timing_events();
     x_valid = false;
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto x = lambda_reader(
             [&]() { return x_valid; }, [&]() { return x_value; });
         auto d = deflicker(ctx, x, value(50));
@@ -252,7 +252,7 @@ TEST_CASE("deflicker", "[timing][deflicker]")
     });
     external.tick_count = 290;
     process_timing_events();
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto x = lambda_reader(
             [&]() { return x_valid; }, [&]() { return x_value; });
         auto d = deflicker(ctx, x, value(50));
@@ -265,10 +265,10 @@ TEST_CASE("initially empty deflicker", "[timing][deflicker]")
     alia::system sys;
     auto* external_ptr = new testing_external_interface(sys);
     initialize_standalone_system(
-        sys, [](context) {}, external_ptr);
+        sys, [](core_context) {}, external_ptr);
 
     // Test that our deflickered signal picks up an initially empty value.
-    do_traversal(sys, [&](context ctx) {
+    do_traversal(sys, [&](core_context ctx) {
         auto d = deflicker(ctx, empty<int>(), 50);
         REQUIRE(!signal_has_value(d));
     });

@@ -420,7 +420,9 @@ update_id_change_minimization_data(
 template<class Signal, class Value>
 id_change_minimization_signal<Signal>
 minimize_id_changes(
-    dataless_context ctx, id_change_minimization_data<Value>* data, Signal x)
+    dataless_core_context ctx,
+    id_change_minimization_data<Value>* data,
+    Signal x)
 {
     if (is_refresh_event(ctx))
         update_id_change_minimization_data(data, x);
@@ -428,7 +430,7 @@ minimize_id_changes(
 }
 template<class Signal>
 id_change_minimization_signal<Signal>
-minimize_id_changes(context ctx, Signal x)
+minimize_id_changes(core_context ctx, Signal x)
 {
     id_change_minimization_data<typename Signal::value_type>* data;
     get_cached_data(ctx, &data);
@@ -729,7 +731,8 @@ template<
     std::enable_if_t<
         is_signal_type<Signal>::value && signal_is_readable<Signal>::value
             && !signal_is_movable<Signal>::value,
-        int> = 0>
+        int>
+    = 0>
 auto
 move(Signal signal)
 {

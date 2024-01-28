@@ -319,7 +319,7 @@ read_condition(T const& x)
 
 // The following macros are substitutes for normal C++ control flow statements.
 // Unlike alia_if and company, they do NOT track control flow. Instead, they
-// convert your context variable to a dataless_context within the block.
+// convert your context variable to a dataless_core_context within the block.
 // This means that any attempt to retrieve data within the block will result
 // in an error (as it should).
 

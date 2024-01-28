@@ -22,7 +22,7 @@ TEST_CASE("basic alia_if", "[flow][macros]")
     {
         data_graph graph;
         auto make_controller = [](auto condition) {
-            return [=](context ctx) {
+            return [=](core_context ctx) {
                 ALIA_IF(condition)
                 {
                     do_int(ctx, 0);
@@ -53,7 +53,7 @@ TEST_CASE("alia_if/alia_else", "[flow][macros]")
     {
         data_graph graph;
         auto make_controller = [](auto condition) {
-            return [=](context ctx) {
+            return [=](core_context ctx) {
                 ALIA_IF(condition)
                 {
                     do_int(ctx, 0);
@@ -93,7 +93,7 @@ TEST_CASE("non-signal alia_if/alia_else", "[flow][macros]")
     {
         data_graph graph;
         auto make_controller = [](auto condition) {
-            return [=](context ctx) {
+            return [=](core_context ctx) {
                 ALIA_IF(condition)
                 {
                     do_int(ctx, 0);
@@ -131,7 +131,7 @@ TEST_CASE("alia_if/alia_else caching", "[flow][macros]")
     {
         data_graph graph;
         auto make_controller = [](auto condition) {
-            return [=](context ctx) {
+            return [=](core_context ctx) {
                 ALIA_IF(condition)
                 {
                     ALIA_IF(value(true))
@@ -188,7 +188,7 @@ TEST_CASE("alia_if/alia_else_if/alia_else", "[flow][macros]")
     {
         data_graph graph;
         auto make_controller = [](auto condition1, auto condition2) {
-            return [=](context ctx) {
+            return [=](core_context ctx) {
                 alia_if(condition1)
                 {
                     do_int(ctx, 0);
@@ -252,7 +252,7 @@ TEST_CASE("alia_switch", "[flow][macros]")
     {
         data_graph graph;
         auto make_controller = [](auto n) {
-            return [=](context ctx) {
+            return [=](core_context ctx) {
                 // clang-format off
                 do_int(ctx, -1);
                 ALIA_SWITCH(n)
@@ -333,7 +333,7 @@ TEST_CASE("non-signal alia_switch", "[flow][macros]")
     {
         data_graph graph;
         auto make_controller = [](auto n) {
-            return [=](context ctx) {
+            return [=](core_context ctx) {
                 // clang-format off
                 do_int(ctx, -1);
                 alia_switch(n)
@@ -414,7 +414,7 @@ TEST_CASE("alia_switch cached destruction order", "[flow][macros]")
     {
         data_graph graph;
         auto make_controller = [](auto n) {
-            return [=](context ctx) {
+            return [=](core_context ctx) {
                 // clang-format off
                 do_int(ctx, -1);
                 ALIA_SWITCH(n)
@@ -480,7 +480,7 @@ TEST_CASE("alia_for", "[flow][macros]")
     {
         data_graph graph;
         auto make_controller = [](int n) {
-            return [=](context ctx) {
+            return [=](core_context ctx) {
                 ALIA_FOR(int i = 1; i <= n; ++i)
                 {
                     do_int(ctx, i);
@@ -535,7 +535,7 @@ TEST_CASE("alia_while", "[flow][macros]")
     {
         data_graph graph;
         auto make_controller = [](int n) {
-            return [=](context ctx) {
+            return [=](core_context ctx) {
                 int i = 1;
                 alia_while(i <= n)
                 {
@@ -592,7 +592,7 @@ TEST_CASE("alia_untracked_if", "[flow][macros]")
     {
         data_graph graph;
         auto make_controller = [](int n) {
-            return [=](context ctx) {
+            return [=](core_context ctx) {
                 REQUIRE(detail::has_context_object<data_traversal_tag>(ctx));
                 alia_untracked_if(n > 2)
                 {
@@ -626,10 +626,10 @@ TEST_CASE("alia_untracked_switch", "[flow][macros]")
     {
         data_graph graph;
         auto make_controller = [](int n) {
-            return [=](context ctx) {
+            return [=](core_context ctx) {
                 REQUIRE(detail::has_context_object<data_traversal_tag>(ctx));
 
-                auto f = [](context ctx, int x) {
+                auto f = [](core_context ctx, int x) {
                     REQUIRE(
                         detail::has_context_object<data_traversal_tag>(ctx));
                     return x;
@@ -663,7 +663,7 @@ TEST_CASE("alia_event_dependent_if", "[flow][macros]")
     {
         data_graph graph;
         auto make_controller = [](int n) {
-            return [=](context ctx) {
+            return [=](core_context ctx) {
                 ALIA_IF(n > 1)
                 {
                     do_cached_int(ctx, 3);

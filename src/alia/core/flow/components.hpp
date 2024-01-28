@@ -23,24 +23,25 @@ void
 mark_dirty_component(component_container_ptr const& container);
 
 void
-mark_dirty_component(dataless_context ctx);
+mark_dirty_component(dataless_core_context ctx);
 
 void
 mark_animating_component(component_container_ptr const& container);
 
 void
-mark_animating_component(dataless_context ctx);
+mark_animating_component(dataless_core_context ctx);
 
 struct scoped_component_container
 {
     scoped_component_container()
     {
     }
-    scoped_component_container(context ctx)
+    scoped_component_container(core_context ctx)
     {
         begin(ctx);
     }
-    scoped_component_container(context ctx, component_container_ptr* container)
+    scoped_component_container(
+        core_context ctx, component_container_ptr* container)
     {
         begin(ctx, container);
     }
@@ -50,10 +51,10 @@ struct scoped_component_container
     }
 
     void
-    begin(dataless_context ctx, component_container_ptr* container);
+    begin(dataless_core_context ctx, component_container_ptr* container);
 
     void
-    begin(context ctx);
+    begin(core_context ctx);
 
     void
     end();
@@ -77,7 +78,7 @@ struct scoped_component_container
     }
 
  private:
-    optional_context<dataless_context> ctx_;
+    optional_context<dataless_core_context> ctx_;
     component_container_ptr* container_;
     component_container_ptr* parent_;
     bool is_on_route_;

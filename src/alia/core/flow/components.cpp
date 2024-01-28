@@ -15,7 +15,7 @@ mark_dirty_component(component_container_ptr const& container)
 }
 
 void
-mark_dirty_component(dataless_context ctx)
+mark_dirty_component(dataless_core_context ctx)
 {
     event_traversal& traversal = get_event_traversal(ctx);
     mark_dirty_component(*traversal.active_container);
@@ -33,7 +33,7 @@ mark_animating_component(component_container_ptr const& container)
 }
 
 void
-mark_animating_component(dataless_context ctx)
+mark_animating_component(dataless_core_context ctx)
 {
     event_traversal& traversal = get_event_traversal(ctx);
     mark_animating_component(*traversal.active_container);
@@ -41,7 +41,7 @@ mark_animating_component(dataless_context ctx)
 
 void
 scoped_component_container::begin(
-    dataless_context ctx, component_container_ptr* container)
+    dataless_core_context ctx, component_container_ptr* container)
 {
     event_traversal& traversal = get_event_traversal(ctx);
 
@@ -82,7 +82,7 @@ scoped_component_container::begin(
 }
 
 void
-scoped_component_container::begin(context ctx)
+scoped_component_container::begin(core_context ctx)
 {
     component_container_ptr* container;
     if (get_data(ctx, &container))

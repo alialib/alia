@@ -18,7 +18,7 @@ struct ostream_event
 };
 
 void
-do_ostream_text(context ctx, std::string const& text)
+do_ostream_text(core_context ctx, std::string const& text)
 {
     ostream_event* oe;
     if (detect_event(ctx, &oe))
@@ -34,7 +34,7 @@ struct find_label_event
 };
 
 void
-do_label(context ctx, std::string const& name)
+do_label(core_context ctx, std::string const& name)
 {
     do_ostream_text(ctx, name);
 
@@ -51,7 +51,7 @@ struct traversal_function
     {
     }
     void
-    operator()(context ctx)
+    operator()(core_context ctx)
     {
         do_ostream_text(ctx, "");
 

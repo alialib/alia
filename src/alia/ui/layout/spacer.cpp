@@ -1,8 +1,8 @@
-#include <alia/indie/layout/spacer.hpp>
+#include <alia/ui/layout/spacer.hpp>
 
-#include <alia/indie/layout/utilities.hpp>
+#include <alia/ui/layout/utilities.hpp>
 
-namespace alia { namespace indie {
+namespace alia {
 
 struct spacer_node : layout_leaf
 {
@@ -17,7 +17,7 @@ struct spacer_node : layout_leaf
     }
 
     void
-    process_input(event_context) override
+    process_input(ui_event_context) override
     {
     }
 
@@ -41,19 +41,19 @@ struct spacer_node : layout_leaf
 };
 
 void
-do_spacer(indie::context ctx, layout const& layout_spec)
+do_spacer(ui_context ctx, layout const& layout_spec)
 {
     spacer_node* node;
     get_cached_data(ctx, &node);
 
-    if (get<indie::traversal_tag>(ctx).layout.is_refresh_pass)
+    if (get<ui_traversal_tag>(ctx).layout.is_refresh_pass)
     {
         node->refresh_layout(
-            get<indie::traversal_tag>(ctx).layout,
+            get<ui_traversal_tag>(ctx).layout,
             layout_spec,
             leaf_layout_requirements(make_layout_vector(0, 0), 0, 0));
-        add_layout_node(get<indie::traversal_tag>(ctx).layout, node);
+        add_layout_node(get<ui_traversal_tag>(ctx).layout, node);
     }
 }
 
-}} // namespace alia::indie
+} // namespace alia

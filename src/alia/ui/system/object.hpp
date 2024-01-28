@@ -1,20 +1,20 @@
-#ifndef ALIA_INDIE_SYSTEM_INTERNAL_DEFINITION_HPP
-#define ALIA_INDIE_SYSTEM_INTERNAL_DEFINITION_HPP
+#ifndef ALIA_UI_SYSTEM_INTERNAL_DEFINITION_HPP
+#define ALIA_UI_SYSTEM_INTERNAL_DEFINITION_HPP
 
 #include <alia/core/flow/events.hpp>
 #include <alia/core/system/internals.hpp>
 #include <alia/core/timing/ticks.hpp>
-#include <alia/indie/context.hpp>
-#include <alia/indie/events/input.hpp>
-#include <alia/indie/layout/system.hpp>
-#include <alia/indie/system/os_interface.hpp>
-#include <alia/indie/system/window_interface.hpp>
-#include <alia/indie/widget.hpp>
+#include <alia/ui/context.hpp>
+#include <alia/ui/events/input.hpp>
+#include <alia/ui/layout/system.hpp>
+#include <alia/ui/system/os_interface.hpp>
+#include <alia/ui/system/window_interface.hpp>
+#include <alia/ui/widget.hpp>
 
 // TODO: Get rid of this.
 #include "modules/skparagraph/include/FontCollection.h"
 
-namespace alia { namespace indie {
+namespace alia {
 
 struct widget;
 
@@ -58,10 +58,10 @@ struct window_input_state
     mouse_cursor current_mouse_cursor = mouse_cursor::DEFAULT;
 };
 
-struct system : alia::typed_system<indie::vanilla_context>
+struct ui_system : alia::typed_system<vanilla_ui_context>
 {
-    std::function<void(indie::context)> controller;
-    void invoke_controller(indie::vanilla_context) override;
+    std::function<void(ui_context)> controller;
+    void invoke_controller(vanilla_ui_context) override;
 
     counter_type refresh_counter = 1;
 
@@ -95,6 +95,6 @@ struct system : alia::typed_system<indie::vanilla_context>
     // tooltip_state tooltip;
 };
 
-}} // namespace alia::indie
+} // namespace alia
 
 #endif

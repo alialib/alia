@@ -75,13 +75,13 @@ make_async_signal(async_operation_data<Value>& data)
 
 template<class Result>
 void
-process_async_args(context, async_operation_data<Result>&, bool&)
+process_async_args(core_context, async_operation_data<Result>&, bool&)
 {
 }
 template<class Result, class Arg, class... Rest>
 void
 process_async_args(
-    context ctx,
+    core_context ctx,
     async_operation_data<Result>& data,
     bool& args_ready,
     Arg const& arg,
@@ -166,7 +166,7 @@ async(Context ctx, Launcher launcher, Args const&... args)
                 auto reporter = async_reporter<Result>{
                     data_ptr,
                     data.version,
-                    &get<system_tag>(ctx),
+                    &get<core_system_tag>(ctx),
                     get_active_component_container(ctx)};
                 launcher(ctx, reporter, read_signal(args)...);
                 data.status = async_status::LAUNCHED;

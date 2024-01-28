@@ -54,7 +54,7 @@ get_alia_item_id(my_item const& item)
 TEST_CASE("string vector", "[flow][for_each]")
 {
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
+    initialize_standalone_system(sys, [](core_context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -64,7 +64,7 @@ TEST_CASE("string vector", "[flow][for_each]")
 
     std::vector<string> container{"foo", "bar", "baz"};
 
-    auto controller = [&](context ctx) {
+    auto controller = [&](core_context ctx) {
         for_each(ctx, direct(container), [&](readable<string> const& item) {
             do_text(ctx, apply(ctx, counting_identity, simplify_id(item)));
         });
@@ -90,7 +90,7 @@ TEST_CASE("string vector", "[flow][for_each]")
 TEST_CASE("raw string vector", "[flow][for_each]")
 {
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
+    initialize_standalone_system(sys, [](core_context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -100,7 +100,7 @@ TEST_CASE("raw string vector", "[flow][for_each]")
 
     std::vector<string> container{"foo", "bar", "baz"};
 
-    auto controller = [&](context ctx) {
+    auto controller = [&](core_context ctx) {
         for_each(ctx, container, [&](string& item) {
             do_text(ctx, apply(ctx, counting_identity, direct(item)));
         });
@@ -126,7 +126,7 @@ TEST_CASE("raw string vector", "[flow][for_each]")
 TEST_CASE("for_each over vector of string signals", "[flow][for_each]")
 {
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
+    initialize_standalone_system(sys, [](core_context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -136,7 +136,7 @@ TEST_CASE("for_each over vector of string signals", "[flow][for_each]")
 
     std::vector<string_literal_signal> container{"foo", "bar", "baz"};
 
-    auto controller = [&](context ctx) {
+    auto controller = [&](core_context ctx) {
         for_each(ctx, container, [&](auto item) {
             do_text(ctx, apply(ctx, counting_identity, item));
         });
@@ -162,7 +162,7 @@ TEST_CASE("for_each over vector of string signals", "[flow][for_each]")
 TEST_CASE("string vector with naming", "[flow][for_each]")
 {
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
+    initialize_standalone_system(sys, [](core_context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -172,7 +172,7 @@ TEST_CASE("string vector with naming", "[flow][for_each]")
 
     std::vector<string> container{"foo", "bar", "baz"};
 
-    auto controller = [&](context ctx) {
+    auto controller = [&](core_context ctx) {
         for_each(
             ctx,
             direct(container),
@@ -203,7 +203,7 @@ TEST_CASE("string vector with naming", "[flow][for_each]")
 TEST_CASE("string vector with index", "[flow][for_each]")
 {
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
+    initialize_standalone_system(sys, [](core_context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -213,7 +213,7 @@ TEST_CASE("string vector with index", "[flow][for_each]")
 
     std::vector<string> container{"foo", "bar", "baz"};
 
-    auto controller = [&](context ctx) {
+    auto controller = [&](core_context ctx) {
         for_each(
             ctx,
             direct(container),
@@ -243,7 +243,7 @@ TEST_CASE("string vector with index", "[flow][for_each]")
 TEST_CASE("string vector with naming and index", "[flow][for_each]")
 {
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
+    initialize_standalone_system(sys, [](core_context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -253,7 +253,7 @@ TEST_CASE("string vector with naming and index", "[flow][for_each]")
 
     std::vector<string> container{"foo", "bar", "baz"};
 
-    auto controller = [&](context ctx) {
+    auto controller = [&](core_context ctx) {
         for_each(
             ctx,
             direct(container),
@@ -287,7 +287,7 @@ TEST_CASE("string vector with naming and index", "[flow][for_each]")
 TEST_CASE("item vector", "[flow][for_each]")
 {
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
+    initialize_standalone_system(sys, [](core_context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -297,7 +297,7 @@ TEST_CASE("item vector", "[flow][for_each]")
 
     std::vector<my_item> container{{"apple"}, {"banana"}, {"cherry"}};
 
-    auto controller = [&](context ctx) {
+    auto controller = [&](core_context ctx) {
         for_each(ctx, direct(container), [&](readable<my_item> const& item) {
             do_text(
                 ctx,
@@ -329,7 +329,7 @@ TEST_CASE("item vector", "[flow][for_each]")
 TEST_CASE("simple map", "[flow][for_each]")
 {
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
+    initialize_standalone_system(sys, [](core_context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -339,7 +339,7 @@ TEST_CASE("simple map", "[flow][for_each]")
 
     std::map<string, int> container{{"foo", 2}, {"bar", 0}, {"baz", 3}};
 
-    auto controller = [&](context ctx) {
+    auto controller = [&](core_context ctx) {
         for_each(
             ctx,
             direct(container),
@@ -370,7 +370,7 @@ TEST_CASE("simple map", "[flow][for_each]")
 TEST_CASE("item map", "[flow][for_each]")
 {
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
+    initialize_standalone_system(sys, [](core_context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -380,7 +380,7 @@ TEST_CASE("item map", "[flow][for_each]")
 
     std::map<my_item, int> container{{{"foo"}, 2}, {{"bar"}, 0}, {{"baz"}, 3}};
 
-    auto controller = [&](context ctx) {
+    auto controller = [&](core_context ctx) {
         for_each(
             ctx,
             direct(container),
@@ -418,7 +418,7 @@ TEST_CASE("item map", "[flow][for_each]")
 TEST_CASE("string list", "[flow][for_each]")
 {
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
+    initialize_standalone_system(sys, [](core_context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -428,7 +428,7 @@ TEST_CASE("string list", "[flow][for_each]")
 
     std::list<string> container{"foo", "bar", "baz"};
 
-    auto controller = [&](context ctx) {
+    auto controller = [&](core_context ctx) {
         for_each(ctx, direct(container), [&](readable<string> const& item) {
             do_text(ctx, apply(ctx, counting_identity, simplify_id(item)));
         });
@@ -455,7 +455,7 @@ TEST_CASE("string list", "[flow][for_each]")
 TEST_CASE("unsimplified string list", "[flow][for_each]")
 {
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
+    initialize_standalone_system(sys, [](core_context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -465,7 +465,7 @@ TEST_CASE("unsimplified string list", "[flow][for_each]")
 
     std::list<string> container{"foo", "bar", "baz"};
 
-    auto controller = [&](context ctx) {
+    auto controller = [&](core_context ctx) {
         for_each(ctx, direct(container), [&](readable<string> const& item) {
             do_text(ctx, apply(ctx, counting_identity, item));
         });
@@ -492,11 +492,11 @@ TEST_CASE("unsimplified string list", "[flow][for_each]")
 TEST_CASE("writing string list items", "[flow][for_each]")
 {
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
+    initialize_standalone_system(sys, [](core_context) {});
 
     std::list<string> container{"foo", "bar", "baz"};
 
-    auto controller = [&](context ctx) {
+    auto controller = [&](core_context ctx) {
         for_each(ctx, direct(container), [&](duplex<string> const& item) {
             write_signal(item, "boo");
         });
@@ -509,7 +509,7 @@ TEST_CASE("writing string list items", "[flow][for_each]")
 TEST_CASE("item list", "[for_each][list]")
 {
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
+    initialize_standalone_system(sys, [](core_context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -519,7 +519,7 @@ TEST_CASE("item list", "[for_each][list]")
 
     std::list<my_item> container{{"apple"}, {"banana"}, {"cherry"}};
 
-    auto controller = [&](context ctx) {
+    auto controller = [&](core_context ctx) {
         for_each(ctx, direct(container), [&](readable<my_item> item) {
             do_text(
                 ctx,
@@ -559,7 +559,7 @@ TEST_CASE("item list", "[for_each][list]")
 TEST_CASE("for_each over list of item signals", "[for_each][list]")
 {
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
+    initialize_standalone_system(sys, [](core_context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -572,7 +572,7 @@ TEST_CASE("for_each over list of item signals", "[for_each][list]")
         value(my_item{"banana"}),
         value(my_item{"cherry"})};
 
-    auto controller = [&](context ctx) {
+    auto controller = [&](core_context ctx) {
         for_each(
             ctx, container, [&](naming_context& nc, readable<my_item> item) {
                 named_block nb(nc, make_id(read_signal(item).id));
@@ -606,7 +606,7 @@ TEST_CASE("for_each over list of item signals", "[for_each][list]")
 TEST_CASE("for_each over a list of raw items", "[for_each][list]")
 {
     alia::system sys;
-    initialize_standalone_system(sys, [](context) {});
+    initialize_standalone_system(sys, [](core_context) {});
 
     int call_count = 0;
     auto counting_identity = [&](string s) {
@@ -616,7 +616,7 @@ TEST_CASE("for_each over a list of raw items", "[for_each][list]")
 
     std::list<my_item> container{{"apple"}, {"banana"}, {"cherry"}};
 
-    auto controller = [&](context ctx) {
+    auto controller = [&](core_context ctx) {
         for_each(ctx, container, [&](my_item& item) {
             do_text(ctx, apply(ctx, counting_identity, value(item.id)));
         });

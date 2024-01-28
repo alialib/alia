@@ -43,7 +43,7 @@ jobs:
             -DVCPKG_TARGET_TRIPLET=wasm32-emscripten \
             -D"CMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
             -DALIA_BUILD_DOCS=OFF \
-            -DALIA_ENABLE_INDIE=OFF \
+            -DALIA_ENABLE_UI=OFF \
             ..
           make -j
 

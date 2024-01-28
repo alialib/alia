@@ -1,4 +1,4 @@
-#include <alia/indie/backends/glfw.hpp>
+#include <alia/ui/backends/glfw.hpp>
 
 #include <GLFW/glfw3.h>
 
@@ -43,18 +43,18 @@ SkLoadICU()
 
 #pragma warning(pop)
 
-#include <alia/indie/events/input.hpp>
-#include <alia/indie/layout/system.hpp>
-#include <alia/indie/system/api.hpp>
-#include <alia/indie/system/input_processing.hpp>
-#include <alia/indie/system/object.hpp>
-#include <alia/indie/system/os_interface.hpp>
-#include <alia/indie/system/window_interface.hpp>
-#include <alia/indie/widget.hpp>
+#include <alia/ui/events/input.hpp>
+#include <alia/ui/layout/system.hpp>
+#include <alia/ui/system/api.hpp>
+#include <alia/ui/system/input_processing.hpp>
+#include <alia/ui/system/object.hpp>
+#include <alia/ui/system/os_interface.hpp>
+#include <alia/ui/system/window_interface.hpp>
+#include <alia/ui/widget.hpp>
 
 #include <chrono>
 
-namespace alia { namespace indie {
+namespace alia {
 
 struct root_widget
 {
@@ -71,7 +71,7 @@ struct glfw_window_impl
     sk_sp<skia::textlayout::FontCollection> font_collection;
 
     // TODO: Does this go here?
-    indie::system system;
+    ui_system system;
 };
 
 struct glfw_os_interface : os_interface
@@ -167,7 +167,7 @@ get_impl(GLFWwindow* window)
         glfwGetWindowUserPointer(window));
 }
 
-system&
+ui_system&
 get_system(GLFWwindow* window)
 {
     return get_impl(window).system;
@@ -334,10 +334,10 @@ update_ui(glfw_window_impl& impl)
     refresh_system(impl.system);
     update(impl.system);
 
-    issue_ready_events(
+    invoke_ready_callbacks(
         impl.system.scheduler,
         impl.system.external->get_tick_count(),
-        [&](std::function<void()> const& callback) {
+        [&](std::function<void()> const& callback, millisecond_count) {
             callback();
             refresh_system(impl.system);
             update(impl.system);
@@ -445,7 +445,7 @@ destroy_window(glfw_window_impl& impl)
 glfw_window::glfw_window(
     std::string const& title,
     vector<2, unsigned> size,
-    std::function<void(indie::context)> controller)
+    std::function<void(ui_context)> controller)
     : impl_(new glfw_window_impl)
 {
     initialize(
@@ -499,4 +499,4 @@ glfw_window::~glfw_window()
     }
 }
 
-}} // namespace alia::indie
+} // namespace alia

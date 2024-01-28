@@ -1,7 +1,7 @@
-#ifndef ALIA_INDIE_GEOMETRY_HPP
-#define ALIA_INDIE_GEOMETRY_HPP
+#ifndef ALIA_UI_GEOMETRY_HPP
+#define ALIA_UI_GEOMETRY_HPP
 
-#include <alia/indie/common.hpp>
+#include <alia/ui/common.hpp>
 
 #include <cmath>
 #include <ostream>
@@ -10,7 +10,7 @@
 // that are needed by a 2D UI library: vectors, boxes, transformation matrices,
 // etc.
 
-namespace alia { namespace indie {
+namespace alia {
 
 // VECTOR
 
@@ -279,14 +279,14 @@ uniform_vector(T value)
 
 ALIA_DEFINE_GEOMETRY_TYPEDEFS(vector)
 
-}} // namespace alia::indie
+} // namespace alia
 
 // hash function
 template<unsigned N, class T>
-struct std::hash<alia::indie::vector<N, T>>
+struct std::hash<alia::vector<N, T>>
 {
     size_t
-    operator()(alia::indie::vector<N, T> const& v) const
+    operator()(alia::vector<N, T> const& v) const
     {
         size_t h = 0;
         for (unsigned i = 0; i != N; ++i)
@@ -295,7 +295,7 @@ struct std::hash<alia::indie::vector<N, T>>
     }
 };
 
-namespace alia { namespace indie {
+namespace alia {
 
 // BOX
 
@@ -449,7 +449,7 @@ template<unsigned N, class T>
 box<N, T>
 add_border(box<N, T> const& box, T border)
 {
-    return indie::box<N, T>(
+    return box<N, T>(
         box.corner - uniform_vector<N, T>(border),
         box.size + uniform_vector<N, T>(border * 2));
 }
@@ -459,7 +459,7 @@ template<unsigned N, class T>
 box<N, T>
 add_border(box<N, T> const& box, vector<N, T> const& border)
 {
-    return indie::box<N, T>(box.corner - border, box.size + border * 2);
+    return box<N, T>(box.corner - border, box.size + border * 2);
 }
 
 template<typename T>
@@ -875,14 +875,14 @@ inverse(matrix<2, 2, T> const& m)
     return inv;
 }
 
-}} // namespace alia::indie
+} // namespace alia
 
 // hash function
 template<unsigned M, unsigned N, class T>
-struct std::hash<alia::indie::matrix<M, N, T>>
+struct std::hash<alia::matrix<M, N, T>>
 {
     size_t
-    operator()(alia::indie::matrix<M, N, T> const& m) const
+    operator()(alia::matrix<M, N, T> const& m) const
     {
         size_t h = 0;
         for (unsigned i = 0; i != M; ++i)
@@ -894,7 +894,7 @@ struct std::hash<alia::indie::matrix<M, N, T>>
     }
 };
 
-namespace alia { namespace indie {
+namespace alia {
 
 // ANGLES
 
@@ -967,6 +967,6 @@ transform_box(matrix<3, 3, T> const& m, box<2, T> const& b)
     return result;
 }
 
-}} // namespace alia::indie
+} // namespace alia
 
 #endif

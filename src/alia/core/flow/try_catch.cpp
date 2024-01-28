@@ -4,11 +4,11 @@
 
 namespace alia {
 
-try_block::try_block(context ctx) : ctx_(ctx)
+try_block::try_block(core_context ctx) : ctx_(ctx)
 {
     get_cached_data(ctx, &data_);
     refresh_handler(ctx, [&](auto ctx) {
-        auto refresh_counter = get<system_tag>(ctx).refresh_counter;
+        auto refresh_counter = get<core_system_tag>(ctx).refresh_counter;
         if (data_->last_refresh != refresh_counter)
         {
             // This is a new refresh pass, so clear out any exception that we

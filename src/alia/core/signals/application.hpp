@@ -270,7 +270,7 @@ make_apply_signal(apply_result_data<Value>& data)
 template<class Result, class Arg>
 void
 process_apply_arg(
-    context ctx,
+    core_context ctx,
     apply_result_data<Result>& data,
     bool& args_ready,
     captured_id& cached_id,
@@ -293,13 +293,13 @@ process_apply_arg(
 
 template<class Result>
 void
-process_apply_args(context, apply_result_data<Result>&, bool&)
+process_apply_args(core_context, apply_result_data<Result>&, bool&)
 {
 }
 template<class Result, class Arg, class... Rest>
 void
 process_apply_args(
-    context ctx,
+    core_context ctx,
     apply_result_data<Result>& data,
     bool& args_ready,
     Arg const& arg,
@@ -314,7 +314,7 @@ process_apply_args(
 template<class Value, class Function, class... Args>
 void
 process_apply_body(
-    context ctx,
+    core_context ctx,
     apply_result_data<Value>& data,
     bool args_ready,
     Function&& f,
@@ -347,7 +347,7 @@ process_apply_body(
 
 template<class Function, class... Args>
 auto
-apply(context ctx, Function&& f, Args const&... args)
+apply(core_context ctx, Function&& f, Args const&... args)
 {
     detail::apply_result_data<decltype(f(forward_signal(args)...))>* data_ptr;
     get_cached_data(ctx, &data_ptr);
@@ -363,7 +363,7 @@ template<class Function>
 auto
 lift(Function f)
 {
-    return [=](context ctx, auto&&... args) {
+    return [=](core_context ctx, auto&&... args) {
         return apply(ctx, std::move(f), std::move(args)...);
     };
 }
@@ -473,7 +473,7 @@ make_duplex_apply_signal(
 
 template<class Forward, class Reverse, class Arg>
 auto
-duplex_apply(context ctx, Forward&& forward, Reverse reverse, Arg arg)
+duplex_apply(core_context ctx, Forward&& forward, Reverse reverse, Arg arg)
 {
     detail::duplex_apply_data<decltype(forward(forward_signal(arg)))>*
         data_ptr;

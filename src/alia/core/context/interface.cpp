@@ -14,7 +14,7 @@ struct context_content_id_folding_data
 };
 
 void
-fold_in_content_id(context ctx, id_interface const& id)
+fold_in_content_id(core_context ctx, id_interface const& id)
 {
     id_interface const* id_from_above = ctx.contents_.storage->content_id;
 

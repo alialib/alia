@@ -1,78 +1,74 @@
-#ifndef ALIA_INDIE_CONTEXT_HPP
-#define ALIA_INDIE_CONTEXT_HPP
+#ifndef ALIA_UI_CONTEXT_HPP
+#define ALIA_UI_CONTEXT_HPP
 
 #include <alia/core/context/interface.hpp>
 
-#include <alia/indie/layout/node_interface.hpp>
-#include <alia/indie/layout/traversal.hpp>
+#include <alia/ui/layout/node_interface.hpp>
+#include <alia/ui/layout/traversal.hpp>
 
 namespace alia {
-namespace indie {
 
-struct system;
-ALIA_DEFINE_TAGGED_TYPE(system_tag, system&)
+struct ui_system;
+ALIA_DEFINE_TAGGED_TYPE(ui_system_tag, ui_system&)
 
 struct widget;
 struct widget_container;
 
-struct traversal
+struct ui_traversal
 {
     layout_traversal<widget_container, widget> layout;
 };
-ALIA_DEFINE_TAGGED_TYPE(traversal_tag, traversal&)
+ALIA_DEFINE_TAGGED_TYPE(ui_traversal_tag, ui_traversal&)
 
-struct context_storage : alia::context_storage
+struct ui_context_storage : core_context_storage
 {
-    system* indie_sys = nullptr;
-    indie::traversal* indie_traversal = nullptr;
+    ui_system* ui_sys = nullptr;
+    alia::ui_traversal* ui_traversal = nullptr;
 
-    ALIA_IMPLEMENT_STORAGE_OBJECT_ACCESSORS(context_storage)
+    ALIA_IMPLEMENT_STORAGE_OBJECT_ACCESSORS(ui_context_storage)
 };
-
-} // namespace indie
 
 #define ALIA_ADD_UI_CONTEXT_ACCESSORS(storage)                                \
     ALIA_ADD_CORE_CONTEXT_ACCESSORS(storage)                                  \
-    ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(storage, indie::system_tag, indie_sys) \
-    ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(                                       \
-        storage, indie::traversal_tag, indie_traversal)
+    ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(storage, ui_system_tag, ui_sys)        \
+    ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(storage, ui_traversal_tag, ui_traversal)
 
-ALIA_ADD_UI_CONTEXT_ACCESSORS(indie::context_storage)
+ALIA_ADD_UI_CONTEXT_ACCESSORS(ui_context_storage)
 
-namespace indie {
-
-using event_context = context_interface<detail::add_tagged_data_types_t<
-    detail::empty_structural_collection<indie::context_storage>,
-    alia::system_tag,
+using ui_event_context = context_interface<detail::add_tagged_data_types_t<
+    detail::empty_structural_collection<ui_context_storage>,
+    core_system_tag,
     event_traversal_tag,
     timing_tag,
-    indie::system_tag>>;
+    ui_system_tag>>;
 
-using dataless_context
-    = extend_context_type_t<event_context, indie::traversal_tag>;
+using dataless_ui_context
+    = extend_context_type_t<ui_event_context, ui_traversal_tag>;
 
-using context = extend_context_type_t<dataless_context, data_traversal_tag>;
+using ui_context
+    = extend_context_type_t<dataless_ui_context, data_traversal_tag>;
 
-using vanilla_context = context_interface<detail::add_tagged_data_types_t<
-    detail::empty_structural_collection<indie::context_storage>,
-    alia::system_tag,
+// A vanilla_ui_context has the storage of a UI context but with only the
+// components from a core context.
+using vanilla_ui_context = context_interface<detail::add_tagged_data_types_t<
+    detail::empty_structural_collection<ui_context_storage>,
+    core_system_tag,
     event_traversal_tag,
     timing_tag,
     data_traversal_tag>>;
 
-inline system&
-get_system(event_context ctx)
+inline ui_system&
+get_system(ui_event_context ctx)
 {
-    return *ctx.contents_.storage->indie_sys;
+    return *ctx.contents_.storage->ui_sys;
 }
 
 inline layout_traversal<widget_container, widget>&
-get_layout_traversal(dataless_context ctx)
+get_layout_traversal(dataless_ui_context ctx)
 {
-    return get<indie::traversal_tag>(ctx).layout;
+    return get<ui_traversal_tag>(ctx).layout;
 }
 
-} // namespace indie
 } // namespace alia
 
 #endif

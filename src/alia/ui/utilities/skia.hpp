@@ -1,9 +1,9 @@
-#ifndef ALIA_INDIE_UTILITIES_SKIA_HPP
-#define ALIA_INDIE_UTILITIES_SKIA_HPP
+#ifndef ALIA_UI_UTILITIES_SKIA_HPP
+#define ALIA_UI_UTILITIES_SKIA_HPP
 
-#include <alia/indie/layout/specification.hpp>
+#include <alia/ui/layout/specification.hpp>
 
-namespace alia { namespace indie {
+namespace alia {
 
 // Cast a Skia scalar to layout scalar representing a size.
 inline layout_scalar
@@ -38,6 +38,6 @@ as_skrect(skia_box const& box)
     return rect;
 }
 
-}} // namespace alia::indie
+} // namespace alia
 
 #endif

@@ -1,6 +1,6 @@
-#include <alia/indie/layout/containers/utilities.hpp>
+#include <alia/ui/layout/containers/utilities.hpp>
 
-namespace alia { namespace indie {
+namespace alia {
 
 void
 scoped_layout_container::begin(
@@ -50,4 +50,4 @@ update_layout_cacher(
         traversal, &cacher.resolved_spec, resolved_spec);
 }
 
-}} // namespace alia::indie
+} // namespace alia

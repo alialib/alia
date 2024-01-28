@@ -5,7 +5,7 @@
 
 // TODO: Sort this stuff into proper locations
 
-namespace alia { namespace indie {
+namespace alia {
 
 // KEYED_DATA
 
@@ -55,4 +55,4 @@ struct keyed_data
     Data value_;
 };
 
-}} // namespace alia::indie
+} // namespace alia

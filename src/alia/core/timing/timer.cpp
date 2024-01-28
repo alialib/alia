@@ -4,11 +4,11 @@ namespace alia {
 
 void
 schedule_timer_event(
-    dataless_context ctx,
+    dataless_core_context ctx,
     external_component_id id,
     millisecond_count trigger_time)
 {
-    auto& sys = get<system_tag>(ctx);
+    auto& sys = get<core_system_tag>(ctx);
     sys.external->schedule_callback(
         [&sys, id, trigger_time] {
             timer_event event;
@@ -19,7 +19,7 @@ schedule_timer_event(
 }
 
 bool
-detect_timer_event(dataless_context ctx, timer_data& data)
+detect_timer_event(dataless_core_context ctx, timer_data& data)
 {
     timer_event* event;
     return detect_targeted_event(ctx, &data.identity, &event)
@@ -27,7 +27,8 @@ detect_timer_event(dataless_context ctx, timer_data& data)
 }
 
 void
-start_timer(dataless_context ctx, timer_data& data, millisecond_count duration)
+start_timer(
+    dataless_core_context ctx, timer_data& data, millisecond_count duration)
 {
     auto now = get<timing_tag>(ctx).tick_counter;
     auto trigger_time = now + duration;
@@ -37,7 +38,7 @@ start_timer(dataless_context ctx, timer_data& data, millisecond_count duration)
 
 void
 restart_timer(
-    dataless_context ctx, timer_data& data, millisecond_count duration)
+    dataless_core_context ctx, timer_data& data, millisecond_count duration)
 {
     timer_event* event;
     bool detected = detect_event(ctx, &event);
