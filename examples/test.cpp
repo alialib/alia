@@ -290,7 +290,7 @@ struct box_node : widget
         parent->reveal_region(request);
     }
 
-    system* sys_;
+    ui_system* sys_;
     external_component_id id_;
     bool state_ = false;
     SkColor color_ = SK_ColorWHITE;
@@ -306,7 +306,7 @@ struct box_node : widget
 
 void
 do_box(
-    context ctx,
+    ui_context ctx,
     SkColor color,
     action<> on_click,
     layout const& layout_spec = layout(TOP | LEFT | PADDED))
@@ -333,16 +333,16 @@ do_box(
     {
         resolved_layout_spec resolved_spec;
         resolve_layout_spec(
-            get<traversal_tag>(ctx).layout,
+            get<ui_traversal_tag>(ctx).layout,
             resolved_spec,
             layout_spec,
             TOP | LEFT | PADDED);
         detect_layout_change(
-            get<traversal_tag>(ctx).layout,
+            get<ui_traversal_tag>(ctx).layout,
             &node.resolved_spec_,
             resolved_spec);
 
-        add_layout_node(get<traversal_tag>(ctx).layout, &node);
+        add_layout_node(get<ui_traversal_tag>(ctx).layout, &node);
 
         node.id_ = externalize(id);
         // node.tick_counter_ = get_raw_animation_tick_count(ctx);
@@ -434,7 +434,7 @@ struct text_node : layout_leaf
         parent->reveal_region(request);
     }
 
-    system* sys_;
+    ui_system* sys_;
     // std::unique_ptr<skia::textlayout::Paragraph> paragraph;
     std::string text_;
     SkRect bounds_;
@@ -443,7 +443,7 @@ struct text_node : layout_leaf
 
 void
 do_text(
-    context ctx,
+    ui_context ctx,
     readable<std::string> text,
     layout const& layout_spec = default_layout)
 {
@@ -517,14 +517,14 @@ do_text(
     if (is_refresh_event(ctx))
     {
         node.refresh_layout(
-            get<traversal_tag>(ctx).layout,
+            get<ui_traversal_tag>(ctx).layout,
             layout_spec,
             leaf_layout_requirements(
                 make_layout_vector(
                     node.bounds_.width(), node.bounds_.height()),
                 0,
                 0));
-        add_layout_node(get<traversal_tag>(ctx).layout, &node);
+        add_layout_node(get<ui_traversal_tag>(ctx).layout, &node);
 
         // node.id_ = externalize(id);
 
@@ -1028,7 +1028,7 @@ struct wrapped_text_node : widget
         parent->reveal_region(request);
     }
 
-    system* sys_;
+    ui_system* sys_;
 
     captured_id text_id_;
     std::string text_;
@@ -1044,7 +1044,7 @@ struct wrapped_text_node : widget
 
 void
 do_wrapped_text(
-    context ctx,
+    ui_context ctx,
     readable<std::string> text,
     layout const& layout_spec = default_layout)
 {
@@ -1079,7 +1079,7 @@ do_wrapped_text(
             [&](std::string const& new_value) { node.text_ = new_value; },
             [&]() { node.text_.clear(); });
 
-        add_layout_node(get<traversal_tag>(ctx).layout, &node);
+        add_layout_node(get<ui_traversal_tag>(ctx).layout, &node);
     }
 }
 
@@ -1184,7 +1184,7 @@ do_wrapped_text(
 // };
 
 // in<realm>
-// get_realm_name(context ctx)
+// get_realm_name(ui_context ctx)
 // {
 //     auto foo = value("focus");
 //     return alia::apply(
@@ -1202,7 +1202,7 @@ struct scoped_flow_layout : simple_scoped_layout<flow_layout_logic>
     using simple_scoped_layout::simple_scoped_layout;
 
     void
-    begin(context ctx, layout const& layout_spec = default_layout)
+    begin(ui_context ctx, layout const& layout_spec = default_layout)
     {
         // With a flow layout, we want to have the layout itself
         // always fill the horizontal space and use the requested X
@@ -1500,7 +1500,7 @@ struct scoped_grid_row
     {
     }
     scoped_grid_row(
-        context ctx,
+        ui_context ctx,
         scoped_grid_layout const& g,
         layout const& layout_spec = default_layout)
     {
@@ -1512,7 +1512,7 @@ struct scoped_grid_row
     }
     void
     begin(
-        context ctx,
+        ui_context ctx,
         scoped_grid_layout const& g,
         layout const& layout_spec = default_layout);
     void
@@ -1856,7 +1856,7 @@ grid_row_container<Uniformity>::record_self_change(
 
 void
 scoped_grid_row::begin(
-    context, scoped_grid_layout const& grid, layout const& layout_spec)
+    ui_context, scoped_grid_layout const& grid, layout const& layout_spec)
 {
     layout_traversal<widget_container, widget>& traversal = *grid.traversal_;
 
@@ -1878,7 +1878,7 @@ scoped_grid_row::end()
 } // namespace alia
 
 void
-my_ui(context ctx)
+my_ui(ui_context ctx)
 {
     scoped_scrollable_view scrollable(ctx, GROW);
 

@@ -3,7 +3,6 @@
 
 #include <alia/core.hpp>
 
-#include <alia/ui/backends/glfw.hpp>
 #include <alia/ui/events/input.hpp>
 #include <alia/ui/layout/specification.hpp>
 #include <alia/ui/layout/utilities.hpp>
