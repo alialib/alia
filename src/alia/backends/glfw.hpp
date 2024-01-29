@@ -1,5 +1,5 @@
-#ifndef ALIA_UI_BACKENDS_GLFW_HPP
-#define ALIA_UI_BACKENDS_GLFW_HPP
+#ifndef ALIA_BACKENDS_GLFW_HPP
+#define ALIA_BACKENDS_GLFW_HPP
 
 #include <memory>
 
