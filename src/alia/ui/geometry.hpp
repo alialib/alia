@@ -459,7 +459,7 @@ template<unsigned N, class T>
 box<N, T>
 add_border(box<N, T> const& box, vector<N, T> const& border)
 {
-    return box<N, T>(box.corner - border, box.size + border * 2);
+    return alia::box<N, T>(box.corner - border, box.size + border * 2);
 }
 
 template<typename T>
