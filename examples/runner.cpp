@@ -1,10 +1,10 @@
-#include <alia/ui/backends/glfw.hpp>
+#include <alia/backends/glfw.hpp>
 #include <alia/ui/widget.hpp>
 
 using namespace alia;
 
 void
-my_ui(context ctx);
+my_ui(ui_context ctx);
 
 int
 main(void)

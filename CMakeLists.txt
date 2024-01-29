@@ -132,7 +132,6 @@ target_compile_features(alia_core PUBLIC cxx_std_17)
 
 # Add the UI library.
 if (ALIA_ENABLE_UI)
-    find_package(glfw3 3.3 CONFIG REQUIRED)
     find_package(unofficial-skia CONFIG REQUIRED)
 
     include(FetchContent)
@@ -148,7 +147,6 @@ if (ALIA_ENABLE_UI)
         "${CMAKE_CURRENT_SOURCE_DIR}/src")
     target_link_libraries(alia_ui PUBLIC
         alia_core
-        glfw
         unofficial::skia::skia
         unofficial::skia::skparagraph
         unofficial::skia::skshaper
@@ -157,6 +155,15 @@ if (ALIA_ENABLE_UI)
         "${dmilos_color_SOURCE_DIR}/src")
     target_precompile_headers(alia_ui PUBLIC
         src/alia/ui.hpp)
+endif()
+
+# Add the GLFW3 backend.
+if (ALIA_ENABLE_GLFW)
+    find_package(glfw3 3.3 CONFIG REQUIRED)
+    add_library(alia_glfw STATIC "src/alia/backends/glfw.cpp")
+    target_include_directories(alia_glfw PUBLIC
+        "${CMAKE_CURRENT_SOURCE_DIR}/src")
+    target_link_libraries(alia_glfw PUBLIC alia_ui glfw)
 endif()
 
 # Add the tests.

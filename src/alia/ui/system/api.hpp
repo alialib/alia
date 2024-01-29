@@ -6,7 +6,7 @@
 
 namespace alia {
 
-struct system;
+struct ui_system;
 struct os_interface;
 struct window_interface;
 
