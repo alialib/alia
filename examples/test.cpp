@@ -2078,6 +2078,12 @@ struct scoped_collapsible
         end();
     }
 
+    bool
+    do_content() const
+    {
+        return container_->expansion != 0;
+    }
+
     void
     begin(
         ui_context ctx,
@@ -2086,17 +2092,28 @@ struct scoped_collapsible
     {
         std::shared_ptr<collapsible_container>* container;
         get_collapsible_view(ctx, &container, expanded, layout_spec);
-        container_.begin(get_layout_traversal(ctx), container->get());
+        container_ = container->get();
+        scoping_.begin(get_layout_traversal(ctx), container_);
     }
     void
     end()
     {
-        container_.end();
+        scoping_.end();
     }
 
  private:
-    scoped_layout_container container_;
+    collapsible_container* container_;
+    scoped_layout_container scoping_;
 };
+
+template<class Content>
+void
+collapsible_content(
+    ui_context ctx, readable<bool> show_content, Content&& content)
+{
+    scoped_collapsible collapsible(ctx, show_content);
+    if_(ctx, collapsible.do_content(), std::forward<Content>(content));
+}
 
 } // namespace alia
 
@@ -2117,8 +2134,7 @@ my_ui(ui_context ctx)
         do_box(ctx, SK_ColorLTGRAY, actions::toggle(show_other_text));
     }
 
-    {
-        scoped_collapsible collapsible(ctx, show_other_text);
+    collapsible_content(ctx, show_other_text, [&] {
         do_spacer(ctx, height(20, PIXELS));
         do_text(ctx, value("Könnten Sie mir das übersetzen?"));
         {
@@ -2145,7 +2161,7 @@ my_ui(ui_context ctx)
                 }
             }
         }
-    }
+    });
 
     do_spacer(ctx, height(100, PIXELS));
 
