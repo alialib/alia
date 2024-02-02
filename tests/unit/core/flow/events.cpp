@@ -13,6 +13,8 @@
 #include <alia/core/system/interface.hpp>
 #include <alia/core/system/internals.hpp>
 
+#include "test_system.hpp"
+
 using namespace alia;
 using std::string;
 
@@ -48,8 +50,8 @@ do_my_thing(my_context ctx, readable<string> label)
 
 TEST_CASE("node IDs", "[flow][events]")
 {
-    alia::system sys;
-    initialize_standalone_system(sys, [](core_context) {});
+    alia::test_system sys;
+    initialize_test_system(sys, [](core_context) {});
 
     REQUIRE(!is_valid(null_component_id));
 
@@ -90,8 +92,8 @@ struct bad_event
 
 TEST_CASE("event error propagation", "[flow][events]")
 {
-    alia::system sys;
-    initialize_standalone_system(sys, [&](core_context ctx) {
+    alia::test_system sys;
+    initialize_test_system(sys, [&](core_context ctx) {
         event_handler<bad_event>(
             ctx, [&](auto, auto&) { static_cast<void>(std::string().at(0)); });
     });
@@ -111,8 +113,8 @@ TEST_CASE("on_init/on_activate", "[flow][events]")
     int init_count = 0;
     int activate_count = 0;
 
-    alia::system sys;
-    initialize_standalone_system(sys, [&](core_context ctx) {
+    alia::test_system sys;
+    initialize_test_system(sys, [&](core_context ctx) {
         ALIA_IF(active)
         {
             on_init(ctx, ++direct(init_count));
@@ -176,8 +178,8 @@ TEST_CASE("on_observed_value events", "[flow][events]")
     int change_count = 0;
     int change_shadow = 0;
 
-    alia::system sys;
-    initialize_standalone_system(sys, [&](core_context ctx) {
+    alia::test_system sys;
+    initialize_test_system(sys, [&](core_context ctx) {
         refresh_handler(ctx, [&](auto) {
             gain_shadow = gain_count;
             loss_shadow = loss_count;
@@ -292,8 +294,8 @@ TEST_CASE("on_value events", "[flow][events]")
     int change_count = 0;
     int change_shadow = 0;
 
-    alia::system sys;
-    initialize_standalone_system(sys, [&](core_context ctx) {
+    alia::test_system sys;
+    initialize_test_system(sys, [&](core_context ctx) {
         refresh_handler(ctx, [&](auto) {
             gain_shadow = gain_count;
             loss_shadow = loss_count;
@@ -338,8 +340,8 @@ TEST_CASE("error isolation", "[flow][events]")
 {
     int n = 0;
 
-    alia::system sys;
-    initialize_standalone_system(sys, [&](core_context ctx) {
+    alia::test_system sys;
+    initialize_test_system(sys, [&](core_context ctx) {
         on_value_change(ctx, value(n), callback([&] {
                             static_cast<void>(std::string("abc").at(n));
                         }));

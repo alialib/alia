@@ -12,6 +12,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "test_system.hpp"
+
 using namespace alia;
 
 // The following define a small framework for testing data traversal mechanics.
@@ -108,7 +110,7 @@ void
 do_traversal(
     data_graph& graph, Controller const& controller, bool with_gc = true)
 {
-    alia::system sys;
+    alia::test_system sys;
     event_traversal event;
 
     data_traversal data;

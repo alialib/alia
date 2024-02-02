@@ -13,8 +13,8 @@ TEST_CASE("animating components", "[flow][components]")
     component_container_ptr bottom(new component_container);
     component_container_ptr right(new component_container);
 
-    alia::system sys;
-    initialize_standalone_system(sys, [&](core_context ctx) {
+    alia::test_system sys;
+    initialize_test_system(sys, [&](core_context ctx) {
         scoped_component_container scoped_top(ctx, &top);
         if (iteration == 0)
             mark_animating_component(ctx);

@@ -52,7 +52,7 @@ TEST_CASE("context", "[context][interface]")
 {
     core_context_storage storage;
 
-    alia::system sys;
+    alia::test_system sys;
     data_traversal data;
     event_traversal event;
     timing_subsystem timing;
@@ -104,7 +104,7 @@ TEST_CASE("optional_context", "[context][interface]")
 {
     core_context_storage storage;
 
-    alia::system sys;
+    alia::test_system sys;
     data_traversal data;
     event_traversal event;
     timing_subsystem timing;
@@ -130,8 +130,8 @@ TEST_CASE("optional_context", "[context][interface]")
 
 TEST_CASE("content IDs", "[context][interface]")
 {
-    alia::system sys;
-    initialize_standalone_system(sys, [](core_context) {});
+    alia::test_system sys;
+    initialize_test_system(sys, [](core_context) {});
 
     captured_id outer_id, inner_id, downcast_id, recalculated_id;
 
