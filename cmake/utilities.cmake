@@ -30,7 +30,7 @@ endmacro()
 
 # Set the (global) warning flags to what we want for alia development.
 # Generally, this enables a high level of warnings and treats them as errors,
-# but it also disables warnings that are broken or otherwise not useful.
+# but it also disables warnings that are apparently broken.
 function(alia_set_development_warning_flags)
     if(IS_GCC)
         add_compile_options(-Wall -Werror)
