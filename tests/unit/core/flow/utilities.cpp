@@ -14,8 +14,8 @@ using std::string;
 
 TEST_CASE("make_returnable_ref", "[flow][for_each]")
 {
-    alia::system sys;
-    initialize_standalone_system(sys, [](core_context) {});
+    alia::test_system sys;
+    initialize_test_system(sys, [](core_context) {});
 
     auto function_that_returns = [](core_context ctx) -> readable<string> {
         return make_returnable_ref(ctx, value(string("something")));

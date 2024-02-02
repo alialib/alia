@@ -2,6 +2,11 @@
 
 namespace alia {
 
+struct timer_event : targeted_event
+{
+    millisecond_count trigger_time;
+};
+
 void
 schedule_timer_event(
     dataless_core_context ctx,
