@@ -29,8 +29,10 @@
 #include <modules/skshaper/include/SkShaper.h>
 
 #include "alia/core/flow/components.hpp"
+#include "alia/core/flow/macros.hpp"
 #include "alia/core/flow/top_level.hpp"
 #include "alia/core/signals/core.hpp"
+#include "alia/core/timing/smoothing.hpp"
 #include "alia/core/timing/ticks.hpp"
 #include "alia/ui/context.hpp"
 #include "alia/ui/geometry.hpp"
@@ -1875,6 +1877,227 @@ scoped_grid_row::end()
     container_.end();
 }
 
+struct collapsible_container : widget_container
+{
+    column_layout_logic* logic;
+    layout_cacher cacher;
+    layout_vector assigned_size;
+
+    value_smoother<float> smoother;
+
+    float offset_factor = 1;
+
+    // expansion fraction (0 to 1)
+    float expansion = 0;
+
+    // The following are filled in during layout...
+
+    // actual content height
+    layout_scalar content_height;
+
+    // window through which the content is visible
+    layout_box window;
+
+    void
+    refresh(dataless_ui_context ctx, float expansion)
+    {
+        auto smoothed_expansion = smooth_raw(
+            ctx,
+            this->smoother,
+            expansion,
+            animated_transition{default_curve, 160});
+
+        detect_layout_change(
+            get_layout_traversal(ctx), &this->expansion, smoothed_expansion);
+    }
+
+    layout_requirements
+    get_horizontal_requirements() override
+    {
+        return cache_horizontal_layout_requirements(
+            cacher, last_content_change, [&] {
+                calculated_layout_requirements x
+                    = logic->get_horizontal_requirements(children);
+                return calculated_layout_requirements{x.size, 0, 0};
+            });
+    }
+
+    layout_requirements
+    get_vertical_requirements(layout_scalar assigned_width) override
+    {
+        return cache_vertical_layout_requirements(
+            cacher, last_content_change, assigned_width, [&] {
+                layout_scalar resolved_width = resolve_assigned_width(
+                    this->cacher.resolved_spec,
+                    assigned_width,
+                    this->get_horizontal_requirements());
+                calculated_layout_requirements y
+                    = logic->get_vertical_requirements(
+                        children, resolved_width);
+                layout_scalar content_height = y.size;
+                layout_scalar visible_height = round_to_layout_scalar(
+                    float(content_height) * this->expansion);
+                this->content_height = content_height;
+                return calculated_layout_requirements{visible_height, 0, 0};
+            });
+    }
+
+    void
+    set_relative_assignment(
+        relative_layout_assignment const& assignment) override
+    {
+        update_relative_assignment(
+            *this,
+            cacher,
+            last_content_change,
+            assignment,
+            [&](auto const& resolved_assignment) {
+                calculated_layout_requirements y
+                    = logic->get_vertical_requirements(
+                        children, resolved_assignment.region.size[0]);
+                logic->set_relative_assignment(
+                    children,
+                    make_layout_vector(
+                        resolved_assignment.region.size[0], y.size),
+                    y.size - y.descent);
+                this->window = resolved_assignment.region;
+            });
+    }
+
+    void
+    render(render_event& event) override
+    {
+        auto const& region = get_assignment(this->cacher).region;
+        SkRect bounds;
+        bounds.fLeft = SkScalar(region.corner[0] + event.current_offset[0]);
+        bounds.fTop = SkScalar(region.corner[1] + event.current_offset[1]);
+        bounds.fRight = bounds.fLeft + SkScalar(region.size[0]);
+        bounds.fBottom = bounds.fTop + SkScalar(region.size[1]);
+        if (!event.canvas->quickReject(bounds))
+        {
+            event.canvas->save();
+            auto original_offset = event.current_offset;
+            event.canvas->clipRect(bounds);
+            event.current_offset += region.corner;
+            layout_scalar content_offset = round_to_layout_scalar(
+                this->offset_factor * (1 - expansion) * this->content_height);
+            event.current_offset[1] -= content_offset;
+            alia::render_children(event, *this);
+            event.current_offset = original_offset;
+            event.canvas->restore();
+        }
+    }
+
+    void
+    hit_test(
+        hit_test_base& test, vector<2, double> const& point) const override
+    {
+        auto const& region = get_assignment(this->cacher).region;
+        if (is_inside(region, vector<2, float>(point)))
+        {
+            auto local_point = point - vector<2, double>(region.corner);
+            layout_scalar content_offset = round_to_layout_scalar(
+                this->offset_factor * (1 - expansion) * this->content_height);
+            local_point[1] += content_offset;
+            for (widget* node = this->widget_container::children; node;
+                 node = node->next)
+            {
+                node->hit_test(test, local_point);
+            }
+        }
+    }
+
+    void
+    process_input(ui_event_context) override
+    {
+    }
+
+    matrix<3, 3, double>
+    transformation() const override
+    {
+        // TODO
+        return parent->transformation();
+    }
+
+    layout_box
+    bounding_box() const override
+    {
+        return this->cacher.relative_assignment.region;
+    }
+
+    void
+    reveal_region(region_reveal_request const& request) override
+    {
+        parent->reveal_region(request);
+    }
+};
+
+void
+get_collapsible_view(
+    ui_context ctx,
+    std::shared_ptr<collapsible_container>** container,
+    readable<bool> expanded,
+    layout const& layout_spec)
+{
+    if (get_data(ctx, container))
+        **container = std::make_shared<collapsible_container>();
+
+    if (get_layout_traversal(ctx).is_refresh_pass)
+    {
+        (**container)->refresh(ctx, condition_is_true(expanded) ? 1.f : 0.f);
+
+        if (update_layout_cacher(
+                get_layout_traversal(ctx),
+                (**container)->cacher,
+                layout_spec,
+                FILL | UNPADDED))
+        {
+            // Since this container isn't active yet, it didn't get marked
+            // as needing recalculation, so we need to do that manually
+            // here.
+            (**container)->last_content_change
+                = get_layout_traversal(ctx).refresh_counter;
+        }
+    }
+}
+
+struct scoped_collapsible
+{
+    scoped_collapsible()
+    {
+    }
+    scoped_collapsible(
+        ui_context ctx,
+        readable<bool> expanded,
+        layout const& layout_spec = default_layout)
+    {
+        begin(ctx, expanded, layout_spec);
+    }
+    ~scoped_collapsible()
+    {
+        end();
+    }
+
+    void
+    begin(
+        ui_context ctx,
+        readable<bool> expanded,
+        layout const& layout_spec = default_layout)
+    {
+        std::shared_ptr<collapsible_container>* container;
+        get_collapsible_view(ctx, &container, expanded, layout_spec);
+        container_.begin(get_layout_traversal(ctx), container->get());
+    }
+    void
+    end()
+    {
+        container_.end();
+    }
+
+ private:
+    scoped_layout_container container_;
+};
+
 } // namespace alia
 
 void
@@ -1886,26 +2109,48 @@ my_ui(ui_context ctx)
 
     auto show_text = get_state(ctx, false);
 
-    do_box(ctx, SK_ColorLTGRAY, actions::toggle(show_text));
-    do_spacer(ctx, height(100, PIXELS));
+    auto show_other_text = get_state(ctx, false);
 
     {
-        scoped_grid_layout grid(ctx);
+        scoped_flow_layout row(ctx);
+        do_box(ctx, SK_ColorLTGRAY, actions::toggle(show_text));
+        do_box(ctx, SK_ColorLTGRAY, actions::toggle(show_other_text));
+    }
+
+    {
+        scoped_collapsible collapsible(ctx, show_other_text);
+        do_spacer(ctx, height(20, PIXELS));
+        do_text(ctx, value("Könnten Sie mir das übersetzen?"));
         {
-            scoped_grid_row row(ctx, grid);
-            do_box(ctx, SK_ColorMAGENTA, actions::noop(), width(200, PIXELS));
-            do_box(ctx, SK_ColorMAGENTA, actions::noop(), width(200, PIXELS));
-        }
-        {
-            scoped_grid_row row(ctx, grid);
-            do_box(ctx, SK_ColorLTGRAY, actions::noop());
-            do_box(ctx, SK_ColorLTGRAY, actions::noop());
+            scoped_grid_layout grid(ctx);
+            for (int i = 0; i != 4; ++i)
+            {
+                {
+                    scoped_grid_row row(ctx, grid);
+                    do_box(
+                        ctx,
+                        SK_ColorMAGENTA,
+                        actions::noop(),
+                        width(200, PIXELS));
+                    do_box(
+                        ctx,
+                        SK_ColorMAGENTA,
+                        actions::noop(),
+                        width(200, PIXELS));
+                }
+                {
+                    scoped_grid_row row(ctx, grid);
+                    do_box(ctx, SK_ColorLTGRAY, actions::noop());
+                    do_box(ctx, SK_ColorLTGRAY, actions::noop());
+                }
+            }
         }
     }
+
     do_spacer(ctx, height(100, PIXELS));
 
     {
-        for (int outer = 0; outer != 10; ++outer)
+        for (int outer = 0; outer != 0; ++outer)
         {
             do_wrapped_text(
                 ctx,
@@ -1975,7 +2220,7 @@ my_ui(ui_context ctx)
         //     size(400, 400, PIXELS));
         // do_spacer(ctx, height(100, PIXELS));
 
-        for (int outer = 0; outer != 4; ++outer)
+        for (int outer = 0; outer != 2; ++outer)
         {
             scoped_flow_layout flow(ctx, UNPADDED);
 
