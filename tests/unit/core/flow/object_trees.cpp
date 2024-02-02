@@ -44,8 +44,8 @@ TEST_CASE("simple object tree", "[flow][object_trees]")
         ALIA_END
     };
 
-    alia::system sys;
-    initialize_standalone_system(sys, [&](core_context vanilla_ctx) {
+    alia::test_system sys;
+    initialize_test_system(sys, [&](core_context vanilla_ctx) {
         tree_traversal<test_object> traversal;
         auto ctx = extend_context<tree_traversal_tag>(vanilla_ctx, traversal);
         if (is_refresh_event(ctx))
@@ -158,8 +158,8 @@ TEST_CASE("multilevel object tree", "[flow][object_trees]")
         ALIA_END
     };
 
-    alia::system sys;
-    initialize_standalone_system(sys, [&](core_context vanilla_ctx) {
+    alia::test_system sys;
+    initialize_test_system(sys, [&](core_context vanilla_ctx) {
         tree_traversal<test_object> traversal;
         auto ctx = extend_context<tree_traversal_tag>(vanilla_ctx, traversal);
         if (is_refresh_event(ctx))
@@ -237,8 +237,8 @@ TEST_CASE("fluid object tree", "[flow][object_trees]")
         });
     };
 
-    alia::system sys;
-    initialize_standalone_system(sys, [&](core_context vanilla_ctx) {
+    alia::test_system sys;
+    initialize_test_system(sys, [&](core_context vanilla_ctx) {
         tree_traversal<test_object> traversal;
         auto ctx = extend_context<tree_traversal_tag>(vanilla_ctx, traversal);
         if (is_refresh_event(ctx))
@@ -372,8 +372,8 @@ TEST_CASE("piecewise containers", "[flow][object_trees]")
         ALIA_END
     };
 
-    alia::system sys;
-    initialize_standalone_system(sys, [&](core_context vanilla_ctx) {
+    alia::test_system sys;
+    initialize_test_system(sys, [&](core_context vanilla_ctx) {
         tree_traversal<test_object> traversal;
         auto ctx = extend_context<tree_traversal_tag>(vanilla_ctx, traversal);
         if (is_refresh_event(ctx))
@@ -485,8 +485,8 @@ TEST_CASE("floating object tree root", "[flow][object_trees]")
         ALIA_END
     };
 
-    alia::system sys;
-    initialize_standalone_system(sys, [&](core_context vanilla_ctx) {
+    alia::test_system sys;
+    initialize_test_system(sys, [&](core_context vanilla_ctx) {
         tree_traversal<test_object> traversal;
         auto ctx = extend_context<tree_traversal_tag>(vanilla_ctx, traversal);
         if (is_refresh_event(ctx))

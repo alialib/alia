@@ -11,7 +11,7 @@ using namespace alia;
 
 struct testing_external_interface : default_external_interface
 {
-    testing_external_interface(alia::system& sys)
+    testing_external_interface(alia::test_system& sys)
         : default_external_interface(sys)
     {
     }
@@ -27,9 +27,9 @@ struct testing_external_interface : default_external_interface
 
 TEST_CASE("timer", "[timing][timer]")
 {
-    alia::system sys;
+    alia::test_system sys;
     auto* external_ptr = new testing_external_interface(sys);
-    initialize_standalone_system(
+    initialize_test_system(
         sys, [](core_context) {}, external_ptr);
     auto& external = *external_ptr;
 

@@ -13,7 +13,7 @@ using namespace alia;
 
 struct testing_external_interface : default_external_interface
 {
-    testing_external_interface(alia::system& sys)
+    testing_external_interface(alia::test_system& sys)
         : default_external_interface(sys)
     {
     }
@@ -41,9 +41,9 @@ TEST_CASE("interpolation", "[timing][smoothing]")
 
 TEST_CASE("smooth_raw", "[timing][smoothing]")
 {
-    alia::system sys;
+    alia::test_system sys;
     auto* external_ptr = new testing_external_interface(sys);
-    initialize_standalone_system(
+    initialize_test_system(
         sys, [](core_context) {}, external_ptr);
     auto& external = *external_ptr;
 
@@ -133,9 +133,9 @@ TEST_CASE("smooth_raw", "[timing][smoothing]")
 
 TEST_CASE("smooth", "[timing][smoothing]")
 {
-    alia::system sys;
+    alia::test_system sys;
     auto* external_ptr = new testing_external_interface(sys);
-    initialize_standalone_system(
+    initialize_test_system(
         sys, [](core_context) {}, external_ptr);
     auto& external = *external_ptr;
 
@@ -192,9 +192,9 @@ TEST_CASE("smooth", "[timing][smoothing]")
 
 TEST_CASE("smooth writing", "[timing][smoothing]")
 {
-    alia::system sys;
+    alia::test_system sys;
     auto* external_ptr = new testing_external_interface(sys);
-    initialize_standalone_system(
+    initialize_test_system(
         sys, [](core_context) {}, external_ptr);
     auto& external = *external_ptr;
 

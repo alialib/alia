@@ -13,8 +13,8 @@ using namespace alia;
 
 TEST_CASE("automatic ticks", "[timing][ticks]")
 {
-    alia::system sys;
-    initialize_standalone_system(sys, [](core_context) {});
+    alia::test_system sys;
+    initialize_test_system(sys, [](core_context) {});
     millisecond_count last_ticks;
     do_traversal(sys, [&](core_context ctx) {
         last_ticks = get_raw_animation_tick_count(ctx);
@@ -27,7 +27,7 @@ TEST_CASE("automatic ticks", "[timing][ticks]")
 
 struct dummy_external_interface : default_external_interface
 {
-    dummy_external_interface(alia::system& sys)
+    dummy_external_interface(alia::test_system& sys)
         : default_external_interface(sys)
     {
     }
@@ -50,9 +50,9 @@ struct dummy_external_interface : default_external_interface
 
 TEST_CASE("get_raw_animation_ticks_left", "[timing][ticks]")
 {
-    alia::system sys;
+    alia::test_system sys;
     auto* external_ptr = new dummy_external_interface(sys);
-    initialize_standalone_system(
+    initialize_test_system(
         sys, [](core_context) {}, external_ptr);
     auto& external = *external_ptr;
 
@@ -88,9 +88,9 @@ TEST_CASE("get_raw_animation_ticks_left", "[timing][ticks]")
 
 TEST_CASE("animation_timer", "[timing][ticks]")
 {
-    alia::system sys;
+    alia::test_system sys;
     auto* external_ptr = new dummy_external_interface(sys);
-    initialize_standalone_system(
+    initialize_test_system(
         sys, [](core_context) {}, external_ptr);
     auto& external = *external_ptr;
 

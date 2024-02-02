@@ -13,8 +13,8 @@ using namespace alia;
 
 TEST_CASE("async", "[signals][async]")
 {
-    alia::system sys;
-    initialize_standalone_system(sys, [](core_context) {});
+    alia::test_system sys;
+    initialize_test_system(sys, [](core_context) {});
 
     async_reporter<int> reporter;
 

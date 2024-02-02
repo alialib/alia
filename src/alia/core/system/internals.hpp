@@ -80,8 +80,6 @@ struct default_external_interface : external_interface
     schedule_asynchronous_update(std::function<void()> update) override;
 };
 
-// TODO: Clean this up.
-
 struct untyped_system : noncopyable
 {
     data_graph data;
@@ -131,36 +129,6 @@ initialize_core_system(
         sys.external = std::make_unique<default_external_interface>(sys);
     sys.root_component = std::make_shared<component_container>();
 }
-
-struct system : typed_system<core_context>
-{
-    std::function<void(core_context)> controller;
-
-    virtual void
-    invoke_controller(core_context ctx)
-    {
-        controller(ctx);
-    }
-};
-
-void
-initialize_standalone_system(
-    system& sys,
-    std::function<void(core_context)> const& controller,
-    external_interface* external = nullptr);
-
-// timer event
-struct timer_event : targeted_event
-{
-    millisecond_count trigger_time;
-};
-
-void
-process_internal_callbacks(
-    system& sys,
-    millisecond_count now,
-    function_view<void(std::function<void()> const&, millisecond_count)> const&
-        invoker);
 
 } // namespace alia
 

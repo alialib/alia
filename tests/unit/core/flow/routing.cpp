@@ -4,9 +4,10 @@
 
 #include <alia/core/flow/macros.hpp>
 #include <alia/core/flow/top_level.hpp>
-#include <alia/core/system/internals.hpp>
 
 #include <catch2/catch_test_macros.hpp>
+
+#include "test_system.hpp"
 
 using namespace alia;
 
@@ -99,8 +100,8 @@ void
 check_traversal_path(
     int n, std::string const& label, std::string const& expected_path)
 {
-    alia::system sys;
-    initialize_standalone_system(sys, traversal_function(n));
+    alia::test_system sys;
+    initialize_test_system(sys, traversal_function(n));
     component_container_ptr target;
     {
         find_label_event fle;

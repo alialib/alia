@@ -33,24 +33,4 @@ default_external_interface::schedule_asynchronous_update(
     refresh_system(owner);
 }
 
-void
-initialize_standalone_system(
-    system& sys,
-    std::function<void(core_context)> const& controller,
-    external_interface* external)
-{
-    initialize_core_system(sys, external);
-    sys.controller = controller;
-}
-
-void
-process_internal_callbacks(
-    system& sys,
-    millisecond_count now,
-    function_view<void(std::function<void()> const&, millisecond_count)> const&
-        invoker)
-{
-    invoke_ready_callbacks(sys.scheduler, now, invoker);
-}
-
 } // namespace alia
