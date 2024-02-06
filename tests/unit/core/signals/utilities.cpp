@@ -138,6 +138,8 @@ TEST_CASE("simple ID preferring", "[signals][utilities]")
 
 TEST_CASE("refresh_signal_view", "[signals][utilities]")
 {
+    // 2-lambda version...
+
     int new_value_count = 0, lost_value_count = 0;
 
     auto on_new_value = [&](int expected) {
@@ -173,6 +175,35 @@ TEST_CASE("refresh_signal_view", "[signals][utilities]")
     refresh_signal_view(id, value(0), on_new_value(0), on_lost_value);
     REQUIRE(new_value_count == 3);
     REQUIRE(lost_value_count == 1);
+
+    // 3-lambda version...
+
+    int reset_count = 0;
+    auto on_either = [&]() { ++reset_count; };
+
+    refresh_signal_view(
+        id, empty<int>(), on_new_value(-1), on_lost_value, on_either);
+    REQUIRE(new_value_count == 3);
+    REQUIRE(lost_value_count == 2);
+    REQUIRE(reset_count == 1);
+
+    refresh_signal_view(
+        id, empty<int>(), on_new_value(-1), on_lost_value, on_either);
+    REQUIRE(new_value_count == 3);
+    REQUIRE(lost_value_count == 2);
+    REQUIRE(reset_count == 1);
+
+    refresh_signal_view(
+        id, value(0), on_new_value(0), on_lost_value, on_either);
+    REQUIRE(new_value_count == 4);
+    REQUIRE(lost_value_count == 2);
+    REQUIRE(reset_count == 2);
+
+    refresh_signal_view(
+        id, value(0), on_new_value(0), on_lost_value, on_either);
+    REQUIRE(new_value_count == 4);
+    REQUIRE(lost_value_count == 2);
+    REQUIRE(reset_count == 2);
 }
 
 template<class Wrapped>

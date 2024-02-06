@@ -123,7 +123,7 @@ refresh_signal_view(
     {
         if (!id.matches(signal.value_id()))
         {
-            on_new_value(signal.read());
+            std::forward<OnNewValue>(on_new_value)(signal.read());
             id.capture(signal.value_id());
         }
     }
@@ -131,7 +131,38 @@ refresh_signal_view(
     {
         if (!id.matches(null_id))
         {
-            on_lost_value();
+            std::forward<OnLostValue>(on_lost_value)();
+            id.capture(null_id);
+        }
+    }
+}
+
+// This form of refresh_signal_view takes a third lambda that contains "reset"
+// code that is common to both cases.
+template<class Signal, class OnNewValue, class OnLostValue, class OnEither>
+void
+refresh_signal_view(
+    captured_id& id,
+    Signal signal,
+    OnNewValue&& on_new_value,
+    OnLostValue&& on_lost_value,
+    OnEither&& on_either)
+{
+    if (signal.has_value())
+    {
+        if (!id.matches(signal.value_id()))
+        {
+            std::forward<OnNewValue>(on_new_value)(signal.read());
+            std::forward<OnEither>(on_either)();
+            id.capture(signal.value_id());
+        }
+    }
+    else
+    {
+        if (!id.matches(null_id))
+        {
+            std::forward<OnLostValue>(on_lost_value)();
+            std::forward<OnEither>(on_either)();
             id.capture(null_id);
         }
     }
