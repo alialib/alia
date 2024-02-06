@@ -698,6 +698,7 @@ struct scrollable_view : widget_container
     void
     refresh(dataless_ui_context ctx)
     {
+        data.scrollable_axes = 2;
         for (unsigned axis = 0; axis != 2; ++axis)
         {
             data.sb_data[axis].metrics.refresh(

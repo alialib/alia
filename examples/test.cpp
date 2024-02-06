@@ -906,7 +906,7 @@ struct wrapped_text_node : widget
     {
         SkCanvas& canvas = *event.canvas;
 
-        auto const& region = this->relative_assignment_.region;
+        auto const& region = cacher.relative_assignment.region;
 
         SkRect bounds;
         bounds.fLeft = SkScalar(region.corner[0] + event.current_offset[0]);
@@ -949,79 +949,64 @@ struct wrapped_text_node : widget
     layout_requirements
     get_horizontal_requirements() override
     {
-        layout_requirements requirements;
-        resolve_requirements(
-            requirements,
-            resolved_spec_,
-            0,
-            // TODO: What should the actual minimum width be here?
-            calculated_layout_requirements{12, 0, 0});
-        return requirements;
+        return cache_horizontal_layout_requirements(
+            cacher, this->last_content_change, [&] {
+                // TODO: What should the actual minimum width be here?
+                return calculated_layout_requirements{12, 0, 0};
+            });
     }
     layout_requirements
     get_vertical_requirements(layout_scalar assigned_width) override
     {
-        if (shape_width_ != assigned_width)
-        {
-            shape_ = Shape(
-                text_.c_str(), text_.size(), *the_font, assigned_width);
-            shape_width_ = assigned_width;
-        }
+        return cache_vertical_layout_requirements(
+            cacher, this->last_content_change, assigned_width, [&] {
+                if (shape_width_ != assigned_width)
+                {
+                    std::cout << "(gvr) " << shape_width_ << " -> "
+                              << assigned_width << std::endl;
+                    shape_ = Shape(
+                        text_.c_str(),
+                        text_.size(),
+                        *the_font,
+                        assigned_width);
+                    shape_width_ = assigned_width;
+                }
 
-        layout_requirements requirements;
-        resolve_requirements(
-            requirements,
-            resolved_spec_,
-            1,
-            calculated_layout_requirements{
-                layout_scalar(shape_.verticalAdvance),
-                0 /* TODO: ascent */,
-                0 /* TODO: descent */});
-        return requirements;
+                return calculated_layout_requirements{
+                    layout_scalar(shape_.verticalAdvance),
+                    0 /* TODO: ascent */,
+                    0 /* TODO: descent */};
+            });
     }
     void
     set_relative_assignment(
         relative_layout_assignment const& assignment) override
     {
-        layout_requirements horizontal_requirements;
-        resolve_requirements(
-            horizontal_requirements,
-            resolved_spec_,
-            0,
-            // TODO: What should the actual minimum width be here?
-            calculated_layout_requirements{12, 0, 0});
-
-        if (shape_width_ != assignment.region.size[0])
-        {
-            shape_ = Shape(
-                text_.c_str(),
-                text_.size(),
-                *the_font,
-                assignment.region.size[0]);
-            shape_width_ = assignment.region.size[0];
-        }
-
-        layout_requirements vertical_requirements;
-        resolve_requirements(
-            vertical_requirements,
-            resolved_spec_,
-            1,
-            calculated_layout_requirements{
-                layout_scalar(shape_.verticalAdvance),
-                0 /* TODO: ascent */,
-                0 /* TODO: descent */});
-
-        relative_assignment_ = resolve_relative_assignment(
-            resolved_spec_,
+        update_relative_assignment(
+            *this,
+            cacher,
+            this->last_content_change,
             assignment,
-            horizontal_requirements,
-            vertical_requirements);
+            [&](auto const&) {
+                // if (shape_width_ != resolved_assignment.region.size[0])
+                // {
+                //     std::cout << "(sra) " << shape_width_ << " -> "
+                //               << resolved_assignment.region.size[0]
+                //               << std::endl;
+                //     shape_ = Shape(
+                //         text_.c_str(),
+                //         text_.size(),
+                //         *the_font,
+                //         resolved_assignment.region.size[0]);
+                //     shape_width_ = resolved_assignment.region.size[0];
+                // }
+            });
     }
 
     layout_box
     bounding_box() const override
     {
-        return relative_assignment_.region;
+        return cacher.relative_assignment.region;
     }
 
     void
@@ -1035,13 +1020,12 @@ struct wrapped_text_node : widget
     captured_id text_id_;
     std::string text_;
 
+    layout_cacher cacher;
+
     double shape_width_ = 0;
     ShapeResult shape_;
 
-    // the resolved spec
-    resolved_layout_spec resolved_spec_;
-    // resolved relative assignment
-    relative_layout_assignment relative_assignment_;
+    counter_type last_content_change = 0;
 };
 
 void
@@ -1065,21 +1049,31 @@ do_wrapped_text(
 
     if (is_refresh_event(ctx))
     {
-        // TODO: Cache this?
-        resolved_layout_spec resolved_spec;
-        resolve_layout_spec(
-            get_layout_traversal(ctx),
-            resolved_spec,
-            layout_spec,
-            TOP | LEFT | PADDED);
-        detect_layout_change(
-            get_layout_traversal(ctx), &node.resolved_spec_, resolved_spec);
+        if (update_layout_cacher(
+                get_layout_traversal(ctx),
+                node.cacher,
+                layout_spec,
+                TOP | LEFT | PADDED))
+        {
+            // Since this container isn't active yet, it didn't get marked
+            // as needing recalculation, so we need to do that manually
+            // here.
+            node.last_content_change
+                = get_layout_traversal(ctx).refresh_counter;
+        }
 
         refresh_signal_view(
             node.text_id_,
             text,
             [&](std::string const& new_value) { node.text_ = new_value; },
-            [&]() { node.text_.clear(); });
+            [&] { node.text_.clear(); },
+            [&] {
+                record_layout_change(get_layout_traversal(ctx));
+                node.shape_width_ = 0;
+                node.shape_ = ShapeResult();
+                node.last_content_change
+                    = get_layout_traversal(ctx).refresh_counter;
+            });
 
         add_layout_node(get<ui_traversal_tag>(ctx).layout, &node);
     }
@@ -1907,6 +1901,12 @@ struct collapsible_container : widget_container
             expansion,
             animated_transition{default_curve, 160});
 
+        if (this->expansion != smoothed_expansion)
+        {
+            this->last_content_change
+                = get_layout_traversal(ctx).refresh_counter;
+        }
+
         detect_layout_change(
             get_layout_traversal(ctx), &this->expansion, smoothed_expansion);
     }
@@ -2166,7 +2166,7 @@ my_ui(ui_context ctx)
     do_spacer(ctx, height(100, PIXELS));
 
     {
-        for (int outer = 0; outer != 0; ++outer)
+        for (int outer = 0; outer != 10; ++outer)
         {
             do_wrapped_text(
                 ctx,
