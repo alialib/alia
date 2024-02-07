@@ -148,9 +148,7 @@ if (ALIA_ENABLE_UI)
     target_link_libraries(alia_ui PUBLIC
         alia_core
         unofficial::skia::skia
-        unofficial::skia::skparagraph
-        unofficial::skia::skshaper
-        unofficial::skia::skunicode)
+        unofficial::skia::modules::skshaper)
     target_include_directories(alia_ui PUBLIC
         "${dmilos_color_SOURCE_DIR}/src")
     target_precompile_headers(alia_ui PUBLIC
