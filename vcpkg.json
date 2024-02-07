@@ -1,6 +1,6 @@
 {
     "name": "alia",
-    "builtin-baseline": "662dbb50e63af15baa2909b7eac5b1b87e86a0aa",
+    "builtin-baseline": "66b4b34d99ab272fcf21f2bd12b616e371c6bb31",
     "features": {
         "html": {
             "description": "Build HTML integration",
@@ -39,16 +39,6 @@
         }
     },
     "vcpkg-configuration": {
-        "registries": [
-            {
-                "kind": "git",
-                "repository": "https://github.com/alialib/vcpkg-registry",
-                "baseline": "be55918daaa02817e2a48fea215a335f6721f50e",
-                "packages": [
-                    "skia"
-                ]
-            }
-        ],
         "overlay-triplets": [
             "vcpkg/triplets/"
         ]

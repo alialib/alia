@@ -78,7 +78,7 @@ struct ui_system : alia::typed_system<vanilla_ui_context>
     window_input_state input;
 
     // TODO: Clean this up.
-    sk_sp<skia::textlayout::FontCollection> font_collection;
+    // sk_sp<skia::textlayout::FontCollection> font_collection;
 
     // ui_style style;
 
