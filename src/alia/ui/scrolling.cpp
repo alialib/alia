@@ -804,7 +804,7 @@ struct scrollable_view : widget_container
 
                 // Track whether or not we're going to include the scrollbar
                 // width in the available width for content.
-                bool exclude_scrollbar_width[2] = {false, false};
+                // bool exclude_scrollbar_
 
                 calculated_layout_requirements x
                     = logic->get_horizontal_requirements(children);

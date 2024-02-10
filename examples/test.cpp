@@ -18,6 +18,7 @@
 
 #include <color/color.hpp>
 
+#include <chrono>
 #include <cmath>
 
 #include <limits>
@@ -45,9 +46,11 @@
 
 #include <alia/ui/scrolling.hpp>
 
+#include "my_shaper.hpp"
+
 using namespace alia;
 
-// std::unique_ptr<SkShaper> the_shaper;
+// std::unique_ptr<MyShaper> the_shaper;
 
 // TODO
 static std::unique_ptr<SkFont> the_font;
@@ -484,7 +487,7 @@ do_text(
 
 #pragma warning(push, 0)
 
-class RunHandler final : public SkShaper::RunHandler
+class RunHandler final : public MyShaper::RunHandler
 {
  public:
     RunHandler(const char* utf8Text, size_t) : fUtf8Text(utf8Text)
@@ -523,7 +526,7 @@ class RunHandler final : public SkShaper::RunHandler
     runInfo(const RunInfo&) override;
     void
     commitRunInfo() override;
-    SkShaper::RunHandler::Buffer
+    MyShaper::RunHandler::Buffer
     runBuffer(const RunInfo&) override;
     void
     commitRunBuffer(const RunInfo&) override;
@@ -585,7 +588,7 @@ RunHandler::beginLine()
     fMaxRunLeading = 0;
 }
 void
-RunHandler::runInfo(const SkShaper::RunHandler::RunInfo& info)
+RunHandler::runInfo(const MyShaper::RunHandler::RunInfo& info)
 {
     SkFontMetrics metrics;
     info.fFont.getMetrics(&metrics);
@@ -598,7 +601,7 @@ RunHandler::commitRunInfo()
 {
     fCurrentPosition.fY -= fMaxRunAscent;
 }
-SkShaper::RunHandler::Buffer
+MyShaper::RunHandler::Buffer
 RunHandler::runBuffer(const RunInfo& info)
 {
     int glyphCount
@@ -793,7 +796,7 @@ Shape(
         utf8Text = nullptr;
         textByteLen = 0;
     }
-    std::unique_ptr<SkShaper> shaper = SkShaper::Make();
+    std::unique_ptr<MyShaper> shaper = MyShaper::Make();
     float height = font.getSpacing();
     RunHandler runHandler(utf8Text, textByteLen);
     if (textByteLen)
@@ -803,9 +806,9 @@ Shape(
         {
             c = SkRect{-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX};
         }
-        runHandler.setRunCallback(
-            set_character_bounds, result.glyphBounds.data());
-        // TODO: make use of locale in shaping.
+        // runHandler.setRunCallback(
+        //     set_character_bounds, result.glyphBounds.data());
+        //  TODO: make use of locale in shaping.
         shaper->shape(utf8Text, textByteLen, font, true, width, &runHandler);
         if (runHandler.lineEndOffsets().size() > 1)
         {
@@ -2104,14 +2107,14 @@ my_ui(ui_context ctx)
                     "molestie eros. Nam fermentum, mi malesuada eleifend "
                     "dapibus, lectus dolor luctus orci, nec posuere dolor "
                     "lorem ac sem. Nullam interdum laoreet ipsum in "
-                    "dictum.\n\n"
+                    "dictum."
                     "Duis quis blandit felis. Pellentesque et lectus magna. "
                     "Maecenas dui lacus, sollicitudin a eros in, vehicula "
                     "posuere metus. Etiam nec dolor mattis, tincidunt sem "
                     "vitae, maximus tellus. Vestibulum ut nisi nec neque "
                     "rutrum interdum. In justo massa, consequat quis dui "
                     "eget, cursus ultricies sem. Quisque a lectus quis est "
-                    "porttitor ullamcorper ac sed odio.\n\n"
+                    "porttitor ullamcorper ac sed odio."
                     "Vestibulum sed turpis et lacus rutrum scelerisque et sit "
                     "amet ipsum. Sed congue hendrerit augue, sed pellentesque "
                     "neque. Integer efficitur nisi id massa placerat, at "
@@ -2124,7 +2127,7 @@ my_ui(ui_context ctx)
                     "Donec accumsan, nisi egestas sollicitudin ullamcorper, "
                     "diam dolor faucibus neque, eu scelerisque mi erat vel "
                     "erat. Etiam nec leo ac risus porta ornare ut accumsan "
-                    "lorem.\n\n"
+                    "lorem."
                     "Aenean at euismod ligula. Sed augue est, imperdiet ut "
                     "sem sit amet, efficitur dictum enim. Nam sodales id "
                     "risus non pulvinar. Morbi id mollis massa. Nunc elit "
@@ -2136,7 +2139,7 @@ my_ui(ui_context ctx)
                     "Pellentesque convallis suscipit ex et hendrerit. Donec "
                     "est ex, varius eu nulla id, tristique lobortis metus. "
                     "Sed id sem justo. Nulla at porta neque, id elementum "
-                    "lacus.\n\n"
+                    "lacus."
                     "Mauris leo tortor, tincidunt sit amet sem sit amet, "
                     "egestas tempor massa. In diam ipsum, fermentum pulvinar "
                     "posuere ut, scelerisque sit amet odio. Nam nec justo "
@@ -2149,7 +2152,7 @@ my_ui(ui_context ctx)
                     "varius dictum gravida. Nulla molestie fermentum odio "
                     "vitae tincidunt. Quisque dictum, magna vitae porttitor "
                     "accumsan, felis felis consectetur nisi, ut venenatis "
-                    "felis justo ut ante.\n\n"),
+                    "felis justo ut ante."),
                 FILL);
         }
 
@@ -2218,4 +2221,90 @@ my_ui(ui_context ctx)
             }
         }
     }
+}
+
+int
+main(void)
+{
+    if (!the_font)
+    {
+        the_font.reset(new SkFont(
+            SkTypeface::MakeFromFile("roboto/Roboto-Regular.ttf"), 24));
+    }
+
+    for (int i = 0; i != 10; ++i)
+    {
+        auto start = std::chrono::steady_clock::now();
+        for (int width = 600; width != 2000; ++width)
+        {
+            std::string text
+                = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. "
+                  "Phasellus lacinia elementum diam consequat aliquet. "
+                  "Vestibulum ut libero justo. Pellentesque lectus lectus, "
+                  "scelerisque a elementum sed, bibendum id libero. "
+                  "Maecenas venenatis est sed sem consequat mollis. Ut "
+                  "neque odio, hendrerit ut justo venenatis, consequat "
+                  "molestie eros. Nam fermentum, mi malesuada eleifend "
+                  "dapibus, lectus dolor luctus orci, nec posuere dolor "
+                  "lorem ac sem. Nullam interdum laoreet ipsum in "
+                  "dictum."
+                  "Duis quis blandit felis. Pellentesque et lectus magna. "
+                  "Maecenas dui lacus, sollicitudin a eros in, vehicula "
+                  "posuere metus. Etiam nec dolor mattis, tincidunt sem "
+                  "vitae, maximus tellus. Vestibulum ut nisi nec neque "
+                  "rutrum interdum. In justo massa, consequat quis dui "
+                  "eget, cursus ultricies sem. Quisque a lectus quis est "
+                  "porttitor ullamcorper ac sed odio."
+                  "Vestibulum sed turpis et lacus rutrum scelerisque et sit "
+                  "amet ipsum. Sed congue hendrerit augue, sed pellentesque "
+                  "neque. Integer efficitur nisi id massa placerat, at "
+                  "ullamcorper arcu fermentum. Donec sed tellus quis velit "
+                  "placerat viverra nec vel diam. Vestibulum faucibus "
+                  "molestie ipsum eget rhoncus. Donec vitae bibendum nibh, "
+                  "quis pellentesque enim. Donec eget consectetur massa, "
+                  "eget mollis elit. Orci varius natoque penatibus et "
+                  "magnis dis parturient montes, nascetur ridiculus mus. "
+                  "Donec accumsan, nisi egestas sollicitudin ullamcorper, "
+                  "diam dolor faucibus neque, eu scelerisque mi erat vel "
+                  "erat. Etiam nec leo ac risus porta ornare ut accumsan "
+                  "lorem."
+                  "Aenean at euismod ligula. Sed augue est, imperdiet ut "
+                  "sem sit amet, efficitur dictum enim. Nam sodales id "
+                  "risus non pulvinar. Morbi id mollis massa. Nunc elit "
+                  "velit, pellentesque et lobortis ut, luctus sed justo. "
+                  "Morbi eleifend quam vel magna accumsan, eu consequat "
+                  "nisl ultrices. Mauris dictum eu quam sit amet aliquet. "
+                  "Sed rhoncus turpis quis sagittis imperdiet. Lorem ipsum "
+                  "dolor sit amet, consectetur adipiscing elit. "
+                  "Pellentesque convallis suscipit ex et hendrerit. Donec "
+                  "est ex, varius eu nulla id, tristique lobortis metus. "
+                  "Sed id sem justo. Nulla at porta neque, id elementum "
+                  "lacus."
+                  "Mauris leo tortor, tincidunt sit amet sem sit amet, "
+                  "egestas tempor massa. In diam ipsum, fermentum pulvinar "
+                  "posuere ut, scelerisque sit amet odio. Nam nec justo "
+                  "quis felis ultrices ornare sit amet eu massa. Nam "
+                  "gravida lacus eget tortor porttitor, eget scelerisque "
+                  "est imperdiet. Duis quis imperdiet libero. Nullam justo "
+                  "erat, blandit et nisi sit amet, aliquet mattis leo. Sed "
+                  "a augue non felis lacinia ultrices. Aenean porttitor "
+                  "bibendum sem, in consectetur arcu suscipit id. Etiam "
+                  "varius dictum gravida. Nulla molestie fermentum odio "
+                  "vitae tincidunt. Quisque dictum, magna vitae porttitor "
+                  "accumsan, felis felis consectetur nisi, ut venenatis "
+                  "felis justo ut ante.";
+            Shape(text.c_str(), text.size(), *the_font, width);
+        }
+        auto now = std::chrono::steady_clock::now();
+        std::cout << "Shaping 1400 widths took "
+                  << std::chrono::duration_cast<
+                         std::chrono::duration<millisecond_count, std::milli>>(
+                         now - start)
+                         .count()
+                  << " ms.\n";
+    }
+
+    // indie::glfw_window the_window(
+    //     "alia test", indie::make_vector<unsigned>(1200, 1600), my_ui);
+    // the_window.do_main_loop();
 }
