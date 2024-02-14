@@ -23,6 +23,7 @@
 #include <include/core/SkColor.h>
 #include <include/core/SkFontTypes.h>
 #include <include/core/SkMaskFilter.h>
+#include <include/core/SkPath.h>
 #include <include/core/SkPictureRecorder.h>
 #include <include/core/SkTextBlob.h>
 #include <limits>
@@ -54,10 +55,9 @@ struct click_event : targeted_event
 {
 };
 
-// smooth_raw(ctx, smoother, x, transition) returns a smoothed view of x.
 template<class Value>
 Value
-smooth_position(
+smooth_value(
     value_smoother<Value>& smoother,
     Value const& x,
     millisecond_count tick_counter,
@@ -75,7 +75,7 @@ smooth_position(
             double fraction = eval_curve_at_x(
                 transition.curve,
                 1. - double(ticks_left) / smoother.duration,
-                1. / smoother.duration);
+                0.5 / smoother.duration);
             current_value = interpolate(
                 smoother.old_value, smoother.new_value, fraction);
         }
@@ -188,7 +188,7 @@ struct box_node : widget
             c = mix;
         }
 
-        // auto position = smooth_position(
+        // auto position = smooth_value(
         //     position_,
         //     region.corner + event.current_offset,
         //     tick_counter_,
@@ -378,6 +378,249 @@ do_box(
     {
         perform_action(on_click);
         abort_traversal(ctx);
+    }
+}
+
+struct tree_expander_node : widget
+{
+    layout_requirements
+    get_horizontal_requirements() override
+    {
+        layout_requirements requirements;
+        resolve_requirements(
+            requirements,
+            resolved_spec_,
+            0,
+            calculated_layout_requirements{40, 0, 0});
+        return requirements;
+    }
+    layout_requirements
+    get_vertical_requirements(layout_scalar /*assigned_width*/) override
+    {
+        layout_requirements requirements;
+        resolve_requirements(
+            requirements,
+            resolved_spec_,
+            1,
+            calculated_layout_requirements{40, 0, 0});
+        return requirements;
+    }
+    void
+    set_relative_assignment(
+        relative_layout_assignment const& assignment) override
+    {
+        layout_requirements horizontal_requirements, vertical_requirements;
+        resolve_requirements(
+            horizontal_requirements,
+            resolved_spec_,
+            0,
+            calculated_layout_requirements{40, 0, 0});
+        resolve_requirements(
+            vertical_requirements,
+            resolved_spec_,
+            1,
+            calculated_layout_requirements{40, 0, 0});
+        relative_assignment_ = resolve_relative_assignment(
+            resolved_spec_,
+            assignment,
+            horizontal_requirements,
+            vertical_requirements);
+    }
+
+    void
+    render(render_event& event) override
+    {
+        SkCanvas& canvas = *event.canvas;
+
+        auto const& region = this->assignment().region;
+
+        uint8_t background_alpha = 0;
+
+        if (is_click_in_progress(
+                *sys_, internal_element_ref{*this, 0}, mouse_button::LEFT)
+            || is_pressed(keyboard_click_state_))
+        {
+            background_alpha = 0x30;
+        }
+        else if (is_click_possible(*sys_, internal_element_ref{*this, 0}))
+        {
+            background_alpha = 0x18;
+        }
+
+        auto position = region.corner + event.current_offset;
+
+        if (background_alpha != 0)
+        {
+            SkPaint paint;
+            paint.setColor(SkColorSetARGB(background_alpha, 0x00, 0x00, 0xff));
+            SkRect rect;
+            rect.fLeft = SkScalar(position[0]);
+            rect.fTop = SkScalar(position[1]);
+            rect.fRight = SkScalar(position[0] + region.size[0]);
+            rect.fBottom = SkScalar(position[1] + region.size[1]);
+            canvas.drawRect(rect, paint);
+        }
+
+        float angle = smooth_value(
+            angle_smoother_,
+            state_ ? 90.f : 0.f,
+            tick_counter_,
+            animated_transition{linear_curve, 200});
+
+        canvas.save();
+
+        canvas.translate(
+            position[0] + region.size[0] / SkIntToScalar(2),
+            position[1] + region.size[1] / SkIntToScalar(2));
+        canvas.rotate(angle);
+
+        {
+            SkPaint paint;
+            paint.setColor(SK_ColorBLACK);
+            // set_color(paint, renderer.style().fg_color);
+            paint.setStyle(SkPaint::kFill_Style);
+            SkScalar a = region.size[0] / SkIntToScalar(2);
+            SkPath path;
+            path.incReserve(4);
+            SkPoint p0;
+            p0.fX = a * SkDoubleToScalar(-0.34);
+            p0.fY = a * SkDoubleToScalar(-0.5);
+            path.moveTo(p0);
+            SkPoint p1;
+            p1.fX = p0.fX;
+            p1.fY = a * SkDoubleToScalar(0.5);
+            path.lineTo(p1);
+            SkPoint p2;
+            p2.fX = p0.fX + a * SkDoubleToScalar(0.866);
+            p2.fY = 0;
+            path.lineTo(p2);
+            path.lineTo(p0);
+            canvas.drawPath(path, paint);
+        }
+
+        canvas.restore();
+
+        // if (rect.width() > 200)
+        // {
+        //     SkPaint blur(paint);
+        //     blur.setAlpha(200);
+        //     blur.setMaskFilter(
+        //         SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, 40, false));
+        //     canvas.drawRect(rect, blur);
+        // }
+
+        // if (element_has_focus(*sys_, internal_element_ref{*this, 0}))
+        // {
+        //     SkPaint paint;
+        //     paint.setStyle(SkPaint::kStroke_Style);
+        //     paint.setStrokeWidth(4);
+        //     paint.setColor(SK_ColorBLACK);
+        //     canvas.drawRect(rect, paint);
+        // }
+    }
+
+    void
+    hit_test(
+        hit_test_base& test, vector<2, double> const& point) const override
+    {
+        if (is_inside(this->assignment().region, vector<2, float>(point)))
+        {
+            if (test.type == hit_test_type::MOUSE)
+            {
+                static_cast<mouse_hit_test&>(test).result
+                    = mouse_hit_test_result{
+                        externalize(internal_element_ref{*this, 0}),
+                        mouse_cursor::POINTER,
+                        this->assignment().region,
+                        ""};
+            }
+        }
+    }
+
+    void
+    process_input(ui_event_context ctx) override
+    {
+        add_to_focus_order(ctx, internal_element_ref{*this, 0});
+        if (detect_click(
+                ctx, internal_element_ref{*this, 0}, mouse_button::LEFT))
+        {
+            state_ = !state_;
+        }
+        if (detect_keyboard_click(
+                ctx, keyboard_click_state_, internal_element_ref{*this, 0}))
+        {
+            state_ = !state_;
+        }
+    }
+
+    matrix<3, 3, double>
+    transformation() const override
+    {
+        return parent->transformation();
+    }
+
+    relative_layout_assignment const&
+    assignment() const
+    {
+        return relative_assignment_;
+    }
+
+    layout_box
+    bounding_box() const override
+    {
+        return add_border(this->assignment().region, 4.f);
+    }
+
+    void
+    reveal_region(region_reveal_request const& request) override
+    {
+        parent->reveal_region(request);
+    }
+
+    ui_system* sys_;
+    external_component_id id_;
+    bool state_ = false;
+    keyboard_click_state keyboard_click_state_;
+    value_smoother<float> angle_smoother_;
+    millisecond_count tick_counter_;
+    // the resolved spec
+    resolved_layout_spec resolved_spec_;
+    // resolved relative assignment
+    relative_layout_assignment relative_assignment_;
+};
+
+void
+do_tree_expander(
+    ui_context ctx, layout const& layout_spec = layout(TOP | LEFT | PADDED))
+{
+    std::shared_ptr<tree_expander_node>* node_ptr;
+    if (get_cached_data(ctx, &node_ptr))
+    {
+        *node_ptr = std::make_shared<tree_expander_node>();
+        (*node_ptr)->sys_ = &get_system(ctx);
+    }
+    auto& node = **node_ptr;
+
+    auto id = get_component_id(ctx);
+
+    if (is_refresh_event(ctx))
+    {
+        resolved_layout_spec resolved_spec;
+        resolve_layout_spec(
+            get<ui_traversal_tag>(ctx).layout,
+            resolved_spec,
+            layout_spec,
+            TOP | LEFT | PADDED);
+        detect_layout_change(
+            get<ui_traversal_tag>(ctx).layout,
+            &node.resolved_spec_,
+            resolved_spec);
+
+        add_layout_node(get<ui_traversal_tag>(ctx).layout, &node);
+
+        node.id_ = externalize(id);
+
+        node.tick_counter_ = get_raw_animation_tick_count(ctx);
     }
 }
 
@@ -2132,6 +2375,7 @@ my_ui(ui_context ctx)
         scoped_flow_layout row(ctx);
         do_box(ctx, SK_ColorLTGRAY, actions::toggle(show_text));
         do_box(ctx, SK_ColorLTGRAY, actions::toggle(show_other_text));
+        do_tree_expander(ctx);
     }
 
     collapsible_content(ctx, show_other_text, [&] {
@@ -2171,8 +2415,8 @@ my_ui(ui_context ctx)
             do_wrapped_text(
                 ctx,
                 value(
-                    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. "
-                    "Phasellus lacinia elementum diam consequat aliquet. "
+                    "Lorem ipsum dolor sit amet, consectetur adipisg elit. "
+                    "Phasellus lacinia elementum diam consequat alicinquet. "
                     "Vestibulum ut libero justo. Pellentesque lectus lectus, "
                     "scelerisque a elementum sed, bibendum id libero. "
                     "Maecenas venenatis est sed sem consequat mollis. Ut "
