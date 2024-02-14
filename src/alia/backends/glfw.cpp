@@ -3,28 +3,17 @@
 #include <GLFW/glfw3.h>
 
 #pragma warning(push, 0)
-// TODO: Prune these.
+
 #include "include/core/SkCanvas.h"
-#include "include/core/SkColorFilter.h"
-#include "include/core/SkColorPriv.h"
 #include "include/core/SkColorSpace.h"
 #include "include/core/SkFont.h"
 #include "include/core/SkFontMgr.h"
-#include "include/core/SkGraphics.h"
-#include "include/core/SkPath.h"
-#include "include/core/SkRegion.h"
 #include "include/core/SkShader.h"
-#include "include/core/SkStream.h"
 #include "include/core/SkSurface.h"
-#include "include/core/SkTextBlob.h"
-#include "include/core/SkTime.h"
-#include "include/core/SkTypeface.h"
-#include "include/effects/SkBlurMaskFilter.h"
-#include "include/effects/SkGradientShader.h"
 #include "include/gpu/GrBackendSurface.h"
 #include "include/gpu/GrDirectContext.h"
+#include "include/gpu/ganesh/SkSurfaceGanesh.h"
 #include "include/gpu/gl/GrGLInterface.h"
-#include "include/utils/SkRandom.h"
 
 // #include "icu/SkLoadICU.h"
 
@@ -68,7 +57,7 @@ struct glfw_window_impl
     std::unique_ptr<GrDirectContext> skia_graphics_context;
     std::unique_ptr<SkSurface> skia_surface;
 
-    sk_sp<skia::textlayout::FontCollection> font_collection;
+    // sk_sp<skia::textlayout::FontCollection> font_collection;
 
     // TODO: Does this go here?
     ui_system system;
@@ -239,7 +228,7 @@ reset_skia(glfw_window_impl& impl, vector<2, unsigned> size)
         size[0], size[1], 0, 0, framebuffer_info);
 
     impl.skia_surface.reset();
-    auto surface = SkSurface::MakeFromBackendRenderTarget(
+    auto surface = SkSurfaces::WrapBackendRenderTarget(
         impl.skia_graphics_context.get(),
         backend_render_target,
         kBottomLeft_GrSurfaceOrigin,
@@ -263,8 +252,8 @@ init_skia(glfw_window_impl& impl, vector<2, unsigned> size)
         }
     }
 
-    impl.font_collection = sk_make_sp<skia::textlayout::FontCollection>();
-    impl.font_collection->setDefaultFontManager(SkFontMgr::RefDefault());
+    // impl.font_collection = sk_make_sp<skia::textlayout::FontCollection>();
+    // impl.font_collection->setDefaultFontManager(SkFontMgr::RefDefault());
 
     auto interface = GrGLMakeNativeInterface();
     impl.skia_graphics_context.reset(
@@ -465,7 +454,7 @@ glfw_window::glfw_window(
     init_skia(*impl_, size);
 
     // TODO: Not this.
-    impl_->system.font_collection = impl_->font_collection;
+    // impl_->system.font_collection = impl_->font_collection;
 
     // Perform the initial update.
     update_ui(*impl_);

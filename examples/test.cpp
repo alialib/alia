@@ -20,13 +20,15 @@
 
 #include <cmath>
 
+#include <limits>
+
+#include <include/core/SkBlurTypes.h>
 #include <include/core/SkColor.h>
 #include <include/core/SkFontTypes.h>
 #include <include/core/SkMaskFilter.h>
 #include <include/core/SkPath.h>
 #include <include/core/SkPictureRecorder.h>
 #include <include/core/SkTextBlob.h>
-#include <limits>
 #include <modules/skshaper/include/SkShaper.h>
 
 #include "alia/core/flow/components.hpp"
@@ -643,8 +645,6 @@ struct text_node : layout_leaf
         SkPaint paint;
         paint.setAntiAlias(true);
         paint.setColor(SK_ColorBLACK);
-        // paragraph->paint(&canvas, region.corner[0], region.corner[1]);
-        // canvas.drawColor(SK_ColorBLACK);
         if (!text_blob_)
             text_blob_ = SkTextBlob::MakeFromString(text_.c_str(), *the_font);
         canvas.drawTextBlob(
@@ -680,7 +680,6 @@ struct text_node : layout_leaf
     }
 
     ui_system* sys_;
-    // std::unique_ptr<skia::textlayout::Paragraph> paragraph;
     std::string text_;
     SkRect bounds_;
     sk_sp<SkTextBlob> text_blob_;
@@ -700,64 +699,15 @@ do_text(
     {
         node_ptr->sys_ = &get_system(ctx);
 
-#if 0
-        SkPaint paint;
-        paint.setAntiAlias(true);
-        paint.setColor(SK_ColorBLACK);
-        skia::textlayout::TextStyle defaultStyle;
-        defaultStyle.setForegroundColor(paint);
-        skia::textlayout::ParagraphStyle paraStyle;
-
-        defaultStyle.setFontSize(SkScalar(24));
-        paraStyle.setTextStyle(defaultStyle);
-        skia::textlayout::ParagraphBuilderImpl builder(
-            paraStyle, get_system(ctx).font_collection);
-
-        skia::textlayout::TextStyle style;
-        style.setFontFamilies({SkString("Roboto")});
-        SkFontStyle fontStyle(
-            false ? SkFontStyle::Weight::kBold_Weight
-                  : SkFontStyle::Weight::kNormal_Weight,
-            SkFontStyle::Width::kNormal_Width,
-            false ? SkFontStyle::Slant::kItalic_Slant
-                  : SkFontStyle::Slant::kUpright_Slant);
-        style.setForegroundColor(paint);
-        style.setFontStyle(fontStyle);
-        style.setFontSize(24);
-        // if (false)
-        // {
-        //     style.addShadow(skia::textlayout::TextShadow(
-        //         SK_ColorBLACK, SkPoint::Make(5, 5), 2));
-        // }
-        // bool test
-        //     = (skia::textlayout::TextDecoration) 0
-        //       != skia::textlayout::TextDecoration::kNoDecoration;
-        // if (test)
-        // {
-        //     style.setDecoration((TextDecoration) decoration);
-        //     style.setDecorationStyle(std::get<7>(para));
-        //     style.setDecorationColor(std::get<5>(para));
-        // }
-        builder.pushStyle(style);
-        builder.addText(read_signal(text).c_str());
-        builder.pop();
-
-        (*node_ptr)->paragraph = builder.Build();
-        (*node_ptr)->paragraph->layout(
-            std::numeric_limits<SkScalar>::infinity());
-#else
         node_ptr->text_ = read_signal(text);
         the_font->measureText(
             read_signal(text).c_str(),
             read_signal(text).length(),
             SkTextEncoding::kUTF8,
             &node_ptr->bounds_);
-#endif
     }
 
     auto& node = *node_ptr;
-
-    // auto id = get_component_id(ctx);
 
     if (is_refresh_event(ctx))
     {
@@ -770,32 +720,6 @@ do_text(
                 0,
                 0));
         add_layout_node(get<ui_traversal_tag>(ctx).layout, &node);
-
-        // node.id_ = externalize(id);
-
-        // if (color != node.color_)
-        // {
-        //     SkPictureRecorder recorder;
-        //     SkRect bounds;
-        //     bounds.fLeft = 0;
-        //     bounds.fTop = 0;
-        //     bounds.fRight = 100;
-        //     bounds.fBottom = 100;
-        //     SkCanvas* canvas = recorder.beginRecording(bounds);
-
-        //     {
-        //         SkPaint paint;
-        //         paint.setColor(color);
-        //         SkRect rect;
-        //         rect.fLeft = 0;
-        //         rect.fTop = 0;
-        //         rect.fRight = 100;
-        //         rect.fBottom = 100;
-        //         canvas->drawRect(rect, paint);
-        //     }
-
-        //     node.picture_ = recorder.finishRecordingAsPicture();
-        // }
     }
 }
 
