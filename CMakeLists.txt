@@ -176,7 +176,7 @@ endif()
 
 # Add alia/HTML.
 if (ALIA_ENABLE_HTML)
-    add_subdirectory("modules/html")
+    add_subdirectory("integrations/html")
 endif()
 
 # Add the docs.
