@@ -190,7 +190,8 @@ struct layout_container_widget : LayoutContainer
     {
         auto this_level = translation_matrix(
             vector2d(get_assignment(this->cacher).region.corner));
-        return parent ? (parent->transformation() * this_level) : this_level;
+        return this->parent ? (this->parent->transformation() * this_level)
+                            : this_level;
     }
 
     layout_box
@@ -202,7 +203,7 @@ struct layout_container_widget : LayoutContainer
     void
     reveal_region(region_reveal_request const& request) override
     {
-        parent->reveal_region(request);
+        this->parent->reveal_region(request);
     }
 };
 

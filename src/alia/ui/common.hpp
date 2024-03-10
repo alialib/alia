@@ -39,11 +39,9 @@ struct flag_set
     explicit flag_set(unsigned code) : code(code)
     {
     }
-    // allows use within if statements without other unintended conversions
-    typedef unsigned flag_set::*unspecified_bool_type;
-    operator unspecified_bool_type() const
+    explicit operator bool() const
     {
-        return code != 0 ? &flag_set::code : 0;
+        return code != 0;
     }
 };
 

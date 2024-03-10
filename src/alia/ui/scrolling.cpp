@@ -652,9 +652,9 @@ process_scrollbar_input(ui_event_context ctx, scrollbar_parameters const& sb)
 }
 
 // TODO
-constexpr unsigned scrollable_bit_offset = 0;
-constexpr unsigned reserved_axes_bit_offset = 2;
-constexpr unsigned scrollbars_on_bit_offset = 2;
+// constexpr unsigned scrollable_bit_offset = 0;
+// constexpr unsigned reserved_axes_bit_offset = 2;
+// constexpr unsigned scrollbars_on_bit_offset = 2;
 
 // persistent data required for a scrollable view
 struct scrollable_view_data
@@ -794,6 +794,7 @@ struct scrollable_view : widget_container
     set_relative_assignment(
         relative_layout_assignment const& assignment) override
     {
+        // std::cout << "(scrollable) sra: " << assignment.region << std::endl;
         update_relative_assignment(
             *this,
             cacher,
@@ -804,7 +805,7 @@ struct scrollable_view : widget_container
 
                 // Track whether or not we're going to include the scrollbar
                 // width in the available width for content.
-                bool exclude_scrollbar_width[2] = {false, false};
+                // bool exclude_scrollbar_width[2] = {false, false};
 
                 calculated_layout_requirements x
                     = logic->get_horizontal_requirements(children);
@@ -1131,7 +1132,7 @@ struct scrollable_view : widget_container
     void
     handle_scrolling_key_press(modded_key const& key)
     {
-        if (key.mods != 0)
+        if (key.mods.code != 0)
             return;
         switch (key.code)
         {
@@ -1165,6 +1166,8 @@ struct scrollable_view : widget_container
             case key_code::END:
                 set_logical_position(
                     sb(1), data.content_size[1] - data.window_size[1]);
+                break;
+            default:
                 break;
         }
     }
