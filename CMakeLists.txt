@@ -37,12 +37,10 @@ endif()
 
 include(CMakeDependentOption)
 
-cmake_dependent_option(
+option(
     ALIA_ENABLE_UI
     "Enable the UI library"
-    ON
-    "NOT IS_EMSCRIPTEN"
-    OFF)
+    "NOT IS_EMSCRIPTEN")
 if(ALIA_ENABLE_UI)
   list(APPEND VCPKG_MANIFEST_FEATURES "ui")
 endif()
@@ -55,6 +53,16 @@ cmake_dependent_option(
     OFF)
 if(ALIA_ENABLE_GLFW)
   list(APPEND VCPKG_MANIFEST_FEATURES "glfw")
+endif()
+
+cmake_dependent_option(
+    ALIA_ENABLE_SDL
+    "Enable the SDL backend for the UI library"
+    ON
+    "ALIA_ENABLE_UI"
+    OFF)
+if(ALIA_ENABLE_SDL)
+  list(APPEND VCPKG_MANIFEST_FEATURES "sdl")
 endif()
 
 cmake_dependent_option(
@@ -149,6 +157,13 @@ if (ALIA_ENABLE_UI)
         alia_core
         unofficial::skia::skia
         unofficial::skia::modules::skshaper)
+        # unofficial::skia::modules::svg)
+    if (IS_EMSCRIPTEN)
+        target_link_options(alia_ui PUBLIC
+            "-sFULL_ES3"
+            "-sTOTAL_MEMORY=64MB")
+        set(CMAKE_EXECUTABLE_SUFFIX ".html")
+    endif()
     target_include_directories(alia_ui PUBLIC
         "${dmilos_color_SOURCE_DIR}/src")
     target_precompile_headers(alia_ui PUBLIC
@@ -162,6 +177,17 @@ if (ALIA_ENABLE_GLFW)
     target_include_directories(alia_glfw PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/src")
     target_link_libraries(alia_glfw PUBLIC alia_ui glfw)
+endif()
+
+# Add the SDL backend.
+if (ALIA_ENABLE_SDL)
+    find_package(SDL2 CONFIG REQUIRED)
+    add_library(alia_sdl STATIC "src/alia/backends/sdl.cpp")
+    target_include_directories(alia_sdl PUBLIC
+        "${CMAKE_CURRENT_SOURCE_DIR}/src")
+    target_link_libraries(alia_sdl PUBLIC alia_ui
+        $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
+        $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>)
 endif()
 
 # Add the tests.

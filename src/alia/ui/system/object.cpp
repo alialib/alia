@@ -82,7 +82,7 @@ ui_system::invoke_controller(vanilla_ui_context vanilla_ctx)
                 get_layout_traversal(ctx),
                 root->cacher,
                 layout(),
-                GROW | UNPADDED))
+                GROW_X | GROW_Y | UNPADDED))
         {
             // Since this container isn't active yet, it didn't get marked as
             // needing recalculation, so we need to do that manually here.

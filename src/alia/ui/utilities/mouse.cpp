@@ -97,8 +97,8 @@ bool
 detect_mouse_motion(ui_event_context ctx, internal_element_ref element)
 {
     mouse_motion_event* event;
-    return detect_event(ctx, &event) && element_has_capture(ctx, element)
-           || no_element_has_capture(ctx) && is_element_hot(ctx, element);
+    return (detect_event(ctx, &event) && element_has_capture(ctx, element))
+           || (no_element_has_capture(ctx) && is_element_hot(ctx, element));
 }
 
 bool

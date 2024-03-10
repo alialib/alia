@@ -1,7 +1,6 @@
 #ifndef ALIA_UI_RENDERING_HPP
 #define ALIA_UI_RENDERING_HPP
 
-#include "alia/ui/layout/specification.hpp"
 #include <memory>
 
 #include <include/core/SkCanvas.h>
@@ -10,6 +9,7 @@
 #include <alia/ui/common.hpp>
 #include <alia/ui/context.hpp>
 #include <alia/ui/geometry.hpp>
+#include <alia/ui/layout/specification.hpp>
 
 namespace alia {
 

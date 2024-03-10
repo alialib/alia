@@ -1,6 +1,7 @@
 #include <alia/core/flow/data_graph.hpp>
 #include <alia/core/flow/events.hpp>
 #include <alia/ui.hpp>
+#include <alia/ui/color.hpp>
 #include <alia/ui/layout/containers/simple.hpp>
 #include <alia/ui/layout/containers/utilities.hpp>
 #include <alia/ui/layout/library.hpp>
@@ -16,14 +17,16 @@
 #include <alia/ui/utilities/scrolling.hpp>
 #include <alia/ui/widget.hpp>
 
-#include <color/color.hpp>
+// #include <color/color.hpp>
 
 #include <cmath>
 
+#include <include/core/SkTypeface.h>
 #include <limits>
 
 #include <include/core/SkBlurTypes.h>
 #include <include/core/SkColor.h>
+#include <include/core/SkFontMgr.h>
 #include <include/core/SkFontTypes.h>
 #include <include/core/SkMaskFilter.h>
 #include <include/core/SkPath.h>
@@ -44,6 +47,43 @@
 #include "modules/skparagraph/src/ParagraphBuilderImpl.h"
 #include "modules/skparagraph/src/ParagraphImpl.h"
 
+#include "include/core/SkStream.h"
+#include "include/utils/SkNoDrawCanvas.h"
+// #include "modules/svg/include/SkSVGDOM.h"
+// #include "modules/svg/include/SkSVGNode.h"
+
+#if defined(SK_BUILD_FOR_WIN)                                                 \
+    && (defined(SK_FONTMGR_GDI_AVAILABLE)                                     \
+        || defined(SK_FONTMGR_DIRECTWRITE_AVAILABLE))
+#include "include/ports/SkTypeface_win.h"
+#endif
+
+#if defined(SK_BUILD_FOR_ANDROID) && defined(SK_FONTMGR_ANDROID_AVAILABLE)
+#include "include/ports/SkFontMgr_android.h"
+#include "src/ports/SkTypeface_FreeType.h"
+#endif
+
+#if defined(SK_FONTMGR_CORETEXT_AVAILABLE)                                    \
+    && (defined(SK_BUILD_FOR_IOS) || defined(SK_BUILD_FOR_MAC))
+#include "include/ports/SkFontMgr_mac_ct.h"
+#endif
+
+#if defined(SK_FONTMGR_FONTATIONS_AVAILABLE)
+#include "include/ports/SkFontMgr_Fontations.h"
+#endif
+
+#if defined(SK_FONTMGR_FONTCONFIG_AVAILABLE)
+#include "include/ports/SkFontMgr_fontconfig.h"
+#endif
+
+#if defined(SK_FONTMGR_FREETYPE_DIRECTORY_AVAILABLE)
+#include "include/ports/SkFontMgr_directory.h"
+#endif
+
+#if defined(SK_FONTMGR_FREETYPE_EMPTY_AVAILABLE)
+#include "include/ports/SkFontMgr_empty.h"
+#endif
+
 #include <alia/ui/scrolling.hpp>
 
 using namespace alia;
@@ -52,6 +92,8 @@ using namespace alia;
 
 // TODO
 static std::unique_ptr<SkFont> the_font;
+
+static sk_sp<SkFontMgr> the_font_manager;
 
 struct click_event : targeted_event
 {
@@ -168,26 +210,21 @@ struct box_node : widget
             blend_factor = 0.2;
         }
 
-        ::color::rgb<std::uint8_t> c;
+        rgb8 c;
         if (state_)
         {
-            c = ::color::rgb<std::uint8_t>({0x40, 0x40, 0x40});
+            c = rgb8(0x40, 0x40, 0x40);
         }
         else
         {
-            c = ::color::rgb<std::uint8_t>(
-                {SkColorGetR(color_),
-                 SkColorGetG(color_),
-                 SkColorGetB(color_)});
+            c = rgb8(
+                std::uint8_t(SkColorGetR(color_)),
+                std::uint8_t(SkColorGetG(color_)),
+                std::uint8_t(SkColorGetB(color_)));
         }
         if (blend_factor != 0)
         {
-            ::color::yiq<std::uint8_t> color;
-            color = c;
-            ::color::yiq<std::uint8_t> white = ::color::constant::white_t{};
-            ::color::yiq<std::uint8_t> mix
-                = ::color::operation::mix(color, blend_factor, white);
-            c = mix;
+            c = interpolate(c, rgb8(0xff, 0xff, 0xff), blend_factor);
         }
 
         // auto position = smooth_value(
@@ -198,11 +235,7 @@ struct box_node : widget
         auto position = region.corner + event.current_offset;
 
         SkPaint paint;
-        paint.setColor(SkColorSetARGB(
-            0xff,
-            ::color::get::red(c),
-            ::color::get::green(c),
-            ::color::get::blue(c)));
+        paint.setColor(SkColorSetARGB(0xff, c.r, c.g, c.b));
         SkRect rect;
         rect.fLeft = SkScalar(position[0]);
         rect.fTop = SkScalar(position[1]);
@@ -478,10 +511,11 @@ struct tree_expander_node : widget
 
         {
             SkPaint paint;
+            paint.setAntiAlias(true);
             paint.setColor(SK_ColorBLACK);
             // set_color(paint, renderer.style().fg_color);
             paint.setStyle(SkPaint::kFill_Style);
-            SkScalar a = region.size[0] / SkIntToScalar(2);
+            SkScalar a = region.size[0] / SkDoubleToScalar(2.5);
             SkPath path;
             path.incReserve(4);
             SkPoint p0;
@@ -626,6 +660,231 @@ do_tree_expander(
     }
 }
 
+// struct svg_image_node : widget
+// {
+//     layout_requirements
+//     get_horizontal_requirements() override
+//     {
+//         layout_requirements requirements;
+//         resolve_requirements(
+//             requirements,
+//             resolved_spec_,
+//             0,
+//             calculated_layout_requirements{40, 0, 0});
+//         return requirements;
+//     }
+//     layout_requirements
+//     get_vertical_requirements(layout_scalar /*assigned_width*/) override
+//     {
+//         layout_requirements requirements;
+//         resolve_requirements(
+//             requirements,
+//             resolved_spec_,
+//             1,
+//             calculated_layout_requirements{40, 0, 0});
+//         return requirements;
+//     }
+//     void
+//     set_relative_assignment(
+//         relative_layout_assignment const& assignment) override
+//     {
+//         layout_requirements horizontal_requirements, vertical_requirements;
+//         resolve_requirements(
+//             horizontal_requirements,
+//             resolved_spec_,
+//             0,
+//             calculated_layout_requirements{40, 0, 0});
+//         resolve_requirements(
+//             vertical_requirements,
+//             resolved_spec_,
+//             1,
+//             calculated_layout_requirements{40, 0, 0});
+//         relative_assignment_ = resolve_relative_assignment(
+//             resolved_spec_,
+//             assignment,
+//             horizontal_requirements,
+//             vertical_requirements);
+//     }
+
+//     void
+//     render(render_event& event) override
+//     {
+//         SkCanvas& canvas = *event.canvas;
+
+//         auto const& region = this->assignment().region;
+
+//         uint8_t background_alpha = 0;
+
+//         if (is_click_in_progress(
+//                 *sys_, internal_element_ref{*this, 0}, mouse_button::LEFT)
+//             || is_pressed(keyboard_click_state_))
+//         {
+//             background_alpha = 0x30;
+//         }
+//         else if (is_click_possible(*sys_, internal_element_ref{*this, 0}))
+//         {
+//             background_alpha = 0x18;
+//         }
+
+//         auto position = region.corner + event.current_offset;
+
+//         if (background_alpha != 0)
+//         {
+//             SkPaint paint;
+//             paint.setColor(SkColorSetARGB(background_alpha, 0x00, 0x00,
+//             0xff)); SkRect rect; rect.fLeft = SkScalar(position[0]);
+//             rect.fTop = SkScalar(position[1]);
+//             rect.fRight = SkScalar(position[0] + region.size[0]);
+//             rect.fBottom = SkScalar(position[1] + region.size[1]);
+//             canvas.drawRect(rect, paint);
+//         }
+
+//         canvas.save();
+
+//         const std::string svgText = R"EOF(
+// <svg xmlns="http://www.w3.org/2000/svg"
+//  width="467" height="462">
+//   <rect x="80" y="60" width="250" height="250" rx="20"
+//       style="fill:#ff0000; stroke:#000000;stroke-width:2px;" />
+
+//   <rect x="140" y="120" width="250" height="250" rx="40"
+//       style="fill:#0000ff; stroke:#000000; stroke-width:2px;
+//       fill-opacity:0.7;" />
+// </svg>
+// )EOF";
+
+//         auto str = SkMemoryStream::MakeDirect(svgText.c_str(),
+//         svgText.size()); auto svg_dom = SkSVGDOM::Builder().make(*str);
+//         svg_dom->render(&canvas);
+
+//         canvas.restore();
+
+//         // if (rect.width() > 200)
+//         // {
+//         //     SkPaint blur(paint);
+//         //     blur.setAlpha(200);
+//         //     blur.setMaskFilter(
+//         //         SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, 40, false));
+//         //     canvas.drawRect(rect, blur);
+//         // }
+
+//         // if (element_has_focus(*sys_, internal_element_ref{*this, 0}))
+//         // {
+//         //     SkPaint paint;
+//         //     paint.setStyle(SkPaint::kStroke_Style);
+//         //     paint.setStrokeWidth(4);
+//         //     paint.setColor(SK_ColorBLACK);
+//         //     canvas.drawRect(rect, paint);
+//         // }
+//     }
+
+//     void
+//     hit_test(
+//         hit_test_base& test, vector<2, double> const& point) const override
+//     {
+//         if (is_inside(this->assignment().region, vector<2, float>(point)))
+//         {
+//             if (test.type == hit_test_type::MOUSE)
+//             {
+//                 static_cast<mouse_hit_test&>(test).result
+//                     = mouse_hit_test_result{
+//                         externalize(internal_element_ref{*this, 0}),
+//                         mouse_cursor::POINTER,
+//                         this->assignment().region,
+//                         ""};
+//             }
+//         }
+//     }
+
+//     void
+//     process_input(ui_event_context ctx) override
+//     {
+//         add_to_focus_order(ctx, internal_element_ref{*this, 0});
+//         if (detect_click(
+//                 ctx, internal_element_ref{*this, 0}, mouse_button::LEFT))
+//         {
+//             state_ = !state_;
+//         }
+//         if (detect_keyboard_click(
+//                 ctx, keyboard_click_state_, internal_element_ref{*this, 0}))
+//         {
+//             state_ = !state_;
+//         }
+//     }
+
+//     matrix<3, 3, double>
+//     transformation() const override
+//     {
+//         return parent->transformation();
+//     }
+
+//     relative_layout_assignment const&
+//     assignment() const
+//     {
+//         return relative_assignment_;
+//     }
+
+//     layout_box
+//     bounding_box() const override
+//     {
+//         return add_border(this->assignment().region, 4.f);
+//     }
+
+//     void
+//     reveal_region(region_reveal_request const& request) override
+//     {
+//         parent->reveal_region(request);
+//     }
+
+//     ui_system* sys_;
+//     external_component_id id_;
+//     bool state_ = false;
+//     keyboard_click_state keyboard_click_state_;
+//     value_smoother<float> angle_smoother_;
+//     millisecond_count tick_counter_;
+//     // the resolved spec
+//     resolved_layout_spec resolved_spec_;
+//     // resolved relative assignment
+//     relative_layout_assignment relative_assignment_;
+// };
+
+// void
+// do_svg_image(
+//     ui_context ctx, layout const& layout_spec = layout(TOP | LEFT | PADDED))
+// {
+//     std::shared_ptr<svg_image_node>* node_ptr;
+//     if (get_cached_data(ctx, &node_ptr))
+//     {
+//         *node_ptr = std::make_shared<svg_image_node>();
+//         (*node_ptr)->sys_ = &get_system(ctx);
+//     }
+//     auto& node = **node_ptr;
+
+//     auto id = get_component_id(ctx);
+
+//     if (is_refresh_event(ctx))
+//     {
+//         resolved_layout_spec resolved_spec;
+//         resolve_layout_spec(
+//             get<ui_traversal_tag>(ctx).layout,
+//             resolved_spec,
+//             layout_spec,
+//             TOP | LEFT | PADDED);
+//         detect_layout_change(
+//             get<ui_traversal_tag>(ctx).layout,
+//             &node.resolved_spec_,
+//             resolved_spec);
+
+//         add_layout_node(get<ui_traversal_tag>(ctx).layout, &node);
+
+//         node.id_ = externalize(id);
+
+//         node.tick_counter_ = get_raw_animation_tick_count(ctx);
+//     }
+// }
+
+#if 0
+
 struct text_node : layout_leaf
 {
     void
@@ -692,7 +951,15 @@ do_text(
     layout const& layout_spec = default_layout)
 {
     if (!the_font)
-        the_font.reset(new SkFont(nullptr, 24));
+    {
+        if (!the_font_manager)
+            the_font_manager = SkFontMgr_New_DirectWrite();
+        auto typeface
+            = the_font_manager->makeFromFile("../roboto/Roboto-Regular.ttf");
+        if (!typeface)
+            std::cout << "font loading failed" << std::endl;
+        the_font.reset(new SkFont(typeface, 24));
+    }
 
     text_node* node_ptr;
     if (get_cached_data(ctx, &node_ptr))
@@ -725,7 +992,9 @@ do_text(
 
 // ---
 
+#ifdef _WIN32
 #pragma warning(push, 0)
+#endif
 
 class RunHandler final : public SkShaper::RunHandler
 {
@@ -1036,7 +1305,11 @@ Shape(
         utf8Text = nullptr;
         textByteLen = 0;
     }
-    std::unique_ptr<SkShaper> shaper = SkShaper::Make();
+    if (!the_font_manager)
+    {
+        the_font_manager = SkFontMgr_New_DirectWrite();
+    }
+    std::unique_ptr<SkShaper> shaper = SkShaper::Make(the_font_manager);
     float height = font.getSpacing();
     RunHandler runHandler(utf8Text, textByteLen);
     if (textByteLen)
@@ -1044,12 +1317,59 @@ Shape(
         result.glyphBounds.resize(textByteLen);
         for (SkRect& c : result.glyphBounds)
         {
-            c = SkRect{-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX};
+            c = SkRect{
+                -std::numeric_limits<float>::max(),
+                -std::numeric_limits<float>::max(),
+                -std::numeric_limits<float>::max(),
+                -std::numeric_limits<float>::max()};
         }
         runHandler.setRunCallback(
             set_character_bounds, result.glyphBounds.data());
-        // TODO: make use of locale in shaping.
-        shaper->shape(utf8Text, textByteLen, font, true, width, &runHandler);
+
+        std::unique_ptr<SkShaper::BiDiRunIterator> bidi(
+            SkShaper::MakeBiDiRunIterator(utf8Text, textByteLen, 0xfe));
+        if (!bidi)
+        {
+            return result;
+        }
+        std::unique_ptr<SkShaper::LanguageRunIterator> language(
+            SkShaper::MakeStdLanguageRunIterator(utf8Text, textByteLen));
+        if (!language)
+        {
+            return result;
+        }
+        SkFourByteTag undeterminedScript
+            = SkSetFourByteTag('Z', 'y', 'y', 'y');
+        std::unique_ptr<SkShaper::ScriptRunIterator> script(
+            SkShaper::MakeScriptRunIterator(
+                utf8Text, textByteLen, undeterminedScript));
+        if (!script)
+        {
+            return result;
+        }
+        std::unique_ptr<SkShaper::FontRunIterator> font(
+            SkShaper::MakeFontMgrRunIterator(
+                utf8Text,
+                textByteLen,
+                font,
+                the_font_manager,
+                "Arial",
+                SkFontStyle::Bold(),
+                &*language));
+        if (!font)
+        {
+            return result;
+        }
+
+        shaper->shape(
+            utf8Text,
+            textByteLen,
+            *font,
+            *bidi,
+            *script,
+            *language,
+            width,
+            &runHandler);
         if (runHandler.lineEndOffsets().size() > 1)
         {
             result.lineBreakOffsets = runHandler.lineEndOffsets();
@@ -1202,7 +1522,15 @@ do_wrapped_text(
     layout const& layout_spec = default_layout)
 {
     if (!the_font)
-        the_font.reset(new SkFont(nullptr, 24));
+    {
+        if (!the_font_manager)
+            the_font_manager = SkFontMgr_New_DirectWrite();
+        auto typeface
+            = the_font_manager->makeFromFile("../roboto/Roboto-Regular.ttf");
+        if (!typeface)
+            std::cout << "font loading failed" << std::endl;
+        the_font.reset(new SkFont(typeface, 24));
+    }
 
     wrapped_text_node* node_ptr;
     if (get_cached_data(ctx, &node_ptr))
@@ -1245,6 +1573,8 @@ do_wrapped_text(
         add_layout_node(get<ui_traversal_tag>(ctx).layout, &node);
     }
 }
+
+#endif
 
 // namespace alia {
 
@@ -2049,7 +2379,7 @@ struct collapsible_container : widget_container
     float offset_factor = 1;
 
     // expansion fraction (0 to 1)
-    float expansion = 0;
+    float expansion_ = 0;
 
     // The following are filled in during layout...
 
@@ -2068,14 +2398,14 @@ struct collapsible_container : widget_container
             expansion,
             animated_transition{default_curve, 160});
 
-        if (this->expansion != smoothed_expansion)
+        if (this->expansion_ != smoothed_expansion)
         {
             this->last_content_change
                 = get_layout_traversal(ctx).refresh_counter;
         }
 
         detect_layout_change(
-            get_layout_traversal(ctx), &this->expansion, smoothed_expansion);
+            get_layout_traversal(ctx), &this->expansion_, smoothed_expansion);
     }
 
     layout_requirements
@@ -2103,7 +2433,7 @@ struct collapsible_container : widget_container
                         children, resolved_width);
                 layout_scalar content_height = y.size;
                 layout_scalar visible_height = round_to_layout_scalar(
-                    float(content_height) * this->expansion);
+                    float(content_height) * this->expansion_);
                 this->content_height = content_height;
                 return calculated_layout_requirements{visible_height, 0, 0};
             });
@@ -2147,7 +2477,7 @@ struct collapsible_container : widget_container
             event.canvas->clipRect(bounds);
             event.current_offset += region.corner;
             layout_scalar content_offset = round_to_layout_scalar(
-                this->offset_factor * (1 - expansion) * this->content_height);
+                this->offset_factor * (1 - expansion_) * this->content_height);
             event.current_offset[1] -= content_offset;
             alia::render_children(event, *this);
             event.current_offset = original_offset;
@@ -2164,7 +2494,7 @@ struct collapsible_container : widget_container
         {
             auto local_point = point - vector<2, double>(region.corner);
             layout_scalar content_offset = round_to_layout_scalar(
-                this->offset_factor * (1 - expansion) * this->content_height);
+                this->offset_factor * (1 - expansion_) * this->content_height);
             local_point[1] += content_offset;
             for (widget* node = this->widget_container::children; node;
                  node = node->next)
@@ -2248,7 +2578,7 @@ struct scoped_collapsible
     bool
     do_content() const
     {
-        return container_->expansion != 0;
+        return container_->expansion_ != 0;
     }
 
     void
@@ -2296,15 +2626,31 @@ my_ui(ui_context ctx)
     auto show_other_text = get_state(ctx, false);
 
     {
-        scoped_flow_layout row(ctx);
+        scoped_flow_layout row(ctx, UNPADDED | FILL);
         do_box(ctx, SK_ColorLTGRAY, actions::toggle(show_text));
         do_box(ctx, SK_ColorLTGRAY, actions::toggle(show_other_text));
         do_tree_expander(ctx);
+        // do_svg_image(ctx);
     }
 
     collapsible_content(ctx, show_other_text, [&] {
         do_spacer(ctx, height(20, PIXELS));
-        do_text(ctx, value("Könnten Sie mir das übersetzen?"));
+        // do_text(ctx, value("Könnten Sie mir das übersetzen?"));
+        // do_wrapped_text(
+        //     ctx,
+        //     value("\xce\xa3\xe1\xbd\xb2\x20\xce\xb3\xce\xbd\xcf\x89\xcf\x81"
+        //           "\xe1\xbd\xb7\xce\xb6\xcf\x89\x20\xe1\xbc\x80\xcf\x80\xe1"
+        //           "\xbd\xb8\x20\xcf\x84\xe1\xbd\xb4\xce\xbd\x20\xce\xba\xe1"
+        //           "\xbd\xb9\xcf\x88\xce\xb7"));
+        // do_wrapped_text(
+        //     ctx,
+        //     value("\x58\x20\x2d\x20\xd9\x82\xd9\x84\xd9\x85\x20\xd8\xb1\xd8"
+        //           "\xb5\xd8\xa7\xd8\xb5\x20\x2d\x20\x59"));
+        // do_wrapped_text(
+        //     ctx,
+        //     value("\xe7\x8e\x8b\xe6\x98\x8e\xef\xbc\x9a\xe8\xbf\x99\xe6\x98"
+        //           "\xaf\xe4\xbb\x80\xe4\xb9\x88\xef\xbc\x9f"));
+
         {
             scoped_grid_layout grid(ctx);
             for (int i = 0; i != 4; ++i)
@@ -2334,68 +2680,74 @@ my_ui(ui_context ctx)
     do_spacer(ctx, height(100, PIXELS));
 
     {
-        for (int outer = 0; outer != 10; ++outer)
-        {
-            do_wrapped_text(
-                ctx,
-                value(
-                    "Lorem ipsum dolor sit amet, consectetur adipisg elit. "
-                    "Phasellus lacinia elementum diam consequat alicinquet. "
-                    "Vestibulum ut libero justo. Pellentesque lectus lectus, "
-                    "scelerisque a elementum sed, bibendum id libero. "
-                    "Maecenas venenatis est sed sem consequat mollis. Ut "
-                    "neque odio, hendrerit ut justo venenatis, consequat "
-                    "molestie eros. Nam fermentum, mi malesuada eleifend "
-                    "dapibus, lectus dolor luctus orci, nec posuere dolor "
-                    "lorem ac sem. Nullam interdum laoreet ipsum in "
-                    "dictum.\n\n"
-                    "Duis quis blandit felis. Pellentesque et lectus magna. "
-                    "Maecenas dui lacus, sollicitudin a eros in, vehicula "
-                    "posuere metus. Etiam nec dolor mattis, tincidunt sem "
-                    "vitae, maximus tellus. Vestibulum ut nisi nec neque "
-                    "rutrum interdum. In justo massa, consequat quis dui "
-                    "eget, cursus ultricies sem. Quisque a lectus quis est "
-                    "porttitor ullamcorper ac sed odio.\n\n"
-                    "Vestibulum sed turpis et lacus rutrum scelerisque et sit "
-                    "amet ipsum. Sed congue hendrerit augue, sed pellentesque "
-                    "neque. Integer efficitur nisi id massa placerat, at "
-                    "ullamcorper arcu fermentum. Donec sed tellus quis velit "
-                    "placerat viverra nec vel diam. Vestibulum faucibus "
-                    "molestie ipsum eget rhoncus. Donec vitae bibendum nibh, "
-                    "quis pellentesque enim. Donec eget consectetur massa, "
-                    "eget mollis elit. Orci varius natoque penatibus et "
-                    "magnis dis parturient montes, nascetur ridiculus mus. "
-                    "Donec accumsan, nisi egestas sollicitudin ullamcorper, "
-                    "diam dolor faucibus neque, eu scelerisque mi erat vel "
-                    "erat. Etiam nec leo ac risus porta ornare ut accumsan "
-                    "lorem.\n\n"
-                    "Aenean at euismod ligula. Sed augue est, imperdiet ut "
-                    "sem sit amet, efficitur dictum enim. Nam sodales id "
-                    "risus non pulvinar. Morbi id mollis massa. Nunc elit "
-                    "velit, pellentesque et lobortis ut, luctus sed justo. "
-                    "Morbi eleifend quam vel magna accumsan, eu consequat "
-                    "nisl ultrices. Mauris dictum eu quam sit amet aliquet. "
-                    "Sed rhoncus turpis quis sagittis imperdiet. Lorem ipsum "
-                    "dolor sit amet, consectetur adipiscing elit. "
-                    "Pellentesque convallis suscipit ex et hendrerit. Donec "
-                    "est ex, varius eu nulla id, tristique lobortis metus. "
-                    "Sed id sem justo. Nulla at porta neque, id elementum "
-                    "lacus.\n\n"
-                    "Mauris leo tortor, tincidunt sit amet sem sit amet, "
-                    "egestas tempor massa. In diam ipsum, fermentum pulvinar "
-                    "posuere ut, scelerisque sit amet odio. Nam nec justo "
-                    "quis felis ultrices ornare sit amet eu massa. Nam "
-                    "gravida lacus eget tortor porttitor, eget scelerisque "
-                    "est imperdiet. Duis quis imperdiet libero. Nullam justo "
-                    "erat, blandit et nisi sit amet, aliquet mattis leo. Sed "
-                    "a augue non felis lacinia ultrices. Aenean porttitor "
-                    "bibendum sem, in consectetur arcu suscipit id. Etiam "
-                    "varius dictum gravida. Nulla molestie fermentum odio "
-                    "vitae tincidunt. Quisque dictum, magna vitae porttitor "
-                    "accumsan, felis felis consectetur nisi, ut venenatis "
-                    "felis justo ut ante.\n\n"),
-                FILL);
-        }
+        //     for (int outer = 0; outer != 0; ++outer)
+        //     {
+        //         do_wrapped_text(
+        //             ctx,
+        //             value(
+        //                 "Lorem ipsum dolor sit amet, consectetur "
+        //                 "adipisg elit. "
+        //                 "Phasellus lacinia elementum diam consequat
+        //                 alicinquet. " "Vestibulum ut libero justo.
+        //                 Pellentesque lectus lectus, " "scelerisque a
+        //                 elementum sed, bibendum id libero. " "Maecenas
+        //                 venenatis est sed sem consequat mollis. Ut " "neque
+        //                 odio, hendrerit ut justo venenatis, consequat "
+        //                 "molestie eros. Nam fermentum, mi malesuada eleifend
+        //                 " "dapibus, lectus dolor luctus orci, nec posuere
+        //                 dolor " "lorem ac sem. Nullam interdum laoreet ipsum
+        //                 in " "dictum.\n\n" "Duis quis blandit felis.
+        //                 Pellentesque et lectus magna. " "Maecenas dui lacus,
+        //                 sollicitudin a eros in, vehicula " "posuere metus.
+        //                 Etiam nec dolor mattis, tincidunt sem " "vitae,
+        //                 maximus tellus. Vestibulum ut nisi nec neque "
+        //                 "rutrum interdum. In justo massa, consequat quis dui
+        //                 " "eget, cursus ultricies sem. Quisque a lectus quis
+        //                 est " "porttitor ullamcorper ac sed odio.\n\n"
+        //                 "Vestibulum sed turpis et lacus rutrum scelerisque
+        //                 et sit " "amet ipsum. Sed congue hendrerit augue,
+        //                 sed pellentesque " "neque. Integer efficitur nisi id
+        //                 massa placerat, at " "ullamcorper arcu fermentum.
+        //                 Donec sed tellus quis velit " "placerat viverra nec
+        //                 vel diam. Vestibulum faucibus " "molestie ipsum eget
+        //                 rhoncus. Donec vitae bibendum nibh, " "quis
+        //                 pellentesque enim. Donec eget consectetur massa, "
+        //                 "eget mollis elit. Orci varius natoque penatibus et
+        //                 " "magnis dis parturient montes, nascetur ridiculus
+        //                 mus. " "Donec accumsan, nisi egestas sollicitudin
+        //                 ullamcorper, " "diam dolor faucibus neque, eu
+        //                 scelerisque mi erat vel " "erat. Etiam nec leo ac
+        //                 risus porta ornare ut accumsan " "lorem.\n\n"
+        //                 "Aenean at euismod ligula. Sed augue est, imperdiet
+        //                 ut " "sem sit amet, efficitur dictum enim. Nam
+        //                 sodales id " "risus non pulvinar. Morbi id mollis
+        //                 massa. Nunc elit " "velit, pellentesque et lobortis
+        //                 ut, luctus sed justo. " "Morbi eleifend quam vel
+        //                 magna accumsan, eu consequat " "nisl ultrices.
+        //                 Mauris dictum eu quam sit amet aliquet. " "Sed
+        //                 rhoncus turpis quis sagittis imperdiet. Lorem ipsum
+        //                 " "dolor sit amet, consectetur adipiscing elit. "
+        //                 "Pellentesque convallis suscipit ex et hendrerit.
+        //                 Donec " "est ex, varius eu nulla id, tristique
+        //                 lobortis metus. " "Sed id sem justo. Nulla at porta
+        //                 neque, id elementum " "lacus.\n\n" "Mauris leo
+        //                 tortor, tincidunt sit amet sem sit amet, " "egestas
+        //                 tempor massa. In diam ipsum, fermentum pulvinar "
+        //                 "posuere ut, scelerisque sit amet odio. Nam nec
+        //                 justo " "quis felis ultrices ornare sit amet eu
+        //                 massa. Nam " "gravida lacus eget tortor porttitor,
+        //                 eget scelerisque " "est imperdiet. Duis quis
+        //                 imperdiet libero. Nullam justo " "erat, blandit et
+        //                 nisi sit amet, aliquet mattis leo. Sed " "a augue
+        //                 non felis lacinia ultrices. Aenean porttitor "
+        //                 "bibendum sem, in consectetur arcu suscipit id.
+        //                 Etiam " "varius dictum gravida. Nulla molestie
+        //                 fermentum odio " "vitae tincidunt. Quisque dictum,
+        //                 magna vitae porttitor " "accumsan, felis felis
+        //                 consectetur nisi, ut venenatis " "felis justo ut
+        //                 ante.\n\n"),
+        //             FILL);
+        //     }
 
         // do_box(
         //     ctx,
@@ -2410,11 +2762,11 @@ my_ui(ui_context ctx)
 
             for (int i = 0; i != 100; ++i)
             {
-                if_(ctx, show_text, [&] {
-                    // do_spacer(ctx, size(60, 40, PIXELS));
-                    do_text(ctx, alia::printf(ctx, "text%i", i));
-                    do_text(ctx, value("Könnten Sie mir das übersetzen?"));
-                });
+                // if_(ctx, show_text, [&] {
+                //     // do_spacer(ctx, size(60, 40, PIXELS));
+                //     do_text(ctx, alia::printf(ctx, "text%i", i));
+                //     do_text(ctx, value("Könnten Sie mir das übersetzen?"));
+                // });
 
                 {
                     scoped_column col(ctx);

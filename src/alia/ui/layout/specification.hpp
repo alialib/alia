@@ -202,9 +202,9 @@ ALIA_DEFINE_FLAG(
     layout, X_ALIGNMENT_MASK_CODE << X_TO_Y_SHIFT, Y_ALIGNMENT_MASK)
 
 // combined alignment flags - These specify both X and Y simultaneously.
-layout_flag_set const CENTER = CENTER_X | CENTER_Y;
-layout_flag_set const FILL = FILL_X | FILL_Y;
-layout_flag_set const GROW = GROW_X | GROW_Y;
+ALIA_DEFINE_FLAG(layout, CENTER_X_CODE | CENTER_Y_CODE, CENTER)
+ALIA_DEFINE_FLAG(layout, FILL_X_CODE | FILL_Y_CODE, FILL)
+ALIA_DEFINE_FLAG(layout, GROW_X_CODE | GROW_Y_CODE, GROW)
 // PROPORTIONAL_FILL and PROPORTIONAL_GROW are like FILL and GROW, but the
 // width and height are constrained to their original ratio. These should
 // only be used for leaf element, not containers.

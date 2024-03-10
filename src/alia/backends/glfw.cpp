@@ -10,10 +10,14 @@
 #include "include/core/SkFontMgr.h"
 #include "include/core/SkShader.h"
 #include "include/core/SkSurface.h"
+
 #include "include/gpu/GrBackendSurface.h"
 #include "include/gpu/GrDirectContext.h"
 #include "include/gpu/ganesh/SkSurfaceGanesh.h"
+#include "include/gpu/ganesh/gl/GrGLBackendSurface.h"
+#include "include/gpu/ganesh/gl/GrGLDirectContext.h"
 #include "include/gpu/gl/GrGLInterface.h"
+#include "include/gpu/gl/GrGLTypes.h"
 
 // #include "icu/SkLoadICU.h"
 
@@ -44,10 +48,6 @@ SkLoadICU()
 #include <chrono>
 
 namespace alia {
-
-struct root_widget
-{
-};
 
 struct glfw_window_impl
 {
@@ -224,7 +224,7 @@ reset_skia(glfw_window_impl& impl, vector<2, unsigned> size)
     framebuffer_info.fFBOID = 0;
     framebuffer_info.fFormat = GL_RGBA8;
 
-    GrBackendRenderTarget backend_render_target(
+    auto backend_render_target = GrBackendRenderTargets::MakeGL(
         size[0], size[1], 0, 0, framebuffer_info);
 
     impl.skia_surface.reset();
@@ -255,9 +255,8 @@ init_skia(glfw_window_impl& impl, vector<2, unsigned> size)
     // impl.font_collection = sk_make_sp<skia::textlayout::FontCollection>();
     // impl.font_collection->setDefaultFontManager(SkFontMgr::RefDefault());
 
-    auto interface = GrGLMakeNativeInterface();
     impl.skia_graphics_context.reset(
-        GrDirectContext::MakeGL(interface).release());
+        GrDirectContexts::MakeGL(nullptr, GrContextOptions()).release());
     reset_skia(impl, size);
 }
 
