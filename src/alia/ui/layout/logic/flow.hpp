@@ -252,7 +252,7 @@ struct vertical_flow_layout_logic
                 current_column_height += y.size;
             });
 
-        return calculated_layout_requirements(max_column_height, 0, 0);
+        return calculated_layout_requirements{max_column_height, 0, 0};
     }
 
     template<class Children>
