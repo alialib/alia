@@ -40,14 +40,14 @@ jobs:
         export CXX=`which clang++-16`
         cmake -Bbuild -DCMAKE_BUILD_TYPE=${{matrix.config}} \
           -D"CMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
-          -DALIA_ENABLE_INDIE=ON \
+          -DALIA_ENABLE_UI=ON \
           -DALIA_ENABLE_GLFW=OFF \
           . \
 
     - name: Build
       run: >
         cmake --build build --config ${{matrix.config}}
-        --target unit_test_runner indie_unit_test_runner -j4
+        --target core_unit_test_runner ui_unit_test_runner -j4
 
     - name: Test
       run: |
@@ -79,18 +79,22 @@ jobs:
         export CXX=`which clang++-10`
         cmake -Bbuild -DCMAKE_BUILD_TYPE=${{matrix.config}} \
           -D"CMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
-          -DALIA_ENABLE_INDIE=OFF \
+          -DALIA_ENABLE_UI=OFF \
           .
 
     - name: Build
       run: >
         cmake --build build --config ${{matrix.config}}
-        --target unit_test_runner -j4
+        --target core_unit_test_runner -j4
 
     - name: Test
       run: |
         cd build
         ctest --build-config ${{matrix.config}}
 
-    - name: Upload coverage report
-      run: bash <(curl -s https://codecov.io/bash) -X gcov
+    - name: Upload coverage reports
+      run: |
+        bash <(curl -s https://codecov.io/bash) -X gcov -F core \
+          -f build/tests/core_coverage.txt
+        bash <(curl -s https://codecov.io/bash) -X gcov -F ui \
+          -f build/tests/ui_coverage.txt

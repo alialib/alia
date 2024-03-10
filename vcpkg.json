@@ -1,6 +1,6 @@
 {
     "name": "alia",
-    "builtin-baseline": "662dbb50e63af15baa2909b7eac5b1b87e86a0aa",
+    "builtin-baseline": "d8160798747ac9953d3374f9473393868d76dfe6",
     "features": {
         "html": {
             "description": "Build HTML integration",
@@ -10,8 +10,8 @@
                 "scnlib"
             ]
         },
-        "indie": {
-            "description": "Build the 'Indie' UI library",
+        "ui": {
+            "description": "Build the UI library",
             "dependencies": [
                 "fmt",
                 {
@@ -26,9 +26,15 @@
             ]
         },
         "glfw": {
-            "description": "GLFW backend for Indie library",
+            "description": "GLFW backend for UI library",
             "dependencies": [
                 "glfw3"
+            ]
+        },
+        "sdl": {
+            "description": "SDL backend for UI library",
+            "dependencies": [
+                "sdl2"
             ]
         },
         "tests": {
@@ -43,7 +49,7 @@
             {
                 "kind": "git",
                 "repository": "https://github.com/alialib/vcpkg-registry",
-                "baseline": "4db9a932e08aa2fe816019058b23b1572d426f90",
+                "baseline": "2cf62623ae1d44a648c5bf3ab44aaf201aaef95e",
                 "packages": [
                     "skia"
                 ]

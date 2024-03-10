@@ -48,8 +48,7 @@ init_demo(std::string dom_id)
 {
     static html::system the_system;
 
-    initialize(
-        the_system, dom_id, [](html::context ctx) { app_ui(ctx); });
+    initialize(the_system, dom_id, [](html::context ctx) { app_ui(ctx); });
 }
 
 static demo the_demo("stateful-component", init_demo);
