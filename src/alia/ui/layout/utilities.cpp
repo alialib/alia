@@ -343,6 +343,16 @@ resolve_relative_assignment(
         assignment.baseline_y,
         vertical_requirements.size,
         vertical_requirements.ascent);
+    // std::cout << "-- resolve_relative_assignment\n"
+    //           << assignment.region << "\n"
+    //           << "growth_factor: " << spec.growth_factor << "\n"
+    //           << "padding_size: " << spec.padding_size << "\n"
+    //           << "flags: " << spec.flags.code << "\n"
+    //           << "size: " << spec.size << "\n"
+    //           << "x_offset: " << x_offset << "\n"
+    //           << "x_size: " << x_size << "\n"
+    //           << "y_offset: " << y_offset << "\n"
+    //           << "y_size: " << y_size << std::endl;
     return relative_layout_assignment{
         layout_box(
             assignment.region.corner + make_layout_vector(x_offset, y_offset)

@@ -141,7 +141,8 @@ struct untyped_signal_base
 
     // Does the signal currently have a value?
     virtual bool
-    has_value() const = 0;
+    has_value() const
+        = 0;
 
     // A signal must supply an ID that uniquely identifies its value.
     //
@@ -153,15 +154,18 @@ struct untyped_signal_base
     // signal itself is valid.
     //
     virtual id_interface const&
-    value_id() const = 0;
+    value_id() const
+        = 0;
 
     // Is the signal currently ready to write?
     virtual bool
-    ready_to_write() const = 0;
+    ready_to_write() const
+        = 0;
 
     // Clear the signal.
     virtual void
-    clear() const = 0;
+    clear() const
+        = 0;
 
     // WARNING: EXPERIMENTAL VALIDATION STUFF FOLLOWS...
 
@@ -194,25 +198,29 @@ struct signal_interface : untyped_signal_base
     // Read the signal's value. The reference returned here is only guaranteed
     // to be valid as long as the signal object itself is valid.
     virtual Value const&
-    read() const = 0;
+    read() const
+        = 0;
 
     // Move out the signal's value.
     // This is expected to be implemented by movable signals.
     virtual Value
-    move_out() const = 0;
+    move_out() const
+        = 0;
 
     // Get a reference to the signal's value that the caller can manipulate
     // as it pleases.
     // This is expected to be implemented by movable signals.
     virtual Value&
-    destructive_ref() const = 0;
+    destructive_ref() const
+        = 0;
 
     // Write the signal's value.
     // The signal can *optionally* return the new value ID of the signal (after
     // taking on the value that was written in by this call). If this is
     // impractical, it can just return null_id instead.
     virtual id_interface const&
-    write(Value value) const = 0;
+    write(Value value) const
+        = 0;
 };
 
 template<class Derived, class Value, class Capabilities>
@@ -350,13 +358,22 @@ struct signal_ref
         std::enable_if_t<
             signal_capabilities_compatible<Capabilities, OtherCapabilities>::
                 value,
-            int> = 0)
+            int>
+        = 0)
         : ref_(&signal)
     {
     }
     // Construct from another signal_ref. - This is meant to prevent
     // unnecessary layers of indirection.
-    signal_ref(signal_ref<Value, Capabilities> const& other) : ref_(other.ref_)
+    template<class OtherCapabilities>
+    signal_ref(
+        signal_ref<Value, OtherCapabilities> const& other,
+        std::enable_if_t<
+            signal_capabilities_compatible<Capabilities, OtherCapabilities>::
+                value,
+            int>
+        = 0)
+        : ref_(other.ref_)
     {
     }
 

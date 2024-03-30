@@ -42,12 +42,15 @@ struct simple_layout_container : widget_container
     set_relative_assignment(
         relative_layout_assignment const& assignment) override
     {
+        // std::cout << "(simple) sra: " << assignment.region << std::endl;
         update_relative_assignment(
             *this,
             cacher,
             last_content_change,
             assignment,
             [&](auto const& resolved_assignment) {
+                // std::cout << "(simple) ura: " << resolved_assignment.region
+                //           << std::endl;
                 this->assigned_size = resolved_assignment.region.size;
                 logic->set_relative_assignment(
                     children,
