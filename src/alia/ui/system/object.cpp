@@ -89,6 +89,13 @@ ui_system::invoke_controller(vanilla_ui_context vanilla_ctx)
             root->last_content_change
                 = get_layout_traversal(ctx).refresh_counter;
         }
+
+        // auto const& spec = root->cacher.resolved_spec;
+        // std::cout << "-- (root) resolved_spec\n"
+        //           << "growth_factor: " << spec.growth_factor << "\n"
+        //           << "padding_size: " << spec.padding_size << "\n"
+        //           << "flags: " << spec.flags.code << "\n"
+        //           << "size: " << spec.size << std::endl;
     }
     scoped_layout_container root_scope(get_layout_traversal(ctx), root);
 
