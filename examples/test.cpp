@@ -11,13 +11,15 @@
 #include <alia/ui/layout/utilities.hpp>
 #include <alia/ui/system/api.hpp>
 #include <alia/ui/system/input_constants.hpp>
+#include <alia/ui/text/components.hpp>
+#include <alia/ui/text/fonts.hpp>
 #include <alia/ui/utilities/hit_testing.hpp>
 #include <alia/ui/utilities/keyboard.hpp>
 #include <alia/ui/utilities/mouse.hpp>
 #include <alia/ui/utilities/scrolling.hpp>
 #include <alia/ui/widget.hpp>
 
-// #include <color/color.hpp>
+#include <color/color.hpp>
 
 #include <cmath>
 
@@ -26,13 +28,11 @@
 
 #include <include/core/SkBlurTypes.h>
 #include <include/core/SkColor.h>
-#include <include/core/SkFontMgr.h>
 #include <include/core/SkFontTypes.h>
 #include <include/core/SkMaskFilter.h>
 #include <include/core/SkPath.h>
 #include <include/core/SkPictureRecorder.h>
-#include <include/core/SkTextBlob.h>
-#include <modules/skshaper/include/SkShaper.h>
+#include <optional>
 
 #include "alia/core/flow/components.hpp"
 #include "alia/core/flow/macros.hpp"
@@ -52,48 +52,9 @@
 // #include "modules/svg/include/SkSVGDOM.h"
 // #include "modules/svg/include/SkSVGNode.h"
 
-#if defined(SK_BUILD_FOR_WIN)                                                 \
-    && (defined(SK_FONTMGR_GDI_AVAILABLE)                                     \
-        || defined(SK_FONTMGR_DIRECTWRITE_AVAILABLE))
-#include "include/ports/SkTypeface_win.h"
-#endif
-
-#if defined(SK_BUILD_FOR_ANDROID) && defined(SK_FONTMGR_ANDROID_AVAILABLE)
-#include "include/ports/SkFontMgr_android.h"
-#include "src/ports/SkTypeface_FreeType.h"
-#endif
-
-#if defined(SK_FONTMGR_CORETEXT_AVAILABLE)                                    \
-    && (defined(SK_BUILD_FOR_IOS) || defined(SK_BUILD_FOR_MAC))
-#include "include/ports/SkFontMgr_mac_ct.h"
-#endif
-
-#if defined(SK_FONTMGR_FONTATIONS_AVAILABLE)
-#include "include/ports/SkFontMgr_Fontations.h"
-#endif
-
-#if defined(SK_FONTMGR_FONTCONFIG_AVAILABLE)
-#include "include/ports/SkFontMgr_fontconfig.h"
-#endif
-
-#if defined(SK_FONTMGR_FREETYPE_DIRECTORY_AVAILABLE)
-#include "include/ports/SkFontMgr_directory.h"
-#endif
-
-#if defined(SK_FONTMGR_FREETYPE_EMPTY_AVAILABLE)
-#include "include/ports/SkFontMgr_empty.h"
-#endif
-
 #include <alia/ui/scrolling.hpp>
 
 using namespace alia;
-
-// std::unique_ptr<SkShaper> the_shaper;
-
-// TODO
-static std::unique_ptr<SkFont> the_font;
-
-static sk_sp<SkFontMgr> the_font_manager;
 
 struct click_event : targeted_event
 {
@@ -883,698 +844,9 @@ do_tree_expander(
 //     }
 // }
 
-#if 0
-
-struct text_node : layout_leaf
-{
-    void
-    render(render_event& event) override
-    {
-        SkCanvas& canvas = *event.canvas;
-
-        auto const& region = this->assignment().region;
-
-        SkRect bounds;
-        bounds.fLeft = SkScalar(region.corner[0] + event.current_offset[0]);
-        bounds.fTop = SkScalar(region.corner[1] + event.current_offset[1]);
-        bounds.fRight = bounds.fLeft + SkScalar(region.size[0]);
-        bounds.fBottom = bounds.fTop + SkScalar(region.size[1]);
-        if (canvas.quickReject(bounds))
-            return;
-        SkPaint paint;
-        paint.setAntiAlias(true);
-        paint.setColor(SK_ColorBLACK);
-        if (!text_blob_)
-            text_blob_ = SkTextBlob::MakeFromString(text_.c_str(), *the_font);
-        canvas.drawTextBlob(
-            text_blob_.get(), bounds.fLeft, bounds.fBottom, paint);
-    }
-
-    void
-    hit_test(hit_test_base&, vector<2, double> const&) const override
-    {
-    }
-
-    void
-    process_input(ui_event_context) override
-    {
-    }
-
-    matrix<3, 3, double>
-    transformation() const override
-    {
-        return parent->transformation();
-    }
-
-    layout_box
-    bounding_box() const override
-    {
-        return this->assignment().region;
-    }
-
-    void
-    reveal_region(region_reveal_request const& request) override
-    {
-        parent->reveal_region(request);
-    }
-
-    ui_system* sys_;
-    std::string text_;
-    SkRect bounds_;
-    sk_sp<SkTextBlob> text_blob_;
-};
-
-void
-do_text(
-    ui_context ctx,
-    readable<std::string> text,
-    layout const& layout_spec = default_layout)
-{
-    if (!the_font)
-    {
-        if (!the_font_manager)
-            the_font_manager = SkFontMgr_New_DirectWrite();
-        auto typeface
-            = the_font_manager->makeFromFile("../roboto/Roboto-Regular.ttf");
-        if (!typeface)
-            std::cout << "font loading failed" << std::endl;
-        the_font.reset(new SkFont(typeface, 24));
-    }
-
-    text_node* node_ptr;
-    if (get_cached_data(ctx, &node_ptr))
-    {
-        node_ptr->sys_ = &get_system(ctx);
-
-        node_ptr->text_ = read_signal(text);
-        the_font->measureText(
-            read_signal(text).c_str(),
-            read_signal(text).length(),
-            SkTextEncoding::kUTF8,
-            &node_ptr->bounds_);
-    }
-
-    auto& node = *node_ptr;
-
-    if (is_refresh_event(ctx))
-    {
-        node.refresh_layout(
-            get<ui_traversal_tag>(ctx).layout,
-            layout_spec,
-            leaf_layout_requirements(
-                make_layout_vector(
-                    node.bounds_.width(), node.bounds_.height()),
-                0,
-                0));
-        add_layout_node(get<ui_traversal_tag>(ctx).layout, &node);
-    }
-}
-
 // ---
 
-#ifdef _WIN32
-#pragma warning(push, 0)
-#endif
-
-class RunHandler final : public SkShaper::RunHandler
-{
- public:
-    RunHandler(const char* utf8Text, size_t) : fUtf8Text(utf8Text)
-    {
-    }
-    using RunCallback = void (*)(
-        void* context,
-        const char* utf8Text,
-        size_t utf8TextBytes,
-        size_t glyphCount,
-        const SkGlyphID* glyphs,
-        const SkPoint* positions,
-        const uint32_t* clusters,
-        const SkFont& font);
-    void
-    setRunCallback(RunCallback f, void* context)
-    {
-        fCallbackContext = context;
-        fCallbackFunction = f;
-    }
-    sk_sp<SkTextBlob>
-    makeBlob();
-    SkPoint
-    endPoint() const
-    {
-        return fOffset;
-    }
-    SkPoint
-    finalPosition() const
-    {
-        return fCurrentPosition;
-    }
-    void
-    beginLine() override;
-    void
-    runInfo(const RunInfo&) override;
-    void
-    commitRunInfo() override;
-    SkShaper::RunHandler::Buffer
-    runBuffer(const RunInfo&) override;
-    void
-    commitRunBuffer(const RunInfo&) override;
-    void
-    commitLine() override;
-    const std::vector<size_t>&
-    lineEndOffsets() const
-    {
-        return fLineEndOffsets;
-    }
-    SkRect
-    finalRect(const SkFont& font) const
-    {
-        if (0 == fMaxRunAscent || 0 == fMaxRunDescent)
-        {
-            SkFontMetrics metrics;
-            font.getMetrics(&metrics);
-            return {
-                fCurrentPosition.x(),
-                fCurrentPosition.y(),
-                fCurrentPosition.x() + font.getSize(),
-                fCurrentPosition.y() + metrics.fDescent - metrics.fAscent};
-        }
-        else
-        {
-            return {
-                fCurrentPosition.x(),
-                fCurrentPosition.y() + fMaxRunAscent,
-                fCurrentPosition.x() + font.getSize(),
-                fCurrentPosition.y() + fMaxRunDescent};
-        }
-    }
-
- private:
-    SkTextBlobBuilder fBuilder;
-    std::vector<size_t> fLineEndOffsets;
-    const SkGlyphID* fCurrentGlyphs = nullptr;
-    const SkPoint* fCurrentPoints = nullptr;
-    void* fCallbackContext = nullptr;
-    RunCallback fCallbackFunction = nullptr;
-    char const* const fUtf8Text;
-    size_t fTextOffset = 0;
-    uint32_t* fClusters = nullptr;
-    int fClusterOffset = 0;
-    int fGlyphCount = 0;
-    SkScalar fMaxRunAscent = 0;
-    SkScalar fMaxRunDescent = 0;
-    SkScalar fMaxRunLeading = 0;
-    SkPoint fCurrentPosition = {0, 0};
-    SkPoint fOffset = {0, 0};
-};
-
-void
-RunHandler::beginLine()
-{
-    fCurrentPosition = fOffset;
-    fMaxRunAscent = 0;
-    fMaxRunDescent = 0;
-    fMaxRunLeading = 0;
-}
-void
-RunHandler::runInfo(const SkShaper::RunHandler::RunInfo& info)
-{
-    SkFontMetrics metrics;
-    info.fFont.getMetrics(&metrics);
-    fMaxRunAscent = std::min(fMaxRunAscent, metrics.fAscent);
-    fMaxRunDescent = std::max(fMaxRunDescent, metrics.fDescent);
-    fMaxRunLeading = std::max(fMaxRunLeading, metrics.fLeading);
-}
-void
-RunHandler::commitRunInfo()
-{
-    fCurrentPosition.fY -= fMaxRunAscent;
-}
-SkShaper::RunHandler::Buffer
-RunHandler::runBuffer(const RunInfo& info)
-{
-    int glyphCount
-        = SkTFitsIn<int>(info.glyphCount) ? info.glyphCount : INT_MAX;
-    int utf8RangeSize = SkTFitsIn<int>(info.utf8Range.size())
-                            ? info.utf8Range.size()
-                            : INT_MAX;
-    const auto& runBuffer
-        = fBuilder.allocRunTextPos(info.fFont, glyphCount, utf8RangeSize);
-    fCurrentGlyphs = runBuffer.glyphs;
-    fCurrentPoints = runBuffer.points();
-    if (runBuffer.utf8text && fUtf8Text)
-    {
-        memcpy(
-            runBuffer.utf8text,
-            fUtf8Text + info.utf8Range.begin(),
-            utf8RangeSize);
-    }
-    fClusters = runBuffer.clusters;
-    fGlyphCount = glyphCount;
-    fClusterOffset = info.utf8Range.begin();
-    return {
-        runBuffer.glyphs,
-        runBuffer.points(),
-        nullptr,
-        runBuffer.clusters,
-        fCurrentPosition};
-}
-void
-RunHandler::commitRunBuffer(const RunInfo& info)
-{
-    // for (size_t i = 0; i < info.glyphCount; ++i) {
-    //     SkASSERT(fClusters[i] >= info.utf8Range.begin());
-    //     // this fails for khmer example.
-    //     SkASSERT(fClusters[i] <  info.utf8Range.end());
-    // }
-    if (fCallbackFunction)
-    {
-        fCallbackFunction(
-            fCallbackContext,
-            fUtf8Text,
-            info.utf8Range.end(),
-            info.glyphCount,
-            fCurrentGlyphs,
-            fCurrentPoints,
-            fClusters,
-            info.fFont);
-    }
-    SkASSERT(0 <= fClusterOffset);
-    for (int i = 0; i < fGlyphCount; ++i)
-    {
-        SkASSERT(fClusters[i] >= (unsigned) fClusterOffset);
-        fClusters[i] -= fClusterOffset;
-    }
-    fCurrentPosition += info.fAdvance;
-    fTextOffset = std::max(fTextOffset, info.utf8Range.end());
-}
-void
-RunHandler::commitLine()
-{
-    if (fLineEndOffsets.empty() || fTextOffset > fLineEndOffsets.back())
-    {
-        // Ensure that fLineEndOffsets is monotonic.
-        fLineEndOffsets.push_back(fTextOffset);
-    }
-    fOffset += {0, fMaxRunDescent + fMaxRunLeading - fMaxRunAscent};
-}
-sk_sp<SkTextBlob>
-RunHandler::makeBlob()
-{
-    return fBuilder.make();
-}
-static SkRect
-selection_box(const SkFontMetrics& metrics, float advance, SkPoint pos)
-{
-    if (fabsf(advance) < 1.0f)
-    {
-        advance = copysignf(1.0f, advance);
-    }
-    return SkRect{
-        pos.x(),
-        pos.y() + metrics.fAscent,
-        pos.x() + advance,
-        pos.y() + metrics.fDescent}
-        .makeSorted();
-}
-static void
-set_character_bounds(
-    void* context,
-    const char* utf8Text,
-    size_t utf8TextBytes,
-    size_t glyphCount,
-    const SkGlyphID* glyphs,
-    const SkPoint* positions,
-    const uint32_t* clusters,
-    const SkFont& font)
-{
-    SkASSERT(context);
-    SkASSERT(glyphCount > 0);
-    SkRect* cursors = (SkRect*) context;
-    SkFontMetrics metrics;
-    font.getMetrics(&metrics);
-    std::unique_ptr<float[]> advances(new float[glyphCount]);
-    font.getWidths(glyphs, glyphCount, advances.get());
-    // Loop over each cluster in this run.
-    size_t clusterStart = 0;
-    for (size_t glyphIndex = 0; glyphIndex < glyphCount; ++glyphIndex)
-    {
-        if (glyphIndex + 1 < glyphCount // more glyphs
-            && clusters[glyphIndex] == clusters[glyphIndex + 1])
-        {
-            continue; // multi-glyph cluster
-        }
-        unsigned textBegin = clusters[glyphIndex];
-        unsigned textEnd = utf8TextBytes;
-        for (size_t i = 0; i < glyphCount; ++i)
-        {
-            if (clusters[i] >= textEnd)
-            {
-                textEnd = clusters[i] + 1;
-            }
-        }
-        for (size_t i = 0; i < glyphCount; ++i)
-        {
-            if (clusters[i] > textBegin && clusters[i] < textEnd)
-            {
-                textEnd = clusters[i];
-                if (textEnd == textBegin + 1)
-                {
-                    break;
-                }
-            }
-        }
-        SkASSERT(glyphIndex + 1 > clusterStart);
-        unsigned clusterGlyphCount = glyphIndex + 1 - clusterStart;
-        const SkPoint* clusterGlyphPositions = &positions[clusterStart];
-        const float* clusterAdvances = &advances[clusterStart];
-        clusterStart = glyphIndex + 1; // for next loop
-        SkRect clusterBox = selection_box(
-            metrics, clusterAdvances[0], clusterGlyphPositions[0]);
-        for (unsigned i = 1; i < clusterGlyphCount; ++i)
-        { // multiple glyphs
-            clusterBox.join(selection_box(
-                metrics, clusterAdvances[i], clusterGlyphPositions[i]));
-        }
-        if (textBegin + 1 == textEnd)
-        { // single byte, fast path.
-            cursors[textBegin] = clusterBox;
-            continue;
-        }
-        int textCount = textEnd - textBegin;
-        int codePointCount = SkUTF::CountUTF8(utf8Text + textBegin, textCount);
-        if (codePointCount == 1)
-        { // single codepoint, fast path.
-            cursors[textBegin] = clusterBox;
-            continue;
-        }
-        float width = clusterBox.width() / codePointCount;
-        SkASSERT(width > 0);
-        const char* ptr = utf8Text + textBegin;
-        const char* end = utf8Text + textEnd;
-        float x = clusterBox.left();
-        while (ptr < end)
-        { // for each codepoint in cluster
-            const char* nextPtr = ptr;
-            SkUTF::NextUTF8(&nextPtr, end);
-            int firstIndex = ptr - utf8Text;
-            float nextX = x + width;
-            cursors[firstIndex]
-                = SkRect{x, clusterBox.top(), nextX, clusterBox.bottom()};
-            x = nextX;
-            ptr = nextPtr;
-        }
-    }
-}
-
-struct ShapeResult
-{
-    sk_sp<SkTextBlob> blob;
-    std::vector<std::size_t> lineBreakOffsets;
-    std::vector<SkRect> glyphBounds;
-    int verticalAdvance;
-};
-
-ShapeResult
-Shape(
-    const char* utf8Text, size_t textByteLen, const SkFont& font, float width)
-{
-    ShapeResult result;
-    if (SkUTF::CountUTF8(utf8Text, textByteLen) < 0)
-    {
-        utf8Text = nullptr;
-        textByteLen = 0;
-    }
-    if (!the_font_manager)
-    {
-        the_font_manager = SkFontMgr_New_DirectWrite();
-    }
-    std::unique_ptr<SkShaper> shaper = SkShaper::Make(the_font_manager);
-    float height = font.getSpacing();
-    RunHandler runHandler(utf8Text, textByteLen);
-    if (textByteLen)
-    {
-        result.glyphBounds.resize(textByteLen);
-        for (SkRect& c : result.glyphBounds)
-        {
-            c = SkRect{
-                -std::numeric_limits<float>::max(),
-                -std::numeric_limits<float>::max(),
-                -std::numeric_limits<float>::max(),
-                -std::numeric_limits<float>::max()};
-        }
-        runHandler.setRunCallback(
-            set_character_bounds, result.glyphBounds.data());
-
-        std::unique_ptr<SkShaper::BiDiRunIterator> bidi(
-            SkShaper::MakeBiDiRunIterator(utf8Text, textByteLen, 0xfe));
-        if (!bidi)
-        {
-            return result;
-        }
-        std::unique_ptr<SkShaper::LanguageRunIterator> language(
-            SkShaper::MakeStdLanguageRunIterator(utf8Text, textByteLen));
-        if (!language)
-        {
-            return result;
-        }
-        SkFourByteTag undeterminedScript
-            = SkSetFourByteTag('Z', 'y', 'y', 'y');
-        std::unique_ptr<SkShaper::ScriptRunIterator> script(
-            SkShaper::MakeScriptRunIterator(
-                utf8Text, textByteLen, undeterminedScript));
-        if (!script)
-        {
-            return result;
-        }
-        std::unique_ptr<SkShaper::FontRunIterator> font(
-            SkShaper::MakeFontMgrRunIterator(
-                utf8Text,
-                textByteLen,
-                font,
-                the_font_manager,
-                "Arial",
-                SkFontStyle::Bold(),
-                &*language));
-        if (!font)
-        {
-            return result;
-        }
-
-        shaper->shape(
-            utf8Text,
-            textByteLen,
-            *font,
-            *bidi,
-            *script,
-            *language,
-            width,
-            &runHandler);
-        if (runHandler.lineEndOffsets().size() > 1)
-        {
-            result.lineBreakOffsets = runHandler.lineEndOffsets();
-            SkASSERT(result.lineBreakOffsets.size() > 0);
-            result.lineBreakOffsets.pop_back();
-        }
-        height = std::max(height, runHandler.endPoint().y());
-        result.blob = runHandler.makeBlob();
-    }
-    result.glyphBounds.push_back(runHandler.finalRect(font));
-    result.verticalAdvance = (int) ceilf(height);
-    return result;
-}
-
 // ---
-
-struct wrapped_text_node : widget
-{
-    void
-    render(render_event& event) override
-    {
-        SkCanvas& canvas = *event.canvas;
-
-        auto const& region = cacher.relative_assignment.region;
-
-        SkRect bounds;
-        bounds.fLeft = SkScalar(region.corner[0] + event.current_offset[0]);
-        bounds.fTop = SkScalar(region.corner[1] + event.current_offset[1]);
-        bounds.fRight = bounds.fLeft + SkScalar(region.size[0]);
-        bounds.fBottom = bounds.fTop + SkScalar(region.size[1]);
-        if (canvas.quickReject(bounds))
-            return;
-
-        SkPaint paint;
-        paint.setAntiAlias(true);
-        paint.setColor(SK_ColorBLACK);
-
-        if (shape_width_ != region.size[0])
-        {
-            shape_ = Shape(
-                text_.c_str(), text_.size(), *the_font, region.size[0]);
-            shape_width_ = region.size[0];
-        }
-        canvas.drawTextBlob(
-            shape_.blob.get(), bounds.fLeft, bounds.fTop, paint);
-    }
-
-    void
-    hit_test(hit_test_base&, vector<2, double> const&) const override
-    {
-    }
-
-    void
-    process_input(ui_event_context) override
-    {
-    }
-
-    matrix<3, 3, double>
-    transformation() const override
-    {
-        return parent->transformation();
-    }
-
-    layout_requirements
-    get_horizontal_requirements() override
-    {
-        return cache_horizontal_layout_requirements(
-            cacher, this->last_content_change, [&] {
-                // TODO: What should the actual minimum width be here?
-                return calculated_layout_requirements{12, 0, 0};
-            });
-    }
-    layout_requirements
-    get_vertical_requirements(layout_scalar assigned_width) override
-    {
-        return cache_vertical_layout_requirements(
-            cacher, this->last_content_change, assigned_width, [&] {
-                if (shape_width_ != assigned_width)
-                {
-                    std::cout << "(gvr) " << shape_width_ << " -> "
-                              << assigned_width << std::endl;
-                    shape_ = Shape(
-                        text_.c_str(),
-                        text_.size(),
-                        *the_font,
-                        assigned_width);
-                    shape_width_ = assigned_width;
-                }
-
-                return calculated_layout_requirements{
-                    layout_scalar(shape_.verticalAdvance),
-                    0 /* TODO: ascent */,
-                    0 /* TODO: descent */};
-            });
-    }
-    void
-    set_relative_assignment(
-        relative_layout_assignment const& assignment) override
-    {
-        update_relative_assignment(
-            *this,
-            cacher,
-            this->last_content_change,
-            assignment,
-            [&](auto const&) {
-                // if (shape_width_ != resolved_assignment.region.size[0])
-                // {
-                //     std::cout << "(sra) " << shape_width_ << " -> "
-                //               << resolved_assignment.region.size[0]
-                //               << std::endl;
-                //     shape_ = Shape(
-                //         text_.c_str(),
-                //         text_.size(),
-                //         *the_font,
-                //         resolved_assignment.region.size[0]);
-                //     shape_width_ = resolved_assignment.region.size[0];
-                // }
-            });
-    }
-
-    layout_box
-    bounding_box() const override
-    {
-        return cacher.relative_assignment.region;
-    }
-
-    void
-    reveal_region(region_reveal_request const& request) override
-    {
-        parent->reveal_region(request);
-    }
-
-    ui_system* sys_;
-
-    captured_id text_id_;
-    std::string text_;
-
-    layout_cacher cacher;
-
-    double shape_width_ = 0;
-    ShapeResult shape_;
-
-    counter_type last_content_change = 0;
-};
-
-void
-do_wrapped_text(
-    ui_context ctx,
-    readable<std::string> text,
-    layout const& layout_spec = default_layout)
-{
-    if (!the_font)
-    {
-        if (!the_font_manager)
-            the_font_manager = SkFontMgr_New_DirectWrite();
-        auto typeface
-            = the_font_manager->makeFromFile("../roboto/Roboto-Regular.ttf");
-        if (!typeface)
-            std::cout << "font loading failed" << std::endl;
-        the_font.reset(new SkFont(typeface, 24));
-    }
-
-    wrapped_text_node* node_ptr;
-    if (get_cached_data(ctx, &node_ptr))
-    {
-        node_ptr->sys_ = &get_system(ctx);
-
-        node_ptr->text_ = read_signal(text);
-    }
-
-    auto& node = *node_ptr;
-
-    if (is_refresh_event(ctx))
-    {
-        if (update_layout_cacher(
-                get_layout_traversal(ctx),
-                node.cacher,
-                layout_spec,
-                TOP | LEFT | PADDED))
-        {
-            // Since this container isn't active yet, it didn't get marked
-            // as needing recalculation, so we need to do that manually
-            // here.
-            node.last_content_change
-                = get_layout_traversal(ctx).refresh_counter;
-        }
-
-        refresh_signal_view(
-            node.text_id_,
-            text,
-            [&](std::string const& new_value) { node.text_ = new_value; },
-            [&] { node.text_.clear(); },
-            [&] {
-                record_layout_change(get_layout_traversal(ctx));
-                node.shape_width_ = 0;
-                node.shape_ = ShapeResult();
-                node.last_content_change
-                    = get_layout_traversal(ctx).refresh_counter;
-            });
-
-        add_layout_node(get<ui_traversal_tag>(ctx).layout, &node);
-    }
-}
-
-#endif
 
 // namespace alia {
 
@@ -2612,6 +1884,145 @@ collapsible_content(
     if_(ctx, collapsible.do_content(), std::forward<Content>(content));
 }
 
+///
+
+struct panel_container : simple_layout_container<column_layout_logic>
+{
+    void
+    render(render_event& event) override
+    {
+        auto const& region = get_assignment(this->cacher).region;
+        SkRect bounds;
+        bounds.fLeft = SkScalar(region.corner[0] + event.current_offset[0]);
+        bounds.fTop = SkScalar(region.corner[1] + event.current_offset[1]);
+        bounds.fRight = bounds.fLeft + SkScalar(region.size[0]);
+        bounds.fBottom = bounds.fTop + SkScalar(region.size[1]);
+        if (!event.canvas->quickReject(bounds))
+        {
+            SkPaint paint;
+            paint.setColor(SkColorSetRGB(0x31, 0x38, 0x44));
+            event.canvas->drawRect(bounds, paint);
+            alia::render_children(event, *this);
+        }
+    }
+
+    void
+    hit_test(
+        hit_test_base& test, vector<2, double> const& point) const override
+    {
+        if (is_inside(this->assignment().region, vector<2, float>(point)))
+        {
+            if (test.type == hit_test_type::MOUSE)
+            {
+                static_cast<mouse_hit_test&>(test).result
+                    = mouse_hit_test_result{
+                        externalize(internal_element_ref{*this, 0}),
+                        mouse_cursor::POINTER,
+                        this->assignment().region,
+                        ""};
+            }
+        }
+    }
+
+    void
+    process_input(ui_event_context) override
+    {
+    }
+
+    matrix<3, 3, double>
+    transformation() const override
+    {
+        return parent->transformation();
+    }
+
+    relative_layout_assignment const&
+    assignment() const
+    {
+        return cacher.relative_assignment;
+    }
+
+    layout_box
+    bounding_box() const override
+    {
+        return add_border(this->assignment().region, 4.f);
+    }
+
+    void
+    reveal_region(region_reveal_request const& request) override
+    {
+        parent->reveal_region(request);
+    }
+};
+
+void
+get_panel_container(
+    ui_context ctx,
+    std::shared_ptr<panel_container>** container,
+    layout const& layout_spec)
+{
+    if (get_data(ctx, container))
+        **container = std::make_shared<panel_container>();
+
+    if (get_layout_traversal(ctx).is_refresh_pass)
+    {
+        if (update_layout_cacher(
+                get_layout_traversal(ctx),
+                (**container)->cacher,
+                layout_spec,
+                FILL | UNPADDED))
+        {
+            // Since this container isn't active yet, it didn't get marked
+            // as needing recalculation, so we need to do that manually
+            // here.
+            (**container)->last_content_change
+                = get_layout_traversal(ctx).refresh_counter;
+        }
+    }
+}
+
+// rgb(49, 58, 70)
+
+struct scoped_panel
+{
+    scoped_panel()
+    {
+    }
+    scoped_panel(ui_context ctx, layout const& layout_spec = default_layout)
+    {
+        begin(ctx, layout_spec);
+    }
+    ~scoped_panel()
+    {
+        end();
+    }
+
+    void
+    begin(ui_context ctx, layout const& layout_spec = default_layout)
+    {
+        std::shared_ptr<panel_container>* container;
+        get_panel_container(ctx, &container, layout_spec);
+        container_ = container->get();
+        scoping_.begin(get_layout_traversal(ctx), container_);
+    }
+    void
+    end()
+    {
+        scoping_.end();
+    }
+
+ private:
+    panel_container* container_;
+    scoped_layout_container scoping_;
+};
+
+template<class Content>
+void
+panel(ui_context ctx, Content&& content)
+{
+    scoped_panel panel(ctx);
+    std::forward<Content>(content);
+}
+
 } // namespace alia
 
 void
@@ -2619,65 +2030,88 @@ my_ui(ui_context ctx)
 {
     scoped_scrollable_view scrollable(ctx, GROW);
 
+    scoped_panel panel(ctx, GROW | UNPADDED);
+
     scoped_column column(ctx, GROW | PADDED);
 
-    auto show_text = get_state(ctx, false);
+    // {
+    //     scoped_grid_layout grid(ctx);
+    //     for (int i = 0; i != 4; ++i)
+    //     {
+    //         {
+    //             scoped_grid_row row(ctx, grid);
+    //             do_box(
+    //                 ctx, SK_ColorMAGENTA, actions::noop(), width(200,
+    //                 PIXELS));
+    //             do_box(
+    //                 ctx, SK_ColorMAGENTA, actions::noop(), width(200,
+    //                 PIXELS));
+    //         }
+    //         {
+    //             scoped_grid_row row(ctx, grid);
+    //             do_box(ctx, SK_ColorLTGRAY, actions::noop());
+    //             do_box(ctx, SK_ColorLTGRAY, actions::noop());
+    //         }
+    //     }
+    // }
 
-    auto show_other_text = get_state(ctx, false);
+    // auto show_text = get_state(ctx, false);
 
-    {
-        scoped_flow_layout row(ctx, UNPADDED | FILL);
-        do_box(ctx, SK_ColorLTGRAY, actions::toggle(show_text));
-        do_box(ctx, SK_ColorLTGRAY, actions::toggle(show_other_text));
-        do_tree_expander(ctx);
-        // do_svg_image(ctx);
-    }
+    // auto show_other_text = get_state(ctx, false);
 
-    collapsible_content(ctx, show_other_text, [&] {
-        do_spacer(ctx, height(20, PIXELS));
-        // do_text(ctx, value("Könnten Sie mir das übersetzen?"));
-        // do_wrapped_text(
-        //     ctx,
-        //     value("\xce\xa3\xe1\xbd\xb2\x20\xce\xb3\xce\xbd\xcf\x89\xcf\x81"
-        //           "\xe1\xbd\xb7\xce\xb6\xcf\x89\x20\xe1\xbc\x80\xcf\x80\xe1"
-        //           "\xbd\xb8\x20\xcf\x84\xe1\xbd\xb4\xce\xbd\x20\xce\xba\xe1"
-        //           "\xbd\xb9\xcf\x88\xce\xb7"));
-        // do_wrapped_text(
-        //     ctx,
-        //     value("\x58\x20\x2d\x20\xd9\x82\xd9\x84\xd9\x85\x20\xd8\xb1\xd8"
-        //           "\xb5\xd8\xa7\xd8\xb5\x20\x2d\x20\x59"));
-        // do_wrapped_text(
-        //     ctx,
-        //     value("\xe7\x8e\x8b\xe6\x98\x8e\xef\xbc\x9a\xe8\xbf\x99\xe6\x98"
-        //           "\xaf\xe4\xbb\x80\xe4\xb9\x88\xef\xbc\x9f"));
+    // {
+    //     scoped_flow_layout row(ctx, UNPADDED | FILL);
+    //     do_box(ctx, SK_ColorLTGRAY, actions::toggle(show_text));
+    //     do_box(ctx, SK_ColorLTGRAY, actions::toggle(show_other_text));
+    //     do_tree_expander(ctx);
+    //     // do_svg_image(ctx);
+    // }
 
-        {
-            scoped_grid_layout grid(ctx);
-            for (int i = 0; i != 4; ++i)
-            {
-                {
-                    scoped_grid_row row(ctx, grid);
-                    do_box(
-                        ctx,
-                        SK_ColorMAGENTA,
-                        actions::noop(),
-                        width(200, PIXELS));
-                    do_box(
-                        ctx,
-                        SK_ColorMAGENTA,
-                        actions::noop(),
-                        width(200, PIXELS));
-                }
-                {
-                    scoped_grid_row row(ctx, grid);
-                    do_box(ctx, SK_ColorLTGRAY, actions::noop());
-                    do_box(ctx, SK_ColorLTGRAY, actions::noop());
-                }
-            }
-        }
-    });
+    // collapsible_content(ctx, show_other_text, [&] {
+    //     do_spacer(ctx, height(20, PIXELS));
+    //     do_text(ctx, value("Könnten Sie mir das übersetzen?"));
+    //     do_wrapped_text(
+    //         ctx,
+    //         value("\xce\xa3\xe1\xbd\xb2\x20\xce\xb3\xce\xbd\xcf\x89\xcf\x81"
+    //               "\xe1\xbd\xb7\xce\xb6\xcf\x89\x20\xe1\xbc\x80\xcf\x80\xe1"
+    //               "\xbd\xb8\x20\xcf\x84\xe1\xbd\xb4\xce\xbd\x20\xce\xba\xe1"
+    //               "\xbd\xb9\xcf\x88\xce\xb7"));
+    //     do_wrapped_text(
+    //         ctx,
+    //         value("\x58\x20\x2d\x20\xd9\x82\xd9\x84\xd9\x85\x20\xd8\xb1\xd8"
+    //               "\xb5\xd8\xa7\xd8\xb5\x20\x2d\x20\x59"));
+    //     do_wrapped_text(
+    //         ctx,
+    //         value("\xe7\x8e\x8b\xe6\x98\x8e\xef\xbc\x9a\xe8\xbf\x99\xe6\x98"
+    //               "\xaf\xe4\xbb\x80\xe4\xb9\x88\xef\xbc\x9f"));
 
-    do_spacer(ctx, height(100, PIXELS));
+    //     {
+    //         scoped_grid_layout grid(ctx);
+    //         for (int i = 0; i != 4; ++i)
+    //         {
+    //             {
+    //                 scoped_grid_row row(ctx, grid);
+    //                 do_box(
+    //                     ctx,
+    //                     SK_ColorMAGENTA,
+    //                     actions::noop(),
+    //                     width(200, PIXELS));
+    //                 do_box(
+    //                     ctx,
+    //                     SK_ColorMAGENTA,
+    //                     actions::noop(),
+    //                     width(200, PIXELS));
+    //             }
+    //             {
+    //                 scoped_grid_row row(ctx, grid);
+    //                 do_box(ctx, SK_ColorLTGRAY, actions::noop());
+    //                 do_box(ctx, SK_ColorLTGRAY, actions::noop());
+    //             }
+    //         }
+    //     }
+    // });
+
+    // do_spacer(ctx, height(100, PIXELS));
 
     {
         //     for (int outer = 0; outer != 0; ++outer)
@@ -2759,6 +2193,18 @@ my_ui(ui_context ctx)
         for (int outer = 0; outer != 2; ++outer)
         {
             scoped_flow_layout flow(ctx, UNPADDED);
+
+            auto my_style = text_style{
+                "roboto/Roboto-Regular", 22.f, rgb8(173, 181, 189)};
+
+            for (int i = 0; i != 100; ++i)
+                do_text(
+                    ctx,
+                    direct(my_style),
+                    alia::printf(
+                        ctx,
+                        "Revenue today - Könnten Sie mir das übersetzen?",
+                        i));
 
             for (int i = 0; i != 100; ++i)
             {

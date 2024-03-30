@@ -278,22 +278,22 @@ render_ui(sdl_window_impl& impl)
         // TODO: Clear the canvas?
     }
 
-    {
-        canvas.clipRect(SkRect::MakeWH(SkScalar(width), SkScalar(height)));
-        canvas.resetMatrix();
-        for (int i = 0; i != 10; ++i)
-        {
-            SkPaint paint;
-            paint.setAntiAlias(true);
-            paint.setColor(SK_ColorGRAY);
-            SkPath path;
-            path.moveTo(SkScalar(i * 100), 0);
-            path.lineTo(SkScalar(i * 100), 600);
-            paint.setStyle(SkPaint::kStroke_Style);
-            paint.setStrokeWidth(1);
-            canvas.drawPath(path, paint);
-        }
-    }
+    // {
+    //     canvas.clipRect(SkRect::MakeWH(SkScalar(width), SkScalar(height)));
+    //     canvas.resetMatrix();
+    //     for (int i = 0; i != 10; ++i)
+    //     {
+    //         SkPaint paint;
+    //         paint.setAntiAlias(true);
+    //         paint.setColor(SK_ColorGRAY);
+    //         SkPath path;
+    //         path.moveTo(SkScalar(i * 100), 0);
+    //         path.lineTo(SkScalar(i * 100), 600);
+    //         paint.setStyle(SkPaint::kStroke_Style);
+    //         paint.setStrokeWidth(1);
+    //         canvas.drawPath(path, paint);
+    //     }
+    // }
 
     {
         std::chrono::steady_clock::time_point end

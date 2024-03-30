@@ -16,21 +16,12 @@ struct rgb
     {
     }
     Channel r, g, b;
+
+    auto
+    operator<=>(rgb const&) const
+        = default;
 };
 typedef rgb<uint8_t> rgb8;
-
-inline bool
-operator==(rgb8 const& a, rgb8 const& b)
-{
-    return a.r == b.r && a.g == b.g && a.b == b.b;
-}
-inline bool
-operator!=(rgb8 const& a, rgb8 const& b)
-{
-    return !(a == b);
-}
-bool
-operator<(rgb8 const& a, rgb8 const& b);
 
 std::ostream&
 operator<<(std::ostream& s, rgb8 const& c);
@@ -91,21 +82,12 @@ struct rgba
     {
     }
     Channel r, g, b, a;
+
+    auto
+    operator<=>(rgba const&) const
+        = default;
 };
 typedef rgba<uint8_t> rgba8;
-
-inline bool
-operator==(rgba8 const& a, rgba8 const& b)
-{
-    return a.r == b.r && a.g == b.g && a.b == b.b && a.a == b.a;
-}
-inline bool
-operator!=(rgba8 const& a, rgba8 const& b)
-{
-    return !(a == b);
-}
-bool
-operator<(rgba8 const& a, rgba8 const& b);
 
 std::ostream&
 operator<<(std::ostream& s, rgba8 const& c);

@@ -3,41 +3,6 @@
 
 namespace alia {
 
-bool
-operator<(rgb8 const& a, rgb8 const& b)
-{
-    if (a.r < b.r)
-        return true;
-    if (a.r > b.r)
-        return false;
-    if (a.g < b.g)
-        return true;
-    if (a.g > b.g)
-        return false;
-    if (a.b < b.b)
-        return true;
-    return false;
-}
-bool
-operator<(rgba8 const& a, rgba8 const& b)
-{
-    if (a.r < b.r)
-        return true;
-    if (a.r > b.r)
-        return false;
-    if (a.g < b.g)
-        return true;
-    if (a.g > b.g)
-        return false;
-    if (a.b < b.b)
-        return true;
-    if (a.b > b.b)
-        return false;
-    if (a.a < b.a)
-        return true;
-    return false;
-}
-
 rgb8
 interpolate(rgb8 const& a, rgb8 const& b, double f)
 {
