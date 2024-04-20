@@ -377,6 +377,285 @@ do_box(
     }
 }
 
+struct radio_button_node : widget
+{
+    layout_requirements
+    get_horizontal_requirements() override
+    {
+        layout_requirements requirements;
+        resolve_requirements(
+            requirements,
+            resolved_spec_,
+            0,
+            calculated_layout_requirements{40, 0, 0});
+        return requirements;
+    }
+    layout_requirements
+    get_vertical_requirements(layout_scalar /*assigned_width*/) override
+    {
+        layout_requirements requirements;
+        resolve_requirements(
+            requirements,
+            resolved_spec_,
+            1,
+            calculated_layout_requirements{40, 0, 0});
+        return requirements;
+    }
+    void
+    set_relative_assignment(
+        relative_layout_assignment const& assignment) override
+    {
+        layout_requirements horizontal_requirements, vertical_requirements;
+        resolve_requirements(
+            horizontal_requirements,
+            resolved_spec_,
+            0,
+            calculated_layout_requirements{40, 0, 0});
+        resolve_requirements(
+            vertical_requirements,
+            resolved_spec_,
+            1,
+            calculated_layout_requirements{40, 0, 0});
+        relative_assignment_ = resolve_relative_assignment(
+            resolved_spec_,
+            assignment,
+            horizontal_requirements,
+            vertical_requirements);
+    }
+
+    void
+    render(render_event& event) override
+    {
+        SkCanvas& canvas = *event.canvas;
+
+        auto const& region = this->assignment().region;
+
+        double highlight = 0;
+
+        if (is_click_in_progress(
+                *sys_, internal_element_ref{*this, 0}, mouse_button::LEFT)
+            || is_pressed(keyboard_click_state_))
+        {
+            highlight = 0.4;
+        }
+        else if (is_click_possible(*sys_, internal_element_ref{*this, 0}))
+        {
+            highlight = 0.2;
+        }
+        if (highlight != 0)
+        {
+            SkPaint paint;
+            paint.setAntiAlias(true);
+            paint.setColor(SK_ColorBLACK);
+            // set_color(paint, renderer.style().fg_color);
+            paint.setStyle(SkPaint::kFill_Style);
+            SkScalar a = region.size[0] / SkDoubleToScalar(2.5);
+            SkPath path;
+            path.incReserve(4);
+            SkPoint p0;
+            p0.fX = a * SkDoubleToScalar(-0.34);
+            p0.fY = a * SkDoubleToScalar(-0.5);
+            path.moveTo(p0);
+            SkPoint p1;
+            p1.fX = p0.fX;
+            p1.fY = a * SkDoubleToScalar(0.5);
+            path.lineTo(p1);
+            SkPoint p2;
+            p2.fX = p0.fX + a * SkDoubleToScalar(0.866);
+            p2.fY = 0;
+            path.lineTo(p2);
+            path.lineTo(p0);
+            canvas.drawPath(path, paint);
+        }
+
+        rgb8 c;
+        if (state_)
+        {
+            c = rgb8(0x40, 0x40, 0x40);
+        }
+
+        // auto position = smooth_value(
+        //     position_,
+        //     region.corner + event.current_offset,
+        //     tick_counter_,
+        //     {default_curve, 80});
+        auto position = region.corner + event.current_offset;
+
+        SkPaint paint;
+        paint.setColor(SkColorSetARGB(0xff, c.r, c.g, c.b));
+        SkRect rect;
+        rect.fLeft = SkScalar(position[0]);
+        rect.fTop = SkScalar(position[1]);
+        rect.fRight = SkScalar(position[0] + region.size[0]);
+        rect.fBottom = SkScalar(position[1] + region.size[1]);
+        canvas.drawRect(rect, paint);
+
+        if (element_has_focus(*sys_, internal_element_ref{*this, 0}))
+        {
+            paint.setStyle(SkPaint::kStroke_Style);
+            paint.setStrokeWidth(4);
+            paint.setColor(SK_ColorBLACK);
+            canvas.drawRect(rect, paint);
+        }
+    }
+
+    void
+    hit_test(
+        hit_test_base& test, vector<2, double> const& point) const override
+    {
+        if (is_inside(this->assignment().region, vector<2, float>(point)))
+        {
+            if (test.type == hit_test_type::MOUSE)
+            {
+                static_cast<mouse_hit_test&>(test).result
+                    = mouse_hit_test_result{
+                        externalize(internal_element_ref{*this, 0}),
+                        mouse_cursor::POINTER,
+                        this->assignment().region,
+                        ""};
+            }
+        }
+    }
+
+    void
+    process_input(ui_event_context ctx) override
+    {
+        add_to_focus_order(ctx, internal_element_ref{*this, 0});
+        if (detect_click(
+                ctx, internal_element_ref{*this, 0}, mouse_button::LEFT))
+        {
+            click_event event;
+            dispatch_targeted_event(*sys_, event, this->id_);
+            // state_ = !state_;
+            // advance_focus(get_system(ctx));
+        }
+        // if (detect_key_press(ctx, this, key_code::SPACE))
+        // {
+        //     state_ = !state_;
+        //     // advance_focus(get_system(ctx));
+        // }
+        if (detect_keyboard_click(
+                ctx, keyboard_click_state_, internal_element_ref{*this, 0}))
+        {
+            // state_ = !state_;
+        }
+    }
+
+    matrix<3, 3, double>
+    transformation() const override
+    {
+        return parent->transformation();
+    }
+
+    relative_layout_assignment const&
+    assignment() const
+    {
+        return relative_assignment_;
+    }
+
+    layout_box
+    bounding_box() const override
+    {
+        return add_border(this->assignment().region, 4.f);
+    }
+
+    void
+    reveal_region(region_reveal_request const& request) override
+    {
+        parent->reveal_region(request);
+    }
+
+    ui_system* sys_;
+    external_component_id id_;
+    bool state_ = false;
+    keyboard_click_state keyboard_click_state_;
+    // value_smoother<layout_vector> position_;
+    // TODO: Move this into the system.
+    // sk_sp<SkPicture> picture_;
+    // the resolved spec
+    resolved_layout_spec resolved_spec_;
+    // resolved relative assignment
+    relative_layout_assignment relative_assignment_;
+};
+
+ALIA_DEFINE_FLAG_TYPE(simple_control)
+ALIA_DEFINE_FLAG(simple_control, 0x1, SIMPLE_CONTROL_DISABLED)
+
+void
+do_radio_button(
+    ui_context ctx,
+    duplex<bool> selected,
+    layout const& layout_spec = default_layout)
+{
+    std::shared_ptr<box_node>* node_ptr;
+    if (get_cached_data(ctx, &node_ptr))
+    {
+        *node_ptr = std::make_shared<box_node>();
+        (*node_ptr)->sys_ = &get_system(ctx);
+    }
+    auto& node = **node_ptr;
+    // box_node* node_ptr;
+    // if (get_cached_data(ctx, &node_ptr))
+    // {
+    //     node_ptr->sys_ = &get_system(ctx);
+    //     node_ptr->color_ = color;
+    // }
+    // auto& node = *node_ptr;
+
+    auto id = get_component_id(ctx);
+
+    if (is_refresh_event(ctx))
+    {
+        resolved_layout_spec resolved_spec;
+        resolve_layout_spec(
+            get<ui_traversal_tag>(ctx).layout,
+            resolved_spec,
+            layout_spec,
+            TOP | LEFT | PADDED);
+        detect_layout_change(
+            get<ui_traversal_tag>(ctx).layout,
+            &node.resolved_spec_,
+            resolved_spec);
+
+        add_layout_node(get<ui_traversal_tag>(ctx).layout, &node);
+
+        node.id_ = externalize(id);
+        // node.tick_counter_ = get_raw_animation_tick_count(ctx);
+
+        // if (color != node.color_)
+        // {
+        //     SkPictureRecorder recorder;
+        //     SkRect bounds;
+        //     bounds.fLeft = 0;
+        //     bounds.fTop = 0;
+        //     bounds.fRight = 100;
+        //     bounds.fBottom = 100;
+        //     SkCanvas* canvas = recorder.beginRecording(bounds);
+
+        //     {
+        //         SkPaint paint;
+        //         paint.setColor(color);
+        //         SkRect rect;
+        //         rect.fLeft = 0;
+        //         rect.fTop = 0;
+        //         rect.fRight = 100;
+        //         rect.fBottom = 100;
+        //         canvas->drawRect(rect, paint);
+        //     }
+
+        //     node.picture_ = recorder.finishRecordingAsPicture();
+        // }
+    }
+    click_event* click;
+    if (detect_targeted_event(ctx, id, &click))
+    {
+        // perform_action(on_click);
+        if (signal_ready_to_write(selected))
+            write_signal(selected, true);
+        abort_traversal(ctx);
+    }
+}
+
 struct tree_expander_node : widget
 {
     layout_requirements
@@ -2034,6 +2313,9 @@ my_ui(ui_context ctx)
 
     scoped_column column(ctx, GROW | PADDED);
 
+    auto selected = get_state(ctx, false);
+    do_radio_button(ctx, selected);
+
     // {
     //     scoped_grid_layout grid(ctx);
     //     for (int i = 0; i != 4; ++i)
@@ -2190,74 +2472,75 @@ my_ui(ui_context ctx)
         //     size(400, 400, PIXELS));
         // do_spacer(ctx, height(100, PIXELS));
 
-        for (int outer = 0; outer != 2; ++outer)
-        {
-            scoped_flow_layout flow(ctx, UNPADDED);
+        // for (int outer = 0; outer != 2; ++outer)
+        // {
+        //     scoped_flow_layout flow(ctx, UNPADDED);
 
-            auto my_style = text_style{
-                "roboto/Roboto-Regular", 22.f, rgb8(173, 181, 189)};
+        //     auto my_style = text_style{
+        //         "roboto/Roboto-Regular", 22.f, rgb8(173, 181, 189)};
 
-            for (int i = 0; i != 100; ++i)
-                do_text(
-                    ctx,
-                    direct(my_style),
-                    alia::printf(
-                        ctx,
-                        "Revenue today - Könnten Sie mir das übersetzen?",
-                        i));
+        //     for (int i = 0; i != 100; ++i)
+        //         do_text(
+        //             ctx,
+        //             direct(my_style),
+        //             alia::printf(
+        //                 ctx,
+        //                 "Revenue today - Könnten Sie mir das übersetzen?",
+        //                 i));
 
-            for (int i = 0; i != 100; ++i)
-            {
-                // if_(ctx, show_text, [&] {
-                //     // do_spacer(ctx, size(60, 40, PIXELS));
-                //     do_text(ctx, alia::printf(ctx, "text%i", i));
-                //     do_text(ctx, value("Könnten Sie mir das übersetzen?"));
-                // });
+        //     for (int i = 0; i != 100; ++i)
+        //     {
+        //         // if_(ctx, show_text, [&] {
+        //         //     // do_spacer(ctx, size(60, 40, PIXELS));
+        //         //     do_text(ctx, alia::printf(ctx, "text%i", i));
+        //         //     do_text(ctx, value("Könnten Sie mir das
+        //         übersetzen?"));
+        //         // });
 
-                {
-                    scoped_column col(ctx);
+        //         {
+        //             scoped_column col(ctx);
 
-                    do_box(
-                        ctx,
-                        SK_ColorMAGENTA,
-                        actions::noop(),
-                        width(100, PIXELS));
+        //             do_box(
+        //                 ctx,
+        //                 SK_ColorMAGENTA,
+        //                 actions::noop(),
+        //                 width(100, PIXELS));
 
-                    // color::yiq<std::uint8_t> y1 =
-                    // ::color::constant::blue_t{};
-                    // color::yiq<std::uint8_t> y2 =
-                    // ::color::constant::red_t{};
-                    // color::yiq<std::uint8_t> yr =
-                    // color::operation::mix(
-                    //     y1,
-                    //     std::max(
-                    //         0.0,
-                    //         std::min(
-                    //             1.0,
-                    //             std::fabs(std::sin(
-                    //                 get_raw_animation_tick_count(ctx)
-                    //                 / 1000.0)))),
-                    //     y2);
-                    // color::rgb<std::uint8_t> r(yr);
-                    // color::rgb<std::uint8_t> r(y1);
+        //             // color::yiq<std::uint8_t> y1 =
+        //             // ::color::constant::blue_t{};
+        //             // color::yiq<std::uint8_t> y2 =
+        //             // ::color::constant::red_t{};
+        //             // color::yiq<std::uint8_t> yr =
+        //             // color::operation::mix(
+        //             //     y1,
+        //             //     std::max(
+        //             //         0.0,
+        //             //         std::min(
+        //             //             1.0,
+        //             //             std::fabs(std::sin(
+        //             //                 get_raw_animation_tick_count(ctx)
+        //             //                 / 1000.0)))),
+        //             //     y2);
+        //             // color::rgb<std::uint8_t> r(yr);
+        //             // color::rgb<std::uint8_t> r(y1);
 
-                    do_box(ctx, SK_ColorLTGRAY, actions::noop());
-                }
+        //             do_box(ctx, SK_ColorLTGRAY, actions::noop());
+        //         }
 
-                {
-                    scoped_column col(ctx);
+        //         {
+        //             scoped_column col(ctx);
 
-                    static SkColor clicky_color = SK_ColorRED;
-                    // event_handler<mouse_button_event>(
-                    //     ctx, [&](auto, auto&) { clicky_color =
-                    //     SK_ColorBLUE; });
-                    do_box(ctx, clicky_color, actions::noop());
+        //             static SkColor clicky_color = SK_ColorRED;
+        //             // event_handler<mouse_button_event>(
+        //             //     ctx, [&](auto, auto&) { clicky_color =
+        //             //     SK_ColorBLUE; });
+        //             do_box(ctx, clicky_color, actions::noop());
 
-                    do_box(ctx, SK_ColorLTGRAY, actions::noop());
+        //             do_box(ctx, SK_ColorLTGRAY, actions::noop());
 
-                    do_box(ctx, SK_ColorGRAY, actions::noop());
-                }
-            }
-        }
+        //             do_box(ctx, SK_ColorGRAY, actions::noop());
+        //         }
+        //     }
+        //}
     }
 }
