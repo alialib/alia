@@ -40,7 +40,7 @@ include(CMakeDependentOption)
 option(
     ALIA_ENABLE_UI
     "Enable the UI library"
-    "NOT IS_EMSCRIPTEN")
+    ON)
 if(ALIA_ENABLE_UI)
   list(APPEND VCPKG_MANIFEST_FEATURES "ui")
 endif()

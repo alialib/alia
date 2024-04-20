@@ -3,6 +3,7 @@
 
 #include <alia/ui/common.hpp>
 
+#include <algorithm>
 #include <cmath>
 #include <ostream>
 
