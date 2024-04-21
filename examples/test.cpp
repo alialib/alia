@@ -377,6 +377,112 @@ do_box(
     }
 }
 
+template<class Selected, class Index>
+struct radio_signal
+    : lazy_signal<radio_signal<Selected, Index>, bool, duplex_signal>
+{
+    radio_signal(Selected selected, Index index)
+        : selected_(std::move(selected)),
+          index_(std::move(index))
+    {
+    }
+    bool
+    has_value() const override
+    { return signal_has_value(selected_) && signal_has_value(index_); }
+    bool
+    move_out() const override
+    {
+        return read_signal(selected_) == read_signal(index_);
+    }
+    id_interface const&
+    value_id() const override
+    {
+        return selected_.value_id();
+    }
+    bool
+    ready_to_write() const override
+    {
+        return signal_ready_to_write(selected_) && signal_has_value(index_);
+    }
+    id_interface const&
+    write(bool) const override
+    {
+        write_signal(selected_, read_signal(index_));
+        return null_id;
+    }
+ private:
+    Selected selected_;
+    Index index_;
+};
+template<class Selected, class Index>
+radio_signal<Selected, Index>
+make_radio_signal(Selected selected, Index index)
+{
+    return radio_signal<Selected, Index>(
+        std::move(selected), std::move(index));
+}
+// template<class Selected, class Index>
+// auto
+// add_default(Selected selected, Index index)
+// {
+//     return make_default_value_signal(
+//         signalize(std::move(primary)), signalize(std::move(default_)));
+// }
+
+// // make_radio_accessor_for_optional(selected, index), where
+// // selected is of type accessor<optional<T>> and index is of type
+// // accessor<T>, yields an accessor<bool> whose value tells whether or not
+// // selected is set to index.
+// // Setting the resulting accessor to any value sets selected's value to
+// // index. (Setting it to false results in setting :selected to std::nullopt.)
+// template<class Accessor, class Index>
+// struct radio_accessor_for_optional : regular_accessor<bool>
+// {
+//     radio_accessor_for_optional(
+//         Accessor const& selected,
+//         Index const& index)
+//       : selected_(selected), index_(index)
+//     {}
+//     bool is_gettable() const
+//     { return selected_.is_gettable() && index_.is_gettable(); }
+//     bool const& get() const
+//     { return lazy_getter_.get(*this); }
+//     bool is_settable() const
+//     { return selected_.is_settable() && index_.is_gettable(); }
+//     void set(bool const& value) const
+//     {
+//         if(value)
+//             selected_.set(some(index_.get()));
+//         else
+//             selected_.set(std::nullopt);
+//     }
+//  private:
+//     friend struct lazy_getter<bool>;
+//     bool generate() const
+//     {
+//         auto const& selected = selected_.get();
+//         return selected && selected.get() == index_.get();
+//     }
+//     Accessor selected_;
+//     Index index_;
+//     lazy_getter<bool> lazy_getter_;
+// };
+// template<class Accessor, class Index>
+// radio_accessor_for_optional<
+//     typename copyable_accessor_helper<Accessor const&>::result_type,
+//     typename copyable_accessor_helper<Index const&>::result_type>
+// make_radio_accessor_for_optional(
+//     Accessor const& selected,
+//     Index const& index)
+// {
+//     return
+//         radio_accessor_for_optional<
+//             typename copyable_accessor_helper<Accessor const&>::result_type,
+//             typename copyable_accessor_helper<Index const&>::result_type>(
+//                 make_accessor_copyable(selected),
+//                 make_accessor_copyable(index));
+// }
+
 struct radio_button_node : widget
 {
     layout_requirements
@@ -430,73 +536,48 @@ struct radio_button_node : widget
 
         auto const& region = this->assignment().region;
 
-        double highlight = 0;
+        auto center = get_center(region) + event.current_offset;
+        //SkScalar radius = 12;
 
+        uint8_t highlight = 0;
         if (is_click_in_progress(
                 *sys_, internal_element_ref{*this, 0}, mouse_button::LEFT)
             || is_pressed(keyboard_click_state_))
         {
-            highlight = 0.4;
+            highlight = 0x40;
         }
         else if (is_click_possible(*sys_, internal_element_ref{*this, 0}))
         {
-            highlight = 0.2;
+            highlight = 0x20;
         }
         if (highlight != 0)
         {
             SkPaint paint;
             paint.setAntiAlias(true);
-            paint.setColor(SK_ColorBLACK);
-            // set_color(paint, renderer.style().fg_color);
-            paint.setStyle(SkPaint::kFill_Style);
-            SkScalar a = region.size[0] / SkDoubleToScalar(2.5);
-            SkPath path;
-            path.incReserve(4);
-            SkPoint p0;
-            p0.fX = a * SkDoubleToScalar(-0.34);
-            p0.fY = a * SkDoubleToScalar(-0.5);
-            path.moveTo(p0);
-            SkPoint p1;
-            p1.fX = p0.fX;
-            p1.fY = a * SkDoubleToScalar(0.5);
-            path.lineTo(p1);
-            SkPoint p2;
-            p2.fX = p0.fX + a * SkDoubleToScalar(0.866);
-            p2.fY = 0;
-            path.lineTo(p2);
-            path.lineTo(p0);
-            canvas.drawPath(path, paint);
+            paint.setColor(SkColorSetARGB(highlight, 0xff, 0xff, 0xff));
+            canvas.drawPath(SkPath::Circle(center[0], center[1], 18.f), paint);
         }
 
-        rgb8 c;
-        if (state_)
         {
-            c = rgb8(0x40, 0x40, 0x40);
+            SkPaint paint;
+            paint.setAntiAlias(true);
+            paint.setStyle(SkPaint::kStroke_Style);
+            paint.setColor(SK_ColorWHITE);
+            paint.setStrokeWidth(2);
+            canvas.drawPath(SkPath::Circle(center[0], center[1], 14.f), paint);
         }
 
-        // auto position = smooth_value(
-        //     position_,
-        //     region.corner + event.current_offset,
-        //     tick_counter_,
-        //     {default_curve, 80});
-        auto position = region.corner + event.current_offset;
+        float dot_radius = smooth_value(
+            smoother_,
+            state_ ? 8.f : 0.f,
+            tick_counter_,
+            animated_transition{default_curve, 250});
 
         SkPaint paint;
-        paint.setColor(SkColorSetARGB(0xff, c.r, c.g, c.b));
-        SkRect rect;
-        rect.fLeft = SkScalar(position[0]);
-        rect.fTop = SkScalar(position[1]);
-        rect.fRight = SkScalar(position[0] + region.size[0]);
-        rect.fBottom = SkScalar(position[1] + region.size[1]);
-        canvas.drawRect(rect, paint);
-
-        if (element_has_focus(*sys_, internal_element_ref{*this, 0}))
-        {
-            paint.setStyle(SkPaint::kStroke_Style);
-            paint.setStrokeWidth(4);
-            paint.setColor(SK_ColorBLACK);
-            canvas.drawRect(rect, paint);
-        }
+        paint.setAntiAlias(true);
+        paint.setColor(SkColorSetARGB(0xff, 0x80, 0x80, 0xff));
+        paint.setStrokeWidth(3);
+        canvas.drawPath(SkPath::Circle(center[0], center[1], dot_radius), paint);
     }
 
     void
@@ -510,7 +591,7 @@ struct radio_button_node : widget
                 static_cast<mouse_hit_test&>(test).result
                     = mouse_hit_test_result{
                         externalize(internal_element_ref{*this, 0}),
-                        mouse_cursor::POINTER,
+                        mouse_cursor::DEFAULT,
                         this->assignment().region,
                         ""};
             }
@@ -526,18 +607,12 @@ struct radio_button_node : widget
         {
             click_event event;
             dispatch_targeted_event(*sys_, event, this->id_);
-            // state_ = !state_;
-            // advance_focus(get_system(ctx));
         }
-        // if (detect_key_press(ctx, this, key_code::SPACE))
-        // {
-        //     state_ = !state_;
-        //     // advance_focus(get_system(ctx));
-        // }
         if (detect_keyboard_click(
                 ctx, keyboard_click_state_, internal_element_ref{*this, 0}))
         {
-            // state_ = !state_;
+            click_event event;
+            dispatch_targeted_event(*sys_, event, this->id_);
         }
     }
 
@@ -570,8 +645,9 @@ struct radio_button_node : widget
     bool state_ = false;
     keyboard_click_state keyboard_click_state_;
     // value_smoother<layout_vector> position_;
-    // TODO: Move this into the system.
     // sk_sp<SkPicture> picture_;
+    value_smoother<float> smoother_;
+    millisecond_count tick_counter_;
     // the resolved spec
     resolved_layout_spec resolved_spec_;
     // resolved relative assignment
@@ -587,20 +663,13 @@ do_radio_button(
     duplex<bool> selected,
     layout const& layout_spec = default_layout)
 {
-    std::shared_ptr<box_node>* node_ptr;
+    std::shared_ptr<radio_button_node>* node_ptr;
     if (get_cached_data(ctx, &node_ptr))
     {
-        *node_ptr = std::make_shared<box_node>();
+        *node_ptr = std::make_shared<radio_button_node>();
         (*node_ptr)->sys_ = &get_system(ctx);
     }
     auto& node = **node_ptr;
-    // box_node* node_ptr;
-    // if (get_cached_data(ctx, &node_ptr))
-    // {
-    //     node_ptr->sys_ = &get_system(ctx);
-    //     node_ptr->color_ = color;
-    // }
-    // auto& node = *node_ptr;
 
     auto id = get_component_id(ctx);
 
@@ -619,8 +688,10 @@ do_radio_button(
 
         add_layout_node(get<ui_traversal_tag>(ctx).layout, &node);
 
+        node.state_ = signal_has_value(selected) ? read_signal(selected) : false;
+
         node.id_ = externalize(id);
-        // node.tick_counter_ = get_raw_animation_tick_count(ctx);
+        node.tick_counter_ = get_raw_animation_tick_count(ctx);
 
         // if (color != node.color_)
         // {
@@ -799,8 +870,10 @@ struct tree_expander_node : widget
     hit_test(
         hit_test_base& test, vector<2, double> const& point) const override
     {
+        std::cout << "hit test: " << point << std::endl;
         if (is_inside(this->assignment().region, vector<2, float>(point)))
         {
+            std::cout << "inside!" << std::endl;
             if (test.type == hit_test_type::MOUSE)
             {
                 static_cast<mouse_hit_test&>(test).result
@@ -2189,16 +2262,14 @@ struct panel_container : simple_layout_container<column_layout_logic>
     hit_test(
         hit_test_base& test, vector<2, double> const& point) const override
     {
-        if (is_inside(this->assignment().region, vector<2, float>(point)))
+        auto const& region = get_assignment(this->cacher).region;
+        if (is_inside(region, vector<2, float>(point)))
         {
-            if (test.type == hit_test_type::MOUSE)
+            auto local_point = point - vector<2, double>(region.corner);
+            for (widget* node = this->widget_container::children; node;
+                 node = node->next)
             {
-                static_cast<mouse_hit_test&>(test).result
-                    = mouse_hit_test_result{
-                        externalize(internal_element_ref{*this, 0}),
-                        mouse_cursor::POINTER,
-                        this->assignment().region,
-                        ""};
+                node->hit_test(test, local_point);
             }
         }
     }
@@ -2313,8 +2384,28 @@ my_ui(ui_context ctx)
 
     scoped_column column(ctx, GROW | PADDED);
 
-    auto selected = get_state(ctx, false);
-    do_radio_button(ctx, selected);
+    auto selected = get_state(ctx, int(0));
+
+             auto my_style = text_style{
+                "roboto/Roboto-Regular", 22.f, rgb8(173, 181, 189)};
+
+            //do_text(ctx, direct(my_style), value("Lorem ipsum"));
+        {
+            scoped_row row(ctx);
+            do_radio_button(ctx, make_radio_signal(selected, value(1)));
+            do_text(ctx, direct(my_style), value("Lorem ipsum"), CENTER_Y);
+        }
+        {
+            scoped_row row(ctx);
+            do_radio_button(ctx, make_radio_signal(selected, value(2)));
+            do_text(ctx, direct(my_style), value("Dolor sit amet"), CENTER_Y);
+        }
+        {
+            scoped_row row(ctx);
+            do_radio_button(ctx, make_radio_signal(selected, value(3)));
+            do_text(ctx, direct(my_style), value("consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua"), CENTER_Y);
+        }
+
 
     // {
     //     scoped_grid_layout grid(ctx);
