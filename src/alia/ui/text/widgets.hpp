@@ -70,7 +70,7 @@ struct text_node : layout_leaf
     {
         SkCanvas& canvas = *event.canvas;
 
-        auto const& region = cacher.relative_assignment.region;
+        auto const& region = cacher.resolved_relative_assignment.region;
 
         SkRect bounds;
         bounds.fLeft = SkScalar(region.corner[0] + event.current_offset[0]);

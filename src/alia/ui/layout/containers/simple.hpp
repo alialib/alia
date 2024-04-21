@@ -193,6 +193,7 @@ struct simple_scoped_layout
 };
 
 using scoped_column = simple_scoped_layout<column_layout_logic>;
+using scoped_row = simple_scoped_layout<row_layout_logic>;
 
 } // namespace alia
 
