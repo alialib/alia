@@ -1,8 +1,7 @@
 #ifndef ALIA_UI_LAYOUT_UTILITIES_HPP
 #define ALIA_UI_LAYOUT_UTILITIES_HPP
 
-#include <alia/ui/layout/node_interface.hpp>
-#include <alia/ui/widget.hpp>
+#include <alia/ui/layout/internals.hpp>
 
 // This file defines various utilities for working with the layout system.
 
@@ -88,53 +87,30 @@ add_default_alignment(
     layout_flag_set y_alignment);
 
 // Initialize a container for use within the given context.
-inline void
-initialize(
-    layout_traversal<widget_container, widget>& traversal,
-    widget_container& container)
-{
-    container.last_content_change = traversal.refresh_counter;
-}
+void
+initialize(layout_traversal& traversal, layout_container& container);
 
-// Record a change in the layout at the current position in the traversal.
-inline void
-record_layout_change(layout_traversal<widget_container, widget>& traversal)
-{
-    if (traversal.active_container)
-        traversal.active_container->record_content_change(traversal);
-}
-
-inline void
-set_next_node(
-    layout_traversal<widget_container, widget>& traversal, widget* node)
-{
-    if (*traversal.next_ptr != node)
-    {
-        record_layout_change(traversal);
-        *traversal.next_ptr = node;
-    }
-}
+void
+set_next_node(layout_traversal& traversal, layout_node* node);
 
 // Add a layout node to the layout tree being traversed.
-inline void
-add_layout_node(
-    layout_traversal<widget_container, widget>& traversal, widget* node)
-{
-    set_next_node(traversal, node);
-    traversal.next_ptr = &node->next;
-    node->parent = traversal.active_container;
-}
+void
+add_layout_node(layout_traversal& traversal, layout_node* node);
+
+// Record a change in the layout at the current position in the traversal.
+void
+record_layout_change(layout_traversal& traversal);
 
 // detect_layout_change(ctx, value_storage, new_value) detects if new_value is
 // different from the value stored in value_storage.
 // If it is, it records the change in the layout tree and updates the stored
 // value.
 // The return value indicates whether or not a change was detected.
-template<class Traversal, class T>
+template<class Context, class T>
 bool
-detect_layout_change(
-    Traversal& traversal, T* value_storage, T const& new_value)
+detect_layout_change(Context& ctx, T* value_storage, T const& new_value)
 {
+    layout_traversal& traversal = get_layout_traversal(ctx);
     if (traversal.is_refresh_pass && *value_storage != new_value)
     {
         record_layout_change(traversal);
@@ -158,21 +134,12 @@ resolve_absolute_size(
     layout_style_info const& style_info,
     absolute_size const& size);
 // Same as above, but the PPI an style_info are taken from the context.
-template<class Traversal>
 float
 resolve_absolute_length(
-    Traversal const& traversal, unsigned axis, absolute_length const& length)
-{
-    return resolve_absolute_length(
-        traversal.ppi, *traversal.style_info, axis, length);
-}
+    layout_traversal& traversal, unsigned axis, absolute_length const& length);
 // 2D version
-template<class Traversal>
 vector<2, float>
-resolve_absolute_size(Traversal& traversal, absolute_size const& size)
-{
-    return resolve_absolute_size(traversal.ppi, *traversal.style_info, size);
-}
+resolve_absolute_size(layout_traversal& traversal, absolute_size const& size);
 
 // Resolve a relative length into an actual length, in pixels.
 float
@@ -189,43 +156,25 @@ resolve_relative_size(
     layout_style_info const& style_info,
     relative_size const& size,
     vector<2, float> const& full_size);
-
 // Same as above, but the PPI an style_info are taken from the context.
-template<class Traversal>
 float
 resolve_relative_length(
-    Traversal& traversal,
+    layout_traversal& traversal,
     unsigned axis,
     relative_length const& length,
-    float full_length)
-{
-    return resolve_relative_length(
-        traversal.ppi, *traversal.style_info, axis, length, full_length);
-}
+    float full_length);
 // 2D version
-template<class Traversal>
 vector<2, float>
 resolve_relative_size(
-    Traversal& traversal,
+    layout_traversal& traversal,
     relative_size const& size,
-    vector<2, float> const& full_size)
-{
-    return resolve_relative_size(
-        traversal.ppi, *traversal.style_info, size, full_size);
-}
+    vector<2, float> const& full_size);
 
 // Resolve a box_border_width into actual widths, in pixels.
-template<class Traversal>
 box_border_width<float>
 resolve_box_border_width(
-    Traversal& traversal, box_border_width<absolute_length> const& border)
-{
-    return box_border_width<float>(
-        resolve_absolute_length(traversal, 1, border.top),
-        resolve_absolute_length(traversal, 0, border.right),
-        resolve_absolute_length(traversal, 1, border.bottom),
-        resolve_absolute_length(traversal, 0, border.left));
-}
+    layout_traversal& traversal,
+    box_border_width<absolute_length> const& border);
 
 // Convert a resolved box_border_width to layout_scalars, rounding up.
 box_border_width<layout_scalar>
@@ -258,7 +207,7 @@ operator+=(box_border_width<Scalar>& a, box_border_width<Scalar> const& b)
 template<class Scalar>
 box<2, Scalar>
 add_border(
-    alia::box<2, Scalar> const& box, box_border_width<Scalar> const& border)
+    box<2, Scalar> const& box, box_border_width<Scalar> const& border)
 {
     return alia::box<2, Scalar>(
         box.corner - make_vector(border.left, border.top),
@@ -311,7 +260,7 @@ bool
 operator!=(resolved_layout_spec const& a, resolved_layout_spec const& b);
 void
 resolve_layout_spec(
-    layout_traversal<widget_container, widget>& traversal,
+    layout_traversal& traversal,
     resolved_layout_spec& resolved,
     layout const& spec,
     layout_flag_set default_flags);
@@ -322,8 +271,18 @@ struct calculated_layout_requirements
 {
     layout_scalar size;
 
-    // the minimum space required on either side of the baseline
+    // The minimum space required on either side of the baseline.
     layout_scalar ascent, descent;
+
+    calculated_layout_requirements()
+    {
+    }
+
+    calculated_layout_requirements(
+        layout_scalar size, layout_scalar ascent, layout_scalar descent)
+        : size(size), ascent(ascent), descent(descent)
+    {
+    }
 };
 
 // Update 'current' so that it includes the additional requirements specified
@@ -362,6 +321,215 @@ resolve_relative_assignment(
     layout_requirements const& horizontal_requirements,
     layout_requirements const& vertical_requirements);
 
+// layout_cacher is a utility used by layout containers to cache the results
+// of their layout calculations.
+struct layout_cacher
+{
+    // the resolved layout spec supplied by the user
+    resolved_layout_spec resolved_spec;
+
+    // the last frame in which there was a horizontal requirements query
+    counter_type last_horizontal_query = 0;
+    // the result of that query
+    layout_requirements horizontal_requirements;
+
+    // the last frame in which there was a vertical requirements query
+    counter_type last_vertical_query = 0;
+    // the assigned_width associated with that query
+    layout_scalar assigned_width;
+    // the result of that query
+    layout_requirements vertical_requirements;
+
+    // last time set_relative_assignment was called
+    counter_type last_relative_assignment = 0;
+    // the last value that was passed to set_relative_assignment
+    relative_layout_assignment relative_assignment;
+    // the actual assignment that that value resolved to
+    relative_layout_assignment resolved_relative_assignment;
+};
+bool
+update_layout_cacher(
+    layout_traversal& traversal,
+    layout_cacher& cacher,
+    layout const& layout_spec,
+    layout_flag_set default_flags);
+struct horizontal_layout_query
+{
+    horizontal_layout_query(
+        layout_cacher& cacher, counter_type last_content_change);
+    bool
+    update_required() const
+    {
+        return cacher_->last_horizontal_query != last_content_change_;
+    }
+    void
+    update(calculated_layout_requirements const& calculated);
+    layout_requirements const&
+    result() const
+    {
+        return cacher_->horizontal_requirements;
+    }
+
+ private:
+    layout_cacher* cacher_;
+    counter_type last_content_change_;
+};
+
+struct vertical_layout_query
+{
+    vertical_layout_query(
+        layout_cacher& cacher,
+        counter_type last_content_change,
+        layout_scalar assigned_width);
+    bool
+    update_required() const
+    {
+        return cacher_->assigned_width != assigned_width_
+               || cacher_->last_vertical_query != last_content_change_;
+    }
+    void
+    update(calculated_layout_requirements const& calculated);
+    layout_requirements const&
+    result() const
+    {
+        return cacher_->vertical_requirements;
+    }
+
+ private:
+    layout_cacher* cacher_;
+    counter_type last_content_change_;
+    layout_scalar assigned_width_;
+};
+struct relative_region_assignment
+{
+    relative_region_assignment(
+        layout_node& node,
+        layout_cacher& cacher,
+        counter_type last_content_change,
+        relative_layout_assignment const& assignment);
+    bool
+    update_required() const
+    {
+        return update_required_;
+    }
+    relative_layout_assignment const&
+    resolved_assignment() const
+    {
+        return cacher_->resolved_relative_assignment;
+    }
+    void
+    update();
+
+ private:
+    layout_cacher* cacher_;
+    counter_type last_content_change_;
+    bool update_required_;
+};
+// Get the resolved relative assignment for a layout cacher.
+inline relative_layout_assignment const&
+get_assignment(layout_cacher const& cacher)
+{
+    return cacher.resolved_relative_assignment;
+}
+
+// The vast majority of layout containers behave identically except for the
+// logic they use to calculate their requirements and divide their space
+// amongst their children.
+// All the shared behavior is refactored into simple_layout_container.
+template<class Logic>
+struct simple_layout_container : layout_container
+{
+    // implementation of layout interface
+    layout_requirements
+    get_horizontal_requirements() override
+    {
+        horizontal_layout_query query(cacher, last_content_change);
+        if (query.update_required())
+        {
+            query.update(logic->get_horizontal_requirements(children));
+        }
+        return query.result();
+    }
+
+    layout_requirements
+    get_vertical_requirements(layout_scalar assigned_width) override
+    {
+        vertical_layout_query query(
+            cacher, last_content_change, assigned_width);
+        if (query.update_required())
+        {
+            query.update(logic->get_vertical_requirements(
+                children,
+                resolve_assigned_width(
+                    this->cacher.resolved_spec,
+                    assigned_width,
+                    this->get_horizontal_requirements())));
+        }
+        return query.result();
+    }
+
+    void
+    set_relative_assignment(
+        relative_layout_assignment const& assignment) override
+    {
+        relative_region_assignment rra(
+            *this, cacher, last_content_change, assignment);
+        if (rra.update_required())
+        {
+            this->assigned_size = rra.resolved_assignment().region.size;
+            logic->set_relative_assignment(
+                children,
+                rra.resolved_assignment().region.size,
+                rra.resolved_assignment().baseline_y);
+            rra.update();
+        }
+    }
+
+    Logic* logic;
+
+    layout_cacher cacher;
+
+    layout_vector assigned_size;
+};
+
+// get_simple_layout_container is a utility function for retrieving a
+// simple_layout_container with a specific type of logic from a UI context's
+// data graph and refreshing it.
+template<class Logic>
+struct simple_layout_container_storage
+{
+    simple_layout_container<Logic> container;
+    Logic logic;
+};
+template<class Logic>
+void
+get_simple_layout_container(
+    layout_traversal& traversal,
+    data_traversal& data,
+    simple_layout_container<Logic>** container,
+    Logic** logic,
+    layout const& layout_spec)
+{
+    simple_layout_container_storage<Logic>* storage;
+    if (get_cached_data(data, &storage))
+        storage->container.logic = &storage->logic;
+
+    *container = &storage->container;
+
+    if (is_refresh_pass(traversal))
+    {
+        if (update_layout_cacher(
+                traversal, (*container)->cacher, layout_spec, FILL | UNPADDED))
+        {
+            // Since this container isn't active yet, it didn't get marked as
+            // needing recalculation, so we need to do that manually here.
+            (*container)->last_content_change = traversal.refresh_counter;
+        }
+    }
+
+    *logic = &storage->logic;
+}
+
 // layout_leaf is used to represent simple leaves in the layout tree.
 // Each refresh pass, the associated widget function calls refresh_layout(...)
 // to pass along the user's layout_spec, the calculated properties of the
@@ -383,19 +551,13 @@ struct leaf_layout_requirements
     layout_vector size;
     layout_scalar ascent, descent;
 };
-inline bool
+bool
 operator==(
-    leaf_layout_requirements const& a, leaf_layout_requirements const& b)
-{
-    return a.size == b.size && a.ascent == b.ascent && a.descent == b.descent;
-}
-inline bool
+    leaf_layout_requirements const& a, leaf_layout_requirements const& b);
+bool
 operator!=(
-    leaf_layout_requirements const& a, leaf_layout_requirements const& b)
-{
-    return !(a == b);
-}
-struct layout_leaf : widget
+    leaf_layout_requirements const& a, leaf_layout_requirements const& b);
+struct layout_leaf : layout_node
 {
     layout_leaf()
     {
@@ -403,7 +565,7 @@ struct layout_leaf : widget
 
     void
     refresh_layout(
-        layout_traversal<widget_container, widget>& traversal,
+        layout_traversal& traversal,
         layout const& layout_spec,
         leaf_layout_requirements const& requirements,
         layout_flag_set default_flags = TOP | LEFT | PADDED);
@@ -430,19 +592,72 @@ struct layout_leaf : widget
     leaf_layout_requirements requirements_;
 
     // resolved relative assignment
-    relative_layout_assignment relative_assignment_;
+    alia::relative_layout_assignment relative_assignment_;
 };
+
+// Some macros for implementing simple layout containers.
+
+#define ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA(logic_type, data)                 \
+    struct logic_type                                                         \
+    {                                                                         \
+        calculated_layout_requirements                                        \
+        get_horizontal_requirements(layout_node* children);                   \
+        calculated_layout_requirements                                        \
+        get_vertical_requirements(                                            \
+            layout_node* children, layout_scalar assigned_width);             \
+        void                                                                  \
+        set_relative_assignment(                                              \
+            layout_node* children,                                            \
+            layout_vector const& assigned_size,                               \
+            layout_scalar assigned_baseline_y);                               \
+        data                                                                  \
+    };
+
+#define ALIA_DECLARE_LAYOUT_LOGIC(logic_type)                                 \
+    ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA(logic_type, )
+
+#define ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(logic_type)                        \
+    logic_type* logic;                                                        \
+    get_simple_layout_container(                                              \
+        traversal, data, &container_, &logic, layout_spec);                   \
+    slc_.begin(traversal, container_);
 
 // Various utilities for working with layout children...
 
 // Walk through the children of a layout container.
 template<class Visitor>
 void
-walk_layout_nodes(widget* children, Visitor&& visitor)
+walk_layout_children(layout_node* children, Visitor&& visitor)
 {
-    for (widget* child = children; child; child = child->next)
+    for (layout_node* child = children; child; child = child->next)
         std::forward<Visitor>(visitor)(*child);
 }
+
+// Get the required width of the widest child in the list.
+layout_scalar
+get_max_child_width(layout_node* children);
+
+// Get the horizontal requirements of all the children in the list, fold them
+// together, and return the result.
+calculated_layout_requirements
+fold_horizontal_child_requirements(layout_node* children);
+
+// Get the vertical requirements of all the children in the list, fold them
+// together, and return the result.
+calculated_layout_requirements
+fold_vertical_child_requirements(
+    layout_node* children, layout_scalar assigned_width);
+
+// Assign the same layout region to all children in the list.
+void
+assign_identical_child_regions(
+    layout_node* children,
+    layout_vector const& assigned_size,
+    layout_scalar assigned_baseline_y);
+
+// Get the total height of all children in the list.
+layout_scalar
+compute_total_height(layout_node* children, layout_scalar assigned_width);
 
 } // namespace alia
 
