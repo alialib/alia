@@ -132,7 +132,8 @@ get_container_offset(simple_layout_container<Logic> const& container)
         end()                                                                 \
         {                                                                     \
             if (container_)                                                   \
-            {                                                                 \
+            { \
+                transform_.end(); \
                 slc_.end();                                                   \
                 container_ = 0;                                               \
             }                                                                 \
@@ -165,6 +166,7 @@ get_container_offset(simple_layout_container<Logic> const& container)
                                                                               \
         simple_layout_container<logic_type>* container_;                      \
         scoped_layout_container slc_;                                         \
+        scoped_transformation transform_; \
     };
 
 #define ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(                        \
@@ -207,6 +209,7 @@ get_container_offset(simple_layout_container<Logic> const& container)
         void                                                                  \
         end()                                                                 \
         {                                                                     \
+            transform_.end(); \
             slc_.end();                                                       \
         }                                                                     \
                                                                               \
@@ -238,6 +241,7 @@ get_container_offset(simple_layout_container<Logic> const& container)
                                                                               \
         simple_layout_container<logic_type>* container_;                      \
         scoped_layout_container slc_;                                         \
+        scoped_transformation transform_; \
     };
 
 // // A row layout places all its children in a horizontal row.
@@ -338,6 +342,7 @@ get_container_offset(simple_layout_container<Logic> const& container)
         void                                                                  \
         end()                                                                 \
         {                                                                     \
+            transform_.end(); \
             container_.end();                                                 \
         }                                                                     \
                                                                               \
@@ -352,6 +357,7 @@ get_container_offset(simple_layout_container<Logic> const& container)
         friend struct row_type;                                               \
                                                                               \
         scoped_layout_container container_;                                   \
+        scoped_transformation transform_; \
         layout_traversal* traversal_;                                         \
         data_traversal* data_traversal_;                                      \
         grid_type##_data* data_;                                              \
@@ -378,6 +384,7 @@ get_container_offset(simple_layout_container<Logic> const& container)
                                                                               \
      private:                                                                 \
         scoped_layout_container container_;                                   \
+        scoped_transformation transform_; \
     };
 
 // A grid layout is used to arrange widgets in a grid. To use it, create
@@ -456,7 +463,7 @@ struct floating_layout
     layout_node** old_next_ptr_;
     layout_node* floating_root_;
     floating_layout_data* data_;
-    // scoped_clip_region_reset clipping_reset_;
+    scoped_clip_region_reset clipping_reset_;
     layout_vector min_size_, max_size_;
 };
 
