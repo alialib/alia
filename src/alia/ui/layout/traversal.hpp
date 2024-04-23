@@ -5,16 +5,21 @@
 
 namespace alia {
 
+struct layout_system;
+struct layout_container;
+struct layout_node;
 struct layout_style_info;
 
 // layout_traversal is the state associated with a traversal of the scene
 // that the application wants to lay out.
-template<class Container, class Node>
 struct layout_traversal
 {
-    Container* active_container;
+    // This is the layout system that this traversal is traversing.
+    layout_system* system;
 
-    Node** next_ptr;
+    layout_container* active_container;
+
+    layout_node** next_ptr;
 
     // Iff this is true, then this a refresh pass.
     // A refresh pass is used to specify the contents of the layout tree.
@@ -29,6 +34,13 @@ struct layout_traversal
     vector<2, float> ppi;
     layout_style_info const* style_info;
 };
+
+template<class Context>
+bool
+is_refresh_pass(Context& ctx)
+{
+    return get_layout_traversal(ctx).is_refresh_pass;
+}
 
 } // namespace alia
 

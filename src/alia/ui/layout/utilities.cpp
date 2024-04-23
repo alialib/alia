@@ -30,8 +30,24 @@ fold_in_requirements(
 }
 
 void
-widget_container::record_content_change(
-    layout_traversal<widget_container, widget>& traversal)
+set_next_node(layout_traversal& traversal, layout_node* node)
+{
+    if (*traversal.next_ptr != node)
+    {
+        record_layout_change(traversal);
+        *traversal.next_ptr = node;
+    }
+}
+
+void
+add_layout_node(layout_traversal& traversal, layout_node* node)
+{
+    set_next_node(traversal, node);
+    traversal.next_ptr = &node->next;
+}
+
+void
+layout_container::record_content_change(layout_traversal& traversal)
 {
     if (this->last_content_change != traversal.refresh_counter)
     {
@@ -39,6 +55,13 @@ widget_container::record_content_change(
         if (this->parent)
             this->parent->record_content_change(traversal);
     }
+}
+
+void
+record_layout_change(layout_traversal& traversal)
+{
+    if (traversal.active_container)
+        traversal.active_container->record_content_change(traversal);
 }
 
 layout
@@ -151,6 +174,20 @@ resolve_absolute_size(
 }
 
 float
+resolve_absolute_length(
+    layout_traversal& traversal, unsigned axis, absolute_length const& length)
+{
+    return resolve_absolute_length(
+        traversal.ppi, *traversal.style_info, axis, length);
+}
+
+vector<2, float>
+resolve_absolute_size(layout_traversal& traversal, absolute_size const& size)
+{
+    return resolve_absolute_size(traversal.ppi, *traversal.style_info, size);
+}
+
+float
 resolve_relative_length(
     vector<2, float> const& ppi,
     layout_style_info const& style_info,
@@ -179,6 +216,39 @@ resolve_relative_size(
         resolve_relative_length(ppi, style_info, 1, size[1], full_size[1]));
 }
 
+float
+resolve_relative_length(
+    layout_traversal& traversal,
+    unsigned axis,
+    relative_length const& length,
+    float full_length)
+{
+    return resolve_relative_length(
+        traversal.ppi, *traversal.style_info, axis, length, full_length);
+}
+
+vector<2, float>
+resolve_relative_size(
+    layout_traversal& traversal,
+    relative_size const& size,
+    vector<2, float> const& full_size)
+{
+    return resolve_relative_size(
+        traversal.ppi, *traversal.style_info, size, full_size);
+}
+
+box_border_width<float>
+resolve_box_border_width(
+    layout_traversal& traversal,
+    box_border_width<absolute_length> const& border)
+{
+    return box_border_width<float>(
+        resolve_absolute_length(traversal, 1, border.top),
+        resolve_absolute_length(traversal, 0, border.right),
+        resolve_absolute_length(traversal, 1, border.bottom),
+        resolve_absolute_length(traversal, 0, border.left));
+}
+
 box_border_width<layout_scalar>
 as_layout_size(box_border_width<float> const& border)
 {
@@ -204,7 +274,7 @@ operator!=(resolved_layout_spec const& a, resolved_layout_spec const& b)
 
 void
 resolve_layout_spec(
-    layout_traversal<widget_container, widget>& traversal,
+    layout_traversal& traversal,
     resolved_layout_spec& resolved,
     layout const& spec,
     layout_flag_set default_flags)
@@ -343,22 +413,116 @@ resolve_relative_assignment(
         assignment.baseline_y,
         vertical_requirements.size,
         vertical_requirements.ascent);
-    // std::cout << "-- resolve_relative_assignment\n"
-    //           << assignment.region << "\n"
-    //           << "growth_factor: " << spec.growth_factor << "\n"
-    //           << "padding_size: " << spec.padding_size << "\n"
-    //           << "flags: " << spec.flags.code << "\n"
-    //           << "size: " << spec.size << "\n"
-    //           << "x_offset: " << x_offset << "\n"
-    //           << "x_size: " << x_size << "\n"
-    //           << "y_offset: " << y_offset << "\n"
-    //           << "y_size: " << y_size << std::endl;
     return relative_layout_assignment{
         layout_box(
             assignment.region.corner + make_layout_vector(x_offset, y_offset)
                 + spec.padding_size,
             make_layout_vector(x_size, y_size) - spec.padding_size * 2),
         vertical_requirements.ascent - spec.padding_size[1]};
+}
+
+bool
+update_layout_cacher(
+    layout_traversal& traversal,
+    layout_cacher& cacher,
+    layout const& layout_spec,
+    layout_flag_set default_flags)
+{
+    resolved_layout_spec resolved_spec;
+    resolve_layout_spec(traversal, resolved_spec, layout_spec, default_flags);
+    return detect_layout_change(
+        traversal, &cacher.resolved_spec, resolved_spec);
+}
+
+horizontal_layout_query::horizontal_layout_query(
+    layout_cacher& cacher, counter_type last_content_change)
+    : cacher_(&cacher), last_content_change_(last_content_change)
+{
+}
+void
+horizontal_layout_query::update(
+    calculated_layout_requirements const& calculated)
+{
+    resolve_requirements(
+        cacher_->horizontal_requirements,
+        cacher_->resolved_spec,
+        0,
+        calculated);
+    cacher_->last_horizontal_query = last_content_change_;
+}
+
+vertical_layout_query::vertical_layout_query(
+    layout_cacher& cacher,
+    counter_type last_content_change,
+    layout_scalar assigned_width)
+    : cacher_(&cacher),
+      last_content_change_(last_content_change),
+      assigned_width_(assigned_width)
+{
+}
+void
+vertical_layout_query::update(calculated_layout_requirements const& calculated)
+{
+    resolve_requirements(
+        cacher_->vertical_requirements, cacher_->resolved_spec, 1, calculated);
+    cacher_->last_vertical_query = last_content_change_;
+    cacher_->assigned_width = assigned_width_;
+}
+
+relative_region_assignment::relative_region_assignment(
+    layout_node& node,
+    layout_cacher& cacher,
+    counter_type last_content_change,
+    relative_layout_assignment const& assignment)
+    : cacher_(&cacher), last_content_change_(last_content_change)
+{
+    if (cacher_->last_relative_assignment != last_content_change_
+        || cacher_->relative_assignment != assignment)
+    {
+        auto resolved_assignment = resolve_relative_assignment(
+            cacher_->resolved_spec,
+            assignment,
+            cacher_->horizontal_requirements,
+            node.get_vertical_requirements(assignment.region.size[0]));
+        if (cacher_->resolved_relative_assignment.region.size
+                != resolved_assignment.region.size
+            || cacher_->resolved_relative_assignment.baseline_y
+                   != resolved_assignment.baseline_y)
+        {
+            // This ensures that an update will be performed.
+            cacher_->last_relative_assignment = 0;
+        }
+        cacher_->resolved_relative_assignment = resolved_assignment;
+        cacher_->relative_assignment = assignment;
+    }
+
+    update_required_
+        = cacher_->last_relative_assignment != last_content_change_;
+}
+void
+relative_region_assignment::update()
+{
+    cacher_->last_relative_assignment = last_content_change_;
+}
+
+void
+initialize(layout_traversal& traversal, layout_container& container)
+{
+    container.last_content_change = traversal.refresh_counter;
+}
+
+bool
+operator==(
+    leaf_layout_requirements const& a, leaf_layout_requirements const& b)
+{
+    return a.size == b.size && a.ascent == b.ascent && a.descent == b.descent;
+}
+
+bool
+operator!=(
+    leaf_layout_requirements const& a, leaf_layout_requirements const& b)
+{
+    return !(a == b);
 }
 
 layout_requirements
@@ -369,21 +533,21 @@ layout_leaf::get_horizontal_requirements()
         requirements,
         resolved_spec_,
         0,
-        calculated_layout_requirements{requirements_.size[0], 0, 0});
+        calculated_layout_requirements(requirements_.size[0], 0, 0));
     return requirements;
 }
 layout_requirements
-layout_leaf::get_vertical_requirements(layout_scalar /*assigned_width*/)
+    layout_leaf::get_vertical_requirements(layout_scalar /*assigned_width*/)
 {
     layout_requirements requirements;
     resolve_requirements(
         requirements,
         resolved_spec_,
         1,
-        calculated_layout_requirements{
+        calculated_layout_requirements(
             requirements_.size[1],
             requirements_.ascent,
-            requirements_.descent});
+            requirements_.descent));
     return requirements;
 }
 void
@@ -395,15 +559,15 @@ layout_leaf::set_relative_assignment(
         horizontal_requirements,
         resolved_spec_,
         0,
-        calculated_layout_requirements{requirements_.size[0], 0, 0});
+        calculated_layout_requirements(requirements_.size[0], 0, 0));
     resolve_requirements(
         vertical_requirements,
         resolved_spec_,
         1,
-        calculated_layout_requirements{
+        calculated_layout_requirements(
             requirements_.size[1],
             requirements_.ascent,
-            requirements_.descent});
+            requirements_.descent));
     relative_assignment_ = resolve_relative_assignment(
         resolved_spec_,
         assignment,
@@ -413,7 +577,7 @@ layout_leaf::set_relative_assignment(
 
 void
 layout_leaf::refresh_layout(
-    layout_traversal<widget_container, widget>& traversal,
+    layout_traversal& traversal,
     layout const& layout_spec,
     leaf_layout_requirements const& requirements,
     layout_flag_set default_flags)
@@ -428,6 +592,59 @@ layout_leaf::refresh_layout(
 
         detect_layout_change(traversal, &requirements_, requirements);
     }
+}
+
+layout_scalar
+get_max_child_width(layout_node* children)
+{
+    layout_scalar width = 0;
+    walk_layout_children(children, [&](layout_node& node) {
+        layout_requirements x = node.get_horizontal_requirements();
+        width = (std::max)(x.size, width);
+    });
+    return width;
+}
+
+calculated_layout_requirements
+fold_horizontal_child_requirements(layout_node* children)
+{
+    return calculated_layout_requirements(get_max_child_width(children), 0, 0);
+}
+
+calculated_layout_requirements
+fold_vertical_child_requirements(
+    layout_node* children, layout_scalar assigned_width)
+{
+    calculated_layout_requirements requirements(0, 0, 0);
+    walk_layout_children(children, [&](layout_node& node) {
+        fold_in_requirements(
+            requirements, node.get_vertical_requirements(assigned_width));
+    });
+    return requirements;
+}
+
+void
+assign_identical_child_regions(
+    layout_node* children,
+    layout_vector const& assigned_size,
+    layout_scalar assigned_baseline_y)
+{
+    walk_layout_children(children, [&](layout_node& node) {
+        node.set_relative_assignment(relative_layout_assignment{
+            layout_box(make_layout_vector(0, 0), assigned_size),
+            assigned_baseline_y});
+    });
+}
+
+layout_scalar
+compute_total_height(layout_node* children, layout_scalar assigned_width)
+{
+    layout_scalar total_height = 0;
+    walk_layout_children(children, [&](layout_node& node) {
+        layout_requirements y = node.get_vertical_requirements(assigned_width);
+        total_height += y.size;
+    });
+    return total_height;
 }
 
 } // namespace alia
