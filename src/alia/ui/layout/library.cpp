@@ -1251,11 +1251,13 @@ grid_layout::concrete_begin(
     get_cached_data(data, &data_);
     refresh_grid(traversal, *data_);
 
-    simple_layout_container<column_layout_logic>* container;
+    simple_layout_container* container;
     column_layout_logic* logic;
     get_simple_layout_container(
         traversal, data, &container, &logic, layout_spec);
     container_.begin(traversal, container);
+
+    begin_layout_transform(transform_, traversal, container->cacher);
 
     data_->container = container;
 
@@ -1276,11 +1278,14 @@ grid_row::begin(grid_layout const& grid, layout const& layout_spec)
     refresh_grid_row(traversal, *grid.data_, *row, layout_spec);
 
     container_.begin(traversal, row);
+
+    begin_layout_transform(transform_, traversal, row->cacher);
 }
 
 void
 grid_row::end()
 {
+    transform_.end();
     container_.end();
 }
 
@@ -1309,6 +1314,8 @@ uniform_grid_layout::concrete_begin(
         traversal, data, &container, &logic, layout_spec);
     container_.begin(traversal, container);
 
+    begin_layout_transform(transform_, traversal, container->cacher);
+
     data_->container = container;
 
     layout_scalar resolved_spacing = as_layout_size(
@@ -1331,11 +1338,14 @@ uniform_grid_row::begin(
     refresh_grid_row(traversal, *grid.data_, *row, GROW | UNPADDED);
 
     container_.begin(traversal, row);
+
+    begin_layout_transform(transform_, traversal, container->cacher);
 }
 
 void
 uniform_grid_row::end()
 {
+    transform_.end();
     container_.end();
 }
 
@@ -1373,8 +1383,8 @@ floating_layout::concrete_begin(
         max_size_ = max_size;
     }
 
-    // if (traversal.geometry)
-    //     clipping_reset_.begin(*traversal.geometry);
+    if (traversal.geometry)
+        clipping_reset_.begin(*traversal.geometry);
 }
 
 void
@@ -1401,7 +1411,7 @@ floating_layout::end()
             resolve_layout(floating_root_, data_->size);
         }
 
-        // clipping_reset_.end();
+        clipping_reset_.end();
 
         traversal_ = 0;
     }

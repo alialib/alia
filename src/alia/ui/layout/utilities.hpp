@@ -620,7 +620,8 @@ struct layout_leaf : layout_node
     logic_type* logic;                                                        \
     get_simple_layout_container(                                              \
         traversal, data, &container_, &logic, layout_spec);                   \
-    slc_.begin(traversal, container_);
+    slc_.begin(traversal, container_);                                        \
+    begin_layout_transform(transform_, traversal, container_->cacher);
 
 // Various utilities for working with layout children...
 

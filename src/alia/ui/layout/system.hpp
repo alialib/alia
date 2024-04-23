@@ -20,6 +20,7 @@ initialize_layout_traversal(
     layout_system& system,
     layout_traversal& traversal,
     bool is_refresh,
+    geometry_context* geometry,
     layout_style_info* style,
     vector<2, float> const& ppi);
 

@@ -5,6 +5,7 @@
 
 namespace alia {
 
+struct geometry_context;
 struct layout_system;
 struct layout_container;
 struct layout_node;
@@ -28,6 +29,10 @@ struct layout_traversal
 
     // This is incremented each refresh pass.
     counter_type refresh_counter;
+
+    // This is the geometry context that the layout system manipulates during
+    // non-refresh passes.
+    geometry_context* geometry;
 
     // This is required for resolving layout specs that are specified in
     // physical units or characters.
