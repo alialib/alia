@@ -11,6 +11,7 @@ namespace alia {
 typedef float layout_scalar;
 
 typedef vector<2, layout_scalar> layout_vector;
+
 inline layout_vector
 make_layout_vector(layout_scalar x, layout_scalar y)
 {
@@ -73,7 +74,7 @@ operator!=(absolute_length const& a, absolute_length const& b)
 // 2D version of absolute_length
 typedef vector<2, absolute_length> absolute_size;
 
-// Relative lengths is used to sepcify the size of widget components.
+// `relative_length` is used to specify the size of widget components.
 // They can be either be specified in absolute units or as a fraction of the
 // full widget size.
 struct relative_length
@@ -202,9 +203,9 @@ ALIA_DEFINE_FLAG(
     layout, X_ALIGNMENT_MASK_CODE << X_TO_Y_SHIFT, Y_ALIGNMENT_MASK)
 
 // combined alignment flags - These specify both X and Y simultaneously.
-ALIA_DEFINE_FLAG(layout, CENTER_X_CODE | CENTER_Y_CODE, CENTER)
-ALIA_DEFINE_FLAG(layout, FILL_X_CODE | FILL_Y_CODE, FILL)
-ALIA_DEFINE_FLAG(layout, GROW_X_CODE | GROW_Y_CODE, GROW)
+layout_flag_set const CENTER = CENTER_X | CENTER_Y;
+layout_flag_set const FILL = FILL_X | FILL_Y;
+layout_flag_set const GROW = GROW_X | GROW_Y;
 // PROPORTIONAL_FILL and PROPORTIONAL_GROW are like FILL and GROW, but the
 // width and height are constrained to their original ratio. These should
 // only be used for leaf element, not containers.
