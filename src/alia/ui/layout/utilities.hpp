@@ -206,8 +206,7 @@ operator+=(box_border_width<Scalar>& a, box_border_width<Scalar> const& b)
 // Get the box that results from adding a border to another box.
 template<class Scalar>
 box<2, Scalar>
-add_border(
-    box<2, Scalar> const& box, box_border_width<Scalar> const& border)
+add_border(box<2, Scalar> const& box, box_border_width<Scalar> const& border)
 {
     return alia::box<2, Scalar>(
         box.corner - make_vector(border.left, border.top),
