@@ -87,8 +87,6 @@ do_spacer(
 
 // ROW LAYOUT
 
-ALIA_DECLARE_LAYOUT_LOGIC(row_layout_logic)
-
 static void
 compute_total_width_and_growth(
     layout_scalar* total_width, float* total_growth, layout_node* children)
@@ -173,19 +171,17 @@ row_layout_logic::set_relative_assignment(
     });
 }
 
-// void
-// row_layout::concrete_begin(
-//     layout_traversal& traversal,
-//     data_traversal& data,
-//     layout const& layout_spec){
-//     ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(row_layout_logic)}
+void
+row_layout::concrete_begin(
+    layout_traversal& traversal,
+    data_traversal& data,
+    layout const& layout_spec){
+    ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(row_layout_logic)}
 
 // COLUMN LAYOUT
 
-ALIA_DECLARE_LAYOUT_LOGIC(column_layout_logic)
-
 calculated_layout_requirements
-column_layout_logic::get_horizontal_requirements(layout_node* children)
+    column_layout_logic::get_horizontal_requirements(layout_node* children)
 {
     return fold_horizontal_child_requirements(children);
 }
@@ -253,14 +249,12 @@ column_layout_logic::set_relative_assignment(
     });
 }
 
-// void
-// column_layout::concrete_begin(
-//     layout_traversal& traversal,
-//     data_traversal& data,
-//     layout const& layout_spec)
-// {
-//     ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(column_layout_logic)
-// }
+void
+column_layout::concrete_begin(
+    layout_traversal& traversal,
+    data_traversal& data,
+    layout const& layout_spec){
+    ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(column_layout_logic)}
 
 // LINEAR LAYOUT - This just chooses between row and column logic.
 
@@ -289,10 +283,8 @@ column_layout_logic::set_relative_assignment(
 
 // LAYERED LAYOUT
 
-ALIA_DECLARE_LAYOUT_LOGIC(layered_layout_logic)
-
 calculated_layout_requirements
-layered_layout_logic::get_horizontal_requirements(layout_node* children)
+    layered_layout_logic::get_horizontal_requirements(layout_node* children)
 {
     return fold_horizontal_child_requirements(children);
 }
@@ -314,20 +306,17 @@ layered_layout_logic::set_relative_assignment(
         children, assigned_size, assigned_baseline_y);
 }
 
-// void
-// layered_layout::concrete_begin(
-//     layout_traversal& traversal,
-//     data_traversal& data,
-//     layout const& layout_spec){
-//     ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(layered_layout_logic)}
+void
+layered_layout::concrete_begin(
+    layout_traversal& traversal,
+    data_traversal& data,
+    layout const& layout_spec){
+    ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(layered_layout_logic)}
 
 // FLOW LAYOUT
 
-ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA(flow_layout_logic,
-                                    layout_flag_set x_alignment_;)
-
 calculated_layout_requirements
-flow_layout_logic::get_horizontal_requirements(layout_node* children)
+    flow_layout_logic::get_horizontal_requirements(layout_node* children)
 {
     // In the worst case scenario, we can put one child on each row, so the
     // required width is simply the minimal width required by the widest
@@ -502,8 +491,6 @@ flow_layout_logic::set_relative_assignment(
 // The vertical flow algorithm is a bit simplistic. All columns have the
 // same width.
 
-ALIA_DECLARE_LAYOUT_LOGIC(vertical_flow_layout_logic)
-
 calculated_layout_requirements
 vertical_flow_layout_logic::get_horizontal_requirements(layout_node* children)
 {
@@ -667,6 +654,7 @@ clamped_layout_logic::set_relative_assignment(
 //     get_simple_layout_container(
 //         traversal, data, &container_, &logic, layout_spec);
 //     slc_.begin(traversal, container_);
+//     begin_layout_transform(transform_, traversal, container_->cacher);
 //     if (traversal.is_refresh_pass)
 //     {
 //         detect_layout_change(
@@ -898,6 +886,7 @@ struct cached_grid_vertical_requirements<uniform_grid_tag>
 {
     calculated_layout_requirements requirements;
     counter_type last_update = 1;
+    layout_scalar assigned_width = 0;
 };
 
 template<class Uniformity>
@@ -1088,9 +1077,9 @@ calculate_grid_row_vertical_requirements(
     grid_row_container<uniform_grid_tag>& /*row*/,
     layout_scalar assigned_width)
 {
-    named_block nb;
     auto& cache = grid.vertical_requirements_cache;
-    if (cache.last_update != grid.container->last_content_change)
+    if (cache.last_update != grid.container->last_content_change ||
+        cache.assigned_width != assigned_width)
     {
         update_grid_column_requirements(grid);
 
@@ -1112,6 +1101,7 @@ calculate_grid_row_vertical_requirements(
         }
 
         cache.last_update = grid.container->last_content_change;
+        cache.assigned_width = assigned_width;
     }
     return cache.requirements;
 }
@@ -1149,6 +1139,7 @@ set_grid_row_relative_assignment(
             layout_box(p, make_layout_vector(this_width, assigned_size[1])),
             assigned_baseline_y});
         p[0] += this_width + grid.column_spacing;
+        ++n;
     });
 }
 
@@ -1251,7 +1242,7 @@ grid_layout::concrete_begin(
     get_cached_data(data, &data_);
     refresh_grid(traversal, *data_);
 
-    simple_layout_container* container;
+    simple_layout_container<column_layout_logic>* container;
     column_layout_logic* logic;
     get_simple_layout_container(
         traversal, data, &container, &logic, layout_spec);
@@ -1339,7 +1330,7 @@ uniform_grid_row::begin(
 
     container_.begin(traversal, row);
 
-    begin_layout_transform(transform_, traversal, container->cacher);
+    begin_layout_transform(transform_, traversal, row->cacher);
 }
 
 void

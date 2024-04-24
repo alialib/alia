@@ -1,7 +1,10 @@
 #ifndef ALIA_UI_LAYOUT_LIBRARY_HPP
 #define ALIA_UI_LAYOUT_LIBRARY_HPP
 
+#include <alia/ui/layout/geometry.hpp>
 #include <alia/ui/layout/specification.hpp>
+// TODO: This shouldn't be here.
+#include <alia/ui/layout/utilities.hpp>
 
 namespace alia {
 
@@ -132,8 +135,8 @@ get_container_offset(simple_layout_container<Logic> const& container)
         end()                                                                 \
         {                                                                     \
             if (container_)                                                   \
-            { \
-                transform_.end(); \
+            {                                                                 \
+                transform_.end();                                             \
                 slc_.end();                                                   \
                 container_ = 0;                                               \
             }                                                                 \
@@ -166,12 +169,11 @@ get_container_offset(simple_layout_container<Logic> const& container)
                                                                               \
         simple_layout_container<logic_type>* container_;                      \
         scoped_layout_container slc_;                                         \
-        scoped_transformation transform_; \
+        scoped_transformation transform_;                                     \
     };
 
 #define ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(                        \
     container_name, logic_type, Arg)                                          \
-    struct logic_type;                                                        \
     struct container_name                                                     \
     {                                                                         \
         container_name()                                                      \
@@ -209,7 +211,7 @@ get_container_offset(simple_layout_container<Logic> const& container)
         void                                                                  \
         end()                                                                 \
         {                                                                     \
-            transform_.end(); \
+            transform_.end();                                                 \
             slc_.end();                                                       \
         }                                                                     \
                                                                               \
@@ -241,65 +243,70 @@ get_container_offset(simple_layout_container<Logic> const& container)
                                                                               \
         simple_layout_container<logic_type>* container_;                      \
         scoped_layout_container slc_;                                         \
-        scoped_transformation transform_; \
+        scoped_transformation transform_;                                     \
     };
 
-// // A row layout places all its children in a horizontal row.
-// ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(row_layout)
+// A row layout places all its children in a horizontal row.
+ALIA_DECLARE_LAYOUT_LOGIC(row_layout_logic)
+ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(row_layout, row_layout_logic)
 
-// // A column layout places all its children in a vertical column.
-// ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(column_layout)
+// A column layout places all its children in a vertical column.
+ALIA_DECLARE_LAYOUT_LOGIC(column_layout_logic)
+ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(column_layout, column_layout_logic)
 
-// // Linear layout places its children in a line.
-// // In other words, it can act as either a row or a column depending on the
-// // argument you give it.
+// Linear layout places its children in a line.
+// In other words, it can act as either a row or a column depending on the
+// argument you give it.
 // ALIA_DEFINE_FLAG_TYPE(linear_layout)
 // ALIA_DEFINE_FLAG(linear_layout, 0, HORIZONTAL_LAYOUT)
 // ALIA_DEFINE_FLAG(linear_layout, 1, VERTICAL_LAYOUT)
 // ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(
-//     linear_layout, linear_layout_flag_set)
+//     linear_layout, linear_layout_logic, linear_layout_flag_set)
 
-// // Layered layout places all its children in the same rectangle, so they are
-// // in effect layered over the same region.
-// ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(layered_layout)
+// Layered layout places all its children in the same rectangle, so they are in
+// effect layered over the same region.
+ALIA_DECLARE_LAYOUT_LOGIC(layered_layout_logic)
+ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(layered_layout, layered_layout_logic)
 
-// // A rotated layout rotates its child 90 degrees counterclockwise.
-// // Note that a rotated layout should only have one child. If it has multiple
-// // children, it will simply layer them.
-// ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(rotated_layout)
+// A rotated layout rotates its child 90 degrees counterclockwise.
+// Note that a rotated layout should only have one child. If it has multiple
+// children, it will simply layer them.
+// ALIA_DECLARE_LAYOUT_LOGIC(rotated_layout_logic)
+// ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(rotated_layout, rotated_layout_logic)
 
-// // A flow layout arranges its children in horizontal rows, wrapping them
-// around
-// // to new rows as needed.
-// ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(flow_layout)
+// A flow layout arranges its children in horizontal rows, wrapping them around
+// to new rows as needed.
+ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA(flow_layout_logic,
+                                    layout_flag_set x_alignment_;)
+ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(flow_layout, flow_layout_logic)
 
-// // A vertical flow layout arranges its children in columns. Widgets flow
-// down
-// // the columns, starting with the left column. Note that like all
-// containers,
-// // this one is still primarily driven by the horizontal space allocated to
-// it,
-// // so it will prefer to create many short columns rather than one long one.
-// ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(vertical_flow_layout)
+// A vertical flow layout arranges its children in columns. Widgets flow down
+// the columns, starting with the left column. Note that like all containers,
+// this one is still primarily driven by the horizontal space allocated to it,
+// so it will prefer to create many short columns rather than one long one.
+ALIA_DECLARE_LAYOUT_LOGIC(vertical_flow_layout_logic)
+ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(
+    vertical_flow_layout, vertical_flow_layout_logic)
 
-// // clamped_layout imposes a maximum size on its child.
-// // (It should only have a single child.)
-// // If the space assigned to it is larger than the specified maximum, it
-// // centers the child within that space.
-// ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(clamped_layout, absolute_size)
-
-// // bordered_layout adds a border to its child.
-// // (It should only have a single child.)
-// // (Note that the scalar type should ideally be relative_length, but that's
-// a
-// // little more complicated to implement.)
+// clamped_layout imposes a maximum size on its child.
+// (It should only have a single child.)
+// If the space assigned to it is larger than the specified maximum, it
+// centers the child within that space.
 // ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(
-//     bordered_layout, box_border_width<absolute_length>)
+//     clamped_layout, clamped_layout_logic, absolute_size)
 
-// // A clip_evasion_layout will move its child around inside its assigned
-// region
-// // to try to keep the child visible.
-// ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(clip_evasion_layout)
+// bordered_layout adds a border to its child.
+// (It should only have a single child.)
+// (Note that the scalar type should ideally be relative_length, but that's a
+// little more complicated to implement.)
+// ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(
+//     bordered_layout, bordered_layout_logic,
+//     box_border_width<absolute_length>)
+
+// A clip_evasion_layout will move its child around inside its assigned region
+// to try to keep the child visible.
+// ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(clip_evasion_layout,
+//     clip_evasion_layout_logic)
 
 #define ALIA_DECLARE_GRID_LAYOUT_CONTAINER(grid_type, row_type)               \
     struct grid_type##_data;                                                  \
@@ -342,7 +349,7 @@ get_container_offset(simple_layout_container<Logic> const& container)
         void                                                                  \
         end()                                                                 \
         {                                                                     \
-            transform_.end(); \
+            transform_.end();                                                 \
             container_.end();                                                 \
         }                                                                     \
                                                                               \
@@ -357,7 +364,7 @@ get_container_offset(simple_layout_container<Logic> const& container)
         friend struct row_type;                                               \
                                                                               \
         scoped_layout_container container_;                                   \
-        scoped_transformation transform_; \
+        scoped_transformation transform_;                                     \
         layout_traversal* traversal_;                                         \
         data_traversal* data_traversal_;                                      \
         grid_type##_data* data_;                                              \
@@ -384,7 +391,7 @@ get_container_offset(simple_layout_container<Logic> const& container)
                                                                               \
      private:                                                                 \
         scoped_layout_container container_;                                   \
-        scoped_transformation transform_; \
+        scoped_transformation transform_;                                     \
     };
 
 // A grid layout is used to arrange widgets in a grid. To use it, create
