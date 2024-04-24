@@ -1,4 +1,5 @@
 #include <alia/ui/layout/geometry.hpp>
+#include <alia/ui/layout/utilities.hpp>
 
 namespace alia {
 
@@ -149,4 +150,18 @@ is_visible(geometry_context& ctx, box<2, double> const& region)
     return true;
 }
 
+void
+begin_layout_transform(
+    scoped_transformation& transform,
+    layout_traversal const& traversal,
+    layout_cacher const& cacher)
+{
+    if (!traversal.is_refresh_pass)
+    {
+        transform.begin(*traversal.geometry);
+        transform.set(translation_matrix(
+            vector<2, double>(get_assignment(cacher).region.corner)));
+    }
 }
+
+} // namespace alia

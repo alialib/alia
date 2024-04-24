@@ -5,6 +5,9 @@
 
 namespace alia {
 
+struct layout_traversal;
+struct layout_cacher;
+
 // geometry_context represents a context for defining 2D geometry.
 // It provides a transformation matrix, which maps the current frame of
 // reference for the context to its root frame of reference.
@@ -173,3 +176,5 @@ begin_layout_transform(
     layout_cacher const& cacher);
 
 }
+
+#endif

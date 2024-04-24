@@ -1,5 +1,5 @@
-#if 0
-
+#include <alia/ui/layout/geometry.hpp>
+#include <alia/ui/layout/library.hpp>
 #include <alia/ui/layout/specification.hpp>
 #include <alia/ui/layout/system.hpp>
 #include <alia/ui/layout/traversal.hpp>
@@ -79,8 +79,19 @@ do_test_leaf2(testing_context& ctx, layout const& layout_spec)
             data_traversal data_traversal;                                    \
             scoped_data_traversal sdt(graph, data_traversal);                 \
             layout_traversal layout_traversal;                                \
-            scoped_layout_refresh slr(                                        \
-                system, layout_traversal, make_vector<float>(1, 1));          \
+            layout_style_info style{                                          \
+                make_layout_vector(0, 0),                                     \
+                16,                                                           \
+                make_layout_vector(12, 16),                                   \
+                12,                                                           \
+                1};                                                           \
+            initialize_layout_traversal(                                      \
+                system,                                                       \
+                layout_traversal,                                             \
+                true,                                                         \
+                nullptr,                                                      \
+                &style,                                                       \
+                make_vector<float>(1, 1));                                    \
             testing_context ctx;                                              \
             ctx.data = &data_traversal;                                       \
             ctx.layout = &layout_traversal;                                   \
@@ -98,10 +109,18 @@ do_test_leaf2(testing_context& ctx, layout const& layout_spec)
                 box<2, double>(                                               \
                     make_vector(0., 0.), vector<2, double>(assigned_size)));  \
             layout_traversal layout_traversal;                                \
-            scoped_layout_traversal slr(                                      \
+            layout_style_info style{                                          \
+                make_layout_vector(0, 0),                                     \
+                16,                                                           \
+                make_layout_vector(12, 16),                                   \
+                12,                                                           \
+                1};                                                           \
+            initialize_layout_traversal(                                      \
                 system,                                                       \
                 layout_traversal,                                             \
-                geometry,                                                     \
+                false,                                                        \
+                &geometry,                                                    \
+                &style,                                                       \
                 make_vector<float>(1, 1));                                    \
             testing_context ctx;                                              \
             ctx.data = &data_traversal;                                       \
@@ -125,8 +144,19 @@ do_test_leaf2(testing_context& ctx, layout const& layout_spec)
             data_traversal data_traversal;                                    \
             scoped_data_traversal sdt(graph, data_traversal);                 \
             layout_traversal layout_traversal;                                \
-            scoped_layout_refresh slr(                                        \
-                system, layout_traversal, make_vector<float>(1, 1));          \
+            layout_style_info style{                                          \
+                make_layout_vector(0, 0),                                     \
+                16,                                                           \
+                make_layout_vector(12, 16),                                   \
+                12,                                                           \
+                1};                                                           \
+            initialize_layout_traversal(                                      \
+                system,                                                       \
+                layout_traversal,                                             \
+                true,                                                         \
+                nullptr,                                                      \
+                &style,                                                       \
+                make_vector<float>(1, 1));                                    \
             testing_context ctx;                                              \
             ctx.data = &data_traversal;                                       \
             ctx.layout = &layout_traversal;                                   \
@@ -144,10 +174,18 @@ do_test_leaf2(testing_context& ctx, layout const& layout_spec)
                 box<2, double>(                                               \
                     make_vector(0., 0.), vector<2, double>(assigned_size)));  \
             layout_traversal layout_traversal;                                \
-            scoped_layout_traversal slr(                                      \
+            layout_style_info style{                                          \
+                make_layout_vector(0, 0),                                     \
+                16,                                                           \
+                make_layout_vector(12, 16),                                   \
+                12,                                                           \
+                1};                                                           \
+            initialize_layout_traversal(                                      \
                 system,                                                       \
                 layout_traversal,                                             \
-                geometry,                                                     \
+                false,                                                        \
+                &geometry,                                                    \
+                &style,                                                       \
                 make_vector<float>(1, 1));                                    \
             testing_context ctx;                                              \
             ctx.data = &data_traversal;                                       \
@@ -225,37 +263,37 @@ TEST_CASE("layout tests", "[ui]")
         layout_box(make_layout_vector(0, 0), make_layout_vector(100, 100)),
         layout_box(make_layout_vector(0, 100), make_layout_vector(100, 200)));
 
-    DO_1LEAF_TEST(
-        {
-            linear_layout column(ctx, VERTICAL_LAYOUT);
-            do_test_leaf1(ctx, size(100, 100, PIXELS));
-        },
-        make_layout_vector(100, 200),
-        layout_box(make_layout_vector(0, 0), make_layout_vector(100, 100)));
+    // DO_1LEAF_TEST(
+    //     {
+    //         linear_layout column(ctx, VERTICAL_LAYOUT);
+    //         do_test_leaf1(ctx, size(100, 100, PIXELS));
+    //     },
+    //     make_layout_vector(100, 200),
+    //     layout_box(make_layout_vector(0, 0), make_layout_vector(100, 100)));
 
-    DO_1LEAF_TEST(
-        {
-            linear_layout column(ctx, VERTICAL_LAYOUT);
-            do_test_leaf1(ctx, layout(size(100, 100, PIXELS), LEFT));
-        },
-        make_layout_vector(200, 200),
-        layout_box(make_layout_vector(0, 0), make_layout_vector(100, 100)));
+    // DO_1LEAF_TEST(
+    //     {
+    //         linear_layout column(ctx, VERTICAL_LAYOUT);
+    //         do_test_leaf1(ctx, layout(size(100, 100, PIXELS), LEFT));
+    //     },
+    //     make_layout_vector(200, 200),
+    //     layout_box(make_layout_vector(0, 0), make_layout_vector(100, 100)));
 
-    DO_1LEAF_TEST(
-        {
-            linear_layout column(ctx, VERTICAL_LAYOUT);
-            do_test_leaf1(ctx, layout(FILL, 1));
-        },
-        make_layout_vector(100, 200),
-        layout_box(make_layout_vector(0, 0), make_layout_vector(100, 200)));
+    // DO_1LEAF_TEST(
+    //     {
+    //         linear_layout column(ctx, VERTICAL_LAYOUT);
+    //         do_test_leaf1(ctx, layout(FILL, 1));
+    //     },
+    //     make_layout_vector(100, 200),
+    //     layout_box(make_layout_vector(0, 0), make_layout_vector(100, 200)));
 
-    DO_1LEAF_TEST(
-        {
-            linear_layout column(ctx, VERTICAL_LAYOUT);
-            do_test_leaf1(ctx, GROW);
-        },
-        make_layout_vector(100, 200),
-        layout_box(make_layout_vector(0, 0), make_layout_vector(100, 200)));
+    // DO_1LEAF_TEST(
+    //     {
+    //         linear_layout column(ctx, VERTICAL_LAYOUT);
+    //         do_test_leaf1(ctx, GROW);
+    //     },
+    //     make_layout_vector(100, 200),
+    //     layout_box(make_layout_vector(0, 0), make_layout_vector(100, 200)));
 
     // LAYERED TESTS
 
@@ -299,90 +337,90 @@ TEST_CASE("layout tests", "[ui]")
 
     // ROTATED TESTS
 
-    DO_2LEAF_TEST(
-        {
-            column_layout column(ctx);
-            {
-                rotated_layout rotated(ctx);
-                {
-                    column_layout nested_column(ctx);
-                    do_spacer(ctx, size(10, 20, PIXELS));
-                    do_test_leaf1(ctx, GROW);
-                }
-            }
-            do_test_leaf2(ctx, GROW);
-        },
-        make_layout_vector(100, 100),
-        layout_box(make_layout_vector(20, 10), make_layout_vector(10, 80)),
-        layout_box(make_layout_vector(0, 10), make_layout_vector(100, 90)));
+    // DO_2LEAF_TEST(
+    //     {
+    //         column_layout column(ctx);
+    //         {
+    //             rotated_layout rotated(ctx);
+    //             {
+    //                 column_layout nested_column(ctx);
+    //                 do_spacer(ctx, size(10, 20, PIXELS));
+    //                 do_test_leaf1(ctx, GROW);
+    //             }
+    //         }
+    //         do_test_leaf2(ctx, GROW);
+    //     },
+    //     make_layout_vector(100, 100),
+    //     layout_box(make_layout_vector(20, 10), make_layout_vector(10, 80)),
+    //     layout_box(make_layout_vector(0, 10), make_layout_vector(100, 90)));
 
     // FLOW TESTS
 
-    DO_2LEAF_TEST(
-        {
-            flow_layout flow(ctx);
-            {
-                do_spacer(ctx, size(10, 20, PIXELS));
-                do_test_leaf1(ctx, size(20, 10, PIXELS));
-                do_spacer(ctx, size(30, 20, PIXELS));
-                do_test_leaf2(ctx, layout(size(20, 10, PIXELS), FILL));
-            }
-        },
-        make_layout_vector(50, 50),
-        layout_box(make_layout_vector(10, 0), make_layout_vector(20, 10)),
-        layout_box(make_layout_vector(30, 20), make_layout_vector(20, 20)));
+    // DO_2LEAF_TEST(
+    //     {
+    //         flow_layout flow(ctx);
+    //         {
+    //             do_spacer(ctx, size(10, 20, PIXELS));
+    //             do_test_leaf1(ctx, size(20, 10, PIXELS));
+    //             do_spacer(ctx, size(30, 20, PIXELS));
+    //             do_test_leaf2(ctx, layout(size(20, 10, PIXELS), FILL));
+    //         }
+    //     },
+    //     make_layout_vector(50, 50),
+    //     layout_box(make_layout_vector(10, 0), make_layout_vector(20, 10)),
+    //     layout_box(make_layout_vector(30, 20), make_layout_vector(20, 20)));
 
-    DO_2LEAF_TEST(
-        {
-            column_layout column(ctx);
-            {
-                flow_layout flow(ctx);
-                {
-                    do_spacer(ctx, size(10, 20, PIXELS));
-                    do_test_leaf1(ctx, size(20, 10, PIXELS));
-                    do_spacer(ctx, size(30, 20, PIXELS));
-                    do_spacer(ctx, layout(size(20, 10, PIXELS), FILL));
-                }
-            }
-            do_test_leaf2(ctx, layout(size(20, 10, PIXELS)));
-        },
-        make_layout_vector(50, 100),
-        layout_box(make_layout_vector(10, 0), make_layout_vector(20, 10)),
-        layout_box(make_layout_vector(0, 40), make_layout_vector(20, 10)));
+    // DO_2LEAF_TEST(
+    //     {
+    //         column_layout column(ctx);
+    //         {
+    //             flow_layout flow(ctx);
+    //             {
+    //                 do_spacer(ctx, size(10, 20, PIXELS));
+    //                 do_test_leaf1(ctx, size(20, 10, PIXELS));
+    //                 do_spacer(ctx, size(30, 20, PIXELS));
+    //                 do_spacer(ctx, layout(size(20, 10, PIXELS), FILL));
+    //             }
+    //         }
+    //         do_test_leaf2(ctx, layout(size(20, 10, PIXELS)));
+    //     },
+    //     make_layout_vector(50, 100),
+    //     layout_box(make_layout_vector(10, 0), make_layout_vector(20, 10)),
+    //     layout_box(make_layout_vector(0, 40), make_layout_vector(20, 10)));
 
     // VERTICAL FLOW TESTS
 
-    DO_2LEAF_TEST(
-        {
-            vertical_flow_layout flow(ctx);
-            {
-                do_spacer(ctx, size(20, 20, PIXELS));
-                do_test_leaf1(ctx, layout(size(10, 20, PIXELS), FILL));
-                do_spacer(ctx, size(20, 10, PIXELS));
-                do_test_leaf2(ctx, layout(size(20, 10, PIXELS), FILL));
-            }
-        },
-        make_layout_vector(50, 50),
-        layout_box(make_layout_vector(0, 20), make_layout_vector(20, 20)),
-        layout_box(make_layout_vector(20, 10), make_layout_vector(20, 10)));
+    // DO_2LEAF_TEST(
+    //     {
+    //         vertical_flow_layout flow(ctx);
+    //         {
+    //             do_spacer(ctx, size(20, 20, PIXELS));
+    //             do_test_leaf1(ctx, layout(size(10, 20, PIXELS), FILL));
+    //             do_spacer(ctx, size(20, 10, PIXELS));
+    //             do_test_leaf2(ctx, layout(size(20, 10, PIXELS), FILL));
+    //         }
+    //     },
+    //     make_layout_vector(50, 50),
+    //     layout_box(make_layout_vector(0, 20), make_layout_vector(20, 20)),
+    //     layout_box(make_layout_vector(20, 10), make_layout_vector(20, 10)));
 
-    DO_2LEAF_TEST(
-        {
-            column_layout column(ctx);
-            {
-                vertical_flow_layout flow(ctx);
-                {
-                    do_spacer(ctx, size(10, 20, PIXELS));
-                    do_test_leaf1(ctx, layout(size(10, 20, PIXELS), FILL));
-                    do_spacer(ctx, size(20, 10, PIXELS));
-                    do_spacer(ctx, layout(size(20, 10, PIXELS), FILL));
-                }
-            }
-            do_test_leaf2(ctx, size(20, 10, PIXELS));
-        },
-        make_layout_vector(50, 100),
-        layout_box(make_layout_vector(0, 20), make_layout_vector(20, 20)),
-        layout_box(make_layout_vector(0, 40), make_layout_vector(20, 10)));
+    // DO_2LEAF_TEST(
+    //     {
+    //         column_layout column(ctx);
+    //         {
+    //             vertical_flow_layout flow(ctx);
+    //             {
+    //                 do_spacer(ctx, size(10, 20, PIXELS));
+    //                 do_test_leaf1(ctx, layout(size(10, 20, PIXELS), FILL));
+    //                 do_spacer(ctx, size(20, 10, PIXELS));
+    //                 do_spacer(ctx, layout(size(20, 10, PIXELS), FILL));
+    //             }
+    //         }
+    //         do_test_leaf2(ctx, size(20, 10, PIXELS));
+    //     },
+    //     make_layout_vector(50, 100),
+    //     layout_box(make_layout_vector(0, 20), make_layout_vector(20, 20)),
+    //     layout_box(make_layout_vector(0, 40), make_layout_vector(20, 10)));
 
     // GRID TESTS
 
@@ -595,8 +633,19 @@ TEST_CASE("layout tests", "[ui]")
             data_traversal data_traversal;
             scoped_data_traversal sdt(graph, data_traversal);
             layout_traversal layout_traversal;
-            scoped_layout_refresh slr(
-                system, layout_traversal, make_vector<float>(1, 1));
+            layout_style_info style{
+                make_layout_vector(0, 0),
+                16,
+                make_layout_vector(12, 16),
+                12,
+                1};
+            initialize_layout_traversal(
+                system,
+                layout_traversal,
+                true,
+                nullptr,
+                &style,
+                make_vector<float>(1, 1));
             testing_context ctx;
             ctx.data = &data_traversal;
             ctx.layout = &layout_traversal;
@@ -626,5 +675,3 @@ TEST_CASE("layout tests", "[ui]")
         }
     };
 }
-
-#endif
