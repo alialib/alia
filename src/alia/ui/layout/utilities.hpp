@@ -445,7 +445,7 @@ struct simple_layout_container : layout_container
         horizontal_layout_query query(cacher, last_content_change);
         if (query.update_required())
         {
-            query.update(logic->get_horizontal_requirements(children));
+            query.update(logic.get_horizontal_requirements(children));
         }
         return query.result();
     }
@@ -457,7 +457,7 @@ struct simple_layout_container : layout_container
             cacher, last_content_change, assigned_width);
         if (query.update_required())
         {
-            query.update(logic->get_vertical_requirements(
+            query.update(logic.get_vertical_requirements(
                 children,
                 resolve_assigned_width(
                     this->cacher.resolved_spec,
@@ -476,7 +476,7 @@ struct simple_layout_container : layout_container
         if (rra.update_required())
         {
             this->assigned_size = rra.resolved_assignment().region.size;
-            logic->set_relative_assignment(
+            logic.set_relative_assignment(
                 children,
                 rra.resolved_assignment().region.size,
                 rra.resolved_assignment().baseline_y);
@@ -484,7 +484,7 @@ struct simple_layout_container : layout_container
         }
     }
 
-    Logic* logic;
+    Logic logic;
 
     layout_cacher cacher;
 
@@ -495,12 +495,6 @@ struct simple_layout_container : layout_container
 // simple_layout_container with a specific type of logic from a UI context's
 // data graph and refreshing it.
 template<class Logic>
-struct simple_layout_container_storage
-{
-    simple_layout_container<Logic> container;
-    Logic logic;
-};
-template<class Logic>
 void
 get_simple_layout_container(
     layout_traversal& traversal,
@@ -509,11 +503,7 @@ get_simple_layout_container(
     Logic** logic,
     layout const& layout_spec)
 {
-    simple_layout_container_storage<Logic>* storage;
-    if (get_cached_data(data, &storage))
-        storage->container.logic = &storage->logic;
-
-    *container = &storage->container;
+    get_cached_data(data, container);
 
     if (is_refresh_pass(traversal))
     {
@@ -526,7 +516,7 @@ get_simple_layout_container(
         }
     }
 
-    *logic = &storage->logic;
+    *logic = &(*container)->logic;
 }
 
 // layout_leaf is used to represent simple leaves in the layout tree.
