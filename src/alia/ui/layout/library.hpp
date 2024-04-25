@@ -254,15 +254,6 @@ ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(row_layout, row_layout_logic)
 ALIA_DECLARE_LAYOUT_LOGIC(column_layout_logic)
 ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(column_layout, column_layout_logic)
 
-// Linear layout places its children in a line.
-// In other words, it can act as either a row or a column depending on the
-// argument you give it.
-// ALIA_DEFINE_FLAG_TYPE(linear_layout)
-// ALIA_DEFINE_FLAG(linear_layout, 0, HORIZONTAL_LAYOUT)
-// ALIA_DEFINE_FLAG(linear_layout, 1, VERTICAL_LAYOUT)
-// ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(
-//     linear_layout, linear_layout_logic, linear_layout_flag_set)
-
 // Layered layout places all its children in the same rectangle, so they are in
 // effect layered over the same region.
 ALIA_DECLARE_LAYOUT_LOGIC(layered_layout_logic)
@@ -271,8 +262,8 @@ ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(layered_layout, layered_layout_logic)
 // A rotated layout rotates its child 90 degrees counterclockwise.
 // Note that a rotated layout should only have one child. If it has multiple
 // children, it will simply layer them.
-// ALIA_DECLARE_LAYOUT_LOGIC(rotated_layout_logic)
-// ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(rotated_layout, rotated_layout_logic)
+ALIA_DECLARE_LAYOUT_LOGIC(rotated_layout_logic)
+ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(rotated_layout, rotated_layout_logic)
 
 // A flow layout arranges its children in horizontal rows, wrapping them around
 // to new rows as needed.
@@ -292,21 +283,25 @@ ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(
 // (It should only have a single child.)
 // If the space assigned to it is larger than the specified maximum, it
 // centers the child within that space.
-// ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(
-//     clamped_layout, clamped_layout_logic, absolute_size)
+ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA(clamped_layout_logic,
+                                    layout_vector max_size;)
+ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(
+    clamped_layout, clamped_layout_logic, absolute_size)
 
 // bordered_layout adds a border to its child.
 // (It should only have a single child.)
 // (Note that the scalar type should ideally be relative_length, but that's a
 // little more complicated to implement.)
-// ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(
-//     bordered_layout, bordered_layout_logic,
-//     box_border_width<absolute_length>)
+ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA(bordered_layout_logic,
+                                    box_border_width<layout_scalar> border;)
+ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(
+    bordered_layout, bordered_layout_logic, box_border_width<absolute_length>)
 
 // A clip_evasion_layout will move its child around inside its assigned region
 // to try to keep the child visible.
-// ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(clip_evasion_layout,
-//     clip_evasion_layout_logic)
+ALIA_DECLARE_LAYOUT_LOGIC(clip_evasion_layout_logic)
+ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(
+    clip_evasion_layout, clip_evasion_layout_logic)
 
 #define ALIA_DECLARE_GRID_LAYOUT_CONTAINER(grid_type, row_type)               \
     struct grid_type##_data;                                                  \

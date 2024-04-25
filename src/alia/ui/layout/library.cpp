@@ -175,13 +175,15 @@ void
 row_layout::concrete_begin(
     layout_traversal& traversal,
     data_traversal& data,
-    layout const& layout_spec){
-    ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(row_layout_logic)}
+    layout const& layout_spec)
+{
+    ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(row_layout_logic);
+}
 
 // COLUMN LAYOUT
 
 calculated_layout_requirements
-    column_layout_logic::get_horizontal_requirements(layout_node* children)
+column_layout_logic::get_horizontal_requirements(layout_node* children)
 {
     return fold_horizontal_child_requirements(children);
 }
@@ -253,38 +255,15 @@ void
 column_layout::concrete_begin(
     layout_traversal& traversal,
     data_traversal& data,
-    layout const& layout_spec){
-    ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(column_layout_logic)}
-
-// LINEAR LAYOUT - This just chooses between row and column logic.
-
-// void
-// linear_layout::concrete_begin(
-//     layout_traversal& traversal,
-//     data_traversal& data,
-//     linear_layout_flag_set flags,
-//     layout const& layout_spec)
-// {
-//     ALIA_IF_(data, flags & VERTICAL_LAYOUT)
-//     {
-//         column_layout_logic* logic;
-//         get_simple_layout_container(
-//             traversal, data, &container_, &logic, layout_spec);
-//     }
-//     ALIA_ELSE_(data)
-//     {
-//         row_layout_logic* logic;
-//         get_simple_layout_container(
-//             traversal, data, &container_, &logic, layout_spec);
-//     }
-//     ALIA_END
-//     slc_.begin(traversal, container_);
-// }
+    layout const& layout_spec)
+{
+    ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(column_layout_logic);
+}
 
 // LAYERED LAYOUT
 
 calculated_layout_requirements
-    layered_layout_logic::get_horizontal_requirements(layout_node* children)
+layered_layout_logic::get_horizontal_requirements(layout_node* children)
 {
     return fold_horizontal_child_requirements(children);
 }
@@ -310,13 +289,15 @@ void
 layered_layout::concrete_begin(
     layout_traversal& traversal,
     data_traversal& data,
-    layout const& layout_spec){
-    ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(layered_layout_logic)}
+    layout const& layout_spec)
+{
+    ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(layered_layout_logic);
+}
 
 // FLOW LAYOUT
 
 calculated_layout_requirements
-    flow_layout_logic::get_horizontal_requirements(layout_node* children)
+flow_layout_logic::get_horizontal_requirements(layout_node* children)
 {
     // In the worst case scenario, we can put one child on each row, so the
     // required width is simply the minimal width required by the widest
@@ -362,9 +343,11 @@ void
 wrap_row(wrapping_assignment_state& state)
 {
     ++state.active_row;
-    state.x = state.active_row != state.end_row ? calculate_initial_x(
-                  state.assigned_width, state.x_alignment, *state.active_row)
-                                                : 0;
+    state.x
+        = state.active_row != state.end_row
+              ? calculate_initial_x(
+                    state.assigned_width, state.x_alignment, *state.active_row)
+              : 0;
 }
 
 void
@@ -454,7 +437,7 @@ flow_layout_logic::set_relative_assignment(
     // Now actually do the assignments.
     wrapping_assignment_state state;
     state.x = !rows.empty() ? calculate_initial_x(
-                  assigned_size[0], x_alignment_, rows.front())
+                                  assigned_size[0], x_alignment_, rows.front())
                             : 0;
     state.assigned_width = assigned_size[0];
     state.active_row = rows.begin();
@@ -465,26 +448,26 @@ flow_layout_logic::set_relative_assignment(
     });
 }
 
-// void
-// flow_layout::concrete_begin(
-//     layout_traversal& traversal,
-//     data_traversal& data,
-//     layout const& requested_layout_spec)
-// {
-//     // With a flow layout, we want to have the layout itself always fill
-//     // the horizontal space and use the requested X alignment to position
-//     // the individual rows in the flow.
-//     auto layout_spec = add_default_padding(requested_layout_spec, PADDED);
-//     layout_flag_set x_alignment = FILL_X;
-//     if ((layout_spec.flags.code & 0x3) != 0)
-//     {
-//         x_alignment.code = layout_spec.flags.code & X_ALIGNMENT_MASK_CODE;
-//         layout_spec.flags.code &= ~X_ALIGNMENT_MASK_CODE;
-//         layout_spec.flags.code |= FILL_X_CODE;
-//     }
-//     ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(flow_layout_logic)
-//     logic->x_alignment_ = x_alignment;
-// }
+void
+flow_layout::concrete_begin(
+    layout_traversal& traversal,
+    data_traversal& data,
+    layout const& requested_layout_spec)
+{
+    // With a flow layout, we want to have the layout itself always fill
+    // the horizontal space and use the requested X alignment to position
+    // the individual rows in the flow.
+    auto layout_spec = add_default_padding(requested_layout_spec, PADDED);
+    layout_flag_set x_alignment = FILL_X;
+    if ((layout_spec.flags.code & 0x3) != 0)
+    {
+        x_alignment.code = layout_spec.flags.code & X_ALIGNMENT_MASK_CODE;
+        layout_spec.flags.code &= ~X_ALIGNMENT_MASK_CODE;
+        layout_spec.flags.code |= FILL_X_CODE;
+    }
+    ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(flow_layout_logic);
+    logic->x_alignment_ = x_alignment;
+}
 
 // VERTICAL FLOW LAYOUT
 
@@ -571,32 +554,104 @@ vertical_flow_layout_logic::set_relative_assignment(
     });
 }
 
-// void
-// vertical_flow_layout::concrete_begin(
-//     layout_traversal& traversal,
-//     data_traversal& data,
-//     layout const& layout_spec)
-// {
-//     ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(vertical_flow_layout_logic)
-// }
+void
+vertical_flow_layout::concrete_begin(
+    layout_traversal& traversal,
+    data_traversal& data,
+    layout const& layout_spec)
+{
+    ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(vertical_flow_layout_logic);
+}
+
+// ROTATED LAYOUT
+
+calculated_layout_requirements
+rotated_layout_logic::get_horizontal_requirements(layout_node* children)
+{
+    // The horizontal requirements of the rotated layout are the vertical
+    // requirements of the child, but in order to obtain the vertical
+    // requirements, we need to specify a width, so we specify an essentially
+    // infinite width, which should give the minimum required height of the
+    // child.
+    layout_scalar width = 0;
+    walk_layout_children(children, [&](layout_node& node) {
+        // The layout protocol requires that we ask for horizontal
+        // requirements first.
+        (void) node.get_horizontal_requirements();
+        auto y = node.get_vertical_requirements(100000);
+        width = (std::max)(y.size, width);
+    });
+    return calculated_layout_requirements(width, 0, 0);
+}
+
+calculated_layout_requirements
+rotated_layout_logic::get_vertical_requirements(
+    layout_node* children, layout_scalar assigned_width)
+{
+    // This requires performing the inverse of the normal vertical
+    // requirements request (i.e., determine the minimum width required for
+    // a given height), so we do a binary search to determine the minimum
+    // child width for which the child height is less than or equal to
+    // our assigned width.
+    layout_scalar height = 0;
+    walk_layout_children(children, [&](layout_node& node) {
+        layout_requirements x = node.get_horizontal_requirements();
+        layout_scalar lower_bound = x.size, upper_bound = 100000;
+        while (!layout_scalars_almost_equal(upper_bound, lower_bound))
+        {
+            layout_scalar test_value = (upper_bound + lower_bound) / 2;
+            layout_requirements y = node.get_vertical_requirements(test_value);
+            if (y.size <= assigned_width)
+                upper_bound = test_value;
+            else
+                lower_bound = test_value + layout_scalar_epsilon;
+        }
+        height = (std::max)(upper_bound, height);
+    });
+    return calculated_layout_requirements(height, 0, 0);
+}
+
+void
+rotated_layout_logic::set_relative_assignment(
+    layout_node* children,
+    layout_vector const& assigned_size,
+    layout_scalar /* assigned_baseline_y */)
+{
+    walk_layout_children(children, [&](layout_node& node) {
+        layout_requirements y
+            = node.get_vertical_requirements(assigned_size[1]);
+        node.set_relative_assignment(relative_layout_assignment(
+            layout_box(
+                make_layout_vector(0, 0),
+                make_layout_vector(assigned_size[1], assigned_size[0])),
+            y.ascent));
+    });
+}
+
+void
+rotated_layout::concrete_begin(
+    layout_traversal& traversal,
+    data_traversal& data,
+    layout const& layout_spec)
+{
+    rotated_layout_logic* logic;
+    get_simple_layout_container(
+        traversal, data, &container_, &logic, layout_spec);
+    slc_.begin(traversal, container_);
+
+    if (!traversal.is_refresh_pass)
+    {
+        transform_.begin(*traversal.geometry);
+        transform_.set(
+            translation_matrix(vector<2, double>(
+                get_assignment(container_->cacher).region.corner
+                + make_layout_vector(
+                    0, get_assignment(container_->cacher).region.size[1])))
+            * make_matrix<double>(0, 1, 0, -1, 0, 0, 0, 0, 1));
+    }
+}
 
 // CLAMPED LAYOUT
-
-struct clamped_layout_logic
-{
-    calculated_layout_requirements
-    get_horizontal_requirements(layout_node* children);
-    calculated_layout_requirements
-    get_vertical_requirements(
-        layout_node* children, layout_scalar assigned_width);
-    void
-    set_relative_assignment(
-        layout_node* children,
-        layout_vector const& assigned_size,
-        layout_scalar assigned_baseline_y);
-
-    layout_vector max_size;
-};
 
 calculated_layout_requirements
 clamped_layout_logic::get_horizontal_requirements(layout_node* children)
@@ -643,44 +698,113 @@ clamped_layout_logic::set_relative_assignment(
     });
 }
 
-// void
-// clamped_layout::concrete_begin(
-//     layout_traversal& traversal,
-//     data_traversal& data,
-//     absolute_size max_size,
-//     layout const& layout_spec)
-// {
-//     clamped_layout_logic* logic;
-//     get_simple_layout_container(
-//         traversal, data, &container_, &logic, layout_spec);
-//     slc_.begin(traversal, container_);
-//     begin_layout_transform(transform_, traversal, container_->cacher);
-//     if (traversal.is_refresh_pass)
-//     {
-//         detect_layout_change(
-//             traversal,
-//             &logic->max_size,
-//             as_layout_size(resolve_absolute_size(traversal, max_size)));
-//     }
-// }
+void
+clamped_layout::concrete_begin(
+    layout_traversal& traversal,
+    data_traversal& data,
+    absolute_size max_size,
+    layout const& layout_spec)
+{
+    clamped_layout_logic* logic;
+    get_simple_layout_container(
+        traversal, data, &container_, &logic, layout_spec);
+    slc_.begin(traversal, container_);
+    begin_layout_transform(transform_, traversal, container_->cacher);
+    if (traversal.is_refresh_pass)
+    {
+        detect_layout_change(
+            traversal,
+            &logic->max_size,
+            as_layout_size(resolve_absolute_size(traversal, max_size)));
+    }
+}
+
+// CLIP EVASION LAYOUT
+
+calculated_layout_requirements
+clip_evasion_layout_logic::get_horizontal_requirements(layout_node* children)
+{
+    return fold_horizontal_child_requirements(children);
+}
+
+calculated_layout_requirements
+clip_evasion_layout_logic::get_vertical_requirements(
+    layout_node* children, layout_scalar assigned_width)
+{
+    return fold_vertical_child_requirements(children, assigned_width);
+}
+
+void
+clip_evasion_layout_logic::set_relative_assignment(
+    layout_node* children,
+    layout_vector const& assigned_size,
+    layout_scalar assigned_baseline_y)
+{
+    assign_identical_child_regions(
+        children, assigned_size, assigned_baseline_y);
+}
+
+void
+clip_evasion_layout::concrete_begin(
+    layout_traversal& traversal,
+    data_traversal& data,
+    layout const& layout_spec)
+{
+    clip_evasion_layout_logic* logic;
+    get_simple_layout_container(
+        traversal, data, &container_, &logic, layout_spec);
+    slc_.begin(traversal, container_);
+
+    if (!traversal.is_refresh_pass)
+    {
+        vector<2, double> corner_on_surface = transform(
+            traversal.geometry->transformation_matrix,
+            vector<2, double>(
+                get_assignment(container_->cacher).region.corner));
+        vector<2, double> high_corner_on_surface = transform(
+            traversal.geometry->transformation_matrix,
+            vector<2, double>(
+                get_high_corner(get_assignment(container_->cacher).region)));
+        vector<2, double> offset;
+        for (unsigned i = 0; i != 2; ++i)
+        {
+            // If the content is smaller than the clip region, just prevent it
+            // from scrolling off the top of the clip region.
+            if (high_corner_on_surface[i] - corner_on_surface[i]
+                < traversal.geometry->clip_region.size[i])
+            {
+                offset[i] = (std::max)(
+                    0.,
+                    traversal.geometry->clip_region.corner[i]
+                        - corner_on_surface[i]);
+            }
+            // Otherwise, just make sure that it's not scrolled to the point
+            // that there's empty space.
+            else if (
+                corner_on_surface[i]
+                > traversal.geometry->clip_region.corner[i])
+            {
+                offset[i] = traversal.geometry->clip_region.corner[i]
+                            - corner_on_surface[i];
+            }
+            else if (
+                high_corner_on_surface[i]
+                < get_high_corner(traversal.geometry->clip_region)[i])
+            {
+                offset[i] = get_high_corner(traversal.geometry->clip_region)[i]
+                            - high_corner_on_surface[i];
+            }
+            else
+            {
+                offset[i] = 0;
+            }
+        }
+        transform_.begin(*traversal.geometry);
+        transform_.set(translation_matrix(offset));
+    }
+}
 
 // BORDERED LAYOUT
-
-struct bordered_layout_logic
-{
-    calculated_layout_requirements
-    get_horizontal_requirements(layout_node* children);
-    calculated_layout_requirements
-    get_vertical_requirements(
-        layout_node* children, layout_scalar assigned_width);
-    void
-    set_relative_assignment(
-        layout_node* children,
-        layout_vector const& assigned_size,
-        layout_scalar assigned_baseline_y);
-
-    box_border_width<layout_scalar> border;
-};
 
 calculated_layout_requirements
 bordered_layout_logic::get_horizontal_requirements(layout_node* children)
@@ -720,25 +844,25 @@ bordered_layout_logic::set_relative_assignment(
     });
 }
 
-// void
-// bordered_layout::concrete_begin(
-//     layout_traversal& traversal,
-//     data_traversal& data,
-//     box_border_width<absolute_length> border,
-//     layout const& layout_spec)
-// {
-//     bordered_layout_logic* logic;
-//     get_simple_layout_container(
-//         traversal, data, &container_, &logic, layout_spec);
-//     slc_.begin(traversal, container_);
-//     if (traversal.is_refresh_pass)
-//     {
-//         detect_layout_change(
-//             traversal,
-//             &logic->border,
-//             as_layout_size(resolve_box_border_width(traversal, border)));
-//     }
-// }
+void
+bordered_layout::concrete_begin(
+    layout_traversal& traversal,
+    data_traversal& data,
+    box_border_width<absolute_length> border,
+    layout const& layout_spec)
+{
+    bordered_layout_logic* logic;
+    get_simple_layout_container(
+        traversal, data, &container_, &logic, layout_spec);
+    slc_.begin(traversal, container_);
+    if (traversal.is_refresh_pass)
+    {
+        detect_layout_change(
+            traversal,
+            &logic->border,
+            as_layout_size(resolve_box_border_width(traversal, border)));
+    }
+}
 
 // GRIDS
 
@@ -1078,8 +1202,8 @@ calculate_grid_row_vertical_requirements(
     layout_scalar assigned_width)
 {
     auto& cache = grid.vertical_requirements_cache;
-    if (cache.last_update != grid.container->last_content_change ||
-        cache.assigned_width != assigned_width)
+    if (cache.last_update != grid.container->last_content_change
+        || cache.assigned_width != assigned_width)
     {
         update_grid_column_requirements(grid);
 
