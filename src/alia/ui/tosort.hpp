@@ -1,7 +1,7 @@
 #pragma once
 
-#include "alia/core/id.hpp"
 #include <alia/core/flow/data_graph.hpp>
+#include <alia/core/id.hpp>
 
 // TODO: Sort this stuff into proper locations
 
@@ -16,7 +16,8 @@ struct keyed_data
     {
     }
 
-    explicit operator bool() const
+    explicit
+    operator bool() const
     {
         return key_.is_initialized();
     }

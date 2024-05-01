@@ -5,18 +5,15 @@
 #include <alia/core/system/internals.hpp>
 #include <alia/core/timing/ticks.hpp>
 #include <alia/ui/context.hpp>
-#include <alia/ui/events/input.hpp>
+#include <alia/ui/events.hpp>
 #include <alia/ui/layout/system.hpp>
 #include <alia/ui/system/os_interface.hpp>
 #include <alia/ui/system/window_interface.hpp>
-#include <alia/ui/widget.hpp>
 
 // TODO: Get rid of this.
 #include "modules/skparagraph/include/FontCollection.h"
 
 namespace alia {
-
-struct widget;
 
 struct window_input_state
 {
@@ -30,14 +27,14 @@ struct window_input_state
     vector<2, double> mouse_position;
 
     // the widget that the mouse is over
-    external_element_ref hot_element;
+    external_element_id hot_element;
 
     // the widget that has the mouse captured - Note that this isn't
     // necessarily the same as the hot_element.
-    external_element_ref element_with_capture;
+    external_element_id element_with_capture;
 
     // the widget that has the keyboard focus
-    external_element_ref element_with_focus;
+    external_element_id element_with_focus;
 
     // Is the user currently dragging the mouse (with a button pressed)?
     bool dragging = false;
@@ -65,8 +62,6 @@ struct ui_system : alia::typed_system<vanilla_ui_context>
 
     counter_type refresh_counter = 1;
 
-    widget* root_widget;
-
     // alia__shared_ptr<alia::surface> surface;
     vector<2, unsigned> surface_size;
     // vector<2,float> ppi;
@@ -77,8 +72,7 @@ struct ui_system : alia::typed_system<vanilla_ui_context>
 
     window_input_state input;
 
-    // TODO: Clean this up.
-    // sk_sp<skia::textlayout::FontCollection> font_collection;
+    layout_system layout;
 
     // ui_style style;
 

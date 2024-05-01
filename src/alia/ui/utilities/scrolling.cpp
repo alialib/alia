@@ -3,7 +3,7 @@
 namespace alia {
 
 std::optional<vector<2, double>>
-detect_scroll(ui_event_context ctx, internal_element_ref)
+detect_scroll(dataless_ui_context ctx, internal_element_id)
 {
     scroll_event* event;
     if (detect_event(ctx, &event))

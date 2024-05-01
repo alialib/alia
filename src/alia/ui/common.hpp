@@ -39,7 +39,8 @@ struct flag_set
     explicit flag_set(unsigned code) : code(code)
     {
     }
-    explicit operator bool() const
+    explicit
+    operator bool() const
     {
         return code != 0;
     }

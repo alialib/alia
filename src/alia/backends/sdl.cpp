@@ -29,7 +29,7 @@
 bool
 SkLoadICU();
 #else
-static inline bool
+inline bool
 SkLoadICU()
 {
     return true;
@@ -47,7 +47,7 @@ SkLoadICU()
 #include <emscripten/html5.h>
 #endif
 
-#include <alia/ui/events/input.hpp>
+#include <alia/ui/events.hpp>
 #include <alia/ui/layout/system.hpp>
 #include <alia/ui/system/api.hpp>
 #include <alia/ui/system/input_processing.hpp>
