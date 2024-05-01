@@ -1,26 +1,22 @@
+#include "alia/core/flow/top_level.hpp"
 #include <alia/ui/system/input_processing.hpp>
 
 #include <alia/core/flow/events.hpp>
-#include <alia/ui/events/delivery.hpp>
-#include <alia/ui/events/input.hpp>
+#include <alia/ui/events.hpp>
 #include <alia/ui/system/api.hpp>
+#include <alia/ui/system/object.hpp>
 #include <alia/ui/utilities/hit_testing.hpp>
 
 namespace alia {
 
 namespace {
 
-std::shared_ptr<widget>
+external_element_id
 get_mouse_target(ui_system& ui)
 {
-    // The widget with mouse capture takes precedence as the target for mouse
-    // events.
-    std::shared_ptr<widget> target
-        = ui.input.element_with_capture.widget.lock();
-    // But if no widget has capture, send events to the widget under the mouse.
-    if (!target)
-        target = ui.input.hot_element.widget.lock();
-    return target;
+    // If no widget has capture, send events to the widget under the mouse.
+    return ui.input.element_with_capture ? ui.input.element_with_capture
+                                         : ui.input.hot_element;
 }
 
 } // namespace
@@ -32,7 +28,7 @@ process_mouse_motion(ui_system& ui, vector<2, double> const& position)
     {
         mouse_motion_event event{
             {{}, input_event_type::MOUSE_MOTION}, position};
-        deliver_input_event(ui, get_mouse_target(ui), event);
+        dispatch_targeted_event(ui, event, get_mouse_target(ui).component);
 
         ui.input.mouse_position = position;
         ui.input.mouse_inside_window = true;
@@ -55,7 +51,7 @@ process_mouse_press(ui_system& ui, mouse_button button, key_modifiers)
     if (target)
     {
         mouse_button_event event{{{}, input_event_type::MOUSE_PRESS}, button};
-        deliver_input_event(ui, target, event);
+        dispatch_targeted_event(ui, event, target.component);
     }
     else
     {
@@ -73,12 +69,12 @@ process_mouse_release(ui_system& ui, mouse_button button)
     {
         mouse_button_event event{
             {{}, input_event_type::MOUSE_RELEASE}, button};
-        deliver_input_event(ui, target, event);
+        dispatch_targeted_event(ui, event, target.component);
     }
     ui.input.mouse_button_state &= ~(1 << int(button));
     if (ui.input.mouse_button_state == 0)
     {
-        set_element_with_capture(ui, external_element_ref());
+        set_element_with_capture(ui, external_element_id());
         ui.input.dragging = false;
     }
 }
@@ -90,7 +86,7 @@ process_double_click(ui_system& ui, mouse_button button)
     if (target)
     {
         mouse_button_event event{{{}, input_event_type::DOUBLE_CLICK}, button};
-        deliver_input_event(ui, target, event);
+        dispatch_targeted_event(ui, event, target.component);
     }
     ui.input.mouse_button_state |= 1 << int(button);
     ui.input.keyboard_interaction = false;
@@ -125,62 +121,73 @@ process_double_click(ui_system& ui, mouse_button button)
 // }
 
 void
-process_scroll(ui_system& ui, vector<2, double> const& delta)
+process_scroll(ui_system& /*ui*/, vector<2, double> const& /*delta*/)
 {
-    wheel_hit_test hit_test;
-    ui.root_widget->hit_test(hit_test, ui.input.mouse_position);
-    if (hit_test.result)
-    {
-        scroll_event event{{{}, input_event_type::SCROLL}, delta};
-        deliver_input_event(ui, hit_test.result->widget, event);
-    }
+    // TODO
+    // wheel_hit_test hit_test;
+    // ui.root_widget->hit_test(hit_test, ui.input.mouse_position);
+    // if (hit_test.result)
+    // {
+    //     scroll_event event{{{}, input_event_type::SCROLL}, delta};
+    //     deliver_input_event(ui, hit_test.result->widget, event);
+    // }
 }
 
 bool
-process_focused_key_press(ui_system& ui, modded_key const& info)
+process_focused_key_press(ui_system& /*ui*/, modded_key const& /*info*/)
 {
-    key_event event{{{}, input_event_type::KEY_PRESS}, info};
-    auto target = ui.input.element_with_focus.widget.lock();
-    deliver_input_event(ui, target, event);
-    return event.acknowledged;
+    // TODO
+    // key_event event{{{}, input_event_type::KEY_PRESS}, info};
+    // auto target = ui.input.element_with_focus.widget.lock();
+    // deliver_input_event(ui, target, event);
+    // return event.acknowledged;
+    return false;
 }
 
 bool
-process_background_key_press(ui_system& ui, modded_key const& info)
+process_background_key_press(ui_system& /*ui*/, modded_key const& /*info*/)
 {
-    key_event event{{{}, input_event_type::BACKGROUND_KEY_PRESS}, info};
-    event_delivery_fixture<key_event> fixture(ui);
-    auto focus = ui.input.element_with_focus.widget.lock();
-    widget* target = focus.get();
-    while (target)
-    {
-        fixture.deliver(target, event);
-        target = target->parent;
-    }
-    return event.acknowledged;
+    // TODO
+    // key_event event{{{}, input_event_type::BACKGROUND_KEY_PRESS}, info};
+    // event_delivery_fixture<key_event> fixture(ui);
+    // auto focus = ui.input.element_with_focus.widget.lock();
+    // widget* target = focus.get();
+    // while (target)
+    // {
+    //     fixture.deliver(target, event);
+    //     target = target->parent;
+    // }
+    // return event.acknowledged;
+    return false;
 }
 
 bool
-process_focused_key_release(ui_system& ui, modded_key const& info)
+process_focused_key_release(ui_system& /*ui*/, modded_key const& /*info*/)
 {
-    key_event event{{{}, input_event_type::KEY_RELEASE}, info};
-    auto target = ui.input.element_with_focus.widget.lock();
-    deliver_input_event(ui, target, event);
-    return event.acknowledged;
+    // TODO
+    // key_event event{{{}, input_event_type::KEY_RELEASE}, info};
+    // auto target = ui.input.element_with_focus.widget.lock();
+    // deliver_input_event(ui, target, event);
+    // return event.acknowledged;
+    return false;
 }
 bool
-process_key_press(ui_system& ui, modded_key const& info)
+process_key_press(ui_system& /*ui*/, modded_key const& /*info*/)
 {
-    ui.input.keyboard_interaction = true;
-    return process_focused_key_press(ui, info)
-           || process_background_key_press(ui, info);
+    // TODO
+    // ui.input.keyboard_interaction = true;
+    // return process_focused_key_press(ui, info)
+    //        || process_background_key_press(ui, info);
+    return false;
 }
 
 bool
-process_key_release(ui_system& ui, modded_key const& info)
+process_key_release(ui_system& /*ui*/, modded_key const& /*info*/)
 {
-    ui.input.keyboard_interaction = true;
-    return process_focused_key_release(ui, info);
+    // TODO
+    // ui.input.keyboard_interaction = true;
+    // return process_focused_key_release(ui, info);
+    return false;
 }
 
 } // namespace alia

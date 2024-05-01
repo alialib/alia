@@ -19,6 +19,7 @@ refresh_component_identity(
 {
     auto const& active_container = get_active_component_container(ctx);
     // Only update to the active container if it's actually different.
+    // TODO: Is this actually more efficient?
     if (identity.owner_before(active_container)
         || active_container.owner_before(identity))
     {

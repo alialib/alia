@@ -1,9 +1,12 @@
 #ifndef ALIA_UI_SYSTEM_INPUT_PROCESSING_HPP
 #define ALIA_UI_SYSTEM_INPUT_PROCESSING_HPP
 
+#include <alia/ui/geometry.hpp>
 #include <alia/ui/system/input_constants.hpp>
 
 namespace alia {
+
+struct ui_system;
 
 // Process mouse movement within (or into) the window.
 void
