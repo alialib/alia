@@ -1,6 +1,8 @@
 #ifndef ALIA_UI_SYSTEM_INPUT_CONSTANTS_HPP
 #define ALIA_UI_SYSTEM_INPUT_CONSTANTS_HPP
 
+#include <alia/ui/common.hpp>
+
 // This file defines various enumerations for input devices.
 
 namespace alia {

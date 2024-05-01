@@ -3,10 +3,4 @@
 
 #include <alia/core.hpp>
 
-#include <alia/ui/events/input.hpp>
-#include <alia/ui/layout/specification.hpp>
-#include <alia/ui/layout/utilities.hpp>
-#include <alia/ui/system/object.hpp>
-#include <alia/ui/widget.hpp>
-
 #endif

@@ -1,5 +1,6 @@
 #include <alia/ui/text/shaping.hpp>
 
+#include <include/core/SkFontMetrics.h>
 #include <modules/skshaper/include/SkShaper.h>
 #include <src/base/SkUTF.h>
 

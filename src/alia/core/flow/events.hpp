@@ -112,17 +112,15 @@ struct external_component_id
     // so that it can be tested externally to see if the component still exists
     // within the data graph.
     component_identity identity;
+
+    explicit
+    operator bool() const
+    {
+        return id != nullptr;
+    }
 };
 
 external_component_id const null_component_id;
-
-// Is the given external_component_id valid?
-// (Only the null_component_id is invalid.)
-inline bool
-is_valid(external_component_id const& id)
-{
-    return id.id != nullptr;
-}
 
 inline external_component_id
 externalize(component_id id)

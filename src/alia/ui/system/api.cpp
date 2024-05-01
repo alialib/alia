@@ -1,9 +1,7 @@
-#include "alia/ui/events/input.hpp"
-#include "alia/ui/widget.hpp"
 #include <alia/ui/system/api.hpp>
 
 #include <alia/core/flow/events.hpp>
-#include <alia/ui/events/delivery.hpp>
+#include <alia/ui/events.hpp>
 #include <alia/ui/system/object.hpp>
 #include <alia/ui/utilities/hit_testing.hpp>
 #include <alia/ui/utilities/keyboard.hpp>
@@ -78,10 +76,10 @@ update(ui_system& ui)
     mouse_cursor resolved_cursor = mouse_cursor::DEFAULT;
 
     // Determine which widget is under the mouse cursor.
-    if (ui.input.mouse_inside_window && ui.root_widget)
+    if (ui.input.mouse_inside_window)
     {
-        mouse_hit_test hit_test;
-        ui.root_widget->hit_test(hit_test, ui.input.mouse_position);
+        mouse_hit_test hit_test(ui.input.mouse_position);
+        dispatch_event(ui, hit_test);
         if (hit_test.result)
         {
             set_hot_element(ui, hit_test.result->element);
@@ -90,12 +88,12 @@ update(ui_system& ui)
         }
         else
         {
-            set_hot_element(ui, external_element_ref());
+            set_hot_element(ui, external_element_id());
         }
     }
     else
     {
-        set_hot_element(ui, external_element_ref());
+        set_hot_element(ui, external_element_id());
     }
 
     // The block above gives us the mouse cursor that's been requested by
@@ -190,40 +188,43 @@ setup_initial_styling(ui_context& ctx)
 
 #endif
 
-static external_element_ref
-get_focus_successor(ui_system& sys, internal_element_ref target)
+static external_element_id
+get_focus_successor(ui_system& /*sys*/, internal_element_id /*target*/)
 {
-    focus_successor_event event;
-    event.target = target;
+    return external_element_id();
+    // TODO
+    // focus_successor_event event;
+    // event.target = target;
     // Initializing `just_saw_target` to true handles the cases where no widget
     // has focus or where the focus is on the last widget in the focus
     // sequence. The correct successor here is the very first widget, so by
     // initializing `just_saw_target` to true, we'll pick up that first widget
     // as the default answer to the query. (And in cases where another widget
     // is the correct successor, it'll overwrite that answer.)
-    event.just_saw_target = true;
+    // event.just_saw_target = true;
 
-    event_delivery_fixture<focus_successor_event> delivery_fixture(sys);
-    walk_widget_tree(sys.root_widget, [&](widget* widget) {
-        delivery_fixture.deliver(widget, event);
-    });
+    // event_delivery_fixture<focus_successor_event> delivery_fixture(sys);
+    // walk_widget_tree(sys.root_widget, [&](widget* widget) {
+    //     delivery_fixture.deliver(widget, event);
+    // });
 
-    return externalize(event.successor);
+    // return externalize(event.successor);
 }
 
-static external_element_ref
-get_focus_predecessor(ui_system& sys, internal_element_ref target)
+static external_element_id
+get_focus_predecessor(ui_system& /*sys*/, internal_element_id /*target*/)
 {
-    focus_predecessor_event event;
-    event.target = target;
-    event.saw_target = false;
+    return external_element_id();
+    // focus_predecessor_event event;
+    // event.target = target;
+    // event.saw_target = false;
 
-    event_delivery_fixture<focus_predecessor_event> delivery_fixture(sys);
-    walk_widget_tree(sys.root_widget, [&](widget* widget) {
-        delivery_fixture.deliver(widget, event);
-    });
+    // event_delivery_fixture<focus_predecessor_event> delivery_fixture(sys);
+    // walk_widget_tree(sys.root_widget, [&](widget* widget) {
+    //     delivery_fixture.deliver(widget, event);
+    // });
 
-    return externalize(event.predecessor);
+    // return externalize(event.predecessor);
 }
 
 #if 0
@@ -718,51 +719,53 @@ void process_focus_gain(ui_system& ui, ui_time_type time)
 #endif
 
 void
-advance_focus(ui_system& sys)
+advance_focus(ui_system& /*sys*/)
 {
-    set_focus(
-        sys,
-        get_focus_successor(
-            sys,
-            internal_element_ref{
-                sys.input.element_with_focus.widget.raw_ptr(),
-                sys.input.element_with_focus.id}));
+    // TODO
+    // set_focus(
+    //     sys,
+    //     get_focus_successor(
+    //         sys,
+    //         internal_element_id{
+    //             sys.input.element_with_focus.widget.raw_ptr(),
+    //             sys.input.element_with_focus.id}));
 }
 
 void
-regress_focus(ui_system& sys)
+regress_focus(ui_system& /*sys*/)
 {
-    set_focus(
-        sys,
-        get_focus_predecessor(
-            sys,
-            internal_element_ref{
-                sys.input.element_with_focus.widget.raw_ptr(),
-                sys.input.element_with_focus.id}));
+    // TODO
+    // set_focus(
+    //     sys,
+    //     get_focus_predecessor(
+    //         sys,
+    //         internal_element_id{
+    //             sys.input.element_with_focus.widget.raw_ptr(),
+    //             sys.input.element_with_focus.id}));
 }
 
 void
 clear_focus(ui_system& ui)
 {
-    ui.input.element_with_focus = external_element_ref();
+    ui.input.element_with_focus = external_element_id();
 }
 
 void
-set_element_with_capture(ui_system& ui, external_element_ref element)
+set_element_with_capture(ui_system& ui, external_element_id element)
 {
     ui.input.element_with_capture = std::move(element);
 }
 
 void
-set_hot_element(ui_system& ui, external_element_ref element)
+set_hot_element(ui_system& ui, external_element_id element)
 {
+    // TODO:
     // If no element has capture and the mouse is moving to a different
     // element, this marks the start of a hover.
-    if (!ui.input.element_with_capture && ui.input.hot_element != element)
-    {
-        // TODO:
-        // ui.input.hover_start_time = ui.tick_count;
-    }
+    // if (!ui.input.element_with_capture && ui.input.hot_element != element)
+    // {
+    //     // ui.input.hover_start_time = ui.tick_count;
+    // }
 
     ui.input.hot_element = std::move(element);
 }

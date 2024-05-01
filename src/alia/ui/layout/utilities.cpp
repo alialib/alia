@@ -198,10 +198,10 @@ resolve_relative_length(
     return length.is_relative
                ? length.length * full_length
                : resolve_absolute_length(
-                   ppi,
-                   style_info,
-                   axis,
-                   absolute_length(length.length, length.units));
+                     ppi,
+                     style_info,
+                     axis,
+                     absolute_length(length.length, length.units));
 }
 
 vector<2, float>
@@ -364,7 +364,7 @@ resolve_axis_assignment(
     // assert(offset >= 0 && offset + size <= assigned_size);
 }
 
-static inline unsigned
+inline unsigned
 get_axis_alignment_code(resolved_layout_spec const& spec, unsigned axis)
 {
     return (spec.flags.code >> (axis * X_TO_Y_SHIFT)) & X_ALIGNMENT_MASK_CODE;
@@ -537,7 +537,7 @@ layout_leaf::get_horizontal_requirements()
     return requirements;
 }
 layout_requirements
-    layout_leaf::get_vertical_requirements(layout_scalar /*assigned_width*/)
+layout_leaf::get_vertical_requirements(layout_scalar /*assigned_width*/)
 {
     layout_requirements requirements;
     resolve_requirements(

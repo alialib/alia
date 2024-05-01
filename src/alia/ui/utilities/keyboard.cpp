@@ -1,18 +1,19 @@
-#include "alia/ui/events/delivery.hpp"
-#include "alia/ui/geometry.hpp"
-#include "alia/ui/utilities/mouse.hpp"
+#include "alia/core/flow/top_level.hpp"
 #include <alia/ui/utilities/keyboard.hpp>
 
-#include <alia/core/flow/events.hpp>
-#include <alia/ui/events/input.hpp>
-#include <alia/ui/layout/node_interface.hpp>
-#include <alia/ui/system/api.hpp>
 #include <optional>
+
+#include <alia/core/flow/events.hpp>
+#include <alia/ui/events.hpp>
+#include <alia/ui/geometry.hpp>
+#include <alia/ui/system/api.hpp>
+#include <alia/ui/system/object.hpp>
+#include <alia/ui/utilities/mouse.hpp>
 
 namespace alia {
 
 void
-acknowledge_key_event(ui_event_context ctx)
+acknowledge_key_event(dataless_ui_context ctx)
 {
     key_event* event;
     if (detect_event(ctx, &event))
@@ -20,7 +21,7 @@ acknowledge_key_event(ui_event_context ctx)
 }
 
 void
-add_to_focus_order(ui_event_context ctx, internal_element_ref element)
+add_to_focus_order(dataless_ui_context ctx, internal_element_id element)
 {
     {
         focus_successor_event* event;
@@ -54,13 +55,13 @@ add_to_focus_order(ui_event_context ctx, internal_element_ref element)
 }
 
 bool
-element_has_focus(ui_system& sys, internal_element_ref element)
+element_has_focus(ui_system& sys, internal_element_id element)
 {
     return sys.input.element_with_focus.matches(element);
 }
 
 void
-set_focus(ui_system& sys, external_element_ref element)
+set_focus(ui_system& sys, external_element_id element)
 {
     // TODO: Some of this logic seems to be asking for alia to have an internal
     // event queue.
@@ -75,7 +76,8 @@ set_focus(ui_system& sys, external_element_ref element)
         refresh_system(sys);
 
         focus_notification_event event{{{}, input_event_type::FOCUS_LOSS}};
-        deliver_input_event(sys, sys.input.element_with_focus.widget, event);
+        dispatch_targeted_event(
+            sys, event, sys.input.element_with_focus.component);
     }
 
     sys.input.element_with_focus = element;
@@ -84,29 +86,30 @@ set_focus(ui_system& sys, external_element_ref element)
     // another widget has the focus, so we need to refresh here.
     refresh_system(sys);
 
-    if (different && element)
-    {
-        // Make the new widget visible.
-        {
-            auto widget = element.widget.lock();
-            if (widget && widget->parent)
-            {
-                widget->parent->reveal_region(region_reveal_request{
-                    layout_box(transform_box(
-                        widget->transformation(),
-                        box2d(widget->bounding_box()))),
-                    false,
-                    false});
-            }
-        }
+    // TODO
+    // if (different && element)
+    // {
+    //     // Make the new widget visible.
+    //     {
+    //         auto widget = element.widget.lock();
+    //         if (widget && widget->parent)
+    //         {
+    //             widget->parent->reveal_region(region_reveal_request{
+    //                 layout_box(transform_box(
+    //                     widget->transformation(),
+    //                     box2d(widget->bounding_box()))),
+    //                 false,
+    //                 false});
+    //         }
+    //     }
 
-        focus_notification_event event{{{}, input_event_type::FOCUS_GAIN}};
-        deliver_input_event(sys, element.widget, event);
-    }
+    //     focus_notification_event event{{{}, input_event_type::FOCUS_GAIN}};
+    //     deliver_input_event(sys, element.widget, event);
+    // }
 }
 
 void
-focus_on_click(ui_event_context ctx, internal_element_ref element)
+focus_on_click(dataless_ui_context ctx, internal_element_id element)
 {
     mouse_button_event* event;
     if (is_element_hot(ctx, element) && detect_event(ctx, &event)
@@ -118,7 +121,7 @@ focus_on_click(ui_event_context ctx, internal_element_ref element)
 }
 
 bool
-detect_focus_gain(ui_event_context ctx, internal_element_ref)
+detect_focus_gain(dataless_ui_context ctx, internal_element_id)
 {
     focus_notification_event* event;
     return detect_event(ctx, &event)
@@ -126,7 +129,7 @@ detect_focus_gain(ui_event_context ctx, internal_element_ref)
 }
 
 bool
-detect_focus_loss(ui_event_context ctx, internal_element_ref)
+detect_focus_loss(dataless_ui_context ctx, internal_element_id)
 {
     focus_notification_event* event;
     return detect_event(ctx, &event)
@@ -134,7 +137,7 @@ detect_focus_loss(ui_event_context ctx, internal_element_ref)
 }
 
 std::optional<modded_key>
-detect_key_press(ui_event_context ctx, internal_element_ref element)
+detect_key_press(dataless_ui_context ctx, internal_element_id element)
 {
     focus_on_click(ctx, element);
 
@@ -149,7 +152,7 @@ detect_key_press(ui_event_context ctx, internal_element_ref element)
 }
 
 std::optional<modded_key>
-detect_key_press(ui_event_context ctx)
+detect_key_press(dataless_ui_context ctx)
 {
     key_event* event;
     if (detect_event(ctx, &event)
@@ -163,8 +166,8 @@ detect_key_press(ui_event_context ctx)
 
 bool
 detect_key_press(
-    ui_event_context ctx,
-    internal_element_ref element,
+    dataless_ui_context ctx,
+    internal_element_id element,
     key_code code,
     key_modifiers modifiers)
 {
@@ -178,7 +181,7 @@ detect_key_press(
 }
 
 std::optional<modded_key>
-detect_key_release(ui_event_context ctx, internal_element_ref element)
+detect_key_release(dataless_ui_context ctx, internal_element_id element)
 {
     focus_on_click(ctx, element);
 
@@ -194,8 +197,8 @@ detect_key_release(ui_event_context ctx, internal_element_ref element)
 
 bool
 detect_key_release(
-    ui_event_context ctx,
-    internal_element_ref element,
+    dataless_ui_context ctx,
+    internal_element_id element,
     key_code code,
     key_modifiers modifiers)
 {
@@ -210,9 +213,9 @@ detect_key_release(
 
 bool
 detect_keyboard_click(
-    ui_event_context ctx,
+    dataless_ui_context ctx,
     keyboard_click_state& state,
-    internal_element_ref element,
+    internal_element_id element,
     key_code code,
     key_modifiers modifiers)
 {

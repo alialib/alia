@@ -6,7 +6,7 @@ void
 hit_test_box(
     hit_test_base& test,
     vector<2, double> const& point,
-    internal_element_ref element,
+    internal_element_id element,
     layout_box const& box,
     mouse_cursor cursor)
 {

@@ -2,7 +2,8 @@
 #define ALIA_UI_SYSTEM_API_HPP
 
 #include <alia/core/flow/events.hpp>
-#include <alia/ui/widget.hpp>
+#include <alia/ui/context.hpp>
+#include <alia/ui/events.hpp>
 
 namespace alia {
 
@@ -120,7 +121,7 @@ get_last_refresh_duration(ui_system& ui);
 void
 set_system_style(ui_system& system, alia__shared_ptr<style_tree> const& style);
 
-static inline void
+inline void
 on_ui_style_change(ui_system& system)
 {
     inc_version(system.style.id);
@@ -130,11 +131,11 @@ on_ui_style_change(ui_system& system)
 
 // Set the widget that has the mouse captured.
 void
-set_element_with_capture(ui_system& ui, external_element_ref element);
+set_element_with_capture(ui_system& ui, external_element_id element);
 
 // Set the widget that's under the mouse.
 void
-set_hot_element(ui_system& ui, external_element_ref element);
+set_hot_element(ui_system& ui, external_element_id element);
 
 } // namespace alia
 

@@ -25,7 +25,7 @@
 bool
 SkLoadICU();
 #else
-static inline bool
+inline bool
 SkLoadICU()
 {
     return true;
@@ -36,14 +36,13 @@ SkLoadICU()
 
 #pragma warning(pop)
 
-#include <alia/ui/events/input.hpp>
+#include <alia/ui/events.hpp>
 #include <alia/ui/layout/system.hpp>
 #include <alia/ui/system/api.hpp>
 #include <alia/ui/system/input_processing.hpp>
 #include <alia/ui/system/object.hpp>
 #include <alia/ui/system/os_interface.hpp>
 #include <alia/ui/system/window_interface.hpp>
-#include <alia/ui/widget.hpp>
 
 #include <chrono>
 
@@ -271,6 +270,7 @@ render_ui(glfw_window_impl& impl)
         = std::chrono::steady_clock::now();
 
     auto& canvas = *impl.skia_surface->getCanvas();
+    canvas.resetMatrix();
     canvas.clipRect(SkRect::MakeWH(SkScalar(width), SkScalar(height)));
 
     // TODO: Don't clear automatically.
@@ -280,17 +280,20 @@ render_ui(glfw_window_impl& impl)
         canvas.drawPaint(paint);
     }
 
-    if (impl.system.root_widget)
     {
         render_event event;
         event.canvas = impl.skia_surface->getCanvas();
-        event.sys = &impl.system;
-        impl.system.root_widget->render(event);
+        dispatch_event(impl.system, event);
     }
-    else
-    {
-        // TODO: Clear the canvas?
-    }
+
+    // if (impl.system.root_widget)
+    // {
+    //     impl.system.root_widget->render(event);
+    // }
+    // else
+    // {
+    //     // TODO: Clear the canvas?
+    // }
 
     {
         std::chrono::steady_clock::time_point end
@@ -342,7 +345,7 @@ update_ui(glfw_window_impl& impl)
     }
 
     resolve_layout(
-        impl.system.root_widget, make_vector(float(width), float(height)));
+        impl.system.layout, make_vector(float(width), float(height)));
 
     // Increment the refresh counter immediately after resolving layout so
     // that any changes detected after this will be associated with the new

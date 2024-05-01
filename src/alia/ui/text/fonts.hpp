@@ -1,6 +1,9 @@
 #ifndef ALIA_UI_TEXT_FONTS_HPP
 #define ALIA_UI_TEXT_FONTS_HPP
 
+#include <string>
+
+#include <include/core/SkFont.h>
 #include <include/core/SkFontMgr.h>
 
 namespace alia {
