@@ -78,7 +78,7 @@ update(ui_system& ui)
     // Determine which widget is under the mouse cursor.
     if (ui.input.mouse_inside_window)
     {
-        mouse_hit_test hit_test(ui.input.mouse_position);
+        mouse_hit_test_event hit_test(ui.input.mouse_position);
         dispatch_event(ui, hit_test);
         if (hit_test.result)
         {

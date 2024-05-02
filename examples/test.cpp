@@ -11,6 +11,7 @@
 #include <alia/ui/utilities/hit_testing.hpp>
 #include <alia/ui/utilities/keyboard.hpp>
 #include <alia/ui/utilities/mouse.hpp>
+#include <alia/ui/utilities/regions.hpp>
 #include <alia/ui/utilities/scrolling.hpp>
 
 #include <color/color.hpp>
@@ -331,17 +332,21 @@ do_box(
     }
 
     {
-        mouse_hit_test* event;
-        if (detect_event(ctx, &event))
-        {
-            auto const& region = data.layout_node.assignment().region;
-            hit_test_box(
-                *event,
-                event->point,
-                internal_element_id{id, 0},
-                region,
-                mouse_cursor::DEFAULT);
-        }
+        do_box_region(
+            ctx,
+            internal_element_id{id, 0},
+            box<2, double>(data.layout_node.assignment().region));
+        // mouse_hit_test* event;
+        // if (detect_event(ctx, &event))
+        // {
+        //     auto const& region = data.layout_node.assignment().region;
+        //     hit_test_box(
+        //         *event,
+        //         event->point,
+        //         internal_element_id{id, 0},
+        //         region,
+        //         mouse_cursor::DEFAULT);
+        // }
     }
 
     {

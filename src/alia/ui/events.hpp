@@ -69,6 +69,7 @@ externalize(internal_element_id element)
 // implementations.)
 enum class ui_event_category
 {
+    NONE,
     REGION,
     INPUT,
     RENDER
@@ -76,6 +77,8 @@ enum class ui_event_category
 
 enum class ui_event_type
 {
+    NONE,
+
     // rendering
     RENDER,
 
@@ -110,55 +113,70 @@ enum class ui_event_type
     SCROLL,
 };
 
-struct ui_event : targeted_event
+struct ui_event
 {
     ui_event_category category;
     ui_event_type type;
 };
 
+struct targeted_input_event : ui_event, targeted_event
+{
+    targeted_input_event(ui_event_type type)
+        : ui_event{ui_event_category::INPUT, type}
+    {
+    }
+};
+
 // MOUSE_PRESS, DOUBLE_CLICK, and MOUSE_RELEASE
-struct mouse_button_event : ui_event
+struct mouse_button_event : targeted_input_event
 {
     mouse_button button;
 };
 
 // MOUSE_MOTION
-struct mouse_motion_event : ui_event
+struct mouse_motion_event : targeted_input_event
 {
     vector<2, double> position;
 };
 
 // MOUSE_GAIN, MOUSE_LOSS, and MOUSE_HOVER
-struct mouse_notification_event : ui_event
+struct mouse_notification_event : targeted_input_event
 {
 };
 
 // SCROLL
-struct scroll_event : ui_event
+struct scroll_event : targeted_input_event
 {
     vector<2, double> delta;
 };
 
 // TEXT_INPUT
-struct text_ui_event : ui_event
+struct text_ui_event : targeted_input_event
 {
     std::string text;
 };
 
 // KEY_PRESS and KEY_RELEASE
-struct key_event : ui_event
+struct key_event : targeted_input_event
+{
+    modded_key key;
+    bool acknowledged = false;
+};
+
+// KEY_PRESS and KEY_RELEASE
+struct background_key_event : ui_event
 {
     modded_key key;
     bool acknowledged = false;
 };
 
 // FOCUS_GAIN and FOCUS_LOSS
-struct focus_notification_event : ui_event
+struct focus_notification_event : targeted_input_event
 {
 };
 
 // FOCUS_SUCCESSOR
-struct focus_successor_event : ui_event
+struct focus_successor_event : targeted_input_event
 {
     internal_element_id target;
     internal_element_id successor;
@@ -166,7 +184,7 @@ struct focus_successor_event : ui_event
 };
 
 // FOCUS_PREDECESSOR
-struct focus_predecessor_event : ui_event
+struct focus_predecessor_event : targeted_input_event
 {
     internal_element_id target;
     internal_element_id predecessor;
