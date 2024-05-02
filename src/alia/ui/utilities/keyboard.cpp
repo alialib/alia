@@ -75,7 +75,7 @@ set_focus(ui_system& sys, external_element_id element)
         // here just to be safe.
         refresh_system(sys);
 
-        focus_notification_event event{{{}, input_event_type::FOCUS_LOSS}};
+        focus_notification_event event{{ui_event_type::FOCUS_LOSS}};
         dispatch_targeted_event(
             sys, event, sys.input.element_with_focus.component);
     }
@@ -103,7 +103,7 @@ set_focus(ui_system& sys, external_element_id element)
     //         }
     //     }
 
-    //     focus_notification_event event{{{}, input_event_type::FOCUS_GAIN}};
+    //     focus_notification_event event{{{}, ui_event_type::FOCUS_GAIN}};
     //     deliver_input_event(sys, element.widget, event);
     // }
 }
@@ -113,8 +113,8 @@ focus_on_click(dataless_ui_context ctx, internal_element_id element)
 {
     mouse_button_event* event;
     if (is_element_hot(ctx, element) && detect_event(ctx, &event)
-        && (event->type == input_event_type::MOUSE_PRESS
-            || event->type == input_event_type::DOUBLE_CLICK))
+        && (event->type == ui_event_type::MOUSE_PRESS
+            || event->type == ui_event_type::DOUBLE_CLICK))
     {
         set_focus(get_system(ctx), externalize(element));
     }
@@ -125,7 +125,7 @@ detect_focus_gain(dataless_ui_context ctx, internal_element_id)
 {
     focus_notification_event* event;
     return detect_event(ctx, &event)
-           && event->type == input_event_type::FOCUS_GAIN;
+           && event->type == ui_event_type::FOCUS_GAIN;
 }
 
 bool
@@ -133,7 +133,7 @@ detect_focus_loss(dataless_ui_context ctx, internal_element_id)
 {
     focus_notification_event* event;
     return detect_event(ctx, &event)
-           && event->type == input_event_type::FOCUS_LOSS;
+           && event->type == ui_event_type::FOCUS_LOSS;
 }
 
 std::optional<modded_key>
@@ -143,7 +143,7 @@ detect_key_press(dataless_ui_context ctx, internal_element_id element)
 
     key_event* event;
     if (element_has_focus(ctx, element) && detect_event(ctx, &event)
-        && event->type == input_event_type::KEY_PRESS)
+        && event->type == ui_event_type::KEY_PRESS)
     {
         if (!event->acknowledged)
             return event->key;
@@ -156,7 +156,7 @@ detect_key_press(dataless_ui_context ctx)
 {
     key_event* event;
     if (detect_event(ctx, &event)
-        && event->type == input_event_type::BACKGROUND_KEY_PRESS)
+        && event->type == ui_event_type::BACKGROUND_KEY_PRESS)
     {
         if (!event->acknowledged)
             return event->key;
@@ -187,7 +187,7 @@ detect_key_release(dataless_ui_context ctx, internal_element_id element)
 
     key_event* event;
     if (element_has_focus(ctx, element) && detect_event(ctx, &event)
-        && event->type == input_event_type::KEY_RELEASE)
+        && event->type == ui_event_type::KEY_RELEASE)
     {
         if (!event->acknowledged)
             return event->key;

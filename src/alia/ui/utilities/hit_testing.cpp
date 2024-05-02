@@ -1,10 +1,11 @@
+#include "alia/ui/events.hpp"
 #include <alia/ui/utilities/hit_testing.hpp>
 
 namespace alia {
 
 void
 hit_test_box(
-    hit_test_base& test,
+    hit_test_event& test,
     vector<2, double> const& point,
     internal_element_id element,
     layout_box const& box,
@@ -12,9 +13,9 @@ hit_test_box(
 {
     if (is_inside(box, vector<2, float>(point)))
     {
-        if (test.type == hit_test_type::MOUSE)
+        if (test.type == ui_event_type::MOUSE_HIT_TEST)
         {
-            static_cast<mouse_hit_test&>(test).result
+            static_cast<mouse_hit_test_event&>(test).result
                 = mouse_hit_test_result{externalize(element), cursor, box, ""};
         }
     }

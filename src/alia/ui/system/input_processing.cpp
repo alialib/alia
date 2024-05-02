@@ -26,8 +26,7 @@ process_mouse_motion(ui_system& ui, vector<2, double> const& position)
 {
     if (!ui.input.mouse_inside_window || ui.input.mouse_position != position)
     {
-        mouse_motion_event event{
-            {{}, input_event_type::MOUSE_MOTION}, position};
+        mouse_motion_event event{{ui_event_type::MOUSE_MOTION}, position};
         dispatch_targeted_event(ui, event, get_mouse_target(ui).component);
 
         ui.input.mouse_position = position;
@@ -50,7 +49,7 @@ process_mouse_press(ui_system& ui, mouse_button button, key_modifiers)
     auto target = get_mouse_target(ui);
     if (target)
     {
-        mouse_button_event event{{{}, input_event_type::MOUSE_PRESS}, button};
+        mouse_button_event event{{ui_event_type::MOUSE_PRESS}, button};
         dispatch_targeted_event(ui, event, target.component);
     }
     else
@@ -67,8 +66,7 @@ process_mouse_release(ui_system& ui, mouse_button button)
     auto target = get_mouse_target(ui);
     if (target)
     {
-        mouse_button_event event{
-            {{}, input_event_type::MOUSE_RELEASE}, button};
+        mouse_button_event event{{ui_event_type::MOUSE_RELEASE}, button};
         dispatch_targeted_event(ui, event, target.component);
     }
     ui.input.mouse_button_state &= ~(1 << int(button));
@@ -85,7 +83,7 @@ process_double_click(ui_system& ui, mouse_button button)
     auto target = get_mouse_target(ui);
     if (target)
     {
-        mouse_button_event event{{{}, input_event_type::DOUBLE_CLICK}, button};
+        mouse_button_event event{{ui_event_type::DOUBLE_CLICK}, button};
         dispatch_targeted_event(ui, event, target.component);
     }
     ui.input.mouse_button_state |= 1 << int(button);
@@ -128,7 +126,7 @@ process_scroll(ui_system& /*ui*/, vector<2, double> const& /*delta*/)
     // ui.root_widget->hit_test(hit_test, ui.input.mouse_position);
     // if (hit_test.result)
     // {
-    //     scroll_event event{{{}, input_event_type::SCROLL}, delta};
+    //     scroll_event event{{{}, ui_event_type::SCROLL}, delta};
     //     deliver_input_event(ui, hit_test.result->widget, event);
     // }
 }
@@ -137,7 +135,7 @@ bool
 process_focused_key_press(ui_system& /*ui*/, modded_key const& /*info*/)
 {
     // TODO
-    // key_event event{{{}, input_event_type::KEY_PRESS}, info};
+    // key_event event{{{}, ui_event_type::KEY_PRESS}, info};
     // auto target = ui.input.element_with_focus.widget.lock();
     // deliver_input_event(ui, target, event);
     // return event.acknowledged;
@@ -148,7 +146,7 @@ bool
 process_background_key_press(ui_system& /*ui*/, modded_key const& /*info*/)
 {
     // TODO
-    // key_event event{{{}, input_event_type::BACKGROUND_KEY_PRESS}, info};
+    // key_event event{{{}, ui_event_type::BACKGROUND_KEY_PRESS}, info};
     // event_delivery_fixture<key_event> fixture(ui);
     // auto focus = ui.input.element_with_focus.widget.lock();
     // widget* target = focus.get();
@@ -165,7 +163,7 @@ bool
 process_focused_key_release(ui_system& /*ui*/, modded_key const& /*info*/)
 {
     // TODO
-    // key_event event{{{}, input_event_type::KEY_RELEASE}, info};
+    // key_event event{{{}, ui_event_type::KEY_RELEASE}, info};
     // auto target = ui.input.element_with_focus.widget.lock();
     // deliver_input_event(ui, target, event);
     // return event.acknowledged;
