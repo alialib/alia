@@ -56,8 +56,8 @@ detect_mouse_press(dataless_ui_context ctx, mouse_button button)
 {
     mouse_button_event* event;
     return detect_event(ctx, &event) && event->button == button
-           && (event->type == input_event_type::MOUSE_PRESS
-               || event->type == input_event_type::DOUBLE_CLICK);
+           && (event->type == ui_event_type::MOUSE_PRESS
+               || event->type == ui_event_type::DOUBLE_CLICK);
 }
 
 bool
@@ -80,7 +80,7 @@ detect_mouse_release(dataless_ui_context ctx, mouse_button button)
 {
     mouse_button_event* event;
     return detect_event(ctx, &event) && event->button == button
-           && event->type == input_event_type::MOUSE_RELEASE;
+           && event->type == ui_event_type::MOUSE_RELEASE;
 }
 
 bool
@@ -104,7 +104,7 @@ detect_double_click(dataless_ui_context ctx, mouse_button button)
 {
     mouse_button_event* event;
     return detect_event(ctx, &event) && event->button == button
-           && event->type == input_event_type::DOUBLE_CLICK;
+           && event->type == ui_event_type::DOUBLE_CLICK;
 }
 
 bool

@@ -2,6 +2,7 @@
 #define ALIA_UI_CONTEXT_HPP
 
 #include <alia/core/context/interface.hpp>
+#include <alia/ui/events.hpp>
 #include <alia/ui/layout/geometry.hpp>
 #include <alia/ui/layout/traversal.hpp>
 
@@ -70,6 +71,17 @@ inline geometry_context&
 get_geometry_context(dataless_ui_context ctx)
 {
     return *get<ui_traversal_tag>(ctx).layout.geometry;
+}
+
+inline ui_event_type
+get_event_type(dataless_ui_context ctx)
+{
+    // TODO: Store this directly in the traversal?
+    ui_event* event;
+    if (detect_event(ctx, &event))
+        return event->type;
+
+    return ui_event_type::NONE;
 }
 
 } // namespace alia

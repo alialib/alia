@@ -68,6 +68,14 @@ traversal_was_aborted(dataless_core_context ctx)
 }
 
 template<class Event>
+Event&
+cast_event(dataless_core_context ctx)
+{
+    event_traversal& traversal = get_event_traversal(ctx);
+    return *reinterpret_cast<Event*>(traversal.event);
+}
+
+template<class Event>
 bool
 detect_event(dataless_core_context ctx, Event** event)
 {
