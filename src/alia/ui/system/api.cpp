@@ -79,7 +79,7 @@ update(ui_system& ui)
     if (ui.input.mouse_inside_window)
     {
         mouse_hit_test_event hit_test(ui.input.mouse_position);
-        dispatch_event(ui, hit_test);
+        dispatch_event(ui, hit_test, MOUSE_HIT_TEST_EVENT);
         if (hit_test.result)
         {
             set_hot_element(ui, hit_test.result->element);

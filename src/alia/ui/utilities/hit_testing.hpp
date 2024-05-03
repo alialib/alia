@@ -10,13 +10,13 @@
 namespace alia {
 
 // Perform mouse hit testing on a box.
-void
-hit_test_box(
-    hit_test_event& test,
-    vector<2, double> const& point,
-    internal_element_id element,
-    layout_box const& box,
-    mouse_cursor cursor = mouse_cursor::DEFAULT);
+// void
+// hit_test_box(
+//     hit_test_event& test,
+//     vector<2, double> const& point,
+//     internal_element_id element,
+//     layout_box const& box,
+//     mouse_cursor cursor = mouse_cursor::DEFAULT);
 
 } // namespace alia
 

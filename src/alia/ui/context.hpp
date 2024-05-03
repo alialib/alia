@@ -73,17 +73,6 @@ get_geometry_context(dataless_ui_context ctx)
     return *get<ui_traversal_tag>(ctx).layout.geometry;
 }
 
-inline ui_event_type
-get_event_type(dataless_ui_context ctx)
-{
-    // TODO: Store this directly in the traversal?
-    ui_event* event;
-    if (detect_event(ctx, &event))
-        return event->type;
-
-    return ui_event_type::NONE;
-}
-
 } // namespace alia
 
 #endif

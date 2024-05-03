@@ -1,6 +1,6 @@
-#include "alia/ui/events.hpp"
 #include <alia/ui/utilities/regions.hpp>
 
+#include <alia/ui/events.hpp>
 #include <alia/ui/system/object.hpp>
 #include <alia/ui/utilities/mouse.hpp>
 
@@ -24,7 +24,7 @@ handle_mouse_hit(
     hit_test_flag_set flags,
     mouse_cursor cursor)
 {
-    if (get_event_type(ctx) == ui_event_type::MOUSE_HIT_TEST
+    if (get_event_type(ctx) == MOUSE_HIT_TEST_EVENT
         && (flags & HIT_TEST_MOUSE))
     {
         auto& e = cast_event<mouse_hit_test_event>(ctx);
@@ -35,7 +35,7 @@ handle_mouse_hit(
             ""};
     }
     else if (
-        get_event_type(ctx) == ui_event_type::WHEEL_HIT_TEST
+        get_event_type(ctx) == WHEEL_HIT_TEST_EVENT
         && (flags & HIT_TEST_WHEEL))
     {
         auto& e = cast_event<wheel_hit_test_event>(ctx);
@@ -100,10 +100,10 @@ do_box_region(
 {
     switch (get_event_type(ctx))
     {
-        case ui_event_type::MOUSE_HIT_TEST:
+        case MOUSE_HIT_TEST_EVENT:
             hit_test_box_region(ctx, id, region, HIT_TEST_MOUSE, cursor);
             break;
-        case ui_event_type::MAKE_WIDGET_VISIBLE:
+        case MAKE_WIDGET_VISIBLE_EVENT:
             // handle_region_visibility(ctx, id, region);
             break;
     }
@@ -118,10 +118,10 @@ do_box_region(
 {
     switch (get_event_type(ctx))
     {
-        case ui_event_type::MOUSE_HIT_TEST:
+        case MOUSE_HIT_TEST_EVENT:
             hit_test_box_region(ctx, id, region, HIT_TEST_MOUSE, cursor);
             break;
-        case ui_event_type::MAKE_WIDGET_VISIBLE:
+        case MAKE_WIDGET_VISIBLE_EVENT:
             // handle_region_visibility(ctx, id, region);
             break;
     }

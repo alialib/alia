@@ -1,3 +1,4 @@
+#include "alia/core/context/interface.hpp"
 #include <alia/ui/system/object.hpp>
 
 #include <alia/ui/context.hpp>
@@ -89,6 +90,7 @@ ui_system::invoke_controller(vanilla_ui_context vanilla_ctx)
     }
 
     ui_traversal traversal;
+
     initialize_layout_traversal(
         this->layout,
         traversal.layout,

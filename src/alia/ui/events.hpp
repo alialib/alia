@@ -64,138 +64,11 @@ externalize(internal_element_id element)
     return external_element_id{externalize(element.component), element.index};
 }
 
-// general categories of UI events recognized by alia
-// (This can be useful as a primary dispatching criteria in widget
-// implementations.)
-enum class ui_event_category
-{
-    NONE,
-    REGION,
-    INPUT,
-    RENDER
-};
+ALIA_DEFINE_EVENT_CATEGORY(REGION_CATEGORY, 0x10)
 
-enum class ui_event_type
-{
-    NONE,
+ALIA_DEFINE_EVENT_TYPE_CODE(REGION_CATEGORY, MAKE_WIDGET_VISIBLE_EVENT, 0)
 
-    // rendering
-    RENDER,
-
-    // regions
-    MAKE_WIDGET_VISIBLE,
-    MOUSE_HIT_TEST,
-    WHEEL_HIT_TEST,
-
-    // keyboard
-    TEXT_INPUT,
-    KEY_PRESS,
-    KEY_RELEASE,
-    BACKGROUND_KEY_PRESS,
-    BACKGROUND_KEY_RELEASE,
-
-    // focus
-    FOCUS_SUCCESSOR,
-    FOCUS_PREDECESSOR,
-    FOCUS_GAIN,
-    FOCUS_LOSS,
-
-    // mouse
-    MOUSE_PRESS,
-    DOUBLE_CLICK,
-    MOUSE_RELEASE,
-    MOUSE_MOTION,
-    MOUSE_GAIN,
-    MOUSE_LOSS,
-    MOUSE_HOVER,
-
-    // scrolling (via the mouse wheel, gesture, etc.)
-    SCROLL,
-};
-
-struct ui_event
-{
-    ui_event_category category;
-    ui_event_type type;
-};
-
-struct targeted_input_event : ui_event, targeted_event
-{
-    targeted_input_event(ui_event_type type)
-        : ui_event{ui_event_category::INPUT, type}
-    {
-    }
-};
-
-// MOUSE_PRESS, DOUBLE_CLICK, and MOUSE_RELEASE
-struct mouse_button_event : targeted_input_event
-{
-    mouse_button button;
-};
-
-// MOUSE_MOTION
-struct mouse_motion_event : targeted_input_event
-{
-    vector<2, double> position;
-};
-
-// MOUSE_GAIN, MOUSE_LOSS, and MOUSE_HOVER
-struct mouse_notification_event : targeted_input_event
-{
-};
-
-// SCROLL
-struct scroll_event : targeted_input_event
-{
-    vector<2, double> delta;
-};
-
-// TEXT_INPUT
-struct text_ui_event : targeted_input_event
-{
-    std::string text;
-};
-
-// KEY_PRESS and KEY_RELEASE
-struct key_event : targeted_input_event
-{
-    modded_key key;
-    bool acknowledged = false;
-};
-
-// KEY_PRESS and KEY_RELEASE
-struct background_key_event : ui_event
-{
-    modded_key key;
-    bool acknowledged = false;
-};
-
-// FOCUS_GAIN and FOCUS_LOSS
-struct focus_notification_event : targeted_input_event
-{
-};
-
-// FOCUS_SUCCESSOR
-struct focus_successor_event : targeted_input_event
-{
-    internal_element_id target;
-    internal_element_id successor;
-    bool just_saw_target = false;
-};
-
-// FOCUS_PREDECESSOR
-struct focus_predecessor_event : targeted_input_event
-{
-    internal_element_id target;
-    internal_element_id predecessor;
-    bool saw_target = false;
-};
-
-struct hit_test_event : ui_event
-{
-    // the point to test
-    vector<2, double> point;
-};
+ALIA_DEFINE_EVENT_TYPE_CODE(REGION_CATEGORY, MOUSE_HIT_TEST_EVENT, 1)
 
 struct mouse_hit_test_result
 {
@@ -205,31 +78,110 @@ struct mouse_hit_test_result
     std::string tooltip_message;
 };
 
-// MOUSE_HIT_TEST
-struct mouse_hit_test_event : hit_test_event
+struct mouse_hit_test_event
 {
-    std::optional<mouse_hit_test_result> result;
+    // the point to test
+    vector<2, double> point;
 
-    mouse_hit_test_event(vector<2, double> point)
-        : hit_test_event{
-              {ui_event_category::REGION, ui_event_type::MOUSE_HIT_TEST},
-              point}
-    {
-    }
+    std::optional<mouse_hit_test_result> result;
 };
+
+ALIA_DEFINE_EVENT_TYPE_CODE(REGION_CATEGORY, WHEEL_HIT_TEST_EVENT, 2)
 
 // WHEEL_HIT_TEST
-struct wheel_hit_test_event : hit_test_event
+struct wheel_hit_test_event
 {
-    std::optional<external_element_id> result;
+    // the point to test
+    vector<2, double> point;
 
-    wheel_hit_test_event(vector<2, double> point)
-        : hit_test_event{
-              {ui_event_category::REGION, ui_event_type::WHEEL_HIT_TEST},
-              point}
-    {
-    }
+    std::optional<external_element_id> result;
 };
+
+ALIA_DEFINE_EVENT_CATEGORY(INPUT_CATEGORY, 0x11)
+
+ALIA_DEFINE_EVENT_TYPE_CODE(INPUT_CATEGORY, TEXT_INPUT_EVENT, 0x00)
+
+struct text_input_event : targeted_event
+{
+    std::string text;
+};
+
+ALIA_DEFINE_EVENT_TYPE_CODE(INPUT_CATEGORY, KEY_PRESS_EVENT, 0x01)
+ALIA_DEFINE_EVENT_TYPE_CODE(INPUT_CATEGORY, KEY_RELEASE_EVENT, 0x02)
+
+struct key_event : targeted_event
+{
+    modded_key key;
+    bool acknowledged = false;
+};
+
+ALIA_DEFINE_EVENT_TYPE_CODE(INPUT_CATEGORY, BACKGROUND_KEY_PRESS_EVENT, 0x03)
+ALIA_DEFINE_EVENT_TYPE_CODE(INPUT_CATEGORY, BACKGROUND_KEY_RELEASE_EVENT, 0x04)
+
+struct background_key_event
+{
+    modded_key key;
+    bool acknowledged = false;
+};
+
+ALIA_DEFINE_EVENT_TYPE_CODE(INPUT_CATEGORY, FOCUS_GAIN_EVENT, 0x10)
+ALIA_DEFINE_EVENT_TYPE_CODE(INPUT_CATEGORY, FOCUS_LOSS_EVENT, 0x11)
+
+struct focus_notification_event : targeted_event
+{
+};
+
+ALIA_DEFINE_EVENT_TYPE_CODE(INPUT_CATEGORY, FOCUS_SUCCESSOR_EVENT, 0x12)
+
+struct focus_successor_event : targeted_event
+{
+    internal_element_id target;
+    internal_element_id successor;
+    bool just_saw_target = false;
+};
+
+ALIA_DEFINE_EVENT_TYPE_CODE(INPUT_CATEGORY, FOCUS_PREDECESSOR_EVENT, 0x13)
+
+struct focus_predecessor_event : targeted_event
+{
+    internal_element_id target;
+    internal_element_id predecessor;
+    bool saw_target = false;
+};
+
+ALIA_DEFINE_EVENT_TYPE_CODE(INPUT_CATEGORY, MOUSE_PRESS_EVENT, 0x20)
+ALIA_DEFINE_EVENT_TYPE_CODE(INPUT_CATEGORY, DOUBLE_CLICK_EVENT, 0x21)
+ALIA_DEFINE_EVENT_TYPE_CODE(INPUT_CATEGORY, MOUSE_RELEASE_EVENT, 0x22)
+
+struct mouse_button_event : targeted_event
+{
+    mouse_button button;
+};
+
+ALIA_DEFINE_EVENT_TYPE_CODE(INPUT_CATEGORY, MOUSE_MOTION_EVENT, 0x23)
+
+struct mouse_motion_event : targeted_event
+{
+    vector<2, double> position;
+};
+
+ALIA_DEFINE_EVENT_TYPE_CODE(INPUT_CATEGORY, MOUSE_GAIN_EVENT, 0x24)
+ALIA_DEFINE_EVENT_TYPE_CODE(INPUT_CATEGORY, MOUSE_LOSS_EVENT, 0x25)
+ALIA_DEFINE_EVENT_TYPE_CODE(INPUT_CATEGORY, MOUSE_HOVER_EVENT, 0x26)
+
+struct mouse_notification_event : targeted_event
+{
+};
+
+ALIA_DEFINE_EVENT_TYPE_CODE(INPUT_CATEGORY, SCROLL_EVENT, 0x30)
+
+struct scroll_event : targeted_event
+{
+    vector<2, double> delta;
+};
+
+ALIA_DEFINE_EVENT_CATEGORY(RENDER_CATEGORY, 0x12)
+ALIA_DEFINE_EVENT_TYPE_CODE(RENDER_CATEGORY, RENDER_EVENT, 0)
 
 struct render_event
 {
