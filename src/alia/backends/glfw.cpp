@@ -283,7 +283,7 @@ render_ui(glfw_window_impl& impl)
     {
         render_event event;
         event.canvas = impl.skia_surface->getCanvas();
-        dispatch_event(impl.system, event);
+        dispatch_event(impl.system, event, RENDER_EVENT);
     }
 
     // if (impl.system.root_widget)

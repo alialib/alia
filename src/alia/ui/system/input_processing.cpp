@@ -26,8 +26,11 @@ process_mouse_motion(ui_system& ui, vector<2, double> const& position)
 {
     if (!ui.input.mouse_inside_window || ui.input.mouse_position != position)
     {
-        mouse_motion_event event{{ui_event_type::MOUSE_MOTION}, position};
-        dispatch_targeted_event(ui, event, get_mouse_target(ui).component);
+        mouse_motion_event event;
+        // TODO: Use constructor
+        event.position = position;
+        dispatch_targeted_event(
+            ui, event, get_mouse_target(ui).component, MOUSE_MOTION_EVENT);
 
         ui.input.mouse_position = position;
         ui.input.mouse_inside_window = true;
@@ -49,8 +52,11 @@ process_mouse_press(ui_system& ui, mouse_button button, key_modifiers)
     auto target = get_mouse_target(ui);
     if (target)
     {
-        mouse_button_event event{{ui_event_type::MOUSE_PRESS}, button};
-        dispatch_targeted_event(ui, event, target.component);
+        mouse_button_event event;
+        // TODO: Use constructor
+        event.button = button;
+        dispatch_targeted_event(
+            ui, event, target.component, MOUSE_PRESS_EVENT);
     }
     else
     {
@@ -66,8 +72,11 @@ process_mouse_release(ui_system& ui, mouse_button button)
     auto target = get_mouse_target(ui);
     if (target)
     {
-        mouse_button_event event{{ui_event_type::MOUSE_RELEASE}, button};
-        dispatch_targeted_event(ui, event, target.component);
+        mouse_button_event event;
+        // TODO: Use constructor
+        event.button = button;
+        dispatch_targeted_event(
+            ui, event, target.component, MOUSE_RELEASE_EVENT);
     }
     ui.input.mouse_button_state &= ~(1 << int(button));
     if (ui.input.mouse_button_state == 0)
@@ -83,8 +92,11 @@ process_double_click(ui_system& ui, mouse_button button)
     auto target = get_mouse_target(ui);
     if (target)
     {
-        mouse_button_event event{{ui_event_type::DOUBLE_CLICK}, button};
-        dispatch_targeted_event(ui, event, target.component);
+        mouse_button_event event;
+        // TODO: Use constructor
+        event.button = button;
+        dispatch_targeted_event(
+            ui, event, target.component, DOUBLE_CLICK_EVENT);
     }
     ui.input.mouse_button_state |= 1 << int(button);
     ui.input.keyboard_interaction = false;

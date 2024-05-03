@@ -26,6 +26,17 @@
 
 namespace alia {
 
+using event_type_code = uint32_t;
+
+inline constexpr event_type_code EVENT_CATEGORY_BIT_OFFSET = 16;
+
+#define ALIA_DEFINE_EVENT_CATEGORY(id, code)                                  \
+    inline constexpr event_type_code id = code;
+
+#define ALIA_DEFINE_EVENT_TYPE_CODE(category, id, code)                       \
+    inline constexpr event_type_code id                                       \
+        = (category << EVENT_CATEGORY_BIT_OFFSET) | code;
+
 struct system;
 
 struct event_routing_path
@@ -40,6 +51,7 @@ struct event_traversal
     bool targeted;
     event_routing_path* path_to_target = nullptr;
     bool is_refresh;
+    int type_code = 0;
     std::type_info const* event_type;
     void* event;
     bool aborted = false;
@@ -73,6 +85,21 @@ cast_event(dataless_core_context ctx)
 {
     event_traversal& traversal = get_event_traversal(ctx);
     return *reinterpret_cast<Event*>(traversal.event);
+}
+
+ALIA_DEFINE_EVENT_CATEGORY(NO_CATEGORY, 0)
+ALIA_DEFINE_EVENT_TYPE_CODE(NO_CATEGORY, UNRECOGNIZED_EVENT, 0)
+
+inline event_type_code
+get_event_category(dataless_core_context ctx)
+{
+    return get_event_traversal(ctx).type_code >> EVENT_CATEGORY_BIT_OFFSET;
+}
+
+inline event_type_code
+get_event_type(dataless_core_context ctx)
+{
+    return get_event_traversal(ctx).type_code;
 }
 
 template<class Event>

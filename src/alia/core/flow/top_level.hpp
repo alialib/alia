@@ -26,7 +26,10 @@ route_event(
 template<class Event>
 void
 dispatch_targeted_event(
-    untyped_system& sys, Event& event, component_identity const& target)
+    untyped_system& sys,
+    Event& event,
+    component_identity const& target,
+    event_type_code type_code = 0)
 {
     // `target` is a weak_ptr, so we have to acquire a lock on it. It's
     // possible that the target has actually been destroyed and we're trying to
@@ -36,6 +39,7 @@ dispatch_targeted_event(
     {
         event_traversal traversal;
         traversal.targeted = true;
+        traversal.type_code = type_code;
         traversal.event_type = &typeid(Event);
         traversal.event = &event;
         route_event(sys, traversal, target_container.get());
@@ -44,10 +48,12 @@ dispatch_targeted_event(
 
 template<class Event>
 void
-dispatch_untargeted_event(untyped_system& sys, Event& event)
+dispatch_untargeted_event(
+    untyped_system& sys, Event& event, event_type_code type_code = 0)
 {
     event_traversal traversal;
     traversal.targeted = false;
+    traversal.type_code = type_code;
     traversal.event_type = &typeid(Event);
     traversal.event = &event;
     route_event(sys, traversal, nullptr);
@@ -57,19 +63,23 @@ dispatch_untargeted_event(untyped_system& sys, Event& event)
 
 template<class Event>
 void
-dispatch_event(untyped_system& sys, Event& event)
+dispatch_event(
+    untyped_system& sys, Event& event, event_type_code type_code = 0)
 {
-    detail::dispatch_untargeted_event(sys, event);
+    detail::dispatch_untargeted_event(sys, event, type_code);
     refresh_system(sys);
 }
 
 template<class Event>
 void
 dispatch_targeted_event(
-    untyped_system& sys, Event& event, external_component_id component)
+    untyped_system& sys,
+    Event& event,
+    external_component_id component,
+    event_type_code type_code = 0)
 {
     event.target_id = component.id;
-    detail::dispatch_targeted_event(sys, event, component.identity);
+    detail::dispatch_targeted_event(sys, event, component.identity, type_code);
     refresh_system(sys);
 }
 
