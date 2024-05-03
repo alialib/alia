@@ -54,10 +54,9 @@ is_mouse_button_pressed(ui_system& sys, mouse_button button)
 bool
 detect_mouse_press(dataless_ui_context ctx, mouse_button button)
 {
-    mouse_button_event* event;
-    return detect_event(ctx, &event) && event->button == button
-           && (event->type == ui_event_type::MOUSE_PRESS
-               || event->type == ui_event_type::DOUBLE_CLICK);
+    return (get_event_type(ctx) == MOUSE_PRESS_EVENT
+            || get_event_type(ctx) == DOUBLE_CLICK_EVENT)
+           && cast_event<mouse_button_event>(ctx).button == button;
 }
 
 bool
@@ -78,9 +77,8 @@ detect_mouse_press(
 bool
 detect_mouse_release(dataless_ui_context ctx, mouse_button button)
 {
-    mouse_button_event* event;
-    return detect_event(ctx, &event) && event->button == button
-           && event->type == ui_event_type::MOUSE_RELEASE;
+    return get_event_type(ctx) == MOUSE_RELEASE_EVENT
+           && cast_event<mouse_button_event>(ctx).button == button;
 }
 
 bool
@@ -102,9 +100,8 @@ detect_mouse_motion(dataless_ui_context ctx, internal_element_id element)
 bool
 detect_double_click(dataless_ui_context ctx, mouse_button button)
 {
-    mouse_button_event* event;
-    return detect_event(ctx, &event) && event->button == button
-           && event->type == ui_event_type::DOUBLE_CLICK;
+    return get_event_type(ctx) == DOUBLE_CLICK_EVENT
+           && cast_event<mouse_button_event>(ctx).button == button;
 }
 
 bool
