@@ -7,6 +7,10 @@ namespace alia {
 
 struct os_interface
 {
+    virtual ~os_interface()
+    {
+    }
+
     virtual void
     set_clipboard_text(std::string text)
         = 0;

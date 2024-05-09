@@ -17,6 +17,23 @@ struct timer_data
     millisecond_count expected_trigger_time;
 };
 
+void
+schedule_timer_event(
+    dataless_core_context ctx,
+    external_component_id id,
+    millisecond_count trigger_time);
+
+bool
+detect_timer_event(dataless_core_context ctx, timer_data& data);
+
+void
+start_timer(
+    dataless_core_context ctx, timer_data& data, millisecond_count duration);
+
+void
+restart_timer(
+    dataless_core_context ctx, timer_data& data, millisecond_count duration);
+
 struct timer
 {
     timer(core_context ctx) : ctx_(ctx)

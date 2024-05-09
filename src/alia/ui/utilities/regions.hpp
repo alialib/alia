@@ -14,7 +14,7 @@ void
 do_box_region(
     dataless_ui_context ctx,
     internal_element_id id,
-    box<2, int> const& region,
+    box<2, float> const& region,
     mouse_cursor cursor = mouse_cursor::DEFAULT);
 // same, but for double coordinates
 void
@@ -37,7 +37,7 @@ void
 hit_test_box_region(
     dataless_ui_context ctx,
     internal_element_id id,
-    box<2, int> const& box,
+    box<2, float> const& box,
     hit_test_flag_set flags = HIT_TEST_MOUSE,
     mouse_cursor cursor = mouse_cursor::DEFAULT);
 // same, but for double coordinates
