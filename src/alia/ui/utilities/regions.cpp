@@ -47,7 +47,7 @@ void
 hit_test_box_region(
     dataless_ui_context ctx,
     internal_element_id id,
-    box<2, int> const& box,
+    box<2, float> const& box,
     hit_test_flag_set flags,
     mouse_cursor cursor)
 {
@@ -95,7 +95,7 @@ void
 do_box_region(
     dataless_ui_context ctx,
     internal_element_id id,
-    box<2, int> const& region,
+    box<2, float> const& region,
     mouse_cursor cursor)
 {
     switch (get_event_type(ctx))

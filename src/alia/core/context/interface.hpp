@@ -192,13 +192,10 @@ make_context(
 
 template<class Context>
 Context
-copy_context(Context ctx)
+copy_context(
+    typename Context::contents_type::storage_type* new_storage, Context ctx)
 {
-    typename Context::contents_type::storage_type* new_storage;
-    get_data(ctx, &new_storage);
-
     *new_storage = *ctx.contents_.storage;
-
     return Context(typename Context::contents_type(new_storage));
 }
 
@@ -285,10 +282,13 @@ template<
     class Contents,
     std::enable_if_t<std::is_reference_v<typename Tag::data_type>, int> = 0>
 auto
-extend_context(context_interface<Contents> ctx, typename Tag::data_type object)
+extend_context(
+    context_interface<Contents> ctx,
+    typename Contents::storage_type* new_storage,
+    typename Tag::data_type object)
 {
     auto extended_ctx = detail::add_context_object<Tag>(
-        copy_context(ctx),
+        copy_context(new_storage, ctx),
         std::ref<std::remove_reference_t<typename Tag::data_type>>(object));
     fold_in_object_id(extended_ctx, object);
     return extended_ctx;
@@ -298,10 +298,13 @@ template<
     class Contents,
     std::enable_if_t<!std::is_reference_v<typename Tag::data_type>, int> = 0>
 auto
-extend_context(context_interface<Contents> ctx, typename Tag::data_type object)
+extend_context(
+    context_interface<Contents> ctx,
+    typename Contents::storage_type* new_storage,
+    typename Tag::data_type object)
 {
-    auto extended_ctx
-        = detail::add_context_object<Tag>(copy_context(ctx), object);
+    auto extended_ctx = detail::add_context_object<Tag>(
+        copy_context(new_storage, ctx), object);
     fold_in_object_id(extended_ctx, object);
     return extended_ctx;
 }
@@ -311,7 +314,8 @@ void
 with_extended_context(
     Context ctx, typename Tag::data_type object, Content&& content)
 {
-    std::forward<Content>(content)(extend_context<Tag>(ctx, object));
+    typename Context::contents_type::storage_type storage;
+    std::forward<Content>(content)(extend_context<Tag>(ctx, &storage, object));
 }
 
 template<class Tag, class Contents>
@@ -372,7 +376,8 @@ struct optional_context
         return ctx_.contents_.storage != nullptr;
     }
 
-    explicit operator bool() const
+    explicit
+    operator bool() const
     {
         return has_value();
     }

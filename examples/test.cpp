@@ -14,7 +14,7 @@
 #include <alia/ui/utilities/regions.hpp>
 #include <alia/ui/utilities/scrolling.hpp>
 
-#include <color/color.hpp>
+// #include <color/color.hpp>
 
 #include <cmath>
 
@@ -42,6 +42,7 @@
 #include "modules/skparagraph/include/TextStyle.h"
 #include "modules/skparagraph/src/ParagraphBuilderImpl.h"
 #include "modules/skparagraph/src/ParagraphImpl.h"
+#include <alia/ui/text/components.hpp>
 
 #include "include/core/SkStream.h"
 #include "include/utils/SkNoDrawCanvas.h"
@@ -53,6 +54,52 @@ using namespace alia;
 // struct click_event : targeted_event
 // {
 // };
+
+template<class Value>
+Value
+smooth_for_render(
+    dataless_core_context ctx,
+    value_smoother<Value>& smoother,
+    Value const& x,
+    animated_transition const& transition = default_transition)
+{
+    if (!smoother.initialized)
+        reset_smoothing(smoother, x);
+    Value current_value = smoother.new_value;
+    if (smoother.in_transition)
+    {
+        millisecond_count ticks_left
+            = get_raw_animation_ticks_left(ctx, smoother.transition_end);
+        if (ticks_left > 0)
+        {
+            double fraction = eval_curve_at_x(
+                transition.curve,
+                1. - double(ticks_left) / smoother.duration,
+                1. / smoother.duration);
+            current_value = interpolate(
+                smoother.old_value, smoother.new_value, fraction);
+        }
+        else
+            smoother.in_transition = false;
+    }
+    if (x != smoother.new_value)
+    {
+        smoother.duration =
+            // If we're just going back to the old value, go back in the same
+            // amount of time it took to get here.
+            smoother.in_transition && x == smoother.old_value
+                ? (transition.duration
+                   - get_raw_animation_ticks_left(
+                       ctx, smoother.transition_end))
+                : transition.duration;
+        smoother.transition_end
+            = get_raw_animation_tick_count(ctx) + smoother.duration;
+        smoother.old_value = current_value;
+        smoother.new_value = x;
+        smoother.in_transition = true;
+    }
+    return current_value;
+}
 
 // template<class Value>
 // Value
@@ -302,6 +349,7 @@ struct box_data
     bool state_ = false;
     keyboard_click_state keyboard_click_state_;
     layout_leaf layout_node;
+    component_identity identity;
 };
 
 void
@@ -314,49 +362,59 @@ do_box(
     box_data* data_ptr;
     get_cached_data(ctx, &data_ptr);
     auto& data = *data_ptr;
+    auto id = &data.identity;
 
-    auto id = get_component_id(ctx);
-
-    if (is_refresh_event(ctx))
+    alia_untracked_switch(get_event_category(ctx))
     {
-        data.layout_node.refresh_layout(
-            get_layout_traversal(ctx),
-            layout_spec,
-            leaf_layout_requirements(make_layout_vector(40, 40), 0, 0),
-            LEFT | BASELINE_Y | PADDED);
+        case REFRESH_CATEGORY:
+            refresh_component_identity(ctx, data.identity);
 
-        add_layout_node(get<ui_traversal_tag>(ctx).layout, &data.layout_node);
+            data.layout_node.refresh_layout(
+                get_layout_traversal(ctx),
+                layout_spec,
+                leaf_layout_requirements(make_layout_vector(40, 40), 0, 0),
+                LEFT | BASELINE_Y | PADDED);
 
-        // node.id_ = externalize(id);
-        // node.tick_counter_ = get_raw_animation_tick_count(ctx);
-    }
+            add_layout_node(
+                get<ui_traversal_tag>(ctx).layout, &data.layout_node);
 
-    {
-        do_box_region(
-            ctx,
-            internal_element_id{id, 0},
-            box<2, double>(data.layout_node.assignment().region));
-        // mouse_hit_test* event;
-        // if (detect_event(ctx, &event))
-        // {
-        //     auto const& region = data.layout_node.assignment().region;
-        //     hit_test_box(
-        //         *event,
-        //         event->point,
-        //         internal_element_id{id, 0},
-        //         region,
-        //         mouse_cursor::DEFAULT);
-        // }
-    }
+            break;
 
-    {
-        render_event* render;
-        if (detect_event(ctx, &render))
-        {
-            auto& event = *render;
+        case REGION_CATEGORY:
+            do_box_region(
+                ctx,
+                internal_element_id{id, 0},
+                box<2, double>(data.layout_node.assignment().region));
+            break;
+
+        case INPUT_CATEGORY:
+            if (detect_click(
+                    ctx, internal_element_id{id, 0}, mouse_button::LEFT)
+                || detect_keyboard_click(
+                    ctx,
+                    data.keyboard_click_state_,
+                    internal_element_id{id, 0}))
+            {
+                data.state_ = !data.state_;
+            }
+
+            break;
+
+        case RENDER_CATEGORY: {
+            auto& event = cast_event<render_event>(ctx);
+
             SkCanvas& canvas = *event.canvas;
 
             auto const& region = data.layout_node.assignment().region;
+
+            SkRect rect;
+            rect.fLeft = SkScalar(region.corner[0]);
+            rect.fTop = SkScalar(region.corner[1]);
+            rect.fRight = SkScalar(region.corner[0] + region.size[0]);
+            rect.fBottom = SkScalar(region.corner[1] + region.size[1]);
+
+            if (event.canvas->quickReject(rect))
+                break;
 
             double blend_factor = 0;
 
@@ -396,15 +454,9 @@ do_box(
             //     region.corner + event.current_offset,
             //     tick_counter_,
             //     {default_curve, 80});
-            auto position = region.corner; // + event.current_offset;
 
             SkPaint paint;
             paint.setColor(SkColorSetARGB(0xff, c.r, c.g, c.b));
-            SkRect rect;
-            rect.fLeft = SkScalar(position[0]);
-            rect.fTop = SkScalar(position[1]);
-            rect.fRight = SkScalar(position[0] + region.size[0]);
-            rect.fBottom = SkScalar(position[1] + region.size[1]);
             canvas.drawRect(rect, paint);
 
             // if (rect.width() > 200)
@@ -416,133 +468,250 @@ do_box(
             //     canvas.drawRect(rect, blur);
             // }
 
-            // if (element_has_focus(*sys_, internal_element_id{*this, 0}))
-            // {
-            //     paint.setStyle(SkPaint::kStroke_Style);
-            //     paint.setStrokeWidth(4);
-            //     paint.setColor(SK_ColorBLACK);
-            //     canvas.drawRect(rect, paint);
-            // }
+            if (element_has_focus(ctx, internal_element_id{id, 0}))
+            {
+                paint.setStyle(SkPaint::kStroke_Style);
+                paint.setStrokeWidth(4);
+                paint.setColor(SK_ColorBLACK);
+                canvas.drawRect(rect, paint);
+            }
+            break;
         }
     }
-
-    // click_event* click;
-    // if (detect_targeted_event(ctx, id, &click))
-    // {
-    //     perform_action(on_click);
-    //     abort_traversal(ctx);
-    // }
+    alia_end
 }
 
-// template<class Selected, class Index>
-// struct radio_signal
-//     : lazy_signal<radio_signal<Selected, Index>, bool, duplex_signal>
-// {
-//     radio_signal(Selected selected, Index index)
-//         : selected_(std::move(selected)), index_(std::move(index))
-//     {
-//     }
-//     bool
-//     has_value() const override
-//     {
-//         return signal_has_value(selected_) && signal_has_value(index_);
-//     }
-//     bool
-//     move_out() const override
-//     {
-//         return read_signal(selected_) == read_signal(index_);
-//     }
-//     id_interface const&
-//     value_id() const override
-//     {
-//         return selected_.value_id();
-//     }
-//     bool
-//     ready_to_write() const override
-//     {
-//         return signal_ready_to_write(selected_) && signal_has_value(index_);
-//     }
-//     id_interface const&
-//     write(bool) const override
-//     {
-//         write_signal(selected_, read_signal(index_));
-//         return null_id;
-//     }
+template<class Selected, class Index>
+struct radio_signal
+    : lazy_signal<radio_signal<Selected, Index>, bool, duplex_signal>
+{
+    radio_signal(Selected selected, Index index)
+        : selected_(std::move(selected)), index_(std::move(index))
+    {
+    }
+    bool
+    has_value() const override
+    {
+        return signal_has_value(selected_) && signal_has_value(index_);
+    }
+    bool
+    move_out() const override
+    {
+        return read_signal(selected_) == read_signal(index_);
+    }
+    id_interface const&
+    value_id() const override
+    {
+        return selected_.value_id();
+    }
+    bool
+    ready_to_write() const override
+    {
+        return signal_ready_to_write(selected_) && signal_has_value(index_);
+    }
+    id_interface const&
+    write(bool) const override
+    {
+        write_signal(selected_, read_signal(index_));
+        return null_id;
+    }
 
-//  private:
-//     Selected selected_;
-//     Index index_;
-// };
+ private:
+    Selected selected_;
+    Index index_;
+};
+template<class Selected, class Index>
+radio_signal<Selected, Index>
+make_radio_signal(Selected selected, Index index)
+{
+    return radio_signal<Selected, Index>(
+        std::move(selected), std::move(index));
+}
 // template<class Selected, class Index>
-// radio_signal<Selected, Index>
-// make_radio_signal(Selected selected, Index index)
+// auto
+// add_default(Selected selected, Index index)
 // {
-//     return radio_signal<Selected, Index>(
-//         std::move(selected), std::move(index));
+//     return make_default_value_signal(
+//         signalize(std::move(primary)), signalize(std::move(default_)));
 // }
-// // template<class Selected, class Index>
-// // auto
-// // add_default(Selected selected, Index index)
-// // {
-// //     return make_default_value_signal(
-// //         signalize(std::move(primary)), signalize(std::move(default_)));
-// // }
 
-// // // make_radio_accessor_for_optional(selected, index), where
-// // // selected is of type accessor<optional<T>> and index is of type
-// // // accessor<T>, yields an accessor<bool> whose value tells whether or not
-// // // selected is set to index.
-// // // Setting the resulting accessor to any value sets selected's value to
-// // // index. (Setting it to false results in setting :selected to
-// // std::nullopt.) template<class Accessor, class Index> struct
-// // radio_accessor_for_optional : regular_accessor<bool>
-// // {
-// //     radio_accessor_for_optional(
-// //         Accessor const& selected,
-// //         Index const& index)
-// //       : selected_(selected), index_(index)
-// //     {}
-// //     bool is_gettable() const
-// //     { return selected_.is_gettable() && index_.is_gettable(); }
-// //     bool const& get() const
-// //     { return lazy_getter_.get(*this); }
-// //     bool is_settable() const
-// //     { return selected_.is_settable() && index_.is_gettable(); }
-// //     void set(bool const& value) const
-// //     {
-// //         if(value)
-// //             selected_.set(some(index_.get()));
-// //         else
-// //             selected_.set(std::nullopt);
-// //     }
-// //  private:
-// //     friend struct lazy_getter<bool>;
-// //     bool generate() const
-// //     {
-// //         auto const& selected = selected_.get();
-// //         return selected && selected.get() == index_.get();
-// //     }
-// //     Accessor selected_;
-// //     Index index_;
-// //     lazy_getter<bool> lazy_getter_;
-// // };
-// // template<class Accessor, class Index>
-// // radio_accessor_for_optional<
-// //     typename copyable_accessor_helper<Accessor const&>::result_type,
-// //     typename copyable_accessor_helper<Index const&>::result_type>
-// // make_radio_accessor_for_optional(
-// //     Accessor const& selected,
-// //     Index const& index)
-// // {
-// //     return
-// //         radio_accessor_for_optional<
-// //             typename copyable_accessor_helper<Accessor
-// const&>::result_type,
-// //             typename copyable_accessor_helper<Index
-// const&>::result_type>(
-// //                 make_accessor_copyable(selected),
-// //                 make_accessor_copyable(index));
-// // }
+// // make_radio_accessor_for_optional(selected, index), where
+// // selected is of type accessor<optional<T>> and index is of type
+// // accessor<T>, yields an accessor<bool> whose value tells whether or not
+// // selected is set to index.
+// // Setting the resulting accessor to any value sets selected's value to
+// // index. (Setting it to false results in setting :selected to
+// std::nullopt.) template<class Accessor, class Index> struct
+// radio_accessor_for_optional : regular_accessor<bool>
+// {
+//     radio_accessor_for_optional(
+//         Accessor const& selected,
+//         Index const& index)
+//       : selected_(selected), index_(index)
+//     {}
+//     bool is_gettable() const
+//     { return selected_.is_gettable() && index_.is_gettable(); }
+//     bool const& get() const
+//     { return lazy_getter_.get(*this); }
+//     bool is_settable() const
+//     { return selected_.is_settable() && index_.is_gettable(); }
+//     void set(bool const& value) const
+//     {
+//         if(value)
+//             selected_.set(some(index_.get()));
+//         else
+//             selected_.set(std::nullopt);
+//     }
+//  private:
+//     friend struct lazy_getter<bool>;
+//     bool generate() const
+//     {
+//         auto const& selected = selected_.get();
+//         return selected && selected.get() == index_.get();
+//     }
+//     Accessor selected_;
+//     Index index_;
+//     lazy_getter<bool> lazy_getter_;
+// };
+// template<class Accessor, class Index>
+// radio_accessor_for_optional<
+//     typename copyable_accessor_helper<Accessor const&>::result_type,
+//     typename copyable_accessor_helper<Index const&>::result_type>
+// make_radio_accessor_for_optional(
+//     Accessor const& selected,
+//     Index const& index)
+// {
+//     return
+//         radio_accessor_for_optional<
+//             typename copyable_accessor_helper<Accessor const&>::result_type,
+//             typename copyable_accessor_helper<Index const&>::result_type>(
+//                 make_accessor_copyable(selected),
+//                 make_accessor_copyable(index));
+// }
+
+struct radio_button_data
+{
+    keyboard_click_state keyboard_click_state_;
+    layout_leaf layout_node;
+    component_identity identity;
+    value_smoother<float> smoother;
+};
+
+void
+do_radio_button(
+    ui_context ctx,
+    duplex<bool> selected,
+    layout const& layout_spec = layout(TOP | LEFT | PADDED))
+{
+    radio_button_data* data_ptr;
+    get_cached_data(ctx, &data_ptr);
+    auto& data = *data_ptr;
+    auto id = &data.identity;
+
+    alia_untracked_switch(get_event_category(ctx))
+    {
+        case REFRESH_CATEGORY:
+            refresh_component_identity(ctx, data.identity);
+
+            data.layout_node.refresh_layout(
+                get_layout_traversal(ctx),
+                layout_spec,
+                leaf_layout_requirements(make_layout_vector(40, 40), 0, 0),
+                LEFT | BASELINE_Y | PADDED);
+
+            add_layout_node(
+                get<ui_traversal_tag>(ctx).layout, &data.layout_node);
+
+            break;
+
+        case REGION_CATEGORY:
+            do_box_region(
+                ctx,
+                internal_element_id{id, 0},
+                box<2, double>(data.layout_node.assignment().region));
+            break;
+
+        case INPUT_CATEGORY:
+            add_to_focus_order(ctx, internal_element_id{id, 0});
+
+            if (detect_click(
+                    ctx, internal_element_id{id, 0}, mouse_button::LEFT)
+                || detect_keyboard_click(
+                    ctx,
+                    data.keyboard_click_state_,
+                    internal_element_id{id, 0}))
+            {
+                if (signal_ready_to_write(selected))
+                    write_signal(selected, true);
+                abort_traversal(ctx);
+            }
+
+            break;
+
+        case RENDER_CATEGORY: {
+            auto& event = cast_event<render_event>(ctx);
+
+            SkCanvas& canvas = *event.canvas;
+
+            auto const& region = data.layout_node.assignment().region;
+
+            SkRect rect;
+            rect.fLeft = SkScalar(region.corner[0]);
+            rect.fTop = SkScalar(region.corner[1]);
+            rect.fRight = SkScalar(region.corner[0] + region.size[0]);
+            rect.fBottom = SkScalar(region.corner[1] + region.size[1]);
+
+            if (event.canvas->quickReject(rect))
+                break;
+
+            auto center = get_center(region);
+
+            uint8_t highlight = 0;
+            if (is_click_in_progress(
+                    ctx, internal_element_id{id, 0}, mouse_button::LEFT)
+                || is_pressed(data.keyboard_click_state_))
+            {
+                highlight = 0x40;
+            }
+            else if (is_click_possible(ctx, internal_element_id{id, 0}))
+            {
+                highlight = 0x20;
+            }
+            if (highlight != 0)
+            {
+                SkPaint paint;
+                paint.setAntiAlias(true);
+                paint.setColor(SkColorSetARGB(highlight, 0xff, 0xff, 0xff));
+                canvas.drawPath(
+                    SkPath::Circle(center[0], center[1], 18.f), paint);
+            }
+
+            {
+                SkPaint paint;
+                paint.setAntiAlias(true);
+                paint.setStyle(SkPaint::kStroke_Style);
+                paint.setColor(SK_ColorWHITE);
+                paint.setStrokeWidth(2);
+                canvas.drawPath(
+                    SkPath::Circle(center[0], center[1], 14.f), paint);
+            }
+
+            float dot_radius = smooth_for_render(
+                ctx,
+                data.smoother,
+                condition_is_true(selected) ? 8.f : 0.f,
+                animated_transition{default_curve, 200});
+
+            SkPaint paint;
+            paint.setAntiAlias(true);
+            paint.setColor(SkColorSetARGB(0xff, 0x80, 0x80, 0xff));
+            paint.setStrokeWidth(3);
+            canvas.drawPath(
+                SkPath::Circle(center[0], center[1], dot_radius), paint);
+        }
+    }
+    alia_end
+}
 
 // struct radio_button_node : widget
 // {
@@ -593,55 +762,6 @@ do_box(
 //     void
 //     render(render_event& event) override
 //     {
-//         SkCanvas& canvas = *event.canvas;
-
-//         auto const& region = this->assignment().region;
-
-//         auto center = get_center(region) + event.current_offset;
-//         // SkScalar radius = 12;
-
-//         uint8_t highlight = 0;
-//         if (is_click_in_progress(
-//                 *sys_, internal_element_id{*this, 0}, mouse_button::LEFT)
-//             || is_pressed(keyboard_click_state_))
-//         {
-//             highlight = 0x40;
-//         }
-//         else if (is_click_possible(*sys_, internal_element_id{*this, 0}))
-//         {
-//             highlight = 0x20;
-//         }
-//         if (highlight != 0)
-//         {
-//             SkPaint paint;
-//             paint.setAntiAlias(true);
-//             paint.setColor(SkColorSetARGB(highlight, 0xff, 0xff, 0xff));
-//             canvas.drawPath(SkPath::Circle(center[0], center[1], 18.f),
-//             paint);
-//         }
-
-//         {
-//             SkPaint paint;
-//             paint.setAntiAlias(true);
-//             paint.setStyle(SkPaint::kStroke_Style);
-//             paint.setColor(SK_ColorWHITE);
-//             paint.setStrokeWidth(2);
-//             canvas.drawPath(SkPath::Circle(center[0], center[1], 14.f),
-//             paint);
-//         }
-
-//         float dot_radius = smooth_value(
-//             smoother_,
-//             state_ ? 8.f : 0.f,
-//             tick_counter_,
-//             animated_transition{default_curve, 250});
-
-//         SkPaint paint;
-//         paint.setAntiAlias(true);
-//         paint.setColor(SkColorSetARGB(0xff, 0x80, 0x80, 0xff));
-//         paint.setStrokeWidth(3);
-//         canvas.drawPath(
-//             SkPath::Circle(center[0], center[1], dot_radius), paint);
 //     }
 
 //     void
@@ -2468,32 +2588,32 @@ my_ui(ui_context ctx)
 
     // scoped_column column(ctx, GROW | PADDED);
 
-    // auto selected = get_state(ctx, int(0));
+    auto selected = get_state(ctx, int(0));
 
-    // auto my_style
-    //     = text_style{"roboto/Roboto-Regular", 22.f, rgb8(173, 181, 189)};
+    auto my_style
+        = text_style{"roboto/Roboto-Regular", 22.f, rgb8(173, 181, 189)};
 
-    // // do_text(ctx, direct(my_style), value("Lorem ipsum"));
-    // {
-    //     scoped_row row(ctx);
-    //     do_radio_button(ctx, make_radio_signal(selected, value(1)));
-    //     do_text(ctx, direct(my_style), value("Lorem ipsum"), CENTER_Y);
-    // }
-    // {
-    //     scoped_row row(ctx);
-    //     do_radio_button(ctx, make_radio_signal(selected, value(2)));
-    //     do_text(ctx, direct(my_style), value("Dolor sit amet"), CENTER_Y);
-    // }
-    // {
-    //     scoped_row row(ctx);
-    //     do_radio_button(ctx, make_radio_signal(selected, value(3)));
-    //     do_text(
-    //         ctx,
-    //         direct(my_style),
-    //         value("consectetur adipiscing elit, sed do eiusmod tempor "
-    //               "incididunt ut labore et dolore magna aliqua"),
-    //         CENTER_Y);
-    // }
+    do_text(ctx, direct(my_style), value("Lorem ipsum"));
+    {
+        row_layout row(ctx);
+        do_radio_button(ctx, make_radio_signal(selected, value(1)));
+        do_text(ctx, direct(my_style), value("Lorem ipsum"), CENTER_Y);
+    }
+    {
+        row_layout row(ctx);
+        do_radio_button(ctx, make_radio_signal(selected, value(2)));
+        do_text(ctx, direct(my_style), value("Dolor sit amet"), CENTER_Y);
+    }
+    {
+        row_layout row(ctx);
+        do_radio_button(ctx, make_radio_signal(selected, value(3)));
+        do_text(
+            ctx,
+            direct(my_style),
+            value("consectetur adipiscing elit, sed do eiusmod tempor "
+                  "incididunt ut labore et dolore magna aliqua"),
+            CENTER_Y);
+    }
 
     // {
     //     scoped_grid_layout grid(ctx);
@@ -2517,6 +2637,10 @@ my_ui(ui_context ctx)
             do_box(ctx, SK_ColorLTGRAY, actions::noop());
             do_box(ctx, SK_ColorDKGRAY, actions::noop());
             do_box(ctx, SK_ColorMAGENTA, actions::noop());
+            do_box(ctx, SK_ColorLTGRAY, actions::noop());
+            do_box(ctx, SK_ColorMAGENTA, actions::noop());
+            do_box(ctx, SK_ColorRED, actions::noop());
+            do_box(ctx, SK_ColorBLUE, actions::noop());
         }
     }
 

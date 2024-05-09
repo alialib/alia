@@ -22,7 +22,7 @@ refresh_system(untyped_system& sys)
     while (true)
     {
         refresh_event refresh;
-        detail::dispatch_untargeted_event(sys, refresh);
+        detail::dispatch_untargeted_event(sys, refresh, REFRESH_EVENT);
         if (!sys.root_component->dirty)
             break;
         // ++pass_count;

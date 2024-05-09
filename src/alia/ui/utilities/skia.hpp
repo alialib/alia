@@ -3,6 +3,9 @@
 
 #include <alia/ui/layout/specification.hpp>
 
+#include <include/core/SkRect.h>
+#include <include/core/SkScalar.h>
+
 namespace alia {
 
 // Cast a Skia scalar to layout scalar representing a size.

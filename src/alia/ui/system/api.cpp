@@ -150,81 +150,69 @@ update_window_size(ui_system& ui, vector<2, unsigned> const& new_size)
     ui.surface_size = new_size;
 }
 
-#if 0
+// struct initial_styling_data
+// {
+//     owned_id id;
+//     primary_style_properties props;
+//     layout_style_info info;
+//     style_search_path path;
+// };
 
-struct initial_styling_data
-{
-    owned_id id;
-    primary_style_properties props;
-    layout_style_info info;
-    style_search_path path;
-};
+// static void
+// setup_initial_styling(ui_context& ctx)
+// {
+//     initial_styling_data* data;
+//     get_data(ctx, &data);
 
-static void
-setup_initial_styling(ui_context& ctx)
-{
-    initial_styling_data* data;
-    get_data(ctx, &data);
+//     if (!data->id.matches(get_id(ctx.system->style.id)))
+//     {
+//         data->path.rest = 0;
+//         data->path.tree = &*ctx.system->style.styles;
 
-    if (!data->id.matches(get_id(ctx.system->style.id)))
-    {
-        data->path.rest = 0;
-        data->path.tree = &*ctx.system->style.styles;
+//         read_primary_style_properties(*ctx.system, &data->props,
+//         &data->path);
 
-        read_primary_style_properties(*ctx.system, &data->props, &data->path);
+//         data->id.store(get_id(ctx.system->style.id));
 
-        data->id.store(get_id(ctx.system->style.id));
+//         read_layout_style_info(
+//             ctx, &data->info, data->props.font, &data->path);
+//     }
+//     get_layout_traversal(ctx).style_info = &data->info;
 
-        read_layout_style_info(
-            ctx, &data->info, data->props.font, &data->path);
-    }
-    get_layout_traversal(ctx).style_info = &data->info;
-
-    ctx.style.path = &data->path;
-    ctx.style.properties = &data->props;
-    ctx.style.id = &data->id.get();
-    ctx.style.theme = &ctx.system->style.theme;
-}
-
-#endif
+//     ctx.style.path = &data->path;
+//     ctx.style.properties = &data->props;
+//     ctx.style.id = &data->id.get();
+//     ctx.style.theme = &ctx.system->style.theme;
+// }
 
 static external_element_id
-get_focus_successor(ui_system& /*sys*/, internal_element_id /*target*/)
+get_focus_successor(ui_system& ui, internal_element_id target)
 {
-    return external_element_id();
-    // TODO
-    // focus_successor_event event;
-    // event.target = target;
+    focus_successor_event event;
+    event.target = target;
     // Initializing `just_saw_target` to true handles the cases where no widget
     // has focus or where the focus is on the last widget in the focus
     // sequence. The correct successor here is the very first widget, so by
     // initializing `just_saw_target` to true, we'll pick up that first widget
     // as the default answer to the query. (And in cases where another widget
     // is the correct successor, it'll overwrite that answer.)
-    // event.just_saw_target = true;
+    event.just_saw_target = true;
 
-    // event_delivery_fixture<focus_successor_event> delivery_fixture(sys);
-    // walk_widget_tree(sys.root_widget, [&](widget* widget) {
-    //     delivery_fixture.deliver(widget, event);
-    // });
+    dispatch_event(ui, event, FOCUS_SUCCESSOR_EVENT);
 
-    // return externalize(event.successor);
+    return externalize(event.successor);
 }
 
 static external_element_id
-get_focus_predecessor(ui_system& /*sys*/, internal_element_id /*target*/)
+get_focus_predecessor(ui_system& ui, internal_element_id target)
 {
-    return external_element_id();
-    // focus_predecessor_event event;
-    // event.target = target;
-    // event.saw_target = false;
+    focus_predecessor_event event;
+    event.target = target;
+    event.saw_target = false;
 
-    // event_delivery_fixture<focus_predecessor_event> delivery_fixture(sys);
-    // walk_widget_tree(sys.root_widget, [&](widget* widget) {
-    //     delivery_fixture.deliver(widget, event);
-    // });
+    dispatch_event(ui, event, FOCUS_PREDECESSOR_EVENT);
 
-    // return externalize(event.predecessor);
+    return externalize(event.predecessor);
 }
 
 #if 0
@@ -719,29 +707,27 @@ void process_focus_gain(ui_system& ui, ui_time_type time)
 #endif
 
 void
-advance_focus(ui_system& /*sys*/)
+advance_focus(ui_system& ui)
 {
-    // TODO
-    // set_focus(
-    //     sys,
-    //     get_focus_successor(
-    //         sys,
-    //         internal_element_id{
-    //             sys.input.element_with_focus.widget.raw_ptr(),
-    //             sys.input.element_with_focus.id}));
+    set_focus(
+        ui,
+        get_focus_successor(
+            ui,
+            internal_element_id{
+                ui.input.element_with_focus.component.id,
+                ui.input.element_with_focus.index}));
 }
 
 void
-regress_focus(ui_system& /*sys*/)
+regress_focus(ui_system& ui)
 {
-    // TODO
-    // set_focus(
-    //     sys,
-    //     get_focus_predecessor(
-    //         sys,
-    //         internal_element_id{
-    //             sys.input.element_with_focus.widget.raw_ptr(),
-    //             sys.input.element_with_focus.id}));
+    set_focus(
+        ui,
+        get_focus_predecessor(
+            ui,
+            internal_element_id{
+                ui.input.element_with_focus.component.id,
+                ui.input.element_with_focus.index}));
 }
 
 void

@@ -1,6 +1,6 @@
-#include "alia/core/context/interface.hpp"
 #include <alia/ui/system/object.hpp>
 
+#include <alia/core/context/interface.hpp>
 #include <alia/ui/context.hpp>
 #include <alia/ui/events.hpp>
 #include <alia/ui/geometry.hpp>
@@ -99,8 +99,9 @@ ui_system::invoke_controller(vanilla_ui_context vanilla_ctx)
         &style_info,
         make_vector<float>(200, 200)); // TODO
 
-    auto ctx = extend_context<ui_traversal_tag>(
-        extend_context<ui_system_tag>(vanilla_ctx, *this), traversal);
+    auto ctx = add_context_object<ui_traversal_tag>(
+        add_context_object<ui_system_tag>(vanilla_ctx, std::ref(*this)),
+        std::ref(traversal));
 
     this->controller(ctx);
 }

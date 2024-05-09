@@ -8,6 +8,10 @@ namespace alia {
 
 struct window_interface
 {
+    virtual ~window_interface()
+    {
+    }
+
     virtual void
     set_mouse_cursor(mouse_cursor cursor)
         = 0;
