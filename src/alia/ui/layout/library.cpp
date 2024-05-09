@@ -1130,15 +1130,12 @@ template<class Uniformity>
 layout_requirements
 grid_row_container<Uniformity>::get_horizontal_requirements()
 {
-    horizontal_layout_query query(
-        cacher, grid->container->last_content_change);
-    if (query.update_required())
-    {
-        update_grid_column_requirements(*grid);
-        query.update(
-            calculated_layout_requirements(get_required_width(*grid), 0, 0));
-    }
-    return query.result();
+    return cache_horizontal_layout_requirements(
+        cacher, grid->container->last_content_change, [&] {
+            update_grid_column_requirements(*grid);
+            return calculated_layout_requirements(
+                get_required_width(*grid), 0, 0);
+        });
 }
 
 template<class Uniformity>
@@ -1235,14 +1232,11 @@ layout_requirements
 grid_row_container<Uniformity>::get_vertical_requirements(
     layout_scalar assigned_width)
 {
-    vertical_layout_query query(
-        cacher, grid->container->last_content_change, assigned_width);
-    if (query.update_required())
-    {
-        query.update(calculate_grid_row_vertical_requirements(
-            *grid, *this, assigned_width));
-    }
-    return query.result();
+    return cache_vertical_layout_requirements(
+        cacher, grid->container->last_content_change, assigned_width, [&] {
+            return calculate_grid_row_vertical_requirements(
+                *grid, *this, assigned_width);
+        });
 }
 
 template<class Uniformity>
@@ -1272,17 +1266,18 @@ void
 grid_row_container<Uniformity>::set_relative_assignment(
     relative_layout_assignment const& assignment)
 {
-    relative_region_assignment rra(
-        *this, cacher, grid->container->last_content_change, assignment);
-    if (rra.update_required())
-    {
-        set_grid_row_relative_assignment(
-            *grid,
-            children,
-            rra.resolved_assignment().region.size,
-            rra.resolved_assignment().baseline_y);
-        rra.update();
-    }
+    update_relative_assignment(
+        *this,
+        cacher,
+        grid->container->last_content_change,
+        assignment,
+        [&](auto const& resolved_assignment) {
+            set_grid_row_relative_assignment(
+                *grid,
+                children,
+                resolved_assignment.region.size,
+                resolved_assignment.baseline_y);
+        });
 }
 
 template<class Uniformity>
