@@ -5,6 +5,7 @@
 #include <alia/ui/events.hpp>
 #include <alia/ui/layout/library.hpp>
 #include <alia/ui/layout/utilities.hpp>
+#include <alia/ui/scrolling.hpp>
 #include <alia/ui/system/api.hpp>
 #include <alia/ui/system/input_constants.hpp>
 #include <alia/ui/text/fonts.hpp>
@@ -12,7 +13,6 @@
 #include <alia/ui/utilities/keyboard.hpp>
 #include <alia/ui/utilities/mouse.hpp>
 #include <alia/ui/utilities/regions.hpp>
-#include <alia/ui/utilities/scrolling.hpp>
 
 // #include <color/color.hpp>
 
@@ -2580,11 +2580,11 @@ do_radio_button(
 void
 my_ui(ui_context ctx)
 {
-    // scoped_scrollable_view scrollable(ctx, GROW);
+    scoped_scrollable_view scrollable(ctx, GROW);
 
     // scoped_panel panel(ctx, GROW | UNPADDED);
 
-    column_layout column(ctx, GROW | PADDED);
+    // column_layout column(ctx, GROW | PADDED);
 
     // scoped_column column(ctx, GROW | PADDED);
 
@@ -2593,7 +2593,7 @@ my_ui(ui_context ctx)
     auto my_style
         = text_style{"roboto/Roboto-Regular", 22.f, rgb8(173, 181, 189)};
 
-    do_text(ctx, direct(my_style), value("Lorem ipsum"));
+    // do_text(ctx, direct(my_style), value("Lorem ipsum"));
     {
         row_layout row(ctx);
         do_radio_button(ctx, make_radio_signal(selected, value(1)));
