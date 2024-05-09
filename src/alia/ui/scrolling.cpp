@@ -112,7 +112,7 @@ struct scrollbar_renderer
 struct scrollbar_junction_renderer
 {
     virtual void
-    draw(render_event& render, layout_box const& position) const
+    draw(dataless_ui_context ctx, layout_box const& position) const
         = 0;
 };
 
@@ -160,7 +160,8 @@ struct default_scrollbar_renderer : scrollbar_renderer
     {
         SkPaint paint;
         paint.setAntiAlias(true);
-        paint.setColor(SkColorSetARGB(12, 0, 0, 0));
+        // paint.setColor(SkColorSetARGB(12, 0, 0, 0));
+        paint.setColor(SkColorSetARGB(12, 0xff, 0xff, 0xff));
 
         cast_event<render_event>(ctx).canvas->drawRect(as_skrect(rect), paint);
     }
@@ -176,7 +177,8 @@ struct default_scrollbar_renderer : scrollbar_renderer
     {
         SkPaint paint;
         paint.setAntiAlias(true);
-        paint.setColor(SkColorSetARGB(60, 0, 0, 0));
+        // paint.setColor(SkColorSetARGB(60, 0, 0, 0));
+        paint.setColor(SkColorSetARGB(60, 0xff, 0xff, 0xff));
 
         cast_event<render_event>(ctx).canvas->drawRect(as_skrect(rect), paint);
     }
@@ -193,7 +195,8 @@ struct default_scrollbar_renderer : scrollbar_renderer
     {
         SkPaint paint;
         paint.setAntiAlias(true);
-        paint.setColor(SkColorSetARGB(40, 0, 0, 0));
+        // paint.setColor(SkColorSetARGB(40, 0, 0, 0));
+        paint.setColor(SkColorSetARGB(40, 0xff, 0xff, 0xff));
 
         cast_event<render_event>(ctx).canvas->drawRect(
             as_skrect(layout_box(p, make_layout_vector(30, 30))), paint);
@@ -203,7 +206,7 @@ struct default_scrollbar_renderer : scrollbar_renderer
 struct default_scrollbar_junction_renderer : scrollbar_junction_renderer
 {
     void
-    draw(render_event&, layout_box const&) const override
+    draw(dataless_ui_context, layout_box const&) const override
     {
     }
 };
@@ -480,7 +483,28 @@ clamp_scroll_position(scrollbar_parameters const& sb, layout_scalar position)
                : 0;
 }
 
-static void
+void
+refresh_scrollbar(dataless_ui_context ctx, scrollbar_data& data)
+{
+    // TODO: Parameterize renderer.
+    auto* renderer = &default_renderer;
+
+    data.metrics.refresh(/* TODO: *ctx.style.id */ unit_id, [&] {
+        return renderer->get_metrics(ctx);
+    });
+
+    // Update the smoothed version of the scroll position.
+    for (unsigned i = 0; i != 2; ++i)
+    {
+        data.smoothed_scroll_position = smooth_raw(
+            ctx,
+            data.smoother,
+            data.scroll_position,
+            animated_transition{linear_curve, 120});
+    }
+}
+
+void
 do_scrollbar_pass(dataless_ui_context ctx, scrollbar_parameters const& sb)
 {
     assert(sb.axis == 0 || sb.axis == 1);
@@ -495,32 +519,6 @@ do_scrollbar_pass(dataless_ui_context ctx, scrollbar_parameters const& sb)
 
     switch (get_event_category(ctx))
     {
-        case REFRESH_CATEGORY:
-            data.metrics.refresh(/* TODO: *ctx.style.id */ unit_id, [&] {
-                return renderer->get_metrics(ctx);
-            });
-
-            // If the thumb isn't being dragged, then the physical position
-            // should stay in sync with the logical position.
-            if (!is_drag_in_progress(
-                    ctx, get_thumb_id(sb), mouse_button::LEFT))
-            {
-                data.physical_position
-                    = logical_position_to_physical(sb, data.scroll_position);
-            }
-
-            // Update the smoothed version of the scroll position.
-            for (unsigned i = 0; i != 2; ++i)
-            {
-                data.smoothed_scroll_position = smooth_raw(
-                    ctx,
-                    data.smoother,
-                    data.scroll_position,
-                    animated_transition{linear_curve, 120});
-            }
-
-            break;
-
         case REGION_CATEGORY:
             do_box_region(ctx, get_bg0_id(sb), get_bg0_area(sb));
             do_box_region(ctx, get_bg1_id(sb), get_bg1_area(sb));
@@ -574,6 +572,15 @@ do_scrollbar_pass(dataless_ui_context ctx, scrollbar_parameters const& sb)
                 return;
             }
 
+            // If the thumb isn't being dragged, then the physical position
+            // should stay in sync with the logical position.
+            if (!is_drag_in_progress(
+                    ctx, get_thumb_id(sb), mouse_button::LEFT))
+            {
+                data.physical_position
+                    = logical_position_to_physical(sb, data.scroll_position);
+            }
+
             renderer->draw_background(
                 ctx,
                 *data.metrics,
@@ -611,6 +618,29 @@ do_scrollbar_pass(dataless_ui_context ctx, scrollbar_parameters const& sb)
     }
 }
 
+struct scrollable_view_data;
+
+struct scrollable_layout_container : layout_container
+{
+    // implementation of layout interface
+    layout_requirements
+    get_horizontal_requirements() override;
+    layout_requirements
+    get_vertical_requirements(layout_scalar assigned_width) override;
+    void
+    set_relative_assignment(
+        relative_layout_assignment const& assignment) override;
+
+    // associated data
+    scrollable_view_data* data_;
+
+    // layout cacher
+    layout_cacher cacher_;
+
+    // logic for internal layout
+    column_layout_logic logic_;
+};
+
 // TODO
 // constexpr unsigned scrollable_bit_offset = 0;
 // constexpr unsigned reserved_axes_bit_offset = 2;
@@ -620,7 +650,7 @@ do_scrollbar_pass(dataless_ui_context ctx, scrollbar_parameters const& sb)
 struct scrollable_view_data
 {
     // set by caller and copied here
-    unsigned scrollable_axes, reserved_axes;
+    unsigned scrollable_axes = 0, reserved_axes = 0;
 
     // determined at usage site and needed by layout
     layout_scalar minimum_window_size, line_size;
@@ -632,11 +662,8 @@ struct scrollable_view_data
     // persistent data for scrollbars
     scrollbar_data sb_data[2];
 
-    // // rendering data for junction
-    // themed_rendering_data junction_rendering;
-
-    // // layout container
-    // scrollable_layout_container container;
+    // layout container
+    scrollable_layout_container container;
 };
 
 void
@@ -653,115 +680,154 @@ is_scrollbar_on(scrollable_view_data const& data, unsigned axis)
     return (data.scrollbars_on & (1 << axis)) != 0;
 }
 
-struct scrollable_layout_container : layout_container
+layout_box
+get_scrollbar_region(
+    scrollable_view_data const& data,
+    layout_cacher const& cacher,
+    unsigned axis)
 {
-    // implementation of layout interface
-    layout_requirements
-    get_horizontal_requirements() override
-    {
-        return cache_horizontal_layout_requirements(
-            cacher, last_content_change, [&] {
-                if ((data.scrollable_axes & 1) != 0)
-                {
-                    // If the window is horizontally scrollable, then we only
-                    // need enough space for scrolling to happen.
-                    return calculated_layout_requirements{
-                        data.minimum_window_size, 0, 0};
-                }
-                else
-                {
-                    // Otherwise, we need to calculate the requirements.
-                    calculated_layout_requirements x
-                        = logic->get_horizontal_requirements(children);
-                    layout_scalar required_width = x.size;
-                    if ((data.scrollable_axes & 2) != 0)
-                        required_width += get_scrollbar_width(data.sb_data[1]);
-                    return calculated_layout_requirements{
-                        required_width, 0, 0};
-                }
-            });
-    }
+    layout_box region = get_assignment(cacher).region;
+    region.corner[1 - axis]
+        += region.size[1 - axis] - get_scrollbar_width(data.sb_data[axis]);
+    region.size[1 - axis] = get_scrollbar_width(data.sb_data[axis]);
+    return region;
+}
 
-    layout_requirements
-    get_vertical_requirements(layout_scalar assigned_width) override
-    {
-        return cache_vertical_layout_requirements(
-            cacher, last_content_change, assigned_width, [&] {
-                if ((data.scrollable_axes & 2) != 0)
-                {
-                    // If the window is vertically scrollable, then we only
-                    // need enough space for scrolling to happen.
-                    return calculated_layout_requirements{
-                        data.minimum_window_size, 0, 0};
-                }
-                else
-                {
-                    // Otherwise, we need to calculate the requirements.
-                    layout_scalar resolved_width = resolve_assigned_width(
-                        this->cacher.resolved_spec,
-                        assigned_width,
-                        this->get_horizontal_requirements());
-                    calculated_layout_requirements x
-                        = logic->get_horizontal_requirements(children);
-                    layout_scalar actual_width
-                        = (std::max)(resolved_width, x.size);
-                    calculated_layout_requirements y
-                        = logic->get_vertical_requirements(
-                            children, actual_width);
-                    layout_scalar required_height = y.size;
-                    if ((data.scrollable_axes & 1) != 0
-                        && x.size > resolved_width)
-                    {
-                        required_height
-                            += get_scrollbar_width(data.sb_data[0]);
-                    }
-                    return calculated_layout_requirements{
-                        required_height, 0, 0};
-                }
-            });
-    }
+scrollbar_parameters
+construct_scrollbar(
+    scrollable_view_data& data, layout_cacher const& cacher, unsigned axis)
+{
+    return scrollbar_parameters{
+        &data.sb_data[axis],
+        axis,
+        get_scrollbar_region(data, cacher, axis),
+        data.content_size[axis],
+        data.window_size[axis],
+        1 + int(axis) * scrollbar_element_id_count};
+}
 
-    void
-    set_relative_assignment(
-        relative_layout_assignment const& assignment) override
-    {
-        // std::cout << "(scrollable) sra: " << assignment.region << std::endl;
-        update_relative_assignment(
-            *this,
-            cacher_,
-            last_content_change,
-            assignment,
-            [&](auto const& resolved_assignment) {
-                layout_vector available_size = resolved_assignment.region.size;
-
-                // Track whether or not we're going to include the scrollbar
-                // width in the available width for content.
-                // bool exclude_scrollbar_width[2] = {false, false};
-
+layout_requirements
+scrollable_layout_container::get_horizontal_requirements()
+{
+    auto& data = *data_;
+    return cache_horizontal_layout_requirements(
+        cacher_, this->last_content_change, [&] {
+            if ((data.scrollable_axes & 1) != 0)
+            {
+                // If the window is horizontally scrollable, then we only
+                // need enough space for scrolling to happen.
+                return calculated_layout_requirements{
+                    data.minimum_window_size, 0, 0};
+            }
+            else
+            {
+                // Otherwise, we need to calculate the requirements.
                 calculated_layout_requirements x
-                    = logic->get_horizontal_requirements(children);
-                if (available_size[0] < x.size)
+                    = logic_.get_horizontal_requirements(children);
+                layout_scalar required_width = x.size;
+                if ((data.scrollable_axes & 2) != 0)
+                    required_width += get_scrollbar_width(data.sb_data[1]);
+                return calculated_layout_requirements{required_width, 0, 0};
+            }
+        });
+}
+
+layout_requirements
+scrollable_layout_container::get_vertical_requirements(
+    layout_scalar assigned_width)
+{
+    auto& data = *data_;
+    return cache_vertical_layout_requirements(
+        cacher_, this->last_content_change, assigned_width, [&] {
+            if ((data.scrollable_axes & 2) != 0)
+            {
+                // If the window is vertically scrollable, then we only
+                // need enough space for scrolling to happen.
+                return calculated_layout_requirements{
+                    data.minimum_window_size, 0, 0};
+            }
+            else
+            {
+                // Otherwise, we need to calculate the requirements.
+                layout_scalar resolved_width = resolve_assigned_width(
+                    cacher_.resolved_spec,
+                    assigned_width,
+                    this->get_horizontal_requirements());
+                calculated_layout_requirements x
+                    = logic_.get_horizontal_requirements(children);
+                layout_scalar actual_width
+                    = (std::max)(resolved_width, x.size);
+                calculated_layout_requirements y
+                    = logic_.get_vertical_requirements(children, actual_width);
+                layout_scalar required_height = y.size;
+                if ((data.scrollable_axes & 1) != 0 && x.size > resolved_width)
+                {
+                    required_height += get_scrollbar_width(data.sb_data[0]);
+                }
+                return calculated_layout_requirements{required_height, 0, 0};
+            }
+        });
+}
+
+void
+scrollable_layout_container::set_relative_assignment(
+    relative_layout_assignment const& assignment)
+{
+    auto& data = *data_;
+    // std::cout << "(scrollable) sra: " << assignment.region << std::endl;
+    update_relative_assignment(
+        *this,
+        cacher_,
+        this->last_content_change,
+        assignment,
+        [&](auto const& resolved_assignment) {
+            layout_vector available_size = resolved_assignment.region.size;
+
+            // Track whether or not we're going to include the scrollbar
+            // width in the available width for content.
+            // bool exclude_scrollbar_width[2] = {false, false};
+
+            calculated_layout_requirements x
+                = logic_.get_horizontal_requirements(children);
+            if (available_size[0] < x.size)
+            {
+                set_scrollbar_on(data, 0, true);
+                available_size[1] -= get_scrollbar_width(data.sb_data[0]);
+            }
+            else
+            {
+                set_scrollbar_on(data, 0, false);
+            }
+
+            // Attempted hack to avoid calling get_vertical_requirements
+            // twice for long scrolled content...
+            calculated_layout_requirements y_without_scrollbar;
+            layout_scalar available_width_with_scrollbar
+                = available_size[0] - get_scrollbar_width(data.sb_data[1]);
+            calculated_layout_requirements y_with_scrollbar
+                = logic_.get_vertical_requirements(
+                    children,
+                    (std::max)(available_width_with_scrollbar, x.size));
+
+            if (available_size[1] * available_size[0]
+                < y_with_scrollbar.size * available_width_with_scrollbar)
+            {
+                set_scrollbar_on(data, 1, true);
+                available_size[0] -= get_scrollbar_width(data.sb_data[1]);
+                // The introduction of the vertical scrollbar may have
+                // triggered the need for a horizontal scrollbar as
+                // well.
+                if (!is_scrollbar_on(data, 0) && available_size[0] < x.size)
                 {
                     set_scrollbar_on(data, 0, true);
                     available_size[1] -= get_scrollbar_width(data.sb_data[0]);
                 }
-                else
-                {
-                    set_scrollbar_on(data, 0, false);
-                }
-
-                // Attempted hack to avoid calling get_vertical_requirements
-                // twice for long scrolled content...
-                calculated_layout_requirements y_without_scrollbar;
-                layout_scalar available_width_with_scrollbar
-                    = available_size[0] - get_scrollbar_width(data.sb_data[1]);
-                calculated_layout_requirements y_with_scrollbar
-                    = logic->get_vertical_requirements(
-                        children,
-                        (std::max)(available_width_with_scrollbar, x.size));
-
-                if (available_size[1] * available_size[0]
-                    < y_with_scrollbar.size * available_width_with_scrollbar)
+            }
+            else
+            {
+                y_without_scrollbar = logic_.get_vertical_requirements(
+                    children, (std::max)(available_size[0], x.size));
+                if (available_size[1] < y_without_scrollbar.size)
                 {
                     set_scrollbar_on(data, 1, true);
                     available_size[0] -= get_scrollbar_width(data.sb_data[1]);
@@ -778,214 +844,89 @@ struct scrollable_layout_container : layout_container
                 }
                 else
                 {
-                    y_without_scrollbar = logic->get_vertical_requirements(
-                        children, (std::max)(available_size[0], x.size));
-                    if (available_size[1] < y_without_scrollbar.size)
-                    {
-                        set_scrollbar_on(data, 1, true);
-                        available_size[0]
-                            -= get_scrollbar_width(data.sb_data[1]);
-                        // The introduction of the vertical scrollbar may have
-                        // triggered the need for a horizontal scrollbar as
-                        // well.
-                        if (!is_scrollbar_on(data, 0)
-                            && available_size[0] < x.size)
-                        {
-                            set_scrollbar_on(data, 0, true);
-                            available_size[1]
-                                -= get_scrollbar_width(data.sb_data[0]);
-                        }
-                    }
-                    else
-                    {
-                        set_scrollbar_on(data, 1, false);
-                    }
+                    set_scrollbar_on(data, 1, false);
                 }
+            }
 
-                if ((data.reserved_axes & 1) != 0 && !is_scrollbar_on(data, 0))
-                    available_size[1] -= get_scrollbar_width(data.sb_data[0]);
-                if ((data.reserved_axes & 2) != 0 && !is_scrollbar_on(data, 1))
-                    available_size[0] -= get_scrollbar_width(data.sb_data[1]);
+            if ((data.reserved_axes & 1) != 0 && !is_scrollbar_on(data, 0))
+                available_size[1] -= get_scrollbar_width(data.sb_data[0]);
+            if ((data.reserved_axes & 2) != 0 && !is_scrollbar_on(data, 1))
+                available_size[0] -= get_scrollbar_width(data.sb_data[1]);
 
-                layout_scalar content_width
-                    = (std::max)(available_size[0], x.size);
+            layout_scalar content_width
+                = (std::max)(available_size[0], x.size);
 
-                calculated_layout_requirements y
-                    = available_size[0] == available_width_with_scrollbar
-                          ? y_with_scrollbar
-                          : y_without_scrollbar;
+            calculated_layout_requirements y
+                = available_size[0] == available_width_with_scrollbar
+                      ? y_with_scrollbar
+                      : y_without_scrollbar;
 
-                layout_scalar content_height
-                    = (std::max)(available_size[1], y.size);
+            layout_scalar content_height
+                = (std::max)(available_size[1], y.size);
 
-                layout_vector content_size
-                    = make_layout_vector(content_width, content_height);
+            layout_vector content_size
+                = make_layout_vector(content_width, content_height);
 
-                // Determine if either scrollbar is scrolled to the end of the
-                // content and the content is growing. If that's the case, we
-                // consider it pinned to the end of the content.
-                bool pin_to_end[2] = {false, false};
-                for (unsigned axis = 0; axis != 2; ++axis)
+            // Determine if either scrollbar is scrolled to the end of the
+            // content and the content is growing. If that's the case, we
+            // consider it pinned to the end of the content.
+            bool pin_to_end[2] = {false, false};
+            for (unsigned axis = 0; axis != 2; ++axis)
+            {
+                layout_scalar sp = data.sb_data[axis].smoothed_scroll_position;
+                if (sp != 0
+                    && sp + data.window_size[axis] >= data.content_size[axis]
+                    && sp + available_size[axis] < content_size[axis])
                 {
-                    layout_scalar sp
-                        = data.sb_data[axis].smoothed_scroll_position;
-                    if (sp != 0
-                        && sp + data.window_size[axis]
-                               >= data.content_size[axis]
-                        && sp + available_size[axis] < content_size[axis])
-                    {
-                        pin_to_end[axis] = true;
-                    }
+                    pin_to_end[axis] = true;
                 }
+            }
 
-                // Update the persistent copies of the content and window
-                // sizes.
-                data.content_size = content_size;
-                data.window_size = available_size;
+            // Update the persistent copies of the content and window
+            // sizes.
+            data.content_size = content_size;
+            data.window_size = available_size;
 
-                // If we determined that either of the scrollbars are pinned to
-                // the end, keep them that way.
-                for (unsigned axis = 0; axis != 2; ++axis)
+            // If we determined that either of the scrollbars are pinned to
+            // the end, keep them that way.
+            for (unsigned axis = 0; axis != 2; ++axis)
+            {
+                if (pin_to_end[axis])
                 {
-                    if (pin_to_end[axis])
+                    set_logical_position_abruptly(
+                        construct_scrollbar(*data_, cacher_, axis),
+                        content_size[axis] - available_size[axis]);
+                }
+            }
+
+            // If the scroll position needs to be clamped because of
+            // changes in content size, then do it abruptly, not
+            // smoothly.
+            for (unsigned i = 0; i != 2; ++i)
+            {
+                if (is_scrollbar_on(data, i))
+                {
+                    auto clamped_position = clamp_scroll_position(
+                        construct_scrollbar(*data_, cacher_, i),
+                        data.sb_data[i].scroll_position);
+                    if (clamped_position != data.sb_data[i].scroll_position)
                     {
                         set_logical_position_abruptly(
-                            sb(axis),
-                            content_size[axis] - available_size[axis]);
+                            construct_scrollbar(*data_, cacher_, i),
+                            clamped_position);
                     }
                 }
+            }
 
-                // If the scroll position needs to be clamped because of
-                // changes in content size, then do it abruptly, not
-                // smoothly.
-                for (unsigned i = 0; i != 2; ++i)
-                {
-                    if (is_scrollbar_on(data, i))
-                    {
-                        auto clamped_position = clamp_scroll_position(
-                            sb(i), data.sb_data[i].scroll_position);
-                        if (clamped_position
-                            != data.sb_data[i].scroll_position)
-                        {
-                            set_logical_position_abruptly(
-                                sb(i), clamped_position);
-                        }
-                    }
-                }
-
-                logic->set_relative_assignment(
-                    children, content_size, content_height - y.descent);
-            });
-    }
-
-    // associated data
-    scrollable_view_data* data_;
-
-    // layout cacher
-    layout_cacher cacher_;
-};
+            logic_.set_relative_assignment(
+                children, content_size, content_height - y.descent);
+        });
+}
 
 #if 0
 
 struct scrollable_view : widget_container
 {
-    void
-    refresh(dataless_ui_context ctx)
-    {
-        data.scrollable_axes = 2;
-        for (unsigned axis = 0; axis != 2; ++axis)
-        {
-            data.sb_data[axis].metrics.refresh(
-                /* TODO: *ctx.style.id */ unit_id,
-                [&] { return default_renderer.get_metrics(ctx); });
-            if (is_scrollbar_on(data, axis))
-                refresh_scrollbar(ctx, sb(axis));
-        }
-        // if (data.scroll_position_changed)
-        // {
-        //     if (signal_ready_to_write(position))
-        //     {
-        //         write_signal(position, data.scroll_position[1]);
-        //         data.scroll_position_changed = false;
-        //     }
-        // }
-        // else
-        // {
-        //     if (signal_has_value(position))
-        //         data.scroll_position[1] = read_signal(position);
-        // }
-        data.minimum_window_size = 120;
-        data.line_size = 60;
-    }
-
-    void
-    render(render_event& event) override
-    {
-        auto const& region = get_assignment(this->cacher).region;
-        SkRect bounds;
-        bounds.fLeft = SkScalar(region.corner[0] + event.current_offset[0]);
-        bounds.fTop = SkScalar(region.corner[1] + event.current_offset[1]);
-        bounds.fRight = bounds.fLeft + SkScalar(region.size[0]);
-        bounds.fBottom = bounds.fTop + SkScalar(region.size[1]);
-        if (!event.canvas->quickReject(bounds))
-        {
-            event.canvas->save();
-            auto original_offset = event.current_offset;
-            event.canvas->clipRect(bounds);
-            event.canvas->translate(
-                -data.sb_data[0].smoothed_scroll_position,
-                -data.sb_data[1].smoothed_scroll_position);
-            event.current_offset += region.corner;
-            alia::render_children(event, *this);
-            event.current_offset = original_offset;
-            event.canvas->restore();
-            // {
-            //     SkPaint paint;
-            //     paint.setColor(SK_ColorDKGRAY);
-            //     auto thumb_area = get_thumb_area();
-            //     SkRect box;
-            //     box.fLeft
-            //         = SkScalar(thumb_area.corner[0] +
-            //         event.current_offset[0]);
-            //     box.fTop
-            //         = SkScalar(thumb_area.corner[1] +
-            //         event.current_offset[1]);
-            //     box.fRight = box.fLeft + SkScalar(thumb_area.size[0]);
-            //     box.fBottom = box.fTop + SkScalar(thumb_area.size[1]);
-            //     event.canvas->drawRect(box, paint);
-            // }
-            render_scrollbar(event, sb(1));
-        }
-    }
-
-    void
-    hit_test(
-        hit_test_base& test, vector<2, double> const& point) const override
-    {
-        auto const& region = get_assignment(this->cacher).region;
-        if (is_inside(region, vector<2, float>(point)))
-        {
-            hit_test_box(test, point, internal_element_id{*this, 0}, region);
-
-            if (test.type == alia::hit_test_type::WHEEL)
-            {
-                static_cast<alia::wheel_hit_test&>(test).result
-                    = externalize(internal_element_id{*this, 0});
-            }
-
-            auto local_point = point - vector<2, double>(region.corner);
-            local_point[0] += data.sb_data[0].smoothed_scroll_position;
-            local_point[1] += data.sb_data[1].smoothed_scroll_position;
-            for (widget* node = this->widget_container::children; node;
-                 node = node->next)
-            {
-                node->hit_test(test, local_point);
-            }
-
-            hit_test_scrollbar(sb(1), test, point);
-        }
-    }
-
     void
     process_input(ui_event_context ctx) override
     {
@@ -1075,29 +1016,6 @@ struct scrollable_view : widget_container
         }
 
         parent->reveal_region({box, request.abrupt, request.move_to_top});
-    }
-
-    layout_box
-    get_scrollbar_region(unsigned axis) const
-    {
-        layout_box region = get_assignment(this->cacher).region;
-        region.corner[1 - axis]
-            += region.size[1 - axis] - get_scrollbar_width(data.sb_data[axis]);
-        region.size[1 - axis] = get_scrollbar_width(data.sb_data[axis]);
-        return region;
-    }
-
-    scrollbar_parameters
-    sb(unsigned axis) const
-    {
-        return scrollbar_parameters{
-            &data.sb_data[axis],
-            axis,
-            this->get_scrollbar_region(axis),
-            data.content_size[axis],
-            data.window_size[axis],
-            internal_widget_ref{*this},
-            1 + int(axis) * scrollbar_element_id_count};
     }
 
     void
@@ -1198,61 +1116,62 @@ scoped_scrollable_view::end()
 
 void
 scoped_scrollable_view::begin(
-    context ctx,
+    ui_context ctx,
     layout const& layout_spec,
     unsigned scrollable_axes,
-    widget_id id,
-    optional_storage<layout_vector> const& scroll_position_storage,
     unsigned reserved_axes)
 {
     ctx_ = &ctx;
-    id_ = id;
 
     if (get_cached_data(ctx, &data_))
-    {
-        data_->scroll_position = data_->smoothed_scroll_position
-            = make_layout_vector(0, 0);
         data_->container.data_ = data_;
-    }
-    scrollable_view_data& data = *data_;
+    auto& data = *data_;
 
-    // Determine where the scroll position is actually supposed to be stored,
-    // and handle requests to set its value.
-    accessor_mux<
-        input_accessor<bool>,
-        indirect_accessor<layout_vector>,
-        inout_accessor<layout_vector>>
-        position
-        = resolve_storage(scroll_position_storage, &data.scroll_position);
-    if (data.scroll_position_changed)
-    {
-        position.set(data.scroll_position);
-        data.scroll_position_changed = false;
-    }
-
-    // Get the smoothed version of the scroll position.
-    for (unsigned i = 0; i != 2; ++i)
-    {
-        layout_scalar smoothed = smooth_raw_value(
-            ctx,
-            data.smoothers[i],
-            data.scroll_position[i],
-            animated_transition(default_curve, 350));
-        data.smoothed_scroll_position[i]
-            = clamp_scroll_position(data, i, smoothed);
-    }
-
-    slc_.begin(get_layout_traversal(ctx), &data.container);
-
-    srr_.begin(ctx.routing);
+    container_.begin(get_layout_traversal(ctx), &data.container);
 
     alia_untracked_if(is_refresh_pass(ctx))
     {
-        if (is_gettable(position))
-            data.scroll_position = get(position);
+        detect_layout_change(
+            get_layout_traversal(ctx), &data.scrollable_axes, scrollable_axes);
+        detect_layout_change(
+            get_layout_traversal(ctx), &data.reserved_axes, reserved_axes);
 
-        refresh_scrollbar_data(ctx, data.hsb_data);
-        refresh_scrollbar_data(ctx, data.vsb_data);
+        for (unsigned axis = 0; axis != 2; ++axis)
+        {
+            if (is_scrollbar_on(data, axis))
+                refresh_scrollbar(ctx, data.sb_data[axis]);
+        }
+
+        // TODO
+        // if (data.scroll_position_changed)
+        // {
+        //     if (signal_ready_to_write(position))
+        //     {
+        //         write_signal(position, data.scroll_position[1]);
+        //         data.scroll_position_changed = false;
+        //     }
+        // }
+        // else
+        // {
+        //     if (signal_has_value(position))
+        //         data.scroll_position[1] = read_signal(position);
+        // }
+
+        // TODO
+        // detect_layout_change(
+        //     ctx, &data.scrollbar_width, get_scrollbar_width(data.vsb_data));
+        data.minimum_window_size = 120;
+
+        // TODO
+        // detect_layout_change(
+        //     ctx,
+        //     &data.minimum_window_size,
+        //     get_minimum_scrollbar_length(data.vsb_data));
+
+        // TODO
+        // data.line_size = as_layout_size(resolve_absolute_length(
+        //     get_layout_traversal(ctx), 0, absolute_length(6, EM)));
+        data.line_size = 60;
 
         detect_layout_change(
             get_layout_traversal(ctx), &data.scrollable_axes, scrollable_axes);
@@ -1264,107 +1183,78 @@ scoped_scrollable_view::begin(
             data.container.cacher_,
             layout_spec,
             FILL | UNPADDED);
-
-        detect_layout_change(
-            ctx, &data.scrollbar_width, get_scrollbar_width(data.vsb_data));
-        detect_layout_change(
-            ctx,
-            &data.minimum_window_size,
-            get_minimum_scrollbar_length(data.vsb_data));
-
-        data.line_size = as_layout_size(resolve_absolute_length(
-            get_layout_traversal(ctx), 0, absolute_length(6, EM)));
     }
     alia_untracked_else
     {
         layout_vector window_corner
             = get_assignment(data.container.cacher_).region.corner;
 
-        hit_test_box_region(
-            ctx,
-            id,
-            layout_box(window_corner, data.window_size),
-            HIT_TEST_WHEEL);
+        // TODO
+        // hit_test_box_region(
+        //     ctx,
+        //     id,
+        //     layout_box(window_corner, data.window_size),
+        //     HIT_TEST_WHEEL);
 
-        float movement;
-        if (detect_wheel_movement(ctx, &movement, id))
-        {
-            set_scroll_position(
-                data,
-                1,
-                clamp_scroll_position(
-                    data,
-                    1,
-                    data.scroll_position[1]
-                        - round_to_layout_scalar(data.line_size * movement)));
-        }
+        // TODO
+        // float movement;
+        // if (detect_wheel_movement(ctx, &movement, id))
+        // {
+        //     set_scroll_position(
+        //         data,
+        //         1,
+        //         clamp_scroll_position(
+        //             data,
+        //             1,
+        //             data.scroll_position[1]
+        //                 - round_to_layout_scalar(data.line_size *
+        //                 movement)));
+        // }
 
-        if (data.hsb_on)
+        for (unsigned i = 0; i != 2; ++i)
         {
-            state_proxy<layout_scalar> proxy(data.smoothed_scroll_position[0]);
-            do_scrollbar(
-                ctx,
-                data.hsb_data,
-                0,
-                make_accessor(proxy),
-                layout_box(
-                    window_corner + make_layout_vector(0, data.window_size[1]),
-                    make_layout_vector(
-                        data.window_size[0], data.scrollbar_width)),
-                data.content_size[0],
-                data.window_size[0],
-                data.line_size,
-                data.window_size[0]);
-            if (proxy.was_set())
-                set_scroll_position_abruptly(data, 0, proxy.get());
-        }
-        if (data.vsb_on)
-        {
-            state_proxy<layout_scalar> proxy(data.smoothed_scroll_position[1]);
-            do_scrollbar(
-                ctx,
-                data.vsb_data,
-                1,
-                make_accessor(proxy),
-                layout_box(
-                    window_corner + make_layout_vector(data.window_size[0], 0),
-                    make_layout_vector(
-                        data.scrollbar_width, data.window_size[1])),
-                data.content_size[1],
-                data.window_size[1],
-                data.line_size,
-                data.window_size[1]);
-            if (proxy.was_set())
-                set_scroll_position_abruptly(data, 1, proxy.get());
-        }
-        if (data.hsb_on && data.vsb_on)
-        {
-            scrollbar_junction_renderer const* junction_renderer;
-            static default_scrollbar_junction_renderer
-                default_junction_renderer;
-            get_themed_renderer(
-                ctx,
-                data.junction_rendering,
-                &junction_renderer,
-                &default_junction_renderer);
-            alia_tracked_block(data.junction_rendering.drawing_block)
+            if (is_scrollbar_on(data, i))
             {
+                do_scrollbar_pass(
+                    ctx, construct_scrollbar(data, data.container.cacher_, i));
+            }
+        }
+
+        if (get_event_type(ctx) == RENDER_EVENT)
+        {
+            if (is_scrollbar_on(data, 0) && is_scrollbar_on(data, 1))
+            {
+                static default_scrollbar_junction_renderer
+                    default_junction_renderer;
+                scrollbar_junction_renderer const* junction_renderer
+                    = &default_junction_renderer;
                 junction_renderer->draw(
                     ctx, layout_box(window_corner, data.window_size));
             }
-            alia_end
         }
 
-        scr_.begin(*get_layout_traversal(ctx).geometry);
-        scr_.set(box<2, double>(
+        clip_region_.begin(*get_layout_traversal(ctx).geometry);
+        clip_region_.set(box<2, double>(
             vector<2, double>(window_corner),
             vector<2, double>(data.window_size)));
 
+        auto scroll_position = make_vector<double>(0, 0);
+        for (unsigned i = 0; i != 2; ++i)
+        {
+            if (is_scrollbar_on(data, i))
+                scroll_position[i] = data.sb_data[i].smoothed_scroll_position;
+        }
+
         transform_.begin(*get_layout_traversal(ctx).geometry);
         transform_.set(translation_matrix(
-            vector<2, double>(window_corner - data.smoothed_scroll_position)));
+            vector<2, double>(window_corner) - scroll_position));
     }
     alia_end
+}
+
+void
+scoped_scrollable_view::end()
+{
 }
 
 } // namespace alia
