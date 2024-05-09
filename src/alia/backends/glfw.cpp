@@ -276,7 +276,8 @@ render_ui(glfw_window_impl& impl)
     // TODO: Don't clear automatically.
     {
         SkPaint paint;
-        paint.setColor(SK_ColorWHITE);
+        // paint.setColor(SK_ColorWHITE);
+        paint.setColor(SkColorSetRGB(0x31, 0x38, 0x44));
         canvas.drawPaint(paint);
     }
 

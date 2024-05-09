@@ -144,60 +144,43 @@ process_scroll(ui_system& /*ui*/, vector<2, double> const& /*delta*/)
 }
 
 bool
-process_focused_key_press(ui_system& /*ui*/, modded_key const& /*info*/)
+process_focused_key_press(ui_system& ui, modded_key const& info)
 {
-    // TODO
-    // key_event event{{{}, ui_event_type::KEY_PRESS}, info};
-    // auto target = ui.input.element_with_focus.widget.lock();
-    // deliver_input_event(ui, target, event);
-    // return event.acknowledged;
-    return false;
+    key_event event{{}, info};
+    dispatch_targeted_event(
+        ui, event, ui.input.element_with_focus.component, KEY_PRESS_EVENT);
+    return event.acknowledged;
 }
 
 bool
-process_background_key_press(ui_system& /*ui*/, modded_key const& /*info*/)
+process_background_key_press(ui_system& ui, modded_key const& info)
 {
-    // TODO
-    // key_event event{{{}, ui_event_type::BACKGROUND_KEY_PRESS}, info};
-    // event_delivery_fixture<key_event> fixture(ui);
-    // auto focus = ui.input.element_with_focus.widget.lock();
-    // widget* target = focus.get();
-    // while (target)
-    // {
-    //     fixture.deliver(target, event);
-    //     target = target->parent;
-    // }
-    // return event.acknowledged;
-    return false;
+    key_event event{{}, info};
+    dispatch_event(ui, event, BACKGROUND_KEY_PRESS_EVENT);
+    return event.acknowledged;
 }
 
 bool
-process_focused_key_release(ui_system& /*ui*/, modded_key const& /*info*/)
+process_focused_key_release(ui_system& ui, modded_key const& info)
 {
-    // TODO
-    // key_event event{{{}, ui_event_type::KEY_RELEASE}, info};
-    // auto target = ui.input.element_with_focus.widget.lock();
-    // deliver_input_event(ui, target, event);
-    // return event.acknowledged;
-    return false;
+    key_event event{{}, info};
+    dispatch_targeted_event(
+        ui, event, ui.input.element_with_focus.component, KEY_RELEASE_EVENT);
+    return event.acknowledged;
 }
 bool
-process_key_press(ui_system& /*ui*/, modded_key const& /*info*/)
+process_key_press(ui_system& ui, modded_key const& info)
 {
-    // TODO
-    // ui.input.keyboard_interaction = true;
-    // return process_focused_key_press(ui, info)
-    //        || process_background_key_press(ui, info);
-    return false;
+    ui.input.keyboard_interaction = true;
+    return process_focused_key_press(ui, info)
+           || process_background_key_press(ui, info);
 }
 
 bool
-process_key_release(ui_system& /*ui*/, modded_key const& /*info*/)
+process_key_release(ui_system& ui, modded_key const& info)
 {
-    // TODO
-    // ui.input.keyboard_interaction = true;
-    // return process_focused_key_release(ui, info);
-    return false;
+    ui.input.keyboard_interaction = true;
+    return process_focused_key_release(ui, info);
 }
 
 } // namespace alia

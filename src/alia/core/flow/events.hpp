@@ -194,6 +194,9 @@ targeted_event_handler(Context ctx, component_id id, Handler&& handler)
 
 // the refresh event...
 
+ALIA_DEFINE_EVENT_CATEGORY(REFRESH_CATEGORY, 1)
+ALIA_DEFINE_EVENT_TYPE_CODE(REFRESH_CATEGORY, REFRESH_EVENT, 0)
+
 struct refresh_event
 {
 };
