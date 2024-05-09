@@ -352,78 +352,79 @@ update_layout_cacher(
     layout_cacher& cacher,
     layout const& layout_spec,
     layout_flag_set default_flags);
-struct horizontal_layout_query
+
+template<class Calculator>
+layout_requirements const&
+cache_horizontal_layout_requirements(
+    layout_cacher& cacher,
+    counter_type last_content_change,
+    Calculator&& calculator)
 {
-    horizontal_layout_query(
-        layout_cacher& cacher, counter_type last_content_change);
-    bool
-    update_required() const
+    if (cacher.last_horizontal_query != last_content_change)
     {
-        return cacher_->last_horizontal_query != last_content_change_;
+        resolve_requirements(
+            cacher.horizontal_requirements,
+            cacher.resolved_spec,
+            0,
+            std::forward<Calculator>(calculator)());
+        cacher.last_horizontal_query = last_content_change;
     }
-    void
-    update(calculated_layout_requirements const& calculated);
-    layout_requirements const&
-    result() const
-    {
-        return cacher_->horizontal_requirements;
-    }
+    return cacher.horizontal_requirements;
+}
 
- private:
-    layout_cacher* cacher_;
-    counter_type last_content_change_;
-};
-
-struct vertical_layout_query
+template<class Calculator>
+layout_requirements const&
+cache_vertical_layout_requirements(
+    layout_cacher& cacher,
+    counter_type last_content_change,
+    layout_scalar assigned_width,
+    Calculator&& calculator)
 {
-    vertical_layout_query(
-        layout_cacher& cacher,
-        counter_type last_content_change,
-        layout_scalar assigned_width);
-    bool
-    update_required() const
+    if (cacher.assigned_width != assigned_width
+        || cacher.last_vertical_query != last_content_change)
     {
-        return cacher_->assigned_width != assigned_width_
-               || cacher_->last_vertical_query != last_content_change_;
+        resolve_requirements(
+            cacher.vertical_requirements,
+            cacher.resolved_spec,
+            1,
+            std::forward<Calculator>(calculator)());
+        cacher.last_vertical_query = last_content_change;
+        cacher.assigned_width = assigned_width;
     }
-    void
-    update(calculated_layout_requirements const& calculated);
-    layout_requirements const&
-    result() const
-    {
-        return cacher_->vertical_requirements;
-    }
+    return cacher.vertical_requirements;
+}
 
- private:
-    layout_cacher* cacher_;
-    counter_type last_content_change_;
-    layout_scalar assigned_width_;
-};
-struct relative_region_assignment
+template<class Assigner>
+void
+update_relative_assignment(
+    layout_node& node,
+    layout_cacher& cacher,
+    counter_type last_content_change,
+    relative_layout_assignment const& assignment,
+    Assigner&& assigner)
 {
-    relative_region_assignment(
-        layout_node& node,
-        layout_cacher& cacher,
-        counter_type last_content_change,
-        relative_layout_assignment const& assignment);
-    bool
-    update_required() const
+    if (cacher.last_relative_assignment != last_content_change
+        || cacher.relative_assignment != assignment)
     {
-        return update_required_;
+        auto resolved_assignment = resolve_relative_assignment(
+            cacher.resolved_spec,
+            assignment,
+            cacher.horizontal_requirements,
+            node.get_vertical_requirements(assignment.region.size[0]));
+        if (cacher.last_relative_assignment != last_content_change
+            || cacher.resolved_relative_assignment.region.size
+                   != resolved_assignment.region.size
+            || cacher.resolved_relative_assignment.baseline_y
+                   != resolved_assignment.baseline_y)
+        {
+            std::forward<Assigner>(assigner)(resolved_assignment);
+            cacher.last_relative_assignment = last_content_change;
+        }
+        cacher.resolved_relative_assignment = resolved_assignment;
+        cacher.relative_assignment = assignment;
     }
-    relative_layout_assignment const&
-    resolved_assignment() const
-    {
-        return cacher_->resolved_relative_assignment;
-    }
-    void
-    update();
+}
 
- private:
-    layout_cacher* cacher_;
-    counter_type last_content_change_;
-    bool update_required_;
-};
 // Get the resolved relative assignment for a layout cacher.
 inline relative_layout_assignment const&
 get_assignment(layout_cacher const& cacher)
@@ -442,46 +443,42 @@ struct simple_layout_container : layout_container
     layout_requirements
     get_horizontal_requirements() override
     {
-        horizontal_layout_query query(cacher, last_content_change);
-        if (query.update_required())
-        {
-            query.update(logic.get_horizontal_requirements(children));
-        }
-        return query.result();
+        return cache_horizontal_layout_requirements(
+            cacher, last_content_change, [&] {
+                return logic.get_horizontal_requirements(children);
+            });
     }
 
     layout_requirements
     get_vertical_requirements(layout_scalar assigned_width) override
     {
-        vertical_layout_query query(
-            cacher, last_content_change, assigned_width);
-        if (query.update_required())
-        {
-            query.update(logic.get_vertical_requirements(
-                children,
-                resolve_assigned_width(
-                    this->cacher.resolved_spec,
-                    assigned_width,
-                    this->get_horizontal_requirements())));
-        }
-        return query.result();
+        return cache_vertical_layout_requirements(
+            cacher, last_content_change, assigned_width, [&] {
+                return logic.get_vertical_requirements(
+                    children,
+                    resolve_assigned_width(
+                        this->cacher.resolved_spec,
+                        assigned_width,
+                        this->get_horizontal_requirements()));
+            });
     }
 
     void
     set_relative_assignment(
         relative_layout_assignment const& assignment) override
     {
-        relative_region_assignment rra(
-            *this, cacher, last_content_change, assignment);
-        if (rra.update_required())
-        {
-            this->assigned_size = rra.resolved_assignment().region.size;
-            logic.set_relative_assignment(
-                children,
-                rra.resolved_assignment().region.size,
-                rra.resolved_assignment().baseline_y);
-            rra.update();
-        }
+        update_relative_assignment(
+            *this,
+            cacher,
+            last_content_change,
+            assignment,
+            [&](auto const& resolved_assignment) {
+                this->assigned_size = resolved_assignment.region.size;
+                logic.set_relative_assignment(
+                    children,
+                    resolved_assignment.region.size,
+                    resolved_assignment.baseline_y);
+            });
     }
 
     Logic logic;
