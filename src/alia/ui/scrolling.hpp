@@ -1,7 +1,7 @@
 #ifndef ALIA_UI_SCROLLING_HPP
 #define ALIA_UI_SCROLLING_HPP
 
-#include "alia/core/flow/events.hpp"
+#include <alia/core/flow/events.hpp>
 #include <alia/ui/context.hpp>
 #include <alia/ui/events.hpp>
 #include <alia/ui/layout/library.hpp>
@@ -74,15 +74,20 @@ struct scrollbar_parameters
 // maximum IDs that the scrollbar will use
 int constexpr scrollbar_element_id_count = 5;
 
+struct scrollable_view_data;
+
 struct scoped_scrollable_view
 {
     scoped_scrollable_view()
     {
     }
     scoped_scrollable_view(
-        ui_context ctx, layout const& layout_spec = default_layout)
+        ui_context ctx,
+        layout const& layout_spec = default_layout,
+        unsigned scrollable_axes = 1 | 2,
+        unsigned reserved_axes = 0)
     {
-        begin(ctx, layout_spec);
+        begin(ctx, layout_spec, scrollable_axes, reserved_axes);
     }
     ~scoped_scrollable_view()
     {
@@ -90,12 +95,21 @@ struct scoped_scrollable_view
     }
 
     void
-    begin(ui_context ctx, layout const& layout_spec = default_layout);
+    begin(
+        ui_context ctx,
+        layout const& layout_spec = default_layout,
+        unsigned scrollable_axes = 1 | 2,
+        unsigned reserved_axes = 0);
     void
     end();
 
  private:
+    // TODO: Something else.
+    ui_context* ctx_;
+    scrollable_view_data* data_;
     scoped_layout_container container_;
+    scoped_clip_region clip_region_;
+    scoped_transformation transform_;
 };
 
 } // namespace alia
