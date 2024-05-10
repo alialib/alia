@@ -198,10 +198,10 @@ resolve_relative_length(
     return length.is_relative
                ? length.length * full_length
                : resolve_absolute_length(
-                     ppi,
-                     style_info,
-                     axis,
-                     absolute_length(length.length, length.units));
+                   ppi,
+                   style_info,
+                   axis,
+                   absolute_length(length.length, length.units));
 }
 
 vector<2, float>

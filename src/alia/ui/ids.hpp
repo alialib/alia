@@ -28,8 +28,7 @@ struct routable_widget_id
         return this->id == widget;
     }
 
-    explicit
-    operator bool() const
+    explicit operator bool() const
     {
         return id != 0;
     }

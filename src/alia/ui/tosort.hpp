@@ -16,8 +16,7 @@ struct keyed_data
     {
     }
 
-    explicit
-    operator bool() const
+    explicit operator bool() const
     {
         return key_.is_initialized();
     }
