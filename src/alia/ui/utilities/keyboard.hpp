@@ -10,20 +10,20 @@
 
 namespace alia {
 
-// Add the given element to the list that will be traversed when the user
+// Add the given widget to the list that will be traversed when the user
 // presses Tab.
 void
 add_to_focus_order(dataless_ui_context ctx, widget_id id);
 
-// Determine if the given element has the keyboard focus.
+// Determine if the given widget has the keyboard focus.
 bool
-element_has_focus(ui_system& sys, widget_id id);
+widget_has_focus(ui_system& sys, widget_id id);
 
-// Determine if the given element has the keyboard focus.
+// Determine if the given widget has the keyboard focus.
 inline bool
-element_has_focus(dataless_ui_context ctx, widget_id id)
+widget_has_focus(dataless_ui_context ctx, widget_id id)
 {
-    return element_has_focus(get_system(ctx), id);
+    return widget_has_focus(get_system(ctx), id);
 }
 
 // Set the component with focus and ensure that it's visible.
@@ -38,21 +38,21 @@ detect_focus_gain(dataless_ui_context ctx, widget_id id);
 bool
 detect_focus_loss(dataless_ui_context ctx, widget_id id);
 
-// Calling this ensure that a element will steal the focus if it's click on.
+// Calling this ensure that a widget will steal the focus if it's click on.
 void
 focus_on_click(dataless_ui_context ctx, widget_id id);
 
 // The following are used to detect general keyboard events related to
 // any key...
 
-// Detect if a key press just occurred and was directed at the given element.
+// Detect if a key press just occurred and was directed at the given widget.
 std::optional<modded_key>
 detect_key_press(dataless_ui_context ctx, widget_id id);
 // same, but without ID (as background)
 std::optional<modded_key>
 detect_key_press(dataless_ui_context ctx);
 
-// Detect if a key release just occurred and was directed at the given element.
+// Detect if a key release just occurred and was directed at the given widget.
 // Note that many key presses may be received before the corresponding (single)
 // key release is received.
 std::optional<modded_key>

@@ -30,7 +30,7 @@ struct window_input_state
     routable_widget_id hot_widget;
 
     // the widget that has the mouse captured - Note that this isn't
-    // necessarily the same as the hot_element.
+    // necessarily the same as the hot_widget.
     routable_widget_id widget_with_capture;
 
     // the widget that has the keyboard focus
@@ -46,7 +46,7 @@ struct window_input_state
     // is used as a hint to display focus indicators.
     bool keyboard_interaction = false;
 
-    // If the mouse is hovering over a widget (identified by hot_element), this
+    // If the mouse is hovering over a widget (identified by hot_widget), this
     // is the time at which the hovering started. Note that hovering is only
     // possible if no widget has captured the mouse.
     millisecond_count hover_start_time;
