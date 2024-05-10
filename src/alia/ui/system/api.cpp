@@ -82,18 +82,18 @@ update(ui_system& ui)
         dispatch_event(ui, hit_test, MOUSE_HIT_TEST_EVENT);
         if (hit_test.result)
         {
-            set_hot_element(ui, hit_test.result->id);
+            set_hot_widget(ui, hit_test.result->id);
             resolved_cursor = hit_test.result->cursor;
             // record_tooltip(ui, hit_test);
         }
         else
         {
-            set_hot_element(ui, routable_widget_id());
+            set_hot_widget(ui, routable_widget_id());
         }
     }
     else
     {
-        set_hot_element(ui, routable_widget_id());
+        set_hot_widget(ui, routable_widget_id());
     }
 
     // The block above gives us the mouse cursor that's been requested by
@@ -725,18 +725,18 @@ clear_focus(ui_system& ui)
 }
 
 void
-set_element_with_capture(ui_system& ui, routable_widget_id id)
+set_widget_with_capture(ui_system& ui, routable_widget_id id)
 {
     ui.input.widget_with_capture = std::move(id);
 }
 
 void
-set_hot_element(ui_system& ui, routable_widget_id id)
+set_hot_widget(ui_system& ui, routable_widget_id id)
 {
     // TODO:
-    // If no element has capture and the mouse is moving to a different
-    // element, this marks the start of a hover.
-    // if (!ui.input.element_with_capture && ui.input.hot_element != element)
+    // If no widget has capture and the mouse is moving to a different
+    // widget, this marks the start of a hover.
+    // if (!ui.input.widget_with_capture && ui.input.hot_widget != id)
     // {
     //     // ui.input.hover_start_time = ui.tick_count;
     // }

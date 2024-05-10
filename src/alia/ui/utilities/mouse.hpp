@@ -24,30 +24,30 @@ vector<2, int>
 get_integer_mouse_position(dataless_ui_context ctx);
 
 bool
-is_element_hot(ui_system& sys, widget_id id);
+is_widget_hot(ui_system& sys, widget_id id);
 
 inline bool
-is_element_hot(dataless_ui_context ctx, widget_id id)
+is_widget_hot(dataless_ui_context ctx, widget_id id)
 {
-    return is_element_hot(get_system(ctx), id);
+    return is_widget_hot(get_system(ctx), id);
 }
 
 bool
-element_has_capture(ui_system& sys, widget_id id);
+widget_has_capture(ui_system& sys, widget_id id);
 
 inline bool
-element_has_capture(dataless_ui_context ctx, widget_id id)
+widget_has_capture(dataless_ui_context ctx, widget_id id)
 {
-    return element_has_capture(get_system(ctx), id);
+    return widget_has_capture(get_system(ctx), id);
 }
 
 bool
-no_element_has_capture(ui_system& sys);
+no_widget_has_capture(ui_system& sys);
 
 inline bool
-no_element_has_capture(dataless_ui_context ctx)
+no_widget_has_capture(dataless_ui_context ctx)
 {
-    return no_element_has_capture(get_system(ctx));
+    return no_widget_has_capture(get_system(ctx));
 }
 
 bool

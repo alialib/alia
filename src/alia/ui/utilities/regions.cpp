@@ -150,7 +150,7 @@ do_box_region(
 // bool
 // is_region_active(dataless_ui_context ctx, widget_id id)
 // {
-//     return get_system(ctx).input.element_with_capture.matches(id);
+//     return get_system(ctx).input.widget_with_capture.matches(id);
 // }
 
 // void

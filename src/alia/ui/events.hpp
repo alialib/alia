@@ -6,51 +6,15 @@
 #include <alia/ui/common.hpp>
 #include <alia/ui/context.hpp>
 #include <alia/ui/geometry.hpp>
+#include <alia/ui/ids.hpp>
 #include <alia/ui/layout/specification.hpp>
 #include <alia/ui/system/input_constants.hpp>
+
 #include <cstdint>
 
 class SkCanvas;
 
 namespace alia {
-
-// TODO: Move ID stuff to another file.
-
-typedef void const* widget_id;
-constexpr widget_id auto_id = nullptr;
-
-inline widget_id
-offset_id(widget_id main_id, uint8_t index)
-{
-    return reinterpret_cast<uint8_t const*>(main_id) + index;
-}
-
-// routable_widget_id identifies a widget with enough information that an
-// event can be routed to it.
-struct routable_widget_id
-{
-    widget_id id = nullptr;
-    component_container_ptr component;
-
-    bool
-    matches(widget_id widget) const
-    {
-        return this->id == widget;
-    }
-
-    explicit
-    operator bool() const
-    {
-        return id != 0;
-    }
-};
-static routable_widget_id const null_widget_id(0, component_container_ptr());
-
-inline routable_widget_id
-make_routable_widget_id(dataless_ui_context ctx, widget_id id)
-{
-    return routable_widget_id{id, get_active_component_container(ctx)};
-}
 
 ALIA_DEFINE_EVENT_CATEGORY(REGION_CATEGORY, 0x10)
 

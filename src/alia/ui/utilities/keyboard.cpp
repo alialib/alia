@@ -55,7 +55,7 @@ add_to_focus_order(dataless_ui_context ctx, widget_id id)
 }
 
 bool
-element_has_focus(ui_system& sys, widget_id id)
+widget_has_focus(ui_system& sys, widget_id id)
 {
     return sys.input.widget_with_focus.matches(id);
 }
@@ -88,7 +88,7 @@ set_focus(ui_system& sys, routable_widget_id widget)
     refresh_system(sys);
 
     // TODO
-    // if (different && element)
+    // if (different && widget)
     // {
     //     // Make the new widget visible.
     //     {
@@ -112,7 +112,7 @@ set_focus(ui_system& sys, routable_widget_id widget)
 void
 focus_on_click(dataless_ui_context ctx, widget_id id)
 {
-    if (is_element_hot(ctx, id)
+    if (is_widget_hot(ctx, id)
         && (get_event_type(ctx) == MOUSE_PRESS_EVENT
             || get_event_type(ctx) == DOUBLE_CLICK_EVENT))
     {
@@ -139,7 +139,7 @@ detect_key_press(dataless_ui_context ctx, widget_id id)
 {
     focus_on_click(ctx, id);
 
-    if (get_event_type(ctx) == KEY_PRESS_EVENT && element_has_focus(ctx, id))
+    if (get_event_type(ctx) == KEY_PRESS_EVENT && widget_has_focus(ctx, id))
     {
         auto const& event = cast_event<key_event>(ctx);
         if (!event.acknowledged)
@@ -182,7 +182,7 @@ detect_key_release(dataless_ui_context ctx, widget_id id)
 {
     focus_on_click(ctx, id);
 
-    if (element_has_focus(ctx, id) && get_event_type(ctx) == KEY_RELEASE_EVENT)
+    if (widget_has_focus(ctx, id) && get_event_type(ctx) == KEY_RELEASE_EVENT)
     {
         auto const& event = cast_event<key_event>(ctx);
         if (!event.acknowledged)

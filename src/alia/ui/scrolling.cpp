@@ -21,6 +21,7 @@
 #include <alia/ui/utilities/mouse.hpp>
 #include <alia/ui/utilities/regions.hpp>
 #include <alia/ui/utilities/skia.hpp>
+#include <alia/ui/utilities/widgets.hpp>
 
 #include <include/core/SkCanvas.h>
 #include <include/core/SkColor.h>
@@ -28,46 +29,6 @@
 #include <ratio>
 
 namespace alia {
-
-// TODO: Move
-
-element_state
-get_element_state(
-    ui_system& sys, widget_id id, element_state overrides = NO_FLAGS)
-{
-    element_state state;
-    if (!(overrides & ELEMENT_DISABLED))
-    {
-        if (overrides & ELEMENT_SELECTED)
-        {
-            state = ELEMENT_SELECTED;
-        }
-        else if (
-            is_click_in_progress(sys, id, mouse_button::LEFT)
-            || (overrides & ELEMENT_DEPRESSED))
-        {
-            state = ELEMENT_DEPRESSED;
-        }
-        else if (is_click_possible(sys, id))
-        {
-            state = ELEMENT_HOT;
-        }
-        else
-        {
-            state = ELEMENT_NORMAL;
-        }
-        if (element_has_focus(sys, id) && sys.input.window_has_focus
-            && sys.input.keyboard_interaction)
-        {
-            state |= ELEMENT_FOCUSED;
-        }
-    }
-    else
-    {
-        state = ELEMENT_DISABLED;
-    }
-    return state;
-}
 
 struct scrollbar_renderer
 {
@@ -82,7 +43,7 @@ struct scrollbar_renderer
         layout_box const& rect,
         unsigned axis,
         unsigned which,
-        element_state state) const
+        widget_state state) const
         = 0;
 
     virtual void
@@ -91,7 +52,7 @@ struct scrollbar_renderer
         scrollbar_metrics const& metrics,
         layout_box const& rect,
         unsigned axis,
-        element_state state) const
+        widget_state state) const
         = 0;
 
     virtual void
@@ -101,7 +62,7 @@ struct scrollbar_renderer
         layout_vector const& position,
         unsigned axis,
         unsigned which,
-        element_state state) const
+        widget_state state) const
         = 0;
 };
 
@@ -153,7 +114,7 @@ struct default_scrollbar_renderer : scrollbar_renderer
         layout_box const& rect,
         unsigned,
         unsigned,
-        element_state) const override
+        widget_state) const override
     {
         SkPaint paint;
         paint.setAntiAlias(true);
@@ -170,7 +131,7 @@ struct default_scrollbar_renderer : scrollbar_renderer
         scrollbar_metrics const&,
         layout_box const& rect,
         unsigned,
-        element_state) const override
+        widget_state) const override
     {
         SkPaint paint;
         paint.setAntiAlias(true);
@@ -188,7 +149,7 @@ struct default_scrollbar_renderer : scrollbar_renderer
         layout_vector const& p,
         unsigned,
         unsigned,
-        element_state) const override
+        widget_state) const override
     {
         SkPaint paint;
         paint.setAntiAlias(true);
@@ -564,7 +525,7 @@ do_scrollbar_pass(dataless_ui_context ctx, scrollbar_parameters const& sb)
                         sb.area,
                         sb.axis,
                         0,
-                        ELEMENT_NORMAL);
+                        WIDGET_NORMAL);
                 }
                 return;
             }
@@ -584,34 +545,34 @@ do_scrollbar_pass(dataless_ui_context ctx, scrollbar_parameters const& sb)
                 get_bg0_area(sb),
                 sb.axis,
                 0,
-                get_element_state(get_system(ctx), get_bg0_id(sb)));
+                get_widget_state(ctx, get_bg0_id(sb)));
             renderer->draw_background(
                 ctx,
                 *data.metrics,
                 get_bg1_area(sb),
                 sb.axis,
                 1,
-                get_element_state(get_system(ctx), get_bg1_id(sb)));
+                get_widget_state(ctx, get_bg1_id(sb)));
             renderer->draw_thumb(
                 ctx,
                 *data.metrics,
                 get_thumb_area(sb),
                 sb.axis,
-                get_element_state(get_system(ctx), get_thumb_id(sb)));
+                get_widget_state(ctx, get_thumb_id(sb)));
             renderer->draw_button(
                 ctx,
                 *data.metrics,
                 get_button0_area(sb).corner,
                 sb.axis,
                 0,
-                get_element_state(get_system(ctx), get_button0_id(sb)));
+                get_widget_state(ctx, get_button0_id(sb)));
             renderer->draw_button(
                 ctx,
                 *data.metrics,
                 get_button1_area(sb).corner,
                 sb.axis,
                 1,
-                get_element_state(get_system(ctx), get_button1_id(sb)));
+                get_widget_state(ctx, get_button1_id(sb)));
     }
 }
 
