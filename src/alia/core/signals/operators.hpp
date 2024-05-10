@@ -17,7 +17,8 @@ namespace alia {
         class B,                                                              \
         std::enable_if_t<                                                     \
             is_signal_type<A>::value && is_signal_type<B>::value,             \
-            int> = 0>                                                         \
+            int>                                                              \
+        = 0>                                                                  \
     auto operator op(A const& a, B const& b)                                  \
     {                                                                         \
         return lazy_apply([](auto a, auto b) { return a op b; }, a, b);       \
@@ -48,7 +49,8 @@ ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(>=)
         class B,                                                              \
         std::enable_if_t<                                                     \
             is_signal_type<A>::value && !is_signal_type<B>::value,            \
-            int> = 0>                                                         \
+            int>                                                              \
+        = 0>                                                                  \
     auto operator op(A const& a, B const& b)                                  \
     {                                                                         \
         return lazy_apply(                                                    \
@@ -60,7 +62,8 @@ ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(>=)
         std::enable_if_t<                                                     \
             !is_signal_type<A>::value && !is_action_type<A>::value            \
                 && is_signal_type<B>::value,                                  \
-            int> = 0>                                                         \
+            int>                                                              \
+        = 0>                                                                  \
     auto operator op(A const& a, B const& b)                                  \
     {                                                                         \
         return lazy_apply(                                                    \
@@ -108,7 +111,8 @@ ALIA_DEFINE_UNARY_SIGNAL_OPERATOR(*)
         std::enable_if_t<                                                     \
             is_duplex_signal_type<A>::value                                   \
                 && is_readable_signal_type<B>::value,                         \
-            int> = 0>                                                         \
+            int>                                                              \
+        = 0>                                                                  \
     auto operator assignment_form(A const& a, B const& b)                     \
     {                                                                         \
         return a <<= (a normal_form b);                                       \
@@ -132,7 +136,8 @@ ALIA_DEFINE_COMPOUND_ASSIGNMENT_OPERATOR(|=, |)
         class B,                                                              \
         std::enable_if_t<                                                     \
             is_duplex_signal_type<A>::value && !is_signal_type<B>::value,     \
-            int> = 0>                                                         \
+            int>                                                              \
+        = 0>                                                                  \
     auto operator assignment_form(A const& a, B const& b)                     \
     {                                                                         \
         return a <<= (a normal_form value(b));                                \
@@ -214,9 +219,8 @@ struct logical_or_signal
 template<
     class A,
     class B,
-    std::enable_if_t<
-        is_signal_type<A>::value && is_signal_type<B>::value,
-        int> = 0>
+    std::enable_if_t<is_signal_type<A>::value && is_signal_type<B>::value, int>
+    = 0>
 auto
 operator||(A const& a, B const& b)
 {
@@ -226,9 +230,9 @@ operator||(A const& a, B const& b)
 template<
     class A,
     class B,
-    std::enable_if_t<
-        is_signal_type<A>::value && !is_signal_type<B>::value,
-        int> = 0>
+    std::
+        enable_if_t<is_signal_type<A>::value && !is_signal_type<B>::value, int>
+    = 0>
 auto
 operator||(A const& a, B const& b)
 {
@@ -237,9 +241,9 @@ operator||(A const& a, B const& b)
 template<
     class A,
     class B,
-    std::enable_if_t<
-        !is_signal_type<A>::value && is_signal_type<B>::value,
-        int> = 0>
+    std::
+        enable_if_t<!is_signal_type<A>::value && is_signal_type<B>::value, int>
+    = 0>
 auto
 operator||(A const& a, B const& b)
 {
@@ -288,9 +292,8 @@ struct logical_and_signal
 template<
     class A,
     class B,
-    std::enable_if_t<
-        is_signal_type<A>::value && is_signal_type<B>::value,
-        int> = 0>
+    std::enable_if_t<is_signal_type<A>::value && is_signal_type<B>::value, int>
+    = 0>
 auto
 operator&&(A const& a, B const& b)
 {
@@ -300,9 +303,9 @@ operator&&(A const& a, B const& b)
 template<
     class A,
     class B,
-    std::enable_if_t<
-        is_signal_type<A>::value && !is_signal_type<B>::value,
-        int> = 0>
+    std::
+        enable_if_t<is_signal_type<A>::value && !is_signal_type<B>::value, int>
+    = 0>
 auto
 operator&&(A const& a, B const& b)
 {
@@ -311,9 +314,9 @@ operator&&(A const& a, B const& b)
 template<
     class A,
     class B,
-    std::enable_if_t<
-        !is_signal_type<A>::value && is_signal_type<B>::value,
-        int> = 0>
+    std::
+        enable_if_t<!is_signal_type<A>::value && is_signal_type<B>::value, int>
+    = 0>
 auto
 operator&&(A const& a, B const& b)
 {

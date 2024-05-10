@@ -175,6 +175,6 @@ begin_layout_transform(
     layout_traversal const& traversal,
     layout_cacher const& cacher);
 
-}
+} // namespace alia
 
 #endif

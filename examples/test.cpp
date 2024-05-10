@@ -254,7 +254,7 @@ smooth_for_render(
 //             canvas.drawRect(rect, blur);
 //         }
 
-//         if (element_has_focus(*sys_, widget_id{*this, 0}))
+//         if (widget_has_focus(*sys_, widget_id{*this, 0}))
 //         {
 //             paint.setStyle(SkPaint::kStroke_Style);
 //             paint.setStrokeWidth(4);
@@ -454,7 +454,7 @@ do_box(
             //     canvas.drawRect(rect, blur);
             // }
 
-            if (element_has_focus(ctx, id))
+            if (widget_has_focus(ctx, id))
             {
                 paint.setStyle(SkPaint::kStroke_Style);
                 paint.setStrokeWidth(4);
@@ -1016,7 +1016,7 @@ do_radio_button(
 //         //     canvas.drawRect(rect, blur);
 //         // }
 
-//         // if (element_has_focus(*sys_, widget_id{*this, 0}))
+//         // if (widget_has_focus(*sys_, widget_id{*this, 0}))
 //         // {
 //         //     SkPaint paint;
 //         //     paint.setStyle(SkPaint::kStroke_Style);
@@ -1243,7 +1243,7 @@ do_radio_button(
 // //         //     canvas.drawRect(rect, blur);
 // //         // }
 
-// //         // if (element_has_focus(*sys_, widget_id{*this, 0}))
+// //         // if (widget_has_focus(*sys_, widget_id{*this, 0}))
 // //         // {
 // //         //     SkPaint paint;
 // //         //     paint.setStyle(SkPaint::kStroke_Style);
@@ -2609,7 +2609,7 @@ my_ui(ui_context ctx)
     //             scoped_grid_row row(ctx, grid);
     {
         flow_layout flow(ctx);
-        for (int i = 0; i != 30; ++i)
+        for (int i = 0; i != 300; ++i)
         {
             do_box(ctx, SK_ColorLTGRAY, actions::noop());
             do_box(ctx, SK_ColorDKGRAY, actions::noop());

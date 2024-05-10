@@ -96,7 +96,8 @@ template<
     std::enable_if_t<
         is_action_type<Action>::value
             && is_readable_signal_type<Signal>::value,
-        int> = 0>
+        int>
+    = 0>
 auto
 operator<<(Action action, Signal signal)
 {
@@ -108,7 +109,8 @@ template<
     class Value,
     std::enable_if_t<
         is_action_type<Action>::value && !is_signal_type<Value>::value,
-        int> = 0>
+        int>
+    = 0>
 auto
 operator<<(Action action, Value v)
 {
@@ -155,7 +157,8 @@ template<
     std::enable_if_t<
         is_writable_signal_type<Sink>::value
             && is_readable_signal_type<Source>::value,
-        int> = 0>
+        int>
+    = 0>
 auto
 operator<<=(Sink sink, Source source)
 {
@@ -167,7 +170,8 @@ template<
     class Source,
     std::enable_if_t<
         is_writable_signal_type<Sink>::value && !is_signal_type<Source>::value,
-        int> = 0>
+        int>
+    = 0>
 auto
 operator<<=(Sink sink, Source source)
 {

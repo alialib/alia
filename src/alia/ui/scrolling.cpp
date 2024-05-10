@@ -327,9 +327,9 @@ physical_position_to_logical(
     layout_scalar max_logical = get_max_logical_position(sb);
     return max_physical <= 0 ? 0
                              : std::clamp(
-                                   position * max_logical / max_physical,
-                                   layout_scalar(0),
-                                   max_logical);
+                                 position * max_logical / max_physical,
+                                 layout_scalar(0),
+                                 max_logical);
 }
 
 void
@@ -433,12 +433,9 @@ scrollbar_is_valid(scrollbar_parameters const& sb)
 layout_scalar
 clamp_scroll_position(scrollbar_parameters const& sb, layout_scalar position)
 {
-    return sb.content_size > sb.window_size
-               ? std::clamp(
-                     position,
-                     layout_scalar(0),
-                     sb.content_size - sb.window_size)
-               : 0;
+    return sb.content_size > sb.window_size ? std::clamp(
+               position, layout_scalar(0), sb.content_size - sb.window_size)
+                                            : 0;
 }
 
 void

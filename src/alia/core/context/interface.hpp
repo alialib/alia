@@ -376,8 +376,7 @@ struct optional_context
         return ctx_.contents_.storage != nullptr;
     }
 
-    explicit
-    operator bool() const
+    explicit operator bool() const
     {
         return has_value();
     }

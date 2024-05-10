@@ -60,7 +60,8 @@ template<
     std::enable_if_t<
         std::is_invocable<IterationBody&&, naming_context&, Key&&, Value&&>::
             value,
-        int> = 0>
+        int>
+    = 0>
 void
 invoke_map_iteration_body(
     IterationBody&& body,
@@ -78,7 +79,8 @@ template<
     class Value,
     std::enable_if_t<
         std::is_invocable<IterationBody&&, Key&&, Value&&>::value,
-        int> = 0>
+        int>
+    = 0>
 void
 invoke_map_iteration_body(
     IterationBody&& body,
@@ -100,7 +102,8 @@ template<
     std::enable_if_t<
         is_signal_type<ContainerSignal>::value
             && is_map_like<typename ContainerSignal::value_type>::value,
-        int> = 0>
+        int>
+    = 0>
 void
 for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
 {
@@ -132,7 +135,8 @@ template<
     std::enable_if_t<
         std::is_invocable<IterationBody&&, naming_context&, size_t, Item&&>::
             value,
-        int> = 0>
+        int>
+    = 0>
 void
 invoke_sequence_iteration_body(
     IterationBody&& body,
@@ -149,7 +153,8 @@ template<
     class Item,
     std::enable_if_t<
         std::is_invocable<IterationBody&&, size_t, Item&&>::value,
-        int> = 0>
+        int>
+    = 0>
 void
 invoke_sequence_iteration_body(
     IterationBody&& body,
@@ -168,7 +173,8 @@ template<
     class Item,
     std::enable_if_t<
         std::is_invocable<IterationBody&&, naming_context&, Item&&>::value,
-        int> = 0>
+        int>
+    = 0>
 void
 invoke_sequence_iteration_body(
     IterationBody&& body,
@@ -183,9 +189,8 @@ template<
     class IterationBody,
     class NamedBlockBegin,
     class Item,
-    std::enable_if_t<
-        std::is_invocable<IterationBody&&, Item&&>::value,
-        int> = 0>
+    std::enable_if_t<std::is_invocable<IterationBody&&, Item&&>::value, int>
+    = 0>
 void
 invoke_sequence_iteration_body(
     IterationBody&& body,
@@ -208,7 +213,8 @@ template<
         is_signal_type<ContainerSignal>::value
             && !is_map_like<typename ContainerSignal::value_type>::value
             && is_vector_like<typename ContainerSignal::value_type>::value,
-        int> = 0>
+        int>
+    = 0>
 void
 for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
 {
@@ -250,7 +256,8 @@ template<
                 std::remove_cv_t<std::remove_reference_t<Container>>>::value
             && is_signal_type<typename std::remove_cv_t<
                 std::remove_reference_t<Container>>::value_type>::value,
-        int> = 0>
+        int>
+    = 0>
 void
 for_each(Context ctx, Container&& container, Fn&& fn)
 {
@@ -288,7 +295,8 @@ template<
                 std::remove_cv_t<std::remove_reference_t<Container>>>::value
             && !is_signal_type<typename std::remove_cv_t<
                 std::remove_reference_t<Container>>::value_type>::value,
-        int> = 0>
+        int>
+    = 0>
 void
 for_each(Context ctx, Container&& container, Fn&& fn)
 {
@@ -384,7 +392,8 @@ template<
         is_signal_type<ContainerSignal>::value
             && !is_map_like<typename ContainerSignal::value_type>::value
             && !is_vector_like<typename ContainerSignal::value_type>::value,
-        int> = 0>
+        int>
+    = 0>
 void
 for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
 {
@@ -427,7 +436,8 @@ template<
                 std::remove_cv_t<std::remove_reference_t<Container>>>::value
             && is_signal_type<typename std::remove_cv_t<
                 std::remove_reference_t<Container>>::value_type>::value,
-        int> = 0>
+        int>
+    = 0>
 void
 for_each(Context ctx, Container&& container, Fn&& fn)
 {
@@ -465,7 +475,8 @@ template<
                 std::remove_cv_t<std::remove_reference_t<Container>>>::value
             && !is_signal_type<typename std::remove_cv_t<
                 std::remove_reference_t<Container>>::value_type>::value,
-        int> = 0>
+        int>
+    = 0>
 void
 for_each(Context ctx, Container&& container, Fn&& fn)
 {

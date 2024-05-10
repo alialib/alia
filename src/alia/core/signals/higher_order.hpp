@@ -61,9 +61,8 @@ template<
     class Context,
     class Container,
     class Function,
-    std::enable_if_t<
-        !is_map_like<typename Container::value_type>::value,
-        int> = 0>
+    std::enable_if_t<!is_map_like<typename Container::value_type>::value, int>
+    = 0>
 auto
 transform(Context ctx, Container const& container, Function&& f)
 {
@@ -167,9 +166,8 @@ template<
     class Context,
     class Container,
     class Function,
-    std::enable_if_t<
-        is_map_like<typename Container::value_type>::value,
-        int> = 0>
+    std::enable_if_t<is_map_like<typename Container::value_type>::value, int>
+    = 0>
 auto
 transform(Context ctx, Container const& container, Function&& f)
 {
