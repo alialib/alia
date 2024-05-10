@@ -186,49 +186,28 @@ detect_stationary_click(
     return detect_click(ctx, id, button) && !get_system(ctx).input.dragging;
 }
 
-#if 0
-
-bool
-detect_wheel_movement(
-    dataless_ui_context ctx, float* movement, widget_id id)
-{
-    if (ctx.event->type == MOUSE_WHEEL_EVENT)
-    {
-        mouse_wheel_event& e = get_event<mouse_wheel_event>(ctx);
-        if (e.target == element)
-        {
-            *movement = e.movement;
-            acknowledge_input_event(ctx);
-            return true;
-        }
-    }
-    return false;
-}
-
 bool
 detect_mouse_gain(dataless_ui_context ctx, widget_id id)
 {
-    if (ctx.event->type == MOUSE_GAIN_EVENT)
-    {
-        mouse_notification_event& event
-            = get_event<mouse_notification_event>(ctx);
-        return event.target == id;
-    }
-    return false;
+    return get_event_type(ctx) == MOUSE_GAIN_EVENT
+           && cast_event<mouse_notification_event>(ctx).target == id;
 }
 
 bool
 detect_mouse_loss(dataless_ui_context ctx, widget_id id)
 {
-    if (ctx.event->type == MOUSE_LOSS_EVENT)
-    {
-        mouse_notification_event& event
-            = get_event<mouse_notification_event>(ctx);
-        return event.target == id;
-    }
-    return false;
+    return get_event_type(ctx) == MOUSE_LOSS_EVENT
+           && cast_event<mouse_notification_event>(ctx).target == id;
 }
 
-#endif
+std::optional<vector<2, double>>
+detect_scroll(dataless_ui_context ctx, widget_id)
+{
+    scroll_event* event;
+    if (detect_event(ctx, &event))
+        return event->delta;
+    else
+        return std::nullopt;
+}
 
 } // namespace alia
