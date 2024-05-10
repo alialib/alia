@@ -19,22 +19,26 @@ struct id_interface
 
     // Create a standalone copy of the ID.
     virtual id_interface*
-    clone() const = 0;
+    clone() const
+        = 0;
 
     // Given another ID of the same type, set it equal to a standalone copy
     // of this ID.
     virtual void
-    deep_copy(id_interface* copy) const = 0;
+    deep_copy(id_interface* copy) const
+        = 0;
 
     // Given another ID of the same type, return true iff it's equal to this
     // one.
     virtual bool
-    equals(id_interface const& other) const = 0;
+    equals(id_interface const& other) const
+        = 0;
 
     // Given another ID of the same type, return true iff it's less than this
     // one.
     virtual bool
-    less_than(id_interface const& other) const = 0;
+    less_than(id_interface const& other) const
+        = 0;
 };
 
 // The following convert the interface of the ID operations into the usual form

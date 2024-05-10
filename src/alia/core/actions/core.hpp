@@ -24,7 +24,8 @@ struct untyped_action_interface
 {
     // Is this action ready to be performed?
     virtual bool
-    is_ready() const = 0;
+    is_ready() const
+        = 0;
 };
 
 template<class... Args>
@@ -39,7 +40,8 @@ struct action_interface : untyped_action_interface
     // BEFORE invoking any side effects.
     //
     virtual void
-    perform(function_view<void()> const& intermediary, Args... args) const = 0;
+    perform(function_view<void()> const& intermediary, Args... args) const
+        = 0;
 };
 
 // is_action_type<T>::value yields a compile-time boolean indicating whether or

@@ -72,11 +72,10 @@ do_text(
                 get_layout_traversal(ctx),
                 layout_spec,
                 leaf_layout_requirements(
-                    data.shape
-                        ? make_layout_vector(
-                              layout_scalar(data.shape->width),
-                              layout_scalar(data.shape->verticalAdvance))
-                        : make_layout_vector(0, 0),
+                    data.shape ? make_layout_vector(
+                        layout_scalar(data.shape->width),
+                        layout_scalar(data.shape->verticalAdvance))
+                               : make_layout_vector(0, 0),
                     0,
                     0),
                 LEFT | BASELINE_Y | PADDED);
