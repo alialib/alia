@@ -24,21 +24,21 @@ vector<2, int>
 get_integer_mouse_position(dataless_ui_context ctx);
 
 bool
-is_element_hot(ui_system& sys, internal_element_id element);
+is_element_hot(ui_system& sys, widget_id id);
 
 inline bool
-is_element_hot(dataless_ui_context ctx, internal_element_id element)
+is_element_hot(dataless_ui_context ctx, widget_id id)
 {
-    return is_element_hot(get_system(ctx), element);
+    return is_element_hot(get_system(ctx), id);
 }
 
 bool
-element_has_capture(ui_system& sys, internal_element_id element);
+element_has_capture(ui_system& sys, widget_id id);
 
 inline bool
-element_has_capture(dataless_ui_context ctx, internal_element_id element)
+element_has_capture(dataless_ui_context ctx, widget_id id)
 {
-    return element_has_capture(get_system(ctx), element);
+    return element_has_capture(get_system(ctx), id);
 }
 
 bool
@@ -72,70 +72,64 @@ bool
 detect_mouse_press(dataless_ui_context ctx, mouse_button button);
 
 bool
-detect_mouse_press(
-    dataless_ui_context ctx, internal_element_id element, mouse_button button);
+detect_mouse_press(dataless_ui_context ctx, widget_id id, mouse_button button);
 
 bool
 detect_mouse_release(dataless_ui_context ctx, mouse_button button);
 
 bool
 detect_mouse_release(
-    dataless_ui_context ctx, internal_element_id element, mouse_button button);
+    dataless_ui_context ctx, widget_id id, mouse_button button);
 
 bool
-detect_mouse_motion(dataless_ui_context ctx, internal_element_id element);
+detect_mouse_motion(dataless_ui_context ctx, widget_id id);
 
 bool
 detect_double_click(dataless_ui_context ctx, mouse_button button);
 
 bool
 detect_double_click(
-    dataless_ui_context ctx, internal_element_id element, mouse_button button);
+    dataless_ui_context ctx, widget_id id, mouse_button button);
 
 bool
-detect_click(
-    dataless_ui_context ctx, internal_element_id element, mouse_button button);
+detect_click(dataless_ui_context ctx, widget_id id, mouse_button button);
 
 bool
-is_click_possible(ui_system& sys, internal_element_id element);
+is_click_possible(ui_system& sys, widget_id id);
 
 inline bool
-is_click_possible(dataless_ui_context ctx, internal_element_id element)
+is_click_possible(dataless_ui_context ctx, widget_id id)
 {
-    return is_click_possible(get_system(ctx), element);
+    return is_click_possible(get_system(ctx), id);
 }
 
 bool
-is_click_in_progress(
-    ui_system& sys, internal_element_id element, mouse_button button);
+is_click_in_progress(ui_system& sys, widget_id id, mouse_button button);
 
 inline bool
 is_click_in_progress(
-    dataless_ui_context ctx, internal_element_id element, mouse_button button)
+    dataless_ui_context ctx, widget_id id, mouse_button button)
 {
-    return is_click_in_progress(get_system(ctx), element, button);
+    return is_click_in_progress(get_system(ctx), id, button);
 }
 
 bool
-detect_drag(
-    dataless_ui_context ctx, internal_element_id element, mouse_button button);
+detect_drag(dataless_ui_context ctx, widget_id id, mouse_button button);
 
 bool
 detect_press_or_drag(
-    dataless_ui_context ctx, internal_element_id element, mouse_button button);
+    dataless_ui_context ctx, widget_id id, mouse_button button);
 
 vector<2, double>
 get_mouse_motion_delta(dataless_ui_context ctx, widget const& widget);
 
 bool
-is_drag_in_progress(
-    ui_system& sys, internal_element_id element, mouse_button button);
+is_drag_in_progress(ui_system& sys, widget_id id, mouse_button button);
 
 inline bool
-is_drag_in_progress(
-    dataless_ui_context ctx, internal_element_id element, mouse_button button)
+is_drag_in_progress(dataless_ui_context ctx, widget_id id, mouse_button button)
 {
-    return is_drag_in_progress(get_system(ctx), element, button);
+    return is_drag_in_progress(get_system(ctx), id, button);
 }
 
 } // namespace alia

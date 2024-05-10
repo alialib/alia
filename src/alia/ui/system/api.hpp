@@ -131,11 +131,11 @@ on_ui_style_change(ui_system& system)
 
 // Set the widget that has the mouse captured.
 void
-set_element_with_capture(ui_system& ui, external_element_id element);
+set_element_with_capture(ui_system& ui, routable_widget_id widget);
 
 // Set the widget that's under the mouse.
 void
-set_hot_element(ui_system& ui, external_element_id element);
+set_hot_element(ui_system& ui, routable_widget_id widget);
 
 } // namespace alia
 

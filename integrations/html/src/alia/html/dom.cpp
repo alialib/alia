@@ -263,6 +263,7 @@ install_element_callback(
         auto start = std::chrono::high_resolution_clock::now();
 #endif
         dispatch_targeted_event(*system, event, external_id);
+        refresh_system(*system);
 #ifdef ALIA_HTML_LOGGING
         auto elapsed_ms
             = std::chrono::duration_cast<std::chrono::microseconds>(
