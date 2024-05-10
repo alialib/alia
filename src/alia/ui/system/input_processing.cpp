@@ -102,34 +102,6 @@ process_double_click(ui_system& ui, mouse_button button)
     ui.input.keyboard_interaction = false;
 }
 
-// void
-// process_wheel_movement(ui_system& ui, ui_time_type time, float movement)
-// {
-//     // First determine who should receive the event.
-//     routable_widget_id target;
-//     if (is_valid(ui.overlay_id))
-//     {
-//         wheel_hit_test_event hit_test;
-//         hit_test.category = OVERLAY_CATEGORY;
-//         hit_test.type = OVERLAY_WHEEL_HIT_TEST_EVENT;
-//         issue_targeted_event(ui, hit_test, ui.overlay_id);
-//         if (is_valid(hit_test.id))
-//             target = hit_test.id;
-//     }
-//     if (!is_valid(target))
-//     {
-//         wheel_hit_test_event hit_test;
-//         issue_event(ui, hit_test);
-//         target = hit_test.id;
-//     }
-//     // Now dispatch it.
-//     if (is_valid(target))
-//     {
-//         mouse_wheel_event event(time, target.id, movement);
-//         issue_targeted_event(ui, event, target);
-//     }
-// }
-
 void
 process_scroll(ui_system& ui, vector<2, double> const& delta)
 {
