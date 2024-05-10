@@ -1,5 +1,6 @@
 #include <alia/ui/text/components.hpp>
 
+#include <alia/ui/events.hpp>
 #include <alia/ui/layout/utilities.hpp>
 #include <alia/ui/text/fonts.hpp>
 #include <alia/ui/text/shaping.hpp>

@@ -1,22 +1,22 @@
-#include "alia/core/flow/top_level.hpp"
 #include <alia/ui/system/input_processing.hpp>
 
 #include <alia/core/flow/events.hpp>
+#include <alia/core/flow/top_level.hpp>
 #include <alia/ui/events.hpp>
 #include <alia/ui/system/api.hpp>
 #include <alia/ui/system/object.hpp>
-#include <alia/ui/utilities/hit_testing.hpp>
+#include <alia/ui/utilities/regions.hpp>
 
 namespace alia {
 
 namespace {
 
-external_element_id
+routable_widget_id
 get_mouse_target(ui_system& ui)
 {
     // If no widget has capture, send events to the widget under the mouse.
-    return ui.input.element_with_capture ? ui.input.element_with_capture
-                                         : ui.input.hot_element;
+    return ui.input.widget_with_capture ? ui.input.widget_with_capture
+                                        : ui.input.hot_widget;
 }
 
 } // namespace
@@ -30,7 +30,8 @@ process_mouse_motion(ui_system& ui, vector<2, double> const& position)
         // TODO: Use constructor
         event.position = position;
         dispatch_targeted_event(
-            ui, event, get_mouse_target(ui).component, MOUSE_MOTION_EVENT);
+            ui, event, get_mouse_target(ui), MOUSE_MOTION_EVENT);
+        refresh_system(ui);
 
         ui.input.mouse_position = position;
         ui.input.mouse_inside_window = true;
@@ -55,8 +56,8 @@ process_mouse_press(ui_system& ui, mouse_button button, key_modifiers)
         mouse_button_event event;
         // TODO: Use constructor
         event.button = button;
-        dispatch_targeted_event(
-            ui, event, target.component, MOUSE_PRESS_EVENT);
+        dispatch_targeted_event(ui, event, target, MOUSE_PRESS_EVENT);
+        refresh_system(ui);
     }
     else
     {
@@ -75,13 +76,13 @@ process_mouse_release(ui_system& ui, mouse_button button)
         mouse_button_event event;
         // TODO: Use constructor
         event.button = button;
-        dispatch_targeted_event(
-            ui, event, target.component, MOUSE_RELEASE_EVENT);
+        dispatch_targeted_event(ui, event, target, MOUSE_RELEASE_EVENT);
+        refresh_system(ui);
     }
     ui.input.mouse_button_state &= ~(1 << int(button));
     if (ui.input.mouse_button_state == 0)
     {
-        set_element_with_capture(ui, external_element_id());
+        set_element_with_capture(ui, routable_widget_id());
         ui.input.dragging = false;
     }
 }
@@ -95,8 +96,7 @@ process_double_click(ui_system& ui, mouse_button button)
         mouse_button_event event;
         // TODO: Use constructor
         event.button = button;
-        dispatch_targeted_event(
-            ui, event, target.component, DOUBLE_CLICK_EVENT);
+        dispatch_targeted_event(ui, event, target, DOUBLE_CLICK_EVENT);
     }
     ui.input.mouse_button_state |= 1 << int(button);
     ui.input.keyboard_interaction = false;
@@ -131,16 +131,16 @@ process_double_click(ui_system& ui, mouse_button button)
 // }
 
 void
-process_scroll(ui_system& /*ui*/, vector<2, double> const& /*delta*/)
+process_scroll(ui_system& ui, vector<2, double> const& delta)
 {
-    // TODO
-    // wheel_hit_test hit_test;
-    // ui.root_widget->hit_test(hit_test, ui.input.mouse_position);
-    // if (hit_test.result)
-    // {
-    //     scroll_event event{{{}, ui_event_type::SCROLL}, delta};
-    //     deliver_input_event(ui, hit_test.result->widget, event);
-    // }
+    wheel_hit_test_event hit_test{ui.input.mouse_position};
+    dispatch_event(ui, hit_test, WHEEL_HIT_TEST_EVENT);
+    if (hit_test.result)
+    {
+        scroll_event event{{}, delta};
+        dispatch_targeted_event(ui, event, *hit_test.result, SCROLL_EVENT);
+        refresh_system(ui);
+    }
 }
 
 bool
@@ -148,7 +148,9 @@ process_focused_key_press(ui_system& ui, modded_key const& info)
 {
     key_event event{{}, info};
     dispatch_targeted_event(
-        ui, event, ui.input.element_with_focus.component, KEY_PRESS_EVENT);
+        ui, event, ui.input.widget_with_focus, KEY_PRESS_EVENT);
+    if (event.acknowledged)
+        refresh_system(ui);
     return event.acknowledged;
 }
 
@@ -157,6 +159,8 @@ process_background_key_press(ui_system& ui, modded_key const& info)
 {
     key_event event{{}, info};
     dispatch_event(ui, event, BACKGROUND_KEY_PRESS_EVENT);
+    if (event.acknowledged)
+        refresh_system(ui);
     return event.acknowledged;
 }
 
@@ -165,7 +169,9 @@ process_focused_key_release(ui_system& ui, modded_key const& info)
 {
     key_event event{{}, info};
     dispatch_targeted_event(
-        ui, event, ui.input.element_with_focus.component, KEY_RELEASE_EVENT);
+        ui, event, ui.input.widget_with_focus, KEY_RELEASE_EVENT);
+    if (event.acknowledged)
+        refresh_system(ui);
     return event.acknowledged;
 }
 bool

@@ -2,7 +2,6 @@
 #define ALIA_UI_CONTEXT_HPP
 
 #include <alia/core/context/interface.hpp>
-#include <alia/ui/events.hpp>
 #include <alia/ui/layout/geometry.hpp>
 #include <alia/ui/layout/traversal.hpp>
 
