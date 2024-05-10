@@ -20,7 +20,7 @@ offset_id(widget_id main_id, uint8_t index)
 struct routable_widget_id
 {
     widget_id id = nullptr;
-    component_container_ptr component;
+    component_identity component;
 
     bool
     matches(widget_id widget) const
@@ -34,7 +34,7 @@ struct routable_widget_id
         return id != 0;
     }
 };
-static routable_widget_id const null_widget_id(0, component_container_ptr());
+static routable_widget_id const null_widget_id(0, component_identity());
 
 inline routable_widget_id
 make_routable_widget_id(dataless_ui_context ctx, widget_id id)
