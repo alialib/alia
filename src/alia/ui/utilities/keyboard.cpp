@@ -21,7 +21,7 @@ acknowledge_key_event(dataless_ui_context ctx)
 }
 
 void
-add_to_focus_order(dataless_ui_context ctx, internal_element_id element)
+add_to_focus_order(dataless_ui_context ctx, widget_id id)
 {
     {
         focus_successor_event* event;
@@ -29,10 +29,10 @@ add_to_focus_order(dataless_ui_context ctx, internal_element_id element)
         {
             if (event->just_saw_target)
             {
-                event->successor = element;
+                event->successor = make_routable_widget_id(ctx, id);
                 event->just_saw_target = false;
             }
-            if (element == event->target)
+            if (id == event->target)
             {
                 event->just_saw_target = true;
             }
@@ -42,32 +42,32 @@ add_to_focus_order(dataless_ui_context ctx, internal_element_id element)
         focus_predecessor_event* event;
         if (detect_event(ctx, &event))
         {
-            if (element == event->target && event->predecessor)
+            if (id == event->target && event->predecessor)
             {
                 event->saw_target = true;
             }
             if (!event->saw_target)
             {
-                event->predecessor = element;
+                event->predecessor = make_routable_widget_id(ctx, id);
             }
         }
     }
 }
 
 bool
-element_has_focus(ui_system& sys, internal_element_id element)
+element_has_focus(ui_system& sys, widget_id id)
 {
-    return sys.input.element_with_focus.matches(element);
+    return sys.input.widget_with_focus.matches(id);
 }
 
 void
-set_focus(ui_system& sys, external_element_id element)
+set_focus(ui_system& sys, routable_widget_id widget)
 {
     // TODO: Some of this logic seems to be asking for alia to have an internal
     // event queue.
 
-    bool different = sys.input.element_with_focus != element;
-    if (different && sys.input.element_with_focus)
+    bool different = sys.input.widget_with_focus.id != widget.id;
+    if (different && sys.input.widget_with_focus)
     {
         // A lot of code likes to call set_focus in response to events, which
         // means that the following FOCUS_LOSS_EVENT could end up being invoked
@@ -77,13 +77,11 @@ set_focus(ui_system& sys, external_element_id element)
 
         focus_notification_event event;
         dispatch_targeted_event(
-            sys,
-            event,
-            sys.input.element_with_focus.component,
-            FOCUS_LOSS_EVENT);
+            sys, event, sys.input.widget_with_focus, FOCUS_LOSS_EVENT);
+        refresh_system(sys);
     }
 
-    sys.input.element_with_focus = element;
+    sys.input.widget_with_focus = widget;
 
     // It's possible to have widgets that appear based on whether or not
     // another widget has the focus, so we need to refresh here.
@@ -112,37 +110,36 @@ set_focus(ui_system& sys, external_element_id element)
 }
 
 void
-focus_on_click(dataless_ui_context ctx, internal_element_id element)
+focus_on_click(dataless_ui_context ctx, widget_id id)
 {
-    if (is_element_hot(ctx, element)
+    if (is_element_hot(ctx, id)
         && (get_event_type(ctx) == MOUSE_PRESS_EVENT
             || get_event_type(ctx) == DOUBLE_CLICK_EVENT))
     {
-        set_focus(get_system(ctx), externalize(element));
+        set_focus(get_system(ctx), make_routable_widget_id(ctx, id));
     }
 }
 
 bool
-detect_focus_gain(dataless_ui_context ctx, internal_element_id)
+detect_focus_gain(dataless_ui_context ctx, widget_id id)
 {
-    // TODO
-    return get_event_type(ctx) == FOCUS_GAIN_EVENT;
+    return get_event_type(ctx) == FOCUS_GAIN_EVENT
+           && cast_event<focus_notification_event>(ctx).target == id;
 }
 
 bool
-detect_focus_loss(dataless_ui_context ctx, internal_element_id)
+detect_focus_loss(dataless_ui_context ctx, widget_id id)
 {
-    // TODO
-    return get_event_type(ctx) == FOCUS_LOSS_EVENT;
+    return get_event_type(ctx) == FOCUS_LOSS_EVENT
+           && cast_event<focus_notification_event>(ctx).target == id;
 }
 
 std::optional<modded_key>
-detect_key_press(dataless_ui_context ctx, internal_element_id element)
+detect_key_press(dataless_ui_context ctx, widget_id id)
 {
-    focus_on_click(ctx, element);
+    focus_on_click(ctx, id);
 
-    if (get_event_type(ctx) == KEY_PRESS_EVENT
-        && element_has_focus(ctx, element))
+    if (get_event_type(ctx) == KEY_PRESS_EVENT && element_has_focus(ctx, id))
     {
         auto const& event = cast_event<key_event>(ctx);
         if (!event.acknowledged)
@@ -167,11 +164,11 @@ detect_key_press(dataless_ui_context ctx)
 bool
 detect_key_press(
     dataless_ui_context ctx,
-    internal_element_id element,
+    widget_id id,
     key_code code,
     key_modifiers modifiers)
 {
-    auto key = detect_key_press(ctx, element);
+    auto key = detect_key_press(ctx, id);
     if (key && key->code == code && key->mods == modifiers)
     {
         acknowledge_key_event(ctx);
@@ -181,12 +178,11 @@ detect_key_press(
 }
 
 std::optional<modded_key>
-detect_key_release(dataless_ui_context ctx, internal_element_id element)
+detect_key_release(dataless_ui_context ctx, widget_id id)
 {
-    focus_on_click(ctx, element);
+    focus_on_click(ctx, id);
 
-    if (element_has_focus(ctx, element)
-        && get_event_type(ctx) == KEY_RELEASE_EVENT)
+    if (element_has_focus(ctx, id) && get_event_type(ctx) == KEY_RELEASE_EVENT)
     {
         auto const& event = cast_event<key_event>(ctx);
         if (!event.acknowledged)
@@ -198,11 +194,11 @@ detect_key_release(dataless_ui_context ctx, internal_element_id element)
 bool
 detect_key_release(
     dataless_ui_context ctx,
-    internal_element_id element,
+    widget_id id,
     key_code code,
     key_modifiers modifiers)
 {
-    auto key = detect_key_release(ctx, element);
+    auto key = detect_key_release(ctx, id);
     if (key && key->code == code && key->mods == modifiers)
     {
         acknowledge_key_event(ctx);
@@ -215,11 +211,11 @@ bool
 detect_keyboard_click(
     dataless_ui_context ctx,
     keyboard_click_state& state,
-    internal_element_id element,
+    widget_id id,
     key_code code,
     key_modifiers modifiers)
 {
-    auto key = detect_key_press(ctx, element);
+    auto key = detect_key_press(ctx, id);
     if (key)
     {
         if (key->code == code && key->mods == modifiers)
@@ -233,13 +229,13 @@ detect_keyboard_click(
         // else if (state.state == 1)
         //     state.state = 2;
     }
-    else if (detect_key_release(ctx, element, code, modifiers))
+    else if (detect_key_release(ctx, id, code, modifiers))
     {
         bool proper = state.state == 1;
         state.state = 0;
         return proper;
     }
-    else if (detect_focus_loss(ctx, element))
+    else if (detect_focus_loss(ctx, id))
     {
         state.state = 0;
     }

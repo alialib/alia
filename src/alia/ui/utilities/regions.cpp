@@ -19,7 +19,7 @@ is_mouse_inside_box(dataless_ui_context ctx, box<2, double> const& box)
 void
 handle_mouse_hit(
     dataless_ui_context ctx,
-    internal_element_id id,
+    widget_id id,
     box<2, double> const& bounding_box,
     hit_test_flag_set flags,
     mouse_cursor cursor)
@@ -29,7 +29,7 @@ handle_mouse_hit(
     {
         auto& e = cast_event<mouse_hit_test_event>(ctx);
         e.result = mouse_hit_test_result{
-            externalize(id),
+            make_routable_widget_id(ctx, id),
             cursor,
             layout_box(transform_box(get_transformation(ctx), bounding_box)),
             ""};
@@ -39,14 +39,14 @@ handle_mouse_hit(
         && (flags & HIT_TEST_WHEEL))
     {
         auto& e = cast_event<wheel_hit_test_event>(ctx);
-        e.result = externalize(id);
+        e.result = make_routable_widget_id(ctx, id);
     }
 }
 
 void
 hit_test_box_region(
     dataless_ui_context ctx,
-    internal_element_id id,
+    widget_id id,
     box<2, float> const& box,
     hit_test_flag_set flags,
     mouse_cursor cursor)
@@ -58,7 +58,7 @@ hit_test_box_region(
 void
 hit_test_box_region(
     dataless_ui_context ctx,
-    internal_element_id id,
+    widget_id id,
     box<2, double> const& box,
     hit_test_flag_set flags,
     mouse_cursor cursor)
@@ -70,7 +70,7 @@ hit_test_box_region(
 void
 handle_region_visibility(
     dataless_ui_context, // ctx,
-    internal_element_id, // id,
+    widget_id, // id,
     box<2, double> const&) // region)
 {
     // make_widget_visible_event& e =
@@ -94,7 +94,7 @@ handle_region_visibility(
 void
 do_box_region(
     dataless_ui_context ctx,
-    internal_element_id id,
+    widget_id id,
     box<2, float> const& region,
     mouse_cursor cursor)
 {
@@ -112,7 +112,7 @@ do_box_region(
 void
 do_box_region(
     dataless_ui_context ctx,
-    internal_element_id id,
+    widget_id id,
     box<2, double> const& region,
     mouse_cursor cursor)
 {
@@ -130,7 +130,7 @@ do_box_region(
 // void
 // override_mouse_cursor(
 //     dataless_ui_context /*ctx*/,
-//     internal_element_id /*id*/,
+//     widget_id /*id*/,
 //     mouse_cursor /*cursor*/)
 // {
 //     // if (get_event_type(ctx) == ui_input_event::MOUSE_HIT_TEST)
@@ -148,13 +148,13 @@ do_box_region(
 // }
 
 // bool
-// is_region_active(dataless_ui_context ctx, internal_element_id id)
+// is_region_active(dataless_ui_context ctx, widget_id id)
 // {
 //     return get_system(ctx).input.element_with_capture.matches(id);
 // }
 
 // void
-// set_hot_region(ui_system& ui, external_element_id const& hot_id)
+// set_hot_region(ui_system& ui, routable_widget_id const& hot_id)
 // {
 //     // If there's no active widget and the mouse is moving to a different
 //     // widget, set the hover_start_time.
@@ -167,13 +167,13 @@ do_box_region(
 // }
 
 // bool
-// is_region_hot(dataless_ui_context ctx, internal_element_id id)
+// is_region_hot(dataless_ui_context ctx, widget_id id)
 // {
 //     return get_system(ctx).input.hot_id.id == id;
 // }
 
 // void
-// set_active_region(ui_system& ui, external_element_id const& active_id)
+// set_active_region(ui_system& ui, routable_widget_id const& active_id)
 // {
 //     // If there was an active widget before, but we're removing it, this
 //     means
@@ -189,7 +189,7 @@ do_box_region(
 // void
 // make_widget_visible(
 //     dataless_ui_context ctx,
-//     internal_element_id id,
+//     widget_id id,
 //     make_widget_visible_flag_set flags)
 // {
 //     widget_visibility_request request;
@@ -221,7 +221,7 @@ do_box_region(
 // void
 // set_tooltip_message(
 //     ui_context& ctx,
-//     internal_element_id region_id,
+//     widget_id region_id,
 //     accessor<string> const& tooltip_message)
 // {
 //     if (ctx.event->type == MOUSE_HIT_TEST_EVENT

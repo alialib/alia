@@ -67,7 +67,6 @@ dispatch_event(
     untyped_system& sys, Event& event, event_type_code type_code = 0)
 {
     detail::dispatch_untargeted_event(sys, event, type_code);
-    refresh_system(sys);
 }
 
 template<class Event>
@@ -80,7 +79,6 @@ dispatch_targeted_event(
 {
     event.target_id = component.id;
     detail::dispatch_targeted_event(sys, event, component.identity, type_code);
-    refresh_system(sys);
 }
 
 } // namespace alia

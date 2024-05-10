@@ -41,10 +41,6 @@ struct scrollbar_data
     // top of the thumb.
     double drag_start_delta = 0;
 
-    // widget identity
-    // TODO: Remove
-    component_identity identity;
-
     // for timing button repeats
     timer_data timer;
 };
@@ -66,13 +62,7 @@ struct scrollbar_parameters
 
     // size of the window through which we view the content
     layout_scalar window_size;
-
-    // index at which the scrollbar can start assigning its own IDs
-    int element_id_start;
 };
-
-// maximum IDs that the scrollbar will use
-int constexpr scrollbar_element_id_count = 5;
 
 struct scrollable_view_data;
 

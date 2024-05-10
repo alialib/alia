@@ -9,7 +9,6 @@
 #include <alia/ui/system/api.hpp>
 #include <alia/ui/system/input_constants.hpp>
 #include <alia/ui/text/fonts.hpp>
-#include <alia/ui/utilities/hit_testing.hpp>
 #include <alia/ui/utilities/keyboard.hpp>
 #include <alia/ui/utilities/mouse.hpp>
 #include <alia/ui/utilities/regions.hpp>
@@ -203,12 +202,12 @@ smooth_for_render(
 //         double blend_factor = 0;
 
 //         if (is_click_in_progress(
-//                 *sys_, internal_element_id{*this, 0}, mouse_button::LEFT)
+//                 *sys_, widget_id{*this, 0}, mouse_button::LEFT)
 //             || is_pressed(keyboard_click_state_))
 //         {
 //             blend_factor = 0.4;
 //         }
-//         else if (is_click_possible(*sys_, internal_element_id{*this, 0}))
+//         else if (is_click_possible(*sys_, widget_id{*this, 0}))
 //         {
 //             blend_factor = 0.2;
 //         }
@@ -255,7 +254,7 @@ smooth_for_render(
 //             canvas.drawRect(rect, blur);
 //         }
 
-//         if (element_has_focus(*sys_, internal_element_id{*this, 0}))
+//         if (element_has_focus(*sys_, widget_id{*this, 0}))
 //         {
 //             paint.setStyle(SkPaint::kStroke_Style);
 //             paint.setStrokeWidth(4);
@@ -274,7 +273,7 @@ smooth_for_render(
 //             {
 //                 static_cast<mouse_hit_test&>(test).result
 //                     = mouse_hit_test_result{
-//                         externalize(internal_element_id{*this, 0}),
+//                         externalize(widget_id{*this, 0}),
 //                         mouse_cursor::POINTER,
 //                         this->assignment().region,
 //                         ""};
@@ -285,9 +284,9 @@ smooth_for_render(
 //     void
 //     process_input(dataless_ui_context ctx) override
 //     {
-//         add_to_focus_order(ctx, internal_element_id{*this, 0});
+//         add_to_focus_order(ctx, widget_id{*this, 0});
 //         if (detect_click(
-//                 ctx, internal_element_id{*this, 0}, mouse_button::LEFT))
+//                 ctx, widget_id{*this, 0}, mouse_button::LEFT))
 //         {
 //             click_event event;
 //             dispatch_targeted_event(*sys_, event, this->id_);
@@ -300,7 +299,7 @@ smooth_for_render(
 //         //     // advance_focus(get_system(ctx));
 //         // }
 //         if (detect_keyboard_click(
-//                 ctx, keyboard_click_state_, internal_element_id{*this, 0}))
+//                 ctx, keyboard_click_state_, widget_id{*this, 0}))
 //         {
 //             state_ = !state_;
 //         }
@@ -349,7 +348,6 @@ struct box_data
     bool state_ = false;
     keyboard_click_state keyboard_click_state_;
     layout_leaf layout_node;
-    component_identity identity;
 };
 
 void
@@ -362,13 +360,11 @@ do_box(
     box_data* data_ptr;
     get_cached_data(ctx, &data_ptr);
     auto& data = *data_ptr;
-    auto id = &data.identity;
+    auto id = data_ptr;
 
     alia_untracked_switch(get_event_category(ctx))
     {
         case REFRESH_CATEGORY:
-            refresh_component_identity(ctx, data.identity);
-
             data.layout_node.refresh_layout(
                 get_layout_traversal(ctx),
                 layout_spec,
@@ -382,18 +378,12 @@ do_box(
 
         case REGION_CATEGORY:
             do_box_region(
-                ctx,
-                internal_element_id{id, 0},
-                box<2, double>(data.layout_node.assignment().region));
+                ctx, id, box<2, double>(data.layout_node.assignment().region));
             break;
 
         case INPUT_CATEGORY:
-            if (detect_click(
-                    ctx, internal_element_id{id, 0}, mouse_button::LEFT)
-                || detect_keyboard_click(
-                    ctx,
-                    data.keyboard_click_state_,
-                    internal_element_id{id, 0}))
+            if (detect_click(ctx, id, mouse_button::LEFT)
+                || detect_keyboard_click(ctx, data.keyboard_click_state_, id))
             {
                 data.state_ = !data.state_;
             }
@@ -418,16 +408,12 @@ do_box(
 
             double blend_factor = 0;
 
-            if (is_click_in_progress(
-                    get_system(ctx),
-                    internal_element_id{id, 0},
-                    mouse_button::LEFT)
+            if (is_click_in_progress(get_system(ctx), id, mouse_button::LEFT)
                 || is_pressed(data.keyboard_click_state_))
             {
                 blend_factor = 0.4;
             }
-            else if (is_click_possible(
-                         get_system(ctx), internal_element_id{id, 0}))
+            else if (is_click_possible(get_system(ctx), id))
             {
                 blend_factor = 0.2;
             }
@@ -468,7 +454,7 @@ do_box(
             //     canvas.drawRect(rect, blur);
             // }
 
-            if (element_has_focus(ctx, internal_element_id{id, 0}))
+            if (element_has_focus(ctx, id))
             {
                 paint.setStyle(SkPaint::kStroke_Style);
                 paint.setStrokeWidth(4);
@@ -593,7 +579,6 @@ struct radio_button_data
 {
     keyboard_click_state keyboard_click_state_;
     layout_leaf layout_node;
-    component_identity identity;
     value_smoother<float> smoother;
 };
 
@@ -606,13 +591,11 @@ do_radio_button(
     radio_button_data* data_ptr;
     get_cached_data(ctx, &data_ptr);
     auto& data = *data_ptr;
-    auto id = &data.identity;
+    auto id = data_ptr;
 
     alia_untracked_switch(get_event_category(ctx))
     {
         case REFRESH_CATEGORY:
-            refresh_component_identity(ctx, data.identity);
-
             data.layout_node.refresh_layout(
                 get_layout_traversal(ctx),
                 layout_spec,
@@ -626,20 +609,14 @@ do_radio_button(
 
         case REGION_CATEGORY:
             do_box_region(
-                ctx,
-                internal_element_id{id, 0},
-                box<2, double>(data.layout_node.assignment().region));
+                ctx, id, box<2, double>(data.layout_node.assignment().region));
             break;
 
         case INPUT_CATEGORY:
-            add_to_focus_order(ctx, internal_element_id{id, 0});
+            add_to_focus_order(ctx, id);
 
-            if (detect_click(
-                    ctx, internal_element_id{id, 0}, mouse_button::LEFT)
-                || detect_keyboard_click(
-                    ctx,
-                    data.keyboard_click_state_,
-                    internal_element_id{id, 0}))
+            if (detect_click(ctx, id, mouse_button::LEFT)
+                || detect_keyboard_click(ctx, data.keyboard_click_state_, id))
             {
                 if (signal_ready_to_write(selected))
                     write_signal(selected, true);
@@ -667,13 +644,12 @@ do_radio_button(
             auto center = get_center(region);
 
             uint8_t highlight = 0;
-            if (is_click_in_progress(
-                    ctx, internal_element_id{id, 0}, mouse_button::LEFT)
+            if (is_click_in_progress(ctx, id, mouse_button::LEFT)
                 || is_pressed(data.keyboard_click_state_))
             {
                 highlight = 0x40;
             }
-            else if (is_click_possible(ctx, internal_element_id{id, 0}))
+            else if (is_click_possible(ctx, id))
             {
                 highlight = 0x20;
             }
@@ -774,7 +750,7 @@ do_radio_button(
 //             {
 //                 static_cast<mouse_hit_test&>(test).result
 //                     = mouse_hit_test_result{
-//                         externalize(internal_element_id{*this, 0}),
+//                         externalize(widget_id{*this, 0}),
 //                         mouse_cursor::DEFAULT,
 //                         this->assignment().region,
 //                         ""};
@@ -785,15 +761,15 @@ do_radio_button(
 //     void
 //     process_input(dataless_ui_context ctx) override
 //     {
-//         add_to_focus_order(ctx, internal_element_id{*this, 0});
+//         add_to_focus_order(ctx, widget_id{*this, 0});
 //         if (detect_click(
-//                 ctx, internal_element_id{*this, 0}, mouse_button::LEFT))
+//                 ctx, widget_id{*this, 0}, mouse_button::LEFT))
 //         {
 //             click_event event;
 //             dispatch_targeted_event(*sys_, event, this->id_);
 //         }
 //         if (detect_keyboard_click(
-//                 ctx, keyboard_click_state_, internal_element_id{*this, 0}))
+//                 ctx, keyboard_click_state_, widget_id{*this, 0}))
 //         {
 //             click_event event;
 //             dispatch_targeted_event(*sys_, event, this->id_);
@@ -968,12 +944,12 @@ do_radio_button(
 //         uint8_t background_alpha = 0;
 
 //         if (is_click_in_progress(
-//                 *sys_, internal_element_id{*this, 0}, mouse_button::LEFT)
+//                 *sys_, widget_id{*this, 0}, mouse_button::LEFT)
 //             || is_pressed(keyboard_click_state_))
 //         {
 //             background_alpha = 0x30;
 //         }
-//         else if (is_click_possible(*sys_, internal_element_id{*this, 0}))
+//         else if (is_click_possible(*sys_, widget_id{*this, 0}))
 //         {
 //             background_alpha = 0x18;
 //         }
@@ -1040,7 +1016,7 @@ do_radio_button(
 //         //     canvas.drawRect(rect, blur);
 //         // }
 
-//         // if (element_has_focus(*sys_, internal_element_id{*this, 0}))
+//         // if (element_has_focus(*sys_, widget_id{*this, 0}))
 //         // {
 //         //     SkPaint paint;
 //         //     paint.setStyle(SkPaint::kStroke_Style);
@@ -1062,7 +1038,7 @@ do_radio_button(
 //             {
 //                 static_cast<mouse_hit_test&>(test).result
 //                     = mouse_hit_test_result{
-//                         externalize(internal_element_id{*this, 0}),
+//                         externalize(widget_id{*this, 0}),
 //                         mouse_cursor::POINTER,
 //                         this->assignment().region,
 //                         ""};
@@ -1073,14 +1049,14 @@ do_radio_button(
 //     void
 //     process_input(dataless_ui_context ctx) override
 //     {
-//         add_to_focus_order(ctx, internal_element_id{*this, 0});
+//         add_to_focus_order(ctx, widget_id{*this, 0});
 //         if (detect_click(
-//                 ctx, internal_element_id{*this, 0}, mouse_button::LEFT))
+//                 ctx, widget_id{*this, 0}, mouse_button::LEFT))
 //         {
 //             state_ = !state_;
 //         }
 //         if (detect_keyboard_click(
-//                 ctx, keyboard_click_state_, internal_element_id{*this, 0}))
+//                 ctx, keyboard_click_state_, widget_id{*this, 0}))
 //         {
 //             state_ = !state_;
 //         }
@@ -1214,12 +1190,12 @@ do_radio_button(
 // //         uint8_t background_alpha = 0;
 
 // //         if (is_click_in_progress(
-// //                 *sys_, internal_element_id{*this, 0}, mouse_button::LEFT)
+// //                 *sys_, widget_id{*this, 0}, mouse_button::LEFT)
 // //             || is_pressed(keyboard_click_state_))
 // //         {
 // //             background_alpha = 0x30;
 // //         }
-// //         else if (is_click_possible(*sys_, internal_element_id{*this, 0}))
+// //         else if (is_click_possible(*sys_, widget_id{*this, 0}))
 // //         {
 // //             background_alpha = 0x18;
 // //         }
@@ -1267,7 +1243,7 @@ do_radio_button(
 // //         //     canvas.drawRect(rect, blur);
 // //         // }
 
-// //         // if (element_has_focus(*sys_, internal_element_id{*this, 0}))
+// //         // if (element_has_focus(*sys_, widget_id{*this, 0}))
 // //         // {
 // //         //     SkPaint paint;
 // //         //     paint.setStyle(SkPaint::kStroke_Style);
@@ -1289,7 +1265,7 @@ do_radio_button(
 // //             {
 // //                 static_cast<mouse_hit_test&>(test).result
 // //                     = mouse_hit_test_result{
-// //                         externalize(internal_element_id{*this, 0}),
+// //                         externalize(widget_id{*this, 0}),
 // //                         mouse_cursor::POINTER,
 // //                         this->assignment().region,
 // //                         ""};
@@ -1300,14 +1276,14 @@ do_radio_button(
 // //     void
 // //     process_input(dataless_ui_context ctx) override
 // //     {
-// //         add_to_focus_order(ctx, internal_element_id{*this, 0});
+// //         add_to_focus_order(ctx, widget_id{*this, 0});
 // //         if (detect_click(
-// //                 ctx, internal_element_id{*this, 0}, mouse_button::LEFT))
+// //                 ctx, widget_id{*this, 0}, mouse_button::LEFT))
 // //         {
 // //             state_ = !state_;
 // //         }
 // //         if (detect_keyboard_click(
-// //                 ctx, keyboard_click_state_, internal_element_id{*this,
+// //                 ctx, keyboard_click_state_, widget_id{*this,
 // 0}))
 // //         {
 // //             state_ = !state_;
@@ -2594,26 +2570,27 @@ my_ui(ui_context ctx)
         = text_style{"roboto/Roboto-Regular", 22.f, rgb8(173, 181, 189)};
 
     // do_text(ctx, direct(my_style), value("Lorem ipsum"));
-    {
-        row_layout row(ctx);
-        do_radio_button(ctx, make_radio_signal(selected, value(1)));
-        do_text(ctx, direct(my_style), value("Lorem ipsum"), CENTER_Y);
-    }
-    {
-        row_layout row(ctx);
-        do_radio_button(ctx, make_radio_signal(selected, value(2)));
-        do_text(ctx, direct(my_style), value("Dolor sit amet"), CENTER_Y);
-    }
-    {
-        row_layout row(ctx);
-        do_radio_button(ctx, make_radio_signal(selected, value(3)));
-        do_text(
-            ctx,
-            direct(my_style),
-            value("consectetur adipiscing elit, sed do eiusmod tempor "
-                  "incididunt ut labore et dolore magna aliqua"),
-            CENTER_Y);
-    }
+
+    // {
+    //     row_layout row(ctx);
+    //     do_radio_button(ctx, make_radio_signal(selected, value(1)));
+    //     do_text(ctx, direct(my_style), value("Lorem ipsum"), CENTER_Y);
+    // }
+    // {
+    //     row_layout row(ctx);
+    //     do_radio_button(ctx, make_radio_signal(selected, value(2)));
+    //     do_text(ctx, direct(my_style), value("Dolor sit amet"), CENTER_Y);
+    // }
+    // {
+    //     row_layout row(ctx);
+    //     do_radio_button(ctx, make_radio_signal(selected, value(3)));
+    //     do_text(
+    //         ctx,
+    //         direct(my_style),
+    //         value("consectetur adipiscing elit, sed do eiusmod tempor "
+    //               "incididunt ut labore et dolore magna aliqua"),
+    //         CENTER_Y);
+    // }
 
     // {
     //     scoped_grid_layout grid(ctx);
@@ -2632,14 +2609,14 @@ my_ui(ui_context ctx)
     //             scoped_grid_row row(ctx, grid);
     {
         flow_layout flow(ctx);
-        for (int i = 0; i != 1000; ++i)
+        for (int i = 0; i != 30; ++i)
         {
             do_box(ctx, SK_ColorLTGRAY, actions::noop());
             do_box(ctx, SK_ColorDKGRAY, actions::noop());
             do_box(ctx, SK_ColorMAGENTA, actions::noop());
             do_box(ctx, SK_ColorLTGRAY, actions::noop());
-            do_box(ctx, SK_ColorMAGENTA, actions::noop());
-            do_box(ctx, SK_ColorRED, actions::noop());
+            // do_box(ctx, SK_ColorMAGENTA, actions::noop());
+            // do_box(ctx, SK_ColorRED, actions::noop());
             do_box(ctx, SK_ColorBLUE, actions::noop());
         }
     }

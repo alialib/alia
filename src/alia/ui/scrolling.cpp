@@ -17,9 +17,9 @@
 #include <alia/ui/styling.hpp>
 #include <alia/ui/system/input_constants.hpp>
 #include <alia/ui/system/object.hpp>
-#include <alia/ui/utilities/hit_testing.hpp>
 #include <alia/ui/utilities/keyboard.hpp>
 #include <alia/ui/utilities/mouse.hpp>
+#include <alia/ui/utilities/regions.hpp>
 #include <alia/ui/utilities/scrolling.hpp>
 #include <alia/ui/utilities/skia.hpp>
 
@@ -34,9 +34,7 @@ namespace alia {
 
 element_state
 get_element_state(
-    ui_system& sys,
-    internal_element_id element,
-    element_state overrides = NO_FLAGS)
+    ui_system& sys, widget_id id, element_state overrides = NO_FLAGS)
 {
     element_state state;
     if (!(overrides & ELEMENT_DISABLED))
@@ -46,12 +44,12 @@ get_element_state(
             state = ELEMENT_SELECTED;
         }
         else if (
-            is_click_in_progress(sys, element, mouse_button::LEFT)
+            is_click_in_progress(sys, id, mouse_button::LEFT)
             || (overrides & ELEMENT_DEPRESSED))
         {
             state = ELEMENT_DEPRESSED;
         }
-        else if (is_click_possible(sys, element))
+        else if (is_click_possible(sys, id))
         {
             state = ELEMENT_HOT;
         }
@@ -59,7 +57,7 @@ get_element_state(
         {
             state = ELEMENT_NORMAL;
         }
-        if (element_has_focus(sys, element) && sys.input.window_has_focus
+        if (element_has_focus(sys, id) && sys.input.window_has_focus
             && sys.input.keyboard_interaction)
         {
             state |= ELEMENT_FOCUSED;
@@ -301,34 +299,34 @@ get_bg1_area(scrollbar_parameters const& sb)
 // The following are utilities for getting the IDs of the various parts of
 // the scrollbar.
 
-internal_element_id
+widget_id
 get_thumb_id(scrollbar_parameters const& sb)
 {
-    return internal_element_id{&sb.data->identity, sb.element_id_start + 0};
+    return offset_id(sb.data, 0);
 }
 
-internal_element_id
+widget_id
 get_button0_id(scrollbar_parameters const& sb)
 {
-    return internal_element_id{&sb.data->identity, sb.element_id_start + 1};
+    return offset_id(sb.data, 1);
 }
 
-internal_element_id
+widget_id
 get_button1_id(scrollbar_parameters const& sb)
 {
-    return internal_element_id{&sb.data->identity, sb.element_id_start + 2};
+    return offset_id(sb.data, 2);
 }
 
-internal_element_id
+widget_id
 get_bg0_id(scrollbar_parameters const& sb)
 {
-    return internal_element_id{&sb.data->identity, sb.element_id_start + 3};
+    return offset_id(sb.data, 3);
 }
 
-internal_element_id
+widget_id
 get_bg1_id(scrollbar_parameters const& sb)
 {
-    return internal_element_id{&sb.data->identity, sb.element_id_start + 4};
+    return offset_id(sb.data, 4);
 }
 
 // The following are utilities for working with scrollbar positions.
@@ -442,19 +440,19 @@ void
 process_button_input(
     dataless_ui_context ctx,
     scrollbar_parameters const& sb,
-    internal_element_id element,
+    widget_id id,
     layout_scalar increment)
 {
     static int const delay_after_first_increment = 400;
     static int const delay_after_other_increment = 40;
 
-    if (detect_mouse_press(ctx, element, mouse_button::LEFT))
+    if (detect_mouse_press(ctx, id, mouse_button::LEFT))
     {
         offset_logical_position(sb, increment);
         start_timer(ctx, sb.data->timer, delay_after_first_increment);
     }
     else if (
-        is_click_in_progress(ctx, element, mouse_button::LEFT)
+        is_click_in_progress(ctx, id, mouse_button::LEFT)
         && detect_timer_event(ctx, sb.data->timer))
     {
         offset_logical_position(sb, increment);
@@ -702,8 +700,7 @@ construct_scrollbar(
         axis,
         get_scrollbar_region(data, cacher, axis),
         data.content_size[axis],
-        data.window_size[axis],
-        1 + int(axis) * scrollbar_element_id_count};
+        data.window_size[axis]};
 }
 
 layout_requirements
@@ -930,7 +927,7 @@ struct scrollable_view : widget_container
     void
     process_input(ui_event_context ctx) override
     {
-        auto delta = detect_scroll(ctx, internal_element_id{*this, 0});
+        auto delta = detect_scroll(ctx, widget_id{*this, 0});
         if (delta)
         {
             set_logical_position_abruptly(
@@ -940,7 +937,7 @@ struct scrollable_view : widget_container
 
         process_scrollbar_input(ctx, sb(1));
 
-        focus_on_click(ctx, internal_element_id{*this, 0});
+        focus_on_click(ctx, widget_id{*this, 0});
         auto key = detect_key_press(ctx);
         if (key)
             handle_scrolling_key_press(*key);
@@ -1127,6 +1124,8 @@ scoped_scrollable_view::begin(
         data_->container.data_ = data_;
     auto& data = *data_;
 
+    widget_id id = data_;
+
     container_.begin(get_layout_traversal(ctx), &data.container);
 
     alia_untracked_if(is_refresh_pass(ctx))
@@ -1189,38 +1188,45 @@ scoped_scrollable_view::begin(
         layout_vector window_corner
             = get_assignment(data.container.cacher_).region.corner;
 
-        // TODO
-        // hit_test_box_region(
-        //     ctx,
-        //     id,
-        //     layout_box(window_corner, data.window_size),
-        //     HIT_TEST_WHEEL);
-
-        // TODO
-        // float movement;
-        // if (detect_wheel_movement(ctx, &movement, id))
-        // {
-        //     set_scroll_position(
-        //         data,
-        //         1,
-        //         clamp_scroll_position(
-        //             data,
-        //             1,
-        //             data.scroll_position[1]
-        //                 - round_to_layout_scalar(data.line_size *
-        //                 movement)));
-        // }
-
-        for (unsigned i = 0; i != 2; ++i)
+        if (get_event_category(ctx) == REGION_CATEGORY)
         {
-            if (is_scrollbar_on(data, i))
+            hit_test_box_region(
+                ctx,
+                id,
+                layout_box(window_corner, data.window_size),
+                HIT_TEST_WHEEL);
+        }
+
+        if (get_event_category(ctx) == INPUT_CATEGORY)
+        {
+            auto delta = detect_scroll(ctx, id);
+            if (delta)
             {
-                do_scrollbar_pass(
-                    ctx, construct_scrollbar(data, data.container.cacher_, i));
+                for (unsigned axis = 0; axis != 2; ++axis)
+                {
+                    if ((*delta)[axis] != 0)
+                    {
+                        set_logical_position_abruptly(
+                            construct_scrollbar(
+                                data, data.container.cacher_, axis),
+                            data.sb_data[axis].scroll_position
+                            -= float((*delta)[axis] * 120));
+                    }
+                }
             }
         }
 
-        if (get_event_type(ctx) == RENDER_EVENT)
+        for (unsigned axis = 0; axis != 2; ++axis)
+        {
+            if (is_scrollbar_on(data, axis))
+            {
+                do_scrollbar_pass(
+                    ctx,
+                    construct_scrollbar(data, data.container.cacher_, axis));
+            }
+        }
+
+        if (get_event_category(ctx) == RENDER_CATEGORY)
         {
             if (is_scrollbar_on(data, 0) && is_scrollbar_on(data, 1))
             {
@@ -1239,10 +1245,11 @@ scoped_scrollable_view::begin(
             vector<2, double>(data.window_size)));
 
         auto scroll_position = make_vector<double>(0, 0);
-        for (unsigned i = 0; i != 2; ++i)
+        for (unsigned axis = 0; axis != 2; ++axis)
         {
-            if (is_scrollbar_on(data, i))
-                scroll_position[i] = data.sb_data[i].smoothed_scroll_position;
+            if (is_scrollbar_on(data, axis))
+                scroll_position[axis]
+                    = data.sb_data[axis].smoothed_scroll_position;
         }
 
         transform_.begin(*get_layout_traversal(ctx).geometry);

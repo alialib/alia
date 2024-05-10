@@ -1,3 +1,4 @@
+#include "alia/core/system/interface.hpp"
 #include <alia/core/timing/timer.hpp>
 
 namespace alia {
@@ -19,6 +20,7 @@ schedule_timer_event(
             timer_event event;
             event.trigger_time = trigger_time;
             dispatch_targeted_event(sys, event, id);
+            refresh_system(sys);
         },
         trigger_time);
 }

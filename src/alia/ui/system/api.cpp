@@ -3,8 +3,8 @@
 #include <alia/core/flow/events.hpp>
 #include <alia/ui/events.hpp>
 #include <alia/ui/system/object.hpp>
-#include <alia/ui/utilities/hit_testing.hpp>
 #include <alia/ui/utilities/keyboard.hpp>
+#include <alia/ui/utilities/regions.hpp>
 
 namespace alia {
 
@@ -82,18 +82,18 @@ update(ui_system& ui)
         dispatch_event(ui, hit_test, MOUSE_HIT_TEST_EVENT);
         if (hit_test.result)
         {
-            set_hot_element(ui, hit_test.result->element);
+            set_hot_element(ui, hit_test.result->id);
             resolved_cursor = hit_test.result->cursor;
             // record_tooltip(ui, hit_test);
         }
         else
         {
-            set_hot_element(ui, external_element_id());
+            set_hot_element(ui, routable_widget_id());
         }
     }
     else
     {
-        set_hot_element(ui, external_element_id());
+        set_hot_element(ui, routable_widget_id());
     }
 
     // The block above gives us the mouse cursor that's been requested by
@@ -185,8 +185,8 @@ update_window_size(ui_system& ui, vector<2, unsigned> const& new_size)
 //     ctx.style.theme = &ctx.system->style.theme;
 // }
 
-static external_element_id
-get_focus_successor(ui_system& ui, internal_element_id target)
+static routable_widget_id
+get_focus_successor(ui_system& ui, widget_id target)
 {
     focus_successor_event event;
     event.target = target;
@@ -200,11 +200,11 @@ get_focus_successor(ui_system& ui, internal_element_id target)
 
     dispatch_event(ui, event, FOCUS_SUCCESSOR_EVENT);
 
-    return externalize(event.successor);
+    return event.successor;
 }
 
-static external_element_id
-get_focus_predecessor(ui_system& ui, internal_element_id target)
+static routable_widget_id
+get_focus_predecessor(ui_system& ui, widget_id target)
 {
     focus_predecessor_event event;
     event.target = target;
@@ -212,7 +212,7 @@ get_focus_predecessor(ui_system& ui, internal_element_id target)
 
     dispatch_event(ui, event, FOCUS_PREDECESSOR_EVENT);
 
-    return externalize(event.predecessor);
+    return event.predecessor;
 }
 
 #if 0
@@ -709,41 +709,29 @@ void process_focus_gain(ui_system& ui, ui_time_type time)
 void
 advance_focus(ui_system& ui)
 {
-    set_focus(
-        ui,
-        get_focus_successor(
-            ui,
-            internal_element_id{
-                ui.input.element_with_focus.component.id,
-                ui.input.element_with_focus.index}));
+    set_focus(ui, get_focus_successor(ui, ui.input.widget_with_focus.id));
 }
 
 void
 regress_focus(ui_system& ui)
 {
-    set_focus(
-        ui,
-        get_focus_predecessor(
-            ui,
-            internal_element_id{
-                ui.input.element_with_focus.component.id,
-                ui.input.element_with_focus.index}));
+    set_focus(ui, get_focus_predecessor(ui, ui.input.widget_with_focus.id));
 }
 
 void
 clear_focus(ui_system& ui)
 {
-    ui.input.element_with_focus = external_element_id();
+    ui.input.widget_with_focus = routable_widget_id();
 }
 
 void
-set_element_with_capture(ui_system& ui, external_element_id element)
+set_element_with_capture(ui_system& ui, routable_widget_id id)
 {
-    ui.input.element_with_capture = std::move(element);
+    ui.input.widget_with_capture = std::move(id);
 }
 
 void
-set_hot_element(ui_system& ui, external_element_id element)
+set_hot_element(ui_system& ui, routable_widget_id id)
 {
     // TODO:
     // If no element has capture and the mouse is moving to a different
@@ -753,7 +741,7 @@ set_hot_element(ui_system& ui, external_element_id element)
     //     // ui.input.hover_start_time = ui.tick_count;
     // }
 
-    ui.input.hot_element = std::move(element);
+    ui.input.hot_widget = std::move(id);
 }
 
 #if 0

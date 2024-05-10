@@ -27,14 +27,14 @@ struct window_input_state
     vector<2, double> mouse_position;
 
     // the widget that the mouse is over
-    external_element_id hot_element;
+    routable_widget_id hot_widget;
 
     // the widget that has the mouse captured - Note that this isn't
     // necessarily the same as the hot_element.
-    external_element_id element_with_capture;
+    routable_widget_id widget_with_capture;
 
     // the widget that has the keyboard focus
-    external_element_id element_with_focus;
+    routable_widget_id widget_with_focus;
 
     // Is the user currently dragging the mouse (with a button pressed)?
     bool dragging = false;
