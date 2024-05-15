@@ -115,33 +115,11 @@ template<class Scalar>
 struct box_border_width
 {
     Scalar top, right, bottom, left;
-    box_border_width()
-    {
-    }
-    box_border_width(Scalar top, Scalar right, Scalar bottom, Scalar left)
-        : top(top), right(right), bottom(bottom), left(left)
-    {
-    }
-    explicit box_border_width(Scalar width)
-        : top(width), right(width), bottom(width), left(width)
-    {
-    }
+
+    auto
+    operator<=>(box_border_width const&) const
+        = default;
 };
-template<class Scalar>
-bool
-operator==(
-    box_border_width<Scalar> const& a, box_border_width<Scalar> const& b)
-{
-    return a.top == b.top && a.right == b.right && a.bottom == b.bottom
-           && a.left == b.left;
-}
-template<class Scalar>
-bool
-operator!=(
-    box_border_width<Scalar> const& a, box_border_width<Scalar> const& b)
-{
-    return !(a == b);
-}
 
 // some convenience functions for specifying widget sizes
 inline absolute_size
