@@ -94,8 +94,7 @@ struct scoped_scrollable_view
     end();
 
  private:
-    // TODO: Something else.
-    ui_context* ctx_;
+    optional_context<ui_context> ctx_;
     scrollable_view_data* data_;
     scoped_layout_container container_;
     scoped_clip_region clip_region_;
