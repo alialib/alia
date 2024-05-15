@@ -62,6 +62,9 @@ struct glfw_window_impl
     ui_system system;
 };
 
+void
+update_ui(glfw_window_impl& impl);
+
 struct glfw_os_interface : os_interface
 {
     glfw_os_interface(glfw_window_impl& impl) : impl_(impl)
@@ -122,8 +125,6 @@ struct glfw_window_interface : window_interface
 
     glfw_window_impl& impl_;
 };
-
-namespace {
 
 void
 error_callback(int /*error*/, const char* description)
@@ -193,6 +194,7 @@ void
 mouse_motion_callback(GLFWwindow* window, double x, double y)
 {
     process_mouse_motion(get_system(window), make_vector(x, y));
+    update_ui(get_impl(window));
 }
 
 void
@@ -305,8 +307,8 @@ render_ui(glfw_window_impl& impl)
                   .count();
         static long long max_render_time = 0;
         max_render_time = (std::max)(render_time, max_render_time);
-        std::cout << "render: " << render_time << "[us]\n";
-        std::cout << "max_render_time: " << max_render_time << "[us]\n";
+        // std::cout << "render: " << render_time << "[us]\n";
+        // std::cout << "max_render_time: " << max_render_time << "[us]\n";
     }
 
     impl.skia_graphics_context->flush();
@@ -320,9 +322,6 @@ update_ui(glfw_window_impl& impl)
     int width, height;
     glfwGetFramebufferSize(impl.glfw_window, &width, &height);
 
-    std::chrono::steady_clock::time_point begin
-        = std::chrono::steady_clock::now();
-
     refresh_system(impl.system);
     update(impl.system);
 
@@ -335,15 +334,8 @@ update_ui(glfw_window_impl& impl)
             update(impl.system);
         });
 
-    long long refresh_time;
-    {
-        std::chrono::steady_clock::time_point end
-            = std::chrono::steady_clock::now();
-        refresh_time = std::chrono::duration_cast<std::chrono::microseconds>(
-                           end - begin)
-                           .count();
-        begin = end;
-    }
+    std::chrono::steady_clock::time_point begin
+        = std::chrono::steady_clock::now();
 
     resolve_layout(
         impl.system.layout, make_vector(float(width), float(height)));
@@ -360,18 +352,12 @@ update_ui(glfw_window_impl& impl)
         layout_time = std::chrono::duration_cast<std::chrono::microseconds>(
                           end - begin)
                           .count();
-        begin = end;
     }
-
-    static long long max_refresh_time = 0;
-    max_refresh_time = (std::max)(refresh_time, max_refresh_time);
-    std::cout << "refresh: " << refresh_time << "[us]\n";
-    std::cout << "max_refresh_time: " << max_refresh_time << "[us]\n";
 
     static long long max_layout_time = 0;
     max_layout_time = (std::max)(layout_time, max_layout_time);
-    std::cout << "layout: " << layout_time << "[us]\n";
-    std::cout << "max_layout_time: " << max_layout_time << "[us]\n";
+    // std::cout << "layout: " << layout_time << "[us]\n";
+    // std::cout << "max_layout_time: " << max_layout_time << "[us]\n";
 
     render_ui(impl);
 
@@ -431,8 +417,6 @@ destroy_window(glfw_window_impl& impl)
 {
     glfwDestroyWindow(impl.glfw_window);
 }
-
-} // namespace
 
 glfw_window::glfw_window(
     std::string const& title,

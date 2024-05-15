@@ -64,6 +64,7 @@ route_event(
 {
     try
     {
+        // printf("CODE: %08x\n", traversal.type_code);
         route_event_(sys, traversal, target);
     }
     catch (traversal_aborted&)
