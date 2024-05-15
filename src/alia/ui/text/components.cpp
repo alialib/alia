@@ -121,58 +121,157 @@ do_text(
     alia_end
 }
 
-// void
-// do_wrapped_text(
-//     ui_context ctx,
-//     readable<text_style> style,
-//     readable<std::string> text,
-//     layout const& layout_spec)
-// {
-//     wrapped_text_node* node_ptr;
-//     if (get_cached_data(ctx, &node_ptr))
-//     {
-//         node_ptr->sys_ = &get_system(ctx);
+struct wrapped_text_node : layout_node
+{
+    layout_requirements
+    get_horizontal_requirements() override
+    {
+        return cache_horizontal_layout_requirements(
+            cacher, this->last_content_change, [&] {
+                // TODO: What should the actual minimum width be here?
+                return calculated_layout_requirements{12, 0, 0};
+            });
+    }
+    layout_requirements
+    get_vertical_requirements(layout_scalar assigned_width) override
+    {
+        return cache_vertical_layout_requirements(
+            cacher, this->last_content_change, assigned_width, [&] {
+                if (this->shape_width != assigned_width)
+                {
+                    this->shape = Shape(
+                        this->text.c_str(),
+                        this->text.size(),
+                        *this->font,
+                        assigned_width);
+                    this->shape_width = assigned_width;
+                }
 
-//         // TODO: This isn't necessarily readable right now.
-//         node_ptr->text_ = read_signal(text);
-//         // TODO: This also isn't necessarily readable right now.
-//         // TODO: Need to track changes in this.
-//         node_ptr->font_ = &get_font(
-//             read_signal(style).font_name, read_signal(style).font_size);
-//     }
+                return calculated_layout_requirements{
+                    layout_scalar(this->shape.verticalAdvance),
+                    0 /* TODO: ascent */,
+                    0 /* TODO: descent */};
+            });
+    }
+    void
+    set_relative_assignment(
+        relative_layout_assignment const& assignment) override
+    {
+        update_relative_assignment(
+            *this,
+            this->cacher,
+            this->last_content_change,
+            assignment,
+            [&](auto const&) {});
+    }
 
-//     auto& node = *node_ptr;
+    captured_id text_id;
+    std::string text;
 
-//     if (is_refresh_event(ctx))
-//     {
-//         if (update_layout_cacher(
-//                 get_layout_traversal(ctx),
-//                 node.cacher,
-//                 layout_spec,
-//                 TOP | LEFT | PADDED))
-//         {
-//             // Since this container isn't active yet, it didn't get marked
-//             // as needing recalculation, so we need to do that manually
-//             // here.
-//             node.last_content_change
-//                 = get_layout_traversal(ctx).refresh_counter;
-//         }
+    layout_cacher cacher;
 
-//         refresh_signal_view(
-//             node.text_id_,
-//             text,
-//             [&](std::string const& new_value) { node.text_ = new_value; },
-//             [&] { node.text_.clear(); },
-//             [&] {
-//                 record_layout_change(get_layout_traversal(ctx));
-//                 node.shape_width_ = 0;
-//                 node.shape_ = ShapeResult();
-//                 node.last_content_change
-//                     = get_layout_traversal(ctx).refresh_counter;
-//             });
+    double shape_width = 0;
+    ShapeResult shape;
 
-//         add_layout_node(get<ui_traversal_tag>(ctx).layout, &node);
-//     }
-// }
+    SkFont* font;
+
+    counter_type last_content_change = 0;
+};
+
+void
+do_wrapped_text(
+    ui_context ctx,
+    readable<text_style> style,
+    readable<std::string> text,
+    layout const& layout_spec)
+{
+    wrapped_text_node* node_ptr;
+    if (get_cached_data(ctx, &node_ptr))
+    {
+        // TODO: This isn't necessarily readable right now.
+        node_ptr->text = read_signal(text);
+        // TODO: This also isn't necessarily readable right now.
+        // TODO: Need to track changes in this.
+        node_ptr->font = &get_font(
+            read_signal(style).font_name, read_signal(style).font_size);
+    }
+
+    auto& node = *node_ptr;
+
+    alia_untracked_switch(get_event_category(ctx))
+    {
+        case REFRESH_CATEGORY:
+            refresh_signal_view(
+                node.text_id,
+                text,
+                [&](std::string const& new_value) { node.text = new_value; },
+                [&] { node.text.clear(); },
+                [&] {
+                    record_layout_change(get_layout_traversal(ctx));
+                    node.shape_width = 0;
+                    node.shape = ShapeResult();
+                    node.last_content_change
+                        = get_layout_traversal(ctx).refresh_counter;
+                });
+
+            if (update_layout_cacher(
+                    get_layout_traversal(ctx),
+                    node.cacher,
+                    layout_spec,
+                    TOP | LEFT | PADDED))
+            {
+                // Since this container isn't active yet, it didn't get
+                // marked as needing recalculation, so we need to do that
+                // manually here.
+                node.last_content_change
+                    = get_layout_traversal(ctx).refresh_counter;
+            }
+
+            add_layout_node(get<ui_traversal_tag>(ctx).layout, &node);
+
+            break;
+
+        case REGION_CATEGORY:
+            break;
+
+        case INPUT_CATEGORY:
+            break;
+
+        case RENDER_CATEGORY: {
+            auto& event = cast_event<render_event>(ctx);
+
+            SkCanvas& canvas = *event.canvas;
+
+            auto const& region = node.cacher.relative_assignment.region;
+
+            SkRect bounds;
+            bounds.fLeft = SkScalar(region.corner[0]);
+            bounds.fTop = SkScalar(region.corner[1]);
+            bounds.fRight = bounds.fLeft + SkScalar(region.size[0]);
+            bounds.fBottom = bounds.fTop + SkScalar(region.size[1]);
+            if (canvas.quickReject(bounds))
+                return;
+
+            SkPaint paint;
+            paint.setAntiAlias(true);
+            // Note that this isn't necessarily readable yet.
+            auto color = as_skia_color(read_signal(style).color);
+            paint.setColor(color);
+
+            if (node.shape_width != region.size[0])
+            {
+                node.shape = Shape(
+                    node.text.c_str(),
+                    node.text.size(),
+                    *node.font,
+                    region.size[0]);
+                node.shape_width = region.size[0];
+            }
+            canvas.drawTextBlob(
+                node.shape.blob.get(), bounds.fLeft, bounds.fTop, paint);
+        }
+    }
+    alia_end
+}
 
 } // namespace alia
