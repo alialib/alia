@@ -1,5 +1,7 @@
 #include <alia/core/system/interface.hpp>
 
+#include <chrono>
+
 #include <alia/core/system/internals.hpp>
 
 namespace alia {
@@ -16,6 +18,9 @@ refresh_system(untyped_system& sys)
     sys.refresh_needed = false;
     ++sys.refresh_counter;
 
+    std::chrono::steady_clock::time_point begin
+        = std::chrono::steady_clock::now();
+
     // TODO: Track pass_count and handle excessive counts in useful ways.
     // ("Useful" is probably different for development/release builds.)
     // int pass_count = 0;
@@ -28,6 +33,20 @@ refresh_system(untyped_system& sys)
         // ++pass_count;
         // assert(pass_count < 64);
     };
+
+    long long refresh_time;
+    {
+        std::chrono::steady_clock::time_point end
+            = std::chrono::steady_clock::now();
+        refresh_time = std::chrono::duration_cast<std::chrono::microseconds>(
+                           end - begin)
+                           .count();
+    }
+
+    static long long max_refresh_time = 0;
+    max_refresh_time = (std::max)(refresh_time, max_refresh_time);
+    // std::cout << "refresh: " << refresh_time << "[us]\n";
+    // std::cout << "max_refresh_time: " << max_refresh_time << "[us]\n";
 }
 
 void
