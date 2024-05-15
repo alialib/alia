@@ -343,9 +343,11 @@ void
 wrap_row(wrapping_assignment_state& state)
 {
     ++state.active_row;
-    state.x = state.active_row != state.end_row ? calculate_initial_x(
-                  state.assigned_width, state.x_alignment, *state.active_row)
-                                                : 0;
+    state.x
+        = state.active_row != state.end_row
+              ? calculate_initial_x(
+                    state.assigned_width, state.x_alignment, *state.active_row)
+              : 0;
 }
 
 void
@@ -435,7 +437,7 @@ flow_layout_logic::set_relative_assignment(
     // Now actually do the assignments.
     wrapping_assignment_state state;
     state.x = !rows.empty() ? calculate_initial_x(
-                  assigned_size[0], x_alignment_, rows.front())
+                                  assigned_size[0], x_alignment_, rows.front())
                             : 0;
     state.assigned_width = assigned_size[0];
     state.active_row = rows.begin();
@@ -853,6 +855,7 @@ bordered_layout::concrete_begin(
     get_simple_layout_container(
         traversal, data, &container_, &logic, layout_spec);
     slc_.begin(traversal, container_);
+    begin_layout_transform(transform_, traversal, container_->cacher);
     if (traversal.is_refresh_pass)
     {
         detect_layout_change(
