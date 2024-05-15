@@ -4,7 +4,9 @@
 #include <alia/ui/color.hpp>
 #include <alia/ui/events.hpp>
 #include <alia/ui/layout/library.hpp>
+#include <alia/ui/layout/specification.hpp>
 #include <alia/ui/layout/utilities.hpp>
+#include <alia/ui/library/panels.hpp>
 #include <alia/ui/scrolling.hpp>
 #include <alia/ui/system/api.hpp>
 #include <alia/ui/system/input_constants.hpp>
@@ -348,6 +350,9 @@ struct box_data
     bool state_ = false;
     keyboard_click_state keyboard_click_state_;
     layout_leaf layout_node;
+    sk_sp<SkPicture> picture;
+    rgb8 cached_color;
+    layout_box cached_rect;
 };
 
 void
@@ -403,8 +408,8 @@ do_box(
             rect.fRight = SkScalar(region.corner[0] + region.size[0]);
             rect.fBottom = SkScalar(region.corner[1] + region.size[1]);
 
-            if (event.canvas->quickReject(rect))
-                break;
+            // if (event.canvas->quickReject(rect))
+            //     break;
 
             double blend_factor = 0;
 
@@ -435,15 +440,38 @@ do_box(
                 c = interpolate(c, rgb8(0xff, 0xff, 0xff), blend_factor);
             }
 
+            {
+                SkPaint paint;
+                paint.setColor(SkColorSetARGB(0xff, c.r, c.g, c.b));
+                canvas.drawRect(rect, paint);
+            }
+
+            // if (!data.picture || data.cached_color != c
+            //     || data.cached_rect != region)
+            // {
+            //     SkPictureRecorder recorder;
+            //     SkCanvas* recoreder_canvas = recorder.beginRecording(rect);
+
+            //     {
+            //         SkPaint paint;
+            //         paint.setColor(SkColorSetARGB(0xff, c.r, c.g, c.b));
+            //         recoreder_canvas->drawRect(rect, paint);
+            //     }
+
+            //     data.picture = recorder.finishRecordingAsPicture();
+            //     data.cached_color = c;
+            //     data.cached_rect = region;
+            // }
+
+            // data.picture->playback(&canvas);
+
+            // --
+
             // auto position = smooth_value(
             //     position_,
             //     region.corner + event.current_offset,
             //     tick_counter_,
             //     {default_curve, 80});
-
-            SkPaint paint;
-            paint.setColor(SkColorSetARGB(0xff, c.r, c.g, c.b));
-            canvas.drawRect(rect, paint);
 
             // if (rect.width() > 200)
             // {
@@ -456,6 +484,7 @@ do_box(
 
             if (widget_has_focus(ctx, id))
             {
+                SkPaint paint;
                 paint.setStyle(SkPaint::kStroke_Style);
                 paint.setStrokeWidth(4);
                 paint.setColor(SK_ColorBLACK);
@@ -2553,44 +2582,292 @@ do_radio_button(
 
 // } // namespace alia
 
+namespace alia {
+
+struct culling_block
+{
+    culling_block()
+    {
+    }
+    culling_block(ui_context& ctx, layout const& layout_spec = default_layout)
+    {
+        begin(ctx, layout_spec);
+    }
+    ~culling_block()
+    {
+        end();
+    }
+    void
+    begin(ui_context& ctx, layout const& layout_spec = default_layout);
+    void
+    end();
+    bool
+    is_relevant() const
+    {
+        return is_relevant_;
+    }
+
+ private:
+    ui_context* ctx_;
+    scoped_component_container scc_;
+    column_layout layout_;
+    bool is_relevant_;
+};
+
+void
+culling_block::begin(ui_context& ctx, layout const& layout_spec)
+{
+    ctx_ = &ctx;
+    scc_.begin(ctx);
+    layout_.begin(ctx, layout_spec);
+    switch (get_event_category(ctx))
+    {
+        case REFRESH_CATEGORY:
+            is_relevant_ = true;
+            break;
+        case RENDER_CATEGORY:
+            is_relevant_ = is_visible(
+                get_geometry_context(ctx), box<2, double>(layout_.region()));
+            break;
+        case REGION_CATEGORY:
+            if (get_event_type(ctx) == MOUSE_HIT_TEST_EVENT
+                || get_event_type(ctx) == WHEEL_HIT_TEST_EVENT)
+            {
+                is_relevant_ = is_mouse_inside_box(
+                    ctx, box<2, double>(layout_.region()));
+                break;
+            }
+            // Other region events fall through.
+        default:
+            is_relevant_ = scc_.is_on_route();
+    }
+}
+void
+culling_block::end()
+{
+    if (ctx_)
+    {
+        layout_.end();
+        scc_.end();
+        ctx_ = 0;
+    }
+}
+
+}
+
+#define alia_culling_block_(ctx, layout_spec)                                 \
+    {                                                                         \
+        ::alia::culling_block alia__culling_block(ctx, layout_spec);          \
+        {                                                                     \
+            ::alia::event_dependent_if_block alia__if_block(                  \
+                get_data_traversal(ctx), alia__culling_block.is_relevant());  \
+            if (alia__culling_block.is_relevant())                            \
+            {
+
+#define alia_culling_block(layout_spec) alia_culling_block_(ctx, layout_spec)
+
+namespace alia {
+
+struct layout_node;
+struct ui_caching_node;
+
+struct cached_ui_block
+{
+    cached_ui_block() : ctx_(0)
+    {
+    }
+    cached_ui_block(
+        ui_context& ctx,
+        id_interface const& id,
+        layout const& layout_spec = default_layout)
+    {
+        begin(ctx, id, layout_spec);
+    }
+    ~cached_ui_block()
+    {
+        end();
+    }
+    void
+    begin(
+        ui_context& ctx,
+        id_interface const& id,
+        layout const& layout_spec = default_layout);
+    void
+    end();
+    bool
+    is_relevant() const
+    {
+        return is_relevant_;
+    }
+
+ private:
+    ui_context* ctx_;
+    ui_caching_node* cacher_;
+    culling_block culling_;
+    bool is_relevant_;
+    layout_node** layout_next_ptr_;
+};
+
+struct ui_caching_node
+{
+    // ui_caching_node* parent;
+
+    // cached layout info
+    bool layout_valid;
+    captured_id layout_id;
+    layout_node* layout_subtree_head;
+    layout_node** layout_subtree_tail;
+};
+
+void
+cached_ui_block::begin(
+    ui_context& ctx, id_interface const& id, layout const& layout_spec)
+{
+    ctx_ = &ctx;
+
+    culling_.begin(ctx, layout_spec);
+
+    get_cached_data(ctx, &cacher_);
+    ui_caching_node& cacher = *cacher_;
+
+    // cacher.parent = ctx.active_cacher;
+    // ctx.active_cacher = &cacher;
+
+    // Caching content in the middle of a validation block is not currently
+    // supported.
+    // assert(!ctx.validation.detection && !ctx.validation.reporting);
+
+    // Before doing anything else, see if the content can be culled by the
+    // culling block's criteria.
+    if (!culling_.is_relevant())
+    {
+        is_relevant_ = false;
+        return;
+    }
+
+    if (get_event_type(ctx) == REFRESH_EVENT)
+    {
+        // Detect if there are changes that require the block to be traversed
+        // this pass.
+        is_relevant_ = !cacher.layout_valid || !cacher.layout_id.matches(id);
+        // If we're going to actually update the layout, record the current
+        // value of the layout context's next_ptr, so we'll know where to look
+        // for the address of the first node.
+        if (is_relevant_)
+        {
+            layout_next_ptr_ = get_layout_traversal(ctx).next_ptr;
+            // Store the ID here because it's only available within this
+            // function.
+            cacher.layout_id.capture(id);
+            // Need to mark it valid here because it could be invalidated
+            // by something inside the block.
+            // (Is this dangerous?)
+            cacher.layout_valid = true;
+        }
+        // Otherwise, just splice in the cached subtree.
+        else
+        {
+            *get_layout_traversal(ctx).next_ptr = cacher.layout_subtree_head;
+            get_layout_traversal(ctx).next_ptr = cacher.layout_subtree_tail;
+        }
+    }
+    else
+        is_relevant_ = true;
+}
+void
+cached_ui_block::end()
+{
+    if (ctx_)
+    {
+        ui_context& ctx = *ctx_;
+        ui_caching_node& cacher = *cacher_;
+
+        // If the layout was just updated, record the head and tail of the
+        // layout subtree so we can splice it into the parent tree on passes
+        // where we skip layout.
+        if (is_refresh_pass(ctx) && is_relevant_)
+        {
+            cacher.layout_subtree_head = *layout_next_ptr_;
+            cacher.layout_subtree_tail = get_layout_traversal(ctx).next_ptr;
+        }
+
+        switch (get_event_type(ctx))
+        {
+            case REFRESH_EVENT:
+            case RENDER_EVENT:
+            case MOUSE_HIT_TEST_EVENT:
+            case WHEEL_HIT_TEST_EVENT:
+                break;
+            default:
+                // Any other event that makes it into the block could
+                // potentially cause a state change, so record a change.
+                cacher.layout_valid = false;
+        }
+
+        culling_.end();
+
+        // ctx.active_cacher = cacher.parent;
+
+        ctx_ = 0;
+    }
+}
+
+#define alia_cached_ui_block_(ctx, id, layout_spec)                           \
+    {                                                                         \
+        ::alia::cached_ui_block alia__cached_ui_block(ctx, id);               \
+        {                                                                     \
+            ::alia::event_dependent_if_block alia__if_block(                  \
+                get_data_traversal(ctx),                                      \
+                alia__cached_ui_block.is_relevant());                         \
+            if (alia__cached_ui_block.is_relevant())                          \
+            {
+
+#define alia_cached_ui_block(id, layout_spec)                                 \
+    alia_cached_ui_block_(ctx, id, layout_spec)
+
+}
+
 void
 my_ui(ui_context ctx)
 {
-    scoped_scrollable_view scrollable(ctx, GROW);
+    scoped_scrollable_view scrollable(ctx, GROW); //, 3, 2);
 
     // scoped_panel panel(ctx, GROW | UNPADDED);
 
-    // column_layout column(ctx, GROW | PADDED);
-
-    // scoped_column column(ctx, GROW | PADDED);
+    column_layout column(ctx, GROW | PADDED);
 
     auto selected = get_state(ctx, int(0));
 
     auto my_style
         = text_style{"roboto/Roboto-Regular", 22.f, rgb8(173, 181, 189)};
 
-    // do_text(ctx, direct(my_style), value("Lorem ipsum"));
+    panel_style_info pstyle{
+        box_border_width<float>(4, 4, 4, 4),
+        box_border_width<float>(0, 0, 0, 0),
+        box_border_width<float>(4, 4, 4, 4)};
 
-    // {
-    //     row_layout row(ctx);
-    //     do_radio_button(ctx, make_radio_signal(selected, value(1)));
-    //     do_text(ctx, direct(my_style), value("Lorem ipsum"), CENTER_Y);
-    // }
-    // {
-    //     row_layout row(ctx);
-    //     do_radio_button(ctx, make_radio_signal(selected, value(2)));
-    //     do_text(ctx, direct(my_style), value("Dolor sit amet"), CENTER_Y);
-    // }
-    // {
-    //     row_layout row(ctx);
-    //     do_radio_button(ctx, make_radio_signal(selected, value(3)));
-    //     do_text(
-    //         ctx,
-    //         direct(my_style),
-    //         value("consectetur adipiscing elit, sed do eiusmod tempor "
-    //               "incididunt ut labore et dolore magna aliqua"),
-    //         CENTER_Y);
-    // }
+    do_text(ctx, direct(my_style), value("Lorem ipsum"));
+    // do_spacer(ctx, size(200, 2000, PIXELS));
+    //  {
+    //      row_layout row(ctx);
+    //      do_radio_button(ctx, make_radio_signal(selected, value(1)));
+    //      do_text(ctx, direct(my_style), value("Lorem ipsum"), CENTER_Y);
+    //  }
+    //  {
+    //      row_layout row(ctx);
+    //      do_radio_button(ctx, make_radio_signal(selected, value(2)));
+    //      do_text(ctx, direct(my_style), value("Dolor sit amet"), CENTER_Y);
+    //  }
+    //  {
+    //      row_layout row(ctx);
+    //      do_radio_button(ctx, make_radio_signal(selected, value(3)));
+    //      do_text(
+    //          ctx,
+    //          direct(my_style),
+    //          value("consectetur adipiscing elit, sed do eiusmod tempor "
+    //                "incididunt ut labore et dolore magna aliqua"),
+    //          CENTER_Y);
+    //  }
 
     // {
     //     scoped_grid_layout grid(ctx);
@@ -2607,23 +2884,31 @@ my_ui(ui_context ctx)
     //         }
     //         {
     //             scoped_grid_row row(ctx, grid);
-    {
-        flow_layout flow(ctx);
-        for (int i = 0; i != 300; ++i)
-        {
-            do_box(ctx, SK_ColorLTGRAY, actions::noop());
-            do_box(ctx, SK_ColorDKGRAY, actions::noop());
-            do_box(ctx, SK_ColorMAGENTA, actions::noop());
-            do_box(ctx, SK_ColorLTGRAY, actions::noop());
-            // do_box(ctx, SK_ColorMAGENTA, actions::noop());
-            // do_box(ctx, SK_ColorRED, actions::noop());
-            do_box(ctx, SK_ColorBLUE, actions::noop());
-        }
-    }
-
     //         }
     //     }
     // }
+
+    for (int i = 0; i != 1; ++i)
+    {
+        alia_cached_ui_block(unit_id, default_layout)
+        {
+            panel p(ctx, direct(pstyle));
+            // do_text(ctx, direct(my_style), value("Lorem ipsum"));
+            //  column_layout column(ctx);
+            flow_layout flow(ctx);
+            for (int j = 0; j != 100; ++j)
+            {
+                do_box(ctx, SK_ColorLTGRAY, actions::noop());
+                do_box(ctx, SK_ColorDKGRAY, actions::noop());
+                do_box(ctx, SK_ColorMAGENTA, actions::noop());
+                do_box(ctx, SK_ColorLTGRAY, actions::noop());
+                do_box(ctx, SK_ColorMAGENTA, actions::noop());
+                do_box(ctx, SK_ColorRED, actions::noop());
+                do_box(ctx, SK_ColorBLUE, actions::noop());
+            }
+        }
+        alia_end
+    }
 
     // auto show_text = get_state(ctx, false);
 
@@ -2655,103 +2940,95 @@ my_ui(ui_context ctx)
     //         value("\xe7\x8e\x8b\xe6\x98\x8e\xef\xbc\x9a\xe8\xbf\x99\xe6\x98"
     //               "\xaf\xe4\xbb\x80\xe4\xb9\x88\xef\xbc\x9f"));
 
+    // {
+    //     grid_layout grid(ctx);
+    //     for (int i = 0; i != 4; ++i)
     //     {
-    //         scoped_grid_layout grid(ctx);
-    //         for (int i = 0; i != 4; ++i)
     //         {
-    //             {
-    //                 scoped_grid_row row(ctx, grid);
-    //                 do_box(
-    //                     ctx,
-    //                     SK_ColorMAGENTA,
-    //                     actions::noop(),
-    //                     width(200, PIXELS));
-    //                 do_box(
-    //                     ctx,
-    //                     SK_ColorMAGENTA,
-    //                     actions::noop(),
-    //                     width(200, PIXELS));
-    //             }
-    //             {
-    //                 scoped_grid_row row(ctx, grid);
-    //                 do_box(ctx, SK_ColorLTGRAY, actions::noop());
-    //                 do_box(ctx, SK_ColorLTGRAY, actions::noop());
-    //             }
+    //             grid_row row(grid);
+    //             do_box(
+    //                 ctx, SK_ColorMAGENTA, actions::noop(), width(200,
+    //                 PIXELS));
+    //             do_box(
+    //                 ctx, SK_ColorMAGENTA, actions::noop(), width(200,
+    //                 PIXELS));
+    //         }
+    //         {
+    //             grid_row row(grid);
+    //             do_box(ctx, SK_ColorLTGRAY, actions::noop());
+    //             do_box(ctx, SK_ColorLTGRAY, actions::noop());
     //         }
     //     }
-    // });
+    // }
 
     // do_spacer(ctx, height(100, PIXELS));
 
     {
-        //     for (int outer = 0; outer != 0; ++outer)
-        //     {
-        //         do_wrapped_text(
-        //             ctx,
-        //             value(
-        //                 "Lorem ipsum dolor sit amet, consectetur "
-        //                 "adipisg elit. "
-        //                 "Phasellus lacinia elementum diam consequat
-        //                 alicinquet. " "Vestibulum ut libero justo.
-        //                 Pellentesque lectus lectus, " "scelerisque a
-        //                 elementum sed, bibendum id libero. " "Maecenas
-        //                 venenatis est sed sem consequat mollis. Ut " "neque
-        //                 odio, hendrerit ut justo venenatis, consequat "
-        //                 "molestie eros. Nam fermentum, mi malesuada eleifend
-        //                 " "dapibus, lectus dolor luctus orci, nec posuere
-        //                 dolor " "lorem ac sem. Nullam interdum laoreet ipsum
-        //                 in " "dictum.\n\n" "Duis quis blandit felis.
-        //                 Pellentesque et lectus magna. " "Maecenas dui lacus,
-        //                 sollicitudin a eros in, vehicula " "posuere metus.
-        //                 Etiam nec dolor mattis, tincidunt sem " "vitae,
-        //                 maximus tellus. Vestibulum ut nisi nec neque "
-        //                 "rutrum interdum. In justo massa, consequat quis dui
-        //                 " "eget, cursus ultricies sem. Quisque a lectus quis
-        //                 est " "porttitor ullamcorper ac sed odio.\n\n"
-        //                 "Vestibulum sed turpis et lacus rutrum scelerisque
-        //                 et sit " "amet ipsum. Sed congue hendrerit augue,
-        //                 sed pellentesque " "neque. Integer efficitur nisi id
-        //                 massa placerat, at " "ullamcorper arcu fermentum.
-        //                 Donec sed tellus quis velit " "placerat viverra nec
-        //                 vel diam. Vestibulum faucibus " "molestie ipsum eget
-        //                 rhoncus. Donec vitae bibendum nibh, " "quis
-        //                 pellentesque enim. Donec eget consectetur massa, "
-        //                 "eget mollis elit. Orci varius natoque penatibus et
-        //                 " "magnis dis parturient montes, nascetur ridiculus
-        //                 mus. " "Donec accumsan, nisi egestas sollicitudin
-        //                 ullamcorper, " "diam dolor faucibus neque, eu
-        //                 scelerisque mi erat vel " "erat. Etiam nec leo ac
-        //                 risus porta ornare ut accumsan " "lorem.\n\n"
-        //                 "Aenean at euismod ligula. Sed augue est, imperdiet
-        //                 ut " "sem sit amet, efficitur dictum enim. Nam
-        //                 sodales id " "risus non pulvinar. Morbi id mollis
-        //                 massa. Nunc elit " "velit, pellentesque et lobortis
-        //                 ut, luctus sed justo. " "Morbi eleifend quam vel
-        //                 magna accumsan, eu consequat " "nisl ultrices.
-        //                 Mauris dictum eu quam sit amet aliquet. " "Sed
-        //                 rhoncus turpis quis sagittis imperdiet. Lorem ipsum
-        //                 " "dolor sit amet, consectetur adipiscing elit. "
-        //                 "Pellentesque convallis suscipit ex et hendrerit.
-        //                 Donec " "est ex, varius eu nulla id, tristique
-        //                 lobortis metus. " "Sed id sem justo. Nulla at porta
-        //                 neque, id elementum " "lacus.\n\n" "Mauris leo
-        //                 tortor, tincidunt sit amet sem sit amet, " "egestas
-        //                 tempor massa. In diam ipsum, fermentum pulvinar "
-        //                 "posuere ut, scelerisque sit amet odio. Nam nec
-        //                 justo " "quis felis ultrices ornare sit amet eu
-        //                 massa. Nam " "gravida lacus eget tortor porttitor,
-        //                 eget scelerisque " "est imperdiet. Duis quis
-        //                 imperdiet libero. Nullam justo " "erat, blandit et
-        //                 nisi sit amet, aliquet mattis leo. Sed " "a augue
-        //                 non felis lacinia ultrices. Aenean porttitor "
-        //                 "bibendum sem, in consectetur arcu suscipit id.
-        //                 Etiam " "varius dictum gravida. Nulla molestie
-        //                 fermentum odio " "vitae tincidunt. Quisque dictum,
-        //                 magna vitae porttitor " "accumsan, felis felis
-        //                 consectetur nisi, ut venenatis " "felis justo ut
-        //                 ante.\n\n"),
-        //             FILL);
-        //     }
+        for (int outer = 0; outer != 10; ++outer)
+        {
+            do_wrapped_text(
+                ctx,
+                direct(my_style),
+                value(
+                    "Lorem ipsum dolor sit amet, consectetur "
+                    "adipisg elit. "
+                    "Phasellus lacinia elementum diam consequat alicinquet. "
+                    "Vestibulum ut libero justo. Pellentesque lectus lectus, "
+                    "scelerisque a elementum sed, bibendum id libero. "
+                    "Maecenas venenatis est sed sem "
+                    "consequat mollis. Ut "
+                    "nequeodio, hendrerit ut justo venenatis, consequat "
+                    "molestie eros. Nam fermentum, mi malesuada eleifend"
+                    "dapibus, lectus dolor luctus orci, nec posuere lor "
+                    "lorem ac sem. Nullam interdum laoreet ipsum in "
+                    "dictum.\n\n"
+                    "Duis quis blandit felis. Pellentesque et lectus magna. "
+                    "Maecenas dui lacus, sollicitudin a eros in, vehicula "
+                    "posuere metus. Etiam nec dolor mattis, tincidunt sem "
+                    "vitae, maximus tellus. Vestibulum ut nisi nec neque "
+                    "rutrum interdum. In justo massa, consequat quis dui "
+                    "eget, cursus ultricies sem. Quisque a lectus quisest "
+                    "porttitor ullamcorper ac sed odio.\n\n"
+                    "Vestibulum sed turpis et lacus rutrum scelerisqueet sit "
+                    "amet ipsum. Sed congue hendrerit augue, sed pellentesque "
+                    "neque. Integer efficitur nisi idmassa placerat, at "
+                    "ullamcorper arcu fermentum. Donec sed tellus quis velit "
+                    "placerat viverra necvel diam. Vestibulum faucibus "
+                    "molestie ipsum eget rhoncus. Donec vitae bibendum nibh, "
+                    "quis pellentesque enim. Donec eget consectetur massa, "
+                    "eget mollis elit. Orci varius natoque penatibus et"
+                    "magnis dis parturient montes, nascetur ridiculus mus. "
+                    "Donec accumsan, nisi egestas sollicitudinullamcorper, "
+                    "diam dolor faucibus neque, euscelerisque mi erat vel "
+                    "erat. Etiam nec leo acrisus porta ornare ut accumsan "
+                    "lorem.\n\n"
+                    "Aenean at euismod ligula. Sed augue est, imperdietut "
+                    "sem sit amet, efficitur dictum enim. Namsodales id "
+                    "risus non pulvinar. Morbi id mollismassa. Nunc elit "
+                    "velit, pellentesque et lobortisut, luctus sed justo. "
+                    "Morbi eleifend quam velmagna accumsan, eu consequat "
+                    "nisl ultrices.Mauris dictum eu quam sit amet aliquet. "
+                    "Sedrhoncus turpis quis sagittis imperdiet. Lorem ipsum"
+                    "dolor sit amet, consectetur adipiscing elit. "
+                    "Pellentesque convallis suscipit ex et hendrerit.Donec "
+                    "est ex, varius eu nulla id, tristiquelobortis metus. "
+                    "Sed id sem justo. Nulla at portaneque, id elementum "
+                    "lacus.\n\n"
+                    "Mauris leotortor, tincidunt sit amet sem sit amet, "
+                    "egestastempor massa. In diam ipsum, fermentum pulvinar "
+                    "posuere ut, scelerisque sit amet odio. Nam necjusto "
+                    "quis felis ultrices ornare sit amet eumassa. Nam "
+                    "gravida lacus eget tortor porttitor,eget scelerisque "
+                    "est imperdiet. Duis quisimperdiet libero. Nullam justo "
+                    "erat, blandit etnisi sit amet, aliquet mattis leo. Sed "
+                    "a auguenon felis lacinia ultrices. Aenean porttitor "
+                    "bibendum sem, in consectetur arcu suscipit id.Etiam "
+                    "varius dictum gravida. Nulla molestiefermentum odio "
+                    "vitae tincidunt. Quisque dictum,magna vitae porttitor "
+                    "accumsan, felis felisconsectetur nisi, ut venenatis "
+                    "felis justo utante.\n\n"),
+                FILL);
+        }
 
         // do_box(
         //     ctx,
