@@ -150,6 +150,12 @@ if (ALIA_ENABLE_UI)
 
     file(GLOB_RECURSE ALIA_UI_SOURCES ${ALIA_GLOB_OPTIONS}
         "src/alia/ui/*.cpp")
+    foreach(file ${ALIA_UI_SOURCES})
+        if(${file} MATCHES "/ui/backends/")
+            list(REMOVE_ITEM ALIA_UI_SOURCES ${file})
+        endif()
+    endforeach()
+
     add_library(alia_ui STATIC ${ALIA_UI_SOURCES})
     target_include_directories(alia_ui PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/src")
@@ -173,7 +179,7 @@ endif()
 # Add the GLFW3 backend.
 if (ALIA_ENABLE_GLFW)
     find_package(glfw3 3.3 CONFIG REQUIRED)
-    add_library(alia_glfw STATIC "src/alia/backends/glfw.cpp")
+    add_library(alia_glfw STATIC "src/alia/ui/backends/glfw.cpp")
     target_include_directories(alia_glfw PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/src")
     target_link_libraries(alia_glfw PUBLIC alia_ui glfw)
@@ -182,7 +188,7 @@ endif()
 # Add the SDL backend.
 if (ALIA_ENABLE_SDL)
     find_package(SDL2 CONFIG REQUIRED)
-    add_library(alia_sdl STATIC "src/alia/backends/sdl.cpp")
+    add_library(alia_sdl STATIC "src/alia/ui/backends/sdl.cpp")
     target_include_directories(alia_sdl PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/src")
     target_link_libraries(alia_sdl PUBLIC alia_ui
