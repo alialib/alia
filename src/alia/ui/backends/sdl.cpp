@@ -1,7 +1,7 @@
-#include <SDL_mouse.h>
-#include <alia/backends/sdl.hpp>
+#include <alia/ui/backends/sdl.hpp>
 
 #include <SDL.h>
+#include <SDL_mouse.h>
 #include <SDL_opengl.h>
 
 #if defined(_WIN32)
