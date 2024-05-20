@@ -54,7 +54,6 @@ SkLoadICU()
 #include <alia/ui/system/object.hpp>
 #include <alia/ui/system/os_interface.hpp>
 #include <alia/ui/system/window_interface.hpp>
-#include <alia/ui/widget.hpp>
 
 #include <chrono>
 
@@ -514,11 +513,9 @@ sdl_window::sdl_window(
 
     init_window(*impl_, title, size);
 
-    // TODO: Do this in a better way.
     int width, height;
     SDL_GL_GetDrawableSize(impl_->sdl_window, &width, &height);
-    impl_->system.surface_size[0] = width;
-    impl_->system.surface_size[1] = height;
+    impl_->system.surface_size = make_vector<unsigned>(width, height);
 
     init_skia(*impl_, size);
 
