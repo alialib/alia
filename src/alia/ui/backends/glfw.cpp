@@ -373,6 +373,7 @@ void
 framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     auto& impl = get_impl(window);
+    impl.system.surface_size = make_vector<unsigned>(width, height);
     reset_skia(impl, make_vector<unsigned>(width, height));
     update_ui(impl);
 }
@@ -435,8 +436,7 @@ glfw_window::glfw_window(
     // TODO: Do this in a better way.
     int width, height;
     glfwGetFramebufferSize(impl_->glfw_window, &width, &height);
-    impl_->system.surface_size[0] = width;
-    impl_->system.surface_size[1] = height;
+    impl_->system.surface_size = make_vector<unsigned>(width, height);
 
     init_skia(*impl_, size);
 
