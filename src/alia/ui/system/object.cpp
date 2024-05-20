@@ -70,11 +70,9 @@ ui_system::invoke_controller(vanilla_ui_context vanilla_ctx)
     skia_geometry_subscriber skia_subscriber;
 
     geometry_context geometry;
-    // TODO
     initialize(
         geometry,
-        make_box(
-            make_vector<double>(0, 0), make_vector<double>(1200., 1600.)));
+        make_box(make_vector<double>(0, 0), vector<2, double>(surface_size)));
 
     {
         render_event* render;
