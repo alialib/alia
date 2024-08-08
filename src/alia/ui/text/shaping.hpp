@@ -3,7 +3,15 @@
 
 #include <vector>
 
+#ifdef _WIN32
+#pragma warning(push, 0)
+#endif
+
 #include <include/core/SkTextBlob.h>
+
+#ifdef _WIN32
+#pragma warning(pop)
+#endif
 
 namespace alia {
 

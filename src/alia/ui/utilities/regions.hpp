@@ -69,58 +69,36 @@ handle_mouse_hit(
     hit_test_flag_set flags = HIT_TEST_MOUSE,
     mouse_cursor cursor = mouse_cursor::DEFAULT);
 
-// // If the widget associated with the given ID is hot or active, this will
-// // set the current mouse cursor to the one specified.
-// // Note that the events that this handles are part of the REGION_CATEGORY.
-// // Also note that this should be called after doing hit testing.
-// void
-// override_mouse_cursor(
-//     dataless_ui_context ctx, widget_id id, mouse_cursor cursor);
+// If the widget associated with the given ID is hot or active, this will
+// set the current mouse cursor to the one specified.
+// Note that the events that this handles are part of the REGION_CATEGORY.
+// Also note that this should be called after doing hit testing.
+void
+override_mouse_cursor(
+    dataless_ui_context ctx, widget_id id, mouse_cursor cursor);
 
-// // Detect if the given ID has captured the mouse, meaning that a mouse
-// // button was pressed down when the mouse was over the widget with the
-// // given ID, and the mouse button is still down.
-// bool
-// is_region_active(dataless_ui_context ctx, widget_id id);
+// Call this to request that a given widget be made visible.
+// If the widget is scrolled off screen, this will trigger the containing
+// scrollable regions to scroll such that the region is visible.
+void
+make_widget_visible(
+    dataless_ui_context ctx,
+    widget_id id,
+    widget_visibility_request_flag_set flags = NO_FLAGS);
 
-// // Set the ID of the widget that has captured the mouse.
-// // (This is primarily intended for internal use.)
-// void
-// set_active_region(ui_system& ui, routable_widget_id const& active_id);
-
-// // Detect if the mouse is over the given region.
-// bool
-// is_region_hot(dataless_ui_context ctx, widget_id id);
-
-// // Set the ID of the widget that the mouse is over.
-// // (This is primarily intended for internal use.)
-// void
-// set_hot_region(ui_system& ui, routable_widget_id const& hot_id);
-
-// // Call this to request that a given widget be made visible.
-// // If the widget is scrolled off screen, this will trigger the containing
-// // scrollable regions to scroll such that the region is visible.
-// ALIA_DEFINE_FLAG_TYPE(make_widget_visible)
-// ALIA_DEFINE_FLAG(make_widget_visible, 1, MAKE_WIDGET_VISIBLE_ABRUPTLY)
-// void
-// make_widget_visible(
-//     dataless_ui_context ctx,
-//     widget_id id,
-//     make_widget_visible_flag_set flags = NO_FLAGS);
-
-// // Convert a region from the current frame of reference to the surface.
-// box<2, double>
-// region_to_surface_coordinates(
-//     dataless_ui_context ctx, box<2, double> const& region);
+// Convert a region from the current frame of reference to the surface.
+box<2, double>
+region_to_surface_coordinates(
+    dataless_ui_context ctx, box<2, double> const& region);
 
 // Set the tooltip associated with the given region ID.
 // Note that this must be called AFTER hit testing has been performed on the
 // region.
-// void
-// set_tooltip_message(
-//     ui_context& ctx,
-//     widget_id region_id,
-//     accessor<string> const& tooltip_message);
+void
+set_tooltip_message(
+    ui_context& ctx,
+    widget_id region_id,
+    readable<std::string> const& tooltip_message);
 
 } // namespace alia
 

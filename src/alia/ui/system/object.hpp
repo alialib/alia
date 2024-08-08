@@ -10,9 +10,6 @@
 #include <alia/ui/system/os_interface.hpp>
 #include <alia/ui/system/window_interface.hpp>
 
-// TODO: Get rid of this.
-#include "modules/skparagraph/include/FontCollection.h"
-
 namespace alia {
 
 struct window_input_state
@@ -74,11 +71,15 @@ struct ui_system : alia::typed_system<vanilla_ui_context>
 
     layout_system layout;
 
+    // the current time, as a millisecond tick counter with an arbitrary start
+    // point and the possibility of wraparound
+    millisecond_count tick_count = 0;
+
     // ui_style style;
 
     // routable_widget_id overlay_id;
 
-    // std::vector<widget_visibility_request> pending_visibility_requests;
+    std::vector<widget_visibility_request> pending_visibility_requests;
 
     // This prevents timer requests from being serviced in the same frame that
     // they're requested and thus throwing the event handler into a loop.
