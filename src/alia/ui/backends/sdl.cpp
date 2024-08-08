@@ -326,7 +326,7 @@ update_ui(sdl_window_impl& impl)
 
     invoke_ready_callbacks(
         impl.system.scheduler,
-        impl.system.external->get_tick_count(),
+        impl.system.tick_count,
         [&](std::function<void()> const& callback, millisecond_count) {
             callback();
             refresh_system(impl.system);

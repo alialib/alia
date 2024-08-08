@@ -1,3 +1,4 @@
+#include "alia/core/flow/components.hpp"
 #include "alia/core/flow/events.hpp"
 #include "alia/ui/utilities/regions.hpp"
 #include <alia/ui/scrolling.hpp>
@@ -23,8 +24,16 @@
 #include <alia/ui/utilities/skia.hpp>
 #include <alia/ui/utilities/widgets.hpp>
 
+#ifdef _WIN32
+#pragma warning(push, 0)
+#endif
+
 #include <include/core/SkCanvas.h>
 #include <include/core/SkColor.h>
+
+#ifdef _WIN32
+#pragma warning(pop)
+#endif
 
 #include <ratio>
 
@@ -916,6 +925,63 @@ scrollable_layout_container::set_relative_assignment(
         });
 }
 
+static void
+handle_visibility_request(
+    dataless_ui_context& ctx,
+    scrollable_view_data& data,
+    make_widget_visible_event const& event)
+{
+    auto box = *event.region;
+    auto const inverse_transform = inverse(get_transformation(ctx));
+    auto const transformed_box
+        = transform_box(inverse_transform, alia::box<2, double>(box));
+    auto const region_ul = transformed_box.corner;
+    auto const region_lr = get_high_corner(transformed_box);
+    auto const window_ul = make_vector<double>(
+        data.sb_data[0].scroll_position, data.sb_data[1].scroll_position);
+    auto const window_lr = window_ul + vector<2, double>(data.window_size);
+    for (int i = 0; i != 2; ++i)
+    {
+        layout_scalar correction = 0;
+        if (event.flags & MOVE_TO_TOP)
+        {
+            correction = round_to_layout_scalar(region_ul[i] - window_ul[i]);
+        }
+        else if (transformed_box.size[i] <= double(data.window_size[i]))
+        {
+            if (region_ul[i] < window_ul[i] && region_lr[i] < window_lr[i])
+            {
+                correction
+                    = -round_to_layout_scalar(window_ul[i] - region_ul[i]);
+            }
+            else if (
+                region_ul[i] > window_ul[i] && region_lr[i] > window_lr[i])
+            {
+                correction = round_to_layout_scalar((std::min)(
+                    region_ul[i] - window_ul[i], region_lr[i] - window_lr[i]));
+            }
+        }
+        else
+        {
+            if (region_lr[i] < window_ul[i] || region_ul[i] >= window_lr[i])
+            {
+                correction
+                    = round_to_layout_scalar(region_ul[i] - window_ul[i]);
+            }
+        }
+        if (correction != 0)
+        {
+            auto sb = construct_scrollbar(data, i);
+            layout_scalar clamped = clamp_scroll_position(
+                sb, data.sb_data[i].scroll_position + correction);
+            box.corner[i] += data.sb_data[i].scroll_position - clamped;
+            set_logical_position(sb, clamped);
+            if (event.flags & ABRUPT)
+                reset_smoothing(data.sb_data[i]);
+        }
+    }
+}
+
 void
 handle_scrolling_key_press(scrollable_view_data& data, modded_key const& key)
 {
@@ -1003,58 +1069,7 @@ struct scrollable_view : widget_container
     void
     reveal_region(region_reveal_request const& request) override
     {
-        auto box = request.region;
-        auto const inverse_transform = inverse(this->transformation());
-        auto const transformed_box
-            = transform_box(inverse_transform, alia::box<2, double>(box));
-        auto const region_ul = transformed_box.corner;
-        auto const region_lr = get_high_corner(transformed_box);
-        auto const window_ul = make_vector<double>(
-            data.sb_data[0].scroll_position, data.sb_data[1].scroll_position);
-        auto const window_lr = window_ul + vector<2, double>(data.window_size);
-        for (int i = 0; i != 2; ++i)
-        {
-            layout_scalar correction = 0;
-            if (request.move_to_top)
-            {
-                correction
-                    = round_to_layout_scalar(region_ul[i] - window_ul[i]);
-            }
-            else if (transformed_box.size[i] <= double(data.window_size[i]))
-            {
-                if (region_ul[i] < window_ul[i] && region_lr[i] < window_lr[i])
-                {
-                    correction
-                        = -round_to_layout_scalar(window_ul[i] - region_ul[i]);
-                }
-                else if (
-                    region_ul[i] > window_ul[i] && region_lr[i] > window_lr[i])
-                {
-                    correction = round_to_layout_scalar((std::min)(
-                        region_ul[i] - window_ul[i],
-                        region_lr[i] - window_lr[i]));
-                }
-            }
-            else
-            {
-                if (region_lr[i] < window_ul[i]
-                    || region_ul[i] >= window_lr[i])
-                {
-                    correction
-                        = round_to_layout_scalar(region_ul[i] - window_ul[i]);
-                }
-            }
-            if (correction != 0)
-            {
-                auto sb = this->sb(i);
-                layout_scalar clamped = clamp_scroll_position(
-                    sb, data.sb_data[i].scroll_position + correction);
-                box.corner[i] += data.sb_data[i].scroll_position - clamped;
-                set_logical_position(sb, clamped);
-                if (request.abrupt)
-                    reset_smoothing(data.sb_data[i]);
-            }
-        }
+
 
         parent->reveal_region({box, request.abrupt, request.move_to_top});
     }
@@ -1128,6 +1143,8 @@ scoped_scrollable_view::begin(
     widget_id id = data_;
 
     container_.begin(get_layout_traversal(ctx), &data.container);
+
+    component_.begin(ctx);
 
     alia_untracked_if(is_refresh_pass(ctx))
     {
@@ -1269,16 +1286,15 @@ scoped_scrollable_view::end()
         dataless_ui_context ctx = *ctx_;
         switch (get_event_category(ctx))
         {
-                // case REGION_CATEGORY:
-                //     if (get_event_type(ctx) == MAKE_WIDGET_VISIBLE_EVENT
-                //         && srr_.is_relevant())
-                //     {
-                //         make_widget_visible_event& e
-                //             = get_event<make_widget_visible_event>(ctx);
-                //         if (e.acknowledged)
-                //             handle_visibility_request(ctx, *data_, e);
-                //     }
-                //     break;
+            case REGION_CATEGORY:
+                if (get_event_type(ctx) == MAKE_WIDGET_VISIBLE_EVENT
+                    && component_.is_on_route())
+                {
+                    auto const& e = cast_event<make_widget_visible_event>(ctx);
+                    if (e.region)
+                        handle_visibility_request(ctx, *data_, e);
+                }
+                break;
 
             case INPUT_CATEGORY:
                 // if (srr_.is_relevant() || id_has_focus(ctx, id_))
@@ -1289,6 +1305,13 @@ scoped_scrollable_view::end()
                 // }
                 break;
         }
+
+        transform_.end();
+        clip_region_.end();
+        component_.end();
+        container_.end();
+
+        ctx_.reset();
     }
 }
 

@@ -22,33 +22,43 @@
 #include <include/core/SkTypeface.h>
 #include <limits>
 
+#include <optional>
+
+#include <alia/core/flow/components.hpp>
+#include <alia/core/flow/macros.hpp>
+#include <alia/core/flow/top_level.hpp>
+#include <alia/core/signals/core.hpp>
+#include <alia/core/timing/smoothing.hpp>
+#include <alia/core/timing/ticks.hpp>
+#include <alia/ui/context.hpp>
+#include <alia/ui/geometry.hpp>
+#include <alia/ui/layout/internals.hpp>
+#include <alia/ui/text/components.hpp>
+
+#ifdef _WIN32
+#pragma warning(push, 0)
+#endif
+
 #include <include/core/SkBlurTypes.h>
 #include <include/core/SkColor.h>
 #include <include/core/SkFontTypes.h>
 #include <include/core/SkMaskFilter.h>
 #include <include/core/SkPath.h>
 #include <include/core/SkPictureRecorder.h>
-#include <optional>
 
-#include "alia/core/flow/components.hpp"
-#include "alia/core/flow/macros.hpp"
-#include "alia/core/flow/top_level.hpp"
-#include "alia/core/signals/core.hpp"
-#include "alia/core/timing/smoothing.hpp"
-#include "alia/core/timing/ticks.hpp"
-#include "alia/ui/context.hpp"
-#include "alia/ui/geometry.hpp"
-#include "alia/ui/layout/internals.hpp"
 #include "modules/skparagraph/include/Paragraph.h"
 #include "modules/skparagraph/include/TextStyle.h"
 #include "modules/skparagraph/src/ParagraphBuilderImpl.h"
 #include "modules/skparagraph/src/ParagraphImpl.h"
-#include <alia/ui/text/components.hpp>
 
 #include "include/core/SkStream.h"
 #include "include/utils/SkNoDrawCanvas.h"
 // #include "modules/svg/include/SkSVGDOM.h"
 // #include "modules/svg/include/SkSVGNode.h"
+
+#ifdef _WIN32
+#pragma warning(pop)
+#endif
 
 using namespace alia;
 
@@ -2847,27 +2857,27 @@ my_ui(ui_context ctx)
         box_border_width<float>(4, 4, 4, 4)};
 
     do_text(ctx, direct(my_style), value("Lorem ipsum"));
-    // do_spacer(ctx, size(200, 2000, PIXELS));
-    //  {
-    //      row_layout row(ctx);
-    //      do_radio_button(ctx, make_radio_signal(selected, value(1)));
-    //      do_text(ctx, direct(my_style), value("Lorem ipsum"), CENTER_Y);
-    //  }
-    //  {
-    //      row_layout row(ctx);
-    //      do_radio_button(ctx, make_radio_signal(selected, value(2)));
-    //      do_text(ctx, direct(my_style), value("Dolor sit amet"), CENTER_Y);
-    //  }
-    //  {
-    //      row_layout row(ctx);
-    //      do_radio_button(ctx, make_radio_signal(selected, value(3)));
-    //      do_text(
-    //          ctx,
-    //          direct(my_style),
-    //          value("consectetur adipiscing elit, sed do eiusmod tempor "
-    //                "incididunt ut labore et dolore magna aliqua"),
-    //          CENTER_Y);
-    //  }
+    do_spacer(ctx, size(200, 2000, PIXELS));
+    {
+        row_layout row(ctx);
+        do_radio_button(ctx, make_radio_signal(selected, value(1)));
+        do_text(ctx, direct(my_style), value("Lorem ipsum"), CENTER_Y);
+    }
+    {
+        row_layout row(ctx);
+        do_radio_button(ctx, make_radio_signal(selected, value(2)));
+        do_text(ctx, direct(my_style), value("Dolor sit amet"), CENTER_Y);
+    }
+    {
+        row_layout row(ctx);
+        do_radio_button(ctx, make_radio_signal(selected, value(3)));
+        do_text(
+            ctx,
+            direct(my_style),
+            value("consectetur adipiscing elit, sed do eiusmod tempor "
+                  "incididunt ut labore et dolore magna aliqua"),
+            CENTER_Y);
+    }
 
     // {
     //     scoped_grid_layout grid(ctx);

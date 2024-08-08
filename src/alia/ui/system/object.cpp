@@ -10,8 +10,16 @@
 #include <alia/ui/layout/system.hpp>
 #include <alia/ui/layout/traversal.hpp>
 
+#ifdef _WIN32
+#pragma warning(push, 0)
+#endif
+
 #include <include/core/SkCanvas.h>
 #include <include/core/SkMatrix.h>
+
+#ifdef _WIN32
+#pragma warning(pop)
+#endif
 
 namespace alia {
 

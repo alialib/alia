@@ -5,7 +5,15 @@
 #include <alia/ui/text/fonts.hpp>
 #include <alia/ui/text/shaping.hpp>
 
+#ifdef _WIN32
+#pragma warning(push, 0)
+#endif
+
 #include <include/core/SkCanvas.h>
+
+#ifdef _WIN32
+#pragma warning(pop)
+#endif
 
 namespace alia {
 

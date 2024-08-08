@@ -307,8 +307,8 @@ render_ui(glfw_window_impl& impl)
                   .count();
         static long long max_render_time = 0;
         max_render_time = (std::max)(render_time, max_render_time);
-        // std::cout << "render: " << render_time << "[us]\n";
-        // std::cout << "max_render_time: " << max_render_time << "[us]\n";
+        std::cout << "render: " << render_time << "[us]\n";
+        std::cout << "max_render_time: " << max_render_time << "[us]\n";
     }
 
     impl.skia_graphics_context->flush();
@@ -327,7 +327,7 @@ update_ui(glfw_window_impl& impl)
 
     invoke_ready_callbacks(
         impl.system.scheduler,
-        impl.system.external->get_tick_count(),
+        impl.system.tick_count,
         [&](std::function<void()> const& callback, millisecond_count) {
             callback();
             refresh_system(impl.system);
@@ -356,8 +356,8 @@ update_ui(glfw_window_impl& impl)
 
     static long long max_layout_time = 0;
     max_layout_time = (std::max)(layout_time, max_layout_time);
-    // std::cout << "layout: " << layout_time << "[us]\n";
-    // std::cout << "max_layout_time: " << max_layout_time << "[us]\n";
+    std::cout << "layout: " << layout_time << "[us]\n";
+    std::cout << "max_layout_time: " << max_layout_time << "[us]\n";
 
     render_ui(impl);
 

@@ -1,14 +1,14 @@
 #include <alia/ui/text/shaping.hpp>
 
-#include <include/core/SkFontMetrics.h>
-#include <modules/skshaper/include/SkShaper.h>
-#include <src/base/SkUTF.h>
-
 #include <alia/ui/text/fonts.hpp>
 
 #ifdef _WIN32
 #pragma warning(push, 0)
 #endif
+
+#include <include/core/SkFontMetrics.h>
+#include <modules/skshaper/include/SkShaper.h>
+#include <src/base/SkUTF.h>
 
 namespace alia {
 

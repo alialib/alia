@@ -46,30 +46,30 @@ initialize(
 void
 update(ui_system& ui)
 {
+    // TODO?
     // refresh_ui(ui);
+
+    ui.tick_count = ui.external->get_tick_count();
 
     // Once layout has been resolved, we can honor requests to make a
     // particular widget visible.
-    // if (!ui.pending_visibility_requests.empty())
-    // {
-    //     for (std::vector<widget_visibility_request>::const_iterator i
-    //          = ui.pending_visibility_requests.begin();
-    //          i != ui.pending_visibility_requests.end();
-    //          ++i)
-    //     {
-    //         make_widget_visible_event e(*i);
-    //         if (is_valid(ui.overlay_id))
-    //         {
-    //             e.category = OVERLAY_CATEGORY;
-    //             e.type = OVERLAY_MAKE_WIDGET_VISIBLE_EVENT;
-    //         }
-    //         issue_targeted_event(ui, e, i->widget);
-    //     }
-    //     ui.pending_visibility_requests.clear();
-    //     // The movement may have caused changes that require a refresh, so
-    //     // issue another one.
-    //     refresh_ui(ui);
-    // }
+    if (!ui.pending_visibility_requests.empty())
+    {
+        for (std::vector<widget_visibility_request>::const_iterator i
+             = ui.pending_visibility_requests.begin();
+             i != ui.pending_visibility_requests.end();
+             ++i)
+        {
+            make_widget_visible_event e{{i->widget.id}, i->flags};
+            dispatch_targeted_event(
+                ui, e, i->widget, MAKE_WIDGET_VISIBLE_EVENT);
+        }
+        ui.pending_visibility_requests.clear();
+        // The movement may have caused changes that require a refresh, so
+        // issue another one.
+        // TODO
+        // refresh_ui(ui);
+    }
 
     // routable_widget_id previous_mouse_target = get_mouse_target(ui);
 
@@ -96,10 +96,11 @@ update(ui_system& ui)
         set_hot_widget(ui, routable_widget_id());
     }
 
-    // The block above gives us the mouse cursor that's been requested by
-    // the widget under the mouse. However, if there's a different widget
-    // that's active, it should take priority, so we need to see what cursor
-    // it wants.
+    // The block above gives us the mouse cursor that's been requested by the
+    // widget under the mouse. However, if there's a different widget that has
+    // the mouse captured, it should take priority, so we need to see what
+    // cursor it wants.
+
     // if (ui.input.id_with_capture.id && ui.input.id_with_capture.id !=
     // ui.input.hot_id.id)
     // {
@@ -728,18 +729,24 @@ void
 set_widget_with_capture(ui_system& ui, routable_widget_id id)
 {
     ui.input.widget_with_capture = std::move(id);
+
+    // If there was an active widget before, but we're removing it, this means
+    // that the mouse is starting to hover over whatever it's over.
+    if (ui.input.widget_with_capture && !id)
+    {
+        ui.input.hover_start_time = ui.tick_count;
+    }
 }
 
 void
 set_hot_widget(ui_system& ui, routable_widget_id id)
 {
-    // TODO:
     // If no widget has capture and the mouse is moving to a different
     // widget, this marks the start of a hover.
-    // if (!ui.input.widget_with_capture && ui.input.hot_widget != id)
-    // {
-    //     // ui.input.hover_start_time = ui.tick_count;
-    // }
+    if (!ui.input.widget_with_capture && ui.input.hot_widget.id != id.id)
+    {
+        ui.input.hover_start_time = ui.tick_count;
+    }
 
     ui.input.hot_widget = std::move(id);
 }
@@ -754,4 +761,5 @@ void set_system_style(ui_system& system,
 }
 
 #endif
+
 } // namespace alia

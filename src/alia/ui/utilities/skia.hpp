@@ -3,8 +3,16 @@
 
 #include <alia/ui/layout/specification.hpp>
 
+#ifdef _WIN32
+#pragma warning(push, 0)
+#endif
+
 #include <include/core/SkRect.h>
 #include <include/core/SkScalar.h>
+
+#ifdef _WIN32
+#pragma warning(pop)
+#endif
 
 namespace alia {
 

@@ -2,9 +2,17 @@
 
 #include <alia/core/flow/events.hpp>
 
+#ifdef _WIN32
+#pragma warning(push, 0)
+#endif
+
 #include <include/core/SkCanvas.h>
 #include <include/core/SkPaint.h>
 #include <include/core/SkRect.h>
+
+#ifdef _WIN32
+#pragma warning(pop)
+#endif
 
 // #include <SkGradientShader.h>
 
