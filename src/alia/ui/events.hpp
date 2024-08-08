@@ -16,9 +16,48 @@ class SkCanvas;
 
 namespace alia {
 
+struct targeted_ui_event
+{
+    widget_id target = nullptr;
+};
+
+template<class Event>
+void
+dispatch_targeted_event(
+    untyped_system& sys,
+    Event& event,
+    routable_widget_id const& target,
+    event_type_code type_code = 0)
+{
+    event.target = target.id;
+    detail::dispatch_targeted_event(sys, event, target.component, type_code);
+}
+
 ALIA_DEFINE_EVENT_CATEGORY(REGION_CATEGORY, 0x10)
 
 ALIA_DEFINE_EVENT_TYPE_CODE(REGION_CATEGORY, MAKE_WIDGET_VISIBLE_EVENT, 0)
+
+ALIA_DEFINE_FLAG_TYPE(widget_visibility_request)
+// If this is set, the UI will jump abruptly instead of smoothly scrolling.
+ALIA_DEFINE_FLAG(widget_visibility_request, 0x1, ABRUPT)
+// If this is set, the widget will be moved to the top of the UI instead of
+// just being made visible.
+ALIA_DEFINE_FLAG(widget_visibility_request, 0x2, MOVE_TO_TOP)
+
+struct widget_visibility_request
+{
+    routable_widget_id widget;
+    widget_visibility_request_flag_set flags = NO_FLAGS;
+};
+
+// MAKE_WIDGET_VISIBLE_EVENT
+struct make_widget_visible_event : targeted_ui_event
+{
+    widget_visibility_request_flag_set flags = NO_FLAGS;
+
+    // This gets filled in once we find the widget in question.
+    std::optional<box<2, double>> region;
+};
 
 ALIA_DEFINE_EVENT_TYPE_CODE(REGION_CATEGORY, MOUSE_HIT_TEST_EVENT, 1)
 
@@ -40,7 +79,7 @@ struct mouse_hit_test_event
 
 ALIA_DEFINE_EVENT_TYPE_CODE(REGION_CATEGORY, WHEEL_HIT_TEST_EVENT, 2)
 
-// WHEEL_HIT_TEST
+// WHEEL_HIT_TEST_EVENT
 struct wheel_hit_test_event
 {
     // the point to test
@@ -52,23 +91,6 @@ struct wheel_hit_test_event
 ALIA_DEFINE_EVENT_CATEGORY(INPUT_CATEGORY, 0x11)
 
 ALIA_DEFINE_EVENT_TYPE_CODE(INPUT_CATEGORY, TEXT_INPUT_EVENT, 0x00)
-
-struct targeted_ui_event
-{
-    widget_id target = nullptr;
-};
-
-template<class Event>
-void
-dispatch_targeted_event(
-    untyped_system& sys,
-    Event& event,
-    routable_widget_id const& target,
-    event_type_code type_code = 0)
-{
-    event.target = target.id;
-    detail::dispatch_targeted_event(sys, event, target.component, type_code);
-}
 
 struct text_input_event : targeted_ui_event
 {
@@ -140,6 +162,15 @@ ALIA_DEFINE_EVENT_TYPE_CODE(INPUT_CATEGORY, MOUSE_HOVER_EVENT, 0x26)
 
 struct mouse_notification_event : targeted_ui_event
 {
+};
+
+ALIA_DEFINE_EVENT_TYPE_CODE(INPUT_CATEGORY, MOUSE_CURSOR_QUERY_EVENT, 0x27)
+
+// If there is an active widget and it's not the one under the mouse cursor,
+// we have to query it to see what cursor it wants.
+struct mouse_cursor_query : targeted_ui_event
+{
+    mouse_cursor cursor = mouse_cursor::DEFAULT;
 };
 
 ALIA_DEFINE_EVENT_TYPE_CODE(INPUT_CATEGORY, SCROLL_EVENT, 0x30)

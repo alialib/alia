@@ -37,15 +37,6 @@ update_window_size(ui_system& ui, vector<2, unsigned> const& new_size);
 
 #if 0
 
-// Returns true iff there are pending timer requests.
-bool
-has_timer_requests(ui_system& ui);
-
-// Check expired timer requests in the UI and issue the corresponding events.
-// The return value is true iff any requests were processed.
-bool
-process_timer_requests(ui_system& system, millisecond_count now);
-
 // Get the number of milliseconds until the UI expects to update next.
 // The system can safely idle for this many milliseconds if no external events
 // occur.

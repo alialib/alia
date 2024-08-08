@@ -127,110 +127,68 @@ do_box_region(
     }
 }
 
-// void
-// override_mouse_cursor(
-//     dataless_ui_context /*ctx*/,
-//     widget_id /*id*/,
-//     mouse_cursor /*cursor*/)
-// {
-//     // if (get_event_type(ctx) == ui_input_event::MOUSE_HIT_TEST)
-//     // {
-//     //     mouse_hit_test_event& e = get_event<mouse_hit_test_event>(ctx);
-//     //     if (e.id.id == id)
-//     //         e.cursor = cursor;
-//     // }
-//     // else if (get_event_type(ctx) == ui_input_event::MOUSE_CURSOR_QUERY)
-//     // {
-//     //     mouse_cursor_query& e = get_event<mouse_cursor_query>(ctx);
-//     //     if (e.id == id)
-//     //         e.cursor = cursor;
-//     // }
-// }
+void
+override_mouse_cursor(
+    dataless_ui_context ctx, widget_id id, mouse_cursor cursor)
+{
+    if (get_event_type(ctx) == MOUSE_HIT_TEST_EVENT)
+    {
+        auto& e = cast_event<mouse_hit_test_event>(ctx);
+        if (e.result && e.result->id.matches(id))
+            e.result->cursor = cursor;
+    }
+    else if (get_event_type(ctx) == MOUSE_CURSOR_QUERY_EVENT)
+    {
+        auto& e = cast_event<mouse_cursor_query>(ctx);
+        if (e.target == id)
+            e.cursor = cursor;
+    }
+}
 
-// bool
-// is_region_active(dataless_ui_context ctx, widget_id id)
-// {
-//     return get_system(ctx).input.widget_with_capture.matches(id);
-// }
+void
+make_widget_visible(
+    dataless_ui_context ctx,
+    widget_id id,
+    widget_visibility_request_flag_set flags)
+{
+    widget_visibility_request request;
+    request.widget = make_routable_widget_id(ctx, id);
+    request.flags = flags;
+    get_system(ctx).pending_visibility_requests.push_back(request);
+}
 
-// void
-// set_hot_region(ui_system& ui, routable_widget_id const& hot_id)
-// {
-//     // If there's no active widget and the mouse is moving to a different
-//     // widget, set the hover_start_time.
-//     if (!is_valid(ui.input.active_id) && ui.input.hot_id.id != hot_id.id)
-//     {
-//         ui.input.hover_start_time = ui.millisecond_tick_count;
-//     }
+box<2, double>
+region_to_surface_coordinates(
+    dataless_ui_context ctx, box<2, double> const& region)
+{
+    vector<2, double> corner0 = transform(
+        get_geometry_context(ctx).transformation_matrix, region.corner);
+    vector<2, double> corner1 = transform(
+        get_geometry_context(ctx).transformation_matrix,
+        get_high_corner(region));
+    box<2, double> region_in_root_frame;
+    for (unsigned i = 0; i != 2; ++i)
+    {
+        region_in_root_frame.corner[i]
+            = corner0[i] < corner1[i] ? corner0[i] : corner1[i];
+        region_in_root_frame.size[i] = std::fabs(corner1[i] - corner0[i]);
+    }
+    return region_in_root_frame;
+}
 
-//     ui.input.hot_id = hot_id;
-// }
-
-// bool
-// is_region_hot(dataless_ui_context ctx, widget_id id)
-// {
-//     return get_system(ctx).input.hot_id.id == id;
-// }
-
-// void
-// set_active_region(ui_system& ui, routable_widget_id const& active_id)
-// {
-//     // If there was an active widget before, but we're removing it, this
-//     means
-//     // that the mouse is starting to hover over whatever it's over.
-//     if (is_valid(ui.input.active_id) && !is_valid(active_id))
-//     {
-//         ui.input.hover_start_time = ui.millisecond_tick_count;
-//     }
-
-//     ui.input.active_id = active_id;
-// }
-
-// void
-// make_widget_visible(
-//     dataless_ui_context ctx,
-//     widget_id id,
-//     make_widget_visible_flag_set flags)
-// {
-//     widget_visibility_request request;
-//     request.widget = make_routable_widget_id(ctx, id);
-//     request.abrupt = (flags & MAKE_WIDGET_VISIBLE_ABRUPTLY) ? true : false;
-//     request.move_to_top = false;
-//     get_system(ctx).pending_visibility_requests.push_back(request);
-// }
-
-// box<2, double>
-// region_to_surface_coordinates(
-//     dataless_ui_context ctx, box<2, double> const& region)
-// {
-//     vector<2, double> corner0 = transform(
-//         get_geometry_context(ctx).transformation_matrix, region.corner);
-//     vector<2, double> corner1 = transform(
-//         get_geometry_context(ctx).transformation_matrix,
-//         get_high_corner(region));
-//     box<2, double> region_in_root_frame;
-//     for (unsigned i = 0; i != 2; ++i)
-//     {
-//         region_in_root_frame.corner[i]
-//             = corner0[i] < corner1[i] ? corner0[i] : corner1[i];
-//         region_in_root_frame.size[i] = std::fabs(corner1[i] - corner0[i]);
-//     }
-//     return region_in_root_frame;
-// }
-
-// void
-// set_tooltip_message(
-//     ui_context& ctx,
-//     widget_id region_id,
-//     accessor<string> const& tooltip_message)
-// {
-//     if (ctx.event->type == MOUSE_HIT_TEST_EVENT
-//         && is_gettable(tooltip_message))
-//     {
-//         mouse_hit_test_event& e = get_event<mouse_hit_test_event>(ctx);
-//         if (e.id.id == region_id)
-//             e.tooltip_message = get(tooltip_message);
-//     }
-// }
+void
+set_tooltip_message(
+    ui_context& ctx,
+    widget_id region_id,
+    readable<std::string> const& tooltip_message)
+{
+    if (get_event_type(ctx) == MOUSE_HIT_TEST_EVENT
+        && signal_has_value(tooltip_message))
+    {
+        auto& e = cast_event<mouse_hit_test_event>(ctx);
+        if (e.result && e.result->id.matches(region_id))
+            e.result->tooltip_message = read_signal(tooltip_message);
+    }
+}
 
 } // namespace alia

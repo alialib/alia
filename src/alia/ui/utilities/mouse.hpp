@@ -19,22 +19,26 @@ get_transformation(dataless_ui_context ctx)
 // Get the mouse position in the current frame of reference.
 vector<2, double>
 get_mouse_position(dataless_ui_context ctx);
-// Same, but rounded to integer coordinates.
+// same, but rounded to integer coordinates
 vector<2, int>
 get_integer_mouse_position(dataless_ui_context ctx);
 
+// Detect if the widget with the given ID is under the mouse.
 bool
 is_widget_hot(ui_system& sys, widget_id id);
-
+// same, but operating on a context
 inline bool
 is_widget_hot(dataless_ui_context ctx, widget_id id)
 {
     return is_widget_hot(get_system(ctx), id);
 }
 
+// Detect if the given ID has captured the mouse, meaning that a mouse
+// button was pressed down when the mouse was over the widget with the
+// given ID, and the mouse button is still down.
 bool
 widget_has_capture(ui_system& sys, widget_id id);
-
+// same, but operating on a context
 inline bool
 widget_has_capture(dataless_ui_context ctx, widget_id id)
 {

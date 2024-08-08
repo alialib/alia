@@ -97,6 +97,7 @@ struct scoped_scrollable_view
     optional_context<ui_context> ctx_;
     scrollable_view_data* data_;
     scoped_layout_container container_;
+    scoped_component_container component_;
     scoped_clip_region clip_region_;
     scoped_transformation transform_;
 };
