@@ -1,3 +1,4 @@
+#include "alia/core/timing/cubic_bezier.hpp"
 #include <alia/core/flow/data_graph.hpp>
 #include <alia/core/flow/events.hpp>
 #include <alia/ui.hpp>
@@ -16,6 +17,8 @@
 #include <alia/ui/utilities/regions.hpp>
 
 // #include <color/color.hpp>
+
+#include <bit>
 
 #include <cmath>
 
@@ -723,6 +726,403 @@ do_radio_button(
             paint.setStrokeWidth(3);
             canvas.drawPath(
                 SkPath::Circle(center[0], center[1], dot_radius), paint);
+        }
+    }
+    alia_end
+}
+
+// template<class Type, unsigned Offset, unsigned Size>
+// struct bitset_reference
+// {
+//     Type& ref;
+// };
+
+// consteval unsigned
+// bitmask(unsigned offset, unsigned size)
+// {
+//     return (1 << (size + offset)) - (1 << offset);
+// }
+
+// template<class Type, unsigned Offset, unsigned Size>
+// unsigned
+// read(bitset_reference<Type, Offset, Size> const& x)
+// {
+//     return (std::bit_cast<unsigned>(x.ref) & bitmask(Offset, Size)) >>
+//     Offset;
+// }
+
+// template<class Type, unsigned Offset, unsigned Size>
+// unsigned
+// write(bitset_reference<Type, Offset, Size> const& x, unsigned value)
+// {
+//     x.ref = std::bit_cast<Type>(
+//         std::bit_cast<unsigned>(x.ref) & (unsigned(-1) - bitmask(Offset,
+//         Size)) | value << Offset);
+// }
+
+// #define bitoffsetof_(T, f)                                                    \
+//     ({                                                                        \
+//         union                                                                 \
+//         {                                                                     \
+//             unsigned long long raw;                                           \
+//             T t;                                                              \
+//         };                                                                    \
+//         raw = 0;                                                              \
+//         ++t.f;                                                                \
+//         std::countr_zero(raw);                                                \
+//     })
+
+// #define bitsizeof(T, f)                                                       \
+//     ({                                                                        \
+//         union                                                                 \
+//         {                                                                     \
+//             unsigned long long raw;                                           \
+//             T t;                                                              \
+//         };                                                                    \
+//         raw = 0;                                                              \
+//         --t.f;                                                                \
+//         8 * sizeof(raw) - std::countl_zero(raw) - std::countr_zero(raw);      \
+//     })
+
+// #define bitset_ref_type(T, f)                                                 \
+//     (bitset_reference<                                                        \
+//         decltype(std::declval<T>().f),                                        \
+//         bitoffsetof(T, f),                                                    \
+//         bitsizeof(T, f)>)
+
+// #define bitset_ref(x, f) (bitset_ref_type(decltype(x), f){x})
+
+// struct checkbox_bits
+// {
+//     unsigned radius_animation : 2 = 0, position_animation : 2 = 0,
+//                                 color_animation : 2 = 0;
+// };
+
+unsigned
+read_bit_pair(unsigned bitset, unsigned index)
+{
+    return (bitset >> index) & 3u;
+}
+
+void
+write_bit_pair(unsigned& bitset, unsigned index, unsigned new_value)
+{
+    bitset = (bitset & ~(3u << index)) | (new_value << index);
+}
+
+unsigned
+read_bit(unsigned bitset, unsigned index)
+{
+    return (bitset >> index) & 1u;
+}
+
+template<class Type, unsigned Offset, unsigned Size>
+void
+set_bit(unsigned& bitset, unsigned index)
+{
+    bitset |= (1u << index);
+}
+
+template<class Type, unsigned Offset, unsigned Size>
+void
+clear_bit(unsigned& bitset, unsigned index)
+{
+    bitset &= ~(1u << index);
+}
+
+template<class Type, unsigned Offset, unsigned Size>
+void
+toggle_bit(unsigned& bitset, unsigned index)
+{
+    bitset ^= (1u << index);
+}
+
+inline uintptr_t
+make_animation_id(unsigned* ptr, unsigned index)
+{
+    return std::bit_cast<uintptr_t>(ptr)
+           | (uintptr_t(index) << (sizeof(uintptr_t) * 8 - 8));
+}
+
+struct active_animation_data
+{
+    bool direction;
+    millisecond_count duration, transition_end;
+};
+
+struct animation_tracking_system
+{
+    std::map<uintptr_t, active_animation_data> active_animations;
+};
+
+static animation_tracking_system the_animation_system;
+
+inline void
+init_animation(
+    dataless_core_context ctx,
+    unsigned& bitset,
+    unsigned index,
+    bool current_state,
+    animated_transition const& transition)
+{
+    auto& animation
+        = the_animation_system
+              .active_animations[make_animation_id(&bitset, index)];
+    animation.direction = current_state;
+    animation.transition_end
+        = get_raw_animation_tick_count(ctx) + transition.duration;
+    write_bit_pair(bitset, index, 0b01);
+}
+
+template<class Value>
+Value
+smooth_between_values(
+    dataless_core_context ctx,
+    unsigned& bitset,
+    unsigned index,
+    bool current_state,
+    Value true_value,
+    Value false_value,
+    animated_transition const& transition = default_transition)
+{
+    auto internal_state = read_bit_pair(bitset, index);
+    switch (internal_state)
+    {
+        default:
+        case 0b00:
+            write_bit_pair(bitset, index, current_state ? 0b11 : 0b10);
+            return current_state ? true_value : false_value;
+        case 0b01: {
+            auto& animation
+                = the_animation_system
+                      .active_animations[make_animation_id(&bitset, index)];
+            millisecond_count ticks_left
+                = get_raw_animation_ticks_left(ctx, animation.transition_end);
+            if (ticks_left > 0)
+            {
+                double fraction = eval_curve_at_x(
+                    transition.curve,
+                    1. - double(ticks_left) / transition.duration,
+                    1. / transition.duration);
+                Value current_value = interpolate(
+                    animation.direction ? false_value : true_value,
+                    animation.direction ? true_value : false_value,
+                    fraction);
+                if (current_state != animation.direction)
+                {
+                    // Go back in the same amount of time it took to get here.
+                    // In order to do this, we have to solve for time it will
+                    // take to get back here.
+                    animation.transition_end
+                        = get_raw_animation_tick_count(ctx)
+                          + millisecond_count(
+                              transition.duration
+                              * (1
+                                 - eval_curve_at_x(
+                                     unit_cubic_bezier{
+                                         1 - transition.curve.p1x,
+                                         1 - transition.curve.p1y,
+                                         1 - transition.curve.p2x,
+                                         1 - transition.curve.p2y},
+                                     1 - fraction,
+                                     1. / transition.duration)));
+                    animation.direction = current_state;
+                }
+                return current_value;
+            }
+            else
+            {
+                auto end_state = animation.direction;
+                the_animation_system.active_animations.erase(
+                    make_animation_id(&bitset, index));
+                write_bit_pair(bitset, index, end_state ? 0b11 : 0b10);
+                return end_state ? true_value : false_value;
+            }
+        }
+        case 0b10:
+            if (current_state)
+                init_animation(ctx, bitset, index, true, transition);
+            return false_value;
+        case 0b11:
+            if (!current_state)
+                init_animation(ctx, bitset, index, false, transition);
+            return true_value;
+    }
+}
+
+struct checkbox_data
+{
+    unsigned bits;
+    keyboard_click_state keyboard_click_state_;
+    layout_leaf layout_node;
+    value_smoother<float> radius_smoother, position_smoother;
+    value_smoother<rgb8> color_smoother;
+};
+
+// consteval auto
+// checkbox_hack2()
+// {
+//     checkbox_bits x = std::bit_cast<checkbox_bits>(0);
+//     ++x.radius_animation;
+//     return std::countr_zero(std::bit_cast<unsigned>(x));
+// }
+
+// constexpr auto
+// checkbox_hack3()
+// {
+//     checkbox_bits x = std::bit_cast<checkbox_bits>(0xffffffff);
+//     x.radius_animation = 0;
+//     auto const raw = std::bit_cast<unsigned>(x);
+//     return 8 * sizeof(raw) - std::countl_one(raw) - std::countr_one(raw);
+// }
+
+void
+do_checkbox(
+    ui_context ctx,
+    duplex<bool> checked,
+    layout const& layout_spec = layout(TOP | LEFT | PADDED))
+{
+    checkbox_data* data_ptr;
+    get_cached_data(ctx, &data_ptr);
+    auto& data = *data_ptr;
+    auto id = data_ptr;
+
+    // checkbox_hack3();
+
+    // auto radius_anim
+    //     = bitset_reference<checkbox_bits, checkbox_hack2(),
+    //     checkbox_hack3()>{
+    //         data.bits};
+    // write(radius_anim, read(radius_anim) + 1);
+    // write(radius_anim, read(radius_anim) + 1);
+    // write(radius_anim, read(radius_anim) + 1);
+
+    alia_untracked_switch(get_event_category(ctx))
+    {
+        case REFRESH_CATEGORY:
+            data.layout_node.refresh_layout(
+                get_layout_traversal(ctx),
+                layout_spec,
+                leaf_layout_requirements(make_layout_vector(60, 35), 0, 0),
+                LEFT | BASELINE_Y | PADDED);
+
+            add_layout_node(
+                get<ui_traversal_tag>(ctx).layout, &data.layout_node);
+
+            break;
+
+        case REGION_CATEGORY:
+            do_box_region(
+                ctx, id, box<2, double>(data.layout_node.assignment().region));
+            break;
+
+        case INPUT_CATEGORY:
+            add_to_focus_order(ctx, id);
+
+            if (detect_click(ctx, id, mouse_button::LEFT)
+                || detect_keyboard_click(ctx, data.keyboard_click_state_, id))
+            {
+                if (signal_has_value(checked)
+                    && signal_ready_to_write(checked))
+                {
+                    write_signal(checked, !read_signal(checked));
+                }
+                abort_traversal(ctx);
+            }
+
+            break;
+
+        case RENDER_CATEGORY: {
+            auto& event = cast_event<render_event>(ctx);
+
+            SkCanvas& canvas = *event.canvas;
+
+            auto const& region = data.layout_node.assignment().region;
+
+            SkRect rect;
+            rect.fLeft = SkScalar(region.corner[0]);
+            rect.fTop = SkScalar(region.corner[1]);
+            rect.fRight = SkScalar(region.corner[0] + region.size[0]);
+            rect.fBottom = SkScalar(region.corner[1] + region.size[1]);
+
+            {
+                SkPaint paint;
+                paint.setAntiAlias(true);
+                paint.setColor(SK_ColorLTGRAY);
+                paint.setStyle(SkPaint::kStroke_Style);
+                paint.setStrokeWidth(3);
+                canvas.drawRoundRect(
+                    rect, region.size[1] / 2, region.size[1] / 2, paint);
+            }
+
+            if (event.canvas->quickReject(rect))
+                break;
+
+            uint8_t highlight = 0;
+            if (is_click_in_progress(ctx, id, mouse_button::LEFT)
+                || is_pressed(data.keyboard_click_state_))
+            {
+                highlight = 0x40;
+            }
+            else if (is_click_possible(ctx, id))
+            {
+                highlight = 0x20;
+            }
+            if (highlight != 0)
+            {
+                SkPaint paint;
+                paint.setAntiAlias(true);
+                paint.setColor(SkColorSetARGB(highlight, 0xff, 0xff, 0xff));
+                canvas.drawRoundRect(
+                    rect, region.size[1] / 2, region.size[1] / 2, paint);
+            }
+
+            // {
+            //     SkPaint paint;
+            //     paint.setAntiAlias(true);
+            //     paint.setStyle(SkPaint::kStroke_Style);
+            //     paint.setColor(SK_ColorWHITE);
+            //     paint.setStrokeWidth(2);
+            //     canvas.drawPath(
+            //         SkPath::Circle(center[0], center[1], 14.f), paint);
+            // }
+
+            float dot_radius = smooth_between_values(
+                ctx,
+                data.bits,
+                0,
+                condition_is_true(checked),
+                16.f,
+                12.f,
+                animated_transition{default_curve, 200});
+
+            float const dot_x_offset = smooth_between_values(
+                ctx,
+                data.bits,
+                2,
+                condition_is_true(checked),
+                0.75f,
+                0.25f,
+                animated_transition{default_curve, 200});
+
+            rgb8 color = smooth_between_values(
+                ctx,
+                data.bits,
+                4,
+                condition_is_true(checked),
+                rgb8(0x80, 0x80, 0xff),
+                rgb8(0x80, 0x80, 0x80),
+                animated_transition{default_curve, 200});
+
+            SkPaint paint;
+            paint.setAntiAlias(true);
+            paint.setColor(SkColorSetARGB(0xff, color.r, color.g, color.b));
+            canvas.drawPath(
+                SkPath::Circle(
+                    region.corner[0] + region.size[0] * dot_x_offset,
+                    get_center(region)[1],
+                    dot_radius),
+                paint);
         }
     }
     alia_end
@@ -2593,7 +2993,6 @@ do_radio_button(
 // } // namespace alia
 
 namespace alia {
-
 struct culling_block
 {
     culling_block()
@@ -2677,7 +3076,6 @@ culling_block::end()
 #define alia_culling_block(layout_spec) alia_culling_block_(ctx, layout_spec)
 
 namespace alia {
-
 struct layout_node;
 struct ui_caching_node;
 
@@ -2743,12 +3141,12 @@ cached_ui_block::begin(
     // cacher.parent = ctx.active_cacher;
     // ctx.active_cacher = &cacher;
 
-    // Caching content in the middle of a validation block is not currently
-    // supported.
-    // assert(!ctx.validation.detection && !ctx.validation.reporting);
+    // Caching content in the middle of a validation block is not
+    // currently supported. assert(!ctx.validation.detection &&
+    // !ctx.validation.reporting);
 
-    // Before doing anything else, see if the content can be culled by the
-    // culling block's criteria.
+    // Before doing anything else, see if the content can be culled by
+    // the culling block's criteria.
     if (!culling_.is_relevant())
     {
         is_relevant_ = false;
@@ -2757,21 +3155,21 @@ cached_ui_block::begin(
 
     if (get_event_type(ctx) == REFRESH_EVENT)
     {
-        // Detect if there are changes that require the block to be traversed
-        // this pass.
+        // Detect if there are changes that require the block to be
+        // traversed this pass.
         is_relevant_ = !cacher.layout_valid || !cacher.layout_id.matches(id);
-        // If we're going to actually update the layout, record the current
-        // value of the layout context's next_ptr, so we'll know where to look
-        // for the address of the first node.
+        // If we're going to actually update the layout, record the
+        // current value of the layout context's next_ptr, so we'll
+        // know where to look for the address of the first node.
         if (is_relevant_)
         {
             layout_next_ptr_ = get_layout_traversal(ctx).next_ptr;
-            // Store the ID here because it's only available within this
-            // function.
+            // Store the ID here because it's only available within
+            // this function.
             cacher.layout_id.capture(id);
-            // Need to mark it valid here because it could be invalidated
-            // by something inside the block.
-            // (Is this dangerous?)
+            // Need to mark it valid here because it could be
+            // invalidated by something inside the block. (Is this
+            // dangerous?)
             cacher.layout_valid = true;
         }
         // Otherwise, just splice in the cached subtree.
@@ -2792,9 +3190,9 @@ cached_ui_block::end()
         ui_context& ctx = *ctx_;
         ui_caching_node& cacher = *cacher_;
 
-        // If the layout was just updated, record the head and tail of the
-        // layout subtree so we can splice it into the parent tree on passes
-        // where we skip layout.
+        // If the layout was just updated, record the head and tail of
+        // the layout subtree so we can splice it into the parent tree
+        // on passes where we skip layout.
         if (is_refresh_pass(ctx) && is_relevant_)
         {
             cacher.layout_subtree_head = *layout_next_ptr_;
@@ -2810,7 +3208,8 @@ cached_ui_block::end()
                 break;
             default:
                 // Any other event that makes it into the block could
-                // potentially cause a state change, so record a change.
+                // potentially cause a state change, so record a
+                // change.
                 cacher.layout_valid = false;
         }
 
@@ -2857,7 +3256,13 @@ my_ui(ui_context ctx)
         box_border_width<float>(4, 4, 4, 4)};
 
     do_text(ctx, direct(my_style), value("Lorem ipsum"));
-    do_spacer(ctx, size(200, 2000, PIXELS));
+
+    do_spacer(ctx, size(20, 100, PIXELS));
+
+    do_checkbox(ctx, get_state(ctx, false));
+
+    do_spacer(ctx, size(20, 100, PIXELS));
+
     {
         row_layout row(ctx);
         do_radio_button(ctx, make_radio_signal(selected, value(1)));
@@ -2898,7 +3303,7 @@ my_ui(ui_context ctx)
     //     }
     // }
 
-    for (int i = 0; i != 1; ++i)
+    for (int i = 0; i != 10; ++i)
     {
         alia_cached_ui_block(unit_id, default_layout)
         {
@@ -2974,69 +3379,85 @@ my_ui(ui_context ctx)
     // do_spacer(ctx, height(100, PIXELS));
 
     {
-        for (int outer = 0; outer != 10; ++outer)
+        for (int outer = 0; outer != 0; ++outer)
         {
             do_wrapped_text(
                 ctx,
                 direct(my_style),
-                value(
-                    "Lorem ipsum dolor sit amet, consectetur "
-                    "adipisg elit. "
-                    "Phasellus lacinia elementum diam consequat alicinquet. "
-                    "Vestibulum ut libero justo. Pellentesque lectus lectus, "
-                    "scelerisque a elementum sed, bibendum id libero. "
-                    "Maecenas venenatis est sed sem "
-                    "consequat mollis. Ut "
-                    "nequeodio, hendrerit ut justo venenatis, consequat "
-                    "molestie eros. Nam fermentum, mi malesuada eleifend"
-                    "dapibus, lectus dolor luctus orci, nec posuere lor "
-                    "lorem ac sem. Nullam interdum laoreet ipsum in "
-                    "dictum.\n\n"
-                    "Duis quis blandit felis. Pellentesque et lectus magna. "
-                    "Maecenas dui lacus, sollicitudin a eros in, vehicula "
-                    "posuere metus. Etiam nec dolor mattis, tincidunt sem "
-                    "vitae, maximus tellus. Vestibulum ut nisi nec neque "
-                    "rutrum interdum. In justo massa, consequat quis dui "
-                    "eget, cursus ultricies sem. Quisque a lectus quisest "
-                    "porttitor ullamcorper ac sed odio.\n\n"
-                    "Vestibulum sed turpis et lacus rutrum scelerisqueet sit "
-                    "amet ipsum. Sed congue hendrerit augue, sed pellentesque "
-                    "neque. Integer efficitur nisi idmassa placerat, at "
-                    "ullamcorper arcu fermentum. Donec sed tellus quis velit "
-                    "placerat viverra necvel diam. Vestibulum faucibus "
-                    "molestie ipsum eget rhoncus. Donec vitae bibendum nibh, "
-                    "quis pellentesque enim. Donec eget consectetur massa, "
-                    "eget mollis elit. Orci varius natoque penatibus et"
-                    "magnis dis parturient montes, nascetur ridiculus mus. "
-                    "Donec accumsan, nisi egestas sollicitudinullamcorper, "
-                    "diam dolor faucibus neque, euscelerisque mi erat vel "
-                    "erat. Etiam nec leo acrisus porta ornare ut accumsan "
-                    "lorem.\n\n"
-                    "Aenean at euismod ligula. Sed augue est, imperdietut "
-                    "sem sit amet, efficitur dictum enim. Namsodales id "
-                    "risus non pulvinar. Morbi id mollismassa. Nunc elit "
-                    "velit, pellentesque et lobortisut, luctus sed justo. "
-                    "Morbi eleifend quam velmagna accumsan, eu consequat "
-                    "nisl ultrices.Mauris dictum eu quam sit amet aliquet. "
-                    "Sedrhoncus turpis quis sagittis imperdiet. Lorem ipsum"
-                    "dolor sit amet, consectetur adipiscing elit. "
-                    "Pellentesque convallis suscipit ex et hendrerit.Donec "
-                    "est ex, varius eu nulla id, tristiquelobortis metus. "
-                    "Sed id sem justo. Nulla at portaneque, id elementum "
-                    "lacus.\n\n"
-                    "Mauris leotortor, tincidunt sit amet sem sit amet, "
-                    "egestastempor massa. In diam ipsum, fermentum pulvinar "
-                    "posuere ut, scelerisque sit amet odio. Nam necjusto "
-                    "quis felis ultrices ornare sit amet eumassa. Nam "
-                    "gravida lacus eget tortor porttitor,eget scelerisque "
-                    "est imperdiet. Duis quisimperdiet libero. Nullam justo "
-                    "erat, blandit etnisi sit amet, aliquet mattis leo. Sed "
-                    "a auguenon felis lacinia ultrices. Aenean porttitor "
-                    "bibendum sem, in consectetur arcu suscipit id.Etiam "
-                    "varius dictum gravida. Nulla molestiefermentum odio "
-                    "vitae tincidunt. Quisque dictum,magna vitae porttitor "
-                    "accumsan, felis felisconsectetur nisi, ut venenatis "
-                    "felis justo utante.\n\n"),
+                value("Lorem ipsum dolor sit amet, consectetur "
+                      "adipisg elit. "
+                      "Phasellus lacinia elementum diam consequat "
+                      "alicinquet. "
+                      "Vestibulum ut libero justo. Pellentesque lectus "
+                      "lectus, "
+                      "scelerisque a elementum sed, bibendum id libero. "
+                      "Maecenas venenatis est sed sem "
+                      "consequat mollis. Ut "
+                      "nequeodio, hendrerit ut justo venenatis, consequat "
+                      "molestie eros. Nam fermentum, mi malesuada eleifend"
+                      "dapibus, lectus dolor luctus orci, nec posuere lor "
+                      "lorem ac sem. Nullam interdum laoreet ipsum in "
+                      "dictum.\n\n"
+                      "Duis quis blandit felis. Pellentesque et lectus "
+                      "magna. "
+                      "Maecenas dui lacus, sollicitudin a eros in, vehicula "
+                      "posuere metus. Etiam nec dolor mattis, tincidunt sem "
+                      "vitae, maximus tellus. Vestibulum ut nisi nec neque "
+                      "rutrum interdum. In justo massa, consequat quis dui "
+                      "eget, cursus ultricies sem. Quisque a lectus quisest "
+                      "porttitor ullamcorper ac sed odio.\n\n"
+                      "Vestibulum sed turpis et lacus rutrum scelerisqueet "
+                      "sit "
+                      "amet ipsum. Sed congue hendrerit augue, sed "
+                      "pellentesque "
+                      "neque. Integer efficitur nisi idmassa placerat, at "
+                      "ullamcorper arcu fermentum. Donec sed tellus quis "
+                      "velit "
+                      "placerat viverra necvel diam. Vestibulum faucibus "
+                      "molestie ipsum eget rhoncus. Donec vitae bibendum "
+                      "nibh, "
+                      "quis pellentesque enim. Donec eget consectetur "
+                      "massa, "
+                      "eget mollis elit. Orci varius natoque penatibus et"
+                      "magnis dis parturient montes, nascetur ridiculus "
+                      "mus. "
+                      "Donec accumsan, nisi egestas "
+                      "sollicitudinullamcorper, "
+                      "diam dolor faucibus neque, euscelerisque mi erat vel "
+                      "erat. Etiam nec leo acrisus porta ornare ut accumsan "
+                      "lorem.\n\n"
+                      "Aenean at euismod ligula. Sed augue est, imperdietut "
+                      "sem sit amet, efficitur dictum enim. Namsodales id "
+                      "risus non pulvinar. Morbi id mollismassa. Nunc elit "
+                      "velit, pellentesque et lobortisut, luctus sed justo. "
+                      "Morbi eleifend quam velmagna accumsan, eu consequat "
+                      "nisl ultrices.Mauris dictum eu quam sit amet "
+                      "aliquet. "
+                      "Sedrhoncus turpis quis sagittis imperdiet. Lorem "
+                      "ipsum"
+                      "dolor sit amet, consectetur adipiscing elit. "
+                      "Pellentesque convallis suscipit ex et "
+                      "hendrerit.Donec "
+                      "est ex, varius eu nulla id, tristiquelobortis metus. "
+                      "Sed id sem justo. Nulla at portaneque, id elementum "
+                      "lacus.\n\n"
+                      "Mauris leotortor, tincidunt sit amet sem sit amet, "
+                      "egestastempor massa. In diam ipsum, fermentum "
+                      "pulvinar "
+                      "posuere ut, scelerisque sit amet odio. Nam necjusto "
+                      "quis felis ultrices ornare sit amet eumassa. Nam "
+                      "gravida lacus eget tortor porttitor,eget scelerisque "
+                      "est imperdiet. Duis quisimperdiet libero. Nullam "
+                      "justo "
+                      "erat, blandit etnisi sit amet, aliquet mattis leo. "
+                      "Sed "
+                      "a auguenon felis lacinia ultrices. Aenean porttitor "
+                      "bibendum sem, in consectetur arcu suscipit id.Etiam "
+                      "varius dictum gravida. Nulla molestiefermentum odio "
+                      "vitae tincidunt. Quisque dictum,magna vitae "
+                      "porttitor "
+                      "accumsan, felis felisconsectetur nisi, ut venenatis "
+                      "felis justo utante.\n\n"),
                 FILL);
         }
 
@@ -3060,8 +3481,8 @@ my_ui(ui_context ctx)
         //             direct(my_style),
         //             alia::printf(
         //                 ctx,
-        //                 "Revenue today - Könnten Sie mir das übersetzen?",
-        //                 i));
+        //                 "Revenue today - Könnten Sie mir das
+        //                 übersetzen?", i));
 
         //     for (int i = 0; i != 100; ++i)
         //     {
