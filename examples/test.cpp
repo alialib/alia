@@ -358,6 +358,240 @@ smooth_for_render(
 //     relative_layout_assignment relative_assignment_;
 // };
 
+inline unsigned
+read_bit_pair(unsigned bitset, unsigned index)
+{
+    return (bitset >> index) & 3u;
+}
+
+inline void
+write_bit_pair(unsigned& bitset, unsigned index, unsigned new_value)
+{
+    bitset = (bitset & ~(3u << index)) | (new_value << index);
+}
+
+inline unsigned
+read_bit(unsigned bitset, unsigned index)
+{
+    return (bitset >> index) & 1u;
+}
+
+inline void
+set_bit(unsigned& bitset, unsigned index)
+{
+    bitset |= (1u << index);
+}
+
+inline void
+clear_bit(unsigned& bitset, unsigned index)
+{
+    bitset &= ~(1u << index);
+}
+
+inline void
+toggle_bit(unsigned& bitset, unsigned index)
+{
+    bitset ^= (1u << index);
+}
+
+inline uintptr_t
+make_animation_id(unsigned* ptr, unsigned index)
+{
+    return std::bit_cast<uintptr_t>(ptr)
+           | (uintptr_t(index) << (sizeof(uintptr_t) * 8 - 8));
+}
+
+struct transition_animation_data
+{
+    // TODO: Combine these.
+    bool direction;
+    millisecond_count transition_end;
+};
+
+struct flare_group_animation_data
+{
+    static constexpr unsigned capacity = 7;
+    unsigned flare_count = 0;
+    millisecond_count flares[capacity];
+};
+
+inline void
+pop_flare(flare_group_animation_data& group)
+{
+    assert(group.flare_count > 0);
+    --group.flare_count;
+    for (unsigned i = 0; i != group.flare_count; ++i)
+        group.flares[i] = group.flares[i + 1];
+}
+
+inline void
+push_flare(flare_group_animation_data& group, millisecond_count end_time)
+{
+    if (group.flare_count == flare_group_animation_data::capacity)
+        pop_flare(group);
+    group.flares[group.flare_count] = end_time;
+    ++group.flare_count;
+}
+
+struct animation_tracking_system
+{
+    // active transitions
+    std::map<uintptr_t, transition_animation_data> transitions;
+    // active flare groups
+    std::map<uintptr_t, flare_group_animation_data> flares;
+};
+
+static animation_tracking_system the_animation_system;
+
+void
+fire_flare(
+    dataless_core_context ctx,
+    unsigned& bitset,
+    unsigned index,
+    millisecond_count duration)
+{
+    push_flare(
+        the_animation_system.flares[make_animation_id(&bitset, index)],
+        get_raw_animation_tick_count(ctx) + duration);
+    set_bit(bitset, index);
+}
+
+template<class Processor>
+void
+process_flares(
+    dataless_core_context ctx,
+    unsigned& bitset,
+    unsigned index,
+    Processor&& processor)
+{
+    if (read_bit(bitset, index))
+    {
+        auto& group
+            = the_animation_system.flares[make_animation_id(&bitset, index)];
+        unsigned flare_index = 0;
+        while (flare_index != group.flare_count)
+        {
+            millisecond_count ticks_left
+                = get_raw_animation_ticks_left(ctx, group.flares[flare_index]);
+            if (ticks_left > 0)
+            {
+                // The flare has time left, so process it and move on to the
+                // next one.
+                std::forward<Processor>(processor)(ticks_left);
+                ++flare_index;
+            }
+            else
+            {
+                // The flare is done, so remove it.
+                // All flares in a group should have the same duration and
+                // should be sorted from oldest to youngest, so we should
+                // always be removing them from the front.
+                assert(flare_index == 0);
+                pop_flare(group);
+            }
+        }
+        if (flare_index == 0)
+        {
+            // All flares were popped, so remove this group.
+            the_animation_system.flares.erase(
+                make_animation_id(&bitset, flare_index));
+            clear_bit(bitset, flare_index);
+        }
+    }
+}
+
+void
+init_animation(
+    dataless_core_context ctx,
+    unsigned& bitset,
+    unsigned index,
+    bool current_state,
+    animated_transition const& transition)
+{
+    auto& animation
+        = the_animation_system.transitions[make_animation_id(&bitset, index)];
+    animation.direction = current_state;
+    animation.transition_end
+        = get_raw_animation_tick_count(ctx) + transition.duration;
+    write_bit_pair(bitset, index, 0b01);
+}
+
+template<class Value>
+Value
+smooth_between_values(
+    dataless_core_context ctx,
+    unsigned& bitset,
+    unsigned index,
+    bool current_state,
+    Value true_value,
+    Value false_value,
+    animated_transition const& transition = default_transition)
+{
+    auto internal_state = read_bit_pair(bitset, index);
+    switch (internal_state)
+    {
+        default:
+        case 0b00:
+            write_bit_pair(bitset, index, current_state ? 0b11 : 0b10);
+            return current_state ? true_value : false_value;
+        case 0b01: {
+            auto& animation
+                = the_animation_system
+                      .transitions[make_animation_id(&bitset, index)];
+            millisecond_count ticks_left
+                = get_raw_animation_ticks_left(ctx, animation.transition_end);
+            if (ticks_left > 0)
+            {
+                double fraction = eval_curve_at_x(
+                    transition.curve,
+                    1. - double(ticks_left) / transition.duration,
+                    1. / transition.duration);
+                Value current_value = interpolate(
+                    animation.direction ? false_value : true_value,
+                    animation.direction ? true_value : false_value,
+                    fraction);
+                if (current_state != animation.direction)
+                {
+                    // Go back in the same amount of time it took to get here.
+                    // In order to do this, we have to solve for time it will
+                    // take to get back here.
+                    animation.transition_end
+                        = get_raw_animation_tick_count(ctx)
+                          + millisecond_count(
+                              transition.duration
+                              * (1
+                                 - eval_curve_at_x(
+                                     unit_cubic_bezier{
+                                         1 - transition.curve.p1x,
+                                         1 - transition.curve.p1y,
+                                         1 - transition.curve.p2x,
+                                         1 - transition.curve.p2y},
+                                     1 - fraction,
+                                     1. / transition.duration)));
+                    animation.direction = current_state;
+                }
+                return current_value;
+            }
+            else
+            {
+                auto end_state = animation.direction;
+                the_animation_system.transitions.erase(
+                    make_animation_id(&bitset, index));
+                write_bit_pair(bitset, index, end_state ? 0b11 : 0b10);
+                return end_state ? true_value : false_value;
+            }
+        }
+        case 0b10:
+            if (current_state)
+                init_animation(ctx, bitset, index, true, transition);
+            return false_value;
+        case 0b11:
+            if (!current_state)
+                init_animation(ctx, bitset, index, false, transition);
+            return true_value;
+    }
+}
+
 struct box_data
 {
     bool state_ = false;
@@ -619,6 +853,7 @@ make_radio_signal(Selected selected, Index index)
 
 struct radio_button_data
 {
+    unsigned bits;
     keyboard_click_state keyboard_click_state_;
     layout_leaf layout_node;
     value_smoother<float> smoother;
@@ -662,6 +897,7 @@ do_radio_button(
             {
                 if (signal_ready_to_write(selected))
                     write_signal(selected, true);
+                fire_flare(ctx, data.bits, 0, 400);
                 abort_traversal(ctx);
             }
 
@@ -689,7 +925,8 @@ do_radio_button(
             if (is_click_in_progress(ctx, id, mouse_button::LEFT)
                 || is_pressed(data.keyboard_click_state_))
             {
-                highlight = 0x40;
+                // highlight = 0x40;
+                highlight = 0x20;
             }
             else if (is_click_possible(ctx, id))
             {
@@ -701,23 +938,34 @@ do_radio_button(
                 paint.setAntiAlias(true);
                 paint.setColor(SkColorSetARGB(highlight, 0xff, 0xff, 0xff));
                 canvas.drawPath(
-                    SkPath::Circle(center[0], center[1], 18.f), paint);
+                    SkPath::Circle(center[0], center[1], 24.f), paint);
             }
+
+            process_flares(
+                ctx, data.bits, 0, [&](millisecond_count ticks_left) {
+                    auto f = float(eval_curve_at_x(
+                        ease_out_curve, (1 - float(ticks_left) / 400), 0.001));
+                    SkPaint paint;
+                    paint.setAntiAlias(true);
+                    paint.setColor(SkColorSetARGB(0x40, 0xff, 0xff, 0xff));
+                    canvas.drawPath(
+                        SkPath::Circle(center[0], center[1], 24.f * f), paint);
+                });
 
             {
                 SkPaint paint;
                 paint.setAntiAlias(true);
                 paint.setStyle(SkPaint::kStroke_Style);
-                paint.setColor(SK_ColorWHITE);
-                paint.setStrokeWidth(2);
+                paint.setColor(SkColorSetARGB(0xff, 0xc0, 0xc0, 0xc0));
+                paint.setStrokeWidth(3);
                 canvas.drawPath(
-                    SkPath::Circle(center[0], center[1], 14.f), paint);
+                    SkPath::Circle(center[0], center[1], 15.f), paint);
             }
 
             float dot_radius = smooth_for_render(
                 ctx,
                 data.smoother,
-                condition_is_true(selected) ? 8.f : 0.f,
+                condition_is_true(selected) ? 10.f : 0.f,
                 animated_transition{default_curve, 200});
 
             SkPaint paint;
@@ -729,225 +977,6 @@ do_radio_button(
         }
     }
     alia_end
-}
-
-// template<class Type, unsigned Offset, unsigned Size>
-// struct bitset_reference
-// {
-//     Type& ref;
-// };
-
-// consteval unsigned
-// bitmask(unsigned offset, unsigned size)
-// {
-//     return (1 << (size + offset)) - (1 << offset);
-// }
-
-// template<class Type, unsigned Offset, unsigned Size>
-// unsigned
-// read(bitset_reference<Type, Offset, Size> const& x)
-// {
-//     return (std::bit_cast<unsigned>(x.ref) & bitmask(Offset, Size)) >>
-//     Offset;
-// }
-
-// template<class Type, unsigned Offset, unsigned Size>
-// unsigned
-// write(bitset_reference<Type, Offset, Size> const& x, unsigned value)
-// {
-//     x.ref = std::bit_cast<Type>(
-//         std::bit_cast<unsigned>(x.ref) & (unsigned(-1) - bitmask(Offset,
-//         Size)) | value << Offset);
-// }
-
-// #define bitoffsetof_(T, f)                                                    \
-//     ({                                                                        \
-//         union                                                                 \
-//         {                                                                     \
-//             unsigned long long raw;                                           \
-//             T t;                                                              \
-//         };                                                                    \
-//         raw = 0;                                                              \
-//         ++t.f;                                                                \
-//         std::countr_zero(raw);                                                \
-//     })
-
-// #define bitsizeof(T, f)                                                       \
-//     ({                                                                        \
-//         union                                                                 \
-//         {                                                                     \
-//             unsigned long long raw;                                           \
-//             T t;                                                              \
-//         };                                                                    \
-//         raw = 0;                                                              \
-//         --t.f;                                                                \
-//         8 * sizeof(raw) - std::countl_zero(raw) - std::countr_zero(raw);      \
-//     })
-
-// #define bitset_ref_type(T, f)                                                 \
-//     (bitset_reference<                                                        \
-//         decltype(std::declval<T>().f),                                        \
-//         bitoffsetof(T, f),                                                    \
-//         bitsizeof(T, f)>)
-
-// #define bitset_ref(x, f) (bitset_ref_type(decltype(x), f){x})
-
-// struct checkbox_bits
-// {
-//     unsigned radius_animation : 2 = 0, position_animation : 2 = 0,
-//                                 color_animation : 2 = 0;
-// };
-
-unsigned
-read_bit_pair(unsigned bitset, unsigned index)
-{
-    return (bitset >> index) & 3u;
-}
-
-void
-write_bit_pair(unsigned& bitset, unsigned index, unsigned new_value)
-{
-    bitset = (bitset & ~(3u << index)) | (new_value << index);
-}
-
-unsigned
-read_bit(unsigned bitset, unsigned index)
-{
-    return (bitset >> index) & 1u;
-}
-
-template<class Type, unsigned Offset, unsigned Size>
-void
-set_bit(unsigned& bitset, unsigned index)
-{
-    bitset |= (1u << index);
-}
-
-template<class Type, unsigned Offset, unsigned Size>
-void
-clear_bit(unsigned& bitset, unsigned index)
-{
-    bitset &= ~(1u << index);
-}
-
-template<class Type, unsigned Offset, unsigned Size>
-void
-toggle_bit(unsigned& bitset, unsigned index)
-{
-    bitset ^= (1u << index);
-}
-
-inline uintptr_t
-make_animation_id(unsigned* ptr, unsigned index)
-{
-    return std::bit_cast<uintptr_t>(ptr)
-           | (uintptr_t(index) << (sizeof(uintptr_t) * 8 - 8));
-}
-
-struct active_animation_data
-{
-    bool direction;
-    millisecond_count duration, transition_end;
-};
-
-struct animation_tracking_system
-{
-    std::map<uintptr_t, active_animation_data> active_animations;
-};
-
-static animation_tracking_system the_animation_system;
-
-inline void
-init_animation(
-    dataless_core_context ctx,
-    unsigned& bitset,
-    unsigned index,
-    bool current_state,
-    animated_transition const& transition)
-{
-    auto& animation
-        = the_animation_system
-              .active_animations[make_animation_id(&bitset, index)];
-    animation.direction = current_state;
-    animation.transition_end
-        = get_raw_animation_tick_count(ctx) + transition.duration;
-    write_bit_pair(bitset, index, 0b01);
-}
-
-template<class Value>
-Value
-smooth_between_values(
-    dataless_core_context ctx,
-    unsigned& bitset,
-    unsigned index,
-    bool current_state,
-    Value true_value,
-    Value false_value,
-    animated_transition const& transition = default_transition)
-{
-    auto internal_state = read_bit_pair(bitset, index);
-    switch (internal_state)
-    {
-        default:
-        case 0b00:
-            write_bit_pair(bitset, index, current_state ? 0b11 : 0b10);
-            return current_state ? true_value : false_value;
-        case 0b01: {
-            auto& animation
-                = the_animation_system
-                      .active_animations[make_animation_id(&bitset, index)];
-            millisecond_count ticks_left
-                = get_raw_animation_ticks_left(ctx, animation.transition_end);
-            if (ticks_left > 0)
-            {
-                double fraction = eval_curve_at_x(
-                    transition.curve,
-                    1. - double(ticks_left) / transition.duration,
-                    1. / transition.duration);
-                Value current_value = interpolate(
-                    animation.direction ? false_value : true_value,
-                    animation.direction ? true_value : false_value,
-                    fraction);
-                if (current_state != animation.direction)
-                {
-                    // Go back in the same amount of time it took to get here.
-                    // In order to do this, we have to solve for time it will
-                    // take to get back here.
-                    animation.transition_end
-                        = get_raw_animation_tick_count(ctx)
-                          + millisecond_count(
-                              transition.duration
-                              * (1
-                                 - eval_curve_at_x(
-                                     unit_cubic_bezier{
-                                         1 - transition.curve.p1x,
-                                         1 - transition.curve.p1y,
-                                         1 - transition.curve.p2x,
-                                         1 - transition.curve.p2y},
-                                     1 - fraction,
-                                     1. / transition.duration)));
-                    animation.direction = current_state;
-                }
-                return current_value;
-            }
-            else
-            {
-                auto end_state = animation.direction;
-                the_animation_system.active_animations.erase(
-                    make_animation_id(&bitset, index));
-                write_bit_pair(bitset, index, end_state ? 0b11 : 0b10);
-                return end_state ? true_value : false_value;
-            }
-        }
-        case 0b10:
-            if (current_state)
-                init_animation(ctx, bitset, index, true, transition);
-            return false_value;
-        case 0b11:
-            if (!current_state)
-                init_animation(ctx, bitset, index, false, transition);
-            return true_value;
-    }
 }
 
 struct checkbox_data
@@ -1050,13 +1079,40 @@ do_checkbox(
                 paint.setAntiAlias(true);
                 paint.setColor(SK_ColorLTGRAY);
                 paint.setStyle(SkPaint::kStroke_Style);
-                paint.setStrokeWidth(3);
-                canvas.drawRoundRect(
-                    rect, region.size[1] / 2, region.size[1] / 2, paint);
+                paint.setStrokeCap(SkPaint::kRound_Cap);
+                paint.setStrokeWidth(16);
+                canvas.drawPath(
+                    SkPath::Line(
+                        SkPoint::Make(
+                            region.corner[0] + region.size[0] * 0.25f,
+                            get_center(region)[1]),
+                        SkPoint::Make(
+                            region.corner[0] + region.size[0] * 0.75f,
+                            get_center(region)[1])),
+                    paint);
             }
 
             if (event.canvas->quickReject(rect))
                 break;
+
+            float switch_position = smooth_between_values(
+                ctx,
+                data.bits,
+                0,
+                condition_is_true(checked),
+                1.f,
+                0.f,
+                animated_transition{default_curve, 200});
+
+            float dot_radius = interpolate(14.f, 16.f, switch_position);
+
+            float const dot_x_offset
+                = interpolate(0.25f, 0.75f, switch_position);
+
+            rgb8 color = interpolate(
+                rgb8(0x80, 0x80, 0x80),
+                rgb8(0x80, 0x80, 0xff),
+                switch_position);
 
             uint8_t highlight = 0;
             if (is_click_in_progress(ctx, id, mouse_button::LEFT)
@@ -1073,8 +1129,12 @@ do_checkbox(
                 SkPaint paint;
                 paint.setAntiAlias(true);
                 paint.setColor(SkColorSetARGB(highlight, 0xff, 0xff, 0xff));
-                canvas.drawRoundRect(
-                    rect, region.size[1] / 2, region.size[1] / 2, paint);
+                canvas.drawPath(
+                    SkPath::Circle(
+                        region.corner[0] + region.size[0] * dot_x_offset,
+                        get_center(region)[1],
+                        24),
+                    paint);
             }
 
             // {
@@ -1086,33 +1146,6 @@ do_checkbox(
             //     canvas.drawPath(
             //         SkPath::Circle(center[0], center[1], 14.f), paint);
             // }
-
-            float dot_radius = smooth_between_values(
-                ctx,
-                data.bits,
-                0,
-                condition_is_true(checked),
-                16.f,
-                12.f,
-                animated_transition{default_curve, 200});
-
-            float const dot_x_offset = smooth_between_values(
-                ctx,
-                data.bits,
-                2,
-                condition_is_true(checked),
-                0.75f,
-                0.25f,
-                animated_transition{default_curve, 200});
-
-            rgb8 color = smooth_between_values(
-                ctx,
-                data.bits,
-                4,
-                condition_is_true(checked),
-                rgb8(0x80, 0x80, 0xff),
-                rgb8(0x80, 0x80, 0x80),
-                animated_transition{default_curve, 200});
 
             SkPaint paint;
             paint.setAntiAlias(true);
