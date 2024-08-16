@@ -16,6 +16,8 @@
 
 // #include <SkGradientShader.h>
 
+#include <alia/ui/utilities/rendering.hpp>
+
 namespace alia {
 
 #if 0

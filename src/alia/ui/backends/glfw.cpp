@@ -43,6 +43,7 @@ SkLoadICU()
 #include <alia/ui/system/object.hpp>
 #include <alia/ui/system/os_interface.hpp>
 #include <alia/ui/system/window_interface.hpp>
+#include <alia/ui/utilities/rendering.hpp>
 
 #include <chrono>
 
@@ -307,8 +308,8 @@ render_ui(glfw_window_impl& impl)
                   .count();
         static long long max_render_time = 0;
         max_render_time = (std::max)(render_time, max_render_time);
-        // std::cout << "render: " << render_time << "[us]\n";
-        // std::cout << "max_render_time: " << max_render_time << "[us]\n";
+        std::cout << "render: " << render_time << "[us]\n";
+        std::cout << "max_render_time: " << max_render_time << "[us]\n";
     }
 
     impl.skia_graphics_context->flush();

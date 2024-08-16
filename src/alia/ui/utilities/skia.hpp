@@ -35,11 +35,8 @@ layout_scalar_as_skia_scalar(layout_scalar x)
     return x;
 }
 
-typedef vector<2, SkScalar> skia_vector;
-typedef box<2, SkScalar> skia_box;
-
 inline SkRect
-as_skrect(skia_box const& box)
+as_skrect(layout_box const& box)
 {
     SkRect rect;
     rect.fLeft = box.corner[0];

@@ -9,6 +9,7 @@
 #include <alia/ui/layout/specification.hpp>
 #include <alia/ui/layout/system.hpp>
 #include <alia/ui/layout/traversal.hpp>
+#include <alia/ui/utilities/rendering.hpp>
 
 #ifdef _WIN32
 #pragma warning(push, 0)

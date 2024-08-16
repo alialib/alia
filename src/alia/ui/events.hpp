@@ -12,8 +12,6 @@
 
 #include <cstdint>
 
-class SkCanvas;
-
 namespace alia {
 
 struct targeted_ui_event
@@ -183,10 +181,7 @@ struct scroll_event : targeted_ui_event
 ALIA_DEFINE_EVENT_CATEGORY(RENDER_CATEGORY, 0x12)
 ALIA_DEFINE_EVENT_TYPE_CODE(RENDER_CATEGORY, RENDER_EVENT, 0)
 
-struct render_event
-{
-    SkCanvas* canvas = nullptr;
-};
+// render_event defined in ui/utilities/rendering.hpp
 
 } // namespace alia
 
