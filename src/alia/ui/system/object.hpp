@@ -23,6 +23,11 @@ struct window_input_state
     // the raw mouse position inside the window
     vector<2, double> mouse_position;
 
+    // the tick count corresponding to the last press of the primary mouse
+    // button
+    // TODO: Add this for other buttons?
+    millisecond_count last_mouse_press_time;
+
     // the widget that the mouse is over
     routable_widget_id hot_widget;
 
