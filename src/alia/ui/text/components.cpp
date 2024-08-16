@@ -4,6 +4,7 @@
 #include <alia/ui/layout/utilities.hpp>
 #include <alia/ui/text/fonts.hpp>
 #include <alia/ui/text/shaping.hpp>
+#include <alia/ui/utilities/rendering.hpp>
 
 #ifdef _WIN32
 #pragma warning(push, 0)
@@ -85,7 +86,7 @@ do_text(
                               layout_scalar(data.shape->width),
                               layout_scalar(data.shape->verticalAdvance))
                         : make_layout_vector(0, 0),
-                    0,
+                    0, // TODO: ascent/descent
                     0),
                 LEFT | BASELINE_Y | PADDED);
 
