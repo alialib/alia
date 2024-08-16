@@ -11,6 +11,7 @@
 #include <alia/ui/scrolling.hpp>
 #include <alia/ui/system/api.hpp>
 #include <alia/ui/system/input_constants.hpp>
+#include <alia/ui/system/object.hpp>
 #include <alia/ui/text/fonts.hpp>
 #include <alia/ui/utilities/keyboard.hpp>
 #include <alia/ui/utilities/mouse.hpp>
@@ -495,7 +496,7 @@ process_flares(
             // All flares were popped, so remove this group.
             the_animation_system.flares.erase(
                 make_animation_id(&bitset, flare_index));
-            clear_bit(bitset, flare_index);
+            clear_bit(bitset, index);
         }
     }
 }
@@ -870,6 +871,8 @@ do_radio_button(
     auto& data = *data_ptr;
     auto id = data_ptr;
 
+    constexpr millisecond_count click_flare_duration = 300;
+
     alia_untracked_switch(get_event_category(ctx))
     {
         case REFRESH_CATEGORY:
@@ -897,7 +900,7 @@ do_radio_button(
             {
                 if (signal_ready_to_write(selected))
                     write_signal(selected, true);
-                fire_flare(ctx, data.bits, 0, 400);
+                fire_flare(ctx, data.bits, 0, click_flare_duration);
                 abort_traversal(ctx);
             }
 
@@ -944,12 +947,17 @@ do_radio_button(
             process_flares(
                 ctx, data.bits, 0, [&](millisecond_count ticks_left) {
                     auto f = float(eval_curve_at_x(
-                        ease_out_curve, (1 - float(ticks_left) / 400), 0.001));
+                        ease_out_curve,
+                        (1 - float(ticks_left) / click_flare_duration),
+                        0.001));
                     SkPaint paint;
                     paint.setAntiAlias(true);
-                    paint.setColor(SkColorSetARGB(0x40, 0xff, 0xff, 0xff));
+                    paint.setColor(SkColorSetARGB(
+                        0x10 + uint8_t((1 - f) * 0x20), 0xff, 0xff, 0xff));
                     canvas.drawPath(
-                        SkPath::Circle(center[0], center[1], 24.f * f), paint);
+                        SkPath::Circle(
+                            center[0], center[1], 30.f * (std::min)(f, 0.8f)),
+                        paint);
                 });
 
             {
@@ -984,26 +992,14 @@ struct checkbox_data
     unsigned bits;
     keyboard_click_state keyboard_click_state_;
     layout_leaf layout_node;
-    value_smoother<float> radius_smoother, position_smoother;
-    value_smoother<rgb8> color_smoother;
 };
 
-// consteval auto
-// checkbox_hack2()
-// {
-//     checkbox_bits x = std::bit_cast<checkbox_bits>(0);
-//     ++x.radius_animation;
-//     return std::countr_zero(std::bit_cast<unsigned>(x));
-// }
-
-// constexpr auto
-// checkbox_hack3()
-// {
-//     checkbox_bits x = std::bit_cast<checkbox_bits>(0xffffffff);
-//     x.radius_animation = 0;
-//     auto const raw = std::bit_cast<unsigned>(x);
-//     return 8 * sizeof(raw) - std::countl_one(raw) - std::countr_one(raw);
-// }
+// TODO: Add mouse button selector.
+inline millisecond_count
+get_click_start_time(dataless_ui_context ctx)
+{
+    return get_system(ctx).input.last_mouse_press_time;
+}
 
 void
 do_checkbox(
@@ -1016,11 +1012,237 @@ do_checkbox(
     auto& data = *data_ptr;
     auto id = data_ptr;
 
-    // checkbox_hack3();
+    constexpr millisecond_count click_flare_duration = 700;
+    constexpr millisecond_count click_accumulation_time = 400;
+
+    alia_untracked_switch(get_event_category(ctx))
+    {
+        case REFRESH_CATEGORY:
+            data.layout_node.refresh_layout(
+                get_layout_traversal(ctx),
+                layout_spec,
+                leaf_layout_requirements(make_layout_vector(52, 52), 0, 0),
+                LEFT | BASELINE_Y | PADDED);
+
+            add_layout_node(
+                get<ui_traversal_tag>(ctx).layout, &data.layout_node);
+
+            break;
+
+        case REGION_CATEGORY:
+            do_box_region(
+                ctx, id, box<2, double>(data.layout_node.assignment().region));
+            break;
+
+        case INPUT_CATEGORY:
+            add_to_focus_order(ctx, id);
+
+            if (detect_click(ctx, id, mouse_button::LEFT)
+                || detect_keyboard_click(ctx, data.keyboard_click_state_, id))
+            {
+                if (get_system(ctx).tick_count - get_click_start_time(ctx)
+                    < 200)
+                {
+                    fire_flare(ctx, data.bits, 0, click_flare_duration);
+                }
+                else
+                {
+                    fire_flare(
+                        ctx,
+                        data.bits,
+                        1,
+                        (std::min)(
+                            click_accumulation_time,
+                            get_system(ctx).tick_count
+                                - get_click_start_time(ctx))
+                            / 2);
+                }
+                if (signal_has_value(checked)
+                    && signal_ready_to_write(checked))
+                {
+                    write_signal(checked, !read_signal(checked));
+                }
+                abort_traversal(ctx);
+            }
+
+            break;
+
+        case RENDER_CATEGORY: {
+            auto& event = cast_event<render_event>(ctx);
+
+            SkCanvas& canvas = *event.canvas;
+
+            auto const& region = data.layout_node.assignment().region;
+
+            SkRect rect;
+            rect.fLeft = SkScalar(region.corner[0]);
+            rect.fTop = SkScalar(region.corner[1]);
+            rect.fRight = SkScalar(region.corner[0] + region.size[0]);
+            rect.fBottom = SkScalar(region.corner[1] + region.size[1]);
+
+            if (event.canvas->quickReject(rect))
+                break;
+
+            auto center = get_center(region);
+
+            float smoothed_state = smooth_between_values(
+                ctx,
+                data.bits,
+                2,
+                condition_is_true(checked),
+                1.f,
+                0.f,
+                animated_transition{default_curve, 200});
+
+            rgb8 color = interpolate(
+                rgb8(0xa0, 0xa0, 0xa0),
+                rgb8(0x80, 0x80, 0xff),
+                smoothed_state);
+
+            if (is_click_in_progress(ctx, id, mouse_button::LEFT)
+                /* TODO: || is_pressed(data.keyboard_click_state_) */)
+            {
+                // TODO: Refactor this as 'get_click_duration' with a maximum
+                // duration.
+                millisecond_count click_duration
+                    = click_accumulation_time
+                      - get_raw_animation_ticks_left(
+                          ctx,
+                          get_click_start_time(ctx) + click_accumulation_time);
+                float intensity
+                    = float(click_duration) / click_accumulation_time;
+                float radius = float(click_duration) / click_accumulation_time;
+                SkPaint paint;
+                paint.setAntiAlias(true);
+                paint.setColor(SkColorSetARGB(
+                    uint8_t(intensity * 0x60), color.r, color.g, color.b));
+                canvas.drawPath(
+                    SkPath::Circle(center[0], center[1], 32.f * radius),
+                    paint);
+            }
+
+            uint8_t highlight = 0;
+            if (is_click_in_progress(ctx, id, mouse_button::LEFT)
+                || is_pressed(data.keyboard_click_state_))
+            {
+                // highlight = 0x40;
+                highlight = 0x20;
+            }
+            else if (is_click_possible(ctx, id))
+            {
+                highlight = 0x20;
+            }
+            if (highlight != 0)
+            {
+                SkPaint paint;
+                paint.setAntiAlias(true);
+                paint.setColor(
+                    SkColorSetARGB(highlight, color.r, color.g, color.b));
+                canvas.drawPath(
+                    SkPath::Circle(center[0], center[1], 32.f), paint);
+            }
+
+            process_flares(
+                ctx, data.bits, 0, [&](millisecond_count ticks_left) {
+                    float intensity = float(eval_curve_at_x(
+                        animation_curve{0.2, 0, 1, 1},
+                        float(ticks_left) / click_flare_duration,
+                        0.001));
+                    float radius = float(eval_curve_at_x(
+                        animation_curve{0, 0, 0.9, 1},
+                        1
+                            - (std::fmax)(
+                                0.0f,
+                                (float(ticks_left) - 300)
+                                    / (click_flare_duration - 300)),
+                        0.001));
+                    SkPaint paint;
+                    paint.setAntiAlias(true);
+                    paint.setColor(SkColorSetARGB(
+                        uint8_t(intensity * 0x60), color.r, color.g, color.b));
+                    canvas.drawPath(
+                        SkPath::Circle(center[0], center[1], 32.f * radius),
+                        paint);
+                });
+
+            process_flares(
+                ctx, data.bits, 1, [&](millisecond_count ticks_left) {
+                    float intensity = float(ticks_left) / 200;
+                    float radius = 1;
+                    SkPaint paint;
+                    paint.setAntiAlias(true);
+                    paint.setColor(SkColorSetARGB(
+                        uint8_t(intensity * 0x60), color.r, color.g, color.b));
+                    canvas.drawPath(
+                        SkPath::Circle(center[0], center[1], 32.f * radius),
+                        paint);
+                });
+
+            {
+                SkPaint paint;
+                paint.setAntiAlias(true);
+                paint.setStyle(SkPaint::kStroke_Style);
+                paint.setColor(SkColorSetARGB(0xff, 0xc0, 0xc0, 0xc0));
+                paint.setStrokeWidth(3);
+                canvas.drawPath(
+                    SkPath::Circle(center[0], center[1], 15.f), paint);
+            }
+
+            float dot_radius = interpolate(0.f, 10.f, smoothed_state);
+
+            SkPaint paint;
+            paint.setAntiAlias(true);
+            paint.setColor(SkColorSetARGB(0xff, 0x80, 0x80, 0xff));
+            paint.setStrokeWidth(3);
+            canvas.drawPath(
+                SkPath::Circle(center[0], center[1], dot_radius), paint);
+        }
+    }
+    alia_end
+}
+
+struct switch_data
+{
+    unsigned bits;
+    keyboard_click_state keyboard_click_state_;
+    layout_leaf layout_node;
+    value_smoother<float> radius_smoother, position_smoother;
+    value_smoother<rgb8> color_smoother;
+};
+
+// consteval auto
+// switch_hack2()
+// {
+//     switch_bits x = std::bit_cast<switch_bits>(0);
+//     ++x.radius_animation;
+//     return std::countr_zero(std::bit_cast<unsigned>(x));
+// }
+
+// constexpr auto
+// switch_hack3()
+// {
+//     switch_bits x = std::bit_cast<switch_bits>(0xffffffff);
+//     x.radius_animation = 0;
+//     auto const raw = std::bit_cast<unsigned>(x);
+//     return 8 * sizeof(raw) - std::countl_one(raw) - std::countr_one(raw);
+// }
+
+void
+do_switch(
+    ui_context ctx,
+    duplex<bool> checked,
+    layout const& layout_spec = layout(TOP | LEFT | PADDED))
+{
+    switch_data* data_ptr;
+    get_cached_data(ctx, &data_ptr);
+    auto& data = *data_ptr;
+    auto id = data_ptr;
+
+    // switch_hack3();
 
     // auto radius_anim
-    //     = bitset_reference<checkbox_bits, checkbox_hack2(),
-    //     checkbox_hack3()>{
+    //     = bitset_reference<switch_bits, switch_hack2(),
+    //     switch_hack3()>{
     //         data.bits};
     // write(radius_anim, read(radius_anim) + 1);
     // write(radius_anim, read(radius_anim) + 1);
@@ -1074,24 +1296,6 @@ do_checkbox(
             rect.fRight = SkScalar(region.corner[0] + region.size[0]);
             rect.fBottom = SkScalar(region.corner[1] + region.size[1]);
 
-            {
-                SkPaint paint;
-                paint.setAntiAlias(true);
-                paint.setColor(SK_ColorLTGRAY);
-                paint.setStyle(SkPaint::kStroke_Style);
-                paint.setStrokeCap(SkPaint::kRound_Cap);
-                paint.setStrokeWidth(16);
-                canvas.drawPath(
-                    SkPath::Line(
-                        SkPoint::Make(
-                            region.corner[0] + region.size[0] * 0.25f,
-                            get_center(region)[1]),
-                        SkPoint::Make(
-                            region.corner[0] + region.size[0] * 0.75f,
-                            get_center(region)[1])),
-                    paint);
-            }
-
             if (event.canvas->quickReject(rect))
                 break;
 
@@ -1110,25 +1314,60 @@ do_checkbox(
                 = interpolate(0.25f, 0.75f, switch_position);
 
             rgb8 color = interpolate(
-                rgb8(0x80, 0x80, 0x80),
+                rgb8(0xa0, 0xa0, 0xa0),
                 rgb8(0x80, 0x80, 0xff),
                 switch_position);
+
+            {
+                SkPaint paint;
+                paint.setAntiAlias(true);
+                rgb8 track_color
+                    = interpolate(color, rgb8(0xff, 0xff, 0xff), 0.5);
+                paint.setColor(SkColorSetARGB(
+                    0xff, track_color.r, track_color.g, track_color.b));
+                paint.setStyle(SkPaint::kStroke_Style);
+                paint.setStrokeCap(SkPaint::kRound_Cap);
+                paint.setStrokeWidth(16);
+                canvas.drawPath(
+                    SkPath::Line(
+                        SkPoint::Make(
+                            region.corner[0] + region.size[0] * 0.25f,
+                            get_center(region)[1]),
+                        SkPoint::Make(
+                            region.corner[0] + region.size[0] * 0.75f,
+                            get_center(region)[1])),
+                    paint);
+            }
+
+            {
+                SkPaint paint;
+                paint.setAntiAlias(true);
+                paint.setColor(
+                    SkColorSetARGB(0xff, color.r, color.g, color.b));
+                canvas.drawPath(
+                    SkPath::Circle(
+                        region.corner[0] + region.size[0] * dot_x_offset,
+                        get_center(region)[1],
+                        dot_radius),
+                    paint);
+            }
 
             uint8_t highlight = 0;
             if (is_click_in_progress(ctx, id, mouse_button::LEFT)
                 || is_pressed(data.keyboard_click_state_))
             {
-                highlight = 0x40;
+                highlight = 0x80;
             }
             else if (is_click_possible(ctx, id))
             {
-                highlight = 0x20;
+                highlight = 0x40;
             }
             if (highlight != 0)
             {
                 SkPaint paint;
                 paint.setAntiAlias(true);
-                paint.setColor(SkColorSetARGB(highlight, 0xff, 0xff, 0xff));
+                paint.setColor(
+                    SkColorSetARGB(highlight, color.r, color.g, color.b));
                 canvas.drawPath(
                     SkPath::Circle(
                         region.corner[0] + region.size[0] * dot_x_offset,
@@ -1136,26 +1375,6 @@ do_checkbox(
                         24),
                     paint);
             }
-
-            // {
-            //     SkPaint paint;
-            //     paint.setAntiAlias(true);
-            //     paint.setStyle(SkPaint::kStroke_Style);
-            //     paint.setColor(SK_ColorWHITE);
-            //     paint.setStrokeWidth(2);
-            //     canvas.drawPath(
-            //         SkPath::Circle(center[0], center[1], 14.f), paint);
-            // }
-
-            SkPaint paint;
-            paint.setAntiAlias(true);
-            paint.setColor(SkColorSetARGB(0xff, color.r, color.g, color.b));
-            canvas.drawPath(
-                SkPath::Circle(
-                    region.corner[0] + region.size[0] * dot_x_offset,
-                    get_center(region)[1],
-                    dot_radius),
-                paint);
         }
     }
     alia_end
@@ -3292,7 +3511,25 @@ my_ui(ui_context ctx)
 
     do_spacer(ctx, size(20, 100, PIXELS));
 
-    do_checkbox(ctx, get_state(ctx, false));
+    do_switch(ctx, get_state(ctx, false));
+
+    do_spacer(ctx, size(20, 100, PIXELS));
+
+    {
+        row_layout row(ctx);
+        do_checkbox(ctx, get_state(ctx, false));
+        do_text(ctx, direct(my_style), value("One"), CENTER_Y);
+    }
+    {
+        row_layout row(ctx);
+        do_checkbox(ctx, get_state(ctx, true));
+        do_text(ctx, direct(my_style), value("Two"), CENTER_Y);
+    }
+    {
+        row_layout row(ctx);
+        do_checkbox(ctx, get_state(ctx, false));
+        do_text(ctx, direct(my_style), value("Three"), CENTER_Y);
+    }
 
     do_spacer(ctx, size(20, 100, PIXELS));
 
