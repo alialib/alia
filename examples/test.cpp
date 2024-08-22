@@ -9,6 +9,7 @@
 #include <alia/ui/layout/specification.hpp>
 #include <alia/ui/layout/utilities.hpp>
 #include <alia/ui/library/panels.hpp>
+#include <alia/ui/library/slider.hpp>
 #include <alia/ui/scrolling.hpp>
 #include <alia/ui/system/api.hpp>
 #include <alia/ui/system/input_constants.hpp>
@@ -40,6 +41,7 @@
 #include <alia/ui/geometry.hpp>
 #include <alia/ui/layout/internals.hpp>
 #include <alia/ui/text/components.hpp>
+#include <alia/ui/utilities/animation.hpp>
 
 #ifdef _WIN32
 #pragma warning(push, 0)
@@ -68,537 +70,6 @@
 #endif
 
 using namespace alia;
-
-// struct click_event : targeted_event
-// {
-// };
-
-template<class Value>
-Value
-smooth_for_render(
-    dataless_core_context ctx,
-    value_smoother<Value>& smoother,
-    Value const& x,
-    animated_transition const& transition = default_transition)
-{
-    if (!smoother.initialized)
-        reset_smoothing(smoother, x);
-    Value current_value = smoother.new_value;
-    if (smoother.in_transition)
-    {
-        millisecond_count ticks_left
-            = get_raw_animation_ticks_left(ctx, smoother.transition_end);
-        if (ticks_left > 0)
-        {
-            double fraction = eval_curve_at_x(
-                transition.curve,
-                1. - double(ticks_left) / smoother.duration,
-                1. / smoother.duration);
-            current_value = interpolate(
-                smoother.old_value, smoother.new_value, fraction);
-        }
-        else
-            smoother.in_transition = false;
-    }
-    if (x != smoother.new_value)
-    {
-        smoother.duration =
-            // If we're just going back to the old value, go back in the same
-            // amount of time it took to get here.
-            smoother.in_transition && x == smoother.old_value
-                ? (transition.duration
-                   - get_raw_animation_ticks_left(
-                       ctx, smoother.transition_end))
-                : transition.duration;
-        smoother.transition_end
-            = get_raw_animation_tick_count(ctx) + smoother.duration;
-        smoother.old_value = current_value;
-        smoother.new_value = x;
-        smoother.in_transition = true;
-    }
-    return current_value;
-}
-
-// template<class Value>
-// Value
-// smooth_value(
-//     value_smoother<Value>& smoother,
-//     Value const& x,
-//     millisecond_count tick_counter,
-//     animated_transition const& transition = default_transition)
-// {
-//     if (!smoother.initialized)
-//         reset_smoothing(smoother, x);
-//     Value current_value = smoother.new_value;
-//     if (smoother.in_transition)
-//     {
-//         auto ticks_left = millisecond_count(
-//             (std::max)(0, int(smoother.transition_end - tick_counter)));
-//         if (ticks_left > 0)
-//         {
-//             double fraction = eval_curve_at_x(
-//                 transition.curve,
-//                 1. - double(ticks_left) / smoother.duration,
-//                 0.5 / smoother.duration);
-//             current_value = interpolate(
-//                 smoother.old_value, smoother.new_value, fraction);
-//         }
-//         else
-//             smoother.in_transition = false;
-//     }
-//     if (x != smoother.new_value)
-//     {
-//         smoother.duration =
-//             // If we're just going back to the old value, go back in the
-//             same
-//             // amount of time it took to get here.
-//             smoother.in_transition && x == smoother.old_value
-//                 ? (transition.duration
-//                    - millisecond_count((std::max)(
-//                        0, int(smoother.transition_end - tick_counter))))
-//                 : transition.duration;
-//         smoother.transition_end = tick_counter + smoother.duration;
-//         smoother.old_value = current_value;
-//         smoother.new_value = x;
-//         smoother.in_transition = true;
-//     }
-//     return current_value;
-// }
-
-// struct box_node : widget
-// {
-//     layout_requirements
-//     get_horizontal_requirements() override
-//     {
-//         layout_requirements requirements;
-//         resolve_requirements(
-//             requirements,
-//             resolved_spec_,
-//             0,
-//             calculated_layout_requirements{40, 0, 0});
-//         return requirements;
-//     }
-//     layout_requirements
-//     get_vertical_requirements(layout_scalar /*assigned_width*/) override
-//     {
-//         layout_requirements requirements;
-//         resolve_requirements(
-//             requirements,
-//             resolved_spec_,
-//             1,
-//             calculated_layout_requirements{40, 0, 0});
-//         return requirements;
-//     }
-//     void
-//     set_relative_assignment(
-//         relative_layout_assignment const& assignment) override
-//     {
-//         layout_requirements horizontal_requirements, vertical_requirements;
-//         resolve_requirements(
-//             horizontal_requirements,
-//             resolved_spec_,
-//             0,
-//             calculated_layout_requirements{40, 0, 0});
-//         resolve_requirements(
-//             vertical_requirements,
-//             resolved_spec_,
-//             1,
-//             calculated_layout_requirements{40, 0, 0});
-//         relative_assignment_ = resolve_relative_assignment(
-//             resolved_spec_,
-//             assignment,
-//             horizontal_requirements,
-//             vertical_requirements);
-//     }
-
-//     void
-//     render(render_event& event) override
-//     {
-//         SkCanvas& canvas = *event.canvas;
-
-//         auto const& region = this->assignment().region;
-
-//         double blend_factor = 0;
-
-//         if (is_click_in_progress(
-//                 *sys_, widget_id{*this, 0}, mouse_button::LEFT)
-//             || is_pressed(keyboard_click_state_))
-//         {
-//             blend_factor = 0.4;
-//         }
-//         else if (is_click_possible(*sys_, widget_id{*this, 0}))
-//         {
-//             blend_factor = 0.2;
-//         }
-
-//         rgb8 c;
-//         if (state_)
-//         {
-//             c = rgb8(0x40, 0x40, 0x40);
-//         }
-//         else
-//         {
-//             c = rgb8(
-//                 std::uint8_t(SkColorGetR(color_)),
-//                 std::uint8_t(SkColorGetG(color_)),
-//                 std::uint8_t(SkColorGetB(color_)));
-//         }
-//         if (blend_factor != 0)
-//         {
-//             c = interpolate(c, rgb8(0xff, 0xff, 0xff), blend_factor);
-//         }
-
-//         // auto position = smooth_value(
-//         //     position_,
-//         //     region.corner + event.current_offset,
-//         //     tick_counter_,
-//         //     {default_curve, 80});
-//         auto position = region.corner + event.current_offset;
-
-//         SkPaint paint;
-//         paint.setColor(SkColorSetARGB(0xff, c.r, c.g, c.b));
-//         SkRect rect;
-//         rect.fLeft = SkScalar(position[0]);
-//         rect.fTop = SkScalar(position[1]);
-//         rect.fRight = SkScalar(position[0] + region.size[0]);
-//         rect.fBottom = SkScalar(position[1] + region.size[1]);
-//         canvas.drawRect(rect, paint);
-
-//         if (rect.width() > 200)
-//         {
-//             SkPaint blur(paint);
-//             blur.setAlpha(200);
-//             blur.setMaskFilter(
-//                 SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, 40, false));
-//             canvas.drawRect(rect, blur);
-//         }
-
-//         if (widget_has_focus(*sys_, widget_id{*this, 0}))
-//         {
-//             paint.setStyle(SkPaint::kStroke_Style);
-//             paint.setStrokeWidth(4);
-//             paint.setColor(SK_ColorBLACK);
-//             canvas.drawRect(rect, paint);
-//         }
-//     }
-
-//     void
-//     hit_test(
-//         hit_test_base& test, vector<2, double> const& point) const override
-//     {
-//         if (is_inside(this->assignment().region, vector<2, float>(point)))
-//         {
-//             if (test.type == hit_test_type::MOUSE)
-//             {
-//                 static_cast<mouse_hit_test&>(test).result
-//                     = mouse_hit_test_result{
-//                         externalize(widget_id{*this, 0}),
-//                         mouse_cursor::POINTER,
-//                         this->assignment().region,
-//                         ""};
-//             }
-//         }
-//     }
-
-//     void
-//     process_input(dataless_ui_context ctx) override
-//     {
-//         add_to_focus_order(ctx, widget_id{*this, 0});
-//         if (detect_click(
-//                 ctx, widget_id{*this, 0}, mouse_button::LEFT))
-//         {
-//             click_event event;
-//             dispatch_targeted_event(*sys_, event, this->id_);
-//             state_ = !state_;
-//             // advance_focus(get_system(ctx));
-//         }
-//         // if (detect_key_press(ctx, this, key_code::SPACE))
-//         // {
-//         //     state_ = !state_;
-//         //     // advance_focus(get_system(ctx));
-//         // }
-//         if (detect_keyboard_click(
-//                 ctx, keyboard_click_state_, widget_id{*this, 0}))
-//         {
-//             state_ = !state_;
-//         }
-//     }
-
-//     matrix<3, 3, double>
-//     transformation() const override
-//     {
-//         return parent->transformation();
-//     }
-
-//     relative_layout_assignment const&
-//     assignment() const
-//     {
-//         return relative_assignment_;
-//     }
-
-//     layout_box
-//     bounding_box() const override
-//     {
-//         return add_border(this->assignment().region, 4.f);
-//     }
-
-//     void
-//     reveal_region(region_reveal_request const& request) override
-//     {
-//         parent->reveal_region(request);
-//     }
-
-//     ui_system* sys_;
-//     external_component_id id_;
-//     bool state_ = false;
-//     SkColor color_ = SK_ColorWHITE;
-//     keyboard_click_state keyboard_click_state_;
-//     // value_smoother<layout_vector> position_;
-//     // TODO: Move this into the system.
-//     // sk_sp<SkPicture> picture_;
-//     // the resolved spec
-//     resolved_layout_spec resolved_spec_;
-//     // resolved relative assignment
-//     relative_layout_assignment relative_assignment_;
-// };
-
-inline unsigned
-read_bit_pair(unsigned bitset, unsigned index)
-{
-    return (bitset >> index) & 3u;
-}
-
-inline void
-write_bit_pair(unsigned& bitset, unsigned index, unsigned new_value)
-{
-    bitset = (bitset & ~(3u << index)) | (new_value << index);
-}
-
-inline unsigned
-read_bit(unsigned bitset, unsigned index)
-{
-    return (bitset >> index) & 1u;
-}
-
-inline void
-set_bit(unsigned& bitset, unsigned index)
-{
-    bitset |= (1u << index);
-}
-
-inline void
-clear_bit(unsigned& bitset, unsigned index)
-{
-    bitset &= ~(1u << index);
-}
-
-inline void
-toggle_bit(unsigned& bitset, unsigned index)
-{
-    bitset ^= (1u << index);
-}
-
-inline uintptr_t
-make_animation_id(unsigned* ptr, unsigned index)
-{
-    return std::bit_cast<uintptr_t>(ptr)
-           | (uintptr_t(index) << (sizeof(uintptr_t) * 8 - 8));
-}
-
-struct transition_animation_data
-{
-    // TODO: Combine these.
-    bool direction;
-    millisecond_count transition_end;
-};
-
-struct flare_group_animation_data
-{
-    static constexpr unsigned capacity = 7;
-    unsigned flare_count = 0;
-    millisecond_count flares[capacity];
-};
-
-inline void
-pop_flare(flare_group_animation_data& group)
-{
-    assert(group.flare_count > 0);
-    --group.flare_count;
-    for (unsigned i = 0; i != group.flare_count; ++i)
-        group.flares[i] = group.flares[i + 1];
-}
-
-inline void
-push_flare(flare_group_animation_data& group, millisecond_count end_time)
-{
-    if (group.flare_count == flare_group_animation_data::capacity)
-        pop_flare(group);
-    group.flares[group.flare_count] = end_time;
-    ++group.flare_count;
-}
-
-struct animation_tracking_system
-{
-    // active transitions
-    std::map<uintptr_t, transition_animation_data> transitions;
-    // active flare groups
-    std::map<uintptr_t, flare_group_animation_data> flares;
-};
-
-static animation_tracking_system the_animation_system;
-
-void
-fire_flare(
-    dataless_core_context ctx,
-    unsigned& bitset,
-    unsigned index,
-    millisecond_count duration)
-{
-    push_flare(
-        the_animation_system.flares[make_animation_id(&bitset, index)],
-        get_raw_animation_tick_count(ctx) + duration);
-    set_bit(bitset, index);
-}
-
-template<class Processor>
-void
-process_flares(
-    dataless_core_context ctx,
-    unsigned& bitset,
-    unsigned index,
-    Processor&& processor)
-{
-    if (read_bit(bitset, index))
-    {
-        auto& group
-            = the_animation_system.flares[make_animation_id(&bitset, index)];
-        unsigned flare_index = 0;
-        while (flare_index != group.flare_count)
-        {
-            millisecond_count ticks_left
-                = get_raw_animation_ticks_left(ctx, group.flares[flare_index]);
-            if (ticks_left > 0)
-            {
-                // The flare has time left, so process it and move on to the
-                // next one.
-                std::forward<Processor>(processor)(ticks_left);
-                ++flare_index;
-            }
-            else
-            {
-                // The flare is done, so remove it.
-                // All flares in a group should have the same duration and
-                // should be sorted from oldest to youngest, so we should
-                // always be removing them from the front.
-                assert(flare_index == 0);
-                pop_flare(group);
-            }
-        }
-        if (flare_index == 0)
-        {
-            // All flares were popped, so remove this group.
-            the_animation_system.flares.erase(
-                make_animation_id(&bitset, flare_index));
-            clear_bit(bitset, index);
-        }
-    }
-}
-
-constexpr unsigned bits_required_for_flare = 1;
-
-void
-init_animation(
-    dataless_core_context ctx,
-    unsigned& bitset,
-    unsigned index,
-    bool current_state,
-    animated_transition const& transition)
-{
-    auto& animation
-        = the_animation_system.transitions[make_animation_id(&bitset, index)];
-    animation.direction = current_state;
-    animation.transition_end
-        = get_raw_animation_tick_count(ctx) + transition.duration;
-    write_bit_pair(bitset, index, 0b01);
-}
-
-constexpr unsigned bits_required_for_smoothing = 2;
-
-template<class Value>
-Value
-smooth_between_values(
-    dataless_core_context ctx,
-    unsigned& bitset,
-    unsigned index,
-    bool current_state,
-    Value true_value,
-    Value false_value,
-    animated_transition const& transition = default_transition)
-{
-    auto internal_state = read_bit_pair(bitset, index);
-    switch (internal_state)
-    {
-        default:
-        case 0b00:
-            write_bit_pair(bitset, index, current_state ? 0b11 : 0b10);
-            return current_state ? true_value : false_value;
-        case 0b01: {
-            auto& animation
-                = the_animation_system
-                      .transitions[make_animation_id(&bitset, index)];
-            millisecond_count ticks_left
-                = get_raw_animation_ticks_left(ctx, animation.transition_end);
-            if (ticks_left > 0)
-            {
-                double fraction = eval_curve_at_x(
-                    transition.curve,
-                    1. - double(ticks_left) / transition.duration,
-                    1. / transition.duration);
-                Value current_value = interpolate(
-                    animation.direction ? false_value : true_value,
-                    animation.direction ? true_value : false_value,
-                    fraction);
-                if (current_state != animation.direction)
-                {
-                    // Go back in the same amount of time it took to get here.
-                    // In order to do this, we have to solve for time it will
-                    // take to get back here.
-                    animation.transition_end
-                        = get_raw_animation_tick_count(ctx)
-                          + millisecond_count(
-                              transition.duration
-                              * (1
-                                 - eval_curve_at_x(
-                                     unit_cubic_bezier{
-                                         1 - transition.curve.p1x,
-                                         1 - transition.curve.p1y,
-                                         1 - transition.curve.p2x,
-                                         1 - transition.curve.p2y},
-                                     1 - fraction,
-                                     1. / transition.duration)));
-                    animation.direction = current_state;
-                }
-                return current_value;
-            }
-            else
-            {
-                auto end_state = animation.direction;
-                the_animation_system.transitions.erase(
-                    make_animation_id(&bitset, index));
-                write_bit_pair(bitset, index, end_state ? 0b11 : 0b10);
-                return end_state ? true_value : false_value;
-            }
-        }
-        case 0b10:
-            if (current_state)
-                init_animation(ctx, bitset, index, true, transition);
-            return false_value;
-        case 0b11:
-            if (!current_state)
-                init_animation(ctx, bitset, index, false, transition);
-            return true_value;
-    }
-}
 
 struct box_data
 {
@@ -797,67 +268,6 @@ make_radio_signal(Selected selected, Index index)
     return radio_signal<Selected, Index>(
         std::move(selected), std::move(index));
 }
-// template<class Selected, class Index>
-// auto
-// add_default(Selected selected, Index index)
-// {
-//     return make_default_value_signal(
-//         signalize(std::move(primary)), signalize(std::move(default_)));
-// }
-
-// // make_radio_accessor_for_optional(selected, index), where
-// // selected is of type accessor<optional<T>> and index is of type
-// // accessor<T>, yields an accessor<bool> whose value tells whether or not
-// // selected is set to index.
-// // Setting the resulting accessor to any value sets selected's value to
-// // index. (Setting it to false results in setting :selected to
-// std::nullopt.) template<class Accessor, class Index> struct
-// radio_accessor_for_optional : regular_accessor<bool>
-// {
-//     radio_accessor_for_optional(
-//         Accessor const& selected,
-//         Index const& index)
-//       : selected_(selected), index_(index)
-//     {}
-//     bool is_gettable() const
-//     { return selected_.is_gettable() && index_.is_gettable(); }
-//     bool const& get() const
-//     { return lazy_getter_.get(*this); }
-//     bool is_settable() const
-//     { return selected_.is_settable() && index_.is_gettable(); }
-//     void set(bool const& value) const
-//     {
-//         if(value)
-//             selected_.set(some(index_.get()));
-//         else
-//             selected_.set(std::nullopt);
-//     }
-//  private:
-//     friend struct lazy_getter<bool>;
-//     bool generate() const
-//     {
-//         auto const& selected = selected_.get();
-//         return selected && selected.get() == index_.get();
-//     }
-//     Accessor selected_;
-//     Index index_;
-//     lazy_getter<bool> lazy_getter_;
-// };
-// template<class Accessor, class Index>
-// radio_accessor_for_optional<
-//     typename copyable_accessor_helper<Accessor const&>::result_type,
-//     typename copyable_accessor_helper<Index const&>::result_type>
-// make_radio_accessor_for_optional(
-//     Accessor const& selected,
-//     Index const& index)
-// {
-//     return
-//         radio_accessor_for_optional<
-//             typename copyable_accessor_helper<Accessor const&>::result_type,
-//             typename copyable_accessor_helper<Index const&>::result_type>(
-//                 make_accessor_copyable(selected),
-//                 make_accessor_copyable(index));
-// }
 
 // TODO: Add mouse button selector.
 inline millisecond_count
@@ -907,7 +317,8 @@ render_click_flares(
     unsigned& bits,
     unsigned base_index,
     layout_vector position,
-    rgb8 color)
+    rgb8 color,
+    float radius = 32)
 {
     process_flares(
         ctx, bits, base_index + 0, [&](millisecond_count ticks_left) {
@@ -915,7 +326,7 @@ render_click_flares(
                 animation_curve{0.2, 0, 1, 1},
                 float(ticks_left) / click_flare_duration,
                 0.001));
-            float radius = float(eval_curve_at_x(
+            float radius_scale_factor = float(eval_curve_at_x(
                 animation_curve{0, 0, 0.9, 1},
                 1
                     - (std::fmax)(
@@ -930,14 +341,14 @@ render_click_flares(
             auto& event = cast_event<render_event>(ctx);
             SkCanvas& canvas = *event.canvas;
             canvas.drawPath(
-                SkPath::Circle(position[0], position[1], 32.f * radius),
+                SkPath::Circle(
+                    position[0], position[1], radius * radius_scale_factor),
                 paint);
         });
 
     process_flares(
         ctx, bits, base_index + 1, [&](millisecond_count ticks_left) {
             float intensity = float(ticks_left) / 200;
-            float radius = 1;
             SkPaint paint;
             paint.setAntiAlias(true);
             paint.setColor(SkColorSetARGB(
@@ -945,8 +356,7 @@ render_click_flares(
             auto& event = cast_event<render_event>(ctx);
             SkCanvas& canvas = *event.canvas;
             canvas.drawPath(
-                SkPath::Circle(position[0], position[1], 32.f * radius),
-                paint);
+                SkPath::Circle(position[0], position[1], radius), paint);
         });
 
     if (is_click_in_progress(ctx, id, mouse_button::LEFT)
@@ -955,7 +365,8 @@ render_click_flares(
         millisecond_count click_duration
             = get_click_duration(ctx, click_accumulation_time);
         float intensity = float(click_duration) / click_accumulation_time;
-        float radius = float(click_duration) / click_accumulation_time;
+        float radius_scale_factor
+            = float(click_duration) / click_accumulation_time;
         SkPaint paint;
         paint.setAntiAlias(true);
         paint.setColor(SkColorSetARGB(
@@ -963,7 +374,9 @@ render_click_flares(
         auto& event = cast_event<render_event>(ctx);
         SkCanvas& canvas = *event.canvas;
         canvas.drawPath(
-            SkPath::Circle(position[0], position[1], 32.f * radius), paint);
+            SkPath::Circle(
+                position[0], position[1], radius_scale_factor * radius),
+            paint);
     }
 }
 
@@ -1286,23 +699,6 @@ struct switch_data
     layout_leaf layout_node;
 };
 
-// consteval auto
-// switch_hack2()
-// {
-//     switch_bits x = std::bit_cast<switch_bits>(0);
-//     ++x.radius_animation;
-//     return std::countr_zero(std::bit_cast<unsigned>(x));
-// }
-
-// constexpr auto
-// switch_hack3()
-// {
-//     switch_bits x = std::bit_cast<switch_bits>(0xffffffff);
-//     x.radius_animation = 0;
-//     auto const raw = std::bit_cast<unsigned>(x);
-//     return 8 * sizeof(raw) - std::countl_one(raw) - std::countr_one(raw);
-// }
-
 void
 do_switch(
     ui_context ctx,
@@ -1313,16 +709,6 @@ do_switch(
     get_cached_data(ctx, &data_ptr);
     auto& data = *data_ptr;
     auto id = data_ptr;
-
-    // switch_hack3();
-
-    // auto radius_anim
-    //     = bitset_reference<switch_bits, switch_hack2(),
-    //     switch_hack3()>{
-    //         data.bits};
-    // write(radius_anim, read(radius_anim) + 1);
-    // write(radius_anim, read(radius_anim) + 1);
-    // write(radius_anim, read(radius_anim) + 1);
 
     alia_untracked_switch(get_event_category(ctx))
     {
@@ -1349,6 +735,7 @@ do_switch(
             if (detect_click(ctx, id, mouse_button::LEFT)
                 || detect_keyboard_click(ctx, data.keyboard_click_state_, id))
             {
+                fire_click_flare(ctx, data.bits, 4);
                 if (signal_has_value(checked)
                     && signal_ready_to_write(checked))
                 {
@@ -1456,7 +843,7 @@ do_switch(
             if (is_click_in_progress(ctx, id, mouse_button::LEFT)
                 || is_pressed(data.keyboard_click_state_))
             {
-                highlight = 0x80;
+                highlight = 0x40;
             }
             else if (is_click_possible(ctx, id))
             {
@@ -1475,6 +862,17 @@ do_switch(
                         24),
                     paint);
             }
+
+            render_click_flares(
+                ctx,
+                id,
+                data.bits,
+                4,
+                make_vector(
+                    region.corner[0] + region.size[0] * dot_x_offset,
+                    get_center(region)[1]),
+                color,
+                24);
         }
     }
     alia_end
@@ -3611,6 +3009,10 @@ my_ui(ui_context ctx)
 
     do_spacer(ctx, size(20, 100, PIXELS));
 
+    do_unsafe_slider(ctx, get_state(ctx, value(1.5)), 0, 5, 0.01);
+
+    do_spacer(ctx, size(20, 100, PIXELS));
+
     {
         row_layout blah(ctx);
 
@@ -3695,7 +3097,7 @@ my_ui(ui_context ctx)
     //     }
     // }
 
-    for (int i = 0; i != 10; ++i)
+    for (int i = 0; i != 0; ++i)
     {
         alia_cached_ui_block(unit_id, default_layout)
         {
