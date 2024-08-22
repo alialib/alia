@@ -351,6 +351,9 @@ template<class Value, class Capabilities>
 struct signal_ref
     : signal<signal_ref<Value, Capabilities>, Value, Capabilities>
 {
+    template<class V, class C>
+    friend struct signal_ref;
+
     // Construct from any signal with compatible capabilities.
     template<class OtherSignal, class OtherCapabilities>
     signal_ref(
