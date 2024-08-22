@@ -25,7 +25,7 @@ jobs:
 
     - uses: friendlyanon/setup-vcpkg@v1
       with:
-        committish: 2cf62623ae1d44a648c5bf3ab44aaf201aaef95e
+        committish: d8160798747ac9953d3374f9473393868d76dfe6
         path: the-vcpkg
 
     - name: Install System Dependencies
@@ -66,7 +66,7 @@ jobs:
 
     - uses: friendlyanon/setup-vcpkg@v1
       with:
-        committish: 2cf62623ae1d44a648c5bf3ab44aaf201aaef95e
+        committish: d8160798747ac9953d3374f9473393868d76dfe6
         path: the-vcpkg
 
     - name: Install
