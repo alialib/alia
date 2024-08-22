@@ -136,6 +136,10 @@ is_drag_in_progress(dataless_ui_context ctx, widget_id id, mouse_button button)
     return is_drag_in_progress(get_system(ctx), id, button);
 }
 
+bool
+detect_drag_release(
+    dataless_ui_context ctx, widget_id id, mouse_button button);
+
 std::optional<vector<2, double>>
 detect_scroll(dataless_ui_context ctx, widget_id id);
 

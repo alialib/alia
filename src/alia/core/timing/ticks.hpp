@@ -43,6 +43,7 @@ get_raw_animation_ticks_left(
 
 struct animation_timer_state
 {
+    // TODO: Combine these.
     bool active = false;
     millisecond_count end_tick;
 };
