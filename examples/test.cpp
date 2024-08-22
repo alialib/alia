@@ -404,7 +404,9 @@ do_radio_button(
     radio_button_data* data_ptr;
     get_cached_data(ctx, &data_ptr);
     auto& data = *data_ptr;
-    auto id = data_ptr;
+    auto const id = data_ptr;
+
+    auto const is_disabled = !signal_ready_to_write(selected);
 
     alia_untracked_switch(get_event_category(ctx))
     {
@@ -426,6 +428,9 @@ do_radio_button(
             break;
 
         case INPUT_CATEGORY:
+            if (is_disabled)
+                return;
+
             add_to_focus_order(ctx, id);
 
             if (detect_click(ctx, id, mouse_button::LEFT)
@@ -456,6 +461,31 @@ do_radio_button(
                 break;
 
             auto center = get_center(region);
+
+            if (is_disabled)
+            {
+                {
+                    SkPaint paint;
+                    paint.setAntiAlias(true);
+                    paint.setStyle(SkPaint::kStroke_Style);
+                    paint.setColor(SkColorSetARGB(0xff, 0x60, 0x60, 0x66));
+                    paint.setStrokeWidth(3);
+                    canvas.drawPath(
+                        SkPath::Circle(center[0], center[1], 15.f), paint);
+                }
+
+                if (condition_is_true(selected))
+                {
+                    SkPaint paint;
+                    paint.setAntiAlias(true);
+                    paint.setColor(SkColorSetARGB(0xff, 0x80, 0x80, 0x88));
+                    paint.setStrokeWidth(3);
+                    canvas.drawPath(
+                        SkPath::Circle(center[0], center[1], 10), paint);
+                }
+
+                break;
+            }
 
             uint8_t highlight = 0;
             if (is_click_in_progress(ctx, id, mouse_button::LEFT)
@@ -541,7 +571,9 @@ do_checkbox(
     checkbox_data* data_ptr;
     get_cached_data(ctx, &data_ptr);
     auto& data = *data_ptr;
-    auto id = data_ptr;
+    auto const id = data_ptr;
+
+    bool const is_disabled = !signal_ready_to_write(checked);
 
     alia_untracked_switch(get_event_category(ctx))
     {
@@ -563,6 +595,9 @@ do_checkbox(
             break;
 
         case INPUT_CATEGORY:
+            if (is_disabled)
+                break;
+
             add_to_focus_order(ctx, id);
 
             if (detect_click(ctx, id, mouse_button::LEFT)
@@ -590,6 +625,70 @@ do_checkbox(
 
             if (event.canvas->quickReject(rect))
                 break;
+
+            if (is_disabled)
+            {
+                float const padding = 11.f;
+                auto checkbox_rect = remove_border(
+                    region,
+                    box_border_width<float>(
+                        padding, padding, padding, padding));
+
+                if (condition_is_true(checked))
+                {
+                    {
+                        SkPaint paint;
+                        paint.setAntiAlias(true);
+                        paint.setStyle(SkPaint::kStrokeAndFill_Style);
+                        paint.setColor(SkColorSetARGB(0xff, 0x60, 0x60, 0x66));
+                        paint.setStrokeWidth(4);
+                        canvas.drawPath(
+                            SkPath::RRect(as_skrect(checkbox_rect), 2, 2),
+                            paint);
+                    }
+                    {
+                        SkPaint paint;
+                        paint.setAntiAlias(true);
+                        paint.setStyle(SkPaint::kStroke_Style);
+                        paint.setColor(SkColorSetARGB(0xff, 0x20, 0x20, 0x20));
+                        paint.setStrokeWidth(4);
+                        paint.setStrokeCap(SkPaint::kSquare_Cap);
+                        SkPath path;
+                        path.incReserve(3);
+                        SkPoint p0;
+                        p0.fX = checkbox_rect.corner[0]
+                                + checkbox_rect.size[0] * 0.2f;
+                        p0.fY = checkbox_rect.corner[1]
+                                + checkbox_rect.size[1] * 0.5f;
+                        path.moveTo(p0);
+                        SkPoint p1;
+                        p1.fX = checkbox_rect.corner[0]
+                                + checkbox_rect.size[0] * 0.4f;
+                        p1.fY = checkbox_rect.corner[1]
+                                + checkbox_rect.size[1] * 0.7f;
+                        path.lineTo(p1);
+                        SkPoint p2;
+                        p2.fX = checkbox_rect.corner[0]
+                                + checkbox_rect.size[0] * 0.8f;
+                        p2.fY = checkbox_rect.corner[1]
+                                + checkbox_rect.size[1] * 0.3f;
+                        path.lineTo(p2);
+                        canvas.drawPath(path, paint);
+                    }
+                }
+                else
+                {
+                    SkPaint paint;
+                    paint.setAntiAlias(true);
+                    paint.setStyle(SkPaint::kStroke_Style);
+                    paint.setColor(SkColorSetARGB(0xff, 0x60, 0x60, 0x66));
+                    paint.setStrokeWidth(4);
+                    canvas.drawPath(
+                        SkPath::RRect(as_skrect(checkbox_rect), 2, 2), paint);
+                }
+
+                break;
+            }
 
             auto center = get_center(region);
 
@@ -702,13 +801,15 @@ struct switch_data
 void
 do_switch(
     ui_context ctx,
-    duplex<bool> checked,
+    duplex<bool> state,
     layout const& layout_spec = layout(TOP | LEFT | PADDED))
 {
     switch_data* data_ptr;
     get_cached_data(ctx, &data_ptr);
     auto& data = *data_ptr;
-    auto id = data_ptr;
+    auto const id = data_ptr;
+
+    bool const is_disabled = !signal_ready_to_write(state);
 
     alia_untracked_switch(get_event_category(ctx))
     {
@@ -730,16 +831,18 @@ do_switch(
             break;
 
         case INPUT_CATEGORY:
+            if (is_disabled)
+                break;
+
             add_to_focus_order(ctx, id);
 
             if (detect_click(ctx, id, mouse_button::LEFT)
                 || detect_keyboard_click(ctx, data.keyboard_click_state_, id))
             {
                 fire_click_flare(ctx, data.bits, 4);
-                if (signal_has_value(checked)
-                    && signal_ready_to_write(checked))
+                if (signal_has_value(state) && signal_ready_to_write(state))
                 {
-                    write_signal(checked, !read_signal(checked));
+                    write_signal(state, !read_signal(state));
                 }
                 abort_traversal(ctx);
             }
@@ -762,11 +865,55 @@ do_switch(
             if (event.canvas->quickReject(rect))
                 break;
 
+            if (is_disabled)
+            {
+                {
+                    auto const track_color = rgb8(0x48, 0x48, 0x4b);
+                    SkPaint paint;
+                    paint.setAntiAlias(true);
+                    paint.setColor(SkColorSetARGB(
+                        0xff, track_color.r, track_color.g, track_color.b));
+                    paint.setStyle(SkPaint::kStroke_Style);
+                    paint.setStrokeCap(SkPaint::kRound_Cap);
+                    paint.setStrokeWidth(16);
+                    canvas.drawPath(
+                        SkPath::Line(
+                            SkPoint::Make(
+                                region.corner[0] + region.size[0] * 0.25f,
+                                get_center(region)[1]),
+                            SkPoint::Make(
+                                region.corner[0] + region.size[0] * 0.75f,
+                                get_center(region)[1])),
+                        paint);
+                }
+
+                {
+                    float const dot_x_offset
+                        = condition_is_true(state) ? 0.75f : 0.25f;
+
+                    float dot_radius = condition_is_true(state) ? 16.f : 14.f;
+
+                    auto const color = rgb8(0x60, 0x60, 0x66);
+                    SkPaint paint;
+                    paint.setAntiAlias(true);
+                    paint.setColor(
+                        SkColorSetARGB(0xff, color.r, color.g, color.b));
+                    canvas.drawPath(
+                        SkPath::Circle(
+                            region.corner[0] + region.size[0] * dot_x_offset,
+                            get_center(region)[1],
+                            dot_radius),
+                        paint);
+                }
+
+                break;
+            }
+
             float switch_position = smooth_between_values(
                 ctx,
                 data.bits,
                 0,
-                condition_is_true(checked),
+                condition_is_true(state),
                 1.f,
                 0.f,
                 animated_transition{default_curve, 200});
@@ -3021,8 +3168,9 @@ my_ui(ui_context ctx)
         {
             column_layout col(ctx);
 
-            do_switch(ctx, get_state(ctx, false));
-            do_switch(ctx, get_state(ctx, true));
+            auto state1 = get_state(ctx, false);
+            do_switch(ctx, disable_writes(state1));
+            do_switch(ctx, state1);
             do_switch(ctx, get_state(ctx, false));
             do_switch(ctx, get_state(ctx, false));
         }
@@ -3031,16 +3179,17 @@ my_ui(ui_context ctx)
 
         {
             column_layout col(ctx);
+            auto state1 = get_state(ctx, false);
             {
                 row_layout row(ctx);
-                do_checkbox(ctx, get_state(ctx, false));
+                do_checkbox(ctx, disable_writes(state1));
                 // scoped_transformation transform(
                 //     ctx, translation_matrix(make_vector(0., 1.)));
                 do_text(ctx, direct(my_style), value("One"), CENTER_Y);
             }
             {
                 row_layout row(ctx);
-                do_checkbox(ctx, get_state(ctx, true));
+                do_checkbox(ctx, state1);
                 // scoped_transformation transform(
                 //     ctx, translation_matrix(make_vector(0., 1.)));
                 do_text(ctx, direct(my_style), value("Two"), CENTER_Y);
@@ -3060,7 +3209,9 @@ my_ui(ui_context ctx)
             column_layout col(ctx);
             {
                 row_layout row(ctx);
-                do_radio_button(ctx, make_radio_signal(selected, value(1)));
+                do_radio_button(
+                    ctx,
+                    disable_writes(make_radio_signal(selected, value(2))));
                 do_text(ctx, direct(my_style), value("One"), CENTER_Y);
             }
             {
