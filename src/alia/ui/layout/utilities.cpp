@@ -49,9 +49,9 @@ add_layout_node(layout_traversal& traversal, layout_node* node)
 void
 layout_container::record_content_change(layout_traversal& traversal)
 {
-    if (this->last_content_change != traversal.refresh_counter)
+    if (!cache_is_fully_invalid(this->cacher))
     {
-        this->last_content_change = traversal.refresh_counter;
+        invalidate_cached_layout(this->cacher);
         if (this->parent)
             this->parent->record_content_change(traversal);
     }
@@ -198,10 +198,10 @@ resolve_relative_length(
     return length.is_relative
                ? length.length * full_length
                : resolve_absolute_length(
-                   ppi,
-                   style_info,
-                   axis,
-                   absolute_length(length.length, length.units));
+                     ppi,
+                     style_info,
+                     axis,
+                     absolute_length(length.length, length.units));
 }
 
 vector<2, float>
@@ -432,12 +432,6 @@ update_layout_cacher(
     resolve_layout_spec(traversal, resolved_spec, layout_spec, default_flags);
     return detect_layout_change(
         traversal, &cacher.resolved_spec, resolved_spec);
-}
-
-void
-initialize(layout_traversal& traversal, layout_container& container)
-{
-    container.last_content_change = traversal.refresh_counter;
 }
 
 bool

@@ -116,17 +116,77 @@ struct layout_node
     layout_node* next = nullptr;
 };
 
+// The layout spec supplied by the application must be resolved based on the
+// current proporties of the UI context and the default layout properties of
+// the UI element that the spec is applied to. This is done by calling
+// resolve_layout_spec, which fills out a resolved_layout_spec.
+struct resolved_layout_spec
+{
+    layout_vector size;
+    layout_flag_set flags;
+    float growth_factor;
+    layout_vector padding_size;
+
+    resolved_layout_spec()
+    {
+    }
+    resolved_layout_spec(
+        layout_vector const& size,
+        layout_flag_set flags,
+        float growth_factor,
+        layout_vector const& padding_size)
+        : size(size),
+          flags(flags),
+          growth_factor(growth_factor),
+          padding_size(padding_size)
+    {
+    }
+};
+bool
+operator==(resolved_layout_spec const& a, resolved_layout_spec const& b);
+bool
+operator!=(resolved_layout_spec const& a, resolved_layout_spec const& b);
+void
+resolve_layout_spec(
+    layout_traversal& traversal,
+    resolved_layout_spec& resolved,
+    layout const& spec,
+    layout_flag_set default_flags);
+
+// layout_cacher is a utility used by layout containers to cache the results
+// of their layout calculations.
+struct layout_cacher
+{
+    unsigned bits = 0;
+    static unsigned constexpr horizontal_query_results_valid = 0;
+    static unsigned constexpr vertical_query_results_valid = 1;
+    static unsigned constexpr assignment_valid = 2;
+
+    // the resolved layout spec supplied by the user
+    resolved_layout_spec resolved_spec;
+
+    // the cached horizontal requirements
+    layout_requirements horizontal_requirements;
+
+    // the assigned_width associated with the last vertical query
+    layout_scalar assigned_width;
+    // the result of that query
+    layout_requirements vertical_requirements;
+
+    // the last value that was passed to set_relative_assignment
+    relative_layout_assignment relative_assignment;
+    // the actual assignment that that value resolved to
+    relative_layout_assignment resolved_relative_assignment;
+};
+
 // All nodes in a layout tree with children derive from this.
 struct layout_container : layout_node
 {
+    layout_cacher cacher;
+
     layout_node* children = nullptr;
 
     layout_container* parent = nullptr;
-
-    // This records the last refresh in which the contents of the container
-    // changed. It's updated during the refresh pass and is used to determine
-    // when the container's layout needs to be recomputed.
-    counter_type last_content_change = 1;
 
     virtual void
     record_content_change(layout_traversal& traversal);
@@ -136,7 +196,6 @@ struct layout_container : layout_node
 // layout system.
 struct layout_system
 {
-    counter_type refresh_counter = 1;
     layout_node* root_node = nullptr;
 };
 

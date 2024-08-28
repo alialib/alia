@@ -629,6 +629,7 @@ TEST_CASE("layout tests", "[ui]")
         layout_system system;
         data_graph graph;
 
+        for (int i = 0; i != 200; ++i)
         {
             data_traversal data_traversal;
             scoped_data_traversal sdt(graph, data_traversal);
@@ -656,10 +657,13 @@ TEST_CASE("layout tests", "[ui]")
                     uniform_grid_layout grid(ctx);
                     {
                         column_layout nested_column(ctx, LEFT);
+                        for (int j = 0; j != 100; ++j)
                         {
                             uniform_grid_row row(grid);
                             do_spacer(ctx, size(20, 20, PIXELS));
-                            do_spacer(ctx, size(20, 10, PIXELS));
+                            do_spacer(
+                                ctx,
+                                size(20, float((i >> 2) & 7) * 5, PIXELS));
                         }
                         do_test_leaf1(ctx, layout(size(10, 20, PIXELS), FILL));
                     }

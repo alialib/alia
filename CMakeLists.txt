@@ -101,13 +101,19 @@ if (ALIA_IS_MAIN_PROJECT)
         # TODO: Use CMAKE_MSVC_DEBUG_INFORMATION_FORMAT once it's more widely
         # supported:
         # set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT
-        #    "$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>")
-        string(REGEX REPLACE "/Zi" "/ZI"
-            CMAKE_CXX_FLAGS_RELWITHDEBINFO
-            "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
+        #     "$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>")
+        # string(REGEX REPLACE "/Zi" "/ZI"
+        #     CMAKE_CXX_FLAGS_RELWITHDEBINFO
+        #     "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
         string(REGEX REPLACE "/Zi" "/ZI"
             CMAKE_CXX_FLAGS_DEBUG
             "${CMAKE_CXX_FLAGS_DEBUG}")
+        # Enable profiling.
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /PROFILE")
+        # Use full optimizations for profiling.
+        string(REGEX REPLACE "/Ob1" "/Ob2"
+            CMAKE_CXX_FLAGS_RELWITHDEBINFO
+            "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
         # Use absolute paths for error messages.
         add_compile_options(/FC)
     endif()

@@ -53,7 +53,7 @@ TEST_CASE("node IDs", "[flow][events]")
     alia::test_system sys;
     initialize_test_system(sys, [](core_context) {});
 
-    REQUIRE(!is_valid(null_component_id));
+    REQUIRE(!null_component_id);
 
     std::vector<external_component_id> ids;
 
@@ -65,8 +65,8 @@ TEST_CASE("node IDs", "[flow][events]")
     refresh_system(sys);
 
     REQUIRE(ids.size() == 2);
-    REQUIRE(is_valid(ids[0]));
-    REQUIRE(is_valid(ids[1]));
+    REQUIRE(ids[0]);
+    REQUIRE(ids[1]);
 
     {
         my_event event;
