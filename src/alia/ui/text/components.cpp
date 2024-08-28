@@ -135,43 +135,37 @@ struct wrapped_text_node : layout_node
     layout_requirements
     get_horizontal_requirements() override
     {
-        return cache_horizontal_layout_requirements(
-            cacher, this->last_content_change, [&] {
-                // TODO: What should the actual minimum width be here?
-                return calculated_layout_requirements{12, 0, 0};
-            });
+        return cache_horizontal_layout_requirements(cacher, [&] {
+            // TODO: What should the actual minimum width be here?
+            return calculated_layout_requirements{12, 0, 0};
+        });
     }
     layout_requirements
     get_vertical_requirements(layout_scalar assigned_width) override
     {
-        return cache_vertical_layout_requirements(
-            cacher, this->last_content_change, assigned_width, [&] {
-                if (this->shape_width != assigned_width)
-                {
-                    this->shape = Shape(
-                        this->text.c_str(),
-                        this->text.size(),
-                        *this->font,
-                        assigned_width);
-                    this->shape_width = assigned_width;
-                }
+        return cache_vertical_layout_requirements(cacher, assigned_width, [&] {
+            if (this->shape_width != assigned_width)
+            {
+                this->shape = Shape(
+                    this->text.c_str(),
+                    this->text.size(),
+                    *this->font,
+                    assigned_width);
+                this->shape_width = assigned_width;
+            }
 
-                return calculated_layout_requirements{
-                    layout_scalar(this->shape.verticalAdvance),
-                    0 /* TODO: ascent */,
-                    0 /* TODO: descent */};
-            });
+            return calculated_layout_requirements{
+                layout_scalar(this->shape.verticalAdvance),
+                0 /* TODO: ascent */,
+                0 /* TODO: descent */};
+        });
     }
     void
     set_relative_assignment(
         relative_layout_assignment const& assignment) override
     {
         update_relative_assignment(
-            *this,
-            this->cacher,
-            this->last_content_change,
-            assignment,
-            [&](auto const&) {});
+            *this, this->cacher, assignment, [&](auto const&) {});
     }
 
     captured_id text_id;
@@ -183,8 +177,6 @@ struct wrapped_text_node : layout_node
     ShapeResult shape;
 
     SkFont* font;
-
-    counter_type last_content_change = 0;
 };
 
 void
@@ -219,22 +211,14 @@ do_wrapped_text(
                     record_layout_change(get_layout_traversal(ctx));
                     node.shape_width = 0;
                     node.shape = ShapeResult();
-                    node.last_content_change
-                        = get_layout_traversal(ctx).refresh_counter;
+                    invalidate_cached_layout(this->cacher);
                 });
 
-            if (update_layout_cacher(
-                    get_layout_traversal(ctx),
-                    node.cacher,
-                    layout_spec,
-                    TOP | LEFT | PADDED))
-            {
-                // Since this container isn't active yet, it didn't get
-                // marked as needing recalculation, so we need to do that
-                // manually here.
-                node.last_content_change
-                    = get_layout_traversal(ctx).refresh_counter;
-            }
+            update_layout_cacher(
+                get_layout_traversal(ctx),
+                node.cacher,
+                layout_spec,
+                TOP | LEFT | PADDED);
 
             add_layout_node(get<ui_traversal_tag>(ctx).layout, &node);
 

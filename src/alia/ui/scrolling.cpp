@@ -606,9 +606,6 @@ struct scrollable_layout_container : layout_container
     // associated data
     scrollable_view_data* data_;
 
-    // layout cacher
-    layout_cacher cacher_;
-
     // logic for internal layout
     column_layout_logic logic_;
 };
@@ -661,7 +658,7 @@ is_axis_reserved(scrollable_view_data const& data, unsigned axis)
 layout_box
 get_scrollbar_region(scrollable_view_data const& data, unsigned axis)
 {
-    auto const& cacher = data.container.cacher_;
+    auto const& cacher = data.container.cacher;
     layout_box region = get_assignment(cacher).region;
     region.corner[1 - axis]
         += region.size[1 - axis] - get_scrollbar_width(data.sb_data[axis]);
@@ -684,26 +681,25 @@ layout_requirements
 scrollable_layout_container::get_horizontal_requirements()
 {
     auto& data = *data_;
-    return cache_horizontal_layout_requirements(
-        cacher_, this->last_content_change, [&] {
-            if ((data.scrollable_axes & 1) != 0)
-            {
-                // If the window is horizontally scrollable, then we only
-                // need enough space for scrolling to happen.
-                return calculated_layout_requirements{
-                    data.minimum_window_size, 0, 0};
-            }
-            else
-            {
-                // Otherwise, we need to calculate the requirements.
-                calculated_layout_requirements x
-                    = logic_.get_horizontal_requirements(children);
-                layout_scalar required_width = x.size;
-                if ((data.scrollable_axes & 2) != 0)
-                    required_width += get_scrollbar_width(data.sb_data[1]);
-                return calculated_layout_requirements{required_width, 0, 0};
-            }
-        });
+    return cache_horizontal_layout_requirements(this->cacher, [&] {
+        if ((data.scrollable_axes & 1) != 0)
+        {
+            // If the window is horizontally scrollable, then we only
+            // need enough space for scrolling to happen.
+            return calculated_layout_requirements{
+                data.minimum_window_size, 0, 0};
+        }
+        else
+        {
+            // Otherwise, we need to calculate the requirements.
+            calculated_layout_requirements x
+                = logic_.get_horizontal_requirements(children);
+            layout_scalar required_width = x.size;
+            if ((data.scrollable_axes & 2) != 0)
+                required_width += get_scrollbar_width(data.sb_data[1]);
+            return calculated_layout_requirements{required_width, 0, 0};
+        }
+    });
 }
 
 layout_requirements
@@ -712,7 +708,7 @@ scrollable_layout_container::get_vertical_requirements(
 {
     auto& data = *data_;
     return cache_vertical_layout_requirements(
-        cacher_, this->last_content_change, assigned_width, [&] {
+        this->cacher, assigned_width, [&] {
             if ((data.scrollable_axes & 2) != 0)
             {
                 // If the window is vertically scrollable, then we only
@@ -725,7 +721,7 @@ scrollable_layout_container::get_vertical_requirements(
                 // Otherwise, we need to calculate the requirements.
                 auto x = this->get_horizontal_requirements();
                 layout_scalar resolved_width = resolve_assigned_width(
-                    cacher_.resolved_spec, assigned_width, x);
+                    this->cacher.resolved_spec, assigned_width, x);
                 layout_scalar actual_width
                     = (std::max)(resolved_width, x.size);
                 calculated_layout_requirements y
@@ -746,11 +742,7 @@ scrollable_layout_container::set_relative_assignment(
     auto& data = *data_;
     // std::cout << "(scrollable) sra: " << assignment.region << std::endl;
     update_relative_assignment(
-        *this,
-        cacher_,
-        this->last_content_change,
-        assignment,
-        [&](auto const& resolved_assignment) {
+        *this, this->cacher, assignment, [&](auto const& resolved_assignment) {
             // Assigning a region to scrolled content means establishing the
             // dimensions of the virtual region that we're scrolling over, and
             // this means we need to decide which scrollbars will actually be
@@ -1199,14 +1191,14 @@ scoped_scrollable_view::begin(
 
         update_layout_cacher(
             get_layout_traversal(ctx),
-            data.container.cacher_,
+            data.container.cacher,
             layout_spec,
             FILL | UNPADDED);
     }
     alia_untracked_else
     {
         layout_vector window_corner
-            = get_assignment(data.container.cacher_).region.corner;
+            = get_assignment(data.container.cacher).region.corner;
 
         if (get_event_category(ctx) == REGION_CATEGORY)
         {
