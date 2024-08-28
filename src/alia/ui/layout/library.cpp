@@ -1028,7 +1028,6 @@ struct grid_data
 
     // requirements for the columns
     grid_column_requirements<Uniformity> requirements;
-    counter_type last_content_query = 0;
 
     // cached vertical requirements
     cached_grid_vertical_requirements<Uniformity> vertical_requirements_cache;
@@ -1054,11 +1053,8 @@ struct grid_row_container : layout_container
     void
     record_self_change(layout_traversal& traversal);
 
-    layout_cacher cacher;
-
     // cached requirements for cells within this row
     grid_column_requirements<Uniformity> requirements;
-    counter_type last_content_query;
 
     // reference to the data for the grid that this row belongs to
     grid_data<Uniformity>* grid;
@@ -1066,7 +1062,7 @@ struct grid_row_container : layout_container
     // next row in this grid
     grid_row_container* next;
 
-    grid_row_container() : last_content_query(0)
+    grid_row_container()
     {
     }
 };
@@ -1076,30 +1072,22 @@ template<class Uniformity>
 void
 update_grid_column_requirements(grid_data<Uniformity>& grid)
 {
-    // Only update if something in the grid has changed since the last
-    // update.
-    if (grid.last_content_query != grid.container->last_content_change)
+    // Clear the requirements for the grid and recompute them by
+    // iterating through the rows and folding each row's requirements
+    // into the main grid requirements.
+    clear_requirements(grid.requirements);
+    for (grid_row_container<Uniformity>* row = grid.rows; row; row = row->next)
     {
-        // Clear the requirements for the grid and recompute them by
-        // iterating through the rows and folding each row's requirements
-        // into the main grid requirements.
-        clear_requirements(grid.requirements);
-        for (grid_row_container<Uniformity>* row = grid.rows; row;
-             row = row->next)
+        // Only update if something in the row has changed.
+        if (!cache_is_fully_valid(row.cacher))
         {
-            // Again, only update if something in the row has changed.
-            if (row->last_content_query != row->last_content_change)
-            {
-                clear_requirements(row->requirements);
-                walk_layout_children(row->children, [&](layout_node& node) {
-                    layout_requirements x = node.get_horizontal_requirements();
-                    add_requirements(row->requirements, x);
-                });
-                row->last_content_query = row->last_content_change;
-            }
-            fold_in_requirements(grid.requirements, row->requirements);
+            clear_requirements(row->requirements);
+            walk_layout_children(row->children, [&](layout_node& node) {
+                layout_requirements x = node.get_horizontal_requirements();
+                add_requirements(row->requirements, x);
+            });
         }
-        grid.last_content_query = grid.container->last_content_change;
+        fold_in_requirements(grid.requirements, row->requirements);
     }
 }
 

@@ -16,7 +16,6 @@ initialize_layout_traversal(
     traversal.active_container = 0;
     traversal.next_ptr = &system.root_node;
     traversal.is_refresh_pass = is_refresh;
-    traversal.refresh_counter = system.refresh_counter;
     traversal.geometry = geometry;
     traversal.style_info = style;
     traversal.ppi = ppi;
@@ -38,10 +37,6 @@ void
 resolve_layout(layout_system& system, layout_vector const& size)
 {
     resolve_layout(system.root_node, size);
-    // Increment the refresh counter immediately after resolving layout so
-    // that any changes detected after this will be associated with the new
-    // counter value and thus cause a recalculation.
-    ++system.refresh_counter;
 }
 
 layout_vector

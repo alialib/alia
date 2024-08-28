@@ -1,6 +1,7 @@
 #ifndef ALIA_UI_LAYOUT_UTILITIES_HPP
 #define ALIA_UI_LAYOUT_UTILITIES_HPP
 
+#include <alia/core/bit_ops.hpp>
 #include <alia/ui/layout/internals.hpp>
 
 // This file defines various utilities for working with the layout system.
@@ -16,12 +17,12 @@ namespace alia {
 inline layout_scalar
 as_layout_size(double x)
 {
-    return layout_scalar(std::ceil(x));
+    return layout_scalar(x);
 }
 inline layout_scalar
 as_layout_size(float x)
 {
-    return layout_scalar(std::ceil(x));
+    return layout_scalar(x);
 }
 inline layout_scalar
 as_layout_size(int x)
@@ -227,43 +228,6 @@ remove_border(
                 border.left + border.right, border.top + border.bottom));
 }
 
-// The layout spec supplied by the application must be resolved based on the
-// current proporties of the UI context and the default layout properties of
-// the UI element that the spec is applied to. This is done by calling
-// resolve_layout_spec, which fills out a resolved_layout_spec.
-struct resolved_layout_spec
-{
-    layout_vector size;
-    layout_flag_set flags;
-    float growth_factor;
-    layout_vector padding_size;
-
-    resolved_layout_spec()
-    {
-    }
-    resolved_layout_spec(
-        layout_vector const& size,
-        layout_flag_set flags,
-        float growth_factor,
-        layout_vector const& padding_size)
-        : size(size),
-          flags(flags),
-          growth_factor(growth_factor),
-          padding_size(padding_size)
-    {
-    }
-};
-bool
-operator==(resolved_layout_spec const& a, resolved_layout_spec const& b);
-bool
-operator!=(resolved_layout_spec const& a, resolved_layout_spec const& b);
-void
-resolve_layout_spec(
-    layout_traversal& traversal,
-    resolved_layout_spec& resolved,
-    layout const& spec,
-    layout_flag_set default_flags);
-
 // The layout of a UI element is also dependent on the calculated minimum
 // requirements for that element.
 struct calculated_layout_requirements
@@ -320,32 +284,24 @@ resolve_relative_assignment(
     layout_requirements const& horizontal_requirements,
     layout_requirements const& vertical_requirements);
 
-// layout_cacher is a utility used by layout containers to cache the results
-// of their layout calculations.
-struct layout_cacher
+inline bool
+cache_is_fully_invalid(layout_cacher& cacher)
 {
-    // the resolved layout spec supplied by the user
-    resolved_layout_spec resolved_spec;
+    return cacher.bits == 0;
+}
 
-    // the last frame in which there was a horizontal requirements query
-    counter_type last_horizontal_query = 0;
-    // the result of that query
-    layout_requirements horizontal_requirements;
+inline bool
+cache_is_fully_valid(layout_cacher& cacher)
+{
+    return cacher.bits == 7;
+}
 
-    // the last frame in which there was a vertical requirements query
-    counter_type last_vertical_query = 0;
-    // the assigned_width associated with that query
-    layout_scalar assigned_width;
-    // the result of that query
-    layout_requirements vertical_requirements;
+void
+invalidate_cached_layout(layout_cacher& cacher)
+{
+    cacher.bits = 0;
+}
 
-    // last time set_relative_assignment was called
-    counter_type last_relative_assignment = 0;
-    // the last value that was passed to set_relative_assignment
-    relative_layout_assignment relative_assignment;
-    // the actual assignment that that value resolved to
-    relative_layout_assignment resolved_relative_assignment;
-};
 bool
 update_layout_cacher(
     layout_traversal& traversal,
@@ -356,18 +312,16 @@ update_layout_cacher(
 template<class Calculator>
 layout_requirements const&
 cache_horizontal_layout_requirements(
-    layout_cacher& cacher,
-    counter_type last_content_change,
-    Calculator&& calculator)
+    layout_cacher& cacher, Calculator&& calculator)
 {
-    if (cacher.last_horizontal_query != last_content_change)
+    if (!read_bit(cacher.bits, layout_cacher::horizontal_query_results_valid))
     {
         resolve_requirements(
             cacher.horizontal_requirements,
             cacher.resolved_spec,
             0,
             std::forward<Calculator>(calculator)());
-        cacher.last_horizontal_query = last_content_change;
+        set_bit(cacher.bits, layout_cacher::horizontal_query_results_valid);
     }
     return cacher.horizontal_requirements;
 }
@@ -376,19 +330,18 @@ template<class Calculator>
 layout_requirements const&
 cache_vertical_layout_requirements(
     layout_cacher& cacher,
-    counter_type last_content_change,
     layout_scalar assigned_width,
     Calculator&& calculator)
 {
     if (cacher.assigned_width != assigned_width
-        || cacher.last_vertical_query != last_content_change)
+        || !read_bit(cacher.bits, layout_cacher::vertical_query_results_valid))
     {
         resolve_requirements(
             cacher.vertical_requirements,
             cacher.resolved_spec,
             1,
             std::forward<Calculator>(calculator)());
-        cacher.last_vertical_query = last_content_change;
+        set_bit(cacher.bits, layout_cacher::vertical_query_results_valid);
         cacher.assigned_width = assigned_width;
     }
     return cacher.vertical_requirements;
@@ -399,11 +352,10 @@ void
 update_relative_assignment(
     layout_node& node,
     layout_cacher& cacher,
-    counter_type last_content_change,
     relative_layout_assignment const& assignment,
     Assigner&& assigner)
 {
-    if (cacher.last_relative_assignment != last_content_change
+    if (!read_bit(cacher.bits, layout_cacher::assignment_valid)
         || cacher.relative_assignment != assignment)
     {
         auto resolved_assignment = resolve_relative_assignment(
@@ -411,14 +363,14 @@ update_relative_assignment(
             assignment,
             cacher.horizontal_requirements,
             node.get_vertical_requirements(assignment.region.size[0]));
-        if (cacher.last_relative_assignment != last_content_change
+        if (!read_bit(cacher.bits, layout_cacher::assignment_valid)
             || cacher.resolved_relative_assignment.region.size
                    != resolved_assignment.region.size
             || cacher.resolved_relative_assignment.baseline_y
                    != resolved_assignment.baseline_y)
         {
             std::forward<Assigner>(assigner)(resolved_assignment);
-            cacher.last_relative_assignment = last_content_change;
+            set_bit(cacher.bits, layout_cacher::assignment_valid);
         }
         cacher.resolved_relative_assignment = resolved_assignment;
         cacher.relative_assignment = assignment;
@@ -443,24 +395,22 @@ struct simple_layout_container : layout_container
     layout_requirements
     get_horizontal_requirements() override
     {
-        return cache_horizontal_layout_requirements(
-            cacher, last_content_change, [&] {
-                return logic.get_horizontal_requirements(children);
-            });
+        return cache_horizontal_layout_requirements(cacher, [&] {
+            return logic.get_horizontal_requirements(children);
+        });
     }
 
     layout_requirements
     get_vertical_requirements(layout_scalar assigned_width) override
     {
-        return cache_vertical_layout_requirements(
-            cacher, last_content_change, assigned_width, [&] {
-                return logic.get_vertical_requirements(
-                    children,
-                    resolve_assigned_width(
-                        this->cacher.resolved_spec,
-                        assigned_width,
-                        this->get_horizontal_requirements()));
-            });
+        return cache_vertical_layout_requirements(cacher, assigned_width, [&] {
+            return logic.get_vertical_requirements(
+                children,
+                resolve_assigned_width(
+                    this->cacher.resolved_spec,
+                    assigned_width,
+                    this->get_horizontal_requirements()));
+        });
     }
 
     void
@@ -468,11 +418,7 @@ struct simple_layout_container : layout_container
         relative_layout_assignment const& assignment) override
     {
         update_relative_assignment(
-            *this,
-            cacher,
-            last_content_change,
-            assignment,
-            [&](auto const& resolved_assignment) {
+            *this, cacher, assignment, [&](auto const& resolved_assignment) {
                 this->assigned_size = resolved_assignment.region.size;
                 logic.set_relative_assignment(
                     children,
@@ -482,8 +428,6 @@ struct simple_layout_container : layout_container
     }
 
     Logic logic;
-
-    layout_cacher cacher;
 
     layout_vector assigned_size;
 };
@@ -504,13 +448,8 @@ get_simple_layout_container(
 
     if (is_refresh_pass(traversal))
     {
-        if (update_layout_cacher(
-                traversal, (*container)->cacher, layout_spec, FILL | UNPADDED))
-        {
-            // Since this container isn't active yet, it didn't get marked as
-            // needing recalculation, so we need to do that manually here.
-            (*container)->last_content_change = traversal.refresh_counter;
-        }
+        update_layout_cacher(
+            traversal, (*container)->cacher, layout_spec, FILL | UNPADDED);
     }
 
     *logic = &(*container)->logic;
