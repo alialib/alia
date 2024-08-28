@@ -176,6 +176,12 @@ struct state_test_object
 {
     int x;
 
+    state_test_object() : x(0)
+    {
+    }
+    state_test_object(int x) : x(x)
+    {
+    }
     state_test_object(state_test_object const&) = delete;
     state_test_object&
     operator=(state_test_object const&)
@@ -184,7 +190,6 @@ struct state_test_object
     state_test_object&
     operator=(state_test_object&&)
         = default;
-    state_test_object() = default;
 };
 
 } // namespace
