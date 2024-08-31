@@ -189,7 +189,7 @@ struct layout_container : layout_node
     layout_container* parent = nullptr;
 
     virtual void
-    record_content_change(layout_traversal& traversal);
+    record_content_change();
 };
 
 // layout_system stores the persistent state associated with an instance of the
