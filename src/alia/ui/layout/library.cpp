@@ -904,6 +904,8 @@ struct grid_column_requirements
 template<>
 struct grid_column_requirements<nonuniform_grid_tag>
 {
+    // TODO: Store this in-object somehow. (Usually, the column will have a
+    // fixed number of columns anyway.)
     std::vector<layout_requirements> columns;
 };
 // In uniform grids, the columns all share the same requirements.
@@ -1006,13 +1008,23 @@ struct cached_grid_vertical_requirements
 {
 };
 
+inline void
+invalidate(cached_grid_vertical_requirements<nonuniform_grid_tag>&)
+{
+}
+
 template<>
 struct cached_grid_vertical_requirements<uniform_grid_tag>
 {
     calculated_layout_requirements requirements;
-    counter_type last_update = 1;
     layout_scalar assigned_width = 0;
 };
+
+inline void
+invalidate(cached_grid_vertical_requirements<uniform_grid_tag>& grid)
+{
+    grid.assigned_width = -1;
+}
 
 template<class Uniformity>
 struct grid_data
@@ -1033,8 +1045,12 @@ struct grid_data
     cached_grid_vertical_requirements<Uniformity> vertical_requirements_cache;
 
     // cached assignments
+    // TODO: Give the option to avoid using a vector here.
     std::vector<layout_scalar> assignments;
-    counter_type last_assignments_update;
+    // TODO: Combine this with other flags.
+    bool assignments_valid = false;
+    // TODO: Combine this with other flags.
+    bool requirements_valid = false;
 };
 
 template<class Uniformity>
@@ -1049,22 +1065,20 @@ struct grid_row_container : layout_container
     set_relative_assignment(relative_layout_assignment const& assignment);
 
     void
-    record_content_change(layout_traversal& traversal);
+    record_content_change();
     void
-    record_self_change(layout_traversal& traversal);
+    record_self_change();
 
     // cached requirements for cells within this row
     grid_column_requirements<Uniformity> requirements;
+    // TODO: Merge this in somewhere else.
+    bool requirements_valid = false;
 
     // reference to the data for the grid that this row belongs to
     grid_data<Uniformity>* grid;
 
     // next row in this grid
     grid_row_container* next;
-
-    grid_row_container()
-    {
-    }
 };
 
 // Update the requirements for a grid's columns by querying its contents.
@@ -1072,22 +1086,27 @@ template<class Uniformity>
 void
 update_grid_column_requirements(grid_data<Uniformity>& grid)
 {
-    // Clear the requirements for the grid and recompute them by
-    // iterating through the rows and folding each row's requirements
-    // into the main grid requirements.
-    clear_requirements(grid.requirements);
-    for (grid_row_container<Uniformity>* row = grid.rows; row; row = row->next)
+    if (!grid.requirements_valid)
     {
-        // Only update if something in the row has changed.
-        if (!cache_is_fully_valid(row.cacher))
+        // Clear the requirements for the grid and recompute them by
+        // iterating through the rows and folding each row's requirements
+        // into the main grid requirements.
+        clear_requirements(grid.requirements);
+        for (grid_row_container<Uniformity>* row = grid.rows; row;
+             row = row->next)
         {
-            clear_requirements(row->requirements);
-            walk_layout_children(row->children, [&](layout_node& node) {
-                layout_requirements x = node.get_horizontal_requirements();
-                add_requirements(row->requirements, x);
-            });
+            if (!row->requirements_valid)
+            {
+                clear_requirements(row->requirements);
+                walk_layout_children(row->children, [&](layout_node& node) {
+                    layout_requirements x = node.get_horizontal_requirements();
+                    add_requirements(row->requirements, x);
+                });
+                row->requirements_valid = true;
+            }
+            fold_in_requirements(grid.requirements, row->requirements);
         }
-        fold_in_requirements(grid.requirements, row->requirements);
+        grid.requirements_valid = true;
     }
 }
 
@@ -1119,12 +1138,10 @@ template<class Uniformity>
 layout_requirements
 grid_row_container<Uniformity>::get_horizontal_requirements()
 {
-    return cache_horizontal_layout_requirements(
-        cacher, grid->container->last_content_change, [&] {
-            update_grid_column_requirements(*grid);
-            return calculated_layout_requirements(
-                get_required_width(*grid), 0, 0);
-        });
+    return cache_horizontal_layout_requirements(cacher, [&] {
+        update_grid_column_requirements(*grid);
+        return calculated_layout_requirements(get_required_width(*grid), 0, 0);
+    });
 }
 
 template<class Uniformity>
@@ -1132,7 +1149,7 @@ std::vector<layout_scalar> const&
 calculate_column_assignments(
     grid_data<Uniformity>& grid, layout_scalar assigned_width)
 {
-    if (grid.last_assignments_update != grid.container->last_content_change)
+    if (!grid.assignments_valid)
     {
         update_grid_column_requirements(grid);
         size_t n_columns = get_column_count(grid.requirements);
@@ -1157,7 +1174,7 @@ calculate_column_assignments(
             }
             grid.assignments[i] = width;
         }
-        grid.last_assignments_update = grid.container->last_content_change;
+        grid.assignments_valid = true;
     }
     return grid.assignments;
 }
@@ -1188,8 +1205,7 @@ calculate_grid_row_vertical_requirements(
     layout_scalar assigned_width)
 {
     auto& cache = grid.vertical_requirements_cache;
-    if (cache.last_update != grid.container->last_content_change
-        || cache.assigned_width != assigned_width)
+    if (cache.assigned_width != assigned_width)
     {
         update_grid_column_requirements(grid);
 
@@ -1210,7 +1226,6 @@ calculate_grid_row_vertical_requirements(
             });
         }
 
-        cache.last_update = grid.container->last_content_change;
         cache.assigned_width = assigned_width;
     }
     return cache.requirements;
@@ -1222,7 +1237,7 @@ grid_row_container<Uniformity>::get_vertical_requirements(
     layout_scalar assigned_width)
 {
     return cache_vertical_layout_requirements(
-        cacher, grid->container->last_content_change, assigned_width, [&] {
+        this->cacher, assigned_width, [&] {
             return calculate_grid_row_vertical_requirements(
                 *grid, *this, assigned_width);
         });
@@ -1256,11 +1271,7 @@ grid_row_container<Uniformity>::set_relative_assignment(
     relative_layout_assignment const& assignment)
 {
     update_relative_assignment(
-        *this,
-        cacher,
-        grid->container->last_content_change,
-        assignment,
-        [&](auto const& resolved_assignment) {
+        *this, cacher, assignment, [&](auto const& resolved_assignment) {
             set_grid_row_relative_assignment(
                 *grid,
                 children,
@@ -1271,31 +1282,37 @@ grid_row_container<Uniformity>::set_relative_assignment(
 
 template<class Uniformity>
 void
-grid_row_container<Uniformity>::record_content_change(
-    layout_traversal& traversal)
+grid_row_container<Uniformity>::record_content_change()
 {
-    if (this->last_content_change != traversal.refresh_counter)
+    if (!cache_is_fully_invalid(this->cacher))
     {
-        this->last_content_change = traversal.refresh_counter;
+        invalidate(this->grid->vertical_requirements_cache);
+        this->grid->assignments_valid = false;
+        this->grid->requirements_valid = false;
+        invalidate_cached_layout(this->cacher);
+        // TODO: Is it true that this flag is never valid when the cacher is
+        // fully invalid?
+        this->requirements_valid = false;
         if (this->parent)
-            this->parent->record_content_change(traversal);
+            this->parent->record_content_change();
         for (grid_row_container<Uniformity>* row = this->grid->rows; row;
              row = row->next)
         {
-            row->record_self_change(traversal);
+            row->record_self_change();
         }
     }
 }
 
 template<class Uniformity>
 void
-grid_row_container<Uniformity>::record_self_change(layout_traversal& traversal)
+grid_row_container<Uniformity>::record_self_change()
 {
-    if (this->last_content_change != traversal.refresh_counter)
+    if (!cache_is_fully_invalid(this->cacher))
     {
-        this->last_content_change = traversal.refresh_counter;
+        invalidate_cached_layout(this->cacher);
+        this->requirements_valid = false;
         if (this->parent)
-            this->parent->record_content_change(traversal);
+            this->parent->record_content_change();
     }
 }
 
@@ -1371,8 +1388,7 @@ grid_row::begin(grid_layout const& grid, layout const& layout_spec)
     layout_traversal& traversal = *grid.traversal_;
 
     grid_row_container<nonuniform_grid_tag>* row;
-    if (get_cached_data(*grid.data_traversal_, &row))
-        initialize(traversal, *row);
+    get_cached_data(*grid.data_traversal_, &row);
 
     refresh_grid_row(traversal, *grid.data_, *row, layout_spec);
 
@@ -1429,8 +1445,7 @@ uniform_grid_row::begin(
     layout_traversal& traversal = *grid.traversal_;
 
     grid_row_container<uniform_grid_tag>* row;
-    if (get_cached_data(*grid.data_traversal_, &row))
-        initialize(traversal, *row);
+    get_cached_data(*grid.data_traversal_, &row);
 
     // All rows must be set to GROW to ensure they receive equal space from
     // the column that contains them.
