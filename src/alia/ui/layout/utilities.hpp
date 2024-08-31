@@ -87,10 +87,6 @@ add_default_alignment(
     layout_flag_set x_alignment,
     layout_flag_set y_alignment);
 
-// Initialize a container for use within the given context.
-void
-initialize(layout_traversal& traversal, layout_container& container);
-
 void
 set_next_node(layout_traversal& traversal, layout_node* node);
 
@@ -285,18 +281,18 @@ resolve_relative_assignment(
     layout_requirements const& vertical_requirements);
 
 inline bool
-cache_is_fully_invalid(layout_cacher& cacher)
+cache_is_fully_invalid(layout_cacher const& cacher)
 {
     return cacher.bits == 0;
 }
 
 inline bool
-cache_is_fully_valid(layout_cacher& cacher)
+cache_is_fully_valid(layout_cacher const& cacher)
 {
     return cacher.bits == 7;
 }
 
-void
+inline void
 invalidate_cached_layout(layout_cacher& cacher)
 {
     cacher.bits = 0;

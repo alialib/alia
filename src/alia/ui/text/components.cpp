@@ -211,7 +211,7 @@ do_wrapped_text(
                     record_layout_change(get_layout_traversal(ctx));
                     node.shape_width = 0;
                     node.shape = ShapeResult();
-                    invalidate_cached_layout(this->cacher);
+                    invalidate_cached_layout(node.cacher);
                 });
 
             update_layout_cacher(
