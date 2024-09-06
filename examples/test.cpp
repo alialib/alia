@@ -5,7 +5,9 @@
 #include <alia/ui.hpp>
 #include <alia/ui/color.hpp>
 #include <alia/ui/events.hpp>
-#include <alia/ui/layout/library.hpp>
+#include <alia/ui/layout/grids.hpp>
+#include <alia/ui/layout/simple.hpp>
+#include <alia/ui/layout/spacer.hpp>
 #include <alia/ui/layout/specification.hpp>
 #include <alia/ui/layout/utilities.hpp>
 #include <alia/ui/library/panels.hpp>
@@ -399,12 +401,14 @@ void
 do_radio_button(
     ui_context ctx,
     duplex<bool> selected,
-    layout const& layout_spec = layout(TOP | LEFT | PADDED))
+    layout const& layout_spec = layout(TOP | LEFT | PADDED),
+    widget_id id = auto_id)
 {
     radio_button_data* data_ptr;
     get_cached_data(ctx, &data_ptr);
     auto& data = *data_ptr;
-    auto const id = data_ptr;
+    if (!id)
+        id = data_ptr;
 
     auto const is_disabled = !signal_ready_to_write(selected);
 
@@ -3216,7 +3220,13 @@ my_ui(ui_context ctx)
             }
             {
                 row_layout row(ctx);
-                do_radio_button(ctx, make_radio_signal(selected, value(2)));
+                auto id = get_widget_id(ctx);
+                do_box_region(ctx, id, row.region());
+                do_radio_button(
+                    ctx,
+                    make_radio_signal(selected, value(2)),
+                    default_layout,
+                    id);
                 do_text(ctx, direct(my_style), value("Two"), CENTER_Y);
             }
             {
