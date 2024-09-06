@@ -5,7 +5,7 @@
 #include <alia/ui/events.hpp>
 #include <alia/ui/geometry.hpp>
 #include <alia/ui/layout/geometry.hpp>
-#include <alia/ui/layout/library.hpp>
+#include <alia/ui/layout/simple.hpp>
 #include <alia/ui/layout/specification.hpp>
 #include <alia/ui/layout/system.hpp>
 #include <alia/ui/layout/traversal.hpp>

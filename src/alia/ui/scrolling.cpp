@@ -12,7 +12,7 @@
 #include <alia/ui/context.hpp>
 #include <alia/ui/events.hpp>
 #include <alia/ui/geometry.hpp>
-#include <alia/ui/layout/library.hpp>
+#include <alia/ui/layout/simple.hpp>
 #include <alia/ui/layout/specification.hpp>
 #include <alia/ui/layout/utilities.hpp>
 #include <alia/ui/styling.hpp>

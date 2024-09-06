@@ -570,4 +570,34 @@ compute_total_height(layout_node* children, layout_scalar assigned_width)
     return total_height;
 }
 
+void
+scoped_layout_container::begin(
+    layout_traversal& traversal, layout_container* container)
+{
+    if (traversal.is_refresh_pass)
+    {
+        traversal_ = &traversal;
+
+        set_next_node(traversal, container);
+        container->parent = traversal.active_container;
+
+        traversal.next_ptr = &container->children;
+        traversal.active_container = container;
+    }
+}
+void
+scoped_layout_container::end()
+{
+    if (traversal_)
+    {
+        set_next_node(*traversal_, 0);
+
+        layout_container* container = traversal_->active_container;
+        traversal_->next_ptr = &container->next;
+        traversal_->active_container = container->parent;
+
+        traversal_ = 0;
+    }
+}
+
 } // namespace alia
