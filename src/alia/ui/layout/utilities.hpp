@@ -581,6 +581,54 @@ assign_identical_child_regions(
 layout_scalar
 compute_total_height(layout_node* children, layout_scalar assigned_width);
 
+// scoped_layout_container makes a layout container active for its scope.
+struct scoped_layout_container : noncopyable
+{
+    scoped_layout_container() : traversal_(0)
+    {
+    }
+    scoped_layout_container(
+        layout_traversal& traversal, layout_container* container)
+    {
+        begin(traversal, container);
+    }
+    ~scoped_layout_container()
+    {
+        end();
+    }
+    void
+    begin(layout_traversal& traversal, layout_container* container);
+    void
+    end();
+
+ private:
+    layout_traversal* traversal_;
+};
+
+template<class Logic>
+layout_box
+get_container_region(simple_layout_container<Logic> const& container)
+{
+    return layout_box(make_layout_vector(0, 0), container.assigned_size);
+}
+
+template<class Logic>
+layout_box
+get_padded_container_region(simple_layout_container<Logic> const& container)
+{
+    return layout_box(
+        container.cacher.relative_assignment.region.corner
+            - container.cacher.resolved_relative_assignment.region.corner,
+        container.cacher.relative_assignment.region.size);
+}
+
+template<class Logic>
+layout_vector
+get_container_offset(simple_layout_container<Logic> const& container)
+{
+    return get_assignment(container.cacher).region.corner;
+}
+
 } // namespace alia
 
 #endif
