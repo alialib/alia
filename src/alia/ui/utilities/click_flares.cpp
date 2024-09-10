@@ -1,0 +1,109 @@
+#include "alia/ui/system/input_constants.hpp"
+#include <alia/ui/utilities/click_flares.hpp>
+
+#include <alia/ui/system/object.hpp>
+#include <alia/ui/utilities/mouse.hpp>
+#include <alia/ui/utilities/rendering.hpp>
+#include <alia/ui/utilities/skia.hpp>
+
+#include <include/core/SkCanvas.h>
+#include <include/core/SkColor.h>
+#include <include/core/SkPaint.h>
+#include <include/core/SkPath.h>
+
+namespace alia {
+
+void
+fire_click_flare(
+    dataless_ui_context ctx,
+    mouse_button button,
+    unsigned& bits,
+    unsigned base_index)
+{
+    if (get_system(ctx).tick_count - get_click_start_time(ctx, button) < 200)
+    {
+        fire_flare(ctx, bits, base_index + 0, click_flare_duration);
+    }
+    else
+    {
+        fire_flare(
+            ctx,
+            bits,
+            base_index + bits_required_for_flare,
+            (std::min)(
+                click_accumulation_time,
+                get_system(ctx).tick_count - get_click_start_time(ctx, button))
+                / 2);
+    }
+}
+
+void
+render_click_flares(
+    dataless_ui_context ctx,
+    unsigned& bits,
+    unsigned base_index,
+    widget_state state,
+    layout_vector position,
+    rgb8 color,
+    float radius)
+{
+    process_flares(
+        ctx, bits, base_index + 0, [&](millisecond_count ticks_left) {
+            float intensity = float(eval_curve_at_x(
+                animation_curve{0.2, 0, 1, 1},
+                float(ticks_left) / click_flare_duration,
+                0.001));
+            float radius_scale_factor = float(eval_curve_at_x(
+                animation_curve{0, 0, 0.9, 1},
+                1
+                    - (std::fmax)(
+                        0.0f,
+                        (float(ticks_left) - 300)
+                            / (click_flare_duration - 300)),
+                0.001));
+            SkPaint paint;
+            paint.setAntiAlias(true);
+            paint.setColor(SkColorSetARGB(
+                uint8_t(intensity * 0x60), color.r, color.g, color.b));
+            auto& event = cast_event<render_event>(ctx);
+            SkCanvas& canvas = *event.canvas;
+            canvas.drawPath(
+                SkPath::Circle(
+                    position[0], position[1], radius * radius_scale_factor),
+                paint);
+        });
+
+    process_flares(
+        ctx, bits, base_index + 1, [&](millisecond_count ticks_left) {
+            float intensity = float(ticks_left) / 200;
+            SkPaint paint;
+            paint.setAntiAlias(true);
+            paint.setColor(SkColorSetARGB(
+                uint8_t(intensity * 0x60), color.r, color.g, color.b));
+            auto& event = cast_event<render_event>(ctx);
+            SkCanvas& canvas = *event.canvas;
+            canvas.drawPath(
+                SkPath::Circle(position[0], position[1], radius), paint);
+        });
+
+    if ((state & WIDGET_PRIMARY_STATE_MASK) == WIDGET_DEPRESSED)
+    {
+        millisecond_count click_duration = get_click_duration(
+            ctx, mouse_button::LEFT, click_accumulation_time);
+        float intensity = float(click_duration) / click_accumulation_time;
+        float radius_scale_factor
+            = float(click_duration) / click_accumulation_time;
+        SkPaint paint;
+        paint.setAntiAlias(true);
+        paint.setColor(SkColorSetARGB(
+            uint8_t(intensity * 0x60), color.r, color.g, color.b));
+        auto& event = cast_event<render_event>(ctx);
+        SkCanvas& canvas = *event.canvas;
+        canvas.drawPath(
+            SkPath::Circle(
+                position[0], position[1], radius_scale_factor * radius),
+            paint);
+    }
+}
+
+} // namespace alia

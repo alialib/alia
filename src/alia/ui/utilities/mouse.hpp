@@ -6,6 +6,8 @@
 #include <alia/ui/events.hpp>
 #include <alia/ui/geometry.hpp>
 #include <alia/ui/layout/geometry.hpp>
+#include <alia/ui/system/input_constants.hpp>
+#include <alia/ui/system/object.hpp>
 
 namespace alia {
 
@@ -142,6 +144,29 @@ detect_drag_release(
 
 std::optional<vector<2, double>>
 detect_scroll(dataless_ui_context ctx, widget_id id);
+
+inline millisecond_count
+get_click_start_time(ui_system& sys, mouse_button button)
+{
+    return sys.input.last_mouse_press_time[unsigned(button)];
+}
+
+inline millisecond_count
+get_click_start_time(dataless_ui_context ctx, mouse_button button)
+{
+    return get_click_start_time(get_system(ctx), button);
+}
+
+inline millisecond_count
+get_click_duration(
+    dataless_ui_context ctx,
+    mouse_button button,
+    millisecond_count max_duration)
+{
+    return max_duration
+           - get_raw_animation_ticks_left(
+               ctx, get_click_start_time(ctx, button) + max_duration);
+}
 
 } // namespace alia
 
