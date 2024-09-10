@@ -37,7 +37,7 @@ jobs:
 
       - uses: friendlyanon/setup-vcpkg@v1
         with:
-          committish: d8160798747ac9953d3374f9473393868d76dfe6
+          committish: b4624c3a701b11248d88aab08744a37ee7aea1cc
           path: the-vcpkg
 
       - name: Build
