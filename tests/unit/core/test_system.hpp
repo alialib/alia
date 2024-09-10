@@ -17,7 +17,7 @@ struct test_system : typed_system<core_context>
     }
 };
 
-void
+inline void
 initialize_test_system(
     test_system& sys,
     std::function<void(core_context)> const& controller,
@@ -27,7 +27,7 @@ initialize_test_system(
     sys.controller = controller;
 }
 
-void
+inline void
 process_internal_callbacks(
     test_system& sys,
     millisecond_count now,

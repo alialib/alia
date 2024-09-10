@@ -106,7 +106,7 @@ template<class Tag, class Contents, class Object>
 auto
 add_context_object(context_interface<Contents> ctx, Object object)
 {
-    auto new_contents = detail::add_tagged_data<Tag>(
+    auto new_contents = add_tagged_data<Tag>(
         get_structural_collection(ctx), std::move(object));
     return context_interface<decltype(new_contents)>(std::move(new_contents));
 }
@@ -376,7 +376,8 @@ struct optional_context
         return ctx_.contents_.storage != nullptr;
     }
 
-    explicit operator bool() const
+    explicit
+    operator bool() const
     {
         return has_value();
     }
