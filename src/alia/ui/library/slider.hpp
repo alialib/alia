@@ -12,7 +12,7 @@ ALIA_DEFINE_FLAG(slider, 0x0, SLIDER_HORIZONTAL)
 ALIA_DEFINE_FLAG(slider, 0x1, SLIDER_VERTICAL)
 
 void
-do_unsafe_slider(
+do_slider(
     ui_context ctx,
     duplex<double> value,
     double minimum,
