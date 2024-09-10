@@ -74,7 +74,7 @@ TEST_CASE("context", "[context][interface]")
 
     other_traversal other;
     extend_context_type_t<core_context, other_traversal_tag> extended
-        = add_context_object<other_traversal_tag>(ctx, other);
+        = add_context_object<other_traversal_tag>(ctx, std::ref(other));
     REQUIRE(detail::has_context_object<data_traversal_tag>(extended));
     REQUIRE(&get<data_traversal_tag>(extended) == &data);
     REQUIRE(detail::has_context_object<event_traversal_tag>(extended));
@@ -89,8 +89,8 @@ TEST_CASE("context", "[context][interface]")
         REQUIRE(&get<other_traversal_tag>(with_ctx) == &other);
     });
 
-    auto more_extended
-        = add_context_object<by_value_string_tag>(extended, "test");
+    auto more_extended = add_context_object<by_value_string_tag>(
+        extended, std::string("test"));
     REQUIRE(detail::has_context_object<by_value_string_tag>(more_extended));
     REQUIRE(get<by_value_string_tag>(more_extended) == "test");
 
@@ -150,7 +150,7 @@ TEST_CASE("content IDs", "[context][interface]")
                     outer_id.capture(get_content_id(outer_ctx));
                     {
                         auto inner_signal = value(inner);
-                        with_extended_context<outer_tag>(
+                        with_extended_context<inner_tag>(
                             outer_ctx, inner_signal, [&](auto inner_ctx) {
                                 // To avoid warnings about unused typedefs.
                                 REQUIRE(signal_has_value(

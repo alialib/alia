@@ -237,6 +237,8 @@ TEST_CASE("state changes and component dirtying", "[signals][state]")
 
     refresh_system(sys);
 
+    refresh_system(sys);
+
     REQUIRE(log.str() == "clean;12;clean;12;writing;dirty;13;clean;13;");
 
     // And some benchmarking...
