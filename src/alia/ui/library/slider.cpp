@@ -1,12 +1,11 @@
-#include "alia/ui/context.hpp"
-#include "alia/ui/events.hpp"
-#include "alia/ui/layout/specification.hpp"
-#include "alia/ui/utilities/widgets.hpp"
 #include <alia/ui/library/slider.hpp>
 
 #include <algorithm>
 
 #include <alia/ui/color.hpp>
+#include <alia/ui/context.hpp>
+#include <alia/ui/events.hpp>
+#include <alia/ui/layout/specification.hpp>
 #include <alia/ui/utilities.hpp>
 #include <alia/ui/utilities/skia.hpp>
 
@@ -214,7 +213,7 @@ get_thumb_region(
 }
 
 void
-do_unsafe_slider(
+do_slider(
     ui_context ctx,
     duplex<double> value,
     double minimum,

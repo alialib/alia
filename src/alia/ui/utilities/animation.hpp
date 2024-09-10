@@ -60,7 +60,7 @@ struct animation_tracking_system
 
 static animation_tracking_system the_animation_system;
 
-void
+inline void
 fire_flare(
     dataless_core_context ctx,
     unsigned& bitset,
@@ -119,7 +119,7 @@ process_flares(
 
 constexpr unsigned bits_required_for_flare = 1;
 
-void
+inline void
 init_animation(
     dataless_core_context ctx,
     unsigned& bitset,

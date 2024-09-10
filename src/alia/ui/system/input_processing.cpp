@@ -63,7 +63,7 @@ process_mouse_press(ui_system& ui, mouse_button button, key_modifiers)
     {
         clear_focus(ui);
     }
-    ui.input.last_mouse_press_time = ui.tick_count;
+    ui.input.last_mouse_press_time[unsigned(button)] = ui.tick_count;
     ui.input.mouse_button_state |= 1 << mouse_button_code(button);
     ui.input.keyboard_interaction = false;
 }

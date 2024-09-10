@@ -19,6 +19,8 @@ enum class mouse_button
     RIGHT
 };
 
+static constexpr unsigned max_supported_mouse_buttons = 4;
+
 // standard mouse cursors that are expected to be supplied by the backend
 enum class mouse_cursor
 {
