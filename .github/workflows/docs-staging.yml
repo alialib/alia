@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 env:
   EM_VERSION: 3.1.40
@@ -55,6 +58,7 @@ jobs:
           scripts/build-docs.sh
 
       - name: Deploy
+        if: github.event_name != 'pull_request'
         uses: JamesIves/github-pages-deploy-action@4.1.0
         with:
           repository-name: alialib/alia-staging
