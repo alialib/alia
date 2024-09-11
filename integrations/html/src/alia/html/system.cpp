@@ -1,5 +1,7 @@
+#include "alia/core/context/interface.hpp"
 #include <alia/html/system.hpp>
 
+#include <alia/html/context.hpp>
 #include <alia/html/dom.hpp>
 #include <alia/html/history.hpp>
 #include <functional>
@@ -9,7 +11,7 @@ namespace alia { namespace html {
 static void
 refresh_for_emscripten(void* system)
 {
-    refresh_system(*reinterpret_cast<alia::system*>(system));
+    refresh_system(*reinterpret_cast<html::system*>(system));
 }
 
 struct timer_callback_data
@@ -27,7 +29,7 @@ timer_callback(void* user_data)
 
 struct dom_external_interface : default_external_interface
 {
-    dom_external_interface(alia::system& owner)
+    dom_external_interface(html::system& owner)
         : default_external_interface(owner)
     {
     }
@@ -48,11 +50,13 @@ struct dom_external_interface : default_external_interface
 };
 
 void
-system::operator()(alia::context vanilla_ctx)
+system::invoke_controller(vanilla_context vanilla_ctx)
 {
     tree_traversal<element_object> traversal;
-    auto ctx = extend_context<system_tag>(
-        extend_context<tree_traversal_tag>(vanilla_ctx, traversal), *this);
+    auto ctx = add_context_object<system_tag>(
+        add_context_object<tree_traversal_tag>(
+            vanilla_ctx, std::ref(traversal)),
+        std::ref(*this));
 
     this->controller(ctx);
 }
@@ -72,14 +76,12 @@ initialize(html::system& system, std::function<void(html::context)> controller)
     }
 
     // Initialize the alia::system and hook it up to the html::system.
-    initialize_system(
-        system.alia_system,
-        std::ref(system),
-        new dom_external_interface(system.alia_system));
+    initialize_core_system<html::vanilla_context>(
+        system, new dom_external_interface(system));
     system.controller = std::move(controller);
 
     // Update our DOM.
-    refresh_system(system.alia_system);
+    refresh_system(system);
 }
 
 void
@@ -108,11 +110,11 @@ enable_hash_monitoring(html::system& sys)
 {
     // Do an initial query.
     update_location_hash(sys);
-    refresh_system(sys.alia_system);
+    refresh_system(sys);
     // Install monitors.
     auto onhashchange = [&sys](emscripten::val) {
         update_location_hash(sys);
-        refresh_system(sys.alia_system);
+        refresh_system(sys);
     };
     detail::install_window_callback(
         sys.hashchange, "hashchange", onhashchange);

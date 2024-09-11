@@ -124,9 +124,8 @@ struct tagged_data_accessor
     }
 
 #define ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(Storage, Tag, name)                \
-    namespace detail {                                                        \
     template<>                                                                \
-    struct tagged_data_accessor<Storage, Tag>                                 \
+    struct alia::detail::tagged_data_accessor<Storage, Tag>                   \
     {                                                                         \
         static bool                                                           \
         has(Storage const& storage)                                           \
@@ -148,8 +147,7 @@ struct tagged_data_accessor
         {                                                                     \
             return *storage.name;                                             \
         }                                                                     \
-    };                                                                        \
-    }
+    };
 
 }} // namespace alia::detail
 

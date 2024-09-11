@@ -27,12 +27,17 @@ struct ui_context_storage : core_context_storage
     ALIA_IMPLEMENT_STORAGE_OBJECT_ACCESSORS(ui_context_storage)
 };
 
+} // namespace alia
+
 #define ALIA_ADD_UI_CONTEXT_ACCESSORS(storage)                                \
     ALIA_ADD_CORE_CONTEXT_ACCESSORS(storage)                                  \
-    ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(storage, ui_system_tag, ui_sys)        \
-    ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(storage, ui_traversal_tag, ui_traversal)
+    ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(storage, alia::ui_system_tag, ui_sys)  \
+    ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(                                       \
+        storage, alia::ui_traversal_tag, ui_traversal)
 
-ALIA_ADD_UI_CONTEXT_ACCESSORS(ui_context_storage)
+ALIA_ADD_UI_CONTEXT_ACCESSORS(alia::ui_context_storage)
+
+namespace alia {
 
 using dataless_ui_context = context_interface<detail::add_tagged_data_types_t<
     detail::empty_structural_collection<ui_context_storage>,

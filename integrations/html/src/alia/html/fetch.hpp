@@ -43,13 +43,13 @@ struct http_error
 };
 
 async_signal<http_response>
-fetch(alia::context ctx, readable<http_request> request);
+fetch(alia::core_context ctx, readable<http_request> request);
 
 apply_signal<std::string>
-fetch_text(alia::context ctx, readable<std::string> path);
+fetch_text(alia::core_context ctx, readable<std::string> path);
 
 inline apply_signal<std::string>
-fetch_text(alia::context ctx, char const* path)
+fetch_text(alia::core_context ctx, char const* path)
 {
     return fetch_text(ctx, value(path));
 }

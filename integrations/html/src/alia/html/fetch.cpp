@@ -74,7 +74,7 @@ handle_fetch_response(emscripten_fetch_t* fetch)
 
 void
 launch_fetch_operation(
-    alia::dataless_context ctx,
+    alia::dataless_core_context ctx,
     async_reporter<http_response> reporter,
     http_request const& request)
 {
@@ -122,7 +122,7 @@ launch_fetch_operation(
 } // namespace
 
 async_signal<http_response>
-fetch(alia::context ctx, readable<http_request> request)
+fetch(alia::core_context ctx, readable<http_request> request)
 {
     return async<http_response>(ctx, launch_fetch_operation, request);
 }
@@ -138,7 +138,7 @@ make_text_request(std::string const& path)
 } // namespace
 
 apply_signal<std::string>
-fetch_text(alia::context ctx, readable<std::string> path)
+fetch_text(alia::core_context ctx, readable<std::string> path)
 {
     return apply(
         ctx,

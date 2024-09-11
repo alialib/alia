@@ -66,6 +66,12 @@ printf(core_context ctx, Format format, Args... args)
 // the text-based widgets and utilities provided here, that type must
 // implement these functions.
 
+inline std::string
+to_string(char const* str)
+{
+    return str;
+}
+
 #define ALIA_DECLARE_STRING_CONVERSIONS(T)                                    \
     void from_string(T* value, std::string const& s);                         \
     std::string to_string(T value);
