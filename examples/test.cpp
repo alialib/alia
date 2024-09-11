@@ -2199,9 +2199,9 @@ my_ui(ui_context ctx)
         = text_style{"roboto/Roboto-Regular", 22.f, rgb8(173, 181, 189)};
 
     panel_style_info pstyle{
-        box_border_width<float>(4, 4, 4, 4),
-        box_border_width<float>(0, 0, 0, 0),
-        box_border_width<float>(4, 4, 4, 4)};
+        box_border_width<float>{4, 4, 4, 4},
+        box_border_width<float>{0, 0, 0, 0},
+        box_border_width<float>{4, 4, 4, 4}};
 
     do_text(ctx, direct(my_style), value("Lorem ipsum"));
 
