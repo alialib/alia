@@ -5,6 +5,7 @@
 #include <alia/ui/system/object.hpp>
 #include <alia/ui/utilities/keyboard.hpp>
 #include <alia/ui/utilities/regions.hpp>
+#include <optional>
 
 namespace alia {
 
@@ -78,7 +79,7 @@ update(ui_system& ui)
     // Determine which widget is under the mouse cursor.
     if (ui.input.mouse_inside_window)
     {
-        mouse_hit_test_event hit_test(ui.input.mouse_position);
+        mouse_hit_test_event hit_test{ui.input.mouse_position, std::nullopt};
         dispatch_event(ui, hit_test, MOUSE_HIT_TEST_EVENT);
         if (hit_test.result)
         {
