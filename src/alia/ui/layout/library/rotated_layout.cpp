@@ -61,11 +61,11 @@ rotated_layout_logic::set_relative_assignment(
     walk_layout_children(children, [&](layout_node& node) {
         layout_requirements y
             = node.get_vertical_requirements(assigned_size[1]);
-        node.set_relative_assignment(relative_layout_assignment(
+        node.set_relative_assignment(relative_layout_assignment{
             layout_box(
                 make_layout_vector(0, 0),
                 make_layout_vector(assigned_size[1], assigned_size[0])),
-            y.ascent));
+            y.ascent});
     });
 }
 
