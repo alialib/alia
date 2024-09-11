@@ -242,21 +242,21 @@ resolve_box_border_width(
     layout_traversal& traversal,
     box_border_width<absolute_length> const& border)
 {
-    return box_border_width<float>(
+    return box_border_width<float>{
         resolve_absolute_length(traversal, 1, border.top),
         resolve_absolute_length(traversal, 0, border.right),
         resolve_absolute_length(traversal, 1, border.bottom),
-        resolve_absolute_length(traversal, 0, border.left));
+        resolve_absolute_length(traversal, 0, border.left)};
 }
 
 box_border_width<layout_scalar>
 as_layout_size(box_border_width<float> const& border)
 {
-    return box_border_width<layout_scalar>(
+    return box_border_width<layout_scalar>{
         as_layout_size(border.top),
         as_layout_size(border.right),
         as_layout_size(border.bottom),
-        as_layout_size(border.left));
+        as_layout_size(border.left)};
 }
 
 bool

@@ -100,8 +100,8 @@ do_checkbox(ui_context ctx, duplex<bool> checked, layout const& layout_spec)
                 float const padding = 11.f;
                 auto checkbox_rect = remove_border(
                     region,
-                    box_border_width<float>(
-                        padding, padding, padding, padding));
+                    box_border_width<float>{
+                        padding, padding, padding, padding});
 
                 if (condition_is_true(checked))
                 {
@@ -199,7 +199,7 @@ do_checkbox(ui_context ctx, duplex<bool> checked, layout const& layout_spec)
             float const padding = 11.f;
             auto checkbox_rect = remove_border(
                 region,
-                box_border_width<float>(padding, padding, padding, padding));
+                box_border_width<float>{padding, padding, padding, padding});
 
             auto state = get_widget_state(
                 ctx,
