@@ -27,6 +27,7 @@ jobs:
       with:
         committish: b4624c3a701b11248d88aab08744a37ee7aea1cc
         path: the-vcpkg
+        cache-version: gcc-7
 
     - name: Configure
       run: |
@@ -61,6 +62,7 @@ jobs:
       with:
         committish: b4624c3a701b11248d88aab08744a37ee7aea1cc
         path: the-vcpkg
+        cache-version: gcc-10
 
     - name: Install
       run: |
