@@ -10,14 +10,11 @@
 
 namespace alia { namespace html {
 
-struct system
+struct system : alia::typed_system<vanilla_context>
 {
     std::function<void(html::context)> controller;
 
-    alia::system alia_system;
-
-    void
-    operator()(alia::context ctx);
+    void invoke_controller(vanilla_context) override;
 
     std::string hash;
     detail::window_callback hashchange;
@@ -28,13 +25,6 @@ struct system
 void
 initialize(
     html::system& system, std::function<void(html::context)> controller);
-
-// Get the core alia system object associated with the HTML system.
-inline alia::system&
-get_alia_system(html::system& sys)
-{
-    return sys.alia_system;
-}
 
 // Get the current location hash associated with the HTML system.
 //

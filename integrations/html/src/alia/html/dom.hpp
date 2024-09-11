@@ -351,7 +351,7 @@ struct regular_element_handle
     regular_element_handle(
         context ctx, tree_node<element_object>* node, bool initializing)
         : regular_element_handle::element_handle_base{
-            element_handle_storage{ctx, node, initializing}}
+              element_handle_storage{ctx, node, initializing}}
     {
     }
 
@@ -394,7 +394,7 @@ struct body_handle : element_handle_base<body_handle, element_handle_storage>
     body_handle(
         html::context ctx, tree_node<element_object>* node, bool initializing)
         : body_handle::element_handle_base{
-            element_handle_storage{ctx, node, initializing}}
+              element_handle_storage{ctx, node, initializing}}
     {
     }
 

@@ -135,7 +135,7 @@ get_storage_state(html::context ctx, char const* storage_name, char const* key)
         // changes in the underlying value of the signal.
         if (!strcmp(storage_name, "localStorage"))
         {
-            alia::system* sys = &get<alia::system_tag>(ctx);
+            alia::untyped_system* sys = &get<core_system_tag>(ctx);
             detail::install_window_callback(
                 data->on_storage_event, "storage", [=](emscripten::val event) {
                     // The event will fire for any storage activity related to

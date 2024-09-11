@@ -90,8 +90,5 @@ with_demo_context(
     alia::function_view<void(demo_context)> const& content)
 {
     auto src = fetch_text(vanilla_ctx, value("main.cpp"));
-
-    auto ctx = extend_context<src_tag>(vanilla_ctx, src);
-
-    content(ctx);
+    with_extended_context<src_tag>(vanilla_ctx, src, content);
 }

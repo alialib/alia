@@ -40,13 +40,19 @@ struct core_context_storage
     id_interface const* content_id = nullptr;
 };
 
-#define ALIA_ADD_CORE_CONTEXT_ACCESSORS(storage)                              \
-    ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(storage, core_system_tag, sys)         \
-    ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(storage, event_traversal_tag, event)   \
-    ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(storage, data_traversal_tag, data)     \
-    ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(storage, timing_tag, timing)
+} // namespace alia
 
-ALIA_ADD_CORE_CONTEXT_ACCESSORS(core_context_storage)
+#define ALIA_ADD_CORE_CONTEXT_ACCESSORS(storage)                              \
+    ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(storage, alia::core_system_tag, sys)   \
+    ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(                                       \
+        storage, alia::event_traversal_tag, event)                            \
+    ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(                                       \
+        storage, alia::data_traversal_tag, data)                              \
+    ALIA_ADD_DIRECT_TAGGED_DATA_ACCESS(storage, alia::timing_tag, timing)
+
+ALIA_ADD_CORE_CONTEXT_ACCESSORS(alia::core_context_storage)
+
+namespace alia {
 
 // the context interface wrapper
 template<class Contents>

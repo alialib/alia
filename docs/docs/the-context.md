@@ -12,8 +12,8 @@ data graph, event dispatch info, etc.
 The context is designed to be extended with externally defined objects to give
 applications additional capabilities. All of the examples in this documentation
 use an `html::context`, which is defined by alia/HTML (the HTML bindings for
-alia). `html::context` extends `alia::context` to add the ability to interact
-with the browser and control the contents of the web page.
+alia). `html::context` extends `alia::core_context` to add the ability to
+interact with the browser and control the contents of the web page.
 
 A context is essentially an unordered collection of objects. Context objects
 have compile-time tags (to identify them) and run-time data (so they can do
