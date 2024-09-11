@@ -150,7 +150,8 @@ read_condition(T const& x)
 #if defined(__clang__)
 #define ALIA_DISABLE_MACRO_WARNINGS                                           \
     _Pragma("clang diagnostic push")                                          \
-        _Pragma("clang diagnostic ignored \"-Wunused-but-set-variable\"")
+        _Pragma("clang diagnostic ignored \"-Wunknown-warning-option\"")      \
+            _Pragma("clang diagnostic ignored \"-Wunused-but-set-variable\"")
 #define ALIA_REENABLE_MACRO_WARNINGS _Pragma("clang diagnostic pop")
 #elif defined(_MSC_VER)
 #define ALIA_DISABLE_MACRO_WARNINGS                                           \
