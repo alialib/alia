@@ -83,7 +83,7 @@ process_mouse_release(ui_system& ui, mouse_button button)
     ui.input.mouse_button_state &= ~(1 << int(button));
     if (ui.input.mouse_button_state == 0)
     {
-        set_widget_with_capture(ui, routable_widget_id());
+        set_widget_with_capture(ui, routable_widget_id{});
         ui.input.dragging = false;
     }
 }

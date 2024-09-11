@@ -34,7 +34,7 @@ struct routable_widget_id
         return id != 0;
     }
 };
-static routable_widget_id const null_widget_id(0, component_identity());
+static routable_widget_id const null_widget_id{0, component_identity()};
 
 inline routable_widget_id
 make_routable_widget_id(dataless_ui_context ctx, widget_id id)

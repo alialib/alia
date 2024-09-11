@@ -146,7 +146,13 @@ read_condition(T const& x)
 // MSVC likes to warn about shadowed local variables and function parameters,
 // but there's really no way to implement these macros without potentially
 // shadowing things, so we need to disable those warning within the macros.
-#ifdef _MSC_VER
+// Similarly for Clang warning about unused variables.
+#if defined(__clang__)
+#define ALIA_DISABLE_MACRO_WARNINGS                                           \
+    _Pragma("clang diagnostic push")                                          \
+        _Pragma("clang diagnostic ignored \"-Wunused-but-set-variable\"")
+#define ALIA_REENABLE_MACRO_WARNINGS _Pragma("clang diagnostic pop")
+#elif defined(_MSC_VER)
 #define ALIA_DISABLE_MACRO_WARNINGS                                           \
     __pragma(warning(push)) __pragma(warning(disable : 4456))                 \
         __pragma(warning(disable : 4457))

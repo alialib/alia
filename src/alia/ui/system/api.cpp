@@ -88,12 +88,12 @@ update(ui_system& ui)
         }
         else
         {
-            set_hot_widget(ui, routable_widget_id());
+            set_hot_widget(ui, routable_widget_id{});
         }
     }
     else
     {
-        set_hot_widget(ui, routable_widget_id());
+        set_hot_widget(ui, routable_widget_id{});
     }
 
     // The block above gives us the mouse cursor that's been requested by the
@@ -722,7 +722,7 @@ regress_focus(ui_system& ui)
 void
 clear_focus(ui_system& ui)
 {
-    ui.input.widget_with_focus = routable_widget_id();
+    ui.input.widget_with_focus = routable_widget_id{};
 }
 
 void
