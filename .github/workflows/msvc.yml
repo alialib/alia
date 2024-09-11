@@ -13,8 +13,8 @@ env:
 
 jobs:
 
-  VS2019:
-    runs-on: windows-2019
+  VS2022:
+    runs-on: windows-2022
 
     strategy:
       matrix:
