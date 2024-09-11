@@ -1,5 +1,7 @@
 #include <alia/ui/layout/geometry.hpp>
+#include <alia/ui/layout/grids.hpp>
 #include <alia/ui/layout/simple.hpp>
+#include <alia/ui/layout/spacer.hpp>
 #include <alia/ui/layout/specification.hpp>
 #include <alia/ui/layout/system.hpp>
 #include <alia/ui/layout/traversal.hpp>
