@@ -129,15 +129,15 @@ TEST_CASE("optional_context", "[context][interface]")
     REQUIRE(!optional);
 }
 
+ALIA_DEFINE_TAGGED_TYPE(outer_tag, value_signal<int>&)
+ALIA_DEFINE_TAGGED_TYPE(inner_tag, value_signal<int>&)
+
 TEST_CASE("content IDs", "[context][interface]")
 {
     alia::test_system sys;
     initialize_test_system(sys, [](core_context) {});
 
     captured_id outer_id, inner_id, downcast_id, recalculated_id;
-
-    ALIA_DEFINE_TAGGED_TYPE(outer_tag, value_signal<int>&)
-    ALIA_DEFINE_TAGGED_TYPE(inner_tag, value_signal<int>&)
 
     auto make_controller = [&](int outer, int inner) {
         return [&, outer, inner](core_context root_ctx) {
