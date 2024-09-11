@@ -256,7 +256,7 @@ install_element_callback(
               << std::endl;
 #endif
     auto external_id = externalize(&callback.identity);
-    auto* system = &get<alia::system_tag>(ctx);
+    auto* system = &get<core_system_tag>(ctx);
     callback.function = [=](emscripten::val v) {
         dom_event event(v);
 #ifdef ALIA_HTML_LOGGING

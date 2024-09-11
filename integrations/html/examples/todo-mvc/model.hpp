@@ -36,7 +36,12 @@ struct todo_item
     todo_item&
     operator=(todo_item&&)
         = default;
+    // Re-enable the basic constructors...
     todo_item() = default;
+    todo_item(bool completed, std::string title, int id)
+        : completed(completed), title(title), id(id)
+    {
+    }
 };
 
 typedef std::vector<todo_item> todo_list;
