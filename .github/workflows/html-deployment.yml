@@ -49,7 +49,7 @@ jobs:
 
       - name: Create CNAME file
         run: |
-          echo "html.alia.dev" >build/modules/html/deploy/CNAME
+          echo "html.alia.dev" >build/integrations/html/deploy/CNAME
 
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@4.1.0
@@ -57,5 +57,5 @@ jobs:
           repository-name: alialib/alia-html
           branch: gh-pages
           token: ${{ secrets.ALIA_GHPAGES_DEPLOYMENT_TOKEN }}
-          folder: build/modules/html/deploy
+          folder: build/integrations/html/deploy
           single-commit: true
