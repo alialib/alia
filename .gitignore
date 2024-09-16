@@ -1,6 +1,6 @@
-.vscode
-.vs
-/*build*
+/.vscode/
+/.vs/
+/*build*/
 debug.log
-/docs/www
+/docs/www/
 /out/
