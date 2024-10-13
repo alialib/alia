@@ -1,5 +1,6 @@
 #include <alia/ui/library/radio_button.hpp>
 
+#include <alia/core/bit_packing.hpp>
 #include <alia/ui/color.hpp>
 #include <alia/ui/context.hpp>
 #include <alia/ui/events.hpp>
@@ -17,17 +18,15 @@
 
 namespace alia {
 
+struct radio_button_bit_layout
+{
+    click_flare_bit_layout click_flare;
+    smoothing_bit_field state_smoothing;
+};
+
 struct radio_button_data
 {
-    unsigned bits;
-
-    static constexpr unsigned click_flare_bits = 0;
-    static constexpr unsigned state_smoothing_bits
-        = click_flare_bits + click_flare_bit_count;
-    static constexpr unsigned total_bits_used
-        = state_smoothing_bits + bits_required_for_smoothing;
-    static_assert(total_bits_used <= 32);
-
+    bitpack<radio_button_bit_layout> bits;
     keyboard_click_state keyboard_click_state_;
     layout_leaf layout_node;
 };
@@ -89,8 +88,7 @@ render_radio_button(
 
     float smoothed_state = smooth_between_values(
         ctx,
-        data.bits,
-        2,
+        ALIA_BITREF(data.bits, state_smoothing),
         selected,
         1.f,
         0.f,
@@ -100,7 +98,11 @@ render_radio_button(
         rgb8(0xa0, 0xa0, 0xa0), rgb8(0x90, 0xc0, 0xff), smoothed_state);
 
     render_click_flares(
-        ctx, data.bits, data.click_flare_bits, state, center, color);
+        ctx,
+        ALIA_NESTED_BITPACK(data.bits, click_flare),
+        state,
+        center,
+        color);
 
     {
         SkPaint paint;
@@ -165,7 +167,7 @@ do_radio_button(
             {
                 // TODO: It's not necessarily the left mouse button.
                 fire_click_flare(
-                    ctx, mouse_button::LEFT, data.bits, data.click_flare_bits);
+                    ctx, ALIA_NESTED_BITPACK(data.bits, click_flare));
                 if (signal_ready_to_write(selected))
                     write_signal(selected, true);
                 abort_traversal(ctx);

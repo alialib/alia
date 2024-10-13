@@ -16,20 +16,18 @@ namespace alia {
 void
 fire_click_flare(
     dataless_ui_context ctx,
-    mouse_button button,
-    unsigned& bits,
-    unsigned base_index)
+    bitpack_ref<click_flare_bit_layout> bits,
+    mouse_button button)
 {
     if (get_system(ctx).tick_count - get_click_start_time(ctx, button) < 200)
     {
-        fire_flare(ctx, bits, base_index + 0, click_flare_duration);
+        fire_flare(ctx, ALIA_BITREF(bits, click_flare), click_flare_duration);
     }
     else
     {
         fire_flare(
             ctx,
-            bits,
-            base_index + bits_required_for_flare,
+            ALIA_BITREF(bits, press_and_hold_flare),
             (std::min)(
                 click_accumulation_time,
                 get_system(ctx).tick_count - get_click_start_time(ctx, button))
@@ -40,15 +38,16 @@ fire_click_flare(
 void
 render_click_flares(
     dataless_ui_context ctx,
-    unsigned& bits,
-    unsigned base_index,
+    bitpack_ref<click_flare_bit_layout> bits,
     widget_state state,
     layout_vector position,
     rgb8 color,
     float radius)
 {
     process_flares(
-        ctx, bits, base_index + 0, [&](millisecond_count ticks_left) {
+        ctx,
+        ALIA_BITREF(bits, click_flare),
+        [&](millisecond_count ticks_left) {
             float intensity = float(eval_curve_at_x(
                 animation_curve{0.2, 0, 1, 1},
                 float(ticks_left) / click_flare_duration,
@@ -74,7 +73,9 @@ render_click_flares(
         });
 
     process_flares(
-        ctx, bits, base_index + 1, [&](millisecond_count ticks_left) {
+        ctx,
+        ALIA_BITREF(bits, press_and_hold_flare),
+        [&](millisecond_count ticks_left) {
             float intensity = float(ticks_left) / 200;
             SkPaint paint;
             paint.setAntiAlias(true);

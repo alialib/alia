@@ -5,22 +5,22 @@
 
 #include <bit>
 
-#include <alia/core/bit_ops.hpp>
+#include <alia/core/bit_packing.hpp>
 #include <alia/core/timing/smoothing.hpp>
 #include <alia/core/timing/ticks.hpp>
 
 namespace alia {
 
+template<class Tag>
 inline uintptr_t
-make_animation_id(unsigned* ptr, unsigned index)
+make_animation_id(bitref<Tag>& ref)
 {
-    return std::bit_cast<uintptr_t>(ptr)
-           | (uintptr_t(index) << (sizeof(uintptr_t) * 8 - 8));
+    return std::bit_cast<uintptr_t>(&ref.storage)
+           | (uintptr_t(ref.index) << (sizeof(uintptr_t) * 8 - 8));
 }
 
 struct transition_animation_data
 {
-    // TODO: Combine these.
     bool direction;
     millisecond_count transition_end;
 };
@@ -60,31 +60,32 @@ struct animation_tracking_system
 
 static animation_tracking_system the_animation_system;
 
+struct flare_bit_field : bit_field<1>
+{
+};
+
 inline void
 fire_flare(
     dataless_core_context ctx,
-    unsigned& bitset,
-    unsigned index,
+    bitref<flare_bit_field> bit,
     millisecond_count duration)
 {
     push_flare(
-        the_animation_system.flares[make_animation_id(&bitset, index)],
+        the_animation_system.flares[make_animation_id(bit)],
         get_raw_animation_tick_count(ctx) + duration);
-    set_bit(bitset, index);
+    set_bit(bit);
 }
 
 template<class Processor>
 void
 process_flares(
     dataless_core_context ctx,
-    unsigned& bitset,
-    unsigned index,
+    bitref<flare_bit_field> bit,
     Processor&& processor)
 {
-    if (read_bit(bitset, index))
+    if (is_set(bit))
     {
-        auto& group
-            = the_animation_system.flares[make_animation_id(&bitset, index)];
+        auto& group = the_animation_system.flares[make_animation_id(bit)];
         unsigned flare_index = 0;
         while (flare_index != group.flare_count)
         {
@@ -110,55 +111,51 @@ process_flares(
         if (flare_index == 0)
         {
             // All flares were popped, so remove this group.
-            the_animation_system.flares.erase(
-                make_animation_id(&bitset, flare_index));
-            clear_bit(bitset, index);
+            the_animation_system.flares.erase(make_animation_id(bit));
+            clear_bit(bit);
         }
     }
 }
 
-constexpr unsigned bits_required_for_flare = 1;
+struct smoothing_bit_field : bit_field<2>
+{
+};
 
 inline void
 init_animation(
     dataless_core_context ctx,
-    unsigned& bitset,
-    unsigned index,
+    bitref<smoothing_bit_field> bits,
     bool current_state,
     animated_transition const& transition)
 {
     auto& animation
-        = the_animation_system.transitions[make_animation_id(&bitset, index)];
+        = the_animation_system.transitions[make_animation_id(bits)];
     animation.direction = current_state;
     animation.transition_end
         = get_raw_animation_tick_count(ctx) + transition.duration;
-    write_bit_pair(bitset, index, 0b01);
+    write_bitref(bits, 0b01);
 }
-
-constexpr unsigned bits_required_for_smoothing = 2;
 
 template<class Value>
 Value
 smooth_between_values(
     dataless_core_context ctx,
-    unsigned& bitset,
-    unsigned index,
+    bitref<smoothing_bit_field> bits,
     bool current_state,
     Value true_value,
     Value false_value,
     animated_transition const& transition = default_transition)
 {
-    auto internal_state = read_bit_pair(bitset, index);
+    auto internal_state = read_bitref(bits);
     switch (internal_state)
     {
         default:
         case 0b00:
-            write_bit_pair(bitset, index, current_state ? 0b11 : 0b10);
+            write_bitref(bits, current_state ? 0b11 : 0b10);
             return current_state ? true_value : false_value;
         case 0b01: {
             auto& animation
-                = the_animation_system
-                      .transitions[make_animation_id(&bitset, index)];
+                = the_animation_system.transitions[make_animation_id(bits)];
             millisecond_count ticks_left
                 = get_raw_animation_ticks_left(ctx, animation.transition_end);
             if (ticks_left > 0)
@@ -197,18 +194,18 @@ smooth_between_values(
             {
                 auto end_state = animation.direction;
                 the_animation_system.transitions.erase(
-                    make_animation_id(&bitset, index));
-                write_bit_pair(bitset, index, end_state ? 0b11 : 0b10);
+                    make_animation_id(bits));
+                write_bitref(bits, end_state ? 0b11 : 0b10);
                 return end_state ? true_value : false_value;
             }
         }
         case 0b10:
             if (current_state)
-                init_animation(ctx, bitset, index, true, transition);
+                init_animation(ctx, bits, true, transition);
             return false_value;
         case 0b11:
             if (!current_state)
-                init_animation(ctx, bitset, index, false, transition);
+                init_animation(ctx, bits, false, transition);
             return true_value;
     }
 }

@@ -12,20 +12,22 @@ namespace alia {
 constexpr millisecond_count click_flare_duration = 700;
 constexpr millisecond_count click_accumulation_time = 400;
 
-constexpr unsigned click_flare_bit_count = bits_required_for_flare * 2;
+struct click_flare_bit_layout
+{
+    flare_bit_field click_flare;
+    flare_bit_field press_and_hold_flare;
+};
 
 void
 fire_click_flare(
     dataless_ui_context ctx,
-    mouse_button button,
-    unsigned& bits,
-    unsigned base_index);
+    bitpack_ref<click_flare_bit_layout> bits,
+    mouse_button button = mouse_button::LEFT);
 
 void
 render_click_flares(
     dataless_ui_context ctx,
-    unsigned& bits,
-    unsigned base_index,
+    bitpack_ref<click_flare_bit_layout> bits,
     widget_state state,
     layout_vector position,
     rgb8 color,
