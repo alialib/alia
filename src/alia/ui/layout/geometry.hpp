@@ -15,8 +15,15 @@ struct layout_cacher;
 // frame of reference.
 // An object may 'subscribe' to a geometry_context so that it is informed of
 // changes in the state of the context.
+// TODO: Redesign this....
 struct geometry_context_subscriber
 {
+    virtual void
+    push_state()
+        = 0;
+    virtual void
+    pop_state()
+        = 0;
     virtual void
     set_transformation_matrix(
         matrix<3, 3, double> const& transformation_matrix)
@@ -93,8 +100,6 @@ class scoped_clip_region : noncopyable
     void
     set(box<2, double> const& region);
     void
-    restore();
-    void
     end();
 
  private:
@@ -105,30 +110,30 @@ class scoped_clip_region : noncopyable
 // scoped_clip_region_reset resets the clip region to the full geometry region
 // for its scope. This can be useful for drawing overlays that are meant to
 // extend beyond the clip region normally associated with their scope.
-class scoped_clip_region_reset : noncopyable
-{
- public:
-    scoped_clip_region_reset() : ctx_(0)
-    {
-    }
-    template<class Context>
-    scoped_clip_region_reset(Context& ctx)
-    {
-        begin(get_geometry_context(ctx));
-    }
-    ~scoped_clip_region_reset()
-    {
-        end();
-    }
-    void
-    begin(geometry_context& ctx);
-    void
-    end();
+// class scoped_clip_region_reset : noncopyable
+// {
+//  public:
+//     scoped_clip_region_reset() : ctx_(0)
+//     {
+//     }
+//     template<class Context>
+//     scoped_clip_region_reset(Context& ctx)
+//     {
+//         begin(get_geometry_context(ctx));
+//     }
+//     ~scoped_clip_region_reset()
+//     {
+//         end();
+//     }
+//     void
+//     begin(geometry_context& ctx);
+//     void
+//     end();
 
- private:
-    geometry_context* ctx_;
-    box<2, double> old_region_;
-};
+//  private:
+//     geometry_context* ctx_;
+//     box<2, double> old_region_;
+// };
 
 // scoped_transformation is a scoped object that applies a transformation to a
 // geometry_context. While it's active, the context's transformation matrix
@@ -159,8 +164,6 @@ class scoped_transformation : noncopyable
     begin(geometry_context& ctx);
     void
     set(matrix<3, 3, double> const& transformation);
-    void
-    restore();
     void
     end();
 
