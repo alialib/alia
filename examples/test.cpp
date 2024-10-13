@@ -1,6 +1,7 @@
 #include <alia/core/flow/data_graph.hpp>
 #include <alia/core/flow/events.hpp>
 #include <alia/core/timing/cubic_bezier.hpp>
+#include <alia/core/timing/smoothing.hpp>
 #include <alia/ui.hpp>
 #include <alia/ui/color.hpp>
 #include <alia/ui/events.hpp>
@@ -9,7 +10,9 @@
 #include <alia/ui/layout/spacer.hpp>
 #include <alia/ui/layout/specification.hpp>
 #include <alia/ui/layout/utilities.hpp>
+#include <alia/ui/library/bullets.hpp>
 #include <alia/ui/library/checkbox.hpp>
+#include <alia/ui/library/node_expander.hpp>
 #include <alia/ui/library/panels.hpp>
 #include <alia/ui/library/radio_button.hpp>
 #include <alia/ui/library/slider.hpp>
@@ -274,251 +277,6 @@ make_radio_signal(Selected selected, Index index)
     return radio_signal<Selected, Index>(
         std::move(selected), std::move(index));
 }
-
-// struct tree_expander_node : widget
-// {
-//     layout_requirements
-//     get_horizontal_requirements() override
-//     {
-//         layout_requirements requirements;
-//         resolve_requirements(
-//             requirements,
-//             resolved_spec_,
-//             0,
-//             calculated_layout_requirements{40, 0, 0});
-//         return requirements;
-//     }
-//     layout_requirements
-//     get_vertical_requirements(layout_scalar /*assigned_width*/) override
-//     {
-//         layout_requirements requirements;
-//         resolve_requirements(
-//             requirements,
-//             resolved_spec_,
-//             1,
-//             calculated_layout_requirements{40, 0, 0});
-//         return requirements;
-//     }
-//     void
-//     set_relative_assignment(
-//         relative_layout_assignment const& assignment) override
-//     {
-//         layout_requirements horizontal_requirements, vertical_requirements;
-//         resolve_requirements(
-//             horizontal_requirements,
-//             resolved_spec_,
-//             0,
-//             calculated_layout_requirements{40, 0, 0});
-//         resolve_requirements(
-//             vertical_requirements,
-//             resolved_spec_,
-//             1,
-//             calculated_layout_requirements{40, 0, 0});
-//         relative_assignment_ = resolve_relative_assignment(
-//             resolved_spec_,
-//             assignment,
-//             horizontal_requirements,
-//             vertical_requirements);
-//     }
-
-//     void
-//     render(render_event& event) override
-//     {
-//         SkCanvas& canvas = *event.canvas;
-
-//         auto const& region = this->assignment().region;
-
-//         uint8_t background_alpha = 0;
-
-//         if (is_click_in_progress(
-//                 *sys_, widget_id{*this, 0}, mouse_button::LEFT)
-//             || is_pressed(keyboard_click_state_))
-//         {
-//             background_alpha = 0x30;
-//         }
-//         else if (is_click_possible(*sys_, widget_id{*this, 0}))
-//         {
-//             background_alpha = 0x18;
-//         }
-
-//         auto position = region.corner + event.current_offset;
-
-//         if (background_alpha != 0)
-//         {
-//             SkPaint paint;
-//             paint.setColor(SkColorSetARGB(background_alpha, 0x00, 0x00,
-//             0xff)); SkRect rect; rect.fLeft = SkScalar(position[0]);
-//             rect.fTop = SkScalar(position[1]);
-//             rect.fRight = SkScalar(position[0] + region.size[0]);
-//             rect.fBottom = SkScalar(position[1] + region.size[1]);
-//             canvas.drawRect(rect, paint);
-//         }
-
-//         float angle = smooth_value(
-//             angle_smoother_,
-//             state_ ? 90.f : 0.f,
-//             tick_counter_,
-//             animated_transition{linear_curve, 200});
-
-//         canvas.save();
-
-//         canvas.translate(
-//             position[0] + region.size[0] / SkIntToScalar(2),
-//             position[1] + region.size[1] / SkIntToScalar(2));
-//         canvas.rotate(angle);
-
-//         {
-//             SkPaint paint;
-//             paint.setAntiAlias(true);
-//             paint.setColor(SK_ColorBLACK);
-//             // set_color(paint, renderer.style().fg_color);
-//             paint.setStyle(SkPaint::kFill_Style);
-//             SkScalar a = region.size[0] / SkDoubleToScalar(2.5);
-//             SkPath path;
-//             path.incReserve(4);
-//             SkPoint p0;
-//             p0.fX = a * SkDoubleToScalar(-0.34);
-//             p0.fY = a * SkDoubleToScalar(-0.5);
-//             path.moveTo(p0);
-//             SkPoint p1;
-//             p1.fX = p0.fX;
-//             p1.fY = a * SkDoubleToScalar(0.5);
-//             path.lineTo(p1);
-//             SkPoint p2;
-//             p2.fX = p0.fX + a * SkDoubleToScalar(0.866);
-//             p2.fY = 0;
-//             path.lineTo(p2);
-//             path.lineTo(p0);
-//             canvas.drawPath(path, paint);
-//         }
-
-//         canvas.restore();
-
-//         // if (rect.width() > 200)
-//         // {
-//         //     SkPaint blur(paint);
-//         //     blur.setAlpha(200);
-//         //     blur.setMaskFilter(
-//         //         SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, 40, false));
-//         //     canvas.drawRect(rect, blur);
-//         // }
-
-//         // if (widget_has_focus(*sys_, widget_id{*this, 0}))
-//         // {
-//         //     SkPaint paint;
-//         //     paint.setStyle(SkPaint::kStroke_Style);
-//         //     paint.setStrokeWidth(4);
-//         //     paint.setColor(SK_ColorBLACK);
-//         //     canvas.drawRect(rect, paint);
-//         // }
-//     }
-
-//     void
-//     hit_test(
-//         hit_test_base& test, vector<2, double> const& point) const override
-//     {
-//         std::cout << "hit test: " << point << std::endl;
-//         if (is_inside(this->assignment().region, vector<2, float>(point)))
-//         {
-//             std::cout << "inside!" << std::endl;
-//             if (test.type == hit_test_type::MOUSE)
-//             {
-//                 static_cast<mouse_hit_test&>(test).result
-//                     = mouse_hit_test_result{
-//                         externalize(widget_id{*this, 0}),
-//                         mouse_cursor::POINTER,
-//                         this->assignment().region,
-//                         ""};
-//             }
-//         }
-//     }
-
-//     void
-//     process_input(dataless_ui_context ctx) override
-//     {
-//         add_to_focus_order(ctx, widget_id{*this, 0});
-//         if (detect_click(
-//                 ctx, widget_id{*this, 0}, mouse_button::LEFT))
-//         {
-//             state_ = !state_;
-//         }
-//         if (detect_keyboard_click(
-//                 ctx, keyboard_click_state_, widget_id{*this, 0}))
-//         {
-//             state_ = !state_;
-//         }
-//     }
-
-//     matrix<3, 3, double>
-//     transformation() const override
-//     {
-//         return parent->transformation();
-//     }
-
-//     relative_layout_assignment const&
-//     assignment() const
-//     {
-//         return relative_assignment_;
-//     }
-
-//     layout_box
-//     bounding_box() const override
-//     {
-//         return add_border(this->assignment().region, 4.f);
-//     }
-
-//     void
-//     reveal_region(region_reveal_request const& request) override
-//     {
-//         parent->reveal_region(request);
-//     }
-
-//     ui_system* sys_;
-//     external_component_id id_;
-//     bool state_ = false;
-//     keyboard_click_state keyboard_click_state_;
-//     value_smoother<float> angle_smoother_;
-//     millisecond_count tick_counter_;
-//     // the resolved spec
-//     resolved_layout_spec resolved_spec_;
-//     // resolved relative assignment
-//     relative_layout_assignment relative_assignment_;
-// };
-
-// void
-// do_tree_expander(
-//     ui_context ctx, layout const& layout_spec = layout(TOP | LEFT | PADDED))
-// {
-//     std::shared_ptr<tree_expander_node>* node_ptr;
-//     if (get_cached_data(ctx, &node_ptr))
-//     {
-//         *node_ptr = std::make_shared<tree_expander_node>();
-//         (*node_ptr)->sys_ = &get_system(ctx);
-//     }
-//     auto& node = **node_ptr;
-
-//     auto id = get_component_id(ctx);
-
-//     if (is_refresh_event(ctx))
-//     {
-//         resolved_layout_spec resolved_spec;
-//         resolve_layout_spec(
-//             get<ui_traversal_tag>(ctx).layout,
-//             resolved_spec,
-//             layout_spec,
-//             TOP | LEFT | PADDED);
-//         detect_layout_change(
-//             get<ui_traversal_tag>(ctx).layout,
-//             &node.resolved_spec_,
-//             resolved_spec);
-
-//         add_layout_node(get<ui_traversal_tag>(ctx).layout, &node);
-
-//         node.id_ = externalize(id);
-
-//         node.tick_counter_ = get_raw_animation_tick_count(ctx);
-//     }
-// }
 
 // // struct svg_image_node : widget
 // // {
@@ -1553,253 +1311,234 @@ make_radio_signal(Selected selected, Index index)
 //     container_.end();
 // }
 
-// struct collapsible_container : widget_container
-// {
-//     column_layout_logic* logic;
-//     layout_cacher cacher;
-//     layout_vector assigned_size;
+template<class Content>
+struct collapsible_layout_container : layout_container
+{
+    // implementation of layout interface
+    layout_requirements
+    get_horizontal_requirements() override
+    {
+        return content.get_horizontal_requirements();
+    }
+    layout_requirements
+    get_vertical_requirements(layout_scalar assigned_width) override
+    {
+        auto const content_requirements
+            = content.get_vertical_requirements(assigned_width);
+        this->content_height = content_requirements.size;
+        auto const visible_height = round_to_layout_scalar(
+            float(this->content_height) * this->expansion);
+        return layout_requirements{visible_height, 0, 0};
+    }
+    void
+    set_relative_assignment(
+        relative_layout_assignment const& assignment) override
+    {
+        layout_box const& region = assignment.region;
 
-//     value_smoother<float> smoother;
+        layout_requirements y
+            = content.get_vertical_requirements(region.size[0]);
 
-//     float offset_factor = 1;
+        content.set_relative_assignment(relative_layout_assignment{
+            layout_box(
+                region.corner, make_layout_vector(region.size[0], y.size)),
+            y.size - y.descent});
 
-//     // expansion fraction (0 to 1)
-//     float expansion_ = 0;
+        this->window = region;
+    }
 
-//     // The following are filled in during layout...
+    void
+    record_content_change() override
+    {
+        this->parent->record_content_change();
+    }
 
-//     // actual content height
-//     layout_scalar content_height;
+    Content content;
 
-//     // window through which the content is visible
-//     layout_box window;
+    // expansion fraction (0 to 1)
+    float expansion = 0;
 
-//     void
-//     refresh(dataless_ui_context ctx, float expansion)
-//     {
-//         auto smoothed_expansion = smooth_raw(
-//             ctx,
-//             this->smoother,
-//             expansion,
-//             animated_transition{default_curve, 160});
+    // The following are filled in during layout...
 
-//         if (this->expansion_ != smoothed_expansion)
-//         {
-//             this->last_content_change
-//                 = get_layout_traversal(ctx).refresh_counter;
-//         }
+    // actual content height
+    layout_scalar content_height;
 
-//         detect_layout_change(
-//             get_layout_traversal(ctx), &this->expansion_,
-//             smoothed_expansion);
-//     }
+    // window through which the content is visible
+    layout_box window;
+};
 
-//     layout_requirements
-//     get_horizontal_requirements() override
-//     {
-//         return cache_horizontal_layout_requirements(
-//             cacher, last_content_change, [&] {
-//                 calculated_layout_requirements x
-//                     = logic->get_horizontal_requirements(children);
-//                 return calculated_layout_requirements{x.size, 0, 0};
-//             });
-//     }
+class scoped_collapsible_content : noncopyable
+{
+ public:
+    scoped_collapsible_content()
+    {
+    }
+    ~scoped_collapsible_content()
+    {
+        end();
+    }
 
-//     layout_requirements
-//     get_vertical_requirements(layout_scalar assigned_width) override
-//     {
-//         return cache_vertical_layout_requirements(
-//             cacher, last_content_change, assigned_width, [&] {
-//                 layout_scalar resolved_width = resolve_assigned_width(
-//                     this->cacher.resolved_spec,
-//                     assigned_width,
-//                     this->get_horizontal_requirements());
-//                 calculated_layout_requirements y
-//                     = logic->get_vertical_requirements(
-//                         children, resolved_width);
-//                 layout_scalar content_height = y.size;
-//                 layout_scalar visible_height = round_to_layout_scalar(
-//                     float(content_height) * this->expansion_);
-//                 this->content_height = content_height;
-//                 return calculated_layout_requirements{visible_height, 0, 0};
-//             });
-//     }
+    scoped_collapsible_content(
+        ui_context& ctx,
+        bool expanded,
+        animated_transition const& transition = default_transition,
+        double const offset_factor = 1.,
+        layout const& layout_spec = default_layout)
+    {
+        begin(ctx, expanded, transition, offset_factor, layout_spec);
+    }
 
-//     void
-//     set_relative_assignment(
-//         relative_layout_assignment const& assignment) override
-//     {
-//         update_relative_assignment(
-//             *this,
-//             cacher,
-//             last_content_change,
-//             assignment,
-//             [&](auto const& resolved_assignment) {
-//                 calculated_layout_requirements y
-//                     = logic->get_vertical_requirements(
-//                         children, resolved_assignment.region.size[0]);
-//                 logic->set_relative_assignment(
-//                     children,
-//                     make_layout_vector(
-//                         resolved_assignment.region.size[0], y.size),
-//                     y.size - y.descent);
-//                 this->window = resolved_assignment.region;
-//             });
-//     }
+    scoped_collapsible_content(
+        ui_context& ctx,
+        float expansion,
+        double const offset_factor = 1.,
+        layout const& layout_spec = default_layout)
+    {
+        begin(ctx, expansion, offset_factor, layout_spec);
+    }
 
-//     void
-//     render(render_event& event) override
-//     {
-//         auto const& region = get_assignment(this->cacher).region;
-//         SkRect bounds;
-//         bounds.fLeft = SkScalar(region.corner[0] + event.current_offset[0]);
-//         bounds.fTop = SkScalar(region.corner[1] + event.current_offset[1]);
-//         bounds.fRight = bounds.fLeft + SkScalar(region.size[0]);
-//         bounds.fBottom = bounds.fTop + SkScalar(region.size[1]);
-//         if (!event.canvas->quickReject(bounds))
-//         {
-//             event.canvas->save();
-//             auto original_offset = event.current_offset;
-//             event.canvas->clipRect(bounds);
-//             event.current_offset += region.corner;
-//             layout_scalar content_offset = round_to_layout_scalar(
-//                 this->offset_factor * (1 - expansion_) *
-//                 this->content_height);
-//             event.current_offset[1] -= content_offset;
-//             alia::render_children(event, *this);
-//             event.current_offset = original_offset;
-//             event.canvas->restore();
-//         }
-//     }
+    void
+    begin(
+        ui_context& ctx,
+        bool expanded,
+        animated_transition const& transition = default_transition,
+        double const offset_factor = 1.,
+        layout const& layout_spec = default_layout);
 
-//     void
-//     hit_test(
-//         hit_test_base& test, vector<2, double> const& point) const override
-//     {
-//         auto const& region = get_assignment(this->cacher).region;
-//         if (is_inside(region, vector<2, float>(point)))
-//         {
-//             auto local_point = point - vector<2, double>(region.corner);
-//             layout_scalar content_offset = round_to_layout_scalar(
-//                 this->offset_factor * (1 - expansion_) *
-//                 this->content_height);
-//             local_point[1] += content_offset;
-//             for (widget* node = this->widget_container::children; node;
-//                  node = node->next)
-//             {
-//                 node->hit_test(test, local_point);
-//             }
-//         }
-//     }
+    void
+    begin(
+        ui_context& ctx,
+        float expansion,
+        double const offset_factor = 1.,
+        layout const& layout_spec = default_layout);
 
-//     void
-//     process_input(dataless_ui_context) override
-//     {
-//     }
+    void
+    end();
 
-//     matrix<3, 3, double>
-//     transformation() const override
-//     {
-//         // TODO
-//         return parent->transformation();
-//     }
+    bool
+    do_content() const
+    {
+        return do_content_;
+    }
 
-//     layout_box
-//     bounding_box() const override
-//     {
-//         return this->cacher.relative_assignment.region;
-//     }
+ private:
+    ui_context* ctx_;
+    scoped_layout_container container_;
+    scoped_clip_region clipper_;
+    scoped_transformation transform_;
+    column_layout column_;
+    bool do_content_;
+};
 
-//     void
-//     reveal_region(region_reveal_request const& request) override
-//     {
-//         parent->reveal_region(request);
-//     }
-// };
+void
+scoped_collapsible_content::begin(
+    ui_context& ctx,
+    bool expanded,
+    animated_transition const& transition,
+    double const offset_factor,
+    layout const& layout_spec)
+{
+    // TODO:
+    static value_smoother<float> the_smoother;
+    float expansion
+        = smooth_raw(ctx, the_smoother, expanded ? 1.f : 0.f, transition);
+    begin(ctx, expansion, offset_factor, layout_spec);
+}
 
-// void
-// get_collapsible_view(
-//     ui_context ctx,
-//     std::shared_ptr<collapsible_container>** container,
-//     readable<bool> expanded,
-//     layout const& layout_spec)
-// {
-//     if (get_data(ctx, container))
-//         **container = std::make_shared<collapsible_container>();
+void
+scoped_collapsible_content::begin(
+    ui_context& ctx,
+    float expansion,
+    double const offset_factor,
+    layout const& layout_spec)
+{
+    ctx_ = &ctx;
 
-//     if (get_layout_traversal(ctx).is_refresh_pass)
-//     {
-//         (**container)->refresh(ctx, condition_is_true(expanded) ? 1.f :
-//         0.f);
+    collapsible_layout_container<column_layout_container>* layout;
+    get_cached_data(ctx, &layout);
+    container_.begin(get_layout_traversal(ctx), layout);
 
-//         if (update_layout_cacher(
-//                 get_layout_traversal(ctx),
-//                 (**container)->cacher,
-//                 layout_spec,
-//                 FILL | UNPADDED))
-//         {
-//             // Since this container isn't active yet, it didn't get marked
-//             // as needing recalculation, so we need to do that manually
-//             // here.
-//             (**container)->last_content_change
-//                 = get_layout_traversal(ctx).refresh_counter;
-//         }
-//     }
-// }
+    widget_id id = get_widget_id(ctx);
 
-// struct scoped_collapsible
-// {
-//     scoped_collapsible()
-//     {
-//     }
-//     scoped_collapsible(
-//         ui_context ctx,
-//         readable<bool> expanded,
-//         layout const& layout_spec = default_layout)
-//     {
-//         begin(ctx, expanded, layout_spec);
-//     }
-//     ~scoped_collapsible()
-//     {
-//         end();
-//     }
+    if (is_refresh_pass(ctx))
+    {
+        // If the widget is expanding, ensure that it's visible.
+        // TODO: Is this the correct place to do this?
+        // std::cout << "refresh:\n  " << "expansion: " << expansion << "\n  "
+        //           << "layout->expansion: " << layout->expansion <<
+        //           std::endl;
+        if (expansion > layout->expansion)
+            make_widget_visible(ctx, id, ABRUPT);
+        detect_layout_change(ctx, &layout->expansion, expansion);
+    }
+    else
+    {
+        if (get_event_category(ctx) == REGION_CATEGORY)
+            do_box_region(ctx, id, layout->window);
 
-//     bool
-//     do_content() const
-//     {
-//         return container_->expansion_ != 0;
-//     }
+        if (expansion != 0 && expansion != 1)
+        {
+            clipper_.begin(*get_layout_traversal(ctx).geometry);
+            clipper_.set(box<2, double>(layout->window));
+        }
 
-//     void
-//     begin(
-//         ui_context ctx,
-//         readable<bool> expanded,
-//         layout const& layout_spec = default_layout)
-//     {
-//         std::shared_ptr<collapsible_container>* container;
-//         get_collapsible_view(ctx, &container, expanded, layout_spec);
-//         container_ = container->get();
-//         scoping_.begin(get_layout_traversal(ctx), container_);
-//     }
-//     void
-//     end()
-//     {
-//         scoping_.end();
-//     }
+        layout_scalar offset = round_to_layout_scalar(
+            offset_factor * (1 - expansion) * layout->content_height);
 
-//  private:
-//     collapsible_container* container_;
-//     scoped_layout_container scoping_;
-// };
+        transform_.begin(*get_layout_traversal(ctx).geometry);
+        transform_.set(translation_matrix(
+            make_vector<double>(0, -offset)
+            + vector<2, double>(
+                layout->cacher.relative_assignment.region.corner)));
+    }
 
-// template<class Content>
-// void
-// collapsible_content(
-//     ui_context ctx, readable<bool> show_content, Content&& content)
-// {
-//     scoped_collapsible collapsible(ctx, show_content);
-//     if_(ctx, collapsible.do_content(), std::forward<Content>(content));
-// }
+    do_content_ = expansion != 0;
+
+    column_.begin(ctx, layout->content, layout_spec);
+}
+
+void
+scoped_collapsible_content::end()
+{
+    if (ctx_)
+    {
+        column_.end();
+
+        transform_.end();
+        clipper_.end();
+
+        container_.end();
+
+        ctx_ = 0;
+    }
+}
+
+template<class Content>
+void
+collapsible_content(
+    ui_context ctx, readable<bool> show_content, Content&& content)
+{
+    scoped_collapsible_content collapsible(
+        ctx, condition_is_true(show_content));
+    if_(ctx, collapsible.do_content(), std::forward<Content>(content));
+}
+
+template<class Content>
+void
+collapsible_content(
+    ui_context ctx,
+    readable<bool> show_content,
+    layout const& layout_spec,
+    Content&& content)
+{
+    scoped_collapsible_content collapsible(
+        ctx,
+        condition_is_true(show_content),
+        default_transition,
+        1.,
+        layout_spec);
+    if_(ctx, collapsible.do_content(), std::forward<Content>(content));
+}
 
 // ///
 
@@ -2196,7 +1935,9 @@ my_ui(ui_context ctx)
     auto selected = get_state(ctx, int(0));
 
     auto my_style
-        = text_style{"roboto/Roboto-Regular", 22.f, rgb8(173, 181, 189)};
+        = text_style{"Roboto/Roboto-Regular", 22.f, rgb8(173, 181, 189)};
+    // auto my_style = text_style{
+    //     "Roboto_Mono/static/RobotoMono-Regular", 22.f, rgb8(173, 181, 189)};
 
     panel_style_info pstyle{
         box_border_width<float>{4, 4, 4, 4},
@@ -2212,6 +1953,22 @@ my_ui(ui_context ctx)
     do_spacer(ctx, size(20, 100, PIXELS));
 
     {
+        bulleted_list list(ctx);
+        {
+            bulleted_item item(list);
+            do_text(ctx, direct(my_style), value("this"));
+        }
+        {
+            bulleted_item item(list);
+            do_text(ctx, direct(my_style), value("that"));
+        }
+        {
+            bulleted_item item(list);
+            do_text(ctx, direct(my_style), value("the other"));
+        }
+    }
+
+    {
         row_layout blah(ctx);
 
         do_spacer(ctx, size(100, 100, PIXELS));
@@ -2224,6 +1981,34 @@ my_ui(ui_context ctx)
             do_switch(ctx, state1);
             do_switch(ctx, get_state(ctx, false));
             do_switch(ctx, get_state(ctx, false));
+        }
+
+        do_spacer(ctx, size(100, 100, PIXELS));
+
+        {
+            column_layout col(ctx);
+            auto state1 = get_state(ctx, false);
+            {
+                row_layout row(ctx);
+                do_node_expander(ctx, disable_writes(state1));
+                // scoped_transformation transform(
+                //     ctx, translation_matrix(make_vector(0., 1.)));
+                do_text(ctx, direct(my_style), value("One"), CENTER_Y);
+            }
+            {
+                row_layout row(ctx);
+                do_node_expander(ctx, state1);
+                // scoped_transformation transform(
+                //     ctx, translation_matrix(make_vector(0., 1.)));
+                do_text(ctx, direct(my_style), value("Two"), CENTER_Y);
+            }
+            {
+                row_layout row(ctx);
+                do_node_expander(ctx, get_state(ctx, false));
+                // scoped_transformation transform(
+                //     ctx, translation_matrix(make_vector(0., 1.)));
+                do_text(ctx, direct(my_style), value("Three"), CENTER_Y);
+            }
         }
 
         do_spacer(ctx, size(100, 100, PIXELS));
@@ -2329,8 +2114,6 @@ my_ui(ui_context ctx)
 
     // auto show_text = get_state(ctx, false);
 
-    // auto show_other_text = get_state(ctx, false);
-
     // {
     //     scoped_flow_layout row(ctx, UNPADDED | FILL);
     //     do_box(ctx, SK_ColorLTGRAY, actions::toggle(show_text));
@@ -2339,23 +2122,60 @@ my_ui(ui_context ctx)
     //     // do_svg_image(ctx);
     // }
 
-    // collapsible_content(ctx, show_other_text, [&] {
-    //     do_spacer(ctx, height(20, PIXELS));
-    //     do_text(ctx, value("Könnten Sie mir das übersetzen?"));
-    //     do_wrapped_text(
-    //         ctx,
-    //         value("\xce\xa3\xe1\xbd\xb2\x20\xce\xb3\xce\xbd\xcf\x89\xcf\x81"
-    //               "\xe1\xbd\xb7\xce\xb6\xcf\x89\x20\xe1\xbc\x80\xcf\x80\xe1"
-    //               "\xbd\xb8\x20\xcf\x84\xe1\xbd\xb4\xce\xbd\x20\xce\xba\xe1"
-    //               "\xbd\xb9\xcf\x88\xce\xb7"));
-    //     do_wrapped_text(
-    //         ctx,
-    //         value("\x58\x20\x2d\x20\xd9\x82\xd9\x84\xd9\x85\x20\xd8\xb1\xd8"
-    //               "\xb5\xd8\xa7\xd8\xb5\x20\x2d\x20\x59"));
-    //     do_wrapped_text(
-    //         ctx,
-    //         value("\xe7\x8e\x8b\xe6\x98\x8e\xef\xbc\x9a\xe8\xbf\x99\xe6\x98"
-    //               "\xaf\xe4\xbb\x80\xe4\xb9\x88\xef\xbc\x9f"));
+    {
+        auto show_content = get_state(ctx, false);
+        // grid_layout grid(ctx);
+
+        {
+            row_layout row(ctx);
+            // grid_row row(grid);
+            do_node_expander(ctx, show_content);
+            // scoped_transformation transform(
+            //     ctx, translation_matrix(make_vector(0., 1.)));
+            do_text(ctx, direct(my_style), value("One"), CENTER_Y);
+        }
+
+        {
+            // grid_row row(grid);
+            row_layout row(ctx);
+            do_spacer(ctx, size(48, 48, PIXELS));
+            collapsible_content(ctx, show_content, GROW, [&] {
+                // std::cout << "content!" << std::endl;
+                do_wrapped_text(
+                    ctx,
+                    direct(my_style),
+                    value("Lorem ipsum dolor sit amet, consectetur "
+                          "adipisg elit. "
+                          "Phasellus lacinia elementum diam consequat "
+                          "alicinquet. "
+                          "Vestibulum ut libero justo. Pellentesque lectus "
+                          "lectus, "
+                          "scelerisque a elementum sed, bibendum id libero. "
+                          "Maecenas venenatis est sed sem "
+                          "consequat mollis. Ut "
+                          "nequeodio, hendrerit ut justo venenatis, consequat "
+                          "molestie eros. Nam fermentum, mi malesuada eleifend"
+                          "dapibus, lectus dolor luctus orci, nec posuere lor "
+                          "lorem ac sem. Nullam interdum laoreet ipsum in "
+                          "dictum."));
+            });
+        }
+    }
+
+    // do_wrapped_text(
+    //     ctx,
+    //     value("\xce\xa3\xe1\xbd\xb2\x20\xce\xb3\xce\xbd\xcf\x89\xcf\x81"
+    //           "\xe1\xbd\xb7\xce\xb6\xcf\x89\x20\xe1\xbc\x80\xcf\x80\xe1"
+    //           "\xbd\xb8\x20\xcf\x84\xe1\xbd\xb4\xce\xbd\x20\xce\xba\xe1"
+    //           "\xbd\xb9\xcf\x88\xce\xb7"));
+    // do_wrapped_text(
+    //     ctx,
+    //     value("\x58\x20\x2d\x20\xd9\x82\xd9\x84\xd9\x85\x20\xd8\xb1\xd8"
+    //           "\xb5\xd8\xa7\xd8\xb5\x20\x2d\x20\x59"));
+    // do_wrapped_text(
+    //     ctx,
+    //     value("\xe7\x8e\x8b\xe6\x98\x8e\xef\xbc\x9a\xe8\xbf\x99\xe6\x98"
+    //           "\xaf\xe4\xbb\x80\xe4\xb9\x88\xef\xbc\x9f"));
 
     // {
     //     grid_layout grid(ctx);
@@ -2378,6 +2198,13 @@ my_ui(ui_context ctx)
     //     }
     // }
 
+    do_spacer(ctx, height(100, PIXELS));
+
+    // do_box(
+    //     ctx,
+    //     SK_ColorRED,
+    //     actions::toggle(get_state(ctx, false)),
+    //     size(400, 400, PIXELS));
     // do_spacer(ctx, height(100, PIXELS));
 
     {
@@ -2462,13 +2289,6 @@ my_ui(ui_context ctx)
                       "felis justo utante.\n\n"),
                 FILL);
         }
-
-        // do_box(
-        //     ctx,
-        //     SK_ColorRED,
-        //     actions::toggle(show_text),
-        //     size(400, 400, PIXELS));
-        // do_spacer(ctx, height(100, PIXELS));
 
         // for (int outer = 0; outer != 2; ++outer)
         // {
