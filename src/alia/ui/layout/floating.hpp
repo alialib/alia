@@ -77,7 +77,7 @@ struct floating_layout
     layout_node** old_next_ptr_;
     layout_node* floating_root_;
     floating_layout_data* data_;
-    scoped_clip_region_reset clipping_reset_;
+    // scoped_clip_region_reset clipping_reset_;
     layout_vector min_size_, max_size_;
 };
 

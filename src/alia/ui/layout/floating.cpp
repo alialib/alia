@@ -38,8 +38,8 @@ floating_layout::concrete_begin(
         max_size_ = max_size;
     }
 
-    if (traversal.geometry)
-        clipping_reset_.begin(*traversal.geometry);
+    // if (traversal.geometry)
+    //     clipping_reset_.begin(*traversal.geometry);
 }
 
 void
@@ -66,7 +66,8 @@ floating_layout::end()
             resolve_layout(floating_root_, data_->size);
         }
 
-        clipping_reset_.end();
+        // TODO
+        // clipping_reset_.end();
 
         traversal_ = 0;
     }

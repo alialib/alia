@@ -1,3 +1,4 @@
+#include "alia/ui/utilities/skia.hpp"
 #include <alia/ui/system/object.hpp>
 
 #include <alia/core/context/interface.hpp>
@@ -27,6 +28,16 @@ namespace alia {
 struct noop_geometry_subscriber : geometry_context_subscriber
 {
     void
+    push_state() override
+    {
+    }
+
+    void
+    pop_state() override
+    {
+    }
+
+    void
     set_transformation_matrix(matrix<3, 3, double> const&) override
     {
     }
@@ -39,6 +50,18 @@ struct noop_geometry_subscriber : geometry_context_subscriber
 
 struct skia_geometry_subscriber : geometry_context_subscriber
 {
+    void
+    push_state() override
+    {
+        canvas->save();
+    }
+
+    void
+    pop_state() override
+    {
+        canvas->restore();
+    }
+
     void
     set_transformation_matrix(matrix<3, 3, double> const& m) override
     {
@@ -59,9 +82,12 @@ struct skia_geometry_subscriber : geometry_context_subscriber
     }
 
     void
-    set_clip_region(box<2, double> const&) override
+    set_clip_region(box<2, double> const& region) override
     {
-        // TODO
+        // TODO: Change this interface to make the implementation less
+        // convoluted.
+        // TODO: `region` should just be passed directly as floats?
+        canvas->clipRect(as_skrect(layout_box(region)));
     }
 
     SkCanvas* canvas;
