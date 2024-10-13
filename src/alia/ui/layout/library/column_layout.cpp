@@ -99,6 +99,7 @@ void
 column_layout::concrete_begin(
     layout_traversal& traversal,
     data_traversal& data,
+    simple_layout_container<column_layout_logic>* container,
     layout const& layout_spec)
 {
     ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(column_layout_logic);

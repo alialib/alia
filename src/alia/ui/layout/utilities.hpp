@@ -440,14 +440,13 @@ get_simple_layout_container(
     Logic** logic,
     layout const& layout_spec)
 {
-    get_cached_data(data, container);
-
+    if (!*container)
+        get_cached_data(data, container);
     if (is_refresh_pass(traversal))
     {
         update_layout_cacher(
             traversal, (*container)->cacher, layout_spec, FILL | UNPADDED);
     }
-
     *logic = &(*container)->logic;
 }
 
@@ -539,6 +538,7 @@ struct layout_leaf : layout_node
 
 #define ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(logic_type)                        \
     logic_type* logic;                                                        \
+    container_ = container;                                                   \
     get_simple_layout_container(                                              \
         traversal, data, &container_, &logic, layout_spec);                   \
     slc_.begin(traversal, container_);                                        \

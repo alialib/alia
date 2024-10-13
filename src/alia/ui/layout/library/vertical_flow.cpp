@@ -93,6 +93,7 @@ void
 vertical_flow_layout::concrete_begin(
     layout_traversal& traversal,
     data_traversal& data,
+    simple_layout_container<vertical_flow_layout_logic>* container,
     layout const& layout_spec)
 {
     ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(vertical_flow_layout_logic);

@@ -33,9 +33,11 @@ void
 clip_evasion_layout::concrete_begin(
     layout_traversal& traversal,
     data_traversal& data,
+    simple_layout_container<clip_evasion_layout_logic>* container,
     layout const& layout_spec)
 {
     clip_evasion_layout_logic* logic;
+    container_ = container;
     get_simple_layout_container(
         traversal, data, &container_, &logic, layout_spec);
     slc_.begin(traversal, container_);
