@@ -85,6 +85,17 @@ class RunHandler final : public SkShaper::RunHandler
         }
     }
 
+    SkScalar
+    ascent() const
+    {
+        return fMaxRunAscent;
+    }
+    SkScalar
+    descent() const
+    {
+        return fMaxRunDescent;
+    }
+
  private:
     SkTextBlobBuilder fBuilder;
     std::vector<size_t> fLineEndOffsets;
@@ -383,6 +394,8 @@ Shape(
         }
         height = std::max(height, runHandler.endPoint().y());
         result.width = runHandler.finalPosition().x();
+        result.ascent = -runHandler.ascent();
+        result.descent = runHandler.descent();
         // std::cout << "result.width = " << result.width << std::endl;
         result.blob = runHandler.makeBlob();
     }

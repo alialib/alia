@@ -21,7 +21,7 @@ struct ShapeResult
     std::vector<std::size_t> lineBreakOffsets;
     std::vector<SkRect> glyphBounds;
     int verticalAdvance;
-    SkScalar width;
+    SkScalar width, ascent, descent;
 };
 
 ShapeResult

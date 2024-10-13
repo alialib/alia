@@ -86,8 +86,8 @@ do_text(
                               layout_scalar(data.shape->width),
                               layout_scalar(data.shape->verticalAdvance))
                         : make_layout_vector(0, 0),
-                    0, // TODO: ascent/descent
-                    0),
+                    data.shape ? data.shape->ascent : 0,
+                    data.shape ? data.shape->descent : 0),
                 LEFT | BASELINE_Y | PADDED);
 
             add_layout_node(
