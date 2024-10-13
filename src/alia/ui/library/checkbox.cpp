@@ -17,17 +17,15 @@
 
 namespace alia {
 
+struct checkbox_bit_layout
+{
+    click_flare_bit_layout click_flare;
+    smoothing_bit_field state_smoothing;
+};
+
 struct checkbox_data
 {
-    unsigned bits;
-
-    static constexpr unsigned click_flare_bits = 0;
-    static constexpr unsigned state_smoothing_bits
-        = click_flare_bits + click_flare_bit_count;
-    static constexpr unsigned total_bits_used
-        = state_smoothing_bits + bits_required_for_smoothing;
-    static_assert(total_bits_used <= 32);
-
+    bitpack<checkbox_bit_layout> bits;
     keyboard_click_state keyboard_click_state_;
     layout_leaf layout_node;
 };
@@ -72,7 +70,7 @@ do_checkbox(ui_context ctx, duplex<bool> checked, layout const& layout_spec)
             {
                 // TODO: Handle timing properly for keyboard clicks.
                 fire_click_flare(
-                    ctx, mouse_button::LEFT, data.bits, data.click_flare_bits);
+                    ctx, ALIA_NESTED_BITPACK(data.bits, click_flare));
                 if (signal_has_value(checked)
                     && signal_ready_to_write(checked))
                 {
@@ -163,8 +161,7 @@ do_checkbox(ui_context ctx, duplex<bool> checked, layout const& layout_spec)
 
             float smoothed_state = smooth_between_values(
                 ctx,
-                data.bits,
-                2,
+                ALIA_BITREF(data.bits, state_smoothing),
                 condition_is_true(checked),
                 1.f,
                 0.f,
@@ -262,7 +259,11 @@ do_checkbox(ui_context ctx, duplex<bool> checked, layout const& layout_spec)
             }
 
             render_click_flares(
-                ctx, data.bits, data.click_flare_bits, state, center, color);
+                ctx,
+                ALIA_NESTED_BITPACK(data.bits, click_flare),
+                state,
+                center,
+                color);
         }
     }
     alia_end

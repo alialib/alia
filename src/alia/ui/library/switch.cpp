@@ -18,9 +18,15 @@
 
 namespace alia {
 
+struct switch_bit_layout
+{
+    click_flare_bit_layout click_flare;
+    smoothing_bit_field state_smoothing;
+};
+
 struct switch_data
 {
-    unsigned bits;
+    bitpack<switch_bit_layout> bits;
     keyboard_click_state keyboard_click_state_;
     layout_leaf layout_node;
 };
@@ -64,7 +70,8 @@ do_switch(ui_context ctx, duplex<bool> state, layout const& layout_spec)
                 || detect_keyboard_click(ctx, data.keyboard_click_state_, id))
             {
                 // TODO: Fix mouse_button::LEFT
-                fire_click_flare(ctx, mouse_button::LEFT, data.bits, 4);
+                fire_click_flare(
+                    ctx, ALIA_NESTED_BITPACK(data.bits, click_flare));
                 if (signal_has_value(state) && signal_ready_to_write(state))
                 {
                     write_signal(state, !read_signal(state));
@@ -136,8 +143,7 @@ do_switch(ui_context ctx, duplex<bool> state, layout const& layout_spec)
 
             float switch_position = smooth_between_values(
                 ctx,
-                data.bits,
-                0,
+                ALIA_BITREF(data.bits, state_smoothing),
                 condition_is_true(state),
                 1.f,
                 0.f,
@@ -245,8 +251,7 @@ do_switch(ui_context ctx, duplex<bool> state, layout const& layout_spec)
 
             render_click_flares(
                 ctx,
-                data.bits,
-                4,
+                ALIA_NESTED_BITPACK(data.bits, click_flare),
                 interaction_status,
                 make_vector(
                     region.corner[0] + region.size[0] * dot_x_offset,
