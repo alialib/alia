@@ -54,6 +54,7 @@ SkLoadICU()
 #include <alia/ui/system/object.hpp>
 #include <alia/ui/system/os_interface.hpp>
 #include <alia/ui/system/window_interface.hpp>
+#include <alia/ui/utilities/rendering.hpp>
 
 #include <chrono>
 
@@ -261,38 +262,15 @@ render_ui(sdl_window_impl& impl)
     // TODO: Don't clear automatically.
     {
         SkPaint paint;
-        paint.setColor(SK_ColorWHITE);
+        paint.setColor(SkColorSetRGB(0x31, 0x38, 0x44));
         canvas.drawPaint(paint);
     }
 
-    if (impl.system.root_widget)
     {
         render_event event;
         event.canvas = impl.skia_surface->getCanvas();
-        event.sys = &impl.system;
-        impl.system.root_widget->render(event);
+        dispatch_event(impl.system, event, RENDER_EVENT);
     }
-    else
-    {
-        // TODO: Clear the canvas?
-    }
-
-    // {
-    //     canvas.clipRect(SkRect::MakeWH(SkScalar(width), SkScalar(height)));
-    //     canvas.resetMatrix();
-    //     for (int i = 0; i != 10; ++i)
-    //     {
-    //         SkPaint paint;
-    //         paint.setAntiAlias(true);
-    //         paint.setColor(SK_ColorGRAY);
-    //         SkPath path;
-    //         path.moveTo(SkScalar(i * 100), 0);
-    //         path.lineTo(SkScalar(i * 100), 600);
-    //         paint.setStyle(SkPaint::kStroke_Style);
-    //         paint.setStrokeWidth(1);
-    //         canvas.drawPath(path, paint);
-    //     }
-    // }
 
     {
         std::chrono::steady_clock::time_point end
@@ -344,7 +322,7 @@ update_ui(sdl_window_impl& impl)
     }
 
     resolve_layout(
-        impl.system.root_widget, make_vector(float(width), float(height)));
+        impl.system.layout, make_vector(float(width), float(height)));
 
     // Increment the refresh counter immediately after resolving layout so
     // that any changes detected after this will be associated with the new
