@@ -162,6 +162,7 @@ void
 flow_layout::concrete_begin(
     layout_traversal& traversal,
     data_traversal& data,
+    simple_layout_container<flow_layout_logic>* container,
     layout const& requested_layout_spec)
 {
     // With a flow layout, we want to have the layout itself always fill

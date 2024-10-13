@@ -33,6 +33,7 @@ void
 layered_layout::concrete_begin(
     layout_traversal& traversal,
     data_traversal& data,
+    simple_layout_container<layered_layout_logic>* container,
     layout const& layout_spec)
 {
     ALIA_BEGIN_SIMPLE_LAYOUT_CONTAINER(layered_layout_logic);

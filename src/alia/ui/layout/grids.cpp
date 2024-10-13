@@ -509,7 +509,7 @@ grid_layout::concrete_begin(
     get_cached_data(data, &data_);
     refresh_grid(traversal, *data_);
 
-    simple_layout_container<column_layout_logic>* container;
+    simple_layout_container<column_layout_logic>* container = nullptr;
     column_layout_logic* logic;
     get_simple_layout_container(
         traversal, data, &container, &logic, layout_spec);
@@ -565,7 +565,7 @@ uniform_grid_layout::concrete_begin(
     get_cached_data(*data_traversal_, &data_);
     refresh_grid(traversal, *data_);
 
-    simple_layout_container<column_layout_logic>* container;
+    simple_layout_container<column_layout_logic>* container = nullptr;
     column_layout_logic* logic;
     get_simple_layout_container(
         traversal, data, &container, &logic, layout_spec);

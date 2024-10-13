@@ -31,6 +31,14 @@ struct simple_layout_container;
         {                                                                     \
             begin(ctx, layout_spec);                                          \
         }                                                                     \
+        template<class Context>                                               \
+        container_name(                                                       \
+            Context& ctx,                                                     \
+            simple_layout_container<logic_type>& container,                   \
+            layout const& layout_spec = default_layout)                       \
+        {                                                                     \
+            begin(ctx, container, layout_spec);                               \
+        }                                                                     \
                                                                               \
         ~container_name()                                                     \
         {                                                                     \
@@ -44,6 +52,21 @@ struct simple_layout_container;
             concrete_begin(                                                   \
                 get_layout_traversal(ctx),                                    \
                 get_data_traversal(ctx),                                      \
+                nullptr,                                                      \
+                layout_spec);                                                 \
+        }                                                                     \
+                                                                              \
+        template<class Context>                                               \
+        void                                                                  \
+        begin(                                                                \
+            Context& ctx,                                                     \
+            simple_layout_container<logic_type>& container,                   \
+            layout const& layout_spec = default_layout)                       \
+        {                                                                     \
+            concrete_begin(                                                   \
+                get_layout_traversal(ctx),                                    \
+                get_data_traversal(ctx),                                      \
+                &container,                                                   \
                 layout_spec);                                                 \
         }                                                                     \
                                                                               \
@@ -81,12 +104,14 @@ struct simple_layout_container;
         concrete_begin(                                                       \
             layout_traversal& traversal,                                      \
             data_traversal& data,                                             \
+            simple_layout_container<logic_type>* container,                   \
             layout const& layout_spec);                                       \
                                                                               \
         simple_layout_container<logic_type>* container_;                      \
         scoped_layout_container slc_;                                         \
         scoped_transformation transform_;                                     \
-    };
+    };                                                                        \
+    using container_name##_container = simple_layout_container<logic_type>;
 
 #define ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(                        \
     container_name, logic_type, Arg)                                          \
@@ -160,7 +185,8 @@ struct simple_layout_container;
         simple_layout_container<logic_type>* container_;                      \
         scoped_layout_container slc_;                                         \
         scoped_transformation transform_;                                     \
-    };
+    };                                                                        \
+    using container_name##_container = simple_layout_container<logic_type>;
 
 // A row layout places all its children in a horizontal row.
 ALIA_DECLARE_LAYOUT_LOGIC(row_layout_logic)
