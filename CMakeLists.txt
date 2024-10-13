@@ -174,12 +174,46 @@ if (ALIA_ENABLE_UI)
         target_link_options(alia_ui PUBLIC
             "-sFULL_ES3"
             "-sTOTAL_MEMORY=64MB")
+
+        # TODO...
+        # target_compile_options(alia_ui PUBLIC "-fwasm-exceptions")
+        # target_link_options(alia_ui PUBLIC "-fwasm-exceptions")
+        # Restore pre-3.1.27 stack size for Emscripten.
+        target_link_options(alia_ui PUBLIC "-sSTACK_SIZE=5MB")
+
+        # target_compile_options(alia_core PUBLIC "-fwasm-exceptions")
+        # target_link_options(alia_core PUBLIC "-fwasm-exceptions")
+        target_link_options(alia_core PUBLIC "-sSTACK_SIZE=5MB")
+
+        # Set various other Emscripten options...
+        target_link_options(alia_ui PUBLIC
+            "-sENVIRONMENT=web")
+        target_link_options(alia_ui PUBLIC
+            "-sWASM=1")
+        target_link_options(alia_ui PUBLIC
+            "--bind")
+        target_link_options(alia_ui PUBLIC
+            "-sMIN_WEBGL_VERSION=2")
+        target_link_options(alia_ui PUBLIC
+            "-sMAX_WEBGL_VERSION=2")
+
+        target_link_options(alia_ui PUBLIC
+            "-Oz"
+            "-sELIMINATE_DUPLICATE_FUNCTIONS=1")
+
+        add_library(alia_emscripten_ui STATIC "src/alia/ui/backends/emscripten.cpp")
+        target_include_directories(alia_emscripten_ui PUBLIC
+            "${CMAKE_CURRENT_SOURCE_DIR}/src")
+        target_link_libraries(alia_emscripten_ui PUBLIC alia_ui)
+        target_link_options(alia_emscripten_ui PUBLIC "-sERROR_ON_UNDEFINED_SYMBOLS=0")
+
         set(CMAKE_EXECUTABLE_SUFFIX ".html")
     endif()
     target_include_directories(alia_ui PUBLIC
         "${dmilos_color_SOURCE_DIR}/src")
     target_precompile_headers(alia_ui PUBLIC
         src/alia/ui.hpp)
+
 endif()
 
 # Add the GLFW3 backend.
