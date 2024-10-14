@@ -491,7 +491,7 @@ void refresh_ui(ui_system& ui)
     LARGE_INTEGER end_time;
     QueryPerformanceCounter(&end_time);
     ui.last_refresh_duration =
-        int((end_time.QuadPart - start_time.QuadPart) * 1000000 /
+        int((end_time.QuadPart - start_time.QuadPart) * 1'000'000 /
             frequency.QuadPart);
 #else
     ui.last_refresh_duration = 0;

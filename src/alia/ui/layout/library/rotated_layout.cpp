@@ -19,7 +19,7 @@ rotated_layout_logic::get_horizontal_requirements(layout_node* children)
         // The layout protocol requires that we ask for horizontal
         // requirements first.
         (void) node.get_horizontal_requirements();
-        auto y = node.get_vertical_requirements(100000);
+        auto y = node.get_vertical_requirements(100'000);
         width = (std::max)(y.size, width);
     });
     return calculated_layout_requirements(width, 0, 0);
@@ -37,7 +37,7 @@ rotated_layout_logic::get_vertical_requirements(
     layout_scalar height = 0;
     walk_layout_children(children, [&](layout_node& node) {
         layout_requirements x = node.get_horizontal_requirements();
-        layout_scalar lower_bound = x.size, upper_bound = 100000;
+        layout_scalar lower_bound = x.size, upper_bound = 100'000;
         while (!layout_scalars_almost_equal(upper_bound, lower_bound))
         {
             layout_scalar test_value = (upper_bound + lower_bound) / 2;
