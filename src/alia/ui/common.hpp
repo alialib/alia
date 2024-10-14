@@ -8,7 +8,7 @@ namespace alia {
 // Combine two hash values.
 size_t inline combine_hashes(size_t a, size_t b)
 {
-    return a ^ (0x9e3779b9 + (a << 6) + (a >> 2) + b);
+    return a ^ (0x9e37'79b9 + (a << 6) + (a >> 2) + b);
 }
 
 // A flag_set is a set of flags, each of which represents a boolean property.
