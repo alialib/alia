@@ -22,7 +22,7 @@ draw_round_rect(SkCanvas& canvas, SkPaint& paint, layout_box const& region)
 {
     SkScalar radius = layout_scalar_as_skia_scalar(
                           (std::min)(region.size[0], region.size[1]))
-                      / SkIntToScalar(4);
+                    / SkIntToScalar(4);
     canvas.drawRoundRect(as_skrect(region), radius, radius, paint);
 }
 

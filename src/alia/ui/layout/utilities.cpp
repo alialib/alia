@@ -196,12 +196,12 @@ resolve_relative_length(
     float full_length)
 {
     return length.is_relative
-               ? length.length * full_length
-               : resolve_absolute_length(
-                     ppi,
-                     style_info,
-                     axis,
-                     absolute_length(length.length, length.units));
+             ? length.length * full_length
+             : resolve_absolute_length(
+                   ppi,
+                   style_info,
+                   axis,
+                   absolute_length(length.length, length.units));
 }
 
 vector<2, float>
@@ -263,8 +263,8 @@ bool
 operator==(resolved_layout_spec const& a, resolved_layout_spec const& b)
 {
     return a.size == b.size && a.flags == b.flags
-           && a.growth_factor == b.growth_factor
-           && a.padding_size == b.padding_size;
+        && a.growth_factor == b.growth_factor
+        && a.padding_size == b.padding_size;
 }
 bool
 operator!=(resolved_layout_spec const& a, resolved_layout_spec const& b)
@@ -285,12 +285,12 @@ resolve_layout_spec(
         = ((spec.flags.code & X_ALIGNMENT_MASK_CODE) != 0
                ? (spec.flags.code & X_ALIGNMENT_MASK_CODE)
                : (default_flags.code & X_ALIGNMENT_MASK_CODE))
-          | ((spec.flags.code & Y_ALIGNMENT_MASK_CODE) != 0
-                 ? (spec.flags.code & Y_ALIGNMENT_MASK_CODE)
-                 : (default_flags.code & Y_ALIGNMENT_MASK_CODE))
-          | ((spec.flags.code & PADDING_MASK_CODE) != 0
-                 ? (spec.flags.code & PADDING_MASK_CODE)
-                 : (default_flags.code & PADDING_MASK_CODE));
+        | ((spec.flags.code & Y_ALIGNMENT_MASK_CODE) != 0
+               ? (spec.flags.code & Y_ALIGNMENT_MASK_CODE)
+               : (default_flags.code & Y_ALIGNMENT_MASK_CODE))
+        | ((spec.flags.code & PADDING_MASK_CODE) != 0
+               ? (spec.flags.code & PADDING_MASK_CODE)
+               : (default_flags.code & PADDING_MASK_CODE));
     if ((resolved.flags & PADDED
          || (!(resolved.flags & UNPADDED) && (default_flags & PADDED))))
     {
@@ -300,11 +300,11 @@ resolve_layout_spec(
         resolved.padding_size = make_layout_vector(0, 0);
     resolved.growth_factor
         = spec.growth_factor == 0
-                  && (resolved.flags.code
-                      & (GROW_X_CODE | GROW_Y_CODE | PROPORTIONAL_GROW_CODE))
-                         != 0
-              ? 1
-              : spec.growth_factor;
+               && (resolved.flags.code
+                   & (GROW_X_CODE | GROW_Y_CODE | PROPORTIONAL_GROW_CODE))
+                      != 0
+            ? 1
+            : spec.growth_factor;
 }
 
 void
@@ -320,7 +320,7 @@ resolve_requirements(
               (std::max)(
                   calculated.size, calculated.ascent + calculated.descent),
               spec.size[axis])
-          + padding * 2;
+        + padding * 2;
     requirements.ascent = calculated.ascent + padding;
     requirements.descent = calculated.descent + padding;
     requirements.growth_factor = spec.growth_factor;

@@ -189,7 +189,7 @@ layout_scalar
 get_minimum_scrollbar_length(scrollbar_data const& data)
 {
     return data.metrics->minimum_thumb_length
-           + 2 * data.metrics->button_length;
+         + 2 * data.metrics->button_length;
 }
 
 scrollbar_metrics
@@ -310,7 +310,7 @@ layout_scalar
 get_max_physical_position(scrollbar_parameters const& sb)
 {
     return get_background_area(sb).size[sb.axis]
-           - get_thumb_area(sb).size[sb.axis];
+         - get_thumb_area(sb).size[sb.axis];
 }
 
 layout_scalar
@@ -335,11 +335,12 @@ physical_position_to_logical(
 {
     layout_scalar max_physical = get_max_physical_position(sb);
     layout_scalar max_logical = get_max_logical_position(sb);
-    return max_physical <= 0 ? 0
-                             : std::clamp(
-                                   position * max_logical / max_physical,
-                                   layout_scalar(0),
-                                   max_logical);
+    return max_physical <= 0
+             ? 0
+             : std::clamp(
+                   position * max_logical / max_physical,
+                   layout_scalar(0),
+                   max_logical);
 }
 
 void
@@ -436,19 +437,19 @@ bool
 scrollbar_is_valid(scrollbar_parameters const& sb)
 {
     return sb.content_size > 0 && sb.window_size > 0
-           && sb.window_size < sb.content_size
-           && get_max_physical_position(sb) >= 0;
+        && sb.window_size < sb.content_size
+        && get_max_physical_position(sb) >= 0;
 }
 
 layout_scalar
 clamp_scroll_position(scrollbar_parameters const& sb, layout_scalar position)
 {
     return sb.content_size > sb.window_size
-               ? std::clamp(
-                     position,
-                     layout_scalar(0),
-                     sb.content_size - sb.window_size)
-               : 0;
+             ? std::clamp(
+                   position,
+                   layout_scalar(0),
+                   sb.content_size - sb.window_size)
+             : 0;
 }
 
 inline void
@@ -508,7 +509,7 @@ do_scrollbar_pass(dataless_ui_context ctx, scrollbar_parameters const& sb)
             if (detect_mouse_press(ctx, get_thumb_id(sb), mouse_button::LEFT))
             {
                 data.drag_start_delta = data.physical_position
-                                        - get_mouse_position(ctx)[sb.axis];
+                                      - get_mouse_position(ctx)[sb.axis];
             }
             if (detect_drag(ctx, get_thumb_id(sb), mouse_button::LEFT))
             {
@@ -1139,7 +1140,7 @@ scoped_scrollable_view::begin(
 
     component_.begin(ctx);
 
-    alia_untracked_if(is_refresh_pass(ctx))
+    alia_untracked_if (is_refresh_pass(ctx))
     {
         detect_layout_change(
             get_layout_traversal(ctx), &data.scrollable_axes, scrollable_axes);

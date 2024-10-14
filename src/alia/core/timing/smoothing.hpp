@@ -129,13 +129,14 @@ smooth_raw(
 // values.
 
 template<class Wrapped>
-struct smoothed_signal : signal_wrapper<
-                             smoothed_signal<Wrapped>,
-                             Wrapped,
-                             typename Wrapped::value_type,
-                             typename signal_capabilities_intersection<
-                                 typename Wrapped::capabilities,
-                                 readable_duplex_signal>::type>
+struct smoothed_signal
+    : signal_wrapper<
+          smoothed_signal<Wrapped>,
+          Wrapped,
+          typename Wrapped::value_type,
+          typename signal_capabilities_intersection<
+              typename Wrapped::capabilities,
+              readable_duplex_signal>::type>
 {
     smoothed_signal(
         Wrapped wrapped,

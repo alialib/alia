@@ -105,9 +105,10 @@ element_object::relocate(
         case element_object::BODY:
             assert(new_parent.asmdom_id != 0);
 #ifdef ALIA_HTML_LOGGING
-            std::cout << "asmdom::direct::insertBefore: "
-                      << new_parent.asmdom_id << ", " << this->asmdom_id
-                      << ", " << (before ? before->asmdom_id : 0) << std::endl;
+            std::cout
+                << "asmdom::direct::insertBefore: " << new_parent.asmdom_id
+                << ", " << this->asmdom_id << ", "
+                << (before ? before->asmdom_id : 0) << std::endl;
 #endif
             asmdom::direct::insertBefore(
                 new_parent.asmdom_id,
@@ -326,9 +327,9 @@ text(html::context ctx, readable<std::string> text)
             },
             [&]() {
 #ifdef ALIA_HTML_LOGGING
-                std::cout << "asmdom::direct::setNodeValue: "
-                          << data->node.object.asmdom_id << ": (null)"
-                          << std::endl;
+                std::cout
+                    << "asmdom::direct::setNodeValue: "
+                    << data->node.object.asmdom_id << ": (null)" << std::endl;
 #endif
                 asmdom::direct::setNodeValue(data->node.object.asmdom_id, "");
             });

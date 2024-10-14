@@ -24,10 +24,11 @@ struct mapped_sequence_data
 };
 
 template<class MappedItem>
-struct mapped_sequence_signal : signal<
-                                    mapped_sequence_signal<MappedItem>,
-                                    std::vector<MappedItem>,
-                                    read_only_signal>
+struct mapped_sequence_signal
+    : signal<
+          mapped_sequence_signal<MappedItem>,
+          std::vector<MappedItem>,
+          read_only_signal>
 {
     mapped_sequence_signal(
         mapped_sequence_data<MappedItem>& data, bool all_items_have_values)
@@ -76,7 +77,7 @@ transform(Context ctx, Container const& container, Function&& f)
 
     bool all_items_have_values = false;
 
-    ALIA_IF(has_value(container))
+    ALIA_IF (has_value(container))
     {
         size_t container_size = read_signal(container).size();
 
@@ -129,10 +130,11 @@ struct mapped_map_data
 };
 
 template<class Key, class MappedItem>
-struct mapped_map_signal : signal<
-                               mapped_map_signal<Key, MappedItem>,
-                               std::map<Key, MappedItem>,
-                               read_only_signal>
+struct mapped_map_signal
+    : signal<
+          mapped_map_signal<Key, MappedItem>,
+          std::map<Key, MappedItem>,
+          read_only_signal>
 {
     mapped_map_signal(
         mapped_map_data<Key, MappedItem>& data, bool all_items_have_values)
@@ -183,7 +185,7 @@ transform(Context ctx, Container const& container, Function&& f)
 
     bool all_items_have_values = false;
 
-    ALIA_IF(has_value(container))
+    ALIA_IF (has_value(container))
     {
         size_t container_size = read_signal(container).size();
 

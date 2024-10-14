@@ -29,7 +29,7 @@ if_(Context ctx, bool inherited_condition, Condition condition, Body&& body)
 {
     bool else_condition;
 
-    ALIA_IF(inherited_condition && condition)
+    ALIA_IF (inherited_condition && condition)
     {
         std::forward<Body>(body)();
     }

@@ -127,8 +127,8 @@ get_values_per_pixel(
 {
     layout_box const& assigned_region = data.layout_node.assignment().region;
     return double(maximum - minimum)
-           / (assigned_region.size[axis] - left_side_padding_size(ctx)
-              - right_side_padding_size(ctx) - 1);
+         / (assigned_region.size[axis] - left_side_padding_size(ctx)
+            - right_side_padding_size(ctx) - 1);
 }
 
 static layout_vector
@@ -140,7 +140,7 @@ get_track_position(dataless_ui_context ctx, slider_data& data, unsigned axis)
         = assigned_region.corner[axis] + left_side_padding_size(ctx);
     track_position[1 - axis]
         = assigned_region.corner[1 - axis]
-          + (assigned_region.size[1 - axis] - track_width) / 2;
+        + (assigned_region.size[1 - axis] - track_width) / 2;
     return track_position;
 }
 
@@ -149,7 +149,7 @@ get_track_length(dataless_ui_context ctx, slider_data& data, unsigned axis)
 {
     layout_box const& assigned_region = data.layout_node.assignment().region;
     return assigned_region.size[axis] - left_side_padding_size(ctx)
-           - right_side_padding_size(ctx);
+         - right_side_padding_size(ctx);
 }
 
 static layout_vector
@@ -184,10 +184,10 @@ get_thumb_position(
         thumb_position[1 - axis] = get_center(assigned_region)[1 - axis];
         thumb_position[axis]
             = assigned_region.corner[axis]
-              + round_to_layout_scalar(
+            + round_to_layout_scalar(
                   (read_signal(value) - minimum)
                   / get_values_per_pixel(ctx, data, axis, minimum, maximum))
-              + left_side_padding_size(ctx);
+            + left_side_padding_size(ctx);
     }
     return thumb_position;
 }
@@ -276,9 +276,9 @@ do_slider(
                     = (get_mouse_position(ctx)[axis]
                        - data.layout_node.assignment().region.corner[axis]
                        - left_side_padding_size(ctx))
-                          * get_values_per_pixel(
-                              ctx, data, axis, minimum, maximum)
-                      + minimum;
+                        * get_values_per_pixel(
+                            ctx, data, axis, minimum, maximum)
+                    + minimum;
 
                 write_signal(
                     value, round_and_clamp(new_value, minimum, maximum, step));

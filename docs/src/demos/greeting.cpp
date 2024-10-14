@@ -12,7 +12,7 @@ greeting_ui(html::context ctx, duplex<std::string> name)
     html::input(ctx, name);
 
     // If we have a name, greet the user.
-    alia_if(name != "")
+    alia_if (name != "")
     {
         html::p(ctx, "Hello, " + name + "!");
     }
@@ -78,7 +78,7 @@ demo_ui(html::context ctx, duplex<bool> show_message)
 {
     html::button(ctx, "Toggle the Message", actions::toggle(show_message));
 
-    alia_if(show_message)
+    alia_if (show_message)
     {
         html::p(ctx, "Hello, World!");
     }
@@ -130,7 +130,7 @@ contrived_hello(html::context ctx)
 
     widget(ctx, "A");
 
-    ALIA_IF(n > 1000)
+    ALIA_IF (n > 1000)
     {
         widget(ctx, "B");
     }
@@ -140,7 +140,7 @@ contrived_hello(html::context ctx)
     }
     ALIA_END
 
-    ALIA_IF(n > 500)
+    ALIA_IF (n > 500)
     {
         widget(ctx, "D");
     }

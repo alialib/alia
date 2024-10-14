@@ -109,7 +109,7 @@ bool
 matches_filter(item_filter filter, todo_item const& item)
 {
     return (item.completed && filter != item_filter::ACTIVE)
-           || (!item.completed && filter != item_filter::COMPLETED);
+        || (!item.completed && filter != item_filter::COMPLETED);
 }
 
 // Trim a string.

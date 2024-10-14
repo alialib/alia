@@ -87,7 +87,7 @@ struct erase_index_action : action_interface<>
     is_ready() const override
     {
         return container_.has_value() && container_.ready_to_write()
-               && index_.has_value();
+            && index_.has_value();
     }
 
     void
@@ -134,7 +134,7 @@ struct erase_key_action : action_interface<>
     is_ready() const override
     {
         return container_.has_value() && container_.ready_to_write()
-               && key_.has_value();
+            && key_.has_value();
     }
 
     void

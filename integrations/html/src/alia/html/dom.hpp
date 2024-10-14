@@ -521,7 +521,7 @@ struct html_fragment_handle
             create_as_placeholder_root(data->node.object, placeholder_id);
         }
 
-        ALIA_IF(data->node.object.is_initialized())
+        ALIA_IF (data->node.object.is_initialized())
         {
             invoke_tree(ctx, data->node, content);
         }

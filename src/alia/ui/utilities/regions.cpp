@@ -10,8 +10,8 @@ bool
 is_mouse_inside_box(dataless_ui_context ctx, box<2, double> const& box)
 {
     return get_system(ctx).input.mouse_inside_window
-           && is_inside(box, get_mouse_position(ctx))
-           && is_inside(
+        && is_inside(box, get_mouse_position(ctx))
+        && is_inside(
                get_geometry_context(ctx).clip_region,
                vector<2, double>(get_system(ctx).input.mouse_position));
 }

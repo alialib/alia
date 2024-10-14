@@ -13,7 +13,7 @@ bool
 operator<(id_interface const& a, id_interface const& b)
 {
     return typeid(a).before(typeid(b))
-           || (types_match(a, b) && a.less_than(b));
+        || (types_match(a, b) && a.less_than(b));
 }
 
 void
@@ -56,7 +56,7 @@ bool
 operator==(captured_id const& a, captured_id const& b)
 {
     return a.is_initialized() == b.is_initialized()
-           && (!a.is_initialized() || *a == *b);
+        && (!a.is_initialized() || *a == *b);
 }
 bool
 operator!=(captured_id const& a, captured_id const& b)

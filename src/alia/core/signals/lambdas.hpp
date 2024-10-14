@@ -108,10 +108,11 @@ lambda_reader(Read read)
 // lambda_reader(has_value, read) creates a read-only signal whose value is
 // determined by calling :has_value and :read.
 template<class Value, class HasValue, class Read>
-struct lambda_reader_signal : regular_signal<
-                                  lambda_reader_signal<Value, HasValue, Read>,
-                                  Value,
-                                  move_activated_signal>
+struct lambda_reader_signal
+    : regular_signal<
+          lambda_reader_signal<Value, HasValue, Read>,
+          Value,
+          move_activated_signal>
 {
     lambda_reader_signal(HasValue has_value, Read read)
         : has_value_(has_value), read_(read), value_(decltype(read())())
@@ -312,16 +313,17 @@ template<
     class ReadyToWrite,
     class Write,
     class GenerateId>
-struct lambda_duplex_signal_with_id : signal<
-                                          lambda_duplex_signal_with_id<
-                                              Value,
-                                              HasValue,
-                                              Read,
-                                              ReadyToWrite,
-                                              Write,
-                                              GenerateId>,
-                                          Value,
-                                          move_activated_duplex_signal>
+struct lambda_duplex_signal_with_id
+    : signal<
+          lambda_duplex_signal_with_id<
+              Value,
+              HasValue,
+              Read,
+              ReadyToWrite,
+              Write,
+              GenerateId>,
+          Value,
+          move_activated_duplex_signal>
 {
     lambda_duplex_signal_with_id(
         HasValue has_value,

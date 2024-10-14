@@ -56,7 +56,7 @@ detect_mouse_press(dataless_ui_context ctx, mouse_button button)
 {
     return (get_event_type(ctx) == MOUSE_PRESS_EVENT
             || get_event_type(ctx) == DOUBLE_CLICK_EVENT)
-           && cast_event<mouse_button_event>(ctx).button == button;
+        && cast_event<mouse_button_event>(ctx).button == button;
 }
 
 bool
@@ -78,7 +78,7 @@ bool
 detect_mouse_release(dataless_ui_context ctx, mouse_button button)
 {
     return get_event_type(ctx) == MOUSE_RELEASE_EVENT
-           && cast_event<mouse_button_event>(ctx).button == button;
+        && cast_event<mouse_button_event>(ctx).button == button;
 }
 
 bool
@@ -93,14 +93,14 @@ detect_mouse_motion(dataless_ui_context ctx, widget_id id)
 {
     mouse_motion_event* event;
     return (detect_event(ctx, &event) && widget_has_capture(ctx, id))
-           || (no_widget_has_capture(ctx) && is_widget_hot(ctx, id));
+        || (no_widget_has_capture(ctx) && is_widget_hot(ctx, id));
 }
 
 bool
 detect_double_click(dataless_ui_context ctx, mouse_button button)
 {
     return get_event_type(ctx) == DOUBLE_CLICK_EVENT
-           && cast_event<mouse_button_event>(ctx).button == button;
+        && cast_event<mouse_button_event>(ctx).button == button;
 }
 
 bool
@@ -126,7 +126,7 @@ bool
 is_click_in_progress(ui_system& sys, widget_id id, mouse_button button)
 {
     return is_widget_hot(sys, id) && widget_has_capture(sys, id)
-           && is_mouse_button_pressed(sys, button);
+        && is_mouse_button_pressed(sys, button);
 }
 
 bool
@@ -135,7 +135,7 @@ detect_drag(dataless_ui_context ctx, widget_id id, mouse_button button)
     detect_mouse_press(ctx, id, button);
     mouse_motion_event* event;
     return detect_event(ctx, &event) && is_mouse_button_pressed(ctx, button)
-           && widget_has_capture(ctx, id);
+        && widget_has_capture(ctx, id);
 }
 
 bool
@@ -146,7 +146,7 @@ detect_press_or_drag(
     return (detect_mouse_press(ctx, id, button)
             || (detect_event(ctx, &event)
                 && is_mouse_button_pressed(ctx, button)))
-           && widget_has_capture(ctx, id);
+        && widget_has_capture(ctx, id);
 }
 
 vector<2, double>
@@ -160,7 +160,7 @@ get_mouse_motion_delta(dataless_ui_context ctx, widget const& /*widget*/)
     // mouse_motion_event is delivered, so by subtracting that from the one
     // carried by the event, we get the delta.
     return transform(matrix, vector<2, double>(event->position))
-           - transform(
+         - transform(
                matrix,
                vector<2, double>(get_system(ctx).input.mouse_position));
 }
@@ -169,14 +169,14 @@ bool
 is_drag_in_progress(ui_system& sys, widget_id id, mouse_button button)
 {
     return is_mouse_button_pressed(sys, button) && widget_has_capture(sys, id)
-           && sys.input.dragging;
+        && sys.input.dragging;
 }
 
 bool
 detect_drag_release(dataless_ui_context ctx, widget_id id, mouse_button button)
 {
     return is_drag_in_progress(ctx, id, button)
-           && detect_mouse_release(ctx, button);
+        && detect_mouse_release(ctx, button);
 }
 
 bool
@@ -190,14 +190,14 @@ bool
 detect_mouse_gain(dataless_ui_context ctx, widget_id id)
 {
     return get_event_type(ctx) == MOUSE_GAIN_EVENT
-           && cast_event<mouse_notification_event>(ctx).target == id;
+        && cast_event<mouse_notification_event>(ctx).target == id;
 }
 
 bool
 detect_mouse_loss(dataless_ui_context ctx, widget_id id)
 {
     return get_event_type(ctx) == MOUSE_LOSS_EVENT
-           && cast_event<mouse_notification_event>(ctx).target == id;
+        && cast_event<mouse_notification_event>(ctx).target == id;
 }
 
 std::optional<vector<2, double>>

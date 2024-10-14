@@ -99,7 +99,7 @@ struct action_masking_adaptor<
     is_ready() const override
     {
         return wrapped_.is_ready() && signal_has_value(mask_)
-               && read_signal(mask_);
+            && read_signal(mask_);
     }
 
     void

@@ -124,21 +124,21 @@ do_checkbox(ui_context ctx, duplex<bool> checked, layout const& layout_spec)
                         path.incReserve(3);
                         SkPoint p0;
                         p0.fX = checkbox_rect.corner[0]
-                                + checkbox_rect.size[0] * 0.2f;
+                              + checkbox_rect.size[0] * 0.2f;
                         p0.fY = checkbox_rect.corner[1]
-                                + checkbox_rect.size[1] * 0.5f;
+                              + checkbox_rect.size[1] * 0.5f;
                         path.moveTo(p0);
                         SkPoint p1;
                         p1.fX = checkbox_rect.corner[0]
-                                + checkbox_rect.size[0] * 0.4f;
+                              + checkbox_rect.size[0] * 0.4f;
                         p1.fY = checkbox_rect.corner[1]
-                                + checkbox_rect.size[1] * 0.7f;
+                              + checkbox_rect.size[1] * 0.7f;
                         path.lineTo(p1);
                         SkPoint p2;
                         p2.fX = checkbox_rect.corner[0]
-                                + checkbox_rect.size[0] * 0.8f;
+                              + checkbox_rect.size[0] * 0.8f;
                         p2.fY = checkbox_rect.corner[1]
-                                + checkbox_rect.size[1] * 0.3f;
+                              + checkbox_rect.size[1] * 0.3f;
                         path.lineTo(p2);
                         canvas.drawPath(path, paint);
                     }
@@ -228,21 +228,21 @@ do_checkbox(ui_context ctx, duplex<bool> checked, layout const& layout_spec)
                     path.incReserve(3);
                     SkPoint p0;
                     p0.fX = checkbox_rect.corner[0]
-                            + checkbox_rect.size[0] * 0.2f;
+                          + checkbox_rect.size[0] * 0.2f;
                     p0.fY = checkbox_rect.corner[1]
-                            + checkbox_rect.size[1] * 0.5f;
+                          + checkbox_rect.size[1] * 0.5f;
                     path.moveTo(p0);
                     SkPoint p1;
                     p1.fX = checkbox_rect.corner[0]
-                            + checkbox_rect.size[0] * 0.4f;
+                          + checkbox_rect.size[0] * 0.4f;
                     p1.fY = checkbox_rect.corner[1]
-                            + checkbox_rect.size[1] * 0.7f;
+                          + checkbox_rect.size[1] * 0.7f;
                     path.lineTo(p1);
                     SkPoint p2;
                     p2.fX = checkbox_rect.corner[0]
-                            + checkbox_rect.size[0] * 0.8f;
+                          + checkbox_rect.size[0] * 0.8f;
                     p2.fY = checkbox_rect.corner[1]
-                            + checkbox_rect.size[1] * 0.3f;
+                          + checkbox_rect.size[1] * 0.3f;
                     path.lineTo(p2);
                     canvas.drawPath(path, paint);
                 }

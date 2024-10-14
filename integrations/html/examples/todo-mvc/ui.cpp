@@ -44,7 +44,7 @@ todo_item_ui(app_context ctx, duplex<todo_item> todo, action<> erase_action)
         .class_("completed", alia_field(todo, completed))
         .class_("editing", editing)
         .content([&] {
-            alia_if(editing)
+            alia_if (editing)
             {
                 // In editing mode, we need to track the new value for the
                 // title of the item. (The edit is cancellable, so we don't
@@ -85,7 +85,7 @@ todo_item_ui(app_context ctx, duplex<todo_item> todo, action<> erase_action)
 
                     // If the mouse is hovered over this item view, show a
                     // button that will erase it from the list.
-                    alia_if(mouse_inside(ctx, view))
+                    alia_if (mouse_inside(ctx, view))
                     {
                         button(ctx, erase_action).class_("destroy");
                     }
@@ -111,7 +111,7 @@ todo_list_ui(app_context ctx, duplex<todo_list> todos)
         for_each(ctx, todos, [&](size_t index, auto todo) {
             auto matches
                 = apply(ctx, matches_filter, get<view_filter_tag>(ctx), todo);
-            alia_if(matches)
+            alia_if (matches)
             {
                 todo_item_ui(ctx, todo, actions::erase_index(todos, index));
             }
@@ -168,7 +168,7 @@ app_ui(app_context ctx, duplex<app_state> state)
 
     // None of the following should be shown when the TODO list is empty.
     auto todos = alia_field(state, todos);
-    alia_if(!is_empty(todos))
+    alia_if (!is_empty(todos))
     {
         section(ctx, "main", [&] {
             toggle_all_checkbox(ctx, todos);

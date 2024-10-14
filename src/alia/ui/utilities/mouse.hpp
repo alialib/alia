@@ -164,7 +164,7 @@ get_click_duration(
     millisecond_count max_duration)
 {
     return max_duration
-           - get_raw_animation_ticks_left(
+         - get_raw_animation_ticks_left(
                ctx, get_click_start_time(ctx, button) + max_duration);
 }
 

@@ -16,7 +16,7 @@ inline uintptr_t
 make_animation_id(bitref<Tag>& ref)
 {
     return std::bit_cast<uintptr_t>(&ref.storage)
-           | (uintptr_t(ref.index) << (sizeof(uintptr_t) * 8 - 8));
+         | (uintptr_t(ref.index) << (sizeof(uintptr_t) * 8 - 8));
 }
 
 struct transition_animation_data
@@ -175,7 +175,7 @@ smooth_between_values(
                     // take to get back here.
                     animation.transition_end
                         = get_raw_animation_tick_count(ctx)
-                          + millisecond_count(
+                        + millisecond_count(
                               transition.duration
                               * (1
                                  - eval_curve_at_x(

@@ -161,9 +161,10 @@ template<class Context, class Tag>
 using remove_context_tag_t = typename remove_context_tag<Context, Tag>::type;
 
 template<class Context, class Tag>
-struct context_has_tag : detail::structural_collection_contains_tag<
-                             typename Context::contents_type,
-                             Tag>
+struct context_has_tag
+    : detail::structural_collection_contains_tag<
+          typename Context::contents_type,
+          Tag>
 {
 };
 
