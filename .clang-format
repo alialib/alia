@@ -111,24 +111,14 @@ ForEachMacros:
 IfMacros:
   - ALIA_IF
   - alia_if
-  - ALIA_IF_
-  - alia_if_
   - ALIA_ELSE_IF
   - alia_else_if
-  - ALIA_ELSE_IF_
-  - alia_else_if_
   - ALIA_UNTRACKED_IF
   - alia_untracked_if
-  - ALIA_UNTRACKED_IF_
-  - alia_untracked_if_
   - ALIA_UNTRACKED_ELSE_IF
   - alia_untracked_else_if
-  - ALIA_UNTRACKED_ELSE_IF_
-  - alia_untracked_else_if_
   - ALIA_EVENT_DEPENDENT_IF
   - alia_event_dependent_if
-  - ALIA_EVENT_DEPENDENT_IF_
-  - alia_event_dependent_if_
   - KJ_IF_MAYBE
 IncludeBlocks: Preserve
 IncludeCategories:
@@ -159,8 +149,8 @@ InsertBraces: false
 InsertNewlineAtEOF: false
 InsertTrailingCommas: None
 IntegerLiteralSeparator:
-  Binary: 0
-  BinaryMinDigits: 0
+  Binary: 4
+  BinaryMinDigits: 8
   Decimal: 0
   DecimalMinDigits: 0
   Hex: 0

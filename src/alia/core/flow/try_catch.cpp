@@ -37,7 +37,7 @@ try_block::operator<<(function_view<void()> body)
     // 2. We are processing a non-refresh event and there is no exception being
     //    generated from inside the body. In this case, the body is the proper
     //    component to handle the event.
-    ALIA_EVENT_DEPENDENT_IF_ (ctx_, !data_->exception)
+    ALIA_EVENT_DEPENDENT_IF_(ctx_, !data_->exception)
     {
         try
         {
