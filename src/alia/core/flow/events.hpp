@@ -148,7 +148,8 @@ struct external_component_id
     // within the data graph.
     component_identity identity;
 
-    explicit operator bool() const
+    explicit
+    operator bool() const
     {
         return id != nullptr;
     }

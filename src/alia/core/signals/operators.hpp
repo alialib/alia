@@ -452,7 +452,7 @@ struct field_signal : preferred_id_signal<
                           id_pair<id_ref, simple_id<Field*>>>
 {
     typedef typename StructureSignal::value_type structure_type;
-    typedef Field structure_type::*field_ptr;
+    typedef Field structure_type::* field_ptr;
     field_signal(StructureSignal structure, field_ptr field)
         : structure_(std::move(structure)), field_(std::move(field))
     {
@@ -516,7 +516,7 @@ std::enable_if_t<
     field_signal<StructureSignal, Field>>
 operator->*(
     StructureSignal const& structure,
-    Field StructureSignal::value_type::*field)
+    Field StructureSignal::value_type::* field)
 {
     return field_signal<StructureSignal, Field>(structure, field);
 }
