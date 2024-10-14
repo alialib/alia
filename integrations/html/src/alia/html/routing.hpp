@@ -110,7 +110,7 @@ parameter_count(const char (&pattern)[N], unsigned i = 0, unsigned count = 0)
     return i == N - 1
                ? count
                : parameter_count(
-                   pattern, i + 1, pattern[i] == '{' ? count + 1 : count);
+                     pattern, i + 1, pattern[i] == '{' ? count + 1 : count);
 }
 
 template<unsigned N>

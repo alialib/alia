@@ -197,7 +197,8 @@ value(char const* text)
 
 // literal operators
 namespace literals {
-inline string_literal_signal operator"" _a(char const* s, size_t)
+inline string_literal_signal
+operator"" _a(char const* s, size_t)
 {
     return string_literal_signal(s);
 }
