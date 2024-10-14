@@ -199,14 +199,14 @@ struct logical_or_signal
         // However, we can also determine a value if only one input has a value
         // but that value is true.
         return (arg0_.has_value() && arg1_.has_value())
-               || (arg0_.has_value() && arg0_.read())
-               || (arg1_.has_value() && arg1_.read());
+            || (arg0_.has_value() && arg0_.read())
+            || (arg1_.has_value() && arg1_.read());
     }
     bool const&
     read() const override
     {
         value_ = (arg0_.has_value() && arg0_.read())
-                 || (arg1_.has_value() && arg1_.read());
+              || (arg1_.has_value() && arg1_.read());
         return value_;
     }
 
@@ -271,8 +271,8 @@ struct logical_and_signal
         // However, we can also determine a value if only one input has a value
         // but that value is false.
         return (arg0_.has_value() && arg1_.has_value())
-               || (arg0_.has_value() && !arg0_.read())
-               || (arg1_.has_value() && !arg1_.read());
+            || (arg0_.has_value() && !arg0_.read())
+            || (arg1_.has_value() && !arg1_.read());
     }
     bool const&
     read() const override
@@ -337,12 +337,13 @@ operator&&(A const& a, B const& b)
 // read if they're selected.
 //
 template<class Condition, class T, class F>
-struct signal_mux : signal<
-                        signal_mux<Condition, T, F>,
-                        typename T::value_type,
-                        typename signal_capabilities_intersection<
-                            typename T::capabilities,
-                            typename F::capabilities>::type>
+struct signal_mux
+    : signal<
+          signal_mux<Condition, T, F>,
+          typename T::value_type,
+          typename signal_capabilities_intersection<
+              typename T::capabilities,
+              typename F::capabilities>::type>
 {
     signal_mux(Condition condition, T t, F f)
         : condition_(condition), t_(t), f_(f)
@@ -352,7 +353,7 @@ struct signal_mux : signal<
     has_value() const override
     {
         return condition_.has_value()
-               && (condition_.read() ? t_.has_value() : f_.has_value());
+            && (condition_.read() ? t_.has_value() : f_.has_value());
     }
     typename T::value_type const&
     read() const override
@@ -383,8 +384,7 @@ struct signal_mux : signal<
     ready_to_write() const override
     {
         return condition_.has_value()
-               && (condition_.read() ? t_.ready_to_write()
-                                     : f_.ready_to_write());
+            && (condition_.read() ? t_.ready_to_write() : f_.ready_to_write());
     }
     id_interface const&
     write(typename T::value_type value) const override
@@ -443,16 +443,17 @@ conditional(Condition condition, T t, F f)
 // Given a signal to a structure, signal->*field_ptr returns a signal to the
 // specified field within the structure.
 template<class StructureSignal, class Field>
-struct field_signal : preferred_id_signal<
-                          field_signal<StructureSignal, Field>,
-                          Field,
-                          typename signal_capabilities_intersection<
-                              typename StructureSignal::capabilities,
-                              movable_duplex_signal>::type,
-                          id_pair<id_ref, simple_id<Field*>>>
+struct field_signal
+    : preferred_id_signal<
+          field_signal<StructureSignal, Field>,
+          Field,
+          typename signal_capabilities_intersection<
+              typename StructureSignal::capabilities,
+              movable_duplex_signal>::type,
+          id_pair<id_ref, simple_id<Field*>>>
 {
     typedef typename StructureSignal::value_type structure_type;
-    typedef Field structure_type::* field_ptr;
+    typedef Field structure_type::*field_ptr;
     field_signal(StructureSignal structure, field_ptr field)
         : structure_(std::move(structure)), field_(std::move(field))
     {
@@ -516,7 +517,7 @@ std::enable_if_t<
     field_signal<StructureSignal, Field>>
 operator->*(
     StructureSignal const& structure,
-    Field StructureSignal::value_type::* field)
+    Field StructureSignal::value_type::*field)
 {
     return field_signal<StructureSignal, Field>(structure, field);
 }
@@ -776,7 +777,7 @@ struct subscript_signal
     ready_to_write() const override
     {
         return container_.has_value() && index_.has_value()
-               && container_.ready_to_write();
+            && container_.ready_to_write();
     }
     id_interface const&
     write(typename subscript_signal::value_type x) const override

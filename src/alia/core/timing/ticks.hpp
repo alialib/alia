@@ -103,8 +103,9 @@ namespace actions {
 inline auto
 start(animation_timer& timer)
 {
-    return callback(
-        [&](millisecond_count duration) { timer.start(duration); });
+    return callback([&](millisecond_count duration) {
+        timer.start(duration);
+    });
 }
 
 } // namespace actions

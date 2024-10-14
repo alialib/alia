@@ -83,7 +83,7 @@ struct vector_equality_test
     apply(vector<N, T> const& a, vector<N, T> const& b)
     {
         return a[I - 1] == b[I - 1]
-               && vector_equality_test<N, T, I - 1>::apply(a, b);
+            && vector_equality_test<N, T, I - 1>::apply(a, b);
     }
 };
 template<unsigned N, class T>

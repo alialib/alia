@@ -86,8 +86,8 @@ column_layout_logic::set_relative_assignment(
         // column is planning to allocate the extra space.
         layout_scalar this_baseline
             = &node == children && remaining_extra_size == 0
-                  ? assigned_baseline_y
-                  : y.ascent;
+                ? assigned_baseline_y
+                : y.ascent;
         node.set_relative_assignment(relative_layout_assignment{
             layout_box(p, make_layout_vector(assigned_size[0], this_height)),
             this_baseline});

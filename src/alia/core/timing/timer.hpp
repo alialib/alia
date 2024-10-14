@@ -82,8 +82,9 @@ namespace actions {
 inline auto
 start(timer& timer)
 {
-    return callback(
-        [&](millisecond_count duration) { timer.start(duration); });
+    return callback([&](millisecond_count duration) {
+        timer.start(duration);
+    });
 }
 
 inline auto

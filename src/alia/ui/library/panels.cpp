@@ -138,7 +138,7 @@ begin_outer_panel(
     // TODO: style isn't necessarily readable
     box_border_width<layout_scalar> total_border
         = as_layout_size(read_signal(style_info).margin)
-          + as_layout_size(read_signal(style_info).border_width);
+        + as_layout_size(read_signal(style_info).border_width);
     if (!(flags & PANEL_IGNORE_STYLE_PADDING))
         total_border += as_layout_size(read_signal(style_info).padding);
     outer.begin(
@@ -315,9 +315,9 @@ begin_inner_panel(
 {
     layout_flag_set inner_layout_flags
         = FILL_X
-          | ((layout_spec.flags & Y_ALIGNMENT_MASK) == BASELINE_Y ? BASELINE_Y
-                                                                  : FILL_Y)
-          | ((flags & PANEL_NO_INTERNAL_PADDING) ? UNPADDED : PADDED);
+        | ((layout_spec.flags & Y_ALIGNMENT_MASK) == BASELINE_Y ? BASELINE_Y
+                                                                : FILL_Y)
+        | ((flags & PANEL_NO_INTERNAL_PADDING) ? UNPADDED : PADDED);
     inner.begin(
         ctx,
         // (flags & PANEL_HORIZONTAL) ? HORIZONTAL_LAYOUT : VERTICAL_LAYOUT,

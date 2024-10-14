@@ -107,7 +107,7 @@ template<
 void
 for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
 {
-    ALIA_IF(has_value(container_signal))
+    ALIA_IF (has_value(container_signal))
     {
         naming_context nc(ctx);
         auto const& container = read_signal(container_signal);
@@ -218,7 +218,7 @@ template<
 void
 for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
 {
-    ALIA_IF(has_value(container_signal))
+    ALIA_IF (has_value(container_signal))
     {
         naming_context nc(ctx);
         auto const& container = read_signal(container_signal);
@@ -322,10 +322,11 @@ for_each(Context ctx, Container&& container, Fn&& fn)
 
 // signal type for accessing items within a list
 template<class ListSignal, class Item>
-struct list_item_signal : signal<
-                              list_item_signal<ListSignal, Item>,
-                              Item,
-                              typename ListSignal::capabilities>
+struct list_item_signal
+    : signal<
+          list_item_signal<ListSignal, Item>,
+          Item,
+          typename ListSignal::capabilities>
 {
     list_item_signal(ListSignal const& list_signal, size_t index, Item* item)
         : list_signal_(list_signal), index_(index), item_(item)
@@ -397,7 +398,7 @@ template<
 void
 for_each(Context ctx, ContainerSignal const& container_signal, Fn&& fn)
 {
-    ALIA_IF(has_value(container_signal))
+    ALIA_IF (has_value(container_signal))
     {
         naming_context nc(ctx);
         auto const& container = read_signal(container_signal);

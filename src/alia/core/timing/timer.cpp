@@ -30,7 +30,7 @@ detect_timer_event(dataless_core_context ctx, timer_data& data)
 {
     timer_event* event;
     return detect_targeted_event(ctx, &data.identity, &event)
-           && event->trigger_time == data.expected_trigger_time;
+        && event->trigger_time == data.expected_trigger_time;
 }
 
 void

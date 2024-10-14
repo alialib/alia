@@ -19,7 +19,7 @@ sqrt_flashcard(html::context ctx, readable<int> n)
 
     // If the answer is revealed, show it. Otherwise show a button to reveal
     // it.
-    alia_if(answer_revealed)
+    alia_if (answer_revealed)
     {
         html::p(ctx, alia::printf(ctx, "The square root is %d.", n));
     }

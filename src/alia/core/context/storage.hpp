@@ -23,7 +23,7 @@ struct generic_tagged_storage
     has() const
     {
         return this->objects.find(std::type_index(typeid(Tag)))
-               != this->objects.end();
+            != this->objects.end();
     }
 
     template<class Tag, class ObjectData>

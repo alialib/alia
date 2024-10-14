@@ -457,19 +457,21 @@ struct is_signal_type : std::is_base_of<untyped_signal_base, T>
 // signal_is_readable<Signal>::value yields a compile-time boolean indicating
 // whether or not the given signal type supports reading.
 template<class Signal>
-struct signal_is_readable : signal_capability_level_is_compatible<
-                                signal_readable,
-                                Signal::capabilities::reading>
+struct signal_is_readable
+    : signal_capability_level_is_compatible<
+          signal_readable,
+          Signal::capabilities::reading>
 {
 };
 
 // is_readable_signal_type<T>::value yields a compile-time boolean indicating
 // whether or not T is an alia signal that supports reading.
 template<class T>
-struct is_readable_signal_type : std::conditional_t<
-                                     is_signal_type<T>::value,
-                                     signal_is_readable<T>,
-                                     std::false_type>
+struct is_readable_signal_type
+    : std::conditional_t<
+          is_signal_type<T>::value,
+          signal_is_readable<T>,
+          std::false_type>
 {
 };
 
@@ -512,19 +514,21 @@ struct validation_error : exception
 // signal_is_writable<Signal>::value yields a compile-time boolean indicating
 // whether or not the given signal type supports writing.
 template<class Signal>
-struct signal_is_writable : signal_capability_level_is_compatible<
-                                signal_writable,
-                                Signal::capabilities::writing>
+struct signal_is_writable
+    : signal_capability_level_is_compatible<
+          signal_writable,
+          Signal::capabilities::writing>
 {
 };
 
 // is_writable_signal_type<T>::value yields a compile-time boolean indicating
 // whether or not T is an alia signal that supports writing.
 template<class T>
-struct is_writable_signal_type : std::conditional_t<
-                                     is_signal_type<T>::value,
-                                     signal_is_writable<T>,
-                                     std::false_type>
+struct is_writable_signal_type
+    : std::conditional_t<
+          is_signal_type<T>::value,
+          signal_is_writable<T>,
+          std::false_type>
 {
 };
 
@@ -568,57 +572,63 @@ write_signal(Signal const& signal, Value value)
 // signal_is_duplex<Signal>::value yields a compile-time boolean indicating
 // whether or not the given signal type supports both reading and writing.
 template<class Signal>
-struct signal_is_duplex : signal_capabilities_compatible<
-                              readable_duplex_signal,
-                              typename Signal::capabilities>
+struct signal_is_duplex
+    : signal_capabilities_compatible<
+          readable_duplex_signal,
+          typename Signal::capabilities>
 {
 };
 
 // is_duplex_signal_type<T>::value yields a compile-time boolean indicating
 // whether or not T is an alia signal that supports both reading and writing.
 template<class T>
-struct is_duplex_signal_type : std::conditional_t<
-                                   is_signal_type<T>::value,
-                                   signal_is_duplex<T>,
-                                   std::false_type>
+struct is_duplex_signal_type
+    : std::conditional_t<
+          is_signal_type<T>::value,
+          signal_is_duplex<T>,
+          std::false_type>
 {
 };
 
 // signal_is_movable<Signal>::value yields a compile-time boolean indicating
 // whether or not the given signal type supports copying.
 template<class Signal>
-struct signal_is_movable : signal_capability_level_is_compatible<
-                               signal_movable,
-                               Signal::capabilities::reading>
+struct signal_is_movable
+    : signal_capability_level_is_compatible<
+          signal_movable,
+          Signal::capabilities::reading>
 {
 };
 
 // is_movable_signal_type<T>::value yields a compile-time boolean indicating
 // whether or not T is an alia signal that supports value copying.
 template<class T>
-struct is_movable_signal_type : std::conditional_t<
-                                    is_signal_type<T>::value,
-                                    signal_is_movable<T>,
-                                    std::false_type>
+struct is_movable_signal_type
+    : std::conditional_t<
+          is_signal_type<T>::value,
+          signal_is_movable<T>,
+          std::false_type>
 {
 };
 
 // signal_is_move_activated<Signal>::value yields a compile-time boolean
 // indicating whether or not the given signal type allows moving.
 template<class Signal>
-struct signal_is_move_activated : signal_capability_level_is_compatible<
-                                      signal_move_activated,
-                                      Signal::capabilities::reading>
+struct signal_is_move_activated
+    : signal_capability_level_is_compatible<
+          signal_move_activated,
+          Signal::capabilities::reading>
 {
 };
 
 // is_move_activated_signal_type<T>::value yields a compile-time boolean
 // indicating whether or not T is an alia signal that supports value movement.
 template<class T>
-struct is_move_activated_signal_type : std::conditional_t<
-                                           is_signal_type<T>::value,
-                                           signal_is_move_activated<T>,
-                                           std::false_type>
+struct is_move_activated_signal_type
+    : std::conditional_t<
+          is_signal_type<T>::value,
+          signal_is_move_activated<T>,
+          std::false_type>
 {
 };
 
@@ -659,19 +669,21 @@ forward_signal(Signal const& signal)
 // signal_is_clearable<Signal>::value yields a compile-time boolean indicating
 // whether or not the given signal type supports clearing.
 template<class Signal>
-struct signal_is_clearable : signal_capability_level_is_compatible<
-                                 signal_clearable,
-                                 Signal::capabilities::writing>
+struct signal_is_clearable
+    : signal_capability_level_is_compatible<
+          signal_clearable,
+          Signal::capabilities::writing>
 {
 };
 
 // is_clearable_signal_type<T>::value yields a compile-time boolean indicating
 // whether or not T is an alia signal that supports clearing.
 template<class T>
-struct is_clearable_signal_type : std::conditional_t<
-                                      is_signal_type<T>::value,
-                                      signal_is_clearable<T>,
-                                      std::false_type>
+struct is_clearable_signal_type
+    : std::conditional_t<
+          is_signal_type<T>::value,
+          signal_is_clearable<T>,
+          std::false_type>
 {
 };
 

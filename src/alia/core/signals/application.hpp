@@ -15,10 +15,11 @@ namespace alia {
 // just doing the two overloads I need for now...
 
 template<class Result, class Function, class Arg>
-struct lazy_apply1_signal : lazy_signal<
-                                lazy_apply1_signal<Result, Function, Arg>,
-                                Result,
-                                move_activated_signal>
+struct lazy_apply1_signal
+    : lazy_signal<
+          lazy_apply1_signal<Result, Function, Arg>,
+          Result,
+          move_activated_signal>
 {
     lazy_apply1_signal(Function f, Arg arg)
         : f_(std::move(f)), arg_(std::move(arg))
@@ -232,7 +233,7 @@ struct apply_signal
     has_value() const
     {
         return data_->status == detail::apply_status::READY
-               || data_->status == detail::apply_status::MOVED;
+            || data_->status == detail::apply_status::MOVED;
     }
     Value const&
     read() const
@@ -384,10 +385,11 @@ struct duplex_apply_data
 };
 
 template<class Value, class Input, class Reverse>
-struct duplex_apply_signal : signal<
-                                 duplex_apply_signal<Value, Input, Reverse>,
-                                 Value,
-                                 movable_duplex_signal>
+struct duplex_apply_signal
+    : signal<
+          duplex_apply_signal<Value, Input, Reverse>,
+          Value,
+          movable_duplex_signal>
 {
     duplex_apply_signal(
         duplex_apply_data<Value>& data, Input input, Reverse reverse)
@@ -404,7 +406,7 @@ struct duplex_apply_signal : signal<
     has_value() const
     {
         return data_->result.status == apply_status::READY
-               || data_->result.status == apply_status::MOVED;
+            || data_->result.status == apply_status::MOVED;
     }
     Value const&
     read() const

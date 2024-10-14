@@ -47,7 +47,7 @@ modal(
             div(ctx, "modal-dialog modal-dialog-centered")
                 .attr("role", "document")
                 .content([&] {
-                    ALIA_IF(data->active)
+                    ALIA_IF (data->active)
                     {
                         div(ctx, "modal-content", [&] {
                             internal_modal_handle handle(modal);

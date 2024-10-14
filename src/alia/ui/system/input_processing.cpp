@@ -152,7 +152,7 @@ process_key_press(ui_system& ui, modded_key const& info)
 {
     ui.input.keyboard_interaction = true;
     return process_focused_key_press(ui, info)
-           || process_background_key_press(ui, info);
+        || process_background_key_press(ui, info);
 }
 
 bool

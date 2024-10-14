@@ -120,7 +120,7 @@ void
 event_handler(Context ctx, Handler&& handler)
 {
     Event* e;
-    ALIA_UNTRACKED_IF(detect_event(ctx, &e))
+    ALIA_UNTRACKED_IF (detect_event(ctx, &e))
     {
         handler(ctx, *e);
     }
@@ -184,7 +184,7 @@ void
 targeted_event_handler(Context ctx, component_id id, Handler&& handler)
 {
     Event* e;
-    ALIA_UNTRACKED_IF(detect_targeted_event(ctx, id, &e))
+    ALIA_UNTRACKED_IF (detect_targeted_event(ctx, id, &e))
     {
         handler(ctx, *e);
         abort_traversal(ctx);
@@ -211,7 +211,7 @@ template<class Context, class Handler>
 void
 refresh_handler(Context ctx, Handler handler)
 {
-    ALIA_UNTRACKED_IF(is_refresh_event(ctx))
+    ALIA_UNTRACKED_IF (is_refresh_event(ctx))
     {
         handler(ctx);
     }

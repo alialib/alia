@@ -37,10 +37,9 @@ clamped_layout_logic::set_relative_assignment(
     layout_vector clamped_size;
     for (int i = 0; i != 2; ++i)
     {
-        clamped_size[i]
-            = this->max_size[i] <= 0
-                  ? assigned_size[i]
-                  : (std::min)(assigned_size[i], this->max_size[i]);
+        clamped_size[i] = this->max_size[i] <= 0
+                            ? assigned_size[i]
+                            : (std::min)(assigned_size[i], this->max_size[i]);
     }
     walk_layout_children(children, [&](layout_node& node) {
         layout_requirements y

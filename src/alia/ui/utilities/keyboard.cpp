@@ -124,14 +124,14 @@ bool
 detect_focus_gain(dataless_ui_context ctx, widget_id id)
 {
     return get_event_type(ctx) == FOCUS_GAIN_EVENT
-           && cast_event<focus_notification_event>(ctx).target == id;
+        && cast_event<focus_notification_event>(ctx).target == id;
 }
 
 bool
 detect_focus_loss(dataless_ui_context ctx, widget_id id)
 {
     return get_event_type(ctx) == FOCUS_LOSS_EVENT
-           && cast_event<focus_notification_event>(ctx).target == id;
+        && cast_event<focus_notification_event>(ctx).target == id;
 }
 
 std::optional<modded_key>

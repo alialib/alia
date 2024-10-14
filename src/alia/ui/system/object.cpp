@@ -67,16 +67,16 @@ struct skia_geometry_subscriber : geometry_context_subscriber
     {
         // TODO: This could be more efficient.
         SkMatrix matrix;
-        SkScalar values[9]
-            = {SkScalar(m(0, 0)),
-               SkScalar(m(0, 1)),
-               SkScalar(m(0, 2)),
-               SkScalar(m(1, 0)),
-               SkScalar(m(1, 1)),
-               SkScalar(m(1, 2)),
-               SkScalar(m(2, 0)),
-               SkScalar(m(2, 1)),
-               SkScalar(m(2, 2))};
+        SkScalar values[9] = {
+            SkScalar(m(0, 0)),
+            SkScalar(m(0, 1)),
+            SkScalar(m(0, 2)),
+            SkScalar(m(1, 0)),
+            SkScalar(m(1, 1)),
+            SkScalar(m(1, 2)),
+            SkScalar(m(2, 0)),
+            SkScalar(m(2, 1)),
+            SkScalar(m(2, 2))};
         matrix.set9(values);
         canvas->setMatrix(matrix);
     }

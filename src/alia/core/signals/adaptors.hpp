@@ -30,13 +30,14 @@ signalize(Value v)
 // pretends to have read capabilities. It will never actually have a value, but
 // it will type-check as a readable signal.
 template<class Wrapped>
-struct readability_faker : signal_wrapper<
-                               readability_faker<Wrapped>,
-                               Wrapped,
-                               typename Wrapped::value_type,
-                               typename signal_capabilities_union<
-                                   read_only_signal,
-                                   typename Wrapped::capabilities>::type>
+struct readability_faker
+    : signal_wrapper<
+          readability_faker<Wrapped>,
+          Wrapped,
+          typename Wrapped::value_type,
+          typename signal_capabilities_union<
+              read_only_signal,
+              typename Wrapped::capabilities>::type>
 {
     readability_faker(Wrapped wrapped)
         : readability_faker::signal_wrapper(std::move(wrapped))
@@ -79,13 +80,14 @@ fake_readability(Wrapped wrapped)
 // pretends to have write capabilities. It will never actually be ready to
 // write, but it will type-check as a writable signal.
 template<class Wrapped>
-struct writability_faker : signal_wrapper<
-                               writability_faker<Wrapped>,
-                               Wrapped,
-                               typename Wrapped::value_type,
-                               typename signal_capabilities_union<
-                                   write_only_signal,
-                                   typename Wrapped::capabilities>::type>
+struct writability_faker
+    : signal_wrapper<
+          writability_faker<Wrapped>,
+          Wrapped,
+          typename Wrapped::value_type,
+          typename signal_capabilities_union<
+              write_only_signal,
+              typename Wrapped::capabilities>::type>
 {
     writability_faker(Wrapped wrapped)
         : writability_faker::signal_wrapper(std::move(wrapped))
@@ -115,13 +117,14 @@ fake_writability(Wrapped wrapped)
 // the value type :Value. The proxy will apply static_casts to convert its
 // own values to and from :x's value type.
 template<class Wrapped, class To>
-struct casting_signal : casting_signal_wrapper<
-                            casting_signal<Wrapped, To>,
-                            Wrapped,
-                            To,
-                            typename signal_capabilities_intersection<
-                                typename Wrapped::capabilities,
-                                move_activated_clearable_signal>::type>
+struct casting_signal
+    : casting_signal_wrapper<
+          casting_signal<Wrapped, To>,
+          Wrapped,
+          To,
+          typename signal_capabilities_intersection<
+              typename Wrapped::capabilities,
+              move_activated_clearable_signal>::type>
 {
     casting_signal(Wrapped wrapped)
         : casting_signal::casting_signal_wrapper(std::move(wrapped))
@@ -469,7 +472,7 @@ struct masking_signal : signal_wrapper<masking_signal<Primary, Mask>, Primary>
     ready_to_write() const override
     {
         return mask_.has_value() && mask_.read()
-               && this->wrapped_.ready_to_write();
+            && this->wrapped_.ready_to_write();
     }
 
  private:
@@ -523,7 +526,7 @@ struct write_masking_signal
     ready_to_write() const override
     {
         return mask_.has_value() && mask_.read()
-               && this->wrapped_.ready_to_write();
+            && this->wrapped_.ready_to_write();
     }
 
  private:
@@ -634,12 +637,13 @@ struct unwrapper_signal_capabilities<
 };
 
 template<class Wrapped>
-struct unwrapper_signal : casting_signal_wrapper<
-                              unwrapper_signal<Wrapped>,
-                              Wrapped,
-                              typename Wrapped::value_type::value_type,
-                              typename unwrapper_signal_capabilities<
-                                  typename Wrapped::capabilities>::type>
+struct unwrapper_signal
+    : casting_signal_wrapper<
+          unwrapper_signal<Wrapped>,
+          Wrapped,
+          typename Wrapped::value_type::value_type,
+          typename unwrapper_signal_capabilities<
+              typename Wrapped::capabilities>::type>
 {
     unwrapper_signal()
     {
@@ -702,13 +706,14 @@ unwrap(Signal signal)
 // If the input signal doesn't support movement, it's returned unchanged.
 //
 template<class Wrapped>
-struct signal_movement_activator : signal_wrapper<
-                                       signal_movement_activator<Wrapped>,
-                                       Wrapped,
-                                       typename Wrapped::value_type,
-                                       signal_capabilities<
-                                           signal_move_activated,
-                                           Wrapped::capabilities::writing>>
+struct signal_movement_activator
+    : signal_wrapper<
+          signal_movement_activator<Wrapped>,
+          Wrapped,
+          typename Wrapped::value_type,
+          signal_capabilities<
+              signal_move_activated,
+              Wrapped::capabilities::writing>>
 {
     signal_movement_activator()
     {

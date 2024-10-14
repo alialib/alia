@@ -31,7 +31,7 @@ struct is_path_separator
     operator()(scn::span<const char_type> ch)
     {
         return !allow_subpaths
-               && ch[0] == scn::detail::ascii_widen<char_type>('/');
+            && ch[0] == scn::detail::ascii_widen<char_type>('/');
     }
 
     constexpr bool
@@ -108,9 +108,9 @@ constexpr unsigned
 parameter_count(const char (&pattern)[N], unsigned i = 0, unsigned count = 0)
 {
     return i == N - 1
-               ? count
-               : parameter_count(
-                     pattern, i + 1, pattern[i] == '{' ? count + 1 : count);
+             ? count
+             : parameter_count(
+                   pattern, i + 1, pattern[i] == '{' ? count + 1 : count);
 }
 
 template<unsigned N>
@@ -170,7 +170,7 @@ struct page_invoker<N, std::index_sequence<S...>>
     invoke(
         Context ctx, Page&& page, Result const& result, bool& already_matched)
     {
-        ALIA_IF(!already_matched && ALIA_FIELD(result, matched))
+        ALIA_IF (!already_matched && ALIA_FIELD(result, matched))
         {
             auto args = ALIA_FIELD(result, arguments);
             std::forward<Page>(page)(args[S]...);
@@ -195,10 +195,11 @@ struct page_has_n_arity<Page, N, std::index_sequence<S...>>
 };
 
 template<class Page, std::size_t N = 0>
-struct page_arity : std::conditional_t<
-                        page_has_n_arity<Page, N>::value,
-                        std::integral_constant<std::size_t, N>,
-                        page_arity<Page, N + 1>>
+struct page_arity
+    : std::conditional_t<
+          page_has_n_arity<Page, N>::value,
+          std::integral_constant<std::size_t, N>,
+          page_arity<Page, N + 1>>
 {
 };
 

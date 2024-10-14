@@ -72,8 +72,8 @@ time_until_next_callback(callback_scheduler& scheduler, millisecond_count now)
         }
     }
     return int(next_event->trigger_time - now) >= 0
-               ? (next_event->trigger_time - now)
-               : 0;
+             ? (next_event->trigger_time - now)
+             : 0;
 }
 
 } // namespace alia

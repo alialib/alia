@@ -94,7 +94,7 @@ checkboxes_demo(demo_context ctx)
         /// [checkbox]
         auto my_state = get_state(ctx, false);
         checkbox(ctx, my_state);
-        alia_if(my_state)
+        alia_if (my_state)
         {
             p(ctx, "Box is checked!");
         }

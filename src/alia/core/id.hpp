@@ -50,7 +50,7 @@ operator==(id_interface const& a, id_interface const& b)
     // Apparently it's faster to compare the name pointers for equality before
     // resorting to actually comparing the typeid objects themselves.
     return (typeid(a).name() == typeid(b).name() || typeid(a) == typeid(b))
-           && a.equals(b);
+        && a.equals(b);
 }
 
 inline bool
@@ -376,8 +376,7 @@ struct id_pair : id_interface
     {
         id_pair const& other_id = static_cast<id_pair const&>(other);
         return id0_.less_than(other_id.id0_)
-               || (id0_.equals(other_id.id0_)
-                   && id1_.less_than(other_id.id1_));
+            || (id0_.equals(other_id.id0_) && id1_.less_than(other_id.id1_));
     }
 
     void

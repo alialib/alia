@@ -98,7 +98,7 @@ inline bool
 operator==(relative_length const& a, relative_length const& b)
 {
     return a.length == b.length && a.is_relative == b.is_relative
-           && (!a.is_relative || a.units == b.units);
+        && (!a.is_relative || a.units == b.units);
 }
 inline bool
 operator!=(relative_length const& a, relative_length const& b)
@@ -219,7 +219,7 @@ inline bool
 operator==(layout const& a, layout const& b)
 {
     return a.size == b.size && a.flags == b.flags
-           && a.growth_factor == b.growth_factor;
+        && a.growth_factor == b.growth_factor;
 }
 inline bool
 operator!=(layout const& a, layout const& b)
