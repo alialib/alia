@@ -47,7 +47,7 @@ do_node_expander(
             data.layout_node.refresh_layout(
                 get_layout_traversal(ctx),
                 layout_spec,
-                leaf_layout_requirements(make_layout_vector(48, 48), 0, 0),
+                leaf_layout_requirements(make_layout_vector(40, 40), 28, 12),
                 LEFT | BASELINE_Y | PADDED);
 
             add_layout_node(
@@ -173,7 +173,7 @@ do_node_expander(
                 paint.setColor(
                     SkColorSetARGB(highlight, color.r, color.g, color.b));
                 canvas.drawPath(
-                    SkPath::Circle(center[0], center[1], 28.f), paint);
+                    SkPath::Circle(center[0], center[1], 24.f), paint);
             }
 
             auto state = get_widget_state(
@@ -190,7 +190,7 @@ do_node_expander(
                 state,
                 center,
                 color,
-                28);
+                24);
         }
     }
     alia_end

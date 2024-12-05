@@ -1438,11 +1438,9 @@ scoped_collapsible_content::begin(
     double const offset_factor,
     layout const& layout_spec)
 {
-    // TODO:
-    static value_smoother<float> the_smoother;
-    float expansion
-        = smooth_raw(ctx, the_smoother, expanded ? 1.f : 0.f, transition);
-    begin(ctx, expansion, offset_factor, layout_spec);
+    // TODO
+    auto expansion = smooth(ctx, value(expanded ? 1.f : 0.f), transition);
+    begin(ctx, read_signal(expansion), offset_factor, layout_spec);
 }
 
 void
@@ -1867,7 +1865,9 @@ cached_ui_block::begin(
         }
     }
     else
+    {
         is_relevant_ = true;
+    }
 }
 void
 cached_ui_block::end()
@@ -1923,6 +1923,58 @@ cached_ui_block::end()
 
 }
 
+auto my_style = text_style{"Roboto/Roboto-Regular", 22.f, rgb8(173, 181, 189)};
+
+int
+factor(int n)
+{
+    int i;
+    for (i = int(std::sqrt(n) + 0.5); i > 1 && n % i != 0; --i)
+        ;
+    return i;
+}
+
+void
+factor_tree(ui_context ctx, readable<int> n)
+{
+    // Get the 'best' factor that n has. (The one closest to sqrt(n).)
+    auto f = alia::apply(ctx, factor, n);
+
+    // If that factor isn't 1, n is composite.
+    // if_(ctx, f != 1, [&] {
+    alia_if (f != 1)
+    {
+        auto show_factors = get_state(ctx, false);
+
+        {
+            row_layout row(ctx);
+            do_node_expander(ctx, show_factors);
+            do_text(
+                ctx, direct(my_style), alia::printf(ctx, "%i: composite", n));
+        }
+
+        collapsible_content(ctx, show_factors, GROW, [&] {
+            row_layout row(ctx);
+            do_spacer(ctx, size(48, 48, PIXELS));
+            column_layout column(ctx, GROW);
+            // std::cout << "factors!" << std::endl;
+            factor_tree(ctx, f);
+            factor_tree(ctx, n / f);
+        });
+    }
+    // }).else_([&] {
+    alia_else
+    {
+        // std::cout << "prime!" << std::endl;
+        row_layout row(ctx);
+        do_spacer(ctx, size(48, 48, PIXELS));
+        // do_text(ctx, direct(my_style), value("prime"));
+        do_text(ctx, direct(my_style), alia::printf(ctx, "%i: prime", n));
+    }
+    alia_end
+    // });
+}
+
 void
 my_ui(ui_context ctx)
 {
@@ -1932,10 +1984,12 @@ my_ui(ui_context ctx)
 
     column_layout column(ctx, GROW | PADDED);
 
+    factor_tree(ctx, value(768'000'000));
+
+    return;
+
     auto selected = get_state(ctx, int(0));
 
-    auto my_style
-        = text_style{"Roboto/Roboto-Regular", 22.f, rgb8(173, 181, 189)};
     // auto my_style = text_style{
     //     "Roboto_Mono/static/RobotoMono-Regular", 22.f, rgb8(173, 181, 189)};
 
@@ -2213,80 +2267,81 @@ my_ui(ui_context ctx)
             do_wrapped_text(
                 ctx,
                 direct(my_style),
-                value("Lorem ipsum dolor sit amet, consectetur "
-                      "adipisg elit. "
-                      "Phasellus lacinia elementum diam consequat "
-                      "alicinquet. "
-                      "Vestibulum ut libero justo. Pellentesque lectus "
-                      "lectus, "
-                      "scelerisque a elementum sed, bibendum id libero. "
-                      "Maecenas venenatis est sed sem "
-                      "consequat mollis. Ut "
-                      "nequeodio, hendrerit ut justo venenatis, consequat "
-                      "molestie eros. Nam fermentum, mi malesuada eleifend"
-                      "dapibus, lectus dolor luctus orci, nec posuere lor "
-                      "lorem ac sem. Nullam interdum laoreet ipsum in "
-                      "dictum.\n\n"
-                      "Duis quis blandit felis. Pellentesque et lectus "
-                      "magna. "
-                      "Maecenas dui lacus, sollicitudin a eros in, vehicula "
-                      "posuere metus. Etiam nec dolor mattis, tincidunt sem "
-                      "vitae, maximus tellus. Vestibulum ut nisi nec neque "
-                      "rutrum interdum. In justo massa, consequat quis dui "
-                      "eget, cursus ultricies sem. Quisque a lectus quisest "
-                      "porttitor ullamcorper ac sed odio.\n\n"
-                      "Vestibulum sed turpis et lacus rutrum scelerisqueet "
-                      "sit "
-                      "amet ipsum. Sed congue hendrerit augue, sed "
-                      "pellentesque "
-                      "neque. Integer efficitur nisi idmassa placerat, at "
-                      "ullamcorper arcu fermentum. Donec sed tellus quis "
-                      "velit "
-                      "placerat viverra necvel diam. Vestibulum faucibus "
-                      "molestie ipsum eget rhoncus. Donec vitae bibendum "
-                      "nibh, "
-                      "quis pellentesque enim. Donec eget consectetur "
-                      "massa, "
-                      "eget mollis elit. Orci varius natoque penatibus et"
-                      "magnis dis parturient montes, nascetur ridiculus "
-                      "mus. "
-                      "Donec accumsan, nisi egestas "
-                      "sollicitudinullamcorper, "
-                      "diam dolor faucibus neque, euscelerisque mi erat vel "
-                      "erat. Etiam nec leo acrisus porta ornare ut accumsan "
-                      "lorem.\n\n"
-                      "Aenean at euismod ligula. Sed augue est, imperdietut "
-                      "sem sit amet, efficitur dictum enim. Namsodales id "
-                      "risus non pulvinar. Morbi id mollismassa. Nunc elit "
-                      "velit, pellentesque et lobortisut, luctus sed justo. "
-                      "Morbi eleifend quam velmagna accumsan, eu consequat "
-                      "nisl ultrices.Mauris dictum eu quam sit amet "
-                      "aliquet. "
-                      "Sedrhoncus turpis quis sagittis imperdiet. Lorem "
-                      "ipsum"
-                      "dolor sit amet, consectetur adipiscing elit. "
-                      "Pellentesque convallis suscipit ex et "
-                      "hendrerit.Donec "
-                      "est ex, varius eu nulla id, tristiquelobortis metus. "
-                      "Sed id sem justo. Nulla at portaneque, id elementum "
-                      "lacus.\n\n"
-                      "Mauris leotortor, tincidunt sit amet sem sit amet, "
-                      "egestastempor massa. In diam ipsum, fermentum "
-                      "pulvinar "
-                      "posuere ut, scelerisque sit amet odio. Nam necjusto "
-                      "quis felis ultrices ornare sit amet eumassa. Nam "
-                      "gravida lacus eget tortor porttitor,eget scelerisque "
-                      "est imperdiet. Duis quisimperdiet libero. Nullam "
-                      "justo "
-                      "erat, blandit etnisi sit amet, aliquet mattis leo. "
-                      "Sed "
-                      "a auguenon felis lacinia ultrices. Aenean porttitor "
-                      "bibendum sem, in consectetur arcu suscipit id.Etiam "
-                      "varius dictum gravida. Nulla molestiefermentum odio "
-                      "vitae tincidunt. Quisque dictum,magna vitae "
-                      "porttitor "
-                      "accumsan, felis felisconsectetur nisi, ut venenatis "
-                      "felis justo utante.\n\n"),
+                value(
+                    "Lorem ipsum dolor sit amet, consectetur "
+                    "adipisg elit. "
+                    "Phasellus lacinia elementum diam consequat "
+                    "alicinquet. "
+                    "Vestibulum ut libero justo. Pellentesque lectus "
+                    "lectus, "
+                    "scelerisque a elementum sed, bibendum id libero. "
+                    "Maecenas venenatis est sed sem "
+                    "consequat mollis. Ut "
+                    "nequeodio, hendrerit ut justo venenatis, consequat "
+                    "molestie eros. Nam fermentum, mi malesuada eleifend"
+                    "dapibus, lectus dolor luctus orci, nec posuere lor "
+                    "lorem ac sem. Nullam interdum laoreet ipsum in "
+                    "dictum.\n\n"
+                    "Duis quis blandit felis. Pellentesque et lectus "
+                    "magna. "
+                    "Maecenas dui lacus, sollicitudin a eros in, vehicula "
+                    "posuere metus. Etiam nec dolor mattis, tincidunt sem "
+                    "vitae, maximus tellus. Vestibulum ut nisi nec neque "
+                    "rutrum interdum. In justo massa, consequat quis dui "
+                    "eget, cursus ultricies sem. Quisque a lectus quisest "
+                    "porttitor ullamcorper ac sed odio.\n\n"
+                    "Vestibulum sed turpis et lacus rutrum scelerisqueet "
+                    "sit "
+                    "amet ipsum. Sed congue hendrerit augue, sed "
+                    "pellentesque "
+                    "neque. Integer efficitur nisi idmassa placerat, at "
+                    "ullamcorper arcu fermentum. Donec sed tellus quis "
+                    "velit "
+                    "placerat viverra necvel diam. Vestibulum faucibus "
+                    "molestie ipsum eget rhoncus. Donec vitae bibendum "
+                    "nibh, "
+                    "quis pellentesque enim. Donec eget consectetur "
+                    "massa, "
+                    "eget mollis elit. Orci varius natoque penatibus et"
+                    "magnis dis parturient montes, nascetur ridiculus "
+                    "mus. "
+                    "Donec accumsan, nisi egestas "
+                    "sollicitudinullamcorper, "
+                    "diam dolor faucibus neque, euscelerisque mi erat vel "
+                    "erat. Etiam nec leo acrisus porta ornare ut accumsan "
+                    "lorem.\n\n"
+                    "Aenean at euismod ligula. Sed augue est, imperdietut "
+                    "sem sit amet, efficitur dictum enim. Namsodales id "
+                    "risus non pulvinar. Morbi id mollismassa. Nunc elit "
+                    "velit, pellentesque et lobortisut, luctus sed justo. "
+                    "Morbi eleifend quam velmagna accumsan, eu consequat "
+                    "nisl ultrices.Mauris dictum eu quam sit amet "
+                    "aliquet. "
+                    "Sedrhoncus turpis quis sagittis imperdiet. Lorem "
+                    "ipsum"
+                    "dolor sit amet, consectetur adipiscing elit. "
+                    "Pellentesque convallis suscipit ex et "
+                    "hendrerit.Donec "
+                    "est ex, varius eu nulla id, tristiquelobortis metus. "
+                    "Sed id sem justo. Nulla at portaneque, id elementum "
+                    "lacus.\n\n"
+                    "Mauris leotortor, tincidunt sit amet sem sit amet, "
+                    "egestastempor massa. In diam ipsum, fermentum "
+                    "pulvinar "
+                    "posuere ut, scelerisque sit amet odio. Nam necjusto "
+                    "quis felis ultrices ornare sit amet eumassa. Nam "
+                    "gravida lacus eget tortor porttitor,eget scelerisque "
+                    "est imperdiet. Duis quisimperdiet libero. Nullam "
+                    "justo "
+                    "erat, blandit etnisi sit amet, aliquet mattis leo. "
+                    "Sed "
+                    "a auguenon felis lacinia ultrices. Aenean porttitor "
+                    "bibendum sem, in consectetur arcu suscipit id.Etiam "
+                    "varius dictum gravida. Nulla molestiefermentum odio "
+                    "vitae tincidunt. Quisque dictum,magna vitae "
+                    "porttitor "
+                    "accumsan, felis felisconsectetur nisi, ut venenatis "
+                    "felis justo utante.\n\n"),
                 FILL);
         }
 
