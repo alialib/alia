@@ -12,6 +12,7 @@
 #include <alia/ui/layout/utilities.hpp>
 #include <alia/ui/library/bullets.hpp>
 #include <alia/ui/library/checkbox.hpp>
+#include <alia/ui/library/collapsible.hpp>
 #include <alia/ui/library/node_expander.hpp>
 #include <alia/ui/library/panels.hpp>
 #include <alia/ui/library/radio_button.hpp>
@@ -1311,235 +1312,6 @@ make_radio_signal(Selected selected, Index index)
 //     container_.end();
 // }
 
-template<class Content>
-struct collapsible_layout_container : layout_container
-{
-    // implementation of layout interface
-    layout_requirements
-    get_horizontal_requirements() override
-    {
-        return content.get_horizontal_requirements();
-    }
-    layout_requirements
-    get_vertical_requirements(layout_scalar assigned_width) override
-    {
-        auto const content_requirements
-            = content.get_vertical_requirements(assigned_width);
-        this->content_height = content_requirements.size;
-        auto const visible_height = round_to_layout_scalar(
-            float(this->content_height) * this->expansion);
-        return layout_requirements{visible_height, 0, 0};
-    }
-    void
-    set_relative_assignment(
-        relative_layout_assignment const& assignment) override
-    {
-        layout_box const& region = assignment.region;
-
-        layout_requirements y
-            = content.get_vertical_requirements(region.size[0]);
-
-        content.set_relative_assignment(relative_layout_assignment{
-            layout_box(
-                region.corner, make_layout_vector(region.size[0], y.size)),
-            y.size - y.descent});
-
-        this->window = region;
-    }
-
-    void
-    record_content_change() override
-    {
-        this->parent->record_content_change();
-    }
-
-    Content content;
-
-    // expansion fraction (0 to 1)
-    float expansion = 0;
-
-    // The following are filled in during layout...
-
-    // actual content height
-    layout_scalar content_height;
-
-    // window through which the content is visible
-    layout_box window;
-};
-
-class scoped_collapsible_content : noncopyable
-{
- public:
-    scoped_collapsible_content()
-    {
-    }
-    ~scoped_collapsible_content()
-    {
-        end();
-    }
-
-    scoped_collapsible_content(
-        ui_context& ctx,
-        bool expanded,
-        animated_transition const& transition = default_transition,
-        double const offset_factor = 1.,
-        layout const& layout_spec = default_layout)
-    {
-        begin(ctx, expanded, transition, offset_factor, layout_spec);
-    }
-
-    scoped_collapsible_content(
-        ui_context& ctx,
-        float expansion,
-        double const offset_factor = 1.,
-        layout const& layout_spec = default_layout)
-    {
-        begin(ctx, expansion, offset_factor, layout_spec);
-    }
-
-    void
-    begin(
-        ui_context& ctx,
-        bool expanded,
-        animated_transition const& transition = default_transition,
-        double const offset_factor = 1.,
-        layout const& layout_spec = default_layout);
-
-    void
-    begin(
-        ui_context& ctx,
-        float expansion,
-        double const offset_factor = 1.,
-        layout const& layout_spec = default_layout);
-
-    void
-    end();
-
-    bool
-    do_content() const
-    {
-        return do_content_;
-    }
-
- private:
-    ui_context* ctx_;
-    scoped_layout_container container_;
-    scoped_clip_region clipper_;
-    scoped_transformation transform_;
-    column_layout column_;
-    bool do_content_;
-};
-
-void
-scoped_collapsible_content::begin(
-    ui_context& ctx,
-    bool expanded,
-    animated_transition const& transition,
-    double const offset_factor,
-    layout const& layout_spec)
-{
-    // TODO:
-    static value_smoother<float> the_smoother;
-    float expansion
-        = smooth_raw(ctx, the_smoother, expanded ? 1.f : 0.f, transition);
-    begin(ctx, expansion, offset_factor, layout_spec);
-}
-
-void
-scoped_collapsible_content::begin(
-    ui_context& ctx,
-    float expansion,
-    double const offset_factor,
-    layout const& layout_spec)
-{
-    ctx_ = &ctx;
-
-    collapsible_layout_container<column_layout_container>* layout;
-    get_cached_data(ctx, &layout);
-    container_.begin(get_layout_traversal(ctx), layout);
-
-    widget_id id = get_widget_id(ctx);
-
-    if (is_refresh_pass(ctx))
-    {
-        // If the widget is expanding, ensure that it's visible.
-        // TODO: Is this the correct place to do this?
-        // std::cout << "refresh:\n  " << "expansion: " << expansion << "\n  "
-        //           << "layout->expansion: " << layout->expansion <<
-        //           std::endl;
-        if (expansion > layout->expansion)
-            make_widget_visible(ctx, id, ABRUPT);
-        detect_layout_change(ctx, &layout->expansion, expansion);
-    }
-    else
-    {
-        if (get_event_category(ctx) == REGION_CATEGORY)
-            do_box_region(ctx, id, layout->window);
-
-        if (expansion != 0 && expansion != 1)
-        {
-            clipper_.begin(*get_layout_traversal(ctx).geometry);
-            clipper_.set(box<2, double>(layout->window));
-        }
-
-        layout_scalar offset = round_to_layout_scalar(
-            offset_factor * (1 - expansion) * layout->content_height);
-
-        transform_.begin(*get_layout_traversal(ctx).geometry);
-        transform_.set(translation_matrix(
-            make_vector<double>(0, -offset)
-            + vector<2, double>(
-                layout->cacher.relative_assignment.region.corner)));
-    }
-
-    do_content_ = expansion != 0;
-
-    column_.begin(ctx, layout->content, layout_spec);
-}
-
-void
-scoped_collapsible_content::end()
-{
-    if (ctx_)
-    {
-        column_.end();
-
-        transform_.end();
-        clipper_.end();
-
-        container_.end();
-
-        ctx_ = 0;
-    }
-}
-
-template<class Content>
-void
-collapsible_content(
-    ui_context ctx, readable<bool> show_content, Content&& content)
-{
-    scoped_collapsible_content collapsible(
-        ctx, condition_is_true(show_content));
-    if_(ctx, collapsible.do_content(), std::forward<Content>(content));
-}
-
-template<class Content>
-void
-collapsible_content(
-    ui_context ctx,
-    readable<bool> show_content,
-    layout const& layout_spec,
-    Content&& content)
-{
-    scoped_collapsible_content collapsible(
-        ctx,
-        condition_is_true(show_content),
-        default_transition,
-        1.,
-        layout_spec);
-    if_(ctx, collapsible.do_content(), std::forward<Content>(content));
-}
-
 // ///
 
 // struct panel_container : simple_layout_container<column_layout_logic>
@@ -1923,6 +1695,8 @@ cached_ui_block::end()
 
 }
 
+auto my_style = text_style{"Roboto/Roboto-Regular", 22.f, rgb8(173, 181, 189)};
+
 void
 my_ui(ui_context ctx)
 {
@@ -1934,8 +1708,8 @@ my_ui(ui_context ctx)
 
     auto selected = get_state(ctx, int(0));
 
-    auto my_style
-        = text_style{"Roboto/Roboto-Regular", 22.f, rgb8(173, 181, 189)};
+    // auto my_style
+    //     = text_style{"Roboto/Roboto-Regular", 22.f, rgb8(173, 181, 189)};
     // auto my_style = text_style{
     //     "Roboto_Mono/static/RobotoMono-Regular", 22.f, rgb8(173, 181, 189)};
 
@@ -2213,80 +1987,81 @@ my_ui(ui_context ctx)
             do_wrapped_text(
                 ctx,
                 direct(my_style),
-                value("Lorem ipsum dolor sit amet, consectetur "
-                      "adipisg elit. "
-                      "Phasellus lacinia elementum diam consequat "
-                      "alicinquet. "
-                      "Vestibulum ut libero justo. Pellentesque lectus "
-                      "lectus, "
-                      "scelerisque a elementum sed, bibendum id libero. "
-                      "Maecenas venenatis est sed sem "
-                      "consequat mollis. Ut "
-                      "nequeodio, hendrerit ut justo venenatis, consequat "
-                      "molestie eros. Nam fermentum, mi malesuada eleifend"
-                      "dapibus, lectus dolor luctus orci, nec posuere lor "
-                      "lorem ac sem. Nullam interdum laoreet ipsum in "
-                      "dictum.\n\n"
-                      "Duis quis blandit felis. Pellentesque et lectus "
-                      "magna. "
-                      "Maecenas dui lacus, sollicitudin a eros in, vehicula "
-                      "posuere metus. Etiam nec dolor mattis, tincidunt sem "
-                      "vitae, maximus tellus. Vestibulum ut nisi nec neque "
-                      "rutrum interdum. In justo massa, consequat quis dui "
-                      "eget, cursus ultricies sem. Quisque a lectus quisest "
-                      "porttitor ullamcorper ac sed odio.\n\n"
-                      "Vestibulum sed turpis et lacus rutrum scelerisqueet "
-                      "sit "
-                      "amet ipsum. Sed congue hendrerit augue, sed "
-                      "pellentesque "
-                      "neque. Integer efficitur nisi idmassa placerat, at "
-                      "ullamcorper arcu fermentum. Donec sed tellus quis "
-                      "velit "
-                      "placerat viverra necvel diam. Vestibulum faucibus "
-                      "molestie ipsum eget rhoncus. Donec vitae bibendum "
-                      "nibh, "
-                      "quis pellentesque enim. Donec eget consectetur "
-                      "massa, "
-                      "eget mollis elit. Orci varius natoque penatibus et"
-                      "magnis dis parturient montes, nascetur ridiculus "
-                      "mus. "
-                      "Donec accumsan, nisi egestas "
-                      "sollicitudinullamcorper, "
-                      "diam dolor faucibus neque, euscelerisque mi erat vel "
-                      "erat. Etiam nec leo acrisus porta ornare ut accumsan "
-                      "lorem.\n\n"
-                      "Aenean at euismod ligula. Sed augue est, imperdietut "
-                      "sem sit amet, efficitur dictum enim. Namsodales id "
-                      "risus non pulvinar. Morbi id mollismassa. Nunc elit "
-                      "velit, pellentesque et lobortisut, luctus sed justo. "
-                      "Morbi eleifend quam velmagna accumsan, eu consequat "
-                      "nisl ultrices.Mauris dictum eu quam sit amet "
-                      "aliquet. "
-                      "Sedrhoncus turpis quis sagittis imperdiet. Lorem "
-                      "ipsum"
-                      "dolor sit amet, consectetur adipiscing elit. "
-                      "Pellentesque convallis suscipit ex et "
-                      "hendrerit.Donec "
-                      "est ex, varius eu nulla id, tristiquelobortis metus. "
-                      "Sed id sem justo. Nulla at portaneque, id elementum "
-                      "lacus.\n\n"
-                      "Mauris leotortor, tincidunt sit amet sem sit amet, "
-                      "egestastempor massa. In diam ipsum, fermentum "
-                      "pulvinar "
-                      "posuere ut, scelerisque sit amet odio. Nam necjusto "
-                      "quis felis ultrices ornare sit amet eumassa. Nam "
-                      "gravida lacus eget tortor porttitor,eget scelerisque "
-                      "est imperdiet. Duis quisimperdiet libero. Nullam "
-                      "justo "
-                      "erat, blandit etnisi sit amet, aliquet mattis leo. "
-                      "Sed "
-                      "a auguenon felis lacinia ultrices. Aenean porttitor "
-                      "bibendum sem, in consectetur arcu suscipit id.Etiam "
-                      "varius dictum gravida. Nulla molestiefermentum odio "
-                      "vitae tincidunt. Quisque dictum,magna vitae "
-                      "porttitor "
-                      "accumsan, felis felisconsectetur nisi, ut venenatis "
-                      "felis justo utante.\n\n"),
+                value(
+                    "Lorem ipsum dolor sit amet, consectetur "
+                    "adipisg elit. "
+                    "Phasellus lacinia elementum diam consequat "
+                    "alicinquet. "
+                    "Vestibulum ut libero justo. Pellentesque lectus "
+                    "lectus, "
+                    "scelerisque a elementum sed, bibendum id libero. "
+                    "Maecenas venenatis est sed sem "
+                    "consequat mollis. Ut "
+                    "nequeodio, hendrerit ut justo venenatis, consequat "
+                    "molestie eros. Nam fermentum, mi malesuada eleifend"
+                    "dapibus, lectus dolor luctus orci, nec posuere lor "
+                    "lorem ac sem. Nullam interdum laoreet ipsum in "
+                    "dictum.\n\n"
+                    "Duis quis blandit felis. Pellentesque et lectus "
+                    "magna. "
+                    "Maecenas dui lacus, sollicitudin a eros in, vehicula "
+                    "posuere metus. Etiam nec dolor mattis, tincidunt sem "
+                    "vitae, maximus tellus. Vestibulum ut nisi nec neque "
+                    "rutrum interdum. In justo massa, consequat quis dui "
+                    "eget, cursus ultricies sem. Quisque a lectus quisest "
+                    "porttitor ullamcorper ac sed odio.\n\n"
+                    "Vestibulum sed turpis et lacus rutrum scelerisqueet "
+                    "sit "
+                    "amet ipsum. Sed congue hendrerit augue, sed "
+                    "pellentesque "
+                    "neque. Integer efficitur nisi idmassa placerat, at "
+                    "ullamcorper arcu fermentum. Donec sed tellus quis "
+                    "velit "
+                    "placerat viverra necvel diam. Vestibulum faucibus "
+                    "molestie ipsum eget rhoncus. Donec vitae bibendum "
+                    "nibh, "
+                    "quis pellentesque enim. Donec eget consectetur "
+                    "massa, "
+                    "eget mollis elit. Orci varius natoque penatibus et"
+                    "magnis dis parturient montes, nascetur ridiculus "
+                    "mus. "
+                    "Donec accumsan, nisi egestas "
+                    "sollicitudinullamcorper, "
+                    "diam dolor faucibus neque, euscelerisque mi erat vel "
+                    "erat. Etiam nec leo acrisus porta ornare ut accumsan "
+                    "lorem.\n\n"
+                    "Aenean at euismod ligula. Sed augue est, imperdietut "
+                    "sem sit amet, efficitur dictum enim. Namsodales id "
+                    "risus non pulvinar. Morbi id mollismassa. Nunc elit "
+                    "velit, pellentesque et lobortisut, luctus sed justo. "
+                    "Morbi eleifend quam velmagna accumsan, eu consequat "
+                    "nisl ultrices.Mauris dictum eu quam sit amet "
+                    "aliquet. "
+                    "Sedrhoncus turpis quis sagittis imperdiet. Lorem "
+                    "ipsum"
+                    "dolor sit amet, consectetur adipiscing elit. "
+                    "Pellentesque convallis suscipit ex et "
+                    "hendrerit.Donec "
+                    "est ex, varius eu nulla id, tristiquelobortis metus. "
+                    "Sed id sem justo. Nulla at portaneque, id elementum "
+                    "lacus.\n\n"
+                    "Mauris leotortor, tincidunt sit amet sem sit amet, "
+                    "egestastempor massa. In diam ipsum, fermentum "
+                    "pulvinar "
+                    "posuere ut, scelerisque sit amet odio. Nam necjusto "
+                    "quis felis ultrices ornare sit amet eumassa. Nam "
+                    "gravida lacus eget tortor porttitor,eget scelerisque "
+                    "est imperdiet. Duis quisimperdiet libero. Nullam "
+                    "justo "
+                    "erat, blandit etnisi sit amet, aliquet mattis leo. "
+                    "Sed "
+                    "a auguenon felis lacinia ultrices. Aenean porttitor "
+                    "bibendum sem, in consectetur arcu suscipit id.Etiam "
+                    "varius dictum gravida. Nulla molestiefermentum odio "
+                    "vitae tincidunt. Quisque dictum,magna vitae "
+                    "porttitor "
+                    "accumsan, felis felisconsectetur nisi, ut venenatis "
+                    "felis justo utante.\n\n"),
                 FILL);
         }
 
