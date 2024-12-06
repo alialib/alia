@@ -23,6 +23,8 @@
 #include <alia/ui/system/input_constants.hpp>
 #include <alia/ui/system/object.hpp>
 #include <alia/ui/text/fonts.hpp>
+#include <alia/ui/utilities/cached_ui.hpp>
+#include <alia/ui/utilities/culling.hpp>
 #include <alia/ui/utilities/keyboard.hpp>
 #include <alia/ui/utilities/mouse.hpp>
 #include <alia/ui/utilities/regions.hpp>
@@ -230,53 +232,6 @@ do_box(
         }
     }
     alia_end
-}
-
-template<class Selected, class Index>
-struct radio_signal
-    : lazy_signal<radio_signal<Selected, Index>, bool, duplex_signal>
-{
-    radio_signal(Selected selected, Index index)
-        : selected_(std::move(selected)), index_(std::move(index))
-    {
-    }
-    bool
-    has_value() const override
-    {
-        return signal_has_value(selected_) && signal_has_value(index_);
-    }
-    bool
-    move_out() const override
-    {
-        return read_signal(selected_) == read_signal(index_);
-    }
-    id_interface const&
-    value_id() const override
-    {
-        return selected_.value_id();
-    }
-    bool
-    ready_to_write() const override
-    {
-        return signal_ready_to_write(selected_) && signal_has_value(index_);
-    }
-    id_interface const&
-    write(bool) const override
-    {
-        write_signal(selected_, read_signal(index_));
-        return null_id;
-    }
-
- private:
-    Selected selected_;
-    Index index_;
-};
-template<class Selected, class Index>
-radio_signal<Selected, Index>
-make_radio_signal(Selected selected, Index index)
-{
-    return radio_signal<Selected, Index>(
-        std::move(selected), std::move(index));
 }
 
 // // struct svg_image_node : widget
@@ -1451,252 +1406,6 @@ make_radio_signal(Selected selected, Index index)
 
 // } // namespace alia
 
-namespace alia {
-struct culling_block
-{
-    culling_block()
-    {
-    }
-    culling_block(ui_context& ctx, layout const& layout_spec = default_layout)
-    {
-        begin(ctx, layout_spec);
-    }
-    ~culling_block()
-    {
-        end();
-    }
-    void
-    begin(ui_context& ctx, layout const& layout_spec = default_layout);
-    void
-    end();
-    bool
-    is_relevant() const
-    {
-        return is_relevant_;
-    }
-
- private:
-    ui_context* ctx_;
-    scoped_component_container scc_;
-    column_layout layout_;
-    bool is_relevant_;
-};
-
-void
-culling_block::begin(ui_context& ctx, layout const& layout_spec)
-{
-    ctx_ = &ctx;
-    scc_.begin(ctx);
-    layout_.begin(ctx, layout_spec);
-    switch (get_event_category(ctx))
-    {
-        case REFRESH_CATEGORY:
-            is_relevant_ = true;
-            break;
-        case RENDER_CATEGORY:
-            is_relevant_ = is_visible(
-                get_geometry_context(ctx), box<2, double>(layout_.region()));
-            break;
-        case REGION_CATEGORY:
-            if (get_event_type(ctx) == MOUSE_HIT_TEST_EVENT
-                || get_event_type(ctx) == WHEEL_HIT_TEST_EVENT)
-            {
-                is_relevant_ = is_mouse_inside_box(
-                    ctx, box<2, double>(layout_.region()));
-                break;
-            }
-            // Other region events fall through.
-        default:
-            is_relevant_ = scc_.is_on_route();
-    }
-}
-void
-culling_block::end()
-{
-    if (ctx_)
-    {
-        layout_.end();
-        scc_.end();
-        ctx_ = 0;
-    }
-}
-
-}
-
-#define alia_culling_block_(ctx, layout_spec)                                 \
-    {                                                                         \
-        ::alia::culling_block alia__culling_block(ctx, layout_spec);          \
-        {                                                                     \
-            ::alia::event_dependent_if_block alia__if_block(                  \
-                get_data_traversal(ctx), alia__culling_block.is_relevant());  \
-            if (alia__culling_block.is_relevant())                            \
-            {
-
-#define alia_culling_block(layout_spec) alia_culling_block_(ctx, layout_spec)
-
-namespace alia {
-struct layout_node;
-struct ui_caching_node;
-
-struct cached_ui_block
-{
-    cached_ui_block() : ctx_(0)
-    {
-    }
-    cached_ui_block(
-        ui_context& ctx,
-        id_interface const& id,
-        layout const& layout_spec = default_layout)
-    {
-        begin(ctx, id, layout_spec);
-    }
-    ~cached_ui_block()
-    {
-        end();
-    }
-    void
-    begin(
-        ui_context& ctx,
-        id_interface const& id,
-        layout const& layout_spec = default_layout);
-    void
-    end();
-    bool
-    is_relevant() const
-    {
-        return is_relevant_;
-    }
-
- private:
-    ui_context* ctx_;
-    ui_caching_node* cacher_;
-    culling_block culling_;
-    bool is_relevant_;
-    layout_node** layout_next_ptr_;
-};
-
-struct ui_caching_node
-{
-    // ui_caching_node* parent;
-
-    // cached layout info
-    bool layout_valid;
-    captured_id layout_id;
-    layout_node* layout_subtree_head;
-    layout_node** layout_subtree_tail;
-};
-
-void
-cached_ui_block::begin(
-    ui_context& ctx, id_interface const& id, layout const& layout_spec)
-{
-    ctx_ = &ctx;
-
-    culling_.begin(ctx, layout_spec);
-
-    get_cached_data(ctx, &cacher_);
-    ui_caching_node& cacher = *cacher_;
-
-    // cacher.parent = ctx.active_cacher;
-    // ctx.active_cacher = &cacher;
-
-    // Caching content in the middle of a validation block is not
-    // currently supported. assert(!ctx.validation.detection &&
-    // !ctx.validation.reporting);
-
-    // Before doing anything else, see if the content can be culled by
-    // the culling block's criteria.
-    if (!culling_.is_relevant())
-    {
-        is_relevant_ = false;
-        return;
-    }
-
-    if (get_event_type(ctx) == REFRESH_EVENT)
-    {
-        // Detect if there are changes that require the block to be
-        // traversed this pass.
-        is_relevant_ = !cacher.layout_valid || !cacher.layout_id.matches(id);
-        // If we're going to actually update the layout, record the
-        // current value of the layout context's next_ptr, so we'll
-        // know where to look for the address of the first node.
-        if (is_relevant_)
-        {
-            layout_next_ptr_ = get_layout_traversal(ctx).next_ptr;
-            // Store the ID here because it's only available within
-            // this function.
-            cacher.layout_id.capture(id);
-            // Need to mark it valid here because it could be
-            // invalidated by something inside the block. (Is this
-            // dangerous?)
-            cacher.layout_valid = true;
-        }
-        // Otherwise, just splice in the cached subtree.
-        else
-        {
-            *get_layout_traversal(ctx).next_ptr = cacher.layout_subtree_head;
-            get_layout_traversal(ctx).next_ptr = cacher.layout_subtree_tail;
-        }
-    }
-    else
-    {
-        is_relevant_ = true;
-    }
-}
-void
-cached_ui_block::end()
-{
-    if (ctx_)
-    {
-        ui_context& ctx = *ctx_;
-        ui_caching_node& cacher = *cacher_;
-
-        // If the layout was just updated, record the head and tail of
-        // the layout subtree so we can splice it into the parent tree
-        // on passes where we skip layout.
-        if (is_refresh_pass(ctx) && is_relevant_)
-        {
-            cacher.layout_subtree_head = *layout_next_ptr_;
-            cacher.layout_subtree_tail = get_layout_traversal(ctx).next_ptr;
-        }
-
-        switch (get_event_type(ctx))
-        {
-            case REFRESH_EVENT:
-            case RENDER_EVENT:
-            case MOUSE_HIT_TEST_EVENT:
-            case WHEEL_HIT_TEST_EVENT:
-                break;
-            default:
-                // Any other event that makes it into the block could
-                // potentially cause a state change, so record a
-                // change.
-                cacher.layout_valid = false;
-        }
-
-        culling_.end();
-
-        // ctx.active_cacher = cacher.parent;
-
-        ctx_ = 0;
-    }
-}
-
-#define alia_cached_ui_block_(ctx, id, layout_spec)                           \
-    {                                                                         \
-        ::alia::cached_ui_block alia__cached_ui_block(ctx, id);               \
-        {                                                                     \
-            ::alia::event_dependent_if_block alia__if_block(                  \
-                get_data_traversal(ctx),                                      \
-                alia__cached_ui_block.is_relevant());                         \
-            if (alia__cached_ui_block.is_relevant())                          \
-            {
-
-#define alia_cached_ui_block(id, layout_spec)                                 \
-    alia_cached_ui_block_(ctx, id, layout_spec)
-
-}
-
 auto my_style = text_style{"Roboto/Roboto-Regular", 22.f, rgb8(173, 181, 189)};
 
 void
@@ -1866,8 +1575,7 @@ my_ui(ui_context ctx)
 
     for (int i = 0; i != 0; ++i)
     {
-        alia_cached_ui_block(unit_id, default_layout)
-        {
+        cached_ui_block<column_layout>(ctx, unit_id, default_layout, [&] {
             panel p(ctx, direct(pstyle));
             // do_text(ctx, direct(my_style), value("Lorem ipsum"));
             //  column_layout column(ctx);
@@ -1882,8 +1590,7 @@ my_ui(ui_context ctx)
                 do_box(ctx, SK_ColorRED, actions::noop());
                 do_box(ctx, SK_ColorBLUE, actions::noop());
             }
-        }
-        alia_end
+        });
     }
 
     // auto show_text = get_state(ctx, false);
