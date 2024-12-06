@@ -45,8 +45,8 @@ refresh_system(untyped_system& sys)
 
     static long long max_refresh_time = 0;
     max_refresh_time = (std::max)(refresh_time, max_refresh_time);
-    // std::cout << "refresh: " << refresh_time << "[us]\n";
-    // std::cout << "max_refresh_time: " << max_refresh_time << "[us]\n";
+    std::cout << "refresh: " << refresh_time << "[us]\n";
+    std::cout << "max_refresh_time: " << max_refresh_time << "[us]\n";
 }
 
 void

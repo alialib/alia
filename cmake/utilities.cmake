@@ -39,7 +39,8 @@ function(alia_set_development_warning_flags)
     elseif(IS_MSVC)
         # First strip out the old warning level.
         string(REPLACE "/W3" "" SANITIZED_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-        add_compile_options(/W4 /WX)
+        # TODO: Make warnings errors only in CI.
+        add_compile_options(/W4)
         # Disable "unreferenced local function has been removed".
         # (As far as I can tell, this warning seems to be broken.)
         add_compile_options(/wd4505)
