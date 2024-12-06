@@ -744,6 +744,60 @@ move(Signal signal)
     return signal;
 }
 
+// A radio signal is a signal type that models the semantics of a radio button.
+//
+// In particular, make_radio_signal(selected, index) yields a boolean signal
+// that evaluates to true iff the value of :selected matches the value of
+// :index. Additionally, writing the value `true` to the signal has the effect
+// of setting :selected to :index. (Writing `false` is considered meaningless.)
+//
+template<class Selected, class Index>
+struct radio_signal
+    : lazy_signal<radio_signal<Selected, Index>, bool, duplex_signal>
+{
+    radio_signal(Selected selected, Index index)
+        : selected_(std::move(selected)), index_(std::move(index))
+    {
+    }
+    bool
+    has_value() const override
+    {
+        return signal_has_value(selected_) && signal_has_value(index_);
+    }
+    bool
+    move_out() const override
+    {
+        return read_signal(selected_) == read_signal(index_);
+    }
+    id_interface const&
+    value_id() const override
+    {
+        return selected_.value_id();
+    }
+    bool
+    ready_to_write() const override
+    {
+        return signal_ready_to_write(selected_) && signal_has_value(index_);
+    }
+    id_interface const&
+    write(bool) const override
+    {
+        write_signal(selected_, read_signal(index_));
+        return null_id;
+    }
+
+ private:
+    Selected selected_;
+    Index index_;
+};
+template<class Selected, class Index>
+radio_signal<Selected, Index>
+make_radio_signal(Selected selected, Index index)
+{
+    return radio_signal<Selected, Index>(
+        std::move(selected), std::move(index));
+}
+
 } // namespace alia
 
 #endif

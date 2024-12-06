@@ -655,3 +655,23 @@ TEST_CASE("signal value movement", "[signals][adaptors]")
     REQUIRE(copy_count == 0);
     REQUIRE(state.get().n == 4);
 }
+
+TEST_CASE("radio signal", "[signals][adaptors]")
+{
+    {
+        int selected = 0;
+        auto radio = make_radio_signal(direct(selected), value(1));
+        REQUIRE(signal_has_value(radio));
+        REQUIRE(!read_signal(radio));
+        REQUIRE(signal_ready_to_write(radio));
+        write_signal(radio, true);
+        REQUIRE(selected == 1);
+    }
+    {
+        int selected = 1;
+        auto radio = make_radio_signal(direct(selected), value(1));
+        REQUIRE(signal_has_value(radio));
+        REQUIRE(read_signal(radio));
+        REQUIRE(signal_ready_to_write(radio));
+    }
+}
