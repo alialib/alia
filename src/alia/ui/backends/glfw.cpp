@@ -44,6 +44,7 @@ SkLoadICU()
 #include <alia/ui/system/os_interface.hpp>
 #include <alia/ui/system/window_interface.hpp>
 #include <alia/ui/utilities/rendering.hpp>
+#include <alia/ui/utilities/skia.hpp>
 
 #include <chrono>
 
@@ -269,8 +270,8 @@ render_ui(glfw_window_impl& impl)
     int width, height;
     glfwGetFramebufferSize(impl.glfw_window, &width, &height);
 
-    std::chrono::steady_clock::time_point begin
-        = std::chrono::steady_clock::now();
+    // std::chrono::steady_clock::time_point begin
+    //     = std::chrono::steady_clock::now();
 
     auto& canvas = *impl.skia_surface->getCanvas();
     canvas.resetMatrix();
@@ -279,8 +280,7 @@ render_ui(glfw_window_impl& impl)
     // TODO: Don't clear automatically.
     {
         SkPaint paint;
-        // paint.setColor(SK_ColorWHITE);
-        paint.setColor(SkColorSetRGB(0x31, 0x38, 0x44));
+        paint.setColor(as_skcolor(impl.system.theme.surface));
         canvas.drawPaint(paint);
     }
 
@@ -299,18 +299,18 @@ render_ui(glfw_window_impl& impl)
     //     // TODO: Clear the canvas?
     // }
 
-    {
-        std::chrono::steady_clock::time_point end
-            = std::chrono::steady_clock::now();
-        auto render_time
-            = std::chrono::duration_cast<std::chrono::microseconds>(
-                  end - begin)
-                  .count();
-        static long long max_render_time = 0;
-        max_render_time = (std::max)(render_time, max_render_time);
-        std::cout << "render: " << render_time << "[us]\n";
-        std::cout << "max_render_time: " << max_render_time << "[us]\n";
-    }
+    // {
+    //     std::chrono::steady_clock::time_point end
+    //         = std::chrono::steady_clock::now();
+    //     auto render_time
+    //         = std::chrono::duration_cast<std::chrono::microseconds>(
+    //               end - begin)
+    //               .count();
+    //     static long long max_render_time = 0;
+    //     max_render_time = (std::max)(render_time, max_render_time);
+    //     // std::cout << "render: " << render_time << "[us]\n";
+    //     // std::cout << "max_render_time: " << max_render_time << "[us]\n";
+    // }
 
     impl.skia_graphics_context->flush();
     glfwSwapBuffers(impl.glfw_window);

@@ -9,6 +9,7 @@
 #include <alia/ui/layout/system.hpp>
 #include <alia/ui/system/os_interface.hpp>
 #include <alia/ui/system/window_interface.hpp>
+#include <alia/ui/theme.hpp>
 
 namespace alia {
 
@@ -78,7 +79,7 @@ struct ui_system : alia::typed_system<vanilla_ui_context>
     // point and the possibility of wraparound
     millisecond_count tick_count = 0;
 
-    // ui_style style;
+    theme_colors theme;
 
     // routable_widget_id overlay_id;
 
