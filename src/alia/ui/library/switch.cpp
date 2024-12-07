@@ -47,7 +47,7 @@ do_switch(ui_context ctx, duplex<bool> state, layout const& layout_spec)
             data.layout_node.refresh_layout(
                 get_layout_traversal(ctx),
                 layout_spec,
-                leaf_layout_requirements(make_layout_vector(60, 35), 0, 0),
+                leaf_layout_requirements(make_layout_vector(60, 35), 25, 10),
                 LEFT | BASELINE_Y | PADDED);
 
             add_layout_node(

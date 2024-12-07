@@ -16,6 +16,7 @@
 #include <alia/ui/library/node_expander.hpp>
 #include <alia/ui/library/panels.hpp>
 #include <alia/ui/library/radio_button.hpp>
+#include <alia/ui/library/separator.hpp>
 #include <alia/ui/library/slider.hpp>
 #include <alia/ui/library/switch.hpp>
 #include <alia/ui/scrolling.hpp>
@@ -717,9 +718,63 @@ do_box(
 
 // } // namespace alia
 
+enum class color_theme
+{
+    VIOLET,
+    BLUE,
+    INDIGO,
+    PINK
+};
+
+color_theme selected_theme = color_theme::BLUE;
+
+bool light_theme = false;
+
+theme_colors* active_theme = nullptr;
+
+void
+update_theme(ui_context ctx)
+{
+    theme_colors* new_theme = nullptr;
+    switch (selected_theme)
+    {
+        case color_theme::VIOLET:
+            if (light_theme)
+                new_theme = &violet_light_theme;
+            else
+                new_theme = &violet_dark_theme;
+            break;
+        case color_theme::BLUE:
+            if (light_theme)
+                new_theme = &blue_light_theme;
+            else
+                new_theme = &blue_dark_theme;
+            break;
+        case color_theme::INDIGO:
+            if (light_theme)
+                new_theme = &indigo_light_theme;
+            else
+                new_theme = &indigo_dark_theme;
+            break;
+        case color_theme::PINK:
+            if (light_theme)
+                new_theme = &pink_light_theme;
+            else
+                new_theme = &pink_dark_theme;
+            break;
+    }
+    if (new_theme && new_theme != active_theme)
+    {
+        active_theme = new_theme;
+        get_system(ctx).theme = *new_theme;
+    }
+}
+
 void
 my_ui(ui_context ctx)
 {
+    update_theme(ctx);
+
     auto my_style = style_info{
         font_info{&get_font("Roboto/Roboto-Regular", 22.f)},
         get_system(ctx).theme.on_surface};
@@ -730,26 +785,18 @@ my_ui(ui_context ctx)
     // scoped_panel panel(ctx, GROW | UNPADDED);
 
     column_layout column(ctx, GROW | PADDED);
-
-    auto selected = get_state(ctx, int(0));
+    column_layout column2(ctx, GROW | PADDED);
+    column_layout column3(ctx, GROW | PADDED);
 
     // auto my_style
     //     = text_style{"Roboto/Roboto-Regular", 22.f, rgb8(173, 181, 189)};
     // auto my_style = text_style{
     //     "Roboto_Mono/static/RobotoMono-Regular", 22.f, rgb8(173, 181, 189)};
 
-    panel_style_info pstyle{
-        box_border_width<float>{4, 4, 4, 4},
-        box_border_width<float>{0, 0, 0, 0},
-        box_border_width<float>{4, 4, 4, 4}};
-
-    do_text(ctx, value("Lorem ipsum"));
-
-    do_spacer(ctx, size(20, 100, PIXELS));
-
-    do_slider(ctx, get_state(ctx, value(1.5)), 0, 5, 0.01);
-
-    do_spacer(ctx, size(20, 100, PIXELS));
+    // panel_style_info pstyle{
+    //     box_border_width<float>{4, 4, 4, 4},
+    //     box_border_width<float>{0, 0, 0, 0},
+    //     box_border_width<float>{4, 4, 4, 4}};
 
     // {
     //     bulleted_list list(ctx);
@@ -766,6 +813,67 @@ my_ui(ui_context ctx)
     //         do_text(ctx, value("the other"));
     //     }
     // }
+
+    do_spacer(ctx, height(40, PIXELS));
+    do_separator(ctx);
+    do_spacer(ctx, height(40, PIXELS));
+
+    do_text(ctx, value("Theme Options"));
+    do_spacer(ctx, height(20, PIXELS));
+
+    {
+        grid_layout grid(ctx);
+
+        {
+            grid_row row(grid);
+            do_switch(ctx, direct(light_theme));
+            do_text(ctx, value("Light"));
+        }
+
+        do_spacer(ctx, height(10, PIXELS));
+
+        {
+            {
+                grid_row row(grid);
+                do_radio_button(
+                    ctx,
+                    make_radio_signal(
+                        direct(selected_theme), value(color_theme::VIOLET)));
+                do_text(ctx, value("Violet"));
+            }
+            {
+                grid_row row(grid);
+                do_radio_button(
+                    ctx,
+                    make_radio_signal(
+                        direct(selected_theme), value(color_theme::BLUE)));
+                do_text(ctx, value("Blue"));
+            }
+            {
+                grid_row row(grid);
+                do_radio_button(
+                    ctx,
+                    make_radio_signal(
+                        direct(selected_theme), value(color_theme::PINK)));
+                do_text(ctx, value("Pink"));
+            }
+            {
+                grid_row row(grid);
+                do_radio_button(
+                    ctx,
+                    make_radio_signal(
+                        direct(selected_theme), value(color_theme::INDIGO)));
+                do_text(ctx, value("Indigo"));
+            }
+        }
+    }
+
+    do_spacer(ctx, height(40, PIXELS));
+    do_separator(ctx);
+    do_spacer(ctx, height(40, PIXELS));
+
+    do_text(ctx, value("Some Widgets"));
+    do_spacer(ctx, height(20, PIXELS));
 
     {
         row_layout blah(ctx);
@@ -790,17 +898,17 @@ my_ui(ui_context ctx)
             {
                 row_layout row(ctx);
                 do_node_expander(ctx, disable_writes(state1));
-                do_text(ctx, value("One"), CENTER_Y);
+                do_text(ctx, value("One"));
             }
             {
                 row_layout row(ctx);
                 do_node_expander(ctx, state1);
-                do_text(ctx, value("Two"), CENTER_Y);
+                do_text(ctx, value("Two"));
             }
             {
                 row_layout row(ctx);
                 do_node_expander(ctx, get_state(ctx, false));
-                do_text(ctx, value("Three"), CENTER_Y);
+                do_text(ctx, value("Three"));
             }
         }
 
@@ -812,17 +920,17 @@ my_ui(ui_context ctx)
             {
                 row_layout row(ctx);
                 do_checkbox(ctx, disable_writes(state1));
-                do_text(ctx, value("One"), CENTER_Y);
+                do_text(ctx, value("One"));
             }
             {
                 row_layout row(ctx);
                 do_checkbox(ctx, state1);
-                do_text(ctx, value("Two"), CENTER_Y);
+                do_text(ctx, value("Two"));
             }
             {
                 row_layout row(ctx);
                 do_checkbox(ctx, get_state(ctx, false));
-                do_text(ctx, value("Three"), CENTER_Y);
+                do_text(ctx, value("Three"));
             }
         }
 
@@ -830,6 +938,7 @@ my_ui(ui_context ctx)
 
         {
             column_layout col(ctx);
+            auto selected = get_state(ctx, int(0));
             {
                 row_layout row(ctx);
                 do_radio_button(
@@ -857,7 +966,18 @@ my_ui(ui_context ctx)
         }
     }
 
-    do_spacer(ctx, size(20, 100, PIXELS));
+    do_spacer(ctx, height(20, PIXELS));
+
+    {
+        row_layout row(ctx);
+        auto slider_value = get_state(ctx, value(1.5));
+        do_slider(ctx, slider_value, 0, 5, 0.01);
+        do_text(ctx, alia::printf(ctx, "%.2f", slider_value));
+    }
+
+    do_spacer(ctx, height(40, PIXELS));
+    do_separator(ctx);
+    do_spacer(ctx, height(40, PIXELS));
 
     // {
     //     scoped_grid_layout grid(ctx);
@@ -878,25 +998,25 @@ my_ui(ui_context ctx)
     //     }
     // }
 
-    for (int i = 0; i != 0; ++i)
-    {
-        cached_ui_block<column_layout>(ctx, unit_id, default_layout, [&] {
-            panel p(ctx, direct(pstyle));
-            // do_text(ctx, value("Lorem ipsum"));
-            //  column_layout column(ctx);
-            flow_layout flow(ctx);
-            for (int j = 0; j != 100; ++j)
-            {
-                do_box(ctx, SK_ColorLTGRAY, actions::noop());
-                do_box(ctx, SK_ColorDKGRAY, actions::noop());
-                do_box(ctx, SK_ColorMAGENTA, actions::noop());
-                do_box(ctx, SK_ColorLTGRAY, actions::noop());
-                do_box(ctx, SK_ColorMAGENTA, actions::noop());
-                do_box(ctx, SK_ColorRED, actions::noop());
-                do_box(ctx, SK_ColorBLUE, actions::noop());
-            }
-        });
-    }
+    // for (int i = 0; i != 0; ++i)
+    // {
+    //     cached_ui_block<column_layout>(ctx, unit_id, default_layout, [&] {
+    //         panel p(ctx, direct(pstyle));
+    //         // do_text(ctx, value("Lorem ipsum"));
+    //         //  column_layout column(ctx);
+    //         flow_layout flow(ctx);
+    //         for (int j = 0; j != 100; ++j)
+    //         {
+    //             do_box(ctx, SK_ColorLTGRAY, actions::noop());
+    //             do_box(ctx, SK_ColorDKGRAY, actions::noop());
+    //             do_box(ctx, SK_ColorMAGENTA, actions::noop());
+    //             do_box(ctx, SK_ColorLTGRAY, actions::noop());
+    //             do_box(ctx, SK_ColorMAGENTA, actions::noop());
+    //             do_box(ctx, SK_ColorRED, actions::noop());
+    //             do_box(ctx, SK_ColorBLUE, actions::noop());
+    //         }
+    //     });
+    // }
 
     // auto show_text = get_state(ctx, false);
 
@@ -914,19 +1034,14 @@ my_ui(ui_context ctx)
 
         {
             row_layout row(ctx);
-            // grid_row row(grid);
             do_node_expander(ctx, show_content);
-            // scoped_transformation transform(
-            //     ctx, translation_matrix(make_vector(0., 1.)));
-            do_text(ctx, value("One"), CENTER_Y);
+            do_text(ctx, value("Some Text"), CENTER_Y);
         }
 
         {
-            // grid_row row(grid);
             row_layout row(ctx);
-            do_spacer(ctx, size(48, 48, PIXELS));
+            do_spacer(ctx, width(40, PIXELS));
             collapsible_content(ctx, show_content, GROW, [&] {
-                // std::cout << "content!" << std::endl;
                 do_wrapped_text(
                     ctx,
                     value("Lorem ipsum dolor sit amet, consectetur "
