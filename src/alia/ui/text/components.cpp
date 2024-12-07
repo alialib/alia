@@ -101,7 +101,6 @@ do_text(ui_context ctx, readable<std::string> text, layout const& layout_spec)
 
             SkPaint paint;
             paint.setAntiAlias(true);
-            // Note that this isn't necessarily readable yet.
             auto color = as_skcolor(get_style(ctx).color);
             paint.setColor(color);
 
@@ -223,7 +222,6 @@ do_wrapped_text(
 
             SkPaint paint;
             paint.setAntiAlias(true);
-            // Note that this isn't necessarily readable yet.
             auto color = as_skcolor(get_style(ctx).color);
             paint.setColor(color);
 

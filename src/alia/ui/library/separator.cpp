@@ -1,67 +1,69 @@
-// #include <alia/ui/library/separator.hpp>
+#include <alia/ui/library/separator.hpp>
 
-// #include <alia/ui/events.hpp>
-// #include <alia/ui/layout/utilities.hpp>
+#include <alia/ui/events.hpp>
+#include <alia/ui/layout/utilities.hpp>
+#include <alia/ui/system/object.hpp>
+#include <alia/ui/utilities/rendering.hpp>
+#include <alia/ui/utilities/skia.hpp>
 
-// namespace alia {
+#include <include/core/SkCanvas.h>
+#include <include/core/SkPaint.h>
+#include <include/core/SkPath.h>
+#include <include/core/SkRect.h>
 
-// struct separator_data
-// {
-//     layout_leaf layout_node;
-// };
+namespace alia {
 
-// void
-// do_separator(ui_context ctx, layout const& layout_spec)
-// {
-//     auto& data = get_cached_data<separator_data>(ctx);
+struct separator_data
+{
+    layout_leaf layout_node;
+};
 
-//     switch (get_event_category(ctx))
-//     {
-//         case REFRESH_CATEGORY: {
-//             data.layout_node.refresh_layout(
-//                 get_layout_traversal(ctx),
-//                 layout_spec,
-//                 leaf_layout_requirements(make_layout_vector(2, 2), 0, 0),
-//                 FILL | PADDED);
-//             add_layout_node(get_layout_traversal(ctx), &data.layout_node);
-//             break;
-//         }
+void
+do_separator(ui_context ctx, layout const& layout_spec)
+{
+    auto& data = get_cached_data<separator_data>(ctx);
 
-//         case RENDER_CATEGORY: {
-//             layout_box const& region = data.layout_node.assignment().region;
-//             caching_renderer cache(ctx, data.rendering, *ctx.style.id,
-//             region); if (cache.needs_rendering())
-//             {
-//                 skia_renderer renderer(ctx, cache.image(), region.size);
-//                 SkPaint paint;
-//                 paint.setFlags(SkPaint::kAntiAlias_Flag);
-//                 SkScalar stroke_width
-//                     =
-//                     layout_scalar_as_skia_scalar(get(data.metrics).size[0]);
-//                 SkScalar half_stroke_width = stroke_width / 2;
-//                 paint.setStrokeWidth(stroke_width);
-//                 paint.setStrokeCap(SkPaint::kSquare_Cap);
-//                 style_path_storage storage;
-//                 style_search_path const* path = add_substyle_to_path(
-//                     &storage, ctx.style.path, ctx.style.path, "separator");
-//                 set_color(paint, get_color_property(path, "color"));
-//                 renderer.canvas().drawLine(
-//                     half_stroke_width,
-//                     half_stroke_width,
-//                     layout_scalar_as_skia_scalar(region.size[0])
-//                         - half_stroke_width,
-//                     layout_scalar_as_skia_scalar(region.size[1])
-//                         - half_stroke_width,
-//                     paint);
-//                 renderer.cache();
-//                 cache.mark_valid();
-//             }
-//             cache.draw();
-//             break;
-//         }
-//     }
+    switch (get_event_category(ctx))
+    {
+        case REFRESH_CATEGORY: {
+            data.layout_node.refresh_layout(
+                get_layout_traversal(ctx),
+                layout_spec,
+                leaf_layout_requirements(make_layout_vector(2, 2), 0, 0),
+                FILL | PADDED);
+            add_layout_node(get_layout_traversal(ctx), &data.layout_node);
+            break;
+        }
 
-//     do_spacer(ctx, layout(get(data.metrics).padding, UNPADDED));
-// }
+        case RENDER_CATEGORY: {
+            auto& event = cast_event<render_event>(ctx);
 
-// } // namespace alia
+            SkCanvas& canvas = *event.canvas;
+
+            auto const& region = data.layout_node.assignment().region;
+
+            SkRect rect;
+            rect.fLeft = SkScalar(region.corner[0]);
+            rect.fTop = SkScalar(region.corner[1]);
+            rect.fRight = SkScalar(region.corner[0] + region.size[0]);
+            rect.fBottom = SkScalar(region.corner[1] + region.size[1]);
+
+            if (event.canvas->quickReject(rect))
+                break;
+
+            {
+                SkPaint paint;
+                paint.setAntiAlias(true);
+                paint.setColor(as_skcolor(get_system(ctx).theme.outline));
+                paint.setStyle(SkPaint::kFill_Style);
+                // paint.setStrokeCap(SkPaint::kRound_Cap);
+                // paint.setStrokeWidth(16);
+                canvas.drawPath(SkPath::Rect(rect), paint);
+            }
+
+            break;
+        }
+    }
+}
+
+} // namespace alia
