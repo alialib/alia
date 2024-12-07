@@ -5,6 +5,7 @@
 #include <alia/ui/text/fonts.hpp>
 #include <alia/ui/text/shaping.hpp>
 #include <alia/ui/utilities/rendering.hpp>
+#include <alia/ui/utilities/skia.hpp>
 
 #ifdef _WIN32
 #pragma warning(push, 0)
@@ -18,41 +19,22 @@
 
 namespace alia {
 
-// TODO: Move elsewhere.
-inline SkColor
-as_skia_color(rgba8 color)
-{
-    return SkColorSetARGB(color.a, color.r, color.g, color.b);
-}
-
-inline SkColor
-as_skia_color(rgb8 color)
-{
-    return SkColorSetARGB(0xff, color.r, color.g, color.b);
-}
-
 struct text_data
 {
     layout_leaf layout_node;
     captured_id text_id;
-    SkFont* font;
+    SkFont* font = nullptr;
     std::optional<ShapeResult> shape;
 };
 
 void
-do_text(
-    ui_context ctx,
-    readable<text_style> style,
-    readable<std::string> text,
-    layout const& layout_spec)
+do_text(ui_context ctx, readable<std::string> text, layout const& layout_spec)
 {
     text_data* data_ptr;
     if (get_cached_data(ctx, &data_ptr))
     {
-        // TODO: This isn't necessarily readable right now.
         // TODO: Need to track changes in this.
-        data_ptr->font = &get_font(
-            read_signal(style).font_name, read_signal(style).font_size);
+        data_ptr->font = get_style(ctx).font.font;
     }
     auto& data = *data_ptr;
 
@@ -120,7 +102,7 @@ do_text(
             SkPaint paint;
             paint.setAntiAlias(true);
             // Note that this isn't necessarily readable yet.
-            auto color = as_skia_color(read_signal(style).color);
+            auto color = as_skcolor(get_style(ctx).color);
             paint.setColor(color);
 
             canvas.drawTextBlob(
@@ -181,20 +163,14 @@ struct wrapped_text_node : layout_node
 
 void
 do_wrapped_text(
-    ui_context ctx,
-    readable<text_style> style,
-    readable<std::string> text,
-    layout const& layout_spec)
+    ui_context ctx, readable<std::string> text, layout const& layout_spec)
 {
     wrapped_text_node* node_ptr;
     if (get_cached_data(ctx, &node_ptr))
     {
         // TODO: This isn't necessarily readable right now.
         node_ptr->text = read_signal(text);
-        // TODO: This also isn't necessarily readable right now.
-        // TODO: Need to track changes in this.
-        node_ptr->font = &get_font(
-            read_signal(style).font_name, read_signal(style).font_size);
+        node_ptr->font = get_style(ctx).font.font;
     }
 
     auto& node = *node_ptr;
@@ -248,7 +224,7 @@ do_wrapped_text(
             SkPaint paint;
             paint.setAntiAlias(true);
             // Note that this isn't necessarily readable yet.
-            auto color = as_skia_color(read_signal(style).color);
+            auto color = as_skcolor(get_style(ctx).color);
             paint.setColor(color);
 
             if (node.shape_width != region.size[0])

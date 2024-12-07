@@ -100,11 +100,10 @@ do_switch(ui_context ctx, duplex<bool> state, layout const& layout_spec)
             if (is_disabled)
             {
                 {
-                    auto const track_color = rgb8(0x48, 0x48, 0x4b);
                     SkPaint paint;
                     paint.setAntiAlias(true);
-                    paint.setColor(SkColorSetARGB(
-                        0xff, track_color.r, track_color.g, track_color.b));
+                    paint.setColor(as_skcolor(rgba8(
+                        get_system(ctx).theme.secondary_container, 0x60)));
                     paint.setStyle(SkPaint::kStroke_Style);
                     paint.setStrokeCap(SkPaint::kRound_Cap);
                     paint.setStrokeWidth(16);
@@ -125,11 +124,11 @@ do_switch(ui_context ctx, duplex<bool> state, layout const& layout_spec)
 
                     float dot_radius = condition_is_true(state) ? 16.f : 14.f;
 
-                    auto const color = rgb8(0x60, 0x60, 0x66);
+                    auto const color
+                        = rgba8(get_system(ctx).theme.on_surface, 0x60);
                     SkPaint paint;
                     paint.setAntiAlias(true);
-                    paint.setColor(
-                        SkColorSetARGB(0xff, color.r, color.g, color.b));
+                    paint.setColor(as_skcolor(color));
                     canvas.drawPath(
                         SkPath::Circle(
                             region.corner[0] + region.size[0] * dot_x_offset,
@@ -154,14 +153,14 @@ do_switch(ui_context ctx, duplex<bool> state, layout const& layout_spec)
             float const dot_x_offset
                 = interpolate(0.25f, 0.75f, switch_position);
 
-            rgb8 color = interpolate(
-                rgb8(0xd6, 0xd6, 0xd6),
-                rgb8(0x90, 0xc0, 0xff),
+            rgb8 const color = interpolate(
+                get_system(ctx).theme.on_surface_variant,
+                get_system(ctx).theme.primary,
                 switch_position);
 
-            rgb8 track_color = interpolate(
-                rgb8(0x64, 0x64, 0x64),
-                rgb8(0x64, 0x64, 0x64),
+            rgb8 const track_color = interpolate(
+                get_system(ctx).theme.secondary_container,
+                get_system(ctx).theme.secondary_container,
                 switch_position);
 
             {

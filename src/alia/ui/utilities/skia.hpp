@@ -1,12 +1,14 @@
 #ifndef ALIA_UI_UTILITIES_SKIA_HPP
 #define ALIA_UI_UTILITIES_SKIA_HPP
 
+#include <alia/ui/color.hpp>
 #include <alia/ui/layout/specification.hpp>
 
 #ifdef _WIN32
 #pragma warning(push, 0)
 #endif
 
+#include <include/core/SkColor.h>
 #include <include/core/SkRect.h>
 #include <include/core/SkScalar.h>
 
@@ -44,6 +46,18 @@ as_skrect(layout_box const& box)
     rect.fTop = box.corner[1];
     rect.fBottom = box.corner[1] + box.size[1];
     return rect;
+}
+
+inline SkColor
+as_skcolor(rgba8 color)
+{
+    return SkColorSetARGB(color.a, color.r, color.g, color.b);
+}
+
+inline SkColor
+as_skcolor(rgb8 color)
+{
+    return SkColorSetARGB(0xff, color.r, color.g, color.b);
 }
 
 } // namespace alia
