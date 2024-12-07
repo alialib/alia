@@ -30,6 +30,7 @@
 #include <alia/ui/utilities/regions.hpp>
 #include <alia/ui/utilities/rendering.hpp>
 #include <alia/ui/utilities/skia.hpp>
+#include <alia/ui/utilities/styling.hpp>
 
 // #include <color/color.hpp>
 
@@ -579,696 +580,6 @@ do_box(
 // //         foo);
 // // }
 
-// namespace alia {
-
-// struct scoped_flow_layout : simple_scoped_layout<flow_layout_logic>
-// {
-//     using simple_scoped_layout::simple_scoped_layout;
-
-//     void
-//     begin(ui_context ctx, layout const& layout_spec = default_layout)
-//     {
-//         // With a flow layout, we want to have the layout itself
-//         // always fill the horizontal space and use the requested X
-//         // alignment to position the individual rows in the flow.
-//         auto adjusted_layout_spec = add_default_padding(layout_spec,
-//         PADDED); layout_flag_set x_alignment = FILL_X; if
-//         ((layout_spec.flags.code & 0x3) != 0)
-//         {
-//             x_alignment.code
-//                 = adjusted_layout_spec.flags.code & X_ALIGNMENT_MASK_CODE;
-//             adjusted_layout_spec.flags.code &= ~X_ALIGNMENT_MASK_CODE;
-//             adjusted_layout_spec.flags.code |= FILL_X_CODE;
-//         }
-//         flow_layout_logic* logic;
-//         get_simple_layout_container(
-//             get_layout_traversal(ctx),
-//             get_data_traversal(ctx),
-//             &container_,
-//             &logic,
-//             adjusted_layout_spec);
-//         logic->x_alignment = x_alignment;
-//         slc_.begin(get_layout_traversal(ctx), container_);
-//     }
-// };
-
-// struct nonuniform_grid_tag
-// {
-// };
-// struct uniform_grid_tag
-// {
-// };
-
-// // This structure stores the layout requirements for the columns in a grid.
-// template<class Uniformity>
-// struct grid_column_requirements
-// {
-// };
-// // In nonuniform grids, each column has its own requirements.
-// template<>
-// struct grid_column_requirements<nonuniform_grid_tag>
-// {
-//     std::vector<layout_requirements> columns;
-// };
-// // In uniform grids, the columns all share the same requirements.
-// template<>
-// struct grid_column_requirements<uniform_grid_tag>
-// {
-//     size_t n_columns;
-//     layout_requirements requirements;
-// };
-
-// // Get the number of columns.
-// static size_t
-// get_column_count(grid_column_requirements<nonuniform_grid_tag> const& x)
-// {
-//     return x.columns.size();
-// }
-// static size_t
-// get_column_count(grid_column_requirements<uniform_grid_tag> const& x)
-// {
-//     return x.n_columns;
-// }
-
-// // Reset the column requirements.
-// static void
-// clear_requirements(grid_column_requirements<nonuniform_grid_tag>& x)
-// {
-//     x.columns.clear();
-// }
-// static void
-// clear_requirements(grid_column_requirements<uniform_grid_tag>& x)
-// {
-//     x.n_columns = 0;
-//     x.requirements = layout_requirements{0, 0, 0, 1};
-// }
-
-// // Add the requirements for a column.
-// static void
-// add_requirements(
-//     grid_column_requirements<nonuniform_grid_tag>& x,
-//     layout_requirements const& addition)
-// {
-//     x.columns.push_back(addition);
-// }
-// static void
-// add_requirements(
-//     grid_column_requirements<uniform_grid_tag>& x,
-//     layout_requirements const& addition)
-// {
-//     ++x.n_columns;
-//     fold_in_requirements(x.requirements, addition);
-// }
-
-// // Fold the second set of requirements into the first.
-// static void
-// fold_in_requirements(
-//     grid_column_requirements<nonuniform_grid_tag>& x,
-//     grid_column_requirements<nonuniform_grid_tag> const& y)
-// {
-//     size_t n_columns = get_column_count(y);
-//     if (get_column_count(x) < n_columns)
-//         x.columns.resize(n_columns, layout_requirements{0, 0, 0, 0});
-//     for (size_t i = 0; i != n_columns; ++i)
-//     {
-//         layout_requirements& xi = x.columns[i];
-//         layout_requirements const& yi = y.columns[i];
-//         fold_in_requirements(xi, yi);
-//         if (xi.growth_factor < yi.growth_factor)
-//             xi.growth_factor = yi.growth_factor;
-//     }
-// }
-// static void
-// fold_in_requirements(
-//     grid_column_requirements<uniform_grid_tag>& x,
-//     grid_column_requirements<uniform_grid_tag> const& y)
-// {
-//     if (x.n_columns < y.n_columns)
-//         x.n_columns = y.n_columns;
-//     fold_in_requirements(x.requirements, y.requirements);
-// }
-
-// // Get the requirements for the nth column.
-// inline layout_requirements const&
-// get_column_requirements(
-//     grid_column_requirements<nonuniform_grid_tag> const& x, size_t n)
-// {
-//     return x.columns[n];
-// }
-// inline layout_requirements const&
-// get_column_requirements(
-//     grid_column_requirements<uniform_grid_tag> const& x, size_t /*n*/)
-// {
-//     return x.requirements;
-// }
-
-// template<class Uniformity>
-// struct grid_row_container;
-
-// template<class Uniformity>
-// struct cached_grid_vertical_requirements
-// {
-// };
-
-// template<>
-// struct cached_grid_vertical_requirements<uniform_grid_tag>
-// {
-//     calculated_layout_requirements requirements;
-//     counter_type last_update = 0;
-// };
-
-// template<class Uniformity>
-// struct grid_data
-// {
-//     // the container that contains the whole grid
-//     widget_container* container = nullptr;
-
-//     // list of rows in the grid
-//     grid_row_container<Uniformity>* rows = nullptr;
-
-//     // spacing between columns
-//     layout_scalar column_spacing;
-
-//     // requirements for the columns
-//     grid_column_requirements<Uniformity> requirements;
-//     counter_type last_content_query = 0;
-
-//     // cached vertical requirements
-//     cached_grid_vertical_requirements<Uniformity>
-//     vertical_requirements_cache;
-
-//     // cached assignments
-//     std::vector<layout_scalar> assignments;
-//     counter_type last_assignments_update;
-// };
-
-// template<class Uniformity>
-// void
-// refresh_grid(
-//     layout_traversal<widget_container, widget>& traversal,
-//     grid_data<Uniformity>& data)
-// {
-//     if (traversal.is_refresh_pass)
-//     {
-//         // Reset the row list.
-//         data.rows = 0;
-//     }
-// }
-
-// template<class Uniformity>
-// void
-// refresh_grid_row(
-//     layout_traversal<widget_container, widget>& traversal,
-//     grid_data<Uniformity>& grid,
-//     grid_row_container<Uniformity>& row,
-//     layout const& layout_spec)
-// {
-//     // Add this row to the grid's list of rows.
-//     // It doesn't matter what order the list is in, and adding the row to
-//     // the front of the list is easier.
-//     if (traversal.is_refresh_pass)
-//     {
-//         row.next = grid.rows;
-//         grid.rows = &row;
-//         row.grid = &grid;
-//     }
-
-//     update_layout_cacher(traversal, row.cacher, layout_spec, FILL |
-//     UNPADDED);
-// }
-
-// struct scoped_grid_layout
-// {
-//     scoped_grid_layout()
-//     {
-//     }
-
-//     template<class Context>
-//     scoped_grid_layout(
-//         Context& ctx,
-//         layout const& layout_spec = default_layout,
-//         absolute_length const& column_spacing = absolute_length(0, PIXELS))
-//     {
-//         begin(ctx, layout_spec, column_spacing);
-//     }
-
-//     ~scoped_grid_layout()
-//     {
-//         end();
-//     }
-
-//     template<class Context>
-//     void
-//     begin(
-//         Context& ctx,
-//         layout const& layout_spec = default_layout,
-//         absolute_length const& column_spacing = absolute_length(0, PIXELS))
-//     {
-//         concrete_begin(
-//             get_layout_traversal(ctx),
-//             get_data_traversal(ctx),
-//             layout_spec,
-//             column_spacing);
-//     }
-
-//     void
-//     end()
-//     {
-//         container_.end();
-//     }
-
-//  private:
-//     void
-//     concrete_begin(
-//         layout_traversal<widget_container, widget>& traversal,
-//         data_traversal& data,
-//         layout const& layout_spec,
-//         absolute_length const& column_spacing);
-
-//     friend struct scoped_grid_row;
-
-//     scoped_layout_container container_;
-//     layout_traversal<widget_container, widget>* traversal_;
-//     data_traversal* data_traversal_;
-//     grid_data<nonuniform_grid_tag>* data_;
-// };
-
-// void
-// scoped_grid_layout::concrete_begin(
-//     layout_traversal<widget_container, widget>& traversal,
-//     data_traversal& data,
-//     layout const& layout_spec,
-//     absolute_length const& column_spacing)
-// {
-//     traversal_ = &traversal;
-//     data_traversal_ = &data;
-
-//     get_cached_data(data, &data_);
-//     refresh_grid(traversal, *data_);
-
-//     layout_container_widget<simple_layout_container<column_layout_logic>>*
-//         container;
-//     column_layout_logic* logic;
-//     get_simple_layout_container(
-//         traversal, data, &container, &logic, layout_spec);
-//     container_.begin(traversal, container);
-
-//     data_->container = container;
-
-//     layout_scalar resolved_spacing = as_layout_size(
-//         resolve_absolute_length(traversal, 0, column_spacing));
-//     detect_layout_change(traversal, &data_->column_spacing,
-//     resolved_spacing);
-// }
-
-// struct scoped_grid_row
-// {
-//     scoped_grid_row()
-//     {
-//     }
-//     scoped_grid_row(
-//         ui_context ctx,
-//         scoped_grid_layout const& g,
-//         layout const& layout_spec = default_layout)
-//     {
-//         begin(ctx, g, layout_spec);
-//     }
-//     ~scoped_grid_row()
-//     {
-//         end();
-//     }
-//     void
-//     begin(
-//         ui_context ctx,
-//         scoped_grid_layout const& g,
-//         layout const& layout_spec = default_layout);
-//     void
-//     end();
-
-//  private:
-//     scoped_layout_container container_;
-// };
-
-// template<class Uniformity>
-// struct grid_row_container : widget_container
-// {
-//     void
-//     render(render_event& event) override
-//     {
-//         auto const& region = get_assignment(this->cacher).region;
-//         SkRect bounds;
-//         bounds.fLeft = SkScalar(region.corner[0] + event.current_offset[0]);
-//         bounds.fTop = SkScalar(region.corner[1] + event.current_offset[1]);
-//         bounds.fRight = bounds.fLeft + SkScalar(region.size[0]);
-//         bounds.fBottom = bounds.fTop + SkScalar(region.size[1]);
-//         if (!event.canvas->quickReject(bounds))
-//         {
-//             auto original_offset = event.current_offset;
-//             event.current_offset += region.corner;
-//             render_children(event, *this);
-//             event.current_offset = original_offset;
-//         }
-//     }
-
-//     void
-//     hit_test(
-//         hit_test_base& test, vector<2, double> const& point) const override
-//     {
-//         auto const& region = get_assignment(this->cacher).region;
-//         if (is_inside(region, vector<2, float>(point)))
-//         {
-//             auto local_point = point - vector<2, double>(region.corner);
-//             for (widget* node = this->widget_container::children; node;
-//                  node = node->next)
-//             {
-//                 node->hit_test(test, local_point);
-//             }
-//         }
-//     }
-
-//     void
-//     process_input(dataless_ui_context) override
-//     {
-//     }
-
-//     matrix<3, 3, double>
-//     transformation() const override
-//     {
-//         return parent->transformation();
-//     }
-
-//     layout_box
-//     bounding_box() const override
-//     {
-//         return this->cacher.relative_assignment.region;
-//     }
-
-//     void
-//     reveal_region(region_reveal_request const& request) override
-//     {
-//         parent->reveal_region(request);
-//     }
-
-//     // implementation of layout interface
-//     layout_requirements
-//     get_horizontal_requirements() override;
-//     layout_requirements
-//     get_vertical_requirements(layout_scalar assigned_width) override;
-//     void
-//     set_relative_assignment(
-//         relative_layout_assignment const& assignment) override;
-
-//     void
-//     record_content_change(
-//         layout_traversal<widget_container, widget>& traversal) override;
-//     void
-//     record_self_change(layout_traversal<widget_container, widget>&
-//     traversal);
-
-//     layout_cacher cacher;
-
-//     // cached requirements for cells within this row
-//     grid_column_requirements<Uniformity> requirements;
-//     counter_type last_content_query = 0;
-
-//     // reference to the data for the grid that this row belongs to
-//     grid_data<Uniformity>* grid = nullptr;
-
-//     // next row in this grid
-//     grid_row_container* next = nullptr;
-// };
-
-// // Update the requirements for a grid's columns by querying its contents.
-// template<class Uniformity>
-// void
-// update_grid_column_requirements(grid_data<Uniformity>& grid)
-// {
-//     // Only update if something in the grid has changed since the last
-//     // update.
-//     if (grid.last_content_query != grid.container->last_content_change)
-//     {
-//         // Clear the requirements for the grid and recompute them
-//         // by iterating through the rows and folding each row's
-//         // requirements into the main grid requirements.
-//         clear_requirements(grid.requirements);
-//         for (grid_row_container<Uniformity>* row = grid.rows; row;
-//              row = row->next)
-//         {
-//             // Again, only update if something in the row has
-//             // changed.
-//             if (row->last_content_query != row->last_content_change)
-//             {
-//                 clear_requirements(row->requirements);
-//                 for (widget* child = row->widget_container::children; child;
-//                      child = child->next)
-//                 {
-//                     layout_requirements x
-//                         = child->get_horizontal_requirements();
-//                     add_requirements(row->requirements, x);
-//                 }
-//                 row->last_content_query = row->last_content_change;
-//             }
-//             fold_in_requirements(grid.requirements, row->requirements);
-//         }
-//         grid.last_content_query = grid.container->last_content_change;
-//     }
-// }
-
-// template<class Uniformity>
-// layout_scalar
-// get_required_width(grid_data<Uniformity> const& grid)
-// {
-//     size_t n_columns = get_column_count(grid.requirements);
-//     layout_scalar width = 0;
-//     for (size_t i = 0; i != n_columns; ++i)
-//         width += get_column_requirements(grid.requirements, i).size;
-//     if (n_columns > 0)
-//         width += grid.column_spacing * layout_scalar(n_columns - 1);
-//     return width;
-// }
-
-// template<class Uniformity>
-// float
-// get_total_growth(grid_data<Uniformity> const& grid)
-// {
-//     size_t n_columns = get_column_count(grid.requirements);
-//     float growth = 0;
-//     for (size_t i = 0; i != n_columns; ++i)
-//         growth += get_column_requirements(grid.requirements,
-//         i).growth_factor;
-//     return growth;
-// }
-
-// template<class Uniformity>
-// layout_requirements
-// grid_row_container<Uniformity>::get_horizontal_requirements()
-// {
-//     return cache_horizontal_layout_requirements(
-//         cacher, grid->container->last_content_change, [&] {
-//             update_grid_column_requirements(*grid);
-//             return calculated_layout_requirements{
-//                 get_required_width(*grid), 0, 0};
-//         });
-// }
-
-// template<class Uniformity>
-// std::vector<layout_scalar> const&
-// calculate_column_assignments(
-//     grid_data<Uniformity>& grid, layout_scalar assigned_width)
-// {
-//     if (grid.last_assignments_update != grid.container->last_content_change)
-//     {
-//         update_grid_column_requirements(grid);
-//         size_t n_columns = get_column_count(grid.requirements);
-//         grid.assignments.resize(n_columns);
-//         layout_scalar required_width = get_required_width(grid);
-//         float total_growth = get_total_growth(grid);
-//         layout_scalar extra_width = assigned_width - required_width;
-//         for (size_t i = 0; i != n_columns; ++i)
-//         {
-//             layout_scalar width
-//                 = get_column_requirements(grid.requirements, i).size;
-//             if (total_growth != 0)
-//             {
-//                 float growth_factor
-//                     = get_column_requirements(grid.requirements, i)
-//                           .growth_factor;
-//                 layout_scalar extra = round_to_layout_scalar(
-//                     (growth_factor / total_growth) * extra_width);
-//                 extra_width -= extra;
-//                 total_growth -= growth_factor;
-//                 width += extra;
-//             }
-//             grid.assignments[i] = width;
-//         }
-//         grid.last_assignments_update = grid.container->last_content_change;
-//     }
-//     return grid.assignments;
-// }
-
-// calculated_layout_requirements
-// calculate_grid_row_vertical_requirements(
-//     grid_data<nonuniform_grid_tag>& grid,
-//     grid_row_container<nonuniform_grid_tag>& row,
-//     layout_scalar assigned_width)
-// {
-//     std::vector<layout_scalar> const& column_widths
-//         = calculate_column_assignments(grid, assigned_width);
-//     calculated_layout_requirements requirements{0, 0, 0};
-//     size_t column_index = 0;
-//     walk_layout_nodes(row.children, [&](layout_node_interface& node) {
-//         fold_in_requirements(
-//             requirements,
-//             node.get_vertical_requirements(column_widths[column_index]));
-//         ++column_index;
-//     });
-//     return requirements;
-// }
-
-// calculated_layout_requirements
-// calculate_grid_row_vertical_requirements(
-//     grid_data<uniform_grid_tag>& grid,
-//     grid_row_container<uniform_grid_tag>& /*row*/,
-//     layout_scalar assigned_width)
-// {
-//     named_block nb;
-//     auto& cache = grid.vertical_requirements_cache;
-//     if (cache.last_update != grid.container->last_content_change)
-//     {
-//         update_grid_column_requirements(grid);
-
-//         std::vector<layout_scalar> const& widths
-//             = calculate_column_assignments(grid, assigned_width);
-
-//         calculated_layout_requirements& grid_requirements =
-//         cache.requirements; grid_requirements =
-//         calculated_layout_requirements{0, 0, 0}; for
-//         (grid_row_container<uniform_grid_tag>* row = grid.rows; row;
-//              row = row->next)
-//         {
-//             size_t column_index = 0;
-//             walk_layout_nodes(row->children, [&](layout_node_interface&
-//             node) {
-//                 fold_in_requirements(
-//                     grid_requirements,
-//                     node.get_vertical_requirements(widths[column_index]));
-//                 ++column_index;
-//             });
-//         }
-
-//         cache.last_update = grid.container->last_content_change;
-//     }
-//     return cache.requirements;
-// }
-
-// template<class Uniformity>
-// layout_requirements
-// grid_row_container<Uniformity>::get_vertical_requirements(
-//     layout_scalar assigned_width)
-// {
-//     return cache_vertical_layout_requirements(
-//         cacher, grid->container->last_content_change, assigned_width, [&] {
-//             return calculate_grid_row_vertical_requirements(
-//                 *grid, *this, assigned_width);
-//         });
-// }
-
-// template<class Uniformity>
-// void
-// set_grid_row_relative_assignment(
-//     grid_data<Uniformity>& grid,
-//     widget* children,
-//     layout_vector const& assigned_size,
-//     layout_scalar assigned_baseline_y)
-// {
-//     std::vector<layout_scalar> const& column_widths
-//         = calculate_column_assignments(grid, assigned_size[0]);
-//     size_t n = 0;
-//     layout_vector p = make_layout_vector(0, 0);
-//     for (widget* i = children; i; i = i->next, ++n)
-//     {
-//         layout_scalar this_width = column_widths[n];
-//         i->set_relative_assignment(relative_layout_assignment{
-//             layout_box(p, make_layout_vector(this_width, assigned_size[1])),
-//             assigned_baseline_y});
-//         p[0] += this_width + grid.column_spacing;
-//     }
-// }
-
-// template<class Uniformity>
-// void
-// grid_row_container<Uniformity>::set_relative_assignment(
-//     relative_layout_assignment const& assignment)
-// {
-//     update_relative_assignment(
-//         *this,
-//         cacher,
-//         grid->container->last_content_change,
-//         assignment,
-//         [&](auto const& resolved_assignment) {
-//             set_grid_row_relative_assignment(
-//                 *grid,
-//                 widget_container::children,
-//                 resolved_assignment.region.size,
-//                 resolved_assignment.baseline_y);
-//         });
-// }
-
-// template<class Uniformity>
-// void
-// grid_row_container<Uniformity>::record_content_change(
-//     layout_traversal<widget_container, widget>& traversal)
-// {
-//     if (this->last_content_change != traversal.refresh_counter)
-//     {
-//         this->last_content_change = traversal.refresh_counter;
-//         if (this->parent)
-//             this->parent->record_content_change(traversal);
-//         for (grid_row_container<Uniformity>* row = this->grid->rows; row;
-//              row = row->next)
-//         {
-//             row->record_self_change(traversal);
-//         }
-//     }
-// }
-
-// template<class Uniformity>
-// void
-// grid_row_container<Uniformity>::record_self_change(
-//     layout_traversal<widget_container, widget>& traversal)
-// {
-//     if (this->last_content_change != traversal.refresh_counter)
-//     {
-//         this->last_content_change = traversal.refresh_counter;
-//         if (this->parent)
-//             this->parent->record_content_change(traversal);
-//     }
-// }
-
-// void
-// scoped_grid_row::begin(
-//     ui_context, scoped_grid_layout const& grid, layout const& layout_spec)
-// {
-//     layout_traversal<widget_container, widget>& traversal =
-//     *grid.traversal_;
-
-//     grid_row_container<nonuniform_grid_tag>* row;
-//     if (get_cached_data(*grid.data_traversal_, &row))
-//         initialize(traversal, *row);
-
-//     refresh_grid_row(traversal, *grid.data_, *row, layout_spec);
-
-//     container_.begin(traversal, row);
-// }
-
-// void
-// scoped_grid_row::end()
-// {
-//     container_.end();
-// }
-
-// ///
-
 // struct panel_container : simple_layout_container<column_layout_logic>
 // {
 //     void
@@ -1406,11 +717,14 @@ do_box(
 
 // } // namespace alia
 
-auto my_style = text_style{"Roboto/Roboto-Regular", 22.f, rgb8(173, 181, 189)};
-
 void
 my_ui(ui_context ctx)
 {
+    auto my_style = style_info{
+        font_info{&get_font("Roboto/Roboto-Regular", 22.f)},
+        get_system(ctx).theme.on_surface};
+    scoped_style_info scoped_style(ctx, my_style);
+
     scoped_scrollable_view scrollable(ctx, GROW); //, 3, 2);
 
     // scoped_panel panel(ctx, GROW | UNPADDED);
@@ -1429,7 +743,7 @@ my_ui(ui_context ctx)
         box_border_width<float>{0, 0, 0, 0},
         box_border_width<float>{4, 4, 4, 4}};
 
-    do_text(ctx, direct(my_style), value("Lorem ipsum"));
+    do_text(ctx, value("Lorem ipsum"));
 
     do_spacer(ctx, size(20, 100, PIXELS));
 
@@ -1437,21 +751,21 @@ my_ui(ui_context ctx)
 
     do_spacer(ctx, size(20, 100, PIXELS));
 
-    {
-        bulleted_list list(ctx);
-        {
-            bulleted_item item(list);
-            do_text(ctx, direct(my_style), value("this"));
-        }
-        {
-            bulleted_item item(list);
-            do_text(ctx, direct(my_style), value("that"));
-        }
-        {
-            bulleted_item item(list);
-            do_text(ctx, direct(my_style), value("the other"));
-        }
-    }
+    // {
+    //     bulleted_list list(ctx);
+    //     {
+    //         bulleted_item item(list);
+    //         do_text(ctx, value("this"));
+    //     }
+    //     {
+    //         bulleted_item item(list);
+    //         do_text(ctx, value("that"));
+    //     }
+    //     {
+    //         bulleted_item item(list);
+    //         do_text(ctx, value("the other"));
+    //     }
+    // }
 
     {
         row_layout blah(ctx);
@@ -1476,23 +790,17 @@ my_ui(ui_context ctx)
             {
                 row_layout row(ctx);
                 do_node_expander(ctx, disable_writes(state1));
-                // scoped_transformation transform(
-                //     ctx, translation_matrix(make_vector(0., 1.)));
-                do_text(ctx, direct(my_style), value("One"), CENTER_Y);
+                do_text(ctx, value("One"), CENTER_Y);
             }
             {
                 row_layout row(ctx);
                 do_node_expander(ctx, state1);
-                // scoped_transformation transform(
-                //     ctx, translation_matrix(make_vector(0., 1.)));
-                do_text(ctx, direct(my_style), value("Two"), CENTER_Y);
+                do_text(ctx, value("Two"), CENTER_Y);
             }
             {
                 row_layout row(ctx);
                 do_node_expander(ctx, get_state(ctx, false));
-                // scoped_transformation transform(
-                //     ctx, translation_matrix(make_vector(0., 1.)));
-                do_text(ctx, direct(my_style), value("Three"), CENTER_Y);
+                do_text(ctx, value("Three"), CENTER_Y);
             }
         }
 
@@ -1504,23 +812,17 @@ my_ui(ui_context ctx)
             {
                 row_layout row(ctx);
                 do_checkbox(ctx, disable_writes(state1));
-                // scoped_transformation transform(
-                //     ctx, translation_matrix(make_vector(0., 1.)));
-                do_text(ctx, direct(my_style), value("One"), CENTER_Y);
+                do_text(ctx, value("One"), CENTER_Y);
             }
             {
                 row_layout row(ctx);
                 do_checkbox(ctx, state1);
-                // scoped_transformation transform(
-                //     ctx, translation_matrix(make_vector(0., 1.)));
-                do_text(ctx, direct(my_style), value("Two"), CENTER_Y);
+                do_text(ctx, value("Two"), CENTER_Y);
             }
             {
                 row_layout row(ctx);
                 do_checkbox(ctx, get_state(ctx, false));
-                // scoped_transformation transform(
-                //     ctx, translation_matrix(make_vector(0., 1.)));
-                do_text(ctx, direct(my_style), value("Three"), CENTER_Y);
+                do_text(ctx, value("Three"), CENTER_Y);
             }
         }
 
@@ -1533,23 +835,24 @@ my_ui(ui_context ctx)
                 do_radio_button(
                     ctx,
                     disable_writes(make_radio_signal(selected, value(2))));
-                do_text(ctx, direct(my_style), value("One"), CENTER_Y);
+                do_text(ctx, value("Option One"));
             }
             {
+                // TODO: Implement radio buttons with clickable text.
                 row_layout row(ctx);
                 auto id = get_widget_id(ctx);
                 do_box_region(ctx, id, row.region());
                 do_radio_button(
                     ctx,
                     make_radio_signal(selected, value(2)),
-                    default_layout,
+                    BASELINE_Y,
                     id);
-                do_text(ctx, direct(my_style), value("Two"), CENTER_Y);
+                do_text(ctx, value("Option Two"));
             }
             {
                 row_layout row(ctx);
                 do_radio_button(ctx, make_radio_signal(selected, value(3)));
-                do_text(ctx, direct(my_style), value("Three"), CENTER_Y);
+                do_text(ctx, value("Option Three"));
             }
         }
     }
@@ -1579,7 +882,7 @@ my_ui(ui_context ctx)
     {
         cached_ui_block<column_layout>(ctx, unit_id, default_layout, [&] {
             panel p(ctx, direct(pstyle));
-            // do_text(ctx, direct(my_style), value("Lorem ipsum"));
+            // do_text(ctx, value("Lorem ipsum"));
             //  column_layout column(ctx);
             flow_layout flow(ctx);
             for (int j = 0; j != 100; ++j)
@@ -1615,7 +918,7 @@ my_ui(ui_context ctx)
             do_node_expander(ctx, show_content);
             // scoped_transformation transform(
             //     ctx, translation_matrix(make_vector(0., 1.)));
-            do_text(ctx, direct(my_style), value("One"), CENTER_Y);
+            do_text(ctx, value("One"), CENTER_Y);
         }
 
         {
@@ -1626,7 +929,6 @@ my_ui(ui_context ctx)
                 // std::cout << "content!" << std::endl;
                 do_wrapped_text(
                     ctx,
-                    direct(my_style),
                     value("Lorem ipsum dolor sit amet, consectetur "
                           "adipisg elit. "
                           "Phasellus lacinia elementum diam consequat "
@@ -1695,7 +997,6 @@ my_ui(ui_context ctx)
         {
             do_wrapped_text(
                 ctx,
-                direct(my_style),
                 value(
                     "Lorem ipsum dolor sit amet, consectetur "
                     "adipisg elit. "

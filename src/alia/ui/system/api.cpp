@@ -20,6 +20,7 @@ initialize(
     ui.controller = std::move(controller);
     ui.os = std::move(os);
     ui.window = std::move(window);
+    ui.theme = default_light_theme;
 }
 
 // void initialize_ui(

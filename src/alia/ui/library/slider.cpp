@@ -52,9 +52,7 @@ draw_track(
 
     SkPaint paint;
     paint.setAntiAlias(true);
-    rgba8 const color = rgba8(
-        0xc0, 0xc0, 0xc0, 0xff); // get_color_property(path, "track-color");
-    paint.setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
+    paint.setColor(as_skcolor(rgba8(get_system(ctx).theme.on_surface, 0x60)));
 
     canvas.drawPath(SkPath::Rect(as_skrect(track_box)), paint);
 }
@@ -72,11 +70,7 @@ draw_thumb(
     {
         SkPaint paint;
         paint.setAntiAlias(true);
-
-        rgba8 const color = rgba8(0x90, 0xc0, 0xff, 0xff);
-        // get_color_property(path, "thumb-color");
-        paint.setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
-
+        paint.setColor(as_skcolor(get_system(ctx).theme.primary));
         canvas.drawPath(
             SkPath::Circle(thumb_position[0], thumb_position[1], 16.f), paint);
     }
@@ -95,7 +89,8 @@ draw_thumb(
     {
         SkPaint paint;
         paint.setAntiAlias(true);
-        paint.setColor(SkColorSetARGB(highlight, 0xff, 0xff, 0xff));
+        paint.setColor(
+            as_skcolor(rgba8(get_system(ctx).theme.on_surface, highlight)));
         canvas.drawPath(
             SkPath::Circle(thumb_position[0], thumb_position[1], 24.f), paint);
     }

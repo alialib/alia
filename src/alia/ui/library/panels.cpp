@@ -201,8 +201,8 @@ begin_outer_panel(
                 //             outer_region.corner[1] +
                 //             outer_region.size[1])}};
                 // SkColor gradient_colors[]
-                //     = {as_skia_color(get(style_info).background_color),
-                //        as_skia_color(get(style_info).gradient_color)};
+                //     = {as_skcolor(get(style_info).background_color),
+                //        as_skcolor(get(style_info).gradient_color)};
                 // paint.setShader(SkGradientShader::MakeLinear(
                 //     gradient_points,
                 //     gradient_colors,

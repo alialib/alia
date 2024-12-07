@@ -4,6 +4,7 @@
 #include <alia/core/context/interface.hpp>
 #include <alia/ui/layout/geometry.hpp>
 #include <alia/ui/layout/traversal.hpp>
+#include <alia/ui/styling.hpp>
 
 namespace alia {
 
@@ -16,6 +17,7 @@ struct widget_container;
 struct ui_traversal
 {
     layout_traversal layout;
+    style_info style;
 };
 ALIA_DEFINE_TAGGED_TYPE(ui_traversal_tag, ui_traversal&)
 
@@ -75,6 +77,12 @@ inline geometry_context&
 get_geometry_context(dataless_ui_context ctx)
 {
     return *get<ui_traversal_tag>(ctx).layout.geometry;
+}
+
+inline style_info&
+get_style(dataless_ui_context ctx)
+{
+    return get<ui_traversal_tag>(ctx).style;
 }
 
 } // namespace alia

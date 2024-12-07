@@ -118,11 +118,13 @@ do_node_expander(
                 paint.setAntiAlias(true);
                 if (is_disabled)
                 {
-                    paint.setColor(SkColorSetARGB(0xff, 0x60, 0x60, 0x66));
+                    paint.setColor(as_skcolor(
+                        rgba8(get_system(ctx).theme.on_surface, 0x60)));
                 }
                 else
                 {
-                    paint.setColor(SkColorSetARGB(0xff, 0xa0, 0xa0, 0xa0));
+                    paint.setColor(
+                        as_skcolor(get_system(ctx).theme.on_surface));
                 }
                 // set_color(paint, renderer.style().fg_color);
                 paint.setStyle(SkPaint::kFill_Style);
@@ -151,8 +153,8 @@ do_node_expander(
                 break;
 
             rgb8 color = interpolate(
-                rgb8(0x90, 0xc0, 0xff),
-                rgb8(0xa0, 0xa0, 0xa0),
+                get_system(ctx).theme.primary,
+                get_system(ctx).theme.on_surface,
                 smoothed_state);
 
             uint8_t highlight = 0;

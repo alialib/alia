@@ -60,7 +60,8 @@ render_radio_button(
             SkPaint paint;
             paint.setAntiAlias(true);
             paint.setStyle(SkPaint::kStroke_Style);
-            paint.setColor(SkColorSetARGB(0xff, 0x60, 0x60, 0x66));
+            paint.setColor(
+                as_skcolor(rgba8(get_system(ctx).theme.on_surface, 0x60)));
             paint.setStrokeWidth(3);
             canvas.drawPath(SkPath::Circle(center[0], center[1], 15.f), paint);
         }
@@ -69,7 +70,8 @@ render_radio_button(
         {
             SkPaint paint;
             paint.setAntiAlias(true);
-            paint.setColor(SkColorSetARGB(0xff, 0x80, 0x80, 0x88));
+            paint.setColor(
+                as_skcolor(rgba8(get_system(ctx).theme.on_surface, 0x60)));
             paint.setStrokeWidth(3);
             canvas.drawPath(SkPath::Circle(center[0], center[1], 10), paint);
         }
@@ -82,7 +84,8 @@ render_radio_button(
     {
         SkPaint paint;
         paint.setAntiAlias(true);
-        paint.setColor(SkColorSetARGB(0x20, 0xff, 0xff, 0xff));
+        paint.setColor(
+            as_skcolor(rgba8(get_system(ctx).theme.on_surface, 0x20)));
         canvas.drawPath(SkPath::Circle(center[0], center[1], 32.f), paint);
     }
 
@@ -95,7 +98,9 @@ render_radio_button(
         animated_transition{default_curve, 200});
 
     rgb8 color = interpolate(
-        rgb8(0xa0, 0xa0, 0xa0), rgb8(0x90, 0xc0, 0xff), smoothed_state);
+        get_system(ctx).theme.on_surface,
+        get_system(ctx).theme.primary,
+        smoothed_state);
 
     render_click_flares(
         ctx,
@@ -108,7 +113,7 @@ render_radio_button(
         SkPaint paint;
         paint.setAntiAlias(true);
         paint.setStyle(SkPaint::kStroke_Style);
-        paint.setColor(SkColorSetARGB(0xff, 0xc0, 0xc0, 0xc0));
+        paint.setColor(as_skcolor(get_system(ctx).theme.on_surface));
         paint.setStrokeWidth(3);
         canvas.drawPath(SkPath::Circle(center[0], center[1], 15.f), paint);
     }
@@ -117,7 +122,7 @@ render_radio_button(
 
     SkPaint paint;
     paint.setAntiAlias(true);
-    paint.setColor(SkColorSetARGB(0xff, 0x90, 0xc0, 0xff));
+    paint.setColor(as_skcolor(get_system(ctx).theme.primary));
     paint.setStrokeWidth(3);
     canvas.drawPath(SkPath::Circle(center[0], center[1], dot_radius), paint);
 }
@@ -143,7 +148,7 @@ do_radio_button(
             data.layout_node.refresh_layout(
                 get_layout_traversal(ctx),
                 layout_spec,
-                leaf_layout_requirements(make_layout_vector(48, 48), 0, 0),
+                leaf_layout_requirements(make_layout_vector(48, 48), 32, 16),
                 LEFT | BASELINE_Y | PADDED);
 
             add_layout_node(

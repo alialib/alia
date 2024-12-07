@@ -9,10 +9,10 @@ namespace alia {
 template<class Channel>
 struct rgb
 {
-    rgb()
+    constexpr rgb()
     {
     }
-    rgb(Channel r, Channel g, Channel b) : r(r), g(g), b(b)
+    constexpr rgb(Channel r, Channel g, Channel b) : r(r), g(g), b(b)
     {
     }
     Channel r, g, b;
@@ -61,7 +61,7 @@ rgb8 const white(0xff, 0xff, 0xff), silver(0xc0, 0xc0, 0xc0),
     navy(0x00, 0x00, 0x80), fuchsia(0xff, 0x00, 0xff),
     purple(0x80, 0x00, 0x80);
 
-inline uint8_t
+constexpr uint8_t
 max_channel_value(uint8_t)
 {
     return 0xff;
@@ -71,14 +71,19 @@ max_channel_value(uint8_t)
 template<class Channel>
 struct rgba
 {
-    rgba()
+    constexpr rgba()
     {
     }
-    rgba(Channel r, Channel g, Channel b, Channel a) : r(r), g(g), b(b), a(a)
+    constexpr rgba(Channel r, Channel g, Channel b, Channel a)
+        : r(r), g(g), b(b), a(a)
     {
     }
-    rgba(rgb<Channel> color)
+    constexpr rgba(rgb<Channel> color)
         : r(color.r), g(color.g), b(color.b), a(max_channel_value(Channel()))
+    {
+    }
+    constexpr rgba(rgb<Channel> color, Channel a)
+        : r(color.r), g(color.g), b(color.b), a(a)
     {
     }
     Channel r, g, b, a;

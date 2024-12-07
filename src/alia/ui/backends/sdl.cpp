@@ -296,8 +296,8 @@ update_ui(sdl_window_impl& impl)
     int width, height;
     SDL_GL_GetDrawableSize(impl.sdl_window, &width, &height);
 
-    std::chrono::steady_clock::time_point begin
-        = std::chrono::steady_clock::now();
+    // std::chrono::steady_clock::time_point begin
+    //     = std::chrono::steady_clock::now();
 
     refresh_system(impl.system);
     update(impl.system);
@@ -311,15 +311,16 @@ update_ui(sdl_window_impl& impl)
             update(impl.system);
         });
 
-    long long refresh_time;
-    {
-        std::chrono::steady_clock::time_point end
-            = std::chrono::steady_clock::now();
-        refresh_time = std::chrono::duration_cast<std::chrono::microseconds>(
-                           end - begin)
-                           .count();
-        begin = end;
-    }
+    // long long refresh_time;
+    // {
+    //     std::chrono::steady_clock::time_point end
+    //         = std::chrono::steady_clock::now();
+    //     refresh_time =
+    //     std::chrono::duration_cast<std::chrono::microseconds>(
+    //                        end - begin)
+    //                        .count();
+    //     begin = end;
+    // }
 
     resolve_layout(
         impl.system.layout, make_vector(float(width), float(height)));
@@ -329,25 +330,25 @@ update_ui(sdl_window_impl& impl)
     // counter value and thus cause a recalculation.
     ++impl.system.refresh_counter;
 
-    long long layout_time;
-    {
-        std::chrono::steady_clock::time_point end
-            = std::chrono::steady_clock::now();
-        layout_time = std::chrono::duration_cast<std::chrono::microseconds>(
-                          end - begin)
-                          .count();
-        begin = end;
-    }
+    // long long layout_time;
+    // {
+    //     std::chrono::steady_clock::time_point end
+    //         = std::chrono::steady_clock::now();
+    //     layout_time = std::chrono::duration_cast<std::chrono::microseconds>(
+    //                       end - begin)
+    //                       .count();
+    //     begin = end;
+    // }
 
-    static long long max_refresh_time = 0;
-    max_refresh_time = (std::max)(refresh_time, max_refresh_time);
-    // std::cout << "refresh: " << refresh_time << "[us]\n";
-    // std::cout << "max_refresh_time: " << max_refresh_time << "[us]\n";
+    // static long long max_refresh_time = 0;
+    // max_refresh_time = (std::max)(refresh_time, max_refresh_time);
+    // // std::cout << "refresh: " << refresh_time << "[us]\n";
+    // // std::cout << "max_refresh_time: " << max_refresh_time << "[us]\n";
 
-    static long long max_layout_time = 0;
-    max_layout_time = (std::max)(layout_time, max_layout_time);
-    // std::cout << "layout: " << layout_time << "[us]\n";
-    // std::cout << "max_layout_time: " << max_layout_time << "[us]\n";
+    // static long long max_layout_time = 0;
+    // max_layout_time = (std::max)(layout_time, max_layout_time);
+    // // std::cout << "layout: " << layout_time << "[us]\n";
+    // // std::cout << "max_layout_time: " << max_layout_time << "[us]\n";
 
     render_ui(impl);
 
