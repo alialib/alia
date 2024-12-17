@@ -19,7 +19,7 @@ class scoped_collapsible_content : noncopyable
     }
 
     scoped_collapsible_content(
-        ui_context& ctx,
+        ui_context ctx,
         bool expanded,
         animated_transition const& transition = default_transition,
         double const offset_factor = 1.,
@@ -29,7 +29,7 @@ class scoped_collapsible_content : noncopyable
     }
 
     scoped_collapsible_content(
-        ui_context& ctx,
+        ui_context ctx,
         float expansion,
         double const offset_factor = 1.,
         layout const& layout_spec = default_layout)
@@ -39,7 +39,7 @@ class scoped_collapsible_content : noncopyable
 
     void
     begin(
-        ui_context& ctx,
+        ui_context ctx,
         bool expanded,
         animated_transition const& transition = default_transition,
         double const offset_factor = 1.,
@@ -47,7 +47,7 @@ class scoped_collapsible_content : noncopyable
 
     void
     begin(
-        ui_context& ctx,
+        ui_context ctx,
         float expansion,
         double const offset_factor = 1.,
         layout const& layout_spec = default_layout);
@@ -62,7 +62,7 @@ class scoped_collapsible_content : noncopyable
     }
 
  private:
-    ui_context* ctx_;
+    optional_context<ui_context> ctx_;
     scoped_layout_container container_;
     scoped_clip_region clipper_;
     scoped_transformation transform_;
