@@ -18,7 +18,8 @@ tree_sitter_cpp(void);
 
 using namespace alia;
 
-auto my_style = text_style{"Roboto/Roboto-Regular", 22.f, rgb8(173, 181, 189)};
+// auto my_style = text_style{"Roboto/Roboto-Regular", 22.f, rgb8(173, 181,
+// 189)};
 
 introspection_traversal* the_traversal;
 introspection_node root_node;
@@ -63,8 +64,7 @@ factor_tree(ui_context ctx, readable<int> n)
         {
             row_layout row(ctx);
             do_node_expander(ctx, show_factors);
-            do_text(
-                ctx, direct(my_style), alia::printf(ctx, "%i: composite", n));
+            do_text(ctx, alia::printf(ctx, "%i: composite", n));
         }
 
         collapsible_content(ctx, show_factors, GROW, [&] {
