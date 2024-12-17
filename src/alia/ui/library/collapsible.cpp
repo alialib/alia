@@ -66,7 +66,7 @@ struct collapsible_layout_container : layout_container
 
 void
 scoped_collapsible_content::begin(
-    ui_context& ctx,
+    ui_context ctx,
     bool expanded,
     animated_transition const& transition,
     double const offset_factor,
@@ -79,12 +79,12 @@ scoped_collapsible_content::begin(
 
 void
 scoped_collapsible_content::begin(
-    ui_context& ctx,
+    ui_context ctx,
     float expansion,
     double const offset_factor,
     layout const& layout_spec)
 {
-    ctx_ = &ctx;
+    ctx_.reset(ctx);
 
     collapsible_layout_container<column_layout_container>* layout;
     get_cached_data(ctx, &layout);
@@ -138,7 +138,7 @@ scoped_collapsible_content::end()
 
         container_.end();
 
-        ctx_ = 0;
+        ctx_.reset();
     }
 }
 
