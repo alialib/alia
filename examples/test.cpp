@@ -743,90 +743,182 @@ update_theme(ui_context ctx)
                 new_theme = &violet_light_theme;
             else
                 new_theme = &violet_dark_theme;
-            break;
-        case color_theme::BLUE:
-            if (light_theme)
-                new_theme = &blue_light_theme;
-            else
-                new_theme = &blue_dark_theme;
-            break;
-        case color_theme::INDIGO:
-            if (light_theme)
-                new_theme = &indigo_light_theme;
-            else
-                new_theme = &indigo_dark_theme;
-            break;
-        case color_theme::PINK:
-            if (light_theme)
-                new_theme = &pink_light_theme;
-            else
-                new_theme = &pink_dark_theme;
-            break;
+            enum class color_theme
+            {
+                VIOLET,
+                BLUE,
+                INDIGO,
+                PINK
+            };
+
+            color_theme selected_theme = color_theme::BLUE;
+
+            bool light_theme = false;
+
+            theme_colors* active_theme = nullptr;
+
+            void update_theme(ui_context ctx)
+            {
+                theme_colors* new_theme = nullptr;
+                switch (selected_theme)
+                {
+                    case color_theme::VIOLET:
+                        if (light_theme)
+                            new_theme = &violet_light_theme;
+                        else
+                            new_theme = &violet_dark_theme;
+                        break;
+                    case color_theme::BLUE:
+                        if (light_theme)
+                            new_theme = &blue_light_theme;
+                        else
+                            new_theme = &blue_dark_theme;
+                    case color_theme::BLUE:
+                        if (light_theme)
+                            new_theme = &blue_light_theme;
+                        else
+                            new_theme = &blue_dark_theme;
+                        break;
+                    case color_theme::INDIGO:
+                        if (light_theme)
+                            new_theme = &indigo_light_theme;
+                        else
+                            new_theme = &indigo_dark_theme;
+                        break;
+                    case color_theme::PINK:
+                        if (light_theme)
+                            new_theme = &pink_light_theme;
+                        else
+                            new_theme = &pink_dark_theme;
+                        break;
+                }
+                if (new_theme && new_theme != active_theme)
+                case color_theme::INDIGO:
+                    if (light_theme)
+                        new_theme = &indigo_light_theme;
+                    else
+                        new_theme = &indigo_dark_theme;
+                break;
+                case color_theme::PINK:
+                    if (light_theme)
+                        new_theme = &pink_light_theme;
+                    else
+                        new_theme = &pink_dark_theme;
+                    break;
+            }
+            if (new_theme && new_theme != active_theme)
+            {
+                active_theme = new_theme;
+                get_system(ctx).theme = *new_theme;
+                active_theme = new_theme;
+                get_system(ctx).theme = *new_theme;
+            }
     }
-    if (new_theme && new_theme != active_theme)
+
+    void my_ui(ui_context ctx)
     {
-        active_theme = new_theme;
-        get_system(ctx).theme = *new_theme;
-    }
-}
+        update_theme(ctx);
 
-void
-my_ui(ui_context ctx)
-{
-    update_theme(ctx);
+        auto my_style = style_info{
+            font_info{&get_font("Roboto/Roboto-Regular", 22.f)},
+            get_system(ctx).theme.on_surface};
+        scoped_style_info scoped_style(ctx, my_style);
 
-    auto my_style = style_info{
-        font_info{&get_font("Roboto/Roboto-Regular", 22.f)},
-        get_system(ctx).theme.on_surface};
-    scoped_style_info scoped_style(ctx, my_style);
+        scoped_scrollable_view scrollable(ctx, GROW); //, 3, 2);
 
-    scoped_scrollable_view scrollable(ctx, GROW); //, 3, 2);
+        // scoped_panel panel(ctx, GROW | UNPADDED);
 
-    // scoped_panel panel(ctx, GROW | UNPADDED);
+        column_layout column(ctx, GROW | PADDED);
+        column_layout column2(ctx, GROW | PADDED);
+        column_layout column3(ctx, GROW | PADDED);
 
-    column_layout column(ctx, GROW | PADDED);
-    column_layout column2(ctx, GROW | PADDED);
-    column_layout column3(ctx, GROW | PADDED);
+        // auto my_style = text_style{
+        //     "Roboto_Mono/static/RobotoMono-Regular", 22.f, rgb8(173, 181,
+        //     189)};
 
-    // auto my_style = text_style{
-    //     "Roboto_Mono/static/RobotoMono-Regular", 22.f, rgb8(173, 181, 189)};
+        // panel_style_info pstyle{
+        //     box_border_width<float>{4, 4, 4, 4},
+        //     box_border_width<float>{0, 0, 0, 0},
+        //     box_border_width<float>{4, 4, 4, 4}};
 
-    // panel_style_info pstyle{
-    //     box_border_width<float>{4, 4, 4, 4},
-    //     box_border_width<float>{0, 0, 0, 0},
-    //     box_border_width<float>{4, 4, 4, 4}};
+        // {
+        //     bulleted_list list(ctx);
+        //     {
+        //         bulleted_item item(list);
+        //         do_text(ctx, value("this"));
+        //     }
+        //     {
+        //         bulleted_item item(list);
+        //         do_text(ctx, value("that"));
+        //     }
+        //     {
+        //         bulleted_item item(list);
+        //         do_text(ctx, value("the other"));
+        //     }
+        // }
 
-    // {
-    //     bulleted_list list(ctx);
-    //     {
-    //         bulleted_item item(list);
-    //         do_text(ctx, value("this"));
-    //     }
-    //     {
-    //         bulleted_item item(list);
-    //         do_text(ctx, value("that"));
-    //     }
-    //     {
-    //         bulleted_item item(list);
-    //         do_text(ctx, value("the other"));
-    //     }
-    // }
+        do_spacer(ctx, height(40, PIXELS));
+        do_separator(ctx);
+        do_spacer(ctx, height(40, PIXELS));
 
-    do_spacer(ctx, height(40, PIXELS));
-    do_separator(ctx);
-    do_spacer(ctx, height(40, PIXELS));
-
-    do_text(ctx, value("Theme Options"));
-    do_spacer(ctx, height(20, PIXELS));
-
-    {
-        grid_layout grid(ctx);
+        do_text(ctx, value("Theme Options"));
+        do_spacer(ctx, height(20, PIXELS));
 
         {
-            grid_row row(grid);
-            do_switch(ctx, direct(light_theme));
-            do_text(ctx, value("Light"));
+            grid_layout grid(ctx);
+
+            {
+                grid_row row(grid);
+                do_switch(ctx, direct(light_theme));
+                do_text(ctx, value("Light"));
+            }
+
+            do_spacer(ctx, height(10, PIXELS));
+
+            {
+                {
+                    grid_row row(grid);
+                    do_radio_button(
+                        ctx,
+                        make_radio_signal(
+                            direct(selected_theme),
+                            value(color_theme::VIOLET)));
+                    do_text(ctx, value("Violet"));
+                }
+                {
+                    grid_row row(grid);
+                    do_radio_button(
+                        ctx,
+                        make_radio_signal(
+                            direct(selected_theme), value(color_theme::BLUE)));
+                    do_text(ctx, value("Blue"));
+                }
+                {
+                    grid_row row(grid);
+                    do_radio_button(
+                        ctx,
+                        make_radio_signal(
+                            direct(selected_theme), value(color_theme::PINK)));
+                    do_text(ctx, value("Pink"));
+                }
+                {
+                    grid_row row(grid);
+                    do_radio_button(
+                        ctx,
+                        make_radio_signal(
+                            direct(selected_theme),
+                            value(color_theme::INDIGO)));
+                    do_text(ctx, value("Indigo"));
+                }
+            }
         }
+
+        do_spacer(ctx, height(40, PIXELS));
+        do_separator(ctx);
+        do_spacer(ctx, height(40, PIXELS));
+
+        do_text(ctx, value("Some Widgets"));
+        do_spacer(ctx, height(20, PIXELS));
 
         do_spacer(ctx, height(10, PIXELS));
 
@@ -897,15 +989,18 @@ my_ui(ui_context ctx)
                 row_layout row(ctx);
                 do_node_expander(ctx, disable_writes(state1));
                 do_text(ctx, value("One"));
+                do_text(ctx, value("One"));
             }
             {
                 row_layout row(ctx);
                 do_node_expander(ctx, state1);
                 do_text(ctx, value("Two"));
+                do_text(ctx, value("Two"));
             }
             {
                 row_layout row(ctx);
                 do_node_expander(ctx, get_state(ctx, false));
+                do_text(ctx, value("Three"));
                 do_text(ctx, value("Three"));
             }
         }
@@ -919,15 +1014,18 @@ my_ui(ui_context ctx)
                 row_layout row(ctx);
                 do_checkbox(ctx, disable_writes(state1));
                 do_text(ctx, value("One"));
+                do_text(ctx, value("One"));
             }
             {
                 row_layout row(ctx);
                 do_checkbox(ctx, state1);
                 do_text(ctx, value("Two"));
+                do_text(ctx, value("Two"));
             }
             {
                 row_layout row(ctx);
                 do_checkbox(ctx, get_state(ctx, false));
+                do_text(ctx, value("Three"));
                 do_text(ctx, value("Three"));
             }
         }
@@ -937,14 +1035,17 @@ my_ui(ui_context ctx)
         {
             column_layout col(ctx);
             auto selected = get_state(ctx, int(0));
+            auto selected = get_state(ctx, int(0));
             {
                 row_layout row(ctx);
                 do_radio_button(
                     ctx,
                     disable_writes(make_radio_signal(selected, value(2))));
                 do_text(ctx, value("Option One"));
+                do_text(ctx, value("Option One"));
             }
             {
+                // TODO: Implement radio buttons with clickable text.
                 // TODO: Implement radio buttons with clickable text.
                 row_layout row(ctx);
                 auto id = get_widget_id(ctx);
@@ -953,7 +1054,9 @@ my_ui(ui_context ctx)
                     ctx,
                     make_radio_signal(selected, value(2)),
                     BASELINE_Y,
+                    BASELINE_Y,
                     id);
+                do_text(ctx, value("Option Two"));
                 do_text(ctx, value("Option Two"));
             }
             {
@@ -971,292 +1074,403 @@ my_ui(ui_context ctx)
         auto slider_value = get_state(ctx, value(1.5));
         do_slider(ctx, slider_value, 0, 5, 0.01);
         do_text(ctx, alia::printf(ctx, "%.2f", slider_value));
+        do_text(ctx, value("Option Three"));
     }
+}
+}
 
-    do_spacer(ctx, height(40, PIXELS));
-    do_separator(ctx);
-    do_spacer(ctx, height(40, PIXELS));
+do_spacer(ctx, height(20, PIXELS));
 
-    // {
-    //     scoped_grid_layout grid(ctx);
-    //     for (int i = 0; i != 4; ++i)
-    //     {
-    //         {
-    //             scoped_grid_row row(ctx, grid);
-    //             do_box(
-    //                 ctx, SK_ColorMAGENTA, actions::noop(), width(200,
-    //                 PIXELS));
-    //             do_box(
-    //                 ctx, SK_ColorMAGENTA, actions::noop(), width(200,
-    //                 PIXELS));
-    //         }
-    //         {
-    //             scoped_grid_row row(ctx, grid);
-    //         }
-    //     }
-    // }
+{
+    row_layout row(ctx);
+    auto slider_value = get_state(ctx, value(1.5));
+    do_slider(ctx, slider_value, 0, 5, 0.01);
+    do_text(ctx, alia::printf(ctx, "%.2f", slider_value));
+}
 
-    // for (int i = 0; i != 0; ++i)
-    // {
-    //     cached_ui_block<column_layout>(ctx, unit_id, default_layout, [&] {
-    //         panel p(ctx, direct(pstyle));
-    //         // do_text(ctx, value("Lorem ipsum"));
-    //         //  column_layout column(ctx);
-    //         flow_layout flow(ctx);
-    //         for (int j = 0; j != 100; ++j)
-    //         {
-    //             do_box(ctx, SK_ColorLTGRAY, actions::noop());
-    //             do_box(ctx, SK_ColorDKGRAY, actions::noop());
-    //             do_box(ctx, SK_ColorMAGENTA, actions::noop());
-    //             do_box(ctx, SK_ColorLTGRAY, actions::noop());
-    //             do_box(ctx, SK_ColorMAGENTA, actions::noop());
-    //             do_box(ctx, SK_ColorRED, actions::noop());
-    //             do_box(ctx, SK_ColorBLUE, actions::noop());
-    //         }
-    //     });
-    // }
+do_spacer(ctx, height(40, PIXELS));
+do_separator(ctx);
+do_spacer(ctx, height(40, PIXELS));
+do_spacer(ctx, height(40, PIXELS));
+do_separator(ctx);
+do_spacer(ctx, height(40, PIXELS));
 
-    // auto show_text = get_state(ctx, false);
+// {
+//     scoped_grid_layout grid(ctx);
+//     for (int i = 0; i != 4; ++i)
+//     {
+//         {
+//             scoped_grid_row row(ctx, grid);
+//             do_box(
+//                 ctx, SK_ColorMAGENTA, actions::noop(), width(200,
+//                 PIXELS));
+//             do_box(
+//                 ctx, SK_ColorMAGENTA, actions::noop(), width(200,
+//                 PIXELS));
+//         }
+//         {
+//             scoped_grid_row row(ctx, grid);
+//         }
+//     }
+// }
 
-    // {
-    //     scoped_flow_layout row(ctx, UNPADDED | FILL);
-    //     do_box(ctx, SK_ColorLTGRAY, actions::toggle(show_text));
-    //     do_box(ctx, SK_ColorLTGRAY, actions::toggle(show_other_text));
-    //     do_tree_expander(ctx);
-    //     // do_svg_image(ctx);
-    // }
+// for (int i = 0; i != 0; ++i)
+// {
+//     cached_ui_block<column_layout>(ctx, unit_id, default_layout, [&] {
+//         panel p(ctx, direct(pstyle));
+//         // do_text(ctx, value("Lorem ipsum"));
+//         //  column_layout column(ctx);
+//         flow_layout flow(ctx);
+//         for (int j = 0; j != 100; ++j)
+//         {
+//             do_box(ctx, SK_ColorLTGRAY, actions::noop());
+//             do_box(ctx, SK_ColorDKGRAY, actions::noop());
+//             do_box(ctx, SK_ColorMAGENTA, actions::noop());
+//             do_box(ctx, SK_ColorLTGRAY, actions::noop());
+//             do_box(ctx, SK_ColorMAGENTA, actions::noop());
+//             do_box(ctx, SK_ColorRED, actions::noop());
+//             do_box(ctx, SK_ColorBLUE, actions::noop());
+//         }
+//     });
+// }
+// for (int i = 0; i != 0; ++i)
+// {
+//     cached_ui_block<column_layout>(ctx, unit_id, default_layout, [&] {
+//         panel p(ctx, direct(pstyle));
+//         // do_text(ctx, value("Lorem ipsum"));
+//         //  column_layout column(ctx);
+//         flow_layout flow(ctx);
+//         for (int j = 0; j != 100; ++j)
+//         {
+//             do_box(ctx, SK_ColorLTGRAY, actions::noop());
+//             do_box(ctx, SK_ColorDKGRAY, actions::noop());
+//             do_box(ctx, SK_ColorMAGENTA, actions::noop());
+//             do_box(ctx, SK_ColorLTGRAY, actions::noop());
+//             do_box(ctx, SK_ColorMAGENTA, actions::noop());
+//             do_box(ctx, SK_ColorRED, actions::noop());
+//             do_box(ctx, SK_ColorBLUE, actions::noop());
+//         }
+//     });
+// }
+
+// auto show_text = get_state(ctx, false);
+
+// {
+//     scoped_flow_layout row(ctx, UNPADDED | FILL);
+//     do_box(ctx, SK_ColorLTGRAY, actions::toggle(show_text));
+//     do_box(ctx, SK_ColorLTGRAY, actions::toggle(show_other_text));
+//     do_tree_expander(ctx);
+//     // do_svg_image(ctx);
+// }
+
+{
+    auto show_content = get_state(ctx, false);
+    // grid_layout grid(ctx);
 
     {
-        auto show_content = get_state(ctx, false);
-        // grid_layout grid(ctx);
-
-        {
-            row_layout row(ctx);
-            do_node_expander(ctx, show_content);
-            do_text(ctx, value("Some Text"), CENTER_Y);
-        }
-
-        {
-            row_layout row(ctx);
-            do_spacer(ctx, width(40, PIXELS));
-            collapsible_content(ctx, show_content, GROW, [&] {
-                do_wrapped_text(
-                    ctx,
-                    value("Lorem ipsum dolor sit amet, consectetur "
-                          "adipisg elit. "
-                          "Phasellus lacinia elementum diam consequat "
-                          "alicinquet. "
-                          "Vestibulum ut libero justo. Pellentesque lectus "
-                          "lectus, "
-                          "scelerisque a elementum sed, bibendum id libero. "
-                          "Maecenas venenatis est sed sem "
-                          "consequat mollis. Ut "
-                          "nequeodio, hendrerit ut justo venenatis, consequat "
-                          "molestie eros. Nam fermentum, mi malesuada eleifend"
-                          "dapibus, lectus dolor luctus orci, nec posuere lor "
-                          "lorem ac sem. Nullam interdum laoreet ipsum in "
-                          "dictum."));
-            });
-        }
+        row_layout row(ctx);
+        do_node_expander(ctx, show_content);
+        do_text(ctx, value("Some Text"), CENTER_Y);
+        do_text(ctx, value("Some Text"), CENTER_Y);
     }
 
-    // do_wrapped_text(
-    //     ctx,
-    //     value("\xce\xa3\xe1\xbd\xb2\x20\xce\xb3\xce\xbd\xcf\x89\xcf\x81"
-    //           "\xe1\xbd\xb7\xce\xb6\xcf\x89\x20\xe1\xbc\x80\xcf\x80\xe1"
-    //           "\xbd\xb8\x20\xcf\x84\xe1\xbd\xb4\xce\xbd\x20\xce\xba\xe1"
-    //           "\xbd\xb9\xcf\x88\xce\xb7"));
-    // do_wrapped_text(
-    //     ctx,
-    //     value("\x58\x20\x2d\x20\xd9\x82\xd9\x84\xd9\x85\x20\xd8\xb1\xd8"
-    //           "\xb5\xd8\xa7\xd8\xb5\x20\x2d\x20\x59"));
-    // do_wrapped_text(
-    //     ctx,
-    //     value("\xe7\x8e\x8b\xe6\x98\x8e\xef\xbc\x9a\xe8\xbf\x99\xe6\x98"
-    //           "\xaf\xe4\xbb\x80\xe4\xb9\x88\xef\xbc\x9f"));
-
-    // {
-    //     grid_layout grid(ctx);
-    //     for (int i = 0; i != 4; ++i)
-    //     {
-    //         {
-    //             grid_row row(grid);
-    //             do_box(
-    //                 ctx, SK_ColorMAGENTA, actions::noop(), width(200,
-    //                 PIXELS));
-    //             do_box(
-    //                 ctx, SK_ColorMAGENTA, actions::noop(), width(200,
-    //                 PIXELS));
-    //         }
-    //         {
-    //             grid_row row(grid);
-    //             do_box(ctx, SK_ColorLTGRAY, actions::noop());
-    //             do_box(ctx, SK_ColorLTGRAY, actions::noop());
-    //         }
-    //     }
-    // }
-
-    do_spacer(ctx, height(100, PIXELS));
-
-    // do_box(
-    //     ctx,
-    //     SK_ColorRED,
-    //     actions::toggle(get_state(ctx, false)),
-    //     size(400, 400, PIXELS));
-    // do_spacer(ctx, height(100, PIXELS));
-
     {
-        for (int outer = 0; outer != 0; ++outer)
-        {
+        row_layout row(ctx);
+        do_spacer(ctx, width(40, PIXELS));
+        do_spacer(ctx, width(40, PIXELS));
+        collapsible_content(ctx, show_content, GROW, [&] {
             do_wrapped_text(
                 ctx,
-                value(
-                    "Lorem ipsum dolor sit amet, consectetur "
-                    "adipisg elit. "
-                    "Phasellus lacinia elementum diam consequat "
-                    "alicinquet. "
-                    "Vestibulum ut libero justo. Pellentesque lectus "
-                    "lectus, "
-                    "scelerisque a elementum sed, bibendum id libero. "
-                    "Maecenas venenatis est sed sem "
-                    "consequat mollis. Ut "
-                    "nequeodio, hendrerit ut justo venenatis, consequat "
-                    "molestie eros. Nam fermentum, mi malesuada eleifend"
-                    "dapibus, lectus dolor luctus orci, nec posuere lor "
-                    "lorem ac sem. Nullam interdum laoreet ipsum in "
-                    "dictum.\n\n"
-                    "Duis quis blandit felis. Pellentesque et lectus "
-                    "magna. "
-                    "Maecenas dui lacus, sollicitudin a eros in, vehicula "
-                    "posuere metus. Etiam nec dolor mattis, tincidunt sem "
-                    "vitae, maximus tellus. Vestibulum ut nisi nec neque "
-                    "rutrum interdum. In justo massa, consequat quis dui "
-                    "eget, cursus ultricies sem. Quisque a lectus quisest "
-                    "porttitor ullamcorper ac sed odio.\n\n"
-                    "Vestibulum sed turpis et lacus rutrum scelerisqueet "
-                    "sit "
-                    "amet ipsum. Sed congue hendrerit augue, sed "
-                    "pellentesque "
-                    "neque. Integer efficitur nisi idmassa placerat, at "
-                    "ullamcorper arcu fermentum. Donec sed tellus quis "
-                    "velit "
-                    "placerat viverra necvel diam. Vestibulum faucibus "
-                    "molestie ipsum eget rhoncus. Donec vitae bibendum "
-                    "nibh, "
-                    "quis pellentesque enim. Donec eget consectetur "
-                    "massa, "
-                    "eget mollis elit. Orci varius natoque penatibus et"
-                    "magnis dis parturient montes, nascetur ridiculus "
-                    "mus. "
-                    "Donec accumsan, nisi egestas "
-                    "sollicitudinullamcorper, "
-                    "diam dolor faucibus neque, euscelerisque mi erat vel "
-                    "erat. Etiam nec leo acrisus porta ornare ut accumsan "
-                    "lorem.\n\n"
-                    "Aenean at euismod ligula. Sed augue est, imperdietut "
-                    "sem sit amet, efficitur dictum enim. Namsodales id "
-                    "risus non pulvinar. Morbi id mollismassa. Nunc elit "
-                    "velit, pellentesque et lobortisut, luctus sed justo. "
-                    "Morbi eleifend quam velmagna accumsan, eu consequat "
-                    "nisl ultrices.Mauris dictum eu quam sit amet "
-                    "aliquet. "
-                    "Sedrhoncus turpis quis sagittis imperdiet. Lorem "
-                    "ipsum"
-                    "dolor sit amet, consectetur adipiscing elit. "
-                    "Pellentesque convallis suscipit ex et "
-                    "hendrerit.Donec "
-                    "est ex, varius eu nulla id, tristiquelobortis metus. "
-                    "Sed id sem justo. Nulla at portaneque, id elementum "
-                    "lacus.\n\n"
-                    "Mauris leotortor, tincidunt sit amet sem sit amet, "
-                    "egestastempor massa. In diam ipsum, fermentum "
-                    "pulvinar "
-                    "posuere ut, scelerisque sit amet odio. Nam necjusto "
-                    "quis felis ultrices ornare sit amet eumassa. Nam "
-                    "gravida lacus eget tortor porttitor,eget scelerisque "
-                    "est imperdiet. Duis quisimperdiet libero. Nullam "
-                    "justo "
-                    "erat, blandit etnisi sit amet, aliquet mattis leo. "
-                    "Sed "
-                    "a auguenon felis lacinia ultrices. Aenean porttitor "
-                    "bibendum sem, in consectetur arcu suscipit id.Etiam "
-                    "varius dictum gravida. Nulla molestiefermentum odio "
-                    "vitae tincidunt. Quisque dictum,magna vitae "
-                    "porttitor "
-                    "accumsan, felis felisconsectetur nisi, ut venenatis "
-                    "felis justo utante.\n\n"),
-                FILL);
-        }
-
-        // for (int outer = 0; outer != 2; ++outer)
-        // {
-        //     scoped_flow_layout flow(ctx, UNPADDED);
-
-        //     auto my_style = text_style{
-        //         "roboto/Roboto-Regular", 22.f, rgb8(173, 181, 189)};
-
-        //     for (int i = 0; i != 100; ++i)
-        //         do_text(
-        //             ctx,
-        //             direct(my_style),
-        //             alia::printf(
-        //                 ctx,
-        //                 "Revenue today - Könnten Sie mir das
-        //                 übersetzen?", i));
-
-        //     for (int i = 0; i != 100; ++i)
-        //     {
-        //         // if_(ctx, show_text, [&] {
-        //         //     // do_spacer(ctx, size(60, 40, PIXELS));
-        //         //     do_text(ctx, alia::printf(ctx, "text%i", i));
-        //         //     do_text(ctx, value("Könnten Sie mir das
-        //         übersetzen?"));
-        //         // });
-
-        //         {
-        //             scoped_column col(ctx);
-
-        //             do_box(
-        //                 ctx,
-        //                 SK_ColorMAGENTA,
-        //                 actions::noop(),
-        //                 width(100, PIXELS));
-
-        //             // color::yiq<std::uint8_t> y1 =
-        //             // ::color::constant::blue_t{};
-        //             // color::yiq<std::uint8_t> y2 =
-        //             // ::color::constant::red_t{};
-        //             // color::yiq<std::uint8_t> yr =
-        //             // color::operation::mix(
-        //             //     y1,
-        //             //     std::max(
-        //             //         0.0,
-        //             //         std::min(
-        //             //             1.0,
-        //             //             std::fabs(std::sin(
-        //             //                 get_raw_animation_tick_count(ctx)
-        //             //                 / 1000.0)))),
-        //             //     y2);
-        //             // color::rgb<std::uint8_t> r(yr);
-        //             // color::rgb<std::uint8_t> r(y1);
-
-        //             do_box(ctx, SK_ColorLTGRAY, actions::noop());
-        //         }
-
-        //         {
-        //             scoped_column col(ctx);
-
-        //             static SkColor clicky_color = SK_ColorRED;
-        //             // event_handler<mouse_button_event>(
-        //             //     ctx, [&](auto, auto&) { clicky_color =
-        //             //     SK_ColorBLUE; });
-        //             do_box(ctx, clicky_color, actions::noop());
-
-        //             do_box(ctx, SK_ColorLTGRAY, actions::noop());
-
-        //             do_box(ctx, SK_ColorGRAY, actions::noop());
-        //         }
-        //     }
-        //}
+                value("Lorem ipsum dolor sit amet, consectetur "
+                      "adipisg elit. "
+                      "Phasellus lacinia elementum diam consequat "
+                      "alicinquet. "
+                      "Vestibulum ut libero justo. Pellentesque lectus "
+                      "lectus, "
+                      "scelerisque a elementum sed, bibendum id libero. "
+                      "Maecenas venenatis est sed sem "
+                      "consequat mollis. Ut "
+                      "nequeodio, hendrerit ut justo venenatis, consequat "
+                      "molestie eros. Nam fermentum, mi malesuada eleifend"
+                      "dapibus, lectus dolor luctus orci, nec posuere lor "
+                      "lorem ac sem. Nullam interdum laoreet ipsum in "
+                      "dictum."));
+        });
     }
+}
+
+// do_wrapped_text(
+//     ctx,
+//     value("\xce\xa3\xe1\xbd\xb2\x20\xce\xb3\xce\xbd\xcf\x89\xcf\x81"
+//           "\xe1\xbd\xb7\xce\xb6\xcf\x89\x20\xe1\xbc\x80\xcf\x80\xe1"
+//           "\xbd\xb8\x20\xcf\x84\xe1\xbd\xb4\xce\xbd\x20\xce\xba\xe1"
+//           "\xbd\xb9\xcf\x88\xce\xb7"));
+// do_wrapped_text(
+//     ctx,
+//     value("\x58\x20\x2d\x20\xd9\x82\xd9\x84\xd9\x85\x20\xd8\xb1\xd8"
+//           "\xb5\xd8\xa7\xd8\xb5\x20\x2d\x20\x59"));
+// do_wrapped_text(
+//     ctx,
+//     value("\xe7\x8e\x8b\xe6\x98\x8e\xef\xbc\x9a\xe8\xbf\x99\xe6\x98"
+//           "\xaf\xe4\xbb\x80\xe4\xb9\x88\xef\xbc\x9f"));
+
+// {
+//     grid_layout grid(ctx);
+//     for (int i = 0; i != 4; ++i)
+//     {
+//         {
+//             grid_row row(grid);
+//             do_box(
+//                 ctx, SK_ColorMAGENTA, actions::noop(), width(200,
+//                 PIXELS));
+//             do_box(
+//                 ctx, SK_ColorMAGENTA, actions::noop(), width(200,
+//                 PIXELS));
+//         }
+//         {
+//             grid_row row(grid);
+//             do_box(ctx, SK_ColorLTGRAY, actions::noop());
+//             do_box(ctx, SK_ColorLTGRAY, actions::noop());
+//         }
+//     }
+// }
+
+do_spacer(ctx, height(100, PIXELS));
+
+// do_box(
+//     ctx,
+//     SK_ColorRED,
+//     actions::toggle(get_state(ctx, false)),
+//     size(400, 400, PIXELS));
+// do_spacer(ctx, height(100, PIXELS));
+
+{
+    for (int outer = 0; outer != 0; ++outer)
+    {
+        do_wrapped_text(
+            ctx,
+            value(
+                "Lorem ipsum dolor sit amet, consectetur "
+                "adipisg elit. "
+                "Phasellus lacinia elementum diam consequat "
+                "alicinquet. "
+                "Vestibulum ut libero justo. Pellentesque lectus "
+                "lectus, "
+                "scelerisque a elementum sed, bibendum id libero. "
+                "Maecenas venenatis est sed sem "
+                "consequat mollis. Ut "
+                "nequeodio, hendrerit ut justo venenatis, consequat "
+                "molestie eros. Nam fermentum, mi malesuada eleifend"
+                "dapibus, lectus dolor luctus orci, nec posuere lor "
+                "lorem ac sem. Nullam interdum laoreet ipsum in "
+                "dictum.\n\n"
+                "Duis quis blandit felis. Pellentesque et lectus "
+                "magna. "
+                "Maecenas dui lacus, sollicitudin a eros in, vehicula "
+                "posuere metus. Etiam nec dolor mattis, tincidunt sem "
+                "vitae, maximus tellus. Vestibulum ut nisi nec neque "
+                "rutrum interdum. In justo massa, consequat quis dui "
+                "eget, cursus ultricies sem. Quisque a lectus quisest "
+                "porttitor ullamcorper ac sed odio.\n\n"
+                "Vestibulum sed turpis et lacus rutrum scelerisqueet "
+                "sit "
+                "amet ipsum. Sed congue hendrerit augue, sed "
+                "pellentesque "
+                "neque. Integer efficitur nisi idmassa placerat, at "
+                "ullamcorper arcu fermentum. Donec sed tellus quis "
+                "velit "
+                "placerat viverra necvel diam. Vestibulum faucibus "
+                "molestie ipsum eget rhoncus. Donec vitae bibendum "
+                "nibh, "
+                "quis pellentesque enim. Donec eget consectetur "
+                "massa, "
+                "eget mollis elit. Orci varius natoque penatibus et"
+                "magnis dis parturient montes, nascetur ridiculus "
+                "mus. "
+                "Donec accumsan, nisi egestas "
+                "sollicitudinullamcorper, "
+                "diam dolor faucibus neque, euscelerisque mi erat vel "
+                "erat. Etiam nec leo acrisus porta ornare ut accumsan "
+                "lorem.\n\n"
+                "Aenean at euismod ligula. Sed augue est, imperdietut "
+                "sem sit amet, efficitur dictum enim. Namsodales id "
+                "risus non pulvinar. Morbi id mollismassa. Nunc elit "
+                "velit, pellentesque et lobortisut, luctus sed justo. "
+                "Morbi eleifend quam velmagna accumsan, eu consequat "
+                "nisl ultrices.Mauris dictum eu quam sit amet "
+                "aliquet. "
+                "Sedrhoncus turpis quis sagittis imperdiet. Lorem "
+                "ipsum"
+                "dolor sit amet, consectetur adipiscing elit. "
+                "Pellentesque convallis suscipit ex et "
+                "hendrerit.Donec "
+                "est ex, varius eu nulla id, tristiquelobortis metus. "
+                "Sed id sem justo. Nulla at portaneque, id elementum "
+                "lacus.\n\n"
+                "Mauris leotortor, tincidunt sit amet sem sit amet, "
+                "egestastempor massa. In diam ipsum, fermentum "
+                "pulvinar "
+                "posuere ut, scelerisque sit amet odio. Nam necjusto "
+                "quis felis ultrices ornare sit amet eumassa. Nam "
+                "gravida lacus eget tortor porttitor,eget scelerisque "
+                "est imperdiet. Duis quisimperdiet libero. Nullam "
+                "justo "
+                "erat, blandit etnisi sit amet, aliquet mattis leo. "
+                "Sed "
+                "a auguenon felis lacinia ultrices. Aenean porttitor "
+                "bibendum sem, in consectetur arcu suscipit id.Etiam "
+                "varius dictum gravida. Nulla molestiefermentum odio "
+                "vitae tincidunt. Quisque dictum,magna vitae "
+                "porttitor "
+                "accumsan, felis felisconsectetur nisi, ut venenatis "
+                "felis justo utante.\n\n"),
+            value(
+                "Lorem ipsum dolor sit amet, consectetur "
+                "adipisg elit. "
+                "Phasellus lacinia elementum diam consequat "
+                "alicinquet. "
+                "Vestibulum ut libero justo. Pellentesque lectus "
+                "lectus, "
+                "scelerisque a elementum sed, bibendum id libero. "
+                "Maecenas venenatis est sed sem "
+                "consequat mollis. Ut "
+                "nequeodio, hendrerit ut justo venenatis, consequat "
+                "molestie eros. Nam fermentum, mi malesuada eleifend"
+                "dapibus, lectus dolor luctus orci, nec posuere lor "
+                "lorem ac sem. Nullam interdum laoreet ipsum in "
+                "dictum.\n\n"
+                "Duis quis blandit felis. Pellentesque et lectus "
+                "magna. "
+                "Maecenas dui lacus, sollicitudin a eros in, vehicula "
+                "posuere metus. Etiam nec dolor mattis, tincidunt sem "
+                "vitae, maximus tellus. Vestibulum ut nisi nec neque "
+                "rutrum interdum. In justo massa, consequat quis dui "
+                "eget, cursus ultricies sem. Quisque a lectus quisest "
+                "porttitor ullamcorper ac sed odio.\n\n"
+                "Vestibulum sed turpis et lacus rutrum scelerisqueet "
+                "sit "
+                "amet ipsum. Sed congue hendrerit augue, sed "
+                "pellentesque "
+                "neque. Integer efficitur nisi idmassa placerat, at "
+                "ullamcorper arcu fermentum. Donec sed tellus quis "
+                "velit "
+                "placerat viverra necvel diam. Vestibulum faucibus "
+                "molestie ipsum eget rhoncus. Donec vitae bibendum "
+                "nibh, "
+                "quis pellentesque enim. Donec eget consectetur "
+                "massa, "
+                "eget mollis elit. Orci varius natoque penatibus et"
+                "magnis dis parturient montes, nascetur ridiculus "
+                "mus. "
+                "Donec accumsan, nisi egestas "
+                "sollicitudinullamcorper, "
+                "diam dolor faucibus neque, euscelerisque mi erat vel "
+                "erat. Etiam nec leo acrisus porta ornare ut accumsan "
+                "lorem.\n\n"
+                "Aenean at euismod ligula. Sed augue est, imperdietut "
+                "sem sit amet, efficitur dictum enim. Namsodales id "
+                "risus non pulvinar. Morbi id mollismassa. Nunc elit "
+                "velit, pellentesque et lobortisut, luctus sed justo. "
+                "Morbi eleifend quam velmagna accumsan, eu consequat "
+                "nisl ultrices.Mauris dictum eu quam sit amet "
+                "aliquet. "
+                "Sedrhoncus turpis quis sagittis imperdiet. Lorem "
+                "ipsum"
+                "dolor sit amet, consectetur adipiscing elit. "
+                "Pellentesque convallis suscipit ex et "
+                "hendrerit.Donec "
+                "est ex, varius eu nulla id, tristiquelobortis metus. "
+                "Sed id sem justo. Nulla at portaneque, id elementum "
+                "lacus.\n\n"
+                "Mauris leotortor, tincidunt sit amet sem sit amet, "
+                "egestastempor massa. In diam ipsum, fermentum "
+                "pulvinar "
+                "posuere ut, scelerisque sit amet odio. Nam necjusto "
+                "quis felis ultrices ornare sit amet eumassa. Nam "
+                "gravida lacus eget tortor porttitor,eget scelerisque "
+                "est imperdiet. Duis quisimperdiet libero. Nullam "
+                "justo "
+                "erat, blandit etnisi sit amet, aliquet mattis leo. "
+                "Sed "
+                "a auguenon felis lacinia ultrices. Aenean porttitor "
+                "bibendum sem, in consectetur arcu suscipit id.Etiam "
+                "varius dictum gravida. Nulla molestiefermentum odio "
+                "vitae tincidunt. Quisque dictum,magna vitae "
+                "porttitor "
+                "accumsan, felis felisconsectetur nisi, ut venenatis "
+                "felis justo utante.\n\n"),
+            FILL);
+    }
+
+    // for (int outer = 0; outer != 2; ++outer)
+    // {
+    //     scoped_flow_layout flow(ctx, UNPADDED);
+
+    //     auto my_style = text_style{
+    //         "roboto/Roboto-Regular", 22.f, rgb8(173, 181, 189)};
+
+    //     for (int i = 0; i != 100; ++i)
+    //         do_text(
+    //             ctx,
+    //             direct(my_style),
+    //             alia::printf(
+    //                 ctx,
+    //                 "Revenue today - Könnten Sie mir das
+    //                 übersetzen?", i));
+
+    //     for (int i = 0; i != 100; ++i)
+    //     {
+    //         // if_(ctx, show_text, [&] {
+    //         //     // do_spacer(ctx, size(60, 40, PIXELS));
+    //         //     do_text(ctx, alia::printf(ctx, "text%i", i));
+    //         //     do_text(ctx, value("Könnten Sie mir das
+    //         übersetzen?"));
+    //         // });
+
+    //         {
+    //             scoped_column col(ctx);
+
+    //             do_box(
+    //                 ctx,
+    //                 SK_ColorMAGENTA,
+    //                 actions::noop(),
+    //                 width(100, PIXELS));
+
+    //             // color::yiq<std::uint8_t> y1 =
+    //             // ::color::constant::blue_t{};
+    //             // color::yiq<std::uint8_t> y2 =
+    //             // ::color::constant::red_t{};
+    //             // color::yiq<std::uint8_t> yr =
+    //             // color::operation::mix(
+    //             //     y1,
+    //             //     std::max(
+    //             //         0.0,
+    //             //         std::min(
+    //             //             1.0,
+    //             //             std::fabs(std::sin(
+    //             //                 get_raw_animation_tick_count(ctx)
+    //             //                 / 1000.0)))),
+    //             //     y2);
+    //             // color::rgb<std::uint8_t> r(yr);
+    //             // color::rgb<std::uint8_t> r(y1);
+
+    //             do_box(ctx, SK_ColorLTGRAY, actions::noop());
+    //         }
+
+    //         {
+    //             scoped_column col(ctx);
+
+    //             static SkColor clicky_color = SK_ColorRED;
+    //             // event_handler<mouse_button_event>(
+    //             //     ctx, [&](auto, auto&) { clicky_color =
+    //             //     SK_ColorBLUE; });
+    //             do_box(ctx, clicky_color, actions::noop());
+
+    //             do_box(ctx, SK_ColorLTGRAY, actions::noop());
+
+    //             do_box(ctx, SK_ColorGRAY, actions::noop());
+    //         }
+    //     }
+    //}
+}
 }
