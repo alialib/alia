@@ -19,6 +19,12 @@
 
 namespace alia {
 
+struct slider_style_info
+{
+    rgb8 highlight_color;
+    rgb8 disabled_color;
+};
+
 constexpr layout_scalar thumb_radius = 16;
 constexpr layout_scalar track_width = 6;
 

@@ -31,6 +31,218 @@ struct switch_data
     layout_leaf layout_node;
 };
 
+struct switch_style_info
+{
+    // track color when switch is disabled
+    rgb8 disabled_track_color;
+    // dot color when switch is disabled
+    rgb8 disabled_dot_color;
+    // track color when switch is off
+    rgb8 off_track_color;
+    // track color when switch is on
+    rgb8 on_track_color;
+    // dot color when switch is off
+    rgb8 off_dot_color;
+    // dot color when switch is on
+    rgb8 on_dot_color;
+    // color of dot shadow
+    rgb8 shadow_color;
+    // color of hover/press highlight
+    rgb8 highlight_color;
+};
+
+switch_style_info
+extract_switch_style_info(dataless_ui_context ctx)
+{
+    auto const& theme = get_system(ctx).theme;
+    return {
+        .disabled_track_color
+        = interpolate(theme.surface, theme.secondary_container, 0.6f),
+        .disabled_dot_color
+        = interpolate(theme.surface, theme.on_surface, 0.5f),
+        .off_track_color = theme.secondary_container,
+        .on_track_color = theme.secondary_container,
+        .off_dot_color = theme.on_surface_variant,
+        .on_dot_color = theme.primary,
+        .shadow_color = theme.shadow,
+        .highlight_color = theme.primary,
+    };
+}
+
+void
+render_switch(
+    dataless_ui_context ctx,
+    switch_data& data,
+    bool state,
+    widget_state interaction_status,
+    switch_style_info const& style)
+{
+    auto& event = cast_event<render_event>(ctx);
+
+    SkCanvas& canvas = *event.canvas;
+
+    auto const& region = data.layout_node.assignment().region;
+
+    SkRect rect;
+    rect.fLeft = SkScalar(region.corner[0]);
+    rect.fTop = SkScalar(region.corner[1]);
+    rect.fRight = SkScalar(region.corner[0] + region.size[0]);
+    rect.fBottom = SkScalar(region.corner[1] + region.size[1]);
+
+    if (event.canvas->quickReject(rect))
+        return;
+
+    if ((interaction_status & WIDGET_PRIMARY_STATE_MASK) == WIDGET_DISABLED)
+    {
+        {
+            SkPaint paint;
+            paint.setAntiAlias(true);
+            paint.setColor(
+                as_skcolor(rgba8(style.disabled_track_color, 0x60)));
+            paint.setStyle(SkPaint::kStroke_Style);
+            paint.setStrokeCap(SkPaint::kRound_Cap);
+            paint.setStrokeWidth(16);
+            canvas.drawPath(
+                SkPath::Line(
+                    SkPoint::Make(
+                        region.corner[0] + region.size[0] * 0.25f,
+                        get_center(region)[1]),
+                    SkPoint::Make(
+                        region.corner[0] + region.size[0] * 0.75f,
+                        get_center(region)[1])),
+                paint);
+        }
+
+        {
+            float const dot_x_offset
+                = condition_is_true(state) ? 0.75f : 0.25f;
+
+            float dot_radius = condition_is_true(state) ? 16.f : 14.f;
+
+            SkPaint paint;
+            paint.setAntiAlias(true);
+            paint.setColor(as_skcolor(rgba8(style.disabled_dot_color, 0x60)));
+            canvas.drawPath(
+                SkPath::Circle(
+                    region.corner[0] + region.size[0] * dot_x_offset,
+                    get_center(region)[1],
+                    dot_radius),
+                paint);
+        }
+
+        return;
+    }
+
+    float switch_position = smooth_between_values(
+        ctx,
+        ALIA_BITREF(data.bits, state_smoothing),
+        condition_is_true(state),
+        1.f,
+        0.f,
+        animated_transition{default_curve, 200});
+
+    float dot_radius = interpolate(14.f, 16.f, switch_position);
+
+    float const dot_x_offset = interpolate(0.25f, 0.75f, switch_position);
+
+    rgb8 const dot_color = interpolate(
+        style.off_dot_color, style.on_dot_color, switch_position);
+
+    rgb8 const track_color = interpolate(
+        style.off_track_color, style.on_track_color, switch_position);
+
+    {
+        SkPaint paint;
+        paint.setAntiAlias(true);
+        paint.setColor(
+            SkColorSetARGB(0xff, track_color.r, track_color.g, track_color.b));
+        paint.setStyle(SkPaint::kStroke_Style);
+        paint.setStrokeCap(SkPaint::kRound_Cap);
+        paint.setStrokeWidth(16);
+        canvas.drawPath(
+            SkPath::Line(
+                SkPoint::Make(
+                    region.corner[0] + region.size[0] * 0.25f,
+                    get_center(region)[1]),
+                SkPoint::Make(
+                    region.corner[0] + region.size[0] * 0.75f,
+                    get_center(region)[1])),
+            paint);
+    }
+
+    {
+        const SkScalar blurSigma = 3.0f;
+        const SkScalar xDrop = 2.0f;
+        const SkScalar yDrop = 2.0f;
+
+        SkPaint paint;
+        paint.setAntiAlias(true);
+        paint.setColor(SkColorSetARGB(
+            0x40,
+            style.shadow_color.r,
+            style.shadow_color.g,
+            style.shadow_color.b));
+        paint.setMaskFilter(
+            SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, blurSigma, false));
+
+        canvas.drawPath(
+            SkPath::Circle(
+                region.corner[0] + region.size[0] * dot_x_offset + xDrop,
+                get_center(region)[1] + yDrop,
+                dot_radius),
+            paint);
+    }
+
+    {
+        SkPaint paint;
+        paint.setAntiAlias(true);
+        paint.setColor(
+            SkColorSetARGB(0xff, dot_color.r, dot_color.g, dot_color.b));
+        canvas.drawPath(
+            SkPath::Circle(
+                region.corner[0] + region.size[0] * dot_x_offset,
+                get_center(region)[1],
+                dot_radius),
+            paint);
+    }
+
+    uint8_t highlight = 0;
+    if ((interaction_status & WIDGET_PRIMARY_STATE_MASK) == WIDGET_DEPRESSED)
+    {
+        highlight = 0x40;
+    }
+    else if ((interaction_status & WIDGET_PRIMARY_STATE_MASK) == WIDGET_HOT)
+    {
+        highlight = 0x40;
+    }
+    if (highlight != 0)
+    {
+        SkPaint paint;
+        paint.setAntiAlias(true);
+        paint.setColor(SkColorSetARGB(
+            highlight,
+            style.highlight_color.r,
+            style.highlight_color.g,
+            style.highlight_color.b));
+        canvas.drawPath(
+            SkPath::Circle(
+                region.corner[0] + region.size[0] * dot_x_offset,
+                get_center(region)[1],
+                24),
+            paint);
+    }
+
+    render_click_flares(
+        ctx,
+        ALIA_NESTED_BITPACK(data.bits, click_flare),
+        interaction_status,
+        make_vector(
+            region.corner[0] + region.size[0] * dot_x_offset,
+            get_center(region)[1]),
+        dot_color,
+        24);
+}
+
 void
 do_switch(ui_context ctx, duplex<bool> state, layout const& layout_spec)
 {
@@ -82,140 +294,6 @@ do_switch(ui_context ctx, duplex<bool> state, layout const& layout_spec)
             break;
 
         case RENDER_CATEGORY: {
-            auto& event = cast_event<render_event>(ctx);
-
-            SkCanvas& canvas = *event.canvas;
-
-            auto const& region = data.layout_node.assignment().region;
-
-            SkRect rect;
-            rect.fLeft = SkScalar(region.corner[0]);
-            rect.fTop = SkScalar(region.corner[1]);
-            rect.fRight = SkScalar(region.corner[0] + region.size[0]);
-            rect.fBottom = SkScalar(region.corner[1] + region.size[1]);
-
-            if (event.canvas->quickReject(rect))
-                break;
-
-            if (is_disabled)
-            {
-                {
-                    SkPaint paint;
-                    paint.setAntiAlias(true);
-                    paint.setColor(as_skcolor(rgba8(
-                        get_system(ctx).theme.secondary_container, 0x60)));
-                    paint.setStyle(SkPaint::kStroke_Style);
-                    paint.setStrokeCap(SkPaint::kRound_Cap);
-                    paint.setStrokeWidth(16);
-                    canvas.drawPath(
-                        SkPath::Line(
-                            SkPoint::Make(
-                                region.corner[0] + region.size[0] * 0.25f,
-                                get_center(region)[1]),
-                            SkPoint::Make(
-                                region.corner[0] + region.size[0] * 0.75f,
-                                get_center(region)[1])),
-                        paint);
-                }
-
-                {
-                    float const dot_x_offset
-                        = condition_is_true(state) ? 0.75f : 0.25f;
-
-                    float dot_radius = condition_is_true(state) ? 16.f : 14.f;
-
-                    auto const color
-                        = rgba8(get_system(ctx).theme.on_surface, 0x60);
-                    SkPaint paint;
-                    paint.setAntiAlias(true);
-                    paint.setColor(as_skcolor(color));
-                    canvas.drawPath(
-                        SkPath::Circle(
-                            region.corner[0] + region.size[0] * dot_x_offset,
-                            get_center(region)[1],
-                            dot_radius),
-                        paint);
-                }
-
-                break;
-            }
-
-            float switch_position = smooth_between_values(
-                ctx,
-                ALIA_BITREF(data.bits, state_smoothing),
-                condition_is_true(state),
-                1.f,
-                0.f,
-                animated_transition{default_curve, 200});
-
-            float dot_radius = interpolate(14.f, 16.f, switch_position);
-
-            float const dot_x_offset
-                = interpolate(0.25f, 0.75f, switch_position);
-
-            rgb8 const color = interpolate(
-                get_system(ctx).theme.on_surface_variant,
-                get_system(ctx).theme.primary,
-                switch_position);
-
-            rgb8 const track_color = interpolate(
-                get_system(ctx).theme.secondary_container,
-                get_system(ctx).theme.secondary_container,
-                switch_position);
-
-            {
-                SkPaint paint;
-                paint.setAntiAlias(true);
-                paint.setColor(SkColorSetARGB(
-                    0xff, track_color.r, track_color.g, track_color.b));
-                paint.setStyle(SkPaint::kStroke_Style);
-                paint.setStrokeCap(SkPaint::kRound_Cap);
-                paint.setStrokeWidth(16);
-                canvas.drawPath(
-                    SkPath::Line(
-                        SkPoint::Make(
-                            region.corner[0] + region.size[0] * 0.25f,
-                            get_center(region)[1]),
-                        SkPoint::Make(
-                            region.corner[0] + region.size[0] * 0.75f,
-                            get_center(region)[1])),
-                    paint);
-            }
-
-            {
-                const SkScalar blurSigma = 3.0f;
-                const SkScalar xDrop = 2.0f;
-                const SkScalar yDrop = 2.0f;
-
-                SkPaint paint;
-                paint.setAntiAlias(true);
-                paint.setColor(
-                    SkColorSetARGB(0x40, color.r, color.g, color.b));
-                paint.setMaskFilter(SkMaskFilter::MakeBlur(
-                    kNormal_SkBlurStyle, blurSigma, false));
-
-                canvas.drawPath(
-                    SkPath::Circle(
-                        region.corner[0] + region.size[0] * dot_x_offset
-                            + xDrop,
-                        get_center(region)[1] + yDrop,
-                        dot_radius),
-                    paint);
-            }
-
-            {
-                SkPaint paint;
-                paint.setAntiAlias(true);
-                paint.setColor(
-                    SkColorSetARGB(0xff, color.r, color.g, color.b));
-                canvas.drawPath(
-                    SkPath::Circle(
-                        region.corner[0] + region.size[0] * dot_x_offset,
-                        get_center(region)[1],
-                        dot_radius),
-                    paint);
-            }
-
             auto interaction_status = get_widget_state(
                 ctx,
                 id,
@@ -223,40 +301,13 @@ do_switch(ui_context ctx, duplex<bool> state, layout const& layout_spec)
                     | (is_pressed(data.keyboard_click_state_)
                            ? WIDGET_DEPRESSED
                            : NO_FLAGS));
-
-            uint8_t highlight = 0;
-            if (is_click_in_progress(ctx, id, mouse_button::LEFT)
-                || is_pressed(data.keyboard_click_state_))
-            {
-                highlight = 0x40;
-            }
-            else if (is_click_possible(ctx, id))
-            {
-                highlight = 0x40;
-            }
-            if (highlight != 0)
-            {
-                SkPaint paint;
-                paint.setAntiAlias(true);
-                paint.setColor(
-                    SkColorSetARGB(highlight, color.r, color.g, color.b));
-                canvas.drawPath(
-                    SkPath::Circle(
-                        region.corner[0] + region.size[0] * dot_x_offset,
-                        get_center(region)[1],
-                        24),
-                    paint);
-            }
-
-            render_click_flares(
+            auto style = extract_switch_style_info(ctx);
+            render_switch(
                 ctx,
-                ALIA_NESTED_BITPACK(data.bits, click_flare),
+                data,
+                condition_is_true(state),
                 interaction_status,
-                make_vector(
-                    region.corner[0] + region.size[0] * dot_x_offset,
-                    get_center(region)[1]),
-                color,
-                24);
+                style);
         }
     }
     alia_end

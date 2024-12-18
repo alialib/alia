@@ -87,7 +87,7 @@ render_click_flares(
                 SkPath::Circle(position[0], position[1], radius), paint);
         });
 
-    if ((state & WIDGET_PRIMARY_STATE_MASK) == WIDGET_DEPRESSED)
+    if (is_depressed(state))
     {
         millisecond_count click_duration = get_click_duration(
             ctx, mouse_button::LEFT, click_accumulation_time);
