@@ -31,12 +31,34 @@ struct radio_button_data
     layout_leaf layout_node;
 };
 
+struct radio_button_style_info
+{
+    rgb8 disabled_color;
+    rgb8 highlight_color;
+    rgb8 outline_color;
+    rgb8 selected_dot_color;
+    rgb8 unselected_dot_color;
+};
+
+radio_button_style_info
+extract_radio_button_style_info(dataless_ui_context ctx)
+{
+    auto const& theme = get_system(ctx).theme;
+    return {
+        .disabled_color = interpolate(theme.surface, theme.on_surface, 0.6f),
+        .highlight_color = theme.primary,
+        .outline_color = theme.on_surface,
+        .selected_dot_color = theme.primary,
+        .unselected_dot_color = theme.on_surface};
+}
+
 void
 render_radio_button(
     dataless_ui_context ctx,
     radio_button_data& data,
     bool selected,
-    widget_state state)
+    widget_state state,
+    radio_button_style_info const& style)
 {
     auto& event = cast_event<render_event>(ctx);
     SkCanvas& canvas = *event.canvas;
@@ -54,14 +76,13 @@ render_radio_button(
 
     auto center = get_center(region);
 
-    if ((state & WIDGET_PRIMARY_STATE_MASK) == WIDGET_DISABLED)
+    if (is_disabled(state))
     {
         {
             SkPaint paint;
             paint.setAntiAlias(true);
             paint.setStyle(SkPaint::kStroke_Style);
-            paint.setColor(
-                as_skcolor(rgba8(get_system(ctx).theme.on_surface, 0x60)));
+            paint.setColor(as_skcolor(style.disabled_color));
             paint.setStrokeWidth(3);
             canvas.drawPath(SkPath::Circle(center[0], center[1], 15.f), paint);
         }
@@ -70,8 +91,7 @@ render_radio_button(
         {
             SkPaint paint;
             paint.setAntiAlias(true);
-            paint.setColor(
-                as_skcolor(rgba8(get_system(ctx).theme.on_surface, 0x60)));
+            paint.setColor(as_skcolor(style.disabled_color));
             paint.setStrokeWidth(3);
             canvas.drawPath(SkPath::Circle(center[0], center[1], 10), paint);
         }
@@ -79,13 +99,11 @@ render_radio_button(
         return;
     }
 
-    if ((state & WIDGET_PRIMARY_STATE_MASK) == WIDGET_HOT
-        || (state & WIDGET_PRIMARY_STATE_MASK) == WIDGET_DEPRESSED)
+    if (is_depressed(state) || is_hot(state))
     {
         SkPaint paint;
         paint.setAntiAlias(true);
-        paint.setColor(
-            as_skcolor(rgba8(get_system(ctx).theme.on_surface, 0x20)));
+        paint.setColor(as_skcolor(rgba8(style.highlight_color, 0x20)));
         canvas.drawPath(SkPath::Circle(center[0], center[1], 32.f), paint);
     }
 
@@ -98,9 +116,7 @@ render_radio_button(
         animated_transition{default_curve, 200});
 
     rgb8 color = interpolate(
-        get_system(ctx).theme.on_surface,
-        get_system(ctx).theme.primary,
-        smoothed_state);
+        style.unselected_dot_color, style.selected_dot_color, smoothed_state);
 
     render_click_flares(
         ctx,
@@ -113,7 +129,7 @@ render_radio_button(
         SkPaint paint;
         paint.setAntiAlias(true);
         paint.setStyle(SkPaint::kStroke_Style);
-        paint.setColor(as_skcolor(get_system(ctx).theme.on_surface));
+        paint.setColor(as_skcolor(style.outline_color));
         paint.setStrokeWidth(3);
         canvas.drawPath(SkPath::Circle(center[0], center[1], 15.f), paint);
     }
@@ -122,7 +138,7 @@ render_radio_button(
 
     SkPaint paint;
     paint.setAntiAlias(true);
-    paint.setColor(as_skcolor(get_system(ctx).theme.primary));
+    paint.setColor(as_skcolor(color));
     paint.setStrokeWidth(3);
     canvas.drawPath(SkPath::Circle(center[0], center[1], dot_radius), paint);
 }
@@ -188,7 +204,9 @@ do_radio_button(
                     | (is_pressed(data.keyboard_click_state_)
                            ? WIDGET_DEPRESSED
                            : NO_FLAGS));
-            render_radio_button(ctx, data, condition_is_true(selected), state);
+            auto style = extract_radio_button_style_info(ctx);
+            render_radio_button(
+                ctx, data, condition_is_true(selected), state, style);
             break;
         }
     }

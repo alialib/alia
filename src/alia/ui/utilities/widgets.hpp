@@ -16,10 +16,27 @@ ALIA_DEFINE_FLAG(widget_state, 0x01, WIDGET_NORMAL)
 ALIA_DEFINE_FLAG(widget_state, 0x02, WIDGET_DISABLED)
 ALIA_DEFINE_FLAG(widget_state, 0x03, WIDGET_HOT)
 ALIA_DEFINE_FLAG(widget_state, 0x04, WIDGET_DEPRESSED)
-ALIA_DEFINE_FLAG(widget_state, 0x05, WIDGET_SELECTED)
 ALIA_DEFINE_FLAG(widget_state, 0x0f, WIDGET_PRIMARY_STATE_MASK)
 // additional (independent) states
 ALIA_DEFINE_FLAG(widget_state, 0x10, WIDGET_FOCUSED)
+
+inline bool
+is_disabled(widget_state state)
+{
+    return (state & WIDGET_PRIMARY_STATE_MASK) == WIDGET_DISABLED;
+}
+
+inline bool
+is_hot(widget_state state)
+{
+    return (state & WIDGET_PRIMARY_STATE_MASK) == WIDGET_HOT;
+}
+
+inline bool
+is_depressed(widget_state state)
+{
+    return (state & WIDGET_PRIMARY_STATE_MASK) == WIDGET_DEPRESSED;
+}
 
 // Get the state of a widget by detecting if it has the focus or is being
 // interacted with via the mouse.

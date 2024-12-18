@@ -20,12 +20,7 @@ get_widget_state(dataless_ui_context ctx, widget_id id, widget_state overrides)
     widget_state state;
     if (!(overrides & WIDGET_DISABLED))
     {
-        if (overrides & WIDGET_SELECTED)
-        {
-            state = WIDGET_SELECTED;
-        }
-        else if (
-            is_click_in_progress(ctx, id, mouse_button::LEFT)
+        if (is_click_in_progress(ctx, id, mouse_button::LEFT)
             || (overrides & WIDGET_DEPRESSED))
         {
             state = WIDGET_DEPRESSED;
@@ -45,7 +40,9 @@ get_widget_state(dataless_ui_context ctx, widget_id id, widget_state overrides)
         }
     }
     else
+    {
         state = WIDGET_DISABLED;
+    }
     return state;
 }
 

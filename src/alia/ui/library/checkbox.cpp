@@ -30,6 +30,187 @@ struct checkbox_data
     layout_leaf layout_node;
 };
 
+struct checkbox_style_info
+{
+    rgb8 highlight_color;
+    rgb8 disabled_fill_color;
+    rgb8 disabled_check_color;
+    rgb8 disabled_outline_color;
+    rgb8 outline_color;
+    rgb8 checked_fill_color;
+    rgb8 check_color;
+};
+
+checkbox_style_info
+extract_checkbox_style_info(dataless_ui_context ctx)
+{
+    auto const& theme = get_system(ctx).theme;
+    return {
+        .highlight_color = theme.primary,
+        .disabled_fill_color
+        = interpolate(theme.surface, theme.on_surface, 0.6f),
+        .disabled_check_color = theme.surface,
+        .disabled_outline_color
+        = interpolate(theme.surface, theme.on_surface, 0.6f),
+        .outline_color = theme.on_surface,
+        .checked_fill_color = theme.primary,
+        .check_color = theme.on_primary,
+    };
+}
+
+void
+render_checkbox(
+    dataless_ui_context ctx,
+    checkbox_data& data,
+    bool checked,
+    widget_state state,
+    checkbox_style_info const& style)
+{
+    auto& event = cast_event<render_event>(ctx);
+
+    SkCanvas& canvas = *event.canvas;
+
+    auto const& region = data.layout_node.assignment().region;
+
+    SkRect rect = as_skrect(region);
+
+    if (event.canvas->quickReject(rect))
+        return;
+
+    if (is_disabled(state))
+    {
+        float const padding = 11.f;
+        auto checkbox_rect = remove_border(
+            region,
+            box_border_width<float>{padding, padding, padding, padding});
+
+        if (condition_is_true(checked))
+        {
+            {
+                SkPaint paint;
+                paint.setAntiAlias(true);
+                paint.setStyle(SkPaint::kStrokeAndFill_Style);
+                paint.setColor(as_skcolor(style.disabled_fill_color));
+                paint.setStrokeWidth(4);
+                canvas.drawPath(
+                    SkPath::RRect(as_skrect(checkbox_rect), 2, 2), paint);
+            }
+            {
+                SkPaint paint;
+                paint.setAntiAlias(true);
+                paint.setStyle(SkPaint::kStroke_Style);
+                paint.setColor(as_skcolor(style.disabled_check_color));
+                paint.setStrokeWidth(4);
+                paint.setStrokeCap(SkPaint::kSquare_Cap);
+                SkPath path;
+                path.incReserve(3);
+                SkPoint p0;
+                p0.fX = checkbox_rect.corner[0] + checkbox_rect.size[0] * 0.2f;
+                p0.fY = checkbox_rect.corner[1] + checkbox_rect.size[1] * 0.5f;
+                path.moveTo(p0);
+                SkPoint p1;
+                p1.fX = checkbox_rect.corner[0] + checkbox_rect.size[0] * 0.4f;
+                p1.fY = checkbox_rect.corner[1] + checkbox_rect.size[1] * 0.7f;
+                path.lineTo(p1);
+                SkPoint p2;
+                p2.fX = checkbox_rect.corner[0] + checkbox_rect.size[0] * 0.8f;
+                p2.fY = checkbox_rect.corner[1] + checkbox_rect.size[1] * 0.3f;
+                path.lineTo(p2);
+                canvas.drawPath(path, paint);
+            }
+        }
+        else
+        {
+            SkPaint paint;
+            paint.setAntiAlias(true);
+            paint.setStyle(SkPaint::kStroke_Style);
+            paint.setColor(as_skcolor(style.disabled_outline_color));
+            paint.setStrokeWidth(4);
+            canvas.drawPath(
+                SkPath::RRect(as_skrect(checkbox_rect), 2, 2), paint);
+        }
+
+        return;
+    }
+
+    auto center = get_center(region);
+
+    float smoothed_state = smooth_between_values(
+        ctx,
+        ALIA_BITREF(data.bits, state_smoothing),
+        condition_is_true(checked),
+        1.f,
+        0.f,
+        animated_transition{default_curve, 200});
+
+    if (is_depressed(state) || is_hot(state))
+    {
+        SkPaint paint;
+        paint.setAntiAlias(true);
+        paint.setColor(as_skcolor(rgba8(style.highlight_color, 0x20)));
+        canvas.drawPath(SkPath::Circle(center[0], center[1], 32.f), paint);
+    }
+
+    float const padding = 11.f;
+    auto checkbox_rect = remove_border(
+        region, box_border_width<float>{padding, padding, padding, padding});
+
+    if (condition_is_true(checked))
+    {
+        {
+            SkPaint paint;
+            paint.setAntiAlias(true);
+            paint.setStyle(SkPaint::kStrokeAndFill_Style);
+            paint.setColor(as_skcolor(style.checked_fill_color));
+            paint.setStrokeWidth(4);
+            canvas.drawPath(
+                SkPath::RRect(as_skrect(checkbox_rect), 2, 2), paint);
+        }
+        {
+            SkPaint paint;
+            paint.setAntiAlias(true);
+            paint.setStyle(SkPaint::kStroke_Style);
+            paint.setColor(as_skcolor(style.check_color));
+            paint.setStrokeWidth(4);
+            paint.setStrokeCap(SkPaint::kSquare_Cap);
+            SkPath path;
+            path.incReserve(3);
+            SkPoint p0;
+            p0.fX = checkbox_rect.corner[0] + checkbox_rect.size[0] * 0.2f;
+            p0.fY = checkbox_rect.corner[1] + checkbox_rect.size[1] * 0.5f;
+            path.moveTo(p0);
+            SkPoint p1;
+            p1.fX = checkbox_rect.corner[0] + checkbox_rect.size[0] * 0.4f;
+            p1.fY = checkbox_rect.corner[1] + checkbox_rect.size[1] * 0.7f;
+            path.lineTo(p1);
+            SkPoint p2;
+            p2.fX = checkbox_rect.corner[0] + checkbox_rect.size[0] * 0.8f;
+            p2.fY = checkbox_rect.corner[1] + checkbox_rect.size[1] * 0.3f;
+            path.lineTo(p2);
+            canvas.drawPath(path, paint);
+        }
+    }
+    else
+    {
+        SkPaint paint;
+        paint.setAntiAlias(true);
+        paint.setStyle(SkPaint::kStroke_Style);
+        paint.setColor(as_skcolor(style.outline_color));
+        paint.setStrokeWidth(4);
+        canvas.drawPath(SkPath::RRect(as_skrect(checkbox_rect), 2, 2), paint);
+    }
+
+    rgb8 color = interpolate(
+        style.outline_color, style.checked_fill_color, smoothed_state);
+
+    render_click_flares(
+        ctx,
+        ALIA_NESTED_BITPACK(data.bits, click_flare),
+        state,
+        center,
+        color);
+}
+
 void
 do_checkbox(ui_context ctx, duplex<bool> checked, layout const& layout_spec)
 {
@@ -82,191 +263,20 @@ do_checkbox(ui_context ctx, duplex<bool> checked, layout const& layout_spec)
             break;
 
         case RENDER_CATEGORY: {
-            auto& event = cast_event<render_event>(ctx);
-
-            SkCanvas& canvas = *event.canvas;
-
-            auto const& region = data.layout_node.assignment().region;
-
-            SkRect rect = as_skrect(region);
-
-            if (event.canvas->quickReject(rect))
-                break;
-
-            if (is_disabled)
-            {
-                float const padding = 11.f;
-                auto checkbox_rect = remove_border(
-                    region,
-                    box_border_width<float>{
-                        padding, padding, padding, padding});
-
-                if (condition_is_true(checked))
-                {
-                    {
-                        SkPaint paint;
-                        paint.setAntiAlias(true);
-                        paint.setStyle(SkPaint::kStrokeAndFill_Style);
-                        paint.setColor(as_skcolor(
-                            rgba8(get_system(ctx).theme.on_surface, 0x60)));
-                        paint.setStrokeWidth(4);
-                        canvas.drawPath(
-                            SkPath::RRect(as_skrect(checkbox_rect), 2, 2),
-                            paint);
-                    }
-                    {
-                        SkPaint paint;
-                        paint.setAntiAlias(true);
-                        paint.setStyle(SkPaint::kStroke_Style);
-                        paint.setColor(
-                            as_skcolor(get_system(ctx).theme.surface));
-                        paint.setStrokeWidth(4);
-                        paint.setStrokeCap(SkPaint::kSquare_Cap);
-                        SkPath path;
-                        path.incReserve(3);
-                        SkPoint p0;
-                        p0.fX = checkbox_rect.corner[0]
-                              + checkbox_rect.size[0] * 0.2f;
-                        p0.fY = checkbox_rect.corner[1]
-                              + checkbox_rect.size[1] * 0.5f;
-                        path.moveTo(p0);
-                        SkPoint p1;
-                        p1.fX = checkbox_rect.corner[0]
-                              + checkbox_rect.size[0] * 0.4f;
-                        p1.fY = checkbox_rect.corner[1]
-                              + checkbox_rect.size[1] * 0.7f;
-                        path.lineTo(p1);
-                        SkPoint p2;
-                        p2.fX = checkbox_rect.corner[0]
-                              + checkbox_rect.size[0] * 0.8f;
-                        p2.fY = checkbox_rect.corner[1]
-                              + checkbox_rect.size[1] * 0.3f;
-                        path.lineTo(p2);
-                        canvas.drawPath(path, paint);
-                    }
-                }
-                else
-                {
-                    SkPaint paint;
-                    paint.setAntiAlias(true);
-                    paint.setStyle(SkPaint::kStroke_Style);
-                    paint.setColor(as_skcolor(
-                        rgba8(get_system(ctx).theme.on_surface, 0x60)));
-                    paint.setStrokeWidth(4);
-                    canvas.drawPath(
-                        SkPath::RRect(as_skrect(checkbox_rect), 2, 2), paint);
-                }
-
-                break;
-            }
-
-            auto center = get_center(region);
-
-            float smoothed_state = smooth_between_values(
-                ctx,
-                ALIA_BITREF(data.bits, state_smoothing),
-                condition_is_true(checked),
-                1.f,
-                0.f,
-                animated_transition{default_curve, 200});
-
-            rgb8 color = interpolate(
-                get_system(ctx).theme.on_surface,
-                get_system(ctx).theme.primary,
-                smoothed_state);
-
-            uint8_t highlight = 0;
-            if (is_click_in_progress(ctx, id, mouse_button::LEFT)
-                || is_pressed(data.keyboard_click_state_))
-            {
-                // highlight = 0x40;
-                highlight = 0x20;
-            }
-            else if (is_click_possible(ctx, id))
-            {
-                highlight = 0x20;
-            }
-            if (highlight != 0)
-            {
-                SkPaint paint;
-                paint.setAntiAlias(true);
-                paint.setColor(
-                    SkColorSetARGB(highlight, color.r, color.g, color.b));
-                canvas.drawPath(
-                    SkPath::Circle(center[0], center[1], 32.f), paint);
-            }
-
-            float const padding = 11.f;
-            auto checkbox_rect = remove_border(
-                region,
-                box_border_width<float>{padding, padding, padding, padding});
-
-            auto state = get_widget_state(
+            auto interaction_status = get_widget_state(
                 ctx,
                 id,
                 (is_disabled ? WIDGET_DISABLED : NO_FLAGS)
                     | (is_pressed(data.keyboard_click_state_)
                            ? WIDGET_DEPRESSED
                            : NO_FLAGS));
-
-            if (condition_is_true(checked))
-            {
-                {
-                    SkPaint paint;
-                    paint.setAntiAlias(true);
-                    paint.setStyle(SkPaint::kStrokeAndFill_Style);
-                    paint.setColor(as_skcolor(get_system(ctx).theme.primary));
-                    paint.setStrokeWidth(4);
-                    canvas.drawPath(
-                        SkPath::RRect(as_skrect(checkbox_rect), 2, 2), paint);
-                }
-                {
-                    SkPaint paint;
-                    paint.setAntiAlias(true);
-                    paint.setStyle(SkPaint::kStroke_Style);
-                    paint.setColor(as_skcolor(get_system(ctx).theme.surface));
-                    paint.setStrokeWidth(4);
-                    paint.setStrokeCap(SkPaint::kSquare_Cap);
-                    SkPath path;
-                    path.incReserve(3);
-                    SkPoint p0;
-                    p0.fX = checkbox_rect.corner[0]
-                          + checkbox_rect.size[0] * 0.2f;
-                    p0.fY = checkbox_rect.corner[1]
-                          + checkbox_rect.size[1] * 0.5f;
-                    path.moveTo(p0);
-                    SkPoint p1;
-                    p1.fX = checkbox_rect.corner[0]
-                          + checkbox_rect.size[0] * 0.4f;
-                    p1.fY = checkbox_rect.corner[1]
-                          + checkbox_rect.size[1] * 0.7f;
-                    path.lineTo(p1);
-                    SkPoint p2;
-                    p2.fX = checkbox_rect.corner[0]
-                          + checkbox_rect.size[0] * 0.8f;
-                    p2.fY = checkbox_rect.corner[1]
-                          + checkbox_rect.size[1] * 0.3f;
-                    path.lineTo(p2);
-                    canvas.drawPath(path, paint);
-                }
-            }
-            else
-            {
-                SkPaint paint;
-                paint.setAntiAlias(true);
-                paint.setStyle(SkPaint::kStroke_Style);
-                paint.setColor(as_skcolor(get_system(ctx).theme.on_surface));
-                paint.setStrokeWidth(4);
-                canvas.drawPath(
-                    SkPath::RRect(as_skrect(checkbox_rect), 2, 2), paint);
-            }
-
-            render_click_flares(
+            auto style = extract_checkbox_style_info(ctx);
+            render_checkbox(
                 ctx,
-                ALIA_NESTED_BITPACK(data.bits, click_flare),
-                state,
-                center,
-                color);
+                data,
+                condition_is_true(checked),
+                interaction_status,
+                style);
         }
     }
     alia_end
