@@ -70,7 +70,7 @@ draw_thumb(
     dataless_ui_context ctx,
     unsigned, // axis
     layout_vector const& thumb_position,
-    widget_state state,
+    interaction_status state,
     slider_style_info const& style)
 {
     auto& event = cast_event<render_event>(ctx);
@@ -84,22 +84,12 @@ draw_thumb(
             SkPath::Circle(thumb_position[0], thumb_position[1], 16.f), paint);
     }
 
-    uint8_t highlight = 0;
-    if ((state.code & WIDGET_PRIMARY_STATE_MASK_CODE) == WIDGET_DEPRESSED_CODE)
-    {
-        // highlight = 0x40;
-        highlight = 0x20;
-    }
-    else if ((state.code & WIDGET_PRIMARY_STATE_MASK_CODE) == WIDGET_HOT_CODE)
-    {
-        highlight = 0x20;
-    }
-    if (highlight != 0)
+    if (is_active(state) || is_hovered(state))
     {
         SkPaint paint;
         paint.setAntiAlias(true);
         paint.setColor(
-            as_skcolor(rgba8(get_system(ctx).theme.on_surface, highlight)));
+            as_skcolor(rgba8(get_system(ctx).theme.on_surface, 0x20)));
         canvas.drawPath(
             SkPath::Circle(thumb_position[0], thumb_position[1], 24.f), paint);
     }
@@ -235,7 +225,7 @@ render_slider(
     duplex<double> value,
     double minimum,
     double maximum,
-    widget_state thumb_status,
+    interaction_status thumb_status,
     slider_style_info const& style)
 {
     draw_track(
@@ -418,7 +408,8 @@ do_slider(
         }
         case RENDER_CATEGORY:
             auto const style = extract_slider_style_info(ctx);
-            widget_state thumb_status = get_widget_state(ctx, thumb_id);
+            interaction_status thumb_status
+                = get_interaction_status(ctx, thumb_id);
             render_slider(
                 ctx, axis, data, value, minimum, maximum, thumb_status, style);
             break;

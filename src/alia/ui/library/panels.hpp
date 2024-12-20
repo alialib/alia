@@ -61,7 +61,7 @@ struct panel : noncopyable
         layout const& layout_spec = default_layout,
         panel_flag_set flags = NO_FLAGS,
         widget_id id = auto_id,
-        widget_state state = WIDGET_NORMAL)
+        interaction_status state = NO_FLAGS)
     {
         begin(ctx, style, layout_spec, flags, id, state);
     }
@@ -76,7 +76,7 @@ struct panel : noncopyable
         layout const& layout_spec = default_layout,
         panel_flag_set flags = NO_FLAGS,
         widget_id id = auto_id,
-        widget_state state = WIDGET_NORMAL);
+        interaction_status state = NO_FLAGS);
     void
     end();
     // // inner_region() is the region inside the panel's border

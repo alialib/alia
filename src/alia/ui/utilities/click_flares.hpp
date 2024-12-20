@@ -28,7 +28,7 @@ void
 render_click_flares(
     dataless_ui_context ctx,
     bitpack_ref<click_flare_bit_layout> bits,
-    widget_state state,
+    interaction_status state,
     layout_vector position,
     rgb8 color,
     float radius = 32);

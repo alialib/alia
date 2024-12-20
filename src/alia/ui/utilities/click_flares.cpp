@@ -39,7 +39,7 @@ void
 render_click_flares(
     dataless_ui_context ctx,
     bitpack_ref<click_flare_bit_layout> bits,
-    widget_state state,
+    interaction_status state,
     layout_vector position,
     rgb8 color,
     float radius)
@@ -87,7 +87,7 @@ render_click_flares(
                 SkPath::Circle(position[0], position[1], radius), paint);
         });
 
-    if (is_depressed(state))
+    if (is_active(state))
     {
         millisecond_count click_duration = get_click_duration(
             ctx, mouse_button::LEFT, click_accumulation_time);

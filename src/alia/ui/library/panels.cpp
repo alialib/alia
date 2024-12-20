@@ -66,7 +66,7 @@ refresh_panel_style_info(
     dataless_ui_context& ctx,
     keyed_data<panel_style_info>& stored_info,
     accessor<string> const& substyle,
-    widget_state state,
+    interaction_status state,
     add_substyle_flag_set flags)
 {
     refresh_keyed_data(
@@ -133,7 +133,7 @@ begin_outer_panel(
     layout const& layout_spec,
     panel_flag_set flags,
     widget_id,
-    widget_state)
+    interaction_status)
 {
     // TODO: style isn't necessarily readable
     box_border_width<layout_scalar> total_border
@@ -332,7 +332,7 @@ begin_inner_panel(
 //     layout const& layout_spec,
 //     panel_flag_set flags,
 //     widget_id id,
-//     widget_state state)
+//     interaction_status state)
 // {
 //     ctx_ = &ctx;
 //     flags_ = flags;
@@ -379,7 +379,7 @@ panel::begin(
     layout const& layout_spec,
     panel_flag_set flags,
     widget_id id,
-    widget_state state)
+    interaction_status state)
 {
     ctx_.reset(ctx);
 
@@ -456,7 +456,7 @@ clickable_panel::begin(
 {
     ALIA_GET_CACHED_DATA(clickable_panel_data)
     get_widget_id_if_needed(ctx, id);
-    widget_state state;
+    interaction_status state;
     if (flags & PANEL_DISABLED)
     {
         state = WIDGET_DISABLED;

@@ -63,7 +63,7 @@ render_checkbox(
     dataless_ui_context ctx,
     checkbox_data& data,
     bool checked,
-    widget_state state,
+    interaction_status state,
     checkbox_style_info const& style)
 {
     auto& event = cast_event<render_event>(ctx);
@@ -143,7 +143,7 @@ render_checkbox(
         0.f,
         animated_transition{default_curve, 200});
 
-    if (is_depressed(state) || is_hot(state))
+    if (is_active(state) || is_hovered(state))
     {
         SkPaint paint;
         paint.setAntiAlias(true);
@@ -263,13 +263,12 @@ do_checkbox(ui_context ctx, duplex<bool> checked, layout const& layout_spec)
             break;
 
         case RENDER_CATEGORY: {
-            auto interaction_status = get_widget_state(
+            auto interaction_status = get_interaction_status(
                 ctx,
                 id,
                 (is_disabled ? WIDGET_DISABLED : NO_FLAGS)
-                    | (is_pressed(data.keyboard_click_state_)
-                           ? WIDGET_DEPRESSED
-                           : NO_FLAGS));
+                    | (is_pressed(data.keyboard_click_state_) ? WIDGET_ACTIVE
+                                                              : NO_FLAGS));
             auto style = extract_checkbox_style_info(ctx);
             render_checkbox(
                 ctx,

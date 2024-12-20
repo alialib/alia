@@ -52,7 +52,7 @@ render_node_expander(
     dataless_ui_context ctx,
     node_expander_data& data,
     bool expanded,
-    widget_state interaction_status,
+    interaction_status interaction_status,
     node_expander_style_info const& style)
 {
     auto& event = cast_event<render_event>(ctx);
@@ -121,21 +121,12 @@ render_node_expander(
     if (is_disabled(interaction_status))
         return;
 
-    uint8_t highlight = 0;
-    if (is_depressed(interaction_status))
-    {
-        highlight = 0x20;
-    }
-    else if (is_hot(interaction_status))
-    {
-        highlight = 0x20;
-    }
-    if (highlight != 0)
+    if (is_active(interaction_status) || is_hovered(interaction_status))
     {
         SkPaint paint;
         paint.setAntiAlias(true);
         paint.setColor(SkColorSetARGB(
-            highlight,
+            0x20,
             style.highlight_color.r,
             style.highlight_color.g,
             style.highlight_color.b));
@@ -205,13 +196,12 @@ do_node_expander(
 
         case RENDER_CATEGORY: {
             auto const style = extract_node_expander_style_info(ctx);
-            auto interaction_status = get_widget_state(
+            auto interaction_status = get_interaction_status(
                 ctx,
                 id,
                 (is_disabled ? WIDGET_DISABLED : NO_FLAGS)
-                    | (is_pressed(data.keyboard_click_state_)
-                           ? WIDGET_DEPRESSED
-                           : NO_FLAGS));
+                    | (is_pressed(data.keyboard_click_state_) ? WIDGET_ACTIVE
+                                                              : NO_FLAGS));
             render_node_expander(
                 ctx,
                 data,
