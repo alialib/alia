@@ -19,12 +19,6 @@
 
 namespace alia {
 
-struct slider_style_info
-{
-    rgb8 highlight_color;
-    rgb8 disabled_color;
-};
-
 constexpr layout_scalar thumb_radius = 16;
 constexpr layout_scalar track_width = 6;
 
@@ -40,12 +34,20 @@ right_side_padding_size(dataless_ui_context)
     return thumb_radius;
 }
 
+struct slider_style_info
+{
+    rgb8 highlight_color;
+    rgb8 track_color;
+    rgb8 thumb_color;
+};
+
 void
 draw_track(
     dataless_ui_context ctx,
     unsigned axis,
     layout_vector const& track_position,
-    layout_scalar track_length)
+    layout_scalar track_length,
+    slider_style_info const& style)
 {
     auto& event = cast_event<render_event>(ctx);
     SkCanvas& canvas = *event.canvas;
@@ -58,17 +60,18 @@ draw_track(
 
     SkPaint paint;
     paint.setAntiAlias(true);
-    paint.setColor(as_skcolor(rgba8(get_system(ctx).theme.on_surface, 0x60)));
+    paint.setColor(as_skcolor(style.track_color));
 
     canvas.drawPath(SkPath::Rect(as_skrect(track_box)), paint);
 }
 
 void
 draw_thumb(
-    ui_context ctx,
+    dataless_ui_context ctx,
     unsigned, // axis
     layout_vector const& thumb_position,
-    widget_state state)
+    widget_state state,
+    slider_style_info const& style)
 {
     auto& event = cast_event<render_event>(ctx);
     SkCanvas& canvas = *event.canvas;
@@ -76,7 +79,7 @@ draw_thumb(
     {
         SkPaint paint;
         paint.setAntiAlias(true);
-        paint.setColor(as_skcolor(get_system(ctx).theme.primary));
+        paint.setColor(as_skcolor(style.thumb_color));
         canvas.drawPath(
             SkPath::Circle(thumb_position[0], thumb_position[1], 16.f), paint);
     }
@@ -211,6 +214,53 @@ get_thumb_region(
     thumb_region.size[axis] = thumb_radius * 2.5f;
     thumb_region.size[1 - axis] = thumb_radius * 2.5f;
     return thumb_region;
+}
+
+slider_style_info
+extract_slider_style_info(dataless_ui_context ctx)
+{
+    auto const& theme = get_system(ctx).theme;
+    return {
+        .highlight_color = theme.primary,
+        .track_color = theme.on_surface,
+        .thumb_color = theme.primary,
+    };
+}
+
+void
+render_slider(
+    dataless_ui_context ctx,
+    unsigned axis,
+    slider_data& data,
+    duplex<double> value,
+    double minimum,
+    double maximum,
+    widget_state thumb_status,
+    slider_style_info const& style)
+{
+    draw_track(
+        ctx,
+        axis,
+        get_track_position(ctx, data, axis),
+        get_track_length(ctx, data, axis),
+        style);
+    if (signal_has_value(value))
+    {
+        draw_thumb(
+            ctx,
+            axis,
+            get_thumb_position(ctx, data, axis, minimum, maximum, value),
+            thumb_status,
+            style);
+    }
+    // TODO: Draw focus
+    // if (thumb_state & WIDGET_FOCUSED)
+    // {
+    //     draw_focus_rect(
+    //         ctx,
+    //         data.focus_rendering,
+    //         data.layout_node.assignment().region);
+    // }
 }
 
 void
@@ -367,29 +417,11 @@ do_slider(
             break;
         }
         case RENDER_CATEGORY:
-            draw_track(
-                ctx,
-                axis,
-                get_track_position(ctx, data, axis),
-                get_track_length(ctx, data, axis));
-            widget_state thumb_state = get_widget_state(ctx, thumb_id);
-            if (signal_has_value(value))
-            {
-                draw_thumb(
-                    ctx,
-                    axis,
-                    get_thumb_position(
-                        ctx, data, axis, minimum, maximum, value),
-                    thumb_state);
-            }
-            // TODO: Draw focus
-            // if (thumb_state & WIDGET_FOCUSED)
-            // {
-            //     draw_focus_rect(
-            //         ctx,
-            //         data.focus_rendering,
-            //         data.layout_node.assignment().region);
-            // }
+            auto const style = extract_slider_style_info(ctx);
+            widget_state thumb_status = get_widget_state(ctx, thumb_id);
+            render_slider(
+                ctx, axis, data, value, minimum, maximum, thumb_status, style);
+            break;
     }
 }
 
