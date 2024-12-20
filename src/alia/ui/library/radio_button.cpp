@@ -45,7 +45,7 @@ extract_radio_button_style_info(dataless_ui_context ctx)
 {
     auto const& theme = get_system(ctx).theme;
     return {
-        .disabled_color = interpolate(theme.surface, theme.on_surface, 0.6f),
+        .disabled_color = interpolate(theme.surface, theme.on_surface, 0.4f),
         .highlight_color = theme.primary,
         .outline_color = theme.on_surface,
         .selected_dot_color = theme.primary,

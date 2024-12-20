@@ -48,10 +48,10 @@ extract_checkbox_style_info(dataless_ui_context ctx)
     return {
         .highlight_color = theme.primary,
         .disabled_fill_color
-        = interpolate(theme.surface, theme.on_surface, 0.6f),
+        = interpolate(theme.surface, theme.on_surface, 0.4f),
         .disabled_check_color = theme.surface,
         .disabled_outline_color
-        = interpolate(theme.surface, theme.on_surface, 0.6f),
+        = interpolate(theme.surface, theme.on_surface, 0.4f),
         .outline_color = theme.on_surface,
         .checked_fill_color = theme.primary,
         .check_color = theme.on_primary,

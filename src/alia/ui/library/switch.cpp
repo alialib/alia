@@ -57,9 +57,9 @@ extract_switch_style_info(dataless_ui_context ctx)
     auto const& theme = get_system(ctx).theme;
     return {
         .disabled_track_color
-        = interpolate(theme.surface, theme.secondary_container, 0.6f),
+        = interpolate(theme.surface, theme.secondary_container, 0.5f),
         .disabled_dot_color
-        = interpolate(theme.surface, theme.on_surface, 0.5f),
+        = interpolate(theme.surface, theme.on_surface, 0.4f),
         .off_track_color = theme.secondary_container,
         .on_track_color = theme.secondary_container,
         .off_dot_color = theme.on_surface_variant,
