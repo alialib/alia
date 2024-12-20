@@ -57,7 +57,7 @@ render_radio_button(
     dataless_ui_context ctx,
     radio_button_data& data,
     bool selected,
-    widget_state state,
+    interaction_status state,
     radio_button_style_info const& style)
 {
     auto& event = cast_event<render_event>(ctx);
@@ -99,7 +99,7 @@ render_radio_button(
         return;
     }
 
-    if (is_depressed(state) || is_hot(state))
+    if (is_active(state) || is_hovered(state))
     {
         SkPaint paint;
         paint.setAntiAlias(true);
@@ -197,13 +197,12 @@ do_radio_button(
             break;
 
         case RENDER_CATEGORY: {
-            auto state = get_widget_state(
+            auto state = get_interaction_status(
                 ctx,
                 id,
                 (is_disabled ? WIDGET_DISABLED : NO_FLAGS)
-                    | (is_pressed(data.keyboard_click_state_)
-                           ? WIDGET_DEPRESSED
-                           : NO_FLAGS));
+                    | (is_pressed(data.keyboard_click_state_) ? WIDGET_ACTIVE
+                                                              : NO_FLAGS));
             auto style = extract_radio_button_style_info(ctx);
             render_radio_button(
                 ctx, data, condition_is_true(selected), state, style);

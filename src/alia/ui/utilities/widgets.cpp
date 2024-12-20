@@ -14,36 +14,33 @@ get_widget_id(ui_context& ctx)
     return id;
 }
 
-widget_state
-get_widget_state(dataless_ui_context ctx, widget_id id, widget_state overrides)
+interaction_status
+get_interaction_status(
+    dataless_ui_context ctx, widget_id id, interaction_status overrides)
 {
-    widget_state state;
+    interaction_status status = NO_FLAGS;
     if (is_disabled(overrides))
     {
-        state = WIDGET_DISABLED;
+        status = WIDGET_DISABLED;
     }
     else
     {
         if (is_click_in_progress(ctx, id, mouse_button::LEFT)
-            || is_depressed(overrides))
+            || is_active(overrides))
         {
-            state = WIDGET_DEPRESSED;
+            status = WIDGET_ACTIVE;
         }
         else if (is_click_possible(ctx, id))
         {
-            state = WIDGET_HOT;
-        }
-        else
-        {
-            state = WIDGET_NORMAL;
+            status = WIDGET_HOVERED;
         }
         if (widget_has_focus(ctx, id) && get_system(ctx).input.window_has_focus
             && get_system(ctx).input.keyboard_interaction)
         {
-            state = state | WIDGET_FOCUSED;
+            status = status | WIDGET_FOCUSED;
         }
     }
-    return state;
+    return status;
 }
 
 } // namespace alia

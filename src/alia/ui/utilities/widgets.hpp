@@ -6,36 +6,44 @@
 
 namespace alia {
 
-// widget state flags
-struct widget_state_flag_tag
+// element interaction status flags
+struct interaction_status_flag_tag
 {
 };
-typedef flag_set<widget_state_flag_tag> widget_state;
-// primary state
-ALIA_DEFINE_FLAG(widget_state, 0x01, WIDGET_NORMAL)
-ALIA_DEFINE_FLAG(widget_state, 0x02, WIDGET_DISABLED)
-ALIA_DEFINE_FLAG(widget_state, 0x03, WIDGET_HOT)
-ALIA_DEFINE_FLAG(widget_state, 0x04, WIDGET_DEPRESSED)
-ALIA_DEFINE_FLAG(widget_state, 0x0f, WIDGET_PRIMARY_STATE_MASK)
-// additional (independent) states
-ALIA_DEFINE_FLAG(widget_state, 0x10, WIDGET_FOCUSED)
+typedef flag_set<interaction_status_flag_tag> interaction_status;
+// DISABLED - element is disabled by app logic and can't be
+// interacted with - Note that when this is set, get_interaction_status() will
+// ensure that the other flags aren't set.
+ALIA_DEFINE_FLAG(interaction_status, 0x01, WIDGET_DISABLED)
+// HOVERED
+ALIA_DEFINE_FLAG(interaction_status, 0x02, WIDGET_HOVERED)
+// ACTIVE
+ALIA_DEFINE_FLAG(interaction_status, 0x04, WIDGET_ACTIVE)
+// FOCUSED
+ALIA_DEFINE_FLAG(interaction_status, 0x08, WIDGET_FOCUSED)
 
 inline bool
-is_disabled(widget_state state)
+is_disabled(interaction_status state)
 {
-    return (state & WIDGET_PRIMARY_STATE_MASK) == WIDGET_DISABLED;
+    return (state & WIDGET_DISABLED) ? true : false;
 }
 
 inline bool
-is_hot(widget_state state)
+is_hovered(interaction_status state)
 {
-    return (state & WIDGET_PRIMARY_STATE_MASK) == WIDGET_HOT;
+    return (state & WIDGET_HOVERED) ? true : false;
 }
 
 inline bool
-is_depressed(widget_state state)
+is_active(interaction_status state)
 {
-    return (state & WIDGET_PRIMARY_STATE_MASK) == WIDGET_DEPRESSED;
+    return (state & WIDGET_ACTIVE) ? true : false;
+}
+
+inline bool
+is_focused(interaction_status state)
+{
+    return (state & WIDGET_FOCUSED) ? true : false;
 }
 
 // Get the state of a widget by detecting if it has the focus or is being
@@ -43,13 +51,15 @@ is_depressed(widget_state state)
 //
 // 'overrides' allows you to include special states that the function wouldn't
 // otherwise be aware of. It can include any of the following.
-//  * WIDGET_SELECTED
-//  * WIDGET_DISABLED
-//  * WIDGET_DEPRESSED (e.g., if the widget was pressed using the keyboard)
+//  * INTERACTION_DISABLED
+//  * INTERACTION_DEPRESSED (e.g., if the widget was pressed using the
+//    keyboard)
 //
-widget_state
-get_widget_state(
-    dataless_ui_context ctx, widget_id id, widget_state overrides = NO_FLAGS);
+interaction_status
+get_interaction_status(
+    dataless_ui_context ctx,
+    widget_id id,
+    interaction_status overrides = NO_FLAGS);
 
 // Widgets are identified by pointers.
 // Sometimes its useful to request some dummy data just to get a unique

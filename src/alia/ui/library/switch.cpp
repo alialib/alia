@@ -74,7 +74,7 @@ render_switch(
     dataless_ui_context ctx,
     switch_data& data,
     bool state,
-    widget_state interaction_status,
+    interaction_status interaction_status,
     switch_style_info const& style)
 {
     auto& event = cast_event<render_event>(ctx);
@@ -92,7 +92,7 @@ render_switch(
     if (event.canvas->quickReject(rect))
         return;
 
-    if ((interaction_status & WIDGET_PRIMARY_STATE_MASK) == WIDGET_DISABLED)
+    if (is_disabled(interaction_status))
     {
         {
             SkPaint paint;
@@ -206,21 +206,12 @@ render_switch(
             paint);
     }
 
-    uint8_t highlight = 0;
-    if ((interaction_status & WIDGET_PRIMARY_STATE_MASK) == WIDGET_DEPRESSED)
-    {
-        highlight = 0x40;
-    }
-    else if ((interaction_status & WIDGET_PRIMARY_STATE_MASK) == WIDGET_HOT)
-    {
-        highlight = 0x40;
-    }
-    if (highlight != 0)
+    if (is_active(interaction_status) || is_hovered(interaction_status))
     {
         SkPaint paint;
         paint.setAntiAlias(true);
         paint.setColor(SkColorSetARGB(
-            highlight,
+            0x40,
             style.highlight_color.r,
             style.highlight_color.g,
             style.highlight_color.b));
@@ -294,13 +285,12 @@ do_switch(ui_context ctx, duplex<bool> state, layout const& layout_spec)
             break;
 
         case RENDER_CATEGORY: {
-            auto interaction_status = get_widget_state(
+            auto interaction_status = get_interaction_status(
                 ctx,
                 id,
                 (is_disabled ? WIDGET_DISABLED : NO_FLAGS)
-                    | (is_pressed(data.keyboard_click_state_)
-                           ? WIDGET_DEPRESSED
-                           : NO_FLAGS));
+                    | (is_pressed(data.keyboard_click_state_) ? WIDGET_ACTIVE
+                                                              : NO_FLAGS));
             auto style = extract_switch_style_info(ctx);
             render_switch(
                 ctx,

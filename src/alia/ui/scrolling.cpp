@@ -53,7 +53,7 @@ struct scrollbar_renderer
         layout_box const& rect,
         unsigned axis,
         unsigned which,
-        widget_state state) const
+        interaction_status state) const
         = 0;
 
     virtual void
@@ -62,7 +62,7 @@ struct scrollbar_renderer
         scrollbar_metrics const& metrics,
         layout_box const& rect,
         unsigned axis,
-        widget_state state) const
+        interaction_status state) const
         = 0;
 
     virtual void
@@ -72,7 +72,7 @@ struct scrollbar_renderer
         layout_vector const& position,
         unsigned axis,
         unsigned which,
-        widget_state state) const
+        interaction_status state) const
         = 0;
 };
 
@@ -124,7 +124,7 @@ struct default_scrollbar_renderer : scrollbar_renderer
         layout_box const& rect,
         unsigned,
         unsigned,
-        widget_state) const override
+        interaction_status) const override
     {
         SkPaint paint;
         paint.setAntiAlias(true);
@@ -141,7 +141,7 @@ struct default_scrollbar_renderer : scrollbar_renderer
         scrollbar_metrics const&,
         layout_box const& rect,
         unsigned,
-        widget_state) const override
+        interaction_status) const override
     {
         SkPaint paint;
         paint.setAntiAlias(true);
@@ -159,7 +159,7 @@ struct default_scrollbar_renderer : scrollbar_renderer
         layout_vector const& p,
         unsigned,
         unsigned,
-        widget_state) const override
+        interaction_status) const override
     {
         SkPaint paint;
         paint.setAntiAlias(true);
@@ -535,12 +535,7 @@ do_scrollbar_pass(dataless_ui_context ctx, scrollbar_parameters const& sb)
                 if (sb.area.size[0] > 0 && sb.area.size[1] > 0)
                 {
                     renderer->draw_background(
-                        ctx,
-                        *data.metrics,
-                        sb.area,
-                        sb.axis,
-                        0,
-                        WIDGET_NORMAL);
+                        ctx, *data.metrics, sb.area, sb.axis, 0, NO_FLAGS);
                 }
                 return;
             }
@@ -560,34 +555,34 @@ do_scrollbar_pass(dataless_ui_context ctx, scrollbar_parameters const& sb)
                 get_bg0_area(sb),
                 sb.axis,
                 0,
-                get_widget_state(ctx, get_bg0_id(sb)));
+                get_interaction_status(ctx, get_bg0_id(sb)));
             renderer->draw_background(
                 ctx,
                 *data.metrics,
                 get_bg1_area(sb),
                 sb.axis,
                 1,
-                get_widget_state(ctx, get_bg1_id(sb)));
+                get_interaction_status(ctx, get_bg1_id(sb)));
             renderer->draw_thumb(
                 ctx,
                 *data.metrics,
                 get_thumb_area(sb),
                 sb.axis,
-                get_widget_state(ctx, get_thumb_id(sb)));
+                get_interaction_status(ctx, get_thumb_id(sb)));
             renderer->draw_button(
                 ctx,
                 *data.metrics,
                 get_button0_area(sb).corner,
                 sb.axis,
                 0,
-                get_widget_state(ctx, get_button0_id(sb)));
+                get_interaction_status(ctx, get_button0_id(sb)));
             renderer->draw_button(
                 ctx,
                 *data.metrics,
                 get_button1_area(sb).corner,
                 sb.axis,
                 1,
-                get_widget_state(ctx, get_button1_id(sb)));
+                get_interaction_status(ctx, get_button1_id(sb)));
     }
 }
 
