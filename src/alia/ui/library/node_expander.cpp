@@ -30,6 +30,127 @@ struct node_expander_data
     layout_leaf layout_node;
 };
 
+struct node_expander_style_info
+{
+    rgb8 normal_color;
+    rgb8 disabled_color;
+    rgb8 highlight_color;
+};
+
+node_expander_style_info
+extract_node_expander_style_info(dataless_ui_context ctx)
+{
+    auto const& theme = get_system(ctx).theme;
+    return node_expander_style_info{
+        .normal_color = theme.on_surface,
+        .disabled_color = interpolate(theme.surface, theme.on_surface, 0.4f),
+        .highlight_color = theme.primary};
+}
+
+void
+render_node_expander(
+    dataless_ui_context ctx,
+    node_expander_data& data,
+    bool expanded,
+    widget_state interaction_status,
+    node_expander_style_info const& style)
+{
+    auto& event = cast_event<render_event>(ctx);
+
+    SkCanvas& canvas = *event.canvas;
+
+    auto const& region = data.layout_node.assignment().region;
+
+    SkRect rect = as_skrect(region);
+
+    if (event.canvas->quickReject(rect))
+        return;
+
+    auto center = get_center(region);
+
+    auto position = region.corner;
+
+    float smoothed_state = smooth_between_values(
+        ctx,
+        ALIA_BITREF(data.bits, state_smoothing),
+        condition_is_true(expanded),
+        1.f,
+        0.f,
+        animated_transition{default_curve, 200});
+
+    canvas.save();
+
+    canvas.translate(
+        position[0] + region.size[0] / SkIntToScalar(2),
+        position[1] + region.size[1] / SkIntToScalar(2));
+    canvas.rotate(interpolate(0.f, 90.f, smoothed_state));
+
+    {
+        SkPaint paint;
+        paint.setAntiAlias(true);
+        if (is_disabled(interaction_status))
+        {
+            paint.setColor(as_skcolor(style.disabled_color));
+        }
+        else
+        {
+            paint.setColor(as_skcolor(style.normal_color));
+        }
+        paint.setStyle(SkPaint::kFill_Style);
+        SkScalar a = region.size[0] / SkDoubleToScalar(2);
+        SkPath path;
+        path.incReserve(4);
+        SkPoint p0;
+        p0.fX = a * SkDoubleToScalar(-0.34);
+        p0.fY = a * SkDoubleToScalar(-0.5);
+        path.moveTo(p0);
+        SkPoint p1;
+        p1.fX = p0.fX;
+        p1.fY = a * SkDoubleToScalar(0.5);
+        path.lineTo(p1);
+        SkPoint p2;
+        p2.fX = p0.fX + a * SkDoubleToScalar(0.866);
+        p2.fY = 0;
+        path.lineTo(p2);
+        path.lineTo(p0);
+        canvas.drawPath(path, paint);
+    }
+
+    canvas.restore();
+
+    if (is_disabled(interaction_status))
+        return;
+
+    uint8_t highlight = 0;
+    if (is_depressed(interaction_status))
+    {
+        highlight = 0x20;
+    }
+    else if (is_hot(interaction_status))
+    {
+        highlight = 0x20;
+    }
+    if (highlight != 0)
+    {
+        SkPaint paint;
+        paint.setAntiAlias(true);
+        paint.setColor(SkColorSetARGB(
+            highlight,
+            style.highlight_color.r,
+            style.highlight_color.g,
+            style.highlight_color.b));
+        canvas.drawPath(SkPath::Circle(center[0], center[1], 28.f), paint);
+    }
+
+    render_click_flares(
+        ctx,
+        ALIA_NESTED_BITPACK(data.bits, click_flare),
+        interaction_status,
+        center,
+        style.highlight_color,
+        28);
+}
+
 void
 do_node_expander(
     ui_context ctx, duplex<bool> expanded, layout const& layout_spec)
@@ -47,7 +168,7 @@ do_node_expander(
             data.layout_node.refresh_layout(
                 get_layout_traversal(ctx),
                 layout_spec,
-                leaf_layout_requirements(make_layout_vector(48, 48), 0, 0),
+                leaf_layout_requirements(make_layout_vector(48, 48), 30, 18),
                 LEFT | BASELINE_Y | PADDED);
 
             add_layout_node(
@@ -83,116 +204,20 @@ do_node_expander(
             break;
 
         case RENDER_CATEGORY: {
-            auto& event = cast_event<render_event>(ctx);
-
-            SkCanvas& canvas = *event.canvas;
-
-            auto const& region = data.layout_node.assignment().region;
-
-            SkRect rect = as_skrect(region);
-
-            if (event.canvas->quickReject(rect))
-                break;
-
-            auto center = get_center(region);
-
-            auto position = region.corner;
-
-            float smoothed_state = smooth_between_values(
-                ctx,
-                ALIA_BITREF(data.bits, state_smoothing),
-                condition_is_true(expanded),
-                1.f,
-                0.f,
-                animated_transition{default_curve, 200});
-
-            canvas.save();
-
-            canvas.translate(
-                position[0] + region.size[0] / SkIntToScalar(2),
-                position[1] + region.size[1] / SkIntToScalar(2));
-            canvas.rotate(interpolate(0.f, 90.f, smoothed_state));
-
-            {
-                SkPaint paint;
-                paint.setAntiAlias(true);
-                if (is_disabled)
-                {
-                    paint.setColor(as_skcolor(
-                        rgba8(get_system(ctx).theme.on_surface, 0x60)));
-                }
-                else
-                {
-                    paint.setColor(
-                        as_skcolor(get_system(ctx).theme.on_surface));
-                }
-                // set_color(paint, renderer.style().fg_color);
-                paint.setStyle(SkPaint::kFill_Style);
-                SkScalar a = region.size[0] / SkDoubleToScalar(2);
-                SkPath path;
-                path.incReserve(4);
-                SkPoint p0;
-                p0.fX = a * SkDoubleToScalar(-0.34);
-                p0.fY = a * SkDoubleToScalar(-0.5);
-                path.moveTo(p0);
-                SkPoint p1;
-                p1.fX = p0.fX;
-                p1.fY = a * SkDoubleToScalar(0.5);
-                path.lineTo(p1);
-                SkPoint p2;
-                p2.fX = p0.fX + a * SkDoubleToScalar(0.866);
-                p2.fY = 0;
-                path.lineTo(p2);
-                path.lineTo(p0);
-                canvas.drawPath(path, paint);
-            }
-
-            canvas.restore();
-
-            if (is_disabled)
-                break;
-
-            rgb8 color = interpolate(
-                get_system(ctx).theme.primary,
-                get_system(ctx).theme.on_surface,
-                smoothed_state);
-
-            uint8_t highlight = 0;
-            if (is_click_in_progress(ctx, id, mouse_button::LEFT)
-                || is_pressed(data.keyboard_click_state_))
-            {
-                // highlight = 0x40;
-                highlight = 0x20;
-            }
-            else if (is_click_possible(ctx, id))
-            {
-                highlight = 0x20;
-            }
-            if (highlight != 0)
-            {
-                SkPaint paint;
-                paint.setAntiAlias(true);
-                paint.setColor(
-                    SkColorSetARGB(highlight, color.r, color.g, color.b));
-                canvas.drawPath(
-                    SkPath::Circle(center[0], center[1], 28.f), paint);
-            }
-
-            auto state = get_widget_state(
+            auto const style = extract_node_expander_style_info(ctx);
+            auto interaction_status = get_widget_state(
                 ctx,
                 id,
                 (is_disabled ? WIDGET_DISABLED : NO_FLAGS)
                     | (is_pressed(data.keyboard_click_state_)
                            ? WIDGET_DEPRESSED
                            : NO_FLAGS));
-
-            render_click_flares(
+            render_node_expander(
                 ctx,
-                ALIA_NESTED_BITPACK(data.bits, click_flare),
-                state,
-                center,
-                color,
-                28);
+                data,
+                condition_is_true(expanded),
+                interaction_status,
+                style);
         }
     }
     alia_end
