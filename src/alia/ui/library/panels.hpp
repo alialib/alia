@@ -17,8 +17,7 @@ struct panel_style_info
 {
     // absolute_size size;
     box_border_width<float> margin, border_width, padding;
-    // bool is_rounded;
-    // rgba8 border_color, background_color, gradient_color;
+    rgba8 border_color, background_color, gradient_color;
     // TODO
     // box_corner_sizes border_radii;
 
@@ -49,15 +48,15 @@ ALIA_DEFINE_FLAG(panel, 0x10000, PANEL_DISABLED)
 
 struct panel_data;
 
-struct panel : noncopyable
+struct scoped_panel : noncopyable
 {
  public:
-    panel()
+    scoped_panel()
     {
     }
-    panel(
+    scoped_panel(
         ui_context ctx,
-        readable<panel_style_info> style,
+        panel_style_info const& style,
         layout const& layout_spec = default_layout,
         panel_flag_set flags = NO_FLAGS,
         widget_id id = auto_id,
@@ -65,14 +64,14 @@ struct panel : noncopyable
     {
         begin(ctx, style, layout_spec, flags, id, state);
     }
-    ~panel()
+    ~scoped_panel()
     {
         end();
     }
     void
     begin(
         ui_context ctx,
-        readable<panel_style_info> style,
+        panel_style_info const& style,
         layout const& layout_spec = default_layout,
         panel_flag_set flags = NO_FLAGS,
         widget_id id = auto_id,
@@ -100,6 +99,14 @@ struct panel : noncopyable
     column_layout inner_;
     panel_flag_set flags_;
 };
+
+template<class Content>
+void
+panel(ui_context ctx, panel_style_info const& style, Content&& content)
+{
+    scoped_panel panel(ctx, style);
+    std::forward<Content>(content)();
+}
 
 #if 0
 

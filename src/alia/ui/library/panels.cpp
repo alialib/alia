@@ -128,19 +128,18 @@ draw_panel_focus_border(
 bool
 begin_outer_panel(
     ui_context ctx,
-    readable<panel_style_info> style_info,
+    panel_style_info const& style_info,
     bordered_layout& outer,
     layout const& layout_spec,
     panel_flag_set flags,
     widget_id,
     interaction_status)
 {
-    // TODO: style isn't necessarily readable
     box_border_width<layout_scalar> total_border
-        = as_layout_size(read_signal(style_info).margin)
-        + as_layout_size(read_signal(style_info).border_width);
+        = as_layout_size(style_info.margin)
+        + as_layout_size(style_info.border_width);
     if (!(flags & PANEL_IGNORE_STYLE_PADDING))
-        total_border += as_layout_size(read_signal(style_info).padding);
+        total_border += as_layout_size(style_info.padding);
     outer.begin(
         ctx,
         box_border_width<absolute_length>{
@@ -155,8 +154,7 @@ begin_outer_panel(
     {
         case RENDER_CATEGORY: {
             layout_box outer_region = remove_border(
-                outer.region(),
-                as_layout_size(read_signal(style_info).margin));
+                outer.region(), as_layout_size(style_info.margin));
 
             auto& event = cast_event<render_event>(ctx);
 
@@ -169,7 +167,10 @@ begin_outer_panel(
             bounds.fBottom = bounds.fTop + SkScalar(region.size[1]);
 
             SkPaint paint;
-            paint.setColor(SkColorSetRGB(0x41, 0x48, 0x54));
+            paint.setColor(SkColorSetRGB(
+                style_info.background_color.r,
+                style_info.background_color.g,
+                style_info.background_color.b));
             event.canvas->drawRect(bounds, paint);
 
             // If the panel is rounded or has a gradient, draw it with Skia.
@@ -373,9 +374,9 @@ begin_inner_panel(
 // };
 
 void
-panel::begin(
+scoped_panel::begin(
     ui_context ctx,
-    readable<panel_style_info> style,
+    panel_style_info const& style,
     layout const& layout_spec,
     panel_flag_set flags,
     widget_id id,
@@ -384,8 +385,6 @@ panel::begin(
     ctx_.reset(ctx);
 
     // get_cached_data(ctx, &data_);
-
-    // refresh_panel_style_info(ctx, data_->style_info, style, state);
 
     // init_optional_widget_id(id, data_);
 
@@ -407,13 +406,14 @@ panel::begin(
     begin_inner_panel(ctx, inner_, layout_spec, flags);
 }
 void
-panel::end()
+scoped_panel::end()
 {
     if (ctx_)
     {
         inner_.end();
         // substyle_.end();
         outer_.end();
+        ctx_.reset();
     }
 }
 

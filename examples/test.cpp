@@ -581,141 +581,6 @@ do_box(
 // //         foo);
 // // }
 
-// struct panel_container : simple_layout_container<column_layout_logic>
-// {
-//     void
-//     render(render_event& event) override
-//     {
-//         auto const& region = get_assignment(this->cacher).region;
-//         SkRect bounds;
-//         bounds.fLeft = SkScalar(region.corner[0] + event.current_offset[0]);
-//         bounds.fTop = SkScalar(region.corner[1] + event.current_offset[1]);
-//         bounds.fRight = bounds.fLeft + SkScalar(region.size[0]);
-//         bounds.fBottom = bounds.fTop + SkScalar(region.size[1]);
-//         if (!event.canvas->quickReject(bounds))
-//         {
-//             SkPaint paint;
-//             paint.setColor(SkColorSetRGB(0x31, 0x38, 0x44));
-//             event.canvas->drawRect(bounds, paint);
-//             alia::render_children(event, *this);
-//         }
-//     }
-
-//     void
-//     hit_test(
-//         hit_test_base& test, vector<2, double> const& point) const override
-//     {
-//         auto const& region = get_assignment(this->cacher).region;
-//         if (is_inside(region, vector<2, float>(point)))
-//         {
-//             auto local_point = point - vector<2, double>(region.corner);
-//             for (widget* node = this->widget_container::children; node;
-//                  node = node->next)
-//             {
-//                 node->hit_test(test, local_point);
-//             }
-//         }
-//     }
-
-//     void
-//     process_input(dataless_ui_context) override
-//     {
-//     }
-
-//     matrix<3, 3, double>
-//     transformation() const override
-//     {
-//         return parent->transformation();
-//     }
-
-//     relative_layout_assignment const&
-//     assignment() const
-//     {
-//         return cacher.relative_assignment;
-//     }
-
-//     layout_box
-//     bounding_box() const override
-//     {
-//         return add_border(this->assignment().region, 4.f);
-//     }
-
-//     void
-//     reveal_region(region_reveal_request const& request) override
-//     {
-//         parent->reveal_region(request);
-//     }
-// };
-
-// void
-// get_panel_container(
-//     ui_context ctx,
-//     std::shared_ptr<panel_container>** container,
-//     layout const& layout_spec)
-// {
-//     if (get_data(ctx, container))
-//         **container = std::make_shared<panel_container>();
-
-//     if (get_layout_traversal(ctx).is_refresh_pass)
-//     {
-//         if (update_layout_cacher(
-//                 get_layout_traversal(ctx),
-//                 (**container)->cacher,
-//                 layout_spec,
-//                 FILL | UNPADDED))
-//         {
-//             // Since this container isn't active yet, it didn't get marked
-//             // as needing recalculation, so we need to do that manually
-//             // here.
-//             (**container)->last_content_change
-//                 = get_layout_traversal(ctx).refresh_counter;
-//         }
-//     }
-// }
-
-// // rgb(49, 58, 70)
-
-// struct scoped_panel
-// {
-//     scoped_panel()
-//     {
-//     }
-//     scoped_panel(ui_context ctx, layout const& layout_spec = default_layout)
-//     {
-//         begin(ctx, layout_spec);
-//     }
-//     ~scoped_panel()
-//     {
-//         end();
-//     }
-
-//     void
-//     begin(ui_context ctx, layout const& layout_spec = default_layout)
-//     {
-//         std::shared_ptr<panel_container>* container;
-//         get_panel_container(ctx, &container, layout_spec);
-//         container_ = container->get();
-//         scoping_.begin(get_layout_traversal(ctx), container_);
-//     }
-//     void
-//     end()
-//     {
-//         scoping_.end();
-//     }
-
-//  private:
-//     panel_container* container_;
-//     scoped_layout_container scoping_;
-// };
-
-// template<class Content>
-// void
-// panel(ui_context ctx, Content&& content)
-// {
-//     scoped_panel panel(ctx);
-//     std::forward<Content>(content);
-// }
-
 // } // namespace alia
 
 enum class color_theme
@@ -782,21 +647,15 @@ my_ui(ui_context ctx)
 
     scoped_scrollable_view scrollable(ctx, GROW); //, 3, 2);
 
-    // scoped_panel panel(ctx, GROW | UNPADDED);
-
+    bordered_layout border(
+        ctx,
+        box_border_width<absolute_length>{
+            absolute_length(10, PIXELS),
+            absolute_length(10, PIXELS),
+            absolute_length(10, PIXELS),
+            absolute_length(10, PIXELS)},
+        GROW | PADDED);
     column_layout column(ctx, GROW | PADDED);
-    column_layout column2(ctx, GROW | PADDED);
-    column_layout column3(ctx, GROW | PADDED);
-
-    // auto my_style
-    //     = text_style{"Roboto/Roboto-Regular", 22.f, rgb8(173, 181, 189)};
-    // auto my_style = text_style{
-    //     "Roboto_Mono/static/RobotoMono-Regular", 22.f, rgb8(173, 181, 189)};
-
-    // panel_style_info pstyle{
-    //     box_border_width<float>{4, 4, 4, 4},
-    //     box_border_width<float>{0, 0, 0, 0},
-    //     box_border_width<float>{4, 4, 4, 4}};
 
     // {
     //     bulleted_list list(ctx);
@@ -818,55 +677,74 @@ my_ui(ui_context ctx)
     do_separator(ctx);
     do_spacer(ctx, height(40, PIXELS));
 
-    do_text(ctx, value("Theme Options"));
-    do_spacer(ctx, height(20, PIXELS));
+    panel(
+        ctx,
+        panel_style_info{
+            .margin = box_border_width<float>{0, 0, 0, 0},
+            .border_width = box_border_width<float>{0, 0, 0, 0},
+            .padding = box_border_width<float>{0, 0, 0, 0},
+            .border_color = rgba8{0, 0, 0, 0},
+            .background_color
+            = rgba8(get_system(ctx).theme.surface_container_levels[3], 0xff),
+            .gradient_color
+            = rgba8(get_system(ctx).theme.surface_container_levels[3], 0xff)},
+        [&] {
+            column_layout column(ctx);
 
-    {
-        grid_layout grid(ctx);
+            do_text(ctx, value("Theme Options"));
+            do_spacer(ctx, height(20, PIXELS));
 
-        {
-            grid_row row(grid);
-            do_switch(ctx, direct(light_theme));
-            do_text(ctx, value("Light"));
-        }
+            {
+                grid_layout grid(ctx);
 
-        do_spacer(ctx, height(10, PIXELS));
+                {
+                    grid_row row(grid);
+                    do_switch(ctx, direct(light_theme));
+                    do_text(ctx, value("Light"));
+                }
 
-        {
-            {
-                grid_row row(grid);
-                do_radio_button(
-                    ctx,
-                    make_radio_signal(
-                        direct(selected_theme), value(color_theme::VIOLET)));
-                do_text(ctx, value("Violet"));
+                do_spacer(ctx, height(10, PIXELS));
+
+                {
+                    {
+                        grid_row row(grid);
+                        do_radio_button(
+                            ctx,
+                            make_radio_signal(
+                                direct(selected_theme),
+                                value(color_theme::VIOLET)));
+                        do_text(ctx, value("Violet"));
+                    }
+                    {
+                        grid_row row(grid);
+                        do_radio_button(
+                            ctx,
+                            make_radio_signal(
+                                direct(selected_theme),
+                                value(color_theme::BLUE)));
+                        do_text(ctx, value("Blue"));
+                    }
+                    {
+                        grid_row row(grid);
+                        do_radio_button(
+                            ctx,
+                            make_radio_signal(
+                                direct(selected_theme),
+                                value(color_theme::PINK)));
+                        do_text(ctx, value("Pink"));
+                    }
+                    {
+                        grid_row row(grid);
+                        do_radio_button(
+                            ctx,
+                            make_radio_signal(
+                                direct(selected_theme),
+                                value(color_theme::INDIGO)));
+                        do_text(ctx, value("Indigo"));
+                    }
+                }
             }
-            {
-                grid_row row(grid);
-                do_radio_button(
-                    ctx,
-                    make_radio_signal(
-                        direct(selected_theme), value(color_theme::BLUE)));
-                do_text(ctx, value("Blue"));
-            }
-            {
-                grid_row row(grid);
-                do_radio_button(
-                    ctx,
-                    make_radio_signal(
-                        direct(selected_theme), value(color_theme::PINK)));
-                do_text(ctx, value("Pink"));
-            }
-            {
-                grid_row row(grid);
-                do_radio_button(
-                    ctx,
-                    make_radio_signal(
-                        direct(selected_theme), value(color_theme::INDIGO)));
-                do_text(ctx, value("Indigo"));
-            }
-        }
-    }
+        });
 
     do_spacer(ctx, height(40, PIXELS));
     do_separator(ctx);
@@ -986,11 +864,11 @@ my_ui(ui_context ctx)
     //         {
     //             scoped_grid_row row(ctx, grid);
     //             do_box(
-    //                 ctx, SK_ColorMAGENTA, actions::noop(), width(200,
-    //                 PIXELS));
+    //                 ctx, SK_ColorMAGENTA, actions::noop(),
+    //                 width(200, PIXELS));
     //             do_box(
-    //                 ctx, SK_ColorMAGENTA, actions::noop(), width(200,
-    //                 PIXELS));
+    //                 ctx, SK_ColorMAGENTA, actions::noop(),
+    //                 width(200, PIXELS));
     //         }
     //         {
     //             scoped_grid_row row(ctx, grid);
@@ -1000,7 +878,8 @@ my_ui(ui_context ctx)
 
     // for (int i = 0; i != 0; ++i)
     // {
-    //     cached_ui_block<column_layout>(ctx, unit_id, default_layout, [&] {
+    //     cached_ui_block<column_layout>(ctx, unit_id, default_layout,
+    //     [&] {
     //         panel p(ctx, direct(pstyle));
     //         // do_text(ctx, value("Lorem ipsum"));
     //         //  column_layout column(ctx);
@@ -1023,8 +902,8 @@ my_ui(ui_context ctx)
     // {
     //     scoped_flow_layout row(ctx, UNPADDED | FILL);
     //     do_box(ctx, SK_ColorLTGRAY, actions::toggle(show_text));
-    //     do_box(ctx, SK_ColorLTGRAY, actions::toggle(show_other_text));
-    //     do_tree_expander(ctx);
+    //     do_box(ctx, SK_ColorLTGRAY,
+    //     actions::toggle(show_other_text)); do_tree_expander(ctx);
     //     // do_svg_image(ctx);
     // }
 
@@ -1048,15 +927,21 @@ my_ui(ui_context ctx)
                           "adipisg elit. "
                           "Phasellus lacinia elementum diam consequat "
                           "alicinquet. "
-                          "Vestibulum ut libero justo. Pellentesque lectus "
+                          "Vestibulum ut libero justo. Pellentesque "
+                          "lectus "
                           "lectus, "
-                          "scelerisque a elementum sed, bibendum id libero. "
+                          "scelerisque a elementum sed, bibendum id "
+                          "libero. "
                           "Maecenas venenatis est sed sem "
                           "consequat mollis. Ut "
-                          "nequeodio, hendrerit ut justo venenatis, consequat "
-                          "molestie eros. Nam fermentum, mi malesuada eleifend"
-                          "dapibus, lectus dolor luctus orci, nec posuere lor "
-                          "lorem ac sem. Nullam interdum laoreet ipsum in "
+                          "nequeodio, hendrerit ut justo venenatis, "
+                          "consequat "
+                          "molestie eros. Nam fermentum, mi malesuada "
+                          "eleifend"
+                          "dapibus, lectus dolor luctus orci, nec "
+                          "posuere lor "
+                          "lorem ac sem. Nullam interdum laoreet "
+                          "ipsum in "
                           "dictum."));
             });
         }
@@ -1084,11 +969,11 @@ my_ui(ui_context ctx)
     //         {
     //             grid_row row(grid);
     //             do_box(
-    //                 ctx, SK_ColorMAGENTA, actions::noop(), width(200,
-    //                 PIXELS));
+    //                 ctx, SK_ColorMAGENTA, actions::noop(),
+    //                 width(200, PIXELS));
     //             do_box(
-    //                 ctx, SK_ColorMAGENTA, actions::noop(), width(200,
-    //                 PIXELS));
+    //                 ctx, SK_ColorMAGENTA, actions::noop(),
+    //                 width(200, PIXELS));
     //         }
     //         {
     //             grid_row row(grid);
@@ -1122,44 +1007,65 @@ my_ui(ui_context ctx)
                     "scelerisque a elementum sed, bibendum id libero. "
                     "Maecenas venenatis est sed sem "
                     "consequat mollis. Ut "
-                    "nequeodio, hendrerit ut justo venenatis, consequat "
-                    "molestie eros. Nam fermentum, mi malesuada eleifend"
-                    "dapibus, lectus dolor luctus orci, nec posuere lor "
+                    "nequeodio, hendrerit ut justo venenatis, "
+                    "consequat "
+                    "molestie eros. Nam fermentum, mi malesuada "
+                    "eleifend"
+                    "dapibus, lectus dolor luctus orci, nec posuere "
+                    "lor "
                     "lorem ac sem. Nullam interdum laoreet ipsum in "
                     "dictum.\n\n"
                     "Duis quis blandit felis. Pellentesque et lectus "
                     "magna. "
-                    "Maecenas dui lacus, sollicitudin a eros in, vehicula "
-                    "posuere metus. Etiam nec dolor mattis, tincidunt sem "
-                    "vitae, maximus tellus. Vestibulum ut nisi nec neque "
-                    "rutrum interdum. In justo massa, consequat quis dui "
-                    "eget, cursus ultricies sem. Quisque a lectus quisest "
+                    "Maecenas dui lacus, sollicitudin a eros in, "
+                    "vehicula "
+                    "posuere metus. Etiam nec dolor mattis, tincidunt "
+                    "sem "
+                    "vitae, maximus tellus. Vestibulum ut nisi nec "
+                    "neque "
+                    "rutrum interdum. In justo massa, consequat quis "
+                    "dui "
+                    "eget, cursus ultricies sem. Quisque a lectus "
+                    "quisest "
                     "porttitor ullamcorper ac sed odio.\n\n"
-                    "Vestibulum sed turpis et lacus rutrum scelerisqueet "
+                    "Vestibulum sed turpis et lacus rutrum "
+                    "scelerisqueet "
                     "sit "
                     "amet ipsum. Sed congue hendrerit augue, sed "
                     "pellentesque "
-                    "neque. Integer efficitur nisi idmassa placerat, at "
-                    "ullamcorper arcu fermentum. Donec sed tellus quis "
+                    "neque. Integer efficitur nisi idmassa placerat, "
+                    "at "
+                    "ullamcorper arcu fermentum. Donec sed tellus "
+                    "quis "
                     "velit "
-                    "placerat viverra necvel diam. Vestibulum faucibus "
-                    "molestie ipsum eget rhoncus. Donec vitae bibendum "
+                    "placerat viverra necvel diam. Vestibulum "
+                    "faucibus "
+                    "molestie ipsum eget rhoncus. Donec vitae "
+                    "bibendum "
                     "nibh, "
                     "quis pellentesque enim. Donec eget consectetur "
                     "massa, "
-                    "eget mollis elit. Orci varius natoque penatibus et"
+                    "eget mollis elit. Orci varius natoque penatibus "
+                    "et"
                     "magnis dis parturient montes, nascetur ridiculus "
                     "mus. "
                     "Donec accumsan, nisi egestas "
                     "sollicitudinullamcorper, "
-                    "diam dolor faucibus neque, euscelerisque mi erat vel "
-                    "erat. Etiam nec leo acrisus porta ornare ut accumsan "
+                    "diam dolor faucibus neque, euscelerisque mi erat "
+                    "vel "
+                    "erat. Etiam nec leo acrisus porta ornare ut "
+                    "accumsan "
                     "lorem.\n\n"
-                    "Aenean at euismod ligula. Sed augue est, imperdietut "
-                    "sem sit amet, efficitur dictum enim. Namsodales id "
-                    "risus non pulvinar. Morbi id mollismassa. Nunc elit "
-                    "velit, pellentesque et lobortisut, luctus sed justo. "
-                    "Morbi eleifend quam velmagna accumsan, eu consequat "
+                    "Aenean at euismod ligula. Sed augue est, "
+                    "imperdietut "
+                    "sem sit amet, efficitur dictum enim. Namsodales "
+                    "id "
+                    "risus non pulvinar. Morbi id mollismassa. Nunc "
+                    "elit "
+                    "velit, pellentesque et lobortisut, luctus sed "
+                    "justo. "
+                    "Morbi eleifend quam velmagna accumsan, eu "
+                    "consequat "
                     "nisl ultrices.Mauris dictum eu quam sit amet "
                     "aliquet. "
                     "Sedrhoncus turpis quis sagittis imperdiet. Lorem "
@@ -1167,25 +1073,35 @@ my_ui(ui_context ctx)
                     "dolor sit amet, consectetur adipiscing elit. "
                     "Pellentesque convallis suscipit ex et "
                     "hendrerit.Donec "
-                    "est ex, varius eu nulla id, tristiquelobortis metus. "
-                    "Sed id sem justo. Nulla at portaneque, id elementum "
+                    "est ex, varius eu nulla id, tristiquelobortis "
+                    "metus. "
+                    "Sed id sem justo. Nulla at portaneque, id "
+                    "elementum "
                     "lacus.\n\n"
-                    "Mauris leotortor, tincidunt sit amet sem sit amet, "
+                    "Mauris leotortor, tincidunt sit amet sem sit "
+                    "amet, "
                     "egestastempor massa. In diam ipsum, fermentum "
                     "pulvinar "
-                    "posuere ut, scelerisque sit amet odio. Nam necjusto "
+                    "posuere ut, scelerisque sit amet odio. Nam "
+                    "necjusto "
                     "quis felis ultrices ornare sit amet eumassa. Nam "
-                    "gravida lacus eget tortor porttitor,eget scelerisque "
+                    "gravida lacus eget tortor porttitor,eget "
+                    "scelerisque "
                     "est imperdiet. Duis quisimperdiet libero. Nullam "
                     "justo "
-                    "erat, blandit etnisi sit amet, aliquet mattis leo. "
+                    "erat, blandit etnisi sit amet, aliquet mattis "
+                    "leo. "
                     "Sed "
-                    "a auguenon felis lacinia ultrices. Aenean porttitor "
-                    "bibendum sem, in consectetur arcu suscipit id.Etiam "
-                    "varius dictum gravida. Nulla molestiefermentum odio "
+                    "a auguenon felis lacinia ultrices. Aenean "
+                    "porttitor "
+                    "bibendum sem, in consectetur arcu suscipit "
+                    "id.Etiam "
+                    "varius dictum gravida. Nulla molestiefermentum "
+                    "odio "
                     "vitae tincidunt. Quisque dictum,magna vitae "
                     "porttitor "
-                    "accumsan, felis felisconsectetur nisi, ut venenatis "
+                    "accumsan, felis felisconsectetur nisi, ut "
+                    "venenatis "
                     "felis justo utante.\n\n"),
                 FILL);
         }
@@ -1236,7 +1152,7 @@ my_ui(ui_context ctx)
         //             //         std::min(
         //             //             1.0,
         //             //             std::fabs(std::sin(
-        //             //                 get_raw_animation_tick_count(ctx)
+        //             // get_raw_animation_tick_count(ctx)
         //             //                 / 1000.0)))),
         //             //     y2);
         //             // color::rgb<std::uint8_t> r(yr);
