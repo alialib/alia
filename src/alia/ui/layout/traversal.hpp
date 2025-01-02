@@ -27,9 +27,6 @@ struct layout_traversal
     // Other passes utilize the layout information for their own purposes.
     bool is_refresh_pass;
 
-    // This is incremented each refresh pass.
-    counter_type refresh_counter;
-
     // This is the geometry context that the layout system manipulates during
     // non-refresh passes.
     geometry_context* geometry;
