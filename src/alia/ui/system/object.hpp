@@ -61,8 +61,6 @@ struct ui_system : alia::typed_system<vanilla_ui_context>
     std::function<void(ui_context)> controller;
     void invoke_controller(vanilla_ui_context) override;
 
-    counter_type refresh_counter = 1;
-
     // alia__shared_ptr<alia::surface> surface;
     vector<2, unsigned> surface_size;
     // vector<2,float> ppi;
