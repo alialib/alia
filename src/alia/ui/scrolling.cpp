@@ -1019,103 +1019,6 @@ handle_scrolling_key_press(scrollable_view_data& data, modded_key const& key)
     }
 }
 
-#if 0
-
-struct scrollable_view : widget_container
-{
-    void
-    process_input(ui_event_context ctx) override
-    {
-        auto delta = detect_scroll(ctx, widget_id{*this, 0});
-        if (delta)
-        {
-            set_logical_position_abruptly(
-                sb(1),
-                data.sb_data[1].scroll_position -= float((*delta)[1] * 120));
-        }
-
-        process_scrollbar_input(ctx, sb(1));
-
-        focus_on_click(ctx, widget_id{*this, 0});
-        auto key = detect_key_press(ctx);
-        if (key)
-            handle_scrolling_key_press(*key);
-    }
-
-    matrix<3, 3, double>
-    transformation() const override
-    {
-        // TODO
-        return parent->transformation();
-    }
-
-    layout_box
-    bounding_box() const override
-    {
-        return this->cacher.relative_assignment.region;
-    }
-
-    void
-    reveal_region(region_reveal_request const& request) override
-    {
-
-
-        parent->reveal_region({box, request.abrupt, request.move_to_top});
-    }
-
-    mutable scrollable_view_data data;
-
-    column_layout_logic* logic;
-    layout_cacher cacher;
-    layout_vector assigned_size;
-
-    value_smoother<float> smoother;
-};
-
-void
-get_scrollable_view(
-    ui_context ctx,
-    std::shared_ptr<scrollable_view>** container,
-    layout const& layout_spec)
-{
-    if (get_data(ctx, container))
-        **container = std::make_shared<scrollable_view>();
-
-    if (get_layout_traversal(ctx).is_refresh_pass)
-    {
-        (**container)->refresh(ctx);
-
-        if (update_layout_cacher(
-                get_layout_traversal(ctx),
-                (**container)->cacher,
-                layout_spec,
-                FILL | UNPADDED))
-        {
-            // Since this container isn't active yet, it didn't get marked
-            // as needing recalculation, so we need to do that manually
-            // here.
-            (**container)->last_content_change
-                = get_layout_traversal(ctx).refresh_counter;
-        }
-    }
-}
-
-void
-scoped_scrollable_view::begin(ui_context ctx, layout const& layout_spec)
-{
-    std::shared_ptr<scrollable_view>* container;
-    get_scrollable_view(ctx, &container, layout_spec);
-    container_.begin(get_layout_traversal(ctx), container->get());
-}
-
-void
-scoped_scrollable_view::end()
-{
-    container_.end();
-}
-
-#endif
-
 void
 scoped_scrollable_view::begin(
     ui_context ctx,
@@ -1135,7 +1038,7 @@ scoped_scrollable_view::begin(
 
     component_.begin(ctx);
 
-    alia_untracked_if (is_refresh_pass(ctx))
+    alia_untracked_if (is_refresh_event(ctx))
     {
         detect_layout_change(
             get_layout_traversal(ctx), &data.scrollable_axes, scrollable_axes);
