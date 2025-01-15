@@ -507,12 +507,11 @@ layout_leaf::refresh_layout(
 {
     if (traversal.is_refresh_pass)
     {
-        // TODO: Cache this?
-        resolved_layout_spec resolved_spec;
-        resolve_layout_spec(
-            traversal, resolved_spec, layout_spec, default_flags);
-        detect_layout_change(traversal, &resolved_spec_, resolved_spec);
-
+        if (detect_layout_change(traversal, &layout_spec_, layout_spec))
+        {
+            resolve_layout_spec(
+                traversal, resolved_spec_, layout_spec, default_flags);
+        }
         detect_layout_change(traversal, &requirements_, requirements);
     }
 }

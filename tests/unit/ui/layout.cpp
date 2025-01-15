@@ -680,4 +680,92 @@ TEST_CASE("layout tests", "[ui]")
             resolve_layout(system, make_layout_vector(100, 100));
         }
     };
+
+    BENCHMARK("a simple column of rows")
+    {
+        layout_system system;
+        data_graph graph;
+
+        for (int i = 0; i != 200; ++i)
+        {
+            data_traversal data_traversal;
+            scoped_data_traversal sdt(graph, data_traversal);
+            layout_traversal layout_traversal;
+            layout_style_info style{
+                make_layout_vector(0, 0),
+                16,
+                make_layout_vector(12, 16),
+                12,
+                1};
+            initialize_layout_traversal(
+                system,
+                layout_traversal,
+                true,
+                nullptr,
+                &style,
+                make_vector<float>(1, 1));
+            testing_context ctx;
+            ctx.data = &data_traversal;
+            ctx.layout = &layout_traversal;
+
+            {
+                column_layout column(ctx);
+                {
+                    for (int j = 0; j != 100; ++j)
+                    {
+                        row_layout row(ctx);
+                        do_spacer(ctx, size(20, 20, PIXELS));
+                        do_spacer(
+                            ctx, size(20, float((i >> 2) & 7) * 5, PIXELS));
+                    }
+                }
+            }
+
+            resolve_layout(system, make_layout_vector(10'000, 10'000));
+        }
+    };
+
+    BENCHMARK("a column of rows with some growth")
+    {
+        layout_system system;
+        data_graph graph;
+
+        for (int i = 0; i != 200; ++i)
+        {
+            data_traversal data_traversal;
+            scoped_data_traversal sdt(graph, data_traversal);
+            layout_traversal layout_traversal;
+            layout_style_info style{
+                make_layout_vector(0, 0),
+                16,
+                make_layout_vector(12, 16),
+                12,
+                1};
+            initialize_layout_traversal(
+                system,
+                layout_traversal,
+                true,
+                nullptr,
+                &style,
+                make_vector<float>(1, 1));
+            testing_context ctx;
+            ctx.data = &data_traversal;
+            ctx.layout = &layout_traversal;
+
+            {
+                column_layout column(ctx);
+                {
+                    for (int j = 0; j != 100; ++j)
+                    {
+                        row_layout row(ctx, GROW);
+                        do_spacer(ctx, size(20, 20, PIXELS));
+                        do_spacer(ctx, GROW);
+                        do_spacer(ctx, width(float((i >> 2) & 7) * 5, PIXELS));
+                    }
+                }
+            }
+
+            resolve_layout(system, make_layout_vector(10'000, 10'000));
+        }
+    };
 }

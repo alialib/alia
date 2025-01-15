@@ -26,7 +26,6 @@ resolve_layout(layout_node* root_node, layout_vector const& size)
 {
     if (root_node)
     {
-        root_node->get_horizontal_requirements();
         layout_requirements y = root_node->get_vertical_requirements(size[0]);
         root_node->set_relative_assignment(relative_layout_assignment{
             layout_box(make_layout_vector(0, 0), size), y.ascent});
