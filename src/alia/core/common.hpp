@@ -20,7 +20,7 @@ typedef long long counter_type;
 
 struct blob
 {
-    std::shared_ptr<std::byte> data;
+    std::shared_ptr<std::byte[]> data;
     uint64_t size = 0;
 };
 
