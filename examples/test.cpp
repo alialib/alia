@@ -9,6 +9,7 @@
 #include <alia/ui/layout/simple.hpp>
 #include <alia/ui/layout/spacer.hpp>
 #include <alia/ui/layout/specification.hpp>
+#include <alia/ui/layout/system.hpp>
 #include <alia/ui/layout/utilities.hpp>
 #include <alia/ui/library/bullets.hpp>
 #include <alia/ui/library/checkbox.hpp>
@@ -99,7 +100,7 @@ void
 do_box(
     ui_context ctx,
     SkColor color,
-    action<> /*on_click*/,
+    action<> on_click,
     layout const& layout_spec = layout(TOP | LEFT | PADDED))
 {
     box_data* data_ptr;
@@ -130,7 +131,8 @@ do_box(
             if (detect_click(ctx, id, mouse_button::LEFT)
                 || detect_keyboard_click(ctx, data.keyboard_click_state_, id))
             {
-                data.state_ = !data.state_;
+                // data.state_ = !data.state_;
+                perform_action(on_click);
             }
 
             break;
@@ -164,11 +166,11 @@ do_box(
             }
 
             rgb8 c;
-            if (data.state_)
-            {
-                c = rgb8(0x40, 0x40, 0x40);
-            }
-            else
+            // if (data.state_)
+            // {
+            //     c = rgb8(0x40, 0x40, 0x40);
+            // }
+            // else
             {
                 c = rgb8(
                     std::uint8_t(SkColorGetR(color)),
@@ -771,6 +773,269 @@ update_theme(ui_context ctx)
 }
 
 void
+binary_number_ui(ui_context ctx, /*grid_layout& grid,*/ int number)
+{
+    row_layout row(ctx);
+    auto n = get_state(ctx, number);
+    do_text(ctx, printf(ctx, "%d", n));
+    for (int i = 0; i != 12; ++i)
+    {
+        auto bit = read_signal(n) & (1 << (11 - i));
+        do_box(ctx, bit ? SK_ColorLTGRAY : SK_ColorDKGRAY, callback([&] {
+                   n.write(read_signal(n) ^ (1 << (11 - i)));
+               }));
+    }
+}
+
+struct lazy_list_data
+{
+    size_t item_count;
+    relative_layout_assignment assignment;
+};
+
+struct component_data
+{
+    data_block block;
+    layout_system layout;
+};
+
+struct lazy_list_item_data : component_data
+{
+    counter_type last_refresh;
+};
+
+template<class DoItem>
+void
+invoke_lazy_list_item(
+    ui_context ctx, lazy_list_item_data& data, DoItem&& do_item, size_t index)
+{
+    scoped_data_block sdb(ctx, data.block);
+    std::forward<DoItem>(do_item)(ctx, index);
+}
+
+void
+resolve_layout(
+    layout_node* root_node, relative_layout_assignment const& assignment)
+{
+    if (root_node)
+    {
+        root_node->get_horizontal_requirements();
+        layout_requirements y
+            = root_node->get_vertical_requirements(assignment.region.size[0]);
+        root_node->set_relative_assignment(
+            relative_layout_assignment{assignment.region, y.ascent});
+    }
+}
+
+template<class Component>
+void
+refresh_component(ui_context ctx, component_data& data, Component&& component)
+{
+    // TODO: Make this all less hacky...
+
+    refresh_event refresh;
+    event_traversal traversal;
+    traversal.targeted = false;
+    traversal.type_code = REFRESH_EVENT;
+    traversal.event_type = &typeid(refresh_event);
+    traversal.event = &refresh;
+    traversal.is_refresh = true;
+
+    auto* old_event = ctx.contents_.storage->event;
+    ctx.contents_.storage->event = &traversal;
+    auto old_layout = ctx.contents_.storage->ui_traversal->layout;
+
+    layout_traversal new_layout;
+    initialize_layout_traversal(
+        data.layout,
+        new_layout,
+        true,
+        nullptr,
+        old_layout.style_info,
+        old_layout.ppi);
+    ctx.contents_.storage->ui_traversal->layout = new_layout;
+
+    auto& data_traversal = get_data_traversal(ctx);
+    data_traversal.gc_enabled = data_traversal.cache_clearing_enabled = true;
+
+    {
+        static component_container_ptr new_root_component
+            = std::make_shared<component_container>();
+        scoped_component_container root(ctx, &new_root_component);
+
+        scoped_data_block sdb(ctx, data.block);
+
+        std::forward<Component>(component)(ctx);
+    }
+
+    data_traversal.gc_enabled = data_traversal.cache_clearing_enabled = false;
+    ctx.contents_.storage->event = old_event;
+    ctx.contents_.storage->ui_traversal->layout = old_layout;
+}
+
+template<class DoItem>
+void
+refresh_lazy_list_item(
+    ui_context ctx,
+    lazy_list_data& data,
+    lazy_list_item_data& item,
+    DoItem&& do_item,
+    size_t index)
+{
+    if (item.last_refresh != get<core_system_tag>(ctx).refresh_counter)
+    {
+        refresh_component(ctx, item, [&](ui_context ctx) {
+            std::forward<DoItem>(do_item)(ctx, index);
+        });
+
+        relative_layout_assignment item_assignment;
+        item_assignment.region.corner[0] = data.assignment.region.corner[0];
+        item_assignment.region.corner[1]
+            = data.assignment.region.corner[1]
+            + data.assignment.region.size[1] / data.item_count * index;
+        item_assignment.region.size[0] = data.assignment.region.size[0];
+        item_assignment.region.size[1]
+            = data.assignment.region.size[1] / data.item_count;
+        item_assignment.baseline_y = item_assignment.region.size[1];
+
+        resolve_layout(item.layout.root_node, item_assignment);
+
+        item.last_refresh = get<core_system_tag>(ctx).refresh_counter;
+    }
+}
+
+// TODO: Obviously not this.
+static lazy_list_item_data the_items[4096];
+
+struct lazy_list_layout_container : layout_node
+{
+    // implementation of layout interface
+    layout_requirements
+    get_horizontal_requirements() override
+    {
+        return layout_requirements{0, 0, 0, 1};
+    }
+    layout_requirements
+    get_vertical_requirements(layout_scalar width) override
+    {
+        if (data_->item_count > 0)
+        {
+            auto* root_node = the_items[0].layout.root_node;
+            if (root_node)
+            {
+                auto const y = root_node->get_vertical_requirements(width);
+                item_height_ = y.size;
+            }
+            else
+            {
+                item_height_ = 0;
+            }
+        }
+        else
+        {
+            item_height_ = 0;
+        }
+        return layout_requirements{item_height_ * data_->item_count, 0, 0, 0};
+    }
+    void
+    set_relative_assignment(
+        relative_layout_assignment const& assignment) override
+    {
+        data_->assignment = assignment;
+    }
+
+    layout_scalar item_height_;
+    lazy_list_data* data_;
+};
+
+template<class DoItem>
+void
+lazy_list_ui(ui_context ctx, size_t item_count, DoItem&& do_item)
+{
+    auto& data = get_cached_data<lazy_list_data>(ctx);
+    auto& container = get_cached_data<lazy_list_layout_container>(ctx);
+
+    if (is_refresh_event(ctx))
+    {
+        data.item_count = item_count;
+        container.data_ = &data;
+        add_layout_node(get_layout_traversal(ctx), &container);
+    }
+
+    switch (get_event_category(ctx))
+    {
+        case REFRESH_CATEGORY: {
+            if (item_count > 0)
+            {
+                refresh_component(ctx, the_items[0], [&](ui_context ctx) {
+                    std::forward<DoItem>(do_item)(ctx, 0);
+                });
+            }
+            break;
+        }
+        case RENDER_CATEGORY: {
+            auto& geometry = get_geometry_context(ctx);
+            vector<2, double> const window_low = geometry.clip_region.corner;
+            vector<2, double> const window_high
+                = get_high_corner(geometry.clip_region);
+            auto const region = box<2, double>(data.assignment.region);
+            auto const region_low
+                = transform(geometry.transformation_matrix, region.corner);
+            double const item_height = container.item_height_;
+            auto const first_visible_index = std::clamp(
+                ptrdiff_t(
+                    std::floor((window_low[1] - region_low[1]) / item_height)),
+                ptrdiff_t(0),
+                ptrdiff_t(item_count) - 1);
+            auto const last_visible_index = std::clamp(
+                ptrdiff_t(
+                    std::ceil((window_high[1] - region_low[1]) / item_height)),
+                ptrdiff_t(0),
+                ptrdiff_t(item_count) - 1);
+            for (ptrdiff_t i = first_visible_index; i != last_visible_index;
+                 ++i)
+            {
+                refresh_lazy_list_item(ctx, data, the_items[i], do_item, i);
+                invoke_lazy_list_item(ctx, the_items[i], do_item, i);
+            }
+            break;
+        }
+        case REGION_CATEGORY: {
+            if (get_event_type(ctx) == MOUSE_HIT_TEST_EVENT
+                || get_event_type(ctx) == WHEEL_HIT_TEST_EVENT)
+            {
+                if (is_mouse_inside_box(
+                        ctx, box<2, double>(data.assignment.region)))
+                {
+                    auto const mouse_position = get_mouse_position(ctx);
+                    auto const item_height = container.item_height_;
+                    auto const index = std::clamp(
+                        ptrdiff_t(std::floor(
+                            (mouse_position[1]
+                             - data.assignment.region.corner[1])
+                            / item_height)),
+                        ptrdiff_t(0),
+                        ptrdiff_t(item_count) - 1);
+                    refresh_lazy_list_item(
+                        ctx, data, the_items[index], do_item, index);
+                    invoke_lazy_list_item(
+                        ctx, the_items[index], do_item, index);
+                }
+                break;
+            }
+            [[fallthrough]];
+        }
+        default:
+            for (size_t i = 0; i != item_count; ++i)
+            {
+                refresh_lazy_list_item(ctx, data, the_items[i], do_item, i);
+                invoke_lazy_list_item(ctx, the_items[i], do_item, i);
+            }
+            break;
+    }
+}
+
+void
 my_ui(ui_context ctx)
 {
     update_theme(ctx);
@@ -979,6 +1244,13 @@ my_ui(ui_context ctx)
     do_separator(ctx);
     do_spacer(ctx, height(40, PIXELS));
 
+    {
+        // grid_layout grid(ctx);
+        lazy_list_ui(ctx, 4096, [&](ui_context ctx, size_t index) {
+            binary_number_ui(ctx, /*grid,*/ int(index));
+        });
+    }
+
     // {
     //     scoped_grid_layout grid(ctx);
     //     for (int i = 0; i != 4; ++i)
@@ -1028,39 +1300,39 @@ my_ui(ui_context ctx)
     //     // do_svg_image(ctx);
     // }
 
-    {
-        auto show_content = get_state(ctx, false);
-        // grid_layout grid(ctx);
+    // {
+    //     auto show_content = get_state(ctx, false);
+    //     // grid_layout grid(ctx);
 
-        {
-            row_layout row(ctx);
-            do_node_expander(ctx, show_content);
-            do_text(ctx, value("Some Text"), CENTER_Y);
-        }
+    //     {
+    //         row_layout row(ctx);
+    //         do_node_expander(ctx, show_content);
+    //         do_text(ctx, value("Some Text"), CENTER_Y);
+    //     }
 
-        {
-            row_layout row(ctx);
-            do_spacer(ctx, width(40, PIXELS));
-            collapsible_content(ctx, show_content, GROW, [&] {
-                do_wrapped_text(
-                    ctx,
-                    value("Lorem ipsum dolor sit amet, consectetur "
-                          "adipisg elit. "
-                          "Phasellus lacinia elementum diam consequat "
-                          "alicinquet. "
-                          "Vestibulum ut libero justo. Pellentesque lectus "
-                          "lectus, "
-                          "scelerisque a elementum sed, bibendum id libero. "
-                          "Maecenas venenatis est sed sem "
-                          "consequat mollis. Ut "
-                          "nequeodio, hendrerit ut justo venenatis, consequat "
-                          "molestie eros. Nam fermentum, mi malesuada eleifend"
-                          "dapibus, lectus dolor luctus orci, nec posuere lor "
-                          "lorem ac sem. Nullam interdum laoreet ipsum in "
-                          "dictum."));
-            });
-        }
-    }
+    //     {
+    //         row_layout row(ctx);
+    //         do_spacer(ctx, width(40, PIXELS));
+    //         collapsible_content(ctx, show_content, GROW, [&] {
+    //             do_wrapped_text(
+    //                 ctx,
+    //                 value("Lorem ipsum dolor sit amet, consectetur "
+    //                       "adipisg elit. "
+    //                       "Phasellus lacinia elementum diam consequat "
+    //                       "alicinquet. "
+    //                       "Vestibulum ut libero justo. Pellentesque lectus "
+    //                       "lectus, "
+    //                       "scelerisque a elementum sed, bibendum id libero.
+    //                       " "Maecenas venenatis est sed sem " "consequat
+    //                       mollis. Ut " "nequeodio, hendrerit ut justo
+    //                       venenatis, consequat " "molestie eros. Nam
+    //                       fermentum, mi malesuada eleifend" "dapibus, lectus
+    //                       dolor luctus orci, nec posuere lor " "lorem ac
+    //                       sem. Nullam interdum laoreet ipsum in "
+    //                       "dictum."));
+    //         });
+    //     }
+    // }
 
     // do_wrapped_text(
     //     ctx,
@@ -1100,15 +1372,16 @@ my_ui(ui_context ctx)
 
     do_spacer(ctx, height(100, PIXELS));
 
-    // do_box(
-    //     ctx,
-    //     SK_ColorRED,
-    //     actions::toggle(get_state(ctx, false)),
-    //     size(400, 400, PIXELS));
-    // do_spacer(ctx, height(100, PIXELS));
+    do_box(
+        ctx,
+        SK_ColorRED,
+        actions::toggle(get_state(ctx, false)),
+        size(400, 400, PIXELS));
+
+    do_spacer(ctx, height(100, PIXELS));
 
     {
-        for (int outer = 0; outer != 0; ++outer)
+        for (int outer = 0; outer != 2; ++outer)
         {
             do_wrapped_text(
                 ctx,
