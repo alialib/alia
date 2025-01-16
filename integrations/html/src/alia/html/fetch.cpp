@@ -21,14 +21,6 @@ to_string(http_method method)
     }
 }
 
-blob
-to_blob(std::string s)
-{
-    std::shared_ptr<char> storage(new char[s.size()], array_deleter<char>());
-    memcpy(storage.get(), s.data(), s.size());
-    return blob{storage.get(), s.size(), storage};
-}
-
 namespace {
 
 struct fetch_user_data
@@ -55,8 +47,7 @@ struct scoped_emscripten_fetch : noncopyable
 void
 handle_fetch_response(emscripten_fetch_t* fetch)
 {
-    std::shared_ptr<scoped_emscripten_fetch> fetch_ownership(
-        new scoped_emscripten_fetch(fetch));
+    auto fetch_ownership = std::make_shared<scoped_emscripten_fetch>(fetch);
 
     // Grab our data from the Emscripten fetch object and assume ownership of
     // it.
@@ -66,7 +57,11 @@ handle_fetch_response(emscripten_fetch_t* fetch)
     // Construct the response.
     http_response response;
     response.status_code = fetch->status;
-    response.body = blob{fetch->data, fetch->numBytes, fetch_ownership};
+    response.body = blob{
+        std::shared_ptr<std::byte>(
+            std::move(fetch_ownership),
+            reinterpret_cast<std::byte*>(fetch->data)),
+        fetch->numBytes};
 
     // Invoke the callback.
     data->reporter.report_success(response);
