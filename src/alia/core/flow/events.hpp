@@ -58,7 +58,7 @@ struct event_traversal
 };
 
 template<class Context>
-component_container_ptr const&
+component_container_ptr const
 get_active_component_container(Context ctx)
 {
     return *get_event_traversal(ctx).active_container;

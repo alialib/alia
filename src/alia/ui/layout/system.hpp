@@ -21,7 +21,7 @@ initialize_layout_traversal(
     layout_traversal& traversal,
     bool is_refresh,
     geometry_context* geometry,
-    layout_style_info* style,
+    layout_style_info const* style,
     vector<2, float> const& ppi);
 
 // Calculate the minimum space needed by the given layout system.
