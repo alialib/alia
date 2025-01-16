@@ -58,7 +58,7 @@ handle_fetch_response(emscripten_fetch_t* fetch)
     http_response response;
     response.status_code = fetch->status;
     response.body = blob{
-        std::shared_ptr<std::byte>(
+        std::shared_ptr<std::byte[]>(
             std::move(fetch_ownership),
             reinterpret_cast<std::byte*>(fetch->data)),
         fetch->numBytes};
