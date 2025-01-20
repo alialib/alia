@@ -128,6 +128,8 @@ do_box(
             break;
 
         case INPUT_CATEGORY:
+            add_to_focus_order(ctx, id);
+
             if (detect_click(ctx, id, mouse_button::LEFT)
                 || detect_keyboard_click(ctx, data.keyboard_click_state_, id))
             {
@@ -229,7 +231,7 @@ do_box(
                 SkPaint paint;
                 paint.setStyle(SkPaint::kStroke_Style);
                 paint.setStrokeWidth(4);
-                paint.setColor(SK_ColorBLACK);
+                paint.setColor(SK_ColorBLUE);
                 canvas.drawRect(rect, paint);
             }
             break;
@@ -775,9 +777,10 @@ update_theme(ui_context ctx)
 void
 binary_number_ui(ui_context ctx, /*grid_layout& grid,*/ int number)
 {
-    row_layout row(ctx);
     auto n = get_state(ctx, number);
-    do_text(ctx, printf(ctx, "%d", n));
+    row_layout row(ctx);
+    // cached_ui_block<row_layout>(ctx, n.value_id(), default_layout, [&] {
+    do_text(ctx, printf(ctx, "%d", n), layout(width(100, PIXELS), RIGHT));
     for (int i = 0; i != 12; ++i)
     {
         auto bit = read_signal(n) & (1 << (11 - i));
@@ -785,13 +788,8 @@ binary_number_ui(ui_context ctx, /*grid_layout& grid,*/ int number)
                    n.write(read_signal(n) ^ (1 << (11 - i)));
                }));
     }
+    //});
 }
-
-struct lazy_list_data
-{
-    size_t item_count;
-    relative_layout_assignment assignment;
-};
 
 struct component_data
 {
@@ -802,6 +800,16 @@ struct component_data
 struct lazy_list_item_data : component_data
 {
     counter_type last_refresh;
+};
+
+struct lazy_list_data
+{
+    size_t item_count = 0;
+    std::unordered_map<size_t, lazy_list_item_data> items;
+    component_container_ptr component;
+    relative_layout_assignment assignment;
+    layout_scalar item_height = 0;
+    std::pair<ptrdiff_t, ptrdiff_t> active_range = {0, 0};
 };
 
 template<class DoItem>
@@ -843,6 +851,7 @@ refresh_component(ui_context ctx, component_data& data, Component&& component)
 
     auto* old_event = ctx.contents_.storage->event;
     ctx.contents_.storage->event = &traversal;
+    traversal.active_container = old_event->active_container;
     auto old_layout = ctx.contents_.storage->ui_traversal->layout;
 
     layout_traversal new_layout;
@@ -859,9 +868,9 @@ refresh_component(ui_context ctx, component_data& data, Component&& component)
     data_traversal.gc_enabled = data_traversal.cache_clearing_enabled = true;
 
     {
-        static component_container_ptr new_root_component
-            = std::make_shared<component_container>();
-        scoped_component_container root(ctx, &new_root_component);
+        // static component_container_ptr new_root_component
+        //     = std::make_shared<component_container>();
+        // scoped_component_container root(ctx, &new_root_component);
 
         scoped_data_block sdb(ctx, data.block);
 
@@ -877,7 +886,7 @@ template<class DoItem>
 void
 refresh_lazy_list_item(
     ui_context ctx,
-    lazy_list_data& data,
+    lazy_list_data& list,
     lazy_list_item_data& item,
     DoItem&& do_item,
     size_t index)
@@ -889,13 +898,13 @@ refresh_lazy_list_item(
         });
 
         relative_layout_assignment item_assignment;
-        item_assignment.region.corner[0] = data.assignment.region.corner[0];
+        item_assignment.region.corner[0] = list.assignment.region.corner[0];
         item_assignment.region.corner[1]
-            = data.assignment.region.corner[1]
-            + data.assignment.region.size[1] / data.item_count * index;
-        item_assignment.region.size[0] = data.assignment.region.size[0];
+            = list.assignment.region.corner[1]
+            + list.assignment.region.size[1] / list.item_count * index;
+        item_assignment.region.size[0] = list.assignment.region.size[0];
         item_assignment.region.size[1]
-            = data.assignment.region.size[1] / data.item_count;
+            = list.assignment.region.size[1] / list.item_count;
         item_assignment.baseline_y = item_assignment.region.size[1];
 
         resolve_layout(item.layout.root_node, item_assignment);
@@ -903,9 +912,6 @@ refresh_lazy_list_item(
         item.last_refresh = get<core_system_tag>(ctx).refresh_counter;
     }
 }
-
-// TODO: Obviously not this.
-static lazy_list_item_data the_items[4096];
 
 struct lazy_list_layout_container : layout_node
 {
@@ -918,88 +924,160 @@ struct lazy_list_layout_container : layout_node
     layout_requirements
     get_vertical_requirements(layout_scalar width) override
     {
-        if (data_->item_count > 0)
+        if (data.item_count > 0)
         {
-            auto* root_node = the_items[0].layout.root_node;
+            auto* root_node = data.items[0].layout.root_node;
             if (root_node)
             {
                 auto const y = root_node->get_vertical_requirements(width);
-                item_height_ = y.size;
+                data.item_height = y.size;
             }
             else
             {
-                item_height_ = 0;
+                data.item_height = 0;
             }
         }
         else
         {
-            item_height_ = 0;
+            data.item_height = 0;
         }
-        return layout_requirements{item_height_ * data_->item_count, 0, 0, 0};
+        return layout_requirements{
+            data.item_height * data.item_count, 0, 0, 0};
     }
     void
     set_relative_assignment(
         relative_layout_assignment const& assignment) override
     {
-        data_->assignment = assignment;
+        data.assignment = assignment;
     }
 
-    layout_scalar item_height_;
-    lazy_list_data* data_;
+    lazy_list_data data;
 };
+
+ptrdiff_t
+clamp_index(lazy_list_data const& list, ptrdiff_t index)
+{
+    return std::clamp(index, ptrdiff_t(0), ptrdiff_t(list.item_count) - 1);
+}
+
+std::pair<ptrdiff_t, ptrdiff_t>
+compute_visible_range(ui_context ctx, lazy_list_data const& list)
+{
+    auto& geometry = get_geometry_context(ctx);
+    auto const window_low = geometry.clip_region.corner;
+    auto const window_high = get_high_corner(geometry.clip_region);
+    auto const region = box<2, double>(list.assignment.region);
+    auto const region_low
+        = transform(geometry.transformation_matrix, region.corner);
+    auto const first = clamp_index(
+        list,
+        ptrdiff_t(
+            std::floor((window_low[1] - region_low[1]) / list.item_height)));
+    auto const last = clamp_index(
+        list,
+        ptrdiff_t(
+            std::ceil((window_high[1] - region_low[1]) / list.item_height)));
+    return std::pair{first, last};
+}
+
+ptrdiff_t
+index_from_position(lazy_list_data const& list, vector<2, double> position)
+{
+    return clamp_index(
+        list,
+        ptrdiff_t(std::floor(
+            (position[1] - list.assignment.region.corner[1])
+            / list.item_height)));
+}
+
+void
+update_active_range(
+    lazy_list_data& list, std::pair<ptrdiff_t, ptrdiff_t> new_range)
+{
+    // Clean up any items that are no longer in the active range...
+    // If there's no overlap, we can just remove all items.
+    if (new_range.first > list.active_range.second
+        || new_range.second < list.active_range.first)
+    {
+        for (ptrdiff_t i = list.active_range.first;
+             i <= list.active_range.second;
+             ++i)
+        {
+            // Item 0 is special because we use it for layout.
+            if (i != 0)
+                list.items.erase(i);
+        }
+    }
+    else
+    {
+        // Check for items that fell off the beginning.
+        for (ptrdiff_t i = list.active_range.first; i < new_range.first; ++i)
+        {
+            // Item 0 is special because we use it for layout.
+            if (i != 0)
+                list.items.erase(i);
+        }
+        // Check for items that fell off the end.
+        for (ptrdiff_t i = new_range.second + 1; i <= list.active_range.second;
+             ++i)
+        {
+            // Item 0 is special because we use it for layout.
+            if (i != 0)
+                list.items.erase(i);
+        }
+    }
+    list.active_range = new_range;
+}
 
 template<class DoItem>
 void
 lazy_list_ui(ui_context ctx, size_t item_count, DoItem&& do_item)
 {
-    auto& data = get_cached_data<lazy_list_data>(ctx);
-    auto& container = get_cached_data<lazy_list_layout_container>(ctx);
+    lazy_list_layout_container* container;
+    if (get_cached_data(ctx, &container))
+        container->data.component = std::make_shared<component_container>();
+    auto& data = container->data;
 
     if (is_refresh_event(ctx))
     {
         data.item_count = item_count;
-        container.data_ = &data;
-        add_layout_node(get_layout_traversal(ctx), &container);
+        add_layout_node(get_layout_traversal(ctx), container);
     }
+
+    scoped_component_container scc(ctx, &data.component);
 
     switch (get_event_category(ctx))
     {
         case REFRESH_CATEGORY: {
             if (item_count > 0)
             {
-                refresh_component(ctx, the_items[0], [&](ui_context ctx) {
+                refresh_component(ctx, data.items[0], [&](ui_context ctx) {
                     std::forward<DoItem>(do_item)(ctx, 0);
                 });
             }
             break;
         }
+
         case RENDER_CATEGORY: {
-            auto& geometry = get_geometry_context(ctx);
-            vector<2, double> const window_low = geometry.clip_region.corner;
-            vector<2, double> const window_high
-                = get_high_corner(geometry.clip_region);
-            auto const region = box<2, double>(data.assignment.region);
-            auto const region_low
-                = transform(geometry.transformation_matrix, region.corner);
-            double const item_height = container.item_height_;
-            auto const first_visible_index = std::clamp(
-                ptrdiff_t(
-                    std::floor((window_low[1] - region_low[1]) / item_height)),
-                ptrdiff_t(0),
-                ptrdiff_t(item_count) - 1);
-            auto const last_visible_index = std::clamp(
-                ptrdiff_t(
-                    std::ceil((window_high[1] - region_low[1]) / item_height)),
-                ptrdiff_t(0),
-                ptrdiff_t(item_count) - 1);
-            for (ptrdiff_t i = first_visible_index; i != last_visible_index;
-                 ++i)
+            auto const [first, last] = compute_visible_range(ctx, data);
+
+            // The active range includes one item before and after the visible
+            // range, primarily so those items can handle focus queries.
+            update_active_range(
+                data,
+                std::pair{
+                    clamp_index(data, first - 1),
+                    clamp_index(data, last + 1)});
+
+            for (ptrdiff_t i = first; i <= last; ++i)
             {
-                refresh_lazy_list_item(ctx, data, the_items[i], do_item, i);
-                invoke_lazy_list_item(ctx, the_items[i], do_item, i);
+                refresh_lazy_list_item(ctx, data, data.items[i], do_item, i);
+                invoke_lazy_list_item(ctx, data.items[i], do_item, i);
             }
+
             break;
         }
+
         case REGION_CATEGORY: {
             if (get_event_type(ctx) == MOUSE_HIT_TEST_EVENT
                 || get_event_type(ctx) == WHEEL_HIT_TEST_EVENT)
@@ -1007,29 +1085,30 @@ lazy_list_ui(ui_context ctx, size_t item_count, DoItem&& do_item)
                 if (is_mouse_inside_box(
                         ctx, box<2, double>(data.assignment.region)))
                 {
-                    auto const mouse_position = get_mouse_position(ctx);
-                    auto const item_height = container.item_height_;
-                    auto const index = std::clamp(
-                        ptrdiff_t(std::floor(
-                            (mouse_position[1]
-                             - data.assignment.region.corner[1])
-                            / item_height)),
-                        ptrdiff_t(0),
-                        ptrdiff_t(item_count) - 1);
+                    auto const index
+                        = index_from_position(data, get_mouse_position(ctx));
                     refresh_lazy_list_item(
-                        ctx, data, the_items[index], do_item, index);
+                        ctx, data, data.items[index], do_item, index);
                     invoke_lazy_list_item(
-                        ctx, the_items[index], do_item, index);
+                        ctx, data.items[index], do_item, index);
                 }
                 break;
             }
             [[fallthrough]];
         }
+
         default:
-            for (size_t i = 0; i != item_count; ++i)
+            // TODO: Handle targeted events.
+            if (scc.is_on_route())
             {
-                refresh_lazy_list_item(ctx, data, the_items[i], do_item, i);
-                invoke_lazy_list_item(ctx, the_items[i], do_item, i);
+                for (ptrdiff_t i = data.active_range.first;
+                     i <= data.active_range.second;
+                     ++i)
+                {
+                    refresh_lazy_list_item(
+                        ctx, data, data.items[i], do_item, i);
+                    invoke_lazy_list_item(ctx, data.items[i], do_item, i);
+                }
             }
             break;
     }
@@ -1054,9 +1133,11 @@ my_ui(ui_context ctx)
     column_layout column3(ctx, GROW | PADDED);
 
     // auto my_style
-    //     = text_style{"Roboto/Roboto-Regular", 22.f, rgb8(173, 181, 189)};
+    //     = text_style{"Roboto/Roboto-Regular", 22.f, rgb8(173, 181,
+    //     189)};
     // auto my_style = text_style{
-    //     "Roboto_Mono/static/RobotoMono-Regular", 22.f, rgb8(173, 181, 189)};
+    //     "Roboto_Mono/static/RobotoMono-Regular", 22.f, rgb8(173, 181,
+    //     189)};
 
     // panel_style_info pstyle{
     //     box_border_width<float>{4, 4, 4, 4},
@@ -1245,8 +1326,7 @@ my_ui(ui_context ctx)
     do_spacer(ctx, height(40, PIXELS));
 
     {
-        // grid_layout grid(ctx);
-        lazy_list_ui(ctx, 4096, [&](ui_context ctx, size_t index) {
+        lazy_list_ui(ctx, 262'144, [&](ui_context ctx, size_t index) {
             binary_number_ui(ctx, /*grid,*/ int(index));
         });
     }
@@ -1272,7 +1352,8 @@ my_ui(ui_context ctx)
 
     // for (int i = 0; i != 0; ++i)
     // {
-    //     cached_ui_block<column_layout>(ctx, unit_id, default_layout, [&] {
+    //     cached_ui_block<column_layout>(ctx, unit_id, default_layout, [&]
+    //     {
     //         panel p(ctx, direct(pstyle));
     //         // do_text(ctx, value("Lorem ipsum"));
     //         //  column_layout column(ctx);
@@ -1320,15 +1401,15 @@ my_ui(ui_context ctx)
     //                       "adipisg elit. "
     //                       "Phasellus lacinia elementum diam consequat "
     //                       "alicinquet. "
-    //                       "Vestibulum ut libero justo. Pellentesque lectus "
-    //                       "lectus, "
-    //                       "scelerisque a elementum sed, bibendum id libero.
-    //                       " "Maecenas venenatis est sed sem " "consequat
-    //                       mollis. Ut " "nequeodio, hendrerit ut justo
-    //                       venenatis, consequat " "molestie eros. Nam
-    //                       fermentum, mi malesuada eleifend" "dapibus, lectus
-    //                       dolor luctus orci, nec posuere lor " "lorem ac
-    //                       sem. Nullam interdum laoreet ipsum in "
+    //                       "Vestibulum ut libero justo. Pellentesque
+    //                       lectus " "lectus, " "scelerisque a elementum
+    //                       sed, bibendum id libero. " "Maecenas venenatis
+    //                       est sed sem " "consequat mollis. Ut "
+    //                       "nequeodio, hendrerit ut justo venenatis,
+    //                       consequat " "molestie eros. Nam fermentum, mi
+    //                       malesuada eleifend" "dapibus, lectus dolor
+    //                       luctus orci, nec posuere lor " "lorem ac sem.
+    //                       Nullam interdum laoreet ipsum in "
     //                       "dictum."));
     //         });
     //     }
