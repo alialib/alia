@@ -302,7 +302,10 @@ update_ui(emscripten_canvas_impl& impl)
         = std::chrono::steady_clock::now();
 
     resolve_layout(
-        impl.system.layout, make_vector(float(width), float(height)));
+        impl.system.layout,
+        make_box(
+            make_layout_vector(0, 0),
+            make_layout_vector(layout_scalar(width), layout_scalar(height))));
 
     long long layout_time;
     {
