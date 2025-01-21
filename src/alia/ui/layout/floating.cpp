@@ -63,7 +63,9 @@ floating_layout::end()
                 if (max_size_[i] >= 0 && data_->size[i] > max_size_[i])
                     data_->size[i] = max_size_[i];
             }
-            resolve_layout(floating_root_, data_->size);
+            resolve_layout(
+                floating_root_,
+                make_box(make_layout_vector(0, 0), data_->size));
         }
 
         // TODO

@@ -22,21 +22,21 @@ initialize_layout_traversal(
 }
 
 void
-resolve_layout(layout_node* root_node, layout_vector const& size)
+resolve_layout(layout_node* root_node, layout_box const& assignment)
 {
     if (root_node)
     {
-        root_node->get_horizontal_requirements();
-        layout_requirements y = root_node->get_vertical_requirements(size[0]);
-        root_node->set_relative_assignment(relative_layout_assignment{
-            layout_box(make_layout_vector(0, 0), size), y.ascent});
+        layout_requirements y
+            = root_node->get_vertical_requirements(assignment.size[0]);
+        root_node->set_relative_assignment(
+            relative_layout_assignment{assignment, y.ascent});
     }
 }
 
 void
-resolve_layout(layout_system& system, layout_vector const& size)
+resolve_layout(layout_system& system, layout_box const& assignment)
 {
-    resolve_layout(system.root_node, size);
+    resolve_layout(system.root_node, assignment);
 }
 
 layout_vector
