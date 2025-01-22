@@ -26,7 +26,7 @@ make_country_request(std::string const& country_code)
         html::http_method::GET,
         "https://restcountries.com/v2/alpha/" + country_code,
         html::http_headers(), // no headers
-        html::blob()}; // no body
+        blob()}; // no body
 }
 
 // Use nlohmann::json to parse the response and extract the name.
