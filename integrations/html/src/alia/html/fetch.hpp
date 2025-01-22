@@ -2,7 +2,6 @@
 #define ALIA_HTML_FETCH_HPP
 
 #include <alia/core.hpp>
-#include <alia/html/common.hpp>
 
 #include <map>
 #include <string>

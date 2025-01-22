@@ -10,59 +10,42 @@
 
 namespace alia {
 
+// the metrics that define the geometry of a scrollbar - A scrollbar is defined
+// as a track with two buttons at the ends and a thumb that moves along the
+// track. All of these elements are the same width. Setting the length of the
+// buttons to 0 disables them.
 struct scrollbar_metrics
 {
-    layout_scalar width, button_length, minimum_thumb_length;
+    // width of the scrollbar track
+    layout_scalar width;
+    // length of each of the buttons at the ends of the scrollbar
+    layout_scalar button_length;
+    // the minimum allowable length of the scrollbar thumb
+    layout_scalar minimum_thumb_length;
+
+    auto
+    operator<=>(scrollbar_metrics const&) const
+        = default;
 };
 
-// persistent data maintained for a scrollbar
-struct scrollbar_data
+scrollbar_metrics
+get_scrollbar_metrics(dataless_ui_context ctx);
+
+struct scrollbar_style_info
 {
-    // the actual scroll position - If the caller wants to provide an external
-    // signal, it will be sync'd with this.
-    layout_scalar scroll_position;
+    rgb8 track_color;
+    rgb8 track_highlight_color;
 
-    // If this is true, the scroll_position has changed internally and needs
-    // to be communicated to the external storage.
-    bool scroll_position_changed = false;
+    rgb8 thumb_color;
+    rgb8 thumb_highlight_color;
 
-    // the smoothed version of the scroll position
-    layout_scalar smoothed_scroll_position;
-    // for smoothing the scroll position
-    value_smoother<layout_scalar> smoother;
-
-    // cached metrics
-    keyed_data<scrollbar_metrics> metrics;
-
-    // the relative position of the thumb within its track, in pixels
-    layout_scalar physical_position = 0;
-
-    // While dragging, this stores the offset from the mouse cursor to the
-    // top of the thumb.
-    double drag_start_delta = 0;
-
-    // for timing button repeats
-    timer_data timer;
+    rgb8 button_background_color;
+    rgb8 button_foreground_color;
+    rgb8 button_highlight_color;
 };
 
-// all the parameters that are necessary to define a scrollbar
-struct scrollbar_parameters
-{
-    // persistent data for the scrollbar
-    scrollbar_data* data;
-
-    // 0 for horizontal, 1 for vertical
-    unsigned axis;
-
-    // surface region assigned to the scrollbar
-    layout_box area;
-
-    // total size of the content along the scrolling axis
-    layout_scalar content_size;
-
-    // size of the window through which we view the content
-    layout_scalar window_size;
-};
+scrollbar_style_info
+extract_scrollbar_style_info(dataless_ui_context ctx);
 
 struct scrollable_view_data;
 

@@ -323,7 +323,10 @@ update_ui(sdl_window_impl& impl)
     // }
 
     resolve_layout(
-        impl.system.layout, make_vector(float(width), float(height)));
+        impl.system.layout,
+        make_box(
+            make_layout_vector(0, 0),
+            make_layout_vector(layout_scalar(width), layout_scalar(height))));
 
     // long long layout_time;
     // {

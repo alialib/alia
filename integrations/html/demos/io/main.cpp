@@ -26,7 +26,7 @@ make_country_request(std::string const& country_code)
         html::http_method::GET,
         "https://restcountries.com/v2/alpha/" + country_code,
         html::http_headers(), // no headers
-        html::blob()}; // no body
+        blob()}; // no body
 }
 
 // Use nlohmann::json to parse the response and extract the name.
@@ -39,7 +39,8 @@ parse_country_response(html::http_response const& response)
         return std::nullopt;
 
     auto const& body = response.body;
-    return json::parse(body.data, body.data + body.size)["name"];
+    char const* data = reinterpret_cast<char*>(body.data.get());
+    return json::parse(data, data + body.size)["name"];
 }
 
 // Here's our signal-based interface for fetching country names.

@@ -100,7 +100,8 @@ do_test_leaf2(testing_context& ctx, layout const& layout_spec)
             ui_code                                                           \
         }                                                                     \
                                                                               \
-        resolve_layout(system, assigned_size);                                \
+        resolve_layout(                                                       \
+            system, make_box(make_layout_vector(0, 0), assigned_size));       \
                                                                               \
         {                                                                     \
             data_traversal data_traversal;                                    \
@@ -165,7 +166,8 @@ do_test_leaf2(testing_context& ctx, layout const& layout_spec)
             ui_code                                                           \
         }                                                                     \
                                                                               \
-        resolve_layout(system, assigned_size);                                \
+        resolve_layout(                                                       \
+            system, make_box(make_layout_vector(0, 0), assigned_size));       \
                                                                               \
         {                                                                     \
             data_traversal data_traversal;                                    \
@@ -677,7 +679,10 @@ TEST_CASE("layout tests", "[ui]")
                 }
             }
 
-            resolve_layout(system, make_layout_vector(100, 100));
+            resolve_layout(
+                system,
+                make_box(
+                    make_layout_vector(0, 0), make_layout_vector(100, 100)));
         }
     };
 
@@ -721,7 +726,11 @@ TEST_CASE("layout tests", "[ui]")
                 }
             }
 
-            resolve_layout(system, make_layout_vector(10'000, 10'000));
+            resolve_layout(
+                system,
+                make_box(
+                    make_layout_vector(0, 0),
+                    make_layout_vector(10'000, 10'000)));
         }
     };
 
@@ -765,7 +774,11 @@ TEST_CASE("layout tests", "[ui]")
                 }
             }
 
-            resolve_layout(system, make_layout_vector(10'000, 10'000));
+            resolve_layout(
+                system,
+                make_box(
+                    make_layout_vector(0, 0),
+                    make_layout_vector(10'000, 10'000)));
         }
     };
 }
