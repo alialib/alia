@@ -30,6 +30,7 @@
 
 #include <include/core/SkCanvas.h>
 #include <include/core/SkColor.h>
+#include <include/core/SkPath.h>
 
 #ifdef _WIN32
 #pragma warning(pop)
@@ -54,8 +55,9 @@ extract_scrollbar_style_info(dataless_ui_context ctx)
     auto const& theme = get_system(ctx).theme;
     return {
         .track_color = theme.surface_container_levels[3],
+        .track_highlight_color = theme.surface_container_levels[4],
         .thumb_color = interpolate(
-            theme.surface_container_levels[4], theme.on_surface_variant, 0.5f),
+            theme.surface_container_levels[4], theme.on_surface_variant, 0.3f),
         .thumb_highlight_color = theme.primary,
         .button_background_color = theme.surface_container_levels[4],
         .button_foreground_color = theme.secondary,
@@ -69,11 +71,24 @@ draw_scrollbar_background(
     scrollbar_metrics const&,
     scrollbar_style_info const& style,
     layout_box const& rect,
-    interaction_status)
+    interaction_status status)
 {
     SkPaint paint;
     paint.setAntiAlias(true);
-    paint.setColor(as_skcolor(style.track_color));
+    if (is_active(status))
+    {
+        paint.setColor(as_skcolor(interpolate(
+            style.track_color, style.track_highlight_color, 0.2f)));
+    }
+    else if (is_hovered(status))
+    {
+        paint.setColor(as_skcolor(interpolate(
+            style.track_color, style.track_highlight_color, 0.4f)));
+    }
+    else
+    {
+        paint.setColor(as_skcolor(style.track_color));
+    }
     cast_event<render_event>(ctx).canvas->drawRect(as_skrect(rect), paint);
 }
 
@@ -87,12 +102,12 @@ draw_scrollbar_thumb(
 {
     SkPaint paint;
     paint.setAntiAlias(true);
-    if (is_hovered(status))
+    if (is_active(status))
     {
         paint.setColor(as_skcolor(interpolate(
             style.thumb_color, style.thumb_highlight_color, 0.2f)));
     }
-    else if (is_active(status))
+    else if (is_hovered(status))
     {
         paint.setColor(as_skcolor(interpolate(
             style.thumb_color, style.thumb_highlight_color, 0.4f)));
@@ -110,29 +125,51 @@ draw_scrollbar_button(
     scrollbar_metrics const&,
     scrollbar_style_info const& style,
     layout_box const& rect,
+    unsigned axis,
+    unsigned which,
     interaction_status status)
 {
     SkPaint paint;
     paint.setAntiAlias(true);
-    if (is_hovered(status))
+    paint.setColor(as_skcolor(style.button_background_color));
+    auto& canvas = *cast_event<render_event>(ctx).canvas;
+    canvas.drawRect(as_skrect(rect), paint);
+    paint.setColor(as_skcolor(style.button_foreground_color));
+    canvas.save();
+    canvas.translate(
+        rect.corner[0] + rect.size[0] / SkIntToScalar(2),
+        rect.corner[1] + rect.size[1] / SkIntToScalar(2));
+    canvas.rotate((which * 2 + axis) * -90.f);
     {
-        paint.setColor(as_skcolor(interpolate(
-            style.button_background_color,
-            style.button_highlight_color,
-            0.2f)));
+        SkScalar a = rect.size[0] / SkDoubleToScalar(2);
+        SkPath path;
+        path.incReserve(4);
+        SkPoint p0;
+        p0.fX = a * SkDoubleToScalar(-0.34);
+        p0.fY = a * SkDoubleToScalar(-0.5);
+        path.moveTo(p0);
+        SkPoint p1;
+        p1.fX = p0.fX;
+        p1.fY = a * SkDoubleToScalar(0.5);
+        path.lineTo(p1);
+        SkPoint p2;
+        p2.fX = p0.fX + a * SkDoubleToScalar(0.866);
+        p2.fY = 0;
+        path.lineTo(p2);
+        path.lineTo(p0);
+        cast_event<render_event>(ctx).canvas->drawPath(path, paint);
     }
-    else if (is_active(status))
+    canvas.restore();
+    if (is_active(status))
     {
-        paint.setColor(as_skcolor(interpolate(
-            style.button_background_color,
-            style.button_highlight_color,
-            0.4f)));
+        paint.setColor(as_skcolor(rgba8(style.button_highlight_color, 0x60)));
+        cast_event<render_event>(ctx).canvas->drawRect(as_skrect(rect), paint);
     }
-    else
+    else if (is_hovered(status))
     {
-        paint.setColor(as_skcolor(style.button_background_color));
+        paint.setColor(as_skcolor(rgba8(style.button_highlight_color, 0x60)));
+        cast_event<render_event>(ctx).canvas->drawRect(as_skrect(rect), paint);
     }
-    cast_event<render_event>(ctx).canvas->drawRect(as_skrect(rect), paint);
 }
 
 // persistent data maintained for a scrollbar
@@ -561,12 +598,16 @@ do_scrollbar_pass(dataless_ui_context ctx, scrollbar_parameters const& sb)
                 data.metrics,
                 style,
                 get_button0_area(sb),
+                sb.axis,
+                0,
                 get_interaction_status(ctx, get_button0_id(sb)));
             draw_scrollbar_button(
                 ctx,
                 data.metrics,
                 style,
                 get_button1_area(sb),
+                sb.axis,
+                1,
                 get_interaction_status(ctx, get_button1_id(sb)));
     }
 }

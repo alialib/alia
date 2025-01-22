@@ -34,6 +34,7 @@ get_scrollbar_metrics(dataless_ui_context ctx);
 struct scrollbar_style_info
 {
     rgb8 track_color;
+    rgb8 track_highlight_color;
 
     rgb8 thumb_color;
     rgb8 thumb_highlight_color;
