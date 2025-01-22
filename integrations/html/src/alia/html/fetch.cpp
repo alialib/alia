@@ -101,7 +101,8 @@ launch_fetch_operation(
     headers.push_back(0);
     attr.requestHeaders = &headers[0];
 
-    attr.requestData = persistent_request.body.data;
+    attr.requestData
+        = reinterpret_cast<char*>(persistent_request.body.data.get());
     attr.requestDataSize = persistent_request.body.size;
 
     auto method_string = to_string(request.method);
@@ -138,7 +139,9 @@ fetch_text(alia::core_context ctx, readable<std::string> path)
     return apply(
         ctx,
         [](auto result) {
-            return std::string(result.body.data, result.body.size);
+            return std::string(
+                reinterpret_cast<char*>(result.body.data.get()),
+                result.body.size);
         },
         fetch(ctx, apply(ctx, make_text_request, path)));
 }
