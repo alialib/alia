@@ -9,10 +9,12 @@
 #include <alia/ui/layout/simple.hpp>
 #include <alia/ui/layout/spacer.hpp>
 #include <alia/ui/layout/specification.hpp>
+#include <alia/ui/layout/system.hpp>
 #include <alia/ui/layout/utilities.hpp>
 #include <alia/ui/library/bullets.hpp>
 #include <alia/ui/library/checkbox.hpp>
 #include <alia/ui/library/collapsible.hpp>
+#include <alia/ui/library/lazy_list.hpp>
 #include <alia/ui/library/node_expander.hpp>
 #include <alia/ui/library/panels.hpp>
 #include <alia/ui/library/radio_button.hpp>
@@ -99,7 +101,7 @@ void
 do_box(
     ui_context ctx,
     SkColor color,
-    action<> /*on_click*/,
+    action<> on_click,
     layout const& layout_spec = layout(TOP | LEFT | PADDED))
 {
     box_data* data_ptr;
@@ -127,10 +129,13 @@ do_box(
             break;
 
         case INPUT_CATEGORY:
+            add_to_focus_order(ctx, id);
+
             if (detect_click(ctx, id, mouse_button::LEFT)
                 || detect_keyboard_click(ctx, data.keyboard_click_state_, id))
             {
-                data.state_ = !data.state_;
+                // data.state_ = !data.state_;
+                perform_action(on_click);
             }
 
             break;
@@ -164,11 +169,11 @@ do_box(
             }
 
             rgb8 c;
-            if (data.state_)
-            {
-                c = rgb8(0x40, 0x40, 0x40);
-            }
-            else
+            // if (data.state_)
+            // {
+            //     c = rgb8(0x40, 0x40, 0x40);
+            // }
+            // else
             {
                 c = rgb8(
                     std::uint8_t(SkColorGetR(color)),
@@ -227,7 +232,7 @@ do_box(
                 SkPaint paint;
                 paint.setStyle(SkPaint::kStroke_Style);
                 paint.setStrokeWidth(4);
-                paint.setColor(SK_ColorBLACK);
+                paint.setColor(SK_ColorBLUE);
                 canvas.drawRect(rect, paint);
             }
             break;
@@ -771,6 +776,23 @@ update_theme(ui_context ctx)
 }
 
 void
+binary_number_ui(ui_context ctx, /*grid_layout& grid,*/ int number)
+{
+    auto n = get_state(ctx, number);
+    row_layout row(ctx);
+    // cached_ui_block<row_layout>(ctx, n.value_id(), default_layout, [&] {
+    do_text(ctx, printf(ctx, "%d", n), layout(width(100, PIXELS), RIGHT));
+    for (int i = 0; i != 12; ++i)
+    {
+        auto bit = read_signal(n) & (1 << (11 - i));
+        do_box(ctx, bit ? SK_ColorLTGRAY : SK_ColorDKGRAY, callback([&] {
+                   n.write(read_signal(n) ^ (1 << (11 - i)));
+               }));
+    }
+    //});
+}
+
+void
 my_ui(ui_context ctx)
 {
     update_theme(ctx);
@@ -789,9 +811,11 @@ my_ui(ui_context ctx)
     column_layout column3(ctx, GROW | PADDED);
 
     // auto my_style
-    //     = text_style{"Roboto/Roboto-Regular", 22.f, rgb8(173, 181, 189)};
+    //     = text_style{"Roboto/Roboto-Regular", 22.f, rgb8(173, 181,
+    //     189)};
     // auto my_style = text_style{
-    //     "Roboto_Mono/static/RobotoMono-Regular", 22.f, rgb8(173, 181, 189)};
+    //     "Roboto_Mono/static/RobotoMono-Regular", 22.f, rgb8(173, 181,
+    //     189)};
 
     // panel_style_info pstyle{
     //     box_border_width<float>{4, 4, 4, 4},
@@ -979,6 +1003,12 @@ my_ui(ui_context ctx)
     do_separator(ctx);
     do_spacer(ctx, height(40, PIXELS));
 
+    {
+        lazy_list_ui(ctx, 262'144, [&](ui_context ctx, size_t index) {
+            binary_number_ui(ctx, /*grid,*/ int(index));
+        });
+    }
+
     // {
     //     scoped_grid_layout grid(ctx);
     //     for (int i = 0; i != 4; ++i)
@@ -1000,7 +1030,8 @@ my_ui(ui_context ctx)
 
     // for (int i = 0; i != 0; ++i)
     // {
-    //     cached_ui_block<column_layout>(ctx, unit_id, default_layout, [&] {
+    //     cached_ui_block<column_layout>(ctx, unit_id, default_layout, [&]
+    //     {
     //         panel p(ctx, direct(pstyle));
     //         // do_text(ctx, value("Lorem ipsum"));
     //         //  column_layout column(ctx);
@@ -1028,39 +1059,39 @@ my_ui(ui_context ctx)
     //     // do_svg_image(ctx);
     // }
 
-    {
-        auto show_content = get_state(ctx, false);
-        // grid_layout grid(ctx);
+    // {
+    //     auto show_content = get_state(ctx, false);
+    //     // grid_layout grid(ctx);
 
-        {
-            row_layout row(ctx);
-            do_node_expander(ctx, show_content);
-            do_text(ctx, value("Some Text"), CENTER_Y);
-        }
+    //     {
+    //         row_layout row(ctx);
+    //         do_node_expander(ctx, show_content);
+    //         do_text(ctx, value("Some Text"), CENTER_Y);
+    //     }
 
-        {
-            row_layout row(ctx);
-            do_spacer(ctx, width(40, PIXELS));
-            collapsible_content(ctx, show_content, GROW, [&] {
-                do_wrapped_text(
-                    ctx,
-                    value("Lorem ipsum dolor sit amet, consectetur "
-                          "adipisg elit. "
-                          "Phasellus lacinia elementum diam consequat "
-                          "alicinquet. "
-                          "Vestibulum ut libero justo. Pellentesque lectus "
-                          "lectus, "
-                          "scelerisque a elementum sed, bibendum id libero. "
-                          "Maecenas venenatis est sed sem "
-                          "consequat mollis. Ut "
-                          "nequeodio, hendrerit ut justo venenatis, consequat "
-                          "molestie eros. Nam fermentum, mi malesuada eleifend"
-                          "dapibus, lectus dolor luctus orci, nec posuere lor "
-                          "lorem ac sem. Nullam interdum laoreet ipsum in "
-                          "dictum."));
-            });
-        }
-    }
+    //     {
+    //         row_layout row(ctx);
+    //         do_spacer(ctx, width(40, PIXELS));
+    //         collapsible_content(ctx, show_content, GROW, [&] {
+    //             do_wrapped_text(
+    //                 ctx,
+    //                 value("Lorem ipsum dolor sit amet, consectetur "
+    //                       "adipisg elit. "
+    //                       "Phasellus lacinia elementum diam consequat "
+    //                       "alicinquet. "
+    //                       "Vestibulum ut libero justo. Pellentesque
+    //                       lectus " "lectus, " "scelerisque a elementum
+    //                       sed, bibendum id libero. " "Maecenas venenatis
+    //                       est sed sem " "consequat mollis. Ut "
+    //                       "nequeodio, hendrerit ut justo venenatis,
+    //                       consequat " "molestie eros. Nam fermentum, mi
+    //                       malesuada eleifend" "dapibus, lectus dolor
+    //                       luctus orci, nec posuere lor " "lorem ac sem.
+    //                       Nullam interdum laoreet ipsum in "
+    //                       "dictum."));
+    //         });
+    //     }
+    // }
 
     // do_wrapped_text(
     //     ctx,
@@ -1100,15 +1131,16 @@ my_ui(ui_context ctx)
 
     do_spacer(ctx, height(100, PIXELS));
 
-    // do_box(
-    //     ctx,
-    //     SK_ColorRED,
-    //     actions::toggle(get_state(ctx, false)),
-    //     size(400, 400, PIXELS));
-    // do_spacer(ctx, height(100, PIXELS));
+    do_box(
+        ctx,
+        SK_ColorRED,
+        actions::toggle(get_state(ctx, false)),
+        size(400, 400, PIXELS));
+
+    do_spacer(ctx, height(100, PIXELS));
 
     {
-        for (int outer = 0; outer != 0; ++outer)
+        for (int outer = 0; outer != 2; ++outer)
         {
             do_wrapped_text(
                 ctx,

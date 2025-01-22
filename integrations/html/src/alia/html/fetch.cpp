@@ -1,4 +1,4 @@
-#include "fetch.hpp"
+#include <alia/html/fetch.hpp>
 
 #include <emscripten/fetch.h>
 
@@ -19,14 +19,6 @@ to_string(http_method method)
         case http_method::DELETE:
             return "DELETE";
     }
-}
-
-blob
-to_blob(std::string s)
-{
-    std::shared_ptr<char> storage(new char[s.size()], array_deleter<char>());
-    memcpy(storage.get(), s.data(), s.size());
-    return blob{storage.get(), s.size(), storage};
 }
 
 namespace {
@@ -55,8 +47,7 @@ struct scoped_emscripten_fetch : noncopyable
 void
 handle_fetch_response(emscripten_fetch_t* fetch)
 {
-    std::shared_ptr<scoped_emscripten_fetch> fetch_ownership(
-        new scoped_emscripten_fetch(fetch));
+    auto fetch_ownership = std::make_shared<scoped_emscripten_fetch>(fetch);
 
     // Grab our data from the Emscripten fetch object and assume ownership of
     // it.
@@ -66,7 +57,11 @@ handle_fetch_response(emscripten_fetch_t* fetch)
     // Construct the response.
     http_response response;
     response.status_code = fetch->status;
-    response.body = blob{fetch->data, fetch->numBytes, fetch_ownership};
+    response.body = blob{
+        std::shared_ptr<std::byte[]>(
+            std::move(fetch_ownership),
+            reinterpret_cast<std::byte*>(const_cast<char*>(fetch->data))),
+        fetch->numBytes};
 
     // Invoke the callback.
     data->reporter.report_success(response);
@@ -106,7 +101,8 @@ launch_fetch_operation(
     headers.push_back(0);
     attr.requestHeaders = &headers[0];
 
-    attr.requestData = persistent_request.body.data;
+    attr.requestData
+        = reinterpret_cast<char*>(persistent_request.body.data.get());
     attr.requestDataSize = persistent_request.body.size;
 
     auto method_string = to_string(request.method);
@@ -143,7 +139,9 @@ fetch_text(alia::core_context ctx, readable<std::string> path)
     return apply(
         ctx,
         [](auto result) {
-            return std::string(result.body.data, result.body.size);
+            return std::string(
+                reinterpret_cast<char*>(result.body.data.get()),
+                result.body.size);
         },
         fetch(ctx, apply(ctx, make_text_request, path)));
 }

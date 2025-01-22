@@ -18,6 +18,15 @@ namespace alia {
 
 typedef long long counter_type;
 
+struct blob
+{
+    std::shared_ptr<std::byte[]> data;
+    uint64_t size = 0;
+};
+
+blob
+make_blob(std::string s);
+
 // Inspired by Boost, inheriting from noncopyable disables copying for a type.
 // The namespace prevents unintended ADL if used by applications.
 namespace detail { namespace noncopyable_ {

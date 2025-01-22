@@ -21,7 +21,7 @@ initialize_layout_traversal(
     layout_traversal& traversal,
     bool is_refresh,
     geometry_context* geometry,
-    layout_style_info* style,
+    layout_style_info const* style,
     vector<2, float> const& ppi);
 
 // Calculate the minimum space needed by the given layout system.
@@ -34,10 +34,10 @@ get_minimum_size(layout_node* root_node);
 // Given the available space, calculate the proper regions for all nodes in
 // the given layout system.
 void
-resolve_layout(layout_system& system, layout_vector const& size);
+resolve_layout(layout_system& system, layout_box const& assignment);
 // Same, but with arguments broken up for flexibility.
 void
-resolve_layout(layout_node* root_node, layout_vector const& size);
+resolve_layout(layout_node* root_node, layout_box const& assignment);
 
 } // namespace alia
 
