@@ -221,26 +221,26 @@ struct scrollbar_parameters
     layout_scalar view_size;
 };
 
-layout_scalar
+inline layout_scalar
 get_scrollbar_width(scrollbar_data const& data)
 {
     return data.metrics.width;
 }
 
-layout_scalar
+inline layout_scalar
 get_minimum_scrollbar_length(scrollbar_data const& data)
 {
     return data.metrics.minimum_thumb_length + 2 * data.metrics.button_length;
 }
 
-scrollbar_metrics
+inline scrollbar_metrics
 get_metrics(scrollbar_parameters const& sb)
 {
     return sb.data->metrics;
 }
 
-// The following are utilities for calculating the layout of the various parts
-// of the scrollbar.
+// The following are utilities for calculating the layout of the various
+// elements of the scrollbar.
 
 layout_box
 get_background_area(scrollbar_parameters const& sb)
@@ -307,7 +307,7 @@ get_bg1_area(scrollbar_parameters const& sb)
     return area;
 }
 
-// The following are utilities for getting the IDs of the various parts of
+// The following are utilities for getting the IDs of the various elements of
 // the scrollbar.
 
 widget_id
