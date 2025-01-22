@@ -60,7 +60,7 @@ handle_fetch_response(emscripten_fetch_t* fetch)
     response.body = blob{
         std::shared_ptr<std::byte[]>(
             std::move(fetch_ownership),
-            reinterpret_cast<std::byte*>(fetch->data)),
+            reinterpret_cast<std::byte*>(const_cast<char*>(fetch->data))),
         fetch->numBytes};
 
     // Invoke the callback.
