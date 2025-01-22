@@ -39,7 +39,8 @@ parse_country_response(html::http_response const& response)
         return std::nullopt;
 
     auto const& body = response.body;
-    return json::parse(body.data, body.data + body.size)["name"];
+    char const* data = reinterpret_cast<char*>(body.data.get());
+    return json::parse(data, data + body.size)["name"];
 }
 
 // Here's our signal-based interface for fetching country names.
