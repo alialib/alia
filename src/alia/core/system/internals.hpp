@@ -54,11 +54,6 @@ struct external_interface
 
 struct untyped_system;
 
-// alia provides an internal system for tracking outstanding requests for timed
-// callbacks. If this system is continuously updating anyway, you can use this
-// default implementation and call `process_internal_callbacks` once per frame
-// to handle callbacks. (See below.)
-//
 struct default_external_interface : external_interface
 {
     untyped_system& owner;
