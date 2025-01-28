@@ -42,9 +42,9 @@ extract_node_expander_style_info(dataless_ui_context ctx)
 {
     auto const& theme = get_system(ctx).theme;
     return node_expander_style_info{
-        .normal_color = theme.on_surface,
-        .disabled_color = interpolate(theme.surface, theme.on_surface, 0.4f),
-        .highlight_color = theme.primary};
+        .normal_color = theme.foreground[4],
+        .disabled_color = lerp(theme.background[4], theme.foreground[4], 0.4f),
+        .highlight_color = theme.primary[4]};
 }
 
 void
@@ -83,7 +83,7 @@ render_node_expander(
     canvas.translate(
         position[0] + region.size[0] / SkIntToScalar(2),
         position[1] + region.size[1] / SkIntToScalar(2));
-    canvas.rotate(interpolate(0.f, 90.f, smoothed_state));
+    canvas.rotate(lerp(0.f, 90.f, smoothed_state));
 
     {
         SkPaint paint;

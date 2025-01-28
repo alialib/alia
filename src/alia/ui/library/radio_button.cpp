@@ -36,8 +36,7 @@ struct radio_button_style_info
     rgb8 disabled_color;
     rgb8 highlight_color;
     rgb8 outline_color;
-    rgb8 selected_dot_color;
-    rgb8 unselected_dot_color;
+    rgb8 dot_color;
 };
 
 radio_button_style_info
@@ -45,11 +44,10 @@ extract_radio_button_style_info(dataless_ui_context ctx)
 {
     auto const& theme = get_system(ctx).theme;
     return {
-        .disabled_color = interpolate(theme.surface, theme.on_surface, 0.4f),
-        .highlight_color = theme.primary,
-        .outline_color = theme.on_surface,
-        .selected_dot_color = theme.primary,
-        .unselected_dot_color = theme.on_surface};
+        .disabled_color = lerp(theme.background[4], theme.foreground[4], 0.4f),
+        .highlight_color = theme.primary[7],
+        .outline_color = theme.foreground[7],
+        .dot_color = theme.primary[7]};
 }
 
 void
@@ -115,15 +113,12 @@ render_radio_button(
         0.f,
         animated_transition{default_curve, 200});
 
-    rgb8 color = interpolate(
-        style.unselected_dot_color, style.selected_dot_color, smoothed_state);
-
     render_click_flares(
         ctx,
         ALIA_NESTED_BITPACK(data.bits, click_flare),
         state,
         center,
-        color);
+        style.dot_color);
 
     {
         SkPaint paint;
@@ -134,11 +129,11 @@ render_radio_button(
         canvas.drawPath(SkPath::Circle(center[0], center[1], 15.f), paint);
     }
 
-    float dot_radius = interpolate(0.f, 10.f, smoothed_state);
+    float dot_radius = lerp(0.f, 10.f, smoothed_state);
 
     SkPaint paint;
     paint.setAntiAlias(true);
-    paint.setColor(as_skcolor(color));
+    paint.setColor(as_skcolor(style.dot_color));
     paint.setStrokeWidth(3);
     canvas.drawPath(SkPath::Circle(center[0], center[1], dot_radius), paint);
 }

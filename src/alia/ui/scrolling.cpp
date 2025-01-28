@@ -54,14 +54,13 @@ extract_scrollbar_style_info(dataless_ui_context ctx)
 {
     auto const& theme = get_system(ctx).theme;
     return {
-        .track_color = theme.surface_container_levels[3],
-        .track_highlight_color = theme.surface_container_levels[4],
-        .thumb_color = interpolate(
-            theme.surface_container_levels[4], theme.on_surface_variant, 0.3f),
-        .thumb_highlight_color = theme.primary,
-        .button_background_color = theme.surface_container_levels[4],
-        .button_foreground_color = theme.secondary,
-        .button_highlight_color = theme.primary,
+        .track_color = theme.background[5],
+        .track_highlight_color = theme.background[6],
+        .thumb_color = theme.background[7],
+        .thumb_highlight_color = theme.background[8],
+        .button_background_color = theme.background[6],
+        .button_foreground_color = theme.background[8],
+        .button_highlight_color = theme.primary[7],
     };
 }
 
@@ -77,13 +76,13 @@ draw_scrollbar_background(
     paint.setAntiAlias(true);
     if (is_active(status))
     {
-        paint.setColor(as_skcolor(interpolate(
-            style.track_color, style.track_highlight_color, 0.2f)));
+        paint.setColor(as_skcolor(
+            lerp(style.track_color, style.track_highlight_color, 0.2f)));
     }
     else if (is_hovered(status))
     {
-        paint.setColor(as_skcolor(interpolate(
-            style.track_color, style.track_highlight_color, 0.4f)));
+        paint.setColor(as_skcolor(
+            lerp(style.track_color, style.track_highlight_color, 0.4f)));
     }
     else
     {
@@ -104,13 +103,13 @@ draw_scrollbar_thumb(
     paint.setAntiAlias(true);
     if (is_active(status))
     {
-        paint.setColor(as_skcolor(interpolate(
-            style.thumb_color, style.thumb_highlight_color, 0.2f)));
+        paint.setColor(as_skcolor(
+            lerp(style.thumb_color, style.thumb_highlight_color, 0.2f)));
     }
     else if (is_hovered(status))
     {
-        paint.setColor(as_skcolor(interpolate(
-            style.thumb_color, style.thumb_highlight_color, 0.4f)));
+        paint.setColor(as_skcolor(
+            lerp(style.thumb_color, style.thumb_highlight_color, 0.4f)));
     }
     else
     {
