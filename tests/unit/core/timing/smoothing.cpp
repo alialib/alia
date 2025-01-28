@@ -29,13 +29,12 @@ struct testing_external_interface : default_external_interface
 
 TEST_CASE("interpolation", "[timing][smoothing]")
 {
-    REQUIRE(interpolate(-1., 1., 0.6) == Catch::Approx(0.2));
-    REQUIRE(interpolate(0, 10, 0.57) == 6);
-    REQUIRE(interpolate(0, 10, 0.64) == 6);
-    REQUIRE(interpolate(1.f, 3.f, 0.5) == Catch::Approx(2.f));
+    REQUIRE(lerp(-1., 1., 0.6) == Catch::Approx(0.2));
+    REQUIRE(lerp(0, 10, 0.57) == 6);
+    REQUIRE(lerp(0, 10, 0.64) == 6);
+    REQUIRE(lerp(1.f, 3.f, 0.5) == Catch::Approx(2.f));
     REQUIRE(
-        interpolate(std::complex<double>(0), std::complex<double>(4), 0.25)
-            .real()
+        lerp(std::complex<double>(0), std::complex<double>(4), 0.25).real()
         == Catch::Approx(1));
 }
 
@@ -43,8 +42,7 @@ TEST_CASE("smooth_raw", "[timing][smoothing]")
 {
     alia::test_system sys;
     auto* external_ptr = new testing_external_interface(sys);
-    initialize_test_system(
-        sys, [](core_context) {}, external_ptr);
+    initialize_test_system(sys, [](core_context) {}, external_ptr);
     auto& external = *external_ptr;
 
     REQUIRE(!system_needs_refresh(sys));
@@ -135,8 +133,7 @@ TEST_CASE("smooth", "[timing][smoothing]")
 {
     alia::test_system sys;
     auto* external_ptr = new testing_external_interface(sys);
-    initialize_test_system(
-        sys, [](core_context) {}, external_ptr);
+    initialize_test_system(sys, [](core_context) {}, external_ptr);
     auto& external = *external_ptr;
 
     REQUIRE(!system_needs_refresh(sys));
@@ -194,8 +191,7 @@ TEST_CASE("smooth writing", "[timing][smoothing]")
 {
     alia::test_system sys;
     auto* external_ptr = new testing_external_interface(sys);
-    initialize_test_system(
-        sys, [](core_context) {}, external_ptr);
+    initialize_test_system(sys, [](core_context) {}, external_ptr);
     auto& external = *external_ptr;
 
     REQUIRE(!system_needs_refresh(sys));

@@ -75,6 +75,7 @@
 #include "modules/skparagraph/src/ParagraphBuilderImpl.h"
 #include "modules/skparagraph/src/ParagraphImpl.h"
 
+#include "include/core/SkColor.h"
 #include "include/core/SkRRect.h"
 #include "include/core/SkStream.h"
 #include "include/utils/SkNoDrawCanvas.h"
@@ -182,7 +183,7 @@ do_box(
             }
             if (blend_factor != 0)
             {
-                c = interpolate(c, rgb8(0xff, 0xff, 0xff), blend_factor);
+                c = lerp(c, rgb8(0xff, 0xff, 0xff), blend_factor);
             }
 
             {
@@ -723,57 +724,57 @@ do_box(
 
 // } // namespace alia
 
-enum class color_theme
-{
-    VIOLET,
-    BLUE,
-    INDIGO,
-    PINK
-};
+// enum class color_theme
+// {
+//     VIOLET,
+//     BLUE,
+//     INDIGO,
+//     PINK
+// };
 
-color_theme selected_theme = color_theme::BLUE;
+// color_theme selected_theme = color_theme::BLUE;
 
-bool light_theme = false;
+// bool light_theme = false;
 
-theme_colors* active_theme = nullptr;
+// theme_colors* active_theme = nullptr;
 
-void
-update_theme(ui_context ctx)
-{
-    theme_colors* new_theme = nullptr;
-    switch (selected_theme)
-    {
-        case color_theme::VIOLET:
-            if (light_theme)
-                new_theme = &violet_light_theme;
-            else
-                new_theme = &violet_dark_theme;
-            break;
-        case color_theme::BLUE:
-            if (light_theme)
-                new_theme = &blue_light_theme;
-            else
-                new_theme = &blue_dark_theme;
-            break;
-        case color_theme::INDIGO:
-            if (light_theme)
-                new_theme = &indigo_light_theme;
-            else
-                new_theme = &indigo_dark_theme;
-            break;
-        case color_theme::PINK:
-            if (light_theme)
-                new_theme = &pink_light_theme;
-            else
-                new_theme = &pink_dark_theme;
-            break;
-    }
-    if (new_theme && new_theme != active_theme)
-    {
-        active_theme = new_theme;
-        get_system(ctx).theme = *new_theme;
-    }
-}
+// void
+// update_theme(ui_context ctx)
+// {
+//     theme_colors* new_theme = nullptr;
+//     switch (selected_theme)
+//     {
+//         case color_theme::VIOLET:
+//             if (light_theme)
+//                 new_theme = &violet_light_theme;
+//             else
+//                 new_theme = &violet_dark_theme;
+//             break;
+//         case color_theme::BLUE:
+//             if (light_theme)
+//                 new_theme = &blue_light_theme;
+//             else
+//                 new_theme = &blue_dark_theme;
+//             break;
+//         case color_theme::INDIGO:
+//             if (light_theme)
+//                 new_theme = &indigo_light_theme;
+//             else
+//                 new_theme = &indigo_dark_theme;
+//             break;
+//         case color_theme::PINK:
+//             if (light_theme)
+//                 new_theme = &pink_light_theme;
+//             else
+//                 new_theme = &pink_dark_theme;
+//             break;
+//     }
+//     if (new_theme && new_theme != active_theme)
+//     {
+//         active_theme = new_theme;
+//         get_system(ctx).theme = *new_theme;
+//     }
+// }
 
 void
 binary_number_ui(ui_context ctx, /*grid_layout& grid,*/ int number)
@@ -792,14 +793,127 @@ binary_number_ui(ui_context ctx, /*grid_layout& grid,*/ int number)
     //});
 }
 
+#include "include/core/SkColor.h"
+#include <algorithm>
+#include <cmath>
+#include <vector>
+
+color_ramp
+make_full_color_ramp(hsl seed, unsigned missing_steps = 1)
+{
+    color_ramp ramp;
+    ramp[color_ramp_half_step_count] = to_rgb8(seed);
+
+    for (unsigned i = 0; i != color_ramp_half_step_count; ++i)
+    {
+        float const t = static_cast<float>(i + 1)
+                      / (color_ramp_half_step_count + 1 + missing_steps);
+        float const lightness = seed.l - seed.l * t;
+        ramp[color_ramp_half_step_count - i - 1]
+            = to_rgb8({seed.h, seed.s, std::max(0.0f, lightness)});
+    }
+
+    for (unsigned i = 0; i != color_ramp_half_step_count; ++i)
+    {
+        float const t = static_cast<float>(i + 1)
+                      / (color_ramp_half_step_count + 1 + missing_steps);
+        float const lightness = seed.l + (1 - seed.l) * t;
+        ramp[color_ramp_half_step_count + i + 1]
+            = to_rgb8({seed.h, seed.s, std::min(lightness, 1.0f)});
+    }
+
+    return ramp;
+}
+
+color_ramp
+make_local_color_ramp(hsl seed, float step_size = 0.04)
+{
+    color_ramp ramp;
+    ramp[color_ramp_half_step_count] = to_rgb8(seed);
+
+    for (unsigned i = 0; i != color_ramp_half_step_count; ++i)
+    {
+        auto const adjusted_step
+            = (std::min)(step_size, seed.l / (color_ramp_half_step_count + 1));
+        float const lightness = seed.l - adjusted_step * (i + 1);
+        ramp[color_ramp_half_step_count - i - 1]
+            = to_rgb8({seed.h, seed.s, std::max(0.0f, lightness)});
+    }
+
+    for (unsigned i = 0; i != color_ramp_half_step_count; ++i)
+    {
+        auto const adjusted_step = (std::min)(
+            step_size, (1.0f - seed.l) / (color_ramp_half_step_count + 1));
+        float const lightness = seed.l + adjusted_step * (i + 1);
+        ramp[color_ramp_half_step_count + i + 1]
+            = to_rgb8({seed.h, seed.s, std::min(lightness, 1.0f)});
+    }
+
+    return ramp;
+}
+
+struct seed_colors
+{
+    rgb8 primary;
+    rgb8 secondary;
+    rgb8 neutral;
+    rgb8 warning;
+    rgb8 danger;
+};
+
+void
+show_color_ramp(ui_context ctx, color_ramp ramp)
+{
+    {
+        row_layout row(ctx);
+        for (int i = 0; i != color_ramp_step_count; ++i)
+        {
+            do_box(ctx, as_skcolor(ramp[i]), actions::noop(), UNPADDED);
+        }
+    }
+}
+
+hsl
+make_foreground_color(hsl seed, bool is_light)
+{
+    return {seed.h, seed.s, is_light ? 0.9f : 0.1f};
+}
+
+hsl
+make_background_color(hsl seed, bool is_light)
+{
+    return {seed.h, seed.s, is_light ? 0.15f : 0.9f};
+}
+
 void
 my_ui(ui_context ctx)
 {
-    update_theme(ctx);
+    // update_theme(ctx);
+
+    seed_colors seeds
+        = {.primary = hex_color("#154DCF"),
+           .secondary = hex_color("#6C36AE"),
+           .neutral = hex_color("#1f212a"),
+           .warning = hex_color("#FF9D00"),
+           .danger = hex_color("#E01D23")};
+
+    static bool light_theme = true;
+
+    theme_colors theme;
+    theme.primary = make_full_color_ramp(to_hsl(seeds.primary));
+    theme.secondary = make_full_color_ramp(to_hsl(seeds.secondary));
+    theme.background = make_local_color_ramp(
+        make_background_color(to_hsl(seeds.neutral), light_theme));
+    theme.foreground = make_local_color_ramp(
+        make_foreground_color(to_hsl(seeds.neutral), light_theme));
+    theme.warning = make_full_color_ramp(to_hsl(seeds.warning));
+    theme.danger = make_full_color_ramp(to_hsl(seeds.danger));
+
+    get_system(ctx).theme = theme;
 
     auto my_style = style_info{
         font_info{&get_font("Roboto/Roboto-Regular", 22.f)},
-        get_system(ctx).theme.on_surface};
+        get_system(ctx).theme.foreground[4]};
     scoped_style_info scoped_style(ctx, my_style);
 
     scoped_scrollable_view scrollable(ctx, GROW); //, 3, 2);
@@ -809,6 +923,13 @@ my_ui(ui_context ctx)
     column_layout column(ctx, GROW | PADDED);
     column_layout column2(ctx, GROW | PADDED);
     column_layout column3(ctx, GROW | PADDED);
+
+    show_color_ramp(ctx, theme.primary);
+    show_color_ramp(ctx, theme.secondary);
+    show_color_ramp(ctx, theme.background);
+    show_color_ramp(ctx, theme.foreground);
+    show_color_ramp(ctx, theme.warning);
+    show_color_ramp(ctx, theme.danger);
 
     // auto my_style
     //     = text_style{"Roboto/Roboto-Regular", 22.f, rgb8(173, 181,
@@ -854,42 +975,44 @@ my_ui(ui_context ctx)
             do_text(ctx, value("Light"));
         }
 
-        do_spacer(ctx, height(10, PIXELS));
+        // do_spacer(ctx, height(10, PIXELS));
 
-        {
-            {
-                grid_row row(grid);
-                do_radio_button(
-                    ctx,
-                    make_radio_signal(
-                        direct(selected_theme), value(color_theme::VIOLET)));
-                do_text(ctx, value("Violet"));
-            }
-            {
-                grid_row row(grid);
-                do_radio_button(
-                    ctx,
-                    make_radio_signal(
-                        direct(selected_theme), value(color_theme::BLUE)));
-                do_text(ctx, value("Blue"));
-            }
-            {
-                grid_row row(grid);
-                do_radio_button(
-                    ctx,
-                    make_radio_signal(
-                        direct(selected_theme), value(color_theme::PINK)));
-                do_text(ctx, value("Pink"));
-            }
-            {
-                grid_row row(grid);
-                do_radio_button(
-                    ctx,
-                    make_radio_signal(
-                        direct(selected_theme), value(color_theme::INDIGO)));
-                do_text(ctx, value("Indigo"));
-            }
-        }
+        // {
+        //     {
+        //         grid_row row(grid);
+        //         do_radio_button(
+        //             ctx,
+        //             make_radio_signal(
+        //                 direct(selected_theme),
+        //                 value(color_theme::VIOLET)));
+        //         do_text(ctx, value("Violet"));
+        //     }
+        //     {
+        //         grid_row row(grid);
+        //         do_radio_button(
+        //             ctx,
+        //             make_radio_signal(
+        //                 direct(selected_theme), value(color_theme::BLUE)));
+        //         do_text(ctx, value("Blue"));
+        //     }
+        //     {
+        //         grid_row row(grid);
+        //         do_radio_button(
+        //             ctx,
+        //             make_radio_signal(
+        //                 direct(selected_theme), value(color_theme::PINK)));
+        //         do_text(ctx, value("Pink"));
+        //     }
+        //     {
+        //         grid_row row(grid);
+        //         do_radio_button(
+        //             ctx,
+        //             make_radio_signal(
+        //                 direct(selected_theme),
+        //                 value(color_theme::INDIGO)));
+        //         do_text(ctx, value("Indigo"));
+        //     }
+        // }
     }
 
     do_spacer(ctx, height(40, PIXELS));
@@ -967,8 +1090,9 @@ my_ui(ui_context ctx)
                 row_layout row(ctx);
                 do_radio_button(
                     ctx,
-                    disable_writes(make_radio_signal(selected, value(2))));
-                do_text(ctx, value("Option One"));
+                    disable_writes(make_radio_signal(selected, value(2))),
+                    BASELINE_Y);
+                do_text(ctx, value("Option One"), BASELINE_Y);
             }
             {
                 // TODO: Implement radio buttons with clickable text.
@@ -980,12 +1104,13 @@ my_ui(ui_context ctx)
                     make_radio_signal(selected, value(2)),
                     BASELINE_Y,
                     id);
-                do_text(ctx, value("Option Two"));
+                do_text(ctx, value("Option Two"), BASELINE_Y);
             }
             {
                 row_layout row(ctx);
-                do_radio_button(ctx, make_radio_signal(selected, value(3)));
-                do_text(ctx, value("Option Three"));
+                do_radio_button(
+                    ctx, make_radio_signal(selected, value(3)), BASELINE_Y);
+                do_text(ctx, value("Option Three"), BASELINE_Y);
             }
         }
     }

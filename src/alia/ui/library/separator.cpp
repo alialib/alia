@@ -54,7 +54,8 @@ do_separator(ui_context ctx, layout const& layout_spec)
             {
                 SkPaint paint;
                 paint.setAntiAlias(true);
-                paint.setColor(as_skcolor(get_system(ctx).theme.outline));
+                paint.setColor(
+                    as_skcolor(get_system(ctx).theme.foreground[4]));
                 paint.setStyle(SkPaint::kFill_Style);
                 // paint.setStrokeCap(SkPaint::kRound_Cap);
                 // paint.setStrokeWidth(16);

@@ -56,16 +56,14 @@ extract_switch_style_info(dataless_ui_context ctx)
 {
     auto const& theme = get_system(ctx).theme;
     return {
-        .disabled_track_color
-        = interpolate(theme.surface, theme.secondary_container, 0.5f),
-        .disabled_dot_color
-        = interpolate(theme.surface, theme.on_surface, 0.4f),
-        .off_track_color = theme.secondary_container,
-        .on_track_color = theme.secondary_container,
-        .off_dot_color = theme.on_surface_variant,
-        .on_dot_color = theme.primary,
-        .shadow_color = theme.shadow,
-        .highlight_color = theme.primary,
+        .disabled_track_color = theme.background[7],
+        .disabled_dot_color = theme.background[8],
+        .off_track_color = theme.foreground[4],
+        .on_track_color = theme.foreground[4],
+        .off_dot_color = theme.foreground[4],
+        .on_dot_color = theme.primary[7],
+        .shadow_color = theme.foreground[7],
+        .highlight_color = theme.primary[7],
     };
 }
 
@@ -97,8 +95,7 @@ render_switch(
         {
             SkPaint paint;
             paint.setAntiAlias(true);
-            paint.setColor(
-                as_skcolor(rgba8(style.disabled_track_color, 0x60)));
+            paint.setColor(as_skcolor(style.disabled_track_color));
             paint.setStyle(SkPaint::kStroke_Style);
             paint.setStrokeCap(SkPaint::kRound_Cap);
             paint.setStrokeWidth(16);
@@ -121,7 +118,7 @@ render_switch(
 
             SkPaint paint;
             paint.setAntiAlias(true);
-            paint.setColor(as_skcolor(rgba8(style.disabled_dot_color, 0x60)));
+            paint.setColor(as_skcolor(style.disabled_dot_color));
             canvas.drawPath(
                 SkPath::Circle(
                     region.corner[0] + region.size[0] * dot_x_offset,
@@ -141,15 +138,15 @@ render_switch(
         0.f,
         animated_transition{default_curve, 200});
 
-    float dot_radius = interpolate(14.f, 16.f, switch_position);
+    float dot_radius = lerp(14.f, 16.f, switch_position);
 
-    float const dot_x_offset = interpolate(0.25f, 0.75f, switch_position);
+    float const dot_x_offset = lerp(0.25f, 0.75f, switch_position);
 
-    rgb8 const dot_color = interpolate(
-        style.off_dot_color, style.on_dot_color, switch_position);
+    rgb8 const dot_color
+        = lerp(style.off_dot_color, style.on_dot_color, switch_position);
 
-    rgb8 const track_color = interpolate(
-        style.off_track_color, style.on_track_color, switch_position);
+    rgb8 const track_color
+        = lerp(style.off_track_color, style.on_track_color, switch_position);
 
     {
         SkPaint paint;

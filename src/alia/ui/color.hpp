@@ -5,20 +5,80 @@
 
 namespace alia {
 
-// RGB color/pixel
+template<class Channel>
+struct channel_operations;
+
+template<>
+struct channel_operations<uint8_t>
+{
+    static constexpr uint8_t
+    multiply(uint8_t a, uint8_t b) noexcept
+    {
+        return uint8_t(unsigned(a) * b / 0xff);
+    }
+
+    static constexpr uint8_t
+    multiply(uint8_t a, double b) noexcept
+    {
+        return uint8_t(a * b + 0.5);
+    }
+
+    static constexpr uint8_t
+    round(double value) noexcept
+    {
+        return uint8_t(value + 0.5);
+    }
+
+    static constexpr uint8_t
+    max_value() noexcept
+    {
+        return 0xff;
+    }
+
+    static constexpr uint8_t
+    from_normalized_double(double value) noexcept
+    {
+        return uint8_t(value * 255.0 + 0.5);
+    }
+
+    static constexpr double
+    to_normalized_double(uint8_t value) noexcept
+    {
+        return value / 255.0;
+    }
+
+    static constexpr uint8_t
+    from_normalized_float(float value) noexcept
+    {
+        return uint8_t(value * 255.0f + 0.5f);
+    }
+
+    static constexpr float
+    to_normalized_float(uint8_t value) noexcept
+    {
+        return value / 255.0f;
+    }
+};
+
+// RGB triplet
 template<class Channel>
 struct rgb
 {
-    constexpr rgb()
-    {
-    }
-    constexpr rgb(Channel r, Channel g, Channel b) : r(r), g(g), b(b)
-    {
-    }
     Channel r, g, b;
 
-    auto
-    operator<=>(rgb const&) const
+    constexpr rgb() noexcept
+    {
+    }
+    constexpr rgb(uint32_t hex) noexcept
+        : r((hex >> 16) & 0xff), g((hex >> 8) & 0xff), b(hex & 0xff)
+    {
+    }
+    constexpr rgb(Channel r, Channel g, Channel b) noexcept : r(r), g(g), b(b)
+    {
+    }
+
+    constexpr auto
+    operator<=>(rgb const&) const noexcept
         = default;
 };
 typedef rgb<uint8_t> rgb8;
@@ -26,70 +86,84 @@ typedef rgb<uint8_t> rgb8;
 std::ostream&
 operator<<(std::ostream& s, rgb8 const& c);
 
-} // namespace alia
-
 template<class Channel>
-struct std::hash<alia::rgb<Channel>>
+constexpr rgb<Channel>
+lerp(rgb<Channel> const& a, rgb<Channel> const& b, double t) noexcept
 {
-    size_t
-    operator()(alia::rgb<Channel> const& x) const
+    rgb<Channel> r;
+    r.r = channel_operations<Channel>::round(a.r + (b.r - a.r) * t);
+    r.g = channel_operations<Channel>::round(a.g + (b.g - a.g) * t);
+    r.b = channel_operations<Channel>::round(a.b + (b.b - a.b) * t);
+    return r;
+}
+
+constexpr rgb8
+hex_color(const char* hex)
+{
+    // Skip leading '#' if present.
+    if (*hex == '#')
+        ++hex;
+
+    // Parse the hex digits.
+    uint32_t value = 0;
+    for (int i = 0; i < 6; ++i)
     {
-        return alia::combine_hashes(
-            alia::combine_hashes(hash<Channel>()(x.r), hash<Channel>()(x.g)),
-            hash<Channel>()(x.b));
+        char c = hex[i];
+        uint8_t digit;
+        if (c >= '0' && c <= '9')
+        {
+            digit = c - '0';
+        }
+        else if (c >= 'a' && c <= 'f')
+        {
+            digit = c - 'a' + 10;
+        }
+        else if (c >= 'A' && c <= 'F')
+        {
+            digit = c - 'A' + 10;
+        }
+        else // invalid hex digit
+        {
+            return rgb8(0, 0, 0);
+        }
+        value = (value << 4) | digit;
     }
-};
 
-namespace alia {
+    // Extract RGB components.
+    uint8_t r = (value >> 16) & 0xff;
+    uint8_t g = (value >> 8) & 0xff;
+    uint8_t b = value & 0xff;
 
-inline uint8_t
-multiply_uint8_channels(uint8_t a, uint8_t b)
-{
-    return uint8_t(unsigned(a) * b / 0xff);
+    return rgb8(r, g, b);
 }
 
-// interpolate(a, b, factor) = a * (1 - factor) + b * factor
-rgb8
-interpolate(rgb8 const& a, rgb8 const& b, double factor);
-
-// standard color names
-rgb8 const white(0xff, 0xff, 0xff), silver(0xc0, 0xc0, 0xc0),
-    gray(0x80, 0x80, 0x80), black(0x00, 0x00, 0x00), red(0xff, 0x00, 0x00),
-    maroon(0x80, 0x00, 0x00), yellow(0xff, 0xff, 0x00),
-    olive(0x80, 0x80, 0x00), lime(0x00, 0xff, 0x00), green(0x00, 0x80, 0x00),
-    aqua(0x00, 0xff, 0xff), teal(0x00, 0x80, 0x80), blue(0x00, 0x00, 0xff),
-    navy(0x00, 0x00, 0x80), fuchsia(0xff, 0x00, 0xff),
-    purple(0x80, 0x00, 0x80);
-
-constexpr uint8_t
-max_channel_value(uint8_t)
-{
-    return 0xff;
-}
-
-// RGBA color/pixel, w/ premultiplied alpha
+// RGBA w/ premultiplied alpha
 template<class Channel>
 struct rgba
 {
-    constexpr rgba()
+    Channel r, g, b, a;
+
+    constexpr rgba() noexcept
     {
     }
-    constexpr rgba(Channel r, Channel g, Channel b, Channel a)
+    constexpr rgba(Channel r, Channel g, Channel b, Channel a) noexcept
         : r(r), g(g), b(b), a(a)
     {
     }
-    constexpr rgba(rgb<Channel> color)
-        : r(color.r), g(color.g), b(color.b), a(max_channel_value(Channel()))
+    constexpr rgba(rgb<Channel> color) noexcept
+        : r(color.r),
+          g(color.g),
+          b(color.b),
+          a(channel_operations<Channel>::max_value())
     {
     }
-    constexpr rgba(rgb<Channel> color, Channel a)
+    constexpr rgba(rgb<Channel> color, Channel a) noexcept
         : r(color.r), g(color.g), b(color.b), a(a)
     {
     }
-    Channel r, g, b, a;
 
-    auto
-    operator<=>(rgba const&) const
+    constexpr auto
+    operator<=>(rgba const&) const noexcept
         = default;
 };
 typedef rgba<uint8_t> rgba8;
@@ -97,31 +171,57 @@ typedef rgba<uint8_t> rgba8;
 std::ostream&
 operator<<(std::ostream& s, rgba8 const& c);
 
-} // namespace alia
+// premultiply the color by the alpha to form an rgba8 value
+template<class Channel, class Alpha>
+constexpr rgba<Channel>
+apply_alpha(rgb<Channel> color, Alpha alpha) noexcept
+{
+    return rgba<Channel>(
+        channel_operations<Channel>::multiply(color.r, alpha),
+        channel_operations<Channel>::multiply(color.g, alpha),
+        channel_operations<Channel>::multiply(color.b, alpha),
+        alpha);
+}
+// same, but with an alpha channel already present
+template<class Channel, class Alpha>
+constexpr rgba<Channel>
+apply_alpha(rgba<Channel> color, Alpha alpha) noexcept
+{
+    return rgba<Channel>(
+        channel_operations<Channel>::multiply(color.r, alpha),
+        channel_operations<Channel>::multiply(color.g, alpha),
+        channel_operations<Channel>::multiply(color.b, alpha),
+        channel_operations<Channel>::multiply(color.a, alpha));
+}
 
 template<class Channel>
-struct std::hash<alia::rgba<Channel>>
+constexpr rgba<Channel>
+lerp(rgba<Channel> const& a, rgba<Channel> const& b, double t) noexcept
 {
-    size_t
-    operator()(alia::rgba<Channel> const& x) const
-    {
-        return alia::combine_hashes(
-            alia::combine_hashes(hash<Channel>()(x.r), hash<Channel>()(x.g)),
-            alia::combine_hashes(hash<Channel>()(x.b), hash<Channel>()(x.a)));
-    }
+    rgba<Channel> r;
+    r.r = channel_operations<Channel>::round(a.r + (b.r - a.r) * t);
+    r.g = channel_operations<Channel>::round(a.g + (b.g - a.g) * t);
+    r.b = channel_operations<Channel>::round(a.b + (b.b - a.b) * t);
+    r.a = channel_operations<Channel>::round(a.a + (b.a - a.a) * t);
+    return r;
+}
+
+// HSL color value
+
+struct hsl
+{
+    float h, s, l;
+
+    constexpr auto
+    operator<=>(hsl const&) const noexcept
+        = default;
 };
 
-namespace alia {
+rgb8
+to_rgb8(hsl const& hsl) noexcept;
 
-// premultiply the color by the alpha to form an rgba8 value
-rgba8
-apply_alpha(rgb8 color, uint8_t alpha);
-rgba8
-apply_alpha(rgba8 color, uint8_t alpha);
-
-// interpolate(a, b, factor) = a * (1 - factor) + b * factor
-rgba8
-interpolate(rgba8 const& a, rgba8 const& b, double factor);
+hsl
+to_hsl(rgb8 const& rgb) noexcept;
 
 } // namespace alia
 

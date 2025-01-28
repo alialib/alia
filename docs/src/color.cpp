@@ -1,5 +1,4 @@
 #include "color.hpp"
-#include <iomanip>
 
 namespace alia {
 
@@ -20,12 +19,12 @@ operator<(rgb8 const& a, rgb8 const& b)
 }
 
 rgb8
-interpolate(rgb8 const& a, rgb8 const& b, double f)
+lerp(rgb8 const& a, rgb8 const& b, double t)
 {
     rgb8 r;
-    r.r = uint8_t(a.r * (1 - f) + b.r * f + 0.5);
-    r.g = uint8_t(a.g * (1 - f) + b.g * f + 0.5);
-    r.b = uint8_t(a.b * (1 - f) + b.b * f + 0.5);
+    r.r = uint8_t(a.r * (1 - t) + b.r * t + 0.5);
+    r.g = uint8_t(a.g * (1 - t) + b.g * t + 0.5);
+    r.b = uint8_t(a.b * (1 - t) + b.b * t + 0.5);
     return r;
 }
 

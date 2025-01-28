@@ -46,23 +46,23 @@ struct value_smoother
 // is to simply implement a compatible interpolate function directly for the
 // value type.
 
-// interpolate(a, b, factor) yields a * (1 - factor) + b * factor
+// lerp(a, b, factor) yields a * (1 - factor) + b * factor
 template<class Value>
 std::enable_if_t<!std::is_integral<Value>::value, Value>
-interpolate(Value const& a, Value const& b, double factor)
+lerp(Value const& a, Value const& b, double factor)
 {
     return a * (1 - factor) + b * factor;
 }
 // Overload it for floats to eliminate warnings about conversions.
 inline float
-interpolate(float a, float b, double factor)
+lerp(float a, float b, double factor)
 {
     return float(a * (1 - factor) + b * factor);
 }
 // Overload it for integers to add rounding (and eliminate warnings).
 template<class Integer>
 std::enable_if_t<std::is_integral<Integer>::value, Integer>
-interpolate(Integer a, Integer b, double factor)
+lerp(Integer a, Integer b, double factor)
 {
     return Integer(std::round(a * (1 - factor) + b * factor));
 }
@@ -100,8 +100,8 @@ smooth_raw(
                 transition.curve,
                 1. - double(ticks_left) / smoother.duration,
                 1. / smoother.duration);
-            current_value = interpolate(
-                smoother.old_value, smoother.new_value, fraction);
+            current_value
+                = lerp(smoother.old_value, smoother.new_value, fraction);
         }
         else
             smoother.in_transition = false;

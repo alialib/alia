@@ -1,5 +1,7 @@
 #include <alia/ui/library/lazy_list.hpp>
 
+#include <unordered_map>
+
 #include <alia/ui/events.hpp>
 #include <alia/ui/layout/system.hpp>
 #include <alia/ui/layout/utilities.hpp>

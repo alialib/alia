@@ -46,15 +46,15 @@ extract_checkbox_style_info(dataless_ui_context ctx)
 {
     auto const& theme = get_system(ctx).theme;
     return {
-        .highlight_color = theme.primary,
+        .highlight_color = theme.primary[4],
         .disabled_fill_color
-        = interpolate(theme.surface, theme.on_surface, 0.4f),
-        .disabled_check_color = theme.surface,
+        = lerp(theme.background[4], theme.foreground[4], 0.4f),
+        .disabled_check_color = theme.foreground[4],
         .disabled_outline_color
-        = interpolate(theme.surface, theme.on_surface, 0.4f),
-        .outline_color = theme.on_surface,
-        .checked_fill_color = theme.primary,
-        .check_color = theme.on_primary,
+        = lerp(theme.background[4], theme.foreground[4], 0.4f),
+        .outline_color = theme.foreground[4],
+        .checked_fill_color = theme.primary[4],
+        .check_color = theme.background[4],
     };
 }
 
@@ -200,8 +200,8 @@ render_checkbox(
         canvas.drawPath(SkPath::RRect(as_skrect(checkbox_rect), 2, 2), paint);
     }
 
-    rgb8 color = interpolate(
-        style.outline_color, style.checked_fill_color, smoothed_state);
+    rgb8 color
+        = lerp(style.outline_color, style.checked_fill_color, smoothed_state);
 
     render_click_flares(
         ctx,
