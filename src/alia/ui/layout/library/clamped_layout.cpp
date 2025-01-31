@@ -58,7 +58,7 @@ clamped_layout::concrete_begin(
     layout const& layout_spec)
 {
     clamped_layout_logic* logic;
-    // TODO
+    container_ = nullptr;
     get_simple_layout_container(
         traversal, data, &container_, &logic, layout_spec);
     slc_.begin(traversal, container_);

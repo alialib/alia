@@ -223,6 +223,11 @@ to_rgb8(hsl const& hsl) noexcept;
 hsl
 to_hsl(rgb8 const& rgb) noexcept;
 
+// LUMINANCE
+
+float
+calculate_relative_luminance(rgb8 const& rgb) noexcept;
+
 } // namespace alia
 
 #endif

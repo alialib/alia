@@ -54,13 +54,13 @@ extract_scrollbar_style_info(dataless_ui_context ctx)
 {
     auto const& theme = get_system(ctx).theme;
     return {
-        .track_color = theme.background[5],
-        .track_highlight_color = theme.background[6],
-        .thumb_color = theme.background[7],
-        .thumb_highlight_color = theme.background[8],
-        .button_background_color = theme.background[6],
-        .button_foreground_color = theme.background[8],
-        .button_highlight_color = theme.primary[7],
+        .track_color = theme.background.base.main,
+        .track_highlight_color = theme.background.base.main,
+        .thumb_color = theme.background.base.main,
+        .thumb_highlight_color = theme.background.base.main,
+        .button_background_color = theme.background.base.main,
+        .button_foreground_color = theme.background.base.main,
+        .button_highlight_color = theme.primary.stronger[1].main,
     };
 }
 

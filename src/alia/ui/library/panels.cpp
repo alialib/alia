@@ -17,6 +17,7 @@
 // #include <SkGradientShader.h>
 
 #include <alia/ui/utilities/rendering.hpp>
+#include <alia/ui/utilities/skia.hpp>
 
 namespace alia {
 
@@ -169,7 +170,8 @@ begin_outer_panel(
             bounds.fBottom = bounds.fTop + SkScalar(region.size[1]);
 
             SkPaint paint;
-            paint.setColor(SkColorSetRGB(0x41, 0x48, 0x54));
+            paint.setColor(
+                as_skcolor(read_signal(style_info).background_color));
             event.canvas->drawRect(bounds, paint);
 
             // If the panel is rounded or has a gradient, draw it with Skia.
