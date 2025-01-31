@@ -280,7 +280,7 @@ render_ui(glfw_window_impl& impl)
     // TODO: Don't clear automatically.
     {
         SkPaint paint;
-        paint.setColor(as_skcolor(impl.system.theme.background[4]));
+        paint.setColor(as_skcolor(impl.system.theme.background.base.main));
         canvas.drawPaint(paint);
     }
 

@@ -46,15 +46,15 @@ extract_checkbox_style_info(dataless_ui_context ctx)
 {
     auto const& theme = get_system(ctx).theme;
     return {
-        .highlight_color = theme.primary[4],
+        .highlight_color = theme.primary.base.main,
         .disabled_fill_color
-        = lerp(theme.background[4], theme.foreground[4], 0.4f),
-        .disabled_check_color = theme.foreground[4],
+        = lerp(theme.background.base.main, theme.structural.base.main, 0.4f),
+        .disabled_check_color = theme.background.base.main,
         .disabled_outline_color
-        = lerp(theme.background[4], theme.foreground[4], 0.4f),
-        .outline_color = theme.foreground[4],
-        .checked_fill_color = theme.primary[4],
-        .check_color = theme.background[4],
+        = lerp(theme.background.base.main, theme.structural.base.main, 0.4f),
+        .outline_color = theme.structural.base.main,
+        .checked_fill_color = theme.primary.stronger[1].main,
+        .check_color = theme.structural.base.main,
     };
 }
 

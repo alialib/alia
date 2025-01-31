@@ -42,9 +42,10 @@ extract_node_expander_style_info(dataless_ui_context ctx)
 {
     auto const& theme = get_system(ctx).theme;
     return node_expander_style_info{
-        .normal_color = theme.foreground[4],
-        .disabled_color = lerp(theme.background[4], theme.foreground[4], 0.4f),
-        .highlight_color = theme.primary[4]};
+        .normal_color = theme.structural.base.main,
+        .disabled_color
+        = lerp(theme.background.base.main, theme.structural.base.main, 0.4f),
+        .highlight_color = theme.primary.stronger[1].main};
 }
 
 void

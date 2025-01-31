@@ -88,8 +88,8 @@ draw_thumb(
     {
         SkPaint paint;
         paint.setAntiAlias(true);
-        paint.setColor(
-            as_skcolor(rgba8(get_system(ctx).theme.foreground[4], 0x20)));
+        paint.setColor(as_skcolor(
+            rgba8(get_system(ctx).theme.structural.base.main, 0x20)));
         canvas.drawPath(
             SkPath::Circle(thumb_position[0], thumb_position[1], 24.f), paint);
     }
@@ -211,9 +211,9 @@ extract_slider_style_info(dataless_ui_context ctx)
 {
     auto const& theme = get_system(ctx).theme;
     return {
-        .highlight_color = theme.primary[4],
-        .track_color = theme.foreground[4],
-        .thumb_color = theme.primary[7],
+        .highlight_color = theme.primary.stronger[1].main,
+        .track_color = theme.structural.base.main,
+        .thumb_color = theme.primary.stronger[1].main,
     };
 }
 

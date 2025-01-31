@@ -54,6 +54,7 @@ to_rgb8(hsl const& hsl) noexcept
             b = c;
             break;
         case 5:
+        default:
             r = c;
             g = 0;
             b = x;
@@ -107,6 +108,24 @@ to_hsl(rgb8 const& rgb) noexcept
     h *= 60.0f;
 
     return hsl(h, s, l);
+}
+
+// Calculate the relative luminance of a color.
+float
+calculate_relative_luminance(rgb8 const& rgb) noexcept
+{
+    float const rs = channel_operations<uint8_t>::to_normalized_float(rgb.r);
+    float const gs = channel_operations<uint8_t>::to_normalized_float(rgb.g);
+    float const bs = channel_operations<uint8_t>::to_normalized_float(rgb.b);
+
+    float const r
+        = rs < 0.03928f ? rs / 12.92f : std::pow((rs + 0.055f) / 1.055f, 2.4f);
+    float const g
+        = gs < 0.03928f ? gs / 12.92f : std::pow((gs + 0.055f) / 1.055f, 2.4f);
+    float const b
+        = bs < 0.03928f ? bs / 12.92f : std::pow((bs + 0.055f) / 1.055f, 2.4f);
+
+    return 0.2126f * r + 0.7152f * g + 0.0722f * b;
 }
 
 } // namespace alia

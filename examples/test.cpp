@@ -798,68 +798,33 @@ binary_number_ui(ui_context ctx, /*grid_layout& grid,*/ int number)
 #include <cmath>
 #include <vector>
 
-color_ramp
-make_full_color_ramp(hsl seed, unsigned missing_steps = 1)
-{
-    color_ramp ramp;
-    ramp[color_ramp_half_step_count] = to_rgb8(seed);
+// color_ramp
+// make_local_color_ramp(hsl seed, float step_size = 0.04)
+// {
+//     color_ramp ramp;
+//     ramp[color_ramp_half_step_count] = to_rgb8(seed);
 
-    for (unsigned i = 0; i != color_ramp_half_step_count; ++i)
-    {
-        float const t = static_cast<float>(i + 1)
-                      / (color_ramp_half_step_count + 1 + missing_steps);
-        float const lightness = seed.l - seed.l * t;
-        ramp[color_ramp_half_step_count - i - 1]
-            = to_rgb8({seed.h, seed.s, std::max(0.0f, lightness)});
-    }
+//     for (unsigned i = 0; i != color_ramp_half_step_count; ++i)
+//     {
+//         auto const adjusted_step
+//             = (std::min)(step_size, seed.l / (color_ramp_half_step_count +
+//             1));
+//         float const lightness = seed.l - adjusted_step * (i + 1);
+//         ramp[color_ramp_half_step_count - i - 1]
+//             = to_rgb8({seed.h, seed.s, std::max(0.0f, lightness)});
+//     }
 
-    for (unsigned i = 0; i != color_ramp_half_step_count; ++i)
-    {
-        float const t = static_cast<float>(i + 1)
-                      / (color_ramp_half_step_count + 1 + missing_steps);
-        float const lightness = seed.l + (1 - seed.l) * t;
-        ramp[color_ramp_half_step_count + i + 1]
-            = to_rgb8({seed.h, seed.s, std::min(lightness, 1.0f)});
-    }
+//     for (unsigned i = 0; i != color_ramp_half_step_count; ++i)
+//     {
+//         auto const adjusted_step = (std::min)(
+//             step_size, (1.0f - seed.l) / (color_ramp_half_step_count + 1));
+//         float const lightness = seed.l + adjusted_step * (i + 1);
+//         ramp[color_ramp_half_step_count + i + 1]
+//             = to_rgb8({seed.h, seed.s, std::min(lightness, 1.0f)});
+//     }
 
-    return ramp;
-}
-
-color_ramp
-make_local_color_ramp(hsl seed, float step_size = 0.04)
-{
-    color_ramp ramp;
-    ramp[color_ramp_half_step_count] = to_rgb8(seed);
-
-    for (unsigned i = 0; i != color_ramp_half_step_count; ++i)
-    {
-        auto const adjusted_step
-            = (std::min)(step_size, seed.l / (color_ramp_half_step_count + 1));
-        float const lightness = seed.l - adjusted_step * (i + 1);
-        ramp[color_ramp_half_step_count - i - 1]
-            = to_rgb8({seed.h, seed.s, std::max(0.0f, lightness)});
-    }
-
-    for (unsigned i = 0; i != color_ramp_half_step_count; ++i)
-    {
-        auto const adjusted_step = (std::min)(
-            step_size, (1.0f - seed.l) / (color_ramp_half_step_count + 1));
-        float const lightness = seed.l + adjusted_step * (i + 1);
-        ramp[color_ramp_half_step_count + i + 1]
-            = to_rgb8({seed.h, seed.s, std::min(lightness, 1.0f)});
-    }
-
-    return ramp;
-}
-
-struct seed_colors
-{
-    rgb8 primary;
-    rgb8 secondary;
-    rgb8 neutral;
-    rgb8 warning;
-    rgb8 danger;
-};
+//     return ramp;
+// }
 
 void
 show_color_ramp(ui_context ctx, color_ramp ramp)
@@ -868,8 +833,36 @@ show_color_ramp(ui_context ctx, color_ramp ramp)
         row_layout row(ctx);
         for (int i = 0; i != color_ramp_step_count; ++i)
         {
-            do_box(ctx, as_skcolor(ramp[i]), actions::noop(), UNPADDED);
+            do_box(ctx, as_skcolor(ramp[i].rgb), actions::noop(), UNPADDED);
         }
+    }
+}
+
+void
+show_contrasting_color_pair(ui_context ctx, contrasting_color_pair pair)
+{
+    panel_style_info style{
+        .margin = box_border_width<float>{4, 4, 4, 4},
+        .border_width = box_border_width<float>{0, 0, 0, 0},
+        .padding = box_border_width<float>{8, 8, 8, 8},
+        .background_color = pair.main};
+    panel p(ctx, direct(style), size(100, 20, PIXELS));
+
+    auto my_style = style_info{
+        font_info{&get_font("Roboto/Roboto-Regular", 16.f)}, pair.contrasting};
+    scoped_style_info scoped_style(ctx, my_style);
+    do_text(ctx, value("Contrasting"), UNPADDED);
+}
+
+void
+show_color_swatch(ui_context ctx, color_swatch swatch)
+{
+    {
+        row_layout row(ctx);
+        show_contrasting_color_pair(ctx, swatch.base);
+        show_contrasting_color_pair(ctx, swatch.stronger[0]);
+        show_contrasting_color_pair(ctx, swatch.stronger[1]);
+        show_contrasting_color_pair(ctx, swatch.weaker[0]);
     }
 }
 
@@ -893,27 +886,26 @@ my_ui(ui_context ctx)
     seed_colors seeds
         = {.primary = hex_color("#154DCF"),
            .secondary = hex_color("#6C36AE"),
+           .tertiary = hex_color("#E01D23"),
            .neutral = hex_color("#1f212a"),
            .warning = hex_color("#FF9D00"),
            .danger = hex_color("#E01D23")};
 
-    static bool light_theme = true;
+    static bool light_theme = false;
+
+    auto const palette = generate_color_palette(seeds);
 
     theme_colors theme;
-    theme.primary = make_full_color_ramp(to_hsl(seeds.primary));
-    theme.secondary = make_full_color_ramp(to_hsl(seeds.secondary));
-    theme.background = make_local_color_ramp(
-        make_background_color(to_hsl(seeds.neutral), light_theme));
-    theme.foreground = make_local_color_ramp(
-        make_foreground_color(to_hsl(seeds.neutral), light_theme));
-    theme.warning = make_full_color_ramp(to_hsl(seeds.warning));
-    theme.danger = make_full_color_ramp(to_hsl(seeds.danger));
-
+    theme = generate_theme_colors(
+        seeds,
+        light_theme ? ui_lightness_mode::LIGHT_MODE
+                    : ui_lightness_mode::DARK_MODE,
+        4.5);
     get_system(ctx).theme = theme;
 
     auto my_style = style_info{
         font_info{&get_font("Roboto/Roboto-Regular", 22.f)},
-        get_system(ctx).theme.foreground[4]};
+        theme.text.base.main};
     scoped_style_info scoped_style(ctx, my_style);
 
     scoped_scrollable_view scrollable(ctx, GROW); //, 3, 2);
@@ -924,12 +916,21 @@ my_ui(ui_context ctx)
     column_layout column2(ctx, GROW | PADDED);
     column_layout column3(ctx, GROW | PADDED);
 
-    show_color_ramp(ctx, theme.primary);
-    show_color_ramp(ctx, theme.secondary);
-    show_color_ramp(ctx, theme.background);
-    show_color_ramp(ctx, theme.foreground);
-    show_color_ramp(ctx, theme.warning);
-    show_color_ramp(ctx, theme.danger);
+    show_color_ramp(ctx, palette.primary);
+    show_color_ramp(ctx, palette.secondary);
+    show_color_ramp(ctx, palette.tertiary);
+    show_color_ramp(ctx, palette.neutral);
+    show_color_ramp(ctx, palette.warning);
+    show_color_ramp(ctx, palette.danger);
+
+    show_color_swatch(ctx, theme.primary);
+    show_color_swatch(ctx, theme.secondary);
+    show_color_swatch(ctx, theme.tertiary);
+    show_color_swatch(ctx, theme.background);
+    show_color_swatch(ctx, theme.structural);
+    show_color_swatch(ctx, theme.text);
+    show_color_swatch(ctx, theme.warning);
+    show_color_swatch(ctx, theme.danger);
 
     // auto my_style
     //     = text_style{"Roboto/Roboto-Regular", 22.f, rgb8(173, 181,

@@ -44,10 +44,11 @@ extract_radio_button_style_info(dataless_ui_context ctx)
 {
     auto const& theme = get_system(ctx).theme;
     return {
-        .disabled_color = lerp(theme.background[4], theme.foreground[4], 0.4f),
-        .highlight_color = theme.primary[7],
-        .outline_color = theme.foreground[7],
-        .dot_color = theme.primary[7]};
+        .disabled_color
+        = lerp(theme.background.base.main, theme.structural.base.main, 0.4f),
+        .highlight_color = theme.primary.stronger[1].main,
+        .outline_color = theme.structural.base.main,
+        .dot_color = theme.primary.stronger[1].main};
 }
 
 void

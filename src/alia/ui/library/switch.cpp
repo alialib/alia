@@ -56,14 +56,14 @@ extract_switch_style_info(dataless_ui_context ctx)
 {
     auto const& theme = get_system(ctx).theme;
     return {
-        .disabled_track_color = theme.background[7],
-        .disabled_dot_color = theme.background[8],
-        .off_track_color = theme.foreground[4],
-        .on_track_color = theme.foreground[4],
-        .off_dot_color = theme.foreground[4],
-        .on_dot_color = theme.primary[7],
-        .shadow_color = theme.foreground[7],
-        .highlight_color = theme.primary[7],
+        .disabled_track_color = theme.background.base.main,
+        .disabled_dot_color = theme.background.base.main,
+        .off_track_color = theme.structural.base.main,
+        .on_track_color = theme.structural.base.main,
+        .off_dot_color = theme.structural.stronger[0].main,
+        .on_dot_color = theme.primary.stronger[1].main,
+        .shadow_color = theme.structural.base.main,
+        .highlight_color = theme.primary.stronger[1].main,
     };
 }
 
