@@ -136,7 +136,7 @@ struct smoothed_signal
           typename Wrapped::value_type,
           typename signal_capabilities_intersection<
               typename Wrapped::capabilities,
-              readable_duplex_signal>::type>
+              movable_duplex_signal>::type>
 {
     smoothed_signal(
         Wrapped wrapped,

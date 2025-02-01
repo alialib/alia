@@ -45,8 +45,6 @@ struct switch_style_info
     rgb8 off_dot_color;
     // dot color when switch is on
     rgb8 on_dot_color;
-    // color of dot shadow
-    rgb8 shadow_color;
     // color of hover/press highlight
     rgb8 highlight_color;
 };
@@ -56,14 +54,15 @@ extract_switch_style_info(dataless_ui_context ctx)
 {
     auto const& theme = get_system(ctx).theme;
     return {
-        .disabled_track_color = theme.background.base.main,
-        .disabled_dot_color = theme.background.base.main,
-        .off_track_color = theme.structural.base.main,
+        .disabled_track_color
+        = lerp(theme.background.base.main, theme.structural.base.main, 0.5f),
+        .disabled_dot_color
+        = lerp(theme.background.base.main, theme.structural.base.main, 0.6f),
+        .off_track_color = theme.structural.weaker[0].main,
         .on_track_color = theme.structural.base.main,
         .off_dot_color = theme.structural.stronger[0].main,
-        .on_dot_color = theme.primary.stronger[1].main,
-        .shadow_color = theme.structural.base.main,
-        .highlight_color = theme.primary.stronger[1].main,
+        .on_dot_color = theme.accent.base.main,
+        .highlight_color = theme.accent.base.main,
     };
 }
 
@@ -168,24 +167,21 @@ render_switch(
     }
 
     {
-        const SkScalar blurSigma = 3.0f;
-        const SkScalar xDrop = 2.0f;
-        const SkScalar yDrop = 2.0f;
+        const SkScalar blur_sigma = 4.0f;
+        const SkScalar x_drop = 2.0f;
+        const SkScalar y_drop = 2.0f;
 
         SkPaint paint;
         paint.setAntiAlias(true);
-        paint.setColor(SkColorSetARGB(
-            0x40,
-            style.shadow_color.r,
-            style.shadow_color.g,
-            style.shadow_color.b));
+        paint.setColor(
+            SkColorSetARGB(0x80, dot_color.r, dot_color.g, dot_color.b));
         paint.setMaskFilter(
-            SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, blurSigma, false));
+            SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, blur_sigma, false));
 
         canvas.drawPath(
             SkPath::Circle(
-                region.corner[0] + region.size[0] * dot_x_offset + xDrop,
-                get_center(region)[1] + yDrop,
+                region.corner[0] + region.size[0] * dot_x_offset + x_drop,
+                get_center(region)[1] + y_drop,
                 dot_radius),
             paint);
     }

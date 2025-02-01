@@ -98,13 +98,19 @@ struct color_swatch
     contrasting_color_pair weaker[weaker_count];
 };
 
+struct contrast_parameters
+{
+    float dark_on_light_ratio;
+    float light_on_dark_ratio;
+};
+
 color_swatch
 generate_color_swatch(
+    ui_lightness_mode mode,
     color_ramp const& main_ramp,
     int base_index,
     color_ramp const& contrasting_ramp,
-    ui_lightness_mode mode,
-    float minimum_contrast_ratio);
+    contrast_parameters const& contrast);
 
 struct theme_colors
 {
@@ -112,17 +118,18 @@ struct theme_colors
     color_swatch secondary;
     color_swatch tertiary;
     color_swatch background;
+    color_swatch foreground;
     color_swatch structural;
-    color_swatch text;
+    color_swatch accent;
     color_swatch warning;
     color_swatch danger;
 };
 
 theme_colors
 generate_theme_colors(
-    seed_colors const& seeds,
     ui_lightness_mode mode,
-    float minimum_contrast_ratio);
+    seed_colors const& seeds,
+    contrast_parameters const& contrast);
 
 } // namespace alia
 
