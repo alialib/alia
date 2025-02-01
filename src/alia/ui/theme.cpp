@@ -120,27 +120,30 @@ make_contrasting_color_pair(
     color_ramp const& main_ramp,
     int index,
     color_ramp const& contrasting_ramp,
-    ui_lightness_mode mode,
-    float minimum_contrast_ratio)
+    contrast_parameters const& contrast)
 {
     rgb8 main_color;
+    float main_luminance;
     if (index < 0)
     {
         main_color = rgb8{0x00, 0x00, 0x00};
+        main_luminance = 0;
     }
     else if (index >= color_ramp_step_count)
     {
         main_color = rgb8{0xff, 0xff, 0xff};
+        main_luminance = 1;
     }
     else
     {
         main_color = main_ramp[index].rgb;
+        main_luminance = main_ramp[index].relative_luminance;
     }
     rgb8 contrasting_color;
-    if (mode == ui_lightness_mode::DARK_MODE)
+    if (main_luminance < 0.2291f)
     {
         auto const contrasting_index = find_darkest_contrasting_index(
-            contrasting_ramp, main_color, minimum_contrast_ratio);
+            contrasting_ramp, main_color, contrast.light_on_dark_ratio);
         if (contrasting_index)
         {
             contrasting_color = contrasting_ramp[*contrasting_index].rgb;
@@ -153,7 +156,7 @@ make_contrasting_color_pair(
     else
     {
         auto const contrasting_index = find_lightest_contrasting_index(
-            contrasting_ramp, main_color, minimum_contrast_ratio);
+            contrasting_ramp, main_color, contrast.dark_on_light_ratio);
         if (contrasting_index)
         {
             contrasting_color = contrasting_ramp[*contrasting_index].rgb;
@@ -168,73 +171,63 @@ make_contrasting_color_pair(
 
 color_swatch
 generate_color_swatch(
+    ui_lightness_mode mode,
     color_ramp const& main_ramp,
     int base_index,
     color_ramp const& contrasting_ramp,
-    ui_lightness_mode mode,
-    float minimum_contrast_ratio)
+    contrast_parameters const& contrast)
 {
     color_swatch swatch;
     swatch.base = make_contrasting_color_pair(
-        main_ramp, base_index, contrasting_ramp, mode, minimum_contrast_ratio);
+        main_ramp, base_index, contrasting_ramp, contrast);
     auto const offset = mode == ui_lightness_mode::DARK_MODE ? 1 : -1;
     swatch.stronger[0] = make_contrasting_color_pair(
-        main_ramp,
-        base_index + offset,
-        contrasting_ramp,
-        mode,
-        minimum_contrast_ratio);
+        main_ramp, base_index + offset, contrasting_ramp, contrast);
     swatch.stronger[1] = make_contrasting_color_pair(
-        main_ramp,
-        base_index + 2 * offset,
-        contrasting_ramp,
-        mode,
-        minimum_contrast_ratio);
+        main_ramp, base_index + 2 * offset, contrasting_ramp, contrast);
     swatch.weaker[0] = make_contrasting_color_pair(
-        main_ramp,
-        base_index - offset,
-        contrasting_ramp,
-        mode,
-        minimum_contrast_ratio);
+        main_ramp, base_index - offset, contrasting_ramp, contrast);
     return swatch;
 }
 
 theme_colors
 generate_theme_colors(
-    seed_colors const& seeds,
     ui_lightness_mode mode,
-    float minimum_contrast_ratio)
+    seed_colors const& seeds,
+    contrast_parameters const& contrast)
 {
     theme_colors colors;
     auto const palette = generate_color_palette(seeds);
     colors.primary = generate_color_swatch(
-        palette.primary, 5, palette.neutral, mode, minimum_contrast_ratio);
+        mode, palette.primary, 5, palette.neutral, contrast);
     colors.secondary = generate_color_swatch(
-        palette.secondary, 5, palette.neutral, mode, minimum_contrast_ratio);
+        mode, palette.secondary, 5, palette.neutral, contrast);
     colors.tertiary = generate_color_swatch(
-        palette.tertiary, 5, palette.neutral, mode, minimum_contrast_ratio);
+        mode, palette.tertiary, 5, palette.neutral, contrast);
     colors.background = generate_color_swatch(
+        mode,
         palette.neutral,
         is_dark_mode(mode) ? 2 : 8,
         palette.neutral,
-        mode,
-        minimum_contrast_ratio);
+        contrast);
     colors.structural = generate_color_swatch(
-        palette.neutral,
-        is_dark_mode(mode) ? 8 : 2,
-        palette.neutral,
         mode,
-        minimum_contrast_ratio);
-    colors.text = generate_color_swatch(
+        palette.neutral,
+        is_dark_mode(mode) ? 8 : 4,
+        palette.neutral,
+        contrast);
+    colors.foreground = generate_color_swatch(
+        mode,
         palette.neutral,
         is_dark_mode(mode) ? 9 : 1,
         palette.neutral,
-        mode,
-        minimum_contrast_ratio);
+        contrast);
+    colors.accent = generate_color_swatch(
+        mode, palette.primary, 8, palette.primary, contrast);
     colors.warning = generate_color_swatch(
-        palette.warning, 5, palette.neutral, mode, minimum_contrast_ratio);
+        mode, palette.warning, 5, palette.neutral, contrast);
     colors.danger = generate_color_swatch(
-        palette.danger, 5, palette.neutral, mode, minimum_contrast_ratio);
+        mode, palette.danger, 5, palette.neutral, contrast);
     return colors;
 }
 

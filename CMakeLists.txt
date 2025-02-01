@@ -142,7 +142,7 @@ file(GLOB_RECURSE ALIA_CORE_SRC_FILES ${ALIA_GLOB_OPTIONS}
     "src/alia/core/*.cpp")
 add_library(alia_core STATIC ${ALIA_CORE_SRC_FILES})
 target_include_directories(alia_core PUBLIC src)
-target_compile_features(alia_core PUBLIC cxx_std_20)
+target_compile_features(alia_core PUBLIC cxx_std_23)
 
 # Add the UI library.
 if (ALIA_ENABLE_UI)

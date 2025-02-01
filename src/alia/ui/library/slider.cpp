@@ -12,10 +12,9 @@
 #include <include/core/SkBlurTypes.h>
 #include <include/core/SkCanvas.h>
 #include <include/core/SkColor.h>
+#include <include/core/SkMaskFilter.h>
 #include <include/core/SkPaint.h>
 #include <include/core/SkPath.h>
-
-// This file implements the slider widget, which is declared in ui_library.hpp.
 
 namespace alia {
 
@@ -33,13 +32,6 @@ right_side_padding_size(dataless_ui_context)
 {
     return thumb_radius;
 }
-
-struct slider_style_info
-{
-    rgb8 highlight_color;
-    rgb8 track_color;
-    rgb8 thumb_color;
-};
 
 void
 draw_track(
@@ -82,6 +74,18 @@ draw_thumb(
         paint.setColor(as_skcolor(style.thumb_color));
         canvas.drawPath(
             SkPath::Circle(thumb_position[0], thumb_position[1], 16.f), paint);
+
+        const SkScalar blur_sigma = 4.0f;
+        const SkScalar x_drop = 2.0f;
+        const SkScalar y_drop = 2.0f;
+
+        paint.setMaskFilter(
+            SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, blur_sigma, false));
+
+        canvas.drawPath(
+            SkPath::Circle(
+                thumb_position[0] + x_drop, thumb_position[1] + y_drop, 16.f),
+            paint);
     }
 
     if (is_active(state) || is_hovered(state))
@@ -99,6 +103,12 @@ struct slider_data
 {
     layout_leaf layout_node;
 };
+
+slider_data&
+get_slider_data(ui_context ctx)
+{
+    return get_cached_data<slider_data>(ctx);
+}
 
 static double
 round_and_clamp(double x, double min, double max, double step)
@@ -125,7 +135,7 @@ get_values_per_pixel(
             - right_side_padding_size(ctx) - 1);
 }
 
-static layout_vector
+layout_vector
 get_track_position(dataless_ui_context ctx, slider_data& data, unsigned axis)
 {
     layout_box const& assigned_region = data.layout_node.assignment().region;
@@ -138,7 +148,7 @@ get_track_position(dataless_ui_context ctx, slider_data& data, unsigned axis)
     return track_position;
 }
 
-static layout_scalar
+layout_scalar
 get_track_length(dataless_ui_context ctx, slider_data& data, unsigned axis)
 {
     layout_box const& assigned_region = data.layout_node.assignment().region;
@@ -146,7 +156,7 @@ get_track_length(dataless_ui_context ctx, slider_data& data, unsigned axis)
          - right_side_padding_size(ctx);
 }
 
-static layout_vector
+layout_vector
 get_thumb_position(
     dataless_ui_context ctx,
     slider_data& data,
@@ -186,7 +196,7 @@ get_thumb_position(
     return thumb_position;
 }
 
-static layout_box
+layout_box
 get_thumb_region(
     dataless_ui_context ctx,
     slider_data& data,
@@ -211,9 +221,9 @@ extract_slider_style_info(dataless_ui_context ctx)
 {
     auto const& theme = get_system(ctx).theme;
     return {
-        .highlight_color = theme.primary.stronger[1].main,
+        .highlight_color = theme.accent.base.main,
         .track_color = theme.structural.base.main,
-        .thumb_color = theme.primary.stronger[1].main,
+        .thumb_color = theme.accent.base.main,
     };
 }
 
@@ -256,6 +266,7 @@ render_slider(
 void
 do_slider(
     ui_context ctx,
+    slider_data& data,
     duplex<double> value,
     double minimum,
     double maximum,
@@ -264,8 +275,6 @@ do_slider(
     slider_flag_set flags)
 {
     unsigned axis = (flags & SLIDER_VERTICAL) ? 1 : 0;
-
-    auto& data = get_cached_data<slider_data>(ctx);
 
     auto track_id = offset_id(&data, 0);
     auto thumb_id = offset_id(&data, 1);
@@ -278,7 +287,7 @@ do_slider(
             auto const default_length = as_layout_size(resolve_absolute_length(
                 get_layout_traversal(ctx), 0, absolute_length(16, EM)));
             auto default_height = as_layout_size(resolve_absolute_length(
-                get_layout_traversal(ctx), 0, absolute_length(0.5f, EM)));
+                get_layout_traversal(ctx), 0, absolute_length(2, EM)));
             default_size[axis] = default_length;
             default_size[1 - axis] = default_height;
             data.layout_node.refresh_layout(
@@ -414,6 +423,27 @@ do_slider(
                 ctx, axis, data, value, minimum, maximum, thumb_status, style);
             break;
     }
+}
+
+void
+do_slider(
+    ui_context ctx,
+    duplex<double> value,
+    double minimum,
+    double maximum,
+    double step,
+    layout const& layout_spec,
+    slider_flag_set flags)
+{
+    do_slider(
+        ctx,
+        get_slider_data(ctx),
+        value,
+        minimum,
+        maximum,
+        step,
+        layout_spec,
+        flags);
 }
 
 } // namespace alia

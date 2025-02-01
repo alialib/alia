@@ -779,24 +779,39 @@ do_box(
 void
 binary_number_ui(ui_context ctx, /*grid_layout& grid,*/ int number)
 {
+    panel_style_info style{
+        .margin = box_border_width<float>{4, 4, 4, 4},
+        .border_width = box_border_width<float>{0, 0, 0, 0},
+        .padding = box_border_width<float>{8, 8, 8, 8},
+        .background_color = get_system(ctx).theme.background.stronger[0].main};
+    panel p(ctx, direct(style), size(100, 20, PIXELS));
+
+    auto code_style = style_info{
+        font_info{&get_font("Roboto_Mono/static/RobotoMono-Regular", 20.f)},
+        get_system(ctx).theme.foreground.base.main};
+    scoped_style_info scoped_style(ctx, code_style);
+
     auto n = get_state(ctx, number);
     row_layout row(ctx);
-    // cached_ui_block<row_layout>(ctx, n.value_id(), default_layout, [&] {
     do_text(ctx, printf(ctx, "%d", n), layout(width(100, PIXELS), RIGHT));
     for (int i = 0; i != 12; ++i)
     {
         auto bit = read_signal(n) & (1 << (11 - i));
-        do_box(ctx, bit ? SK_ColorLTGRAY : SK_ColorDKGRAY, callback([&] {
-                   n.write(read_signal(n) ^ (1 << (11 - i)));
-               }));
+        do_box(
+            ctx,
+            as_skcolor(
+                bit ? get_system(ctx).theme.accent.base.main
+                    : get_system(ctx).theme.structural.base.main),
+            callback([&] { n.write(read_signal(n) ^ (1 << (11 - i))); }));
     }
-    //});
 }
 
 #include "include/core/SkColor.h"
 #include <algorithm>
 #include <cmath>
 #include <vector>
+
+color_palette the_palette;
 
 // color_ramp
 // make_local_color_ramp(hsl seed, float step_size = 0.04)
@@ -849,7 +864,7 @@ show_contrasting_color_pair(ui_context ctx, contrasting_color_pair pair)
     panel p(ctx, direct(style), size(100, 20, PIXELS));
 
     auto my_style = style_info{
-        font_info{&get_font("Roboto/Roboto-Regular", 16.f)}, pair.contrasting};
+        font_info{&get_font("Roboto/Roboto-Regular", 20.f)}, pair.contrasting};
     scoped_style_info scoped_style(ctx, my_style);
     do_text(ctx, value("Contrasting"), UNPADDED);
 }
@@ -866,273 +881,466 @@ show_color_swatch(ui_context ctx, color_swatch swatch)
     }
 }
 
-hsl
-make_foreground_color(hsl seed, bool is_light)
+void
+draw_thumb(
+    dataless_ui_context ctx, layout_vector const& thumb_position, rgb8 color)
 {
-    return {seed.h, seed.s, is_light ? 0.9f : 0.1f};
+    auto& event = cast_event<render_event>(ctx);
+    SkCanvas& canvas = *event.canvas;
+
+    {
+        SkPaint paint;
+        paint.setAntiAlias(true);
+        paint.setColor(as_skcolor(color));
+        canvas.drawPath(
+            SkPath::Rect(SkRect::MakeXYWH(
+                thumb_position[0] - 24.f,
+                thumb_position[1] - 24.f,
+                48.f,
+                48.f)),
+            paint);
+
+        const SkScalar blur_sigma = 16.0f;
+        const SkScalar x_drop = 2.0f;
+        const SkScalar y_drop = 2.0f;
+
+        paint.setMaskFilter(
+            SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, blur_sigma, false));
+
+        canvas.drawPath(
+            SkPath::Rect(SkRect::MakeXYWH(
+                thumb_position[0] - 24.f + x_drop,
+                thumb_position[1] - 24.f + y_drop,
+                48.f,
+                48.f)),
+            paint);
+    }
 }
 
-hsl
-make_background_color(hsl seed, bool is_light)
+void
+render_demo_slider(
+    dataless_ui_context ctx,
+    unsigned axis,
+    slider_data& data,
+    duplex<double> value,
+    rgb8 color,
+    slider_style_info const& style)
 {
-    return {seed.h, seed.s, is_light ? 0.15f : 0.9f};
+    draw_track(
+        ctx,
+        axis,
+        get_track_position(ctx, data, axis),
+        get_track_length(ctx, data, axis),
+        style);
+    if (signal_has_value(value))
+    {
+        draw_thumb(
+            ctx, get_thumb_position(ctx, data, axis, 0, 1, value), color);
+    }
+}
+
+void
+do_demo_slider(
+    ui_context ctx,
+    grid_layout& grid,
+    bool on_off,
+    millisecond_count duration,
+    rgb8 color,
+    char const* label,
+    unit_cubic_bezier const& bezier)
+{
+    grid_row row(grid);
+    {
+        panel_style_info style{
+            .margin = box_border_width<float>{4, 4, 4, 4},
+            .border_width = box_border_width<float>{0, 0, 0, 0},
+            .padding = box_border_width<float>{8, 8, 8, 8},
+            .background_color
+            = get_system(ctx).theme.background.stronger[0].main};
+        panel p(ctx, direct(style), size(100, 20, PIXELS));
+        do_text(ctx, value(label), CENTER_Y);
+    }
+    do_spacer(ctx, size(10, 10, PIXELS));
+    {
+        value_smoother<double>* smoother;
+        get_cached_data(ctx, &smoother);
+        auto& slider_data = get_slider_data(ctx);
+        animated_transition transition(bezier, duration);
+        if (get_event_category(ctx) == RENDER_CATEGORY)
+        {
+            render_demo_slider(
+                ctx,
+                0,
+                slider_data,
+                fake_writability(value(smooth_raw(
+                    ctx, *smoother, on_off ? 1.0 : 0.0, transition))),
+                color,
+                extract_slider_style_info(ctx));
+        }
+        else
+        {
+            do_slider(
+                ctx,
+                slider_data,
+                fake_writability(value(smooth_raw(
+                    ctx, *smoother, on_off ? 1.0 : 0.0, transition))),
+                0,
+                1,
+                0.01,
+                layout(size(600, 60, PIXELS), CENTER_Y));
+        }
+    }
+}
+
+seed_colors const seed_sets[] = {
+    {.primary = hex_color("#154DCF"),
+     .secondary = hex_color("#6C36AE"),
+     .tertiary = hex_color("#E01D23"),
+     .neutral = hex_color("#1f212a"),
+     .warning = hex_color("#FF9D00"),
+     .danger = hex_color("#E01D23")},
+    {.primary = hex_color("#6f42c1"),
+     .secondary = hex_color("#7d8bae"),
+     .tertiary = hex_color("#f1b2b2"),
+     .neutral = hex_color("#1f212a"),
+     .warning = hex_color("#e5857b"),
+     .danger = hex_color("#d31638")},
+    {.primary = hex_color("#a52e45"),
+     .secondary = hex_color("#2b5278"),
+     .tertiary = hex_color("#61787b"),
+     .neutral = hex_color("#1f212a"),
+     .warning = hex_color("#ead8b1"),
+     .danger = hex_color("#d31638")},
+    {.primary = hex_color("#b0edef"),
+     .secondary = hex_color("#505888"),
+     .tertiary = hex_color("#e1b7c5"),
+     .neutral = hex_color("#1f212a"),
+     .warning = hex_color("#ded0d1"),
+     .danger = hex_color("#d31638")},
+};
+
+seed_colors const* seeds = &seed_sets[0];
+
+using cubic_bezier = unit_cubic_bezier;
+
+void
+do_section_divider(ui_context ctx)
+{
+    do_spacer(ctx, height(40, PIXELS));
+    do_separator(ctx);
+    do_spacer(ctx, height(40, PIXELS));
+}
+
+void
+do_heading(ui_context ctx, char const* text)
+{
+    auto heading_style = style_info{
+        font_info{&get_font("Roboto/Roboto-Bold", 32.f)},
+        get_system(ctx).theme.foreground.stronger[1].main};
+    scoped_style_info scoped_style(ctx, heading_style);
+    do_text(ctx, value(text));
+    do_spacer(ctx, height(20, PIXELS));
+}
+
+void
+do_radio_button(ui_context ctx, duplex<bool> selected, const char* label)
+{
+    row_layout row(ctx);
+    auto id = get_widget_id(ctx);
+    do_box_region(ctx, id, row.region());
+    do_radio_button(ctx, selected, BASELINE_Y, id);
+    do_text(ctx, value(label), BASELINE_Y);
+}
+
+void
+do_checkbox(ui_context ctx, duplex<bool> checked, const char* label)
+{
+    row_layout row(ctx);
+    auto id = get_widget_id(ctx);
+    do_box_region(ctx, id, row.region());
+    do_checkbox(ctx, checked, BASELINE_Y, id);
+    do_text(ctx, value(label), BASELINE_Y);
+}
+
+std::vector<std::string>
+split_string(char const* str)
+{
+    std::vector<std::string> ret;
+    char const* line_start = str;
+    char const* p = str;
+    for (; *p; ++p)
+    {
+        if (*p == '\r' || *p == '\n')
+        {
+            if (line_start != p)
+                ret.push_back(std::string(line_start, p - line_start));
+            line_start = p + 1;
+        }
+    }
+    if (line_start != p)
+        ret.push_back(std::string(line_start, p - line_start));
+    return ret;
+}
+
+void
+do_code_snippet(ui_context ctx, std::vector<std::string> const& snippets)
+{
+    panel_style_info style{
+        .margin = box_border_width<float>{4, 4, 4, 4},
+        .border_width = box_border_width<float>{0, 0, 0, 0},
+        .padding = box_border_width<float>{8, 8, 8, 8},
+        .background_color = get_system(ctx).theme.background.stronger[0].main};
+    panel p(ctx, direct(style), layout(size(100, 20, PIXELS), FILL));
+
+    auto my_style = style_info{
+        font_info{&get_font("Roboto_Mono/static/RobotoMono-Regular", 20.f)},
+        get_system(ctx).theme.foreground.base.main};
+    scoped_style_info scoped_style(ctx, my_style);
+
+    for (auto const& snippet : snippets)
+    {
+        do_text(ctx, value(snippet));
+    }
 }
 
 void
 my_ui(ui_context ctx)
 {
-    // update_theme(ctx);
-
-    seed_colors seeds
-        = {.primary = hex_color("#154DCF"),
-           .secondary = hex_color("#6C36AE"),
-           .tertiary = hex_color("#E01D23"),
-           .neutral = hex_color("#1f212a"),
-           .warning = hex_color("#FF9D00"),
-           .danger = hex_color("#E01D23")};
-
     static bool light_theme = false;
 
-    auto const palette = generate_color_palette(seeds);
+    static bool theme_update_needed = true;
 
-    theme_colors theme;
-    theme = generate_theme_colors(
-        seeds,
-        light_theme ? ui_lightness_mode::LIGHT_MODE
-                    : ui_lightness_mode::DARK_MODE,
-        4.5);
-    get_system(ctx).theme = theme;
+    if (theme_update_needed)
+    {
+        the_palette = generate_color_palette(*seeds);
 
-    auto my_style = style_info{
+        contrast_parameters contrast;
+        contrast.light_on_dark_ratio = 6;
+        contrast.dark_on_light_ratio = 8;
+
+        theme_colors theme;
+        theme = generate_theme_colors(
+            light_theme ? ui_lightness_mode::LIGHT_MODE
+                        : ui_lightness_mode::DARK_MODE,
+            *seeds,
+            contrast);
+        get_system(ctx).theme = theme;
+
+        theme_update_needed = false;
+    }
+
+    auto const& theme = get_system(ctx).theme;
+
+    auto main_style = style_info{
         font_info{&get_font("Roboto/Roboto-Regular", 22.f)},
-        theme.text.base.main};
-    scoped_style_info scoped_style(ctx, my_style);
+        theme.foreground.base.main};
+    scoped_style_info main_scoped_style(ctx, main_style);
 
-    scoped_scrollable_view scrollable(ctx, GROW); //, 3, 2);
+    scoped_scrollable_view scrollable(ctx, GROW);
 
-    // scoped_panel panel(ctx, GROW | UNPADDED);
-
-    column_layout column(ctx, GROW | PADDED);
+    // TODO: Use bordered layout.
+    column_layout column1(ctx, GROW | PADDED);
     column_layout column2(ctx, GROW | PADDED);
     column_layout column3(ctx, GROW | PADDED);
 
-    show_color_ramp(ctx, palette.primary);
-    show_color_ramp(ctx, palette.secondary);
-    show_color_ramp(ctx, palette.tertiary);
-    show_color_ramp(ctx, palette.neutral);
-    show_color_ramp(ctx, palette.warning);
-    show_color_ramp(ctx, palette.danger);
+    grid_layout code_snippet_grid(ctx);
 
-    show_color_swatch(ctx, theme.primary);
-    show_color_swatch(ctx, theme.secondary);
-    show_color_swatch(ctx, theme.tertiary);
-    show_color_swatch(ctx, theme.background);
-    show_color_swatch(ctx, theme.structural);
-    show_color_swatch(ctx, theme.text);
-    show_color_swatch(ctx, theme.warning);
-    show_color_swatch(ctx, theme.danger);
-
-    // auto my_style
-    //     = text_style{"Roboto/Roboto-Regular", 22.f, rgb8(173, 181,
-    //     189)};
-    // auto my_style = text_style{
-    //     "Roboto_Mono/static/RobotoMono-Regular", 22.f, rgb8(173, 181,
-    //     189)};
-
-    // panel_style_info pstyle{
-    //     box_border_width<float>{4, 4, 4, 4},
-    //     box_border_width<float>{0, 0, 0, 0},
-    //     box_border_width<float>{4, 4, 4, 4}};
-
-    // {
-    //     bulleted_list list(ctx);
-    //     {
-    //         bulleted_item item(list);
-    //         do_text(ctx, value("this"));
-    //     }
-    //     {
-    //         bulleted_item item(list);
-    //         do_text(ctx, value("that"));
-    //     }
-    //     {
-    //         bulleted_item item(list);
-    //         do_text(ctx, value("the other"));
-    //     }
-    // }
-
-    do_spacer(ctx, height(40, PIXELS));
-    do_separator(ctx);
-    do_spacer(ctx, height(40, PIXELS));
-
-    do_text(ctx, value("Theme Options"));
-    do_spacer(ctx, height(20, PIXELS));
-
-    {
-        grid_layout grid(ctx);
-
-        {
-            grid_row row(grid);
-            do_switch(ctx, direct(light_theme));
-            do_text(ctx, value("Light"));
-        }
-
-        // do_spacer(ctx, height(10, PIXELS));
-
-        // {
-        //     {
-        //         grid_row row(grid);
-        //         do_radio_button(
-        //             ctx,
-        //             make_radio_signal(
-        //                 direct(selected_theme),
-        //                 value(color_theme::VIOLET)));
-        //         do_text(ctx, value("Violet"));
-        //     }
-        //     {
-        //         grid_row row(grid);
-        //         do_radio_button(
-        //             ctx,
-        //             make_radio_signal(
-        //                 direct(selected_theme), value(color_theme::BLUE)));
-        //         do_text(ctx, value("Blue"));
-        //     }
-        //     {
-        //         grid_row row(grid);
-        //         do_radio_button(
-        //             ctx,
-        //             make_radio_signal(
-        //                 direct(selected_theme), value(color_theme::PINK)));
-        //         do_text(ctx, value("Pink"));
-        //     }
-        //     {
-        //         grid_row row(grid);
-        //         do_radio_button(
-        //             ctx,
-        //             make_radio_signal(
-        //                 direct(selected_theme),
-        //                 value(color_theme::INDIGO)));
-        //         do_text(ctx, value("Indigo"));
-        //     }
-        // }
+#define DO_CODE_SNIPPET(snippet, code)                                        \
+    {                                                                         \
+        do_spacer(ctx, height(10, PIXELS));                                   \
+        grid_row code_snippet_row(code_snippet_grid);                         \
+        static std::vector<std::string> lines = split_string(snippet);        \
+        do_code_snippet(ctx, lines);                                          \
+        do_spacer(ctx, width(10, PIXELS));                                    \
+        {                                                                     \
+            column_layout code_column(ctx, CENTER_Y);                         \
+            code                                                              \
+        }                                                                     \
     }
 
-    do_spacer(ctx, height(40, PIXELS));
-    do_separator(ctx);
-    do_spacer(ctx, height(40, PIXELS));
+    {
+        do_heading(ctx, "Switches");
 
-    do_text(ctx, value("Some Widgets"));
-    do_spacer(ctx, height(20, PIXELS));
+        DO_CODE_SNIPPET("do_switch(ctx, get_state(ctx, true));", {
+            do_switch(ctx, get_state(ctx, true));
+        });
+
+        DO_CODE_SNIPPET("do_switch(ctx, get_state(ctx, false));", {
+            do_switch(ctx, get_state(ctx, false));
+        });
+
+        DO_CODE_SNIPPET(
+            R"(
+auto state = get_state(ctx, false);
+do_switch(ctx, disable_writes(state));
+do_switch(ctx, state);
+)",
+            {
+                auto state = get_state(ctx, false);
+                do_switch(ctx, disable_writes(state));
+                do_switch(ctx, state);
+            });
+    }
+
+    do_section_divider(ctx);
 
     {
-        row_layout blah(ctx);
+        do_heading(ctx, "Checkboxes");
 
-        do_spacer(ctx, size(100, 100, PIXELS));
+        DO_CODE_SNIPPET("do_checkbox(ctx, get_state(ctx, true), \"One\");", {
+            do_checkbox(ctx, get_state(ctx, true), "One");
+        });
 
-        {
-            column_layout col(ctx);
+        DO_CODE_SNIPPET("do_checkbox(ctx, get_state(ctx, false), \"Two\");", {
+            do_checkbox(ctx, get_state(ctx, false), "Two");
+        });
 
-            auto state1 = get_state(ctx, false);
-            do_switch(ctx, disable_writes(state1));
-            do_switch(ctx, state1);
-            do_switch(ctx, get_state(ctx, false));
-            do_switch(ctx, get_state(ctx, false));
-        }
-
-        do_spacer(ctx, size(100, 100, PIXELS));
-
-        {
-            column_layout col(ctx);
-            auto state1 = get_state(ctx, false);
+        DO_CODE_SNIPPET(
+            R"(
+auto state = get_state(ctx, false);
+do_checkbox(ctx, state, "Three");
+do_checkbox(ctx, disable_writes(state), "Disabled Three");
+)",
             {
-                row_layout row(ctx);
-                do_node_expander(ctx, disable_writes(state1));
-                do_text(ctx, value("One"));
-            }
-            {
-                row_layout row(ctx);
-                do_node_expander(ctx, state1);
-                do_text(ctx, value("Two"));
-            }
-            {
-                row_layout row(ctx);
-                do_node_expander(ctx, get_state(ctx, false));
-                do_text(ctx, value("Three"));
-            }
-        }
+                auto state = get_state(ctx, false);
+                do_checkbox(ctx, state, "Three");
+                do_checkbox(ctx, disable_writes(state), "Disabled Three");
+            });
+    }
 
-        do_spacer(ctx, size(100, 100, PIXELS));
+    do_section_divider(ctx);
 
-        {
-            column_layout col(ctx);
-            auto state1 = get_state(ctx, false);
-            {
-                row_layout row(ctx);
-                do_checkbox(ctx, disable_writes(state1));
-                do_text(ctx, value("One"));
-            }
-            {
-                row_layout row(ctx);
-                do_checkbox(ctx, state1);
-                do_text(ctx, value("Two"));
-            }
-            {
-                row_layout row(ctx);
-                do_checkbox(ctx, get_state(ctx, false));
-                do_text(ctx, value("Three"));
-            }
-        }
+    {
+        do_heading(ctx, "Radio Buttons");
 
-        do_spacer(ctx, size(100, 100, PIXELS));
+        auto selected = get_state(ctx, int(2));
+        DO_CODE_SNIPPET("auto selected = get_state(ctx, int(2));", {});
 
-        {
-            column_layout col(ctx);
-            auto selected = get_state(ctx, int(0));
+        DO_CODE_SNIPPET(
+            R"(
+do_radio_button(
+    ctx, make_radio_signal(selected, value(0)), "Option One");
+)",
             {
-                row_layout row(ctx);
                 do_radio_button(
-                    ctx,
-                    disable_writes(make_radio_signal(selected, value(2))),
-                    BASELINE_Y);
-                do_text(ctx, value("Option One"), BASELINE_Y);
-            }
+                    ctx, make_radio_signal(selected, value(0)), "Option One");
+            });
+
+        DO_CODE_SNIPPET(
+            R"(
+do_radio_button(
+    ctx, make_radio_signal(selected, value(1)), "Option Two");
+)",
             {
-                // TODO: Implement radio buttons with clickable text.
-                row_layout row(ctx);
-                auto id = get_widget_id(ctx);
-                do_box_region(ctx, id, row.region());
+                do_radio_button(
+                    ctx, make_radio_signal(selected, value(1)), "Option Two");
+            });
+
+        DO_CODE_SNIPPET(
+            R"(
+do_radio_button(
+    ctx, make_radio_signal(selected, value(2)), "Option Three");
+)",
+            {
                 do_radio_button(
                     ctx,
                     make_radio_signal(selected, value(2)),
-                    BASELINE_Y,
-                    id);
-                do_text(ctx, value("Option Two"), BASELINE_Y);
-            }
+                    "Option Three");
+            });
+
+        DO_CODE_SNIPPET(
+            R"(
+do_radio_button(
+    ctx,
+    disable_writes(make_radio_signal(selected, value(2))),
+    "Disabled Option Three");
+)",
             {
-                row_layout row(ctx);
                 do_radio_button(
-                    ctx, make_radio_signal(selected, value(3)), BASELINE_Y);
-                do_text(ctx, value("Option Three"), BASELINE_Y);
-            }
-        }
+                    ctx,
+                    disable_writes(make_radio_signal(selected, value(2))),
+                    "Disabled Option Three");
+            });
     }
 
-    do_spacer(ctx, height(20, PIXELS));
+    do_section_divider(ctx);
 
     {
-        row_layout row(ctx);
-        auto slider_value = get_state(ctx, value(1.5));
-        do_slider(ctx, slider_value, 0, 5, 0.01);
-        do_text(ctx, alia::printf(ctx, "%.2f", slider_value));
-    }
+        do_heading(ctx, "Node Expanders");
 
-    do_spacer(ctx, height(40, PIXELS));
-    do_separator(ctx);
-    do_spacer(ctx, height(40, PIXELS));
-
-    {
-        lazy_list_ui(ctx, 262'144, [&](ui_context ctx, size_t index) {
-            binary_number_ui(ctx, /*grid,*/ int(index));
+        DO_CODE_SNIPPET("do_node_expander(ctx, get_state(ctx, true));", {
+            do_node_expander(ctx, get_state(ctx, true));
         });
+
+        DO_CODE_SNIPPET("do_node_expander(ctx, get_state(ctx, false));", {
+            do_node_expander(ctx, get_state(ctx, false));
+        });
+
+        DO_CODE_SNIPPET(
+            R"(
+auto state = get_state(ctx, false);
+do_node_expander(ctx, disable_writes(state));
+do_node_expander(ctx, state);
+)",
+            {
+                auto state = get_state(ctx, false);
+                do_node_expander(ctx, disable_writes(state));
+                do_node_expander(ctx, state);
+            });
+    }
+
+    do_section_divider(ctx);
+
+    {
+        do_heading(ctx, "Transitions");
+
+        auto duration_in_seconds = get_state(ctx, value(0.5));
+
+        {
+            auto code_style = style_info{
+                font_info{
+                    &get_font("Roboto_Mono/static/RobotoMono-Regular", 20.f)},
+                theme.foreground.base.main};
+            scoped_style_info scoped_style(ctx, code_style);
+
+            auto const duration
+                = millisecond_count(read_signal(duration_in_seconds) * 1000);
+            auto on_off = square_wave(
+                ctx, value(duration + 500), value(duration + 500));
+
+#define STRINGIFY(...) #__VA_ARGS__
+#define ESCAPE(...) __VA_ARGS__
+
+#define DO_DEMO_SLIDER(color, bezier)                                         \
+    do_demo_slider(                                                           \
+        ctx,                                                                  \
+        code_snippet_grid,                                                    \
+        condition_is_true(on_off),                                            \
+        duration,                                                             \
+        color,                                                                \
+        STRINGIFY(bezier),                                                    \
+        bezier)
+
+            DO_DEMO_SLIDER(the_palette.primary[7].rgb, linear_curve);
+            DO_DEMO_SLIDER(the_palette.secondary[7].rgb, ease_in_curve);
+            DO_DEMO_SLIDER(the_palette.tertiary[7].rgb, ease_out_curve);
+            DO_DEMO_SLIDER(theme.structural.base.main, ease_in_out_curve);
+            DO_DEMO_SLIDER(
+                theme.danger.base.main,
+                ESCAPE(cubic_bezier{0.17, 0.67, 0.78, 0.3}));
+        }
+
+        do_spacer(ctx, height(20, PIXELS));
+
+        {
+            row_layout row(ctx);
+            do_text(ctx, value("Duration"));
+            do_slider(ctx, duration_in_seconds, 0, 3, 0.01, CENTER_Y);
+            do_text(
+                ctx,
+                alia::printf(ctx, "%.3f s", duration_in_seconds),
+                CENTER_Y);
+        }
     }
 
     // {
@@ -1255,168 +1463,204 @@ my_ui(ui_context ctx)
     //     }
     // }
 
-    do_spacer(ctx, height(100, PIXELS));
-
-    do_box(
-        ctx,
-        SK_ColorRED,
-        actions::toggle(get_state(ctx, false)),
-        size(400, 400, PIXELS));
-
-    do_spacer(ctx, height(100, PIXELS));
+    do_section_divider(ctx);
 
     {
-        for (int outer = 0; outer != 2; ++outer)
+        do_heading(ctx, "Text");
+
         {
-            do_wrapped_text(
-                ctx,
-                value(
-                    "Lorem ipsum dolor sit amet, consectetur "
-                    "adipisg elit. "
-                    "Phasellus lacinia elementum diam consequat "
-                    "alicinquet. "
-                    "Vestibulum ut libero justo. Pellentesque lectus "
-                    "lectus, "
-                    "scelerisque a elementum sed, bibendum id libero. "
-                    "Maecenas venenatis est sed sem "
-                    "consequat mollis. Ut "
-                    "nequeodio, hendrerit ut justo venenatis, consequat "
-                    "molestie eros. Nam fermentum, mi malesuada eleifend"
-                    "dapibus, lectus dolor luctus orci, nec posuere lor "
-                    "lorem ac sem. Nullam interdum laoreet ipsum in "
-                    "dictum.\n\n"
-                    "Duis quis blandit felis. Pellentesque et lectus "
-                    "magna. "
-                    "Maecenas dui lacus, sollicitudin a eros in, vehicula "
-                    "posuere metus. Etiam nec dolor mattis, tincidunt sem "
-                    "vitae, maximus tellus. Vestibulum ut nisi nec neque "
-                    "rutrum interdum. In justo massa, consequat quis dui "
-                    "eget, cursus ultricies sem. Quisque a lectus quisest "
-                    "porttitor ullamcorper ac sed odio.\n\n"
-                    "Vestibulum sed turpis et lacus rutrum scelerisqueet "
-                    "sit "
-                    "amet ipsum. Sed congue hendrerit augue, sed "
-                    "pellentesque "
-                    "neque. Integer efficitur nisi idmassa placerat, at "
-                    "ullamcorper arcu fermentum. Donec sed tellus quis "
-                    "velit "
-                    "placerat viverra necvel diam. Vestibulum faucibus "
-                    "molestie ipsum eget rhoncus. Donec vitae bibendum "
-                    "nibh, "
-                    "quis pellentesque enim. Donec eget consectetur "
-                    "massa, "
-                    "eget mollis elit. Orci varius natoque penatibus et"
-                    "magnis dis parturient montes, nascetur ridiculus "
-                    "mus. "
-                    "Donec accumsan, nisi egestas "
-                    "sollicitudinullamcorper, "
-                    "diam dolor faucibus neque, euscelerisque mi erat vel "
-                    "erat. Etiam nec leo acrisus porta ornare ut accumsan "
-                    "lorem.\n\n"
-                    "Aenean at euismod ligula. Sed augue est, imperdietut "
-                    "sem sit amet, efficitur dictum enim. Namsodales id "
-                    "risus non pulvinar. Morbi id mollismassa. Nunc elit "
-                    "velit, pellentesque et lobortisut, luctus sed justo. "
-                    "Morbi eleifend quam velmagna accumsan, eu consequat "
-                    "nisl ultrices.Mauris dictum eu quam sit amet "
-                    "aliquet. "
-                    "Sedrhoncus turpis quis sagittis imperdiet. Lorem "
-                    "ipsum"
-                    "dolor sit amet, consectetur adipiscing elit. "
-                    "Pellentesque convallis suscipit ex et "
-                    "hendrerit.Donec "
-                    "est ex, varius eu nulla id, tristiquelobortis metus. "
-                    "Sed id sem justo. Nulla at portaneque, id elementum "
-                    "lacus.\n\n"
-                    "Mauris leotortor, tincidunt sit amet sem sit amet, "
-                    "egestastempor massa. In diam ipsum, fermentum "
-                    "pulvinar "
-                    "posuere ut, scelerisque sit amet odio. Nam necjusto "
-                    "quis felis ultrices ornare sit amet eumassa. Nam "
-                    "gravida lacus eget tortor porttitor,eget scelerisque "
-                    "est imperdiet. Duis quisimperdiet libero. Nullam "
-                    "justo "
-                    "erat, blandit etnisi sit amet, aliquet mattis leo. "
-                    "Sed "
-                    "a auguenon felis lacinia ultrices. Aenean porttitor "
-                    "bibendum sem, in consectetur arcu suscipit id.Etiam "
-                    "varius dictum gravida. Nulla molestiefermentum odio "
-                    "vitae tincidunt. Quisque dictum,magna vitae "
-                    "porttitor "
-                    "accumsan, felis felisconsectetur nisi, ut venenatis "
-                    "felis justo utante.\n\n"),
-                FILL);
+            for (int outer = 0; outer != 1; ++outer)
+            {
+                do_wrapped_text(
+                    ctx,
+                    value("Lorem ipsum dolor sit amet, consectetur "
+                          "adipisg elit. "
+                          "Phasellus lacinia elementum diam consequat "
+                          "alicinquet. "
+                          "Vestibulum ut libero justo. Pellentesque lectus "
+                          "lectus, "
+                          "scelerisque a elementum sed, bibendum id libero. "
+                          "Maecenas venenatis est sed sem "
+                          "consequat mollis. Ut "
+                          "nequeodio, hendrerit ut justo venenatis, "
+                          "consequat "
+                          "molestie eros. Nam fermentum, mi malesuada "
+                          "eleifend"
+                          "dapibus, lectus dolor luctus orci, nec posuere "
+                          "lor "
+                          "lorem ac sem. Nullam interdum laoreet ipsum in "
+                          "dictum."),
+                    FILL);
+            }
         }
 
-        // for (int outer = 0; outer != 2; ++outer)
-        // {
-        //     scoped_flow_layout flow(ctx, UNPADDED);
+        do_wrapped_text(
+            ctx, value("Dies ist ein Beispieltext für Testzwecke."), FILL);
 
-        //     auto my_style = text_style{
-        //         "roboto/Roboto-Regular", 22.f, rgb8(173, 181, 189)};
+        do_wrapped_text(
+            ctx, value("这是一些用于测试目的的示例国际文本"), FILL);
+    }
 
-        //     for (int i = 0; i != 100; ++i)
-        //         do_text(
-        //             ctx,
-        //             direct(my_style),
-        //             alia::printf(
-        //                 ctx,
-        //                 "Revenue today - Könnten Sie mir das
-        //                 übersetzen?", i));
+    do_section_divider(ctx);
 
-        //     for (int i = 0; i != 100; ++i)
-        //     {
-        //         // if_(ctx, show_text, [&] {
-        //         //     // do_spacer(ctx, size(60, 40, PIXELS));
-        //         //     do_text(ctx, alia::printf(ctx, "text%i", i));
-        //         //     do_text(ctx, value("Könnten Sie mir das
-        //         übersetzen?"));
-        //         // });
+    {
+        do_heading(ctx, "Theme Options");
 
-        //         {
-        //             scoped_column col(ctx);
+        grid_layout grid(ctx);
 
-        //             do_box(
-        //                 ctx,
-        //                 SK_ColorMAGENTA,
-        //                 actions::noop(),
-        //                 width(100, PIXELS));
+        {
+            grid_row row(grid);
+            do_switch(
+                ctx, add_write_action(direct(light_theme), callback([&](bool) {
+                                          theme_update_needed = true;
+                                      })));
+            do_text(ctx, value("Light"));
+        }
 
-        //             // color::yiq<std::uint8_t> y1 =
-        //             // ::color::constant::blue_t{};
-        //             // color::yiq<std::uint8_t> y2 =
-        //             // ::color::constant::red_t{};
-        //             // color::yiq<std::uint8_t> yr =
-        //             // color::operation::mix(
-        //             //     y1,
-        //             //     std::max(
-        //             //         0.0,
-        //             //         std::min(
-        //             //             1.0,
-        //             //             std::fabs(std::sin(
-        //             //                 get_raw_animation_tick_count(ctx)
-        //             //                 / 1000.0)))),
-        //             //     y2);
-        //             // color::rgb<std::uint8_t> r(yr);
-        //             // color::rgb<std::uint8_t> r(y1);
+        do_spacer(ctx, height(10, PIXELS));
 
-        //             do_box(ctx, SK_ColorLTGRAY, actions::noop());
-        //         }
+        {
+            {
+                grid_row row(grid);
+                do_radio_button(
+                    ctx,
+                    add_write_action(
+                        make_radio_signal(direct(seeds), value(&seed_sets[0])),
+                        callback([&](bool) { theme_update_needed = true; })));
+                do_text(ctx, value("One"));
+            }
+            {
+                grid_row row(grid);
+                do_radio_button(
+                    ctx,
+                    add_write_action(
+                        make_radio_signal(direct(seeds), value(&seed_sets[1])),
+                        callback([&](bool) { theme_update_needed = true; })));
+                do_text(ctx, value("Two"));
+            }
+            {
+                grid_row row(grid);
+                do_radio_button(
+                    ctx,
+                    add_write_action(
+                        make_radio_signal(direct(seeds), value(&seed_sets[2])),
+                        callback([&](bool) { theme_update_needed = true; })));
+                do_text(ctx, value("Three"));
+            }
+            {
+                grid_row row(grid);
+                do_radio_button(
+                    ctx,
+                    add_write_action(
+                        make_radio_signal(direct(seeds), value(&seed_sets[3])),
+                        callback([&](bool) { theme_update_needed = true; })));
+                do_text(ctx, value("Four"));
+            }
+        }
+    }
 
-        //         {
-        //             scoped_column col(ctx);
+    do_section_divider(ctx);
 
-        //             static SkColor clicky_color = SK_ColorRED;
-        //             // event_handler<mouse_button_event>(
-        //             //     ctx, [&](auto, auto&) { clicky_color =
-        //             //     SK_ColorBLUE; });
-        //             do_box(ctx, clicky_color, actions::noop());
+    {
+        do_heading(ctx, "Color Palette");
 
-        //             do_box(ctx, SK_ColorLTGRAY, actions::noop());
+        show_color_ramp(ctx, the_palette.primary);
+        do_spacer(ctx, size(10, 10, PIXELS));
+        show_color_ramp(ctx, the_palette.secondary);
+        do_spacer(ctx, size(10, 10, PIXELS));
+        show_color_ramp(ctx, the_palette.tertiary);
+        do_spacer(ctx, size(10, 10, PIXELS));
+        show_color_ramp(ctx, the_palette.neutral);
+        do_spacer(ctx, size(10, 10, PIXELS));
+        show_color_ramp(ctx, the_palette.warning);
+        do_spacer(ctx, size(10, 10, PIXELS));
+        show_color_ramp(ctx, the_palette.danger);
+    }
 
-        //             do_box(ctx, SK_ColorGRAY, actions::noop());
-        //         }
-        //     }
-        //}
+    do_section_divider(ctx);
+
+    {
+        do_heading(ctx, "Color Swatches");
+
+        show_color_swatch(ctx, theme.primary);
+        show_color_swatch(ctx, theme.secondary);
+        show_color_swatch(ctx, theme.tertiary);
+        show_color_swatch(ctx, theme.background);
+        show_color_swatch(ctx, theme.structural);
+        show_color_swatch(ctx, theme.foreground);
+        show_color_swatch(ctx, theme.accent);
+        show_color_swatch(ctx, theme.warning);
+        show_color_swatch(ctx, theme.danger);
+    }
+
+    // {
+    //     scoped_flow_layout flow(ctx, UNPADDED);
+
+    //     auto my_style = text_style{
+    //         "roboto/Roboto-Regular", 22.f, rgb8(173, 181, 189)};
+
+    //     for (int i = 0; i != 100; ++i)
+    //     {
+    //         // if_(ctx, show_text, [&] {
+    //         //     // do_spacer(ctx, size(60, 40, PIXELS));
+    //         //     do_text(ctx, alia::printf(ctx, "text%i", i));
+    //         //     do_text(ctx, value("Könnten Sie mir das
+    //         übersetzen?"));
+    //         // });
+
+    //         {
+    //             scoped_column col(ctx);
+
+    //             do_box(
+    //                 ctx,
+    //                 SK_ColorMAGENTA,
+    //                 actions::noop(),
+    //                 width(100, PIXELS));
+
+    //             // color::yiq<std::uint8_t> y1 =
+    //             // ::color::constant::blue_t{};
+    //             // color::yiq<std::uint8_t> y2 =
+    //             // ::color::constant::red_t{};
+    //             // color::yiq<std::uint8_t> yr =
+    //             // color::operation::mix(
+    //             //     y1,
+    //             //     std::max(
+    //             //         0.0,
+    //             //         std::min(
+    //             //             1.0,
+    //             //             std::fabs(std::sin(
+    //             //                 get_raw_animation_tick_count(ctx)
+    //             //                 / 1000.0)))),
+    //             //     y2);
+    //             // color::rgb<std::uint8_t> r(yr);
+    //             // color::rgb<std::uint8_t> r(y1);
+
+    //             do_box(ctx, SK_ColorLTGRAY, actions::noop());
+    //         }
+
+    //         {
+    //             scoped_column col(ctx);
+
+    //             static SkColor clicky_color = SK_ColorRED;
+    //             // event_handler<mouse_button_event>(
+    //             //     ctx, [&](auto, auto&) { clicky_color =
+    //             //     SK_ColorBLUE; });
+    //             do_box(ctx, clicky_color, actions::noop());
+
+    //             do_box(ctx, SK_ColorLTGRAY, actions::noop());
+
+    //             do_box(ctx, SK_ColorGRAY, actions::noop());
+    //         }
+    //     }
+    //}
+
+    do_section_divider(ctx);
+
+    {
+        do_heading(ctx, "Lazy Lists");
+
+        lazy_list_ui(ctx, 262'144, [&](ui_context ctx, size_t index) {
+            binary_number_ui(ctx, /*grid,*/ int(index));
+        });
     }
 }

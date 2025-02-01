@@ -379,7 +379,7 @@ framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
 void
 init_window(
-    glfw_window_impl& impl, std::string const& title, vector<2, unsigned> size)
+    glfw_window_impl& impl, std::string const& title, vector<2, unsigned>)
 {
     static glfw_global_init glfw_singleton;
 
@@ -390,8 +390,10 @@ init_window(
     glfwWindowHint(GLFW_STENCIL_BITS, 0);
     glfwWindowHint(GLFW_DEPTH_BITS, 0);
 
-    GLFWwindow* window
-        = glfwCreateWindow(size[0], size[1], title.c_str(), NULL, NULL);
+    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+    GLFWvidmode const* mode = glfwGetVideoMode(monitor);
+    GLFWwindow* window = glfwCreateWindow(
+        mode->width, mode->height, title.c_str(), monitor, NULL);
     if (!window)
         throw alia::exception("GLFW window creation failed");
     glfwSetWindowUserPointer(window, &impl);
@@ -437,7 +439,7 @@ glfw_window::glfw_window(
     glfwGetFramebufferSize(impl_->glfw_window, &width, &height);
     impl_->system.surface_size = make_vector<unsigned>(width, height);
 
-    init_skia(*impl_, size);
+    init_skia(*impl_, make_vector<unsigned>(width, height));
 
     // TODO: Not this.
     // impl_->system.font_collection = impl_->font_collection;

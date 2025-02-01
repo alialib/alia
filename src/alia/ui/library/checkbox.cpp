@@ -53,7 +53,7 @@ extract_checkbox_style_info(dataless_ui_context ctx)
         .disabled_outline_color
         = lerp(theme.background.base.main, theme.structural.base.main, 0.4f),
         .outline_color = theme.structural.base.main,
-        .checked_fill_color = theme.primary.stronger[1].main,
+        .checked_fill_color = theme.accent.base.main,
         .check_color = theme.structural.base.main,
     };
 }
@@ -212,12 +212,17 @@ render_checkbox(
 }
 
 void
-do_checkbox(ui_context ctx, duplex<bool> checked, layout const& layout_spec)
+do_checkbox(
+    ui_context ctx,
+    duplex<bool> checked,
+    layout const& layout_spec,
+    widget_id id)
 {
     checkbox_data* data_ptr;
     get_cached_data(ctx, &data_ptr);
     auto& data = *data_ptr;
-    auto const id = data_ptr;
+    if (!id)
+        id = data_ptr;
 
     bool const is_disabled = !signal_ready_to_write(checked);
 

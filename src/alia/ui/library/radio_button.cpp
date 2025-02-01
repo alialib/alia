@@ -46,9 +46,9 @@ extract_radio_button_style_info(dataless_ui_context ctx)
     return {
         .disabled_color
         = lerp(theme.background.base.main, theme.structural.base.main, 0.4f),
-        .highlight_color = theme.primary.stronger[1].main,
+        .highlight_color = theme.accent.base.main,
         .outline_color = theme.structural.base.main,
-        .dot_color = theme.primary.stronger[1].main};
+        .dot_color = theme.accent.base.main};
 }
 
 void
