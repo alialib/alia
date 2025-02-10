@@ -46,15 +46,15 @@ extract_checkbox_style_info(dataless_ui_context ctx)
 {
     auto const& theme = get_system(ctx).theme;
     return {
-        .highlight_color = theme.primary,
+        .highlight_color = theme.primary.base.main,
         .disabled_fill_color
-        = interpolate(theme.surface, theme.on_surface, 0.4f),
-        .disabled_check_color = theme.surface,
+        = lerp(theme.background.base.main, theme.structural.base.main, 0.4f),
+        .disabled_check_color = theme.background.base.main,
         .disabled_outline_color
-        = interpolate(theme.surface, theme.on_surface, 0.4f),
-        .outline_color = theme.on_surface,
-        .checked_fill_color = theme.primary,
-        .check_color = theme.on_primary,
+        = lerp(theme.background.base.main, theme.structural.base.main, 0.4f),
+        .outline_color = theme.structural.base.main,
+        .checked_fill_color = theme.accent.base.main,
+        .check_color = theme.structural.base.main,
     };
 }
 
@@ -200,8 +200,8 @@ render_checkbox(
         canvas.drawPath(SkPath::RRect(as_skrect(checkbox_rect), 2, 2), paint);
     }
 
-    rgb8 color = interpolate(
-        style.outline_color, style.checked_fill_color, smoothed_state);
+    rgb8 color
+        = lerp(style.outline_color, style.checked_fill_color, smoothed_state);
 
     render_click_flares(
         ctx,
@@ -212,12 +212,17 @@ render_checkbox(
 }
 
 void
-do_checkbox(ui_context ctx, duplex<bool> checked, layout const& layout_spec)
+do_checkbox(
+    ui_context ctx,
+    duplex<bool> checked,
+    layout const& layout_spec,
+    widget_id id)
 {
     checkbox_data* data_ptr;
     get_cached_data(ctx, &data_ptr);
     auto& data = *data_ptr;
-    auto const id = data_ptr;
+    if (!id)
+        id = data_ptr;
 
     bool const is_disabled = !signal_ready_to_write(checked);
 

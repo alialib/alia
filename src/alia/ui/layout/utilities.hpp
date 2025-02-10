@@ -505,9 +505,6 @@ struct layout_leaf : layout_node
     set_relative_assignment(relative_layout_assignment const& assignment);
 
  private:
-    // user-supplied layout spec
-    layout layout_spec_;
-
     // the resolved spec
     resolved_layout_spec resolved_spec_;
 

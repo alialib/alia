@@ -164,7 +164,7 @@ smooth_between_values(
                     transition.curve,
                     1. - double(ticks_left) / transition.duration,
                     1. / transition.duration);
-                Value current_value = interpolate(
+                Value current_value = lerp(
                     animation.direction ? false_value : true_value,
                     animation.direction ? true_value : false_value,
                     fraction);

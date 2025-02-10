@@ -45,8 +45,6 @@ struct switch_style_info
     rgb8 off_dot_color;
     // dot color when switch is on
     rgb8 on_dot_color;
-    // color of dot shadow
-    rgb8 shadow_color;
     // color of hover/press highlight
     rgb8 highlight_color;
 };
@@ -57,15 +55,14 @@ extract_switch_style_info(dataless_ui_context ctx)
     auto const& theme = get_system(ctx).theme;
     return {
         .disabled_track_color
-        = interpolate(theme.surface, theme.secondary_container, 0.5f),
+        = lerp(theme.background.base.main, theme.structural.base.main, 0.5f),
         .disabled_dot_color
-        = interpolate(theme.surface, theme.on_surface, 0.4f),
-        .off_track_color = theme.secondary_container,
-        .on_track_color = theme.secondary_container,
-        .off_dot_color = theme.on_surface_variant,
-        .on_dot_color = theme.primary,
-        .shadow_color = theme.shadow,
-        .highlight_color = theme.primary,
+        = lerp(theme.background.base.main, theme.structural.base.main, 0.6f),
+        .off_track_color = theme.structural.weaker[0].main,
+        .on_track_color = theme.structural.base.main,
+        .off_dot_color = theme.structural.stronger[0].main,
+        .on_dot_color = theme.accent.base.main,
+        .highlight_color = theme.accent.base.main,
     };
 }
 
@@ -97,8 +94,7 @@ render_switch(
         {
             SkPaint paint;
             paint.setAntiAlias(true);
-            paint.setColor(
-                as_skcolor(rgba8(style.disabled_track_color, 0x60)));
+            paint.setColor(as_skcolor(style.disabled_track_color));
             paint.setStyle(SkPaint::kStroke_Style);
             paint.setStrokeCap(SkPaint::kRound_Cap);
             paint.setStrokeWidth(16);
@@ -121,7 +117,7 @@ render_switch(
 
             SkPaint paint;
             paint.setAntiAlias(true);
-            paint.setColor(as_skcolor(rgba8(style.disabled_dot_color, 0x60)));
+            paint.setColor(as_skcolor(style.disabled_dot_color));
             canvas.drawPath(
                 SkPath::Circle(
                     region.corner[0] + region.size[0] * dot_x_offset,
@@ -141,15 +137,15 @@ render_switch(
         0.f,
         animated_transition{default_curve, 200});
 
-    float dot_radius = interpolate(14.f, 16.f, switch_position);
+    float dot_radius = lerp(14.f, 16.f, switch_position);
 
-    float const dot_x_offset = interpolate(0.25f, 0.75f, switch_position);
+    float const dot_x_offset = lerp(0.25f, 0.75f, switch_position);
 
-    rgb8 const dot_color = interpolate(
-        style.off_dot_color, style.on_dot_color, switch_position);
+    rgb8 const dot_color
+        = lerp(style.off_dot_color, style.on_dot_color, switch_position);
 
-    rgb8 const track_color = interpolate(
-        style.off_track_color, style.on_track_color, switch_position);
+    rgb8 const track_color
+        = lerp(style.off_track_color, style.on_track_color, switch_position);
 
     {
         SkPaint paint;
@@ -171,24 +167,21 @@ render_switch(
     }
 
     {
-        const SkScalar blurSigma = 3.0f;
-        const SkScalar xDrop = 2.0f;
-        const SkScalar yDrop = 2.0f;
+        const SkScalar blur_sigma = 4.0f;
+        const SkScalar x_drop = 2.0f;
+        const SkScalar y_drop = 2.0f;
 
         SkPaint paint;
         paint.setAntiAlias(true);
-        paint.setColor(SkColorSetARGB(
-            0x40,
-            style.shadow_color.r,
-            style.shadow_color.g,
-            style.shadow_color.b));
+        paint.setColor(
+            SkColorSetARGB(0x80, dot_color.r, dot_color.g, dot_color.b));
         paint.setMaskFilter(
-            SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, blurSigma, false));
+            SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, blur_sigma, false));
 
         canvas.drawPath(
             SkPath::Circle(
-                region.corner[0] + region.size[0] * dot_x_offset + xDrop,
-                get_center(region)[1] + yDrop,
+                region.corner[0] + region.size[0] * dot_x_offset + x_drop,
+                get_center(region)[1] + y_drop,
                 dot_radius),
             paint);
     }
