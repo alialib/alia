@@ -965,7 +965,7 @@ do_demo_slider(
         value_smoother<double>* smoother;
         get_cached_data(ctx, &smoother);
         auto& slider_data = get_slider_data(ctx);
-        animated_transition transition(bezier, duration);
+        animated_transition transition{bezier, duration};
         if (get_event_category(ctx) == RENDER_CATEGORY)
         {
             render_demo_slider(

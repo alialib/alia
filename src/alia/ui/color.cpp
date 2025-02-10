@@ -74,8 +74,8 @@ to_hsl(rgb8 const& rgb) noexcept
     float const g = channel_operations<uint8_t>::to_normalized_float(rgb.g);
     float const b = channel_operations<uint8_t>::to_normalized_float(rgb.b);
 
-    float const max_val = std::max({r, g, b});
-    float const min_val = std::min({r, g, b});
+    float const max_val = std::max(r, std::max(g, b));
+    float const min_val = std::min(r, std::min(g, b));
 
     // Calculate lightness.
     float const l = (max_val + min_val) / 2.0f;
@@ -83,7 +83,7 @@ to_hsl(rgb8 const& rgb) noexcept
     // If all RGB values are equal, it's a shade of gray.
     if (max_val == min_val)
     {
-        return hsl(0.0f, 0.0f, l);
+        return hsl{0.0f, 0.0f, l};
     }
 
     // Calculate saturation.
@@ -107,7 +107,7 @@ to_hsl(rgb8 const& rgb) noexcept
     }
     h *= 60.0f;
 
-    return hsl(h, s, l);
+    return hsl{h, s, l};
 }
 
 // Calculate the relative luminance of a color.
