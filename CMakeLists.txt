@@ -46,6 +46,16 @@ if(ALIA_ENABLE_UI)
 endif()
 
 cmake_dependent_option(
+    ALIA_ENABLE_WXWIDGETS
+    "Enable the wxWidgets backend for the UI library"
+    ON
+    "ALIA_ENABLE_UI"
+    OFF)
+if(ALIA_ENABLE_WXWIDGETS)
+  list(APPEND VCPKG_MANIFEST_FEATURES "wx")
+endif()
+
+cmake_dependent_option(
     ALIA_ENABLE_GLFW
     "Enable the GLFW backend for the UI library"
     ON
@@ -214,6 +224,16 @@ if (ALIA_ENABLE_UI)
     target_precompile_headers(alia_ui PUBLIC
         src/alia/ui.hpp)
 
+endif()
+
+# Add the wxWidgets backend.
+if (ALIA_ENABLE_WXWIDGETS)
+    find_package(OpenGL QUIET)
+    find_package(wxWidgets CONFIG REQUIRED)
+    add_library(alia_wx STATIC "src/alia/ui/backends/wx.cpp")
+    target_include_directories(alia_wx PUBLIC
+        "${CMAKE_CURRENT_SOURCE_DIR}/src")
+    target_link_libraries(alia_wx PUBLIC alia_ui wx::core wx::base wx::wxgl)
 endif()
 
 # Add the GLFW3 backend.

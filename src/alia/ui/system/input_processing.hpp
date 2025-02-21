@@ -21,6 +21,11 @@ void
 process_mouse_press(
     ui_system& ui, mouse_button button, key_modifiers mods = NO_FLAGS);
 
+// Process a double click.
+void
+process_double_click(
+    ui_system& ui, mouse_button button, key_modifiers mods = NO_FLAGS);
+
 // Process a mouse button release.
 void
 process_mouse_release(ui_system& ui, mouse_button button);
@@ -36,6 +41,15 @@ process_key_press(ui_system& ui, modded_key const& info);
 // Process a key release.
 bool
 process_key_release(ui_system& ui, modded_key const& info);
+
+// process_key_press calls both of the following.
+// process_focused_key_press will only pass the key to the widget with the
+// keyboard focus (if any).
+// process_background_key_press will pass it to any widget that's listening.
+bool
+process_focused_key_press(ui_system& ui, modded_key const& info);
+bool
+process_background_key_press(ui_system& ui, modded_key const& info);
 
 } // namespace alia
 

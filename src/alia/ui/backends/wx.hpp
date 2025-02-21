@@ -2,8 +2,13 @@
 #define ALIA_UI_BACKENDS_WX_HPP
 
 #include <alia/ui/backends/interface.hpp>
+
 #include <wx/glcanvas.h>
 #include <wx/wx.h>
+
+#include <alia/ui/context.hpp>
+
+#include <functional>
 
 namespace alia {
 
@@ -15,16 +20,15 @@ struct wx_opengl_window : public wxGLCanvas
 {
  public:
     wx_opengl_window(
-        alia__shared_ptr<ui_controller> const& controller,
-        alia__shared_ptr<style_tree> const& alia_style,
+        std::function<void(ui_context)> controller,
         wxWindow* parent,
-        wxWindowID id = wxID_ANY,
-        int const* attrib_list = 0,
+        wxWindowID id,
+        wxGLAttributes const& canvas_attribs,
+        wxGLContextAttrs const& context_attribs,
         wxPoint const& pos = wxDefaultPosition,
         wxSize const& size = wxDefaultSize,
         long style = 0,
-        wxString const& name = "alia_wx_gl_window",
-        wxPalette const& palette = wxNullPalette);
+        wxString const& name = "alia_wx_gl_window");
     ~wx_opengl_window();
 
     alia::ui_system&
@@ -57,6 +61,8 @@ struct wx_opengl_window : public wxGLCanvas
     on_menu(wxCommandEvent& event);
     void
     on_sys_color_change(wxSysColourChangedEvent& event);
+    void
+    on_scroll(wxScrollWinEvent& event);
 
     struct impl_data;
 
@@ -69,7 +75,7 @@ struct wx_opengl_window : public wxGLCanvas
 struct wx_frame : public wxFrame, app_window
 {
     wx_frame(
-        alia__shared_ptr<app_window_controller> const& controller,
+        std::function<void(ui_context)> controller,
         wxWindow* parent,
         wxWindowID id,
         wxString const& title,
@@ -97,10 +103,12 @@ struct wx_frame : public wxFrame, app_window
     void
     on_size(wxSizeEvent& event);
     void
+    on_exit(wxCommandEvent& event);
+    void
     on_close(wxCloseEvent& event);
 
-    void
-    update_menu_bar(wxWindow* controller, menu_container const& menu_bar);
+    // void
+    // update_menu_bar(wxWindow* controller, menu_container const& menu_bar);
 
     struct impl_data;
 
@@ -114,11 +122,9 @@ struct wx_frame : public wxFrame, app_window
 // then this is the simplest way to get alia working with wxWdigets.
 wx_frame*
 create_wx_framed_window(
-    string const& title,
-    alia__shared_ptr<app_window_controller> const& controller,
-    alia__shared_ptr<style_tree> const& style,
-    app_window_state const& initial_state,
-    int const* gl_canvas_attribs);
+    std::string const& title,
+    std::function<void(ui_context)> controller,
+    app_window_state const& initial_state);
 
 } // namespace alia
 

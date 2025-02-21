@@ -58,10 +58,11 @@ struct glfw_window_impl
     std::unique_ptr<GrDirectContext> skia_graphics_context;
     std::unique_ptr<SkSurface> skia_surface;
 
-    // sk_sp<skia::textlayout::FontCollection> font_collection;
-
     // TODO: Does this go here?
     ui_system system;
+
+    bool fullscreen = false;
+    box<2, int> windowed_rect;
 };
 
 void
@@ -172,12 +173,42 @@ key_event_callback(
     {
         switch (key)
         {
+            // TODO: Move all this out of here.
             case GLFW_KEY_TAB:
                 if (mods == GLFW_MOD_SHIFT)
                     regress_focus(get_system(window));
                 else if (mods == 0)
                     advance_focus(get_system(window));
                 break;
+            case GLFW_KEY_F11: {
+                auto& impl = get_impl(window);
+                bool is_fullscreen = impl.fullscreen;
+                if (is_fullscreen)
+                {
+                    glfwSetWindowMonitor(
+                        window,
+                        NULL,
+                        impl.windowed_rect.corner[0],
+                        impl.windowed_rect.corner[1],
+                        impl.windowed_rect.size[0],
+                        impl.windowed_rect.size[1],
+                        GLFW_DONT_CARE);
+                }
+                else
+                {
+                    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+                    GLFWvidmode const* mode = glfwGetVideoMode(monitor);
+                    int x, y, width, height;
+                    glfwGetWindowPos(window, &x, &y);
+                    glfwGetWindowSize(window, &width, &height);
+                    impl.windowed_rect.corner = make_vector<int>(x, y);
+                    impl.windowed_rect.size = make_vector<int>(width, height);
+                    glfwSetWindowMonitor(
+                        window, monitor, 0, 0, mode->width, mode->height, 0);
+                }
+                impl.fullscreen = !is_fullscreen;
+                break;
+            }
             default:
                 process_key_press(
                     get_system(window),
@@ -253,6 +284,7 @@ init_skia(glfw_window_impl& impl, vector<2, unsigned> size)
         {
             throw alia::exception("SkLoadICU failed");
         }
+        globally_initialized = true;
     }
 
     // impl.font_collection = sk_make_sp<skia::textlayout::FontCollection>();
@@ -379,7 +411,7 @@ framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
 void
 init_window(
-    glfw_window_impl& impl, std::string const& title, vector<2, unsigned>)
+    glfw_window_impl& impl, std::string const& title, vector<2, unsigned> size)
 {
     static glfw_global_init glfw_singleton;
 
@@ -389,6 +421,11 @@ init_window(
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_STENCIL_BITS, 0);
     glfwWindowHint(GLFW_DEPTH_BITS, 0);
+    glfwWindowHint(GLFW_DOUBLEBUFFER, GL_TRUE);
+
+    impl.windowed_rect = make_box<2, int>(
+        make_vector<int>(100, 100), make_vector<int>(size[0], size[1]));
+    impl.fullscreen = true;
 
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
     GLFWvidmode const* mode = glfwGetVideoMode(monitor);

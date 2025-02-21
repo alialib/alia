@@ -204,7 +204,7 @@ render_switch(
         SkPaint paint;
         paint.setAntiAlias(true);
         paint.setColor(SkColorSetARGB(
-            0x40,
+            0x30,
             style.highlight_color.r,
             style.highlight_color.g,
             style.highlight_color.b));

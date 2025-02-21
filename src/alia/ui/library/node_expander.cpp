@@ -127,7 +127,7 @@ render_node_expander(
         SkPaint paint;
         paint.setAntiAlias(true);
         paint.setColor(SkColorSetARGB(
-            0x20,
+            0x30,
             style.highlight_color.r,
             style.highlight_color.g,
             style.highlight_color.b));

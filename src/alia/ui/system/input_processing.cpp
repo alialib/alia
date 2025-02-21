@@ -89,7 +89,7 @@ process_mouse_release(ui_system& ui, mouse_button button)
 }
 
 void
-process_double_click(ui_system& ui, mouse_button button)
+process_double_click(ui_system& ui, mouse_button button, key_modifiers)
 {
     auto target = get_mouse_target(ui);
     if (target)
