@@ -102,7 +102,7 @@ render_radio_button(
     {
         SkPaint paint;
         paint.setAntiAlias(true);
-        paint.setColor(as_skcolor(rgba8(style.highlight_color, 0x20)));
+        paint.setColor(as_skcolor(rgba8(style.highlight_color, 0x30)));
         canvas.drawPath(SkPath::Circle(center[0], center[1], 32.f), paint);
     }
 

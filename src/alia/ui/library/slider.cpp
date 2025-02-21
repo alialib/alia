@@ -93,7 +93,7 @@ draw_thumb(
         SkPaint paint;
         paint.setAntiAlias(true);
         paint.setColor(as_skcolor(
-            rgba8(get_system(ctx).theme.structural.base.main, 0x20)));
+            rgba8(get_system(ctx).theme.structural.base.main, 0x30)));
         canvas.drawPath(
             SkPath::Circle(thumb_position[0], thumb_position[1], 24.f), paint);
     }

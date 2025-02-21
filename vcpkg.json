@@ -37,6 +37,12 @@
                 "sdl2"
             ]
         },
+        "wx": {
+            "description": "wxWidgets backend for UI library",
+            "dependencies": [
+                "wxwidgets"
+            ]
+        },
         "tests": {
             "description": "Build tests",
             "dependencies": [

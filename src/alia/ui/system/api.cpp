@@ -13,10 +13,11 @@ void
 initialize(
     ui_system& ui,
     std::function<void(ui_context)> controller,
+    external_interface* external,
     std::shared_ptr<os_interface> os,
     std::shared_ptr<window_interface> window)
 {
-    initialize_core_system<vanilla_ui_context>(ui, nullptr);
+    initialize_core_system<vanilla_ui_context>(ui, external);
     ui.controller = std::move(controller);
     ui.os = std::move(os);
     ui.window = std::move(window);

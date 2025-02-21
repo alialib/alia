@@ -42,8 +42,7 @@ get_raw_animation_ticks_left(
     int ticks_remaining = int(end_time - get<timing_tag>(ctx).tick_counter);
     if (ticks_remaining > 0)
     {
-        if (is_refresh_event(ctx))
-            schedule_animation_refresh(ctx);
+        schedule_animation_refresh(ctx);
         return millisecond_count(ticks_remaining);
     }
     return 0;

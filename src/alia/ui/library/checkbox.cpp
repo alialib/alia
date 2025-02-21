@@ -46,7 +46,7 @@ extract_checkbox_style_info(dataless_ui_context ctx)
 {
     auto const& theme = get_system(ctx).theme;
     return {
-        .highlight_color = theme.primary.base.main,
+        .highlight_color = theme.accent.base.main,
         .disabled_fill_color
         = lerp(theme.background.base.main, theme.structural.base.main, 0.4f),
         .disabled_check_color = theme.background.base.main,
@@ -147,7 +147,7 @@ render_checkbox(
     {
         SkPaint paint;
         paint.setAntiAlias(true);
-        paint.setColor(as_skcolor(rgba8(style.highlight_color, 0x20)));
+        paint.setColor(as_skcolor(rgba8(style.highlight_color, 0x30)));
         canvas.drawPath(SkPath::Circle(center[0], center[1], 32.f), paint);
     }
 
