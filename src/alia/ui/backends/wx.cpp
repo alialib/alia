@@ -75,7 +75,6 @@ struct wx_opengl_window::impl_data
 
     wxGLContext* wx_gl_context;
     wx_opengl_window* window;
-    int wheel_movement; // accumulates fractional mouse wheel movement
     bool vsync_disabled;
     counter_type last_menu_bar_update;
     // this is used to hold key info between events for the same key press
@@ -348,7 +347,7 @@ struct wx_external_interface : default_external_interface
     void
     schedule_animation_refresh() override
     {
-        fprintf(get_console(), "schedule_animation_refresh\n");
+        // fprintf(get_console(), "schedule_animation_refresh\n");
         impl_.window->Refresh(false);
     }
 
@@ -428,7 +427,6 @@ EVT_CHAR(wx_opengl_window::on_char)
 EVT_IDLE(wx_opengl_window::on_idle)
 EVT_MENU(-1, wx_opengl_window::on_menu)
 EVT_SYS_COLOUR_CHANGED(wx_opengl_window::on_sys_color_change)
-// EVT_SCROLLWIN_THUMBTRACK(wx_opengl_window::on_scroll)
 END_EVENT_TABLE()
 
 // static void
@@ -537,7 +535,7 @@ update_window(wx_opengl_window::impl_data& impl)
 static void
 handle_paint(wx_opengl_window::impl_data& impl)
 {
-    fprintf(get_console(), "handle_paint\n");
+    // fprintf(get_console(), "handle_paint\n");
 
     vector<2, int> size;
     impl.window->GetClientSize(&size[0], &size[1]);
@@ -574,18 +572,22 @@ translate_button(int wx_button)
 static void
 handle_mouse(wx_opengl_window::impl_data& impl, wxMouseEvent& event)
 {
-    // if (event.GetEventType() == wxEVT_MOUSEWHEEL)
-    // {
-    //     impl.wheel_movement += event.GetWheelRotation();
-    //     int lines = impl.wheel_movement / event.GetWheelDelta();
-    //     impl.wheel_movement -= lines * event.GetWheelDelta();
-    //     if (lines != 0)
-    //     {
-    //         process_scroll(impl.ui, make_vector<int>(0, lines));
-    //         update_window(impl);
-    //     }
-    //     return;
-    // }
+    if (event.GetEventType() == wxEVT_MOUSEWHEEL)
+    {
+        process_scroll(
+            impl.ui,
+            event.GetWheelAxis() == wxMOUSE_WHEEL_VERTICAL
+                ? make_vector<double>(
+                      0,
+                      double(event.GetWheelRotation())
+                          / double(event.GetWheelDelta()))
+                : make_vector<double>(
+                      double(-event.GetWheelRotation())
+                          / double(event.GetWheelDelta()),
+                      0));
+        impl.window->Refresh(false);
+        return;
+    }
 
     // Get the current mouse position.
     vector<2, int> position = make_vector<int>(event.GetX(), event.GetY());
@@ -636,17 +638,6 @@ handle_mouse(wx_opengl_window::impl_data& impl, wxMouseEvent& event)
     }
 
     // update_window(impl);
-    impl.window->Refresh(false);
-}
-
-static void
-handle_scroll(wx_opengl_window::impl_data& impl, wxScrollWinEvent& event)
-{
-    process_scroll(
-        impl.ui,
-        event.GetOrientation() == wxVERTICAL
-            ? make_vector<double>(0, event.GetPosition())
-            : make_vector<double>(event.GetPosition(), 0));
     impl.window->Refresh(false);
 }
 
@@ -825,8 +816,6 @@ wx_opengl_window::wx_opengl_window(
 
     impl.last_menu_bar_update = 0;
 
-    impl.wheel_movement = 0;
-
     // wxScreenDC dc;
     //  wxSize ppi = dc.GetPPI();
 
@@ -863,7 +852,7 @@ wx_opengl_window::update()
 void
 wx_opengl_window::on_paint(wxPaintEvent&)
 {
-    fprintf(get_console(), "[%d] on_paint\n", impl_->ui.tick_count);
+    // fprintf(get_console(), "[%d] on_paint\n", impl_->ui.tick_count);
     handle_paint(*impl_);
 }
 void
@@ -881,14 +870,8 @@ wx_opengl_window::on_size(wxSizeEvent&)
 void
 wx_opengl_window::on_mouse(wxMouseEvent& event)
 {
-    fprintf(get_console(), "[%d] on_mouse\n", impl_->ui.tick_count);
+    // fprintf(get_console(), "[%d] on_mouse\n", impl_->ui.tick_count);
     handle_mouse(*impl_, event);
-}
-void
-wx_opengl_window::on_scroll(wxScrollWinEvent& event)
-{
-    fprintf(get_console(), "[%d] on_scroll\n", impl_->ui.tick_count);
-    handle_scroll(*impl_, event);
 }
 void
 wx_opengl_window::on_set_focus(wxFocusEvent&)
@@ -911,7 +894,7 @@ wx_opengl_window::on_idle(wxIdleEvent& event)
     wx_opengl_window::impl_data& impl = *impl_;
     impl.ui.tick_count = impl.ui.external->get_tick_count();
 
-    fprintf(get_console(), "[%d] on_idle\n", impl.ui.tick_count);
+    // fprintf(get_console(), "[%d] on_idle\n", impl.ui.tick_count);
 
     invoke_ready_callbacks(
         impl.ui.scheduler,
@@ -930,7 +913,7 @@ wx_opengl_window::on_idle(wxIdleEvent& event)
 
     if (has_scheduled_callbacks(impl.ui.scheduler))
     {
-        fprintf(get_console(), "has_scheduled_callbacks\n");
+        // fprintf(get_console(), "has_scheduled_callbacks\n");
         event.RequestMore();
     }
 }
@@ -1237,19 +1220,13 @@ create_wx_framed_window(
 
     // Show the frame.
     // if (initial_state.flags & APP_WINDOW_FULL_SCREEN)
-    {
-        // This is the only sequence of commands I've found that creates a
-        // full screen window without flickering and without causing a weird
-        // blank window when the user switches back to windowed mode.
-        // frame->Freeze();
-        // frame->Show(true);
-        frame->ShowFullScreen(true);
-        // frame->Thaw();
-    }
-    // else
     // {
-    //     frame->Show(true);
+    //     frame->ShowFullScreen(true);
     // }
+    // else
+    {
+        frame->Show(true);
+    }
 
     return frame;
 }

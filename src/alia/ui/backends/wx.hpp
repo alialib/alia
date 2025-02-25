@@ -61,8 +61,6 @@ struct wx_opengl_window : public wxGLCanvas
     on_menu(wxCommandEvent& event);
     void
     on_sys_color_change(wxSysColourChangedEvent& event);
-    void
-    on_scroll(wxScrollWinEvent& event);
 
     struct impl_data;
 

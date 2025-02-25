@@ -139,7 +139,7 @@ draw_scrollbar_button(
     canvas.translate(
         rect.corner[0] + rect.size[0] / SkIntToScalar(2),
         rect.corner[1] + rect.size[1] / SkIntToScalar(2));
-    canvas.rotate((which * 2 + axis) * -90.f);
+    canvas.rotate((2 + which * 2 + axis) * 90.f);
     {
         SkScalar a = rect.size[0] / SkDoubleToScalar(2);
         SkPath path;
