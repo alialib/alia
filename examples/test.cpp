@@ -55,7 +55,7 @@
 #include <alia/ui/context.hpp>
 #include <alia/ui/geometry.hpp>
 #include <alia/ui/layout/internals.hpp>
-#include <alia/ui/text/components.hpp>
+#include <alia/ui/text/display.hpp>
 #include <alia/ui/utilities/animation.hpp>
 #include <alia/ui/utilities/click_flares.hpp>
 

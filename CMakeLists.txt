@@ -158,12 +158,6 @@ target_compile_features(alia_core PUBLIC cxx_std_23)
 if (ALIA_ENABLE_UI)
     find_package(unofficial-skia CONFIG REQUIRED)
 
-    include(FetchContent)
-    FetchContent_Declare(dmilos_color
-    GIT_REPOSITORY https://github.com/dmilos/color.git
-    GIT_TAG 84dc0512cb5fcf6536d79f0bee2530e678c01b03)
-    FetchContent_Populate(dmilos_color)
-
     file(GLOB_RECURSE ALIA_UI_SOURCES ${ALIA_GLOB_OPTIONS}
         "src/alia/ui/*.cpp")
     foreach(file ${ALIA_UI_SOURCES})
