@@ -30,9 +30,9 @@ get_panel_style_info(dataless_ui_context& ctx, style_search_path const* path)
 
     info.size = make_vector(
         get_property(
-            path, "width", UNINHERITED_PROPERTY, absolute_length(0, PIXELS)),
+            path, "width", UNINHERITED_PROPERTY, absolute_length(0, POINT)),
         get_property(
-            path, "height", UNINHERITED_PROPERTY, absolute_length(0, PIXELS)));
+            path, "height", UNINHERITED_PROPERTY, absolute_length(0, POINT)));
 
     info.margin = resolve_box_border_width(
         get_layout_traversal(ctx), get_margin_property(path));
@@ -145,10 +145,10 @@ begin_outer_panel(
     outer.begin(
         ctx,
         box_border_width<absolute_length>{
-            absolute_length(float(total_border.top), PIXELS),
-            absolute_length(float(total_border.right), PIXELS),
-            absolute_length(float(total_border.bottom), PIXELS),
-            absolute_length(float(total_border.left), PIXELS)},
+            absolute_length(float(total_border.top), POINT),
+            absolute_length(float(total_border.right), POINT),
+            absolute_length(float(total_border.bottom), POINT),
+            absolute_length(float(total_border.left), POINT)},
         layout_spec); // add_default_size(layout_spec,
                       // read_signal(style_info).size));
 
@@ -521,10 +521,10 @@ scrollable_panel::begin(
     padding_border_.begin(
         ctx,
         box_border_width<absolute_length>(
-            absolute_length(float(style_info.padding.top), PIXELS),
-            absolute_length(float(style_info.padding.right), PIXELS),
-            absolute_length(float(style_info.padding.bottom), PIXELS),
-            absolute_length(float(style_info.padding.left), PIXELS)));
+            absolute_length(float(style_info.padding.top), POINT),
+            absolute_length(float(style_info.padding.right), POINT),
+            absolute_length(float(style_info.padding.bottom), POINT),
+            absolute_length(float(style_info.padding.left), POINT)));
     begin_inner_panel(ctx, data->panel, inner_, layout_spec, flags);
 }
 void

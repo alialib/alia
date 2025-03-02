@@ -63,7 +63,7 @@ struct ui_system : alia::typed_system<vanilla_ui_context>
 
     // alia__shared_ptr<alia::surface> surface;
     vector<2, unsigned> surface_size;
-    // vector<2,float> ppi;
+    vector<2, float> ppi;
 
     std::shared_ptr<os_interface> os;
 
