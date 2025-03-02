@@ -647,7 +647,7 @@ binary_number_ui(ui_context ctx, /*grid_layout& grid,*/ int number)
         .border_width = box_border_width<float>{0, 0, 0, 0},
         .padding = box_border_width<float>{8, 8, 8, 8},
         .background_color = get_system(ctx).theme.background.stronger[0].main};
-    panel p(ctx, direct(style), size(100, 20, PIXELS));
+    panel p(ctx, direct(style), size(100, 20, POINT));
 
     auto code_style = style_info{
         font_info{&get_font("Roboto_Mono/static/RobotoMono-Regular", 20.f)},
@@ -656,7 +656,7 @@ binary_number_ui(ui_context ctx, /*grid_layout& grid,*/ int number)
 
     auto n = get_state(ctx, number);
     row_layout row(ctx);
-    do_text(ctx, printf(ctx, "%d", n), layout(width(100, PIXELS), RIGHT));
+    do_text(ctx, printf(ctx, "%d", n), layout(width(100, POINT), RIGHT));
     for (int i = 0; i != 12; ++i)
     {
         auto bit = read_signal(n) & (1 << (11 - i));
@@ -724,7 +724,7 @@ show_contrasting_color_pair(ui_context ctx, contrasting_color_pair pair)
         .border_width = box_border_width<float>{0, 0, 0, 0},
         .padding = box_border_width<float>{8, 8, 8, 8},
         .background_color = pair.main};
-    panel p(ctx, direct(style), size(100, 20, PIXELS));
+    panel p(ctx, direct(style), size(100, 20, POINT));
 
     auto my_style = style_info{
         font_info{&get_font("Roboto/Roboto-Regular", 20.f)}, pair.contrasting};
@@ -820,10 +820,10 @@ do_demo_slider(
             .padding = box_border_width<float>{8, 8, 8, 8},
             .background_color
             = get_system(ctx).theme.background.stronger[0].main};
-        panel p(ctx, direct(style), size(100, 20, PIXELS));
+        panel p(ctx, direct(style), size(100, 20, POINT));
         do_text(ctx, value(label), CENTER_Y);
     }
-    do_spacer(ctx, size(10, 10, PIXELS));
+    do_spacer(ctx, size(10, 10, POINT));
     {
         value_smoother<double>* smoother;
         get_cached_data(ctx, &smoother);
@@ -850,7 +850,7 @@ do_demo_slider(
                 0,
                 1,
                 0.01,
-                layout(size(600, 60, PIXELS), CENTER_Y));
+                layout(size(600, 60, POINT), CENTER_Y));
         }
     }
 }
@@ -889,9 +889,9 @@ using cubic_bezier = unit_cubic_bezier;
 void
 do_section_divider(ui_context ctx)
 {
-    do_spacer(ctx, height(40, PIXELS));
+    do_spacer(ctx, height(40, POINT));
     do_separator(ctx);
-    do_spacer(ctx, height(40, PIXELS));
+    do_spacer(ctx, height(40, POINT));
 }
 
 void
@@ -902,7 +902,7 @@ do_heading(ui_context ctx, char const* text)
         get_system(ctx).theme.foreground.stronger[1].main};
     scoped_style_info scoped_style(ctx, heading_style);
     do_text(ctx, value(text));
-    do_spacer(ctx, height(20, PIXELS));
+    do_spacer(ctx, height(20, POINT));
 }
 
 void
@@ -953,7 +953,7 @@ do_code_snippet(ui_context ctx, std::vector<std::string> const& snippets)
         .border_width = box_border_width<float>{0, 0, 0, 0},
         .padding = box_border_width<float>{8, 8, 8, 8},
         .background_color = get_system(ctx).theme.background.stronger[0].main};
-    panel p(ctx, direct(style), layout(size(100, 20, PIXELS), FILL));
+    panel p(ctx, direct(style), layout(size(100, 20, POINT), FILL));
 
     auto my_style = style_info{
         font_info{&get_font("Roboto_Mono/static/RobotoMono-Regular", 20.f)},
@@ -1007,21 +1007,21 @@ my_ui(ui_context ctx)
         bordered_layout bordered(
             ctx,
             box_border_width<absolute_length>{
-                absolute_length(24, PIXELS),
-                absolute_length(24, PIXELS),
-                absolute_length(24, PIXELS),
-                absolute_length(24, PIXELS)},
+                absolute_length(24, POINT),
+                absolute_length(24, POINT),
+                absolute_length(24, POINT),
+                absolute_length(24, POINT)},
             GROW);
 
         grid_layout code_snippet_grid(ctx);
 
 #define DO_CODE_SNIPPET(snippet, code)                                        \
     {                                                                         \
-        do_spacer(ctx, height(10, PIXELS));                                   \
+        do_spacer(ctx, height(10, POINT));                                    \
         grid_row code_snippet_row(code_snippet_grid);                         \
         static std::vector<std::string> lines = split_string(snippet);        \
         do_code_snippet(ctx, lines);                                          \
-        do_spacer(ctx, width(10, PIXELS));                                    \
+        do_spacer(ctx, width(10, POINT));                                     \
         {                                                                     \
             column_layout code_column(ctx, CENTER_Y);                         \
             code                                                              \
@@ -1204,7 +1204,7 @@ do_node_expander(ctx, state);
                     ESCAPE(cubic_bezier{0.17, 0.67, 0.78, 0.3}));
             }
 
-            do_spacer(ctx, height(20, PIXELS));
+            do_spacer(ctx, height(20, POINT));
 
             {
                 row_layout row(ctx);
@@ -1279,7 +1279,7 @@ do_node_expander(ctx, state);
 
         //     {
         //         row_layout row(ctx);
-        //         do_spacer(ctx, width(40, PIXELS));
+        //         do_spacer(ctx, width(40, POINT));
         //         collapsible_content(ctx, show_content, GROW, [&] {
         //             do_wrapped_text(
         //                 ctx,
@@ -1382,15 +1382,15 @@ do_node_expander(ctx, state);
             do_heading(ctx, "Color Palette");
 
             show_color_ramp(ctx, the_palette.primary);
-            do_spacer(ctx, size(10, 10, PIXELS));
+            do_spacer(ctx, size(10, 10, POINT));
             show_color_ramp(ctx, the_palette.secondary);
-            do_spacer(ctx, size(10, 10, PIXELS));
+            do_spacer(ctx, size(10, 10, POINT));
             show_color_ramp(ctx, the_palette.tertiary);
-            do_spacer(ctx, size(10, 10, PIXELS));
+            do_spacer(ctx, size(10, 10, POINT));
             show_color_ramp(ctx, the_palette.neutral);
-            do_spacer(ctx, size(10, 10, PIXELS));
+            do_spacer(ctx, size(10, 10, POINT));
             show_color_ramp(ctx, the_palette.warning);
-            do_spacer(ctx, size(10, 10, PIXELS));
+            do_spacer(ctx, size(10, 10, POINT));
             show_color_ramp(ctx, the_palette.danger);
         }
 
@@ -1419,7 +1419,7 @@ do_node_expander(ctx, state);
         //     for (int i = 0; i != 100; ++i)
         //     {
         //         // if_(ctx, show_text, [&] {
-        //         //     // do_spacer(ctx, size(60, 40, PIXELS));
+        //         //     // do_spacer(ctx, size(60, 40, POINT));
         //         //     do_text(ctx, alia::printf(ctx, "text%i", i));
         //         //     do_text(ctx, value("Könnten Sie mir das
         //         übersetzen?"));
@@ -1432,7 +1432,7 @@ do_node_expander(ctx, state);
         //                 ctx,
         //                 SK_ColorMAGENTA,
         //                 actions::noop(),
-        //                 width(100, PIXELS));
+        //                 width(100, POINT));
 
         //             // color::yiq<std::uint8_t> y1 =
         //             // ::color::constant::blue_t{};
@@ -1510,9 +1510,9 @@ do_node_expander(ctx, state);
                 do_text(ctx, value("Light"));
             }
 
-            do_spacer(ctx, width(10, PIXELS));
+            do_spacer(ctx, width(10, POINT));
             do_separator(ctx);
-            do_spacer(ctx, width(10, PIXELS));
+            do_spacer(ctx, width(10, POINT));
 
             {
                 {
@@ -1527,9 +1527,9 @@ do_node_expander(ctx, state);
                         "One");
                 }
 
-                do_spacer(ctx, width(10, PIXELS));
+                do_spacer(ctx, width(10, POINT));
                 do_separator(ctx);
-                do_spacer(ctx, width(10, PIXELS));
+                do_spacer(ctx, width(10, POINT));
 
                 {
                     do_radio_button(
@@ -1543,9 +1543,9 @@ do_node_expander(ctx, state);
                         "Two");
                 }
 
-                do_spacer(ctx, width(10, PIXELS));
+                do_spacer(ctx, width(10, POINT));
                 do_separator(ctx);
-                do_spacer(ctx, width(10, PIXELS));
+                do_spacer(ctx, width(10, POINT));
 
                 {
                     do_radio_button(
@@ -1559,9 +1559,9 @@ do_node_expander(ctx, state);
                         "Three");
                 }
 
-                do_spacer(ctx, width(10, PIXELS));
+                do_spacer(ctx, width(10, POINT));
                 do_separator(ctx);
-                do_spacer(ctx, width(10, PIXELS));
+                do_spacer(ctx, width(10, POINT));
 
                 {
                     do_radio_button(

@@ -3,6 +3,7 @@
 #include <fstream>
 
 #include <wx/clipbrd.h>
+#include <wx/display.h>
 #include <wx/stopwatch.h>
 #include <wx/utils.h>
 
@@ -452,12 +453,17 @@ END_EVENT_TABLE()
 //     // #endif
 // }
 
+vector<2, int>
+get_actual_client_size(wxWindow* window)
+{
+    wxSize size = window->GetClientSize();
+    return make_vector(size.GetX(), size.GetY());
+}
+
 void
 render_ui(wx_opengl_window::impl_data& impl)
 {
-    // TODO: Track this ourselves.
-    vector<2, int> size;
-    impl.window->GetClientSize(&size[0], &size[1]);
+    auto size = get_actual_client_size(impl.window);
 
     impl.ui.surface_size = make_vector<unsigned>(size[0], size[1]);
 
@@ -488,9 +494,7 @@ render_ui(wx_opengl_window::impl_data& impl)
 void
 update_ui(wx_opengl_window::impl_data& impl)
 {
-    // TODO: Track this ourselves.
-    int width, height;
-    impl.window->GetClientSize(&width, &height);
+    auto size = get_actual_client_size(impl.window);
 
     refresh_system(impl.ui);
     update(impl.ui);
@@ -499,7 +503,8 @@ update_ui(wx_opengl_window::impl_data& impl)
         impl.ui.layout,
         make_box(
             make_layout_vector(0, 0),
-            make_layout_vector(layout_scalar(width), layout_scalar(height))));
+            make_layout_vector(
+                layout_scalar(size[0]), layout_scalar(size[1]))));
 
     render_ui(impl);
 }
@@ -537,8 +542,7 @@ handle_paint(wx_opengl_window::impl_data& impl)
 {
     // fprintf(get_console(), "handle_paint\n");
 
-    vector<2, int> size;
-    impl.window->GetClientSize(&size[0], &size[1]);
+    auto size = get_actual_client_size(impl.window);
     impl.ui.surface_size = make_vector<unsigned>(size[0], size[1]);
 
     // This is required even though the DC is not actually used.
@@ -590,12 +594,12 @@ handle_mouse(wx_opengl_window::impl_data& impl, wxMouseEvent& event)
     }
 
     // Get the current mouse position.
-    vector<2, int> position = make_vector<int>(event.GetX(), event.GetY());
+    auto const wx_position = event.GetPosition();
+    auto const position = make_vector<int>(wx_position.x, wx_position.y);
 
     // Determine if the mouse is in the surface.
     {
-        vector<2, int> client_size;
-        impl.window->GetClientSize(&client_size[0], &client_size[1]);
+        auto client_size = get_actual_client_size(impl.window);
         if (impl.window->HasCapture()
             || (!event.Leaving()
                 && is_inside(
@@ -816,8 +820,10 @@ wx_opengl_window::wx_opengl_window(
 
     impl.last_menu_bar_update = 0;
 
-    // wxScreenDC dc;
-    //  wxSize ppi = dc.GetPPI();
+    {
+        wxSize ppi = wxDisplay(this).GetPPI();
+        impl_->ui.ppi = make_vector<float>(ppi.GetWidth(), ppi.GetHeight());
+    }
 
     initialize(
         impl_->ui,
@@ -827,11 +833,10 @@ wx_opengl_window::wx_opengl_window(
         std::make_shared<wx_window_interface>(*impl_));
 
     // TODO: Do this in a better way.
-    int width, height;
-    impl_->window->GetClientSize(&width, &height);
-    impl_->ui.surface_size = make_vector<unsigned>(width, height);
+    auto client_size = get_actual_client_size(impl_->window);
+    impl_->ui.surface_size = vector<2, unsigned>(client_size);
 
-    init_skia(*impl_, make_vector<unsigned>(width, height));
+    init_skia(*impl_, vector<2, unsigned>(client_size));
 
     update_ui(*impl_);
 }
@@ -862,9 +867,8 @@ wx_opengl_window::on_erase_background(wxEraseEvent&)
 void
 wx_opengl_window::on_size(wxSizeEvent&)
 {
-    int width, height;
-    impl_->window->GetClientSize(&width, &height);
-    reset_skia(*impl_, make_vector<unsigned>(width, height));
+    reset_skia(
+        *impl_, vector<2, unsigned>(get_actual_client_size(impl_->window)));
     update_window(*impl_);
 }
 void
@@ -872,6 +876,7 @@ wx_opengl_window::on_mouse(wxMouseEvent& event)
 {
     // fprintf(get_console(), "[%d] on_mouse\n", impl_->ui.tick_count);
     handle_mouse(*impl_, event);
+    // update_window(*impl_);
 }
 void
 wx_opengl_window::on_set_focus(wxFocusEvent&)
@@ -1213,17 +1218,12 @@ create_wx_framed_window(
         wxDefaultPosition,
         wxSize(initial_state.size[0], initial_state.size[1]));
 
-    // // Create a sizer, and make sure the content window fills it.
-    // wxSizer* sizer = new wxBoxSizer(wxVERTICAL);
-    // sizer->Add(contents, 1, wxEXPAND, 0);
-    // frame->SetSizer(sizer);
-
     // Show the frame.
-    // if (initial_state.flags & APP_WINDOW_FULL_SCREEN)
-    // {
-    //     frame->ShowFullScreen(true);
-    // }
-    // else
+    if (initial_state.flags & APP_WINDOW_FULL_SCREEN)
+    {
+        frame->ShowFullScreen(true);
+    }
+    else
     {
         frame->Show(true);
     }

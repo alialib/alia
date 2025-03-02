@@ -9,6 +9,8 @@
 #include <wx/glcanvas.h>
 #include <wx/msgdlg.h>
 
+#include <shellscalingapi.h>
+
 using namespace alia;
 
 void
@@ -44,6 +46,8 @@ application::OnInit()
 {
     try
     {
+        SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
+
         // style_tree_ptr style = parse_style_file("alia.style");
 
         // alia__shared_ptr<app_window_controller> controller_ptr(new
