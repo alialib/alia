@@ -704,6 +704,9 @@ get_scrollbar_region(scrollable_view_data const& data, unsigned axis)
     region.corner[1 - axis]
         += region.size[1 - axis] - get_scrollbar_width(data.sb_data[axis]);
     region.size[1 - axis] = get_scrollbar_width(data.sb_data[axis]);
+    // Make room for the opposite axis's scrollbar, if it's on.
+    if (is_scrollbar_on(data, 1 - axis))
+        region.size[axis] -= get_scrollbar_width(data.sb_data[axis]);
     return region;
 }
 
