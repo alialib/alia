@@ -25,8 +25,7 @@ struct layout_node;
         grid_type(                                                            \
             Context& ctx,                                                     \
             layout const& layout_spec = default_layout,                       \
-            absolute_length const& column_spacing                             \
-            = absolute_length(0, PIXELS))                                     \
+            absolute_length const& column_spacing = absolute_length(0))       \
         {                                                                     \
             begin(ctx, layout_spec, column_spacing);                          \
         }                                                                     \
@@ -41,8 +40,7 @@ struct layout_node;
         begin(                                                                \
             Context& ctx,                                                     \
             layout const& layout_spec = default_layout,                       \
-            absolute_length const& column_spacing                             \
-            = absolute_length(0, PIXELS))                                     \
+            absolute_length const& column_spacing = absolute_length(0))       \
         {                                                                     \
             concrete_begin(                                                   \
                 get_layout_traversal(ctx),                                    \

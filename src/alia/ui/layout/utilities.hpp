@@ -123,49 +123,20 @@ resolve_absolute_length(
     vector<2, float> const& ppi,
     layout_style_info const& style_info,
     unsigned axis,
-    absolute_length const& length);
+    absolute_length length);
 // 2D version
 vector<2, float>
 resolve_absolute_size(
     vector<2, float> const& ppi,
     layout_style_info const& style_info,
     absolute_size const& size);
-// Same as above, but the PPI an style_info are taken from the context.
+// Same as above, but the PPI and style_info are taken from the context.
 float
 resolve_absolute_length(
-    layout_traversal& traversal, unsigned axis, absolute_length const& length);
+    layout_traversal& traversal, unsigned axis, absolute_length length);
 // 2D version
 vector<2, float>
 resolve_absolute_size(layout_traversal& traversal, absolute_size const& size);
-
-// Resolve a relative length into an actual length, in pixels.
-float
-resolve_relative_length(
-    vector<2, float> const& ppi,
-    layout_style_info const& style_info,
-    unsigned axis,
-    relative_length const& length,
-    float full_length);
-// 2D version
-vector<2, float>
-resolve_relative_size(
-    vector<2, float> const& ppi,
-    layout_style_info const& style_info,
-    relative_size const& size,
-    vector<2, float> const& full_size);
-// Same as above, but the PPI an style_info are taken from the context.
-float
-resolve_relative_length(
-    layout_traversal& traversal,
-    unsigned axis,
-    relative_length const& length,
-    float full_length);
-// 2D version
-vector<2, float>
-resolve_relative_size(
-    layout_traversal& traversal,
-    relative_size const& size,
-    vector<2, float> const& full_size);
 
 // Resolve a box_border_width into actual widths, in pixels.
 box_border_width<float>

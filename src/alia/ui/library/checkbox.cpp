@@ -3,7 +3,9 @@
 #include <alia/ui/color.hpp>
 #include <alia/ui/context.hpp>
 #include <alia/ui/events.hpp>
+#include <alia/ui/layout/simple.hpp>
 #include <alia/ui/layout/specification.hpp>
+#include <alia/ui/text/display.hpp>
 #include <alia/ui/utilities.hpp>
 #include <alia/ui/utilities/animation.hpp>
 #include <alia/ui/utilities/click_flares.hpp>
@@ -162,7 +164,7 @@ render_checkbox(
             paint.setAntiAlias(true);
             paint.setStyle(SkPaint::kStrokeAndFill_Style);
             paint.setColor(as_skcolor(style.checked_fill_color));
-            paint.setStrokeWidth(4);
+            paint.setStrokeWidth(4 * get_system(ctx).magnification);
             canvas.drawPath(
                 SkPath::RRect(as_skrect(checkbox_rect), 2, 2), paint);
         }
@@ -171,7 +173,7 @@ render_checkbox(
             paint.setAntiAlias(true);
             paint.setStyle(SkPaint::kStroke_Style);
             paint.setColor(as_skcolor(style.check_color));
-            paint.setStrokeWidth(4);
+            paint.setStrokeWidth(4 * get_system(ctx).magnification);
             paint.setStrokeCap(SkPaint::kSquare_Cap);
             SkPath path;
             path.incReserve(3);
@@ -232,7 +234,11 @@ do_checkbox(
             data.layout_node.refresh_layout(
                 get_layout_traversal(ctx),
                 layout_spec,
-                leaf_layout_requirements(make_layout_vector(48, 48), 32, 16),
+                leaf_layout_requirements(
+                    resolve_absolute_size(
+                        get_layout_traversal(ctx), make_layout_vector(32, 32)),
+                    resolve_absolute_length(get_layout_traversal(ctx), 1, 20),
+                    resolve_absolute_length(get_layout_traversal(ctx), 1, 12)),
                 LEFT | BASELINE_Y | PADDED);
 
             add_layout_node(
@@ -284,6 +290,16 @@ do_checkbox(
         }
     }
     alia_end
+}
+
+void
+do_checkbox(ui_context ctx, duplex<bool> checked, char const* label)
+{
+    row_layout row(ctx);
+    auto id = get_widget_id(ctx);
+    do_box_region(ctx, id, row.region());
+    do_checkbox(ctx, checked, BASELINE_Y, id);
+    do_text(ctx, value(label), BASELINE_Y);
 }
 
 } // namespace alia

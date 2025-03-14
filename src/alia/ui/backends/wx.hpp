@@ -21,6 +21,7 @@ struct wx_opengl_window : public wxGLCanvas
  public:
     wx_opengl_window(
         std::function<void(ui_context)> controller,
+        std::function<void(vector<2, unsigned>)> background_graphics,
         wxWindow* parent,
         wxWindowID id,
         wxGLAttributes const& canvas_attribs,
@@ -73,7 +74,6 @@ struct wx_opengl_window : public wxGLCanvas
 struct wx_frame : public wxFrame, app_window
 {
     wx_frame(
-        std::function<void(ui_context)> controller,
         wxWindow* parent,
         wxWindowID id,
         wxString const& title,
@@ -122,6 +122,7 @@ wx_frame*
 create_wx_framed_window(
     std::string const& title,
     std::function<void(ui_context)> controller,
+    std::function<void(vector<2, unsigned>)> background_graphics,
     app_window_state const& initial_state);
 
 } // namespace alia

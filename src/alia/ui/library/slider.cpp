@@ -285,16 +285,18 @@ do_slider(
             // TODO: Figure out refresh/caching/styling logic.
             vector<2, float> default_size;
             auto const default_length = as_layout_size(resolve_absolute_length(
-                get_layout_traversal(ctx), 0, absolute_length(16, EM)));
+                get_layout_traversal(ctx), 0, absolute_length(320)));
             auto default_height = as_layout_size(resolve_absolute_length(
-                get_layout_traversal(ctx), 0, absolute_length(2, EM)));
+                get_layout_traversal(ctx), 0, absolute_length(32)));
             default_size[axis] = default_length;
             default_size[1 - axis] = default_height;
             data.layout_node.refresh_layout(
                 get_layout_traversal(ctx),
                 layout_spec,
-                leaf_layout_requirements(default_size, 0, 0),
-                LEFT | BASELINE_Y | PADDED);
+                // TODO: Need a strategy for baseline.
+                leaf_layout_requirements(
+                    default_size, default_height * 2 / 3, default_height / 3),
+                LEFT | CENTER_Y | PADDED);
             add_layout_node(get_layout_traversal(ctx), &data.layout_node);
             break;
         }
