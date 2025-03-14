@@ -221,36 +221,38 @@ detect_key_release(
 
 bool
 detect_keyboard_click(
-    dataless_ui_context ctx,
-    keyboard_click_state& state,
-    widget_id id,
-    key_code code,
-    key_modifiers modifiers)
+    dataless_ui_context,
+    keyboard_click_state&,
+    widget_id,
+    key_code,
+    key_modifiers)
 {
-    auto key = detect_key_press(ctx, id);
-    if (key)
-    {
-        if (key->code == code && key->mods == modifiers)
-        {
-            if (state.state == 0)
-                state.state = 1;
-            acknowledge_key_event(ctx);
-        }
-        // This behavior doesn't really feel right, but it was apparently here
-        // for a reason.
-        // else if (state.state == 1)
-        //     state.state = 2;
-    }
-    else if (detect_key_release(ctx, id, code, modifiers))
-    {
-        bool proper = state.state == 1;
-        state.state = 0;
-        return proper;
-    }
-    else if (detect_focus_loss(ctx, id))
-    {
-        state.state = 0;
-    }
+    // TODO: This is broken somehow.
+    // auto key = detect_key_press(ctx, id);
+    // if (key)
+    // {
+    //     if (key->code == code && key->mods == modifiers)
+    //     {
+    //         if (state.state == 0)
+    //             state.state = 1;
+    //         acknowledge_key_event(ctx);
+    //     }
+    //     // This behavior doesn't really feel right, but it was apparently
+    //     here
+    //     // for a reason.
+    //     // else if (state.state == 1)
+    //     //     state.state = 2;
+    // }
+    // else if (detect_key_release(ctx, id, code, modifiers))
+    // {
+    //     bool proper = state.state == 1;
+    //     state.state = 0;
+    //     return proper;
+    // }
+    // else if (detect_focus_loss(ctx, id))
+    // {
+    //     state.state = 0;
+    // }
     return false;
 }
 

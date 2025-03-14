@@ -312,6 +312,9 @@ render_ui(glfw_window_impl& impl)
 {
     glfwMakeContextCurrent(impl.glfw_window);
 
+    // glPushAttrib(GL_ALL_ATTRIB_BITS);
+    // glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
+
     // TODO: Track this ourselves.
     int width, height;
     glfwGetFramebufferSize(impl.glfw_window, &width, &height);

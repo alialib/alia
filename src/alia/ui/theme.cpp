@@ -17,7 +17,7 @@ make_augmented_color_info(hsl color)
 }
 
 color_ramp
-generate_color_ramp(rgb8 color)
+generate_linear_color_ramp(rgb8 color)
 {
     auto base = to_hsl(color);
 
@@ -30,6 +30,21 @@ generate_color_ramp(rgb8 color)
     }
     return ramp;
 }
+
+// color_ramp
+// generate_nonlinear_color_ramp(rgb8 color)
+// {
+//     auto base = to_hsl(color);
+
+//     color_ramp ramp;
+//     for (int i = 0; i != color_ramp_step_count; ++i)
+//     {
+//         float const lightness
+//             = static_cast<float>(i + 1) / (color_ramp_step_count + 1);
+//         ramp[i] = make_augmented_color_info(hsl{base.h, base.s, lightness});
+//     }
+//     return ramp;
+// }
 
 color_ramp
 generate_neutral_ramp(rgb8 color)
@@ -63,12 +78,12 @@ color_palette
 generate_color_palette(seed_colors const& seeds)
 {
     return color_palette{
-        generate_color_ramp(seeds.primary),
-        generate_color_ramp(seeds.secondary),
-        generate_color_ramp(seeds.tertiary),
+        generate_linear_color_ramp(seeds.primary),
+        generate_linear_color_ramp(seeds.secondary),
+        generate_linear_color_ramp(seeds.tertiary),
         generate_neutral_ramp(seeds.neutral),
-        generate_color_ramp(seeds.warning),
-        generate_color_ramp(seeds.danger),
+        generate_linear_color_ramp(seeds.warning),
+        generate_linear_color_ramp(seeds.danger),
     };
 }
 
