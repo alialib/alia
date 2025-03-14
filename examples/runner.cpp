@@ -102,8 +102,7 @@ main(void)
     //     "alia test", make_vector<unsigned>(900, 1200), my_ui);
     // the_window.do_main_loop();
 
-    glfw_window the_window(
-        "alia test", make_vector<unsigned>(1600, 1200), my_ui);
+    glfw_window the_window("Alia", make_vector<unsigned>(1600, 1200), my_ui);
     the_window.do_main_loop();
 
     // emscripten_canvas the_canvas(my_ui);

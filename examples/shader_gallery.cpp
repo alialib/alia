@@ -180,22 +180,6 @@ check_gl_errors()
     }
 }
 
-namespace alia {
-
-void
-reset_skia_context();
-
-}
-
-struct graphics_data
-{
-    bool initialized = false;
-    layout_leaf layout_node;
-    GLuint fragment_shader;
-    GLuint vertex_shader;
-    GLuint shader_program;
-};
-
 millisecond_count
 get_animation_delta(ui_context ctx)
 {
@@ -210,13 +194,49 @@ get_animation_delta(ui_context ctx)
     return delta;
 }
 
+namespace alia {
+
+void
+reset_skia_context();
+
+}
+
+struct notargs_graphics_data
+{
+    bool initialized = false;
+    layout_leaf layout_node;
+    GLuint fragment_shader;
+    GLuint vertex_shader;
+    GLuint shader_program;
+
+    GLint corner_loc;
+    GLint size_loc;
+    GLint zoom_loc;
+
+    GLint t_loc;
+
+    GLint curl_loc;
+    GLint thickness_loc;
+
+    GLint normalize_rays_loc;
+    GLint step_scaling_loc;
+    GLint iterations_loc;
+
+    GLint color_loc;
+};
+
 struct notargs_controls
 {
-    bool animate = true;
-    double dz = 0.5;
-    double speed = 2.5;
-    double curl = 0.1;
     double zoom = 1.0;
+
+    bool animate = true;
+    double speed = 2.5;
+
+    double curl = 1.0;
+    double thickness = 0.1;
+
+    bool normalize_rays = false;
+    double step_scaling = 0.5;
     int iterations = 32;
 };
 
@@ -233,7 +253,7 @@ notargs_graphics(
         glad_initialized = true;
     }
 
-    auto& data = get_cached_data<graphics_data>(ctx);
+    auto& data = get_cached_data<notargs_graphics_data>(ctx);
 
     double* t;
     if (get_cached_data(ctx, &t))
@@ -257,6 +277,9 @@ notargs_graphics(
             break;
 
         case RENDER_CATEGORY:
+            // glPopClientAttrib();
+            // glPopAttrib();
+
             glViewport(
                 GLsizei(data.layout_node.assignment().region.corner[0] + 0.5),
                 GLsizei(data.layout_node.assignment().region.corner[1] + 0.5),
@@ -287,7 +310,6 @@ notargs_graphics(
                     1,
                     &fragment_shader_pointer,
                     nullptr);
-                check_gl_errors();
                 glCompileShader(data.fragment_shader);
                 GLint success;
                 GLchar info_log[512];
@@ -302,22 +324,41 @@ notargs_graphics(
                         + info_log);
                 }
 
-                check_gl_errors();
-
                 data.vertex_shader = glCreateShader(GL_VERTEX_SHADER);
                 glShaderSource(
                     data.vertex_shader, 1, &vertex_shader_text, nullptr);
-                check_gl_errors();
                 glCompileShader(data.vertex_shader);
-                check_gl_errors();
 
                 // Create and link program
                 data.shader_program = glCreateProgram();
                 glAttachShader(data.shader_program, data.fragment_shader);
-                check_gl_errors();
                 glAttachShader(data.shader_program, data.vertex_shader);
-                check_gl_errors();
                 glLinkProgram(data.shader_program);
+
+                data.corner_loc
+                    = glGetUniformLocation(data.shader_program, "corner");
+                data.size_loc
+                    = glGetUniformLocation(data.shader_program, "size");
+                data.zoom_loc
+                    = glGetUniformLocation(data.shader_program, "zoom");
+
+                data.t_loc = glGetUniformLocation(data.shader_program, "t");
+
+                data.curl_loc
+                    = glGetUniformLocation(data.shader_program, "curl");
+                data.thickness_loc
+                    = glGetUniformLocation(data.shader_program, "thickness");
+
+                data.normalize_rays_loc = glGetUniformLocation(
+                    data.shader_program, "normalize_rays");
+                data.step_scaling_loc = glGetUniformLocation(
+                    data.shader_program, "step_scaling");
+                data.iterations_loc
+                    = glGetUniformLocation(data.shader_program, "iterations");
+
+                data.color_loc
+                    = glGetUniformLocation(data.shader_program, "color");
+
                 check_gl_errors();
 
                 data.initialized = true;
@@ -338,7 +379,6 @@ notargs_graphics(
                 1.0f,
                 1.0f};
 
-            // Create and bind vertex buffer
             GLuint VAO;
             glGenVertexArrays(1, &VAO);
             glBindVertexArray(VAO);
@@ -352,42 +392,51 @@ notargs_graphics(
             glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
             glEnableVertexAttribArray(0);
 
-            // Render quad
-            check_gl_errors();
-            auto const t_loc = glGetUniformLocation(data.shader_program, "t");
-            check_gl_errors();
-            auto const curl_loc
-                = glGetUniformLocation(data.shader_program, "curl");
-            check_gl_errors();
-            auto const corner_loc
-                = glGetUniformLocation(data.shader_program, "corner");
-            auto const size_loc
-                = glGetUniformLocation(data.shader_program, "size");
-            check_gl_errors();
-            auto const zoom_loc
-                = glGetUniformLocation(data.shader_program, "zoom");
-            auto const iterations_loc
-                = glGetUniformLocation(data.shader_program, "iterations");
-            check_gl_errors();
             glUseProgram(data.shader_program);
-            check_gl_errors();
+
             {
                 float values[2]
                     = {data.layout_node.assignment().region.size[0],
                        data.layout_node.assignment().region.size[1]};
-                glUniform2fv(size_loc, 1, values);
+                glUniform2fv(data.size_loc, 1, values);
             }
             {
                 float values[2]
                     = {data.layout_node.assignment().region.corner[0],
                        data.layout_node.assignment().region.corner[1]};
-                glUniform2fv(corner_loc, 1, values);
+                glUniform2fv(data.corner_loc, 1, values);
             }
-            glUniform1f(t_loc, float(*t));
-            glUniform1f(curl_loc, float(controls.curl));
-            glUniform1f(zoom_loc, float(std::exp(controls.zoom)));
-            glUniform1i(iterations_loc, controls.iterations);
-            check_gl_errors();
+            glUniform1f(data.zoom_loc, float(std::exp(controls.zoom)));
+
+            glUniform1f(data.t_loc, float(*t));
+
+            glUniform1f(data.curl_loc, float(controls.curl));
+            glUniform1f(data.thickness_loc, float(controls.thickness));
+
+            glUniform1i(data.normalize_rays_loc, controls.normalize_rays);
+            glUniform1f(data.step_scaling_loc, float(controls.step_scaling));
+            glUniform1i(data.iterations_loc, controls.iterations);
+
+            switch (seeds - &seed_sets[0])
+            {
+                case 0:
+                default: {
+                    float values[3] = {2, 5, 11};
+                    glUniform3fv(data.color_loc, 1, values);
+                    break;
+                }
+                case 1: {
+                    float values[3] = {5, 2, 7};
+                    glUniform3fv(data.color_loc, 1, values);
+                    break;
+                }
+                case 2: {
+                    float values[3] = {9, 4, 2};
+                    glUniform3fv(data.color_loc, 1, values);
+                    break;
+                }
+            }
+
             glBindVertexArray(VAO);
             glDisable(GL_BLEND);
             glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -397,7 +446,12 @@ notargs_graphics(
             glDeleteBuffers(1, &VBO);
             glDeleteVertexArrays(1, &VAO);
 
+            check_gl_errors();
+
             glFlush();
+
+            // glPushAttrib(GL_ALL_ATTRIB_BITS);
+            // glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
 
             reset_skia_context();
 
@@ -411,6 +465,26 @@ notargs_graphics(
 bool light_theme = false;
 
 bool theme_update_needed = true;
+
+void
+do_section_divider(ui_context ctx)
+{
+    do_spacer(ctx, height(40));
+    do_separator(ctx);
+    do_spacer(ctx, height(40));
+}
+
+void
+do_heading(ui_context ctx, char const* text)
+{
+    auto heading_style = style_info{
+        font_info{&get_font(
+            "Roboto/Roboto-Bold", 32.f * get_system(ctx).magnification)},
+        get_system(ctx).theme.foreground.stronger[1].main};
+    scoped_style_info scoped_style(ctx, heading_style);
+    do_text(ctx, value(text));
+    do_spacer(ctx, height(20));
+}
 
 void
 do_theme_controls(ui_context ctx)
@@ -486,6 +560,87 @@ do_theme_controls(ui_context ctx)
             }
         }
     }
+}
+
+void
+control_slider(
+    ui_context ctx,
+    grid_layout& grid,
+    char const* label,
+    duplex<double> value,
+    double min,
+    double max,
+    double step)
+{
+    grid_row row(grid);
+    do_text(ctx, alia::value(label), CENTER_Y);
+    do_spacer(ctx, layout(width(20), GROW));
+    do_slider(ctx, value, min, max, step, layout(width(420), CENTER_Y));
+}
+
+void
+control_switch(
+    ui_context ctx, grid_layout& grid, char const* label, duplex<bool> value)
+{
+    grid_row row(grid);
+    do_text(ctx, alia::value(label), CENTER_Y);
+    do_spacer(ctx, layout(width(20), GROW));
+    do_switch(ctx, value);
+}
+
+void
+do_notargs_controls(ui_context ctx, duplex<notargs_controls> controls)
+{
+    grid_layout grid(ctx);
+
+    do_heading(ctx, "View");
+
+    control_slider(
+        ctx, grid, "Zoom", alia_field(controls, zoom), -3.0, 5.0, 0.01);
+
+    control_switch(ctx, grid, "Animate", alia_field(controls, animate));
+
+    control_slider(
+        ctx, grid, "Speed", alia_field(controls, speed), -2.0, 7.0, 0.1);
+
+    do_section_divider(ctx);
+
+    do_heading(ctx, "Shape");
+
+    control_slider(
+        ctx, grid, "Curl", alia_field(controls, curl), 0.0, 1.0, 0.001);
+    control_slider(
+        ctx,
+        grid,
+        "Thickness",
+        alia_field(controls, thickness),
+        0.0,
+        1.0,
+        0.001);
+
+    do_section_divider(ctx);
+
+    do_heading(ctx, "Ray Marching");
+
+    control_switch(
+        ctx, grid, "Normalize Rays", alia_field(controls, normalize_rays));
+    control_slider(
+        ctx,
+        grid,
+        "Step Scaling",
+        alia_field(controls, step_scaling),
+        0.0,
+        1.0,
+        0.001);
+
+    control_slider(
+        ctx,
+        grid,
+        "Iterations",
+        signal_cast<double>(alia_field(controls, iterations)),
+        0,
+        120,
+        1);
 }
 
 void
@@ -568,66 +723,7 @@ my_ui(ui_context ctx)
 
             column_layout column(ctx);
 
-            grid_layout grid(ctx);
-
-            {
-                grid_row row(grid);
-                do_text(ctx, value("Animate"));
-                do_spacer(ctx, layout(width(20), GROW));
-                do_switch(ctx, alia_field(controls, animate));
-            }
-
-            {
-                grid_row row(grid);
-                do_text(ctx, value("Speed"), CENTER_Y);
-                do_spacer(ctx, layout(width(20), GROW));
-                do_slider(
-                    ctx,
-                    alia_field(controls, speed),
-                    -2.0,
-                    7.0,
-                    0.1,
-                    layout(width(420), CENTER_Y));
-            }
-
-            {
-                grid_row row(grid);
-                do_text(ctx, value("Curl"), CENTER_Y);
-                do_spacer(ctx, layout(width(20), GROW));
-                do_slider(
-                    ctx,
-                    alia_field(controls, curl),
-                    0.0,
-                    0.5,
-                    0.00001,
-                    layout(width(420), CENTER_Y));
-            }
-
-            {
-                grid_row row(grid);
-                do_text(ctx, value("Zoom"), CENTER_Y);
-                do_spacer(ctx, layout(width(20), GROW));
-                do_slider(
-                    ctx,
-                    alia_field(controls, zoom),
-                    -3.0,
-                    5.0,
-                    0.01,
-                    layout(width(420), CENTER_Y));
-            }
-
-            {
-                grid_row row(grid);
-                do_text(ctx, value("Iterations"), CENTER_Y);
-                do_spacer(ctx, layout(width(20), GROW));
-                do_slider(
-                    ctx,
-                    signal_cast<double>(alia_field(controls, iterations)),
-                    0,
-                    120,
-                    1,
-                    layout(width(420), CENTER_Y));
-            }
+            do_notargs_controls(ctx, controls);
         }
 
         do_theme_controls(ctx);

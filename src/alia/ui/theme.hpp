@@ -59,7 +59,7 @@ constexpr int color_ramp_step_count = 11;
 using color_ramp = std::array<augmented_color_info, color_ramp_step_count>;
 
 color_ramp
-generate_color_ramp(rgb8 color);
+generate_linear_color_ramp(rgb8 color);
 
 struct color_palette
 {
