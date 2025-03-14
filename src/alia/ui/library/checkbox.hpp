@@ -15,6 +15,9 @@ do_checkbox(
     layout const& layout_spec = default_layout,
     widget_id id = auto_id);
 
+void
+do_checkbox(ui_context ctx, duplex<bool> checked, char const* label);
+
 } // namespace alia
 
 #endif

@@ -70,6 +70,8 @@ struct wx_opengl_window::impl_data
 {
     ui_system ui;
 
+    std::function<void(vector<2, unsigned>)> background_graphics;
+
     // TODO: Bundle this up into a Skia structure?
     std::unique_ptr<GrDirectContext> skia_graphics_context;
     std::unique_ptr<SkSurface> skia_surface;
@@ -338,6 +340,8 @@ translate_mouse_cursor(mouse_cursor cursor)
 
 // EXTERNAL INTERFACE
 
+static bool hack_refresh_needed = false;
+
 struct wx_external_interface : default_external_interface
 {
     wx_external_interface(wx_opengl_window::impl_data& impl)
@@ -349,7 +353,8 @@ struct wx_external_interface : default_external_interface
     schedule_animation_refresh() override
     {
         // fprintf(get_console(), "schedule_animation_refresh\n");
-        impl_.window->Refresh(false);
+        // impl_.window->Refresh(false);
+        hack_refresh_needed = true;
     }
 
     wx_opengl_window::impl_data& impl_;
@@ -460,6 +465,14 @@ get_actual_client_size(wxWindow* window)
     return make_vector(size.GetX(), size.GetY());
 }
 
+static GrDirectContext* the_skia_graphics_context;
+
+void
+reset_skia_context()
+{
+    the_skia_graphics_context->resetContext();
+}
+
 void
 render_ui(wx_opengl_window::impl_data& impl)
 {
@@ -469,16 +482,22 @@ render_ui(wx_opengl_window::impl_data& impl)
 
     impl.wx_gl_context->SetCurrent(*impl.window);
 
+    // // TODO: Don't clear automatically.
+    // {
+    //     SkPaint paint;
+    //     paint.setColor(as_skcolor(impl.ui.theme.background.base.main));
+    //     canvas.drawPaint(paint);
+    // }
+
+    impl.background_graphics(impl.ui.surface_size);
+
+    impl.skia_graphics_context->resetContext();
+
     auto& canvas = *impl.skia_surface->getCanvas();
     canvas.resetMatrix();
     canvas.clipRect(SkRect::MakeWH(SkScalar(size[0]), SkScalar(size[1])));
 
-    // TODO: Don't clear automatically.
-    {
-        SkPaint paint;
-        paint.setColor(as_skcolor(impl.ui.theme.background.base.main));
-        canvas.drawPaint(paint);
-    }
+    the_skia_graphics_context = impl.skia_graphics_context.get();
 
     {
         render_event event;
@@ -486,7 +505,7 @@ render_ui(wx_opengl_window::impl_data& impl)
         dispatch_event(impl.ui, event, RENDER_EVENT);
     }
 
-    impl.skia_graphics_context->flush();
+    impl.skia_graphics_context->flushAndSubmit();
 
     impl.window->SwapBuffers();
 }
@@ -494,6 +513,8 @@ render_ui(wx_opengl_window::impl_data& impl)
 void
 update_ui(wx_opengl_window::impl_data& impl)
 {
+    hack_refresh_needed = false;
+
     auto size = get_actual_client_size(impl.window);
 
     refresh_system(impl.ui);
@@ -792,6 +813,7 @@ struct wx_window_interface : window_interface
 
 wx_opengl_window::wx_opengl_window(
     std::function<void(ui_context)> controller,
+    std::function<void(vector<2, unsigned>)> background_graphics,
     wxWindow* parent,
     wxWindowID id,
     wxGLAttributes const& canvas_attribs,
@@ -819,6 +841,8 @@ wx_opengl_window::wx_opengl_window(
     impl.vsync_disabled = false;
 
     impl.last_menu_bar_update = 0;
+
+    impl.background_graphics = background_graphics;
 
     {
         wxSize ppi = wxDisplay(this).GetPPI();
@@ -855,10 +879,11 @@ wx_opengl_window::update()
     update_window(*impl_);
 }
 void
-wx_opengl_window::on_paint(wxPaintEvent&)
+wx_opengl_window::on_paint(wxPaintEvent& event)
 {
     // fprintf(get_console(), "[%d] on_paint\n", impl_->ui.tick_count);
     handle_paint(*impl_);
+    event.Skip();
 }
 void
 wx_opengl_window::on_erase_background(wxEraseEvent&)
@@ -909,18 +934,19 @@ wx_opengl_window::on_idle(wxIdleEvent& event)
             this->Refresh(false);
         });
 
-    // if (hack_refresh_needed)
-    // {
-    //     this->Refresh(false);
-    //     hack_refresh_needed = false;
-    //     event.RequestMore();
-    // }
+    if (hack_refresh_needed)
+    {
+        this->Refresh(false);
+        event.RequestMore();
+    }
 
     if (has_scheduled_callbacks(impl.ui.scheduler))
     {
         // fprintf(get_console(), "has_scheduled_callbacks\n");
         event.RequestMore();
     }
+
+    event.Skip();
 }
 void
 wx_opengl_window::on_key_down(wxKeyEvent& event)
@@ -968,12 +994,11 @@ struct wx_frame::impl_data
 BEGIN_EVENT_TABLE(wx_frame, wxFrame)
 // EVT_MENU(-1, wx_frame::on_menu)
 // EVT_SIZE(wx_frame::on_size)
-// EVT_MOVE(wx_frame::on_move)
+EVT_MOVE(wx_frame::on_move)
 EVT_CLOSE(wx_frame::on_close)
 END_EVENT_TABLE()
 
 wx_frame::wx_frame(
-    std::function<void(ui_context)>,
     wxWindow* parent,
     wxWindowID id,
     wxString const& title,
@@ -1187,11 +1212,11 @@ wx_frame*
 create_wx_framed_window(
     std::string const& title,
     std::function<void(ui_context)> controller,
+    std::function<void(vector<2, unsigned>)> background_graphics,
     app_window_state const& initial_state)
 {
     wx_frame* frame = new wx_frame(
-        controller,
-        0,
+        NULL,
         wxID_ANY,
         title.c_str(),
         initial_state.position
@@ -1211,6 +1236,7 @@ create_wx_framed_window(
 
     new wx_opengl_window(
         controller,
+        background_graphics,
         frame,
         wxID_ANY,
         canvas_attribs,

@@ -35,8 +35,6 @@
 #include <alia/ui/utilities/skia.hpp>
 #include <alia/ui/utilities/styling.hpp>
 
-// #include <color/color.hpp>
-
 #include <bit>
 
 #include <cmath>
@@ -647,16 +645,18 @@ binary_number_ui(ui_context ctx, /*grid_layout& grid,*/ int number)
         .border_width = box_border_width<float>{0, 0, 0, 0},
         .padding = box_border_width<float>{8, 8, 8, 8},
         .background_color = get_system(ctx).theme.background.stronger[0].main};
-    panel p(ctx, direct(style), size(100, 20, POINT));
+    panel p(ctx, direct(style), size(100, 20));
 
     auto code_style = style_info{
-        font_info{&get_font("Roboto_Mono/static/RobotoMono-Regular", 20.f)},
+        font_info{&get_font(
+            "Roboto_Mono/static/RobotoMono-Regular",
+            20.f * get_system(ctx).magnification)},
         get_system(ctx).theme.foreground.base.main};
     scoped_style_info scoped_style(ctx, code_style);
 
     auto n = get_state(ctx, number);
     row_layout row(ctx);
-    do_text(ctx, printf(ctx, "%d", n), layout(width(100, POINT), RIGHT));
+    do_text(ctx, printf(ctx, "%d", n), layout(width(100), RIGHT));
     for (int i = 0; i != 12; ++i)
     {
         auto bit = read_signal(n) & (1 << (11 - i));
@@ -724,10 +724,12 @@ show_contrasting_color_pair(ui_context ctx, contrasting_color_pair pair)
         .border_width = box_border_width<float>{0, 0, 0, 0},
         .padding = box_border_width<float>{8, 8, 8, 8},
         .background_color = pair.main};
-    panel p(ctx, direct(style), size(100, 20, POINT));
+    panel p(ctx, direct(style), size(100, 20));
 
     auto my_style = style_info{
-        font_info{&get_font("Roboto/Roboto-Regular", 20.f)}, pair.contrasting};
+        font_info{&get_font(
+            "Roboto/Roboto-Regular", 20.f * get_system(ctx).magnification)},
+        pair.contrasting};
     scoped_style_info scoped_style(ctx, my_style);
     do_text(ctx, value("Contrasting"), UNPADDED);
 }
@@ -820,10 +822,10 @@ do_demo_slider(
             .padding = box_border_width<float>{8, 8, 8, 8},
             .background_color
             = get_system(ctx).theme.background.stronger[0].main};
-        panel p(ctx, direct(style), size(100, 20, POINT));
+        panel p(ctx, direct(style), size(100, 20));
         do_text(ctx, value(label), CENTER_Y);
     }
-    do_spacer(ctx, size(10, 10, POINT));
+    do_spacer(ctx, size(10, 10));
     {
         value_smoother<double>* smoother;
         get_cached_data(ctx, &smoother);
@@ -850,7 +852,7 @@ do_demo_slider(
                 0,
                 1,
                 0.01,
-                layout(size(600, 60, POINT), CENTER_Y));
+                layout(size(600, 60), CENTER_Y));
         }
     }
 }
@@ -889,40 +891,21 @@ using cubic_bezier = unit_cubic_bezier;
 void
 do_section_divider(ui_context ctx)
 {
-    do_spacer(ctx, height(40, POINT));
+    do_spacer(ctx, height(40));
     do_separator(ctx);
-    do_spacer(ctx, height(40, POINT));
+    do_spacer(ctx, height(40));
 }
 
 void
 do_heading(ui_context ctx, char const* text)
 {
     auto heading_style = style_info{
-        font_info{&get_font("Roboto/Roboto-Bold", 32.f)},
+        font_info{&get_font(
+            "Roboto/Roboto-Bold", 32.f * get_system(ctx).magnification)},
         get_system(ctx).theme.foreground.stronger[1].main};
     scoped_style_info scoped_style(ctx, heading_style);
     do_text(ctx, value(text));
-    do_spacer(ctx, height(20, POINT));
-}
-
-void
-do_radio_button(ui_context ctx, duplex<bool> selected, const char* label)
-{
-    row_layout row(ctx);
-    auto id = get_widget_id(ctx);
-    do_box_region(ctx, id, row.region());
-    do_radio_button(ctx, selected, BASELINE_Y, id);
-    do_text(ctx, value(label), BASELINE_Y);
-}
-
-void
-do_checkbox(ui_context ctx, duplex<bool> checked, const char* label)
-{
-    row_layout row(ctx);
-    auto id = get_widget_id(ctx);
-    do_box_region(ctx, id, row.region());
-    do_checkbox(ctx, checked, BASELINE_Y, id);
-    do_text(ctx, value(label), BASELINE_Y);
+    do_spacer(ctx, height(20));
 }
 
 std::vector<std::string>
@@ -953,10 +936,12 @@ do_code_snippet(ui_context ctx, std::vector<std::string> const& snippets)
         .border_width = box_border_width<float>{0, 0, 0, 0},
         .padding = box_border_width<float>{8, 8, 8, 8},
         .background_color = get_system(ctx).theme.background.stronger[0].main};
-    panel p(ctx, direct(style), layout(size(100, 20, POINT), FILL));
+    panel p(ctx, direct(style), layout(size(100, 20), FILL));
 
     auto my_style = style_info{
-        font_info{&get_font("Roboto_Mono/static/RobotoMono-Regular", 20.f)},
+        font_info{&get_font(
+            "Roboto_Mono/static/RobotoMono-Regular",
+            20.f * get_system(ctx).magnification)},
         get_system(ctx).theme.foreground.base.main};
     scoped_style_info scoped_style(ctx, my_style);
 
@@ -966,9 +951,381 @@ do_code_snippet(ui_context ctx, std::vector<std::string> const& snippets)
     }
 }
 
+#include <glad/glad.h>
+
+struct background_graphics_data
+{
+    bool initialized = false;
+    GLuint fragment_shader;
+    GLuint vertex_shader;
+    GLuint shader_program;
+};
+
+#include <fstream>
+#include <sstream>
+
+#include <chrono>
+
+millisecond_count
+get_tick_count()
+{
+    static auto start = std::chrono::steady_clock::now();
+    auto now = std::chrono::steady_clock::now();
+    return std::chrono::duration_cast<
+               std::chrono::duration<millisecond_count, std::milli>>(
+               now - start)
+        .count();
+}
+
+#include "assets.hpp"
+
+void
+check_gl_errors()
+{
+    GLenum error = glGetError();
+    if (error != GL_NO_ERROR)
+    {
+        const char* error_msg;
+        switch (error)
+        {
+            case GL_INVALID_ENUM:
+                error_msg = "GL_INVALID_ENUM";
+                break;
+            case GL_INVALID_VALUE:
+                error_msg = "GL_INVALID_VALUE";
+                break;
+            case GL_INVALID_OPERATION:
+                error_msg = "GL_INVALID_OPERATION";
+                break;
+            case GL_INVALID_FRAMEBUFFER_OPERATION:
+                error_msg = "GL_INVALID_FRAMEBUFFER_OPERATION";
+                break;
+            case GL_OUT_OF_MEMORY:
+                error_msg = "GL_OUT_OF_MEMORY";
+                break;
+            default:
+                error_msg = "Unknown error";
+        }
+        assert(false && error_msg);
+    }
+}
+
+void
+my_background_graphics(vector<2, unsigned>)
+{
+    // static background_graphics_data data;
+
+    // static bool glad_initialized = false;
+    // if (!glad_initialized)
+    // {
+    //     gladLoadGL();
+    //     glad_initialized = true;
+    // }
+
+    // glViewport(0, 0, size[0], size[1]);
+
+    // if (!data.initialized)
+    // {
+    //     auto const fragment_shader_asset = load_asset("fragment.glsl");
+    //     std::string fragment_shader_text(
+    //         reinterpret_cast<char*>(fragment_shader_asset.data.get()),
+    //         fragment_shader_asset.size);
+    //     char const* fragment_shader_pointer = fragment_shader_text.c_str();
+
+    //     static const char* vertex_shader_text = R"(
+    //             in vec2 position;
+    //             void main()
+    //             {
+    //                 gl_Position = vec4(position, 0, 1);
+    //             }
+    //             )";
+
+    //     // Create and compile shaders
+    //     data.fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+    //     glShaderSource(
+    //         data.fragment_shader, 1, &fragment_shader_pointer, nullptr);
+    //     check_gl_errors();
+    //     glCompileShader(data.fragment_shader);
+    //     check_gl_errors();
+
+    //     data.vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+    //     glShaderSource(data.vertex_shader, 1, &vertex_shader_text, nullptr);
+    //     check_gl_errors();
+    //     glCompileShader(data.vertex_shader);
+    //     check_gl_errors();
+
+    //     // Create and link program
+    //     data.shader_program = glCreateProgram();
+    //     glAttachShader(data.shader_program, data.fragment_shader);
+    //     check_gl_errors();
+    //     glAttachShader(data.shader_program, data.vertex_shader);
+    //     check_gl_errors();
+    //     glLinkProgram(data.shader_program);
+    //     check_gl_errors();
+
+    //     data.initialized = true;
+    // }
+
+    // // Create quad vertices
+    // float vertices[] = {
+    //     -1.0f,
+    //     -1.0f,
+    //     1.0f,
+    //     -1.0f,
+    //     1.0f,
+    //     1.0f,
+    //     -1.0f,
+    //     1.0f,
+    //     -1.0f,
+    //     -1.0f,
+    //     1.0f,
+    //     1.0f};
+
+    // float t = float(get_tick_count()) / 1000.f;
+
+    // // Create and bind vertex buffer
+    // GLuint VAO;
+    // glGenVertexArrays(1, &VAO);
+    // glBindVertexArray(VAO);
+
+    // GLuint VBO;
+    // glGenBuffers(1, &VBO);
+    // glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    // glBufferData(
+    //     GL_ARRAY_BUFFER, sizeof(float) * 12, vertices, GL_STATIC_DRAW);
+
+    // glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+    // glEnableVertexAttribArray(0);
+
+    // // Render quad
+    // auto const t_loc = glGetUniformLocation(data.shader_program, "t");
+    // check_gl_errors();
+    // glUseProgram(data.shader_program);
+    // check_gl_errors();
+    // glUniform1f(t_loc, t);
+    // check_gl_errors();
+    // glBindVertexArray(VAO);
+    // glDisable(GL_BLEND);
+    // glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    // glBindVertexArray(0);
+
+    // glDeleteBuffers(1, &VBO);
+    // glDeleteVertexArrays(1, &VAO);
+
+    // glFlush();
+
+    // // TODO: Cleanup
+    // // glDeleteVertexArrays(1, &VAO);
+    // // glDeleteBuffers(1, &VBO);
+    // // glDeleteBuffers(1, &EBO);
+    // // glDeleteProgram(shader_program);
+    // // glDeleteShader(fragment_shader);
+    // // glDeleteShader(vertex_shader);
+}
+
+struct graphics_data
+{
+    bool initialized = false;
+    layout_leaf layout_node;
+    GLuint fragment_shader;
+    GLuint vertex_shader;
+    GLuint shader_program;
+};
+
+millisecond_count
+get_animation_delta(ui_context ctx)
+{
+    millisecond_count* last_tick_count;
+    auto now = get_raw_animation_tick_count(ctx);
+    if (get_cached_data(ctx, &last_tick_count))
+    {
+        *last_tick_count = now;
+    }
+    auto const delta = now - *last_tick_count;
+    *last_tick_count = now;
+    return delta;
+}
+
+namespace alia {
+
+void
+reset_skia_context();
+
+}
+
+struct notargs_controls
+{
+    float speed = 1.f;
+};
+
+void
+notargs_graphics(
+    ui_context ctx,
+    layout const& layout_spec,
+    notargs_controls const& controls)
+{
+    static bool glad_initialized = false;
+    if (!glad_initialized)
+    {
+        gladLoadGL();
+        glad_initialized = true;
+    }
+
+    auto& data = get_cached_data<graphics_data>(ctx);
+
+    switch (get_event_category(ctx))
+    {
+        case REFRESH_CATEGORY:
+            data.layout_node.refresh_layout(
+                get_layout_traversal(ctx),
+                layout_spec,
+                leaf_layout_requirements(make_layout_vector(40, 40), 0, 0),
+                LEFT | BASELINE_Y | PADDED);
+
+            add_layout_node(
+                get<ui_traversal_tag>(ctx).layout, &data.layout_node);
+
+            break;
+
+        case RENDER_CATEGORY:
+
+            glViewport(
+                GLsizei(data.layout_node.assignment().region.corner[0] + 0.5),
+                GLsizei(data.layout_node.assignment().region.corner[1] + 0.5),
+                GLsizei(data.layout_node.assignment().region.size[0] + 0.5),
+                GLsizei(data.layout_node.assignment().region.size[1] + 0.5));
+
+            if (!data.initialized)
+            {
+                auto const fragment_shader_asset = load_asset("notargs.glsl");
+                std::string fragment_shader_text(
+                    reinterpret_cast<char*>(fragment_shader_asset.data.get()),
+                    fragment_shader_asset.size);
+                char const* fragment_shader_pointer
+                    = fragment_shader_text.c_str();
+
+                static const char* vertex_shader_text = R"(
+                in vec2 position;
+                void main()
+                {
+                    gl_Position = vec4(position, 0, 1);
+                }
+                )";
+
+                // Create and compile shaders
+                data.fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+                glShaderSource(
+                    data.fragment_shader,
+                    1,
+                    &fragment_shader_pointer,
+                    nullptr);
+                check_gl_errors();
+                glCompileShader(data.fragment_shader);
+                check_gl_errors();
+
+                data.vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+                glShaderSource(
+                    data.vertex_shader, 1, &vertex_shader_text, nullptr);
+                check_gl_errors();
+                glCompileShader(data.vertex_shader);
+                check_gl_errors();
+
+                // Create and link program
+                data.shader_program = glCreateProgram();
+                glAttachShader(data.shader_program, data.fragment_shader);
+                check_gl_errors();
+                glAttachShader(data.shader_program, data.vertex_shader);
+                check_gl_errors();
+                glLinkProgram(data.shader_program);
+                check_gl_errors();
+
+                data.initialized = true;
+            }
+
+            // Create quad vertices
+            float vertices[] = {
+                -1.0f,
+                -1.0f,
+                1.0f,
+                -1.0f,
+                1.0f,
+                1.0f,
+                -1.0f,
+                1.0f,
+                -1.0f,
+                -1.0f,
+                1.0f,
+                1.0f};
+
+            float* t;
+            if (get_cached_data(ctx, &t))
+                *t = 0;
+            *t += float(get_animation_delta(ctx)) / 1000.f * controls.speed;
+
+            // Create and bind vertex buffer
+            GLuint VAO;
+            glGenVertexArrays(1, &VAO);
+            glBindVertexArray(VAO);
+
+            GLuint VBO;
+            glGenBuffers(1, &VBO);
+            glBindBuffer(GL_ARRAY_BUFFER, VBO);
+            glBufferData(
+                GL_ARRAY_BUFFER, sizeof(float) * 12, vertices, GL_STATIC_DRAW);
+
+            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+            glEnableVertexAttribArray(0);
+
+            // Render quad
+            auto const t_loc = glGetUniformLocation(data.shader_program, "t");
+            check_gl_errors();
+            glUseProgram(data.shader_program);
+            check_gl_errors();
+            glUniform1f(t_loc, t);
+            check_gl_errors();
+            glBindVertexArray(VAO);
+            glDisable(GL_BLEND);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+
+            glBindVertexArray(0);
+
+            glDeleteBuffers(1, &VBO);
+            glDeleteVertexArrays(1, &VAO);
+
+            glFlush();
+
+            reset_skia_context();
+
+            // TODO: Cleanup
+            // glDeleteProgram(shader_program);
+            // glDeleteShader(fragment_shader);
+            // glDeleteShader(vertex_shader);
+    }
+}
+
 void
 my_ui(ui_context ctx)
 {
+    // F11 toggles full screen mode.
+    if (detect_key_press(ctx, key_code::F11))
+    {
+        // toggle_full_screen(ctx);
+        abort_traversal(ctx);
+    }
+
+    if (detect_key_press(ctx, key_code::MINUS, KMOD_CTRL))
+    {
+        get_system(ctx).magnification /= 1.1f;
+        abort_traversal(ctx);
+    }
+
+    if (detect_key_press(ctx, key_code::EQUAL, KMOD_CTRL))
+    {
+        get_system(ctx).magnification *= 1.1f;
+        abort_traversal(ctx);
+    }
+
     static bool light_theme = false;
 
     static bool theme_update_needed = true;
@@ -995,33 +1352,227 @@ my_ui(ui_context ctx)
     auto const& theme = get_system(ctx).theme;
 
     auto main_style = style_info{
-        font_info{&get_font("Roboto/Roboto-Regular", 22.f)},
+        font_info{&get_font(
+            "Roboto/Roboto-Regular", 22.f * get_system(ctx).magnification)},
         theme.foreground.base.main};
     scoped_style_info main_scoped_style(ctx, main_style);
 
-    column_layout root_column(ctx, GROW);
+    row_layout background_row(ctx, GROW);
+
+    auto controls = get_state(ctx, notargs_controls{1.f});
+
+    notargs_graphics(ctx, GROW | UNPADDED, read_signal(controls));
+
+    column_layout root_column(ctx, layout(width(720)));
+
+    panel background_panel(
+        ctx,
+        direct(panel_style_info{
+            .margin = box_border_width<float>{0, 0, 0, 0},
+            .border_width = box_border_width<float>{0, 0, 0, 0},
+            .padding = box_border_width<float>{0, 0, 0, 0},
+            .background_color
+            = rgba8(get_system(ctx).theme.background.base.main, 0xff)}),
+        GROW | UNPADDED);
 
     {
-        scoped_scrollable_view scrollable(ctx, GROW);
+        scoped_scrollable_view scrollable(ctx, GROW, 2);
 
         bordered_layout bordered(
             ctx,
             box_border_width<absolute_length>{
-                absolute_length(24, POINT),
-                absolute_length(24, POINT),
-                absolute_length(24, POINT),
-                absolute_length(24, POINT)},
+                absolute_length(24),
+                absolute_length(24),
+                absolute_length(24),
+                absolute_length(24)},
+            GROW);
+    }
+
+    {
+        panel_style_info style{
+            .margin = box_border_width<float>{0, 0, 0, 0},
+            .border_width = box_border_width<float>{0, 0, 0, 0},
+            .padding = box_border_width<float>{8, 8, 8, 8},
+            .background_color = lerp(
+                get_system(ctx).theme.background.stronger[0].main,
+                get_system(ctx).theme.background.base.main,
+                0.5)};
+        panel p(ctx, direct(style), FILL | UNPADDED);
+
+        // TODO: Use bordered layout.
+        column_layout column1(ctx, FILL | PADDED);
+        column_layout column2(ctx, FILL | PADDED);
+        column_layout column3(ctx, FILL | PADDED);
+
+        row_layout row(ctx);
+
+        {
+            {
+                do_switch(
+                    ctx,
+                    add_write_action(direct(light_theme), callback([&](bool) {
+                                         theme_update_needed = true;
+                                     })));
+                do_text(ctx, value("Light"));
+            }
+
+            do_spacer(ctx, width(10));
+            do_separator(ctx);
+            do_spacer(ctx, width(10));
+
+            {
+                {
+                    do_radio_button(
+                        ctx,
+                        add_write_action(
+                            make_radio_signal(
+                                direct(seeds), value(&seed_sets[0])),
+                            callback([&](bool) {
+                                theme_update_needed = true;
+                            })),
+                        "One");
+                }
+
+                do_spacer(ctx, width(10));
+                do_separator(ctx);
+                do_spacer(ctx, width(10));
+
+                {
+                    do_radio_button(
+                        ctx,
+                        add_write_action(
+                            make_radio_signal(
+                                direct(seeds), value(&seed_sets[1])),
+                            callback([&](bool) {
+                                theme_update_needed = true;
+                            })),
+                        "Two");
+                }
+
+                do_spacer(ctx, width(10));
+                do_separator(ctx);
+                do_spacer(ctx, width(10));
+
+                {
+                    do_radio_button(
+                        ctx,
+                        add_write_action(
+                            make_radio_signal(
+                                direct(seeds), value(&seed_sets[2])),
+                            callback([&](bool) {
+                                theme_update_needed = true;
+                            })),
+                        "Three");
+                }
+
+                do_spacer(ctx, width(10));
+                do_separator(ctx);
+                do_spacer(ctx, width(10));
+
+                {
+                    do_radio_button(
+                        ctx,
+                        add_write_action(
+                            make_radio_signal(
+                                direct(seeds), value(&seed_sets[3])),
+                            callback([&](bool) {
+                                theme_update_needed = true;
+                            })),
+                        "Four");
+                }
+            }
+        }
+    }
+}
+
+void
+actual_ui(ui_context ctx)
+{
+    // F11 toggles full screen mode.
+    if (detect_key_press(ctx, key_code::F11))
+    {
+        // toggle_full_screen(ctx);
+        abort_traversal(ctx);
+    }
+
+    if (detect_key_press(ctx, key_code::F9))
+    {
+        get_system(ctx).magnification /= 1.1f;
+        abort_traversal(ctx);
+    }
+
+    if (detect_key_press(ctx, key_code::F10))
+    {
+        get_system(ctx).magnification *= 1.1f;
+        abort_traversal(ctx);
+    }
+
+    static bool light_theme = false;
+
+    static bool theme_update_needed = true;
+
+    if (theme_update_needed)
+    {
+        the_palette = generate_color_palette(*seeds);
+
+        contrast_parameters contrast;
+        contrast.light_on_dark_ratio = 6;
+        contrast.dark_on_light_ratio = 8;
+
+        theme_colors theme;
+        theme = generate_theme_colors(
+            light_theme ? ui_lightness_mode::LIGHT_MODE
+                        : ui_lightness_mode::DARK_MODE,
+            *seeds,
+            contrast);
+        get_system(ctx).theme = theme;
+
+        theme_update_needed = false;
+    }
+
+    auto const& theme = get_system(ctx).theme;
+
+    auto main_style = style_info{
+        font_info{&get_font(
+            "Roboto/Roboto-Regular", 22.f * get_system(ctx).magnification)},
+        theme.foreground.base.main};
+    scoped_style_info main_scoped_style(ctx, main_style);
+
+    row_layout background_row(ctx, GROW);
+
+    column_layout root_column(ctx, layout(width(720), LEFT));
+
+    panel background_panel(
+        ctx,
+        direct(panel_style_info{
+            .margin = box_border_width<float>{0, 0, 0, 0},
+            .border_width = box_border_width<float>{0, 0, 0, 0},
+            .padding = box_border_width<float>{0, 0, 0, 0},
+            .background_color
+            = rgba8(get_system(ctx).theme.background.base.main, 0xf0)}),
+        GROW | UNPADDED);
+
+    {
+        scoped_scrollable_view scrollable(ctx, GROW, 2);
+
+        bordered_layout bordered(
+            ctx,
+            box_border_width<absolute_length>{
+                absolute_length(24),
+                absolute_length(24),
+                absolute_length(24),
+                absolute_length(24)},
             GROW);
 
         grid_layout code_snippet_grid(ctx);
 
 #define DO_CODE_SNIPPET(snippet, code)                                        \
     {                                                                         \
-        do_spacer(ctx, height(10, POINT));                                    \
+        do_spacer(ctx, height(10));                                           \
         grid_row code_snippet_row(code_snippet_grid);                         \
         static std::vector<std::string> lines = split_string(snippet);        \
         do_code_snippet(ctx, lines);                                          \
-        do_spacer(ctx, width(10, POINT));                                     \
+        do_spacer(ctx, width(10));                                            \
         {                                                                     \
             column_layout code_column(ctx, CENTER_Y);                         \
             code                                                              \
@@ -1173,7 +1724,8 @@ do_node_expander(ctx, state);
             {
                 auto code_style = style_info{
                     font_info{&get_font(
-                        "Roboto_Mono/static/RobotoMono-Regular", 20.f)},
+                        "Roboto_Mono/static/RobotoMono-Regular",
+                        20.f * get_system(ctx).magnification)},
                     theme.foreground.base.main};
                 scoped_style_info scoped_style(ctx, code_style);
 
@@ -1204,7 +1756,7 @@ do_node_expander(ctx, state);
                     ESCAPE(cubic_bezier{0.17, 0.67, 0.78, 0.3}));
             }
 
-            do_spacer(ctx, height(20, POINT));
+            do_spacer(ctx, height(20));
 
             {
                 row_layout row(ctx);
@@ -1224,11 +1776,11 @@ do_node_expander(ctx, state);
         //         {
         //             scoped_grid_row row(ctx, grid);
         //             do_box(
-        //                 ctx, SK_ColorMAGENTA, actions::noop(), width(200,
-        //                 PIXELS));
+        //                 ctx, SK_ColorMAGENTA, actions::noop(),
+        //                 width(200));
         //             do_box(
-        //                 ctx, SK_ColorMAGENTA, actions::noop(), width(200,
-        //                 PIXELS));
+        //                 ctx, SK_ColorMAGENTA, actions::noop(),
+        //                 width(200));
         //         }
         //         {
         //             scoped_grid_row row(ctx, grid);
@@ -1238,7 +1790,8 @@ do_node_expander(ctx, state);
 
         // for (int i = 0; i != 0; ++i)
         // {
-        //     cached_ui_block<column_layout>(ctx, unit_id, default_layout, [&]
+        //     cached_ui_block<column_layout>(ctx, unit_id, default_layout,
+        //     [&]
         //     {
         //         panel p(ctx, direct(pstyle));
         //         // do_text(ctx, value("Lorem ipsum"));
@@ -1262,8 +1815,8 @@ do_node_expander(ctx, state);
         // {
         //     scoped_flow_layout row(ctx, UNPADDED | FILL);
         //     do_box(ctx, SK_ColorLTGRAY, actions::toggle(show_text));
-        //     do_box(ctx, SK_ColorLTGRAY, actions::toggle(show_other_text));
-        //     do_tree_expander(ctx);
+        //     do_box(ctx, SK_ColorLTGRAY,
+        //     actions::toggle(show_other_text)); do_tree_expander(ctx);
         //     // do_svg_image(ctx);
         // }
 
@@ -1279,24 +1832,24 @@ do_node_expander(ctx, state);
 
         //     {
         //         row_layout row(ctx);
-        //         do_spacer(ctx, width(40, POINT));
+        //         do_spacer(ctx, width(40));
         //         collapsible_content(ctx, show_content, GROW, [&] {
         //             do_wrapped_text(
         //                 ctx,
         //                 value("Lorem ipsum dolor sit amet, consectetur "
         //                       "adipisg elit. "
-        //                       "Phasellus lacinia elementum diam consequat "
-        //                       "alicinquet. "
-        //                       "Vestibulum ut libero justo. Pellentesque
-        //                       lectus " "lectus, " "scelerisque a elementum
-        //                       sed, bibendum id libero. " "Maecenas venenatis
+        //                       "Phasellus lacinia elementum diam
+        //                       consequat " "alicinquet. " "Vestibulum ut
+        //                       libero justo. Pellentesque lectus "
+        //                       "lectus, " "scelerisque a elementum sed,
+        //                       bibendum id libero. " "Maecenas venenatis
         //                       est sed sem " "consequat mollis. Ut "
         //                       "nequeodio, hendrerit ut justo venenatis,
-        //                       consequat " "molestie eros. Nam fermentum, mi
-        //                       malesuada eleifend" "dapibus, lectus dolor
-        //                       luctus orci, nec posuere lor " "lorem ac sem.
-        //                       Nullam interdum laoreet ipsum in "
-        //                       "dictum."));
+        //                       consequat " "molestie eros. Nam fermentum,
+        //                       mi malesuada eleifend" "dapibus, lectus
+        //                       dolor luctus orci, nec posuere lor "
+        //                       "lorem ac sem. Nullam interdum laoreet
+        //                       ipsum in " "dictum."));
         //         });
         //     }
         // }
@@ -1323,11 +1876,11 @@ do_node_expander(ctx, state);
         //         {
         //             grid_row row(grid);
         //             do_box(
-        //                 ctx, SK_ColorMAGENTA, actions::noop(), width(200,
-        //                 PIXELS));
+        //                 ctx, SK_ColorMAGENTA, actions::noop(),
+        //                 width(200, PIXELS));
         //             do_box(
-        //                 ctx, SK_ColorMAGENTA, actions::noop(), width(200,
-        //                 PIXELS));
+        //                 ctx, SK_ColorMAGENTA, actions::noop(),
+        //                 width(200, PIXELS));
         //         }
         //         {
         //             grid_row row(grid);
@@ -1347,24 +1900,27 @@ do_node_expander(ctx, state);
                 {
                     do_wrapped_text(
                         ctx,
-                        value(
-                            "Lorem ipsum dolor sit amet, consectetur "
-                            "adipisg elit. "
-                            "Phasellus lacinia elementum diam consequat "
-                            "alicinquet. "
-                            "Vestibulum ut libero justo. Pellentesque lectus "
-                            "lectus, "
-                            "scelerisque a elementum sed, bibendum id libero. "
-                            "Maecenas venenatis est sed sem "
-                            "consequat mollis. Ut "
-                            "nequeodio, hendrerit ut justo venenatis, "
-                            "consequat "
-                            "molestie eros. Nam fermentum, mi malesuada "
-                            "eleifend"
-                            "dapibus, lectus dolor luctus orci, nec posuere "
-                            "lor "
-                            "lorem ac sem. Nullam interdum laoreet ipsum in "
-                            "dictum."),
+                        value("Lorem ipsum dolor sit amet, consectetur "
+                              "adipisg elit. "
+                              "Phasellus lacinia elementum diam consequat "
+                              "alicinquet. "
+                              "Vestibulum ut libero justo. Pellentesque "
+                              "lectus "
+                              "lectus, "
+                              "scelerisque a elementum sed, bibendum id "
+                              "libero. "
+                              "Maecenas venenatis est sed sem "
+                              "consequat mollis. Ut "
+                              "nequeodio, hendrerit ut justo venenatis, "
+                              "consequat "
+                              "molestie eros. Nam fermentum, mi malesuada "
+                              "eleifend"
+                              "dapibus, lectus dolor luctus orci, nec "
+                              "posuere "
+                              "lor "
+                              "lorem ac sem. Nullam interdum laoreet "
+                              "ipsum in "
+                              "dictum."),
                         FILL);
                 }
             }
@@ -1382,15 +1938,15 @@ do_node_expander(ctx, state);
             do_heading(ctx, "Color Palette");
 
             show_color_ramp(ctx, the_palette.primary);
-            do_spacer(ctx, size(10, 10, POINT));
+            do_spacer(ctx, size(10, 10));
             show_color_ramp(ctx, the_palette.secondary);
-            do_spacer(ctx, size(10, 10, POINT));
+            do_spacer(ctx, size(10, 10));
             show_color_ramp(ctx, the_palette.tertiary);
-            do_spacer(ctx, size(10, 10, POINT));
+            do_spacer(ctx, size(10, 10));
             show_color_ramp(ctx, the_palette.neutral);
-            do_spacer(ctx, size(10, 10, POINT));
+            do_spacer(ctx, size(10, 10));
             show_color_ramp(ctx, the_palette.warning);
-            do_spacer(ctx, size(10, 10, POINT));
+            do_spacer(ctx, size(10, 10));
             show_color_ramp(ctx, the_palette.danger);
         }
 
@@ -1419,7 +1975,7 @@ do_node_expander(ctx, state);
         //     for (int i = 0; i != 100; ++i)
         //     {
         //         // if_(ctx, show_text, [&] {
-        //         //     // do_spacer(ctx, size(60, 40, POINT));
+        //         //     // do_spacer(ctx, size(60, 40));
         //         //     do_text(ctx, alia::printf(ctx, "text%i", i));
         //         //     do_text(ctx, value("Könnten Sie mir das
         //         übersetzen?"));
@@ -1432,7 +1988,7 @@ do_node_expander(ctx, state);
         //                 ctx,
         //                 SK_ColorMAGENTA,
         //                 actions::noop(),
-        //                 width(100, POINT));
+        //                 width(100));
 
         //             // color::yiq<std::uint8_t> y1 =
         //             // ::color::constant::blue_t{};
@@ -1510,9 +2066,9 @@ do_node_expander(ctx, state);
                 do_text(ctx, value("Light"));
             }
 
-            do_spacer(ctx, width(10, POINT));
+            do_spacer(ctx, width(10));
             do_separator(ctx);
-            do_spacer(ctx, width(10, POINT));
+            do_spacer(ctx, width(10));
 
             {
                 {
@@ -1527,9 +2083,9 @@ do_node_expander(ctx, state);
                         "One");
                 }
 
-                do_spacer(ctx, width(10, POINT));
+                do_spacer(ctx, width(10));
                 do_separator(ctx);
-                do_spacer(ctx, width(10, POINT));
+                do_spacer(ctx, width(10));
 
                 {
                     do_radio_button(
@@ -1543,9 +2099,9 @@ do_node_expander(ctx, state);
                         "Two");
                 }
 
-                do_spacer(ctx, width(10, POINT));
+                do_spacer(ctx, width(10));
                 do_separator(ctx);
-                do_spacer(ctx, width(10, POINT));
+                do_spacer(ctx, width(10));
 
                 {
                     do_radio_button(
@@ -1559,9 +2115,9 @@ do_node_expander(ctx, state);
                         "Three");
                 }
 
-                do_spacer(ctx, width(10, POINT));
+                do_spacer(ctx, width(10));
                 do_separator(ctx);
-                do_spacer(ctx, width(10, POINT));
+                do_spacer(ctx, width(10));
 
                 {
                     do_radio_button(

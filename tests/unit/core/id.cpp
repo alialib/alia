@@ -1,7 +1,6 @@
 #include <alia/core/id.hpp>
 
 #include <map>
-#include <unordered_map>
 #include <utility>
 
 #include <catch2/catch_test_macros.hpp>

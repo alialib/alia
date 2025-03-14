@@ -176,6 +176,18 @@ detect_key_press(
     }
     return false;
 }
+bool
+detect_key_press(
+    dataless_ui_context ctx, key_code code, key_modifiers modifiers)
+{
+    auto key = detect_key_press(ctx);
+    if (key && key->code == code && key->mods == modifiers)
+    {
+        acknowledge_key_event(ctx);
+        return true;
+    }
+    return false;
+}
 
 std::optional<modded_key>
 detect_key_release(dataless_ui_context ctx, widget_id id)

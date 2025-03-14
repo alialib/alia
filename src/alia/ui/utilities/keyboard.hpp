@@ -84,10 +84,11 @@ detect_key_press(
     key_code code,
     key_modifiers modifiers = KMOD_NONE);
 // same, but without ID (as background)
-// bool
-// detect_key_press(
-//     dataless_ui_context ctx, key_code code, key_modifiers modifiers =
-//     KMOD_NONE);
+bool
+detect_key_press(
+    dataless_ui_context ctx,
+    key_code code,
+    key_modifiers modifiers = KMOD_NONE);
 
 // Detect if the given key (plus optional modifiers) was just released.
 bool

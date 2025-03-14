@@ -4,7 +4,9 @@
 #include <alia/ui/color.hpp>
 #include <alia/ui/context.hpp>
 #include <alia/ui/events.hpp>
+#include <alia/ui/layout/simple.hpp>
 #include <alia/ui/layout/specification.hpp>
+#include <alia/ui/text/display.hpp>
 #include <alia/ui/utilities.hpp>
 #include <alia/ui/utilities/animation.hpp>
 #include <alia/ui/utilities/click_flares.hpp>
@@ -206,6 +208,16 @@ do_radio_button(
         }
     }
     alia_end
+}
+
+void
+do_radio_button(ui_context ctx, duplex<bool> selected, char const* label)
+{
+    row_layout row(ctx);
+    auto id = get_widget_id(ctx);
+    do_box_region(ctx, id, row.region());
+    do_radio_button(ctx, selected, BASELINE_Y, id);
+    do_text(ctx, value(label), BASELINE_Y);
 }
 
 } // namespace alia

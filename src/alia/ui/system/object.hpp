@@ -65,6 +65,8 @@ struct ui_system : alia::typed_system<vanilla_ui_context>
     vector<2, unsigned> surface_size;
     vector<2, float> ppi;
 
+    float magnification = 1;
+
     std::shared_ptr<os_interface> os;
 
     std::shared_ptr<window_interface> window;
