@@ -434,7 +434,7 @@ init_window(
 
     impl.windowed_rect = make_box<2, int>(
         make_vector<int>(100, 100), make_vector<int>(size[0], size[1]));
-    impl.fullscreen = true;
+    impl.fullscreen = false;
 
     // GLFWmonitor* monitor = glfwGetPrimaryMonitor();
     // GLFWvidmode const* mode = glfwGetVideoMode(monitor);
