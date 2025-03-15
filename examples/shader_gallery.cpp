@@ -104,6 +104,10 @@ seed_colors const seed_sets[] = {
 
 seed_colors const* seeds = &seed_sets[0];
 
+bool light_theme = true;
+
+bool theme_update_needed = true;
+
 using cubic_bezier = unit_cubic_bezier;
 
 std::vector<std::string>
@@ -199,7 +203,10 @@ namespace alia {
 void
 reset_skia_context();
 
-}
+void
+toggle_full_screen();
+
+} // namespace alia
 
 struct notargs_graphics_data
 {
@@ -217,12 +224,20 @@ struct notargs_graphics_data
 
     GLint curl_loc;
     GLint thickness_loc;
+    GLint cosx_factor_loc;
+    GLint cosy_factor_loc;
+    GLint siny_factor_loc;
+    GLint sinz_factor_loc;
 
     GLint normalize_rays_loc;
     GLint step_scaling_loc;
     GLint iterations_loc;
 
+    GLint depth_scale_loc;
     GLint color_loc;
+    GLint color_factor_loc;
+    GLint sine_factor_loc;
+    GLint invert_loc;
 };
 
 struct notargs_controls
@@ -234,10 +249,18 @@ struct notargs_controls
 
     double curl = 1.0;
     double thickness = 0.1;
+    bool include_cosx = true;
+    bool include_cosy = true;
+    bool include_siny = true;
+    bool include_sinz = true;
 
     bool normalize_rays = false;
     double step_scaling = 0.5;
     int iterations = 32;
+
+    double color_factor = 1.0;
+    double sine_factor = 1.0;
+    double depth_scale = 1.0;
 };
 
 void
@@ -348,6 +371,14 @@ notargs_graphics(
                     = glGetUniformLocation(data.shader_program, "curl");
                 data.thickness_loc
                     = glGetUniformLocation(data.shader_program, "thickness");
+                data.cosx_factor_loc
+                    = glGetUniformLocation(data.shader_program, "cosx_factor");
+                data.cosy_factor_loc
+                    = glGetUniformLocation(data.shader_program, "cosy_factor");
+                data.siny_factor_loc
+                    = glGetUniformLocation(data.shader_program, "siny_factor");
+                data.sinz_factor_loc
+                    = glGetUniformLocation(data.shader_program, "sinz_factor");
 
                 data.normalize_rays_loc = glGetUniformLocation(
                     data.shader_program, "normalize_rays");
@@ -356,8 +387,16 @@ notargs_graphics(
                 data.iterations_loc
                     = glGetUniformLocation(data.shader_program, "iterations");
 
+                data.invert_loc
+                    = glGetUniformLocation(data.shader_program, "invert");
                 data.color_loc
                     = glGetUniformLocation(data.shader_program, "color");
+                data.color_factor_loc = glGetUniformLocation(
+                    data.shader_program, "color_factor");
+                data.sine_factor_loc
+                    = glGetUniformLocation(data.shader_program, "sine_factor");
+                data.depth_scale_loc
+                    = glGetUniformLocation(data.shader_program, "depth_scale");
 
                 check_gl_errors();
 
@@ -412,6 +451,14 @@ notargs_graphics(
 
             glUniform1f(data.curl_loc, float(controls.curl));
             glUniform1f(data.thickness_loc, float(controls.thickness));
+            glUniform1f(
+                data.cosx_factor_loc, controls.include_cosx ? 1.0f : 0.0f);
+            glUniform1f(
+                data.cosy_factor_loc, controls.include_cosy ? 1.0f : 0.0f);
+            glUniform1f(
+                data.siny_factor_loc, controls.include_siny ? 1.0f : 0.0f);
+            glUniform1f(
+                data.sinz_factor_loc, controls.include_sinz ? 1.0f : 0.0f);
 
             glUniform1i(data.normalize_rays_loc, controls.normalize_rays);
             glUniform1f(data.step_scaling_loc, float(controls.step_scaling));
@@ -437,6 +484,11 @@ notargs_graphics(
                 }
             }
 
+            glUniform1i(data.invert_loc, light_theme);
+            glUniform1f(data.color_factor_loc, float(controls.color_factor));
+            glUniform1f(data.sine_factor_loc, float(controls.sine_factor));
+            glUniform1f(data.depth_scale_loc, float(controls.depth_scale));
+
             glBindVertexArray(VAO);
             glDisable(GL_BLEND);
             glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -461,10 +513,6 @@ notargs_graphics(
             // glDeleteShader(vertex_shader);
     }
 }
-
-bool light_theme = false;
-
-bool theme_update_needed = true;
 
 void
 do_section_divider(ui_context ctx)
@@ -575,6 +623,8 @@ control_slider(
     grid_row row(grid);
     do_text(ctx, alia::value(label), CENTER_Y);
     do_spacer(ctx, layout(width(20), GROW));
+    do_text(ctx, alia::printf(ctx, "%.3f", value));
+    do_spacer(ctx, layout(width(20), GROW));
     do_slider(ctx, value, min, max, step, layout(width(420), CENTER_Y));
 }
 
@@ -605,21 +655,6 @@ do_notargs_controls(ui_context ctx, duplex<notargs_controls> controls)
 
     do_section_divider(ctx);
 
-    do_heading(ctx, "Shape");
-
-    control_slider(
-        ctx, grid, "Curl", alia_field(controls, curl), 0.0, 1.0, 0.001);
-    control_slider(
-        ctx,
-        grid,
-        "Thickness",
-        alia_field(controls, thickness),
-        0.0,
-        1.0,
-        0.001);
-
-    do_section_divider(ctx);
-
     do_heading(ctx, "Ray Marching");
 
     control_switch(
@@ -641,17 +676,68 @@ do_notargs_controls(ui_context ctx, duplex<notargs_controls> controls)
         0,
         120,
         1);
+
+    do_section_divider(ctx);
+
+    do_heading(ctx, "Shape");
+
+    control_slider(
+        ctx, grid, "Curl", alia_field(controls, curl), 0.0, 1.0, 0.001);
+    control_slider(
+        ctx,
+        grid,
+        "Thickness",
+        alia_field(controls, thickness),
+        0.0,
+        2.0,
+        0.001);
+    control_switch(
+        ctx, grid, "Include CosX", alia_field(controls, include_cosx));
+    control_switch(
+        ctx, grid, "Include CosY", alia_field(controls, include_cosy));
+    control_switch(
+        ctx, grid, "Include SinY", alia_field(controls, include_siny));
+    control_switch(
+        ctx, grid, "Include SinZ", alia_field(controls, include_sinz));
+
+    do_section_divider(ctx);
+    do_heading(ctx, "Coloring");
+
+    control_slider(
+        ctx,
+        grid,
+        "Color Factor",
+        alia_field(controls, color_factor),
+        0.0,
+        2.0,
+        0.001);
+    control_slider(
+        ctx,
+        grid,
+        "Sine Factor",
+        alia_field(controls, sine_factor),
+        0.0,
+        4.0,
+        0.001);
+    control_slider(
+        ctx,
+        grid,
+        "Depth Scale",
+        alia_field(controls, depth_scale),
+        0.0,
+        4.0,
+        0.001);
 }
 
 void
 my_ui(ui_context ctx)
 {
     // F11 toggles full screen mode.
-    if (detect_key_press(ctx, key_code::F11))
-    {
-        // toggle_full_screen(ctx);
-        abort_traversal(ctx);
-    }
+    // if (detect_key_press(ctx, key_code::F11))
+    // {
+    //     toggle_full_screen();
+    //     abort_traversal(ctx);
+    // }
 
     if (detect_key_press(ctx, key_code::MINUS, KMOD_CTRL))
     {
