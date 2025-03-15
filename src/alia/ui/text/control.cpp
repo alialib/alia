@@ -11,7 +11,7 @@ do_unsafe_text_control(
     widget_id,
     std::optional<size_t>)
 {
-    return text_control_result{false, TEXT_CONTROL_NO_EVENT};
+    return text_control_result{{false}, TEXT_CONTROL_NO_EVENT};
 }
 
 } // namespace alia
