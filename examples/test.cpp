@@ -1007,6 +1007,8 @@ check_gl_errors()
                 error_msg = "Unknown error";
         }
         assert(false && error_msg);
+        if (error_msg)
+            std::cerr << error_msg << std::endl;
     }
 }
 
