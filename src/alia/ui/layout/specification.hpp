@@ -125,9 +125,9 @@ struct layout
     layout_flag_set flags;
     float growth_factor;
 
-    auto
-    operator<=>(layout const&) const
-        = default;
+    // auto
+    // operator<=>(layout const&) const
+    //     = default;
 };
 
 layout const default_layout;

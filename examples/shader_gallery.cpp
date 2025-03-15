@@ -177,6 +177,8 @@ check_gl_errors()
                 error_msg = "Unknown error";
         }
         assert(false && error_msg);
+        if (error_msg)
+            std::cerr << error_msg << std::endl;
     }
 }
 
@@ -296,6 +298,7 @@ notargs_graphics(
                     = fragment_shader_text.c_str();
 
                 static const char* vertex_shader_text = R"(
+                #version 130
                 in vec2 position;
                 void main()
                 {
@@ -324,16 +327,40 @@ notargs_graphics(
                         + info_log);
                 }
 
+                check_gl_errors();
+
                 data.vertex_shader = glCreateShader(GL_VERTEX_SHADER);
                 glShaderSource(
                     data.vertex_shader, 1, &vertex_shader_text, nullptr);
                 glCompileShader(data.vertex_shader);
+                glGetShaderiv(data.vertex_shader, GL_COMPILE_STATUS, &success);
+                if (!success)
+                {
+                    glGetShaderInfoLog(
+                        data.vertex_shader, 512, NULL, info_log);
+                    throw alia::exception(
+                        std::string("Fragment shader compilation failed: ")
+                        + info_log);
+                }
+
+                check_gl_errors();
 
                 // Create and link program
                 data.shader_program = glCreateProgram();
                 glAttachShader(data.shader_program, data.fragment_shader);
                 glAttachShader(data.shader_program, data.vertex_shader);
                 glLinkProgram(data.shader_program);
+                glGetProgramiv(data.shader_program, GL_LINK_STATUS, &success);
+                if (!success)
+                {
+                    glGetProgramInfoLog(
+                        data.shader_program, 512, NULL, info_log);
+                    throw alia::exception(
+                        std::string("Shader program linking failed: ")
+                        + info_log);
+                }
+
+                check_gl_errors();
 
                 data.corner_loc
                     = glGetUniformLocation(data.shader_program, "corner");
@@ -342,12 +369,18 @@ notargs_graphics(
                 data.zoom_loc
                     = glGetUniformLocation(data.shader_program, "zoom");
 
+                check_gl_errors();
+
                 data.t_loc = glGetUniformLocation(data.shader_program, "t");
+
+                check_gl_errors();
 
                 data.curl_loc
                     = glGetUniformLocation(data.shader_program, "curl");
                 data.thickness_loc
                     = glGetUniformLocation(data.shader_program, "thickness");
+
+                check_gl_errors();
 
                 data.normalize_rays_loc = glGetUniformLocation(
                     data.shader_program, "normalize_rays");
@@ -355,6 +388,8 @@ notargs_graphics(
                     data.shader_program, "step_scaling");
                 data.iterations_loc
                     = glGetUniformLocation(data.shader_program, "iterations");
+
+                check_gl_errors();
 
                 data.color_loc
                     = glGetUniformLocation(data.shader_program, "color");
