@@ -22,7 +22,8 @@
                         "icu",
                         "gl"
                     ]
-                }
+                },
+                "glad"
             ]
         },
         "glfw": {
@@ -35,6 +36,12 @@
             "description": "SDL backend for UI library",
             "dependencies": [
                 "sdl2"
+            ]
+        },
+        "wx": {
+            "description": "wxWidgets backend for UI library",
+            "dependencies": [
+                "wxwidgets"
             ]
         },
         "tests": {

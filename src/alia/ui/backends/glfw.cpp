@@ -58,10 +58,11 @@ struct glfw_window_impl
     std::unique_ptr<GrDirectContext> skia_graphics_context;
     std::unique_ptr<SkSurface> skia_surface;
 
-    // sk_sp<skia::textlayout::FontCollection> font_collection;
-
     // TODO: Does this go here?
     ui_system system;
+
+    bool fullscreen = false;
+    box<2, int> windowed_rect;
 };
 
 void
@@ -172,12 +173,42 @@ key_event_callback(
     {
         switch (key)
         {
+            // TODO: Move all this out of here.
             case GLFW_KEY_TAB:
                 if (mods == GLFW_MOD_SHIFT)
                     regress_focus(get_system(window));
                 else if (mods == 0)
                     advance_focus(get_system(window));
                 break;
+            case GLFW_KEY_F11: {
+                auto& impl = get_impl(window);
+                bool is_fullscreen = impl.fullscreen;
+                if (is_fullscreen)
+                {
+                    glfwSetWindowMonitor(
+                        window,
+                        NULL,
+                        impl.windowed_rect.corner[0],
+                        impl.windowed_rect.corner[1],
+                        impl.windowed_rect.size[0],
+                        impl.windowed_rect.size[1],
+                        GLFW_DONT_CARE);
+                }
+                else
+                {
+                    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+                    GLFWvidmode const* mode = glfwGetVideoMode(monitor);
+                    int x, y, width, height;
+                    glfwGetWindowPos(window, &x, &y);
+                    glfwGetWindowSize(window, &width, &height);
+                    impl.windowed_rect.corner = make_vector<int>(x, y);
+                    impl.windowed_rect.size = make_vector<int>(width, height);
+                    glfwSetWindowMonitor(
+                        window, monitor, 0, 0, mode->width, mode->height, 0);
+                }
+                impl.fullscreen = !is_fullscreen;
+                break;
+            }
             default:
                 process_key_press(
                     get_system(window),
@@ -196,7 +227,7 @@ void
 mouse_motion_callback(GLFWwindow* window, double x, double y)
 {
     process_mouse_motion(get_system(window), make_vector(x, y));
-    update_ui(get_impl(window));
+    // update_ui(get_impl(window));
 }
 
 void
@@ -227,6 +258,8 @@ reset_skia(glfw_window_impl& impl, vector<2, unsigned> size)
     framebuffer_info.fFBOID = 0;
     framebuffer_info.fFormat = GL_RGBA8;
 
+    glfwMakeContextCurrent(impl.glfw_window);
+
     auto backend_render_target = GrBackendRenderTargets::MakeGL(
         size[0], size[1], 0, 0, framebuffer_info);
 
@@ -253,19 +286,35 @@ init_skia(glfw_window_impl& impl, vector<2, unsigned> size)
         {
             throw alia::exception("SkLoadICU failed");
         }
+        globally_initialized = true;
     }
 
     // impl.font_collection = sk_make_sp<skia::textlayout::FontCollection>();
     // impl.font_collection->setDefaultFontManager(SkFontMgr::RefDefault());
 
+    glfwMakeContextCurrent(impl.glfw_window);
     impl.skia_graphics_context.reset(
         GrDirectContexts::MakeGL(nullptr, GrContextOptions()).release());
+
     reset_skia(impl, size);
+}
+
+static GrDirectContext* the_skia_graphics_context;
+
+void
+reset_skia_context()
+{
+    the_skia_graphics_context->resetContext();
 }
 
 void
 render_ui(glfw_window_impl& impl)
 {
+    glfwMakeContextCurrent(impl.glfw_window);
+
+    // glPushAttrib(GL_ALL_ATTRIB_BITS);
+    // glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
+
     // TODO: Track this ourselves.
     int width, height;
     glfwGetFramebufferSize(impl.glfw_window, &width, &height);
@@ -277,27 +326,13 @@ render_ui(glfw_window_impl& impl)
     canvas.resetMatrix();
     canvas.clipRect(SkRect::MakeWH(SkScalar(width), SkScalar(height)));
 
-    // TODO: Don't clear automatically.
-    {
-        SkPaint paint;
-        paint.setColor(as_skcolor(impl.system.theme.surface));
-        canvas.drawPaint(paint);
-    }
+    the_skia_graphics_context = impl.skia_graphics_context.get();
 
     {
         render_event event;
         event.canvas = impl.skia_surface->getCanvas();
         dispatch_event(impl.system, event, RENDER_EVENT);
     }
-
-    // if (impl.system.root_widget)
-    // {
-    //     impl.system.root_widget->render(event);
-    // }
-    // else
-    // {
-    //     // TODO: Clear the canvas?
-    // }
 
     // {
     //     std::chrono::steady_clock::time_point end
@@ -319,7 +354,6 @@ render_ui(glfw_window_impl& impl)
 void
 update_ui(glfw_window_impl& impl)
 {
-    // TODO: Track this ourselves.
     int width, height;
     glfwGetFramebufferSize(impl.glfw_window, &width, &height);
 
@@ -378,6 +412,13 @@ framebuffer_size_callback(GLFWwindow* window, int width, int height)
 }
 
 void
+content_scale_callback(GLFWwindow* window, float xscale, float yscale)
+{
+    auto& impl = get_impl(window);
+    impl.system.ppi = make_vector<float>(xscale * 96.f, yscale * 96.f);
+}
+
+void
 init_window(
     glfw_window_impl& impl, std::string const& title, vector<2, unsigned> size)
 {
@@ -389,11 +430,27 @@ init_window(
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_STENCIL_BITS, 0);
     glfwWindowHint(GLFW_DEPTH_BITS, 0);
+    glfwWindowHint(GLFW_DOUBLEBUFFER, GL_TRUE);
 
+    impl.windowed_rect = make_box<2, int>(
+        make_vector<int>(100, 100), make_vector<int>(size[0], size[1]));
+    impl.fullscreen = false;
+
+    // GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+    // GLFWvidmode const* mode = glfwGetVideoMode(monitor);
+    // GLFWwindow* window = glfwCreateWindow(
+    //     mode->width, mode->height, title.c_str(), monitor, NULL);
     GLFWwindow* window
         = glfwCreateWindow(size[0], size[1], title.c_str(), NULL, NULL);
     if (!window)
         throw alia::exception("GLFW window creation failed");
+
+    float xscale, yscale;
+    glfwGetWindowContentScale(window, &xscale, &yscale);
+    impl.system.ppi = make_vector<float>(xscale * 96.f, yscale * 96.f);
+
+    glfwSetWindowContentScaleCallback(window, content_scale_callback);
+
     glfwSetWindowUserPointer(window, &impl);
 
     glfwSetMouseButtonCallback(window, mouse_button_callback);
@@ -404,10 +461,6 @@ init_window(
     glfwSetKeyCallback(window, key_event_callback);
 
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-
-    // TODO: Do this elsewhere?
-    glfwMakeContextCurrent(window);
-    // glfwSwapInterval(0);
 
     impl.glfw_window = window;
 }
@@ -427,20 +480,17 @@ glfw_window::glfw_window(
     initialize(
         impl_->system,
         controller,
+        nullptr,
         std::make_shared<glfw_os_interface>(*impl_),
         std::make_shared<glfw_window_interface>(*impl_));
 
     init_window(*impl_, title, size);
 
-    // TODO: Do this in a better way.
     int width, height;
     glfwGetFramebufferSize(impl_->glfw_window, &width, &height);
     impl_->system.surface_size = make_vector<unsigned>(width, height);
 
-    init_skia(*impl_, size);
-
-    // TODO: Not this.
-    // impl_->system.font_collection = impl_->font_collection;
+    init_skia(*impl_, make_vector<unsigned>(width, height));
 
     // Perform the initial update.
     update_ui(*impl_);

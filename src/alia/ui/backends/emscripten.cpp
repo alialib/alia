@@ -224,6 +224,7 @@ init_skia(emscripten_canvas_impl& impl, vector<2, unsigned> size)
     //         std::cout << "SkLoadICU failed" << std::endl;
     //         throw alia::exception("SkLoadICU failed");
     //     }
+    //     globally_initialized = true;
     // }
 
     // impl.font_collection = sk_make_sp<skia::textlayout::FontCollection>();

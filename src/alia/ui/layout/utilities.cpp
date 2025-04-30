@@ -68,9 +68,9 @@ layout
 add_default_size(layout const& layout_spec, absolute_size const& size)
 {
     layout adjusted_spec = layout_spec;
-    if (adjusted_spec.size[0].length <= 0)
+    if (adjusted_spec.size[0] <= 0)
         adjusted_spec.size[0] = size[0];
-    if (adjusted_spec.size[1].length <= 0)
+    if (adjusted_spec.size[1] <= 0)
         adjusted_spec.size[1] = size[1];
     return adjusted_spec;
 }
@@ -122,44 +122,9 @@ resolve_absolute_length(
     vector<2, float> const& ppi,
     layout_style_info const& style_info,
     unsigned axis,
-    absolute_length const& length)
+    absolute_length length)
 {
-    float scale_factor;
-    switch (length.units)
-    {
-        case PIXELS:
-        default:
-            scale_factor = style_info.magnification;
-            break;
-        case UNMAGNIFIED_PIXELS:
-            scale_factor = 1;
-            break;
-        case INCHES:
-            scale_factor = style_info.magnification * ppi[axis];
-            break;
-        case CM:
-            scale_factor = style_info.magnification * ppi[axis] / 2.54f;
-            break;
-        case MM:
-            scale_factor = style_info.magnification * ppi[axis] / 25.4f;
-            break;
-        case POINT:
-            scale_factor = style_info.magnification * ppi[axis] / 72.f;
-            break;
-        case PICA:
-            scale_factor = style_info.magnification * ppi[axis] / 6.f;
-            break;
-        case CHARS:
-            scale_factor = style_info.character_size[axis];
-            break;
-        case EM:
-            scale_factor = style_info.font_size;
-            break;
-        case EX:
-            scale_factor = style_info.x_height;
-            break;
-    }
-    return length.length * scale_factor;
+    return length * style_info.magnification * ppi[axis] / 96.f;
 }
 
 vector<2, float>
@@ -175,7 +140,7 @@ resolve_absolute_size(
 
 float
 resolve_absolute_length(
-    layout_traversal& traversal, unsigned axis, absolute_length const& length)
+    layout_traversal& traversal, unsigned axis, absolute_length length)
 {
     return resolve_absolute_length(
         traversal.ppi, *traversal.style_info, axis, length);
@@ -185,56 +150,6 @@ vector<2, float>
 resolve_absolute_size(layout_traversal& traversal, absolute_size const& size)
 {
     return resolve_absolute_size(traversal.ppi, *traversal.style_info, size);
-}
-
-float
-resolve_relative_length(
-    vector<2, float> const& ppi,
-    layout_style_info const& style_info,
-    unsigned axis,
-    relative_length const& length,
-    float full_length)
-{
-    return length.is_relative
-             ? length.length * full_length
-             : resolve_absolute_length(
-                   ppi,
-                   style_info,
-                   axis,
-                   absolute_length(length.length, length.units));
-}
-
-vector<2, float>
-resolve_relative_size(
-    vector<2, float> const& ppi,
-    layout_style_info const& style_info,
-    relative_size const& size,
-    vector<2, float> const& full_size)
-{
-    return make_vector(
-        resolve_relative_length(ppi, style_info, 0, size[0], full_size[0]),
-        resolve_relative_length(ppi, style_info, 1, size[1], full_size[1]));
-}
-
-float
-resolve_relative_length(
-    layout_traversal& traversal,
-    unsigned axis,
-    relative_length const& length,
-    float full_length)
-{
-    return resolve_relative_length(
-        traversal.ppi, *traversal.style_info, axis, length, full_length);
-}
-
-vector<2, float>
-resolve_relative_size(
-    layout_traversal& traversal,
-    relative_size const& size,
-    vector<2, float> const& full_size)
-{
-    return resolve_relative_size(
-        traversal.ppi, *traversal.style_info, size, full_size);
 }
 
 box_border_width<float>
@@ -279,8 +194,7 @@ resolve_layout_spec(
     layout const& spec,
     layout_flag_set default_flags)
 {
-    resolved.size
-        = as_layout_size(resolve_absolute_size(traversal, spec.size));
+    resolved.size = spec.size;
     resolved.flags.code
         = ((spec.flags.code & X_ALIGNMENT_MASK_CODE) != 0
                ? (spec.flags.code & X_ALIGNMENT_MASK_CODE)
@@ -507,11 +421,10 @@ layout_leaf::refresh_layout(
 {
     if (traversal.is_refresh_pass)
     {
-        if (detect_layout_change(traversal, &layout_spec_, layout_spec))
-        {
-            resolve_layout_spec(
-                traversal, resolved_spec_, layout_spec, default_flags);
-        }
+        resolved_layout_spec resolved_spec;
+        resolve_layout_spec(
+            traversal, resolved_spec, layout_spec, default_flags);
+        detect_layout_change(traversal, &resolved_spec_, resolved_spec);
         detect_layout_change(traversal, &requirements_, requirements);
     }
 }

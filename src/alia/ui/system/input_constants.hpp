@@ -22,16 +22,23 @@ enum class mouse_button
 static constexpr unsigned max_supported_mouse_buttons = 4;
 
 // standard mouse cursors that are expected to be supplied by the backend
+// These are named after the web standard.
 enum class mouse_cursor
 {
-    DEFAULT,
-    CROSSHAIR,
     NONE,
+    DEFAULT,
+    WAIT,
+    CROSSHAIR,
     TEXT,
+    NOT_ALLOWED,
     POINTER,
     MOVE,
     EW_RESIZE,
     NS_RESIZE,
+    NESW_RESIZE,
+    NWSE_RESIZE,
+    ZOOM_IN,
+    ZOOM_OUT
 };
 
 // codes for all the keyboard keys recognized by alia
@@ -157,7 +164,10 @@ enum class key_code
     RIGHT_CONTROL = 345,
     RIGHT_ALT = 346,
     RIGHT_SUPER = 347,
-    MENU = 348
+    MENU = 348,
+
+    CLEAR = 1024,
+    HELP,
 };
 
 // keyboard modifier keys

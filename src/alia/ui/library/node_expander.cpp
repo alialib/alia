@@ -42,9 +42,10 @@ extract_node_expander_style_info(dataless_ui_context ctx)
 {
     auto const& theme = get_system(ctx).theme;
     return node_expander_style_info{
-        .normal_color = theme.on_surface,
-        .disabled_color = interpolate(theme.surface, theme.on_surface, 0.4f),
-        .highlight_color = theme.primary};
+        .normal_color = theme.structural.base.main,
+        .disabled_color
+        = lerp(theme.background.base.main, theme.structural.base.main, 0.4f),
+        .highlight_color = theme.accent.base.main};
 }
 
 void
@@ -83,7 +84,7 @@ render_node_expander(
     canvas.translate(
         position[0] + region.size[0] / SkIntToScalar(2),
         position[1] + region.size[1] / SkIntToScalar(2));
-    canvas.rotate(interpolate(0.f, 90.f, smoothed_state));
+    canvas.rotate(lerp(0.f, 90.f, smoothed_state));
 
     {
         SkPaint paint;
@@ -126,7 +127,7 @@ render_node_expander(
         SkPaint paint;
         paint.setAntiAlias(true);
         paint.setColor(SkColorSetARGB(
-            0x20,
+            0x30,
             style.highlight_color.r,
             style.highlight_color.g,
             style.highlight_color.b));

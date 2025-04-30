@@ -3,7 +3,9 @@
 #include <alia/ui/color.hpp>
 #include <alia/ui/context.hpp>
 #include <alia/ui/events.hpp>
+#include <alia/ui/layout/simple.hpp>
 #include <alia/ui/layout/specification.hpp>
+#include <alia/ui/text/display.hpp>
 #include <alia/ui/utilities.hpp>
 #include <alia/ui/utilities/animation.hpp>
 #include <alia/ui/utilities/click_flares.hpp>
@@ -46,15 +48,15 @@ extract_checkbox_style_info(dataless_ui_context ctx)
 {
     auto const& theme = get_system(ctx).theme;
     return {
-        .highlight_color = theme.primary,
+        .highlight_color = theme.accent.base.main,
         .disabled_fill_color
-        = interpolate(theme.surface, theme.on_surface, 0.4f),
-        .disabled_check_color = theme.surface,
+        = lerp(theme.background.base.main, theme.structural.base.main, 0.4f),
+        .disabled_check_color = theme.background.base.main,
         .disabled_outline_color
-        = interpolate(theme.surface, theme.on_surface, 0.4f),
-        .outline_color = theme.on_surface,
-        .checked_fill_color = theme.primary,
-        .check_color = theme.on_primary,
+        = lerp(theme.background.base.main, theme.structural.base.main, 0.4f),
+        .outline_color = theme.structural.base.main,
+        .checked_fill_color = theme.accent.base.main,
+        .check_color = theme.structural.base.main,
     };
 }
 
@@ -147,7 +149,7 @@ render_checkbox(
     {
         SkPaint paint;
         paint.setAntiAlias(true);
-        paint.setColor(as_skcolor(rgba8(style.highlight_color, 0x20)));
+        paint.setColor(as_skcolor(rgba8(style.highlight_color, 0x30)));
         canvas.drawPath(SkPath::Circle(center[0], center[1], 32.f), paint);
     }
 
@@ -162,7 +164,7 @@ render_checkbox(
             paint.setAntiAlias(true);
             paint.setStyle(SkPaint::kStrokeAndFill_Style);
             paint.setColor(as_skcolor(style.checked_fill_color));
-            paint.setStrokeWidth(4);
+            paint.setStrokeWidth(4 * get_system(ctx).magnification);
             canvas.drawPath(
                 SkPath::RRect(as_skrect(checkbox_rect), 2, 2), paint);
         }
@@ -171,7 +173,7 @@ render_checkbox(
             paint.setAntiAlias(true);
             paint.setStyle(SkPaint::kStroke_Style);
             paint.setColor(as_skcolor(style.check_color));
-            paint.setStrokeWidth(4);
+            paint.setStrokeWidth(4 * get_system(ctx).magnification);
             paint.setStrokeCap(SkPaint::kSquare_Cap);
             SkPath path;
             path.incReserve(3);
@@ -200,8 +202,8 @@ render_checkbox(
         canvas.drawPath(SkPath::RRect(as_skrect(checkbox_rect), 2, 2), paint);
     }
 
-    rgb8 color = interpolate(
-        style.outline_color, style.checked_fill_color, smoothed_state);
+    rgb8 color
+        = lerp(style.outline_color, style.checked_fill_color, smoothed_state);
 
     render_click_flares(
         ctx,
@@ -212,12 +214,17 @@ render_checkbox(
 }
 
 void
-do_checkbox(ui_context ctx, duplex<bool> checked, layout const& layout_spec)
+do_checkbox(
+    ui_context ctx,
+    duplex<bool> checked,
+    layout const& layout_spec,
+    widget_id id)
 {
     checkbox_data* data_ptr;
     get_cached_data(ctx, &data_ptr);
     auto& data = *data_ptr;
-    auto const id = data_ptr;
+    if (!id)
+        id = data_ptr;
 
     bool const is_disabled = !signal_ready_to_write(checked);
 
@@ -227,7 +234,11 @@ do_checkbox(ui_context ctx, duplex<bool> checked, layout const& layout_spec)
             data.layout_node.refresh_layout(
                 get_layout_traversal(ctx),
                 layout_spec,
-                leaf_layout_requirements(make_layout_vector(48, 48), 32, 16),
+                leaf_layout_requirements(
+                    resolve_absolute_size(
+                        get_layout_traversal(ctx), make_layout_vector(32, 32)),
+                    resolve_absolute_length(get_layout_traversal(ctx), 1, 20),
+                    resolve_absolute_length(get_layout_traversal(ctx), 1, 12)),
                 LEFT | BASELINE_Y | PADDED);
 
             add_layout_node(
@@ -279,6 +290,16 @@ do_checkbox(ui_context ctx, duplex<bool> checked, layout const& layout_spec)
         }
     }
     alia_end
+}
+
+void
+do_checkbox(ui_context ctx, duplex<bool> checked, char const* label)
+{
+    row_layout row(ctx);
+    auto id = get_widget_id(ctx);
+    do_box_region(ctx, id, row.region());
+    do_checkbox(ctx, checked, BASELINE_Y, id);
+    do_text(ctx, value(label), BASELINE_Y);
 }
 
 } // namespace alia

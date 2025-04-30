@@ -4,7 +4,9 @@
 #include <alia/ui/color.hpp>
 #include <alia/ui/context.hpp>
 #include <alia/ui/events.hpp>
+#include <alia/ui/layout/simple.hpp>
 #include <alia/ui/layout/specification.hpp>
+#include <alia/ui/text/display.hpp>
 #include <alia/ui/utilities.hpp>
 #include <alia/ui/utilities/animation.hpp>
 #include <alia/ui/utilities/click_flares.hpp>
@@ -36,8 +38,7 @@ struct radio_button_style_info
     rgb8 disabled_color;
     rgb8 highlight_color;
     rgb8 outline_color;
-    rgb8 selected_dot_color;
-    rgb8 unselected_dot_color;
+    rgb8 dot_color;
 };
 
 radio_button_style_info
@@ -45,11 +46,11 @@ extract_radio_button_style_info(dataless_ui_context ctx)
 {
     auto const& theme = get_system(ctx).theme;
     return {
-        .disabled_color = interpolate(theme.surface, theme.on_surface, 0.4f),
-        .highlight_color = theme.primary,
-        .outline_color = theme.on_surface,
-        .selected_dot_color = theme.primary,
-        .unselected_dot_color = theme.on_surface};
+        .disabled_color
+        = lerp(theme.background.base.main, theme.structural.base.main, 0.4f),
+        .highlight_color = theme.accent.base.main,
+        .outline_color = theme.structural.base.main,
+        .dot_color = theme.accent.base.main};
 }
 
 void
@@ -103,7 +104,7 @@ render_radio_button(
     {
         SkPaint paint;
         paint.setAntiAlias(true);
-        paint.setColor(as_skcolor(rgba8(style.highlight_color, 0x20)));
+        paint.setColor(as_skcolor(rgba8(style.highlight_color, 0x30)));
         canvas.drawPath(SkPath::Circle(center[0], center[1], 32.f), paint);
     }
 
@@ -115,15 +116,12 @@ render_radio_button(
         0.f,
         animated_transition{default_curve, 200});
 
-    rgb8 color = interpolate(
-        style.unselected_dot_color, style.selected_dot_color, smoothed_state);
-
     render_click_flares(
         ctx,
         ALIA_NESTED_BITPACK(data.bits, click_flare),
         state,
         center,
-        color);
+        style.dot_color);
 
     {
         SkPaint paint;
@@ -134,11 +132,11 @@ render_radio_button(
         canvas.drawPath(SkPath::Circle(center[0], center[1], 15.f), paint);
     }
 
-    float dot_radius = interpolate(0.f, 10.f, smoothed_state);
+    float dot_radius = lerp(0.f, 10.f, smoothed_state);
 
     SkPaint paint;
     paint.setAntiAlias(true);
-    paint.setColor(as_skcolor(color));
+    paint.setColor(as_skcolor(style.dot_color));
     paint.setStrokeWidth(3);
     canvas.drawPath(SkPath::Circle(center[0], center[1], dot_radius), paint);
 }
@@ -210,6 +208,16 @@ do_radio_button(
         }
     }
     alia_end
+}
+
+void
+do_radio_button(ui_context ctx, duplex<bool> selected, char const* label)
+{
+    row_layout row(ctx);
+    auto id = get_widget_id(ctx);
+    do_box_region(ctx, id, row.region());
+    do_radio_button(ctx, selected, BASELINE_Y, id);
+    do_text(ctx, value(label), BASELINE_Y);
 }
 
 } // namespace alia

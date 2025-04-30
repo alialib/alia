@@ -16,6 +16,7 @@ void
 initialize(
     ui_system& system,
     std::function<void(ui_context)> controller,
+    external_interface* external,
     std::shared_ptr<os_interface> os,
     std::shared_ptr<window_interface> window);
 
@@ -63,17 +64,6 @@ void
 process_focus_loss(ui_system& ui, millisecond_count time);
 void
 process_focus_gain(ui_system& ui, millisecond_count time);
-
-// process_key_press calls both of the following.
-// process_focused_key_press will only pass the key to the widget with the
-// keyboard focus (if any).
-// process_background_key_press will pass it to any widget that's listening.
-bool
-process_focused_key_press(
-    ui_system& ui, millisecond_count time, key_event_info const& info);
-bool
-process_background_key_press(
-    ui_system& ui, millisecond_count time, key_event_info const& info);
 
 #endif
 

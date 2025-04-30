@@ -214,34 +214,34 @@ TEST_CASE("layout tests", "[ui]")
     // LEAF-ONLY TESTS
 
     DO_1LEAF_TEST(
-        { do_test_leaf1(ctx, size(50, 100, PIXELS)); },
+        { do_test_leaf1(ctx, size(50, 100)); },
         make_layout_vector(50, 100),
         layout_box(make_layout_vector(0, 0), make_layout_vector(50, 100)));
 
     // ALIGNMENT TESTS
 
     DO_1LEAF_TEST(
-        { do_test_leaf1(ctx, layout(size(10, 10, PIXELS), BOTTOM | RIGHT)); },
+        { do_test_leaf1(ctx, layout(size(10, 10), BOTTOM | RIGHT)); },
         make_layout_vector(100, 100),
         layout_box(make_layout_vector(90, 90), make_layout_vector(10, 10)));
     DO_1LEAF_TEST(
-        { do_test_leaf1(ctx, layout(size(10, 10, PIXELS), TOP | LEFT)); },
+        { do_test_leaf1(ctx, layout(size(10, 10), TOP | LEFT)); },
         make_layout_vector(100, 100),
         layout_box(make_layout_vector(0, 0), make_layout_vector(10, 10)));
     DO_1LEAF_TEST(
-        { do_test_leaf1(ctx, layout(size(10, 10, PIXELS), BOTTOM | LEFT)); },
+        { do_test_leaf1(ctx, layout(size(10, 10), BOTTOM | LEFT)); },
         make_layout_vector(100, 100),
         layout_box(make_layout_vector(0, 90), make_layout_vector(10, 10)));
     DO_1LEAF_TEST(
-        { do_test_leaf1(ctx, layout(size(10, 10, PIXELS), FILL)); },
+        { do_test_leaf1(ctx, layout(size(10, 10), FILL)); },
         make_layout_vector(100, 100),
         layout_box(make_layout_vector(0, 0), make_layout_vector(100, 100)));
     DO_1LEAF_TEST(
-        { do_test_leaf1(ctx, layout(size(10, 10, PIXELS), FILL_X | TOP)); },
+        { do_test_leaf1(ctx, layout(size(10, 10), FILL_X | TOP)); },
         make_layout_vector(100, 100),
         layout_box(make_layout_vector(0, 0), make_layout_vector(100, 10)));
     DO_1LEAF_TEST(
-        { do_test_leaf1(ctx, layout(size(10, 10, PIXELS), FILL_Y | RIGHT)); },
+        { do_test_leaf1(ctx, layout(size(10, 10), FILL_Y | RIGHT)); },
         make_layout_vector(100, 100),
         layout_box(make_layout_vector(90, 0), make_layout_vector(10, 100)));
 
@@ -250,7 +250,7 @@ TEST_CASE("layout tests", "[ui]")
     DO_2LEAF_TEST(
         {
             row_layout row(ctx);
-            do_test_leaf1(ctx, layout(size(100, 100, PIXELS)));
+            do_test_leaf1(ctx, layout(size(100, 100)));
             do_test_leaf2(ctx, GROW);
         },
         make_layout_vector(300, 100),
@@ -260,7 +260,7 @@ TEST_CASE("layout tests", "[ui]")
     DO_2LEAF_TEST(
         {
             column_layout column(ctx);
-            do_test_leaf1(ctx, layout(size(100, 100, PIXELS)));
+            do_test_leaf1(ctx, layout(size(100, 100)));
             do_test_leaf2(ctx, GROW);
         },
         make_layout_vector(100, 300),
@@ -270,7 +270,7 @@ TEST_CASE("layout tests", "[ui]")
     DO_1LEAF_TEST(
         {
             column_layout column(ctx);
-            do_test_leaf1(ctx, size(100, 100, PIXELS));
+            do_test_leaf1(ctx, size(100, 100));
         },
         make_layout_vector(100, 200),
         layout_box(make_layout_vector(0, 0), make_layout_vector(100, 100)));
@@ -278,7 +278,7 @@ TEST_CASE("layout tests", "[ui]")
     DO_1LEAF_TEST(
         {
             column_layout column(ctx);
-            do_test_leaf1(ctx, layout(size(100, 100, PIXELS), LEFT));
+            do_test_leaf1(ctx, layout(size(100, 100), LEFT));
         },
         make_layout_vector(200, 200),
         layout_box(make_layout_vector(0, 0), make_layout_vector(100, 100)));
@@ -304,7 +304,7 @@ TEST_CASE("layout tests", "[ui]")
     DO_2LEAF_TEST(
         {
             layered_layout layered(ctx);
-            do_test_leaf1(ctx, layout(size(100, 100, PIXELS)));
+            do_test_leaf1(ctx, layout(size(100, 100)));
             do_test_leaf2(ctx, GROW);
         },
         make_layout_vector(300, 100),
@@ -317,7 +317,7 @@ TEST_CASE("layout tests", "[ui]")
             do_spacer(ctx, GROW);
             {
                 layered_layout layered(ctx);
-                do_test_leaf1(ctx, size(10, 10, PIXELS));
+                do_test_leaf1(ctx, size(10, 10));
                 do_test_leaf2(ctx, FILL);
             }
         },
@@ -331,7 +331,7 @@ TEST_CASE("layout tests", "[ui]")
             do_spacer(ctx, GROW);
             {
                 layered_layout layered(ctx, GROW);
-                do_test_leaf1(ctx, size(10, 10, PIXELS));
+                do_test_leaf1(ctx, size(10, 10));
                 do_test_leaf2(ctx, FILL);
             }
         },
@@ -348,7 +348,7 @@ TEST_CASE("layout tests", "[ui]")
                 rotated_layout rotated(ctx);
                 {
                     column_layout nested_column(ctx);
-                    do_spacer(ctx, size(10, 20, PIXELS));
+                    do_spacer(ctx, size(10, 20));
                     do_test_leaf1(ctx, GROW);
                 }
             }
@@ -364,10 +364,10 @@ TEST_CASE("layout tests", "[ui]")
         {
             flow_layout flow(ctx);
             {
-                do_spacer(ctx, size(10, 20, PIXELS));
-                do_test_leaf1(ctx, size(20, 10, PIXELS));
-                do_spacer(ctx, size(30, 20, PIXELS));
-                do_test_leaf2(ctx, layout(size(20, 10, PIXELS), FILL));
+                do_spacer(ctx, size(10, 20));
+                do_test_leaf1(ctx, size(20, 10));
+                do_spacer(ctx, size(30, 20));
+                do_test_leaf2(ctx, layout(size(20, 10), FILL));
             }
         },
         make_layout_vector(50, 50),
@@ -380,13 +380,13 @@ TEST_CASE("layout tests", "[ui]")
             {
                 flow_layout flow(ctx);
                 {
-                    do_spacer(ctx, size(10, 20, PIXELS));
-                    do_test_leaf1(ctx, size(20, 10, PIXELS));
-                    do_spacer(ctx, size(30, 20, PIXELS));
-                    do_spacer(ctx, layout(size(20, 10, PIXELS), FILL));
+                    do_spacer(ctx, size(10, 20));
+                    do_test_leaf1(ctx, size(20, 10));
+                    do_spacer(ctx, size(30, 20));
+                    do_spacer(ctx, layout(size(20, 10), FILL));
                 }
             }
-            do_test_leaf2(ctx, layout(size(20, 10, PIXELS)));
+            do_test_leaf2(ctx, layout(size(20, 10)));
         },
         make_layout_vector(50, 100),
         layout_box(make_layout_vector(10, 0), make_layout_vector(20, 10)),
@@ -398,10 +398,10 @@ TEST_CASE("layout tests", "[ui]")
         {
             vertical_flow_layout flow(ctx);
             {
-                do_spacer(ctx, size(20, 20, PIXELS));
-                do_test_leaf1(ctx, layout(size(10, 20, PIXELS), FILL));
-                do_spacer(ctx, size(20, 10, PIXELS));
-                do_test_leaf2(ctx, layout(size(20, 10, PIXELS), FILL));
+                do_spacer(ctx, size(20, 20));
+                do_test_leaf1(ctx, layout(size(10, 20), FILL));
+                do_spacer(ctx, size(20, 10));
+                do_test_leaf2(ctx, layout(size(20, 10), FILL));
             }
         },
         make_layout_vector(50, 50),
@@ -414,13 +414,13 @@ TEST_CASE("layout tests", "[ui]")
             {
                 vertical_flow_layout flow(ctx);
                 {
-                    do_spacer(ctx, size(10, 20, PIXELS));
-                    do_test_leaf1(ctx, layout(size(10, 20, PIXELS), FILL));
-                    do_spacer(ctx, size(20, 10, PIXELS));
-                    do_spacer(ctx, layout(size(20, 10, PIXELS), FILL));
+                    do_spacer(ctx, size(10, 20));
+                    do_test_leaf1(ctx, layout(size(10, 20), FILL));
+                    do_spacer(ctx, size(20, 10));
+                    do_spacer(ctx, layout(size(20, 10), FILL));
                 }
             }
-            do_test_leaf2(ctx, size(20, 10, PIXELS));
+            do_test_leaf2(ctx, size(20, 10));
         },
         make_layout_vector(50, 100),
         layout_box(make_layout_vector(0, 20), make_layout_vector(20, 20)),
@@ -434,13 +434,13 @@ TEST_CASE("layout tests", "[ui]")
             grid_layout grid(ctx);
             {
                 grid_row r(grid);
-                do_spacer(ctx, size(20, 20, PIXELS));
-                do_spacer(ctx, size(30, 10, PIXELS));
+                do_spacer(ctx, size(20, 20));
+                do_spacer(ctx, size(30, 10));
             }
             {
                 grid_row r(grid);
-                do_test_leaf1(ctx, layout(size(10, 20, PIXELS), FILL));
-                do_test_leaf2(ctx, layout(size(10, 10, PIXELS), TOP | LEFT));
+                do_test_leaf1(ctx, layout(size(10, 20), FILL));
+                do_test_leaf2(ctx, layout(size(10, 10), TOP | LEFT));
             }
         },
         make_layout_vector(50, 50),
@@ -453,13 +453,13 @@ TEST_CASE("layout tests", "[ui]")
             grid_layout grid(ctx);
             {
                 grid_row r(grid);
-                do_spacer(ctx, size(20, 20, PIXELS));
-                do_spacer(ctx, layout(size(30, 10, PIXELS), GROW));
+                do_spacer(ctx, size(20, 20));
+                do_spacer(ctx, layout(size(30, 10), GROW));
             }
             {
                 grid_row r(grid);
-                do_test_leaf1(ctx, layout(size(10, 20, PIXELS), FILL));
-                do_test_leaf2(ctx, layout(size(10, 10, PIXELS), FILL));
+                do_test_leaf1(ctx, layout(size(10, 20), FILL));
+                do_test_leaf2(ctx, layout(size(10, 10), FILL));
             }
         },
         make_layout_vector(100, 50),
@@ -469,16 +469,16 @@ TEST_CASE("layout tests", "[ui]")
     // with column spacing
     DO_2LEAF_TEST(
         {
-            grid_layout grid(ctx, default_layout, absolute_length(10, PIXELS));
+            grid_layout grid(ctx, default_layout, absolute_length(10));
             {
                 grid_row r(grid);
-                do_spacer(ctx, size(20, 20, PIXELS));
-                do_spacer(ctx, layout(size(30, 10, PIXELS), GROW));
+                do_spacer(ctx, size(20, 20));
+                do_spacer(ctx, layout(size(30, 10), GROW));
             }
             {
                 grid_row r(grid);
-                do_test_leaf1(ctx, layout(size(10, 20, PIXELS), FILL));
-                do_test_leaf2(ctx, layout(size(10, 10, PIXELS), FILL));
+                do_test_leaf1(ctx, layout(size(10, 20), FILL));
+                do_test_leaf2(ctx, layout(size(10, 10), FILL));
             }
         },
         make_layout_vector(100, 50),
@@ -493,15 +493,15 @@ TEST_CASE("layout tests", "[ui]")
                 column_layout c(ctx, LEFT);
                 {
                     grid_row r(grid);
-                    do_spacer(ctx, size(20, 20, PIXELS));
-                    do_spacer(ctx, size(20, 10, PIXELS));
+                    do_spacer(ctx, size(20, 20));
+                    do_spacer(ctx, size(20, 10));
                 }
-                do_test_leaf1(ctx, layout(size(10, 20, PIXELS), FILL));
+                do_test_leaf1(ctx, layout(size(10, 20), FILL));
             }
             {
                 grid_row r(grid);
-                do_spacer(ctx, size(20, 20, PIXELS));
-                do_spacer(ctx, size(50, 10, PIXELS));
+                do_spacer(ctx, size(20, 20));
+                do_spacer(ctx, size(50, 10));
             }
         },
         make_layout_vector(100, 50),
@@ -517,14 +517,13 @@ TEST_CASE("layout tests", "[ui]")
                 uniform_grid_layout grid(ctx);
                 {
                     uniform_grid_row r(grid);
-                    do_spacer(ctx, size(20, 20, PIXELS));
-                    do_spacer(ctx, size(30, 10, PIXELS));
+                    do_spacer(ctx, size(20, 20));
+                    do_spacer(ctx, size(30, 10));
                 }
                 {
                     uniform_grid_row r(grid);
-                    do_test_leaf1(ctx, layout(size(10, 20, PIXELS), FILL));
-                    do_test_leaf2(
-                        ctx, layout(size(10, 10, PIXELS), BOTTOM | LEFT));
+                    do_test_leaf1(ctx, layout(size(10, 20), FILL));
+                    do_test_leaf2(ctx, layout(size(10, 10), BOTTOM | LEFT));
                 }
             }
         },
@@ -540,14 +539,13 @@ TEST_CASE("layout tests", "[ui]")
                 uniform_grid_layout grid(ctx, GROW);
                 {
                     uniform_grid_row r(grid);
-                    do_spacer(ctx, size(20, 20, PIXELS));
-                    do_spacer(ctx, size(30, 10, PIXELS));
+                    do_spacer(ctx, size(20, 20));
+                    do_spacer(ctx, size(30, 10));
                 }
                 {
                     uniform_grid_row r(grid);
-                    do_test_leaf1(ctx, layout(size(10, 20, PIXELS), FILL));
-                    do_test_leaf2(
-                        ctx, layout(size(10, 10, PIXELS), BOTTOM | LEFT));
+                    do_test_leaf1(ctx, layout(size(10, 20), FILL));
+                    do_test_leaf2(ctx, layout(size(10, 10), BOTTOM | LEFT));
                 }
             }
         },
@@ -563,13 +561,13 @@ TEST_CASE("layout tests", "[ui]")
                 uniform_grid_layout grid(ctx);
                 {
                     uniform_grid_row r(grid);
-                    do_spacer(ctx, size(20, 20, PIXELS));
-                    do_spacer(ctx, layout(size(30, 10, PIXELS), GROW));
+                    do_spacer(ctx, size(20, 20));
+                    do_spacer(ctx, layout(size(30, 10), GROW));
                 }
                 {
                     uniform_grid_row r(grid);
-                    do_test_leaf1(ctx, layout(size(10, 20, PIXELS), FILL));
-                    do_test_leaf2(ctx, layout(size(10, 10, PIXELS), FILL));
+                    do_test_leaf1(ctx, layout(size(10, 20), FILL));
+                    do_test_leaf2(ctx, layout(size(10, 10), FILL));
                 }
             }
         },
@@ -583,17 +581,16 @@ TEST_CASE("layout tests", "[ui]")
             column_layout c(ctx);
             {
                 uniform_grid_layout grid(
-                    ctx, default_layout, absolute_length(10, PIXELS));
+                    ctx, default_layout, absolute_length(10));
                 {
                     uniform_grid_row r(grid);
-                    do_spacer(ctx, size(20, 20, PIXELS));
-                    do_spacer(ctx, size(30, 10, PIXELS));
+                    do_spacer(ctx, size(20, 20));
+                    do_spacer(ctx, size(30, 10));
                 }
                 {
                     uniform_grid_row r(grid);
-                    do_test_leaf1(ctx, layout(size(10, 20, PIXELS), FILL));
-                    do_test_leaf2(
-                        ctx, layout(size(10, 10, PIXELS), BOTTOM | LEFT));
+                    do_test_leaf1(ctx, layout(size(10, 20), FILL));
+                    do_test_leaf2(ctx, layout(size(10, 10), BOTTOM | LEFT));
                 }
             }
         },
@@ -611,15 +608,15 @@ TEST_CASE("layout tests", "[ui]")
                     column_layout nested_column(ctx, LEFT);
                     {
                         uniform_grid_row row(grid);
-                        do_spacer(ctx, size(20, 20, PIXELS));
-                        do_spacer(ctx, size(20, 10, PIXELS));
+                        do_spacer(ctx, size(20, 20));
+                        do_spacer(ctx, size(20, 10));
                     }
-                    do_test_leaf1(ctx, layout(size(10, 20, PIXELS), FILL));
+                    do_test_leaf1(ctx, layout(size(10, 20), FILL));
                 }
                 {
                     uniform_grid_row row(grid);
-                    do_spacer(ctx, size(20, 30, PIXELS));
-                    do_spacer(ctx, size(40, 10, PIXELS));
+                    do_spacer(ctx, size(20, 30));
+                    do_spacer(ctx, size(40, 10));
                 }
             }
         },
@@ -664,17 +661,15 @@ TEST_CASE("layout tests", "[ui]")
                         for (int j = 0; j != 100; ++j)
                         {
                             uniform_grid_row row(grid);
-                            do_spacer(ctx, size(20, 20, PIXELS));
-                            do_spacer(
-                                ctx,
-                                size(20, float((i >> 2) & 7) * 5, PIXELS));
+                            do_spacer(ctx, size(20, 20));
+                            do_spacer(ctx, size(20, float((i >> 2) & 7) * 5));
                         }
-                        do_test_leaf1(ctx, layout(size(10, 20, PIXELS), FILL));
+                        do_test_leaf1(ctx, layout(size(10, 20), FILL));
                     }
                     {
                         uniform_grid_row row(grid);
-                        do_spacer(ctx, size(20, 30, PIXELS));
-                        do_spacer(ctx, size(40, 10, PIXELS));
+                        do_spacer(ctx, size(20, 30));
+                        do_spacer(ctx, size(40, 10));
                     }
                 }
             }
@@ -719,9 +714,8 @@ TEST_CASE("layout tests", "[ui]")
                     for (int j = 0; j != 100; ++j)
                     {
                         row_layout row(ctx);
-                        do_spacer(ctx, size(20, 20, PIXELS));
-                        do_spacer(
-                            ctx, size(20, float((i >> 2) & 7) * 5, PIXELS));
+                        do_spacer(ctx, size(20, 20));
+                        do_spacer(ctx, size(20, float((i >> 2) & 7) * 5));
                     }
                 }
             }
@@ -767,9 +761,9 @@ TEST_CASE("layout tests", "[ui]")
                     for (int j = 0; j != 100; ++j)
                     {
                         row_layout row(ctx, GROW);
-                        do_spacer(ctx, size(20, 20, PIXELS));
+                        do_spacer(ctx, size(20, 20));
                         do_spacer(ctx, GROW);
-                        do_spacer(ctx, width(float((i >> 2) & 7) * 5, PIXELS));
+                        do_spacer(ctx, width(float((i >> 2) & 7) * 5));
                     }
                 }
             }

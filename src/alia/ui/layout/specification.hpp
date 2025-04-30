@@ -20,94 +20,9 @@ make_layout_vector(layout_scalar x, layout_scalar y)
 
 typedef box<2, layout_scalar> layout_box;
 
-enum layout_units
-{
-    PIXELS,
+typedef layout_scalar absolute_length;
 
-    // won't be affected by the global magnification factor
-    UNMAGNIFIED_PIXELS,
-
-    // physical units
-    INCHES,
-    CM,
-    MM,
-    POINT, // point - 1/72 of an inch
-    PICA, // pica - 12 points
-
-    // character cells - One character cell is equal to the size of an average
-    // character in the current font, including ascent and descent.
-    // Unlike other units, CHARS has a different interpretation for X and Y
-    // (i.e., 1 CHAR x 1 CHAR is probably not a square).
-    CHARS,
-
-    // borrowed from CSS - One EM is equal to the current font size.
-    // One EX is equal to the height of the character 'x' in the current font.
-    EM,
-    EX,
-};
-
-// Absolute lengths are used to specify the size of stand-alone widgets.
-struct absolute_length
-{
-    float length;
-    layout_units units;
-
-    absolute_length(float length, layout_units units)
-        : length(length), units(units)
-    {
-    }
-    absolute_length()
-    {
-    }
-};
-inline bool
-operator==(absolute_length const& a, absolute_length const& b)
-{
-    return a.length == b.length && a.units == b.units;
-}
-inline bool
-operator!=(absolute_length const& a, absolute_length const& b)
-{
-    return !(a == b);
-}
-
-// 2D version of absolute_length
-typedef vector<2, absolute_length> absolute_size;
-
-// `relative_length` is used to specify the size of widget components.
-// They can be either be specified in absolute units or as a fraction of the
-// full widget size.
-struct relative_length
-{
-    bool is_relative;
-    float length;
-    layout_units units; // only relevant if is_relative is false
-
-    relative_length(float length, layout_units units)
-        : is_relative(false), length(length), units(units)
-    {
-    }
-    relative_length(float length) : is_relative(true), length(length)
-    {
-    }
-    relative_length()
-    {
-    }
-};
-inline bool
-operator==(relative_length const& a, relative_length const& b)
-{
-    return a.length == b.length && a.is_relative == b.is_relative
-        && (!a.is_relative || a.units == b.units);
-}
-inline bool
-operator!=(relative_length const& a, relative_length const& b)
-{
-    return !(a == b);
-}
-
-// 2D version of relative_length
-typedef vector<2, relative_length> relative_size;
+typedef vector<2, layout_scalar> absolute_size;
 
 // box_border_width specifies the width of the borders of a box.
 // Each side can have a different border width.
@@ -123,27 +38,22 @@ struct box_border_width
 
 // some convenience functions for specifying widget sizes
 inline absolute_size
-size(float w, float h, layout_units u)
+size(absolute_length w, absolute_length h)
 {
-    return make_vector(absolute_length(w, u), absolute_length(h, u));
-}
-inline absolute_size
-size(float w, layout_units wu, float h, layout_units hu)
-{
-    return make_vector(absolute_length(w, wu), absolute_length(h, hu));
+    return make_vector(w, h);
 }
 // These only specify a single dimension.
 // Note that setting the other dimension to 0 is harmless as these are
 // specifying a minimum size.
 inline absolute_size
-width(float w, layout_units u)
+width(absolute_length w)
 {
-    return make_vector(absolute_length(w, u), absolute_length(0, PIXELS));
+    return make_vector(w, 0.f);
 }
 inline absolute_size
-height(float h, layout_units u)
+height(absolute_length h)
 {
-    return make_vector(absolute_length(0, PIXELS), absolute_length(h, u));
+    return make_vector(0.f, h);
 }
 
 // The following flags are used to specify various aspects of an element's
@@ -199,33 +109,26 @@ ALIA_DEFINE_FLAG(layout, 0x3000, PADDING_MASK)
 struct layout
 {
     layout(
-        absolute_size const& size = alia::size(0, 0, PIXELS),
+        absolute_size const& size = alia::size(0, 0),
         layout_flag_set flags = NO_FLAGS,
         float growth_factor = 0)
         : size(size), flags(flags), growth_factor(growth_factor)
     {
     }
+
     layout(layout_flag_set flags, float growth_factor = 0)
-        : size(alia::size(0, 0, PIXELS)),
-          flags(flags),
-          growth_factor(growth_factor)
+        : size(alia::size(0, 0)), flags(flags), growth_factor(growth_factor)
     {
     }
+
     absolute_size size;
     layout_flag_set flags;
     float growth_factor;
+
+    // auto
+    // operator<=>(layout const&) const
+    //     = default;
 };
-inline bool
-operator==(layout const& a, layout const& b)
-{
-    return a.size == b.size && a.flags == b.flags
-        && a.growth_factor == b.growth_factor;
-}
-inline bool
-operator!=(layout const& a, layout const& b)
-{
-    return !(a == b);
-}
 
 layout const default_layout;
 

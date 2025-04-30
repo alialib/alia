@@ -15,6 +15,9 @@ do_radio_button(
     layout const& layout_spec = layout(TOP | LEFT | PADDED),
     widget_id id = auto_id);
 
-}
+void
+do_radio_button(ui_context ctx, duplex<bool> selected, char const* label);
+
+} // namespace alia
 
 #endif

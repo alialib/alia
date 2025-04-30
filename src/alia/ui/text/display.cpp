@@ -1,4 +1,4 @@
-#include <alia/ui/text/components.hpp>
+#include <alia/ui/text/display.hpp>
 
 #include <alia/ui/events.hpp>
 #include <alia/ui/layout/utilities.hpp>

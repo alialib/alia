@@ -54,14 +54,14 @@ extract_scrollbar_style_info(dataless_ui_context ctx)
 {
     auto const& theme = get_system(ctx).theme;
     return {
-        .track_color = theme.surface_container_levels[3],
-        .track_highlight_color = theme.surface_container_levels[4],
-        .thumb_color = interpolate(
-            theme.surface_container_levels[4], theme.on_surface_variant, 0.3f),
-        .thumb_highlight_color = theme.primary,
-        .button_background_color = theme.surface_container_levels[4],
-        .button_foreground_color = theme.secondary,
-        .button_highlight_color = theme.primary,
+        .track_color = lerp(
+            theme.background.weaker[0].main, theme.background.base.main, 0.5),
+        .track_highlight_color = theme.background.stronger[0].main,
+        .thumb_color = theme.background.stronger[0].main,
+        .thumb_highlight_color = theme.background.stronger[1].main,
+        .button_background_color = theme.background.stronger[0].main,
+        .button_foreground_color = theme.structural.base.main,
+        .button_highlight_color = theme.accent.base.main,
     };
 }
 
@@ -77,13 +77,13 @@ draw_scrollbar_background(
     paint.setAntiAlias(true);
     if (is_active(status))
     {
-        paint.setColor(as_skcolor(interpolate(
-            style.track_color, style.track_highlight_color, 0.2f)));
+        paint.setColor(as_skcolor(
+            lerp(style.track_color, style.track_highlight_color, 0.2f)));
     }
     else if (is_hovered(status))
     {
-        paint.setColor(as_skcolor(interpolate(
-            style.track_color, style.track_highlight_color, 0.4f)));
+        paint.setColor(as_skcolor(
+            lerp(style.track_color, style.track_highlight_color, 0.4f)));
     }
     else
     {
@@ -104,13 +104,13 @@ draw_scrollbar_thumb(
     paint.setAntiAlias(true);
     if (is_active(status))
     {
-        paint.setColor(as_skcolor(interpolate(
-            style.thumb_color, style.thumb_highlight_color, 0.2f)));
+        paint.setColor(as_skcolor(
+            lerp(style.thumb_color, style.thumb_highlight_color, 0.2f)));
     }
     else if (is_hovered(status))
     {
-        paint.setColor(as_skcolor(interpolate(
-            style.thumb_color, style.thumb_highlight_color, 0.4f)));
+        paint.setColor(as_skcolor(
+            lerp(style.thumb_color, style.thumb_highlight_color, 0.4f)));
     }
     else
     {
@@ -139,7 +139,7 @@ draw_scrollbar_button(
     canvas.translate(
         rect.corner[0] + rect.size[0] / SkIntToScalar(2),
         rect.corner[1] + rect.size[1] / SkIntToScalar(2));
-    canvas.rotate((which * 2 + axis) * -90.f);
+    canvas.rotate((2 + which * 2 + axis) * 90.f);
     {
         SkScalar a = rect.size[0] / SkDoubleToScalar(2);
         SkPath path;
@@ -704,6 +704,9 @@ get_scrollbar_region(scrollable_view_data const& data, unsigned axis)
     region.corner[1 - axis]
         += region.size[1 - axis] - get_scrollbar_width(data.sb_data[axis]);
     region.size[1 - axis] = get_scrollbar_width(data.sb_data[axis]);
+    // Make room for the opposite axis's scrollbar, if it's on.
+    if (is_scrollbar_on(data, 1 - axis))
+        region.size[axis] -= get_scrollbar_width(data.sb_data[axis]);
     return region;
 }
 

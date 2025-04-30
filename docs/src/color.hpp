@@ -36,9 +36,9 @@ operator<(rgb8 const& a, rgb8 const& b);
 std::ostream&
 operator<<(std::ostream& s, rgb8 const& c);
 
-// interpolate(a, b, factor) = a * (1 - factor) + b * factor
+// lerp(a, b, t) = a * (1 - t) + b * t
 rgb8
-interpolate(rgb8 const& a, rgb8 const& b, double factor);
+lerp(rgb8 const& a, rgb8 const& b, double t);
 
 } // namespace alia
 

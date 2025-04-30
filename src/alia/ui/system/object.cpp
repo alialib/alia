@@ -98,7 +98,11 @@ ui_system::invoke_controller(vanilla_ui_context vanilla_ctx)
 {
     // TODO
     layout_style_info style_info{
-        make_layout_vector(4, 4), 16, make_layout_vector(12, 16), 12, 1};
+        make_layout_vector(4, 4),
+        16,
+        make_layout_vector(12, 16),
+        12,
+        this->magnification};
 
     static noop_geometry_subscriber noop_subscriber;
 
@@ -130,7 +134,7 @@ ui_system::invoke_controller(vanilla_ui_context vanilla_ctx)
         is_refresh_event(vanilla_ctx),
         is_refresh_event(vanilla_ctx) ? nullptr : &geometry,
         &style_info,
-        make_vector<float>(200, 200)); // TODO
+        this->ppi);
 
     auto ctx = add_context_object<ui_traversal_tag>(
         add_context_object<ui_system_tag>(vanilla_ctx, std::ref(*this)),

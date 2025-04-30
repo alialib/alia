@@ -13,14 +13,16 @@ void
 initialize(
     ui_system& ui,
     std::function<void(ui_context)> controller,
+    external_interface* external,
     std::shared_ptr<os_interface> os,
     std::shared_ptr<window_interface> window)
 {
-    initialize_core_system<vanilla_ui_context>(ui, nullptr);
+    initialize_core_system<vanilla_ui_context>(ui, external);
     ui.controller = std::move(controller);
     ui.os = std::move(os);
     ui.window = std::move(window);
-    ui.theme = blue_dark_theme;
+    // TODO
+    // ui.theme = blue_dark_theme;
 }
 
 // void initialize_ui(
@@ -243,7 +245,7 @@ operator!=(tooltip_overlay_state const& a, tooltip_overlay_state const& b)
 }
 
 tooltip_overlay_state static
-interpolate(tooltip_overlay_state const& a, tooltip_overlay_state const& b, double factor)
+lerp(tooltip_overlay_state const& a, tooltip_overlay_state const& b, double factor)
 {
     tooltip_overlay_state interpolated;
     // Transition the message/region instantly unless there's no message to transition to.
@@ -258,7 +260,7 @@ interpolate(tooltip_overlay_state const& a, tooltip_overlay_state const& b, doub
         interpolated.generating_region = a.generating_region;
     }
     // Transition the opacity smoothly.
-    interpolated.opacity = interpolate(a.opacity, b.opacity, factor);
+    interpolated.opacity = lerp(a.opacity, b.opacity, factor);
     return interpolated;
 }
 

@@ -17,6 +17,7 @@
 // #include <SkGradientShader.h>
 
 #include <alia/ui/utilities/rendering.hpp>
+#include <alia/ui/utilities/skia.hpp>
 
 namespace alia {
 
@@ -29,9 +30,9 @@ get_panel_style_info(dataless_ui_context& ctx, style_search_path const* path)
 
     info.size = make_vector(
         get_property(
-            path, "width", UNINHERITED_PROPERTY, absolute_length(0, PIXELS)),
+            path, "width", UNINHERITED_PROPERTY, absolute_length(0)),
         get_property(
-            path, "height", UNINHERITED_PROPERTY, absolute_length(0, PIXELS)));
+            path, "height", UNINHERITED_PROPERTY, absolute_length(0)));
 
     info.margin = resolve_box_border_width(
         get_layout_traversal(ctx), get_margin_property(path));
@@ -144,10 +145,10 @@ begin_outer_panel(
     outer.begin(
         ctx,
         box_border_width<absolute_length>{
-            absolute_length(float(total_border.top), PIXELS),
-            absolute_length(float(total_border.right), PIXELS),
-            absolute_length(float(total_border.bottom), PIXELS),
-            absolute_length(float(total_border.left), PIXELS)},
+            absolute_length(float(total_border.top)),
+            absolute_length(float(total_border.right)),
+            absolute_length(float(total_border.bottom)),
+            absolute_length(float(total_border.left))},
         layout_spec); // add_default_size(layout_spec,
                       // read_signal(style_info).size));
 
@@ -169,7 +170,8 @@ begin_outer_panel(
             bounds.fBottom = bounds.fTop + SkScalar(region.size[1]);
 
             SkPaint paint;
-            paint.setColor(SkColorSetRGB(0x41, 0x48, 0x54));
+            paint.setColor(
+                as_skcolor(read_signal(style_info).background_color));
             event.canvas->drawRect(bounds, paint);
 
             // If the panel is rounded or has a gradient, draw it with Skia.
@@ -519,10 +521,10 @@ scrollable_panel::begin(
     padding_border_.begin(
         ctx,
         box_border_width<absolute_length>(
-            absolute_length(float(style_info.padding.top), PIXELS),
-            absolute_length(float(style_info.padding.right), PIXELS),
-            absolute_length(float(style_info.padding.bottom), PIXELS),
-            absolute_length(float(style_info.padding.left), PIXELS)));
+            absolute_length(float(style_info.padding.top)),
+            absolute_length(float(style_info.padding.right)),
+            absolute_length(float(style_info.padding.bottom)),
+            absolute_length(float(style_info.padding.left))));
     begin_inner_panel(ctx, data->panel, inner_, layout_spec, flags);
 }
 void

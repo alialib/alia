@@ -40,7 +40,7 @@ do_bullet(ui_context ctx, layout const& layout_spec)
     {
         case REFRESH_CATEGORY: {
             layout_scalar size = as_layout_size(resolve_absolute_length(
-                get_layout_traversal(ctx), 1, absolute_length(20, PIXELS)));
+                get_layout_traversal(ctx), 1, absolute_length(20)));
             data.layout_node.refresh_layout(
                 get_layout_traversal(ctx),
                 layout_spec,
@@ -77,8 +77,8 @@ bulleted_list::begin(ui_context ctx, layout const& layout_spec)
     // any extra space in the grid.
     {
         grid_row r(grid_);
-        do_spacer(ctx, layout(size(0, 0, PIXELS), UNPADDED));
-        do_spacer(ctx, layout(size(0, 0, PIXELS), UNPADDED | GROW));
+        do_spacer(ctx, layout(size(0, 0), UNPADDED));
+        do_spacer(ctx, layout(size(0, 0), UNPADDED | GROW));
     }
 }
 void
