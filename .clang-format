@@ -113,12 +113,6 @@ IfMacros:
   - alia_if
   - ALIA_ELSE_IF
   - alia_else_if
-  - ALIA_UNTRACKED_IF
-  - alia_untracked_if
-  - ALIA_UNTRACKED_ELSE_IF
-  - alia_untracked_else_if
-  - ALIA_EVENT_DEPENDENT_IF
-  - alia_event_dependent_if
   - KJ_IF_MAYBE
 IncludeBlocks: Preserve
 IncludeCategories:
