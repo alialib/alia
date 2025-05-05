@@ -118,6 +118,7 @@ reset_arena(Arena* arena)
     arena->dtors = nullptr;
 
     // Free all chunks
+    // TODO: Should this definitely be done here?
     ArenaChunk* chunk = arena->chunks;
     while (chunk)
     {
