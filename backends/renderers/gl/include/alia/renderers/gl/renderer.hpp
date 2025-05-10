@@ -12,10 +12,14 @@ struct DisplayList;
 // TODO: Make this opaque.
 struct GlRenderer
 {
-    GLuint shader_program;
+    GLuint vanilla_shader_program;
+    GLuint msdf_shader_program;
+    GLuint msdf_texture;
     GLuint vao, vbo;
     GLuint instance_vbo;
-    GLint matrix_location;
+    GLint vanilla_matrix_location;
+    GLint msdf_matrix_location;
+    GLint msdf_color_location;
     Arena* rect_instance_arena;
 };
 
