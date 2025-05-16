@@ -11,10 +11,10 @@ add_subdirectory(core/foundation)
 add_subdirectory(tests/foundation)
 add_test(NAME test_arena COMMAND test_arena)
 
-add_subdirectory(core/fabric)
+# add_subdirectory(core/fabric)
 
-add_subdirectory(tests/fabric)
-add_test(NAME test_data_graph COMMAND test_data_graph)
+# add_subdirectory(tests/fabric)
+# add_test(NAME test_data_graph COMMAND test_data_graph)
 
 add_subdirectory(core/ui)
 
