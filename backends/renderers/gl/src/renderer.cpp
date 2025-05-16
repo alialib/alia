@@ -105,10 +105,9 @@ void main() {
     vec3 msd = texture(u_msdf, v_uv).rgb;
     float sd = median(msd) - 0.5;
     float screen_px_distance = v_scale / 12.0f * sd;
-
     float opacity = clamp(screen_px_distance + 0.5, 0.0, 1.0);
-
-    out_color = vec4(v_color.rgb * opacity, v_color.a * opacity);
+    opacity = pow(opacity, 1.0 / 2.2);
+    out_color = vec4(v_color.rgb, v_color.a * opacity);
 }
 )";
 

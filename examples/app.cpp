@@ -243,7 +243,7 @@ render_text(
                {vx1 - vx0, vy1 - vy0},
                {uvx0, uvy0},
                {uvx1 - uvx0, uvy1 - uvy0},
-               {1, 1, 1, 1},
+               {0.9, 0.9, 0.9, 1},
                scale};
         the_glyph_instance_count++;
 
@@ -392,9 +392,9 @@ update()
     the_glyph_instances = the_glyph_instance_storage;
     the_glyph_instance_count = 0;
 
-    float next_line = 64;
+    render_text("a", 0, 1, 1, 256, 64, 320);
 
-    // render_text("a", 0, 1, 1, 256, 64, 320);
+    float next_line = 400;
 
     for (int i = 0; i != 4; ++i)
     {
