@@ -33,7 +33,7 @@ default_dealloc(void*, void* ptr)
 #endif
 }
 
-const char* instanced_vertex_shader_source = R"(
+const char* vanilla_vertex_shader_source = R"(
 #version 330 core
 layout (location = 0) in vec2 a_pos;
 layout (location = 1) in vec2 i_pos;
@@ -62,27 +62,40 @@ void main() {
 
 const char* msdf_vertex_shader_source = R"(
 #version 330 core
-layout(location = 0) in vec2 a_position;
-layout(location = 1) in vec2 a_uv;
+layout (location = 0) in vec2 a_pos;
+layout (location = 1) in vec2 i_xy_base;
+layout (location = 2) in vec2 i_xy_delta;
+layout (location = 3) in vec2 i_uv_base;
+layout (location = 4) in vec2 i_uv_delta;
+layout (location = 5) in vec4 i_color;
+layout (location = 6) in float i_scale;
 
+flat out vec4 v_color;
+flat out float v_scale;
 out vec2 v_uv;
 
 uniform mat4 u_projection;
 
 void main() {
-    v_uv = a_uv;
-    gl_Position = u_projection * vec4(a_position, 0.0, 1.0);
+    vec2 xy = a_pos * i_xy_delta + i_xy_base;
+    vec2 uv = a_pos * i_uv_delta + i_uv_base;
+    gl_Position = u_projection * vec4(xy, 0.0, 1.0);
+    v_uv = uv;
+    v_color = i_color;
+    v_scale = i_scale;
 }
 )";
 
 const char* msdf_fragment_shader_source = R"(
 #version 330 core
 
+flat in vec4 v_color;
+flat in float v_scale;
 in vec2 v_uv;
+
 out vec4 out_color;
 
 uniform sampler2D u_msdf;
-uniform vec4 u_color;
 
 float median(vec3 v) {
     return max(min(v.r, v.g), min(max(v.r, v.g), v.b));
@@ -91,18 +104,11 @@ float median(vec3 v) {
 void main() {
     vec3 msd = texture(u_msdf, v_uv).rgb;
     float sd = median(msd) - 0.5;
+    float screen_px_distance = v_scale / 12.0f * sd;
 
-    // float opacity = clamp(sd / fwidth(sd) + 0.5, 0.0, 1.0);
+    float opacity = clamp(screen_px_distance + 0.5, 0.0, 1.0);
 
-    // float screen_px_distance = 3.0 * sd;
-    // float opacity = clamp(screen_px_distance + 0.5, 0.0, 1.0);
-
-    // Tune this scale factor!
-    float smoothing = 0.15; // OR: smoothing = 0.04 (manual)
-    float opacity = smoothstep(-smoothing, smoothing, sd + 0.1);
-    // opacity = pow(opacity, 1.0 / 2.2); // optional gamma tweak
-
-    out_color = vec4(u_color.rgb * opacity, u_color.a * opacity);
+    out_color = vec4(v_color.rgb * opacity, v_color.a * opacity);
 }
 )";
 
@@ -153,7 +159,7 @@ init_gl_renderer(GlRenderer* renderer)
     float quad_vertices[] = {0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f};
 
     GLuint vanilla_shader_program = create_shader_program(
-        instanced_vertex_shader_source, vanilla_fragment_shader_source);
+        vanilla_vertex_shader_source, vanilla_fragment_shader_source);
     GLuint msdf_shader_program = create_shader_program(
         msdf_vertex_shader_source, msdf_fragment_shader_source);
 
@@ -230,8 +236,6 @@ init_gl_renderer(GlRenderer* renderer)
         = glGetUniformLocation(vanilla_shader_program, "u_projection");
     GLint msdf_matrix_location
         = glGetUniformLocation(msdf_shader_program, "u_projection");
-    GLint msdf_color_location
-        = glGetUniformLocation(msdf_shader_program, "u_color");
 
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
@@ -244,7 +248,6 @@ init_gl_renderer(GlRenderer* renderer)
         .instance_vbo = instance_vbo,
         .vanilla_matrix_location = vanilla_matrix_location,
         .msdf_matrix_location = msdf_matrix_location,
-        .msdf_color_location = msdf_color_location,
         .rect_instance_arena = rect_instance_arena,
     };
 }
@@ -338,7 +341,6 @@ render_display_list(
 
     glUseProgram(renderer->msdf_shader_program);
     glUniformMatrix4fv(renderer->msdf_matrix_location, 1, GL_FALSE, ortho);
-    glUniform4f(renderer->msdf_color_location, 1, 1, 1, 1); // white
 }
 
 } // namespace alia

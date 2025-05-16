@@ -19,7 +19,6 @@ struct GlRenderer
     GLuint instance_vbo;
     GLint vanilla_matrix_location;
     GLint msdf_matrix_location;
-    GLint msdf_color_location;
     Arena* rect_instance_arena;
 };
 

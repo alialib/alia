@@ -164,16 +164,21 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     }
 }
 
-GLuint the_vao, the_vbo;
+GLuint the_vao, the_vbo, the_instance_vbo;
 
-struct Vertex
+struct GlyphInstance
 {
-    float x, y, u, v;
+    Vec2 xy_base;
+    Vec2 xy_delta;
+    Vec2 uv_base;
+    Vec2 uv_delta;
+    Color color;
+    float scale;
 };
 
-Vertex* the_vertex_storage;
-Vertex* the_vertices = nullptr;
-GLuint the_vertex_count = 0;
+GlyphInstance* the_glyph_instance_storage;
+GlyphInstance* the_glyph_instances = nullptr;
+GLuint the_glyph_instance_count = 0;
 
 struct pair_hash
 {
@@ -233,14 +238,14 @@ render_text(
         float uvx1 = glyph.atlas_right;
         float uvy1 = 1 - glyph.atlas_top;
 
-        the_vertices[the_vertex_count] = {vx0, vy0, uvx0, uvy0};
-        the_vertices[the_vertex_count + 1] = {vx1, vy0, uvx1, uvy0};
-        the_vertices[the_vertex_count + 2] = {vx1, vy1, uvx1, uvy1};
-        the_vertices[the_vertex_count + 3] = {vx0, vy0, uvx0, uvy0};
-        the_vertices[the_vertex_count + 4] = {vx1, vy1, uvx1, uvy1};
-        the_vertices[the_vertex_count + 5] = {vx0, vy1, uvx0, uvy1};
-
-        the_vertex_count += 6;
+        the_glyph_instances[the_glyph_instance_count]
+            = {{vx0, vy0},
+               {vx1 - vx0, vy1 - vy0},
+               {uvx0, uvy0},
+               {uvx1 - uvx0, uvy1 - uvy0},
+               {1, 1, 1, 1},
+               scale};
+        the_glyph_instance_count++;
 
         x += glyph.advance * scale;
 
@@ -292,6 +297,8 @@ float
 render_wrapped_text(
     char const* text, float scale, float x, float y, float width)
 {
+    if (y > the_system.framebuffer_size.y + scale * 2)
+        return y;
     size_t length = strlen(text);
     size_t start = 0;
     while (start < length)
@@ -360,7 +367,7 @@ update()
     // glUseProgram(the_renderer.msdf_shader_program);
     glBindTexture(GL_TEXTURE_2D, the_renderer.msdf_texture);
 
-    glUniform4f(the_renderer.msdf_color_location, 0.9, 0.9, 0.9, 1);
+    // glUniform4f(the_renderer.msdf_color_location, 0.9, 0.9, 0.9, 1);
 
     // RectInstance rect_instance{Vec2{0, 0}, Vec2{1, 1}};
 
@@ -382,10 +389,12 @@ update()
     // glBindVertexArray(the_renderer.vao);
     // glDrawArrays(GL_TRIANGLES, 0, 6);
 
-    the_vertices = the_vertex_storage;
-    the_vertex_count = 0;
+    the_glyph_instances = the_glyph_instance_storage;
+    the_glyph_instance_count = 0;
 
     float next_line = 64;
+
+    // render_text("a", 0, 1, 1, 256, 64, 320);
 
     for (int i = 0; i != 4; ++i)
     {
@@ -414,14 +423,17 @@ Nunc tincidunt fermentum accumsan. Duis vestibulum enim arcu, eu rutrum magna cu
             the_system.framebuffer_size.x - 24);
     }
 
+    while ((err = glGetError()) != GL_NO_ERROR)
+        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
+
     glBindVertexArray(the_vao);
-    glBindBuffer(GL_ARRAY_BUFFER, the_vbo);
     // glBufferSubData(
     //     GL_ARRAY_BUFFER, 0, sizeof(Vertex) * the_vertex_count,
     //     the_vertices);
-    glDrawArrays(GL_TRIANGLES, 0, the_vertex_count);
+    glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, the_glyph_instance_count);
 
-    printf("the_vertex_count: %d\n", the_vertex_count);
+    while ((err = glGetError()) != GL_NO_ERROR)
+        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
@@ -429,6 +441,8 @@ Nunc tincidunt fermentum accumsan. Duis vestibulum enim arcu, eu rutrum magna cu
     auto const end_time = std::chrono::high_resolution_clock::now();
     auto const delta_time = std::chrono::duration_cast<
         std::chrono::duration<int64_t, std::micro>>(end_time - start_time);
+
+    printf("the_glyph_count: %d\n", the_glyph_instance_count);
 
     std::cout << "frame_time: " << delta_time.count() << "us" << std::endl;
 
@@ -505,25 +519,94 @@ main()
     glBindVertexArray(the_vao);
     glBindBuffer(GL_ARRAY_BUFFER, the_vbo);
 
-    const GLsizeiptr buffer_size = sizeof(Vertex) * 240'000;
+    float quad_vertices[] = {0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f};
+    glBufferData(
+        GL_ARRAY_BUFFER, sizeof(quad_vertices), quad_vertices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(
+        0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*) 0);
+    glEnableVertexAttribArray(0);
+
+    glBindVertexArray(the_vao);
+    glGenBuffers(1, &the_instance_vbo);
+
+    glBindBuffer(GL_ARRAY_BUFFER, the_instance_vbo);
+
+    const GLsizeiptr buffer_size = sizeof(GlyphInstance) * 40'000;
 
     const GLbitfield flags
         = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
 
     glBufferStorage(GL_ARRAY_BUFFER, buffer_size, nullptr, flags);
 
-    the_vertex_storage
-        = (Vertex*) glMapBufferRange(GL_ARRAY_BUFFER, 0, buffer_size, flags);
+    the_glyph_instance_storage = (GlyphInstance*) glMapBufferRange(
+        GL_ARRAY_BUFFER, 0, buffer_size, flags);
 
-    // Enable and set up vertex attributes
-    // Attribute 0 = vec2 position
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*) 0);
-
-    // Attribute 1 = vec2 UV
-    glEnableVertexAttribArray(1);
+    // xy_base (location = 1)
     glVertexAttribPointer(
-        1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*) (2 * sizeof(float)));
+        1,
+        2,
+        GL_FLOAT,
+        GL_FALSE,
+        sizeof(GlyphInstance),
+        (void*) offsetof(GlyphInstance, xy_base));
+    glEnableVertexAttribArray(1);
+    glVertexAttribDivisor(1, 1);
+
+    // xy_delta (location = 2)
+    glVertexAttribPointer(
+        2,
+        2,
+        GL_FLOAT,
+        GL_FALSE,
+        sizeof(GlyphInstance),
+        (void*) offsetof(GlyphInstance, xy_delta));
+    glEnableVertexAttribArray(2);
+    glVertexAttribDivisor(2, 1);
+
+    // uv_base (location = 3)
+    glVertexAttribPointer(
+        3,
+        2,
+        GL_FLOAT,
+        GL_FALSE,
+        sizeof(GlyphInstance),
+        (void*) offsetof(GlyphInstance, uv_base));
+    glEnableVertexAttribArray(3);
+    glVertexAttribDivisor(3, 1);
+
+    // uv_delta (location = 4)
+    glVertexAttribPointer(
+        4,
+        2,
+        GL_FLOAT,
+        GL_FALSE,
+        sizeof(GlyphInstance),
+        (void*) offsetof(GlyphInstance, uv_delta));
+    glEnableVertexAttribArray(4);
+    glVertexAttribDivisor(4, 1);
+
+    // color (location = 5)
+    glVertexAttribPointer(
+        5,
+        4,
+        GL_FLOAT,
+        GL_FALSE,
+        sizeof(GlyphInstance),
+        (void*) offsetof(GlyphInstance, color));
+    glEnableVertexAttribArray(5);
+    glVertexAttribDivisor(5, 1);
+
+    // scale (location = 6)
+    glVertexAttribPointer(
+        6,
+        1,
+        GL_FLOAT,
+        GL_FALSE,
+        sizeof(GlyphInstance),
+        (void*) offsetof(GlyphInstance, scale));
+    glEnableVertexAttribArray(6);
+    glVertexAttribDivisor(6, 1);
 
     // glBufferData(
     //     GL_ARRAY_BUFFER,
