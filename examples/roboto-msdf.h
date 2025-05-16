@@ -11,7 +11,7 @@ typedef struct
     float atlas_left, atlas_bottom, atlas_right, atlas_top;
 } Glyph;
 
-static const Glyph g_glyphs[] = {
+static Glyph g_glyphs[] = {
     {32,
      0.247559f,
      0,

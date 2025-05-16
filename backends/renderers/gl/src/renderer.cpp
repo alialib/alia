@@ -90,9 +90,19 @@ float median(vec3 v) {
 
 void main() {
     vec3 msd = texture(u_msdf, v_uv).rgb;
-    float dist = median(msd) - 0.5;
-    float alpha = clamp(dist / fwidth(dist) + 0.5, 0.0, 1.0);
-    out_color = vec4(u_color.rgb * alpha, u_color.a * alpha);
+    float sd = median(msd) - 0.5;
+
+    // float opacity = clamp(sd / fwidth(sd) + 0.5, 0.0, 1.0);
+
+    // float screen_px_distance = 3.0 * sd;
+    // float opacity = clamp(screen_px_distance + 0.5, 0.0, 1.0);
+
+    // Tune this scale factor!
+    float smoothing = 0.15; // OR: smoothing = 0.04 (manual)
+    float opacity = smoothstep(-smoothing, smoothing, sd + 0.1);
+    // opacity = pow(opacity, 1.0 / 2.2); // optional gamma tweak
+
+    out_color = vec4(u_color.rgb * opacity, u_color.a * opacity);
 }
 )";
 
