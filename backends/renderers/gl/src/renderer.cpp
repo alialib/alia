@@ -61,26 +61,35 @@ void main() {
 )";
 
 const char* msdf_vertex_shader_source = R"(
-#version 330 core
-layout (location = 0) in vec2 a_pos;
-layout (location = 1) in vec2 i_xy_base;
-layout (location = 2) in vec2 i_xy_delta;
-layout (location = 3) in vec2 i_uv_base;
-layout (location = 4) in vec2 i_uv_delta;
-layout (location = 5) in vec4 i_color;
-layout (location = 6) in float i_scale;
+#version 430 core
+layout (location = 0) in vec2 a_vertex_pos;
+layout (location = 1) in vec4 i_color;
+layout (location = 2) in vec2 i_glyph_pos;
+layout (location = 3) in float i_scale;
+layout (location = 4) in uint i_glyph_id;
 
 flat out vec4 v_color;
 flat out float v_scale;
 out vec2 v_uv;
 
+struct GlyphData {
+    vec2 uv_pos;
+    vec2 uv_size;
+    vec2 xy_pos;
+    vec2 xy_size;
+};
+
+layout(std430, binding = 0) readonly buffer GlyphTable {
+    GlyphData glyphs[];
+};
+
 uniform mat4 u_projection;
 
 void main() {
-    vec2 xy = a_pos * i_xy_delta + i_xy_base;
-    vec2 uv = a_pos * i_uv_delta + i_uv_base;
+    GlyphData glyph = glyphs[i_glyph_id];
+    vec2 xy = i_glyph_pos + (glyph.xy_pos + a_vertex_pos * glyph.xy_size) * i_scale;
     gl_Position = u_projection * vec4(xy, 0.0, 1.0);
-    v_uv = uv;
+    v_uv = glyph.uv_pos + a_vertex_pos * glyph.uv_size;
     v_color = i_color;
     v_scale = i_scale;
 }

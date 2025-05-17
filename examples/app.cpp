@@ -166,19 +166,26 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 
 GLuint the_vao, the_vbo, the_instance_vbo;
 
+struct GpuGlyphData
+{
+    Vec2 uv_pos;
+    Vec2 uv_size;
+    Vec2 xy_pos;
+    Vec2 xy_size;
+};
+
 struct GlyphInstance
 {
-    Vec2 xy_base;
-    Vec2 xy_delta;
-    Vec2 uv_base;
-    Vec2 uv_delta;
     Color color;
+    Vec2 position;
     float scale;
+    GLuint glyph_id;
 };
 
 GlyphInstance* the_glyph_instance_storage;
 GlyphInstance* the_glyph_instances = nullptr;
 GLuint the_glyph_instance_count = 0;
+GLuint the_glyph_table_ssbo;
 
 struct pair_hash
 {
@@ -224,27 +231,13 @@ render_text(
         char const c = text[i];
         if (c < 32)
             continue;
+        GLuint glyph_id = c - 32;
 
-        const Glyph& glyph = g_glyphs[c - 32];
+        const Glyph& glyph = g_glyphs[glyph_id];
         assert(glyph.codepoint == c);
 
-        float vx0 = x + glyph.plane_left * scale;
-        float vy0 = y - glyph.plane_bottom * scale;
-        float vx1 = x + glyph.plane_right * scale;
-        float vy1 = y - glyph.plane_top * scale;
-
-        float uvx0 = glyph.atlas_left;
-        float uvy0 = 1 - glyph.atlas_bottom;
-        float uvx1 = glyph.atlas_right;
-        float uvy1 = 1 - glyph.atlas_top;
-
         the_glyph_instances[the_glyph_instance_count]
-            = {{vx0, vy0},
-               {vx1 - vx0, vy1 - vy0},
-               {uvx0, uvy0},
-               {uvx1 - uvx0, uvy1 - uvy0},
-               {0.9, 0.9, 0.9, 1},
-               scale};
+            = {{0.9, 0.9, 0.9, 1}, {x, y}, scale, glyph_id};
         the_glyph_instance_count++;
 
         x += glyph.advance * scale;
@@ -392,11 +385,11 @@ update()
     the_glyph_instances = the_glyph_instance_storage;
     the_glyph_instance_count = 0;
 
-    render_text("a", 0, 1, 1, 256, 64, 320);
+    render_text("abcdef - hello", 0, 14, 14, 256, 64, 320);
 
     float next_line = 400;
 
-    for (int i = 0; i != 4; ++i)
+    for (int i = 0; i < 4; ++i)
     {
         next_line = render_wrapped_text(
             R"---(
@@ -427,9 +420,31 @@ Nunc tincidunt fermentum accumsan. Duis vestibulum enim arcu, eu rutrum magna cu
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
     glBindVertexArray(the_vao);
-    // glBufferSubData(
-    //     GL_ARRAY_BUFFER, 0, sizeof(Vertex) * the_vertex_count,
-    //     the_vertices);
+
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, the_glyph_table_ssbo);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, the_glyph_table_ssbo);
+
+    // GpuGlyphData* debug_data
+    //     = (GpuGlyphData*) glMapBuffer(GL_SHADER_STORAGE_BUFFER,
+    //     GL_READ_ONLY);
+    // if (debug_data)
+    // {
+    //     // Check first few entries
+    //     printf(
+    //         "glyph 15 UV pos: %f, %f; size: %f, %f\n",
+    //         debug_data[15].uv_pos.x,
+    //         debug_data[15].uv_pos.y,
+    //         debug_data[15].uv_size.x,
+    //         debug_data[15].uv_size.y);
+    //     printf(
+    //         "glyph 15 XY pos: %f, %f; size: %f, %f\n",
+    //         debug_data[15].xy_pos.x,
+    //         debug_data[15].xy_pos.y,
+    //         debug_data[15].xy_size.x,
+    //         debug_data[15].xy_size.y);
+    //     glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+    // }
+
     glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, the_glyph_instance_count);
 
     while ((err = glGetError()) != GL_NO_ERROR)
@@ -442,7 +457,7 @@ Nunc tincidunt fermentum accumsan. Duis vestibulum enim arcu, eu rutrum magna cu
     auto const delta_time = std::chrono::duration_cast<
         std::chrono::duration<int64_t, std::micro>>(end_time - start_time);
 
-    printf("the_glyph_count: %d\n", the_glyph_instance_count);
+    // printf("the_glyph_count: %d\n", the_glyph_instance_count);
 
     std::cout << "frame_time: " << delta_time.count() << "us" << std::endl;
 
@@ -497,19 +512,55 @@ main()
 
     init_gl_renderer(&the_renderer);
 
-    ArenaAllocator alloc{default_alloc, default_dealloc, nullptr};
-    Arena* display_list_arena
-        = create_arena(alloc, sizeof(DrawCommand) * 4096);
-    the_display_list = create_display_list(display_list_arena);
+    glGenTextures(1, &the_renderer.msdf_texture);
 
-    int tex_width, tex_height, channels;
-    unsigned char* msdf_data
-        = stbi_load("roboto-msdf.png", &tex_width, &tex_height, &channels, 3);
+    GLenum err;
+    while ((err = glGetError()) != GL_NO_ERROR)
+        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
+
+    glBindTexture(GL_TEXTURE_2D, the_renderer.msdf_texture);
+
+    while ((err = glGetError()) != GL_NO_ERROR)
+        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
+
+    int atlas_width, atlas_height, channels;
+    unsigned char* msdf_data = stbi_load(
+        "roboto-msdf.png", &atlas_width, &atlas_height, &channels, 3);
     if (!msdf_data)
     {
         std::cerr << "load failed: " << stbi_failure_reason() << std::endl;
         exit(1);
     }
+
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_RGB8,
+        atlas_width,
+        atlas_height,
+        0,
+        GL_RGB,
+        GL_UNSIGNED_BYTE,
+        msdf_data);
+
+    while ((err = glGetError()) != GL_NO_ERROR)
+        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    stbi_image_free(msdf_data);
+
+    for (size_t i = 0; i < g_kerning_pair_count; ++i)
+    {
+        the_kerning_map[std::make_pair(
+            g_kerning_pairs[i].left, g_kerning_pairs[i].right)]
+            = g_kerning_pairs[i].advance_adjustment;
+    }
+
+    ArenaAllocator alloc{default_alloc, default_dealloc, nullptr};
+    Arena* display_list_arena
+        = create_arena(alloc, sizeof(DrawCommand) * 4096);
+    the_display_list = create_display_list(display_list_arena);
 
     // the_vertex_storage = (Vertex*) malloc(sizeof(Vertex) * 240'000);
 
@@ -542,71 +593,78 @@ main()
     the_glyph_instance_storage = (GlyphInstance*) glMapBufferRange(
         GL_ARRAY_BUFFER, 0, buffer_size, flags);
 
-    // xy_base (location = 1)
+    // color (location = 1)
     glVertexAttribPointer(
         1,
-        2,
-        GL_FLOAT,
-        GL_FALSE,
-        sizeof(GlyphInstance),
-        (void*) offsetof(GlyphInstance, xy_base));
-    glEnableVertexAttribArray(1);
-    glVertexAttribDivisor(1, 1);
-
-    // xy_delta (location = 2)
-    glVertexAttribPointer(
-        2,
-        2,
-        GL_FLOAT,
-        GL_FALSE,
-        sizeof(GlyphInstance),
-        (void*) offsetof(GlyphInstance, xy_delta));
-    glEnableVertexAttribArray(2);
-    glVertexAttribDivisor(2, 1);
-
-    // uv_base (location = 3)
-    glVertexAttribPointer(
-        3,
-        2,
-        GL_FLOAT,
-        GL_FALSE,
-        sizeof(GlyphInstance),
-        (void*) offsetof(GlyphInstance, uv_base));
-    glEnableVertexAttribArray(3);
-    glVertexAttribDivisor(3, 1);
-
-    // uv_delta (location = 4)
-    glVertexAttribPointer(
-        4,
-        2,
-        GL_FLOAT,
-        GL_FALSE,
-        sizeof(GlyphInstance),
-        (void*) offsetof(GlyphInstance, uv_delta));
-    glEnableVertexAttribArray(4);
-    glVertexAttribDivisor(4, 1);
-
-    // color (location = 5)
-    glVertexAttribPointer(
-        5,
         4,
         GL_FLOAT,
         GL_FALSE,
         sizeof(GlyphInstance),
         (void*) offsetof(GlyphInstance, color));
-    glEnableVertexAttribArray(5);
-    glVertexAttribDivisor(5, 1);
+    glEnableVertexAttribArray(1);
+    glVertexAttribDivisor(1, 1);
 
-    // scale (location = 6)
+    // position (location = 2)
     glVertexAttribPointer(
-        6,
+        2,
+        2,
+        GL_FLOAT,
+        GL_FALSE,
+        sizeof(GlyphInstance),
+        (void*) offsetof(GlyphInstance, position));
+    glEnableVertexAttribArray(2);
+    glVertexAttribDivisor(2, 1);
+
+    // scale (location = 3)
+    glVertexAttribPointer(
+        3,
         1,
         GL_FLOAT,
         GL_FALSE,
         sizeof(GlyphInstance),
         (void*) offsetof(GlyphInstance, scale));
-    glEnableVertexAttribArray(6);
-    glVertexAttribDivisor(6, 1);
+    glEnableVertexAttribArray(3);
+    glVertexAttribDivisor(3, 1);
+
+    // glyph_id (location = 4)
+    glVertexAttribIPointer(
+        4,
+        1,
+        GL_UNSIGNED_INT,
+        sizeof(GlyphInstance),
+        (void*) offsetof(GlyphInstance, glyph_id));
+    glEnableVertexAttribArray(4);
+    glVertexAttribDivisor(4, 1);
+
+    std::vector<GpuGlyphData> gpu_glyph_data(g_glyph_count);
+    for (size_t i = 0; i < g_glyph_count; ++i)
+    {
+        gpu_glyph_data[i].uv_pos
+            = {g_glyphs[i].atlas_left / float(atlas_width),
+               1.0f - (g_glyphs[i].atlas_top / float(atlas_height))};
+        gpu_glyph_data[i].uv_size
+            = {(g_glyphs[i].atlas_right - g_glyphs[i].atlas_left)
+                   / float(atlas_width),
+               (g_glyphs[i].atlas_top - g_glyphs[i].atlas_bottom)
+                   / float(atlas_height)};
+        gpu_glyph_data[i].xy_pos
+            = {g_glyphs[i].plane_left, -g_glyphs[i].plane_top};
+        gpu_glyph_data[i].xy_size
+            = {g_glyphs[i].plane_right - g_glyphs[i].plane_left,
+               -g_glyphs[i].plane_bottom + g_glyphs[i].plane_top};
+    }
+
+    glGenBuffers(1, &the_glyph_table_ssbo);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, the_glyph_table_ssbo);
+    glBufferData(
+        GL_SHADER_STORAGE_BUFFER,
+        gpu_glyph_data.size() * sizeof(GpuGlyphData),
+        gpu_glyph_data.data(),
+        GL_STATIC_DRAW);
+    glBindBufferBase(
+        GL_SHADER_STORAGE_BUFFER,
+        0,
+        the_glyph_table_ssbo); // binding = 0 in the shader
 
     // glBufferData(
     //     GL_ARRAY_BUFFER,
@@ -614,52 +672,8 @@ main()
     //     nullptr, // calloc(240'000, sizeof(Vertex)),
     //     GL_DYNAMIC_DRAW);
 
-    GLenum err;
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
-
-    glGenTextures(1, &the_renderer.msdf_texture);
-
-    while ((err = glGetError()) != GL_NO_ERROR)
-        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
-
-    glBindTexture(GL_TEXTURE_2D, the_renderer.msdf_texture);
-
-    while ((err = glGetError()) != GL_NO_ERROR)
-        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
-
-    glTexImage2D(
-        GL_TEXTURE_2D,
-        0,
-        GL_RGB8,
-        tex_width,
-        tex_height,
-        0,
-        GL_RGB,
-        GL_UNSIGNED_BYTE,
-        msdf_data);
-
-    while ((err = glGetError()) != GL_NO_ERROR)
-        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    stbi_image_free(msdf_data);
-
-    for (size_t i = 0; i < g_glyph_count; ++i)
-    {
-        g_glyphs[i].atlas_left /= float(tex_height);
-        g_glyphs[i].atlas_right /= float(tex_height);
-        g_glyphs[i].atlas_top /= float(tex_height);
-        g_glyphs[i].atlas_bottom /= float(tex_height);
-    }
-
-    for (size_t i = 0; i < g_kerning_pair_count; ++i)
-    {
-        the_kerning_map[std::make_pair(
-            g_kerning_pairs[i].left, g_kerning_pairs[i].right)]
-            = g_kerning_pairs[i].advance_adjustment;
-    }
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
