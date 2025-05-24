@@ -60,66 +60,6 @@ void main() {
 }
 )";
 
-const char* msdf_vertex_shader_source = R"(
-#version 430 core
-layout (location = 0) in vec2 a_vertex_pos;
-layout (location = 1) in vec4 i_color;
-layout (location = 2) in vec2 i_glyph_pos;
-layout (location = 3) in float i_scale;
-layout (location = 4) in uint i_glyph_id;
-
-flat out vec4 v_color;
-flat out float v_scale;
-out vec2 v_uv;
-
-struct GlyphData {
-    vec2 uv_pos;
-    vec2 uv_size;
-    vec2 xy_pos;
-    vec2 xy_size;
-};
-
-layout(std430, binding = 0) readonly buffer GlyphTable {
-    GlyphData glyphs[];
-};
-
-uniform mat4 u_projection;
-
-void main() {
-    GlyphData glyph = glyphs[i_glyph_id];
-    vec2 xy = i_glyph_pos + (glyph.xy_pos + a_vertex_pos * glyph.xy_size) * i_scale;
-    gl_Position = u_projection * vec4(xy, 0.0, 1.0);
-    v_uv = glyph.uv_pos + a_vertex_pos * glyph.uv_size;
-    v_color = i_color;
-    v_scale = i_scale;
-}
-)";
-
-const char* msdf_fragment_shader_source = R"(
-#version 330 core
-
-flat in vec4 v_color;
-flat in float v_scale;
-in vec2 v_uv;
-
-out vec4 out_color;
-
-uniform sampler2D u_msdf;
-
-float median(vec3 v) {
-    return max(min(v.r, v.g), min(max(v.r, v.g), v.b));
-}
-
-void main() {
-    vec3 msd = texture(u_msdf, v_uv).rgb;
-    float sd = median(msd) - 0.5;
-    float screen_px_distance = v_scale / 12.0f * sd;
-    float opacity = clamp(screen_px_distance + 0.5, 0.0, 1.0);
-    opacity = pow(opacity, 1.0 / 2.2);
-    out_color = vec4(v_color.rgb, v_color.a * opacity);
-}
-)";
-
 struct RectInstance
 {
     Vec2 pos;
@@ -168,8 +108,6 @@ init_gl_renderer(GlRenderer* renderer)
 
     GLuint vanilla_shader_program = create_shader_program(
         vanilla_vertex_shader_source, vanilla_fragment_shader_source);
-    GLuint msdf_shader_program = create_shader_program(
-        msdf_vertex_shader_source, msdf_fragment_shader_source);
 
     GLenum err;
     while ((err = glGetError()) != GL_NO_ERROR)
@@ -242,20 +180,16 @@ init_gl_renderer(GlRenderer* renderer)
 
     GLint vanilla_matrix_location
         = glGetUniformLocation(vanilla_shader_program, "u_projection");
-    GLint msdf_matrix_location
-        = glGetUniformLocation(msdf_shader_program, "u_projection");
 
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
     *renderer = {
         .vanilla_shader_program = vanilla_shader_program,
-        .msdf_shader_program = msdf_shader_program,
         .vao = vao,
         .vbo = vbo,
         .instance_vbo = instance_vbo,
         .vanilla_matrix_location = vanilla_matrix_location,
-        .msdf_matrix_location = msdf_matrix_location,
         .rect_instance_arena = rect_instance_arena,
     };
 }
@@ -264,7 +198,6 @@ void
 destroy_gl_renderer(GlRenderer* renderer)
 {
     glDeleteProgram(renderer->vanilla_shader_program);
-    glDeleteProgram(renderer->msdf_shader_program);
     glDeleteBuffers(1, &renderer->vbo);
     glDeleteBuffers(1, &renderer->instance_vbo);
 }
@@ -346,9 +279,6 @@ render_display_list(
 
     glBindVertexArray(renderer->vao);
     glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, display_list.count);
-
-    glUseProgram(renderer->msdf_shader_program);
-    glUniformMatrix4fv(renderer->msdf_matrix_location, 1, GL_FALSE, ortho);
 }
 
 } // namespace alia

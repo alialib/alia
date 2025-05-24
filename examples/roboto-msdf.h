@@ -2,16 +2,9 @@
 
 #include <stdint.h>
 
-typedef struct
-{
-    uint32_t codepoint;
-    float advance;
-    uint8_t visible;
-    float plane_left, plane_bottom, plane_right, plane_top;
-    float atlas_left, atlas_bottom, atlas_right, atlas_top;
-} Glyph;
+#include <alia/text_engines/msdf/msdf.hpp>
 
-static Glyph const g_glyphs[] = {
+static const alia::MsdfGlyph roboto_glyphs[] = {
     {32,
      0.247559f,
      0,
@@ -1059,15 +1052,9 @@ static Glyph const g_glyphs[] = {
      27.500000f},
 };
 
-static const size_t g_glyph_count = 95;
-typedef struct
-{
-    uint32_t left;
-    uint32_t right;
-    float advance_adjustment;
-} KerningPair;
+static const size_t roboto_glyph_count = 95;
 
-static const KerningPair g_kerning_pairs[] = {
+static const alia::MsdfKerningPair roboto_kerning_pairs[] = {
     {32, 84, -0.019531f},   {34, 34, -0.052246f},   {34, 39, -0.052246f},
     {34, 65, -0.058594f},   {34, 97, -0.024414f},   {34, 99, -0.028809f},
     {34, 100, -0.028809f},  {34, 101, -0.028809f},  {34, 103, -0.028809f},
@@ -1210,4 +1197,4 @@ static const KerningPair g_kerning_pairs[] = {
     {123, 85, -0.009766f},
 };
 
-static const size_t g_kerning_pair_count = 418;
+static const size_t roboto_kerning_pair_count = 418;

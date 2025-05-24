@@ -13,12 +13,9 @@ struct DisplayList;
 struct GlRenderer
 {
     GLuint vanilla_shader_program;
-    GLuint msdf_shader_program;
-    GLuint msdf_texture;
     GLuint vao, vbo;
     GLuint instance_vbo;
     GLint vanilla_matrix_location;
-    GLint msdf_matrix_location;
     Arena* rect_instance_arena;
 };
 
@@ -37,5 +34,10 @@ render_display_list(
     GlRenderer* renderer,
     System const& system,
     DisplayList const& display_list);
+
+// TODO: Move to a separate utility header.
+GLuint
+create_shader_program(
+    const char* vertex_shader_source, const char* fragment_shader_source);
 
 } // namespace alia
