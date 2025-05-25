@@ -62,8 +62,17 @@ do_rect(Context& ctx, Vec2 size, Color color)
     switch (ctx.pass.type)
     {
         case PassType::Refresh: {
-            ctx.pass.layout_emission.specs[ctx.pass.layout_emission.count++]
-                = LayoutSpec{.size = size, .margin = {4, 4}};
+            auto& layout = ctx.pass.layout_emission;
+            *layout.next = layout.count;
+            LayoutSpec* new_node = &layout.specs[layout.count];
+            *new_node = LayoutSpec{
+                .type = LayoutNodeType::Leaf,
+                .size = size,
+                .margin = {4, 4},
+                .first_child = 0,
+                .next_sibling = 0};
+            layout.next = &new_node->next_sibling;
+            ++layout.count;
             break;
         }
         case PassType::Draw: {
@@ -92,35 +101,129 @@ do_rect(Context& ctx, Vec2 size, Color color)
     return false;
 }
 
+template<class Content>
+void
+hbox(Context& ctx, Content&& content)
+{
+    LayoutIndex index = 0;
+
+    switch (ctx.pass.type)
+    {
+        case PassType::Refresh: {
+            auto& layout = ctx.pass.layout_emission;
+            *layout.next = layout.count;
+            index = layout.count;
+            LayoutSpec* new_node = &layout.specs[index];
+            *new_node = LayoutSpec{
+                .type = LayoutNodeType::HBox,
+                .size = {0, 0},
+                .margin = {0, 0},
+                .first_child = 0,
+                .next_sibling = 0};
+            layout.next = &new_node->first_child;
+            ++layout.count;
+            break;
+        }
+        default:
+            index = ctx.pass.layout_consumption.index++;
+            break;
+    }
+
+    std::forward<Content>(content)();
+
+    switch (ctx.pass.type)
+    {
+        case PassType::Refresh: {
+            auto& layout = ctx.pass.layout_emission;
+            LayoutSpec* this_node = &layout.specs[index];
+            *layout.next = 0;
+            layout.next = &this_node->next_sibling;
+            break;
+        }
+    }
+}
+
+template<class Content>
+void
+vbox(Context& ctx, Content&& content)
+{
+    LayoutIndex index = 0;
+
+    switch (ctx.pass.type)
+    {
+        case PassType::Refresh: {
+            auto& layout = ctx.pass.layout_emission;
+            *layout.next = layout.count;
+            index = layout.count;
+            LayoutSpec* new_node = &layout.specs[index];
+            *new_node = LayoutSpec{
+                .type = LayoutNodeType::VBox,
+                .size = {0, 0},
+                .margin = {0, 0},
+                .first_child = 0,
+                .next_sibling = 0};
+            layout.next = &new_node->first_child;
+            ++layout.count;
+            break;
+        }
+        default:
+            index = ctx.pass.layout_consumption.index++;
+            break;
+    }
+
+    std::forward<Content>(content)();
+
+    switch (ctx.pass.type)
+    {
+        case PassType::Refresh: {
+            auto& layout = ctx.pass.layout_emission;
+            LayoutSpec* this_node = &layout.specs[index];
+            *layout.next = 0;
+            layout.next = &this_node->next_sibling;
+            break;
+        }
+    }
+}
+
 void
 rectangle_demo(Context& ctx)
 {
     static bool invert = false;
 
-    // box 1: dynamic color
-    float x = 0.0f;
-    for (int i = 0; i < 2000; ++i)
-    {
-        do_rect(
-            ctx,
-            {24, 24},
-            invert ? Color{x, 0.1f, 1.0f - x, 1}
-                   : Color{1.0f - x, 0.1f, x, 1});
-        x += 0.0005f;
-    }
-
-    // box 2: button
-    for (int i = 0; i < 400; ++i)
-    {
-        if (do_rect(ctx, {24, 24}, GRAY))
+    vbox(ctx, [&]() {
+        // box 1: dynamic color
+        float x = 0.0f;
+        for (int i = 0; i < 100; ++i)
         {
-            invert = !invert;
+            hbox(ctx, [&]() {
+                for (int j = 0; j != 20; ++j)
+                {
+                    do_rect(
+                        ctx,
+                        {24, 24},
+                        invert ? Color{x, 0.1f, 1.0f - x, 1}
+                               : Color{1.0f - x, 0.1f, x, 1});
+                    x += 0.0005f;
+                }
+            });
         }
-    }
+
+        // box 2: button
+        hbox(ctx, [&]() {
+            for (int i = 0; i < 4; ++i)
+            {
+                if (do_rect(ctx, {24, 24}, GRAY))
+                {
+                    invert = !invert;
+                }
+            }
+        });
+    });
 }
 
 System the_system;
 LayoutSpec the_layout_specs[4096];
+LayoutScratchArena the_scratch_arena;
 LayoutPlacement the_layout_placements[4096];
 GLFWwindow* the_window;
 GlRenderer the_renderer;
@@ -151,11 +254,12 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         event.click.y
             = (static_cast<float>(y) * framebuffer_height
                / window_height); // / the_ui_scale.y;
+        std::uint32_t root_index;
         Context event_ctx
             = {Pass{
                    PassType::Event,
-                   {the_layout_specs, 0},
-                   {the_layout_placements, 0},
+                   {the_layout_specs, 1, &root_index},
+                   {the_layout_placements, 1},
                    nullptr,
                    &event},
                &the_system};
@@ -164,60 +268,8 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 }
 
 void
-update()
+do_text_demo()
 {
-    auto const start_time = std::chrono::high_resolution_clock::now();
-
-    Context refresh_ctx
-        = {Pass{
-               PassType::Refresh,
-               {the_layout_specs, 0},
-               {the_layout_placements, 0},
-               nullptr,
-               nullptr},
-           &the_system};
-    rectangle_demo(refresh_ctx);
-
-    update_glfw_window_info(the_system, the_window);
-
-    // glfwMakeContextCurrent(the_window);
-    glViewport(
-        0, 0, the_system.framebuffer_size.x, the_system.framebuffer_size.y);
-
-    glClearColor(0.15f, 0.15f, 0.2f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    start_render_pass(the_msdf_text_engine);
-
-    GLenum err;
-    while ((err = glGetError()) != GL_NO_ERROR)
-        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
-
-    layout(
-        the_layout_specs,
-        the_layout_placements,
-        refresh_ctx.pass.layout_emission.count,
-        the_system.framebuffer_size);
-
-    reset_display_list(&the_display_list);
-    Context draw_ctx
-        = {Pass{
-               PassType::Draw,
-               {the_layout_specs, 0},
-               {the_layout_placements, 0},
-               &the_display_list,
-               nullptr},
-           &the_system};
-    // rectangle_demo(draw_ctx);
-
-    while ((err = glGetError()) != GL_NO_ERROR)
-        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
-
-    render_display_list(&the_renderer, the_system, the_display_list);
-
-    while ((err = glGetError()) != GL_NO_ERROR)
-        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
-
     render_text(
         the_msdf_text_engine, "abcdef - hello", 0, 14, 14, 256, 64, 320);
 
@@ -263,6 +315,69 @@ Nunc tincidunt fermentum accumsan. Duis vestibulum enim arcu, eu rutrum magna cu
             next_line,
             the_system.framebuffer_size.x - 24);
     }
+}
+
+void
+update()
+{
+    auto const start_time = std::chrono::high_resolution_clock::now();
+
+    std::uint32_t root_index;
+    Context refresh_ctx
+        = {Pass{
+               PassType::Refresh,
+               {the_layout_specs, 1, &root_index},
+               {the_layout_placements, 1},
+               nullptr,
+               nullptr},
+           &the_system};
+    *refresh_ctx.pass.layout_emission.next = 0;
+    rectangle_demo(refresh_ctx);
+
+    update_glfw_window_info(the_system, the_window);
+
+    resolve_layout(
+        the_layout_specs,
+        the_scratch_arena,
+        the_layout_placements,
+        the_system.framebuffer_size);
+
+    auto const layout_finished_time
+        = std::chrono::high_resolution_clock::now();
+
+    // glfwMakeContextCurrent(the_window);
+    glViewport(
+        0, 0, the_system.framebuffer_size.x, the_system.framebuffer_size.y);
+
+    glClearColor(0.15f, 0.15f, 0.2f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    start_render_pass(the_msdf_text_engine);
+
+    GLenum err;
+    while ((err = glGetError()) != GL_NO_ERROR)
+        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
+
+    reset_display_list(&the_display_list);
+    Context draw_ctx
+        = {Pass{
+               PassType::Draw,
+               {the_layout_specs, 1, &root_index},
+               {the_layout_placements, 1},
+               &the_display_list,
+               nullptr},
+           &the_system};
+    rectangle_demo(draw_ctx);
+
+    while ((err = glGetError()) != GL_NO_ERROR)
+        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
+
+    render_display_list(&the_renderer, the_system, the_display_list);
+
+    while ((err = glGetError()) != GL_NO_ERROR)
+        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
+
+    // do_text_demo();
 
     end_render_pass(the_msdf_text_engine, the_system.framebuffer_size);
 
@@ -273,12 +388,19 @@ Nunc tincidunt fermentum accumsan. Duis vestibulum enim arcu, eu rutrum magna cu
     glBindVertexArray(0);
 
     auto const end_time = std::chrono::high_resolution_clock::now();
-    auto const delta_time = std::chrono::duration_cast<
+    auto const layout_time = std::chrono::duration_cast<
+        std::chrono::duration<int64_t, std::micro>>(
+        layout_finished_time - start_time);
+    auto const render_time = std::chrono::duration_cast<
+        std::chrono::duration<int64_t, std::micro>>(
+        end_time - layout_finished_time);
+    auto const frame_time = std::chrono::duration_cast<
         std::chrono::duration<int64_t, std::micro>>(end_time - start_time);
 
     // printf("the_glyph_count: %d\n", the_glyph_instance_count);
 
-    std::cout << "frame_time: " << delta_time.count() << "us" << std::endl;
+    std::cout << "frame_time: " << frame_time << ": " << layout_time << " / "
+              << render_time << std::endl;
 
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
@@ -311,7 +433,8 @@ main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    the_window = glfwCreateWindow(800, 600, "Alia Renderer", nullptr, nullptr);
+    the_window
+        = glfwCreateWindow(1200, 1600, "Alia Renderer", nullptr, nullptr);
     if (!the_window)
     {
         std::cerr << "Failed to create GLFW window\n";
@@ -328,6 +451,8 @@ main()
         std::cerr << "Failed to initialize GLAD\n";
         return -1;
     }
+
+    the_scratch_arena.initialize();
 
     init_gl_renderer(&the_renderer);
 

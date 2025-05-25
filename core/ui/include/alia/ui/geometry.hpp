@@ -35,6 +35,34 @@ operator-=(Vec2& a, Vec2 b)
     return a;
 }
 
+inline Vec2
+operator*(Vec2 v, float s)
+{
+    return Vec2{v.x * s, v.y * s};
+}
+
+inline Vec2&
+operator*=(Vec2& v, float s)
+{
+    v.x *= s;
+    v.y *= s;
+    return v;
+}
+
+inline Vec2
+operator/(Vec2 v, float s)
+{
+    return Vec2{v.x / s, v.y / s};
+}
+
+inline Vec2&
+operator/=(Vec2& v, float s)
+{
+    v.x /= s;
+    v.y /= s;
+    return v;
+}
+
 struct Box
 {
     Vec2 pos;

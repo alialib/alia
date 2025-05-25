@@ -11,7 +11,7 @@
 namespace alia {
 
 bool
-UniformInfiniteArena::initialize(std::size_t reservation_size)
+RawInfiniteArena::initialize(std::size_t reservation_size)
 {
 #if defined(_WIN32)
     base_ = (std::uint8_t*) VirtualAlloc(
@@ -38,7 +38,7 @@ UniformInfiniteArena::initialize(std::size_t reservation_size)
 }
 
 void
-UniformInfiniteArena::release()
+RawInfiniteArena::release()
 {
     if (!base_)
         return;

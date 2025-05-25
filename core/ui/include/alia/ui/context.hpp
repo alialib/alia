@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cstddef>
+#include <cstdint>
 
 namespace alia {
 
@@ -20,13 +20,14 @@ enum class PassType
 struct LayoutEmission
 {
     LayoutSpec* specs;
-    std::size_t count;
+    std::uint32_t count;
+    std::uint32_t* next;
 };
 
 struct LayoutConsumption
 {
     LayoutPlacement* placements;
-    std::size_t index;
+    std::uint32_t index;
 };
 
 struct Pass
