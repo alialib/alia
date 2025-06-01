@@ -63,17 +63,22 @@ gather_hbox_x_requirements(
     LayoutSpec const& hbox)
 {
     auto& hbox_scratch = claim_scratch<HBoxScratch>(scratch_arena);
+    HorizontalRequirements* x_requirements
+        = reinterpret_cast<HorizontalRequirements*>(scratch_arena.allocate(
+            hbox.child_count * sizeof(HorizontalRequirements),
+            alignof(HorizontalRequirements)));
     for (LayoutIndex child_index = hbox.first_child; child_index != 0;
          child_index = specs[child_index].next_sibling)
     {
         auto const child_x
             = gather_x_requirements(specs, scratch_arena, child_index);
+        *x_requirements++ = child_x;
         hbox_scratch.total_width += child_x.min_size;
         hbox_scratch.total_growth += child_x.growth_factor;
     }
     return HorizontalRequirements{
         .min_size = hbox_scratch.total_width + hbox.margin.x * 2,
-        .growth_factor = hbox_scratch.total_growth};
+        .growth_factor = 0};
 }
 
 HorizontalRequirements
@@ -85,7 +90,7 @@ recall_hbox_x_requirements(
     auto& hbox_scratch = peek_scratch<HBoxScratch>(scratch_arena);
     return HorizontalRequirements{
         .min_size = hbox_scratch.total_width + hbox.margin.x * 2,
-        .growth_factor = hbox_scratch.total_growth};
+        .growth_factor = 0};
 }
 
 void
@@ -96,18 +101,22 @@ assign_hbox_x_layout(
     LayoutSpec const& hbox)
 {
     auto& hbox_scratch = use_scratch<HBoxScratch>(scratch_arena);
+    HorizontalRequirements* x_requirements
+        = reinterpret_cast<HorizontalRequirements*>(scratch_arena.allocate(
+            hbox.child_count * sizeof(HorizontalRequirements),
+            alignof(HorizontalRequirements)));
     assigned_width -= hbox.margin.x * 2;
     float const total_extra_space
         = (std::max)(0.f, assigned_width - hbox_scratch.total_width);
     // TODO: Figure out how to handle 0 total growth.
-    float const total_growth = (std::max)(0.00001f, hbox_scratch.total_growth);
+    float const one_over_total_growth
+        = 1.0f / (std::max)(0.00001f, hbox_scratch.total_growth);
     for (LayoutIndex child_index = hbox.first_child; child_index != 0;
          child_index = specs[child_index].next_sibling)
     {
-        auto const child_x
-            = recall_x_requirements(specs, scratch_arena, child_index);
-        float const extra_space
-            = total_extra_space * child_x.growth_factor / total_growth;
+        auto const child_x = *x_requirements++;
+        float const extra_space = total_extra_space * child_x.growth_factor
+                                * one_over_total_growth;
         assign_x_layout(
             specs, scratch_arena, child_x.min_size + extra_space, child_index);
     }
@@ -121,19 +130,23 @@ gather_hbox_y_requirements(
     LayoutSpec const& hbox)
 {
     auto& hbox_scratch = use_scratch<HBoxScratch>(scratch_arena);
+    HorizontalRequirements* x_requirements
+        = reinterpret_cast<HorizontalRequirements*>(scratch_arena.allocate(
+            hbox.child_count * sizeof(HorizontalRequirements),
+            alignof(HorizontalRequirements)));
     // TODO: Stop repeating this logic everywhere.
     assigned_width -= hbox.margin.y * 2;
     float const total_extra_space
         = (std::max)(0.f, assigned_width - hbox_scratch.total_width);
     // TODO: Figure out how to handle 0 total growth.
-    float const total_growth = (std::max)(0.00001f, hbox_scratch.total_growth);
+    float const one_over_total_growth
+        = 1.0f / (std::max)(0.00001f, hbox_scratch.total_growth);
     for (LayoutIndex child_index = hbox.first_child; child_index != 0;
          child_index = specs[child_index].next_sibling)
     {
-        auto const child_x
-            = recall_x_requirements(specs, scratch_arena, child_index);
-        float const extra_space
-            = total_extra_space * child_x.growth_factor / total_growth;
+        auto const child_x = *x_requirements++;
+        float const extra_space = total_extra_space * child_x.growth_factor
+                                * one_over_total_growth;
         auto const child_y = gather_y_requirements(
             specs, scratch_arena, child_x.min_size + extra_space, child_index);
         hbox_scratch.height
@@ -152,7 +165,7 @@ gather_hbox_y_requirements(
         hbox_scratch.height, hbox_scratch.ascent + hbox_scratch.descent);
     return VerticalRequirements{
         .min_size = hbox_scratch.height + hbox.margin.y * 2,
-        .growth_factor = hbox_scratch.total_growth,
+        .growth_factor = 0,
         .has_baseline = hbox_scratch.has_baseline,
         .baseline_offset = hbox_scratch.ascent};
 }
@@ -166,7 +179,7 @@ recall_hbox_y_requirements(
     auto& hbox_scratch = peek_scratch<HBoxScratch>(scratch_arena);
     return VerticalRequirements{
         .min_size = hbox_scratch.height + hbox.margin.y * 2,
-        .growth_factor = hbox_scratch.total_growth,
+        .growth_factor = 0,
         .has_baseline = hbox_scratch.has_baseline,
         .baseline_offset = hbox_scratch.ascent};
 }
@@ -186,19 +199,23 @@ assign_hbox_y_layout(
     LayoutSpec const& hbox)
 {
     auto& hbox_scratch = use_scratch<HBoxScratch>(scratch_arena);
+    HorizontalRequirements* x_requirements
+        = reinterpret_cast<HorizontalRequirements*>(scratch_arena.allocate(
+            hbox.child_count * sizeof(HorizontalRequirements),
+            alignof(HorizontalRequirements)));
     box = apply_margin(box, hbox.margin);
     float const total_extra_space
         = (std::max)(0.f, box.size.x - hbox_scratch.total_width);
     // TODO: Figure out how to handle 0 total growth.
-    float const total_growth = (std::max)(0.00001f, hbox_scratch.total_growth);
+    float const one_over_total_growth
+        = 1.0f / (std::max)(0.00001f, hbox_scratch.total_growth);
     float current_x = box.pos.x;
     for (LayoutIndex child_index = hbox.first_child; child_index != 0;
          child_index = specs[child_index].next_sibling)
     {
-        auto const child_x
-            = recall_x_requirements(specs, scratch_arena, child_index);
-        float const extra_space
-            = total_extra_space * child_x.growth_factor / total_growth;
+        auto const child_x = *x_requirements++;
+        float const extra_space = total_extra_space * child_x.growth_factor
+                                * one_over_total_growth;
         assign_y_layout(
             specs,
             scratch_arena,
@@ -237,7 +254,7 @@ gather_vbox_x_requirements(
     }
     return HorizontalRequirements{
         .min_size = hbox_scratch.max_width + vbox.margin.x * 2,
-        .growth_factor = hbox_scratch.total_growth};
+        .growth_factor = 0};
 }
 
 HorizontalRequirements
@@ -249,7 +266,7 @@ recall_vbox_x_requirements(
     auto& vbox_scratch = peek_scratch<VBoxScratch>(scratch_arena);
     return HorizontalRequirements{
         .min_size = vbox_scratch.max_width + vbox.margin.x * 2,
-        .growth_factor = vbox_scratch.total_growth};
+        .growth_factor = 0};
 }
 
 void
@@ -288,7 +305,7 @@ gather_vbox_y_requirements(
     }
     return VerticalRequirements{
         .min_size = vbox_scratch.total_height + vbox.margin.y * 2,
-        .growth_factor = vbox_scratch.total_growth};
+        .growth_factor = 0};
 }
 
 VerticalRequirements
@@ -300,7 +317,7 @@ recall_vbox_y_requirements(
     auto& vbox_scratch = peek_scratch<VBoxScratch>(scratch_arena);
     return VerticalRequirements{
         .min_size = vbox_scratch.total_height + vbox.margin.y * 2,
-        .growth_factor = vbox_scratch.total_growth};
+        .growth_factor = 0};
 }
 
 void

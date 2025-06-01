@@ -26,6 +26,7 @@ struct LayoutSpec
     Vec2 margin;
     float growth_factor = 0.f; // 0 = fixed, >0 = wants to grow
     LayoutIndex first_child;
+    uint32_t child_count = 0;
     LayoutIndex next_sibling;
 };
 
