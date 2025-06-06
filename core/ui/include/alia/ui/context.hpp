@@ -21,6 +21,7 @@ struct LayoutEmission
 {
     LayoutSpec* specs;
     std::uint32_t count;
+    LayoutSpec* active_container;
     std::uint32_t* next;
 };
 

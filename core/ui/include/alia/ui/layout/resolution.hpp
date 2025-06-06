@@ -1,13 +1,12 @@
 #pragma once
 
-#include <alia/foundation/infinite_arena.hpp>
-#include <alia/ui/geometry.hpp>
-
 #include <cstdint>
 
-namespace alia {
+#include <alia/foundation/infinite_arena.hpp>
+#include <alia/ui/geometry.hpp>
+#include <alia/ui/layout/api.hpp>
 
-using LayoutIndex = std::uint32_t;
+namespace alia {
 
 enum class LayoutNodeType
 {
@@ -44,14 +43,6 @@ struct HorizontalRequirements
     float growth_factor = 0.f; // 0 = fixed, >0 = wants to grow
 };
 
-struct VerticalRequirements
-{
-    float min_size;
-    float growth_factor = 0.f; // 0 = fixed, >0 = wants to grow
-    bool has_baseline = false;
-    float baseline_offset = 0.f;
-};
-
 void
 resolve_layout(
     LayoutSpec const* specs,
@@ -68,11 +59,19 @@ recall_x_requirements(
     LayoutSpec const* specs, LayoutScratchArena& scratch, LayoutIndex index);
 
 void
-assign_x_layout(
+assign_widths(
     LayoutSpec const* specs,
     LayoutScratchArena& scratch,
     float assigned_width,
     LayoutIndex index);
+
+struct VerticalRequirements
+{
+    float min_size;
+    float growth_factor = 0.f; // 0 = fixed, >0 = wants to grow
+    bool has_baseline = false;
+    float baseline_offset = 0.f;
+};
 
 VerticalRequirements
 gather_y_requirements(
@@ -86,7 +85,7 @@ recall_y_requirements(
     LayoutSpec const* specs, LayoutScratchArena& scratch, LayoutIndex index);
 
 void
-assign_y_layout(
+assign_boxes(
     LayoutSpec const* specs,
     LayoutScratchArena& scratch,
     LayoutPlacement* placements,

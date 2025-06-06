@@ -19,7 +19,8 @@
 #include <alia/ui/drawing.hpp>
 #include <alia/ui/events.hpp>
 #include <alia/ui/geometry.hpp>
-#include <alia/ui/layout.hpp>
+#include <alia/ui/layout/api.hpp>
+#include <alia/ui/layout/resolution.hpp>
 #include <alia/ui/system.hpp>
 
 using namespace alia;
@@ -72,6 +73,7 @@ do_rect(Context& ctx, Vec2 size, Color color)
                 .first_child = 0,
                 .next_sibling = 0};
             layout.next = &new_node->next_sibling;
+            ++layout.active_container->child_count;
             ++layout.count;
             break;
         }
@@ -101,102 +103,17 @@ do_rect(Context& ctx, Vec2 size, Color color)
     return false;
 }
 
-template<class Content>
-void
-hbox(Context& ctx, Content&& content)
-{
-    LayoutIndex index = 0;
-
-    switch (ctx.pass.type)
-    {
-        case PassType::Refresh: {
-            auto& layout = ctx.pass.layout_emission;
-            *layout.next = layout.count;
-            index = layout.count;
-            LayoutSpec* new_node = &layout.specs[index];
-            *new_node = LayoutSpec{
-                .type = LayoutNodeType::HBox,
-                .size = {0, 0},
-                .margin = {0, 0},
-                .first_child = 0,
-                .next_sibling = 0};
-            layout.next = &new_node->first_child;
-            ++layout.count;
-            break;
-        }
-        default:
-            index = ctx.pass.layout_consumption.index++;
-            break;
-    }
-
-    std::forward<Content>(content)();
-
-    switch (ctx.pass.type)
-    {
-        case PassType::Refresh: {
-            auto& layout = ctx.pass.layout_emission;
-            LayoutSpec* this_node = &layout.specs[index];
-            *layout.next = 0;
-            layout.next = &this_node->next_sibling;
-            break;
-        }
-    }
-}
-
-template<class Content>
-void
-vbox(Context& ctx, Content&& content)
-{
-    LayoutIndex index = 0;
-
-    switch (ctx.pass.type)
-    {
-        case PassType::Refresh: {
-            auto& layout = ctx.pass.layout_emission;
-            *layout.next = layout.count;
-            index = layout.count;
-            LayoutSpec* new_node = &layout.specs[index];
-            *new_node = LayoutSpec{
-                .type = LayoutNodeType::VBox,
-                .size = {0, 0},
-                .margin = {0, 0},
-                .first_child = 0,
-                .next_sibling = 0};
-            layout.next = &new_node->first_child;
-            ++layout.count;
-            break;
-        }
-        default:
-            index = ctx.pass.layout_consumption.index++;
-            break;
-    }
-
-    std::forward<Content>(content)();
-
-    switch (ctx.pass.type)
-    {
-        case PassType::Refresh: {
-            auto& layout = ctx.pass.layout_emission;
-            LayoutSpec* this_node = &layout.specs[index];
-            *layout.next = 0;
-            layout.next = &this_node->next_sibling;
-            break;
-        }
-    }
-}
-
 void
 rectangle_demo(Context& ctx)
 {
     static bool invert = false;
 
     vbox(ctx, [&]() {
-        // box 1: dynamic color
         float x = 0.0f;
-        for (int i = 0; i < 100; ++i)
+        for (int i = 0; i < 40; ++i)
         {
             hbox(ctx, [&]() {
-                for (int j = 0; j != 20; ++j)
+                for (int j = 0; j != 50; ++j)
                 {
                     do_rect(
                         ctx,
@@ -208,7 +125,6 @@ rectangle_demo(Context& ctx)
             });
         }
 
-        // box 2: button
         hbox(ctx, [&]() {
             for (int i = 0; i < 4; ++i)
             {
@@ -258,7 +174,7 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         Context event_ctx
             = {Pass{
                    PassType::Event,
-                   {the_layout_specs, 1, &root_index},
+                   {the_layout_specs, 1, the_layout_specs, &root_index},
                    {the_layout_placements, 1},
                    nullptr,
                    &event},
@@ -323,10 +239,12 @@ update()
     auto const start_time = std::chrono::high_resolution_clock::now();
 
     std::uint32_t root_index;
+    // Add a placeholder to fill the reserved/invalid 0 index.
+    the_layout_specs[0] = LayoutSpec{};
     Context refresh_ctx
         = {Pass{
                PassType::Refresh,
-               {the_layout_specs, 1, &root_index},
+               {the_layout_specs, 1, the_layout_specs, &root_index},
                {the_layout_placements, 1},
                nullptr,
                nullptr},
@@ -362,7 +280,7 @@ update()
     Context draw_ctx
         = {Pass{
                PassType::Draw,
-               {the_layout_specs, 1, &root_index},
+               {the_layout_specs, 1, the_layout_specs, &root_index},
                {the_layout_placements, 1},
                &the_display_list,
                nullptr},

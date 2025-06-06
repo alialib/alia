@@ -3,7 +3,7 @@
 #include "nanobench.h"
 
 #include <alia/foundation/infinite_arena.hpp>
-#include <alia/ui/layout.hpp>
+#include <alia/ui/layout/resolution.hpp>
 
 using namespace alia;
 
