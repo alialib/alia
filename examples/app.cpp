@@ -108,12 +108,12 @@ rectangle_demo(Context& ctx)
 {
     static bool invert = false;
 
-    vbox(ctx, [&]() {
+    flow(ctx, [&]() {
         float x = 0.0f;
-        for (int i = 0; i < 40; ++i)
+        for (int i = 0; i < 400; ++i)
         {
             hbox(ctx, [&]() {
-                for (int j = 0; j != 50; ++j)
+                for (int j = 0; j != 5; ++j)
                 {
                     do_rect(
                         ctx,

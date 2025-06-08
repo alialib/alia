@@ -47,4 +47,20 @@ vbox(Context& ctx, Content&& content)
     end_vbox(ctx, scope);
 }
 
+void
+begin_flow(Context& ctx, LayoutScope& scope);
+
+void
+end_flow(Context& ctx, LayoutScope& scope);
+
+template<class Content>
+void
+flow(Context& ctx, Content&& content)
+{
+    LayoutScope scope;
+    begin_flow(ctx, scope);
+    std::forward<Content>(content)();
+    end_flow(ctx, scope);
+}
+
 } // namespace alia

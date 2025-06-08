@@ -1,8 +1,8 @@
 #include <alia/ui/layout/resolution.hpp>
 
+#include <alia/ui/layout/flow.hpp>
 #include <alia/ui/layout/hbox.hpp>
 #include <alia/ui/layout/vbox.hpp>
-
 namespace alia {
 
 void
@@ -35,6 +35,8 @@ gather_x_requirements(
             return gather_hbox_x_requirements(specs, scratch, spec);
         case LayoutNodeType::VBox:
             return gather_vbox_x_requirements(specs, scratch, spec);
+        case LayoutNodeType::Flow:
+            return gather_flow_x_requirements(specs, scratch, spec);
         default:
         case LayoutNodeType::Leaf:
             return HorizontalRequirements{
@@ -54,6 +56,8 @@ recall_x_requirements(
             return recall_hbox_x_requirements(specs, scratch, spec);
         case LayoutNodeType::VBox:
             return recall_vbox_x_requirements(specs, scratch, spec);
+        case LayoutNodeType::Flow:
+            return recall_flow_x_requirements(specs, scratch, spec);
         default:
         case LayoutNodeType::Leaf:
             return HorizontalRequirements{
@@ -78,6 +82,9 @@ assign_widths(
         case LayoutNodeType::VBox:
             assign_vbox_widths(specs, scratch, assigned_width, spec);
             break;
+        case LayoutNodeType::Flow:
+            assign_flow_widths(specs, scratch, assigned_width, spec);
+            break;
         default:
         case LayoutNodeType::Leaf:
             break;
@@ -100,6 +107,9 @@ gather_y_requirements(
         case LayoutNodeType::VBox:
             return gather_vbox_y_requirements(
                 specs, scratch, assigned_width, spec);
+        case LayoutNodeType::Flow:
+            return gather_flow_y_requirements(
+                specs, scratch, assigned_width, spec);
         default:
         case LayoutNodeType::Leaf:
             return VerticalRequirements{
@@ -119,6 +129,8 @@ recall_y_requirements(
             return recall_hbox_y_requirements(specs, scratch, spec);
         case LayoutNodeType::VBox:
             return recall_vbox_y_requirements(specs, scratch, spec);
+        case LayoutNodeType::Flow:
+            return recall_flow_y_requirements(specs, scratch, spec);
         default:
         case LayoutNodeType::Leaf:
             return VerticalRequirements{
@@ -143,6 +155,9 @@ assign_boxes(
             break;
         case LayoutNodeType::VBox:
             assign_vbox_boxes(specs, scratch, placements, box, spec);
+            break;
+        case LayoutNodeType::Flow:
+            assign_flow_boxes(specs, scratch, placements, box, spec);
             break;
         default:
         case LayoutNodeType::Leaf:

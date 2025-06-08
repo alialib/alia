@@ -73,4 +73,16 @@ end_vbox(Context& ctx, LayoutScope& scope)
     end_container(ctx, scope);
 }
 
+void
+begin_flow(Context& ctx, LayoutScope& scope)
+{
+    begin_container(ctx, scope, LayoutNodeType::Flow);
+}
+
+void
+end_flow(Context& ctx, LayoutScope& scope)
+{
+    end_container(ctx, scope);
+}
+
 } // namespace alia
