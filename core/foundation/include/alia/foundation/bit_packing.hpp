@@ -1,6 +1,6 @@
-#ifndef ALIA_CORE_BIT_PACKING_HPP
-#define ALIA_CORE_BIT_PACKING_HPP
+#pragma once
 
+#include <cstddef>
 #include <cstdint>
 
 // This file provides utilities for composing bit fields into a single uint32_t
@@ -108,13 +108,15 @@ adjust_offset(bitpack_ref<Layout>& pack, unsigned offset)
 #define ALIA_BITREF(pack, member)                                             \
     (alia::bitref<decltype(decltype(pack)::layout_t().member)>{               \
         (pack).bits,                                                          \
-        adjust_offset(pack, offsetof(decltype(pack)::layout_t, member))})
+        alia::adjust_offset(                                                  \
+            (pack), offsetof(decltype(pack)::layout_t, member))})
 
 #define ALIA_NESTED_BITPACK(parent_pack, member)                              \
     (alia::bitpack_ref<decltype(decltype(parent_pack)::layout_t().member)>{   \
         (parent_pack).bits,                                                   \
-        adjust_offset(                                                        \
-            parent_pack, offsetof(decltype(parent_pack)::layout_t, member))})
+        alia::adjust_offset(                                                  \
+            (parent_pack),                                                    \
+            offsetof(decltype(parent_pack)::layout_t, member))})
 
 // General-purpose bitref operations...
 
@@ -168,6 +170,5 @@ toggle_bit(bitref<Tag>& ref)
     static_assert(Tag::size == 1, "toggle_bit requires a single-bit field");
     ref.storage ^= (1u << ref.index);
 }
-} // namespace alia
 
-#endif
+} // namespace alia

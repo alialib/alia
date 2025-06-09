@@ -1,10 +1,10 @@
-#include <alia/core/bit_packing.hpp>
+#include <doctest/doctest.h>
 
-#include <catch2/catch_test_macros.hpp>
+#include <alia/foundation/bit_packing.hpp>
 
 using namespace alia;
 
-TEST_CASE("bitpack", "[bit_packing]")
+TEST_CASE("bitpack")
 {
     struct bit_field_a : bit_field<2>
     {
@@ -49,25 +49,25 @@ TEST_CASE("bitpack", "[bit_packing]")
 
     write_bitref(a_ref, 2);
     REQUIRE(read_bitref(a_ref) == 2);
-    REQUIRE(pack.bits == 0b0000010);
+    REQUIRE(pack.bits == 0b000'0010);
 
     write_bitref(b_ref, 5);
     REQUIRE(read_bitref(b_ref) == 5);
-    REQUIRE(pack.bits == 0b00010110);
+    REQUIRE(pack.bits == 0b0001'0110);
 
     // Test single-bit operations.
 
     set_bit(c_ref);
     REQUIRE(is_set(c_ref) == true);
-    REQUIRE(pack.bits == 0b00110110);
+    REQUIRE(pack.bits == 0b0011'0110);
 
     clear_bit(c_ref);
     REQUIRE(is_set(c_ref) == false);
-    REQUIRE(pack.bits == 0b00010110);
+    REQUIRE(pack.bits == 0b0001'0110);
 
     toggle_bit(c_ref);
     REQUIRE(is_set(c_ref) == true);
-    REQUIRE(pack.bits == 0b00110110);
+    REQUIRE(pack.bits == 0b0011'0110);
 
     // Test overwriting fields.
     write_bitref(a_ref, 3);
@@ -97,7 +97,7 @@ TEST_CASE("bitpack", "[bit_packing]")
     REQUIRE(read_bitref(c_ref) == 1);
 }
 
-TEST_CASE("bitpack subpacks", "[bit_packing]")
+TEST_CASE("bitpack subpacks")
 {
     struct inner_layout
     {
@@ -137,7 +137,7 @@ TEST_CASE("bitpack subpacks", "[bit_packing]")
     REQUIRE(read_bitref(b_ref) == 3);
 
     // Verify the overall bitpack.
-    REQUIRE(pack.bits == 0b11101101);
+    REQUIRE(pack.bits == 0b1110'1101);
 
     // Test overwriting subpack fields.
     write_bitref(x_ref, 3);
@@ -148,5 +148,5 @@ TEST_CASE("bitpack subpacks", "[bit_packing]")
     REQUIRE(read_bitref(y_ref) == 2);
 
     // Verify the overall bitpack again
-    REQUIRE(pack.bits == 0b11010111);
+    REQUIRE(pack.bits == 0b1101'0111);
 }

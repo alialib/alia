@@ -1,8 +1,13 @@
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 
 #include <alia/foundation/arena.hpp>
 #include <cstring> // for std::memset
+
+#ifdef _MSC_VER
+#include <malloc.h>
+#else
+#include <cstdlib>
+#endif
 
 using namespace alia;
 
