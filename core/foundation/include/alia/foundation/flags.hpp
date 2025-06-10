@@ -12,22 +12,22 @@ namespace alia {
 // it. Only properties/sets with the same tag can be combined.
 
 // NO_FLAGS can be implicitly converted to any type of flag_set.
-struct null_flag_set
+struct NullFlagSet
 {
 };
-null_flag_set const NO_FLAGS = null_flag_set();
+NullFlagSet const NO_FLAGS = NullFlagSet();
 
 template<class Tag>
-struct flag_set
+struct FlagSet
 {
     unsigned code;
-    flag_set()
+    FlagSet()
     {
     }
-    flag_set(null_flag_set) : code(0)
+    FlagSet(NullFlagSet) : code(0)
     {
     }
-    explicit flag_set(unsigned code) : code(code)
+    explicit FlagSet(unsigned code) : code(code)
     {
     }
     explicit
@@ -38,64 +38,64 @@ struct flag_set
 };
 
 template<class Tag>
-flag_set<Tag>
-operator|(flag_set<Tag> a, flag_set<Tag> b)
+FlagSet<Tag>
+operator|(FlagSet<Tag> a, FlagSet<Tag> b)
 {
-    return flag_set<Tag>(a.code | b.code);
+    return FlagSet<Tag>(a.code | b.code);
 }
 template<class Tag>
-flag_set<Tag>&
-operator|=(flag_set<Tag>& a, flag_set<Tag> b)
+FlagSet<Tag>&
+operator|=(FlagSet<Tag>& a, FlagSet<Tag> b)
 {
     a.code |= b.code;
     return a;
 }
 template<class Tag>
-flag_set<Tag>
-operator&(flag_set<Tag> a, flag_set<Tag> b)
+FlagSet<Tag>
+operator&(FlagSet<Tag> a, FlagSet<Tag> b)
 {
-    return flag_set<Tag>(a.code & b.code);
+    return FlagSet<Tag>(a.code & b.code);
 }
 template<class Tag>
-flag_set<Tag>&
-operator&=(flag_set<Tag>& a, flag_set<Tag> b)
+FlagSet<Tag>&
+operator&=(FlagSet<Tag>& a, FlagSet<Tag> b)
 {
     a.code &= b.code;
     return a;
 }
 template<class Tag>
 bool
-operator==(flag_set<Tag> a, flag_set<Tag> b)
+operator==(FlagSet<Tag> a, FlagSet<Tag> b)
 {
     return a.code == b.code;
 }
 template<class Tag>
 bool
-operator!=(flag_set<Tag> a, flag_set<Tag> b)
+operator!=(FlagSet<Tag> a, FlagSet<Tag> b)
 {
     return a.code != b.code;
 }
 template<class Tag>
 bool
-operator<(flag_set<Tag> a, flag_set<Tag> b)
+operator<(FlagSet<Tag> a, FlagSet<Tag> b)
 {
     return a.code < b.code;
 }
 template<class Tag>
-flag_set<Tag>
-operator~(flag_set<Tag> a)
+FlagSet<Tag>
+operator~(FlagSet<Tag> a)
 {
-    return flag_set<Tag>(~a.code);
+    return FlagSet<Tag>(~a.code);
 }
 
 } // namespace alia
 
-#define ALIA_DEFINE_FLAG_TYPE(type_prefix)                                    \
-    struct type_prefix##_flag_tag                                             \
+#define ALIA_DEFINE_FLAG_TYPE(TypePrefix)                                     \
+    struct TypePrefix##FlagTag                                                \
     {                                                                         \
     };                                                                        \
-    typedef alia::flag_set<type_prefix##_flag_tag> type_prefix##_flag_set;
+    typedef alia::FlagSet<TypePrefix##FlagTag> TypePrefix##FlagSet;
 
-#define ALIA_DEFINE_FLAG(type_prefix, code, name)                             \
+#define ALIA_DEFINE_FLAG(TypePrefix, code, name)                              \
     unsigned const name##_CODE = code;                                        \
-    alia::flag_set<type_prefix##_flag_tag> const name(code);
+    alia::FlagSet<TypePrefix##FlagTag> const name(code);
