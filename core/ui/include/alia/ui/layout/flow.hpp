@@ -6,42 +6,42 @@ namespace alia {
 
 HorizontalRequirements
 gather_flow_x_requirements(
-    LayoutSpec const* specs,
+    LayoutNode const* nodes,
     LayoutScratchArena& scratch_arena,
-    LayoutSpec const& flow);
+    LayoutNode const& flow);
 
 HorizontalRequirements
 recall_flow_x_requirements(
-    LayoutSpec const* specs,
+    LayoutNode const* nodes,
     LayoutScratchArena& scratch_arena,
-    LayoutSpec const& flow);
+    LayoutNode const& flow);
 
 void
 assign_flow_widths(
-    LayoutSpec const* specs,
+    LayoutNode const* nodes,
     LayoutScratchArena& scratch_arena,
     float assigned_width,
-    LayoutSpec const& flow);
+    LayoutNode const& flow);
 
 VerticalRequirements
 gather_flow_y_requirements(
-    LayoutSpec const* specs,
+    LayoutNode const* nodes,
     LayoutScratchArena& scratch_arena,
     float assigned_width,
-    LayoutSpec const& flow);
+    LayoutNode const& flow);
 
 VerticalRequirements
 recall_flow_y_requirements(
-    LayoutSpec const* specs,
+    LayoutNode const* nodes,
     LayoutScratchArena& scratch_arena,
-    LayoutSpec const& flow);
+    LayoutNode const& flow);
 
 void
 assign_flow_boxes(
-    LayoutSpec const* specs,
+    LayoutNode const* nodes,
     LayoutScratchArena& scratch_arena,
     LayoutPlacement* placements,
     Box box,
-    LayoutSpec const& flow);
+    LayoutNode const& flow);
 
 } // namespace alia

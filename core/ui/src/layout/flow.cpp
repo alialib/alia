@@ -12,9 +12,9 @@ struct FlowScratch
 
 HorizontalRequirements
 gather_flow_x_requirements(
-    LayoutSpec const* specs,
+    LayoutNode const* nodes,
     LayoutScratchArena& scratch_arena,
-    LayoutSpec const& flow)
+    LayoutNode const& flow)
 {
     auto& flow_scratch = claim_scratch<FlowScratch>(scratch_arena);
     HorizontalRequirements* x_requirements
@@ -26,10 +26,10 @@ gather_flow_x_requirements(
             flow.child_count * sizeof(VerticalRequirements),
             alignof(VerticalRequirements)));
     for (LayoutIndex child_index = flow.first_child; child_index != 0;
-         child_index = specs[child_index].next_sibling)
+         child_index = nodes[child_index].next_sibling)
     {
         auto const child_x
-            = gather_x_requirements(specs, scratch_arena, child_index);
+            = gather_x_requirements(nodes, scratch_arena, child_index);
         *x_requirements++ = child_x;
         flow_scratch.max_child_width
             = (std::max)(flow_scratch.max_child_width, child_x.min_size);
@@ -41,9 +41,9 @@ gather_flow_x_requirements(
 
 HorizontalRequirements
 recall_flow_x_requirements(
-    LayoutSpec const* specs,
+    LayoutNode const* nodes,
     LayoutScratchArena& scratch_arena,
-    LayoutSpec const& flow)
+    LayoutNode const& flow)
 {
     auto& flow_scratch = peek_scratch<FlowScratch>(scratch_arena);
     return HorizontalRequirements{
@@ -53,10 +53,10 @@ recall_flow_x_requirements(
 
 void
 assign_flow_widths(
-    LayoutSpec const* specs,
+    LayoutNode const* nodes,
     LayoutScratchArena& scratch_arena,
     float assigned_width,
-    LayoutSpec const& flow)
+    LayoutNode const& flow)
 {
     auto& flow_scratch = use_scratch<FlowScratch>(scratch_arena);
     HorizontalRequirements* x_requirements
@@ -69,19 +69,19 @@ assign_flow_widths(
             alignof(VerticalRequirements)));
     assigned_width -= flow.margin.x * 2;
     for (LayoutIndex child_index = flow.first_child; child_index != 0;
-         child_index = specs[child_index].next_sibling)
+         child_index = nodes[child_index].next_sibling)
     {
         auto const child_x = *x_requirements++;
-        assign_widths(specs, scratch_arena, child_x.min_size, child_index);
+        assign_widths(nodes, scratch_arena, child_x.min_size, child_index);
     }
 }
 
 VerticalRequirements
 gather_flow_y_requirements(
-    LayoutSpec const* specs,
+    LayoutNode const* nodes,
     LayoutScratchArena& scratch_arena,
     float assigned_width,
-    LayoutSpec const& flow)
+    LayoutNode const& flow)
 {
     auto& flow_scratch = use_scratch<FlowScratch>(scratch_arena);
     HorizontalRequirements* x_requirements
@@ -94,7 +94,7 @@ gather_flow_y_requirements(
             alignof(VerticalRequirements)));
     float row_height = 0, total_height = 0, row_width = 0;
     for (LayoutIndex child_index = flow.first_child; child_index != 0;
-         child_index = specs[child_index].next_sibling)
+         child_index = nodes[child_index].next_sibling)
     {
         auto const child_x = *x_requirements++;
         row_width += child_x.min_size;
@@ -105,7 +105,7 @@ gather_flow_y_requirements(
             row_width = child_x.min_size;
         }
         auto const child_y = gather_y_requirements(
-            specs, scratch_arena, child_x.min_size, child_index);
+            nodes, scratch_arena, child_x.min_size, child_index);
         *y_requirements++ = child_y;
         row_height = (std::max)(row_height, child_y.min_size);
         // TODO: Add baseline support.
@@ -130,9 +130,9 @@ gather_flow_y_requirements(
 
 VerticalRequirements
 recall_flow_y_requirements(
-    LayoutSpec const* specs,
+    LayoutNode const* nodes,
     LayoutScratchArena& scratch_arena,
-    LayoutSpec const& flow)
+    LayoutNode const& flow)
 {
     auto& flow_scratch = peek_scratch<FlowScratch>(scratch_arena);
     return VerticalRequirements{
@@ -144,11 +144,11 @@ recall_flow_y_requirements(
 
 void
 assign_flow_boxes(
-    LayoutSpec const* specs,
+    LayoutNode const* nodes,
     LayoutScratchArena& scratch_arena,
     LayoutPlacement* placements,
     Box box,
-    LayoutSpec const& flow)
+    LayoutNode const& flow)
 {
     auto& flow_scratch = use_scratch<FlowScratch>(scratch_arena);
     HorizontalRequirements* x_requirements
@@ -163,7 +163,7 @@ assign_flow_boxes(
     float current_x = box.pos.x, current_y = box.pos.y;
     float row_height = 0;
     for (LayoutIndex child_index = flow.first_child; child_index != 0;
-         child_index = specs[child_index].next_sibling)
+         child_index = nodes[child_index].next_sibling)
     {
         auto const child_x = *x_requirements++;
         auto const child_y = *y_requirements++;
@@ -175,7 +175,7 @@ assign_flow_boxes(
         }
         row_height = (std::max)(row_height, child_y.min_size);
         assign_boxes(
-            specs,
+            nodes,
             scratch_arena,
             placements,
             Box{Vec2{current_x, current_y},

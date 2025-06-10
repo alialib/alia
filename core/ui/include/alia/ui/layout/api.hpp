@@ -5,14 +5,14 @@
 namespace alia {
 
 struct Context;
-struct LayoutSpec;
+struct LayoutNode;
 
 using LayoutIndex = std::uint32_t;
 
 struct LayoutScope
 {
     LayoutIndex index = 0;
-    LayoutSpec* parent = nullptr;
+    LayoutNode* parent = nullptr;
 };
 
 void

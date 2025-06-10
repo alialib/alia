@@ -15,8 +15,8 @@ begin_container(Context& ctx, LayoutScope& scope, LayoutNodeType type)
         auto& layout = ctx.pass.layout_emission;
         *layout.next = layout.count;
         scope.index = layout.count;
-        LayoutSpec* new_node = &layout.specs[scope.index];
-        *new_node = LayoutSpec{
+        LayoutNode* new_node = &layout.nodes[scope.index];
+        *new_node = LayoutNode{
             .type = type,
             .size = {0, 0},
             .margin = {0, 0},
@@ -40,7 +40,7 @@ end_container(Context& ctx, LayoutScope& scope)
     if (ctx.pass.type == PassType::Refresh)
     {
         auto& layout = ctx.pass.layout_emission;
-        LayoutSpec* this_node = &layout.specs[scope.index];
+        LayoutNode* this_node = &layout.nodes[scope.index];
         *layout.next = 0;
         layout.next = &this_node->next_sibling;
         layout.active_container = scope.parent;

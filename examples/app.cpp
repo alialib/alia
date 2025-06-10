@@ -65,8 +65,8 @@ do_rect(Context& ctx, Vec2 size, Color color)
         case PassType::Refresh: {
             auto& layout = ctx.pass.layout_emission;
             *layout.next = layout.count;
-            LayoutSpec* new_node = &layout.specs[layout.count];
-            *new_node = LayoutSpec{
+            LayoutNode* new_node = &layout.nodes[layout.count];
+            *new_node = LayoutNode{
                 .type = LayoutNodeType::Leaf,
                 .size = size,
                 .margin = {4, 4},
@@ -138,7 +138,7 @@ rectangle_demo(Context& ctx)
 }
 
 System the_system;
-LayoutSpec the_layout_specs[4096];
+LayoutNode the_layout_specs[4096];
 LayoutScratchArena the_scratch_arena;
 LayoutPlacement the_layout_placements[4096];
 GLFWwindow* the_window;
@@ -240,7 +240,7 @@ update()
 
     std::uint32_t root_index;
     // Add a placeholder to fill the reserved/invalid 0 index.
-    the_layout_specs[0] = LayoutSpec{};
+    the_layout_specs[0] = LayoutNode{};
     Context refresh_ctx
         = {Pass{
                PassType::Refresh,

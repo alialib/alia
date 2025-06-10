@@ -7,7 +7,7 @@ namespace alia {
 struct Event;
 struct DisplayList;
 struct System;
-struct LayoutSpec;
+struct LayoutNode;
 struct LayoutPlacement;
 
 enum class PassType
@@ -19,9 +19,9 @@ enum class PassType
 
 struct LayoutEmission
 {
-    LayoutSpec* specs;
+    LayoutNode* nodes;
     std::uint32_t count;
-    LayoutSpec* active_container;
+    LayoutNode* active_container;
     std::uint32_t* next;
 };
 
