@@ -1,6 +1,6 @@
 #include <alia/renderers/gl/renderer.hpp>
 
-#include <alia/foundation/arena.hpp>
+#include <alia/flow/arena.hpp>
 #include <alia/ui/display_list.hpp>
 #include <alia/ui/system.hpp>
 

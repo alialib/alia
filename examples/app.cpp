@@ -10,7 +10,7 @@
 
 #include "roboto-msdf.h"
 
-#include <alia/foundation/arena.hpp>
+#include <alia/flow/arena.hpp>
 #include <alia/platforms/glfw/window.hpp>
 #include <alia/renderers/gl/renderer.hpp>
 #include <alia/text_engines/msdf/msdf.hpp>

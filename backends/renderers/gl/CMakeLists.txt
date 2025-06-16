@@ -6,4 +6,4 @@ add_library(alia_gl_renderer STATIC
 target_include_directories(alia_gl_renderer PUBLIC
     ${PROJECT_SOURCE_DIR}/backends/renderers/gl/include)
 target_link_libraries(alia_gl_renderer PUBLIC
-    glfw glad::glad alia_ui alia_foundation)
+    glfw glad::glad alia_ui)

@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 
-#include <alia/foundation/base.hpp>
+#include <alia/flow/base.hpp>
 
 namespace alia {
 

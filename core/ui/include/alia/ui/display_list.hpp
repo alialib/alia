@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-#include <alia/foundation/arena.hpp>
+#include <alia/flow/arena.hpp>
 #include <alia/ui/color.hpp>
 #include <alia/ui/geometry.hpp>
 

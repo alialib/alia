@@ -1,6 +1,6 @@
 #include <alia/ui/display_list.hpp>
 
-#include <alia/foundation/arena.hpp>
+#include <alia/flow/arena.hpp>
 
 namespace alia {
 

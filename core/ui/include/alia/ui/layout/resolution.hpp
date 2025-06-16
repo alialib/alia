@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-#include <alia/foundation/infinite_arena.hpp>
+#include <alia/flow/infinite_arena.hpp>
 #include <alia/ui/geometry.hpp>
 #include <alia/ui/layout/api.hpp>
 
