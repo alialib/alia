@@ -276,7 +276,7 @@ update()
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
-    reset_display_list(&the_display_list);
+    reset_display_list(the_display_list);
     Context draw_ctx
         = {Pass{
                PassType::Draw,
@@ -409,10 +409,7 @@ main()
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
-    ArenaAllocator alloc{default_alloc, default_dealloc, nullptr};
-    Arena* display_list_arena
-        = create_arena(alloc, sizeof(DrawCommand) * 4096);
-    the_display_list = create_display_list(display_list_arena);
+    init_display_list(the_display_list);
 
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);

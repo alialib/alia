@@ -20,6 +20,27 @@ struct RawInfiniteArena
 {
     static constexpr std::size_t INFINITE_CAPACITY = 128 * 1024 * 1024;
 
+    RawInfiniteArena()
+    {
+    }
+
+    // Disallow copying.
+    RawInfiniteArena(RawInfiniteArena const&) = delete;
+    RawInfiniteArena&
+    operator=(RawInfiniteArena const&)
+        = delete;
+
+    // Allowing moving.
+    RawInfiniteArena(RawInfiniteArena&&) = default;
+    RawInfiniteArena&
+    operator=(RawInfiniteArena&&)
+        = default;
+
+    ~RawInfiniteArena()
+    {
+        release();
+    }
+
     bool
     initialize(std::size_t reservation_size = INFINITE_CAPACITY);
 
@@ -48,11 +69,6 @@ struct RawInfiniteArena
     void
     release();
 
-    ~RawInfiniteArena()
-    {
-        release();
-    }
-
  private:
     std::uint8_t* base_ = nullptr;
     std::uint8_t* next_ = nullptr;
@@ -61,7 +77,7 @@ struct RawInfiniteArena
 
 // UniformlyAlignedInfiniteArena is a simple arena allocator that assumes an
 // infinite reservation of memory and uniform alignment requirements. (It
-// checks for overflow with ALIA_ASSERT but does not check for misalignment.)
+// checks for overflow and misalignment with ALIA_ASSERT.)
 template<std::size_t Alignment>
 struct UniformlyAlignedInfiniteArena
 {
@@ -84,6 +100,52 @@ struct UniformlyAlignedInfiniteArena
         std::size_t const aligned_size
             = (size + Alignment - 1) & ~(Alignment - 1);
         return base_.allocate(aligned_size);
+    }
+
+    void*
+    peek()
+    {
+        return base_.peek();
+    }
+
+    void
+    reset()
+    {
+        base_.reset();
+    }
+
+    void
+    release()
+    {
+        base_.release();
+    }
+};
+
+// HeterogeneousInfiniteArena is an arena allocator that assumes an infinite
+// reservation of memory but supports heterogeneous sizes and alignments.
+struct HeterogeneousInfiniteArena
+{
+    // TODO: Use inheritance to avoid code duplication?
+
+    static constexpr std::size_t INFINITE_CAPACITY = 128 * 1024 * 1024;
+
+    RawInfiniteArena base_;
+
+    bool
+    initialize(std::size_t reservation_size = INFINITE_CAPACITY)
+    {
+        return base_.initialize(reservation_size);
+    }
+
+    void*
+    allocate(std::size_t size, std::size_t alignment)
+    {
+        std::uintptr_t addr = std::uintptr_t(base_.peek());
+        std::uintptr_t aligned_addr
+            = (addr + (alignment - 1)) & ~(alignment - 1);
+        std::size_t padding = aligned_addr - addr;
+        base_.allocate(size + padding);
+        return (void*) (aligned_addr);
     }
 
     void*

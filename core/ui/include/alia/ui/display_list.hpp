@@ -1,39 +1,57 @@
 #pragma once
 
-#include <cstdint>
-
-#include <alia/flow/arena.hpp>
+#include <alia/flow/infinite_arena.hpp>
 #include <alia/ui/color.hpp>
 #include <alia/ui/geometry.hpp>
 
 namespace alia {
 
-enum class DrawCommandType : std::uint8_t
+struct BoxDrawCommand
 {
-    Box
-};
-
-struct DrawCommand
-{
-    DrawCommandType type;
     Box box;
     Color color;
+    BoxDrawCommand* next;
 };
 
-struct DisplayList
+template<class Command>
+struct CommandList
 {
-    Arena* arena;
-    DrawCommand* commands;
+    Command* head;
+    Command** tail_ptr;
     size_t count;
 };
 
-DisplayList
-create_display_list(Arena* arena);
+template<class Command>
+void
+clear_command_list(CommandList<Command>& list)
+{
+    list.head = nullptr;
+    list.tail_ptr = &list.head;
+    list.count = 0;
+}
+
+template<class Command>
+void
+add_command(CommandList<Command>& list, Command* command)
+{
+    *list.tail_ptr = command;
+    list.tail_ptr = &command->next;
+    ++list.count;
+}
+
+struct DisplayList
+{
+    HeterogeneousInfiniteArena arena;
+    CommandList<BoxDrawCommand> boxes;
+};
 
 void
-reset_display_list(DisplayList* display_list);
+init_display_list(DisplayList& list);
 
 void
-destroy_display_list(DisplayList* display_list);
+reset_display_list(DisplayList& list);
+
+void
+destroy_display_list(DisplayList& list);
 
 } // namespace alia

@@ -2,6 +2,8 @@
 #define ANKERL_NANOBENCH_IMPLEMENT
 #include "nanobench.h"
 
+#include <vector>
+
 #include <alia/flow/infinite_arena.hpp>
 #include <alia/ui/layout/resolution.hpp>
 

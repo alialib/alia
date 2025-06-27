@@ -6,9 +6,11 @@ namespace alia {
 void
 draw_box(DisplayList* display_list, Box box, Color color)
 {
-    // TODO: Allocate a new command via the arena.
-    display_list->commands[display_list->count++]
-        = {.type = DrawCommandType::Box, .box = box, .color = color};
+    BoxDrawCommand* command
+        = reinterpret_cast<BoxDrawCommand*>(display_list->arena.allocate(
+            sizeof(BoxDrawCommand), alignof(BoxDrawCommand)));
+    *command = BoxDrawCommand{.box = box, .color = color, .next = nullptr};
+    add_command(display_list->boxes, command);
 }
 
 } // namespace alia

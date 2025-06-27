@@ -258,19 +258,23 @@ render_display_list(
     reset_arena(renderer->rect_instance_arena);
     RectInstance* rect_instances = (RectInstance*) arena_alloc(
         renderer->rect_instance_arena,
-        sizeof(RectInstance) * display_list.count);
-    for (size_t i = 0; i < display_list.count; ++i)
+        sizeof(RectInstance) * display_list.boxes.count);
     {
-        RectInstance* rect_instance = &rect_instances[i];
-        rect_instance->pos = display_list.commands[i].box.pos;
-        rect_instance->size = display_list.commands[i].box.size;
-        rect_instance->color = display_list.commands[i].color;
+        RectInstance* instance = rect_instances;
+        for (auto const* command = display_list.boxes.head; command;
+             command = command->next)
+        {
+            instance->pos = command->box.pos;
+            instance->size = command->box.size;
+            instance->color = command->color;
+            ++instance;
+        }
     }
 
     glBindBuffer(GL_ARRAY_BUFFER, renderer->instance_vbo);
     glBufferData(
         GL_ARRAY_BUFFER,
-        sizeof(RectInstance) * display_list.count,
+        sizeof(RectInstance) * display_list.boxes.count,
         rect_instances,
         GL_STATIC_DRAW);
 
@@ -278,7 +282,7 @@ render_display_list(
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
     glBindVertexArray(renderer->vao);
-    glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, display_list.count);
+    glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, display_list.boxes.count);
 }
 
 } // namespace alia
