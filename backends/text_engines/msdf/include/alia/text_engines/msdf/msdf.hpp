@@ -1,8 +1,12 @@
 #pragma once
 
+#include <cstdint>
+
+#include <alia/ui/color.hpp>
+#include <alia/ui/display_list.hpp>
 #include <alia/ui/geometry.hpp>
 
-#include <vector>
+// TODO: Split up this file.
 
 namespace alia {
 
@@ -29,7 +33,7 @@ struct MsdfAtlasDescription
 
 struct MsdfGlyph
 {
-    uint32_t unicode;
+    std::uint32_t unicode;
     float advance;
     bool visible;
     float plane_left, plane_bottom, plane_right, plane_top;
@@ -38,8 +42,8 @@ struct MsdfGlyph
 
 struct MsdfKerningPair
 {
-    uint32_t left;
-    uint32_t right;
+    std::uint32_t left;
+    std::uint32_t right;
     float adjustment;
 };
 
@@ -55,7 +59,6 @@ struct MsdfFontDescription
     size_t kerning_pair_count;
 };
 
-// TODO: Support multiple fonts within a single engine.
 // TODO: Don't assume that the atlas will be loaded from a file.
 MsdfTextEngine*
 create_msdf_text_engine(
@@ -65,9 +68,22 @@ create_msdf_text_engine(
 void
 destroy_msdf_text_engine(MsdfTextEngine* engine);
 
-float
-render_text(
+struct MsdfDrawCommand
+{
+    MsdfTextEngine* engine;
+    MsdfDrawCommand* next = nullptr;
+    Vec2 position;
+    float scale;
+    Color color;
+    size_t length;
+    char text[];
+};
+
+void
+draw_text(
     MsdfTextEngine* engine,
+    DisplayListArena& arena,
+    CommandList<MsdfDrawCommand>& commands,
     char const* text,
     size_t start,
     size_t end,
@@ -76,19 +92,10 @@ render_text(
     float x,
     float y);
 
-float
-render_wrapped_text(
+void
+render_command_list(
     MsdfTextEngine* engine,
-    char const* text,
-    float scale,
-    float x,
-    float y,
-    float width);
-
-void
-start_render_pass(MsdfTextEngine* engine);
-
-void
-end_render_pass(MsdfTextEngine* engine, Vec2 framebuffer_size);
+    CommandList<MsdfDrawCommand> const& commands,
+    Vec2 framebuffer_size);
 
 } // namespace alia

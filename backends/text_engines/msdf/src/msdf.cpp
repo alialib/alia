@@ -149,9 +149,6 @@ struct MsdfTextEngine
     GlyphMap glyph_map;
 
     KerningMap kerning_map;
-
-    // TODO: This should be tracked by the higher-level renderer.
-    uint32_t glyph_instance_count;
 };
 
 inline GLuint
@@ -389,12 +386,6 @@ destroy_msdf_text_engine(MsdfTextEngine* engine)
     delete engine;
 }
 
-void
-start_render_pass(MsdfTextEngine* engine)
-{
-    engine->glyph_instance_count = 0;
-}
-
 float
 get_kerning(MsdfTextEngine* engine, uint32_t left, uint32_t right)
 {
@@ -406,39 +397,30 @@ get_kerning(MsdfTextEngine* engine, uint32_t left, uint32_t right)
     return 0.0f;
 }
 
-float
-render_text(
+void
+draw_text(
     MsdfTextEngine* engine,
+    DisplayListArena& arena,
+    CommandList<MsdfDrawCommand>& commands,
     char const* text,
     size_t start,
     size_t end,
-    size_t buffer_length,
+    size_t length,
     float scale,
     float x,
     float y)
 {
-    // TODO: Culling.
-
-    for (size_t i = start; i < end; ++i)
-    {
-        char const c = text[i];
-        if (c < 32)
-            continue;
-        uint32_t unicode = c;
-
-        const MsdfGlyph& glyph = engine->glyph_map[unicode];
-        assert(glyph.unicode == unicode);
-
-        engine->gpu.glyph_instances[engine->glyph_instance_count]
-            = {{0.9, 0.9, 0.9, 1}, {x, y}, scale, /* TODO */ unicode - 32};
-        engine->glyph_instance_count++;
-
-        x += glyph.advance * scale;
-
-        if (i + 1 < buffer_length)
-            x += get_kerning(engine, c, text[i + 1]) * scale;
-    }
-    return x;
+    MsdfDrawCommand* command
+        = reinterpret_cast<MsdfDrawCommand*>(arena.allocate(
+            sizeof(MsdfDrawCommand) + length, alignof(MsdfDrawCommand)));
+    command->engine = engine;
+    command->next = nullptr;
+    command->position = {x, y};
+    command->scale = scale;
+    command->color = {0.9f, 0.9f, 0.9f, 1.0f};
+    command->length = length;
+    memcpy(command->text, text + start, length);
+    add_command(commands, command);
 }
 
 size_t
@@ -480,31 +462,48 @@ break_text(
     return end;
 }
 
-float
-render_wrapped_text(
+void
+render_command(
     MsdfTextEngine* engine,
-    char const* text,
-    float scale,
-    float x,
-    float y,
-    float width)
+    size_t& glyph_instance_count,
+    MsdfDrawCommand const& command)
 {
-    size_t length = strlen(text);
-    size_t start = 0;
-    while (start < length)
+    // TODO: Culling.
+    Vec2 position = command.position;
+    float scale = command.scale;
+    for (size_t i = 0; i < command.length; ++i)
     {
-        size_t end
-            = break_text(engine, text, start, length, length, scale, width);
-        render_text(engine, text, start, end, length, scale, x, y);
-        y += scale * 1.2f;
-        start = end;
+        char const c = command.text[i];
+        if (c < 32)
+            continue;
+        uint32_t unicode = c;
+
+        const MsdfGlyph& glyph = engine->glyph_map[unicode];
+        assert(glyph.unicode == unicode);
+
+        engine->gpu.glyph_instances[glyph_instance_count]
+            = {{0.9, 0.9, 0.9, 1}, position, scale, /* TODO */ unicode - 32};
+        glyph_instance_count++;
+
+        position.x += glyph.advance * scale;
+
+        if (i + 1 < command.length)
+            position.x += get_kerning(engine, c, command.text[i + 1]) * scale;
     }
-    return y;
 }
 
 void
-end_render_pass(MsdfTextEngine* engine, Vec2 framebuffer_size)
+render_command_list(
+    MsdfTextEngine* engine,
+    CommandList<MsdfDrawCommand> const& commands,
+    Vec2 framebuffer_size)
 {
+    size_t glyph_instance_count = 0;
+    for (MsdfDrawCommand* cmd = commands.head; cmd; cmd = cmd->next)
+    {
+        render_command(engine, glyph_instance_count, *cmd);
+    }
+
     glBindTexture(GL_TEXTURE_2D, engine->gpu.texture);
 
     glUseProgram(engine->gpu.shader_program);
@@ -542,8 +541,7 @@ end_render_pass(MsdfTextEngine* engine, Vec2 framebuffer_size)
     glBindBufferBase(
         GL_SHADER_STORAGE_BUFFER, 0, engine->gpu.glyph_table_ssbo);
 
-    glDrawArraysInstanced(
-        GL_TRIANGLE_STRIP, 0, 4, engine->glyph_instance_count);
+    glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, glyph_instance_count);
 }
 
 }; // namespace alia

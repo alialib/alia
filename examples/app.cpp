@@ -150,6 +150,7 @@ GlRenderer the_renderer;
 DisplayListArena the_display_list_arena;
 BoxCommandList the_box_commands;
 MsdfTextEngine* the_msdf_text_engine;
+CommandList<MsdfDrawCommand> the_msdf_commands;
 
 void
 mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
@@ -280,14 +281,13 @@ update()
     glClearColor(0.15f, 0.15f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    start_render_pass(the_msdf_text_engine);
-
     GLenum err;
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
     the_display_list_arena.reset();
     clear_command_list(the_box_commands);
+    clear_command_list(the_msdf_commands);
     Context draw_ctx = {
         Pass{
             PassType::Draw,
@@ -309,7 +309,8 @@ update()
 
     // do_text_demo();
 
-    end_render_pass(the_msdf_text_engine, the_system.framebuffer_size);
+    render_command_list(
+        the_msdf_text_engine, the_msdf_commands, the_system.framebuffer_size);
 
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
@@ -423,6 +424,7 @@ main()
 
     the_display_list_arena.initialize();
     clear_command_list(the_box_commands);
+    clear_command_list(the_msdf_commands);
 
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
