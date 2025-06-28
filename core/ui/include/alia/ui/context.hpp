@@ -2,10 +2,12 @@
 
 #include <cstdint>
 
+#include <alia/ui/display_list.hpp>
+#include <alia/ui/drawing.hpp>
+
 namespace alia {
 
 struct Event;
-struct DisplayList;
 struct System;
 struct LayoutNode;
 struct LayoutPlacement;
@@ -37,7 +39,8 @@ struct Pass
     // TODO: Sort this out.
     LayoutEmission layout_emission;
     LayoutConsumption layout_consumption;
-    DisplayList* display_list;
+    DisplayListArena* display_list_arena;
+    BoxCommandList* box_command_list;
     Event* event;
 };
 

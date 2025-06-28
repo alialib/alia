@@ -4,8 +4,10 @@
 
 namespace alia {
 
+using BoxCommandList = CommandList<BoxDrawCommand>;
+
 // TODO: Take a context parameter.
 void
-draw_box(DisplayList* display_list, Box box, Color color);
+draw_box(DisplayListArena& arena, BoxCommandList& list, Box box, Color color);
 
 } // namespace alia

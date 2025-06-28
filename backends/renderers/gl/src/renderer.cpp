@@ -207,12 +207,9 @@ struct Vertex
     float x, y, u, v;
 };
 
-// Submit the display list and render to framebuffer
 void
-render_display_list(
-    GlRenderer* renderer,
-    System const& system,
-    DisplayList const& display_list)
+render_box_command_list(
+    GlRenderer* renderer, System const& system, BoxCommandList const& boxes)
 {
     glViewport(0, 0, system.framebuffer_size.x, system.framebuffer_size.y);
 
@@ -257,16 +254,14 @@ render_display_list(
 
     reset_arena(renderer->rect_instance_arena);
     RectInstance* rect_instances = (RectInstance*) arena_alloc(
-        renderer->rect_instance_arena,
-        sizeof(RectInstance) * display_list.boxes.count);
+        renderer->rect_instance_arena, sizeof(RectInstance) * boxes.count);
     {
         RectInstance* instance = rect_instances;
-        for (auto const* command = display_list.boxes.head; command;
-             command = command->next)
+        for (auto const* cmd = boxes.head; cmd; cmd = cmd->next)
         {
-            instance->pos = command->box.pos;
-            instance->size = command->box.size;
-            instance->color = command->color;
+            instance->pos = cmd->box.pos;
+            instance->size = cmd->box.size;
+            instance->color = cmd->color;
             ++instance;
         }
     }
@@ -274,7 +269,7 @@ render_display_list(
     glBindBuffer(GL_ARRAY_BUFFER, renderer->instance_vbo);
     glBufferData(
         GL_ARRAY_BUFFER,
-        sizeof(RectInstance) * display_list.boxes.count,
+        sizeof(RectInstance) * boxes.count,
         rect_instances,
         GL_STATIC_DRAW);
 
@@ -282,7 +277,7 @@ render_display_list(
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
     glBindVertexArray(renderer->vao);
-    glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, display_list.boxes.count);
+    glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, boxes.count);
 }
 
 } // namespace alia

@@ -3,6 +3,9 @@
 // TODO: Remove this.
 #include <glad/glad.h>
 
+// TODO: Remove this.
+#include <alia/ui/drawing.hpp>
+
 namespace alia {
 
 struct Arena;
@@ -28,12 +31,9 @@ init_gl_renderer(GlRenderer* renderer);
 void
 destroy_gl_renderer(GlRenderer* renderer);
 
-// Submit the display list and render to framebuffer
 void
-render_display_list(
-    GlRenderer* renderer,
-    System const& system,
-    DisplayList const& display_list);
+render_box_command_list(
+    GlRenderer* renderer, System const& system, BoxCommandList const& boxes);
 
 // TODO: Move to a separate utility header.
 GLuint

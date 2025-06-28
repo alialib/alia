@@ -82,7 +82,11 @@ do_rect(Context& ctx, Vec2 size, Color color)
                 = ctx.pass.layout_consumption
                       .placements[ctx.pass.layout_consumption.index++];
             Box box = {.pos = placement.position, .size = placement.size};
-            draw_box(ctx.pass.display_list, box, color);
+            draw_box(
+                *ctx.pass.display_list_arena,
+                *ctx.pass.box_command_list,
+                box,
+                color);
             break;
         }
         case PassType::Event: {
@@ -143,7 +147,8 @@ LayoutScratchArena the_scratch_arena;
 LayoutPlacement the_layout_placements[4096];
 GLFWwindow* the_window;
 GlRenderer the_renderer;
-DisplayList the_display_list;
+DisplayListArena the_display_list_arena;
+BoxCommandList the_box_commands;
 MsdfTextEngine* the_msdf_text_engine;
 
 void
@@ -171,29 +176,31 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
             = (static_cast<float>(y) * framebuffer_height
                / window_height); // / the_ui_scale.y;
         std::uint32_t root_index;
-        Context event_ctx
-            = {Pass{
-                   PassType::Event,
-                   {the_layout_specs, 1, the_layout_specs, &root_index},
-                   {the_layout_placements, 1},
-                   nullptr,
-                   &event},
-               &the_system};
+        Context event_ctx = {
+            Pass{
+                PassType::Event,
+                {the_layout_specs, 1, the_layout_specs, &root_index},
+                {the_layout_placements, 1},
+                nullptr,
+                nullptr,
+                &event},
+            &the_system};
         rectangle_demo(event_ctx);
     }
 }
 
+#if 0
+
 void
 do_text_demo()
 {
-    render_text(
-        the_msdf_text_engine, "abcdef - hello", 0, 14, 14, 256, 64, 320);
+    draw_text(the_msdf_text_engine, "abcdef - hello", 0, 14, 14, 256, 64, 320);
 
     float next_line = 400;
 
     for (int i = 0; i < 18; ++i)
     {
-        next_line = render_wrapped_text(
+        next_line = draw_wrapped_text(
             the_msdf_text_engine,
             R"---(
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur rutrum nunc non ligula volutpat, quis ultricies enim viverra. Cras at pellentesque orci, eget aliquam sapien. Donec fringilla dui orci, vitae sodales purus blandit quis. Aenean porttitor varius erat, pulvinar tristique nibh faucibus at. In maximus, ex non fermentum pulvinar, lacus diam iaculis mi, ac sagittis neque nulla in risus. Mauris rutrum nibh vitae eros iaculis maximus. Curabitur nec lorem ac massa elementum suscipit. Fusce vel sagittis ipsum.
@@ -206,7 +213,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur rutrum nunc n
 
     for (int i = 0; i < 0; ++i)
     {
-        next_line = render_wrapped_text(
+        next_line = draw_wrapped_text(
             the_msdf_text_engine,
             R"---(
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur rutrum nunc non ligula volutpat, quis ultricies enim viverra. Cras at pellentesque orci, eget aliquam sapien. Donec fringilla dui orci, vitae sodales purus blandit quis. Aenean porttitor varius erat, pulvinar tristique nibh faucibus at. In maximus, ex non fermentum pulvinar, lacus diam iaculis mi, ac sagittis neque nulla in risus. Mauris rutrum nibh vitae eros iaculis maximus. Curabitur nec lorem ac massa elementum suscipit. Fusce vel sagittis ipsum. Suspendisse porta imperdiet nisi at vehicula. Nulla a pharetra tortor. Ut non velit sollicitudin, aliquam mauris at, interdum tortor. Vestibulum et est aliquet, consequat massa nec, ullamcorper est. Etiam euismod felis leo. Praesent cursus sed risus eu eleifend. Quisque pharetra maximus gravida. Ut non ullamcorper arcu. Sed vulputate ullamcorper metus, sit amet tempor nulla consequat sit amet. Nulla facilisi. Nam quis purus vel tortor fringilla pellentesque ut sit amet metus.
@@ -233,6 +240,8 @@ Nunc tincidunt fermentum accumsan. Duis vestibulum enim arcu, eu rutrum magna cu
     }
 }
 
+#endif
+
 void
 update()
 {
@@ -241,14 +250,15 @@ update()
     std::uint32_t root_index;
     // Add a placeholder to fill the reserved/invalid 0 index.
     the_layout_specs[0] = LayoutNode{};
-    Context refresh_ctx
-        = {Pass{
-               PassType::Refresh,
-               {the_layout_specs, 1, the_layout_specs, &root_index},
-               {the_layout_placements, 1},
-               nullptr,
-               nullptr},
-           &the_system};
+    Context refresh_ctx = {
+        Pass{
+            PassType::Refresh,
+            {the_layout_specs, 1, the_layout_specs, &root_index},
+            {the_layout_placements, 1},
+            nullptr,
+            nullptr,
+            nullptr},
+        &the_system};
     *refresh_ctx.pass.layout_emission.next = 0;
     rectangle_demo(refresh_ctx);
 
@@ -276,21 +286,23 @@ update()
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
-    reset_display_list(the_display_list);
-    Context draw_ctx
-        = {Pass{
-               PassType::Draw,
-               {the_layout_specs, 1, the_layout_specs, &root_index},
-               {the_layout_placements, 1},
-               &the_display_list,
-               nullptr},
-           &the_system};
+    the_display_list_arena.reset();
+    clear_command_list(the_box_commands);
+    Context draw_ctx = {
+        Pass{
+            PassType::Draw,
+            {the_layout_specs, 1, the_layout_specs, &root_index},
+            {the_layout_placements, 1},
+            &the_display_list_arena,
+            &the_box_commands,
+            nullptr},
+        &the_system};
     rectangle_demo(draw_ctx);
 
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
-    render_display_list(&the_renderer, the_system, the_display_list);
+    render_box_command_list(&the_renderer, the_system, the_box_commands);
 
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
@@ -409,7 +421,8 @@ main()
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
-    init_display_list(the_display_list);
+    the_display_list_arena.initialize();
+    clear_command_list(the_box_commands);
 
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);

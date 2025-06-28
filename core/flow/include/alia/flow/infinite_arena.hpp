@@ -30,11 +30,23 @@ struct RawInfiniteArena
     operator=(RawInfiniteArena const&)
         = delete;
 
-    // Allowing moving.
-    RawInfiniteArena(RawInfiniteArena&&) = default;
+    RawInfiniteArena(RawInfiniteArena&& other)
+    {
+        base_ = other.base_;
+        next_ = other.next_;
+        capacity_ = other.capacity_;
+        // The moved-from arena must have a noop destruction.
+        other.base_ = nullptr;
+    }
     RawInfiniteArena&
-    operator=(RawInfiniteArena&&)
-        = default;
+    operator=(RawInfiniteArena&& other)
+    {
+        base_ = other.base_;
+        next_ = other.next_;
+        capacity_ = other.capacity_;
+        // The moved-from arena must have a noop destruction.
+        other.base_ = nullptr;
+    }
 
     ~RawInfiniteArena()
     {

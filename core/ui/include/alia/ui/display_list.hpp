@@ -39,19 +39,6 @@ add_command(CommandList<Command>& list, Command* command)
     ++list.count;
 }
 
-struct DisplayList
-{
-    HeterogeneousInfiniteArena arena;
-    CommandList<BoxDrawCommand> boxes;
-};
-
-void
-init_display_list(DisplayList& list);
-
-void
-reset_display_list(DisplayList& list);
-
-void
-destroy_display_list(DisplayList& list);
+using DisplayListArena = HeterogeneousInfiniteArena;
 
 } // namespace alia
