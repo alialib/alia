@@ -85,12 +85,10 @@ draw_text(
     DisplayListArena& arena,
     CommandList<MsdfDrawCommand>& commands,
     char const* text,
-    size_t start,
-    size_t end,
     size_t length,
     float scale,
-    float x,
-    float y);
+    Vec2 position,
+    Color color);
 
 void
 render_command_list(

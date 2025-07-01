@@ -403,23 +403,21 @@ draw_text(
     DisplayListArena& arena,
     CommandList<MsdfDrawCommand>& commands,
     char const* text,
-    size_t start,
-    size_t end,
     size_t length,
     float scale,
-    float x,
-    float y)
+    Vec2 position,
+    Color color)
 {
     MsdfDrawCommand* command
         = reinterpret_cast<MsdfDrawCommand*>(arena.allocate(
             sizeof(MsdfDrawCommand) + length, alignof(MsdfDrawCommand)));
     command->engine = engine;
     command->next = nullptr;
-    command->position = {x, y};
+    command->position = position;
     command->scale = scale;
-    command->color = {0.9f, 0.9f, 0.9f, 1.0f};
+    command->color = color;
     command->length = length;
-    memcpy(command->text, text + start, length);
+    memcpy(command->text, text, length);
     add_command(commands, command);
 }
 
