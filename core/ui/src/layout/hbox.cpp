@@ -12,21 +12,17 @@ struct HBoxScratch
 };
 
 HorizontalRequirements
-gather_hbox_x_requirements(
-    LayoutNode const* nodes,
-    LayoutScratchArena& scratch_arena,
-    LayoutNode const& hbox)
+gather_hbox_x_requirements(LayoutScratchArena& scratch_arena, LayoutNode& hbox)
 {
     auto& hbox_scratch = claim_scratch<HBoxScratch>(scratch_arena);
     HorizontalRequirements* x_requirements
         = reinterpret_cast<HorizontalRequirements*>(scratch_arena.allocate(
-            hbox.child_count * sizeof(HorizontalRequirements),
+            hbox.container.child_count * sizeof(HorizontalRequirements),
             alignof(HorizontalRequirements)));
-    for (LayoutIndex child_index = hbox.first_child; child_index != 0;
-         child_index = nodes[child_index].next_sibling)
+    for (LayoutNode* child = hbox.container.first_child; child != nullptr;
+         child = child->next_sibling)
     {
-        auto const child_x
-            = gather_x_requirements(nodes, scratch_arena, child_index);
+        auto const child_x = gather_x_requirements(scratch_arena, *child);
         *x_requirements++ = child_x;
         hbox_scratch.total_width += child_x.min_size;
         hbox_scratch.total_growth += child_x.growth_factor;
@@ -37,10 +33,7 @@ gather_hbox_x_requirements(
 }
 
 HorizontalRequirements
-recall_hbox_x_requirements(
-    LayoutNode const* nodes,
-    LayoutScratchArena& scratch_arena,
-    LayoutNode const& hbox)
+recall_hbox_x_requirements(LayoutScratchArena& scratch_arena, LayoutNode& hbox)
 {
     auto& hbox_scratch = peek_scratch<HBoxScratch>(scratch_arena);
     return HorizontalRequirements{
@@ -50,15 +43,12 @@ recall_hbox_x_requirements(
 
 void
 assign_hbox_widths(
-    LayoutNode const* nodes,
-    LayoutScratchArena& scratch_arena,
-    float assigned_width,
-    LayoutNode const& hbox)
+    LayoutScratchArena& scratch_arena, LayoutNode& hbox, float assigned_width)
 {
     auto& hbox_scratch = use_scratch<HBoxScratch>(scratch_arena);
     HorizontalRequirements* x_requirements
         = reinterpret_cast<HorizontalRequirements*>(scratch_arena.allocate(
-            hbox.child_count * sizeof(HorizontalRequirements),
+            hbox.container.child_count * sizeof(HorizontalRequirements),
             alignof(HorizontalRequirements)));
     assigned_width -= hbox.margin.x * 2;
     float const total_extra_space
@@ -66,28 +56,24 @@ assign_hbox_widths(
     // TODO: Figure out how to handle 0 total growth.
     float const one_over_total_growth
         = 1.0f / (std::max)(0.00001f, hbox_scratch.total_growth);
-    for (LayoutIndex child_index = hbox.first_child; child_index != 0;
-         child_index = nodes[child_index].next_sibling)
+    for (LayoutNode* child = hbox.container.first_child; child != nullptr;
+         child = child->next_sibling)
     {
         auto const child_x = *x_requirements++;
         float const extra_space = total_extra_space * child_x.growth_factor
                                 * one_over_total_growth;
-        assign_widths(
-            nodes, scratch_arena, child_x.min_size + extra_space, child_index);
+        assign_widths(scratch_arena, *child, child_x.min_size + extra_space);
     }
 }
 
 VerticalRequirements
 gather_hbox_y_requirements(
-    LayoutNode const* nodes,
-    LayoutScratchArena& scratch_arena,
-    float assigned_width,
-    LayoutNode const& hbox)
+    LayoutScratchArena& scratch_arena, LayoutNode& hbox, float assigned_width)
 {
     auto& hbox_scratch = use_scratch<HBoxScratch>(scratch_arena);
     HorizontalRequirements* x_requirements
         = reinterpret_cast<HorizontalRequirements*>(scratch_arena.allocate(
-            hbox.child_count * sizeof(HorizontalRequirements),
+            hbox.container.child_count * sizeof(HorizontalRequirements),
             alignof(HorizontalRequirements)));
     // TODO: Stop repeating this logic everywhere.
     assigned_width -= hbox.margin.y * 2;
@@ -96,14 +82,14 @@ gather_hbox_y_requirements(
     // TODO: Figure out how to handle 0 total growth.
     float const one_over_total_growth
         = 1.0f / (std::max)(0.00001f, hbox_scratch.total_growth);
-    for (LayoutIndex child_index = hbox.first_child; child_index != 0;
-         child_index = nodes[child_index].next_sibling)
+    for (LayoutNode* child = hbox.container.first_child; child != nullptr;
+         child = child->next_sibling)
     {
         auto const child_x = *x_requirements++;
         float const extra_space = total_extra_space * child_x.growth_factor
                                 * one_over_total_growth;
         auto const child_y = gather_y_requirements(
-            nodes, scratch_arena, child_x.min_size + extra_space, child_index);
+            scratch_arena, *child, child_x.min_size + extra_space);
         hbox_scratch.height
             = (std::max)(hbox_scratch.height, child_y.min_size);
         if (child_y.has_baseline)
@@ -126,10 +112,7 @@ gather_hbox_y_requirements(
 }
 
 VerticalRequirements
-recall_hbox_y_requirements(
-    LayoutNode const* nodes,
-    LayoutScratchArena& scratch_arena,
-    LayoutNode const& hbox)
+recall_hbox_y_requirements(LayoutScratchArena& scratch_arena, LayoutNode& hbox)
 {
     auto& hbox_scratch = peek_scratch<HBoxScratch>(scratch_arena);
     return VerticalRequirements{
@@ -140,17 +123,12 @@ recall_hbox_y_requirements(
 }
 
 void
-assign_hbox_boxes(
-    LayoutNode const* nodes,
-    LayoutScratchArena& scratch_arena,
-    LayoutPlacement* placements,
-    Box box,
-    LayoutNode const& hbox)
+assign_hbox_boxes(PlacementContext& ctx, LayoutNode& hbox, Box box)
 {
-    auto& hbox_scratch = use_scratch<HBoxScratch>(scratch_arena);
+    auto& hbox_scratch = use_scratch<HBoxScratch>(*ctx.scratch);
     HorizontalRequirements* x_requirements
-        = reinterpret_cast<HorizontalRequirements*>(scratch_arena.allocate(
-            hbox.child_count * sizeof(HorizontalRequirements),
+        = reinterpret_cast<HorizontalRequirements*>(ctx.scratch->allocate(
+            hbox.container.child_count * sizeof(HorizontalRequirements),
             alignof(HorizontalRequirements)));
     box = apply_margin(box, hbox.margin);
     float const total_extra_space
@@ -159,19 +137,17 @@ assign_hbox_boxes(
     float const one_over_total_growth
         = 1.0f / (std::max)(0.00001f, hbox_scratch.total_growth);
     float current_x = box.pos.x;
-    for (LayoutIndex child_index = hbox.first_child; child_index != 0;
-         child_index = nodes[child_index].next_sibling)
+    for (LayoutNode* child = hbox.container.first_child; child != nullptr;
+         child = child->next_sibling)
     {
         auto const child_x = *x_requirements++;
         float const extra_space = total_extra_space * child_x.growth_factor
                                 * one_over_total_growth;
         assign_boxes(
-            nodes,
-            scratch_arena,
-            placements,
+            ctx,
+            *child,
             Box{Vec2{current_x, box.pos.y},
-                Vec2{child_x.min_size + extra_space, box.size.y}},
-            child_index);
+                Vec2{child_x.min_size + extra_space, box.size.y}});
         current_x += child_x.min_size + extra_space;
     }
 }

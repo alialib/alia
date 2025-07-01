@@ -25,29 +25,17 @@
 
 using namespace alia;
 
-// TODO: Move this to foundation.
-
-static void*
-default_alloc(void*, size_t size, size_t alignment)
-{
-    void* ptr = nullptr;
-#ifdef _MSC_VER
-    ptr = _aligned_malloc(size, alignment);
-#else
-    posix_memalign(&ptr, alignment, size);
-#endif
-    return ptr;
-}
-
-static void
-default_dealloc(void*, void* ptr)
-{
-#ifdef _MSC_VER
-    _aligned_free(ptr);
-#else
-    free(ptr);
-#endif
-}
+System the_system;
+LayoutSpecArena the_layout_spec_arena;
+LayoutScratchArena the_scratch_arena;
+LayoutContainer the_layout_root = {.first_child = nullptr, .child_count = 0};
+LayoutPlacementArena the_layout_placement_arena;
+GLFWwindow* the_window;
+GlRenderer the_renderer;
+DisplayListArena the_display_list_arena;
+BoxCommandList the_box_commands;
+MsdfTextEngine* the_msdf_text_engine;
+CommandList<MsdfDrawCommand> the_msdf_commands;
 
 bool
 detect_click(Event* event, float x, float y, float width, float height)
@@ -57,8 +45,67 @@ detect_click(Event* event, float x, float y, float width, float height)
         && event->click.y <= y + height;
 }
 
+template<class T>
+T*
+allocate_spec_node(LayoutSpecArena& arena)
+{
+    static_assert(std::is_trivially_destructible_v<T>);
+    return reinterpret_cast<T*>(arena.allocate(sizeof(T), alignof(T)));
+}
+
 bool
 do_rect(Context& ctx, Vec2 size, Color color)
+{
+    switch (ctx.pass.type)
+    {
+        case PassType::Refresh: {
+            auto& layout = ctx.pass.layout_emission;
+            LayoutNode* new_node
+                = allocate_spec_node<LayoutNode>(the_layout_spec_arena);
+            *layout.next_ptr = new_node;
+            layout.next_ptr = &new_node->next_sibling;
+            *new_node = LayoutNode{
+                .type = LayoutNodeType::Leaf,
+                .next_sibling = 0,
+                .size = size,
+                .margin = {4, 4},
+                .leaf = {}};
+            ++layout.active_container->child_count;
+            break;
+        }
+        case PassType::Draw: {
+            auto const& placement
+                = *ctx.pass.layout_consumption.next_placement;
+            ctx.pass.layout_consumption.next_placement = placement.next;
+            Box box = {.pos = placement.position, .size = placement.size};
+            draw_box(
+                *ctx.pass.display_list_arena,
+                *ctx.pass.box_command_list,
+                box,
+                color);
+            break;
+        }
+        case PassType::Event: {
+            auto const& placement
+                = *ctx.pass.layout_consumption.next_placement;
+            ctx.pass.layout_consumption.next_placement = placement.next;
+            Box box = {.pos = placement.position, .size = placement.size};
+            if (detect_click(
+                    ctx.pass.event,
+                    box.pos.x,
+                    box.pos.y,
+                    box.size.x,
+                    box.size.y))
+                return true;
+            break;
+        }
+    }
+    return false;
+}
+
+/*bool
+do_text(
+    Context& ctx, Vec2 size, Color color, float scale, std::string_view text)
 {
     switch (ctx.pass.type)
     {
@@ -68,12 +115,12 @@ do_rect(Context& ctx, Vec2 size, Color color)
             LayoutNode* new_node = &layout.nodes[layout.count];
             *new_node = LayoutNode{
                 .type = LayoutNodeType::Leaf,
+                .next_sibling = 0,
                 .size = size,
                 .margin = {4, 4},
-                .first_child = 0,
-                .next_sibling = 0};
+                .leaf = {}};
             layout.next = &new_node->next_sibling;
-            ++layout.active_container->child_count;
+            ++layout.active_container->container.child_count;
             ++layout.count;
             break;
         }
@@ -81,11 +128,14 @@ do_rect(Context& ctx, Vec2 size, Color color)
             auto const& placement
                 = ctx.pass.layout_consumption
                       .placements[ctx.pass.layout_consumption.index++];
-            Box box = {.pos = placement.position, .size = placement.size};
-            draw_box(
+            draw_text(
+                the_msdf_text_engine,
                 *ctx.pass.display_list_arena,
-                *ctx.pass.box_command_list,
-                box,
+                the_msdf_commands,
+                text.data(),
+                text.size(),
+                scale,
+                placement.position,
                 color);
             break;
         }
@@ -105,7 +155,7 @@ do_rect(Context& ctx, Vec2 size, Color color)
         }
     }
     return false;
-}
+}*/
 
 void
 rectangle_demo(Context& ctx)
@@ -114,43 +164,27 @@ rectangle_demo(Context& ctx)
 
     flow(ctx, [&]() {
         float x = 0.0f;
-        for (int i = 0; i < 400; ++i)
+        for (int i = 0; i < 2000; ++i)
         {
-            hbox(ctx, [&]() {
-                for (int j = 0; j != 5; ++j)
-                {
-                    do_rect(
-                        ctx,
-                        {24, 24},
-                        invert ? Color{x, 0.1f, 1.0f - x, 1}
-                               : Color{1.0f - x, 0.1f, x, 1});
-                    x += 0.0005f;
-                }
-            });
+            do_rect(
+                ctx,
+                {24, 24},
+                invert ? Color{x, 0.1f, 1.0f - x, 1}
+                       : Color{1.0f - x, 0.1f, x, 1});
+            x += 0.0005f;
         }
 
-        hbox(ctx, [&]() {
+        /*hbox(ctx, [&]() {
             for (int i = 0; i < 4; ++i)
             {
-                if (do_rect(ctx, {24, 24}, GRAY))
+                if (do_text(ctx, {200, 30}, GRAY, 24, "HELLO!"))
                 {
                     invert = !invert;
                 }
             }
-        });
+        });*/
     });
 }
-
-System the_system;
-LayoutNode the_layout_specs[4096];
-LayoutScratchArena the_scratch_arena;
-LayoutPlacement the_layout_placements[4096];
-GLFWwindow* the_window;
-GlRenderer the_renderer;
-DisplayListArena the_display_list_arena;
-BoxCommandList the_box_commands;
-MsdfTextEngine* the_msdf_text_engine;
-CommandList<MsdfDrawCommand> the_msdf_commands;
 
 void
 mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
@@ -180,8 +214,8 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         Context event_ctx = {
             Pass{
                 PassType::Event,
-                {the_layout_specs, 1, the_layout_specs, &root_index},
-                {the_layout_placements, 1},
+                {nullptr, nullptr, nullptr},
+                {nullptr},
                 nullptr,
                 nullptr,
                 &event},
@@ -246,29 +280,32 @@ Nunc tincidunt fermentum accumsan. Duis vestibulum enim arcu, eu rutrum magna cu
 void
 update()
 {
+    static std::chrono::time_point<std::chrono::high_resolution_clock>
+        last_frame_time = std::chrono::high_resolution_clock::now();
     auto const start_time = std::chrono::high_resolution_clock::now();
 
     std::uint32_t root_index;
     // Add a placeholder to fill the reserved/invalid 0 index.
-    the_layout_specs[0] = LayoutNode{};
     Context refresh_ctx = {
         Pass{
             PassType::Refresh,
-            {the_layout_specs, 1, the_layout_specs, &root_index},
-            {the_layout_placements, 1},
+            {&the_layout_spec_arena,
+             &the_layout_root,
+             &the_layout_root.first_child},
+            {nullptr},
             nullptr,
             nullptr,
             nullptr},
         &the_system};
-    *refresh_ctx.pass.layout_emission.next = 0;
+    *refresh_ctx.pass.layout_emission.next_ptr = 0;
     rectangle_demo(refresh_ctx);
 
     update_glfw_window_info(the_system, the_window);
 
-    resolve_layout(
-        the_layout_specs,
+    LayoutPlacement* initial_layout_placement = resolve_layout(
         the_scratch_arena,
-        the_layout_placements,
+        the_layout_placement_arena,
+        *the_layout_root.first_child,
         the_system.framebuffer_size);
 
     auto const layout_finished_time
@@ -291,8 +328,8 @@ update()
     Context draw_ctx = {
         Pass{
             PassType::Draw,
-            {the_layout_specs, 1, the_layout_specs, &root_index},
-            {the_layout_placements, 1},
+            {nullptr, nullptr, nullptr},
+            {initial_layout_placement},
             &the_display_list_arena,
             &the_box_commands,
             nullptr},
@@ -329,9 +366,21 @@ update()
         std::chrono::duration<int64_t, std::micro>>(end_time - start_time);
 
     // printf("the_glyph_count: %d\n", the_glyph_instance_count);
+    auto const external_frame_time = std::chrono::duration_cast<
+        std::chrono::duration<int64_t, std::micro>>(
+        start_time - last_frame_time);
 
-    std::cout << "frame_time: " << frame_time << ": " << layout_time << " / "
-              << render_time << std::endl;
+    if (external_frame_time > std::chrono::milliseconds(20))
+    {
+        std::cout << "FRAME_TIME_SLOW" << std::endl;
+    }
+
+    std::cout
+        << "frame_time: " << std::setw(6) << external_frame_time << ": "
+        << std::setw(6) << frame_time << ": " << std::setw(6) << layout_time
+        << " / " << std::setw(6) << render_time << std::endl;
+
+    last_frame_time = start_time;
 
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
@@ -384,6 +433,8 @@ main()
     }
 
     the_scratch_arena.initialize();
+    the_layout_spec_arena.initialize();
+    the_layout_placement_arena.initialize();
 
     init_gl_renderer(&the_renderer);
 

@@ -15,30 +15,55 @@ enum class LayoutNodeType
     VBox,
     Stack,
     Flow,
+    Text,
+};
+
+struct CustomLayoutNodeVtable;
+
+struct CustomLayoutNode
+{
+    CustomLayoutNodeVtable* vtable;
+    void* data;
+};
+
+struct LayoutContainer
+{
+    LayoutNode* first_child;
+    uint32_t child_count;
+};
+
+struct LayoutLeafNode
+{
 };
 
 struct LayoutNode
 {
     LayoutNodeType type;
-
-    //  TODO: Unionize this...
+    LayoutNode* next_sibling;
 
     Vec2 size;
     Vec2 margin;
-    float growth_factor = 0.f; // 0: fixed, >0: wants to grow
+    float growth_factor;
 
-    LayoutIndex first_child;
-    uint32_t child_count = 0;
-
-    LayoutIndex next_sibling;
+    union
+    {
+        LayoutContainer container;
+        LayoutLeafNode leaf;
+        CustomLayoutNode custom;
+    };
 };
 
+using LayoutSpecArena = HeterogeneousInfiniteArena;
+
 using LayoutScratchArena = UniformlyAlignedInfiniteArena<16>;
+
+using LayoutPlacementArena = HeterogeneousInfiniteArena;
 
 struct LayoutPlacement
 {
     Vec2 position;
     Vec2 size;
+    LayoutPlacement* next;
 };
 
 struct HorizontalRequirements
@@ -47,27 +72,22 @@ struct HorizontalRequirements
     float growth_factor = 0.f; // 0: fixed, >0: wants to grow
 };
 
-void
+LayoutPlacement*
 resolve_layout(
-    LayoutNode const* nodes,
     LayoutScratchArena& scratch,
-    LayoutPlacement* placements,
+    LayoutPlacementArena& arena,
+    LayoutNode& root_node,
     Vec2 available_space);
 
 HorizontalRequirements
-gather_x_requirements(
-    LayoutNode const* nodes, LayoutScratchArena& scratch, LayoutIndex index);
+gather_x_requirements(LayoutScratchArena& scratch, LayoutNode& node);
 
 HorizontalRequirements
-recall_x_requirements(
-    LayoutNode const* nodes, LayoutScratchArena& scratch, LayoutIndex index);
+recall_x_requirements(LayoutScratchArena& scratch, LayoutNode& node);
 
 void
 assign_widths(
-    LayoutNode const* nodes,
-    LayoutScratchArena& scratch,
-    float assigned_width,
-    LayoutIndex index);
+    LayoutScratchArena& scratch, LayoutNode& node, float assigned_width);
 
 struct VerticalRequirements
 {
@@ -79,21 +99,35 @@ struct VerticalRequirements
 
 VerticalRequirements
 gather_y_requirements(
-    LayoutNode const* nodes,
-    LayoutScratchArena& scratch,
-    float assigned_width,
-    LayoutIndex index);
+    LayoutScratchArena& scratch, LayoutNode& node, float assigned_width);
 
 VerticalRequirements
-recall_y_requirements(
-    LayoutNode const* nodes, LayoutScratchArena& scratch, LayoutIndex index);
+recall_y_requirements(LayoutScratchArena& scratch, LayoutNode& node);
+
+struct PlacementContext
+{
+    LayoutScratchArena* scratch;
+    LayoutPlacementArena* arena;
+    LayoutPlacement** next_ptr;
+};
 
 void
-assign_boxes(
-    LayoutNode const* nodes,
-    LayoutScratchArena& scratch,
-    LayoutPlacement* placements,
-    Box box,
-    LayoutIndex index);
+assign_boxes(PlacementContext& ctx, LayoutNode& node, Box box);
+
+struct CustomLayoutNodeVtable
+{
+    /*void (*gather_x_requirements)(
+        LayoutNode* node, LayoutScratchArena& scratch);
+    void (*recall_x_requirements)(
+        LayoutNode* node, LayoutScratchArena& scratch);
+    void (*assign_widths)(
+        LayoutNode* node, LayoutScratchArena& scratch, float assigned_width);
+    void (*gather_y_requirements)(
+        LayoutNode* node, LayoutScratchArena& scratch, float assigned_width);
+    void (*recall_y_requirements)(
+        LayoutNode* node, LayoutScratchArena& scratch);
+    void (*assign_boxes)(
+        LayoutNode* node, LayoutScratchArena& scratch, Box box);*/
+};
 
 } // namespace alia

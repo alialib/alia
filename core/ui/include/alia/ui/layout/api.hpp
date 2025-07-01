@@ -2,62 +2,70 @@
 
 #include <utility>
 
+#include <alia/flow/flags.hpp>
+
 namespace alia {
 
 struct Context;
 struct LayoutNode;
+struct LayoutContainer;
 
-using LayoutIndex = std::uint32_t;
+ALIA_DEFINE_FLAG_TYPE(Layout)
 
-struct LayoutScope
+// struct Layout
+// {
+//     float grow = 0;
+// };
+
+struct LayoutContainerScope
 {
-    LayoutIndex index = 0;
-    LayoutNode* parent = nullptr;
+    LayoutNode* this_node;
+    LayoutContainer* parent_node;
 };
 
 void
-begin_hbox(Context& ctx, LayoutScope& scope);
+begin_hbox(Context& ctx, LayoutContainerScope& scope);
 
 void
-end_hbox(Context& ctx, LayoutScope& scope);
+end_hbox(Context& ctx, LayoutContainerScope& scope);
 
 template<class Content>
 void
 hbox(Context& ctx, Content&& content)
 {
-    LayoutScope scope;
+    LayoutContainerScope scope;
     begin_hbox(ctx, scope);
     std::forward<Content>(content)();
     end_hbox(ctx, scope);
 }
 
 void
-begin_vbox(Context& ctx, LayoutScope& scope);
+begin_vbox(Context& ctx, LayoutContainerScope& scope);
 
 void
-end_vbox(Context& ctx, LayoutScope& scope);
+end_vbox(Context& ctx, LayoutContainerScope& scope);
 
 template<class Content>
 void
 vbox(Context& ctx, Content&& content)
 {
-    LayoutScope scope;
+    LayoutContainerScope scope;
     begin_vbox(ctx, scope);
     std::forward<Content>(content)();
     end_vbox(ctx, scope);
 }
 
 void
-begin_flow(Context& ctx, LayoutScope& scope);
+begin_flow(Context& ctx, LayoutContainerScope& scope);
 
 void
-end_flow(Context& ctx, LayoutScope& scope);
+end_flow(Context& ctx, LayoutContainerScope& scope);
 
 template<class Content>
 void
 flow(Context& ctx, Content&& content)
 {
-    LayoutScope scope;
+    LayoutContainerScope scope;
     begin_flow(ctx, scope);
     std::forward<Content>(content)();
     end_flow(ctx, scope);

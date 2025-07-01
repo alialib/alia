@@ -10,7 +10,9 @@ namespace alia {
 struct Event;
 struct System;
 struct LayoutNode;
+struct LayoutContainer;
 struct LayoutPlacement;
+struct HeterogeneousInfiniteArena;
 
 enum class PassType
 {
@@ -21,16 +23,14 @@ enum class PassType
 
 struct LayoutEmission
 {
-    LayoutNode* nodes;
-    std::uint32_t count;
-    LayoutNode* active_container;
-    std::uint32_t* next;
+    HeterogeneousInfiniteArena* arena;
+    LayoutContainer* active_container;
+    LayoutNode** next_ptr;
 };
 
 struct LayoutConsumption
 {
-    LayoutPlacement* placements;
-    std::uint32_t index;
+    LayoutPlacement* next_placement;
 };
 
 struct Pass

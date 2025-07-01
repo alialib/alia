@@ -5,38 +5,38 @@
 #include <alia/ui/layout/vbox.hpp>
 namespace alia {
 
-void
+LayoutPlacement*
 resolve_layout(
-    LayoutNode const* nodes,
     LayoutScratchArena& scratch,
-    LayoutPlacement* placements,
+    LayoutPlacementArena& arena,
+    LayoutNode& root_node,
     Vec2 available_space)
 {
     scratch.reset();
-    gather_x_requirements(nodes, scratch, 1);
+    gather_x_requirements(scratch, root_node);
     scratch.reset();
-    assign_widths(nodes, scratch, available_space.x, 1);
+    assign_widths(scratch, root_node, available_space.x);
     scratch.reset();
-    gather_y_requirements(nodes, scratch, available_space.y, 1);
+    gather_y_requirements(scratch, root_node, available_space.y);
     scratch.reset();
-    assign_boxes(
-        nodes, scratch, placements, Box{Vec2{0, 0}, available_space}, 1);
+    LayoutPlacement* initial_placement = nullptr;
+    PlacementContext ctx{&scratch, &arena, &initial_placement};
+    assign_boxes(ctx, root_node, Box{Vec2{0, 0}, available_space});
     scratch.reset();
+    return initial_placement;
 }
 
 HorizontalRequirements
-gather_x_requirements(
-    LayoutNode const* nodes, LayoutScratchArena& scratch, LayoutIndex index)
+gather_x_requirements(LayoutScratchArena& scratch, LayoutNode& node)
 {
-    auto& node = nodes[index];
     switch (node.type)
     {
         case LayoutNodeType::HBox:
-            return gather_hbox_x_requirements(nodes, scratch, node);
+            return gather_hbox_x_requirements(scratch, node);
         case LayoutNodeType::VBox:
-            return gather_vbox_x_requirements(nodes, scratch, node);
+            return gather_vbox_x_requirements(scratch, node);
         case LayoutNodeType::Flow:
-            return gather_flow_x_requirements(nodes, scratch, node);
+            return gather_flow_x_requirements(scratch, node);
         default:
         case LayoutNodeType::Leaf:
             return HorizontalRequirements{
@@ -46,18 +46,16 @@ gather_x_requirements(
 }
 
 HorizontalRequirements
-recall_x_requirements(
-    LayoutNode const* nodes, LayoutScratchArena& scratch, LayoutIndex index)
+recall_x_requirements(LayoutScratchArena& scratch, LayoutNode& node)
 {
-    auto& node = nodes[index];
     switch (node.type)
     {
         case LayoutNodeType::HBox:
-            return recall_hbox_x_requirements(nodes, scratch, node);
+            return recall_hbox_x_requirements(scratch, node);
         case LayoutNodeType::VBox:
-            return recall_vbox_x_requirements(nodes, scratch, node);
+            return recall_vbox_x_requirements(scratch, node);
         case LayoutNodeType::Flow:
-            return recall_flow_x_requirements(nodes, scratch, node);
+            return recall_flow_x_requirements(scratch, node);
         default:
         case LayoutNodeType::Leaf:
             return HorizontalRequirements{
@@ -68,22 +66,18 @@ recall_x_requirements(
 
 void
 assign_widths(
-    LayoutNode const* nodes,
-    LayoutScratchArena& scratch,
-    float assigned_width,
-    LayoutIndex index)
+    LayoutScratchArena& scratch, LayoutNode& node, float assigned_width)
 {
-    auto& node = nodes[index];
     switch (node.type)
     {
         case LayoutNodeType::HBox:
-            assign_hbox_widths(nodes, scratch, assigned_width, node);
+            assign_hbox_widths(scratch, node, assigned_width);
             break;
         case LayoutNodeType::VBox:
-            assign_vbox_widths(nodes, scratch, assigned_width, node);
+            assign_vbox_widths(scratch, node, assigned_width);
             break;
         case LayoutNodeType::Flow:
-            assign_flow_widths(nodes, scratch, assigned_width, node);
+            assign_flow_widths(scratch, node, assigned_width);
             break;
         default:
         case LayoutNodeType::Leaf:
@@ -93,23 +87,16 @@ assign_widths(
 
 VerticalRequirements
 gather_y_requirements(
-    LayoutNode const* nodes,
-    LayoutScratchArena& scratch,
-    float assigned_width,
-    LayoutIndex index)
+    LayoutScratchArena& scratch, LayoutNode& node, float assigned_width)
 {
-    auto& node = nodes[index];
     switch (node.type)
     {
         case LayoutNodeType::HBox:
-            return gather_hbox_y_requirements(
-                nodes, scratch, assigned_width, node);
+            return gather_hbox_y_requirements(scratch, node, assigned_width);
         case LayoutNodeType::VBox:
-            return gather_vbox_y_requirements(
-                nodes, scratch, assigned_width, node);
+            return gather_vbox_y_requirements(scratch, node, assigned_width);
         case LayoutNodeType::Flow:
-            return gather_flow_y_requirements(
-                nodes, scratch, assigned_width, node);
+            return gather_flow_y_requirements(scratch, node, assigned_width);
         default:
         case LayoutNodeType::Leaf:
             return VerticalRequirements{
@@ -119,18 +106,16 @@ gather_y_requirements(
 }
 
 VerticalRequirements
-recall_y_requirements(
-    LayoutNode const* nodes, LayoutScratchArena& scratch, LayoutIndex index)
+recall_y_requirements(LayoutScratchArena& scratch, LayoutNode& node)
 {
-    auto& node = nodes[index];
     switch (node.type)
     {
         case LayoutNodeType::HBox:
-            return recall_hbox_y_requirements(nodes, scratch, node);
+            return recall_hbox_y_requirements(scratch, node);
         case LayoutNodeType::VBox:
-            return recall_vbox_y_requirements(nodes, scratch, node);
+            return recall_vbox_y_requirements(scratch, node);
         case LayoutNodeType::Flow:
-            return recall_flow_y_requirements(nodes, scratch, node);
+            return recall_flow_y_requirements(scratch, node);
         default:
         case LayoutNodeType::Leaf:
             return VerticalRequirements{
@@ -140,30 +125,30 @@ recall_y_requirements(
 }
 
 void
-assign_boxes(
-    LayoutNode const* nodes,
-    LayoutScratchArena& scratch,
-    LayoutPlacement* placements,
-    Box box,
-    LayoutIndex index)
+assign_boxes(PlacementContext& ctx, LayoutNode& node, Box box)
 {
-    auto& node = nodes[index];
     switch (node.type)
     {
         case LayoutNodeType::HBox:
-            assign_hbox_boxes(nodes, scratch, placements, box, node);
+            assign_hbox_boxes(ctx, node, box);
             break;
         case LayoutNodeType::VBox:
-            assign_vbox_boxes(nodes, scratch, placements, box, node);
+            assign_vbox_boxes(ctx, node, box);
             break;
         case LayoutNodeType::Flow:
-            assign_flow_boxes(nodes, scratch, placements, box, node);
+            assign_flow_boxes(ctx, node, box);
             break;
         default:
-        case LayoutNodeType::Leaf:
-            placements[index].position = box.pos + node.margin;
-            placements[index].size = node.size - node.margin * 2;
+        case LayoutNodeType::Leaf: {
+            LayoutPlacement* placement
+                = reinterpret_cast<LayoutPlacement*>(ctx.arena->allocate(
+                    sizeof(LayoutPlacement), alignof(LayoutPlacement)));
+            placement->position = box.pos + node.margin;
+            placement->size = node.size - node.margin * 2;
+            *ctx.next_ptr = placement;
+            ctx.next_ptr = &placement->next;
             break;
+        }
     }
 }
 

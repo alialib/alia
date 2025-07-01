@@ -8,79 +8,74 @@ namespace alia {
 namespace {
 
 void
-begin_container(Context& ctx, LayoutScope& scope, LayoutNodeType type)
+begin_container(Context& ctx, LayoutContainerScope& scope, LayoutNodeType type)
 {
     if (ctx.pass.type == PassType::Refresh)
     {
         auto& layout = ctx.pass.layout_emission;
-        *layout.next = layout.count;
-        scope.index = layout.count;
-        LayoutNode* new_node = &layout.nodes[scope.index];
-        *new_node = LayoutNode{
+        LayoutNode* this_node = reinterpret_cast<LayoutNode*>(
+            layout.arena->allocate(sizeof(LayoutNode), alignof(LayoutNode)));
+        scope.this_node = this_node;
+        *this_node = LayoutNode{
             .type = type,
+            .next_sibling = 0,
             .size = {0, 0},
             .margin = {0, 0},
-            .first_child = 0,
-            .next_sibling = 0};
-        layout.next = &new_node->first_child;
-        ++layout.count;
-        scope.parent = layout.active_container;
-        ++scope.parent->child_count;
-        layout.active_container = new_node;
-    }
-    else
-    {
-        scope.index = ctx.pass.layout_consumption.index++;
+            .container = {.first_child = 0, .child_count = 0}};
+        *layout.next_ptr = this_node;
+        layout.next_ptr = &this_node->container.first_child;
+        scope.parent_node = layout.active_container;
+        ++scope.parent_node->child_count;
+        layout.active_container = &this_node->container;
     }
 }
 
 void
-end_container(Context& ctx, LayoutScope& scope)
+end_container(Context& ctx, LayoutContainerScope& scope)
 {
     if (ctx.pass.type == PassType::Refresh)
     {
         auto& layout = ctx.pass.layout_emission;
-        LayoutNode* this_node = &layout.nodes[scope.index];
-        *layout.next = 0;
-        layout.next = &this_node->next_sibling;
-        layout.active_container = scope.parent;
+        *layout.next_ptr = 0;
+        layout.next_ptr = &scope.this_node->next_sibling;
+        layout.active_container = scope.parent_node;
     }
 }
 
 } // namespace
 
 void
-begin_hbox(Context& ctx, LayoutScope& scope)
+begin_hbox(Context& ctx, LayoutContainerScope& scope)
 {
     begin_container(ctx, scope, LayoutNodeType::HBox);
 }
 
 void
-end_hbox(Context& ctx, LayoutScope& scope)
+end_hbox(Context& ctx, LayoutContainerScope& scope)
 {
     end_container(ctx, scope);
 }
 
 void
-begin_vbox(Context& ctx, LayoutScope& scope)
+begin_vbox(Context& ctx, LayoutContainerScope& scope)
 {
     begin_container(ctx, scope, LayoutNodeType::VBox);
 }
 
 void
-end_vbox(Context& ctx, LayoutScope& scope)
+end_vbox(Context& ctx, LayoutContainerScope& scope)
 {
     end_container(ctx, scope);
 }
 
 void
-begin_flow(Context& ctx, LayoutScope& scope)
+begin_flow(Context& ctx, LayoutContainerScope& scope)
 {
     begin_container(ctx, scope, LayoutNodeType::Flow);
 }
 
 void
-end_flow(Context& ctx, LayoutScope& scope)
+end_flow(Context& ctx, LayoutContainerScope& scope)
 {
     end_container(ctx, scope);
 }

@@ -11,25 +11,21 @@ struct FlowScratch
 };
 
 HorizontalRequirements
-gather_flow_x_requirements(
-    LayoutNode const* nodes,
-    LayoutScratchArena& scratch_arena,
-    LayoutNode const& flow)
+gather_flow_x_requirements(LayoutScratchArena& scratch, LayoutNode& flow)
 {
-    auto& flow_scratch = claim_scratch<FlowScratch>(scratch_arena);
+    auto& flow_scratch = claim_scratch<FlowScratch>(scratch);
     HorizontalRequirements* x_requirements
-        = reinterpret_cast<HorizontalRequirements*>(scratch_arena.allocate(
-            flow.child_count * sizeof(HorizontalRequirements),
+        = reinterpret_cast<HorizontalRequirements*>(scratch.allocate(
+            flow.container.child_count * sizeof(HorizontalRequirements),
             alignof(HorizontalRequirements)));
     VerticalRequirements* y_requirements
-        = reinterpret_cast<VerticalRequirements*>(scratch_arena.allocate(
-            flow.child_count * sizeof(VerticalRequirements),
+        = reinterpret_cast<VerticalRequirements*>(scratch.allocate(
+            flow.container.child_count * sizeof(VerticalRequirements),
             alignof(VerticalRequirements)));
-    for (LayoutIndex child_index = flow.first_child; child_index != 0;
-         child_index = nodes[child_index].next_sibling)
+    for (LayoutNode* child = flow.container.first_child; child != nullptr;
+         child = child->next_sibling)
     {
-        auto const child_x
-            = gather_x_requirements(nodes, scratch_arena, child_index);
+        auto const child_x = gather_x_requirements(scratch, *child);
         *x_requirements++ = child_x;
         flow_scratch.max_child_width
             = (std::max)(flow_scratch.max_child_width, child_x.min_size);
@@ -40,12 +36,9 @@ gather_flow_x_requirements(
 }
 
 HorizontalRequirements
-recall_flow_x_requirements(
-    LayoutNode const* nodes,
-    LayoutScratchArena& scratch_arena,
-    LayoutNode const& flow)
+recall_flow_x_requirements(LayoutScratchArena& scratch, LayoutNode& flow)
 {
-    auto& flow_scratch = peek_scratch<FlowScratch>(scratch_arena);
+    auto& flow_scratch = peek_scratch<FlowScratch>(scratch);
     return HorizontalRequirements{
         .min_size = flow_scratch.max_child_width + flow.margin.x * 2,
         .growth_factor = 0};
@@ -53,48 +46,42 @@ recall_flow_x_requirements(
 
 void
 assign_flow_widths(
-    LayoutNode const* nodes,
-    LayoutScratchArena& scratch_arena,
-    float assigned_width,
-    LayoutNode const& flow)
+    LayoutScratchArena& scratch, LayoutNode& flow, float assigned_width)
 {
-    auto& flow_scratch = use_scratch<FlowScratch>(scratch_arena);
+    auto& flow_scratch = use_scratch<FlowScratch>(scratch);
     HorizontalRequirements* x_requirements
-        = reinterpret_cast<HorizontalRequirements*>(scratch_arena.allocate(
-            flow.child_count * sizeof(HorizontalRequirements),
+        = reinterpret_cast<HorizontalRequirements*>(scratch.allocate(
+            flow.container.child_count * sizeof(HorizontalRequirements),
             alignof(HorizontalRequirements)));
     VerticalRequirements* y_requirements
-        = reinterpret_cast<VerticalRequirements*>(scratch_arena.allocate(
-            flow.child_count * sizeof(VerticalRequirements),
+        = reinterpret_cast<VerticalRequirements*>(scratch.allocate(
+            flow.container.child_count * sizeof(VerticalRequirements),
             alignof(VerticalRequirements)));
     assigned_width -= flow.margin.x * 2;
-    for (LayoutIndex child_index = flow.first_child; child_index != 0;
-         child_index = nodes[child_index].next_sibling)
+    for (LayoutNode* child = flow.container.first_child; child != nullptr;
+         child = child->next_sibling)
     {
         auto const child_x = *x_requirements++;
-        assign_widths(nodes, scratch_arena, child_x.min_size, child_index);
+        assign_widths(scratch, *child, child_x.min_size);
     }
 }
 
 VerticalRequirements
 gather_flow_y_requirements(
-    LayoutNode const* nodes,
-    LayoutScratchArena& scratch_arena,
-    float assigned_width,
-    LayoutNode const& flow)
+    LayoutScratchArena& scratch, LayoutNode& flow, float assigned_width)
 {
-    auto& flow_scratch = use_scratch<FlowScratch>(scratch_arena);
+    auto& flow_scratch = use_scratch<FlowScratch>(scratch);
     HorizontalRequirements* x_requirements
-        = reinterpret_cast<HorizontalRequirements*>(scratch_arena.allocate(
-            flow.child_count * sizeof(HorizontalRequirements),
+        = reinterpret_cast<HorizontalRequirements*>(scratch.allocate(
+            flow.container.child_count * sizeof(HorizontalRequirements),
             alignof(HorizontalRequirements)));
     VerticalRequirements* y_requirements
-        = reinterpret_cast<VerticalRequirements*>(scratch_arena.allocate(
-            flow.child_count * sizeof(VerticalRequirements),
+        = reinterpret_cast<VerticalRequirements*>(scratch.allocate(
+            flow.container.child_count * sizeof(VerticalRequirements),
             alignof(VerticalRequirements)));
     float row_height = 0, total_height = 0, row_width = 0;
-    for (LayoutIndex child_index = flow.first_child; child_index != 0;
-         child_index = nodes[child_index].next_sibling)
+    for (LayoutNode* child = flow.container.first_child; child != nullptr;
+         child = child->next_sibling)
     {
         auto const child_x = *x_requirements++;
         row_width += child_x.min_size;
@@ -104,8 +91,8 @@ gather_flow_y_requirements(
             row_height = 0;
             row_width = child_x.min_size;
         }
-        auto const child_y = gather_y_requirements(
-            nodes, scratch_arena, child_x.min_size, child_index);
+        auto const child_y
+            = gather_y_requirements(scratch, *child, child_x.min_size);
         *y_requirements++ = child_y;
         row_height = (std::max)(row_height, child_y.min_size);
         // TODO: Add baseline support.
@@ -129,12 +116,9 @@ gather_flow_y_requirements(
 }
 
 VerticalRequirements
-recall_flow_y_requirements(
-    LayoutNode const* nodes,
-    LayoutScratchArena& scratch_arena,
-    LayoutNode const& flow)
+recall_flow_y_requirements(LayoutScratchArena& scratch, LayoutNode& flow)
 {
-    auto& flow_scratch = peek_scratch<FlowScratch>(scratch_arena);
+    auto& flow_scratch = peek_scratch<FlowScratch>(scratch);
     return VerticalRequirements{
         .min_size = flow_scratch.height + flow.margin.y * 2,
         .growth_factor = 0,
@@ -143,27 +127,22 @@ recall_flow_y_requirements(
 }
 
 void
-assign_flow_boxes(
-    LayoutNode const* nodes,
-    LayoutScratchArena& scratch_arena,
-    LayoutPlacement* placements,
-    Box box,
-    LayoutNode const& flow)
+assign_flow_boxes(PlacementContext& ctx, LayoutNode& flow, Box box)
 {
-    auto& flow_scratch = use_scratch<FlowScratch>(scratch_arena);
+    auto& flow_scratch = use_scratch<FlowScratch>(*ctx.scratch);
     HorizontalRequirements* x_requirements
-        = reinterpret_cast<HorizontalRequirements*>(scratch_arena.allocate(
-            flow.child_count * sizeof(HorizontalRequirements),
+        = reinterpret_cast<HorizontalRequirements*>(ctx.scratch->allocate(
+            flow.container.child_count * sizeof(HorizontalRequirements),
             alignof(HorizontalRequirements)));
     VerticalRequirements* y_requirements
-        = reinterpret_cast<VerticalRequirements*>(scratch_arena.allocate(
-            flow.child_count * sizeof(VerticalRequirements),
+        = reinterpret_cast<VerticalRequirements*>(ctx.scratch->allocate(
+            flow.container.child_count * sizeof(VerticalRequirements),
             alignof(VerticalRequirements)));
     box = apply_margin(box, flow.margin);
     float current_x = box.pos.x, current_y = box.pos.y;
     float row_height = 0;
-    for (LayoutIndex child_index = flow.first_child; child_index != 0;
-         child_index = nodes[child_index].next_sibling)
+    for (LayoutNode* child = flow.container.first_child; child != nullptr;
+         child = child->next_sibling)
     {
         auto const child_x = *x_requirements++;
         auto const child_y = *y_requirements++;
@@ -175,12 +154,10 @@ assign_flow_boxes(
         }
         row_height = (std::max)(row_height, child_y.min_size);
         assign_boxes(
-            nodes,
-            scratch_arena,
-            placements,
+            ctx,
+            *child,
             Box{Vec2{current_x, current_y},
-                Vec2{child_x.min_size, row_height}},
-            child_index);
+                Vec2{child_x.min_size, row_height}});
         current_x += child_x.min_size;
     }
 }
