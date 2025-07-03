@@ -289,7 +289,7 @@ update()
     auto const start_time = std::chrono::high_resolution_clock::now();
 
     std::uint32_t root_index;
-    // Add a placeholder to fill the reserved/invalid 0 index.
+    the_layout_spec_arena.reset();
     Context refresh_ctx = {
         Pass{
             PassType::Refresh,
@@ -306,6 +306,7 @@ update()
 
     update_glfw_window_info(the_system, the_window);
 
+    the_layout_placement_arena.reset();
     LayoutPlacement* initial_layout_placement = resolve_layout(
         the_scratch_arena,
         the_layout_placement_arena,
