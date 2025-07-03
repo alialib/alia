@@ -1,3 +1,6 @@
+.gitignore text eol=lf
+.gitattributes text eol=lf
+CNAME text eol=lf
 *.c text eol=lf
 *.cpp text eol=lf
 *.h text eol=lf
@@ -9,4 +12,12 @@
 *.sh text eol=lf
 *.txt text eol=lf
 *.yml text eol=lf
+*.cmake text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.glsl text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.dot text eol=lf
+*.svg text eol=lf
 *.zip filter=lfs diff=lfs merge=lfs -text
