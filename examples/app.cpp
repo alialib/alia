@@ -163,7 +163,7 @@ rectangle_demo(Context& ctx)
 
     vbox(ctx, [&]() {
         float x = 0.0f;
-        for (int i = 0; i < 200; ++i)
+        for (int i = 0; i < 50; ++i)
         {
             flow(ctx, [&]() {
                 for (int j = 0; j < 40; ++j)
@@ -173,8 +173,8 @@ rectangle_demo(Context& ctx)
                         {24, 24},
                         invert ? Color{x, 0.1f, 1.0f - x, 1}
                                : Color{1.0f - x, 0.1f, x, 1});
+                    x += 0.0005f;
                 }
-                x += 0.000125f;
             });
         }
 
