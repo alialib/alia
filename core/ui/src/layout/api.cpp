@@ -1,32 +1,35 @@
 #include <alia/ui/layout/api.hpp>
 
 #include <alia/ui/context.hpp>
+#include <alia/ui/layout/flow.hpp>
+#include <alia/ui/layout/hbox.hpp>
 #include <alia/ui/layout/resolution.hpp>
+#include <alia/ui/layout/vbox.hpp>
 
 namespace alia {
 
 namespace {
 
 void
-begin_container(Context& ctx, LayoutContainerScope& scope, LayoutNodeType type)
+begin_container(
+    Context& ctx, LayoutContainerScope& scope, LayoutNodeVtable* vtable)
 {
     if (ctx.pass.type == PassType::Refresh)
     {
         auto& layout = ctx.pass.layout_emission;
-        LayoutNode* this_node = reinterpret_cast<LayoutNode*>(
-            layout.arena->allocate(sizeof(LayoutNode), alignof(LayoutNode)));
-        scope.this_node = this_node;
-        *this_node = LayoutNode{
-            .type = type,
-            .next_sibling = 0,
-            .size = {0, 0},
-            .margin = {0, 0},
-            .container = {.first_child = 0, .child_count = 0}};
-        *layout.next_ptr = this_node;
-        layout.next_ptr = &this_node->container.first_child;
-        scope.parent_node = layout.active_container;
-        ++scope.parent_node->child_count;
-        layout.active_container = &this_node->container;
+        LayoutContainer* this_container
+            = reinterpret_cast<LayoutContainer*>(layout.arena->allocate(
+                sizeof(LayoutContainer), alignof(LayoutContainer)));
+        scope.this_container = this_container;
+        *this_container = LayoutContainer{
+            .base = {.vtable = vtable, .next_sibling = 0},
+            .first_child = 0,
+            .child_count = 0};
+        *layout.next_ptr = &this_container->base;
+        layout.next_ptr = &this_container->first_child;
+        scope.parent_container = layout.active_container;
+        ++scope.parent_container->child_count;
+        layout.active_container = this_container;
     }
 }
 
@@ -37,8 +40,8 @@ end_container(Context& ctx, LayoutContainerScope& scope)
     {
         auto& layout = ctx.pass.layout_emission;
         *layout.next_ptr = 0;
-        layout.next_ptr = &scope.this_node->next_sibling;
-        layout.active_container = scope.parent_node;
+        layout.next_ptr = &scope.this_container->base.next_sibling;
+        layout.active_container = scope.parent_container;
     }
 }
 
@@ -47,7 +50,7 @@ end_container(Context& ctx, LayoutContainerScope& scope)
 void
 begin_hbox(Context& ctx, LayoutContainerScope& scope)
 {
-    begin_container(ctx, scope, LayoutNodeType::HBox);
+    begin_container(ctx, scope, &hbox_vtable);
 }
 
 void
@@ -59,7 +62,7 @@ end_hbox(Context& ctx, LayoutContainerScope& scope)
 void
 begin_vbox(Context& ctx, LayoutContainerScope& scope)
 {
-    begin_container(ctx, scope, LayoutNodeType::VBox);
+    begin_container(ctx, scope, &vbox_vtable);
 }
 
 void
@@ -71,7 +74,7 @@ end_vbox(Context& ctx, LayoutContainerScope& scope)
 void
 begin_flow(Context& ctx, LayoutContainerScope& scope)
 {
-    begin_container(ctx, scope, LayoutNodeType::Flow);
+    begin_container(ctx, scope, &flow_vtable);
 }
 
 void

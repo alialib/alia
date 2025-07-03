@@ -20,6 +20,7 @@
 #include <alia/ui/events.hpp>
 #include <alia/ui/geometry.hpp>
 #include <alia/ui/layout/api.hpp>
+#include <alia/ui/layout/leaf.hpp>
 #include <alia/ui/layout/resolution.hpp>
 #include <alia/ui/system.hpp>
 
@@ -60,16 +61,14 @@ do_rect(Context& ctx, Vec2 size, Color color)
     {
         case PassType::Refresh: {
             auto& layout = ctx.pass.layout_emission;
-            LayoutNode* new_node
-                = allocate_spec_node<LayoutNode>(the_layout_spec_arena);
-            *layout.next_ptr = new_node;
-            layout.next_ptr = &new_node->next_sibling;
-            *new_node = LayoutNode{
-                .type = LayoutNodeType::Leaf,
-                .next_sibling = 0,
+            LayoutLeafNode* new_node
+                = allocate_spec_node<LayoutLeafNode>(the_layout_spec_arena);
+            *layout.next_ptr = &new_node->base;
+            layout.next_ptr = &new_node->base.next_sibling;
+            *new_node = LayoutLeafNode{
+                .base = {.vtable = &leaf_vtable, .next_sibling = 0},
                 .size = size,
-                .margin = {4, 4},
-                .leaf = {}};
+                .margin = {4, 4}};
             ++layout.active_container->child_count;
             break;
         }
@@ -162,16 +161,21 @@ rectangle_demo(Context& ctx)
 {
     static bool invert = false;
 
-    flow(ctx, [&]() {
+    vbox(ctx, [&]() {
         float x = 0.0f;
-        for (int i = 0; i < 2000; ++i)
+        for (int i = 0; i < 200; ++i)
         {
-            do_rect(
-                ctx,
-                {24, 24},
-                invert ? Color{x, 0.1f, 1.0f - x, 1}
-                       : Color{1.0f - x, 0.1f, x, 1});
-            x += 0.0005f;
+            flow(ctx, [&]() {
+                for (int j = 0; j < 40; ++j)
+                {
+                    do_rect(
+                        ctx,
+                        {24, 24},
+                        invert ? Color{x, 0.1f, 1.0f - x, 1}
+                               : Color{1.0f - x, 0.1f, x, 1});
+                }
+                x += 0.000125f;
+            });
         }
 
         /*hbox(ctx, [&]() {

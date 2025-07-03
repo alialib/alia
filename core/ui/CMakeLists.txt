@@ -4,6 +4,7 @@ add_library(alia_ui STATIC
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/api.cpp
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/flow.cpp
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/hbox.cpp
+    ${PROJECT_SOURCE_DIR}/core/ui/src/layout/leaf.cpp
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/vbox.cpp
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/resolution.cpp)
 target_include_directories(alia_ui PUBLIC

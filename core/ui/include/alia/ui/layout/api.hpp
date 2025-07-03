@@ -7,7 +7,6 @@
 namespace alia {
 
 struct Context;
-struct LayoutNode;
 struct LayoutContainer;
 
 ALIA_DEFINE_FLAG_TYPE(Layout)
@@ -19,8 +18,8 @@ ALIA_DEFINE_FLAG_TYPE(Layout)
 
 struct LayoutContainerScope
 {
-    LayoutNode* this_node;
-    LayoutContainer* parent_node;
+    LayoutContainer* this_container;
+    LayoutContainer* parent_container;
 };
 
 void
