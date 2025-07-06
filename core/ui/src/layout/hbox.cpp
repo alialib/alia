@@ -12,7 +12,7 @@ struct HBoxScratch
 };
 
 HorizontalRequirements
-gather_hbox_x_requirements(LayoutScratchArena* scratch, LayoutNode* node)
+measure_hbox_horizontal(LayoutScratchArena* scratch, LayoutNode* node)
 {
     auto& hbox = *reinterpret_cast<HBoxLayoutNode*>(node);
     auto& hbox_scratch = claim_scratch<HBoxScratch>(*scratch);
@@ -23,7 +23,7 @@ gather_hbox_x_requirements(LayoutScratchArena* scratch, LayoutNode* node)
     for (LayoutNode* child = hbox.first_child; child != nullptr;
          child = child->next_sibling)
     {
-        auto const child_x = gather_x_requirements(scratch, child);
+        auto const child_x = measure_horizontal(scratch, child);
         *x_requirements++ = child_x;
         hbox_scratch.total_width += child_x.min_size;
         hbox_scratch.total_growth += child_x.growth_factor;
@@ -58,7 +58,7 @@ assign_hbox_widths(
 }
 
 VerticalRequirements
-gather_hbox_y_requirements(
+measure_hbox_vertical(
     LayoutScratchArena* scratch, LayoutNode* node, float assigned_width)
 {
     auto& hbox = *reinterpret_cast<HBoxLayoutNode*>(node);
@@ -79,8 +79,8 @@ gather_hbox_y_requirements(
         auto const child_x = *x_requirements++;
         float const extra_space = total_extra_space * child_x.growth_factor
                                 * one_over_total_growth;
-        auto const child_y = gather_y_requirements(
-            scratch, child, child_x.min_size + extra_space);
+        auto const child_y
+            = measure_vertical(scratch, child, child_x.min_size + extra_space);
         hbox_scratch.height
             = (std::max)(hbox_scratch.height, child_y.min_size);
         if (child_y.has_baseline)
@@ -132,11 +132,13 @@ assign_hbox_boxes(PlacementContext* ctx, LayoutNode* node, Box box)
     }
 }
 
-LayoutNodeVtable hbox_vtable = {
-    gather_hbox_x_requirements,
-    assign_hbox_widths,
-    gather_hbox_y_requirements,
-    assign_hbox_boxes,
-};
+LayoutNodeVtable hbox_vtable
+    = {measure_hbox_horizontal,
+       assign_hbox_widths,
+       measure_hbox_vertical,
+       assign_hbox_boxes,
+       default_measure_wrapped_horizontal,
+       default_measure_wrapped_vertical,
+       nullptr};
 
 } // namespace alia

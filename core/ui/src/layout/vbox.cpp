@@ -15,7 +15,7 @@ struct VBoxScratch
 };
 
 HorizontalRequirements
-gather_vbox_x_requirements(LayoutScratchArena* scratch, LayoutNode* node)
+measure_vbox_horizontal(LayoutScratchArena* scratch, LayoutNode* node)
 {
     auto& vbox = *reinterpret_cast<VBoxLayoutNode*>(node);
     auto& vbox_scratch = claim_scratch<VBoxScratch>(*scratch);
@@ -26,7 +26,7 @@ gather_vbox_x_requirements(LayoutScratchArena* scratch, LayoutNode* node)
     for (LayoutNode* child = vbox.first_child; child != nullptr;
          child = child->next_sibling)
     {
-        auto const child_x = gather_x_requirements(scratch, child);
+        auto const child_x = measure_horizontal(scratch, child);
         vbox_scratch.max_width
             = (std::max)(vbox_scratch.max_width, child_x.min_size);
     }
@@ -52,7 +52,7 @@ assign_vbox_widths(
 }
 
 VerticalRequirements
-gather_vbox_y_requirements(
+measure_vbox_vertical(
     LayoutScratchArena* scratch, LayoutNode* node, float assigned_width)
 {
     auto& vbox = *reinterpret_cast<VBoxLayoutNode*>(node);
@@ -64,8 +64,7 @@ gather_vbox_y_requirements(
     for (LayoutNode* child = vbox.first_child; child != nullptr;
          child = child->next_sibling)
     {
-        auto const child_y
-            = gather_y_requirements(scratch, child, assigned_width);
+        auto const child_y = measure_vertical(scratch, child, assigned_width);
         *y_requirements++ = child_y;
         vbox_scratch.total_height += child_y.min_size;
         vbox_scratch.total_growth += child_y.growth_factor;
@@ -104,11 +103,13 @@ assign_vbox_boxes(PlacementContext* ctx, LayoutNode* node, Box box)
     }
 }
 
-LayoutNodeVtable vbox_vtable = {
-    gather_vbox_x_requirements,
-    assign_vbox_widths,
-    gather_vbox_y_requirements,
-    assign_vbox_boxes,
-};
+LayoutNodeVtable vbox_vtable
+    = {measure_vbox_horizontal,
+       assign_vbox_widths,
+       measure_vbox_vertical,
+       assign_vbox_boxes,
+       default_measure_wrapped_horizontal,
+       default_measure_wrapped_vertical,
+       nullptr};
 
 } // namespace alia

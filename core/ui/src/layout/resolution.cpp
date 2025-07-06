@@ -1,8 +1,5 @@
 #include <alia/ui/layout/resolution.hpp>
 
-#include <alia/ui/layout/flow.hpp>
-#include <alia/ui/layout/hbox.hpp>
-#include <alia/ui/layout/vbox.hpp>
 namespace alia {
 
 LayoutPlacement*
@@ -13,17 +10,53 @@ resolve_layout(
     Vec2 available_space)
 {
     scratch.reset();
-    gather_x_requirements(&scratch, &root_node);
+    measure_horizontal(&scratch, &root_node);
     scratch.reset();
-    assign_widths(&scratch, &root_node, available_space.x);
-    scratch.reset();
-    gather_y_requirements(&scratch, &root_node, available_space.x);
+    measure_vertical(&scratch, &root_node, available_space.x);
     scratch.reset();
     LayoutPlacement* initial_placement = nullptr;
     PlacementContext ctx{&scratch, &arena, &initial_placement};
     assign_boxes(&ctx, &root_node, Box{Vec2{0, 0}, available_space});
     scratch.reset();
     return initial_placement;
+}
+
+HorizontalRequirements
+default_measure_wrapped_horizontal(
+    LayoutScratchArena* scratch, LayoutNode* node)
+{
+    return measure_horizontal(scratch, node);
+}
+
+WrappingRequirements
+default_measure_wrapped_vertical(
+    LayoutScratchArena* scratch,
+    LayoutNode* node,
+    float current_x_offset,
+    float line_width)
+{
+    auto checkpoint = scratch->save_state();
+    auto horizontal = measure_horizontal(scratch, node);
+    scratch->restore_state(checkpoint);
+    auto vertical = measure_vertical(scratch, node, horizontal.min_size);
+    if (current_x_offset + horizontal.min_size > line_width)
+    {
+        return WrappingRequirements{
+            .line_height = vertical.min_size,
+            .baseline_offset = vertical.baseline_offset,
+            .wrap_count = 1,
+            .wrapped_immediately = true,
+            .new_x_offset = horizontal.min_size};
+    }
+    else
+    {
+        return WrappingRequirements{
+            .line_height = vertical.min_size,
+            .baseline_offset = vertical.baseline_offset,
+            .wrap_count = 0,
+            .wrapped_immediately = false,
+            .new_x_offset = current_x_offset + horizontal.min_size};
+    }
 }
 
 } // namespace alia

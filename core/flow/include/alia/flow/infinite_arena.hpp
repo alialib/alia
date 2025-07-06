@@ -78,6 +78,18 @@ struct RawInfiniteArena
         next_ = base_;
     }
 
+    std::uint8_t*
+    save_state()
+    {
+        return next_;
+    }
+
+    void
+    restore_state(std::uint8_t* state)
+    {
+        next_ = state;
+    }
+
     void
     release();
 
@@ -85,52 +97,6 @@ struct RawInfiniteArena
     std::uint8_t* base_ = nullptr;
     std::uint8_t* next_ = nullptr;
     std::size_t capacity_ = 0;
-};
-
-// UniformlyAlignedInfiniteArena is a simple arena allocator that assumes an
-// infinite reservation of memory and uniform alignment requirements. (It
-// checks for overflow and misalignment with ALIA_ASSERT.)
-template<std::size_t Alignment>
-struct UniformlyAlignedInfiniteArena
-{
-    // TODO: Use inheritance to avoid code duplication?
-
-    static constexpr std::size_t INFINITE_CAPACITY = 128 * 1024 * 1024;
-
-    RawInfiniteArena base_;
-
-    bool
-    initialize(std::size_t reservation_size = INFINITE_CAPACITY)
-    {
-        return base_.initialize(reservation_size);
-    }
-
-    void*
-    allocate(std::size_t size, std::size_t alignment)
-    {
-        ALIA_ASSERT(alignment <= Alignment);
-        std::size_t const aligned_size
-            = (size + Alignment - 1) & ~(Alignment - 1);
-        return base_.allocate(aligned_size);
-    }
-
-    void*
-    peek()
-    {
-        return base_.peek();
-    }
-
-    void
-    reset()
-    {
-        base_.reset();
-    }
-
-    void
-    release()
-    {
-        base_.release();
-    }
 };
 
 // HeterogeneousInfiniteArena is an arena allocator that assumes an infinite
@@ -176,6 +142,18 @@ struct HeterogeneousInfiniteArena
     release()
     {
         base_.release();
+    }
+
+    std::uint8_t*
+    save_state()
+    {
+        return base_.save_state();
+    }
+
+    void
+    restore_state(std::uint8_t* state)
+    {
+        base_.restore_state(state);
     }
 };
 

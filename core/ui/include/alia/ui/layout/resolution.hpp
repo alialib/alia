@@ -29,7 +29,7 @@ struct LayoutContainer
 
 using LayoutSpecArena = HeterogeneousInfiniteArena;
 
-using LayoutScratchArena = UniformlyAlignedInfiniteArena<16>;
+using LayoutScratchArena = HeterogeneousInfiniteArena;
 
 using LayoutPlacementArena = HeterogeneousInfiniteArena;
 
@@ -43,15 +43,15 @@ struct LayoutPlacement
 struct HorizontalRequirements
 {
     float min_size;
-    float growth_factor = 0.f; // 0: fixed, >0: wants to grow
+    float growth_factor = 0.0f;
 };
 
 struct VerticalRequirements
 {
     float min_size;
-    float growth_factor = 0.f; // 0 = fixed, >0 = wants to grow
+    float growth_factor = 0.0f;
     bool has_baseline = false;
-    float baseline_offset = 0.f;
+    float baseline_offset = 0.0f;
 };
 
 struct PlacementContext
@@ -61,21 +61,83 @@ struct PlacementContext
     LayoutPlacement** next_ptr;
 };
 
+struct WrappingRequirements
+{
+    float line_height;
+    float baseline_offset;
+    // TODO: Combine `wrap_count` and `wrapped_immediately` into a single
+    // uint32_t.
+    int wrap_count;
+    bool wrapped_immediately;
+    float new_x_offset;
+};
+
+struct VerticalAssignment
+{
+    float line_height;
+    float baseline_offset;
+};
+
+struct WrappingAssignment
+{
+    // X position of the flow layout
+    float x_base;
+
+    // width of the flow layout
+    float line_width;
+
+    // X offset of the first line - relative to `x_base`; to be used for any
+    // content that fits before any wrapping occurs
+    float first_line_x_offset;
+
+    // Y position of the first line
+    float y_base;
+
+    // vertical assignment for first line - to be used for any content that
+    // fits before any wrapping occurs
+    VerticalAssignment first_line;
+
+    // vertical assignment for middle lines - to be used for content on
+    // intermediate lines (i.e., where this node completely fills the line)
+    VerticalAssignment middle_lines;
+
+    // vertical assignment for last line - to be used for content on the last
+    // line (i.e., where later nodes might share the same line)
+    VerticalAssignment last_line;
+};
+
 struct LayoutNodeVtable
 {
-    HorizontalRequirements (*gather_x_requirements)(
+    HorizontalRequirements (*measure_horizontal)(
         LayoutScratchArena* scratch, LayoutNode* node);
+
     void (*assign_widths)(
         LayoutScratchArena* scratch, LayoutNode* node, float assigned_width);
-    VerticalRequirements (*gather_y_requirements)(
+
+    VerticalRequirements (*measure_vertical)(
         LayoutScratchArena* scratch, LayoutNode* node, float assigned_width);
+
     void (*assign_boxes)(PlacementContext* ctx, LayoutNode* node, Box box);
+
+    HorizontalRequirements (*measure_wrapped_horizontal)(
+        LayoutScratchArena* scratch, LayoutNode* node);
+
+    WrappingRequirements (*measure_wrapped_vertical)(
+        LayoutScratchArena* scratch,
+        LayoutNode* node,
+        float current_x_offset,
+        float line_width);
+
+    void (*assign_wrapped_boxes)(
+        PlacementContext* ctx,
+        LayoutNode* node,
+        WrappingAssignment const* assignment);
 };
 
 inline HorizontalRequirements
-gather_x_requirements(LayoutScratchArena* scratch, LayoutNode* node)
+measure_horizontal(LayoutScratchArena* scratch, LayoutNode* node)
 {
-    return node->vtable->gather_x_requirements(scratch, node);
+    return node->vtable->measure_horizontal(scratch, node);
 }
 
 inline void
@@ -86,16 +148,53 @@ assign_widths(
 }
 
 inline VerticalRequirements
-gather_y_requirements(
+measure_vertical(
     LayoutScratchArena* scratch, LayoutNode* node, float assigned_width)
 {
-    return node->vtable->gather_y_requirements(scratch, node, assigned_width);
+    return node->vtable->measure_vertical(scratch, node, assigned_width);
 }
 
 inline void
 assign_boxes(PlacementContext* ctx, LayoutNode* node, Box box)
 {
     return node->vtable->assign_boxes(ctx, node, box);
+}
+
+inline HorizontalRequirements
+measure_wrapped_horizontal(LayoutScratchArena* scratch, LayoutNode* node)
+{
+    return node->vtable->measure_wrapped_horizontal(scratch, node);
+}
+
+HorizontalRequirements
+default_measure_wrapped_horizontal(
+    LayoutScratchArena* scratch, LayoutNode* node);
+
+inline WrappingRequirements
+measure_wrapped_vertical(
+    LayoutScratchArena* scratch,
+    LayoutNode* node,
+    float current_x_offset,
+    float line_width)
+{
+    return node->vtable->measure_wrapped_vertical(
+        scratch, node, current_x_offset, line_width);
+}
+
+WrappingRequirements
+default_measure_wrapped_vertical(
+    LayoutScratchArena* scratch,
+    LayoutNode* node,
+    float current_x_offset,
+    float line_width);
+
+inline void
+assign_wrapped_boxes(
+    PlacementContext* ctx,
+    LayoutNode* node,
+    WrappingAssignment const* assignment)
+{
+    return node->vtable->assign_wrapped_boxes(ctx, node, assignment);
 }
 
 LayoutPlacement*

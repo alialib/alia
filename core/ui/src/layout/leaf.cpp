@@ -5,7 +5,7 @@
 namespace alia {
 
 HorizontalRequirements
-gather_leaf_x_requirements(LayoutScratchArena* scratch, LayoutNode* node)
+measure_leaf_horizontal(LayoutScratchArena* scratch, LayoutNode* node)
 {
     auto& leaf = *reinterpret_cast<LayoutLeafNode*>(node);
     return HorizontalRequirements{
@@ -20,7 +20,7 @@ assign_leaf_widths(
 }
 
 VerticalRequirements
-gather_leaf_y_requirements(
+measure_leaf_vertical(
     LayoutScratchArena* scratch, LayoutNode* node, float assigned_width)
 {
     auto& leaf = *reinterpret_cast<LayoutLeafNode*>(node);
@@ -42,11 +42,13 @@ assign_leaf_boxes(PlacementContext* ctx, LayoutNode* node, Box box)
     ctx->next_ptr = &placement->next;
 }
 
-LayoutNodeVtable leaf_vtable = {
-    gather_leaf_x_requirements,
-    assign_leaf_widths,
-    gather_leaf_y_requirements,
-    assign_leaf_boxes,
-};
+LayoutNodeVtable leaf_vtable
+    = {measure_leaf_horizontal,
+       assign_leaf_widths,
+       measure_leaf_vertical,
+       assign_leaf_boxes,
+       default_measure_wrapped_horizontal,
+       default_measure_wrapped_vertical,
+       nullptr};
 
 } // namespace alia
