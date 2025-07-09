@@ -462,7 +462,7 @@ break_text(
     float scale,
     float width)
 {
-    size_t last_space = 0;
+    size_t last_space = start;
     float x = 0;
     for (size_t i = start; i < end; ++i)
     {
@@ -475,7 +475,7 @@ break_text(
             case '\n':
                 return {i + 1, x};
             case ' ':
-                last_space = i;
+                last_space = i + 1;
                 break;
         }
 
@@ -485,7 +485,7 @@ break_text(
         x += (glyph.advance + get_kerning(engine, c, text[i + 1])) * scale;
         if (x > width)
         {
-            return {last_space == start ? i : last_space + 1, x};
+            return {last_space == start ? i : last_space, x};
         }
     }
     return {end, x};
