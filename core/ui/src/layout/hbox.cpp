@@ -8,7 +8,6 @@ struct HBoxScratch
 {
     float total_width = 0, total_growth = 0;
     bool has_baseline = false;
-    float height = 0, ascent = 0, descent = 0;
 };
 
 HorizontalRequirements
@@ -73,6 +72,7 @@ measure_hbox_vertical(
     // TODO: Figure out how to handle 0 total growth.
     float const one_over_total_growth
         = 1.0f / (std::max)(0.00001f, hbox_scratch.total_growth);
+    float height = 0, ascent = 0, descent = 0;
     for (LayoutNode* child = hbox.first_child; child != nullptr;
          child = child->next_sibling)
     {
@@ -81,25 +81,16 @@ measure_hbox_vertical(
                                 * one_over_total_growth;
         auto const child_y
             = measure_vertical(scratch, child, child_x.min_size + extra_space);
-        hbox_scratch.height
-            = (std::max)(hbox_scratch.height, child_y.min_size);
-        if (child_y.has_baseline)
-        {
-            hbox_scratch.ascent
-                = (std::max)(hbox_scratch.ascent, child_y.baseline_offset);
-            hbox_scratch.descent = (std::max)(
-                hbox_scratch.descent,
-                child_y.min_size - child_y.baseline_offset);
-            hbox_scratch.has_baseline = true;
-        }
+        height = (std::max)(height, child_y.min_size);
+        ascent = (std::max)(ascent, child_y.ascent);
+        descent = (std::max)(descent, child_y.descent);
+        hbox_scratch.has_baseline = true;
     }
-    hbox_scratch.height = (std::max)(
-        hbox_scratch.height, hbox_scratch.ascent + hbox_scratch.descent);
     return VerticalRequirements{
-        .min_size = hbox_scratch.height,
+        .min_size = (std::max)(height, ascent + descent),
         .growth_factor = 0,
-        .has_baseline = hbox_scratch.has_baseline,
-        .baseline_offset = hbox_scratch.ascent};
+        .ascent = ascent,
+        .descent = descent};
 }
 
 void

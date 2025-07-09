@@ -33,13 +33,13 @@ void
 assign_leaf_boxes(PlacementContext* ctx, LayoutNode* node, Box box)
 {
     auto& leaf = *reinterpret_cast<LayoutLeafNode*>(node);
-    LayoutPlacement* placement
-        = reinterpret_cast<LayoutPlacement*>(ctx->arena->allocate(
-            sizeof(LayoutPlacement), alignof(LayoutPlacement)));
+    LeafLayoutPlacement* placement
+        = reinterpret_cast<LeafLayoutPlacement*>(ctx->arena->allocate(
+            sizeof(LeafLayoutPlacement), alignof(LeafLayoutPlacement)));
     placement->position = box.pos + leaf.margin;
     placement->size = leaf.size - leaf.margin * 2;
-    *ctx->next_ptr = placement;
-    ctx->next_ptr = &placement->next;
+    *ctx->next_ptr = &placement->base;
+    ctx->next_ptr = &placement->base.next;
 }
 
 LayoutNodeVtable leaf_vtable

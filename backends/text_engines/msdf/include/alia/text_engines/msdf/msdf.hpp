@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <utility>
 
 #include <alia/ui/color.hpp>
 #include <alia/ui/display_list.hpp>
@@ -67,6 +68,23 @@ create_msdf_text_engine(
 
 void
 destroy_msdf_text_engine(MsdfTextEngine* engine);
+
+MsdfFontMetrics const*
+get_msdf_font_metrics(MsdfTextEngine* engine);
+
+float
+measure_text_width(
+    MsdfTextEngine* engine, char const* text, size_t length, float font_size);
+
+std::pair<size_t, float>
+break_text(
+    MsdfTextEngine* engine,
+    char const* text,
+    size_t start,
+    size_t end,
+    size_t buffer_length,
+    float scale,
+    float width);
 
 struct MsdfDrawCommand
 {

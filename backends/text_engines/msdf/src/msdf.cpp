@@ -386,6 +386,12 @@ destroy_msdf_text_engine(MsdfTextEngine* engine)
     delete engine;
 }
 
+MsdfFontMetrics const*
+get_msdf_font_metrics(MsdfTextEngine* engine)
+{
+    return &engine->metrics;
+}
+
 float
 get_kerning(MsdfTextEngine* engine, uint32_t left, uint32_t right)
 {
@@ -395,6 +401,31 @@ get_kerning(MsdfTextEngine* engine, uint32_t left, uint32_t right)
         return it->second;
     }
     return 0.0f;
+}
+
+float
+measure_text_width(
+    MsdfTextEngine* engine, char const* text, size_t length, float font_size)
+{
+    float width = 0;
+    for (size_t i = 0; i < length; ++i)
+    {
+        char const c = text[i];
+
+        const MsdfGlyph& glyph = engine->glyph_map[c];
+        assert(glyph.unicode == c);
+
+        if (i + 1 < length)
+        {
+            width += (glyph.advance + get_kerning(engine, c, text[i + 1]))
+                   * font_size;
+        }
+        else
+        {
+            width += glyph.advance * font_size;
+        }
+    }
+    return width;
 }
 
 void
@@ -413,7 +444,7 @@ draw_text(
             sizeof(MsdfDrawCommand) + length, alignof(MsdfDrawCommand)));
     command->engine = engine;
     command->next = nullptr;
-    command->position = position;
+    command->position = position + Vec2{0, engine->metrics.ascender * scale};
     command->scale = scale;
     command->color = color;
     command->length = length;
@@ -421,7 +452,7 @@ draw_text(
     add_command(commands, command);
 }
 
-size_t
+std::pair<size_t, float>
 break_text(
     MsdfTextEngine* engine,
     char const* text,
@@ -442,7 +473,7 @@ break_text(
             case '\r':
                 continue;
             case '\n':
-                return i + 1;
+                return {i + 1, x};
             case ' ':
                 last_space = i;
                 break;
@@ -454,10 +485,10 @@ break_text(
         x += (glyph.advance + get_kerning(engine, c, text[i + 1])) * scale;
         if (x > width)
         {
-            return last_space == start ? i : last_space + 1;
+            return {last_space == start ? i : last_space + 1, x};
         }
     }
-    return end;
+    return {end, x};
 }
 
 void

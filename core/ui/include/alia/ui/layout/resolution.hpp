@@ -33,11 +33,16 @@ using LayoutScratchArena = HeterogeneousInfiniteArena;
 
 using LayoutPlacementArena = HeterogeneousInfiniteArena;
 
-struct LayoutPlacement
+struct LayoutPlacementNode
 {
+    LayoutPlacementNode* next;
+};
+
+struct LeafLayoutPlacement
+{
+    LayoutPlacementNode base;
     Vec2 position;
     Vec2 size;
-    LayoutPlacement* next;
 };
 
 struct HorizontalRequirements
@@ -50,21 +55,22 @@ struct VerticalRequirements
 {
     float min_size;
     float growth_factor = 0.0f;
-    bool has_baseline = false;
-    float baseline_offset = 0.0f;
+    float ascent = 0.0f;
+    float descent = 0.0f;
 };
 
 struct PlacementContext
 {
     LayoutScratchArena* scratch;
     LayoutPlacementArena* arena;
-    LayoutPlacement** next_ptr;
+    LayoutPlacementNode** next_ptr;
 };
 
 struct WrappingRequirements
 {
     float line_height;
-    float baseline_offset;
+    float ascent;
+    float descent;
     // TODO: Combine `wrap_count` and `wrapped_immediately` into a single
     // uint32_t.
     int wrap_count;
@@ -197,7 +203,7 @@ assign_wrapped_boxes(
     return node->vtable->assign_wrapped_boxes(ctx, node, assignment);
 }
 
-LayoutPlacement*
+LayoutPlacementNode*
 resolve_layout(
     LayoutScratchArena& scratch,
     LayoutPlacementArena& arena,

@@ -2,7 +2,7 @@
 
 namespace alia {
 
-LayoutPlacement*
+LayoutPlacementNode*
 resolve_layout(
     LayoutScratchArena& scratch,
     LayoutPlacementArena& arena,
@@ -14,7 +14,7 @@ resolve_layout(
     scratch.reset();
     measure_vertical(&scratch, &root_node, available_space.x);
     scratch.reset();
-    LayoutPlacement* initial_placement = nullptr;
+    LayoutPlacementNode* initial_placement = nullptr;
     PlacementContext ctx{&scratch, &arena, &initial_placement};
     assign_boxes(&ctx, &root_node, Box{Vec2{0, 0}, available_space});
     scratch.reset();
@@ -43,7 +43,8 @@ default_measure_wrapped_vertical(
     {
         return WrappingRequirements{
             .line_height = vertical.min_size,
-            .baseline_offset = vertical.baseline_offset,
+            .ascent = vertical.ascent,
+            .descent = vertical.descent,
             .wrap_count = 1,
             .wrapped_immediately = true,
             .new_x_offset = horizontal.min_size};
@@ -52,7 +53,8 @@ default_measure_wrapped_vertical(
     {
         return WrappingRequirements{
             .line_height = vertical.min_size,
-            .baseline_offset = vertical.baseline_offset,
+            .ascent = vertical.ascent,
+            .descent = vertical.descent,
             .wrap_count = 0,
             .wrapped_immediately = false,
             .new_x_offset = current_x_offset + horizontal.min_size};

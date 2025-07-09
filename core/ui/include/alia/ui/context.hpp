@@ -11,7 +11,7 @@ struct Event;
 struct System;
 struct LayoutNode;
 struct LayoutContainer;
-struct LayoutPlacement;
+struct LayoutPlacementNode;
 struct HeterogeneousInfiniteArena;
 
 enum class PassType
@@ -30,7 +30,7 @@ struct LayoutEmission
 
 struct LayoutConsumption
 {
-    LayoutPlacement* next_placement;
+    LayoutPlacementNode* next_placement;
 };
 
 struct Pass

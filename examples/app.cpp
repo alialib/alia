@@ -5,6 +5,7 @@
 #include <chrono>
 #include <functional> // For std::hash
 #include <iostream>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 
@@ -37,6 +38,7 @@ DisplayListArena the_display_list_arena;
 BoxCommandList the_box_commands;
 MsdfTextEngine* the_msdf_text_engine;
 CommandList<MsdfDrawCommand> the_msdf_commands;
+LayoutPlacementNode* the_initial_layout_placement;
 
 bool
 detect_click(Event* event, float x, float y, float width, float height)
@@ -52,6 +54,30 @@ allocate_spec_node(LayoutSpecArena& arena)
 {
     static_assert(std::is_trivially_destructible_v<T>);
     return reinterpret_cast<T*>(arena.allocate(sizeof(T), alignof(T)));
+}
+
+template<typename Outer, typename Inner>
+Outer*
+downcast(Inner* inner_ptr)
+{
+    static_assert(
+        std::is_same<decltype(Outer::base), Inner>::value,
+        "Outer::base must be of type Inner");
+    static_assert(
+        offsetof(Outer, base) == 0, "Outer must embed `base` at offset 0");
+    return reinterpret_cast<Outer*>(inner_ptr);
+}
+
+template<typename Outer, typename Inner>
+Outer const*
+downcast(Inner const* inner_ptr)
+{
+    static_assert(
+        std::is_same<decltype(Outer::base), Inner>::value,
+        "Outer::base must be of type Inner");
+    static_assert(
+        offsetof(Outer, base) == 0, "Outer must embed `base` at offset 0");
+    return reinterpret_cast<Outer const*>(inner_ptr);
 }
 
 bool
@@ -73,10 +99,11 @@ do_rect(Context& ctx, Vec2 size, Color color)
             break;
         }
         case PassType::Draw: {
-            auto const& placement
-                = *ctx.pass.layout_consumption.next_placement;
-            ctx.pass.layout_consumption.next_placement = placement.next;
-            Box box = {.pos = placement.position, .size = placement.size};
+            auto const* placement = ctx.pass.layout_consumption.next_placement;
+            ctx.pass.layout_consumption.next_placement = placement->next;
+            auto& leaf_placement = *downcast<LeafLayoutPlacement>(placement);
+            Box box = {
+                .pos = leaf_placement.position, .size = leaf_placement.size};
             draw_box(
                 *ctx.pass.display_list_arena,
                 *ctx.pass.box_command_list,
@@ -85,10 +112,11 @@ do_rect(Context& ctx, Vec2 size, Color color)
             break;
         }
         case PassType::Event: {
-            auto const& placement
-                = *ctx.pass.layout_consumption.next_placement;
-            ctx.pass.layout_consumption.next_placement = placement.next;
-            Box box = {.pos = placement.position, .size = placement.size};
+            auto const* placement = ctx.pass.layout_consumption.next_placement;
+            ctx.pass.layout_consumption.next_placement = placement->next;
+            auto& leaf_placement = *downcast<LeafLayoutPlacement>(placement);
+            Box box = {
+                .pos = leaf_placement.position, .size = leaf_placement.size};
             if (detect_click(
                     ctx.pass.event,
                     box.pos.x,
@@ -102,59 +130,287 @@ do_rect(Context& ctx, Vec2 size, Color color)
     return false;
 }
 
-/*bool
-do_text(
-    Context& ctx, Vec2 size, Color color, float scale, std::string_view text)
+struct MsdfTextLayoutNode
+{
+    LayoutNode base;
+    char const* text;
+    float font_size;
+    MsdfTextEngine* engine;
+};
+
+HorizontalRequirements
+measure_text_horizontal(LayoutScratchArena* scratch, LayoutNode* node)
+{
+    auto& text = *reinterpret_cast<MsdfTextLayoutNode*>(node);
+    float width = measure_text_width(
+        text.engine, text.text, strlen(text.text), text.font_size);
+    return HorizontalRequirements{.min_size = width, .growth_factor = 0};
+}
+
+void
+assign_text_widths(
+    LayoutScratchArena* scratch, LayoutNode* node, float assigned_width)
+{
+}
+
+VerticalRequirements
+measure_text_vertical(
+    LayoutScratchArena* scratch, LayoutNode* node, float assigned_width)
+{
+    auto& text = *reinterpret_cast<MsdfTextLayoutNode*>(node);
+    auto const* metrics = get_msdf_font_metrics(text.engine);
+    return VerticalRequirements{
+        .min_size = metrics->line_height * text.font_size, .growth_factor = 0};
+}
+
+struct TextLayoutPlacementHeader
+{
+    LayoutPlacementNode base;
+    int fragment_count;
+};
+
+struct TextLayoutPlacementFragment
+{
+    LayoutPlacementNode base;
+    Vec2 position;
+    Vec2 size;
+    char const* text;
+    size_t length;
+};
+
+void
+assign_text_boxes(PlacementContext* ctx, LayoutNode* node, Box box)
+{
+    auto& text = *reinterpret_cast<MsdfTextLayoutNode*>(node);
+    auto const* metrics = get_msdf_font_metrics(text.engine);
+
+    TextLayoutPlacementHeader* header
+        = reinterpret_cast<TextLayoutPlacementHeader*>(ctx->arena->allocate(
+            sizeof(TextLayoutPlacementHeader),
+            alignof(TextLayoutPlacementHeader)));
+    header->fragment_count = 1;
+    *ctx->next_ptr = &header->base;
+    ctx->next_ptr = &header->base.next;
+
+    TextLayoutPlacementFragment* fragment
+        = reinterpret_cast<TextLayoutPlacementFragment*>(ctx->arena->allocate(
+            sizeof(TextLayoutPlacementFragment),
+            alignof(TextLayoutPlacementFragment)));
+    fragment->position = box.pos;
+    fragment->size = {box.size.x, metrics->line_height * text.font_size};
+    fragment->text = text.text;
+    fragment->length = strlen(text.text);
+    *ctx->next_ptr = &fragment->base;
+    ctx->next_ptr = &fragment->base.next;
+}
+
+HorizontalRequirements
+measure_text_wrapped_horizontal(LayoutScratchArena* scratch, LayoutNode* node)
+{
+    return HorizontalRequirements{0, 0};
+}
+
+WrappingRequirements
+measure_text_wrapped_vertical(
+    LayoutScratchArena* scratch,
+    LayoutNode* node,
+    float current_x_offset,
+    float line_width)
+{
+    auto& text = *reinterpret_cast<MsdfTextLayoutNode*>(node);
+    auto const* metrics = get_msdf_font_metrics(text.engine);
+
+    size_t length = strlen(text.text);
+
+    auto break_result = break_text(
+        text.engine,
+        text.text,
+        0,
+        length,
+        length,
+        text.font_size,
+        line_width - current_x_offset);
+    bool wrapped_immediately = (break_result.first == 0);
+
+    int wrap_count = 0;
+    size_t index = break_result.first;
+    float new_x = 0;
+    while (index < length)
+    {
+        ++wrap_count;
+        auto break_result = break_text(
+            text.engine,
+            text.text,
+            index,
+            length,
+            length,
+            text.font_size,
+            line_width);
+        index = break_result.first;
+        new_x = break_result.second;
+    }
+
+    return WrappingRequirements{
+        .line_height = metrics->line_height * text.font_size,
+        .ascent = metrics->ascender * text.font_size,
+        .descent = -metrics->descender * text.font_size,
+        .wrap_count = wrap_count,
+        .wrapped_immediately = wrapped_immediately,
+        .new_x_offset = new_x};
+}
+
+void
+assign_text_wrapped_boxes(
+    PlacementContext* ctx,
+    LayoutNode* node,
+    WrappingAssignment const* assignment)
+{
+    auto& text = *reinterpret_cast<MsdfTextLayoutNode*>(node);
+    auto const* metrics = get_msdf_font_metrics(text.engine);
+
+    size_t length = strlen(text.text);
+
+    TextLayoutPlacementHeader* header
+        = reinterpret_cast<TextLayoutPlacementHeader*>(ctx->arena->allocate(
+            sizeof(TextLayoutPlacementHeader),
+            alignof(TextLayoutPlacementHeader)));
+    header->fragment_count = 0;
+    *ctx->next_ptr = &header->base;
+    ctx->next_ptr = &header->base.next;
+
+    float x = assignment->first_line_x_offset;
+    float y = assignment->y_base + assignment->first_line.baseline_offset
+            - metrics->ascender * text.font_size;
+    float next_y = assignment->y_base + assignment->first_line.line_height;
+
+    size_t index = 0;
+    while (index < length)
+    {
+        auto break_result = break_text(
+            text.engine,
+            text.text,
+            index,
+            length,
+            length,
+            text.font_size,
+            assignment->line_width - x);
+        size_t const end_index = break_result.first;
+
+        TextLayoutPlacementFragment* fragment
+            = reinterpret_cast<TextLayoutPlacementFragment*>(
+                ctx->arena->allocate(
+                    sizeof(TextLayoutPlacementFragment),
+                    alignof(TextLayoutPlacementFragment)));
+        if (end_index == length)
+        {
+            fragment->position
+                = {x,
+                   y + assignment->last_line.baseline_offset
+                       - metrics->ascender * text.font_size};
+        }
+        else
+        {
+            fragment->position
+                = {x,
+                   y + assignment->middle_lines.baseline_offset
+                       - metrics->ascender * text.font_size};
+        }
+        fragment->size = {
+            assignment->line_width - x, metrics->line_height * text.font_size};
+        fragment->text = text.text + index;
+        fragment->length = end_index - index;
+        *ctx->next_ptr = &fragment->base;
+        ctx->next_ptr = &fragment->base.next;
+        ++header->fragment_count;
+
+        x = 0;
+        y = next_y;
+        next_y += metrics->line_height * text.font_size;
+        index = end_index;
+    }
+}
+
+LayoutNodeVtable text_layout_vtable
+    = {measure_text_horizontal,
+       assign_text_widths,
+       measure_text_vertical,
+       assign_text_boxes,
+       measure_text_wrapped_horizontal,
+       measure_text_wrapped_vertical,
+       assign_text_wrapped_boxes};
+
+bool
+do_text(Context& ctx, Color color, float scale, char const* text)
 {
     switch (ctx.pass.type)
     {
         case PassType::Refresh: {
             auto& layout = ctx.pass.layout_emission;
-            *layout.next = layout.count;
-            LayoutNode* new_node = &layout.nodes[layout.count];
-            *new_node = LayoutNode{
-                .type = LayoutNodeType::Leaf,
-                .next_sibling = 0,
-                .size = size,
-                .margin = {4, 4},
-                .leaf = {}};
-            layout.next = &new_node->next_sibling;
-            ++layout.active_container->container.child_count;
-            ++layout.count;
+            MsdfTextLayoutNode* new_node
+                = allocate_spec_node<MsdfTextLayoutNode>(
+                    the_layout_spec_arena);
+            new_node->base.vtable = &text_layout_vtable;
+            new_node->base.next_sibling = nullptr;
+            new_node->text = text;
+            new_node->font_size = scale;
+            new_node->engine = the_msdf_text_engine;
+            *layout.next_ptr = &new_node->base;
+            layout.next_ptr = &new_node->base.next_sibling;
+            ++layout.active_container->child_count;
             break;
         }
         case PassType::Draw: {
-            auto const& placement
-                = ctx.pass.layout_consumption
-                      .placements[ctx.pass.layout_consumption.index++];
-            draw_text(
-                the_msdf_text_engine,
-                *ctx.pass.display_list_arena,
-                the_msdf_commands,
-                text.data(),
-                text.size(),
-                scale,
-                placement.position,
-                color);
+            auto const* placement = ctx.pass.layout_consumption.next_placement;
+            ctx.pass.layout_consumption.next_placement = placement->next;
+            auto& text_placement
+                = *downcast<TextLayoutPlacementHeader>(placement);
+            for (int i = 0; i < text_placement.fragment_count; ++i)
+            {
+                auto const* fragment_placement
+                    = ctx.pass.layout_consumption.next_placement;
+                ctx.pass.layout_consumption.next_placement
+                    = fragment_placement->next;
+                auto& fragment = *downcast<TextLayoutPlacementFragment>(
+                    fragment_placement);
+                draw_text(
+                    the_msdf_text_engine,
+                    *ctx.pass.display_list_arena,
+                    the_msdf_commands,
+                    fragment.text,
+                    fragment.length,
+                    scale,
+                    fragment.position,
+                    color);
+            }
             break;
         }
         case PassType::Event: {
-            auto const& placement
-                = ctx.pass.layout_consumption
-                      .placements[ctx.pass.layout_consumption.index++];
-            Box box = {.pos = placement.position, .size = placement.size};
-            if (detect_click(
-                    ctx.pass.event,
-                    box.pos.x,
-                    box.pos.y,
-                    box.size.x,
-                    box.size.y))
-                return true;
+            auto const* placement = ctx.pass.layout_consumption.next_placement;
+            ctx.pass.layout_consumption.next_placement = placement->next;
+            auto& text_placement
+                = *downcast<TextLayoutPlacementHeader>(placement);
+            for (int i = 0; i < text_placement.fragment_count; ++i)
+            {
+                auto const* fragment_placement
+                    = ctx.pass.layout_consumption.next_placement;
+                ctx.pass.layout_consumption.next_placement
+                    = fragment_placement->next;
+                auto& fragment = *downcast<TextLayoutPlacementFragment>(
+                    fragment_placement);
+                Box box = {.pos = fragment.position, .size = fragment.size};
+                if (detect_click(
+                        ctx.pass.event,
+                        box.pos.x,
+                        box.pos.y,
+                        box.size.x,
+                        box.size.y))
+                    return true;
+            }
             break;
         }
     }
     return false;
-}*/
+}
 
 void
 rectangle_demo(Context& ctx)
@@ -162,31 +418,69 @@ rectangle_demo(Context& ctx)
     static bool invert = false;
 
     vbox(ctx, [&]() {
-        float x = 0.0f;
-        for (int i = 0; i < 50; ++i)
-        {
-            flow(ctx, [&]() {
-                for (int j = 0; j < 40; ++j)
-                {
-                    do_rect(
-                        ctx,
-                        {24, 24},
-                        invert ? Color{x, 0.1f, 1.0f - x, 1}
-                               : Color{1.0f - x, 0.1f, x, 1});
-                    x += 0.0005f;
-                }
-            });
-        }
-
-        /*hbox(ctx, [&]() {
-            for (int i = 0; i < 4; ++i)
+        flow(ctx, [&]() {
+            float x = 0.0f;
+            for (int i = 0; i < 10; ++i)
             {
-                if (do_text(ctx, {200, 30}, GRAY, 24, "HELLO!"))
+                for (int j = 0; j < 500; ++j)
                 {
-                    invert = !invert;
+                    float f = fmod(x, 1.0f);
+                    if (do_rect(
+                            ctx,
+                            {24, 24},
+                            invert ? Color{f, 0.1f, 1.0f - f, 1}
+                                   : Color{1.0f - f, 0.1f, f, 1}))
+                    {
+                        invert = !invert;
+                        return;
+                    }
+                    x += 0.0015f;
+                }
+
+                for (int j = 0; j < 1; ++j)
+                {
+                    if (do_text(
+                            ctx,
+                            GRAY,
+                            20 + i * 12 + j * 4,
+                            "Lorem ipsum dolor sit amet, consectetur "
+                            "adipiscing "
+                            "elit. Proin sed dictum massa. Maecenas et "
+                            "euismod "
+                            "lorem, ut dapibus eros. Nam maximus, purus vitae "
+                            "mollis ornare, tortor justo posuere neque, at "
+                            "lacinia ante metus eget diam. Aenean sit amet "
+                            "posuere metus. In hac habitasse platea dictumst. "
+                            "Nam "
+                            "sed turpis ultricies tellus auctor egestas. Ut "
+                            "laoreet nisi nisi, id posuere tortor tincidunt "
+                            "a. "
+                            "Pellentesque placerat vulputate massa at semper. "
+                            "Fusce malesuada porttitor enim dignissim "
+                            "viverra. In "
+                            "aliquam, odio nec sagittis elementum, elit enim "
+                            "auctor turpis, sit amet volutpat enim massa ac "
+                            "orci. "
+                            "Maecenas iaculis, ex at pulvinar volutpat, "
+                            "ligula "
+                            "nulla pellentesque tellus, vel aliquam nunc "
+                            "dolor eu "
+                            "risus."))
+                    {
+                        invert = !invert;
+                        return;
+                    }
                 }
             }
-        });*/
+        });
+
+        hbox(ctx, [&]() {
+            if (do_rect(ctx, {400, 24}, GRAY))
+            {
+                invert = !invert;
+                return;
+            }
+        });
     });
 }
 
@@ -219,7 +513,7 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
             Pass{
                 PassType::Event,
                 {nullptr, nullptr, nullptr},
-                {nullptr},
+                {the_initial_layout_placement},
                 nullptr,
                 nullptr,
                 &event},
@@ -227,59 +521,6 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         rectangle_demo(event_ctx);
     }
 }
-
-#if 0
-
-void
-do_text_demo()
-{
-    draw_text(the_msdf_text_engine, "abcdef - hello", 0, 14, 14, 256, 64, 320);
-
-    float next_line = 400;
-
-    for (int i = 0; i < 18; ++i)
-    {
-        next_line = draw_wrapped_text(
-            the_msdf_text_engine,
-            R"---(
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur rutrum nunc non ligula volutpat, quis ultricies enim viverra. Cras at pellentesque orci, eget aliquam sapien. Donec fringilla dui orci, vitae sodales purus blandit quis. Aenean porttitor varius erat, pulvinar tristique nibh faucibus at. In maximus, ex non fermentum pulvinar, lacus diam iaculis mi, ac sagittis neque nulla in risus. Mauris rutrum nibh vitae eros iaculis maximus. Curabitur nec lorem ac massa elementum suscipit. Fusce vel sagittis ipsum.
-)---",
-            40 - i * 2,
-            12,
-            next_line,
-            the_system.framebuffer_size.x - 24);
-    }
-
-    for (int i = 0; i < 0; ++i)
-    {
-        next_line = draw_wrapped_text(
-            the_msdf_text_engine,
-            R"---(
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur rutrum nunc non ligula volutpat, quis ultricies enim viverra. Cras at pellentesque orci, eget aliquam sapien. Donec fringilla dui orci, vitae sodales purus blandit quis. Aenean porttitor varius erat, pulvinar tristique nibh faucibus at. In maximus, ex non fermentum pulvinar, lacus diam iaculis mi, ac sagittis neque nulla in risus. Mauris rutrum nibh vitae eros iaculis maximus. Curabitur nec lorem ac massa elementum suscipit. Fusce vel sagittis ipsum. Suspendisse porta imperdiet nisi at vehicula. Nulla a pharetra tortor. Ut non velit sollicitudin, aliquam mauris at, interdum tortor. Vestibulum et est aliquet, consequat massa nec, ullamcorper est. Etiam euismod felis leo. Praesent cursus sed risus eu eleifend. Quisque pharetra maximus gravida. Ut non ullamcorper arcu. Sed vulputate ullamcorper metus, sit amet tempor nulla consequat sit amet. Nulla facilisi. Nam quis purus vel tortor fringilla pellentesque ut sit amet metus.
-
-Nam facilisis volutpat eros, euismod finibus erat ornare vitae. Nulla dictum arcu at nisl pretium, non hendrerit justo pulvinar. Donec pretium mi ornare odio iaculis semper. Curabitur ex odio, lacinia nec nulla vitae, porta posuere lacus. Quisque iaculis elementum ante, vel maximus ipsum. Sed eleifend auctor turpis sed porttitor. Donec dignissim luctus velit. Aenean vehicula purus et nisl viverra finibus. Phasellus molestie lacus massa, faucibus laoreet purus molestie quis. Phasellus nec maximus augue. Duis est lectus, pretium non lacus in, hendrerit sagittis elit. Vestibulum volutpat cursus orci, rhoncus vestibulum nisi tempor interdum. Curabitur sapien magna, luctus quis dictum a, pulvinar eu nisl. Mauris ut felis lorem. Nullam ullamcorper scelerisque ipsum eu tincidunt. Aenean malesuada eros nec tincidunt ultrices. Cras sed ipsum vel nulla ultrices vehicula. Ut dapibus, dolor convallis fringilla varius, ante ex placerat lacus, eget viverra orci purus ac ipsum. In ullamcorper commodo libero, et auctor leo lobortis quis. Suspendisse vitae rutrum neque. Etiam pharetra turpis nec elementum dapibus. Nunc tincidunt fermentum accumsan. Duis vestibulum enim arcu, eu rutrum magna cursus nec. Sed quis viverra enim. Morbi arcu dui, tristique ac imperdiet non, bibendum in nisl. Donec et neque porta, maximus urna vitae, dictum risus. Curabitur vel dapibus justo, eget gravida est. Fusce facilisis convallis tortor. Donec nulla massa, dignissim at metus quis, malesuada fermentum tortor. Nulla efficitur, purus et pellentesque tristique, nibh sem ultrices sapien, eget tincidunt dui erat nec nulla. Curabitur auctor metus eros, sit amet maximus arcu sodales eu. Suspendisse potenti. Mauris vitae quam volutpat, consequat massa vitae, iaculis enim. Phasellus at scelerisque mauris. Quisque placerat nibh in justo auctor, nec accumsan sem fermentum. Morbi pretium ante in eros ullamcorper condimentum. Nunc tincidunt fermentum accumsan. Duis vestibulum enim arcu, eu rutrum magna cursus nec. Sed quis viverra enim. Morbi arcu dui, tristique ac imperdiet non, bibendum in nisl. Donec et neque porta, maximus urna vitae, dictum risus. Curabitur vel dapibus justo, eget gravida est. Fusce facilisis convallis tortor. Donec nulla massa, dignissim at metus quis, malesuada fermentum tortor. Nulla efficitur, purus et pellentesque tristique, nibh sem ultrices sapien, eget tincidunt dui erat nec nulla. Curabitur auctor metus eros, sit amet maximus arcu sodales eu. Suspendisse potenti. Mauris vitae quam volutpat, consequat massa vitae, iaculis enim. Phasellus at scelerisque mauris. Quisque placerat nibh in justo auctor, nec accumsan sem fermentum. Morbi pretium ante in eros ullamcorper condimentum.
-
-Phasellus molestie lacus massa, faucibus laoreet purus molestie quis. Phasellus nec maximus augue. Duis est lectus, pretium non lacus in, hendrerit sagittis elit. Vestibulum volutpat cursus orci, rhoncus vestibulum nisi tempor interdum. Curabitur sapien magna, luctus quis dictum a, pulvinar eu nisl. Mauris ut felis lorem. Nullam ullamcorper scelerisque ipsum eu tincidunt. Aenean malesuada eros nec tincidunt ultrices. Cras sed ipsum vel nulla ultrices vehicula. Ut dapibus, dolor convallis fringilla varius, ante ex placerat lacus, eget viverra orci purus ac ipsum. In ullamcorper commodo libero, et auctor leo lobortis quis. Suspendisse vitae rutrum neque. Etiam pharetra turpis nec elementum dapibus. Nunc tincidunt fermentum accumsan. Duis vestibulum enim arcu, eu rutrum magna cursus nec. Sed quis viverra enim. Morbi arcu dui, tristique ac imperdiet non, bibendum in nisl. Donec et neque porta, maximus urna vitae, dictum risus. Curabitur vel dapibus justo, eget gravida est. Fusce facilisis convallis tortor. Donec nulla massa, dignissim at metus quis, malesuada fermentum tortor. Nulla efficitur, purus et pellentesque tristique, nibh sem ultrices sapien, eget tincidunt dui erat nec nulla. Curabitur auctor metus eros, sit amet maximus arcu sodales eu. Suspendisse potenti. Mauris vitae quam volutpat, consequat massa vitae, iaculis enim. Phasellus at scelerisque mauris. Quisque placerat nibh in justo auctor, nec accumsan sem fermentum. Morbi pretium ante in eros ullamcorper condimentum. Nunc tincidunt fermentum accumsan. Duis vestibulum enim arcu, eu rutrum magna cursus nec. Sed quis viverra enim. Morbi arcu dui, tristique ac imperdiet non, bibendum in nisl. Donec et neque porta, maximus urna vitae, dictum risus. Curabitur vel dapibus justo, eget gravida est. Fusce facilisis convallis tortor. Donec nulla massa, dignissim at metus quis, malesuada fermentum tortor. Nulla efficitur, purus et pellentesque tristique, nibh sem ultrices sapien, eget tincidunt dui erat nec nulla. Curabitur auctor metus eros, sit amet maximus arcu sodales eu. Suspendisse potenti. Mauris vitae quam volutpat, consequat massa vitae, iaculis enim. Phasellus at scelerisque mauris. Quisque placerat nibh in justo auctor, nec accumsan sem fermentum. Morbi pretium ante in eros ullamcorper condimentum.
-
-Etiam tempus fermentum dolor, ac sollicitudin leo posuere nec. Nunc euismod scelerisque ligula, ut ullamcorper lacus bibendum quis. Nullam vel pharetra ligula. Aenean hendrerit, eros et commodo mollis, elit libero blandit nisi, a porttitor tortor enim congue nunc. Maecenas viverra lacus tellus, quis pharetra quam malesuada ac. Quisque dapibus sollicitudin aliquet. Etiam a diam nec risus fringilla blandit. Ut eu pretium nibh. Nam facilisis volutpat eros, euismod finibus erat ornare vitae. Nulla dictum arcu at nisl pretium, non hendrerit justo pulvinar. Donec pretium mi ornare odio iaculis semper. Curabitur ex odio, lacinia nec nulla vitae, porta posuere lacus. Quisque iaculis elementum ante, vel maximus ipsum. Sed eleifend auctor turpis sed porttitor. Donec dignissim luctus velit. Aenean vehicula purus et nisl viverra finibus. Etiam tempus fermentum dolor, ac sollicitudin leo posuere nec. Nunc euismod scelerisque ligula, ut ullamcorper lacus bibendum quis. Nullam vel pharetra ligula. Aenean hendrerit, eros et commodo mollis, elit libero blandit nisi, a porttitor tortor enim congue nunc. Maecenas viverra lacus tellus, quis pharetra quam malesuada ac. Quisque dapibus sollicitudin aliquet. Etiam a diam nec risus fringilla blandit. Ut eu pretium nibh.
-
-Nunc tincidunt fermentum accumsan. Duis vestibulum enim arcu, eu rutrum magna cursus nec. Sed quis viverra enim. Morbi arcu dui, tristique ac imperdiet non, bibendum in nisl. Donec et neque porta, maximus urna vitae, dictum risus. Curabitur vel dapibus justo, eget gravida est. Fusce facilisis convallis tortor. Donec nulla massa, dignissim at metus quis, malesuada fermentum tortor. Nulla efficitur, purus et pellentesque tristique, nibh sem ultrices sapien, eget tincidunt dui erat nec nulla. Curabitur auctor metus eros, sit amet maximus arcu sodales eu. Suspendisse potenti. Mauris vitae quam volutpat, consequat massa vitae, iaculis enim. Phasellus at scelerisque mauris. Quisque placerat nibh in justo auctor, nec accumsan sem fermentum. Morbi pretium ante in eros ullamcorper condimentum. Nunc tincidunt fermentum accumsan. Duis vestibulum enim arcu, eu rutrum magna cursus nec. Sed quis viverra enim. Morbi arcu dui, tristique ac imperdiet non, bibendum in nisl. Donec et neque porta, maximus urna vitae, dictum risus. Curabitur vel dapibus justo, eget gravida est. Fusce facilisis convallis tortor. Donec nulla massa, dignissim at metus quis, malesuada fermentum tortor. Nulla efficitur, purus et pellentesque tristique, nibh sem ultrices sapien, eget tincidunt dui erat nec nulla. Curabitur auctor metus eros, sit amet maximus arcu sodales eu. Suspendisse potenti. Mauris vitae quam volutpat, consequat massa vitae, iaculis enim. Phasellus at scelerisque mauris. Quisque placerat nibh in justo auctor, nec accumsan sem fermentum. Morbi pretium ante in eros ullamcorper condimentum. Nam facilisis volutpat eros, euismod finibus erat ornare vitae. Nulla dictum arcu at nisl pretium, non hendrerit justo pulvinar. Donec pretium mi ornare odio iaculis semper. Curabitur ex odio, lacinia nec nulla vitae, porta posuere lacus. Quisque iaculis elementum ante, vel maximus ipsum. Sed eleifend auctor turpis sed porttitor. Donec dignissim luctus velit. Aenean vehicula purus et nisl viverra finibus. Etiam tempus fermentum dolor, ac sollicitudin leo posuere nec. Nunc euismod scelerisque ligula, ut ullamcorper lacus bibendum quis. Nullam vel pharetra ligula. Aenean hendrerit, eros et commodo mollis, elit libero blandit nisi, a porttitor tortor enim congue nunc. Maecenas viverra lacus tellus, quis pharetra quam malesuada ac. Quisque dapibus sollicitudin aliquet. Etiam a diam nec risus fringilla blandit. Ut eu pretium nibh. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur rutrum nunc non ligula volutpat, quis ultricies enim viverra. Cras at pellentesque orci, eget aliquam sapien. Donec fringilla dui orci, vitae sodales purus blandit quis. Aenean porttitor varius erat, pulvinar tristique nibh faucibus at. In maximus, ex non fermentum pulvinar, lacus diam iaculis mi, ac sagittis neque nulla in risus. Mauris rutrum nibh vitae eros iaculis maximus. Curabitur nec lorem ac massa elementum suscipit. Fusce vel sagittis ipsum. Suspendisse porta imperdiet nisi at vehicula. Nulla a pharetra tortor. Ut non velit sollicitudin, aliquam mauris at, interdum tortor. Vestibulum et est aliquet, consequat massa nec, ullamcorper est. Etiam euismod felis leo. Praesent cursus sed risus eu eleifend. Quisque pharetra maximus gravida. Ut non ullamcorper arcu. Sed vulputate ullamcorper metus, sit amet tempor nulla consequat sit amet. Nulla facilisi. Nam quis purus vel tortor fringilla pellentesque ut sit amet metus.
-
-Nam facilisis volutpat eros, euismod finibus erat ornare vitae. Nulla dictum arcu at nisl pretium, non hendrerit justo pulvinar. Donec pretium mi ornare odio iaculis semper. Curabitur ex odio, lacinia nec nulla vitae, porta posuere lacus. Quisque iaculis elementum ante, vel maximus ipsum. Sed eleifend auctor turpis sed porttitor. Donec dignissim luctus velit. Aenean vehicula purus et nisl viverra finibus. Etiam tempus fermentum dolor, ac sollicitudin leo posuere nec. Nunc euismod scelerisque ligula, ut ullamcorper lacus bibendum quis. Nullam vel pharetra ligula. Aenean hendrerit, eros et commodo mollis, elit libero blandit nisi, a porttitor tortor enim congue nunc. Maecenas viverra lacus tellus, quis pharetra quam malesuada ac. Quisque dapibus sollicitudin aliquet. Etiam a diam nec risus fringilla blandit. Ut eu pretium nibh. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur rutrum nunc non ligula volutpat, quis ultricies enim viverra. Cras at pellentesque orci, eget aliquam sapien. Donec fringilla dui orci, vitae sodales purus blandit quis. Aenean porttitor varius erat, pulvinar tristique nibh faucibus at. In maximus, ex non fermentum pulvinar, lacus diam iaculis mi, ac sagittis neque nulla in risus. Mauris rutrum nibh vitae eros iaculis maximus. Curabitur nec lorem ac massa elementum suscipit. Fusce vel sagittis ipsum. Suspendisse porta imperdiet nisi at vehicula. Nulla a pharetra tortor. Ut non velit sollicitudin, aliquam mauris at, interdum tortor. Vestibulum et est aliquet, consequat massa nec, ullamcorper est. Etiam euismod felis leo. Praesent cursus sed risus eu eleifend. Quisque pharetra maximus gravida. Ut non ullamcorper arcu. Sed vulputate ullamcorper metus, sit amet tempor nulla consequat sit amet. Nulla facilisi. Nam quis purus vel tortor fringilla pellentesque ut sit amet metus.
-
-Phasellus molestie lacus massa, faucibus laoreet purus molestie quis. Phasellus nec maximus augue. Duis est lectus, pretium non lacus in, hendrerit sagittis elit. Vestibulum volutpat cursus orci, rhoncus vestibulum nisi tempor interdum. Curabitur sapien magna, luctus quis dictum a, pulvinar eu nisl. Mauris ut felis lorem. Nullam ullamcorper scelerisque ipsum eu tincidunt. Aenean malesuada eros nec tincidunt ultrices. Cras sed ipsum vel nulla ultrices vehicula. Ut dapibus, dolor convallis fringilla varius, ante ex placerat lacus, eget viverra orci purus ac ipsum. In ullamcorper commodo libero, et auctor leo lobortis quis. Suspendisse vitae rutrum neque. Etiam pharetra turpis nec elementum dapibus. Etiam tempus fermentum dolor, ac sollicitudin leo posuere nec. Nunc euismod scelerisque ligula, ut ullamcorper lacus bibendum quis. Nullam vel pharetra ligula. Aenean hendrerit, eros et commodo mollis, elit libero blandit nisi, a porttitor tortor enim congue nunc. Maecenas viverra lacus tellus, quis pharetra quam malesuada ac. Quisque dapibus sollicitudin aliquet. Etiam a diam nec risus fringilla blandit. Ut eu pretium nibh.
-
-Etiam tempus fermentum dolor, ac sollicitudin leo posuere nec. Nunc euismod scelerisque ligula, ut ullamcorper lacus bibendum quis. Nullam vel pharetra ligula. Aenean hendrerit, eros et commodo mollis, elit libero blandit nisi, a porttitor tortor enim congue nunc. Maecenas viverra lacus tellus, quis pharetra quam malesuada ac. Quisque dapibus sollicitudin aliquet. Etiam a diam nec risus fringilla blandit. Ut eu pretium nibh. Phasellus molestie lacus massa, faucibus laoreet purus molestie quis. Phasellus nec maximus augue. Duis est lectus, pretium non lacus in, hendrerit sagittis elit. Vestibulum volutpat cursus orci, rhoncus vestibulum nisi tempor interdum. Curabitur sapien magna, luctus quis dictum a, pulvinar eu nisl. Mauris ut felis lorem. Nullam ullamcorper scelerisque ipsum eu tincidunt. Aenean malesuada eros nec tincidunt ultrices. Cras sed ipsum vel nulla ultrices vehicula. Ut dapibus, dolor convallis fringilla varius, ante ex placerat lacus, eget viverra orci purus ac ipsum. In ullamcorper commodo libero, et auctor leo lobortis quis. Suspendisse vitae rutrum neque. Etiam pharetra turpis nec elementum dapibus. Etiam tempus fermentum dolor, ac sollicitudin leo posuere nec. Nunc euismod scelerisque ligula, ut ullamcorper lacus bibendum quis. Nullam vel pharetra ligula. Aenean hendrerit, eros et commodo mollis, elit libero blandit nisi, a porttitor tortor enim congue nunc.
-
-Nunc tincidunt fermentum accumsan. Duis vestibulum enim arcu, eu rutrum magna cursus nec. Sed quis viverra enim. Morbi arcu dui, tristique ac imperdiet non, bibendum in nisl. Donec et neque porta, maximus urna vitae, dictum risus. Curabitur vel dapibus justo, eget gravida est. Fusce facilisis convallis tortor. Donec nulla massa, dignissim at metus quis, malesuada fermentum tortor. Nulla efficitur, purus et pellentesque tristique, nibh sem ultrices sapien, eget tincidunt dui erat nec nulla. Curabitur auctor metus eros, sit amet maximus arcu sodales eu. Suspendisse potenti. Mauris vitae quam volutpat, consequat massa vitae, iaculis enim. Phasellus at scelerisque mauris. Quisque placerat nibh in justo auctor, nec accumsan sem fermentum. Morbi pretium ante in eros ullamcorper condimentum.)---",
-            24,
-            12,
-            next_line,
-            the_system.framebuffer_size.x - 24);
-    }
-}
-
-#endif
 
 void
 update()
@@ -307,7 +548,7 @@ update()
     update_glfw_window_info(the_system, the_window);
 
     the_layout_placement_arena.reset();
-    LayoutPlacement* initial_layout_placement = resolve_layout(
+    the_initial_layout_placement = resolve_layout(
         the_scratch_arena,
         the_layout_placement_arena,
         *the_layout_root.first_child,
@@ -334,7 +575,7 @@ update()
         Pass{
             PassType::Draw,
             {nullptr, nullptr, nullptr},
-            {initial_layout_placement},
+            {the_initial_layout_placement},
             &the_display_list_arena,
             &the_box_commands,
             nullptr},

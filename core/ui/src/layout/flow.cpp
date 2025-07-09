@@ -3,17 +3,10 @@
 
 namespace alia {
 
-struct FlowScratch
-{
-    bool has_baseline = false;
-    float height = 0, ascent = 0, descent = 0;
-};
-
 HorizontalRequirements
 measure_flow_horizontal(LayoutScratchArena* scratch, LayoutNode* node)
 {
     auto& flow = *reinterpret_cast<FlowLayoutNode*>(node);
-    auto& flow_scratch = claim_scratch<FlowScratch>(*scratch);
 
     WrappingRequirements* child_requirements
         = reinterpret_cast<WrappingRequirements*>(scratch->allocate(
@@ -38,7 +31,6 @@ assign_flow_widths(
     LayoutScratchArena* scratch, LayoutNode* node, float assigned_width)
 {
     // auto& flow = *reinterpret_cast<FlowLayoutNode*>(node);
-    // auto& flow_scratch = claim_scratch<FlowScratch>(*scratch);
     // HorizontalRequirements* x_requirements
     //     = reinterpret_cast<HorizontalRequirements*>(scratch->allocate(
     //         flow.child_count * sizeof(HorizontalRequirements),
@@ -60,15 +52,19 @@ measure_flow_vertical(
     LayoutScratchArena* scratch, LayoutNode* node, float assigned_width)
 {
     auto& flow = *reinterpret_cast<FlowLayoutNode*>(node);
-    auto& flow_scratch = claim_scratch<FlowScratch>(*scratch);
 
     WrappingRequirements* child_requirements
         = reinterpret_cast<WrappingRequirements*>(scratch->allocate(
             flow.child_count * sizeof(WrappingRequirements),
             alignof(WrappingRequirements)));
 
+    VerticalRequirements flow_requirements;
+    flow_requirements.min_size = 0;
+    flow_requirements.growth_factor = 0;
+    bool first_wrap = true;
+
     float line_height = 0, line_ascent = 0, line_descent = 0;
-    float total_height = 0, current_x_offset = 0;
+    float current_x_offset = 0;
     for (LayoutNode* child = flow.first_child; child != nullptr;
          child = child->next_sibling)
     {
@@ -79,42 +75,42 @@ measure_flow_vertical(
         if (!requirements.wrapped_immediately)
         {
             line_height = (std::max)(line_height, requirements.line_height);
-            line_ascent
-                = (std::max)(line_ascent, requirements.baseline_offset);
-            line_descent = (std::max)(
-                line_descent,
-                requirements.line_height - requirements.baseline_offset);
+            line_ascent = (std::max)(line_ascent, requirements.ascent);
+            line_descent = (std::max)(line_descent, requirements.descent);
         }
 
         // TODO: Optimize this for larger wrap counts.
         for (int i = 0; i < requirements.wrap_count; ++i)
         {
-            total_height
+            if (first_wrap)
+            {
+                flow_requirements.ascent = line_ascent;
+                first_wrap = false;
+            }
+            flow_requirements.min_size
                 += (std::max)(line_height, line_ascent + line_descent);
 
             line_height = requirements.line_height;
-            line_ascent = requirements.baseline_offset;
-            line_descent
-                = requirements.line_height - requirements.baseline_offset;
+            line_ascent = requirements.ascent;
+            line_descent = requirements.descent;
         }
 
         current_x_offset = requirements.new_x_offset;
     }
 
-    total_height += (std::max)(line_height, line_ascent + line_descent);
+    flow_requirements.min_size
+        += (std::max)(line_height, line_ascent + line_descent);
 
-    return VerticalRequirements{
-        .min_size = total_height,
-        .growth_factor = 0,
-        .has_baseline = flow_scratch.has_baseline,
-        .baseline_offset = flow_scratch.ascent};
+    flow_requirements.descent
+        = flow_requirements.min_size - flow_requirements.ascent;
+
+    return flow_requirements;
 }
 
 void
 assign_flow_boxes(PlacementContext* ctx, LayoutNode* node, Box box)
 {
     auto& flow = *reinterpret_cast<FlowLayoutNode*>(node);
-    auto& flow_scratch = claim_scratch<FlowScratch>(*ctx->scratch);
 
     WrappingRequirements* child_requirements
         = reinterpret_cast<WrappingRequirements*>(ctx->scratch->allocate(
@@ -134,11 +130,8 @@ assign_flow_boxes(PlacementContext* ctx, LayoutNode* node, Box box)
                 break;
 
             line_height = (std::max)(line_height, requirements.line_height);
-            line_ascent
-                = (std::max)(line_ascent, requirements.baseline_offset);
-            line_descent = (std::max)(
-                line_descent,
-                requirements.line_height - requirements.baseline_offset);
+            line_ascent = (std::max)(line_ascent, requirements.ascent);
+            line_descent = (std::max)(line_descent, requirements.descent);
 
             if (requirements.wrap_count > 0)
                 break;
@@ -172,16 +165,15 @@ assign_flow_boxes(PlacementContext* ctx, LayoutNode* node, Box box)
             // determined purely from the child's own requirements.
             assignment.middle_lines = VerticalAssignment{
                 .line_height = requirements.line_height,
-                .baseline_offset = requirements.baseline_offset};
+                .baseline_offset = requirements.ascent};
 
             // And for the last line, we need to reset to the child's
-            // requirements then incorporate any the requirements for any later
-            // children that fit on that line.
+            // requirements and then incorporate any the requirements for any
+            // later children that fit on that line.
 
             line_height = requirements.line_height;
-            line_ascent = requirements.baseline_offset;
-            line_descent
-                = requirements.line_height - requirements.baseline_offset;
+            line_ascent = requirements.ascent;
+            line_descent = requirements.descent;
 
             ++child_index;
             update_line_measures(child_index);
@@ -213,8 +205,7 @@ assign_flow_boxes(PlacementContext* ctx, LayoutNode* node, Box box)
                 // Update our X and Y positions.
                 current_y += assignment.first_line.line_height
                            + assignment.middle_lines.line_height
-                                 * (requirements.wrap_count - 1)
-                           + assignment.last_line.line_height;
+                                 * (requirements.wrap_count - 1);
                 current_x = requirements.new_x_offset;
             }
         }
