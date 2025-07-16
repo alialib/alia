@@ -39,7 +39,7 @@ assign_vbox_widths(
     LayoutScratchArena* scratch, LayoutNode* node, float assigned_width)
 {
     auto& vbox = *reinterpret_cast<VBoxLayoutNode*>(node);
-    auto& vbox_scratch = claim_scratch<VBoxScratch>(*scratch);
+    auto& vbox_scratch = use_scratch<VBoxScratch>(*scratch);
     VerticalRequirements* y_requirements
         = reinterpret_cast<VerticalRequirements*>(scratch->allocate(
             vbox.child_count * sizeof(VerticalRequirements),
@@ -56,7 +56,7 @@ measure_vbox_vertical(
     LayoutScratchArena* scratch, LayoutNode* node, float assigned_width)
 {
     auto& vbox = *reinterpret_cast<VBoxLayoutNode*>(node);
-    auto& vbox_scratch = claim_scratch<VBoxScratch>(*scratch);
+    auto& vbox_scratch = use_scratch<VBoxScratch>(*scratch);
     VerticalRequirements* y_requirements
         = reinterpret_cast<VerticalRequirements*>(scratch->allocate(
             vbox.child_count * sizeof(VerticalRequirements),
@@ -75,14 +75,16 @@ measure_vbox_vertical(
 }
 
 void
-assign_vbox_boxes(PlacementContext* ctx, LayoutNode* node, Box box)
+assign_vbox_boxes(
+    PlacementContext* ctx, LayoutNode* node, Box box, float baseline)
 {
     auto& vbox = *reinterpret_cast<VBoxLayoutNode*>(node);
-    auto& vbox_scratch = claim_scratch<VBoxScratch>(*ctx->scratch);
+    auto& vbox_scratch = use_scratch<VBoxScratch>(*ctx->scratch);
     VerticalRequirements* y_requirements
         = reinterpret_cast<VerticalRequirements*>(ctx->scratch->allocate(
             vbox.child_count * sizeof(VerticalRequirements),
             alignof(VerticalRequirements)));
+    // TODO: Handle baseline.
     float const total_extra_space
         = (std::max)(0.f, box.size.y - vbox_scratch.total_height);
     // TODO: Figure out how to handle 0 total growth.
@@ -98,7 +100,8 @@ assign_vbox_boxes(PlacementContext* ctx, LayoutNode* node, Box box)
             ctx,
             child,
             Box{Vec2{box.pos.x, current_y},
-                Vec2{box.size.x, child_y.min_size + extra_space}});
+                Vec2{box.size.x, child_y.min_size + extra_space}},
+            child_y.ascent);
         current_y += child_y.min_size + extra_space;
     }
 }

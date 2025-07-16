@@ -10,13 +10,26 @@ namespace alia {
 
 struct LayoutNodeVtable;
 
+enum class LayoutAlignment
+{
+    Start,
+    Center,
+    End,
+    Baseline,
+    Fill,
+};
+
 struct LayoutNode
 {
     LayoutNodeVtable* vtable;
     LayoutNode* next_sibling;
 
-    // TODO: Should this really be here?
+    // TODO: Combine these.
+    // TODO: Move these into their own struct.
     float growth_factor;
+    // TODO: Add X alignment.
+    // TODO: Add padding flag.
+    LayoutAlignment alignment;
 };
 
 struct LayoutContainer
@@ -65,6 +78,8 @@ struct PlacementContext
     LayoutPlacementArena* arena;
     LayoutPlacementNode** next_ptr;
 };
+
+// TODO: Add measurement context.
 
 struct WrappingRequirements
 {
@@ -123,7 +138,8 @@ struct LayoutNodeVtable
     VerticalRequirements (*measure_vertical)(
         LayoutScratchArena* scratch, LayoutNode* node, float assigned_width);
 
-    void (*assign_boxes)(PlacementContext* ctx, LayoutNode* node, Box box);
+    void (*assign_boxes)(
+        PlacementContext* ctx, LayoutNode* node, Box box, float baseline);
 
     HorizontalRequirements (*measure_wrapped_horizontal)(
         LayoutScratchArena* scratch, LayoutNode* node);
@@ -161,9 +177,9 @@ measure_vertical(
 }
 
 inline void
-assign_boxes(PlacementContext* ctx, LayoutNode* node, Box box)
+assign_boxes(PlacementContext* ctx, LayoutNode* node, Box box, float baseline)
 {
-    return node->vtable->assign_boxes(ctx, node, box);
+    return node->vtable->assign_boxes(ctx, node, box, baseline);
 }
 
 inline HorizontalRequirements
@@ -209,5 +225,21 @@ resolve_layout(
     LayoutPlacementArena& arena,
     LayoutNode& root_node,
     Vec2 available_space);
+
+// TODO: Move to some utilities file...
+
+struct LayoutAxisPlacement
+{
+    float offset;
+    float size;
+};
+
+LayoutAxisPlacement
+resolve_axis_assignment(
+    LayoutAlignment alignment,
+    float assigned_size,
+    float baseline,
+    float required_size,
+    float ascent);
 
 } // namespace alia

@@ -16,7 +16,7 @@ resolve_layout(
     scratch.reset();
     LayoutPlacementNode* initial_placement = nullptr;
     PlacementContext ctx{&scratch, &arena, &initial_placement};
-    assign_boxes(&ctx, &root_node, Box{Vec2{0, 0}, available_space});
+    assign_boxes(&ctx, &root_node, Box{Vec2{0, 0}, available_space}, 0);
     scratch.reset();
     return initial_placement;
 }
@@ -58,6 +58,35 @@ default_measure_wrapped_vertical(
             .wrap_count = 0,
             .wrapped_immediately = false,
             .new_x_offset = current_x_offset + horizontal.min_size};
+    }
+}
+
+LayoutAxisPlacement
+resolve_axis_assignment(
+    LayoutAlignment alignment,
+    float assigned_size,
+    float baseline,
+    float required_size,
+    float ascent)
+{
+    switch (alignment)
+    {
+        case LayoutAlignment::Center:
+            return LayoutAxisPlacement{
+                .offset = (assigned_size - required_size) / 2,
+                .size = required_size};
+        case LayoutAlignment::Start:
+            return LayoutAxisPlacement{.offset = 0, .size = required_size};
+        case LayoutAlignment::End:
+            return LayoutAxisPlacement{
+                .offset = assigned_size - required_size,
+                .size = required_size};
+        case LayoutAlignment::Baseline:
+            return LayoutAxisPlacement{
+                .offset = baseline - ascent, .size = required_size};
+        case LayoutAlignment::Fill:
+        default:
+            return LayoutAxisPlacement{.offset = 0, .size = assigned_size};
     }
 }
 

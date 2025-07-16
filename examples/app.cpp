@@ -92,7 +92,11 @@ do_rect(Context& ctx, Vec2 size, Color color)
             *layout.next_ptr = &new_node->base;
             layout.next_ptr = &new_node->base.next_sibling;
             *new_node = LayoutLeafNode{
-                .base = {.vtable = &leaf_vtable, .next_sibling = 0},
+                .base
+                = {.vtable = &leaf_vtable,
+                   .next_sibling = 0,
+                   .growth_factor = 0.0f,
+                   .alignment = LayoutAlignment::Start},
                 .size = size,
                 .margin = {4, 4}};
             ++layout.active_container->child_count;
@@ -151,6 +155,7 @@ void
 assign_text_widths(
     LayoutScratchArena* scratch, LayoutNode* node, float assigned_width)
 {
+    // TODO: Implement
 }
 
 VerticalRequirements
@@ -160,7 +165,14 @@ measure_text_vertical(
     auto& text = *reinterpret_cast<MsdfTextLayoutNode*>(node);
     auto const* metrics = get_msdf_font_metrics(text.engine);
     return VerticalRequirements{
-        .min_size = metrics->line_height * text.font_size, .growth_factor = 0};
+        .min_size = metrics->line_height * text.font_size,
+        .growth_factor = 0,
+        .ascent = node->alignment == LayoutAlignment::Baseline
+                    ? metrics->ascender * text.font_size
+                    : 0.0f,
+        .descent = node->alignment == LayoutAlignment::Baseline
+                     ? -metrics->descender * text.font_size
+                     : 0.0f};
 }
 
 struct TextLayoutPlacementHeader
@@ -179,10 +191,18 @@ struct TextLayoutPlacementFragment
 };
 
 void
-assign_text_boxes(PlacementContext* ctx, LayoutNode* node, Box box)
+assign_text_boxes(
+    PlacementContext* ctx, LayoutNode* node, Box box, float baseline)
 {
     auto& text = *reinterpret_cast<MsdfTextLayoutNode*>(node);
     auto const* metrics = get_msdf_font_metrics(text.engine);
+
+    auto const placement = resolve_axis_assignment(
+        node->alignment,
+        box.size.y,
+        baseline,
+        metrics->line_height * text.font_size,
+        metrics->ascender * text.font_size);
 
     TextLayoutPlacementHeader* header
         = reinterpret_cast<TextLayoutPlacementHeader*>(ctx->arena->allocate(
@@ -196,8 +216,8 @@ assign_text_boxes(PlacementContext* ctx, LayoutNode* node, Box box)
         = reinterpret_cast<TextLayoutPlacementFragment*>(ctx->arena->allocate(
             sizeof(TextLayoutPlacementFragment),
             alignof(TextLayoutPlacementFragment)));
-    fragment->position = box.pos;
-    fragment->size = {box.size.x, metrics->line_height * text.font_size};
+    fragment->position = box.pos + Vec2{0, placement.offset};
+    fragment->size = {box.size.x, placement.size};
     fragment->text = text.text;
     fragment->length = strlen(text.text);
     *ctx->next_ptr = &fragment->base;
@@ -304,14 +324,14 @@ assign_text_wrapped_boxes(
         if (end_index == length)
         {
             fragment->position
-                = {x,
+                = {x + assignment->x_base,
                    y + assignment->last_line.baseline_offset
                        - metrics->ascender * text.font_size};
         }
         else
         {
             fragment->position
-                = {x,
+                = {x + assignment->x_base,
                    y + assignment->middle_lines.baseline_offset
                        - metrics->ascender * text.font_size};
         }
@@ -342,6 +362,7 @@ LayoutNodeVtable text_layout_vtable
 bool
 do_text(Context& ctx, Color color, float scale, char const* text)
 {
+    bool result = false;
     switch (ctx.pass.type)
     {
         case PassType::Refresh: {
@@ -351,6 +372,8 @@ do_text(Context& ctx, Color color, float scale, char const* text)
                     the_layout_spec_arena);
             new_node->base.vtable = &text_layout_vtable;
             new_node->base.next_sibling = nullptr;
+            new_node->base.growth_factor = 0.0f;
+            new_node->base.alignment = LayoutAlignment::Baseline;
             new_node->text = text;
             new_node->font_size = scale;
             new_node->engine = the_msdf_text_engine;
@@ -404,12 +427,15 @@ do_text(Context& ctx, Color color, float scale, char const* text)
                         box.pos.y,
                         box.size.x,
                         box.size.y))
-                    return true;
+                {
+                    // TODO: Perform action, abort traversal.
+                    result = true;
+                }
             }
             break;
         }
     }
-    return false;
+    return result;
 }
 
 void
@@ -485,6 +511,42 @@ rectangle_demo(Context& ctx)
 }
 
 void
+text_demo(Context& ctx)
+{
+    static bool invert = false;
+
+    vbox(ctx, [&]() {
+        for (int i = 0; i < 10; ++i)
+        {
+            hbox(ctx, [&]() {
+                do_text(ctx, GRAY, 40, "test");
+                flow(ctx, 1.0f, [&]() {
+                    do_text(
+                        ctx,
+                        GRAY,
+                        10 + i * 6,
+                        "Lorem ipsum dolor sit amet, consectetur adipiscing "
+                        "elit. Proin sed dictum massa. Maecenas et euismod "
+                        "lorem, ut dapibus eros. Nam maximus, purus vitae "
+                        "mollis ornare, tortor justo posuere neque, at "
+                        "lacinia ante metus eget diam. Aenean sit amet "
+                        "posuere metus. In hac habitasse platea dictumst. Nam "
+                        "sed turpis ultricies tellus auctor egestas. Ut "
+                        "laoreet nisi nisi, id posuere tortor tincidunt a. "
+                        "Pellentesque placerat vulputate massa at semper. "
+                        "Fusce malesuada porttitor enim dignissim viverra. In "
+                        "aliquam, odio nec sagittis elementum, elit enim "
+                        "auctor turpis, sit amet volutpat enim massa ac orci. "
+                        "Maecenas iaculis, ex at pulvinar volutpat, ligula "
+                        "nulla pellentesque tellus, vel aliquam nunc dolor eu "
+                        "risus.");
+                });
+            });
+        }
+    });
+}
+
+void
 mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
@@ -518,7 +580,7 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
                 nullptr,
                 &event},
             &the_system};
-        rectangle_demo(event_ctx);
+        text_demo(event_ctx);
     }
 }
 
@@ -543,7 +605,7 @@ update()
             nullptr},
         &the_system};
     *refresh_ctx.pass.layout_emission.next_ptr = 0;
-    rectangle_demo(refresh_ctx);
+    text_demo(refresh_ctx);
 
     update_glfw_window_info(the_system, the_window);
 
@@ -580,7 +642,7 @@ update()
             &the_box_commands,
             nullptr},
         &the_system};
-    rectangle_demo(draw_ctx);
+    text_demo(draw_ctx);
 
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);

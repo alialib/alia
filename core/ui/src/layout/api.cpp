@@ -12,7 +12,10 @@ namespace {
 
 void
 begin_container(
-    Context& ctx, LayoutContainerScope& scope, LayoutNodeVtable* vtable)
+    Context& ctx,
+    LayoutContainerScope& scope,
+    LayoutNodeVtable* vtable,
+    float growth_factor = 0.0f)
 {
     if (ctx.pass.type == PassType::Refresh)
     {
@@ -22,7 +25,11 @@ begin_container(
                 sizeof(LayoutContainer), alignof(LayoutContainer)));
         scope.this_container = this_container;
         *this_container = LayoutContainer{
-            .base = {.vtable = vtable, .next_sibling = 0},
+            .base
+            = {.vtable = vtable,
+               .next_sibling = 0,
+               .growth_factor = growth_factor,
+               .alignment = LayoutAlignment::Baseline},
             .first_child = 0,
             .child_count = 0};
         *layout.next_ptr = &this_container->base;
@@ -48,9 +55,9 @@ end_container(Context& ctx, LayoutContainerScope& scope)
 } // namespace
 
 void
-begin_hbox(Context& ctx, LayoutContainerScope& scope)
+begin_hbox(Context& ctx, LayoutContainerScope& scope, float growth_factor)
 {
-    begin_container(ctx, scope, &hbox_vtable);
+    begin_container(ctx, scope, &hbox_vtable, growth_factor);
 }
 
 void
@@ -60,9 +67,9 @@ end_hbox(Context& ctx, LayoutContainerScope& scope)
 }
 
 void
-begin_vbox(Context& ctx, LayoutContainerScope& scope)
+begin_vbox(Context& ctx, LayoutContainerScope& scope, float growth_factor)
 {
-    begin_container(ctx, scope, &vbox_vtable);
+    begin_container(ctx, scope, &vbox_vtable, growth_factor);
 }
 
 void
@@ -72,9 +79,9 @@ end_vbox(Context& ctx, LayoutContainerScope& scope)
 }
 
 void
-begin_flow(Context& ctx, LayoutContainerScope& scope)
+begin_flow(Context& ctx, LayoutContainerScope& scope, float growth_factor)
 {
-    begin_container(ctx, scope, &flow_vtable);
+    begin_container(ctx, scope, &flow_vtable, growth_factor);
 }
 
 void

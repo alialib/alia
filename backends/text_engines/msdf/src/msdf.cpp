@@ -485,7 +485,9 @@ break_text(
         x += (glyph.advance + get_kerning(engine, c, text[i + 1])) * scale;
         if (x > width)
         {
-            return {last_space == start ? i : last_space, x};
+            return {
+                last_space == start ? (i == start ? i + 1 : i) : last_space,
+                x};
         }
     }
     return {end, x};

@@ -30,7 +30,8 @@ measure_leaf_vertical(
 }
 
 void
-assign_leaf_boxes(PlacementContext* ctx, LayoutNode* node, Box box)
+assign_leaf_boxes(
+    PlacementContext* ctx, LayoutNode* node, Box box, float baseline)
 {
     auto& leaf = *reinterpret_cast<LayoutLeafNode*>(node);
     LeafLayoutPlacement* placement
