@@ -95,34 +95,4 @@ flow(Context& ctx, float growth_factor, Content&& content)
     end_flow(ctx, scope);
 }
 
-void
-begin_padding(
-    Context& ctx,
-    LayoutContainerScope& scope,
-    float padding,
-    float growth_factor);
-
-void
-end_padding(Context& ctx, LayoutContainerScope& scope);
-
-template<class Content>
-void
-padding(Context& ctx, float padding, Content&& content)
-{
-    LayoutContainerScope scope;
-    begin_padding(ctx, scope, padding, 0);
-    std::forward<Content>(content)();
-    end_padding(ctx, scope);
-}
-
-template<class Content>
-void
-padding(Context& ctx, float padding, float growth_factor, Content&& content)
-{
-    LayoutContainerScope scope;
-    begin_padding(ctx, scope, padding, growth_factor);
-    std::forward<Content>(content)();
-    end_padding(ctx, scope);
-}
-
 } // namespace alia

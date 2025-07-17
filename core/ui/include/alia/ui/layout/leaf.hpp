@@ -7,9 +7,9 @@ namespace alia {
 struct LayoutLeafNode
 {
     LayoutNode base;
-
+    LayoutProperties props;
+    float padding;
     Vec2 size;
-    Vec2 margin;
 };
 
 extern LayoutNodeVtable leaf_vtable;

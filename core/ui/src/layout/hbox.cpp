@@ -7,7 +7,7 @@ namespace alia {
 struct HBoxScratch
 {
     float total_width = 0, total_growth = 0;
-    float baseline = 0;
+    float height = 0, ascent = 0;
 };
 
 HorizontalRequirements
@@ -29,7 +29,7 @@ measure_hbox_horizontal(MeasurementContext* ctx, LayoutNode* node)
     }
     return HorizontalRequirements{
         .min_size = hbox_scratch.total_width,
-        .growth_factor = node->growth_factor};
+        .growth_factor = float(hbox.props.growth_factor)};
 }
 
 void
@@ -43,9 +43,13 @@ assign_hbox_widths(
             hbox.child_count * sizeof(HorizontalRequirements),
             alignof(HorizontalRequirements)));
     auto const placement = resolve_axis_assignment(
-        node->alignment, assigned_width, 0, hbox_scratch.total_width, 0);
+        hbox.props.x_alignment,
+        assigned_width,
+        0,
+        hbox_scratch.total_width,
+        0);
     float const total_extra_space
-        = (std::max)(0.f, assigned_width - hbox_scratch.total_width);
+        = (std::max)(0.f, placement.size - hbox_scratch.total_width);
     // TODO: Figure out how to handle 0 total growth.
     float const one_over_total_growth
         = 1.0f / (std::max)(0.00001f, hbox_scratch.total_growth);
@@ -70,8 +74,14 @@ measure_hbox_vertical(
             hbox.child_count * sizeof(HorizontalRequirements),
             alignof(HorizontalRequirements)));
     // TODO: Stop repeating this logic everywhere.
+    auto const placement = resolve_axis_assignment(
+        hbox.props.x_alignment,
+        assigned_width,
+        0,
+        hbox_scratch.total_width,
+        0);
     float const total_extra_space
-        = (std::max)(0.f, assigned_width - hbox_scratch.total_width);
+        = (std::max)(0.f, placement.size - hbox_scratch.total_width);
     // TODO: Figure out how to handle 0 total growth.
     float const one_over_total_growth
         = 1.0f / (std::max)(0.00001f, hbox_scratch.total_growth);
@@ -88,7 +98,8 @@ measure_hbox_vertical(
         ascent = (std::max)(ascent, child_y.ascent);
         descent = (std::max)(descent, child_y.descent);
     }
-    hbox_scratch.baseline = ascent;
+    hbox_scratch.height = height;
+    hbox_scratch.ascent = ascent;
     return VerticalRequirements{
         .min_size = (std::max)(height, ascent + descent),
         .growth_factor = 0,
@@ -106,12 +117,18 @@ assign_hbox_boxes(
         = reinterpret_cast<HorizontalRequirements*>(ctx->scratch->allocate(
             hbox.child_count * sizeof(HorizontalRequirements),
             alignof(HorizontalRequirements)));
+    auto const placement = resolve_assignment(
+        hbox.props,
+        box.size,
+        baseline,
+        Vec2{hbox_scratch.total_width, hbox_scratch.height},
+        hbox_scratch.ascent);
     float const total_extra_space
-        = (std::max)(0.f, box.size.x - hbox_scratch.total_width);
+        = (std::max)(0.f, placement.size.x - hbox_scratch.total_width);
     // TODO: Figure out how to handle 0 total growth.
     float const one_over_total_growth
         = 1.0f / (std::max)(0.00001f, hbox_scratch.total_growth);
-    float current_x = box.pos.x;
+    float current_x = box.pos.x + placement.pos.x;
     for (LayoutNode* child = hbox.first_child; child != nullptr;
          child = child->next_sibling)
     {
@@ -121,9 +138,9 @@ assign_hbox_boxes(
         assign_boxes(
             ctx,
             child,
-            Box{Vec2{current_x, box.pos.y},
-                Vec2{child_x.min_size + extra_space, box.size.y}},
-            hbox_scratch.baseline);
+            Box{.pos = Vec2{current_x, box.pos.y + placement.pos.y},
+                .size = Vec2{child_x.min_size + extra_space, box.size.y}},
+            baseline);
         current_x += child_x.min_size + extra_space;
     }
 }

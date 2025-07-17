@@ -33,6 +33,11 @@ struct LayoutConsumption
     LayoutPlacementNode* next_placement;
 };
 
+struct Style
+{
+    float padding;
+};
+
 struct Pass
 {
     PassType type;
@@ -47,6 +52,7 @@ struct Pass
 struct Context
 {
     Pass pass;
+    Style* style;
     System* system;
 };
 

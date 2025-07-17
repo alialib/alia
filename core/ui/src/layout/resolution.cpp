@@ -10,7 +10,7 @@ resolve_layout(
     Vec2 available_space)
 {
     {
-        MeasurementContext ctx{&scratch, 0.0f};
+        MeasurementContext ctx{&scratch};
         scratch.reset();
         measure_horizontal(&ctx, &root_node);
         scratch.reset();
@@ -18,7 +18,7 @@ resolve_layout(
     }
     LayoutPlacementNode* initial_placement = nullptr;
     {
-        PlacementContext ctx{&scratch, &arena, &initial_placement, 0.0f};
+        PlacementContext ctx{&scratch, &arena, &initial_placement};
         scratch.reset();
         assign_boxes(&ctx, &root_node, Box{Vec2{0, 0}, available_space}, 0);
         scratch.reset();
@@ -92,6 +92,23 @@ resolve_axis_assignment(
         default:
             return LayoutAxisPlacement{.offset = 0, .size = assigned_size};
     }
+}
+
+Box
+resolve_assignment(
+    LayoutProperties props,
+    Vec2 assigned_size,
+    float baseline,
+    Vec2 required_size,
+    float ascent)
+{
+    LayoutAxisPlacement x_placement = resolve_axis_assignment(
+        props.x_alignment, assigned_size.x, 0, required_size.x, 0);
+    LayoutAxisPlacement y_placement = resolve_axis_assignment(
+        props.y_alignment, assigned_size.y, baseline, required_size.y, ascent);
+    return Box{
+        Vec2{x_placement.offset, y_placement.offset},
+        Vec2{x_placement.size, y_placement.size}};
 }
 
 } // namespace alia

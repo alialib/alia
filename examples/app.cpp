@@ -30,7 +30,7 @@ using namespace alia;
 System the_system;
 LayoutSpecArena the_layout_spec_arena;
 LayoutScratchArena the_scratch_arena;
-LayoutContainer the_layout_root = {.first_child = nullptr, .child_count = 0};
+LayoutContainer the_layout_root = {.child_count = 0, .first_child = nullptr};
 LayoutPlacementArena the_layout_placement_arena;
 GLFWwindow* the_window;
 GlRenderer the_renderer;
@@ -39,6 +39,7 @@ BoxCommandList the_box_commands;
 MsdfTextEngine* the_msdf_text_engine;
 CommandList<MsdfDrawCommand> the_msdf_commands;
 LayoutPlacementNode* the_initial_layout_placement;
+Style the_style = {.padding = 10.0f};
 
 bool
 detect_click(Event* event, float x, float y, float width, float height)
@@ -92,13 +93,13 @@ do_rect(Context& ctx, Vec2 size, Color color)
             *layout.next_ptr = &new_node->base;
             layout.next_ptr = &new_node->base.next_sibling;
             *new_node = LayoutLeafNode{
-                .base
-                = {.vtable = &leaf_vtable,
-                   .next_sibling = 0,
-                   .growth_factor = 0.0f,
-                   .alignment = LayoutAlignment::Start},
-                .size = size,
-                .margin = {4, 4}};
+                .base = {.vtable = &leaf_vtable, .next_sibling = 0},
+                .props
+                = {.x_alignment = LayoutAlignment::Start,
+                   .y_alignment = LayoutAlignment::Start,
+                   .growth_factor = 0},
+                .padding = ctx.style->padding,
+                .size = size};
             ++layout.active_container->child_count;
             break;
         }
@@ -137,9 +138,11 @@ do_rect(Context& ctx, Vec2 size, Color color)
 struct MsdfTextLayoutNode
 {
     LayoutNode base;
+    LayoutProperties props;
+    float padding;
+    MsdfTextEngine* engine;
     char const* text;
     float font_size;
-    MsdfTextEngine* engine;
 };
 
 HorizontalRequirements
@@ -149,7 +152,7 @@ measure_text_horizontal(MeasurementContext* ctx, LayoutNode* node)
     float width = measure_text_width(
         text.engine, text.text, strlen(text.text), text.font_size);
     return HorizontalRequirements{
-        .min_size = width + ctx->padding * 2, .growth_factor = 0};
+        .min_size = width + text.padding * 2, .growth_factor = 0};
 }
 
 void
@@ -166,13 +169,13 @@ measure_text_vertical(
     auto& text = *reinterpret_cast<MsdfTextLayoutNode*>(node);
     auto const* metrics = get_msdf_font_metrics(text.engine);
     return VerticalRequirements{
-        .min_size = metrics->line_height * text.font_size + ctx->padding * 2,
+        .min_size = metrics->line_height * text.font_size + text.padding * 2,
         .growth_factor = 0,
-        .ascent = node->alignment == LayoutAlignment::Baseline
-                    ? metrics->ascender * text.font_size + ctx->padding
+        .ascent = text.props.y_alignment == LayoutAlignment::Baseline
+                    ? metrics->ascender * text.font_size + text.padding
                     : 0.0f,
-        .descent = node->alignment == LayoutAlignment::Baseline
-                     ? -metrics->descender * text.font_size + ctx->padding
+        .descent = text.props.y_alignment == LayoutAlignment::Baseline
+                     ? -metrics->descender * text.font_size + text.padding
                      : 0.0f};
 }
 
@@ -198,12 +201,18 @@ assign_text_boxes(
     auto& text = *reinterpret_cast<MsdfTextLayoutNode*>(node);
     auto const* metrics = get_msdf_font_metrics(text.engine);
 
-    auto const placement = resolve_axis_assignment(
-        node->alignment,
-        box.size.y,
+    // TODO: Don't repeatedly measure the text width.
+    float width = measure_text_width(
+        text.engine, text.text, strlen(text.text), text.font_size);
+
+    auto const placement = resolve_assignment(
+        text.props,
+        box.size,
         baseline,
-        metrics->line_height * text.font_size + ctx->padding * 2,
-        metrics->ascender * text.font_size + ctx->padding);
+        Vec2{
+            width + text.padding * 2,
+            metrics->line_height * text.font_size + text.padding * 2},
+        metrics->ascender * text.font_size + text.padding);
 
     TextLayoutPlacementHeader* header
         = reinterpret_cast<TextLayoutPlacementHeader*>(ctx->arena->allocate(
@@ -218,9 +227,8 @@ assign_text_boxes(
             sizeof(TextLayoutPlacementFragment),
             alignof(TextLayoutPlacementFragment)));
     fragment->position
-        = box.pos + Vec2{ctx->padding, placement.offset + ctx->padding};
-    fragment->size
-        = {box.size.x - ctx->padding * 2, placement.size - ctx->padding * 2};
+        = box.pos + placement.pos + Vec2{text.padding, text.padding};
+    fragment->size = placement.size - Vec2{text.padding * 2, text.padding * 2};
     fragment->text = text.text;
     fragment->length = strlen(text.text);
     *ctx->next_ptr = &fragment->base;
@@ -252,7 +260,7 @@ measure_text_wrapped_vertical(
         length,
         length,
         text.font_size,
-        line_width - current_x_offset - ctx->padding * 2);
+        line_width - current_x_offset - text.padding * 2);
     bool wrapped_immediately = (break_result.first == 0);
 
     int wrap_count = 0;
@@ -268,16 +276,16 @@ measure_text_wrapped_vertical(
             length,
             length,
             text.font_size,
-            line_width - ctx->padding * 2);
+            line_width - text.padding * 2);
         index = break_result.first;
         new_x = break_result.second;
     }
 
     return WrappingRequirements{
         .line_height
-        = metrics->line_height * text.font_size + ctx->padding * 2,
-        .ascent = metrics->ascender * text.font_size + ctx->padding,
-        .descent = -metrics->descender * text.font_size + ctx->padding,
+        = metrics->line_height * text.font_size + text.padding * 2,
+        .ascent = metrics->ascender * text.font_size + text.padding,
+        .descent = -metrics->descender * text.font_size + text.padding,
         .wrap_count = wrap_count,
         .wrapped_immediately = wrapped_immediately,
         .new_x_offset = new_x};
@@ -317,7 +325,7 @@ assign_text_wrapped_boxes(
             length,
             length,
             text.font_size,
-            assignment->line_width - x - ctx->padding * 2);
+            assignment->line_width - x - text.padding * 2);
         size_t const end_index = break_result.first;
 
         if (end_index == length)
@@ -332,10 +340,10 @@ assign_text_wrapped_boxes(
                     sizeof(TextLayoutPlacementFragment),
                     alignof(TextLayoutPlacementFragment)));
         fragment->position
-            = {x + assignment->x_base + ctx->padding,
+            = {x + assignment->x_base + text.padding,
                y - metrics->ascender * text.font_size};
         fragment->size
-            = {assignment->line_width - x - ctx->padding * 2,
+            = {assignment->line_width - x - text.padding * 2,
                metrics->line_height * text.font_size};
         fragment->text = text.text + index;
         fragment->length = end_index - index;
@@ -345,7 +353,7 @@ assign_text_wrapped_boxes(
 
         x = 0;
         y = next_y;
-        next_y += metrics->line_height * text.font_size + ctx->padding * 2;
+        next_y += metrics->line_height * text.font_size + text.padding * 2;
         index = end_index;
     }
 }
@@ -358,6 +366,16 @@ LayoutNodeVtable text_layout_vtable
        measure_text_wrapped_horizontal,
        measure_text_wrapped_vertical,
        assign_text_wrapped_boxes};
+
+template<class Content>
+void
+with_padding(Context& ctx, float padding, Content&& content)
+{
+    float old_padding = ctx.style->padding;
+    ctx.style->padding = padding;
+    content();
+    ctx.style->padding = old_padding;
+}
 
 bool
 do_text(Context& ctx, Color color, float scale, char const* text)
@@ -372,11 +390,13 @@ do_text(Context& ctx, Color color, float scale, char const* text)
                     the_layout_spec_arena);
             new_node->base.vtable = &text_layout_vtable;
             new_node->base.next_sibling = nullptr;
-            new_node->base.growth_factor = 0.0f;
-            new_node->base.alignment = LayoutAlignment::Baseline;
+            new_node->props.growth_factor = 0;
+            new_node->props.x_alignment = LayoutAlignment::Start;
+            new_node->props.y_alignment = LayoutAlignment::Baseline;
             new_node->text = text;
             new_node->font_size = scale;
             new_node->engine = the_msdf_text_engine;
+            new_node->padding = ctx.style->padding;
             *layout.next_ptr = &new_node->base;
             layout.next_ptr = &new_node->base.next_sibling;
             ++layout.active_container->child_count;
@@ -518,7 +538,7 @@ text_demo(Context& ctx)
     vbox(ctx, [&]() {
         for (int i = 0; i < 10; ++i)
         {
-            padding(ctx, 12.0f, 0.0f, [&]() {
+            with_padding(ctx, 15, [&] {
                 hbox(ctx, [&]() {
                     do_text(ctx, GRAY, 40, "test");
                     flow(ctx, 1.0f, [&]() {
@@ -583,6 +603,7 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
                 nullptr,
                 nullptr,
                 &event},
+            &the_style,
             &the_system};
         text_demo(event_ctx);
     }
@@ -607,6 +628,7 @@ update()
             nullptr,
             nullptr,
             nullptr},
+        &the_style,
         &the_system};
     *refresh_ctx.pass.layout_emission.next_ptr = 0;
     text_demo(refresh_ctx);
@@ -645,6 +667,7 @@ update()
             &the_display_list_arena,
             &the_box_commands,
             nullptr},
+        &the_style,
         &the_system};
     text_demo(draw_ctx);
 

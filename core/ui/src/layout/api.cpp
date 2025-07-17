@@ -3,7 +3,6 @@
 #include <alia/ui/context.hpp>
 #include <alia/ui/layout/flow.hpp>
 #include <alia/ui/layout/hbox.hpp>
-#include <alia/ui/layout/padding.hpp>
 #include <alia/ui/layout/resolution.hpp>
 #include <alia/ui/layout/vbox.hpp>
 
@@ -16,7 +15,7 @@ begin_container(
     Context& ctx,
     LayoutContainerScope& scope,
     LayoutNodeVtable* vtable,
-    float growth_factor = 0.0f)
+    uint8_t growth_factor = 0)
 {
     if (ctx.pass.type == PassType::Refresh)
     {
@@ -26,13 +25,13 @@ begin_container(
                 sizeof(LayoutContainer), alignof(LayoutContainer)));
         scope.this_container = this_container;
         *this_container = LayoutContainer{
-            .base
-            = {.vtable = vtable,
-               .next_sibling = 0,
-               .growth_factor = growth_factor,
-               .alignment = LayoutAlignment::Baseline},
-            .first_child = 0,
-            .child_count = 0};
+            .base = {.vtable = vtable, .next_sibling = 0},
+            .props
+            = {.x_alignment = LayoutAlignment::Fill,
+               .y_alignment = LayoutAlignment::Baseline,
+               .growth_factor = growth_factor},
+            .child_count = 0,
+            .first_child = 0};
         *layout.next_ptr = &this_container->base;
         layout.next_ptr = &this_container->first_child;
         scope.parent_container = layout.active_container;
@@ -87,44 +86,6 @@ begin_flow(Context& ctx, LayoutContainerScope& scope, float growth_factor)
 
 void
 end_flow(Context& ctx, LayoutContainerScope& scope)
-{
-    end_container(ctx, scope);
-}
-
-void
-begin_padding(
-    Context& ctx,
-    LayoutContainerScope& scope,
-    float padding,
-    float growth_factor)
-{
-    if (ctx.pass.type == PassType::Refresh)
-    {
-        auto& layout = ctx.pass.layout_emission;
-        PaddingLayoutNode* this_container
-            = reinterpret_cast<PaddingLayoutNode*>(layout.arena->allocate(
-                sizeof(PaddingLayoutNode), alignof(PaddingLayoutNode)));
-        scope.this_container = &this_container->container;
-        *this_container = PaddingLayoutNode{
-            .container
-            = {.base
-               = {.vtable = &padding_vtable,
-                  .next_sibling = 0,
-                  .growth_factor = growth_factor,
-                  .alignment = LayoutAlignment::Baseline},
-               .first_child = 0,
-               .child_count = 0},
-            .padding = padding};
-        *layout.next_ptr = &this_container->container.base;
-        layout.next_ptr = &this_container->container.first_child;
-        scope.parent_container = layout.active_container;
-        ++scope.parent_container->child_count;
-        layout.active_container = &this_container->container;
-    }
-}
-
-void
-end_padding(Context& ctx, LayoutContainerScope& scope)
 {
     end_container(ctx, scope);
 }

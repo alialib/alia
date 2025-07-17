@@ -10,7 +10,7 @@ namespace alia {
 
 struct LayoutNodeVtable;
 
-enum class LayoutAlignment
+enum class LayoutAlignment : uint8_t
 {
     Start,
     Center,
@@ -19,25 +19,25 @@ enum class LayoutAlignment
     Fill,
 };
 
+struct LayoutProperties
+{
+    LayoutAlignment x_alignment;
+    LayoutAlignment y_alignment;
+    uint8_t growth_factor;
+};
+
 struct LayoutNode
 {
     LayoutNodeVtable* vtable;
     LayoutNode* next_sibling;
-
-    // TODO: Combine these.
-    // TODO: Move these into their own struct.
-    float growth_factor;
-    // TODO: Add X alignment.
-    // TODO: Add padding flag.
-    LayoutAlignment alignment;
 };
 
 struct LayoutContainer
 {
     LayoutNode base;
-
-    LayoutNode* first_child;
+    LayoutProperties props;
     uint32_t child_count;
+    LayoutNode* first_child;
 };
 
 using LayoutSpecArena = HeterogeneousInfiniteArena;
@@ -77,13 +77,11 @@ struct PlacementContext
     LayoutScratchArena* scratch;
     LayoutPlacementArena* arena;
     LayoutPlacementNode** next_ptr;
-    float padding;
 };
 
 struct MeasurementContext
 {
     LayoutScratchArena* scratch;
-    float padding;
 };
 
 struct WrappingRequirements
@@ -243,6 +241,14 @@ resolve_axis_assignment(
     float assigned_size,
     float baseline,
     float required_size,
+    float ascent);
+
+Box
+resolve_assignment(
+    LayoutProperties props,
+    Vec2 assigned_size,
+    float baseline,
+    Vec2 required_size,
     float ascent);
 
 } // namespace alia
