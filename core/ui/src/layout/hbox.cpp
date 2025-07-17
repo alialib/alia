@@ -11,18 +11,18 @@ struct HBoxScratch
 };
 
 HorizontalRequirements
-measure_hbox_horizontal(LayoutScratchArena* scratch, LayoutNode* node)
+measure_hbox_horizontal(MeasurementContext* ctx, LayoutNode* node)
 {
     auto& hbox = *reinterpret_cast<HBoxLayoutNode*>(node);
-    auto& hbox_scratch = claim_scratch<HBoxScratch>(*scratch);
+    auto& hbox_scratch = claim_scratch<HBoxScratch>(*ctx->scratch);
     HorizontalRequirements* x_requirements
-        = reinterpret_cast<HorizontalRequirements*>(scratch->allocate(
+        = reinterpret_cast<HorizontalRequirements*>(ctx->scratch->allocate(
             hbox.child_count * sizeof(HorizontalRequirements),
             alignof(HorizontalRequirements)));
     for (LayoutNode* child = hbox.first_child; child != nullptr;
          child = child->next_sibling)
     {
-        auto const child_x = measure_horizontal(scratch, child);
+        auto const child_x = measure_horizontal(ctx, child);
         *x_requirements++ = child_x;
         hbox_scratch.total_width += child_x.min_size;
         hbox_scratch.total_growth += child_x.growth_factor;
@@ -34,12 +34,12 @@ measure_hbox_horizontal(LayoutScratchArena* scratch, LayoutNode* node)
 
 void
 assign_hbox_widths(
-    LayoutScratchArena* scratch, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
 {
     auto& hbox = *reinterpret_cast<HBoxLayoutNode*>(node);
-    auto& hbox_scratch = use_scratch<HBoxScratch>(*scratch);
+    auto& hbox_scratch = use_scratch<HBoxScratch>(*ctx->scratch);
     HorizontalRequirements* x_requirements
-        = reinterpret_cast<HorizontalRequirements*>(scratch->allocate(
+        = reinterpret_cast<HorizontalRequirements*>(ctx->scratch->allocate(
             hbox.child_count * sizeof(HorizontalRequirements),
             alignof(HorizontalRequirements)));
     auto const placement = resolve_axis_assignment(
@@ -55,18 +55,18 @@ assign_hbox_widths(
         auto const child_x = *x_requirements++;
         float const extra_space = total_extra_space * child_x.growth_factor
                                 * one_over_total_growth;
-        assign_widths(scratch, child, child_x.min_size + extra_space);
+        assign_widths(ctx, child, child_x.min_size + extra_space);
     }
 }
 
 VerticalRequirements
 measure_hbox_vertical(
-    LayoutScratchArena* scratch, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
 {
     auto& hbox = *reinterpret_cast<HBoxLayoutNode*>(node);
-    auto& hbox_scratch = use_scratch<HBoxScratch>(*scratch);
+    auto& hbox_scratch = use_scratch<HBoxScratch>(*ctx->scratch);
     HorizontalRequirements* x_requirements
-        = reinterpret_cast<HorizontalRequirements*>(scratch->allocate(
+        = reinterpret_cast<HorizontalRequirements*>(ctx->scratch->allocate(
             hbox.child_count * sizeof(HorizontalRequirements),
             alignof(HorizontalRequirements)));
     // TODO: Stop repeating this logic everywhere.
@@ -83,7 +83,7 @@ measure_hbox_vertical(
         float const extra_space = total_extra_space * child_x.growth_factor
                                 * one_over_total_growth;
         auto const child_y
-            = measure_vertical(scratch, child, child_x.min_size + extra_space);
+            = measure_vertical(ctx, child, child_x.min_size + extra_space);
         height = (std::max)(height, child_y.min_size);
         ascent = (std::max)(ascent, child_y.ascent);
         descent = (std::max)(descent, child_y.descent);

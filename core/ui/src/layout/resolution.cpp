@@ -9,36 +9,40 @@ resolve_layout(
     LayoutNode& root_node,
     Vec2 available_space)
 {
-    scratch.reset();
-    measure_horizontal(&scratch, &root_node);
-    scratch.reset();
-    measure_vertical(&scratch, &root_node, available_space.x);
-    scratch.reset();
+    {
+        MeasurementContext ctx{&scratch, 12.0f};
+        scratch.reset();
+        measure_horizontal(&ctx, &root_node);
+        scratch.reset();
+        measure_vertical(&ctx, &root_node, available_space.x);
+    }
     LayoutPlacementNode* initial_placement = nullptr;
-    PlacementContext ctx{&scratch, &arena, &initial_placement};
-    assign_boxes(&ctx, &root_node, Box{Vec2{0, 0}, available_space}, 0);
-    scratch.reset();
+    {
+        PlacementContext ctx{&scratch, &arena, &initial_placement, 12.0f};
+        scratch.reset();
+        assign_boxes(&ctx, &root_node, Box{Vec2{0, 0}, available_space}, 0);
+        scratch.reset();
+    }
     return initial_placement;
 }
 
 HorizontalRequirements
-default_measure_wrapped_horizontal(
-    LayoutScratchArena* scratch, LayoutNode* node)
+default_measure_wrapped_horizontal(MeasurementContext* ctx, LayoutNode* node)
 {
-    return measure_horizontal(scratch, node);
+    return measure_horizontal(ctx, node);
 }
 
 WrappingRequirements
 default_measure_wrapped_vertical(
-    LayoutScratchArena* scratch,
+    MeasurementContext* ctx,
     LayoutNode* node,
     float current_x_offset,
     float line_width)
 {
-    auto checkpoint = scratch->save_state();
-    auto horizontal = measure_horizontal(scratch, node);
-    scratch->restore_state(checkpoint);
-    auto vertical = measure_vertical(scratch, node, horizontal.min_size);
+    auto checkpoint = ctx->scratch->save_state();
+    auto horizontal = measure_horizontal(ctx, node);
+    ctx->scratch->restore_state(checkpoint);
+    auto vertical = measure_vertical(ctx, node, horizontal.min_size);
     if (current_x_offset + horizontal.min_size > line_width)
     {
         return WrappingRequirements{

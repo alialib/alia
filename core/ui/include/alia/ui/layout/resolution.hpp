@@ -77,9 +77,14 @@ struct PlacementContext
     LayoutScratchArena* scratch;
     LayoutPlacementArena* arena;
     LayoutPlacementNode** next_ptr;
+    float padding;
 };
 
-// TODO: Add measurement context.
+struct MeasurementContext
+{
+    LayoutScratchArena* scratch;
+    float padding;
+};
 
 struct WrappingRequirements
 {
@@ -130,22 +135,22 @@ struct WrappingAssignment
 struct LayoutNodeVtable
 {
     HorizontalRequirements (*measure_horizontal)(
-        LayoutScratchArena* scratch, LayoutNode* node);
+        MeasurementContext* ctx, LayoutNode* node);
 
     void (*assign_widths)(
-        LayoutScratchArena* scratch, LayoutNode* node, float assigned_width);
+        MeasurementContext* ctx, LayoutNode* node, float assigned_width);
 
     VerticalRequirements (*measure_vertical)(
-        LayoutScratchArena* scratch, LayoutNode* node, float assigned_width);
+        MeasurementContext* ctx, LayoutNode* node, float assigned_width);
 
     void (*assign_boxes)(
         PlacementContext* ctx, LayoutNode* node, Box box, float baseline);
 
     HorizontalRequirements (*measure_wrapped_horizontal)(
-        LayoutScratchArena* scratch, LayoutNode* node);
+        MeasurementContext* ctx, LayoutNode* node);
 
     WrappingRequirements (*measure_wrapped_vertical)(
-        LayoutScratchArena* scratch,
+        MeasurementContext* ctx,
         LayoutNode* node,
         float current_x_offset,
         float line_width);
@@ -157,23 +162,22 @@ struct LayoutNodeVtable
 };
 
 inline HorizontalRequirements
-measure_horizontal(LayoutScratchArena* scratch, LayoutNode* node)
+measure_horizontal(MeasurementContext* ctx, LayoutNode* node)
 {
-    return node->vtable->measure_horizontal(scratch, node);
+    return node->vtable->measure_horizontal(ctx, node);
 }
 
 inline void
-assign_widths(
-    LayoutScratchArena* scratch, LayoutNode* node, float assigned_width)
+assign_widths(MeasurementContext* ctx, LayoutNode* node, float assigned_width)
 {
-    return node->vtable->assign_widths(scratch, node, assigned_width);
+    return node->vtable->assign_widths(ctx, node, assigned_width);
 }
 
 inline VerticalRequirements
 measure_vertical(
-    LayoutScratchArena* scratch, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
 {
-    return node->vtable->measure_vertical(scratch, node, assigned_width);
+    return node->vtable->measure_vertical(ctx, node, assigned_width);
 }
 
 inline void
@@ -183,29 +187,28 @@ assign_boxes(PlacementContext* ctx, LayoutNode* node, Box box, float baseline)
 }
 
 inline HorizontalRequirements
-measure_wrapped_horizontal(LayoutScratchArena* scratch, LayoutNode* node)
+measure_wrapped_horizontal(MeasurementContext* ctx, LayoutNode* node)
 {
-    return node->vtable->measure_wrapped_horizontal(scratch, node);
+    return node->vtable->measure_wrapped_horizontal(ctx, node);
 }
 
 HorizontalRequirements
-default_measure_wrapped_horizontal(
-    LayoutScratchArena* scratch, LayoutNode* node);
+default_measure_wrapped_horizontal(MeasurementContext* ctx, LayoutNode* node);
 
 inline WrappingRequirements
 measure_wrapped_vertical(
-    LayoutScratchArena* scratch,
+    MeasurementContext* ctx,
     LayoutNode* node,
     float current_x_offset,
     float line_width)
 {
     return node->vtable->measure_wrapped_vertical(
-        scratch, node, current_x_offset, line_width);
+        ctx, node, current_x_offset, line_width);
 }
 
 WrappingRequirements
 default_measure_wrapped_vertical(
-    LayoutScratchArena* scratch,
+    MeasurementContext* ctx,
     LayoutNode* node,
     float current_x_offset,
     float line_width);

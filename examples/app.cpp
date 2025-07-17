@@ -143,35 +143,36 @@ struct MsdfTextLayoutNode
 };
 
 HorizontalRequirements
-measure_text_horizontal(LayoutScratchArena* scratch, LayoutNode* node)
+measure_text_horizontal(MeasurementContext* ctx, LayoutNode* node)
 {
     auto& text = *reinterpret_cast<MsdfTextLayoutNode*>(node);
     float width = measure_text_width(
         text.engine, text.text, strlen(text.text), text.font_size);
-    return HorizontalRequirements{.min_size = width, .growth_factor = 0};
+    return HorizontalRequirements{
+        .min_size = width + ctx->padding * 2, .growth_factor = 0};
 }
 
 void
 assign_text_widths(
-    LayoutScratchArena* scratch, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
 {
     // TODO: Implement
 }
 
 VerticalRequirements
 measure_text_vertical(
-    LayoutScratchArena* scratch, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
 {
     auto& text = *reinterpret_cast<MsdfTextLayoutNode*>(node);
     auto const* metrics = get_msdf_font_metrics(text.engine);
     return VerticalRequirements{
-        .min_size = metrics->line_height * text.font_size,
+        .min_size = metrics->line_height * text.font_size + ctx->padding * 2,
         .growth_factor = 0,
         .ascent = node->alignment == LayoutAlignment::Baseline
-                    ? metrics->ascender * text.font_size
+                    ? metrics->ascender * text.font_size + ctx->padding
                     : 0.0f,
         .descent = node->alignment == LayoutAlignment::Baseline
-                     ? -metrics->descender * text.font_size
+                     ? -metrics->descender * text.font_size + ctx->padding
                      : 0.0f};
 }
 
@@ -201,8 +202,8 @@ assign_text_boxes(
         node->alignment,
         box.size.y,
         baseline,
-        metrics->line_height * text.font_size,
-        metrics->ascender * text.font_size);
+        metrics->line_height * text.font_size + ctx->padding * 2,
+        metrics->ascender * text.font_size + ctx->padding);
 
     TextLayoutPlacementHeader* header
         = reinterpret_cast<TextLayoutPlacementHeader*>(ctx->arena->allocate(
@@ -216,8 +217,10 @@ assign_text_boxes(
         = reinterpret_cast<TextLayoutPlacementFragment*>(ctx->arena->allocate(
             sizeof(TextLayoutPlacementFragment),
             alignof(TextLayoutPlacementFragment)));
-    fragment->position = box.pos + Vec2{0, placement.offset};
-    fragment->size = {box.size.x, placement.size};
+    fragment->position
+        = box.pos + Vec2{ctx->padding, placement.offset + ctx->padding};
+    fragment->size
+        = {box.size.x - ctx->padding * 2, placement.size - ctx->padding * 2};
     fragment->text = text.text;
     fragment->length = strlen(text.text);
     *ctx->next_ptr = &fragment->base;
@@ -225,14 +228,14 @@ assign_text_boxes(
 }
 
 HorizontalRequirements
-measure_text_wrapped_horizontal(LayoutScratchArena* scratch, LayoutNode* node)
+measure_text_wrapped_horizontal(MeasurementContext* ctx, LayoutNode* node)
 {
     return HorizontalRequirements{0, 0};
 }
 
 WrappingRequirements
 measure_text_wrapped_vertical(
-    LayoutScratchArena* scratch,
+    MeasurementContext* ctx,
     LayoutNode* node,
     float current_x_offset,
     float line_width)
@@ -249,7 +252,7 @@ measure_text_wrapped_vertical(
         length,
         length,
         text.font_size,
-        line_width - current_x_offset);
+        line_width - current_x_offset - ctx->padding * 2);
     bool wrapped_immediately = (break_result.first == 0);
 
     int wrap_count = 0;
@@ -265,15 +268,16 @@ measure_text_wrapped_vertical(
             length,
             length,
             text.font_size,
-            line_width);
+            line_width - ctx->padding * 2);
         index = break_result.first;
         new_x = break_result.second;
     }
 
     return WrappingRequirements{
-        .line_height = metrics->line_height * text.font_size,
-        .ascent = metrics->ascender * text.font_size,
-        .descent = -metrics->descender * text.font_size,
+        .line_height
+        = metrics->line_height * text.font_size + ctx->padding * 2,
+        .ascent = metrics->ascender * text.font_size + ctx->padding,
+        .descent = -metrics->descender * text.font_size + ctx->padding,
         .wrap_count = wrap_count,
         .wrapped_immediately = wrapped_immediately,
         .new_x_offset = new_x};
@@ -299,9 +303,9 @@ assign_text_wrapped_boxes(
     ctx->next_ptr = &header->base.next;
 
     float x = assignment->first_line_x_offset;
-    float y = assignment->y_base + assignment->first_line.baseline_offset
-            - metrics->ascender * text.font_size;
-    float next_y = assignment->y_base + assignment->first_line.line_height;
+    float y = assignment->y_base + assignment->first_line.baseline_offset;
+    float next_y = assignment->y_base + assignment->first_line.line_height
+                 + assignment->middle_lines.baseline_offset;
 
     size_t index = 0;
     while (index < length)
@@ -313,30 +317,26 @@ assign_text_wrapped_boxes(
             length,
             length,
             text.font_size,
-            assignment->line_width - x);
+            assignment->line_width - x - ctx->padding * 2);
         size_t const end_index = break_result.first;
+
+        if (end_index == length)
+        {
+            y += assignment->last_line.baseline_offset
+               - assignment->middle_lines.baseline_offset;
+        }
 
         TextLayoutPlacementFragment* fragment
             = reinterpret_cast<TextLayoutPlacementFragment*>(
                 ctx->arena->allocate(
                     sizeof(TextLayoutPlacementFragment),
                     alignof(TextLayoutPlacementFragment)));
-        if (end_index == length)
-        {
-            fragment->position
-                = {x + assignment->x_base,
-                   y + assignment->last_line.baseline_offset
-                       - metrics->ascender * text.font_size};
-        }
-        else
-        {
-            fragment->position
-                = {x + assignment->x_base,
-                   y + assignment->middle_lines.baseline_offset
-                       - metrics->ascender * text.font_size};
-        }
-        fragment->size = {
-            assignment->line_width - x, metrics->line_height * text.font_size};
+        fragment->position
+            = {x + assignment->x_base + ctx->padding,
+               y - metrics->ascender * text.font_size};
+        fragment->size
+            = {assignment->line_width - x - ctx->padding * 2,
+               metrics->line_height * text.font_size};
         fragment->text = text.text + index;
         fragment->length = end_index - index;
         *ctx->next_ptr = &fragment->base;
@@ -345,7 +345,7 @@ assign_text_wrapped_boxes(
 
         x = 0;
         y = next_y;
-        next_y += metrics->line_height * text.font_size;
+        next_y += metrics->line_height * text.font_size + ctx->padding * 2;
         index = end_index;
     }
 }

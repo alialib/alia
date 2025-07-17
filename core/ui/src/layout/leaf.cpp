@@ -5,7 +5,7 @@
 namespace alia {
 
 HorizontalRequirements
-measure_leaf_horizontal(LayoutScratchArena* scratch, LayoutNode* node)
+measure_leaf_horizontal(MeasurementContext* ctx, LayoutNode* node)
 {
     auto& leaf = *reinterpret_cast<LayoutLeafNode*>(node);
     return HorizontalRequirements{
@@ -15,13 +15,13 @@ measure_leaf_horizontal(LayoutScratchArena* scratch, LayoutNode* node)
 
 void
 assign_leaf_widths(
-    LayoutScratchArena* scratch, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
 {
 }
 
 VerticalRequirements
 measure_leaf_vertical(
-    LayoutScratchArena* scratch, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
 {
     auto& leaf = *reinterpret_cast<LayoutLeafNode*>(node);
     return VerticalRequirements{

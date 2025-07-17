@@ -9,13 +9,13 @@ struct FlowScratch
 };
 
 HorizontalRequirements
-measure_flow_horizontal(LayoutScratchArena* scratch, LayoutNode* node)
+measure_flow_horizontal(MeasurementContext* ctx, LayoutNode* node)
 {
     auto& flow = *reinterpret_cast<FlowLayoutNode*>(node);
-    auto& flow_scratch = claim_scratch<FlowScratch>(*scratch);
+    auto& flow_scratch = claim_scratch<FlowScratch>(*ctx->scratch);
 
     WrappingRequirements* child_requirements
-        = reinterpret_cast<WrappingRequirements*>(scratch->allocate(
+        = reinterpret_cast<WrappingRequirements*>(ctx->scratch->allocate(
             flow.child_count * sizeof(WrappingRequirements),
             alignof(WrappingRequirements)));
 
@@ -23,8 +23,7 @@ measure_flow_horizontal(LayoutScratchArena* scratch, LayoutNode* node)
     for (LayoutNode* child = flow.first_child; child != nullptr;
          child = child->next_sibling)
     {
-        auto const child_requirements
-            = measure_wrapped_horizontal(scratch, child);
+        auto const child_requirements = measure_wrapped_horizontal(ctx, child);
         max_child_width
             = (std::max)(max_child_width, child_requirements.min_size);
     }
@@ -34,7 +33,7 @@ measure_flow_horizontal(LayoutScratchArena* scratch, LayoutNode* node)
 
 void
 assign_flow_widths(
-    LayoutScratchArena* scratch, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
 {
     // TODO
     // auto& flow = *reinterpret_cast<FlowLayoutNode*>(node);
@@ -57,13 +56,13 @@ assign_flow_widths(
 
 VerticalRequirements
 measure_flow_vertical(
-    LayoutScratchArena* scratch, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
 {
     auto& flow = *reinterpret_cast<FlowLayoutNode*>(node);
-    auto& flow_scratch = use_scratch<FlowScratch>(*scratch);
+    auto& flow_scratch = use_scratch<FlowScratch>(*ctx->scratch);
 
     WrappingRequirements* child_requirements
-        = reinterpret_cast<WrappingRequirements*>(scratch->allocate(
+        = reinterpret_cast<WrappingRequirements*>(ctx->scratch->allocate(
             flow.child_count * sizeof(WrappingRequirements),
             alignof(WrappingRequirements)));
 
@@ -75,7 +74,7 @@ measure_flow_vertical(
          child = child->next_sibling)
     {
         auto const requirements = measure_wrapped_vertical(
-            scratch, child, current_x_offset, assigned_width);
+            ctx, child, current_x_offset, assigned_width);
         *child_requirements++ = requirements;
 
         if (!requirements.wrapped_immediately)

@@ -15,18 +15,18 @@ struct VBoxScratch
 };
 
 HorizontalRequirements
-measure_vbox_horizontal(LayoutScratchArena* scratch, LayoutNode* node)
+measure_vbox_horizontal(MeasurementContext* ctx, LayoutNode* node)
 {
     auto& vbox = *reinterpret_cast<VBoxLayoutNode*>(node);
-    auto& vbox_scratch = claim_scratch<VBoxScratch>(*scratch);
+    auto& vbox_scratch = claim_scratch<VBoxScratch>(*ctx->scratch);
     VerticalRequirements* y_requirements
-        = reinterpret_cast<VerticalRequirements*>(scratch->allocate(
+        = reinterpret_cast<VerticalRequirements*>(ctx->scratch->allocate(
             vbox.child_count * sizeof(VerticalRequirements),
             alignof(VerticalRequirements)));
     for (LayoutNode* child = vbox.first_child; child != nullptr;
          child = child->next_sibling)
     {
-        auto const child_x = measure_horizontal(scratch, child);
+        auto const child_x = measure_horizontal(ctx, child);
         vbox_scratch.max_width
             = (std::max)(vbox_scratch.max_width, child_x.min_size);
     }
@@ -36,35 +36,35 @@ measure_vbox_horizontal(LayoutScratchArena* scratch, LayoutNode* node)
 
 void
 assign_vbox_widths(
-    LayoutScratchArena* scratch, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
 {
     auto& vbox = *reinterpret_cast<VBoxLayoutNode*>(node);
-    auto& vbox_scratch = use_scratch<VBoxScratch>(*scratch);
+    auto& vbox_scratch = use_scratch<VBoxScratch>(*ctx->scratch);
     VerticalRequirements* y_requirements
-        = reinterpret_cast<VerticalRequirements*>(scratch->allocate(
+        = reinterpret_cast<VerticalRequirements*>(ctx->scratch->allocate(
             vbox.child_count * sizeof(VerticalRequirements),
             alignof(VerticalRequirements)));
     for (LayoutNode* child = vbox.first_child; child != nullptr;
          child = child->next_sibling)
     {
-        assign_widths(scratch, child, assigned_width);
+        assign_widths(ctx, child, assigned_width);
     }
 }
 
 VerticalRequirements
 measure_vbox_vertical(
-    LayoutScratchArena* scratch, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
 {
     auto& vbox = *reinterpret_cast<VBoxLayoutNode*>(node);
-    auto& vbox_scratch = use_scratch<VBoxScratch>(*scratch);
+    auto& vbox_scratch = use_scratch<VBoxScratch>(*ctx->scratch);
     VerticalRequirements* y_requirements
-        = reinterpret_cast<VerticalRequirements*>(scratch->allocate(
+        = reinterpret_cast<VerticalRequirements*>(ctx->scratch->allocate(
             vbox.child_count * sizeof(VerticalRequirements),
             alignof(VerticalRequirements)));
     for (LayoutNode* child = vbox.first_child; child != nullptr;
          child = child->next_sibling)
     {
-        auto const child_y = measure_vertical(scratch, child, assigned_width);
+        auto const child_y = measure_vertical(ctx, child, assigned_width);
         *y_requirements++ = child_y;
         vbox_scratch.total_height += child_y.min_size;
         vbox_scratch.total_growth += child_y.growth_factor;
