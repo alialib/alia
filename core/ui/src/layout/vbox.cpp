@@ -2,8 +2,6 @@
 
 #include <alia/ui/layout/scratch.hpp>
 
-#include <iostream>
-
 namespace alia {
 
 struct VBoxScratch

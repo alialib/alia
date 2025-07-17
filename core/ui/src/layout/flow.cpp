@@ -103,6 +103,8 @@ measure_flow_vertical(
         current_x_offset = requirements.new_x_offset;
     }
 
+    if (first_wrap)
+        overall_ascent = line_ascent;
     overall_height += (std::max)(line_height, line_ascent + line_descent);
 
     flow_scratch.total_height = overall_height;

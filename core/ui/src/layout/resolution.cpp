@@ -10,7 +10,7 @@ resolve_layout(
     Vec2 available_space)
 {
     {
-        MeasurementContext ctx{&scratch, 12.0f};
+        MeasurementContext ctx{&scratch, 0.0f};
         scratch.reset();
         measure_horizontal(&ctx, &root_node);
         scratch.reset();
@@ -18,7 +18,7 @@ resolve_layout(
     }
     LayoutPlacementNode* initial_placement = nullptr;
     {
-        PlacementContext ctx{&scratch, &arena, &initial_placement, 12.0f};
+        PlacementContext ctx{&scratch, &arena, &initial_placement, 0.0f};
         scratch.reset();
         assign_boxes(&ctx, &root_node, Box{Vec2{0, 0}, available_space}, 0);
         scratch.reset();

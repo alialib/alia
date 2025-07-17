@@ -518,28 +518,32 @@ text_demo(Context& ctx)
     vbox(ctx, [&]() {
         for (int i = 0; i < 10; ++i)
         {
-            hbox(ctx, [&]() {
-                do_text(ctx, GRAY, 40, "test");
-                flow(ctx, 1.0f, [&]() {
-                    do_text(
-                        ctx,
-                        GRAY,
-                        10 + i * 6,
-                        "Lorem ipsum dolor sit amet, consectetur adipiscing "
-                        "elit. Proin sed dictum massa. Maecenas et euismod "
-                        "lorem, ut dapibus eros. Nam maximus, purus vitae "
-                        "mollis ornare, tortor justo posuere neque, at "
-                        "lacinia ante metus eget diam. Aenean sit amet "
-                        "posuere metus. In hac habitasse platea dictumst. Nam "
-                        "sed turpis ultricies tellus auctor egestas. Ut "
-                        "laoreet nisi nisi, id posuere tortor tincidunt a. "
-                        "Pellentesque placerat vulputate massa at semper. "
-                        "Fusce malesuada porttitor enim dignissim viverra. In "
-                        "aliquam, odio nec sagittis elementum, elit enim "
-                        "auctor turpis, sit amet volutpat enim massa ac orci. "
-                        "Maecenas iaculis, ex at pulvinar volutpat, ligula "
-                        "nulla pellentesque tellus, vel aliquam nunc dolor eu "
-                        "risus.");
+            padding(ctx, 12.0f, 0.0f, [&]() {
+                hbox(ctx, [&]() {
+                    do_text(ctx, GRAY, 40, "test");
+                    flow(ctx, 1.0f, [&]() {
+                        do_text(
+                            ctx,
+                            GRAY,
+                            10 + i * 6,
+                            "Lorem ipsum dolor sit amet, consectetur "
+                            "adipiscing elit. Proin sed dictum massa. "
+                            "Maecenas et euismod lorem, ut dapibus eros. "
+                            "Nam maximus, purus vitae mollis ornare, tortor "
+                            "justo posuere neque, at lacinia ante metus eget "
+                            "diam. Aenean sit amet posuere metus. In hac "
+                            "habitasse platea dictumst. Nam sed turpis "
+                            "ultricies tellus auctor egestas. Ut laoreet nisi "
+                            "nisi, id posuere tortor tincidunt a. "
+                            "Pellentesque placerat vulputate massa at semper. "
+                            "Fusce malesuada porttitor enim dignissim "
+                            "viverra. In aliquam, odio nec sagittis "
+                            "elementum, elit enim auctor turpis, sit amet "
+                            "volutpat enim massa ac orci. Maecenas iaculis, "
+                            "ex at pulvinar volutpat, ligula nulla "
+                            "pellentesque tellus, vel aliquam nunc dolor eu "
+                            "risus.");
+                    });
                 });
             });
         }
