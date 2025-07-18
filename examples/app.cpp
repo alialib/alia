@@ -262,6 +262,9 @@ measure_text_wrapped_vertical(
         text.font_size,
         line_width - current_x_offset - text.padding * 2,
         current_x_offset == 0);
+
+    // If there is content on the first line, then we need to assign the
+    // vertical requirements for it.
     if (first_break.first != 0)
     {
         requirements.first_line = {
@@ -273,6 +276,18 @@ measure_text_wrapped_vertical(
     {
         requirements.first_line = {.height = 0, .ascent = 0, .descent = 0};
     }
+
+    // If everything fits on the first line, then we're done.
+    if (first_break.first == length)
+    {
+        requirements.interior_height = 0;
+        requirements.last_line = {.height = 0, .ascent = 0, .descent = 0};
+        requirements.end_x
+            = current_x_offset + first_break.second + text.padding * 2;
+        return requirements;
+    }
+
+    // Otherwise, wrap the rest of the text...
 
     int wrap_count = 0;
     size_t index = first_break.first;
@@ -293,24 +308,14 @@ measure_text_wrapped_vertical(
         new_x = break_result.second;
     }
 
-    if (wrap_count > 0)
-    {
-        requirements.interior_height
-            = (wrap_count - 1)
-            * (metrics->line_height * text.font_size + text.padding * 2);
-        requirements.last_line = {
-            .height = metrics->line_height * text.font_size + text.padding * 2,
-            .ascent = metrics->ascender * text.font_size + text.padding,
-            .descent = -metrics->descender * text.font_size + text.padding};
-        requirements.end_x = new_x + text.padding * 2;
-    }
-    else
-    {
-        requirements.interior_height = 0;
-        requirements.last_line = {.height = 0, .ascent = 0, .descent = 0};
-        requirements.end_x
-            = current_x_offset + first_break.second + text.padding * 2;
-    }
+    requirements.interior_height
+        = (wrap_count - 1)
+        * (metrics->line_height * text.font_size + text.padding * 2);
+    requirements.last_line
+        = {.height = metrics->line_height * text.font_size + text.padding * 2,
+           .ascent = metrics->ascender * text.font_size + text.padding,
+           .descent = -metrics->descender * text.font_size + text.padding};
+    requirements.end_x = new_x + text.padding * 2;
 
     return requirements;
 }
@@ -333,6 +338,9 @@ assign_text_wrapped_boxes(
     header->fragment_count = 0;
     *ctx->next_ptr = &header->base;
     ctx->next_ptr = &header->base.next;
+
+    // TODO: This all feels a bit hacky, but it works for now, and it feels
+    // like there is more significant restructuring to come anyway.
 
     float x = assignment->first_line_x_offset;
     float y = assignment->y_base + assignment->first_line.baseline_offset;
@@ -507,36 +515,41 @@ rectangle_demo(Context& ctx)
                 float x = 0.0f;
                 for (int i = 0; i < 10; ++i)
                 {
-                    for (int j = 0; j < 500; ++j)
-                    {
-                        float f = fmod(x, 1.0f);
-                        if (do_rect(
-                                ctx,
-                                {24, 24},
-                                invert ? Color{f, 0.1f, 1.0f - f, 1}
-                                       : Color{1.0f - f, 0.1f, f, 1}))
+                    flow(ctx, [&]() {
+                        for (int j = 0; j < 500; ++j)
                         {
-                            invert = !invert;
-                            return;
-                        }
-                        x += 0.0015f;
-                    }
-
-                    with_padding(ctx, 20, [&] {
-                        for (int j = 0; j < 1; ++j)
-                        {
-                            do_text(
-                                ctx, GRAY, 24 + i * 6 + j * 4, "lorem ipsum");
-                            if (do_text(
+                            float f = fmod(x, 1.0f);
+                            if (do_rect(
                                     ctx,
-                                    GRAY,
-                                    20 + i * 12 + j * 4,
-                                    lorem_ipsum))
+                                    {24, 24},
+                                    invert ? Color{f, 0.1f, 1.0f - f, 1}
+                                           : Color{1.0f - f, 0.1f, f, 1}))
                             {
                                 invert = !invert;
                                 return;
                             }
+                            x += 0.0015f;
                         }
+
+                        with_padding(ctx, 20, [&] {
+                            for (int j = 0; j < 1; ++j)
+                            {
+                                do_text(
+                                    ctx,
+                                    GRAY,
+                                    24 + i * 6 + j * 4,
+                                    "lorem ipsum");
+                                if (do_text(
+                                        ctx,
+                                        GRAY,
+                                        20 + i * 12 + j * 4,
+                                        lorem_ipsum))
+                                {
+                                    invert = !invert;
+                                    return;
+                                }
+                            }
+                        });
                     });
                 }
             });
@@ -565,9 +578,15 @@ text_demo(Context& ctx)
                     hbox(ctx, [&]() {
                         do_text(ctx, GRAY, 40, "test");
                         flow(ctx, 1.0f, [&]() {
-                            do_text(ctx, GRAY, 16 + i * 4, "lorum");
-                            do_text(ctx, GRAY, 20 + i * 2, "ipsum");
-                            do_text(ctx, GRAY, 10 + i * 6, lorem_ipsum);
+                            for (int j = 0; j < 10; ++j)
+                            {
+                                flow(ctx, [&]() {
+                                    do_text(
+                                        ctx, GRAY, 10 + i * 6, lorem_ipsum);
+                                });
+                                do_text(ctx, GRAY, 16 + i * 4, "lorum");
+                                do_text(ctx, GRAY, 20 + i * 2, "ipsum");
+                            }
                         });
                     });
                 });
@@ -577,9 +596,28 @@ text_demo(Context& ctx)
 }
 
 void
+nested_flow_demo(Context& ctx)
+{
+    static bool invert = false;
+
+    inset(ctx, {.left = 100, .right = 100, .top = 100, .bottom = 100}, [&]() {
+        flow(ctx, [&]() {
+            for (int i = 0; i < 10; ++i)
+            {
+                flow(ctx, [&]() {
+                    do_text(ctx, GRAY, 10 + i * 6, lorem_ipsum);
+                });
+                do_text(ctx, GRAY, 16 + i * 4, "lorum");
+                do_text(ctx, GRAY, 20 + i * 2, "ipsum");
+            }
+        });
+    });
+}
+
+void
 the_demo(Context& ctx)
 {
-    text_demo(ctx);
+    rectangle_demo(ctx);
 }
 
 void

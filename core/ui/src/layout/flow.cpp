@@ -245,14 +245,227 @@ assign_flow_boxes(
     }
 }
 
+WrappingRequirements
+measure_flow_wrapped_vertical(
+    MeasurementContext* ctx,
+    LayoutNode* node,
+    float current_x_offset,
+    float line_width)
+{
+    auto& flow = *reinterpret_cast<FlowLayoutNode*>(node);
+    auto& flow_scratch = use_scratch<FlowScratch>(*ctx->scratch);
+
+    WrappingRequirements* child_requirements
+        = reinterpret_cast<WrappingRequirements*>(ctx->scratch->allocate(
+            flow.child_count * sizeof(WrappingRequirements),
+            alignof(WrappingRequirements)));
+
+    float line_height = 0, line_ascent = 0, line_descent = 0;
+    LineRequirements first_line;
+    bool wrapping_has_occurred = false;
+    float interior_height = 0;
+    for (LayoutNode* child = flow.first_child; child != nullptr;
+         child = child->next_sibling)
+    {
+        auto const requirements = measure_wrapped_vertical(
+            ctx, child, current_x_offset, line_width);
+        *child_requirements++ = requirements;
+
+        line_height = (std::max)(line_height, requirements.first_line.height);
+        line_ascent = (std::max)(line_ascent, requirements.first_line.ascent);
+        line_descent
+            = (std::max)(line_descent, requirements.first_line.descent);
+
+        if (has_wrapped_content(requirements))
+        {
+            if (!wrapping_has_occurred)
+            {
+                first_line
+                    = {.height = line_height,
+                       .ascent = line_ascent,
+                       .descent = line_descent};
+                wrapping_has_occurred = true;
+            }
+            else
+            {
+                interior_height
+                    += (std::max)(line_height, line_ascent + line_descent);
+            }
+
+            interior_height += requirements.interior_height;
+
+            line_height = requirements.last_line.height;
+            line_ascent = requirements.last_line.ascent;
+            line_descent = requirements.last_line.descent;
+        }
+
+        current_x_offset = requirements.end_x;
+    }
+
+    LineRequirements last_line;
+    if (!wrapping_has_occurred)
+    {
+        first_line
+            = {.height = line_height,
+               .ascent = line_ascent,
+               .descent = line_descent};
+        last_line = {.height = 0, .ascent = 0, .descent = 0};
+    }
+    else
+    {
+        last_line
+            = {.height = line_height,
+               .ascent = line_ascent,
+               .descent = line_descent};
+    }
+
+    return WrappingRequirements{
+        .first_line = first_line,
+        .interior_height = interior_height,
+        .last_line = last_line,
+        .end_x = current_x_offset};
+}
+
+void
+assign_flow_wrapped_boxes(
+    PlacementContext* ctx,
+    LayoutNode* node,
+    WrappingAssignment const* assignment)
+{
+    auto& flow = *reinterpret_cast<FlowLayoutNode*>(node);
+    auto& flow_scratch = use_scratch<FlowScratch>(*ctx->scratch);
+
+    WrappingRequirements* child_requirements
+        = reinterpret_cast<WrappingRequirements*>(ctx->scratch->allocate(
+            flow.child_count * sizeof(WrappingRequirements),
+            alignof(WrappingRequirements)));
+
+    if (flow.child_count == 0)
+        return;
+
+    float line_height = assignment->first_line.line_height,
+          line_ascent = assignment->first_line.baseline_offset,
+          line_descent = line_height - line_ascent;
+
+    auto update_line_measures = [&](int i) {
+        for (; i < flow.child_count; ++i)
+        {
+            auto const requirements = child_requirements[i];
+            if (!has_first_line_content(requirements))
+                return;
+
+            line_height
+                = (std::max)(line_height, requirements.first_line.height);
+            line_ascent
+                = (std::max)(line_ascent, requirements.first_line.ascent);
+            line_descent
+                = (std::max)(line_descent, requirements.first_line.descent);
+
+            if (has_wrapped_content(requirements))
+                return;
+        }
+
+        line_height
+            = (std::max)(line_height, assignment->last_line.line_height);
+        line_ascent
+            = (std::max)(line_ascent, assignment->last_line.baseline_offset);
+        line_descent = (std::max)(
+            line_descent,
+            assignment->last_line.line_height
+                - assignment->last_line.baseline_offset);
+    };
+
+    float current_x = assignment->first_line_x_offset;
+    float current_y = assignment->y_base;
+    update_line_measures(0);
+
+    int child_index = 0;
+    for (LayoutNode* child = flow.first_child; child != nullptr;
+         child = child->next_sibling)
+    {
+        auto const& requirements = child_requirements[child_index];
+
+        WrappingAssignment child_assignment;
+        child_assignment.x_base = assignment->x_base;
+        child_assignment.line_width = assignment->line_width;
+        child_assignment.first_line_x_offset = current_x;
+
+        // For the first line, we use the vertical requirements that existed
+        // for the previous children.
+        child_assignment.first_line = VerticalAssignment{
+            .line_height = (std::max)(line_height, line_ascent + line_descent),
+            .baseline_offset = line_ascent};
+
+        if (has_wrapped_content(requirements))
+        {
+            // For the last line, we need to reset to the child's requirements
+            // and then incorporate any the requirements for any later children
+            // that fit on that line.
+
+            line_height = requirements.last_line.height;
+            line_ascent = requirements.last_line.ascent;
+            line_descent = requirements.last_line.descent;
+
+            ++child_index;
+            update_line_measures(child_index);
+
+            child_assignment.last_line = VerticalAssignment{
+                .line_height
+                = (std::max)(line_height, line_ascent + line_descent),
+                .baseline_offset = line_ascent};
+
+            if (requirements.interior_height == 0
+                && !has_first_line_content(requirements))
+            {
+                // If the child wraps only once and does so immediately, then
+                // we can just assign it using the non-wrapping interface.
+                current_y += child_assignment.first_line.line_height;
+                assign_boxes(
+                    ctx,
+                    child,
+                    Box{.pos = Vec2{assignment->x_base, current_y},
+                        .size = Vec2{requirements.end_x, line_height}},
+                    line_ascent);
+                current_x = requirements.end_x;
+            }
+            else
+            {
+                child_assignment.y_base = current_y;
+
+                // Otherwise, there is real wrapping going on, so we need to do
+                // an actual wrapped assignment.
+                assign_wrapped_boxes(ctx, child, &child_assignment);
+
+                // Update our X and Y positions.
+                current_y += child_assignment.first_line.line_height
+                           + requirements.interior_height;
+                current_x = requirements.end_x;
+            }
+        }
+        else
+        {
+            // If the child doesn't wrap, then we can just assign it using
+            // the non-wrapping interface.
+            assign_boxes(
+                ctx,
+                child,
+                Box{.pos = Vec2{assignment->x_base + current_x, current_y},
+                    .size = Vec2{requirements.end_x - current_x, line_height}},
+                line_ascent);
+            current_x = requirements.end_x;
+            ++child_index;
+        }
+    }
+}
+
 LayoutNodeVtable flow_vtable = {
     measure_flow_horizontal,
     assign_flow_widths,
     measure_flow_vertical,
     assign_flow_boxes,
-    default_measure_wrapped_horizontal,
-    default_measure_wrapped_vertical,
-    nullptr,
+    measure_flow_horizontal,
+    measure_flow_wrapped_vertical,
+    assign_flow_wrapped_boxes,
 };
 
 } // namespace alia
