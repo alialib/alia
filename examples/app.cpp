@@ -264,10 +264,10 @@ measure_text_wrapped_vertical(
         current_x_offset == 0);
     if (first_break.first != 0)
     {
-        requirements.first_line
-            = {.height = metrics->line_height * text.font_size + text.padding,
-               .ascent = metrics->ascender * text.font_size + text.padding,
-               .descent = -metrics->descender * text.font_size};
+        requirements.first_line = {
+            .height = metrics->line_height * text.font_size + text.padding * 2,
+            .ascent = metrics->ascender * text.font_size + text.padding,
+            .descent = -metrics->descender * text.font_size + text.padding};
     }
     else
     {
@@ -296,24 +296,18 @@ measure_text_wrapped_vertical(
     if (wrap_count > 0)
     {
         requirements.interior_height
-            = (wrap_count - 1) * metrics->line_height * text.font_size;
-        requirements.last_line
-            = {.height = metrics->line_height * text.font_size + text.padding,
-               .ascent = metrics->ascender * text.font_size,
-               .descent = -metrics->descender * text.font_size + text.padding};
-        if (first_break.first == 0)
-            requirements.interior_height += text.padding;
+            = (wrap_count - 1)
+            * (metrics->line_height * text.font_size + text.padding * 2);
+        requirements.last_line = {
+            .height = metrics->line_height * text.font_size + text.padding * 2,
+            .ascent = metrics->ascender * text.font_size + text.padding,
+            .descent = -metrics->descender * text.font_size + text.padding};
         requirements.end_x = new_x + text.padding * 2;
     }
     else
     {
         requirements.interior_height = 0;
         requirements.last_line = {.height = 0, .ascent = 0, .descent = 0};
-        if (first_break.first != 0)
-        {
-            requirements.first_line.height += text.padding;
-            requirements.first_line.descent += text.padding;
-        }
         requirements.end_x
             = current_x_offset + first_break.second + text.padding * 2;
     }
@@ -343,7 +337,7 @@ assign_text_wrapped_boxes(
     float x = assignment->first_line_x_offset;
     float y = assignment->y_base + assignment->first_line.baseline_offset;
     float next_y = assignment->y_base + assignment->first_line.line_height
-                 + metrics->ascender * text.font_size;
+                 + metrics->ascender * text.font_size + text.padding;
 
     size_t index = 0;
     while (index < length)
@@ -362,11 +356,8 @@ assign_text_wrapped_boxes(
         if (end_index == length)
         {
             y += assignment->last_line.baseline_offset
-               - metrics->ascender * text.font_size;
+               - (metrics->ascender * text.font_size + text.padding);
         }
-        // TODO: This feels very hacky.
-        if (end_index == 0)
-            next_y += text.padding;
 
         TextLayoutPlacementFragment* fragment
             = reinterpret_cast<TextLayoutPlacementFragment*>(
@@ -387,8 +378,7 @@ assign_text_wrapped_boxes(
 
         x = 0;
         y = next_y;
-
-        next_y += metrics->line_height * text.font_size;
+        next_y += metrics->line_height * text.font_size + text.padding * 2;
         index = end_index;
     }
 }
@@ -571,7 +561,7 @@ text_demo(Context& ctx)
         vbox(ctx, [&]() {
             for (int i = 0; i < 10; ++i)
             {
-                with_padding(ctx, 15, [&] {
+                with_padding(ctx, 8, [&] {
                     hbox(ctx, [&]() {
                         do_text(ctx, GRAY, 40, "test");
                         flow(ctx, 1.0f, [&]() {
