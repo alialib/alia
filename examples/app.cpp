@@ -95,8 +95,8 @@ do_rect(Context& ctx, Vec2 size, Color color)
             *new_node = LayoutLeafNode{
                 .base = {.vtable = &leaf_vtable, .next_sibling = 0},
                 .props
-                = {.x_alignment = LayoutAlignment::Start,
-                   .y_alignment = LayoutAlignment::Start,
+                = {.x_alignment = LayoutAlignment::Center,
+                   .y_alignment = LayoutAlignment::Center,
                    .growth_factor = 0},
                 .padding = ctx.style->padding,
                 .size = size};
@@ -205,14 +205,13 @@ assign_text_boxes(
     float width = measure_text_width(
         text.engine, text.text, strlen(text.text), text.font_size);
 
-    auto const placement = resolve_assignment(
+    auto const placement = resolve_padded_assignment(
         text.props,
         box.size,
         baseline,
-        Vec2{
-            width + text.padding * 2,
-            metrics->line_height * text.font_size + text.padding * 2},
-        metrics->ascender * text.font_size + text.padding);
+        Vec2{width, metrics->line_height * text.font_size},
+        metrics->ascender * text.font_size,
+        text.padding);
 
     TextLayoutPlacementHeader* header
         = reinterpret_cast<TextLayoutPlacementHeader*>(ctx->arena->allocate(
@@ -226,9 +225,8 @@ assign_text_boxes(
         = reinterpret_cast<TextLayoutPlacementFragment*>(ctx->arena->allocate(
             sizeof(TextLayoutPlacementFragment),
             alignof(TextLayoutPlacementFragment)));
-    fragment->position
-        = box.pos + placement.pos + Vec2{text.padding, text.padding};
-    fragment->size = placement.size - Vec2{text.padding * 2, text.padding * 2};
+    fragment->position = box.pos + placement.pos;
+    fragment->size = placement.size;
     fragment->text = text.text;
     fragment->length = strlen(text.text);
     *ctx->next_ptr = &fragment->base;
@@ -253,18 +251,31 @@ measure_text_wrapped_vertical(
 
     size_t length = strlen(text.text);
 
-    auto break_result = break_text(
+    WrappingRequirements requirements;
+
+    auto first_break = break_text(
         text.engine,
         text.text,
         0,
         length,
         length,
         text.font_size,
-        line_width - current_x_offset - text.padding * 2);
-    bool wrapped_immediately = (break_result.first == 0);
+        line_width - current_x_offset - text.padding * 2,
+        current_x_offset == 0);
+    if (first_break.first != 0)
+    {
+        requirements.first_line
+            = {.height = metrics->line_height * text.font_size + text.padding,
+               .ascent = metrics->ascender * text.font_size + text.padding,
+               .descent = -metrics->descender * text.font_size};
+    }
+    else
+    {
+        requirements.first_line = {.height = 0, .ascent = 0, .descent = 0};
+    }
 
     int wrap_count = 0;
-    size_t index = break_result.first;
+    size_t index = first_break.first;
     float new_x = 0;
     while (index < length)
     {
@@ -276,19 +287,38 @@ measure_text_wrapped_vertical(
             length,
             length,
             text.font_size,
-            line_width - text.padding * 2);
+            line_width - text.padding * 2,
+            true);
         index = break_result.first;
         new_x = break_result.second;
     }
 
-    return WrappingRequirements{
-        .line_height
-        = metrics->line_height * text.font_size + text.padding * 2,
-        .ascent = metrics->ascender * text.font_size + text.padding,
-        .descent = -metrics->descender * text.font_size + text.padding,
-        .wrap_count = wrap_count,
-        .wrapped_immediately = wrapped_immediately,
-        .new_x_offset = new_x};
+    if (wrap_count > 0)
+    {
+        requirements.interior_height
+            = (wrap_count - 1) * metrics->line_height * text.font_size;
+        requirements.last_line
+            = {.height = metrics->line_height * text.font_size + text.padding,
+               .ascent = metrics->ascender * text.font_size,
+               .descent = -metrics->descender * text.font_size + text.padding};
+        if (first_break.first == 0)
+            requirements.interior_height += text.padding;
+        requirements.end_x = new_x + text.padding * 2;
+    }
+    else
+    {
+        requirements.interior_height = 0;
+        requirements.last_line = {.height = 0, .ascent = 0, .descent = 0};
+        if (first_break.first != 0)
+        {
+            requirements.first_line.height += text.padding;
+            requirements.first_line.descent += text.padding;
+        }
+        requirements.end_x
+            = current_x_offset + first_break.second + text.padding * 2;
+    }
+
+    return requirements;
 }
 
 void
@@ -313,7 +343,7 @@ assign_text_wrapped_boxes(
     float x = assignment->first_line_x_offset;
     float y = assignment->y_base + assignment->first_line.baseline_offset;
     float next_y = assignment->y_base + assignment->first_line.line_height
-                 + assignment->middle_lines.baseline_offset;
+                 + metrics->ascender * text.font_size;
 
     size_t index = 0;
     while (index < length)
@@ -325,14 +355,18 @@ assign_text_wrapped_boxes(
             length,
             length,
             text.font_size,
-            assignment->line_width - x - text.padding * 2);
+            assignment->line_width - x - text.padding * 2,
+            x == 0);
         size_t const end_index = break_result.first;
 
         if (end_index == length)
         {
             y += assignment->last_line.baseline_offset
-               - assignment->middle_lines.baseline_offset;
+               - metrics->ascender * text.font_size;
         }
+        // TODO: This feels very hacky.
+        if (end_index == 0)
+            next_y += text.padding;
 
         TextLayoutPlacementFragment* fragment
             = reinterpret_cast<TextLayoutPlacementFragment*>(
@@ -353,7 +387,8 @@ assign_text_wrapped_boxes(
 
         x = 0;
         y = next_y;
-        next_y += metrics->line_height * text.font_size + text.padding * 2;
+
+        next_y += metrics->line_height * text.font_size;
         index = end_index;
     }
 }
@@ -458,74 +493,71 @@ do_text(Context& ctx, Color color, float scale, char const* text)
     return result;
 }
 
+char const* lorem_ipsum
+    = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin sed "
+      "dictum massa. Maecenas et euismod lorem, ut dapibus eros. Nam maximus, "
+      "purus vitae mollis ornare, tortor justo posuere neque, at lacinia ante "
+      "metus eget diam. Aenean sit amet posuere metus. In hac habitasse "
+      "platea dictumst. Nam sed turpis ultricies tellus auctor egestas. Ut "
+      "laoreet nisi nisi, id posuere tortor tincidunt a. Pellentesque "
+      "placerat vulputate massa at semper. Fusce malesuada porttitor enim "
+      "dignissim viverra. In aliquam, odio nec sagittis elementum, elit enim "
+      "auctor turpis, sit amet volutpat enim massa ac orci. Maecenas iaculis, "
+      "ex at pulvinar volutpat, ligula nulla pellentesque tellus, vel aliquam "
+      "nunc dolor eu risus.";
+
 void
 rectangle_demo(Context& ctx)
 {
     static bool invert = false;
 
-    vbox(ctx, [&]() {
-        flow(ctx, [&]() {
-            float x = 0.0f;
-            for (int i = 0; i < 10; ++i)
-            {
-                for (int j = 0; j < 500; ++j)
+    with_padding(ctx, 0, [&] {
+        vbox(ctx, [&]() {
+            flow(ctx, [&]() {
+                float x = 0.0f;
+                for (int i = 0; i < 10; ++i)
                 {
-                    float f = fmod(x, 1.0f);
-                    if (do_rect(
-                            ctx,
-                            {24, 24},
-                            invert ? Color{f, 0.1f, 1.0f - f, 1}
-                                   : Color{1.0f - f, 0.1f, f, 1}))
+                    for (int j = 0; j < 500; ++j)
                     {
-                        invert = !invert;
-                        return;
+                        float f = fmod(x, 1.0f);
+                        if (do_rect(
+                                ctx,
+                                {24, 24},
+                                invert ? Color{f, 0.1f, 1.0f - f, 1}
+                                       : Color{1.0f - f, 0.1f, f, 1}))
+                        {
+                            invert = !invert;
+                            return;
+                        }
+                        x += 0.0015f;
                     }
-                    x += 0.0015f;
-                }
 
-                for (int j = 0; j < 1; ++j)
+                    with_padding(ctx, 20, [&] {
+                        for (int j = 0; j < 1; ++j)
+                        {
+                            do_text(
+                                ctx, GRAY, 24 + i * 6 + j * 4, "lorem ipsum");
+                            if (do_text(
+                                    ctx,
+                                    GRAY,
+                                    20 + i * 12 + j * 4,
+                                    lorem_ipsum))
+                            {
+                                invert = !invert;
+                                return;
+                            }
+                        }
+                    });
+                }
+            });
+
+            hbox(ctx, [&]() {
+                if (do_rect(ctx, {400, 24}, GRAY))
                 {
-                    if (do_text(
-                            ctx,
-                            GRAY,
-                            20 + i * 12 + j * 4,
-                            "Lorem ipsum dolor sit amet, consectetur "
-                            "adipiscing "
-                            "elit. Proin sed dictum massa. Maecenas et "
-                            "euismod "
-                            "lorem, ut dapibus eros. Nam maximus, purus vitae "
-                            "mollis ornare, tortor justo posuere neque, at "
-                            "lacinia ante metus eget diam. Aenean sit amet "
-                            "posuere metus. In hac habitasse platea dictumst. "
-                            "Nam "
-                            "sed turpis ultricies tellus auctor egestas. Ut "
-                            "laoreet nisi nisi, id posuere tortor tincidunt "
-                            "a. "
-                            "Pellentesque placerat vulputate massa at semper. "
-                            "Fusce malesuada porttitor enim dignissim "
-                            "viverra. In "
-                            "aliquam, odio nec sagittis elementum, elit enim "
-                            "auctor turpis, sit amet volutpat enim massa ac "
-                            "orci. "
-                            "Maecenas iaculis, ex at pulvinar volutpat, "
-                            "ligula "
-                            "nulla pellentesque tellus, vel aliquam nunc "
-                            "dolor eu "
-                            "risus."))
-                    {
-                        invert = !invert;
-                        return;
-                    }
+                    invert = !invert;
+                    return;
                 }
-            }
-        });
-
-        hbox(ctx, [&]() {
-            if (do_rect(ctx, {400, 24}, GRAY))
-            {
-                invert = !invert;
-                return;
-            }
+            });
         });
     });
 }
@@ -535,39 +567,29 @@ text_demo(Context& ctx)
 {
     static bool invert = false;
 
-    vbox(ctx, [&]() {
-        for (int i = 0; i < 10; ++i)
-        {
-            with_padding(ctx, 15, [&] {
-                hbox(ctx, [&]() {
-                    do_text(ctx, GRAY, 40, "test");
-                    flow(ctx, 1.0f, [&]() {
-                        do_text(
-                            ctx,
-                            GRAY,
-                            10 + i * 6,
-                            "Lorem ipsum dolor sit amet, consectetur "
-                            "adipiscing elit. Proin sed dictum massa. "
-                            "Maecenas et euismod lorem, ut dapibus eros. "
-                            "Nam maximus, purus vitae mollis ornare, tortor "
-                            "justo posuere neque, at lacinia ante metus eget "
-                            "diam. Aenean sit amet posuere metus. In hac "
-                            "habitasse platea dictumst. Nam sed turpis "
-                            "ultricies tellus auctor egestas. Ut laoreet nisi "
-                            "nisi, id posuere tortor tincidunt a. "
-                            "Pellentesque placerat vulputate massa at semper. "
-                            "Fusce malesuada porttitor enim dignissim "
-                            "viverra. In aliquam, odio nec sagittis "
-                            "elementum, elit enim auctor turpis, sit amet "
-                            "volutpat enim massa ac orci. Maecenas iaculis, "
-                            "ex at pulvinar volutpat, ligula nulla "
-                            "pellentesque tellus, vel aliquam nunc dolor eu "
-                            "risus.");
+    inset(ctx, {.left = 10, .right = 10, .top = 10, .bottom = 10}, [&]() {
+        vbox(ctx, [&]() {
+            for (int i = 0; i < 10; ++i)
+            {
+                with_padding(ctx, 15, [&] {
+                    hbox(ctx, [&]() {
+                        do_text(ctx, GRAY, 40, "test");
+                        flow(ctx, 1.0f, [&]() {
+                            do_text(ctx, GRAY, 16 + i * 4, "lorum");
+                            do_text(ctx, GRAY, 20 + i * 2, "ipsum");
+                            do_text(ctx, GRAY, 10 + i * 6, lorem_ipsum);
+                        });
                     });
                 });
-            });
-        }
+            }
+        });
     });
+}
+
+void
+the_demo(Context& ctx)
+{
+    text_demo(ctx);
 }
 
 void
@@ -605,7 +627,7 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
                 &event},
             &the_style,
             &the_system};
-        text_demo(event_ctx);
+        the_demo(event_ctx);
     }
 }
 
@@ -631,7 +653,7 @@ update()
         &the_style,
         &the_system};
     *refresh_ctx.pass.layout_emission.next_ptr = 0;
-    text_demo(refresh_ctx);
+    the_demo(refresh_ctx);
 
     update_glfw_window_info(the_system, the_window);
 
@@ -669,7 +691,7 @@ update()
             nullptr},
         &the_style,
         &the_system};
-    text_demo(draw_ctx);
+    the_demo(draw_ctx);
 
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);

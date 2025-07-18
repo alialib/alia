@@ -84,7 +84,8 @@ break_text(
     size_t end,
     size_t buffer_length,
     float scale,
-    float width);
+    float width,
+    bool force_break);
 
 struct MsdfDrawCommand
 {

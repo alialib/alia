@@ -3,6 +3,7 @@
 #include <utility>
 
 #include <alia/flow/flags.hpp>
+#include <alia/ui/geometry.hpp>
 
 namespace alia {
 
@@ -93,6 +94,22 @@ flow(Context& ctx, float growth_factor, Content&& content)
     begin_flow(ctx, scope, growth_factor);
     std::forward<Content>(content)();
     end_flow(ctx, scope);
+}
+
+void
+begin_inset(Context& ctx, LayoutContainerScope& scope, Insets insets);
+
+void
+end_inset(Context& ctx, LayoutContainerScope& scope);
+
+template<class Content>
+void
+inset(Context& ctx, Insets insets, Content&& content)
+{
+    LayoutContainerScope scope;
+    begin_inset(ctx, scope, insets);
+    std::forward<Content>(content)();
+    end_inset(ctx, scope);
 }
 
 } // namespace alia

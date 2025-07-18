@@ -84,17 +84,47 @@ struct MeasurementContext
     LayoutScratchArena* scratch;
 };
 
-struct WrappingRequirements
+struct LineRequirements
 {
-    float line_height;
+    float height;
     float ascent;
     float descent;
-    // TODO: Combine `wrap_count` and `wrapped_immediately` into a single
-    // uint32_t.
-    int wrap_count;
-    bool wrapped_immediately;
-    float new_x_offset;
 };
+
+struct WrappingRequirements
+{
+    // the child's contribution to the line that was already in progress when
+    // it was invoked - This may be all 0s if the child doesn't actually place
+    // anything on that line.
+    LineRequirements first_line;
+    // the total height that the child uses in between the first line and the
+    // last line
+    float interior_height;
+    // the child's contribution to the last line that it places content on -
+    // This should be all 0s if the child never wraps.
+    LineRequirements last_line;
+    // the X offset at which the child's content ends
+    float end_x;
+};
+
+inline bool
+has_content(LineRequirements const& requirements)
+{
+    return requirements.height != 0 || requirements.ascent != 0
+        || requirements.descent != 0;
+}
+
+inline bool
+has_first_line_content(WrappingRequirements const& requirements)
+{
+    return has_content(requirements.first_line);
+}
+
+inline bool
+has_wrapped_content(WrappingRequirements const& requirements)
+{
+    return has_content(requirements.last_line);
+}
 
 struct VerticalAssignment
 {
@@ -120,10 +150,6 @@ struct WrappingAssignment
     // vertical assignment for first line - to be used for any content that
     // fits before any wrapping occurs
     VerticalAssignment first_line;
-
-    // vertical assignment for middle lines - to be used for content on
-    // intermediate lines (i.e., where this node completely fills the line)
-    VerticalAssignment middle_lines;
 
     // vertical assignment for last line - to be used for content on the last
     // line (i.e., where later nodes might share the same line)
@@ -250,5 +276,23 @@ resolve_assignment(
     float baseline,
     Vec2 required_size,
     float ascent);
+
+LayoutAxisPlacement
+resolve_padded_axis_assignment(
+    LayoutAlignment alignment,
+    float assigned_size,
+    float baseline,
+    float required_size,
+    float ascent,
+    float padding);
+
+Box
+resolve_padded_assignment(
+    LayoutProperties props,
+    Vec2 assigned_size,
+    float baseline,
+    Vec2 required_size,
+    float ascent,
+    float padding);
 
 } // namespace alia

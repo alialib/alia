@@ -46,23 +46,25 @@ default_measure_wrapped_vertical(
     if (current_x_offset + horizontal.min_size > line_width)
     {
         return WrappingRequirements{
-            .line_height = vertical.min_size,
-            .ascent = vertical.ascent,
-            .descent = vertical.descent,
-            .wrap_count = 1,
-            .wrapped_immediately = true,
-            .new_x_offset = horizontal.min_size};
+            .first_line = {.height = 0, .ascent = 0, .descent = 0},
+            .interior_height = 0,
+            .last_line
+            = {.height = vertical.min_size,
+               .ascent = vertical.ascent,
+               .descent = vertical.descent},
+            .end_x = horizontal.min_size};
     }
     else
     {
         return WrappingRequirements{
-            .line_height = vertical.min_size,
-            .ascent = vertical.ascent,
-            .descent = vertical.descent,
-            .wrap_count = 0,
-            .wrapped_immediately = false,
-            .new_x_offset = current_x_offset + horizontal.min_size};
-    }
+            .first_line
+            = {.height = vertical.min_size,
+               .ascent = vertical.ascent,
+               .descent = vertical.descent},
+            .interior_height = 0,
+            .last_line = {.height = 0, .ascent = 0, .descent = 0},
+            .end_x = current_x_offset + horizontal.min_size};
+    };
 }
 
 LayoutAxisPlacement
@@ -106,6 +108,49 @@ resolve_assignment(
         props.x_alignment, assigned_size.x, 0, required_size.x, 0);
     LayoutAxisPlacement y_placement = resolve_axis_assignment(
         props.y_alignment, assigned_size.y, baseline, required_size.y, ascent);
+    return Box{
+        Vec2{x_placement.offset, y_placement.offset},
+        Vec2{x_placement.size, y_placement.size}};
+}
+
+LayoutAxisPlacement
+resolve_padded_axis_assignment(
+    LayoutAlignment alignment,
+    float assigned_size,
+    float baseline,
+    float required_size,
+    float ascent,
+    float padding)
+{
+    auto placement = resolve_axis_assignment(
+        alignment,
+        assigned_size,
+        baseline,
+        required_size + padding * 2,
+        ascent + padding);
+    return LayoutAxisPlacement{
+        .offset = placement.offset + padding,
+        .size = placement.size - padding * 2};
+}
+
+Box
+resolve_padded_assignment(
+    LayoutProperties props,
+    Vec2 assigned_size,
+    float baseline,
+    Vec2 required_size,
+    float ascent,
+    float padding)
+{
+    LayoutAxisPlacement x_placement = resolve_padded_axis_assignment(
+        props.x_alignment, assigned_size.x, 0, required_size.x, 0, padding);
+    LayoutAxisPlacement y_placement = resolve_padded_axis_assignment(
+        props.y_alignment,
+        assigned_size.y,
+        baseline,
+        required_size.y,
+        ascent,
+        padding);
     return Box{
         Vec2{x_placement.offset, y_placement.offset},
         Vec2{x_placement.size, y_placement.size}};

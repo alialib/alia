@@ -460,7 +460,8 @@ break_text(
     size_t end,
     size_t buffer_length,
     float scale,
-    float width)
+    float width,
+    bool force_break)
 {
     size_t last_space = start;
     float x = 0;
@@ -486,7 +487,8 @@ break_text(
         if (x > width)
         {
             return {
-                last_space == start ? (i == start ? i + 1 : i) : last_space,
+                last_space == start && force_break ? (i == start ? i + 1 : i)
+                                                   : last_space,
                 x};
         }
     }

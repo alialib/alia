@@ -81,4 +81,12 @@ apply_margin(Box box, Vec2 margin)
     return {.pos = box.pos + margin, .size = box.size - margin * 2};
 }
 
+struct Insets
+{
+    float left;
+    float right;
+    float top;
+    float bottom;
+};
+
 } // namespace alia

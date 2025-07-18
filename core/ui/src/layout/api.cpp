@@ -3,6 +3,7 @@
 #include <alia/ui/context.hpp>
 #include <alia/ui/layout/flow.hpp>
 #include <alia/ui/layout/hbox.hpp>
+#include <alia/ui/layout/inset.hpp>
 #include <alia/ui/layout/resolution.hpp>
 #include <alia/ui/layout/vbox.hpp>
 
@@ -86,6 +87,41 @@ begin_flow(Context& ctx, LayoutContainerScope& scope, float growth_factor)
 
 void
 end_flow(Context& ctx, LayoutContainerScope& scope)
+{
+    end_container(ctx, scope);
+}
+
+void
+begin_inset(Context& ctx, LayoutContainerScope& scope, Insets insets)
+{
+    if (ctx.pass.type == PassType::Refresh)
+    {
+        auto& layout = ctx.pass.layout_emission;
+        InsetLayoutNode* this_container
+            = reinterpret_cast<InsetLayoutNode*>(layout.arena->allocate(
+                sizeof(InsetLayoutNode), alignof(InsetLayoutNode)));
+        scope.this_container
+            = reinterpret_cast<LayoutContainer*>(this_container);
+        *this_container = InsetLayoutNode{
+            .container
+            = {.base = {.vtable = &inset_vtable, .next_sibling = 0},
+               .props
+               = {.x_alignment = LayoutAlignment::Start,
+                  .y_alignment = LayoutAlignment::Start,
+                  .growth_factor = 0},
+               .child_count = 0,
+               .first_child = 0},
+            .insets = insets};
+        *layout.next_ptr = &this_container->container.base;
+        layout.next_ptr = &this_container->container.first_child;
+        scope.parent_container = layout.active_container;
+        ++scope.parent_container->child_count;
+        layout.active_container = scope.this_container;
+    }
+}
+
+void
+end_inset(Context& ctx, LayoutContainerScope& scope)
 {
     end_container(ctx, scope);
 }
