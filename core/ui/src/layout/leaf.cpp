@@ -5,7 +5,7 @@
 namespace alia {
 
 HorizontalRequirements
-measure_leaf_horizontal(MeasurementContext* ctx, LayoutNode* node)
+leaf_measure_horizontal(MeasurementContext* ctx, LayoutNode* node)
 {
     auto& leaf = *reinterpret_cast<LayoutLeafNode*>(node);
     return HorizontalRequirements{
@@ -14,13 +14,13 @@ measure_leaf_horizontal(MeasurementContext* ctx, LayoutNode* node)
 }
 
 void
-assign_leaf_widths(
+leaf_assign_widths(
     MeasurementContext* ctx, LayoutNode* node, float assigned_width)
 {
 }
 
 VerticalRequirements
-measure_leaf_vertical(
+leaf_measure_vertical(
     MeasurementContext* ctx, LayoutNode* node, float assigned_width)
 {
     auto& leaf = *reinterpret_cast<LayoutLeafNode*>(node);
@@ -32,7 +32,7 @@ measure_leaf_vertical(
 }
 
 void
-assign_leaf_boxes(
+leaf_assign_boxes(
     PlacementContext* ctx, LayoutNode* node, Box box, float baseline)
 {
     auto& leaf = *reinterpret_cast<LayoutLeafNode*>(node);
@@ -48,11 +48,11 @@ assign_leaf_boxes(
 }
 
 LayoutNodeVtable leaf_vtable
-    = {measure_leaf_horizontal,
-       assign_leaf_widths,
-       measure_leaf_vertical,
-       assign_leaf_boxes,
-       measure_leaf_horizontal,
+    = {leaf_measure_horizontal,
+       leaf_assign_widths,
+       leaf_measure_vertical,
+       leaf_assign_boxes,
+       leaf_measure_horizontal,
        default_measure_wrapped_vertical,
        nullptr};
 

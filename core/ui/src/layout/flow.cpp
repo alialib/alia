@@ -9,7 +9,7 @@ struct FlowScratch
 };
 
 HorizontalRequirements
-measure_flow_horizontal(MeasurementContext* ctx, LayoutNode* node)
+flow_measure_horizontal(MeasurementContext* ctx, LayoutNode* node)
 {
     auto& flow = *reinterpret_cast<FlowLayoutNode*>(node);
     auto& flow_scratch = claim_scratch<FlowScratch>(*ctx->scratch);
@@ -33,7 +33,7 @@ measure_flow_horizontal(MeasurementContext* ctx, LayoutNode* node)
 }
 
 void
-assign_flow_widths(
+flow_assign_widths(
     MeasurementContext* ctx, LayoutNode* node, float assigned_width)
 {
     // TODO
@@ -56,7 +56,7 @@ assign_flow_widths(
 }
 
 VerticalRequirements
-measure_flow_vertical(
+flow_measure_vertical(
     MeasurementContext* ctx, LayoutNode* node, float assigned_width)
 {
     auto& flow = *reinterpret_cast<FlowLayoutNode*>(node);
@@ -121,7 +121,7 @@ measure_flow_vertical(
 }
 
 void
-assign_flow_boxes(
+flow_assign_boxes(
     PlacementContext* ctx, LayoutNode* node, Box box, float baseline)
 {
     auto& flow = *reinterpret_cast<FlowLayoutNode*>(node);
@@ -246,7 +246,7 @@ assign_flow_boxes(
 }
 
 WrappingRequirements
-measure_flow_wrapped_vertical(
+flow_measure_wrapped_vertical(
     MeasurementContext* ctx,
     LayoutNode* node,
     float current_x_offset,
@@ -327,7 +327,7 @@ measure_flow_wrapped_vertical(
 }
 
 void
-assign_flow_wrapped_boxes(
+flow_assign_wrapped_boxes(
     PlacementContext* ctx,
     LayoutNode* node,
     WrappingAssignment const* assignment)
@@ -459,13 +459,13 @@ assign_flow_wrapped_boxes(
 }
 
 LayoutNodeVtable flow_vtable = {
-    measure_flow_horizontal,
-    assign_flow_widths,
-    measure_flow_vertical,
-    assign_flow_boxes,
-    measure_flow_horizontal,
-    measure_flow_wrapped_vertical,
-    assign_flow_wrapped_boxes,
+    flow_measure_horizontal,
+    flow_assign_widths,
+    flow_measure_vertical,
+    flow_assign_boxes,
+    flow_measure_horizontal,
+    flow_measure_wrapped_vertical,
+    flow_assign_wrapped_boxes,
 };
 
 } // namespace alia

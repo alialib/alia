@@ -6,7 +6,7 @@
 namespace alia {
 
 HorizontalRequirements
-measure_inset_horizontal(MeasurementContext* ctx, LayoutNode* node)
+inset_measure_horizontal(MeasurementContext* ctx, LayoutNode* node)
 {
     auto& inset = *reinterpret_cast<InsetLayoutNode*>(node);
     ALIA_ASSERT(inset.container.child_count == 1);
@@ -17,7 +17,7 @@ measure_inset_horizontal(MeasurementContext* ctx, LayoutNode* node)
 }
 
 void
-assign_inset_widths(
+inset_assign_widths(
     MeasurementContext* ctx, LayoutNode* node, float assigned_width)
 {
     auto& inset = *reinterpret_cast<InsetLayoutNode*>(node);
@@ -29,7 +29,7 @@ assign_inset_widths(
 }
 
 VerticalRequirements
-measure_inset_vertical(
+inset_measure_vertical(
     MeasurementContext* ctx, LayoutNode* node, float assigned_width)
 {
     auto& inset = *reinterpret_cast<InsetLayoutNode*>(node);
@@ -46,7 +46,7 @@ measure_inset_vertical(
 }
 
 void
-assign_inset_boxes(
+inset_assign_boxes(
     PlacementContext* ctx, LayoutNode* node, Box box, float baseline)
 {
     auto& inset = *reinterpret_cast<InsetLayoutNode*>(node);
@@ -61,7 +61,7 @@ assign_inset_boxes(
 }
 
 HorizontalRequirements
-measure_wrapped_inset_horizontal(MeasurementContext* ctx, LayoutNode* node)
+inset_measure_wrapped_horizontal(MeasurementContext* ctx, LayoutNode* node)
 {
     auto& inset = *reinterpret_cast<InsetLayoutNode*>(node);
     ALIA_ASSERT(inset.container.child_count == 1);
@@ -73,7 +73,7 @@ measure_wrapped_inset_horizontal(MeasurementContext* ctx, LayoutNode* node)
 }
 
 WrappingRequirements
-measure_wrapped_inset_vertical(
+inset_measure_wrapped_vertical(
     MeasurementContext* ctx,
     LayoutNode* node,
     float current_x_offset,
@@ -117,7 +117,7 @@ measure_wrapped_inset_vertical(
 }
 
 void
-assign_wrapped_inset_boxes(
+inset_assign_wrapped_boxes(
     PlacementContext* ctx,
     LayoutNode* node,
     WrappingAssignment const* assignment)
@@ -131,12 +131,12 @@ assign_wrapped_inset_boxes(
 }
 
 LayoutNodeVtable inset_vtable
-    = {measure_inset_horizontal,
-       assign_inset_widths,
-       measure_inset_vertical,
-       assign_inset_boxes,
-       measure_wrapped_horizontal,
-       measure_wrapped_vertical,
-       assign_wrapped_boxes};
+    = {inset_measure_horizontal,
+       inset_assign_widths,
+       inset_measure_vertical,
+       inset_assign_boxes,
+       inset_measure_wrapped_horizontal,
+       inset_measure_wrapped_vertical,
+       inset_assign_wrapped_boxes};
 
 } // namespace alia

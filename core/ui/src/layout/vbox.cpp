@@ -13,7 +13,7 @@ struct VBoxScratch
 };
 
 HorizontalRequirements
-measure_vbox_horizontal(MeasurementContext* ctx, LayoutNode* node)
+vbox_measure_horizontal(MeasurementContext* ctx, LayoutNode* node)
 {
     auto& vbox = *reinterpret_cast<VBoxLayoutNode*>(node);
     auto& vbox_scratch = claim_scratch<VBoxScratch>(*ctx->scratch);
@@ -33,7 +33,7 @@ measure_vbox_horizontal(MeasurementContext* ctx, LayoutNode* node)
 }
 
 void
-assign_vbox_widths(
+vbox_assign_widths(
     MeasurementContext* ctx, LayoutNode* node, float assigned_width)
 {
     auto& vbox = *reinterpret_cast<VBoxLayoutNode*>(node);
@@ -50,7 +50,7 @@ assign_vbox_widths(
 }
 
 VerticalRequirements
-measure_vbox_vertical(
+vbox_measure_vertical(
     MeasurementContext* ctx, LayoutNode* node, float assigned_width)
 {
     auto& vbox = *reinterpret_cast<VBoxLayoutNode*>(node);
@@ -73,7 +73,7 @@ measure_vbox_vertical(
 }
 
 void
-assign_vbox_boxes(
+vbox_assign_boxes(
     PlacementContext* ctx, LayoutNode* node, Box box, float baseline)
 {
     auto& vbox = *reinterpret_cast<VBoxLayoutNode*>(node);
@@ -105,11 +105,11 @@ assign_vbox_boxes(
 }
 
 LayoutNodeVtable vbox_vtable
-    = {measure_vbox_horizontal,
-       assign_vbox_widths,
-       measure_vbox_vertical,
-       assign_vbox_boxes,
-       measure_vbox_horizontal,
+    = {vbox_measure_horizontal,
+       vbox_assign_widths,
+       vbox_measure_vertical,
+       vbox_assign_boxes,
+       vbox_measure_horizontal,
        default_measure_wrapped_vertical,
        nullptr};
 
