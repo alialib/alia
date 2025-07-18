@@ -515,42 +515,39 @@ rectangle_demo(Context& ctx)
                 float x = 0.0f;
                 for (int i = 0; i < 10; ++i)
                 {
-                    flow(ctx, [&]() {
-                        for (int j = 0; j < 500; ++j)
+                    // flow(ctx, [&]() {
+                    for (int j = 0; j < 500; ++j)
+                    {
+                        float f = fmod(x, 1.0f);
+                        if (do_rect(
+                                ctx,
+                                {24, 24},
+                                invert ? Color{f, 0.1f, 1.0f - f, 1}
+                                       : Color{1.0f - f, 0.1f, f, 1}))
                         {
-                            float f = fmod(x, 1.0f);
-                            if (do_rect(
+                            invert = !invert;
+                            return;
+                        }
+                        x += 0.0015f;
+                    }
+
+                    with_padding(ctx, 20, [&] {
+                        for (int j = 0; j < 1; ++j)
+                        {
+                            do_text(
+                                ctx, GRAY, 24 + i * 6 + j * 4, "lorem ipsum");
+                            if (do_text(
                                     ctx,
-                                    {24, 24},
-                                    invert ? Color{f, 0.1f, 1.0f - f, 1}
-                                           : Color{1.0f - f, 0.1f, f, 1}))
+                                    GRAY,
+                                    20 + i * 12 + j * 4,
+                                    lorem_ipsum))
                             {
                                 invert = !invert;
                                 return;
                             }
-                            x += 0.0015f;
                         }
-
-                        with_padding(ctx, 20, [&] {
-                            for (int j = 0; j < 1; ++j)
-                            {
-                                do_text(
-                                    ctx,
-                                    GRAY,
-                                    24 + i * 6 + j * 4,
-                                    "lorem ipsum");
-                                if (do_text(
-                                        ctx,
-                                        GRAY,
-                                        20 + i * 12 + j * 4,
-                                        lorem_ipsum))
-                                {
-                                    invert = !invert;
-                                    return;
-                                }
-                            }
-                        });
                     });
+                    //});
                 }
             });
 

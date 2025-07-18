@@ -216,9 +216,6 @@ measure_wrapped_horizontal(MeasurementContext* ctx, LayoutNode* node)
     return node->vtable->measure_wrapped_horizontal(ctx, node);
 }
 
-HorizontalRequirements
-default_measure_wrapped_horizontal(MeasurementContext* ctx, LayoutNode* node);
-
 inline WrappingRequirements
 measure_wrapped_vertical(
     MeasurementContext* ctx,

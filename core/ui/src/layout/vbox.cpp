@@ -109,7 +109,7 @@ LayoutNodeVtable vbox_vtable
        assign_vbox_widths,
        measure_vbox_vertical,
        assign_vbox_boxes,
-       default_measure_wrapped_horizontal,
+       measure_vbox_horizontal,
        default_measure_wrapped_vertical,
        nullptr};
 

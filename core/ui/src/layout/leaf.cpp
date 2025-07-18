@@ -52,7 +52,7 @@ LayoutNodeVtable leaf_vtable
        assign_leaf_widths,
        measure_leaf_vertical,
        assign_leaf_boxes,
-       default_measure_wrapped_horizontal,
+       measure_leaf_horizontal,
        default_measure_wrapped_vertical,
        nullptr};
 

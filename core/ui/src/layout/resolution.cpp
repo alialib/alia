@@ -31,12 +31,6 @@ resolve_layout(
     return initial_placement;
 }
 
-HorizontalRequirements
-default_measure_wrapped_horizontal(MeasurementContext* ctx, LayoutNode* node)
-{
-    return measure_horizontal(ctx, node);
-}
-
 WrappingRequirements
 default_measure_wrapped_vertical(
     MeasurementContext* ctx,
