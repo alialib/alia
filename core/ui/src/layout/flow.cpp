@@ -135,6 +135,13 @@ flow_assign_boxes(
     if (flow.child_count == 0)
         return;
 
+    auto const placement = resolve_axis_assignment(
+        flow.props.y_alignment,
+        box.size.y,
+        baseline,
+        flow_scratch.total_height,
+        flow_scratch.ascent);
+
     float line_height = 0, line_ascent = 0, line_descent = 0;
 
     auto update_line_measures = [&](int i) {
@@ -155,13 +162,6 @@ flow_assign_boxes(
                 break;
         }
     };
-
-    auto const placement = resolve_axis_assignment(
-        flow.props.y_alignment,
-        box.size.y,
-        baseline,
-        flow_scratch.total_height,
-        flow_scratch.ascent);
 
     float current_x = 0, current_y = box.pos.y + placement.offset;
     update_line_measures(0);
@@ -318,6 +318,12 @@ flow_measure_wrapped_vertical(
                .ascent = line_ascent,
                .descent = line_descent};
     }
+
+    flow_scratch.total_height
+        = (std::max)(first_line.height, first_line.ascent + first_line.descent)
+        + interior_height
+        + (std::max)(last_line.height, last_line.ascent + last_line.descent);
+    flow_scratch.ascent = first_line.ascent;
 
     return WrappingRequirements{
         .first_line = first_line,
