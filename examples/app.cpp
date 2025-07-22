@@ -87,7 +87,7 @@ do_rect(Context& ctx, Vec2 size, Color color)
     switch (ctx.pass.type)
     {
         case PassType::Refresh: {
-            auto& layout = ctx.pass.layout_emission;
+            auto& layout = ctx.pass.refresh.layout_emission;
             LayoutLeafNode* new_node
                 = allocate_spec_node<LayoutLeafNode>(the_layout_spec_arena);
             *layout.next_ptr = &new_node->base;
@@ -104,26 +104,26 @@ do_rect(Context& ctx, Vec2 size, Color color)
             break;
         }
         case PassType::Draw: {
-            auto const* placement = ctx.pass.layout_consumption.next_placement;
-            ctx.pass.layout_consumption.next_placement = placement->next;
+            auto const* placement = ctx.layout_consumption.next_placement;
+            ctx.layout_consumption.next_placement = placement->next;
             auto& leaf_placement = *downcast<LeafLayoutPlacement>(placement);
             Box box = {
                 .pos = leaf_placement.position, .size = leaf_placement.size};
             draw_box(
-                *ctx.pass.display_list_arena,
-                *ctx.pass.box_command_list,
+                *ctx.pass.draw.display_list_arena,
+                *ctx.pass.draw.box_command_list,
                 box,
                 color);
             break;
         }
         case PassType::Event: {
-            auto const* placement = ctx.pass.layout_consumption.next_placement;
-            ctx.pass.layout_consumption.next_placement = placement->next;
+            auto const* placement = ctx.layout_consumption.next_placement;
+            ctx.layout_consumption.next_placement = placement->next;
             auto& leaf_placement = *downcast<LeafLayoutPlacement>(placement);
             Box box = {
                 .pos = leaf_placement.position, .size = leaf_placement.size};
             if (detect_click(
-                    ctx.pass.event,
+                    ctx.pass.event.event,
                     box.pos.x,
                     box.pos.y,
                     box.size.x,
@@ -417,7 +417,7 @@ do_text(Context& ctx, Color color, float scale, char const* text)
     switch (ctx.pass.type)
     {
         case PassType::Refresh: {
-            auto& layout = ctx.pass.layout_emission;
+            auto& layout = ctx.pass.refresh.layout_emission;
             MsdfTextLayoutNode* new_node
                 = allocate_spec_node<MsdfTextLayoutNode>(
                     the_layout_spec_arena);
@@ -436,21 +436,21 @@ do_text(Context& ctx, Color color, float scale, char const* text)
             break;
         }
         case PassType::Draw: {
-            auto const* placement = ctx.pass.layout_consumption.next_placement;
-            ctx.pass.layout_consumption.next_placement = placement->next;
+            auto const* placement = ctx.layout_consumption.next_placement;
+            ctx.layout_consumption.next_placement = placement->next;
             auto& text_placement
                 = *downcast<TextLayoutPlacementHeader>(placement);
             for (int i = 0; i < text_placement.fragment_count; ++i)
             {
                 auto const* fragment_placement
-                    = ctx.pass.layout_consumption.next_placement;
-                ctx.pass.layout_consumption.next_placement
+                    = ctx.layout_consumption.next_placement;
+                ctx.layout_consumption.next_placement
                     = fragment_placement->next;
                 auto& fragment = *downcast<TextLayoutPlacementFragment>(
                     fragment_placement);
                 draw_text(
                     the_msdf_text_engine,
-                    *ctx.pass.display_list_arena,
+                    *ctx.pass.draw.display_list_arena,
                     the_msdf_commands,
                     fragment.text,
                     fragment.length,
@@ -461,21 +461,21 @@ do_text(Context& ctx, Color color, float scale, char const* text)
             break;
         }
         case PassType::Event: {
-            auto const* placement = ctx.pass.layout_consumption.next_placement;
-            ctx.pass.layout_consumption.next_placement = placement->next;
+            auto const* placement = ctx.layout_consumption.next_placement;
+            ctx.layout_consumption.next_placement = placement->next;
             auto& text_placement
                 = *downcast<TextLayoutPlacementHeader>(placement);
             for (int i = 0; i < text_placement.fragment_count; ++i)
             {
                 auto const* fragment_placement
-                    = ctx.pass.layout_consumption.next_placement;
-                ctx.pass.layout_consumption.next_placement
+                    = ctx.layout_consumption.next_placement;
+                ctx.layout_consumption.next_placement
                     = fragment_placement->next;
                 auto& fragment = *downcast<TextLayoutPlacementFragment>(
                     fragment_placement);
                 Box box = {.pos = fragment.position, .size = fragment.size};
                 if (detect_click(
-                        ctx.pass.event,
+                        ctx.pass.event.event,
                         box.pos.x,
                         box.pos.y,
                         box.size.x,
@@ -515,39 +515,42 @@ rectangle_demo(Context& ctx)
                 float x = 0.0f;
                 for (int i = 0; i < 10; ++i)
                 {
-                    // flow(ctx, [&]() {
-                    for (int j = 0; j < 500; ++j)
-                    {
-                        float f = fmod(x, 1.0f);
-                        if (do_rect(
-                                ctx,
-                                {24, 24},
-                                invert ? Color{f, 0.1f, 1.0f - f, 1}
-                                       : Color{1.0f - f, 0.1f, f, 1}))
+                    flow(ctx, [&]() {
+                        for (int j = 0; j < 500; ++j)
                         {
-                            invert = !invert;
-                            return;
-                        }
-                        x += 0.0015f;
-                    }
-
-                    with_padding(ctx, 20, [&] {
-                        for (int j = 0; j < 1; ++j)
-                        {
-                            do_text(
-                                ctx, GRAY, 24 + i * 6 + j * 4, "lorem ipsum");
-                            if (do_text(
+                            float f = fmod(x, 1.0f);
+                            if (do_rect(
                                     ctx,
-                                    GRAY,
-                                    20 + i * 12 + j * 4,
-                                    lorem_ipsum))
+                                    {24, 24},
+                                    invert ? Color{f, 0.1f, 1.0f - f, 1}
+                                           : Color{1.0f - f, 0.1f, f, 1}))
                             {
                                 invert = !invert;
                                 return;
                             }
+                            x += 0.0015f;
                         }
+
+                        with_padding(ctx, 20, [&] {
+                            for (int j = 0; j < 1; ++j)
+                            {
+                                do_text(
+                                    ctx,
+                                    GRAY,
+                                    24 + i * 6 + j * 4,
+                                    "lorem ipsum");
+                                if (do_text(
+                                        ctx,
+                                        GRAY,
+                                        20 + i * 12 + j * 4,
+                                        lorem_ipsum))
+                                {
+                                    invert = !invert;
+                                    return;
+                                }
+                            }
+                        });
                     });
-                    //});
                 }
             });
 
@@ -614,7 +617,7 @@ nested_flow_demo(Context& ctx)
 void
 the_demo(Context& ctx)
 {
-    rectangle_demo(ctx);
+    nested_flow_demo(ctx);
 }
 
 void
@@ -642,16 +645,12 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
             = (static_cast<float>(y) * framebuffer_height
                / window_height); // / the_ui_scale.y;
         std::uint32_t root_index;
-        Context event_ctx = {
-            Pass{
-                PassType::Event,
-                {nullptr, nullptr, nullptr},
-                {the_initial_layout_placement},
-                nullptr,
-                nullptr,
-                &event},
-            &the_style,
-            &the_system};
+        Context event_ctx
+            = {.pass = {.type = PassType::Event, .event = {.event = &event}},
+               .style = &the_style,
+               .system = &the_system,
+               .layout_consumption
+               = {.next_placement = the_initial_layout_placement}};
         the_demo(event_ctx);
     }
 }
@@ -668,16 +667,14 @@ update()
     Context refresh_ctx = {
         Pass{
             PassType::Refresh,
-            {&the_layout_spec_arena,
-             &the_layout_root,
-             &the_layout_root.first_child},
-            {nullptr},
-            nullptr,
-            nullptr,
-            nullptr},
+            {.refresh
+             = {.layout_emission
+                = {&the_layout_spec_arena,
+                   &the_layout_root,
+                   &the_layout_root.first_child}}}},
         &the_style,
         &the_system};
-    *refresh_ctx.pass.layout_emission.next_ptr = 0;
+    *refresh_ctx.pass.refresh.layout_emission.next_ptr = 0;
     the_demo(refresh_ctx);
 
     update_glfw_window_info(the_system, the_window);
@@ -707,15 +704,15 @@ update()
     clear_command_list(the_box_commands);
     clear_command_list(the_msdf_commands);
     Context draw_ctx = {
-        Pass{
-            PassType::Draw,
-            {nullptr, nullptr, nullptr},
-            {the_initial_layout_placement},
-            &the_display_list_arena,
-            &the_box_commands,
-            nullptr},
-        &the_style,
-        &the_system};
+        .pass
+        = {.type = PassType::Draw,
+           .draw
+           = {.display_list_arena = &the_display_list_arena,
+              .box_command_list = &the_box_commands}},
+        .style = &the_style,
+        .system = &the_system,
+        .layout_consumption
+        = {.next_placement = the_initial_layout_placement}};
     the_demo(draw_ctx);
 
     while ((err = glGetError()) != GL_NO_ERROR)

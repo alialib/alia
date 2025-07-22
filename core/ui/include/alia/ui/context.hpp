@@ -38,15 +38,31 @@ struct Style
     float padding;
 };
 
+struct RefreshPass
+{
+    LayoutEmission layout_emission;
+};
+
+struct DrawPass
+{
+    DisplayListArena* display_list_arena;
+    BoxCommandList* box_command_list;
+};
+
+struct EventPass
+{
+    Event* event;
+};
+
 struct Pass
 {
     PassType type;
-    // TODO: Sort this out.
-    LayoutEmission layout_emission;
-    LayoutConsumption layout_consumption;
-    DisplayListArena* display_list_arena;
-    BoxCommandList* box_command_list;
-    Event* event;
+    union
+    {
+        RefreshPass refresh;
+        DrawPass draw;
+        EventPass event;
+    };
 };
 
 struct Context
@@ -54,6 +70,7 @@ struct Context
     Pass pass;
     Style* style;
     System* system;
+    LayoutConsumption layout_consumption;
 };
 
 } // namespace alia

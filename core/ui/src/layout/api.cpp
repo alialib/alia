@@ -20,7 +20,7 @@ begin_container(
 {
     if (ctx.pass.type == PassType::Refresh)
     {
-        auto& layout = ctx.pass.layout_emission;
+        auto& layout = ctx.pass.refresh.layout_emission;
         LayoutContainer* this_container
             = reinterpret_cast<LayoutContainer*>(layout.arena->allocate(
                 sizeof(LayoutContainer), alignof(LayoutContainer)));
@@ -46,7 +46,7 @@ end_container(Context& ctx, LayoutContainerScope& scope)
 {
     if (ctx.pass.type == PassType::Refresh)
     {
-        auto& layout = ctx.pass.layout_emission;
+        auto& layout = ctx.pass.refresh.layout_emission;
         *layout.next_ptr = 0;
         layout.next_ptr = &scope.this_container->base.next_sibling;
         layout.active_container = scope.parent_container;
@@ -96,7 +96,7 @@ begin_inset(Context& ctx, LayoutContainerScope& scope, Insets insets)
 {
     if (ctx.pass.type == PassType::Refresh)
     {
-        auto& layout = ctx.pass.layout_emission;
+        auto& layout = ctx.pass.refresh.layout_emission;
         InsetLayoutNode* this_container
             = reinterpret_cast<InsetLayoutNode*>(layout.arena->allocate(
                 sizeof(InsetLayoutNode), alignof(InsetLayoutNode)));
