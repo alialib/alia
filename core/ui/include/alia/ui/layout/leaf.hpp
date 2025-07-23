@@ -7,7 +7,7 @@ namespace alia {
 struct LayoutLeafNode
 {
     LayoutNode base;
-    LayoutProperties props;
+    LayoutFlagSet flags;
     float padding;
     Vec2 size;
 };

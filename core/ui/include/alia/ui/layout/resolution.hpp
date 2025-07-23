@@ -10,22 +10,6 @@ namespace alia {
 
 struct LayoutNodeVtable;
 
-enum class LayoutAlignment : uint8_t
-{
-    Start,
-    Center,
-    End,
-    Baseline,
-    Fill,
-};
-
-struct LayoutProperties
-{
-    LayoutAlignment x_alignment;
-    LayoutAlignment y_alignment;
-    uint8_t growth_factor;
-};
-
 struct LayoutNode
 {
     LayoutNodeVtable* vtable;
@@ -35,7 +19,7 @@ struct LayoutNode
 struct LayoutContainer
 {
     LayoutNode base;
-    LayoutProperties props;
+    LayoutFlagSet flags;
     uint32_t child_count;
     LayoutNode* first_child;
 };
@@ -61,15 +45,15 @@ struct LeafLayoutPlacement
 struct HorizontalRequirements
 {
     float min_size;
-    float growth_factor = 0.0f;
+    float growth_factor;
 };
 
 struct VerticalRequirements
 {
     float min_size;
-    float growth_factor = 0.0f;
-    float ascent = 0.0f;
-    float descent = 0.0f;
+    float growth_factor;
+    float ascent;
+    float descent;
 };
 
 struct PlacementContext
@@ -259,8 +243,12 @@ struct LayoutAxisPlacement
 };
 
 LayoutAxisPlacement
-resolve_axis_assignment(
-    LayoutAlignment alignment,
+resolve_horizontal_assignment(
+    LayoutFlagSet flags, float assigned_size, float required_size);
+
+LayoutAxisPlacement
+resolve_vertical_assignment(
+    LayoutFlagSet flags,
     float assigned_size,
     float baseline,
     float required_size,
@@ -268,15 +256,22 @@ resolve_axis_assignment(
 
 Box
 resolve_assignment(
-    LayoutProperties props,
+    LayoutFlagSet flags,
     Vec2 assigned_size,
     float baseline,
     Vec2 required_size,
     float ascent);
 
 LayoutAxisPlacement
-resolve_padded_axis_assignment(
-    LayoutAlignment alignment,
+resolve_padded_horizontal_assignment(
+    LayoutFlagSet flags,
+    float assigned_size,
+    float required_size,
+    float padding);
+
+LayoutAxisPlacement
+resolve_padded_vertical_assignment(
+    LayoutFlagSet flags,
     float assigned_size,
     float baseline,
     float required_size,
@@ -285,11 +280,17 @@ resolve_padded_axis_assignment(
 
 Box
 resolve_padded_assignment(
-    LayoutProperties props,
+    LayoutFlagSet flags,
     Vec2 assigned_size,
     float baseline,
     Vec2 required_size,
     float ascent,
     float padding);
+
+inline float
+resolve_growth_factor(LayoutFlagSet flags)
+{
+    return flags & GROW ? 1.0f : 0.0f;
+}
 
 } // namespace alia

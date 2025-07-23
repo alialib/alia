@@ -16,7 +16,7 @@ begin_container(
     Context& ctx,
     LayoutContainerScope& scope,
     LayoutNodeVtable* vtable,
-    uint8_t growth_factor = 0)
+    LayoutFlagSet flags)
 {
     if (ctx.pass.type == PassType::Refresh)
     {
@@ -27,10 +27,7 @@ begin_container(
         scope.this_container = this_container;
         *this_container = LayoutContainer{
             .base = {.vtable = vtable, .next_sibling = 0},
-            .props
-            = {.x_alignment = LayoutAlignment::Fill,
-               .y_alignment = LayoutAlignment::Baseline,
-               .growth_factor = growth_factor},
+            .flags = flags,
             .child_count = 0,
             .first_child = 0};
         *layout.next_ptr = &this_container->base;
@@ -56,9 +53,9 @@ end_container(Context& ctx, LayoutContainerScope& scope)
 } // namespace
 
 void
-begin_hbox(Context& ctx, LayoutContainerScope& scope, float growth_factor)
+begin_hbox(Context& ctx, LayoutContainerScope& scope, LayoutFlagSet flags)
 {
-    begin_container(ctx, scope, &hbox_vtable, growth_factor);
+    begin_container(ctx, scope, &hbox_vtable, flags);
 }
 
 void
@@ -68,9 +65,9 @@ end_hbox(Context& ctx, LayoutContainerScope& scope)
 }
 
 void
-begin_vbox(Context& ctx, LayoutContainerScope& scope, float growth_factor)
+begin_vbox(Context& ctx, LayoutContainerScope& scope, LayoutFlagSet flags)
 {
-    begin_container(ctx, scope, &vbox_vtable, growth_factor);
+    begin_container(ctx, scope, &vbox_vtable, flags);
 }
 
 void
@@ -80,9 +77,9 @@ end_vbox(Context& ctx, LayoutContainerScope& scope)
 }
 
 void
-begin_flow(Context& ctx, LayoutContainerScope& scope, float growth_factor)
+begin_flow(Context& ctx, LayoutContainerScope& scope, LayoutFlagSet flags)
 {
-    begin_container(ctx, scope, &flow_vtable, growth_factor);
+    begin_container(ctx, scope, &flow_vtable, flags);
 }
 
 void
@@ -92,7 +89,11 @@ end_flow(Context& ctx, LayoutContainerScope& scope)
 }
 
 void
-begin_inset(Context& ctx, LayoutContainerScope& scope, Insets insets)
+begin_inset(
+    Context& ctx,
+    LayoutContainerScope& scope,
+    Insets insets,
+    LayoutFlagSet flags)
 {
     if (ctx.pass.type == PassType::Refresh)
     {
@@ -105,10 +106,7 @@ begin_inset(Context& ctx, LayoutContainerScope& scope, Insets insets)
         *this_container = InsetLayoutNode{
             .container
             = {.base = {.vtable = &inset_vtable, .next_sibling = 0},
-               .props
-               = {.x_alignment = LayoutAlignment::Start,
-                  .y_alignment = LayoutAlignment::Start,
-                  .growth_factor = 0},
+               .flags = flags,
                .child_count = 0,
                .first_child = 0},
             .insets = insets};

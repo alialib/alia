@@ -82,7 +82,7 @@ downcast(Inner const* inner_ptr)
 }
 
 bool
-do_rect(Context& ctx, Vec2 size, Color color)
+do_rect(Context& ctx, Vec2 size, Color color, LayoutFlagSet flags)
 {
     switch (ctx.pass.type)
     {
@@ -94,10 +94,7 @@ do_rect(Context& ctx, Vec2 size, Color color)
             layout.next_ptr = &new_node->base.next_sibling;
             *new_node = LayoutLeafNode{
                 .base = {.vtable = &leaf_vtable, .next_sibling = 0},
-                .props
-                = {.x_alignment = LayoutAlignment::Center,
-                   .y_alignment = LayoutAlignment::Center,
-                   .growth_factor = 0},
+                .flags = flags,
                 .padding = ctx.style->padding,
                 .size = size};
             ++layout.active_container->child_count;
@@ -138,7 +135,7 @@ do_rect(Context& ctx, Vec2 size, Color color)
 struct MsdfTextLayoutNode
 {
     LayoutNode base;
-    LayoutProperties props;
+    LayoutFlagSet flags;
     float padding;
     MsdfTextEngine* engine;
     char const* text;
@@ -171,10 +168,10 @@ measure_text_vertical(
     return VerticalRequirements{
         .min_size = metrics->line_height * text.font_size + text.padding * 2,
         .growth_factor = 0,
-        .ascent = text.props.y_alignment == LayoutAlignment::Baseline
+        .ascent = (text.flags & Y_ALIGNMENT_MASK) == BASELINE_Y
                     ? metrics->ascender * text.font_size + text.padding
                     : 0.0f,
-        .descent = text.props.y_alignment == LayoutAlignment::Baseline
+        .descent = (text.flags & Y_ALIGNMENT_MASK) == BASELINE_Y
                      ? -metrics->descender * text.font_size + text.padding
                      : 0.0f};
 }
@@ -206,7 +203,7 @@ assign_text_boxes(
         text.engine, text.text, strlen(text.text), text.font_size);
 
     auto const placement = resolve_padded_assignment(
-        text.props,
+        text.flags,
         box.size,
         baseline,
         Vec2{width, metrics->line_height * text.font_size},
@@ -411,7 +408,12 @@ with_padding(Context& ctx, float padding, Content&& content)
 }
 
 bool
-do_text(Context& ctx, Color color, float scale, char const* text)
+do_text(
+    Context& ctx,
+    Color color,
+    float scale,
+    char const* text,
+    LayoutFlagSet flags = NO_FLAGS)
 {
     bool result = false;
     switch (ctx.pass.type)
@@ -423,9 +425,7 @@ do_text(Context& ctx, Color color, float scale, char const* text)
                     the_layout_spec_arena);
             new_node->base.vtable = &text_layout_vtable;
             new_node->base.next_sibling = nullptr;
-            new_node->props.growth_factor = 0;
-            new_node->props.x_alignment = LayoutAlignment::Start;
-            new_node->props.y_alignment = LayoutAlignment::Baseline;
+            new_node->flags = flags;
             new_node->text = text;
             new_node->font_size = scale;
             new_node->engine = the_msdf_text_engine;
@@ -523,7 +523,8 @@ rectangle_demo(Context& ctx)
                                     ctx,
                                     {24, 24},
                                     invert ? Color{f, 0.1f, 1.0f - f, 1}
-                                           : Color{1.0f - f, 0.1f, f, 1}))
+                                           : Color{1.0f - f, 0.1f, f, 1},
+                                    TOP | LEFT))
                             {
                                 invert = !invert;
                                 return;
@@ -553,14 +554,6 @@ rectangle_demo(Context& ctx)
                     });
                 }
             });
-
-            hbox(ctx, [&]() {
-                if (do_rect(ctx, {400, 24}, GRAY))
-                {
-                    invert = !invert;
-                    return;
-                }
-            });
         });
     });
 }
@@ -577,7 +570,7 @@ text_demo(Context& ctx)
                 with_padding(ctx, 8, [&] {
                     hbox(ctx, [&]() {
                         do_text(ctx, GRAY, 40, "test");
-                        flow(ctx, 1.0f, [&]() {
+                        flow(ctx, GROW, [&]() {
                             for (int j = 0; j < 10; ++j)
                             {
                                 flow(ctx, [&]() {
@@ -615,9 +608,53 @@ nested_flow_demo(Context& ctx)
 }
 
 void
+layout_demo(Context& ctx)
+{
+    with_padding(ctx, 10, [&] {
+        inset(ctx, {.left = 40, .right = 40, .top = 40, .bottom = 40}, [&]() {
+            hbox(ctx, [&]() {
+                float x = 0.0f;
+                vbox(ctx, [&]() {
+                    for (int j = 0; j < 40; ++j)
+                    {
+                        float f = fmod(x, 1.0f);
+                        if (do_rect(
+                                ctx,
+                                {float((j & 7) * 12 + 12), 24},
+                                Color{f, 0.1f, 1.0f - f, 1},
+                                LayoutFlagSet(
+                                    (j & 3) << X_ALIGNMENT_BIT_OFFSET)))
+                        {
+                            return;
+                        }
+                        x += 0.02f;
+                    }
+                });
+                flow(ctx, GROW, [&]() {
+                    for (int j = 0; j < 500; ++j)
+                    {
+                        float f = fmod(x, 1.0f);
+                        if (do_rect(
+                                ctx,
+                                {24, float((j & 7) * 12 + 12)},
+                                Color{f, 0.1f, 1.0f - f, 1},
+                                LayoutFlagSet(
+                                    (j & 3) << Y_ALIGNMENT_BIT_OFFSET)))
+                        {
+                            return;
+                        }
+                        x += 0.01f;
+                    }
+                });
+            });
+        });
+    });
+}
+
+void
 the_demo(Context& ctx)
 {
-    nested_flow_demo(ctx);
+    layout_demo(ctx);
 }
 
 void

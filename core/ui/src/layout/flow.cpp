@@ -29,7 +29,7 @@ flow_measure_horizontal(MeasurementContext* ctx, LayoutNode* node)
     }
     return HorizontalRequirements{
         .min_size = max_child_width,
-        .growth_factor = float(flow.props.growth_factor)};
+        .growth_factor = resolve_growth_factor(flow.flags)};
 }
 
 void
@@ -111,11 +111,11 @@ flow_measure_vertical(
 
     return VerticalRequirements{
         .min_size = overall_height,
-        .growth_factor = float(flow.props.growth_factor),
-        .ascent = flow.props.y_alignment == LayoutAlignment::Baseline
+        .growth_factor = resolve_growth_factor(flow.flags),
+        .ascent = (flow.flags & Y_ALIGNMENT_MASK) == BASELINE_Y
                     ? overall_ascent
                     : 0.0f,
-        .descent = flow.props.y_alignment == LayoutAlignment::Baseline
+        .descent = (flow.flags & Y_ALIGNMENT_MASK) == BASELINE_Y
                      ? overall_height - overall_ascent
                      : 0.0f};
 }
@@ -135,8 +135,8 @@ flow_assign_boxes(
     if (flow.child_count == 0)
         return;
 
-    auto const placement = resolve_axis_assignment(
-        flow.props.y_alignment,
+    auto const placement = resolve_vertical_assignment(
+        flow.flags,
         box.size.y,
         baseline,
         flow_scratch.total_height,

@@ -10,7 +10,7 @@ leaf_measure_horizontal(MeasurementContext* ctx, LayoutNode* node)
     auto& leaf = *reinterpret_cast<LayoutLeafNode*>(node);
     return HorizontalRequirements{
         .min_size = leaf.size.x + leaf.padding * 2,
-        .growth_factor = float(leaf.props.growth_factor)};
+        .growth_factor = resolve_growth_factor(leaf.flags)};
 }
 
 void
@@ -26,7 +26,7 @@ leaf_measure_vertical(
     auto& leaf = *reinterpret_cast<LayoutLeafNode*>(node);
     return VerticalRequirements{
         .min_size = leaf.size.y + leaf.padding * 2,
-        .growth_factor = float(leaf.props.growth_factor),
+        .growth_factor = resolve_growth_factor(leaf.flags),
         .ascent = 0,
         .descent = 0};
 }
@@ -40,7 +40,7 @@ leaf_assign_boxes(
         = reinterpret_cast<LeafLayoutPlacement*>(ctx->arena->allocate(
             sizeof(LeafLayoutPlacement), alignof(LeafLayoutPlacement)));
     auto const padded_placement = resolve_padded_assignment(
-        leaf.props, box.size, baseline, leaf.size, 0, leaf.padding);
+        leaf.flags, box.size, baseline, leaf.size, 0, leaf.padding);
     placement->position = box.pos + padded_placement.pos;
     placement->size = padded_placement.size;
     *ctx->next_ptr = &placement->base;

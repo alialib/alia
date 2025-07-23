@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 namespace alia {
 
 // A flag_set is a set of flags, each of which represents a boolean property.
@@ -17,17 +19,17 @@ struct NullFlagSet
 };
 NullFlagSet const NO_FLAGS = NullFlagSet();
 
-template<class Tag>
+template<class Tag, class Storage = std::uint32_t>
 struct FlagSet
 {
-    unsigned code;
+    Storage code;
     FlagSet()
     {
     }
     FlagSet(NullFlagSet) : code(0)
     {
     }
-    explicit FlagSet(unsigned code) : code(code)
+    explicit FlagSet(Storage code) : code(code)
     {
     }
     explicit
@@ -37,55 +39,62 @@ struct FlagSet
     }
 };
 
-template<class Tag>
-FlagSet<Tag>
-operator|(FlagSet<Tag> a, FlagSet<Tag> b)
+template<class Tag, class Storage>
+FlagSet<Tag, Storage>
+operator|(FlagSet<Tag, Storage> a, FlagSet<Tag, Storage> b)
 {
-    return FlagSet<Tag>(a.code | b.code);
+    return FlagSet<Tag, Storage>(a.code | b.code);
 }
-template<class Tag>
-FlagSet<Tag>&
-operator|=(FlagSet<Tag>& a, FlagSet<Tag> b)
+template<class Tag, class Storage>
+FlagSet<Tag, Storage>&
+operator|=(FlagSet<Tag, Storage>& a, FlagSet<Tag, Storage> b)
 {
     a.code |= b.code;
     return a;
 }
-template<class Tag>
-FlagSet<Tag>
-operator&(FlagSet<Tag> a, FlagSet<Tag> b)
+template<class Tag, class Storage>
+FlagSet<Tag, Storage>
+operator&(FlagSet<Tag, Storage> a, FlagSet<Tag, Storage> b)
 {
-    return FlagSet<Tag>(a.code & b.code);
+    return FlagSet<Tag, Storage>(a.code & b.code);
 }
-template<class Tag>
-FlagSet<Tag>&
-operator&=(FlagSet<Tag>& a, FlagSet<Tag> b)
+template<class Tag, class Storage>
+FlagSet<Tag, Storage>&
+operator&=(FlagSet<Tag, Storage>& a, FlagSet<Tag, Storage> b)
 {
     a.code &= b.code;
     return a;
 }
-template<class Tag>
+template<class Tag, class Storage>
 bool
-operator==(FlagSet<Tag> a, FlagSet<Tag> b)
+operator==(FlagSet<Tag, Storage> a, FlagSet<Tag, Storage> b)
 {
     return a.code == b.code;
 }
-template<class Tag>
+template<class Tag, class Storage>
 bool
-operator!=(FlagSet<Tag> a, FlagSet<Tag> b)
+operator!=(FlagSet<Tag, Storage> a, FlagSet<Tag, Storage> b)
 {
     return a.code != b.code;
 }
-template<class Tag>
+template<class Tag, class Storage>
 bool
-operator<(FlagSet<Tag> a, FlagSet<Tag> b)
+operator<(FlagSet<Tag, Storage> a, FlagSet<Tag, Storage> b)
 {
     return a.code < b.code;
 }
-template<class Tag>
-FlagSet<Tag>
-operator~(FlagSet<Tag> a)
+template<class Tag, class Storage>
+FlagSet<Tag, Storage>
+operator~(FlagSet<Tag, Storage> a)
 {
-    return FlagSet<Tag>(~a.code);
+    return FlagSet<Tag, Storage>(~a.code);
+}
+
+template<class Tag, class Storage>
+Storage
+raw_code(FlagSet<Tag, Storage> flags)
+{
+    return flags.code;
 }
 
 } // namespace alia
@@ -94,8 +103,9 @@ operator~(FlagSet<Tag> a)
     struct TypePrefix##FlagTag                                                \
     {                                                                         \
     };                                                                        \
-    typedef alia::FlagSet<TypePrefix##FlagTag> TypePrefix##FlagSet;
+    typedef alia::FlagSet<TypePrefix##FlagTag, std::uint32_t>                 \
+        TypePrefix##FlagSet;
 
 #define ALIA_DEFINE_FLAG(TypePrefix, code, name)                              \
-    unsigned const name##_CODE = code;                                        \
-    alia::FlagSet<TypePrefix##FlagTag> const name(code);
+    std::uint32_t const name##_CODE = code;                                   \
+    alia::FlagSet<TypePrefix##FlagTag, std::uint32_t> const name(code);
