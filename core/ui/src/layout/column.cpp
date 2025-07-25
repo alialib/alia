@@ -1,4 +1,4 @@
-#include <alia/ui/layout/vbox.hpp>
+#include <alia/ui/layout/column.hpp>
 
 #include <alia/ui/layout/scratch.hpp>
 #include <alia/ui/layout/utilities.hpp>
@@ -6,18 +6,18 @@
 namespace alia {
 
 void
-begin_vbox(Context& ctx, LayoutContainerScope& scope, LayoutFlagSet flags)
+begin_column(Context& ctx, LayoutContainerScope& scope, LayoutFlagSet flags)
 {
-    begin_container(ctx, scope, &vbox_vtable, flags);
+    begin_container(ctx, scope, &column_vtable, flags);
 }
 
 void
-end_vbox(Context& ctx, LayoutContainerScope& scope)
+end_column(Context& ctx, LayoutContainerScope& scope)
 {
     end_container(ctx, scope);
 }
 
-struct VBoxScratch
+struct ColumnScratch
 {
     float max_width = 0;
     float total_height = 0, total_growth = 0;
@@ -26,36 +26,36 @@ struct VBoxScratch
 };
 
 HorizontalRequirements
-vbox_measure_horizontal(MeasurementContext* ctx, LayoutNode* node)
+column_measure_horizontal(MeasurementContext* ctx, LayoutNode* node)
 {
-    auto& vbox = *reinterpret_cast<VBoxLayoutNode*>(node);
-    auto& vbox_scratch = claim_scratch<VBoxScratch>(*ctx->scratch);
+    auto& column = *reinterpret_cast<ColumnLayoutNode*>(node);
+    auto& column_scratch = claim_scratch<ColumnScratch>(*ctx->scratch);
     VerticalRequirements* y_requirements
         = reinterpret_cast<VerticalRequirements*>(ctx->scratch->allocate(
-            vbox.child_count * sizeof(VerticalRequirements),
+            column.child_count * sizeof(VerticalRequirements),
             alignof(VerticalRequirements)));
-    for (LayoutNode* child = vbox.first_child; child != nullptr;
+    for (LayoutNode* child = column.first_child; child != nullptr;
          child = child->next_sibling)
     {
         auto const child_x = measure_horizontal(ctx, child);
-        vbox_scratch.max_width
-            = (std::max)(vbox_scratch.max_width, child_x.min_size);
+        column_scratch.max_width
+            = (std::max)(column_scratch.max_width, child_x.min_size);
     }
     return HorizontalRequirements{
-        .min_size = vbox_scratch.max_width, .growth_factor = 0};
+        .min_size = column_scratch.max_width, .growth_factor = 0};
 }
 
 void
-vbox_assign_widths(
+column_assign_widths(
     MeasurementContext* ctx, LayoutNode* node, float assigned_width)
 {
-    auto& vbox = *reinterpret_cast<VBoxLayoutNode*>(node);
-    auto& vbox_scratch = use_scratch<VBoxScratch>(*ctx->scratch);
+    auto& column = *reinterpret_cast<ColumnLayoutNode*>(node);
+    auto& column_scratch = use_scratch<ColumnScratch>(*ctx->scratch);
     VerticalRequirements* y_requirements
         = reinterpret_cast<VerticalRequirements*>(ctx->scratch->allocate(
-            vbox.child_count * sizeof(VerticalRequirements),
+            column.child_count * sizeof(VerticalRequirements),
             alignof(VerticalRequirements)));
-    for (LayoutNode* child = vbox.first_child; child != nullptr;
+    for (LayoutNode* child = column.first_child; child != nullptr;
          child = child->next_sibling)
     {
         assign_widths(ctx, child, assigned_width);
@@ -63,45 +63,46 @@ vbox_assign_widths(
 }
 
 VerticalRequirements
-vbox_measure_vertical(
+column_measure_vertical(
     MeasurementContext* ctx, LayoutNode* node, float assigned_width)
 {
-    auto& vbox = *reinterpret_cast<VBoxLayoutNode*>(node);
-    auto& vbox_scratch = use_scratch<VBoxScratch>(*ctx->scratch);
+    auto& column = *reinterpret_cast<ColumnLayoutNode*>(node);
+    auto& column_scratch = use_scratch<ColumnScratch>(*ctx->scratch);
     VerticalRequirements* y_requirements
         = reinterpret_cast<VerticalRequirements*>(ctx->scratch->allocate(
-            vbox.child_count * sizeof(VerticalRequirements),
+            column.child_count * sizeof(VerticalRequirements),
             alignof(VerticalRequirements)));
-    for (LayoutNode* child = vbox.first_child; child != nullptr;
+    for (LayoutNode* child = column.first_child; child != nullptr;
          child = child->next_sibling)
     {
         auto const child_y = measure_vertical(ctx, child, assigned_width);
         *y_requirements++ = child_y;
-        vbox_scratch.total_height += child_y.min_size;
-        vbox_scratch.total_growth += child_y.growth_factor;
+        column_scratch.total_height += child_y.min_size;
+        column_scratch.total_growth += child_y.growth_factor;
         // TODO: Handle baseline.
     }
     return VerticalRequirements{
-        .min_size = vbox_scratch.total_height, .growth_factor = 0};
+        .min_size = column_scratch.total_height, .growth_factor = 0};
 }
 
 void
-vbox_assign_boxes(
+column_assign_boxes(
     PlacementContext* ctx, LayoutNode* node, Box box, float baseline)
 {
-    auto& vbox = *reinterpret_cast<VBoxLayoutNode*>(node);
-    auto& vbox_scratch = use_scratch<VBoxScratch>(*ctx->scratch);
+    auto& column = *reinterpret_cast<ColumnLayoutNode*>(node);
+    auto& column_scratch = use_scratch<ColumnScratch>(*ctx->scratch);
     VerticalRequirements* y_requirements
         = reinterpret_cast<VerticalRequirements*>(ctx->scratch->allocate(
-            vbox.child_count * sizeof(VerticalRequirements),
+            column.child_count * sizeof(VerticalRequirements),
             alignof(VerticalRequirements)));
     // TODO: Handle baseline.
     float const total_extra_space
-        = (std::max)(0.f, box.size.y - vbox_scratch.total_height);
+        = (std::max)(0.f, box.size.y - column_scratch.total_height);
     // TODO: Figure out how to handle 0 total growth.
-    float const total_growth = (std::max)(0.00001f, vbox_scratch.total_growth);
+    float const total_growth
+        = (std::max)(0.00001f, column_scratch.total_growth);
     float current_y = box.pos.y;
-    for (LayoutNode* child = vbox.first_child; child != nullptr;
+    for (LayoutNode* child = column.first_child; child != nullptr;
          child = child->next_sibling)
     {
         auto const child_y = *y_requirements++;
@@ -117,12 +118,12 @@ vbox_assign_boxes(
     }
 }
 
-LayoutNodeVtable vbox_vtable
-    = {vbox_measure_horizontal,
-       vbox_assign_widths,
-       vbox_measure_vertical,
-       vbox_assign_boxes,
-       vbox_measure_horizontal,
+LayoutNodeVtable column_vtable
+    = {column_measure_horizontal,
+       column_assign_widths,
+       column_measure_vertical,
+       column_assign_boxes,
+       column_measure_horizontal,
        default_measure_wrapped_vertical,
        nullptr};
 

@@ -20,15 +20,15 @@
 #include <alia/ui/drawing.hpp>
 #include <alia/ui/events.hpp>
 #include <alia/ui/geometry.hpp>
+#include <alia/ui/layout/column.hpp>
 #include <alia/ui/layout/container.hpp>
 #include <alia/ui/layout/flow.hpp>
-#include <alia/ui/layout/hbox.hpp>
 #include <alia/ui/layout/inset.hpp>
 #include <alia/ui/layout/leaf.hpp>
 #include <alia/ui/layout/placement_hook.hpp>
 #include <alia/ui/layout/resolution.hpp>
+#include <alia/ui/layout/row.hpp>
 #include <alia/ui/layout/utilities.hpp>
-#include <alia/ui/layout/vbox.hpp>
 #include <alia/ui/system.hpp>
 
 using namespace alia;
@@ -510,7 +510,7 @@ rectangle_demo(Context& ctx)
     static bool invert = false;
 
     with_padding(ctx, 0, [&] {
-        vbox(ctx, [&]() {
+        column(ctx, [&]() {
             flow(ctx, [&]() {
                 float x = 0.0f;
                 for (int i = 0; i < 10; ++i)
@@ -564,11 +564,11 @@ text_demo(Context& ctx)
     static bool invert = false;
 
     inset(ctx, {.left = 10, .right = 10, .top = 10, .bottom = 10}, [&]() {
-        vbox(ctx, [&]() {
+        column(ctx, [&]() {
             for (int i = 0; i < 10; ++i)
             {
                 with_padding(ctx, 8, [&] {
-                    hbox(ctx, [&]() {
+                    row(ctx, [&]() {
                         do_text(ctx, GRAY, 40, "test");
                         flow(ctx, GROW, [&]() {
                             for (int j = 0; j < 10; ++j)
@@ -612,9 +612,9 @@ layout_demo(Context& ctx)
 {
     with_padding(ctx, 10, [&] {
         inset(ctx, {.left = 40, .right = 40, .top = 40, .bottom = 40}, [&]() {
-            hbox(ctx, [&]() {
+            row(ctx, [&]() {
                 float x = 0.0f;
-                vbox(ctx, [&]() {
+                column(ctx, [&]() {
                     for (int j = 0; j < 40; ++j)
                     {
                         float f = fmod(x, 1.0f);
@@ -633,23 +633,26 @@ layout_demo(Context& ctx)
                 flow(ctx, GROW, [&]() {
                     for (int i = 0; i < 500; ++i)
                     {
-                        float intensity = (i % 3) * 0.04f;
+                        float intensity = (i % 3) * 0.02f;
                         panel(
                             ctx,
                             Color{
-                                0.1f + intensity,
-                                0.1f + intensity,
-                                0.15f + intensity,
+                                0.14f + intensity,
+                                0.14f + intensity,
+                                0.18f + intensity,
                                 1},
                             NO_FLAGS,
                             [&]() {
-                                hbox(ctx, [&]() {
-                                    for (int j = 0; j < 10; ++j)
+                                row(ctx, [&]() {
+                                    for (int j = 0; j < 4; ++j)
                                     {
                                         float f = fmod(x, 1.0f);
                                         if (do_rect(
                                                 ctx,
-                                                {24, float((j & 7) * 12 + 12)},
+                                                {24,
+                                                 float(
+                                                     ((i * 10 + j) & 7) * 12
+                                                     + 12)},
                                                 Color{f, 0.1f, 1.0f - f, 1},
                                                 LayoutFlagSet(
                                                     (j & 3)
