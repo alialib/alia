@@ -1,7 +1,21 @@
 #include <alia/ui/layout/flow.hpp>
+
 #include <alia/ui/layout/scratch.hpp>
+#include <alia/ui/layout/utilities.hpp>
 
 namespace alia {
+
+void
+begin_flow(Context& ctx, LayoutContainerScope& scope, LayoutFlagSet flags)
+{
+    begin_container(ctx, scope, &flow_vtable, flags);
+}
+
+void
+end_flow(Context& ctx, LayoutContainerScope& scope)
+{
+    end_container(ctx, scope);
+}
 
 struct FlowScratch
 {

@@ -1,8 +1,21 @@
 #include <alia/ui/layout/vbox.hpp>
 
 #include <alia/ui/layout/scratch.hpp>
+#include <alia/ui/layout/utilities.hpp>
 
 namespace alia {
+
+void
+begin_vbox(Context& ctx, LayoutContainerScope& scope, LayoutFlagSet flags)
+{
+    begin_container(ctx, scope, &vbox_vtable, flags);
+}
+
+void
+end_vbox(Context& ctx, LayoutContainerScope& scope)
+{
+    end_container(ctx, scope);
+}
 
 struct VBoxScratch
 {

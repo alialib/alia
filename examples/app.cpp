@@ -20,9 +20,14 @@
 #include <alia/ui/drawing.hpp>
 #include <alia/ui/events.hpp>
 #include <alia/ui/geometry.hpp>
-#include <alia/ui/layout/api.hpp>
+#include <alia/ui/layout/container.hpp>
+#include <alia/ui/layout/flow.hpp>
+#include <alia/ui/layout/hbox.hpp>
+#include <alia/ui/layout/inset.hpp>
 #include <alia/ui/layout/leaf.hpp>
 #include <alia/ui/layout/resolution.hpp>
+#include <alia/ui/layout/utilities.hpp>
+#include <alia/ui/layout/vbox.hpp>
 #include <alia/ui/system.hpp>
 
 using namespace alia;
@@ -80,6 +85,61 @@ downcast(Inner const* inner_ptr)
         offsetof(Outer, base) == 0, "Outer must embed `base` at offset 0");
     return reinterpret_cast<Outer const*>(inner_ptr);
 }
+
+// template<class Content>
+// bool
+// do_panel(Context& ctx, Color color, LayoutFlagSet flags, Content&& content)
+// {
+//     switch (ctx.pass.type)
+//     {
+//         case PassType::Refresh: {
+//             auto& layout = ctx.pass.refresh.layout_emission;
+//             LayoutInsetNode* new_node
+//                 =
+//                 allocate_spec_node<InsetLayoutNode>(the_layout_spec_arena);
+//             *layout.next_ptr = &new_node->base;
+//             layout.next_ptr = &new_node->base.next_sibling;
+//             *new_node = LayoutLeafNode{
+//                 .base = {.vtable = &leaf_vtable, .next_sibling = 0},
+//                 .flags = flags,
+//                 .padding = ctx.style->padding,
+//                 .size = size};
+//             ++layout.active_container->child_count;
+//             break;
+//         }
+//         case PassType::Draw: {
+//             auto const* placement = ctx.layout_consumption.next_placement;
+//             ctx.layout_consumption.next_placement = placement->next;
+//             auto& leaf_placement =
+//             *downcast<LeafLayoutPlacement>(placement); Box box = {
+//                 .pos = leaf_placement.position, .size =
+//                 leaf_placement.size};
+//             draw_box(
+//                 *ctx.pass.draw.display_list_arena,
+//                 *ctx.pass.draw.box_command_list,
+//                 box,
+//                 color);
+//             break;
+//         }
+//         case PassType::Event: {
+//             auto const* placement = ctx.layout_consumption.next_placement;
+//             ctx.layout_consumption.next_placement = placement->next;
+//             auto& leaf_placement =
+//             *downcast<LeafLayoutPlacement>(placement); Box box = {
+//                 .pos = leaf_placement.position, .size =
+//                 leaf_placement.size};
+//             if (detect_click(
+//                     ctx.pass.event.event,
+//                     box.pos.x,
+//                     box.pos.y,
+//                     box.size.x,
+//                     box.size.y))
+//                 return true;
+//             break;
+//         }
+//     }
+//     return false;
+// }
 
 bool
 do_rect(Context& ctx, Vec2 size, Color color, LayoutFlagSet flags)

@@ -1,6 +1,6 @@
 #include <alia/ui/layout/leaf.hpp>
 
-#include <alia/ui/layout/resolution.hpp>
+#include <alia/ui/layout/utilities.hpp>
 
 namespace alia {
 

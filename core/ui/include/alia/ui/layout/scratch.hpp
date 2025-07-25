@@ -1,6 +1,6 @@
 #pragma once
 
-#include <alia/ui/layout/resolution.hpp>
+#include <alia/ui/layout/node.hpp>
 
 #include <algorithm>
 

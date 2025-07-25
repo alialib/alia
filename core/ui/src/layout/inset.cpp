@@ -1,9 +1,45 @@
 #include <alia/ui/layout/inset.hpp>
 
-#include <alia/ui/layout/resolution.hpp>
+#include <alia/ui/context.hpp>
 #include <alia/ui/layout/scratch.hpp>
 
 namespace alia {
+
+void
+begin_inset(
+    Context& ctx,
+    LayoutContainerScope& scope,
+    Insets insets,
+    LayoutFlagSet flags)
+{
+    if (ctx.pass.type == PassType::Refresh)
+    {
+        auto& layout = ctx.pass.refresh.layout_emission;
+        InsetLayoutNode* this_container
+            = reinterpret_cast<InsetLayoutNode*>(layout.arena->allocate(
+                sizeof(InsetLayoutNode), alignof(InsetLayoutNode)));
+        scope.this_container
+            = reinterpret_cast<LayoutContainer*>(this_container);
+        *this_container = InsetLayoutNode{
+            .container
+            = {.base = {.vtable = &inset_vtable, .next_sibling = 0},
+               .flags = flags,
+               .child_count = 0,
+               .first_child = 0},
+            .insets = insets};
+        *layout.next_ptr = &this_container->container.base;
+        layout.next_ptr = &this_container->container.first_child;
+        scope.parent_container = layout.active_container;
+        ++scope.parent_container->child_count;
+        layout.active_container = scope.this_container;
+    }
+}
+
+void
+end_inset(Context& ctx, LayoutContainerScope& scope)
+{
+    end_container(ctx, scope);
+}
 
 HorizontalRequirements
 inset_measure_horizontal(MeasurementContext* ctx, LayoutNode* node)

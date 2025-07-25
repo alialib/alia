@@ -1,8 +1,22 @@
 #include <alia/ui/layout/hbox.hpp>
 
+#include <alia/ui/layout/container.hpp>
 #include <alia/ui/layout/scratch.hpp>
+#include <alia/ui/layout/utilities.hpp>
 
 namespace alia {
+
+void
+begin_hbox(Context& ctx, LayoutContainerScope& scope, LayoutFlagSet flags)
+{
+    begin_container(ctx, scope, &hbox_vtable, flags);
+}
+
+void
+end_hbox(Context& ctx, LayoutContainerScope& scope)
+{
+    end_container(ctx, scope);
+}
 
 struct HBoxScratch
 {

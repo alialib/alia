@@ -1,6 +1,7 @@
 #pragma once
 
-#include <alia/ui/layout/resolution.hpp>
+#include <alia/ui/layout/flags.hpp>
+#include <alia/ui/layout/node.hpp>
 
 namespace alia {
 
