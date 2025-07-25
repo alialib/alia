@@ -25,13 +25,6 @@ struct LayoutPlacementNode
     LayoutPlacementNode* next;
 };
 
-struct LeafLayoutPlacement
-{
-    LayoutPlacementNode base;
-    Vec2 position;
-    Vec2 size;
-};
-
 struct HorizontalRequirements
 {
     float min_size;

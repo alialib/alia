@@ -6,6 +6,7 @@ add_library(alia_ui STATIC
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/hbox.cpp
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/inset.cpp
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/leaf.cpp
+    ${PROJECT_SOURCE_DIR}/core/ui/src/layout/placement_hook.cpp
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/resolution.cpp
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/utilities.cpp
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/vbox.cpp)

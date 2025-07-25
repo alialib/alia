@@ -25,6 +25,7 @@
 #include <alia/ui/layout/hbox.hpp>
 #include <alia/ui/layout/inset.hpp>
 #include <alia/ui/layout/leaf.hpp>
+#include <alia/ui/layout/placement_hook.hpp>
 #include <alia/ui/layout/resolution.hpp>
 #include <alia/ui/layout/utilities.hpp>
 #include <alia/ui/layout/vbox.hpp>
@@ -62,84 +63,23 @@ allocate_spec_node(LayoutSpecArena& arena)
     return reinterpret_cast<T*>(arena.allocate(sizeof(T), alignof(T)));
 }
 
-template<typename Outer, typename Inner>
-Outer*
-downcast(Inner* inner_ptr)
+template<class Content>
+void
+panel(Context& ctx, Color color, LayoutFlagSet flags, Content&& content)
 {
-    static_assert(
-        std::is_same<decltype(Outer::base), Inner>::value,
-        "Outer::base must be of type Inner");
-    static_assert(
-        offsetof(Outer, base) == 0, "Outer must embed `base` at offset 0");
-    return reinterpret_cast<Outer*>(inner_ptr);
-}
+    placement_hook(ctx, flags, [&](auto const& placement) {
+        if (ctx.pass.type == PassType::Draw)
+        {
+            draw_box(
+                *ctx.pass.draw.display_list_arena,
+                *ctx.pass.draw.box_command_list,
+                placement.box,
+                color);
+        }
 
-template<typename Outer, typename Inner>
-Outer const*
-downcast(Inner const* inner_ptr)
-{
-    static_assert(
-        std::is_same<decltype(Outer::base), Inner>::value,
-        "Outer::base must be of type Inner");
-    static_assert(
-        offsetof(Outer, base) == 0, "Outer must embed `base` at offset 0");
-    return reinterpret_cast<Outer const*>(inner_ptr);
+        std::forward<Content>(content)();
+    });
 }
-
-// template<class Content>
-// bool
-// do_panel(Context& ctx, Color color, LayoutFlagSet flags, Content&& content)
-// {
-//     switch (ctx.pass.type)
-//     {
-//         case PassType::Refresh: {
-//             auto& layout = ctx.pass.refresh.layout_emission;
-//             LayoutInsetNode* new_node
-//                 =
-//                 allocate_spec_node<InsetLayoutNode>(the_layout_spec_arena);
-//             *layout.next_ptr = &new_node->base;
-//             layout.next_ptr = &new_node->base.next_sibling;
-//             *new_node = LayoutLeafNode{
-//                 .base = {.vtable = &leaf_vtable, .next_sibling = 0},
-//                 .flags = flags,
-//                 .padding = ctx.style->padding,
-//                 .size = size};
-//             ++layout.active_container->child_count;
-//             break;
-//         }
-//         case PassType::Draw: {
-//             auto const* placement = ctx.layout_consumption.next_placement;
-//             ctx.layout_consumption.next_placement = placement->next;
-//             auto& leaf_placement =
-//             *downcast<LeafLayoutPlacement>(placement); Box box = {
-//                 .pos = leaf_placement.position, .size =
-//                 leaf_placement.size};
-//             draw_box(
-//                 *ctx.pass.draw.display_list_arena,
-//                 *ctx.pass.draw.box_command_list,
-//                 box,
-//                 color);
-//             break;
-//         }
-//         case PassType::Event: {
-//             auto const* placement = ctx.layout_consumption.next_placement;
-//             ctx.layout_consumption.next_placement = placement->next;
-//             auto& leaf_placement =
-//             *downcast<LeafLayoutPlacement>(placement); Box box = {
-//                 .pos = leaf_placement.position, .size =
-//                 leaf_placement.size};
-//             if (detect_click(
-//                     ctx.pass.event.event,
-//                     box.pos.x,
-//                     box.pos.y,
-//                     box.size.x,
-//                     box.size.y))
-//                 return true;
-//             break;
-//         }
-//     }
-//     return false;
-// }
 
 bool
 do_rect(Context& ctx, Vec2 size, Color color, LayoutFlagSet flags)
@@ -691,19 +631,36 @@ layout_demo(Context& ctx)
                     }
                 });
                 flow(ctx, GROW, [&]() {
-                    for (int j = 0; j < 500; ++j)
+                    for (int i = 0; i < 500; ++i)
                     {
-                        float f = fmod(x, 1.0f);
-                        if (do_rect(
-                                ctx,
-                                {24, float((j & 7) * 12 + 12)},
-                                Color{f, 0.1f, 1.0f - f, 1},
-                                LayoutFlagSet(
-                                    (j & 3) << Y_ALIGNMENT_BIT_OFFSET)))
-                        {
-                            return;
-                        }
-                        x += 0.01f;
+                        float intensity = (i % 3) * 0.04f;
+                        panel(
+                            ctx,
+                            Color{
+                                0.1f + intensity,
+                                0.1f + intensity,
+                                0.15f + intensity,
+                                1},
+                            NO_FLAGS,
+                            [&]() {
+                                hbox(ctx, [&]() {
+                                    for (int j = 0; j < 10; ++j)
+                                    {
+                                        float f = fmod(x, 1.0f);
+                                        if (do_rect(
+                                                ctx,
+                                                {24, float((j & 7) * 12 + 12)},
+                                                Color{f, 0.1f, 1.0f - f, 1},
+                                                LayoutFlagSet(
+                                                    (j & 3)
+                                                    << Y_ALIGNMENT_BIT_OFFSET)))
+                                        {
+                                            return;
+                                        }
+                                        x += 0.01f;
+                                    }
+                                });
+                            });
                     }
                 });
             });

@@ -13,6 +13,13 @@ struct LayoutLeafNode
     Vec2 size;
 };
 
+struct LeafLayoutPlacement
+{
+    LayoutPlacementNode base;
+    Vec2 position;
+    Vec2 size;
+};
+
 extern LayoutNodeVtable leaf_vtable;
 
 } // namespace alia
