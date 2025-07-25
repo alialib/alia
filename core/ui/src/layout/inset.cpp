@@ -133,7 +133,15 @@ inset_measure_wrapped_vertical(
     }
     else if (has_wrapped_content(child))
     {
-        requirements.interior_height += inset.insets.top;
+        if (requirements.interior_height > 0)
+        {
+            requirements.interior_height += inset.insets.top;
+        }
+        else
+        {
+            requirements.last_line.height += inset.insets.top;
+            requirements.last_line.ascent += inset.insets.top;
+        }
     }
 
     if (has_wrapped_content(child))

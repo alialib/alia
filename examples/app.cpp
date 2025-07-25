@@ -634,35 +634,45 @@ layout_demo(Context& ctx)
                     for (int i = 0; i < 500; ++i)
                     {
                         float intensity = (i % 3) * 0.02f;
-                        panel(
+                        inset(
                             ctx,
-                            Color{
-                                0.14f + intensity,
-                                0.14f + intensity,
-                                0.18f + intensity,
-                                1},
-                            NO_FLAGS,
+                            {.left = 10, .right = 10, .top = 10, .bottom = 10},
                             [&]() {
-                                row(ctx, [&]() {
-                                    for (int j = 0; j < 4; ++j)
-                                    {
-                                        float f = fmod(x, 1.0f);
-                                        if (do_rect(
-                                                ctx,
-                                                {24,
-                                                 float(
-                                                     ((i * 10 + j) & 7) * 12
-                                                     + 12)},
-                                                Color{f, 0.1f, 1.0f - f, 1},
-                                                LayoutFlagSet(
-                                                    (j & 3)
-                                                    << Y_ALIGNMENT_BIT_OFFSET)))
-                                        {
-                                            return;
-                                        }
-                                        x += 0.01f;
-                                    }
-                                });
+                                panel(
+                                    ctx,
+                                    Color{
+                                        0.14f + intensity,
+                                        0.14f + intensity,
+                                        0.18f + intensity,
+                                        1},
+                                    NO_FLAGS,
+                                    [&]() {
+                                        row(ctx, [&]() {
+                                            for (int j = 0; j < 4; ++j)
+                                            {
+                                                float f = fmod(x, 1.0f);
+                                                if (do_rect(
+                                                        ctx,
+                                                        {24,
+                                                         float(
+                                                             ((i * 10 + j) & 7)
+                                                                 * 12
+                                                             + 12)},
+                                                        Color{
+                                                            f,
+                                                            0.1f,
+                                                            1.0f - f,
+                                                            1},
+                                                        LayoutFlagSet(
+                                                            (j & 3)
+                                                            << Y_ALIGNMENT_BIT_OFFSET)))
+                                                {
+                                                    return;
+                                                }
+                                                x += 0.01f;
+                                            }
+                                        });
+                                    });
                             });
                     }
                 });
