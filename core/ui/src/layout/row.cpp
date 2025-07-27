@@ -108,7 +108,7 @@ row_measure_vertical(
     row_scratch.ascent = ascent;
     return VerticalRequirements{
         .min_size = (std::max)(height, ascent + descent),
-        .growth_factor = 0,
+        .growth_factor = resolve_growth_factor(row.flags),
         .ascent = ascent,
         .descent = descent};
 }

@@ -3,6 +3,7 @@ add_library(alia_ui STATIC
     ${PROJECT_SOURCE_DIR}/core/ui/src/display_list.cpp
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/container.cpp
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/flow.cpp
+    ${PROJECT_SOURCE_DIR}/core/ui/src/layout/growth_override.cpp
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/row.cpp
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/inset.cpp
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/leaf.cpp

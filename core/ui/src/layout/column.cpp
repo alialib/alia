@@ -42,7 +42,8 @@ column_measure_horizontal(MeasurementContext* ctx, LayoutNode* node)
             = (std::max)(column_scratch.max_width, child_x.min_size);
     }
     return HorizontalRequirements{
-        .min_size = column_scratch.max_width, .growth_factor = 0};
+        .min_size = column_scratch.max_width,
+        .growth_factor = resolve_growth_factor(column.flags)};
 }
 
 void
@@ -82,7 +83,8 @@ column_measure_vertical(
         // TODO: Handle baseline.
     }
     return VerticalRequirements{
-        .min_size = column_scratch.total_height, .growth_factor = 0};
+        .min_size = column_scratch.total_height,
+        .growth_factor = resolve_growth_factor(column.flags)};
 }
 
 void

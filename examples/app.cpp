@@ -23,6 +23,7 @@
 #include <alia/ui/layout/column.hpp>
 #include <alia/ui/layout/container.hpp>
 #include <alia/ui/layout/flow.hpp>
+#include <alia/ui/layout/growth_override.hpp>
 #include <alia/ui/layout/inset.hpp>
 #include <alia/ui/layout/leaf.hpp>
 #include <alia/ui/layout/placement_hook.hpp>
@@ -608,6 +609,76 @@ nested_flow_demo(Context& ctx)
 }
 
 void
+layout_demo_flow(Context& ctx)
+{
+    float x = 0.0f;
+    flow(ctx, [&]() {
+        for (int i = 0; i < 500; ++i)
+        {
+            float intensity = (i % 3) * 0.02f;
+            inset(
+                ctx,
+                {.left = 10, .right = 10, .top = 10, .bottom = 10},
+                [&]() {
+                    panel(
+                        ctx,
+                        Color{
+                            0.14f + intensity,
+                            0.14f + intensity,
+                            0.18f + intensity,
+                            1},
+                        NO_FLAGS,
+                        [&]() {
+                            row(ctx, [&]() {
+                                for (int j = 0; j < 4; ++j)
+                                {
+                                    float f = fmod(x, 1.0f);
+                                    if (do_rect(
+                                            ctx,
+                                            {24,
+                                             float(
+                                                 ((i * 10 + j) & 7) * 12
+                                                 + 12)},
+                                            Color{f, 0.1f, 1.0f - f, 1},
+                                            LayoutFlagSet(
+                                                (j & 3)
+                                                << Y_ALIGNMENT_BIT_OFFSET)))
+                                    {
+                                        return;
+                                    }
+                                    x += 0.01f;
+                                }
+                            });
+                        });
+                });
+        }
+    });
+}
+
+void
+layout_growth_demo(Context& ctx)
+{
+    float x = 0.0f;
+    row(ctx, [&]() {
+        for (int i = 0; i < 12; ++i)
+        {
+            float f = fmod(x, 1.0f);
+            growth_override(ctx, i * 1.0f, [&]() {
+                if (do_rect(
+                        ctx,
+                        {24, 24},
+                        Color{f, 0.1f, 1.0f - f, 1},
+                        FILL | (i & 1 ? GROW : NO_FLAGS)))
+                {
+                    return;
+                }
+            });
+            x += 0.08f;
+        }
+    });
+}
+
+void
 layout_demo(Context& ctx)
 {
     with_padding(ctx, 10, [&] {
@@ -630,51 +701,9 @@ layout_demo(Context& ctx)
                         x += 0.02f;
                     }
                 });
-                flow(ctx, GROW, [&]() {
-                    for (int i = 0; i < 500; ++i)
-                    {
-                        float intensity = (i % 3) * 0.02f;
-                        inset(
-                            ctx,
-                            {.left = 10, .right = 10, .top = 10, .bottom = 10},
-                            [&]() {
-                                panel(
-                                    ctx,
-                                    Color{
-                                        0.14f + intensity,
-                                        0.14f + intensity,
-                                        0.18f + intensity,
-                                        1},
-                                    NO_FLAGS,
-                                    [&]() {
-                                        row(ctx, [&]() {
-                                            for (int j = 0; j < 4; ++j)
-                                            {
-                                                float f = fmod(x, 1.0f);
-                                                if (do_rect(
-                                                        ctx,
-                                                        {24,
-                                                         float(
-                                                             ((i * 10 + j) & 7)
-                                                                 * 12
-                                                             + 12)},
-                                                        Color{
-                                                            f,
-                                                            0.1f,
-                                                            1.0f - f,
-                                                            1},
-                                                        LayoutFlagSet(
-                                                            (j & 3)
-                                                            << Y_ALIGNMENT_BIT_OFFSET)))
-                                                {
-                                                    return;
-                                                }
-                                                x += 0.01f;
-                                            }
-                                        });
-                                    });
-                            });
-                    }
+                column(ctx, GROW, [&]() {
+                    layout_growth_demo(ctx);
+                    layout_demo_flow(ctx);
                 });
             });
         });
