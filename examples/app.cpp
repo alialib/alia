@@ -26,6 +26,7 @@
 #include <alia/ui/layout/growth_override.hpp>
 #include <alia/ui/layout/inset.hpp>
 #include <alia/ui/layout/leaf.hpp>
+#include <alia/ui/layout/min_size.hpp>
 #include <alia/ui/layout/placement_hook.hpp>
 #include <alia/ui/layout/resolution.hpp>
 #include <alia/ui/layout/row.hpp>
@@ -613,9 +614,9 @@ layout_demo_flow(Context& ctx)
 {
     float x = 0.0f;
     flow(ctx, [&]() {
-        for (int i = 0; i < 500; ++i)
+        for (int i = 0; i < 2400; ++i)
         {
-            float intensity = (i % 3) * 0.02f;
+            float intensity = ((i / 4) % 3) * 0.02f;
             inset(
                 ctx,
                 {.left = 10, .right = 10, .top = 10, .bottom = 10},
@@ -629,25 +630,27 @@ layout_demo_flow(Context& ctx)
                             1},
                         NO_FLAGS,
                         [&]() {
-                            row(ctx, [&]() {
-                                for (int j = 0; j < 4; ++j)
-                                {
-                                    float f = fmod(x, 1.0f);
-                                    if (do_rect(
-                                            ctx,
-                                            {24,
-                                             float(
-                                                 ((i * 10 + j) & 7) * 12
-                                                 + 12)},
-                                            Color{f, 0.1f, 1.0f - f, 1},
-                                            LayoutFlagSet(
-                                                (j & 3)
-                                                << Y_ALIGNMENT_BIT_OFFSET)))
+                            min_size(ctx, {0, 200}, [&]() {
+                                row(ctx, [&]() {
+                                    for (int j = 0; j < 1; ++j)
                                     {
-                                        return;
+                                        float f = fmod(x, 1.0f);
+                                        if (do_rect(
+                                                ctx,
+                                                {24,
+                                                 float(
+                                                     ((i * 1 + j) & 7) * 12
+                                                     + 12)},
+                                                Color{f, 0.1f, 1.0f - f, 1},
+                                                LayoutFlagSet(
+                                                    (i & 3)
+                                                    << Y_ALIGNMENT_BIT_OFFSET)))
+                                        {
+                                            return;
+                                        }
+                                        x += 0.01f;
                                     }
-                                    x += 0.01f;
-                                }
+                                });
                             });
                         });
                 });
