@@ -3,14 +3,9 @@
 #include <alia/ui/context.hpp>
 #include <alia/ui/layout/scratch.hpp>
 #include <alia/ui/layout/utilities.hpp>
+#include <alia/ui/system.hpp>
 
 namespace alia {
-
-struct PlacementHookPlacement
-{
-    LayoutPlacementNode base;
-    PlacementInfo placement;
-};
 
 void
 begin_placement_hook(
@@ -35,10 +30,8 @@ begin_placement_hook(
     }
     else
     {
-        auto const* placement = ctx.layout_consumption.next_placement;
-        ctx.layout_consumption.next_placement = placement->next;
-        auto& placement_info = *downcast<PlacementHookPlacement>(placement);
-        scope.placement = placement_info.placement;
+        scope.placement
+            = *arena_alloc<PlacementInfo>(ctx.system->layout.placement_arena);
     }
 }
 
@@ -80,12 +73,9 @@ placement_hook_assign_boxes(
 {
     auto& placement_hook = *reinterpret_cast<PlacementHookNode*>(node);
 
-    PlacementHookPlacement* placement
-        = arena_alloc<PlacementHookPlacement>(*ctx->arena);
-    placement->placement.box = box;
-    placement->placement.baseline = baseline;
-    *ctx->next_ptr = &placement->base;
-    ctx->next_ptr = &placement->base.next;
+    PlacementInfo* placement = arena_alloc<PlacementInfo>(*ctx->arena);
+    placement->box = box;
+    placement->baseline = baseline;
 
     ALIA_ASSERT(placement_hook.child_count == 1);
     assign_boxes(ctx, placement_hook.first_child, box, baseline);

@@ -15,7 +15,6 @@ struct LayoutLeafNode
 
 struct LeafLayoutPlacement
 {
-    LayoutPlacementNode base;
     Vec2 position;
     Vec2 size;
 };

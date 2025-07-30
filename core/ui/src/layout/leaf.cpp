@@ -42,8 +42,6 @@ leaf_assign_boxes(
         leaf.flags, box.size, baseline, leaf.size, 0, leaf.padding);
     placement->position = box.pos + padded_placement.pos;
     placement->size = padded_placement.size;
-    *ctx->next_ptr = &placement->base;
-    ctx->next_ptr = &placement->base.next;
 }
 
 LayoutNodeVtable leaf_vtable

@@ -52,14 +52,6 @@ detect_click(Event* event, float x, float y, float width, float height)
         && event->click.y <= y + height;
 }
 
-template<class T>
-T*
-allocate_spec_node(InfiniteArena& arena)
-{
-    static_assert(std::is_trivially_destructible_v<T>);
-    return arena_alloc<T>(arena);
-}
-
 template<class Content>
 void
 panel(Context& ctx, Color color, LayoutFlagSet flags, Content&& content)
@@ -85,8 +77,8 @@ do_rect(Context& ctx, Vec2 size, Color color, LayoutFlagSet flags)
     {
         case PassType::Refresh: {
             auto& layout = ctx.pass.refresh.layout_emission;
-            LayoutLeafNode* new_node = allocate_spec_node<LayoutLeafNode>(
-                ctx.system->layout.node_arena);
+            LayoutLeafNode* new_node
+                = arena_alloc<LayoutLeafNode>(ctx.system->layout.node_arena);
             *layout.next_ptr = &new_node->base;
             layout.next_ptr = &new_node->base.next_sibling;
             *new_node = LayoutLeafNode{
@@ -98,9 +90,8 @@ do_rect(Context& ctx, Vec2 size, Color color, LayoutFlagSet flags)
             break;
         }
         case PassType::Draw: {
-            auto const* placement = ctx.layout_consumption.next_placement;
-            ctx.layout_consumption.next_placement = placement->next;
-            auto& leaf_placement = *downcast<LeafLayoutPlacement>(placement);
+            auto& leaf_placement = *arena_alloc<LeafLayoutPlacement>(
+                ctx.system->layout.placement_arena);
             Box box = {
                 .pos = leaf_placement.position, .size = leaf_placement.size};
             draw_box(
@@ -111,9 +102,8 @@ do_rect(Context& ctx, Vec2 size, Color color, LayoutFlagSet flags)
             break;
         }
         case PassType::Event: {
-            auto const* placement = ctx.layout_consumption.next_placement;
-            ctx.layout_consumption.next_placement = placement->next;
-            auto& leaf_placement = *downcast<LeafLayoutPlacement>(placement);
+            auto& leaf_placement = *arena_alloc<LeafLayoutPlacement>(
+                ctx.system->layout.placement_arena);
             Box box = {
                 .pos = leaf_placement.position, .size = leaf_placement.size};
             if (detect_click(
@@ -175,13 +165,11 @@ measure_text_vertical(
 
 struct TextLayoutPlacementHeader
 {
-    LayoutPlacementNode base;
     int fragment_count;
 };
 
 struct TextLayoutPlacementFragment
 {
-    LayoutPlacementNode base;
     Vec2 position;
     Vec2 size;
     char const* text;
@@ -210,8 +198,6 @@ assign_text_boxes(
     TextLayoutPlacementHeader* header
         = arena_alloc<TextLayoutPlacementHeader>(*ctx->arena);
     header->fragment_count = 1;
-    *ctx->next_ptr = &header->base;
-    ctx->next_ptr = &header->base.next;
 
     TextLayoutPlacementFragment* fragment
         = arena_alloc<TextLayoutPlacementFragment>(*ctx->arena);
@@ -219,8 +205,6 @@ assign_text_boxes(
     fragment->size = placement.size;
     fragment->text = text.text;
     fragment->length = strlen(text.text);
-    *ctx->next_ptr = &fragment->base;
-    ctx->next_ptr = &fragment->base.next;
 }
 
 HorizontalRequirements
@@ -324,8 +308,6 @@ assign_text_wrapped_boxes(
     TextLayoutPlacementHeader* header
         = arena_alloc<TextLayoutPlacementHeader>(*ctx->arena);
     header->fragment_count = 0;
-    *ctx->next_ptr = &header->base;
-    ctx->next_ptr = &header->base.next;
 
     // TODO: This all feels a bit hacky, but it works for now, and it feels
     // like there is more significant restructuring to come anyway.
@@ -365,8 +347,6 @@ assign_text_wrapped_boxes(
                metrics->line_height * text.font_size};
         fragment->text = text.text + index;
         fragment->length = end_index - index;
-        *ctx->next_ptr = &fragment->base;
-        ctx->next_ptr = &fragment->base.next;
         ++header->fragment_count;
 
         x = 0;
@@ -408,9 +388,8 @@ do_text(
     {
         case PassType::Refresh: {
             auto& layout = ctx.pass.refresh.layout_emission;
-            MsdfTextLayoutNode* new_node
-                = allocate_spec_node<MsdfTextLayoutNode>(
-                    ctx.system->layout.node_arena);
+            MsdfTextLayoutNode* new_node = arena_alloc<MsdfTextLayoutNode>(
+                ctx.system->layout.node_arena);
             new_node->base.vtable = &text_layout_vtable;
             new_node->base.next_sibling = nullptr;
             new_node->flags = flags;
@@ -424,18 +403,12 @@ do_text(
             break;
         }
         case PassType::Draw: {
-            auto const* placement = ctx.layout_consumption.next_placement;
-            ctx.layout_consumption.next_placement = placement->next;
-            auto& text_placement
-                = *downcast<TextLayoutPlacementHeader>(placement);
+            auto& text_placement = *arena_alloc<TextLayoutPlacementHeader>(
+                ctx.system->layout.placement_arena);
             for (int i = 0; i < text_placement.fragment_count; ++i)
             {
-                auto const* fragment_placement
-                    = ctx.layout_consumption.next_placement;
-                ctx.layout_consumption.next_placement
-                    = fragment_placement->next;
-                auto& fragment = *downcast<TextLayoutPlacementFragment>(
-                    fragment_placement);
+                auto& fragment = *arena_alloc<TextLayoutPlacementFragment>(
+                    ctx.system->layout.placement_arena);
                 draw_text(
                     the_msdf_text_engine,
                     *ctx.pass.draw.display_list_arena,
@@ -449,18 +422,12 @@ do_text(
             break;
         }
         case PassType::Event: {
-            auto const* placement = ctx.layout_consumption.next_placement;
-            ctx.layout_consumption.next_placement = placement->next;
-            auto& text_placement
-                = *downcast<TextLayoutPlacementHeader>(placement);
+            auto& text_placement = *arena_alloc<TextLayoutPlacementHeader>(
+                ctx.system->layout.placement_arena);
             for (int i = 0; i < text_placement.fragment_count; ++i)
             {
-                auto const* fragment_placement
-                    = ctx.layout_consumption.next_placement;
-                ctx.layout_consumption.next_placement
-                    = fragment_placement->next;
-                auto& fragment = *downcast<TextLayoutPlacementFragment>(
-                    fragment_placement);
+                auto& fragment = *arena_alloc<TextLayoutPlacementFragment>(
+                    ctx.system->layout.placement_arena);
                 Box box = {.pos = fragment.position, .size = fragment.size};
                 if (detect_click(
                         ctx.pass.event.event,
@@ -730,12 +697,11 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
             = (static_cast<float>(y) * framebuffer_height
                / window_height); // / the_ui_scale.y;
         std::uint32_t root_index;
+        the_system.layout.placement_arena.reset();
         Context event_ctx
             = {.pass = {.type = PassType::Event, .event = {.event = &event}},
                .style = &the_style,
-               .system = &the_system,
-               .layout_consumption
-               = {.next_placement = the_system.layout.placement}};
+               .system = &the_system};
         the_demo(event_ctx);
     }
 }
@@ -783,15 +749,15 @@ update()
     the_display_list_arena.reset();
     clear_command_list(the_box_commands);
     clear_command_list(the_msdf_commands);
-    Context draw_ctx = {
-        .pass
-        = {.type = PassType::Draw,
-           .draw
-           = {.display_list_arena = &the_display_list_arena,
-              .box_command_list = &the_box_commands}},
-        .style = &the_style,
-        .system = &the_system,
-        .layout_consumption = {.next_placement = the_system.layout.placement}};
+    the_system.layout.placement_arena.reset();
+    Context draw_ctx
+        = {.pass
+           = {.type = PassType::Draw,
+              .draw
+              = {.display_list_arena = &the_display_list_arena,
+                 .box_command_list = &the_box_commands}},
+           .style = &the_style,
+           .system = &the_system};
     the_demo(draw_ctx);
 
     while ((err = glGetError()) != GL_NO_ERROR)
@@ -801,8 +767,6 @@ update()
 
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
-
-    // do_text_demo();
 
     render_command_list(
         the_msdf_text_engine, the_msdf_commands, the_system.framebuffer_size);

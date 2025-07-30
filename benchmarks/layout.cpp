@@ -108,6 +108,7 @@ main()
     ankerl::nanobench::Bench().minEpochIterations(1000).run(
         "resolve_layout", [&] {
             resolve_layout(system.layout, Vec2{10'000, 10'000});
-            ankerl::nanobench::doNotOptimizeAway(system.layout.placement);
+            ankerl::nanobench::doNotOptimizeAway(
+                system.layout.placement_arena.peek());
         });
 }

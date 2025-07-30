@@ -11,7 +11,6 @@ struct Event;
 struct System;
 struct LayoutNode;
 struct LayoutContainer;
-struct LayoutPlacementNode;
 struct InfiniteArena;
 
 enum class PassType
@@ -26,11 +25,6 @@ struct LayoutEmission
     InfiniteArena* arena;
     LayoutContainer* active_container;
     LayoutNode** next_ptr;
-};
-
-struct LayoutConsumption
-{
-    LayoutPlacementNode* next_placement;
 };
 
 struct Style
@@ -70,7 +64,6 @@ struct Context
     Pass pass;
     Style* style;
     System* system;
-    LayoutConsumption layout_consumption;
 };
 
 } // namespace alia

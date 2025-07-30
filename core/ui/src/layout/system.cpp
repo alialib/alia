@@ -9,7 +9,6 @@ initialize(LayoutSystem& system)
     system.placement_arena.initialize();
     system.scratch_arena.initialize();
     system.root = LayoutContainer{.child_count = 0, .first_child = nullptr};
-    system.placement = nullptr;
 }
 
 void
@@ -25,8 +24,7 @@ resolve_layout(LayoutSystem& system, Vec2 available_space)
         vertical = measure_vertical(&ctx, root_node, available_space.x);
     }
     {
-        PlacementContext ctx{
-            &system.scratch_arena, &system.placement_arena, &system.placement};
+        PlacementContext ctx{&system.scratch_arena, &system.placement_arena};
         system.scratch_arena.reset();
         assign_boxes(
             &ctx,

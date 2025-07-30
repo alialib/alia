@@ -14,11 +14,6 @@ struct LayoutNode
     LayoutNode* next_sibling;
 };
 
-struct LayoutPlacementNode
-{
-    LayoutPlacementNode* next;
-};
-
 struct HorizontalRequirements
 {
     float min_size;
@@ -37,7 +32,6 @@ struct PlacementContext
 {
     InfiniteArena* scratch;
     InfiniteArena* arena;
-    LayoutPlacementNode** next_ptr;
 };
 
 struct MeasurementContext

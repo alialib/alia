@@ -11,7 +11,6 @@ struct LayoutSystem
     InfiniteArena scratch_arena;
     LayoutContainer root;
     InfiniteArena placement_arena;
-    LayoutPlacementNode* placement;
 };
 
 void
