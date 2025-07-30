@@ -30,9 +30,8 @@ row_measure_horizontal(MeasurementContext* ctx, LayoutNode* node)
     auto& row = *reinterpret_cast<RowLayoutNode*>(node);
     auto& row_scratch = claim_scratch<RowScratch>(*ctx->scratch);
     HorizontalRequirements* x_requirements
-        = reinterpret_cast<HorizontalRequirements*>(ctx->scratch->allocate(
-            row.child_count * sizeof(HorizontalRequirements),
-            alignof(HorizontalRequirements)));
+        = arena_array_alloc<HorizontalRequirements>(
+            *ctx->scratch, row.child_count);
     for (LayoutNode* child = row.first_child; child != nullptr;
          child = child->next_sibling)
     {
@@ -53,9 +52,8 @@ row_assign_widths(
     auto& row = *reinterpret_cast<RowLayoutNode*>(node);
     auto& row_scratch = use_scratch<RowScratch>(*ctx->scratch);
     HorizontalRequirements* x_requirements
-        = reinterpret_cast<HorizontalRequirements*>(ctx->scratch->allocate(
-            row.child_count * sizeof(HorizontalRequirements),
-            alignof(HorizontalRequirements)));
+        = arena_array_alloc<HorizontalRequirements>(
+            *ctx->scratch, row.child_count);
     auto const placement = resolve_horizontal_assignment(
         row.flags, assigned_width, row_scratch.total_width);
     float const total_extra_space
@@ -80,9 +78,8 @@ row_measure_vertical(
     auto& row = *reinterpret_cast<RowLayoutNode*>(node);
     auto& row_scratch = use_scratch<RowScratch>(*ctx->scratch);
     HorizontalRequirements* x_requirements
-        = reinterpret_cast<HorizontalRequirements*>(ctx->scratch->allocate(
-            row.child_count * sizeof(HorizontalRequirements),
-            alignof(HorizontalRequirements)));
+        = arena_array_alloc<HorizontalRequirements>(
+            *ctx->scratch, row.child_count);
     // TODO: Stop repeating this logic everywhere.
     auto const placement = resolve_horizontal_assignment(
         row.flags, assigned_width, row_scratch.total_width);
@@ -120,9 +117,8 @@ row_assign_boxes(
     auto& row = *reinterpret_cast<RowLayoutNode*>(node);
     auto& row_scratch = use_scratch<RowScratch>(*ctx->scratch);
     HorizontalRequirements* x_requirements
-        = reinterpret_cast<HorizontalRequirements*>(ctx->scratch->allocate(
-            row.child_count * sizeof(HorizontalRequirements),
-            alignof(HorizontalRequirements)));
+        = arena_array_alloc<HorizontalRequirements>(
+            *ctx->scratch, row.child_count);
     auto const placement = resolve_assignment(
         row.flags,
         box.size,

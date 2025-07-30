@@ -15,8 +15,7 @@ begin_container(
     {
         auto& layout = ctx.pass.refresh.layout_emission;
         LayoutContainer* this_container
-            = reinterpret_cast<LayoutContainer*>(layout.arena->allocate(
-                sizeof(LayoutContainer), alignof(LayoutContainer)));
+            = arena_alloc<LayoutContainer>(*layout.arena);
         scope.this_container = this_container;
         *this_container = LayoutContainer{
             .base = {.vtable = vtable, .next_sibling = 0},

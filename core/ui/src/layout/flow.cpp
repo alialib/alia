@@ -29,9 +29,8 @@ flow_measure_horizontal(MeasurementContext* ctx, LayoutNode* node)
     auto& flow_scratch = claim_scratch<FlowScratch>(*ctx->scratch);
 
     WrappingRequirements* child_requirements
-        = reinterpret_cast<WrappingRequirements*>(ctx->scratch->allocate(
-            flow.child_count * sizeof(WrappingRequirements),
-            alignof(WrappingRequirements)));
+        = arena_array_alloc<WrappingRequirements>(
+            *ctx->scratch, flow.child_count);
 
     float max_child_width = 0;
     for (LayoutNode* child = flow.first_child; child != nullptr;
@@ -77,9 +76,8 @@ flow_measure_vertical(
     auto& flow_scratch = use_scratch<FlowScratch>(*ctx->scratch);
 
     WrappingRequirements* child_requirements
-        = reinterpret_cast<WrappingRequirements*>(ctx->scratch->allocate(
-            flow.child_count * sizeof(WrappingRequirements),
-            alignof(WrappingRequirements)));
+        = arena_array_alloc<WrappingRequirements>(
+            *ctx->scratch, flow.child_count);
 
     float line_height = 0, line_ascent = 0, line_descent = 0;
     float overall_height = 0, overall_ascent = 0;
@@ -142,9 +140,8 @@ flow_assign_boxes(
     auto& flow_scratch = use_scratch<FlowScratch>(*ctx->scratch);
 
     WrappingRequirements* child_requirements
-        = reinterpret_cast<WrappingRequirements*>(ctx->scratch->allocate(
-            flow.child_count * sizeof(WrappingRequirements),
-            alignof(WrappingRequirements)));
+        = arena_array_alloc<WrappingRequirements>(
+            *ctx->scratch, flow.child_count);
 
     if (flow.child_count == 0)
         return;
@@ -270,9 +267,8 @@ flow_measure_wrapped_vertical(
     auto& flow_scratch = use_scratch<FlowScratch>(*ctx->scratch);
 
     WrappingRequirements* child_requirements
-        = reinterpret_cast<WrappingRequirements*>(ctx->scratch->allocate(
-            flow.child_count * sizeof(WrappingRequirements),
-            alignof(WrappingRequirements)));
+        = arena_array_alloc<WrappingRequirements>(
+            *ctx->scratch, flow.child_count);
 
     float line_height = 0, line_ascent = 0, line_descent = 0;
     LineRequirements first_line;
@@ -356,9 +352,8 @@ flow_assign_wrapped_boxes(
     auto& flow_scratch = use_scratch<FlowScratch>(*ctx->scratch);
 
     WrappingRequirements* child_requirements
-        = reinterpret_cast<WrappingRequirements*>(ctx->scratch->allocate(
-            flow.child_count * sizeof(WrappingRequirements),
-            alignof(WrappingRequirements)));
+        = arena_array_alloc<WrappingRequirements>(
+            *ctx->scratch, flow.child_count);
 
     if (flow.child_count == 0)
         return;

@@ -12,7 +12,7 @@ struct System;
 struct LayoutNode;
 struct LayoutContainer;
 struct LayoutPlacementNode;
-struct HeterogeneousInfiniteArena;
+struct InfiniteArena;
 
 enum class PassType
 {
@@ -23,7 +23,7 @@ enum class PassType
 
 struct LayoutEmission
 {
-    HeterogeneousInfiniteArena* arena;
+    InfiniteArena* arena;
     LayoutContainer* active_container;
     LayoutNode** next_ptr;
 };

@@ -37,8 +37,7 @@ leaf_assign_boxes(
 {
     auto& leaf = *reinterpret_cast<LayoutLeafNode*>(node);
     LeafLayoutPlacement* placement
-        = reinterpret_cast<LeafLayoutPlacement*>(ctx->arena->allocate(
-            sizeof(LeafLayoutPlacement), alignof(LeafLayoutPlacement)));
+        = arena_alloc<LeafLayoutPlacement>(*ctx->arena);
     auto const padded_placement = resolve_padded_assignment(
         leaf.flags, box.size, baseline, leaf.size, 0, leaf.padding);
     placement->position = box.pos + padded_placement.pos;

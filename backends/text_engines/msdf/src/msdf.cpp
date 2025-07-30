@@ -440,8 +440,7 @@ draw_text(
     Color color)
 {
     MsdfDrawCommand* command
-        = reinterpret_cast<MsdfDrawCommand*>(arena.allocate(
-            sizeof(MsdfDrawCommand) + length, alignof(MsdfDrawCommand)));
+        = arena_array_alloc<MsdfDrawCommand>(arena, length);
     command->engine = engine;
     command->next = nullptr;
     command->position = position + Vec2{0, engine->metrics.ascender * scale};

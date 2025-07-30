@@ -1,6 +1,7 @@
 add_library(alia_ui STATIC
     ${PROJECT_SOURCE_DIR}/core/ui/src/drawing.cpp
     ${PROJECT_SOURCE_DIR}/core/ui/src/display_list.cpp
+    ${PROJECT_SOURCE_DIR}/core/ui/src/system.cpp
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/container.cpp
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/flow.cpp
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/growth_override.cpp
@@ -9,7 +10,7 @@ add_library(alia_ui STATIC
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/inset.cpp
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/leaf.cpp
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/placement_hook.cpp
-    ${PROJECT_SOURCE_DIR}/core/ui/src/layout/resolution.cpp
+    ${PROJECT_SOURCE_DIR}/core/ui/src/layout/system.cpp
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/utilities.cpp
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/column.cpp)
 target_include_directories(alia_ui PUBLIC

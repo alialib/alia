@@ -31,9 +31,8 @@ column_measure_horizontal(MeasurementContext* ctx, LayoutNode* node)
     auto& column = *reinterpret_cast<ColumnLayoutNode*>(node);
     auto& column_scratch = claim_scratch<ColumnScratch>(*ctx->scratch);
     VerticalRequirements* y_requirements
-        = reinterpret_cast<VerticalRequirements*>(ctx->scratch->allocate(
-            column.child_count * sizeof(VerticalRequirements),
-            alignof(VerticalRequirements)));
+        = arena_array_alloc<VerticalRequirements>(
+            *ctx->scratch, column.child_count);
     for (LayoutNode* child = column.first_child; child != nullptr;
          child = child->next_sibling)
     {
@@ -53,9 +52,8 @@ column_assign_widths(
     auto& column = *reinterpret_cast<ColumnLayoutNode*>(node);
     auto& column_scratch = use_scratch<ColumnScratch>(*ctx->scratch);
     VerticalRequirements* y_requirements
-        = reinterpret_cast<VerticalRequirements*>(ctx->scratch->allocate(
-            column.child_count * sizeof(VerticalRequirements),
-            alignof(VerticalRequirements)));
+        = arena_array_alloc<VerticalRequirements>(
+            *ctx->scratch, column.child_count);
     for (LayoutNode* child = column.first_child; child != nullptr;
          child = child->next_sibling)
     {
@@ -70,9 +68,8 @@ column_measure_vertical(
     auto& column = *reinterpret_cast<ColumnLayoutNode*>(node);
     auto& column_scratch = use_scratch<ColumnScratch>(*ctx->scratch);
     VerticalRequirements* y_requirements
-        = reinterpret_cast<VerticalRequirements*>(ctx->scratch->allocate(
-            column.child_count * sizeof(VerticalRequirements),
-            alignof(VerticalRequirements)));
+        = arena_array_alloc<VerticalRequirements>(
+            *ctx->scratch, column.child_count);
     for (LayoutNode* child = column.first_child; child != nullptr;
          child = child->next_sibling)
     {
@@ -94,9 +91,8 @@ column_assign_boxes(
     auto& column = *reinterpret_cast<ColumnLayoutNode*>(node);
     auto& column_scratch = use_scratch<ColumnScratch>(*ctx->scratch);
     VerticalRequirements* y_requirements
-        = reinterpret_cast<VerticalRequirements*>(ctx->scratch->allocate(
-            column.child_count * sizeof(VerticalRequirements),
-            alignof(VerticalRequirements)));
+        = arena_array_alloc<VerticalRequirements>(
+            *ctx->scratch, column.child_count);
     // TODO: Handle baseline.
     float const total_extra_space
         = (std::max)(0.f, box.size.y - column_scratch.total_height);

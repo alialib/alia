@@ -12,8 +12,7 @@ begin_growth_override(Context& ctx, LayoutContainerScope& scope, float growth)
     {
         auto& layout = ctx.pass.refresh.layout_emission;
         GrowthOverrideNode* this_container
-            = reinterpret_cast<GrowthOverrideNode*>(layout.arena->allocate(
-                sizeof(GrowthOverrideNode), alignof(GrowthOverrideNode)));
+            = arena_alloc<GrowthOverrideNode>(*layout.arena);
         scope.this_container
             = reinterpret_cast<LayoutContainer*>(this_container);
         *this_container = GrowthOverrideNode{

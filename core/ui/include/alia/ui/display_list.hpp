@@ -39,6 +39,6 @@ add_command(CommandList<Command>& list, Command* command)
     ++list.count;
 }
 
-using DisplayListArena = HeterogeneousInfiniteArena;
+using DisplayListArena = InfiniteArena;
 
 } // namespace alia

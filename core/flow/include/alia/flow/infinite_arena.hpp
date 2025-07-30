@@ -3,34 +3,29 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 
 #include <alia/flow/base.hpp>
 
 namespace alia {
 
 // RawInfiniteArena is a simple arena allocator that assumes an infinite
-// reservation of memory. It's up to the caller to ensure that allocations:
-//
-// - Do not overflow the arena.
-// - Are properly aligned.
-//
-// It checks for overflow with ALIA_ASSERT, but does not check for alignment.
-//
-struct RawInfiniteArena
+// reservation of memory.
+struct InfiniteArena
 {
     static constexpr std::size_t INFINITE_CAPACITY = 128 * 1024 * 1024;
 
-    RawInfiniteArena()
+    InfiniteArena()
     {
     }
 
     // Disallow copying.
-    RawInfiniteArena(RawInfiniteArena const&) = delete;
-    RawInfiniteArena&
-    operator=(RawInfiniteArena const&)
+    InfiniteArena(InfiniteArena const&) = delete;
+    InfiniteArena&
+    operator=(InfiniteArena const&)
         = delete;
 
-    RawInfiniteArena(RawInfiniteArena&& other)
+    InfiniteArena(InfiniteArena&& other)
     {
         base_ = other.base_;
         next_ = other.next_;
@@ -38,8 +33,8 @@ struct RawInfiniteArena
         // The moved-from arena must have a noop destruction.
         other.base_ = nullptr;
     }
-    RawInfiniteArena&
-    operator=(RawInfiniteArena&& other)
+    InfiniteArena&
+    operator=(InfiniteArena&& other)
     {
         base_ = other.base_;
         next_ = other.next_;
@@ -48,7 +43,7 @@ struct RawInfiniteArena
         other.base_ = nullptr;
     }
 
-    ~RawInfiniteArena()
+    ~InfiniteArena()
     {
         release();
     }
@@ -57,13 +52,12 @@ struct RawInfiniteArena
     initialize(std::size_t reservation_size = INFINITE_CAPACITY);
 
     void*
-    allocate(std::size_t size)
+    alloc(std::size_t size)
     {
         ALIA_ASSERT(base_ && "LayoutArena must be initialized");
-        void* ptr = next_;
         next_ += size;
         ALIA_ASSERT(next_ - base_ <= capacity_ && "LayoutArena overflow");
-        return ptr;
+        return (void*) next_;
     }
 
     void*
@@ -99,62 +93,38 @@ struct RawInfiniteArena
     std::size_t capacity_ = 0;
 };
 
-// HeterogeneousInfiniteArena is an arena allocator that assumes an infinite
-// reservation of memory but supports heterogeneous sizes and alignments.
-struct HeterogeneousInfiniteArena
+inline void*
+aligned_alloc(InfiniteArena& arena, std::size_t size, std::size_t alignment)
 {
-    // TODO: Use inheritance to avoid code duplication?
+    std::uintptr_t addr = std::uintptr_t(arena.peek());
+    std::uintptr_t aligned_addr = (addr + (alignment - 1)) & ~(alignment - 1);
+    std::size_t padding = aligned_addr - addr;
+    arena.alloc(size + padding);
+    return (void*) aligned_addr;
+}
 
-    static constexpr std::size_t INFINITE_CAPACITY = 128 * 1024 * 1024;
+template<class T>
+T*
+arena_alloc(InfiniteArena& arena)
+{
+    return reinterpret_cast<T*>(aligned_alloc(arena, sizeof(T), alignof(T)));
+}
 
-    RawInfiniteArena base_;
+template<class T>
+T*
+arena_array_alloc(InfiniteArena& arena, std::size_t count)
+{
+    return reinterpret_cast<T*>(
+        aligned_alloc(arena, count * sizeof(T), alignof(T)));
+}
 
-    bool
-    initialize(std::size_t reservation_size = INFINITE_CAPACITY)
-    {
-        return base_.initialize(reservation_size);
-    }
-
-    void*
-    allocate(std::size_t size, std::size_t alignment)
-    {
-        std::uintptr_t addr = std::uintptr_t(base_.peek());
-        std::uintptr_t aligned_addr
-            = (addr + (alignment - 1)) & ~(alignment - 1);
-        std::size_t padding = aligned_addr - addr;
-        base_.allocate(size + padding);
-        return (void*) (aligned_addr);
-    }
-
-    void*
-    peek()
-    {
-        return base_.peek();
-    }
-
-    void
-    reset()
-    {
-        base_.reset();
-    }
-
-    void
-    release()
-    {
-        base_.release();
-    }
-
-    std::uint8_t*
-    save_state()
-    {
-        return base_.save_state();
-    }
-
-    void
-    restore_state(std::uint8_t* state)
-    {
-        base_.restore_state(state);
-    }
-};
+template<class T>
+T*
+arena_new(InfiniteArena& arena)
+{
+    static_assert(std::is_trivially_destructible_v<T>);
+    void* raw = aligned_alloc(arena, sizeof(T), alignof(T));
+    return std::construct_at(reinterpret_cast<T*>(raw));
+}
 
 } // namespace alia

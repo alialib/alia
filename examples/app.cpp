@@ -28,25 +28,20 @@
 #include <alia/ui/layout/leaf.hpp>
 #include <alia/ui/layout/min_size.hpp>
 #include <alia/ui/layout/placement_hook.hpp>
-#include <alia/ui/layout/resolution.hpp>
 #include <alia/ui/layout/row.hpp>
+#include <alia/ui/layout/system.hpp>
 #include <alia/ui/layout/utilities.hpp>
 #include <alia/ui/system.hpp>
 
 using namespace alia;
 
 System the_system;
-LayoutSpecArena the_layout_spec_arena;
-LayoutScratchArena the_scratch_arena;
-LayoutContainer the_layout_root = {.child_count = 0, .first_child = nullptr};
-LayoutPlacementArena the_layout_placement_arena;
 GLFWwindow* the_window;
 GlRenderer the_renderer;
 DisplayListArena the_display_list_arena;
 BoxCommandList the_box_commands;
 MsdfTextEngine* the_msdf_text_engine;
 CommandList<MsdfDrawCommand> the_msdf_commands;
-LayoutPlacementNode* the_initial_layout_placement;
 Style the_style = {.padding = 10.0f};
 
 bool
@@ -59,10 +54,10 @@ detect_click(Event* event, float x, float y, float width, float height)
 
 template<class T>
 T*
-allocate_spec_node(LayoutSpecArena& arena)
+allocate_spec_node(InfiniteArena& arena)
 {
     static_assert(std::is_trivially_destructible_v<T>);
-    return reinterpret_cast<T*>(arena.allocate(sizeof(T), alignof(T)));
+    return arena_alloc<T>(arena);
 }
 
 template<class Content>
@@ -90,8 +85,8 @@ do_rect(Context& ctx, Vec2 size, Color color, LayoutFlagSet flags)
     {
         case PassType::Refresh: {
             auto& layout = ctx.pass.refresh.layout_emission;
-            LayoutLeafNode* new_node
-                = allocate_spec_node<LayoutLeafNode>(the_layout_spec_arena);
+            LayoutLeafNode* new_node = allocate_spec_node<LayoutLeafNode>(
+                ctx.system->layout.node_arena);
             *layout.next_ptr = &new_node->base;
             layout.next_ptr = &new_node->base.next_sibling;
             *new_node = LayoutLeafNode{
@@ -213,17 +208,13 @@ assign_text_boxes(
         text.padding);
 
     TextLayoutPlacementHeader* header
-        = reinterpret_cast<TextLayoutPlacementHeader*>(ctx->arena->allocate(
-            sizeof(TextLayoutPlacementHeader),
-            alignof(TextLayoutPlacementHeader)));
+        = arena_alloc<TextLayoutPlacementHeader>(*ctx->arena);
     header->fragment_count = 1;
     *ctx->next_ptr = &header->base;
     ctx->next_ptr = &header->base.next;
 
     TextLayoutPlacementFragment* fragment
-        = reinterpret_cast<TextLayoutPlacementFragment*>(ctx->arena->allocate(
-            sizeof(TextLayoutPlacementFragment),
-            alignof(TextLayoutPlacementFragment)));
+        = arena_alloc<TextLayoutPlacementFragment>(*ctx->arena);
     fragment->position = box.pos + placement.pos;
     fragment->size = placement.size;
     fragment->text = text.text;
@@ -331,9 +322,7 @@ assign_text_wrapped_boxes(
     size_t length = strlen(text.text);
 
     TextLayoutPlacementHeader* header
-        = reinterpret_cast<TextLayoutPlacementHeader*>(ctx->arena->allocate(
-            sizeof(TextLayoutPlacementHeader),
-            alignof(TextLayoutPlacementHeader)));
+        = arena_alloc<TextLayoutPlacementHeader>(*ctx->arena);
     header->fragment_count = 0;
     *ctx->next_ptr = &header->base;
     ctx->next_ptr = &header->base.next;
@@ -367,10 +356,7 @@ assign_text_wrapped_boxes(
         }
 
         TextLayoutPlacementFragment* fragment
-            = reinterpret_cast<TextLayoutPlacementFragment*>(
-                ctx->arena->allocate(
-                    sizeof(TextLayoutPlacementFragment),
-                    alignof(TextLayoutPlacementFragment)));
+            = arena_alloc<TextLayoutPlacementFragment>(*ctx->arena);
         fragment->position
             = {x + assignment->x_base + text.padding,
                y - metrics->ascender * text.font_size};
@@ -424,7 +410,7 @@ do_text(
             auto& layout = ctx.pass.refresh.layout_emission;
             MsdfTextLayoutNode* new_node
                 = allocate_spec_node<MsdfTextLayoutNode>(
-                    the_layout_spec_arena);
+                    ctx.system->layout.node_arena);
             new_node->base.vtable = &text_layout_vtable;
             new_node->base.next_sibling = nullptr;
             new_node->flags = flags;
@@ -749,7 +735,7 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
                .style = &the_style,
                .system = &the_system,
                .layout_consumption
-               = {.next_placement = the_initial_layout_placement}};
+               = {.next_placement = the_system.layout.placement}};
         the_demo(event_ctx);
     }
 }
@@ -761,29 +747,24 @@ update()
         last_frame_time = std::chrono::high_resolution_clock::now();
     auto const start_time = std::chrono::high_resolution_clock::now();
 
-    std::uint32_t root_index;
-    the_layout_spec_arena.reset();
+    the_system.layout.node_arena.reset();
     Context refresh_ctx = {
         Pass{
             PassType::Refresh,
             {.refresh
              = {.layout_emission
-                = {&the_layout_spec_arena,
-                   &the_layout_root,
-                   &the_layout_root.first_child}}}},
+                = {&the_system.layout.node_arena,
+                   &the_system.layout.root,
+                   &the_system.layout.root.first_child}}}},
         &the_style,
         &the_system};
-    *refresh_ctx.pass.refresh.layout_emission.next_ptr = 0;
     the_demo(refresh_ctx);
+    *refresh_ctx.pass.refresh.layout_emission.next_ptr = 0;
 
     update_glfw_window_info(the_system, the_window);
 
-    the_layout_placement_arena.reset();
-    the_initial_layout_placement = resolve_layout(
-        the_scratch_arena,
-        the_layout_placement_arena,
-        *the_layout_root.first_child,
-        the_system.framebuffer_size);
+    the_system.layout.placement_arena.reset();
+    resolve_layout(the_system.layout, the_system.framebuffer_size);
 
     auto const layout_finished_time
         = std::chrono::high_resolution_clock::now();
@@ -810,8 +791,7 @@ update()
               .box_command_list = &the_box_commands}},
         .style = &the_style,
         .system = &the_system,
-        .layout_consumption
-        = {.next_placement = the_initial_layout_placement}};
+        .layout_consumption = {.next_placement = the_system.layout.placement}};
     the_demo(draw_ctx);
 
     while ((err = glGetError()) != GL_NO_ERROR)
@@ -843,7 +823,6 @@ update()
     auto const frame_time = std::chrono::duration_cast<
         std::chrono::duration<int64_t, std::micro>>(end_time - start_time);
 
-    // printf("the_glyph_count: %d\n", the_glyph_instance_count);
     auto const external_frame_time = std::chrono::duration_cast<
         std::chrono::duration<int64_t, std::micro>>(
         start_time - last_frame_time);
@@ -910,9 +889,10 @@ main()
         return -1;
     }
 
-    the_scratch_arena.initialize();
-    the_layout_spec_arena.initialize();
-    the_layout_placement_arena.initialize();
+    initialize(
+        the_system,
+        Vec2{1200, 1600}, // Initial framebuffer size
+        Vec2{1.0f, 1.0f}); // Initial UI zoom
 
     init_gl_renderer(&the_renderer);
 

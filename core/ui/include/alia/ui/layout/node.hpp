@@ -14,12 +14,6 @@ struct LayoutNode
     LayoutNode* next_sibling;
 };
 
-using LayoutSpecArena = HeterogeneousInfiniteArena;
-
-using LayoutScratchArena = HeterogeneousInfiniteArena;
-
-using LayoutPlacementArena = HeterogeneousInfiniteArena;
-
 struct LayoutPlacementNode
 {
     LayoutPlacementNode* next;
@@ -41,14 +35,14 @@ struct VerticalRequirements
 
 struct PlacementContext
 {
-    LayoutScratchArena* scratch;
-    LayoutPlacementArena* arena;
+    InfiniteArena* scratch;
+    InfiniteArena* arena;
     LayoutPlacementNode** next_ptr;
 };
 
 struct MeasurementContext
 {
-    LayoutScratchArena* scratch;
+    InfiniteArena* scratch;
 };
 
 struct LineRequirements

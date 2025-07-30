@@ -5,128 +5,74 @@
 #include <vector>
 
 #include <alia/flow/infinite_arena.hpp>
-#include <alia/ui/layout/resolution.hpp>
+#include <alia/ui/context.hpp>
+#include <alia/ui/layout/column.hpp>
+#include <alia/ui/layout/container.hpp>
+#include <alia/ui/layout/leaf.hpp>
+#include <alia/ui/layout/row.hpp>
+#include <alia/ui/system.hpp>
 
 using namespace alia;
 
-struct LayoutBenchmarkSystem
-{
-    LayoutScratchArena scratch;
-    std::vector<LayoutNode> nodes;
-    std::vector<LayoutPlacement> placements;
-};
-
-struct LayoutBenchmarkContext
-{
-    std::vector<LayoutNode>* nodes;
-    std::uint32_t active_container = 0;
-    std::uint32_t* next;
-};
-
-void
-initialize(LayoutBenchmarkSystem& system)
-{
-    system.scratch.initialize();
-}
-
 template<class Content>
 void
-add_content(LayoutBenchmarkSystem& system, Content&& content)
+add_content(System& system, Content&& content)
 {
-    system.scratch.reset();
+    Style style = {.padding = 0};
 
-    system.nodes.clear();
-    // Add a placeholder to fill the reserved/invalid 0 index.
-    system.nodes.push_back(LayoutNode{});
+    system.layout.node_arena.reset();
+    Context refresh_ctx = {
+        Pass{
+            PassType::Refresh,
+            {.refresh
+             = {.layout_emission
+                = {&system.layout.node_arena,
+                   &system.layout.root,
+                   &system.layout.root.first_child}}}},
+        &style,
+        &system};
 
-    std::uint32_t root_index;
-    LayoutBenchmarkContext ctx;
-    ctx.nodes = &system.nodes;
-    ctx.next = &root_index;
+    content(refresh_ctx);
 
-    content(ctx);
-
-    *ctx.next = 0;
-
-    system.placements.resize(system.nodes.size());
+    *refresh_ctx.pass.refresh.layout_emission.next_ptr = 0;
 }
 
 void
-add_leaf(LayoutBenchmarkContext& ctx, LayoutNode node)
+do_leaf(Context& ctx, Vec2 size, LayoutFlagSet flags = NO_FLAGS)
 {
-    *ctx.next = static_cast<std::uint32_t>(ctx.nodes->size());
-    node.type = LayoutNodeType::Leaf;
-    ctx.nodes->push_back(node);
-    ++(*ctx.nodes)[ctx.active_container].child_count;
-    ctx.next = &ctx.nodes->back().next_sibling;
-}
-
-template<class Content>
-void
-add_hbox(LayoutBenchmarkContext& ctx, LayoutNode node, Content&& content)
-{
-    std::uint32_t this_index = static_cast<std::uint32_t>(ctx.nodes->size());
-    *ctx.next = this_index;
-
-    node.type = LayoutNodeType::HBox;
-    ctx.nodes->push_back(node);
-
-    std::uint32_t parent_container = ctx.active_container;
-    ++(*ctx.nodes)[parent_container].child_count;
-
-    ctx.next = &(*ctx.nodes)[this_index].first_child;
-    ctx.active_container = this_index;
-
-    content();
-
-    *ctx.next = 0;
-    ctx.next = &(*ctx.nodes)[this_index].next_sibling;
-
-    ctx.active_container = parent_container;
-}
-
-template<class Content>
-void
-add_vbox(LayoutBenchmarkContext& ctx, LayoutNode node, Content&& content)
-{
-    std::uint32_t this_index = static_cast<std::uint32_t>(ctx.nodes->size());
-    *ctx.next = this_index;
-
-    node.type = LayoutNodeType::VBox;
-    ctx.nodes->push_back(node);
-
-    std::uint32_t parent_container = ctx.active_container;
-    ++(*ctx.nodes)[parent_container].child_count;
-
-    ctx.next = &(*ctx.nodes)[this_index].first_child;
-    ctx.active_container = this_index;
-
-    content();
-
-    *ctx.next = 0;
-    ctx.next = &(*ctx.nodes)[this_index].next_sibling;
-
-    ctx.active_container = parent_container;
+    if (ctx.pass.type != PassType::Refresh)
+    {
+        auto& layout = ctx.pass.refresh.layout_emission;
+        LayoutLeafNode* new_node = arena_alloc<LayoutLeafNode>(
+            *ctx.pass.refresh.layout_emission.arena);
+        *layout.next_ptr = &new_node->base;
+        layout.next_ptr = &new_node->base.next_sibling;
+        *new_node = LayoutLeafNode{
+            .base = {.vtable = &leaf_vtable, .next_sibling = 0},
+            .flags = flags,
+            .padding = ctx.style->padding,
+            .size = size};
+        ++layout.active_container->child_count;
+    }
 }
 
 int
 main()
 {
-    LayoutBenchmarkSystem system;
-    initialize(system);
+    System system;
+    initialize(system, Vec2{10'000, 10'000}, Vec2{1.0f, 1.0f});
 
     add_content(system, [&](auto& ctx) {
-        add_hbox(ctx, LayoutNode{}, [&] {
+        row(ctx, [&] {
             for (uint32_t i = 0; i < 10; ++i)
             {
-                add_vbox(ctx, LayoutNode{}, [&] {
+                column(ctx, [&] {
                     for (uint32_t i = 0; i < 10; ++i)
                     {
-                        add_hbox(ctx, LayoutNode{}, [&] {
+                        row(ctx, [&] {
                             for (uint32_t i = 0; i < 10; ++i)
                             {
-                                add_leaf(
-                                    ctx, LayoutNode{.size = Vec2(100, 100)});
+                                do_leaf(ctx, Vec2(100, 100));
                             }
                         });
                     }
@@ -135,12 +81,33 @@ main()
         });
     });
 
-    ankerl::nanobench::Bench().run("resolve_layout", [&] {
-        resolve_layout(
-            system.nodes.data(),
-            system.scratch,
-            system.placements.data(),
-            Vec2{10'000, 1000});
-        ankerl::nanobench::doNotOptimizeAway(system.placements);
-    });
+    ankerl::nanobench::Bench().minEpochIterations(1000).run(
+        "add_content", [&] {
+            add_content(system, [&](auto& ctx) {
+                row(ctx, [&] {
+                    for (uint32_t i = 0; i < 10; ++i)
+                    {
+                        column(ctx, [&] {
+                            for (uint32_t i = 0; i < 10; ++i)
+                            {
+                                row(ctx, [&] {
+                                    for (uint32_t i = 0; i < 10; ++i)
+                                    {
+                                        do_leaf(ctx, Vec2(100, 100));
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+            });
+            ankerl::nanobench::doNotOptimizeAway(
+                system.layout.root.first_child);
+        });
+
+    ankerl::nanobench::Bench().minEpochIterations(1000).run(
+        "resolve_layout", [&] {
+            resolve_layout(system.layout, Vec2{10'000, 10'000});
+            ankerl::nanobench::doNotOptimizeAway(system.layout.placement);
+        });
 }

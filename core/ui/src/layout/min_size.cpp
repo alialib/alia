@@ -11,8 +11,7 @@ begin_min_size(Context& ctx, LayoutContainerScope& scope, Vec2 min_size)
     if (ctx.pass.type == PassType::Refresh)
     {
         auto& layout = ctx.pass.refresh.layout_emission;
-        MinSizeNode* this_container = reinterpret_cast<MinSizeNode*>(
-            layout.arena->allocate(sizeof(MinSizeNode), alignof(MinSizeNode)));
+        MinSizeNode* this_container = arena_alloc<MinSizeNode>(*layout.arena);
         scope.this_container
             = reinterpret_cast<LayoutContainer*>(this_container);
         *this_container = MinSizeNode{

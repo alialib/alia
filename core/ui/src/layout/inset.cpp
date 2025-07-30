@@ -16,8 +16,7 @@ begin_inset(
     {
         auto& layout = ctx.pass.refresh.layout_emission;
         InsetLayoutNode* this_container
-            = reinterpret_cast<InsetLayoutNode*>(layout.arena->allocate(
-                sizeof(InsetLayoutNode), alignof(InsetLayoutNode)));
+            = arena_alloc<InsetLayoutNode>(*layout.arena);
         scope.this_container
             = reinterpret_cast<LayoutContainer*>(this_container);
         *this_container = InsetLayoutNode{

@@ -20,8 +20,7 @@ begin_placement_hook(
     {
         auto& layout = ctx.pass.refresh.layout_emission;
         PlacementHookNode* this_node
-            = reinterpret_cast<PlacementHookNode*>(layout.arena->allocate(
-                sizeof(PlacementHookNode), alignof(PlacementHookNode)));
+            = arena_alloc<PlacementHookNode>(*layout.arena);
         scope.container.this_container = this_node;
         *this_node = PlacementHookNode{
             .base = {.vtable = &placement_hook_vtable, .next_sibling = 0},
@@ -82,8 +81,7 @@ placement_hook_assign_boxes(
     auto& placement_hook = *reinterpret_cast<PlacementHookNode*>(node);
 
     PlacementHookPlacement* placement
-        = reinterpret_cast<PlacementHookPlacement*>(ctx->arena->allocate(
-            sizeof(PlacementHookPlacement), alignof(PlacementHookPlacement)));
+        = arena_alloc<PlacementHookPlacement>(*ctx->arena);
     placement->placement.box = box;
     placement->placement.baseline = baseline;
     *ctx->next_ptr = &placement->base;

@@ -6,8 +6,7 @@ namespace alia {
 void
 draw_box(DisplayListArena& arena, BoxCommandList& list, Box box, Color color)
 {
-    BoxDrawCommand* command = reinterpret_cast<BoxDrawCommand*>(
-        arena.allocate(sizeof(BoxDrawCommand), alignof(BoxDrawCommand)));
+    BoxDrawCommand* command = arena_alloc<BoxDrawCommand>(arena);
     *command = BoxDrawCommand{.box = box, .color = color, .next = nullptr};
     add_command(list, command);
 }
