@@ -4,6 +4,7 @@ add_library(alia_ui STATIC
     ${PROJECT_SOURCE_DIR}/core/ui/src/system.cpp
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/container.cpp
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/flow.cpp
+    ${PROJECT_SOURCE_DIR}/core/ui/src/layout/alignment_override.cpp
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/growth_override.cpp
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/min_size.cpp
     ${PROJECT_SOURCE_DIR}/core/ui/src/layout/row.cpp

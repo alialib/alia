@@ -20,6 +20,7 @@
 #include <alia/ui/drawing.hpp>
 #include <alia/ui/events.hpp>
 #include <alia/ui/geometry.hpp>
+#include <alia/ui/layout/alignment_override.hpp>
 #include <alia/ui/layout/column.hpp>
 #include <alia/ui/layout/container.hpp>
 #include <alia/ui/layout/flow.hpp>
@@ -620,15 +621,50 @@ layout_growth_demo(Context& ctx)
         {
             float f = fmod(x, 1.0f);
             growth_override(ctx, i * 1.0f, [&]() {
-                if (do_rect(
-                        ctx,
-                        {24, 24},
-                        Color{f, 0.1f, 1.0f - f, 1},
-                        FILL | (i & 1 ? GROW : NO_FLAGS)))
-                {
-                    return;
-                }
+                do_rect(
+                    ctx,
+                    {24, 24},
+                    Color{f, 0.1f, 1.0f - f, 1},
+                    FILL | (i & 1 ? GROW : NO_FLAGS));
             });
+            x += 0.08f;
+        }
+    });
+}
+
+void
+alignment_override_demo(Context& ctx)
+{
+    float x = 0.0f;
+    row(ctx, [&]() {
+        for (int i = 0; i < 12; ++i)
+        {
+            float f = fmod(x, 1.0f);
+            inset(
+                ctx,
+                {.left = 10, .right = 10, .top = 10, .bottom = 10},
+                [&]() {
+                    min_size(ctx, {0, 200}, [&]() {
+                        panel(
+                            ctx,
+                            Color{
+                                0.14f + 0.06f * f,
+                                0.14f + 0.06f * f,
+                                0.16f + 0.08f * f,
+                                1},
+                            NO_FLAGS,
+                            [&]() {
+                                alignment_override(
+                                    ctx, i & 1 ? TOP : BOTTOM, [&]() {
+                                        do_rect(
+                                            ctx,
+                                            {24, 24},
+                                            Color{f, 0.1f, 1.0f - f, 1},
+                                            FILL);
+                                    });
+                            });
+                    });
+                });
             x += 0.08f;
         }
     });
@@ -659,6 +695,7 @@ layout_demo(Context& ctx)
                 });
                 column(ctx, GROW, [&]() {
                     layout_growth_demo(ctx);
+                    alignment_override_demo(ctx);
                     layout_demo_flow(ctx);
                 });
             });
