@@ -20,8 +20,7 @@ struct ColumnScratch
 {
     float max_width = 0;
     float total_height = 0, total_growth = 0;
-    bool has_baseline = false;
-    float baseline_y = 0;
+    float baseline = 0;
 };
 
 HorizontalRequirements
@@ -53,10 +52,12 @@ column_assign_widths(
     VerticalRequirements* y_requirements
         = arena_array_alloc<VerticalRequirements>(
             *ctx->scratch, column.child_count);
+    auto const assignment = resolve_horizontal_assignment(
+        column.flags, assigned_width, column_scratch.max_width);
     for (LayoutNode* child = column.first_child; child != nullptr;
          child = child->next_sibling)
     {
-        assign_widths(ctx, child, assigned_width);
+        assign_widths(ctx, child, assignment.size);
     }
 }
 
@@ -69,18 +70,24 @@ column_measure_vertical(
     VerticalRequirements* y_requirements
         = arena_array_alloc<VerticalRequirements>(
             *ctx->scratch, column.child_count);
+    auto const assignment = resolve_horizontal_assignment(
+        column.flags, assigned_width, column_scratch.max_width);
+    VerticalRequirements* requirement_i = y_requirements;
     for (LayoutNode* child = column.first_child; child != nullptr;
          child = child->next_sibling)
     {
-        auto const child_y = measure_vertical(ctx, child, assigned_width);
-        *y_requirements++ = child_y;
+        auto const child_y = measure_vertical(ctx, child, assignment.size);
+        *requirement_i++ = child_y;
         column_scratch.total_height += child_y.min_size;
         column_scratch.total_growth += child_y.growth_factor;
-        // TODO: Handle baseline.
     }
+    column_scratch.baseline
+        = (column.child_count > 0) ? y_requirements->ascent : 0;
     return VerticalRequirements{
         .min_size = column_scratch.total_height,
-        .growth_factor = resolve_growth_factor(column.flags)};
+        .growth_factor = resolve_growth_factor(column.flags),
+        .ascent = column_scratch.baseline,
+        .descent = column_scratch.total_height - column_scratch.baseline};
 }
 
 void
@@ -92,13 +99,18 @@ column_assign_boxes(
     VerticalRequirements* y_requirements
         = arena_array_alloc<VerticalRequirements>(
             *ctx->scratch, column.child_count);
-    // TODO: Handle baseline.
+    auto const assignment = resolve_assignment(
+        column.flags,
+        box.size,
+        baseline,
+        {column_scratch.max_width, column_scratch.total_height},
+        column_scratch.baseline);
     float const total_extra_space
-        = (std::max)(0.f, box.size.y - column_scratch.total_height);
+        = (std::max)(0.f, assignment.size.y - column_scratch.total_height);
     // TODO: Figure out how to handle 0 total growth.
     float const total_growth
         = (std::max)(0.00001f, column_scratch.total_growth);
-    float current_y = box.pos.y;
+    float current_y = box.pos.y + assignment.pos.y;
     for (LayoutNode* child = column.first_child; child != nullptr;
          child = child->next_sibling)
     {
@@ -108,8 +120,8 @@ column_assign_boxes(
         assign_boxes(
             ctx,
             child,
-            Box{Vec2{box.pos.x, current_y},
-                Vec2{box.size.x, child_y.min_size + extra_space}},
+            Box{Vec2{box.pos.x + assignment.pos.x, current_y},
+                Vec2{assignment.size.x, child_y.min_size + extra_space}},
             child_y.ascent);
         current_y += child_y.min_size + extra_space;
     }
