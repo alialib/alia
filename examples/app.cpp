@@ -727,13 +727,16 @@ update()
     the_demo(refresh_ctx);
     *refresh_ctx.pass.refresh.layout_emission.next_ptr = 0;
 
-    update_glfw_window_info(the_system, the_window);
+    auto const refresh_finished_time
+        = std::chrono::high_resolution_clock::now();
 
     the_system.layout.placement_arena.reset();
     resolve_layout(the_system.layout, the_system.framebuffer_size);
 
     auto const layout_finished_time
         = std::chrono::high_resolution_clock::now();
+
+    update_glfw_window_info(the_system, the_window);
 
     // glfwMakeContextCurrent(the_window);
     glViewport(
@@ -778,9 +781,12 @@ update()
     glBindVertexArray(0);
 
     auto const end_time = std::chrono::high_resolution_clock::now();
+    auto const refresh_time = std::chrono::duration_cast<
+        std::chrono::duration<int64_t, std::micro>>(
+        refresh_finished_time - start_time);
     auto const layout_time = std::chrono::duration_cast<
         std::chrono::duration<int64_t, std::micro>>(
-        layout_finished_time - start_time);
+        layout_finished_time - refresh_finished_time);
     auto const render_time = std::chrono::duration_cast<
         std::chrono::duration<int64_t, std::micro>>(
         end_time - layout_finished_time);
@@ -796,10 +802,10 @@ update()
         std::cout << "FRAME_TIME_SLOW" << std::endl;
     }
 
-    std::cout
-        << "frame_time: " << std::setw(6) << external_frame_time << ": "
-        << std::setw(6) << frame_time << ": " << std::setw(6) << layout_time
-        << " / " << std::setw(6) << render_time << std::endl;
+    std::cout << "frame_time: " << std::setw(6) << external_frame_time << ": "
+              << std::setw(6) << frame_time << ": " << std::setw(6)
+              << refresh_time << " / " << std::setw(6) << layout_time << " / "
+              << std::setw(6) << render_time << std::endl;
 
     last_frame_time = start_time;
 
