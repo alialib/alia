@@ -19,13 +19,9 @@ begin_placement_hook(
         *this_node = PlacementHookNode{
             .base = {.vtable = &placement_hook_vtable, .next_sibling = 0},
             .flags = flags,
-            .child_count = 0,
             .first_child = 0};
         *layout.next_ptr = &this_node->base;
         layout.next_ptr = &this_node->first_child;
-        scope.container.parent_container = layout.active_container;
-        ++scope.container.parent_container->child_count;
-        layout.active_container = scope.container.this_container;
     }
     else
     {
@@ -44,7 +40,6 @@ HorizontalRequirements
 placement_hook_measure_horizontal(MeasurementContext* ctx, LayoutNode* node)
 {
     auto& placement_hook = *reinterpret_cast<PlacementHookNode*>(node);
-    ALIA_ASSERT(placement_hook.child_count == 1);
     return measure_horizontal(ctx, placement_hook.first_child);
 }
 
@@ -53,7 +48,6 @@ placement_hook_assign_widths(
     MeasurementContext* ctx, LayoutNode* node, float assigned_width)
 {
     auto& placement_hook = *reinterpret_cast<PlacementHookNode*>(node);
-    ALIA_ASSERT(placement_hook.child_count == 1);
     assign_widths(ctx, placement_hook.first_child, assigned_width);
 }
 
@@ -62,7 +56,6 @@ placement_hook_measure_vertical(
     MeasurementContext* ctx, LayoutNode* node, float assigned_width)
 {
     auto& placement_hook = *reinterpret_cast<PlacementHookNode*>(node);
-    ALIA_ASSERT(placement_hook.child_count == 1);
     return measure_vertical(ctx, placement_hook.first_child, assigned_width);
 }
 
@@ -76,7 +69,6 @@ placement_hook_assign_boxes(
     placement->box = box;
     placement->baseline = baseline;
 
-    ALIA_ASSERT(placement_hook.child_count == 1);
     assign_boxes(ctx, placement_hook.first_child, box, baseline);
 }
 

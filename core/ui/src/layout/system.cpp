@@ -8,7 +8,10 @@ initialize(LayoutSystem& system)
     system.node_arena.initialize();
     system.placement_arena.initialize();
     system.scratch_arena.initialize();
-    system.root = LayoutContainer{.child_count = 0, .first_child = nullptr};
+    system.root = LayoutContainer{
+        .base = {.vtable = nullptr, .next_sibling = nullptr},
+        .flags = NO_FLAGS,
+        .first_child = 0};
 }
 
 void

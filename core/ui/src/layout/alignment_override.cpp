@@ -29,14 +29,10 @@ begin_alignment_override(
             = {.base
                = {.vtable = &alignment_override_vtable, .next_sibling = 0},
                .flags = NO_FLAGS,
-               .child_count = 0,
                .first_child = 0},
             .flags = flags};
         *layout.next_ptr = &this_container->container.base;
         layout.next_ptr = &this_container->container.first_child;
-        scope.parent_container = layout.active_container;
-        ++scope.parent_container->child_count;
-        layout.active_container = scope.this_container;
     }
 }
 
@@ -52,7 +48,6 @@ alignment_override_measure_horizontal(
 {
     auto& override = *reinterpret_cast<AlignmentOverrideNode*>(node);
     auto& scratch = claim_scratch<AlignmentOverrideScratch>(*ctx->scratch);
-    ALIA_ASSERT(override.container.child_count == 1);
     scratch.horizontal
         = measure_horizontal(ctx, override.container.first_child);
     return scratch.horizontal;
@@ -64,7 +59,6 @@ alignment_override_assign_widths(
 {
     auto& override = *reinterpret_cast<AlignmentOverrideNode*>(node);
     auto& scratch = use_scratch<AlignmentOverrideScratch>(*ctx->scratch);
-    ALIA_ASSERT(override.container.child_count == 1);
     auto const assignment = resolve_horizontal_assignment(
         override.flags, assigned_width, scratch.horizontal.min_size);
     assign_widths(ctx, override.container.first_child, assignment.size);
@@ -76,7 +70,6 @@ alignment_override_measure_vertical(
 {
     auto& override = *reinterpret_cast<AlignmentOverrideNode*>(node);
     auto& scratch = use_scratch<AlignmentOverrideScratch>(*ctx->scratch);
-    ALIA_ASSERT(override.container.child_count == 1);
     auto const assignment = resolve_horizontal_assignment(
         override.flags, assigned_width, scratch.horizontal.min_size);
     scratch.vertical = measure_vertical(
@@ -90,7 +83,6 @@ alignment_override_assign_boxes(
 {
     auto& override = *reinterpret_cast<AlignmentOverrideNode*>(node);
     auto& scratch = use_scratch<AlignmentOverrideScratch>(*ctx->scratch);
-    ALIA_ASSERT(override.container.child_count == 1);
     auto const placement = resolve_assignment(
         override.flags,
         box.size,

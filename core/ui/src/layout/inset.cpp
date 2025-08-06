@@ -22,14 +22,10 @@ begin_inset(
             .container
             = {.base = {.vtable = &inset_vtable, .next_sibling = 0},
                .flags = flags,
-               .child_count = 0,
                .first_child = 0},
             .insets = insets};
         *layout.next_ptr = &this_container->container.base;
         layout.next_ptr = &this_container->container.first_child;
-        scope.parent_container = layout.active_container;
-        ++scope.parent_container->child_count;
-        layout.active_container = scope.this_container;
     }
 }
 
@@ -43,7 +39,6 @@ HorizontalRequirements
 inset_measure_horizontal(MeasurementContext* ctx, LayoutNode* node)
 {
     auto& inset = *reinterpret_cast<InsetLayoutNode*>(node);
-    ALIA_ASSERT(inset.container.child_count == 1);
     auto const child_x = measure_horizontal(ctx, inset.container.first_child);
     return HorizontalRequirements{
         .min_size = child_x.min_size + inset.insets.left + inset.insets.right,
@@ -55,7 +50,6 @@ inset_assign_widths(
     MeasurementContext* ctx, LayoutNode* node, float assigned_width)
 {
     auto& inset = *reinterpret_cast<InsetLayoutNode*>(node);
-    ALIA_ASSERT(inset.container.child_count == 1);
     assign_widths(
         ctx,
         inset.container.first_child,
@@ -67,7 +61,6 @@ inset_measure_vertical(
     MeasurementContext* ctx, LayoutNode* node, float assigned_width)
 {
     auto& inset = *reinterpret_cast<InsetLayoutNode*>(node);
-    ALIA_ASSERT(inset.container.child_count == 1);
     auto const child_y = measure_vertical(
         ctx,
         inset.container.first_child,
@@ -84,7 +77,6 @@ inset_assign_boxes(
     PlacementContext* ctx, LayoutNode* node, Box box, float baseline)
 {
     auto& inset = *reinterpret_cast<InsetLayoutNode*>(node);
-    ALIA_ASSERT(inset.container.child_count == 1);
     assign_boxes(
         ctx,
         inset.container.first_child,
@@ -98,7 +90,6 @@ HorizontalRequirements
 inset_measure_wrapped_horizontal(MeasurementContext* ctx, LayoutNode* node)
 {
     auto& inset = *reinterpret_cast<InsetLayoutNode*>(node);
-    ALIA_ASSERT(inset.container.child_count == 1);
     auto const child_x
         = measure_wrapped_horizontal(ctx, inset.container.first_child);
     return HorizontalRequirements{
@@ -115,7 +106,6 @@ inset_measure_wrapped_vertical(
 {
     auto& inset = *reinterpret_cast<InsetLayoutNode*>(node);
 
-    ALIA_ASSERT(inset.container.child_count == 1);
     auto const child = measure_wrapped_vertical(
         ctx,
         inset.container.first_child,
@@ -165,7 +155,6 @@ inset_assign_wrapped_boxes(
     WrappingAssignment const* assignment)
 {
     auto& inset = *reinterpret_cast<InsetLayoutNode*>(node);
-    ALIA_ASSERT(inset.container.child_count == 1);
     WrappingAssignment inset_assignment = *assignment;
     inset_assignment.x_base += inset.insets.left;
     inset_assignment.line_width -= inset.insets.left + inset.insets.right;

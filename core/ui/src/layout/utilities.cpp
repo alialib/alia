@@ -47,9 +47,9 @@ resolve_horizontal_assignment(
             return LayoutAxisPlacement{
                 .offset = (assigned_size - required_size) / 2,
                 .size = required_size};
-        case LEFT_CODE:
+        case ALIGN_LEFT_CODE:
             return LayoutAxisPlacement{.offset = 0, .size = required_size};
-        case RIGHT_CODE:
+        case ALIGN_RIGHT_CODE:
             return LayoutAxisPlacement{
                 .offset = assigned_size - required_size,
                 .size = required_size};
@@ -73,9 +73,9 @@ resolve_vertical_assignment(
             return LayoutAxisPlacement{
                 .offset = (assigned_size - required_size) / 2,
                 .size = required_size};
-        case TOP_CODE:
+        case ALIGN_TOP_CODE:
             return LayoutAxisPlacement{.offset = 0, .size = required_size};
-        case BOTTOM_CODE:
+        case ALIGN_BOTTOM_CODE:
             return LayoutAxisPlacement{
                 .offset = assigned_size - required_size,
                 .size = required_size};

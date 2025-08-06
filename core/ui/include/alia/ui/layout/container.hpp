@@ -14,14 +14,12 @@ struct LayoutContainer
 {
     LayoutNode base;
     LayoutFlagSet flags;
-    std::uint32_t child_count;
     LayoutNode* first_child;
 };
 
 struct LayoutContainerScope
 {
-    LayoutContainer* this_container;
-    LayoutContainer* parent_container;
+    LayoutContainer* container;
 };
 
 void

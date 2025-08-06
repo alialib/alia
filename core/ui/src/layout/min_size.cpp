@@ -5,7 +5,8 @@
 namespace alia {
 
 void
-begin_min_size(Context& ctx, LayoutContainerScope& scope, Vec2 min_size)
+begin_min_size_constraint(
+    Context& ctx, LayoutContainerScope& scope, Vec2 min_size)
 {
     if (ctx.pass.type == PassType::Refresh)
     {
@@ -17,19 +18,15 @@ begin_min_size(Context& ctx, LayoutContainerScope& scope, Vec2 min_size)
             .container
             = {.base = {.vtable = &min_size_vtable, .next_sibling = 0},
                .flags = NO_FLAGS,
-               .child_count = 0,
                .first_child = 0},
             .min_size = min_size};
         *layout.next_ptr = &this_container->container.base;
         layout.next_ptr = &this_container->container.first_child;
-        scope.parent_container = layout.active_container;
-        ++scope.parent_container->child_count;
-        layout.active_container = scope.this_container;
     }
 }
 
 void
-end_min_size(Context& ctx, LayoutContainerScope& scope)
+end_min_size_constraint(Context& ctx, LayoutContainerScope& scope)
 {
     end_container(ctx, scope);
 }
@@ -38,7 +35,6 @@ HorizontalRequirements
 min_size_measure_horizontal(MeasurementContext* ctx, LayoutNode* base_node)
 {
     auto& node = *reinterpret_cast<MinSizeNode*>(base_node);
-    ALIA_ASSERT(node.container.child_count == 1);
     auto const child_x = measure_horizontal(ctx, node.container.first_child);
     return HorizontalRequirements{
         .min_size = std::max(node.min_size.x, child_x.min_size),
@@ -50,7 +46,6 @@ min_size_assign_widths(
     MeasurementContext* ctx, LayoutNode* base_node, float assigned_width)
 {
     auto& node = *reinterpret_cast<MinSizeNode*>(base_node);
-    ALIA_ASSERT(node.container.child_count == 1);
     assign_widths(ctx, node.container.first_child, assigned_width);
 }
 
@@ -59,7 +54,6 @@ min_size_measure_vertical(
     MeasurementContext* ctx, LayoutNode* base_node, float assigned_width)
 {
     auto& node = *reinterpret_cast<MinSizeNode*>(base_node);
-    ALIA_ASSERT(node.container.child_count == 1);
     auto const child_y
         = measure_vertical(ctx, node.container.first_child, assigned_width);
     return VerticalRequirements{
@@ -74,7 +68,6 @@ min_size_assign_boxes(
     PlacementContext* ctx, LayoutNode* base_node, Box box, float baseline)
 {
     auto& node = *reinterpret_cast<MinSizeNode*>(base_node);
-    ALIA_ASSERT(node.container.child_count == 1);
     assign_boxes(ctx, node.container.first_child, box, baseline);
 }
 
@@ -83,7 +76,6 @@ min_size_measure_wrapped_horizontal(
     MeasurementContext* ctx, LayoutNode* base_node)
 {
     auto& node = *reinterpret_cast<MinSizeNode*>(base_node);
-    ALIA_ASSERT(node.container.child_count == 1);
     auto const child_x
         = measure_wrapped_horizontal(ctx, node.container.first_child);
     return HorizontalRequirements{
@@ -99,7 +91,6 @@ min_size_measure_wrapped_vertical(
     float line_width)
 {
     auto& node = *reinterpret_cast<MinSizeNode*>(base_node);
-    ALIA_ASSERT(node.container.child_count == 1);
     return measure_wrapped_vertical(
         ctx, node.container.first_child, current_x_offset, line_width);
 }
@@ -111,7 +102,6 @@ min_size_assign_wrapped_boxes(
     WrappingAssignment const* assignment)
 {
     auto& node = *reinterpret_cast<MinSizeNode*>(base_node);
-    ALIA_ASSERT(node.container.child_count == 1);
     assign_wrapped_boxes(ctx, node.container.first_child, assignment);
 }
 

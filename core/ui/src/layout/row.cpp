@@ -19,6 +19,7 @@ end_row(Context& ctx, LayoutContainerScope& scope)
 
 struct RowScratch
 {
+    std::uint32_t child_count = 0;
     float total_width = 0, total_growth = 0;
     float height = 0, ascent = 0;
 };
@@ -27,20 +28,25 @@ HorizontalRequirements
 row_measure_horizontal(MeasurementContext* ctx, LayoutNode* node)
 {
     auto& row = *reinterpret_cast<RowLayoutNode*>(node);
-    auto& row_scratch = claim_scratch<RowScratch>(*ctx->scratch);
+    auto& scratch = claim_scratch<RowScratch>(*ctx->scratch);
+    for (LayoutNode* child = row.first_child; child != nullptr;
+         child = child->next_sibling)
+    {
+        ++scratch.child_count;
+    }
     HorizontalRequirements* x_requirements
         = arena_array_alloc<HorizontalRequirements>(
-            *ctx->scratch, row.child_count);
+            *ctx->scratch, scratch.child_count);
     for (LayoutNode* child = row.first_child; child != nullptr;
          child = child->next_sibling)
     {
         auto const child_x = measure_horizontal(ctx, child);
         *x_requirements++ = child_x;
-        row_scratch.total_width += child_x.min_size;
-        row_scratch.total_growth += child_x.growth_factor;
+        scratch.total_width += child_x.min_size;
+        scratch.total_growth += child_x.growth_factor;
     }
     return HorizontalRequirements{
-        .min_size = row_scratch.total_width,
+        .min_size = scratch.total_width,
         .growth_factor = resolve_growth_factor(row.flags)};
 }
 
@@ -49,17 +55,17 @@ row_assign_widths(
     MeasurementContext* ctx, LayoutNode* node, float assigned_width)
 {
     auto& row = *reinterpret_cast<RowLayoutNode*>(node);
-    auto& row_scratch = use_scratch<RowScratch>(*ctx->scratch);
+    auto& scratch = use_scratch<RowScratch>(*ctx->scratch);
     HorizontalRequirements* x_requirements
         = arena_array_alloc<HorizontalRequirements>(
-            *ctx->scratch, row.child_count);
+            *ctx->scratch, scratch.child_count);
     auto const placement = resolve_horizontal_assignment(
-        row.flags, assigned_width, row_scratch.total_width);
+        row.flags, assigned_width, scratch.total_width);
     float const total_extra_space
-        = (std::max)(0.f, placement.size - row_scratch.total_width);
+        = (std::max)(0.f, placement.size - scratch.total_width);
     // TODO: Figure out how to handle 0 total growth.
     float const one_over_total_growth
-        = 1.0f / (std::max)(0.00001f, row_scratch.total_growth);
+        = 1.0f / (std::max)(0.00001f, scratch.total_growth);
     for (LayoutNode* child = row.first_child; child != nullptr;
          child = child->next_sibling)
     {
@@ -75,18 +81,18 @@ row_measure_vertical(
     MeasurementContext* ctx, LayoutNode* node, float assigned_width)
 {
     auto& row = *reinterpret_cast<RowLayoutNode*>(node);
-    auto& row_scratch = use_scratch<RowScratch>(*ctx->scratch);
+    auto& scratch = use_scratch<RowScratch>(*ctx->scratch);
     HorizontalRequirements* x_requirements
         = arena_array_alloc<HorizontalRequirements>(
-            *ctx->scratch, row.child_count);
+            *ctx->scratch, scratch.child_count);
     // TODO: Stop repeating this logic everywhere.
     auto const placement = resolve_horizontal_assignment(
-        row.flags, assigned_width, row_scratch.total_width);
+        row.flags, assigned_width, scratch.total_width);
     float const total_extra_space
-        = (std::max)(0.f, placement.size - row_scratch.total_width);
+        = (std::max)(0.f, placement.size - scratch.total_width);
     // TODO: Figure out how to handle 0 total growth.
     float const one_over_total_growth
-        = 1.0f / (std::max)(0.00001f, row_scratch.total_growth);
+        = 1.0f / (std::max)(0.00001f, scratch.total_growth);
     float height = 0, ascent = 0, descent = 0;
     for (LayoutNode* child = row.first_child; child != nullptr;
          child = child->next_sibling)
@@ -100,8 +106,8 @@ row_measure_vertical(
         ascent = (std::max)(ascent, child_y.ascent);
         descent = (std::max)(descent, child_y.descent);
     }
-    row_scratch.height = height;
-    row_scratch.ascent = ascent;
+    scratch.height = height;
+    scratch.ascent = ascent;
     return VerticalRequirements{
         .min_size = (std::max)(height, ascent + descent),
         .growth_factor = resolve_growth_factor(row.flags),
@@ -114,21 +120,21 @@ row_assign_boxes(
     PlacementContext* ctx, LayoutNode* node, Box box, float baseline)
 {
     auto& row = *reinterpret_cast<RowLayoutNode*>(node);
-    auto& row_scratch = use_scratch<RowScratch>(*ctx->scratch);
+    auto& scratch = use_scratch<RowScratch>(*ctx->scratch);
     HorizontalRequirements* x_requirements
         = arena_array_alloc<HorizontalRequirements>(
-            *ctx->scratch, row.child_count);
+            *ctx->scratch, scratch.child_count);
     auto const placement = resolve_assignment(
         row.flags,
         box.size,
         baseline,
-        Vec2{row_scratch.total_width, row_scratch.height},
-        row_scratch.ascent);
+        Vec2{scratch.total_width, scratch.height},
+        scratch.ascent);
     float const total_extra_space
-        = (std::max)(0.f, placement.size.x - row_scratch.total_width);
+        = (std::max)(0.f, placement.size.x - scratch.total_width);
     // TODO: Figure out how to handle 0 total growth.
     float const one_over_total_growth
-        = 1.0f / (std::max)(0.00001f, row_scratch.total_growth);
+        = 1.0f / (std::max)(0.00001f, scratch.total_growth);
     float current_x = box.pos.x + placement.pos.x;
     for (LayoutNode* child = row.first_child; child != nullptr;
          child = child->next_sibling)

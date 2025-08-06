@@ -99,13 +99,15 @@ raw_code(FlagSet<Tag, Storage> flags)
 
 } // namespace alia
 
-#define ALIA_DEFINE_FLAG_TYPE(TypePrefix)                                     \
+#define ALIA_DEFINE_FLAG_TYPE(Storage, TypePrefix)                            \
     struct TypePrefix##FlagTag                                                \
     {                                                                         \
+        using storage_type = Storage;                                         \
     };                                                                        \
-    typedef alia::FlagSet<TypePrefix##FlagTag, std::uint32_t>                 \
-        TypePrefix##FlagSet;
+    typedef alia::FlagSet<TypePrefix##FlagTag, Storage> TypePrefix##FlagSet;
 
 #define ALIA_DEFINE_FLAG(TypePrefix, code, name)                              \
-    std::uint32_t const name##_CODE = code;                                   \
-    alia::FlagSet<TypePrefix##FlagTag, std::uint32_t> const name(code);
+    typename TypePrefix##FlagTag::storage_type const name##_CODE = code;      \
+    alia::FlagSet<                                                            \
+        TypePrefix##FlagTag,                                                  \
+        typename TypePrefix##FlagTag::storage_type> const name(code);

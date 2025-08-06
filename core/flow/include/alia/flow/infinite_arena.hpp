@@ -51,6 +51,13 @@ struct InfiniteArena
     bool
     initialize(std::size_t reservation_size = INFINITE_CAPACITY);
 
+    void
+    align(std::size_t alignment)
+    {
+        next_ = (std::uint8_t*) ((std::uintptr_t(next_) + (alignment - 1))
+                                 & ~(alignment - 1));
+    }
+
     void*
     alloc(std::size_t size)
     {

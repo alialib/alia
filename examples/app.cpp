@@ -2,6 +2,9 @@
 
 #include <GLFW/glfw3.h>
 
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
 #include <chrono>
 #include <functional> // For std::hash
 #include <iostream>
@@ -53,24 +56,6 @@ detect_click(Event* event, float x, float y, float width, float height)
         && event->click.y <= y + height;
 }
 
-template<class Content>
-void
-panel(Context& ctx, Color color, LayoutFlagSet flags, Content&& content)
-{
-    placement_hook(ctx, flags, [&](auto const& placement) {
-        if (ctx.pass.type == PassType::Draw)
-        {
-            draw_box(
-                *ctx.pass.draw.display_list_arena,
-                *ctx.pass.draw.box_command_list,
-                placement.box,
-                color);
-        }
-
-        std::forward<Content>(content)();
-    });
-}
-
 bool
 do_rect(Context& ctx, Vec2 size, Color color, LayoutFlagSet flags)
 {
@@ -87,7 +72,6 @@ do_rect(Context& ctx, Vec2 size, Color color, LayoutFlagSet flags)
                 .flags = flags,
                 .padding = ctx.style->padding,
                 .size = size};
-            ++layout.active_container->child_count;
             break;
         }
         case PassType::Draw: {
@@ -119,6 +103,249 @@ do_rect(Context& ctx, Vec2 size, Color color, LayoutFlagSet flags)
     }
     return false;
 }
+
+template<class T>
+struct is_layout_modifier : std::false_type
+{
+};
+
+template<class T>
+concept LayoutModifier = is_layout_modifier<T>::value;
+
+template<class T>
+concept LayoutModifierPack
+    = requires(T t) { typename std::remove_cvref_t<T>::values; };
+
+template<class... Ts>
+struct layout_mods_t
+{
+    std::tuple<Ts...> values;
+};
+
+// Modifier | Modifier
+template<LayoutModifier A, LayoutModifier B>
+constexpr auto
+operator|(A a, B b)
+{
+    return layout_mods_t<A, B>{std::tuple{a, b}};
+}
+
+// Modifier | Pack
+template<LayoutModifier A, class... Bs>
+constexpr auto
+operator|(A a, layout_mods_t<Bs...> b)
+{
+    return layout_mods_t<A, Bs...>{std::tuple_cat(std::tuple{a}, b.values)};
+}
+
+// Pack | Modifier
+template<class... As, LayoutModifier B>
+constexpr auto
+operator|(layout_mods_t<As...> a, B b)
+{
+    return layout_mods_t<As..., B>{std::tuple_cat(a.values, std::tuple{b})};
+}
+
+// Pack | Pack
+template<class... As, class... Bs>
+constexpr auto
+operator|(layout_mods_t<As...> a, layout_mods_t<Bs...> b)
+{
+    return layout_mods_t<As..., Bs...>{std::tuple_cat(a.values, b.values)};
+}
+
+template<class Context, class Content>
+void
+apply_mods(Context& ctx, layout_mods_t<>, Content&& content)
+{
+    std::forward<Content>(content)();
+}
+
+template<class Context, class Content, LayoutModifier Mod, class... Rest>
+void
+apply_mods(Context& ctx, layout_mods_t<Mod, Rest...> mods, Content&& content)
+{
+    apply_mod(ctx, std::get<Mod>(mods.values), [&] {
+        apply_mods(
+            ctx,
+            layout_mods_t<Rest...>{
+                std::tuple<Rest...>{std::get<Rest>(mods.values)...}},
+            std::forward<Content>(content));
+    });
+}
+
+struct align_right_t
+{
+};
+template<>
+struct is_layout_modifier<align_right_t> : std::true_type
+{
+};
+
+template<class Context, class Content>
+void
+apply_mod(Context& ctx, align_right_t, Content&& content)
+{
+    alignment_override(ctx, ALIGN_RIGHT, std::forward<Content>(content));
+}
+
+struct fill_x_t
+{
+};
+template<>
+struct is_layout_modifier<fill_x_t> : std::true_type
+{
+};
+
+template<class Context, class Content>
+void
+apply_mod(Context& ctx, fill_x_t, Content&& content)
+{
+    alignment_override(ctx, FILL_X, std::forward<Content>(content));
+}
+
+struct center_y_t
+{
+};
+template<>
+struct is_layout_modifier<center_y_t> : std::true_type
+{
+};
+
+template<class Context, class Content>
+void
+apply_mod(Context& ctx, center_y_t, Content&& content)
+{
+    alignment_override(ctx, CENTER_Y, std::forward<Content>(content));
+}
+
+struct min_width_t
+{
+    float width;
+};
+template<>
+struct is_layout_modifier<min_width_t> : std::true_type
+{
+};
+
+template<class Context, class Content>
+void
+apply_mod(Context& ctx, min_width_t m, Content&& content)
+{
+    min_size_constraint(
+        ctx, {.x = m.width, .y = 0}, std::forward<Content>(content));
+}
+
+struct min_height_t
+{
+    float height;
+};
+template<>
+struct is_layout_modifier<min_height_t> : std::true_type
+{
+};
+
+template<class Context, class Content>
+void
+apply_mod(Context& ctx, min_height_t m, Content&& content)
+{
+    min_size_constraint(
+        ctx, {.x = 0, .y = m.height}, std::forward<Content>(content));
+}
+
+struct min_size_t
+{
+    Vec2 size;
+};
+template<>
+struct is_layout_modifier<min_size_t> : std::true_type
+{
+};
+
+template<class Context, class Content>
+void
+apply_mod(Context& ctx, min_size_t m, Content&& content)
+{
+    min_size_constraint(ctx, m.size, std::forward<Content>(content));
+}
+
+struct margins_t
+{
+    Insets insets;
+};
+template<>
+struct is_layout_modifier<margins_t> : std::true_type
+{
+};
+
+template<class Context, class Content>
+void
+apply_mod(Context& ctx, margins_t m, Content&& content)
+{
+    inset(ctx, m.insets, std::forward<Content>(content));
+}
+
+constexpr align_right_t align_right;
+constexpr fill_x_t fill_x;
+constexpr center_y_t center_y;
+
+constexpr min_width_t
+min_width(float w)
+{
+    return {w};
+}
+constexpr min_height_t
+min_height(float h)
+{
+    return {h};
+}
+constexpr min_size_t
+min_size(Vec2 size)
+{
+    return {size};
+}
+constexpr margins_t
+margins(Insets insets)
+{
+    return {insets};
+}
+
+template<class LayoutMods>
+void
+do_rect(Context& ctx, Vec2 size, Color color, LayoutMods mods)
+{
+    apply_mods(ctx, mods, [&] { do_rect(ctx, size, color, FILL); });
+}
+
+template<class Content>
+void
+concrete_panel(
+    Context& ctx, Color color, LayoutFlagSet flags, Content&& content)
+{
+    placement_hook(ctx, flags, [&](auto const& placement) {
+        if (ctx.pass.type == PassType::Draw)
+        {
+            draw_box(
+                *ctx.pass.draw.display_list_arena,
+                *ctx.pass.draw.box_command_list,
+                placement.box,
+                color);
+        }
+
+        std::forward<Content>(content)();
+    });
+}
+
+template<class Content, class LayoutMods>
+void
+panel(Context& ctx, Color color, LayoutMods mods, Content&& content)
+{
+    apply_mods(ctx, mods, [&] {
+        concrete_panel(ctx, color, FILL, std::forward<Content>(content));
+    });
+}
+
+/// ----
 
 struct MsdfTextLayoutNode
 {
@@ -400,7 +627,6 @@ do_text(
             new_node->padding = ctx.style->padding;
             *layout.next_ptr = &new_node->base;
             layout.next_ptr = &new_node->base.next_sibling;
-            ++layout.active_container->child_count;
             break;
         }
         case PassType::Draw: {
@@ -480,7 +706,7 @@ rectangle_demo(Context& ctx)
                                     {24, 24},
                                     invert ? Color{f, 0.1f, 1.0f - f, 1}
                                            : Color{1.0f - f, 0.1f, f, 1},
-                                    TOP | LEFT))
+                                    ALIGN_TOP | ALIGN_LEFT))
                             {
                                 invert = !invert;
                                 return;
@@ -575,7 +801,7 @@ layout_demo_flow(Context& ctx)
                 ctx,
                 {.left = 10, .right = 10, .top = 10, .bottom = 10},
                 [&]() {
-                    panel(
+                    concrete_panel(
                         ctx,
                         Color{
                             0.14f + intensity,
@@ -584,26 +810,20 @@ layout_demo_flow(Context& ctx)
                             1},
                         NO_FLAGS,
                         [&]() {
-                            min_size(ctx, {0, 200}, [&]() {
+                            min_size_constraint(ctx, {0, 200}, [&]() {
                                 row(ctx, [&]() {
-                                    for (int j = 0; j < 1; ++j)
+                                    float f = fmod(x, 1.0f);
+                                    if (do_rect(
+                                            ctx,
+                                            {24, float((i & 7) * 12 + 12)},
+                                            Color{f, 0.1f, 1.0f - f, 1},
+                                            LayoutFlagSet(
+                                                (i & 3)
+                                                << Y_ALIGNMENT_BIT_OFFSET)))
                                     {
-                                        float f = fmod(x, 1.0f);
-                                        if (do_rect(
-                                                ctx,
-                                                {24,
-                                                 float(
-                                                     ((i * 1 + j) & 7) * 12
-                                                     + 12)},
-                                                Color{f, 0.1f, 1.0f - f, 1},
-                                                LayoutFlagSet(
-                                                    (i & 3)
-                                                    << Y_ALIGNMENT_BIT_OFFSET)))
-                                        {
-                                            return;
-                                        }
-                                        x += 0.01f;
+                                        return;
                                     }
+                                    x += 0.01f;
                                 });
                             });
                         });
@@ -644,8 +864,8 @@ alignment_override_demo(Context& ctx)
                 ctx,
                 {.left = 10, .right = 10, .top = 10, .bottom = 10},
                 [&]() {
-                    min_size(ctx, {0, 200}, [&]() {
-                        panel(
+                    min_size_constraint(ctx, {0, 200}, [&]() {
+                        concrete_panel(
                             ctx,
                             Color{
                                 0.14f + 0.06f * f,
@@ -655,7 +875,9 @@ alignment_override_demo(Context& ctx)
                             NO_FLAGS,
                             [&]() {
                                 alignment_override(
-                                    ctx, i & 1 ? TOP : BOTTOM, [&]() {
+                                    ctx,
+                                    i & 1 ? ALIGN_TOP : ALIGN_BOTTOM,
+                                    [&]() {
                                         do_rect(
                                             ctx,
                                             {24, 24},
@@ -666,6 +888,36 @@ alignment_override_demo(Context& ctx)
                     });
                 });
             x += 0.08f;
+        }
+    });
+}
+
+void
+layout_mods_demo(Context& ctx)
+{
+    float x = 0.0f;
+    row(ctx, [&]() {
+        for (int i = 0; i < 6; ++i)
+        {
+            float f = fmod(x, 1.0f);
+            panel(
+                ctx,
+                Color{
+                    0.14f + 0.06f * f,
+                    0.14f + 0.06f * f,
+                    0.16f + 0.08f * f,
+                    1},
+                min_size({200, 200})
+                    | margins(
+                        {.left = 10, .right = 10, .top = 10, .bottom = 10}),
+                [&]() {
+                    do_rect(
+                        ctx,
+                        {24, 24},
+                        Color{f, 0.1f, 1.0f - f, 1},
+                        align_right | center_y);
+                });
+            x += 0.16f;
         }
     });
 }
@@ -694,8 +946,13 @@ layout_demo(Context& ctx)
                     }
                 });
                 column(ctx, GROW, [&]() {
+                    do_text(ctx, GRAY, 20, "layout_growth_demo");
                     layout_growth_demo(ctx);
+                    do_text(ctx, GRAY, 20, "alignment_override_demo");
                     alignment_override_demo(ctx);
+                    do_text(ctx, GRAY, 20, "layout_mods_demo");
+                    layout_mods_demo(ctx);
+                    do_text(ctx, GRAY, 20, "layout_demo_flow");
                     layout_demo_flow(ctx);
                 });
             });
@@ -751,16 +1008,14 @@ update()
     auto const start_time = std::chrono::high_resolution_clock::now();
 
     the_system.layout.node_arena.reset();
-    Context refresh_ctx = {
-        Pass{
-            PassType::Refresh,
+    Context refresh_ctx
+        = {{PassType::Refresh,
             {.refresh
              = {.layout_emission
                 = {&the_system.layout.node_arena,
-                   &the_system.layout.root,
                    &the_system.layout.root.first_child}}}},
-        &the_style,
-        &the_system};
+           &the_style,
+           &the_system};
     the_demo(refresh_ctx);
     *refresh_ctx.pass.refresh.layout_emission.next_ptr = 0;
 
@@ -867,6 +1122,16 @@ framebuffer_size_callback(GLFWwindow* window, int width, int height)
 int
 main()
 {
+    HANDLE hCurrentThread = GetCurrentThread();
+    if (SetThreadPriority(hCurrentThread, THREAD_PRIORITY_HIGHEST))
+    {
+        std::cout << "Main thread priority set to HIGHEST." << std::endl;
+    }
+    else
+    {
+        std::cerr << "Failed to set main thread priority." << std::endl;
+    }
+
     if (!glfwInit())
     {
         std::cerr << "Failed to initialize GLFW\n";

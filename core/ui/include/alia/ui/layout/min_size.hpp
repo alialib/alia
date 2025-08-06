@@ -15,19 +15,20 @@ struct MinSizeNode
 };
 
 void
-begin_min_size(Context& ctx, LayoutContainerScope& scope, Vec2 min_size);
+begin_min_size_constraint(
+    Context& ctx, LayoutContainerScope& scope, Vec2 min_size);
 
 void
-end_min_size(Context& ctx, LayoutContainerScope& scope);
+end_min_size_constraint(Context& ctx, LayoutContainerScope& scope);
 
 template<class Content>
 void
-min_size(Context& ctx, Vec2 min_size, Content&& content)
+min_size_constraint(Context& ctx, Vec2 min_size, Content&& content)
 {
     LayoutContainerScope scope;
-    begin_min_size(ctx, scope, min_size);
+    begin_min_size_constraint(ctx, scope, min_size);
     std::forward<Content>(content)();
-    end_min_size(ctx, scope);
+    end_min_size_constraint(ctx, scope);
 }
 
 extern LayoutNodeVtable min_size_vtable;

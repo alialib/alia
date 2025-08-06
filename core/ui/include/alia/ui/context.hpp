@@ -23,7 +23,6 @@ enum class PassType
 struct LayoutEmission
 {
     InfiniteArena* arena;
-    LayoutContainer* active_container;
     LayoutNode** next_ptr;
 };
 
