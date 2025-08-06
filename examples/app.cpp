@@ -28,6 +28,7 @@
 #include <alia/ui/layout/container.hpp>
 #include <alia/ui/layout/flow.hpp>
 #include <alia/ui/layout/growth_override.hpp>
+#include <alia/ui/layout/hyperflow.hpp>
 #include <alia/ui/layout/inset.hpp>
 #include <alia/ui/layout/leaf.hpp>
 #include <alia/ui/layout/min_size.hpp>
@@ -793,7 +794,7 @@ void
 layout_demo_flow(Context& ctx)
 {
     float x = 0.0f;
-    flow(ctx, [&]() {
+    hyperflow(ctx, [&]() {
         for (int i = 0; i < 2400; ++i)
         {
             float intensity = ((i / 4) % 3) * 0.02f;
