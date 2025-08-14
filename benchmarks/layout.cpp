@@ -52,7 +52,6 @@ do_leaf(Context& ctx, Vec2 size, LayoutFlagSet flags = NO_FLAGS)
             .flags = flags,
             .padding = ctx.style->padding,
             .size = size};
-        ++layout.active_container->child_count;
     }
 }
 

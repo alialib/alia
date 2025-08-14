@@ -20,19 +20,18 @@ begin_alignment_override(
     if (ctx.pass.type == PassType::Refresh)
     {
         auto& layout = ctx.pass.refresh.layout_emission;
-        AlignmentOverrideNode* this_container
+        AlignmentOverrideNode* node
             = arena_alloc<AlignmentOverrideNode>(*layout.arena);
-        scope.this_container
-            = reinterpret_cast<LayoutContainer*>(this_container);
-        *this_container = AlignmentOverrideNode{
+        *node = AlignmentOverrideNode{
             .container
             = {.base
                = {.vtable = &alignment_override_vtable, .next_sibling = 0},
                .flags = NO_FLAGS,
                .first_child = 0},
             .flags = flags};
-        *layout.next_ptr = &this_container->container.base;
-        layout.next_ptr = &this_container->container.first_child;
+        scope.container = &node->container;
+        *layout.next_ptr = &node->container.base;
+        layout.next_ptr = &node->container.first_child;
     }
 }
 
@@ -83,6 +82,7 @@ alignment_override_assign_boxes(
 {
     auto& override = *reinterpret_cast<AlignmentOverrideNode*>(node);
     auto& scratch = use_scratch<AlignmentOverrideScratch>(*ctx->scratch);
+    ALIA_ASSERT(override.container.child_count == 1);
     auto const placement = resolve_assignment(
         override.flags,
         box.size,

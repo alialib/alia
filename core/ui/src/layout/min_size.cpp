@@ -11,17 +11,16 @@ begin_min_size_constraint(
     if (ctx.pass.type == PassType::Refresh)
     {
         auto& layout = ctx.pass.refresh.layout_emission;
-        MinSizeNode* this_container = arena_alloc<MinSizeNode>(*layout.arena);
-        scope.this_container
-            = reinterpret_cast<LayoutContainer*>(this_container);
-        *this_container = MinSizeNode{
+        MinSizeNode* node = arena_alloc<MinSizeNode>(*layout.arena);
+        *node = MinSizeNode{
             .container
             = {.base = {.vtable = &min_size_vtable, .next_sibling = 0},
                .flags = NO_FLAGS,
                .first_child = 0},
             .min_size = min_size};
-        *layout.next_ptr = &this_container->container.base;
-        layout.next_ptr = &this_container->container.first_child;
+        scope.container = &node->container;
+        *layout.next_ptr = &node->container.base;
+        layout.next_ptr = &node->container.first_child;
     }
 }
 

@@ -41,22 +41,14 @@ LayoutAxisPlacement
 resolve_horizontal_assignment(
     LayoutFlagSet flags, float assigned_size, float required_size)
 {
-    switch (raw_code(flags & X_ALIGNMENT_MASK))
-    {
-        case CENTER_X_CODE:
-            return LayoutAxisPlacement{
-                .offset = (assigned_size - required_size) / 2,
-                .size = required_size};
-        case ALIGN_LEFT_CODE:
-            return LayoutAxisPlacement{.offset = 0, .size = required_size};
-        case ALIGN_RIGHT_CODE:
-            return LayoutAxisPlacement{
-                .offset = assigned_size - required_size,
-                .size = required_size};
-        case FILL_X_CODE:
-        default:
-            return LayoutAxisPlacement{.offset = 0, .size = assigned_size};
-    }
+    static float const offsets[8] = {0, 0.5, 0, 1, 0, 0, 0, 0};
+    static float const sizes[8] = {1, 0, 0, 0, 1, 1, 1, 1};
+
+    auto const index = raw_code(flags & X_ALIGNMENT_MASK);
+    float const extra_space = assigned_size - required_size;
+    return LayoutAxisPlacement{
+        .offset = offsets[index] * extra_space,
+        .size = required_size + sizes[index] * extra_space};
 }
 
 LayoutAxisPlacement
@@ -67,25 +59,17 @@ resolve_vertical_assignment(
     float required_size,
     float ascent)
 {
-    switch (raw_code(flags & Y_ALIGNMENT_MASK))
-    {
-        case CENTER_Y_CODE:
-            return LayoutAxisPlacement{
-                .offset = (assigned_size - required_size) / 2,
-                .size = required_size};
-        case ALIGN_TOP_CODE:
-            return LayoutAxisPlacement{.offset = 0, .size = required_size};
-        case ALIGN_BOTTOM_CODE:
-            return LayoutAxisPlacement{
-                .offset = assigned_size - required_size,
-                .size = required_size};
-        case BASELINE_Y_CODE:
-            return LayoutAxisPlacement{
-                .offset = baseline - ascent, .size = required_size};
-        case FILL_Y_CODE:
-        default:
-            return LayoutAxisPlacement{.offset = 0, .size = assigned_size};
-    }
+    static float const offsets[8] = {0, 0.5, 0, 1, 0, 0, 0, 0};
+    static float const baseline_offsets[8] = {0, 0, 0, 0, 1, 0, 0, 0};
+    static float const sizes[8] = {1, 0, 0, 0, 1, 0, 1, 1};
+
+    auto const index
+        = raw_code(flags & Y_ALIGNMENT_MASK) >> Y_ALIGNMENT_BIT_OFFSET;
+    float const extra_space = assigned_size - required_size;
+    return LayoutAxisPlacement{
+        .offset = offsets[index] * extra_space
+                + baseline_offsets[index] * (baseline - ascent),
+        .size = required_size + sizes[index] * extra_space};
 }
 
 Box

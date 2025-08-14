@@ -10,18 +10,17 @@ begin_growth_override(Context& ctx, LayoutContainerScope& scope, float growth)
     if (ctx.pass.type == PassType::Refresh)
     {
         auto& layout = ctx.pass.refresh.layout_emission;
-        GrowthOverrideNode* this_container
+        GrowthOverrideNode* node
             = arena_alloc<GrowthOverrideNode>(*layout.arena);
-        scope.this_container
-            = reinterpret_cast<LayoutContainer*>(this_container);
-        *this_container = GrowthOverrideNode{
+        *node = GrowthOverrideNode{
             .container
             = {.base = {.vtable = &growth_override_vtable, .next_sibling = 0},
                .flags = NO_FLAGS,
                .first_child = 0},
             .growth = growth};
-        *layout.next_ptr = &this_container->container.base;
-        layout.next_ptr = &this_container->container.first_child;
+        scope.container = &node->container;
+        *layout.next_ptr = &node->container.base;
+        layout.next_ptr = &node->container.first_child;
     }
 }
 

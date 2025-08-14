@@ -13,15 +13,15 @@ begin_placement_hook(
     if (ctx.pass.type == PassType::Refresh)
     {
         auto& layout = ctx.pass.refresh.layout_emission;
-        PlacementHookNode* this_node
+        PlacementHookNode* node
             = arena_alloc<PlacementHookNode>(*layout.arena);
-        scope.container.this_container = this_node;
-        *this_node = PlacementHookNode{
+        *node = PlacementHookNode{
             .base = {.vtable = &placement_hook_vtable, .next_sibling = 0},
             .flags = flags,
             .first_child = 0};
-        *layout.next_ptr = &this_node->base;
-        layout.next_ptr = &this_node->first_child;
+        scope.container.container = node;
+        *layout.next_ptr = &node->base;
+        layout.next_ptr = &node->first_child;
     }
     else
     {

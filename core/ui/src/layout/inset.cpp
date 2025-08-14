@@ -14,18 +14,16 @@ begin_inset(
     if (ctx.pass.type == PassType::Refresh)
     {
         auto& layout = ctx.pass.refresh.layout_emission;
-        InsetLayoutNode* this_container
-            = arena_alloc<InsetLayoutNode>(*layout.arena);
-        scope.this_container
-            = reinterpret_cast<LayoutContainer*>(this_container);
-        *this_container = InsetLayoutNode{
+        InsetLayoutNode* node = arena_alloc<InsetLayoutNode>(*layout.arena);
+        *node = InsetLayoutNode{
             .container
             = {.base = {.vtable = &inset_vtable, .next_sibling = 0},
                .flags = flags,
                .first_child = 0},
             .insets = insets};
-        *layout.next_ptr = &this_container->container.base;
-        layout.next_ptr = &this_container->container.first_child;
+        scope.container = &node->container;
+        *layout.next_ptr = &node->container.base;
+        layout.next_ptr = &node->container.first_child;
     }
 }
 
