@@ -6,10 +6,10 @@
 
 #include <alia/flow/infinite_arena.hpp>
 #include <alia/ui/context.hpp>
-#include <alia/ui/layout/column.hpp>
+#include <alia/ui/layout/compositors/column.hpp>
+#include <alia/ui/layout/compositors/row.hpp>
 #include <alia/ui/layout/container.hpp>
 #include <alia/ui/layout/leaf.hpp>
-#include <alia/ui/layout/row.hpp>
 #include <alia/ui/system.hpp>
 
 using namespace alia;
