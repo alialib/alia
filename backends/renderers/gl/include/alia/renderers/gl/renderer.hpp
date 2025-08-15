@@ -18,8 +18,9 @@ struct GlRenderer
     GLuint vanilla_shader_program;
     GLuint vao, vbo;
     GLuint instance_vbo;
-    GLint vanilla_matrix_location;
     Arena* rect_instance_arena;
+    GLuint clip_ubo;
+    float* clip_ptr;
 };
 
 // Create a new OpenGL renderer.

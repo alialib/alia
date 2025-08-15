@@ -34,28 +34,48 @@ default_dealloc(void*, void* ptr)
 }
 
 const char* vanilla_vertex_shader_source = R"(
-#version 330 core
+#version 430 core
+
+layout (location = 0) uniform mat4 u_projection;
+
 layout (location = 0) in vec2 a_pos;
 layout (location = 1) in vec2 i_pos;
 layout (location = 2) in vec2 i_size;
 layout (location = 3) in vec4 i_color;
-
-uniform mat4 u_projection;
+layout (location = 4) in uint i_clip_index;
 
 out vec4 v_color;
+flat out uint v_clip_index;
 
 void main() {
     vec2 scaled = a_pos * i_size + i_pos;
     gl_Position = u_projection * vec4(scaled, 0.0, 1.0);
     v_color = i_color;
+    v_clip_index = i_clip_index;
 }
 )";
 
 const char* vanilla_fragment_shader_source = R"(
-#version 330 core
+#version 430 core
+
+layout (std140, binding = 0) uniform ClipUBO {
+    vec4 clips[4096]; // TODO: Make this dynamic and adjust for GL limits.
+};
+
 in vec4 v_color;
+flat in uint v_clip_index;
+
 out vec4 frag_color;
+
 void main() {
+    vec4 r = clips[v_clip_index];
+    vec2 p = vec2(gl_FragCoord.x, gl_FragCoord.y);
+    bvec4 inside = bvec4(p.x >= r.x,
+                         p.y >= r.y,
+                         p.x <  r.x + r.z,
+                         p.y <  r.y + r.w);
+    if (!(inside.x && inside.y && inside.z && inside.w)) discard;
+
     frag_color = v_color;
 }
 )";
@@ -65,6 +85,7 @@ struct RectInstance
     Vec2 pos;
     Vec2 size;
     Color color;
+    GLuint clip_index;
 };
 
 GLuint
@@ -129,6 +150,21 @@ init_gl_renderer(GlRenderer* renderer)
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
+    constexpr GLsizeiptr max_clips = 4096;
+    constexpr GLsizeiptr bytes_per_clip = sizeof(float) * 4; // vec4
+    constexpr GLsizeiptr ubo_size = max_clips * bytes_per_clip;
+
+    GLuint clip_ubo = 0;
+    glCreateBuffers(1, &clip_ubo);
+
+    glNamedBufferStorage(
+        clip_ubo,
+        ubo_size,
+        nullptr,
+        GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, clip_ubo);
+
     ArenaAllocator alloc{default_alloc, default_dealloc, nullptr};
     Arena* rect_instance_arena
         = create_arena(alloc, sizeof(RectInstance) * 4096); // TODO
@@ -175,22 +211,32 @@ init_gl_renderer(GlRenderer* renderer)
     glEnableVertexAttribArray(3);
     glVertexAttribDivisor(3, 1);
 
+    glVertexAttribIPointer(
+        4,
+        1,
+        GL_UNSIGNED_INT,
+        sizeof(RectInstance),
+        (void*) offsetof(RectInstance, clip_index));
+    glEnableVertexAttribArray(4);
+    glVertexAttribDivisor(4, 1);
+
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
-    GLint vanilla_matrix_location
-        = glGetUniformLocation(vanilla_shader_program, "u_projection");
-
-    while ((err = glGetError()) != GL_NO_ERROR)
-        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
+    float* clip_ptr = (float*) glMapNamedBufferRange(
+        clip_ubo,
+        0,
+        ubo_size,
+        GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
 
     *renderer = {
         .vanilla_shader_program = vanilla_shader_program,
         .vao = vao,
         .vbo = vbo,
         .instance_vbo = instance_vbo,
-        .vanilla_matrix_location = vanilla_matrix_location,
         .rect_instance_arena = rect_instance_arena,
+        .clip_ubo = clip_ubo,
+        .clip_ptr = clip_ptr,
     };
 }
 
@@ -200,6 +246,7 @@ destroy_gl_renderer(GlRenderer* renderer)
     glDeleteProgram(renderer->vanilla_shader_program);
     glDeleteBuffers(1, &renderer->vbo);
     glDeleteBuffers(1, &renderer->instance_vbo);
+    glDeleteBuffers(1, &renderer->clip_ubo);
 }
 
 struct Vertex
@@ -247,10 +294,16 @@ render_box_command_list(
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
-    glUniformMatrix4fv(renderer->vanilla_matrix_location, 1, GL_FALSE, ortho);
+    glProgramUniformMatrix4fv(
+        renderer->vanilla_shader_program, 0, 1, GL_FALSE, ortho);
 
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
+
+    renderer->clip_ptr[0] = 0.f;
+    renderer->clip_ptr[1] = 0.f;
+    renderer->clip_ptr[2] = system.framebuffer_size.x;
+    renderer->clip_ptr[3] = system.framebuffer_size.y;
 
     reset_arena(renderer->rect_instance_arena);
     RectInstance* rect_instances = (RectInstance*) arena_alloc(
@@ -262,6 +315,7 @@ render_box_command_list(
             instance->pos = cmd->box.pos;
             instance->size = cmd->box.size;
             instance->color = cmd->color;
+            instance->clip_index = 0; // TODO: Add clip index.
             ++instance;
         }
     }
