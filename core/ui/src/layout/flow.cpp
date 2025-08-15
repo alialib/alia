@@ -49,7 +49,10 @@ flow_measure_horizontal(MeasurementContext* ctx, LayoutNode* node)
 
 void
 flow_assign_widths(
-    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* node,
+    float assigned_width)
 {
     // TODO
     // auto& flow = *reinterpret_cast<FlowLayoutNode*>(node);
@@ -72,7 +75,10 @@ flow_assign_widths(
 
 VerticalRequirements
 flow_measure_vertical(
-    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* node,
+    float assigned_width)
 {
     auto& flow = *reinterpret_cast<FlowLayoutNode*>(node);
     auto& scratch = use_scratch<FlowScratch>(*ctx->scratch);
@@ -87,7 +93,7 @@ flow_measure_vertical(
          child = child->next_sibling)
     {
         auto const requirements = measure_wrapped_vertical(
-            ctx, child, current_x_offset, assigned_width);
+            ctx, MAIN_AXIS_X, child, current_x_offset, assigned_width);
         *child_requirements++ = requirements;
 
         line_height = (std::max)(line_height, requirements.first_line.height);
@@ -137,7 +143,11 @@ flow_measure_vertical(
 
 void
 flow_assign_boxes(
-    PlacementContext* ctx, LayoutNode* node, Box box, float baseline)
+    PlacementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* node,
+    Box box,
+    float baseline)
 {
     auto& flow = *reinterpret_cast<FlowLayoutNode*>(node);
     auto& scratch = use_scratch<FlowScratch>(*ctx->scratch);
@@ -148,7 +158,7 @@ flow_assign_boxes(
         return;
 
     auto const placement = resolve_vertical_assignment(
-        flow.flags,
+        adjust_flags_for_main_axis(flow.flags, main_axis),
         box.size.y,
         baseline,
         scratch.total_height,
@@ -221,6 +231,7 @@ flow_assign_boxes(
                 current_y += assignment.first_line.line_height;
                 assign_boxes(
                     ctx,
+                    MAIN_AXIS_X,
                     child,
                     Box{.pos = Vec2{box.pos.x, current_y},
                         .size = Vec2{requirements.end_x, line_height}},
@@ -233,7 +244,7 @@ flow_assign_boxes(
 
                 // Otherwise, there is real wrapping going on, so we need to do
                 // an actual wrapped assignment.
-                assign_wrapped_boxes(ctx, child, &assignment);
+                assign_wrapped_boxes(ctx, MAIN_AXIS_X, child, &assignment);
 
                 // Update our X and Y positions.
                 current_y += assignment.first_line.line_height
@@ -247,6 +258,7 @@ flow_assign_boxes(
             // the non-wrapping interface.
             assign_boxes(
                 ctx,
+                MAIN_AXIS_X,
                 child,
                 Box{.pos = Vec2{box.pos.x + current_x, current_y},
                     .size = Vec2{requirements.end_x - current_x, line_height}},
@@ -263,6 +275,7 @@ flow_assign_boxes(
 WrappingRequirements
 flow_measure_wrapped_vertical(
     MeasurementContext* ctx,
+    MainAxisIndex main_axis,
     LayoutNode* node,
     float current_x_offset,
     float line_width)
@@ -280,7 +293,7 @@ flow_measure_wrapped_vertical(
          child = child->next_sibling)
     {
         auto const requirements = measure_wrapped_vertical(
-            ctx, child, current_x_offset, line_width);
+            ctx, MAIN_AXIS_X, child, current_x_offset, line_width);
         *child_requirements++ = requirements;
 
         line_height = (std::max)(line_height, requirements.first_line.height);
@@ -350,6 +363,7 @@ flow_measure_wrapped_vertical(
 void
 flow_assign_wrapped_boxes(
     PlacementContext* ctx,
+    MainAxisIndex main_axis,
     LayoutNode* node,
     WrappingAssignment const* assignment)
 {
@@ -440,6 +454,7 @@ flow_assign_wrapped_boxes(
                 current_y += child_assignment.first_line.line_height;
                 assign_boxes(
                     ctx,
+                    MAIN_AXIS_X,
                     child,
                     Box{.pos = Vec2{assignment->x_base, current_y},
                         .size = Vec2{requirements.end_x, line_height}},
@@ -452,7 +467,8 @@ flow_assign_wrapped_boxes(
 
                 // Otherwise, there is real wrapping going on, so we need to do
                 // an actual wrapped assignment.
-                assign_wrapped_boxes(ctx, child, &child_assignment);
+                assign_wrapped_boxes(
+                    ctx, MAIN_AXIS_X, child, &child_assignment);
 
                 // Update our X and Y positions.
                 current_y += child_assignment.first_line.line_height
@@ -466,6 +482,7 @@ flow_assign_wrapped_boxes(
             // the non-wrapping interface.
             assign_boxes(
                 ctx,
+                MAIN_AXIS_X,
                 child,
                 Box{.pos = Vec2{assignment->x_base + current_x, current_y},
                     .size = Vec2{requirements.end_x - current_x, line_height}},

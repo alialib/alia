@@ -52,7 +52,10 @@ column_measure_horizontal(MeasurementContext* ctx, LayoutNode* node)
 
 void
 column_assign_widths(
-    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* node,
+    float assigned_width)
 {
     auto& column = *reinterpret_cast<ColumnLayoutNode*>(node);
     auto& scratch = use_scratch<ColumnScratch>(*ctx->scratch);
@@ -60,17 +63,22 @@ column_assign_widths(
         = arena_array_alloc<VerticalRequirements>(
             *ctx->scratch, scratch.child_count);
     auto const assignment = resolve_horizontal_assignment(
-        column.flags, assigned_width, scratch.max_width);
+        adjust_flags_for_main_axis(column.flags, main_axis),
+        assigned_width,
+        scratch.max_width);
     for (LayoutNode* child = column.first_child; child != nullptr;
          child = child->next_sibling)
     {
-        assign_widths(ctx, child, assignment.size);
+        assign_widths(ctx, MAIN_AXIS_Y, child, assignment.size);
     }
 }
 
 VerticalRequirements
 column_measure_vertical(
-    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* node,
+    float assigned_width)
 {
     auto& column = *reinterpret_cast<ColumnLayoutNode*>(node);
     auto& scratch = use_scratch<ColumnScratch>(*ctx->scratch);
@@ -78,12 +86,15 @@ column_measure_vertical(
         = arena_array_alloc<VerticalRequirements>(
             *ctx->scratch, scratch.child_count);
     auto const assignment = resolve_horizontal_assignment(
-        column.flags, assigned_width, scratch.max_width);
+        adjust_flags_for_main_axis(column.flags, main_axis),
+        assigned_width,
+        scratch.max_width);
     VerticalRequirements* requirement_i = y_requirements;
     for (LayoutNode* child = column.first_child; child != nullptr;
          child = child->next_sibling)
     {
-        auto const child_y = measure_vertical(ctx, child, assignment.size);
+        auto const child_y
+            = measure_vertical(ctx, MAIN_AXIS_Y, child, assignment.size);
         *requirement_i++ = child_y;
         scratch.total_height += child_y.min_size;
         scratch.total_growth += child_y.growth_factor;
@@ -98,7 +109,11 @@ column_measure_vertical(
 
 void
 column_assign_boxes(
-    PlacementContext* ctx, LayoutNode* node, Box box, float baseline)
+    PlacementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* node,
+    Box box,
+    float baseline)
 {
     auto& column = *reinterpret_cast<ColumnLayoutNode*>(node);
     auto& scratch = use_scratch<ColumnScratch>(*ctx->scratch);
@@ -106,7 +121,7 @@ column_assign_boxes(
         = arena_array_alloc<VerticalRequirements>(
             *ctx->scratch, scratch.child_count);
     auto const assignment = resolve_assignment(
-        column.flags,
+        adjust_flags_for_main_axis(column.flags, main_axis),
         box.size,
         baseline,
         {scratch.max_width, scratch.total_height},
@@ -124,6 +139,7 @@ column_assign_boxes(
             = total_extra_space * child_y.growth_factor / total_growth;
         assign_boxes(
             ctx,
+            MAIN_AXIS_Y,
             child,
             Box{Vec2{box.pos.x + assignment.pos.x, current_y},
                 Vec2{assignment.size.x, child_y.min_size + extra_space}},

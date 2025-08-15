@@ -370,14 +370,20 @@ measure_text_horizontal(MeasurementContext* ctx, LayoutNode* node)
 
 void
 assign_text_widths(
-    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* node,
+    float assigned_width)
 {
     // TODO: Implement
 }
 
 VerticalRequirements
 measure_text_vertical(
-    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* node,
+    float assigned_width)
 {
     auto& text = *reinterpret_cast<MsdfTextLayoutNode*>(node);
     auto const* metrics = get_msdf_font_metrics(text.engine);
@@ -407,7 +413,11 @@ struct TextLayoutPlacementFragment
 
 void
 assign_text_boxes(
-    PlacementContext* ctx, LayoutNode* node, Box box, float baseline)
+    PlacementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* node,
+    Box box,
+    float baseline)
 {
     auto& text = *reinterpret_cast<MsdfTextLayoutNode*>(node);
     auto const* metrics = get_msdf_font_metrics(text.engine);
@@ -417,7 +427,7 @@ assign_text_boxes(
         text.engine, text.text, strlen(text.text), text.font_size);
 
     auto const placement = resolve_padded_assignment(
-        text.flags,
+        adjust_flags_for_main_axis(text.flags, main_axis),
         box.size,
         baseline,
         Vec2{width, metrics->line_height * text.font_size},
@@ -445,6 +455,7 @@ measure_text_wrapped_horizontal(MeasurementContext* ctx, LayoutNode* node)
 WrappingRequirements
 measure_text_wrapped_vertical(
     MeasurementContext* ctx,
+    MainAxisIndex main_axis,
     LayoutNode* node,
     float current_x_offset,
     float line_width)
@@ -526,6 +537,7 @@ measure_text_wrapped_vertical(
 void
 assign_text_wrapped_boxes(
     PlacementContext* ctx,
+    MainAxisIndex main_axis,
     LayoutNode* node,
     WrappingAssignment const* assignment)
 {
@@ -820,7 +832,7 @@ layout_demo_flow(Context& ctx)
                                             Color{f, 0.1f, 1.0f - f, 1},
                                             LayoutFlagSet(
                                                 (i & 3)
-                                                << Y_ALIGNMENT_BIT_OFFSET)))
+                                                << CROSS_ALIGNMENT_BIT_OFFSET)))
                                     {
                                         return;
                                     }

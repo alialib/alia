@@ -42,19 +42,26 @@ growth_override_measure_horizontal(MeasurementContext* ctx, LayoutNode* node)
 
 void
 growth_override_assign_widths(
-    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* node,
+    float assigned_width)
 {
     auto& override = *reinterpret_cast<GrowthOverrideNode*>(node);
-    assign_widths(ctx, override.container.first_child, assigned_width);
+    assign_widths(
+        ctx, main_axis, override.container.first_child, assigned_width);
 }
 
 VerticalRequirements
 growth_override_measure_vertical(
-    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* node,
+    float assigned_width)
 {
     auto& override = *reinterpret_cast<GrowthOverrideNode*>(node);
     auto const child_y = measure_vertical(
-        ctx, override.container.first_child, assigned_width);
+        ctx, main_axis, override.container.first_child, assigned_width);
     return VerticalRequirements{
         .min_size = child_y.min_size,
         .growth_factor = override.growth,
@@ -64,10 +71,15 @@ growth_override_measure_vertical(
 
 void
 growth_override_assign_boxes(
-    PlacementContext* ctx, LayoutNode* node, Box box, float baseline)
+    PlacementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* node,
+    Box box,
+    float baseline)
 {
     auto& override = *reinterpret_cast<GrowthOverrideNode*>(node);
-    assign_boxes(ctx, override.container.first_child, box, baseline);
+    assign_boxes(
+        ctx, main_axis, override.container.first_child, box, baseline);
 }
 
 HorizontalRequirements
@@ -84,23 +96,30 @@ growth_override_measure_wrapped_horizontal(
 WrappingRequirements
 growth_override_measure_wrapped_vertical(
     MeasurementContext* ctx,
+    MainAxisIndex main_axis,
     LayoutNode* node,
     float current_x_offset,
     float line_width)
 {
     auto& override = *reinterpret_cast<GrowthOverrideNode*>(node);
     return measure_wrapped_vertical(
-        ctx, override.container.first_child, current_x_offset, line_width);
+        ctx,
+        main_axis,
+        override.container.first_child,
+        current_x_offset,
+        line_width);
 }
 
 void
 growth_override_assign_wrapped_boxes(
     PlacementContext* ctx,
+    MainAxisIndex main_axis,
     LayoutNode* node,
     WrappingAssignment const* assignment)
 {
     auto& override = *reinterpret_cast<GrowthOverrideNode*>(node);
-    assign_wrapped_boxes(ctx, override.container.first_child, assignment);
+    assign_wrapped_boxes(
+        ctx, main_axis, override.container.first_child, assignment);
 }
 
 LayoutNodeVtable growth_override_vtable

@@ -42,19 +42,25 @@ min_size_measure_horizontal(MeasurementContext* ctx, LayoutNode* base_node)
 
 void
 min_size_assign_widths(
-    MeasurementContext* ctx, LayoutNode* base_node, float assigned_width)
+    MeasurementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* base_node,
+    float assigned_width)
 {
     auto& node = *reinterpret_cast<MinSizeNode*>(base_node);
-    assign_widths(ctx, node.container.first_child, assigned_width);
+    assign_widths(ctx, main_axis, node.container.first_child, assigned_width);
 }
 
 VerticalRequirements
 min_size_measure_vertical(
-    MeasurementContext* ctx, LayoutNode* base_node, float assigned_width)
+    MeasurementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* base_node,
+    float assigned_width)
 {
     auto& node = *reinterpret_cast<MinSizeNode*>(base_node);
-    auto const child_y
-        = measure_vertical(ctx, node.container.first_child, assigned_width);
+    auto const child_y = measure_vertical(
+        ctx, main_axis, node.container.first_child, assigned_width);
     return VerticalRequirements{
         .min_size = std::max(node.min_size.y, child_y.min_size),
         .growth_factor = child_y.growth_factor,
@@ -64,10 +70,14 @@ min_size_measure_vertical(
 
 void
 min_size_assign_boxes(
-    PlacementContext* ctx, LayoutNode* base_node, Box box, float baseline)
+    PlacementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* base_node,
+    Box box,
+    float baseline)
 {
     auto& node = *reinterpret_cast<MinSizeNode*>(base_node);
-    assign_boxes(ctx, node.container.first_child, box, baseline);
+    assign_boxes(ctx, main_axis, node.container.first_child, box, baseline);
 }
 
 HorizontalRequirements
@@ -85,23 +95,30 @@ min_size_measure_wrapped_horizontal(
 WrappingRequirements
 min_size_measure_wrapped_vertical(
     MeasurementContext* ctx,
+    MainAxisIndex main_axis,
     LayoutNode* base_node,
     float current_x_offset,
     float line_width)
 {
     auto& node = *reinterpret_cast<MinSizeNode*>(base_node);
     return measure_wrapped_vertical(
-        ctx, node.container.first_child, current_x_offset, line_width);
+        ctx,
+        main_axis,
+        node.container.first_child,
+        current_x_offset,
+        line_width);
 }
 
 void
 min_size_assign_wrapped_boxes(
     PlacementContext* ctx,
+    MainAxisIndex main_axis,
     LayoutNode* base_node,
     WrappingAssignment const* assignment)
 {
     auto& node = *reinterpret_cast<MinSizeNode*>(base_node);
-    assign_wrapped_boxes(ctx, node.container.first_child, assignment);
+    assign_wrapped_boxes(
+        ctx, main_axis, node.container.first_child, assignment);
 }
 
 LayoutNodeVtable min_size_vtable

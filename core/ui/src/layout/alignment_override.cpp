@@ -54,43 +54,59 @@ alignment_override_measure_horizontal(
 
 void
 alignment_override_assign_widths(
-    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* node,
+    float assigned_width)
 {
     auto& override = *reinterpret_cast<AlignmentOverrideNode*>(node);
     auto& scratch = use_scratch<AlignmentOverrideScratch>(*ctx->scratch);
     auto const assignment = resolve_horizontal_assignment(
-        override.flags, assigned_width, scratch.horizontal.min_size);
-    assign_widths(ctx, override.container.first_child, assignment.size);
+        adjust_flags_for_main_axis(override.flags, main_axis),
+        assigned_width,
+        scratch.horizontal.min_size);
+    assign_widths(
+        ctx, main_axis, override.container.first_child, assignment.size);
 }
 
 VerticalRequirements
 alignment_override_measure_vertical(
-    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* node,
+    float assigned_width)
 {
     auto& override = *reinterpret_cast<AlignmentOverrideNode*>(node);
     auto& scratch = use_scratch<AlignmentOverrideScratch>(*ctx->scratch);
     auto const assignment = resolve_horizontal_assignment(
-        override.flags, assigned_width, scratch.horizontal.min_size);
+        adjust_flags_for_main_axis(override.flags, main_axis),
+        assigned_width,
+        scratch.horizontal.min_size);
     scratch.vertical = measure_vertical(
-        ctx, override.container.first_child, assignment.size);
+        ctx, main_axis, override.container.first_child, assignment.size);
     return scratch.vertical;
 }
 
 void
 alignment_override_assign_boxes(
-    PlacementContext* ctx, LayoutNode* node, Box box, float baseline)
+    PlacementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* node,
+    Box box,
+    float baseline)
 {
     auto& override = *reinterpret_cast<AlignmentOverrideNode*>(node);
     auto& scratch = use_scratch<AlignmentOverrideScratch>(*ctx->scratch);
     ALIA_ASSERT(override.container.child_count == 1);
     auto const placement = resolve_assignment(
-        override.flags,
+        adjust_flags_for_main_axis(override.flags, main_axis),
         box.size,
         baseline,
         {scratch.horizontal.min_size, scratch.vertical.min_size},
         scratch.vertical.ascent);
     assign_boxes(
         ctx,
+        main_axis,
         override.container.first_child,
         Box{.pos = box.pos + placement.pos, .size = placement.size},
         scratch.vertical.ascent);

@@ -45,23 +45,34 @@ placement_hook_measure_horizontal(MeasurementContext* ctx, LayoutNode* node)
 
 void
 placement_hook_assign_widths(
-    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* node,
+    float assigned_width)
 {
     auto& placement_hook = *reinterpret_cast<PlacementHookNode*>(node);
-    assign_widths(ctx, placement_hook.first_child, assigned_width);
+    assign_widths(ctx, main_axis, placement_hook.first_child, assigned_width);
 }
 
 VerticalRequirements
 placement_hook_measure_vertical(
-    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* node,
+    float assigned_width)
 {
     auto& placement_hook = *reinterpret_cast<PlacementHookNode*>(node);
-    return measure_vertical(ctx, placement_hook.first_child, assigned_width);
+    return measure_vertical(
+        ctx, main_axis, placement_hook.first_child, assigned_width);
 }
 
 void
 placement_hook_assign_boxes(
-    PlacementContext* ctx, LayoutNode* node, Box box, float baseline)
+    PlacementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* node,
+    Box box,
+    float baseline)
 {
     auto& placement_hook = *reinterpret_cast<PlacementHookNode*>(node);
 
@@ -69,7 +80,7 @@ placement_hook_assign_boxes(
     placement->box = box;
     placement->baseline = baseline;
 
-    assign_boxes(ctx, placement_hook.first_child, box, baseline);
+    assign_boxes(ctx, main_axis, placement_hook.first_child, box, baseline);
 }
 
 LayoutNodeVtable placement_hook_vtable

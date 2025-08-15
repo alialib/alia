@@ -45,22 +45,30 @@ inset_measure_horizontal(MeasurementContext* ctx, LayoutNode* node)
 
 void
 inset_assign_widths(
-    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* node,
+    float assigned_width)
 {
     auto& inset = *reinterpret_cast<InsetLayoutNode*>(node);
     assign_widths(
         ctx,
+        main_axis,
         inset.container.first_child,
         assigned_width - inset.insets.left - inset.insets.right);
 }
 
 VerticalRequirements
 inset_measure_vertical(
-    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* node,
+    float assigned_width)
 {
     auto& inset = *reinterpret_cast<InsetLayoutNode*>(node);
     auto const child_y = measure_vertical(
         ctx,
+        main_axis,
         inset.container.first_child,
         assigned_width - inset.insets.top - inset.insets.bottom);
     return VerticalRequirements{
@@ -72,11 +80,16 @@ inset_measure_vertical(
 
 void
 inset_assign_boxes(
-    PlacementContext* ctx, LayoutNode* node, Box box, float baseline)
+    PlacementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* node,
+    Box box,
+    float baseline)
 {
     auto& inset = *reinterpret_cast<InsetLayoutNode*>(node);
     assign_boxes(
         ctx,
+        main_axis,
         inset.container.first_child,
         Box{.pos = box.pos + Vec2{inset.insets.left, inset.insets.top},
             .size = box.size - Vec2{inset.insets.left + inset.insets.right,
@@ -98,6 +111,7 @@ inset_measure_wrapped_horizontal(MeasurementContext* ctx, LayoutNode* node)
 WrappingRequirements
 inset_measure_wrapped_vertical(
     MeasurementContext* ctx,
+    MainAxisIndex main_axis,
     LayoutNode* node,
     float current_x_offset,
     float line_width)
@@ -106,6 +120,7 @@ inset_measure_wrapped_vertical(
 
     auto const child = measure_wrapped_vertical(
         ctx,
+        main_axis,
         inset.container.first_child,
         current_x_offset,
         line_width - inset.insets.left - inset.insets.right);
@@ -149,6 +164,7 @@ inset_measure_wrapped_vertical(
 void
 inset_assign_wrapped_boxes(
     PlacementContext* ctx,
+    MainAxisIndex main_axis,
     LayoutNode* node,
     WrappingAssignment const* assignment)
 {
@@ -156,7 +172,8 @@ inset_assign_wrapped_boxes(
     WrappingAssignment inset_assignment = *assignment;
     inset_assignment.x_base += inset.insets.left;
     inset_assignment.line_width -= inset.insets.left + inset.insets.right;
-    assign_wrapped_boxes(ctx, inset.container.first_child, &inset_assignment);
+    assign_wrapped_boxes(
+        ctx, main_axis, inset.container.first_child, &inset_assignment);
 }
 
 LayoutNodeVtable inset_vtable

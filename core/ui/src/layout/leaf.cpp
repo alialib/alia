@@ -15,13 +15,19 @@ leaf_measure_horizontal(MeasurementContext* ctx, LayoutNode* node)
 
 void
 leaf_assign_widths(
-    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* node,
+    float assigned_width)
 {
 }
 
 VerticalRequirements
 leaf_measure_vertical(
-    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* node,
+    float assigned_width)
 {
     auto& leaf = *reinterpret_cast<LayoutLeafNode*>(node);
     return VerticalRequirements{
@@ -33,13 +39,22 @@ leaf_measure_vertical(
 
 void
 leaf_assign_boxes(
-    PlacementContext* ctx, LayoutNode* node, Box box, float baseline)
+    PlacementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* node,
+    Box box,
+    float baseline)
 {
     auto& leaf = *reinterpret_cast<LayoutLeafNode*>(node);
     LeafLayoutPlacement* placement
         = arena_alloc<LeafLayoutPlacement>(*ctx->arena);
     auto const padded_placement = resolve_padded_assignment(
-        leaf.flags, box.size, baseline, leaf.size, 0, leaf.padding);
+        adjust_flags_for_main_axis(leaf.flags, main_axis),
+        box.size,
+        baseline,
+        leaf.size,
+        0,
+        leaf.padding);
     placement->position = box.pos + padded_placement.pos;
     placement->size = padded_placement.size;
 }

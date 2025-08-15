@@ -60,14 +60,20 @@ hyperflow_measure_horizontal(MeasurementContext* ctx, LayoutNode* node)
 
 void
 hyperflow_assign_widths(
-    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* node,
+    float assigned_width)
 {
     // TODO
 }
 
 VerticalRequirements
 hyperflow_measure_vertical(
-    MeasurementContext* ctx, LayoutNode* node, float assigned_width)
+    MeasurementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* node,
+    float assigned_width)
 {
     auto& hyperflow = *reinterpret_cast<HyperflowLayoutNode*>(node);
     auto& scratch = use_scratch<HyperflowScratch>(*ctx->scratch);
@@ -82,8 +88,8 @@ hyperflow_measure_vertical(
     for (LayoutNode* child = hyperflow.first_child; child != nullptr;
          child = child->next_sibling)
     {
-        auto const child_y
-            = measure_vertical(ctx, child, child_requirements->x.min_size);
+        auto const child_y = measure_vertical(
+            ctx, MAIN_AXIS_X, child, child_requirements->x.min_size);
         child_requirements->y = child_y;
         ++child_requirements;
 
@@ -130,7 +136,11 @@ hyperflow_measure_vertical(
 
 void
 hyperflow_assign_boxes(
-    PlacementContext* ctx, LayoutNode* node, Box box, float baseline)
+    PlacementContext* ctx,
+    MainAxisIndex main_axis,
+    LayoutNode* node,
+    Box box,
+    float baseline)
 {
     auto& hyperflow = *reinterpret_cast<HyperflowLayoutNode*>(node);
     auto& scratch = use_scratch<HyperflowScratch>(*ctx->scratch);
@@ -142,7 +152,7 @@ hyperflow_assign_boxes(
         return;
 
     auto const placement = resolve_vertical_assignment(
-        hyperflow.flags,
+        adjust_flags_for_main_axis(hyperflow.flags, main_axis),
         box.size.y,
         baseline,
         scratch.total_height,
@@ -169,6 +179,7 @@ hyperflow_assign_boxes(
                 ++i;
                 assign_boxes(
                     ctx,
+                    MAIN_AXIS_X,
                     c,
                     Box{.pos = Vec2{x, current_y},
                         .size = Vec2{child_x.min_size, line_height}},

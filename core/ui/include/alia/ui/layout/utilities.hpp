@@ -65,6 +65,13 @@ resolve_growth_factor(LayoutFlagSet flags)
     return flags & GROW ? 1.0f : 0.0f;
 }
 
+inline LayoutFlagSet
+adjust_flags_for_main_axis(LayoutFlagSet flags, MainAxisIndex main_axis)
+{
+    flags.code |= flags.code >> main_axis;
+    return flags;
+}
+
 // SCRATCH ARENA UTILITIES
 
 // Claim scratch space from the arena - This is called by the node
@@ -95,6 +102,7 @@ use_scratch(InfiniteArena& arena)
 WrappingRequirements
 default_measure_wrapped_vertical(
     MeasurementContext* ctx,
+    MainAxisIndex main_axis,
     LayoutNode* node,
     float current_x_offset,
     float line_width);

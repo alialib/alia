@@ -24,13 +24,15 @@ resolve_layout(LayoutSystem& system, Vec2 available_space)
         MeasurementContext ctx{&system.scratch_arena};
         measure_horizontal(&ctx, root_node);
         system.scratch_arena.reset();
-        vertical = measure_vertical(&ctx, root_node, available_space.x);
+        vertical = measure_vertical(
+            &ctx, MAIN_AXIS_X, root_node, available_space.x);
     }
     {
         PlacementContext ctx{&system.scratch_arena, &system.placement_arena};
         system.scratch_arena.reset();
         assign_boxes(
             &ctx,
+            MAIN_AXIS_X,
             root_node,
             Box{Vec2{0, 0}, available_space},
             vertical.ascent);

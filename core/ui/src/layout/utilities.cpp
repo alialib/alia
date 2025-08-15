@@ -5,6 +5,7 @@ namespace alia {
 WrappingRequirements
 default_measure_wrapped_vertical(
     MeasurementContext* ctx,
+    MainAxisIndex main_axis,
     LayoutNode* node,
     float current_x_offset,
     float line_width)
@@ -12,7 +13,8 @@ default_measure_wrapped_vertical(
     auto checkpoint = ctx->scratch->save_state();
     auto horizontal = measure_horizontal(ctx, node);
     ctx->scratch->restore_state(checkpoint);
-    auto vertical = measure_vertical(ctx, node, horizontal.min_size);
+    auto vertical
+        = measure_vertical(ctx, main_axis, node, horizontal.min_size);
     if (current_x_offset + horizontal.min_size > line_width)
     {
         return WrappingRequirements{
