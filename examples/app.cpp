@@ -105,6 +105,57 @@ do_rect(Context& ctx, Vec2 size, Color color, LayoutFlagSet flags)
     return false;
 }
 
+bool
+do_rect_with_offset(
+    Context& ctx, Vec2 size, Color color, LayoutFlagSet flags, Vec2 offset)
+{
+    switch (ctx.pass.type)
+    {
+        case PassType::Refresh: {
+            auto& layout = ctx.pass.refresh.layout_emission;
+            LayoutLeafNode* new_node
+                = arena_alloc<LayoutLeafNode>(ctx.system->layout.node_arena);
+            *layout.next_ptr = &new_node->base;
+            layout.next_ptr = &new_node->base.next_sibling;
+            *new_node = LayoutLeafNode{
+                .base = {.vtable = &leaf_vtable, .next_sibling = 0},
+                .flags = flags,
+                .padding = ctx.style->padding,
+                .size = size};
+            break;
+        }
+        case PassType::Draw: {
+            auto& leaf_placement = *arena_alloc<LeafLayoutPlacement>(
+                ctx.system->layout.placement_arena);
+            Box box
+                = {.pos = leaf_placement.position + offset,
+                   .size = leaf_placement.size};
+            draw_box(
+                *ctx.pass.draw.display_list_arena,
+                *ctx.pass.draw.box_command_list,
+                box,
+                color);
+            break;
+        }
+        case PassType::Event: {
+            auto& leaf_placement = *arena_alloc<LeafLayoutPlacement>(
+                ctx.system->layout.placement_arena);
+            Box box
+                = {.pos = leaf_placement.position + offset,
+                   .size = leaf_placement.size};
+            if (detect_click(
+                    ctx.pass.event.event,
+                    box.pos.x,
+                    box.pos.y,
+                    box.size.x,
+                    box.size.y))
+                return true;
+            break;
+        }
+    }
+    return false;
+}
+
 template<class T>
 struct is_layout_modifier : std::false_type
 {
@@ -803,11 +854,34 @@ nested_flow_demo(Context& ctx)
 }
 
 void
+mixed_flow_demo(Context& ctx)
+{
+    with_padding(ctx, 10, [&] {
+        flow(ctx, [&]() {
+            for (int i = 0; i < 10; ++i)
+            {
+                float x = 0.0f;
+                for (int j = 0; j < 10; ++j)
+                {
+                    float f = fmod(x, 1.0f);
+                    do_rect(
+                        ctx, {24, 24}, Color{f, 0.1f, 1.0f - f, 1}, CENTER);
+                    x += 0.1f;
+                }
+
+                do_text(ctx, GRAY, 24 + i * 6, "lorem ipsum", BASELINE_Y);
+                do_text(ctx, GRAY, 12 + i * 6, lorem_ipsum, BASELINE_Y);
+            }
+        });
+    });
+}
+
+void
 layout_demo_flow(Context& ctx)
 {
     float x = 0.0f;
     hyperflow(ctx, [&]() {
-        for (int i = 0; i < 2400; ++i)
+        for (int i = 0; i < 600; ++i)
         {
             float intensity = ((i / 4) % 3) * 0.02f;
             inset(
@@ -826,16 +900,13 @@ layout_demo_flow(Context& ctx)
                             min_size_constraint(ctx, {0, 200}, [&]() {
                                 row(ctx, [&]() {
                                     float f = fmod(x, 1.0f);
-                                    if (do_rect(
-                                            ctx,
-                                            {24, float((i & 7) * 12 + 12)},
-                                            Color{f, 0.1f, 1.0f - f, 1},
-                                            LayoutFlagSet(
-                                                (i & 3)
-                                                << CROSS_ALIGNMENT_BIT_OFFSET)))
-                                    {
-                                        return;
-                                    }
+                                    do_rect(
+                                        ctx,
+                                        {24, float((i & 7) * 12 + 12)},
+                                        Color{f, 0.1f, 1.0f - f, 1},
+                                        LayoutFlagSet(
+                                            (i & 3)
+                                            << CROSS_ALIGNMENT_BIT_OFFSET));
                                     x += 0.01f;
                                 });
                             });
@@ -856,7 +927,7 @@ layout_growth_demo(Context& ctx)
             growth_override(ctx, i * 1.0f, [&]() {
                 do_rect(
                     ctx,
-                    {24, 24},
+                    {6, 12},
                     Color{f, 0.1f, 1.0f - f, 1},
                     FILL | (i & 1 ? GROW : NO_FLAGS));
             });
@@ -866,10 +937,55 @@ layout_growth_demo(Context& ctx)
 }
 
 void
+do_animated_rect(
+    Context& ctx,
+    bool& initialized,
+    Vec2& offset,
+    Vec2 size,
+    Color color,
+    LayoutFlagSet flags)
+{
+    placement_hook(ctx, FILL, [&](auto outer_placement) {
+        alignment_override(ctx, flags, [&]() {
+            placement_hook(ctx, FILL, [&](auto inner_placement) {
+                Vec2 inner_pos
+                    = inner_placement.box.pos - outer_placement.box.pos;
+                if (ctx.pass.type == PassType::Draw)
+                {
+                    if (!initialized)
+                    {
+                        offset = inner_pos;
+                        initialized = true;
+                    }
+                    offset += (inner_pos - offset) * 0.1f;
+                }
+                do_rect_with_offset(
+                    ctx, size, color, FILL, offset - inner_pos);
+            });
+        });
+    });
+}
+
+void
 alignment_override_demo(Context& ctx)
 {
+    static bool invert = false;
+    static bool initialized[12] = {false};
+    static Vec2 offsets[12] = {0};
     float x = 0.0f;
     row(ctx, [&]() {
+        concrete_panel(ctx, Color{0.14f, 0.14f, 0.16f, 1}, CENTER, [&]() {
+            inset(ctx, {.left = 4, .right = 4, .top = 4, .bottom = 4}, [&]() {
+                if (do_rect(
+                        ctx,
+                        {24, 24},
+                        invert ? Color{1, 1, 1, 1} : Color{0, 0, 0, 0},
+                        CENTER))
+                {
+                    invert = !invert;
+                }
+            });
+        });
         for (int i = 0; i < 12; ++i)
         {
             float f = fmod(x, 1.0f);
@@ -887,16 +1003,15 @@ alignment_override_demo(Context& ctx)
                                 1},
                             NO_FLAGS,
                             [&]() {
-                                alignment_override(
+                                do_animated_rect(
                                     ctx,
-                                    i & 1 ? ALIGN_TOP : ALIGN_BOTTOM,
-                                    [&]() {
-                                        do_rect(
-                                            ctx,
-                                            {24, 24},
-                                            Color{f, 0.1f, 1.0f - f, 1},
-                                            FILL);
-                                    });
+                                    initialized[i],
+                                    offsets[i],
+                                    {24, 24},
+                                    Color{f, 0.1f, 1.0f - f, 1},
+                                    (i & 1) == (invert ? 0 : 1)
+                                        ? ALIGN_TOP
+                                        : ALIGN_BOTTOM);
                             });
                     });
                 });
@@ -909,8 +1024,8 @@ void
 layout_mods_demo(Context& ctx)
 {
     float x = 0.0f;
-    row(ctx, [&]() {
-        for (int i = 0; i < 6; ++i)
+    flow(ctx, [&]() {
+        for (int i = 0; i < 36; ++i)
         {
             float f = fmod(x, 1.0f);
             panel(
@@ -926,11 +1041,11 @@ layout_mods_demo(Context& ctx)
                 [&]() {
                     do_rect(
                         ctx,
-                        {24, 24},
+                        {float(4 * i), float(4 * i)},
                         Color{f, 0.1f, 1.0f - f, 1},
                         align_right | center_y);
                 });
-            x += 0.16f;
+            x += 0.2f;
         }
     });
 }
@@ -942,31 +1057,35 @@ layout_demo(Context& ctx)
         inset(ctx, {.left = 40, .right = 40, .top = 40, .bottom = 40}, [&]() {
             row(ctx, [&]() {
                 float x = 0.0f;
-                column(ctx, [&]() {
-                    for (int j = 0; j < 40; ++j)
-                    {
-                        float f = fmod(x, 1.0f);
-                        if (do_rect(
-                                ctx,
-                                {float((j & 7) * 12 + 12), 24},
-                                Color{f, 0.1f, 1.0f - f, 1},
-                                LayoutFlagSet(
-                                    (j & 3) << X_ALIGNMENT_BIT_OFFSET)))
-                        {
-                            return;
-                        }
-                        x += 0.02f;
-                    }
-                });
+                inset(
+                    ctx,
+                    {.left = 0, .right = 12, .top = 0, .bottom = 0},
+                    [&]() {
+                        column(ctx, [&]() {
+                            for (int j = 0; j < 80; ++j)
+                            {
+                                float f = fmod(x, 1.0f);
+                                do_rect(
+                                    ctx,
+                                    {float((j & 7) * 12 + 12), 24},
+                                    Color{f, 0.1f, 1.0f - f, 1},
+                                    LayoutFlagSet(
+                                        (j & 3) << X_ALIGNMENT_BIT_OFFSET));
+                                x += 0.02f;
+                            }
+                        });
+                    });
                 column(ctx, GROW, [&]() {
-                    do_text(ctx, GRAY, 20, "layout_growth_demo");
+                    do_text(ctx, GRAY, 24, "layout_growth_demo");
                     layout_growth_demo(ctx);
-                    do_text(ctx, GRAY, 20, "alignment_override_demo");
+                    do_text(ctx, GRAY, 24, "alignment_override_demo");
                     alignment_override_demo(ctx);
-                    do_text(ctx, GRAY, 20, "layout_mods_demo");
+                    do_text(ctx, GRAY, 24, "layout_mods_demo");
                     layout_mods_demo(ctx);
-                    do_text(ctx, GRAY, 20, "layout_demo_flow");
-                    layout_demo_flow(ctx);
+                    do_text(ctx, GRAY, 24, "mixed_flow_demo");
+                    mixed_flow_demo(ctx);
+                    // do_text(ctx, GRAY, 24, "layout_demo_flow");
+                    // layout_demo_flow(ctx);
                 });
             });
         });
@@ -1013,6 +1132,120 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     }
 }
 
+// alloc_probe.h
+#ifdef _MSC_VER
+#include <atomic>
+#include <crtdbg.h>
+#include <functional>
+#include <windows.h>
+#endif
+
+struct AllocProbeResult
+{
+    bool any; // did any allocations occur?
+    long first_req = -1; // first global request number seen
+    long last_req = -1; // last global request number seen
+    unsigned count = 0; // number of alloc/realloc events seen
+};
+
+#if 0
+
+#ifdef _MSC_VER
+namespace detail {
+// Per-thread tracking (the hook is process-wide, so we filter by thread)
+static thread_local bool g_active = false;
+static thread_local DWORD g_tid = 0;
+static thread_local long g_first = -1;
+static thread_local long g_last = -1;
+static thread_local unsigned g_count = 0;
+
+// Keep previous hook so we can restore it
+static _CRT_ALLOC_HOOK g_prevHook = nullptr;
+
+// Our hook: called by the Debug CRT on each alloc/free/realloc
+static int __cdecl Hook(
+    int allocType,
+    void* /*userData*/,
+    size_t /*size*/,
+    int /*blockType*/,
+    long requestNumber,
+    const unsigned char* /*filename*/,
+    int /*line*/)
+{
+    if (g_active && GetCurrentThreadId() == g_tid)
+    {
+        if (allocType == _HOOK_ALLOC || allocType == _HOOK_REALLOC)
+        {
+            if (g_first < 0)
+                g_first = requestNumber; // <- global order id
+            g_last = requestNumber;
+            ++g_count;
+        }
+    }
+    return g_prevHook
+             ? g_prevHook(allocType, nullptr, 0, 0, requestNumber, nullptr, 0)
+             : 1;
+}
+
+struct Activator
+{
+    Activator()
+    {
+        // ensure debug heap is on so hooks fire
+        int flags = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);
+        _CrtSetDbgFlag(flags | _CRTDBG_ALLOC_MEM_DF);
+        g_prevHook = _CrtSetAllocHook(&Hook);
+    }
+    ~Activator()
+    {
+        _CrtSetAllocHook(g_prevHook);
+    }
+};
+} // namespace detail
+
+#endif // _MSC_VER
+
+template<class F>
+AllocProbeResult
+probe_allocations(F&& f)
+{
+#ifdef _MSC_VER
+    detail::g_active = true;
+    detail::g_tid = GetCurrentThreadId();
+    detail::g_first = -1;
+    detail::g_last = -1;
+    detail::g_count = 0;
+    detail::Activator guard;
+
+    // Run the code under test
+    std::forward<F>(f)();
+
+    AllocProbeResult r;
+    r.any = detail::g_count > 0;
+    r.first_req = detail::g_first;
+    r.last_req = detail::g_last;
+    r.count = detail::g_count;
+
+    detail::g_active = false;
+    return r;
+#else
+    // Non-MSVC / Release: can’t use Debug CRT hook; report no info.
+    return AllocProbeResult{false, -1, -1, 0};
+#endif
+}
+
+#else
+
+template<class F>
+AllocProbeResult
+probe_allocations(F&& f)
+{
+    std::forward<F>(f)();
+    return AllocProbeResult{false, -1, -1, 0};
+}
+
+#endif
+
 void
 update()
 {
@@ -1020,70 +1253,80 @@ update()
         last_frame_time = std::chrono::high_resolution_clock::now();
     auto const start_time = std::chrono::high_resolution_clock::now();
 
-    the_system.layout.node_arena.reset();
-    Context refresh_ctx
-        = {{PassType::Refresh,
-            {.refresh
-             = {.layout_emission
-                = {&the_system.layout.node_arena,
-                   &the_system.layout.root.first_child}}}},
-           &the_style,
-           &the_system};
-    the_demo(refresh_ctx);
-    *refresh_ctx.pass.refresh.layout_emission.next_ptr = 0;
+    std::chrono::time_point<std::chrono::high_resolution_clock>
+        refresh_finished_time;
+    std::chrono::time_point<std::chrono::high_resolution_clock>
+        layout_finished_time;
 
-    auto const refresh_finished_time
-        = std::chrono::high_resolution_clock::now();
+    AllocProbeResult result = probe_allocations([&]() {
+        the_system.layout.node_arena.reset();
+        Context refresh_ctx
+            = {{PassType::Refresh,
+                {.refresh
+                 = {.layout_emission
+                    = {&the_system.layout.node_arena,
+                       &the_system.layout.root.first_child}}}},
+               &the_style,
+               &the_system};
+        the_demo(refresh_ctx);
+        *refresh_ctx.pass.refresh.layout_emission.next_ptr = 0;
 
-    the_system.layout.placement_arena.reset();
-    resolve_layout(the_system.layout, the_system.framebuffer_size);
+        refresh_finished_time = std::chrono::high_resolution_clock::now();
 
-    auto const layout_finished_time
-        = std::chrono::high_resolution_clock::now();
+        the_system.layout.placement_arena.reset();
+        resolve_layout(the_system.layout, the_system.framebuffer_size);
 
-    update_glfw_window_info(the_system, the_window);
+        layout_finished_time = std::chrono::high_resolution_clock::now();
 
-    // glfwMakeContextCurrent(the_window);
-    glViewport(
-        0, 0, the_system.framebuffer_size.x, the_system.framebuffer_size.y);
+        update_glfw_window_info(the_system, the_window);
 
-    glClearColor(0.15f, 0.15f, 0.2f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+        // glfwMakeContextCurrent(the_window);
+        glViewport(
+            0,
+            0,
+            the_system.framebuffer_size.x,
+            the_system.framebuffer_size.y);
 
-    GLenum err;
-    while ((err = glGetError()) != GL_NO_ERROR)
-        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
+        glClearColor(0.15f, 0.15f, 0.2f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
 
-    the_display_list_arena.reset();
-    clear_command_list(the_box_commands);
-    clear_command_list(the_msdf_commands);
-    the_system.layout.placement_arena.reset();
-    Context draw_ctx
-        = {.pass
-           = {.type = PassType::Draw,
-              .draw
-              = {.display_list_arena = &the_display_list_arena,
-                 .box_command_list = &the_box_commands}},
-           .style = &the_style,
-           .system = &the_system};
-    the_demo(draw_ctx);
+        GLenum err;
+        while ((err = glGetError()) != GL_NO_ERROR)
+            printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
-    while ((err = glGetError()) != GL_NO_ERROR)
-        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
+        the_display_list_arena.reset();
+        clear_command_list(the_box_commands);
+        clear_command_list(the_msdf_commands);
+        the_system.layout.placement_arena.reset();
+        Context draw_ctx
+            = {.pass
+               = {.type = PassType::Draw,
+                  .draw
+                  = {.display_list_arena = &the_display_list_arena,
+                     .box_command_list = &the_box_commands}},
+               .style = &the_style,
+               .system = &the_system};
+        the_demo(draw_ctx);
 
-    render_box_command_list(&the_renderer, the_system, the_box_commands);
+        while ((err = glGetError()) != GL_NO_ERROR)
+            printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
-    while ((err = glGetError()) != GL_NO_ERROR)
-        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
+        render_box_command_list(&the_renderer, the_system, the_box_commands);
 
-    render_command_list(
-        the_msdf_text_engine, the_msdf_commands, the_system.framebuffer_size);
+        while ((err = glGetError()) != GL_NO_ERROR)
+            printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
-    while ((err = glGetError()) != GL_NO_ERROR)
-        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
+        render_command_list(
+            the_msdf_text_engine,
+            the_msdf_commands,
+            the_system.framebuffer_size);
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
+        while ((err = glGetError()) != GL_NO_ERROR)
+            printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+    });
 
     auto const end_time = std::chrono::high_resolution_clock::now();
     auto const refresh_time = std::chrono::duration_cast<
@@ -1112,8 +1355,11 @@ update()
               << refresh_time << " / " << std::setw(6) << layout_time << " / "
               << std::setw(6) << render_time << std::endl;
 
+    // std::cout << "allocation count: " << result.count << std::endl;
+
     last_frame_time = start_time;
 
+    GLenum err;
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
@@ -1135,6 +1381,9 @@ framebuffer_size_callback(GLFWwindow* window, int width, int height)
 int
 main()
 {
+    // Enable debug heap reports
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+
     HANDLE hCurrentThread = GetCurrentThread();
     if (SetThreadPriority(hCurrentThread, THREAD_PRIORITY_HIGHEST))
     {
