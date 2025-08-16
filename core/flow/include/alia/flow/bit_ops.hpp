@@ -1,5 +1,4 @@
-#ifndef ALIA_CORE_BIT_OPS_HPP
-#define ALIA_CORE_BIT_OPS_HPP
+#pragma once
 
 namespace alia {
 
@@ -44,5 +43,3 @@ write_bit_pair(unsigned& bitset, unsigned index, unsigned new_value)
 }
 
 } // namespace alia
-
-#endif
