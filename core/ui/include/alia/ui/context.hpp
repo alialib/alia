@@ -65,4 +65,6 @@ struct Context
     System* system;
 };
 
+using EphemeralContext = Context;
+
 } // namespace alia

@@ -4,7 +4,7 @@
 
 #include <vector>
 
-#include <alia/flow/infinite_arena.hpp>
+#include <alia/base/infinite_arena.hpp>
 #include <alia/ui/context.hpp>
 #include <alia/ui/layout/compositors/column.hpp>
 #include <alia/ui/layout/compositors/row.hpp>

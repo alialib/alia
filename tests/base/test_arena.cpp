@@ -1,6 +1,6 @@
 #include <doctest/doctest.h>
 
-#include <alia/flow/arena.hpp>
+#include <alia/base/arena.hpp>
 #include <cstring> // for std::memset
 
 #ifdef _MSC_VER

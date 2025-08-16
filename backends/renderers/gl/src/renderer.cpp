@@ -1,6 +1,6 @@
 #include <alia/renderers/gl/renderer.hpp>
 
-#include <alia/flow/arena.hpp>
+#include <alia/base/infinite_arena.hpp>
 #include <alia/ui/display_list.hpp>
 #include <alia/ui/system.hpp>
 
@@ -165,9 +165,8 @@ init_gl_renderer(GlRenderer* renderer)
 
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, clip_ubo);
 
-    ArenaAllocator alloc{default_alloc, default_dealloc, nullptr};
-    Arena* rect_instance_arena
-        = create_arena(alloc, sizeof(RectInstance) * 4096); // TODO
+    InfiniteArena* rect_instance_arena = new InfiniteArena; // TODO
+    rect_instance_arena->initialize();
 
     GLuint instance_vbo;
     glGenBuffers(1, &instance_vbo);
@@ -305,9 +304,9 @@ render_box_command_list(
     renderer->clip_ptr[2] = system.framebuffer_size.x;
     renderer->clip_ptr[3] = system.framebuffer_size.y;
 
-    reset_arena(renderer->rect_instance_arena);
-    RectInstance* rect_instances = (RectInstance*) arena_alloc(
-        renderer->rect_instance_arena, sizeof(RectInstance) * boxes.count);
+    renderer->rect_instance_arena->reset();
+    RectInstance* rect_instances = arena_array_alloc<RectInstance>(
+        *renderer->rect_instance_arena, boxes.count);
     {
         RectInstance* instance = rect_instances;
         for (auto const* cmd = boxes.head; cmd; cmd = cmd->next)

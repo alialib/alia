@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cmath>
+
 namespace alia {
 
 struct Vec2
@@ -88,5 +90,48 @@ struct Insets
     float top;
     float bottom;
 };
+
+struct Affine2
+{
+    float a, b, c, d, tx, ty;
+};
+
+inline Affine2
+identity_matrix()
+{
+    return {1, 0, 0, 1, 0, 0};
+}
+
+inline Affine2
+translation_matrix(float x, float y)
+{
+    return {1, 0, 0, 1, x, y};
+}
+
+inline Affine2
+scaling_matrix(float sx, float sy)
+{
+    return {sx, 0, 0, sy, 0, 0};
+}
+
+inline Affine2
+rotation_matrix(float r)
+{
+    float s = std::sin(r), c = std::cos(r);
+    return {c, s, -s, c, 0, 0};
+}
+
+inline Affine2
+compose(Affine2 p, Affine2 c)
+{
+    return {
+        .a = p.a * c.a + p.c * c.b,
+        .b = p.b * c.a + p.d * c.b,
+        .c = p.a * c.c + p.c * c.d,
+        .d = p.b * c.c + p.d * c.d,
+        .tx = p.a * c.tx + p.c * c.ty + p.tx,
+        .ty = p.b * c.tx + p.d * c.ty + p.ty,
+    };
+}
 
 } // namespace alia

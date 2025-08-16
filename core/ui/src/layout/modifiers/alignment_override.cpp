@@ -97,7 +97,6 @@ alignment_override_assign_boxes(
 {
     auto& override = *reinterpret_cast<AlignmentOverrideNode*>(node);
     auto& scratch = use_scratch<AlignmentOverrideScratch>(*ctx->scratch);
-    ALIA_ASSERT(override.container.child_count == 1);
     auto const placement = resolve_assignment(
         adjust_flags_for_main_axis(override.flags, main_axis),
         box.size,

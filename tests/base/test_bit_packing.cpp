@@ -1,6 +1,6 @@
 #include <doctest/doctest.h>
 
-#include <alia/flow/bit_packing.hpp>
+#include <alia/base/bit_packing.hpp>
 
 using namespace alia;
 

@@ -8,7 +8,7 @@
 
 namespace alia {
 
-struct Arena;
+struct InfiniteArena;
 struct System;
 struct DisplayList;
 
@@ -18,7 +18,7 @@ struct GlRenderer
     GLuint vanilla_shader_program;
     GLuint vao, vbo;
     GLuint instance_vbo;
-    Arena* rect_instance_arena;
+    InfiniteArena* rect_instance_arena;
     GLuint clip_ubo;
     float* clip_ptr;
 };

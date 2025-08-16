@@ -6,10 +6,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 enable_testing()
 
-add_subdirectory(core/flow)
+add_subdirectory(core/base)
 
-add_subdirectory(tests/flow)
-add_test(NAME test_flow COMMAND test_flow)
+add_subdirectory(tests/base)
+add_test(NAME test_base COMMAND test_base)
 
 add_subdirectory(core/ui)
 
