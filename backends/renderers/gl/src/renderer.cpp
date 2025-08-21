@@ -39,10 +39,9 @@ layout (location = 0) in vec2 a_pos;
 layout (location = 1) in vec2 i_pos;
 layout (location = 2) in vec2 i_size;
 layout (location = 3) in vec4 i_color;
+layout (location = 4) in uint i_clip_index;
 
 uniform mat4 u_projection;
-
-layout (location = 4) in uint i_clip_index;
 
 out vec4 v_color;
 flat out uint v_clip_index;
@@ -58,8 +57,8 @@ void main() {
 const char* vanilla_fragment_shader_source = R"(
 #version 330 core
 
-layout (std140, binding = 0) uniform ClipUBO {
-    vec4 clips[4096]; // TODO: Make this dynamic and adjust for GL limits.
+layout (std140) uniform ClipUBO {
+    vec4 clips[1024]; // TODO: Make this dynamic and adjust for GL limits.
 };
 
 in vec4 v_color;
@@ -130,10 +129,13 @@ init_gl_renderer(GlRenderer* renderer)
     GLuint vanilla_shader_program = create_shader_program(
         vanilla_vertex_shader_source, vanilla_fragment_shader_source);
 
+    GLenum err;
+    while ((err = glGetError()) != GL_NO_ERROR)
+        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
+
     GLint vanilla_matrix_location
         = glGetUniformLocation(vanilla_shader_program, "u_projection");
 
-    GLenum err;
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
@@ -153,7 +155,7 @@ init_gl_renderer(GlRenderer* renderer)
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
-    constexpr GLsizeiptr max_clips = 4096;
+    constexpr GLsizeiptr max_clips = 1024;
     constexpr GLsizeiptr bytes_per_clip = sizeof(float) * 4; // vec4
     constexpr GLsizeiptr ubo_size = max_clips * bytes_per_clip;
 
@@ -166,7 +168,9 @@ init_gl_renderer(GlRenderer* renderer)
         nullptr,
         GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, 0, clip_ubo);
+    GLuint clip_block
+        = glGetUniformBlockIndex(vanilla_shader_program, "ClipUBO");
+    glBindBufferBase(GL_UNIFORM_BUFFER, clip_block, clip_ubo);
 
     InfiniteArena* rect_instance_arena = new InfiniteArena; // TODO
     rect_instance_arena->initialize();
