@@ -62,7 +62,7 @@ resolve_vertical_assignment(
     float ascent)
 {
     static float const offsets[8] = {0, 0.5, 0, 1, 0, 0, 0, 0};
-    static float const baseline_offsets[8] = {0, 0, 0, 0, 1, 0, 0, 0};
+    static float const baseline_offsets[8] = {0, 0, 0, 0, 0, 1, 0, 0};
     static float const sizes[8] = {1, 0, 0, 0, 1, 0, 1, 1};
 
     auto const index
@@ -115,7 +115,11 @@ resolve_padded_vertical_assignment(
     float padding)
 {
     auto placement = resolve_vertical_assignment(
-        flags, assigned_size, baseline, required_size + padding * 2, ascent);
+        flags,
+        assigned_size,
+        baseline,
+        required_size + padding * 2,
+        ascent + padding);
     return LayoutAxisPlacement{
         .offset = placement.offset + padding,
         .size = placement.size - padding * 2};

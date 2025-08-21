@@ -208,7 +208,20 @@ hyperflow_assign_boxes(
     {
         float x = box.pos.x;
         int i = line_start_index;
-        // TODO
+        for (LayoutNode* c = line_start_child; c != nullptr;
+             c = c->next_sibling)
+        {
+            auto const& child_x = child_requirements[i].x;
+            ++i;
+            assign_boxes(
+                ctx,
+                MAIN_AXIS_X,
+                c,
+                Box{.pos = Vec2{x, current_y},
+                    .size = Vec2{child_x.min_size, line_height}},
+                line_ascent);
+            x += child_x.min_size;
+        }
     }
 }
 
