@@ -34,14 +34,14 @@ default_dealloc(void*, void* ptr)
 }
 
 const char* vanilla_vertex_shader_source = R"(
-#version 430 core
-
-layout (location = 0) uniform mat4 u_projection;
-
+#version 330 core
 layout (location = 0) in vec2 a_pos;
 layout (location = 1) in vec2 i_pos;
 layout (location = 2) in vec2 i_size;
 layout (location = 3) in vec4 i_color;
+
+uniform mat4 u_projection;
+
 layout (location = 4) in uint i_clip_index;
 
 out vec4 v_color;
@@ -56,7 +56,7 @@ void main() {
 )";
 
 const char* vanilla_fragment_shader_source = R"(
-#version 430 core
+#version 330 core
 
 layout (std140, binding = 0) uniform ClipUBO {
     vec4 clips[4096]; // TODO: Make this dynamic and adjust for GL limits.
@@ -129,6 +129,9 @@ init_gl_renderer(GlRenderer* renderer)
 
     GLuint vanilla_shader_program = create_shader_program(
         vanilla_vertex_shader_source, vanilla_fragment_shader_source);
+
+    GLint vanilla_matrix_location
+        = glGetUniformLocation(vanilla_shader_program, "u_projection");
 
     GLenum err;
     while ((err = glGetError()) != GL_NO_ERROR)
@@ -233,6 +236,7 @@ init_gl_renderer(GlRenderer* renderer)
         .vao = vao,
         .vbo = vbo,
         .instance_vbo = instance_vbo,
+        .vanilla_matrix_location = vanilla_matrix_location,
         .rect_instance_arena = rect_instance_arena,
         .clip_ubo = clip_ubo,
         .clip_ptr = clip_ptr,
@@ -293,8 +297,7 @@ render_box_command_list(
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
-    glProgramUniformMatrix4fv(
-        renderer->vanilla_shader_program, 0, 1, GL_FALSE, ortho);
+    glUniformMatrix4fv(renderer->vanilla_matrix_location, 1, GL_FALSE, ortho);
 
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
