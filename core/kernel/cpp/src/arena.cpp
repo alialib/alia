@@ -1,4 +1,4 @@
-#include <alia/base/arena.hpp>
+#include <alia/kernel/arena.hpp>
 
 namespace alia {
 

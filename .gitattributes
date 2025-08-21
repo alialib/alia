@@ -1,5 +1,6 @@
 .gitignore text eol=lf
 .gitattributes text eol=lf
+.clang-format text eol=lf
 CNAME text eol=lf
 *.c text eol=lf
 *.cpp text eol=lf

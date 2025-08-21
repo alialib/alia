@@ -1,6 +1,6 @@
 #include <alia/renderers/gl/renderer.hpp>
 
-#include <alia/base/infinite_arena.hpp>
+#include <alia/kernel/infinite_arena.hpp>
 #include <alia/ui/display_list.hpp>
 #include <alia/ui/system.hpp>
 

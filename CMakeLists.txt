@@ -6,12 +6,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 enable_testing()
 
-add_subdirectory(core/base)
+add_subdirectory(core/kernel/cpp)
 
-add_subdirectory(tests/base)
-add_test(NAME test_base COMMAND test_base)
+add_subdirectory(tests/kernel)
+add_test(NAME test_kernel COMMAND test_kernel)
 
-add_subdirectory(core/ui)
+add_subdirectory(core/ui/cpp)
 
 add_subdirectory(backends/renderers/gl)
 

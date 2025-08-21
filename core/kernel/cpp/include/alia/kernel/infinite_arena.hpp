@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <memory>
 
-#include <alia/base/base.hpp>
+#include <alia/kernel/base.hpp>
 
 namespace alia {
 

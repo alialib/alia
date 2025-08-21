@@ -1,6 +1,6 @@
 #pragma once
 
-#include <alia/base/infinite_arena.hpp>
+#include <alia/kernel/infinite_arena.hpp>
 #include <alia/ui/color.hpp>
 #include <alia/ui/geometry.hpp>
 

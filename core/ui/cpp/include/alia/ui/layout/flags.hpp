@@ -1,6 +1,6 @@
 #pragma once
 
-#include <alia/base/flags.hpp>
+#include <alia/kernel/flags.hpp>
 
 namespace alia {
 

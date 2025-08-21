@@ -1,4 +1,4 @@
-#include <alia/base/infinite_arena.hpp>
+#include <alia/kernel/infinite_arena.hpp>
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
