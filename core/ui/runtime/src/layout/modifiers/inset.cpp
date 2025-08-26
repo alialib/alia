@@ -148,7 +148,7 @@ inset_measure_wrapped_vertical(
     if (has_wrapped_content(child))
     {
         requirements.last_line.height += inset.insets.bottom;
-        requirements.last_line.ascent += inset.insets.bottom;
+        requirements.last_line.descent += inset.insets.bottom;
     }
     else if (has_first_line_content(child))
     {
