@@ -14,7 +14,6 @@
 
 #include "roboto-msdf.h"
 
-#include <alia/kernel/arena.hpp>
 #include <alia/platforms/glfw/window.hpp>
 #include <alia/renderers/gl/renderer.hpp>
 #include <alia/text_engines/msdf/msdf.hpp>
@@ -858,7 +857,7 @@ mixed_flow_demo(Context& ctx)
 {
     with_padding(ctx, 10, [&] {
         flow(ctx, [&]() {
-            for (int i = 0; i < 10; ++i)
+            for (int i = 0; i < 8; ++i)
             {
                 float x = 0.0f;
                 for (int j = 0; j < 10; ++j)
@@ -869,8 +868,20 @@ mixed_flow_demo(Context& ctx)
                     x += 0.1f;
                 }
 
-                do_text(ctx, GRAY, 24 + i * 6, "lorem ipsum", BASELINE_Y);
-                do_text(ctx, GRAY, 12 + i * 6, lorem_ipsum, BASELINE_Y);
+                panel(
+                    ctx,
+                    Color{0.24f, 0.24f, 0.30f, 1},
+                    min_size({200, 200})
+                        | margins(
+                            {.left = 10,
+                             .right = 10,
+                             .top = 10,
+                             .bottom = 10}),
+                    [&] {
+                        do_text(
+                            ctx, GRAY, 8 + i * 6, "lorem ipsum", BASELINE_Y);
+                    });
+                do_text(ctx, GRAY, 12 + i * 4, lorem_ipsum, BASELINE_Y);
             }
         });
     });
@@ -1084,8 +1095,8 @@ layout_demo(Context& ctx)
                     layout_mods_demo(ctx);
                     do_text(ctx, GRAY, 24, "mixed_flow_demo");
                     mixed_flow_demo(ctx);
-                    // do_text(ctx, GRAY, 24, "layout_demo_flow");
-                    // layout_demo_flow(ctx);
+                    do_text(ctx, GRAY, 24, "layout_demo_flow");
+                    layout_demo_flow(ctx);
                 });
             });
         });
