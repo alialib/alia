@@ -1,6 +1,7 @@
 #include <alia/ui/layout/modifiers/min_size.hpp>
 
 #include <alia/ui/context.hpp>
+#include <alia/ui/layout/utilities.hpp>
 
 namespace alia {
 
@@ -80,54 +81,13 @@ min_size_assign_boxes(
     assign_boxes(ctx, main_axis, node.container.first_child, box, baseline);
 }
 
-HorizontalRequirements
-min_size_measure_wrapped_horizontal(
-    MeasurementContext* ctx, LayoutNode* base_node)
-{
-    auto& node = *reinterpret_cast<MinSizeNode*>(base_node);
-    auto const child_x
-        = measure_wrapped_horizontal(ctx, node.container.first_child);
-    return HorizontalRequirements{
-        .min_size = std::max(node.min_size.x, child_x.min_size),
-        .growth_factor = child_x.growth_factor};
-}
-
-WrappingRequirements
-min_size_measure_wrapped_vertical(
-    MeasurementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* base_node,
-    float current_x_offset,
-    float line_width)
-{
-    auto& node = *reinterpret_cast<MinSizeNode*>(base_node);
-    return measure_wrapped_vertical(
-        ctx,
-        main_axis,
-        node.container.first_child,
-        current_x_offset,
-        line_width);
-}
-
-void
-min_size_assign_wrapped_boxes(
-    PlacementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* base_node,
-    WrappingAssignment const* assignment)
-{
-    auto& node = *reinterpret_cast<MinSizeNode*>(base_node);
-    assign_wrapped_boxes(
-        ctx, main_axis, node.container.first_child, assignment);
-}
-
 LayoutNodeVtable min_size_vtable
     = {min_size_measure_horizontal,
        min_size_assign_widths,
        min_size_measure_vertical,
        min_size_assign_boxes,
-       min_size_measure_wrapped_horizontal,
-       min_size_measure_wrapped_vertical,
-       min_size_assign_wrapped_boxes};
+       min_size_measure_horizontal,
+       default_measure_wrapped_vertical,
+       nullptr};
 
 } // namespace alia

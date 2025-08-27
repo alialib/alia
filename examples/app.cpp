@@ -871,15 +871,21 @@ mixed_flow_demo(Context& ctx)
                 panel(
                     ctx,
                     Color{0.24f, 0.24f, 0.30f, 1},
-                    min_size({200, 200})
+                    min_size({0, 0})
                         | margins(
                             {.left = 10,
                              .right = 10,
                              .top = 10,
                              .bottom = 10}),
                     [&] {
-                        do_text(
-                            ctx, GRAY, 8 + i * 6, "lorem ipsum", BASELINE_Y);
+                        row(ctx, [&]() {
+                            do_text(
+                                ctx,
+                                GRAY,
+                                8 + i * 6,
+                                "lorem ipsum",
+                                BASELINE_Y);
+                        });
                     });
                 do_text(ctx, GRAY, 12 + i * 4, lorem_ipsum, BASELINE_Y);
             }
@@ -1046,7 +1052,7 @@ layout_mods_demo(Context& ctx)
                     0.14f + 0.06f * f,
                     0.16f + 0.08f * f,
                     1},
-                min_size({200, 200})
+                min_size({120, 120})
                     | margins(
                         {.left = 10, .right = 10, .top = 10, .bottom = 10}),
                 [&]() {
