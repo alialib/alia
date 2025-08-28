@@ -5,13 +5,13 @@
 namespace alia {
 
 void
-update_glfw_window_info(System& system, GLFWwindow* window)
+update_glfw_window_info(system& system, GLFWwindow* window)
 {
     int framebuffer_width, framebuffer_height;
     glfwGetFramebufferSize(window, &framebuffer_width, &framebuffer_height);
 
     system.framebuffer_size
-        = Vec2{float(framebuffer_width), float(framebuffer_height)};
+        = vec2{float(framebuffer_width), float(framebuffer_height)};
 
     // TODO: Sort out scaling...
 

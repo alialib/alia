@@ -2,11 +2,11 @@
 
 namespace alia {
 
-WrappingRequirements
+wrapping_requirements
 default_measure_wrapped_vertical(
-    MeasurementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* node,
+    measurement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* node,
     float current_x_offset,
     float line_width)
 {
@@ -17,7 +17,7 @@ default_measure_wrapped_vertical(
         = measure_vertical(ctx, main_axis, node, horizontal.min_size);
     if (current_x_offset + horizontal.min_size > line_width)
     {
-        return WrappingRequirements{
+        return wrapping_requirements{
             .first_line = {.height = 0, .ascent = 0, .descent = 0},
             .interior_height = 0,
             .last_line
@@ -28,7 +28,7 @@ default_measure_wrapped_vertical(
     }
     else
     {
-        return WrappingRequirements{
+        return wrapping_requirements{
             .first_line
             = {.height = vertical.min_size,
                .ascent = vertical.ascent,
@@ -39,23 +39,23 @@ default_measure_wrapped_vertical(
     };
 }
 
-LayoutAxisPlacement
+layout_axis_placement
 resolve_horizontal_assignment(
-    LayoutFlagSet flags, float assigned_size, float required_size)
+    layout_flag_set flags, float assigned_size, float required_size)
 {
     static float const offsets[8] = {0, 0.5, 0, 1, 0, 0, 0, 0};
     static float const sizes[8] = {1, 0, 0, 0, 1, 1, 1, 1};
 
     auto const index = raw_code(flags & X_ALIGNMENT_MASK);
     float const extra_space = assigned_size - required_size;
-    return LayoutAxisPlacement{
+    return layout_axis_placement{
         .offset = offsets[index] * extra_space,
         .size = required_size + sizes[index] * extra_space};
 }
 
-LayoutAxisPlacement
+layout_axis_placement
 resolve_vertical_assignment(
-    LayoutFlagSet flags,
+    layout_flag_set flags,
     float assigned_size,
     float baseline,
     float required_size,
@@ -68,46 +68,46 @@ resolve_vertical_assignment(
     auto const index
         = raw_code(flags & Y_ALIGNMENT_MASK) >> Y_ALIGNMENT_BIT_OFFSET;
     float const extra_space = assigned_size - required_size;
-    return LayoutAxisPlacement{
+    return layout_axis_placement{
         .offset = offsets[index] * extra_space
                 + baseline_offsets[index] * (baseline - ascent),
         .size = required_size + sizes[index] * extra_space};
 }
 
-Box
+box
 resolve_assignment(
-    LayoutFlagSet flags,
-    Vec2 assigned_size,
+    layout_flag_set flags,
+    vec2 assigned_size,
     float baseline,
-    Vec2 required_size,
+    vec2 required_size,
     float ascent)
 {
-    LayoutAxisPlacement x_placement = resolve_horizontal_assignment(
+    layout_axis_placement x_placement = resolve_horizontal_assignment(
         flags, assigned_size.x, required_size.x);
-    LayoutAxisPlacement y_placement = resolve_vertical_assignment(
+    layout_axis_placement y_placement = resolve_vertical_assignment(
         flags, assigned_size.y, baseline, required_size.y, ascent);
-    return Box{
-        Vec2{x_placement.offset, y_placement.offset},
-        Vec2{x_placement.size, y_placement.size}};
+    return {
+        vec2{x_placement.offset, y_placement.offset},
+        vec2{x_placement.size, y_placement.size}};
 }
 
-LayoutAxisPlacement
+layout_axis_placement
 resolve_padded_horizontal_assignment(
-    LayoutFlagSet flags,
+    layout_flag_set flags,
     float assigned_size,
     float required_size,
     float padding)
 {
     auto placement = resolve_horizontal_assignment(
         flags, assigned_size, required_size + padding * 2);
-    return LayoutAxisPlacement{
+    return layout_axis_placement{
         .offset = placement.offset + padding,
         .size = placement.size - padding * 2};
 }
 
-LayoutAxisPlacement
+layout_axis_placement
 resolve_padded_vertical_assignment(
-    LayoutFlagSet flags,
+    layout_flag_set flags,
     float assigned_size,
     float baseline,
     float required_size,
@@ -120,27 +120,27 @@ resolve_padded_vertical_assignment(
         baseline,
         required_size + padding * 2,
         ascent + padding);
-    return LayoutAxisPlacement{
+    return layout_axis_placement{
         .offset = placement.offset + padding,
         .size = placement.size - padding * 2};
 }
 
-Box
+box
 resolve_padded_assignment(
-    LayoutFlagSet flags,
-    Vec2 assigned_size,
+    layout_flag_set flags,
+    vec2 assigned_size,
     float baseline,
-    Vec2 required_size,
+    vec2 required_size,
     float ascent,
     float padding)
 {
-    LayoutAxisPlacement x_placement = resolve_padded_horizontal_assignment(
+    layout_axis_placement x_placement = resolve_padded_horizontal_assignment(
         flags, assigned_size.x, required_size.x, padding);
-    LayoutAxisPlacement y_placement = resolve_padded_vertical_assignment(
+    layout_axis_placement y_placement = resolve_padded_vertical_assignment(
         flags, assigned_size.y, baseline, required_size.y, ascent, padding);
-    return Box{
-        Vec2{x_placement.offset, y_placement.offset},
-        Vec2{x_placement.size, y_placement.size}};
+    return {
+        vec2{x_placement.offset, y_placement.offset},
+        vec2{x_placement.size, y_placement.size}};
 }
 
 } // namespace alia

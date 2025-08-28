@@ -7,35 +7,35 @@
 
 namespace alia {
 
-struct Context;
+struct context;
 
-using PlacementHookNode = LayoutContainer;
+using placement_hook_node = layout_container;
 
 // TODO: Give this a better name and maybe move it somewhere more generic.
-struct PlacementInfo
+struct placement_info
 {
-    Box box;
+    alia::box box;
     float baseline;
 };
 
-struct PlacementHookScope
+struct placement_hook_scope
 {
-    LayoutContainerScope container;
-    PlacementInfo placement;
+    layout_container_scope container;
+    placement_info placement;
 };
 
 void
 begin_placement_hook(
-    Context& ctx, PlacementHookScope& scope, LayoutFlagSet flags);
+    context& ctx, placement_hook_scope& scope, layout_flag_set flags);
 
 void
-end_placement_hook(Context& ctx, PlacementHookScope& scope);
+end_placement_hook(context& ctx, placement_hook_scope& scope);
 
 template<class Content>
 void
-placement_hook(Context& ctx, Content&& content)
+placement_hook(context& ctx, Content&& content)
 {
-    PlacementHookScope scope;
+    placement_hook_scope scope;
     begin_placement_hook(ctx, scope, NO_FLAGS);
     std::forward<Content>(content)(scope.placement);
     end_placement_hook(ctx, scope);
@@ -43,14 +43,14 @@ placement_hook(Context& ctx, Content&& content)
 
 template<class Content>
 void
-placement_hook(Context& ctx, LayoutFlagSet flags, Content&& content)
+placement_hook(context& ctx, layout_flag_set flags, Content&& content)
 {
-    PlacementHookScope scope;
+    placement_hook_scope scope;
     begin_placement_hook(ctx, scope, flags);
     std::forward<Content>(content)(scope.placement);
     end_placement_hook(ctx, scope);
 }
 
-extern LayoutNodeVtable placement_hook_vtable;
+extern layout_node_vtable placement_hook_vtable;
 
 } // namespace alia

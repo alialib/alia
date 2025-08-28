@@ -8,65 +8,65 @@ namespace alia {
 
 // ALIGNMENT UTILITIES
 
-struct LayoutAxisPlacement
+struct layout_axis_placement
 {
     float offset;
     float size;
 };
 
-LayoutAxisPlacement
+layout_axis_placement
 resolve_horizontal_assignment(
-    LayoutFlagSet flags, float assigned_size, float required_size);
+    layout_flag_set flags, float assigned_size, float required_size);
 
-LayoutAxisPlacement
+layout_axis_placement
 resolve_vertical_assignment(
-    LayoutFlagSet flags,
+    layout_flag_set flags,
     float assigned_size,
     float baseline,
     float required_size,
     float ascent);
 
-Box
+box
 resolve_assignment(
-    LayoutFlagSet flags,
-    Vec2 assigned_size,
+    layout_flag_set flags,
+    vec2 assigned_size,
     float baseline,
-    Vec2 required_size,
+    vec2 required_size,
     float ascent);
 
-LayoutAxisPlacement
+layout_axis_placement
 resolve_padded_horizontal_assignment(
-    LayoutFlagSet flags,
+    layout_flag_set flags,
     float assigned_size,
     float required_size,
     float padding);
 
-LayoutAxisPlacement
+layout_axis_placement
 resolve_padded_vertical_assignment(
-    LayoutFlagSet flags,
+    layout_flag_set flags,
     float assigned_size,
     float baseline,
     float required_size,
     float ascent,
     float padding);
 
-Box
+box
 resolve_padded_assignment(
-    LayoutFlagSet flags,
-    Vec2 assigned_size,
+    layout_flag_set flags,
+    vec2 assigned_size,
     float baseline,
-    Vec2 required_size,
+    vec2 required_size,
     float ascent,
     float padding);
 
 inline float
-resolve_growth_factor(LayoutFlagSet flags)
+resolve_growth_factor(layout_flag_set flags)
 {
     return flags & GROW ? 1.0f : 0.0f;
 }
 
-inline LayoutFlagSet
-adjust_flags_for_main_axis(LayoutFlagSet flags, MainAxisIndex main_axis)
+inline layout_flag_set
+adjust_flags_for_main_axis(layout_flag_set flags, main_axis_index main_axis)
 {
     flags.code |= flags.code >> main_axis;
     return flags;
@@ -81,7 +81,7 @@ adjust_flags_for_main_axis(LayoutFlagSet flags, MainAxisIndex main_axis)
 // Note that no destructor is ever called, so T must be trivially destructible.
 template<class T>
 T&
-claim_scratch(InfiniteArena& arena)
+claim_scratch(infinite_arena& arena)
 {
     return *arena_new<T>(arena);
 }
@@ -92,18 +92,18 @@ claim_scratch(InfiniteArena& arena)
 // measurement step.
 template<class T>
 T&
-use_scratch(InfiniteArena& arena)
+use_scratch(infinite_arena& arena)
 {
     return *arena_alloc<T>(arena);
 }
 
 // DEFAULT NODE IMPLEMENTATIONS
 
-WrappingRequirements
+wrapping_requirements
 default_measure_wrapped_vertical(
-    MeasurementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* node,
+    measurement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* node,
     float current_x_offset,
     float line_width);
 

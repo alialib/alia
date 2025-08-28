@@ -7,29 +7,29 @@
 
 namespace alia {
 
-struct Context;
-struct LayoutNodeVtable;
+struct context;
+struct layout_node_vtable;
 
-struct LayoutContainer
+struct layout_container
 {
-    LayoutNode base;
-    LayoutFlagSet flags;
-    LayoutNode* first_child;
+    layout_node base;
+    layout_flag_set flags;
+    layout_node* first_child;
 };
 
-struct LayoutContainerScope
+struct layout_container_scope
 {
-    LayoutContainer* container;
+    layout_container* container;
 };
 
 void
 begin_container(
-    Context& ctx,
-    LayoutContainerScope& scope,
-    LayoutNodeVtable* vtable,
-    LayoutFlagSet flags);
+    context& ctx,
+    layout_container_scope& scope,
+    layout_node_vtable* vtable,
+    layout_flag_set flags);
 
 void
-end_container(Context& ctx, LayoutContainerScope& scope);
+end_container(context& ctx, layout_container_scope& scope);
 
 } // namespace alia

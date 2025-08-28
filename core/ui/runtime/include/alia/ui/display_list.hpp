@@ -6,24 +6,24 @@
 
 namespace alia {
 
-struct BoxDrawCommand
+struct box_draw_command
 {
-    Box box;
-    Color color;
-    BoxDrawCommand* next;
+    box box;
+    color color;
+    box_draw_command* next;
 };
 
 template<class Command>
-struct CommandList
+struct command_list
 {
     Command* head;
     Command** tail_ptr;
-    size_t count;
+    std::size_t count;
 };
 
 template<class Command>
 void
-clear_command_list(CommandList<Command>& list)
+clear_command_list(command_list<Command>& list)
 {
     list.head = nullptr;
     list.tail_ptr = &list.head;
@@ -32,13 +32,13 @@ clear_command_list(CommandList<Command>& list)
 
 template<class Command>
 void
-add_command(CommandList<Command>& list, Command* command)
+add_command(command_list<Command>& list, Command* command)
 {
     *list.tail_ptr = command;
     list.tail_ptr = &command->next;
     ++list.count;
 }
 
-using DisplayListArena = InfiniteArena;
+using display_list_arena = infinite_arena;
 
 } // namespace alia

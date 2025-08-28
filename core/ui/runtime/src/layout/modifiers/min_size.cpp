@@ -7,13 +7,13 @@ namespace alia {
 
 void
 begin_min_size_constraint(
-    Context& ctx, LayoutContainerScope& scope, Vec2 min_size)
+    context& ctx, layout_container_scope& scope, vec2 min_size)
 {
-    if (ctx.pass.type == PassType::Refresh)
+    if (ctx.pass.type == pass_type::Refresh)
     {
         auto& layout = ctx.pass.refresh.layout_emission;
-        MinSizeNode* node = arena_alloc<MinSizeNode>(*layout.arena);
-        *node = MinSizeNode{
+        min_size_node* node = arena_alloc<min_size_node>(*layout.arena);
+        *node = min_size_node{
             .container
             = {.base = {.vtable = &min_size_vtable, .next_sibling = 0},
                .flags = NO_FLAGS,
@@ -26,43 +26,43 @@ begin_min_size_constraint(
 }
 
 void
-end_min_size_constraint(Context& ctx, LayoutContainerScope& scope)
+end_min_size_constraint(context& ctx, layout_container_scope& scope)
 {
     end_container(ctx, scope);
 }
 
-HorizontalRequirements
-min_size_measure_horizontal(MeasurementContext* ctx, LayoutNode* base_node)
+horizontal_requirements
+min_size_measure_horizontal(measurement_context* ctx, layout_node* base_node)
 {
-    auto& node = *reinterpret_cast<MinSizeNode*>(base_node);
+    auto& node = *reinterpret_cast<min_size_node*>(base_node);
     auto const child_x = measure_horizontal(ctx, node.container.first_child);
-    return HorizontalRequirements{
+    return horizontal_requirements{
         .min_size = std::max(node.min_size.x, child_x.min_size),
         .growth_factor = child_x.growth_factor};
 }
 
 void
 min_size_assign_widths(
-    MeasurementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* base_node,
+    measurement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* base_node,
     float assigned_width)
 {
-    auto& node = *reinterpret_cast<MinSizeNode*>(base_node);
+    auto& node = *reinterpret_cast<min_size_node*>(base_node);
     assign_widths(ctx, main_axis, node.container.first_child, assigned_width);
 }
 
-VerticalRequirements
+vertical_requirements
 min_size_measure_vertical(
-    MeasurementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* base_node,
+    measurement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* base_node,
     float assigned_width)
 {
-    auto& node = *reinterpret_cast<MinSizeNode*>(base_node);
+    auto& node = *reinterpret_cast<min_size_node*>(base_node);
     auto const child_y = measure_vertical(
         ctx, main_axis, node.container.first_child, assigned_width);
-    return VerticalRequirements{
+    return vertical_requirements{
         .min_size = std::max(node.min_size.y, child_y.min_size),
         .growth_factor = child_y.growth_factor,
         .ascent = child_y.ascent,
@@ -71,17 +71,17 @@ min_size_measure_vertical(
 
 void
 min_size_assign_boxes(
-    PlacementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* base_node,
-    Box box,
+    placement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* base_node,
+    box box,
     float baseline)
 {
-    auto& node = *reinterpret_cast<MinSizeNode*>(base_node);
+    auto& node = *reinterpret_cast<min_size_node*>(base_node);
     assign_boxes(ctx, main_axis, node.container.first_child, box, baseline);
 }
 
-LayoutNodeVtable min_size_vtable
+layout_node_vtable min_size_vtable
     = {min_size_measure_horizontal,
        min_size_assign_widths,
        min_size_measure_vertical,

@@ -3,7 +3,7 @@
 namespace alia {
 
 void
-initialize(System& system, Vec2 framebuffer_size, Vec2 ui_zoom)
+initialize(system& system, vec2 framebuffer_size, vec2 ui_zoom)
 {
     initialize(system.layout);
     system.framebuffer_size = framebuffer_size;

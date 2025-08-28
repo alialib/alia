@@ -6,18 +6,18 @@ namespace alia {
 
 void
 begin_container(
-    Context& ctx,
-    LayoutContainerScope& scope,
-    LayoutNodeVtable* vtable,
-    LayoutFlagSet flags)
+    context& ctx,
+    layout_container_scope& scope,
+    layout_node_vtable* vtable,
+    layout_flag_set flags)
 {
-    if (ctx.pass.type == PassType::Refresh)
+    if (ctx.pass.type == pass_type::Refresh)
     {
         auto& layout = ctx.pass.refresh.layout_emission;
-        LayoutContainer* container
-            = arena_alloc<LayoutContainer>(*layout.arena);
+        layout_container* container
+            = arena_alloc<layout_container>(*layout.arena);
         scope.container = container;
-        *container = LayoutContainer{
+        *container = layout_container{
             .base = {.vtable = vtable, .next_sibling = 0},
             .flags = flags,
             .first_child = 0};
@@ -27,9 +27,9 @@ begin_container(
 }
 
 void
-end_container(Context& ctx, LayoutContainerScope& scope)
+end_container(context& ctx, layout_container_scope& scope)
 {
-    if (ctx.pass.type == PassType::Refresh)
+    if (ctx.pass.type == pass_type::Refresh)
     {
         auto& layout = ctx.pass.refresh.layout_emission;
         *layout.next_ptr = 0;

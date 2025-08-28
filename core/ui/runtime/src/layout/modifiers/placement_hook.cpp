@@ -8,14 +8,14 @@ namespace alia {
 
 void
 begin_placement_hook(
-    Context& ctx, PlacementHookScope& scope, LayoutFlagSet flags)
+    context& ctx, placement_hook_scope& scope, layout_flag_set flags)
 {
-    if (ctx.pass.type == PassType::Refresh)
+    if (ctx.pass.type == pass_type::Refresh)
     {
         auto& layout = ctx.pass.refresh.layout_emission;
-        PlacementHookNode* node
-            = arena_alloc<PlacementHookNode>(*layout.arena);
-        *node = PlacementHookNode{
+        placement_hook_node* node
+            = arena_alloc<placement_hook_node>(*layout.arena);
+        *node = placement_hook_node{
             .base = {.vtable = &placement_hook_vtable, .next_sibling = 0},
             .flags = flags,
             .first_child = 0};
@@ -26,64 +26,64 @@ begin_placement_hook(
     else
     {
         scope.placement
-            = *arena_alloc<PlacementInfo>(ctx.system->layout.placement_arena);
+            = *arena_alloc<placement_info>(ctx.system->layout.placement_arena);
     }
 }
 
 void
-end_placement_hook(Context& ctx, PlacementHookScope& scope)
+end_placement_hook(context& ctx, placement_hook_scope& scope)
 {
     end_container(ctx, scope.container);
 }
 
-HorizontalRequirements
-placement_hook_measure_horizontal(MeasurementContext* ctx, LayoutNode* node)
+horizontal_requirements
+placement_hook_measure_horizontal(measurement_context* ctx, layout_node* node)
 {
-    auto& placement_hook = *reinterpret_cast<PlacementHookNode*>(node);
+    auto& placement_hook = *reinterpret_cast<placement_hook_node*>(node);
     return measure_horizontal(ctx, placement_hook.first_child);
 }
 
 void
 placement_hook_assign_widths(
-    MeasurementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* node,
+    measurement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* node,
     float assigned_width)
 {
-    auto& placement_hook = *reinterpret_cast<PlacementHookNode*>(node);
+    auto& placement_hook = *reinterpret_cast<placement_hook_node*>(node);
     assign_widths(ctx, main_axis, placement_hook.first_child, assigned_width);
 }
 
-VerticalRequirements
+vertical_requirements
 placement_hook_measure_vertical(
-    MeasurementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* node,
+    measurement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* node,
     float assigned_width)
 {
-    auto& placement_hook = *reinterpret_cast<PlacementHookNode*>(node);
+    auto& placement_hook = *reinterpret_cast<placement_hook_node*>(node);
     return measure_vertical(
         ctx, main_axis, placement_hook.first_child, assigned_width);
 }
 
 void
 placement_hook_assign_boxes(
-    PlacementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* node,
-    Box box,
+    placement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* node,
+    box box,
     float baseline)
 {
-    auto& placement_hook = *reinterpret_cast<PlacementHookNode*>(node);
+    auto& placement_hook = *reinterpret_cast<placement_hook_node*>(node);
 
-    PlacementInfo* placement = arena_alloc<PlacementInfo>(*ctx->arena);
+    placement_info* placement = arena_alloc<placement_info>(*ctx->arena);
     placement->box = box;
     placement->baseline = baseline;
 
     assign_boxes(ctx, main_axis, placement_hook.first_child, box, baseline);
 }
 
-LayoutNodeVtable placement_hook_vtable
+layout_node_vtable placement_hook_vtable
     = {placement_hook_measure_horizontal,
        placement_hook_assign_widths,
        placement_hook_measure_vertical,

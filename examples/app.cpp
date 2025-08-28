@@ -39,45 +39,45 @@
 
 using namespace alia;
 
-System the_system;
+alia::system the_system;
 GLFWwindow* the_window;
-GlRenderer the_renderer;
-DisplayListArena the_display_list_arena;
-BoxCommandList the_box_commands;
-MsdfTextEngine* the_msdf_text_engine;
-CommandList<MsdfDrawCommand> the_msdf_commands;
-Style the_style = {.padding = 10.0f};
+gl_renderer the_renderer;
+display_list_arena the_display_list_arena;
+box_command_list the_box_commands;
+msdf_text_engine* the_msdf_text_engine;
+command_list<msdf_draw_command> the_msdf_commands;
+style the_style = {.padding = 10.0f};
 
 bool
-detect_click(Event* event, float x, float y, float width, float height)
+detect_click(event const* event, float x, float y, float width, float height)
 {
-    return event->type == EventType::Click && event->click.x >= x
+    return event->type == event_type::Click && event->click.x >= x
         && event->click.x <= x + width && event->click.y >= y
         && event->click.y <= y + height;
 }
 
 bool
-do_rect(Context& ctx, Vec2 size, Color color, LayoutFlagSet flags)
+do_rect(context& ctx, vec2 size, color color, layout_flag_set flags)
 {
     switch (ctx.pass.type)
     {
-        case PassType::Refresh: {
+        case pass_type::Refresh: {
             auto& layout = ctx.pass.refresh.layout_emission;
-            LayoutLeafNode* new_node
-                = arena_alloc<LayoutLeafNode>(ctx.system->layout.node_arena);
+            layout_leaf_node* new_node
+                = arena_alloc<layout_leaf_node>(ctx.system->layout.node_arena);
             *layout.next_ptr = &new_node->base;
             layout.next_ptr = &new_node->base.next_sibling;
-            *new_node = LayoutLeafNode{
+            *new_node = layout_leaf_node{
                 .base = {.vtable = &leaf_vtable, .next_sibling = 0},
                 .flags = flags,
                 .padding = ctx.style->padding,
                 .size = size};
             break;
         }
-        case PassType::Draw: {
-            auto& leaf_placement = *arena_alloc<LeafLayoutPlacement>(
+        case pass_type::Draw: {
+            auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
                 ctx.system->layout.placement_arena);
-            Box box = {
+            box box = {
                 .pos = leaf_placement.position, .size = leaf_placement.size};
             draw_box(
                 *ctx.pass.draw.display_list_arena,
@@ -86,10 +86,10 @@ do_rect(Context& ctx, Vec2 size, Color color, LayoutFlagSet flags)
                 color);
             break;
         }
-        case PassType::Event: {
-            auto& leaf_placement = *arena_alloc<LeafLayoutPlacement>(
+        case pass_type::Event: {
+            auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
                 ctx.system->layout.placement_arena);
-            Box box = {
+            box box = {
                 .pos = leaf_placement.position, .size = leaf_placement.size};
             if (detect_click(
                     ctx.pass.event.event,
@@ -106,27 +106,27 @@ do_rect(Context& ctx, Vec2 size, Color color, LayoutFlagSet flags)
 
 bool
 do_rect_with_offset(
-    Context& ctx, Vec2 size, Color color, LayoutFlagSet flags, Vec2 offset)
+    context& ctx, vec2 size, color color, layout_flag_set flags, vec2 offset)
 {
     switch (ctx.pass.type)
     {
-        case PassType::Refresh: {
+        case pass_type::Refresh: {
             auto& layout = ctx.pass.refresh.layout_emission;
-            LayoutLeafNode* new_node
-                = arena_alloc<LayoutLeafNode>(ctx.system->layout.node_arena);
+            layout_leaf_node* new_node
+                = arena_alloc<layout_leaf_node>(ctx.system->layout.node_arena);
             *layout.next_ptr = &new_node->base;
             layout.next_ptr = &new_node->base.next_sibling;
-            *new_node = LayoutLeafNode{
+            *new_node = layout_leaf_node{
                 .base = {.vtable = &leaf_vtable, .next_sibling = 0},
                 .flags = flags,
                 .padding = ctx.style->padding,
                 .size = size};
             break;
         }
-        case PassType::Draw: {
-            auto& leaf_placement = *arena_alloc<LeafLayoutPlacement>(
+        case pass_type::Draw: {
+            auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
                 ctx.system->layout.placement_arena);
-            Box box
+            box box
                 = {.pos = leaf_placement.position + offset,
                    .size = leaf_placement.size};
             draw_box(
@@ -136,10 +136,10 @@ do_rect_with_offset(
                 color);
             break;
         }
-        case PassType::Event: {
-            auto& leaf_placement = *arena_alloc<LeafLayoutPlacement>(
+        case pass_type::Event: {
+            auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
                 ctx.system->layout.placement_arena);
-            Box box
+            box box
                 = {.pos = leaf_placement.position + offset,
                    .size = leaf_placement.size};
             if (detect_click(
@@ -306,7 +306,7 @@ apply_mod(Context& ctx, min_height_t m, Content&& content)
 
 struct min_size_t
 {
-    Vec2 size;
+    vec2 size;
 };
 template<>
 struct is_layout_modifier<min_size_t> : std::true_type
@@ -322,7 +322,7 @@ apply_mod(Context& ctx, min_size_t m, Content&& content)
 
 struct margins_t
 {
-    Insets insets;
+    alia::insets insets;
 };
 template<>
 struct is_layout_modifier<margins_t> : std::true_type
@@ -351,19 +351,19 @@ min_height(float h)
     return {h};
 }
 constexpr min_size_t
-min_size(Vec2 size)
+min_size(vec2 size)
 {
     return {size};
 }
 constexpr margins_t
-margins(Insets insets)
+margins(insets insets)
 {
     return {insets};
 }
 
 template<class LayoutMods>
 void
-do_rect(Context& ctx, Vec2 size, Color color, LayoutMods mods)
+do_rect(context& ctx, vec2 size, color color, LayoutMods mods)
 {
     apply_mods(ctx, mods, [&] { do_rect(ctx, size, color, FILL); });
 }
@@ -371,10 +371,10 @@ do_rect(Context& ctx, Vec2 size, Color color, LayoutMods mods)
 template<class Content>
 void
 concrete_panel(
-    Context& ctx, Color color, LayoutFlagSet flags, Content&& content)
+    context& ctx, color color, layout_flag_set flags, Content&& content)
 {
     placement_hook(ctx, flags, [&](auto const& placement) {
-        if (ctx.pass.type == PassType::Draw)
+        if (ctx.pass.type == pass_type::Draw)
         {
             draw_box(
                 *ctx.pass.draw.display_list_arena,
@@ -389,7 +389,7 @@ concrete_panel(
 
 template<class Content, class LayoutMods>
 void
-panel(Context& ctx, Color color, LayoutMods mods, Content&& content)
+panel(context& ctx, color color, LayoutMods mods, Content&& content)
 {
     apply_mods(ctx, mods, [&] {
         concrete_panel(ctx, color, FILL, std::forward<Content>(content));
@@ -398,46 +398,46 @@ panel(Context& ctx, Color color, LayoutMods mods, Content&& content)
 
 /// ----
 
-struct MsdfTextLayoutNode
+struct msdf_text_layout_node
 {
-    LayoutNode base;
-    LayoutFlagSet flags;
+    layout_node base;
+    layout_flag_set flags;
     float padding;
-    MsdfTextEngine* engine;
+    msdf_text_engine* engine;
     char const* text;
     float font_size;
 };
 
-HorizontalRequirements
-measure_text_horizontal(MeasurementContext* ctx, LayoutNode* node)
+horizontal_requirements
+measure_text_horizontal(measurement_context* ctx, layout_node* node)
 {
-    auto& text = *reinterpret_cast<MsdfTextLayoutNode*>(node);
+    auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
     float width = measure_text_width(
         text.engine, text.text, strlen(text.text), text.font_size);
-    return HorizontalRequirements{
+    return horizontal_requirements{
         .min_size = width + text.padding * 2, .growth_factor = 0};
 }
 
 void
 assign_text_widths(
-    MeasurementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* node,
+    measurement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* node,
     float assigned_width)
 {
     // TODO: Implement
 }
 
-VerticalRequirements
+vertical_requirements
 measure_text_vertical(
-    MeasurementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* node,
+    measurement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* node,
     float assigned_width)
 {
-    auto& text = *reinterpret_cast<MsdfTextLayoutNode*>(node);
+    auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
     auto const* metrics = get_msdf_font_metrics(text.engine);
-    return VerticalRequirements{
+    return vertical_requirements{
         .min_size = metrics->line_height * text.font_size + text.padding * 2,
         .growth_factor = 0,
         .ascent = (text.flags & Y_ALIGNMENT_MASK) == BASELINE_Y
@@ -448,28 +448,28 @@ measure_text_vertical(
                      : 0.0f};
 }
 
-struct TextLayoutPlacementHeader
+struct text_layout_placement_header
 {
     int fragment_count;
 };
 
-struct TextLayoutPlacementFragment
+struct text_layout_placement_fragment
 {
-    Vec2 position;
-    Vec2 size;
+    vec2 position;
+    vec2 size;
     char const* text;
     size_t length;
 };
 
 void
 assign_text_boxes(
-    PlacementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* node,
-    Box box,
+    placement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* node,
+    box box,
     float baseline)
 {
-    auto& text = *reinterpret_cast<MsdfTextLayoutNode*>(node);
+    auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
     auto const* metrics = get_msdf_font_metrics(text.engine);
 
     // TODO: Don't repeatedly measure the text width.
@@ -480,42 +480,42 @@ assign_text_boxes(
         adjust_flags_for_main_axis(text.flags, main_axis),
         box.size,
         baseline,
-        Vec2{width, metrics->line_height * text.font_size},
+        vec2{width, metrics->line_height * text.font_size},
         metrics->ascender * text.font_size,
         text.padding);
 
-    TextLayoutPlacementHeader* header
-        = arena_alloc<TextLayoutPlacementHeader>(*ctx->arena);
+    text_layout_placement_header* header
+        = arena_alloc<text_layout_placement_header>(*ctx->arena);
     header->fragment_count = 1;
 
-    TextLayoutPlacementFragment* fragment
-        = arena_alloc<TextLayoutPlacementFragment>(*ctx->arena);
+    text_layout_placement_fragment* fragment
+        = arena_alloc<text_layout_placement_fragment>(*ctx->arena);
     fragment->position = box.pos + placement.pos;
     fragment->size = placement.size;
     fragment->text = text.text;
     fragment->length = strlen(text.text);
 }
 
-HorizontalRequirements
-measure_text_wrapped_horizontal(MeasurementContext* ctx, LayoutNode* node)
+horizontal_requirements
+measure_text_wrapped_horizontal(measurement_context* ctx, layout_node* node)
 {
-    return HorizontalRequirements{0, 0};
+    return horizontal_requirements{0, 0};
 }
 
-WrappingRequirements
+wrapping_requirements
 measure_text_wrapped_vertical(
-    MeasurementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* node,
+    measurement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* node,
     float current_x_offset,
     float line_width)
 {
-    auto& text = *reinterpret_cast<MsdfTextLayoutNode*>(node);
+    auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
     auto const* metrics = get_msdf_font_metrics(text.engine);
 
     size_t length = strlen(text.text);
 
-    WrappingRequirements requirements;
+    wrapping_requirements requirements;
 
     auto first_break = break_text(
         text.engine,
@@ -586,18 +586,18 @@ measure_text_wrapped_vertical(
 
 void
 assign_text_wrapped_boxes(
-    PlacementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* node,
-    WrappingAssignment const* assignment)
+    placement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* node,
+    wrapping_assignment const* assignment)
 {
-    auto& text = *reinterpret_cast<MsdfTextLayoutNode*>(node);
+    auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
     auto const* metrics = get_msdf_font_metrics(text.engine);
 
     size_t length = strlen(text.text);
 
-    TextLayoutPlacementHeader* header
-        = arena_alloc<TextLayoutPlacementHeader>(*ctx->arena);
+    text_layout_placement_header* header
+        = arena_alloc<text_layout_placement_header>(*ctx->arena);
     header->fragment_count = 0;
 
     // TODO: This all feels a bit hacky, but it works for now, and it feels
@@ -628,8 +628,8 @@ assign_text_wrapped_boxes(
                - (metrics->ascender * text.font_size + text.padding);
         }
 
-        TextLayoutPlacementFragment* fragment
-            = arena_alloc<TextLayoutPlacementFragment>(*ctx->arena);
+        text_layout_placement_fragment* fragment
+            = arena_alloc<text_layout_placement_fragment>(*ctx->arena);
         fragment->position
             = {x + assignment->x_base + text.padding,
                y - metrics->ascender * text.font_size};
@@ -647,7 +647,7 @@ assign_text_wrapped_boxes(
     }
 }
 
-LayoutNodeVtable text_layout_vtable
+layout_node_vtable text_layout_vtable
     = {measure_text_horizontal,
        assign_text_widths,
        measure_text_vertical,
@@ -658,7 +658,7 @@ LayoutNodeVtable text_layout_vtable
 
 template<class Content>
 void
-with_padding(Context& ctx, float padding, Content&& content)
+with_padding(context& ctx, float padding, Content&& content)
 {
     float old_padding = ctx.style->padding;
     ctx.style->padding = padding;
@@ -668,19 +668,20 @@ with_padding(Context& ctx, float padding, Content&& content)
 
 bool
 do_text(
-    Context& ctx,
-    Color color,
+    context& ctx,
+    color color,
     float scale,
     char const* text,
-    LayoutFlagSet flags = NO_FLAGS)
+    layout_flag_set flags = NO_FLAGS)
 {
     bool result = false;
     switch (ctx.pass.type)
     {
-        case PassType::Refresh: {
+        case pass_type::Refresh: {
             auto& layout = ctx.pass.refresh.layout_emission;
-            MsdfTextLayoutNode* new_node = arena_alloc<MsdfTextLayoutNode>(
-                ctx.system->layout.node_arena);
+            msdf_text_layout_node* new_node
+                = arena_alloc<msdf_text_layout_node>(
+                    ctx.system->layout.node_arena);
             new_node->base.vtable = &text_layout_vtable;
             new_node->base.next_sibling = nullptr;
             new_node->flags = flags;
@@ -692,12 +693,12 @@ do_text(
             layout.next_ptr = &new_node->base.next_sibling;
             break;
         }
-        case PassType::Draw: {
-            auto& text_placement = *arena_alloc<TextLayoutPlacementHeader>(
+        case pass_type::Draw: {
+            auto& text_placement = *arena_alloc<text_layout_placement_header>(
                 ctx.system->layout.placement_arena);
             for (int i = 0; i < text_placement.fragment_count; ++i)
             {
-                auto& fragment = *arena_alloc<TextLayoutPlacementFragment>(
+                auto& fragment = *arena_alloc<text_layout_placement_fragment>(
                     ctx.system->layout.placement_arena);
                 draw_text(
                     the_msdf_text_engine,
@@ -711,14 +712,14 @@ do_text(
             }
             break;
         }
-        case PassType::Event: {
-            auto& text_placement = *arena_alloc<TextLayoutPlacementHeader>(
+        case pass_type::Event: {
+            auto& text_placement = *arena_alloc<text_layout_placement_header>(
                 ctx.system->layout.placement_arena);
             for (int i = 0; i < text_placement.fragment_count; ++i)
             {
-                auto& fragment = *arena_alloc<TextLayoutPlacementFragment>(
+                auto& fragment = *arena_alloc<text_layout_placement_fragment>(
                     ctx.system->layout.placement_arena);
-                Box box = {.pos = fragment.position, .size = fragment.size};
+                box box = {.pos = fragment.position, .size = fragment.size};
                 if (detect_click(
                         ctx.pass.event.event,
                         box.pos.x,
@@ -750,7 +751,7 @@ char const* lorem_ipsum
       "nunc dolor eu risus.";
 
 void
-rectangle_demo(Context& ctx)
+rectangle_demo(context& ctx)
 {
     static bool invert = false;
 
@@ -767,8 +768,8 @@ rectangle_demo(Context& ctx)
                             if (do_rect(
                                     ctx,
                                     {24, 24},
-                                    invert ? Color{f, 0.1f, 1.0f - f, 1}
-                                           : Color{1.0f - f, 0.1f, f, 1},
+                                    invert ? color{f, 0.1f, 1.0f - f, 1}
+                                           : color{1.0f - f, 0.1f, f, 1},
                                     ALIGN_TOP | ALIGN_LEFT))
                             {
                                 invert = !invert;
@@ -804,7 +805,7 @@ rectangle_demo(Context& ctx)
 }
 
 void
-text_demo(Context& ctx)
+text_demo(context& ctx)
 {
     static bool invert = false;
 
@@ -834,7 +835,23 @@ text_demo(Context& ctx)
 }
 
 void
-nested_flow_demo(Context& ctx)
+simple_text_demo(context& ctx)
+{
+    static bool invert = false;
+
+    inset(ctx, {.left = 10, .right = 10, .top = 10, .bottom = 10}, [&]() {
+        column(ctx, [&]() {
+            do_text(
+                ctx,
+                GRAY,
+                40,
+                " !\"#$%&'()*+,-./0123456789:;<=>?@AZaz[]^_`{|}~");
+        });
+    });
+}
+
+void
+nested_flow_demo(context& ctx)
 {
     static bool invert = false;
 
@@ -853,7 +870,7 @@ nested_flow_demo(Context& ctx)
 }
 
 void
-mixed_flow_demo(Context& ctx)
+mixed_flow_demo(context& ctx)
 {
     with_padding(ctx, 10, [&] {
         flow(ctx, [&]() {
@@ -864,13 +881,13 @@ mixed_flow_demo(Context& ctx)
                 {
                     float f = fmod(x, 1.0f);
                     do_rect(
-                        ctx, {24, 24}, Color{f, 0.1f, 1.0f - f, 1}, CENTER);
+                        ctx, {24, 24}, color{f, 0.1f, 1.0f - f, 1}, CENTER);
                     x += 0.1f;
                 }
 
                 panel(
                     ctx,
-                    Color{0.24f, 0.24f, 0.30f, 1},
+                    color{0.24f, 0.24f, 0.30f, 1},
                     min_size({0, 0})
                         | margins(
                             {.left = 10,
@@ -878,14 +895,7 @@ mixed_flow_demo(Context& ctx)
                              .top = 10,
                              .bottom = 10}),
                     [&] {
-                        row(ctx, [&]() {
-                            do_text(
-                                ctx,
-                                GRAY,
-                                8 + i * 6,
-                                "lorem ipsum",
-                                BASELINE_Y);
-                        });
+                        do_text(ctx, GRAY, 8 + i * 6, "panel", BASELINE_Y);
                     });
                 do_text(ctx, GRAY, 12 + i * 4, lorem_ipsum, BASELINE_Y);
             }
@@ -894,7 +904,7 @@ mixed_flow_demo(Context& ctx)
 }
 
 void
-layout_demo_flow(Context& ctx)
+layout_demo_flow(context& ctx)
 {
     float x = 0.0f;
     hyperflow(ctx, [&]() {
@@ -907,7 +917,7 @@ layout_demo_flow(Context& ctx)
                 [&]() {
                     concrete_panel(
                         ctx,
-                        Color{
+                        color{
                             0.14f + intensity,
                             0.14f + intensity,
                             0.18f + intensity,
@@ -920,8 +930,8 @@ layout_demo_flow(Context& ctx)
                                     do_rect(
                                         ctx,
                                         {24, float((i & 7) * 12 + 12)},
-                                        Color{f, 0.1f, 1.0f - f, 1},
-                                        LayoutFlagSet(
+                                        color{f, 0.1f, 1.0f - f, 1},
+                                        layout_flag_set(
                                             (i & 3)
                                             << CROSS_ALIGNMENT_BIT_OFFSET));
                                     x += 0.01f;
@@ -934,7 +944,7 @@ layout_demo_flow(Context& ctx)
 }
 
 void
-layout_growth_demo(Context& ctx)
+layout_growth_demo(context& ctx)
 {
     float x = 0.0f;
     row(ctx, [&]() {
@@ -945,7 +955,7 @@ layout_growth_demo(Context& ctx)
                 do_rect(
                     ctx,
                     {6, 12},
-                    Color{f, 0.1f, 1.0f - f, 1},
+                    color{f, 0.1f, 1.0f - f, 1},
                     FILL | (i & 1 ? GROW : NO_FLAGS));
             });
             x += 0.08f;
@@ -955,19 +965,19 @@ layout_growth_demo(Context& ctx)
 
 void
 do_animated_rect(
-    Context& ctx,
+    context& ctx,
     bool& initialized,
-    Vec2& offset,
-    Vec2 size,
-    Color color,
-    LayoutFlagSet flags)
+    vec2& offset,
+    vec2 size,
+    color color,
+    layout_flag_set flags)
 {
     placement_hook(ctx, FILL, [&](auto outer_placement) {
         alignment_override(ctx, flags, [&]() {
             placement_hook(ctx, FILL, [&](auto inner_placement) {
-                Vec2 inner_pos
+                vec2 inner_pos
                     = inner_placement.box.pos - outer_placement.box.pos;
-                if (ctx.pass.type == PassType::Draw)
+                if (ctx.pass.type == pass_type::Draw)
                 {
                     if (!initialized)
                     {
@@ -984,19 +994,19 @@ do_animated_rect(
 }
 
 void
-alignment_override_demo(Context& ctx)
+alignment_override_demo(context& ctx)
 {
     static bool invert = false;
     static bool initialized[12] = {false};
-    static Vec2 offsets[12] = {0};
+    static vec2 offsets[12] = {0};
     float x = 0.0f;
     row(ctx, [&]() {
-        concrete_panel(ctx, Color{0.14f, 0.14f, 0.16f, 1}, CENTER, [&]() {
+        concrete_panel(ctx, color{0.14f, 0.14f, 0.16f, 1}, CENTER, [&]() {
             inset(ctx, {.left = 4, .right = 4, .top = 4, .bottom = 4}, [&]() {
                 if (do_rect(
                         ctx,
                         {24, 24},
-                        invert ? Color{1, 1, 1, 1} : Color{0, 0, 0, 0},
+                        invert ? color{1, 1, 1, 1} : color{0, 0, 0, 0},
                         CENTER))
                 {
                     invert = !invert;
@@ -1013,7 +1023,7 @@ alignment_override_demo(Context& ctx)
                     min_size_constraint(ctx, {0, 200}, [&]() {
                         concrete_panel(
                             ctx,
-                            Color{
+                            color{
                                 0.14f + 0.06f * f,
                                 0.14f + 0.06f * f,
                                 0.16f + 0.08f * f,
@@ -1025,7 +1035,7 @@ alignment_override_demo(Context& ctx)
                                     initialized[i],
                                     offsets[i],
                                     {24, 24},
-                                    Color{f, 0.1f, 1.0f - f, 1},
+                                    color{f, 0.1f, 1.0f - f, 1},
                                     (i & 1) == (invert ? 0 : 1)
                                         ? ALIGN_TOP
                                         : ALIGN_BOTTOM);
@@ -1038,7 +1048,7 @@ alignment_override_demo(Context& ctx)
 }
 
 void
-layout_mods_demo(Context& ctx)
+layout_mods_demo(context& ctx)
 {
     float x = 0.0f;
     flow(ctx, [&]() {
@@ -1047,7 +1057,7 @@ layout_mods_demo(Context& ctx)
             float f = fmod(x, 1.0f);
             panel(
                 ctx,
-                Color{
+                color{
                     0.14f + 0.06f * f,
                     0.14f + 0.06f * f,
                     0.16f + 0.08f * f,
@@ -1059,7 +1069,7 @@ layout_mods_demo(Context& ctx)
                     do_rect(
                         ctx,
                         {float(4 * i), float(4 * i)},
-                        Color{f, 0.1f, 1.0f - f, 1},
+                        color{f, 0.1f, 1.0f - f, 1},
                         align_right | center_y);
                 });
             x += 0.2f;
@@ -1068,7 +1078,7 @@ layout_mods_demo(Context& ctx)
 }
 
 void
-layout_demo(Context& ctx)
+layout_demo(context& ctx)
 {
     with_padding(ctx, 10, [&] {
         inset(ctx, {.left = 40, .right = 40, .top = 40, .bottom = 40}, [&]() {
@@ -1085,8 +1095,8 @@ layout_demo(Context& ctx)
                                 do_rect(
                                     ctx,
                                     {float((j & 7) * 12 + 12), 24},
-                                    Color{f, 0.1f, 1.0f - f, 1},
-                                    LayoutFlagSet(
+                                    color{f, 0.1f, 1.0f - f, 1},
+                                    layout_flag_set(
                                         (j & 3) << X_ALIGNMENT_BIT_OFFSET));
                                 x += 0.02f;
                             }
@@ -1110,7 +1120,7 @@ layout_demo(Context& ctx)
 }
 
 void
-the_demo(Context& ctx)
+the_demo(context& ctx)
 {
     layout_demo(ctx);
 }
@@ -1123,8 +1133,8 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         double x, y;
         glfwGetCursorPos(window, &x, &y);
 
-        Event event;
-        event.type = EventType::Click;
+        event event;
+        event.type = event_type::Click;
 
         int framebuffer_width, framebuffer_height;
         glfwGetFramebufferSize(
@@ -1141,8 +1151,8 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
                / window_height); // / the_ui_scale.y;
         std::uint32_t root_index;
         the_system.layout.placement_arena.reset();
-        Context event_ctx
-            = {.pass = {.type = PassType::Event, .event = {.event = &event}},
+        context event_ctx
+            = {.pass = {.type = pass_type::Event, .event = {.event = &event}},
                .style = &the_style,
                .system = &the_system};
         the_demo(event_ctx);
@@ -1277,8 +1287,8 @@ update()
 
     AllocProbeResult result = probe_allocations([&]() {
         the_system.layout.node_arena.reset();
-        Context refresh_ctx
-            = {{PassType::Refresh,
+        context refresh_ctx
+            = {{pass_type::Refresh,
                 {.refresh
                  = {.layout_emission
                     = {&the_system.layout.node_arena,
@@ -1315,9 +1325,9 @@ update()
         clear_command_list(the_box_commands);
         clear_command_list(the_msdf_commands);
         the_system.layout.placement_arena.reset();
-        Context draw_ctx
+        context draw_ctx
             = {.pass
-               = {.type = PassType::Draw,
+               = {.type = pass_type::Draw,
                   .draw
                   = {.display_list_arena = &the_display_list_arena,
                      .box_command_list = &the_box_commands}},
@@ -1442,8 +1452,8 @@ main()
 
     initialize(
         the_system,
-        Vec2{1200, 1600}, // Initial framebuffer size
-        Vec2{1.0f, 1.0f}); // Initial UI zoom
+        vec2{1200, 1600}, // Initial framebuffer size
+        vec2{1.0f, 1.0f}); // Initial UI zoom
 
     init_gl_renderer(&the_renderer);
 
@@ -1456,7 +1466,7 @@ main()
 
     // TODO
     the_msdf_text_engine = create_msdf_text_engine(
-        MsdfFontDescription{
+        msdf_font_description{
             .metrics = {
                 .em_size = 1,
                 .line_height = 1.171875,

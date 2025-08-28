@@ -2,13 +2,13 @@
 
 namespace alia {
 
-struct Color
+struct color
 {
     float r, g, b, a;
 };
 
-constexpr Color RED = {1.f, 0.f, 0.f, 1.f};
-constexpr Color BLUE = {0.f, 0.f, 1.f, 1.f};
-constexpr Color GRAY = {0.5f, 0.5f, 0.5f, 1.f};
+constexpr color RED = {1.f, 0.f, 0.f, 1.f};
+constexpr color BLUE = {0.f, 0.f, 1.f, 1.f};
+constexpr color GRAY = {0.5f, 0.5f, 0.5f, 1.f};
 
 } // namespace alia

@@ -6,21 +6,21 @@
 
 namespace alia {
 
-struct LayoutNodeVtable;
+struct layout_node_vtable;
 
-struct LayoutNode
+struct layout_node
 {
-    LayoutNodeVtable* vtable;
-    LayoutNode* next_sibling;
+    layout_node_vtable* vtable;
+    layout_node* next_sibling;
 };
 
-struct HorizontalRequirements
+struct horizontal_requirements
 {
     float min_size;
     float growth_factor;
 };
 
-struct VerticalRequirements
+struct vertical_requirements
 {
     float min_size;
     float growth_factor;
@@ -28,66 +28,66 @@ struct VerticalRequirements
     float descent;
 };
 
-struct PlacementContext
+struct placement_context
 {
-    InfiniteArena* scratch;
-    InfiniteArena* arena;
+    infinite_arena* scratch;
+    infinite_arena* arena;
 };
 
-struct MeasurementContext
+struct measurement_context
 {
-    InfiniteArena* scratch;
+    infinite_arena* scratch;
 };
 
-struct LineRequirements
+struct line_requirements
 {
     float height;
     float ascent;
     float descent;
 };
 
-struct WrappingRequirements
+struct wrapping_requirements
 {
     // the child's contribution to the line that was already in progress when
     // it was invoked - This may be all 0s if the child doesn't actually place
     // anything on that line.
-    LineRequirements first_line;
+    line_requirements first_line;
     // the total height that the child uses in between the first line and the
     // last line
     float interior_height;
     // the child's contribution to the last line that it places content on -
     // This should be all 0s if the child never wraps.
-    LineRequirements last_line;
+    line_requirements last_line;
     // the X offset at which the child's content ends
     float end_x;
 };
 
 inline bool
-has_content(LineRequirements const& requirements)
+has_content(line_requirements const& requirements)
 {
     return requirements.height != 0 || requirements.ascent != 0
         || requirements.descent != 0;
 }
 
 inline bool
-has_first_line_content(WrappingRequirements const& requirements)
+has_first_line_content(wrapping_requirements const& requirements)
 {
     return has_content(requirements.first_line);
 }
 
 inline bool
-has_wrapped_content(WrappingRequirements const& requirements)
+has_wrapped_content(wrapping_requirements const& requirements)
 {
     return has_content(requirements.last_line);
 }
 
-struct VerticalAssignment
+struct vertical_assignment
 {
     float line_height;
     float baseline_offset;
 };
 
-struct WrappingAssignment
+struct wrapping_assignment
 {
     // X position of the flow layout
     float x_base;
@@ -104,79 +104,79 @@ struct WrappingAssignment
 
     // vertical assignment for first line - to be used for any content that
     // fits before any wrapping occurs
-    VerticalAssignment first_line;
+    vertical_assignment first_line;
 
     // vertical assignment for last line - to be used for content on the last
     // line (i.e., where later nodes might share the same line)
-    VerticalAssignment last_line;
+    vertical_assignment last_line;
 };
 
-using MainAxisIndex = std::uint8_t;
-constexpr MainAxisIndex MAIN_AXIS_X = 3;
-constexpr MainAxisIndex MAIN_AXIS_Y = 6;
+using main_axis_index = std::uint8_t;
+constexpr main_axis_index MAIN_AXIS_X = 3;
+constexpr main_axis_index MAIN_AXIS_Y = 6;
 
-struct LayoutNodeVtable
+struct layout_node_vtable
 {
-    HorizontalRequirements (*measure_horizontal)(
-        MeasurementContext* ctx, LayoutNode* node);
+    horizontal_requirements (*measure_horizontal)(
+        measurement_context* ctx, layout_node* node);
 
     void (*assign_widths)(
-        MeasurementContext* ctx,
-        MainAxisIndex main_axis,
-        LayoutNode* node,
+        measurement_context* ctx,
+        main_axis_index main_axis,
+        layout_node* node,
         float assigned_width);
 
-    VerticalRequirements (*measure_vertical)(
-        MeasurementContext* ctx,
-        MainAxisIndex main_axis,
-        LayoutNode* node,
+    vertical_requirements (*measure_vertical)(
+        measurement_context* ctx,
+        main_axis_index main_axis,
+        layout_node* node,
         float assigned_width);
 
     void (*assign_boxes)(
-        PlacementContext* ctx,
-        MainAxisIndex main_axis,
-        LayoutNode* node,
-        Box box,
+        placement_context* ctx,
+        main_axis_index main_axis,
+        layout_node* node,
+        box box,
         float baseline);
 
-    HorizontalRequirements (*measure_wrapped_horizontal)(
-        MeasurementContext* ctx, LayoutNode* node);
+    horizontal_requirements (*measure_wrapped_horizontal)(
+        measurement_context* ctx, layout_node* node);
 
-    WrappingRequirements (*measure_wrapped_vertical)(
-        MeasurementContext* ctx,
-        MainAxisIndex main_axis,
-        LayoutNode* node,
+    wrapping_requirements (*measure_wrapped_vertical)(
+        measurement_context* ctx,
+        main_axis_index main_axis,
+        layout_node* node,
         float current_x_offset,
         float line_width);
 
     void (*assign_wrapped_boxes)(
-        PlacementContext* ctx,
-        MainAxisIndex main_axis,
-        LayoutNode* node,
-        WrappingAssignment const* assignment);
+        placement_context* ctx,
+        main_axis_index main_axis,
+        layout_node* node,
+        wrapping_assignment const* assignment);
 };
 
-inline HorizontalRequirements
-measure_horizontal(MeasurementContext* ctx, LayoutNode* node)
+inline horizontal_requirements
+measure_horizontal(measurement_context* ctx, layout_node* node)
 {
     return node->vtable->measure_horizontal(ctx, node);
 }
 
 inline void
 assign_widths(
-    MeasurementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* node,
+    measurement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* node,
     float assigned_width)
 {
     return node->vtable->assign_widths(ctx, main_axis, node, assigned_width);
 }
 
-inline VerticalRequirements
+inline vertical_requirements
 measure_vertical(
-    MeasurementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* node,
+    measurement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* node,
     float assigned_width)
 {
     return node->vtable->measure_vertical(
@@ -185,26 +185,26 @@ measure_vertical(
 
 inline void
 assign_boxes(
-    PlacementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* node,
-    Box box,
+    placement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* node,
+    box box,
     float baseline)
 {
     return node->vtable->assign_boxes(ctx, main_axis, node, box, baseline);
 }
 
-inline HorizontalRequirements
-measure_wrapped_horizontal(MeasurementContext* ctx, LayoutNode* node)
+inline horizontal_requirements
+measure_wrapped_horizontal(measurement_context* ctx, layout_node* node)
 {
     return node->vtable->measure_wrapped_horizontal(ctx, node);
 }
 
-inline WrappingRequirements
+inline wrapping_requirements
 measure_wrapped_vertical(
-    MeasurementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* node,
+    measurement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* node,
     float current_x_offset,
     float line_width)
 {
@@ -214,10 +214,10 @@ measure_wrapped_vertical(
 
 inline void
 assign_wrapped_boxes(
-    PlacementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* node,
-    WrappingAssignment const* assignment)
+    placement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* node,
+    wrapping_assignment const* assignment)
 {
     return node->vtable->assign_wrapped_boxes(
         ctx, main_axis, node, assignment);

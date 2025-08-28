@@ -4,7 +4,7 @@
 
 #include <alia/text_engines/msdf/msdf.hpp>
 
-static const alia::MsdfGlyph roboto_glyphs[] = {
+static const alia::msdf_glyph roboto_glyphs[] = {
     {32,
      0.247559f,
      0,
@@ -1054,7 +1054,7 @@ static const alia::MsdfGlyph roboto_glyphs[] = {
 
 static const size_t roboto_glyph_count = 95;
 
-static const alia::MsdfKerningPair roboto_kerning_pairs[] = {
+static const alia::msdf_kerning_pair roboto_kerning_pairs[] = {
     {32, 84, -0.019531f},   {34, 34, -0.052246f},   {34, 39, -0.052246f},
     {34, 65, -0.058594f},   {34, 97, -0.024414f},   {34, 99, -0.028809f},
     {34, 100, -0.028809f},  {34, 101, -0.028809f},  {34, 103, -0.028809f},

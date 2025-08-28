@@ -9,23 +9,23 @@
 
 namespace alia {
 
-// RawInfiniteArena is a simple arena allocator that assumes an infinite
+// infinite_arena is a simple arena allocator that assumes an infinite
 // reservation of memory.
-struct InfiniteArena
+struct infinite_arena
 {
     static constexpr std::size_t INFINITE_CAPACITY = 128 * 1024 * 1024;
 
-    InfiniteArena()
+    infinite_arena()
     {
     }
 
     // Disallow copying.
-    InfiniteArena(InfiniteArena const&) = delete;
-    InfiniteArena&
-    operator=(InfiniteArena const&)
+    infinite_arena(infinite_arena const&) = delete;
+    infinite_arena&
+    operator=(infinite_arena const&)
         = delete;
 
-    InfiniteArena(InfiniteArena&& other)
+    infinite_arena(infinite_arena&& other)
     {
         base_ = other.base_;
         next_ = other.next_;
@@ -33,8 +33,8 @@ struct InfiniteArena
         // The moved-from arena must have a noop destruction.
         other.base_ = nullptr;
     }
-    InfiniteArena&
-    operator=(InfiniteArena&& other)
+    infinite_arena&
+    operator=(infinite_arena&& other)
     {
         base_ = other.base_;
         next_ = other.next_;
@@ -43,7 +43,7 @@ struct InfiniteArena
         other.base_ = nullptr;
     }
 
-    ~InfiniteArena()
+    ~infinite_arena()
     {
         release();
     }
@@ -61,9 +61,9 @@ struct InfiniteArena
     void*
     alloc(std::size_t size)
     {
-        ALIA_ASSERT(base_ && "LayoutArena must be initialized");
+        ALIA_ASSERT(base_ && "infinite_arena must be initialized");
         next_ += size;
-        ALIA_ASSERT(next_ - base_ <= capacity_ && "LayoutArena overflow");
+        ALIA_ASSERT(next_ - base_ <= capacity_ && "infinite_arena overflow");
         return (void*) next_;
     }
 
@@ -101,7 +101,7 @@ struct InfiniteArena
 };
 
 inline void*
-aligned_alloc(InfiniteArena& arena, std::size_t size, std::size_t alignment)
+aligned_alloc(infinite_arena& arena, std::size_t size, std::size_t alignment)
 {
     std::uintptr_t addr = std::uintptr_t(arena.peek());
     std::uintptr_t aligned_addr = (addr + (alignment - 1)) & ~(alignment - 1);
@@ -112,14 +112,14 @@ aligned_alloc(InfiniteArena& arena, std::size_t size, std::size_t alignment)
 
 template<class T>
 T*
-arena_alloc(InfiniteArena& arena)
+arena_alloc(infinite_arena& arena)
 {
     return reinterpret_cast<T*>(aligned_alloc(arena, sizeof(T), alignof(T)));
 }
 
 template<class T>
 T*
-arena_array_alloc(InfiniteArena& arena, std::size_t count)
+arena_array_alloc(infinite_arena& arena, std::size_t count)
 {
     return reinterpret_cast<T*>(
         aligned_alloc(arena, count * sizeof(T), alignof(T)));
@@ -127,7 +127,7 @@ arena_array_alloc(InfiniteArena& arena, std::size_t count)
 
 template<class T>
 T*
-arena_new(InfiniteArena& arena)
+arena_new(infinite_arena& arena)
 {
     static_assert(std::is_trivially_destructible_v<T>);
     void* raw = aligned_alloc(arena, sizeof(T), alignof(T));

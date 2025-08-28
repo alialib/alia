@@ -5,32 +5,32 @@
 namespace alia {
 
 void
-begin_flow(Context& ctx, LayoutContainerScope& scope, LayoutFlagSet flags)
+begin_flow(context& ctx, layout_container_scope& scope, layout_flag_set flags)
 {
     begin_container(ctx, scope, &flow_vtable, flags);
 }
 
 void
-end_flow(Context& ctx, LayoutContainerScope& scope)
+end_flow(context& ctx, layout_container_scope& scope)
 {
     end_container(ctx, scope);
 }
 
-struct FlowScratch
+struct flow_scratch
 {
     std::uint32_t child_count = 0;
     float total_height = 0, ascent = 0;
-    WrappingRequirements* child_requirements = nullptr;
+    wrapping_requirements* child_requirements = nullptr;
 };
 
-HorizontalRequirements
-flow_measure_horizontal(MeasurementContext* ctx, LayoutNode* node)
+horizontal_requirements
+flow_measure_horizontal(measurement_context* ctx, layout_node* node)
 {
-    auto& flow = *reinterpret_cast<FlowLayoutNode*>(node);
-    auto& scratch = claim_scratch<FlowScratch>(*ctx->scratch);
+    auto& flow = *reinterpret_cast<flow_layout_node*>(node);
+    auto& scratch = claim_scratch<flow_scratch>(*ctx->scratch);
 
     float max_child_width = 0;
-    for (LayoutNode* child = flow.first_child; child != nullptr;
+    for (layout_node* child = flow.first_child; child != nullptr;
          child = child->next_sibling)
     {
         auto const child_requirements = measure_wrapped_horizontal(ctx, child);
@@ -39,19 +39,19 @@ flow_measure_horizontal(MeasurementContext* ctx, LayoutNode* node)
         ++scratch.child_count;
     }
 
-    scratch.child_requirements = arena_array_alloc<WrappingRequirements>(
+    scratch.child_requirements = arena_array_alloc<wrapping_requirements>(
         *ctx->scratch, scratch.child_count);
 
-    return HorizontalRequirements{
+    return horizontal_requirements{
         .min_size = max_child_width,
         .growth_factor = resolve_growth_factor(flow.flags)};
 }
 
 void
 flow_assign_widths(
-    MeasurementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* node,
+    measurement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* node,
     float assigned_width)
 {
     // TODO
@@ -73,15 +73,15 @@ flow_assign_widths(
     // }
 }
 
-VerticalRequirements
+vertical_requirements
 flow_measure_vertical(
-    MeasurementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* node,
+    measurement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* node,
     float assigned_width)
 {
-    auto& flow = *reinterpret_cast<FlowLayoutNode*>(node);
-    auto& scratch = use_scratch<FlowScratch>(*ctx->scratch);
+    auto& flow = *reinterpret_cast<flow_layout_node*>(node);
+    auto& scratch = use_scratch<flow_scratch>(*ctx->scratch);
 
     auto* child_requirements = scratch.child_requirements;
 
@@ -89,7 +89,7 @@ flow_measure_vertical(
     float overall_height = 0, overall_ascent = 0;
     float current_x_offset = 0;
     bool wrapping_has_occurred = false;
-    for (LayoutNode* child = flow.first_child; child != nullptr;
+    for (layout_node* child = flow.first_child; child != nullptr;
          child = child->next_sibling)
     {
         auto const requirements = measure_wrapped_vertical(
@@ -120,7 +120,7 @@ flow_measure_vertical(
         current_x_offset = requirements.end_x;
     }
 
-    arena_array_alloc<WrappingRequirements>(
+    arena_array_alloc<wrapping_requirements>(
         *ctx->scratch, scratch.child_count);
 
     if (!wrapping_has_occurred)
@@ -130,7 +130,7 @@ flow_measure_vertical(
     scratch.total_height = overall_height;
     scratch.ascent = overall_ascent;
 
-    return VerticalRequirements{
+    return vertical_requirements{
         .min_size = overall_height,
         .growth_factor = resolve_growth_factor(flow.flags),
         .ascent = (flow.flags & Y_ALIGNMENT_MASK) == BASELINE_Y
@@ -143,14 +143,14 @@ flow_measure_vertical(
 
 void
 flow_assign_boxes(
-    PlacementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* node,
-    Box box,
+    placement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* node,
+    box box,
     float baseline)
 {
-    auto& flow = *reinterpret_cast<FlowLayoutNode*>(node);
-    auto& scratch = use_scratch<FlowScratch>(*ctx->scratch);
+    auto& flow = *reinterpret_cast<flow_layout_node*>(node);
+    auto& scratch = use_scratch<flow_scratch>(*ctx->scratch);
 
     auto* child_requirements = scratch.child_requirements;
 
@@ -189,19 +189,19 @@ flow_assign_boxes(
     update_line_measures(0);
 
     int child_index = 0;
-    for (LayoutNode* child = flow.first_child; child != nullptr;
+    for (layout_node* child = flow.first_child; child != nullptr;
          child = child->next_sibling)
     {
         auto const& requirements = child_requirements[child_index];
 
-        WrappingAssignment assignment;
+        wrapping_assignment assignment;
         assignment.x_base = box.pos.x;
         assignment.line_width = box.size.x;
         assignment.first_line_x_offset = current_x;
 
         // For the first line, we use the vertical requirements that existed
         // for the previous children.
-        assignment.first_line = VerticalAssignment{
+        assignment.first_line = vertical_assignment{
             .line_height = (std::max)(line_height, line_ascent + line_descent),
             .baseline_offset = line_ascent};
 
@@ -218,7 +218,7 @@ flow_assign_boxes(
             ++child_index;
             update_line_measures(child_index);
 
-            assignment.last_line = VerticalAssignment{
+            assignment.last_line = vertical_assignment{
                 .line_height
                 = (std::max)(line_height, line_ascent + line_descent),
                 .baseline_offset = line_ascent};
@@ -233,8 +233,8 @@ flow_assign_boxes(
                     ctx,
                     MAIN_AXIS_X,
                     child,
-                    Box{.pos = Vec2{box.pos.x, current_y},
-                        .size = Vec2{requirements.end_x, line_height}},
+                    {.pos = vec2{box.pos.x, current_y},
+                     .size = vec2{requirements.end_x, line_height}},
                     line_ascent);
                 current_x = requirements.end_x;
             }
@@ -260,36 +260,36 @@ flow_assign_boxes(
                 ctx,
                 MAIN_AXIS_X,
                 child,
-                Box{.pos = Vec2{box.pos.x + current_x, current_y},
-                    .size = Vec2{requirements.end_x - current_x, line_height}},
+                {.pos = vec2{box.pos.x + current_x, current_y},
+                 .size = vec2{requirements.end_x - current_x, line_height}},
                 line_ascent);
             current_x = requirements.end_x;
             ++child_index;
         }
     }
 
-    arena_array_alloc<WrappingRequirements>(
+    arena_array_alloc<wrapping_requirements>(
         *ctx->scratch, scratch.child_count);
 }
 
-WrappingRequirements
+wrapping_requirements
 flow_measure_wrapped_vertical(
-    MeasurementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* node,
+    measurement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* node,
     float current_x_offset,
     float line_width)
 {
-    auto& flow = *reinterpret_cast<FlowLayoutNode*>(node);
-    auto& scratch = use_scratch<FlowScratch>(*ctx->scratch);
+    auto& flow = *reinterpret_cast<flow_layout_node*>(node);
+    auto& scratch = use_scratch<flow_scratch>(*ctx->scratch);
 
     auto* child_requirements = scratch.child_requirements;
 
     float line_height = 0, line_ascent = 0, line_descent = 0;
-    LineRequirements first_line;
+    line_requirements first_line;
     bool wrapping_has_occurred = false;
     float interior_height = 0;
-    for (LayoutNode* child = flow.first_child; child != nullptr;
+    for (layout_node* child = flow.first_child; child != nullptr;
          child = child->next_sibling)
     {
         auto const requirements = measure_wrapped_vertical(
@@ -327,7 +327,7 @@ flow_measure_wrapped_vertical(
         current_x_offset = requirements.end_x;
     }
 
-    LineRequirements last_line;
+    line_requirements last_line;
     if (!wrapping_has_occurred)
     {
         first_line
@@ -344,7 +344,7 @@ flow_measure_wrapped_vertical(
                .descent = line_descent};
     }
 
-    arena_array_alloc<WrappingRequirements>(
+    arena_array_alloc<wrapping_requirements>(
         *ctx->scratch, scratch.child_count);
 
     scratch.total_height
@@ -353,7 +353,7 @@ flow_measure_wrapped_vertical(
         + (std::max)(last_line.height, last_line.ascent + last_line.descent);
     scratch.ascent = first_line.ascent;
 
-    return WrappingRequirements{
+    return wrapping_requirements{
         .first_line = first_line,
         .interior_height = interior_height,
         .last_line = last_line,
@@ -362,13 +362,13 @@ flow_measure_wrapped_vertical(
 
 void
 flow_assign_wrapped_boxes(
-    PlacementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* node,
-    WrappingAssignment const* assignment)
+    placement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* node,
+    wrapping_assignment const* assignment)
 {
-    auto& flow = *reinterpret_cast<FlowLayoutNode*>(node);
-    auto& scratch = use_scratch<FlowScratch>(*ctx->scratch);
+    auto& flow = *reinterpret_cast<flow_layout_node*>(node);
+    auto& scratch = use_scratch<flow_scratch>(*ctx->scratch);
 
     auto* child_requirements = scratch.child_requirements;
 
@@ -412,19 +412,19 @@ flow_assign_wrapped_boxes(
     update_line_measures(0);
 
     int child_index = 0;
-    for (LayoutNode* child = flow.first_child; child != nullptr;
+    for (layout_node* child = flow.first_child; child != nullptr;
          child = child->next_sibling)
     {
         auto const& requirements = child_requirements[child_index];
 
-        WrappingAssignment child_assignment;
+        wrapping_assignment child_assignment;
         child_assignment.x_base = assignment->x_base;
         child_assignment.line_width = assignment->line_width;
         child_assignment.first_line_x_offset = current_x;
 
         // For the first line, we use the vertical requirements that existed
         // for the previous children.
-        child_assignment.first_line = VerticalAssignment{
+        child_assignment.first_line = vertical_assignment{
             .line_height = (std::max)(line_height, line_ascent + line_descent),
             .baseline_offset = line_ascent};
 
@@ -441,7 +441,7 @@ flow_assign_wrapped_boxes(
             ++child_index;
             update_line_measures(child_index);
 
-            child_assignment.last_line = VerticalAssignment{
+            child_assignment.last_line = vertical_assignment{
                 .line_height
                 = (std::max)(line_height, line_ascent + line_descent),
                 .baseline_offset = line_ascent};
@@ -456,8 +456,8 @@ flow_assign_wrapped_boxes(
                     ctx,
                     MAIN_AXIS_X,
                     child,
-                    Box{.pos = Vec2{assignment->x_base, current_y},
-                        .size = Vec2{requirements.end_x, line_height}},
+                    box{.pos = vec2{assignment->x_base, current_y},
+                        .size = vec2{requirements.end_x, line_height}},
                     line_ascent);
                 current_x = requirements.end_x;
             }
@@ -484,19 +484,19 @@ flow_assign_wrapped_boxes(
                 ctx,
                 MAIN_AXIS_X,
                 child,
-                Box{.pos = Vec2{assignment->x_base + current_x, current_y},
-                    .size = Vec2{requirements.end_x - current_x, line_height}},
+                box{.pos = vec2{assignment->x_base + current_x, current_y},
+                    .size = vec2{requirements.end_x - current_x, line_height}},
                 line_ascent);
             current_x = requirements.end_x;
             ++child_index;
         }
     }
 
-    arena_array_alloc<WrappingRequirements>(
+    arena_array_alloc<wrapping_requirements>(
         *ctx->scratch, scratch.child_count);
 }
 
-LayoutNodeVtable flow_vtable = {
+layout_node_vtable flow_vtable = {
     flow_measure_horizontal,
     flow_assign_widths,
     flow_measure_vertical,

@@ -7,64 +7,64 @@
 
 namespace alia {
 
-struct Event;
-struct System;
-struct LayoutNode;
-struct LayoutContainer;
-struct InfiniteArena;
+struct event;
+struct system;
+struct layout_node;
+struct layout_container;
+struct infinite_arena;
 
-enum class PassType
+enum class pass_type
 {
     Refresh,
     Draw,
     Event,
 };
 
-struct LayoutEmission
+struct layout_emission
 {
-    InfiniteArena* arena;
-    LayoutNode** next_ptr;
+    infinite_arena* arena;
+    layout_node** next_ptr;
 };
 
-struct Style
+struct style
 {
     float padding;
 };
 
-struct RefreshPass
+struct refresh_pass
 {
-    LayoutEmission layout_emission;
+    layout_emission layout_emission;
 };
 
-struct DrawPass
+struct draw_pass
 {
-    DisplayListArena* display_list_arena;
-    BoxCommandList* box_command_list;
+    display_list_arena* display_list_arena;
+    box_command_list* box_command_list;
 };
 
-struct EventPass
+struct event_pass
 {
-    Event* event;
+    alia::event* event;
 };
 
-struct Pass
+struct pass
 {
-    PassType type;
+    pass_type type;
     union
     {
-        RefreshPass refresh;
-        DrawPass draw;
-        EventPass event;
+        refresh_pass refresh;
+        draw_pass draw;
+        event_pass event;
     };
 };
 
-struct Context
+struct context
 {
-    Pass pass;
-    Style* style;
-    System* system;
+    pass pass;
+    style* style;
+    system* system;
 };
 
-using EphemeralContext = Context;
+using ephemeral_context = context;
 
 } // namespace alia

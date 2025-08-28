@@ -3,38 +3,38 @@
 namespace alia {
 
 void
-initialize(LayoutSystem& system)
+initialize(layout_system& system)
 {
     system.node_arena.initialize();
     system.placement_arena.initialize();
     system.scratch_arena.initialize();
-    system.root = LayoutContainer{
+    system.root = layout_container{
         .base = {.vtable = nullptr, .next_sibling = nullptr},
         .flags = NO_FLAGS,
         .first_child = 0};
 }
 
 void
-resolve_layout(LayoutSystem& system, Vec2 available_space)
+resolve_layout(layout_system& system, vec2 available_space)
 {
     system.scratch_arena.reset();
-    LayoutNode* root_node = system.root.first_child;
-    VerticalRequirements vertical;
+    layout_node* root_node = system.root.first_child;
+    vertical_requirements vertical;
     {
-        MeasurementContext ctx{&system.scratch_arena};
+        measurement_context ctx{&system.scratch_arena};
         measure_horizontal(&ctx, root_node);
         system.scratch_arena.reset();
         vertical = measure_vertical(
             &ctx, MAIN_AXIS_X, root_node, available_space.x);
     }
     {
-        PlacementContext ctx{&system.scratch_arena, &system.placement_arena};
+        placement_context ctx{&system.scratch_arena, &system.placement_arena};
         system.scratch_arena.reset();
         assign_boxes(
             &ctx,
             MAIN_AXIS_X,
             root_node,
-            Box{Vec2{0, 0}, available_space},
+            {vec2{0, 0}, available_space},
             vertical.ascent);
         system.scratch_arena.reset();
     }

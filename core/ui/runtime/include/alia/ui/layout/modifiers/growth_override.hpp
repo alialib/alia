@@ -8,28 +8,29 @@
 
 namespace alia {
 
-struct GrowthOverrideNode
+struct growth_override_node
 {
-    LayoutContainer container;
+    layout_container container;
     float growth;
 };
 
 void
-begin_growth_override(Context& ctx, LayoutContainerScope& scope, float growth);
+begin_growth_override(
+    context& ctx, layout_container_scope& scope, float growth);
 
 void
-end_growth_override(Context& ctx, LayoutContainerScope& scope);
+end_growth_override(context& ctx, layout_container_scope& scope);
 
 template<class Content>
 void
-growth_override(Context& ctx, float growth, Content&& content)
+growth_override(context& ctx, float growth, Content&& content)
 {
-    LayoutContainerScope scope;
+    layout_container_scope scope;
     begin_growth_override(ctx, scope, growth);
     std::forward<Content>(content)();
     end_growth_override(ctx, scope);
 }
 
-extern LayoutNodeVtable growth_override_vtable;
+extern layout_node_vtable growth_override_vtable;
 
 } // namespace alia

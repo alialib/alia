@@ -5,15 +5,15 @@
 
 namespace alia {
 
-struct LayoutSystem
+struct layout_system
 {
-    InfiniteArena node_arena;
-    InfiniteArena scratch_arena;
-    LayoutContainer root;
-    InfiniteArena placement_arena;
+    infinite_arena node_arena;
+    infinite_arena scratch_arena;
+    layout_container root;
+    infinite_arena placement_arena;
 };
 
 void
-resolve_layout(LayoutSystem& system, Vec2 available_space);
+resolve_layout(layout_system& system, vec2 available_space);
 
 } // namespace alia

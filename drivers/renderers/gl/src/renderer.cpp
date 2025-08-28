@@ -79,11 +79,11 @@ void main() {
 }
 )";
 
-struct RectInstance
+struct rect_instance
 {
-    Vec2 pos;
-    Vec2 size;
-    Color color;
+    vec2 pos;
+    vec2 size;
+    alia::color color;
     GLuint clip_index;
 };
 
@@ -122,7 +122,7 @@ create_shader_program(
 }
 
 void
-init_gl_renderer(GlRenderer* renderer)
+init_gl_renderer(gl_renderer* renderer)
 {
     float quad_vertices[] = {0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f};
 
@@ -172,7 +172,7 @@ init_gl_renderer(GlRenderer* renderer)
         = glGetUniformBlockIndex(vanilla_shader_program, "ClipUBO");
     glBindBufferBase(GL_UNIFORM_BUFFER, clip_block, clip_ubo);
 
-    InfiniteArena* rect_instance_arena = new InfiniteArena; // TODO
+    infinite_arena* rect_instance_arena = new infinite_arena; // TODO
     rect_instance_arena->initialize();
 
     GLuint instance_vbo;
@@ -190,8 +190,8 @@ init_gl_renderer(GlRenderer* renderer)
         2,
         GL_FLOAT,
         GL_FALSE,
-        sizeof(RectInstance),
-        (void*) offsetof(RectInstance, pos));
+        sizeof(rect_instance),
+        (void*) offsetof(rect_instance, pos));
     glEnableVertexAttribArray(1);
     glVertexAttribDivisor(1, 1);
 
@@ -201,8 +201,8 @@ init_gl_renderer(GlRenderer* renderer)
         2,
         GL_FLOAT,
         GL_FALSE,
-        sizeof(RectInstance),
-        (void*) offsetof(RectInstance, size));
+        sizeof(rect_instance),
+        (void*) offsetof(rect_instance, size));
     glEnableVertexAttribArray(2);
     glVertexAttribDivisor(2, 1);
 
@@ -212,8 +212,8 @@ init_gl_renderer(GlRenderer* renderer)
         4,
         GL_FLOAT,
         GL_FALSE,
-        sizeof(RectInstance),
-        (void*) offsetof(RectInstance, color));
+        sizeof(rect_instance),
+        (void*) offsetof(rect_instance, color));
     glEnableVertexAttribArray(3);
     glVertexAttribDivisor(3, 1);
 
@@ -221,8 +221,8 @@ init_gl_renderer(GlRenderer* renderer)
         4,
         1,
         GL_UNSIGNED_INT,
-        sizeof(RectInstance),
-        (void*) offsetof(RectInstance, clip_index));
+        sizeof(rect_instance),
+        (void*) offsetof(rect_instance, clip_index));
     glEnableVertexAttribArray(4);
     glVertexAttribDivisor(4, 1);
 
@@ -248,7 +248,7 @@ init_gl_renderer(GlRenderer* renderer)
 }
 
 void
-destroy_gl_renderer(GlRenderer* renderer)
+destroy_gl_renderer(gl_renderer* renderer)
 {
     glDeleteProgram(renderer->vanilla_shader_program);
     glDeleteBuffers(1, &renderer->vbo);
@@ -263,7 +263,7 @@ struct Vertex
 
 void
 render_box_command_list(
-    GlRenderer* renderer, System const& system, BoxCommandList const& boxes)
+    gl_renderer* renderer, system const& system, box_command_list const& boxes)
 {
     glViewport(0, 0, system.framebuffer_size.x, system.framebuffer_size.y);
 
@@ -312,10 +312,10 @@ render_box_command_list(
     renderer->clip_ptr[3] = system.framebuffer_size.y;
 
     renderer->rect_instance_arena->reset();
-    RectInstance* rect_instances = arena_array_alloc<RectInstance>(
+    rect_instance* rect_instances = arena_array_alloc<rect_instance>(
         *renderer->rect_instance_arena, boxes.count);
     {
-        RectInstance* instance = rect_instances;
+        rect_instance* instance = rect_instances;
         for (auto const* cmd = boxes.head; cmd; cmd = cmd->next)
         {
             instance->pos = cmd->box.pos;
@@ -329,7 +329,7 @@ render_box_command_list(
     glBindBuffer(GL_ARRAY_BUFFER, renderer->instance_vbo);
     glBufferData(
         GL_ARRAY_BUFFER,
-        sizeof(RectInstance) * boxes.count,
+        sizeof(rect_instance) * boxes.count,
         rect_instances,
         GL_STATIC_DRAW);
 

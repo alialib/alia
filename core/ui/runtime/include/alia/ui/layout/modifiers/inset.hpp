@@ -8,32 +8,32 @@
 
 namespace alia {
 
-struct InsetLayoutNode
+struct inset_layout_node
 {
-    LayoutContainer container;
-    Insets insets;
+    layout_container container;
+    insets insets;
 };
 
 void
 begin_inset(
-    Context& ctx,
-    LayoutContainerScope& scope,
-    Insets insets,
-    LayoutFlagSet flags);
+    context& ctx,
+    layout_container_scope& scope,
+    insets insets,
+    layout_flag_set flags);
 
 void
-end_inset(Context& ctx, LayoutContainerScope& scope);
+end_inset(context& ctx, layout_container_scope& scope);
 
 template<class Content>
 void
-inset(Context& ctx, Insets insets, Content&& content)
+inset(context& ctx, insets insets, Content&& content)
 {
-    LayoutContainerScope scope;
+    layout_container_scope scope;
     begin_inset(ctx, scope, insets, NO_FLAGS);
     std::forward<Content>(content)();
     end_inset(ctx, scope);
 }
 
-extern LayoutNodeVtable inset_vtable;
+extern layout_node_vtable inset_vtable;
 
 } // namespace alia

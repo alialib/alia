@@ -2,22 +2,22 @@
 
 namespace alia {
 
-enum class EventType
+enum class event_type
 {
     Click
 };
 
-struct ClickEvent
+struct click_event
 {
     float x, y; // in logical (DIP) coordinates
 };
 
-struct Event
+struct event
 {
-    EventType type;
+    event_type type;
     union
     {
-        ClickEvent click;
+        click_event click;
     };
 };
 

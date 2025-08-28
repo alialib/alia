@@ -6,16 +6,17 @@ namespace alia {
 
 void
 begin_inset(
-    Context& ctx,
-    LayoutContainerScope& scope,
-    Insets insets,
-    LayoutFlagSet flags)
+    context& ctx,
+    layout_container_scope& scope,
+    insets insets,
+    layout_flag_set flags)
 {
-    if (ctx.pass.type == PassType::Refresh)
+    if (ctx.pass.type == pass_type::Refresh)
     {
         auto& layout = ctx.pass.refresh.layout_emission;
-        InsetLayoutNode* node = arena_alloc<InsetLayoutNode>(*layout.arena);
-        *node = InsetLayoutNode{
+        inset_layout_node* node
+            = arena_alloc<inset_layout_node>(*layout.arena);
+        *node = inset_layout_node{
             .container
             = {.base = {.vtable = &inset_vtable, .next_sibling = 0},
                .flags = flags,
@@ -28,29 +29,29 @@ begin_inset(
 }
 
 void
-end_inset(Context& ctx, LayoutContainerScope& scope)
+end_inset(context& ctx, layout_container_scope& scope)
 {
     end_container(ctx, scope);
 }
 
-HorizontalRequirements
-inset_measure_horizontal(MeasurementContext* ctx, LayoutNode* node)
+horizontal_requirements
+inset_measure_horizontal(measurement_context* ctx, layout_node* node)
 {
-    auto& inset = *reinterpret_cast<InsetLayoutNode*>(node);
+    auto& inset = *reinterpret_cast<inset_layout_node*>(node);
     auto const child_x = measure_horizontal(ctx, inset.container.first_child);
-    return HorizontalRequirements{
+    return horizontal_requirements{
         .min_size = child_x.min_size + inset.insets.left + inset.insets.right,
         .growth_factor = child_x.growth_factor};
 }
 
 void
 inset_assign_widths(
-    MeasurementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* node,
+    measurement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* node,
     float assigned_width)
 {
-    auto& inset = *reinterpret_cast<InsetLayoutNode*>(node);
+    auto& inset = *reinterpret_cast<inset_layout_node*>(node);
     assign_widths(
         ctx,
         main_axis,
@@ -58,20 +59,20 @@ inset_assign_widths(
         assigned_width - inset.insets.left - inset.insets.right);
 }
 
-VerticalRequirements
+vertical_requirements
 inset_measure_vertical(
-    MeasurementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* node,
+    measurement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* node,
     float assigned_width)
 {
-    auto& inset = *reinterpret_cast<InsetLayoutNode*>(node);
+    auto& inset = *reinterpret_cast<inset_layout_node*>(node);
     auto const child_y = measure_vertical(
         ctx,
         main_axis,
         inset.container.first_child,
         assigned_width - inset.insets.top - inset.insets.bottom);
-    return VerticalRequirements{
+    return vertical_requirements{
         .min_size = child_y.min_size + inset.insets.top + inset.insets.bottom,
         .growth_factor = child_y.growth_factor,
         .ascent = child_y.ascent + inset.insets.top,
@@ -80,43 +81,44 @@ inset_measure_vertical(
 
 void
 inset_assign_boxes(
-    PlacementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* node,
-    Box box,
+    placement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* node,
+    box box,
     float baseline)
 {
-    auto& inset = *reinterpret_cast<InsetLayoutNode*>(node);
+    auto& inset = *reinterpret_cast<inset_layout_node*>(node);
     assign_boxes(
         ctx,
         main_axis,
         inset.container.first_child,
-        Box{.pos = box.pos + Vec2{inset.insets.left, inset.insets.top},
-            .size = box.size - Vec2{inset.insets.left + inset.insets.right,
+        {
+            .pos = box.pos + vec2{inset.insets.left, inset.insets.top},
+            .size = box.size - vec2{inset.insets.left + inset.insets.right,
                                     inset.insets.top + inset.insets.bottom}},
         baseline - inset.insets.top);
 }
 
-HorizontalRequirements
-inset_measure_wrapped_horizontal(MeasurementContext* ctx, LayoutNode* node)
+horizontal_requirements
+inset_measure_wrapped_horizontal(measurement_context* ctx, layout_node* node)
 {
-    auto& inset = *reinterpret_cast<InsetLayoutNode*>(node);
+    auto& inset = *reinterpret_cast<inset_layout_node*>(node);
     auto const child_x
         = measure_wrapped_horizontal(ctx, inset.container.first_child);
-    return HorizontalRequirements{
+    return horizontal_requirements{
         .min_size = child_x.min_size + inset.insets.left + inset.insets.right,
         .growth_factor = child_x.growth_factor};
 }
 
-WrappingRequirements
+wrapping_requirements
 inset_measure_wrapped_vertical(
-    MeasurementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* node,
+    measurement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* node,
     float current_x_offset,
     float line_width)
 {
-    auto& inset = *reinterpret_cast<InsetLayoutNode*>(node);
+    auto& inset = *reinterpret_cast<inset_layout_node*>(node);
 
     auto const child = measure_wrapped_vertical(
         ctx,
@@ -125,7 +127,7 @@ inset_measure_wrapped_vertical(
         current_x_offset,
         line_width - inset.insets.left - inset.insets.right);
 
-    WrappingRequirements requirements = child;
+    wrapping_requirements requirements = child;
 
     if (has_first_line_content(child))
     {
@@ -163,20 +165,20 @@ inset_measure_wrapped_vertical(
 
 void
 inset_assign_wrapped_boxes(
-    PlacementContext* ctx,
-    MainAxisIndex main_axis,
-    LayoutNode* node,
-    WrappingAssignment const* assignment)
+    placement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* node,
+    wrapping_assignment const* assignment)
 {
-    auto& inset = *reinterpret_cast<InsetLayoutNode*>(node);
-    WrappingAssignment inset_assignment = *assignment;
+    auto& inset = *reinterpret_cast<inset_layout_node*>(node);
+    wrapping_assignment inset_assignment = *assignment;
     inset_assignment.x_base += inset.insets.left;
     inset_assignment.line_width -= inset.insets.left + inset.insets.right;
     assign_wrapped_boxes(
         ctx, main_axis, inset.container.first_child, &inset_assignment);
 }
 
-LayoutNodeVtable inset_vtable
+layout_node_vtable inset_vtable
     = {inset_measure_horizontal,
        inset_assign_widths,
        inset_measure_vertical,

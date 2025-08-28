@@ -5,15 +5,15 @@
 
 namespace alia {
 
-struct System
+struct system
 {
-    LayoutSystem layout;
+    layout_system layout;
 
-    Vec2 framebuffer_size;
-    Vec2 ui_zoom;
+    vec2 framebuffer_size;
+    vec2 ui_zoom;
 };
 
 void
-initialize(System& system, Vec2 framebuffer_size, Vec2 ui_zoom);
+initialize(system& system, vec2 framebuffer_size, vec2 ui_zoom);
 
 } // namespace alia

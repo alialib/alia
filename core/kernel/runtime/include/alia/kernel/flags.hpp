@@ -14,22 +14,22 @@ namespace alia {
 // it. Only properties/sets with the same tag can be combined.
 
 // NO_FLAGS can be implicitly converted to any type of flag_set.
-struct NullFlagSet
+struct null_flag_set
 {
 };
-NullFlagSet const NO_FLAGS = NullFlagSet();
+null_flag_set const NO_FLAGS = null_flag_set{};
 
 template<class Tag, class Storage = std::uint32_t>
-struct FlagSet
+struct flag_set
 {
     Storage code;
-    FlagSet()
+    flag_set()
     {
     }
-    FlagSet(NullFlagSet) : code(0)
+    flag_set(null_flag_set) : code(0)
     {
     }
-    explicit FlagSet(Storage code) : code(code)
+    explicit flag_set(Storage code) : code(code)
     {
     }
     explicit
@@ -40,74 +40,75 @@ struct FlagSet
 };
 
 template<class Tag, class Storage>
-FlagSet<Tag, Storage>
-operator|(FlagSet<Tag, Storage> a, FlagSet<Tag, Storage> b)
+flag_set<Tag, Storage>
+operator|(flag_set<Tag, Storage> a, flag_set<Tag, Storage> b)
 {
-    return FlagSet<Tag, Storage>(a.code | b.code);
+    return flag_set<Tag, Storage>(a.code | b.code);
 }
 template<class Tag, class Storage>
-FlagSet<Tag, Storage>&
-operator|=(FlagSet<Tag, Storage>& a, FlagSet<Tag, Storage> b)
+flag_set<Tag, Storage>&
+operator|=(flag_set<Tag, Storage>& a, flag_set<Tag, Storage> b)
 {
     a.code |= b.code;
     return a;
 }
 template<class Tag, class Storage>
-FlagSet<Tag, Storage>
-operator&(FlagSet<Tag, Storage> a, FlagSet<Tag, Storage> b)
+flag_set<Tag, Storage>
+operator&(flag_set<Tag, Storage> a, flag_set<Tag, Storage> b)
 {
-    return FlagSet<Tag, Storage>(a.code & b.code);
+    return flag_set<Tag, Storage>(a.code & b.code);
 }
 template<class Tag, class Storage>
-FlagSet<Tag, Storage>&
-operator&=(FlagSet<Tag, Storage>& a, FlagSet<Tag, Storage> b)
+flag_set<Tag, Storage>&
+operator&=(flag_set<Tag, Storage>& a, flag_set<Tag, Storage> b)
 {
     a.code &= b.code;
     return a;
 }
 template<class Tag, class Storage>
 bool
-operator==(FlagSet<Tag, Storage> a, FlagSet<Tag, Storage> b)
+operator==(flag_set<Tag, Storage> a, flag_set<Tag, Storage> b)
 {
     return a.code == b.code;
 }
 template<class Tag, class Storage>
 bool
-operator!=(FlagSet<Tag, Storage> a, FlagSet<Tag, Storage> b)
+operator!=(flag_set<Tag, Storage> a, flag_set<Tag, Storage> b)
 {
     return a.code != b.code;
 }
 template<class Tag, class Storage>
 bool
-operator<(FlagSet<Tag, Storage> a, FlagSet<Tag, Storage> b)
+operator<(flag_set<Tag, Storage> a, flag_set<Tag, Storage> b)
 {
     return a.code < b.code;
 }
 template<class Tag, class Storage>
-FlagSet<Tag, Storage>
-operator~(FlagSet<Tag, Storage> a)
+flag_set<Tag, Storage>
+operator~(flag_set<Tag, Storage> a)
 {
-    return FlagSet<Tag, Storage>(~a.code);
+    return flag_set<Tag, Storage>(~a.code);
 }
 
 template<class Tag, class Storage>
 Storage
-raw_code(FlagSet<Tag, Storage> flags)
+raw_code(flag_set<Tag, Storage> flags)
 {
     return flags.code;
 }
 
 } // namespace alia
 
-#define ALIA_DEFINE_FLAG_TYPE(Storage, TypePrefix)                            \
-    struct TypePrefix##FlagTag                                                \
+#define ALIA_DEFINE_FLAG_TYPE(Storage, type_prefix)                           \
+    struct type_prefix##_flag_tag                                             \
     {                                                                         \
         using storage_type = Storage;                                         \
     };                                                                        \
-    typedef alia::FlagSet<TypePrefix##FlagTag, Storage> TypePrefix##FlagSet;
+    typedef alia::flag_set<type_prefix##_flag_tag, Storage>                   \
+        type_prefix##_flag_set;
 
-#define ALIA_DEFINE_FLAG(TypePrefix, code, name)                              \
-    typename TypePrefix##FlagTag::storage_type const name##_CODE = code;      \
-    alia::FlagSet<                                                            \
-        TypePrefix##FlagTag,                                                  \
-        typename TypePrefix##FlagTag::storage_type> const name(code);
+#define ALIA_DEFINE_FLAG(type_prefix, code, name)                             \
+    typename type_prefix##_flag_tag::storage_type const name##_CODE = code;   \
+    alia::flag_set<                                                           \
+        type_prefix##_flag_tag,                                               \
+        typename type_prefix##_flag_tag::storage_type> const name(code);

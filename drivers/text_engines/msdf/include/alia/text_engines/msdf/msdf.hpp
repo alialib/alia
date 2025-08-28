@@ -11,9 +11,9 @@
 
 namespace alia {
 
-struct MsdfTextEngine;
+struct msdf_text_engine;
 
-struct MsdfFontMetrics
+struct msdf_font_metrics
 {
     float em_size;
     float line_height;
@@ -23,7 +23,7 @@ struct MsdfFontMetrics
     float underline_thickness;
 };
 
-struct MsdfAtlasDescription
+struct msdf_atlas_description
 {
     float distance_range;
     float distance_range_middle;
@@ -32,7 +32,7 @@ struct MsdfAtlasDescription
     float height;
 };
 
-struct MsdfGlyph
+struct msdf_glyph
 {
     std::uint32_t unicode;
     float advance;
@@ -41,44 +41,47 @@ struct MsdfGlyph
     float atlas_left, atlas_bottom, atlas_right, atlas_top;
 };
 
-struct MsdfKerningPair
+struct msdf_kerning_pair
 {
     std::uint32_t left;
     std::uint32_t right;
     float adjustment;
 };
 
-struct MsdfFontDescription
+struct msdf_font_description
 {
-    MsdfFontMetrics metrics;
-    MsdfAtlasDescription atlas;
+    msdf_font_metrics metrics;
+    msdf_atlas_description atlas;
 
-    MsdfGlyph const* glyphs;
+    msdf_glyph const* glyphs;
     size_t glyph_count;
 
-    MsdfKerningPair const* kerning_pairs;
+    msdf_kerning_pair const* kerning_pairs;
     size_t kerning_pair_count;
 };
 
 // TODO: Don't assume that the atlas will be loaded from a file.
-MsdfTextEngine*
+msdf_text_engine*
 create_msdf_text_engine(
-    MsdfFontDescription const& font_description,
+    msdf_font_description const& font_description,
     char const* texture_atlas_path);
 
 void
-destroy_msdf_text_engine(MsdfTextEngine* engine);
+destroy_msdf_text_engine(msdf_text_engine* engine);
 
-MsdfFontMetrics const*
-get_msdf_font_metrics(MsdfTextEngine* engine);
+msdf_font_metrics const*
+get_msdf_font_metrics(msdf_text_engine* engine);
 
 float
 measure_text_width(
-    MsdfTextEngine* engine, char const* text, size_t length, float font_size);
+    msdf_text_engine* engine,
+    char const* text,
+    size_t length,
+    float font_size);
 
 std::pair<size_t, float>
 break_text(
-    MsdfTextEngine* engine,
+    msdf_text_engine* engine,
     char const* text,
     size_t start,
     size_t end,
@@ -87,32 +90,32 @@ break_text(
     float width,
     bool force_break);
 
-struct MsdfDrawCommand
+struct msdf_draw_command
 {
-    MsdfTextEngine* engine;
-    MsdfDrawCommand* next = nullptr;
-    Vec2 position;
+    msdf_text_engine* engine;
+    msdf_draw_command* next = nullptr;
+    vec2 position;
     float scale;
-    Color color;
+    alia::color color;
     size_t length;
     char text[];
 };
 
 void
 draw_text(
-    MsdfTextEngine* engine,
-    DisplayListArena& arena,
-    CommandList<MsdfDrawCommand>& commands,
+    msdf_text_engine* engine,
+    display_list_arena& arena,
+    command_list<msdf_draw_command>& commands,
     char const* text,
     size_t length,
     float scale,
-    Vec2 position,
-    Color color);
+    vec2 position,
+    color color);
 
 void
 render_command_list(
-    MsdfTextEngine* engine,
-    CommandList<MsdfDrawCommand> const& commands,
-    Vec2 framebuffer_size);
+    msdf_text_engine* engine,
+    command_list<msdf_draw_command> const& commands,
+    vec2 framebuffer_size);
 
 } // namespace alia

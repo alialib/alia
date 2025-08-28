@@ -4,86 +4,86 @@
 
 namespace alia {
 
-struct Vec2
+struct vec2
 {
     float x, y;
 };
 
-inline Vec2
-operator+(Vec2 a, Vec2 b)
+inline vec2
+operator+(vec2 a, vec2 b)
 {
-    return Vec2{a.x + b.x, a.y + b.y};
+    return vec2{a.x + b.x, a.y + b.y};
 }
 
-inline Vec2&
-operator+=(Vec2& a, Vec2 b)
+inline vec2&
+operator+=(vec2& a, vec2 b)
 {
     a.x += b.x;
     a.y += b.y;
     return a;
 }
 
-inline Vec2
-operator-(Vec2 a, Vec2 b)
+inline vec2
+operator-(vec2 a, vec2 b)
 {
-    return Vec2{a.x - b.x, a.y - b.y};
+    return vec2{a.x - b.x, a.y - b.y};
 }
 
-inline Vec2&
-operator-=(Vec2& a, Vec2 b)
+inline vec2&
+operator-=(vec2& a, vec2 b)
 {
     a.x -= b.x;
     a.y -= b.y;
     return a;
 }
 
-inline Vec2
-operator*(Vec2 v, float s)
+inline vec2
+operator*(vec2 v, float s)
 {
-    return Vec2{v.x * s, v.y * s};
+    return vec2{v.x * s, v.y * s};
 }
 
-inline Vec2&
-operator*=(Vec2& v, float s)
+inline vec2&
+operator*=(vec2& v, float s)
 {
     v.x *= s;
     v.y *= s;
     return v;
 }
 
-inline Vec2
-operator/(Vec2 v, float s)
+inline vec2
+operator/(vec2 v, float s)
 {
-    return Vec2{v.x / s, v.y / s};
+    return vec2{v.x / s, v.y / s};
 }
 
-inline Vec2&
-operator/=(Vec2& v, float s)
+inline vec2&
+operator/=(vec2& v, float s)
 {
     v.x /= s;
     v.y /= s;
     return v;
 }
 
-struct Box
+struct box
 {
-    Vec2 pos;
-    Vec2 size;
+    vec2 pos;
+    vec2 size;
 };
 
-struct Rect
+struct rect
 {
-    Vec2 min;
-    Vec2 max;
+    vec2 min;
+    vec2 max;
 };
 
-inline Box
-apply_margin(Box box, Vec2 margin)
+inline box
+apply_margin(box box, vec2 margin)
 {
     return {.pos = box.pos + margin, .size = box.size - margin * 2};
 }
 
-struct Insets
+struct insets
 {
     float left;
     float right;
@@ -91,38 +91,38 @@ struct Insets
     float bottom;
 };
 
-struct Affine2
+struct affine2
 {
     float a, b, c, d, tx, ty;
 };
 
-inline Affine2
+inline affine2
 identity_matrix()
 {
     return {1, 0, 0, 1, 0, 0};
 }
 
-inline Affine2
+inline affine2
 translation_matrix(float x, float y)
 {
     return {1, 0, 0, 1, x, y};
 }
 
-inline Affine2
+inline affine2
 scaling_matrix(float sx, float sy)
 {
     return {sx, 0, 0, sy, 0, 0};
 }
 
-inline Affine2
+inline affine2
 rotation_matrix(float r)
 {
     float s = std::sin(r), c = std::cos(r);
     return {c, s, -s, c, 0, 0};
 }
 
-inline Affine2
-compose(Affine2 p, Affine2 c)
+inline affine2
+compose(affine2 p, affine2 c)
 {
     return {
         .a = p.a * c.a + p.c * c.b,

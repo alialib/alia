@@ -8,18 +8,18 @@
 
 namespace alia {
 
-struct InfiniteArena;
-struct System;
-struct DisplayList;
+struct infinite_arena;
+struct system;
+struct display_list;
 
 // TODO: Make this opaque.
-struct GlRenderer
+struct gl_renderer
 {
     GLuint vanilla_shader_program;
     GLuint vao, vbo;
     GLuint instance_vbo;
     GLint vanilla_matrix_location;
-    InfiniteArena* rect_instance_arena;
+    infinite_arena* rect_instance_arena;
     GLuint clip_ubo;
     float* clip_ptr;
 };
@@ -27,15 +27,17 @@ struct GlRenderer
 // Create a new OpenGL renderer.
 // (This may compile shaders, etc.)
 void
-init_gl_renderer(GlRenderer* renderer);
+init_gl_renderer(gl_renderer* renderer);
 
 // Destroy a renderer.
 void
-destroy_gl_renderer(GlRenderer* renderer);
+destroy_gl_renderer(gl_renderer* renderer);
 
 void
 render_box_command_list(
-    GlRenderer* renderer, System const& system, BoxCommandList const& boxes);
+    gl_renderer* renderer,
+    system const& system,
+    box_command_list const& boxes);
 
 // TODO: Move to a separate utility header.
 GLuint

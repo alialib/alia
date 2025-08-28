@@ -8,29 +8,29 @@
 
 namespace alia {
 
-struct AlignmentOverrideNode
+struct alignment_override_node
 {
-    LayoutContainer container;
-    LayoutFlagSet flags;
+    layout_container container;
+    layout_flag_set flags;
 };
 
 void
 begin_alignment_override(
-    Context& ctx, LayoutContainerScope& scope, LayoutFlagSet flags);
+    context& ctx, layout_container_scope& scope, layout_flag_set flags);
 
 void
-end_alignment_override(Context& ctx, LayoutContainerScope& scope);
+end_alignment_override(context& ctx, layout_container_scope& scope);
 
 template<class Content>
 void
-alignment_override(Context& ctx, LayoutFlagSet flags, Content&& content)
+alignment_override(context& ctx, layout_flag_set flags, Content&& content)
 {
-    LayoutContainerScope scope;
+    layout_container_scope scope;
     begin_alignment_override(ctx, scope, flags);
     std::forward<Content>(content)();
     end_alignment_override(ctx, scope);
 }
 
-extern LayoutNodeVtable alignment_override_vtable;
+extern layout_node_vtable alignment_override_vtable;
 
 } // namespace alia

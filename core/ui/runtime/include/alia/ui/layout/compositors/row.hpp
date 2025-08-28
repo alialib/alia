@@ -7,21 +7,21 @@
 
 namespace alia {
 
-struct Context;
+struct context;
 
-using RowLayoutNode = LayoutContainer;
-
-void
-begin_row(Context& ctx, LayoutContainerScope& scope, LayoutFlagSet flags);
+using row_layout_node = layout_container;
 
 void
-end_row(Context& ctx, LayoutContainerScope& scope);
+begin_row(context& ctx, layout_container_scope& scope, layout_flag_set flags);
+
+void
+end_row(context& ctx, layout_container_scope& scope);
 
 template<class Content>
 void
-row(Context& ctx, Content&& content)
+row(context& ctx, Content&& content)
 {
-    LayoutContainerScope scope;
+    layout_container_scope scope;
     begin_row(ctx, scope, NO_FLAGS);
     std::forward<Content>(content)();
     end_row(ctx, scope);
@@ -29,14 +29,14 @@ row(Context& ctx, Content&& content)
 
 template<class Content>
 void
-row(Context& ctx, LayoutFlagSet flags, Content&& content)
+row(context& ctx, layout_flag_set flags, Content&& content)
 {
-    LayoutContainerScope scope;
+    layout_container_scope scope;
     begin_row(ctx, scope, flags);
     std::forward<Content>(content)();
     end_row(ctx, scope);
 }
 
-extern LayoutNodeVtable row_vtable;
+extern layout_node_vtable row_vtable;
 
 } // namespace alia

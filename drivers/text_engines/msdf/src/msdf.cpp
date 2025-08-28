@@ -83,23 +83,23 @@ void main() {
 }
 )";
 
-struct GpuGlyphData
+struct gpu_glyph_data
 {
-    Vec2 uv_pos;
-    Vec2 uv_size;
-    Vec2 xy_pos;
-    Vec2 xy_size;
+    vec2 uv_pos;
+    vec2 uv_size;
+    vec2 xy_pos;
+    vec2 xy_size;
 };
 
-struct GpuGlyphInstance
+struct gpu_glyph_instance
 {
-    Color color;
-    Vec2 position;
+    alia::color color;
+    vec2 position;
     float scale;
     GLuint glyph_id;
 };
 
-struct MsdfGpuData
+struct msdf_gpu_data
 {
     GLuint shader_program;
     GLint matrix_location;
@@ -111,44 +111,44 @@ struct MsdfGpuData
     GLuint instance_vbo;
     GLuint glyph_table_ssbo;
 
-    GpuGlyphInstance* glyph_instances;
+    gpu_glyph_instance* glyph_instances;
     uint32_t glyph_instance_capacity;
 };
 
-struct KerningPairIndex
+struct kerning_pair_index
 {
     uint32_t left;
     uint32_t right;
 
     bool
-    operator==(KerningPairIndex const& other) const
+    operator==(kerning_pair_index const& other) const
         = default;
 };
 
-struct KerningPairIndexHash
+struct kerning_pair_index_hash
 {
     std::size_t
-    operator()(const KerningPairIndex& pair) const
+    operator()(kerning_pair_index const& pair) const
     {
         return (pair.left << 4) ^ pair.right;
     }
 };
 
-using KerningMap
-    = std::unordered_map<KerningPairIndex, float, KerningPairIndexHash>;
+using kerning_map
+    = std::unordered_map<kerning_pair_index, float, kerning_pair_index_hash>;
 
-using GlyphMap = std::unordered_map<int, MsdfGlyph>;
+using glyph_map = std::unordered_map<int, msdf_glyph>;
 
-struct MsdfTextEngine
+struct msdf_text_engine
 {
-    MsdfGpuData gpu;
+    msdf_gpu_data gpu;
 
-    MsdfFontMetrics metrics;
-    MsdfAtlasDescription atlas;
+    msdf_font_metrics metrics;
+    msdf_atlas_description atlas;
 
-    GlyphMap glyph_map;
+    alia::glyph_map glyph_map;
 
-    KerningMap kerning_map;
+    alia::kerning_map kerning_map;
 };
 
 inline GLuint
@@ -166,7 +166,7 @@ create_quad_vbo()
     return quad_vbo;
 }
 
-inline std::pair<GLuint, GpuGlyphInstance*>
+inline std::pair<GLuint, gpu_glyph_instance*>
 create_instance_vbo(uint32_t initial_capacity)
 {
     GLuint instance_vbo;
@@ -174,7 +174,8 @@ create_instance_vbo(uint32_t initial_capacity)
 
     glBindBuffer(GL_ARRAY_BUFFER, instance_vbo);
 
-    GLsizeiptr const buffer_size = sizeof(GpuGlyphInstance) * initial_capacity;
+    GLsizeiptr const buffer_size
+        = sizeof(gpu_glyph_instance) * initial_capacity;
 
     glBufferStorage(
         GL_ARRAY_BUFFER,
@@ -183,11 +184,12 @@ create_instance_vbo(uint32_t initial_capacity)
         GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
 
     glBindBuffer(GL_ARRAY_BUFFER, instance_vbo);
-    GpuGlyphInstance* glyph_instances = (GpuGlyphInstance*) glMapBufferRange(
-        GL_ARRAY_BUFFER,
-        0,
-        buffer_size,
-        GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+    gpu_glyph_instance* glyph_instances
+        = (gpu_glyph_instance*) glMapBufferRange(
+            GL_ARRAY_BUFFER,
+            0,
+            buffer_size,
+            GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
 
     return {instance_vbo, glyph_instances};
 }
@@ -214,8 +216,8 @@ create_vertex_array(GLuint quad_vbo, GLuint instance_vbo)
         4,
         GL_FLOAT,
         GL_FALSE,
-        sizeof(GpuGlyphInstance),
-        (void*) offsetof(GpuGlyphInstance, color));
+        sizeof(gpu_glyph_instance),
+        (void*) offsetof(gpu_glyph_instance, color));
     glEnableVertexAttribArray(1);
     glVertexAttribDivisor(1, 1);
 
@@ -225,8 +227,8 @@ create_vertex_array(GLuint quad_vbo, GLuint instance_vbo)
         2,
         GL_FLOAT,
         GL_FALSE,
-        sizeof(GpuGlyphInstance),
-        (void*) offsetof(GpuGlyphInstance, position));
+        sizeof(gpu_glyph_instance),
+        (void*) offsetof(gpu_glyph_instance, position));
     glEnableVertexAttribArray(2);
     glVertexAttribDivisor(2, 1);
 
@@ -236,8 +238,8 @@ create_vertex_array(GLuint quad_vbo, GLuint instance_vbo)
         1,
         GL_FLOAT,
         GL_FALSE,
-        sizeof(GpuGlyphInstance),
-        (void*) offsetof(GpuGlyphInstance, scale));
+        sizeof(gpu_glyph_instance),
+        (void*) offsetof(gpu_glyph_instance, scale));
     glEnableVertexAttribArray(3);
     glVertexAttribDivisor(3, 1);
 
@@ -246,8 +248,8 @@ create_vertex_array(GLuint quad_vbo, GLuint instance_vbo)
         4,
         1,
         GL_UNSIGNED_INT,
-        sizeof(GpuGlyphInstance),
-        (void*) offsetof(GpuGlyphInstance, glyph_id));
+        sizeof(gpu_glyph_instance),
+        (void*) offsetof(gpu_glyph_instance, glyph_id));
     glEnableVertexAttribArray(4);
     glVertexAttribDivisor(4, 1);
 
@@ -290,9 +292,9 @@ create_msdf_texture(char const* texture_atlas_path)
     return texture;
 }
 
-MsdfTextEngine*
+msdf_text_engine*
 create_msdf_text_engine(
-    MsdfFontDescription const& font, char const* texture_atlas_path)
+    msdf_font_description const& font, char const* texture_atlas_path)
 {
     GLuint texture = create_msdf_texture(texture_atlas_path);
 
@@ -307,7 +309,7 @@ create_msdf_text_engine(
         = create_instance_vbo(initial_glyph_instance_capacity);
     GLuint const vao = create_vertex_array(quad_vbo, instance_vbo);
 
-    std::vector<GpuGlyphData> gpu_glyph_data(font.glyph_count);
+    std::vector<gpu_glyph_data> gpu_glyph_data(font.glyph_count);
     for (size_t i = 0; i < font.glyph_count; ++i)
     {
         gpu_glyph_data[i].uv_pos
@@ -330,26 +332,26 @@ create_msdf_text_engine(
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, glyph_table_ssbo);
     glBufferData(
         GL_SHADER_STORAGE_BUFFER,
-        gpu_glyph_data.size() * sizeof(GpuGlyphData),
+        gpu_glyph_data.size() * sizeof(alia::gpu_glyph_data),
         gpu_glyph_data.data(),
         GL_STATIC_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, glyph_table_ssbo);
 
-    KerningMap kerning_map;
+    kerning_map kerning_map;
     for (size_t i = 0; i < font.kerning_pair_count; ++i)
     {
-        kerning_map[KerningPairIndex{
+        kerning_map[kerning_pair_index{
             font.kerning_pairs[i].left, font.kerning_pairs[i].right}]
             = font.kerning_pairs[i].adjustment;
     }
 
-    GlyphMap glyph_map;
+    glyph_map glyph_map;
     for (size_t i = 0; i < font.glyph_count; ++i)
     {
         glyph_map[font.glyphs[i].unicode] = font.glyphs[i];
     }
 
-    MsdfTextEngine* engine = new MsdfTextEngine{
+    msdf_text_engine* engine = new msdf_text_engine{
         .gpu
         = {.shader_program = shader_program,
            .matrix_location = matrix_location,
@@ -374,7 +376,7 @@ create_msdf_text_engine(
 }
 
 void
-destroy_msdf_text_engine(MsdfTextEngine* engine)
+destroy_msdf_text_engine(msdf_text_engine* engine)
 {
     glDeleteTextures(1, &engine->gpu.texture);
     glDeleteProgram(engine->gpu.shader_program);
@@ -386,16 +388,16 @@ destroy_msdf_text_engine(MsdfTextEngine* engine)
     delete engine;
 }
 
-MsdfFontMetrics const*
-get_msdf_font_metrics(MsdfTextEngine* engine)
+msdf_font_metrics const*
+get_msdf_font_metrics(msdf_text_engine* engine)
 {
     return &engine->metrics;
 }
 
 float
-get_kerning(MsdfTextEngine* engine, uint32_t left, uint32_t right)
+get_kerning(msdf_text_engine* engine, uint32_t left, uint32_t right)
 {
-    auto it = engine->kerning_map.find(KerningPairIndex{left, right});
+    auto it = engine->kerning_map.find(kerning_pair_index{left, right});
     if (it != engine->kerning_map.end())
     {
         return it->second;
@@ -405,14 +407,14 @@ get_kerning(MsdfTextEngine* engine, uint32_t left, uint32_t right)
 
 float
 measure_text_width(
-    MsdfTextEngine* engine, char const* text, size_t length, float font_size)
+    msdf_text_engine* engine, char const* text, size_t length, float font_size)
 {
     float width = 0;
     for (size_t i = 0; i < length; ++i)
     {
         char const c = text[i];
 
-        const MsdfGlyph& glyph = engine->glyph_map[c];
+        const msdf_glyph& glyph = engine->glyph_map[c];
         assert(glyph.unicode == c);
 
         if (i + 1 < length)
@@ -430,20 +432,20 @@ measure_text_width(
 
 void
 draw_text(
-    MsdfTextEngine* engine,
-    DisplayListArena& arena,
-    CommandList<MsdfDrawCommand>& commands,
+    msdf_text_engine* engine,
+    display_list_arena& arena,
+    command_list<msdf_draw_command>& commands,
     char const* text,
     size_t length,
     float scale,
-    Vec2 position,
-    Color color)
+    vec2 position,
+    color color)
 {
-    MsdfDrawCommand* command
-        = arena_array_alloc<MsdfDrawCommand>(arena, length);
+    msdf_draw_command* command
+        = arena_array_alloc<msdf_draw_command>(arena, length);
     command->engine = engine;
     command->next = nullptr;
-    command->position = position + Vec2{0, engine->metrics.ascender * scale};
+    command->position = position + vec2{0, engine->metrics.ascender * scale};
     command->scale = scale;
     command->color = color;
     command->length = length;
@@ -453,7 +455,7 @@ draw_text(
 
 std::pair<size_t, float>
 break_text(
-    MsdfTextEngine* engine,
+    msdf_text_engine* engine,
     char const* text,
     size_t start,
     size_t end,
@@ -479,7 +481,7 @@ break_text(
                 break;
         }
 
-        const MsdfGlyph& glyph = engine->glyph_map[c];
+        const msdf_glyph& glyph = engine->glyph_map[c];
         assert(glyph.unicode == c);
 
         x += (glyph.advance + get_kerning(engine, c, text[i + 1])) * scale;
@@ -496,12 +498,12 @@ break_text(
 
 void
 render_command(
-    MsdfTextEngine* engine,
+    msdf_text_engine* engine,
     size_t& glyph_instance_count,
-    MsdfDrawCommand const& command)
+    msdf_draw_command const& command)
 {
     // TODO: Culling.
-    Vec2 position = command.position;
+    vec2 position = command.position;
     float scale = command.scale;
     for (size_t i = 0; i < command.length; ++i)
     {
@@ -510,7 +512,7 @@ render_command(
             continue;
         uint32_t unicode = c;
 
-        const MsdfGlyph& glyph = engine->glyph_map[unicode];
+        const msdf_glyph& glyph = engine->glyph_map[unicode];
         assert(glyph.unicode == unicode);
 
         engine->gpu.glyph_instances[glyph_instance_count]
@@ -526,12 +528,12 @@ render_command(
 
 void
 render_command_list(
-    MsdfTextEngine* engine,
-    CommandList<MsdfDrawCommand> const& commands,
-    Vec2 framebuffer_size)
+    msdf_text_engine* engine,
+    command_list<msdf_draw_command> const& commands,
+    vec2 framebuffer_size)
 {
     size_t glyph_instance_count = 0;
-    for (MsdfDrawCommand* cmd = commands.head; cmd; cmd = cmd->next)
+    for (msdf_draw_command* cmd = commands.head; cmd; cmd = cmd->next)
     {
         render_command(engine, glyph_instance_count, *cmd);
     }

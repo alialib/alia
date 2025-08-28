@@ -5,20 +5,20 @@
 
 namespace alia {
 
-struct LayoutLeafNode
+struct layout_leaf_node
 {
-    LayoutNode base;
-    LayoutFlagSet flags;
+    layout_node base;
+    layout_flag_set flags;
     float padding;
-    Vec2 size;
+    vec2 size;
 };
 
-struct LeafLayoutPlacement
+struct leaf_layout_placement
 {
-    Vec2 position;
-    Vec2 size;
+    vec2 position;
+    vec2 size;
 };
 
-extern LayoutNodeVtable leaf_vtable;
+extern layout_node_vtable leaf_vtable;
 
 } // namespace alia

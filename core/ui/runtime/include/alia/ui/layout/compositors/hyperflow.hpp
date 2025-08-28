@@ -7,22 +7,22 @@
 
 namespace alia {
 
-using HyperflowLayoutNode = LayoutContainer;
+using hyperflow_layout_node = layout_container;
 
-extern LayoutNodeVtable hyperflow_vtable;
+extern layout_node_vtable hyperflow_vtable;
 
 void
 begin_hyperflow(
-    Context& ctx, LayoutContainerScope& scope, LayoutFlagSet flags);
+    context& ctx, layout_container_scope& scope, layout_flag_set flags);
 
 void
-end_hyperflow(Context& ctx, LayoutContainerScope& scope);
+end_hyperflow(context& ctx, layout_container_scope& scope);
 
 template<class Content>
 void
-hyperflow(Context& ctx, Content&& content)
+hyperflow(context& ctx, Content&& content)
 {
-    LayoutContainerScope scope;
+    layout_container_scope scope;
     begin_hyperflow(ctx, scope, NO_FLAGS);
     std::forward<Content>(content)();
     end_hyperflow(ctx, scope);
@@ -30,9 +30,9 @@ hyperflow(Context& ctx, Content&& content)
 
 template<class Content>
 void
-hyperflow(Context& ctx, LayoutFlagSet flags, Content&& content)
+hyperflow(context& ctx, layout_flag_set flags, Content&& content)
 {
-    LayoutContainerScope scope;
+    layout_container_scope scope;
     begin_hyperflow(ctx, scope, flags);
     std::forward<Content>(content)();
     end_hyperflow(ctx, scope);

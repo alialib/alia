@@ -7,21 +7,21 @@
 
 namespace alia {
 
-using FlowLayoutNode = LayoutContainer;
+using flow_layout_node = layout_container;
 
-extern LayoutNodeVtable flow_vtable;
-
-void
-begin_flow(Context& ctx, LayoutContainerScope& scope, LayoutFlagSet flags);
+extern layout_node_vtable flow_vtable;
 
 void
-end_flow(Context& ctx, LayoutContainerScope& scope);
+begin_flow(context& ctx, layout_container_scope& scope, layout_flag_set flags);
+
+void
+end_flow(context& ctx, layout_container_scope& scope);
 
 template<class Content>
 void
-flow(Context& ctx, Content&& content)
+flow(context& ctx, Content&& content)
 {
-    LayoutContainerScope scope;
+    layout_container_scope scope;
     begin_flow(ctx, scope, NO_FLAGS);
     std::forward<Content>(content)();
     end_flow(ctx, scope);
@@ -29,9 +29,9 @@ flow(Context& ctx, Content&& content)
 
 template<class Content>
 void
-flow(Context& ctx, LayoutFlagSet flags, Content&& content)
+flow(context& ctx, layout_flag_set flags, Content&& content)
 {
-    LayoutContainerScope scope;
+    layout_container_scope scope;
     begin_flow(ctx, scope, flags);
     std::forward<Content>(content)();
     end_flow(ctx, scope);

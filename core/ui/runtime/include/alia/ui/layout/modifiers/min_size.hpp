@@ -8,29 +8,29 @@
 
 namespace alia {
 
-struct MinSizeNode
+struct min_size_node
 {
-    LayoutContainer container;
-    Vec2 min_size;
+    layout_container container;
+    vec2 min_size;
 };
 
 void
 begin_min_size_constraint(
-    Context& ctx, LayoutContainerScope& scope, Vec2 min_size);
+    context& ctx, layout_container_scope& scope, vec2 min_size);
 
 void
-end_min_size_constraint(Context& ctx, LayoutContainerScope& scope);
+end_min_size_constraint(context& ctx, layout_container_scope& scope);
 
 template<class Content>
 void
-min_size_constraint(Context& ctx, Vec2 min_size, Content&& content)
+min_size_constraint(context& ctx, vec2 min_size, Content&& content)
 {
-    LayoutContainerScope scope;
+    layout_container_scope scope;
     begin_min_size_constraint(ctx, scope, min_size);
     std::forward<Content>(content)();
     end_min_size_constraint(ctx, scope);
 }
 
-extern LayoutNodeVtable min_size_vtable;
+extern layout_node_vtable min_size_vtable;
 
 } // namespace alia
