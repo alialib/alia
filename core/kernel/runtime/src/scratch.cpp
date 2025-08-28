@@ -37,7 +37,7 @@ struct alignas(ALIA_SCRATCH_CHUNK_ALIGN) scratch_chunk
 
 } // namespace
 
-struct alia_frame_hdr
+struct alia_scratch_frame_header
 {
     scratch_chunk* mark_chunk = nullptr;
     std::size_t mark_off = 0;
@@ -46,8 +46,8 @@ struct alia_frame_hdr
 
 struct alia_scratch_arena
 {
-    // config
-    alia_scratch_config cfg{};
+    // allocator
+    alia_scratch_allocator allocator{};
 
     // chunk list
     scratch_chunk* first = nullptr;
@@ -59,7 +59,7 @@ struct alia_scratch_arena
     std::uint32_t chunks_touched = 0; // max prefix count touched in pass
 
     // pass state
-    alia_frame_hdr* pass_base = nullptr;
+    alia_scratch_frame_header* pass_base = nullptr;
     void* current_frame = nullptr;
 };
 
@@ -77,9 +77,8 @@ align_up(std::size_t v, std::size_t a)
 inline void*
 align_ptr(void* ptr, std::size_t a)
 {
-    std::uintptr_t int_ptr = reinterpret_cast<std::uintptr_t>(ptr);
-    std::uintptr_t aligned_int_ptr = (int_ptr + a - 1) & ~(a - 1);
-    return reinterpret_cast<void*>(aligned_int_ptr);
+    return reinterpret_cast<void*>(
+        (reinterpret_cast<std::uintptr_t>(ptr) + a - 1) & ~(a - 1));
 }
 
 // Compute an approximate "bytes used" = sum(full prior chunk caps) +
@@ -115,7 +114,8 @@ ensure_head_exists(alia_scratch_arena* A)
     const std::size_t need
         = sizeof(scratch_chunk) + alignof(scratch_chunk) + payload;
 
-    alia_scratch_chunk_allocation alloc = (A->cfg.alloc)(A->cfg.user, 0, need);
+    alia_scratch_chunk_allocation alloc
+        = (A->allocator.alloc)(A->allocator.user, 0, need);
     auto* mem = static_cast<scratch_chunk*>(
         align_ptr(alloc.ptr, alignof(scratch_chunk)));
     mem->alloc = alloc;
@@ -147,19 +147,11 @@ ensure_head_space(alia_scratch_arena* A, std::size_t need_bytes)
         // else fall-through to append a larger chunk
     }
 
-    // Append a new chunk
-    if (A->cfg.hard_cap_bytes
-        && (A->total_bytes + need_bytes) > A->cfg.hard_cap_bytes)
-    {
-        assert(false && "alia_scratch: hard cap exceeded");
-        std::terminate();
-    }
-
     const std::size_t bytes
         = sizeof(scratch_chunk) + alignof(scratch_chunk) + need_bytes;
 
     alia_scratch_chunk_allocation alloc
-        = (A->cfg.alloc)(A->cfg.user, 0, bytes);
+        = (A->allocator.alloc)(A->allocator.user, 0, bytes);
     auto* mem = static_cast<scratch_chunk*>(
         align_ptr(alloc.ptr, alignof(scratch_chunk)));
     mem->alloc = alloc;
@@ -265,7 +257,7 @@ free_tail_after(
     {
         auto* nxt = to_free->next;
         A->total_bytes -= to_free->cap;
-        (A->cfg.free)(A->cfg.user, to_free->alloc);
+        (A->allocator.free)(A->allocator.user, to_free->alloc);
         to_free = nxt;
     }
 }
@@ -291,7 +283,7 @@ alia_scratch_state_align(void)
 // CREATION AND DESTRUCTION (HEAP-OWNED)
 
 alia_scratch_arena*
-alia_scratch_create(const alia_scratch_config* cfg)
+alia_scratch_create(const alia_scratch_allocator* allocator)
 {
     void* mem = ::operator new(
         sizeof(alia_scratch_arena),
@@ -299,8 +291,7 @@ alia_scratch_create(const alia_scratch_config* cfg)
     auto* A = reinterpret_cast<alia_scratch_arena*>(mem);
     // zero-initialize then construct config
     std::memset(A, 0, sizeof(*A));
-    if (cfg)
-        A->cfg = *cfg;
+    A->allocator = *allocator;
 
     return A;
 }
@@ -316,7 +307,7 @@ alia_scratch_destroy(alia_scratch_arena* arena)
     while (c)
     {
         auto* nxt = c->next;
-        (arena->cfg.free)(arena->cfg.user, c->alloc);
+        (arena->allocator.free)(arena->allocator.user, c->alloc);
         c = nxt;
     }
 
@@ -326,12 +317,11 @@ alia_scratch_destroy(alia_scratch_arena* arena)
 // CONSTRUCTION AND DESTRUCTION (CALLER-SUPPLIED STORAGE)
 
 alia_scratch_arena*
-alia_scratch_construct(void* mem, const alia_scratch_config* cfg)
+alia_scratch_construct(void* mem, const alia_scratch_allocator* allocator)
 {
     assert(mem && "alia_scratch_construct: mem must not be null");
     auto* A = new (mem) alia_scratch_arena{};
-    if (cfg)
-        A->cfg = *cfg;
+    A->allocator = *allocator;
     return A;
 }
 
@@ -346,7 +336,7 @@ alia_scratch_destruct(alia_scratch_arena* arena)
     while (c)
     {
         auto* nxt = c->next;
-        (arena->cfg.free)(arena->cfg.user, c->alloc);
+        (arena->allocator.free)(arena->allocator.user, c->alloc);
         c = nxt;
     }
 
@@ -356,38 +346,9 @@ alia_scratch_destruct(alia_scratch_arena* arena)
 
 // PASS LIFECYCLE
 
-alia_frame_handle
-alia_scratch_begin_pass(alia_scratch_arena* arena)
-{
-    assert(arena && "begin_pass: arena null");
-
-    ensure_head_exists(arena);
-
-    // Push a base frame header inline
-    auto* h = static_cast<alia_frame_hdr*>(arena_alloc_raw(
-        arena, sizeof(alia_frame_hdr), alignof(alia_frame_hdr)));
-    h->mark_chunk = arena->head;
-    h->mark_off = arena->head->used;
-    h->prev_frame = nullptr;
-
-    arena->pass_base = h;
-    arena->current_frame = nullptr;
-
-    return h;
-}
-
 void
-alia_scratch_end_pass(alia_scratch_arena* arena)
+alia_scratch_reset(alia_scratch_arena* arena)
 {
-    assert(arena && "end_pass: arena null");
-
-    // Rewind to base
-    if (arena->pass_base)
-    {
-        arena->head = arena->pass_base->mark_chunk;
-        if (arena->head)
-            arena->head->used = arena->pass_base->mark_off;
-    }
     arena->current_frame = nullptr;
     arena->pass_base = nullptr;
 
@@ -395,7 +356,7 @@ alia_scratch_end_pass(alia_scratch_arena* arena)
     for (auto* k = arena->first; k; k = k->next)
         k->used = 0;
 
-    // reset stats for next pass
+    // Reset stats for next pass
     arena->peak_used = 0;
     arena->chunks_touched = 0;
 }
@@ -419,12 +380,14 @@ alia_scratch_alloc(alia_scratch_arena* arena, size_t bytes, size_t align)
 
 // FRAMES
 
-alia_frame_handle
-alia_push_frame(alia_scratch_arena* arena)
+alia_scratch_marker
+alia_scratch_mark(alia_scratch_arena* arena)
 {
     assert(arena && "push_frame: arena null");
-    auto* h = static_cast<alia_frame_hdr*>(arena_alloc_raw(
-        arena, sizeof(alia_frame_hdr), alignof(alia_frame_hdr)));
+    auto* h = static_cast<alia_scratch_frame_header*>(arena_alloc_raw(
+        arena,
+        sizeof(alia_scratch_frame_header),
+        alignof(alia_scratch_frame_header)));
     h->mark_chunk = arena->head;
     h->mark_off = arena->head ? arena->head->used : 0;
     h->prev_frame = arena->current_frame;
@@ -433,14 +396,12 @@ alia_push_frame(alia_scratch_arena* arena)
 }
 
 void
-alia_pop_frame(alia_scratch_arena* arena, alia_frame_handle h)
+alia_scratch_rewind(alia_scratch_arena* arena, alia_scratch_marker m)
 {
-    assert(arena && "pop_frame: arena null");
-    assert(h && "pop_frame: handle null");
-    arena->head = h->mark_chunk;
+    arena->head = m->mark_chunk;
     if (arena->head)
-        arena->head->used = h->mark_off;
-    arena->current_frame = h->prev_frame;
+        arena->head->used = m->mark_off;
+    arena->current_frame = m->prev_frame;
 }
 
 // STATISTICS
