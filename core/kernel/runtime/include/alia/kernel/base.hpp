@@ -6,6 +6,14 @@ namespace alia {
 
 #define ALIA_ASSERT(expr) assert(expr)
 
+template<typename T>
+T*
+align_ptr(T* ptr, std::size_t a)
+{
+    return reinterpret_cast<T*>(
+        (reinterpret_cast<std::uintptr_t>(ptr) + a - 1) & ~(a - 1));
+}
+
 template<typename Outer, typename Inner>
 Outer*
 downcast(Inner* inner_ptr)

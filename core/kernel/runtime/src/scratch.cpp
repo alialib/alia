@@ -5,321 +5,238 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <new>
+
+#include <alia/kernel/base.hpp>
+
+// TODO: Sort out namespaces.
+using namespace alia;
 
 namespace {
 
-// INTERNAL TYPES
+// INTERNAL STRUCTURES
 
-// 1) Pick a chunk/payload alignment you want to guarantee.
-// 64 is a good default for SIMD/GPU-friendly writes.
-#ifndef ALIA_SCRATCH_CHUNK_ALIGN
-#define ALIA_SCRATCH_CHUNK_ALIGN 64
-#endif
-
-struct alignas(ALIA_SCRATCH_CHUNK_ALIGN) scratch_chunk
+struct scratch_chunk
 {
+    // the original allocation result from the allocator
     alia_scratch_chunk_allocation alloc;
+    // next chunk in the list
     scratch_chunk* next = nullptr;
-    std::size_t cap = 0; // payload capacity (bytes)
-    std::size_t used = 0; // payload used (bytes)
-    std::uint8_t*
-    data()
-    {
-        return reinterpret_cast<std::uint8_t*>(this + 1);
-    }
-    const std::uint8_t*
-    data() const
-    {
-        return reinterpret_cast<const std::uint8_t*>(this + 1);
-    }
+};
+
+struct scratch_bump_state
+{
+    std::uint8_t* head = nullptr;
+    std::uint8_t* end = nullptr;
 };
 
 } // namespace
 
-struct alia_scratch_frame_header
+// ABI STRUCTURES
+
+struct alia_scratch_marker_def
 {
-    scratch_chunk* mark_chunk = nullptr;
-    std::size_t mark_off = 0;
-    void* prev_frame = nullptr;
+    std::size_t bytes_used = 0;
+    scratch_chunk* chunk = nullptr;
+    scratch_bump_state bump{};
 };
 
 struct alia_scratch_arena
 {
-    // allocator
+    // user-provided allocator
     alia_scratch_allocator allocator{};
 
     // chunk list
-    scratch_chunk* first = nullptr;
-    scratch_chunk* head = nullptr;
+    scratch_chunk* first_chunk = nullptr;
+    scratch_chunk* active_chunk = nullptr;
 
-    // stats
-    std::size_t total_bytes = 0; // sum of chunk caps
-    std::size_t peak_used = 0; // coarse high-water mark
-    std::uint32_t chunks_touched = 0; // max prefix count touched in pass
+    // bump allocator state
+    scratch_bump_state bump{};
 
-    // pass state
-    alia_scratch_frame_header* pass_base = nullptr;
-    void* current_frame = nullptr;
+    // stats - Note that peak values aren't updated until requested, and
+    // `stats.current.bytes_used` only reflects chunks that have been advanced
+    // past.
+    alia_scratch_stats stats{};
 };
 
-// HELPERS
+// INTERNAL FUNCTIONS
 
 namespace {
 
-inline std::size_t
-align_up(std::size_t v, std::size_t a)
+std::uint8_t*
+chunk_start(scratch_chunk* c)
 {
-    const std::size_t m = a - 1;
-    return (v + m) & ~m;
+    return reinterpret_cast<std::uint8_t*>(c + 1);
+}
+std::uint8_t*
+chunk_end(scratch_chunk* c)
+{
+    return reinterpret_cast<std::uint8_t*>(c->alloc.ptr) + c->alloc.size;
+}
+std::size_t
+chunk_capacity(scratch_chunk* c)
+{
+    return chunk_end(c) - chunk_start(c);
+}
+
+void
+record_bytes_used(alia_scratch_arena* arena)
+{
+    if (arena->active_chunk)
+    {
+        arena->stats.current.bytes_used
+            += arena->bump.head - chunk_start(arena->active_chunk);
+    }
+}
+
+void
+activate_chunk(alia_scratch_arena* arena, scratch_chunk* chunk)
+{
+    arena->active_chunk = chunk;
+    arena->bump.head = chunk_start(chunk);
+    arena->bump.end = chunk_end(chunk);
+}
+
+void
+update_peak_allocation_stats(alia_scratch_arena* arena)
+{
+    auto& stats = arena->stats;
+    if (stats.current.bytes_allocated > stats.peak.bytes_allocated)
+        stats.peak.bytes_allocated = stats.current.bytes_allocated;
+    if (stats.current.chunk_count > stats.peak.chunk_count)
+        stats.peak.chunk_count = stats.current.chunk_count;
+}
+
+void
+update_peak_usage_stats(alia_scratch_arena* arena)
+{
+    auto& stats = arena->stats;
+    if (stats.current.bytes_used > stats.peak.bytes_used)
+        stats.peak.bytes_used = stats.current.bytes_used;
+}
+
+void
+activate_new_chunk(alia_scratch_arena* arena, std::size_t bytes_required)
+{
+    // We're moving past the active chunk, so record its used bytes.
+    record_bytes_used(arena);
+
+    // If we're not already at the end of the chunk list, walk through the list
+    // to see if we can find a chunk that has enough space.
+    scratch_chunk* chunk = arena->active_chunk;
+    if (chunk)
+    {
+        while (chunk->next)
+        {
+            chunk = chunk->next;
+            if (chunk_capacity(chunk) >= bytes_required)
+            {
+                activate_chunk(arena, chunk);
+                return;
+            }
+        }
+    }
+    // Otherwise, we need to allocate a new chunk...
+    // Note that at this point, `chunk` is either null (if there were no chunks
+    // yet) or the last chunk in the list.
+
+    // Request at least enough space for the chunk header, alignment padding,
+    // and the actual request. (Note that `bytes_required` already includes
+    // alignment padding for the actual request.)
+    const std::size_t bytes_to_request
+        = sizeof(scratch_chunk) + alignof(scratch_chunk) + bytes_required;
+
+    // Invoke the user allocator and create the new chunk structure.
+    alia_scratch_chunk_allocation alloc = (arena->allocator.alloc)(
+        arena->allocator.user,
+        arena->stats.current.bytes_allocated,
+        bytes_to_request);
+    auto* new_chunk = static_cast<scratch_chunk*>(
+        align_ptr(alloc.ptr, alignof(scratch_chunk)));
+    new_chunk->alloc = alloc;
+    new_chunk->next = nullptr;
+
+    // Append it to the arena's chunk list.
+    if (chunk)
+        chunk->next = new_chunk;
+    else
+        arena->first_chunk = new_chunk;
+
+    // Update allocation stats.
+    arena->stats.current.bytes_allocated += alloc.size;
+    ++arena->stats.current.chunk_count;
+    update_peak_allocation_stats(arena);
+
+    activate_chunk(arena, new_chunk);
 }
 
 inline void*
-align_ptr(void* ptr, std::size_t a)
+arena_alloc_raw(
+    alia_scratch_arena* arena, std::size_t bytes, std::size_t align)
 {
-    return reinterpret_cast<void*>(
-        (reinterpret_cast<std::uintptr_t>(ptr) + a - 1) & ~(a - 1));
-}
-
-// Compute an approximate "bytes used" = sum(full prior chunk caps) +
-// head->used
-inline std::size_t
-approx_used_bytes(const alia_scratch_arena* A)
-{
-    if (!A->first)
-        return 0;
-    std::size_t used = 0;
-    for (auto* c = A->first; c; c = c->next)
+    std::uint8_t* p = align_ptr(arena->bump.head, align);
+    std::uint8_t* next = p + bytes;
+    if (next > arena->bump.end)
     {
-        if (c == A->head)
-        {
-            used += c->used;
-            break;
-        }
-        else
-        {
-            used += c->cap;
-        }
+        activate_new_chunk(arena, bytes + align);
+        p = align_ptr(arena->bump.head, align);
+        next = p + bytes;
     }
-    return used;
+    arena->bump.head = next;
+    return p;
 }
 
-inline void
-ensure_head_exists(alia_scratch_arena* A)
+void
+trim_chunks(alia_scratch_arena* arena, std::uint32_t chunk_count_to_keep)
 {
-    if (A->first)
+    // Advance past the chunks that we're keeping, counting the total number of
+    // bytes allocated among them.
+    std::size_t total_kept_bytes = 0;
+    scratch_chunk* chunk = arena->first_chunk;
+    std::uint32_t chunks_touched = 0;
+    scratch_chunk* previous_chunk = nullptr;
+    while (chunk && chunks_touched < chunk_count_to_keep)
+    {
+        total_kept_bytes += chunk->alloc.size;
+        previous_chunk = chunk;
+        chunk = chunk->next;
+        ++chunks_touched;
+    }
+    // If the chunk list is shorter than the number to keep, there's nothing to
+    // do.
+    if (chunks_touched < chunk_count_to_keep)
         return;
 
-    const std::size_t payload = 0; // TODO
-    const std::size_t need
-        = sizeof(scratch_chunk) + alignof(scratch_chunk) + payload;
-
-    alia_scratch_chunk_allocation alloc
-        = (A->allocator.alloc)(A->allocator.user, 0, need);
-    auto* mem = static_cast<scratch_chunk*>(
-        align_ptr(alloc.ptr, alignof(scratch_chunk)));
-    mem->alloc = alloc;
-    mem->next = nullptr;
-    mem->cap = reinterpret_cast<std::uint8_t*>(alloc.ptr) + alloc.size
-             - reinterpret_cast<std::uint8_t*>(mem) - sizeof(scratch_chunk);
-    mem->used = 0;
-
-    A->first = A->head = mem;
-    A->total_bytes += mem->cap;
-}
-
-inline void
-ensure_head_space(alia_scratch_arena* A, std::size_t need_bytes)
-{
-    ensure_head_exists(A);
-
-    // If head has space, done.
-    if (A->head->used + need_bytes <= A->head->cap)
-        return;
-
-    // If there is a next chunk already, reuse it.
-    if (A->head->next)
+    // Free the rest of the chunks.
+    while (chunk)
     {
-        A->head = A->head->next;
-        A->head->used = 0;
-        if (A->head->used + need_bytes <= A->head->cap)
-            return;
-        // else fall-through to append a larger chunk
+        auto* next = chunk->next;
+        (arena->allocator.free)(arena->allocator.user, chunk->alloc);
+        chunk = next;
     }
+    // Terminate the chunk list.
+    if (previous_chunk)
+        previous_chunk->next = nullptr;
 
-    const std::size_t bytes
-        = sizeof(scratch_chunk) + alignof(scratch_chunk) + need_bytes;
-
-    alia_scratch_chunk_allocation alloc
-        = (A->allocator.alloc)(A->allocator.user, 0, bytes);
-    auto* mem = static_cast<scratch_chunk*>(
-        align_ptr(alloc.ptr, alignof(scratch_chunk)));
-    mem->alloc = alloc;
-    mem->next = nullptr;
-    mem->cap = reinterpret_cast<std::uint8_t*>(alloc.ptr) + alloc.size
-             - reinterpret_cast<std::uint8_t*>(mem) - sizeof(scratch_chunk);
-    mem->used = 0;
-
-    // Link after current head, even if head is mid-list due to a pop.
-    mem->next = A->head->next;
-    A->head->next = mem;
-    A->head = mem;
-    A->total_bytes += mem->cap;
-}
-
-inline void*
-arena_alloc_raw(alia_scratch_arena* A, std::size_t bytes, std::size_t align)
-{
-    ensure_head_exists(A);
-
-    // ensure space considering alignment slack
-    const std::size_t worst = bytes + (align - 1);
-    ensure_head_space(A, worst);
-
-    std::size_t p = align_up(A->head->used, align);
-    if (p + bytes > A->head->cap)
-    {
-        // Spill once to next/append, then align again
-        ensure_head_space(A, bytes + (align - 1));
-        p = align_up(A->head->used, align);
-        assert(p + bytes <= A->head->cap);
-    }
-
-    void* out = A->head->data() + p;
-    A->head->used = p + bytes;
-
-    // stats
-    const std::size_t used = approx_used_bytes(A);
-    if (used > A->peak_used)
-        A->peak_used = used;
-
-    // chunks_touched: number of chunks up to head
-    std::uint32_t count = 0;
-    for (auto* c = A->first; c; c = c->next)
-    {
-        ++count;
-        if (c == A->head)
-            break;
-    }
-    if (count > A->chunks_touched)
-        A->chunks_touched = count;
-
-    return out;
-}
-
-inline void
-free_tail_after(
-    alia_scratch_arena* A,
-    scratch_chunk* keep_tail_of_prefix,
-    std::uint32_t keep_min_chunks)
-{
-    if (!A->first)
-        return;
-
-    // Ensure we keep at least keep_min_chunks from the front
-    scratch_chunk* keep_tail = A->first;
-    for (std::uint32_t k = 1; k < std::max<std::uint32_t>(keep_min_chunks, 1);
-         ++k)
-    {
-        if (!keep_tail->next)
-            break;
-        keep_tail = keep_tail->next;
-    }
-    // If caller wants to keep beyond that, advance.
-    if (keep_tail_of_prefix)
-    {
-        // Walk from first until we reach keep_tail_of_prefix
-        auto* c = A->first;
-        while (c && c != keep_tail_of_prefix)
-        {
-            keep_tail = c;
-            c = c->next;
-        }
-        if (c)
-            keep_tail = c;
-    }
-
-    scratch_chunk* to_free = keep_tail->next;
-    keep_tail->next = nullptr;
-
-    // If head pointed into the tail, move it back to keep_tail.
-    for (auto* c = to_free; c; c = c->next)
-    {
-        if (A->head == c)
-        {
-            A->head = keep_tail;
-            break;
-        }
-    }
-
-    // Free tail
-    while (to_free)
-    {
-        auto* nxt = to_free->next;
-        A->total_bytes -= to_free->cap;
-        (A->allocator.free)(A->allocator.user, to_free->alloc);
-        to_free = nxt;
-    }
+    // Update stats.
+    arena->stats.current.bytes_allocated = total_kept_bytes;
+    arena->stats.current.chunk_count = chunk_count_to_keep;
 }
 
 } // namespace
 
+// ABI FUNCTIONS
+
 extern "C" {
 
-// OPAQUE TYPE SIZE/ALIGN (FOR CONSTRUCT)
-
-size_t
-alia_scratch_state_size(void)
+alia_struct_spec
+alia_scratch_struct_spec(void)
 {
-    return sizeof(alia_scratch_arena);
+    return {sizeof(alia_scratch_arena), alignof(alia_scratch_arena)};
 }
-
-size_t
-alia_scratch_state_align(void)
-{
-    return alignof(alia_scratch_arena);
-}
-
-// CREATION AND DESTRUCTION (HEAP-OWNED)
-
-alia_scratch_arena*
-alia_scratch_create(const alia_scratch_allocator* allocator)
-{
-    void* mem = ::operator new(
-        sizeof(alia_scratch_arena),
-        std::align_val_t(alignof(alia_scratch_arena)));
-    auto* A = reinterpret_cast<alia_scratch_arena*>(mem);
-    // zero-initialize then construct config
-    std::memset(A, 0, sizeof(*A));
-    A->allocator = *allocator;
-
-    return A;
-}
-
-void
-alia_scratch_destroy(alia_scratch_arena* arena)
-{
-    if (!arena)
-        return;
-
-    // free all chunks
-    auto* c = arena->first;
-    while (c)
-    {
-        auto* nxt = c->next;
-        (arena->allocator.free)(arena->allocator.user, c->alloc);
-        c = nxt;
-    }
-
-    ::operator delete(arena, std::align_val_t(alignof(alia_scratch_arena)));
-}
-
-// CONSTRUCTION AND DESTRUCTION (CALLER-SUPPLIED STORAGE)
 
 alia_scratch_arena*
 alia_scratch_construct(void* mem, const alia_scratch_allocator* allocator)
 {
-    assert(mem && "alia_scratch_construct: mem must not be null");
     auto* A = new (mem) alia_scratch_arena{};
     A->allocator = *allocator;
     return A;
@@ -331,90 +248,77 @@ alia_scratch_destruct(alia_scratch_arena* arena)
     if (!arena)
         return;
 
-    // free all chunks
-    auto* c = arena->first;
-    while (c)
+    // Free all chunks.
+    auto* chunk = arena->first_chunk;
+    while (chunk)
     {
-        auto* nxt = c->next;
-        (arena->allocator.free)(arena->allocator.user, c->alloc);
-        c = nxt;
+        auto* next = chunk->next;
+        (arena->allocator.free)(arena->allocator.user, chunk->alloc);
+        chunk = next;
     }
 
-    // placement "destruct": explicitly call destructor (trivial here)
-    arena->~alia_scratch_arena();
+    static_assert(std::is_trivially_destructible_v<alia_scratch_arena>);
 }
-
-// PASS LIFECYCLE
 
 void
 alia_scratch_reset(alia_scratch_arena* arena)
 {
-    arena->current_frame = nullptr;
-    arena->pass_base = nullptr;
-
-    // Reset used on kept chunks
-    for (auto* k = arena->first; k; k = k->next)
-        k->used = 0;
-
-    // Reset stats for next pass
-    arena->peak_used = 0;
-    arena->chunks_touched = 0;
+    record_bytes_used(arena);
+    update_peak_usage_stats(arena);
+    if (arena->first_chunk)
+        activate_chunk(arena, arena->first_chunk);
+    arena->stats.current.bytes_used = 0;
 }
 
 void
 alia_scratch_trim_chunks(alia_scratch_arena* arena, uint32_t n)
 {
-    free_tail_after(arena, nullptr, n);
+    trim_chunks(arena, n);
 }
-
-// ALLOCATION
 
 void*
 alia_scratch_alloc(alia_scratch_arena* arena, size_t bytes, size_t align)
 {
-    assert(arena && "alloc: arena null");
-    if (align == 0)
-        align = alignof(std::max_align_t);
     return arena_alloc_raw(arena, bytes, align);
 }
-
-// FRAMES
 
 alia_scratch_marker
 alia_scratch_mark(alia_scratch_arena* arena)
 {
-    assert(arena && "push_frame: arena null");
-    auto* h = static_cast<alia_scratch_frame_header*>(arena_alloc_raw(
+    auto* marker = static_cast<alia_scratch_marker_def*>(arena_alloc_raw(
         arena,
-        sizeof(alia_scratch_frame_header),
-        alignof(alia_scratch_frame_header)));
-    h->mark_chunk = arena->head;
-    h->mark_off = arena->head ? arena->head->used : 0;
-    h->prev_frame = arena->current_frame;
-    arena->current_frame = reinterpret_cast<void*>(h + 1);
-    return h;
+        sizeof(alia_scratch_marker_def),
+        alignof(alia_scratch_marker_def)));
+    marker->bytes_used = arena->stats.current.bytes_used;
+    marker->chunk = arena->active_chunk;
+    marker->bump = arena->bump;
+    return marker;
 }
 
 void
 alia_scratch_rewind(alia_scratch_arena* arena, alia_scratch_marker m)
 {
-    arena->head = m->mark_chunk;
-    if (arena->head)
-        arena->head->used = m->mark_off;
-    arena->current_frame = m->prev_frame;
+    record_bytes_used(arena);
+    update_peak_usage_stats(arena);
+    arena->active_chunk = m->chunk;
+    arena->bump = m->bump;
+    arena->stats.current.bytes_used = m->bytes_used;
 }
 
-// STATISTICS
-
 alia_scratch_stats
-alia_scratch_get_stats(const alia_scratch_arena* arena)
+alia_scratch_get_stats(alia_scratch_arena const* arena)
 {
-    alia_scratch_stats s{};
-    if (!arena)
-        return s;
-    s.committed_bytes = arena->total_bytes;
-    s.peak_used_bytes = arena->peak_used;
-    s.max_chunks_touched = arena->chunks_touched;
+    // The stats in the arena should accurate reflect allocations but not
+    // usage (which doesn't include bytes allocated from the active chunk).
+    alia_scratch_stats s = arena->stats;
+    if (arena->active_chunk)
+    {
+        // Update the current used bytes to include the active chunk.
+        s.current.bytes_used
+            += arena->bump.head - chunk_start(arena->active_chunk);
+        // And update the peak used bytes to reflect that.
+        s.peak.bytes_used = std::max(s.peak.bytes_used, s.current.bytes_used);
+    }
     return s;
 }
 

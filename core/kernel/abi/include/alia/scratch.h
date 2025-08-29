@@ -14,9 +14,9 @@ extern "C" {
 #endif
 
 typedef struct alia_scratch_arena alia_scratch_arena;
-typedef struct alia_scratch_frame_header* alia_scratch_marker;
+typedef struct alia_scratch_marker_def* alia_scratch_marker;
 
-// ALLOCATION
+// ALLOCATOR INTERFACE
 
 // represents a chunk of memory allocated by an allocator
 typedef struct alia_scratch_chunk_allocation
@@ -34,19 +34,20 @@ typedef struct alia_scratch_allocator
     void (*free)(void* user, alia_scratch_chunk_allocation chunk);
 } alia_scratch_allocator;
 
-// CREATION/DESTRUCTION
+// OPAQUE CONSTRUCTION/DESTRUCTION
 
-alia_scratch_arena*
-alia_scratch_create(const alia_scratch_allocator* allocator);
-void
-alia_scratch_destroy(alia_scratch_arena* arena);
+typedef struct alia_struct_spec
+{
+    size_t size;
+    size_t align;
+} alia_struct_spec;
 
-size_t
-alia_scratch_state_size(void);
-size_t
-alia_scratch_state_align(void);
+alia_struct_spec
+alia_scratch_struct_spec(void);
+
 alia_scratch_arena*
 alia_scratch_construct(void* mem, const alia_scratch_allocator* allocator);
+
 void
 alia_scratch_destruct(alia_scratch_arena* arena);
 
@@ -57,6 +58,7 @@ alia_scratch_alloc(alia_scratch_arena* arena, size_t bytes, size_t align);
 
 alia_scratch_marker
 alia_scratch_mark(alia_scratch_arena* arena);
+
 void
 alia_scratch_rewind(alia_scratch_arena* arena, alia_scratch_marker marker);
 
@@ -64,20 +66,29 @@ void
 alia_scratch_reset(alia_scratch_arena* arena);
 
 // Trim the scratch arena so that at most `n` chunks remain.
+// Note that this should only be called after a full reset.
 void
 alia_scratch_trim_chunks(alia_scratch_arena* arena, uint32_t n);
 
-// STATISTICS
+// INTROSPECTION
+
+typedef struct alia_scratch_stat_values
+{
+    size_t bytes_allocated;
+    size_t bytes_used;
+    uint32_t chunk_count;
+} alia_scratch_stat_values;
 
 typedef struct alia_scratch_stats
 {
-    size_t committed_bytes; // sum of all chunk payloads
-    size_t peak_used_bytes; // approximate high-water usage
-    uint32_t max_chunks_touched; // max chunks touched in last pass
+    alia_scratch_stat_values current;
+    // Note that peak values don't necessarily correspond to any single point
+    // in time. They are independent maximums on their respective fields.
+    alia_scratch_stat_values peak;
 } alia_scratch_stats;
 
 alia_scratch_stats
-alia_scratch_get_stats(const alia_scratch_arena* arena);
+alia_scratch_get_stats(alia_scratch_arena const* arena);
 
 #ifdef __cplusplus
 }
