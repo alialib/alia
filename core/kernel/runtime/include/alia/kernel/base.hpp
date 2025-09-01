@@ -8,10 +8,16 @@ namespace alia {
 
 template<typename T>
 T*
-align_ptr(T* ptr, std::size_t a)
+align_ptr(T* ptr, std::size_t align)
 {
     return reinterpret_cast<T*>(
-        (reinterpret_cast<std::uintptr_t>(ptr) + a - 1) & ~(a - 1));
+        (reinterpret_cast<std::uintptr_t>(ptr) + align - 1) & ~(align - 1));
+}
+
+inline std::size_t
+align_offset(std::size_t offset, std::size_t align)
+{
+    return (offset + align - 1) & ~(align - 1);
 }
 
 template<typename Outer, typename Inner>
