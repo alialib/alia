@@ -104,6 +104,8 @@ struct substrate_destructor_record
     void* ptr = nullptr;
 };
 
+struct substrate_system;
+
 // A substrate_block represents a block of execution. During a single traversal
 // of the substrate system, either all nodes in the block are executed or all
 // nodes are bypassed, and, if executed, they are always executed in the same
@@ -115,6 +117,9 @@ struct substrate_destructor_record
 //
 struct substrate_block
 {
+    // the system that owns this block - This is needed to destruct the block
+    // using only a pointer to the block itself.
+    substrate_system* system = nullptr;
     std::uint8_t* storage = nullptr;
     substrate_destructor_record* destructors = nullptr;
 };
@@ -131,6 +136,19 @@ struct substrate_block_discovery_state
     size_t alignment = 0;
 };
 
+enum class substrate_block_traversal_mode
+{
+    // normal mode
+    NORMAL = 0,
+    // initialization mode - This is set for the first pass over a freshly
+    // allocated block.
+    INIT = 1,
+    // discovery mode - This is used to discover the
+    // shape of the graph. Specifically, when traversing a block, this is used
+    // to measure the total size of data used by nodes in the block.
+    DISCOVERY = 2,
+};
+
 struct substrate_block_traversal_state
 {
     substrate_block* data = nullptr;
@@ -141,6 +159,8 @@ struct substrate_block_traversal_state
 
     // used for assigning memory in non-discovery passes
     size_t current_offset = 0;
+
+    substrate_block_traversal_mode mode{};
 
     substrate_block_discovery_state* discovery = nullptr;
 };
@@ -201,35 +221,36 @@ substrate_end_traversal(substrate_traversal& traversal);
 struct substrate_usage_result
 {
     void* ptr = nullptr;
-    enum
-    {
-        // This is a normal usage. The pointer points to an existing node that
-        // has been seen before.
-        NORMAL = 0,
-        // This is a new usage. The pointer points to newly allocated memory
-        // that should be initialized.
-        INIT = 1,
-        // This is a discovery usage. The pointer points to newly allocated
-        // memory that will be discarded once discovery is complete. You only
-        // need to initialize the memory to the extent that the calling
-        // function and/or the associated destructor require it.
-        DISCOVERY = 2,
-    } code
-        = NORMAL;
+    substrate_block_traversal_mode mode
+        = substrate_block_traversal_mode::NORMAL;
 };
 
 // 'Use' memory from the current substrate block.
+//
+// The `mode` field in the result indicates how the memory should be treated:
+// - `NORMAL`: This is a normal usage. The pointer points to an existing node
+//   that has been seen before.
+// - `INIT`: This is a new usage. The pointer points to newly allocated memory
+//   that should be initialized.
+// - `DISCOVERY`: This is a discovery usage. The pointer points to newly
+//   allocated memory that will be discarded once discovery is complete. You
+//   only need to initialize the memory to the extent that the calling function
+//   and/or the associated destructor require it.
+//
 substrate_usage_result
 substrate_use_memory(
     substrate_traversal& traversal, size_t size, size_t alignment);
 
-// 'Use' memory from the current substrate block.
-// In this version, a destructor is provided that will be called when the
-// memory is freed.
+// 'Use' an 'object' from the current substrate block.
+//
+// By using an object, you are both using memory to store that object and
+// providing a destructor that will be called when the memory is freed.
+//
 // Note that currently, the destructor is called even when cleaning up after
 // discovery. TODO: Add an flag to disable this.
+//
 substrate_usage_result
-substrate_use_memory(
+substrate_use_object(
     substrate_traversal& traversal,
     size_t size,
     size_t alignment,
@@ -239,16 +260,6 @@ substrate_block*
 substrate_use_block(substrate_traversal& traversal);
 
 using substrate_block_scope = substrate_block_traversal_state;
-
-enum class substrate_block_traversal_mode
-{
-    // normal mode
-    NORMAL = 0,
-    // discovery mode - This is used to discover the shape of the graph.
-    // Specifically, when traversing a block, this is used to measure the total
-    // size of data used by nodes in the block.
-    DISCOVERY = 1,
-};
 
 struct substrate_block_spec
 {

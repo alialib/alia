@@ -116,21 +116,21 @@ TEST_CASE("basic_block")
 
     auto use1 = substrate_use_memory(traversal, 256, 16);
     CHECK(use1.ptr != nullptr);
-    CHECK(use1.code == alia::substrate_usage_result::NORMAL);
+    CHECK(use1.mode == alia::substrate_block_traversal_mode::INIT);
     auto use2 = substrate_use_memory(traversal, 256, 16);
     CHECK(use2.ptr != nullptr);
     CHECK(
         reinterpret_cast<std::uint8_t*>(use2.ptr)
             - reinterpret_cast<std::uint8_t*>(use1.ptr)
         == 256);
-    CHECK(use2.code == alia::substrate_usage_result::NORMAL);
+    CHECK(use2.mode == alia::substrate_block_traversal_mode::INIT);
     auto use3 = substrate_use_memory(traversal, 256, 16);
     CHECK(use3.ptr != nullptr);
     CHECK(
         reinterpret_cast<std::uint8_t*>(use3.ptr)
             - reinterpret_cast<std::uint8_t*>(use2.ptr)
         == 256);
-    CHECK(use3.code == alia::substrate_usage_result::NORMAL);
+    CHECK(use3.mode == alia::substrate_block_traversal_mode::INIT);
 
     substrate_end_block(traversal, scope);
 
@@ -164,15 +164,15 @@ TEST_CASE("basic_block_discovery")
     {
         auto use1 = substrate_use_memory(traversal, 256, 16);
         CHECK(use1.ptr != nullptr);
-        CHECK(use1.code == alia::substrate_usage_result::DISCOVERY);
+        CHECK(use1.mode == alia::substrate_block_traversal_mode::DISCOVERY);
         auto use2 = substrate_use_memory(traversal, 256, 16);
         CHECK(use2.ptr != nullptr);
         CHECK(use2.ptr != use1.ptr);
-        CHECK(use2.code == alia::substrate_usage_result::DISCOVERY);
+        CHECK(use2.mode == alia::substrate_block_traversal_mode::DISCOVERY);
         auto use3 = substrate_use_memory(traversal, 256, 16);
         CHECK(use3.ptr != nullptr);
         CHECK(use3.ptr != use2.ptr);
-        CHECK(use3.code == alia::substrate_usage_result::DISCOVERY);
+        CHECK(use3.mode == alia::substrate_block_traversal_mode::DISCOVERY);
     }
 
     auto spec = substrate_get_block_spec(traversal);
@@ -186,22 +186,92 @@ TEST_CASE("basic_block_discovery")
     {
         auto use1 = substrate_use_memory(traversal, 256, 16);
         CHECK(use1.ptr != nullptr);
-        CHECK(use1.code == alia::substrate_usage_result::NORMAL);
+        CHECK(use1.mode == alia::substrate_block_traversal_mode::INIT);
         auto use2 = substrate_use_memory(traversal, 256, 16);
         CHECK(use2.ptr != nullptr);
         CHECK(
             reinterpret_cast<std::uint8_t*>(use2.ptr)
                 - reinterpret_cast<std::uint8_t*>(use1.ptr)
             == 256);
-        CHECK(use2.code == alia::substrate_usage_result::NORMAL);
+        CHECK(use2.mode == alia::substrate_block_traversal_mode::INIT);
         auto use3 = substrate_use_memory(traversal, 256, 16);
         CHECK(use3.ptr != nullptr);
         CHECK(
             reinterpret_cast<std::uint8_t*>(use3.ptr)
                 - reinterpret_cast<std::uint8_t*>(use2.ptr)
             == 256);
-        CHECK(use3.code == alia::substrate_usage_result::NORMAL);
+        CHECK(use3.mode == alia::substrate_block_traversal_mode::INIT);
     }
+
+    substrate_end_block(traversal, scope);
+
+    substrate_end_traversal(traversal);
+
+    destruct_substrate_system(system);
+}
+
+TEST_CASE("substrate_use_block")
+{
+    scratch_rig rig;
+
+    alia::substrate_system system;
+
+    alia::substrate_allocator allocator;
+    allocator.user_data = nullptr;
+    allocator.alloc = block_alloc;
+    allocator.free = block_free;
+
+    construct_substrate_system(system, allocator);
+
+    alia::substrate_traversal traversal = {};
+    substrate_begin_traversal(traversal, system, rig.scratch);
+
+    alia::substrate_block_spec spec;
+    spec.size = 1024;
+    spec.alignment = 16;
+
+    alia::substrate_block_scope scope;
+    alia::substrate_block block;
+
+    substrate_begin_block(traversal, scope, block, spec);
+
+    {
+        auto use1 = substrate_use_memory(traversal, 256, 16);
+        CHECK(use1.ptr != nullptr);
+        CHECK(use1.mode == alia::substrate_block_traversal_mode::INIT);
+    }
+
+    auto subblock = substrate_use_block(traversal);
+    CHECK(subblock != nullptr);
+    CHECK(subblock->system == &system);
+    CHECK(subblock->storage == nullptr);
+    CHECK(subblock->destructors == nullptr);
+
+    alia::substrate_block_scope subscope;
+
+    substrate_begin_block(traversal, subscope, *subblock, spec);
+
+    {
+        auto use1 = substrate_use_memory(traversal, 256, 16);
+        CHECK(use1.ptr != nullptr);
+        CHECK(use1.mode == alia::substrate_block_traversal_mode::INIT);
+        auto use2 = substrate_use_memory(traversal, 256, 16);
+        CHECK(use2.ptr != nullptr);
+        CHECK(
+            reinterpret_cast<std::uint8_t*>(use2.ptr)
+                - reinterpret_cast<std::uint8_t*>(use1.ptr)
+            == 256);
+        CHECK(use2.mode == alia::substrate_block_traversal_mode::INIT);
+        auto use3 = substrate_use_memory(traversal, 256, 16);
+        CHECK(use3.ptr != nullptr);
+        CHECK(
+            reinterpret_cast<std::uint8_t*>(use3.ptr)
+                - reinterpret_cast<std::uint8_t*>(use2.ptr)
+            == 256);
+        CHECK(use3.mode == alia::substrate_block_traversal_mode::INIT);
+    }
+
+    substrate_end_block(traversal, subscope);
 
     substrate_end_block(traversal, scope);
 

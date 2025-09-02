@@ -46,41 +46,48 @@ substrate_usage_result
 substrate_use_memory(
     substrate_traversal& traversal, size_t size, size_t alignment)
 {
-    if (traversal.block.discovery != nullptr)
+    switch (traversal.block.mode)
     {
-        traversal.block.discovery->offset
-            = align_offset(traversal.block.discovery->offset, alignment)
-            + size;
-        traversal.block.discovery->alignment
-            = std::max(alignment, traversal.block.discovery->alignment);
-        return {
-            alia_scratch_alloc(traversal.scratch, size, alignment),
-            substrate_usage_result::DISCOVERY};
+        case substrate_block_traversal_mode::DISCOVERY: {
+            traversal.block.discovery->offset
+                = align_offset(traversal.block.discovery->offset, alignment)
+                + size;
+            traversal.block.discovery->alignment
+                = std::max(alignment, traversal.block.discovery->alignment);
+            return {
+                alia_scratch_alloc(traversal.scratch, size, alignment),
+                substrate_block_traversal_mode::DISCOVERY};
+        }
+        case substrate_block_traversal_mode::NORMAL:
+        case substrate_block_traversal_mode::INIT:
+        default:
+            size_t aligned_offset
+                = align_offset(traversal.block.current_offset, alignment);
+            traversal.block.current_offset = aligned_offset + size;
+            return {
+                traversal.block.data->storage + aligned_offset,
+                traversal.block.mode};
     }
-
-    size_t aligned_offset
-        = align_offset(traversal.block.current_offset, alignment);
-    traversal.block.current_offset = aligned_offset + size;
-    return {
-        traversal.block.data->storage + aligned_offset,
-        substrate_usage_result::NORMAL};
 }
 
 substrate_usage_result
-substrate_use_memory(
+substrate_use_object(
     substrate_traversal& traversal,
     size_t size,
     size_t alignment,
     void (*destructor)(void*))
 {
+    // 'Use' the memory for the object.
     substrate_usage_result mr
         = substrate_use_memory(traversal, size, alignment);
+    // 'Use' the memory for the destructor record.
     substrate_usage_result dr = substrate_use_memory(
         traversal,
         sizeof(substrate_destructor_record),
-        alignof(substrate_destructor_record),
-        destructor);
-    if (dr.code != substrate_usage_result::NORMAL)
+        alignof(substrate_destructor_record));
+    // If the destructor record is new, then initialize it and add it to
+    // the block's destructors list.
+    if (dr.mode != substrate_block_traversal_mode::NORMAL)
     {
         substrate_destructor_record* record
             = new (dr.ptr) substrate_destructor_record{
@@ -90,12 +97,25 @@ substrate_use_memory(
     return mr;
 }
 
+void
+substrate_block_destructor(void* ptr)
+{
+    substrate_block* block = static_cast<substrate_block*>(ptr);
+    destruct_substrate_block(*block->system, *block);
+}
+
 substrate_block*
 substrate_use_block(substrate_traversal& traversal)
 {
-    // TODO: Add destructor.
-    substrate_use_memory(
-        traversal, sizeof(substrate_block), alignof(substrate_block));
+    substrate_usage_result result = substrate_use_object(
+        traversal,
+        sizeof(substrate_block),
+        alignof(substrate_block),
+        substrate_block_destructor);
+    if (result.mode != substrate_block_traversal_mode::NORMAL)
+        return new (result.ptr) substrate_block{.system = traversal.system};
+    else
+        return static_cast<substrate_block*>(result.ptr);
 }
 
 void
@@ -132,6 +152,7 @@ substrate_begin_block(
             alignof(substrate_block_discovery_state)))
             substrate_block_discovery_state;
         traversal.block.discovery = discovery;
+        traversal.block.mode = substrate_block_traversal_mode::DISCOVERY;
     }
     else
     {
@@ -143,6 +164,11 @@ substrate_begin_block(
                     traversal.system->allocator.user_data,
                     spec.size,
                     spec.alignment));
+            traversal.block.mode = substrate_block_traversal_mode::INIT;
+        }
+        else
+        {
+            traversal.block.mode = substrate_block_traversal_mode::NORMAL;
         }
     }
 }
