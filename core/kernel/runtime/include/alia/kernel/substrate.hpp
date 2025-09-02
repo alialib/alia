@@ -106,6 +106,8 @@ struct substrate_destructor_record
 
 struct substrate_system;
 
+using generation_counter = std::uint32_t;
+
 // A substrate_block represents a block of execution. During a single traversal
 // of the substrate system, either all nodes in the block are executed or all
 // nodes are bypassed, and, if executed, they are always executed in the same
@@ -122,12 +124,16 @@ struct substrate_block
     substrate_system* system = nullptr;
     std::uint8_t* storage = nullptr;
     substrate_destructor_record* destructors = nullptr;
+    // the generation ID for this block - assigned at allocation time
+    generation_counter generation = 0;
 };
 
 struct substrate_system
 {
     substrate_allocator allocator{};
     substrate_block root_block{};
+    // incremented whenever a block is freed (and thus might be reused)
+    generation_counter current_generation = 0;
 };
 
 struct substrate_block_discovery_state
@@ -221,6 +227,7 @@ substrate_end_traversal(substrate_traversal& traversal);
 struct substrate_usage_result
 {
     void* ptr = nullptr;
+    generation_counter generation = 0;
     substrate_block_traversal_mode mode
         = substrate_block_traversal_mode::NORMAL;
 };

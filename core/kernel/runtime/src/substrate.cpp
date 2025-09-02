@@ -56,6 +56,7 @@ substrate_use_memory(
                 = std::max(alignment, traversal.block.discovery->alignment);
             return {
                 alia_scratch_alloc(traversal.scratch, size, alignment),
+                traversal.block.data->generation,
                 substrate_block_traversal_mode::DISCOVERY};
         }
         case substrate_block_traversal_mode::NORMAL:
@@ -66,6 +67,7 @@ substrate_use_memory(
             traversal.block.current_offset = aligned_offset + size;
             return {
                 traversal.block.data->storage + aligned_offset,
+                traversal.block.data->generation,
                 traversal.block.mode};
     }
 }
@@ -130,6 +132,7 @@ destruct_substrate_block(substrate_system& system, substrate_block& block)
 
     system.allocator.free(system.allocator.user_data, block.storage);
     block.storage = nullptr;
+    ++system.current_generation;
 }
 
 void
@@ -164,6 +167,7 @@ substrate_begin_block(
                     traversal.system->allocator.user_data,
                     spec.size,
                     spec.alignment));
+            block.generation = traversal.system->current_generation;
             traversal.block.mode = substrate_block_traversal_mode::INIT;
         }
         else

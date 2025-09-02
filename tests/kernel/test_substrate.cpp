@@ -279,3 +279,48 @@ TEST_CASE("substrate_use_block")
 
     destruct_substrate_system(system);
 }
+
+TEST_CASE("substrate_generations")
+{
+    scratch_rig rig;
+
+    alia::substrate_system system;
+
+    alia::substrate_allocator allocator;
+    allocator.user_data = nullptr;
+    allocator.alloc = block_alloc;
+    allocator.free = block_free;
+
+    construct_substrate_system(system, allocator);
+
+    alia::substrate_block block;
+
+    for (int generation = 0; generation < 2; ++generation)
+    {
+        alia::substrate_traversal traversal = {};
+        substrate_begin_traversal(traversal, system, rig.scratch);
+
+        alia::substrate_block_spec spec;
+        spec.size = 1024;
+        spec.alignment = 16;
+
+        alia::substrate_block_scope scope;
+
+        substrate_begin_block(traversal, scope, block, spec);
+
+        {
+            auto use = substrate_use_memory(traversal, 256, 16);
+            CHECK(use.ptr != nullptr);
+            CHECK(use.generation == generation);
+            CHECK(use.mode == alia::substrate_block_traversal_mode::INIT);
+        }
+
+        substrate_end_block(traversal, scope);
+
+        substrate_end_traversal(traversal);
+
+        destruct_substrate_block(system, block);
+    }
+
+    destruct_substrate_system(system);
+}
