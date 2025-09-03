@@ -1,7 +1,7 @@
-add_library(alia_flow STATIC
+add_library(alia_kernel STATIC
     src/infinite_arena.cpp
     src/scratch.cpp
     src/substrate.cpp)
-target_include_directories(alia_flow PUBLIC
+target_include_directories(alia_kernel PUBLIC
     ${PROJECT_SOURCE_DIR}/core/kernel/abi/include
     include)

@@ -17,4 +17,4 @@ add_library(alia_ui STATIC
     src/layout/utilities.cpp)
 target_include_directories(alia_ui PUBLIC
     include)
-target_link_libraries(alia_ui PUBLIC alia_flow)
+target_link_libraries(alia_ui PUBLIC alia_kernel)
