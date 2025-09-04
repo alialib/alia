@@ -38,6 +38,7 @@ ALIA_DEFINE_FLAG(layout, 0b00'000'100'000'000, FILL_CROSS)
 ALIA_DEFINE_FLAG(layout, 0b00'000'101'000'000, BASELINE_CROSS)
 
 // justification flags
+unsigned const JUSTIFICATION_BIT_OFFSET = 9;
 ALIA_DEFINE_FLAG(layout, 0b00'111'000'000'000, JUSTIFY_MASK)
 ALIA_DEFINE_FLAG(layout, 0b00'000'000'000'000, JUSTIFY_START)
 ALIA_DEFINE_FLAG(layout, 0b00'001'000'000'000, JUSTIFY_END)
@@ -45,6 +46,17 @@ ALIA_DEFINE_FLAG(layout, 0b00'010'000'000'000, JUSTIFY_CENTER)
 ALIA_DEFINE_FLAG(layout, 0b00'011'000'000'000, JUSTIFY_SPACE_BETWEEN)
 ALIA_DEFINE_FLAG(layout, 0b00'100'000'000'000, JUSTIFY_SPACE_AROUND)
 ALIA_DEFINE_FLAG(layout, 0b00'101'000'000'000, JUSTIFY_SPACE_EVENLY)
+
+// baseline group alignment flags - When nodes use baseline alignment, they are
+// constrained relative to one another, but they are not necessarily
+// constrained within the larger container space. These flags control how the
+// group of nodes with baseline alignment are positioned when there is extra
+// vertical space.
+unsigned const BASELINE_GROUP_ALIGNMENT_BIT_OFFSET = 12;
+ALIA_DEFINE_FLAG(layout, 0b11'000'000'000'000, BASELINE_GROUP_ALIGNMENT_MASK)
+ALIA_DEFINE_FLAG(layout, 0b01'000'000'000'000, BASELINE_GROUP_ALIGN_TOP)
+ALIA_DEFINE_FLAG(layout, 0b10'000'000'000'000, BASELINE_GROUP_ALIGN_BOTTOM)
+ALIA_DEFINE_FLAG(layout, 0b11'000'000'000'000, BASELINE_GROUP_ALIGN_CENTER)
 
 // combined alignment flags
 layout_flag_set const CENTER = CENTER_X | CENTER_Y | CENTER_CROSS;

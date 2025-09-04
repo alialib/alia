@@ -187,6 +187,7 @@ flow_assign_boxes(
 
     float current_x = 0, current_y = box.pos.y + placement.offset;
     update_line_measures(0);
+    line_height = (std::max)(line_height, line_ascent + line_descent);
 
     int child_index = 0;
     for (layout_node* child = flow.first_child; child != nullptr;
@@ -202,8 +203,9 @@ flow_assign_boxes(
         // For the first line, we use the vertical requirements that existed
         // for the previous children.
         assignment.first_line = vertical_assignment{
-            .line_height = (std::max)(line_height, line_ascent + line_descent),
-            .baseline_offset = line_ascent};
+            .line_height = line_height,
+            .baseline_offset = assign_baseline(
+                flow.flags, line_height, line_ascent, line_descent)};
 
         if (has_wrapped_content(requirements))
         {
@@ -217,11 +219,12 @@ flow_assign_boxes(
 
             ++child_index;
             update_line_measures(child_index);
+            line_height = (std::max)(line_height, line_ascent + line_descent);
 
             assignment.last_line = vertical_assignment{
-                .line_height
-                = (std::max)(line_height, line_ascent + line_descent),
-                .baseline_offset = line_ascent};
+                .line_height = line_height,
+                .baseline_offset = assign_baseline(
+                    flow.flags, line_height, line_ascent, line_descent)};
 
             if (requirements.interior_height == 0
                 && !has_first_line_content(requirements))
@@ -235,7 +238,8 @@ flow_assign_boxes(
                     child,
                     {.pos = vec2{box.pos.x, current_y},
                      .size = vec2{requirements.end_x, line_height}},
-                    line_ascent);
+                    assign_baseline(
+                        flow.flags, line_height, line_ascent, line_descent));
                 current_x = requirements.end_x;
             }
             else
@@ -262,7 +266,8 @@ flow_assign_boxes(
                 child,
                 {.pos = vec2{box.pos.x + current_x, current_y},
                  .size = vec2{requirements.end_x - current_x, line_height}},
-                line_ascent);
+                assign_baseline(
+                    flow.flags, line_height, line_ascent, line_descent));
             current_x = requirements.end_x;
             ++child_index;
         }
@@ -410,6 +415,7 @@ flow_assign_wrapped_boxes(
     float current_x = assignment->first_line_x_offset;
     float current_y = assignment->y_base;
     update_line_measures(0);
+    line_height = (std::max)(line_height, line_ascent + line_descent);
 
     int child_index = 0;
     for (layout_node* child = flow.first_child; child != nullptr;
@@ -425,8 +431,9 @@ flow_assign_wrapped_boxes(
         // For the first line, we use the vertical requirements that existed
         // for the previous children.
         child_assignment.first_line = vertical_assignment{
-            .line_height = (std::max)(line_height, line_ascent + line_descent),
-            .baseline_offset = line_ascent};
+            .line_height = line_height,
+            .baseline_offset = assign_baseline(
+                flow.flags, line_height, line_ascent, line_descent)};
 
         if (has_wrapped_content(requirements))
         {
@@ -440,11 +447,12 @@ flow_assign_wrapped_boxes(
 
             ++child_index;
             update_line_measures(child_index);
+            line_height = (std::max)(line_height, line_ascent + line_descent);
 
             child_assignment.last_line = vertical_assignment{
-                .line_height
-                = (std::max)(line_height, line_ascent + line_descent),
-                .baseline_offset = line_ascent};
+                .line_height = line_height,
+                .baseline_offset = assign_baseline(
+                    flow.flags, line_height, line_ascent, line_descent)};
 
             if (requirements.interior_height == 0
                 && !has_first_line_content(requirements))
@@ -458,7 +466,8 @@ flow_assign_wrapped_boxes(
                     child,
                     box{.pos = vec2{assignment->x_base, current_y},
                         .size = vec2{requirements.end_x, line_height}},
-                    line_ascent);
+                    assign_baseline(
+                        flow.flags, line_height, line_ascent, line_descent));
                 current_x = requirements.end_x;
             }
             else
@@ -486,7 +495,8 @@ flow_assign_wrapped_boxes(
                 child,
                 box{.pos = vec2{assignment->x_base + current_x, current_y},
                     .size = vec2{requirements.end_x - current_x, line_height}},
-                line_ascent);
+                assign_baseline(
+                    flow.flags, line_height, line_ascent, line_descent));
             current_x = requirements.end_x;
             ++child_index;
         }

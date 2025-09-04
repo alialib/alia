@@ -143,4 +143,13 @@ resolve_padded_assignment(
         vec2{x_placement.size, y_placement.size}};
 }
 
+float
+assign_baseline(
+    layout_flag_set flags, float assigned_height, float ascent, float descent)
+{
+    static float const offsets[4] = {0.5, 0, 1, 0.5};
+    auto const index = raw_code(flags & BASELINE_GROUP_ALIGNMENT_MASK)
+                    >> BASELINE_GROUP_ALIGNMENT_BIT_OFFSET;
+    return ascent + offsets[index] * (assigned_height - ascent - descent);
+}
 } // namespace alia

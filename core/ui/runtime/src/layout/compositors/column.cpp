@@ -144,7 +144,11 @@ column_assign_boxes(
             child,
             {.pos = vec2{box.pos.x + assignment.pos.x, current_y},
              .size = vec2{assignment.size.x, child_y.min_size + extra_space}},
-            child_y.ascent);
+            assign_baseline(
+                column.flags,
+                assignment.size.y,
+                child_y.ascent,
+                child_y.descent));
         current_y += child_y.min_size + extra_space;
     }
 }

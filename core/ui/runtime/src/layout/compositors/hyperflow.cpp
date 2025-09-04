@@ -173,6 +173,7 @@ hyperflow_assign_boxes(
         {
             float x = box.pos.x;
             int i = line_start_index;
+            line_height = (std::max)(line_height, line_ascent + line_descent);
             for (layout_node* c = line_start_child; c != child;
                  c = c->next_sibling)
             {
@@ -184,7 +185,11 @@ hyperflow_assign_boxes(
                     c,
                     {.pos = vec2{x, current_y},
                      .size = vec2{child_x.min_size, line_height}},
-                    line_ascent);
+                    assign_baseline(
+                        hyperflow.flags,
+                        line_height,
+                        line_ascent,
+                        line_descent));
                 x += child_x.min_size;
             }
 
@@ -209,6 +214,7 @@ hyperflow_assign_boxes(
     {
         float x = box.pos.x;
         int i = line_start_index;
+        line_height = (std::max)(line_height, line_ascent + line_descent);
         for (layout_node* c = line_start_child; c != nullptr;
              c = c->next_sibling)
         {
@@ -220,7 +226,8 @@ hyperflow_assign_boxes(
                 c,
                 {.pos = vec2{x, current_y},
                  .size = vec2{child_x.min_size, line_height}},
-                line_ascent);
+                assign_baseline(
+                    hyperflow.flags, line_height, line_ascent, line_descent));
             x += child_x.min_size;
         }
     }

@@ -59,6 +59,10 @@ resolve_padded_assignment(
     float ascent,
     float padding);
 
+float
+assign_baseline(
+    layout_flag_set flags, float assigned_height, float ascent, float descent);
+
 inline float
 resolve_growth_factor(layout_flag_set flags)
 {

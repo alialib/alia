@@ -881,7 +881,7 @@ mixed_flow_demo(context& ctx)
                 {
                     float f = fmod(x, 1.0f);
                     do_rect(
-                        ctx, {24, 24}, color{f, 0.1f, 1.0f - f, 1}, CENTER);
+                        ctx, {72, 72}, color{f, 0.1f, 1.0f - f, 1}, CENTER);
                     x += 0.1f;
                 }
 
