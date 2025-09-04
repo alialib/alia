@@ -7,60 +7,11 @@
 #include <cstring>
 
 #include <alia/kernel/base.hpp>
+#include <alia/kernel/internals/scratch.hpp>
 
-// TODO: Sort out namespaces.
-using namespace alia;
-
-namespace {
-
-// INTERNAL STRUCTURES
-
-struct scratch_chunk
-{
-    // the original allocation result from the allocator
-    alia_scratch_chunk_allocation alloc;
-    // next chunk in the list
-    scratch_chunk* next = nullptr;
-};
-
-struct scratch_bump_state
-{
-    std::uint8_t* head = nullptr;
-    std::uint8_t* end = nullptr;
-};
-
-} // namespace
-
-// ABI STRUCTURES
-
-struct alia_scratch_marker_def
-{
-    std::size_t bytes_used = 0;
-    scratch_chunk* chunk = nullptr;
-    scratch_bump_state bump{};
-};
-
-struct alia_scratch_arena
-{
-    // user-provided allocator
-    alia_scratch_allocator allocator{};
-
-    // chunk list
-    scratch_chunk* first_chunk = nullptr;
-    scratch_chunk* active_chunk = nullptr;
-
-    // bump allocator state
-    scratch_bump_state bump{};
-
-    // stats - Note that peak values aren't updated until requested, and
-    // `stats.current.bytes_used` only reflects chunks that have been advanced
-    // past.
-    alia_scratch_stats stats{};
-};
+namespace alia {
 
 // INTERNAL FUNCTIONS
-
-namespace {
 
 std::uint8_t*
 chunk_start(scratch_chunk* c)
@@ -169,22 +120,6 @@ activate_new_chunk(alia_scratch_arena* arena, std::size_t bytes_required)
     activate_chunk(arena, new_chunk);
 }
 
-inline void*
-arena_alloc_raw(
-    alia_scratch_arena* arena, std::size_t bytes, std::size_t align)
-{
-    std::uint8_t* p = align_ptr(arena->bump.head, align);
-    std::uint8_t* next = p + bytes;
-    if (next > arena->bump.end)
-    {
-        activate_new_chunk(arena, bytes + align);
-        p = align_ptr(arena->bump.head, align);
-        next = p + bytes;
-    }
-    arena->bump.head = next;
-    return p;
-}
-
 void
 trim_chunks(alia_scratch_arena* arena, std::uint32_t chunk_count_to_keep)
 {
@@ -222,9 +157,11 @@ trim_chunks(alia_scratch_arena* arena, std::uint32_t chunk_count_to_keep)
     arena->stats.current.chunk_count = chunk_count_to_keep;
 }
 
-} // namespace
+} // namespace alia
 
 // ABI FUNCTIONS
+
+using namespace alia;
 
 extern "C" {
 
@@ -279,13 +216,13 @@ alia_scratch_trim_chunks(alia_scratch_arena* arena, uint32_t n)
 void*
 alia_scratch_alloc(alia_scratch_arena* arena, size_t bytes, size_t align)
 {
-    return arena_alloc_raw(arena, bytes, align);
+    return scratch_alloc(arena, bytes, align);
 }
 
 alia_scratch_marker
 alia_scratch_mark(alia_scratch_arena* arena)
 {
-    auto* marker = static_cast<alia_scratch_marker_def*>(arena_alloc_raw(
+    auto* marker = static_cast<alia_scratch_marker_def*>(scratch_alloc(
         arena,
         sizeof(alia_scratch_marker_def),
         alignof(alia_scratch_marker_def)));
