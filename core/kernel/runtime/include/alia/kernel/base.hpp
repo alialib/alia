@@ -46,4 +46,30 @@ downcast(Inner const* inner_ptr)
     return reinterpret_cast<Outer const*>(inner_ptr);
 }
 
+template<typename Inner, typename Outer>
+Inner*
+upcast(Outer* outer_ptr)
+{
+    static_assert(
+        std::is_same<decltype(Outer::base), Inner>::value,
+        "upcast: Outer::base must be of type Inner");
+    static_assert(
+        offsetof(Outer, base) == 0,
+        "upcast: Outer must embed `base` at offset 0");
+    return &outer_ptr->base;
+}
+
+template<typename Inner, typename Outer>
+Inner const*
+upcast(Outer const* outer_ptr)
+{
+    static_assert(
+        std::is_same<decltype(Outer::base), Inner>::value,
+        "upcast: Outer::base must be of type Inner");
+    static_assert(
+        offsetof(Outer, base) == 0,
+        "upcast: Outer must embed `base` at offset 0");
+    return &outer_ptr->base;
+}
+
 } // namespace alia

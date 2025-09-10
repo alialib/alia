@@ -4,6 +4,7 @@ add_library(alia_ui STATIC
     src/system.cpp
     src/layout/compositors/column.cpp
     src/layout/compositors/flow.cpp
+    src/layout/compositors/grid.cpp
     src/layout/compositors/hyperflow.cpp
     src/layout/compositors/row.cpp
     src/layout/modifiers/alignment_override.cpp

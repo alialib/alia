@@ -40,4 +40,29 @@ column(context& ctx, layout_flag_set flags, Content&& content)
 
 extern layout_node_vtable column_vtable;
 
+horizontal_requirements
+column_measure_horizontal(measurement_context* ctx, layout_node* node);
+
+void
+column_assign_widths(
+    measurement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* node,
+    float assigned_width);
+
+vertical_requirements
+column_measure_vertical(
+    measurement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* node,
+    float assigned_width);
+
+void
+column_assign_boxes(
+    placement_context* ctx,
+    main_axis_index main_axis,
+    layout_node* node,
+    box box,
+    float baseline);
+
 } // namespace alia
