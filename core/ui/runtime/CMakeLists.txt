@@ -1,4 +1,5 @@
 add_library(alia_ui STATIC
+    src/color.cpp
     src/drawing.cpp
     src/display_list.cpp
     src/system.cpp
@@ -17,5 +18,6 @@ add_library(alia_ui STATIC
     src/layout/system.cpp
     src/layout/utilities.cpp)
 target_include_directories(alia_ui PUBLIC
+    ${PROJECT_SOURCE_DIR}/core/ui/abi/include
     include)
 target_link_libraries(alia_ui PUBLIC alia_kernel)
