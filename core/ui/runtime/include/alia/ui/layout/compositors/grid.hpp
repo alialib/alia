@@ -49,7 +49,7 @@ grid(context& ctx, Content&& content)
 {
     grid_scope scope;
     begin_grid(ctx, scope, NO_FLAGS);
-    std::forward<Content>(content)();
+    std::forward<Content>(content)(&scope);
     end_grid(ctx, scope);
 }
 
@@ -59,7 +59,7 @@ grid(context& ctx, layout_flag_set flags, Content&& content)
 {
     grid_scope scope;
     begin_grid(ctx, scope, flags);
-    std::forward<Content>(content)();
+    std::forward<Content>(content)(&scope);
     end_grid(ctx, scope);
 }
 

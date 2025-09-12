@@ -21,16 +21,18 @@ int
 count_columns(grid_layout_node* grid)
 {
     // TODO: Add faster paths.
-    int column_count = 0;
+    int max_column_count = 0;
     for (auto row = grid->first_row; row; row = row->next_row)
     {
+        int column_count = 0;
         for (auto child = row->container.first_child; child;
              child = child->next_sibling)
         {
             ++column_count;
         }
+        max_column_count = (std::max) (max_column_count, column_count);
     }
-    return column_count;
+    return max_column_count;
 }
 
 horizontal_requirements
@@ -54,20 +56,20 @@ grid_measure_horizontal(measurement_context* ctx, layout_node* node)
              child = child->next_sibling, ++column_index)
         {
             auto const child_x = measure_horizontal(ctx, child);
-            grid.scratch->columns[column_index].growth_factor = (std::max)(
-                grid.scratch->columns[column_index].growth_factor,
-                child_x.growth_factor);
-            grid.scratch->columns[column_index].min_size = (std::max)(
-                grid.scratch->columns[column_index].min_size,
-                child_x.min_size);
+            grid.scratch->columns[column_index].growth_factor
+                = (std::max) (grid.scratch->columns[column_index]
+                                  .growth_factor,
+                              child_x.growth_factor);
+            grid.scratch->columns[column_index].min_size
+                = (std::max) (grid.scratch->columns[column_index].min_size,
+                              child_x.min_size);
         }
     }
     float total_width = 0, total_growth = 0;
     for (int i = 0; i < grid.scratch->column_count; ++i)
     {
         total_width += grid.scratch->columns[i].min_size;
-        total_growth
-            = (std::max)(total_growth, grid.scratch->columns[i].growth_factor);
+        total_growth += grid.scratch->columns[i].growth_factor;
     }
     grid.scratch->total_width = total_width;
     grid.scratch->total_growth = total_growth;
@@ -131,8 +133,10 @@ horizontal_requirements
 grid_row_measure_horizontal(measurement_context* ctx, layout_node* node)
 {
     auto& grid_row = *reinterpret_cast<grid_row_layout_node*>(node);
+    auto const marker = ctx->scratch->save_state();
     ctx->scratch->restore_state(grid_row.scratch_marker);
-    auto& scratch = claim_scratch<grid_row_scratch>(*ctx->scratch);
+    auto& scratch = use_scratch<grid_row_scratch>(*ctx->scratch);
+    ctx->scratch->restore_state(marker);
     return horizontal_requirements{
         .min_size = grid_row.grid->scratch->total_width,
         .growth_factor = resolve_growth_factor(grid_row.container.flags)};
@@ -146,9 +150,11 @@ grid_row_assign_widths(
     float assigned_width)
 {
     auto& grid_row = *reinterpret_cast<grid_row_layout_node*>(node);
+    auto const marker = ctx->scratch->save_state();
     ctx->scratch->restore_state(grid_row.scratch_marker);
     auto& scratch = use_scratch<grid_row_scratch>(*ctx->scratch);
     // TODO: Implement.
+    ctx->scratch->restore_state(marker);
 }
 
 vertical_requirements
@@ -159,6 +165,7 @@ grid_row_measure_vertical(
     float assigned_width)
 {
     auto& grid_row = *reinterpret_cast<grid_row_layout_node*>(node);
+    auto const marker = ctx->scratch->save_state();
     ctx->scratch->restore_state(grid_row.scratch_marker);
     auto& scratch = use_scratch<grid_row_scratch>(*ctx->scratch);
     auto& grid = *grid_row.grid;
@@ -167,27 +174,29 @@ grid_row_measure_vertical(
         assigned_width,
         grid.scratch->total_width);
     float const total_extra_space
-        = (std::max)(0.f, placement.size - grid.scratch->total_width);
+        = (std::max) (0.f, placement.size - grid.scratch->total_width);
     // TODO: Figure out how to handle 0 total growth.
     float const one_over_total_growth
-        = 1.0f / (std::max)(0.00001f, grid.scratch->total_growth);
+        = 1.0f / (std::max) (0.00001f, grid.scratch->total_growth);
     float height = 0, ascent = 0, descent = 0;
+    auto const* column_data = grid.scratch->columns;
     for (layout_node* child = grid_row.container.first_child; child != nullptr;
          child = child->next_sibling)
     {
-        auto const child_x = *grid.scratch->columns++;
+        auto const child_x = *column_data++;
         float const extra_space = total_extra_space * child_x.growth_factor
                                 * one_over_total_growth;
         auto const child_y = measure_vertical(
             ctx, MAIN_AXIS_X, child, child_x.min_size + extra_space);
-        height = (std::max)(height, child_y.min_size);
-        ascent = (std::max)(ascent, child_y.ascent);
-        descent = (std::max)(descent, child_y.descent);
+        height = (std::max) (height, child_y.min_size);
+        ascent = (std::max) (ascent, child_y.ascent);
+        descent = (std::max) (descent, child_y.descent);
     }
     scratch.height = height;
     scratch.ascent = ascent;
+    ctx->scratch->restore_state(marker);
     return vertical_requirements{
-        .min_size = (std::max)(height, ascent + descent),
+        .min_size = (std::max) (height, ascent + descent),
         .growth_factor = resolve_growth_factor(grid_row.container.flags),
         .ascent = ascent,
         .descent = descent};
@@ -202,6 +211,7 @@ grid_row_assign_boxes(
     float baseline)
 {
     auto& grid_row = *reinterpret_cast<grid_row_layout_node*>(node);
+    auto const marker = ctx->scratch->save_state();
     ctx->scratch->restore_state(grid_row.scratch_marker);
     auto& scratch = use_scratch<grid_row_scratch>(*ctx->scratch);
     auto& grid = *grid_row.grid;
@@ -213,13 +223,14 @@ grid_row_assign_boxes(
         scratch.ascent);
     float current_x = box.pos.x + placement.pos.x;
     float const total_extra_space
-        = (std::max)(0.f, placement.size.x - grid.scratch->total_width);
+        = (std::max) (0.f, placement.size.x - grid.scratch->total_width);
     float const one_over_total_growth
-        = 1.0f / (std::max)(0.00001f, grid.scratch->total_growth);
+        = 1.0f / (std::max) (0.00001f, grid.scratch->total_growth);
+    auto const* column_data = grid.scratch->columns;
     for (layout_node* child = grid_row.container.first_child; child != nullptr;
          child = child->next_sibling)
     {
-        auto const child_x = *grid.scratch->columns++;
+        auto const child_x = *column_data++;
         float const extra_space = total_extra_space * child_x.growth_factor
                                 * one_over_total_growth;
         assign_boxes(
@@ -231,6 +242,7 @@ grid_row_assign_boxes(
             baseline);
         current_x += child_x.min_size + extra_space;
     }
+    ctx->scratch->restore_state(marker);
 }
 
 layout_node_vtable grid_row_vtable = {
@@ -287,6 +299,7 @@ begin_grid_row(
         auto& layout = ctx.pass.refresh.layout_emission;
         grid_row_layout_node* node
             = arena_alloc<grid_row_layout_node>(*layout.arena);
+        scope.container = &node->container;
         *node = grid_row_layout_node{
             .container
             = {.base = {.vtable = &grid_row_vtable, .next_sibling = nullptr},
@@ -294,6 +307,8 @@ begin_grid_row(
                .first_child = nullptr},
             .grid = grid->grid,
             .next_row = nullptr};
+        *layout.next_ptr = &node->container.base;
+        layout.next_ptr = &node->container.first_child;
         *grid->next_row_ptr = node;
         grid->next_row_ptr = &node->next_row;
     }

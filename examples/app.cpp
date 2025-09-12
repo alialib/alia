@@ -8,6 +8,7 @@
 #include <chrono>
 #include <functional> // For std::hash
 #include <iostream>
+#include <random>
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
@@ -24,6 +25,7 @@
 #include <alia/ui/geometry.hpp>
 #include <alia/ui/layout/compositors/column.hpp>
 #include <alia/ui/layout/compositors/flow.hpp>
+#include <alia/ui/layout/compositors/grid.hpp>
 #include <alia/ui/layout/compositors/hyperflow.hpp>
 #include <alia/ui/layout/compositors/row.hpp>
 #include <alia/ui/layout/container.hpp>
@@ -1078,6 +1080,32 @@ layout_mods_demo(context& ctx)
 }
 
 void
+grid_demo(context& ctx)
+{
+    std::mt19937 rng(42);
+    std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+    grid(ctx, [&](auto* grid) {
+        float x = 0.0f;
+        for (int i = 0; i < 40; ++i)
+        {
+            grid_row(ctx, grid, [&]() {
+                for (int j = 0; j < 40; ++j)
+                {
+                    float const f = fmod(x, 1.0f);
+                    float const size = std::pow(dist(rng), 12.0f) * 80 + 20;
+                    do_rect(
+                        ctx,
+                        {size, size},
+                        color{f, 0.1f, 1.0f - f, 1},
+                        CENTER);
+                    x += 0.2f;
+                }
+            });
+        }
+    });
+}
+
+void
 layout_demo(context& ctx)
 {
     with_padding(ctx, 10, [&] {
@@ -1122,7 +1150,11 @@ layout_demo(context& ctx)
 void
 the_demo(context& ctx)
 {
-    layout_demo(ctx);
+    with_padding(ctx, 10, [&] {
+        inset(ctx, {.left = 40, .right = 40, .top = 40, .bottom = 40}, [&]() {
+            grid_demo(ctx);
+        });
+    });
 }
 
 void
