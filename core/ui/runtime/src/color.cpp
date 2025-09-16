@@ -189,7 +189,6 @@ alia_lerp_rgba(alia_rgba a, alia_rgba b, float t)
 extern "C" float
 alia_relative_luminance_rgb(alia_rgb c)
 {
-    // Rec. 709 coefficients in *linear* light
     return 0.2126f * c.r + 0.7152f * c.g + 0.0722f * c.b;
 }
 extern "C" float

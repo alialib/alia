@@ -13,6 +13,9 @@ add_test(NAME test_kernel COMMAND test_kernel)
 
 add_subdirectory(core/ui/runtime)
 
+add_subdirectory(tests/ui)
+add_test(NAME test_ui COMMAND test_ui)
+
 add_subdirectory(drivers/renderers/gl)
 
 add_subdirectory(drivers/platforms/glfw)
