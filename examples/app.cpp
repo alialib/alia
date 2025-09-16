@@ -18,6 +18,7 @@
 #include <alia/platforms/glfw/window.hpp>
 #include <alia/renderers/gl/renderer.hpp>
 #include <alia/text_engines/msdf/msdf.hpp>
+#include <alia/ui/color.hpp>
 #include <alia/ui/context.hpp>
 #include <alia/ui/display_list.hpp>
 #include <alia/ui/drawing.hpp>
@@ -1148,11 +1149,69 @@ layout_demo(context& ctx)
 }
 
 void
+color_ramp(context& ctx, alia_srgb8 seed)
+{
+    column(ctx, [&]() {
+        alia_oklch oklch = alia_oklch_from_oklab(
+            alia_oklab_from_rgb(alia_rgb_from_srgb8(seed)));
+        for (int i = 0; i < 11; ++i)
+        {
+            oklch.L = i * 0.1f;
+            alia_rgb rgb = alia_rgb_from_oklab(alia_oklab_from_oklch(oklch));
+            do_rect(
+                ctx, {100, 100}, alia_rgba_from_rgb_alpha(rgb, 1.0f), CENTER);
+        }
+    });
+}
+
+void
+color_transition(context& ctx, alia_oklch start, alia_oklch end)
+{
+    column(ctx, [&]() {
+        alia_oklch oklch = start;
+        for (int i = 0; i < 101; ++i)
+        {
+            oklch.L = start.L + (end.L - start.L) * i * 0.01f;
+            oklch.C = start.C + (end.C - start.C) * i * 0.01f;
+            oklch.h = start.h + (end.h - start.h) * i * 0.01f;
+            alia_rgb rgb = alia_rgb_from_oklab(alia_oklab_from_oklch(oklch));
+            do_rect(
+                ctx, {100, 100}, alia_rgba_from_rgb_alpha(rgb, 1.0f), CENTER);
+        }
+    });
+}
+
+void
+color_demo(context& ctx)
+{
+    hyperflow(ctx, [&]() {
+        alia_oklch oklch = {.L = 0.7f, .C = 0.2f, .h = 0.0f};
+        for (int i = 0; i < 101; ++i)
+        {
+            oklch.h = i * 0.01f * 2 * 3.14159f;
+            alia_rgb rgb = alia_rgb_from_oklab(alia_oklab_from_oklch(oklch));
+            with_padding(ctx, 5, [&] {
+                do_rect(
+                    ctx,
+                    {40, 40},
+                    alia_rgba_from_rgb_alpha(rgb, 1.0f),
+                    CENTER);
+            });
+        }
+    });
+    // row(ctx, [&]() {
+    //     color_ramp(ctx, alia_srgb8{0x8B, 0x43, 0x67});
+    //     color_ramp(ctx, alia_srgb8{0xff, 0x64, 0x64});
+    // });
+}
+
+void
 the_demo(context& ctx)
 {
     with_padding(ctx, 10, [&] {
         inset(ctx, {.left = 40, .right = 40, .top = 40, .bottom = 40}, [&]() {
-            grid_demo(ctx);
+            // grid_demo(ctx);
+            color_demo(ctx);
         });
     });
 }
@@ -1346,7 +1405,8 @@ update()
             the_system.framebuffer_size.x,
             the_system.framebuffer_size.y);
 
-        glClearColor(0.15f, 0.15f, 0.2f, 1.0f);
+        alia_rgb c = alia_rgb_from_srgb8(alia_srgb8{0x29, 0x29, 0x40});
+        glClearColor(c.r, c.g, c.b, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         GLenum err;
@@ -1486,6 +1546,8 @@ main()
         the_system,
         vec2{1200, 1600}, // Initial framebuffer size
         vec2{1.0f, 1.0f}); // Initial UI zoom
+
+    glEnable(GL_FRAMEBUFFER_SRGB);
 
     init_gl_renderer(&the_renderer);
 
