@@ -39,8 +39,30 @@
 #include <alia/ui/layout/system.hpp>
 #include <alia/ui/layout/utilities.hpp>
 #include <alia/ui/system.hpp>
+#include <alia/ui/theme.hpp>
 
 using namespace alia;
+
+seed_colors const seed_sets[] = {
+    {.primary = hex_color("#154DCF"),
+     .secondary = hex_color("#6C36AE"),
+     .tertiary = hex_color("#E01D23"),
+     .neutral = hex_color("#1f212a"),
+     .warning = hex_color("#FF9D00"),
+     .danger = hex_color("#E01D23")},
+    {.primary = hex_color("#6f42c1"),
+     .secondary = hex_color("#7d8bae"),
+     .tertiary = hex_color("#f1b2b2"),
+     .neutral = hex_color("#1f212a"),
+     .warning = hex_color("#e5857b"),
+     .danger = hex_color("#d31638")},
+    {.primary = hex_color("#a52e45"),
+     .secondary = hex_color("#2b5278"),
+     .tertiary = hex_color("#61787b"),
+     .neutral = hex_color("#1f212a"),
+     .warning = hex_color("#ead8b1"),
+     .danger = hex_color("#d31638")},
+};
 
 alia::system the_system;
 GLFWwindow* the_window;
@@ -50,6 +72,9 @@ box_command_list the_box_commands;
 msdf_text_engine* the_msdf_text_engine;
 command_list<msdf_draw_command> the_msdf_commands;
 style the_style = {.padding = 10.0f};
+theme_colors the_theme;
+seed_colors const* seeds = &seed_sets[0];
+color_palette the_palette;
 
 bool
 detect_click(event const* event, float x, float y, float width, float height)
@@ -1149,6 +1174,52 @@ layout_demo(context& ctx)
 }
 
 void
+show_color_ramp(context& ctx, color_ramp ramp)
+{
+    row(ctx, [&]() {
+        for (int i = 0; i != color_ramp_step_count; ++i)
+        {
+            do_rect(
+                ctx,
+                {100, 100},
+                alia_rgba_from_rgb_alpha(
+                    alia_rgb_from_srgb8(ramp[i].rgb), 1.0f),
+                CENTER);
+        }
+    });
+}
+
+void
+show_contrasting_color_pair(context& ctx, contrasting_color_pair pair)
+{
+    concrete_panel(
+        ctx,
+        alia_rgba_from_rgb_alpha(alia_rgb_from_srgb8(pair.main), 1.0f),
+        CENTER,
+        [&]() {
+            with_padding(ctx, 40, [&]() {
+                do_rect(
+                    ctx,
+                    {20, 20},
+                    alia_rgba_from_rgb_alpha(
+                        alia_rgb_from_srgb8(pair.contrasting), 1.0f),
+                    CENTER);
+            });
+        });
+}
+
+void
+show_color_swatch(context& ctx, color_swatch swatch)
+{
+    row(ctx, [&]() {
+        show_contrasting_color_pair(ctx, swatch.weaker[0]);
+        show_contrasting_color_pair(ctx, swatch.base);
+        show_contrasting_color_pair(ctx, swatch.stronger[0]);
+        show_contrasting_color_pair(ctx, swatch.stronger[1]);
+    });
+}
+
+void
 color_ramp(context& ctx, alia_srgb8 seed)
 {
     column(ctx, [&]() {
@@ -1156,7 +1227,7 @@ color_ramp(context& ctx, alia_srgb8 seed)
             alia_oklab_from_rgb(alia_rgb_from_srgb8(seed)));
         for (int i = 0; i < 11; ++i)
         {
-            oklch.L = i * 0.1f;
+            oklch.l = i * 0.1f;
             alia_rgb rgb = alia_rgb_from_oklab(alia_oklab_from_oklch(oklch));
             do_rect(
                 ctx, {100, 100}, alia_rgba_from_rgb_alpha(rgb, 1.0f), CENTER);
@@ -1171,8 +1242,8 @@ color_transition(context& ctx, alia_oklch start, alia_oklch end)
         alia_oklch oklch = start;
         for (int i = 0; i < 101; ++i)
         {
-            oklch.L = start.L + (end.L - start.L) * i * 0.01f;
-            oklch.C = start.C + (end.C - start.C) * i * 0.01f;
+            oklch.l = start.l + (end.l - start.l) * i * 0.01f;
+            oklch.c = start.c + (end.c - start.c) * i * 0.01f;
             oklch.h = start.h + (end.h - start.h) * i * 0.01f;
             alia_rgb rgb = alia_rgb_from_oklab(alia_oklab_from_oklch(oklch));
             do_rect(
@@ -1185,7 +1256,7 @@ void
 color_demo(context& ctx)
 {
     hyperflow(ctx, [&]() {
-        alia_oklch oklch = {.L = 0.7f, .C = 0.2f, .h = 0.0f};
+        alia_oklch oklch = {.l = 0.7f, .c = 0.2f, .h = 0.0f};
         for (int i = 0; i < 101; ++i)
         {
             oklch.h = i * 0.01f * 2 * 3.14159f;
@@ -1206,12 +1277,36 @@ color_demo(context& ctx)
 }
 
 void
+theme_demo(context& ctx)
+{
+    column(ctx, [&]() {
+        show_color_ramp(ctx, the_palette.primary);
+        show_color_ramp(ctx, the_palette.secondary);
+        show_color_ramp(ctx, the_palette.tertiary);
+        show_color_ramp(ctx, the_palette.neutral);
+        show_color_ramp(ctx, the_palette.warning);
+        show_color_ramp(ctx, the_palette.danger);
+
+        show_color_swatch(ctx, the_theme.primary);
+        show_color_swatch(ctx, the_theme.secondary);
+        show_color_swatch(ctx, the_theme.tertiary);
+        show_color_swatch(ctx, the_theme.background);
+        show_color_swatch(ctx, the_theme.foreground);
+        show_color_swatch(ctx, the_theme.structural);
+        show_color_swatch(ctx, the_theme.accent);
+        show_color_swatch(ctx, the_theme.warning);
+        show_color_swatch(ctx, the_theme.danger);
+    });
+}
+
+void
 the_demo(context& ctx)
 {
     with_padding(ctx, 10, [&] {
         inset(ctx, {.left = 40, .right = 40, .top = 40, .bottom = 40}, [&]() {
             // grid_demo(ctx);
-            color_demo(ctx);
+            // color_demo(ctx);
+            theme_demo(ctx);
         });
     });
 }
@@ -1500,6 +1595,31 @@ framebuffer_size_callback(GLFWwindow* window, int width, int height)
 int
 main()
 {
+    static bool light_theme = false;
+
+    static bool theme_update_needed = true;
+
+    if (theme_update_needed)
+    {
+        the_palette = generate_color_palette(*seeds);
+
+        contrast_parameters contrast;
+        contrast.light_on_dark_ratio = 6;
+        contrast.dark_on_light_ratio = 8;
+
+        theme_colors theme;
+        theme = generate_theme_colors(
+            light_theme ? ui_lightness_mode::LIGHT_MODE
+                        : ui_lightness_mode::DARK_MODE,
+            *seeds,
+            contrast);
+        the_theme = theme;
+
+        theme_update_needed = false;
+    }
+
+    // auto const& theme = get_system(ctx).theme;
+
     // Enable debug heap reports
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 

@@ -93,7 +93,7 @@ alia_oklab_from_rgb(alia_rgb c)
     const float s_ = std::cbrt(s);
 
     alia_oklab lab;
-    lab.L = 0.2104542553f * l_ + 0.7936177850f * m_ - 0.0040720468f * s_;
+    lab.l = 0.2104542553f * l_ + 0.7936177850f * m_ - 0.0040720468f * s_;
     lab.a = 1.9779984951f * l_ - 2.4285922050f * m_ + 0.4505937099f * s_;
     lab.b = 0.0259040371f * l_ + 0.7827717662f * m_ - 0.8086757660f * s_;
     return lab;
@@ -101,9 +101,9 @@ alia_oklab_from_rgb(alia_rgb c)
 extern "C" alia_rgb
 alia_rgb_from_oklab(alia_oklab lab)
 {
-    const float l_ = lab.L + 0.3963377774f * lab.a + 0.2158037573f * lab.b;
-    const float m_ = lab.L - 0.1055613458f * lab.a - 0.0638541728f * lab.b;
-    const float s_ = lab.L - 0.0894841775f * lab.a - 1.2914855480f * lab.b;
+    const float l_ = lab.l + 0.3963377774f * lab.a + 0.2158037573f * lab.b;
+    const float m_ = lab.l - 0.1055613458f * lab.a - 0.0638541728f * lab.b;
+    const float s_ = lab.l - 0.0894841775f * lab.a - 1.2914855480f * lab.b;
 
     const float l = l_ * l_ * l_;
     const float m = m_ * m_ * m_;
@@ -123,8 +123,8 @@ extern "C" alia_oklch
 alia_oklch_from_oklab(alia_oklab lab)
 {
     alia_oklch lch;
-    lch.L = lab.L;
-    lch.C = std::sqrt(lab.a * lab.a + lab.b * lab.b);
+    lch.l = lab.l;
+    lch.c = std::sqrt(lab.a * lab.a + lab.b * lab.b);
     lch.h = std::atan2(lab.b, lab.a);
     if (lch.h < 0.f)
         lch.h += 2.f * std::numbers::pi_v<float>;
@@ -134,9 +134,9 @@ extern "C" alia_oklab
 alia_oklab_from_oklch(alia_oklch lch)
 {
     alia_oklab lab;
-    lab.L = lch.L;
-    lab.a = lch.C * std::cos(lch.h);
-    lab.b = lch.C * std::sin(lch.h);
+    lab.l = lch.l;
+    lab.a = lch.c * std::cos(lch.h);
+    lab.b = lch.c * std::sin(lch.h);
     return lab;
 }
 
@@ -146,6 +146,22 @@ extern "C" alia_oklch
 alia_oklch_from_srgb8(alia_srgb8 c)
 {
     return alia_oklch_from_oklab(alia_oklab_from_rgb(alia_rgb_from_srgb8(c)));
+}
+
+// convenience: linear RGB -> OKLCH
+
+extern "C" alia_oklch
+alia_oklch_from_rgb(alia_rgb c)
+{
+    return alia_oklch_from_oklab(alia_oklab_from_rgb(c));
+}
+
+// convenience: OKLCH -> linear RGB
+
+extern "C" alia_rgb
+alia_rgb_from_oklch(alia_oklch lch)
+{
+    return alia_rgb_from_oklab(alia_oklab_from_oklch(lch));
 }
 
 // alpha / compositing (linear premultiplied)

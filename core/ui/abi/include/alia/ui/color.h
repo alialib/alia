@@ -28,13 +28,13 @@ typedef struct
 // OKLab
 typedef struct
 {
-    float L, a, b;
+    float l, a, b;
 } alia_oklab;
 
 // OKLCH
 typedef struct
 {
-    float L, C, h;
+    float l, c, h;
 } alia_oklch;
 
 // sRGB transfer (single component in [0,1])
@@ -61,6 +61,12 @@ alia_oklch_from_oklab(alia_oklab lab);
 alia_oklab
 alia_oklab_from_oklch(alia_oklch lch);
 
+// linear RGB <-> OKLCH
+alia_oklch
+alia_oklch_from_rgb(alia_rgb c);
+alia_rgb
+alia_rgb_from_oklch(alia_oklch lch);
+
 // convenience
 
 alia_oklch
@@ -85,11 +91,17 @@ alia_lerp_rgb(alia_rgb a, alia_rgb b, float t);
 alia_rgba
 alia_lerp_rgba(alia_rgba a, alia_rgba b, float t);
 
-// relative luminance (W3C)
+// relative luminance
 float
 alia_relative_luminance_rgb(alia_rgb c);
 float
 alia_relative_luminance_rgba(alia_rgba c);
+
+inline float
+alia_relative_luminance_srgb8(alia_srgb8 c)
+{
+    return alia_relative_luminance_rgb(alia_rgb_from_srgb8(c));
+}
 
 #ifdef __cplusplus
 }

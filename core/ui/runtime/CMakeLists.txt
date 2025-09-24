@@ -16,7 +16,8 @@ add_library(alia_ui STATIC
     src/layout/container.cpp
     src/layout/leaf.cpp
     src/layout/system.cpp
-    src/layout/utilities.cpp)
+    src/layout/utilities.cpp
+    src/theme.cpp)
 target_include_directories(alia_ui PUBLIC
     ${PROJECT_SOURCE_DIR}/core/ui/abi/include
     include)
