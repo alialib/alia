@@ -13,23 +13,6 @@
 
 namespace alia {
 
-// The following are interpolation curves that can be used for animations.
-typedef unit_cubic_bezier animation_curve;
-animation_curve const default_curve = {0.25, 0.1, 0.25, 1};
-animation_curve const linear_curve = {0, 0, 1, 1};
-animation_curve const ease_in_curve = {0.42, 0, 1, 1};
-animation_curve const ease_out_curve = {0, 0, 0.58, 1};
-animation_curve const ease_in_out_curve = {0.42, 0, 0.58, 1};
-
-// animated_transition specifies an animated transition from one state to
-// another, defined by a duration and a curve to follow.
-struct animated_transition
-{
-    animation_curve curve;
-    millisecond_count duration;
-};
-animated_transition const default_transition = {default_curve, 250};
-
 // A value_smoother is used to create smoothly changing views of values that
 // actually change abruptly.
 template<class Value>
@@ -45,27 +28,6 @@ struct value_smoother
 // can be interpolated using the default implementation below. Another option
 // is to simply implement a compatible interpolate function directly for the
 // value type.
-
-// lerp(a, b, factor) yields a * (1 - factor) + b * factor
-template<class Value>
-std::enable_if_t<!std::is_integral<Value>::value, Value>
-lerp(Value const& a, Value const& b, double factor)
-{
-    return a * (1 - factor) + b * factor;
-}
-// Overload it for floats to eliminate warnings about conversions.
-inline float
-lerp(float a, float b, double factor)
-{
-    return float(a * (1 - factor) + b * factor);
-}
-// Overload it for integers to add rounding (and eliminate warnings).
-template<class Integer>
-std::enable_if_t<std::is_integral<Integer>::value, Integer>
-lerp(Integer a, Integer b, double factor)
-{
-    return Integer(std::round(a * (1 - factor) + b * factor));
-}
 
 // reset_smoothing(smoother, value) causes the smoother to transition abruptly
 // to the value specified.

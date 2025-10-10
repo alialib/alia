@@ -17,30 +17,6 @@ struct timing_subsystem
     millisecond_count tick_counter = 0;
 };
 
-// Request that the UI context refresh again quickly enough for smooth
-// animation.
-void
-schedule_animation_refresh(dataless_core_context ctx);
-
-// Get the value of the millisecond tick counter associated with the given
-// UI context. This counter is updated every refresh pass, so it's consistent
-// within a single frame.
-// When this is called, it's assumed that something is currently animating, so
-// it also requests a refresh.
-millisecond_count
-get_raw_animation_tick_count(dataless_core_context ctx);
-
-// Same as above, but returns a signal rather than a raw integer.
-value_signal<millisecond_count>
-get_animation_tick_count(dataless_core_context ctx);
-
-// Get the number of ticks remaining until the given end time.
-// If the time has passed, this returns 0.
-// This ensures that the UI context refreshes until the end time is reached.
-millisecond_count
-get_raw_animation_ticks_left(
-    dataless_core_context ctx, millisecond_count end_tick);
-
 struct animation_timer_state
 {
     // TODO: Combine these.

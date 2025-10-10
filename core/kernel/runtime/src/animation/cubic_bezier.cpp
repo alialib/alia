@@ -1,4 +1,4 @@
-#include <alia/core/timing/cubic_bezier.hpp>
+#include <alia/kernel/animation/cubic_bezier.hpp>
 
 #include <cmath>
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cassert>
+#include <cstdint>
 #include <type_traits>
 
 namespace alia {
@@ -70,6 +72,14 @@ upcast(Outer const* outer_ptr)
         offsetof(Outer, base) == 0,
         "upcast: Outer must embed `base` at offset 0");
     return &outer_ptr->base;
+}
+
+typedef int64_t nanosecond_count;
+
+constexpr nanosecond_count
+milliseconds(uint32_t ms)
+{
+    return nanosecond_count(ms * 1'000'000);
 }
 
 } // namespace alia

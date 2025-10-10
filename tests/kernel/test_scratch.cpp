@@ -2,11 +2,11 @@
 
 #include <doctest/doctest.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <new>
-#include <utility>
 
 namespace {
 
