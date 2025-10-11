@@ -1,17 +1,21 @@
 #ifndef ALIA_UI_SYSTEM_INTERNAL_DEFINITION_HPP
 #define ALIA_UI_SYSTEM_INTERNAL_DEFINITION_HPP
 
-#include <alia/core/flow/events.hpp>
-#include <alia/core/system/internals.hpp>
-#include <alia/core/timing/ticks.hpp>
+// #include <alia/core/system/internals.hpp>
+// #include <alia/core/timing/ticks.hpp>
+#include <alia/kernel/animation/flares.hpp>
+#include <alia/kernel/animation/transitions.hpp>
 #include <alia/ui/context.hpp>
 #include <alia/ui/events.hpp>
+#include <alia/ui/geometry.hpp>
 #include <alia/ui/layout/system.hpp>
-#include <alia/ui/system/os_interface.hpp>
-#include <alia/ui/system/window_interface.hpp>
+// #include <alia/ui/system/os_interface.hpp>
+// #include <alia/ui/system/window_interface.hpp>
 #include <alia/ui/theme.hpp>
 
 namespace alia {
+
+#if 0
 
 struct window_input_state
 {
@@ -22,10 +26,10 @@ struct window_input_state
     unsigned mouse_button_state = 0;
 
     // the raw mouse position inside the window
-    vector<2, double> mouse_position;
+    vec2 mouse_position;
 
     // the tick count corresponding to the last press of each mouse button
-    millisecond_count last_mouse_press_time[max_supported_mouse_buttons];
+    nanosecond_count last_mouse_press_time[max_supported_mouse_buttons];
 
     // the widget that the mouse is over
     routable_widget_id hot_widget;
@@ -55,6 +59,29 @@ struct window_input_state
     // the mouse cursor that's currently set for our window
     mouse_cursor current_mouse_cursor = mouse_cursor::DEFAULT;
 };
+
+#endif
+
+struct animation_tracking_system
+{
+    // active transitions
+    transition_animation_map transitions;
+    // active flare groups
+    flare_map flares;
+};
+
+struct system
+{
+    layout_system layout;
+    animation_tracking_system animation;
+    vec2 framebuffer_size;
+    vec2 ui_zoom;
+};
+
+void
+initialize(system& system, vec2 framebuffer_size, vec2 ui_zoom);
+
+#if 0
 
 struct ui_system : alia::typed_system<vanilla_ui_context>
 {
@@ -93,6 +120,8 @@ struct ui_system : alia::typed_system<vanilla_ui_context>
 
     // tooltip_state tooltip;
 };
+
+#endif
 
 } // namespace alia
 

@@ -1,7 +1,6 @@
 #ifndef ALIA_UI_IDS_HPP
 #define ALIA_UI_IDS_HPP
 
-#include <alia/core/flow/events.hpp>
 #include <alia/ui/context.hpp>
 
 namespace alia {

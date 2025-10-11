@@ -10,7 +10,7 @@
 #include <alia/ui/layout/compositors/row.hpp>
 #include <alia/ui/layout/container.hpp>
 #include <alia/ui/layout/leaf.hpp>
-#include <alia/ui/system.hpp>
+#include <alia/ui/system/object.hpp>
 
 using namespace alia;
 

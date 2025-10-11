@@ -2,7 +2,7 @@
 
 #include <alia/kernel/infinite_arena.hpp>
 #include <alia/ui/display_list.hpp>
-#include <alia/ui/system.hpp>
+#include <alia/ui/system/object.hpp>
 
 // TODO: Remove this.
 #include <iostream>

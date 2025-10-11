@@ -2,7 +2,6 @@ add_library(alia_ui STATIC
     src/color.cpp
     src/drawing.cpp
     src/display_list.cpp
-    src/system.cpp
     src/layout/compositors/column.cpp
     src/layout/compositors/flow.cpp
     src/layout/compositors/grid.cpp
@@ -17,6 +16,9 @@ add_library(alia_ui STATIC
     src/layout/leaf.cpp
     src/layout/system.cpp
     src/layout/utilities.cpp
+    # src/system/input_processing.cpp
+    # src/system/object.cpp
+    src/system.cpp
     src/theme.cpp)
 target_include_directories(alia_ui PUBLIC
     ${PROJECT_SOURCE_DIR}/core/ui/abi/include

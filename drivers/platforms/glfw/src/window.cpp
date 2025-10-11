@@ -1,6 +1,6 @@
 #include <alia/platforms/glfw/window.hpp>
 
-#include <alia/ui/system.hpp>
+#include <alia/ui/system/object.hpp>
 
 namespace alia {
 
