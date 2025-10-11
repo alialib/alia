@@ -38,7 +38,7 @@
 #include <alia/ui/layout/modifiers/placement_hook.hpp>
 #include <alia/ui/layout/system.hpp>
 #include <alia/ui/layout/utilities.hpp>
-#include <alia/ui/system.hpp>
+#include <alia/ui/system/object.hpp>
 #include <alia/ui/theme.hpp>
 
 using namespace alia;
@@ -75,6 +75,7 @@ style the_style = {.padding = 10.0f};
 theme_colors the_theme;
 seed_colors const* seeds = &seed_sets[0];
 color_palette the_palette;
+float the_time = 0.0f;
 
 bool
 detect_click(event const* event, float x, float y, float width, float height)
@@ -915,7 +916,7 @@ mixed_flow_demo(context& ctx)
 
                 panel(
                     ctx,
-                    color{0.24f, 0.24f, 0.30f, 1},
+                    color{0.05f, 0.05f, 0.06f, 1},
                     min_size({0, 0})
                         | margins(
                             {.left = 10,
@@ -938,7 +939,7 @@ layout_demo_flow(context& ctx)
     hyperflow(ctx, [&]() {
         for (int i = 0; i < 600; ++i)
         {
-            float intensity = ((i / 4) % 3) * 0.02f;
+            float intensity = ((i / 4) % 3) * 0.01f;
             inset(
                 ctx,
                 {.left = 10, .right = 10, .top = 10, .bottom = 10},
@@ -946,9 +947,9 @@ layout_demo_flow(context& ctx)
                     concrete_panel(
                         ctx,
                         color{
-                            0.14f + intensity,
-                            0.14f + intensity,
-                            0.18f + intensity,
+                            0.03f + intensity,
+                            0.03f + intensity,
+                            0.04f + intensity,
                             1},
                         NO_FLAGS,
                         [&]() {
@@ -1029,7 +1030,7 @@ alignment_override_demo(context& ctx)
     static vec2 offsets[12] = {0};
     float x = 0.0f;
     row(ctx, [&]() {
-        concrete_panel(ctx, color{0.14f, 0.14f, 0.16f, 1}, CENTER, [&]() {
+        concrete_panel(ctx, color{0.03f, 0.03f, 0.04f, 1}, CENTER, [&]() {
             inset(ctx, {.left = 4, .right = 4, .top = 4, .bottom = 4}, [&]() {
                 if (do_rect(
                         ctx,
@@ -1052,9 +1053,9 @@ alignment_override_demo(context& ctx)
                         concrete_panel(
                             ctx,
                             color{
-                                0.14f + 0.06f * f,
-                                0.14f + 0.06f * f,
-                                0.16f + 0.08f * f,
+                                0.03f + 0.02f * f,
+                                0.03f + 0.02f * f,
+                                0.04f + 0.02f * f,
                                 1},
                             NO_FLAGS,
                             [&]() {
@@ -1086,9 +1087,9 @@ layout_mods_demo(context& ctx)
             panel(
                 ctx,
                 color{
-                    0.14f + 0.06f * f,
-                    0.14f + 0.06f * f,
-                    0.16f + 0.08f * f,
+                    0.03f + 0.02f * f,
+                    0.03f + 0.02f * f,
+                    0.04f + 0.02f * f,
                     1},
                 min_size({120, 120})
                     | margins(
@@ -1181,7 +1182,7 @@ show_color_ramp(context& ctx, color_ramp ramp)
         {
             do_rect(
                 ctx,
-                {100, 100},
+                {36, 36},
                 alia_rgba_from_rgb_alpha(
                     alia_rgb_from_srgb8(ramp[i].rgb), 1.0f),
                 CENTER);
@@ -1197,10 +1198,10 @@ show_contrasting_color_pair(context& ctx, contrasting_color_pair pair)
         alia_rgba_from_rgb_alpha(alia_rgb_from_srgb8(pair.main), 1.0f),
         CENTER,
         [&]() {
-            with_padding(ctx, 40, [&]() {
+            with_padding(ctx, 20, [&]() {
                 do_rect(
                     ctx,
-                    {20, 20},
+                    {10, 10},
                     alia_rgba_from_rgb_alpha(
                         alia_rgb_from_srgb8(pair.contrasting), 1.0f),
                     CENTER);
@@ -1230,7 +1231,7 @@ color_ramp(context& ctx, alia_srgb8 seed)
             oklch.l = i * 0.1f;
             alia_rgb rgb = alia_rgb_from_oklab(alia_oklab_from_oklch(oklch));
             do_rect(
-                ctx, {100, 100}, alia_rgba_from_rgb_alpha(rgb, 1.0f), CENTER);
+                ctx, {36, 36}, alia_rgba_from_rgb_alpha(rgb, 1.0f), CENTER);
         }
     });
 }
@@ -1247,7 +1248,7 @@ color_transition(context& ctx, alia_oklch start, alia_oklch end)
             oklch.h = start.h + (end.h - start.h) * i * 0.01f;
             alia_rgb rgb = alia_rgb_from_oklab(alia_oklab_from_oklch(oklch));
             do_rect(
-                ctx, {100, 100}, alia_rgba_from_rgb_alpha(rgb, 1.0f), CENTER);
+                ctx, {36, 36}, alia_rgba_from_rgb_alpha(rgb, 1.0f), CENTER);
         }
     });
 }
@@ -1264,7 +1265,7 @@ color_demo(context& ctx)
             with_padding(ctx, 5, [&] {
                 do_rect(
                     ctx,
-                    {40, 40},
+                    {24, 24},
                     alia_rgba_from_rgb_alpha(rgb, 1.0f),
                     CENTER);
             });
@@ -1299,16 +1300,77 @@ theme_demo(context& ctx)
     });
 }
 
+struct pass_aborted
+{
+};
+
+void
+abort_pass()
+{
+    throw pass_aborted();
+}
+
 void
 the_demo(context& ctx)
 {
-    with_padding(ctx, 10, [&] {
-        inset(ctx, {.left = 40, .right = 40, .top = 40, .bottom = 40}, [&]() {
-            // grid_demo(ctx);
-            // color_demo(ctx);
-            theme_demo(ctx);
+    try
+    {
+        static int active_demo = 0;
+        int const demo_count = 6;
+        with_padding(ctx, 0, [&] {
+            row(ctx, [&]() {
+                column(ctx, [&]() {
+                    for (int i = 0; i < demo_count; ++i)
+                    {
+                        if (do_rect(
+                                ctx,
+                                {40, 40},
+                                (active_demo == i) ? color{1, 1, 1, 1}
+                                                   : color{0, 0, 0, 0},
+                                FILL))
+                        {
+                            active_demo = i;
+                            abort_pass();
+                        }
+                        do_rect(ctx, {1, 1}, color{0.4f, 0.4f, 0.4f, 1}, FILL);
+                    }
+                });
+                column(ctx, GROW, [&]() {
+                    inset(
+                        ctx,
+                        {.left = 40, .right = 40, .top = 40, .bottom = 40},
+                        [&]() {
+                            with_padding(ctx, 10, [&] {
+                                switch (active_demo)
+                                {
+                                    case 0:
+                                        mixed_flow_demo(ctx);
+                                        break;
+                                    case 1:
+                                        layout_demo(ctx);
+                                        break;
+                                    case 2:
+                                        color_demo(ctx);
+                                        break;
+                                    case 3:
+                                        theme_demo(ctx);
+                                        break;
+                                    case 4:
+                                        grid_demo(ctx);
+                                        break;
+                                    case 5:
+                                        simple_text_demo(ctx);
+                                        break;
+                                }
+                            });
+                        });
+                });
+            });
         });
-    });
+    }
+    catch (pass_aborted)
+    {
+    }
 }
 
 void
@@ -1462,6 +1524,8 @@ probe_allocations(F&& f)
 void
 update()
 {
+    the_time = glfwGetTime();
+
     static std::chrono::time_point<std::chrono::high_resolution_clock>
         last_frame_time = std::chrono::high_resolution_clock::now();
     auto const start_time = std::chrono::high_resolution_clock::now();
@@ -1564,10 +1628,11 @@ update()
         std::cout << "FRAME_TIME_SLOW" << std::endl;
     }
 
-    std::cout << "frame_time: " << std::setw(6) << external_frame_time << ": "
-              << std::setw(6) << frame_time << ": " << std::setw(6)
-              << refresh_time << " / " << std::setw(6) << layout_time << " / "
-              << std::setw(6) << render_time << std::endl;
+    std::cout
+        << "frame_time: " // << std::setw(6) << external_frame_time << ": "
+        << std::setw(6) << frame_time << ": " << std::setw(6) << refresh_time
+        << " / " << std::setw(6) << layout_time << " / " << std::setw(6)
+        << render_time << std::endl;
 
     // std::cout << "allocation count: " << result.count << std::endl;
 
