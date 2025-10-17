@@ -15,31 +15,31 @@
 
 #include "roboto-msdf.h"
 
+#include <alia/color.hpp>
+#include <alia/context.hpp>
+#include <alia/display_list.hpp>
+#include <alia/drawing.hpp>
+#include <alia/events.hpp>
+#include <alia/geometry.hpp>
+#include <alia/layout/compositors/column.hpp>
+#include <alia/layout/compositors/flow.hpp>
+#include <alia/layout/compositors/grid.hpp>
+#include <alia/layout/compositors/hyperflow.hpp>
+#include <alia/layout/compositors/row.hpp>
+#include <alia/layout/container.hpp>
+#include <alia/layout/leaf.hpp>
+#include <alia/layout/modifiers/alignment_override.hpp>
+#include <alia/layout/modifiers/growth_override.hpp>
+#include <alia/layout/modifiers/inset.hpp>
+#include <alia/layout/modifiers/min_size.hpp>
+#include <alia/layout/modifiers/placement_hook.hpp>
+#include <alia/layout/system.hpp>
+#include <alia/layout/utilities.hpp>
 #include <alia/platforms/glfw/window.hpp>
 #include <alia/renderers/gl/renderer.hpp>
+#include <alia/system/object.hpp>
 #include <alia/text_engines/msdf/msdf.hpp>
-#include <alia/ui/color.hpp>
-#include <alia/ui/context.hpp>
-#include <alia/ui/display_list.hpp>
-#include <alia/ui/drawing.hpp>
-#include <alia/ui/events.hpp>
-#include <alia/ui/geometry.hpp>
-#include <alia/ui/layout/compositors/column.hpp>
-#include <alia/ui/layout/compositors/flow.hpp>
-#include <alia/ui/layout/compositors/grid.hpp>
-#include <alia/ui/layout/compositors/hyperflow.hpp>
-#include <alia/ui/layout/compositors/row.hpp>
-#include <alia/ui/layout/container.hpp>
-#include <alia/ui/layout/leaf.hpp>
-#include <alia/ui/layout/modifiers/alignment_override.hpp>
-#include <alia/ui/layout/modifiers/growth_override.hpp>
-#include <alia/ui/layout/modifiers/inset.hpp>
-#include <alia/ui/layout/modifiers/min_size.hpp>
-#include <alia/ui/layout/modifiers/placement_hook.hpp>
-#include <alia/ui/layout/system.hpp>
-#include <alia/ui/layout/utilities.hpp>
-#include <alia/ui/system/object.hpp>
-#include <alia/ui/theme.hpp>
+#include <alia/theme.hpp>
 
 using namespace alia;
 

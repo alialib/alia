@@ -4,13 +4,13 @@
 
 #include <vector>
 
-#include <alia/kernel/infinite_arena.hpp>
-#include <alia/ui/context.hpp>
-#include <alia/ui/layout/compositors/column.hpp>
-#include <alia/ui/layout/compositors/row.hpp>
-#include <alia/ui/layout/container.hpp>
-#include <alia/ui/layout/leaf.hpp>
-#include <alia/ui/system/object.hpp>
+#include <alia/context.hpp>
+#include <alia/infinite_arena.hpp>
+#include <alia/layout/compositors/column.hpp>
+#include <alia/layout/compositors/row.hpp>
+#include <alia/layout/container.hpp>
+#include <alia/layout/leaf.hpp>
+#include <alia/system/object.hpp>
 
 using namespace alia;
 

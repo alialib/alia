@@ -4,7 +4,7 @@
 #include <glad/glad.h>
 
 // TODO: Remove this.
-#include <alia/ui/drawing.hpp>
+#include <alia/drawing.hpp>
 
 namespace alia {
 

@@ -1,8 +1,8 @@
 #include <alia/renderers/gl/renderer.hpp>
 
-#include <alia/kernel/infinite_arena.hpp>
-#include <alia/ui/display_list.hpp>
-#include <alia/ui/system/object.hpp>
+#include <alia/display_list.hpp>
+#include <alia/infinite_arena.hpp>
+#include <alia/system/object.hpp>
 
 // TODO: Remove this.
 #include <iostream>

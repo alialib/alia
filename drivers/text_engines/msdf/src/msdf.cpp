@@ -1,7 +1,7 @@
 #include <alia/text_engines/msdf/msdf.hpp>
 
+#include <alia/color.hpp>
 #include <alia/renderers/gl/renderer.hpp>
-#include <alia/ui/color.hpp>
 
 #include <glad/glad.h>
 

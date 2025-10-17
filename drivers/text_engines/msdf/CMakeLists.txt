@@ -6,4 +6,4 @@ add_library(alia_msdf_text_engine STATIC
 target_include_directories(alia_msdf_text_engine PUBLIC
     include)
 target_link_libraries(alia_msdf_text_engine PUBLIC
-    glfw glad::glad alia_ui alia_gl_renderer)
+    glfw glad::glad alia_core alia_gl_renderer)

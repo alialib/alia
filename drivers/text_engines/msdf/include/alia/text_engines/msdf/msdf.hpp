@@ -3,9 +3,9 @@
 #include <cstdint>
 #include <utility>
 
-#include <alia/ui/color.hpp>
-#include <alia/ui/display_list.hpp>
-#include <alia/ui/geometry.hpp>
+#include <alia/color.hpp>
+#include <alia/display_list.hpp>
+#include <alia/geometry.hpp>
 
 // TODO: Split up this file.
 
