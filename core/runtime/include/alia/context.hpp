@@ -4,10 +4,10 @@
 
 #include <alia/display_list.hpp>
 #include <alia/drawing.hpp>
+#include <alia/event.h>
 
 namespace alia {
 
-struct event;
 struct system;
 struct layout_node;
 struct layout_container;
@@ -44,7 +44,7 @@ struct draw_pass
 
 struct event_pass
 {
-    alia::event* event;
+    alia_event event;
 };
 
 struct pass

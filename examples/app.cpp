@@ -41,6 +41,8 @@
 #include <alia/text_engines/msdf/msdf.hpp>
 #include <alia/theme.hpp>
 
+#include <alia/event.h>
+
 using namespace alia;
 
 seed_colors const seed_sets[] = {
@@ -78,11 +80,14 @@ color_palette the_palette;
 float the_time = 0.0f;
 
 bool
-detect_click(event const* event, float x, float y, float width, float height)
+detect_click(
+    alia_event const* event, float x, float y, float width, float height)
 {
-    return event->type == event_type::Click && event->click.x >= x
-        && event->click.x <= x + width && event->click.y >= y
-        && event->click.y <= y + height;
+    return event->type == ALIA_EVENT_MOUSE_PRESS
+        && event->payload.mouse_press.x >= x
+        && event->payload.mouse_press.x <= x + width
+        && event->payload.mouse_press.y >= y
+        && event->payload.mouse_press.y <= y + height;
 }
 
 bool
@@ -121,7 +126,7 @@ do_rect(context& ctx, vec2 size, color color, layout_flag_set flags)
             box box = {
                 .pos = leaf_placement.position, .size = leaf_placement.size};
             if (detect_click(
-                    ctx.pass.event.event,
+                    &ctx.pass.event.event,
                     box.pos.x,
                     box.pos.y,
                     box.size.x,
@@ -172,7 +177,7 @@ do_rect_with_offset(
                 = {.pos = leaf_placement.position + offset,
                    .size = leaf_placement.size};
             if (detect_click(
-                    ctx.pass.event.event,
+                    &ctx.pass.event.event,
                     box.pos.x,
                     box.pos.y,
                     box.size.x,
@@ -750,7 +755,7 @@ do_text(
                     ctx.system->layout.placement_arena);
                 box box = {.pos = fragment.position, .size = fragment.size};
                 if (detect_click(
-                        ctx.pass.event.event,
+                        &ctx.pass.event.event,
                         box.pos.x,
                         box.pos.y,
                         box.size.x,
@@ -870,11 +875,14 @@ simple_text_demo(context& ctx)
 
     inset(ctx, {.left = 10, .right = 10, .top = 10, .bottom = 10}, [&]() {
         column(ctx, [&]() {
-            do_text(
-                ctx,
-                GRAY,
-                40,
-                " !\"#$%&'()*+,-./0123456789:;<=>?@AZaz[]^_`{|}~");
+            for (int i = 0; i < 12; ++i)
+            {
+                do_text(
+                    ctx,
+                    GRAY,
+                    20 + (10 - i) * 4,
+                    " !\"#$%&'()*+,-./0123456789:;<=>?@AZaz[]^_`{|}~");
+            }
         });
     });
 }
@@ -1381,9 +1389,6 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         double x, y;
         glfwGetCursorPos(window, &x, &y);
 
-        event event;
-        event.type = event_type::Click;
-
         int framebuffer_width, framebuffer_height;
         glfwGetFramebufferSize(
             window, &framebuffer_width, &framebuffer_height);
@@ -1391,16 +1396,19 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         int window_width, window_height;
         glfwGetWindowSize(window, &window_width, &window_height);
 
-        event.click.x
+        float internal_x
             = (static_cast<float>(x) * framebuffer_width
                / window_width); // / the_ui_scale.x;
-        event.click.y
+        float internal_y
             = (static_cast<float>(y) * framebuffer_height
                / window_height); // / the_ui_scale.y;
-        std::uint32_t root_index;
         the_system.layout.placement_arena.reset();
         context event_ctx
-            = {.pass = {.type = pass_type::Event, .event = {.event = &event}},
+            = {.pass
+               = {.type = pass_type::Event,
+                  .event
+                  = {.event = alia_make_mouse_press_event(
+                         {.x = internal_x, .y = internal_y})}},
                .style = &the_style,
                .system = &the_system};
         the_demo(event_ctx);
