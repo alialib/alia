@@ -65,6 +65,18 @@ operator/=(vec2& v, float s)
     return v;
 }
 
+inline bool
+operator==(vec2 a, vec2 b)
+{
+    return a.x == b.x && a.y == b.y;
+}
+
+inline bool
+operator!=(vec2 a, vec2 b)
+{
+    return !(a == b);
+}
+
 struct box
 {
     vec2 pos;

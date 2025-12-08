@@ -530,7 +530,7 @@ void
 render_command_list(
     msdf_text_engine* engine,
     command_list<msdf_draw_command> const& commands,
-    vec2 framebuffer_size)
+    vec2 surface_size)
 {
     size_t glyph_instance_count = 0;
     for (msdf_draw_command* cmd = commands.head; cmd; cmd = cmd->next)
@@ -543,9 +543,9 @@ render_command_list(
     glUseProgram(engine->gpu.shader_program);
 
     float l = 0.f; // left
-    float r = framebuffer_size.x; // right
+    float r = surface_size.x; // right
     float t = 0.f; // top
-    float b = framebuffer_size.y; // bottom
+    float b = surface_size.y; // bottom
     float n = -1.f; // near
     float f = 1.f; // far
 

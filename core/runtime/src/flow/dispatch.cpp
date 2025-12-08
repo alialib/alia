@@ -1,33 +1,32 @@
-#include <alia/core/flow/top_level.hpp>
+#include <alia/flow/dispatch.hpp>
 
-#include <alia/core/system/internals.hpp>
+#include <alia/events.hpp>
+#include <alia/system/object.hpp>
 
 namespace alia {
 
 void
-invoke_controller(untyped_system& sys, event_traversal& events)
+invoke_controller(ui_system& sys, event_traversal& events)
 {
-    events.is_refresh = (events.event_type == &typeid(refresh_event));
+    // events.is_refresh = (events.event->category == ALIA_EVENT_REFRESH);
 
-    data_traversal data;
-    scoped_data_traversal sdt(sys.data, data);
-    // Only use refresh events to decide when data is no longer needed.
-    data.gc_enabled = data.cache_clearing_enabled = events.is_refresh;
+    // data_traversal data;
+    // scoped_data_traversal sdt(sys.data, data);
+    // // Only use refresh events to decide when data is no longer needed.
+    // data.gc_enabled = data.cache_clearing_enabled = events.is_refresh;
 
-    timing_subsystem timing;
-    // TODO: The UI system has a different tick count.
-    timing.tick_counter = sys.external->get_tick_count();
+    // timing_subsystem timing;
+    // // TODO: The UI system has a different tick count.
+    // timing.tick_counter = sys.external->get_tick_count();
 
-    sys.create_core_context_and_invoke_controller(events, data, timing);
+    // sys.create_core_context_and_invoke_controller(events, data, timing);
 }
 
 namespace {
 
 void
 route_event_(
-    untyped_system& sys,
-    event_traversal& traversal,
-    component_container* target)
+    ui_system& sys, event_traversal& traversal, component_container* target)
 {
     // In order to construct the path to the target, we start at the target
     // and follow the 'parent' pointers until we reach the root. We do this
@@ -59,9 +58,7 @@ namespace detail {
 //
 void
 route_event(
-    untyped_system& sys,
-    event_traversal& traversal,
-    component_container* target)
+    ui_system& sys, event_traversal& traversal, component_container* target)
 {
     try
     {

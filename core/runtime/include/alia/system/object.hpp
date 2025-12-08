@@ -14,6 +14,8 @@
 // #include <alia/system/window_interface.hpp>
 #include <alia/theme.hpp>
 
+#include <functional>
+
 namespace alia {
 
 struct window_input_state
@@ -62,39 +64,26 @@ struct window_input_state
 struct animation_tracking_system
 {
     // active transitions
-    transition_animation_map transitions;
+    // transition_animation_map transitions;
     // active flare groups
     flare_map flares;
 };
 
-struct system
+struct ui_system
 {
-    window_input_state input;
-    layout_system layout;
     animation_tracking_system animation;
-    vec2 framebuffer_size;
-    vec2 ui_zoom;
-};
 
-void
-initialize(system& system, vec2 framebuffer_size, vec2 ui_zoom);
-
-#if 0
-
-struct ui_system : alia::typed_system<vanilla_ui_context>
-{
-    std::function<void(ui_context)> controller;
-    void invoke_controller(vanilla_ui_context) override;
+    std::function<void(context&)> controller;
 
     // alia__shared_ptr<alia::surface> surface;
-    vector<2, unsigned> surface_size;
-    vector<2, float> ppi;
+    vec2 surface_size;
+    vec2 ppi;
 
     float magnification = 1;
 
-    std::shared_ptr<os_interface> os;
+    // std::shared_ptr<os_interface> os;
 
-    std::shared_ptr<window_interface> window;
+    // std::shared_ptr<window_interface> window;
 
     window_input_state input;
 
@@ -102,13 +91,13 @@ struct ui_system : alia::typed_system<vanilla_ui_context>
 
     // the current time, as a millisecond tick counter with an arbitrary start
     // point and the possibility of wraparound
-    millisecond_count tick_count = 0;
+    nanosecond_count tick_count = 0;
 
     theme_colors theme;
 
     // routable_widget_id overlay_id;
 
-    std::vector<widget_visibility_request> pending_visibility_requests;
+    // std::vector<widget_visibility_request> pending_visibility_requests;
 
     // This prevents timer requests from being serviced in the same frame that
     // they're requested and thus throwing the event handler into a loop.
@@ -119,6 +108,7 @@ struct ui_system : alia::typed_system<vanilla_ui_context>
     // tooltip_state tooltip;
 };
 
-#endif
+void
+initialize(ui_system& system, vec2 surface_size);
 
 } // namespace alia

@@ -9,7 +9,7 @@
 namespace alia {
 
 struct infinite_arena;
-struct system;
+struct ui_system;
 struct display_list;
 
 // TODO: Make this opaque.
@@ -36,7 +36,7 @@ destroy_gl_renderer(gl_renderer* renderer);
 void
 render_box_command_list(
     gl_renderer* renderer,
-    system const& system,
+    ui_system const& system,
     box_command_list const& boxes);
 
 // TODO: Move to a separate utility header.

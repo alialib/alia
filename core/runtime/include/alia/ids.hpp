@@ -1,11 +1,9 @@
 #pragma once
 
 #include <alia/context.hpp>
+#include <alia/events.hpp>
 
 namespace alia {
-
-// TODO: Implement component identities.
-using component_identity = void const*;
 
 typedef void const* widget_id;
 constexpr widget_id auto_id = nullptr;
@@ -23,7 +21,7 @@ struct routable_widget_id
     widget_id id = nullptr;
 
     // TODO: Implement component identities.
-    component_identity component = nullptr;
+    component_identity component;
 
     bool
     matches(widget_id widget) const
@@ -39,11 +37,10 @@ struct routable_widget_id
 };
 static routable_widget_id const null_widget_id{0, component_identity()};
 
-// TODO: Implement component identities.
 inline routable_widget_id
 make_routable_widget_id(ephemeral_context& ctx, widget_id id)
 {
-    return routable_widget_id{id, nullptr};
+    return routable_widget_id{id, get_active_component_container(ctx)};
 }
 
 } // namespace alia

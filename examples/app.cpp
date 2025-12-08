@@ -19,7 +19,9 @@
 #include <alia/context.hpp>
 #include <alia/display_list.hpp>
 #include <alia/drawing.hpp>
+#include <alia/event.h>
 #include <alia/events.hpp>
+#include <alia/flow/dispatch.hpp>
 #include <alia/geometry.hpp>
 #include <alia/layout/compositors/column.hpp>
 #include <alia/layout/compositors/flow.hpp>
@@ -40,8 +42,6 @@
 #include <alia/system/object.hpp>
 #include <alia/text_engines/msdf/msdf.hpp>
 #include <alia/theme.hpp>
-
-#include <alia/event.h>
 
 using namespace alia;
 
@@ -66,7 +66,7 @@ seed_colors const seed_sets[] = {
      .danger = hex_color("#d31638")},
 };
 
-alia::system the_system;
+alia::ui_system the_system;
 GLFWwindow* the_window;
 gl_renderer the_renderer;
 display_list_arena the_display_list_arena;
@@ -83,11 +83,9 @@ bool
 detect_click(
     alia_event const* event, float x, float y, float width, float height)
 {
-    return event->type == ALIA_EVENT_MOUSE_PRESS
-        && event->payload.mouse_press.x >= x
-        && event->payload.mouse_press.x <= x + width
-        && event->payload.mouse_press.y >= y
-        && event->payload.mouse_press.y <= y + height;
+    return event->type == ALIA_EVENT_MOUSE_PRESS && event->mouse_press.x >= x
+        && event->mouse_press.x <= x + width && event->mouse_press.y >= y
+        && event->mouse_press.y <= y + height;
 }
 
 bool
@@ -1559,18 +1557,14 @@ update()
         refresh_finished_time = std::chrono::high_resolution_clock::now();
 
         the_system.layout.placement_arena.reset();
-        resolve_layout(the_system.layout, the_system.framebuffer_size);
+        resolve_layout(the_system.layout, the_system.surface_size);
 
         layout_finished_time = std::chrono::high_resolution_clock::now();
 
         update_glfw_window_info(the_system, the_window);
 
         // glfwMakeContextCurrent(the_window);
-        glViewport(
-            0,
-            0,
-            the_system.framebuffer_size.x,
-            the_system.framebuffer_size.y);
+        glViewport(0, 0, the_system.surface_size.x, the_system.surface_size.y);
 
         alia_rgb c = alia_rgb_from_srgb8(alia_srgb8{0x29, 0x29, 0x40});
         glClearColor(c.r, c.g, c.b, 1.0f);
@@ -1603,9 +1597,7 @@ update()
             printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
         render_command_list(
-            the_msdf_text_engine,
-            the_msdf_commands,
-            the_system.framebuffer_size);
+            the_msdf_text_engine, the_msdf_commands, the_system.surface_size);
 
         while ((err = glGetError()) != GL_NO_ERROR)
             printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
@@ -1659,9 +1651,7 @@ update()
 void
 framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-    // Update the system's framebuffer size
-    the_system.framebuffer_size = {float(width), float(height)};
-
+    the_system.surface_size = {float(width), float(height)};
     update();
 }
 
@@ -1735,10 +1725,7 @@ main()
         return -1;
     }
 
-    initialize(
-        the_system,
-        vec2{1200, 1600}, // Initial framebuffer size
-        vec2{1.0f, 1.0f}); // Initial UI zoom
+    initialize(the_system, vec2{1200, 1600});
 
     glEnable(GL_FRAMEBUFFER_SRGB);
 

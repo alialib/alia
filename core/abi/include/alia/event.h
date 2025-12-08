@@ -201,26 +201,24 @@ typedef struct
     int dummy;
 } alia_custom_event;
 
-// EVENT PAYLOAD UNION
+// EVENT STRUCT
 
 #define ALIA_EVENT_PAYLOAD(code, CATEGORY, NAME, name, data_type)             \
     data_type name;
-
-typedef union alia_event_payload
-{
-    ALIA_ENUMERATE_EVENT_TYPES(ALIA_EVENT_PAYLOAD)
-} alia_event_payload;
-
-#undef ALIA_EVENT_PAYLOAD
-
-// EVENT STRUCT
 
 typedef struct alia_event
 {
     alia_category_id category; // ALIA_CATEGORY_*
     alia_event_code type; // ALIA_EVENT_*
-    alia_event_payload payload;
+    union
+    {
+        ALIA_ENUMERATE_EVENT_TYPES(ALIA_EVENT_PAYLOAD)
+    };
 } alia_event;
+
+#undef ALIA_EVENT_PAYLOAD
+
+// CONSTRUCTORS
 
 #define ALIA_DEFINE_EVENT_CONSTRUCTOR(code, CATEGORY, NAME, name, data_type)  \
     static inline alia_event alia_make_##name##_event(data_type data)         \
@@ -228,7 +226,7 @@ typedef struct alia_event
         alia_event event;                                                     \
         event.category = ALIA_CATEGORY_##CATEGORY;                            \
         event.type = ALIA_EVENT_##NAME;                                       \
-        event.payload.name = data;                                            \
+        event.name = data;                                                    \
         return event;                                                         \
     }
 

@@ -4,9 +4,9 @@
 
 namespace alia {
 
-struct system;
+struct ui_system;
 
 void
-update_glfw_window_info(system& system, GLFWwindow* window);
+update_glfw_window_info(ui_system& system, GLFWwindow* window);
 
 } // namespace alia

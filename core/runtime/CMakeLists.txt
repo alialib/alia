@@ -6,6 +6,8 @@ add_library(alia_core STATIC
     src/color.cpp
     src/drawing.cpp
     src/display_list.cpp
+    src/flow/dispatch.cpp
+    src/flow/traversal.cpp
     src/layout/compositors/column.cpp
     src/layout/compositors/flow.cpp
     src/layout/compositors/grid.cpp
@@ -20,7 +22,7 @@ add_library(alia_core STATIC
     src/layout/leaf.cpp
     src/layout/system.cpp
     src/layout/utilities.cpp
-    # src/system/input_processing.cpp
+    src/system/input_processing.cpp
     # src/system/object.cpp
     src/system.cpp
     src/theme.cpp)

@@ -10,7 +10,7 @@ struct ui_system;
 
 // Process mouse movement within (or into) the window.
 void
-process_mouse_motion(ui_system& ui, vector<2, double> const& position);
+process_mouse_motion(ui_system& ui, vec2 const& position);
 
 // Process the window's loss of the mouse.
 void
@@ -32,7 +32,7 @@ process_mouse_release(ui_system& ui, mouse_button button);
 
 // Process scroll inputs (e.g., the mouse wheel).
 void
-process_scroll(ui_system& ui, vector<2, double> const& delta);
+process_scroll(ui_system& ui, vec2 const& delta);
 
 // Process a key press.
 bool

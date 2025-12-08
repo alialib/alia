@@ -116,6 +116,6 @@ void
 render_command_list(
     msdf_text_engine* engine,
     command_list<msdf_draw_command> const& commands,
-    vec2 framebuffer_size);
+    vec2 surface_size);
 
 } // namespace alia

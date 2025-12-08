@@ -8,10 +8,11 @@
 
 namespace alia {
 
-struct system;
+struct ui_system;
 struct layout_node;
 struct layout_container;
 struct infinite_arena;
+struct event_traversal;
 
 enum class pass_type
 {
@@ -62,9 +63,17 @@ struct context
 {
     pass pass;
     style* style;
-    system* system;
+    ui_system* system;
+    event_traversal* event;
 };
 
 using ephemeral_context = context;
+
+// TODO: Figure out actual context interface protocols.
+inline event_traversal&
+get_event_traversal(ephemeral_context ctx)
+{
+    return *ctx.event;
+}
 
 } // namespace alia

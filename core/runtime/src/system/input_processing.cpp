@@ -1,11 +1,8 @@
 #include <alia/system/input_processing.hpp>
 
-#include <alia/core/flow/events.hpp>
-#include <alia/core/flow/top_level.hpp>
 #include <alia/events.hpp>
-#include <alia/system/api.hpp>
+#include <alia/flow/dispatch.hpp>
 #include <alia/system/object.hpp>
-#include <alia/utilities/regions.hpp>
 
 namespace alia {
 
@@ -21,16 +18,16 @@ get_mouse_target(ui_system& ui)
 
 } // namespace
 
+#if 0
+
 void
-process_mouse_motion(ui_system& ui, vector<2, double> const& position)
+process_mouse_motion(ui_system& ui, vec2 const& position)
 {
     if (!ui.input.mouse_inside_window || ui.input.mouse_position != position)
     {
-        mouse_motion_event event;
-        // TODO: Use constructor
-        event.position = position;
-        dispatch_targeted_event(
-            ui, event, get_mouse_target(ui), MOUSE_MOTION_EVENT);
+        alia_event event
+            = alia_make_mouse_motion_event({.x = position.x, .y = position.y});
+        dispatch_targeted_event(ui, event, get_mouse_target(ui));
         refresh_system(ui);
 
         ui.input.mouse_position = position;
@@ -161,5 +158,7 @@ process_key_release(ui_system& ui, modded_key const& info)
     ui.input.keyboard_interaction = true;
     return process_focused_key_release(ui, info);
 }
+
+#endif
 
 } // namespace alia

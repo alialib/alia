@@ -263,18 +263,20 @@ struct Vertex
 
 void
 render_box_command_list(
-    gl_renderer* renderer, system const& system, box_command_list const& boxes)
+    gl_renderer* renderer,
+    ui_system const& system,
+    box_command_list const& boxes)
 {
-    glViewport(0, 0, system.framebuffer_size.x, system.framebuffer_size.y);
+    glViewport(0, 0, system.surface_size.x, system.surface_size.y);
 
     GLenum err;
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
     float l = 0.f; // left
-    float r = system.framebuffer_size.x; // right
+    float r = system.surface_size.x; // right
     float t = 0.f; // top
-    float b = system.framebuffer_size.y; // bottom
+    float b = system.surface_size.y; // bottom
     float n = -1.f; // near
     float f = 1.f; // far
 
@@ -308,8 +310,8 @@ render_box_command_list(
 
     renderer->clip_ptr[0] = 0.f;
     renderer->clip_ptr[1] = 0.f;
-    renderer->clip_ptr[2] = system.framebuffer_size.x;
-    renderer->clip_ptr[3] = system.framebuffer_size.y;
+    renderer->clip_ptr[2] = system.surface_size.x;
+    renderer->clip_ptr[3] = system.surface_size.y;
 
     renderer->rect_instance_arena->reset();
     rect_instance* rect_instances = arena_array_alloc<rect_instance>(
