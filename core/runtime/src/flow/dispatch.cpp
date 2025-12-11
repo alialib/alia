@@ -20,6 +20,17 @@ invoke_controller(ui_system& sys, event_traversal& events)
     // timing.tick_counter = sys.external->get_tick_count();
 
     // invoke_controller(sys, events);
+
+    // TODO
+    static style the_style = {.padding = 10.0f};
+
+    context event_ctx
+        = {.pass = {.type = pass_type::Event, .event = {}},
+           .style = &the_style,
+           .system = &sys,
+           .event = &events};
+
+    sys.controller(event_ctx);
 }
 
 namespace {

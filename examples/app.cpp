@@ -80,12 +80,12 @@ color_palette the_palette;
 float the_time = 0.0f;
 
 bool
-detect_click(
-    alia_event const* event, float x, float y, float width, float height)
+detect_click(context& ctx, float x, float y, float width, float height)
 {
-    return event->type == ALIA_EVENT_MOUSE_PRESS && event->mouse_press.x >= x
-        && event->mouse_press.x <= x + width && event->mouse_press.y >= y
-        && event->mouse_press.y <= y + height;
+    auto& event = *ctx.event->event;
+    return event.type == ALIA_EVENT_MOUSE_PRESS && event.mouse_press.x >= x
+        && event.mouse_press.x <= x + width && event.mouse_press.y >= y
+        && event.mouse_press.y <= y + height;
 }
 
 bool
@@ -124,11 +124,7 @@ do_rect(context& ctx, vec2 size, color color, layout_flag_set flags)
             box box = {
                 .pos = leaf_placement.position, .size = leaf_placement.size};
             if (detect_click(
-                    &ctx.pass.event.event,
-                    box.pos.x,
-                    box.pos.y,
-                    box.size.x,
-                    box.size.y))
+                    ctx, box.pos.x, box.pos.y, box.size.x, box.size.y))
                 return true;
             break;
         }
@@ -175,11 +171,7 @@ do_rect_with_offset(
                 = {.pos = leaf_placement.position + offset,
                    .size = leaf_placement.size};
             if (detect_click(
-                    &ctx.pass.event.event,
-                    box.pos.x,
-                    box.pos.y,
-                    box.size.x,
-                    box.size.y))
+                    ctx, box.pos.x, box.pos.y, box.size.x, box.size.y))
                 return true;
             break;
         }
@@ -753,11 +745,7 @@ do_text(
                     ctx.system->layout.placement_arena);
                 box box = {.pos = fragment.position, .size = fragment.size};
                 if (detect_click(
-                        &ctx.pass.event.event,
-                        box.pos.x,
-                        box.pos.y,
-                        box.size.x,
-                        box.size.y))
+                        ctx, box.pos.x, box.pos.y, box.size.x, box.size.y))
                 {
                     // TODO: Perform action, abort traversal.
                     result = true;

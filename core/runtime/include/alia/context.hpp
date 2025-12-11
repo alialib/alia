@@ -44,7 +44,6 @@ struct draw_pass
 
 struct event_pass
 {
-    alia_event event;
 };
 
 struct pass
