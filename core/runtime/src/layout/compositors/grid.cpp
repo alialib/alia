@@ -1,6 +1,7 @@
 #include <alia/layout/compositors/grid.hpp>
 
 #include <alia/context.hpp>
+#include <alia/events.hpp>
 #include <alia/layout/utilities.hpp>
 
 namespace alia {
@@ -30,7 +31,7 @@ count_columns(grid_layout_node* grid)
         {
             ++column_count;
         }
-        max_column_count = (std::max) (max_column_count, column_count);
+        max_column_count = (std::max)(max_column_count, column_count);
     }
     return max_column_count;
 }
@@ -56,13 +57,12 @@ grid_measure_horizontal(measurement_context* ctx, layout_node* node)
              child = child->next_sibling, ++column_index)
         {
             auto const child_x = measure_horizontal(ctx, child);
-            grid.scratch->columns[column_index].growth_factor
-                = (std::max) (grid.scratch->columns[column_index]
-                                  .growth_factor,
-                              child_x.growth_factor);
-            grid.scratch->columns[column_index].min_size
-                = (std::max) (grid.scratch->columns[column_index].min_size,
-                              child_x.min_size);
+            grid.scratch->columns[column_index].growth_factor = (std::max)(
+                grid.scratch->columns[column_index].growth_factor,
+                child_x.growth_factor);
+            grid.scratch->columns[column_index].min_size = (std::max)(
+                grid.scratch->columns[column_index].min_size,
+                child_x.min_size);
         }
     }
     float total_width = 0, total_growth = 0;
@@ -174,10 +174,10 @@ grid_row_measure_vertical(
         assigned_width,
         grid.scratch->total_width);
     float const total_extra_space
-        = (std::max) (0.f, placement.size - grid.scratch->total_width);
+        = (std::max)(0.f, placement.size - grid.scratch->total_width);
     // TODO: Figure out how to handle 0 total growth.
     float const one_over_total_growth
-        = 1.0f / (std::max) (0.00001f, grid.scratch->total_growth);
+        = 1.0f / (std::max)(0.00001f, grid.scratch->total_growth);
     float height = 0, ascent = 0, descent = 0;
     auto const* column_data = grid.scratch->columns;
     for (layout_node* child = grid_row.container.first_child; child != nullptr;
@@ -188,15 +188,15 @@ grid_row_measure_vertical(
                                 * one_over_total_growth;
         auto const child_y = measure_vertical(
             ctx, ALIA_MAIN_AXIS_X, child, child_x.min_size + extra_space);
-        height = (std::max) (height, child_y.min_size);
-        ascent = (std::max) (ascent, child_y.ascent);
-        descent = (std::max) (descent, child_y.descent);
+        height = (std::max)(height, child_y.min_size);
+        ascent = (std::max)(ascent, child_y.ascent);
+        descent = (std::max)(descent, child_y.descent);
     }
     scratch.height = height;
     scratch.ascent = ascent;
     scratch_restore_state(ctx->scratch, marker);
     return vertical_requirements{
-        .min_size = (std::max) (height, ascent + descent),
+        .min_size = (std::max)(height, ascent + descent),
         .growth_factor = resolve_growth_factor(grid_row.container.flags),
         .ascent = ascent,
         .descent = descent};
@@ -223,9 +223,9 @@ grid_row_assign_boxes(
         scratch.ascent);
     float current_x = box.pos.x + placement.pos.x;
     float const total_extra_space
-        = (std::max) (0.f, placement.size.x - grid.scratch->total_width);
+        = (std::max)(0.f, placement.size.x - grid.scratch->total_width);
     float const one_over_total_growth
-        = 1.0f / (std::max) (0.00001f, grid.scratch->total_growth);
+        = 1.0f / (std::max)(0.00001f, grid.scratch->total_growth);
     auto const* column_data = grid.scratch->columns;
     for (layout_node* child = grid_row.container.first_child; child != nullptr;
          child = child->next_sibling)
@@ -255,9 +255,9 @@ layout_node_vtable grid_row_vtable = {
 void
 begin_grid(context& ctx, grid_scope& scope, layout_flag_set flags)
 {
-    if (ctx.pass.type == pass_type::Refresh)
+    if (is_refresh_event(ctx))
     {
-        auto& layout = ctx.pass.refresh.layout_emission;
+        auto& layout = as_refresh_event(ctx).layout_emission;
         grid_layout_node* node = arena_alloc<grid_layout_node>(*layout.arena);
         scope.grid = node;
         scope.next_row_ptr = &node->first_row;
@@ -278,10 +278,10 @@ begin_grid(context& ctx, grid_scope& scope, layout_flag_set flags)
 void
 end_grid(context& ctx, grid_scope& scope)
 {
-    if (ctx.pass.type == pass_type::Refresh)
+    if (is_refresh_event(ctx))
     {
         *scope.next_row_ptr = 0;
-        auto& layout = ctx.pass.refresh.layout_emission;
+        auto& layout = as_refresh_event(ctx).layout_emission;
         *layout.next_ptr = 0;
         layout.next_ptr = &scope.grid->base.next_sibling;
     }
@@ -294,9 +294,9 @@ begin_grid_row(
     layout_container_scope& scope,
     layout_flag_set flags)
 {
-    if (ctx.pass.type == pass_type::Refresh)
+    if (is_refresh_event(ctx))
     {
-        auto& layout = ctx.pass.refresh.layout_emission;
+        auto& layout = as_refresh_event(ctx).layout_emission;
         grid_row_layout_node* node
             = arena_alloc<grid_row_layout_node>(*layout.arena);
         scope.container = &node->container;
@@ -317,9 +317,9 @@ begin_grid_row(
 void
 end_grid_row(context& ctx, layout_container_scope& scope)
 {
-    if (ctx.pass.type == pass_type::Refresh)
+    if (is_refresh_event(ctx))
     {
-        auto& layout = ctx.pass.refresh.layout_emission;
+        auto& layout = as_refresh_event(ctx).layout_emission;
         *layout.next_ptr = nullptr;
         layout.next_ptr = &scope.container->base.next_sibling;
     }

@@ -1,5 +1,6 @@
 #include <alia/flow/dispatch.hpp>
 
+#include <alia/context.hpp>
 #include <alia/events.hpp>
 #include <alia/system/object.hpp>
 
@@ -25,10 +26,7 @@ invoke_controller(ui_system& sys, event_traversal& events)
     static style the_style = {.padding = 10.0f};
 
     context event_ctx
-        = {.pass = {.type = pass_type::Event, .event = {}},
-           .style = &the_style,
-           .system = &sys,
-           .event = &events};
+        = {.style = &the_style, .system = &sys, .event = &events};
 
     sys.controller(event_ctx);
 }

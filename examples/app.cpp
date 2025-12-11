@@ -91,10 +91,10 @@ detect_click(context& ctx, float x, float y, float width, float height)
 bool
 do_rect(context& ctx, vec2 size, color color, layout_flag_set flags)
 {
-    switch (ctx.pass.type)
+    switch (get_event_category(ctx))
     {
-        case pass_type::Refresh: {
-            auto& layout = ctx.pass.refresh.layout_emission;
+        case ALIA_CATEGORY_REFRESH: {
+            auto& layout = as_refresh_event(ctx).layout_emission;
             layout_leaf_node* new_node
                 = arena_alloc<layout_leaf_node>(ctx.system->layout.node_arena);
             *layout.next_ptr = &new_node->base;
@@ -106,19 +106,19 @@ do_rect(context& ctx, vec2 size, color color, layout_flag_set flags)
                 .size = size};
             break;
         }
-        case pass_type::Draw: {
+        case ALIA_CATEGORY_DRAWING: {
             auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
                 ctx.system->layout.placement_arena);
             box box = {
                 .pos = leaf_placement.position, .size = leaf_placement.size};
             draw_box(
-                *ctx.pass.draw.state->arena,
-                *ctx.pass.draw.state->box_command_list,
+                *as_draw_event(ctx).state->arena,
+                *as_draw_event(ctx).state->box_command_list,
                 box,
                 color);
             break;
         }
-        case pass_type::Event: {
+        case ALIA_CATEGORY_INPUT: {
             auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
                 ctx.system->layout.placement_arena);
             box box = {
@@ -136,10 +136,10 @@ bool
 do_rect_with_offset(
     context& ctx, vec2 size, color color, layout_flag_set flags, vec2 offset)
 {
-    switch (ctx.pass.type)
+    switch (get_event_category(ctx))
     {
-        case pass_type::Refresh: {
-            auto& layout = ctx.pass.refresh.layout_emission;
+        case ALIA_CATEGORY_REFRESH: {
+            auto& layout = as_refresh_event(ctx).layout_emission;
             layout_leaf_node* new_node
                 = arena_alloc<layout_leaf_node>(ctx.system->layout.node_arena);
             *layout.next_ptr = &new_node->base;
@@ -151,20 +151,20 @@ do_rect_with_offset(
                 .size = size};
             break;
         }
-        case pass_type::Draw: {
+        case ALIA_CATEGORY_DRAWING: {
             auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
                 ctx.system->layout.placement_arena);
             box box
                 = {.pos = leaf_placement.position + offset,
                    .size = leaf_placement.size};
             draw_box(
-                *ctx.pass.draw.state->arena,
-                *ctx.pass.draw.state->box_command_list,
+                *as_draw_event(ctx).state->arena,
+                *as_draw_event(ctx).state->box_command_list,
                 box,
                 color);
             break;
         }
-        case pass_type::Event: {
+        case ALIA_CATEGORY_INPUT: {
             auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
                 ctx.system->layout.placement_arena);
             box box
@@ -398,11 +398,11 @@ concrete_panel(
     context& ctx, color color, layout_flag_set flags, Content&& content)
 {
     placement_hook(ctx, flags, [&](auto const& placement) {
-        if (ctx.pass.type == pass_type::Draw)
+        if (get_event_type(ctx) == ALIA_EVENT_DRAW)
         {
             draw_box(
-                *ctx.pass.draw.state->arena,
-                *ctx.pass.draw.state->box_command_list,
+                *as_draw_event(ctx).state->arena,
+                *as_draw_event(ctx).state->box_command_list,
                 placement.box,
                 color);
         }
@@ -699,10 +699,10 @@ do_text(
     layout_flag_set flags = NO_FLAGS)
 {
     bool result = false;
-    switch (ctx.pass.type)
+    switch (get_event_category(ctx))
     {
-        case pass_type::Refresh: {
-            auto& layout = ctx.pass.refresh.layout_emission;
+        case ALIA_CATEGORY_REFRESH: {
+            auto& layout = as_refresh_event(ctx).layout_emission;
             msdf_text_layout_node* new_node
                 = arena_alloc<msdf_text_layout_node>(
                     ctx.system->layout.node_arena);
@@ -717,7 +717,7 @@ do_text(
             layout.next_ptr = &new_node->base.next_sibling;
             break;
         }
-        case pass_type::Draw: {
+        case ALIA_CATEGORY_DRAWING: {
             auto& text_placement = *arena_alloc<text_layout_placement_header>(
                 ctx.system->layout.placement_arena);
             for (int i = 0; i < text_placement.fragment_count; ++i)
@@ -726,7 +726,7 @@ do_text(
                     ctx.system->layout.placement_arena);
                 draw_text(
                     the_msdf_text_engine,
-                    *ctx.pass.draw.state->arena,
+                    *as_draw_event(ctx).state->arena,
                     the_msdf_commands,
                     fragment.text,
                     fragment.length,
@@ -736,7 +736,7 @@ do_text(
             }
             break;
         }
-        case pass_type::Event: {
+        case ALIA_CATEGORY_INPUT: {
             auto& text_placement = *arena_alloc<text_layout_placement_header>(
                 ctx.system->layout.placement_arena);
             for (int i = 0; i < text_placement.fragment_count; ++i)
@@ -1000,7 +1000,7 @@ do_animated_rect(
             placement_hook(ctx, FILL, [&](auto inner_placement) {
                 vec2 inner_pos
                     = inner_placement.box.pos - outer_placement.box.pos;
-                if (ctx.pass.type == pass_type::Draw)
+                if (get_event_type(ctx) == ALIA_EVENT_DRAW)
                 {
                     if (!initialized)
                     {
@@ -1525,16 +1525,12 @@ update()
 
     AllocProbeResult result = probe_allocations([&]() {
         alia_scratch_reset(&the_system.layout.node_arena);
-        context refresh_ctx
-            = {{pass_type::Refresh,
-                {.refresh
-                 = {.layout_emission
-                    = {&the_system.layout.node_arena,
-                       &the_system.layout.root.first_child}}}},
-               &the_style,
-               &the_system};
-        the_demo(refresh_ctx);
-        *refresh_ctx.pass.refresh.layout_emission.next_ptr = 0;
+        auto refresh_event = alia_make_refresh_event(
+            {.layout_emission
+             = {&the_system.layout.node_arena,
+                &the_system.layout.root.first_child}});
+        dispatch_event(the_system, refresh_event);
+        *refresh_event.refresh.layout_emission.next_ptr = 0;
 
         refresh_finished_time = std::chrono::high_resolution_clock::now();
 
@@ -1565,11 +1561,8 @@ update()
             .arena = &the_display_list_arena,
             .box_command_list = &the_box_commands,
         };
-        context draw_ctx = {
-            .pass = {.type = pass_type::Draw, .draw = {.state = &draw_state}},
-            .style = &the_style,
-            .system = &the_system};
-        the_demo(draw_ctx);
+        auto draw_event = alia_make_draw_event({.state = &draw_state});
+        dispatch_event(the_system, draw_event);
 
         while ((err = glGetError()) != GL_NO_ERROR)
             printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);

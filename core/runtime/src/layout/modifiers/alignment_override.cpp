@@ -1,6 +1,7 @@
 #include <alia/layout/modifiers/alignment_override.hpp>
 
 #include <alia/context.hpp>
+#include <alia/events.hpp>
 #include <alia/layout/container.hpp>
 #include <alia/layout/flags.hpp>
 #include <alia/layout/utilities.hpp>
@@ -17,9 +18,9 @@ void
 begin_alignment_override(
     context& ctx, layout_container_scope& scope, layout_flag_set flags)
 {
-    if (ctx.pass.type == pass_type::Refresh)
+    if (is_refresh_event(ctx))
     {
-        auto& layout = ctx.pass.refresh.layout_emission;
+        auto& layout = as_refresh_event(ctx).layout_emission;
         alignment_override_node* node
             = arena_alloc<alignment_override_node>(*layout.arena);
         *node = alignment_override_node{

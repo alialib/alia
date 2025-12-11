@@ -1,6 +1,7 @@
 #include <alia/layout/modifiers/inset.hpp>
 
 #include <alia/context.hpp>
+#include <alia/events.hpp>
 
 namespace alia {
 
@@ -11,9 +12,9 @@ begin_inset(
     insets insets,
     layout_flag_set flags)
 {
-    if (ctx.pass.type == pass_type::Refresh)
+    if (is_refresh_event(ctx))
     {
-        auto& layout = ctx.pass.refresh.layout_emission;
+        auto& layout = as_refresh_event(ctx).layout_emission;
         inset_layout_node* node
             = arena_alloc<inset_layout_node>(*layout.arena);
         *node = inset_layout_node{

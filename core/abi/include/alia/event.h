@@ -39,7 +39,7 @@ enum
     /* refresh */                                                             \
     X(0x10, REFRESH, REFRESH, refresh, alia_refresh)                          \
     /* drawing */                                                             \
-    X(0x20, DRAWING, RENDER, render, alia_render)                             \
+    X(0x20, DRAWING, DRAW, draw, alia_draw)                                   \
     /* spatial (geometry-aware routing) */                                    \
     X(0x30,                                                                   \
       SPATIAL,                                                                \
@@ -104,31 +104,22 @@ typedef struct alia_layout_emission
     alia_layout_node** next_ptr;
 } alia_layout_emission;
 
-typedef struct alia_refresh_event
+typedef struct alia_refresh
 {
     alia_layout_emission layout_emission;
-} alia_refresh_event;
+} alia_refresh;
 
 typedef struct alia_draw_state alia_draw_state;
 
-typedef struct alia_draw_event
+typedef struct alia_draw
 {
     alia_draw_state* state;
-} alia_draw_event;
+} alia_draw;
 
 typedef struct
 {
     int dummy;
 } alia_nil;
-
-typedef struct
-{
-    int dummy;
-} alia_refresh;
-typedef struct
-{
-    int dummy;
-} alia_render;
 
 typedef struct
 {

@@ -1,6 +1,7 @@
 #include <alia/layout/modifiers/placement_hook.hpp>
 
 #include <alia/context.hpp>
+#include <alia/events.hpp>
 #include <alia/layout/utilities.hpp>
 #include <alia/system/object.hpp>
 
@@ -10,9 +11,9 @@ void
 begin_placement_hook(
     context& ctx, placement_hook_scope& scope, layout_flag_set flags)
 {
-    if (ctx.pass.type == pass_type::Refresh)
+    if (is_refresh_event(ctx))
     {
-        auto& layout = ctx.pass.refresh.layout_emission;
+        auto& layout = as_refresh_event(ctx).layout_emission;
         placement_hook_node* node
             = arena_alloc<placement_hook_node>(*layout.arena);
         *node = placement_hook_node{

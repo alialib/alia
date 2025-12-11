@@ -1,6 +1,7 @@
 #include <alia/layout/modifiers/min_size.hpp>
 
 #include <alia/context.hpp>
+#include <alia/events.hpp>
 #include <alia/layout/utilities.hpp>
 
 namespace alia {
@@ -9,9 +10,9 @@ void
 begin_min_size_constraint(
     context& ctx, layout_container_scope& scope, vec2 min_size)
 {
-    if (ctx.pass.type == pass_type::Refresh)
+    if (is_refresh_event(ctx))
     {
-        auto& layout = ctx.pass.refresh.layout_emission;
+        auto& layout = as_refresh_event(ctx).layout_emission;
         min_size_node* node = arena_alloc<min_size_node>(*layout.arena);
         *node = min_size_node{
             .container

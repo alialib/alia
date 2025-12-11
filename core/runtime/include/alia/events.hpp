@@ -46,14 +46,6 @@ traversal_was_aborted(ephemeral_context ctx)
     return get_event_traversal(ctx).aborted;
 }
 
-template<class Event>
-Event&
-cast_event(ephemeral_context ctx)
-{
-    event_traversal& traversal = get_event_traversal(ctx);
-    return *reinterpret_cast<Event*>(traversal.event);
-}
-
 inline alia_category_id
 get_event_category(ephemeral_context ctx)
 {
@@ -65,6 +57,25 @@ get_event_type(ephemeral_context ctx)
 {
     return get_event_traversal(ctx).event->type;
 }
+
+inline bool
+is_refresh_event(ephemeral_context ctx)
+{
+    return get_event_type(ctx) == ALIA_EVENT_REFRESH;
+}
+
+// ACCESSORS
+
+#define ALIA_DEFINE_EVENT_ACCESSOR(code, CATEGORY, NAME, name, data_type)     \
+    inline data_type& as_##name##_event(ephemeral_context& ctx)               \
+    {                                                                         \
+        ALIA_ASSERT(get_event_type(ctx) == ALIA_EVENT_##NAME);                \
+        return get_event_traversal(ctx).event->name;                          \
+    }
+
+ALIA_ENUMERATE_EVENT_TYPES(ALIA_DEFINE_EVENT_ACCESSOR)
+
+#undef ALIA_DEFINE_EVENT_ACCESSOR
 
 // template<class Event>
 // bool
@@ -156,12 +167,6 @@ detect_targeted_event(ephemeral_context ctx, component_id id, Event** event)
 //     }
 //     ALIA_END
 // }
-
-inline bool
-is_refresh_event(ephemeral_context ctx)
-{
-    return get_event_traversal(ctx).event->category == ALIA_EVENT_REFRESH;
-}
 
 // TODO: Implement this.
 // template<class Context, class Handler>

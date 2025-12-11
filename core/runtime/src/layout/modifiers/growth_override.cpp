@@ -1,6 +1,7 @@
 #include <alia/layout/modifiers/growth_override.hpp>
 
 #include <alia/context.hpp>
+#include <alia/events.hpp>
 
 namespace alia {
 
@@ -8,9 +9,9 @@ void
 begin_growth_override(
     context& ctx, layout_container_scope& scope, float growth)
 {
-    if (ctx.pass.type == pass_type::Refresh)
+    if (is_refresh_event(ctx))
     {
-        auto& layout = ctx.pass.refresh.layout_emission;
+        auto& layout = as_refresh_event(ctx).layout_emission;
         growth_override_node* node
             = arena_alloc<growth_override_node>(*layout.arena);
         *node = growth_override_node{

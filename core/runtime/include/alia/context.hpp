@@ -14,52 +14,13 @@ struct ui_system;
 struct layout_container;
 struct event_traversal;
 
-enum class pass_type
-{
-    Refresh,
-    Draw,
-    Event,
-};
-
-struct layout_emission
-{
-    alia_scratch_arena* arena;
-    layout_node** next_ptr;
-};
-
 struct style
 {
     float padding;
 };
 
-struct refresh_pass
-{
-    layout_emission layout_emission;
-};
-
-struct draw_pass
-{
-    alia_draw_state* state;
-};
-
-struct event_pass
-{
-};
-
-struct pass
-{
-    pass_type type;
-    union
-    {
-        refresh_pass refresh;
-        draw_pass draw;
-        event_pass event;
-    };
-};
-
 struct context
 {
-    pass pass;
     style* style;
     ui_system* system;
     event_traversal* event;
