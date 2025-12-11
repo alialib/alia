@@ -10,9 +10,9 @@ default_measure_wrapped_vertical(
     float current_x_offset,
     float line_width)
 {
-    auto checkpoint = ctx->scratch->save_state();
+    auto checkpoint = alia_scratch_mark(ctx->scratch);
     auto horizontal = measure_horizontal(ctx, node);
-    ctx->scratch->restore_state(checkpoint);
+    alia_scratch_jump(ctx->scratch, checkpoint);
     auto vertical
         = measure_vertical(ctx, main_axis, node, horizontal.min_size);
     if (current_x_offset + horizontal.min_size > line_width)

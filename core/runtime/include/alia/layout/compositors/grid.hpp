@@ -18,14 +18,14 @@ struct grid_layout_node
     grid_row_layout_node* first_row = nullptr;
     grid_scratch* scratch = nullptr;
     column_layout_node column = {};
-    std::uint8_t* scratch_marker = nullptr;
+    alia_scratch_marker scratch_marker = nullptr;
 };
 
 struct grid_row_layout_node
 {
     layout_container container = {};
     grid_layout_node* grid = nullptr;
-    std::uint8_t* scratch_marker = nullptr;
+    alia_scratch_marker scratch_marker = nullptr;
     grid_row_layout_node* next_row = nullptr;
 };
 

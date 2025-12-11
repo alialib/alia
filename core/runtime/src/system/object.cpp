@@ -25,6 +25,8 @@
 
 namespace alia {
 
+#if 0
+
 struct noop_geometry_subscriber : geometry_context_subscriber
 {
     void
@@ -93,54 +95,57 @@ struct skia_geometry_subscriber : geometry_context_subscriber
     SkCanvas* canvas;
 };
 
+#endif
+
 void
-ui_system::invoke_controller(vanilla_ui_context vanilla_ctx)
+invoke_controller(ui_system& system, context& ctx)
 {
     // TODO
-    layout_style_info style_info{
-        make_layout_vector(4, 4),
-        16,
-        make_layout_vector(12, 16),
-        12,
-        this->magnification};
+    // layout_style_info style_info{
+    //     make_layout_vector(4, 4),
+    //     16,
+    //     make_layout_vector(12, 16),
+    //     12,
+    //     this->magnification};
 
-    static noop_geometry_subscriber noop_subscriber;
+    // static noop_geometry_subscriber noop_subscriber;
 
-    skia_geometry_subscriber skia_subscriber;
+    // skia_geometry_subscriber skia_subscriber;
 
-    geometry_context geometry;
-    initialize(
-        geometry,
-        make_box(make_vector<double>(0, 0), vector<2, double>(surface_size)));
+    // geometry_context geometry;
+    // initialize(
+    //     geometry,
+    //     make_box(make_vector<double>(0, 0), vector<2,
+    //     double>(surface_size)));
 
-    {
-        render_event* render;
-        if (detect_event(vanilla_ctx, &render))
-        {
-            skia_subscriber.canvas = render->canvas;
-            set_subscriber(geometry, skia_subscriber);
-        }
-        else
-        {
-            set_subscriber(geometry, noop_subscriber);
-        }
-    }
+    // {
+    //     render_event* render;
+    //     if (detect_event(vanilla_ctx, &render))
+    //     {
+    //         skia_subscriber.canvas = render->canvas;
+    //         set_subscriber(geometry, skia_subscriber);
+    //     }
+    //     else
+    //     {
+    //         set_subscriber(geometry, noop_subscriber);
+    //     }
+    // }
 
-    ui_traversal traversal;
+    // ui_traversal traversal;
 
-    initialize_layout_traversal(
-        this->layout,
-        traversal.layout,
-        is_refresh_event(vanilla_ctx),
-        is_refresh_event(vanilla_ctx) ? nullptr : &geometry,
-        &style_info,
-        this->ppi);
+    // initialize_layout_traversal(
+    //     this->layout,
+    //     traversal.layout,
+    //     is_refresh_event(vanilla_ctx),
+    //     is_refresh_event(vanilla_ctx) ? nullptr : &geometry,
+    //     &style_info,
+    //     this->ppi);
 
-    auto ctx = add_context_object<ui_traversal_tag>(
-        add_context_object<ui_system_tag>(vanilla_ctx, std::ref(*this)),
-        std::ref(traversal));
+    // auto ctx = add_context_object<ui_traversal_tag>(
+    //     add_context_object<ui_system_tag>(vanilla_ctx, std::ref(*this)),
+    //     std::ref(traversal));
 
-    this->controller(ctx);
+    system.controller(ctx);
 }
 
 } // namespace alia

@@ -172,10 +172,10 @@ alia_scratch_struct_spec(void)
 }
 
 alia_scratch_arena*
-alia_scratch_construct(void* mem, const alia_scratch_allocator* allocator)
+alia_scratch_construct(void* mem, alia_scratch_allocator allocator)
 {
     auto* A = new (mem) alia_scratch_arena{};
-    A->allocator = *allocator;
+    A->allocator = allocator;
     return A;
 }
 
@@ -233,7 +233,7 @@ alia_scratch_mark(alia_scratch_arena* arena)
 }
 
 void
-alia_scratch_rewind(alia_scratch_arena* arena, alia_scratch_marker m)
+alia_scratch_jump(alia_scratch_arena* arena, alia_scratch_marker m)
 {
     record_bytes_used(arena);
     update_peak_usage_stats(arena);

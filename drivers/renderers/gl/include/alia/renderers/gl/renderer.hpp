@@ -6,9 +6,10 @@
 // TODO: Remove this.
 #include <alia/drawing.hpp>
 
+#include <alia/internals/scratch.hpp>
+
 namespace alia {
 
-struct infinite_arena;
 struct ui_system;
 struct display_list;
 
@@ -19,7 +20,8 @@ struct gl_renderer
     GLuint vao, vbo;
     GLuint instance_vbo;
     GLint vanilla_matrix_location;
-    infinite_arena* rect_instance_arena;
+    lazy_commit_arena_allocator allocator;
+    alia_scratch_arena rect_instance_arena;
     GLuint clip_ubo;
     float* clip_ptr;
 };

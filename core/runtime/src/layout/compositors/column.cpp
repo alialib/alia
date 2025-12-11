@@ -44,7 +44,7 @@ column_measure_horizontal(measurement_context* ctx, layout_node* node)
          child = child->next_sibling)
     {
         auto const child_x = measure_horizontal(ctx, child);
-        scratch.max_width = (std::max)(scratch.max_width, child_x.min_size);
+        scratch.max_width = (std::max) (scratch.max_width, child_x.min_size);
     }
     return horizontal_requirements{
         .min_size = scratch.max_width,
@@ -70,7 +70,7 @@ column_assign_widths(
     for (layout_node* child = column.first_child; child != nullptr;
          child = child->next_sibling)
     {
-        assign_widths(ctx, MAIN_AXIS_Y, child, assignment.size);
+        assign_widths(ctx, ALIA_MAIN_AXIS_Y, child, assignment.size);
     }
 }
 
@@ -95,7 +95,7 @@ column_measure_vertical(
          child = child->next_sibling)
     {
         auto const child_y
-            = measure_vertical(ctx, MAIN_AXIS_Y, child, assignment.size);
+            = measure_vertical(ctx, ALIA_MAIN_AXIS_Y, child, assignment.size);
         *requirement_i++ = child_y;
         scratch.total_height += child_y.min_size;
         scratch.total_growth += child_y.growth_factor;
@@ -128,9 +128,9 @@ column_assign_boxes(
         {scratch.max_width, scratch.total_height},
         scratch.baseline);
     float const total_extra_space
-        = (std::max)(0.f, assignment.size.y - scratch.total_height);
+        = (std::max) (0.f, assignment.size.y - scratch.total_height);
     // TODO: Figure out how to handle 0 total growth.
-    float const total_growth = (std::max)(0.00001f, scratch.total_growth);
+    float const total_growth = (std::max) (0.00001f, scratch.total_growth);
     float current_y = box.pos.y + assignment.pos.y;
     for (layout_node* child = column.first_child; child != nullptr;
          child = child->next_sibling)
@@ -140,7 +140,7 @@ column_assign_boxes(
             = total_extra_space * child_y.growth_factor / total_growth;
         assign_boxes(
             ctx,
-            MAIN_AXIS_Y,
+            ALIA_MAIN_AXIS_Y,
             child,
             {.pos = vec2{box.pos.x + assignment.pos.x, current_y},
              .size = vec2{assignment.size.x, child_y.min_size + extra_space}},

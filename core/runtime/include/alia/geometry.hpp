@@ -2,12 +2,11 @@
 
 #include <cmath>
 
+#include <alia/geometry.h>
+
 namespace alia {
 
-struct vec2
-{
-    float x, y;
-};
+using vec2 = alia_vec2;
 
 inline vec2
 operator+(vec2 a, vec2 b)
@@ -77,17 +76,8 @@ operator!=(vec2 a, vec2 b)
     return !(a == b);
 }
 
-struct box
-{
-    vec2 pos;
-    vec2 size;
-};
-
-struct rect
-{
-    vec2 min;
-    vec2 max;
-};
+using box = alia_box;
+using rect = alia_rect;
 
 inline box
 apply_margin(box box, vec2 margin)

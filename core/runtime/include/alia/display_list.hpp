@@ -1,8 +1,8 @@
 #pragma once
 
+#include <alia/arenas.hpp>
 #include <alia/color.hpp>
 #include <alia/geometry.hpp>
-#include <alia/infinite_arena.hpp>
 
 namespace alia {
 
@@ -39,6 +39,6 @@ add_command(command_list<Command>& list, Command* command)
     ++list.count;
 }
 
-using display_list_arena = infinite_arena;
+using display_list_arena = alia_scratch_arena;
 
 } // namespace alia

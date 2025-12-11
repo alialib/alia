@@ -51,7 +51,7 @@ struct test_rig
         auto const spec = alia_scratch_struct_spec();
         this->storage
             = ::operator new(spec.size, std::align_val_t{spec.align});
-        this->arena = alia_scratch_construct(storage, &allocator);
+        this->arena = alia_scratch_construct(storage, allocator);
     }
 
     void
@@ -130,12 +130,12 @@ TEST_CASE("frames_push_pop_and_address_reuse")
     void* a2 = alia_scratch_alloc(rig.arena, 96, 8);
 
     // Pop back to `m2`. The next allocation should reuse the address of `a2`.
-    alia_scratch_rewind(rig.arena, m2);
+    alia_scratch_jump(rig.arena, m2);
     void* b2 = alia_scratch_alloc(rig.arena, 96, 8);
     CHECK(b2 == a2);
 
     // Pop back to `m1`. The next allocation should reuse the address of `a1`.
-    alia_scratch_rewind(rig.arena, m1);
+    alia_scratch_jump(rig.arena, m1);
     void* b1 = alia_scratch_alloc(rig.arena, 80, 8);
     CHECK(b1 == a1);
 
@@ -171,13 +171,13 @@ TEST_CASE("cross_chunk_marks_and_chunk_reuse")
         == bytes_used_after_m2 + 112);
 
     // Rewind to `m2` to check that stats are updated.
-    alia_scratch_rewind(rig.arena, m2);
+    alia_scratch_jump(rig.arena, m2);
     CHECK(
         alia_scratch_get_stats(rig.arena).current.bytes_used
         == bytes_used_after_m2);
 
     // Rewind back to `m1`, which is in the first chunk.
-    alia_scratch_rewind(rig.arena, m1);
+    alia_scratch_jump(rig.arena, m1);
     CHECK(
         alia_scratch_get_stats(rig.arena).current.bytes_used
         == bytes_used_after_m1);

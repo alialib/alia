@@ -1,5 +1,5 @@
 add_library(alia_core STATIC
-    src/infinite_arena.cpp
+    src/arenas.cpp
     src/scratch.cpp
     src/substrate.cpp
     src/animation/cubic_bezier.cpp

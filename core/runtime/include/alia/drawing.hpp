@@ -2,6 +2,8 @@
 
 #include <alia/display_list.hpp>
 
+#include <alia/scratch.h>
+
 namespace alia {
 
 using box_command_list = command_list<box_draw_command>;
@@ -12,3 +14,9 @@ draw_box(
     display_list_arena& arena, box_command_list& list, box box, color color);
 
 } // namespace alia
+
+extern "C" struct alia_draw_state
+{
+    alia_scratch_arena* arena;
+    alia::box_command_list* box_command_list;
+};

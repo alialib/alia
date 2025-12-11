@@ -8,7 +8,6 @@
 namespace alia {
 
 struct context;
-struct layout_node_vtable;
 
 struct layout_container
 {

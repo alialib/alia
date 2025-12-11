@@ -46,7 +46,7 @@ alia_struct_spec
 alia_scratch_struct_spec(void);
 
 alia_scratch_arena*
-alia_scratch_construct(void* mem, const alia_scratch_allocator* allocator);
+alia_scratch_construct(void* mem, alia_scratch_allocator allocator);
 
 void
 alia_scratch_destruct(alia_scratch_arena* arena);
@@ -60,7 +60,7 @@ alia_scratch_marker
 alia_scratch_mark(alia_scratch_arena* arena);
 
 void
-alia_scratch_rewind(alia_scratch_arena* arena, alia_scratch_marker marker);
+alia_scratch_jump(alia_scratch_arena* arena, alia_scratch_marker marker);
 
 void
 alia_scratch_reset(alia_scratch_arena* arena);

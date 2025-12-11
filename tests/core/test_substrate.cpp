@@ -1,6 +1,6 @@
 #include <alia/substrate.hpp>
 
-#include <alia/infinite_arena.hpp>
+#include <alia/arenas.hpp>
 #include <alia/scratch.h>
 
 #include <doctest/doctest.h>
@@ -12,37 +12,21 @@
 
 namespace {
 
-alia_scratch_chunk_allocation
-infinite_alloc(
-    void* user, size_t existing_capacity, size_t minimum_needed_bytes)
-{
-    auto* a = static_cast<alia::infinite_arena*>(user);
-    return {a->peek(), alia::infinite_arena::INFINITE_CAPACITY};
-}
-void
-infinite_free(void* user, alia_scratch_chunk_allocation chunk)
-{
-}
-
 struct scratch_rig
 {
-    alia::infinite_arena allocator;
+    alia::lazy_commit_arena_allocator allocator;
     void* storage = nullptr;
     alia_scratch_arena* scratch = nullptr;
 
     scratch_rig()
     {
-        this->allocator.initialize();
-
-        alia_scratch_allocator allocator;
-        allocator.user = &this->allocator;
-        allocator.alloc = &infinite_alloc;
-        allocator.free = &infinite_free;
+        alia_scratch_allocator allocator
+            = make_lazy_commit_arena_allocator(&this->allocator);
 
         auto const spec = alia_scratch_struct_spec();
         this->storage
             = ::operator new(spec.size, std::align_val_t{spec.align});
-        this->scratch = alia_scratch_construct(storage, &allocator);
+        this->scratch = alia_scratch_construct(storage, allocator);
     }
 
     ~scratch_rig()

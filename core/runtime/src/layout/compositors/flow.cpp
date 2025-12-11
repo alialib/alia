@@ -35,7 +35,7 @@ flow_measure_horizontal(measurement_context* ctx, layout_node* node)
     {
         auto const child_requirements = measure_wrapped_horizontal(ctx, child);
         max_child_width
-            = (std::max)(max_child_width, child_requirements.min_size);
+            = (std::max) (max_child_width, child_requirements.min_size);
         ++scratch.child_count;
     }
 
@@ -93,13 +93,13 @@ flow_measure_vertical(
          child = child->next_sibling)
     {
         auto const requirements = measure_wrapped_vertical(
-            ctx, MAIN_AXIS_X, child, current_x_offset, assigned_width);
+            ctx, ALIA_MAIN_AXIS_X, child, current_x_offset, assigned_width);
         *child_requirements++ = requirements;
 
-        line_height = (std::max)(line_height, requirements.first_line.height);
-        line_ascent = (std::max)(line_ascent, requirements.first_line.ascent);
+        line_height = (std::max) (line_height, requirements.first_line.height);
+        line_ascent = (std::max) (line_ascent, requirements.first_line.ascent);
         line_descent
-            = (std::max)(line_descent, requirements.first_line.descent);
+            = (std::max) (line_descent, requirements.first_line.descent);
 
         if (has_wrapped_content(requirements))
         {
@@ -109,7 +109,7 @@ flow_measure_vertical(
                 wrapping_has_occurred = true;
             }
             overall_height
-                += (std::max)(line_height, line_ascent + line_descent)
+                += (std::max) (line_height, line_ascent + line_descent)
                  + requirements.interior_height;
 
             line_height = requirements.last_line.height;
@@ -125,7 +125,7 @@ flow_measure_vertical(
 
     if (!wrapping_has_occurred)
         overall_ascent = line_ascent;
-    overall_height += (std::max)(line_height, line_ascent + line_descent);
+    overall_height += (std::max) (line_height, line_ascent + line_descent);
 
     scratch.total_height = overall_height;
     scratch.ascent = overall_ascent;
@@ -174,11 +174,11 @@ flow_assign_boxes(
                 break;
 
             line_height
-                = (std::max)(line_height, requirements.first_line.height);
+                = (std::max) (line_height, requirements.first_line.height);
             line_ascent
-                = (std::max)(line_ascent, requirements.first_line.ascent);
+                = (std::max) (line_ascent, requirements.first_line.ascent);
             line_descent
-                = (std::max)(line_descent, requirements.first_line.descent);
+                = (std::max) (line_descent, requirements.first_line.descent);
 
             if (has_wrapped_content(requirements))
                 break;
@@ -187,7 +187,7 @@ flow_assign_boxes(
 
     float current_x = 0, current_y = box.pos.y + placement.offset;
     update_line_measures(0);
-    line_height = (std::max)(line_height, line_ascent + line_descent);
+    line_height = (std::max) (line_height, line_ascent + line_descent);
 
     int child_index = 0;
     for (layout_node* child = flow.first_child; child != nullptr;
@@ -219,7 +219,7 @@ flow_assign_boxes(
 
             ++child_index;
             update_line_measures(child_index);
-            line_height = (std::max)(line_height, line_ascent + line_descent);
+            line_height = (std::max) (line_height, line_ascent + line_descent);
 
             assignment.last_line = vertical_assignment{
                 .line_height = line_height,
@@ -234,7 +234,7 @@ flow_assign_boxes(
                 current_y += assignment.first_line.line_height;
                 assign_boxes(
                     ctx,
-                    MAIN_AXIS_X,
+                    ALIA_MAIN_AXIS_X,
                     child,
                     {.pos = vec2{box.pos.x, current_y},
                      .size = vec2{requirements.end_x, line_height}},
@@ -248,7 +248,8 @@ flow_assign_boxes(
 
                 // Otherwise, there is real wrapping going on, so we need to do
                 // an actual wrapped assignment.
-                assign_wrapped_boxes(ctx, MAIN_AXIS_X, child, &assignment);
+                assign_wrapped_boxes(
+                    ctx, ALIA_MAIN_AXIS_X, child, &assignment);
 
                 // Update our X and Y positions.
                 current_y += assignment.first_line.line_height
@@ -262,7 +263,7 @@ flow_assign_boxes(
             // the non-wrapping interface.
             assign_boxes(
                 ctx,
-                MAIN_AXIS_X,
+                ALIA_MAIN_AXIS_X,
                 child,
                 {.pos = vec2{box.pos.x + current_x, current_y},
                  .size = vec2{requirements.end_x - current_x, line_height}},
@@ -298,13 +299,13 @@ flow_measure_wrapped_vertical(
          child = child->next_sibling)
     {
         auto const requirements = measure_wrapped_vertical(
-            ctx, MAIN_AXIS_X, child, current_x_offset, line_width);
+            ctx, ALIA_MAIN_AXIS_X, child, current_x_offset, line_width);
         *child_requirements++ = requirements;
 
-        line_height = (std::max)(line_height, requirements.first_line.height);
-        line_ascent = (std::max)(line_ascent, requirements.first_line.ascent);
+        line_height = (std::max) (line_height, requirements.first_line.height);
+        line_ascent = (std::max) (line_ascent, requirements.first_line.ascent);
         line_descent
-            = (std::max)(line_descent, requirements.first_line.descent);
+            = (std::max) (line_descent, requirements.first_line.descent);
 
         if (has_wrapped_content(requirements))
         {
@@ -319,7 +320,7 @@ flow_measure_wrapped_vertical(
             else
             {
                 interior_height
-                    += (std::max)(line_height, line_ascent + line_descent);
+                    += (std::max) (line_height, line_ascent + line_descent);
             }
 
             interior_height += requirements.interior_height;
@@ -353,9 +354,10 @@ flow_measure_wrapped_vertical(
         *ctx->scratch, scratch.child_count);
 
     scratch.total_height
-        = (std::max)(first_line.height, first_line.ascent + first_line.descent)
+        = (std::max) (first_line.height,
+                      first_line.ascent + first_line.descent)
         + interior_height
-        + (std::max)(last_line.height, last_line.ascent + last_line.descent);
+        + (std::max) (last_line.height, last_line.ascent + last_line.descent);
     scratch.ascent = first_line.ascent;
 
     return wrapping_requirements{
@@ -392,30 +394,30 @@ flow_assign_wrapped_boxes(
                 return;
 
             line_height
-                = (std::max)(line_height, requirements.first_line.height);
+                = (std::max) (line_height, requirements.first_line.height);
             line_ascent
-                = (std::max)(line_ascent, requirements.first_line.ascent);
+                = (std::max) (line_ascent, requirements.first_line.ascent);
             line_descent
-                = (std::max)(line_descent, requirements.first_line.descent);
+                = (std::max) (line_descent, requirements.first_line.descent);
 
             if (has_wrapped_content(requirements))
                 return;
         }
 
         line_height
-            = (std::max)(line_height, assignment->last_line.line_height);
+            = (std::max) (line_height, assignment->last_line.line_height);
         line_ascent
-            = (std::max)(line_ascent, assignment->last_line.baseline_offset);
-        line_descent = (std::max)(
-            line_descent,
-            assignment->last_line.line_height
-                - assignment->last_line.baseline_offset);
+            = (std::max) (line_ascent, assignment->last_line.baseline_offset);
+        line_descent
+            = (std::max) (line_descent,
+                          assignment->last_line.line_height
+                              - assignment->last_line.baseline_offset);
     };
 
     float current_x = assignment->first_line_x_offset;
     float current_y = assignment->y_base;
     update_line_measures(0);
-    line_height = (std::max)(line_height, line_ascent + line_descent);
+    line_height = (std::max) (line_height, line_ascent + line_descent);
 
     int child_index = 0;
     for (layout_node* child = flow.first_child; child != nullptr;
@@ -447,7 +449,7 @@ flow_assign_wrapped_boxes(
 
             ++child_index;
             update_line_measures(child_index);
-            line_height = (std::max)(line_height, line_ascent + line_descent);
+            line_height = (std::max) (line_height, line_ascent + line_descent);
 
             child_assignment.last_line = vertical_assignment{
                 .line_height = line_height,
@@ -462,7 +464,7 @@ flow_assign_wrapped_boxes(
                 current_y += child_assignment.first_line.line_height;
                 assign_boxes(
                     ctx,
-                    MAIN_AXIS_X,
+                    ALIA_MAIN_AXIS_X,
                     child,
                     box{.pos = vec2{assignment->x_base, current_y},
                         .size = vec2{requirements.end_x, line_height}},
@@ -477,7 +479,7 @@ flow_assign_wrapped_boxes(
                 // Otherwise, there is real wrapping going on, so we need to do
                 // an actual wrapped assignment.
                 assign_wrapped_boxes(
-                    ctx, MAIN_AXIS_X, child, &child_assignment);
+                    ctx, ALIA_MAIN_AXIS_X, child, &child_assignment);
 
                 // Update our X and Y positions.
                 current_y += child_assignment.first_line.line_height
@@ -491,7 +493,7 @@ flow_assign_wrapped_boxes(
             // the non-wrapping interface.
             assign_boxes(
                 ctx,
-                MAIN_AXIS_X,
+                ALIA_MAIN_AXIS_X,
                 child,
                 box{.pos = vec2{assignment->x_base + current_x, current_y},
                     .size = vec2{requirements.end_x - current_x, line_height}},

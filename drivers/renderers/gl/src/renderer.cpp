@@ -1,7 +1,7 @@
 #include <alia/renderers/gl/renderer.hpp>
 
+#include <alia/arenas.hpp>
 #include <alia/display_list.hpp>
-#include <alia/infinite_arena.hpp>
 #include <alia/system/object.hpp>
 
 // TODO: Remove this.
@@ -172,9 +172,6 @@ init_gl_renderer(gl_renderer* renderer)
         = glGetUniformBlockIndex(vanilla_shader_program, "ClipUBO");
     glBindBufferBase(GL_UNIFORM_BUFFER, clip_block, clip_ubo);
 
-    infinite_arena* rect_instance_arena = new infinite_arena; // TODO
-    rect_instance_arena->initialize();
-
     GLuint instance_vbo;
     glGenBuffers(1, &instance_vbo);
 
@@ -241,10 +238,13 @@ init_gl_renderer(gl_renderer* renderer)
         .vbo = vbo,
         .instance_vbo = instance_vbo,
         .vanilla_matrix_location = vanilla_matrix_location,
-        .rect_instance_arena = rect_instance_arena,
         .clip_ubo = clip_ubo,
         .clip_ptr = clip_ptr,
     };
+
+    alia_scratch_allocator allocator
+        = make_lazy_commit_arena_allocator(&renderer->allocator);
+    alia_scratch_construct(&renderer->rect_instance_arena, allocator);
 }
 
 void
@@ -313,9 +313,9 @@ render_box_command_list(
     renderer->clip_ptr[2] = system.surface_size.x;
     renderer->clip_ptr[3] = system.surface_size.y;
 
-    renderer->rect_instance_arena->reset();
+    alia_scratch_reset(&renderer->rect_instance_arena);
     rect_instance* rect_instances = arena_array_alloc<rect_instance>(
-        *renderer->rect_instance_arena, boxes.count);
+        renderer->rect_instance_arena, boxes.count);
     {
         rect_instance* instance = rect_instances;
         for (auto const* cmd = boxes.head; cmd; cmd = cmd->next)

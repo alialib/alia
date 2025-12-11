@@ -2,16 +2,16 @@
 
 #include <cstdint>
 
+#include <alia/arenas.hpp>
 #include <alia/display_list.hpp>
 #include <alia/drawing.hpp>
 #include <alia/event.h>
+#include <alia/layout/node.hpp>
 
 namespace alia {
 
 struct ui_system;
-struct layout_node;
 struct layout_container;
-struct infinite_arena;
 struct event_traversal;
 
 enum class pass_type
@@ -23,7 +23,7 @@ enum class pass_type
 
 struct layout_emission
 {
-    infinite_arena* arena;
+    alia_scratch_arena* arena;
     layout_node** next_ptr;
 };
 
@@ -39,8 +39,7 @@ struct refresh_pass
 
 struct draw_pass
 {
-    display_list_arena* display_list_arena;
-    box_command_list* box_command_list;
+    alia_draw_state* state;
 };
 
 struct event_pass

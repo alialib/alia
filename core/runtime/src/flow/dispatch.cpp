@@ -19,7 +19,7 @@ invoke_controller(ui_system& sys, event_traversal& events)
     // // TODO: The UI system has a different tick count.
     // timing.tick_counter = sys.external->get_tick_count();
 
-    // sys.create_core_context_and_invoke_controller(events, data, timing);
+    // invoke_controller(sys, events);
 }
 
 namespace {

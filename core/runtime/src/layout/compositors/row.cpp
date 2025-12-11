@@ -67,17 +67,18 @@ row_assign_widths(
         assigned_width,
         scratch.total_width);
     float const total_extra_space
-        = (std::max)(0.f, placement.size - scratch.total_width);
+        = (std::max) (0.f, placement.size - scratch.total_width);
     // TODO: Figure out how to handle 0 total growth.
     float const one_over_total_growth
-        = 1.0f / (std::max)(0.00001f, scratch.total_growth);
+        = 1.0f / (std::max) (0.00001f, scratch.total_growth);
     for (layout_node* child = row.first_child; child != nullptr;
          child = child->next_sibling)
     {
         auto const child_x = *x_requirements++;
         float const extra_space = total_extra_space * child_x.growth_factor
                                 * one_over_total_growth;
-        assign_widths(ctx, MAIN_AXIS_X, child, child_x.min_size + extra_space);
+        assign_widths(
+            ctx, ALIA_MAIN_AXIS_X, child, child_x.min_size + extra_space);
     }
 }
 
@@ -99,10 +100,10 @@ row_measure_vertical(
         assigned_width,
         scratch.total_width);
     float const total_extra_space
-        = (std::max)(0.f, placement.size - scratch.total_width);
+        = (std::max) (0.f, placement.size - scratch.total_width);
     // TODO: Figure out how to handle 0 total growth.
     float const one_over_total_growth
-        = 1.0f / (std::max)(0.00001f, scratch.total_growth);
+        = 1.0f / (std::max) (0.00001f, scratch.total_growth);
     float height = 0, ascent = 0, descent = 0;
     for (layout_node* child = row.first_child; child != nullptr;
          child = child->next_sibling)
@@ -111,15 +112,15 @@ row_measure_vertical(
         float const extra_space = total_extra_space * child_x.growth_factor
                                 * one_over_total_growth;
         auto const child_y = measure_vertical(
-            ctx, MAIN_AXIS_X, child, child_x.min_size + extra_space);
-        height = (std::max)(height, child_y.min_size);
-        ascent = (std::max)(ascent, child_y.ascent);
-        descent = (std::max)(descent, child_y.descent);
+            ctx, ALIA_MAIN_AXIS_X, child, child_x.min_size + extra_space);
+        height = (std::max) (height, child_y.min_size);
+        ascent = (std::max) (ascent, child_y.ascent);
+        descent = (std::max) (descent, child_y.descent);
     }
     scratch.height = height;
     scratch.ascent = ascent;
     return vertical_requirements{
-        .min_size = (std::max)(height, ascent + descent),
+        .min_size = (std::max) (height, ascent + descent),
         .growth_factor = resolve_growth_factor(row.flags),
         .ascent = ascent,
         .descent = descent};
@@ -145,10 +146,10 @@ row_assign_boxes(
         vec2{scratch.total_width, scratch.height},
         scratch.ascent);
     float const total_extra_space
-        = (std::max)(0.f, placement.size.x - scratch.total_width);
+        = (std::max) (0.f, placement.size.x - scratch.total_width);
     // TODO: Figure out how to handle 0 total growth.
     float const one_over_total_growth
-        = 1.0f / (std::max)(0.00001f, scratch.total_growth);
+        = 1.0f / (std::max) (0.00001f, scratch.total_growth);
     float current_x = box.pos.x + placement.pos.x;
     for (layout_node* child = row.first_child; child != nullptr;
          child = child->next_sibling)
@@ -158,7 +159,7 @@ row_assign_boxes(
                                 * one_over_total_growth;
         assign_boxes(
             ctx,
-            MAIN_AXIS_X,
+            ALIA_MAIN_AXIS_X,
             child,
             {.pos = vec2{current_x, box.pos.y + placement.pos.y},
              .size = vec2{child_x.min_size + extra_space, box.size.y}},

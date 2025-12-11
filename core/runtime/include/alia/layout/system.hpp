@@ -1,16 +1,19 @@
 #pragma once
 
+#include <alia/arenas.hpp>
 #include <alia/geometry.hpp>
+#include <alia/internals/scratch.hpp>
 #include <alia/layout/container.hpp>
 
 namespace alia {
 
 struct layout_system
 {
-    infinite_arena node_arena;
-    infinite_arena scratch_arena;
+    lazy_commit_arena_allocator allocator;
+    alia_scratch_arena node_arena;
+    alia_scratch_arena scratch_arena;
     layout_container root;
-    infinite_arena placement_arena;
+    alia_scratch_arena placement_arena;
 };
 
 void

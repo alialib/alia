@@ -112,8 +112,8 @@ do_rect(context& ctx, vec2 size, color color, layout_flag_set flags)
             box box = {
                 .pos = leaf_placement.position, .size = leaf_placement.size};
             draw_box(
-                *ctx.pass.draw.display_list_arena,
-                *ctx.pass.draw.box_command_list,
+                *ctx.pass.draw.state->arena,
+                *ctx.pass.draw.state->box_command_list,
                 box,
                 color);
             break;
@@ -162,8 +162,8 @@ do_rect_with_offset(
                 = {.pos = leaf_placement.position + offset,
                    .size = leaf_placement.size};
             draw_box(
-                *ctx.pass.draw.display_list_arena,
-                *ctx.pass.draw.box_command_list,
+                *ctx.pass.draw.state->arena,
+                *ctx.pass.draw.state->box_command_list,
                 box,
                 color);
             break;
@@ -409,8 +409,8 @@ concrete_panel(
         if (ctx.pass.type == pass_type::Draw)
         {
             draw_box(
-                *ctx.pass.draw.display_list_arena,
-                *ctx.pass.draw.box_command_list,
+                *ctx.pass.draw.state->arena,
+                *ctx.pass.draw.state->box_command_list,
                 placement.box,
                 color);
         }
@@ -734,7 +734,7 @@ do_text(
                     ctx.system->layout.placement_arena);
                 draw_text(
                     the_msdf_text_engine,
-                    *ctx.pass.draw.display_list_arena,
+                    *ctx.pass.draw.state->arena,
                     the_msdf_commands,
                     fragment.text,
                     fragment.length,
@@ -1400,16 +1400,10 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         float internal_y
             = (static_cast<float>(y) * framebuffer_height
                / window_height); // / the_ui_scale.y;
-        the_system.layout.placement_arena.reset();
-        context event_ctx
-            = {.pass
-               = {.type = pass_type::Event,
-                  .event
-                  = {.event = alia_make_mouse_press_event(
-                         {.x = internal_x, .y = internal_y})}},
-               .style = &the_style,
-               .system = &the_system};
-        the_demo(event_ctx);
+        alia_scratch_reset(&the_system.layout.placement_arena);
+        alia_event event
+            = alia_make_mouse_press_event({.x = internal_x, .y = internal_y});
+        alia::dispatch_event(the_system, event);
     }
 }
 
@@ -1542,7 +1536,7 @@ update()
         layout_finished_time;
 
     AllocProbeResult result = probe_allocations([&]() {
-        the_system.layout.node_arena.reset();
+        alia_scratch_reset(&the_system.layout.node_arena);
         context refresh_ctx
             = {{pass_type::Refresh,
                 {.refresh
@@ -1556,7 +1550,7 @@ update()
 
         refresh_finished_time = std::chrono::high_resolution_clock::now();
 
-        the_system.layout.placement_arena.reset();
+        alia_scratch_reset(&the_system.layout.placement_arena);
         resolve_layout(the_system.layout, the_system.surface_size);
 
         layout_finished_time = std::chrono::high_resolution_clock::now();
@@ -1574,18 +1568,19 @@ update()
         while ((err = glGetError()) != GL_NO_ERROR)
             printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
-        the_display_list_arena.reset();
+        alia_scratch_reset(&the_display_list_arena);
         clear_command_list(the_box_commands);
         clear_command_list(the_msdf_commands);
-        the_system.layout.placement_arena.reset();
-        context draw_ctx
-            = {.pass
-               = {.type = pass_type::Draw,
-                  .draw
-                  = {.display_list_arena = &the_display_list_arena,
-                     .box_command_list = &the_box_commands}},
-               .style = &the_style,
-               .system = &the_system};
+        alia_scratch_reset(&the_system.layout.placement_arena);
+
+        alia_draw_state draw_state = {
+            .arena = &the_display_list_arena,
+            .box_command_list = &the_box_commands,
+        };
+        context draw_ctx = {
+            .pass = {.type = pass_type::Draw, .draw = {.state = &draw_state}},
+            .style = &the_style,
+            .system = &the_system};
         the_demo(draw_ctx);
 
         while ((err = glGetError()) != GL_NO_ERROR)
@@ -1726,6 +1721,7 @@ main()
     }
 
     initialize(the_system, vec2{1200, 1600});
+    the_system.controller = the_demo;
 
     glEnable(GL_FRAMEBUFFER_SRGB);
 
@@ -1766,7 +1762,10 @@ main()
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
-    the_display_list_arena.initialize();
+    static lazy_commit_arena_allocator the_allocator;
+    alia_scratch_allocator allocator
+        = make_lazy_commit_arena_allocator(&the_allocator);
+    alia_scratch_construct(&the_display_list_arena, allocator);
     clear_command_list(the_box_commands);
     clear_command_list(the_msdf_commands);
 

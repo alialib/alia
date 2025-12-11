@@ -2,6 +2,10 @@
 
 #include <stdint.h>
 
+#include <alia/geometry.h>
+#include <alia/layout.h>
+#include <alia/scratch.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -31,8 +35,8 @@ enum
 //
 #define ALIA_ENUMERATE_EVENT_TYPES(X)                                         \
     /* none / meta */                                                         \
-    /* refresh */                                                             \
     X(0x00, NONE, NONE, none, alia_nil)                                       \
+    /* refresh */                                                             \
     X(0x10, REFRESH, REFRESH, refresh, alia_refresh)                          \
     /* drawing */                                                             \
     X(0x20, DRAWING, RENDER, render, alia_render)                             \
@@ -91,19 +95,26 @@ enum
 // X(0x84, NONE, SHUTDOWN, shutdown, ui_no_payload)
 // X(0x85, NONE, CUSTOM, custom, custom_event_payload)
 
-// EVENT CODES
+// These are the event-specific data structures that correspond to the event
+// types in the table above...
 
-#define ALIA_DEFINE_EVENT_CODE(code, CATEGORY, NAME, name, data_type)         \
-    ALIA_EVENT_##NAME = (code),
-
-enum
+typedef struct alia_layout_emission
 {
-    ALIA_ENUMERATE_EVENT_TYPES(ALIA_DEFINE_EVENT_CODE)
-};
+    alia_scratch_arena* arena;
+    alia_layout_node** next_ptr;
+} alia_layout_emission;
 
-#undef ALIA_DEFINE_EVENT_CODE
+typedef struct alia_refresh_event
+{
+    alia_layout_emission layout_emission;
+} alia_refresh_event;
 
-// EVENT DATA STRUCTS
+typedef struct alia_draw_state alia_draw_state;
+
+typedef struct alia_draw_event
+{
+    alia_draw_state* state;
+} alia_draw_event;
 
 typedef struct
 {
@@ -200,6 +211,18 @@ typedef struct
 {
     int dummy;
 } alia_custom_event;
+
+// EVENT CODES
+
+#define ALIA_DEFINE_EVENT_CODE(code, CATEGORY, NAME, name, data_type)         \
+    ALIA_EVENT_##NAME = (code),
+
+enum
+{
+    ALIA_ENUMERATE_EVENT_TYPES(ALIA_DEFINE_EVENT_CODE)
+};
+
+#undef ALIA_DEFINE_EVENT_CODE
 
 // EVENT STRUCT
 

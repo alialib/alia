@@ -4,8 +4,8 @@
 
 #include <vector>
 
+#include <alia/arenas.hpp>
 #include <alia/context.hpp>
-#include <alia/infinite_arena.hpp>
 #include <alia/layout/compositors/column.hpp>
 #include <alia/layout/compositors/row.hpp>
 #include <alia/layout/container.hpp>
@@ -40,7 +40,7 @@ add_content(System& system, Content&& content)
 void
 do_leaf(Context& ctx, Vec2 size, LayoutFlagSet flags = NO_FLAGS)
 {
-    if (ctx.pass.type != PassType::Refresh)
+    if (ctx.pass.type == PassType::Refresh)
     {
         auto& layout = ctx.pass.refresh.layout_emission;
         LayoutLeafNode* new_node = arena_alloc<LayoutLeafNode>(

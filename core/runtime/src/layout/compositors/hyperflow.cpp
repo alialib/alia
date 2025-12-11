@@ -49,7 +49,7 @@ hyperflow_measure_horizontal(measurement_context* ctx, layout_node* node)
          child = child->next_sibling)
     {
         auto const child_x = measure_horizontal(ctx, child);
-        max_child_width = (std::max)(max_child_width, child_x.min_size);
+        max_child_width = (std::max) (max_child_width, child_x.min_size);
         child_requirements->x = child_x;
         ++child_requirements;
     }
@@ -90,7 +90,7 @@ hyperflow_measure_vertical(
          child = child->next_sibling)
     {
         auto const child_y = measure_vertical(
-            ctx, MAIN_AXIS_X, child, child_requirements->x.min_size);
+            ctx, ALIA_MAIN_AXIS_X, child, child_requirements->x.min_size);
         child_requirements->y = child_y;
         ++child_requirements;
 
@@ -102,7 +102,7 @@ hyperflow_measure_vertical(
                 wrapping_has_occurred = true;
             }
             overall_height
-                += (std::max)(line_height, line_ascent + line_descent);
+                += (std::max) (line_height, line_ascent + line_descent);
 
             current_x_offset = 0;
             line_height = 0;
@@ -110,16 +110,16 @@ hyperflow_measure_vertical(
             line_descent = 0;
         }
 
-        line_height = (std::max)(line_height, child_y.min_size);
-        line_ascent = (std::max)(line_ascent, child_y.ascent);
-        line_descent = (std::max)(line_descent, child_y.descent);
+        line_height = (std::max) (line_height, child_y.min_size);
+        line_ascent = (std::max) (line_ascent, child_y.ascent);
+        line_descent = (std::max) (line_descent, child_y.descent);
 
         current_x_offset += child_requirements->x.min_size;
     }
 
     if (!wrapping_has_occurred)
         overall_ascent = line_ascent;
-    overall_height += (std::max)(line_height, line_ascent + line_descent);
+    overall_height += (std::max) (line_height, line_ascent + line_descent);
 
     scratch.total_height = overall_height;
     scratch.ascent = overall_ascent;
@@ -173,7 +173,7 @@ hyperflow_assign_boxes(
         {
             float x = box.pos.x;
             int i = line_start_index;
-            line_height = (std::max)(line_height, line_ascent + line_descent);
+            line_height = (std::max) (line_height, line_ascent + line_descent);
             for (layout_node* c = line_start_child; c != child;
                  c = c->next_sibling)
             {
@@ -181,7 +181,7 @@ hyperflow_assign_boxes(
                 ++i;
                 assign_boxes(
                     ctx,
-                    MAIN_AXIS_X,
+                    ALIA_MAIN_AXIS_X,
                     c,
                     {.pos = vec2{x, current_y},
                      .size = vec2{child_x.min_size, line_height}},
@@ -202,9 +202,9 @@ hyperflow_assign_boxes(
             line_start_child = child;
         }
 
-        line_height = (std::max)(line_height, requirements.y.min_size);
-        line_ascent = (std::max)(line_ascent, requirements.y.ascent);
-        line_descent = (std::max)(line_descent, requirements.y.descent);
+        line_height = (std::max) (line_height, requirements.y.min_size);
+        line_ascent = (std::max) (line_ascent, requirements.y.ascent);
+        line_descent = (std::max) (line_descent, requirements.y.descent);
 
         current_x += requirements.x.min_size;
         ++child_index;
@@ -214,7 +214,7 @@ hyperflow_assign_boxes(
     {
         float x = box.pos.x;
         int i = line_start_index;
-        line_height = (std::max)(line_height, line_ascent + line_descent);
+        line_height = (std::max) (line_height, line_ascent + line_descent);
         for (layout_node* c = line_start_child; c != nullptr;
              c = c->next_sibling)
         {
@@ -222,7 +222,7 @@ hyperflow_assign_boxes(
             ++i;
             assign_boxes(
                 ctx,
-                MAIN_AXIS_X,
+                ALIA_MAIN_AXIS_X,
                 c,
                 {.pos = vec2{x, current_y},
                  .size = vec2{child_x.min_size, line_height}},
