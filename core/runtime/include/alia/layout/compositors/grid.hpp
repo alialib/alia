@@ -6,6 +6,8 @@
 #include <alia/layout/container.hpp>
 #include <alia/layout/flags.hpp>
 
+#include <alia/internals/scratch.hpp>
+
 namespace alia {
 
 struct grid_row_layout_node;
@@ -18,14 +20,14 @@ struct grid_layout_node
     grid_row_layout_node* first_row = nullptr;
     grid_scratch* scratch = nullptr;
     column_layout_node column = {};
-    alia_scratch_marker scratch_marker = nullptr;
+    scratch_state scratch_marker = {};
 };
 
 struct grid_row_layout_node
 {
     layout_container container = {};
     grid_layout_node* grid = nullptr;
-    alia_scratch_marker scratch_marker = nullptr;
+    scratch_state scratch_marker = {};
     grid_row_layout_node* next_row = nullptr;
 };
 

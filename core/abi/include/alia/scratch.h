@@ -60,7 +60,7 @@ alia_scratch_marker
 alia_scratch_mark(alia_scratch_arena* arena);
 
 void
-alia_scratch_jump(alia_scratch_arena* arena, alia_scratch_marker marker);
+alia_scratch_rewind(alia_scratch_arena* arena, alia_scratch_marker marker);
 
 void
 alia_scratch_reset(alia_scratch_arena* arena);

@@ -73,4 +73,20 @@ scratch_alloc(alia_scratch_arena* arena, std::size_t bytes, std::size_t align)
     return p;
 }
 
+using scratch_state = alia_scratch_marker_def;
+
+void
+scratch_save_state(alia_scratch_arena* arena, scratch_state* state);
+
+inline scratch_state
+scratch_save_state(alia_scratch_arena* arena)
+{
+    scratch_state state;
+    scratch_save_state(arena, &state);
+    return state;
+}
+
+void
+scratch_restore_state(alia_scratch_arena* arena, scratch_state const& state);
+
 } // namespace alia

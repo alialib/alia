@@ -157,6 +157,22 @@ trim_chunks(alia_scratch_arena* arena, std::uint32_t chunk_count_to_keep)
     arena->stats.current.chunk_count = chunk_count_to_keep;
 }
 
+void
+scratch_save_state(alia_scratch_arena* arena, scratch_state* state)
+{
+    state->bytes_used = arena->stats.current.bytes_used;
+    state->chunk = arena->active_chunk;
+    state->bump = arena->bump;
+}
+
+void
+scratch_restore_state(alia_scratch_arena* arena, scratch_state const& state)
+{
+    arena->stats.current.bytes_used = state.bytes_used;
+    arena->active_chunk = state.chunk;
+    arena->bump = state.bump;
+}
+
 } // namespace alia
 
 // ABI FUNCTIONS
@@ -226,20 +242,16 @@ alia_scratch_mark(alia_scratch_arena* arena)
         arena,
         sizeof(alia_scratch_marker_def),
         alignof(alia_scratch_marker_def)));
-    marker->bytes_used = arena->stats.current.bytes_used;
-    marker->chunk = arena->active_chunk;
-    marker->bump = arena->bump;
+    alia::scratch_save_state(arena, marker);
     return marker;
 }
 
 void
-alia_scratch_jump(alia_scratch_arena* arena, alia_scratch_marker m)
+alia_scratch_rewind(alia_scratch_arena* arena, alia_scratch_marker m)
 {
     record_bytes_used(arena);
     update_peak_usage_stats(arena);
-    arena->active_chunk = m->chunk;
-    arena->bump = m->bump;
-    arena->stats.current.bytes_used = m->bytes_used;
+    alia::scratch_restore_state(arena, *m);
 }
 
 alia_scratch_stats
