@@ -5,7 +5,7 @@
 #include <alia/arenas.hpp>
 #include <alia/display_list.hpp>
 #include <alia/drawing.hpp>
-#include <alia/event.h>
+#include <alia/events.h>
 #include <alia/layout/node.hpp>
 
 namespace alia {

@@ -2,6 +2,7 @@
 
 #include <alia/events.hpp>
 #include <alia/flow/dispatch.hpp>
+#include <alia/system/interface.hpp>
 #include <alia/system/object.hpp>
 
 namespace alia {
@@ -17,8 +18,6 @@ get_mouse_target(ui_system& ui)
 }
 
 } // namespace
-
-#if 0
 
 void
 process_mouse_motion(ui_system& ui, vec2 const& position)
@@ -44,16 +43,24 @@ process_mouse_loss(ui_system& ui)
     ui.input.mouse_inside_window = false;
 }
 
+#if 0
+
 void
-process_mouse_press(ui_system& ui, mouse_button button, key_modifiers)
+process_mouse_press(
+    ui_system& ui,
+    vec2 const& position,
+    mouse_button button,
+    key_modifiers mods)
 {
     auto target = get_mouse_target(ui);
     if (target)
     {
-        mouse_button_event event;
-        // TODO: Use constructor
-        event.button = button;
-        dispatch_targeted_event(ui, event, target, MOUSE_PRESS_EVENT);
+        alia_event event = alia_make_mouse_press_event(
+            {.x = position.x,
+             .y = position.y,
+             .button = button,
+             .mods = mods});
+        dispatch_targeted_event(ui, event, target);
         refresh_system(ui);
     }
     else

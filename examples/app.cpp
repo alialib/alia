@@ -19,7 +19,7 @@
 #include <alia/context.hpp>
 #include <alia/display_list.hpp>
 #include <alia/drawing.hpp>
-#include <alia/event.h>
+#include <alia/events.h>
 #include <alia/events.hpp>
 #include <alia/flow/dispatch.hpp>
 #include <alia/geometry.hpp>
@@ -39,6 +39,7 @@
 #include <alia/layout/utilities.hpp>
 #include <alia/platforms/glfw/window.hpp>
 #include <alia/renderers/gl/renderer.hpp>
+#include <alia/system/interface.hpp>
 #include <alia/system/object.hpp>
 #include <alia/text_engines/msdf/msdf.hpp>
 #include <alia/theme.hpp>
@@ -1524,14 +1525,7 @@ update()
         layout_finished_time;
 
     AllocProbeResult result = probe_allocations([&]() {
-        alia_scratch_reset(&the_system.layout.node_arena);
-        auto refresh_event = alia_make_refresh_event(
-            {.layout_emission
-             = {&the_system.layout.node_arena,
-                &the_system.layout.root.first_child}});
-        dispatch_event(the_system, refresh_event);
-        *refresh_event.refresh.layout_emission.next_ptr = 0;
-
+        refresh_system(the_system);
         refresh_finished_time = std::chrono::high_resolution_clock::now();
 
         alia_scratch_reset(&the_system.layout.placement_arena);

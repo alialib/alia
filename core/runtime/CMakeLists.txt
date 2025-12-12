@@ -23,7 +23,8 @@ add_library(alia_core STATIC
     src/layout/system.cpp
     src/layout/utilities.cpp
     src/system/input_processing.cpp
-    # src/system/object.cpp
+    src/system/object.cpp
+    src/system/interface.cpp
     src/system.cpp
     src/theme.cpp)
 target_include_directories(alia_core PUBLIC

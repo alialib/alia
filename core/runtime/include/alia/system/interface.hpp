@@ -1,22 +1,21 @@
-#ifndef ALIA_CORE_SYSTEM_INTERFACE_HPP
-#define ALIA_CORE_SYSTEM_INTERFACE_HPP
+#pragma once
 
 #include <exception>
 #include <functional>
 
 namespace alia {
 
-struct untyped_system;
+struct ui_system;
 
 bool
-system_needs_refresh(untyped_system& sys);
+system_needs_refresh(ui_system& sys);
 
 void
-refresh_system(untyped_system& sys);
+refresh_system(ui_system& sys);
 
 void
 set_error_handler(
-    untyped_system& sys, std::function<void(std::exception_ptr)> handler);
+    ui_system& sys, std::function<void(std::exception_ptr)> handler);
 
 // Schedule an update to be applied to the system. This is intended to be
 // called asynchronously, and in cases where the system is operating in a
@@ -24,9 +23,6 @@ set_error_handler(
 // will schedule the given function to run inside the UI thread (followed by a
 // refresh).
 void
-schedule_asynchronous_update(
-    untyped_system& sys, std::function<void()> update);
+schedule_asynchronous_update(ui_system& sys, std::function<void()> update);
 
 } // namespace alia
-
-#endif

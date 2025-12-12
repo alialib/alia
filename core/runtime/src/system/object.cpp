@@ -1,27 +1,8 @@
-#include "alia/utilities/skia.hpp"
 #include <alia/system/object.hpp>
 
 #include <alia/context.hpp>
-#include <alia/core/context/interface.hpp>
 #include <alia/events.hpp>
 #include <alia/geometry.hpp>
-#include <alia/layout/geometry.hpp>
-#include <alia/layout/simple.hpp>
-#include <alia/layout/specification.hpp>
-#include <alia/layout/system.hpp>
-#include <alia/layout/traversal.hpp>
-#include <alia/utilities/rendering.hpp>
-
-#ifdef _WIN32
-#pragma warning(push, 0)
-#endif
-
-#include <include/core/SkCanvas.h>
-#include <include/core/SkMatrix.h>
-
-#ifdef _WIN32
-#pragma warning(pop)
-#endif
 
 namespace alia {
 
