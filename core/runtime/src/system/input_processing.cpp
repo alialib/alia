@@ -43,8 +43,6 @@ process_mouse_loss(ui_system& ui)
     ui.input.mouse_inside_window = false;
 }
 
-#if 0
-
 void
 process_mouse_press(
     ui_system& ui,
@@ -56,16 +54,17 @@ process_mouse_press(
     if (target)
     {
         alia_event event = alia_make_mouse_press_event(
-            {.x = position.x,
-             .y = position.y,
-             .button = button,
-             .mods = mods});
+            {.button = int(button),
+             .mods = raw_code(mods),
+             .x = position.x,
+             .y = position.y});
         dispatch_targeted_event(ui, event, target);
         refresh_system(ui);
     }
     else
     {
-        clear_focus(ui);
+        // TODO
+        // clear_focus(ui);
     }
     ui.input.last_mouse_press_time[unsigned(button)] = ui.tick_count;
     ui.input.mouse_button_state |= 1 << mouse_button_code(button);
@@ -73,44 +72,62 @@ process_mouse_press(
 }
 
 void
-process_mouse_release(ui_system& ui, mouse_button button)
+process_mouse_release(
+    ui_system& ui,
+    vec2 const& position,
+    mouse_button button,
+    key_modifiers mods)
 {
     auto target = get_mouse_target(ui);
     if (target)
     {
-        mouse_button_event event;
-        // TODO: Use constructor
-        event.button = button;
-        dispatch_targeted_event(ui, event, target, MOUSE_RELEASE_EVENT);
+        alia_event event = alia_make_mouse_release_event(
+            {.button = int(button),
+             .mods = raw_code(mods),
+             .x = position.x,
+             .y = position.y});
+        dispatch_targeted_event(ui, event, target);
         refresh_system(ui);
     }
     ui.input.mouse_button_state &= ~(1 << int(button));
     if (ui.input.mouse_button_state == 0)
     {
-        set_widget_with_capture(ui, routable_widget_id{});
+        // TODO
+        // set_widget_with_capture(ui, routable_widget_id{});
         ui.input.dragging = false;
     }
 }
 
 void
-process_double_click(ui_system& ui, mouse_button button, key_modifiers)
+process_double_click(
+    ui_system& ui,
+    vec2 const& position,
+    mouse_button button,
+    key_modifiers mods)
 {
     auto target = get_mouse_target(ui);
     if (target)
     {
-        mouse_button_event event;
-        // TODO: Use constructor
-        event.button = button;
-        dispatch_targeted_event(ui, event, target, DOUBLE_CLICK_EVENT);
+        alia_event event = alia_make_double_click_event(
+            {.button = int(button),
+             .mods = raw_code(mods),
+             .x = position.x,
+             .y = position.y});
+        dispatch_targeted_event(ui, event, target);
     }
     ui.input.mouse_button_state |= 1 << int(button);
     ui.input.keyboard_interaction = false;
 }
 
+#if 0
+
 void
-process_scroll(ui_system& ui, vector<2, double> const& delta)
+process_scroll(ui_system& ui, vec2 const& delta)
 {
-    wheel_hit_test_event hit_test{ui.input.mouse_position};
+    alia_event hit_test = alia_make_wheel_hit_test_event(
+        {.x = ui.input.mouse_position.x,
+         .y = ui.input.mouse_position.y,
+         .delta = delta});
     dispatch_event(ui, hit_test, WHEEL_HIT_TEST_EVENT);
     if (hit_test.result)
     {

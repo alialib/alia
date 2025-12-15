@@ -1,6 +1,7 @@
 #pragma once
 
 #include <alia/flags.hpp>
+#include <alia/input_constants.h>
 
 // This file defines various enumerations for input devices.
 
@@ -170,13 +171,13 @@ enum class key_code
 };
 
 // keyboard modifier keys
-ALIA_DEFINE_FLAG_TYPE(std::uint8_t, kmod)
-ALIA_DEFINE_FLAG(kmod, 0x00, KMOD_NONE)
-ALIA_DEFINE_FLAG(kmod, 0x01, KMOD_SHIFT)
-ALIA_DEFINE_FLAG(kmod, 0x02, KMOD_CTRL)
-ALIA_DEFINE_FLAG(kmod, 0x04, KMOD_ALT)
-ALIA_DEFINE_FLAG(kmod, 0x08, KMOD_WIN)
-ALIA_DEFINE_FLAG(kmod, 0x10, KMOD_META)
+ALIA_DEFINE_FLAG_TYPE(alia_kmod_t, kmod)
+ALIA_DEFINE_FLAG(kmod, ALIA_KMOD_NONE, KMOD_NONE)
+ALIA_DEFINE_FLAG(kmod, ALIA_KMOD_SHIFT, KMOD_SHIFT)
+ALIA_DEFINE_FLAG(kmod, ALIA_KMOD_CTRL, KMOD_CTRL)
+ALIA_DEFINE_FLAG(kmod, ALIA_KMOD_ALT, KMOD_ALT)
+ALIA_DEFINE_FLAG(kmod, ALIA_KMOD_WIN, KMOD_WIN)
+ALIA_DEFINE_FLAG(kmod, ALIA_KMOD_META, KMOD_META)
 using key_modifiers = kmod_flag_set;
 
 struct modded_key

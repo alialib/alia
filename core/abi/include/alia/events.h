@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #include <alia/geometry.h>
+#include <alia/input_constants.h>
 #include <alia/layout.h>
 #include <alia/scratch.h>
 
@@ -162,6 +163,7 @@ typedef struct
 typedef struct
 {
     int button;
+    alia_kmod_t mods;
     float x;
     float y;
 } alia_mouse_button;
