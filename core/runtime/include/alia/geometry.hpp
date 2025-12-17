@@ -4,6 +4,8 @@
 
 #include <alia/geometry.h>
 
+#include <alia/base.hpp>
+
 namespace alia {
 
 using vec2 = alia_vec2;
@@ -134,6 +136,38 @@ compose(affine2 p, affine2 c)
         .tx = p.a * c.tx + p.c * c.ty + p.tx,
         .ty = p.b * c.tx + p.d * c.ty + p.ty,
     };
+}
+
+static inline affine2
+invert_affine2(affine2 m)
+{
+    float det = m.a * m.d - m.b * m.c;
+
+    ALIA_ASSERT(det != 0.0f);
+
+    float inv_det = 1.0f / det;
+
+    affine2 r;
+    r.a = m.d * inv_det;
+    r.b = -m.b * inv_det;
+    r.c = -m.c * inv_det;
+    r.d = m.a * inv_det;
+    r.tx = -(r.a * m.tx + r.c * m.ty);
+    r.ty = -(r.b * m.tx + r.d * m.ty);
+
+    return r;
+}
+
+static inline vec2
+transform_point(affine2 m, vec2 v)
+{
+    return {m.a * v.x + m.c * v.y + m.tx, m.b * v.x + m.d * v.y + m.ty};
+}
+
+static inline vec2
+transform_vector(affine2 m, vec2 v)
+{
+    return {m.a * v.x + m.c * v.y, m.b * v.x + m.d * v.y};
 }
 
 } // namespace alia

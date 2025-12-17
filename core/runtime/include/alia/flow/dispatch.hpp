@@ -71,4 +71,11 @@ dispatch_targeted_event(
     detail::dispatch_targeted_event(sys, event, target.component);
 }
 
+inline void
+dispatch_targeted_event(
+    ui_system& sys, alia_event& event, alia_routable_element_id)
+{
+    detail::dispatch_untargeted_event(sys, event);
+}
+
 } // namespace alia

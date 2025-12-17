@@ -32,15 +32,15 @@ struct window_input_state
     // the tick count corresponding to the last press of each mouse button
     nanosecond_count last_mouse_press_time[max_supported_mouse_buttons];
 
-    // the widget that the mouse is over
-    routable_widget_id hot_widget;
+    // the element that the mouse is over
+    alia_routable_element_id hot_element;
 
-    // the widget that has the mouse captured - Note that this isn't
-    // necessarily the same as the hot_widget.
-    routable_widget_id widget_with_capture;
+    // the element that has the mouse captured - Note that this isn't
+    // necessarily the same as the hot_element.
+    alia_routable_element_id element_with_capture;
 
-    // the widget that has the keyboard focus
-    routable_widget_id widget_with_focus;
+    // the element that has the keyboard focus
+    alia_routable_element_id element_with_focus;
 
     // Is the user currently dragging the mouse (with a button pressed)?
     bool dragging = false;

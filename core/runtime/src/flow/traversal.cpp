@@ -16,7 +16,7 @@ mark_dirty_component(component_container_ptr const& container)
 }
 
 void
-mark_dirty_component(ephemeral_context ctx)
+mark_dirty_component(ephemeral_context& ctx)
 {
     event_traversal& traversal = *ctx.event;
     mark_dirty_component(*traversal.active_container);
@@ -34,7 +34,7 @@ mark_animating_component(component_container_ptr const& container)
 }
 
 void
-mark_animating_component(ephemeral_context ctx)
+mark_animating_component(ephemeral_context& ctx)
 {
     event_traversal& traversal = *ctx.event;
     mark_animating_component(*traversal.active_container);
@@ -42,7 +42,7 @@ mark_animating_component(ephemeral_context ctx)
 
 // void
 // scoped_component_container::begin(
-//     ephemeral_context ctx, component_container_ptr* container)
+//     ephemeral_context& ctx, component_container_ptr* container)
 // {
 //     event_traversal& traversal = *ctx.event;
 

@@ -26,7 +26,8 @@ add_library(alia_core STATIC
     src/system/object.cpp
     src/system/interface.cpp
     src/system.cpp
-    src/theme.cpp)
+    src/theme.cpp
+    src/utilities/mouse.cpp)
 target_include_directories(alia_core PUBLIC
     ${PROJECT_SOURCE_DIR}/core/abi/include
     include)

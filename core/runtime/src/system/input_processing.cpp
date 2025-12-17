@@ -9,12 +9,13 @@ namespace alia {
 
 namespace {
 
-routable_widget_id
+alia_routable_element_id
 get_mouse_target(ui_system& ui)
 {
     // If no widget has capture, send events to the widget under the mouse.
-    return ui.input.widget_with_capture ? ui.input.widget_with_capture
-                                        : ui.input.hot_widget;
+    return alia_routable_element_id_is_valid(ui.input.element_with_capture)
+             ? ui.input.element_with_capture
+             : ui.input.hot_element;
 }
 
 } // namespace
@@ -51,7 +52,7 @@ process_mouse_press(
     key_modifiers mods)
 {
     auto target = get_mouse_target(ui);
-    if (target)
+    if (alia_routable_element_id_is_valid(target))
     {
         alia_event event = alia_make_mouse_press_event(
             {.button = int(button),
@@ -79,7 +80,7 @@ process_mouse_release(
     key_modifiers mods)
 {
     auto target = get_mouse_target(ui);
-    if (target)
+    if (alia_routable_element_id_is_valid(target))
     {
         alia_event event = alia_make_mouse_release_event(
             {.button = int(button),
@@ -106,7 +107,7 @@ process_double_click(
     key_modifiers mods)
 {
     auto target = get_mouse_target(ui);
-    if (target)
+    if (alia_routable_element_id_is_valid(target))
     {
         alia_event event = alia_make_double_click_event(
             {.button = int(button),
@@ -119,33 +120,32 @@ process_double_click(
     ui.input.keyboard_interaction = false;
 }
 
-#if 0
-
 void
 process_scroll(ui_system& ui, vec2 const& delta)
 {
-    alia_event hit_test = alia_make_wheel_hit_test_event(
-        {.x = ui.input.mouse_position.x,
-         .y = ui.input.mouse_position.y,
-         .delta = delta});
-    dispatch_event(ui, hit_test, WHEEL_HIT_TEST_EVENT);
-    if (hit_test.result)
+    alia_event hit_test_event = alia_make_wheel_hit_test_event(
+        {.x = ui.input.mouse_position.x, .y = ui.input.mouse_position.y});
+    dispatch_event(ui, hit_test_event);
+    if (alia_element_id_is_valid(hit_test_event.wheel_hit_test.result.element))
     {
-        scroll_event event{{}, delta};
-        dispatch_targeted_event(ui, event, *hit_test.result, SCROLL_EVENT);
+        alia_event wheel_event = alia_make_wheel_event({.delta = delta});
+        dispatch_targeted_event(
+            ui, wheel_event, hit_test_event.wheel_hit_test.result);
         refresh_system(ui);
     }
 }
 
+#if 0
+
 bool
 process_focused_key_press(ui_system& ui, modded_key const& info)
 {
-    key_event event{{}, info};
-    dispatch_targeted_event(
-        ui, event, ui.input.widget_with_focus, KEY_PRESS_EVENT);
-    if (event.acknowledged)
+    alia_event event = alia_make_key_press_event(
+        {.mods = raw_code(info.mods), .key = info.key});
+    dispatch_targeted_event(ui, event, ui.input.widget_with_focus);
+    if (event.key_press.acknowledged)
         refresh_system(ui);
-    return event.acknowledged;
+    return event.key_press.acknowledged;
 }
 
 bool

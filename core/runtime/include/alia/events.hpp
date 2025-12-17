@@ -26,7 +26,7 @@ struct event_traversal
 
 template<class Context>
 component_container_ptr const
-get_active_component_container(Context ctx)
+get_active_component_container(Context& ctx)
 {
     return *get_event_traversal(ctx).active_container;
 }
@@ -38,35 +38,42 @@ struct traversal_aborted
 };
 
 void
-abort_traversal(ephemeral_context ctx);
+abort_traversal(ephemeral_context& ctx);
 
 inline bool
-traversal_was_aborted(ephemeral_context ctx)
+traversal_was_aborted(ephemeral_context& ctx)
 {
     return get_event_traversal(ctx).aborted;
 }
 
 inline alia_category_id
-get_event_category(ephemeral_context ctx)
+get_event_category(ephemeral_context& ctx)
 {
     return get_event_traversal(ctx).event->category;
 }
 
 inline alia_event_code
-get_event_type(ephemeral_context ctx)
+get_event_type(ephemeral_context& ctx)
 {
     return get_event_traversal(ctx).event->type;
 }
 
+inline alia_element_id
+get_event_target(ephemeral_context& ctx)
+{
+    return get_event_traversal(ctx).event->target;
+}
+
 inline bool
-is_refresh_event(ephemeral_context ctx)
+is_refresh_event(ephemeral_context& ctx)
 {
     return get_event_type(ctx) == ALIA_EVENT_REFRESH;
 }
 
 // ACCESSORS
 
-#define ALIA_DEFINE_EVENT_ACCESSOR(code, CATEGORY, NAME, name, data_type)     \
+#define ALIA_DEFINE_EVENT_ACCESSOR(                                           \
+    code, CATEGORY, flags, NAME, name, data_type)                             \
     inline data_type& as_##name##_event(ephemeral_context& ctx)               \
     {                                                                         \
         ALIA_ASSERT(get_event_type(ctx) == ALIA_EVENT_##NAME);                \
@@ -79,7 +86,7 @@ ALIA_ENUMERATE_EVENT_TYPES(ALIA_DEFINE_EVENT_ACCESSOR)
 
 // template<class Event>
 // bool
-// detect_event(ephemeral_context ctx, Event** event)
+// detect_event(ephemeral_context& ctx, Event** event)
 // {
 //     event_traversal& traversal = get_event_traversal(ctx);
 //     if (traversal.event->type == ALIA_EVENT_TYPE(Event))
@@ -107,10 +114,10 @@ typedef component_identity* component_id;
 
 void
 refresh_component_identity(
-    ephemeral_context ctx, component_identity& identity);
+    ephemeral_context& ctx, component_identity& identity);
 
 component_id
-get_component_id(ephemeral_context ctx);
+get_component_id(ephemeral_context& ctx);
 
 // external_component_id identifies a component in a form that can be safely
 // stored outside of the alia data graph.
@@ -149,7 +156,7 @@ struct targeted_event
 
 template<class Event>
 bool
-detect_targeted_event(ephemeral_context ctx, component_id id, Event** event)
+detect_targeted_event(ephemeral_context& ctx, component_id id, Event** event)
 {
     return detect_event(ctx, event) && (*event)->target_id == id;
 }

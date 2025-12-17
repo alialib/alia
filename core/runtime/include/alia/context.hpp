@@ -28,9 +28,15 @@ struct context
 
 using ephemeral_context = context;
 
+inline ui_system&
+get_system(ephemeral_context& ctx)
+{
+    return *ctx.system;
+}
+
 // TODO: Figure out actual context interface protocols.
 inline event_traversal&
-get_event_traversal(ephemeral_context ctx)
+get_event_traversal(ephemeral_context& ctx)
 {
     return *ctx.event;
 }

@@ -22,13 +22,13 @@ void
 mark_dirty_component(component_container_ptr const& container);
 
 void
-mark_dirty_component(ephemeral_context ctx);
+mark_dirty_component(ephemeral_context& ctx);
 
 void
 mark_animating_component(component_container_ptr const& container);
 
 void
-mark_animating_component(ephemeral_context ctx);
+mark_animating_component(ephemeral_context& ctx);
 
 // TODO
 // struct scoped_component_container

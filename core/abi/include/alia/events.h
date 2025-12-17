@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #include <alia/geometry.h>
+#include <alia/ids.h>
 #include <alia/input_constants.h>
 #include <alia/layout.h>
 #include <alia/scratch.h>
@@ -25,76 +26,104 @@ enum
     ALIA_CATEGORY_INPUT = 4,
 };
 
+enum
+{
+    ALIA_EVENT_FLAGS_NONE = 0,
+    ALIA_EVENT_FLAGS_TARGETED = 1 << 0,
+};
+
 // EVENT TYPES
 //
 // The core event types are defined via a macro table that enumerates all the
 // event types.
 //
 // Calling `ALIA_ENUMERATE_EVENT_TYPES(X)` will invoke `X` as
-// `X(code, category, uppercase_name, lowercase_name, data_struct_name)`
+// `X(code, category, flags, uppercase_name, lowercase_name, data_struct_name)`
 // for each built-in event type.
 //
 #define ALIA_ENUMERATE_EVENT_TYPES(X)                                         \
     /* none / meta */                                                         \
-    X(0x00, NONE, NONE, none, alia_nil)                                       \
+    X(0x00, NONE, NONE, NONE, none, alia_nil)                                 \
     /* refresh */                                                             \
-    X(0x10, REFRESH, REFRESH, refresh, alia_refresh)                          \
+    X(0x10, REFRESH, NONE, REFRESH, refresh, alia_refresh)                    \
     /* drawing */                                                             \
-    X(0x20, DRAWING, DRAW, draw, alia_draw)                                   \
+    X(0x20, DRAWING, NONE, DRAW, draw, alia_draw)                             \
     /* spatial (geometry-aware routing) */                                    \
     X(0x30,                                                                   \
       SPATIAL,                                                                \
+      TARGETED,                                                               \
       MAKE_WIDGET_VISIBLE,                                                    \
       make_widget_visible,                                                    \
       alia_make_widget_visible)                                               \
-    X(0x31, SPATIAL, MOUSE_HIT_TEST, mouse_hit_test, alia_mouse_hit_test)     \
-    X(0x32, SPATIAL, WHEEL_HIT_TEST, wheel_hit_test, alia_wheel_hit_test)     \
-    X(0x33,                                                                   \
+    X(0x31,                                                                   \
       SPATIAL,                                                                \
-      MOUSE_CURSOR_QUERY,                                                     \
-      mouse_cursor_query,                                                     \
-      alia_mouse_cursor_query)                                                \
+      NONE,                                                                   \
+      MOUSE_HIT_TEST,                                                         \
+      mouse_hit_test,                                                         \
+      alia_mouse_hit_test)                                                    \
+    X(0x32,                                                                   \
+      SPATIAL,                                                                \
+      NONE,                                                                   \
+      WHEEL_HIT_TEST,                                                         \
+      wheel_hit_test,                                                         \
+      alia_wheel_hit_test)                                                    \
     /* keyboard */                                                            \
-    X(0x40, INPUT, TEXT_INPUT, text_input, alia_text_input)                   \
+    X(0x40, INPUT, TARGETED, TEXT_INPUT, text_input, alia_text_input)         \
     X(0x41,                                                                   \
       INPUT,                                                                  \
+      NONE,                                                                   \
       BACKGROUND_TEXT_INPUT,                                                  \
       background_text_input,                                                  \
       alia_text_input)                                                        \
-    X(0x42, INPUT, KEY_PRESS, key_press, alia_key_input)                      \
+    X(0x42, INPUT, TARGETED, KEY_PRESS, key_press, alia_key_input)            \
     X(0x43,                                                                   \
       INPUT,                                                                  \
+      NONE,                                                                   \
       BACKGROUND_KEY_PRESS,                                                   \
       background_key_press,                                                   \
       alia_key_input)                                                         \
-    X(0x44, INPUT, KEY_RELEASE, key_release, alia_key_input)                  \
+    X(0x44, INPUT, TARGETED, KEY_RELEASE, key_release, alia_key_input)        \
     X(0x45,                                                                   \
       INPUT,                                                                  \
+      NONE,                                                                   \
       BACKGROUND_KEY_RELEASE,                                                 \
       background_key_release,                                                 \
       alia_key_input)                                                         \
     /* focus */                                                               \
-    X(0x50, INPUT, FOCUS_GAIN, focus_gain, alia_focus_notification)           \
-    X(0x51, INPUT, FOCUS_LOSS, focus_loss, alia_focus_notification)           \
-    X(0x52, INPUT, FOCUS_PREDECESSOR, focus_predecessor, alia_focus_query)    \
-    X(0x53, INPUT, FOCUS_SUCCESSOR, focus_successor, alia_focus_query)        \
-    X(0x54, INPUT, FOCUS_RECOVERY, focus_recovery, alia_focus_recovery)       \
+    X(0x50, INPUT, TARGETED, FOCUS_GAIN, focus_gain, alia_focus_notification) \
+    X(0x51, INPUT, TARGETED, FOCUS_LOSS, focus_loss, alia_focus_notification) \
+    X(0x52,                                                                   \
+      INPUT,                                                                  \
+      NONE,                                                                   \
+      FOCUS_PREDECESSOR,                                                      \
+      focus_predecessor,                                                      \
+      alia_focus_query)                                                       \
+    X(0x53, INPUT, NONE, FOCUS_SUCCESSOR, focus_successor, alia_focus_query)  \
+    X(0x54, INPUT, NONE, FOCUS_RECOVERY, focus_recovery, alia_focus_recovery) \
     /* mouse */                                                               \
-    X(0x60, INPUT, MOUSE_PRESS, mouse_press, alia_mouse_button)               \
-    X(0x61, INPUT, DOUBLE_CLICK, double_click, alia_mouse_button)             \
-    X(0x62, INPUT, MOUSE_RELEASE, mouse_release, alia_mouse_button)           \
-    X(0x63, INPUT, MOUSE_MOTION, mouse_motion, alia_mouse_motion)             \
-    X(0x64, INPUT, MOUSE_WHEEL, mouse_wheel, alia_mouse_wheel)                \
-    X(0x65, INPUT, MOUSE_GAIN, mouse_gain, alia_mouse_notification)           \
-    X(0x66, INPUT, MOUSE_LOSS, mouse_loss, alia_mouse_notification)           \
-    X(0x67, INPUT, MOUSE_HOVER, mouse_hover, alia_mouse_notification)
+    X(0x60, INPUT, TARGETED, MOUSE_PRESS, mouse_press, alia_mouse_button)     \
+    X(0x61, INPUT, TARGETED, DOUBLE_CLICK, double_click, alia_mouse_button)   \
+    X(0x62, INPUT, TARGETED, MOUSE_RELEASE, mouse_release, alia_mouse_button) \
+    X(0x63, INPUT, TARGETED, MOUSE_MOTION, mouse_motion, alia_mouse_motion)   \
+    X(0x64, INPUT, TARGETED, MOUSE_GAIN, mouse_gain, alia_mouse_notification) \
+    X(0x65, INPUT, TARGETED, MOUSE_LOSS, mouse_loss, alia_mouse_notification) \
+    X(0x66,                                                                   \
+      INPUT,                                                                  \
+      TARGETED,                                                               \
+      MOUSE_HOVER,                                                            \
+      mouse_hover,                                                            \
+      alia_mouse_notification)                                                \
+    /* scroll */                                                              \
+    X(0x70, INPUT, TARGETED, WHEEL, wheel, alia_wheel)                        \
 /* misc */
-// X(0x80, NONE, WRAPPED, wrapped, wrapped_event_payload)
-// X(0x81, NONE, SET_VALUE, set_value, set_value_payload)
-// X(0x82, INPUT, TIMER, timer, timer_payload)
-// X(0x83, NONE, RESOLVE_LOCATION, resolve_location, resolve_location_payload)
-// X(0x84, NONE, SHUTDOWN, shutdown, ui_no_payload)
-// X(0x85, NONE, CUSTOM, custom, custom_event_payload)
+// X(0x82, INPUT, TIMER, TARGETED, timer, alia_timer)
+//
+// X(0x83, NONE, RESOLVE_LOCATION, TARGETED, resolve_location,
+// alia_resolve_location)
+//
+// X(0x84, NONE, SHUTDOWN, NONE, shutdown, alia_nil)
+//
+// X(0x85, NONE, CUSTOM, NONE, custom, alia_custom_event)
 
 // These are the event-specific data structures that correspond to the event
 // types in the table above...
@@ -124,13 +153,19 @@ typedef struct
 
 typedef struct
 {
+
 } alia_make_widget_visible;
 typedef struct
 {
+    float x;
+    float y;
+    alia_routable_element_id result;
 } alia_mouse_hit_test;
 typedef struct
 {
-    int dummy;
+    float x;
+    float y;
+    alia_routable_element_id result;
 } alia_wheel_hit_test;
 typedef struct
 {
@@ -176,8 +211,8 @@ typedef struct
 } alia_mouse_motion;
 typedef struct
 {
-    float delta;
-} alia_mouse_wheel;
+    alia_vec2 delta;
+} alia_wheel;
 typedef struct
 {
     int dummy;
@@ -187,10 +222,6 @@ typedef struct
 {
     int dummy;
 } alia_wrapped_event;
-typedef struct
-{
-    int dummy;
-} alia_set_value;
 typedef struct
 {
     int timer_id;
@@ -207,7 +238,7 @@ typedef struct
 
 // EVENT CODES
 
-#define ALIA_DEFINE_EVENT_CODE(code, CATEGORY, NAME, name, data_type)         \
+#define ALIA_DEFINE_EVENT_CODE(code, CATEGORY, flags, NAME, name, data_type)  \
     ALIA_EVENT_##NAME = (code),
 
 enum
@@ -219,13 +250,14 @@ enum
 
 // EVENT STRUCT
 
-#define ALIA_EVENT_PAYLOAD(code, CATEGORY, NAME, name, data_type)             \
+#define ALIA_EVENT_PAYLOAD(code, CATEGORY, flags, NAME, name, data_type)      \
     data_type name;
 
 typedef struct alia_event
 {
     alia_category_id category; // ALIA_CATEGORY_*
     alia_event_code type; // ALIA_EVENT_*
+    alia_element_id target;
     union
     {
         ALIA_ENUMERATE_EVENT_TYPES(ALIA_EVENT_PAYLOAD)
@@ -236,13 +268,15 @@ typedef struct alia_event
 
 // CONSTRUCTORS
 
-#define ALIA_DEFINE_EVENT_CONSTRUCTOR(code, CATEGORY, NAME, name, data_type)  \
+#define ALIA_DEFINE_EVENT_CONSTRUCTOR(                                        \
+    code, CATEGORY, flags, NAME, name, data_type)                             \
     static inline alia_event alia_make_##name##_event(data_type data)         \
     {                                                                         \
         alia_event event;                                                     \
         event.category = ALIA_CATEGORY_##CATEGORY;                            \
         event.type = ALIA_EVENT_##NAME;                                       \
         event.name = data;                                                    \
+        event.target = ALIA_ELEMENT_ID_NONE;                                  \
         return event;                                                         \
     }
 
