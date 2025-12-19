@@ -108,7 +108,7 @@ alignment_override_assign_boxes(
         ctx,
         main_axis,
         override.container.first_child,
-        {.pos = box.pos + placement.pos, .size = placement.size},
+        {.min = box.min + placement.min, .size = placement.size},
         scratch.vertical.ascent);
 }
 

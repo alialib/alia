@@ -150,7 +150,7 @@ row_assign_boxes(
     // TODO: Figure out how to handle 0 total growth.
     float const one_over_total_growth
         = 1.0f / (std::max) (0.00001f, scratch.total_growth);
-    float current_x = box.pos.x + placement.pos.x;
+    float current_x = box.min.x + placement.min.x;
     for (layout_node* child = row.first_child; child != nullptr;
          child = child->next_sibling)
     {
@@ -161,7 +161,7 @@ row_assign_boxes(
             ctx,
             ALIA_MAIN_AXIS_X,
             child,
-            {.pos = vec2{current_x, box.pos.y + placement.pos.y},
+            {.min = vec2{current_x, box.min.y + placement.min.y},
              .size = vec2{child_x.min_size + extra_space, box.size.y}},
             baseline);
         current_x += child_x.min_size + extra_space;

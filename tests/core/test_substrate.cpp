@@ -1,7 +1,7 @@
 #include <alia/substrate.hpp>
 
+#include <alia/abi/scratch.h>
 #include <alia/arenas.hpp>
-#include <alia/scratch.h>
 
 #include <doctest/doctest.h>
 

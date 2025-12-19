@@ -37,10 +37,18 @@ struct routable_widget_id
 };
 static routable_widget_id const null_widget_id{0, component_identity()};
 
+// TODO: Remove widget IDs.
 inline routable_widget_id
 make_routable_widget_id(ephemeral_context& ctx, widget_id id)
 {
     return routable_widget_id{id, get_active_component_container(ctx)};
+}
+
+inline alia_routable_element_id
+make_routable_element_id(ephemeral_context& ctx, alia_element_id id)
+{
+    // TODO: Add real routing information.
+    return {id, {}};
 }
 
 } // namespace alia

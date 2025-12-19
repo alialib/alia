@@ -1,4 +1,4 @@
-#include <alia/panic.h>
+#include <alia/abi/panic.h>
 #include <cstdio>
 #include <cstdlib>
 

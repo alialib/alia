@@ -5,6 +5,11 @@
 #include <alia/system/interface.hpp>
 #include <alia/system/object.hpp>
 
+// TODO: API shouldn't be needed here.
+#include <alia/system/api.hpp>
+
+#include <iostream>
+
 namespace alia {
 
 namespace {
@@ -32,6 +37,10 @@ process_mouse_motion(ui_system& ui, vec2 const& position)
 
         ui.input.mouse_position = position;
         ui.input.mouse_inside_window = true;
+        std::cout
+            << "ui.input.mouse_position.x: " << ui.input.mouse_position.x
+            << " ui.input.mouse_position.y: " << ui.input.mouse_position.y
+            << std::endl;
 
         if (ui.input.mouse_button_state != 0)
             ui.input.dragging = true;
@@ -55,7 +64,7 @@ process_mouse_press(
     if (alia_routable_element_id_is_valid(target))
     {
         alia_event event = alia_make_mouse_press_event(
-            {.button = int(button),
+            {.button = alia_mouse_button_t(button),
              .mods = raw_code(mods),
              .x = position.x,
              .y = position.y});
@@ -68,7 +77,7 @@ process_mouse_press(
         // clear_focus(ui);
     }
     ui.input.last_mouse_press_time[unsigned(button)] = ui.tick_count;
-    ui.input.mouse_button_state |= 1 << mouse_button_code(button);
+    ui.input.mouse_button_state |= 1 << unsigned(button);
     ui.input.keyboard_interaction = false;
 }
 
@@ -83,18 +92,17 @@ process_mouse_release(
     if (alia_routable_element_id_is_valid(target))
     {
         alia_event event = alia_make_mouse_release_event(
-            {.button = int(button),
+            {.button = alia_mouse_button_t(button),
              .mods = raw_code(mods),
              .x = position.x,
              .y = position.y});
         dispatch_targeted_event(ui, event, target);
         refresh_system(ui);
     }
-    ui.input.mouse_button_state &= ~(1 << int(button));
+    ui.input.mouse_button_state &= ~(1 << unsigned(button));
     if (ui.input.mouse_button_state == 0)
     {
-        // TODO
-        // set_widget_with_capture(ui, routable_widget_id{});
+        set_element_with_capture(ui, alia_routable_element_id{});
         ui.input.dragging = false;
     }
 }
@@ -110,13 +118,13 @@ process_double_click(
     if (alia_routable_element_id_is_valid(target))
     {
         alia_event event = alia_make_double_click_event(
-            {.button = int(button),
+            {.button = alia_mouse_button_t(button),
              .mods = raw_code(mods),
              .x = position.x,
              .y = position.y});
         dispatch_targeted_event(ui, event, target);
     }
-    ui.input.mouse_button_state |= 1 << int(button);
+    ui.input.mouse_button_state |= 1 << unsigned(button);
     ui.input.keyboard_interaction = false;
 }
 

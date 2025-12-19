@@ -3,7 +3,7 @@
 #include <alia/context.hpp>
 #include <alia/events.hpp>
 #include <alia/geometry.hpp>
-#include <alia/system/input_constants.hpp>
+#include <alia/input/constants.hpp>
 #include <alia/system/object.hpp>
 
 namespace alia {
@@ -14,6 +14,14 @@ get_transformation(ephemeral_context& ctx)
 {
     // TODO
     return identity_matrix();
+}
+
+// TODO: Move elsewhere.
+inline box
+get_clip_region(ephemeral_context& ctx)
+{
+    // TODO
+    return {.min = {0, 0}, .size = get_system(ctx).surface_size};
 }
 
 // Get the mouse position in the current frame of reference.
@@ -62,41 +70,40 @@ is_mouse_in_surface(ephemeral_context& ctx)
 }
 
 bool
-is_mouse_button_pressed(ui_system& sys, mouse_button_code button);
+is_mouse_button_pressed(ui_system& sys, mouse_button button);
 
 inline bool
-is_mouse_button_pressed(ephemeral_context& ctx, mouse_button_code button)
+is_mouse_button_pressed(ephemeral_context& ctx, mouse_button button)
 {
     return is_mouse_button_pressed(*ctx.system, button);
 }
 
 bool
-detect_mouse_press(ephemeral_context& ctx, mouse_button_code button);
+detect_mouse_press(ephemeral_context& ctx, mouse_button button);
 
 bool
 detect_mouse_press(
-    ephemeral_context& ctx, alia_element_id id, mouse_button_code button);
+    ephemeral_context& ctx, alia_element_id id, mouse_button button);
 
 bool
-detect_mouse_release(ephemeral_context& ctx, mouse_button_code button);
+detect_mouse_release(ephemeral_context& ctx, mouse_button button);
 
 bool
 detect_mouse_release(
-    ephemeral_context& ctx, alia_element_id id, mouse_button_code button);
+    ephemeral_context& ctx, alia_element_id id, mouse_button button);
 
 bool
 detect_mouse_motion(ephemeral_context& ctx, alia_element_id id);
 
 bool
-detect_double_click(ephemeral_context& ctx, mouse_button_code button);
+detect_double_click(ephemeral_context& ctx, mouse_button button);
 
 bool
 detect_double_click(
-    ephemeral_context& ctx, alia_element_id id, mouse_button_code button);
+    ephemeral_context& ctx, alia_element_id id, mouse_button button);
 
 bool
-detect_click(
-    ephemeral_context& ctx, alia_element_id id, mouse_button_code button);
+detect_click(ephemeral_context& ctx, alia_element_id id, mouse_button button);
 
 bool
 is_click_possible(ui_system& sys, alia_element_id id);
@@ -108,53 +115,50 @@ is_click_possible(ephemeral_context& ctx, alia_element_id id)
 }
 
 bool
-is_click_in_progress(
-    ui_system& sys, alia_element_id id, mouse_button_code button);
+is_click_in_progress(ui_system& sys, alia_element_id id, mouse_button button);
 
 inline bool
 is_click_in_progress(
-    ephemeral_context& ctx, alia_element_id id, mouse_button_code button)
+    ephemeral_context& ctx, alia_element_id id, mouse_button button)
 {
     return is_click_in_progress(*ctx.system, id, button);
 }
 
 bool
-detect_drag(
-    ephemeral_context& ctx, alia_element_id id, mouse_button_code button);
+detect_drag(ephemeral_context& ctx, alia_element_id id, mouse_button button);
 
 bool
 detect_press_or_drag(
-    ephemeral_context& ctx, alia_element_id id, mouse_button_code button);
+    ephemeral_context& ctx, alia_element_id id, mouse_button button);
 
 vec2
 get_mouse_motion_delta(ephemeral_context& ctx, alia_element_id id);
 
 bool
-is_drag_in_progress(
-    ui_system& sys, alia_element_id id, mouse_button_code button);
+is_drag_in_progress(ui_system& sys, alia_element_id id, mouse_button button);
 
 inline bool
 is_drag_in_progress(
-    ephemeral_context& ctx, alia_element_id id, mouse_button_code button)
+    ephemeral_context& ctx, alia_element_id id, mouse_button button)
 {
     return is_drag_in_progress(*ctx.system, id, button);
 }
 
 bool
 detect_drag_release(
-    ephemeral_context& ctx, alia_element_id id, mouse_button_code button);
+    ephemeral_context& ctx, alia_element_id id, mouse_button button);
 
 bool
 detect_scroll(ephemeral_context& ctx, alia_element_id id, vec2* out_delta);
 
 inline nanosecond_count
-get_click_start_time(ui_system& sys, mouse_button_code button)
+get_click_start_time(ui_system& sys, mouse_button button)
 {
     return sys.input.last_mouse_press_time[unsigned(button)];
 }
 
 inline nanosecond_count
-get_click_start_time(ephemeral_context& ctx, mouse_button_code button)
+get_click_start_time(ephemeral_context& ctx, mouse_button button)
 {
     return get_click_start_time(*ctx.system, button);
 }
@@ -163,7 +167,7 @@ get_click_start_time(ephemeral_context& ctx, mouse_button_code button)
 // inline nanosecond_count
 // get_click_duration(
 //     ephemeral_context& ctx,
-//     mouse_button_code button,
+//     mouse_button button,
 //     nanosecond_count max_duration)
 // {
 //     return max_duration

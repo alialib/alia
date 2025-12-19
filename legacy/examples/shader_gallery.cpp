@@ -5,6 +5,7 @@
 #include <alia/ui.hpp>
 #include <alia/ui/color.hpp>
 #include <alia/ui/events.hpp>
+#include <alia/ui/input/constants.hpp>
 #include <alia/ui/layout/grids.hpp>
 #include <alia/ui/layout/simple.hpp>
 #include <alia/ui/layout/spacer.hpp>
@@ -23,7 +24,6 @@
 #include <alia/ui/library/switch.hpp>
 #include <alia/ui/scrolling.hpp>
 #include <alia/ui/system/api.hpp>
-#include <alia/ui/system/input_constants.hpp>
 #include <alia/ui/system/object.hpp>
 #include <alia/ui/text/fonts.hpp>
 #include <alia/ui/utilities/cached_ui.hpp>
@@ -819,12 +819,13 @@ my_ui(ui_context ctx)
 
         panel background_panel(
             ctx,
-            direct(panel_style_info{
-                .margin = box_border_width<float>{0, 0, 0, 0},
-                .border_width = box_border_width<float>{0, 0, 0, 0},
-                .padding = box_border_width<float>{0, 0, 0, 0},
-                .background_color
-                = rgba8(get_system(ctx).theme.background.base.main, 0xf0)}),
+            direct(
+                panel_style_info{
+                    .margin = box_border_width<float>{0, 0, 0, 0},
+                    .border_width = box_border_width<float>{0, 0, 0, 0},
+                    .padding = box_border_width<float>{0, 0, 0, 0},
+                    .background_color = rgba8(
+                        get_system(ctx).theme.background.base.main, 0xf0)}),
             GROW | UNPADDED);
 
         {

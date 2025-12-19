@@ -1,7 +1,7 @@
 #pragma once
 
+#include <alia/abi/events.h>
 #include <alia/context.hpp>
-#include <alia/events.h>
 #include <alia/flow/traversal.hpp>
 
 namespace alia {
@@ -72,17 +72,15 @@ is_refresh_event(ephemeral_context& ctx)
 
 // ACCESSORS
 
-#define ALIA_DEFINE_EVENT_ACCESSOR(                                           \
-    code, CATEGORY, flags, NAME, name, data_type)                             \
+#define X(code, CATEGORY, flags, NAME, name, data_type)                       \
     inline data_type& as_##name##_event(ephemeral_context& ctx)               \
     {                                                                         \
         ALIA_ASSERT(get_event_type(ctx) == ALIA_EVENT_##NAME);                \
         return get_event_traversal(ctx).event->name;                          \
     }
 
-ALIA_ENUMERATE_EVENT_TYPES(ALIA_DEFINE_EVENT_ACCESSOR)
-
-#undef ALIA_DEFINE_EVENT_ACCESSOR
+ALIA_EVENTS(X)
+#undef X
 
 // template<class Event>
 // bool

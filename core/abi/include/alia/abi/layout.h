@@ -1,7 +1,7 @@
 #pragma once
 
-#include <alia/geometry.h>
-#include <alia/scratch.h>
+#include <alia/abi/geometry.h>
+#include <alia/abi/scratch.h>
 
 #ifdef __cplusplus
 extern "C" {

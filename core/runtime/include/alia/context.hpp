@@ -2,10 +2,10 @@
 
 #include <cstdint>
 
+#include <alia/abi/events.h>
 #include <alia/arenas.hpp>
 #include <alia/display_list.hpp>
 #include <alia/drawing.hpp>
-#include <alia/events.h>
 #include <alia/layout/node.hpp>
 
 namespace alia {
@@ -39,6 +39,13 @@ inline event_traversal&
 get_event_traversal(ephemeral_context& ctx)
 {
     return *ctx.event;
+}
+
+// TODO: Move elsewhere.
+inline float
+get_padding_size(ephemeral_context& ctx)
+{
+    return ctx.style->padding;
 }
 
 } // namespace alia

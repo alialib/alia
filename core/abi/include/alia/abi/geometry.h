@@ -11,7 +11,7 @@ typedef struct alia_vec2
 
 typedef struct alia_box
 {
-    alia_vec2 pos;
+    alia_vec2 min;
     alia_vec2 size;
 } alia_box;
 

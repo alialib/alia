@@ -1,50 +1,32 @@
 #pragma once
 
+#include <alia/abi/input/constants.h>
 #include <alia/flags.hpp>
-#include <alia/input_constants.h>
 
 // This file defines various enumerations for input devices.
 
 namespace alia {
 
-// All mouse buttons have a code.
-using mouse_button_code = int;
-
-// The 'standard' mouse buttons have names.
-// (Other buttons may exist, but they don't have names.)
-enum class mouse_button
+#define X(code, NAME, name) name = (code),
+enum class mouse_button : alia_mouse_button_t
 {
-    LEFT,
-    MIDDLE,
-    RIGHT
+    ALIA_MOUSE_BUTTONS(X)
 };
+#undef X
 
 static constexpr unsigned max_supported_mouse_buttons = 4;
 
-// standard mouse cursors that are expected to be supplied by the backend
-// These are named after the web standard.
-enum class mouse_cursor
+enum class cursor : alia_cursor_t
 {
-    NONE,
-    DEFAULT,
-    WAIT,
-    CROSSHAIR,
-    TEXT,
-    NOT_ALLOWED,
-    POINTER,
-    MOVE,
-    EW_RESIZE,
-    NS_RESIZE,
-    NESW_RESIZE,
-    NWSE_RESIZE,
-    ZOOM_IN,
-    ZOOM_OUT
+#define X(name) name = ALIA_CURSOR_##name,
+    ALIA_CURSORS(X)
+#undef X
 };
 
 // codes for all the keyboard keys recognized by alia
 enum class key_code
 {
-    UNKNOWN = -1,
+    UNKNOWN = 0,
     SPACE = 32,
     APOSTROPHE = 39,
     COMMA = 44,

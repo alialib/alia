@@ -161,7 +161,7 @@ hyperflow_assign_boxes(
 
     float line_height = 0, line_ascent = 0, line_descent = 0;
 
-    float current_x = 0, current_y = box.pos.y + placement.offset;
+    float current_x = 0, current_y = box.min.y + placement.offset;
     layout_node* line_start_child = hyperflow.first_child;
     int child_index = 0, line_start_index = 0;
     for (layout_node* child = hyperflow.first_child; child != nullptr;
@@ -171,7 +171,7 @@ hyperflow_assign_boxes(
 
         if (current_x + requirements.x.min_size > box.size.x)
         {
-            float x = box.pos.x;
+            float x = box.min.x;
             int i = line_start_index;
             line_height = (std::max) (line_height, line_ascent + line_descent);
             for (layout_node* c = line_start_child; c != child;
@@ -183,7 +183,7 @@ hyperflow_assign_boxes(
                     ctx,
                     ALIA_MAIN_AXIS_X,
                     c,
-                    {.pos = vec2{x, current_y},
+                    {.min = vec2{x, current_y},
                      .size = vec2{child_x.min_size, line_height}},
                     assign_baseline(
                         hyperflow.flags,
@@ -212,7 +212,7 @@ hyperflow_assign_boxes(
 
     if (line_start_child != nullptr)
     {
-        float x = box.pos.x;
+        float x = box.min.x;
         int i = line_start_index;
         line_height = (std::max) (line_height, line_ascent + line_descent);
         for (layout_node* c = line_start_child; c != nullptr;
@@ -224,7 +224,7 @@ hyperflow_assign_boxes(
                 ctx,
                 ALIA_MAIN_AXIS_X,
                 c,
-                {.pos = vec2{x, current_y},
+                {.min = vec2{x, current_y},
                  .size = vec2{child_x.min_size, line_height}},
                 assign_baseline(
                     hyperflow.flags, line_height, line_ascent, line_descent));

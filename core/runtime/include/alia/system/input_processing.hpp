@@ -2,7 +2,7 @@
 #define ALIA_UI_SYSTEM_INPUT_PROCESSING_HPP
 
 #include <alia/geometry.hpp>
-#include <alia/system/input_constants.hpp>
+#include <alia/input/constants.hpp>
 
 namespace alia {
 
@@ -19,16 +19,26 @@ process_mouse_loss(ui_system& ui);
 // Process a mouse button press.
 void
 process_mouse_press(
-    ui_system& ui, mouse_button button, key_modifiers mods = NO_FLAGS);
+    ui_system& ui,
+    vec2 const& position,
+    mouse_button button,
+    key_modifiers mods = NO_FLAGS);
 
 // Process a double click.
 void
 process_double_click(
-    ui_system& ui, mouse_button button, key_modifiers mods = NO_FLAGS);
+    ui_system& ui,
+    vec2 const& position,
+    mouse_button button,
+    key_modifiers mods = NO_FLAGS);
 
 // Process a mouse button release.
 void
-process_mouse_release(ui_system& ui, mouse_button button);
+process_mouse_release(
+    ui_system& ui,
+    vec2 const& position,
+    mouse_button button,
+    key_modifiers mods = NO_FLAGS);
 
 // Process scroll inputs (e.g., the mouse wheel).
 void

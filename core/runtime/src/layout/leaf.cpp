@@ -55,7 +55,7 @@ leaf_assign_boxes(
         leaf.size,
         0,
         leaf.padding);
-    placement->position = box.pos + padded_placement.pos;
+    placement->position = box.min + padded_placement.min;
     placement->size = padded_placement.size;
 }
 

@@ -8,8 +8,8 @@
 #include <alia/events.hpp>
 #include <alia/geometry.hpp>
 #include <alia/ids.hpp>
+#include <alia/input/constants.hpp>
 #include <alia/layout/system.hpp>
-#include <alia/system/input_constants.hpp>
 // #include <alia/system/os_interface.hpp>
 // #include <alia/system/window_interface.hpp>
 #include <alia/theme.hpp>
@@ -30,7 +30,7 @@ struct window_input_state
     vec2 mouse_position;
 
     // the tick count corresponding to the last press of each mouse button
-    nanosecond_count last_mouse_press_time[max_supported_mouse_buttons];
+    nanosecond_count last_mouse_press_time[ALIA_MAX_SUPPORTED_MOUSE_BUTTONS];
 
     // the element that the mouse is over
     alia_routable_element_id hot_element;
@@ -58,7 +58,7 @@ struct window_input_state
     nanosecond_count hover_start_time;
 
     // the mouse cursor that's currently set for our window
-    mouse_cursor current_mouse_cursor = mouse_cursor::DEFAULT;
+    cursor current_cursor = cursor::DEFAULT;
 };
 
 struct animation_tracking_system

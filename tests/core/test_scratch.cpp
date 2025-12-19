@@ -1,4 +1,4 @@
-#include <alia/scratch.h>
+#include <alia/abi/scratch.h>
 
 #include <doctest/doctest.h>
 

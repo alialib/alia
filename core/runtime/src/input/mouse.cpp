@@ -1,4 +1,7 @@
-#include <alia/utilities/mouse.hpp>
+#include <alia/input/mouse.hpp>
+
+// TODO: API shouldn't be needed here.
+#include <alia/system/api.hpp>
 
 namespace alia {
 
@@ -35,28 +38,27 @@ is_mouse_in_surface(ui_system& sys)
 }
 
 bool
-is_mouse_button_pressed(ui_system& sys, mouse_button_code button)
+is_mouse_button_pressed(ui_system& sys, mouse_button button)
 {
     return (sys.input.mouse_button_state & (1 << int(button))) != 0;
 }
 
 bool
-detect_mouse_press(ephemeral_context& ctx, mouse_button_code button)
+detect_mouse_press(ephemeral_context& ctx, mouse_button button)
 {
     return (get_event_type(ctx) == ALIA_EVENT_MOUSE_PRESS
             || get_event_type(ctx) == ALIA_EVENT_DOUBLE_CLICK)
-        && as_mouse_press_event(ctx).button == button;
+        && as_mouse_press_event(ctx).button == alia_mouse_button_t(button);
 }
 
 bool
 detect_mouse_press(
-    ephemeral_context& ctx, alia_element_id id, mouse_button_code button)
+    ephemeral_context& ctx, alia_element_id id, mouse_button button)
 {
     if (detect_mouse_press(ctx, button) && is_element_hot(ctx, id))
     {
-        // TODO
-        // set_element_with_capture(
-        //     get_system(ctx), make_routable_element_id(ctx, id));
+        set_element_with_capture(
+            get_system(ctx), make_routable_element_id(ctx, id));
         return true;
     }
     else
@@ -66,15 +68,15 @@ detect_mouse_press(
 }
 
 bool
-detect_mouse_release(ephemeral_context& ctx, mouse_button_code button)
+detect_mouse_release(ephemeral_context& ctx, mouse_button button)
 {
     return get_event_type(ctx) == ALIA_EVENT_MOUSE_RELEASE
-        && as_mouse_release_event(ctx).button == button;
+        && as_mouse_release_event(ctx).button == alia_mouse_button_t(button);
 }
 
 bool
 detect_mouse_release(
-    ephemeral_context& ctx, alia_element_id id, mouse_button_code button)
+    ephemeral_context& ctx, alia_element_id id, mouse_button button)
 {
     return detect_mouse_release(ctx, button) && element_has_capture(ctx, id);
 }
@@ -88,22 +90,21 @@ detect_mouse_motion(ephemeral_context& ctx, alia_element_id id)
 }
 
 bool
-detect_double_click(ephemeral_context& ctx, mouse_button_code button)
+detect_double_click(ephemeral_context& ctx, mouse_button button)
 {
     return get_event_type(ctx) == ALIA_EVENT_DOUBLE_CLICK
-        && as_double_click_event(ctx).button == button;
+        && as_double_click_event(ctx).button == alia_mouse_button_t(button);
 }
 
 bool
 detect_double_click(
-    ephemeral_context& ctx, alia_element_id id, mouse_button_code button)
+    ephemeral_context& ctx, alia_element_id id, mouse_button button)
 {
     return detect_double_click(ctx, button) && is_element_hot(ctx, id);
 }
 
 bool
-detect_click(
-    ephemeral_context& ctx, alia_element_id id, mouse_button_code button)
+detect_click(ephemeral_context& ctx, alia_element_id id, mouse_button button)
 {
     detect_mouse_press(ctx, id, button);
     return detect_mouse_release(ctx, id, button) && is_element_hot(ctx, id);
@@ -116,16 +117,14 @@ is_click_possible(ui_system& sys, alia_element_id id)
 }
 
 bool
-is_click_in_progress(
-    ui_system& sys, alia_element_id id, mouse_button_code button)
+is_click_in_progress(ui_system& sys, alia_element_id id, mouse_button button)
 {
     return is_element_hot(sys, id) && element_has_capture(sys, id)
         && is_mouse_button_pressed(sys, button);
 }
 
 bool
-detect_drag(
-    ephemeral_context& ctx, alia_element_id id, mouse_button_code button)
+detect_drag(ephemeral_context& ctx, alia_element_id id, mouse_button button)
 {
     detect_mouse_press(ctx, id, button);
     return get_event_type(ctx) == ALIA_EVENT_MOUSE_MOTION
@@ -135,7 +134,7 @@ detect_drag(
 
 bool
 detect_press_or_drag(
-    ephemeral_context& ctx, alia_element_id id, mouse_button_code button)
+    ephemeral_context& ctx, alia_element_id id, mouse_button button)
 {
     return (detect_mouse_press(ctx, id, button)
             || (get_event_type(ctx) == ALIA_EVENT_MOUSE_MOTION
@@ -162,8 +161,7 @@ get_mouse_motion_delta(ephemeral_context& ctx, alia_element_id id)
 }
 
 bool
-is_drag_in_progress(
-    ui_system& sys, alia_element_id id, mouse_button_code button)
+is_drag_in_progress(ui_system& sys, alia_element_id id, mouse_button button)
 {
     return is_mouse_button_pressed(sys, button) && element_has_capture(sys, id)
         && sys.input.dragging;
@@ -171,7 +169,7 @@ is_drag_in_progress(
 
 bool
 detect_drag_release(
-    ephemeral_context& ctx, alia_element_id id, mouse_button_code button)
+    ephemeral_context& ctx, alia_element_id id, mouse_button button)
 {
     return is_drag_in_progress(ctx, id, button)
         && detect_mouse_release(ctx, button);
@@ -179,7 +177,7 @@ detect_drag_release(
 
 bool
 detect_stationary_click(
-    ephemeral_context& ctx, alia_element_id id, mouse_button_code button)
+    ephemeral_context& ctx, alia_element_id id, mouse_button button)
 {
     return detect_click(ctx, id, button) && !get_system(ctx).input.dragging;
 }

@@ -185,7 +185,7 @@ flow_assign_boxes(
         }
     };
 
-    float current_x = 0, current_y = box.pos.y + placement.offset;
+    float current_x = 0, current_y = box.min.y + placement.offset;
     update_line_measures(0);
     line_height = (std::max) (line_height, line_ascent + line_descent);
 
@@ -196,7 +196,7 @@ flow_assign_boxes(
         auto const& requirements = child_requirements[child_index];
 
         wrapping_assignment assignment;
-        assignment.x_base = box.pos.x;
+        assignment.x_base = box.min.x;
         assignment.line_width = box.size.x;
         assignment.first_line_x_offset = current_x;
 
@@ -236,7 +236,7 @@ flow_assign_boxes(
                     ctx,
                     ALIA_MAIN_AXIS_X,
                     child,
-                    {.pos = vec2{box.pos.x, current_y},
+                    {.min = vec2{box.min.x, current_y},
                      .size = vec2{requirements.end_x, line_height}},
                     assign_baseline(
                         flow.flags, line_height, line_ascent, line_descent));
@@ -265,7 +265,7 @@ flow_assign_boxes(
                 ctx,
                 ALIA_MAIN_AXIS_X,
                 child,
-                {.pos = vec2{box.pos.x + current_x, current_y},
+                {.min = vec2{box.min.x + current_x, current_y},
                  .size = vec2{requirements.end_x - current_x, line_height}},
                 assign_baseline(
                     flow.flags, line_height, line_ascent, line_descent));
@@ -466,7 +466,7 @@ flow_assign_wrapped_boxes(
                     ctx,
                     ALIA_MAIN_AXIS_X,
                     child,
-                    box{.pos = vec2{assignment->x_base, current_y},
+                    box{.min = vec2{assignment->x_base, current_y},
                         .size = vec2{requirements.end_x, line_height}},
                     assign_baseline(
                         flow.flags, line_height, line_ascent, line_descent));
@@ -495,7 +495,7 @@ flow_assign_wrapped_boxes(
                 ctx,
                 ALIA_MAIN_AXIS_X,
                 child,
-                box{.pos = vec2{assignment->x_base + current_x, current_y},
+                box{.min = vec2{assignment->x_base + current_x, current_y},
                     .size = vec2{requirements.end_x - current_x, line_height}},
                 assign_baseline(
                     flow.flags, line_height, line_ascent, line_descent));

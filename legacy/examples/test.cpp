@@ -5,6 +5,7 @@
 #include <alia/ui.hpp>
 #include <alia/ui/color.hpp>
 #include <alia/ui/events.hpp>
+#include <alia/ui/input/constants.hpp>
 #include <alia/ui/layout/grids.hpp>
 #include <alia/ui/layout/simple.hpp>
 #include <alia/ui/layout/spacer.hpp>
@@ -23,7 +24,6 @@
 #include <alia/ui/library/switch.hpp>
 #include <alia/ui/scrolling.hpp>
 #include <alia/ui/system/api.hpp>
-#include <alia/ui/system/input_constants.hpp>
 #include <alia/ui/system/object.hpp>
 #include <alia/ui/text/fonts.hpp>
 #include <alia/ui/utilities/cached_ui.hpp>
@@ -520,44 +520,47 @@ do_box(
 // //         ALIA_PP_FE_2_0) \
 // //     (F, a, b, __VA_ARGS__)
 
-// // #define ALIA_DEFINE_STRUCT_SIGNAL_FIELD(signal_type, struct_name, field_name) \
-// //     auto ALIA_PP_CONCAT(ALIA_PP_CONCAT(_get_, field_name), _signal)()         \
-// //     {                                                                         \
-// //         return (*this)->*&struct_name::field_name;                            \
-// //     }                                                                         \
-// //     __declspec(property(                                                      \
-// //         get = ALIA_PP_CONCAT(ALIA_PP_CONCAT(_get_, field_name), _signal)))    \
-// //         alia::field_signal<                                                   \
-// //             ALIA_PP_CONCAT(ALIA_PP_CONCAT(signal_type, _), struct_name),      \
-// //             decltype(struct_name::field_name)>                                \
+// // #define ALIA_DEFINE_STRUCT_SIGNAL_FIELD(signal_type, struct_name,
+// field_name) \
+// //     auto ALIA_PP_CONCAT(ALIA_PP_CONCAT(_get_, field_name), _signal)() \
+// //     { \
+// //         return (*this)->*&struct_name::field_name; \
+// //     } \
+// //     __declspec(property( \
+// //         get = ALIA_PP_CONCAT(ALIA_PP_CONCAT(_get_, field_name),
+// _signal)))    \
+// //         alia::field_signal< \
+// //             ALIA_PP_CONCAT(ALIA_PP_CONCAT(signal_type, _), struct_name),
+// \
+// //             decltype(struct_name::field_name)> \
 // //             field_name;
 
-// // #define ALIA_DEFINE_STRUCT_SIGNAL_FIELDS(signal_type, struct_name, ...)       \
-// //     ALIA_PP_FOR_EACH_2(                                                       \
-// //         ALIA_DEFINE_STRUCT_SIGNAL_FIELD,                                      \
-// //         signal_type,                                                          \
-// //         struct_name,                                                          \
+// // #define ALIA_DEFINE_STRUCT_SIGNAL_FIELDS(signal_type, struct_name, ...) \
+// //     ALIA_PP_FOR_EACH_2( \
+// //         ALIA_DEFINE_STRUCT_SIGNAL_FIELD, \
+// //         signal_type, \
+// //         struct_name, \
 // //         __VA_ARGS__)
 
-// // #define ALIA_DEFINE_CUSTOM_STRUCT_SIGNAL(                                     \
-// //     signal_name, signal_type, struct_name, ...)                               \
-// //     struct ALIA_PP_CONCAT(ALIA_PP_CONCAT(signal_type, _), struct_name)        \
-// //         : signal_type<struct_name>                                            \
-// //     {                                                                         \
-// //         using signal_ref::signal_ref;                                         \
-// //         ALIA_DEFINE_STRUCT_SIGNAL_FIELDS(                                     \
-// //             signal_type, struct_name, __VA_ARGS__)                            \
+// // #define ALIA_DEFINE_CUSTOM_STRUCT_SIGNAL( \
+// //     signal_name, signal_type, struct_name, ...) \
+// //     struct ALIA_PP_CONCAT(ALIA_PP_CONCAT(signal_type, _), struct_name) \
+// //         : signal_type<struct_name> \
+// //     { \
+// //         using signal_ref::signal_ref; \
+// //         ALIA_DEFINE_STRUCT_SIGNAL_FIELDS( \
+// //             signal_type, struct_name, __VA_ARGS__) \
 // //     };
 
-// // #define ALIA_DEFINE_STRUCT_SIGNAL(signal_type, struct_name, ...)              \
-// //     ALIA_DEFINE_CUSTOM_STRUCT_SIGNAL(                                         \
-// //         ALIA_PP_CONCAT(ALIA_PP_CONCAT(signal_type, _), struct_name),          \
-// //         signal_type,                                                          \
-// //         struct_name,                                                          \
+// // #define ALIA_DEFINE_STRUCT_SIGNAL(signal_type, struct_name, ...) \
+// //     ALIA_DEFINE_CUSTOM_STRUCT_SIGNAL( \
+// //         ALIA_PP_CONCAT(ALIA_PP_CONCAT(signal_type, _), struct_name), \
+// //         signal_type, \
+// //         struct_name, \
 // //         __VA_ARGS__)
 
-// // #define ALIA_DEFINE_STRUCT_SIGNALS(struct_name, ...)                          \
-// //     ALIA_DEFINE_STRUCT_SIGNAL(readable, struct_name, __VA_ARGS__)             \
+// // #define ALIA_DEFINE_STRUCT_SIGNALS(struct_name, ...) \
+// //     ALIA_DEFINE_STRUCT_SIGNAL(readable, struct_name, __VA_ARGS__) \
 // //     ALIA_DEFINE_STRUCT_SIGNAL(duplex, struct_name, __VA_ARGS__)
 
 // // struct realm
@@ -758,11 +761,12 @@ draw_thumb(
         paint.setAntiAlias(true);
         paint.setColor(as_skcolor(color));
         canvas.drawPath(
-            SkPath::Rect(SkRect::MakeXYWH(
-                thumb_position[0] - 24.f,
-                thumb_position[1] - 24.f,
-                48.f,
-                48.f)),
+            SkPath::Rect(
+                SkRect::MakeXYWH(
+                    thumb_position[0] - 24.f,
+                    thumb_position[1] - 24.f,
+                    48.f,
+                    48.f)),
             paint);
 
         const SkScalar blur_sigma = 16.0f;
@@ -773,11 +777,12 @@ draw_thumb(
             SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, blur_sigma, false));
 
         canvas.drawPath(
-            SkPath::Rect(SkRect::MakeXYWH(
-                thumb_position[0] - 24.f + x_drop,
-                thumb_position[1] - 24.f + y_drop,
-                48.f,
-                48.f)),
+            SkPath::Rect(
+                SkRect::MakeXYWH(
+                    thumb_position[0] - 24.f + x_drop,
+                    thumb_position[1] - 24.f + y_drop,
+                    48.f,
+                    48.f)),
             paint);
     }
 }
@@ -1069,12 +1074,13 @@ my_ui(ui_context ctx)
 
     panel background_panel(
         ctx,
-        direct(panel_style_info{
-            .margin = box_border_width<float>{0, 0, 0, 0},
-            .border_width = box_border_width<float>{0, 0, 0, 0},
-            .padding = box_border_width<float>{0, 0, 0, 0},
-            .background_color
-            = rgba8(get_system(ctx).theme.background.base.main, 0xf0)}),
+        direct(
+            panel_style_info{
+                .margin = box_border_width<float>{0, 0, 0, 0},
+                .border_width = box_border_width<float>{0, 0, 0, 0},
+                .padding = box_border_width<float>{0, 0, 0, 0},
+                .background_color
+                = rgba8(get_system(ctx).theme.background.base.main, 0xf0)}),
         GROW | UNPADDED);
 
     {
@@ -1425,27 +1431,28 @@ do_node_expander(ctx, state);
                 {
                     do_wrapped_text(
                         ctx,
-                        value("Lorem ipsum dolor sit amet, consectetur "
-                              "adipisg elit. "
-                              "Phasellus lacinia elementum diam consequat "
-                              "alicinquet. "
-                              "Vestibulum ut libero justo. Pellentesque "
-                              "lectus "
-                              "lectus, "
-                              "scelerisque a elementum sed, bibendum id "
-                              "libero. "
-                              "Maecenas venenatis est sed sem "
-                              "consequat mollis. Ut "
-                              "nequeodio, hendrerit ut justo venenatis, "
-                              "consequat "
-                              "molestie eros. Nam fermentum, mi malesuada "
-                              "eleifend"
-                              "dapibus, lectus dolor luctus orci, nec "
-                              "posuere "
-                              "lor "
-                              "lorem ac sem. Nullam interdum laoreet "
-                              "ipsum in "
-                              "dictum."),
+                        value(
+                            "Lorem ipsum dolor sit amet, consectetur "
+                            "adipisg elit. "
+                            "Phasellus lacinia elementum diam consequat "
+                            "alicinquet. "
+                            "Vestibulum ut libero justo. Pellentesque "
+                            "lectus "
+                            "lectus, "
+                            "scelerisque a elementum sed, bibendum id "
+                            "libero. "
+                            "Maecenas venenatis est sed sem "
+                            "consequat mollis. Ut "
+                            "nequeodio, hendrerit ut justo venenatis, "
+                            "consequat "
+                            "molestie eros. Nam fermentum, mi malesuada "
+                            "eleifend"
+                            "dapibus, lectus dolor luctus orci, nec "
+                            "posuere "
+                            "lor "
+                            "lorem ac sem. Nullam interdum laoreet "
+                            "ipsum in "
+                            "dictum."),
                         FILL);
                 }
             }

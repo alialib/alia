@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-#include <alia/geometry.h>
+#include <alia/abi/geometry.h>
 
 #include <alia/base.hpp>
 
@@ -84,7 +84,15 @@ using rect = alia_rect;
 inline box
 apply_margin(box box, vec2 margin)
 {
-    return {.pos = box.pos + margin, .size = box.size - margin * 2};
+    return {.min = box.min + margin, .size = box.size - margin * 2};
+}
+
+// Is the point p inside the given box?
+inline bool
+is_inside(box const& box, vec2 const& p)
+{
+    return p.x >= box.min.x && p.x < box.min.x + box.size.x && p.y >= box.min.y
+        && p.y < box.min.y + box.size.y;
 }
 
 struct insets
@@ -159,15 +167,35 @@ invert_affine2(affine2 m)
 }
 
 static inline vec2
-transform_point(affine2 m, vec2 v)
+transform_point(affine2 const& m, vec2 const& v)
 {
     return {m.a * v.x + m.c * v.y + m.tx, m.b * v.x + m.d * v.y + m.ty};
 }
 
 static inline vec2
-transform_vector(affine2 m, vec2 v)
+transform_vector(affine2 const& m, vec2 const& v)
 {
     return {m.a * v.x + m.c * v.y, m.b * v.x + m.d * v.y};
+}
+
+inline box
+transform_aabb(affine2 const& m, box const& b)
+{
+    vec2 c = b.min + b.size * 0.5f; // center
+    vec2 e = b.size * 0.5f; // extents
+
+    vec2 c2 = transform_point(m, c);
+
+    // e' = |M| * e
+    float aa = std::abs(m.a), cc = std::abs(m.c);
+    float bb = std::abs(m.b), dd = std::abs(m.d);
+
+    vec2 e2{aa * e.x + cc * e.y, bb * e.x + dd * e.y};
+
+    vec2 min2 = c2 - e2;
+    vec2 max2 = c2 + e2;
+
+    return {min2, max2 - min2};
 }
 
 } // namespace alia

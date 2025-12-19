@@ -2,11 +2,11 @@
 
 #include <stdint.h>
 
-#include <alia/geometry.h>
-#include <alia/ids.h>
-#include <alia/input_constants.h>
-#include <alia/layout.h>
-#include <alia/scratch.h>
+#include <alia/abi/geometry.h>
+#include <alia/abi/ids.h>
+#include <alia/abi/input/constants.h>
+#include <alia/abi/layout.h>
+#include <alia/abi/scratch.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,11 +37,10 @@ enum
 // The core event types are defined via a macro table that enumerates all the
 // event types.
 //
-// Calling `ALIA_ENUMERATE_EVENT_TYPES(X)` will invoke `X` as
-// `X(code, category, flags, uppercase_name, lowercase_name, data_struct_name)`
-// for each built-in event type.
+// The columns are:
+// `(code, category, flags, uppercase_name, lowercase_name, data_struct_name)`
 //
-#define ALIA_ENUMERATE_EVENT_TYPES(X)                                         \
+#define ALIA_EVENTS(X)                                                        \
     /* none / meta */                                                         \
     X(0x00, NONE, NONE, NONE, none, alia_nil)                                 \
     /* refresh */                                                             \
@@ -100,7 +99,7 @@ enum
       alia_focus_query)                                                       \
     X(0x53, INPUT, NONE, FOCUS_SUCCESSOR, focus_successor, alia_focus_query)  \
     X(0x54, INPUT, NONE, FOCUS_RECOVERY, focus_recovery, alia_focus_recovery) \
-    /* mouse */                                                               \
+    /* mouse / pointer */                                                     \
     X(0x60, INPUT, TARGETED, MOUSE_PRESS, mouse_press, alia_mouse_button)     \
     X(0x61, INPUT, TARGETED, DOUBLE_CLICK, double_click, alia_mouse_button)   \
     X(0x62, INPUT, TARGETED, MOUSE_RELEASE, mouse_release, alia_mouse_button) \
@@ -113,8 +112,9 @@ enum
       MOUSE_HOVER,                                                            \
       mouse_hover,                                                            \
       alia_mouse_notification)                                                \
+    X(0x67, INPUT, TARGETED, CURSOR_QUERY, cursor_query, alia_cursor_query)   \
     /* scroll */                                                              \
-    X(0x70, INPUT, TARGETED, WHEEL, wheel, alia_wheel)                        \
+    X(0x70, INPUT, TARGETED, WHEEL, wheel, alia_wheel)
 /* misc */
 // X(0x82, INPUT, TIMER, TARGETED, timer, alia_timer)
 //
@@ -153,13 +153,20 @@ typedef struct
 
 typedef struct
 {
-
+    bool acknowledged;
+    alia_box region;
 } alia_make_widget_visible;
+
+typedef struct
+{
+    alia_routable_element_id id;
+    alia_cursor_t cursor;
+} alia_mouse_hit_test_result;
 typedef struct
 {
     float x;
     float y;
-    alia_routable_element_id result;
+    alia_mouse_hit_test_result result;
 } alia_mouse_hit_test;
 typedef struct
 {
@@ -169,8 +176,8 @@ typedef struct
 } alia_wheel_hit_test;
 typedef struct
 {
-    int dummy;
-} alia_mouse_cursor_query;
+    alia_cursor_t cursor;
+} alia_cursor_query;
 
 typedef struct
 {
@@ -197,7 +204,7 @@ typedef struct
 
 typedef struct
 {
-    int button;
+    alia_mouse_button_t button;
     alia_kmod_t mods;
     float x;
     float y;
@@ -238,20 +245,17 @@ typedef struct
 
 // EVENT CODES
 
-#define ALIA_DEFINE_EVENT_CODE(code, CATEGORY, flags, NAME, name, data_type)  \
-    ALIA_EVENT_##NAME = (code),
-
+// clang-format off
 enum
 {
-    ALIA_ENUMERATE_EVENT_TYPES(ALIA_DEFINE_EVENT_CODE)
+    #define X(code, CATEGORY, flags, NAME, name, data_type)                       \
+        ALIA_EVENT_##NAME = (code),
+    ALIA_EVENTS(X)
+    #undef X
 };
-
-#undef ALIA_DEFINE_EVENT_CODE
+// clang-format on
 
 // EVENT STRUCT
-
-#define ALIA_EVENT_PAYLOAD(code, CATEGORY, flags, NAME, name, data_type)      \
-    data_type name;
 
 typedef struct alia_event
 {
@@ -260,16 +264,18 @@ typedef struct alia_event
     alia_element_id target;
     union
     {
-        ALIA_ENUMERATE_EVENT_TYPES(ALIA_EVENT_PAYLOAD)
+        // clang-format off
+        #define X(code, CATEGORY, flags, NAME, name, data_type) \
+            data_type name;
+        ALIA_EVENTS(X)
+        #undef X
+        // clang-format on
     };
 } alia_event;
 
-#undef ALIA_EVENT_PAYLOAD
-
 // CONSTRUCTORS
 
-#define ALIA_DEFINE_EVENT_CONSTRUCTOR(                                        \
-    code, CATEGORY, flags, NAME, name, data_type)                             \
+#define X(code, CATEGORY, flags, NAME, name, data_type)                       \
     static inline alia_event alia_make_##name##_event(data_type data)         \
     {                                                                         \
         alia_event event;                                                     \
@@ -280,9 +286,8 @@ typedef struct alia_event
         return event;                                                         \
     }
 
-ALIA_ENUMERATE_EVENT_TYPES(ALIA_DEFINE_EVENT_CONSTRUCTOR)
-
-#undef ALIA_DEFINE_EVENT_CONSTRUCTOR
+ALIA_EVENTS(X)
+#undef X
 
 #ifdef __cplusplus
 } // extern "C"

@@ -1,9 +1,7 @@
-#ifndef ALIA_UI_SYSTEM_API_HPP
-#define ALIA_UI_SYSTEM_API_HPP
+#pragma once
 
-#include <alia/core/flow/events.hpp>
-#include <alia/ui/context.hpp>
-#include <alia/ui/events.hpp>
+#include <alia/context.hpp>
+#include <functional>
 
 namespace alia {
 
@@ -15,11 +13,10 @@ struct window_interface;
 void
 initialize(
     ui_system& system,
-    std::function<void(ui_context)> controller,
+    std::function<void(context&)> controller /*,
     external_interface* external,
     std::shared_ptr<os_interface> os,
-    std::shared_ptr<window_interface> window);
-
+    std::shared_ptr<window_interface> window*/);
 // TODO: Add other initialization arguments...
 //     // alia__shared_ptr<alia::surface> const& surface,
 //     vector<2, float> const& ppi,
@@ -34,7 +31,7 @@ update(ui_system& ui);
 
 // Handle a change in the size of the window.
 void
-update_window_size(ui_system& ui, vector<2, unsigned> const& new_size);
+update_window_size(ui_system& ui, vec2 const& new_size);
 
 #if 0
 
@@ -110,14 +107,12 @@ on_ui_style_change(ui_system& system)
 
 #endif
 
-// Set the widget that has the mouse captured.
+// Set the element that has the mouse captured.
 void
-set_widget_with_capture(ui_system& ui, routable_widget_id widget);
+set_element_with_capture(ui_system& ui, alia_routable_element_id element);
 
-// Set the widget that's under the mouse.
+// Set the element that's under the mouse.
 void
-set_hot_widget(ui_system& ui, routable_widget_id widget);
+set_hot_element(ui_system& ui, alia_routable_element_id element);
 
 } // namespace alia
-
-#endif

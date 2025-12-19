@@ -7,8 +7,8 @@
 #include <alia/ui/context.hpp>
 #include <alia/ui/geometry.hpp>
 #include <alia/ui/ids.hpp>
+#include <alia/ui/input/constants.hpp>
 #include <alia/ui/layout/specification.hpp>
-#include <alia/ui/system/input_constants.hpp>
 
 #include <cstdint>
 

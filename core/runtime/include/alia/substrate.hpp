@@ -3,7 +3,7 @@
 #include <cassert>
 #include <cstdint>
 
-#include <alia/scratch.h>
+#include <alia/abi/scratch.h>
 
 // This file defines the data retrieval library used for associating mutable
 // state and cached data with alia content graphs. It is designed so that each

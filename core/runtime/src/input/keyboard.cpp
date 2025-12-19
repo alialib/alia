@@ -1,4 +1,4 @@
-#include <alia/ui/utilities/keyboard.hpp>
+#include <alia/ui/input/keyboard.hpp>
 
 #include <optional>
 
@@ -6,9 +6,9 @@
 #include <alia/core/flow/top_level.hpp>
 #include <alia/ui/events.hpp>
 #include <alia/ui/geometry.hpp>
+#include <alia/ui/input/mouse.hpp>
 #include <alia/ui/system/api.hpp>
 #include <alia/ui/system/object.hpp>
-#include <alia/ui/utilities/mouse.hpp>
 
 namespace alia {
 

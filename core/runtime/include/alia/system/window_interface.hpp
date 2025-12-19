@@ -2,7 +2,7 @@
 #define ALIA_UI_SYSTEM_WINDOW_INTERFACE_HPP
 
 #include <alia/geometry.hpp>
-#include <alia/system/input_constants.hpp>
+#include <alia/input/constants.hpp>
 
 namespace alia {
 
@@ -13,7 +13,7 @@ struct window_interface
     }
 
     virtual void
-    set_mouse_cursor(mouse_cursor cursor)
+    set_cursor(cursor cursor)
         = 0;
 };
 

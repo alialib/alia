@@ -11,11 +11,11 @@
 #include <alia/ui/context.hpp>
 #include <alia/ui/events.hpp>
 #include <alia/ui/geometry.hpp>
+#include <alia/ui/input/constants.hpp>
 #include <alia/ui/layout/simple.hpp>
 #include <alia/ui/layout/specification.hpp>
 #include <alia/ui/layout/utilities.hpp>
 #include <alia/ui/styling.hpp>
-#include <alia/ui/system/input_constants.hpp>
 #include <alia/ui/system/object.hpp>
 #include <alia/ui/utilities/keyboard.hpp>
 #include <alia/ui/utilities/mouse.hpp>
@@ -256,9 +256,9 @@ get_thumb_area(scrollbar_parameters const& sb)
 {
     layout_box bg_area = get_background_area(sb);
     layout_box area = bg_area;
-    area.size[sb.axis] = (std::max)(
-        get_metrics(sb).minimum_thumb_length,
-        sb.view_size * bg_area.size[sb.axis] / sb.content_size);
+    area.size[sb.axis]
+        = (std::max) (get_metrics(sb).minimum_thumb_length,
+                      sb.view_size * bg_area.size[sb.axis] / sb.content_size);
     area.corner[sb.axis]
         = bg_area.corner[sb.axis] + sb.data->physical_position;
     return area;
@@ -767,7 +767,7 @@ scrollable_layout_container::get_vertical_requirements(
                 layout_scalar resolved_width = resolve_assigned_width(
                     this->cacher.resolved_spec, assigned_width, x);
                 layout_scalar actual_width
-                    = (std::max)(resolved_width, x.size);
+                    = (std::max) (resolved_width, x.size);
                 calculated_layout_requirements y
                     = logic_.get_vertical_requirements(children, actual_width);
                 layout_scalar required_height = y.size;
@@ -901,9 +901,9 @@ scrollable_layout_container::set_relative_assignment(
         scrollbar_logic_done:
 
             layout_scalar content_width
-                = (std::max)(available_size[0], x.size);
+                = (std::max) (available_size[0], x.size);
             layout_scalar content_height
-                = (std::max)(available_size[1], y.size);
+                = (std::max) (available_size[1], y.size);
 
             layout_vector content_size
                 = make_layout_vector(content_width, content_height);
@@ -992,8 +992,9 @@ handle_visibility_request(
             else if (
                 region_ul[i] > window_ul[i] && region_lr[i] > window_lr[i])
             {
-                correction = round_to_layout_scalar((std::min)(
-                    region_ul[i] - window_ul[i], region_lr[i] - window_lr[i]));
+                correction = round_to_layout_scalar(
+                    (std::min) (region_ul[i] - window_ul[i],
+                                region_lr[i] - window_lr[i]));
             }
         }
         else
@@ -1035,14 +1036,14 @@ handle_scrolling_key_press(scrollable_view_data& data, modded_key const& key)
         case key_code::PAGE_UP:
             offset_logical_position(
                 construct_scrollbar(data, 1),
-                -(std::max)(
-                    data.view_size[1] - data.line_size, data.line_size));
+                -(std::max) (data.view_size[1] - data.line_size,
+                             data.line_size));
             break;
         case key_code::PAGE_DOWN:
             offset_logical_position(
                 construct_scrollbar(data, 1),
-                (std::max)(
-                    data.view_size[1] - data.line_size, data.line_size));
+                (std::max) (data.view_size[1] - data.line_size,
+                            data.line_size));
             break;
         case key_code::LEFT:
             offset_logical_position(
@@ -1084,7 +1085,7 @@ scoped_scrollable_view::begin(
 
     component_.begin(ctx);
 
-    alia_untracked_if (is_refresh_event(ctx))
+    alia_untracked_if(is_refresh_event(ctx))
     {
         detect_layout_change(
             get_layout_traversal(ctx), &data.scrollable_axes, scrollable_axes);
@@ -1187,9 +1188,10 @@ scoped_scrollable_view::begin(
         }
 
         clip_region_.begin(*get_layout_traversal(ctx).geometry);
-        clip_region_.set(box<2, double>(
-            vector<2, double>(window_corner),
-            vector<2, double>(data.view_size)));
+        clip_region_.set(
+            box<2, double>(
+                vector<2, double>(window_corner),
+                vector<2, double>(data.view_size)));
 
         auto scroll_position = make_vector<double>(0, 0);
         for (unsigned axis = 0; axis != 2; ++axis)

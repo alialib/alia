@@ -94,7 +94,7 @@ inset_assign_boxes(
         main_axis,
         inset.container.first_child,
         {
-            .pos = box.pos + vec2{inset.insets.left, inset.insets.top},
+            .min = box.min + vec2{inset.insets.left, inset.insets.top},
             .size = box.size - vec2{inset.insets.left + inset.insets.right,
                                     inset.insets.top + inset.insets.bottom}},
         baseline - inset.insets.top);

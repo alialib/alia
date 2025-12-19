@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <memory>
 
-#include <alia/scratch.h>
+#include <alia/abi/scratch.h>
 
 #include <alia/base.hpp>
 

@@ -2,7 +2,7 @@
 
 #include <alia/display_list.hpp>
 
-#include <alia/scratch.h>
+#include <alia/abi/scratch.h>
 
 namespace alia {
 

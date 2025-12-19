@@ -1,4 +1,4 @@
-#include "alia/ui/system/input_constants.hpp"
+#include "alia/ui/input/constants.hpp"
 #include <alia/ui/utilities/click_flares.hpp>
 
 #include <alia/ui/system/object.hpp>
@@ -28,9 +28,9 @@ fire_click_flare(
         fire_flare(
             ctx,
             ALIA_BITREF(bits, press_and_hold_flare),
-            (std::min)(
-                click_accumulation_time,
-                get_system(ctx).tick_count - get_click_start_time(ctx, button))
+            (std::min) (click_accumulation_time,
+                        get_system(ctx).tick_count
+                            - get_click_start_time(ctx, button))
                 / 2);
     }
 }
@@ -55,10 +55,9 @@ render_click_flares(
             float radius_scale_factor = float(eval_curve_at_x(
                 animation_curve{0, 0, 0.9, 1},
                 1
-                    - (std::fmax)(
-                        0.0f,
-                        (float(ticks_left) - 300)
-                            / (click_flare_duration - 300)),
+                    - (std::fmax) (0.0f,
+                                   (float(ticks_left) - 300)
+                                       / (click_flare_duration - 300)),
                 0.001));
             SkPaint paint;
             paint.setAntiAlias(true);

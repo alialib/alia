@@ -1,26 +1,25 @@
-#include <alia/ui/system/api.hpp>
+#include <alia/system/api.hpp>
 
-#include <alia/core/flow/events.hpp>
-#include <alia/ui/events.hpp>
-#include <alia/ui/system/object.hpp>
-#include <alia/ui/utilities/keyboard.hpp>
-#include <alia/ui/utilities/regions.hpp>
-#include <optional>
+#include <alia/flow/dispatch.hpp>
+#include <alia/input/constants.hpp>
+#include <alia/system/object.hpp>
+
+#include <iostream>
 
 namespace alia {
 
 void
 initialize(
     ui_system& ui,
-    std::function<void(ui_context)> controller,
+    std::function<void(context&)> controller/*,
     external_interface* external,
     std::shared_ptr<os_interface> os,
-    std::shared_ptr<window_interface> window)
+    std::shared_ptr<window_interface> window*/)
 {
-    initialize_core_system<vanilla_ui_context>(ui, external);
+    // initialize_core_system<vanilla_ui_context>(ui, external);
     ui.controller = std::move(controller);
-    ui.os = std::move(os);
-    ui.window = std::move(window);
+    // ui.os = std::move(os);
+    // ui.window = std::move(window);
     // TODO
     // ui.theme = blue_dark_theme;
 }
@@ -53,51 +52,58 @@ update(ui_system& ui)
     // TODO?
     // refresh_ui(ui);
 
-    ui.tick_count = ui.external->get_tick_count();
+    // ui.tick_count = ui.external->get_tick_count();
 
     // Once layout has been resolved, we can honor requests to make a
     // particular widget visible.
-    if (!ui.pending_visibility_requests.empty())
-    {
-        for (std::vector<widget_visibility_request>::const_iterator i
-             = ui.pending_visibility_requests.begin();
-             i != ui.pending_visibility_requests.end();
-             ++i)
-        {
-            make_widget_visible_event e{{i->widget.id}, i->flags};
-            dispatch_targeted_event(
-                ui, e, i->widget, MAKE_WIDGET_VISIBLE_EVENT);
-        }
-        ui.pending_visibility_requests.clear();
-        // The movement may have caused changes that require a refresh, so
-        // issue another one.
-        // TODO
-        // refresh_ui(ui);
-    }
+    // if (!ui.pending_visibility_requests.empty())
+    // {
+    //     for (std::vector<widget_visibility_request>::const_iterator i
+    //          = ui.pending_visibility_requests.begin();
+    //          i != ui.pending_visibility_requests.end();
+    //          ++i)
+    //     {
+    //         make_widget_visible_event e{{i->widget.id}, i->flags};
+    //         dispatch_targeted_event(
+    //             ui, e, i->widget, MAKE_WIDGET_VISIBLE_EVENT);
+    //     }
+    //     ui.pending_visibility_requests.clear();
+    //     // The movement may have caused changes that require a refresh, so
+    //     // issue another one.
+    //     // TODO
+    //     // refresh_ui(ui);
+    // }
 
     // routable_widget_id previous_mouse_target = get_mouse_target(ui);
 
-    mouse_cursor resolved_cursor = mouse_cursor::DEFAULT;
+    cursor resolved_cursor = cursor::DEFAULT;
 
     // Determine which widget is under the mouse cursor.
     if (ui.input.mouse_inside_window)
     {
-        mouse_hit_test_event hit_test{ui.input.mouse_position, std::nullopt};
-        dispatch_event(ui, hit_test, MOUSE_HIT_TEST_EVENT);
-        if (hit_test.result)
+        alia_event event = alia_make_mouse_hit_test_event(
+            {.x = ui.input.mouse_position.x,
+             .y = ui.input.mouse_position.y,
+             .result
+             = {.id = alia_routable_element_id{},
+                .cursor = ALIA_CURSOR_DEFAULT}});
+        dispatch_event(ui, event);
+        std::cout << "event.mouse_hit_test.result.id: "
+                  << event.mouse_hit_test.result.id.element << std::endl;
+        if (alia_routable_element_id_is_valid(event.mouse_hit_test.result.id))
         {
-            set_hot_widget(ui, hit_test.result->id);
-            resolved_cursor = hit_test.result->cursor;
+            set_hot_element(ui, event.mouse_hit_test.result.id);
+            resolved_cursor = cursor(event.mouse_hit_test.result.cursor);
             // record_tooltip(ui, hit_test);
         }
         else
         {
-            set_hot_widget(ui, routable_widget_id{});
+            set_hot_element(ui, alia_routable_element_id{});
         }
     }
     else
     {
-        set_hot_widget(ui, routable_widget_id{});
+        set_hot_element(ui, alia_routable_element_id{});
     }
 
     // The block above gives us the mouse cursor that's been requested by the
@@ -114,11 +120,11 @@ update(ui_system& ui)
     // }
 
     // Communicate the desired mouse cursor back to window.
-    if (resolved_cursor != ui.input.current_mouse_cursor)
-    {
-        ui.window->set_mouse_cursor(resolved_cursor);
-        ui.input.current_mouse_cursor = resolved_cursor;
-    }
+    // if (resolved_cursor != ui.input.current_mouse_cursor)
+    // {
+    //     ui.window->set_mouse_cursor(resolved_cursor);
+    //     ui.input.current_mouse_cursor = resolved_cursor;
+    // }
 
     // Update the state of the tooltip based on the passage of time.
     // update_tooltip(ui);
@@ -145,7 +151,7 @@ update(ui_system& ui)
 }
 
 void
-update_window_size(ui_system& ui, vector<2, unsigned> const& new_size)
+update_window_size(ui_system& ui, vec2 const& new_size)
 {
     // // If the surface changes size, that could invalidate popup positioning,
     // // so close any active popups.
@@ -190,6 +196,8 @@ update_window_size(ui_system& ui, vector<2, unsigned> const& new_size)
 //     ctx.style.theme = &ctx.system->style.theme;
 // }
 
+#if 0
+
 static routable_widget_id
 get_focus_successor(ui_system& ui, widget_id target)
 {
@@ -219,8 +227,6 @@ get_focus_predecessor(ui_system& ui, widget_id target)
 
     return event.predecessor;
 }
-
-#if 0
 
 struct tooltip_overlay_state
 {
@@ -709,8 +715,6 @@ void process_focus_gain(ui_system& ui, ui_time_type time)
     }
 }
 
-#endif
-
 void
 advance_focus(ui_system& ui)
 {
@@ -729,30 +733,35 @@ clear_focus(ui_system& ui)
     ui.input.widget_with_focus = routable_widget_id{};
 }
 
-void
-set_widget_with_capture(ui_system& ui, routable_widget_id id)
-{
-    ui.input.widget_with_capture = std::move(id);
+#endif
 
-    // If there was an active widget before, but we're removing it, this means
+void
+set_element_with_capture(ui_system& ui, alia_routable_element_id element)
+{
+    // If there was an active element before, but we're removing it, this means
     // that the mouse is starting to hover over whatever it's over.
-    if (ui.input.widget_with_capture && !id)
+    if (alia_routable_element_id_is_valid(ui.input.element_with_capture)
+        && !alia_routable_element_id_is_valid(element))
     {
-        ui.input.hover_start_time = ui.tick_count;
+        // TODO
+        // ui.input.hover_start_time = ui.tick_count;
     }
+
+    ui.input.element_with_capture = std::move(element);
 }
 
 void
-set_hot_widget(ui_system& ui, routable_widget_id id)
+set_hot_element(ui_system& ui, alia_routable_element_id element)
 {
     // If no widget has capture and the mouse is moving to a different
     // widget, this marks the start of a hover.
-    if (!ui.input.widget_with_capture && ui.input.hot_widget.id != id.id)
+    if (!alia_routable_element_id_is_valid(ui.input.element_with_capture)
+        && ui.input.hot_element.element != element.element)
     {
         ui.input.hover_start_time = ui.tick_count;
     }
 
-    ui.input.hot_widget = std::move(id);
+    ui.input.hot_element = std::move(element);
 }
 
 #if 0

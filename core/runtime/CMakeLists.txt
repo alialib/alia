@@ -8,6 +8,9 @@ add_library(alia_core STATIC
     src/display_list.cpp
     src/flow/dispatch.cpp
     src/flow/traversal.cpp
+    src/input/mouse.cpp
+    src/input/regions.cpp
+    src/input/elements.cpp
     src/layout/compositors/column.cpp
     src/layout/compositors/flow.cpp
     src/layout/compositors/grid.cpp
@@ -22,12 +25,12 @@ add_library(alia_core STATIC
     src/layout/leaf.cpp
     src/layout/system.cpp
     src/layout/utilities.cpp
+    src/system/api.cpp
     src/system/input_processing.cpp
     src/system/object.cpp
     src/system/interface.cpp
     src/system.cpp
-    src/theme.cpp
-    src/utilities/mouse.cpp)
+    src/theme.cpp)
 target_include_directories(alia_core PUBLIC
     ${PROJECT_SOURCE_DIR}/core/abi/include
     include)

@@ -81,7 +81,7 @@ void main() {
 
 struct rect_instance
 {
-    vec2 pos;
+    vec2 min;
     vec2 size;
     alia::color color;
     GLuint clip_index;
@@ -188,7 +188,7 @@ init_gl_renderer(gl_renderer* renderer)
         GL_FLOAT,
         GL_FALSE,
         sizeof(rect_instance),
-        (void*) offsetof(rect_instance, pos));
+        (void*) offsetof(rect_instance, min));
     glEnableVertexAttribArray(1);
     glVertexAttribDivisor(1, 1);
 
@@ -320,7 +320,7 @@ render_box_command_list(
         rect_instance* instance = rect_instances;
         for (auto const* cmd = boxes.head; cmd; cmd = cmd->next)
         {
-            instance->pos = cmd->box.pos;
+            instance->min = cmd->box.min;
             instance->size = cmd->box.size;
             instance->color = cmd->color;
             instance->clip_index = 0; // TODO: Add clip index.

@@ -15,14 +15,17 @@
 
 #include "roboto-msdf.h"
 
+#include <alia/abi/events.h>
 #include <alia/color.hpp>
 #include <alia/context.hpp>
 #include <alia/display_list.hpp>
 #include <alia/drawing.hpp>
-#include <alia/events.h>
 #include <alia/events.hpp>
 #include <alia/flow/dispatch.hpp>
 #include <alia/geometry.hpp>
+#include <alia/input/elements.hpp>
+#include <alia/input/mouse.hpp>
+#include <alia/input/regions.hpp>
 #include <alia/layout/compositors/column.hpp>
 #include <alia/layout/compositors/flow.hpp>
 #include <alia/layout/compositors/grid.hpp>
@@ -39,6 +42,8 @@
 #include <alia/layout/utilities.hpp>
 #include <alia/platforms/glfw/window.hpp>
 #include <alia/renderers/gl/renderer.hpp>
+#include <alia/system/api.hpp>
+#include <alia/system/input_processing.hpp>
 #include <alia/system/interface.hpp>
 #include <alia/system/object.hpp>
 #include <alia/text_engines/msdf/msdf.hpp>
@@ -79,6 +84,7 @@ theme_colors the_theme;
 seed_colors const* seeds = &seed_sets[0];
 color_palette the_palette;
 float the_time = 0.0f;
+static unsigned the_element_counter = 0;
 
 bool
 detect_click(context& ctx, float x, float y, float width, float height)
@@ -90,7 +96,12 @@ detect_click(context& ctx, float x, float y, float width, float height)
 }
 
 bool
-do_rect(context& ctx, vec2 size, color color, layout_flag_set flags)
+do_rect(
+    context& ctx,
+    alia_element_id id,
+    vec2 size,
+    color color,
+    layout_flag_set flags)
 {
     switch (get_event_category(ctx))
     {
@@ -107,11 +118,28 @@ do_rect(context& ctx, vec2 size, color color, layout_flag_set flags)
                 .size = size};
             break;
         }
+        case ALIA_CATEGORY_SPATIAL: {
+            auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
+                ctx.system->layout.placement_arena);
+            box box = {
+                .min = leaf_placement.position, .size = leaf_placement.size};
+            box_region(ctx, id, box);
+            break;
+        }
         case ALIA_CATEGORY_DRAWING: {
             auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
                 ctx.system->layout.placement_arena);
             box box = {
-                .pos = leaf_placement.position, .size = leaf_placement.size};
+                .min = leaf_placement.position, .size = leaf_placement.size};
+            auto status = get_interaction_status(ctx, id);
+            if (status & ELEMENT_HOVERED)
+            {
+                color = {0.0f, 0.0f, 1.0f, 1.0f};
+            }
+            else if (status & ELEMENT_ACTIVE)
+            {
+                color = {1.0f, 0.0f, 1.0f, 1.0f};
+            }
             draw_box(
                 *as_draw_event(ctx).state->arena,
                 *as_draw_event(ctx).state->box_command_list,
@@ -123,9 +151,8 @@ do_rect(context& ctx, vec2 size, color color, layout_flag_set flags)
             auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
                 ctx.system->layout.placement_arena);
             box box = {
-                .pos = leaf_placement.position, .size = leaf_placement.size};
-            if (detect_click(
-                    ctx, box.pos.x, box.pos.y, box.size.x, box.size.y))
+                .min = leaf_placement.position, .size = leaf_placement.size};
+            if (detect_click(ctx, id, mouse_button::left))
                 return true;
             break;
         }
@@ -152,11 +179,19 @@ do_rect_with_offset(
                 .size = size};
             break;
         }
+        case ALIA_CATEGORY_SPATIAL: {
+            auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
+                ctx.system->layout.placement_arena);
+            box box = {
+                .min = leaf_placement.position, .size = leaf_placement.size};
+            // box_region(ctx, id, box);
+            break;
+        }
         case ALIA_CATEGORY_DRAWING: {
             auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
                 ctx.system->layout.placement_arena);
             box box
-                = {.pos = leaf_placement.position + offset,
+                = {.min = leaf_placement.position + offset,
                    .size = leaf_placement.size};
             draw_box(
                 *as_draw_event(ctx).state->arena,
@@ -169,10 +204,10 @@ do_rect_with_offset(
             auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
                 ctx.system->layout.placement_arena);
             box box
-                = {.pos = leaf_placement.position + offset,
+                = {.min = leaf_placement.position + offset,
                    .size = leaf_placement.size};
             if (detect_click(
-                    ctx, box.pos.x, box.pos.y, box.size.x, box.size.y))
+                    ctx, box.min.x, box.min.y, box.size.x, box.size.y))
                 return true;
             break;
         }
@@ -388,9 +423,10 @@ margins(insets insets)
 
 template<class LayoutMods>
 void
-do_rect(context& ctx, vec2 size, color color, LayoutMods mods)
+do_rect(
+    context& ctx, alia_element_id id, vec2 size, color color, LayoutMods mods)
 {
-    apply_mods(ctx, mods, [&] { do_rect(ctx, size, color, FILL); });
+    apply_mods(ctx, mods, [&] { do_rect(ctx, id, size, color, FILL); });
 }
 
 template<class Content>
@@ -515,7 +551,7 @@ assign_text_boxes(
 
     text_layout_placement_fragment* fragment
         = arena_alloc<text_layout_placement_fragment>(*ctx->arena);
-    fragment->position = box.pos + placement.pos;
+    fragment->position = box.min + placement.min;
     fragment->size = placement.size;
     fragment->text = text.text;
     fragment->length = strlen(text.text);
@@ -718,6 +754,17 @@ do_text(
             layout.next_ptr = &new_node->base.next_sibling;
             break;
         }
+        case ALIA_CATEGORY_SPATIAL: {
+            auto& text_placement = *arena_alloc<text_layout_placement_header>(
+                ctx.system->layout.placement_arena);
+            for (int i = 0; i < text_placement.fragment_count; ++i)
+            {
+                auto& fragment = *arena_alloc<text_layout_placement_fragment>(
+                    ctx.system->layout.placement_arena);
+                // box_region(ctx, id, box);
+            }
+            break;
+        }
         case ALIA_CATEGORY_DRAWING: {
             auto& text_placement = *arena_alloc<text_layout_placement_header>(
                 ctx.system->layout.placement_arena);
@@ -744,9 +791,9 @@ do_text(
             {
                 auto& fragment = *arena_alloc<text_layout_placement_fragment>(
                     ctx.system->layout.placement_arena);
-                box box = {.pos = fragment.position, .size = fragment.size};
+                box box = {.min = fragment.position, .size = fragment.size};
                 if (detect_click(
-                        ctx, box.pos.x, box.pos.y, box.size.x, box.size.y))
+                        ctx, box.min.x, box.min.y, box.size.x, box.size.y))
                 {
                     // TODO: Perform action, abort traversal.
                     result = true;
@@ -771,6 +818,12 @@ char const* lorem_ipsum
       "ex at pulvinar volutpat, ligula nulla pellentesque tellus, vel aliquam "
       "nunc dolor eu risus.";
 
+alia_element_id
+make_fake_element_id(context& ctx)
+{
+    return reinterpret_cast<alia_element_id>(the_element_counter++);
+}
+
 void
 rectangle_demo(context& ctx)
 {
@@ -788,6 +841,7 @@ rectangle_demo(context& ctx)
                             float f = fmod(x, 1.0f);
                             if (do_rect(
                                     ctx,
+                                    make_fake_element_id(ctx),
                                     {24, 24},
                                     invert ? color{f, 0.1f, 1.0f - f, 1}
                                            : color{1.0f - f, 0.1f, f, 1},
@@ -898,14 +952,18 @@ mixed_flow_demo(context& ctx)
 {
     with_padding(ctx, 10, [&] {
         flow(ctx, [&]() {
-            for (int i = 0; i < 8; ++i)
+            for (int i = 0; i < 10; ++i)
             {
                 float x = 0.0f;
-                for (int j = 0; j < 10; ++j)
+                for (int j = 0; j < 3; ++j)
                 {
                     float f = fmod(x, 1.0f);
                     do_rect(
-                        ctx, {72, 72}, color{f, 0.1f, 1.0f - f, 1}, CENTER);
+                        ctx,
+                        make_fake_element_id(ctx),
+                        {72, 72},
+                        color{f, 0.1f, 1.0f - f, 1},
+                        CENTER);
                     x += 0.1f;
                 }
 
@@ -953,6 +1011,7 @@ layout_demo_flow(context& ctx)
                                     float f = fmod(x, 1.0f);
                                     do_rect(
                                         ctx,
+                                        make_fake_element_id(ctx),
                                         {24, float((i & 7) * 12 + 12)},
                                         color{f, 0.1f, 1.0f - f, 1},
                                         layout_flag_set(
@@ -978,6 +1037,7 @@ layout_growth_demo(context& ctx)
             growth_override(ctx, i * 1.0f, [&]() {
                 do_rect(
                     ctx,
+                    make_fake_element_id(ctx),
                     {6, 12},
                     color{f, 0.1f, 1.0f - f, 1},
                     FILL | (i & 1 ? GROW : NO_FLAGS));
@@ -1000,7 +1060,7 @@ do_animated_rect(
         alignment_override(ctx, flags, [&]() {
             placement_hook(ctx, FILL, [&](auto inner_placement) {
                 vec2 inner_pos
-                    = inner_placement.box.pos - outer_placement.box.pos;
+                    = inner_placement.box.min - outer_placement.box.min;
                 if (get_event_type(ctx) == ALIA_EVENT_DRAW)
                 {
                     if (!initialized)
@@ -1029,6 +1089,7 @@ alignment_override_demo(context& ctx)
             inset(ctx, {.left = 4, .right = 4, .top = 4, .bottom = 4}, [&]() {
                 if (do_rect(
                         ctx,
+                        make_fake_element_id(ctx),
                         {24, 24},
                         invert ? color{1, 1, 1, 1} : color{0, 0, 0, 0},
                         CENTER))
@@ -1092,6 +1153,7 @@ layout_mods_demo(context& ctx)
                 [&]() {
                     do_rect(
                         ctx,
+                        make_fake_element_id(ctx),
                         {float(4 * i), float(4 * i)},
                         color{f, 0.1f, 1.0f - f, 1},
                         align_right | center_y);
@@ -1117,6 +1179,7 @@ grid_demo(context& ctx)
                     float const size = std::pow(dist(rng), 12.0f) * 80 + 20;
                     do_rect(
                         ctx,
+                        make_fake_element_id(ctx),
                         {size, size},
                         color{f, 0.1f, 1.0f - f, 1},
                         CENTER);
@@ -1144,6 +1207,7 @@ layout_demo(context& ctx)
                                 float f = fmod(x, 1.0f);
                                 do_rect(
                                     ctx,
+                                    make_fake_element_id(ctx),
                                     {float((j & 7) * 12 + 12), 24},
                                     color{f, 0.1f, 1.0f - f, 1},
                                     layout_flag_set(
@@ -1177,6 +1241,7 @@ show_color_ramp(context& ctx, color_ramp ramp)
         {
             do_rect(
                 ctx,
+                make_fake_element_id(ctx),
                 {36, 36},
                 alia_rgba_from_rgb_alpha(
                     alia_rgb_from_srgb8(ramp[i].rgb), 1.0f),
@@ -1196,6 +1261,7 @@ show_contrasting_color_pair(context& ctx, contrasting_color_pair pair)
             with_padding(ctx, 20, [&]() {
                 do_rect(
                     ctx,
+                    make_fake_element_id(ctx),
                     {10, 10},
                     alia_rgba_from_rgb_alpha(
                         alia_rgb_from_srgb8(pair.contrasting), 1.0f),
@@ -1226,7 +1292,11 @@ color_ramp(context& ctx, alia_srgb8 seed)
             oklch.l = i * 0.1f;
             alia_rgb rgb = alia_rgb_from_oklab(alia_oklab_from_oklch(oklch));
             do_rect(
-                ctx, {36, 36}, alia_rgba_from_rgb_alpha(rgb, 1.0f), CENTER);
+                ctx,
+                make_fake_element_id(ctx),
+                {36, 36},
+                alia_rgba_from_rgb_alpha(rgb, 1.0f),
+                CENTER);
         }
     });
 }
@@ -1243,7 +1313,11 @@ color_transition(context& ctx, alia_oklch start, alia_oklch end)
             oklch.h = start.h + (end.h - start.h) * i * 0.01f;
             alia_rgb rgb = alia_rgb_from_oklab(alia_oklab_from_oklch(oklch));
             do_rect(
-                ctx, {36, 36}, alia_rgba_from_rgb_alpha(rgb, 1.0f), CENTER);
+                ctx,
+                make_fake_element_id(ctx),
+                {36, 36},
+                alia_rgba_from_rgb_alpha(rgb, 1.0f),
+                CENTER);
         }
     });
 }
@@ -1260,6 +1334,7 @@ color_demo(context& ctx)
             with_padding(ctx, 5, [&] {
                 do_rect(
                     ctx,
+                    make_fake_element_id(ctx),
                     {24, 24},
                     alia_rgba_from_rgb_alpha(rgb, 1.0f),
                     CENTER);
@@ -1308,10 +1383,11 @@ abort_pass()
 void
 the_demo(context& ctx)
 {
+    the_element_counter = 1;
     try
     {
         static int active_demo = 0;
-        int const demo_count = 6;
+        int const demo_count = 2;
         with_padding(ctx, 0, [&] {
             row(ctx, [&]() {
                 column(ctx, [&]() {
@@ -1319,6 +1395,7 @@ the_demo(context& ctx)
                     {
                         if (do_rect(
                                 ctx,
+                                make_fake_element_id(ctx),
                                 {40, 40},
                                 (active_demo == i) ? color{1, 1, 1, 1}
                                                    : color{0, 0, 0, 0},
@@ -1327,7 +1404,12 @@ the_demo(context& ctx)
                             active_demo = i;
                             abort_pass();
                         }
-                        do_rect(ctx, {1, 1}, color{0.4f, 0.4f, 0.4f, 1}, FILL);
+                        do_rect(
+                            ctx,
+                            make_fake_element_id(ctx),
+                            {1, 1},
+                            color{0.4f, 0.4f, 0.4f, 1},
+                            FILL);
                     }
                 });
                 column(ctx, GROW, [&]() {
@@ -1366,34 +1448,81 @@ the_demo(context& ctx)
     catch (pass_aborted)
     {
     }
+    std::cout << "the_element_counter: " << the_element_counter << std::endl;
+}
+
+alia_kmod_t
+to_alia_kmod_t(int mods)
+{
+    alia_kmod_t result = 0;
+    if (mods & GLFW_MOD_SHIFT)
+        result |= ALIA_KMOD_SHIFT;
+    if (mods & GLFW_MOD_CONTROL)
+        result |= ALIA_KMOD_CTRL;
+    if (mods & GLFW_MOD_ALT)
+        result |= ALIA_KMOD_ALT;
+    // TODO: Finish this.
+    return result;
 }
 
 void
 mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+    double x, y;
+    glfwGetCursorPos(window, &x, &y);
+
+    int framebuffer_width, framebuffer_height;
+    glfwGetFramebufferSize(window, &framebuffer_width, &framebuffer_height);
+
+    int window_width, window_height;
+    glfwGetWindowSize(window, &window_width, &window_height);
+
+    float internal_x
+        = (static_cast<float>(x) * framebuffer_width
+           / window_width); // / the_ui_scale.x;
+    float internal_y
+        = (static_cast<float>(y) * framebuffer_height
+           / window_height); // / the_ui_scale.y;
+
+    alia_scratch_reset(&the_system.layout.placement_arena);
+    switch (action)
     {
-        double x, y;
-        glfwGetCursorPos(window, &x, &y);
-
-        int framebuffer_width, framebuffer_height;
-        glfwGetFramebufferSize(
-            window, &framebuffer_width, &framebuffer_height);
-
-        int window_width, window_height;
-        glfwGetWindowSize(window, &window_width, &window_height);
-
-        float internal_x
-            = (static_cast<float>(x) * framebuffer_width
-               / window_width); // / the_ui_scale.x;
-        float internal_y
-            = (static_cast<float>(y) * framebuffer_height
-               / window_height); // / the_ui_scale.y;
-        alia_scratch_reset(&the_system.layout.placement_arena);
-        alia_event event
-            = alia_make_mouse_press_event({.x = internal_x, .y = internal_y});
-        alia::dispatch_event(the_system, event);
+        case GLFW_PRESS: {
+            process_mouse_press(
+                the_system,
+                {internal_x, internal_y},
+                mouse_button(button),
+                key_modifiers(to_alia_kmod_t(mods)));
+            break;
+        }
+        case GLFW_RELEASE: {
+            process_mouse_release(
+                the_system,
+                {internal_x, internal_y},
+                mouse_button(button),
+                key_modifiers(to_alia_kmod_t(mods)));
+            break;
+        }
     }
+}
+void
+cursor_position_callback(GLFWwindow* window, double x, double y)
+{
+    int framebuffer_width, framebuffer_height;
+    glfwGetFramebufferSize(window, &framebuffer_width, &framebuffer_height);
+
+    int window_width, window_height;
+    glfwGetWindowSize(window, &window_width, &window_height);
+
+    float internal_x
+        = (static_cast<float>(x) * framebuffer_width
+           / window_width); // / the_ui_scale.x;
+    float internal_y
+        = (static_cast<float>(y) * framebuffer_height
+           / window_height); // / the_ui_scale.y;
+
+    alia_scratch_reset(&the_system.layout.placement_arena);
+    process_mouse_motion(the_system, {internal_x, internal_y});
 }
 
 // alloc_probe.h
@@ -1532,6 +1661,9 @@ update()
         resolve_layout(the_system.layout, the_system.surface_size);
 
         layout_finished_time = std::chrono::high_resolution_clock::now();
+
+        alia_scratch_reset(&the_system.layout.placement_arena);
+        update(the_system);
 
         update_glfw_window_info(the_system, the_window);
 
@@ -1687,6 +1819,7 @@ main()
 
     glfwSetMouseButtonCallback(the_window, mouse_button_callback);
     glfwSetFramebufferSizeCallback(the_window, framebuffer_size_callback);
+    glfwSetCursorPosCallback(the_window, cursor_position_callback);
 
     glfwMakeContextCurrent(the_window);
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))

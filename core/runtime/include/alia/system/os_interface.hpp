@@ -1,7 +1,7 @@
 #ifndef ALIA_UI_SYSTEM_OS_INTERFACE_HPP
 #define ALIA_UI_SYSTEM_OS_INTERFACE_HPP
 
-#include <alia/system/input_constants.hpp>
+#include <alia/input/constants.hpp>
 
 namespace alia {
 
