@@ -5,8 +5,6 @@
 #include <alia/input/mouse.hpp>
 #include <alia/system/object.hpp>
 
-#include <iostream>
-
 namespace alia {
 
 bool
@@ -26,11 +24,6 @@ handle_mouse_hit(
     alia_hit_test_flags_t flags,
     alia_cursor_t cursor)
 {
-    std::cout << "handle_mouse_hit" << std::endl;
-    std::cout << "id: " << id << std::endl;
-    std::cout << "bounding_box: " << bounding_box.min.x << " "
-              << bounding_box.min.y << " " << bounding_box.size.x << " "
-              << bounding_box.size.y << std::endl;
     if (get_event_type(ctx) == ALIA_EVENT_MOUSE_HIT_TEST
         && (flags & ALIA_HIT_TEST_MOUSE))
     {

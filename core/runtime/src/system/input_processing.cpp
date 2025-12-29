@@ -8,8 +8,6 @@
 // TODO: API shouldn't be needed here.
 #include <alia/system/api.hpp>
 
-#include <iostream>
-
 namespace alia {
 
 namespace {
@@ -37,10 +35,6 @@ process_mouse_motion(ui_system& ui, vec2 const& position)
 
         ui.input.mouse_position = position;
         ui.input.mouse_inside_window = true;
-        std::cout
-            << "ui.input.mouse_position.x: " << ui.input.mouse_position.x
-            << " ui.input.mouse_position.y: " << ui.input.mouse_position.y
-            << std::endl;
 
         if (ui.input.mouse_button_state != 0)
             ui.input.dragging = true;

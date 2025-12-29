@@ -4,8 +4,6 @@
 #include <alia/input/constants.hpp>
 #include <alia/system/object.hpp>
 
-#include <iostream>
-
 namespace alia {
 
 void
@@ -88,8 +86,6 @@ update(ui_system& ui)
              = {.id = alia_routable_element_id{},
                 .cursor = ALIA_CURSOR_DEFAULT}});
         dispatch_event(ui, event);
-        std::cout << "event.mouse_hit_test.result.id: "
-                  << event.mouse_hit_test.result.id.element << std::endl;
         if (alia_routable_element_id_is_valid(event.mouse_hit_test.result.id))
         {
             set_hot_element(ui, event.mouse_hit_test.result.id);

@@ -955,7 +955,7 @@ mixed_flow_demo(context& ctx)
             for (int i = 0; i < 10; ++i)
             {
                 float x = 0.0f;
-                for (int j = 0; j < 3; ++j)
+                for (int j = 0; j < 10; ++j)
                 {
                     float f = fmod(x, 1.0f);
                     do_rect(
@@ -1387,7 +1387,7 @@ the_demo(context& ctx)
     try
     {
         static int active_demo = 0;
-        int const demo_count = 2;
+        int const demo_count = 6;
         with_padding(ctx, 0, [&] {
             row(ctx, [&]() {
                 column(ctx, [&]() {
@@ -1448,7 +1448,6 @@ the_demo(context& ctx)
     catch (pass_aborted)
     {
     }
-    std::cout << "the_element_counter: " << the_element_counter << std::endl;
 }
 
 alia_kmod_t
