@@ -24,7 +24,7 @@ void
 substrate_begin_traversal(
     substrate_traversal& traversal,
     substrate_system& system,
-    alia_scratch_arena* scratch)
+    alia_arena_view* scratch)
 {
     traversal.system = &system;
     traversal.scratch = scratch;
@@ -55,7 +55,10 @@ substrate_use_memory(
             traversal.block.discovery->alignment
                 = std::max(alignment, traversal.block.discovery->alignment);
             return {
-                alia_scratch_alloc(traversal.scratch, size, alignment),
+                alia_arena_ptr(
+                    traversal.scratch,
+                    alia_arena_alloc_aligned(
+                        traversal.scratch, size, alignment)),
                 traversal.block.data->generation,
                 substrate_block_traversal_mode::DISCOVERY};
         }
@@ -149,10 +152,12 @@ substrate_begin_block(
     traversal.block.current_offset = 0;
     if (needs_discovery(spec))
     {
-        substrate_block_discovery_state* discovery = new (alia_scratch_alloc(
+        substrate_block_discovery_state* discovery = new (alia_arena_ptr(
             traversal.scratch,
-            sizeof(substrate_block_discovery_state),
-            alignof(substrate_block_discovery_state)))
+            alia_arena_alloc_aligned(
+                traversal.scratch,
+                sizeof(substrate_block_discovery_state),
+                alignof(substrate_block_discovery_state))))
             substrate_block_discovery_state;
         traversal.block.discovery = discovery;
         traversal.block.mode = substrate_block_traversal_mode::DISCOVERY;

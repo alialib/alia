@@ -31,7 +31,7 @@ count_columns(grid_layout_node* grid)
         {
             ++column_count;
         }
-        max_column_count = (std::max) (max_column_count, column_count);
+        max_column_count = (std::max)(max_column_count, column_count);
     }
     return max_column_count;
 }
@@ -50,20 +50,19 @@ grid_measure_horizontal(measurement_context* ctx, layout_node* node)
     // to the column (uniformly).
     for (auto row = grid.first_row; row; row = row->next_row)
     {
-        scratch_save_state(ctx->scratch, &row->scratch_marker);
+        row->scratch_marker = alia_arena_mark(ctx->scratch);
         claim_scratch<grid_row_scratch>(*ctx->scratch);
         int column_index = 0;
         for (layout_node* child = row->container.first_child; child != nullptr;
              child = child->next_sibling, ++column_index)
         {
             auto const child_x = measure_horizontal(ctx, child);
-            grid.scratch->columns[column_index].growth_factor
-                = (std::max) (grid.scratch->columns[column_index]
-                                  .growth_factor,
-                              child_x.growth_factor);
-            grid.scratch->columns[column_index].min_size
-                = (std::max) (grid.scratch->columns[column_index].min_size,
-                              child_x.min_size);
+            grid.scratch->columns[column_index].growth_factor = (std::max)(
+                grid.scratch->columns[column_index].growth_factor,
+                child_x.growth_factor);
+            grid.scratch->columns[column_index].min_size = (std::max)(
+                grid.scratch->columns[column_index].min_size,
+                child_x.min_size);
         }
     }
     float total_width = 0, total_growth = 0;
@@ -77,7 +76,7 @@ grid_measure_horizontal(measurement_context* ctx, layout_node* node)
     // We still invoke the column, even though we know what the rows are going
     // to contribute to it. There might be other nodes in the column that
     // affect the results.
-    scratch_save_state(ctx->scratch, &grid.scratch_marker);
+    grid.scratch_marker = alia_arena_mark(ctx->scratch);
     return column_measure_horizontal(ctx, upcast<layout_node>(&grid.column));
 }
 
@@ -89,7 +88,7 @@ grid_assign_widths(
     float assigned_width)
 {
     auto& grid = *reinterpret_cast<grid_layout_node*>(node);
-    scratch_restore_state(ctx->scratch, grid.scratch_marker);
+    alia_arena_jump(ctx->scratch, grid.scratch_marker);
     column_assign_widths(
         ctx, main_axis, upcast<layout_node>(&grid.column), assigned_width);
 }
@@ -102,7 +101,7 @@ grid_measure_vertical(
     float assigned_width)
 {
     auto& grid = *reinterpret_cast<grid_layout_node*>(node);
-    scratch_restore_state(ctx->scratch, grid.scratch_marker);
+    alia_arena_jump(ctx->scratch, grid.scratch_marker);
     return column_measure_vertical(
         ctx, main_axis, upcast<layout_node>(&grid.column), assigned_width);
 }
@@ -116,7 +115,7 @@ grid_assign_boxes(
     float baseline)
 {
     auto& grid = *reinterpret_cast<grid_layout_node*>(node);
-    scratch_restore_state(ctx->scratch, grid.scratch_marker);
+    alia_arena_jump(ctx->scratch, grid.scratch_marker);
     column_assign_boxes(
         ctx, main_axis, upcast<layout_node>(&grid.column), box, baseline);
 }
@@ -134,10 +133,10 @@ horizontal_requirements
 grid_row_measure_horizontal(measurement_context* ctx, layout_node* node)
 {
     auto& grid_row = *reinterpret_cast<grid_row_layout_node*>(node);
-    auto const marker = scratch_save_state(ctx->scratch);
-    scratch_restore_state(ctx->scratch, grid_row.scratch_marker);
+    auto const marker = alia_arena_mark(ctx->scratch);
+    alia_arena_jump(ctx->scratch, grid_row.scratch_marker);
     auto& scratch = use_scratch<grid_row_scratch>(*ctx->scratch);
-    scratch_restore_state(ctx->scratch, marker);
+    alia_arena_jump(ctx->scratch, marker);
     return horizontal_requirements{
         .min_size = grid_row.grid->scratch->total_width,
         .growth_factor = resolve_growth_factor(grid_row.container.flags)};
@@ -151,11 +150,11 @@ grid_row_assign_widths(
     float assigned_width)
 {
     auto& grid_row = *reinterpret_cast<grid_row_layout_node*>(node);
-    auto const marker = scratch_save_state(ctx->scratch);
-    scratch_restore_state(ctx->scratch, grid_row.scratch_marker);
+    auto const marker = alia_arena_mark(ctx->scratch);
+    alia_arena_jump(ctx->scratch, grid_row.scratch_marker);
     auto& scratch = use_scratch<grid_row_scratch>(*ctx->scratch);
     // TODO: Implement.
-    scratch_restore_state(ctx->scratch, marker);
+    alia_arena_jump(ctx->scratch, marker);
 }
 
 vertical_requirements
@@ -166,8 +165,8 @@ grid_row_measure_vertical(
     float assigned_width)
 {
     auto& grid_row = *reinterpret_cast<grid_row_layout_node*>(node);
-    auto const marker = scratch_save_state(ctx->scratch);
-    scratch_restore_state(ctx->scratch, grid_row.scratch_marker);
+    auto const marker = alia_arena_mark(ctx->scratch);
+    alia_arena_jump(ctx->scratch, grid_row.scratch_marker);
     auto& scratch = use_scratch<grid_row_scratch>(*ctx->scratch);
     auto& grid = *grid_row.grid;
     auto const placement = resolve_horizontal_assignment(
@@ -175,10 +174,10 @@ grid_row_measure_vertical(
         assigned_width,
         grid.scratch->total_width);
     float const total_extra_space
-        = (std::max) (0.f, placement.size - grid.scratch->total_width);
+        = (std::max)(0.f, placement.size - grid.scratch->total_width);
     // TODO: Figure out how to handle 0 total growth.
     float const one_over_total_growth
-        = 1.0f / (std::max) (0.00001f, grid.scratch->total_growth);
+        = 1.0f / (std::max)(0.00001f, grid.scratch->total_growth);
     float height = 0, ascent = 0, descent = 0;
     auto const* column_data = grid.scratch->columns;
     for (layout_node* child = grid_row.container.first_child; child != nullptr;
@@ -189,15 +188,15 @@ grid_row_measure_vertical(
                                 * one_over_total_growth;
         auto const child_y = measure_vertical(
             ctx, ALIA_MAIN_AXIS_X, child, child_x.min_size + extra_space);
-        height = (std::max) (height, child_y.min_size);
-        ascent = (std::max) (ascent, child_y.ascent);
-        descent = (std::max) (descent, child_y.descent);
+        height = (std::max)(height, child_y.min_size);
+        ascent = (std::max)(ascent, child_y.ascent);
+        descent = (std::max)(descent, child_y.descent);
     }
     scratch.height = height;
     scratch.ascent = ascent;
-    scratch_restore_state(ctx->scratch, marker);
+    alia_arena_jump(ctx->scratch, marker);
     return vertical_requirements{
-        .min_size = (std::max) (height, ascent + descent),
+        .min_size = (std::max)(height, ascent + descent),
         .growth_factor = resolve_growth_factor(grid_row.container.flags),
         .ascent = ascent,
         .descent = descent};
@@ -212,8 +211,8 @@ grid_row_assign_boxes(
     float baseline)
 {
     auto& grid_row = *reinterpret_cast<grid_row_layout_node*>(node);
-    auto const marker = scratch_save_state(ctx->scratch);
-    scratch_restore_state(ctx->scratch, grid_row.scratch_marker);
+    auto const marker = alia_arena_mark(ctx->scratch);
+    alia_arena_jump(ctx->scratch, grid_row.scratch_marker);
     auto& scratch = use_scratch<grid_row_scratch>(*ctx->scratch);
     auto& grid = *grid_row.grid;
     auto const placement = resolve_assignment(
@@ -224,9 +223,9 @@ grid_row_assign_boxes(
         scratch.ascent);
     float current_x = box.min.x + placement.min.x;
     float const total_extra_space
-        = (std::max) (0.f, placement.size.x - grid.scratch->total_width);
+        = (std::max)(0.f, placement.size.x - grid.scratch->total_width);
     float const one_over_total_growth
-        = 1.0f / (std::max) (0.00001f, grid.scratch->total_growth);
+        = 1.0f / (std::max)(0.00001f, grid.scratch->total_growth);
     auto const* column_data = grid.scratch->columns;
     for (layout_node* child = grid_row.container.first_child; child != nullptr;
          child = child->next_sibling)
@@ -243,7 +242,7 @@ grid_row_assign_boxes(
             baseline);
         current_x += child_x.min_size + extra_space;
     }
-    scratch_restore_state(ctx->scratch, marker);
+    alia_arena_jump(ctx->scratch, marker);
 }
 
 layout_node_vtable grid_row_vtable = {

@@ -3,7 +3,7 @@
 #include <cassert>
 #include <cstdint>
 
-#include <alia/abi/scratch.h>
+#include <alia/abi/arena.h>
 
 // This file defines the data retrieval library used for associating mutable
 // state and cached data with alia content graphs. It is designed so that each
@@ -178,7 +178,7 @@ struct substrate_traversal
     // TODO: Not sure if the traversal actually needs to store its own pointer
     // to this.
     // TODO: Also, it should use the C++ API.
-    alia_scratch_arena* scratch = nullptr;
+    alia_arena_view* scratch = nullptr;
     substrate_system* system = nullptr;
     substrate_block_traversal_state block{};
 };
@@ -219,7 +219,7 @@ void
 substrate_begin_traversal(
     substrate_traversal& traversal,
     substrate_system& system,
-    alia_scratch_arena* scratch);
+    alia_arena_view* scratch);
 
 void
 substrate_end_traversal(substrate_traversal& traversal);

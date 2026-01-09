@@ -85,7 +85,7 @@ adjust_flags_for_main_axis(layout_flag_set flags, main_axis_index main_axis)
 // Note that no destructor is ever called, so T must be trivially destructible.
 template<class T>
 T&
-claim_scratch(alia_scratch_arena& arena)
+claim_scratch(alia_arena_view& arena)
 {
     return *arena_new<T>(arena);
 }
@@ -96,7 +96,7 @@ claim_scratch(alia_scratch_arena& arena)
 // measurement step.
 template<class T>
 T&
-use_scratch(alia_scratch_arena& arena)
+use_scratch(alia_arena_view& arena)
 {
     return *arena_alloc<T>(arena);
 }

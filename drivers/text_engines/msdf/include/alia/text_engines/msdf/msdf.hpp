@@ -104,7 +104,7 @@ struct msdf_draw_command
 void
 draw_text(
     msdf_text_engine* engine,
-    alia_scratch_arena& arena,
+    alia_arena_view& arena,
     command_list<msdf_draw_command>& commands,
     char const* text,
     size_t length,

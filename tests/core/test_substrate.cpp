@@ -1,7 +1,8 @@
 #include <alia/substrate.hpp>
 
-#include <alia/abi/scratch.h>
-#include <alia/arenas.hpp>
+#include <alia/abi/arena.h>
+#include <alia/arena.hpp>
+#include <alia/internals/arena.hpp>
 
 #include <doctest/doctest.h>
 
@@ -14,19 +15,17 @@ namespace {
 
 struct scratch_rig
 {
-    alia::lazy_commit_arena_allocator allocator;
-    void* storage = nullptr;
-    alia_scratch_arena* scratch = nullptr;
+    alia_arena arena;
 
     scratch_rig()
     {
-        alia_scratch_allocator allocator
-            = make_lazy_commit_arena_allocator(&this->allocator);
+        alia::initialize_lazy_commit_arena(&this->arena);
+    }
 
-        auto const spec = alia_scratch_struct_spec();
-        this->storage
-            = ::operator new(spec.size, std::align_val_t{spec.align});
-        this->scratch = alia_scratch_construct(storage, allocator);
+    alia_arena_view*
+    view()
+    {
+        return alia_arena_get_view(&this->arena);
     }
 
     ~scratch_rig()
@@ -37,11 +36,7 @@ struct scratch_rig
     void
     destroy()
     {
-        alia_scratch_destruct(this->scratch);
-        this->scratch = nullptr;
-        ::operator delete(
-            this->storage, std::align_val_t{alia_scratch_struct_spec().align});
-        this->storage = nullptr;
+        alia_arena_destruct(&this->arena);
     }
 };
 
@@ -88,7 +83,7 @@ TEST_CASE("basic_block")
     construct_substrate_system(system, allocator);
 
     alia::substrate_traversal traversal = {};
-    substrate_begin_traversal(traversal, system, rig.scratch);
+    substrate_begin_traversal(traversal, system, rig.view());
 
     alia::substrate_block_spec spec;
     spec.size = 1024;
@@ -139,7 +134,7 @@ TEST_CASE("basic_block_discovery")
     construct_substrate_system(system, allocator);
 
     alia::substrate_traversal traversal = {};
-    substrate_begin_traversal(traversal, system, rig.scratch);
+    substrate_begin_traversal(traversal, system, rig.view());
 
     alia::substrate_block_scope scope;
     alia::substrate_block block;
@@ -211,7 +206,7 @@ TEST_CASE("substrate_use_block")
     construct_substrate_system(system, allocator);
 
     alia::substrate_traversal traversal = {};
-    substrate_begin_traversal(traversal, system, rig.scratch);
+    substrate_begin_traversal(traversal, system, rig.view());
 
     alia::substrate_block_spec spec;
     spec.size = 1024;
@@ -282,7 +277,7 @@ TEST_CASE("substrate_destructors")
     construct_substrate_system(system, allocator);
 
     alia::substrate_traversal traversal = {};
-    substrate_begin_traversal(traversal, system, rig.scratch);
+    substrate_begin_traversal(traversal, system, rig.view());
 
     alia::substrate_block_spec spec;
     spec.size = 1024;
@@ -367,7 +362,7 @@ TEST_CASE("substrate_generations")
     for (int generation = 0; generation < 2; ++generation)
     {
         alia::substrate_traversal traversal = {};
-        substrate_begin_traversal(traversal, system, rig.scratch);
+        substrate_begin_traversal(traversal, system, rig.view());
 
         alia::substrate_block_spec spec;
         spec.size = 1024;

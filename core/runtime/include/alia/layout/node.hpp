@@ -1,7 +1,7 @@
 #pragma once
 
 #include <alia/abi/layout.h>
-#include <alia/arenas.hpp>
+#include <alia/arena.hpp>
 #include <alia/geometry.hpp>
 
 namespace alia {

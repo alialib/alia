@@ -75,7 +75,7 @@ seed_colors const seed_sets[] = {
 alia::ui_system the_system;
 GLFWwindow* the_window;
 gl_renderer the_renderer;
-display_list_arena the_display_list_arena;
+alia_arena the_display_list_arena;
 box_command_list the_box_commands;
 msdf_text_engine* the_msdf_text_engine;
 command_list<msdf_draw_command> the_msdf_commands;
@@ -84,7 +84,7 @@ theme_colors the_theme;
 seed_colors const* seeds = &seed_sets[0];
 color_palette the_palette;
 float the_time = 0.0f;
-static unsigned the_element_counter = 0;
+static uintptr_t the_element_counter = 0;
 
 bool
 detect_click(context& ctx, float x, float y, float width, float height)
@@ -107,8 +107,8 @@ do_rect(
     {
         case ALIA_CATEGORY_REFRESH: {
             auto& layout = as_refresh_event(ctx).layout_emission;
-            layout_leaf_node* new_node
-                = arena_alloc<layout_leaf_node>(ctx.system->layout.node_arena);
+            layout_leaf_node* new_node = arena_alloc<layout_leaf_node>(
+                *alia_arena_get_view(&ctx.system->layout.node_arena));
             *layout.next_ptr = &new_node->base;
             layout.next_ptr = &new_node->base.next_sibling;
             *new_node = layout_leaf_node{
@@ -120,7 +120,7 @@ do_rect(
         }
         case ALIA_CATEGORY_SPATIAL: {
             auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
-                ctx.system->layout.placement_arena);
+                *alia_arena_get_view(&ctx.system->layout.placement_arena));
             box box = {
                 .min = leaf_placement.position, .size = leaf_placement.size};
             box_region(ctx, id, box);
@@ -128,7 +128,7 @@ do_rect(
         }
         case ALIA_CATEGORY_DRAWING: {
             auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
-                ctx.system->layout.placement_arena);
+                *alia_arena_get_view(&ctx.system->layout.placement_arena));
             box box = {
                 .min = leaf_placement.position, .size = leaf_placement.size};
             auto status = get_interaction_status(ctx, id);
@@ -149,7 +149,7 @@ do_rect(
         }
         case ALIA_CATEGORY_INPUT: {
             auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
-                ctx.system->layout.placement_arena);
+                *alia_arena_get_view(&ctx.system->layout.placement_arena));
             box box = {
                 .min = leaf_placement.position, .size = leaf_placement.size};
             if (detect_click(ctx, id, mouse_button::left))
@@ -168,8 +168,8 @@ do_rect_with_offset(
     {
         case ALIA_CATEGORY_REFRESH: {
             auto& layout = as_refresh_event(ctx).layout_emission;
-            layout_leaf_node* new_node
-                = arena_alloc<layout_leaf_node>(ctx.system->layout.node_arena);
+            layout_leaf_node* new_node = arena_alloc<layout_leaf_node>(
+                *alia_arena_get_view(&ctx.system->layout.node_arena));
             *layout.next_ptr = &new_node->base;
             layout.next_ptr = &new_node->base.next_sibling;
             *new_node = layout_leaf_node{
@@ -181,7 +181,7 @@ do_rect_with_offset(
         }
         case ALIA_CATEGORY_SPATIAL: {
             auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
-                ctx.system->layout.placement_arena);
+                *alia_arena_get_view(&ctx.system->layout.placement_arena));
             box box = {
                 .min = leaf_placement.position, .size = leaf_placement.size};
             // box_region(ctx, id, box);
@@ -189,7 +189,7 @@ do_rect_with_offset(
         }
         case ALIA_CATEGORY_DRAWING: {
             auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
-                ctx.system->layout.placement_arena);
+                *alia_arena_get_view(&ctx.system->layout.placement_arena));
             box box
                 = {.min = leaf_placement.position + offset,
                    .size = leaf_placement.size};
@@ -202,7 +202,7 @@ do_rect_with_offset(
         }
         case ALIA_CATEGORY_INPUT: {
             auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
-                ctx.system->layout.placement_arena);
+                *alia_arena_get_view(&ctx.system->layout.placement_arena));
             box box
                 = {.min = leaf_placement.position + offset,
                    .size = leaf_placement.size};
@@ -742,7 +742,7 @@ do_text(
             auto& layout = as_refresh_event(ctx).layout_emission;
             msdf_text_layout_node* new_node
                 = arena_alloc<msdf_text_layout_node>(
-                    ctx.system->layout.node_arena);
+                    *alia_arena_get_view(&ctx.system->layout.node_arena));
             new_node->base.vtable = &text_layout_vtable;
             new_node->base.next_sibling = nullptr;
             new_node->flags = flags;
@@ -756,22 +756,22 @@ do_text(
         }
         case ALIA_CATEGORY_SPATIAL: {
             auto& text_placement = *arena_alloc<text_layout_placement_header>(
-                ctx.system->layout.placement_arena);
+                *alia_arena_get_view(&ctx.system->layout.placement_arena));
             for (int i = 0; i < text_placement.fragment_count; ++i)
             {
                 auto& fragment = *arena_alloc<text_layout_placement_fragment>(
-                    ctx.system->layout.placement_arena);
+                    *alia_arena_get_view(&ctx.system->layout.placement_arena));
                 // box_region(ctx, id, box);
             }
             break;
         }
         case ALIA_CATEGORY_DRAWING: {
             auto& text_placement = *arena_alloc<text_layout_placement_header>(
-                ctx.system->layout.placement_arena);
+                *alia_arena_get_view(&ctx.system->layout.placement_arena));
             for (int i = 0; i < text_placement.fragment_count; ++i)
             {
                 auto& fragment = *arena_alloc<text_layout_placement_fragment>(
-                    ctx.system->layout.placement_arena);
+                    *alia_arena_get_view(&ctx.system->layout.placement_arena));
                 draw_text(
                     the_msdf_text_engine,
                     *as_draw_event(ctx).state->arena,
@@ -786,11 +786,11 @@ do_text(
         }
         case ALIA_CATEGORY_INPUT: {
             auto& text_placement = *arena_alloc<text_layout_placement_header>(
-                ctx.system->layout.placement_arena);
+                *alia_arena_get_view(&ctx.system->layout.placement_arena));
             for (int i = 0; i < text_placement.fragment_count; ++i)
             {
                 auto& fragment = *arena_alloc<text_layout_placement_fragment>(
-                    ctx.system->layout.placement_arena);
+                    *alia_arena_get_view(&ctx.system->layout.placement_arena));
                 box box = {.min = fragment.position, .size = fragment.size};
                 if (detect_click(
                         ctx, box.min.x, box.min.y, box.size.x, box.size.y))
@@ -1483,7 +1483,7 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         = (static_cast<float>(y) * framebuffer_height
            / window_height); // / the_ui_scale.y;
 
-    alia_scratch_reset(&the_system.layout.placement_arena);
+    alia_arena_reset(alia_arena_get_view(&the_system.layout.placement_arena));
     switch (action)
     {
         case GLFW_PRESS: {
@@ -1520,7 +1520,7 @@ cursor_position_callback(GLFWwindow* window, double x, double y)
         = (static_cast<float>(y) * framebuffer_height
            / window_height); // / the_ui_scale.y;
 
-    alia_scratch_reset(&the_system.layout.placement_arena);
+    alia_arena_reset(alia_arena_get_view(&the_system.layout.placement_arena));
     process_mouse_motion(the_system, {internal_x, internal_y});
 }
 
@@ -1656,12 +1656,14 @@ update()
         refresh_system(the_system);
         refresh_finished_time = std::chrono::high_resolution_clock::now();
 
-        alia_scratch_reset(&the_system.layout.placement_arena);
+        alia_arena_reset(
+            alia_arena_get_view(&the_system.layout.placement_arena));
         resolve_layout(the_system.layout, the_system.surface_size);
 
         layout_finished_time = std::chrono::high_resolution_clock::now();
 
-        alia_scratch_reset(&the_system.layout.placement_arena);
+        alia_arena_reset(
+            alia_arena_get_view(&the_system.layout.placement_arena));
         update(the_system);
 
         update_glfw_window_info(the_system, the_window);
@@ -1677,13 +1679,14 @@ update()
         while ((err = glGetError()) != GL_NO_ERROR)
             printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
-        alia_scratch_reset(&the_display_list_arena);
+        alia_arena_reset(alia_arena_get_view(&the_display_list_arena));
         clear_command_list(the_box_commands);
         clear_command_list(the_msdf_commands);
-        alia_scratch_reset(&the_system.layout.placement_arena);
+        alia_arena_reset(
+            alia_arena_get_view(&the_system.layout.placement_arena));
 
         alia_draw_state draw_state = {
-            .arena = &the_display_list_arena,
+            .arena = alia_arena_get_view(&the_display_list_arena),
             .box_command_list = &the_box_commands,
         };
         auto draw_event = alia_make_draw_event({.state = &draw_state});
@@ -1869,10 +1872,7 @@ main()
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
-    static lazy_commit_arena_allocator the_allocator;
-    alia_scratch_allocator allocator
-        = make_lazy_commit_arena_allocator(&the_allocator);
-    alia_scratch_construct(&the_display_list_arena, allocator);
+    initialize_lazy_commit_arena(&the_display_list_arena);
     clear_command_list(the_box_commands);
     clear_command_list(the_msdf_commands);
 

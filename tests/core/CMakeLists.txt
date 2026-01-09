@@ -2,7 +2,7 @@ add_executable(test_core
     runner.cpp
     test_bit_packing.cpp
     test_color.cpp
-    test_scratch.cpp
+    test_arena.cpp
     test_substrate.cpp
     animation/test_cubic_bezier.cpp
     animation/test_flares.cpp

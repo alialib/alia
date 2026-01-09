@@ -27,10 +27,11 @@ refresh_system(ui_system& sys)
     //     = std::chrono::steady_clock::now();
 
     {
-        alia_scratch_reset(&sys.layout.node_arena);
+        alia_arena_reset(alia_arena_get_view(&sys.layout.node_arena));
         auto refresh_event = alia_make_refresh_event(
             {.layout_emission
-             = {&sys.layout.node_arena, &sys.layout.root.first_child}});
+             = {alia_arena_get_view(&sys.layout.node_arena),
+                &sys.layout.root.first_child}});
         dispatch_event(sys, refresh_event);
         *refresh_event.refresh.layout_emission.next_ptr = 0;
     }

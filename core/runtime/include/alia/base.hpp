@@ -1,12 +1,11 @@
 #pragma once
 
-#include <cassert>
 #include <cstdint>
 #include <type_traits>
 
-namespace alia {
+#include <alia/abi/base.h>
 
-#define ALIA_ASSERT(expr) assert(expr)
+namespace alia {
 
 template<typename T>
 T*

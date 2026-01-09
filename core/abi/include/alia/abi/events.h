@@ -2,11 +2,11 @@
 
 #include <stdint.h>
 
+#include <alia/abi/arena.h>
 #include <alia/abi/geometry.h>
 #include <alia/abi/ids.h>
 #include <alia/abi/input/constants.h>
 #include <alia/abi/layout.h>
-#include <alia/abi/scratch.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -130,7 +130,7 @@ enum
 
 typedef struct alia_layout_emission
 {
-    alia_scratch_arena* arena;
+    alia_arena_view* arena;
     alia_layout_node** next_ptr;
 } alia_layout_emission;
 

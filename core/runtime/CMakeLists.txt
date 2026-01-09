@@ -1,6 +1,5 @@
 add_library(alia_core STATIC
-    src/arenas.cpp
-    src/scratch.cpp
+    src/arena.cpp
     src/substrate.cpp
     src/animation/cubic_bezier.cpp
     src/color.cpp

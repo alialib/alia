@@ -1,7 +1,7 @@
 #pragma once
 
+#include <alia/abi/arena.h>
 #include <alia/abi/geometry.h>
-#include <alia/abi/scratch.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,13 +31,13 @@ typedef struct alia_vertical_requirements
 
 typedef struct alia_placement_context
 {
-    alia_scratch_arena* scratch;
-    alia_scratch_arena* arena;
+    alia_arena_view* scratch;
+    alia_arena_view* arena;
 } alia_placement_context;
 
 typedef struct alia_measurement_context
 {
-    alia_scratch_arena* scratch;
+    alia_arena_view* scratch;
 } alia_measurement_context;
 
 typedef struct alia_line_requirements

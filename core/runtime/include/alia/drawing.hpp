@@ -2,7 +2,7 @@
 
 #include <alia/display_list.hpp>
 
-#include <alia/abi/scratch.h>
+#include <alia/abi/arena.h>
 
 namespace alia {
 
@@ -17,6 +17,6 @@ draw_box(
 
 extern "C" struct alia_draw_state
 {
-    alia_scratch_arena* arena;
+    alia_arena_view* arena;
     alia::box_command_list* box_command_list;
 };

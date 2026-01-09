@@ -1,6 +1,6 @@
 #pragma once
 
-#include <alia/arenas.hpp>
+#include <alia/arena.hpp>
 #include <alia/color.hpp>
 #include <alia/geometry.hpp>
 
@@ -39,6 +39,6 @@ add_command(command_list<Command>& list, Command* command)
     ++list.count;
 }
 
-using display_list_arena = alia_scratch_arena;
+using display_list_arena = alia_arena_view;
 
 } // namespace alia

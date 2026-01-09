@@ -1,6 +1,6 @@
 #include <alia/renderers/gl/renderer.hpp>
 
-#include <alia/arenas.hpp>
+#include <alia/arena.hpp>
 #include <alia/display_list.hpp>
 #include <alia/system/object.hpp>
 
@@ -242,9 +242,7 @@ init_gl_renderer(gl_renderer* renderer)
         .clip_ptr = clip_ptr,
     };
 
-    alia_scratch_allocator allocator
-        = make_lazy_commit_arena_allocator(&renderer->allocator);
-    alia_scratch_construct(&renderer->rect_instance_arena, allocator);
+    initialize_lazy_commit_arena(&renderer->rect_instance_arena);
 }
 
 void
@@ -313,9 +311,9 @@ render_box_command_list(
     renderer->clip_ptr[2] = system.surface_size.x;
     renderer->clip_ptr[3] = system.surface_size.y;
 
-    alia_scratch_reset(&renderer->rect_instance_arena);
+    alia_arena_reset(alia_arena_get_view(&renderer->rect_instance_arena));
     rect_instance* rect_instances = arena_array_alloc<rect_instance>(
-        renderer->rect_instance_arena, boxes.count);
+        *alia_arena_get_view(&renderer->rect_instance_arena), boxes.count);
     {
         rect_instance* instance = rect_instances;
         for (auto const* cmd = boxes.head; cmd; cmd = cmd->next)

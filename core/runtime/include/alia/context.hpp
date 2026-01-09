@@ -3,7 +3,7 @@
 #include <cstdint>
 
 #include <alia/abi/events.h>
-#include <alia/arenas.hpp>
+#include <alia/arena.hpp>
 #include <alia/display_list.hpp>
 #include <alia/drawing.hpp>
 #include <alia/layout/node.hpp>

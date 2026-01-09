@@ -26,8 +26,8 @@ begin_placement_hook(
     }
     else
     {
-        scope.placement
-            = *arena_alloc<placement_info>(ctx.system->layout.placement_arena);
+        scope.placement = *arena_alloc<placement_info>(
+            *alia_arena_get_view(&ctx.system->layout.placement_arena));
     }
 }
 

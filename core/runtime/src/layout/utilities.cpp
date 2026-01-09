@@ -1,6 +1,6 @@
 #include <alia/layout/utilities.hpp>
 
-#include <alia/internals/scratch.hpp>
+#include <alia/internals/arena.hpp>
 
 namespace alia {
 
@@ -12,10 +12,9 @@ default_measure_wrapped_vertical(
     float current_x_offset,
     float line_width)
 {
-    scratch_state checkpoint;
-    scratch_save_state(ctx->scratch, &checkpoint);
+    auto const marker = alia_arena_mark(ctx->scratch);
     auto horizontal = measure_horizontal(ctx, node);
-    scratch_restore_state(ctx->scratch, checkpoint);
+    alia_arena_jump(ctx->scratch, marker);
     auto vertical
         = measure_vertical(ctx, main_axis, node, horizontal.min_size);
     if (current_x_offset + horizontal.min_size > line_width)
