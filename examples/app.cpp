@@ -24,7 +24,7 @@
 #include <alia/flow/dispatch.hpp>
 #include <alia/geometry.hpp>
 #include <alia/input/elements.hpp>
-#include <alia/input/mouse.hpp>
+#include <alia/input/pointer.hpp>
 #include <alia/input/regions.hpp>
 #include <alia/layout/compositors/column.hpp>
 #include <alia/layout/compositors/flow.hpp>
@@ -79,7 +79,7 @@ alia_arena the_display_list_arena;
 box_command_list the_box_commands;
 msdf_text_engine* the_msdf_text_engine;
 command_list<msdf_draw_command> the_msdf_commands;
-style the_style = {.padding = 10.0f};
+alia_style the_style = {.padding = 10.0f};
 theme_colors the_theme;
 seed_colors const* seeds = &seed_sets[0];
 color_palette the_palette;
@@ -152,7 +152,7 @@ do_rect(
                 *alia_arena_get_view(&ctx.system->layout.placement_arena));
             box box = {
                 .min = leaf_placement.position, .size = leaf_placement.size};
-            if (detect_click(ctx, id, mouse_button::left))
+            if (detect_click(ctx, id, button::left))
                 return true;
             break;
         }
@@ -1490,7 +1490,7 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
             process_mouse_press(
                 the_system,
                 {internal_x, internal_y},
-                mouse_button(button),
+                alia::button(button),
                 key_modifiers(to_alia_kmod_t(mods)));
             break;
         }
@@ -1498,7 +1498,7 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
             process_mouse_release(
                 the_system,
                 {internal_x, internal_y},
-                mouse_button(button),
+                alia::button(button),
                 key_modifiers(to_alia_kmod_t(mods)));
             break;
         }
@@ -1830,7 +1830,7 @@ main()
         return -1;
     }
 
-    initialize(the_system, vec2{1200, 1600});
+    initialize_ui_system(&the_system, vec2{1200, 1600});
     the_system.controller = the_demo;
 
     glEnable(GL_FRAMEBUFFER_SRGB);

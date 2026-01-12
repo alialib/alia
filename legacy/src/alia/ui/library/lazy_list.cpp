@@ -5,7 +5,7 @@
 #include <alia/ui/events.hpp>
 #include <alia/ui/layout/system.hpp>
 #include <alia/ui/layout/utilities.hpp>
-#include <alia/ui/utilities/mouse.hpp>
+#include <alia/ui/utilities/pointer.hpp>
 #include <alia/ui/utilities/regions.hpp>
 
 namespace alia {
@@ -192,9 +192,10 @@ index_from_position(lazy_list_data const& list, vector<2, double> position)
 {
     return clamp_index(
         list,
-        ptrdiff_t(std::floor(
-            (position[1] - list.assignment.region.corner[1])
-            / list.item_height)));
+        ptrdiff_t(
+            std::floor(
+                (position[1] - list.assignment.region.corner[1])
+                / list.item_height)));
 }
 
 void

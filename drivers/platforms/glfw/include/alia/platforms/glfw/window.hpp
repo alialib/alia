@@ -2,9 +2,10 @@
 
 #include <GLFW/glfw3.h>
 
-namespace alia {
+// TODO: Use forward declarations once those are sorted out.
+#include <alia/system/object.hpp>
 
-struct ui_system;
+namespace alia {
 
 void
 update_glfw_window_info(ui_system& system, GLFWwindow* window);

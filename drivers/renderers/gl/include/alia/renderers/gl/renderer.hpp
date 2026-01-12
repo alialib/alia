@@ -8,9 +8,11 @@
 
 #include <alia/internals/arena.hpp>
 
+// TODO: Use forward declarations once those are sorted out.
+#include <alia/system/object.hpp>
+
 namespace alia {
 
-struct ui_system;
 struct display_list;
 
 // TODO: Make this opaque.

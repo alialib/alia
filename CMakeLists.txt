@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 enable_testing()
 
-add_subdirectory(core/runtime)
+add_subdirectory(core)
 
 add_subdirectory(tests/core)
 add_test(NAME test_core COMMAND test_core)
