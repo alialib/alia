@@ -85,16 +85,16 @@ void main() {
 
 struct gpu_glyph_data
 {
-    vec2 uv_pos;
-    vec2 uv_size;
-    vec2 xy_pos;
-    vec2 xy_size;
+    vec2f uv_pos;
+    vec2f uv_size;
+    vec2f xy_pos;
+    vec2f xy_size;
 };
 
 struct gpu_glyph_instance
 {
     alia::color color;
-    vec2 position;
+    vec2f position;
     float scale;
     GLuint glyph_id;
 };
@@ -438,14 +438,14 @@ draw_text(
     char const* text,
     size_t length,
     float scale,
-    vec2 position,
+    vec2f position,
     color color)
 {
     msdf_draw_command* command
         = arena_array_alloc<msdf_draw_command>(arena, length);
     command->engine = engine;
     command->next = nullptr;
-    command->position = position + vec2{0, engine->metrics.ascender * scale};
+    command->position = position + vec2f{0, engine->metrics.ascender * scale};
     command->scale = scale;
     command->color = color;
     command->length = length;
@@ -503,7 +503,7 @@ render_command(
     msdf_draw_command const& command)
 {
     // TODO: Culling.
-    vec2 position = command.position;
+    vec2f position = command.position;
     float scale = command.scale;
     for (size_t i = 0; i < command.length; ++i)
     {
@@ -530,7 +530,7 @@ void
 render_command_list(
     msdf_text_engine* engine,
     command_list<msdf_draw_command> const& commands,
-    vec2 surface_size)
+    vec2f surface_size)
 {
     size_t glyph_instance_count = 0;
     for (msdf_draw_command* cmd = commands.head; cmd; cmd = cmd->next)

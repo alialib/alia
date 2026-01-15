@@ -81,8 +81,8 @@ void main() {
 
 struct rect_instance
 {
-    vec2 min;
-    vec2 size;
+    vec2f min;
+    vec2f size;
     alia::color color;
     GLuint clip_index;
 };

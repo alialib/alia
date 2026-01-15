@@ -15,7 +15,7 @@ initialize(layout_system& system)
 }
 
 void
-resolve_layout(layout_system& system, vec2 available_space)
+resolve_layout(layout_system& system, vec2f available_space)
 {
     alia_arena_reset(alia_arena_get_view(&system.scratch_arena));
     layout_node* root_node = system.root.first_child;
@@ -36,7 +36,7 @@ resolve_layout(layout_system& system, vec2 available_space)
             &ctx,
             ALIA_MAIN_AXIS_X,
             root_node,
-            {vec2{0, 0}, available_space},
+            {vec2f{0, 0}, available_space},
             vertical.ascent);
         alia_arena_reset(alia_arena_get_view(&system.scratch_arena));
     }

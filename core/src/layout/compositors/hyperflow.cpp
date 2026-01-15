@@ -183,8 +183,8 @@ hyperflow_assign_boxes(
                     ctx,
                     ALIA_MAIN_AXIS_X,
                     c,
-                    {.min = vec2{x, current_y},
-                     .size = vec2{child_x.min_size, line_height}},
+                    {.min = vec2f{x, current_y},
+                     .size = vec2f{child_x.min_size, line_height}},
                     assign_baseline(
                         hyperflow.flags,
                         line_height,
@@ -224,8 +224,8 @@ hyperflow_assign_boxes(
                 ctx,
                 ALIA_MAIN_AXIS_X,
                 c,
-                {.min = vec2{x, current_y},
-                 .size = vec2{child_x.min_size, line_height}},
+                {.min = vec2f{x, current_y},
+                 .size = vec2f{child_x.min_size, line_height}},
                 assign_baseline(
                     hyperflow.flags, line_height, line_ascent, line_descent));
             x += child_x.min_size;

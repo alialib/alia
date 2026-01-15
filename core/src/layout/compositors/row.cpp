@@ -143,7 +143,7 @@ row_assign_boxes(
         adjust_flags_for_main_axis(row.flags, main_axis),
         box.size,
         baseline,
-        vec2{scratch.total_width, scratch.height},
+        vec2f{scratch.total_width, scratch.height},
         scratch.ascent);
     float const total_extra_space
         = (std::max) (0.f, placement.size.x - scratch.total_width);
@@ -161,8 +161,8 @@ row_assign_boxes(
             ctx,
             ALIA_MAIN_AXIS_X,
             child,
-            {.min = vec2{current_x, box.min.y + placement.min.y},
-             .size = vec2{child_x.min_size + extra_space, box.size.y}},
+            {.min = vec2f{current_x, box.min.y + placement.min.y},
+             .size = vec2f{child_x.min_size + extra_space, box.size.y}},
             baseline);
         current_x += child_x.min_size + extra_space;
     }

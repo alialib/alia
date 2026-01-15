@@ -24,7 +24,7 @@ get_mouse_target(ui_system& ui)
 } // namespace
 
 void
-process_mouse_motion(ui_system& ui, vec2 const& position)
+process_mouse_motion(ui_system& ui, vec2f const& position)
 {
     if (!ui.input.mouse_inside_window || ui.input.mouse_position != position)
     {
@@ -49,7 +49,7 @@ process_mouse_loss(ui_system& ui)
 
 void
 process_mouse_press(
-    ui_system& ui, vec2 const& position, button button, key_modifiers mods)
+    ui_system& ui, vec2f const& position, button button, key_modifiers mods)
 {
     auto target = get_mouse_target(ui);
     if (alia_routable_element_id_is_valid(target))
@@ -74,7 +74,7 @@ process_mouse_press(
 
 void
 process_mouse_release(
-    ui_system& ui, vec2 const& position, button button, key_modifiers mods)
+    ui_system& ui, vec2f const& position, button button, key_modifiers mods)
 {
     auto target = get_mouse_target(ui);
     if (alia_routable_element_id_is_valid(target))
@@ -97,7 +97,7 @@ process_mouse_release(
 
 void
 process_double_click(
-    ui_system& ui, vec2 const& position, button button, key_modifiers mods)
+    ui_system& ui, vec2f const& position, button button, key_modifiers mods)
 {
     auto target = get_mouse_target(ui);
     if (alia_routable_element_id_is_valid(target))
@@ -114,7 +114,7 @@ process_double_click(
 }
 
 void
-process_scroll(ui_system& ui, vec2 const& delta)
+process_scroll(ui_system& ui, vec2f const& delta)
 {
     alia_event hit_test_event = alia_make_wheel_hit_test_event(
         {.x = ui.input.mouse_position.x, .y = ui.input.mouse_position.y});

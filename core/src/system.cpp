@@ -5,7 +5,7 @@
 namespace alia {
 
 void
-initialize_ui_system(alia_ui_system* system, alia_vec2 surface_size)
+initialize_ui_system(alia_ui_system* system, alia_vec2f surface_size)
 {
     initialize(system->layout);
     system->surface_size = surface_size;

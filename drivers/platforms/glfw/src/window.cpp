@@ -11,7 +11,7 @@ update_glfw_window_info(ui_system& system, GLFWwindow* window)
     glfwGetFramebufferSize(window, &framebuffer_width, &framebuffer_height);
 
     system.surface_size
-        = vec2{float(framebuffer_width), float(framebuffer_height)};
+        = vec2f{float(framebuffer_width), float(framebuffer_height)};
 
     // TODO: Sort out scaling...
 

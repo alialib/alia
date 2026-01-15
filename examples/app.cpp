@@ -15,11 +15,11 @@
 
 #include "roboto-msdf.h"
 
-#include <alia/abi/events.h>
 #include <alia/color.hpp>
 #include <alia/context.hpp>
 #include <alia/display_list.hpp>
 #include <alia/drawing.hpp>
+#include <alia/events.h>
 #include <alia/events.hpp>
 #include <alia/flow/dispatch.hpp>
 #include <alia/geometry.hpp>
@@ -99,7 +99,7 @@ bool
 do_rect(
     context& ctx,
     alia_element_id id,
-    vec2 size,
+    vec2f size,
     color color,
     layout_flag_set flags)
 {
@@ -162,7 +162,7 @@ do_rect(
 
 bool
 do_rect_with_offset(
-    context& ctx, vec2 size, color color, layout_flag_set flags, vec2 offset)
+    context& ctx, vec2f size, color color, layout_flag_set flags, vec2f offset)
 {
     switch (get_event_category(ctx))
     {
@@ -366,7 +366,7 @@ apply_mod(Context& ctx, min_height_t m, Content&& content)
 
 struct min_size_t
 {
-    vec2 size;
+    vec2f size;
 };
 template<>
 struct is_layout_modifier<min_size_t> : std::true_type
@@ -411,7 +411,7 @@ min_height(float h)
     return {h};
 }
 constexpr min_size_t
-min_size(vec2 size)
+min_size(vec2f size)
 {
     return {size};
 }
@@ -424,7 +424,7 @@ margins(insets insets)
 template<class LayoutMods>
 void
 do_rect(
-    context& ctx, alia_element_id id, vec2 size, color color, LayoutMods mods)
+    context& ctx, alia_element_id id, vec2f size, color color, LayoutMods mods)
 {
     apply_mods(ctx, mods, [&] { do_rect(ctx, id, size, color, FILL); });
 }
@@ -516,8 +516,8 @@ struct text_layout_placement_header
 
 struct text_layout_placement_fragment
 {
-    vec2 position;
-    vec2 size;
+    vec2f position;
+    vec2f size;
     char const* text;
     size_t length;
 };
@@ -541,7 +541,7 @@ assign_text_boxes(
         adjust_flags_for_main_axis(text.flags, main_axis),
         box.size,
         baseline,
-        vec2{width, metrics->line_height * text.font_size},
+        vec2f{width, metrics->line_height * text.font_size},
         metrics->ascender * text.font_size,
         text.padding);
 
@@ -1051,15 +1051,15 @@ void
 do_animated_rect(
     context& ctx,
     bool& initialized,
-    vec2& offset,
-    vec2 size,
+    vec2f& offset,
+    vec2f size,
     color color,
     layout_flag_set flags)
 {
     placement_hook(ctx, FILL, [&](auto outer_placement) {
         alignment_override(ctx, flags, [&]() {
             placement_hook(ctx, FILL, [&](auto inner_placement) {
-                vec2 inner_pos
+                vec2f inner_pos
                     = inner_placement.box.min - outer_placement.box.min;
                 if (get_event_type(ctx) == ALIA_EVENT_DRAW)
                 {
@@ -1082,7 +1082,7 @@ alignment_override_demo(context& ctx)
 {
     static bool invert = false;
     static bool initialized[12] = {false};
-    static vec2 offsets[12] = {0};
+    static vec2f offsets[12] = {0};
     float x = 0.0f;
     row(ctx, [&]() {
         concrete_panel(ctx, color{0.03f, 0.03f, 0.04f, 1}, CENTER, [&]() {
@@ -1830,7 +1830,7 @@ main()
         return -1;
     }
 
-    initialize_ui_system(&the_system, vec2{1200, 1600});
+    initialize_ui_system(&the_system, vec2f{1200, 1600});
     the_system.controller = the_demo;
 
     glEnable(GL_FRAMEBUFFER_SRGB);

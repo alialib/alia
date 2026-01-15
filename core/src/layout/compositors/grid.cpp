@@ -31,7 +31,7 @@ count_columns(grid_layout_node* grid)
         {
             ++column_count;
         }
-        max_column_count = (std::max)(max_column_count, column_count);
+        max_column_count = (std::max) (max_column_count, column_count);
     }
     return max_column_count;
 }
@@ -57,12 +57,13 @@ grid_measure_horizontal(measurement_context* ctx, layout_node* node)
              child = child->next_sibling, ++column_index)
         {
             auto const child_x = measure_horizontal(ctx, child);
-            grid.scratch->columns[column_index].growth_factor = (std::max)(
-                grid.scratch->columns[column_index].growth_factor,
-                child_x.growth_factor);
-            grid.scratch->columns[column_index].min_size = (std::max)(
-                grid.scratch->columns[column_index].min_size,
-                child_x.min_size);
+            grid.scratch->columns[column_index].growth_factor
+                = (std::max) (grid.scratch->columns[column_index]
+                                  .growth_factor,
+                              child_x.growth_factor);
+            grid.scratch->columns[column_index].min_size
+                = (std::max) (grid.scratch->columns[column_index].min_size,
+                              child_x.min_size);
         }
     }
     float total_width = 0, total_growth = 0;
@@ -174,10 +175,10 @@ grid_row_measure_vertical(
         assigned_width,
         grid.scratch->total_width);
     float const total_extra_space
-        = (std::max)(0.f, placement.size - grid.scratch->total_width);
+        = (std::max) (0.f, placement.size - grid.scratch->total_width);
     // TODO: Figure out how to handle 0 total growth.
     float const one_over_total_growth
-        = 1.0f / (std::max)(0.00001f, grid.scratch->total_growth);
+        = 1.0f / (std::max) (0.00001f, grid.scratch->total_growth);
     float height = 0, ascent = 0, descent = 0;
     auto const* column_data = grid.scratch->columns;
     for (layout_node* child = grid_row.container.first_child; child != nullptr;
@@ -188,15 +189,15 @@ grid_row_measure_vertical(
                                 * one_over_total_growth;
         auto const child_y = measure_vertical(
             ctx, ALIA_MAIN_AXIS_X, child, child_x.min_size + extra_space);
-        height = (std::max)(height, child_y.min_size);
-        ascent = (std::max)(ascent, child_y.ascent);
-        descent = (std::max)(descent, child_y.descent);
+        height = (std::max) (height, child_y.min_size);
+        ascent = (std::max) (ascent, child_y.ascent);
+        descent = (std::max) (descent, child_y.descent);
     }
     scratch.height = height;
     scratch.ascent = ascent;
     alia_arena_jump(ctx->scratch, marker);
     return vertical_requirements{
-        .min_size = (std::max)(height, ascent + descent),
+        .min_size = (std::max) (height, ascent + descent),
         .growth_factor = resolve_growth_factor(grid_row.container.flags),
         .ascent = ascent,
         .descent = descent};
@@ -219,13 +220,13 @@ grid_row_assign_boxes(
         adjust_flags_for_main_axis(grid_row.container.flags, main_axis),
         box.size,
         baseline,
-        vec2{grid.scratch->total_width, scratch.height},
+        vec2f{grid.scratch->total_width, scratch.height},
         scratch.ascent);
     float current_x = box.min.x + placement.min.x;
     float const total_extra_space
-        = (std::max)(0.f, placement.size.x - grid.scratch->total_width);
+        = (std::max) (0.f, placement.size.x - grid.scratch->total_width);
     float const one_over_total_growth
-        = 1.0f / (std::max)(0.00001f, grid.scratch->total_growth);
+        = 1.0f / (std::max) (0.00001f, grid.scratch->total_growth);
     auto const* column_data = grid.scratch->columns;
     for (layout_node* child = grid_row.container.first_child; child != nullptr;
          child = child->next_sibling)
@@ -237,8 +238,8 @@ grid_row_assign_boxes(
             ctx,
             ALIA_MAIN_AXIS_X,
             child,
-            {.min = vec2{current_x, box.min.y + placement.min.y},
-             .size = vec2{child_x.min_size + extra_space, box.size.y}},
+            {.min = vec2f{current_x, box.min.y + placement.min.y},
+             .size = vec2f{child_x.min_size + extra_space, box.size.y}},
             baseline);
         current_x += child_x.min_size + extra_space;
     }

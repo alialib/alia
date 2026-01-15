@@ -5,7 +5,7 @@
 
 namespace alia {
 
-vec2
+vec2f
 get_mouse_position(ephemeral_context& ctx)
 {
     return transform_point(
@@ -138,11 +138,11 @@ detect_press_or_drag(ephemeral_context& ctx, alia_element_id id, button button)
         && element_has_capture(ctx, id);
 }
 
-vec2
+vec2f
 get_mouse_motion_delta(ephemeral_context& ctx, alia_element_id id)
 {
     // TODO: Implement this.
-    return vec2{0, 0};
+    return vec2f{0, 0};
     // mouse_motion_event* event;
     // if (!detect_event(ctx, &event))
     //     return make_vector<double>(0, 0);
@@ -192,7 +192,7 @@ detect_mouse_loss(ephemeral_context& ctx, alia_element_id id)
 }
 
 bool
-detect_scroll(ephemeral_context& ctx, alia_element_id id, vec2* out_delta)
+detect_scroll(ephemeral_context& ctx, alia_element_id id, vec2f* out_delta)
 {
     if (get_event_type(ctx) == ALIA_EVENT_WHEEL && get_event_target(ctx) == id)
     {

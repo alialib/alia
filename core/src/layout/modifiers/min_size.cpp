@@ -8,7 +8,7 @@ namespace alia {
 
 void
 begin_min_size_constraint(
-    context& ctx, layout_container_scope& scope, vec2 min_size)
+    context& ctx, layout_container_scope& scope, vec2f min_size)
 {
     if (is_refresh_event(ctx))
     {

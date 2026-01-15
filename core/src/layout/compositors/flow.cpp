@@ -236,8 +236,8 @@ flow_assign_boxes(
                     ctx,
                     ALIA_MAIN_AXIS_X,
                     child,
-                    {.min = vec2{box.min.x, current_y},
-                     .size = vec2{requirements.end_x, line_height}},
+                    {.min = vec2f{box.min.x, current_y},
+                     .size = vec2f{requirements.end_x, line_height}},
                     assign_baseline(
                         flow.flags, line_height, line_ascent, line_descent));
                 current_x = requirements.end_x;
@@ -265,8 +265,8 @@ flow_assign_boxes(
                 ctx,
                 ALIA_MAIN_AXIS_X,
                 child,
-                {.min = vec2{box.min.x + current_x, current_y},
-                 .size = vec2{requirements.end_x - current_x, line_height}},
+                {.min = vec2f{box.min.x + current_x, current_y},
+                 .size = vec2f{requirements.end_x - current_x, line_height}},
                 assign_baseline(
                     flow.flags, line_height, line_ascent, line_descent));
             current_x = requirements.end_x;
@@ -466,8 +466,8 @@ flow_assign_wrapped_boxes(
                     ctx,
                     ALIA_MAIN_AXIS_X,
                     child,
-                    box{.min = vec2{assignment->x_base, current_y},
-                        .size = vec2{requirements.end_x, line_height}},
+                    box{.min = vec2f{assignment->x_base, current_y},
+                        .size = vec2f{requirements.end_x, line_height}},
                     assign_baseline(
                         flow.flags, line_height, line_ascent, line_descent));
                 current_x = requirements.end_x;
@@ -495,8 +495,9 @@ flow_assign_wrapped_boxes(
                 ctx,
                 ALIA_MAIN_AXIS_X,
                 child,
-                box{.min = vec2{assignment->x_base + current_x, current_y},
-                    .size = vec2{requirements.end_x - current_x, line_height}},
+                box{.min = vec2f{assignment->x_base + current_x, current_y},
+                    .size
+                    = vec2f{requirements.end_x - current_x, line_height}},
                 assign_baseline(
                     flow.flags, line_height, line_ascent, line_descent));
             current_x = requirements.end_x;

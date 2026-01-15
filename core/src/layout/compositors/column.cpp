@@ -142,8 +142,8 @@ column_assign_boxes(
             ctx,
             ALIA_MAIN_AXIS_Y,
             child,
-            {.min = vec2{box.min.x + assignment.min.x, current_y},
-             .size = vec2{assignment.size.x, child_y.min_size + extra_space}},
+            {.min = vec2f{box.min.x + assignment.min.x, current_y},
+             .size = vec2f{assignment.size.x, child_y.min_size + extra_space}},
             assign_baseline(
                 column.flags,
                 assignment.size.y,

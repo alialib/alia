@@ -1,4 +1,4 @@
-#include <alia/abi/color.h>
+#include <alia/color.h>
 
 #include <cmath>
 #include <cstdint>
