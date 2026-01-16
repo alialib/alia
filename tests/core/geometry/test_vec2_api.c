@@ -1,5 +1,6 @@
-#include <alia/geometry/vec2_api.h>
+#include <alia/abi/geometry/vec2_api.h>
 
+#define TEST_NO_MAIN
 #include "acutest.h"
 
 #include <math.h>
@@ -122,9 +123,11 @@ test_vec2i_arithmetic(void)
     }
 }
 
-TEST_LIST
-    = {{"constructors_and_equality", test_constructors_and_equality},
-       {"conversions", test_conversions},
-       {"vec2f_arithmetic", test_vec2f_arithmetic},
-       {"vec2i_arithmetic", test_vec2i_arithmetic},
-       {NULL, NULL}};
+void
+vec2_tests()
+{
+    test_constructors_and_equality();
+    test_conversions();
+    test_vec2f_arithmetic();
+    test_vec2i_arithmetic();
+}

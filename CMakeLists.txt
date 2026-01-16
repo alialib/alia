@@ -17,9 +17,11 @@ add_subdirectory(drivers/platforms/glfw)
 
 add_subdirectory(drivers/text_engines/msdf)
 
+add_subdirectory(apis/cpp)
+
 add_executable(alia_app ${PROJECT_SOURCE_DIR}/examples/app.cpp)
 target_link_libraries(alia_app PRIVATE
-    alia_core alia_gl_renderer alia_glfw_platform
+    alia_cpp alia_core alia_gl_renderer alia_glfw_platform
     alia_msdf_text_engine)
 
 add_executable(alia_benchmarks ${PROJECT_SOURCE_DIR}/benchmarks/layout.cpp)

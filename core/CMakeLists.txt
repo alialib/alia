@@ -31,6 +31,5 @@ add_library(alia_core STATIC
     src/system.cpp
     src/theme.cpp)
 target_include_directories(alia_core PUBLIC
-    ${PROJECT_SOURCE_DIR}/core/include/c
-    ${PROJECT_SOURCE_DIR}/core/include/cpp
+    ${PROJECT_SOURCE_DIR}/core/include
     include)

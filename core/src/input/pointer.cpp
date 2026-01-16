@@ -8,8 +8,8 @@ namespace alia {
 vec2f
 get_mouse_position(ephemeral_context& ctx)
 {
-    return transform_point(
-        invert_affine2(get_transformation(ctx)),
+    return affine2_transform_point(
+        affine2_invert(get_transformation(ctx)),
         ctx.system->input.mouse_position);
 }
 

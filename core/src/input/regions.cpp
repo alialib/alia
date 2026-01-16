@@ -11,8 +11,8 @@ bool
 is_mouse_inside_box(ephemeral_context& ctx, alia_box const& box)
 {
     return get_system(ctx).input.mouse_inside_window
-        && is_inside(box, get_mouse_position(ctx))
-        && is_inside(
+        && box_contains(box, get_mouse_position(ctx))
+        && box_contains(
                get_clip_region(ctx), get_system(ctx).input.mouse_position);
 }
 
@@ -60,9 +60,9 @@ handle_region_visibility(
     if (get_event_target(ctx) == id)
     {
         auto& e = as_make_widget_visible_event(ctx);
-        e.region = transform_aabb(
+        e.region = affine2_transform_aabb(
             get_transformation(ctx),
-            apply_margin(
+            box_expand(
                 region, {get_padding_size(ctx), get_padding_size(ctx)}));
         e.acknowledged = true;
     }
