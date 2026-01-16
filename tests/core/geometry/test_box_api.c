@@ -1,20 +1,9 @@
 #include <alia/abi/geometry/box_api.h>
 
+#include <alia/abi/geometry/insets_api.h>
+
 #define TEST_NO_MAIN
 #include "acutest.h"
-
-// Helper: build an insets value (assuming alia_insets has
-// left/top/right/bottom float fields).
-static inline alia_insets
-make_insets(float left, float top, float right, float bottom)
-{
-    alia_insets i;
-    i.left = left;
-    i.top = top;
-    i.right = right;
-    i.bottom = bottom;
-    return i;
-}
 
 static void
 test_make_and_equal(void)
@@ -75,7 +64,7 @@ test_outset_and_inset_roundtrip(void)
 {
     alia_box b = alia_box_make(
         alia_vec2f_make(10.f, 20.f), alia_vec2f_make(30.f, 40.f));
-    alia_insets i = make_insets(1.f, 2.f, 3.f, 4.f);
+    alia_insets i = alia_insets_make_trbl(1.f, 2.f, 3.f, 4.f);
 
     alia_box out = alia_box_outset(b, i);
 
@@ -84,7 +73,7 @@ test_outset_and_inset_roundtrip(void)
     TEST_CHECK(alia_box_equal(
         out,
         alia_box_make(
-            alia_vec2f_make(9.f, 18.f), alia_vec2f_make(34.f, 46.f))));
+            alia_vec2f_make(6.f, 19.f), alia_vec2f_make(36.f, 44.f))));
 
     // Insetting back should return the original.
     alia_box roundtrip = alia_box_inset(out, i);
@@ -96,7 +85,7 @@ test_inset_and_outset_roundtrip(void)
 {
     alia_box b = alia_box_make(
         alia_vec2f_make(10.f, 20.f), alia_vec2f_make(30.f, 40.f));
-    alia_insets i = make_insets(1.f, 2.f, 3.f, 4.f);
+    alia_insets i = alia_insets_make_trbl(1.f, 2.f, 3.f, 4.f);
 
     alia_box in = alia_box_inset(b, i);
 
@@ -105,7 +94,7 @@ test_inset_and_outset_roundtrip(void)
     TEST_CHECK(alia_box_equal(
         in,
         alia_box_make(
-            alia_vec2f_make(11.f, 22.f), alia_vec2f_make(26.f, 34.f))));
+            alia_vec2f_make(14.f, 21.f), alia_vec2f_make(24.f, 36.f))));
 
     // Outsetting back should return the original.
     alia_box roundtrip = alia_box_outset(in, i);
@@ -120,7 +109,7 @@ test_outset_matches_expand_for_uniform_amount(void)
     alia_vec2f v = alia_vec2f_make(2.f, 3.f);
 
     // Outset with uniform insets should match expand(v)
-    alia_insets uniform = make_insets(2.f, 3.f, 2.f, 3.f);
+    alia_insets uniform = alia_insets_make_trbl(3.f, 2.f, 3.f, 2.f);
 
     alia_box a = alia_box_expand(b, v);
     alia_box o = alia_box_outset(b, uniform);
