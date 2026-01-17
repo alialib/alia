@@ -46,12 +46,12 @@ alia_affine2_compose(alia_affine2 p, alia_affine2 c)
 {
     return ALIA_BRACED_INIT(
         alia_affine2,
-        .a = p.a * c.a + p.c * c.b,
-        .b = p.b * c.a + p.d * c.b,
-        .c = p.a * c.c + p.c * c.d,
-        .d = p.b * c.c + p.d * c.d,
-        .tx = p.a * c.tx + p.c * c.ty + p.tx,
-        .ty = p.b * c.tx + p.d * c.ty + p.ty, );
+        p.a * c.a + p.c * c.b,
+        p.b * c.a + p.d * c.b,
+        p.a * c.c + p.c * c.d,
+        p.b * c.c + p.d * c.d,
+        p.a * c.tx + p.c * c.ty + p.tx,
+        p.b * c.tx + p.d * c.ty + p.ty);
 }
 
 static inline alia_affine2
