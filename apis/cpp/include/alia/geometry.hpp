@@ -1,10 +1,7 @@
 #pragma once
 
-#include <alia/raw/geometry.hpp>
+#include <alia/abi/geometry.h>
 
 namespace alia {
-
-using raw::box;
-using raw::rect;
 
 } // namespace alia

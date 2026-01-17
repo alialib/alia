@@ -1,10 +1,10 @@
-#ifndef ALIA_GEOMETRY_AFFINE2_API_H
-#define ALIA_GEOMETRY_AFFINE2_API_H
+#ifndef ALIA_GEOMETRY_AFFINE2_H
+#define ALIA_GEOMETRY_AFFINE2_H
 
-#include <alia/abi/base/config.h>
-#include <alia/abi/geometry/box_api.h>
+#include <alia/abi/base.h>
+#include <alia/abi/geometry/box.h>
 #include <alia/abi/geometry/types.h>
-#include <alia/abi/geometry/vec2_api.h>
+#include <alia/abi/geometry/vec2.h>
 
 #include <math.h>
 
@@ -110,4 +110,4 @@ alia_affine2_transform_aabb(alia_affine2 m, alia_box b)
 
 ALIA_EXTERN_C_END
 
-#endif /* ALIA_GEOMETRY_AFFINE2_API_H */
+#endif /* ALIA_GEOMETRY_AFFINE2_H */

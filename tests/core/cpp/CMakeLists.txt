@@ -4,6 +4,7 @@ add_executable(test_core_cpp
     test_color.cpp
     test_arena.cpp
     test_substrate.cpp
+    test_operators.cpp
     animation/test_cubic_bezier.cpp
     animation/test_flares.cpp
     animation/test_transitions.cpp)

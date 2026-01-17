@@ -6,6 +6,8 @@
 #include <alia/layout/flags.hpp>
 #include <alia/layout/utilities.hpp>
 
+using namespace alia::operators;
+
 namespace alia {
 
 struct alignment_override_scratch

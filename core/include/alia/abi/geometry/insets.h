@@ -1,7 +1,7 @@
-#ifndef ALIA_GEOMETRY_INSETS_API_H
-#define ALIA_GEOMETRY_INSETS_API_H
+#ifndef ALIA_GEOMETRY_INSETS_H
+#define ALIA_GEOMETRY_INSETS_H
 
-#include <alia/abi/base/config.h>
+#include <alia/abi/base.h>
 #include <alia/abi/geometry/types.h>
 
 ALIA_EXTERN_C_BEGIN
@@ -31,6 +31,8 @@ alia_insets_equal(alia_insets a, alia_insets b)
         && a.bottom == b.bottom;
 }
 
+ALIA_DEFINE_EQUALITY_OPERATOR(alia_insets)
+
 static inline alia_insets
 alia_insets_add(alia_insets a, alia_insets b)
 {
@@ -50,6 +52,8 @@ alia_insets_add_inplace(alia_insets* a, alia_insets b)
     a->top += b.top;
     a->bottom += b.bottom;
 }
+
+ALIA_DEFINE_PLUS_OPERATOR(alia_insets)
 
 static inline alia_insets
 alia_insets_sub(alia_insets a, alia_insets b)
@@ -71,6 +75,8 @@ alia_insets_sub_inplace(alia_insets* a, alia_insets b)
     a->bottom -= b.bottom;
 }
 
+ALIA_DEFINE_MINUS_OPERATOR(alia_insets)
+
 static inline alia_insets
 alia_insets_scale(alia_insets a, float s)
 {
@@ -87,6 +93,8 @@ alia_insets_scale_inplace(alia_insets* a, float s)
     a->bottom *= s;
 }
 
+ALIA_DEFINE_SCALE_OPERATOR(alia_insets, float)
+
 ALIA_EXTERN_C_END
 
-#endif /* ALIA_GEOMETRY_INSETS_API_H */
+#endif /* ALIA_GEOMETRY_INSETS_H */

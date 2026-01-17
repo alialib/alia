@@ -13,7 +13,7 @@ inline affine2
 get_transformation(ephemeral_context& ctx)
 {
     // TODO
-    return affine2_identity();
+    return alia_affine2_identity();
 }
 
 // TODO: Move elsewhere.

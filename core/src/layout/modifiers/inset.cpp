@@ -2,6 +2,7 @@
 
 #include <alia/context.hpp>
 #include <alia/events.hpp>
+using namespace alia::operators;
 
 namespace alia {
 

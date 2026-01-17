@@ -2,11 +2,14 @@
 
 #include <alia/events.hpp>
 #include <alia/flow/dispatch.hpp>
+#include <alia/geometry.hpp>
 #include <alia/system/interface.hpp>
 #include <alia/system/object.hpp>
 
 // TODO: API shouldn't be needed here.
 #include <alia/system/api.hpp>
+
+using namespace alia::operators;
 
 namespace alia {
 
@@ -26,7 +29,8 @@ get_mouse_target(ui_system& ui)
 void
 process_mouse_motion(ui_system& ui, vec2f const& position)
 {
-    if (!ui.input.mouse_inside_window || ui.input.mouse_position != position)
+    if (!ui.input.mouse_inside_window
+        || !alia_vec2f_equal(ui.input.mouse_position, position))
     {
         alia_event event
             = alia_make_mouse_motion_event({.x = position.x, .y = position.y});

@@ -10,18 +10,13 @@
 
 namespace {
 
-struct alloc_controller
-{
-    size_t chunk_size = 256;
-    size_t alloc_calls = 0;
-    size_t free_calls = 0;
-};
+size_t const max_arena_capacity = 16'384;
 
 size_t
 test_grow_fn(
     void* user, void* base, size_t existing_capacity, size_t bytes_requested)
 {
-    realloc(base, existing_capacity * 2);
+    ALIA_ASSERT(existing_capacity * 2 <= max_arena_capacity);
     return existing_capacity * 2;
 }
 
@@ -44,7 +39,7 @@ struct test_rig
             = ::operator new(spec.size, std::align_val_t{spec.align});
         this->arena = alia_arena_construct(
             this->storage,
-            malloc(initial_capacity),
+            malloc(max_arena_capacity),
             initial_capacity,
             alia_arena_controller{
                 .user = nullptr, .grow = test_grow_fn, .free = test_free});
@@ -153,7 +148,7 @@ TEST_CASE("mark_jump_reset")
 TEST_CASE("stats")
 {
     test_rig rig;
-    rig.init(256);
+    rig.init(1024);
 
     (void) alia_arena_alloc(rig.view(), 112);
     (void) alia_arena_alloc(rig.view(), 203);

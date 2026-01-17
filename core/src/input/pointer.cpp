@@ -3,13 +3,15 @@
 // TODO: API shouldn't be needed here.
 #include <alia/system/api.hpp>
 
+using namespace alia::operators;
+
 namespace alia {
 
 vec2f
 get_mouse_position(ephemeral_context& ctx)
 {
-    return affine2_transform_point(
-        affine2_invert(get_transformation(ctx)),
+    return alia_affine2_transform_point(
+        alia_affine2_invert(get_transformation(ctx)),
         ctx.system->input.mouse_position);
 }
 

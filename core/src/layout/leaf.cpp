@@ -2,6 +2,8 @@
 
 #include <alia/layout/utilities.hpp>
 
+using namespace alia::operators;
+
 namespace alia {
 
 horizontal_requirements

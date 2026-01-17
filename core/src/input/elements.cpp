@@ -2,6 +2,8 @@
 
 #include <alia/input/pointer.hpp>
 
+using namespace alia::operators;
+
 namespace alia {
 
 alia_element_id

@@ -1,7 +1,7 @@
-#ifndef ALIA_GEOMETRY_VEC2_API_H
-#define ALIA_GEOMETRY_VEC2_API_H
+#ifndef ALIA_GEOMETRY_VEC2_H
+#define ALIA_GEOMETRY_VEC2_H
 
-#include <alia/abi/base/config.h>
+#include <alia/abi/base.h>
 #include <alia/abi/geometry/types.h>
 
 #include <math.h>
@@ -30,11 +30,15 @@ alia_vec2i_equal(alia_vec2i a, alia_vec2i b)
     return a.x == b.x && a.y == b.y;
 }
 
+ALIA_DEFINE_EQUALITY_OPERATOR(alia_vec2i);
+
 static inline bool
 alia_vec2f_equal(alia_vec2f a, alia_vec2f b)
 {
     return a.x == b.x && a.y == b.y;
 }
+
+ALIA_DEFINE_EQUALITY_OPERATOR(alia_vec2f);
 
 static inline bool
 alia_vec2f_near(alia_vec2f a, alia_vec2f b, float epsilon)
@@ -89,6 +93,8 @@ alia_vec2f_add_inplace(alia_vec2f* a, alia_vec2f b)
     a->y += b.y;
 }
 
+ALIA_DEFINE_PLUS_OPERATOR(alia_vec2f)
+
 static inline alia_vec2f
 alia_vec2f_sub(alia_vec2f a, alia_vec2f b)
 {
@@ -102,6 +108,8 @@ alia_vec2f_sub_inplace(alia_vec2f* a, alia_vec2f b)
     a->y -= b.y;
 }
 
+ALIA_DEFINE_MINUS_OPERATOR(alia_vec2f)
+
 static inline alia_vec2f
 alia_vec2f_scale(alia_vec2f v, float s)
 {
@@ -114,6 +122,8 @@ alia_vec2f_scale_inplace(alia_vec2f* v, float s)
     v->x *= s;
     v->y *= s;
 }
+
+ALIA_DEFINE_SCALE_OPERATOR(alia_vec2f, float)
 
 static inline float
 alia_vec2f_dot(alia_vec2f a, alia_vec2f b)
@@ -148,6 +158,8 @@ alia_vec2i_add_inplace(alia_vec2i* a, alia_vec2i b)
     a->y += b.y;
 }
 
+ALIA_DEFINE_PLUS_OPERATOR(alia_vec2i)
+
 static inline alia_vec2i
 alia_vec2i_sub(alia_vec2i a, alia_vec2i b)
 {
@@ -160,6 +172,8 @@ alia_vec2i_sub_inplace(alia_vec2i* a, alia_vec2i b)
     a->x -= b.x;
     a->y -= b.y;
 }
+
+ALIA_DEFINE_MINUS_OPERATOR(alia_vec2i)
 
 static inline alia_vec2i
 alia_vec2i_min(alia_vec2i a, alia_vec2i b)
@@ -175,4 +189,4 @@ alia_vec2i_max(alia_vec2i a, alia_vec2i b)
 
 ALIA_EXTERN_C_END
 
-#endif /* ALIA_GEOMETRY_VEC2_API_H */
+#endif /* ALIA_GEOMETRY_VEC2_H */

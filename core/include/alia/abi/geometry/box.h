@@ -1,9 +1,9 @@
-#ifndef ALIA_GEOMETRY_BOX_API_H
-#define ALIA_GEOMETRY_BOX_API_H
+#ifndef ALIA_GEOMETRY_BOX_H
+#define ALIA_GEOMETRY_BOX_H
 
-#include <alia/abi/base/config.h>
+#include <alia/abi/base.h>
 #include <alia/abi/geometry/types.h>
-#include <alia/abi/geometry/vec2_api.h>
+#include <alia/abi/geometry/vec2.h>
 
 ALIA_EXTERN_C_BEGIN
 
@@ -18,6 +18,8 @@ alia_box_equal(alia_box a, alia_box b)
 {
     return alia_vec2f_equal(a.min, b.min) && alia_vec2f_equal(a.size, b.size);
 }
+
+ALIA_DEFINE_EQUALITY_OPERATOR(alia_box)
 
 static inline alia_box
 alia_box_expand(alia_box box, alia_vec2f v)
@@ -64,4 +66,4 @@ alia_box_contains(alia_box box, alia_vec2f p)
 
 ALIA_EXTERN_C_END
 
-#endif /* ALIA_GEOMETRY_BOX_API_H */
+#endif /* ALIA_GEOMETRY_BOX_H */

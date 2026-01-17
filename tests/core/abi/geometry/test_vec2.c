@@ -1,4 +1,4 @@
-#include <alia/abi/geometry/vec2_api.h>
+#include <alia/abi/geometry/vec2.h>
 
 #define TEST_NO_MAIN
 #include "acutest.h"

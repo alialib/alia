@@ -1,8 +1,7 @@
 #ifndef ALIA_GEOMETRY_TYPES_H
 #define ALIA_GEOMETRY_TYPES_H
 
-#include <alia/abi/base/config.h>
-#include <alia/abi/base/types.h>
+#include <alia/abi/base.h>
 
 ALIA_EXTERN_C_BEGIN
 

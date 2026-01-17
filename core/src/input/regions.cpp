@@ -5,14 +5,16 @@
 #include <alia/input/pointer.hpp>
 #include <alia/system/object.hpp>
 
+using namespace alia::operators;
+
 namespace alia {
 
 bool
 is_mouse_inside_box(ephemeral_context& ctx, alia_box const& box)
 {
     return get_system(ctx).input.mouse_inside_window
-        && box_contains(box, get_mouse_position(ctx))
-        && box_contains(
+        && alia_box_contains(box, get_mouse_position(ctx))
+        && alia_box_contains(
                get_clip_region(ctx), get_system(ctx).input.mouse_position);
 }
 
@@ -60,9 +62,9 @@ handle_region_visibility(
     if (get_event_target(ctx) == id)
     {
         auto& e = as_make_widget_visible_event(ctx);
-        e.region = affine2_transform_aabb(
+        e.region = alia_affine2_transform_aabb(
             get_transformation(ctx),
-            box_expand(
+            alia_box_expand(
                 region, {get_padding_size(ctx), get_padding_size(ctx)}));
         e.acknowledged = true;
     }
