@@ -9,9 +9,6 @@
 extern "C" {
 #endif
 
-#define ALIA_MIN_ARENA_ALIGN (16)
-#define ALIA_MAX_ARENA_ALIGN (256)
-
 typedef struct alia_arena alia_arena;
 
 typedef struct alia_bump_state
@@ -43,28 +40,25 @@ alia_arena_no_controller(void)
     return alia_arena_controller{.user = NULL, .grow = NULL, .free = NULL};
 }
 
-alia_arena_view*
-alia_arena_get_view(alia_arena* arena);
-
-// OPAQUE CONSTRUCTION/DESTRUCTION
-
-typedef struct alia_struct_spec
-{
-    size_t size;
-    size_t align;
-} alia_struct_spec;
+// LIFECYCLE
 
 alia_struct_spec
-alia_arena_struct_spec(void);
+alia_arena_object_spec(void);
 
 alia_arena*
-alia_arena_construct(
-    void* mem, void* base, size_t capacity, alia_arena_controller controller);
+alia_arena_init(
+    void* object_storage,
+    void* buffer,
+    size_t capacity,
+    alia_arena_controller controller);
 
 void
-alia_arena_destruct(alia_arena* arena);
+alia_arena_cleanup(alia_arena* arena);
 
 // ALLOCATION
+
+alia_arena_view*
+alia_arena_get_view(alia_arena* arena);
 
 // Allocation gives offsets from the base, but these helpers can be used to
 // convert to/from pointers.
@@ -89,27 +83,13 @@ void
 alia_arena_handle_out_of_memory(
     alia_arena_view* arena, size_t bytes_requested);
 
-// Align a value up to a power-of-two.
-static inline size_t
-alia_align_up(size_t x, size_t a)
-{
-    return (x + (a - 1)) & ~(a - 1);
-}
-
-// Align a value up to the global minimum alignment.
-static inline size_t
-alia_min_align(size_t x)
-{
-    return alia_align_up(x, ALIA_MIN_ARENA_ALIGN);
-}
-
 // Allocate bytes from the arena.
-// The requested size must be a multiple of the global minimum alignment.
+// The requested size must be a multiple of ALIA_MIN_ALIGN.
 // Returns an offset from the base of the arena to the allocated bytes.
 static inline alia_offset
 alia_arena_alloc(alia_arena_view* arena, size_t bytes)
 {
-    ALIA_ASSERT((bytes & (ALIA_MIN_ARENA_ALIGN - 1)) == 0);
+    ALIA_ASSERT((bytes & (ALIA_MIN_ALIGN - 1)) == 0);
 
     if (bytes > arena->capacity - arena->offset)
         alia_arena_handle_out_of_memory(arena, bytes);

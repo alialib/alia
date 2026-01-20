@@ -34,10 +34,10 @@ struct test_rig
     void
     init(size_t initial_capacity)
     {
-        auto const spec = alia_arena_struct_spec();
+        auto const spec = alia_arena_object_spec();
         this->storage
             = ::operator new(spec.size, std::align_val_t{spec.align});
-        this->arena = alia_arena_construct(
+        this->arena = alia_arena_init(
             this->storage,
             malloc(max_arena_capacity),
             initial_capacity,
@@ -48,10 +48,10 @@ struct test_rig
     void
     destroy()
     {
-        alia_arena_destruct(this->arena);
+        alia_arena_cleanup(this->arena);
         this->arena = nullptr;
         ::operator delete(
-            this->storage, std::align_val_t{alia_arena_struct_spec().align});
+            this->storage, std::align_val_t{alia_arena_object_spec().align});
         this->storage = nullptr;
     }
 
@@ -87,7 +87,7 @@ TEST_CASE("allocation_alignment")
     for (size_t i = 0; i < 4; ++i)
     {
         size_t size = 64 << i;
-        size_t align = ALIA_MIN_ARENA_ALIGN << i;
+        size_t align = ALIA_MIN_ALIGN << i;
         INFO(align);
         alia_offset p = alia_arena_alloc_aligned(rig.view(), size, align);
         CHECK((p % align) == 0);

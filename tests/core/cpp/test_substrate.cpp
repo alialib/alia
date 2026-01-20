@@ -36,7 +36,7 @@ struct scratch_rig
     void
     destroy()
     {
-        alia_arena_destruct(&this->arena);
+        alia_arena_cleanup(&this->arena);
     }
 };
 

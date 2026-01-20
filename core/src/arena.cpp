@@ -23,24 +23,18 @@ using namespace alia;
 
 extern "C" {
 
-alia_arena_view*
-alia_arena_get_view(alia_arena* arena)
-{
-    return &arena->bump;
-}
-
 alia_struct_spec
-alia_arena_struct_spec(void)
+alia_arena_object_spec(void)
 {
     return {sizeof(alia_arena), alignof(alia_arena)};
 }
 
 alia_arena*
-alia_arena_construct(
+alia_arena_init(
     void* mem, void* base, size_t capacity, alia_arena_controller controller)
 {
     ALIA_ASSERT(
-        (reinterpret_cast<uintptr_t>(base) & (ALIA_MAX_ARENA_ALIGN - 1)) == 0);
+        (reinterpret_cast<uintptr_t>(base) & (ALIA_MAX_ALIGN - 1)) == 0);
     return new (mem) alia_arena{
         .bump = {.base = static_cast<uint8_t*>(base), .capacity = capacity},
         .controller = controller,
@@ -48,7 +42,7 @@ alia_arena_construct(
 }
 
 void
-alia_arena_destruct(alia_arena* arena)
+alia_arena_cleanup(alia_arena* arena)
 {
     if (arena->controller.free)
     {
@@ -58,11 +52,17 @@ alia_arena_destruct(alia_arena* arena)
     static_assert(std::is_trivially_destructible_v<alia_arena>);
 }
 
+alia_arena_view*
+alia_arena_get_view(alia_arena* arena)
+{
+    return &arena->bump;
+}
+
 void
 alia_update_peak_usage(alia_arena_view* view)
 {
     alia_arena* arena = arena_from_view(view);
-    arena->peak_usage = (std::max)(arena->peak_usage, arena->bump.offset);
+    arena->peak_usage = (std::max) (arena->peak_usage, arena->bump.offset);
 }
 
 void
@@ -80,9 +80,9 @@ alia_offset
 alia_arena_alloc_aligned(alia_arena_view* arena, size_t bytes, size_t align)
 {
     ALIA_ASSERT((bytes & (align - 1)) == 0);
-    ALIA_ASSERT(align <= ALIA_MAX_ARENA_ALIGN);
+    ALIA_ASSERT(align <= ALIA_MAX_ALIGN);
 
-    if (align <= ALIA_MIN_ARENA_ALIGN)
+    if (align <= ALIA_MIN_ALIGN)
         return alia_arena_alloc(arena, bytes);
 
     size_t aligned_offset = align_offset(arena->offset, align);
@@ -146,7 +146,7 @@ initialize_lazy_commit_arena(
     alia_arena* arena, std::size_t chunk_reservation_size)
 {
     void* block = allocate_virtual_block(chunk_reservation_size);
-    alia_arena_construct(
+    alia_arena_init(
         arena,
         block,
         chunk_reservation_size,

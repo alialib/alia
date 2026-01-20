@@ -1,5 +1,6 @@
 add_executable(test_core_c
     runner.c
+    test_stack.c
     geometry/test_affine2.c
     geometry/test_box.c
     geometry/test_insets.c
