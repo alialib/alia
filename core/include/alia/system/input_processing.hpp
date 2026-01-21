@@ -11,7 +11,7 @@ namespace alia {
 
 // Process mouse movement within (or into) the window.
 void
-process_mouse_motion(ui_system& ui, vec2f const& position);
+process_mouse_motion(ui_system& ui, alia_vec2f const& position);
 
 // Process the window's loss of the mouse.
 void
@@ -21,7 +21,7 @@ process_mouse_loss(ui_system& ui);
 void
 process_mouse_press(
     ui_system& ui,
-    vec2f const& position,
+    alia_vec2f const& position,
     button button,
     key_modifiers mods = NO_FLAGS);
 
@@ -29,7 +29,7 @@ process_mouse_press(
 void
 process_double_click(
     ui_system& ui,
-    vec2f const& position,
+    alia_vec2f const& position,
     button button,
     key_modifiers mods = NO_FLAGS);
 
@@ -37,13 +37,13 @@ process_double_click(
 void
 process_mouse_release(
     ui_system& ui,
-    vec2f const& position,
+    alia_vec2f const& position,
     button button,
     key_modifiers mods = NO_FLAGS);
 
 // Process scroll inputs (e.g., the mouse wheel).
 void
-process_scroll(ui_system& ui, vec2f const& delta);
+process_scroll(ui_system& ui, alia_vec2f const& delta);
 
 // Process a key press.
 bool

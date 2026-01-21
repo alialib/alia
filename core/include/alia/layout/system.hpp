@@ -19,6 +19,6 @@ void
 initialize(layout_system& system);
 
 void
-resolve_layout(layout_system& system, vec2f available_space);
+resolve_layout(layout_system& system, alia_vec2f available_space);
 
 } // namespace alia

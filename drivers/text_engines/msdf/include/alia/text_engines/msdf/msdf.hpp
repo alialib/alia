@@ -94,9 +94,9 @@ struct msdf_draw_command
 {
     msdf_text_engine* engine;
     msdf_draw_command* next = nullptr;
-    vec2f position;
+    alia_vec2f position;
     float scale;
-    alia::color color;
+    alia_rgba color;
     size_t length;
     char text[];
 };
@@ -109,13 +109,13 @@ draw_text(
     char const* text,
     size_t length,
     float scale,
-    vec2f position,
-    color color);
+    alia_vec2f position,
+    alia_rgba color);
 
 void
 render_command_list(
     msdf_text_engine* engine,
     command_list<msdf_draw_command> const& commands,
-    vec2f surface_size);
+    alia_vec2f surface_size);
 
 } // namespace alia

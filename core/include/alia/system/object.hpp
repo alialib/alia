@@ -27,7 +27,7 @@ struct window_input_state
     unsigned mouse_button_state = 0;
 
     // the raw mouse position inside the window
-    vec2f mouse_position;
+    alia_vec2f mouse_position;
 
     // the tick count corresponding to the last press of each mouse button
     nanosecond_count last_mouse_press_time[ALIA_MAX_SUPPORTED_BUTTONS];

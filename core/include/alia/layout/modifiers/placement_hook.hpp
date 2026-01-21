@@ -15,7 +15,7 @@ using placement_hook_node = layout_container;
 // TODO: Give this a better name and maybe move it somewhere more generic.
 struct placement_info
 {
-    alia::box box;
+    alia_box box;
     float baseline;
 };
 

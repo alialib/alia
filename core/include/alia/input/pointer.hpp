@@ -9,7 +9,7 @@
 namespace alia {
 
 // TODO: Move elsewhere.
-inline affine2
+inline alia_affine2
 get_transformation(ephemeral_context& ctx)
 {
     // TODO
@@ -17,7 +17,7 @@ get_transformation(ephemeral_context& ctx)
 }
 
 // TODO: Move elsewhere.
-inline box
+inline alia_box
 get_clip_region(ephemeral_context& ctx)
 {
     // TODO
@@ -25,7 +25,7 @@ get_clip_region(ephemeral_context& ctx)
 }
 
 // Get the mouse position in the current frame of reference.
-vec2f
+alia_vec2f
 get_mouse_position(ephemeral_context& ctx);
 
 // Detect if the element with the given ID is under the mouse.
@@ -128,7 +128,7 @@ bool
 detect_press_or_drag(
     ephemeral_context& ctx, alia_element_id id, button button);
 
-vec2f
+alia_vec2f
 get_mouse_motion_delta(ephemeral_context& ctx, alia_element_id id);
 
 bool
@@ -144,7 +144,8 @@ bool
 detect_drag_release(ephemeral_context& ctx, alia_element_id id, button button);
 
 bool
-detect_scroll(ephemeral_context& ctx, alia_element_id id, vec2f* out_delta);
+detect_scroll(
+    ephemeral_context& ctx, alia_element_id id, alia_vec2f* out_delta);
 
 inline nanosecond_count
 get_click_start_time(ui_system& sys, button button)

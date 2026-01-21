@@ -44,7 +44,7 @@ leaf_assign_boxes(
     placement_context* ctx,
     main_axis_index main_axis,
     layout_node* node,
-    box box,
+    alia_box box,
     float baseline)
 {
     auto& leaf = *reinterpret_cast<layout_leaf_node*>(node);

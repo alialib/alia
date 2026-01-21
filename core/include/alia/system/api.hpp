@@ -33,7 +33,7 @@ update(ui_system& ui);
 
 // Handle a change in the size of the window.
 void
-update_window_size(ui_system& ui, vec2f const& new_size);
+update_window_size(ui_system& ui, alia_vec2f new_size);
 
 #if 0
 

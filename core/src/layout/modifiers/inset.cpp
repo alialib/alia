@@ -2,6 +2,7 @@
 
 #include <alia/context.hpp>
 #include <alia/events.hpp>
+
 using namespace alia::operators;
 
 namespace alia {
@@ -10,7 +11,7 @@ void
 begin_inset(
     context& ctx,
     layout_container_scope& scope,
-    insets insets,
+    alia_insets insets,
     layout_flag_set flags)
 {
     if (is_refresh_event(ctx))
@@ -86,18 +87,21 @@ inset_assign_boxes(
     placement_context* ctx,
     main_axis_index main_axis,
     layout_node* node,
-    box box,
+    alia_box box,
     float baseline)
 {
     auto& inset = *reinterpret_cast<inset_layout_node*>(node);
+    auto const child_box = alia_box{
+        .min = box.min + alia_vec2f{inset.insets.left, inset.insets.top},
+        .size = box.size
+              - alia_vec2f{
+                  inset.insets.left + inset.insets.right,
+                  inset.insets.top + inset.insets.bottom}};
     assign_boxes(
         ctx,
         main_axis,
         inset.container.first_child,
-        {
-            .min = box.min + vec2f{inset.insets.left, inset.insets.top},
-            .size = box.size - vec2f{inset.insets.left + inset.insets.right,
-                                    inset.insets.top + inset.insets.bottom}},
+        child_box,
         baseline - inset.insets.top);
 }
 

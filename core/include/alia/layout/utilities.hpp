@@ -26,12 +26,12 @@ resolve_vertical_assignment(
     float required_size,
     float ascent);
 
-box
+alia_box
 resolve_assignment(
     layout_flag_set flags,
-    vec2f assigned_size,
+    alia_vec2f assigned_size,
     float baseline,
-    vec2f required_size,
+    alia_vec2f required_size,
     float ascent);
 
 layout_axis_placement
@@ -50,12 +50,12 @@ resolve_padded_vertical_assignment(
     float ascent,
     float padding);
 
-box
+alia_box
 resolve_padded_assignment(
     layout_flag_set flags,
-    vec2f assigned_size,
+    alia_vec2f assigned_size,
     float baseline,
-    vec2f required_size,
+    alia_vec2f required_size,
     float ascent,
     float padding);
 

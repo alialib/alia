@@ -50,6 +50,7 @@
 #include <alia/theme.hpp>
 
 using namespace alia;
+using namespace alia::operators;
 
 seed_colors const seed_sets[] = {
     {.primary = hex_color("#154DCF"),
@@ -99,8 +100,8 @@ bool
 do_rect(
     context& ctx,
     alia_element_id id,
-    vec2f size,
-    color color,
+    alia_vec2f size,
+    alia_rgba color,
     layout_flag_set flags)
 {
     switch (get_event_category(ctx))
@@ -121,7 +122,7 @@ do_rect(
         case ALIA_CATEGORY_SPATIAL: {
             auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
                 *alia_arena_get_view(&ctx.system->layout.placement_arena));
-            box box = {
+            alia_box box = {
                 .min = leaf_placement.position, .size = leaf_placement.size};
             box_region(ctx, id, box);
             break;
@@ -129,7 +130,7 @@ do_rect(
         case ALIA_CATEGORY_DRAWING: {
             auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
                 *alia_arena_get_view(&ctx.system->layout.placement_arena));
-            box box = {
+            alia_box box = {
                 .min = leaf_placement.position, .size = leaf_placement.size};
             auto status = get_interaction_status(ctx, id);
             if (status & ELEMENT_HOVERED)
@@ -141,8 +142,8 @@ do_rect(
                 color = {1.0f, 0.0f, 1.0f, 1.0f};
             }
             draw_box(
-                *as_draw_event(ctx).state->arena,
-                *as_draw_event(ctx).state->box_command_list,
+                *as_draw_event(ctx).context->arena,
+                *as_draw_event(ctx).context->box_command_list,
                 box,
                 color);
             break;
@@ -150,7 +151,7 @@ do_rect(
         case ALIA_CATEGORY_INPUT: {
             auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
                 *alia_arena_get_view(&ctx.system->layout.placement_arena));
-            box box = {
+            alia_box box = {
                 .min = leaf_placement.position, .size = leaf_placement.size};
             if (detect_click(ctx, id, button::left))
                 return true;
@@ -162,7 +163,11 @@ do_rect(
 
 bool
 do_rect_with_offset(
-    context& ctx, vec2f size, color color, layout_flag_set flags, vec2f offset)
+    context& ctx,
+    alia_vec2f size,
+    alia_rgba color,
+    layout_flag_set flags,
+    alia_vec2f offset)
 {
     switch (get_event_category(ctx))
     {
@@ -182,7 +187,7 @@ do_rect_with_offset(
         case ALIA_CATEGORY_SPATIAL: {
             auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
                 *alia_arena_get_view(&ctx.system->layout.placement_arena));
-            box box = {
+            alia_box box = {
                 .min = leaf_placement.position, .size = leaf_placement.size};
             // box_region(ctx, id, box);
             break;
@@ -190,12 +195,12 @@ do_rect_with_offset(
         case ALIA_CATEGORY_DRAWING: {
             auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
                 *alia_arena_get_view(&ctx.system->layout.placement_arena));
-            box box
+            alia_box box
                 = {.min = leaf_placement.position + offset,
                    .size = leaf_placement.size};
             draw_box(
-                *as_draw_event(ctx).state->arena,
-                *as_draw_event(ctx).state->box_command_list,
+                *as_draw_event(ctx).context->arena,
+                *as_draw_event(ctx).context->box_command_list,
                 box,
                 color);
             break;
@@ -203,7 +208,7 @@ do_rect_with_offset(
         case ALIA_CATEGORY_INPUT: {
             auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
                 *alia_arena_get_view(&ctx.system->layout.placement_arena));
-            box box
+            alia_box box
                 = {.min = leaf_placement.position + offset,
                    .size = leaf_placement.size};
             if (detect_click(
@@ -366,7 +371,7 @@ apply_mod(Context& ctx, min_height_t m, Content&& content)
 
 struct min_size_t
 {
-    vec2f size;
+    alia_vec2f size;
 };
 template<>
 struct is_layout_modifier<min_size_t> : std::true_type
@@ -382,7 +387,7 @@ apply_mod(Context& ctx, min_size_t m, Content&& content)
 
 struct margins_t
 {
-    alia::insets insets;
+    alia_insets insets;
 };
 template<>
 struct is_layout_modifier<margins_t> : std::true_type
@@ -411,12 +416,12 @@ min_height(float h)
     return {h};
 }
 constexpr min_size_t
-min_size(vec2f size)
+min_size(alia_vec2f size)
 {
     return {size};
 }
 constexpr margins_t
-margins(insets insets)
+margins(alia_insets insets)
 {
     return {insets};
 }
@@ -424,7 +429,11 @@ margins(insets insets)
 template<class LayoutMods>
 void
 do_rect(
-    context& ctx, alia_element_id id, vec2f size, color color, LayoutMods mods)
+    context& ctx,
+    alia_element_id id,
+    alia_vec2f size,
+    alia_rgba color,
+    LayoutMods mods)
 {
     apply_mods(ctx, mods, [&] { do_rect(ctx, id, size, color, FILL); });
 }
@@ -432,14 +441,14 @@ do_rect(
 template<class Content>
 void
 concrete_panel(
-    context& ctx, color color, layout_flag_set flags, Content&& content)
+    context& ctx, alia_rgba color, layout_flag_set flags, Content&& content)
 {
     placement_hook(ctx, flags, [&](auto const& placement) {
         if (get_event_type(ctx) == ALIA_EVENT_DRAW)
         {
             draw_box(
-                *as_draw_event(ctx).state->arena,
-                *as_draw_event(ctx).state->box_command_list,
+                *as_draw_event(ctx).context->arena,
+                *as_draw_event(ctx).context->box_command_list,
                 placement.box,
                 color);
         }
@@ -516,8 +525,8 @@ struct text_layout_placement_header
 
 struct text_layout_placement_fragment
 {
-    vec2f position;
-    vec2f size;
+    alia_vec2f position;
+    alia_vec2f size;
     char const* text;
     size_t length;
 };
@@ -527,7 +536,7 @@ assign_text_boxes(
     placement_context* ctx,
     main_axis_index main_axis,
     layout_node* node,
-    box box,
+    alia_box box,
     float baseline)
 {
     auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
@@ -541,7 +550,7 @@ assign_text_boxes(
         adjust_flags_for_main_axis(text.flags, main_axis),
         box.size,
         baseline,
-        vec2f{width, metrics->line_height * text.font_size},
+        alia_vec2f{width, metrics->line_height * text.font_size},
         metrics->ascender * text.font_size,
         text.padding);
 
@@ -774,7 +783,7 @@ do_text(
                     *alia_arena_get_view(&ctx.system->layout.placement_arena));
                 draw_text(
                     the_msdf_text_engine,
-                    *as_draw_event(ctx).state->arena,
+                    *as_draw_event(ctx).context->arena,
                     the_msdf_commands,
                     fragment.text,
                     fragment.length,
@@ -791,7 +800,8 @@ do_text(
             {
                 auto& fragment = *arena_alloc<text_layout_placement_fragment>(
                     *alia_arena_get_view(&ctx.system->layout.placement_arena));
-                box box = {.min = fragment.position, .size = fragment.size};
+                alia_box box
+                    = {.min = fragment.position, .size = fragment.size};
                 if (detect_click(
                         ctx, box.min.x, box.min.y, box.size.x, box.size.y))
                 {
@@ -1051,15 +1061,15 @@ void
 do_animated_rect(
     context& ctx,
     bool& initialized,
-    vec2f& offset,
-    vec2f size,
-    color color,
+    alia_vec2f& offset,
+    alia_vec2f size,
+    alia_rgba color,
     layout_flag_set flags)
 {
     placement_hook(ctx, FILL, [&](auto outer_placement) {
         alignment_override(ctx, flags, [&]() {
             placement_hook(ctx, FILL, [&](auto inner_placement) {
-                vec2f inner_pos
+                alia_vec2f inner_pos
                     = inner_placement.box.min - outer_placement.box.min;
                 if (get_event_type(ctx) == ALIA_EVENT_DRAW)
                 {
@@ -1082,7 +1092,7 @@ alignment_override_demo(context& ctx)
 {
     static bool invert = false;
     static bool initialized[12] = {false};
-    static vec2f offsets[12] = {0};
+    static alia_vec2f offsets[12] = {0};
     float x = 0.0f;
     row(ctx, [&]() {
         concrete_panel(ctx, color{0.03f, 0.03f, 0.04f, 1}, CENTER, [&]() {
@@ -1685,11 +1695,11 @@ update()
         alia_arena_reset(
             alia_arena_get_view(&the_system.layout.placement_arena));
 
-        alia_draw_state draw_state = {
+        alia_draw_context draw_context = {
             .arena = alia_arena_get_view(&the_display_list_arena),
             .box_command_list = &the_box_commands,
         };
-        auto draw_event = alia_make_draw_event({.state = &draw_state});
+        auto draw_event = alia_make_draw_event({.context = &draw_context});
         dispatch_event(the_system, draw_event);
 
         while ((err = glGetError()) != GL_NO_ERROR)
@@ -1830,7 +1840,7 @@ main()
         return -1;
     }
 
-    initialize_ui_system(&the_system, vec2f{1200, 1600});
+    initialize_ui_system(&the_system, alia_vec2f{1200, 1600});
     the_system.controller = the_demo;
 
     glEnable(GL_FRAMEBUFFER_SRGB);

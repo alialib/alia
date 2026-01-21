@@ -45,7 +45,6 @@ alia_is_aligned_ptr(void const* p, uint32_t align)
 static constexpr uint32_t ALIA_STACK_HEADER_AREA = uint32_t(ALIA_MIN_ALIGN);
 
 // Largest entry size that fits in 16 bits and is a multiple of ALIA_MIN_ALIGN.
-// For MIN_ALIGN=16, this is 65520.
 static constexpr uint32_t ALIA_STACK_MAX_ENTRY_SIZE_U32
     = (0xFFFFu & ~(uint32_t(ALIA_MIN_ALIGN) - 1u));
 

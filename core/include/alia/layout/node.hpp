@@ -69,7 +69,7 @@ assign_boxes(
     placement_context* ctx,
     main_axis_index main_axis,
     layout_node* node,
-    box box,
+    alia_box box,
     float baseline)
 {
     return node->vtable->assign_boxes(ctx, main_axis, node, box, baseline);

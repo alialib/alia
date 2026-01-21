@@ -10,13 +10,13 @@ struct layout_leaf_node
     layout_node base;
     layout_flag_set flags;
     float padding;
-    vec2f size;
+    alia_vec2f size;
 };
 
 struct leaf_layout_placement
 {
-    vec2f position;
-    vec2f size;
+    alia_vec2f position;
+    alia_vec2f size;
 };
 
 extern layout_node_vtable leaf_vtable;

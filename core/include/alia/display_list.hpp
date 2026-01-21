@@ -8,8 +8,8 @@ namespace alia {
 
 struct box_draw_command
 {
-    box box;
-    color color;
+    alia_box box;
+    alia_rgba color;
     box_draw_command* next;
 };
 

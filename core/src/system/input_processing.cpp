@@ -27,7 +27,7 @@ get_mouse_target(ui_system& ui)
 } // namespace
 
 void
-process_mouse_motion(ui_system& ui, vec2f const& position)
+process_mouse_motion(ui_system& ui, alia_vec2f const& position)
 {
     if (!ui.input.mouse_inside_window
         || !alia_vec2f_equal(ui.input.mouse_position, position))

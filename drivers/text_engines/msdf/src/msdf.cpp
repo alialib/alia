@@ -14,6 +14,8 @@
 // TODO: Remove this.
 #include <iostream>
 
+using namespace alia::operators;
+
 namespace alia {
 
 const char* msdf_vertex_shader_source = R"(

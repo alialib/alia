@@ -139,11 +139,12 @@ typedef struct alia_refresh
     alia_layout_emission layout_emission;
 } alia_refresh;
 
-typedef struct alia_draw_state alia_draw_state;
+typedef struct alia_draw_context alia_draw_context;
 
 typedef struct alia_draw
 {
-    alia_draw_state* state;
+    // TODO: Not this.
+    alia_draw_context* context;
 } alia_draw;
 
 typedef struct

@@ -127,12 +127,12 @@ resolve_padded_vertical_assignment(
         .size = placement.size - padding * 2};
 }
 
-box
+alia_box
 resolve_padded_assignment(
     layout_flag_set flags,
-    vec2f assigned_size,
+    alia_vec2f assigned_size,
     float baseline,
-    vec2f required_size,
+    alia_vec2f required_size,
     float ascent,
     float padding)
 {
@@ -141,8 +141,8 @@ resolve_padded_assignment(
     layout_axis_placement y_placement = resolve_padded_vertical_assignment(
         flags, assigned_size.y, baseline, required_size.y, ascent, padding);
     return {
-        vec2f{x_placement.offset, y_placement.offset},
-        vec2f{x_placement.size, y_placement.size}};
+        alia_vec2f{x_placement.offset, y_placement.offset},
+        alia_vec2f{x_placement.size, y_placement.size}};
 }
 
 float
@@ -154,4 +154,5 @@ assign_baseline(
                     >> BASELINE_GROUP_ALIGNMENT_BIT_OFFSET;
     return ascent + offsets[index] * (assigned_height - ascent - descent);
 }
+
 } // namespace alia

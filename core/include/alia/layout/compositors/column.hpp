@@ -63,7 +63,7 @@ column_assign_boxes(
     placement_context* ctx,
     main_axis_index main_axis,
     layout_node* node,
-    box box,
+    alia_box box,
     float baseline);
 
 } // namespace alia
