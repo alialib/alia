@@ -3,6 +3,9 @@
 #include <alia/color.hpp>
 #include <alia/renderers/gl/renderer.hpp>
 
+// TODO: Remove this.
+#include <alia/internals/drawing.hpp>
+
 #include <glad/glad.h>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -143,6 +146,8 @@ using glyph_map = std::unordered_map<int, msdf_glyph>;
 
 struct msdf_text_engine
 {
+    alia_draw_system* system;
+
     msdf_gpu_data gpu;
 
     msdf_font_metrics metrics;
@@ -151,7 +156,12 @@ struct msdf_text_engine
     alia::glyph_map glyph_map;
 
     alia::kerning_map kerning_map;
+
+    alia_draw_material_id material_id;
 };
+
+void
+render_msdf_bucket(void* user, alia_draw_bucket const* bucket);
 
 inline GLuint
 create_quad_vbo()
@@ -296,7 +306,9 @@ create_msdf_texture(char const* texture_atlas_path)
 
 msdf_text_engine*
 create_msdf_text_engine(
-    msdf_font_description const& font, char const* texture_atlas_path)
+    alia_draw_system* system,
+    msdf_font_description const& font,
+    char const* texture_atlas_path)
 {
     GLuint texture = create_msdf_texture(texture_atlas_path);
 
@@ -353,7 +365,10 @@ create_msdf_text_engine(
         glyph_map[font.glyphs[i].unicode] = font.glyphs[i];
     }
 
+    // TODO: Don't use new here.
     msdf_text_engine* engine = new msdf_text_engine{
+        .system = system,
+
         .gpu
         = {.shader_program = shader_program,
            .matrix_location = matrix_location,
@@ -372,7 +387,15 @@ create_msdf_text_engine(
         .atlas = font.atlas,
         .glyph_map = std::move(glyph_map),
         .kerning_map = std::move(kerning_map),
-    };
+
+        .material_id = 0};
+
+    engine->material_id = alia_register_material(
+        system,
+        alia_material_vtable{
+            .draw_bucket = render_msdf_bucket,
+        },
+        engine);
 
     return engine;
 }
@@ -435,8 +458,8 @@ measure_text_width(
 void
 draw_text(
     msdf_text_engine* engine,
-    display_list_arena& arena,
-    command_list<msdf_draw_command>& commands,
+    alia_draw_context* ctx,
+    alia_z_index z_index,
     char const* text,
     size_t length,
     float scale,
@@ -444,15 +467,18 @@ draw_text(
     color color)
 {
     msdf_draw_command* command
-        = arena_array_alloc<msdf_draw_command>(arena, length);
+        = arena_alloc_with_tail_storage<msdf_draw_command>(
+            *ctx->arena, length);
     command->engine = engine;
-    command->next = nullptr;
-    command->position = position + vec2f{0, engine->metrics.ascender * scale};
+    command->position
+        = position + alia_vec2f{0, engine->metrics.ascender * scale};
     command->scale = scale;
     command->color = color;
     command->length = length;
     memcpy(command->text, text, length);
-    add_command(commands, command);
+    alia_draw_bucket_append(
+        alia_get_draw_bucket(ctx, z_index, engine->material_id),
+        upcast<alia_draw_command>(command));
 }
 
 std::pair<size_t, float>
@@ -529,15 +555,17 @@ render_command(
 }
 
 void
-render_command_list(
-    msdf_text_engine* engine,
-    command_list<msdf_draw_command> const& commands,
-    vec2f surface_size)
+render_msdf_bucket(void* user, alia_draw_bucket const* bucket)
 {
+    msdf_text_engine* engine = (msdf_text_engine*) user;
+    vec2f surface_size
+        = {engine->system->surface_size.x, engine->system->surface_size.y};
+
     size_t glyph_instance_count = 0;
-    for (msdf_draw_command* cmd = commands.head; cmd; cmd = cmd->next)
+    for (alia_draw_command* cmd = bucket->head; cmd; cmd = cmd->next)
     {
-        render_command(engine, glyph_instance_count, *cmd);
+        auto const* msdf_cmd = downcast<msdf_draw_command>(cmd);
+        render_command(engine, glyph_instance_count, *msdf_cmd);
     }
 
     glBindTexture(GL_TEXTURE_2D, engine->gpu.texture);

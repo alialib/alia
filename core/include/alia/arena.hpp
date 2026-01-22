@@ -21,6 +21,8 @@ align_up(std::size_t value)
     return (value + (ALIA_MIN_ALIGN - 1)) & ~(ALIA_MIN_ALIGN - 1);
 }
 
+// TODO: Add proper placement new, assertions, etc.
+
 template<class T>
 T*
 arena_alloc(alia_arena_view& arena)
@@ -28,6 +30,14 @@ arena_alloc(alia_arena_view& arena)
     static_assert(alignof(T) <= ALIA_MIN_ALIGN, "ALIA_MIN_ALIGN exceeded");
     return reinterpret_cast<T*>(
         alia_arena_ptr(&arena, alia_arena_alloc(&arena, align_up(sizeof(T)))));
+}
+
+template<class T>
+T*
+arena_alloc_with_tail_storage(alia_arena_view& arena, std::size_t tail_size)
+{
+    return reinterpret_cast<T*>(alia_arena_ptr(
+        &arena, alia_arena_alloc(&arena, align_up(sizeof(T) + tail_size))));
 }
 
 template<class T>

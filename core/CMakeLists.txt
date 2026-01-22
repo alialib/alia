@@ -4,7 +4,6 @@ add_library(alia_core STATIC
     src/animation/cubic_bezier.cpp
     src/color.cpp
     src/drawing.cpp
-    src/display_list.cpp
     src/flow/dispatch.cpp
     src/flow/traversal.cpp
     src/input/pointer.cpp

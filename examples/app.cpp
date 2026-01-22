@@ -18,7 +18,6 @@
 #include <alia/abi/events.h>
 #include <alia/color.hpp>
 #include <alia/context.hpp>
-#include <alia/display_list.hpp>
 #include <alia/drawing.hpp>
 #include <alia/events.hpp>
 #include <alia/flow/dispatch.hpp>
@@ -26,6 +25,7 @@
 #include <alia/input/elements.hpp>
 #include <alia/input/pointer.hpp>
 #include <alia/input/regions.hpp>
+#include <alia/internals/drawing.hpp>
 #include <alia/layout/compositors/column.hpp>
 #include <alia/layout/compositors/flow.hpp>
 #include <alia/layout/compositors/grid.hpp>
@@ -76,10 +76,9 @@ seed_colors const seed_sets[] = {
 alia::ui_system the_system;
 GLFWwindow* the_window;
 gl_renderer the_renderer;
+alia_draw_system the_draw_system;
 alia_arena the_display_list_arena;
-box_command_list the_box_commands;
 msdf_text_engine* the_msdf_text_engine;
-command_list<msdf_draw_command> the_msdf_commands;
 alia_style the_style = {.padding = 10.0f};
 theme_colors the_theme;
 seed_colors const* seeds = &seed_sets[0];
@@ -99,6 +98,7 @@ detect_click(context& ctx, float x, float y, float width, float height)
 bool
 do_rect(
     context& ctx,
+    alia_z_index z_index,
     alia_element_id id,
     alia_vec2f size,
     alia_rgba color,
@@ -141,11 +141,7 @@ do_rect(
             {
                 color = {1.0f, 0.0f, 1.0f, 1.0f};
             }
-            draw_box(
-                *as_draw_event(ctx).context->arena,
-                *as_draw_event(ctx).context->box_command_list,
-                box,
-                color);
+            draw_box(as_draw_event(ctx).context, z_index, box, color);
             break;
         }
         case ALIA_CATEGORY_INPUT: {
@@ -164,6 +160,7 @@ do_rect(
 bool
 do_rect_with_offset(
     context& ctx,
+    alia_z_index z_index,
     alia_vec2f size,
     alia_rgba color,
     layout_flag_set flags,
@@ -198,11 +195,7 @@ do_rect_with_offset(
             alia_box box
                 = {.min = leaf_placement.position + offset,
                    .size = leaf_placement.size};
-            draw_box(
-                *as_draw_event(ctx).context->arena,
-                *as_draw_event(ctx).context->box_command_list,
-                box,
-                color);
+            draw_box(as_draw_event(ctx).context, z_index, box, color);
             break;
         }
         case ALIA_CATEGORY_INPUT: {
@@ -430,27 +423,30 @@ template<class LayoutMods>
 void
 do_rect(
     context& ctx,
+    alia_z_index z_index,
     alia_element_id id,
     alia_vec2f size,
     alia_rgba color,
     LayoutMods mods)
 {
-    apply_mods(ctx, mods, [&] { do_rect(ctx, id, size, color, FILL); });
+    apply_mods(
+        ctx, mods, [&] { do_rect(ctx, z_index, id, size, color, FILL); });
 }
 
 template<class Content>
 void
 concrete_panel(
-    context& ctx, alia_rgba color, layout_flag_set flags, Content&& content)
+    context& ctx,
+    alia_z_index z_index,
+    alia_rgba color,
+    layout_flag_set flags,
+    Content&& content)
 {
     placement_hook(ctx, flags, [&](auto const& placement) {
         if (get_event_type(ctx) == ALIA_EVENT_DRAW)
         {
             draw_box(
-                *as_draw_event(ctx).context->arena,
-                *as_draw_event(ctx).context->box_command_list,
-                placement.box,
-                color);
+                as_draw_event(ctx).context, z_index, placement.box, color);
         }
 
         std::forward<Content>(content)();
@@ -459,10 +455,16 @@ concrete_panel(
 
 template<class Content, class LayoutMods>
 void
-panel(context& ctx, color color, LayoutMods mods, Content&& content)
+panel(
+    context& ctx,
+    alia_z_index z_index,
+    color color,
+    LayoutMods mods,
+    Content&& content)
 {
     apply_mods(ctx, mods, [&] {
-        concrete_panel(ctx, color, FILL, std::forward<Content>(content));
+        concrete_panel(
+            ctx, z_index, color, FILL, std::forward<Content>(content));
     });
 }
 
@@ -739,6 +741,7 @@ with_padding(context& ctx, float padding, Content&& content)
 bool
 do_text(
     context& ctx,
+    alia_z_index z_index,
     color color,
     float scale,
     char const* text,
@@ -783,8 +786,8 @@ do_text(
                     *alia_arena_get_view(&ctx.system->layout.placement_arena));
                 draw_text(
                     the_msdf_text_engine,
-                    *as_draw_event(ctx).context->arena,
-                    the_msdf_commands,
+                    as_draw_event(ctx).context,
+                    z_index,
                     fragment.text,
                     fragment.length,
                     scale,
@@ -846,11 +849,15 @@ rectangle_demo(context& ctx)
                 for (int i = 0; i < 10; ++i)
                 {
                     flow(ctx, [&]() {
+                        alia_z_index const rect_z_index = 0;
+                        alia_z_index const text_z_index = 1;
+
                         for (int j = 0; j < 500; ++j)
                         {
                             float f = fmod(x, 1.0f);
                             if (do_rect(
                                     ctx,
+                                    rect_z_index,
                                     make_fake_element_id(ctx),
                                     {24, 24},
                                     invert ? color{f, 0.1f, 1.0f - f, 1}
@@ -868,11 +875,13 @@ rectangle_demo(context& ctx)
                             {
                                 do_text(
                                     ctx,
+                                    text_z_index,
                                     GRAY,
                                     24 + i * 6 + j * 4,
                                     "lorem ipsum");
                                 if (do_text(
                                         ctx,
+                                        text_z_index,
                                         GRAY,
                                         20 + i * 12 + j * 4,
                                         lorem_ipsum))
@@ -900,16 +909,16 @@ text_demo(context& ctx)
             {
                 with_padding(ctx, 8, [&] {
                     row(ctx, [&]() {
-                        do_text(ctx, GRAY, 40, "test");
+                        do_text(ctx, 1, GRAY, 40, "test");
                         flow(ctx, GROW, [&]() {
                             for (int j = 0; j < 10; ++j)
                             {
                                 flow(ctx, [&]() {
                                     do_text(
-                                        ctx, GRAY, 10 + i * 6, lorem_ipsum);
+                                        ctx, 1, GRAY, 10 + i * 6, lorem_ipsum);
                                 });
-                                do_text(ctx, GRAY, 16 + i * 4, "lorum");
-                                do_text(ctx, GRAY, 20 + i * 2, "ipsum");
+                                do_text(ctx, 1, GRAY, 16 + i * 4, "lorum");
+                                do_text(ctx, 1, GRAY, 20 + i * 2, "ipsum");
                             }
                         });
                     });
@@ -930,6 +939,7 @@ simple_text_demo(context& ctx)
             {
                 do_text(
                     ctx,
+                    1,
                     GRAY,
                     20 + (10 - i) * 4,
                     " !\"#$%&'()*+,-./0123456789:;<=>?@AZaz[]^_`{|}~");
@@ -948,10 +958,10 @@ nested_flow_demo(context& ctx)
             for (int i = 0; i < 10; ++i)
             {
                 flow(ctx, [&]() {
-                    do_text(ctx, GRAY, 10 + i * 6, lorem_ipsum);
+                    do_text(ctx, 1, GRAY, 10 + i * 6, lorem_ipsum);
                 });
-                do_text(ctx, GRAY, 16 + i * 4, "lorum");
-                do_text(ctx, GRAY, 20 + i * 2, "ipsum");
+                do_text(ctx, 1, GRAY, 16 + i * 4, "lorum");
+                do_text(ctx, 1, GRAY, 20 + i * 2, "ipsum");
             }
         });
     });
@@ -970,6 +980,7 @@ mixed_flow_demo(context& ctx)
                     float f = fmod(x, 1.0f);
                     do_rect(
                         ctx,
+                        0,
                         make_fake_element_id(ctx),
                         {72, 72},
                         color{f, 0.1f, 1.0f - f, 1},
@@ -979,6 +990,7 @@ mixed_flow_demo(context& ctx)
 
                 panel(
                     ctx,
+                    1,
                     color{0.05f, 0.05f, 0.06f, 1},
                     min_size({0, 0})
                         | margins(
@@ -987,9 +999,9 @@ mixed_flow_demo(context& ctx)
                              .top = 10,
                              .bottom = 10}),
                     [&] {
-                        do_text(ctx, GRAY, 8 + i * 6, "panel", BASELINE_Y);
+                        do_text(ctx, 2, GRAY, 8 + i * 6, "panel", BASELINE_Y);
                     });
-                do_text(ctx, GRAY, 12 + i * 4, lorem_ipsum, BASELINE_Y);
+                do_text(ctx, 1, GRAY, 12 + i * 4, lorem_ipsum, BASELINE_Y);
             }
         });
     });
@@ -1009,6 +1021,7 @@ layout_demo_flow(context& ctx)
                 [&]() {
                     concrete_panel(
                         ctx,
+                        0,
                         color{
                             0.03f + intensity,
                             0.03f + intensity,
@@ -1021,6 +1034,7 @@ layout_demo_flow(context& ctx)
                                     float f = fmod(x, 1.0f);
                                     do_rect(
                                         ctx,
+                                        1,
                                         make_fake_element_id(ctx),
                                         {24, float((i & 7) * 12 + 12)},
                                         color{f, 0.1f, 1.0f - f, 1},
@@ -1047,6 +1061,7 @@ layout_growth_demo(context& ctx)
             growth_override(ctx, i * 1.0f, [&]() {
                 do_rect(
                     ctx,
+                    0,
                     make_fake_element_id(ctx),
                     {6, 12},
                     color{f, 0.1f, 1.0f - f, 1},
@@ -1060,6 +1075,7 @@ layout_growth_demo(context& ctx)
 void
 do_animated_rect(
     context& ctx,
+    alia_z_index z_index,
     bool& initialized,
     alia_vec2f& offset,
     alia_vec2f size,
@@ -1081,7 +1097,7 @@ do_animated_rect(
                     offset += (inner_pos - offset) * 0.1f;
                 }
                 do_rect_with_offset(
-                    ctx, size, color, FILL, offset - inner_pos);
+                    ctx, z_index, size, color, FILL, offset - inner_pos);
             });
         });
     });
@@ -1095,10 +1111,11 @@ alignment_override_demo(context& ctx)
     static alia_vec2f offsets[12] = {0};
     float x = 0.0f;
     row(ctx, [&]() {
-        concrete_panel(ctx, color{0.03f, 0.03f, 0.04f, 1}, CENTER, [&]() {
+        concrete_panel(ctx, 0, color{0.03f, 0.03f, 0.04f, 1}, CENTER, [&]() {
             inset(ctx, {.left = 4, .right = 4, .top = 4, .bottom = 4}, [&]() {
                 if (do_rect(
                         ctx,
+                        1,
                         make_fake_element_id(ctx),
                         {24, 24},
                         invert ? color{1, 1, 1, 1} : color{0, 0, 0, 0},
@@ -1118,6 +1135,7 @@ alignment_override_demo(context& ctx)
                     min_size_constraint(ctx, {0, 200}, [&]() {
                         concrete_panel(
                             ctx,
+                            0,
                             color{
                                 0.03f + 0.02f * f,
                                 0.03f + 0.02f * f,
@@ -1127,6 +1145,7 @@ alignment_override_demo(context& ctx)
                             [&]() {
                                 do_animated_rect(
                                     ctx,
+                                    1,
                                     initialized[i],
                                     offsets[i],
                                     {24, 24},
@@ -1152,6 +1171,7 @@ layout_mods_demo(context& ctx)
             float f = fmod(x, 1.0f);
             panel(
                 ctx,
+                0,
                 color{
                     0.03f + 0.02f * f,
                     0.03f + 0.02f * f,
@@ -1163,6 +1183,7 @@ layout_mods_demo(context& ctx)
                 [&]() {
                     do_rect(
                         ctx,
+                        1,
                         make_fake_element_id(ctx),
                         {float(4 * i), float(4 * i)},
                         color{f, 0.1f, 1.0f - f, 1},
@@ -1189,6 +1210,7 @@ grid_demo(context& ctx)
                     float const size = std::pow(dist(rng), 12.0f) * 80 + 20;
                     do_rect(
                         ctx,
+                        0,
                         make_fake_element_id(ctx),
                         {size, size},
                         color{f, 0.1f, 1.0f - f, 1},
@@ -1217,6 +1239,7 @@ layout_demo(context& ctx)
                                 float f = fmod(x, 1.0f);
                                 do_rect(
                                     ctx,
+                                    0,
                                     make_fake_element_id(ctx),
                                     {float((j & 7) * 12 + 12), 24},
                                     color{f, 0.1f, 1.0f - f, 1},
@@ -1227,15 +1250,15 @@ layout_demo(context& ctx)
                         });
                     });
                 column(ctx, GROW, [&]() {
-                    do_text(ctx, GRAY, 24, "layout_growth_demo");
+                    do_text(ctx, 1, GRAY, 24, "layout_growth_demo");
                     layout_growth_demo(ctx);
-                    do_text(ctx, GRAY, 24, "alignment_override_demo");
+                    do_text(ctx, 1, GRAY, 24, "alignment_override_demo");
                     alignment_override_demo(ctx);
-                    do_text(ctx, GRAY, 24, "layout_mods_demo");
+                    do_text(ctx, 1, GRAY, 24, "layout_mods_demo");
                     layout_mods_demo(ctx);
-                    do_text(ctx, GRAY, 24, "mixed_flow_demo");
+                    do_text(ctx, 1, GRAY, 24, "mixed_flow_demo");
                     mixed_flow_demo(ctx);
-                    do_text(ctx, GRAY, 24, "layout_demo_flow");
+                    do_text(ctx, 1, GRAY, 24, "layout_demo_flow");
                     layout_demo_flow(ctx);
                 });
             });
@@ -1251,6 +1274,7 @@ show_color_ramp(context& ctx, color_ramp ramp)
         {
             do_rect(
                 ctx,
+                1,
                 make_fake_element_id(ctx),
                 {36, 36},
                 alia_rgba_from_rgb_alpha(
@@ -1265,12 +1289,14 @@ show_contrasting_color_pair(context& ctx, contrasting_color_pair pair)
 {
     concrete_panel(
         ctx,
+        0,
         alia_rgba_from_rgb_alpha(alia_rgb_from_srgb8(pair.main), 1.0f),
         CENTER,
         [&]() {
             with_padding(ctx, 20, [&]() {
                 do_rect(
                     ctx,
+                    1,
                     make_fake_element_id(ctx),
                     {10, 10},
                     alia_rgba_from_rgb_alpha(
@@ -1303,6 +1329,7 @@ color_ramp(context& ctx, alia_srgb8 seed)
             alia_rgb rgb = alia_rgb_from_oklab(alia_oklab_from_oklch(oklch));
             do_rect(
                 ctx,
+                1,
                 make_fake_element_id(ctx),
                 {36, 36},
                 alia_rgba_from_rgb_alpha(rgb, 1.0f),
@@ -1324,6 +1351,7 @@ color_transition(context& ctx, alia_oklch start, alia_oklch end)
             alia_rgb rgb = alia_rgb_from_oklab(alia_oklab_from_oklch(oklch));
             do_rect(
                 ctx,
+                1,
                 make_fake_element_id(ctx),
                 {36, 36},
                 alia_rgba_from_rgb_alpha(rgb, 1.0f),
@@ -1344,6 +1372,7 @@ color_demo(context& ctx)
             with_padding(ctx, 5, [&] {
                 do_rect(
                     ctx,
+                    1,
                     make_fake_element_id(ctx),
                     {24, 24},
                     alia_rgba_from_rgb_alpha(rgb, 1.0f),
@@ -1405,6 +1434,7 @@ the_demo(context& ctx)
                     {
                         if (do_rect(
                                 ctx,
+                                1,
                                 make_fake_element_id(ctx),
                                 {40, 40},
                                 (active_demo == i) ? color{1, 1, 1, 1}
@@ -1416,6 +1446,7 @@ the_demo(context& ctx)
                         }
                         do_rect(
                             ctx,
+                            1,
                             make_fake_element_id(ctx),
                             {1, 1},
                             color{0.4f, 0.4f, 0.4f, 1},
@@ -1690,28 +1721,30 @@ update()
             printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
         alia_arena_reset(alia_arena_get_view(&the_display_list_arena));
-        clear_command_list(the_box_commands);
-        clear_command_list(the_msdf_commands);
+        alia_draw_bucket_table bucket_table = {
+            .buckets = {},
+        };
+        alia_draw_context draw_context
+            = {.system = &the_draw_system,
+               .buckets = &bucket_table,
+               .arena = alia_arena_get_view(&the_display_list_arena)};
         alia_arena_reset(
             alia_arena_get_view(&the_system.layout.placement_arena));
 
-        alia_draw_context draw_context = {
-            .arena = alia_arena_get_view(&the_display_list_arena),
-            .box_command_list = &the_box_commands,
-        };
         auto draw_event = alia_make_draw_event({.context = &draw_context});
         dispatch_event(the_system, draw_event);
 
         while ((err = glGetError()) != GL_NO_ERROR)
             printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
-        render_box_command_list(&the_renderer, the_system, the_box_commands);
-
-        while ((err = glGetError()) != GL_NO_ERROR)
-            printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
-
-        render_command_list(
-            the_msdf_text_engine, the_msdf_commands, the_system.surface_size);
+        // TODO: Sort buckets by z-index.
+        for (auto const& bucket : bucket_table.buckets)
+        {
+            alia_draw_material_id material_id = bucket.first & 0xFFFF;
+            alia_draw_material* material
+                = &the_draw_system.materials[material_id];
+            material->vtable.draw_bucket(material->user, &bucket.second);
+        }
 
         while ((err = glGetError()) != GL_NO_ERROR)
             printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
@@ -1766,6 +1799,7 @@ void
 framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     the_system.surface_size = {float(width), float(height)};
+    the_draw_system.surface_size = {float(width), float(height)};
     update();
 }
 
@@ -1845,7 +1879,13 @@ main()
 
     glEnable(GL_FRAMEBUFFER_SRGB);
 
-    init_gl_renderer(&the_renderer);
+    init_gl_renderer(&the_draw_system, &the_renderer);
+    box_material_id = alia_register_material(
+        &the_draw_system,
+        alia_material_vtable{
+            .draw_bucket = render_box_command_list,
+        },
+        &the_renderer);
 
     GLenum err;
     while ((err = glGetError()) != GL_NO_ERROR)
@@ -1854,8 +1894,11 @@ main()
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
+    the_draw_system.surface_size = the_system.surface_size;
+
     // TODO
     the_msdf_text_engine = create_msdf_text_engine(
+        &the_draw_system,
         msdf_font_description{
             .metrics = {
                 .em_size = 1,
@@ -1883,8 +1926,6 @@ main()
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
     initialize_lazy_commit_arena(&the_display_list_arena);
-    clear_command_list(the_box_commands);
-    clear_command_list(the_msdf_commands);
 
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);

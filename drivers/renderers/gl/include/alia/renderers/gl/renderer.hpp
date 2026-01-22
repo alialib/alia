@@ -18,6 +18,7 @@ struct display_list;
 // TODO: Make this opaque.
 struct gl_renderer
 {
+    alia_draw_system* system;
     GLuint vanilla_shader_program;
     GLuint vao, vbo;
     GLuint instance_vbo;
@@ -30,17 +31,14 @@ struct gl_renderer
 // Create a new OpenGL renderer.
 // (This may compile shaders, etc.)
 void
-init_gl_renderer(gl_renderer* renderer);
+init_gl_renderer(alia_draw_system* system, gl_renderer* renderer);
 
 // Destroy a renderer.
 void
 destroy_gl_renderer(gl_renderer* renderer);
 
 void
-render_box_command_list(
-    gl_renderer* renderer,
-    ui_system const& system,
-    box_command_list const& boxes);
+render_box_command_list(void* user, alia_draw_bucket const* bucket);
 
 // TODO: Move to a separate utility header.
 GLuint

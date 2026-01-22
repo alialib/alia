@@ -1,25 +1,28 @@
 #pragma once
 
-#include <alia/display_list.hpp>
+// TODO: Sort this out.
 
-#include <alia/abi/arena.h>
+#include <alia/abi/drawing.h>
+#include <alia/abi/geometry.h>
+#include <alia/color.hpp>
 
 namespace alia {
 
-using box_command_list = command_list<box_draw_command>;
+// TODO: Not this.
+extern alia_draw_material_id box_material_id;
 
-// TODO: Take a context parameter.
+struct box_draw_command
+{
+    alia_draw_command base;
+    alia_box box;
+    alia_rgba color;
+};
+
 void
 draw_box(
-    display_list_arena& arena,
-    box_command_list& list,
+    alia_draw_context* ctx,
+    alia_z_index z_index,
     alia_box box,
     alia_rgba color);
 
 } // namespace alia
-
-extern "C" struct alia_draw_context
-{
-    alia_arena_view* arena;
-    alia::box_command_list* box_command_list;
-};

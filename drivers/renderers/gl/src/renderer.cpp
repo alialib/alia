@@ -1,8 +1,11 @@
 #include <alia/renderers/gl/renderer.hpp>
 
 #include <alia/arena.hpp>
-#include <alia/display_list.hpp>
+#include <alia/drawing.hpp>
 #include <alia/system/object.hpp>
+
+// TODO: Remove this.
+#include <alia/internals/drawing.hpp>
 
 // TODO: Remove this.
 #include <iostream>
@@ -122,7 +125,7 @@ create_shader_program(
 }
 
 void
-init_gl_renderer(gl_renderer* renderer)
+init_gl_renderer(alia_draw_system* system, gl_renderer* renderer)
 {
     float quad_vertices[] = {0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f};
 
@@ -233,6 +236,7 @@ init_gl_renderer(gl_renderer* renderer)
         GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
 
     *renderer = {
+        .system = system,
         .vanilla_shader_program = vanilla_shader_program,
         .vao = vao,
         .vbo = vbo,
@@ -260,12 +264,11 @@ struct Vertex
 };
 
 void
-render_box_command_list(
-    gl_renderer* renderer,
-    ui_system const& system,
-    box_command_list const& boxes)
+render_box_command_list(void* user, alia_draw_bucket const* bucket)
 {
-    glViewport(0, 0, system.surface_size.x, system.surface_size.y);
+    gl_renderer* renderer = static_cast<gl_renderer*>(user);
+    auto const& system = *renderer->system;
+    alia_draw_bucket const& boxes = *bucket;
 
     GLenum err;
     while ((err = glGetError()) != GL_NO_ERROR)
@@ -318,9 +321,10 @@ render_box_command_list(
         rect_instance* instance = rect_instances;
         for (auto const* cmd = boxes.head; cmd; cmd = cmd->next)
         {
-            instance->min = cmd->box.min;
-            instance->size = cmd->box.size;
-            instance->color = cmd->color;
+            auto const* box_cmd = downcast<box_draw_command>(cmd);
+            instance->min = box_cmd->box.min;
+            instance->size = box_cmd->box.size;
+            instance->color = box_cmd->color;
             instance->clip_index = 0; // TODO: Add clip index.
             ++instance;
         }

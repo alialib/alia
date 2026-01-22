@@ -3,8 +3,8 @@
 #include <cstdint>
 #include <utility>
 
+#include <alia/abi/drawing.h>
 #include <alia/color.hpp>
-#include <alia/display_list.hpp>
 #include <alia/geometry.hpp>
 
 // TODO: Split up this file.
@@ -63,6 +63,7 @@ struct msdf_font_description
 // TODO: Don't assume that the atlas will be loaded from a file.
 msdf_text_engine*
 create_msdf_text_engine(
+    alia_draw_system* system,
     msdf_font_description const& font_description,
     char const* texture_atlas_path);
 
@@ -92,8 +93,8 @@ break_text(
 
 struct msdf_draw_command
 {
+    alia_draw_command base;
     msdf_text_engine* engine;
-    msdf_draw_command* next = nullptr;
     alia_vec2f position;
     float scale;
     alia_rgba color;
@@ -104,18 +105,12 @@ struct msdf_draw_command
 void
 draw_text(
     msdf_text_engine* engine,
-    alia_arena_view& arena,
-    command_list<msdf_draw_command>& commands,
+    alia_draw_context* ctx,
+    alia_z_index z_index,
     char const* text,
     size_t length,
     float scale,
     alia_vec2f position,
     alia_rgba color);
-
-void
-render_command_list(
-    msdf_text_engine* engine,
-    command_list<msdf_draw_command> const& commands,
-    alia_vec2f surface_size);
 
 } // namespace alia
