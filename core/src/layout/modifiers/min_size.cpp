@@ -1,5 +1,6 @@
 #include <alia/layout/modifiers/min_size.hpp>
 
+#include <alia/abi/ui/style.h>
 #include <alia/context.hpp>
 #include <alia/events.hpp>
 #include <alia/layout/utilities.hpp>

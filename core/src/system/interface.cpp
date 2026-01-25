@@ -33,7 +33,7 @@ refresh_system(ui_system& sys)
              = {alia_arena_get_view(&sys.layout.node_arena),
                 &sys.layout.root.first_child}});
         dispatch_event(sys, refresh_event);
-        *refresh_event.refresh.layout_emission.next_ptr = 0;
+        *as_refresh_event(refresh_event).layout_emission.next_ptr = 0;
     }
 
     // long long refresh_time;

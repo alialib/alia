@@ -1,4 +1,4 @@
-#include <alia/abi/arena.h>
+#include <alia/abi/base/arena.h>
 
 #include <doctest/doctest.h>
 

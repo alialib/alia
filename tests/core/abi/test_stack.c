@@ -1,4 +1,4 @@
-#include <alia/abi/stack.h>
+#include <alia/abi/base/stack.h>
 
 #define TEST_NO_MAIN
 #include "acutest.h"

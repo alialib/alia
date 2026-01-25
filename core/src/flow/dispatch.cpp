@@ -1,5 +1,6 @@
 #include <alia/flow/dispatch.hpp>
 
+#include <alia/abi/ui/style.h>
 #include <alia/context.hpp>
 #include <alia/events.hpp>
 #include <alia/system/object.hpp>
@@ -26,7 +27,10 @@ invoke_controller(ui_system& sys, event_traversal& events)
     static alia_style the_style = {.padding = 10.0f};
 
     context event_ctx
-        = {.style = &the_style, .system = &sys, .event = &events};
+        = {.kernel = nullptr,
+           .events = &events,
+           .system = &sys,
+           .style = &the_style};
 
     sys.controller(event_ctx);
 }

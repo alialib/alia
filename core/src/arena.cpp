@@ -6,8 +6,8 @@
 #include <cstdlib>
 #include <cstring>
 
-#include <alia/base.hpp>
 #include <alia/internals/arena.hpp>
+#include <alia/prelude.hpp>
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN

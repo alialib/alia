@@ -3,17 +3,17 @@
 #include <cassert>
 #include <cstdint>
 
-#include <alia/abi/arena.h>
+#include <alia/abi/base/arena.h>
 
 // This file defines the data retrieval library used for associating mutable
-// state and cached data with alia content graphs. It is designed so that each
-// node emitted by an application is associated with a unique instance of data,
-// even if there is no specific external identifier for that node.
+// state and cached data with Alia components. It is designed so that each
+// component emitted by an application is associated with a unique instance of
+// data, even if there is no specific external identifier for that component.
 //
-// More generally, if you replace "node" with "subexpression evaluation" in the
-// previous sentence, it can be used to associate data with particular points
-// in the evaluation of any function. This can be useful in situations where
-// you need to evaluate a particular function many times with slightly
+// More generally, if you replace "component" with "subexpression evaluation"
+// in the previous sentence, it can be used to associate data with particular
+// points in the evaluation of any function. This can be useful in situations
+// where you need to evaluate a particular function many times with slightly
 // different inputs and you want to reuse the work that was done in earlier
 // evaluations without a lot of manual bookkeeping.
 //
@@ -48,10 +48,10 @@
 // that is made available to your function as it executes.
 //
 // One problem with all this is that sometimes a subexpression evaluation
-// (content node) is associated with a particular piece of input data and the
-// evaluation of that input data is not fixed within the graph (e.g., it's in a
-// list of items where you can remove or shuffle items). In cases like this, we
-// allow the application to attach an explicit key to the subgraph
+// (i.e., a component) is associated with a particular piece of input data and
+// the evaluation of that input data is not fixed within the graph (e.g., it's
+// in a list of items where you can remove or shuffle items). In cases like
+// this, we allow the application to attach an explicit key to the subgraph
 // representing the evaluation of that expression, and we ensure that that
 // subgraph is always used where that name is encountered.
 

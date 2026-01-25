@@ -1,5 +1,7 @@
 #include <alia/input/regions.hpp>
 
+#include <alia/abi/ui/context.h>
+#include <alia/abi/ui/style.h>
 #include <alia/events.hpp>
 #include <alia/geometry.hpp>
 #include <alia/input/pointer.hpp>
@@ -64,8 +66,11 @@ handle_region_visibility(
         auto& e = as_make_widget_visible_event(ctx);
         e.region = alia_affine2_transform_aabb(
             get_transformation(ctx),
+            // TODO: Do we really want to expand here?
             alia_box_expand(
-                region, {get_padding_size(ctx), get_padding_size(ctx)}));
+                region,
+                {alia_ctx_style(&ctx)->padding,
+                 alia_ctx_style(&ctx)->padding}));
         e.acknowledged = true;
     }
 }

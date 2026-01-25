@@ -1,27 +1,26 @@
-#pragma once
+#ifndef ALIA_ABI_CONTEXT_H
+#define ALIA_ABI_CONTEXT_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <alia/abi/prelude.h>
 
-typedef struct alia_ui_system alia_ui_system;
-typedef struct alia_layout_container alia_layout_container;
+ALIA_EXTERN_C_BEGIN
+
+typedef struct alia_kernel alia_kernel;
 typedef struct alia_event_traversal alia_event_traversal;
-
-typedef struct alia_style
-{
-    float padding;
-} alia_style;
+typedef struct alia_ui_system alia_ui_system;
+typedef struct alia_style alia_style;
 
 typedef struct alia_context
 {
-    alia_style* style;
+    // kernel-level capabilities
+    alia_kernel* kernel;
+    alia_event_traversal* events;
+
+    // UI-level capabilities
     alia_ui_system* system;
-    alia_event_traversal* event;
+    alia_style* style;
 } alia_context;
 
-typedef alia_context alia_ephemeral_context;
+ALIA_EXTERN_C_END
 
-#ifdef __cplusplus
-}
-#endif
+#endif /* ALIA_ABI_CONTEXT_H */

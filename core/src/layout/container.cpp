@@ -1,5 +1,6 @@
 #include <alia/layout/container.hpp>
 
+#include <alia/abi/ui/style.h>
 #include <alia/context.hpp>
 #include <alia/events.hpp>
 

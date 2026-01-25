@@ -1,9 +1,9 @@
-#ifndef ALIA_GEOMETRY_BOX_H
-#define ALIA_GEOMETRY_BOX_H
+#ifndef ALIA_ABI_BASE_GEOMETRY_BOX_H
+#define ALIA_ABI_BASE_GEOMETRY_BOX_H
 
-#include <alia/abi/base.h>
-#include <alia/abi/geometry/types.h>
-#include <alia/abi/geometry/vec2.h>
+#include <alia/abi/base/geometry/types.h>
+#include <alia/abi/base/geometry/vec2.h>
+#include <alia/abi/prelude.h>
 
 ALIA_EXTERN_C_BEGIN
 
@@ -66,4 +66,4 @@ alia_box_contains(alia_box box, alia_vec2f p)
 
 ALIA_EXTERN_C_END
 
-#endif /* ALIA_GEOMETRY_BOX_H */
+#endif /* ALIA_ABI_BASE_GEOMETRY_BOX_H */

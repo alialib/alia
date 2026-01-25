@@ -1,7 +1,7 @@
 #pragma once
 
-#include <alia/abi/input/constants.h>
-#include <alia/abi/input/regions.h>
+#include <alia/abi/ui/input/constants.h>
+#include <alia/abi/ui/input/regions.h>
 
 #include <alia/context.hpp>
 #include <alia/events.hpp>

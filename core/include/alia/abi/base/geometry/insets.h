@@ -1,8 +1,9 @@
-#ifndef ALIA_GEOMETRY_INSETS_H
-#define ALIA_GEOMETRY_INSETS_H
+#ifndef ALIA_ABI_BASE_GEOMETRY_INSETS_H
+#define ALIA_ABI_BASE_GEOMETRY_INSETS_H
 
-#include <alia/abi/base.h>
-#include <alia/abi/geometry/types.h>
+#include <alia/abi/base/geometry/types.h>
+#include <alia/abi/base/geometry/vec2.h>
+#include <alia/abi/prelude.h>
 
 ALIA_EXTERN_C_BEGIN
 
@@ -97,4 +98,4 @@ ALIA_DEFINE_SCALE_OPERATOR(alia_insets, float)
 
 ALIA_EXTERN_C_END
 
-#endif /* ALIA_GEOMETRY_INSETS_H */
+#endif /* ALIA_ABI_BASE_GEOMETRY_INSETS_H */

@@ -5,9 +5,9 @@
 #include <cstdint>
 #include <memory>
 
-#include <alia/abi/arena.h>
+#include <alia/abi/base/arena.h>
 
-#include <alia/base.hpp>
+#include <alia/prelude.hpp>
 
 namespace alia {
 
@@ -34,15 +34,16 @@ arena_alloc(alia_arena_view& arena)
 
 template<class T>
 T*
-arena_alloc_with_tail_storage(alia_arena_view& arena, std::size_t tail_size)
+arena_alloc_trailing(alia_arena_view& arena, std::size_t trailing_bytes)
 {
     return reinterpret_cast<T*>(alia_arena_ptr(
-        &arena, alia_arena_alloc(&arena, align_up(sizeof(T) + tail_size))));
+        &arena,
+        alia_arena_alloc(&arena, align_up(sizeof(T) + trailing_bytes))));
 }
 
 template<class T>
 T*
-arena_array_alloc(alia_arena_view& arena, std::size_t count)
+arena_alloc_array(alia_arena_view& arena, std::size_t count)
 {
     static_assert(alignof(T) <= ALIA_MIN_ALIGN, "ALIA_MIN_ALIGN exceeded");
     return reinterpret_cast<T*>(alia_arena_ptr(

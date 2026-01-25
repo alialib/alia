@@ -1,7 +1,7 @@
-#ifndef ALIA_GEOMETRY_TYPES_H
-#define ALIA_GEOMETRY_TYPES_H
+#ifndef ALIA_BASE_GEOMETRY_TYPES_H
+#define ALIA_BASE_GEOMETRY_TYPES_H
 
-#include <alia/abi/base.h>
+#include <alia/abi/prelude.h>
 
 ALIA_EXTERN_C_BEGIN
 
@@ -38,4 +38,4 @@ typedef struct alia_affine2
 
 ALIA_EXTERN_C_END
 
-#endif /* ALIA_GEOMETRY_TYPES_H */
+#endif /* ALIA_ABI_BASE_GEOMETRY_TYPES_H */

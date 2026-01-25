@@ -1,7 +1,7 @@
-#ifndef ALIA_STACK_H
-#define ALIA_STACK_H
+#ifndef ALIA_ABI_BASE_STACK_H
+#define ALIA_ABI_BASE_STACK_H
 
-#include <alia/abi/base.h>
+#include <alia/abi/prelude.h>
 
 ALIA_EXTERN_C_BEGIN
 
@@ -93,4 +93,4 @@ struct alia_stack_vtable
 
 ALIA_EXTERN_C_END
 
-#endif
+#endif /* ALIA_ABI_BASE_STACK_H */

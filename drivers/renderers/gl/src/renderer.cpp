@@ -37,48 +37,73 @@ default_dealloc(void*, void* ptr)
 }
 
 const char* vanilla_vertex_shader_source = R"(
-#version 330 core
 layout (location = 0) in vec2 a_pos;
 layout (location = 1) in vec2 i_pos;
 layout (location = 2) in vec2 i_size;
 layout (location = 3) in vec4 i_color;
-layout (location = 4) in uint i_clip_index;
+layout (location = 4) in float i_radius;
+layout (location = 5) in vec4 i_clip_rect;
 
 uniform mat4 u_projection;
 
 out vec4 v_color;
-flat out uint v_clip_index;
+out vec2 v_pos;
+out vec2 v_rect_center;
+out vec2 v_rect_half_size;
+flat out float v_radius;
+flat out vec4 v_clip_rect;
 
 void main() {
     vec2 scaled = a_pos * i_size + i_pos;
     gl_Position = u_projection * vec4(scaled, 0.0, 1.0);
     v_color = i_color;
-    v_clip_index = i_clip_index;
+    v_pos = scaled;
+    v_rect_center = i_pos + i_size * 0.5;
+    v_rect_half_size = i_size * 0.5;
+    v_radius = i_radius;
+    v_clip_rect = i_clip_rect;
 }
 )";
 
 const char* vanilla_fragment_shader_source = R"(
-#version 330 core
-
-layout (std140) uniform ClipUBO {
-    vec4 clips[1024]; // TODO: Make this dynamic and adjust for GL limits.
-};
-
 in vec4 v_color;
-flat in uint v_clip_index;
-
+in vec2 v_pos;
+in vec2 v_rect_center;
+in vec2 v_rect_half_size;
+flat in float v_radius;
+flat in vec4 v_clip_rect;
 out vec4 frag_color;
 
-void main() {
-    vec4 r = clips[v_clip_index];
-    vec2 p = vec2(gl_FragCoord.x, gl_FragCoord.y);
-    bvec4 inside = bvec4(p.x >= r.x,
-                         p.y >= r.y,
-                         p.x <  r.x + r.z,
-                         p.y <  r.y + r.w);
-    if (!(inside.x && inside.y && inside.z && inside.w)) discard;
+float sd_round_rect(vec2 p, vec2 b, float r)
+{
+    // Clamp radius so it can't exceed the half-size in either axis.
+    r = min(r, min(b.x, b.y));
 
-    frag_color = v_color;
+    // q is how far we are outside the inner rectangle (with corners cut out)
+    vec2 q = abs(p) - (b - vec2(r));
+
+    // Outside distance: length of positive part
+    float outside = length(max(q, 0.0));
+
+    // Inside distance: if we're inside, q's max component is <= 0
+    float inside = min(max(q.x, q.y), 0.0);
+
+    return outside + inside - r; // negative inside, 0 on boundary
+}
+
+void main() {
+    if (v_pos.x < v_clip_rect.x || v_pos.y < v_clip_rect.y ||
+        v_pos.x > v_clip_rect.z || v_pos.y > v_clip_rect.w)
+    {
+        discard;
+    }
+
+    float d = sd_round_rect(v_pos - v_rect_center, v_rect_half_size, v_radius);
+
+    float aa = fwidth(d);                    // ~ size of one pixel in distance units
+    float alpha = smoothstep(0.0, -aa, d);   // 1 inside, 0 outside
+
+    frag_color = vec4(v_color.rgb, v_color.a * alpha);
 }
 )";
 
@@ -87,14 +112,24 @@ struct rect_instance
     vec2f min;
     vec2f size;
     alia::color color;
-    GLuint clip_index;
+    float radius;
+    float clip_rect[4];
 };
 
 GLuint
 compile_shader(GLenum type, const char* source)
 {
+// 1. Define the header based on the platform
+// Note: WebGL fragment shaders require explicit precision.
+// It's safe to put this in vertex shaders too (it's the default there).
+#ifdef __EMSCRIPTEN__
+    const char* header = "#version 300 es\nprecision highp float;\n";
+#else
+    const char* header = "#version 330 core\n";
+#endif
+    const char* sources[] = {header, source};
     GLuint shader = glCreateShader(type);
-    glShaderSource(shader, 1, &source, nullptr);
+    glShaderSource(shader, 2, sources, nullptr);
     glCompileShader(shader);
     GLint success;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
@@ -158,23 +193,6 @@ init_gl_renderer(alia_draw_system* system, gl_renderer* renderer)
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
-    constexpr GLsizeiptr max_clips = 1024;
-    constexpr GLsizeiptr bytes_per_clip = sizeof(float) * 4; // vec4
-    constexpr GLsizeiptr ubo_size = max_clips * bytes_per_clip;
-
-    GLuint clip_ubo = 0;
-    glCreateBuffers(1, &clip_ubo);
-
-    glNamedBufferStorage(
-        clip_ubo,
-        ubo_size,
-        nullptr,
-        GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-
-    GLuint clip_block
-        = glGetUniformBlockIndex(vanilla_shader_program, "ClipUBO");
-    glBindBufferBase(GL_UNIFORM_BUFFER, clip_block, clip_ubo);
-
     GLuint instance_vbo;
     glGenBuffers(1, &instance_vbo);
 
@@ -217,23 +235,30 @@ init_gl_renderer(alia_draw_system* system, gl_renderer* renderer)
     glEnableVertexAttribArray(3);
     glVertexAttribDivisor(3, 1);
 
-    glVertexAttribIPointer(
+    // radius (location = 4)
+    glVertexAttribPointer(
         4,
         1,
-        GL_UNSIGNED_INT,
+        GL_FLOAT,
+        GL_FALSE,
         sizeof(rect_instance),
-        (void*) offsetof(rect_instance, clip_index));
+        (void*) offsetof(rect_instance, radius));
     glEnableVertexAttribArray(4);
     glVertexAttribDivisor(4, 1);
 
+    // clip rect (location = 5)
+    glVertexAttribPointer(
+        5,
+        4,
+        GL_FLOAT,
+        GL_FALSE,
+        sizeof(rect_instance),
+        (void*) offsetof(rect_instance, clip_rect));
+    glEnableVertexAttribArray(5);
+    glVertexAttribDivisor(5, 1);
+
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
-
-    float* clip_ptr = (float*) glMapNamedBufferRange(
-        clip_ubo,
-        0,
-        ubo_size,
-        GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
 
     *renderer = {
         .system = system,
@@ -242,8 +267,6 @@ init_gl_renderer(alia_draw_system* system, gl_renderer* renderer)
         .vbo = vbo,
         .instance_vbo = instance_vbo,
         .vanilla_matrix_location = vanilla_matrix_location,
-        .clip_ubo = clip_ubo,
-        .clip_ptr = clip_ptr,
     };
 
     initialize_lazy_commit_arena(&renderer->rect_instance_arena);
@@ -255,7 +278,6 @@ destroy_gl_renderer(gl_renderer* renderer)
     glDeleteProgram(renderer->vanilla_shader_program);
     glDeleteBuffers(1, &renderer->vbo);
     glDeleteBuffers(1, &renderer->instance_vbo);
-    glDeleteBuffers(1, &renderer->clip_ubo);
 }
 
 struct Vertex
@@ -309,13 +331,11 @@ render_box_command_list(void* user, alia_draw_bucket const* bucket)
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
-    renderer->clip_ptr[0] = 0.f;
-    renderer->clip_ptr[1] = 0.f;
-    renderer->clip_ptr[2] = system.surface_size.x;
-    renderer->clip_ptr[3] = system.surface_size.y;
+    float clip_rect[4]
+        = {0.f, 0.f, system.surface_size.x, system.surface_size.y};
 
     alia_arena_reset(alia_arena_get_view(&renderer->rect_instance_arena));
-    rect_instance* rect_instances = arena_array_alloc<rect_instance>(
+    rect_instance* rect_instances = arena_alloc_array<rect_instance>(
         *alia_arena_get_view(&renderer->rect_instance_arena), boxes.count);
     {
         rect_instance* instance = rect_instances;
@@ -325,7 +345,11 @@ render_box_command_list(void* user, alia_draw_bucket const* bucket)
             instance->min = box_cmd->box.min;
             instance->size = box_cmd->box.size;
             instance->color = box_cmd->color;
-            instance->clip_index = 0; // TODO: Add clip index.
+            instance->radius = box_cmd->radius;
+            instance->clip_rect[0] = clip_rect[0];
+            instance->clip_rect[1] = clip_rect[1];
+            instance->clip_rect[2] = clip_rect[2];
+            instance->clip_rect[3] = clip_rect[3];
             ++instance;
         }
     }

@@ -3,9 +3,9 @@
 #define TEST_NO_MAIN
 #include "acutest.h"
 
-#include <alia/abi/geometry/affine2.h>
-#include <alia/abi/geometry/box.h>
-#include <alia/abi/geometry/vec2.h>
+#include <alia/abi/base/geometry/affine2.h>
+#include <alia/abi/base/geometry/box.h>
+#include <alia/abi/base/geometry/vec2.h>
 
 static void
 check_near_f(float a, float b, float eps)

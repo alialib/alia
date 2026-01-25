@@ -1,6 +1,6 @@
 #pragma once
 
-#include <alia/abi/input/constants.h>
+#include <alia/abi/ui/input/constants.h>
 #include <alia/flags.hpp>
 
 namespace alia {

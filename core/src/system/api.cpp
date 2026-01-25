@@ -86,10 +86,12 @@ update(ui_system& ui)
              = {.id = alia_routable_element_id{},
                 .cursor = ALIA_CURSOR_DEFAULT}});
         dispatch_event(ui, event);
-        if (alia_routable_element_id_is_valid(event.mouse_hit_test.result.id))
+        if (alia_routable_element_id_is_valid(
+                as_mouse_hit_test_event(event).result.id))
         {
-            set_hot_element(ui, event.mouse_hit_test.result.id);
-            resolved_cursor = cursor(event.mouse_hit_test.result.cursor);
+            set_hot_element(ui, as_mouse_hit_test_event(event).result.id);
+            resolved_cursor
+                = cursor(as_mouse_hit_test_event(event).result.cursor);
             // record_tooltip(ui, hit_test);
         }
         else

@@ -1,26 +1,22 @@
-#pragma once
+#ifndef ALIA_ABI_EVENTS_H
+#define ALIA_ABI_EVENTS_H
 
-#include <stdint.h>
-
-#include <alia/abi/arena.h>
-#include <alia/abi/geometry.h>
+#include <alia/abi/base/arena.h>
+#include <alia/abi/base/geometry.h>
 #include <alia/abi/ids.h>
-#include <alia/abi/input/constants.h>
-#include <alia/abi/layout.h>
+#include <alia/abi/kernel/events.h>
+#include <alia/abi/prelude.h>
+#include <alia/abi/ui/input/constants.h>
+#include <alia/abi/ui/layout.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <string.h>
+
+ALIA_EXTERN_C_BEGIN
 
 // CATEGORIES
 
-typedef uint8_t alia_category_id;
-typedef uint16_t alia_event_code;
-
 enum
 {
-    ALIA_CATEGORY_NONE = 0,
-    ALIA_CATEGORY_REFRESH = 1,
     ALIA_CATEGORY_DRAWING = 2,
     ALIA_CATEGORY_SPATIAL = 3,
     ALIA_CATEGORY_INPUT = 4,
@@ -258,38 +254,24 @@ enum
 
 // EVENT STRUCT
 
-typedef struct alia_event
-{
-    alia_category_id category; // ALIA_CATEGORY_*
-    alia_event_code type; // ALIA_EVENT_*
-    alia_element_id target;
-    union
-    {
-        // clang-format off
-        #define X(code, CATEGORY, flags, NAME, name, data_type) \
-            data_type name;
-        ALIA_EVENTS(X)
-        #undef X
-        // clang-format on
-    };
-} alia_event;
-
 // CONSTRUCTORS
 
 #define X(code, CATEGORY, flags, NAME, name, data_type)                       \
     static inline alia_event alia_make_##name##_event(data_type data)         \
     {                                                                         \
+        ALIA_ASSERT(sizeof(data) <= ALIA_EVENT_PAYLOAD_SIZE_MAX);             \
         alia_event event;                                                     \
         event.category = ALIA_CATEGORY_##CATEGORY;                            \
         event.type = ALIA_EVENT_##NAME;                                       \
-        event.name = data;                                                    \
         event.target = ALIA_ELEMENT_ID_NONE;                                  \
+        event.payload_size = sizeof(data);                                    \
+        memcpy(event.payload, &data, sizeof(data));                           \
         return event;                                                         \
     }
 
 ALIA_EVENTS(X)
 #undef X
 
-#ifdef __cplusplus
-} // extern "C"
-#endif
+ALIA_EXTERN_C_END
+
+#endif /* ALIA_ABI_EVENTS_H */

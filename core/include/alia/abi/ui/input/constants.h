@@ -1,6 +1,9 @@
-#pragma once
+#ifndef ALIA_ABI_UI_INPUT_CONSTANTS_H
+#define ALIA_ABI_UI_INPUT_CONSTANTS_H
 
-#include <stdint.h>
+#include <alia/abi/prelude.h>
+
+ALIA_EXTERN_C_BEGIN
 
 // MOUSE/POINTER BUTTONS
 
@@ -67,3 +70,7 @@ typedef uint8_t alia_kmod_t;
 #define ALIA_KMOD_ALT 0x04
 #define ALIA_KMOD_WIN 0x08
 #define ALIA_KMOD_META 0x10
+
+ALIA_EXTERN_C_END
+
+#endif /* ALIA_ABI_UI_INPUT_CONSTANTS_H */

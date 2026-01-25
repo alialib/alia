@@ -1,5 +1,6 @@
 #include <alia/layout/compositors/hyperflow.hpp>
 
+#include <alia/abi/ui/style.h>
 #include <alia/layout/utilities.hpp>
 
 namespace alia {
@@ -41,7 +42,7 @@ hyperflow_measure_horizontal(measurement_context* ctx, layout_node* node)
         ++scratch.child_count;
     }
 
-    auto* child_requirements = arena_array_alloc<alia::child_requirements>(
+    auto* child_requirements = arena_alloc_array<alia::child_requirements>(
         *ctx->scratch, scratch.child_count);
 
     float max_child_width = 0;
@@ -79,7 +80,7 @@ hyperflow_measure_vertical(
     auto& hyperflow = *reinterpret_cast<hyperflow_layout_node*>(node);
     auto& scratch = use_scratch<hyperflow_scratch>(*ctx->scratch);
 
-    auto* child_requirements = arena_array_alloc<alia::child_requirements>(
+    auto* child_requirements = arena_alloc_array<alia::child_requirements>(
         *ctx->scratch, scratch.child_count);
 
     float line_height = 0, line_ascent = 0, line_descent = 0;
@@ -146,7 +147,7 @@ hyperflow_assign_boxes(
     auto& hyperflow = *reinterpret_cast<hyperflow_layout_node*>(node);
     auto& scratch = use_scratch<hyperflow_scratch>(*ctx->scratch);
 
-    auto* child_requirements = arena_array_alloc<alia::child_requirements>(
+    auto* child_requirements = arena_alloc_array<alia::child_requirements>(
         *ctx->scratch, scratch.child_count);
 
     if (scratch.child_count == 0)

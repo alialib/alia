@@ -1,6 +1,6 @@
 #include <alia/substrate.hpp>
 
-#include <alia/abi/arena.h>
+#include <alia/abi/base/arena.h>
 #include <alia/arena.hpp>
 #include <alia/internals/arena.hpp>
 

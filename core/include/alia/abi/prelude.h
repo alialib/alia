@@ -1,5 +1,5 @@
-#ifndef ALIA_C_BASE_H
-#define ALIA_C_BASE_H
+#ifndef ALIA_ABI_PRELUDE_H
+#define ALIA_ABI_PRELUDE_H
 
 #include <stdbool.h>
 #include <stddef.h>

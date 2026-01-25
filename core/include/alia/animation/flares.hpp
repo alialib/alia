@@ -5,8 +5,8 @@
 
 #include <alia/animation/context.hpp>
 #include <alia/animation/ids.hpp>
-#include <alia/base.hpp>
-#include <alia/bit_packing.hpp>
+#include <alia/internals/bit_packing.hpp>
+#include <alia/prelude.hpp>
 
 namespace alia {
 

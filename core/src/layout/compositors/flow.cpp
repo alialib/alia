@@ -1,5 +1,6 @@
 #include <alia/layout/compositors/flow.hpp>
 
+#include <alia/abi/ui/style.h>
 #include <alia/layout/utilities.hpp>
 
 namespace alia {
@@ -39,7 +40,7 @@ flow_measure_horizontal(measurement_context* ctx, layout_node* node)
         ++scratch.child_count;
     }
 
-    scratch.child_requirements = arena_array_alloc<wrapping_requirements>(
+    scratch.child_requirements = arena_alloc_array<wrapping_requirements>(
         *ctx->scratch, scratch.child_count);
 
     return horizontal_requirements{
@@ -120,7 +121,7 @@ flow_measure_vertical(
         current_x_offset = requirements.end_x;
     }
 
-    arena_array_alloc<wrapping_requirements>(
+    arena_alloc_array<wrapping_requirements>(
         *ctx->scratch, scratch.child_count);
 
     if (!wrapping_has_occurred)
@@ -274,7 +275,7 @@ flow_assign_boxes(
         }
     }
 
-    arena_array_alloc<wrapping_requirements>(
+    arena_alloc_array<wrapping_requirements>(
         *ctx->scratch, scratch.child_count);
 }
 
@@ -350,7 +351,7 @@ flow_measure_wrapped_vertical(
                .descent = line_descent};
     }
 
-    arena_array_alloc<wrapping_requirements>(
+    arena_alloc_array<wrapping_requirements>(
         *ctx->scratch, scratch.child_count);
 
     scratch.total_height
@@ -505,7 +506,7 @@ flow_assign_wrapped_boxes(
         }
     }
 
-    arena_array_alloc<wrapping_requirements>(
+    arena_alloc_array<wrapping_requirements>(
         *ctx->scratch, scratch.child_count);
 }
 

@@ -1,5 +1,6 @@
 #include <alia/flow/traversal.hpp>
 
+#include <alia/abi/ui/style.h>
 #include <alia/events.hpp>
 
 namespace alia {
@@ -18,7 +19,7 @@ mark_dirty_component(component_container_ptr const& container)
 void
 mark_dirty_component(ephemeral_context& ctx)
 {
-    event_traversal& traversal = *ctx.event;
+    event_traversal& traversal = *ctx.events;
     mark_dirty_component(*traversal.active_container);
 }
 
@@ -36,7 +37,7 @@ mark_animating_component(component_container_ptr const& container)
 void
 mark_animating_component(ephemeral_context& ctx)
 {
-    event_traversal& traversal = *ctx.event;
+    event_traversal& traversal = *ctx.events;
     mark_animating_component(*traversal.active_container);
 }
 

@@ -52,13 +52,13 @@ traversal_was_aborted(ephemeral_context& ctx)
     return get_event_traversal(ctx).aborted;
 }
 
-inline alia_category_id
+inline alia_event_category
 get_event_category(ephemeral_context& ctx)
 {
     return get_event_traversal(ctx).event->category;
 }
 
-inline alia_event_code
+inline alia_event_type
 get_event_type(ephemeral_context& ctx)
 {
     return get_event_traversal(ctx).event->type;
@@ -82,7 +82,23 @@ is_refresh_event(ephemeral_context& ctx)
     inline data_type& as_##name##_event(ephemeral_context& ctx)               \
     {                                                                         \
         ALIA_ASSERT(get_event_type(ctx) == ALIA_EVENT_##NAME);                \
-        return get_event_traversal(ctx).event->name;                          \
+        return *reinterpret_cast<data_type*>(                                 \
+            get_event_traversal(ctx).event->payload);                         \
+    }
+
+ALIA_EVENTS(X)
+#undef X
+
+#define X(code, CATEGORY, flags, NAME, name, data_type)                       \
+    inline data_type const& as_##name##_event(alia_event const& event)        \
+    {                                                                         \
+        ALIA_ASSERT(event.type == ALIA_EVENT_##NAME);                         \
+        return *reinterpret_cast<data_type const*>(event.payload);            \
+    }                                                                         \
+    inline data_type& as_##name##_event(alia_event& event)                    \
+    {                                                                         \
+        ALIA_ASSERT(event.type == ALIA_EVENT_##NAME);                         \
+        return *reinterpret_cast<data_type*>(event.payload);                  \
     }
 
 ALIA_EVENTS(X)

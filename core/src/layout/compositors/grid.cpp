@@ -1,5 +1,6 @@
 #include <alia/layout/compositors/grid.hpp>
 
+#include <alia/abi/ui/style.h>
 #include <alia/context.hpp>
 #include <alia/events.hpp>
 #include <alia/layout/utilities.hpp>
@@ -42,7 +43,7 @@ grid_measure_horizontal(measurement_context* ctx, layout_node* node)
     auto& grid = *reinterpret_cast<grid_layout_node*>(node);
     grid.scratch = &claim_scratch<grid_scratch>(*ctx->scratch);
     grid.scratch->column_count = count_columns(&grid);
-    grid.scratch->columns = arena_array_alloc<horizontal_requirements>(
+    grid.scratch->columns = arena_alloc_array<horizontal_requirements>(
         *ctx->scratch, grid.scratch->column_count);
     // All the work of actually measuring the horizontal requirements of the
     // grid rows is done up-front, here. The grid rows will be contained within

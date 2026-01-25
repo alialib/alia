@@ -143,7 +143,7 @@ template<class Tag>
 bool
 is_set(bitref<Tag>& ref)
 {
-    static_assert(Tag::size == 1, "is_set requires a single-bit field");
+    static_assert(Tag::size == 1, "is_set requires a one-bit field");
     return (ref.storage & (1u << ref.index)) != 0;
 }
 
@@ -151,7 +151,7 @@ template<class Tag>
 void
 clear_bit(bitref<Tag>& ref)
 {
-    static_assert(Tag::size == 1, "clear_bit requires a single-bit field");
+    static_assert(Tag::size == 1, "clear_bit requires a one-bit field");
     ref.storage &= ~(1u << ref.index);
 }
 
@@ -159,7 +159,7 @@ template<class Tag>
 void
 set_bit(bitref<Tag>& ref)
 {
-    static_assert(Tag::size == 1, "set_bit requires a single-bit field");
+    static_assert(Tag::size == 1, "set_bit requires a one-bit field");
     ref.storage |= (1u << ref.index);
 }
 
@@ -167,8 +167,26 @@ template<class Tag>
 void
 toggle_bit(bitref<Tag>& ref)
 {
-    static_assert(Tag::size == 1, "toggle_bit requires a single-bit field");
+    static_assert(Tag::size == 1, "toggle_bit requires a one-bit field");
     ref.storage ^= (1u << ref.index);
+}
+
+// Two-bit operations...
+
+template<class Tag>
+unsigned
+read_bit_pair(bitref<Tag> const& ref)
+{
+    static_assert(Tag::size == 2, "read_bit_pair requires a two-bit field");
+    return (ref.storage >> ref.index) & 3u;
+}
+
+template<class Tag>
+void
+write_bit_pair(bitref<Tag>& ref, uint32_t value)
+{
+    static_assert(Tag::size == 2, "write_bit_pair requires a two-bit field");
+    ref.storage = (ref.storage & ~(3u << ref.index)) | (value << ref.index);
 }
 
 } // namespace alia

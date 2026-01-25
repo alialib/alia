@@ -1,5 +1,6 @@
 #include <alia/layout/compositors/row.hpp>
 
+#include <alia/abi/ui/style.h>
 #include <alia/layout/container.hpp>
 #include <alia/layout/utilities.hpp>
 
@@ -35,7 +36,7 @@ row_measure_horizontal(measurement_context* ctx, layout_node* node)
         ++scratch.child_count;
     }
     horizontal_requirements* x_requirements
-        = arena_array_alloc<horizontal_requirements>(
+        = arena_alloc_array<horizontal_requirements>(
             *ctx->scratch, scratch.child_count);
     for (layout_node* child = row.first_child; child != nullptr;
          child = child->next_sibling)
@@ -60,7 +61,7 @@ row_assign_widths(
     auto& row = *reinterpret_cast<row_layout_node*>(node);
     auto& scratch = use_scratch<row_scratch>(*ctx->scratch);
     horizontal_requirements* x_requirements
-        = arena_array_alloc<horizontal_requirements>(
+        = arena_alloc_array<horizontal_requirements>(
             *ctx->scratch, scratch.child_count);
     auto const placement = resolve_horizontal_assignment(
         adjust_flags_for_main_axis(row.flags, main_axis),
@@ -92,7 +93,7 @@ row_measure_vertical(
     auto& row = *reinterpret_cast<row_layout_node*>(node);
     auto& scratch = use_scratch<row_scratch>(*ctx->scratch);
     horizontal_requirements* x_requirements
-        = arena_array_alloc<horizontal_requirements>(
+        = arena_alloc_array<horizontal_requirements>(
             *ctx->scratch, scratch.child_count);
     // TODO: Stop repeating this logic everywhere.
     auto const placement = resolve_horizontal_assignment(
@@ -137,7 +138,7 @@ row_assign_boxes(
     auto& row = *reinterpret_cast<row_layout_node*>(node);
     auto& scratch = use_scratch<row_scratch>(*ctx->scratch);
     horizontal_requirements* x_requirements
-        = arena_array_alloc<horizontal_requirements>(
+        = arena_alloc_array<horizontal_requirements>(
             *ctx->scratch, scratch.child_count);
     auto const placement = resolve_assignment(
         adjust_flags_for_main_axis(row.flags, main_axis),

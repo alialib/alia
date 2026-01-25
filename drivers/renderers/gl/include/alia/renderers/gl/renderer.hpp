@@ -1,7 +1,16 @@
 #pragma once
 
-// TODO: Remove this.
+// TODO: Refactor this.
+#ifdef __EMSCRIPTEN__
+#define GLFW_INCLUDE_ES3
+#include <GLES3/gl3.h>
+#include <GLFW/glfw3.h>
+#include <emscripten.h>
+#else
 #include <glad/glad.h>
+
+#include <GLFW/glfw3.h>
+#endif
 
 // TODO: Remove this.
 #include <alia/drawing.hpp>
@@ -24,8 +33,6 @@ struct gl_renderer
     GLuint instance_vbo;
     GLint vanilla_matrix_location;
     alia_arena rect_instance_arena;
-    GLuint clip_ubo;
-    float* clip_ptr;
 };
 
 // Create a new OpenGL renderer.

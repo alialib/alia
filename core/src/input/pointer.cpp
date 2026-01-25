@@ -1,5 +1,7 @@
 #include <alia/input/pointer.hpp>
 
+#include <alia/abi/ui/style.h>
+
 // TODO: API shouldn't be needed here.
 #include <alia/system/api.hpp>
 

@@ -1,11 +1,11 @@
-#pragma once
-#include <stdint.h>
+#ifndef ALIA_ABI_BASE_COLOR_H
+#define ALIA_ABI_BASE_COLOR_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <alia/abi/prelude.h>
 
 #define ALIA_COLOR_API_VERSION 0
+
+ALIA_EXTERN_C_BEGIN
 
 // sRGB
 typedef struct
@@ -103,6 +103,6 @@ alia_relative_luminance_srgb8(alia_srgb8 c)
     return alia_relative_luminance_rgb(alia_rgb_from_srgb8(c));
 }
 
-#ifdef __cplusplus
-}
-#endif
+ALIA_EXTERN_C_END
+
+#endif /* ALIA_ABI_BASE_COLOR_H */

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <alia/abi/arena.h>
-#include <alia/abi/geometry.h>
+#include <alia/abi/base/arena.h>
+#include <alia/abi/base/geometry.h>
 
 #ifdef __cplusplus
 extern "C" {

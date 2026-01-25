@@ -6,8 +6,6 @@
 // TODO: Remove this.
 #include <alia/internals/drawing.hpp>
 
-#include <glad/glad.h>
-
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
@@ -22,43 +20,35 @@ using namespace alia::operators;
 namespace alia {
 
 const char* msdf_vertex_shader_source = R"(
-#version 430 core
 layout (location = 0) in vec2 a_vertex_pos;
 layout (location = 1) in vec4 i_color;
 layout (location = 2) in vec2 i_glyph_pos;
 layout (location = 3) in float i_scale;
-layout (location = 4) in uint i_glyph_id;
+layout (location = 4) in vec4 i_uv_rect;    // .xy = pos, .zw = size
+layout (location = 5) in vec4 i_plane_rect; // .xy = pos, .zw = size
 
 flat out vec4 v_color;
 flat out float v_scale;
 out vec2 v_uv;
 
-struct GlyphData {
-    vec2 uv_pos;
-    vec2 uv_size;
-    vec2 xy_pos;
-    vec2 xy_size;
-};
-
-layout(std430, binding = 0) readonly buffer GlyphTable {
-    GlyphData glyphs[];
-};
-
 uniform mat4 u_projection;
 
 void main() {
-    GlyphData glyph = glyphs[i_glyph_id];
-    vec2 xy = i_glyph_pos + (glyph.xy_pos + a_vertex_pos * glyph.xy_size) * i_scale;
+    vec2 xy_pos = i_plane_rect.xy;
+    vec2 xy_size = i_plane_rect.zw;
+    vec2 uv_pos = i_uv_rect.xy;
+    vec2 uv_size = i_uv_rect.zw;
+
+    vec2 xy = i_glyph_pos + (xy_pos + a_vertex_pos * xy_size) * i_scale;
     gl_Position = u_projection * vec4(xy, 0.0, 1.0);
-    v_uv = glyph.uv_pos + a_vertex_pos * glyph.uv_size;
+
+    v_uv = uv_pos + a_vertex_pos * uv_size;
     v_color = i_color;
     v_scale = i_scale;
 }
 )";
 
 const char* msdf_fragment_shader_source = R"(
-#version 330 core
-
 flat in vec4 v_color;
 flat in float v_scale;
 in vec2 v_uv;
@@ -88,20 +78,13 @@ void main() {
 }
 )";
 
-struct gpu_glyph_data
-{
-    vec2f uv_pos;
-    vec2f uv_size;
-    vec2f xy_pos;
-    vec2f xy_size;
-};
-
 struct gpu_glyph_instance
 {
     alia::color color;
     vec2f position;
     float scale;
-    GLuint glyph_id;
+    float uv_rect[4];
+    float plane_rect[4];
 };
 
 struct msdf_gpu_data
@@ -114,10 +97,9 @@ struct msdf_gpu_data
     GLuint vao;
     GLuint quad_vbo;
     GLuint instance_vbo;
-    GLuint glyph_table_ssbo;
 
-    gpu_glyph_instance* glyph_instances;
-    uint32_t glyph_instance_capacity;
+    // TODO: Don't use a vector here.
+    std::vector<gpu_glyph_instance> glyph_instances;
 };
 
 struct kerning_pair_index
@@ -144,6 +126,12 @@ using kerning_map
 
 using glyph_map = std::unordered_map<int, msdf_glyph>;
 
+struct cached_glyph_data
+{
+    float uv_rect[4];
+    float plane_rect[4];
+};
+
 struct msdf_text_engine
 {
     alia_draw_system* system;
@@ -154,6 +142,8 @@ struct msdf_text_engine
     msdf_atlas_description atlas;
 
     alia::glyph_map glyph_map;
+
+    std::unordered_map<int, cached_glyph_data> glyph_cache;
 
     alia::kerning_map kerning_map;
 
@@ -178,7 +168,7 @@ create_quad_vbo()
     return quad_vbo;
 }
 
-inline std::pair<GLuint, gpu_glyph_instance*>
+inline GLuint
 create_instance_vbo(uint32_t initial_capacity)
 {
     GLuint instance_vbo;
@@ -188,22 +178,9 @@ create_instance_vbo(uint32_t initial_capacity)
 
     GLsizeiptr const buffer_size
         = sizeof(gpu_glyph_instance) * initial_capacity;
+    glBufferData(GL_ARRAY_BUFFER, buffer_size, nullptr, GL_STREAM_DRAW);
 
-    glBufferStorage(
-        GL_ARRAY_BUFFER,
-        buffer_size,
-        nullptr,
-        GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-
-    glBindBuffer(GL_ARRAY_BUFFER, instance_vbo);
-    gpu_glyph_instance* glyph_instances
-        = (gpu_glyph_instance*) glMapBufferRange(
-            GL_ARRAY_BUFFER,
-            0,
-            buffer_size,
-            GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-
-    return {instance_vbo, glyph_instances};
+    return instance_vbo;
 }
 
 inline GLuint
@@ -255,15 +232,27 @@ create_vertex_array(GLuint quad_vbo, GLuint instance_vbo)
     glEnableVertexAttribArray(3);
     glVertexAttribDivisor(3, 1);
 
-    // glyph_id (location = 4)
-    glVertexAttribIPointer(
+    // uv_rect (location = 4)
+    glVertexAttribPointer(
         4,
-        1,
-        GL_UNSIGNED_INT,
+        4,
+        GL_FLOAT,
+        GL_FALSE,
         sizeof(gpu_glyph_instance),
-        (void*) offsetof(gpu_glyph_instance, glyph_id));
+        (void*) offsetof(gpu_glyph_instance, uv_rect[0]));
     glEnableVertexAttribArray(4);
     glVertexAttribDivisor(4, 1);
+
+    // plane_rect (location = 5)
+    glVertexAttribPointer(
+        5,
+        4,
+        GL_FLOAT,
+        GL_FALSE,
+        sizeof(gpu_glyph_instance),
+        (void*) offsetof(gpu_glyph_instance, plane_rect[0]));
+    glEnableVertexAttribArray(5);
+    glVertexAttribDivisor(5, 1);
 
     return vao;
 }
@@ -319,37 +308,12 @@ create_msdf_text_engine(
 
     GLuint const quad_vbo = create_quad_vbo();
     uint32_t const initial_glyph_instance_capacity = 262'144; // 4096;
-    auto [instance_vbo, glyph_instances]
+    GLuint const instance_vbo
         = create_instance_vbo(initial_glyph_instance_capacity);
     GLuint const vao = create_vertex_array(quad_vbo, instance_vbo);
 
-    std::vector<gpu_glyph_data> gpu_glyph_data(font.glyph_count);
-    for (size_t i = 0; i < font.glyph_count; ++i)
-    {
-        gpu_glyph_data[i].uv_pos
-            = {font.glyphs[i].atlas_left / font.atlas.width,
-               1.0f - (font.glyphs[i].atlas_top / font.atlas.height)};
-        gpu_glyph_data[i].uv_size
-            = {(font.glyphs[i].atlas_right - font.glyphs[i].atlas_left)
-                   / font.atlas.width,
-               (font.glyphs[i].atlas_top - font.glyphs[i].atlas_bottom)
-                   / font.atlas.height};
-        gpu_glyph_data[i].xy_pos
-            = {font.glyphs[i].plane_left, -font.glyphs[i].plane_top};
-        gpu_glyph_data[i].xy_size
-            = {font.glyphs[i].plane_right - font.glyphs[i].plane_left,
-               -font.glyphs[i].plane_bottom + font.glyphs[i].plane_top};
-    }
-
-    GLuint glyph_table_ssbo;
-    glGenBuffers(1, &glyph_table_ssbo);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, glyph_table_ssbo);
-    glBufferData(
-        GL_SHADER_STORAGE_BUFFER,
-        gpu_glyph_data.size() * sizeof(alia::gpu_glyph_data),
-        gpu_glyph_data.data(),
-        GL_STATIC_DRAW);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, glyph_table_ssbo);
+    std::vector<gpu_glyph_instance> glyph_instances;
+    glyph_instances.resize(initial_glyph_instance_capacity);
 
     kerning_map kerning_map;
     for (size_t i = 0; i < font.kerning_pair_count; ++i)
@@ -378,10 +342,8 @@ create_msdf_text_engine(
            .vao = vao,
            .quad_vbo = quad_vbo,
            .instance_vbo = instance_vbo,
-           .glyph_table_ssbo = glyph_table_ssbo,
 
-           .glyph_instances = glyph_instances,
-           .glyph_instance_capacity = initial_glyph_instance_capacity},
+           .glyph_instances = std::move(glyph_instances)},
 
         .metrics = font.metrics,
         .atlas = font.atlas,
@@ -389,6 +351,26 @@ create_msdf_text_engine(
         .kerning_map = std::move(kerning_map),
 
         .material_id = 0};
+
+    for (size_t i = 0; i < font.glyph_count; ++i)
+    {
+        auto& cached_glyph = engine->glyph_cache[font.glyphs[i].unicode];
+        cached_glyph.uv_rect[0] = font.glyphs[i].atlas_left / font.atlas.width;
+        cached_glyph.uv_rect[1]
+            = 1.0f - (font.glyphs[i].atlas_top / font.atlas.height);
+        cached_glyph.uv_rect[2]
+            = (font.glyphs[i].atlas_right - font.glyphs[i].atlas_left)
+            / font.atlas.width;
+        cached_glyph.uv_rect[3]
+            = (font.glyphs[i].atlas_top - font.glyphs[i].atlas_bottom)
+            / font.atlas.height;
+        cached_glyph.plane_rect[0] = font.glyphs[i].plane_left;
+        cached_glyph.plane_rect[1] = -font.glyphs[i].plane_top;
+        cached_glyph.plane_rect[2]
+            = font.glyphs[i].plane_right - font.glyphs[i].plane_left;
+        cached_glyph.plane_rect[3]
+            = -font.glyphs[i].plane_bottom + font.glyphs[i].plane_top;
+    }
 
     engine->material_id = alia_register_material(
         system,
@@ -407,7 +389,6 @@ destroy_msdf_text_engine(msdf_text_engine* engine)
     glDeleteProgram(engine->gpu.shader_program);
     glDeleteBuffers(1, &engine->gpu.quad_vbo);
     glDeleteBuffers(1, &engine->gpu.instance_vbo);
-    glDeleteBuffers(1, &engine->gpu.glyph_table_ssbo);
     glDeleteVertexArrays(1, &engine->gpu.vao);
 
     delete engine;
@@ -467,8 +448,7 @@ draw_text(
     color color)
 {
     msdf_draw_command* command
-        = arena_alloc_with_tail_storage<msdf_draw_command>(
-            *ctx->arena, length);
+        = arena_alloc_trailing<msdf_draw_command>(*ctx->arena, length);
     command->engine = engine;
     command->position
         = position + alia_vec2f{0, engine->metrics.ascender * scale};
@@ -543,8 +523,21 @@ render_command(
         const msdf_glyph& glyph = engine->glyph_map[unicode];
         assert(glyph.unicode == unicode);
 
-        engine->gpu.glyph_instances[glyph_instance_count]
-            = {{0.9, 0.9, 0.9, 1}, position, scale, /* TODO */ unicode - 32};
+        auto& cached_glyph = engine->glyph_cache[unicode];
+
+        engine->gpu.glyph_instances[glyph_instance_count] = {
+            color{0.9, 0.9, 0.9, 1},
+            position,
+            scale,
+            cached_glyph.uv_rect[0],
+            cached_glyph.uv_rect[1],
+            cached_glyph.uv_rect[2],
+            cached_glyph.uv_rect[3],
+            cached_glyph.plane_rect[0],
+            cached_glyph.plane_rect[1],
+            cached_glyph.plane_rect[2],
+            cached_glyph.plane_rect[3],
+        };
         glyph_instance_count++;
 
         position.x += glyph.advance * scale;
@@ -567,6 +560,13 @@ render_msdf_bucket(void* user, alia_draw_bucket const* bucket)
         auto const* msdf_cmd = downcast<msdf_draw_command>(cmd);
         render_command(engine, glyph_instance_count, *msdf_cmd);
     }
+
+    glBindBuffer(GL_ARRAY_BUFFER, engine->gpu.instance_vbo);
+    glBufferSubData(
+        GL_ARRAY_BUFFER,
+        0,
+        glyph_instance_count * sizeof(gpu_glyph_instance),
+        engine->gpu.glyph_instances.data());
 
     glBindTexture(GL_TEXTURE_2D, engine->gpu.texture);
 
@@ -600,10 +600,6 @@ render_msdf_bucket(void* user, alia_draw_bucket const* bucket)
     glUniformMatrix4fv(engine->gpu.matrix_location, 1, GL_FALSE, ortho);
 
     glBindVertexArray(engine->gpu.vao);
-
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, engine->gpu.glyph_table_ssbo);
-    glBindBufferBase(
-        GL_SHADER_STORAGE_BUFFER, 0, engine->gpu.glyph_table_ssbo);
 
     glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, glyph_instance_count);
 }

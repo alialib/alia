@@ -1,4 +1,4 @@
-#include <alia/abi/geometry/vec2.h>
+#include <alia/abi/base/geometry/vec2.h>
 
 #include <doctest/doctest.h>
 

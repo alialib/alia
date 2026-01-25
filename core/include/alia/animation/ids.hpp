@@ -4,7 +4,7 @@
 #include <climits>
 #include <cstdint>
 
-#include <alia/bit_packing.hpp>
+#include <alia/internals/bit_packing.hpp>
 
 namespace alia {
 

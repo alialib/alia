@@ -1,4 +1,4 @@
-#include <alia/abi/geometry/insets.h>
+#include <alia/abi/base/geometry/insets.h>
 
 #define TEST_NO_MAIN
 #include "acutest.h"

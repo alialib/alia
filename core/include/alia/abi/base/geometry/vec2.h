@@ -1,8 +1,8 @@
-#ifndef ALIA_GEOMETRY_VEC2_H
-#define ALIA_GEOMETRY_VEC2_H
+#ifndef ALIA_ABI_BASE_GEOMETRY_VEC2_H
+#define ALIA_ABI_BASE_GEOMETRY_VEC2_H
 
-#include <alia/abi/base.h>
-#include <alia/abi/geometry/types.h>
+#include <alia/abi/base/geometry/types.h>
+#include <alia/abi/prelude.h>
 
 #include <math.h>
 
@@ -189,4 +189,4 @@ alia_vec2i_max(alia_vec2i a, alia_vec2i b)
 
 ALIA_EXTERN_C_END
 
-#endif /* ALIA_GEOMETRY_VEC2_H */
+#endif /* ALIA_ABI_BASE_GEOMETRY_VEC2_H */

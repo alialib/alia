@@ -1,12 +1,17 @@
-#pragma once
+#ifndef ALIA_ABI_DRAWING_H
+#define ALIA_ABI_DRAWING_H
 
-#include <alia/abi/arena.h>
-#include <alia/abi/base.h>
-#include <alia/abi/geometry.h>
+#include <alia/abi/base/arena.h>
+#include <alia/abi/base/geometry.h>
+#include <alia/abi/prelude.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+ALIA_EXTERN_C_BEGIN
+
+enum alia_draw_command_type
+{
+    ALIA_DRAW_COMMAND_TYPE_BOX,
+    ALIA_DRAW_COMMAND_TYPE_MSDF,
+};
 
 typedef struct alia_draw_state
 {
@@ -75,6 +80,6 @@ alia_get_draw_bucket(
     alia_z_index z_index,
     alia_draw_material_id material_id);
 
-#ifdef __cplusplus
-}
-#endif
+ALIA_EXTERN_C_END
+
+#endif /* ALIA_ABI_UI_DRAWING_H */

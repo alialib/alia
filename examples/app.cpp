@@ -1,12 +1,10 @@
-#include <glad/glad.h>
+// #define WIN32_LEAN_AND_MEAN
+// #include <windows.h>
 
-#include <GLFW/glfw3.h>
-
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-
+#include <algorithm>
 #include <chrono>
 #include <functional> // For std::hash
+#include <iomanip>
 #include <iostream>
 #include <random>
 #include <type_traits>
@@ -15,7 +13,10 @@
 
 #include "roboto-msdf.h"
 
+#include <alia/renderers/gl/renderer.hpp>
+
 #include <alia/abi/events.h>
+#include <alia/abi/ui/style.h>
 #include <alia/color.hpp>
 #include <alia/context.hpp>
 #include <alia/drawing.hpp>
@@ -41,13 +42,17 @@
 #include <alia/layout/system.hpp>
 #include <alia/layout/utilities.hpp>
 #include <alia/platforms/glfw/window.hpp>
-#include <alia/renderers/gl/renderer.hpp>
 #include <alia/system/api.hpp>
 #include <alia/system/input_processing.hpp>
 #include <alia/system/interface.hpp>
 #include <alia/system/object.hpp>
 #include <alia/text_engines/msdf/msdf.hpp>
 #include <alia/theme.hpp>
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#include <emscripten/html5.h>
+#endif
 
 using namespace alia;
 using namespace alia::operators;
@@ -89,10 +94,11 @@ static uintptr_t the_element_counter = 0;
 bool
 detect_click(context& ctx, float x, float y, float width, float height)
 {
-    auto& event = *ctx.event->event;
-    return event.type == ALIA_EVENT_MOUSE_PRESS && event.mouse_press.x >= x
-        && event.mouse_press.x <= x + width && event.mouse_press.y >= y
-        && event.mouse_press.y <= y + height;
+    return get_event_type(ctx) == ALIA_EVENT_MOUSE_PRESS
+        && as_mouse_press_event(ctx).x >= x
+        && as_mouse_press_event(ctx).x <= x + width
+        && as_mouse_press_event(ctx).y >= y
+        && as_mouse_press_event(ctx).y <= y + height;
 }
 
 bool
@@ -141,7 +147,7 @@ do_rect(
             {
                 color = {1.0f, 0.0f, 1.0f, 1.0f};
             }
-            draw_box(as_draw_event(ctx).context, z_index, box, color);
+            draw_box(as_draw_event(ctx).context, z_index, box, color, 10.0f);
             break;
         }
         case ALIA_CATEGORY_INPUT: {
@@ -195,7 +201,7 @@ do_rect_with_offset(
             alia_box box
                 = {.min = leaf_placement.position + offset,
                    .size = leaf_placement.size};
-            draw_box(as_draw_event(ctx).context, z_index, box, color);
+            draw_box(as_draw_event(ctx).context, z_index, box, color, 0.0f);
             break;
         }
         case ALIA_CATEGORY_INPUT: {
@@ -446,7 +452,11 @@ concrete_panel(
         if (get_event_type(ctx) == ALIA_EVENT_DRAW)
         {
             draw_box(
-                as_draw_event(ctx).context, z_index, placement.box, color);
+                as_draw_event(ctx).context,
+                z_index,
+                placement.box,
+                color,
+                0.0f);
         }
 
         std::forward<Content>(content)();
@@ -465,6 +475,26 @@ panel(
     apply_mods(ctx, mods, [&] {
         concrete_panel(
             ctx, z_index, color, FILL, std::forward<Content>(content));
+    });
+}
+
+template<class Content>
+void
+concrete_button(
+    context& ctx,
+    alia_z_index z_index,
+    alia_rgba color,
+    layout_flag_set flags,
+    Content&& content)
+{
+    placement_hook(ctx, flags, [&](auto const& placement) {
+        if (get_event_type(ctx) == ALIA_EVENT_DRAW)
+        {
+            draw_box(
+                as_draw_event(ctx).context, z_index, placement.box, color);
+        }
+
+        std::forward<Content>(content)();
     });
 }
 
@@ -999,7 +1029,7 @@ mixed_flow_demo(context& ctx)
                              .top = 10,
                              .bottom = 10}),
                     [&] {
-                        do_text(ctx, 2, GRAY, 8 + i * 6, "panel", BASELINE_Y);
+                        do_text(ctx, 2, GRAY, 12 + i * 6, "panel", BASELINE_Y);
                     });
                 do_text(ctx, 1, GRAY, 12 + i * 4, lorem_ipsum, BASELINE_Y);
             }
@@ -1723,6 +1753,7 @@ update()
         alia_arena_reset(alia_arena_get_view(&the_display_list_arena));
         alia_draw_bucket_table bucket_table = {
             .buckets = {},
+            .keys = {},
         };
         alia_draw_context draw_context
             = {.system = &the_draw_system,
@@ -1737,13 +1768,15 @@ update()
         while ((err = glGetError()) != GL_NO_ERROR)
             printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
-        // TODO: Sort buckets by z-index.
-        for (auto const& bucket : bucket_table.buckets)
+        std::sort(bucket_table.keys.begin(), bucket_table.keys.end());
+        for (auto const key : bucket_table.keys)
         {
-            alia_draw_material_id material_id = bucket.first & 0xFFFF;
+            alia_draw_material_id material_id = key & 0xffff'ffff;
+            alia_z_index z_index = key >> 32;
+            alia_draw_bucket* bucket = &bucket_table.buckets[key];
             alia_draw_material* material
                 = &the_draw_system.materials[material_id];
-            material->vtable.draw_bucket(material->user, &bucket.second);
+            material->vtable.draw_bucket(material->user, bucket);
         }
 
         while ((err = glGetError()) != GL_NO_ERROR)
@@ -1803,6 +1836,67 @@ framebuffer_size_callback(GLFWwindow* window, int width, int height)
     update();
 }
 
+void
+check_and_update_resolution()
+{
+#ifdef __EMSCRIPTEN__
+    // 1. Get the current size of the HTML element (in CSS pixels)
+    //    This is the size the "window" takes up on the webpage.
+    double css_w, css_h;
+    emscripten_get_element_css_size("#canvas", &css_w, &css_h);
+
+    // 2. Get the Device Pixel Ratio (e.g., 2.0 for Retina/High-DPI)
+    double dpr = emscripten_get_device_pixel_ratio();
+
+    // 3. Calculate the required Buffer Size (Physical Pixels)
+    int target_w = (int) (css_w * dpr);
+    int target_h = (int) (css_h * dpr);
+
+    // 4. Check what GLFW thinks the size is
+    int current_w, current_h;
+    glfwGetWindowSize(the_window, &current_w, &current_h);
+
+    // 5. If they mismatch, Resize!
+    if (current_w != target_w || current_h != target_h)
+    {
+        // This resizes the WebGL Backbuffer
+        glfwSetWindowSize(the_window, target_w, target_h);
+
+        // Update your Alia System / Renderer Viewport
+        // (Assuming you do this in your render code, but if you cache it,
+        // update it here)
+        the_system.surface_size = {float(target_w), float(target_h)};
+
+        // Helpful log to prove it's working
+        std::cout << "Resized to: " << target_w << "x" << target_h
+                  << " (DPR: " << dpr << ")\n";
+    }
+#endif
+}
+
+void
+main_loop_step()
+{
+    // Check if we need to close (mostly for desktop)
+    if (glfwWindowShouldClose(the_window))
+    {
+#ifdef __EMSCRIPTEN__
+        emscripten_cancel_main_loop(); // Stop the loop
+#endif
+        return;
+    }
+
+    glfwPollEvents();
+
+    check_and_update_resolution();
+
+    update();
+
+    GLenum err;
+    while ((err = glGetError()) != GL_NO_ERROR)
+        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
+}
+
 int
 main()
 {
@@ -1831,6 +1925,7 @@ main()
 
     // auto const& theme = get_system(ctx).theme;
 
+#if 0
     // Enable debug heap reports
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 
@@ -1843,6 +1938,7 @@ main()
     {
         std::cerr << "Failed to set main thread priority." << std::endl;
     }
+#endif
 
     if (!glfwInit())
     {
@@ -1850,9 +1946,17 @@ main()
         return -1;
     }
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+#ifndef __EMSCRIPTEN__
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#else
+    // Emscripten handles this via linker flags (-s USE_WEBGL2=1)
+    // But explicitly asking for ES 3.0 doesn't hurt:
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+#endif
 
     the_window
         = glfwCreateWindow(1200, 1600, "Alia Renderer", nullptr, nullptr);
@@ -1867,17 +1971,21 @@ main()
     glfwSetFramebufferSizeCallback(the_window, framebuffer_size_callback);
     glfwSetCursorPosCallback(the_window, cursor_position_callback);
 
+#ifndef __EMSCRIPTEN__
     glfwMakeContextCurrent(the_window);
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
     {
         std::cerr << "Failed to initialize GLAD\n";
         return -1;
     }
+#endif
 
     initialize_ui_system(&the_system, alia_vec2f{1200, 1600});
     the_system.controller = the_demo;
 
+#ifndef __EMSCRIPTEN__
     glEnable(GL_FRAMEBUFFER_SRGB);
+#endif
 
     init_gl_renderer(&the_draw_system, &the_renderer);
     box_material_id = alia_register_material(
@@ -1920,7 +2028,7 @@ main()
             .kerning_pairs = roboto_kerning_pairs,
             .kerning_pair_count = roboto_kerning_pair_count,
         },
-        "roboto-msdf.png");
+        "assets/roboto-msdf.png");
 
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
@@ -1933,16 +2041,12 @@ main()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+#ifdef __EMSCRIPTEN__
+    emscripten_set_main_loop(main_loop_step, 0, 1);
+#else
     while (!glfwWindowShouldClose(the_window))
-    {
-        update();
-
-        glfwPollEvents();
-
-        GLenum err;
-        while ((err = glGetError()) != GL_NO_ERROR)
-            printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
-    }
+        main_loop_step();
+#endif
 
     glfwTerminate();
     return 0;

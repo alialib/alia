@@ -1,13 +1,12 @@
-#pragma once
+#ifndef ALIA_ABI_BASE_ARENA_H
+#define ALIA_ABI_BASE_ARENA_H
 
-#include <alia/abi/base.h>
+#include <alia/abi/prelude.h>
 
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+ALIA_EXTERN_C_BEGIN
 
 typedef struct alia_arena alia_arena;
 
@@ -146,6 +145,6 @@ typedef struct alia_arena_stats
 alia_arena_stats
 alia_arena_get_stats(alia_arena* view);
 
-#ifdef __cplusplus
-}
+ALIA_EXTERN_C_END
+
 #endif

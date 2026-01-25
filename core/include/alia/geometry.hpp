@@ -1,6 +1,6 @@
 #pragma once
 
-#include <alia/abi/geometry.h>
+#include <alia/abi/base/geometry.h>
 
 namespace alia {
 

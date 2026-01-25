@@ -1,5 +1,7 @@
 #include <alia/layout/system.hpp>
 
+#include <alia/abi/ui/style.h>
+
 namespace alia {
 
 void

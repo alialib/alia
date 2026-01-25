@@ -1,5 +1,6 @@
 #include <alia/layout/compositors/column.hpp>
 
+#include <alia/abi/ui/style.h>
 #include <alia/layout/utilities.hpp>
 
 namespace alia {
@@ -37,7 +38,7 @@ column_measure_horizontal(measurement_context* ctx, layout_node* node)
         ++scratch.child_count;
     }
     vertical_requirements* y_requirements
-        = arena_array_alloc<vertical_requirements>(
+        = arena_alloc_array<vertical_requirements>(
             *ctx->scratch, scratch.child_count);
 
     for (layout_node* child = column.first_child; child != nullptr;
@@ -61,7 +62,7 @@ column_assign_widths(
     auto& column = *reinterpret_cast<column_layout_node*>(node);
     auto& scratch = use_scratch<column_scratch>(*ctx->scratch);
     vertical_requirements* y_requirements
-        = arena_array_alloc<vertical_requirements>(
+        = arena_alloc_array<vertical_requirements>(
             *ctx->scratch, scratch.child_count);
     auto const assignment = resolve_horizontal_assignment(
         adjust_flags_for_main_axis(column.flags, main_axis),
@@ -84,7 +85,7 @@ column_measure_vertical(
     auto& column = *reinterpret_cast<column_layout_node*>(node);
     auto& scratch = use_scratch<column_scratch>(*ctx->scratch);
     vertical_requirements* y_requirements
-        = arena_array_alloc<vertical_requirements>(
+        = arena_alloc_array<vertical_requirements>(
             *ctx->scratch, scratch.child_count);
     auto const assignment = resolve_horizontal_assignment(
         adjust_flags_for_main_axis(column.flags, main_axis),
@@ -119,7 +120,7 @@ column_assign_boxes(
     auto& column = *reinterpret_cast<column_layout_node*>(node);
     auto& scratch = use_scratch<column_scratch>(*ctx->scratch);
     vertical_requirements* y_requirements
-        = arena_array_alloc<vertical_requirements>(
+        = arena_alloc_array<vertical_requirements>(
             *ctx->scratch, scratch.child_count);
     auto const assignment = resolve_assignment(
         adjust_flags_for_main_axis(column.flags, main_axis),
