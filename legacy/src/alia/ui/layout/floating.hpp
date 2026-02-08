@@ -1,7 +1,7 @@
 #ifndef ALIA_UI_LAYOUT_FLOATING_LAYOUT_HPP
 #define ALIA_UI_LAYOUT_FLOATING_LAYOUT_HPP
 
-#include <alia/ui/layout/geometry.hpp>
+#include <alia/ui/layout/abi/base/geometry.h>
 #include <alia/ui/layout/specification.hpp>
 
 namespace alia {

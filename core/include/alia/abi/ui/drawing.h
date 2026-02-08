@@ -1,55 +1,64 @@
-#ifndef ALIA_ABI_DRAWING_H
-#define ALIA_ABI_DRAWING_H
+#ifndef ALIA_ABI_UI_DRAWING_H
+#define ALIA_ABI_UI_DRAWING_H
 
 #include <alia/abi/base/arena.h>
+#include <alia/abi/base/color.h>
 #include <alia/abi/base/geometry.h>
 #include <alia/abi/prelude.h>
 
 ALIA_EXTERN_C_BEGIN
 
-enum alia_draw_command_type
-{
-    ALIA_DRAW_COMMAND_TYPE_BOX,
-    ALIA_DRAW_COMMAND_TYPE_MSDF,
-};
+// LIFECYCLE
 
-typedef struct alia_draw_state
-{
-    alia_affine2 transform;
-    alia_box clip;
-    float opacity;
-} alia_draw_state;
+typedef struct alia_draw_system alia_draw_system;
+
+alia_struct_spec
+alia_draw_system_object_spec(void);
+
+alia_draw_system*
+alia_draw_system_init(void* object_storage, alia_vec2f surface_size);
+
+void
+alia_draw_system_cleanup(alia_draw_system* system);
+
+// MATERIALS
 
 typedef uint32_t alia_draw_material_id;
+
+// built-in material IDs
+enum
+{
+    ALIA_BOX_MATERIAL_ID = 0,
+    // TODO: monospaced/variable-width debug text material IDs
+    ALIA_BUILTIN_MATERIAL_COUNT = 1,
+};
+
+// Allocate IDs for custom materials.
+alia_draw_material_id
+alia_material_alloc_ids(alia_draw_system* system, uint32_t count);
+
 typedef int32_t alia_z_index;
+
+typedef uint32_t alia_clip_id;
+
+typedef struct alia_geometry_context
+{
+    // the transformation from the active frame of reference to surface space
+    alia_affine2 transform;
+
+    // the current clipping region ID - 0 represents the full surface.
+    alia_clip_id clip_id;
+
+    // the base z-index for the current context
+    alia_z_index z_base;
+} alia_geometry_context;
 
 typedef struct alia_draw_command
 {
     struct alia_draw_command* next;
-    // TODO: Record state.
-    // alia_draw_state state;
 } alia_draw_command;
 
-typedef struct alia_draw_bucket
-{
-    alia_draw_command* head;
-    alia_draw_command* tail;
-    uint32_t count;
-    // TODO: Add generalized, material-specific summary info.
-    uint32_t instance_count;
-} alia_draw_bucket;
-
-static inline void
-alia_draw_bucket_append(alia_draw_bucket* bucket, alia_draw_command* cmd)
-{
-    cmd->next = NULL;
-    if (!bucket->head)
-        bucket->head = cmd;
-    else
-        bucket->tail->next = cmd;
-    bucket->tail = cmd;
-    bucket->count++;
-}
+typedef struct alia_draw_bucket alia_draw_bucket;
 
 typedef void (*alia_material_draw_fn)(
     void* user, alia_draw_bucket const* bucket);
@@ -59,11 +68,17 @@ typedef struct alia_material_vtable
     alia_material_draw_fn draw_bucket;
 } alia_material_vtable;
 
-typedef struct alia_draw_system alia_draw_system;
+// Register the vtable for a material.
+// The ID can either be a built-in ID or
+// a custom ID allocated with `alia_material_alloc_ids()`.
+void
+alia_material_register(
+    alia_draw_system* system,
+    alia_draw_material_id id,
+    alia_material_vtable vtable,
+    void* user);
 
-alia_draw_material_id
-alia_register_material(
-    alia_draw_system* system, alia_material_vtable vtable, void* user);
+// GENERIC DRAW COMMANDS
 
 typedef struct alia_draw_bucket_table alia_draw_bucket_table;
 
@@ -74,11 +89,42 @@ typedef struct alia_draw_context
     alia_arena_view* arena;
 } alia_draw_context;
 
-alia_draw_bucket*
-alia_get_draw_bucket(
+// Allocate a draw command with `ALIA_MIN_ALIGN` alignment.
+alia_draw_command*
+alia_draw_command_alloc(
     alia_draw_context* ctx,
     alia_z_index z_index,
-    alia_draw_material_id material_id);
+    alia_draw_material_id material_id,
+    size_t size);
+
+// Allocate a draw command with a custom alignment.
+// `alignment` must be a power of two and no greater than `ALIA_MAX_ALIGN`.
+// `size` must be a multiple of `ALIA_MIN_ALIGN`.
+alia_draw_command*
+alia_draw_command_alloc_aligned(
+    alia_draw_context* ctx,
+    alia_z_index z_index,
+    alia_draw_material_id material_id,
+    size_t size,
+    size_t alignment);
+
+// BOXES
+
+typedef struct alia_box_draw_command
+{
+    alia_draw_command base;
+    alia_box box;
+    alia_rgba color;
+    float radius;
+} alia_box_draw_command;
+
+void
+alia_draw_box(
+    alia_draw_context* ctx,
+    alia_z_index z_index,
+    alia_box box,
+    alia_rgba color,
+    float radius);
 
 ALIA_EXTERN_C_END
 

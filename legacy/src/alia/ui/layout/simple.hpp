@@ -1,7 +1,7 @@
 #ifndef ALIA_UI_LAYOUT_SIMPLE_HPP
 #define ALIA_UI_LAYOUT_SIMPLE_HPP
 
-#include <alia/ui/layout/geometry.hpp>
+#include <alia/ui/layout/abi/base/geometry.h>
 #include <alia/ui/layout/specification.hpp>
 // TODO: This shouldn't be here.
 #include <alia/ui/layout/utilities.hpp>
@@ -209,8 +209,8 @@ ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(rotated_layout, rotated_layout_logic)
 
 // A flow layout arranges its children in horizontal rows, wrapping them around
 // to new rows as needed.
-ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA(flow_layout_logic,
-                                    layout_flag_set x_alignment_;)
+ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA(
+    flow_layout_logic, layout_flag_set x_alignment_;)
 ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(flow_layout, flow_layout_logic)
 
 // A vertical flow layout arranges its children in columns. Widgets flow down
@@ -225,8 +225,8 @@ ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER(
 // (It should only have a single child.)
 // If the space assigned to it is larger than the specified maximum, it
 // centers the child within that space.
-ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA(clamped_layout_logic,
-                                    layout_vector max_size;)
+ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA(
+    clamped_layout_logic, layout_vector max_size;)
 ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(
     clamped_layout, clamped_layout_logic, absolute_size)
 
@@ -234,8 +234,8 @@ ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(
 // (It should only have a single child.)
 // (Note that the scalar type should ideally be relative_length, but that's a
 // little more complicated to implement.)
-ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA(bordered_layout_logic,
-                                    box_border_width<layout_scalar> border;)
+ALIA_DECLARE_LAYOUT_LOGIC_WITH_DATA(
+    bordered_layout_logic, box_border_width<layout_scalar> border;)
 ALIA_DECLARE_SIMPLE_LAYOUT_CONTAINER_WITH_ARG(
     bordered_layout, bordered_layout_logic, box_border_width<absolute_length>)
 

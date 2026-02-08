@@ -38,7 +38,7 @@ mark_animation_in_progress(test_context& ctx)
 
 struct test_layout
 {
-    smoothing_bit_field smoothing;
+    smoothing_bitfield smoothing;
 };
 
 using test_bits = bitpack<test_layout>;

@@ -3,8 +3,8 @@
 
 #include <memory>
 
+#include <alia/abi/base/geometry.h>
 #include <alia/ui/context.hpp>
-#include <alia/ui/geometry.hpp>
 
 namespace alia {
 

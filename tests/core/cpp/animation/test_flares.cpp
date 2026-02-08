@@ -38,7 +38,7 @@ mark_animation_in_progress(test_context& ctx)
 
 struct test_layout
 {
-    flare_bit_field flares;
+    flare_bitfield flares;
 };
 
 using test_bits = bitpack<test_layout>;

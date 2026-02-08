@@ -1,7 +1,7 @@
 #ifndef ALIA_UI_LAYOUT_LIBRARY_HPP
 #define ALIA_UI_LAYOUT_LIBRARY_HPP
 
-#include <alia/ui/layout/geometry.hpp>
+#include <alia/ui/layout/abi/base/geometry.h>
 #include <alia/ui/layout/specification.hpp>
 // TODO: This shouldn't be here.
 #include <alia/ui/layout/utilities.hpp>

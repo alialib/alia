@@ -1,7 +1,7 @@
 #ifndef ALIA_UI_LAYOUT_GEOMETRY_HPP
 #define ALIA_UI_LAYOUT_GEOMETRY_HPP
 
-#include <alia/ui/geometry.hpp>
+#include <alia/abi/base/geometry.h>
 
 namespace alia {
 

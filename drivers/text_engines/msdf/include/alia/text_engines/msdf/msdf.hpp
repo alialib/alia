@@ -3,9 +3,9 @@
 #include <cstdint>
 #include <utility>
 
+#include <alia/abi/base/geometry.h>
 #include <alia/abi/ui/drawing.h>
 #include <alia/color.hpp>
-#include <alia/geometry.hpp>
 
 // TODO: Split up this file.
 

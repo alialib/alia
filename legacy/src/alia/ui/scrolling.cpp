@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include <alia/abi/base/geometry.h>
 #include <alia/core/flow/components.hpp>
 #include <alia/core/flow/events.hpp>
 #include <alia/core/signals/core.hpp>
@@ -10,7 +11,6 @@
 #include <alia/ui/common.hpp>
 #include <alia/ui/context.hpp>
 #include <alia/ui/events.hpp>
-#include <alia/ui/geometry.hpp>
 #include <alia/ui/input/constants.hpp>
 #include <alia/ui/layout/simple.hpp>
 #include <alia/ui/layout/specification.hpp>

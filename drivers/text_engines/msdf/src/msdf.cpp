@@ -1,10 +1,9 @@
 #include <alia/text_engines/msdf/msdf.hpp>
 
+#include <alia/abi/ui/drawing.h>
+#include <alia/base/arena.h>
 #include <alia/color.hpp>
 #include <alia/renderers/gl/renderer.hpp>
-
-// TODO: Remove this.
-#include <alia/internals/drawing.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -12,7 +11,9 @@
 #include <unordered_map>
 #include <vector>
 
-// TODO: Remove this.
+// TODO: Remove these.
+#include <alia/arena.hpp>
+#include <alia/ui/drawing.h>
 #include <iostream>
 
 using namespace alia::operators;
@@ -80,8 +81,8 @@ void main() {
 
 struct gpu_glyph_instance
 {
-    alia::color color;
-    vec2f position;
+    alia_rgba color;
+    alia_vec2f position;
     float scale;
     float uv_rect[4];
     float plane_rect[4];
@@ -372,8 +373,10 @@ create_msdf_text_engine(
             = -font.glyphs[i].plane_bottom + font.glyphs[i].plane_top;
     }
 
-    engine->material_id = alia_register_material(
+    engine->material_id = alia_material_alloc_ids(system, 1);
+    alia_material_register(
         system,
+        engine->material_id,
         alia_material_vtable{
             .draw_bucket = render_msdf_bucket,
         },
@@ -444,11 +447,14 @@ draw_text(
     char const* text,
     size_t length,
     float scale,
-    vec2f position,
+    alia_vec2f position,
     color color)
 {
-    msdf_draw_command* command
-        = arena_alloc_trailing<msdf_draw_command>(*ctx->arena, length);
+    auto* command = downcast<msdf_draw_command>(alia_draw_command_alloc(
+        ctx,
+        z_index,
+        engine->material_id,
+        alia_min_aligned_size(sizeof(msdf_draw_command) + length)));
     command->engine = engine;
     command->position
         = position + alia_vec2f{0, engine->metrics.ascender * scale};
@@ -456,9 +462,6 @@ draw_text(
     command->color = color;
     command->length = length;
     memcpy(command->text, text, length);
-    alia_draw_bucket_append(
-        alia_get_draw_bucket(ctx, z_index, engine->material_id),
-        upcast<alia_draw_command>(command));
 }
 
 std::pair<size_t, float>
@@ -511,7 +514,7 @@ render_command(
     msdf_draw_command const& command)
 {
     // TODO: Culling.
-    vec2f position = command.position;
+    alia_vec2f position = command.position;
     float scale = command.scale;
     for (size_t i = 0; i < command.length; ++i)
     {
@@ -551,7 +554,7 @@ void
 render_msdf_bucket(void* user, alia_draw_bucket const* bucket)
 {
     msdf_text_engine* engine = (msdf_text_engine*) user;
-    vec2f surface_size
+    alia_vec2f surface_size
         = {engine->system->surface_size.x, engine->system->surface_size.y};
 
     size_t glyph_instance_count = 0;
@@ -604,4 +607,4 @@ render_msdf_bucket(void* user, alia_draw_bucket const* bucket)
     glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, glyph_instance_count);
 }
 
-}; // namespace alia
+} // namespace alia

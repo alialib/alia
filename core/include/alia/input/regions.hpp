@@ -3,9 +3,9 @@
 #include <alia/abi/ui/input/constants.h>
 #include <alia/abi/ui/input/regions.h>
 
+#include <alia/abi/base/geometry.h>
 #include <alia/context.hpp>
 #include <alia/events.hpp>
-#include <alia/geometry.hpp>
 
 // This file provides various utilities for working with input regions.
 

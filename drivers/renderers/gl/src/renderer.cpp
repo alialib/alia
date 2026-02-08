@@ -1,40 +1,28 @@
 #include <alia/renderers/gl/renderer.hpp>
 
+#include <alia/abi/base/color.h>
 #include <alia/arena.hpp>
 #include <alia/drawing.hpp>
-#include <alia/system/object.hpp>
 
-// TODO: Remove this.
-#include <alia/internals/drawing.hpp>
-
-// TODO: Remove this.
+// TODO: Remove these.
+#include <alia/ui/drawing.h>
 #include <iostream>
 
+// extern "C" {
+
+// struct gl_renderer
+// {
+//     alia_draw_system* system;
+//     GLuint vanilla_shader_program;
+//     GLuint vao, vbo;
+//     GLuint instance_vbo;
+//     GLint vanilla_matrix_location;
+//     alia_arena rect_instance_arena;
+// };
+
+// } // extern "C"
+
 namespace alia {
-
-// TODO: Move this to foundation.
-
-static void*
-default_alloc(void*, size_t size, size_t alignment)
-{
-    void* ptr = nullptr;
-#ifdef _MSC_VER
-    ptr = _aligned_malloc(size, alignment);
-#else
-    posix_memalign(&ptr, alignment, size);
-#endif
-    return ptr;
-}
-
-static void
-default_dealloc(void*, void* ptr)
-{
-#ifdef _MSC_VER
-    _aligned_free(ptr);
-#else
-    free(ptr);
-#endif
-}
 
 const char* vanilla_vertex_shader_source = R"(
 layout (location = 0) in vec2 a_pos;
@@ -109,9 +97,9 @@ void main() {
 
 struct rect_instance
 {
-    vec2f min;
-    vec2f size;
-    alia::color color;
+    alia_vec2f min;
+    alia_vec2f size;
+    alia_rgba color;
     float radius;
     float clip_rect[4];
 };
@@ -341,7 +329,7 @@ render_box_command_list(void* user, alia_draw_bucket const* bucket)
         rect_instance* instance = rect_instances;
         for (auto const* cmd = boxes.head; cmd; cmd = cmd->next)
         {
-            auto const* box_cmd = downcast<box_draw_command>(cmd);
+            auto const* box_cmd = downcast<alia_box_draw_command>(cmd);
             instance->min = box_cmd->box.min;
             instance->size = box_cmd->box.size;
             instance->color = box_cmd->color;

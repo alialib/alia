@@ -2,35 +2,25 @@
 
 #include <utility>
 
-#include <alia/geometry.hpp>
+#include <alia/abi/base/geometry.h>
+#include <alia/abi/ui/layout/flags.h>
 #include <alia/layout/container.hpp>
-#include <alia/layout/flags.hpp>
 
 namespace alia {
 
 struct alignment_override_node
 {
     layout_container container;
-    layout_flag_set flags;
+    alia_layout_flags_t flags;
 };
 
 void
 begin_alignment_override(
-    context& ctx, layout_container_scope& scope, layout_flag_set flags);
+    context& ctx, layout_container_scope& scope, alia_layout_flags_t flags);
 
 void
 end_alignment_override(context& ctx, layout_container_scope& scope);
 
-template<class Content>
-void
-alignment_override(context& ctx, layout_flag_set flags, Content&& content)
-{
-    layout_container_scope scope;
-    begin_alignment_override(ctx, scope, flags);
-    std::forward<Content>(content)();
-    end_alignment_override(ctx, scope);
-}
-
-extern layout_node_vtable alignment_override_vtable;
+extern alia_layout_node_vtable alignment_override_vtable;
 
 } // namespace alia

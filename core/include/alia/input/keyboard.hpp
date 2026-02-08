@@ -1,10 +1,10 @@
 #ifndef ALIA_UI_UTILITIES_KEYBOARD_HPP
 #define ALIA_UI_UTILITIES_KEYBOARD_HPP
 
+#include <alia/abi/base/geometry.h>
 #include <alia/core/flow/events.hpp>
 #include <alia/ui/context.hpp>
 #include <alia/ui/events.hpp>
-#include <alia/ui/geometry.hpp>
 
 // This file provides various utilities for working with keyboard input.
 

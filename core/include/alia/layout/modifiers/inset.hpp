@@ -2,9 +2,9 @@
 
 #include <utility>
 
-#include <alia/geometry.hpp>
+#include <alia/abi/base/geometry.h>
+#include <alia/abi/ui/layout/flags.h>
 #include <alia/layout/container.hpp>
-#include <alia/layout/flags.hpp>
 
 namespace alia {
 
@@ -19,21 +19,11 @@ begin_inset(
     context& ctx,
     layout_container_scope& scope,
     alia_insets insets,
-    layout_flag_set flags);
+    alia_layout_flags_t flags);
 
 void
 end_inset(context& ctx, layout_container_scope& scope);
 
-template<class Content>
-void
-inset(context& ctx, alia_insets insets, Content&& content)
-{
-    layout_container_scope scope;
-    begin_inset(ctx, scope, insets, NO_FLAGS);
-    std::forward<Content>(content)();
-    end_inset(ctx, scope);
-}
-
-extern layout_node_vtable inset_vtable;
+extern alia_layout_node_vtable inset_vtable;
 
 } // namespace alia

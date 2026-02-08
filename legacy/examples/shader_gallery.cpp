@@ -42,6 +42,7 @@
 #include <optional>
 #include <vector>
 
+#include <alia/abi/base/geometry.h>
 #include <alia/core/flow/components.hpp>
 #include <alia/core/flow/macros.hpp>
 #include <alia/core/flow/top_level.hpp>
@@ -49,7 +50,6 @@
 #include <alia/core/timing/smoothing.hpp>
 #include <alia/core/timing/ticks.hpp>
 #include <alia/ui/context.hpp>
-#include <alia/ui/geometry.hpp>
 #include <alia/ui/layout/internals.hpp>
 #include <alia/ui/text/display.hpp>
 #include <alia/ui/utilities/animation.hpp>

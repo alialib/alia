@@ -6,7 +6,6 @@
 
 #include <alia/abi/context.h>
 #include <alia/drawing.hpp>
-#include <alia/layout/node.hpp>
 
 namespace alia {
 

@@ -82,7 +82,7 @@ alia_stack_peek_payload(alia_stack const* s);
 ALIA_API void
 alia_stack_pop(alia_stack* s);
 
-// VTABLES
+// INTROSPECTION
 
 struct alia_stack_vtable
 {

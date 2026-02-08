@@ -1,0 +1,10 @@
+#ifndef ALIA_ABI_UI_LAYOUT_APP_API_H
+#define ALIA_ABI_UI_LAYOUT_APP_API_H
+
+#include <alia/abi/prelude.h>
+
+ALIA_EXTERN_C_BEGIN
+
+ALIA_EXTERN_C_END
+
+#endif /* ALIA_ABI_UI_LAYOUT_APP_API_H */

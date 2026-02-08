@@ -1,14 +1,14 @@
 #pragma once
 
-#include <alia/layout/flags.hpp>
-#include <alia/layout/node.hpp>
+#include <alia/abi/ui/layout/flags.h>
+#include <alia/abi/ui/layout/protocol.h>
 
 namespace alia {
 
 struct layout_leaf_node
 {
-    layout_node base;
-    layout_flag_set flags;
+    alia_layout_node base;
+    alia_layout_flags_t flags;
     float padding;
     alia_vec2f size;
 };
@@ -19,6 +19,6 @@ struct leaf_layout_placement
     alia_vec2f size;
 };
 
-extern layout_node_vtable leaf_vtable;
+extern alia_layout_node_vtable leaf_vtable;
 
 } // namespace alia

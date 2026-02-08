@@ -5,7 +5,7 @@
 
 #include <alia/animation/context.hpp>
 #include <alia/animation/ids.hpp>
-#include <alia/internals/bit_packing.hpp>
+#include <alia/impl/base/bit_packing.hpp>
 #include <alia/prelude.hpp>
 
 namespace alia {
@@ -37,7 +37,7 @@ push_flare(flare_group_animation_data& group, nanosecond_count end_time)
     ++group.flare_count;
 }
 
-struct flare_bit_field : bit_field<1>
+struct flare_bitfield : bitfield<1>
 {
 };
 
@@ -49,8 +49,7 @@ concept flare_animation_context
 
 template<flare_animation_context Context>
 void
-fire_flare(
-    Context& ctx, bitref<flare_bit_field> bit, nanosecond_count duration)
+fire_flare(Context& ctx, bitref<flare_bitfield> bit, nanosecond_count duration)
 {
     push_flare(
         get_animation_system(ctx).flares[make_animation_id(bit)],
@@ -60,8 +59,7 @@ fire_flare(
 
 template<flare_animation_context Context, class Processor>
 void
-process_flares(
-    Context& ctx, bitref<flare_bit_field> bit, Processor&& processor)
+process_flares(Context& ctx, bitref<flare_bitfield> bit, Processor&& processor)
 {
     if (is_set(bit))
     {

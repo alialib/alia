@@ -2,8 +2,8 @@
 
 #include <utility>
 
+#include <alia/abi/ui/layout/flags.h>
 #include <alia/layout/container.hpp>
-#include <alia/layout/flags.hpp>
 
 // TODO: Use forward declarations once those are sorted out.
 #include <alia/context.hpp>
@@ -27,31 +27,11 @@ struct placement_hook_scope
 
 void
 begin_placement_hook(
-    context& ctx, placement_hook_scope& scope, layout_flag_set flags);
+    context& ctx, placement_hook_scope& scope, alia_layout_flags_t flags);
 
 void
 end_placement_hook(context& ctx, placement_hook_scope& scope);
 
-template<class Content>
-void
-placement_hook(context& ctx, Content&& content)
-{
-    placement_hook_scope scope;
-    begin_placement_hook(ctx, scope, NO_FLAGS);
-    std::forward<Content>(content)(scope.placement);
-    end_placement_hook(ctx, scope);
-}
-
-template<class Content>
-void
-placement_hook(context& ctx, layout_flag_set flags, Content&& content)
-{
-    placement_hook_scope scope;
-    begin_placement_hook(ctx, scope, flags);
-    std::forward<Content>(content)(scope.placement);
-    end_placement_hook(ctx, scope);
-}
-
-extern layout_node_vtable placement_hook_vtable;
+extern alia_layout_node_vtable placement_hook_vtable;
 
 } // namespace alia

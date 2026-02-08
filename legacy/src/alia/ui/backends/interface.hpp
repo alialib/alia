@@ -3,8 +3,8 @@
 
 #include <optional>
 
+#include <alia/abi/base/geometry.h>
 #include <alia/ui/common.hpp>
-#include <alia/ui/geometry.hpp>
 
 // This file defines a common interface between the application window and the
 // UI controller. Where applicable, it can be implemented by backends.

@@ -1,4 +1,4 @@
-#include <alia/ui/layout/geometry.hpp>
+#include <alia/ui/layout/abi/base/geometry.h>
 #include <alia/ui/layout/grids.hpp>
 #include <alia/ui/layout/simple.hpp>
 #include <alia/ui/layout/spacer.hpp>

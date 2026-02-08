@@ -159,7 +159,7 @@ typedef struct alia_struct_spec
 // allocations done by Alia. All allocations are aligned to at least this
 // value, and in the allocation 'fast path', sizes must be a multiple of this
 // value.
-#define ALIA_MIN_ALIGN (16u)
+#define ALIA_MIN_ALIGN (8u)
 // `ALIA_MAX_ALIGN` is the global maximum alignment for all allocations done by
 // Alia. Allocations are aligned to at most this value.
 #define ALIA_MAX_ALIGN (256u)

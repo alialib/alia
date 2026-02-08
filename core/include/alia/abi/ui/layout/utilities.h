@@ -1,0 +1,182 @@
+#ifndef ALIA_LAYOUT_UTILITIES_H
+#define ALIA_LAYOUT_UTILITIES_H
+
+#include <alia/abi/base/geometry/types.h>
+#include <alia/abi/prelude.h>
+#include <alia/abi/ui/layout/flags.h>
+#include <alia/abi/ui/layout/protocol.h>
+
+ALIA_EXTERN_C_BEGIN
+
+typedef struct alia_layout_axis_placement
+{
+    float offset;
+    float size;
+} alia_layout_axis_placement;
+
+// CONTAINER PLACEMENT - If no alignment flags are set, the node will be
+// stretched to fill its assigned region.
+
+// Resolve the horizontal placement for a container node.
+alia_layout_axis_placement
+alia_resolve_container_x(
+    alia_layout_flags_t flags, float assigned_size, float required_size);
+
+// Resolve the vertical placement for a container node.
+alia_layout_axis_placement
+alia_resolve_container_y(
+    alia_layout_flags_t flags,
+    float assigned_size,
+    float baseline,
+    float required_size,
+    float ascent);
+
+// Resolve the full 2D placement for a container node.
+alia_box
+alia_resolve_container_box(
+    alia_layout_flags_t flags,
+    alia_vec2f assigned_size,
+    float baseline,
+    alia_vec2f required_size,
+    float ascent);
+
+// LEAF PLACEMENT - Includes padding. If no alignment flags are set, the node
+// will be aligned to the start of its assigned region.
+
+// Resolve the horizontal placement for a leaf node.
+alia_layout_axis_placement
+alia_resolve_leaf_x(
+    alia_layout_flags_t flags,
+    float assigned_size,
+    float required_size,
+    float padding);
+
+// Resolve the vertical placement for a leaf node.
+alia_layout_axis_placement
+alia_resolve_leaf_y(
+    alia_layout_flags_t flags,
+    float assigned_size,
+    float baseline,
+    float required_size,
+    float ascent,
+    float padding);
+
+// Resolve the full 2D placement for a leaf node.
+alia_box
+alia_resolve_leaf_box(
+    alia_layout_flags_t flags,
+    alia_vec2f assigned_size,
+    float baseline,
+    alia_vec2f required_size,
+    float ascent,
+    alia_vec2f padding);
+
+// Resolve the baseline offset for a node.
+float
+alia_resolve_baseline(
+    alia_layout_flags_t flags,
+    float assigned_height,
+    float ascent,
+    float descent);
+
+// Resolve the growth factor for a node from its flags.
+static inline float
+alia_resolve_growth_factor(alia_layout_flags_t flags)
+{
+    return (flags & ALIA_GROW) ? 1.0f : 0.0f;
+}
+
+// Adjust the layout flags to fold the cross-axis flags into the appropriate
+// axis-specific flags.
+// Note that this invalidates other flags that aren't related to alignment,
+// which is fine for what it's used for.
+static inline alia_layout_flags_t
+alia_fold_in_cross_axis_flags(
+    alia_layout_flags_t flags, alia_main_axis_index main_axis)
+{
+    flags |= flags >> main_axis;
+    return flags;
+}
+
+// DEFAULT NODE IMPLEMENTATIONS
+
+alia_wrapping_requirements
+alia_default_measure_wrapped_vertical(
+    alia_measurement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* node,
+    float current_x_offset,
+    float line_width);
+
+// PROTOCOL INVOCATION UTILITIES
+
+static inline alia_horizontal_requirements
+alia_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
+{
+    return node->vtable->measure_horizontal(ctx, node);
+}
+
+static inline void
+alia_assign_widths(
+    alia_placement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* node,
+    float assigned_width)
+{
+    node->vtable->assign_widths(ctx, main_axis, node, assigned_width);
+}
+
+static inline alia_vertical_requirements
+alia_measure_vertical(
+    alia_measurement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* node,
+    float assigned_width)
+{
+    return node->vtable->measure_vertical(
+        ctx, main_axis, node, assigned_width);
+}
+
+static inline void
+alia_assign_boxes(
+    alia_placement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* node,
+    alia_box box,
+    float baseline)
+{
+    node->vtable->assign_boxes(ctx, main_axis, node, box, baseline);
+}
+
+static inline alia_horizontal_requirements
+alia_measure_wrapped_horizontal(
+    alia_measurement_context* ctx, alia_layout_node* node)
+{
+    return node->vtable->measure_wrapped_horizontal(ctx, node);
+}
+
+static inline alia_wrapping_requirements
+alia_measure_wrapped_vertical(
+    alia_measurement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* node,
+    float current_x_offset,
+    float line_width)
+{
+    return node->vtable->measure_wrapped_vertical(
+        ctx, main_axis, node, current_x_offset, line_width);
+}
+
+static inline void
+alia_assign_wrapped_boxes(
+    alia_placement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* node,
+    alia_wrapping_assignment const* assignment)
+{
+    node->vtable->assign_wrapped_boxes(ctx, main_axis, node, assignment);
+}
+
+ALIA_EXTERN_C_END
+
+#endif // ALIA_LAYOUT_UTILITIES_H

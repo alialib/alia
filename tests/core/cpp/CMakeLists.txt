@@ -10,4 +10,5 @@ add_executable(test_core_cpp
     animation/test_transitions.cpp)
 target_link_libraries(test_core_cpp PRIVATE alia_core)
 target_include_directories(test_core_cpp PRIVATE
-    ${PROJECT_SOURCE_DIR}/tests/support)
+    ${PROJECT_SOURCE_DIR}/tests/support
+    ${PROJECT_SOURCE_DIR}/core/src)

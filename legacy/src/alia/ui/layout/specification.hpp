@@ -1,7 +1,7 @@
 #ifndef ALIA_UI_LAYOUT_SPECIFICATION_HPP
 #define ALIA_UI_LAYOUT_SPECIFICATION_HPP
 
-#include <alia/ui/geometry.hpp>
+#include <alia/abi/base/geometry.h>
 
 // This file defines the types and flags available to the application to
 // specify layout properties.

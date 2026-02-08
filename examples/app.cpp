@@ -15,6 +15,7 @@
 
 #include <alia/renderers/gl/renderer.hpp>
 
+#include <alia/abi/base/geometry.h>
 #include <alia/abi/events.h>
 #include <alia/abi/ui/style.h>
 #include <alia/color.hpp>
@@ -22,11 +23,9 @@
 #include <alia/drawing.hpp>
 #include <alia/events.hpp>
 #include <alia/flow/dispatch.hpp>
-#include <alia/geometry.hpp>
 #include <alia/input/elements.hpp>
 #include <alia/input/pointer.hpp>
 #include <alia/input/regions.hpp>
-#include <alia/internals/drawing.hpp>
 #include <alia/layout/compositors/column.hpp>
 #include <alia/layout/compositors/flow.hpp>
 #include <alia/layout/compositors/grid.hpp>
@@ -48,6 +47,10 @@
 #include <alia/system/object.hpp>
 #include <alia/text_engines/msdf/msdf.hpp>
 #include <alia/theme.hpp>
+#include <alia/ui/drawing.h>
+#include <alia/ui/layout/containers.hpp>
+#include <alia/ui/layout/flags.hpp>
+#include <alia/ui/layout/wrappers.hpp>
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -120,7 +123,7 @@ do_rect(
             layout.next_ptr = &new_node->base.next_sibling;
             *new_node = layout_leaf_node{
                 .base = {.vtable = &leaf_vtable, .next_sibling = 0},
-                .flags = flags,
+                .flags = raw_code(flags),
                 .padding = ctx.style->padding,
                 .size = size};
             break;
@@ -147,7 +150,8 @@ do_rect(
             {
                 color = {1.0f, 0.0f, 1.0f, 1.0f};
             }
-            draw_box(as_draw_event(ctx).context, z_index, box, color, 10.0f);
+            alia_draw_box(
+                as_draw_event(ctx).context, z_index, box, color, 10.0f);
             break;
         }
         case ALIA_CATEGORY_INPUT: {
@@ -182,7 +186,7 @@ do_rect_with_offset(
             layout.next_ptr = &new_node->base.next_sibling;
             *new_node = layout_leaf_node{
                 .base = {.vtable = &leaf_vtable, .next_sibling = 0},
-                .flags = flags,
+                .flags = raw_code(flags),
                 .padding = ctx.style->padding,
                 .size = size};
             break;
@@ -201,7 +205,8 @@ do_rect_with_offset(
             alia_box box
                 = {.min = leaf_placement.position + offset,
                    .size = leaf_placement.size};
-            draw_box(as_draw_event(ctx).context, z_index, box, color, 0.0f);
+            alia_draw_box(
+                as_draw_event(ctx).context, z_index, box, color, 0.0f);
             break;
         }
         case ALIA_CATEGORY_INPUT: {
@@ -451,7 +456,7 @@ concrete_panel(
     placement_hook(ctx, flags, [&](auto const& placement) {
         if (get_event_type(ctx) == ALIA_EVENT_DRAW)
         {
-            draw_box(
+            alia_draw_box(
                 as_draw_event(ctx).context,
                 z_index,
                 placement.box,
@@ -490,7 +495,7 @@ concrete_button(
     placement_hook(ctx, flags, [&](auto const& placement) {
         if (get_event_type(ctx) == ALIA_EVENT_DRAW)
         {
-            draw_box(
+            alia_draw_box(
                 as_draw_event(ctx).context, z_index, placement.box, color);
         }
 
@@ -502,50 +507,50 @@ concrete_button(
 
 struct msdf_text_layout_node
 {
-    layout_node base;
-    layout_flag_set flags;
+    alia_layout_node base;
+    alia_layout_flags_t flags;
     float padding;
     msdf_text_engine* engine;
     char const* text;
     float font_size;
 };
 
-horizontal_requirements
-measure_text_horizontal(measurement_context* ctx, layout_node* node)
+alia_horizontal_requirements
+measure_text_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
 {
     auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
     float width = measure_text_width(
         text.engine, text.text, strlen(text.text), text.font_size);
-    return horizontal_requirements{
+    return alia_horizontal_requirements{
         .min_size = width + text.padding * 2, .growth_factor = 0};
 }
 
 void
 assign_text_widths(
-    measurement_context* ctx,
-    main_axis_index main_axis,
-    layout_node* node,
+    alia_placement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* node,
     float assigned_width)
 {
     // TODO: Implement
 }
 
-vertical_requirements
+alia_vertical_requirements
 measure_text_vertical(
-    measurement_context* ctx,
-    main_axis_index main_axis,
-    layout_node* node,
+    alia_measurement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* node,
     float assigned_width)
 {
     auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
     auto const* metrics = get_msdf_font_metrics(text.engine);
-    return vertical_requirements{
+    return alia_vertical_requirements{
         .min_size = metrics->line_height * text.font_size + text.padding * 2,
         .growth_factor = 0,
-        .ascent = (text.flags & Y_ALIGNMENT_MASK) == BASELINE_Y
+        .ascent = (text.flags & ALIA_Y_ALIGNMENT_MASK) == ALIA_BASELINE_Y
                     ? metrics->ascender * text.font_size + text.padding
                     : 0.0f,
-        .descent = (text.flags & Y_ALIGNMENT_MASK) == BASELINE_Y
+        .descent = (text.flags & ALIA_Y_ALIGNMENT_MASK) == ALIA_BASELINE_Y
                      ? -metrics->descender * text.font_size + text.padding
                      : 0.0f};
 }
@@ -565,9 +570,9 @@ struct text_layout_placement_fragment
 
 void
 assign_text_boxes(
-    placement_context* ctx,
-    main_axis_index main_axis,
-    layout_node* node,
+    alia_placement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* node,
     alia_box box,
     float baseline)
 {
@@ -578,13 +583,13 @@ assign_text_boxes(
     float width = measure_text_width(
         text.engine, text.text, strlen(text.text), text.font_size);
 
-    auto const placement = resolve_padded_assignment(
-        adjust_flags_for_main_axis(text.flags, main_axis),
+    auto const placement = alia_resolve_leaf_box(
+        alia_fold_in_cross_axis_flags(text.flags, main_axis),
         box.size,
         baseline,
         alia_vec2f{width, metrics->line_height * text.font_size},
         metrics->ascender * text.font_size,
-        text.padding);
+        {text.padding, text.padding});
 
     text_layout_placement_header* header
         = arena_alloc<text_layout_placement_header>(*ctx->arena);
@@ -598,17 +603,18 @@ assign_text_boxes(
     fragment->length = strlen(text.text);
 }
 
-horizontal_requirements
-measure_text_wrapped_horizontal(measurement_context* ctx, layout_node* node)
+alia_horizontal_requirements
+measure_text_wrapped_horizontal(
+    alia_measurement_context* ctx, alia_layout_node* node)
 {
-    return horizontal_requirements{0, 0};
+    return alia_horizontal_requirements{0, 0};
 }
 
-wrapping_requirements
+alia_wrapping_requirements
 measure_text_wrapped_vertical(
-    measurement_context* ctx,
-    main_axis_index main_axis,
-    layout_node* node,
+    alia_measurement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* node,
     float current_x_offset,
     float line_width)
 {
@@ -617,7 +623,7 @@ measure_text_wrapped_vertical(
 
     size_t length = strlen(text.text);
 
-    wrapping_requirements requirements;
+    alia_wrapping_requirements requirements;
 
     auto first_break = break_text(
         text.engine,
@@ -688,10 +694,10 @@ measure_text_wrapped_vertical(
 
 void
 assign_text_wrapped_boxes(
-    placement_context* ctx,
-    main_axis_index main_axis,
-    layout_node* node,
-    wrapping_assignment const* assignment)
+    alia_placement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* node,
+    alia_wrapping_assignment const* assignment)
 {
     auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
     auto const* metrics = get_msdf_font_metrics(text.engine);
@@ -749,7 +755,7 @@ assign_text_wrapped_boxes(
     }
 }
 
-layout_node_vtable text_layout_vtable
+alia_layout_node_vtable text_layout_vtable
     = {measure_text_horizontal,
        assign_text_widths,
        measure_text_vertical,
@@ -787,7 +793,7 @@ do_text(
                     *alia_arena_get_view(&ctx.system->layout.node_arena));
             new_node->base.vtable = &text_layout_vtable;
             new_node->base.next_sibling = nullptr;
-            new_node->flags = flags;
+            new_node->flags = raw_code(flags);
             new_node->text = text;
             new_node->font_size = scale;
             new_node->engine = the_msdf_text_engine;
@@ -1070,7 +1076,7 @@ layout_demo_flow(context& ctx)
                                         color{f, 0.1f, 1.0f - f, 1},
                                         layout_flag_set(
                                             (i & 3)
-                                            << CROSS_ALIGNMENT_BIT_OFFSET));
+                                            << ALIA_CROSS_ALIGNMENT_BIT_OFFSET));
                                     x += 0.01f;
                                 });
                             });
@@ -1274,7 +1280,8 @@ layout_demo(context& ctx)
                                     {float((j & 7) * 12 + 12), 24},
                                     color{f, 0.1f, 1.0f - f, 1},
                                     layout_flag_set(
-                                        (j & 3) << X_ALIGNMENT_BIT_OFFSET));
+                                        (j & 3)
+                                        << ALIA_X_ALIGNMENT_BIT_OFFSET));
                                 x += 0.02f;
                             }
                         });
@@ -1742,7 +1749,7 @@ update()
         // glfwMakeContextCurrent(the_window);
         glViewport(0, 0, the_system.surface_size.x, the_system.surface_size.y);
 
-        alia_rgb c = alia_rgb_from_srgb8(alia_srgb8{0x29, 0x29, 0x40});
+        alia_rgb c = alia_rgb_from_srgb8(alia_srgb8{0x1f, 0x21, 0x2a});
         glClearColor(c.r, c.g, c.b, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
@@ -1987,9 +1994,12 @@ main()
     glEnable(GL_FRAMEBUFFER_SRGB);
 #endif
 
+    the_draw_system.next_material_id = ALIA_BUILTIN_MATERIAL_COUNT;
+
     init_gl_renderer(&the_draw_system, &the_renderer);
-    box_material_id = alia_register_material(
+    alia_material_register(
         &the_draw_system,
+        ALIA_BOX_MATERIAL_ID,
         alia_material_vtable{
             .draw_bucket = render_box_command_list,
         },

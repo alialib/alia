@@ -2,8 +2,8 @@
 
 #include <cstdint>
 
-#include <alia/layout/flags.hpp>
-#include <alia/layout/node.hpp>
+#include <alia/abi/ui/layout/flags.h>
+#include <alia/abi/ui/layout/protocol.h>
 
 // TODO: Use forward declarations once those are sorted out.
 #include <alia/context.hpp>
@@ -12,9 +12,9 @@ namespace alia {
 
 struct layout_container
 {
-    layout_node base;
-    layout_flag_set flags;
-    layout_node* first_child;
+    alia_layout_node base;
+    alia_layout_flags_t flags;
+    alia_layout_node* first_child;
 };
 
 struct layout_container_scope
@@ -26,8 +26,8 @@ void
 begin_container(
     context& ctx,
     layout_container_scope& scope,
-    layout_node_vtable* vtable,
-    layout_flag_set flags);
+    alia_layout_node_vtable* vtable,
+    alia_layout_flags_t flags);
 
 void
 end_container(context& ctx, layout_container_scope& scope);

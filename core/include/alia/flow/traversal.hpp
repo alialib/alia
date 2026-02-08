@@ -3,6 +3,8 @@
 #include <alia/abi/events.h>
 #include <alia/context.hpp>
 
+#include <memory>
+
 namespace alia {
 
 struct component_container;

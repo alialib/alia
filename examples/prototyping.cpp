@@ -160,8 +160,9 @@ struct InnerIf
     ALIA_DISABLE_MACRO_WARNINGS                                               \
     else if (_alia_if_block                                                   \
                  .is_false) for (auto _alia_inner_if                          \
-                                 = InnerIf(get_memoized_size<                 \
-                                           struct UNIQUE_ID(Memo)>());        \
+                                 = InnerIf(                                   \
+                                     get_memoized_size<struct UNIQUE_ID(      \
+                                         Memo)>());                           \
                                  the_pass_number < 2;                         \
                                  _alia_inner_if.advance())                    \
         ALIA_REENABLE_MACRO_WARNINGS

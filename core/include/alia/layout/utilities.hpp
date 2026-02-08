@@ -1,80 +1,10 @@
 #pragma once
 
-#include <alia/geometry.hpp>
-#include <alia/layout/flags.hpp>
-#include <alia/layout/node.hpp>
+#include <alia/abi/base/geometry.h>
+#include <alia/abi/ui/layout/utilities.h>
+#include <alia/arena.hpp>
 
 namespace alia {
-
-// ALIGNMENT UTILITIES
-
-struct layout_axis_placement
-{
-    float offset;
-    float size;
-};
-
-layout_axis_placement
-resolve_horizontal_assignment(
-    layout_flag_set flags, float assigned_size, float required_size);
-
-layout_axis_placement
-resolve_vertical_assignment(
-    layout_flag_set flags,
-    float assigned_size,
-    float baseline,
-    float required_size,
-    float ascent);
-
-alia_box
-resolve_assignment(
-    layout_flag_set flags,
-    alia_vec2f assigned_size,
-    float baseline,
-    alia_vec2f required_size,
-    float ascent);
-
-layout_axis_placement
-resolve_padded_horizontal_assignment(
-    layout_flag_set flags,
-    float assigned_size,
-    float required_size,
-    float padding);
-
-layout_axis_placement
-resolve_padded_vertical_assignment(
-    layout_flag_set flags,
-    float assigned_size,
-    float baseline,
-    float required_size,
-    float ascent,
-    float padding);
-
-alia_box
-resolve_padded_assignment(
-    layout_flag_set flags,
-    alia_vec2f assigned_size,
-    float baseline,
-    alia_vec2f required_size,
-    float ascent,
-    float padding);
-
-float
-assign_baseline(
-    layout_flag_set flags, float assigned_height, float ascent, float descent);
-
-inline float
-resolve_growth_factor(layout_flag_set flags)
-{
-    return flags & GROW ? 1.0f : 0.0f;
-}
-
-inline layout_flag_set
-adjust_flags_for_main_axis(layout_flag_set flags, main_axis_index main_axis)
-{
-    flags.code |= flags.code >> main_axis;
-    return flags;
-}
 
 // SCRATCH ARENA UTILITIES
 
@@ -100,15 +30,5 @@ use_scratch(alia_arena_view& arena)
 {
     return *arena_alloc<T>(arena);
 }
-
-// DEFAULT NODE IMPLEMENTATIONS
-
-wrapping_requirements
-default_measure_wrapped_vertical(
-    measurement_context* ctx,
-    main_axis_index main_axis,
-    layout_node* node,
-    float current_x_offset,
-    float line_width);
 
 } // namespace alia

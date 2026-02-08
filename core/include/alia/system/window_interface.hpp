@@ -1,7 +1,7 @@
 #ifndef ALIA_UI_SYSTEM_WINDOW_INTERFACE_HPP
 #define ALIA_UI_SYSTEM_WINDOW_INTERFACE_HPP
 
-#include <alia/geometry.hpp>
+#include <alia/abi/base/geometry.h>
 #include <alia/input/constants.hpp>
 
 namespace alia {

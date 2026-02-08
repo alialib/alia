@@ -2,11 +2,11 @@
 
 #include <utility>
 
+#include <alia/abi/ui/layout/flags.h>
 #include <alia/layout/compositors/column.hpp>
 #include <alia/layout/container.hpp>
-#include <alia/layout/flags.hpp>
 
-#include <alia/internals/arena.hpp>
+#include <alia/base/arena.h>
 
 namespace alia {
 
@@ -16,7 +16,7 @@ struct grid_scratch;
 
 struct grid_layout_node
 {
-    layout_node base = {};
+    alia_layout_node base = {};
     grid_row_layout_node* first_row = nullptr;
     grid_scratch* scratch = nullptr;
     column_layout_node column = {};
@@ -40,60 +40,19 @@ struct grid_scope
 using grid_handle = grid_scope*;
 
 void
-begin_grid(context& ctx, grid_scope& scope, layout_flag_set flags);
+begin_grid(context& ctx, grid_scope& scope, alia_layout_flags_t flags);
 
 void
 end_grid(context& ctx, grid_scope& scope);
-
-template<class Content>
-void
-grid(context& ctx, Content&& content)
-{
-    grid_scope scope;
-    begin_grid(ctx, scope, NO_FLAGS);
-    std::forward<Content>(content)(&scope);
-    end_grid(ctx, scope);
-}
-
-template<class Content>
-void
-grid(context& ctx, layout_flag_set flags, Content&& content)
-{
-    grid_scope scope;
-    begin_grid(ctx, scope, flags);
-    std::forward<Content>(content)(&scope);
-    end_grid(ctx, scope);
-}
 
 void
 begin_grid_row(
     context& ctx,
     grid_handle grid,
     layout_container_scope& scope,
-    layout_flag_set flags);
+    alia_layout_flags_t flags);
 
 void
 end_grid_row(context& ctx, layout_container_scope& scope);
-
-template<class Content>
-void
-grid_row(context& ctx, grid_handle grid, Content&& content)
-{
-    layout_container_scope scope;
-    begin_grid_row(ctx, grid, scope, NO_FLAGS);
-    std::forward<Content>(content)();
-    end_grid_row(ctx, scope);
-}
-
-template<class Content>
-void
-grid_row(
-    context& ctx, grid_handle grid, layout_flag_set flags, Content&& content)
-{
-    layout_container_scope scope;
-    begin_grid_row(ctx, grid, scope, flags);
-    std::forward<Content>(content)();
-    end_grid_row(ctx, scope);
-}
 
 } // namespace alia

@@ -2,11 +2,11 @@
 
 // #include <alia/core/system/internals.hpp>
 // #include <alia/core/timing/ticks.hpp>
+#include <alia/abi/base/geometry.h>
 #include <alia/animation/flares.hpp>
 #include <alia/animation/transitions.hpp>
 #include <alia/context.hpp>
 #include <alia/events.hpp>
-#include <alia/geometry.hpp>
 #include <alia/ids.hpp>
 #include <alia/input/constants.hpp>
 #include <alia/layout/system.hpp>

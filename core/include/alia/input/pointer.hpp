@@ -1,8 +1,8 @@
 #pragma once
 
+#include <alia/abi/base/geometry.h>
 #include <alia/context.hpp>
 #include <alia/events.hpp>
-#include <alia/geometry.hpp>
 #include <alia/input/constants.hpp>
 #include <alia/system/object.hpp>
 

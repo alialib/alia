@@ -12,19 +12,13 @@
 #include <GLFW/glfw3.h>
 #endif
 
-// TODO: Remove this.
-#include <alia/drawing.hpp>
+#include <alia/abi/base/arena.h>
+#include <alia/abi/ui/drawing.h>
 
-#include <alia/internals/arena.hpp>
-
-// TODO: Use forward declarations once those are sorted out.
-#include <alia/system/object.hpp>
+#include <alia/base/arena.h>
 
 namespace alia {
 
-struct display_list;
-
-// TODO: Make this opaque.
 struct gl_renderer
 {
     alia_draw_system* system;
@@ -34,6 +28,8 @@ struct gl_renderer
     GLint vanilla_matrix_location;
     alia_arena rect_instance_arena;
 };
+
+struct display_list;
 
 // Create a new OpenGL renderer.
 // (This may compile shaders, etc.)

@@ -1,9 +1,9 @@
 #include <alia/substrate.hpp>
 
 #include <alia/abi/base/arena.h>
-#include <alia/arena.hpp>
-#include <alia/internals/arena.hpp>
+#include <alia/base/arena.h>
 
+#include <alia/arena.hpp>
 #include <doctest/doctest.h>
 
 #include <cstdio>

@@ -1,11 +1,11 @@
 #ifndef ALIA_UI_EVENTS_HPP
 #define ALIA_UI_EVENTS_HPP
 
+#include <alia/abi/base/geometry.h>
 #include <alia/core/flow/events.hpp>
 #include <alia/core/timing/ticks.hpp>
 #include <alia/ui/common.hpp>
 #include <alia/ui/context.hpp>
-#include <alia/ui/geometry.hpp>
 #include <alia/ui/ids.hpp>
 #include <alia/ui/input/constants.hpp>
 #include <alia/ui/layout/specification.hpp>

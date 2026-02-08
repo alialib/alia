@@ -7,7 +7,7 @@
 #include <alia/animation/context.hpp>
 #include <alia/animation/cubic_bezier.hpp>
 #include <alia/animation/ids.hpp>
-#include <alia/internals/bit_packing.hpp>
+#include <alia/impl/base/bit_packing.hpp>
 #include <alia/prelude.hpp>
 
 namespace alia {
@@ -47,7 +47,7 @@ concept animated_transition_context
           } -> std::same_as<transition_animation_map&>;
       };
 
-struct smoothing_bit_field : bit_field<2>
+struct smoothing_bitfield : bitfield<2>
 {
 };
 
@@ -55,7 +55,7 @@ template<animated_transition_context Context>
 void
 init_transition(
     Context& ctx,
-    bitref<smoothing_bit_field> bits,
+    bitref<smoothing_bitfield> bits,
     bool current_state,
     animated_transition const& transition)
 {
@@ -64,7 +64,7 @@ init_transition(
     animation.direction = current_state;
     animation.transition_end
         = get_animation_tick_count(ctx) + transition.duration;
-    write_bitref(bits, 0b01);
+    bits = 0b01;
 }
 
 // TODO: Revisit lerping.
@@ -93,18 +93,17 @@ template<lerpable_value Value, animated_transition_context Context>
 Value
 smooth_between_values(
     Context& ctx,
-    bitref<smoothing_bit_field> bits,
+    bitref<smoothing_bitfield> bits,
     bool current_state,
     Value true_value,
     Value false_value,
     animated_transition const& transition = default_transition)
 {
-    auto internal_state = read_bitref(bits);
-    switch (internal_state)
+    switch (bits)
     {
         default:
         case 0b00:
-            write_bitref(bits, current_state ? 0b11 : 0b10);
+            bits = current_state ? 0b11 : 0b10;
             return current_state ? true_value : false_value;
         case 0b01: {
             auto& animation = get_animation_system(ctx)
@@ -148,7 +147,7 @@ smooth_between_values(
                 auto end_state = animation.direction;
                 get_animation_system(ctx).transitions.erase(
                     make_animation_id(bits));
-                write_bitref(bits, end_state ? 0b11 : 0b10);
+                bits = end_state ? 0b11 : 0b10;
                 return end_state ? true_value : false_value;
             }
         }
